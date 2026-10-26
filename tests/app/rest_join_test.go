@@ -58,7 +58,7 @@ func postJoin(t *testing.T, baseURL, code string, body any, rawBody string) (*ht
 // item's AC itself: POST /api/games (creator "Alice") then POST
 // /api/games/{code}/join with {"player_name": "Bob", "role": "player"} ->
 // 200 {"role": "player", "seat": 2, "color": "white", "status": "active"}
-// (demo.json's seat 2 color is "white"). A following GET /api/games/{code}
+// (freeplay.json's seat 2 color is "white"). A following GET /api/games/{code}
 // must then show status == "active" with both seats filled.
 func TestPostJoin_NewPlayerFillsLastSeat_ActivatesGame(t *testing.T) {
 	baseURL := newRESTTestServer(t)

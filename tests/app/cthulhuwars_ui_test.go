@@ -260,10 +260,10 @@ func TestWebCthulhuWars_RulesWindowHasTabsTablesAndImages(t *testing.T) {
 
 func TestWebRulesWindow_GeneratedGuideForAClassicGame(t *testing.T) {
 	baseURL := newRESTTestServer(t)
-	room := newTakRoom(t, baseURL, "demo-freeplay", "Alice")
+	room := newTakRoom(t, baseURL, "test-freeplay", "Alice")
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	openGameAs(t, ctx, baseURL, room, "demo-freeplay", "Alice")
+	openGameAs(t, ctx, baseURL, room, "test-freeplay", "Alice")
 	waitJS(t, ctx, "rules button", `document.getElementById("show-rules") !== null`, 15*time.Second)
 	if err := chromedp.Run(ctx, chromedp.Evaluate(`document.getElementById("show-rules").click(); true`, nil)); err != nil {
 		t.Fatal(err)

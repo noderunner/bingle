@@ -336,9 +336,8 @@ func TestWebHome_PlayAGameAgainstMyself(t *testing.T) {
 	waitJS(t, ctx, "the board", `document.querySelector('#board svg') !== null && document.querySelector('#board .cell[data-position="b2"]') !== null`, 15*time.Second)
 	for i, sq := range []string{"b2", "a1", "c3"} {
 		waitJS(t, ctx, "the board is ready for move "+itoa(i+1), `document.querySelector('#board .cell[data-position="`+sq+`"]') !== null && !document.getElementById("status-message").textContent.includes("Waiting")`, 15*time.Second)
-		clickCell(t, ctx, sq)
 		// (Preview and confirm: the move is played with Submit.)
-		waitJS(t, ctx, "the preview", `document.getElementById("submit-move") !== null`, 10*time.Second)
+		clickCellUntil(t, ctx, sq, `document.getElementById("submit-move") !== null`, 15*time.Second)
 		clickSel(t, ctx, "#submit-move")
 		waitJS(t, ctx, "the move "+itoa(i+1)+" is on the board", `document.querySelectorAll('#move-list button.mv').length === `+itoa(i+1), 15*time.Second)
 	}

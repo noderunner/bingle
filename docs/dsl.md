@@ -278,7 +278,7 @@ Rules are evaluated in order after every move; the first that fires decides.
   `no-legal-moves` + `mover-wins` (draughts).
 * `reason` is stored as the game's `end_reason`.
 
-`"type": "none"` means free play (the demo); `"type": "callback"` defers to a
+`"type": "none"` means free play (no win condition); `"type": "callback"` defers to a
 Go `GameCallbacks.CheckWinner` for rules JSON cannot express.
 
 ## variants

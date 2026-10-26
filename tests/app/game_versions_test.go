@@ -60,6 +60,7 @@ func TestGameDefs_CarryVersionDesignersAndPublisher(t *testing.T) {
 		"cthulhu-wars": {[]string{"Sandy Petersen"}, "Petersen Games"},
 		"onitama":      {[]string{"Shimpei Sato"}, "Arcane Wonders"},
 		"blooms":       {[]string{"Nick Bentley"}, ""},
+		"fist":         {[]string{"James Ernest"}, "Crab Fragment Games"},
 	} {
 		got := byID[id]
 		if strings.Join(got.Designers, "|") != strings.Join(want.designers, "|") || got.Publisher != want.publisher {
@@ -103,9 +104,9 @@ func TestGameVersions_AreRecordedInTheDatabaseOnce(t *testing.T) {
 			t.Errorf("%s %s: no first-seen time", v.Family, v.Version)
 		}
 	}
-	for _, family := range []string{"tak-5x5", "hive", "cthulhu-wars", "amazons", "go-9x9", "nyet"} {
-		if got := seen[family]; len(got) != 1 || got[0] != "0.1.0" {
-			t.Errorf("%s: recorded versions %v, want [0.1.0] (once, though the server started twice)", family, got)
+	for family, want := range map[string]string{"tak-5x5": "0.1.0", "hive": "0.1.0", "cthulhu-wars": "0.1.0", "amazons": "0.1.0", "go-9x9": "0.1.0", "nyet": "0.2.0", "fist": "0.1.1"} {
+		if got := seen[family]; len(got) != 1 || got[0] != want {
+			t.Errorf("%s: recorded versions %v, want [%s] (once, though the server started twice)", family, got, want)
 		}
 	}
 	// A new version of a game is a new row, and the old one stays.

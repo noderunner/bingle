@@ -38,3 +38,4 @@ docs/
 tests/
 scripts/
 *.md
+!CHANGELOG.md

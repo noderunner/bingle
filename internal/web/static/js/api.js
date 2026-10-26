@@ -69,6 +69,8 @@ export const api = {
 	addBot: (code, name, bot, seat) =>
 		call(`/api/games/${enc(code)}/bots`, { method: "POST", body: { player_name: name, bot, seat: seat || undefined } }),
 	config: () => call("/api/config"),
+	// The newest release of the changelog: {version, date?, markdown}; 404 when the server has none.
+	changelog: () => call("/api/changelog"),
 	start: (code, name) => call(`/api/games/${enc(code)}/start`, { method: "POST", body: { player_name: name } }),
 	chooseSeat: (code, name, seat) => call(`/api/games/${enc(code)}/seat`, { method: "POST", body: { player_name: name, seat } }),
 	// Before the game starts: the cult (gc, cc, bg, ys, ww, sl) an open seat plays.

@@ -147,14 +147,14 @@ func TestGamesWithoutAGuideGetAGeneratedOne(t *testing.T) {
 		} `json:"tabs"`
 	}
 	// A game without a guide of its own gets one page, Rules, made from its definition.
-	if code := doJSON(t, "GET", base+"/api/game-defs/demo-freeplay/guide", nil, &guide); code != 200 {
+	if code := doJSON(t, "GET", base+"/api/game-defs/test-freeplay/guide", nil, &guide); code != 200 {
 		t.Fatalf("guide: %d", code)
 	}
 	if !guide.Generated || len(guide.Tabs) != 1 || guide.Tabs[0].ID != "rules" || guide.Tabs[0].Title != "Rules" {
 		t.Fatalf("guide %+v", guide)
 	}
 	md := guide.Tabs[0].Markdown
-	for _, want := range []string{"# Demo", "Move notation"} {
+	for _, want := range []string{"# Test", "Move notation"} {
 		if !strings.Contains(md, want) {
 			t.Errorf("the generated rules page lacks %q: %q", want, md)
 		}

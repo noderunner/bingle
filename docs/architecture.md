@@ -95,7 +95,7 @@ Served by the same binary as static assets plus lightweight JS (no SPA build pip
 ## Explicitly out of scope (per brief)
 
 - Accounts, auth, RBAC
-- Full rule sets for real games beyond the demo
+- Full rule sets for real games beyond those shipped
 - Audio
 - Enforced turn clocks (async-only for v1)
 
@@ -122,7 +122,7 @@ Served by the same binary as static assets plus lightweight JS (no SPA build pip
   instead bring a Go `state.Ruleset` (`engine: "ruleset"`) that implements
   the same functions itself — with chance, hidden information and
   multi-decision turns — behind the same entry points (ADR 0025).
-* **Games** (`internal/games`): `demo`, `tak` (3×3–8×8 from one JSON
+* **Games** (`internal/games`): `tak` (3×3–8×8 from one JSON
   document), `classics` (Tic-Tac-Toe, Connect Four, Gomoku, Hex, Draughts,
   Breakthrough, Reversi, Go, Yavalath, Havannah, Amazons, Ataxx, Pente,
   Brandubh), `courtfall` (a Go ruleset with a JSON legend,

@@ -48,13 +48,13 @@ type occupant struct {
 }
 
 // createRoom is a small helper wrapping POST /api/games for this file's
-// tests: it creates a demo-freeplay game for playerName and returns the
+// tests: it creates a test-freeplay game for playerName and returns the
 // resulting room code, failing the test on any non-200 response.
 func createRoom(t *testing.T, baseURL, playerName string) string {
 	t.Helper()
 
 	_, raw := postGame(t, baseURL, map[string]string{
-		"game_def_id": "demo-freeplay",
+		"game_def_id": "test-freeplay",
 		"player_name": playerName,
 	}, "")
 
@@ -88,7 +88,7 @@ func getJSON(t *testing.T, baseURL, path string) (*http.Response, []byte) {
 
 // TestGetGame_ImmediatelyAfterCreation_ReturnsWaitingWithOneSeatFilled
 // covers GET /api/games/{code} right after POST /api/games: 200,
-// game_def_id == "demo-freeplay", status == "waiting", exactly 2 seats
+// game_def_id == "test-freeplay", status == "waiting", exactly 2 seats
 // declared (seat 1 filled with the creator's name, seat 2 open/empty name),
 // and turn_seat is JSON null (the game hasn't activated — only one seat is
 // filled).
@@ -119,8 +119,8 @@ func TestGetGame_ImmediatelyAfterCreation_ReturnsWaitingWithOneSeatFilled(t *tes
 		t.Fatalf("decode response body: %v (body: %s)", err, raw)
 	}
 
-	if body.GameDefID != "demo-freeplay" {
-		t.Errorf("game_def_id = %q, want %q", body.GameDefID, "demo-freeplay")
+	if body.GameDefID != "test-freeplay" {
+		t.Errorf("game_def_id = %q, want %q", body.GameDefID, "test-freeplay")
 	}
 	if body.Status != "waiting" {
 		t.Errorf("status = %q, want %q", body.Status, "waiting")
@@ -166,7 +166,7 @@ func TestGetGame_ImmediatelyAfterCreation_ReturnsWaitingWithOneSeatFilled(t *tes
 // after POST /api/games with no moves made yet, returns 200 with
 // status == "waiting", move_seq == 0, turn_seat == null, and board_state
 // decoded as a JSON *object* (not an escaped JSON string) whose occupied
-// positions match internal/games/demo/demo.json's setup entries exactly:
+// positions match tests/testdata/freeplay.json's setup entries exactly:
 // 6 stones total, including (2,0)=black and (2,8)=white.
 func TestGetGameState_ImmediatelyAfterCreation_ReturnsInitialBoardState(t *testing.T) {
 	baseURL := newRESTTestServer(t)

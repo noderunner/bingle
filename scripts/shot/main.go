@@ -72,9 +72,9 @@ func main() {
 		_ = resp
 	}
 
-	// Demo game too.
-	demo := post(base, "/api/games", map[string]any{"game_def_id": "demo-freeplay", "player_name": "Alice", "opponent": "random"})
-	demoRoom := demo["room_code"].(string)
+	// A second game too.
+	second := post(base, "/api/games", map[string]any{"game_def_id": "reversi", "player_name": "Alice", "opponent": "random"})
+	secondRoom := second["room_code"].(string)
 
 	// A uniquely named profile directory lets us kill any browser processes
 	// that outlive the context (the Flatpak-wrapper quirk in docs/test.md).
@@ -114,7 +114,7 @@ func main() {
 	}
 
 	// Remember Alice as the player in both rooms (the UI's identity store).
-	games := fmt.Sprintf(`[{"code":%q,"def":"tak-5x5","name":"Alice","ts":%d},{"code":%q,"def":"demo-freeplay","name":"Alice","ts":%d}]`, room, time.Now().UnixMilli(), demoRoom, time.Now().UnixMilli())
+	games := fmt.Sprintf(`[{"code":%q,"def":"tak-5x5","name":"Alice","ts":%d},{"code":%q,"def":"reversi","name":"Alice","ts":%d}]`, room, time.Now().UnixMilli(), secondRoom, time.Now().UnixMilli())
 	if err := chromedp.Run(ctx,
 		chromedp.Navigate(base+"/"),
 		chromedp.Evaluate(`localStorage.setItem("bingle.games", JSON.stringify(`+games+`)); localStorage.setItem("bingle.name", JSON.stringify("Alice"))`, nil),
@@ -143,7 +143,7 @@ func main() {
 	shot("home", 1200, 900, base+"/", "#create-game-form")
 	shot("tak-desktop", 1280, 900, base+"/game/"+room, "#board-svg")
 	shot("tak-mobile", 390, 844, base+"/game/"+room, "#board-svg")
-	shot("demo-desktop", 1280, 900, base+"/game/"+demoRoom, "#board-svg")
+	shot("reversi-desktop", 1280, 900, base+"/game/"+secondRoom, "#board-svg")
 
 	// Mid-move: pick up the 3-stack on a1 and start dropping.
 	if err := chromedp.Run(ctx,
@@ -165,5 +165,5 @@ func main() {
 	shot("home-dark", 1200, 1000, base+"/", "#create-game-form",
 		emulateDark(), chromedp.Sleep(800*time.Millisecond))
 	shot("home-mobile", 390, 844, base+"/", "#create-game-form", emulateLight(), chromedp.Sleep(800*time.Millisecond))
-	fmt.Println("room", room, "demo", demoRoom)
+	fmt.Println("room", room, "second", secondRoom)
 }

@@ -77,7 +77,7 @@ func insertMinimalGame(t *testing.T, db *sql.DB, roomCode string) int64 {
 	t.Helper()
 	res, err := db.Exec(
 		`INSERT INTO games (room_code, game_def_id, board_state) VALUES (?, ?, ?)`,
-		roomCode, "demo-freeplay", `{"positions":[]}`,
+		roomCode, "test-freeplay", `{"positions":[]}`,
 	)
 	if err != nil {
 		t.Fatalf("inserting minimal games row (room_code=%q): %v, want nil", roomCode, err)

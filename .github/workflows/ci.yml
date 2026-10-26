@@ -42,7 +42,9 @@ jobs:
         run: go build ./...
       # The runner image ships Google Chrome, which the browser-driven tests in tests/app use.
       - name: test
-        run: go test ./...
+        # The slowest package (the bot batches) takes 7-10 minutes on a shared runner, close to go test's default
+        # limit of 10 per package, so the limit is set to what the job (30 minutes) can bear.
+        run: go test -timeout 25m ./...
       - name: smoke test
         run: ./scripts/smoke-test.sh
 

@@ -36,6 +36,7 @@ func NewRouter(mgr *session.Manager, opts ...Option) chi.Router {
 	r.Get("/game-defs/{id}/assets/*", h.handleGameAsset)
 	r.Get("/bots", h.handleListBots)
 	r.Get("/config", h.handleConfig)
+	r.Get("/changelog", h.handleChangelog)
 	r.Get("/puzzles", h.handleListPuzzles)
 	r.Get("/puzzles/{id}", h.handleGetPuzzle)
 	r.Get("/games/{code}", h.handleGetGame)
@@ -130,6 +131,8 @@ type handlers struct {
 	publicURL string
 	// rtc is what voice chat clients are told about STUN and TURN servers.
 	rtc RTCConfig
+	// changelog is the newest release of CHANGELOG.md (nil when there is none).
+	changelog *changelogEntry
 }
 
 // Option customises NewRouter.

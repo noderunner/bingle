@@ -23,6 +23,7 @@ certs/
 # Local working files: notes, scratch inputs, assistant settings
 /temp/
 /*_issues.md
+/bingle_tasks.md
 /.claude/
 
 # Tools and editors

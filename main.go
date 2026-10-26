@@ -3,6 +3,7 @@ package main
 
 import (
 	"context"
+	_ "embed" // CHANGELOG.md
 	"log"
 	"os/signal"
 	"strings"
@@ -13,11 +14,17 @@ import (
 	"github.com/noderunner/bingle/internal/httpserve"
 )
 
+// changelog is CHANGELOG.md, built into the binary for the help window.
+//
+//go:embed CHANGELOG.md
+var changelog string
+
 func main() {
 	cfg, err := config.Load()
 	if err != nil {
 		log.Fatalf("load config: %v", err)
 	}
+	cfg.Changelog = changelog
 
 	a, err := app.New(cfg)
 	if err != nil {

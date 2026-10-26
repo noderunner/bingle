@@ -31,7 +31,11 @@ set to its path; without one they are skipped. `make test-short` skips the slowe
 5. **Version it**: change a game's definition or Go code and you raise its `version` in its JSON
    (patch for a fix, minor for a new rule or option; a game stays below 1.0.0 until its owner
    calls it finished). A change to the engine or platform raises `internal/version`.
-6. Open a pull request that says what changed and why, and how you checked it.
+6. **Say it in the changelog**: add what changed, for players, to the newest entry of
+   [CHANGELOG.md](CHANGELOG.md), or start a new entry (`## 0.4.0 - 2026-10-26`, the engine's
+   version) when you raise `internal/version`. The help window of the game shows that entry
+   under *Recent changes*, so write it for the people who play.
+7. Open a pull request that says what changed and why, and how you checked it.
 
 ## Adding a game
 

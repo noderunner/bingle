@@ -20,7 +20,6 @@ import (
 	"github.com/noderunner/bingle/internal/games/classics"
 	"github.com/noderunner/bingle/internal/games/courtfall"
 	"github.com/noderunner/bingle/internal/games/cthulhuwars"
-	"github.com/noderunner/bingle/internal/games/demo"
 	"github.com/noderunner/bingle/internal/games/fendo"
 	"github.com/noderunner/bingle/internal/games/fist"
 	"github.com/noderunner/bingle/internal/games/hive"
@@ -48,6 +47,7 @@ type App struct {
 	router    chi.Router
 	publicURL string
 	rtc       api.RTCConfig
+	changelog string
 }
 
 // New builds an App from cfg: it opens the store, builds a *catalog.Catalog
@@ -79,7 +79,7 @@ func New(cfg config.Config) (*App, error) {
 		return nil, err
 	}
 
-	a := &App{store: st, catalog: cat, manager: manager, envs: envs.NewManager(cat), batches: batch.NewManager(st, cat), publicURL: cfg.PublicURL,
+	a := &App{store: st, catalog: cat, manager: manager, envs: envs.NewManager(cat), batches: batch.NewManager(st, cat), publicURL: cfg.PublicURL, changelog: cfg.Changelog,
 		rtc: api.RTCConfig{Stun: cfg.RTCStun, TurnURLs: cfg.RTCTurnURLs, TurnSecret: cfg.RTCTurnSecret}}
 	a.router = a.newRouter()
 	return a, nil
@@ -131,7 +131,7 @@ func enableNotify(m *session.Manager, cfg config.Config) error {
 
 // BuiltinModules returns every game module bingle ships with.
 func BuiltinModules() []catalog.Module {
-	return append([]catalog.Module{demo.Module(), tak.Module(), courtfall.Module(), fendo.Module(), fist.Module(), onitama.Module(), blooms.Module(), hive.Module(), nyet.Module(), yinsh.Module(), cthulhuwars.Module()}, classics.Modules()...)
+	return append([]catalog.Module{tak.Module(), courtfall.Module(), fendo.Module(), fist.Module(), onitama.Module(), blooms.Module(), hive.Module(), nyet.Module(), yinsh.Module(), cthulhuwars.Module()}, classics.Modules()...)
 }
 
 // Router returns the application's HTTP handler.
@@ -191,7 +191,7 @@ func (a *App) Close() error {
 func (a *App) newRouter() chi.Router {
 	r := chi.NewRouter()
 	r.Get("/healthz", a.handleHealthz)
-	r.Mount("/api", api.NewRouter(a.manager, api.WithEnvs(a.envs), api.WithBatches(a.batches), api.WithPublicURL(a.publicURL), api.WithRTC(a.rtc)))
+	r.Mount("/api", api.NewRouter(a.manager, api.WithEnvs(a.envs), api.WithBatches(a.batches), api.WithPublicURL(a.publicURL), api.WithRTC(a.rtc), api.WithChangelog(a.changelog)))
 	r.Get("/ws/{code}", api.NewWSHandler(a.manager))
 	r.Get("/ws-chat", api.NewGlobalChatWSHandler(a.manager))
 	r.Mount("/mcp", mcpserver.NewServer(a.manager, a.envs, a.batches))

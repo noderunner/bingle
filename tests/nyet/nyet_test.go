@@ -493,3 +493,164 @@ func TestRandomGamesAreValidAndTerminate(t *testing.T) {
 		}
 	}
 }
+
+// viewOf is what a viewer's page is sent beyond the board: the table, the board
+// of terms and the scoreboard.
+type viewOf struct {
+	Grid struct {
+		Lines []struct {
+			ID    string `json:"id"`
+			Icon  string `json:"icon"`
+			Boxes []struct {
+				ID     string `json:"id"`
+				Label  string `json:"label"`
+				Icon   string `json:"icon"`
+				State  string `json:"state"`
+				By     int    `json:"by"`
+				ByIcon string `json:"by_icon"`
+			} `json:"boxes"`
+		} `json:"lines"`
+	} `json:"grid"`
+	Seats map[string]struct {
+		Counters []struct {
+			ID    string `json:"id"`
+			Value int    `json:"value"`
+		} `json:"counters"`
+	} `json:"seats"`
+}
+
+func viewFor(t *testing.T, g *catalog.CompiledGame, st *state.BoardState, viewer int) viewOf {
+	t.Helper()
+	raw, err := json.Marshal(nyet.New().Redact(g, st, viewer).Ext())
+	if err != nil {
+		t.Fatal(err)
+	}
+	var out struct {
+		View viewOf `json:"view"`
+	}
+	if err := json.Unmarshal(raw, &out); err != nil {
+		t.Fatal(err)
+	}
+	return out.View
+}
+
+// Every box of the board and every line names a picture for the page to draw,
+// and a box that has been crossed off names the animal of the player who did it.
+func TestTheBoardNamesAPictureForEveryBoxAndLine(t *testing.T) {
+	g := game(t, "nyet")
+	rs := nyet.New()
+	st, _ := rs.Start(g, 5)
+	st = play(t, g, st, "nyet:trump:red")  // the wolf (seat 1)
+	st = play(t, g, st, "nyet:first:wolf") // the crane (seat 2)
+	v := viewFor(t, g, st, 1)
+	want := map[string][]string{
+		"first":   {"animal:wolf:red", "animal:crane:blue", "animal:tiger:green", "animal:bear:yellow", "animal:eagle:orange"},
+		"discard": {"discard:none", "discard:1", "discard:2", "discard:except1", "discard:passleft"},
+		"trump":   {"suit:red", "suit:blue", "suit:yellow", "suit:green"},
+		"super":   {"super:red", "super:blue", "super:yellow", "super:green", "super:none"},
+		"points":  {"points:1", "points:2", "points:3", "points:4", "points:-2"},
+	}
+	if len(v.Grid.Lines) != len(want) {
+		t.Fatalf("%d lines, want %d", len(v.Grid.Lines), len(want))
+	}
+	for _, line := range v.Grid.Lines {
+		if line.Icon != "line:"+line.ID {
+			t.Errorf("line %s is pictured as %q", line.ID, line.Icon)
+		}
+		var got []string
+		for _, b := range line.Boxes {
+			got = append(got, b.Icon)
+		}
+		if strings.Join(got, ",") != strings.Join(want[line.ID], ",") {
+			t.Errorf("%s boxes are pictured as %v, want %v", line.ID, got, want[line.ID])
+		}
+	}
+	// The wolf crossed hearts off the trump line, the crane the wolf off the first-player line.
+	for _, line := range v.Grid.Lines {
+		for _, b := range line.Boxes {
+			switch {
+			case line.ID == "trump" && b.ID == "red":
+				if b.State != "crossed" || b.By != 1 || b.ByIcon != "animal:wolf:red" {
+					t.Errorf("hearts: %+v, want crossed by the wolf", b)
+				}
+				if b.Label != "Hearts" {
+					t.Errorf("the hearts box says %q", b.Label)
+				}
+			case line.ID == "first" && b.ID == "1":
+				if b.State != "crossed" || b.By != 2 || b.ByIcon != "animal:crane:blue" {
+					t.Errorf("the wolf's box: %+v, want crossed by the crane", b)
+				}
+			case b.ByIcon != "":
+				t.Errorf("%s:%s names a player though nobody crossed it: %+v", line.ID, b.ID, b)
+			}
+		}
+	}
+}
+
+// How many cards each player holds is public, and goes down as cards are played.
+func TestEachPlayersCardCountIsInTheScoreboard(t *testing.T) {
+	g := game(t, "nyet")
+	st := trick(g, 1, 1, "blue", "none", []int{1, 3},
+		map[int][]string{1: {"red-5", "red-6", "red-7"}, 2: {"green-2", "green-9"}, 3: {"red-1#0"}, 4: {"red-2", "blue-4"}},
+		nil)
+	counts := func(v viewOf) string {
+		var out []string
+		for s := 1; s <= 4; s++ {
+			for _, c := range v.Seats[string(rune('0'+s))].Counters {
+				if c.ID == "cards" {
+					out = append(out, string(rune('0'+c.Value)))
+				}
+			}
+		}
+		return strings.Join(out, "")
+	}
+	// Seen by any viewer, a spectator included.
+	for _, viewer := range []int{0, 2} {
+		if got := counts(viewFor(t, g, st, viewer)); got != "3212" {
+			t.Errorf("viewer %d sees hand sizes %s, want 3212", viewer, got)
+		}
+	}
+	st = play(t, g, st, "red-5")
+	if got := counts(viewFor(t, g, st, 0)); got != "2212" {
+		t.Errorf("after a card is played: %s, want 2212", got)
+	}
+}
+
+// The deck's four colours are the four classic suits to the players: what the
+// game says about a card, a trump or a super trump names the suit, while the
+// notation keeps the colour's own name.
+func TestWhatThePlayersReadNamesTheSuits(t *testing.T) {
+	g := game(t, "nyet")
+	st := trick(g, 1, 1, "blue", "none", []int{1, 3},
+		map[int][]string{1: {"red-9", "red-6"}, 2: {"green-2"}, 3: {"red-1#0"}, 4: {"blue-4"}},
+		nil)
+	st = play(t, g, st, "red-9")
+	events := strings.Join(data(st).Events, " ")
+	if !strings.Contains(events, "plays the 9 of hearts") {
+		t.Errorf("the history says %q, want it to name the 9 of hearts", events)
+	}
+	for _, colour := range []string{"red", "blue", "yellow", "green"} {
+		if strings.Contains(strings.ToLower(events), colour) {
+			t.Errorf("the history names a colour (%s): %q", colour, events)
+		}
+	}
+	// The terms of the round, said when the last box is crossed.
+	rs := nyet.New()
+	start, _ := rs.Start(g, 7)
+	keep := map[string]string{"first": "tiger", "discard": "none", "trump": "blue", "super": "red", "points": "2"}
+	for guard := 0; guard < 60 && data(start).Phase == "nyet"; guard++ {
+		seat := rs.ToMove(g, start)
+		var pick string
+		for _, m := range names(g, start, seat) {
+			if parts := strings.Split(m, ":"); keep[parts[1]] != parts[2] {
+				pick = m
+				break
+			}
+		}
+		start = play(t, g, start, pick)
+	}
+	terms := strings.Join(data(start).Events, " ")
+	if !strings.Contains(terms, "trump spades") || !strings.Contains(terms, "super trump the 1s of hearts") {
+		t.Errorf("the terms read %q, want trump spades and the 1s of hearts as super trumps", terms)
+	}
+}

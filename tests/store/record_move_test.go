@@ -51,7 +51,7 @@ func TestRecordMove_FirstMoveGetsSeqOneAndUpdatesGame(t *testing.T) {
 	s := newRecordMoveTestStore(t)
 	ctx := t.Context()
 
-	game, _, err := s.CreateGame(ctx, "ROOM01", "demo-freeplay", `{"positions":[]}`, "Alice", "black")
+	game, _, err := s.CreateGame(ctx, "ROOM01", "test-freeplay", `{"positions":[]}`, "Alice", "black")
 	if err != nil {
 		t.Fatalf("CreateGame returned error: %v, want nil", err)
 	}
@@ -131,7 +131,7 @@ func TestRecordMove_SecondMoveGetsSeqTwoAndUpdatesGameAgain(t *testing.T) {
 	s := newRecordMoveTestStore(t)
 	ctx := t.Context()
 
-	game, _, err := s.CreateGame(ctx, "ROOM02", "demo-freeplay", `{"positions":[]}`, "Alice", "black")
+	game, _, err := s.CreateGame(ctx, "ROOM02", "test-freeplay", `{"positions":[]}`, "Alice", "black")
 	if err != nil {
 		t.Fatalf("CreateGame returned error: %v, want nil", err)
 	}
@@ -189,7 +189,7 @@ func TestRecordMove_TwoCallsInsertExactlyTwoMovesRowsInOrder(t *testing.T) {
 	s := newRecordMoveTestStore(t)
 	ctx := t.Context()
 
-	game, _, err := s.CreateGame(ctx, "ROOM03", "demo-freeplay", `{"positions":[]}`, "Alice", "black")
+	game, _, err := s.CreateGame(ctx, "ROOM03", "test-freeplay", `{"positions":[]}`, "Alice", "black")
 	if err != nil {
 		t.Fatalf("CreateGame returned error: %v, want nil", err)
 	}
@@ -244,7 +244,7 @@ func TestRecordMove_CapturedPositionStoredWhenNonNil(t *testing.T) {
 	s := newRecordMoveTestStore(t)
 	ctx := t.Context()
 
-	game, _, err := s.CreateGame(ctx, "ROOM04", "demo-freeplay", `{"positions":[]}`, "Alice", "black")
+	game, _, err := s.CreateGame(ctx, "ROOM04", "test-freeplay", `{"positions":[]}`, "Alice", "black")
 	if err != nil {
 		t.Fatalf("CreateGame returned error: %v, want nil", err)
 	}
@@ -281,7 +281,7 @@ func TestRecordMove_CapturedPositionLeftNullWhenNil(t *testing.T) {
 	s := newRecordMoveTestStore(t)
 	ctx := t.Context()
 
-	game, _, err := s.CreateGame(ctx, "ROOM05", "demo-freeplay", `{"positions":[]}`, "Alice", "black")
+	game, _, err := s.CreateGame(ctx, "ROOM05", "test-freeplay", `{"positions":[]}`, "Alice", "black")
 	if err != nil {
 		t.Fatalf("CreateGame returned error: %v, want nil", err)
 	}
@@ -323,7 +323,7 @@ func TestRecordMove_GameEndedSetsTurnSeatNilStatusFinishedAndWinner(t *testing.T
 	s := newRecordMoveTestStore(t)
 	ctx := t.Context()
 
-	game, _, err := s.CreateGame(ctx, "ROOM06", "demo-freeplay", `{"positions":[]}`, "Alice", "black")
+	game, _, err := s.CreateGame(ctx, "ROOM06", "test-freeplay", `{"positions":[]}`, "Alice", "black")
 	if err != nil {
 		t.Fatalf("CreateGame returned error: %v, want nil", err)
 	}
@@ -377,7 +377,7 @@ func TestRecordMove_UnknownGameIDReturnsErrNotFoundAndInsertsNothing(t *testing.
 	// Seed one legitimate game/move so we can confirm the failed attempt
 	// against a different, non-existent id doesn't disturb the overall
 	// moves table, nor create any row for the bogus id.
-	game, _, err := s.CreateGame(ctx, "ROOM07", "demo-freeplay", `{"positions":[]}`, "Alice", "black")
+	game, _, err := s.CreateGame(ctx, "ROOM07", "test-freeplay", `{"positions":[]}`, "Alice", "black")
 	if err != nil {
 		t.Fatalf("CreateGame returned error: %v, want nil", err)
 	}
@@ -422,11 +422,11 @@ func TestRecordMove_SeqNumberingIsPerGameNotGlobal(t *testing.T) {
 	s := newRecordMoveTestStore(t)
 	ctx := t.Context()
 
-	gameA, _, err := s.CreateGame(ctx, "SEQA", "demo-freeplay", `{"positions":[]}`, "Dave", "black")
+	gameA, _, err := s.CreateGame(ctx, "SEQA", "test-freeplay", `{"positions":[]}`, "Dave", "black")
 	if err != nil {
 		t.Fatalf("CreateGame(SEQA) returned error: %v, want nil", err)
 	}
-	gameB, _, err := s.CreateGame(ctx, "SEQB", "demo-freeplay", `{"positions":[]}`, "Erin", "white")
+	gameB, _, err := s.CreateGame(ctx, "SEQB", "test-freeplay", `{"positions":[]}`, "Erin", "white")
 	if err != nil {
 		t.Fatalf("CreateGame(SEQB) returned error: %v, want nil", err)
 	}

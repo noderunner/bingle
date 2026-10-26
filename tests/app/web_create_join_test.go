@@ -164,7 +164,7 @@ func submitClosestForm(ctx context.Context, fieldSelector string) chromedp.Actio
 
 // TestWebIndex_CreateGameForm_SubmitsAndCreatesRealGame covers backlog item
 // 37's AC end-to-end via a real headless browser: loading "/" renders a
-// create-game form (a select for game_def_id offering "demo-freeplay", and
+// create-game form (a select for game_def_id offering "test-freeplay", and
 // a text input for player_name); filling it in and submitting navigates the
 // browser to /game/<6-char-code>; and that code corresponds to a real game
 // (a plain REST GET /api/games/{code} against the same server succeeds and
@@ -178,24 +178,24 @@ func TestWebIndex_CreateGameForm_SubmitsAndCreatesRealGame(t *testing.T) {
 	if err := chromedp.Run(ctx,
 		// A link with ?game= opens the setup of that game (the game is
 		// otherwise picked from the gallery).
-		chromedp.Navigate(baseURL+"/?game=demo-freeplay"),
+		chromedp.Navigate(baseURL+"/?game=test-freeplay"),
 		chromedp.WaitVisible(`#create_player_name`, chromedp.ByQuery),
 	); err != nil {
 		t.Fatalf("navigate to / and locate create-game form fields: %v", err)
 	}
 
-	// Confirm the game_def_id select actually offers demo-freeplay as an
+	// Confirm the game_def_id select actually offers test-freeplay as an
 	// option before trying to select it — a clearer failure than "SetValue
 	// silently did nothing" if the option is missing/misnamed.
-	var hasDemoOption bool
+	var hasFixtureOption bool
 	if err := chromedp.Run(ctx, chromedp.Evaluate(
-		`!!document.querySelector('select[name="game_def_id"] option[value="demo-freeplay"]')`,
-		&hasDemoOption,
+		`!!document.querySelector('select[name="game_def_id"] option[value="test-freeplay"]')`,
+		&hasFixtureOption,
 	)); err != nil {
-		t.Fatalf("check for demo-freeplay option: %v", err)
+		t.Fatalf("check for test-freeplay option: %v", err)
 	}
-	if !hasDemoOption {
-		t.Fatalf(`select[name="game_def_id"] has no option[value="demo-freeplay"]`)
+	if !hasFixtureOption {
+		t.Fatalf(`select[name="game_def_id"] has no option[value="test-freeplay"]`)
 	}
 
 	if err := chromedp.Run(ctx,
@@ -263,7 +263,7 @@ func TestWebIndex_CreateGameForm_MissingPlayerName_DoesNotNavigate(t *testing.T)
 	defer cancel()
 
 	if err := chromedp.Run(ctx,
-		chromedp.Navigate(baseURL+"/?game=demo-freeplay"),
+		chromedp.Navigate(baseURL+"/?game=test-freeplay"),
 		chromedp.WaitVisible(`#create_player_name`, chromedp.ByQuery),
 	); err != nil {
 		t.Fatalf("navigate to / and locate create-game form: %v", err)
@@ -323,10 +323,10 @@ func TestWebIndex_ServedHTML_CreateFormPostsToAPIGames(t *testing.T) {
 
 // TestWebIndex_ServedHTML_HasCreateGameFormFields is a light structural
 // check (no browser) that the served "/" page contains a game_def_id select
-// offering "demo-freeplay" and a player_name text input — the two form
+// offering "test-freeplay" and a player_name text input — the two form
 // controls the AC test above drives via chromedp. This exists so a
 // regression in the static template (e.g. renaming a field, dropping the
-// demo-freeplay option) is caught even without spinning up a browser.
+// test-freeplay option) is caught even without spinning up a browser.
 func TestWebIndex_ServedHTML_HasCreateGameFormFields(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	html := fetchBody(t, baseURL, "/")
@@ -334,8 +334,8 @@ func TestWebIndex_ServedHTML_HasCreateGameFormFields(t *testing.T) {
 	if !regexp.MustCompile(`(?is)<select[^>]*name=["']game_def_id["']`).MatchString(html) {
 		t.Errorf(`served "/" page has no <select name="game_def_id" ...>. Page body:\n%s`, html)
 	}
-	if !regexp.MustCompile(`(?is)value=["']demo-freeplay["']`).MatchString(html) {
-		t.Errorf(`served "/" page has no element with value="demo-freeplay" (expected an <option> inside the game_def_id select). Page body:\n%s`, html)
+	if !regexp.MustCompile(`(?is)value=["']test-freeplay["']`).MatchString(html) {
+		t.Errorf(`served "/" page has no element with value="test-freeplay" (expected an <option> inside the game_def_id select). Page body:\n%s`, html)
 	}
 	if !regexp.MustCompile(`(?is)<input[^>]*name=["']player_name["']`).MatchString(html) {
 		t.Errorf(`served "/" page has no <input name="player_name" ...>. Page body:\n%s`, html)

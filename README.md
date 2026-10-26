@@ -32,10 +32,9 @@ click-to-move for free.
 | **Hive** (John Yianni's insect tile game with the Mosquito, Ladybug and Pillbug expansions: tiles on a table, no board, Universal Hive Protocol notation; a base-game variant — rules in Go) | `internal/games/hive/` ([ADR 0039](docs/decisions/0039-hive-on-a-large-hex-field.md), [0041](docs/decisions/0041-hive-without-a-board.md)) |
 | **Fendo** (Dieter Stein's territory game: move a piece and fence beside it, or add a piece; areas fenced round one piece score; 7×7, 9×9, 11×11 — rules in Go) | `internal/games/fendo/` ([ADR 0040](docs/decisions/0040-fendo-fences-in-the-view.md)) |
 | **Yinsh** (Kris Burm's ring-and-marker game on an 85-point board: move rings, turn markers over, remove rows of five; blitz variant — rules in Go) | `internal/games/yinsh/` ([ADR 0042](docs/decisions/0042-yinsh-rings-and-rows.md)) |
-| **Nyet!** (Stefan Dorra's trick-taking game: cross choices off a board to set the round's terms, pick teams, take tricks and loot; 2–5 players — the first game on the card framework) | `internal/games/nyet/`, `internal/engine/cards/` ([ADR 0043](docs/decisions/0043-card-games.md)) |
+| **Nyet!** (Stefan Dorra's trick-taking game: cross choices off a board to set the round's terms, pick teams, take tricks and loot; 2–5 players, the four classic suits, a player for each animal — the first game on the card framework) | `internal/games/nyet/`, `internal/engine/cards/` ([ADR 0043](docs/decisions/0043-card-games.md)) |
 | **Cthulhu Wars** (core set with the Windwalker, Sleeper, Opener of the Way and Tcho-Tcho cults, the High Priests, the Azathoth neutral spellbooks and Monsters, the Dreamlands and Beyond Time and Space Loyalty Cards, the Hound of Tindalos and five Independent Great Old Ones, three to five players, simplified world map: Power, Gates, Doom, spellbooks, dice battles, hidden Elder Signs — rules in Go, map and rules guide as data) | `internal/games/cthulhuwars/` ([rules notes](docs/cthulhu-wars.md)) |
 | Go (9×9–19×19), Reversi, Hex, Havannah, Yavalath, Amazons, Ataxx, Pente, Brandubh, English Draughts, Breakthrough, Connect Four, Gomoku, Tic-Tac-Toe | `internal/games/classics/*.json` |
-| Demo: free movement & capture (Go-style board) | `internal/games/demo/demo.json` |
 
 ![The lobby: game gallery, puzzles, bots, time limits](docs/screenshots/lobby.png)
 
