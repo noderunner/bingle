@@ -1,0 +1,47 @@
+{
+  "id": "ataxx",
+  "name": "Ataxx",
+  "description": "Grow your colony: clone a piece to a neighbouring square or jump two squares, and every enemy piece next to where you land turns to your side.",
+  "version": "0.1.0",
+  "designers": ["Dave Crummack", "Craig Galley"],
+  "rules": [
+    "Each turn move one of your pieces to an empty square at most two squares away (counting diagonals). One square away is a clone — the original stays, so you gain a piece; two squares away is a jump — the original moves.",
+    "Every opposing piece adjacent to the square you land on is converted to your colour.",
+    "A player with no legal move passes. The game ends when the board is full or neither player can move; the player with more pieces wins."
+  ],
+  "guide": { "tabs": [ { "id": "rules", "title": "Rules", "file": "rules.md" } ] },
+  "board": {
+    "generator": { "type": "grid", "width": 7, "height": 7, "adjacency": "orthogonal8", "labels": "algebraic" }
+  },
+  "seats": [
+    { "seat": 1, "color": "red", "label": "Red" },
+    { "seat": 2, "color": "blue", "label": "Blue" }
+  ],
+  "pieces": {
+    "blob": { "label": "Blob", "shape": "disc" }
+  },
+  "setup": [
+    { "position": "a1", "piece": "blob", "color": "red" },
+    { "position": "g7", "piece": "blob", "color": "red" },
+    { "position": "a7", "piece": "blob", "color": "blue" },
+    { "position": "g1", "piece": "blob", "color": "blue" }
+  ],
+  "turn_order": { "type": "round-robin", "seats": [1, 2], "pass_when_stuck": true },
+  "actions": [
+    {
+      "id": "move",
+      "type": "leap",
+      "label": "Clone or jump",
+      "pieces": ["blob"],
+      "max_distance": 2,
+      "clone_distance": 1,
+      "infect": true
+    }
+  ],
+  "win_condition": {
+    "type": "rules",
+    "rules": [
+      { "id": "count", "type": "end", "when": ["no-legal-moves"], "decide": { "type": "most", "piece": "blob" }, "reason": "count" }
+    ]
+  }
+}

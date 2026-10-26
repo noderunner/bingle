@@ -1,0 +1,42 @@
+{
+  "id": "tic-tac-toe",
+  "name": "Tic-Tac-Toe",
+  "description": "Take turns marking a 3×3 grid; three in a row wins. The classic warm-up.",
+  "version": "0.1.0",
+  "rules": [
+    "Players alternate placing a mark on an empty square.",
+    "The first player to get three of their marks in a row — horizontally, vertically or diagonally — wins.",
+    "If the board fills up with no line, the game is a draw."
+  ],
+  "guide": { "tabs": [ { "id": "rules", "title": "Rules", "file": "rules.md" } ] },
+  "preview": [
+    { "position": "a3", "piece": "mark", "color": "red" },
+    { "position": "b2", "piece": "mark", "color": "red" },
+    { "position": "c2", "piece": "mark", "color": "red" },
+    { "position": "b3", "piece": "mark", "color": "blue" },
+    { "position": "a2", "piece": "mark", "color": "blue" },
+    { "position": "c1", "piece": "mark", "color": "blue" }
+  ],
+  "board": {
+    "generator": { "type": "grid", "width": 3, "height": 3, "adjacency": "orthogonal4", "labels": "algebraic" },
+    "style": "squares"
+  },
+  "seats": [
+    { "seat": 1, "color": "red", "label": "Red (X)" },
+    { "seat": 2, "color": "blue", "label": "Blue (O)" }
+  ],
+  "pieces": {
+    "mark": { "label": "Mark", "shape": "cross" }
+  },
+  "turn_order": { "type": "round-robin", "seats": [1, 2] },
+  "actions": [
+    { "id": "place", "type": "place", "label": "Place a mark", "pieces": ["mark"], "source": "supply" }
+  ],
+  "win_condition": {
+    "type": "rules",
+    "rules": [
+      { "id": "line", "type": "line", "length": 3, "reason": "line" },
+      { "id": "full", "type": "end", "when": ["board-full"], "decide": { "type": "draw" }, "reason": "draw" }
+    ]
+  }
+}

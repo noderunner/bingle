@@ -1,0 +1,33 @@
+{
+  "id": "demo-freeplay",
+  "name": "Demo: Free Movement & Capture",
+  "description": "A rule-free sandbox on a Go-style 9×9 board: move your stones one step at a time and capture by landing on an opponent's stone. There is no win condition.",
+  "version": "0.1.0",
+  "rules": [
+    "Players alternate moving one of their stones one step up, down, left or right.",
+    "Moving onto an opponent's stone captures it. You may not move onto your own stones.",
+    "There is no win condition; this game exists to exercise the platform."
+  ],
+  "board": {
+    "generator": { "type": "grid", "width": 9, "height": 9, "adjacency": "orthogonal4" },
+    "style": "points"
+  },
+  "seats": [
+    { "seat": 1, "color": "black" },
+    { "seat": 2, "color": "white" }
+  ],
+  "pieces": {
+    "stone": { "label": "Stone", "shape": "disc", "movement": { "primitive": "step", "occupancy": "capture-or-empty" } }
+  },
+  "setup": [
+    { "position": "2,0", "piece": "stone", "color": "black" },
+    { "position": "4,0", "piece": "stone", "color": "black" },
+    { "position": "6,0", "piece": "stone", "color": "black" },
+    { "position": "2,8", "piece": "stone", "color": "white" },
+    { "position": "4,8", "piece": "stone", "color": "white" },
+    { "position": "6,8", "piece": "stone", "color": "white" }
+  ],
+  "turn_order": { "type": "round-robin", "seats": [1, 2] },
+  "win_condition": { "type": "none" },
+  "callbacks": {}
+}

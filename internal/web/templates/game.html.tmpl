@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="bingle-version" content="{{engineVersion}}">
+	<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+	<title>Bingle — Game {{.Code}}</title>
+	<link rel="icon" type="image/svg+xml" href="/static/favicon.svg" id="favicon">
+	<link rel="stylesheet" href="/static/style.css">
+	<link rel="stylesheet" href="/static/themes.css">
+</head>
+<body data-room-code="{{.Code}}">
+	<header class="topbar">
+		<a class="brand" href="/"><span class="logo"></span>Bingle</a>
+		<span class="spacer"></span>
+		<span class="topbar-actions" id="topbar-actions"></span>
+		<span class="tagline">Room <strong>{{.Code}}</strong></span>
+	</header>
+
+	<main class="page page-game">
+		<!-- The game options window and the tooltips live outside #game-root, which is rebuilt on every move. -->
+		<div id="game-root"><p class="muted">Loading game {{.Code}}…</p></div>
+	</main>
+
+	<footer class="site-footer"><sub title="The version of the bingle engine">bingle v{{engineVersion}} · MIT License · <a href="https://github.com/noderunner/bingle" target="_blank" rel="noopener noreferrer">GitHub</a></sub></footer>
+
+	<script type="module" src="/static/js/game.js"></script>
+</body>
+</html>

@@ -1,0 +1,10580 @@
+{
+ "id": "cthulhu-wars",
+ "name": "Cthulhu Wars (4 players, 5-3 map)",
+ "family": "cthulhu-wars",
+ "description": "Three to five rival cults fight to wake their Great Old Ones and open the most gates: spend Power on recruiting, moving, summoning and battling over a simplified world map, earn spellbooks, and be first past 30 Doom with all six books. Six cults to choose from — Great Cthulhu, Crawling Chaos, Black Goat, Yellow Sign, Windwalker and Sleeper — and the High Priests as an optional expansion.",
+ "version": "0.1.0",
+ "designers": ["Sandy Petersen"],
+ "publisher": "Petersen Games",
+ "engine": "ruleset",
+ "rules": [
+  "Cthulhu Wars is a game of three to five cults — Great Cthulhu, Crawling Chaos, Black Goat, Yellow Sign and, from the first expansion, Windwalker and Sleeper — racing to open Gates, awaken their Great Old Ones and gain Doom. Each round: everyone spends Power on actions, gathers new Power from cultists and Gates, and then scores Doom for the Gates they control (and may perform a Ritual of Annihilation).",
+  "The first player to reach 30 Doom ends the game at the end of that Doom phase; the player with the most Doom and all six spellbooks wins. If nobody has all six spellbooks, humanity wins and every cult loses.",
+  "Open the Guide tabs in this window for the full rules: the round, every action, battles, the factions and their spellbooks, the High Priests, the neutral cards (neutral spellbooks, Monsters and Terrors with Loyalty Cards), the Independent Great Old Ones and the map."
+ ],
+ "params": {
+  "doom_to_win": 30,
+  "start_power": 8,
+  "gate_cost": 3,
+  "elder_signs": [
+   18,
+   12,
+   6
+  ],
+  "starts": {
+   "gc": "south-pacific",
+   "cc": "asia",
+   "bg": "south-america-west",
+   "ys": "europe"
+  },
+  "sigils": {
+   "ww": [
+    "arctic-ocean",
+    "antarctica"
+   ],
+   "sl": [
+    "north-america-west"
+   ]
+  }
+ },
+ "board": {
+  "style": "areas",
+  "canvas": {
+   "width": 1000,
+   "height": 490
+  },
+  "positions": [
+   {
+    "id": "africa",
+    "name": "Africa",
+    "tags": [
+     "land",
+     "c-af",
+     "glyph-chevron"
+    ],
+    "anchor": [
+     715.8,
+     341.3
+    ],
+    "polygons": [
+     [
+      [
+       722.9,
+       248.0
+      ],
+      [
+       701.0,
+       243.3
+      ],
+      [
+       688.7,
+       227.9
+      ],
+      [
+       670.3,
+       219.9
+      ],
+      [
+       666.2,
+       207.1
+      ],
+      [
+       596.6,
+       213.2
+      ],
+      [
+       580.9,
+       221.9
+      ],
+      [
+       569.3,
+       242.7
+      ],
+      [
+       555.6,
+       251.4
+      ],
+      [
+       536.5,
+       284.9
+      ],
+      [
+       550.9,
+       322.4
+      ],
+      [
+       568.6,
+       340.5
+      ],
+      [
+       612.3,
+       341.9
+      ],
+      [
+       636.2,
+       351.2
+      ],
+      [
+       643.7,
+       364.0
+      ],
+      [
+       643.7,
+       395.5
+      ],
+      [
+       690.8,
+       412.2
+      ],
+      [
+       703.8,
+       434.4
+      ],
+      [
+       733.8,
+       432.4
+      ],
+      [
+       782.3,
+       401.5
+      ],
+      [
+       793.9,
+       357.9
+      ],
+      [
+       828.7,
+       332.5
+      ],
+      [
+       837.5,
+       317.1
+      ],
+      [
+       816.4,
+       319.7
+      ],
+      [
+       793.2,
+       311.7
+      ],
+      [
+       780.9,
+       302.3
+      ],
+      [
+       770.6,
+       280.2
+      ],
+      [
+       737.9,
+       269.5
+      ]
+     ]
+    ]
+   },
+   {
+    "id": "antarctica",
+    "name": "Antarctica",
+    "tags": [
+     "land",
+     "c-ice"
+    ],
+    "anchor": [
+     525.8,
+     451.2
+    ],
+    "polygons": [
+     [
+      [
+       833.4,
+       463.2
+      ],
+      [
+       818.4,
+       466.5
+      ],
+      [
+       798.6,
+       458.5
+      ],
+      [
+       750.9,
+       457.8
+      ],
+      [
+       750.9,
+       473.9
+      ],
+      [
+       730.4,
+       479.9
+      ],
+      [
+       678.5,
+       457.8
+      ],
+      [
+       669.6,
+       445.8
+      ],
+      [
+       621.8,
+       443.7
+      ],
+      [
+       610.2,
+       430.3
+      ],
+      [
+       589.8,
+       427.7
+      ],
+      [
+       587.7,
+       409.6
+      ],
+      [
+       577.5,
+       406.2
+      ],
+      [
+       561.8,
+       408.2
+      ],
+      [
+       556.3,
+       419.6
+      ],
+      [
+       535.2,
+       411.6
+      ],
+      [
+       496.9,
+       413.6
+      ],
+      [
+       485.3,
+       408.9
+      ],
+      [
+       434.8,
+       446.4
+      ],
+      [
+       419.1,
+       477.3
+      ],
+      [
+       419.8,
+       490.0
+      ],
+      [
+       872.4,
+       490.0
+      ],
+      [
+       857.3,
+       468.5
+      ]
+     ]
+    ]
+   },
+   {
+    "id": "arctic-ocean",
+    "name": "Arctic Ocean",
+    "tags": [
+     "ocean",
+     "arctic"
+    ],
+    "anchor": [
+     542.0,
+     40.8
+    ],
+    "polygons": [
+     [
+      [
+       175.4,
+       42.2
+      ],
+      [
+       251.2,
+       31.5
+      ],
+      [
+       321.5,
+       38.9
+      ],
+      [
+       324.9,
+       44.9
+      ],
+      [
+       319.5,
+       51.6
+      ],
+      [
+       285.3,
+       74.4
+      ],
+      [
+       311.3,
+       99.2
+      ],
+      [
+       350.2,
+       79.8
+      ],
+      [
+       368.6,
+       53.0
+      ],
+      [
+       400.0,
+       65.0
+      ],
+      [
+       415.0,
+       85.1
+      ],
+      [
+       477.8,
+       75.1
+      ],
+      [
+       566.6,
+       84.5
+      ],
+      [
+       567.9,
+       72.4
+      ],
+      [
+       591.8,
+       73.7
+      ],
+      [
+       633.4,
+       49.6
+      ],
+      [
+       656.7,
+       61.7
+      ],
+      [
+       669.6,
+       59.0
+      ],
+      [
+       686.7,
+       36.9
+      ],
+      [
+       671.7,
+       26.1
+      ],
+      [
+       688.1,
+       16.1
+      ],
+      [
+       712.6,
+       20.1
+      ],
+      [
+       722.2,
+       42.2
+      ],
+      [
+       739.9,
+       38.9
+      ],
+      [
+       753.6,
+       50.9
+      ],
+      [
+       768.6,
+       48.3
+      ],
+      [
+       791.8,
+       56.3
+      ],
+      [
+       812.3,
+       42.9
+      ],
+      [
+       855.3,
+       53.6
+      ],
+      [
+       897.6,
+       36.9
+      ],
+      [
+       916.0,
+       40.9
+      ],
+      [
+       924.2,
+       31.5
+      ],
+      [
+       923.5,
+       21.5
+      ],
+      [
+       931.7,
+       20.1
+      ],
+      [
+       967.9,
+       57.6
+      ],
+      [
+       1000.0,
+       28.8
+      ],
+      [
+       1000.0,
+       0.0
+      ],
+      [
+       0.0,
+       0.0
+      ],
+      [
+       0.0,
+       55.6
+      ],
+      [
+       38.9,
+       69.7
+      ],
+      [
+       56.0,
+       60.3
+      ],
+      [
+       61.4,
+       49.6
+      ],
+      [
+       103.8,
+       33.5
+      ],
+      [
+       145.4,
+       30.8
+      ]
+     ]
+    ]
+   },
+   {
+    "id": "asia",
+    "name": "Asia",
+    "tags": [
+     "land",
+     "c-as",
+     "glyph-dragon"
+    ],
+    "anchor": [
+     873.3,
+     176.3
+    ],
+    "polygons": [
+     [
+      [
+       930.4,
+       268.8
+      ],
+      [
+       944.0,
+       262.8
+      ],
+      [
+       962.5,
+       269.5
+      ],
+      [
+       983.6,
+       247.3
+      ],
+      [
+       994.5,
+       210.5
+      ],
+      [
+       992.5,
+       193.7
+      ],
+      [
+       974.1,
+       163.6
+      ],
+      [
+       977.5,
+       149.5
+      ],
+      [
+       959.7,
+       131.4
+      ],
+      [
+       948.1,
+       105.9
+      ],
+      [
+       963.8,
+       79.8
+      ],
+      [
+       984.3,
+       81.1
+      ],
+      [
+       967.9,
+       57.6
+      ],
+      [
+       931.7,
+       20.1
+      ],
+      [
+       923.5,
+       21.5
+      ],
+      [
+       924.2,
+       31.5
+      ],
+      [
+       916.0,
+       40.9
+      ],
+      [
+       897.6,
+       36.9
+      ],
+      [
+       855.3,
+       53.6
+      ],
+      [
+       812.3,
+       42.9
+      ],
+      [
+       791.8,
+       56.3
+      ],
+      [
+       793.2,
+       72.4
+      ],
+      [
+       777.5,
+       87.1
+      ],
+      [
+       774.1,
+       103.2
+      ],
+      [
+       758.4,
+       124.0
+      ],
+      [
+       758.4,
+       140.8
+      ],
+      [
+       778.8,
+       153.5
+      ],
+      [
+       755.6,
+       172.3
+      ],
+      [
+       746.1,
+       200.4
+      ],
+      [
+       748.8,
+       212.5
+      ],
+      [
+       730.4,
+       227.9
+      ],
+      [
+       722.9,
+       248.0
+      ],
+      [
+       737.9,
+       269.5
+      ],
+      [
+       770.6,
+       280.2
+      ],
+      [
+       780.9,
+       302.3
+      ],
+      [
+       793.2,
+       311.7
+      ],
+      [
+       816.4,
+       319.7
+      ],
+      [
+       837.5,
+       317.1
+      ],
+      [
+       843.0,
+       295.6
+      ],
+      [
+       860.8,
+       274.8
+      ]
+     ]
+    ]
+   },
+   {
+    "id": "australia",
+    "name": "Australia",
+    "tags": [
+     "land",
+     "c-au",
+     "glyph-dragon"
+    ],
+    "anchor": [
+     56.7,
+     358.6
+    ],
+    "polygons": [
+     [
+      [
+       68.9,
+       408.9
+      ],
+      [
+       77.1,
+       395.5
+      ],
+      [
+       100.3,
+       386.1
+      ],
+      [
+       115.4,
+       357.9
+      ],
+      [
+       111.9,
+       346.6
+      ],
+      [
+       87.4,
+       321.1
+      ],
+      [
+       64.8,
+       315.7
+      ],
+      [
+       58.7,
+       306.3
+      ],
+      [
+       10.9,
+       338.5
+      ],
+      [
+       0.7,
+       374.0
+      ],
+      [
+       9.6,
+       418.9
+      ]
+     ]
+    ]
+   },
+   {
+    "id": "central-america",
+    "name": "Central America",
+    "tags": [
+     "land",
+     "c-na",
+     "glyph-thorns"
+    ],
+    "anchor": [
+     170.0,
+     225.8
+    ],
+    "polygons": [
+     [
+      [
+       100.3,
+       173.6
+      ],
+      [
+       109.2,
+       216.5
+      ],
+      [
+       132.4,
+       229.2
+      ],
+      [
+       148.8,
+       254.7
+      ],
+      [
+       219.8,
+       274.2
+      ],
+      [
+       234.1,
+       296.3
+      ],
+      [
+       238.9,
+       318.4
+      ],
+      [
+       288.1,
+       290.2
+      ],
+      [
+       288.1,
+       288.9
+      ],
+      [
+       242.3,
+       279.5
+      ],
+      [
+       231.4,
+       258.7
+      ],
+      [
+       232.1,
+       242.0
+      ],
+      [
+       211.6,
+       247.3
+      ],
+      [
+       204.8,
+       242.0
+      ],
+      [
+       202.0,
+       209.8
+      ],
+      [
+       152.9,
+       166.9
+      ]
+     ]
+    ]
+   },
+   {
+    "id": "europe",
+    "name": "Europe",
+    "tags": [
+     "land",
+     "c-eu",
+     "glyph-chevron"
+    ],
+    "anchor": [
+     698.2,
+     114.0
+    ],
+    "polygons": [
+     [
+      [
+       746.1,
+       200.4
+      ],
+      [
+       755.6,
+       172.3
+      ],
+      [
+       778.8,
+       153.5
+      ],
+      [
+       758.4,
+       140.8
+      ],
+      [
+       758.4,
+       124.0
+      ],
+      [
+       774.1,
+       103.2
+      ],
+      [
+       777.5,
+       87.1
+      ],
+      [
+       793.2,
+       72.4
+      ],
+      [
+       791.8,
+       56.3
+      ],
+      [
+       768.6,
+       48.3
+      ],
+      [
+       753.6,
+       50.9
+      ],
+      [
+       739.9,
+       38.9
+      ],
+      [
+       722.2,
+       42.2
+      ],
+      [
+       712.6,
+       20.1
+      ],
+      [
+       688.1,
+       16.1
+      ],
+      [
+       671.7,
+       26.1
+      ],
+      [
+       686.7,
+       36.9
+      ],
+      [
+       669.6,
+       59.0
+      ],
+      [
+       656.7,
+       61.7
+      ],
+      [
+       633.4,
+       49.6
+      ],
+      [
+       591.8,
+       73.7
+      ],
+      [
+       567.9,
+       72.4
+      ],
+      [
+       566.6,
+       84.5
+      ],
+      [
+       578.2,
+       101.9
+      ],
+      [
+       574.1,
+       111.9
+      ],
+      [
+       556.3,
+       111.9
+      ],
+      [
+       526.3,
+       127.4
+      ],
+      [
+       505.8,
+       118.6
+      ],
+      [
+       476.5,
+       122.0
+      ],
+      [
+       466.9,
+       153.5
+      ],
+      [
+       482.6,
+       170.3
+      ],
+      [
+       530.4,
+       169.6
+      ],
+      [
+       573.4,
+       152.8
+      ],
+      [
+       602.7,
+       183.0
+      ],
+      [
+       612.3,
+       173.6
+      ],
+      [
+       598.0,
+       158.9
+      ],
+      [
+       598.6,
+       152.2
+      ],
+      [
+       605.5,
+       150.8
+      ],
+      [
+       632.8,
+       162.9
+      ],
+      [
+       641.6,
+       175.0
+      ],
+      [
+       674.4,
+       170.3
+      ],
+      [
+       722.2,
+       198.4
+      ]
+     ]
+    ]
+   },
+   {
+    "id": "indian-ocean",
+    "name": "Indian Ocean",
+    "tags": [
+     "ocean",
+     "indian"
+    ],
+    "anchor": [
+     905.8,
+     387.2
+    ],
+    "polygons": [
+     [
+      [
+       1000.0,
+       307.7
+      ],
+      [
+       959.7,
+       296.3
+      ],
+      [
+       930.4,
+       268.8
+      ],
+      [
+       860.8,
+       274.8
+      ],
+      [
+       843.0,
+       295.6
+      ],
+      [
+       837.5,
+       317.1
+      ],
+      [
+       828.7,
+       332.5
+      ],
+      [
+       793.9,
+       357.9
+      ],
+      [
+       782.3,
+       401.5
+      ],
+      [
+       793.2,
+       421.6
+      ],
+      [
+       833.4,
+       463.2
+      ],
+      [
+       857.3,
+       468.5
+      ],
+      [
+       872.4,
+       490.0
+      ],
+      [
+       1000.0,
+       490.0
+      ]
+     ],
+     [
+      [
+       68.9,
+       408.9
+      ],
+      [
+       9.6,
+       418.9
+      ],
+      [
+       0.7,
+       374.0
+      ],
+      [
+       10.9,
+       338.5
+      ],
+      [
+       58.7,
+       306.3
+      ],
+      [
+       63.5,
+       301.0
+      ],
+      [
+       103.1,
+       303.0
+      ],
+      [
+       91.5,
+       274.2
+      ],
+      [
+       45.1,
+       269.5
+      ],
+      [
+       0.0,
+       282.9
+      ],
+      [
+       0.0,
+       490.0
+      ],
+      [
+       29.4,
+       490.0
+      ],
+      [
+       43.7,
+       451.1
+      ],
+      [
+       87.4,
+       418.9
+      ]
+     ]
+    ]
+   },
+   {
+    "id": "new-zealand",
+    "name": "New Zealand",
+    "tags": [
+     "land",
+     "c-au",
+     "glyph-dragon"
+    ],
+    "anchor": [
+     138.8,
+     389.3
+    ],
+    "polygons": [
+     [
+      [
+       58.7,
+       306.3
+      ],
+      [
+       64.8,
+       315.7
+      ],
+      [
+       87.4,
+       321.1
+      ],
+      [
+       111.9,
+       346.6
+      ],
+      [
+       115.4,
+       357.9
+      ],
+      [
+       100.3,
+       386.1
+      ],
+      [
+       77.1,
+       395.5
+      ],
+      [
+       68.9,
+       408.9
+      ],
+      [
+       87.4,
+       418.9
+      ],
+      [
+       103.8,
+       439.1
+      ],
+      [
+       135.8,
+       439.7
+      ],
+      [
+       148.8,
+       425.0
+      ],
+      [
+       170.0,
+       414.3
+      ],
+      [
+       178.8,
+       399.5
+      ],
+      [
+       161.1,
+       339.2
+      ],
+      [
+       151.5,
+       330.5
+      ],
+      [
+       132.4,
+       329.8
+      ],
+      [
+       118.8,
+       311.7
+      ],
+      [
+       103.1,
+       303.0
+      ],
+      [
+       63.5,
+       301.0
+      ]
+     ]
+    ]
+   },
+   {
+    "id": "north-america-east",
+    "name": "North America East",
+    "tags": [
+     "land",
+     "c-na",
+     "glyph-thorns"
+    ],
+    "anchor": [
+     309.7,
+     131.0
+    ],
+    "polygons": [
+     [
+      [
+       298.3,
+       179.0
+      ],
+      [
+       312.6,
+       175.6
+      ],
+      [
+       334.5,
+       150.2
+      ],
+      [
+       372.7,
+       129.4
+      ],
+      [
+       382.3,
+       107.3
+      ],
+      [
+       413.0,
+       98.5
+      ],
+      [
+       415.0,
+       85.1
+      ],
+      [
+       400.0,
+       65.0
+      ],
+      [
+       368.6,
+       53.0
+      ],
+      [
+       350.2,
+       79.8
+      ],
+      [
+       311.3,
+       99.2
+      ],
+      [
+       285.3,
+       74.4
+      ],
+      [
+       319.5,
+       51.6
+      ],
+      [
+       324.9,
+       44.9
+      ],
+      [
+       321.5,
+       38.9
+      ],
+      [
+       251.2,
+       31.5
+      ],
+      [
+       175.4,
+       42.2
+      ],
+      [
+       180.2,
+       50.3
+      ],
+      [
+       217.1,
+       63.7
+      ],
+      [
+       240.3,
+       81.8
+      ],
+      [
+       271.0,
+       123.3
+      ]
+     ]
+    ]
+   },
+   {
+    "id": "north-america-west",
+    "name": "North America West",
+    "tags": [
+     "land",
+     "c-na",
+     "glyph-thorns"
+    ],
+    "anchor": [
+     195.5,
+     123.8
+    ],
+    "polygons": [
+     [
+      [
+       38.9,
+       69.7
+      ],
+      [
+       48.5,
+       85.8
+      ],
+      [
+       97.6,
+       67.7
+      ],
+      [
+       112.6,
+       70.4
+      ],
+      [
+       125.6,
+       81.1
+      ],
+      [
+       126.3,
+       117.3
+      ],
+      [
+       99.0,
+       155.5
+      ],
+      [
+       100.3,
+       173.6
+      ],
+      [
+       152.9,
+       166.9
+      ],
+      [
+       202.0,
+       209.8
+      ],
+      [
+       249.1,
+       196.4
+      ],
+      [
+       271.0,
+       196.4
+      ],
+      [
+       281.9,
+       203.1
+      ],
+      [
+       298.3,
+       179.0
+      ],
+      [
+       271.0,
+       123.3
+      ],
+      [
+       240.3,
+       81.8
+      ],
+      [
+       217.1,
+       63.7
+      ],
+      [
+       180.2,
+       50.3
+      ],
+      [
+       175.4,
+       42.2
+      ],
+      [
+       145.4,
+       30.8
+      ],
+      [
+       103.8,
+       33.5
+      ],
+      [
+       61.4,
+       49.6
+      ],
+      [
+       56.0,
+       60.3
+      ]
+     ]
+    ]
+   },
+   {
+    "id": "north-atlantic",
+    "name": "North Atlantic",
+    "tags": [
+     "ocean",
+     "atlantic"
+    ],
+    "anchor": [
+     403.3,
+     212.7
+    ],
+    "polygons": [
+     [
+      [
+       415.0,
+       85.1
+      ],
+      [
+       413.0,
+       98.5
+      ],
+      [
+       382.3,
+       107.3
+      ],
+      [
+       372.7,
+       129.4
+      ],
+      [
+       334.5,
+       150.2
+      ],
+      [
+       312.6,
+       175.6
+      ],
+      [
+       298.3,
+       179.0
+      ],
+      [
+       281.9,
+       203.1
+      ],
+      [
+       271.0,
+       196.4
+      ],
+      [
+       249.1,
+       196.4
+      ],
+      [
+       202.0,
+       209.8
+      ],
+      [
+       204.8,
+       242.0
+      ],
+      [
+       211.6,
+       247.3
+      ],
+      [
+       232.1,
+       242.0
+      ],
+      [
+       231.4,
+       258.7
+      ],
+      [
+       242.3,
+       279.5
+      ],
+      [
+       288.1,
+       288.9
+      ],
+      [
+       299.7,
+       282.9
+      ],
+      [
+       339.9,
+       284.2
+      ],
+      [
+       366.6,
+       296.3
+      ],
+      [
+       408.9,
+       300.3
+      ],
+      [
+       428.0,
+       311.0
+      ],
+      [
+       422.5,
+       338.5
+      ],
+      [
+       446.4,
+       329.8
+      ],
+      [
+       484.0,
+       299.6
+      ],
+      [
+       536.5,
+       284.9
+      ],
+      [
+       555.6,
+       251.4
+      ],
+      [
+       569.3,
+       242.7
+      ],
+      [
+       580.9,
+       221.9
+      ],
+      [
+       596.6,
+       213.2
+      ],
+      [
+       666.2,
+       207.1
+      ],
+      [
+       670.3,
+       219.9
+      ],
+      [
+       688.7,
+       227.9
+      ],
+      [
+       701.0,
+       243.3
+      ],
+      [
+       722.9,
+       248.0
+      ],
+      [
+       730.4,
+       227.9
+      ],
+      [
+       748.8,
+       212.5
+      ],
+      [
+       746.1,
+       200.4
+      ],
+      [
+       722.2,
+       198.4
+      ],
+      [
+       674.4,
+       170.3
+      ],
+      [
+       641.6,
+       175.0
+      ],
+      [
+       632.8,
+       162.9
+      ],
+      [
+       605.5,
+       150.8
+      ],
+      [
+       598.6,
+       152.2
+      ],
+      [
+       598.0,
+       158.9
+      ],
+      [
+       612.3,
+       173.6
+      ],
+      [
+       602.7,
+       183.0
+      ],
+      [
+       573.4,
+       152.8
+      ],
+      [
+       530.4,
+       169.6
+      ],
+      [
+       482.6,
+       170.3
+      ],
+      [
+       466.9,
+       153.5
+      ],
+      [
+       476.5,
+       122.0
+      ],
+      [
+       505.8,
+       118.6
+      ],
+      [
+       526.3,
+       127.4
+      ],
+      [
+       556.3,
+       111.9
+      ],
+      [
+       574.1,
+       111.9
+      ],
+      [
+       578.2,
+       101.9
+      ],
+      [
+       566.6,
+       84.5
+      ],
+      [
+       477.8,
+       75.1
+      ]
+     ]
+    ]
+   },
+   {
+    "id": "north-pacific",
+    "name": "North Pacific",
+    "tags": [
+     "ocean",
+     "pacific"
+    ],
+    "anchor": [
+     54.1,
+     215.2
+    ],
+    "polygons": [
+     [
+      [
+       100.3,
+       173.6
+      ],
+      [
+       99.0,
+       155.5
+      ],
+      [
+       126.3,
+       117.3
+      ],
+      [
+       125.6,
+       81.1
+      ],
+      [
+       112.6,
+       70.4
+      ],
+      [
+       97.6,
+       67.7
+      ],
+      [
+       48.5,
+       85.8
+      ],
+      [
+       38.9,
+       69.7
+      ],
+      [
+       0.0,
+       55.6
+      ],
+      [
+       0.0,
+       282.9
+      ],
+      [
+       45.1,
+       269.5
+      ],
+      [
+       91.5,
+       274.2
+      ],
+      [
+       124.2,
+       278.9
+      ],
+      [
+       187.0,
+       325.1
+      ],
+      [
+       236.2,
+       329.8
+      ],
+      [
+       238.9,
+       318.4
+      ],
+      [
+       234.1,
+       296.3
+      ],
+      [
+       219.8,
+       274.2
+      ],
+      [
+       148.8,
+       254.7
+      ],
+      [
+       132.4,
+       229.2
+      ],
+      [
+       109.2,
+       216.5
+      ]
+     ],
+     [
+      [
+       967.9,
+       57.6
+      ],
+      [
+       984.3,
+       81.1
+      ],
+      [
+       963.8,
+       79.8
+      ],
+      [
+       948.1,
+       105.9
+      ],
+      [
+       959.7,
+       131.4
+      ],
+      [
+       977.5,
+       149.5
+      ],
+      [
+       974.1,
+       163.6
+      ],
+      [
+       992.5,
+       193.7
+      ],
+      [
+       994.5,
+       210.5
+      ],
+      [
+       983.6,
+       247.3
+      ],
+      [
+       962.5,
+       269.5
+      ],
+      [
+       944.0,
+       262.8
+      ],
+      [
+       930.4,
+       268.8
+      ],
+      [
+       959.7,
+       296.3
+      ],
+      [
+       1000.0,
+       307.7
+      ],
+      [
+       1000.0,
+       28.8
+      ]
+     ]
+    ]
+   },
+   {
+    "id": "south-america-east",
+    "name": "South America East",
+    "tags": [
+     "land",
+     "c-sa",
+     "glyph-thorns"
+    ],
+    "anchor": [
+     377.2,
+     341.0
+    ],
+    "polygons": [
+     [
+      [
+       422.5,
+       338.5
+      ],
+      [
+       428.0,
+       311.0
+      ],
+      [
+       408.9,
+       300.3
+      ],
+      [
+       366.6,
+       296.3
+      ],
+      [
+       339.9,
+       284.2
+      ],
+      [
+       299.7,
+       282.9
+      ],
+      [
+       288.1,
+       288.9
+      ],
+      [
+       288.1,
+       290.2
+      ],
+      [
+       296.9,
+       303.7
+      ],
+      [
+       323.5,
+       319.7
+      ],
+      [
+       351.5,
+       400.2
+      ],
+      [
+       395.2,
+       392.1
+      ],
+      [
+       399.3,
+       380.1
+      ],
+      [
+       420.5,
+       363.3
+      ]
+     ]
+    ]
+   },
+   {
+    "id": "south-america-west",
+    "name": "South America West",
+    "tags": [
+     "land",
+     "c-sa",
+     "glyph-thorns"
+    ],
+    "anchor": [
+     292.0,
+     348.9
+    ],
+    "polygons": [
+     [
+      [
+       351.5,
+       400.2
+      ],
+      [
+       323.5,
+       319.7
+      ],
+      [
+       296.9,
+       303.7
+      ],
+      [
+       288.1,
+       290.2
+      ],
+      [
+       238.9,
+       318.4
+      ],
+      [
+       236.2,
+       329.8
+      ],
+      [
+       239.6,
+       359.3
+      ],
+      [
+       256.0,
+       365.3
+      ],
+      [
+       274.4,
+       408.9
+      ],
+      [
+       287.4,
+       423.6
+      ],
+      [
+       327.6,
+       439.1
+      ],
+      [
+       355.6,
+       440.4
+      ],
+      [
+       361.8,
+       435.0
+      ],
+      [
+       352.2,
+       425.0
+      ],
+      [
+       352.9,
+       415.6
+      ]
+     ]
+    ]
+   },
+   {
+    "id": "south-atlantic",
+    "name": "South Atlantic",
+    "tags": [
+     "ocean",
+     "atlantic"
+    ],
+    "anchor": [
+     504.4,
+     355.6
+    ],
+    "polygons": [
+     [
+      [
+       422.5,
+       338.5
+      ],
+      [
+       420.5,
+       363.3
+      ],
+      [
+       399.3,
+       380.1
+      ],
+      [
+       395.2,
+       392.1
+      ],
+      [
+       351.5,
+       400.2
+      ],
+      [
+       352.9,
+       415.6
+      ],
+      [
+       404.8,
+       429.0
+      ],
+      [
+       434.8,
+       446.4
+      ],
+      [
+       485.3,
+       408.9
+      ],
+      [
+       496.9,
+       413.6
+      ],
+      [
+       535.2,
+       411.6
+      ],
+      [
+       556.3,
+       419.6
+      ],
+      [
+       561.8,
+       408.2
+      ],
+      [
+       577.5,
+       406.2
+      ],
+      [
+       587.7,
+       409.6
+      ],
+      [
+       589.8,
+       427.7
+      ],
+      [
+       610.2,
+       430.3
+      ],
+      [
+       621.8,
+       443.7
+      ],
+      [
+       669.6,
+       445.8
+      ],
+      [
+       678.5,
+       457.8
+      ],
+      [
+       730.4,
+       479.9
+      ],
+      [
+       750.9,
+       473.9
+      ],
+      [
+       750.9,
+       457.8
+      ],
+      [
+       798.6,
+       458.5
+      ],
+      [
+       818.4,
+       466.5
+      ],
+      [
+       833.4,
+       463.2
+      ],
+      [
+       793.2,
+       421.6
+      ],
+      [
+       782.3,
+       401.5
+      ],
+      [
+       733.8,
+       432.4
+      ],
+      [
+       703.8,
+       434.4
+      ],
+      [
+       690.8,
+       412.2
+      ],
+      [
+       643.7,
+       395.5
+      ],
+      [
+       643.7,
+       364.0
+      ],
+      [
+       636.2,
+       351.2
+      ],
+      [
+       612.3,
+       341.9
+      ],
+      [
+       568.6,
+       340.5
+      ],
+      [
+       550.9,
+       322.4
+      ],
+      [
+       536.5,
+       284.9
+      ],
+      [
+       484.0,
+       299.6
+      ],
+      [
+       446.4,
+       329.8
+      ]
+     ]
+    ]
+   },
+   {
+    "id": "south-pacific",
+    "name": "South Pacific",
+    "tags": [
+     "ocean",
+     "pacific"
+    ],
+    "anchor": [
+     223.8,
+     434.0
+    ],
+    "polygons": [
+     [
+      [
+       91.5,
+       274.2
+      ],
+      [
+       103.1,
+       303.0
+      ],
+      [
+       118.8,
+       311.7
+      ],
+      [
+       132.4,
+       329.8
+      ],
+      [
+       151.5,
+       330.5
+      ],
+      [
+       161.1,
+       339.2
+      ],
+      [
+       178.8,
+       399.5
+      ],
+      [
+       170.0,
+       414.3
+      ],
+      [
+       148.8,
+       425.0
+      ],
+      [
+       135.8,
+       439.7
+      ],
+      [
+       103.8,
+       439.1
+      ],
+      [
+       87.4,
+       418.9
+      ],
+      [
+       43.7,
+       451.1
+      ],
+      [
+       29.4,
+       490.0
+      ],
+      [
+       419.8,
+       490.0
+      ],
+      [
+       419.1,
+       477.3
+      ],
+      [
+       434.8,
+       446.4
+      ],
+      [
+       404.8,
+       429.0
+      ],
+      [
+       352.9,
+       415.6
+      ],
+      [
+       352.2,
+       425.0
+      ],
+      [
+       361.8,
+       435.0
+      ],
+      [
+       355.6,
+       440.4
+      ],
+      [
+       327.6,
+       439.1
+      ],
+      [
+       287.4,
+       423.6
+      ],
+      [
+       274.4,
+       408.9
+      ],
+      [
+       256.0,
+       365.3
+      ],
+      [
+       239.6,
+       359.3
+      ],
+      [
+       236.2,
+       329.8
+      ],
+      [
+       187.0,
+       325.1
+      ],
+      [
+       124.2,
+       278.9
+      ]
+     ]
+    ]
+   }
+  ],
+  "edges": [
+   {
+    "from": "africa",
+    "to": "asia"
+   },
+   {
+    "from": "africa",
+    "to": "indian-ocean"
+   },
+   {
+    "from": "africa",
+    "to": "north-atlantic"
+   },
+   {
+    "from": "africa",
+    "to": "south-atlantic"
+   },
+   {
+    "from": "antarctica",
+    "to": "indian-ocean"
+   },
+   {
+    "from": "antarctica",
+    "to": "south-atlantic"
+   },
+   {
+    "from": "antarctica",
+    "to": "south-pacific"
+   },
+   {
+    "from": "arctic-ocean",
+    "to": "asia"
+   },
+   {
+    "from": "arctic-ocean",
+    "to": "europe"
+   },
+   {
+    "from": "arctic-ocean",
+    "to": "north-america-east"
+   },
+   {
+    "from": "arctic-ocean",
+    "to": "north-america-west"
+   },
+   {
+    "from": "arctic-ocean",
+    "to": "north-atlantic"
+   },
+   {
+    "from": "arctic-ocean",
+    "to": "north-pacific"
+   },
+   {
+    "from": "asia",
+    "to": "europe"
+   },
+   {
+    "from": "asia",
+    "to": "indian-ocean"
+   },
+   {
+    "from": "asia",
+    "to": "north-atlantic"
+   },
+   {
+    "from": "asia",
+    "to": "north-pacific"
+   },
+   {
+    "from": "australia",
+    "to": "indian-ocean"
+   },
+   {
+    "from": "australia",
+    "to": "new-zealand"
+   },
+   {
+    "from": "central-america",
+    "to": "north-america-west"
+   },
+   {
+    "from": "central-america",
+    "to": "north-atlantic"
+   },
+   {
+    "from": "central-america",
+    "to": "north-pacific"
+   },
+   {
+    "from": "central-america",
+    "to": "south-america-west"
+   },
+   {
+    "from": "europe",
+    "to": "north-atlantic"
+   },
+   {
+    "from": "indian-ocean",
+    "to": "new-zealand"
+   },
+   {
+    "from": "indian-ocean",
+    "to": "north-pacific"
+   },
+   {
+    "from": "indian-ocean",
+    "to": "south-atlantic"
+   },
+   {
+    "from": "indian-ocean",
+    "to": "south-pacific"
+   },
+   {
+    "from": "new-zealand",
+    "to": "south-pacific"
+   },
+   {
+    "from": "north-america-east",
+    "to": "north-america-west"
+   },
+   {
+    "from": "north-america-east",
+    "to": "north-atlantic"
+   },
+   {
+    "from": "north-america-west",
+    "to": "north-atlantic"
+   },
+   {
+    "from": "north-america-west",
+    "to": "north-pacific"
+   },
+   {
+    "from": "north-atlantic",
+    "to": "south-america-east"
+   },
+   {
+    "from": "north-atlantic",
+    "to": "south-atlantic"
+   },
+   {
+    "from": "north-pacific",
+    "to": "south-america-west"
+   },
+   {
+    "from": "north-pacific",
+    "to": "south-pacific"
+   },
+   {
+    "from": "south-america-east",
+    "to": "south-america-west"
+   },
+   {
+    "from": "south-america-east",
+    "to": "south-atlantic"
+   },
+   {
+    "from": "south-america-west",
+    "to": "south-atlantic"
+   },
+   {
+    "from": "south-america-west",
+    "to": "south-pacific"
+   },
+   {
+    "from": "south-atlantic",
+    "to": "south-pacific"
+   }
+  ]
+ },
+ "seats": [
+  {
+   "seat": 1,
+   "color": "green",
+   "label": "Great Cthulhu"
+  },
+  {
+   "seat": 2,
+   "color": "blue",
+   "label": "Crawling Chaos"
+  },
+  {
+   "seat": 3,
+   "color": "red",
+   "label": "Black Goat"
+  },
+  {
+   "seat": 4,
+   "color": "yellow",
+   "label": "Yellow Sign"
+  }
+ ],
+ "pieces": {
+  "cultist": {
+   "label": "Acolyte Cultist",
+   "code": "C",
+   "shape": "cultist",
+   "tags": [
+    "cultist"
+   ]
+  },
+  "deep-one": {
+   "label": "Deep One",
+   "code": "D",
+   "shape": "deep-one",
+   "tags": [
+    "monster"
+   ]
+  },
+  "shoggoth": {
+   "label": "Shoggoth",
+   "code": "S",
+   "shape": "shoggoth",
+   "tags": [
+    "monster"
+   ]
+  },
+  "starspawn": {
+   "label": "Star Spawn",
+   "code": "Sp",
+   "shape": "starspawn",
+   "tags": [
+    "monster"
+   ]
+  },
+  "cthulhu": {
+   "label": "Cthulhu",
+   "code": "Ct",
+   "shape": "cthulhu",
+   "tags": [
+    "goo"
+   ]
+  },
+  "nightgaunt": {
+   "label": "Nightgaunt",
+   "code": "N",
+   "shape": "nightgaunt",
+   "tags": [
+    "monster"
+   ]
+  },
+  "flying-polyp": {
+   "label": "Flying Polyp",
+   "code": "F",
+   "shape": "flying-polyp",
+   "tags": [
+    "monster"
+   ]
+  },
+  "hunting-horror": {
+   "label": "Hunting Horror",
+   "code": "H",
+   "shape": "hunting-horror",
+   "tags": [
+    "monster"
+   ]
+  },
+  "nyarlathotep": {
+   "label": "Nyarlathotep",
+   "code": "Ny",
+   "shape": "nyarlathotep",
+   "tags": [
+    "goo"
+   ]
+  },
+  "ghoul": {
+   "label": "Ghoul",
+   "code": "G",
+   "shape": "ghoul",
+   "tags": [
+    "monster"
+   ]
+  },
+  "fungi": {
+   "label": "Fungi",
+   "code": "Fu",
+   "shape": "fungi",
+   "tags": [
+    "monster"
+   ]
+  },
+  "dark-young": {
+   "label": "Dark Young",
+   "code": "Y",
+   "shape": "dark-young",
+   "tags": [
+    "monster"
+   ]
+  },
+  "shub-niggurath": {
+   "label": "Shub-Niggurath",
+   "code": "Sh",
+   "shape": "shub-niggurath",
+   "tags": [
+    "goo"
+   ]
+  },
+  "undead": {
+   "label": "Undead",
+   "code": "U",
+   "shape": "undead",
+   "tags": [
+    "monster"
+   ]
+  },
+  "byakhee": {
+   "label": "Byakhee",
+   "code": "B",
+   "shape": "byakhee",
+   "tags": [
+    "monster"
+   ]
+  },
+  "king-in-yellow": {
+   "label": "King in Yellow",
+   "code": "K",
+   "shape": "king-in-yellow",
+   "tags": [
+    "goo"
+   ]
+  },
+  "hastur": {
+   "label": "Hastur",
+   "code": "Ha",
+   "shape": "hastur",
+   "tags": [
+    "goo"
+   ]
+  },
+  "wendigo": {
+   "label": "Wendigo",
+   "code": "We",
+   "shape": "wendigo",
+   "tags": [
+    "monster"
+   ]
+  },
+  "gnoph-keh": {
+   "label": "Gnoph-Keh",
+   "code": "Gk",
+   "shape": "gnoph-keh",
+   "tags": [
+    "monster"
+   ]
+  },
+  "rhan-tegoth": {
+   "label": "Rhan-Tegoth",
+   "code": "Rh",
+   "shape": "rhan-tegoth",
+   "tags": [
+    "goo"
+   ]
+  },
+  "ithaqua": {
+   "label": "Ithaqua",
+   "code": "It",
+   "shape": "ithaqua",
+   "tags": [
+    "goo"
+   ]
+  },
+  "wizard": {
+   "label": "Wizard",
+   "code": "Wz",
+   "shape": "wizard",
+   "tags": [
+    "monster"
+   ]
+  },
+  "serpent-man": {
+   "label": "Serpent Man",
+   "code": "Sm",
+   "shape": "serpent-man",
+   "tags": [
+    "monster"
+   ]
+  },
+  "formless-spawn": {
+   "label": "Formless Spawn",
+   "code": "Fs",
+   "shape": "formless-spawn",
+   "tags": [
+    "monster"
+   ]
+  },
+  "tsathoggua": {
+   "label": "Tsathoggua",
+   "code": "Ts",
+   "shape": "tsathoggua",
+   "tags": [
+    "goo"
+   ]
+  },
+  "dimensional-shambler": {
+   "label": "Dimensional Shambler",
+   "code": "Ds",
+   "shape": "dimensional-shambler",
+   "tags": [
+    "monster"
+   ]
+  },
+  "star-vampire": {
+   "label": "Star Vampire",
+   "code": "Sv",
+   "shape": "star-vampire",
+   "tags": [
+    "monster"
+   ]
+  },
+  "elder-thing": {
+   "label": "Elder Thing",
+   "code": "Et",
+   "shape": "elder-thing",
+   "tags": [
+    "monster"
+   ]
+  },
+  "servitor": {
+   "label": "Servitor of the Outer Gods",
+   "code": "Sr",
+   "shape": "servitor",
+   "tags": [
+    "monster"
+   ]
+  },
+  "moonbeast": {
+   "label": "Moonbeast",
+   "code": "Mb",
+   "shape": "moonbeast",
+   "tags": [
+    "monster"
+   ]
+  },
+  "gnorri": {
+   "label": "Gnorri",
+   "code": "Gn",
+   "shape": "gnorri",
+   "tags": [
+    "monster"
+   ]
+  },
+  "shantak": {
+   "label": "Shantak",
+   "code": "Sk",
+   "shape": "shantak",
+   "tags": [
+    "monster"
+   ]
+  },
+  "wamp": {
+   "label": "Wamp",
+   "code": "Wa",
+   "shape": "wamp",
+   "tags": [
+    "monster"
+   ]
+  },
+  "voonith": {
+   "label": "Voonith",
+   "code": "Vo",
+   "shape": "voonith",
+   "tags": [
+    "monster"
+   ]
+  },
+  "hound-of-tindalos": {
+   "label": "Hound of Tindalos",
+   "code": "Hd",
+   "shape": "hound-of-tindalos",
+   "tags": [
+    "terror"
+   ]
+  },
+  "abhoth": {
+   "label": "Abhoth",
+   "code": "Ah",
+   "shape": "abhoth",
+   "tags": [
+    "goo"
+   ]
+  },
+  "chaugnar-faugn": {
+   "label": "Chaugnar Faugn",
+   "code": "Cf",
+   "shape": "chaugnar-faugn",
+   "tags": [
+    "goo"
+   ]
+  },
+  "cthugha": {
+   "label": "Cthugha",
+   "code": "Cg",
+   "shape": "cthugha",
+   "tags": [
+    "goo"
+   ]
+  },
+  "mother-hydra": {
+   "label": "Mother Hydra",
+   "code": "Mh",
+   "shape": "mother-hydra",
+   "tags": [
+    "goo"
+   ]
+  },
+  "yig": {
+   "label": "Yig",
+   "code": "Yi",
+   "shape": "yig",
+   "tags": [
+    "goo"
+   ]
+  },
+  "filth": {
+   "label": "Filth",
+   "code": "Fl",
+   "shape": "filth",
+   "tags": [
+    "monster"
+   ]
+  },
+  "mutant": {
+   "label": "Mutant",
+   "code": "Mu",
+   "shape": "mutant",
+   "tags": [
+    "monster"
+   ]
+  },
+  "abomination": {
+   "label": "Abomination",
+   "code": "Ab",
+   "shape": "abomination",
+   "tags": [
+    "monster"
+   ]
+  },
+  "spawn-of-yog-sothoth": {
+   "label": "Spawn of Yog-Sothoth",
+   "code": "Sp",
+   "shape": "spawn-of-yog-sothoth",
+   "tags": [
+    "monster"
+   ]
+  },
+  "yog-sothoth": {
+   "label": "Yog-Sothoth",
+   "code": "Yg",
+   "shape": "yog-sothoth",
+   "tags": [
+    "goo"
+   ]
+  },
+  "proto-shoggoth": {
+   "label": "Proto-Shoggoth",
+   "code": "Ps",
+   "shape": "proto-shoggoth",
+   "tags": [
+    "monster"
+   ]
+  },
+  "ubbo-sathla": {
+   "label": "Ubbo-Sathla",
+   "code": "Ub",
+   "shape": "ubbo-sathla",
+   "tags": [
+    "goo"
+   ]
+  },
+  "high-priest": {
+   "label": "High Priest",
+   "code": "HP",
+   "shape": "high-priest",
+   "tags": [
+    "cultist"
+   ]
+  }
+ },
+ "reserves": {
+  "cultist": 6,
+  "deep-one": 4,
+  "shoggoth": 2,
+  "starspawn": 2,
+  "cthulhu": 1,
+  "nightgaunt": 3,
+  "flying-polyp": 3,
+  "hunting-horror": 2,
+  "nyarlathotep": 1,
+  "ghoul": 2,
+  "fungi": 4,
+  "dark-young": 3,
+  "shub-niggurath": 1,
+  "undead": 6,
+  "byakhee": 4,
+  "king-in-yellow": 1,
+  "hastur": 1,
+  "wendigo": 4,
+  "gnoph-keh": 4,
+  "rhan-tegoth": 1,
+  "ithaqua": 1,
+  "wizard": 2,
+  "serpent-man": 3,
+  "formless-spawn": 4,
+  "tsathoggua": 1,
+  "high-priest": 1,
+  "mutant": 4,
+  "abomination": 3,
+  "spawn-of-yog-sothoth": 2,
+  "yog-sothoth": 1,
+  "proto-shoggoth": 6,
+  "ubbo-sathla": 1,
+  "dimensional-shambler": 0,
+  "star-vampire": 0,
+  "elder-thing": 0,
+  "servitor": 0,
+  "moonbeast": 0,
+  "gnorri": 0,
+  "shantak": 0,
+  "wamp": 0,
+  "voonith": 0,
+  "hound-of-tindalos": 0,
+  "abhoth": 0,
+  "chaugnar-faugn": 0,
+  "cthugha": 0,
+  "mother-hydra": 0,
+  "yig": 0,
+  "filth": 0
+ },
+ "turn_order": {
+  "type": "round-robin",
+  "seats": [
+   1,
+   2,
+   3,
+   4
+  ]
+ },
+ "win_condition": {
+  "type": "ruleset"
+ },
+ "display": {
+  "no_hands": true,
+  "tints": {
+   "ocean": {
+    "label": "Ocean",
+    "color": "#b9d3e6",
+    "text": "Ocean areas: Great Cthulhu's Submerge, Y'ha-Nthlei and gate requirements refer to them."
+   },
+   "land": {
+    "label": "Land",
+    "color": "#e5dcc0",
+    "text": "Land areas."
+   },
+   "desecrated": {
+    "label": "Desecrated",
+    "color": "#d8c76a",
+    "text": "A Desecration token lies here (Yellow Sign)."
+   }
+  },
+  "badges": {
+   "gate-0": {
+    "label": "Abandoned Gate",
+    "color": "#8d8776",
+    "glyph": "◌",
+    "text": "A Gate nobody controls: it still gives 1 Power to every player in Gather Power. A unit that arrives takes it, and so does a unit of yours already there — select it, then click the Gate."
+   },
+   "gate-1": {
+    "label": "Gate (Great Cthulhu)",
+    "color": "#3c9a4a",
+    "glyph": "◉",
+    "text": "A Gate controlled by Great Cthulhu. The figure on it is the unit that occupies it, apart from the others of its kind there: click yours to move it — that abandons the Gate."
+   },
+   "gate-2": {
+    "label": "Gate (Crawling Chaos)",
+    "color": "#2f6fb5",
+    "glyph": "◉",
+    "text": "A Gate controlled by Crawling Chaos. The figure on it is the unit that occupies it, apart from the others of its kind there: click yours to move it — that abandons the Gate."
+   },
+   "gate-3": {
+    "label": "Gate (Black Goat)",
+    "color": "#b3342b",
+    "glyph": "◉",
+    "text": "A Gate controlled by Black Goat. The figure on it is the unit that occupies it, apart from the others of its kind there: click yours to move it — that abandons the Gate."
+   },
+   "gate-4": {
+    "label": "Gate (Yellow Sign)",
+    "color": "#c9a227",
+    "glyph": "◉",
+    "text": "A Gate controlled by Yellow Sign. The figure on it is the unit that occupies it, apart from the others of its kind there: click yours to move it — that abandons the Gate."
+   },
+   "desecrated": {
+    "label": "Desecration",
+    "color": "#d8c76a",
+    "glyph": "✠",
+    "text": "A Desecration token (Yellow Sign)."
+   },
+   "target": {
+    "label": "Battle",
+    "color": "#d1453b",
+    "glyph": "✕",
+    "text": "The area where a battle is being fought."
+   },
+   "gate-5": {
+    "label": "Gate (Windwalker)",
+    "color": "#7f9bb0",
+    "glyph": "◉",
+    "text": "A Gate controlled by Windwalker. The figure on it is the unit that occupies it, apart from the others of its kind there: click yours to move it — that abandons the Gate."
+   },
+   "iceage": {
+    "label": "Ice Age",
+    "color": "#8fc3e6",
+    "glyph": "❄",
+    "text": "Windwalker's Ice Age token: enemy Actions that end here cost 1 Power more."
+   }
+  },
+  "terms": {}
+ },
+ "guide": {
+  "tabs": [
+   {
+    "id": "overview",
+    "title": "Overview",
+    "file": "guide/overview.md"
+   },
+   {
+    "id": "round",
+    "title": "The Round",
+    "file": "guide/round.md"
+   },
+   {
+    "id": "actions",
+    "title": "Actions",
+    "file": "guide/actions.md"
+   },
+   {
+    "id": "battle",
+    "title": "Battle",
+    "file": "guide/battle.md"
+   },
+   {
+    "id": "factions",
+    "title": "Factions",
+    "file": "guide/factions.md"
+   },
+   {
+    "id": "neutral",
+    "title": "Neutral",
+    "file": "guide/neutral.md"
+   },
+   {
+    "id": "independents",
+    "title": "Independents",
+    "file": "guide/independents.md"
+   },
+   {
+    "id": "spellbooks",
+    "title": "Spellbooks",
+    "file": "guide/spellbooks.md"
+   },
+   {
+    "id": "map",
+    "title": "Map",
+    "file": "guide/map.md"
+   },
+   {
+    "id": "playing",
+    "title": "Playing",
+    "file": "guide/playing.md"
+   }
+  ]
+ },
+ "variants": [
+  {
+   "id": "cthulhu-wars-3-5",
+   "name": "Cthulhu Wars (4 players, 3-5 map)",
+   "patch": {
+    "board": {
+     "style": "areas",
+     "canvas": {
+      "width": 1000,
+      "height": 490
+     },
+     "positions": [
+      {
+       "id": "antarctica",
+       "name": "Antarctica",
+       "tags": [
+        "land",
+        "c-ice"
+       ],
+       "anchor": [
+        522.9,
+        449.6
+       ],
+       "polygons": [
+        [
+         [
+          436.4,
+          442.5
+         ],
+         [
+          426.7,
+          490.0
+         ],
+         [
+          862.4,
+          490.0
+         ],
+         [
+          847.1,
+          470.4
+         ],
+         [
+          827.7,
+          471.8
+         ],
+         [
+          818.6,
+          465.5
+         ],
+         [
+          782.5,
+          459.9
+         ],
+         [
+          717.2,
+          480.2
+         ],
+         [
+          693.5,
+          470.4
+         ],
+         [
+          664.4,
+          445.3
+         ],
+         [
+          616.4,
+          442.5
+         ],
+         [
+          609.5,
+          433.4
+         ],
+         [
+          590.0,
+          427.1
+         ],
+         [
+          585.1,
+          408.9
+         ],
+         [
+          574.7,
+          404.0
+         ],
+         [
+          558.0,
+          406.1
+         ],
+         [
+          547.6,
+          415.2
+         ],
+         [
+          528.8,
+          408.9
+         ],
+         [
+          478.8,
+          411.0
+         ]
+        ]
+       ]
+      },
+      {
+       "id": "arabia",
+       "name": "Arabia",
+       "tags": [
+        "land",
+        "c-me",
+        "glyph-chevron"
+       ],
+       "anchor": [
+        804.1,
+        231.9
+       ],
+       "polygons": [
+        [
+         [
+          737.3,
+          272.6
+         ],
+         [
+          767.2,
+          283.8
+         ],
+         [
+          788.0,
+          315.2
+         ],
+         [
+          827.7,
+          320.8
+         ],
+         [
+          836.0,
+          312.5
+         ],
+         [
+          836.7,
+          295.7
+         ],
+         [
+          852.7,
+          279.6
+         ],
+         [
+          899.2,
+          269.1
+         ],
+         [
+          883.9,
+          239.8
+         ],
+         [
+          866.6,
+          223.7
+         ],
+         [
+          863.1,
+          176.8
+         ],
+         [
+          849.9,
+          133.5
+         ],
+         [
+          823.5,
+          137.0
+         ],
+         [
+          795.0,
+          155.9
+         ],
+         [
+          768.6,
+          155.9
+         ],
+         [
+          752.6,
+          169.2
+         ],
+         [
+          740.8,
+          210.4
+         ],
+         [
+          742.2,
+          218.8
+         ],
+         [
+          728.3,
+          230.0
+         ],
+         [
+          719.9,
+          250.9
+         ]
+        ]
+       ]
+      },
+      {
+       "id": "arctic-ocean",
+       "name": "Arctic Ocean",
+       "tags": [
+        "ocean",
+        "arctic"
+       ],
+       "anchor": [
+        428.7,
+        41.8
+       ],
+       "polygons": [
+        [
+         [
+          788.0,
+          58.0
+         ],
+         [
+          813.8,
+          42.6
+         ],
+         [
+          856.8,
+          53.8
+         ],
+         [
+          893.0,
+          37.0
+         ],
+         [
+          915.9,
+          39.1
+         ],
+         [
+          932.6,
+          22.4
+         ],
+         [
+          970.8,
+          60.1
+         ],
+         [
+          1000.0,
+          33.6
+         ],
+         [
+          1000.0,
+          0.0
+         ],
+         [
+          0.0,
+          0.0
+         ],
+         [
+          0.0,
+          55.2
+         ],
+         [
+          37.5,
+          67.8
+         ],
+         [
+          54.9,
+          60.1
+         ],
+         [
+          65.3,
+          46.1
+         ],
+         [
+          107.0,
+          28.7
+         ],
+         [
+          153.6,
+          26.6
+         ],
+         [
+          180.0,
+          36.3
+         ],
+         [
+          257.8,
+          30.1
+         ],
+         [
+          319.7,
+          49.6
+         ],
+         [
+          316.9,
+          58.0
+         ],
+         [
+          285.6,
+          76.2
+         ],
+         [
+          286.3,
+          83.2
+         ],
+         [
+          311.3,
+          97.2
+         ],
+         [
+          352.3,
+          79.7
+         ],
+         [
+          355.1,
+          65.7
+         ],
+         [
+          368.3,
+          52.4
+         ],
+         [
+          381.5,
+          54.5
+         ],
+         [
+          412.8,
+          86.7
+         ],
+         [
+          479.5,
+          74.8
+         ],
+         [
+          560.8,
+          86.0
+         ],
+         [
+          562.9,
+          69.9
+         ],
+         [
+          588.6,
+          72.7
+         ],
+         [
+          633.1,
+          48.2
+         ],
+         [
+          661.6,
+          61.5
+         ],
+         [
+          667.8,
+          46.8
+         ],
+         [
+          649.8,
+          25.2
+         ],
+         [
+          682.4,
+          14.7
+         ],
+         [
+          708.1,
+          18.9
+         ],
+         [
+          724.8,
+          39.8
+         ],
+         [
+          752.6,
+          54.5
+         ]
+        ]
+       ]
+      },
+      {
+       "id": "australia",
+       "name": "Australia",
+       "tags": [
+        "land",
+        "c-au",
+        "glyph-dragon"
+       ],
+       "anchor": [
+        86.0,
+        358.0
+       ],
+       "polygons": [
+        [
+         [
+          107.7,
+          301.3
+         ],
+         [
+          63.2,
+          304.8
+         ],
+         [
+          41.0,
+          326.4
+         ],
+         [
+          19.5,
+          334.8
+         ],
+         [
+          3.5,
+          357.9
+         ],
+         [
+          12.5,
+          425.0
+         ],
+         [
+          61.8,
+          405.4
+         ],
+         [
+          85.5,
+          416.6
+         ],
+         [
+          86.2,
+          425.7
+         ],
+         [
+          99.4,
+          443.2
+         ],
+         [
+          136.2,
+          442.5
+         ],
+         [
+          180.0,
+          410.3
+         ],
+         [
+          185.5,
+          399.8
+         ],
+         [
+          169.6,
+          335.5
+         ],
+         [
+          157.7,
+          327.8
+         ],
+         [
+          132.0,
+          328.5
+         ]
+        ]
+       ]
+      },
+      {
+       "id": "east-africa",
+       "name": "East Africa",
+       "tags": [
+        "land",
+        "c-af",
+        "glyph-chevron"
+       ],
+       "anchor": [
+        724.7,
+        360.7
+       ],
+       "polygons": [
+        [
+         [
+          778.3,
+          397.7
+         ],
+         [
+          792.2,
+          375.4
+         ],
+         [
+          788.0,
+          359.3
+         ],
+         [
+          813.8,
+          341.8
+         ],
+         [
+          827.7,
+          320.8
+         ],
+         [
+          788.0,
+          315.2
+         ],
+         [
+          767.2,
+          283.8
+         ],
+         [
+          737.3,
+          272.6
+         ],
+         [
+          730.4,
+          285.2
+         ],
+         [
+          680.3,
+          304.8
+         ],
+         [
+          663.0,
+          343.2
+         ],
+         [
+          640.0,
+          355.1
+         ],
+         [
+          644.9,
+          398.4
+         ],
+         [
+          663.7,
+          410.3
+         ],
+         [
+          680.3,
+          411.0
+         ],
+         [
+          706.0,
+          433.4
+         ],
+         [
+          742.2,
+          428.5
+         ]
+        ]
+       ]
+      },
+      {
+       "id": "europe",
+       "name": "Europe",
+       "tags": [
+        "land",
+        "c-eu",
+        "glyph-chevron"
+       ],
+       "anchor": [
+        712.9,
+        153.8
+       ],
+       "polygons": [
+        [
+         [
+          576.8,
+          106.2
+         ],
+         [
+          572.6,
+          112.5
+         ],
+         [
+          535.8,
+          116.7
+         ],
+         [
+          528.8,
+          127.9
+         ],
+         [
+          480.2,
+          116.0
+         ],
+         [
+          468.4,
+          156.6
+         ],
+         [
+          473.2,
+          174.1
+         ],
+         [
+          534.4,
+          176.1
+         ],
+         [
+          551.8,
+          160.1
+         ],
+         [
+          570.5,
+          154.5
+         ],
+         [
+          585.8,
+          165.0
+         ],
+         [
+          595.6,
+          183.1
+         ],
+         [
+          604.6,
+          181.0
+         ],
+         [
+          609.5,
+          165.0
+         ],
+         [
+          617.1,
+          162.2
+         ],
+         [
+          642.1,
+          181.7
+         ],
+         [
+          668.5,
+          174.1
+         ],
+         [
+          702.6,
+          197.1
+         ],
+         [
+          740.8,
+          210.4
+         ],
+         [
+          752.6,
+          169.2
+         ],
+         [
+          768.6,
+          155.9
+         ],
+         [
+          756.1,
+          141.9
+         ],
+         [
+          757.5,
+          112.5
+         ],
+         [
+          736.6,
+          100.7
+         ],
+         [
+          715.1,
+          104.2
+         ],
+         [
+          688.0,
+          120.2
+         ],
+         [
+          647.0,
+          118.1
+         ],
+         [
+          608.1,
+          102.8
+         ]
+        ]
+       ]
+      },
+      {
+       "id": "indian-ocean",
+       "name": "Indian Ocean",
+       "tags": [
+        "ocean",
+        "indian"
+       ],
+       "anchor": [
+        901.3,
+        387.2
+       ],
+       "polygons": [
+        [
+         [
+          818.6,
+          465.5
+         ],
+         [
+          827.7,
+          471.8
+         ],
+         [
+          847.1,
+          470.4
+         ],
+         [
+          862.4,
+          490.0
+         ],
+         [
+          1000.0,
+          490.0
+         ],
+         [
+          1000.0,
+          311.8
+         ],
+         [
+          952.7,
+          295.0
+         ],
+         [
+          922.9,
+          267.0
+         ],
+         [
+          899.2,
+          269.1
+         ],
+         [
+          852.7,
+          279.6
+         ],
+         [
+          836.7,
+          295.7
+         ],
+         [
+          836.0,
+          312.5
+         ],
+         [
+          827.7,
+          320.8
+         ],
+         [
+          813.8,
+          341.8
+         ],
+         [
+          788.0,
+          359.3
+         ],
+         [
+          792.2,
+          375.4
+         ],
+         [
+          778.3,
+          397.7
+         ],
+         [
+          798.5,
+          435.5
+         ],
+         [
+          815.1,
+          448.8
+         ]
+        ],
+        [
+         [
+          86.2,
+          425.7
+         ],
+         [
+          85.5,
+          416.6
+         ],
+         [
+          61.8,
+          405.4
+         ],
+         [
+          12.5,
+          425.0
+         ],
+         [
+          3.5,
+          357.9
+         ],
+         [
+          19.5,
+          334.8
+         ],
+         [
+          41.0,
+          326.4
+         ],
+         [
+          63.2,
+          304.8
+         ],
+         [
+          107.7,
+          301.3
+         ],
+         [
+          101.5,
+          280.3
+         ],
+         [
+          36.1,
+          272.6
+         ],
+         [
+          0.0,
+          286.6
+         ],
+         [
+          0.0,
+          470.4
+         ]
+        ]
+       ]
+      },
+      {
+       "id": "north-america",
+       "name": "North America",
+       "tags": [
+        "land",
+        "c-na",
+        "glyph-thorns"
+       ],
+       "anchor": [
+        207.9,
+        121.6
+       ],
+       "polygons": [
+        [
+         [
+          282.8,
+          289.4
+         ],
+         [
+          249.5,
+          281.7
+         ],
+         [
+          234.2,
+          258.6
+         ],
+         [
+          232.8,
+          242.6
+         ],
+         [
+          211.3,
+          245.3
+         ],
+         [
+          207.1,
+          211.8
+         ],
+         [
+          260.6,
+          197.1
+         ],
+         [
+          288.4,
+          201.3
+         ],
+         [
+          337.7,
+          152.4
+         ],
+         [
+          378.0,
+          127.2
+         ],
+         [
+          380.1,
+          106.9
+         ],
+         [
+          407.9,
+          97.9
+         ],
+         [
+          412.8,
+          86.7
+         ],
+         [
+          381.5,
+          54.5
+         ],
+         [
+          368.3,
+          52.4
+         ],
+         [
+          355.1,
+          65.7
+         ],
+         [
+          352.3,
+          79.7
+         ],
+         [
+          311.3,
+          97.2
+         ],
+         [
+          286.3,
+          83.2
+         ],
+         [
+          285.6,
+          76.2
+         ],
+         [
+          316.9,
+          58.0
+         ],
+         [
+          319.7,
+          49.6
+         ],
+         [
+          257.8,
+          30.1
+         ],
+         [
+          180.0,
+          36.3
+         ],
+         [
+          153.6,
+          26.6
+         ],
+         [
+          107.0,
+          28.7
+         ],
+         [
+          65.3,
+          46.1
+         ],
+         [
+          54.9,
+          60.1
+         ],
+         [
+          37.5,
+          67.8
+         ],
+         [
+          44.5,
+          85.3
+         ],
+         [
+          90.3,
+          69.2
+         ],
+         [
+          115.4,
+          75.5
+         ],
+         [
+          120.9,
+          123.7
+         ],
+         [
+          100.1,
+          156.6
+         ],
+         [
+          107.0,
+          209.7
+         ],
+         [
+          139.7,
+          229.3
+         ],
+         [
+          149.4,
+          255.1
+         ],
+         [
+          225.9,
+          276.1
+         ],
+         [
+          243.2,
+          292.2
+         ],
+         [
+          247.4,
+          311.1
+         ]
+        ]
+       ]
+      },
+      {
+       "id": "north-asia",
+       "name": "North Asia",
+       "tags": [
+        "land",
+        "c-as",
+        "glyph-dragon"
+       ],
+       "anchor": [
+        830.2,
+        92.2
+       ],
+       "polygons": [
+        [
+         [
+          956.2,
+          125.8
+         ],
+         [
+          946.5,
+          99.3
+         ],
+         [
+          962.5,
+          83.2
+         ],
+         [
+          980.5,
+          81.1
+         ],
+         [
+          970.8,
+          60.1
+         ],
+         [
+          932.6,
+          22.4
+         ],
+         [
+          915.9,
+          39.1
+         ],
+         [
+          893.0,
+          37.0
+         ],
+         [
+          856.8,
+          53.8
+         ],
+         [
+          813.8,
+          42.6
+         ],
+         [
+          788.0,
+          58.0
+         ],
+         [
+          789.4,
+          76.2
+         ],
+         [
+          757.5,
+          112.5
+         ],
+         [
+          756.1,
+          141.9
+         ],
+         [
+          768.6,
+          155.9
+         ],
+         [
+          795.0,
+          155.9
+         ],
+         [
+          823.5,
+          137.0
+         ],
+         [
+          849.9,
+          133.5
+         ],
+         [
+          882.6,
+          111.8
+         ],
+         [
+          916.6,
+          113.2
+         ],
+         [
+          934.0,
+          124.4
+         ]
+        ]
+       ]
+      },
+      {
+       "id": "north-atlantic",
+       "name": "North Atlantic",
+       "tags": [
+        "ocean",
+        "atlantic"
+       ],
+       "anchor": [
+        398.9,
+        213.7
+       ],
+       "polygons": [
+        [
+         [
+          422.5,
+          336.9
+         ],
+         [
+          483.0,
+          295.7
+         ],
+         [
+          534.4,
+          282.4
+         ],
+         [
+          548.3,
+          260.7
+         ],
+         [
+          567.8,
+          248.1
+         ],
+         [
+          583.7,
+          221.6
+         ],
+         [
+          626.1,
+          211.1
+         ],
+         [
+          666.4,
+          211.1
+         ],
+         [
+          668.5,
+          225.8
+         ],
+         [
+          683.8,
+          230.7
+         ],
+         [
+          698.4,
+          250.9
+         ],
+         [
+          719.9,
+          250.9
+         ],
+         [
+          728.3,
+          230.0
+         ],
+         [
+          742.2,
+          218.8
+         ],
+         [
+          740.8,
+          210.4
+         ],
+         [
+          702.6,
+          197.1
+         ],
+         [
+          668.5,
+          174.1
+         ],
+         [
+          642.1,
+          181.7
+         ],
+         [
+          617.1,
+          162.2
+         ],
+         [
+          609.5,
+          165.0
+         ],
+         [
+          604.6,
+          181.0
+         ],
+         [
+          595.6,
+          183.1
+         ],
+         [
+          585.8,
+          165.0
+         ],
+         [
+          570.5,
+          154.5
+         ],
+         [
+          551.8,
+          160.1
+         ],
+         [
+          534.4,
+          176.1
+         ],
+         [
+          473.2,
+          174.1
+         ],
+         [
+          468.4,
+          156.6
+         ],
+         [
+          480.2,
+          116.0
+         ],
+         [
+          528.8,
+          127.9
+         ],
+         [
+          535.8,
+          116.7
+         ],
+         [
+          572.6,
+          112.5
+         ],
+         [
+          576.8,
+          106.2
+         ],
+         [
+          560.8,
+          86.0
+         ],
+         [
+          479.5,
+          74.8
+         ],
+         [
+          412.8,
+          86.7
+         ],
+         [
+          407.9,
+          97.9
+         ],
+         [
+          380.1,
+          106.9
+         ],
+         [
+          378.0,
+          127.2
+         ],
+         [
+          337.7,
+          152.4
+         ],
+         [
+          288.4,
+          201.3
+         ],
+         [
+          260.6,
+          197.1
+         ],
+         [
+          207.1,
+          211.8
+         ],
+         [
+          211.3,
+          245.3
+         ],
+         [
+          232.8,
+          242.6
+         ],
+         [
+          234.2,
+          258.6
+         ],
+         [
+          249.5,
+          281.7
+         ],
+         [
+          282.8,
+          289.4
+         ],
+         [
+          316.9,
+          281.0
+         ],
+         [
+          357.9,
+          296.4
+         ],
+         [
+          414.9,
+          298.5
+         ],
+         [
+          428.8,
+          306.9
+         ],
+         [
+          419.0,
+          327.8
+         ]
+        ]
+       ]
+      },
+      {
+       "id": "north-pacific",
+       "name": "North Pacific",
+       "tags": [
+        "ocean",
+        "pacific"
+       ],
+       "anchor": [
+        54.0,
+        220.4
+       ],
+       "polygons": [
+        [
+         [
+          0.0,
+          286.6
+         ],
+         [
+          36.1,
+          272.6
+         ],
+         [
+          101.5,
+          280.3
+         ],
+         [
+          134.1,
+          285.9
+         ],
+         [
+          164.7,
+          314.6
+         ],
+         [
+          193.9,
+          331.3
+         ],
+         [
+          241.1,
+          336.2
+         ],
+         [
+          247.4,
+          311.1
+         ],
+         [
+          243.2,
+          292.2
+         ],
+         [
+          225.9,
+          276.1
+         ],
+         [
+          149.4,
+          255.1
+         ],
+         [
+          139.7,
+          229.3
+         ],
+         [
+          107.0,
+          209.7
+         ],
+         [
+          100.1,
+          156.6
+         ],
+         [
+          120.9,
+          123.7
+         ],
+         [
+          115.4,
+          75.5
+         ],
+         [
+          90.3,
+          69.2
+         ],
+         [
+          44.5,
+          85.3
+         ],
+         [
+          37.5,
+          67.8
+         ],
+         [
+          0.0,
+          55.2
+         ]
+        ],
+        [
+         [
+          970.8,
+          60.1
+         ],
+         [
+          980.5,
+          81.1
+         ],
+         [
+          962.5,
+          83.2
+         ],
+         [
+          946.5,
+          99.3
+         ],
+         [
+          956.2,
+          125.8
+         ],
+         [
+          979.2,
+          148.9
+         ],
+         [
+          973.6,
+          163.6
+         ],
+         [
+          988.9,
+          184.5
+         ],
+         [
+          988.9,
+          237.7
+         ],
+         [
+          983.3,
+          252.3
+         ],
+         [
+          963.9,
+          264.9
+         ],
+         [
+          947.9,
+          268.4
+         ],
+         [
+          927.7,
+          262.1
+         ],
+         [
+          922.9,
+          267.0
+         ],
+         [
+          952.7,
+          295.0
+         ],
+         [
+          1000.0,
+          311.8
+         ],
+         [
+          1000.0,
+          33.6
+         ]
+        ]
+       ]
+      },
+      {
+       "id": "scandinavia",
+       "name": "Scandinavia",
+       "tags": [
+        "land",
+        "c-eu",
+        "glyph-chevron"
+       ],
+       "anchor": [
+        699.7,
+        69.7
+       ],
+       "polygons": [
+        [
+         [
+          560.8,
+          86.0
+         ],
+         [
+          576.8,
+          106.2
+         ],
+         [
+          608.1,
+          102.8
+         ],
+         [
+          647.0,
+          118.1
+         ],
+         [
+          688.0,
+          120.2
+         ],
+         [
+          715.1,
+          104.2
+         ],
+         [
+          736.6,
+          100.7
+         ],
+         [
+          757.5,
+          112.5
+         ],
+         [
+          789.4,
+          76.2
+         ],
+         [
+          788.0,
+          58.0
+         ],
+         [
+          752.6,
+          54.5
+         ],
+         [
+          724.8,
+          39.8
+         ],
+         [
+          708.1,
+          18.9
+         ],
+         [
+          682.4,
+          14.7
+         ],
+         [
+          649.8,
+          25.2
+         ],
+         [
+          667.8,
+          46.8
+         ],
+         [
+          661.6,
+          61.5
+         ],
+         [
+          633.1,
+          48.2
+         ],
+         [
+          588.6,
+          72.7
+         ],
+         [
+          562.9,
+          69.9
+         ]
+        ]
+       ]
+      },
+      {
+       "id": "south-america",
+       "name": "South America",
+       "tags": [
+        "land",
+        "c-sa",
+        "glyph-thorns"
+       ],
+       "anchor": [
+        320.7,
+        347.2
+       ],
+       "polygons": [
+        [
+         [
+          282.8,
+          289.4
+         ],
+         [
+          247.4,
+          311.1
+         ],
+         [
+          241.1,
+          336.2
+         ],
+         [
+          242.5,
+          360.0
+         ],
+         [
+          264.8,
+          371.9
+         ],
+         [
+          289.8,
+          425.0
+         ],
+         [
+          355.8,
+          439.0
+         ],
+         [
+          355.8,
+          413.1
+         ],
+         [
+          355.1,
+          397.0
+         ],
+         [
+          366.2,
+          390.7
+         ],
+         [
+          390.5,
+          390.7
+         ],
+         [
+          396.1,
+          374.0
+         ],
+         [
+          419.7,
+          360.0
+         ],
+         [
+          422.5,
+          336.9
+         ],
+         [
+          419.0,
+          327.8
+         ],
+         [
+          428.8,
+          306.9
+         ],
+         [
+          414.9,
+          298.5
+         ],
+         [
+          357.9,
+          296.4
+         ],
+         [
+          316.9,
+          281.0
+         ]
+        ]
+       ]
+      },
+      {
+       "id": "south-asia",
+       "name": "South Asia",
+       "tags": [
+        "land",
+        "c-as",
+        "glyph-dragon"
+       ],
+       "anchor": [
+        924.9,
+        197.2
+       ],
+       "polygons": [
+        [
+         [
+          922.9,
+          267.0
+         ],
+         [
+          927.7,
+          262.1
+         ],
+         [
+          947.9,
+          268.4
+         ],
+         [
+          963.9,
+          264.9
+         ],
+         [
+          983.3,
+          252.3
+         ],
+         [
+          988.9,
+          237.7
+         ],
+         [
+          988.9,
+          184.5
+         ],
+         [
+          973.6,
+          163.6
+         ],
+         [
+          979.2,
+          148.9
+         ],
+         [
+          956.2,
+          125.8
+         ],
+         [
+          934.0,
+          124.4
+         ],
+         [
+          916.6,
+          113.2
+         ],
+         [
+          882.6,
+          111.8
+         ],
+         [
+          849.9,
+          133.5
+         ],
+         [
+          863.1,
+          176.8
+         ],
+         [
+          866.6,
+          223.7
+         ],
+         [
+          883.9,
+          239.8
+         ],
+         [
+          899.2,
+          269.1
+         ]
+        ]
+       ]
+      },
+      {
+       "id": "south-atlantic",
+       "name": "South Atlantic",
+       "tags": [
+        "ocean",
+        "atlantic"
+       ],
+       "anchor": [
+        501.3,
+        352.8
+       ],
+       "polygons": [
+        [
+         [
+          640.0,
+          355.1
+         ],
+         [
+          616.4,
+          345.3
+         ],
+         [
+          585.1,
+          346.7
+         ],
+         [
+          557.3,
+          335.5
+         ],
+         [
+          537.9,
+          301.3
+         ],
+         [
+          534.4,
+          282.4
+         ],
+         [
+          483.0,
+          295.7
+         ],
+         [
+          422.5,
+          336.9
+         ],
+         [
+          419.7,
+          360.0
+         ],
+         [
+          396.1,
+          374.0
+         ],
+         [
+          390.5,
+          390.7
+         ],
+         [
+          366.2,
+          390.7
+         ],
+         [
+          355.1,
+          397.0
+         ],
+         [
+          355.8,
+          413.1
+         ],
+         [
+          396.1,
+          422.9
+         ],
+         [
+          436.4,
+          442.5
+         ],
+         [
+          478.8,
+          411.0
+         ],
+         [
+          528.8,
+          408.9
+         ],
+         [
+          547.6,
+          415.2
+         ],
+         [
+          558.0,
+          406.1
+         ],
+         [
+          574.7,
+          404.0
+         ],
+         [
+          585.1,
+          408.9
+         ],
+         [
+          590.0,
+          427.1
+         ],
+         [
+          609.5,
+          433.4
+         ],
+         [
+          616.4,
+          442.5
+         ],
+         [
+          664.4,
+          445.3
+         ],
+         [
+          693.5,
+          470.4
+         ],
+         [
+          717.2,
+          480.2
+         ],
+         [
+          782.5,
+          459.9
+         ],
+         [
+          818.6,
+          465.5
+         ],
+         [
+          815.1,
+          448.8
+         ],
+         [
+          798.5,
+          435.5
+         ],
+         [
+          778.3,
+          397.7
+         ],
+         [
+          742.2,
+          428.5
+         ],
+         [
+          706.0,
+          433.4
+         ],
+         [
+          680.3,
+          411.0
+         ],
+         [
+          663.7,
+          410.3
+         ],
+         [
+          644.9,
+          398.4
+         ]
+        ]
+       ]
+      },
+      {
+       "id": "south-pacific",
+       "name": "South Pacific",
+       "tags": [
+        "ocean",
+        "pacific"
+       ],
+       "anchor": [
+        231.4,
+        433.3
+       ],
+       "polygons": [
+        [
+         [
+          86.2,
+          425.7
+         ],
+         [
+          0.0,
+          470.4
+         ],
+         [
+          0.0,
+          490.0
+         ],
+         [
+          426.7,
+          490.0
+         ],
+         [
+          436.4,
+          442.5
+         ],
+         [
+          396.1,
+          422.9
+         ],
+         [
+          355.8,
+          413.1
+         ],
+         [
+          355.8,
+          439.0
+         ],
+         [
+          289.8,
+          425.0
+         ],
+         [
+          264.8,
+          371.9
+         ],
+         [
+          242.5,
+          360.0
+         ],
+         [
+          241.1,
+          336.2
+         ],
+         [
+          193.9,
+          331.3
+         ],
+         [
+          164.7,
+          314.6
+         ],
+         [
+          134.1,
+          285.9
+         ],
+         [
+          101.5,
+          280.3
+         ],
+         [
+          107.7,
+          301.3
+         ],
+         [
+          132.0,
+          328.5
+         ],
+         [
+          157.7,
+          327.8
+         ],
+         [
+          169.6,
+          335.5
+         ],
+         [
+          185.5,
+          399.8
+         ],
+         [
+          180.0,
+          410.3
+         ],
+         [
+          136.2,
+          442.5
+         ],
+         [
+          99.4,
+          443.2
+         ]
+        ]
+       ]
+      },
+      {
+       "id": "west-africa",
+       "name": "West Africa",
+       "tags": [
+        "land",
+        "c-af",
+        "glyph-chevron"
+       ],
+       "anchor": [
+        621.2,
+        281.9
+       ],
+       "polygons": [
+        [
+         [
+          534.4,
+          282.4
+         ],
+         [
+          537.9,
+          301.3
+         ],
+         [
+          557.3,
+          335.5
+         ],
+         [
+          585.1,
+          346.7
+         ],
+         [
+          616.4,
+          345.3
+         ],
+         [
+          640.0,
+          355.1
+         ],
+         [
+          663.0,
+          343.2
+         ],
+         [
+          680.3,
+          304.8
+         ],
+         [
+          730.4,
+          285.2
+         ],
+         [
+          737.3,
+          272.6
+         ],
+         [
+          719.9,
+          250.9
+         ],
+         [
+          698.4,
+          250.9
+         ],
+         [
+          683.8,
+          230.7
+         ],
+         [
+          668.5,
+          225.8
+         ],
+         [
+          666.4,
+          211.1
+         ],
+         [
+          626.1,
+          211.1
+         ],
+         [
+          583.7,
+          221.6
+         ],
+         [
+          567.8,
+          248.1
+         ],
+         [
+          548.3,
+          260.7
+         ]
+        ]
+       ]
+      }
+     ],
+     "edges": [
+      {
+       "from": "antarctica",
+       "to": "indian-ocean"
+      },
+      {
+       "from": "antarctica",
+       "to": "south-atlantic"
+      },
+      {
+       "from": "antarctica",
+       "to": "south-pacific"
+      },
+      {
+       "from": "arabia",
+       "to": "east-africa"
+      },
+      {
+       "from": "arabia",
+       "to": "europe"
+      },
+      {
+       "from": "arabia",
+       "to": "indian-ocean"
+      },
+      {
+       "from": "arabia",
+       "to": "north-asia"
+      },
+      {
+       "from": "arabia",
+       "to": "north-atlantic"
+      },
+      {
+       "from": "arabia",
+       "to": "south-asia"
+      },
+      {
+       "from": "arabia",
+       "to": "west-africa"
+      },
+      {
+       "from": "arctic-ocean",
+       "to": "north-america"
+      },
+      {
+       "from": "arctic-ocean",
+       "to": "north-asia"
+      },
+      {
+       "from": "arctic-ocean",
+       "to": "north-atlantic"
+      },
+      {
+       "from": "arctic-ocean",
+       "to": "north-pacific"
+      },
+      {
+       "from": "arctic-ocean",
+       "to": "scandinavia"
+      },
+      {
+       "from": "australia",
+       "to": "indian-ocean"
+      },
+      {
+       "from": "australia",
+       "to": "south-pacific"
+      },
+      {
+       "from": "east-africa",
+       "to": "indian-ocean"
+      },
+      {
+       "from": "east-africa",
+       "to": "south-atlantic"
+      },
+      {
+       "from": "east-africa",
+       "to": "west-africa"
+      },
+      {
+       "from": "europe",
+       "to": "north-asia"
+      },
+      {
+       "from": "europe",
+       "to": "north-atlantic"
+      },
+      {
+       "from": "europe",
+       "to": "scandinavia"
+      },
+      {
+       "from": "indian-ocean",
+       "to": "north-pacific"
+      },
+      {
+       "from": "indian-ocean",
+       "to": "south-asia"
+      },
+      {
+       "from": "indian-ocean",
+       "to": "south-atlantic"
+      },
+      {
+       "from": "indian-ocean",
+       "to": "south-pacific"
+      },
+      {
+       "from": "north-america",
+       "to": "north-atlantic"
+      },
+      {
+       "from": "north-america",
+       "to": "north-pacific"
+      },
+      {
+       "from": "north-america",
+       "to": "south-america"
+      },
+      {
+       "from": "north-asia",
+       "to": "north-pacific"
+      },
+      {
+       "from": "north-asia",
+       "to": "scandinavia"
+      },
+      {
+       "from": "north-asia",
+       "to": "south-asia"
+      },
+      {
+       "from": "north-atlantic",
+       "to": "scandinavia"
+      },
+      {
+       "from": "north-atlantic",
+       "to": "south-america"
+      },
+      {
+       "from": "north-atlantic",
+       "to": "south-atlantic"
+      },
+      {
+       "from": "north-atlantic",
+       "to": "west-africa"
+      },
+      {
+       "from": "north-pacific",
+       "to": "south-america"
+      },
+      {
+       "from": "north-pacific",
+       "to": "south-asia"
+      },
+      {
+       "from": "north-pacific",
+       "to": "south-pacific"
+      },
+      {
+       "from": "south-america",
+       "to": "south-atlantic"
+      },
+      {
+       "from": "south-america",
+       "to": "south-pacific"
+      },
+      {
+       "from": "south-atlantic",
+       "to": "south-pacific"
+      },
+      {
+       "from": "south-atlantic",
+       "to": "west-africa"
+      }
+     ]
+    },
+    "params": {
+     "starts": {
+      "cc": "north-asia",
+      "bg": "south-america"
+     },
+     "sigils": {
+      "sl": [
+       "north-america"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "cthulhu-wars-3p",
+   "name": "Cthulhu Wars (3 players)",
+   "patch": {
+    "board": {
+     "style": "areas",
+     "canvas": {
+      "width": 1000,
+      "height": 490
+     },
+     "positions": [
+      {
+       "id": "africa",
+       "name": "Africa",
+       "tags": [
+        "land",
+        "c-af",
+        "glyph-chevron"
+       ],
+       "anchor": [
+        713.7,
+        350.5
+       ],
+       "polygons": [
+        [
+         [
+          774.6,
+          401.3
+         ],
+         [
+          788.4,
+          371.7
+         ],
+         [
+          812.7,
+          356.9
+         ],
+         [
+          822.6,
+          322.6
+         ],
+         [
+          779.9,
+          315.2
+         ],
+         [
+          766.1,
+          287.7
+         ],
+         [
+          738.5,
+          275.6
+         ],
+         [
+          711.6,
+          250.7
+         ],
+         [
+          691.2,
+          241.3
+         ],
+         [
+          680.7,
+          228.5
+         ],
+         [
+          664.9,
+          225.2
+         ],
+         [
+          660.3,
+          212.4
+         ],
+         [
+          602.5,
+          210.4
+         ],
+         [
+          580.8,
+          223.2
+         ],
+         [
+          569.0,
+          243.3
+         ],
+         [
+          553.9,
+          251.4
+         ],
+         [
+          527.6,
+          285.7
+         ],
+         [
+          543.4,
+          320.6
+         ],
+         [
+          557.2,
+          334.1
+         ],
+         [
+          585.4,
+          342.8
+         ],
+         [
+          632.1,
+          346.2
+         ],
+         [
+          638.6,
+          358.3
+         ],
+         [
+          635.3,
+          395.9
+         ],
+         [
+          655.1,
+          414.0
+         ],
+         [
+          673.5,
+          414.0
+         ],
+         [
+          696.5,
+          430.9
+         ],
+         [
+          730.6,
+          434.2
+         ]
+        ]
+       ]
+      },
+      {
+       "id": "antarctica",
+       "name": "Antarctica",
+       "tags": [
+        "land",
+        "c-ice"
+       ],
+       "anchor": [
+        515.9,
+        449.7
+       ],
+       "polygons": [
+        [
+         [
+          442.2,
+          440.3
+         ],
+         [
+          424.4,
+          490.0
+         ],
+         [
+          858.1,
+          490.0
+         ],
+         [
+          849.5,
+          469.8
+         ],
+         [
+          839.0,
+          463.8
+         ],
+         [
+          795.7,
+          463.1
+         ],
+         [
+          782.5,
+          457.1
+         ],
+         [
+          745.7,
+          459.8
+         ],
+         [
+          740.5,
+          473.2
+         ],
+         [
+          722.7,
+          476.6
+         ],
+         [
+          684.6,
+          471.9
+         ],
+         [
+          685.9,
+          459.1
+         ],
+         [
+          672.1,
+          455.0
+         ],
+         [
+          665.6,
+          445.0
+         ],
+         [
+          645.2,
+          437.6
+         ],
+         [
+          618.3,
+          440.9
+         ],
+         [
+          612.4,
+          428.8
+         ],
+         [
+          594.0,
+          424.1
+         ],
+         [
+          584.8,
+          408.7
+         ],
+         [
+          568.3,
+          402.6
+         ],
+         [
+          554.5,
+          406.7
+         ],
+         [
+          547.3,
+          416.7
+         ],
+         [
+          523.7,
+          408.7
+         ],
+         [
+          475.0,
+          410.0
+         ]
+        ]
+       ]
+      },
+      {
+       "id": "arctic-ocean",
+       "name": "Arctic Ocean",
+       "tags": [
+        "ocean",
+        "arctic"
+       ],
+       "anchor": [
+        438.0,
+        41.7
+       ],
+       "polygons": [
+        [
+         [
+          788.4,
+          58.5
+         ],
+         [
+          807.5,
+          45.0
+         ],
+         [
+          827.9,
+          45.0
+         ],
+         [
+          852.2,
+          55.1
+         ],
+         [
+          895.5,
+          38.3
+         ],
+         [
+          913.9,
+          43.0
+         ],
+         [
+          917.2,
+          25.5
+         ],
+         [
+          929.0,
+          22.9
+         ],
+         [
+          942.2,
+          29.6
+         ],
+         [
+          967.1,
+          63.9
+         ],
+         [
+          1000.0,
+          28.9
+         ],
+         [
+          1000.0,
+          0.0
+         ],
+         [
+          0.0,
+          0.0
+         ],
+         [
+          0.0,
+          52.4
+         ],
+         [
+          42.7,
+          65.2
+         ],
+         [
+          62.4,
+          46.4
+         ],
+         [
+          82.1,
+          45.0
+         ],
+         [
+          92.6,
+          35.0
+         ],
+         [
+          112.4,
+          30.2
+         ],
+         [
+          164.3,
+          25.5
+         ],
+         [
+          186.6,
+          35.0
+         ],
+         [
+          233.2,
+          35.6
+         ],
+         [
+          299.6,
+          20.8
+         ],
+         [
+          297.6,
+          40.3
+         ],
+         [
+          302.9,
+          45.0
+         ],
+         [
+          318.0,
+          43.0
+         ],
+         [
+          323.3,
+          24.9
+         ],
+         [
+          333.1,
+          27.6
+         ],
+         [
+          337.7,
+          42.3
+         ],
+         [
+          355.5,
+          39.7
+         ],
+         [
+          338.4,
+          59.8
+         ],
+         [
+          314.7,
+          61.8
+         ],
+         [
+          290.4,
+          73.3
+         ],
+         [
+          289.8,
+          79.3
+         ],
+         [
+          314.1,
+          98.1
+         ],
+         [
+          350.9,
+          85.4
+         ],
+         [
+          360.1,
+          64.5
+         ],
+         [
+          372.5,
+          55.8
+         ],
+         [
+          404.7,
+          67.9
+         ],
+         [
+          415.9,
+          86.7
+         ],
+         [
+          500.0,
+          77.3
+         ],
+         [
+          540.1,
+          91.4
+         ],
+         [
+          568.3,
+          92.1
+         ],
+         [
+          557.8,
+          76.0
+         ],
+         [
+          557.2,
+          52.4
+         ],
+         [
+          574.9,
+          55.1
+         ],
+         [
+          571.6,
+          73.9
+         ],
+         [
+          578.8,
+          77.3
+         ],
+         [
+          605.1,
+          67.2
+         ],
+         [
+          613.7,
+          56.5
+         ],
+         [
+          623.5,
+          56.5
+         ],
+         [
+          635.3,
+          38.3
+         ],
+         [
+          641.3,
+          40.3
+         ],
+         [
+          640.6,
+          53.8
+         ],
+         [
+          660.3,
+          61.8
+         ],
+         [
+          663.6,
+          56.5
+         ],
+         [
+          647.2,
+          27.6
+         ],
+         [
+          677.4,
+          16.8
+         ],
+         [
+          710.2,
+          22.2
+         ],
+         [
+          723.4,
+          44.4
+         ],
+         [
+          744.4,
+          55.1
+         ]
+        ]
+       ]
+      },
+      {
+       "id": "asia",
+       "name": "Asia",
+       "tags": [
+        "land",
+        "c-as",
+        "glyph-dragon"
+       ],
+       "anchor": [
+        866.2,
+        178.0
+       ],
+       "polygons": [
+        [
+         [
+          926.4,
+          276.3
+         ],
+         [
+          970.4,
+          268.9
+         ],
+         [
+          986.9,
+          239.3
+         ],
+         [
+          984.9,
+          199.0
+         ],
+         [
+          969.8,
+          168.0
+         ],
+         [
+          972.4,
+          153.9
+         ],
+         [
+          958.6,
+          146.5
+         ],
+         [
+          947.4,
+          110.9
+         ],
+         [
+          960.6,
+          85.4
+         ],
+         [
+          979.6,
+          84.0
+         ],
+         [
+          967.1,
+          63.9
+         ],
+         [
+          942.2,
+          29.6
+         ],
+         [
+          929.0,
+          22.9
+         ],
+         [
+          917.2,
+          25.5
+         ],
+         [
+          913.9,
+          43.0
+         ],
+         [
+          895.5,
+          38.3
+         ],
+         [
+          852.2,
+          55.1
+         ],
+         [
+          827.9,
+          45.0
+         ],
+         [
+          807.5,
+          45.0
+         ],
+         [
+          788.4,
+          58.5
+         ],
+         [
+          787.1,
+          78.0
+         ],
+         [
+          770.0,
+          94.8
+         ],
+         [
+          766.8,
+          112.2
+         ],
+         [
+          751.6,
+          133.8
+         ],
+         [
+          753.0,
+          144.5
+         ],
+         [
+          768.1,
+          149.2
+         ],
+         [
+          770.0,
+          155.9
+         ],
+         [
+          753.6,
+          168.7
+         ],
+         [
+          739.8,
+          205.7
+         ],
+         [
+          738.5,
+          219.8
+         ],
+         [
+          726.0,
+          227.9
+         ],
+         [
+          711.6,
+          250.7
+         ],
+         [
+          738.5,
+          275.6
+         ],
+         [
+          766.1,
+          287.7
+         ],
+         [
+          779.9,
+          315.2
+         ],
+         [
+          822.6,
+          322.6
+         ],
+         [
+          834.4,
+          310.5
+         ],
+         [
+          837.7,
+          289.7
+         ],
+         [
+          852.2,
+          280.3
+         ],
+         [
+          891.6,
+          273.6
+         ]
+        ]
+       ]
+      },
+      {
+       "id": "australia",
+       "name": "Australia",
+       "tags": [
+        "land",
+        "c-au",
+        "glyph-dragon"
+       ],
+       "anchor": [
+        85.3,
+        358.7
+       ],
+       "polygons": [
+        [
+         [
+          80.8,
+          413.4
+         ],
+         [
+          92.0,
+          412.7
+         ],
+         [
+          100.5,
+          428.8
+         ],
+         [
+          115.6,
+          438.2
+         ],
+         [
+          136.0,
+          441.6
+         ],
+         [
+          182.7,
+          406.0
+         ],
+         [
+          182.0,
+          377.8
+         ],
+         [
+          168.9,
+          354.2
+         ],
+         [
+          134.7,
+          327.3
+         ],
+         [
+          128.8,
+          309.9
+         ],
+         [
+          111.7,
+          302.5
+         ],
+         [
+          68.3,
+          303.8
+         ],
+         [
+          37.5,
+          326.0
+         ],
+         [
+          16.4,
+          332.0
+         ],
+         [
+          10.5,
+          341.5
+         ],
+         [
+          3.3,
+          387.8
+         ],
+         [
+          14.5,
+          414.7
+         ],
+         [
+          38.8,
+          422.8
+         ]
+        ]
+       ]
+      },
+      {
+       "id": "europe",
+       "name": "Europe",
+       "tags": [
+        "land",
+        "c-eu",
+        "glyph-chevron"
+       ],
+       "anchor": [
+        692.2,
+        115.0
+       ],
+       "polygons": [
+        [
+         [
+          788.4,
+          58.5
+         ],
+         [
+          744.4,
+          55.1
+         ],
+         [
+          723.4,
+          44.4
+         ],
+         [
+          710.2,
+          22.2
+         ],
+         [
+          677.4,
+          16.8
+         ],
+         [
+          647.2,
+          27.6
+         ],
+         [
+          663.6,
+          56.5
+         ],
+         [
+          660.3,
+          61.8
+         ],
+         [
+          640.6,
+          53.8
+         ],
+         [
+          641.3,
+          40.3
+         ],
+         [
+          635.3,
+          38.3
+         ],
+         [
+          623.5,
+          56.5
+         ],
+         [
+          613.7,
+          56.5
+         ],
+         [
+          605.1,
+          67.2
+         ],
+         [
+          578.8,
+          77.3
+         ],
+         [
+          571.6,
+          73.9
+         ],
+         [
+          574.9,
+          55.1
+         ],
+         [
+          557.2,
+          52.4
+         ],
+         [
+          557.8,
+          76.0
+         ],
+         [
+          568.3,
+          92.1
+         ],
+         [
+          576.2,
+          101.5
+         ],
+         [
+          572.9,
+          114.3
+         ],
+         [
+          546.6,
+          111.6
+         ],
+         [
+          528.9,
+          127.0
+         ],
+         [
+          499.3,
+          113.6
+         ],
+         [
+          485.5,
+          116.3
+         ],
+         [
+          468.5,
+          147.2
+         ],
+         [
+          476.3,
+          178.1
+         ],
+         [
+          525.0,
+          180.8
+         ],
+         [
+          559.1,
+          154.6
+         ],
+         [
+          590.0,
+          174.1
+         ],
+         [
+          592.6,
+          154.6
+         ],
+         [
+          599.9,
+          150.6
+         ],
+         [
+          622.9,
+          159.3
+         ],
+         [
+          641.3,
+          180.8
+         ],
+         [
+          671.5,
+          174.1
+         ],
+         [
+          700.4,
+          193.6
+         ],
+         [
+          739.8,
+          205.7
+         ],
+         [
+          753.6,
+          168.7
+         ],
+         [
+          770.0,
+          155.9
+         ],
+         [
+          768.1,
+          149.2
+         ],
+         [
+          753.0,
+          144.5
+         ],
+         [
+          751.6,
+          133.8
+         ],
+         [
+          766.8,
+          112.2
+         ],
+         [
+          770.0,
+          94.8
+         ],
+         [
+          787.1,
+          78.0
+         ]
+        ]
+       ]
+      },
+      {
+       "id": "indian-ocean",
+       "name": "Indian Ocean",
+       "tags": [
+        "ocean",
+        "indian"
+       ],
+       "anchor": [
+        904.0,
+        388.0
+       ],
+       "polygons": [
+        [
+         [
+          822.6,
+          322.6
+         ],
+         [
+          812.7,
+          356.9
+         ],
+         [
+          788.4,
+          371.7
+         ],
+         [
+          774.6,
+          401.3
+         ],
+         [
+          792.4,
+          435.6
+         ],
+         [
+          831.8,
+          451.7
+         ],
+         [
+          839.0,
+          463.8
+         ],
+         [
+          849.5,
+          469.8
+         ],
+         [
+          858.1,
+          490.0
+         ],
+         [
+          1000.0,
+          490.0
+         ],
+         [
+          1000.0,
+          313.2
+         ],
+         [
+          960.6,
+          304.5
+         ],
+         [
+          926.4,
+          276.3
+         ],
+         [
+          891.6,
+          273.6
+         ],
+         [
+          852.2,
+          280.3
+         ],
+         [
+          837.7,
+          289.7
+         ],
+         [
+          834.4,
+          310.5
+         ]
+        ],
+        [
+         [
+          0.0,
+          286.3
+         ],
+         [
+          0.0,
+          490.0
+         ],
+         [
+          22.3,
+          490.0
+         ],
+         [
+          26.3,
+          473.2
+         ],
+         [
+          80.2,
+          430.2
+         ],
+         [
+          80.8,
+          413.4
+         ],
+         [
+          38.8,
+          422.8
+         ],
+         [
+          14.5,
+          414.7
+         ],
+         [
+          3.3,
+          387.8
+         ],
+         [
+          10.5,
+          341.5
+         ],
+         [
+          16.4,
+          332.0
+         ],
+         [
+          37.5,
+          326.0
+         ],
+         [
+          68.3,
+          303.8
+         ],
+         [
+          111.7,
+          302.5
+         ],
+         [
+          105.8,
+          277.6
+         ],
+         [
+          77.5,
+          265.5
+         ],
+         [
+          53.2,
+          264.8
+         ]
+        ]
+       ]
+      },
+      {
+       "id": "north-america",
+       "name": "North America",
+       "tags": [
+        "land",
+        "c-na",
+        "glyph-thorns"
+       ],
+       "anchor": [
+        214.7,
+        121.8
+       ],
+       "polygons": [
+        [
+         [
+          243.8,
+          319.9
+         ],
+         [
+          285.8,
+          289.7
+         ],
+         [
+          245.1,
+          279.6
+         ],
+         [
+          245.7,
+          266.8
+         ],
+         [
+          238.5,
+          256.8
+         ],
+         [
+          241.8,
+          242.6
+         ],
+         [
+          217.5,
+          246.0
+         ],
+         [
+          210.2,
+          240.0
+         ],
+         [
+          212.2,
+          211.7
+         ],
+         [
+          251.6,
+          201.6
+         ],
+         [
+          277.3,
+          201.6
+         ],
+         [
+          292.4,
+          209.0
+         ],
+         [
+          297.0,
+          188.9
+         ],
+         [
+          317.3,
+          179.5
+         ],
+         [
+          334.4,
+          155.3
+         ],
+         [
+          379.1,
+          129.1
+         ],
+         [
+          387.0,
+          108.9
+         ],
+         [
+          416.6,
+          100.8
+         ],
+         [
+          415.9,
+          86.7
+         ],
+         [
+          404.7,
+          67.9
+         ],
+         [
+          372.5,
+          55.8
+         ],
+         [
+          360.1,
+          64.5
+         ],
+         [
+          350.9,
+          85.4
+         ],
+         [
+          314.1,
+          98.1
+         ],
+         [
+          289.8,
+          79.3
+         ],
+         [
+          290.4,
+          73.3
+         ],
+         [
+          314.7,
+          61.8
+         ],
+         [
+          338.4,
+          59.8
+         ],
+         [
+          355.5,
+          39.7
+         ],
+         [
+          337.7,
+          42.3
+         ],
+         [
+          333.1,
+          27.6
+         ],
+         [
+          323.3,
+          24.9
+         ],
+         [
+          318.0,
+          43.0
+         ],
+         [
+          302.9,
+          45.0
+         ],
+         [
+          297.6,
+          40.3
+         ],
+         [
+          299.6,
+          20.8
+         ],
+         [
+          233.2,
+          35.6
+         ],
+         [
+          186.6,
+          35.0
+         ],
+         [
+          164.3,
+          25.5
+         ],
+         [
+          112.4,
+          30.2
+         ],
+         [
+          92.6,
+          35.0
+         ],
+         [
+          82.1,
+          45.0
+         ],
+         [
+          62.4,
+          46.4
+         ],
+         [
+          42.7,
+          65.2
+         ],
+         [
+          48.6,
+          82.7
+         ],
+         [
+          97.2,
+          67.2
+         ],
+         [
+          122.9,
+          75.3
+         ],
+         [
+          128.1,
+          118.3
+         ],
+         [
+          103.2,
+          162.7
+         ],
+         [
+          103.8,
+          183.5
+         ],
+         [
+          158.3,
+          256.8
+         ],
+         [
+          187.3,
+          268.2
+         ],
+         [
+          224.0,
+          272.9
+         ],
+         [
+          247.0,
+          293.1
+         ]
+        ]
+       ]
+      },
+      {
+       "id": "north-atlantic",
+       "name": "North Atlantic",
+       "tags": [
+        "ocean",
+        "atlantic"
+       ],
+       "anchor": [
+        401.0,
+        211.0
+       ],
+       "polygons": [
+        [
+         [
+          415.9,
+          86.7
+         ],
+         [
+          416.6,
+          100.8
+         ],
+         [
+          387.0,
+          108.9
+         ],
+         [
+          379.1,
+          129.1
+         ],
+         [
+          334.4,
+          155.3
+         ],
+         [
+          317.3,
+          179.5
+         ],
+         [
+          297.0,
+          188.9
+         ],
+         [
+          292.4,
+          209.0
+         ],
+         [
+          277.3,
+          201.6
+         ],
+         [
+          251.6,
+          201.6
+         ],
+         [
+          212.2,
+          211.7
+         ],
+         [
+          210.2,
+          240.0
+         ],
+         [
+          217.5,
+          246.0
+         ],
+         [
+          241.8,
+          242.6
+         ],
+         [
+          238.5,
+          256.8
+         ],
+         [
+          245.7,
+          266.8
+         ],
+         [
+          245.1,
+          279.6
+         ],
+         [
+          285.8,
+          289.7
+         ],
+         [
+          335.1,
+          281.6
+         ],
+         [
+          365.3,
+          293.7
+         ],
+         [
+          396.8,
+          293.1
+         ],
+         [
+          421.2,
+          299.8
+         ],
+         [
+          430.4,
+          305.8
+         ],
+         [
+          421.2,
+          326.0
+         ],
+         [
+          423.8,
+          337.4
+         ],
+         [
+          442.8,
+          331.4
+         ],
+         [
+          461.2,
+          309.2
+         ],
+         [
+          488.2,
+          293.7
+         ],
+         [
+          527.6,
+          285.7
+         ],
+         [
+          553.9,
+          251.4
+         ],
+         [
+          569.0,
+          243.3
+         ],
+         [
+          580.8,
+          223.2
+         ],
+         [
+          602.5,
+          210.4
+         ],
+         [
+          660.3,
+          212.4
+         ],
+         [
+          664.9,
+          225.2
+         ],
+         [
+          680.7,
+          228.5
+         ],
+         [
+          691.2,
+          241.3
+         ],
+         [
+          711.6,
+          250.7
+         ],
+         [
+          726.0,
+          227.9
+         ],
+         [
+          738.5,
+          219.8
+         ],
+         [
+          739.8,
+          205.7
+         ],
+         [
+          700.4,
+          193.6
+         ],
+         [
+          671.5,
+          174.1
+         ],
+         [
+          641.3,
+          180.8
+         ],
+         [
+          622.9,
+          159.3
+         ],
+         [
+          599.9,
+          150.6
+         ],
+         [
+          592.6,
+          154.6
+         ],
+         [
+          590.0,
+          174.1
+         ],
+         [
+          559.1,
+          154.6
+         ],
+         [
+          525.0,
+          180.8
+         ],
+         [
+          476.3,
+          178.1
+         ],
+         [
+          468.5,
+          147.2
+         ],
+         [
+          485.5,
+          116.3
+         ],
+         [
+          499.3,
+          113.6
+         ],
+         [
+          528.9,
+          127.0
+         ],
+         [
+          546.6,
+          111.6
+         ],
+         [
+          572.9,
+          114.3
+         ],
+         [
+          576.2,
+          101.5
+         ],
+         [
+          568.3,
+          92.1
+         ],
+         [
+          540.1,
+          91.4
+         ],
+         [
+          500.0,
+          77.3
+         ]
+        ]
+       ]
+      },
+      {
+       "id": "north-pacific",
+       "name": "North Pacific",
+       "tags": [
+        "ocean",
+        "pacific"
+       ],
+       "anchor": [
+        55.2,
+        209.5
+       ],
+       "polygons": [
+        [
+         [
+          0.0,
+          52.4
+         ],
+         [
+          0.0,
+          286.3
+         ],
+         [
+          53.2,
+          264.8
+         ],
+         [
+          77.5,
+          265.5
+         ],
+         [
+          105.8,
+          277.6
+         ],
+         [
+          135.3,
+          278.3
+         ],
+         [
+          182.7,
+          321.3
+         ],
+         [
+          215.5,
+          335.4
+         ],
+         [
+          241.8,
+          336.7
+         ],
+         [
+          243.8,
+          319.9
+         ],
+         [
+          247.0,
+          293.1
+         ],
+         [
+          224.0,
+          272.9
+         ],
+         [
+          187.3,
+          268.2
+         ],
+         [
+          158.3,
+          256.8
+         ],
+         [
+          103.8,
+          183.5
+         ],
+         [
+          103.2,
+          162.7
+         ],
+         [
+          128.1,
+          118.3
+         ],
+         [
+          122.9,
+          75.3
+         ],
+         [
+          97.2,
+          67.2
+         ],
+         [
+          48.6,
+          82.7
+         ],
+         [
+          42.7,
+          65.2
+         ]
+        ],
+        [
+         [
+          967.1,
+          63.9
+         ],
+         [
+          979.6,
+          84.0
+         ],
+         [
+          960.6,
+          85.4
+         ],
+         [
+          947.4,
+          110.9
+         ],
+         [
+          958.6,
+          146.5
+         ],
+         [
+          972.4,
+          153.9
+         ],
+         [
+          969.8,
+          168.0
+         ],
+         [
+          984.9,
+          199.0
+         ],
+         [
+          986.9,
+          239.3
+         ],
+         [
+          970.4,
+          268.9
+         ],
+         [
+          926.4,
+          276.3
+         ],
+         [
+          960.6,
+          304.5
+         ],
+         [
+          1000.0,
+          313.2
+         ],
+         [
+          1000.0,
+          28.9
+         ]
+        ]
+       ]
+      },
+      {
+       "id": "south-america",
+       "name": "South America",
+       "tags": [
+        "land",
+        "c-sa",
+        "glyph-thorns"
+       ],
+       "anchor": [
+        322.1,
+        345.0
+       ],
+       "polygons": [
+        [
+         [
+          285.8,
+          289.7
+         ],
+         [
+          243.8,
+          319.9
+         ],
+         [
+          241.8,
+          336.7
+         ],
+         [
+          243.1,
+          354.2
+         ],
+         [
+          263.5,
+          366.3
+         ],
+         [
+          279.2,
+          393.2
+         ],
+         [
+          281.2,
+          409.3
+         ],
+         [
+          300.9,
+          428.2
+         ],
+         [
+          371.9,
+          442.3
+         ],
+         [
+          375.8,
+          436.2
+         ],
+         [
+          358.1,
+          427.5
+         ],
+         [
+          354.1,
+          410.7
+         ],
+         [
+          351.5,
+          401.9
+         ],
+         [
+          356.8,
+          394.6
+         ],
+         [
+          390.9,
+          389.2
+         ],
+         [
+          396.2,
+          374.4
+         ],
+         [
+          418.5,
+          361.6
+         ],
+         [
+          423.8,
+          337.4
+         ],
+         [
+          421.2,
+          326.0
+         ],
+         [
+          430.4,
+          305.8
+         ],
+         [
+          421.2,
+          299.8
+         ],
+         [
+          396.8,
+          293.1
+         ],
+         [
+          365.3,
+          293.7
+         ],
+         [
+          335.1,
+          281.6
+         ]
+        ]
+       ]
+      },
+      {
+       "id": "south-atlantic",
+       "name": "South Atlantic",
+       "tags": [
+        "ocean",
+        "atlantic"
+       ],
+       "anchor": [
+        497.7,
+        353.1
+       ],
+       "polygons": [
+        [
+         [
+          423.8,
+          337.4
+         ],
+         [
+          418.5,
+          361.6
+         ],
+         [
+          396.2,
+          374.4
+         ],
+         [
+          390.9,
+          389.2
+         ],
+         [
+          356.8,
+          394.6
+         ],
+         [
+          351.5,
+          401.9
+         ],
+         [
+          354.1,
+          410.7
+         ],
+         [
+          393.6,
+          416.7
+         ],
+         [
+          425.8,
+          436.9
+         ],
+         [
+          442.2,
+          440.3
+         ],
+         [
+          475.0,
+          410.0
+         ],
+         [
+          523.7,
+          408.7
+         ],
+         [
+          547.3,
+          416.7
+         ],
+         [
+          554.5,
+          406.7
+         ],
+         [
+          568.3,
+          402.6
+         ],
+         [
+          584.8,
+          408.7
+         ],
+         [
+          594.0,
+          424.1
+         ],
+         [
+          612.4,
+          428.8
+         ],
+         [
+          618.3,
+          440.9
+         ],
+         [
+          645.2,
+          437.6
+         ],
+         [
+          665.6,
+          445.0
+         ],
+         [
+          672.1,
+          455.0
+         ],
+         [
+          685.9,
+          459.1
+         ],
+         [
+          684.6,
+          471.9
+         ],
+         [
+          722.7,
+          476.6
+         ],
+         [
+          740.5,
+          473.2
+         ],
+         [
+          745.7,
+          459.8
+         ],
+         [
+          782.5,
+          457.1
+         ],
+         [
+          795.7,
+          463.1
+         ],
+         [
+          839.0,
+          463.8
+         ],
+         [
+          831.8,
+          451.7
+         ],
+         [
+          792.4,
+          435.6
+         ],
+         [
+          774.6,
+          401.3
+         ],
+         [
+          730.6,
+          434.2
+         ],
+         [
+          696.5,
+          430.9
+         ],
+         [
+          673.5,
+          414.0
+         ],
+         [
+          655.1,
+          414.0
+         ],
+         [
+          635.3,
+          395.9
+         ],
+         [
+          638.6,
+          358.3
+         ],
+         [
+          632.1,
+          346.2
+         ],
+         [
+          585.4,
+          342.8
+         ],
+         [
+          557.2,
+          334.1
+         ],
+         [
+          543.4,
+          320.6
+         ],
+         [
+          527.6,
+          285.7
+         ],
+         [
+          488.2,
+          293.7
+         ],
+         [
+          461.2,
+          309.2
+         ],
+         [
+          442.8,
+          331.4
+         ]
+        ]
+       ]
+      },
+      {
+       "id": "south-pacific",
+       "name": "South Pacific",
+       "tags": [
+        "ocean",
+        "pacific"
+       ],
+       "anchor": [
+        231.0,
+        434.2
+       ],
+       "polygons": [
+        [
+         [
+          105.8,
+          277.6
+         ],
+         [
+          111.7,
+          302.5
+         ],
+         [
+          128.8,
+          309.9
+         ],
+         [
+          134.7,
+          327.3
+         ],
+         [
+          168.9,
+          354.2
+         ],
+         [
+          182.0,
+          377.8
+         ],
+         [
+          182.7,
+          406.0
+         ],
+         [
+          136.0,
+          441.6
+         ],
+         [
+          115.6,
+          438.2
+         ],
+         [
+          100.5,
+          428.8
+         ],
+         [
+          92.0,
+          412.7
+         ],
+         [
+          80.8,
+          413.4
+         ],
+         [
+          80.2,
+          430.2
+         ],
+         [
+          26.3,
+          473.2
+         ],
+         [
+          22.3,
+          490.0
+         ],
+         [
+          424.4,
+          490.0
+         ],
+         [
+          442.2,
+          440.3
+         ],
+         [
+          425.8,
+          436.9
+         ],
+         [
+          393.6,
+          416.7
+         ],
+         [
+          354.1,
+          410.7
+         ],
+         [
+          358.1,
+          427.5
+         ],
+         [
+          375.8,
+          436.2
+         ],
+         [
+          371.9,
+          442.3
+         ],
+         [
+          300.9,
+          428.2
+         ],
+         [
+          281.2,
+          409.3
+         ],
+         [
+          279.2,
+          393.2
+         ],
+         [
+          263.5,
+          366.3
+         ],
+         [
+          243.1,
+          354.2
+         ],
+         [
+          241.8,
+          336.7
+         ],
+         [
+          215.5,
+          335.4
+         ],
+         [
+          182.7,
+          321.3
+         ],
+         [
+          135.3,
+          278.3
+         ]
+        ]
+       ]
+      }
+     ],
+     "edges": [
+      {
+       "from": "africa",
+       "to": "asia"
+      },
+      {
+       "from": "africa",
+       "to": "indian-ocean"
+      },
+      {
+       "from": "africa",
+       "to": "north-atlantic"
+      },
+      {
+       "from": "africa",
+       "to": "south-atlantic"
+      },
+      {
+       "from": "antarctica",
+       "to": "indian-ocean"
+      },
+      {
+       "from": "antarctica",
+       "to": "south-atlantic"
+      },
+      {
+       "from": "antarctica",
+       "to": "south-pacific"
+      },
+      {
+       "from": "arctic-ocean",
+       "to": "asia"
+      },
+      {
+       "from": "arctic-ocean",
+       "to": "europe"
+      },
+      {
+       "from": "arctic-ocean",
+       "to": "north-america"
+      },
+      {
+       "from": "arctic-ocean",
+       "to": "north-atlantic"
+      },
+      {
+       "from": "arctic-ocean",
+       "to": "north-pacific"
+      },
+      {
+       "from": "asia",
+       "to": "europe"
+      },
+      {
+       "from": "asia",
+       "to": "indian-ocean"
+      },
+      {
+       "from": "asia",
+       "to": "north-atlantic"
+      },
+      {
+       "from": "asia",
+       "to": "north-pacific"
+      },
+      {
+       "from": "australia",
+       "to": "indian-ocean"
+      },
+      {
+       "from": "australia",
+       "to": "south-pacific"
+      },
+      {
+       "from": "europe",
+       "to": "north-atlantic"
+      },
+      {
+       "from": "indian-ocean",
+       "to": "north-pacific"
+      },
+      {
+       "from": "indian-ocean",
+       "to": "south-atlantic"
+      },
+      {
+       "from": "indian-ocean",
+       "to": "south-pacific"
+      },
+      {
+       "from": "north-america",
+       "to": "north-atlantic"
+      },
+      {
+       "from": "north-america",
+       "to": "north-pacific"
+      },
+      {
+       "from": "north-america",
+       "to": "south-america"
+      },
+      {
+       "from": "north-atlantic",
+       "to": "south-america"
+      },
+      {
+       "from": "north-atlantic",
+       "to": "south-atlantic"
+      },
+      {
+       "from": "north-pacific",
+       "to": "south-america"
+      },
+      {
+       "from": "north-pacific",
+       "to": "south-pacific"
+      },
+      {
+       "from": "south-america",
+       "to": "south-atlantic"
+      },
+      {
+       "from": "south-america",
+       "to": "south-pacific"
+      },
+      {
+       "from": "south-atlantic",
+       "to": "south-pacific"
+      }
+     ]
+    },
+    "params": {
+     "starts": {
+      "cc": "asia",
+      "bg": "south-america"
+     },
+     "sigils": {
+      "sl": [
+       "north-america"
+      ]
+     }
+    },
+    "seats": [
+     {
+      "seat": 1,
+      "color": "green",
+      "label": "Great Cthulhu"
+     },
+     {
+      "seat": 2,
+      "color": "blue",
+      "label": "Crawling Chaos"
+     },
+     {
+      "seat": 3,
+      "color": "red",
+      "label": "Black Goat"
+     }
+    ],
+    "turn_order": {
+     "type": "round-robin",
+     "seats": [
+      1,
+      2,
+      3
+     ]
+    }
+   }
+  },
+  {
+   "id": "cthulhu-wars-5p",
+   "name": "Cthulhu Wars (5 players, 21-area map)",
+   "patch": {
+    "board": {
+     "style": "areas",
+     "canvas": {
+      "width": 1000,
+      "height": 490
+     },
+     "positions": [
+      {
+       "id": "antarctica",
+       "name": "Antarctica",
+       "tags": [
+        "land",
+        "c-ice"
+       ],
+       "anchor": [
+        498.3,
+        450.8
+       ],
+       "polygons": [
+        [
+         [
+          728.1,
+          490.0
+         ],
+         [
+          717.2,
+          473.9
+         ],
+         [
+          679.1,
+          458.6
+         ],
+         [
+          666.9,
+          446.7
+         ],
+         [
+          622.7,
+          444.6
+         ],
+         [
+          610.5,
+          433.5
+         ],
+         [
+          596.2,
+          431.4
+         ],
+         [
+          588.7,
+          412.5
+         ],
+         [
+          579.2,
+          406.9
+         ],
+         [
+          562.2,
+          407.6
+         ],
+         [
+          552.7,
+          417.4
+         ],
+         [
+          481.3,
+          409.7
+         ],
+         [
+          465.7,
+          420.9
+         ],
+         [
+          456.2,
+          437.6
+         ],
+         [
+          437.1,
+          445.3
+         ],
+         [
+          424.9,
+          471.2
+         ],
+         [
+          426.9,
+          490.0
+         ]
+        ],
+        [
+         [
+          821.9,
+          463.5
+         ],
+         [
+          753.9,
+          464.9
+         ],
+         [
+          736.9,
+          490.0
+         ],
+         [
+          868.8,
+          490.0
+         ],
+         [
+          856.6,
+          473.2
+         ]
+        ]
+       ]
+      },
+      {
+       "id": "arabia",
+       "name": "Arabia",
+       "tags": [
+        "land",
+        "c-me",
+        "glyph-chevron"
+       ],
+       "anchor": [
+        804.0,
+        231.7
+       ],
+       "polygons": [
+        [
+         [
+          902.8,
+          272.9
+         ],
+         [
+          901.4,
+          259.7
+         ],
+         [
+          865.4,
+          217.1
+         ],
+         [
+          866.8,
+          169.6
+         ],
+         [
+          852.5,
+          131.9
+         ],
+         [
+          815.1,
+          142.4
+         ],
+         [
+          798.1,
+          156.4
+         ],
+         [
+          769.5,
+          155.0
+         ],
+         [
+          752.5,
+          173.8
+         ],
+         [
+          741.0,
+          208.7
+         ],
+         [
+          742.4,
+          219.9
+         ],
+         [
+          717.9,
+          249.9
+         ],
+         [
+          737.6,
+          275.7
+         ],
+         [
+          770.2,
+          284.8
+         ],
+         [
+          789.9,
+          314.8
+         ],
+         [
+          830.0,
+          323.2
+         ],
+         [
+          849.1,
+          286.9
+         ],
+         [
+          868.1,
+          276.4
+         ]
+        ]
+       ]
+      },
+      {
+       "id": "arctic-ocean",
+       "name": "Arctic Ocean",
+       "tags": [
+        "ocean",
+        "arctic"
+       ],
+       "anchor": [
+        433.1,
+        41.5
+       ],
+       "polygons": [
+        [
+         [
+          40.1,
+          68.4
+         ],
+         [
+          58.5,
+          59.3
+         ],
+         [
+          65.3,
+          47.5
+         ],
+         [
+          98.6,
+          32.8
+         ],
+         [
+          150.9,
+          29.3
+         ],
+         [
+          182.2,
+          40.5
+         ],
+         [
+          315.4,
+          32.1
+         ],
+         [
+          324.9,
+          41.2
+         ],
+         [
+          322.2,
+          52.4
+         ],
+         [
+          291.0,
+          74.0
+         ],
+         [
+          314.1,
+          97.7
+         ],
+         [
+          351.5,
+          80.3
+         ],
+         [
+          369.1,
+          53.7
+         ],
+         [
+          399.0,
+          66.3
+         ],
+         [
+          414.7,
+          87.3
+         ],
+         [
+          482.7,
+          74.0
+         ],
+         [
+          560.2,
+          82.4
+         ],
+         [
+          567.0,
+          69.1
+         ],
+         [
+          592.1,
+          72.6
+         ],
+         [
+          632.9,
+          49.6
+         ],
+         [
+          668.3,
+          60.0
+         ],
+         [
+          684.6,
+          43.3
+         ],
+         [
+          679.8,
+          24.4
+         ],
+         [
+          692.0,
+          17.5
+         ],
+         [
+          713.8,
+          21.6
+         ],
+         [
+          726.0,
+          41.2
+         ],
+         [
+          790.6,
+          57.2
+         ],
+         [
+          817.8,
+          39.8
+         ],
+         [
+          869.5,
+          49.6
+         ],
+         [
+          893.9,
+          35.6
+         ],
+         [
+          920.5,
+          37.0
+         ],
+         [
+          923.9,
+          20.2
+         ],
+         [
+          933.4,
+          17.5
+         ],
+         [
+          962.6,
+          54.4
+         ],
+         [
+          973.5,
+          58.6
+         ],
+         [
+          1000.0,
+          30.0
+         ],
+         [
+          1000.0,
+          0.0
+         ],
+         [
+          0.0,
+          0.0
+         ],
+         [
+          0.0,
+          55.1
+         ]
+        ]
+       ]
+      },
+      {
+       "id": "australia",
+       "name": "Australia",
+       "tags": [
+        "land",
+        "c-au",
+        "glyph-dragon"
+       ],
+       "anchor": [
+        52.0,
+        369.6
+       ],
+       "polygons": [
+        [
+         [
+          75.5,
+          409.7
+         ],
+         [
+          85.7,
+          396.5
+         ],
+         [
+          106.1,
+          388.8
+         ],
+         [
+          120.3,
+          367.2
+         ],
+         [
+          116.2,
+          347.6
+         ],
+         [
+          80.2,
+          313.4
+         ],
+         [
+          58.5,
+          309.2
+         ],
+         [
+          38.7,
+          327.4
+         ],
+         [
+          19.0,
+          335.0
+         ],
+         [
+          10.9,
+          346.9
+         ],
+         [
+          8.2,
+          371.3
+         ],
+         [
+          17.0,
+          419.5
+         ]
+        ]
+       ]
+      },
+      {
+       "id": "central-america",
+       "name": "Central America",
+       "tags": [
+        "land",
+        "c-na",
+        "glyph-thorns"
+       ],
+       "anchor": [
+        174.2,
+        227.3
+       ],
+       "polygons": [
+        [
+         [
+          106.1,
+          180.1
+         ],
+         [
+          108.1,
+          210.1
+         ],
+         [
+          118.3,
+          227.5
+         ],
+         [
+          137.3,
+          229.6
+         ],
+         [
+          150.9,
+          255.5
+         ],
+         [
+          222.3,
+          277.1
+         ],
+         [
+          247.5,
+          312.0
+         ],
+         [
+          260.4,
+          309.2
+         ],
+         [
+          278.7,
+          291.1
+         ],
+         [
+          246.1,
+          284.1
+         ],
+         [
+          233.2,
+          245.7
+         ],
+         [
+          210.1,
+          244.3
+         ],
+         [
+          206.7,
+          212.2
+         ],
+         [
+          172.7,
+          176.6
+         ],
+         [
+          159.8,
+          171.0
+         ],
+         [
+          127.1,
+          168.2
+         ]
+        ]
+       ]
+      },
+      {
+       "id": "east-africa",
+       "name": "East Africa",
+       "tags": [
+        "land",
+        "c-af",
+        "glyph-chevron"
+       ],
+       "anchor": [
+        726.7,
+        360.0
+       ],
+       "polygons": [
+        [
+         [
+          777.7,
+          404.1
+         ],
+         [
+          789.3,
+          387.4
+         ],
+         [
+          792.0,
+          361.6
+         ],
+         [
+          821.2,
+          342.7
+         ],
+         [
+          830.0,
+          323.2
+         ],
+         [
+          789.9,
+          314.8
+         ],
+         [
+          770.2,
+          284.8
+         ],
+         [
+          737.6,
+          275.7
+         ],
+         [
+          678.5,
+          309.2
+         ],
+         [
+          662.8,
+          342.7
+         ],
+         [
+          639.0,
+          358.1
+         ],
+         [
+          651.3,
+          405.5
+         ],
+         [
+          693.4,
+          423.7
+         ],
+         [
+          700.9,
+          437.6
+         ],
+         [
+          735.6,
+          435.6
+         ]
+        ]
+       ]
+      },
+      {
+       "id": "europe",
+       "name": "Europe",
+       "tags": [
+        "land",
+        "c-eu",
+        "glyph-chevron"
+       ],
+       "anchor": [
+        717.6,
+        152.3
+       ],
+       "polygons": [
+        [
+         [
+          760.7,
+          111.0
+         ],
+         [
+          737.6,
+          101.9
+         ],
+         [
+          713.1,
+          106.1
+         ],
+         [
+          696.1,
+          116.6
+         ],
+         [
+          652.6,
+          122.8
+         ],
+         [
+          606.4,
+          103.3
+         ],
+         [
+          579.2,
+          106.8
+         ],
+         [
+          573.8,
+          113.8
+         ],
+         [
+          537.7,
+          122.8
+         ],
+         [
+          475.9,
+          118.7
+         ],
+         [
+          464.3,
+          159.8
+         ],
+         [
+          465.0,
+          186.4
+         ],
+         [
+          533.7,
+          184.3
+         ],
+         [
+          552.0,
+          164.0
+         ],
+         [
+          569.0,
+          157.7
+         ],
+         [
+          598.9,
+          184.3
+         ],
+         [
+          609.8,
+          179.4
+         ],
+         [
+          613.9,
+          163.3
+         ],
+         [
+          620.7,
+          163.3
+         ],
+         [
+          639.7,
+          181.5
+         ],
+         [
+          696.1,
+          187.1
+         ],
+         [
+          714.5,
+          204.5
+         ],
+         [
+          741.0,
+          208.7
+         ],
+         [
+          752.5,
+          173.8
+         ],
+         [
+          769.5,
+          155.0
+         ],
+         [
+          758.7,
+          146.6
+         ],
+         [
+          755.3,
+          125.6
+         ]
+        ]
+       ]
+      },
+      {
+       "id": "indian-ocean",
+       "name": "Indian Ocean",
+       "tags": [
+        "ocean",
+        "indian"
+       ],
+       "anchor": [
+        904.5,
+        390.1
+       ],
+       "polygons": [
+        [
+         [
+          777.7,
+          404.1
+         ],
+         [
+          790.6,
+          432.1
+         ],
+         [
+          821.9,
+          463.5
+         ],
+         [
+          856.6,
+          473.2
+         ],
+         [
+          868.8,
+          490.0
+         ],
+         [
+          1000.0,
+          490.0
+         ],
+         [
+          1000.0,
+          314.8
+         ],
+         [
+          943.6,
+          291.8
+         ],
+         [
+          927.9,
+          273.6
+         ],
+         [
+          902.8,
+          272.9
+         ],
+         [
+          868.1,
+          276.4
+         ],
+         [
+          849.1,
+          286.9
+         ],
+         [
+          830.0,
+          323.2
+         ],
+         [
+          821.2,
+          342.7
+         ],
+         [
+          792.0,
+          361.6
+         ],
+         [
+          789.3,
+          387.4
+         ]
+        ],
+        [
+         [
+          75.5,
+          409.7
+         ],
+         [
+          17.0,
+          419.5
+         ],
+         [
+          8.2,
+          371.3
+         ],
+         [
+          10.9,
+          346.9
+         ],
+         [
+          19.0,
+          335.0
+         ],
+         [
+          38.7,
+          327.4
+         ],
+         [
+          58.5,
+          309.2
+         ],
+         [
+          80.2,
+          313.4
+         ],
+         [
+          105.4,
+          303.6
+         ],
+         [
+          99.9,
+          277.1
+         ],
+         [
+          76.8,
+          270.1
+         ],
+         [
+          46.9,
+          272.2
+         ],
+         [
+          0.0,
+          291.1
+         ],
+         [
+          0.0,
+          490.0
+         ],
+         [
+          29.9,
+          490.0
+         ],
+         [
+          61.9,
+          446.7
+         ],
+         [
+          91.1,
+          424.4
+         ]
+        ]
+       ]
+      },
+      {
+       "id": "new-zealand",
+       "name": "New Zealand",
+       "tags": [
+        "land",
+        "c-au",
+        "glyph-dragon"
+       ],
+       "anchor": [
+        145.2,
+        395.4
+       ],
+       "polygons": [
+        [
+         [
+          80.2,
+          313.4
+         ],
+         [
+          116.2,
+          347.6
+         ],
+         [
+          120.3,
+          367.2
+         ],
+         [
+          106.1,
+          388.8
+         ],
+         [
+          85.7,
+          396.5
+         ],
+         [
+          75.5,
+          409.7
+         ],
+         [
+          91.1,
+          424.4
+         ],
+         [
+          108.1,
+          442.5
+         ],
+         [
+          136.0,
+          446.0
+         ],
+         [
+          174.0,
+          418.8
+         ],
+         [
+          184.9,
+          394.4
+         ],
+         [
+          170.6,
+          341.3
+         ],
+         [
+          157.7,
+          332.3
+         ],
+         [
+          138.0,
+          330.2
+         ],
+         [
+          119.6,
+          309.2
+         ],
+         [
+          105.4,
+          303.6
+         ]
+        ]
+       ]
+      },
+      {
+       "id": "north-america-east",
+       "name": "North America East",
+       "tags": [
+        "land",
+        "c-na",
+        "glyph-thorns"
+       ],
+       "anchor": [
+        311.6,
+        130.3
+       ],
+       "polygons": [
+        [
+         [
+          182.2,
+          40.5
+         ],
+         [
+          187.6,
+          51.0
+         ],
+         [
+          224.3,
+          68.4
+         ],
+         [
+          252.2,
+          93.5
+         ],
+         [
+          303.9,
+          182.2
+         ],
+         [
+          317.5,
+          179.4
+         ],
+         [
+          333.1,
+          155.7
+         ],
+         [
+          374.6,
+          129.8
+         ],
+         [
+          381.4,
+          106.8
+         ],
+         [
+          408.6,
+          99.8
+         ],
+         [
+          414.7,
+          87.3
+         ],
+         [
+          399.0,
+          66.3
+         ],
+         [
+          369.1,
+          53.7
+         ],
+         [
+          351.5,
+          80.3
+         ],
+         [
+          314.1,
+          97.7
+         ],
+         [
+          291.0,
+          74.0
+         ],
+         [
+          322.2,
+          52.4
+         ],
+         [
+          324.9,
+          41.2
+         ],
+         [
+          315.4,
+          32.1
+         ]
+        ]
+       ]
+      },
+      {
+       "id": "north-america-west",
+       "name": "North America West",
+       "tags": [
+        "land",
+        "c-na",
+        "glyph-thorns"
+       ],
+       "anchor": [
+        186.9,
+        117.1
+       ],
+       "polygons": [
+        [
+         [
+          303.9,
+          182.2
+         ],
+         [
+          252.2,
+          93.5
+         ],
+         [
+          224.3,
+          68.4
+         ],
+         [
+          187.6,
+          51.0
+         ],
+         [
+          182.2,
+          40.5
+         ],
+         [
+          150.9,
+          29.3
+         ],
+         [
+          98.6,
+          32.8
+         ],
+         [
+          65.3,
+          47.5
+         ],
+         [
+          58.5,
+          59.3
+         ],
+         [
+          40.1,
+          68.4
+         ],
+         [
+          42.8,
+          85.2
+         ],
+         [
+          96.5,
+          71.2
+         ],
+         [
+          119.0,
+          77.5
+         ],
+         [
+          127.8,
+          106.8
+         ],
+         [
+          99.3,
+          161.9
+         ],
+         [
+          106.1,
+          180.1
+         ],
+         [
+          127.1,
+          168.2
+         ],
+         [
+          159.8,
+          171.0
+         ],
+         [
+          172.7,
+          176.6
+         ],
+         [
+          206.7,
+          212.2
+         ],
+         [
+          262.4,
+          200.3
+         ],
+         [
+          288.2,
+          203.1
+         ]
+        ]
+       ]
+      },
+      {
+       "id": "north-asia",
+       "name": "North Asia",
+       "tags": [
+        "land",
+        "c-as",
+        "glyph-dragon"
+       ],
+       "anchor": [
+        827.8,
+        89.6
+       ],
+       "polygons": [
+        [
+         [
+          852.5,
+          131.9
+         ],
+         [
+          886.5,
+          111.0
+         ],
+         [
+          917.7,
+          112.4
+         ],
+         [
+          927.9,
+          122.8
+         ],
+         [
+          959.2,
+          125.6
+         ],
+         [
+          953.1,
+          97.7
+         ],
+         [
+          963.3,
+          81.7
+         ],
+         [
+          984.4,
+          78.2
+         ],
+         [
+          973.5,
+          58.6
+         ],
+         [
+          962.6,
+          54.4
+         ],
+         [
+          933.4,
+          17.5
+         ],
+         [
+          923.9,
+          20.2
+         ],
+         [
+          920.5,
+          37.0
+         ],
+         [
+          893.9,
+          35.6
+         ],
+         [
+          869.5,
+          49.6
+         ],
+         [
+          817.8,
+          39.8
+         ],
+         [
+          790.6,
+          57.2
+         ],
+         [
+          769.5,
+          104.7
+         ],
+         [
+          760.7,
+          111.0
+         ],
+         [
+          755.3,
+          125.6
+         ],
+         [
+          758.7,
+          146.6
+         ],
+         [
+          769.5,
+          155.0
+         ],
+         [
+          798.1,
+          156.4
+         ],
+         [
+          815.1,
+          142.4
+         ]
+        ]
+       ]
+      },
+      {
+       "id": "north-atlantic",
+       "name": "North Atlantic",
+       "tags": [
+        "ocean",
+        "atlantic"
+       ],
+       "anchor": [
+        389.3,
+        220.0
+       ],
+       "polygons": [
+        [
+         [
+          287.6,
+          291.1
+         ],
+         [
+          297.8,
+          285.5
+         ],
+         [
+          335.1,
+          286.2
+         ],
+         [
+          362.3,
+          299.4
+         ],
+         [
+          421.5,
+          307.1
+         ],
+         [
+          426.9,
+          313.4
+         ],
+         [
+          420.1,
+          331.6
+         ],
+         [
+          422.8,
+          342.0
+         ],
+         [
+          488.8,
+          298.0
+         ],
+         [
+          534.3,
+          286.2
+         ],
+         [
+          584.0,
+          224.1
+         ],
+         [
+          632.2,
+          208.7
+         ],
+         [
+          666.2,
+          210.1
+         ],
+         [
+          670.3,
+          222.7
+         ],
+         [
+          692.0,
+          231.0
+         ],
+         [
+          702.2,
+          247.8
+         ],
+         [
+          717.9,
+          249.9
+         ],
+         [
+          742.4,
+          219.9
+         ],
+         [
+          741.0,
+          208.7
+         ],
+         [
+          714.5,
+          204.5
+         ],
+         [
+          696.1,
+          187.1
+         ],
+         [
+          639.7,
+          181.5
+         ],
+         [
+          620.7,
+          163.3
+         ],
+         [
+          613.9,
+          163.3
+         ],
+         [
+          609.8,
+          179.4
+         ],
+         [
+          598.9,
+          184.3
+         ],
+         [
+          569.0,
+          157.7
+         ],
+         [
+          552.0,
+          164.0
+         ],
+         [
+          533.7,
+          184.3
+         ],
+         [
+          465.0,
+          186.4
+         ],
+         [
+          464.3,
+          159.8
+         ],
+         [
+          475.9,
+          118.7
+         ],
+         [
+          537.7,
+          122.8
+         ],
+         [
+          573.8,
+          113.8
+         ],
+         [
+          579.2,
+          106.8
+         ],
+         [
+          560.2,
+          82.4
+         ],
+         [
+          482.7,
+          74.0
+         ],
+         [
+          414.7,
+          87.3
+         ],
+         [
+          408.6,
+          99.8
+         ],
+         [
+          381.4,
+          106.8
+         ],
+         [
+          374.6,
+          129.8
+         ],
+         [
+          333.1,
+          155.7
+         ],
+         [
+          317.5,
+          179.4
+         ],
+         [
+          303.9,
+          182.2
+         ],
+         [
+          288.2,
+          203.1
+         ],
+         [
+          262.4,
+          200.3
+         ],
+         [
+          206.7,
+          212.2
+         ],
+         [
+          210.1,
+          244.3
+         ],
+         [
+          233.2,
+          245.7
+         ],
+         [
+          246.1,
+          284.1
+         ],
+         [
+          278.7,
+          291.1
+         ]
+        ]
+       ]
+      },
+      {
+       "id": "north-pacific",
+       "name": "North Pacific",
+       "tags": [
+        "ocean",
+        "pacific"
+       ],
+       "anchor": [
+        54.5,
+        217.1
+       ],
+       "polygons": [
+        [
+         [
+          247.5,
+          312.0
+         ],
+         [
+          222.3,
+          277.1
+         ],
+         [
+          150.9,
+          255.5
+         ],
+         [
+          137.3,
+          229.6
+         ],
+         [
+          118.3,
+          227.5
+         ],
+         [
+          108.1,
+          210.1
+         ],
+         [
+          106.1,
+          180.1
+         ],
+         [
+          99.3,
+          161.9
+         ],
+         [
+          127.8,
+          106.8
+         ],
+         [
+          119.0,
+          77.5
+         ],
+         [
+          96.5,
+          71.2
+         ],
+         [
+          42.8,
+          85.2
+         ],
+         [
+          40.1,
+          68.4
+         ],
+         [
+          0.0,
+          55.1
+         ],
+         [
+          0.0,
+          291.1
+         ],
+         [
+          46.9,
+          272.2
+         ],
+         [
+          76.8,
+          270.1
+         ],
+         [
+          99.9,
+          277.1
+         ],
+         [
+          115.6,
+          277.8
+         ],
+         [
+          145.5,
+          292.5
+         ],
+         [
+          197.8,
+          330.9
+         ],
+         [
+          240.7,
+          334.3
+         ]
+        ],
+        [
+         [
+          1000.0,
+          314.8
+         ],
+         [
+          1000.0,
+          30.0
+         ],
+         [
+          973.5,
+          58.6
+         ],
+         [
+          984.4,
+          78.2
+         ],
+         [
+          963.3,
+          81.7
+         ],
+         [
+          953.1,
+          97.7
+         ],
+         [
+          959.2,
+          125.6
+         ],
+         [
+          981.0,
+          148.0
+         ],
+         [
+          993.9,
+          211.5
+         ],
+         [
+          992.5,
+          240.8
+         ],
+         [
+          984.4,
+          261.1
+         ],
+         [
+          967.4,
+          275.0
+         ],
+         [
+          944.9,
+          269.4
+         ],
+         [
+          927.9,
+          273.6
+         ],
+         [
+          943.6,
+          291.8
+         ]
+        ]
+       ]
+      },
+      {
+       "id": "scandinavia",
+       "name": "Scandinavia",
+       "tags": [
+        "land",
+        "c-eu",
+        "glyph-chevron"
+       ],
+       "anchor": [
+        706.9,
+        71.1
+       ],
+       "polygons": [
+        [
+         [
+          579.2,
+          106.8
+         ],
+         [
+          606.4,
+          103.3
+         ],
+         [
+          652.6,
+          122.8
+         ],
+         [
+          696.1,
+          116.6
+         ],
+         [
+          713.1,
+          106.1
+         ],
+         [
+          737.6,
+          101.9
+         ],
+         [
+          760.7,
+          111.0
+         ],
+         [
+          769.5,
+          104.7
+         ],
+         [
+          790.6,
+          57.2
+         ],
+         [
+          726.0,
+          41.2
+         ],
+         [
+          713.8,
+          21.6
+         ],
+         [
+          692.0,
+          17.5
+         ],
+         [
+          679.8,
+          24.4
+         ],
+         [
+          684.6,
+          43.3
+         ],
+         [
+          668.3,
+          60.0
+         ],
+         [
+          632.9,
+          49.6
+         ],
+         [
+          592.1,
+          72.6
+         ],
+         [
+          567.0,
+          69.1
+         ],
+         [
+          560.2,
+          82.4
+         ]
+        ]
+       ]
+      },
+      {
+       "id": "south-america-east",
+       "name": "South America East",
+       "tags": [
+        "land",
+        "c-sa",
+        "glyph-thorns"
+       ],
+       "anchor": [
+        377.4,
+        343.2
+       ],
+       "polygons": [
+        [
+         [
+          422.8,
+          342.0
+         ],
+         [
+          420.1,
+          331.6
+         ],
+         [
+          426.9,
+          313.4
+         ],
+         [
+          421.5,
+          307.1
+         ],
+         [
+          362.3,
+          299.4
+         ],
+         [
+          335.1,
+          286.2
+         ],
+         [
+          297.8,
+          285.5
+         ],
+         [
+          287.6,
+          291.1
+         ],
+         [
+          297.8,
+          308.5
+         ],
+         [
+          325.6,
+          322.5
+         ],
+         [
+          354.9,
+          404.1
+         ],
+         [
+          390.9,
+          397.2
+         ],
+         [
+          396.3,
+          381.1
+         ],
+         [
+          418.1,
+          367.2
+         ]
+        ]
+       ]
+      },
+      {
+       "id": "south-america-west",
+       "name": "South America West",
+       "tags": [
+        "land",
+        "c-sa",
+        "glyph-thorns"
+       ],
+       "anchor": [
+        294.8,
+        350.3
+       ],
+       "polygons": [
+        [
+         [
+          247.5,
+          312.0
+         ],
+         [
+          240.7,
+          334.3
+         ],
+         [
+          244.7,
+          358.8
+         ],
+         [
+          262.4,
+          370.6
+         ],
+         [
+          288.9,
+          423.7
+         ],
+         [
+          356.2,
+          441.1
+         ],
+         [
+          361.7,
+          434.9
+         ],
+         [
+          351.5,
+          423.0
+         ],
+         [
+          354.2,
+          410.4
+         ],
+         [
+          354.9,
+          404.1
+         ],
+         [
+          325.6,
+          322.5
+         ],
+         [
+          297.8,
+          308.5
+         ],
+         [
+          287.6,
+          291.1
+         ],
+         [
+          278.7,
+          291.1
+         ],
+         [
+          260.4,
+          309.2
+         ]
+        ]
+       ]
+      },
+      {
+       "id": "south-asia",
+       "name": "South Asia",
+       "tags": [
+        "land",
+        "c-as",
+        "glyph-dragon"
+       ],
+       "anchor": [
+        927.7,
+        194.9
+       ],
+       "polygons": [
+        [
+         [
+          959.2,
+          125.6
+         ],
+         [
+          927.9,
+          122.8
+         ],
+         [
+          917.7,
+          112.4
+         ],
+         [
+          886.5,
+          111.0
+         ],
+         [
+          852.5,
+          131.9
+         ],
+         [
+          866.8,
+          169.6
+         ],
+         [
+          865.4,
+          217.1
+         ],
+         [
+          901.4,
+          259.7
+         ],
+         [
+          902.8,
+          272.9
+         ],
+         [
+          927.9,
+          273.6
+         ],
+         [
+          944.9,
+          269.4
+         ],
+         [
+          967.4,
+          275.0
+         ],
+         [
+          984.4,
+          261.1
+         ],
+         [
+          992.5,
+          240.8
+         ],
+         [
+          993.9,
+          211.5
+         ],
+         [
+          981.0,
+          148.0
+         ]
+        ]
+       ]
+      },
+      {
+       "id": "south-atlantic",
+       "name": "South Atlantic",
+       "tags": [
+        "ocean",
+        "atlantic"
+       ],
+       "anchor": [
+        504.5,
+        355.7
+       ],
+       "polygons": [
+        [
+         [
+          821.9,
+          463.5
+         ],
+         [
+          790.6,
+          432.1
+         ],
+         [
+          777.7,
+          404.1
+         ],
+         [
+          735.6,
+          435.6
+         ],
+         [
+          700.9,
+          437.6
+         ],
+         [
+          693.4,
+          423.7
+         ],
+         [
+          651.3,
+          405.5
+         ],
+         [
+          639.0,
+          358.1
+         ],
+         [
+          622.0,
+          349.0
+         ],
+         [
+          567.0,
+          339.2
+         ],
+         [
+          545.2,
+          316.2
+         ],
+         [
+          534.3,
+          286.2
+         ],
+         [
+          488.8,
+          298.0
+         ],
+         [
+          422.8,
+          342.0
+         ],
+         [
+          418.1,
+          367.2
+         ],
+         [
+          396.3,
+          381.1
+         ],
+         [
+          390.9,
+          397.2
+         ],
+         [
+          354.9,
+          404.1
+         ],
+         [
+          354.2,
+          410.4
+         ],
+         [
+          437.1,
+          445.3
+         ],
+         [
+          456.2,
+          437.6
+         ],
+         [
+          465.7,
+          420.9
+         ],
+         [
+          481.3,
+          409.7
+         ],
+         [
+          552.7,
+          417.4
+         ],
+         [
+          562.2,
+          407.6
+         ],
+         [
+          579.2,
+          406.9
+         ],
+         [
+          588.7,
+          412.5
+         ],
+         [
+          596.2,
+          431.4
+         ],
+         [
+          610.5,
+          433.5
+         ],
+         [
+          622.7,
+          444.6
+         ],
+         [
+          666.9,
+          446.7
+         ],
+         [
+          679.1,
+          458.6
+         ],
+         [
+          717.2,
+          473.9
+         ],
+         [
+          728.1,
+          490.0
+         ],
+         [
+          736.9,
+          490.0
+         ],
+         [
+          753.9,
+          464.9
+         ]
+        ]
+       ]
+      },
+      {
+       "id": "south-pacific",
+       "name": "South Pacific",
+       "tags": [
+        "ocean",
+        "pacific"
+       ],
+       "anchor": [
+        229.9,
+        433.3
+       ],
+       "polygons": [
+        [
+         [
+          354.2,
+          410.4
+         ],
+         [
+          351.5,
+          423.0
+         ],
+         [
+          361.7,
+          434.9
+         ],
+         [
+          356.2,
+          441.1
+         ],
+         [
+          288.9,
+          423.7
+         ],
+         [
+          262.4,
+          370.6
+         ],
+         [
+          244.7,
+          358.8
+         ],
+         [
+          240.7,
+          334.3
+         ],
+         [
+          197.8,
+          330.9
+         ],
+         [
+          145.5,
+          292.5
+         ],
+         [
+          115.6,
+          277.8
+         ],
+         [
+          99.9,
+          277.1
+         ],
+         [
+          105.4,
+          303.6
+         ],
+         [
+          119.6,
+          309.2
+         ],
+         [
+          138.0,
+          330.2
+         ],
+         [
+          157.7,
+          332.3
+         ],
+         [
+          170.6,
+          341.3
+         ],
+         [
+          184.9,
+          394.4
+         ],
+         [
+          174.0,
+          418.8
+         ],
+         [
+          136.0,
+          446.0
+         ],
+         [
+          108.1,
+          442.5
+         ],
+         [
+          91.1,
+          424.4
+         ],
+         [
+          61.9,
+          446.7
+         ],
+         [
+          29.9,
+          490.0
+         ],
+         [
+          426.9,
+          490.0
+         ],
+         [
+          424.9,
+          471.2
+         ],
+         [
+          437.1,
+          445.3
+         ]
+        ]
+       ]
+      },
+      {
+       "id": "west-africa",
+       "name": "West Africa",
+       "tags": [
+        "land",
+        "c-af",
+        "glyph-chevron"
+       ],
+       "anchor": [
+        619.7,
+        283.0
+       ],
+       "polygons": [
+        [
+         [
+          717.9,
+          249.9
+         ],
+         [
+          702.2,
+          247.8
+         ],
+         [
+          692.0,
+          231.0
+         ],
+         [
+          670.3,
+          222.7
+         ],
+         [
+          666.2,
+          210.1
+         ],
+         [
+          632.2,
+          208.7
+         ],
+         [
+          584.0,
+          224.1
+         ],
+         [
+          534.3,
+          286.2
+         ],
+         [
+          545.2,
+          316.2
+         ],
+         [
+          567.0,
+          339.2
+         ],
+         [
+          622.0,
+          349.0
+         ],
+         [
+          639.0,
+          358.1
+         ],
+         [
+          662.8,
+          342.7
+         ],
+         [
+          678.5,
+          309.2
+         ],
+         [
+          737.6,
+          275.7
+         ]
+        ]
+       ]
+      }
+     ],
+     "edges": [
+      {
+       "from": "antarctica",
+       "to": "indian-ocean"
+      },
+      {
+       "from": "antarctica",
+       "to": "south-atlantic"
+      },
+      {
+       "from": "antarctica",
+       "to": "south-pacific"
+      },
+      {
+       "from": "arabia",
+       "to": "east-africa"
+      },
+      {
+       "from": "arabia",
+       "to": "europe"
+      },
+      {
+       "from": "arabia",
+       "to": "indian-ocean"
+      },
+      {
+       "from": "arabia",
+       "to": "north-asia"
+      },
+      {
+       "from": "arabia",
+       "to": "north-atlantic"
+      },
+      {
+       "from": "arabia",
+       "to": "south-asia"
+      },
+      {
+       "from": "arabia",
+       "to": "west-africa"
+      },
+      {
+       "from": "arctic-ocean",
+       "to": "north-america-east"
+      },
+      {
+       "from": "arctic-ocean",
+       "to": "north-america-west"
+      },
+      {
+       "from": "arctic-ocean",
+       "to": "north-asia"
+      },
+      {
+       "from": "arctic-ocean",
+       "to": "north-atlantic"
+      },
+      {
+       "from": "arctic-ocean",
+       "to": "north-pacific"
+      },
+      {
+       "from": "arctic-ocean",
+       "to": "scandinavia"
+      },
+      {
+       "from": "australia",
+       "to": "indian-ocean"
+      },
+      {
+       "from": "australia",
+       "to": "new-zealand"
+      },
+      {
+       "from": "central-america",
+       "to": "north-america-west"
+      },
+      {
+       "from": "central-america",
+       "to": "north-atlantic"
+      },
+      {
+       "from": "central-america",
+       "to": "north-pacific"
+      },
+      {
+       "from": "central-america",
+       "to": "south-america-west"
+      },
+      {
+       "from": "east-africa",
+       "to": "indian-ocean"
+      },
+      {
+       "from": "east-africa",
+       "to": "south-atlantic"
+      },
+      {
+       "from": "east-africa",
+       "to": "west-africa"
+      },
+      {
+       "from": "europe",
+       "to": "north-asia"
+      },
+      {
+       "from": "europe",
+       "to": "north-atlantic"
+      },
+      {
+       "from": "europe",
+       "to": "scandinavia"
+      },
+      {
+       "from": "indian-ocean",
+       "to": "new-zealand"
+      },
+      {
+       "from": "indian-ocean",
+       "to": "north-pacific"
+      },
+      {
+       "from": "indian-ocean",
+       "to": "south-asia"
+      },
+      {
+       "from": "indian-ocean",
+       "to": "south-atlantic"
+      },
+      {
+       "from": "indian-ocean",
+       "to": "south-pacific"
+      },
+      {
+       "from": "new-zealand",
+       "to": "south-pacific"
+      },
+      {
+       "from": "north-america-east",
+       "to": "north-america-west"
+      },
+      {
+       "from": "north-america-east",
+       "to": "north-atlantic"
+      },
+      {
+       "from": "north-america-west",
+       "to": "north-atlantic"
+      },
+      {
+       "from": "north-america-west",
+       "to": "north-pacific"
+      },
+      {
+       "from": "north-asia",
+       "to": "north-pacific"
+      },
+      {
+       "from": "north-asia",
+       "to": "scandinavia"
+      },
+      {
+       "from": "north-asia",
+       "to": "south-asia"
+      },
+      {
+       "from": "north-atlantic",
+       "to": "scandinavia"
+      },
+      {
+       "from": "north-atlantic",
+       "to": "south-america-east"
+      },
+      {
+       "from": "north-atlantic",
+       "to": "south-america-west"
+      },
+      {
+       "from": "north-atlantic",
+       "to": "south-atlantic"
+      },
+      {
+       "from": "north-atlantic",
+       "to": "west-africa"
+      },
+      {
+       "from": "north-pacific",
+       "to": "south-america-west"
+      },
+      {
+       "from": "north-pacific",
+       "to": "south-asia"
+      },
+      {
+       "from": "north-pacific",
+       "to": "south-pacific"
+      },
+      {
+       "from": "south-america-east",
+       "to": "south-america-west"
+      },
+      {
+       "from": "south-america-east",
+       "to": "south-atlantic"
+      },
+      {
+       "from": "south-america-west",
+       "to": "south-pacific"
+      },
+      {
+       "from": "south-atlantic",
+       "to": "south-pacific"
+      },
+      {
+       "from": "south-atlantic",
+       "to": "west-africa"
+      }
+     ]
+    },
+    "params": {
+     "starts": {
+      "cc": "north-asia",
+      "bg": "south-america-west"
+     },
+     "sigils": {
+      "sl": [
+       "north-america-west"
+      ]
+     }
+    },
+    "seats": [
+     {
+      "seat": 1,
+      "color": "green",
+      "label": "Great Cthulhu"
+     },
+     {
+      "seat": 2,
+      "color": "blue",
+      "label": "Crawling Chaos"
+     },
+     {
+      "seat": 3,
+      "color": "red",
+      "label": "Black Goat"
+     },
+     {
+      "seat": 4,
+      "color": "yellow",
+      "label": "Yellow Sign"
+     },
+     {
+      "seat": 5,
+      "color": "white",
+      "label": "Windwalker"
+     }
+    ],
+    "turn_order": {
+     "type": "round-robin",
+     "seats": [
+      5,
+      1,
+      2,
+      3,
+      4
+     ]
+    }
+   }
+  }
+ ],
+ "options": [
+  {
+   "id": "factions",
+   "label": "Factions",
+   "kind": "seat-choice",
+   "text": "Which cult sits in each seat. The seats are the players of the table; no cult can be chosen twice.",
+   "choices": [
+    {
+     "id": "gc",
+     "label": "Great Cthulhu",
+     "color": "green",
+     "text": "Deep Ones, Shoggoths, Star Spawn and Cthulhu."
+    },
+    {
+     "id": "cc",
+     "label": "Crawling Chaos",
+     "color": "blue",
+     "text": "Nightgaunts, Flying Polyps, Hunting Horrors and Nyarlathotep: everything flies."
+    },
+    {
+     "id": "bg",
+     "label": "Black Goat",
+     "color": "red",
+     "text": "Ghouls, Fungi, Dark Young and Shub-Niggurath."
+    },
+    {
+     "id": "ys",
+     "label": "Yellow Sign",
+     "color": "yellow",
+     "text": "Undead, Byakhee, the King in Yellow and Hastur."
+    },
+    {
+     "id": "ww",
+     "label": "Windwalker",
+     "color": "white",
+     "text": "Expansion: Wendigos, Gnoph-Keh, Rhan-Tegoth and Ithaqua. Needs the polar areas."
+    },
+    {
+     "id": "sl",
+     "label": "Sleeper",
+     "color": "orange",
+     "text": "Expansion: Wizards, Serpent Men, Formless Spawn and Tsathoggua."
+    },
+    {
+     "id": "ow",
+     "label": "Opener of the Way",
+     "color": "purple",
+     "text": "Expansion: Mutants, Abominations, Spawn of Yog-Sothoth and Yog-Sothoth, who is a Gate himself; moves Gates."
+    },
+    {
+     "id": "tt",
+     "label": "Tcho-Tcho",
+     "color": "brown",
+     "text": "Expansion: High Priests, Proto-Shoggoths and Ubbo-Sathla, whose Growth counter feeds on the Doom phases."
+    }
+   ],
+   "default": [
+    "gc",
+    "cc",
+    "bg",
+    "ys",
+    "ww"
+   ]
+  },
+  {
+   "id": "high-priests",
+   "label": "High Priests",
+   "kind": "bool",
+   "default": false,
+   "text": "The expansion: every cult has one High Priest, a Cultist that is recruited for 3 Power, gives 1 Power, can hold a Gate — and can be sacrificed for 2 Power (Unspeakable Oath)."
+  },
+  {
+   "id": "azathoth",
+   "label": "Azathoth (neutral spellbooks and Monsters)",
+   "kind": "bool",
+   "default": false,
+   "text": "The neutral content of the Azathoth faction. Any cult may take one of the six neutral spellbooks (Shriveling, Stars Are Right, Recriminations, The Mao Ceremony, Umr at-Tawil, Undimensioned) in place of one of its own, and may buy the Loyalty Card of a neutral Monster (Dimensional Shambler, Star Vampire, Elder Thing, Servitor of the Outer Gods) for 2 Doom in the Doom phase."
+  },
+  {
+   "id": "dreamlands",
+   "label": "Dreamlands Surface Monsters",
+   "kind": "bool",
+   "default": false,
+   "text": "Three neutral Monsters whose Loyalty Cards are bought with 2 Doom in the Doom phase: the Moonbeast (lies on an enemy spellbook), the Gnorri (extra Doom for two or three in play) and the Shantak (moves anywhere and carries a Cultist)."
+  },
+  {
+   "id": "beyond",
+   "label": "Beyond Time and Space",
+   "kind": "bool",
+   "default": false,
+   "text": "Two neutral Monsters, the Wamp (an enemy places them where there is no Gate) and the Voonith (makes up Kills), and a Terror, the Hound of Tindalos, whose card costs 2 Doom and 2 Power."
+  },
+  {
+   "id": "igoo-abhoth",
+   "label": "Independent: Abhoth (Great Old One Pack 1)",
+   "kind": "bool",
+   "default": false,
+   "text": "An Independent Great Old One any cult may awaken (a Gate it controls in an area with one of its Great Old Ones). Filth Tokens as meat shields and a spellbook that spoils the others' Gates. For a first game use one Independent fewer than there are players."
+  },
+  {
+   "id": "igoo-chaugnar",
+   "label": "Independent: Chaugnar Faugn (Great Old One Pack 1)",
+   "kind": "bool",
+   "default": false,
+   "text": "An Independent Great Old One any cult may awaken (a Gate it controls in an area with one of its Great Old Ones). +3 dice in battles at your Gates, and a spellbook that lets you choose the Elder Signs others receive. For a first game use one Independent fewer than there are players."
+  },
+  {
+   "id": "igoo-cthugha",
+   "label": "Independent: Cthugha (Great Old One Pack 1)",
+   "kind": "bool",
+   "default": false,
+   "text": "An Independent Great Old One any cult may awaken (a Gate it controls in an area with one of its Great Old Ones). Replaces one of your Great Old Ones; spares the Units he Kills for Power. For a first game use one Independent fewer than there are players."
+  },
+  {
+   "id": "igoo-hydra",
+   "label": "Independent: Mother Hydra (Great Old One Pack 1)",
+   "kind": "bool",
+   "default": false,
+   "text": "An Independent Great Old One any cult may awaken (a Gate it controls in an area with one of its Great Old Ones). Drives Cultists out of an ocean, and a spellbook that places all your Acolytes at once. For a first game use one Independent fewer than there are players."
+  },
+  {
+   "id": "igoo-yig",
+   "label": "Independent: Yig (Great Old One Pack 1)",
+   "kind": "bool",
+   "default": false,
+   "text": "An Independent Great Old One any cult may awaken (a Gate it controls in an area with one of its Great Old Ones). Poisons your Cultists, and a spellbook that makes the others pay you Power or Doom. For a first game use one Independent fewer than there are players."
+  },
+  {
+   "id": "book-swaps",
+   "label": "Neutral spellbook instead of a timer book",
+   "kind": "book-swap",
+   "text": "Ghroth (Black Goat) and The Thousand Forms (Crawling Chaos) need a clock, which is awkward when the turns are days apart. Replace the book with one of the six neutral spellbooks — even without the Azathoth option; each neutral spellbook can replace one book only.",
+   "slots": [
+    {
+     "id": "bg",
+     "label": "Ghroth",
+     "text": "Black Goat: the action that gives its enemies a minute to decide who loses Cultists."
+    },
+    {
+     "id": "cc",
+     "label": "The Thousand Forms",
+     "text": "Crawling Chaos: the negotiation over how much Power the others pay."
+    }
+   ],
+   "choices": [
+    { "id": "shrivel", "label": "Shriveling", "text": "Pre-Battle: eliminate an enemy Monster or Cultist in the battle; its owner gets Power equal to its cost." },
+    { "id": "stars", "label": "Stars Are Right", "text": "Ongoing: revealing Elder Signs in the Doom phase also gives Power equal to their value." },
+    { "id": "recrim", "label": "Recriminations", "text": "Action (1 Power): set aside any spellbook of yours and take another available one." },
+    { "id": "mao", "label": "The Mao Ceremony", "text": "Ongoing: after Gather Power sacrifice any number of your Cultists for 1 Power each." },
+    { "id": "umr", "label": "Umr at-Tawil", "text": "Ongoing: Gates cost you 2 Power." },
+    { "id": "undim", "label": "Undimensioned", "text": "Action (2 Power): rearrange your units among the areas where you already have some." }
+   ]
+  }
+ ]
+}

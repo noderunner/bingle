@@ -1,0 +1,74 @@
+# Bingle — v1 Backlog
+
+> v1 is complete. Ongoing work (Tak and stacking games, the new UI, undo, bots, training environments) is tracked in [`roadmap.md`](roadmap.md).
+
+Ordered, small, independently testable items derived from `docs/history/plan.md`. Every architectural question is already settled in `docs/architecture.md` / `docs/decisions/` — nothing here should require a new design decision; if an item seems to need one, it's too big and should be split further before starting it. Items are ordered so each only depends on earlier ones. The bootstrap slice (`main.go`, `internal/config`, `internal/store`, `internal/app`, `internal/httpserve`, `/healthz`) already exists and is not repeated below.
+
+## Engine / DSL
+
+- [x] **01. Game-definition JSON types + `Parse`** — AC: parsing a well-formed fixture JSON (shaped like the future `demo.json`) into `GameDefinition` returns no error and populates every field. — `internal/engine/dsl`, tested in `tests/dsl_test.go`.
+- [x] **02. Board graph type + `grid` generator** — AC: generating a 9x9 `orthogonal4` grid produces exactly 4 neighbors for every interior position and fewer for edge/corner positions. — `internal/engine/board/{board,grid}.go`, tested in `tests/board/board_test.go`.
+- [x] **03. `explicit` board generator** — AC: an explicit board given 3 positions and 2 edges produces a graph whose adjacency matches exactly those 2 edges, nothing more. — `internal/engine/board/explicit.go`, tested in `tests/board/explicit_test.go`.
+- [x] **04. `step` movement primitive, `empty-only` mode** — AC: `step` with `occupancy=empty-only` allows a move onto an empty adjacent position and rejects one onto any occupied adjacent position. — `internal/engine/primitives/{primitives,step}.go`, tested in `tests/primitives/step_test.go`.
+- [x] **05. `step` movement primitive, `capture-or-empty` mode** — AC: `step` with `occupancy=capture-or-empty` allows landing on an opponent-occupied position and reports it captured, but rejects landing on a same-color-occupied position. — `internal/engine/primitives/step.go`, tested in `tests/primitives/step_capture_test.go`.
+- [x] **06. `GameCallbacks` interface + `NoopCallbacks`** — AC: `NoopCallbacks.ValidateMove` returns nil and `NoopCallbacks.CheckWinner` returns `(nil, false)` for any input. — `internal/engine/callback/callback.go`, tested in `tests/callback/callback_test.go`.
+- [x] **07. `Catalog.Register` / `Get`** — AC: registering a definition that references an unknown primitive name returns an error and the definition is not retrievable via `Get`. — `internal/engine/catalog/catalog.go`, tested in `tests/catalog/catalog_test.go`.
+- [x] **08. `BoardState` + `ApplyMove` core rules engine** — AC: `ApplyMove` with a legal move returns the updated state and the correct next-turn seat; with an illegal move it returns an error and the original state is byte-for-byte unchanged. — `internal/engine/state/{state,apply}.go`, tested in `tests/state/{state_test.go,apply_test.go}`.
+
+## Demo game
+
+- [x] **09. `demo.json` + `demo.Module()`** — AC: constructing a `Catalog` and registering `demo.Module()` succeeds and `Catalog.Get("demo-freeplay")` returns a compiled game with two seats. — `internal/engine/catalog/catalog.go` (`Module` type), `internal/games/demo/{demo.json,demo.go}`, tested in `tests/demo/demo_test.go`.
+- [x] **10. Wire demo module into `internal/app`'s catalog at startup** — AC: a fresh `app.New()` exposes `demo-freeplay` as a registered, creatable game definition. — `internal/app/app.go`, tested in `tests/app/app_test.go`.
+
+## Persistence
+
+- [x] **11. SQLite schema migration on startup** — AC: calling `store.Open` twice in a row against the same fresh temp file does not error (idempotent `CREATE TABLE IF NOT EXISTS`). — `internal/store/{store.go,schema.sql}`, tested in `tests/store/store_test.go`.
+- [x] **12. `Store.CreateGame` / `GetGame`** — AC: `CreateGame` inserts one `games` row and one `players` row (creator's seat), and `GetGame` returns matching values back. — `internal/store/game.go`, tested in `tests/store/create_game_test.go`.
+- [x] **13. `Store.RecordMove`** — AC: recording a move inserts one `moves` row with `seq` = previous + 1 and updates the parent game's `board_state`, `turn_seat`, and `move_seq` in the same call. — `internal/store/move.go`, tested in `tests/store/record_move_test.go`.
+- [x] **14. `Store.GetStateAtSeq`** — AC: `GetStateAtSeq(N)` returns exactly the `resulting_state` stored on the move with `seq=N`. — `internal/store/get_state_at_seq.go`, tested in `tests/store/get_state_at_seq_test.go`.
+
+## Session manager
+
+- [x] **15. Room code generator** — AC: `roomcode.New()` always returns a 6-character string drawn only from the defined unambiguous alphabet. — `internal/session/roomcode/roomcode.go`, tested in `tests/session/roomcode_test.go`.
+- [x] **16. `Manager.CreateGame`** — AC: `CreateGame` returns a room code, and `GetState` for that code immediately reports `status=waiting` with exactly one seat filled. — `internal/session/manager.go`, `internal/store/game.go` (`ListPlayers`), tested in `tests/session/manager_test.go`.
+- [x] **17. `Manager.JoinGame` — new seat** — AC: a second distinct name joining with `role=player` fills seat 2 and flips the game's status to `active`. — `internal/session/manager.go` (`Role`, `JoinResult`, `ErrSeatsFull`, `JoinGame`), `internal/store/game.go` (`AddPlayer`), tested in `tests/session/join_game_test.go`.
+- [x] **18. `Manager.JoinGame` — reconnect by name** — AC: joining again with the exact name already on seat 1 reattaches to seat 1 rather than erroring or creating a new seat. — already implemented as part of item 17's `JoinGame`; tested in `tests/session/join_game_reconnect_test.go`.
+- [x] **19. `Manager.JoinGame` — seats-full & spectator paths** — AC: a third distinct name joining as `role=player` when both seats are taken returns a `SeatsFull` error, while `role=spectator` always succeeds without occupying a seat. — already implemented as part of item 17's `JoinGame`; tested in `tests/session/join_game_seatsfull_spectator_test.go`.
+- [x] **20. `Manager.MakeMove` — happy path** — AC: a legal move on the correct seat's turn persists exactly one new move row and flips `turn_seat` to the other seat. — `internal/session/manager.go` (`MoveOutcome`, `ErrGameNotActive`, `ErrNotYourTurn`, `MakeMove`; `JoinGame` also updated to compute `newTurnSeat`), `internal/store/game.go` (`AddPlayer` gains `newTurnSeat *int`), tested in `tests/session/make_move_test.go`.
+- [x] **21. `Manager.MakeMove` — rejection paths** — AC: a move submitted by a name that doesn't hold the current turn's seat returns an error and leaves persisted state unchanged. — already implemented as part of item 20's `MakeMove`; tested in `tests/session/make_move_rejection_test.go`.
+- [x] **22. Per-room mutex serialization** — AC: firing two concurrent `MakeMove` calls for the same room's turn results in exactly one success and `move_seq` advancing by exactly 1, not 2. — `internal/session/manager.go` (`Manager.mu`/`roomLocks`, `lockRoom`; `MakeMove` and `JoinGame` acquire the room lock as their first action), tested in `tests/session/make_move_concurrency_test.go`.
+- [x] **23. Manager rehydration after restart** — AC: constructing a fresh `Manager` against an existing DB file and calling `GetState` for a previously created room returns the same `board_state`/`turn_seat` as before the restart. — already correct by design (`Manager` never caches state in memory); tested in `tests/session/rehydration_test.go`.
+
+## REST API
+
+- [x] **24. `POST /api/games` + `GET /api/game-defs`** — AC: `POST /api/games` with a known `game_def_id` returns 200 and a 6-character `room_code`. — `internal/api/{router,games,errors}.go`, `internal/engine/catalog/catalog.go` (`Catalog.List`), `internal/session/manager.go` (`GameDefSummary`, `Manager.ListGameDefs`), `internal/app/app.go` (`App.manager`, `/api` mount), tested in `tests/app/rest_create_game_test.go`.
+- [x] **25. `GET /api/games/{code}` + `GET /api/games/{code}/state`** — AC: immediately after creation, `.../state` returns the game's initial `board_state` and `status=waiting`. — `internal/api/{router,games}.go`, tested in `tests/app/rest_get_game_test.go`.
+- [x] **26. `POST /api/games/{code}/join`** — AC: joining a waiting game with `role=player` and a new name returns 200 with an assigned seat, and a following `GetState` call shows `status=active`. — `internal/api/{router,games}.go`, tested in `tests/app/rest_join_test.go`.
+- [x] **27. `POST /api/games/{code}/moves`** — AC: an illegal move returns HTTP 400, and `GET .../state` immediately after shows the board unchanged. — `internal/api/{router,games}.go`, tested in `tests/app/rest_make_move_test.go`.
+- [x] **28. `GET /api/games/{code}/moves` (history)** — AC: after 3 submitted moves, this endpoint returns exactly those 3 entries in ascending `seq` order. — `internal/api/{router,games}.go`, `internal/session/manager.go` (`MoveRecord`, `Manager.ListMoves`), `internal/store/move.go` (`Store.ListMoves`), tested in `tests/app/rest_moves_history_test.go`.
+- [x] **29. `GET /api/games/{code}/legal-moves`** — AC: for a piece with exactly 2 legal empty-adjacent destinations, the endpoint returns exactly those 2 positions and no others. — `internal/api/{router,games}.go`, `internal/session/manager.go` (`Manager.ListLegalMoves`), tested in `tests/app/rest_legal_moves_test.go`.
+
+## WebSocket
+
+- [x] **30. WS upgrade + subscribe (player or spectator)** — AC: connecting to `/ws/{code}` with a valid room code receives a `joined` event before any other traffic. — `internal/session/hub.go` (`Event`, `hub`, `newHub`, `subscribe`, `publish`), `internal/session/manager.go` (`Manager.hub`, `Manager.Subscribe`), `internal/api/ws.go` (`handleWS`), `internal/api/router.go` (`NewWSHandler`), `internal/app/app.go` (`/ws/{code}` mount, sibling of `/api`), tested in `tests/app/ws_connect_test.go`.
+- [x] **31. WS broadcast on move** — AC: a REST move to a room is observed as a `move` event on an already-open WebSocket connection to the same room, with no polling required. — `internal/session/hub.go` (`moveEventData`, `publish` un-nolint'd), `internal/session/manager.go` (`Manager.MakeMove` calls `m.hub.publish`), tested in `tests/app/ws_move_broadcast_test.go`.
+- [x] **32. WS disconnect cleanup** — AC: closing one WebSocket connection removes it from the room's subscriber list without affecting other subscribers or persisted state. — already correct by design (`hub`'s mutex fully serializes subscribe/unsubscribe/publish); tested (incl. `-race` stress test) in `tests/app/ws_disconnect_test.go`.
+
+## MCP server
+
+- [x] **33. `list_game_defs` + `create_game` tools** — AC: calling `create_game` via MCP produces a room joinable through the REST API using the same `room_code`. — `internal/mcpserver/{server,tools}.go` (`NewServer`, `registerTools`, `handleListGameDefs`, `handleCreateGame`), `internal/app/app.go` (`/mcp` mount, sibling of `/api` and `/ws/{code}`), tested in `tests/app/mcp_create_game_test.go`.
+- [x] **34. `join_game` + `get_state` + `list_legal_moves` tools** — AC: the `get_state` MCP tool response for a room matches the REST `GET .../state` response for the same room. — `internal/mcpserver/tools.go` (`registerTools` additions, `handleJoinGame`, `handleGetState`, `handleListLegalMoves`), tested in `tests/app/mcp_join_state_test.go`.
+- [x] **35. `make_move` + `get_moves` tools** — AC: `make_move` via MCP by a seated participant on their turn updates state that's immediately visible to a REST `GET .../state` call. — `internal/mcpserver/tools.go` (`registerTools` additions, `handleMakeMove`, `handleGetMoves`), tested in `tests/app/mcp_make_move_test.go`.
+- [x] **36. Wire `mcpserver` into `internal/app` at `/mcp`** — AC: an MCP client connected to the running app can successfully call `list_game_defs` and get a non-empty result. — already done as part of item 33 (wiring was required before any MCP tool could be tested at all); AC covered exactly by `TestMCPListGameDefs_ReturnsDemoFreeplay` in `tests/app/mcp_create_game_test.go`.
+
+## Web UI
+
+- [x] **37. Create/join static page** — AC: loading `/` renders a form that `POST`s to `/api/games` with a chosen game definition and player name. — `internal/web/{router.go,templates/index.html.tmpl,static/{app.js,style.css}}`, mounted at `/` (last, after `/healthz`/`/api`/`/ws/{code}`/`/mcp`) in `internal/app/app.go`, tested in `tests/app/web_create_join_test.go`.
+- [x] **38. Board page fetching raw state (no rendering yet)** — AC: loading `/game/{code}` fetches `GET .../state` and displays the raw JSON in the page. — `internal/web/{router.go,templates/game.html.tmpl,static/board.js}`, mounted via the existing `GET /game/{code}` route in `internal/web/router.go`'s `NewRouter`, tested in `tests/app/web_board_state_test.go`.
+- [x] **39. `board.js` SVG rendering from board graph + occupants** — AC: for the demo game's initial state, the rendered page contains one SVG shape per occupied position, colored by piece color. — `internal/web/static/board.js` (parses each `board_state` key as an "x,y" grid coordinate and draws one `<circle>` per occupied position, filled from the occupant's `Color`, alongside the existing raw-JSON `<pre>` dump from item 38), tested in `tests/app/web_svg_render_test.go`.
+- [x] **40. `board.js` WebSocket live updates** — AC: making a move in one browser tab updates the rendered board in a second tab open on the same room, without a page reload. — `internal/web/static/board.js` (after the existing item 38/39 fetch-and-render, opens a spectator `WebSocket` to `/ws/{code}?name=...&role=spectator`; rendering was refactored into a shared `renderState` function so both the initial fetch and every subsequent `"move"` WebSocket event re-render the SVG plus the raw-JSON `<pre>` dump in place, with no page reload/re-navigation), tested in `tests/app/web_ws_live_update_test.go`.
+
+## TLS hardening
+
+- [x] **41. `httpserve` TLS support** — AC: `Serve` with a valid cert/key pair binds successfully over HTTPS; leaving both unset still binds plain HTTP as before. — `internal/httpserve/httpserve.go` (`Config{Addr, CertFile, KeyFile}`, `Serve(ctx, cfg, handler)` uses `ListenAndServeTLS` only when both `CertFile` and `KeyFile` are set, else falls back to plain `ListenAndServe`), `internal/config/config.go` (`TLSCert, TLSKey` fields loaded from `BINGLE_TLS_CERT`/`BINGLE_TLS_KEY`), `main.go` (builds `httpserve.Config` from `cfg`), tested in `tests/httpserve/serve_test.go`.
+- [x] **42. `httpserve` TLS misconfiguration handling** — AC: `Serve` given a nonexistent cert file path returns an error rather than panicking or exiting the process. — already implemented as part of item 41's `Serve`; AC covered exactly by `TestServe_MissingCertFile_ReturnsWrappedError` in `tests/httpserve/serve_test.go`.

@@ -1,0 +1,36 @@
+{
+ "gc": {
+  "recruit": 25.5,
+  "awaken": -5,
+  "capture": -12.5,
+  "summon_watch": 8.5,
+  "summon_idle": 4.5,
+  "hunt_move": 7,
+  "battle": 19.5,
+  "end_turn": 19
+ },
+ "bg": {
+  "gate": 38.5,
+  "awaken": -22,
+  "capture": 15.5,
+  "summon_watch": 11,
+  "guard_move": -13.5,
+  "battle": -15.5,
+  "end_turn": 18,
+  "reserve": 3
+ },
+ "ys": {
+  "gate": -18.5,
+  "recruit": -7.5,
+  "awaken": 16.5,
+  "capture": 22.5,
+  "summon_idle": -8.5,
+  "opening_move": -20.5,
+  "guard_move": 15,
+  "hunt_move": -24,
+  "battle": 5,
+  "end_turn": -18,
+  "reserve": 9.5,
+  "slack": -0.5
+ }
+}

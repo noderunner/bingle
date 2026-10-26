@@ -1,0 +1,54 @@
+/* Ambient motion and the finishing touches of the illustrated board themes
+   (themes.js builds their palettes, gradients and the rest of their rules). */
+
+/* The motion only runs when the player has animations on and the system does not ask for less. */
+.th-sun, .th-neon, .th-twinkle, .th-rays, .th-lantern, .th-godrays, .th-kelp, .th-bubble { transform-box: fill-box; transform-origin: center; }
+
+:root[data-ambient="on"] .th-neon { animation: th-neon 3.6s ease-in-out infinite; }
+:root[data-ambient="on"] .th-neon2 { animation-delay: -1.8s; }
+:root[data-ambient="on"] .th-twinkle { animation: th-twinkle 2.8s ease-in-out infinite; }
+:root[data-ambient="on"] .th-sun { animation: th-sun 6s ease-in-out infinite; }
+:root[data-ambient="on"] .th-rays { animation: th-spin 240s linear infinite; }
+:root[data-ambient="on"] .th-lantern { animation: th-lantern 4.5s ease-in-out infinite; }
+:root[data-ambient="on"] .th-godrays { animation: th-godrays 9s ease-in-out infinite; }
+:root[data-ambient="on"] .th-kelp { animation: th-sway 7s ease-in-out infinite; transform-origin: 50% 100%; }
+:root[data-ambient="on"] .th-bubble { animation: th-rise 12s linear infinite; }
+
+@keyframes th-neon { 0%, 100% { opacity: 1; } 50% { opacity: 0.62; } }
+@keyframes th-twinkle { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
+@keyframes th-sun { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.025); } }
+@keyframes th-spin { to { transform: rotate(360deg); } }
+@keyframes th-lantern { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.8; transform: scale(1.08); } }
+@keyframes th-godrays { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
+@keyframes th-sway { 0%, 100% { transform: skewX(-4deg); } 50% { transform: skewX(4deg); } }
+@keyframes th-rise { 0% { transform: translateY(0); opacity: 0; } 12% { opacity: 1; } 100% { transform: translateY(-420px); opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+	.th-neon, .th-twinkle, .th-sun, .th-rays, .th-lantern, .th-godrays, .th-kelp, .th-bubble { animation: none !important; }
+}
+
+/* Neon on the coordinates and the lines of the synthwave board. */
+:root[data-board="synthwave"] .coord:not(.coord-out) { filter: drop-shadow(0 0 3px #7df9ff); }
+:root[data-board="synthwave"] .grid-line { stroke: #ff4fd8; filter: drop-shadow(0 0 2px #ff4fd8); }
+:root[data-board="synthwave"] .hoshi { fill: #7df9ff; }
+:root[data-board="synthwave"] .cell-bg { stroke-opacity: 0.8; }
+
+/* Engraved gold on the celtic board. */
+:root[data-board="celtic"] .coord:not(.coord-out) { fill: #e9cf86; text-shadow: 0 1px 0 #0b1d13; }
+:root[data-board="celtic"] .grid-line { stroke: #d9b45a; stroke-opacity: 0.85; }
+
+/* Terracotta lines and a turquoise focus on the southwestern board. */
+:root[data-board="solstice"] .coord:not(.coord-out) { fill: #f6dca8; }
+:root[data-board="solstice"] .cell.clickable:hover .cell-bg { filter: brightness(1.1) saturate(1.2); }
+
+/* Brass on the bazaar's blue tiles. */
+:root[data-board="bazaar"] .coord:not(.coord-out) { fill: #f0cf7a; }
+:root[data-board="bazaar"] .cell-bg { stroke-opacity: 0.85; }
+
+/* Glass cells and a pale light on the abyss. */
+:root[data-board="abyss"] .coord:not(.coord-out) { fill: #a4f2ff; }
+:root[data-board="abyss"] .cell-bg { stroke-opacity: 0.55; }
+:root[data-board="abyss"] .grid-line { stroke-opacity: 0.7; }
+
+/* The marks on the stones follow the stone: they never take a click. */
+.theme-mark { pointer-events: none; }

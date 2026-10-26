@@ -1,0 +1,59 @@
+{
+  "id": "fist",
+  "name": "Fist",
+  "description": "A two-player abstract strategy game from The Verdigris Pawn: a challenger with a mage, an ace and a few guards against a king with an army, and one neutral pawn either side may seize.",
+  "version": "0.1.0",
+  "engine": "ruleset",
+  "rules": [
+    "Fist is played on an 8×8 board (the chess board of the rules, turned on its side). The challenger (white) moves first. The challenger wins by capturing the king; the king's side (black) wins by capturing all three of the challenger's blue guards. Whoever reaches their goal wins at once.",
+    "Setup: the king and three yellow guards stand in the Keep (d4 e4 d5 e5; the king on e5); three corners hold a blue guard or the mage (a8) or the verdigris pawn (h1), ringed by black guards, and the ace and the challenger's guards crowd the a1 corner.",
+    "Values: yellow guard 1, blue guard 2, ace 3, mage 3, king 4, verdigris pawn 4. Every piece sees along the eight lines until a piece blocks the view. Two squares touch if they share an edge (never diagonally).",
+    "Moving: a piece moves in a straight line (any of the eight directions) over empty squares: yellow guard 1 square, blue guard 2, ace and mage 3, king 1, pawn 4. Blue guards, the ace, the mage and the pawn may instead jump up to that many times: a jump is exactly two squares in a line over a piece of equal or lower value, onto an empty square, never landing twice on a square (the start included). A piece cannot step and jump in one turn.",
+    "Capturing by jumping (blue guards, ace, mage, pawn): each piece jumped may be captured, or not — even your own. The verdigris pawn can never be captured.",
+    "Capturing by pinning (yellow guards, king, pawn): after stepping at least one square, a piece may capture an enemy piece that touches its new square — it does not move there. Its strength is its value plus the value of every ally that touches any target; it can capture only if that is at least the total value of all the enemy pieces touching it, and then just one of them. The pawn counts its allies' help but gives none.",
+    "Ace — Convert: when the ace captures an enemy guard by jumping, it may put one of its own guards of that kind, one that is out of play, in its place.",
+    "Mage — Empower: at the start of each turn the mage adds 1 to the value (and the move range) of every ally it sees; the pawn is unaffected. The values are fixed for the whole turn. If the king's side captures the mage, the king gains Empower.",
+    "Verdigris pawn: it belongs to neither side. A player may move it if one of their pieces sees it at the start of the turn (a piece in the Keep always does). It steps and pins or jumps (not both in one turn), and cannot go straight back to the square it left on the previous turn.",
+    "Interpretations: a side with no legal move draws; the game is drawn after 400 plies; when a jump captures the king the chain stops; a captured piece is removed at once, so later jumps in the chain see the changed board."
+  ],
+  "params": { "max_plies": 400 },
+  "board": {
+    "generator": { "type": "grid", "width": 8, "height": 8, "adjacency": "orthogonal8", "labels": "algebraic" },
+    "style": "squares",
+    "regions": { "keep": ["d4", "e4", "d5", "e5"] }
+  },
+  "seats": [
+    { "seat": 1, "color": "white", "label": "Challenger" },
+    { "seat": 2, "color": "black", "label": "King's side" }
+  ],
+  "extra_colors": ["green"],
+  "pieces": {
+    "yellow": { "label": "Yellow guard", "code": "Y", "shape": "ring" },
+    "blue":   { "label": "Blue guard", "code": "B", "shape": "pawn" },
+    "king":   { "label": "King", "code": "K", "shape": "king" },
+    "ace":    { "label": "Ace", "code": "A", "shape": "knight" },
+    "mage":   { "label": "Mage", "code": "M", "shape": "bishop" },
+    "pawn":   { "label": "Verdigris pawn", "code": "P", "shape": "queen" }
+  },
+  "turn_order": { "type": "round-robin", "seats": [1, 2] },
+  "win_condition": { "type": "ruleset" },
+  "display": {
+    "no_hands": true,
+    "tints": {
+      "keep":  { "label": "The Keep", "color": "#d9c58a", "text": "Any piece standing here can always see the verdigris pawn." },
+      "last":  { "label": "Last move", "color": "#b9d6a0", "text": "Where the last piece started and ended." },
+      "taken": { "label": "Captured", "color": "#e0a090", "text": "A piece was captured here on the last move." }
+    },
+    "badges": {
+      "empowered": { "label": "Empowered", "glyph": "✦", "color": "#d1a21f", "text": "+1 value and range this turn (the mage's Empower)." },
+      "ctrl":      { "label": "Yours to move", "glyph": "◆", "color": "#3f9a55", "text": "You can see the verdigris pawn: it may move this turn." }
+    }
+  },
+  "guide": {
+    "tabs": [
+      { "id": "overview", "title": "Rules", "file": "guide/overview.md" },
+      { "id": "pieces", "title": "Pieces", "file": "guide/pieces.md" },
+      { "id": "moves", "title": "Moving & capturing", "file": "guide/moves.md" }
+    ]
+  }
+}

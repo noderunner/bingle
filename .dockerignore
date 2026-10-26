@@ -1,0 +1,40 @@
+# Build output
+/bin/
+/bingle
+/dist/
+*.test
+*.prof
+*.out
+coverage.html
+
+# Local data: the database, certificates and keys, secrets
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+certs/
+*.pem
+*.key
+.env
+.env.*
+/run_bingle.sh
+
+# Local working files: notes, scratch inputs, assistant settings
+/temp/
+/*_issues.md
+/.claude/
+
+# Tools and editors
+__pycache__/
+*.pyc
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# Not needed to build the image
+.git/
+docs/
+tests/
+scripts/
+*.md

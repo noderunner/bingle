@@ -1,0 +1,57 @@
+{
+  "id": "gomoku",
+  "name": "Gomoku (15×15)",
+  "description": "Five in a row on a Go board. Black moves first.",
+  "version": "0.1.0",
+  "rules": [
+    "Players alternate placing a stone on an empty intersection; Black moves first.",
+    "Because Black has an advantage, White may instead swap sides on their first turn (the pie rule): the black stone becomes white and Black moves next.",
+    "The first player to make an unbroken row of five (or more) stones — horizontally, vertically or diagonally — wins."
+  ],
+  "guide": { "tabs": [ { "id": "rules", "title": "Rules", "file": "rules.md" } ] },
+  "preview": [
+    { "position": "h8", "piece": "stone", "color": "black" },
+    { "position": "i9", "piece": "stone", "color": "black" },
+    { "position": "g9", "piece": "stone", "color": "black" },
+    { "position": "i7", "piece": "stone", "color": "black" },
+    { "position": "j8", "piece": "stone", "color": "black" },
+    { "position": "h6", "piece": "stone", "color": "black" },
+    { "position": "k10", "piece": "stone", "color": "black" },
+    { "position": "f10", "piece": "stone", "color": "black" },
+    { "position": "j6", "piece": "stone", "color": "black" },
+    { "position": "e8", "piece": "stone", "color": "black" },
+    { "position": "h9", "piece": "stone", "color": "white" },
+    { "position": "i8", "piece": "stone", "color": "white" },
+    { "position": "g8", "piece": "stone", "color": "white" },
+    { "position": "j9", "piece": "stone", "color": "white" },
+    { "position": "h7", "piece": "stone", "color": "white" },
+    { "position": "g7", "piece": "stone", "color": "white" },
+    { "position": "k8", "piece": "stone", "color": "white" },
+    { "position": "f9", "piece": "stone", "color": "white" },
+    { "position": "i6", "piece": "stone", "color": "white" },
+    { "position": "d9", "piece": "stone", "color": "white" }
+  ],
+  "board": {
+    "generator": { "type": "grid", "width": 15, "height": 15, "adjacency": "orthogonal4", "labels": "algebraic" },
+    "style": "points"
+  },
+  "seats": [
+    { "seat": 1, "color": "black", "label": "Black" },
+    { "seat": 2, "color": "white", "label": "White" }
+  ],
+  "pieces": {
+    "stone": { "label": "Stone", "shape": "disc" }
+  },
+  "turn_order": { "type": "round-robin", "seats": [1, 2] },
+  "actions": [
+    { "id": "place", "type": "place", "label": "Place a stone", "pieces": ["stone"], "source": "supply" },
+    { "id": "swap", "type": "swap", "label": "Swap sides" }
+  ],
+  "win_condition": {
+    "type": "rules",
+    "rules": [
+      { "id": "five", "type": "line", "length": 5, "reason": "five" },
+      { "id": "full", "type": "end", "when": ["board-full"], "decide": { "type": "draw" }, "reason": "draw" }
+    ]
+  }
+}

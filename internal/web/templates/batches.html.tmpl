@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="bingle-version" content="{{engineVersion}}">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Practice batches — Bingle</title>
+	<link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+	<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+	<header class="topbar">
+		<a class="brand" href="/"><span class="logo"></span>Bingle</a>
+		<a class="button ghost" href="/batches">Practice batches</a>
+		<span class="spacer"></span>
+		<span class="tagline">Bot practice and reports</span>
+	</header>
+	<main class="page">
+		<div id="batch-root" data-batch-id="{{.ID}}"><p class="muted">Loading…</p></div>
+	</main>
+	<footer class="site-footer"><sub title="The version of the bingle engine">bingle v{{engineVersion}} · MIT License · <a href="https://github.com/noderunner/bingle" target="_blank" rel="noopener noreferrer">GitHub</a></sub></footer>
+	<script type="module" src="/static/js/batches.js"></script>
+</body>
+</html>

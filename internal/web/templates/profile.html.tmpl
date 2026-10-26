@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="bingle-version" content="{{engineVersion}}">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Bingle — Profile</title>
+	<link rel="icon" type="image/svg+xml" href="/static/favicon.svg" id="favicon">
+	<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+	<header class="topbar">
+		<a class="brand" href="/"><span class="logo"></span>Bingle</a>
+		<span class="spacer"></span>
+		<span class="topbar-actions" id="topbar-actions"></span>
+	</header>
+
+	<main class="page narrow">
+		<h1>Your profile</h1>
+
+		<section class="card" id="profile-card">
+			<h2>Settings</h2>
+			<p class="muted small">Saved in this browser. Bingle has no accounts: your name is simply offered whenever you create or join a game.</p>
+			<form id="profile-form" novalidate>
+				<div class="field">
+					<label for="profile_name">Name</label>
+					<input id="profile_name" type="text" maxlength="32" autocomplete="nickname">
+					<span class="small muted">Games you already joined keep the name you used in them.</span>
+				</div>
+				<div class="field">
+					<label for="profile_email">Email</label>
+					<input id="profile_email" type="email" maxlength="254" autocomplete="email" placeholder="you@example.com">
+					<span class="small muted">Only used for the turn notices you ask for. Bingle mails a link to confirm the address first, and never shows it to other players.</span>
+				</div>
+				<div class="field">
+					<label class="check"><input type="checkbox" id="profile_notify"> <span>Send me an email when it is my turn</span></label>
+					<span class="small muted">Applies to games you join or open from now on; you can change it for each game in its options.</span>
+				</div>
+				<div id="notify-box" class="notify-box" hidden>
+					<p class="small" id="notify-status" role="status" aria-live="polite"></p>
+					<div class="row" id="notify-actions" hidden>
+						<button type="button" class="ghost" id="notify-resend">Send the confirmation again</button>
+						<button type="button" class="ghost" id="notify-forget">Forget my address</button>
+					</div>
+					<div id="notify-notes"></div>
+				</div>
+				<p class="small muted" id="notify-off" hidden>Email notifications are not set up on this server. What you choose here is kept in this browser for when they are.</p>
+				<div class="row">
+					<button type="submit" class="primary" id="profile-save">Save</button>
+					<span class="small" id="profile-status" role="status"></span>
+				</div>
+			</form>
+		</section>
+
+		<section class="card" id="finished-card">
+			<h2>Finished games</h2>
+			<ul class="my-games" id="finished-games"></ul>
+			<p class="muted" id="finished-empty" hidden>No finished games yet.</p>
+		</section>
+	</main>
+
+	<footer class="site-footer"><sub title="The version of the bingle engine">bingle v{{engineVersion}} · MIT License · <a href="https://github.com/noderunner/bingle" target="_blank" rel="noopener noreferrer">GitHub</a></sub></footer>
+
+	<script type="module" src="/static/js/profile.js"></script>
+</body>
+</html>

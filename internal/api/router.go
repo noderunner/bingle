@@ -1,0 +1,153 @@
+// Package api implements bingle's REST API as a chi.Router mounted by
+// internal/app at "/api", per docs/history/plan.md section 6.8. Every handler here
+// is a thin HTTP adapter over internal/session.Manager: request decoding,
+// input validation, and error→status mapping (see errors.go) live here;
+// game-lifecycle logic stays in internal/session.
+package api
+
+import (
+	"net/http"
+	"strings"
+
+	"github.com/go-chi/chi/v5"
+
+	"github.com/noderunner/bingle/internal/batch"
+	"github.com/noderunner/bingle/internal/envs"
+	"github.com/noderunner/bingle/internal/session"
+)
+
+// NewRouter returns a chi.Router for bingle's REST API, with routes
+// relative to its eventual mount point — it does not bake in an "/api"
+// prefix itself; internal/app mounts it at "/api".
+func NewRouter(mgr *session.Manager, opts ...Option) chi.Router {
+	r := chi.NewRouter()
+
+	h := &handlers{mgr: mgr}
+	for _, opt := range opts {
+		opt(h)
+	}
+
+	r.Post("/games", h.handleCreateGame)
+	r.Post("/games/import", h.handleImportGame)
+	r.Post("/bot-matches", h.handleBotMatch)
+	r.Get("/game-defs", h.handleListGameDefs)
+	r.Get("/game-defs/{id}", h.handleGameDef)
+	r.Get("/game-defs/{id}/guide", h.handleGameGuide)
+	r.Get("/game-defs/{id}/assets/*", h.handleGameAsset)
+	r.Get("/bots", h.handleListBots)
+	r.Get("/config", h.handleConfig)
+	r.Get("/puzzles", h.handleListPuzzles)
+	r.Get("/puzzles/{id}", h.handleGetPuzzle)
+	r.Get("/games/{code}", h.handleGetGame)
+	r.Post("/games/{code}/join", h.handleJoinGame)
+	r.Post("/games/{code}/bots", h.handleAddBot)
+	r.Post("/games/{code}/start", h.handleStartGame)
+	r.Post("/games/{code}/seat", h.handleChooseSeat)
+	r.Post("/games/{code}/seat-cult", h.handleSetSeatCult)
+	r.Post("/games/{code}/leave", h.handleLeave)
+	r.Post("/games/{code}/remove", h.handleRemoveSeat)
+	r.Get("/games/{code}/reactions", h.handleGetReactions)
+	r.Put("/games/{code}/reactions", h.handleSetReactions)
+	r.Get("/games/{code}/autoplay", h.handleGetAutoPlay)
+	r.Put("/games/{code}/autoplay", h.handleSetAutoPlay)
+	r.Get("/chat", h.handleGetGlobalChat)
+	r.Post("/chat", h.handlePostGlobalChat)
+	r.Get("/games/{code}/chat", h.handleGetChat)
+	r.Post("/games/{code}/chat", h.handlePostChat)
+	r.Get("/games/{code}/presence", h.handleGetPresence)
+	r.Get("/games/{code}/voice", h.handleGetVoice)
+	r.Post("/games/{code}/voice", h.handlePostVoice)
+	r.Post("/games/{code}/voice/signal", h.handlePostVoiceSignal)
+	r.Get("/rtc/config", h.handleRTCConfig)
+	r.Get("/notify/config", h.handleNotifyConfig)
+	r.Post("/notify/contact", h.handleSaveContact)
+	r.Post("/notify/contact/status", h.handleContactStatus)
+	r.Post("/notify/contact/resend", h.handleContactResend)
+	r.Post("/notify/contact/forget", h.handleContactForget)
+	r.Get("/games/{code}/notify", h.handleGetGameNotify)
+	r.Put("/games/{code}/notify", h.handleSetGameNotify)
+	r.Post("/games/{code}/presence", h.handlePostPresence)
+	r.Get("/games/{code}/state", h.handleGetGameState)
+	r.Post("/games/{code}/moves", h.handleMakeMove)
+	r.Get("/games/{code}/moves", h.handleListMoves)
+	r.Get("/games/{code}/history", h.handleHistory)
+	r.Get("/games/{code}/legal-moves", h.handleListLegalMoves)
+	r.Get("/games/{code}/moves/legal", h.handleLegalMovesAll)
+	r.Post("/games/{code}/undo", h.handleUndo)
+	r.Post("/games/{code}/resign", h.handleResign)
+	r.Post("/games/{code}/draw", h.handleDraw)
+	r.Post("/games/{code}/takeback", h.handleTakeback)
+	r.Post("/games/{code}/simulate", h.handleSimulate)
+	r.Post("/games/{code}/hint", h.handleHint)
+	r.Get("/games/{code}/export", h.handleExport)
+	r.Get("/games/{code}/observe", h.handleObserve)
+
+	// In-memory training environments (when an envs manager is supplied).
+	if h.envs != nil {
+		r.Post("/envs", h.handleEnvReset)
+		r.Get("/envs", h.handleEnvList)
+		r.Post("/envs/batch-step", h.handleEnvBatchStep)
+		r.Get("/envs/{id}", h.handleEnvObserve)
+		r.Post("/envs/{id}/step", h.handleEnvStep)
+		r.Post("/envs/{id}/fork", h.handleEnvFork)
+		r.Delete("/envs/{id}", h.handleEnvClose)
+		r.Get("/env-specs/{game}", h.handleEnvSpec)
+		r.Post("/matches", h.handleMatch)
+	}
+
+	// Bot practice batches (when a batch manager is supplied).
+	if h.batches != nil {
+		r.Post("/batches", h.handleBatchStart)
+		r.Get("/batches", h.handleBatchList)
+		r.Get("/batches/{id}", h.handleBatchGet)
+		r.Get("/batches/{id}/report", h.handleBatchReport)
+		r.Get("/batches/{id}/games", h.handleBatchGames)
+		r.Get("/batches/{id}/games/{n}/events", h.handleBatchEvents)
+		r.Post("/batches/{id}/cancel", h.handleBatchCancel)
+		r.Delete("/batches/{id}", h.handleBatchDelete)
+	}
+
+	return r
+}
+
+// NewWSHandler returns the http.HandlerFunc for GET /ws/{code}, per
+// docs/history/plan.md section 6.9. It is mounted directly by internal/app (a
+// sibling of the "/api" mount, not nested under it), rather than via
+// NewRouter, since "/ws/{code}" has no "/api" prefix.
+func NewWSHandler(mgr *session.Manager) http.HandlerFunc {
+	h := &handlers{mgr: mgr}
+	return h.handleWS
+}
+
+// handlers holds the dependencies shared by every handler in this package.
+type handlers struct {
+	mgr  *session.Manager
+	envs *envs.Manager
+	// batches runs bot practice batches (nil when not mounted).
+	batches *batch.Manager
+	// publicURL is the base URL clients on other networks reach the server by
+	// (invite links); empty when not configured.
+	publicURL string
+	// rtc is what voice chat clients are told about STUN and TURN servers.
+	rtc RTCConfig
+}
+
+// Option customises NewRouter.
+type Option func(*handlers)
+
+// WithPublicURL sets the base URL that invite links and /config report: how
+// players on other networks reach this server.
+func WithPublicURL(u string) Option {
+	return func(h *handlers) { h.publicURL = strings.TrimRight(u, "/") }
+}
+
+// WithEnvs mounts the in-memory training-environment endpoints (/envs,
+// /env-specs, /matches) backed by em.
+func WithEnvs(em *envs.Manager) Option { return func(h *handlers) { h.envs = em } }
+
+// NewGlobalChatWSHandler returns the http.HandlerFunc for GET /ws-chat, the
+// live feed of the global chat room.
+func NewGlobalChatWSHandler(mgr *session.Manager) http.HandlerFunc {
+	h := &handlers{mgr: mgr}
+	return h.handleGlobalChatWS
+}

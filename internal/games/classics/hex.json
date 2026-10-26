@@ -1,0 +1,56 @@
+{
+  "id": "hex-11",
+  "name": "Hex (11×11)",
+  "description": "Join your two sides of the hexagonal board with an unbroken chain of stones. One player always wins — there are no draws.",
+  "version": "0.1.0",
+  "designers": ["Piet Hein", "John Nash"],
+  "rules": [
+    "Red and Blue alternate placing one stone on any empty hexagon; Red moves first.",
+    "Because the first player has an advantage, the second player may instead swap sides on their first turn (the pie rule): the first stone changes to their colour and the first player moves next.",
+    "Red wins by connecting the top and bottom edges with a chain of adjacent red stones; Blue wins by connecting the left and right edges.",
+    "Stones never move or leave the board, and the game cannot end in a draw."
+  ],
+  "guide": { "tabs": [ { "id": "rules", "title": "Rules", "file": "rules.md" } ] },
+  "preview": [
+    { "position": "f6", "piece": "stone", "color": "red" },
+    { "position": "f5", "piece": "stone", "color": "red" },
+    { "position": "e7", "piece": "stone", "color": "red" },
+    { "position": "g4", "piece": "stone", "color": "red" },
+    { "position": "d8", "piece": "stone", "color": "red" },
+    { "position": "f3", "piece": "stone", "color": "red" },
+    { "position": "e6", "piece": "stone", "color": "blue" },
+    { "position": "g5", "piece": "stone", "color": "blue" },
+    { "position": "d7", "piece": "stone", "color": "blue" },
+    { "position": "h4", "piece": "stone", "color": "blue" },
+    { "position": "e8", "piece": "stone", "color": "blue" },
+    { "position": "g6", "piece": "stone", "color": "blue" }
+  ],
+  "board": {
+    "generator": { "type": "hex", "width": 11, "height": 11 },
+    "borders": { "top": "red", "bottom": "red", "left": "blue", "right": "blue" }
+  },
+  "seats": [
+    { "seat": 1, "color": "red", "label": "Red (top – bottom)" },
+    { "seat": 2, "color": "blue", "label": "Blue (left – right)" }
+  ],
+  "pieces": {
+    "stone": { "label": "Stone", "shape": "disc" }
+  },
+  "turn_order": { "type": "round-robin", "seats": [1, 2] },
+  "actions": [
+    { "id": "place", "type": "place", "label": "Place a stone", "pieces": ["stone"], "source": "supply" },
+    { "id": "swap", "type": "swap", "label": "Swap sides" }
+  ],
+  "win_condition": {
+    "type": "rules",
+    "rules": [
+      { "id": "red", "type": "connect", "seat": 1, "regions": [["top", "bottom"]], "reason": "connection" },
+      { "id": "blue", "type": "connect", "seat": 2, "regions": [["left", "right"]], "reason": "connection" }
+    ]
+  },
+  "variants": [
+    { "id": "hex-7", "name": "Hex (7×7)", "patch": { "board": { "generator": { "width": 7, "height": 7 } } } },
+    { "id": "hex-9", "name": "Hex (9×9)", "patch": { "board": { "generator": { "width": 9, "height": 9 } } } },
+    { "id": "hex-13", "name": "Hex (13×13)", "patch": { "board": { "generator": { "width": 13, "height": 13 } } } }
+  ]
+}

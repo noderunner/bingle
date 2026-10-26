@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="bingle-version" content="{{engineVersion}}">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="referrer" content="no-referrer">
+	<title>Bingle — {{if eq .Action "confirm"}}Confirm your email{{else}}Stop emails{{end}}</title>
+	<link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+	<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+	<header class="topbar">
+		<a class="brand" href="/"><span class="logo"></span>Bingle</a>
+	</header>
+	<main class="page narrow">
+		<section class="card" id="notify-card" data-action="{{.Action}}">
+			{{if eq .Action "confirm"}}
+			<h1>Confirm your email address</h1>
+			<p>Press the button to let Bingle email this address when it is your turn in a game. Nothing happens until you do.</p>
+			<p class="muted small">If you did not ask for this, just close the page: the address is not used.</p>
+			<div class="row"><button type="button" class="primary" id="notify-go">Confirm</button></div>
+			{{else}}
+			<h1>Stop emails from Bingle</h1>
+			<p>Press the button to make sure Bingle never emails this address again.</p>
+			<div class="row"><button type="button" class="primary" id="notify-go">Stop all emails</button></div>
+			{{end}}
+			<p class="small" id="notify-result" role="status"></p>
+		</section>
+	</main>
+	<footer class="site-footer"><sub title="The version of the bingle engine">bingle v{{engineVersion}} · MIT License · <a href="https://github.com/noderunner/bingle" target="_blank" rel="noopener noreferrer">GitHub</a></sub></footer>
+	<script type="module" src="/static/js/notify.js"></script>
+</body>
+</html>

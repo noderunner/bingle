@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="bingle-version" content="{{engineVersion}}">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Bingle</title>
+	<link rel="icon" type="image/svg+xml" href="/static/favicon.svg" id="favicon">
+	<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+	<header class="topbar">
+		<a class="brand" href="/"><span class="logo"></span>Bingle</a>
+		<span class="spacer"></span>
+		<span class="topbar-actions" id="topbar-actions"></span>
+	</header>
+
+	<main class="page">
+		<p class="fun-fact" id="fun-fact"></p>
+
+		<section class="card tabbed" id="browser-card">
+			<div class="tabs" role="tablist" aria-label="Games, puzzles and chat">
+				<button type="button" role="tab" class="tab" id="tab-games" data-tab="games" aria-controls="panel-games" aria-selected="true">Games</button>
+				<button type="button" role="tab" class="tab" id="tab-puzzles" data-tab="puzzles" aria-controls="panel-puzzles" aria-selected="false" tabindex="-1">Puzzles</button>
+				<button type="button" role="tab" class="tab" id="tab-chat" data-tab="chat" aria-controls="panel-chat" aria-selected="false" tabindex="-1">Global Chat <span class="badge tab-badge" id="chat-tab-badge" hidden>0</span></button>
+			</div>
+
+			<div role="tabpanel" id="panel-games" aria-labelledby="tab-games">
+				<div id="gallery-view">
+					<p class="muted small">Pick a game to set up a match.</p>
+					<div class="gallery" id="game-gallery"><p class="muted small">Loading games…</p></div>
+				</div>
+
+				<div id="game-setup" hidden>
+					<div class="setup-head">
+						<button type="button" class="ghost" id="setup-back">← All games</button>
+						<h2 id="setup-title"></h2>
+						<button type="button" class="ghost" id="game-rules-button">Rules</button>
+					</div>
+					<div class="setup-layout">
+						<div class="setup-side">
+							<div class="setup-preview" id="setup-preview"></div>
+							<p class="game-blurb small" id="game-blurb"></p>
+							<div class="variants" id="setup-variants"></div>
+						</div>
+
+						<form id="create-game-form">
+							<select id="game_def_id" name="game_def_id" required hidden>
+								{{range .GameDefs}}
+								<option value="{{.ID}}">{{.Name}}</option>
+								{{end}}
+							</select>
+
+							<div class="field" id="start-mode-field" hidden>
+								<label>Start from</label>
+								<div class="segmented">
+									<label><input type="radio" name="start_mode" value="new" checked><span>A new game</span></label>
+									<label><input type="radio" name="start_mode" value="import"><span>A move log</span></label>
+								</div>
+							</div>
+
+							<div class="field new-only human-only">
+								<label for="create_player_name">Your name</label>
+								<input id="create_player_name" name="player_name" type="text" required maxlength="32" autocomplete="nickname">
+							</div>
+
+							<div class="field new-only">
+								<label>Opponent</label>
+								<div id="opponent-choices" class="stack">
+									<label class="opponent-choice"><input type="radio" name="opponent" value="" checked> <span><strong>A friend</strong></span></label>
+								</div>
+							</div>
+
+							<div class="field new-only bots-only" id="botmatch-options">
+								<div class="row">
+									<label class="inline" for="botmatch-a">First <select id="botmatch-a"></select></label>
+									<label class="inline" for="botmatch-b">Second <select id="botmatch-b"></select></label>
+									<label class="inline" for="botmatch-speed">Speed
+										<select id="botmatch-speed">
+											<option value="1500">Slow</option>
+											<option value="700" selected>Normal</option>
+											<option value="250">Fast</option>
+										</select>
+									</label>
+								</div>
+								<span class="small muted">You watch from a spectator's seat, at a pace you can follow — a quick way to see how strong the bots are.</span>
+							</div>
+
+							<div class="field new-only human-only">
+								<label for="move_time_seconds">Time per move</label>
+								<select id="move_time_seconds" name="move_time_seconds">
+									<option value="0" selected>No limit</option>
+									<option value="60">1 minute</option>
+									<option value="300">5 minutes</option>
+									<option value="3600">1 hour</option>
+									<option value="86400">1 day</option>
+									<option value="259200">3 days</option>
+								</select>
+								<span class="small muted">A player who runs out of time loses.</span>
+							</div>
+
+							<div class="field new-only human-only" id="lobby-field">
+								<label class="check"><input type="checkbox" id="lobby" name="lobby"> <span>Wait in a lobby until I start the game</span></label>
+								<span class="small muted">Players you invite gather first, pick their factions or seats and add bots; nobody plays until you press Start.</span>
+							</div>
+
+							<div class="field new-only human-only">
+								<label>Play as</label>
+								<div class="segmented" id="seat-choices">
+									<label><input type="radio" name="seat" value="1" checked><span>First</span></label>
+									<label><input type="radio" name="seat" value="2"><span>Second</span></label>
+								</div>
+							</div>
+
+							<div class="field import-only" id="import-fields">
+								<p class="muted small">Replay and analyse a recorded game: PTN (for Tak a <code>[Size]</code> header is enough) or just the moves, one after the other.</p>
+								<label for="import-file">Upload a file</label>
+								<input id="import-file" type="file" accept=".ptn,.txt,text/plain">
+								<label for="import-text">…or paste the move log</label>
+								<textarea id="import-text" rows="6" placeholder='[Size "5"]&#10;1. a5 e1 2. c3 c4 …' spellcheck="false"></textarea>
+							</div>
+
+							<div class="error-text" id="create-error" role="alert"></div>
+							<div class="row"><button type="submit" class="primary" id="create-submit">Create game</button></div>
+						</form>
+					</div>
+				</div>
+			</div>
+
+			<div role="tabpanel" id="panel-puzzles" aria-labelledby="tab-puzzles" hidden>
+				<p class="muted small">Positions where the side to move has a forced win. Find it — the opponent defends as well as a bot can.</p>
+				<div class="field puzzle-name">
+					<label for="puzzle_player_name">Your name</label>
+					<input id="puzzle_player_name" type="text" maxlength="32" autocomplete="nickname">
+				</div>
+				<div class="chips" id="puzzle-games"></div>
+				<div class="puzzle-grid" id="puzzle-list"><p class="muted small">Loading puzzles…</p></div>
+			</div>
+
+			<div role="tabpanel" id="panel-chat" aria-labelledby="tab-chat" class="chat-panel" hidden></div>
+		</section>
+
+		<section class="card hidden" id="practice-card">
+			<h2>Practice batches</h2>
+			<p class="muted small">Let bots play hundreds of games of this table in the background and study the results — win rates, units built, abilities used, areas held — to see what wins and to tune the bots.</p>
+			<div class="row"><button type="button" class="primary" id="practice-toggle">Set up a batch</button></div>
+			<div id="practice-wizard" class="hidden"><div id="practice-body"></div></div>
+			<div id="practice-recent"></div>
+		</section>
+	</main>
+
+	<footer class="site-footer"><sub title="The version of the bingle engine">bingle v{{engineVersion}} · MIT License · <a href="https://github.com/noderunner/bingle" target="_blank" rel="noopener noreferrer">GitHub</a></sub></footer>
+
+	<script type="module" src="/static/js/home.js"></script>
+</body>
+</html>
