@@ -461,6 +461,7 @@ func TestWebCthulhuWars_BattleByClickingThroughEveryStep(t *testing.T) {
 	if n := evalInt(t, ctx, `document.querySelectorAll('#board .area-battle').length`); n < 1 {
 		t.Errorf("no battle outline")
 	}
+	waitJS(t, ctx, "the done button", `document.getElementById("action-done") !== null`, 10*time.Second)
 	click(`document.getElementById("action-done").click(); true`)
 
 	// Resolve whatever the dice ask for by clicking glowing tokens, areas or

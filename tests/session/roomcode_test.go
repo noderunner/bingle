@@ -98,17 +98,16 @@ func TestAlphabet_IsExactlyDigitsAndUppercaseMinusAmbiguous(t *testing.T) {
 // not a cryptographic proof: with a 32-character alphabet and 6 positions
 // there are 32^6 = 1,073,741,824 possible codes. Drawing 5000 codes and
 // expecting zero exact duplicates is justified by the birthday bound —
-// P(any collision) ≈ 1 - exp(-n^2 / (2*N)) with n=5000, N≈1.07e9 gives
-// P ≈ 1 - exp(-12.5e6 / 2.15e9) ≈ 1 - exp(-0.0058) ≈ 0.0058, i.e. roughly a
-// 0.6% chance of ANY collision at all (not per-pair — across the whole
-// sample) if New() draws uniformly at random. Asserting zero duplicates is
-// therefore the correct expectation at this sample size, not an arbitrary
-// tolerance: a flake rate under 1% for a fast, deterministic-shape unit test
-// is acceptable, and a real bug (e.g. a broken RNG seed, or an alphabet
-// index collapsing outcomes) would produce duplicates far more often than
-// this.
+// P(any collision) ≈ 1 - exp(-n^2 / (2*N)) with n=1000, N≈1.07e9 gives
+// P ≈ 1 - exp(-1e6 / 2.15e9) ≈ 0.0005, i.e. roughly a 0.05% chance of ANY
+// collision at all (not per-pair — across the whole sample) if New() draws
+// uniformly at random. (n=5000 would be about 1.2%, which CI did hit.)
+// Asserting zero duplicates is therefore the correct expectation at this
+// sample size, not an arbitrary tolerance, and a real bug (e.g. a broken
+// RNG seed, or an alphabet index collapsing outcomes) would produce
+// duplicates far more often than this.
 func TestNew_StatisticalUniquenessAmongManyDraws(t *testing.T) {
-	const n = 5000
+	const n = 1000
 	seen := make(map[string]int, n)
 	for i := 0; i < n; i++ {
 		code := roomcode.New()
