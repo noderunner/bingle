@@ -57,3 +57,4 @@ Short records of choices made for the `bingle` project during the requirements i
 | [0051](0051-cthulhu-wars-capture-choice-and-neutral-window.md) | Cthulhu Wars: capturing the Cultist on a Gate, a window of the neutral items, glyphs off without Yellow Sign |
 | [0052](0052-calls-across-pages-top-bar-and-per-reaction-choices.md) | A voice call that outlives the page, the top bar of a game, and a choice for each reaction |
 | [0053](0053-game-versions-beta-rules-pages-and-themes.md) | Game versions and the Beta mark, one Rules page for the abstract games, coordinates outside themed frames |
+| [0054](0054-changelog-nyet-table-and-removing-the-demo.md) | A changelog in the help window, Nyet!'s table (classic suits, animals, pictures for the board, phone views) and the Demo game removed |

@@ -1,12 +1,15 @@
 package app_test
 
 import (
+	"os"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/chromedp/chromedp"
 	"github.com/noderunner/bingle/internal/config"
+	"github.com/noderunner/bingle/internal/version"
 )
 
 const sampleChangelog = `# Changelog
@@ -126,5 +129,31 @@ func TestWebHelp_NoChangelogNoSection(t *testing.T) {
 	time.Sleep(400 * time.Millisecond)
 	if !evalBool(t, ctx, `document.getElementById("help-changes").hidden && document.getElementById("help-badge").hidden`) {
 		t.Error("a section or dot is shown though the server has no changelog")
+	}
+}
+
+// The help window shows the newest entry of CHANGELOG.md, so that entry is
+// the one for the version of the engine the binary is: the heading of a release
+// is the engine's version (CONTRIBUTING.md says to start a new entry when it is raised).
+func TestChangelog_NewestEntryIsTheEnginesVersion(t *testing.T) {
+	raw, err := os.ReadFile("../../CHANGELOG.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	m := regexp.MustCompile(`(?m)^## \[?(\d+\.\d+\.\d+)\]?(?: - (\d{4}-\d{2}-\d{2}))?\s*$`).FindStringSubmatch(string(raw))
+	if m == nil {
+		t.Fatal("CHANGELOG.md has no release heading such as \"## 0.4.0 - 2026-10-26\"")
+	}
+	if m[1] != version.Engine {
+		t.Errorf("the newest entry of CHANGELOG.md is for %s, but the engine is %s: add an entry for %s (CONTRIBUTING.md)", m[1], version.Engine, version.Engine)
+	}
+	if m[2] == "" {
+		t.Error("the newest entry has no date")
+	}
+	// What the server would show is that entry's text, with its sections.
+	base := newServerWith(t, func(c *config.Config) { c.Changelog = string(raw) })
+	var got changelogResp
+	if code := doJSON(t, "GET", base+"/api/changelog", nil, &got); code != 200 || got.Version != version.Engine || !strings.Contains(got.Markdown, "### Bingle Core") {
+		t.Errorf("GET /api/changelog: %d %+v", code, got)
 	}
 }

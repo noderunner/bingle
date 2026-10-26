@@ -530,7 +530,7 @@ game's guide (see ADR 0026), plus a client-side *Controls* tab:
 
 ## The footer and the help button
 
-Every page ends with a small footer (`.site-footer`): `bingle v0.3.0 · MIT License · GitHub` — the version of the
+Every page ends with a small footer (`.site-footer`): `bingle v0.4.0 · MIT License · GitHub` — the version of the
 engine itself (`internal/version`, apart from the versions of the games) and a link to the project.
 The top bar of the main page, the profile and every game ends with a **?** button (`#open-help`, `js/topbar.js`)
 that opens `#help-dialog`: the version first (`.help-version`, read from `<meta name="bingle-version">`),
