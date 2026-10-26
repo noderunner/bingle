@@ -79,6 +79,9 @@ func newChromedpContextWith(t *testing.T, timeout time.Duration, extra ...chrome
 	}
 	opts := append([]chromedp.ExecAllocatorOption{}, chromedp.DefaultExecAllocatorOptions[:]...)
 	opts = append(opts, chromedp.UserDataDir(dir), chromedp.ExecPath(browser))
+	// The default 20s is too short for Chrome to start on a busy CI runner,
+	// where the packages' tests run side by side.
+	opts = append(opts, chromedp.WSURLReadTimeout(90*time.Second))
 	opts = append(opts, extra...)
 
 	allocCtx, cancelAlloc := chromedp.NewExecAllocator(context.Background(), opts...)
