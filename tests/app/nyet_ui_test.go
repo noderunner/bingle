@@ -1,6 +1,8 @@
 package app_test
 
 import (
+	"fmt"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -85,6 +87,86 @@ func TestWebNyet_PlayARoundThroughTheUI(t *testing.T) {
 	}
 	// By now the terms are set and the tricks are being played.
 	waitJS(t, ctx, "one box left on every line", `document.querySelectorAll('#choice-grid .cg-box.chosen').length === 5`, 5*time.Second)
+	mu.Lock()
+	defer mu.Unlock()
+	if len(jsErrors) > 0 {
+		t.Errorf("uncaught JS exceptions: %v", jsErrors)
+	}
+}
+
+// nyetPlayUntilTeam plays the board of terms of a game the creator holds every
+// seat of (the first legal box each time) and returns once the first player
+// has to choose the team.
+func nyetPlayUntilTeam(t *testing.T, baseURL, room string) {
+	t.Helper()
+	for i := 0; i < 60; i++ {
+		var st struct {
+			TurnSeat int `json:"turn_seat"`
+		}
+		doJSON(t, "GET", baseURL+"/api/games/"+room+"/state", nil, &st)
+		var legal struct {
+			Moves []struct {
+				Notation string `json:"notation"`
+			} `json:"moves"`
+		}
+		doJSON(t, "GET", fmt.Sprintf("%s/api/games/%s/moves/legal?seat=%d", baseURL, room, st.TurnSeat), nil, &legal)
+		if len(legal.Moves) == 0 {
+			t.Fatalf("no legal move for seat %d after %d moves", st.TurnSeat, i)
+		}
+		if strings.HasPrefix(legal.Moves[0].Notation, "team:") {
+			return
+		}
+		var info struct {
+			Seats []struct {
+				Seat int    `json:"seat"`
+				Name string `json:"name"`
+			} `json:"seats"`
+		}
+		doJSON(t, "GET", baseURL+"/api/games/"+room, nil, &info)
+		name := ""
+		for _, s := range info.Seats {
+			if s.Seat == st.TurnSeat {
+				name = s.Name
+			}
+		}
+		if code, out := moveNotation(t, baseURL, room, name, legal.Moves[0].Notation); code != 200 {
+			t.Fatalf("move %q by %s: %d %v", legal.Moves[0].Notation, name, code, out)
+		}
+	}
+	t.Fatal("the board of terms never ended")
+}
+
+// With three or more players the first player picks the team, and the page
+// must offer the choice (the game defines no actions of its own, which once
+// made the move bar fail before it drew the team buttons).
+func TestWebNyet_TheFirstPlayerCanPickTheTeam(t *testing.T) {
+	baseURL := newRESTTestServer(t)
+	var created struct {
+		RoomCode string `json:"room_code"`
+	}
+	if code := doJSON(t, "POST", baseURL+"/api/games", map[string]any{"game_def_id": "nyet", "player_name": "Ana", "also_seats": []int{2, 3, 4}}, &created); code != 200 {
+		t.Fatalf("create: %d", code)
+	}
+	nyetPlayUntilTeam(t, baseURL, created.RoomCode)
+	before := cfGet(t, baseURL, created.RoomCode).MoveSeq
+
+	ctx, cancel := newChromedpContext(t, 60*time.Second)
+	defer cancel()
+	var mu sync.Mutex
+	var jsErrors []string
+	collectJSErrors(ctx, &mu, &jsErrors)
+	openGameAs(t, ctx, baseURL, created.RoomCode, "nyet", "Ana")
+
+	// The three other players are offered as partners, by name.
+	waitJS(t, ctx, "the team buttons", `document.querySelectorAll('.action-buttons button[data-action^="team-"]').length === 3`, 15*time.Second)
+	if got := evalString(t, ctx, `[...document.querySelectorAll('.action-buttons button[data-action^="team-"]')].map(b => b.innerText.trim()).join("|")`); !strings.HasPrefix(got, "Team with ") {
+		t.Errorf("team buttons read %q, want \"Team with <name>\"", got)
+	}
+	clickSel(t, ctx, `.action-buttons button[data-action^="team-"]`)
+	waitJS(t, ctx, "the team to be chosen", `document.querySelectorAll('.action-buttons button[data-action^="team-"]').length === 0`, 15*time.Second)
+	if after := cfGet(t, baseURL, created.RoomCode).MoveSeq; after <= before {
+		t.Errorf("move_seq %d after picking the team, was %d before", after, before)
+	}
 	mu.Lock()
 	defer mu.Unlock()
 	if len(jsErrors) > 0 {

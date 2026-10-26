@@ -2,7 +2,7 @@
  "id": "nyet",
  "name": "Nyet!",
  "description": "Stefan Dorra's trick-taking game for 2–5 players: before every round the players take turns crossing choices off a board — who leads, discards, trump, super trump, what a trick is worth — then the leader picks a team and the round is played.",
- "version": "0.1.0",
+ "version": "0.2.0",
  "designers": ["Stefan Dorra"],
  "engine": "ruleset",
  "rules": [

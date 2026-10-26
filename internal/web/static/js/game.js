@@ -2085,7 +2085,7 @@ function turnPrompt() {
 		if (openingActive() && S.info.opening.owner === "opponent") {
 			return "Opening: place a flat stone of your opponent’s color on any square.";
 		}
-		const acts = S.info.actions.map((a) => a.label.toLowerCase());
+		const acts = (S.info.actions || []).map((a) => a.label.toLowerCase());
 		return acts.length ? `Your turn — ${acts.join(" or ")}.` : "Your turn.";
 	}
 	if (opts.some((o) => o.kind === "count")) return "How many pieces do you want to pick up?";
@@ -3489,7 +3489,7 @@ function moveBar() {
 		for (const id of actionIds) {
 			// The cards and the boxes of the board are chosen where they are drawn.
 			if (rv && rv.panel_actions && rv.panel_actions.some((p) => id.startsWith(p))) continue;
-			const def = S.info.actions.find((a) => a.id === id);
+			const def = actionDef(id);
 			// The direction of play is shown as the order it makes.
 			if ((id === "cw" || id === "ccw") && rv && rv.stage === "direction" && rv.order) {
 				group.append(directionButton(id, rv));
@@ -3960,7 +3960,7 @@ function describeSteps(steps) {
 		if (st.kind === "piece") {
 			parts.push(pieceLook(st.value).label);
 		} else if (st.kind === "action") {
-			const def = S.info.actions.find((a) => a.id === st.value);
+			const def = actionDef(st.value);
 			parts.push(def ? def.label : st.value);
 		} else if (st.kind === "count") {
 			if (isRuleset()) {
