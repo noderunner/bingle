@@ -79,6 +79,34 @@ func clickCell(t *testing.T, ctx context.Context, pos string) {
 	}
 }
 
+// clickCellUntil clicks a square and waits for cond to hold, clicking again when
+// it does not within a moment: the page redraws when a turn changes hands (a
+// game against yourself even changes whose seat it plays for), and a click that
+// lands in the redraw is lost.
+func clickCellUntil(t *testing.T, ctx context.Context, pos, cond string, timeout time.Duration) {
+	t.Helper()
+	js := fmt.Sprintf(`(function(){
+		var el = document.querySelector('#board .cell[data-position=%q] .cell-hit');
+		if (!el) return false;
+		el.dispatchEvent(new MouseEvent('click', {bubbles: true}));
+		return true;
+	})()`, pos)
+	deadline := time.Now().Add(timeout)
+	for time.Now().Before(deadline) {
+		var ok bool
+		_ = chromedp.Run(ctx, chromedp.Evaluate(js, &ok))
+		settle := time.Now().Add(1200 * time.Millisecond)
+		for time.Now().Before(settle) {
+			var done bool
+			if err := chromedp.Run(ctx, chromedp.Evaluate(`Boolean(`+cond+`)`, &done)); err == nil && done {
+				return
+			}
+			time.Sleep(60 * time.Millisecond)
+		}
+	}
+	waitJS(t, ctx, "the click on "+pos+" to take effect", cond, time.Second)
+}
+
 func clickSel(t *testing.T, ctx context.Context, sel string) {
 	t.Helper()
 	js := fmt.Sprintf(`(function(){ var el = document.querySelector(%q); if (!el || el.disabled) return false; el.click(); return true; })()`, sel)
