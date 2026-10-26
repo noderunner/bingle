@@ -48,7 +48,7 @@ func TestCreateGame_InsertsExactlyOneGameRowAndOnePlayerRow(t *testing.T) {
 	s := newCreateGameTestStore(t)
 	ctx := t.Context()
 
-	game, player, err := s.CreateGame(ctx, "ROOM01", "demo-freeplay", `{"positions":[]}`, "Alice", "black")
+	game, player, err := s.CreateGame(ctx, "ROOM01", "test-freeplay", `{"positions":[]}`, "Alice", "black")
 	if err != nil {
 		t.Fatalf("CreateGame returned error: %v, want nil", err)
 	}
@@ -66,8 +66,8 @@ func TestCreateGame_InsertsExactlyOneGameRowAndOnePlayerRow(t *testing.T) {
 	if game.RoomCode != "ROOM01" {
 		t.Errorf("game.RoomCode = %q, want %q", game.RoomCode, "ROOM01")
 	}
-	if game.GameDefID != "demo-freeplay" {
-		t.Errorf("game.GameDefID = %q, want %q", game.GameDefID, "demo-freeplay")
+	if game.GameDefID != "test-freeplay" {
+		t.Errorf("game.GameDefID = %q, want %q", game.GameDefID, "test-freeplay")
 	}
 	if game.BoardState != `{"positions":[]}` {
 		t.Errorf("game.BoardState = %q, want %q", game.BoardState, `{"positions":[]}`)
@@ -126,7 +126,7 @@ func TestGetGame_ReturnsSameFieldsAsCreateGame(t *testing.T) {
 	s := newCreateGameTestStore(t)
 	ctx := t.Context()
 
-	created, _, err := s.CreateGame(ctx, "ROOM02", "demo-freeplay", `{"positions":[1,2,3]}`, "Bob", "white")
+	created, _, err := s.CreateGame(ctx, "ROOM02", "test-freeplay", `{"positions":[1,2,3]}`, "Bob", "white")
 	if err != nil {
 		t.Fatalf("CreateGame returned error: %v, want nil", err)
 	}
@@ -167,7 +167,7 @@ func TestGetGame_TwoGamesNoCrosstalk(t *testing.T) {
 	s := newCreateGameTestStore(t)
 	ctx := t.Context()
 
-	game1, _, err := s.CreateGame(ctx, "ROOMA", "demo-freeplay", `{"board":"A"}`, "Alice", "black")
+	game1, _, err := s.CreateGame(ctx, "ROOMA", "test-freeplay", `{"board":"A"}`, "Alice", "black")
 	if err != nil {
 		t.Fatalf("CreateGame(ROOMA) returned error: %v, want nil", err)
 	}
@@ -185,8 +185,8 @@ func TestGetGame_TwoGamesNoCrosstalk(t *testing.T) {
 		t.Fatalf("GetGame(ROOMB) returned error: %v, want nil", err)
 	}
 
-	if gotA.RoomCode != "ROOMA" || gotA.GameDefID != "demo-freeplay" || gotA.BoardState != `{"board":"A"}` {
-		t.Errorf("GetGame(ROOMA) = %+v, want RoomCode=ROOMA GameDefID=demo-freeplay BoardState={\"board\":\"A\"}", gotA)
+	if gotA.RoomCode != "ROOMA" || gotA.GameDefID != "test-freeplay" || gotA.BoardState != `{"board":"A"}` {
+		t.Errorf("GetGame(ROOMA) = %+v, want RoomCode=ROOMA GameDefID=test-freeplay BoardState={\"board\":\"A\"}", gotA)
 	}
 	if gotB.RoomCode != "ROOMB" || gotB.GameDefID != "othergame" || gotB.BoardState != `{"board":"B"}` {
 		t.Errorf("GetGame(ROOMB) = %+v, want RoomCode=ROOMB GameDefID=othergame BoardState={\"board\":\"B\"}", gotB)
@@ -212,11 +212,11 @@ func TestCreateGame_DuplicateRoomCodeFailsAtomicallyLeavingNoPartialRows(t *test
 	s := newCreateGameTestStore(t)
 	ctx := t.Context()
 
-	if _, _, err := s.CreateGame(ctx, "DUP01", "demo-freeplay", `{"positions":[]}`, "Alice", "black"); err != nil {
+	if _, _, err := s.CreateGame(ctx, "DUP01", "test-freeplay", `{"positions":[]}`, "Alice", "black"); err != nil {
 		t.Fatalf("first CreateGame(DUP01) returned error: %v, want nil", err)
 	}
 
-	_, _, err := s.CreateGame(ctx, "DUP01", "demo-freeplay", `{"positions":[]}`, "Zed", "red")
+	_, _, err := s.CreateGame(ctx, "DUP01", "test-freeplay", `{"positions":[]}`, "Zed", "red")
 	if err == nil {
 		t.Fatal("second CreateGame with duplicate room code DUP01 returned nil error, want non-nil (UNIQUE constraint violation)")
 	}
@@ -270,11 +270,11 @@ func TestCreateGame_SeatNumberingIsPerGameNotGlobal(t *testing.T) {
 	s := newCreateGameTestStore(t)
 	ctx := t.Context()
 
-	game1, player1, err := s.CreateGame(ctx, "SEATA", "demo-freeplay", `{"positions":[]}`, "Dave", "black")
+	game1, player1, err := s.CreateGame(ctx, "SEATA", "test-freeplay", `{"positions":[]}`, "Dave", "black")
 	if err != nil {
 		t.Fatalf("CreateGame(SEATA) returned error: %v, want nil", err)
 	}
-	game2, player2, err := s.CreateGame(ctx, "SEATB", "demo-freeplay", `{"positions":[]}`, "Erin", "white")
+	game2, player2, err := s.CreateGame(ctx, "SEATB", "test-freeplay", `{"positions":[]}`, "Erin", "white")
 	if err != nil {
 		t.Fatalf("CreateGame(SEATB) returned error: %v, want nil", err)
 	}

@@ -1,4 +1,4 @@
-// Tests of building the application: the demo game is registered, and each call makes a fresh app that closes cleanly.
+// Tests of building the application: a real game is registered, and each call makes a fresh app that closes cleanly.
 
 package app_test
 
@@ -8,7 +8,18 @@ import (
 
 	"github.com/noderunner/bingle/internal/app"
 	"github.com/noderunner/bingle/internal/config"
+	"github.com/noderunner/bingle/tests/testdata"
 )
+
+// registerFixtures adds the games only the tests use (see tests/testdata) to
+// the app's catalog: the server registers none of them.
+func registerFixtures(t *testing.T, a *app.App) {
+	t.Helper()
+	mod := testdata.Freeplay()
+	if err := a.Catalog().Register(mod.ID, mod.Definition, mod.Callbacks); err != nil {
+		t.Fatalf("registering the %s fixture: %v", mod.ID, err)
+	}
+}
 
 // newTestConfig returns a config.Config pointing at a fresh, unique SQLite
 // file under a per-call temp directory, so each call to app.New in these
@@ -20,10 +31,10 @@ func newTestConfig(t *testing.T) config.Config {
 	}
 }
 
-// TestNew_RegistersDemoFreeplayInCatalog covers the backlog item's AC
-// itself: a fresh app.New(cfg) succeeds, and a.Catalog().Get("demo-freeplay")
+// TestNew_RegistersTicTacToeInCatalog covers the backlog item's AC
+// itself: a fresh app.New(cfg) succeeds, and a.Catalog().Get("tic-tac-toe")
 // returns a registered, compiled game.
-func TestNew_RegistersDemoFreeplayInCatalog(t *testing.T) {
+func TestNew_RegistersTicTacToeInCatalog(t *testing.T) {
 	cfg := newTestConfig(t)
 
 	a, err := app.New(cfg)
@@ -40,21 +51,21 @@ func TestNew_RegistersDemoFreeplayInCatalog(t *testing.T) {
 		t.Fatal("a.Catalog() returned nil, want a non-nil *catalog.Catalog")
 	}
 
-	cg, ok := cat.Get("demo-freeplay")
+	cg, ok := cat.Get("tic-tac-toe")
 	if !ok {
-		t.Fatal(`a.Catalog().Get("demo-freeplay") returned ok=false, want true`)
+		t.Fatal(`a.Catalog().Get("tic-tac-toe") returned ok=false, want true`)
 	}
 	if cg == nil {
-		t.Fatal(`a.Catalog().Get("demo-freeplay") returned nil *CompiledGame with ok=true`)
+		t.Fatal(`a.Catalog().Get("tic-tac-toe") returned nil *CompiledGame with ok=true`)
 	}
 }
 
-// TestNew_DemoFreeplayHasTwoSeats is a light structural check (mirroring,
-// without duplicating, tests/demo/demo_test.go's checks) that the
-// "demo-freeplay" entry registered into the App's catalog really is the
-// compiled demo game and not some placeholder: it must have exactly two
+// TestNew_TicTacToeHasTwoSeats is a light structural check (mirroring,
+// without duplicating, tests/freeplay/freeplay_test.go's checks) that the
+// "tic-tac-toe" entry registered into the App's catalog really is the
+// compiled Tic-Tac-Toe game and not some placeholder: it must have exactly two
 // seats.
-func TestNew_DemoFreeplayHasTwoSeats(t *testing.T) {
+func TestNew_TicTacToeHasTwoSeats(t *testing.T) {
 	cfg := newTestConfig(t)
 
 	a, err := app.New(cfg)
@@ -63,9 +74,9 @@ func TestNew_DemoFreeplayHasTwoSeats(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = a.Close() })
 
-	cg, ok := a.Catalog().Get("demo-freeplay")
+	cg, ok := a.Catalog().Get("tic-tac-toe")
 	if !ok {
-		t.Fatal(`a.Catalog().Get("demo-freeplay") returned ok=false, want true`)
+		t.Fatal(`a.Catalog().Get("tic-tac-toe") returned ok=false, want true`)
 	}
 	if cg.Definition == nil {
 		t.Fatal("cg.Definition is nil, want a parsed *dsl.GameDefinition")
@@ -80,7 +91,7 @@ func TestNew_DemoFreeplayHasTwoSeats(t *testing.T) {
 // TestNew_RegistersFreshlyOnEachCall guards against an accidental
 // package-level global catalog or sync.Once: calling app.New a second time,
 // against a different fresh temp DB path, must produce an App whose own
-// catalog ALSO has "demo-freeplay" registered — i.e. registration is a
+// catalog ALSO has "tic-tac-toe" registered — i.e. registration is a
 // per-App-instance side effect of New, not a one-time global side effect.
 func TestNew_RegistersFreshlyOnEachCall(t *testing.T) {
 	firstCfg := newTestConfig(t)
@@ -90,8 +101,8 @@ func TestNew_RegistersFreshlyOnEachCall(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = first.Close() })
 
-	if _, ok := first.Catalog().Get("demo-freeplay"); !ok {
-		t.Fatal(`first.Catalog().Get("demo-freeplay") returned ok=false, want true`)
+	if _, ok := first.Catalog().Get("tic-tac-toe"); !ok {
+		t.Fatal(`first.Catalog().Get("tic-tac-toe") returned ok=false, want true`)
 	}
 
 	secondCfg := newTestConfig(t)
@@ -105,12 +116,12 @@ func TestNew_RegistersFreshlyOnEachCall(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = second.Close() })
 
-	secondCg, ok := second.Catalog().Get("demo-freeplay")
+	secondCg, ok := second.Catalog().Get("tic-tac-toe")
 	if !ok {
-		t.Fatal(`second.Catalog().Get("demo-freeplay") returned ok=false, want true — registration must happen freshly on every New call`)
+		t.Fatal(`second.Catalog().Get("tic-tac-toe") returned ok=false, want true — registration must happen freshly on every New call`)
 	}
 	if secondCg == nil {
-		t.Fatal(`second.Catalog().Get("demo-freeplay") returned nil *CompiledGame with ok=true`)
+		t.Fatal(`second.Catalog().Get("tic-tac-toe") returned nil *CompiledGame with ok=true`)
 	}
 }
 

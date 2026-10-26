@@ -35,7 +35,6 @@ click-to-move for free.
 | **Nyet!** (Stefan Dorra's trick-taking game: cross choices off a board to set the round's terms, pick teams, take tricks and loot; 2–5 players — the first game on the card framework) | `internal/games/nyet/`, `internal/engine/cards/` ([ADR 0043](docs/decisions/0043-card-games.md)) |
 | **Cthulhu Wars** (core set with the Windwalker, Sleeper, Opener of the Way and Tcho-Tcho cults, the High Priests, the Azathoth neutral spellbooks and Monsters, the Dreamlands and Beyond Time and Space Loyalty Cards, the Hound of Tindalos and five Independent Great Old Ones, three to five players, simplified world map: Power, Gates, Doom, spellbooks, dice battles, hidden Elder Signs — rules in Go, map and rules guide as data) | `internal/games/cthulhuwars/` ([rules notes](docs/cthulhu-wars.md)) |
 | Go (9×9–19×19), Reversi, Hex, Havannah, Yavalath, Amazons, Ataxx, Pente, Brandubh, English Draughts, Breakthrough, Connect Four, Gomoku, Tic-Tac-Toe | `internal/games/classics/*.json` |
-| Demo: free movement & capture (Go-style board) | `internal/games/demo/demo.json` |
 
 ![The lobby: game gallery, puzzles, bots, time limits](docs/screenshots/lobby.png)
 

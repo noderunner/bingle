@@ -19,8 +19,8 @@ import (
 // with "capture-or-empty" occupancy, 2 seats, round-robin turn order, no win
 // condition, no callbacks.
 const validGridDefJSON = `{
-  "id": "demo-freeplay",
-  "name": "Demo: Free Movement & Capture",
+  "id": "test-freeplay",
+  "name": "Test: Free Movement & Capture",
   "board": {
     "generator": { "type": "grid", "width": 9, "height": 9, "adjacency": "orthogonal4" }
   },
@@ -200,16 +200,16 @@ var _ callback.GameCallbacks = fakeCallbacks{}
 func TestRegister_GridBoard_HappyPath(t *testing.T) {
 	cat := catalog.NewCatalog()
 
-	if err := cat.Register("demo-freeplay", []byte(validGridDefJSON), nil); err != nil {
+	if err := cat.Register("test-freeplay", []byte(validGridDefJSON), nil); err != nil {
 		t.Fatalf("Register() error = %v, want nil", err)
 	}
 
-	cg, ok := cat.Get("demo-freeplay")
+	cg, ok := cat.Get("test-freeplay")
 	if !ok {
-		t.Fatalf("Get(%q) ok = false, want true", "demo-freeplay")
+		t.Fatalf("Get(%q) ok = false, want true", "test-freeplay")
 	}
 	if cg == nil {
-		t.Fatalf("Get(%q) returned nil *CompiledGame with ok=true", "demo-freeplay")
+		t.Fatalf("Get(%q) returned nil *CompiledGame with ok=true", "test-freeplay")
 	}
 
 	// Board: grid positions present.

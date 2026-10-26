@@ -63,7 +63,7 @@ func postMove(t *testing.T, baseURL, code string, body any, rawBody string) (*ht
 	return resp, buf.Bytes()
 }
 
-// setupActiveGame creates a demo-freeplay room with Alice (seat 1, black),
+// setupActiveGame creates a test-freeplay room with Alice (seat 1, black),
 // has Bob join to fill seat 2 (white) and activate the game, and returns
 // the room code. Per the turn-order-init fix (backlog item 20), the newly
 // activated game's turn_seat is seat 1 (black / Alice).

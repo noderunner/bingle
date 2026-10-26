@@ -132,13 +132,13 @@ func toolErrorText(res *mcp.CallToolResult) string {
 	return "(no content)"
 }
 
-// TestMCPListGameDefs_ReturnsDemoFreeplay covers half of backlog item 33's
+// TestMCPListGameDefs_ReturnsTestFreeplay covers half of backlog item 33's
 // AC: calling the list_game_defs MCP tool with no args succeeds
 // (IsError == false) and its result includes an entry for
-// "demo-freeplay" with name "Demo: Free Movement & Capture" and
+// "test-freeplay" with name "Test: Free Movement & Capture" and
 // seats_required == 2 — the MCP equivalent of
-// TestGetGameDefs_ReturnsDemoFreeplay (rest_create_game_test.go).
-func TestMCPListGameDefs_ReturnsDemoFreeplay(t *testing.T) {
+// TestGetGameDefs_ReturnsTestFreeplay (rest_create_game_test.go).
+func TestMCPListGameDefs_ReturnsTestFreeplay(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	c := newMCPClient(t, baseURL)
 
@@ -152,18 +152,18 @@ func TestMCPListGameDefs_ReturnsDemoFreeplay(t *testing.T) {
 
 	found := false
 	for _, d := range defs {
-		if d.ID == "demo-freeplay" {
+		if d.ID == "test-freeplay" {
 			found = true
-			if d.Name != "Demo: Free Movement & Capture" {
-				t.Errorf("demo-freeplay name = %q, want %q", d.Name, "Demo: Free Movement & Capture")
+			if d.Name != "Test: Free Movement & Capture" {
+				t.Errorf("test-freeplay name = %q, want %q", d.Name, "Test: Free Movement & Capture")
 			}
 			if d.SeatsRequired != 2 {
-				t.Errorf("demo-freeplay seats_required = %d, want 2", d.SeatsRequired)
+				t.Errorf("test-freeplay seats_required = %d, want 2", d.SeatsRequired)
 			}
 		}
 	}
 	if !found {
-		t.Errorf("list_game_defs result %+v does not contain an entry with id == %q", defs, "demo-freeplay")
+		t.Errorf("list_game_defs result %+v does not contain an entry with id == %q", defs, "test-freeplay")
 	}
 }
 
@@ -171,7 +171,7 @@ func TestMCPListGameDefs_ReturnsDemoFreeplay(t *testing.T) {
 // against any accidental per-call mutation or one-shot state in the tool
 // handler (e.g. a catalog that's only safely readable once): calling
 // list_game_defs twice on the same client must return the same
-// demo-freeplay entry both times.
+// test-freeplay entry both times.
 func TestMCPListGameDefs_CalledTwice_Idempotent(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	c := newMCPClient(t, baseURL)
@@ -186,19 +186,19 @@ func TestMCPListGameDefs_CalledTwice_Idempotent(t *testing.T) {
 
 		found := false
 		for _, d := range defs {
-			if d.ID == "demo-freeplay" {
+			if d.ID == "test-freeplay" {
 				found = true
 			}
 		}
 		if !found {
-			t.Errorf("call %d: list_game_defs result %+v does not contain an entry with id == %q", i, defs, "demo-freeplay")
+			t.Errorf("call %d: list_game_defs result %+v does not contain an entry with id == %q", i, defs, "test-freeplay")
 		}
 	}
 }
 
 // TestMCPCreateGame_ProducesRoomJoinableViaREST covers backlog item 33's AC
 // itself, in full: calling the create_game MCP tool with
-// {"game_def_id": "demo-freeplay", "player_name": "Alice"} succeeds
+// {"game_def_id": "test-freeplay", "player_name": "Alice"} succeeds
 // (IsError == false) and returns a room_code (6 chars, drawn from
 // roomcode.Alphabet), seat == 1, color == "black", status == "waiting" —
 // then a PLAIN REST call (GET /api/games/{room_code}, via net/http against
@@ -212,7 +212,7 @@ func TestMCPCreateGame_ProducesRoomJoinableViaREST(t *testing.T) {
 	c := newMCPClient(t, baseURL)
 
 	res := callTool(t, c, "create_game", map[string]any{
-		"game_def_id": "demo-freeplay",
+		"game_def_id": "test-freeplay",
 		"player_name": "Alice",
 	})
 	if res.IsError {
@@ -248,8 +248,8 @@ func TestMCPCreateGame_ProducesRoomJoinableViaREST(t *testing.T) {
 		t.Fatalf("decode GET /api/games/%s response: %v (body: %s)", created.RoomCode, err, raw)
 	}
 
-	if got.GameDefID != "demo-freeplay" {
-		t.Errorf("REST game_def_id = %q, want %q", got.GameDefID, "demo-freeplay")
+	if got.GameDefID != "test-freeplay" {
+		t.Errorf("REST game_def_id = %q, want %q", got.GameDefID, "test-freeplay")
 	}
 	if got.Status != "waiting" {
 		t.Errorf("REST status = %q, want %q", got.Status, "waiting")
@@ -284,7 +284,7 @@ func TestMCPCreateGame_TwoCalls_ReturnDifferentRoomCodes(t *testing.T) {
 	c := newMCPClient(t, baseURL)
 
 	res1 := callTool(t, c, "create_game", map[string]any{
-		"game_def_id": "demo-freeplay",
+		"game_def_id": "test-freeplay",
 		"player_name": "Alice",
 	})
 	if res1.IsError {
@@ -294,7 +294,7 @@ func TestMCPCreateGame_TwoCalls_ReturnDifferentRoomCodes(t *testing.T) {
 	decodeToolResult(t, res1, &created1)
 
 	res2 := callTool(t, c, "create_game", map[string]any{
-		"game_def_id": "demo-freeplay",
+		"game_def_id": "test-freeplay",
 		"player_name": "Bob",
 	})
 	if res2.IsError {
@@ -358,7 +358,7 @@ func TestMCPCreateGame_BlankPlayerName_IsToolLevelError(t *testing.T) {
 			c := newMCPClient(t, baseURL)
 
 			res := callTool(t, c, "create_game", map[string]any{
-				"game_def_id": "demo-freeplay",
+				"game_def_id": "test-freeplay",
 				"player_name": tc.playerName,
 			})
 

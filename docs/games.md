@@ -14,7 +14,6 @@ vocabulary and [mcp.md](mcp.md) for the training side (planes, action IDs).
 | **Connect Four** (`connect-four`) | 0.1.0 | 7×6 squares | 2 | place | end/draw, line |  |
 | **Courtfall** (`courtfall`) | 0.1.0 | hexagon, 4 per side | 2 | ruleset (Go) | victory points |  |
 | **Cthulhu Wars** (`cthulhu-wars`) | 0.1.0 | area map, 17 areas | 4 | ruleset (Go) | doom | `cthulhu-wars` `cthulhu-wars-3-5` `cthulhu-wars-3p` `cthulhu-wars-5p` |
-| **Demo: Free Movement & Capture** (`demo-freeplay`) | 0.1.0 | 9×9 points | 2 | step |  |  |
 | **English Draughts (Checkers)** (`draughts`) | 0.1.0 | 8×8 squares | 2 | jump, step | end/draw, end/mover-wins |  |
 | **Fendo** (`fendo`) | 0.1.0 | 7×7 squares | 2 | ruleset (Go) | victory points | `fendo` `fendo-11` `fendo-9` |
 | **Fist** (`fist`) | 0.1.0 | 8×8 squares | 2 | ruleset (Go) | victory points |  |

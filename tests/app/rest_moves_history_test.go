@@ -24,7 +24,7 @@ func getMoves(t *testing.T, baseURL, code, rawQuery string) (*http.Response, []b
 // submitThreeMoves drives exactly three sequential, legal, non-capturing
 // moves against roomCode (created via setupActiveGame, so Alice holds seat
 // 1/black and Bob holds seat 2/white), alternating black/white/black per
-// demo.json's round-robin turn order, and returns the three moveResult
+// freeplay.json's round-robin turn order, and returns the three moveResult
 // values from each POST's response ("move" object), in submission order
 // (seq 1, 2, 3). Fails the test immediately if any of the three moves
 // doesn't come back 200.

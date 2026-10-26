@@ -99,7 +99,7 @@ func TestTakRegisteredWithVariants(t *testing.T) {
 	for _, d := range defs {
 		have[d.ID] = d.BoardWidth
 	}
-	for id, w := range map[string]int{"demo-freeplay": 9, "tak-3x3": 3, "tak-4x4": 4, "tak-5x5": 5, "tak-6x6": 6, "tak-7x7": 7, "tak-8x8": 8} {
+	for id, w := range map[string]int{"test-freeplay": 9, "tak-3x3": 3, "tak-4x4": 4, "tak-5x5": 5, "tak-6x6": 6, "tak-7x7": 7, "tak-8x8": 8} {
 		if have[id] != w {
 			t.Errorf("game def %q width = %d, want %d (defs: %v)", id, have[id], w, have)
 		}
@@ -715,7 +715,7 @@ func TestEveryGameDefDescribesRulesAndNotation(t *testing.T) {
 			t.Errorf("%s: status %d", d.ID, code)
 			continue
 		}
-		if d.ID != "demo-freeplay" && len(info.Rules) == 0 {
+		if d.ID != "test-freeplay" && len(info.Rules) == 0 {
 			t.Errorf("%s: no rules text", d.ID)
 		}
 		if len(info.WinRules) == 0 {

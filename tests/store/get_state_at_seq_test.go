@@ -34,7 +34,7 @@ func TestGetStateAtSeq_ReturnsResultingStateForEachRecordedSeq(t *testing.T) {
 	s := newGetStateAtSeqTestStore(t)
 	ctx := t.Context()
 
-	game, _, err := s.CreateGame(ctx, "GSA01", "demo-freeplay", `{"positions":[]}`, "Alice", "black")
+	game, _, err := s.CreateGame(ctx, "GSA01", "test-freeplay", `{"positions":[]}`, "Alice", "black")
 	if err != nil {
 		t.Fatalf("CreateGame returned error: %v, want nil", err)
 	}
@@ -78,7 +78,7 @@ func TestGetStateAtSeq_SeqNeverRecordedReturnsErrNotFoundAndEmptyString(t *testi
 	s := newGetStateAtSeqTestStore(t)
 	ctx := t.Context()
 
-	game, _, err := s.CreateGame(ctx, "GSA02", "demo-freeplay", `{"positions":[]}`, "Alice", "black")
+	game, _, err := s.CreateGame(ctx, "GSA02", "test-freeplay", `{"positions":[]}`, "Alice", "black")
 	if err != nil {
 		t.Fatalf("CreateGame returned error: %v, want nil", err)
 	}
@@ -111,7 +111,7 @@ func TestGetStateAtSeq_SeqZeroReturnsErrNotFoundEvenWithNoMovesRecorded(t *testi
 	s := newGetStateAtSeqTestStore(t)
 	ctx := t.Context()
 
-	game, _, err := s.CreateGame(ctx, "GSA03", "demo-freeplay", `{"positions":[]}`, "Alice", "black")
+	game, _, err := s.CreateGame(ctx, "GSA03", "test-freeplay", `{"positions":[]}`, "Alice", "black")
 	if err != nil {
 		t.Fatalf("CreateGame returned error: %v, want nil", err)
 	}
@@ -138,7 +138,7 @@ func TestGetStateAtSeq_SeqZeroReturnsErrNotFoundEvenAfterMovesRecorded(t *testin
 	s := newGetStateAtSeqTestStore(t)
 	ctx := t.Context()
 
-	game, _, err := s.CreateGame(ctx, "GSA03B", "demo-freeplay", `{"positions":[]}`, "Alice", "black")
+	game, _, err := s.CreateGame(ctx, "GSA03B", "test-freeplay", `{"positions":[]}`, "Alice", "black")
 	if err != nil {
 		t.Fatalf("CreateGame returned error: %v, want nil", err)
 	}
@@ -169,7 +169,7 @@ func TestGetStateAtSeq_UnknownGameIDReturnsErrNotFound(t *testing.T) {
 	// Seed one legitimate game/move so we can confirm the lookup against a
 	// different, non-existent id isn't accidentally satisfied by unrelated
 	// rows.
-	game, _, err := s.CreateGame(ctx, "GSA04", "demo-freeplay", `{"positions":[]}`, "Alice", "black")
+	game, _, err := s.CreateGame(ctx, "GSA04", "test-freeplay", `{"positions":[]}`, "Alice", "black")
 	if err != nil {
 		t.Fatalf("CreateGame returned error: %v, want nil", err)
 	}
@@ -202,11 +202,11 @@ func TestGetStateAtSeq_CrossGameIsolationForSameSeqNumber(t *testing.T) {
 	s := newGetStateAtSeqTestStore(t)
 	ctx := t.Context()
 
-	gameA, _, err := s.CreateGame(ctx, "GSA05A", "demo-freeplay", `{"positions":[]}`, "Dave", "black")
+	gameA, _, err := s.CreateGame(ctx, "GSA05A", "test-freeplay", `{"positions":[]}`, "Dave", "black")
 	if err != nil {
 		t.Fatalf("CreateGame(gameA) returned error: %v, want nil", err)
 	}
-	gameB, _, err := s.CreateGame(ctx, "GSA05B", "demo-freeplay", `{"positions":[]}`, "Erin", "white")
+	gameB, _, err := s.CreateGame(ctx, "GSA05B", "test-freeplay", `{"positions":[]}`, "Erin", "white")
 	if err != nil {
 		t.Fatalf("CreateGame(gameB) returned error: %v, want nil", err)
 	}

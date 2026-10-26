@@ -269,7 +269,7 @@ func TestMCP_EnvTruncatesAtMaxPlies(t *testing.T) {
 	c := newMCPClient(t, baseURL)
 
 	var obs envObs
-	res := callTool(t, c, "env_reset", map[string]any{"game_def_id": "demo-freeplay", "opponent": "random", "seed": 1, "max_plies": 4})
+	res := callTool(t, c, "env_reset", map[string]any{"game_def_id": "test-freeplay", "opponent": "random", "seed": 1, "max_plies": 4})
 	decodeToolResult(t, res, &obs)
 	for i := 0; i < 10 && !obs.Done; i++ {
 		res = callTool(t, c, "env_step", map[string]any{"env_id": obs.EnvID, "move": obs.LegalMoves[0]})
@@ -557,7 +557,7 @@ func TestMCP_GameGuideAndAddBot(t *testing.T) {
 	if bad := callTool(t, c, "get_game_guide", map[string]any{"game_def_id": "cthulhu-wars", "tab": "nope"}); !bad.IsError {
 		t.Error("an unknown page should be an error")
 	}
-	gen := callTool(t, c, "get_game_guide", map[string]any{"game_def_id": "demo-freeplay"})
+	gen := callTool(t, c, "get_game_guide", map[string]any{"game_def_id": "test-freeplay"})
 	if gen.IsError || !strings.Contains(toolText(gen), "Move notation") {
 		t.Errorf("generated guide: %s", toolText(gen))
 	}

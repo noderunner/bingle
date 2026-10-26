@@ -31,7 +31,7 @@ func TestConcurrentReadersAndWriters_NoBusyErrors(t *testing.T) {
 	var codes []string
 	for i := 0; i < games; i++ {
 		code := fmt.Sprintf("ROOM%02d", i)
-		g, _, err := st.CreateGame(ctx, code, "demo-freeplay", "{}", fmt.Sprintf("p%d", i), "black")
+		g, _, err := st.CreateGame(ctx, code, "test-freeplay", "{}", fmt.Sprintf("p%d", i), "black")
 		if err != nil {
 			t.Fatalf("CreateGame: %v", err)
 		}

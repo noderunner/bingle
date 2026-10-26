@@ -14,7 +14,7 @@ import (
 // TestWebGame_LoadsAndDisplaysBoardState covers backlog item 38's AC
 // itself: creating a game via REST, then navigating a headless-Chrome
 // session to /game/{code}, results in the rendered page displaying data
-// fetched from GET /api/games/{code}/state — specifically the demo game's
+// fetched from GET /api/games/{code}/state — specifically the freeplay fixture's
 // real initial state. (The v1 UI dumped raw JSON into the body; the current
 // UI draws the board and keeps the raw dump in a collapsed debug panel, so
 // this checks the rendered pieces and the debug panel's contents.)
@@ -29,7 +29,7 @@ func TestWebGame_LoadsAndDisplaysBoardState(t *testing.T) {
 		t.Fatalf("navigate to /game/%s: %v", roomCode, err)
 	}
 
-	// The demo game's initial setup always places a black stone at "2,0".
+	// The freeplay fixture's initial setup always places a black stone at "2,0".
 	if err := chromedp.Run(ctx, chromedp.WaitReady(`#board .piece[data-position="2,0"]`, chromedp.ByQuery)); err != nil {
 		t.Fatalf("rendered /game/%s page never drew the stone at 2,0: %v", roomCode, err)
 	}
@@ -139,7 +139,7 @@ func TestWebGame_UnknownRoomCode_PageStillLoadsButShowsError(t *testing.T) {
 		t.Errorf("rendered /game/%s page body is blank/whitespace-only after waiting for board.js's fetch to settle; want SOME visible content (even an error indicator), per this test's documented choice that the page shell always renders and board.js surfaces the .../state 404 visibly rather than leaving a blank page", unknownCode)
 	}
 	if strings.Contains(body, "2,0") {
-		t.Errorf("rendered /game/%s page body unexpectedly contains %q, a real demo-game initial stone position, for a room code that was never created; body:\n%s", unknownCode, "2,0", body)
+		t.Errorf("rendered /game/%s page body unexpectedly contains %q, a real freeplay initial stone position, for a room code that was never created; body:\n%s", unknownCode, "2,0", body)
 	}
 
 	// Confirm no uncaught JS exception was thrown (chromedp surfaces page

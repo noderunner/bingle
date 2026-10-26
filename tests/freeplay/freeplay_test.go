@@ -1,6 +1,6 @@
-// Tests of the demo game module: it registers, has two seats and resolves its stone piece.
+// Tests of the Freeplay fixture game: it registers, has two seats and resolves its stone piece.
 
-package demo_test
+package freeplay_test
 
 import (
 	"testing"
@@ -9,7 +9,7 @@ import (
 	"github.com/noderunner/bingle/internal/engine/callback"
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/engine/primitives"
-	"github.com/noderunner/bingle/internal/games/demo"
+	"github.com/noderunner/bingle/tests/testdata"
 )
 
 // noopOccupancyView is a primitives.OccupancyView with no occupants
@@ -23,27 +23,27 @@ func (emptyOccupancyView) Occupant(id board.PositionID) (string, bool) {
 	return "", false
 }
 
-// TestModule_Shape covers AC 1: demo.Module() returns the expected ID, a
+// TestModule_Shape covers AC 1: testdata.Freeplay() returns the expected ID, a
 // non-empty embedded Definition, and a nil Callbacks (the catalog is
 // responsible for substituting NoopCallbacks — see TestRegisteredGame_Callbacks).
 func TestModule_Shape(t *testing.T) {
-	mod := demo.Module()
+	mod := testdata.Freeplay()
 
-	if mod.ID != "demo-freeplay" {
-		t.Errorf("mod.ID = %q, want %q", mod.ID, "demo-freeplay")
+	if mod.ID != "test-freeplay" {
+		t.Errorf("mod.ID = %q, want %q", mod.ID, "test-freeplay")
 	}
 	if len(mod.Definition) == 0 {
-		t.Error("mod.Definition is empty, want the embedded demo.json contents")
+		t.Error("mod.Definition is empty, want the embedded freeplay.json contents")
 	}
 	if mod.Callbacks != nil {
 		t.Errorf("mod.Callbacks = %#v, want nil (catalog substitutes NoopCallbacks)", mod.Callbacks)
 	}
 }
 
-// TestRegister_Succeeds covers AC 2: registering demo.Module()'s fields into
+// TestRegister_Succeeds covers AC 2: registering testdata.Freeplay()'s fields into
 // a fresh Catalog returns a nil error.
 func TestRegister_Succeeds(t *testing.T) {
-	mod := demo.Module()
+	mod := testdata.Freeplay()
 	cat := catalog.NewCatalog()
 
 	if err := cat.Register(mod.ID, mod.Definition, mod.Callbacks); err != nil {
@@ -51,34 +51,34 @@ func TestRegister_Succeeds(t *testing.T) {
 	}
 }
 
-// mustRegisterDemo is a shared test helper: registers demo.Module() into a
+// mustRegisterFreeplay is a shared test helper: registers testdata.Freeplay() into a
 // fresh Catalog and returns the resulting CompiledGame, failing the test
 // immediately (via t.Fatalf) if registration or lookup fails.
-func mustRegisterDemo(t *testing.T) *catalog.CompiledGame {
+func mustRegisterFreeplay(t *testing.T) *catalog.CompiledGame {
 	t.Helper()
 
-	mod := demo.Module()
+	mod := testdata.Freeplay()
 	cat := catalog.NewCatalog()
 
 	if err := cat.Register(mod.ID, mod.Definition, mod.Callbacks); err != nil {
 		t.Fatalf("cat.Register(%q, ...) returned error: %v, want nil", mod.ID, err)
 	}
 
-	cg, ok := cat.Get("demo-freeplay")
+	cg, ok := cat.Get("test-freeplay")
 	if !ok {
-		t.Fatalf("cat.Get(%q) returned ok=false, want true", "demo-freeplay")
+		t.Fatalf("cat.Get(%q) returned ok=false, want true", "test-freeplay")
 	}
 	if cg == nil {
-		t.Fatalf("cat.Get(%q) returned nil *CompiledGame with ok=true", "demo-freeplay")
+		t.Fatalf("cat.Get(%q) returned nil *CompiledGame with ok=true", "test-freeplay")
 	}
 	return cg
 }
 
 // TestGet_ReturnsCompiledGameWithTwoSeats is the backlog item's AC itself:
-// Catalog.Get("demo-freeplay") returns a compiled game with two seats,
+// Catalog.Get("test-freeplay") returns a compiled game with two seats,
 // colored black and white (order-independent).
 func TestGet_ReturnsCompiledGameWithTwoSeats(t *testing.T) {
-	cg := mustRegisterDemo(t)
+	cg := mustRegisterFreeplay(t)
 
 	if cg.Definition == nil {
 		t.Fatal("cg.Definition is nil, want a parsed *dsl.GameDefinition")
@@ -111,7 +111,7 @@ func TestGet_ReturnsCompiledGameWithTwoSeats(t *testing.T) {
 // primitive registry lookup working together), not just structural presence
 // of the map entry.
 func TestStonePiece_ResolvesAndAllowsEmptyAdjacentStep(t *testing.T) {
-	cg := mustRegisterDemo(t)
+	cg := mustRegisterFreeplay(t)
 
 	stone, ok := cg.Pieces["stone"]
 	if !ok {
@@ -150,7 +150,7 @@ func TestStonePiece_ResolvesAndAllowsEmptyAdjacentStep(t *testing.T) {
 // distinct positions) that is orthogonal4-connected (an interior position
 // has exactly 4 neighbors).
 func TestBoard_Is9x9Orthogonal4Grid(t *testing.T) {
-	cg := mustRegisterDemo(t)
+	cg := mustRegisterFreeplay(t)
 
 	count := 0
 	for x := 0; x < 9; x++ {
@@ -222,19 +222,19 @@ func itoa(n int) string {
 // TestWinCondition_IsNone covers AC 6: cg.Definition.WinCondition.Type ==
 // "none", per section 6.1's demo win-condition decision.
 func TestWinCondition_IsNone(t *testing.T) {
-	cg := mustRegisterDemo(t)
+	cg := mustRegisterFreeplay(t)
 
 	if cg.Definition.WinCondition.Type != "none" {
 		t.Errorf("cg.Definition.WinCondition.Type = %q, want %q", cg.Definition.WinCondition.Type, "none")
 	}
 }
 
-// TestCallbacks_SubstitutedWithNoop covers AC 7: since demo.Module() passes
+// TestCallbacks_SubstitutedWithNoop covers AC 7: since testdata.Freeplay() passes
 // nil Callbacks, the catalog must substitute callback.NoopCallbacks — proven
 // here by checking cg.Callbacks is non-nil and behaves as a no-op (returns
 // nil from ValidateMove given a zero-value MoveContext).
 func TestCallbacks_SubstitutedWithNoop(t *testing.T) {
-	cg := mustRegisterDemo(t)
+	cg := mustRegisterFreeplay(t)
 
 	if cg.Callbacks == nil {
 		t.Fatal("cg.Callbacks is nil, want catalog to have substituted callback.NoopCallbacks for the demo module's nil Callbacks")
@@ -249,9 +249,9 @@ func TestCallbacks_SubstitutedWithNoop(t *testing.T) {
 // TestSetup_HasThreeStonesEachColor covers AC 8: cg.Definition.Setup has
 // exactly 6 entries, 3 colored "black" and 3 colored "white" — deliberately
 // not asserting exact position strings, so minor placement tweaks in the
-// authored demo.json don't break this test.
+// authored freeplay.json don't break this test.
 func TestSetup_HasThreeStonesEachColor(t *testing.T) {
-	cg := mustRegisterDemo(t)
+	cg := mustRegisterFreeplay(t)
 
 	setup := cg.Definition.Setup
 	if len(setup) != 6 {

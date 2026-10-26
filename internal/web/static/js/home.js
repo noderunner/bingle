@@ -187,7 +187,7 @@ function renderSetupPreview(id, info) {
 
 /** Games a move log can be replayed for: two seats, no chance. */
 function importable(d) {
-	return !!d && d.seats_required === 2 && d.id !== "demo-freeplay" && !d.id.startsWith("~");
+	return !!d && d.seats_required === 2 && !d.id.startsWith("~");
 }
 
 function startMode() {
@@ -215,7 +215,7 @@ function applyStartMode() {
 // ---- two bots playing each other ---------------------------------------------------------
 
 /** Games the bots can play against each other: two seats (the others pick bots per seat). */
-const botMatchable = (d) => !!d && d.seats_required === 2 && d.id !== "demo-freeplay";
+const botMatchable = (d) => !!d && d.seats_required === 2;
 
 /** True when "Two bots" is the chosen opponent of a game that offers it. */
 function botMatchChosen() {

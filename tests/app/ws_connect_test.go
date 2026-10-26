@@ -117,7 +117,7 @@ func readFirstEvent(t *testing.T, conn *websocket.Conn) wsEvent {
 // dial /ws/{code}?name=Bob&role=player. The very first message read off the
 // connection must be {"type": "joined", "data": {"role": "player", "seat":
 // 2, "color": "white", "status": "active"}} — Bob fills the last seat
-// (demo.json's seat 2, color "white"), which also activates the game.
+// (freeplay.json's seat 2, color "white"), which also activates the game.
 func TestWSConnect_PlayerFillsLastSeat_ReceivesJoinedEventFirst(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	roomCode := createRoom(t, baseURL, "Alice")
@@ -238,7 +238,7 @@ func TestWSConnect_SpectatorOnActiveGame_ReceivesJoinedEventFirst(t *testing.T) 
 // covers the reconnect-by-name path (mirroring JoinGame's REST coverage):
 // dialing /ws/{code}?name=Alice&role=player on a room Alice already created
 // (she holds seat 1) must reattach her to seat 1, not treat her as a new
-// player — the joined event must show seat 1 / color "black" (demo.json's
+// player — the joined event must show seat 1 / color "black" (freeplay.json's
 // seat 1 color) and must NOT change the game's status (still "waiting",
 // since only seat 1 was ever filled).
 func TestWSConnect_ReconnectExistingName_ReceivesJoinedEventForExistingSeat(t *testing.T) {

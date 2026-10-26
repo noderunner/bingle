@@ -27,6 +27,7 @@ func newRESTTestServer(t *testing.T) string {
 		t.Fatalf("app.New(cfg) returned error: %v, want nil", err)
 	}
 	t.Cleanup(func() { _ = a.Close() })
+	registerFixtures(t, a)
 
 	srv := httptest.NewServer(a.Router())
 	t.Cleanup(srv.Close)
@@ -110,7 +111,7 @@ func TestPostGames_KnownGameDefID_Returns200WithRoomCode(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 
 	resp, raw := postGame(t, baseURL, map[string]string{
-		"game_def_id": "demo-freeplay",
+		"game_def_id": "test-freeplay",
 		"player_name": "Alice",
 	}, "")
 
@@ -129,14 +130,14 @@ func TestPostGames_KnownGameDefID_Returns200WithRoomCode(t *testing.T) {
 }
 
 // TestPostGames_KnownGameDefID_ReturnsSeatColorStatus covers the response
-// shape beyond room_code: seat == 1, color == "black" (demo.json's seat 1
+// shape beyond room_code: seat == 1, color == "black" (freeplay.json's seat 1
 // color), status == "waiting" (a freshly-created game with only the
 // creator seated).
 func TestPostGames_KnownGameDefID_ReturnsSeatColorStatus(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 
 	resp, raw := postGame(t, baseURL, map[string]string{
-		"game_def_id": "demo-freeplay",
+		"game_def_id": "test-freeplay",
 		"player_name": "Alice",
 	}, "")
 
@@ -160,12 +161,12 @@ func TestPostGames_KnownGameDefID_ReturnsSeatColorStatus(t *testing.T) {
 	}
 }
 
-// TestGetGameDefs_ReturnsDemoFreeplay covers GET /api/game-defs: 200 and a
-// JSON array containing at least one entry with id == "demo-freeplay",
-// name == "Demo: Free Movement & Capture", seats_required == 2 — matching
-// internal/games/demo/demo.json, which is always registered into a real
+// TestGetGameDefs_ReturnsTestFreeplay covers GET /api/game-defs: 200 and a
+// JSON array containing at least one entry with id == "test-freeplay",
+// name == "Test: Free Movement & Capture", seats_required == 2 — matching
+// tests/testdata/freeplay.json, which is always registered into a real
 // app.New()'s catalog.
-func TestGetGameDefs_ReturnsDemoFreeplay(t *testing.T) {
+func TestGetGameDefs_ReturnsTestFreeplay(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 
 	resp, err := http.Get(baseURL + "/api/game-defs")
@@ -185,18 +186,18 @@ func TestGetGameDefs_ReturnsDemoFreeplay(t *testing.T) {
 
 	found := false
 	for _, d := range defs {
-		if d.ID == "demo-freeplay" {
+		if d.ID == "test-freeplay" {
 			found = true
-			if d.Name != "Demo: Free Movement & Capture" {
-				t.Errorf("demo-freeplay name = %q, want %q", d.Name, "Demo: Free Movement & Capture")
+			if d.Name != "Test: Free Movement & Capture" {
+				t.Errorf("test-freeplay name = %q, want %q", d.Name, "Test: Free Movement & Capture")
 			}
 			if d.SeatsRequired != 2 {
-				t.Errorf("demo-freeplay seats_required = %d, want 2", d.SeatsRequired)
+				t.Errorf("test-freeplay seats_required = %d, want 2", d.SeatsRequired)
 			}
 		}
 	}
 	if !found {
-		t.Errorf("GET /api/game-defs response %+v does not contain an entry with id == %q", defs, "demo-freeplay")
+		t.Errorf("GET /api/game-defs response %+v does not contain an entry with id == %q", defs, "test-freeplay")
 	}
 }
 
@@ -242,7 +243,7 @@ func TestPostGames_BlankPlayerName_Returns400(t *testing.T) {
 			baseURL := newRESTTestServer(t)
 
 			resp, raw := postGame(t, baseURL, map[string]string{
-				"game_def_id": "demo-freeplay",
+				"game_def_id": "test-freeplay",
 				"player_name": tc.playerName,
 			}, "")
 
@@ -276,7 +277,7 @@ func TestPostGames_BlankGameDefID_Returns400(t *testing.T) {
 func TestPostGames_MalformedJSON_Returns400(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 
-	resp, raw := postGame(t, baseURL, nil, `{"game_def_id": "demo-freeplay", "player_name": `)
+	resp, raw := postGame(t, baseURL, nil, `{"game_def_id": "test-freeplay", "player_name": `)
 
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Fatalf("status = %d, want %d (body: %s)", resp.StatusCode, http.StatusBadRequest, raw)
@@ -303,7 +304,7 @@ func TestPostGames_TwoCalls_ReturnDifferentRoomCodes(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 
 	resp1, raw1 := postGame(t, baseURL, map[string]string{
-		"game_def_id": "demo-freeplay",
+		"game_def_id": "test-freeplay",
 		"player_name": "Alice",
 	}, "")
 	if resp1.StatusCode != http.StatusOK {
@@ -315,7 +316,7 @@ func TestPostGames_TwoCalls_ReturnDifferentRoomCodes(t *testing.T) {
 	}
 
 	resp2, raw2 := postGame(t, baseURL, map[string]string{
-		"game_def_id": "demo-freeplay",
+		"game_def_id": "test-freeplay",
 		"player_name": "Bob",
 	}, "")
 	if resp2.StatusCode != http.StatusOK {

@@ -25,6 +25,7 @@ func newServerWith(t *testing.T, mod func(*config.Config)) string {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = a.Close() })
+	registerFixtures(t, a)
 	srv := httptest.NewServer(a.Router())
 	t.Cleanup(srv.Close)
 	return srv.URL

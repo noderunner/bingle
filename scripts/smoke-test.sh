@@ -42,7 +42,7 @@ echo "smoke test PASSED: /healthz returned $(cat "${WORKDIR}/response.json")"
 # The game catalog is registered, a Tak game can be created and a move made
 # through the real HTTP stack, and the static UI assets are served.
 curl -fsS "http://127.0.0.1:${PORT}/api/game-defs" -o "${WORKDIR}/defs.json"
-for id in tak-5x5 demo-freeplay reversi; do
+for id in tak-5x5 hex-11 reversi; do
   if ! grep -q "\"${id}\"" "${WORKDIR}/defs.json"; then
     echo "smoke test FAILED: game definition ${id} is not registered"
     cat "${WORKDIR}/defs.json"

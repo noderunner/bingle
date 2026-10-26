@@ -63,7 +63,7 @@ func TestOpen_UpgradesAV1DatabaseInPlace(t *testing.T) {
 	}
 	for _, stmt := range []string{
 		v1Schema,
-		`INSERT INTO games (room_code, game_def_id, status, board_state, turn_seat, move_seq) VALUES ('OLDGAM', 'demo-freeplay', 'active', '{"0,0":{"Piece":"stone","Color":"black"}}', 2, 1)`,
+		`INSERT INTO games (room_code, game_def_id, status, board_state, turn_seat, move_seq) VALUES ('OLDGAM', 'test-freeplay', 'active', '{"0,0":{"Piece":"stone","Color":"black"}}', 2, 1)`,
 		`INSERT INTO players (game_id, seat, name, color) VALUES (1, 1, 'Alice', 'black'), (1, 2, 'Bob', 'white')`,
 		`INSERT INTO moves (game_id, seq, seat, color, from_position, to_position, resulting_state) VALUES (1, 1, 1, 'black', '0,0', '0,1', '{"0,1":{"Piece":"stone","Color":"black"}}')`,
 	} {

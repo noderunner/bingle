@@ -190,7 +190,7 @@ func TestWebGame_BoardHasVisibleGridLines(t *testing.T) {
 	if err := chromedp.Run(ctx, chromedp.Evaluate(js, &strokes)); err != nil {
 		t.Fatal(err)
 	}
-	// The demo is a 9x9 "points" board: 9 vertical + 9 horizontal lines.
+	// The fixture is a 9x9 "points" board: 9 vertical + 9 horizontal lines.
 	if len(strokes) != 18 {
 		t.Fatalf("grid lines = %d, want 18", len(strokes))
 	}
@@ -308,7 +308,7 @@ func TestWebGame_OpensWebSocketOnLoad(t *testing.T) {
 
 func TestWebGame_LiveUpdateAcrossTabsWithoutReload(t *testing.T) {
 	baseURL := newRESTTestServer(t)
-	room := newTakRoom(t, baseURL, "demo-freeplay", "Alice")
+	room := newTakRoom(t, baseURL, "test-freeplay", "Alice")
 	joinRoom(t, baseURL, room, "Bob")
 
 	ctx1, cancel1 := newChromedpContext(t, 40*time.Second)
@@ -350,12 +350,12 @@ func TestWebGame_LiveUpdateAcrossTabsWithoutReload(t *testing.T) {
 
 func TestWebGame_ClickToMoveAPiece(t *testing.T) {
 	baseURL := newRESTTestServer(t)
-	room := newTakRoom(t, baseURL, "demo-freeplay", "Alice")
+	room := newTakRoom(t, baseURL, "test-freeplay", "Alice")
 	joinRoom(t, baseURL, room, "Bob")
 
 	ctx, cancel := newChromedpContext(t, 40*time.Second)
 	defer cancel()
-	openGameAs(t, ctx, baseURL, room, "demo-freeplay", "Alice")
+	openGameAs(t, ctx, baseURL, room, "test-freeplay", "Alice")
 
 	waitJS(t, ctx, "my turn", `document.getElementById("status-message").textContent.indexOf("Your turn") === 0`, 10*time.Second)
 	// Alice (black) can start a move from any of her stones.
@@ -467,7 +467,7 @@ func TestWebGame_TakPlacementAndStackMoveByClicking(t *testing.T) {
 
 func TestWebGame_HistoryNavigationAndUndo(t *testing.T) {
 	baseURL := newRESTTestServer(t)
-	room := newTakRoom(t, baseURL, "demo-freeplay", "Alice")
+	room := newTakRoom(t, baseURL, "test-freeplay", "Alice")
 	joinRoom(t, baseURL, room, "Bob")
 	for _, m := range []struct{ who, mv string }{{"Alice", "2,0-2,1"}, {"Bob", "2,8-2,7"}, {"Alice", "4,0-4,1"}} {
 		if code, out := moveNotation(t, baseURL, room, m.who, m.mv); code != 200 {
@@ -480,7 +480,7 @@ func TestWebGame_HistoryNavigationAndUndo(t *testing.T) {
 	// Bob's perspective: it is his turn, so he can also undo his own move... he
 	// has made one move and Alice has moved since, so there is nothing to
 	// undo: the button is not offered.
-	openGameAs(t, ctx, baseURL, room, "demo-freeplay", "Bob")
+	openGameAs(t, ctx, baseURL, room, "test-freeplay", "Bob")
 	waitJS(t, ctx, "three moves listed", `document.querySelectorAll('#move-list button.mv').length === 3`, 10*time.Second)
 	if got := evalString(t, ctx, `String(document.getElementById("undo-move") === null)`); got != "true" {
 		t.Errorf("undo should not be offered to Bob (Alice moved after him)")
@@ -501,7 +501,7 @@ func TestWebGame_HistoryNavigationAndUndo(t *testing.T) {
 	// Alice undoes her last move (two-step confirmation).
 	ctxA, cancelA := newChromedpContext(t, 40*time.Second)
 	defer cancelA()
-	openGameAs(t, ctxA, baseURL, room, "demo-freeplay", "Alice")
+	openGameAs(t, ctxA, baseURL, room, "test-freeplay", "Alice")
 	waitJS(t, ctxA, "undo offered", `document.getElementById("undo-move") && !document.getElementById("undo-move").disabled`, 10*time.Second)
 	clickSel(t, ctxA, "#undo-move")
 	waitJS(t, ctxA, "confirmation", `document.getElementById("undo-move").textContent.indexOf("Really") >= 0`, 5*time.Second)

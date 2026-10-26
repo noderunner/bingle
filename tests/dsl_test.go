@@ -14,8 +14,8 @@ import (
 // game-definition JSON verbatim (minus the jsonc comments, which are not
 // valid JSON), including an explicit empty "callbacks" object.
 const validFixtureJSON = `{
-  "id": "demo-freeplay",
-  "name": "Demo: Free Movement & Capture",
+  "id": "test-freeplay",
+  "name": "Test: Free Movement & Capture",
   "board": {
     "generator": { "type": "grid", "width": 9, "height": 9, "adjacency": "orthogonal4" }
   },
@@ -38,8 +38,8 @@ const validFixtureJSON = `{
 // wantFixture is the GameDefinition validFixtureJSON should decode to.
 func wantFixture() *dsl.GameDefinition {
 	return &dsl.GameDefinition{
-		ID:   "demo-freeplay",
-		Name: "Demo: Free Movement & Capture",
+		ID:   "test-freeplay",
+		Name: "Test: Free Movement & Capture",
 		Board: dsl.Board{
 			Generator: &dsl.BoardGenerator{
 				Type:      "grid",
@@ -250,12 +250,12 @@ func TestParse_AllOtherFieldsValid_OnlyOneFieldMissing(t *testing.T) {
 // or a zero-value result.
 func TestParse_MalformedJSON(t *testing.T) {
 	malformedInputs := map[string]string{
-		"truncated_object":    `{"id": "demo-freeplay", "name": "Demo"`,
-		"trailing_comma":      `{"id": "demo-freeplay",}`,
+		"truncated_object":    `{"id": "test-freeplay", "name": "Demo"`,
+		"trailing_comma":      `{"id": "test-freeplay",}`,
 		"not_json_at_all":     `this is not json`,
 		"empty_input":         ``,
 		"bare_scalar":         `42`,
-		"unterminated_string": `{"id": "demo-freeplay`,
+		"unterminated_string": `{"id": "test-freeplay`,
 	}
 
 	for name, input := range malformedInputs {
