@@ -2,7 +2,9 @@
   "id": "fist",
   "name": "Fist",
   "description": "A two-player abstract strategy game from The Verdigris Pawn: a challenger with a mage, an ace and a few guards against a king with an army, and one neutral pawn either side may seize.",
-  "version": "0.1.0",
+  "version": "0.1.1",
+  "designers": ["James Ernest"],
+  "publisher": "Crab Fragment Games",
   "engine": "ruleset",
   "rules": [
     "Fist is played on an 8×8 board (the chess board of the rules, turned on its side). The challenger (white) moves first. The challenger wins by capturing the king; the king's side (black) wins by capturing all three of the challenger's blue guards. Whoever reaches their goal wins at once.",
