@@ -47,6 +47,7 @@ type App struct {
 	router    chi.Router
 	publicURL string
 	rtc       api.RTCConfig
+	changelog string
 }
 
 // New builds an App from cfg: it opens the store, builds a *catalog.Catalog
@@ -78,7 +79,7 @@ func New(cfg config.Config) (*App, error) {
 		return nil, err
 	}
 
-	a := &App{store: st, catalog: cat, manager: manager, envs: envs.NewManager(cat), batches: batch.NewManager(st, cat), publicURL: cfg.PublicURL,
+	a := &App{store: st, catalog: cat, manager: manager, envs: envs.NewManager(cat), batches: batch.NewManager(st, cat), publicURL: cfg.PublicURL, changelog: cfg.Changelog,
 		rtc: api.RTCConfig{Stun: cfg.RTCStun, TurnURLs: cfg.RTCTurnURLs, TurnSecret: cfg.RTCTurnSecret}}
 	a.router = a.newRouter()
 	return a, nil
@@ -190,7 +191,7 @@ func (a *App) Close() error {
 func (a *App) newRouter() chi.Router {
 	r := chi.NewRouter()
 	r.Get("/healthz", a.handleHealthz)
-	r.Mount("/api", api.NewRouter(a.manager, api.WithEnvs(a.envs), api.WithBatches(a.batches), api.WithPublicURL(a.publicURL), api.WithRTC(a.rtc)))
+	r.Mount("/api", api.NewRouter(a.manager, api.WithEnvs(a.envs), api.WithBatches(a.batches), api.WithPublicURL(a.publicURL), api.WithRTC(a.rtc), api.WithChangelog(a.changelog)))
 	r.Get("/ws/{code}", api.NewWSHandler(a.manager))
 	r.Get("/ws-chat", api.NewGlobalChatWSHandler(a.manager))
 	r.Mount("/mcp", mcpserver.NewServer(a.manager, a.envs, a.batches))

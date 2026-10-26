@@ -1,9 +1,9 @@
 // The icons of the bar at the top of every page: the active games (with a
 // count of those waiting for you), joining a game by its room code, the
-// player's profile, help (the version, the project's page, where to report
-// problems) and — while a voice call is up — a button for the call.
+// player's profile, help (the version, what changed lately, the project's page,
+// where to report problems) and — while a voice call is up — a button for the call.
 
-import { h, s, clear, toast, lastName, rememberGame, setTurnBadge } from "./util.js";
+import { h, s, clear, toast, lastName, rememberGame, setTurnBadge, store } from "./util.js";
 import { api } from "./api.js";
 import { gameDefs, loadRows, isFinished, yourTurn, sortRows, gameRow } from "./mygames.js";
 import { navigate, onLeave } from "./nav.js";
@@ -30,6 +30,9 @@ const helpIcon = () => icon(s("circle", { cx: 12, cy: 12, r: 9 }), s("path", { d
 const profileIcon = () => icon(s("circle", { cx: 12, cy: 8, r: 3.6 }), s("path", { d: "M4.5 20c.8-4 3.7-6 7.5-6s6.7 2 7.5 6" }));
 
 const REPO_URL = "https://github.com/noderunner/bingle";
+
+// The version of the changelog this browser has shown its player (the Recent Changes of the help window).
+const CHANGES_SEEN_KEY = "bingle.changelog.seen";
 
 /** The version of the bingle engine, which the server puts in every page. */
 function engineVersion() {
@@ -163,12 +166,18 @@ export function installTopbar({ onRows = () => {}, manageTitle = true } = {}) {
 	if (window.location.pathname === "/profile") profile.setAttribute("aria-current", "page");
 
 	// ---- help ---------------------------------------------------------------------
-	const helpBtn = h("button", { type: "button", class: "topbar-icon", id: "open-help", "aria-haspopup": "dialog", title: "Help", "aria-label": "Help" }, helpIcon());
+	// A dot on the icon says the changelog has an entry the player has not seen.
+	const helpDot = h("span", { class: "icon-badge dot", id: "help-badge", hidden: true, "aria-hidden": "true" });
+	const helpBtn = h("button", { type: "button", class: "topbar-icon", id: "open-help", "aria-haspopup": "dialog", title: "Help", "aria-label": "Help" }, helpIcon(), helpDot);
+	const changesBody = h("div", { class: "help-changes-body md" });
+	const changesHead = h("p", { class: "muted small help-changes-head", id: "help-changes-head" });
+	const changes = h("section", { class: "help-changes", id: "help-changes", hidden: true }, h("h3", {}, "Recent changes"), changesHead, changesBody);
 	const helpDlg = dialog(
 		"help-dialog",
 		"Help",
 		h("p", { class: "help-version", id: "help-version" }, h("strong", {}, "Bingle"), ` v${engineVersion()}`),
 		h("p", { class: "muted small" }, "Abstract strategy games to play with friends, against bots, or for training models. Open source under the MIT License."),
+		changes,
 		h(
 			"div",
 			{ class: "row help-links" },
@@ -176,7 +185,47 @@ export function installTopbar({ onRows = () => {}, manageTitle = true } = {}) {
 			h("a", { class: "button primary", id: "help-issues", href: `${REPO_URL}/issues`, target: "_blank", rel: "noopener noreferrer" }, "Report Issues")
 		)
 	);
-	helpBtn.addEventListener("click", () => open(helpDlg));
+
+	// The changelog's newest entry is read once the page is up; the dot shows until the player has seen it.
+	let latest = null;
+	let latestShown = false;
+	const paintHelpDot = () => {
+		const unseen = !!latest && store.get(CHANGES_SEEN_KEY, "") !== latest.version;
+		helpDot.hidden = !unseen;
+		const label = unseen ? "Help, with changes you have not seen" : "Help";
+		helpBtn.setAttribute("aria-label", label);
+		helpBtn.title = label;
+	};
+	const showChanges = async () => {
+		if (!latest) return;
+		changesHead.textContent = `Bingle ${latest.version}${latest.date ? ` · ${latest.date}` : ""}`;
+		changes.hidden = false;
+		if (!latestShown) {
+			latestShown = true;
+			try {
+				const { renderMarkdown } = await import("./markdown.js");
+				changesBody.append(renderMarkdown(latest.markdown, { idPrefix: "changes" }).node);
+			} catch (_) {
+				changesBody.textContent = latest.markdown;
+			}
+		}
+		// The section is on screen: the player has seen this entry.
+		store.set(CHANGES_SEEN_KEY, latest.version);
+		paintHelpDot();
+	};
+	api.changelog().then(
+		(entry) => {
+			if (entry && entry.version && entry.markdown) {
+				latest = entry;
+				paintHelpDot();
+			}
+		},
+		() => {} // no changelog on this server: no section, no dot
+	);
+	helpBtn.addEventListener("click", () => {
+		open(helpDlg);
+		showChanges();
+	});
 
 	const voice = voiceChip();
 	host.append(voice, activeBtn, joinBtn, profile, helpBtn);

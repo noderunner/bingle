@@ -68,6 +68,11 @@ type Config struct {
 	// Mail is the setup for email notifications (see Mail).
 	Mail Mail
 
+	// Changelog is the text of CHANGELOG.md, whose newest release the help
+	// window shows. It is not read from the environment: main sets it from the
+	// copy built into the binary.
+	Changelog string
+
 	// RTCStun lists the STUN servers voice chat uses to find a path between
 	// players (BINGLE_RTC_STUN, comma separated "stun:host:port" URLs). The
 	// default is Google's public one; "none" means no STUN server.

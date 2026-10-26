@@ -1535,6 +1535,14 @@ button.move-card { cursor: pointer; }
 	display: inline-flex; align-items: center; justify-content: center; border: 2px solid var(--surface); box-sizing: content-box;
 }
 .icon-badge[hidden] { display: none; }
+.icon-badge.dot { min-width: 0; width: 0.55rem; height: 0.55rem; padding: 0; top: -0.2rem; right: -0.2rem; }
+.help-changes { margin: 0.8rem 0; padding: 0.6rem 0.9rem; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-2); }
+.help-changes[hidden] { display: none; }
+.help-changes h3 { margin: 0 0 0.1rem; font-size: 1rem; }
+.help-changes-head { margin: 0 0 0.4rem; }
+.help-changes-body { max-height: 40vh; overflow-y: auto; font-size: 0.92rem; line-height: 1.45; }
+.help-changes-body h2, .help-changes-body h3, .help-changes-body h4 { font-size: 0.95rem; margin: 0.7rem 0 0.2rem; }
+.help-changes-body ul { margin: 0.2rem 0; padding-left: 1.2rem; }
 
 dialog.bar-dialog { width: min(40rem, 94vw); max-height: 88vh; overflow-y: auto; }
 dialog.bar-dialog .dialog-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 0.6rem; }
