@@ -157,11 +157,14 @@ func (e *notifyEnv) setNotify(t *testing.T, g seatGame, name string, c contactRe
 // verified makes a confirmed contact for the address.
 func (e *notifyEnv) verified(t *testing.T, address string) contactResp {
 	t.Helper()
+	// Count before saving: the confirmation mail may be delivered before the
+	// response returns, and a count taken after would wait for one more.
+	n := len(e.SMTP.Mails())
 	code, c := e.saveContact(t, address)
 	if code != 200 || c.Status != "pending" || c.Secret == "" || !c.ConfirmationSent {
 		t.Fatalf("save: %d %+v", code, c)
 	}
-	m := e.waitMails(t, len(e.SMTP.Mails())+1)
+	m := e.waitMails(t, n+1)
 	last := m[len(m)-1]
 	if st, body := post(t, e.URL+link(t, last, "confirm")); st != 200 {
 		t.Fatalf("confirm: %d %s", st, body)

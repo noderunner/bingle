@@ -130,9 +130,7 @@ func TestVoiceUI_ACallStaysUpWhenThePlayerGoesToAnotherGameOrTheMainPage(t *test
 	waitJS(t, bob, "connected to Alice", fmt.Sprintf(connected, 1), 45*time.Second)
 	// In this very game the button of the call is there, without a room code.
 	waitJS(t, alice, "the call's button", `document.getElementById("voice-chip") && !document.getElementById("voice-chip").hidden`, 5*time.Second)
-	if got := evalString(t, alice, `document.getElementById("voice-chip-code").textContent`); got != "" {
-		t.Errorf("the button names the room %q though the call is in this game", got)
-	}
+	waitJS(t, alice, "no room on the button, the call is in this game", `document.getElementById("voice-chip-code").textContent === ""`, 5*time.Second)
 
 	// To another game, by the list of the active games.
 	if err := chromedp.Run(alice, chromedp.Evaluate(`window.__marker = 42; true`, nil)); err != nil {
@@ -184,9 +182,7 @@ func TestVoiceUI_ACallStaysUpWhenThePlayerGoesToAnotherGameOrTheMainPage(t *test
 	if !evalBool(t, alice, `window.__marker === 42`) {
 		t.Fatal("the document was reloaded on the way back")
 	}
-	if got := evalString(t, alice, `document.getElementById("voice-chip-code").textContent`); got != "" {
-		t.Errorf("the button names the room %q in the game of the call", got)
-	}
+	waitJS(t, alice, "no room on the button, back in the game of the call", `document.getElementById("voice-chip-code").textContent === ""`, 5*time.Second)
 	waitJS(t, alice, "still connected", fmt.Sprintf(connected, 2), 20*time.Second)
 
 	// Leaving ends it everywhere: the button goes, Bob sees her go.
