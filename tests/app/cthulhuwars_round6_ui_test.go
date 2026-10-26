@@ -363,7 +363,10 @@ func TestWebHome_EverySeatOfATableCanBeMine(t *testing.T) {
 		var t3 = document.querySelector('#slots-field select.slot-select[data-seat="3"]');
 		t3.value = "me"; t3.dispatchEvent(new Event("change", { bubbles: true }));
 		document.getElementById("create_player_name").value = "Ana";
-		document.getElementById("lobby").checked = false;
+		// A change event, as a click would fire, so the page keeps the choice
+		// when it redraws the seats (it checks the lobby for a table of three).
+		var lobby = document.getElementById("lobby");
+		lobby.checked = false; lobby.dispatchEvent(new Event("change", { bubbles: true }));
 		return "ok";
 	})()`)
 	if got := evalString(t, ctx, `[...document.querySelectorAll("#slots-field select.slot-select")].map(s => s.value).join(",")`); got != "me,me,me" {
