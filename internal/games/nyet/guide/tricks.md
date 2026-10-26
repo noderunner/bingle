@@ -15,17 +15,17 @@ The bonus card doubles its owner's points in this round only.
 
 The first player leads any card; play goes round the table.
 
-- You **must follow the colour led** if you can.
+- You **must follow the suit led** if you can.
 - If you cannot, you may play **any card** — including a trump or a super trump.
-- A super trump counts as the **trump colour**, so it follows trump (and must be played when trump is led and you have no other way to follow).
+- A super trump counts as the **trump suit**, so it follows trump (and must be played when trump is led and you have no other way to follow).
 
 ## Who takes the trick
 
 1. If a **super trump** was played, it takes the trick.
 2. Otherwise, if any **trump** was played, the highest trump takes it.
-3. Otherwise the highest card of the **colour led** takes it.
+3. Otherwise the highest card of the **suit led** takes it.
 
-When two cards of the same colour and value are played (the three 1s), **the last one played wins** — also among trumps and super trumps. The winner leads the next trick.
+When two cards of the same suit and value are played (the three 1s), **the last one played wins** — also among trumps and super trumps. The winner leads the next trick.
 
 ## Loot
 

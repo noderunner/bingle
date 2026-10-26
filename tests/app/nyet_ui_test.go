@@ -53,7 +53,9 @@ func TestWebNyet_PlayARoundThroughTheUI(t *testing.T) {
 	openGameAs(t, ctx, baseURL, created.RoomCode, "nyet", "Alice")
 	waitJS(t, ctx, "the board of terms", `document.querySelectorAll('#choice-grid .cg-line').length === 5`, 15*time.Second)
 	waitJS(t, ctx, "my hand: 15 faces", `document.querySelectorAll('#card-table .ct-seat.me .zone-hand .pcard.face').length === 15`, 10*time.Second)
-	waitJS(t, ctx, "three opponents showing only backs", `document.querySelectorAll('#card-table .ct-others .zone-hand .pcard.face').length === 0 && document.querySelectorAll('#card-table .ct-others .zone-hand .pcard.back').length >= 36`, 10*time.Second)
+	// The other hands are not drawn at all: the players' list says how many cards each holds.
+	waitJS(t, ctx, "no window for the other hands", `document.querySelectorAll('#card-table .ct-seat').length === 1 && document.querySelectorAll('#card-table .pcard.back').length <= 1`, 10*time.Second)
+	waitJS(t, ctx, "a hand count for each player", `[...document.querySelectorAll('.seat-strip [data-counter="cards"]')].map(e => e.textContent.trim()).join() === "15,15,15,15"`, 10*time.Second)
 	stuck := 0
 	for i := 0; i < 600 && stuck < 40; i++ {
 		var what string
@@ -94,12 +96,12 @@ func TestWebNyet_PlayARoundThroughTheUI(t *testing.T) {
 	}
 }
 
-// nyetPlayUntilTeam plays the board of terms of a game the creator holds every
-// seat of (the first legal box each time) and returns once the first player
-// has to choose the team.
-func nyetPlayUntilTeam(t *testing.T, baseURL, room string) {
+// nyetPlay plays a game the creator holds every seat of: the first legal move
+// each time, until stop says the position is the one wanted. stop is given the
+// notations of the moves open to the player to move.
+func nyetPlay(t *testing.T, baseURL, room string, stop func(moves []string) bool) {
 	t.Helper()
-	for i := 0; i < 60; i++ {
+	for i := 0; i < 200; i++ {
 		var st struct {
 			TurnSeat int `json:"turn_seat"`
 		}
@@ -113,7 +115,11 @@ func nyetPlayUntilTeam(t *testing.T, baseURL, room string) {
 		if len(legal.Moves) == 0 {
 			t.Fatalf("no legal move for seat %d after %d moves", st.TurnSeat, i)
 		}
-		if strings.HasPrefix(legal.Moves[0].Notation, "team:") {
+		var notations []string
+		for _, m := range legal.Moves {
+			notations = append(notations, m.Notation)
+		}
+		if stop(notations) {
 			return
 		}
 		var info struct {
@@ -129,11 +135,18 @@ func nyetPlayUntilTeam(t *testing.T, baseURL, room string) {
 				name = s.Name
 			}
 		}
-		if code, out := moveNotation(t, baseURL, room, name, legal.Moves[0].Notation); code != 200 {
-			t.Fatalf("move %q by %s: %d %v", legal.Moves[0].Notation, name, code, out)
+		if code, out := moveNotation(t, baseURL, room, name, notations[0]); code != 200 {
+			t.Fatalf("move %q by %s: %d %v", notations[0], name, code, out)
 		}
 	}
-	t.Fatal("the board of terms never ended")
+	t.Fatal("the position wanted was never reached")
+}
+
+// nyetPlayUntilTeam plays the board of terms and returns once the first player
+// has to choose the team.
+func nyetPlayUntilTeam(t *testing.T, baseURL, room string) {
+	t.Helper()
+	nyetPlay(t, baseURL, room, func(m []string) bool { return strings.HasPrefix(m[0], "team:") })
 }
 
 // With three or more players the first player picks the team, and the page

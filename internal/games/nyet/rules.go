@@ -459,7 +459,7 @@ func (e *eng) settleTerms() {
 			d.Points, _ = strconv.Atoi(b.Option)
 		}
 	}
-	e.say("The terms: %s leads; discard %s; trump %s; super trump %s; %s a trick.", e.label(d.First), discardName(d.Disc), d.Trump, d.Super, pointsName(d.Points))
+	e.say("The terms: %s leads; discard %s; trump %s; super trump %s; %s a trick.", e.label(d.First), discardName(d.Disc), suitName(d.Trump), superName(d.Super), pointsName(d.Points))
 	if e.n == 2 {
 		d.Team = []int{d.First}
 		e.startDiscard()
@@ -683,17 +683,25 @@ func optionName(e *eng, line, option string) string {
 	case linePoints:
 		p, _ := strconv.Atoi(option)
 		return pointsName(p)
+	case lineTrump:
+		return suitName(option)
 	case lineSuper:
-		if option == "none" {
-			return "no super trump"
-		}
+		return superName(option)
 	}
 	return option
 }
 
+// superName says what a super trump box means: the 1s of a suit, or none.
+func superName(option string) string {
+	if option == "none" {
+		return "no super trump"
+	}
+	return "the 1s of " + suitName(option)
+}
+
 func cardName(e *eng, id string) string {
 	t := e.typeOf(id)
-	return t.Suit + " " + t.Label
+	return "the " + t.Label + " of " + suitName(t.Suit)
 }
 
 func (e *eng) teamNames() string {

@@ -106,3 +106,43 @@ func TestGuides_OnitamaCardsAreDrawnFromTheCardTable(t *testing.T) {
 		}
 	}
 }
+
+// Nyet!'s rules show all the cards, a row for each suit with the cards splayed
+// in the order of their values: sixty of them (the three 1s of each suit).
+func TestGuides_NyetShowsEveryCardBySuitAndValue(t *testing.T) {
+	base := newRESTTestServer(t)
+	var guide struct {
+		Tabs []struct {
+			ID       string `json:"id"`
+			Markdown string `json:"markdown"`
+		} `json:"tabs"`
+	}
+	if code := doJSON(t, "GET", base+"/api/game-defs/nyet/guide", nil, &guide); code != 200 || len(guide.Tabs) == 0 {
+		t.Fatalf("guide: %d %+v", code, guide)
+	}
+	if !strings.Contains(guide.Tabs[0].Markdown, "](cards.svg") {
+		t.Error("the cards of Nyet! are not pictured in its rules")
+	}
+	if strings.Contains(strings.ToLower(guide.Tabs[0].Markdown), "red, blue, yellow") {
+		t.Error("the rules still name the colours of the old cards")
+	}
+	resp, err := http.Get(base + "/api/game-defs/nyet/assets/cards.svg")
+	if err != nil {
+		t.Fatal(err)
+	}
+	body, _ := io.ReadAll(resp.Body)
+	_ = resp.Body.Close()
+	svg := string(body)
+	if resp.StatusCode != 200 || !strings.Contains(resp.Header.Get("Content-Type"), "svg") {
+		t.Fatalf("cards.svg: status %d, type %q", resp.StatusCode, resp.Header.Get("Content-Type"))
+	}
+	if n := strings.Count(svg, `rx="9"`); n != 60 {
+		t.Errorf("cards.svg draws %d cards, want 60", n)
+	}
+	// Four rows of fifteen, one per suit, each card in its suit's colour.
+	for _, colour := range []string{"#c62f2f", "#1f2630"} {
+		if n := strings.Count(svg, "color:"+colour); n != 30 {
+			t.Errorf("%d cards in %s, want 30 (two suits)", n, colour)
+		}
+	}
+}

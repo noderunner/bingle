@@ -29,7 +29,7 @@ var guideFS embed.FS
 
 // Module returns Nyet!'s catalog.Module.
 func Module() catalog.Module {
-	sub, err := fs.Sub(guideFS, ".")
+	sub, err := fs.Sub(guideFS, "guide")
 	if err != nil {
 		panic(err)
 	}

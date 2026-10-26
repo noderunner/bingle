@@ -672,6 +672,11 @@ export const STAT_ICONS = {
 		fill: ["M12 1.5l10.5 10.5L12 22.5 1.5 12z"],
 		cut: ["M10.8 6h2.4v12h-2.4z", "M6 10.8h12v2.4H6z"],
 	},
+	// Two playing cards, one in front of the other: the cards in a hand.
+	cards: {
+		fill: ["M8.5 5.5h9a1.5 1.5 0 0 1 1.5 1.5v12a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 7 19V7a1.5 1.5 0 0 1 1.5-1.5z"],
+		line: ["M5.2 16.6A1.5 1.5 0 0 1 4 15.1V5A1.5 1.5 0 0 1 5.5 3.5h8.1A1.5 1.5 0 0 1 15 5"],
+	},
 	// An open book.
 	books: {
 		fill: ["M3 5.5c3-1.3 6-1.1 9 .8v13.2c-3-1.9-6-2.1-9-.8z", "M21 5.5c-3-1.3-6-1.1-9 .8v13.2c3-1.9 6-2.1 9-.8z"],

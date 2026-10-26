@@ -1458,30 +1458,34 @@ button.move-card { cursor: pointer; }
 .ring-hole { fill: var(--board-light); stroke: var(--board-line); stroke-width: 1.5; pointer-events: none; }
 
 /* ---- Card games: the card table, cards, and the board of choices ------------ */
-.card-table { --cw: 62px; --ch: 88px; display: flex; flex-direction: column; gap: 12px; margin: 10px 0; }
-.ct-others { display: flex; flex-wrap: wrap; gap: 10px; }
+.card-table { --cw: 66px; --ch: 92px; display: flex; flex-direction: column; gap: 12px; margin: 10px 0; }
+/* The board of terms beside the trick when there is room, under it when not. */
+.board-wrap > .card-table { align-self: stretch; }
+.ct-top { display: flex; flex-wrap: wrap; gap: 12px; align-items: stretch; }
+.ct-top > .ct-grid-wrap { flex: 0 0 auto; margin: 0; }
+.ct-top > .ct-center { flex: 1 1 24rem; }
 .ct-seat { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 8px 10px; min-width: 150px; }
 .ct-seat.me { border-color: var(--accent); }
 .ct-seat.to-move { box-shadow: 0 0 0 2px var(--accent-soft), 0 0 0 3px var(--accent); }
-.ct-seat-name { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
 .ct-badge { font: 700 11px system-ui, sans-serif; background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px; padding: 0 6px; }
-.ct-badge.bonus { background: #f3dc8a; }
+.ct-badge.bonus { background: #f3dc8a; color: #3b2f05; }
 .ct-badge.team { background: var(--accent-soft); }
 .ct-zones { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: flex-end; }
-.ct-center { display: flex; flex-wrap: wrap; gap: 12px 24px; justify-content: center; align-items: flex-start; background: color-mix(in srgb, var(--accent) 10%, var(--surface-2)); border-radius: 12px; padding: 10px; min-height: calc(var(--ch) + 40px); }
+.ct-center { display: flex; flex-wrap: wrap; gap: 12px 24px; justify-content: center; align-items: flex-start; background: color-mix(in srgb, var(--accent) 10%, var(--surface-2)); border-radius: 12px; padding: 10px; min-height: calc(var(--ch) + 64px); }
 .ct-zone-label { margin-bottom: 2px; }
-.zone { display: flex; align-items: flex-start; min-height: calc(var(--ch) * 0.6); }
+.zone { display: flex; align-items: flex-end; }
 .pc-slot { position: relative; display: inline-flex; flex-direction: column; align-items: center; }
 .pc-caption { font: 600 11px system-ui, sans-serif; color: var(--muted); margin-top: 2px; white-space: nowrap; }
+.pc-caption.icon { display: inline-flex; align-items: center; gap: 2px; margin-top: 4px; }
+.pc-star { color: #d99a00; font-size: 14px; line-height: 1; }
 .layout-fan .pc-slot + .pc-slot { margin-left: calc(var(--cw) * -0.58); }
 .layout-fan .pc-btn:hover, .layout-fan .pc-slot:hover { z-index: 3; }
 .layout-fan .pc-btn.playable:hover .pcard { transform: translateY(-10px); }
-.layout-row { gap: 8px; flex-wrap: wrap; }
+.layout-fan .pc-slot { transition: transform .12s; }
 .layout-splay .pc-slot + .pc-slot { margin-left: calc(var(--cw) * -0.78); }
-.layout-grid { gap: 6px; flex-wrap: wrap; }
 .zone.counted .pc-slot + .pc-slot { margin-left: calc(var(--cw) * -0.85); }
 .pcard { position: relative; display: inline-block; width: var(--cw); height: var(--ch); border-radius: 7px; box-sizing: border-box; box-shadow: 0 1px 3px rgba(0,0,0,.35); transition: transform .12s; flex: none; }
-.pcard.face { background: #fffdf6; border: 1.5px solid color-mix(in srgb, var(--suit, #555) 60%, #fff); color: var(--suit, #333); font-family: Georgia, serif; }
+.pcard.face { background: #fffdf6; border: 1.5px solid color-mix(in srgb, var(--suit, #555) 55%, #fff); color: var(--suit, #333); font-family: Georgia, serif; }
 .pcard.back { background: repeating-linear-gradient(45deg, var(--back, #5b4a8a), var(--back, #5b4a8a) 6px, color-mix(in srgb, var(--back, #5b4a8a) 80%, #fff) 6px, color-mix(in srgb, var(--back, #5b4a8a) 80%, #fff) 12px); border: 2px solid #fff; display: inline-flex; align-items: center; justify-content: center; }
 .pc-back-text { color: #fff; font: 800 11px system-ui, sans-serif; letter-spacing: .08em; transform: rotate(-35deg); text-shadow: 0 1px 2px rgba(0,0,0,.5); }
 .pc-corner { position: absolute; display: flex; flex-direction: column; align-items: center; line-height: 1; font-weight: 700; }
@@ -1491,6 +1495,15 @@ button.move-card { cursor: pointer; }
 .pc-pip { font-size: 12px; }
 .pc-mid { position: absolute; inset: 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; font-size: 30px; opacity: .85; gap: 2px; padding: 22px 8px; }
 .pc-text { position: absolute; left: 4px; right: 4px; bottom: 20px; font: 600 8px system-ui, sans-serif; text-align: center; }
+/* The classic suits, drawn (js/card-art.js). */
+.pc-svg { display: block; width: 100%; height: 100%; }
+.pc-svg path, .pc-svg circle { fill: currentColor; }
+.pc-svg-rank { fill: currentColor; font-family: Georgia, "Times New Roman", serif; font-weight: 700; }
+.pc-svg .pc-svg-ring, .pc-svg .pc-svg-frame { fill: none; stroke: currentColor; stroke-width: 1.6; opacity: .4; }
+.suit-icon { display: inline-block; vertical-align: middle; }
+.suit-icon path, .suit-icon circle { fill: currentColor; }
+/* The card under the pointer, twice as large (js/cards.js). */
+.pc-zoom { position: fixed; z-index: 80; pointer-events: none; margin: 0; box-shadow: 0 8px 28px rgba(0,0,0,.45); transition: none; animation: none; transform: none; }
 .pc-btn { background: none; border: 0; padding: 0; cursor: pointer; border-radius: 7px; }
 .pc-btn.playable .pcard { outline: 2px solid var(--accent); outline-offset: 1px; box-shadow: 0 0 8px var(--accent), 0 1px 3px rgba(0,0,0,.35); }
 .pc-btn:focus-visible { outline: 2px solid var(--focus); }
@@ -1498,28 +1511,64 @@ button.move-card { cursor: pointer; }
 .pile:not(.empty) { box-shadow: 2px 2px 0 -1px #fff, 3px 3px 0 0 rgba(0,0,0,.3), 5px 5px 0 -1px #fff, 6px 6px 0 0 rgba(0,0,0,.25); border-radius: 7px; }
 .pile.empty { display: inline-block; width: var(--cw); height: var(--ch); border: 2px dashed var(--border); border-radius: 7px; }
 .pile-count { position: absolute; right: -6px; bottom: -8px; background: #2b2926; color: #fff; font: 700 11px system-ui, sans-serif; border-radius: 999px; padding: 1px 6px; }
-.zone-empty { align-self: center; padding: 0 6px; }
 @keyframes pc-flip { from { transform: rotateY(90deg) scale(.9); } to { transform: rotateY(0) scale(1); } }
 @keyframes pc-deal { from { transform: translateY(-26px) scale(.92); opacity: 0; } to { transform: none; opacity: 1; } }
 .pcard.flip-in { animation: pc-flip .35s ease-out; }
 .pcard.deal-in { animation: pc-deal .3s ease-out both; animation-delay: calc(var(--i, 0) * 25ms); }
 @media (prefers-reduced-motion: reduce) { .pcard.flip-in, .pcard.deal-in { animation: none; } }
+.ct-seat.me .layout-fan .pc-slot + .pc-slot { margin-left: calc(var(--cw) * -0.26); }
+@media (max-width: 700px) { .ct-seat.me .layout-fan .pc-slot + .pc-slot { margin-left: calc(var(--cw) * -0.5); } }
+
+/* The board of terms: pictures in a grid whose cells are all the same size, every line centred under the widest. */
 .ct-grid-wrap { margin: 8px 0; }
-.choice-grid { display: flex; flex-direction: column; gap: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 8px; }
-.cg-line { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.cg-title { width: 96px; font-weight: 700; font-size: 13px; }
-.cg-boxes { display: flex; gap: 6px; flex-wrap: wrap; }
-.cg-box { position: relative; display: inline-flex; align-items: center; gap: 5px; min-width: 64px; justify-content: center; padding: 6px 10px; border-radius: 8px; border: 1.5px solid var(--border); background: var(--surface-2); font: 600 13px system-ui, sans-serif; color: var(--text); }
+.ct-round { margin: 0 0 4px 2px; }
+.choice-grid { --cell: 46px; display: flex; flex-direction: column; gap: 6px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 10px; width: max-content; max-width: 100%; }
+.cg-line { display: grid; grid-template-columns: 38px 1fr; align-items: center; gap: 8px; }
+.cg-title { display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; color: var(--muted); cursor: help; }
+.cg-boxes { display: grid; grid-template-columns: repeat(var(--n, 5), var(--cell)); gap: 6px; justify-content: center; }
+.cg-box { position: relative; display: flex; align-items: center; justify-content: center; width: var(--cell); height: var(--cell); padding: 0; border-radius: 10px; border: 1.5px solid var(--border); background: var(--surface-2); color: var(--text); font: 600 12px system-ui, sans-serif; }
 .cg-box.clickable { cursor: pointer; border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
-.cg-box.clickable:hover { background: var(--accent-soft); }
-.cg-box.crossed { opacity: .5; background: repeating-linear-gradient(135deg, var(--surface-2), var(--surface-2) 5px, var(--border) 5px, var(--border) 6px); text-decoration: line-through; }
-.cg-box.chosen { background: #f3dc8a; border-color: #b7791f; box-shadow: 0 0 0 2px #f3dc8a; }
-.cg-box.covered { opacity: .35; background: #999; color: #fff; }
-.cg-cross { position: absolute; top: -6px; right: 4px; color: var(--danger); font-size: 16px; text-decoration: none; }
-.cg-by { position: absolute; bottom: -4px; left: 4px; width: 9px; height: 9px; }
-.cg-swatch { width: 12px; height: 12px; border-radius: 3px; border: 1px solid rgba(0,0,0,.3); }
-@media (max-width: 700px) { .card-table { --cw: 50px; --ch: 72px; } .pc-rank { font-size: 12px; } .pc-mid { font-size: 22px; padding: 18px 6px; } .cg-title { width: 100%; } }
-.ct-seat.me .layout-fan .pc-slot + .pc-slot { margin-left: calc(var(--cw) * -0.38); }
+.cg-box.clickable:hover { background: var(--accent-soft); transform: translateY(-1px); }
+.cg-box.crossed { background: repeating-linear-gradient(135deg, var(--surface-2), var(--surface-2) 5px, var(--border) 5px, var(--border) 6px); }
+.cg-box.chosen { background: #f3dc8a; border-color: #b7791f; box-shadow: 0 0 0 2px #f3dc8a; color: #2b2208; }
+.cg-box.covered { opacity: .35; filter: grayscale(1); }
+.cg-box.covered .cicon, .cg-box.covered .animal { opacity: .7; }
+.cicon { flex: none; overflow: visible; }
+.cicon .ci-card, .cicon .ci-face { fill: #fffdf6; stroke: currentColor; stroke-width: 1.6; }
+.cicon .ci-text { fill: currentColor; font-family: system-ui, sans-serif; }
+.cicon .ci-bold { font-weight: 800; }
+.cicon .ci-arrow, .cicon .ci-pole { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.cicon .ci-no { fill: none; stroke: var(--danger, #c0392b); stroke-width: 2.8; stroke-linecap: round; }
+.cicon .ci-coin { fill: #f4d36a; stroke: #8a6b0f; stroke-width: 1.6; }
+.cicon .ci-coin-ring { fill: none; stroke: #8a6b0f; stroke-width: 1; opacity: .7; }
+.cicon .ci-points .ci-text, .cicon.ci-points .ci-text { fill: #3a2c04; }
+.cicon.ci-negative .ci-coin { fill: #e9a79f; stroke: #8a2a20; }
+.cicon.ci-negative .ci-coin-ring { stroke: #8a2a20; }
+.cicon.ci-negative .ci-text { fill: #6b140c; }
+.cicon .ci-star { fill: #f2b61f; stroke: #8a6b0f; stroke-width: 1.2; stroke-linejoin: round; }
+.cicon .ci-ontop { fill: #3a2c04; }
+.cicon .ci-crown, .cicon .ci-flag { fill: color-mix(in srgb, currentColor 22%, transparent); stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; }
+.cicon.ci-line-points .ci-coin { stroke-width: 1.4; }
+.cicon.ci-line-super .ci-ontop { fill: #3a2c04; }
+.cicon .suit-icon path, .cicon .suit-icon circle { fill: currentColor; }
+.cg-label { padding: 0 4px; text-align: center; }
+@media (max-width: 700px) { .card-table { --cw: 54px; --ch: 76px; } .pc-rank { font-size: 12px; } .pc-mid { font-size: 22px; padding: 18px 6px; } .choice-grid { --cell: 44px; } }
+
+/* ---- the animals of Nyet!'s players (js/animals.js) ------------------------------------- */
+.animal { --a-fill: var(--piece-white-fill); --a-stroke: var(--piece-white-stroke); flex: none; vertical-align: middle; overflow: visible; }
+.animal.color-red { --a-fill: var(--piece-red-fill); --a-stroke: var(--piece-red-stroke); }
+.animal.color-blue { --a-fill: var(--piece-blue-fill); --a-stroke: var(--piece-blue-stroke); }
+.animal.color-green { --a-fill: var(--piece-green-fill); --a-stroke: var(--piece-green-stroke); }
+.animal.color-yellow { --a-fill: var(--piece-yellow-fill); --a-stroke: var(--piece-yellow-stroke); }
+.animal.color-orange { --a-fill: var(--piece-orange-fill); --a-stroke: var(--piece-orange-stroke); }
+.animal .a-body { fill: var(--a-fill); stroke: var(--a-stroke); stroke-width: 1.5; stroke-linejoin: round; }
+.animal .a-inner { fill: var(--a-stroke); opacity: .55; }
+.animal .a-muzzle { fill: #fffdf6; opacity: .92; }
+.animal .a-ink { fill: var(--a-stroke); }
+.animal .a-ink.a-line { fill: none; stroke: var(--a-stroke); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.animal .a-eye { fill: #17141a; }
+.animal .a-beak { fill: #f3c24d; stroke: var(--a-stroke); stroke-width: 1.1; stroke-linejoin: round; }
+.animal .a-crown { fill: #d8362d; }
 
 /* ---- the home page: top-bar icons, tabs, the setup of a game ---------------------------- */
 .topbar-icon {
@@ -1643,3 +1692,22 @@ form[data-opponent="bots"] .human-only { display: none; }
 
 .help-links { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.8rem; }
 .help-version { margin: 0 0 0.4rem; font-size: 1.05rem; }
+
+/* ---- a player who is an animal: the icon beside the name, with the eye of "watching" on it -------- */
+.seat-strip .seat-icon, .players-list .seat-icon { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0; border: 0; background: none; border-radius: 8px; flex: none; }
+.seat-strip .seat-icon.presence-toggle { cursor: pointer; }
+.seat-strip .seat-icon.presence-toggle:hover { background: var(--accent-soft); }
+.seat-icon .eye { position: absolute; right: -3px; bottom: -3px; display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px; border-radius: 50%; background: var(--accent); border: 1.5px solid var(--surface); }
+.seat-icon .eye svg { width: 9px; height: 9px; }
+.seat-strip .stat-cards { vertical-align: -2px; }
+
+/* ---- the phone layout of a card game (game.js: renderMobileCards) ---------------------------- */
+.m-cards-page { display: flex; flex-direction: column; gap: 0.5rem; padding: 0.4rem 0 1rem; }
+.m-cards-page > .status-bar { margin: 0; }
+.m-cards-page .card-table { --cw: 52px; --ch: 73px; margin: 0; }
+.m-cards-page .ct-center { padding: 8px; gap: 8px 14px; }
+.m-cards-page .ct-seat { min-width: 0; padding: 6px 8px; }
+.m-page-terms .choice-grid { margin: 0 auto; }
+.cg-legend { margin: 0; display: grid; grid-template-columns: 1fr; gap: 0.1rem 0; }
+.cg-legend dt { display: flex; align-items: center; gap: 0.4rem; margin-top: 0.5rem; color: var(--text); }
+.cg-legend dd { margin: 0 0 0 1.8rem; }

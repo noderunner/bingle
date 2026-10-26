@@ -18,7 +18,9 @@ import { lobbyCard } from "./lobby.js";
 import { statIcon } from "./icons.js";
 import { hoverCard, hideHoverCard } from "./tooltip.js";
 import { createOptionsWindow } from "./options.js";
-import { cardTable, choiceGrid } from "./cards.js";
+import { cardTable, choiceGrid, hideCardZoom } from "./cards.js";
+import { choiceIcon } from "./choice-icons.js";
+import { animalIcon, animalOf } from "./animals.js";
 import { themesFor, themeById } from "./themes.js";
 
 installNav();
@@ -1511,6 +1513,7 @@ function render() {
 	clear(root);
 	document.body.classList.remove("m-mode");
 	hideHoverCard();
+	hideCardZoom();
 	updateTitle();
 	applyTheme();
 	initOptions();
@@ -1539,13 +1542,23 @@ function render() {
 		// Listed in table order from the viewer: clockwise runs down the list
 		// (and from the last cult back to the first).
 		for (const seat of seatsFrom(bottomSeat)) cults.append(seatStrip(seat));
-		cults.append(h("p", { class: "small muted seat-order-note", id: "seat-order-note" }, "Play runs clockwise down this list, from the last cult back to the first; counter-clockwise runs up it."));
+		cults.append(
+			h(
+				"p",
+				{ class: "small muted seat-order-note", id: "seat-order-note" },
+				S.info.cards ? "Play runs clockwise down this list, from the last player back to the first." : "Play runs clockwise down this list, from the last cult back to the first; counter-clockwise runs up it."
+			)
+		);
 	}
 
 	// A game that has not started shows its lobby instead of an empty board.
 	const lobby = inLobby();
 	if (areas && !lobby && isMobileLayout()) {
 		renderMobile(seats, bottomSeat);
+		return;
+	}
+	if (S.info.cards && !lobby && isMobileLayout() && rulesetView()) {
+		renderMobileCards(seats, bottomSeat);
 		return;
 	}
 	const layout = h("div", { class: "game-layout" + (areas && !lobby ? " areas" : "") + (lobby ? " lobby-layout" : "") });
@@ -1741,6 +1754,77 @@ function renderMobile(seats, bottomSeat) {
 		store.set("bingle.mobileHint", true);
 		toast("Pinch the map to zoom and drag to pan. Swipe from the screen edge, or use the bar below, to change view.");
 	}
+	// A turn that has just come to the player buzzes the phone, once.
+	if (myTurn && S.mBuzzed !== S.moves.length) {
+		S.mBuzzed = S.moves.length;
+		if (navigator.vibrate && document.visibilityState === "visible") navigator.vibrate(60);
+	}
+}
+
+/**
+ * The phone layout of a card game: the play (the trick and your hand), the board
+ * of terms, the players, the moves and the chat, one view each.
+ */
+function renderMobileCards(seats, bottomSeat) {
+	document.body.classList.add("m-mode");
+	const myTurn = isLive() && S.game.status === "active" && isMyTurn();
+	const v = rulesetView();
+	const ctx = cardContext(v);
+
+	const play = h("div", { class: "m-map-page m-cards-page" });
+	play.append(statusBar());
+	for (const banner of [drawOfferBanner(), takebackBanner(), hintBanner()]) if (banner) play.append(banner);
+	if (!S.me.seat && !S.spectating) {
+		const gate = identityGate();
+		if (gate) play.append(gate);
+	}
+	play.append(moveBar());
+	const table = cardTable(ctx);
+	S.ctPrev = table.state;
+	play.append(table.node);
+
+	const pages = [{ id: "play", label: "Play", group: "play", node: play }];
+	if (v.grid) {
+		// The boxes are pictures: a legend says what each line is for (a phone has no hover text).
+		const legend = h("dl", { class: "cg-legend small" });
+		for (const line of v.grid.lines) {
+			legend.append(h("dt", {}, choiceIcon(line.icon, ctx, 22), h("strong", {}, line.label)), h("dd", { class: "muted" }, line.hint));
+		}
+		const terms = h("div", { class: "m-stack" }, h("h2", {}, "Terms"), termsBoard(v, ctx), h("p", { class: "small muted" }, "The box left open on each line is the rule of the round."), legend);
+		pages.push({ id: "terms", label: "Terms", group: "terms", node: terms });
+	}
+	const players = h("div", { class: "m-stack" }, h("h2", {}, "Players"));
+	for (const seat of seatsFrom(bottomSeat)) players.append(seatStrip(seat));
+	pages.push({ id: "players", label: "Players", group: "players", node: players });
+	pages.push({ id: "log", label: "History", group: "log", node: h("div", { class: "m-stack" }, historyCard()) });
+	pages.push({ id: "chat", label: "Chat", group: "chat", node: h("div", { class: "m-stack" }, voiceCard({ code, me: S.me, seats: S.game.seats }), chatCard({ code, me: S.me })) });
+
+	const unread = S.mPage === "chat" ? 0 : chatUnread();
+	const shell = mobileShell({
+		pages,
+		groups: [
+			{ id: "play", label: "Play", icon: "🃏", pulse: myTurn && S.mPage !== "play" },
+			...(v.grid ? [{ id: "terms", label: "Terms", icon: "📋" }] : []),
+			{ id: "players", label: "Players", icon: "👥" },
+			{ id: "log", label: "History", icon: "📜" },
+			{ id: "chat", label: "Chat", icon: "💬", badge: unread || 0 },
+		],
+		current: S.mPage || "play",
+		onChange: (id) => {
+			S.mPage = id;
+			if (id === "chat") chatSeen();
+			paintMobileBadges();
+		},
+	});
+	root.append(shell.node);
+	shell.restore();
+	if (S.mScroll) {
+		for (const p of shell.node.querySelectorAll(".m-page")) {
+			if (S.mScroll[p.dataset.page]) p.scrollTop = S.mScroll[p.dataset.page];
+		}
+	}
+	if (S.mPage === "chat") chatSeen();
+	paintMobileBadges();
 	// A turn that has just come to the player buzzes the phone, once.
 	if (myTurn && S.mBuzzed !== S.moves.length) {
 		S.mBuzzed = S.moves.length;
@@ -2112,15 +2196,35 @@ const eyeIcon = () =>
 	);
 
 /**
- * The coloured box beside a player's name. When the player says they are
+ * The picture of a player who is an animal (Nyet!: Wolf, Crane, Tiger, Bear,
+ * Eagle), in the colour of the seat; null for the games whose players are not.
+ */
+function seatAnimal(seat, px) {
+	if (!S.info || !S.info.cards) return null;
+	const label = seatLabel(seat);
+	if (!animalOf(label)) return null;
+	return animalIcon(label, { color: cssColor(colorOf(seat)), size: px, title: label });
+}
+
+/** The same for a player named by label, as the captions under the trick's cards do. */
+function seatAnimalByLabel(label, px) {
+	const si = (S.info.seats || []).find((x) => x.label === label);
+	return si ? seatAnimal(si.seat, px) : null;
+}
+
+/**
+ * The coloured box beside a player's name (in a game of animals, the animal).
+ * When the player says they are
  * watching the game right now it turns into a round eye, for everyone to see;
  * the player's own box is the switch.
  */
 function presenceSwatch(seat, color, isBot) {
 	const on = S.present.has(seat);
-	const cls = `swatch color-${cssColor(color)}${on ? " present" : ""}`;
+	const animal = seatAnimal(seat, 30);
+	const cls = animal ? `seat-icon${on ? " present" : ""}` : `swatch color-${cssColor(color)}${on ? " present" : ""}`;
 	const label = on ? "Watching the game right now" : "Not marked as watching";
-	const inner = on ? h("span", { class: "eye" }, eyeIcon()) : null;
+	const eye = on ? h("span", { class: "eye" }, eyeIcon()) : null;
+	const inner = animal ? [animal, eye] : eye;
 	if (isBot || !isMine(seat) || !S.me.name) {
 		return h("span", { class: cls, "data-presence": on ? "present" : "away", title: isBot ? "" : label }, inner);
 	}
@@ -2200,6 +2304,13 @@ function seatStrip(seat) {
 	}
 	if (si && si.bot) head.append(h("span", { class: "badge bot" }, "bot"));
 	if (isMine(seat)) head.append(h("span", { class: "badge" }, "you"));
+	// The roles of a card game's round: the dealer, who holds the bonus card, who is on the leader's team.
+	const roles = S.info.cards ? rulesetView() : null;
+	if (roles) {
+		if (roles.dealer === seat) head.append(h("span", { class: "ct-badge", title: "Dealer" }, "D"));
+		if (roles.bonus === seat) head.append(h("span", { class: "ct-badge bonus", title: "Holds the x2 bonus card" }, "×2"));
+		if (roles.team && roles.team.includes(seat)) head.append(h("span", { class: "ct-badge team", title: "On the leader's team" }, "★"));
+	}
 	head.append(h("span", { class: "grow" }));
 	if (toMove && msLeft() !== null) {
 		head.append(h("span", { class: "clock", "data-clock": "1", title: "Time left to move" }, "⏱ " + formatClock(msLeft())));
@@ -3007,9 +3118,19 @@ const PHASE_HINTS = {
 function cardPanels() {
 	const v = rulesetView();
 	if (!v || !S.info.cards || !v.table) return [];
+	const ctx = cardContext(v);
+	// The board of terms stands beside the trick (under it on a narrow screen).
+	if (v.grid) ctx.top = termsBoard(v, ctx);
+	const table = cardTable(ctx);
+	S.ctPrev = table.state;
+	return [table.node];
+}
+
+/** What the card table and the board of terms need to draw this position and to act on it. */
+function cardContext(v) {
 	const b = actingSeat() ? activeBuilder() : null;
 	const actions = new Set(b ? b.nextActions() : []);
-	const ctx = {
+	return {
 		info: S.info,
 		view: v,
 		seats: S.info.seats,
@@ -3023,15 +3144,13 @@ function cardPanels() {
 		onCard: (tid) => chooseAction(`card-${tid}`),
 		onAction: (id) => chooseAction(id),
 		prev: S.ctPrev,
+		seatIconByLabel: seatAnimalByLabel,
 	};
-	const out = [];
-	if (v.grid) {
-		out.push(h("div", { class: "ct-grid-wrap" }, h("div", { class: "ct-round small muted" }, `Round ${v.round} of ${v.rounds}`), choiceGrid(v.grid, ctx)));
-	}
-	const table = cardTable(ctx);
-	S.ctPrev = table.state;
-	out.push(table.node);
-	return out;
+}
+
+/** The board of terms of a card game with its round number. */
+function termsBoard(v, ctx) {
+	return h("div", { class: "ct-grid-wrap", id: "terms-board" }, h("div", { class: "ct-round small muted" }, `Round ${v.round} of ${v.rounds}`), choiceGrid(v.grid, ctx));
 }
 
 function cardsPanel() {

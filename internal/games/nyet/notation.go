@@ -150,9 +150,9 @@ func (rs *Ruleset) Describe(game *catalog.CompiledGame) state.RulesetInfo {
 			"A team scores, for each trick it won and each 1 it captured as loot, the points the round's last box says (1, 2, 3, 4 or −2); the bonus card doubles its owner's points.",
 		},
 		NotationHelp: []string{
-			"Crossing a box of the board: nyet:trump:red, nyet:super:none, nyet:discard:passleft, nyet:points:-2, nyet:first:wolf (the box left empty on each line sets the rule of the round).",
+			"Crossing a box of the board: nyet:trump:red (hearts), nyet:super:none, nyet:discard:passleft, nyet:points:-2, nyet:first:wolf (the box left empty on each line sets the rule of the round).",
 			"The first player's team: team:crane (a partner), team:crane+tiger (two), team:alone; bonus:tiger gives the x2 bonus card.",
-			"Cards are colour-value: blue-9. Playing a card is just its name; discard:blue-9 discards one and pass:blue-9 passes it to the left.",
+			"Cards are colour-value, the four colours being the four suits (red hearts, blue spades, yellow diamonds, green clubs): blue-9 is the 9 of spades. Playing a card is just its name; discard:blue-9 discards one and pass:blue-9 passes it to the left.",
 		},
 	}
 	if st, err := rs.Start(game, 0); err == nil {

@@ -6,13 +6,13 @@
  "designers": ["Stefan Dorra"],
  "engine": "ruleset",
  "rules": [
-  "Nyet! is played with 60 cards in four colours (red, blue, yellow, green): the values 1 (three of each colour) and 2 to 13. With three players the 11, 12 and 13 of each colour are removed (48 cards). The game lasts 8 rounds with 2 or 4 players, 9 with 3 and 10 with 5; everybody deals the same number of times.",
+  "Nyet! is played with 60 cards in the four classic suits (spades, hearts, diamonds, clubs): the values 1 (three of each suit) and 2 to 13. With three players the 11, 12 and 13 of each suit are removed (48 cards). The game lasts 8 rounds with 2 or 4 players, 9 with 3 and 10 with 5; everybody deals the same number of times.",
   "Each round the dealer shuffles and deals every card out (15 cards each with 2 or 4 players, 16 with 3, 12 with 5; with two players 30 cards stay unused). Then comes the Nyet! phase: starting with the dealer and going round, each player crosses off one box of the board — the choice they do NOT want — until every line has exactly one box left. The box left open on each line is the rule of the round.",
-  "The five lines. First player: who leads the first trick, picks the team and gives out the bonus card. Discard: Nyet! = no discards; 1 or 2 = every player discards that many cards; “except 1” = every player discards one card that is not a 1; “pass left” = every player passes one card to the left. Trump: the colour of trump. Super trump: the three 1s of that colour are super trumps (or none). Points: what each trick and each captured 1 is worth (1, 2, 3, 4 or −2).",
+  "The five lines. First player: who leads the first trick, picks the team and gives out the bonus card. Discard: Nyet! = no discards; 1 or 2 = every player discards that many cards; “except 1” = every player discards one card that is not a 1; “pass left” = every player passes one card to the left. Trump: the suit of trump. Super trump: the three 1s of that suit are super trumps (or none). Points: what each trick and each captured 1 is worth (1, 2, 3, 4 or −2).",
   "Teams: the first player chooses their team and the others form the opposing team. With four players it is two against two (the leader picks a partner); with five it is two against three or three against two, the leader's choice; with three it is one against two (the leader may play alone or with a partner); with two players each plays alone. With an odd number of players, one player of the smaller team gets the x2 bonus card: with three, the solo player; with five, whoever the leader names on the two-player team.",
-  "The tricks: the first player leads any card and play goes round. You must follow the colour led if you can; otherwise you may play any card, including a trump. A super trump counts as the trump colour whatever its printed colour, so it must be played when trump is led and can follow trump. The highest card of the colour led takes the trick unless a trump was played, then the highest trump takes it; if a super trump was played it takes the trick. Among equal cards the last one played wins (also for trumps and super trumps). The winner leads the next trick.",
+  "The tricks: the first player leads any card and play goes round. You must follow the suit led if you can; otherwise you may play any card, including a trump. A super trump counts as the trump suit whatever its printed suit, so it must be played when trump is led and can follow trump. The highest card of the suit led takes the trick unless a trump was played, then the highest trump takes it; if a super trump was played it takes the trick. Among equal cards the last one played wins (also for trumps and super trumps). The winner leads the next trick.",
   "Loot: every 1 can be captured. When a player wins a trick that holds a 1 played by an opponent (a player of the other team), they claim it as loot. At the end of the round each team counts its tricks plus the loot it captured, multiplies by the points of the Points line, and every player of the team scores that; the player with the bonus card doubles their own score. Card values do not matter for scoring.",
-  "Interpretations: the printed board has a box per character on the first-player line (boxes of characters not at the table are covered for the whole game); the discard line here has the boxes Nyet!, 1, 2, except 1 and pass left; the trump line has the four colours and the super trump line the four colours and Nyet!. The first dealer is the first seat. A tie at the end is a draw."
+  "Interpretations: the printed board has a box per character on the first-player line (boxes of characters not at the table are covered for the whole game); the discard line here has the boxes Nyet!, 1, 2, except 1 and pass left; the trump line has the four suits and the super trump line the four suits and Nyet!. Inside the program the four suits keep the names of the colours the physical deck has (red hearts, blue spades, yellow diamonds, green clubs), so move notations say blue-9 for the 9 of spades. The first dealer is the first seat. A tie at the end is a draw."
  ],
  "params": {
   "rounds": 8,
@@ -71,24 +71,24 @@
  "cards": {
   "suits": {
    "red": {
-    "label": "Red",
-    "color": "#c0392b",
-    "symbol": "●"
+    "label": "Hearts",
+    "color": "#c62f2f",
+    "symbol": "♥"
    },
    "blue": {
-    "label": "Blue",
-    "color": "#2e6fc0",
-    "symbol": "■"
+    "label": "Spades",
+    "color": "#1f2630",
+    "symbol": "♠"
    },
    "yellow": {
-    "label": "Yellow",
-    "color": "#d9a400",
-    "symbol": "▲"
+    "label": "Diamonds",
+    "color": "#c62f2f",
+    "symbol": "♦"
    },
    "green": {
-    "label": "Green",
-    "color": "#2f9a4f",
-    "symbol": "◆"
+    "label": "Clubs",
+    "color": "#1f2630",
+    "symbol": "♣"
    }
   },
   "suit_order": [
@@ -359,8 +359,8 @@
   }
  ],
  "guide": {"tabs": [
-  {"id": "overview", "title": "Overview", "file": "guide/overview.md"},
-  {"id": "board", "title": "The board", "file": "guide/board.md"},
-  {"id": "tricks", "title": "Teams, tricks & scoring", "file": "guide/tricks.md"}
+  {"id": "overview", "title": "Overview", "file": "overview.md"},
+  {"id": "board", "title": "The board", "file": "board.md"},
+  {"id": "tricks", "title": "Teams, tricks & scoring", "file": "tricks.md"}
  ]}
 }

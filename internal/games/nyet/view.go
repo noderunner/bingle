@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 	"strconv"
+	"strings"
 
 	"github.com/noderunner/bingle/internal/engine/cards"
 	"github.com/noderunner/bingle/internal/engine/catalog"
@@ -48,21 +49,26 @@ type Grid struct {
 
 // GridLine is one line of the board.
 type GridLine struct {
-	ID    string    `json:"id"`
-	Label string    `json:"label"`
-	Hint  string    `json:"hint"`
+	ID    string `json:"id"`
+	Label string `json:"label"`
+	Hint  string `json:"hint"`
+	// Icon names the picture of the line ("line:trump"), as GridBox.Icon does.
+	Icon  string    `json:"icon"`
 	Boxes []GridBox `json:"boxes"`
 }
 
 // GridBox is one box: open, crossed (by a seat), covered for the whole game, or
 // the one left empty on its line (chosen).
 type GridBox struct {
-	ID     string `json:"id"`
-	Label  string `json:"label"`
-	Symbol string `json:"symbol,omitempty"`
-	Color  string `json:"color,omitempty"`
-	State  string `json:"state"`
-	By     int    `json:"by,omitempty"`
+	ID    string `json:"id"`
+	Label string `json:"label"`
+	// Icon names the picture of the box: "kind:argument", such as "suit:red",
+	// "animal:wolf:red", "discard:passleft" or "points:-2". The page draws it.
+	Icon  string `json:"icon"`
+	State string `json:"state"`
+	By    int    `json:"by,omitempty"`
+	// ByIcon is the picture of the player who crossed the box, a seat's animal.
+	ByIcon string `json:"by_icon,omitempty"`
 }
 
 // SeatView is one player's scoreboard.
@@ -219,6 +225,7 @@ func (e *eng) buildView(viewer int) *View {
 			{ID: "score", Label: "Points", Value: d.Scores[s]},
 			{ID: "tricks", Label: "Tricks", Value: d.Tricks[s]},
 			{ID: "loot", Label: "Loot", Value: d.Loot[s]},
+			{ID: "cards", Label: "Cards in hand", Value: d.Table.Zone("hand", s).Len()},
 		}}
 	}
 	return v
@@ -250,29 +257,25 @@ func splitSeats(piece string) []int {
 var lineHints = map[string]string{
 	lineFirst:   "The player whose box stays empty leads, picks the team and decides who has the bonus card.",
 	lineDiscard: "Nyet! = no discards. 1 or 2 = each player discards that many cards. “except 1” = each discards a card that is not a 1. “pass left” = each passes a card to the player on their left.",
-	lineTrump:   "The colour whose box stays empty is trump.",
-	lineSuper:   "The three 1s of the colour whose box stays empty are super trumps (they turn the trump colour and beat every trump). Nyet! = no super trump.",
-	linePoints:  "What each trick and each captured 1 (loot) is worth. The red box is −2.",
+	lineTrump:   "The suit whose box stays empty is trump.",
+	lineSuper:   "The three 1s of the suit whose box stays empty are super trumps (they count as trump and beat every trump). Nyet! = no super trump.",
+	linePoints:  "What each trick and each captured 1 (loot) is worth; the last box, −2, costs points.",
 }
-
-var colourHex = map[string]string{"red": "#c0392b", "blue": "#2e6fc0", "yellow": "#e0a800", "green": "#2f9a4f"}
 
 func (e *eng) buildGrid() *Grid {
 	g := &Grid{}
 	for _, line := range lineOrder {
-		gl := GridLine{ID: line, Label: lineTitle(line), Hint: lineHints[line]}
+		gl := GridLine{ID: line, Label: lineTitle(line), Hint: lineHints[line], Icon: "line:" + line}
 		open := e.empties(line)
 		for _, o := range options(line, e.n) {
 			b := box{line, o}
-			gb := GridBox{ID: o, Label: boxLabel(e, line, o), State: "open"}
-			if line == lineTrump || line == lineSuper {
-				gb.Color = colourHex[o]
-			}
+			gb := GridBox{ID: o, Label: boxLabel(e, line, o), Icon: boxIcon(line, o), State: "open"}
 			switch {
 			case covered(b, e.n):
 				gb.State = "covered"
 			case e.d.Crossed[b.key()] != 0:
 				gb.State, gb.By = "crossed", e.d.Crossed[b.key()]
+				gb.ByIcon = characterIcon(gb.By)
 			case len(open) == 1:
 				gb.State = "chosen"
 			}
@@ -316,9 +319,9 @@ func boxLabel(e *eng, line, o string) string {
 		if o == "none" {
 			return "Nyet!"
 		}
-		return "1s " + o
+		return "1s of " + suitName(o)
 	case lineTrump:
-		return o
+		return strings.ToUpper(suitName(o)[:1]) + suitName(o)[1:]
 	}
 	return o
 }
