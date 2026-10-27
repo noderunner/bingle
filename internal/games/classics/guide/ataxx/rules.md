@@ -27,6 +27,14 @@ If you have no legal move, you **pass**. The game ends when the board is full or
 
 Cloning is how you grow, so most of the game is cloning; a jump is for reaching a hole you can't clone into, but it leaves a hole behind that your opponent can fill. Look out for empty squares in the middle of your own pieces: an opponent who lands there will convert many of them at once.
 
+### The pie rule
+
+The player who moves first has an advantage, so a table may play with the **pie rule** (tick
+*Pie rule* when the game is made). Instead of answering the opening move, the second player
+may **swap sides** on their first turn: every piece on the board changes hands and the first player
+moves again. It is then in the first player's interest to open with a move that is neither too
+strong nor too weak. The move is `swap`.
+
 ## Move notation
 
 A move is `from-to`, for example `g7-e7`. Columns are `a`–`g` and rows `1`–`7`.

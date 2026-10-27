@@ -124,6 +124,15 @@ them, and the URL hash — `/#puzzles`, `/#chat` — selects one).
   `GET /api/chat`; new messages arrive over `/ws-chat` (reconnecting), and a
   badge (`#chat-tab-badge`) counts those that arrive while another tab shows.
 
+**Setup options.** A game's `bool` options are check boxes: under the seats for a
+table of three or more (`#slots-field`, Cthulhu Wars' expansions) and in a field
+of the game's own for a game of two (`#setup-options`, hidden when the game has
+none). The **pie rule** (`#option-pie-rule`) is one of these: it starts ticked
+for a game normally played with it (Hex, Gomoku) and unticked for a game that
+only offers it, and it is sent as an option only when it differs from that, so
+the plain game keeps the plain id and the other choice opens `<id>~pie` or
+`<id>~nopie`.
+
 **Top bar** (`js/topbar.js`, also on the profile page). *Active games*
 (`#open-active-games`) opens `#active-games-dialog` with the games of this
 browser that are not finished, in the layout of the former *Your games* card

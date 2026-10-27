@@ -2,12 +2,13 @@
   "id": "reversi",
   "name": "Reversi (Othello)",
   "description": "Outflank your opponent's discs to flip them; the player with the most discs when nobody can move wins.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "designers": ["Lewis Waterman", "John W. Mollett"],
   "rules": [
     "Players alternate placing a disc of their color; Black moves first. A disc must be placed so that it brackets at least one straight line (horizontal, vertical or diagonal) of opposing discs between the new disc and another disc of your color.",
     "All bracketed discs are flipped to your color. If you have no legal placement you pass; if neither player can move, the game ends.",
-    "The player with more discs on the board when the game ends wins; equal counts are a draw."
+    "The player with more discs on the board when the game ends wins; equal counts are a draw.",
+    "Optional (chosen when the game is made): with the pie rule, the second player may swap sides on their first turn instead of replying, and every piece on the board changes hands."
   ],
   "guide": { "tabs": [ { "id": "rules", "title": "Rules", "file": "rules.md" } ] },
   "board": {
@@ -27,6 +28,7 @@
     { "position": "e4", "piece": "disc", "color": "black" },
     { "position": "d5", "piece": "disc", "color": "black" }
   ],
+  "pie_rule": "optional",
   "turn_order": { "type": "round-robin", "seats": [1, 2], "pass_when_stuck": true },
   "actions": [
     {

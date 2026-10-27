@@ -2,11 +2,11 @@
   "id": "hex-11",
   "name": "Hex (11×11)",
   "description": "Join your two sides of the hexagonal board with an unbroken chain of stones. One player always wins — there are no draws.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "designers": ["Piet Hein", "John Nash"],
   "rules": [
     "Red and Blue alternate placing one stone on any empty hexagon; Red moves first.",
-    "Because the first player has an advantage, the second player may instead swap sides on their first turn (the pie rule): the first stone changes to their colour and the first player moves next.",
+    "Because the first player has an advantage, the second player may instead swap sides on their first turn (the pie rule): the first stone changes to their colour and the first player moves next. A table may leave the pie rule out when the game is made.",
     "Red wins by connecting the top and bottom edges with a chain of adjacent red stones; Blue wins by connecting the left and right edges.",
     "Stones never move or leave the board, and the game cannot end in a draw."
   ],
@@ -36,10 +36,10 @@
   "pieces": {
     "stone": { "label": "Stone", "shape": "disc" }
   },
+  "pie_rule": "standard",
   "turn_order": { "type": "round-robin", "seats": [1, 2] },
   "actions": [
-    { "id": "place", "type": "place", "label": "Place a stone", "pieces": ["stone"], "source": "supply" },
-    { "id": "swap", "type": "swap", "label": "Swap sides" }
+    { "id": "place", "type": "place", "label": "Place a stone", "pieces": ["stone"], "source": "supply" }
   ],
   "win_condition": {
     "type": "rules",
