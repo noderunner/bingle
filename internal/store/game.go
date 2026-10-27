@@ -27,6 +27,11 @@ type Game struct {
 	// MoveTimeLimit is the per-move time allowance in seconds (0 = none).
 	// The current turn started at UpdatedAt.
 	MoveTimeLimit int
+	// Clock is the game clock (a chess clock) as JSON, empty when the game
+	// is played without one: what each seat started with and what it has
+	// left (see session.GameClock). The clock of the seat to move has been
+	// running since UpdatedAt.
+	Clock string
 	// DrawOfferSeat is the seat currently offering a draw, or nil. Any move
 	// (or undo) withdraws the offer.
 	DrawOfferSeat *int
@@ -51,7 +56,7 @@ type Game struct {
 
 // gameColumns is the column list every games SELECT uses, matching
 // scanGameRow.
-const gameColumns = `id, room_code, game_def_id, status, board_state, turn_seat, move_seq, winner_seat, end_reason, end_detail, move_time_limit, draw_offer_seat, initial_state, initial_turn_seat, takeback_seat, takeback_seq, created_at, updated_at, lobby`
+const gameColumns = `id, room_code, game_def_id, status, board_state, turn_seat, move_seq, winner_seat, end_reason, end_detail, move_time_limit, draw_offer_seat, initial_state, initial_turn_seat, takeback_seat, takeback_seq, created_at, updated_at, lobby, clock`
 
 type rowScanner interface{ Scan(dest ...any) error }
 
@@ -61,7 +66,7 @@ func scanGameRow(row rowScanner) (Game, error) {
 	var lobby int
 	err := row.Scan(&g.ID, &g.RoomCode, &g.GameDefID, &g.Status, &g.BoardState, &turnSeat, &g.MoveSeq, &winnerSeat,
 		&g.EndReason, &g.EndDetail, &g.MoveTimeLimit, &drawOffer, &g.InitialState, &g.InitialTurnSeat,
-		&takebackSeat, &g.TakebackSeq, &g.CreatedAt, &g.UpdatedAt, &lobby)
+		&takebackSeat, &g.TakebackSeq, &g.CreatedAt, &g.UpdatedAt, &lobby, &g.Clock)
 	if err != nil {
 		return Game{}, err
 	}
@@ -204,6 +209,20 @@ func (s *Store) SetDrawOffer(ctx context.Context, gameID int64, seat *int) error
 	res, err := s.db.ExecContext(ctx, `UPDATE games SET draw_offer_seat = ? WHERE id = ?`, v, gameID)
 	if err != nil {
 		return fmt.Errorf("setting draw_offer_seat for game_id=%d: %w", gameID, err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+// SetGameClock stores a game's clock (JSON; empty for no clock). It is set
+// when the game is created and then only by RecordMove, which charges the
+// mover in the same transaction as their move.
+func (s *Store) SetGameClock(ctx context.Context, gameID int64, clock string) error {
+	res, err := s.db.ExecContext(ctx, `UPDATE games SET clock = ? WHERE id = ?`, clock, gameID)
+	if err != nil {
+		return fmt.Errorf("setting clock for game_id=%d: %w", gameID, err)
 	}
 	if n, _ := res.RowsAffected(); n == 0 {
 		return ErrNotFound

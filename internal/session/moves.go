@@ -220,6 +220,23 @@ func (m *Manager) applyAndRecordAs(ctx context.Context, compiled *catalog.Compil
 		capturedStr = &v
 	}
 
+	// The clock of the seat to move has been running since the game row was
+	// last touched (its updated_at, which every turn change bumps): charge it
+	// in the transaction that records the move, so the two cannot disagree.
+	var clockJSON *string
+	charged := parseGameClock(game.Clock)
+	if charged != nil {
+		if started, ok := parseTimestamp(game.UpdatedAt); ok {
+			charged.charge(player.Seat, m.now().Sub(charged.startedAt(started)))
+		}
+		charged.start(m.now())
+		stored, err := charged.marshal()
+		if err != nil {
+			return MoveOutcome{}, err
+		}
+		clockJSON = &stored
+	}
+
 	move, err := m.store.RecordMove(ctx, game.ID, store.MoveInput{
 		Seat:                player.Seat,
 		Color:               player.Color,
@@ -237,6 +254,7 @@ func (m *Manager) applyAndRecordAs(ctx context.Context, compiled *catalog.Compil
 		Auto:                auto,
 		AutoPlay:            autoPlay,
 		Locked:              locked,
+		Clock:               clockJSON,
 	})
 	if err != nil {
 		return MoveOutcome{}, err
@@ -254,10 +272,28 @@ func (m *Manager) applyAndRecordAs(ctx context.Context, compiled *catalog.Compil
 
 	var eventTurnSeat *int
 	var eventDeadline string
+	var eventClock *ClockSnapshot
 	if !result.GameEnded {
 		eventTurnSeat = &result.NextTurnSeat
+		deadline := time.Time{}
 		if game.MoveTimeLimit > 0 {
-			eventDeadline = m.now().UTC().Add(time.Duration(game.MoveTimeLimit) * time.Second).Format(time.RFC3339)
+			deadline = m.now().UTC().Add(time.Duration(game.MoveTimeLimit) * time.Second)
+		}
+		if charged != nil {
+			// The next player's clock starts running now.
+			d := m.now().UTC().Add(time.Duration(charged.LeftFor(result.NextTurnSeat) * float64(time.Second)))
+			if deadline.IsZero() || d.Before(deadline) {
+				deadline = d
+			}
+		}
+		if !deadline.IsZero() {
+			eventDeadline = deadline.Format(time.RFC3339)
+		}
+	}
+	if charged != nil {
+		eventClock = charged.snapshot(result.NextTurnSeat)
+		if result.GameEnded {
+			eventClock.Running = 0
 		}
 	}
 	// A move that commits a secret (a strike's dice) is announced without it.
@@ -286,6 +322,7 @@ func (m *Manager) applyAndRecordAs(ctx context.Context, compiled *catalog.Compil
 		State:      json.RawMessage(publicJSON),
 
 		TurnDeadline: eventDeadline,
+		Clock:        eventClock,
 		ServerTime:   m.now().UTC().Format(time.RFC3339),
 		Auto:         auto,
 		AutoPlay:     autoPlay,

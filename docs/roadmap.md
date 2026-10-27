@@ -58,6 +58,7 @@ Legend: ✅ done · 🟡 partial · ⬜ not started · ➖ deliberately out of s
 | ✅ | Resign | ends the game with `end_reason = resignation` |
 | ✅ | Draw offers | offer / cancel / accept / decline; any move withdraws the offer |
 | ✅ | Per-move time limits | `move_time_seconds`; loser on time; lazy server enforcement |
+| ✅ | Game clock (chess clock) | `clock_seconds` (one time per seat, handicaps allowed); the mover's own store runs down; forfeit on the flag |
 | ✅ | Replay at any point | `GET …/state?at_seq=N` (0 = starting position) |
 | ✅ | Simulate / analysis | `POST …/simulate` applies notation to any point without changing the game |
 | ✅ | Export | JSON game record + PTN document |

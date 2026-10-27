@@ -20,11 +20,11 @@ Position documents appear as `state` (full: `cells` = stacks bottom-to-top,
 | `GET /bots` | | `[{id, label, description}]` |
 | `GET /puzzles` | `?game_def_id=&max_win_in=` | `[{id, game_def_id, title, to_move, win_in, plies, tps?, state}]` — positions where the side to move wins by force |
 | `GET /puzzles/{id}` | `?reveal=1` adds `first_moves` and a `solution` line | one puzzle; `404` if unknown |
-| `POST /games` | `{game_def_id, player_name, seat?, opponent?, seat_bots? (`{"2": "random"}`: a bot in chosen seats; the rest stay open), lobby? (wait for the host's `start` even with every seat filled), move_time_seconds?, options? (setup choices — see below), start_tps?, start_state?, start_seat?}` | `{room_code, seat, color, status, bot_moves?}` |
+| `POST /games` | `{game_def_id, player_name, seat?, opponent?, seat_bots? (`{"2": "random"}`: a bot in chosen seats; the rest stay open), lobby? (wait for the host's `start` even with every seat filled), move_time_seconds?, clock_seconds?, options? (setup choices — see below), start_tps?, start_state?, start_seat?}` | `{room_code, seat, color, status, bot_moves?}` |
 | `GET /config` | | `{public_url}`: the configured `BINGLE_PUBLIC_URL` ("" when unset) |
 | `POST /bot-matches` | `{game_def_id, bot_a, bot_b, delay_ms?}`: a two-player room where two built-in bots play each other at a watchable pace (150 ms – 10 s per move); open it as a spectator (`/games/{code}/join` with role spectator, or the WebSocket). Stops when the game ends, after 2 minutes with nobody watching, or at the move cap; at most 12 run at once | `{room_code, status}` |
 | `POST /games/import` | `{text, game_def_id?, player1?, player2?}`: load a PTN document or a plain move list into a new room (full history; the rules engine validates every move, an illegal one is reported by number; a `[TPS]` header sets the start) | `{room_code, game_def_id, status, moves, players}` |
-| `GET /games/{code}` | | `{game_def_id, status, seats[{seat,color,name,label,bot}], turn_seat, move_seq, winner_seat, end_reason, end_detail, move_time_seconds, turn_deadline, server_time, draw_offer_seat, takeback_seat, takeback_to_seq, start_state?, start_turn_seat?, lobby?, host_seat?, invite_url}` |
+| `GET /games/{code}` | | `{game_def_id, status, seats[{seat,color,name,label,bot}], turn_seat, move_seq, winner_seat, end_reason, end_detail, move_time_seconds, clock?, turn_deadline, server_time, draw_offer_seat, takeback_seat, takeback_to_seq, start_state?, start_turn_seat?, lobby?, host_seat?, invite_url}` |
 | `POST /games/{code}/join` | `{player_name, role: player\|spectator, seat?}`: `seat` asks for a particular open seat (`409` if taken); a player already seated keeps theirs | `{role, seat, color, status}` |
 | `POST /games/{code}/bots` | `{player_name, bot, seat?}`: a seated player fills the lowest open seat (or `seat`) of a **waiting** game with a built-in bot, named after the seat's faction/colour and its kind (`Black Goat (MCTS)`); a game without a lobby starts when the last seat fills | `{seat, name, color, bot, status}`; `403` not seated, `409` full or already started |
 | `POST /games/{code}/start` | `{player_name}`: the **host** begins a game waiting in its lobby; every seat must be filled | `{status, lobby, host_seat, move_seq, turn_seat}`; `403` not the host, `409` seats open / already started |
@@ -75,6 +75,17 @@ in every other seat (the game starts immediately); `seat` chooses the
 creator's seat; `move_time_seconds` gives each move a time limit — the player
 to move loses on time when it runs out (the clock only runs while the game is
 active, and is evaluated whenever the game is read or moved in).
+
+**The game clock.** `clock_seconds` plays the game with a chess clock instead:
+a number gives both players that many seconds, a list of one time per seat
+gives them their own (handicap play). It is for a game of two seats and not
+together with `move_time_seconds`; anything else is a `400`. Each player's
+clock runs only while it is their turn — a move takes the time it took off the
+mover's own clock — and the first player to run out forfeits, enforced the same
+lazy way as a per-move limit. `GET /games/{code}` reports it as
+`clock: {running, seats: [{seat, initial_seconds, seconds_left}]}`, the running
+seat counting down to `turn_deadline`; `move` and `state` events carry the same
+object, and `get_observation`'s `seconds_left` follows it.
 
 **Custom start positions.** `start_tps` (PTN games such as Tak; the TPS says
 who moves first) or `start_state` (a position document — the `state` object of

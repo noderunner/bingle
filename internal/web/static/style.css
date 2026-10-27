@@ -438,6 +438,9 @@ details.debug pre {
 	padding: 0.05rem 0.5rem; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border);
 }
 .clock.low { color: var(--danger); border-color: var(--danger); }
+/* The clock of a game clock that is counting down now (js/game.js). */
+.clock.running { background: var(--accent-soft); border-color: var(--accent); }
+.clock.running.low { background: var(--surface-2); }
 
 /* ---- carried pieces & inspector --------------------------------------- */
 
