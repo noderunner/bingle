@@ -198,6 +198,17 @@ button.icon { padding: 0.35rem 0.6rem; min-width: 2.2rem; justify-content: cente
 
 .game-blurb { color: var(--muted); min-height: 3em; }
 
+/* The seats nobody holds, in a list of games. */
+.badge.open-seats { color: var(--accent); border-color: var(--accent); }
+/* A button that is only its icon (the rule book on the setup's Rules button). */
+button.icon-only { display: inline-flex; align-items: center; justify-content: center; padding: 0.3rem 0.5rem; }
+/* Who is here, in the profile window (js/topbar.js, js/here.js). */
+.here-section { margin-top: 1rem; }
+.here-section h3 { margin: 0 0 0.4rem; font-size: 1rem; }
+.here-list { list-style: none; margin: 0 0 0.4rem; padding: 0; max-height: 14rem; overflow-y: auto; }
+.here-list li { display: flex; align-items: center; gap: 0.5rem; padding: 0.3rem 0.1rem; border-top: 1px solid var(--border); }
+.here-list li:first-child { border-top: 0; }
+.here-list li.me { font-weight: 700; }
 .my-games { list-style: none; margin: 0; padding: 0; }
 .my-games li {
 	display: flex; align-items: center; gap: 0.6rem; padding: 0.55rem 0;

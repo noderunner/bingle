@@ -5,6 +5,7 @@
 
 import { h, clear, store, rememberGame, lastName, toast } from "./util.js";
 import { api } from "./api.js";
+import { rulesIcon } from "./ui-icons.js";
 import { renderBoard } from "./render.js";
 import { showRules as openRules } from "./rules.js";
 import { syncPractice } from "./practice.js";
@@ -908,7 +909,14 @@ if (createForm) {
 	const lobbyBoxEl = document.getElementById("lobby");
 	if (lobbyBoxEl) lobbyBoxEl.addEventListener("change", () => (lobbyBoxEl.dataset.touched = "1"));
 	const rulesButton = document.getElementById("game-rules-button");
-	if (rulesButton) rulesButton.addEventListener("click", showRules);
+	if (rulesButton) {
+		// The rule book stands for the word (ui-icons.js).
+		rulesButton.replaceChildren(rulesIcon());
+		rulesButton.classList.add("icon-only");
+		rulesButton.setAttribute("aria-label", "Rules");
+		rulesButton.title = "Rules";
+		rulesButton.addEventListener("click", showRules);
+	}
 	document.getElementById("setup-back").addEventListener("click", closeSetup);
 	document.getElementById("opponent-choices").addEventListener("change", applyStartMode);
 	for (const radio of createForm.querySelectorAll('input[name="start_mode"]')) radio.addEventListener("change", applyStartMode);

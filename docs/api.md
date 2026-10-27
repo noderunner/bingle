@@ -20,6 +20,9 @@ Position documents appear as `state` (full: `cells` = stacks bottom-to-top,
 | `GET /bots` | | `[{id, label, description}]` |
 | `GET /puzzles` | `?game_def_id=&max_win_in=` | `[{id, game_def_id, title, to_move, win_in, plies, tps?, state}]` — positions where the side to move wins by force |
 | `GET /puzzles/{id}` | `?reveal=1` adds `first_moves` and a `solution` line | one puzzle; `404` if unknown |
+| `GET /games` | `?limit=` (60 max) | `{games: [{room_code, game_def_id, name, family, status, lobby?, seats, open_seats, players[{seat,color,name,bot}], turn_seat, move_seq, updated_at}]}` — every unfinished game |
+| `GET /here` | | `{people: [{address, name, since, seen}]}` — the browsers that have said they are here lately |
+| `POST /here` | `{secret, player_name}` (an empty name leaves) | `{address, people[...]}` |
 | `POST /games` | `{game_def_id, player_name, seat?, opponent?, seat_bots? (`{"2": "random"}`: a bot in chosen seats; the rest stay open), lobby? (wait for the host's `start` even with every seat filled), move_time_seconds?, clock_seconds?, options? (setup choices — see below), start_tps?, start_state?, start_seat?}` | `{room_code, seat, color, status, bot_moves?}` |
 | `GET /config` | | `{public_url}`: the configured `BINGLE_PUBLIC_URL` ("" when unset) |
 | `POST /bot-matches` | `{game_def_id, bot_a, bot_b, delay_ms?}`: a two-player room where two built-in bots play each other at a watchable pace (150 ms – 10 s per move); open it as a spectator (`/games/{code}/join` with role spectator, or the WebSocket). Stops when the game ends, after 2 minutes with nobody watching, or at the move cap; at most 12 run at once | `{room_code, status}` |
@@ -86,6 +89,21 @@ lazy way as a per-move limit. `GET /games/{code}` reports it as
 `clock: {running, seats: [{seat, initial_seconds, seconds_left}]}`, the running
 seat counting down to `turn_deadline`; `move` and `state` events carry the same
 object, and `get_observation`'s `seconds_left` follows it.
+
+**Who is here, and what is going on.** `GET /games` lists every game on the
+server that has not finished — waiting for players, sitting in a lobby or being
+played — newest change first, with who is seated and how many seats nobody
+holds; the *Active games* window shows it beside the browser's own games, so a
+person can find a game to watch or an open seat to take. A room code is all it
+has ever taken to join a game, so this makes the rooms public to look at: a game
+nobody should find is one nobody should be able to join by code either.
+
+`POST /here` says that somebody is looking at bingle. There are no accounts, so
+a browser identifies itself with a `secret` of its own making, sent to the
+server and to nobody else; what the list carries is the **address** that secret
+hashes to (the first 8 bytes of its SHA-256), so a person can be found —
+and written to — without their address being forgeable. A browser is forgotten
+two and a half minutes after it last said anything, and nothing is stored.
 
 **Custom start positions.** `start_tps` (PTN games such as Tak; the TPS says
 who moves first) or `start_state` (a position document — the `state` object of

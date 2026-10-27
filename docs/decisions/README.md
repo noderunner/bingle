@@ -61,3 +61,4 @@ Short records of choices made for the `bingle` project during the requirements i
 | [0055](0055-the-order-of-a-hand.md) | The order of a hand: sorted by suit and value in the view, rearranged by dragging in the browser |
 | [0056](0056-the-pie-rule-as-a-setup-choice.md) | The pie rule as a setup choice: the `pie_rule` attribute, the catalog's own swap action and deriver |
 | [0057](0057-the-game-clock.md) | The game clock: a store of time per seat in one JSON column, charged by the move, with the forfeit on the existing lazy enforcement |
+| [0058](0058-all-games-who-is-here-and-the-icons.md) | All the games of the server in a second tab, who is here (a browser's secret and the address it hashes to), the profile as a window, and the icons of the bar |

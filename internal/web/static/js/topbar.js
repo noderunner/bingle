@@ -3,36 +3,21 @@
 // player's profile, help (the version, what changed lately, the project's page,
 // where to report problems) and — while a voice call is up — a button for the call.
 
-import { h, s, clear, toast, lastName, rememberGame, setTurnBadge, store } from "./util.js";
+import { h, clear, toast, lastName, setLastName, rememberGame, setTurnBadge, store } from "./util.js";
 import { api } from "./api.js";
-import { gameDefs, loadRows, isFinished, yourTurn, sortRows, gameRow } from "./mygames.js";
+import { gameDefs, loadRows, isFinished, yourTurn, sortRows, gameRow, openGameRow } from "./mygames.js";
 import { navigate, onLeave } from "./nav.js";
 import { voiceStatus, onVoiceChange, toggleMute, toggleDeafen, leaveVoice } from "./voice.js";
-
-const icon = (...paths) =>
-	s("svg", { viewBox: "0 0 24 24", width: 20, height: 20, fill: "none", stroke: "currentColor", "stroke-width": 1.8, "stroke-linecap": "round", "stroke-linejoin": "round", "aria-hidden": "true" }, ...paths);
-
-// A game controller.
-const gamesIcon = () =>
-	icon(
-		s("path", { d: "M6.5 8h11a4 4 0 0 1 3.9 4.9l-.9 4a2.6 2.6 0 0 1-4.4 1.2L14 16.5h-4L7.9 18.1a2.6 2.6 0 0 1-4.4-1.2l-.9-4A4 4 0 0 1 6.5 8z"}),
-		s("path", { d: "M8 10.8v3.4M6.3 12.5h3.4" }),
-		s("circle", { cx: 15.6, cy: 11.6, r: 0.5 }),
-		s("circle", { cx: 17.6, cy: 13.4, r: 0.5 })
-	);
-// A door with an arrow going in.
-const joinIcon = () => icon(s("path", { d: "M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4" }), s("path", { d: "M10 8l4 4-4 4M14 12H3" }));
-// A microphone.
-const micIcon = () => icon(s("rect", { x: 9, y: 3, width: 6, height: 11, rx: 3 }), s("path", { d: "M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21" }));
-// A question mark in a circle.
-const helpIcon = () => icon(s("circle", { cx: 12, cy: 12, r: 9 }), s("path", { d: "M9.4 9.4a2.7 2.7 0 0 1 5.2 1c0 1.8-2.6 2.2-2.6 4M12 17.4v.1" }));
-// A head and shoulders.
-const profileIcon = () => icon(s("circle", { cx: 12, cy: 8, r: 3.6 }), s("path", { d: "M4.5 20c.8-4 3.7-6 7.5-6s6.7 2 7.5 6" }));
+import { gamesIcon, joinIcon, micIcon, helpIcon, profileIcon } from "./ui-icons.js";
+import { whoIsHere, onHereChange, startHere } from "./here.js";
 
 const REPO_URL = "https://github.com/noderunner/bingle";
 
 // The version of the changelog this browser has shown its player (the Recent Changes of the help window).
 const CHANGES_SEEN_KEY = "bingle.changelog.seen";
+
+// Which tab of the active-games window was last open ("mine" or "all").
+const TAB_KEY = "bingle.gamesTab";
 
 /** The version of the bingle engine, which the server puts in every page. */
 function engineVersion() {
@@ -77,9 +62,58 @@ export function installTopbar({ onRows = () => {}, manageTitle = true } = {}) {
 	);
 	const list = h("ul", { class: "my-games", id: "my-games" });
 	const empty = h("p", { class: "muted", id: "my-games-empty", hidden: true }, "No games going. Pick one in the Games tab to start.");
-	const activeDlg = dialog("active-games-dialog", "Active games", list, empty);
+	const allList = h("ul", { class: "my-games", id: "all-games" });
+	const allEmpty = h("p", { class: "muted", id: "all-games-empty", hidden: true }, "No games are going anywhere on this server just now.");
+	const allNote = h("p", { class: "small muted" }, "Every game on this server that has not finished. Open one to watch it, or take a seat where one is open.");
+	// Two tabs: the games of this browser, and every game on the server.
+	const mineTab = h("button", { type: "button", class: "tab on", id: "tab-my-games", role: "tab", "aria-selected": "true", "aria-controls": "panel-my-games" }, "My games");
+	const allTab = h("button", { type: "button", class: "tab", id: "tab-all-games", role: "tab", "aria-selected": "false", "aria-controls": "panel-all-games" }, "All games");
+	const minePanel = h("div", { id: "panel-my-games", role: "tabpanel", "aria-labelledby": "tab-my-games" }, list, empty);
+	const allPanel = h("div", { id: "panel-all-games", role: "tabpanel", "aria-labelledby": "tab-all-games", hidden: true }, allNote, allList, allEmpty);
+	const tabs = h("div", { class: "tabs", role: "tablist", "aria-label": "Which games to list" }, mineTab, allTab);
+	const showTab = (which) => {
+		const mine = which === "mine";
+		mineTab.classList.toggle("on", mine);
+		allTab.classList.toggle("on", !mine);
+		mineTab.setAttribute("aria-selected", mine ? "true" : "false");
+		allTab.setAttribute("aria-selected", mine ? "false" : "true");
+		minePanel.hidden = !mine;
+		allPanel.hidden = mine;
+		store.set(TAB_KEY, which);
+		if (!mine) refreshAll();
+	};
+	mineTab.addEventListener("click", () => showTab("mine"));
+	allTab.addEventListener("click", () => showTab("all"));
+	for (const [tab, which] of [[mineTab, "mine"], [allTab, "all"]]) {
+		tab.addEventListener("keydown", (ev) => {
+			if (ev.key !== "ArrowLeft" && ev.key !== "ArrowRight") return;
+			ev.preventDefault();
+			const other = which === "mine" ? allTab : mineTab;
+			showTab(which === "mine" ? "all" : "mine");
+			other.focus();
+		});
+	}
+	const activeDlg = dialog("active-games-dialog", "Active games", tabs, minePanel, allPanel);
 	let rows = [];
 	let defs = [];
+	let allRows = [];
+
+	const paintAll = () => {
+		clear(allList);
+		const mine = new Set(rows.map((r) => r.g.code));
+		for (const g of allRows) allList.append(openGameRow(g, defs, mine.has(g.room_code)));
+		allEmpty.hidden = allRows.length > 0;
+	};
+	async function refreshAll() {
+		try {
+			const res = await api.openGames();
+			allRows = (res && res.games) || [];
+			if (!defs.length) defs = await gameDefs();
+			paintAll();
+		} catch (_) {
+			allEmpty.hidden = allRows.length > 0;
+		}
+	}
 
 	const paint = () => {
 		const active = sortRows(rows.filter((r) => !isFinished(r)));
@@ -107,6 +141,7 @@ export function installTopbar({ onRows = () => {}, manageTitle = true } = {}) {
 	activeBtn.addEventListener("click", () => {
 		paint();
 		open(activeDlg);
+		showTab(store.get(TAB_KEY, "mine") === "all" ? "all" : "mine");
 		refresh();
 	});
 
@@ -162,8 +197,7 @@ export function installTopbar({ onRows = () => {}, manageTitle = true } = {}) {
 	joinForm.querySelector("#watch-game").addEventListener("click", () => join("spectator"));
 
 	// ---- profile ---------------------------------------------------------------
-	const profile = h("a", { class: "topbar-icon", id: "open-profile", href: "/profile", title: "Your profile", "aria-label": "Your profile" }, profileIcon());
-	if (window.location.pathname === "/profile") profile.setAttribute("aria-current", "page");
+	const profile = profileWindow();
 
 	// ---- help ---------------------------------------------------------------------
 	// A dot on the icon says the changelog has an entry the player has not seen.
@@ -229,6 +263,8 @@ export function installTopbar({ onRows = () => {}, manageTitle = true } = {}) {
 
 	const voice = voiceChip();
 	host.append(voice, activeBtn, joinBtn, profile, helpBtn);
+	// Say that somebody is here, so the others' lists can show them.
+	startHere();
 
 	refresh().catch(() => toast("Could not read your games.", "error"));
 	// Keep "your turn" fresh while the page sits open in a tab.
@@ -238,6 +274,74 @@ export function installTopbar({ onRows = () => {}, manageTitle = true } = {}) {
 	setInterval(again, 20000);
 	document.addEventListener("visibilitychange", again);
 	return { refresh };
+}
+
+/**
+ * *Your profile*, as a floating window rather than a page of its own: the name
+ * this browser plays under, the people who are here now, and a way on to the
+ * full profile page (the email notifications and the games you have finished).
+ * The list of people comes from js/here.js — self-chosen names, as there are no
+ * accounts, which the window says.
+ */
+function profileWindow() {
+	const btn = h("button", { type: "button", class: "topbar-icon", id: "open-profile", "aria-haspopup": "dialog", title: "Your profile", "aria-label": "Your profile" }, profileIcon());
+	const nameInput = h("input", { id: "profile-window-name", type: "text", maxlength: "32", autocomplete: "nickname", value: lastName() });
+	const saved = h("span", { class: "small muted", id: "profile-window-saved", role: "status" });
+	const list = h("ul", { class: "here-list", id: "here-list" });
+	const count = h("span", { class: "small muted", id: "here-count" });
+	const dlg = dialog(
+		"profile-dialog",
+		"Your profile",
+		h(
+			"div",
+			{ class: "field" },
+			h("label", { for: "profile-window-name" }, "The name you play under"),
+			nameInput,
+			saved,
+			h("span", { class: "small muted" }, "It is offered when you make or join a game, and it is what the others see while you are here.")
+		),
+		h("section", { class: "here-section" }, h("h3", {}, "Here now ", count), list, h("p", { class: "small muted" }, "Everybody whose browser has said it is here in the last few minutes. Names are chosen by the people themselves: there are no accounts, so a name is not proof of who somebody is.")),
+		h("div", { class: "row" }, h("a", { class: "button", id: "profile-page-link", href: "/profile" }, "Email notifications and finished games"))
+	);
+	const paint = (people) => {
+		clear(list);
+		const mine = (lastName() || "").toLowerCase();
+		count.textContent = people.length ? `(${people.length})` : "";
+		for (const p of people) {
+			const isMe = p.name && p.name.toLowerCase() === mine;
+			list.append(
+				h(
+					"li",
+					{ "data-address": p.address, class: isMe ? "me" : null },
+					h("span", { class: "grow" }, p.name),
+					isMe ? h("span", { class: "badge" }, "you") : null
+				)
+			);
+		}
+		if (!people.length) list.append(h("li", { class: "muted" }, "Nobody else just now."));
+	};
+	nameInput.addEventListener("change", () => {
+		const name = nameInput.value.trim();
+		if (!name) return;
+		setLastName(name);
+		saved.textContent = "Saved.";
+		beatHere();
+	});
+	btn.addEventListener("click", () => {
+		nameInput.value = lastName();
+		saved.textContent = "";
+		paint(whoIsHere());
+		open(dlg);
+		beatHere();
+	});
+	const stop = onHereChange(paint);
+	onLeave(stop);
+	return btn;
+}
+
+/** Tells the server we are here again (after a change of name, or on opening the window). */
+function beatHere() {
+	import("./here.js").then((m) => m.beat()).catch(() => {});
 }
 
 /**

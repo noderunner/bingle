@@ -131,7 +131,11 @@ them, and the URL hash — `/#puzzles`, `/#chat` — selects one).
   (`#global-chat-log`, `#global-chat-name`, `#global-chat-input`,
   `#global-chat-send`, the emoji picker of the game chat). History comes from
   `GET /api/chat`; new messages arrive over `/ws-chat` (reconnecting), and a
-  badge (`#chat-tab-badge`) counts those that arrive while another tab shows.
+  badge (`#chat-tab-badge`) counts the messages the person has not read: those
+  that arrive while another tab shows, and those said while this browser was
+  away — the newest message it has shown is remembered
+  (`localStorage` `bingle.chat.seen`), so coming back to the page says how much
+  was missed. Reading the tab clears it.
 
 **Setup options.** A game's `bool` options are check boxes: under the seats for a
 table of three or more (`#slots-field`, Cthulhu Wars' expansions) and in a field
@@ -142,15 +146,39 @@ only offers it, and it is sent as an option only when it differs from that, so
 the plain game keeps the plain id and the other choice opens `<id>~pie` or
 `<id>~nopie`.
 
-**Top bar** (`js/topbar.js`, also on the profile page). *Active games*
-(`#open-active-games`) opens `#active-games-dialog` with the games of this
-browser that are not finished, in the layout of the former *Your games* card
-(`#my-games li`: title, opponent, *Your turn* / *Their turn* / *Waiting*,
-*Open*, remove); its badge (`#active-badge`) counts the games where it is your
-turn, which also shows in the tab title and on the tab icon. *Join a game*
-(`#open-join`) opens `#join-dialog` (`#join-game-form`: `#room_code`,
-`#join_player_name`, *Join*, `#watch-game`). The person icon (`#open-profile`)
-links to the profile.
+**Top bar** (`js/topbar.js`, also on the profile page). Its icons are drawn by
+`js/ui-icons.js` (each `svg.ui-icon[data-icon]`, so a page or a test can tell
+which picture a button carries).
+
+*Active games* (`#open-active-games`) opens `#active-games-dialog`, which has
+**two tabs** (`#tab-my-games`, `#tab-all-games`; the last one open is
+remembered in `bingle.gamesTab`):
+
+* *My games* (`#my-games li`): the games of this browser that are not finished,
+  in the layout of the former *Your games* card — title, opponent, *Your turn* /
+  *Their turn* / *Waiting* / *In the lobby*, how many seats are still open
+  (`.badge.open-seats[data-open-seats]`), *Open*, remove;
+* *All games* (`#all-games li`): every unfinished game on the server
+  (`GET /api/games`), whoever made it — who is at the table, how far it has
+  gone, *In the lobby* and the open seats, and *Open* (or *Watch* at a full
+  table), with *yours* on the browser's own. It is how a person finds a game to
+  watch or a seat to take without being sent a link.
+
+Its badge (`#active-badge`) counts the games where it is your turn, which also
+shows in the tab title and on the tab icon. *Join a game* (`#open-join`, two
+plugs coming together — `data-icon="plugs"`, not a door with an arrow, which
+reads as leaving) opens `#join-dialog` (`#join-game-form`: `#room_code`,
+`#join_player_name`, *Join*, `#watch-game`).
+
+The person icon (`#open-profile`) opens **`#profile-dialog`**, a floating window
+rather than a page: the name this browser plays under
+(`#profile-window-name`, saved as you leave the field), **Here now**
+(`#here-list li[data-address]`, `#here-count`) — everybody whose browser has
+said it is here in the last few minutes, your own entry marked `.me` — and a
+link on to the profile page (`#profile-page-link`) for the email notifications
+and the finished games. `js/here.js` tells the server every minute that
+somebody is here, under the name of `bingle.name`, with this browser's own
+secret (`bingle.session`); names are self-chosen, which the window says.
 
 **The top bar of a game** carries the same icons as the main page — the active games with the
 count of those waiting for you (`#open-active-games`), joining a game (`#open-join`) and the
@@ -554,8 +582,11 @@ starts the count again.
 
 ## The rules window
 
-The **Rules** button opens a floating dialog with one tab per page of the
-game's guide (see ADR 0026), plus a client-side *Controls* tab:
+The **Rules** button is a **rule book** (`js/ui-icons.js`,
+`svg[data-icon="rules"]`, named *Rules* for a screen reader) wherever the word
+used to stand: the top bar of a game (`#show-rules`) and the setup of a game on
+the home page (`#game-rules-button`). It opens a floating dialog with one tab
+per page of the game's guide (see ADR 0026), plus a client-side *Controls* tab:
 
 * tabs with arrow/Home/End keyboard navigation (roving tab stop), the last
   tab per game remembered;
@@ -648,7 +679,11 @@ per-move allowance), `#clock-field` with `#clock_seconds`, `#clock-handicap`,
 `#game-options`, `#share-link`,
 `#save-image`, `#request-takeback`, `#takeback-accept`, `.ghost-piece`,
 `.hint-ring`, `#puzzle-list .puzzle-card` (the name for a puzzle game is `#puzzle_player_name`),
-`#import-text`, `#fun-fact`, `#game-setup`, `#global-chat-log`;
+`#import-text`, `#fun-fact`, `#game-setup`, `#global-chat-log`,
+`#active-games-dialog` with `#tab-my-games` / `#tab-all-games`, `#my-games li`,
+`#all-games li` and `.badge.open-seats`, `#profile-dialog` with
+`#profile-window-name`, `#here-list li[data-address]` and `#profile-page-link`,
+and `svg.ui-icon[data-icon]` for the icons of the bar;
 area maps add `.cell.area[data-position]` with `.area-bg`, `.mark-gate`,
 `.token[data-piece,data-color,data-count]` (`.token-target` when it can be
 picked), `#round-bar`, `#battle-panel`, `.seat-grid`, `.faction-card`,

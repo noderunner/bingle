@@ -40,10 +40,11 @@ type Manager struct {
 	roomLocks map[string]*sync.Mutex // lazily created, one per room code ever touched
 	shuffles  shuffleTracker         // recent piece arrangements of bots (see avoidShuffles)
 	chat      chatLimiter            // how often each name has spoken (see SendChat)
-	presence  presenceTracker        // who says they are watching right now (see SetPresent)
-	voice     voiceTracker           // who is in the voice chat of each game (see SetVoice)
-	notify    *notifier              // email notifications (nil when not set up; see EnableNotify)
-	botsBusy  map[string]bool        // rooms with a background bot run, guarded by mu
+	presence  presenceTracker
+	here      hereTracker     // the browsers that are about (see here.go)        // who says they are watching right now (see SetPresent)
+	voice     voiceTracker    // who is in the voice chat of each game (see SetVoice)
+	notify    *notifier       // email notifications (nil when not set up; see EnableNotify)
+	botsBusy  map[string]bool // rooms with a background bot run, guarded by mu
 	// autoPlayFrom is when the Auto-Play watcher started (zero when it is not
 	// running, as in tests): a wait that ran while the server was down does
 	// not count, see autoPlaySince. Guarded by mu.

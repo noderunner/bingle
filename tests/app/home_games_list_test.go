@@ -95,11 +95,17 @@ func TestHomeGames_ListShowsBetaPlayersAndADetailsCard(t *testing.T) {
 	if got := evalString(t, ctx, `document.getElementById("game-tip").textContent`); strings.Contains(got, "Publisher") || strings.Contains(got, "null") {
 		t.Errorf("the Blooms card names a publisher nobody gave: %q", got)
 	}
-	// The setup of a game: the rules button just says Rules.
+	// The setup of a game: the rules button is the rule book, named Rules.
 	clickSel(t, ctx, `.game-card[data-family="tak-5x5"]`)
 	waitJS(t, ctx, "setup", `!document.getElementById("game-setup").hidden`, 5*time.Second)
-	if got := evalString(t, ctx, `document.getElementById("game-rules-button").textContent.trim()`); got != "Rules" {
-		t.Errorf("the rules button says %q", got)
+	if n := evalInt(t, ctx, `document.querySelectorAll('#game-rules-button svg[data-icon="rules"]').length`); n != 1 {
+		t.Errorf("the rules button does not carry the rule book (%d)", n)
+	}
+	if got := evalString(t, ctx, `document.getElementById("game-rules-button").getAttribute("aria-label")`); got != "Rules" {
+		t.Errorf("the rules button is named %q", got)
+	}
+	if got := evalString(t, ctx, `document.getElementById("game-rules-button").textContent.trim()`); got != "" {
+		t.Errorf("the rules button still holds the word %q", got)
 	}
 	if evalBool(t, ctx, `!document.getElementById("game-tip").hidden`) {
 		t.Error("the details card stays open after a game is picked")
