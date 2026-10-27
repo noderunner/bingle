@@ -4,6 +4,21 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.6.0 - 2026-10-27
+
+### Bingle Core 0.6.0
+- **The pie rule is yours to choose.** Ten two-player games can be played with the pie rule —
+  instead of answering the first move, the second player may swap sides, and every piece on the
+  board changes hands — and the box for it is in the setup when you make the game. Hex and Gomoku
+  start with it on, as they are normally played; Yavalath, Havannah, Pente, Connect Four, Amazons,
+  Ataxx, Reversi and Go offer it. Each game's rules page says how it works.
+
+### Amazons 0.2.0, Ataxx 0.2.0, Connect Four 0.2.0, Go 0.2.0, Havannah 0.2.0, Pente 0.2.0, Reversi 0.2.0, Yavalath 0.2.0
+- The pie rule can be switched on for a game, and the rules page explains it.
+
+### Gomoku 0.2.0, Hex 0.2.0
+- The pie rule is still how these games are played here, and a table may now leave it out.
+
 ## 0.5.0 - 2026-10-27
 
 ### Bingle Core 0.5.0

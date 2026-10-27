@@ -2,12 +2,13 @@
   "id": "go-9x9",
   "name": "Go (9×9)",
   "description": "Surround territory and capture groups of stones in the classic board game of Go: liberties, ko, passing and area scoring, on a 9×9, 13×13 or 19×19 board.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "rules": [
     "Black and White alternate placing a stone on an empty intersection; Black moves first. Stones never move.",
     "A group is a set of orthogonally connected stones of one color. Its liberties are the empty intersections next to it. A group left with no liberties is captured and removed.",
     "You may not play a stone that leaves its own group without liberties unless it captures something (no suicide), and you may not recreate the position as it was before your opponent's last move (the ko rule).",
-    "Pass when you have no useful move. When both players pass in a row the game ends and is scored by area: each player scores their stones on the board plus the empty regions that border only their color; White receives komi as compensation for moving second. Capture dead stones before you pass — stones are not removed at the end."
+    "Pass when you have no useful move. When both players pass in a row the game ends and is scored by area: each player scores their stones on the board plus the empty regions that border only their color; White receives komi as compensation for moving second. Capture dead stones before you pass — stones are not removed at the end.",
+    "Optional (chosen when the game is made): with the pie rule, the second player may swap sides on their first turn instead of replying, and every piece on the board changes hands."
   ],
   "guide": { "tabs": [ { "id": "rules", "title": "Rules", "file": "rules.md" } ] },
   "preview": [
@@ -56,6 +57,7 @@
       "shape": "disc"
     }
   },
+  "pie_rule": "optional",
   "turn_order": {
     "type": "round-robin",
     "seats": [

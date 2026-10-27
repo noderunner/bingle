@@ -13,6 +13,8 @@ version, designers[], publisher   the implementation's semver (raise it with eve
                               definition or Go code; below 1.0.0 shows a Beta mark), and who made the game
 family, variants[]            group sibling games / derive them from this document
 options[]                     setup choices a creator makes (bool, seat-choice, book-swap)
+pie_rule                      standard | optional: the game can be played with the pie rule, and
+                              the creator chooses (the catalog brings the swap action and the box)
 board                         required: generator or explicit graph, regions, style
 seats[]                       required
 pieces{}                      required
@@ -178,7 +180,21 @@ of the opponent's reserve (Tak's swap rule).
 (default: only the second player's first move). Taking it recolours every
 piece on the board to the other side (and exchanges the reserves), and play
 continues with the first player. Notation `swap`; the UI offers a *Swap
-sides* button. Hex and Gomoku use it.
+sides* button.
+
+Games do not usually declare the action themselves: **`pie_rule`** does it
+(ADR 0056). `"pie_rule": "standard"` is a game normally played with the rule
+(Hex, Gomoku) and `"optional"` one that only offers it; either way the catalog
+adds the `swap` action when the rule is in play and a `bool` setup option,
+`pie-rule`, for the creator — whose check box starts at the game's own practice.
+A table that chooses otherwise plays a **derived game**, `<id>~pie` or
+`<id>~nopie` (the built-in `pieDeriver`, so a JSON game needs no Go code);
+choosing what the game does anyway keeps the plain id. The two settled values,
+`"on"` and `"off"`, are what those derived documents carry. A declaration is
+refused where the rule cannot work: a game of other than two seats, a seat with
+a `forward` direction (recolouring in place would leave its pieces facing the
+wrong way), a game that declares a `swap` action of its own, or a Go ruleset —
+which builds its own moves and would have to offer swapping sides itself.
 
 ### slide (and compound moves)
 

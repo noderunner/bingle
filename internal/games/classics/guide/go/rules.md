@@ -33,6 +33,14 @@ The score is counted by **area**: a player's score is the number of their stones
 
 **Dead stones are not removed automatically.** Before you pass, capture any enemy stones that are certain to die: the game scores the board as it stands.
 
+### The pie rule
+
+The player who moves first has an advantage, so a table may play with the **pie rule** (tick
+*Pie rule* when the game is made). Instead of answering the opening move, the second player
+may **swap sides** on their first turn: every piece on the board changes hands and the first player
+moves again. It is then in the first player's interest to open with a move that is neither too
+strong nor too weak. The move is `swap`.
+
 ## Move notation
 
 A move names the intersection, such as `e5` (the middle of the 9×9 board). Columns are letters from `a` on the left and rows are numbers from `1` at the bottom (a 19×19 board runs `a`–`s`). A pass is written `pass`.

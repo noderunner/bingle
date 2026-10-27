@@ -2,12 +2,13 @@
   "id": "ataxx",
   "name": "Ataxx",
   "description": "Grow your colony: clone a piece to a neighbouring square or jump two squares, and every enemy piece next to where you land turns to your side.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "designers": ["Dave Crummack", "Craig Galley"],
   "rules": [
     "Each turn move one of your pieces to an empty square at most two squares away (counting diagonals). One square away is a clone — the original stays, so you gain a piece; two squares away is a jump — the original moves.",
     "Every opposing piece adjacent to the square you land on is converted to your colour.",
-    "A player with no legal move passes. The game ends when the board is full or neither player can move; the player with more pieces wins."
+    "A player with no legal move passes. The game ends when the board is full or neither player can move; the player with more pieces wins.",
+    "Optional (chosen when the game is made): with the pie rule, the second player may swap sides on their first turn instead of replying, and every piece on the board changes hands."
   ],
   "guide": { "tabs": [ { "id": "rules", "title": "Rules", "file": "rules.md" } ] },
   "board": {
@@ -26,6 +27,7 @@
     { "position": "a7", "piece": "blob", "color": "blue" },
     { "position": "g1", "piece": "blob", "color": "blue" }
   ],
+  "pie_rule": "optional",
   "turn_order": { "type": "round-robin", "seats": [1, 2], "pass_when_stuck": true },
   "actions": [
     {
