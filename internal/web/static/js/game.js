@@ -3134,6 +3134,8 @@ function cardContext(v) {
 		info: S.info,
 		view: v,
 		seats: S.info.seats,
+		// The room is the key the order of a hand is remembered under.
+		room: code,
 		me: S.me.seat || 0,
 		toMove: v.to_move,
 		dealer: v.dealer,

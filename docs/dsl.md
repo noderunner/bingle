@@ -453,7 +453,11 @@ template of every suit × every rank, plus explicit cards:
 * Board `style: "none"` draws no board (the cards are the table).
 * In Go, `internal/engine/cards` holds a game's cards in a `Table` of zones: it
   shuffles with a seedable `RNG`, deals, moves and flips cards, and `Redact` /
-  `View` give each viewer only the cards they may see. The client side is
+  `View` give each viewer only the cards they may see. `View` also puts a
+  viewer's own private zone — their hand — in order: by suit (in `suit_order`),
+  then by the rank's `value`, cards of no suit last. The cards on the table keep
+  the order they were dealt in; only the view is sorted, and a player may
+  rearrange their hand in the page. The client side is
   `static/js/cards.js` (the card table, with flip and deal animations) and a
   generic board of choices (`view.grid`).
 
