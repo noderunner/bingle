@@ -169,6 +169,28 @@ that applies (Activate, Strike, Shove…) and, where it asks, a number (attack
 dice, VP to buy). Decisions are submitted at once — there is no preview step
 for these games — and moves that depend on dice are never previewed.
 
+## Card tables and hands (Nyet!)
+
+A game with a `cards` section draws a **card table** (`js/cards.js`, `#card-table`): what the
+players share in the middle (the trick, the piles, the last trick), the board of terms beside it
+where the game has one, and the viewer's own zones below. The other players' hands are not drawn;
+the list of players says how many cards each one holds.
+
+**Your own hand** — any zone whose visibility is `owner`, so this is every card game, not Nyet!
+alone:
+
+* it arrives **in order**: the server sorts a private hand by suit, in the game's own order of
+  suits, then by the value of the rank, with cards of no suit last (`cards.Table.View`), so a hand
+  reads the same way however it was dealt (and an agent reading the state sees the same);
+* a card shows **twice as large** while the pointer is over it or it has the focus;
+* it can be **rearranged**: press a card and drag it along the hand, and the cards it would land in
+  front of make room for it (`.pc-dragging`, `.pc-shift`). The order is this browser's own
+  (`localStorage` `bingle.handOrder`, by room, zone and seat), not the server's, so it survives
+  every redraw and reload; a card the order does not know — one just dealt or drawn — goes after
+  the ones it does, which means a fresh deal comes out sorted again. Dragging a card never plays
+  it: the click that ends the drag is swallowed. **Alt+←** and **Alt+→** move the card that has
+  the focus, for playing without a pointer.
+
 ## Area maps and multi-seat tables (Cthulhu Wars)
 
 `board.style: "areas"` games are drawn by `renderAreaMap`: straight-edged
@@ -619,7 +641,9 @@ picked), `#round-bar`, `#battle-panel`, `.seat-grid`, `.faction-card`,
 `#ask-<id>-seat-<seat>` and `#ask-<id>-state`, `#options-autoplay` with `#autoplay-on`,
 `#autoplay-days|hours|minutes`, `#autoplay-save`, `#autoplay-help` and
 `#autoplay-state`, `#chat-card` with `#chat-log`,
-`#chat-input`, `#chat-send`, `#chat-name`, `#emoji-button`, `#emoji-panel`, the voice card
+`#chat-input`, `#chat-send`, `#chat-name`, `#emoji-button`, `#emoji-panel`, the card table
+`#card-table` (`.ct-seat.me .zone-hand`, `.pc-slot`, `.pcard.face[data-card]`, `.pc-zoom`, and
+`.zone.reorderable` with `.pc-dragging` / `.pc-shift` while a card is dragged), the voice card
 `#voice-card` (`#voice-join`, `#voice-leave`, `#voice-mute`, `#voice-deafen`, `#voice-ptt`,
 `#voice-peers li[data-voice-seat][data-state]`, `#voice-badge`, `#voice-error`, `#voice-elsewhere` and
 `#voice-switch` when the call is in another game), the top-bar button of a call (`#voice-chip` with
@@ -639,4 +663,4 @@ The board is one tab stop; the arrow keys move between squares (as drawn, so a
 flipped board works), Enter/Space selects the square, Backspace steps back
 inside a move, Esc clears it and Enter submits a previewed move. With focus
 outside the board, ←/→ browse the history and Home/End jump to the start / the
-live position. Every square has an accessible name ("c3: stack of 2 …").
+live position. Alt+←/→ moves the card of your own hand that has the focus. Every square has an accessible name ("c3: stack of 2 …").

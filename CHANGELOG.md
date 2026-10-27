@@ -4,6 +4,15 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.5.0 - 2026-10-27
+
+### Bingle Core 0.5.0
+- **Your hand is in order.** In every card game the cards you are dealt come sorted: by suit, in
+  the game's own order of suits, and by value inside each suit.
+- **Arrange your hand as you like.** Press a card and drag it along your hand; the cards make room
+  for it, and your hand keeps that order until the next deal. Dragging a card never plays it, and
+  Alt+← / Alt+→ move the card you have selected with the keyboard.
+
 ## 0.4.0 - 2026-10-26
 
 ### Bingle Core 0.4.0

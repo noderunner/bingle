@@ -1519,6 +1519,16 @@ button.move-card { cursor: pointer; }
 .ct-seat.me .layout-fan .pc-slot + .pc-slot { margin-left: calc(var(--cw) * -0.26); }
 @media (max-width: 700px) { .ct-seat.me .layout-fan .pc-slot + .pc-slot { margin-left: calc(var(--cw) * -0.5); } }
 
+/* Rearranging your own hand by dragging a card along it (js/cards.js): the card
+   follows the pointer and the cards it would land in front of make room. */
+.zone.reorderable { -webkit-user-select: none; user-select: none; }
+.zone.reorderable .pc-slot { touch-action: pan-y; }
+.zone.reorderable .pc-slot:not(.pc-dragging) { cursor: grab; }
+.zone.reordering .pc-slot.pc-dragging { cursor: grabbing; z-index: 20; transition: none; pointer-events: none; }
+.zone.reordering .pc-slot.pc-dragging .pcard { box-shadow: 0 10px 24px rgba(0,0,0,.45); transform: none; }
+.zone.reordering .pc-slot.pc-shift { transform: translateX(calc(var(--cw) * 0.34)); }
+@media (prefers-reduced-motion: reduce) { .layout-fan .pc-slot { transition: none; } }
+
 /* The board of terms: pictures in a grid whose cells are all the same size, every line centred under the widest. */
 .ct-grid-wrap { margin: 8px 0; }
 .ct-round { margin: 0 0 4px 2px; }

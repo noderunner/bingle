@@ -12,6 +12,7 @@
 package cards
 
 import (
+	"sort"
 	"strconv"
 	"strings"
 
@@ -320,7 +321,9 @@ type ZoneView struct {
 }
 
 // View describes the table for viewer: one entry per zone that exists, in a
-// stable order.
+// stable order. A zone that is the viewer's own private one — their hand — is
+// sorted (see sortHand), so that every card game hands a player their cards in
+// an order they can read.
 func (t *Table) View(cc *catalog.CompiledCards, viewer int) []ZoneView {
 	keys := make([]string, 0, len(t.Zones))
 	for k := range t.Zones {
@@ -344,12 +347,52 @@ func (t *Table) View(cc *catalog.CompiledCards, viewer int) []ZoneView {
 			}
 		}
 		def := cc.Zones[zone]
+		if vis == "owner" && owner != 0 && owner == viewer && def.Layout != "stack" && seen == len(cards) {
+			sortHand(cc, cards)
+		}
 		if seen > 0 || (def.Layout != "stack" && !def.Counts) {
 			zv.Cards = cards
 		}
 		out = append(out, zv)
 	}
 	return out
+}
+
+// sortHand puts a hand in the order a player holds their cards in: by suit, in
+// the game's own order of suits, then by the value of the rank, then by the
+// card's id, so that a hand reads the same way however it was dealt. Cards of
+// no suit (jokers and the like) come last. A player may rearrange the cards in
+// their client afterwards; this is the order a hand starts in.
+func sortHand(cc *catalog.CompiledCards, hand []Card) {
+	if cc == nil {
+		return
+	}
+	suits := make(map[string]int, len(cc.Suits))
+	for i, id := range cc.Suits {
+		suits[id] = i
+	}
+	key := func(c Card) (int, int, string) {
+		t := cc.Type(c.ID)
+		if t == nil {
+			return len(suits) + 1, 0, c.ID
+		}
+		s, ok := suits[t.Suit]
+		if !ok {
+			s = len(suits)
+		}
+		return s, t.Value, t.ID
+	}
+	sort.SliceStable(hand, func(i, j int) bool {
+		si, vi, idi := key(hand[i])
+		sj, vj, idj := key(hand[j])
+		if si != sj {
+			return si < sj
+		}
+		if vi != vj {
+			return vi < vj
+		}
+		return idi < idj
+	})
 }
 
 func sortStrings(s []string) {

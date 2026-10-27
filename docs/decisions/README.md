@@ -58,3 +58,4 @@ Short records of choices made for the `bingle` project during the requirements i
 | [0052](0052-calls-across-pages-top-bar-and-per-reaction-choices.md) | A voice call that outlives the page, the top bar of a game, and a choice for each reaction |
 | [0053](0053-game-versions-beta-rules-pages-and-themes.md) | Game versions and the Beta mark, one Rules page for the abstract games, coordinates outside themed frames |
 | [0054](0054-changelog-nyet-table-and-removing-the-demo.md) | A changelog in the help window, Nyet!'s table (classic suits, animals, pictures for the board, phone views) and the Demo game removed |
+| [0055](0055-the-order-of-a-hand.md) | The order of a hand: sorted by suit and value in the view, rearranged by dragging in the browser |

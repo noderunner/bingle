@@ -223,3 +223,47 @@ func TestViewSendsNoCardsForAHiddenPile(t *testing.T) {
 		}
 	}
 }
+
+// A player's own hand comes out in order: by suit, in the game's own order of
+// suits, then by the value of the rank, with the cards of no suit (the jokers)
+// last. Two cards of one type keep the order they were dealt in. The table
+// itself is untouched, and a shared zone keeps the order of play.
+func TestOwnHandComesOutBySuitAndValue(t *testing.T) {
+	g, _ := register(t, goodCards)
+	tb := cards.NewTable()
+	dealt := []string{"hearts-2", "joker#0", "spades-K#1", "hearts-A", "spades-2", "spades-K#0"}
+	tb.Zone("hand", 1).Fill(dealt, false)
+	tb.Zone("table", 0).Cards = []cards.Card{{ID: "hearts-A", Up: true}, {ID: "spades-2", Up: true}}
+	ids := func(zones []cards.ZoneView, id string) []string {
+		for _, z := range zones {
+			if z.ID == id {
+				var out []string
+				for _, c := range z.Cards {
+					out = append(out, c.ID)
+				}
+				return out
+			}
+		}
+		t.Fatalf("no zone %q in the view", id)
+		return nil
+	}
+	own := ids(tb.View(g.Cards, 1), "hand")
+	want := []string{"spades-2", "spades-K#1", "spades-K#0", "hearts-2", "hearts-A", "joker#0"}
+	if strings.Join(own, ",") != strings.Join(want, ",") {
+		t.Errorf("the hand reads %v, want %v", own, want)
+	}
+	// The cards themselves did not move: only the view is sorted.
+	if got := strings.Join(tb.Zone("hand", 1).IDs(), ","); got != strings.Join(dealt, ",") {
+		t.Errorf("the hand on the table is now %s, want the cards as they were dealt", got)
+	}
+	// A zone everybody sees keeps the order it was played in.
+	if got := ids(tb.View(g.Cards, 1), "table"); got[0] != "hearts-A" || got[1] != "spades-2" {
+		t.Errorf("a shared zone was sorted: %v", got)
+	}
+	// Somebody else's hand is hidden, so there is nothing to sort.
+	for _, c := range ids(tb.View(g.Cards, 2), "hand") {
+		if c != "" {
+			t.Errorf("seat 2 sees %q of seat 1's hand", c)
+		}
+	}
+}

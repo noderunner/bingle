@@ -1,13 +1,22 @@
 package app_test
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/chromedp/cdproto/input"
 	"github.com/chromedp/chromedp"
+)
+
+// The cards of the viewer's own hand, as the page draws them: the slots left to
+// right, and the id of the card in each.
+const (
+	handSlotsJS = `[...document.querySelectorAll('#card-table .ct-seat.me .zone-hand .pc-slot')]`
+	handIDsJS   = handSlotsJS + `.map(s => s.querySelector("[data-card]").dataset.card)`
 )
 
 // nyetTable starts a game of the given definition (4 seats unless it says
@@ -229,6 +238,103 @@ func TestWebNyet_ThePhoneHasAViewForEachPartOfTheGame(t *testing.T) {
 	waitJS(t, ctx, "a card to play", `document.querySelector("#m-page-play .pc-btn.playable") !== null`, 10*time.Second)
 	clickSel(t, ctx, "#m-page-play .pc-btn.playable")
 	waitJS(t, ctx, "the card in the trick", `document.querySelectorAll("#m-page-play .zone-trick .pc-slot").length >= 1`, 10*time.Second)
+	mu.Lock()
+	defer mu.Unlock()
+	if len(jsErrors) > 0 {
+		t.Errorf("uncaught JS exceptions: %v", jsErrors)
+	}
+}
+
+// The hand is dealt in an order a player can read: the suits in the game's own
+// order, and the values rising inside each suit.
+func TestWebNyet_TheHandIsHeldBySuitAndValue(t *testing.T) {
+	baseURL := newRESTTestServer(t)
+	room := nyetTable(t, baseURL, "nyet", 4)
+	ctx, cancel := newChromedpContext(t, 60*time.Second)
+	defer cancel()
+	openGameAs(t, ctx, baseURL, room, "nyet", "Ana")
+	waitJS(t, ctx, "the hand", `document.querySelectorAll('#card-table .ct-seat.me .zone-hand .pcard.face').length >= 10`, 15*time.Second)
+	got := evalString(t, ctx, `(function () {
+		var order = ["red", "blue", "yellow", "green"], ids = `+handIDsJS+`, bad = [], suit = -1, value = -1;
+		for (var i = 0; i < ids.length; i++) {
+			var parts = ids[i].split("-"), s = order.indexOf(parts[0]), v = parseInt(parts[1], 10);
+			if (s < suit || (s === suit && v < value)) bad.push(ids[i]);
+			suit = s;
+			value = v;
+		}
+		return ids.join(",") + "|" + bad.join(",");
+	})()`)
+	hand, out, _ := strings.Cut(got, "|")
+	if out != "" {
+		t.Errorf("%s is out of order in the hand %s", out, hand)
+	}
+}
+
+// A card of your own hand can be dragged to another place in it; the drag does
+// not play it, and the hand keeps the new order when the page is drawn again
+// and when the game is opened afresh.
+func TestWebNyet_ACardOfYourHandCanBeDraggedElsewhere(t *testing.T) {
+	baseURL := newRESTTestServer(t)
+	room := nyetTable(t, baseURL, "nyet", 4)
+	ctx, cancel := newChromedpContext(t, 90*time.Second)
+	defer cancel()
+	var mu sync.Mutex
+	var jsErrors []string
+	collectJSErrors(ctx, &mu, &jsErrors)
+	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1400, 1000)); err != nil {
+		t.Fatal(err)
+	}
+	openGameAs(t, ctx, baseURL, room, "nyet", "Ana")
+	waitJS(t, ctx, "the hand", `document.querySelectorAll('#card-table .ct-seat.me .zone-hand .pcard.face').length >= 10`, 15*time.Second)
+	time.Sleep(1200 * time.Millisecond) // the page redraws while it loads the chat, who is present and the moves
+	before := strings.Split(evalString(t, ctx, handIDsJS+`.join(",")`), ",")
+	if len(before) < 6 {
+		t.Fatalf("the hand holds %d cards: %v", len(before), before)
+	}
+	// Take the first card and drop it between the fourth and the fifth.
+	var at []float64
+	if err := chromedp.Run(ctx, chromedp.Evaluate(`(function () {
+		var slots = `+handSlotsJS+`;
+		var mid = function (i) { var r = slots[i].getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; };
+		var a = mid(0), b = mid(3), c = mid(4);
+		return [a[0], a[1], (b[0] + c[0]) / 2, b[1]];
+	})()`, &at)); err != nil {
+		t.Fatal(err)
+	}
+	if err := chromedp.Run(ctx,
+		chromedp.ActionFunc(func(c context.Context) error {
+			return input.DispatchMouseEvent(input.MousePressed, at[0], at[1]).WithButton(input.Left).WithClickCount(1).Do(c)
+		}),
+		chromedp.ActionFunc(func(c context.Context) error {
+			for i := 1; i <= 6; i++ {
+				x := at[0] + (at[2]-at[0])*float64(i)/6
+				if err := input.DispatchMouseEvent(input.MouseMoved, x, at[3]).WithButton(input.Left).Do(c); err != nil {
+					return err
+				}
+				time.Sleep(30 * time.Millisecond)
+			}
+			return nil
+		}),
+		chromedp.ActionFunc(func(c context.Context) error {
+			return input.DispatchMouseEvent(input.MouseReleased, at[2], at[3]).WithButton(input.Left).WithClickCount(1).Do(c)
+		}),
+	); err != nil {
+		t.Fatal(err)
+	}
+	want := strings.Join(append([]string{before[1], before[2], before[3], before[0]}, before[4:]...), ",")
+	waitJS(t, ctx, "the card in its new place", fmt.Sprintf(handIDsJS+`.join(",") === %q`, want), 5*time.Second)
+	if n := evalInt(t, ctx, `document.querySelectorAll('.zone-trick .pc-slot').length`); n != 0 {
+		t.Errorf("%d cards went into the trick: the drag played a card", n)
+	}
+	if !evalBool(t, ctx, fmt.Sprintf(`Object.values(JSON.parse(localStorage.getItem("bingle.handOrder")) || {}).some(ids => ids.join(",") === %q)`, want)) {
+		t.Error("the order the cards were dragged into was not remembered")
+	}
+	// Opened again, the hand is in the order this browser left it in.
+	openGameAs(t, ctx, baseURL, room, "nyet", "Ana")
+	waitJS(t, ctx, "the hand again", `document.querySelectorAll('#card-table .ct-seat.me .zone-hand .pcard.face').length >= 10`, 15*time.Second)
+	if got := evalString(t, ctx, handIDsJS+`.join(",")`); got != want {
+		t.Errorf("the hand reads %s after the page was opened again, want %s", got, want)
+	}
 	mu.Lock()
 	defer mu.Unlock()
 	if len(jsErrors) > 0 {

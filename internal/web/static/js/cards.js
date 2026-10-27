@@ -8,15 +8,17 @@
 //
 // The other players' hands are not drawn: the game page lists every player with
 // the number of cards held. Your own hand shows a card twice as large while the
-// pointer is over it (or it has the focus), for any game whose hand is private
-// to its owner (a zone with the visibility "owner").
+// pointer is over it (or it has the focus), and can be rearranged by dragging a
+// card along it, for any game whose hand is private to its owner (a zone with
+// the visibility "owner"). The server deals a hand by suit and value; the order
+// a player drags it into is this browser's own.
 //
 // It also draws a board of choices (a "grid" of lines of boxes) for games such
 // as Nyet! that settle the terms of a round by crossing boxes off. Each box is
 // a picture (see choice-icons.js); a box that has been crossed off shows the
 // player who crossed it.
 
-import { h } from "./util.js";
+import { h, store } from "./util.js";
 import { cardFaceSvg, isClassicSuit } from "./card-art.js";
 import { choiceIcon } from "./choice-icons.js";
 
@@ -109,7 +111,7 @@ function showCardZoom(card) {
 function enableZoom(zone) {
 	const faceOf = (el) => (el && el.closest ? el.closest(".pcard.face") : null);
 	zone.addEventListener("pointerover", (ev) => {
-		if (ev.pointerType === "touch") return;
+		if (ev.pointerType === "touch" || reordering) return;
 		const c = faceOf(ev.target);
 		if (c && zone.contains(c)) showCardZoom(c);
 	});
@@ -123,6 +125,166 @@ function enableZoom(zone) {
 		if (c) showCardZoom(c);
 	});
 	zone.addEventListener("focusout", hideCardZoom);
+}
+
+// ---- the order the player holds their hand in -------------------------------
+
+const ORDER_KEY = "bingle.handOrder";
+
+/** The key a zone's order is remembered under: the game, the zone and the seat. */
+function orderKey(ctx, zv) {
+	return ctx.room ? `${ctx.room}:${zv.id}:${zv.owner}` : "";
+}
+
+function savedOrders() {
+	const m = store.get(ORDER_KEY, {});
+	return m && typeof m === "object" ? m : {};
+}
+
+function savedOrder(key) {
+	const ids = savedOrders()[key];
+	return Array.isArray(ids) ? ids : [];
+}
+
+/** Remembers the order, forgetting the oldest games once there are many. */
+function saveOrder(key, ids) {
+	const all = savedOrders();
+	delete all[key];
+	all[key] = ids;
+	const keys = Object.keys(all);
+	for (const k of keys.slice(0, Math.max(0, keys.length - 40))) delete all[k];
+	store.set(ORDER_KEY, all);
+}
+
+/**
+ * The cards of a hand in the order the player holds them: the one they last
+ * dragged them into, and after it every card that order does not know — a card
+ * just dealt or drawn — as the server sent it (by suit and value). A fresh deal
+ * knows none of them, so it comes out sorted.
+ */
+function inHandOrder(key, cards) {
+	const want = key ? savedOrder(key) : [];
+	if (!want.length) return cards;
+	const at = new Map(want.map((id, i) => [id, i]));
+	const known = cards.filter((c) => c.id && at.has(c.id));
+	const fresh = cards.filter((c) => !(c.id && at.has(c.id)));
+	known.sort((a, b) => at.get(a.id) - at.get(b.id));
+	return [...known, ...fresh];
+}
+
+// True while a card is being dragged: the enlarged card stays away.
+let reordering = false;
+
+/**
+ * Lets the player rearrange their own hand: press a card and drag it along the
+ * hand to where it should go, and the cards keep that order (in this browser,
+ * for this game) until a deal brings cards the order does not know. The cards
+ * the dragged one would land in front of make room for it while it is held.
+ * Alt+← and Alt+→ move the card that has the focus, for playing without a
+ * pointer.
+ */
+function enableReorder(zone, key) {
+	if (!key) return;
+	const slots = () => [...zone.children].filter((el) => el.classList.contains("pc-slot"));
+	const idOf = (slot) => {
+		const c = slot.querySelector("[data-card]");
+		return c ? c.getAttribute("data-card") : null;
+	};
+	const remember = () => saveOrder(key, slots().map(idOf).filter(Boolean));
+	let drag = null;
+	// A drag ends in a click on the card it started on: that click is not a play.
+	let dropped = false;
+
+	function onMove(ev) {
+		if (!drag) return;
+		if (!drag.slot.isConnected) return end(false);
+		const dx = ev.clientX - drag.x;
+		if (!drag.on) {
+			if (Math.abs(dx) < 6) return;
+			// The cards keep their places while one is held, so where each of
+			// them lies is measured once: only transforms move after this.
+			drag.others = slots().filter((s) => s !== drag.slot);
+			drag.middles = drag.others.map((s) => {
+				const r = s.getBoundingClientRect();
+				return r.left + r.width / 2;
+			});
+			drag.on = true;
+			reordering = true;
+			hideCardZoom();
+			zone.classList.add("reordering");
+			drag.slot.classList.add("pc-dragging");
+		}
+		ev.preventDefault();
+		const dy = Math.max(-60, Math.min(60, ev.clientY - drag.y));
+		drag.slot.style.transform = `translate(${dx}px, ${dy}px)`;
+		drag.at = drag.middles.filter((mid) => mid < ev.clientX).length;
+		drag.others.forEach((s, i) => s.classList.toggle("pc-shift", i >= drag.at));
+	}
+
+	function end(keep) {
+		window.removeEventListener("pointermove", onMove);
+		window.removeEventListener("pointerup", onUp);
+		window.removeEventListener("pointercancel", onCancel);
+		if (!drag) return;
+		const { slot, on, at, others } = drag;
+		drag = null;
+		reordering = false;
+		zone.classList.remove("reordering");
+		slot.classList.remove("pc-dragging");
+		slot.style.transform = "";
+		for (const s of slots()) s.classList.remove("pc-shift");
+		if (!on || !slot.isConnected) return;
+		// The click of this release follows at once; anything later is a play.
+		dropped = true;
+		setTimeout(() => (dropped = false), 0);
+		if (keep && at >= 0) {
+			zone.insertBefore(slot, others[at] || null);
+			remember();
+		}
+	}
+
+	function onUp() {
+		end(true);
+	}
+
+	function onCancel() {
+		end(false);
+	}
+
+	zone.addEventListener("pointerdown", (ev) => {
+		if (ev.button) return;
+		const slot = ev.target.closest ? ev.target.closest(".pc-slot") : null;
+		if (!slot || slot.parentElement !== zone || !idOf(slot) || slots().length < 2) return;
+		drag = { slot, x: ev.clientX, y: ev.clientY, on: false, at: -1, others: [], middles: [] };
+		window.addEventListener("pointermove", onMove);
+		window.addEventListener("pointerup", onUp);
+		window.addEventListener("pointercancel", onCancel);
+	});
+	zone.addEventListener(
+		"click",
+		(ev) => {
+			if (!dropped) return;
+			dropped = false;
+			ev.preventDefault();
+			ev.stopPropagation();
+			ev.stopImmediatePropagation();
+		},
+		true
+	);
+	zone.addEventListener("keydown", (ev) => {
+		if (!ev.altKey || (ev.key !== "ArrowLeft" && ev.key !== "ArrowRight")) return;
+		const slot = ev.target.closest ? ev.target.closest(".pc-slot") : null;
+		if (!slot || slot.parentElement !== zone) return;
+		const list = slots();
+		const i = list.indexOf(slot);
+		const j = ev.key === "ArrowLeft" ? i - 1 : i + 1;
+		if (i < 0 || j < 0 || j >= list.length) return;
+		ev.preventDefault();
+		const focused = document.activeElement;
+		zone.insertBefore(slot, j < i ? list[j] : list[j].nextSibling);
+		remember();
+		if (focused && focused.isConnected && document.activeElement !== focused) focused.focus();
+	});
 }
 
 function zoneDef(info, id) {
@@ -146,12 +308,18 @@ function captionNode(ctx, text) {
 function drawZone(info, zv, ctx, next) {
 	const def = zoneDef(info, zv.id);
 	const layout = def.layout || "row";
-	const cards = zv.cards || [];
+	const own = def.visibility === "owner" && zv.owner && zv.owner === ctx.me;
+	const order = own && layout !== "stack" ? orderKey(ctx, zv) : "";
+	const cards = own && layout !== "stack" ? inHandOrder(order, zv.cards || []) : zv.cards || [];
 	const key = zv.owner ? `${zv.id}:${zv.owner}` : zv.id;
 	const el = h("div", { class: `zone layout-${layout}`, "data-zone": zv.id, "data-owner": zv.owner || null, "data-count": zv.count });
-	if (def.visibility === "owner" && zv.owner && zv.owner === ctx.me) {
+	if (own) {
 		el.classList.add("zoomable");
 		enableZoom(el);
+	}
+	if (own && layout !== "stack") {
+		el.classList.add("reorderable");
+		enableReorder(el, order);
 	}
 	const card = (c, i) => {
 		const stateKey = `${key}/${i}`;
