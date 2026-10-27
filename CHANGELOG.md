@@ -4,6 +4,15 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.7.0 - 2026-10-27
+
+### Bingle Core 0.7.0
+- **A game clock.** Two-player games can be played with a chess clock: each player has a store of
+  time that runs only on their own turn, and the first to run out forfeits. Choose it when you make
+  the game — and give the two players different times if one of you wants odds. Every player's
+  clock is shown beside their name, the one that is running counting down. A game clock takes the
+  place of a time per move, and games are played without one unless you ask.
+
 ## 0.6.0 - 2026-10-27
 
 ### Bingle Core 0.6.0

@@ -36,6 +36,9 @@ type StateSnapshot struct {
 
 	// MoveTimeLimit is the per-move allowance in seconds (0 = untimed).
 	MoveTimeLimit int
+	// Clock is the game clock, nil for a game played without one: what each
+	// seat has left (the seat to move counts down from TurnDeadline).
+	Clock *ClockSnapshot
 	// TurnDeadline is when the player to move runs out of time; nil when
 	// the game is untimed or not in progress.
 	TurnDeadline *time.Time
@@ -106,6 +109,7 @@ func (m *Manager) snapshot(compiled *catalog.CompiledGame, game store.Game, play
 		Lobby:         game.Lobby,
 		HostSeat:      hostOf(players),
 		MoveTimeLimit: game.MoveTimeLimit,
+		Clock:         clockSnapshot(game),
 		TurnDeadline:  m.deadline(game),
 		ServerTime:    m.now().UTC(),
 		DrawOfferSeat: game.DrawOfferSeat,
@@ -146,17 +150,58 @@ func parseTimestamp(ts string) (time.Time, bool) {
 	return time.Time{}, false
 }
 
-// deadline returns when the player to move runs out of time, or nil.
+// ClockSnapshot is a game clock as clients draw it: one entry per seat, and
+// the seat whose clock is running now (0 when none is).
+type ClockSnapshot struct {
+	Seats   []SeatClock `json:"seats"`
+	Running int         `json:"running,omitempty"`
+}
+
+// SeatClock is one seat's clock: what it started with and what is left of it
+// (not counting a turn in progress — the seat that is running counts down from
+// the snapshot's TurnDeadline).
+type SeatClock struct {
+	Seat    int     `json:"seat"`
+	Initial int     `json:"initial_seconds"`
+	Left    float64 `json:"seconds_left"`
+}
+
+// clockSnapshot describes a game's clock for clients, or nil without one.
+func clockSnapshot(game store.Game) *ClockSnapshot {
+	c := parseGameClock(game.Clock)
+	if c == nil {
+		return nil
+	}
+	running := 0
+	if game.Status == "active" && game.TurnSeat != nil {
+		running = *game.TurnSeat
+	}
+	return c.snapshot(running)
+}
+
+// deadline returns when the player to move runs out of time, or nil: the
+// earlier of the per-move allowance and what is left on their game clock (a
+// game is created with one or the other, never both).
 func (m *Manager) deadline(game store.Game) *time.Time {
-	if game.Status != "active" || game.MoveTimeLimit <= 0 || game.TurnSeat == nil {
+	if game.Status != "active" || game.TurnSeat == nil {
 		return nil
 	}
 	started, ok := parseTimestamp(game.UpdatedAt)
 	if !ok {
 		return nil
 	}
-	d := started.Add(time.Duration(game.MoveTimeLimit) * time.Second)
-	return &d
+	var out *time.Time
+	if game.MoveTimeLimit > 0 {
+		d := started.Add(time.Duration(game.MoveTimeLimit) * time.Second)
+		out = &d
+	}
+	if c := parseGameClock(game.Clock); c != nil {
+		d := c.startedAt(started).Add(time.Duration(c.LeftFor(*game.TurnSeat) * float64(time.Second)))
+		if out == nil || d.Before(*out) {
+			out = &d
+		}
+	}
+	return out
 }
 
 // loadGame reads a game and, when its per-move clock has run out, ends it

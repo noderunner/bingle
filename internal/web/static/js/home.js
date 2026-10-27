@@ -301,6 +301,7 @@ function renderSeatChoices(info) {
 	if (lobbyBox && lobbyBox.dataset.touched !== "1") lobbyBox.checked = info.seats.length > 2;
 	renderSlots(info);
 	renderSetupOptions(info);
+	renderClockField(info);
 	applyStartMode();
 }
 
@@ -346,6 +347,74 @@ function boolOptions(info) {
 				opt.text ? h("span", { class: "small muted" }, opt.text) : null
 			);
 		});
+}
+
+/**
+ * The game clock (a chess clock) is offered to a game of two seats — which
+ * includes a game that seats a range when two are chosen, as each of those is a
+ * layout of its own. A clock and a time per move are the same question asked
+ * twice, so choosing one clears the other.
+ */
+function renderClockField(info) {
+	const field = document.getElementById("clock-field");
+	if (!field) return;
+	const two = info.seats.length === 2;
+	field.hidden = !two;
+	const clock = document.getElementById("clock_seconds");
+	const perMove = document.getElementById("move_time_seconds");
+	if (!two) {
+		if (clock) clock.value = "0";
+		const hc = document.getElementById("clock-handicap");
+		if (hc) hc.checked = false;
+		const row = document.getElementById("clock-handicap-row");
+		if (row) row.hidden = true;
+		return;
+	}
+	if (field.dataset.wired === "1") return;
+	field.dataset.wired = "1";
+	const handicap = document.getElementById("clock-handicap");
+	const row = document.getElementById("clock-handicap-row");
+	const first = document.getElementById("clock_seconds_1");
+	const second = document.getElementById("clock_seconds_2");
+	const sync = () => {
+		row.hidden = !handicap.checked;
+		clock.hidden = handicap.checked;
+		if (handicap.checked && clock.value !== "0") {
+			// Start the two sides at what both were set to.
+			for (const sel of [first, second]) if ([...sel.options].some((o) => o.value === clock.value)) sel.value = clock.value;
+		}
+		if (perMove && clockChoice().length) perMove.value = "0";
+	};
+	handicap.addEventListener("change", sync);
+	for (const el of [clock, first, second]) el.addEventListener("change", sync);
+	if (perMove) {
+		perMove.addEventListener("change", () => {
+			// A time per move takes the clock's place, as the clock takes its.
+			if (Number(perMove.value) > 0) {
+				clock.value = "0";
+				handicap.checked = false;
+				sync();
+			}
+		});
+	}
+	sync();
+}
+
+/**
+ * The clock chosen in the setup: the seconds for each seat in seat order, or
+ * nothing for a game played without one.
+ */
+function clockChoice() {
+	const field = document.getElementById("clock-field");
+	if (!field || field.hidden) return [];
+	const handicap = document.getElementById("clock-handicap");
+	if (handicap && handicap.checked) {
+		const a = Number(document.getElementById("clock_seconds_1").value);
+		const b = Number(document.getElementById("clock_seconds_2").value);
+		return a > 0 && b > 0 ? [a, b] : [];
+	}
+	const both = Number(document.getElementById("clock_seconds").value);
+	return both > 0 ? [both, both] : [];
 }
 
 /**
@@ -814,8 +883,10 @@ if (createForm) {
 		// seats are arranged one by one.
 		const chosen = slotChoice();
 		if (chosen.options) body.options = chosen.options;
+		const clock = clockChoice();
+		if (clock.length) body.clock_seconds = clock;
 		const limit = Number(document.getElementById("move_time_seconds").value);
-		if (limit > 0) body.move_time_seconds = limit;
+		if (limit > 0 && !clock.length) body.move_time_seconds = limit;
 		const lobbyBox = document.getElementById("lobby");
 		if (lobbyBox && lobbyBox.checked) body.lobby = true;
 		const submit = createForm.querySelector('button[type="submit"]');

@@ -78,6 +78,11 @@ type CreateOptions struct {
 	// MoveTimeSeconds, when positive, gives each player that many seconds
 	// per move; a player who runs out loses on time. Zero means no limit.
 	MoveTimeSeconds int
+	// ClockSeconds, when set, plays the game with a game clock (a chess
+	// clock): one time in seconds per seat, in seat order, so the two sides
+	// may differ for handicap play. A player whose clock runs out forfeits.
+	// It is for a game of two seats, and not together with MoveTimeSeconds.
+	ClockSeconds []int
 	// Lobby makes the game wait, with every seat filled, until its host
 	// starts it: players gather through the invite link, choose their seats
 	// and add bots first.
@@ -242,6 +247,20 @@ func (m *Manager) CreateGameWithOptions(ctx context.Context, opts CreateOptions)
 		return CreateGameResult{}, fmt.Errorf("%w: %d seconds (use 0 for none, at most %d)", ErrInvalidTimeLimit, opts.MoveTimeSeconds, MaxMoveTimeSeconds)
 	}
 
+	// A game is played with a clock or with a per-move allowance, not both:
+	// two deadlines on one turn would be a riddle rather than a rule.
+	if len(opts.ClockSeconds) > 0 && opts.MoveTimeSeconds > 0 {
+		return CreateGameResult{}, fmt.Errorf("%w: a game clock and a time per move cannot both be set", ErrInvalidClock)
+	}
+	seatNumbers := make([]int, 0, len(compiled.Definition.Seats))
+	for _, s := range compiled.Definition.Seats {
+		seatNumbers = append(seatNumbers, s.Seat)
+	}
+	clock, err := newGameClock(seatNumbers, opts.ClockSeconds)
+	if err != nil {
+		return CreateGameResult{}, err
+	}
+
 	startState, firstSeat, customStart, err := resolveStart(compiled, opts)
 	if err != nil {
 		return CreateGameResult{}, err
@@ -275,6 +294,16 @@ func (m *Manager) CreateGameWithOptions(ctx context.Context, opts CreateOptions)
 		if err := m.store.SetMoveTimeLimit(ctx, game.ID, opts.MoveTimeSeconds); err != nil {
 			return CreateGameResult{}, fmt.Errorf("session: setting move time limit: %w", err)
 		}
+	}
+	if clock != nil {
+		stored, err := clock.marshal()
+		if err != nil {
+			return CreateGameResult{}, err
+		}
+		if err := m.store.SetGameClock(ctx, game.ID, stored); err != nil {
+			return CreateGameResult{}, fmt.Errorf("session: setting the game clock: %w", err)
+		}
+		game.Clock = stored
 	}
 	if opts.Lobby {
 		if err := m.store.SetLobby(ctx, game.ID, true); err != nil {

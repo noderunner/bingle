@@ -161,7 +161,8 @@ Served by the same binary as static assets plus lightweight JS (no SPA build pip
   recorded as the person's with `autoplay` set.
 * **Operations**: `BINGLE_RETENTION_DAYS` removes games nobody touched for
   that long; hint, match and bot searches share bounded CPU slots.
-* **Persistence**: `games` (with `lobby`), `players` (with `bot`), `moves`
+* **Persistence**: `games` (with `lobby` and `clock`, the game clock of a game
+  played with one), `players` (with `bot`), `moves`
   (with `notation`, `move_json`, `auto`, `locked`, `autoplay`), `reaction_prefs`,
   `autoplay_prefs`, `chat_messages`;
   additive column migrations on open; WAL mode with a busy

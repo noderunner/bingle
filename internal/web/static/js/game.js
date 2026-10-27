@@ -284,15 +284,42 @@ function formatClock(ms) {
 let clockTimer = null;
 let expiryRefreshed = false;
 
+/** The game clock of this game (a chess clock), or null without one. */
+function gameClock() {
+	const c = S.game && S.game.clock;
+	return c && Array.isArray(c.seats) && c.seats.length ? c : null;
+}
+
+/**
+ * Milliseconds left on a seat's own clock: the seat whose clock is running
+ * counts down to the turn's deadline, the others hold what they had.
+ */
+function seatMsLeft(seat) {
+	const c = gameClock();
+	if (!c) return null;
+	const own = c.seats.find((s) => s.seat === seat);
+	if (!own) return null;
+	if (c.running === seat) {
+		const live = msLeft();
+		if (live !== null) return live;
+	}
+	return own.seconds_left * 1000;
+}
+
 function tickClocks() {
 	const left = msLeft();
 	for (const el of document.querySelectorAll("[data-clock]")) {
-		if (left === null) {
+		// data-clock is a seat number for a game clock, "turn" for the
+		// allowance of the turn in progress.
+		const seat = Number(el.dataset.clock);
+		const ms = seat ? seatMsLeft(seat) : left;
+		if (ms === null) {
 			el.textContent = "";
 			continue;
 		}
-		el.textContent = "⏱ " + formatClock(left);
-		el.classList.toggle("low", left < 60000);
+		el.textContent = "⏱ " + formatClock(ms);
+		el.classList.toggle("low", ms < 60000);
+		el.classList.toggle("running", !seat || (gameClock() || {}).running === seat);
 	}
 	if (left !== null && left <= 0 && !expiryRefreshed) {
 		// The server ends the game on its next look at it; ask it to look.
@@ -1373,6 +1400,7 @@ async function onEvent(env) {
 			S.game.end_reason = d.end_reason;
 			S.game.end_detail = d.end_detail;
 			S.game.turn_deadline = d.turn_deadline || "";
+			S.game.clock = d.clock || null;
 			S.game.draw_offer_seat = null; // any move withdraws an offer
 			S.game.takeback_seat = null; // ... and a take-back request
 			noteServerTime(d.server_time);
@@ -2312,8 +2340,23 @@ function seatStrip(seat) {
 		if (roles.team && roles.team.includes(seat)) head.append(h("span", { class: "ct-badge team", title: "On the leader's team" }, "★"));
 	}
 	head.append(h("span", { class: "grow" }));
-	if (toMove && msLeft() !== null) {
-		head.append(h("span", { class: "clock", "data-clock": "1", title: "Time left to move" }, "⏱ " + formatClock(msLeft())));
+	const onClock = seatMsLeft(seat);
+	if (onClock !== null && isLive()) {
+		const c = gameClock();
+		const running = c.running === seat;
+		head.append(
+			h(
+				"span",
+				{
+					class: "clock" + (running ? " running" : "") + (onClock < 60000 ? " low" : ""),
+					"data-clock": String(seat),
+					title: running ? "This clock is running" : "Time left on this player's clock",
+				},
+				"⏱ " + formatClock(onClock)
+			)
+		);
+	} else if (toMove && msLeft() !== null) {
+		head.append(h("span", { class: "clock", "data-clock": "turn", title: "Time left to move" }, "⏱ " + formatClock(msLeft())));
 	}
 	for (const sc of scores()) {
 		head.append(h("span", { class: "score", title: sc.label }, `${sc.label}: `, h("strong", {}, String(sc.per[seat]))));
