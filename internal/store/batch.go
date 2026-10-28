@@ -53,7 +53,7 @@ type BatchGame struct {
 
 // CreateBatch stores a new queued batch.
 func (s *Store) CreateBatch(ctx context.Context, name, gameDefID, spec string, nGames int) (int64, error) {
-	res, err := s.db.ExecContext(ctx,
+	res, err := s.exec(ctx, "CreateBatch",
 		`INSERT INTO batches (name, game_def_id, spec, n_games) VALUES (?, ?, ?, ?)`,
 		name, gameDefID, spec, nGames)
 	if err != nil {
@@ -72,7 +72,7 @@ func (s *Store) SetBatchStatus(ctx context.Context, id int64, status, errText st
 	case BatchDone, BatchCancelled, BatchFailed, BatchInterrupted:
 		q = `UPDATE batches SET status = ?, error = ?, finished_at = CURRENT_TIMESTAMP WHERE id = ?`
 	}
-	if _, err := s.db.ExecContext(ctx, q, status, errText, id); err != nil {
+	if _, err := s.exec(ctx, "SetBatchStatus", q, status, errText, id); err != nil {
 		return fmt.Errorf("setting batch %d status: %w", id, err)
 	}
 	return nil
@@ -80,25 +80,25 @@ func (s *Store) SetBatchStatus(ctx context.Context, id int64, status, errText st
 
 // InterruptBatches marks the batches a stopped server left queued or running.
 func (s *Store) InterruptBatches(ctx context.Context) error {
-	_, err := s.db.ExecContext(ctx,
+	_, err := s.exec(ctx, "InterruptBatches",
 		`UPDATE batches SET status = 'interrupted', finished_at = CURRENT_TIMESTAMP WHERE status IN ('queued', 'running')`)
 	return err
 }
 
 // AddBatchGame stores a finished game and counts it in its batch.
 func (s *Store) AddBatchGame(ctx context.Context, g BatchGame) error {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.begin(ctx, "AddBatchGame")
 	if err != nil {
 		return err
 	}
 	defer func() { _ = tx.Rollback() }()
-	if _, err := tx.ExecContext(ctx,
+	if _, err := tx.exec(ctx, "AddBatchGame.upsert",
 		`INSERT OR REPLACE INTO batch_games (batch_id, idx, seed, game_id, seating, winner, end_reason, plies, rounds, metrics, events)
 		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		g.BatchID, g.Index, g.Seed, g.GameID, g.Seating, g.Winner, g.EndReason, g.Plies, g.Rounds, g.Metrics, g.Events); err != nil {
 		return fmt.Errorf("storing batch game: %w", err)
 	}
-	if _, err := tx.ExecContext(ctx,
+	if _, err := tx.exec(ctx, "AddBatchGame.bumpDone",
 		`UPDATE batches SET done = (SELECT COUNT(*) FROM batch_games WHERE batch_id = ?) WHERE id = ?`, g.BatchID, g.BatchID); err != nil {
 		return err
 	}
@@ -124,7 +124,7 @@ func scanBatch(sc interface{ Scan(...any) error }) (Batch, error) {
 
 // GetBatch returns one batch.
 func (s *Store) GetBatch(ctx context.Context, id int64) (Batch, error) {
-	b, err := scanBatch(s.db.QueryRowContext(ctx, `SELECT `+batchCols+` FROM batches WHERE id = ?`, id))
+	b, err := scanBatch(s.queryRow(ctx, "GetBatch", `SELECT `+batchCols+` FROM batches WHERE id = ?`, id))
 	if errors.Is(err, sql.ErrNoRows) {
 		return Batch{}, ErrBatchNotFound
 	}
@@ -139,7 +139,7 @@ func (s *Store) ListBatches(ctx context.Context, limit int) ([]Batch, error) {
 	if limit <= 0 {
 		limit = 100
 	}
-	rows, err := s.db.QueryContext(ctx, `SELECT `+batchCols+` FROM batches ORDER BY id DESC LIMIT ?`, limit)
+	rows, err := s.query(ctx, "ListBatches", `SELECT `+batchCols+` FROM batches ORDER BY id DESC LIMIT ?`, limit)
 	if err != nil {
 		return nil, fmt.Errorf("listing batches: %w", err)
 	}
@@ -162,7 +162,7 @@ func (s *Store) BatchGames(ctx context.Context, id int64, withEvents bool) ([]Ba
 	if withEvents {
 		ev = `events`
 	}
-	rows, err := s.db.QueryContext(ctx,
+	rows, err := s.query(ctx, "BatchGames",
 		`SELECT idx, seed, game_id, seating, winner, end_reason, plies, rounds, metrics, `+ev+` FROM batch_games WHERE batch_id = ? ORDER BY idx`, id)
 	if err != nil {
 		return nil, fmt.Errorf("listing games of batch %d: %w", id, err)
@@ -182,7 +182,7 @@ func (s *Store) BatchGames(ctx context.Context, id int64, withEvents bool) ([]Ba
 // BatchGame returns one game of a batch with its events.
 func (s *Store) BatchGame(ctx context.Context, id int64, index int) (BatchGame, error) {
 	g := BatchGame{BatchID: id}
-	err := s.db.QueryRowContext(ctx,
+	err := s.queryRow(ctx, "BatchGame",
 		`SELECT idx, seed, game_id, seating, winner, end_reason, plies, rounds, metrics, events FROM batch_games WHERE batch_id = ? AND idx = ?`, id, index).
 		Scan(&g.Index, &g.Seed, &g.GameID, &g.Seating, &g.Winner, &g.EndReason, &g.Plies, &g.Rounds, &g.Metrics, &g.Events)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -193,7 +193,7 @@ func (s *Store) BatchGame(ctx context.Context, id int64, index int) (BatchGame, 
 
 // DeleteBatch removes a batch and its games.
 func (s *Store) DeleteBatch(ctx context.Context, id int64) error {
-	res, err := s.db.ExecContext(ctx, `DELETE FROM batches WHERE id = ?`, id)
+	res, err := s.exec(ctx, "DeleteBatch", `DELETE FROM batches WHERE id = ?`, id)
 	if err != nil {
 		return fmt.Errorf("deleting batch %d: %w", id, err)
 	}

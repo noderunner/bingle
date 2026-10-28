@@ -80,10 +80,22 @@ func WithMetrics(m *metrics.Metrics) Option {
 // If any module fails to register, New returns that error instead of a
 // usable *App — the server refuses to start rather than serve a broken game.
 func New(cfg config.Config, opts ...Option) (*App, error) {
+	// The options come first, so the store is recording and logging from its
+	// very first statement: the schema migration and the game versions
+	// written below are part of what starting up costs.
+	a := &App{log: slog.Default()}
+	for _, opt := range opts {
+		opt(a)
+	}
+
 	st, err := store.Open(cfg.DBPath)
 	if err != nil {
 		return nil, err
 	}
+	// Every statement in internal/store is recorded, and the registry asks
+	// the store about the file, its pages and its tables when it is gathered.
+	st.SetMetrics(a.metrics)
+	a.metrics.SetDBSource(func() metrics.DBSnapshot { return st.Snapshot(context.Background()) })
 
 	cat := catalog.NewCatalog()
 	for _, mod := range BuiltinModules() {
@@ -99,13 +111,16 @@ func New(cfg config.Config, opts ...Option) (*App, error) {
 	}
 
 	manager := session.NewManager(st, cat)
-
-	a := &App{store: st, catalog: cat, manager: manager, envs: envs.NewManager(cat), batches: batch.NewManager(st, cat), publicURL: cfg.PublicURL, changelog: cfg.Changelog,
-		rtc: api.RTCConfig{Stun: cfg.RTCStun, TurnURLs: cfg.RTCTurnURLs, TurnSecret: cfg.RTCTurnSecret}, log: slog.Default()}
-	for _, opt := range opts {
-		opt(a)
-	}
 	manager.SetLogger(a.log)
+
+	a.store = st
+	a.catalog = cat
+	a.manager = manager
+	a.envs = envs.NewManager(cat)
+	a.batches = batch.NewManager(st, cat)
+	a.publicURL = cfg.PublicURL
+	a.changelog = cfg.Changelog
+	a.rtc = api.RTCConfig{Stun: cfg.RTCStun, TurnURLs: cfg.RTCTurnURLs, TurnSecret: cfg.RTCTurnSecret}
 
 	if err := enableNotify(manager, cfg, a.log); err != nil {
 		_ = st.Close()

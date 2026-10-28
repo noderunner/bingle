@@ -54,7 +54,7 @@ func (s *Store) SetReactionPrefs(ctx context.Context, gameID int64, seat int, pr
 	if err != nil {
 		return fmt.Errorf("encoding reaction prefs: %w", err)
 	}
-	_, err = s.db.ExecContext(ctx,
+	_, err = s.exec(ctx, "SetReactionPrefs",
 		`INSERT INTO reaction_prefs (game_id, seat, prefs) VALUES (?, ?, ?)
 		 ON CONFLICT(game_id, seat) DO UPDATE SET prefs = excluded.prefs`,
 		gameID, seat, string(raw))
@@ -68,7 +68,7 @@ func (s *Store) SetReactionPrefs(ctx context.Context, gameID int64, seat int, pr
 // saved (the session then applies the defaults).
 func (s *Store) ReactionPrefs(ctx context.Context, gameID int64, seat int) (prefs ReactionPrefs, found bool, err error) {
 	var raw string
-	err = s.db.QueryRowContext(ctx, `SELECT prefs FROM reaction_prefs WHERE game_id = ? AND seat = ?`, gameID, seat).Scan(&raw)
+	err = s.queryRow(ctx, "ReactionPrefs", `SELECT prefs FROM reaction_prefs WHERE game_id = ? AND seat = ?`, gameID, seat).Scan(&raw)
 	if errors.Is(err, sql.ErrNoRows) {
 		return ReactionPrefs{}, false, nil
 	}
@@ -96,7 +96,7 @@ type ChatMessage struct {
 
 // AddChatMessage appends a message to the game's chat.
 func (s *Store) AddChatMessage(ctx context.Context, gameID int64, seat int, name, body string) (ChatMessage, error) {
-	res, err := s.db.ExecContext(ctx, `INSERT INTO chat_messages (game_id, seat, name, body) VALUES (?, ?, ?, ?)`, gameID, seat, name, body)
+	res, err := s.exec(ctx, "AddChatMessage.insert", `INSERT INTO chat_messages (game_id, seat, name, body) VALUES (?, ?, ?, ?)`, gameID, seat, name, body)
 	if err != nil {
 		return ChatMessage{}, fmt.Errorf("storing chat message (game_id=%d): %w", gameID, err)
 	}
@@ -105,13 +105,13 @@ func (s *Store) AddChatMessage(ctx context.Context, gameID int64, seat int, name
 		return ChatMessage{}, err
 	}
 	// A game keeps its latest 500 lines.
-	if _, err := s.db.ExecContext(ctx,
+	if _, err := s.exec(ctx, "AddChatMessage.trim",
 		`DELETE FROM chat_messages WHERE game_id = ? AND id <= (
 		   SELECT id FROM chat_messages WHERE game_id = ? ORDER BY id DESC LIMIT 1 OFFSET 500)`, gameID, gameID); err != nil {
 		return ChatMessage{}, fmt.Errorf("trimming chat (game_id=%d): %w", gameID, err)
 	}
 	var m ChatMessage
-	err = s.db.QueryRowContext(ctx, `SELECT id, game_id, seat, name, body, created_at FROM chat_messages WHERE id = ?`, id).
+	err = s.queryRow(ctx, "AddChatMessage.readBack", `SELECT id, game_id, seat, name, body, created_at FROM chat_messages WHERE id = ?`, id).
 		Scan(&m.ID, &m.GameID, &m.Seat, &m.Name, &m.Body, &m.CreatedAt)
 	if err != nil {
 		return ChatMessage{}, err
@@ -125,14 +125,14 @@ func (s *Store) ListChat(ctx context.Context, gameID int64, afterID int64, limit
 	if limit <= 0 {
 		limit = 100
 	}
-	var rows *sql.Rows
+	var rows *Rows
 	var err error
 	if afterID > 0 {
-		rows, err = s.db.QueryContext(ctx,
+		rows, err = s.query(ctx, "ListChat",
 			`SELECT id, game_id, seat, name, body, created_at FROM chat_messages
 			 WHERE game_id = ? AND id > ? ORDER BY id LIMIT ?`, gameID, afterID, limit)
 	} else {
-		rows, err = s.db.QueryContext(ctx,
+		rows, err = s.query(ctx, "ListChat",
 			`SELECT id, game_id, seat, name, body, created_at FROM (
 			   SELECT id, game_id, seat, name, body, created_at FROM chat_messages
 			   WHERE game_id = ? ORDER BY id DESC LIMIT ?) ORDER BY id`, gameID, limit)
@@ -163,7 +163,7 @@ type GlobalChatMessage struct {
 // AddGlobalChat appends a message to the global chat room, which keeps its
 // latest 500 lines.
 func (s *Store) AddGlobalChat(ctx context.Context, name, body string) (GlobalChatMessage, error) {
-	res, err := s.db.ExecContext(ctx, `INSERT INTO global_chat (name, body) VALUES (?, ?)`, name, body)
+	res, err := s.exec(ctx, "AddGlobalChat.insert", `INSERT INTO global_chat (name, body) VALUES (?, ?)`, name, body)
 	if err != nil {
 		return GlobalChatMessage{}, fmt.Errorf("storing global chat message: %w", err)
 	}
@@ -171,12 +171,12 @@ func (s *Store) AddGlobalChat(ctx context.Context, name, body string) (GlobalCha
 	if err != nil {
 		return GlobalChatMessage{}, err
 	}
-	if _, err := s.db.ExecContext(ctx,
+	if _, err := s.exec(ctx, "AddGlobalChat.trim",
 		`DELETE FROM global_chat WHERE id <= (SELECT id FROM global_chat ORDER BY id DESC LIMIT 1 OFFSET 500)`); err != nil {
 		return GlobalChatMessage{}, fmt.Errorf("trimming global chat: %w", err)
 	}
 	var m GlobalChatMessage
-	if err := s.db.QueryRowContext(ctx, `SELECT id, name, body, created_at FROM global_chat WHERE id = ?`, id).
+	if err := s.queryRow(ctx, "AddGlobalChat.readBack", `SELECT id, name, body, created_at FROM global_chat WHERE id = ?`, id).
 		Scan(&m.ID, &m.Name, &m.Body, &m.CreatedAt); err != nil {
 		return GlobalChatMessage{}, err
 	}
@@ -189,13 +189,13 @@ func (s *Store) ListGlobalChat(ctx context.Context, afterID int64, limit int) ([
 	if limit <= 0 {
 		limit = 100
 	}
-	var rows *sql.Rows
+	var rows *Rows
 	var err error
 	if afterID > 0 {
-		rows, err = s.db.QueryContext(ctx,
+		rows, err = s.query(ctx, "ListGlobalChat",
 			`SELECT id, name, body, created_at FROM global_chat WHERE id > ? ORDER BY id LIMIT ?`, afterID, limit)
 	} else {
-		rows, err = s.db.QueryContext(ctx,
+		rows, err = s.query(ctx, "ListGlobalChat",
 			`SELECT id, name, body, created_at FROM (
 			   SELECT id, name, body, created_at FROM global_chat ORDER BY id DESC LIMIT ?) ORDER BY id`, limit)
 	}
@@ -216,7 +216,7 @@ func (s *Store) ListGlobalChat(ctx context.Context, afterID int64, limit int) ([
 
 // SetLobby marks a game as waiting for its host to start it.
 func (s *Store) SetLobby(ctx context.Context, gameID int64, on bool) error {
-	res, err := s.db.ExecContext(ctx, `UPDATE games SET lobby = ? WHERE id = ?`, boolToInt(on), gameID)
+	res, err := s.exec(ctx, "SetLobby", `UPDATE games SET lobby = ? WHERE id = ?`, boolToInt(on), gameID)
 	if err != nil {
 		return fmt.Errorf("setting lobby for game_id=%d: %w", gameID, err)
 	}
@@ -228,7 +228,7 @@ func (s *Store) SetLobby(ctx context.Context, gameID int64, on bool) error {
 
 // StartGame makes a waiting game active with turnSeat to move.
 func (s *Store) StartGame(ctx context.Context, gameID int64, turnSeat int) error {
-	res, err := s.db.ExecContext(ctx,
+	res, err := s.exec(ctx, "StartGame",
 		`UPDATE games SET status = 'active', turn_seat = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND status = 'waiting'`,
 		turnSeat, gameID)
 	if err != nil {
@@ -243,7 +243,7 @@ func (s *Store) StartGame(ctx context.Context, gameID int64, turnSeat int) error
 // MovePlayerSeat gives the player now at fromSeat the open seat toSeat (and
 // its color) in a game that has not started.
 func (s *Store) MovePlayerSeat(ctx context.Context, gameID int64, fromSeat, toSeat int, color string) error {
-	res, err := s.db.ExecContext(ctx,
+	res, err := s.exec(ctx, "MovePlayerSeat",
 		`UPDATE players SET seat = ?, color = ? WHERE game_id = ? AND seat = ?`, toSeat, color, gameID, fromSeat)
 	if err != nil {
 		return fmt.Errorf("moving player (game_id=%d seat %d to %d): %w", gameID, fromSeat, toSeat, err)
@@ -256,7 +256,7 @@ func (s *Store) MovePlayerSeat(ctx context.Context, gameID int64, fromSeat, toSe
 
 // RemovePlayer takes the player at seat out of a game that has not started.
 func (s *Store) RemovePlayer(ctx context.Context, gameID int64, seat int) error {
-	res, err := s.db.ExecContext(ctx, `DELETE FROM players WHERE game_id = ? AND seat = ?`, gameID, seat)
+	res, err := s.exec(ctx, "RemovePlayer", `DELETE FROM players WHERE game_id = ? AND seat = ?`, gameID, seat)
 	if err != nil {
 		return fmt.Errorf("removing player (game_id=%d seat=%d): %w", gameID, seat, err)
 	}
@@ -268,7 +268,7 @@ func (s *Store) RemovePlayer(ctx context.Context, gameID int64, seat int) error 
 
 // RenamePlayer changes the name shown for the player at seat.
 func (s *Store) RenamePlayer(ctx context.Context, gameID int64, seat int, name string) error {
-	_, err := s.db.ExecContext(ctx, `UPDATE players SET name = ? WHERE game_id = ? AND seat = ?`, name, gameID, seat)
+	_, err := s.exec(ctx, "RenamePlayer", `UPDATE players SET name = ? WHERE game_id = ? AND seat = ?`, name, gameID, seat)
 	if err != nil {
 		return fmt.Errorf("renaming player (game_id=%d seat=%d): %w", gameID, seat, err)
 	}
@@ -289,7 +289,7 @@ type AutoPlayPrefs struct {
 
 // SetAutoPlay stores seat's Auto-Play Timeout for the game.
 func (s *Store) SetAutoPlay(ctx context.Context, gameID int64, seat int, prefs AutoPlayPrefs) error {
-	_, err := s.db.ExecContext(ctx,
+	_, err := s.exec(ctx, "SetAutoPlay",
 		`INSERT INTO autoplay_prefs (game_id, seat, enabled, timeout_seconds) VALUES (?, ?, ?, ?)
 		 ON CONFLICT(game_id, seat) DO UPDATE SET enabled = excluded.enabled, timeout_seconds = excluded.timeout_seconds`,
 		gameID, seat, boolToInt(prefs.Enabled), prefs.TimeoutSeconds)
@@ -303,7 +303,7 @@ func (s *Store) SetAutoPlay(ctx context.Context, gameID int64, seat int, prefs A
 // saved).
 func (s *Store) AutoPlay(ctx context.Context, gameID int64, seat int) (AutoPlayPrefs, error) {
 	var enabled, secs int
-	err := s.db.QueryRowContext(ctx, `SELECT enabled, timeout_seconds FROM autoplay_prefs WHERE game_id = ? AND seat = ?`, gameID, seat).Scan(&enabled, &secs)
+	err := s.queryRow(ctx, "AutoPlay", `SELECT enabled, timeout_seconds FROM autoplay_prefs WHERE game_id = ? AND seat = ?`, gameID, seat).Scan(&enabled, &secs)
 	if errors.Is(err, sql.ErrNoRows) {
 		return AutoPlayPrefs{TimeoutSeconds: DefaultAutoPlayTimeout}, nil
 	}
@@ -330,7 +330,7 @@ type DueAutoPlay struct {
 // AutoPlayCandidates lists the active games whose player to move has turned
 // the Auto-Play Timeout on.
 func (s *Store) AutoPlayCandidates(ctx context.Context) ([]DueAutoPlay, error) {
-	rows, err := s.db.QueryContext(ctx,
+	rows, err := s.query(ctx, "AutoPlayCandidates",
 		`SELECT g.room_code, a.seat, a.timeout_seconds, g.updated_at
 		 FROM games g JOIN autoplay_prefs a ON a.game_id = g.id AND a.seat = g.turn_seat
 		 WHERE g.status = 'active' AND a.enabled = 1`)
@@ -352,7 +352,7 @@ func (s *Store) AutoPlayCandidates(ctx context.Context) ([]DueAutoPlay, error) {
 // ChangeLobbyGame gives a game that has not started another definition (the
 // cults of its open seats were changed) and the new starting position.
 func (s *Store) ChangeLobbyGame(ctx context.Context, gameID int64, gameDefID, boardState string) error {
-	res, err := s.db.ExecContext(ctx,
+	res, err := s.exec(ctx, "ChangeLobbyGame",
 		`UPDATE games SET game_def_id = ?, board_state = ?, initial_state = '', initial_turn_seat = 0, updated_at = CURRENT_TIMESTAMP
 		 WHERE id = ? AND status = 'waiting'`,
 		gameDefID, boardState, gameID)

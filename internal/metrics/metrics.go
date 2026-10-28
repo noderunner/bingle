@@ -18,6 +18,7 @@ package metrics
 
 import (
 	"net/http"
+	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
@@ -51,6 +52,15 @@ type Metrics struct {
 	httpErrors    *prometheus.CounterVec
 	wsConnections *prometheus.GaugeVec
 	wsTotal       *prometheus.CounterVec
+
+	dbQueries    *prometheus.CounterVec
+	dbDuration   *prometheus.HistogramVec
+	dbRows       *prometheus.CounterVec
+	dbTxDuration prometheus.Histogram
+	dbBusy       prometheus.Counter
+	db           *dbCollector
+	// dbHandles caches each statement name's metrics: see handles.
+	dbHandles sync.Map
 }
 
 // New builds the registry, registers the Go runtime and process collectors
@@ -94,6 +104,33 @@ func New(version string) *Metrics {
 			Namespace: Namespace, Subsystem: "ws", Name: "connections_total",
 			Help: "WebSocket connections accepted, by kind.",
 		}, []string{"kind"}),
+
+		dbQueries: prometheus.NewCounterVec(prometheus.CounterOpts{
+			Namespace: Namespace, Subsystem: "db", Name: "queries_total",
+			Help: "Statements run, by name and how they turned out.",
+		}, []string{"stmt", "result"}),
+
+		dbDuration: prometheus.NewHistogramVec(prometheus.HistogramOpts{
+			Namespace: Namespace, Subsystem: "db", Name: "query_duration_seconds",
+			Help: "How long a statement took, by name.", Buckets: durationBuckets,
+		}, []string{"stmt"}),
+
+		dbRows: prometheus.NewCounterVec(prometheus.CounterOpts{
+			Namespace: Namespace, Subsystem: "db", Name: "rows_total",
+			Help: "Rows read or changed, by statement name.",
+		}, []string{"stmt"}),
+
+		dbTxDuration: prometheus.NewHistogram(prometheus.HistogramOpts{
+			Namespace: Namespace, Subsystem: "db", Name: "tx_duration_seconds",
+			Help: "How long a transaction was open.", Buckets: durationBuckets,
+		}),
+
+		dbBusy: prometheus.NewCounter(prometheus.CounterOpts{
+			Namespace: Namespace, Subsystem: "db", Name: "busy_total",
+			Help: "Statements that waited out the busy timeout and still could not get the lock.",
+		}),
+
+		db: newDBCollector(),
 	}
 
 	buildInfo := prometheus.NewGaugeVec(prometheus.GaugeOpts{
@@ -108,6 +145,7 @@ func New(version string) *Metrics {
 		buildInfo,
 		m.httpRequests, m.httpDuration, m.httpInFlight, m.httpBytes, m.httpErrors,
 		m.wsConnections, m.wsTotal,
+		m.dbQueries, m.dbDuration, m.dbRows, m.dbTxDuration, m.dbBusy, m.db,
 	)
 	return m
 }

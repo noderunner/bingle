@@ -2,8 +2,9 @@
 
 Bingle is one binary on one machine, so what it says about itself has to be useful with nothing
 else installed. [docs/history/observability-plan.md](history/observability-plan.md) stages the
-whole of that work; **this page covers what is built: the log and the metrics.** The slow-request
-journal, the metrics database and the Health page are later stages and are not here yet.
+whole of that work; **this page covers what is built: the log, the metrics and the database.** The
+slow-request journal, the metrics database and the Health page are later stages and are not here
+yet.
 
 ## The log
 
@@ -147,6 +148,16 @@ The container image does not publish 9095 by default, and the health check uses 
 | `bingle_http_errors_total{route,kind}` | Refusals, by family: `bad-request`, `forbidden`, `not-found`, `conflict`, `rate-limited`, `client`, `server` |
 | `bingle_ws_connections{kind}` | Sockets open now, by `page`, `voice`, `chat`, `dm` |
 | `bingle_ws_connections_total{kind}` | Sockets accepted |
+| `bingle_db_queries_total{stmt,result}` | Statements run, by name and outcome |
+| `bingle_db_query_duration_seconds{stmt}` | How long each took (a histogram) |
+| `bingle_db_rows_total{stmt}` | Rows read or changed |
+| `bingle_db_tx_duration_seconds` | How long transactions were open |
+| `bingle_db_busy_total` | Statements that waited out the busy timeout and still lost |
+| `bingle_db_file_bytes`, `bingle_db_wal_bytes` | The database and its write-ahead log, on disk |
+| `bingle_db_page_count`, `bingle_db_freelist_pages`, `bingle_db_page_bytes` | What SQLite says about its pages |
+| `bingle_db_table_rows{table}` | Rows in each table |
+| `bingle_db_pool_*` | `database/sql`'s own account of the connection pool |
+| `bingle_db_snapshot_ok` | 1 when the figures above could be read, 0 when they could not |
 | `bingle_build_info{version}` | Always 1; the label is the engine's version |
 | `go_*`, `process_*` | The Go runtime and process collectors, registered explicitly |
 
@@ -177,3 +188,73 @@ middleware returns the handler untouched and the cost is zero.
 
 The dependency is not free: `prometheus/client_golang` is one new direct dependency, seven
 indirect, and 3.6 MB on a 33.9 MB binary.
+
+## The database
+
+Every statement in `internal/store` carries a **name**, and the name is what the metrics group by.
+A statement that fails, finds nothing, or cannot get its lock is told apart from one that worked:
+
+```
+bingle_db_queries_total{result="ok",stmt="RecordMove.insertMove"} 412
+bingle_db_queries_total{result="no-rows",stmt="GetGame"} 7
+bingle_db_queries_total{result="busy",stmt="RecordMove.updateGame"} 0
+bingle_db_queries_total{result="error",stmt="GetGame"} 0
+```
+
+`no-rows` is deliberately **not** an error: asking whether a row exists is what half of bingle's
+statements are for. All four outcomes are published from the first time a statement runs, so a
+`rate()` over errors works from the start rather than the series appearing only once something has
+gone wrong.
+
+`busy` is the one to watch. `store.Open` sets `busy_timeout(10000)`, so a statement counted here
+waited ten whole seconds for the write lock and still did not get it — the first thing to look at
+when writes start failing under load.
+
+### The rule for new code
+
+**Nothing in `internal/store` reaches for the database directly.** Use the wrapper:
+
+```go
+res, err := s.exec(ctx, "SetGameClock", `UPDATE games SET clock = ? WHERE id = ?`, clock, id)
+row := s.queryRow(ctx, "GetGame", `SELECT ... WHERE room_code = ?`, code)
+rows, err := s.query(ctx, "ListMoves", `SELECT ... WHERE game_id = ?`, id)
+tx, err := s.begin(ctx, "RecordMove")   // then tx.exec / tx.queryRow
+```
+
+The name is the method the statement belongs to (`GetGame`), with a short suffix when a method
+runs more than one (`RecordMove.insertMove`). **A name is never built from data** — it is a metric
+label, and a label is a closed set.
+
+This is not a convention to remember: `tests/store/measure_test.go`'s
+`TestWrapperContract_NoStatementBypassesTheWrapper` reads the package's source and fails on a call
+site that bypasses the wrapper, the way the DOM-contract tests pin the interface the browser tests
+rely on. `internal/store/measure.go` is the one file allowed to call the database itself.
+
+### The gauges about the file
+
+These are read when the registry is gathered, not kept up to date as things happen, so what a
+scrape shows is what was true when it was scraped. Counting the rows of `moves` is a table scan, so
+a snapshot is **cached for ten seconds**: shorter than a normal scrape interval, so each scrape
+gets its own figures, while a burst of scrapes costs one read. The snapshot's own statements are
+deliberately not counted — they exist because something is watching.
+
+If reading them fails (a closed database, a dropped table) `bingle_db_snapshot_ok` goes to 0 and
+the figures are **left out** rather than published as zero, which would read as an empty database.
+The pool numbers are still reported, because they are `database/sql`'s own counting and cannot
+fail.
+
+**On WAL mode:** `store.Open` sets `journal_mode(WAL)`, so a page that has been written lives in
+the log until a checkpoint moves it into the file. `bingle_db_file_bytes` can therefore be far
+smaller than `page_count × page_bytes` while `bingle_db_wal_bytes` holds the rest — watch the two
+together. WAL growth is what the plan expects to bite first.
+
+### What it costs
+
+Measured on a read that answers from SQLite's cache, so the figure is the recording and almost
+nothing else: **+0.46 µs per statement, and no extra allocations** (35.6 µs → 36.1 µs for a
+`GetGame`). A move runs about ten statements, so that is about 5 µs on a move of roughly 900 µs:
+**0.5%**, inside the plan's 1% budget.
+
+Each statement name's metrics are resolved once and kept, because looking a label value up in a
+Prometheus vector hashes it and takes a lock — doing that three times for each of ten statements
+was, measured, 1.2% on a move all by itself.

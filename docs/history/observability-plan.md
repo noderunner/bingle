@@ -1,6 +1,6 @@
 # Plan: logging, metrics and a slow-request journal
 
-Status: **Stages 1 and 2 done, stages 3–7 planned** (2026-10-28). The decisions in *What was decided*
+Status: **Stages 1 to 3 done, stages 4–7 planned** (2026-10-28). The decisions in *What was decided*
 below were taken with the owner before this was written; the rest is the reasoning and the
 staging. What Stage 1 built is described in [docs/observability.md](../observability.md).
 
@@ -335,11 +335,17 @@ and a `nil *Metrics` meaning "switched off" so no call site needs a branch. Two 
 design above deliberately left to Stage 4: `bingle_ws_events_total` and `bingle_ws_dropped_total`,
 which come from the hub'"'"'s tap.
 
-**Stage 3 — the database.** Named statements across the ~74 call sites in
-`internal/store` (a thin wrapper, so the diffs are one line each), the busy counter, the
-sampled gauges. Tests: a failing query counts as `result=error`; a contract test fails if a
-new call site bypasses the wrapper (the same trick as the existing DOM-contract tests);
-`PRAGMA` gauges read back sanely on a temporary database.
+**Stage 3 — the database.** *Done.* Named statements across the call sites in `internal/store`
+(a thin wrapper, so the diffs are one line each), the busy counter, the sampled gauges. Tests: a
+failing query counts as `result=error`; a contract test fails if a new call site bypasses the
+wrapper (the same trick as the existing DOM-contract tests); `PRAGMA` gauges read back sanely on a
+temporary database. It was **83** call sites rather than ~74. Four things worth knowing:
+`result` is four outcomes rather than two, because "no rows" is not a fault and a locked database
+is not an ordinary failure; the gauges are a **scrape-time collector with a ten-second cache**
+rather than a ticker, so a scrape shows what was true when it was scraped and counting the rows of
+`moves` cannot become a table scan per second; the snapshot's own statements are deliberately not
+counted; and each statement's metrics are resolved once and kept, because three label lookups per
+statement was 1.2% on a move all by itself — with them cached it is 0.5%.
 
 **Stage 4 — games, bots and the journal.** The move-funnel log and metrics, the end-reason
 and illegal-move counters, slot waits, the `trace` package, the `slow_requests` writer, and
@@ -393,6 +399,11 @@ either shows up, the span cap and the sample interval are the dials.
 
 ## Status log
 
+- 2026-10-28: Stage 3 landed: the statement wrapper in `internal/store/measure.go` and all 83 call
+  sites named, the four outcomes, the busy counter, the snapshot collector in
+  `internal/store/stats.go`, and the contract test that keeps new call sites honest. `app.New`
+  now applies its options before opening the store, so starting up is measured too. Cost on a
+  move: +0.46 µs per statement and no allocations, about 0.5% of a move.
 - 2026-10-28: Stage 2 landed: `internal/metrics` (the registry, the HTTP middleware, the Go and
   process collectors), `internal/httpstat` (one wrapped writer shared by the middlewares that
   need the status), `httpserve.ListenPrivate` and its bearer token, `BINGLE_METRICS_ADDR` and

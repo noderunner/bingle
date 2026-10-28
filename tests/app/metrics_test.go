@@ -161,3 +161,35 @@ func firstLines(exposition, name string) string {
 	}
 	return strings.Join(out, "\n")
 }
+
+// seriesCount is how many series an exposition holds: every line that is not
+// a comment is one, which is what a scraper stores.
+func seriesCount(exposition string) int {
+	n := 0
+	for _, line := range strings.Split(exposition, "\n") {
+		if line != "" && !strings.HasPrefix(line, "#") {
+			n++
+		}
+	}
+	return n
+}
+
+// A freshly started server's series count has a ceiling, so a careless label
+// added later fails here rather than six months later in somebody's scraper.
+// This is the real number, counted off a real server with a real database.
+func TestMetrics_SeriesCountOfAFreshServerIsUnderTheCeiling(t *testing.T) {
+	// Most of this is the Go and process collectors, and the buckets of the
+	// duration histograms of the handful of statements starting up runs. The
+	// headroom is for the runtime collector growing with a Go release and for
+	// a statement or two more at startup — not for a new label, which would
+	// add dozens and is what this is here to catch. Raise it deliberately,
+	// with a reason, never to make a failure go away.
+	const ceiling = 200
+
+	_, scrape := newMeasuredServer(t)
+	got := seriesCount(scrape())
+	if got > ceiling {
+		t.Errorf("a fresh server exposes %d series, over the ceiling of %d: has a label been added?", got, ceiling)
+	}
+	t.Logf("a fresh server exposes %d series of the %d allowed", got, ceiling)
+}

@@ -16,7 +16,7 @@ type MoveLog struct {
 // position after it, in ascending seq order. Only that part of each state is
 // read, so a long game does not pull every full snapshot into memory.
 func (s *Store) ListMoveLogs(ctx context.Context, gameID int64) ([]MoveLog, error) {
-	rows, err := s.db.QueryContext(ctx,
+	rows, err := s.query(ctx, "ListMoveLogs",
 		`SELECT seq, COALESCE(json_extract(resulting_state, '$.ext.log'), '') FROM moves WHERE game_id = ? ORDER BY seq`,
 		gameID)
 	if err != nil {

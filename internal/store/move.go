@@ -73,7 +73,7 @@ type Move struct {
 // layer concern, e.g. when a second player joins). Returns store.ErrNotFound
 // if gameID doesn't exist.
 func (s *Store) RecordMove(ctx context.Context, gameID int64, in MoveInput) (Move, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.begin(ctx, "RecordMove")
 	if err != nil {
 		return Move{}, fmt.Errorf("begin transaction: %w", err)
 	}
@@ -81,7 +81,7 @@ func (s *Store) RecordMove(ctx context.Context, gameID int64, in MoveInput) (Mov
 
 	var currentMoveSeq int
 	var currentStatus string
-	err = tx.QueryRowContext(ctx, `SELECT move_seq, status FROM games WHERE id = ?`, gameID).
+	err = tx.queryRow(ctx, "RecordMove.readSeq", `SELECT move_seq, status FROM games WHERE id = ?`, gameID).
 		Scan(&currentMoveSeq, &currentStatus)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Move{}, ErrNotFound
@@ -97,7 +97,7 @@ func (s *Store) RecordMove(ctx context.Context, gameID int64, in MoveInput) (Mov
 		captured = sql.NullString{String: *in.Captured, Valid: true}
 	}
 
-	res, err := tx.ExecContext(ctx,
+	res, err := tx.exec(ctx, "RecordMove.insertMove",
 		`INSERT INTO moves (game_id, seq, seat, color, from_position, to_position, captured_position, resulting_state, notation, move_json, auto, locked, autoplay)
 		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		gameID, newSeq, in.Seat, in.Color, in.From, in.To, captured, in.ResultingBoardState, in.Notation, in.MoveJSON, boolToInt(in.Auto), boolToInt(in.Locked), boolToInt(in.AutoPlay),
@@ -123,19 +123,19 @@ func (s *Store) RecordMove(ctx context.Context, gameID int64, in MoveInput) (Mov
 		winnerSeat = sql.NullInt64{Int64: int64(*in.WinnerSeat), Valid: true}
 	}
 
-	if _, err := tx.ExecContext(ctx,
+	if _, err := tx.exec(ctx, "RecordMove.updateGame",
 		`UPDATE games SET board_state = ?, move_seq = ?, updated_at = CURRENT_TIMESTAMP, turn_seat = ?, status = ?, winner_seat = ?, end_reason = ?, end_detail = ?, draw_offer_seat = NULL, takeback_seat = NULL, takeback_seq = 0 WHERE id = ?`,
 		in.ResultingBoardState, newSeq, turnSeat, status, winnerSeat, in.EndReason, in.EndDetail, gameID,
 	); err != nil {
 		return Move{}, fmt.Errorf("updating games row for game_id=%d: %w", gameID, err)
 	}
 	if in.Clock != nil {
-		if _, err := tx.ExecContext(ctx, `UPDATE games SET clock = ? WHERE id = ?`, *in.Clock, gameID); err != nil {
+		if _, err := tx.exec(ctx, "RecordMove.updateClock", `UPDATE games SET clock = ? WHERE id = ?`, *in.Clock, gameID); err != nil {
 			return Move{}, fmt.Errorf("updating the clock of game_id=%d: %w", gameID, err)
 		}
 	}
 
-	move, err := scanMoveByID(ctx, tx, moveID)
+	move, err := scanMoveByID(ctx, tx, "RecordMove.readMove", moveID)
 	if err != nil {
 		return Move{}, fmt.Errorf("reading back inserted move: %w", err)
 	}
@@ -155,7 +155,7 @@ func (s *Store) RecordMove(ctx context.Context, gameID int64, in MoveInput) (Mov
 // GetGame first. Always returns a non-nil (possibly empty) slice, so JSON
 // encoding produces "[]", never "null".
 func (s *Store) ListMoves(ctx context.Context, gameID int64, sinceSeq int) ([]Move, error) {
-	rows, err := s.db.QueryContext(ctx,
+	rows, err := s.query(ctx, "ListMoves",
 		`SELECT id, game_id, seq, seat, color, from_position, to_position, captured_position, resulting_state, notation, move_json, auto, locked, autoplay, created_at
 		 FROM moves WHERE game_id = ? AND seq > ? ORDER BY seq`,
 		gameID, sinceSeq,
@@ -189,12 +189,12 @@ func (s *Store) ListMoves(ctx context.Context, gameID int64, sinceSeq int) ([]Mo
 	return moves, nil
 }
 
-func scanMoveByID(ctx context.Context, q queryRowContexter, id int64) (Move, error) {
+func scanMoveByID(ctx context.Context, q rowQuerier, name string, id int64) (Move, error) {
 	var m Move
 	var captured sql.NullString
 	var auto, locked, autoplay int
 
-	row := q.QueryRowContext(ctx,
+	row := q.queryRow(ctx, name,
 		`SELECT id, game_id, seq, seat, color, from_position, to_position, captured_position, resulting_state, notation, move_json, auto, locked, autoplay, created_at
 		 FROM moves WHERE id = ?`,
 		id,
@@ -220,16 +220,16 @@ func scanMoveByID(ctx context.Context, q queryRowContexter, id int64) (Move, err
 // game is active again with no winner. All of it happens in one transaction.
 // Returns ErrNotFound if gameID doesn't exist.
 func (s *Store) UndoToSeq(ctx context.Context, gameID int64, keepSeq int, boardState string, turnSeat int) error {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.begin(ctx, "UndoToSeq")
 	if err != nil {
 		return fmt.Errorf("begin transaction: %w", err)
 	}
 	defer func() { _ = tx.Rollback() }()
 
-	if _, err := tx.ExecContext(ctx, `DELETE FROM moves WHERE game_id = ? AND seq > ?`, gameID, keepSeq); err != nil {
+	if _, err := tx.exec(ctx, "UndoToSeq.deleteMoves", `DELETE FROM moves WHERE game_id = ? AND seq > ?`, gameID, keepSeq); err != nil {
 		return fmt.Errorf("deleting moves for game_id=%d: %w", gameID, err)
 	}
-	res, err := tx.ExecContext(ctx,
+	res, err := tx.exec(ctx, "UndoToSeq.updateGame",
 		`UPDATE games SET board_state = ?, move_seq = ?, turn_seat = ?, status = 'active', winner_seat = NULL, end_reason = '', end_detail = '', draw_offer_seat = NULL, takeback_seat = NULL, takeback_seq = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
 		boardState, keepSeq, turnSeat, gameID,
 	)
@@ -254,7 +254,7 @@ func (s *Store) FinishGame(ctx context.Context, gameID int64, winnerSeat *int, r
 	if winnerSeat != nil {
 		winner = sql.NullInt64{Int64: int64(*winnerSeat), Valid: true}
 	}
-	res, err := s.db.ExecContext(ctx,
+	res, err := s.exec(ctx, "FinishGame",
 		`UPDATE games SET status = 'finished', turn_seat = NULL, winner_seat = ?, end_reason = ?, draw_offer_seat = NULL, takeback_seat = NULL, takeback_seq = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
 		winner, reason, gameID,
 	)
