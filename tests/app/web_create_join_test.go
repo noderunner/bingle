@@ -69,6 +69,8 @@ func newChromedpContextWith(t *testing.T, timeout time.Duration, extra ...chrome
 	if testing.Short() {
 		t.Skip("browser tests are skipped with -short")
 	}
+	skipCthulhuWarsUI(t)
+	skipOtherShards(t)
 	browser := findBrowser()
 	if browser == "" {
 		t.Skip("no Chrome or Chromium found on $PATH (set BINGLE_BROWSER to its path): skipping the browser tests")
