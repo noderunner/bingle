@@ -4,9 +4,25 @@ on:
   push:
     branches: [main, master]
   pull_request:
+  # The nightly run is the one that plays the long bot simulations, which pull
+  # requests skip (see the "sims" job).
+  schedule:
+    - cron: "17 6 * * *"
+  workflow_dispatch:
 
 permissions:
   contents: read
+
+# A new push to a pull request makes the run in progress pointless, so cancel
+# it. Runs on main and the nightly run are left to finish.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  # Whether this run plays the long simulations: everything except a pull
+  # request does (see the "sims" job).
+  FULL: ${{ github.event_name != 'pull_request' }}
 
 jobs:
   lint:
@@ -30,9 +46,12 @@ jobs:
         with:
           version: latest
 
-  test:
+  # Everything except the browser suite and the bot simulations: the engine, the
+  # games, the session layer, the store, REST, MCP and the WebSocket handlers.
+  # Together about a minute, so this job is never the one holding a PR up.
+  unit:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-go@v7
@@ -40,13 +59,51 @@ jobs:
           go-version-file: go.mod
       - name: build
         run: go build ./...
-      # The runner image ships Google Chrome, which the browser-driven tests in tests/app use.
       - name: test
-        # The slowest package (the bot batches) takes 7-10 minutes on a shared runner, close to go test's default
-        # limit of 10 per package, so the limit is set to what the job (30 minutes) can bear.
-        run: go test -timeout 25m ./...
+        run: go test -timeout 10m $(go list ./... | grep -vE '/tests/(app|batch)$')
       - name: smoke test
         run: ./scripts/smoke-test.sh
+
+  # The browser-driven suite: 172 tests, each driving its own headless Chrome,
+  # and by far the longest part of the suite. $BINGLE_TEST_SHARD splits it by
+  # test name over four runners (about 2.5 minutes each instead of 8 minutes in
+  # one), and each runner gets a machine to itself, so Chrome is no longer
+  # competing with the bot simulations for two cores — which is what made these
+  # tests flaky.
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    env:
+      BINGLE_TEST_SHARD: ${{ matrix.shard }}/4
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      # The runner image ships Google Chrome, which the browser-driven tests in
+      # tests/app use.
+      - name: test (browser shard ${{ matrix.shard }} of 4)
+        run: go test -timeout 15m ./tests/app/
+
+  # The bot simulations in tests/batch: whole games of Cthulhu Wars played by
+  # each kind of bot, plus a tuner run. Six minutes on a shared runner, and what
+  # they prove is throughput rather than correctness, so a pull request runs the
+  # short form (the batch machinery, determinism and metrics, which is the part
+  # that can break) and the nightly run and main play them in full.
+  sims:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - name: test
+        run: go test -timeout 20m $([ "$FULL" = true ] || echo -short) ./tests/batch/
 
   container:
     runs-on: ubuntu-latest
@@ -67,3 +124,23 @@ jobs:
           echo "container never became healthy"
           docker logs bingle-ci
           exit 1
+
+  # One check to look at (and to require, if branch protection ever asks for
+  # one): green only when every job above succeeded.
+  ci:
+    if: always()
+    needs: [lint, unit, browser, sims, container]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: check the jobs
+        run: |
+          results="${{ join(needs.*.result, ' ') }}"
+          echo "job results: $results"
+          for r in $results; do
+            if [ "$r" != "success" ]; then
+              echo "a job did not succeed"
+              exit 1
+            fi
+          done
+          echo "all jobs succeeded"
