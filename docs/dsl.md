@@ -16,6 +16,8 @@ options[]                     setup choices a creator makes (bool, seat-choice, 
 pie_rule                      standard | optional: the game can be played with the pie rule, and
                               the creator chooses (the catalog brings the swap action and the box)
 board                         required: generator or explicit graph, regions, style
+                              (a "hexhex" board takes size2 as well: four long sides and two
+                              short ones, a hexagon with no middle cell — Meridians)
 seats[]                       required
 pieces{}                      required
 reserves{}                    starting "hand", per seat, by reserve pool

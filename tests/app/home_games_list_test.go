@@ -120,7 +120,7 @@ func TestHomeGames_EmptyStartsShowASampleGame(t *testing.T) {
 	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/"), chromedp.WaitVisible(`.game-card[data-family="tak-5x5"]`, chromedp.ByQuery)); err != nil {
 		t.Fatal(err)
 	}
-	for _, family := range []string{"gomoku", "yavalath", "go-9x9", "hex-11", "havannah-8", "pente", "connect-four", "tic-tac-toe", "tak-5x5", "blooms", "yinsh", "courtfall"} {
+	for _, family := range []string{"gomoku", "yavalath", "go-9x9", "hex-11", "havannah-8", "pente", "connect-four", "tic-tac-toe", "tak-5x5", "blooms", "yinsh", "courtfall", "meridians"} {
 		waitJS(t, ctx, family+": pieces on the card", fmt.Sprintf(`document.querySelectorAll('.game-card[data-family=%q] .game-card-preview svg .piece').length >= 4`, family), 20*time.Second)
 	}
 	// Nyet! has no board: a picture of cards.

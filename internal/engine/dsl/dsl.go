@@ -239,10 +239,14 @@ type Canvas struct {
 // "orthogonal8"), a "hex" parallelogram of hexagonal cells, or a "hexhex"
 // hexagon with Size cells per side.
 type BoardGenerator struct {
-	Type      string `json:"type"`
-	Width     int    `json:"width"`
-	Height    int    `json:"height"`
-	Size      int    `json:"size,omitempty"`
+	Type   string `json:"type"`
+	Width  int    `json:"width"`
+	Height int    `json:"height"`
+	Size   int    `json:"size,omitempty"`
+	// Size2, for a "hexhex" board, is the length of its four long sides,
+	// Size being its two short ones: a hexagon with no middle cell, which
+	// Meridians is played on. Absent (or equal to Size) = every side alike.
+	Size2     int    `json:"size2,omitempty"`
 	Adjacency string `json:"adjacency"`
 	// Labels is "xy" (positions named "x,y", the default) or "algebraic"
 	// (positions named like chess squares: "a1" is bottom-left).

@@ -118,6 +118,9 @@ func boardText(g *catalog.CompiledGame) string {
 	switch b.Kind() {
 	case "hex":
 		if g.Definition.Board.Generator != nil && g.Definition.Board.Generator.Type == "hexhex" {
+			if s2 := g.Definition.Board.Generator.Size2; s2 > 0 && s2 != g.Definition.Board.Generator.Size {
+				return fmt.Sprintf("hexagon, %d and %d per side", g.Definition.Board.Generator.Size, s2)
+			}
 			return fmt.Sprintf("hexagon, %d per side", g.Definition.Board.Generator.Size)
 		}
 		return fmt.Sprintf("hex %d×%d", b.Width(), b.Height())

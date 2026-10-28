@@ -23,6 +23,7 @@ import (
 	"github.com/noderunner/bingle/internal/games/fendo"
 	"github.com/noderunner/bingle/internal/games/fist"
 	"github.com/noderunner/bingle/internal/games/hive"
+	"github.com/noderunner/bingle/internal/games/meridians"
 	"github.com/noderunner/bingle/internal/games/nyet"
 	"github.com/noderunner/bingle/internal/games/onitama"
 	"github.com/noderunner/bingle/internal/games/tak"
@@ -131,7 +132,7 @@ func enableNotify(m *session.Manager, cfg config.Config) error {
 
 // BuiltinModules returns every game module bingle ships with.
 func BuiltinModules() []catalog.Module {
-	return append([]catalog.Module{tak.Module(), courtfall.Module(), fendo.Module(), fist.Module(), onitama.Module(), blooms.Module(), hive.Module(), nyet.Module(), yinsh.Module(), cthulhuwars.Module()}, classics.Modules()...)
+	return append([]catalog.Module{tak.Module(), courtfall.Module(), fendo.Module(), fist.Module(), meridians.Module(), onitama.Module(), blooms.Module(), hive.Module(), nyet.Module(), yinsh.Module(), cthulhuwars.Module()}, classics.Modules()...)
 }
 
 // Router returns the application's HTTP handler.

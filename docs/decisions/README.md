@@ -65,3 +65,4 @@ Short records of choices made for the `bingle` project during the requirements i
 | [0059](0059-direct-messages-and-their-calls.md) | Direct messages addressed to a browser and signed by its secret, kept in memory only, with a one-to-one voice call and one voice per person at a time |
 | [0060](0060-the-analysis-tab.md) | The Analysis tab: bot batches generalised to every game, win rates per seat and per bot with intervals, and an embedded guide to the bots |
 | [0061](0061-courtfall-odds-and-the-standard-arena.md) | Courtfall: a tested table of the odds of a dice pool, and a standard arena as a setup option (`courtfall~arena`) for quick games and for batches |
+| [0062](0062-meridians.md) | Meridians: a centreless hexagon from the generalised hexhex generator, and a ruleset where a group with no path to a friend dies |

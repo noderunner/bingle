@@ -4,6 +4,21 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.11.0 - 2026-10-27
+
+### Meridians 0.1.0 — a new game
+- **Meridians**, by Kanare Kato, joins the list. Stones never move and are never taken one at a
+  time: a group of yours that can see no other group of yours — along a straight line of empty
+  points — comes off the board when your turn ends. You win when your opponent has nothing left.
+  Lay your first stone anywhere, your second away from it, and after that only where your own
+  stones can see. It is played on a hexagon with **no middle point** (six intersections along two
+  sides, seven along the other four), with smaller and larger boards as well, and the rules page
+  explains sight and paths with pictures.
+
+### Bingle Core 0.11.0
+- Hexagonal boards can now have two side lengths, which is what gives Meridians its centreless
+  board; every existing hexagonal game is unchanged.
+
 ## 0.10.0 - 2026-10-27
 
 ### Bingle Core 0.10.0
