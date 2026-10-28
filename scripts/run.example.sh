@@ -17,5 +17,7 @@ export BINGLE_HTTP_ADDR=:8080                         # the HTTP listener for th
 export BINGLE_ADDR=:8443                              # the HTTPS listener
 export BINGLE_SMTP_HOST=smtp.example.com              # email notifications (docs/email.md)
 export BINGLE_SMTP_PASSWORD_FILE="$HOME/.config/bingle/smtp_password"
+export BINGLE_LOG_LEVEL=info                          # debug for a line per request (docs/observability.md)
+export BINGLE_LOG_FORMAT=text                         # json for a log collector
 
 exec ./bin/bingle

@@ -19,6 +19,7 @@
 package session
 
 import (
+	"log/slog"
 	"strings"
 	"sync"
 	"time"
@@ -35,6 +36,7 @@ type Manager struct {
 	catalog   *catalog.Catalog
 	hub       *hub
 	bots      *bots.Registry
+	log       *slog.Logger           // the server's logger; tests may replace it via SetLogger
 	now       func() time.Time       // clock; tests may replace it via SetClock
 	mu        sync.Mutex             // guards roomLocks itself, not room state
 	roomLocks map[string]*sync.Mutex // lazily created, one per room code ever touched
@@ -68,6 +70,23 @@ func NewManager(st *store.Store, cat *catalog.Catalog) *Manager {
 // SetClock replaces the manager's time source (used by tests to exercise
 // move time limits without sleeping).
 func (m *Manager) SetClock(now func() time.Time) { m.now = now }
+
+// SetLogger replaces the manager's logger. Without one it logs through slog's
+// default logger, which is what the tests want.
+func (m *Manager) SetLogger(lg *slog.Logger) {
+	if lg != nil {
+		m.log = lg
+	}
+}
+
+// logger is the logger to use: the one the server handed over, or slog's
+// default for a manager built straight by a test.
+func (m *Manager) logger() *slog.Logger {
+	if m.log == nil {
+		return slog.Default()
+	}
+	return m.log
+}
 
 // Bots returns the registry of built-in bots.
 func (m *Manager) Bots() *bots.Registry { return m.bots }

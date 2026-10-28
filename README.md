@@ -176,7 +176,8 @@ change the game. The engine has a version of its own in `internal/version`.
 
 Docs: [architecture](docs/architecture.md) · [roadmap & status](docs/roadmap.md) ·
 [game catalog](docs/games.md) · [decisions](docs/decisions/README.md) ·
-[testing](docs/test.md) · [building](docs/build.md) · [history](docs/history/README.md).
+[testing](docs/test.md) · [building](docs/build.md) · [watching it run](docs/observability.md) ·
+[history](docs/history/README.md).
 
 ## License and credits
 

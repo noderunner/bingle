@@ -4,6 +4,22 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.12.0 - 2026-10-28
+
+### Bingle Core 0.12.0
+- **A crash in the server is now written down and answered.** If something went badly wrong while
+  the server was dealing with one of your clicks, the page used to simply lose its connection with
+  no explanation anywhere. Now the problem is recorded — with enough detail to find it — and your
+  browser is told the request failed, so a fault that used to be invisible can be fixed.
+- Every answer the server sends carries a reference (`X-Request-Id`). If you ever report something
+  going wrong, that reference is what ties your report to what the server was doing at the time.
+- For whoever runs the server: two new settings, `BINGLE_LOG_LEVEL` and `BINGLE_LOG_FORMAT`. The
+  default is quiet — the server says what it is listening on and then only speaks up when
+  something is wrong — and `BINGLE_LOG_LEVEL=debug` shows the traffic. What the server writes down
+  is deliberately short of detail about *you*: never the address of the game you are in, what you
+  typed in a chat or a message, your email address, or your name. See
+  [docs/observability.md](docs/observability.md).
+
 ## 0.11.0 - 2026-10-27
 
 ### Meridians 0.1.0 — a new game

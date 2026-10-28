@@ -23,6 +23,10 @@ const (
 	// certificate authority validates over 80 and 443.
 	defaultTLSAddr  = ":443"
 	defaultHTTPAddr = ":80"
+
+	// defaultLogFormat and the format it is checked against are the formats
+	// internal/logging builds a handler for.
+	defaultLogFormat = "text"
 )
 
 // Config holds bingle's runtime configuration.
@@ -64,6 +68,14 @@ type Config struct {
 	// that many seconds to HTTPS responses (BINGLE_TLS_HSTS_SECONDS). Off by
 	// default: browsers refuse plain HTTP for the host while it is in force.
 	HSTSSeconds int
+
+	// LogLevel is how much the server says (BINGLE_LOG_LEVEL: debug, info,
+	// warn or error; info by default). debug is the verbose mode: it adds a
+	// line per request, per WebSocket and per move.
+	LogLevel slog.Level
+	// LogFormat is "text" (the default: key=value lines) or "json", one
+	// object per line for a log collector (BINGLE_LOG_FORMAT).
+	LogFormat string
 
 	// Mail is the setup for email notifications (see Mail).
 	Mail Mail
@@ -162,8 +174,23 @@ func (c Config) TLSEnabled() bool {
 // defaults when unset.
 func Load() (Config, error) {
 	cfg := Config{
-		Addr:   defaultAddr,
-		DBPath: defaultDBPath,
+		Addr:      defaultAddr,
+		DBPath:    defaultDBPath,
+		LogFormat: defaultLogFormat,
+	}
+
+	// slog.Level parses "debug", "info", "warn" and "error" itself, in any
+	// case, and its zero value is already info.
+	if v := strings.TrimSpace(os.Getenv("BINGLE_LOG_LEVEL")); v != "" {
+		if err := cfg.LogLevel.UnmarshalText([]byte(v)); err != nil {
+			return Config{}, fmt.Errorf("config: BINGLE_LOG_LEVEL must be debug, info, warn or error, got %q", v)
+		}
+	}
+	if v := strings.ToLower(strings.TrimSpace(os.Getenv("BINGLE_LOG_FORMAT"))); v != "" {
+		if v != "text" && v != "json" {
+			return Config{}, fmt.Errorf("config: BINGLE_LOG_FORMAT must be text or json, got %q", v)
+		}
+		cfg.LogFormat = v
 	}
 
 	if v := os.Getenv("BINGLE_ADDR"); v != "" {

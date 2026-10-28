@@ -38,6 +38,8 @@ All configuration is via environment variables — there's no config file.
 | `BINGLE_ADDR` | `:8080` | Address/port to listen on |
 | `BINGLE_DB_PATH` | `./bingle.db` | Path to the SQLite database file |
 | `BINGLE_RETENTION_DAYS` | `0` (keep everything) | Delete games nobody has touched for this many days (checked hourly) |
+| `BINGLE_LOG_LEVEL` | `info` | How much the server says: `debug`, `info`, `warn` or `error`. `debug` is the verbose mode and adds a line per request. See [observability.md](observability.md) |
+| `BINGLE_LOG_FORMAT` | `text` | `text` is `key=value` lines for a person, `json` one object per line for a log collector |
 | `BINGLE_TLS_CERT` | *(unset)* | Path to a TLS certificate file |
 | `BINGLE_TLS_KEY` | *(unset)* | Path to a TLS private key file |
 | `BINGLE_PUBLIC_URL` | *(unset)* | Base URL players on other networks reach the server by, such as `https://games.example.com` (an absolute `http`/`https` URL, no query). Invite links in the lobby and `invite_url` are built from it; unset, the address the request came to is used |

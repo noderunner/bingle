@@ -66,3 +66,4 @@ Short records of choices made for the `bingle` project during the requirements i
 | [0060](0060-the-analysis-tab.md) | The Analysis tab: bot batches generalised to every game, win rates per seat and per bot with intervals, and an embedded guide to the bots |
 | [0061](0061-courtfall-odds-and-the-standard-arena.md) | Courtfall: a tested table of the odds of a dice pool, and a standard arena as a setup option (`courtfall~arena`) for quick games and for batches |
 | [0062](0062-meridians.md) | Meridians: a centreless hexagon from the generalised hexhex generator, and a ruleset where a group with no path to a friend dies |
+| [0063](0063-what-a-log-line-may-say.md) | What a log line may say: route patterns not paths, a room code as two characters and a hash, and a test that enforces it |

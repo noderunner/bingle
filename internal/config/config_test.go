@@ -1,6 +1,9 @@
 package config
 
-import "testing"
+import (
+	"log/slog"
+	"testing"
+)
 
 func TestLoad_Defaults(t *testing.T) {
 	t.Setenv("BINGLE_ADDR", "")
@@ -183,6 +186,66 @@ func TestLoad_RTC(t *testing.T) {
 		}
 		if _, err := Load(); err == nil {
 			t.Errorf("%s: want an error", name)
+		}
+	}
+}
+
+func TestLoad_Logging(t *testing.T) {
+	t.Setenv("BINGLE_LOG_LEVEL", "")
+	t.Setenv("BINGLE_LOG_FORMAT", "")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load() returned error: %v", err)
+	}
+	if cfg.LogLevel != slog.LevelInfo || cfg.LogFormat != defaultLogFormat {
+		t.Errorf("by default LogLevel = %v and LogFormat = %q, want info and %q", cfg.LogLevel, cfg.LogFormat, defaultLogFormat)
+	}
+
+	for _, c := range []struct {
+		env  string
+		want slog.Level
+		bad  bool
+	}{
+		{env: "debug", want: slog.LevelDebug},
+		{env: "DEBUG", want: slog.LevelDebug},
+		{env: "info", want: slog.LevelInfo},
+		{env: "warn", want: slog.LevelWarn},
+		{env: "error", want: slog.LevelError},
+		{env: "verbose", bad: true},
+		{env: "7", bad: true},
+	} {
+		t.Setenv("BINGLE_LOG_LEVEL", c.env)
+		cfg, err := Load()
+		switch {
+		case c.bad && err == nil:
+			t.Errorf("BINGLE_LOG_LEVEL=%q was accepted", c.env)
+		case !c.bad && err != nil:
+			t.Errorf("BINGLE_LOG_LEVEL=%q: %v", c.env, err)
+		case !c.bad && cfg.LogLevel != c.want:
+			t.Errorf("BINGLE_LOG_LEVEL=%q gave %v, want %v", c.env, cfg.LogLevel, c.want)
+		}
+	}
+	t.Setenv("BINGLE_LOG_LEVEL", "")
+
+	for _, c := range []struct {
+		env, want string
+		bad       bool
+	}{
+		{env: "json", want: "json"},
+		{env: "JSON", want: "json"},
+		{env: "text", want: "text"},
+		{env: "logfmt", bad: true},
+	} {
+		t.Setenv("BINGLE_LOG_FORMAT", c.env)
+		cfg, err := Load()
+		switch {
+		case c.bad && err == nil:
+			t.Errorf("BINGLE_LOG_FORMAT=%q was accepted", c.env)
+		case !c.bad && err != nil:
+			t.Errorf("BINGLE_LOG_FORMAT=%q: %v", c.env, err)
+		case !c.bad && cfg.LogFormat != c.want:
+			t.Errorf("BINGLE_LOG_FORMAT=%q gave %q, want %q", c.env, cfg.LogFormat, c.want)
 		}
 	}
 }

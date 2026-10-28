@@ -1,8 +1,8 @@
 # Plan: logging, metrics and a slow-request journal
 
-Status: **planned** (2026-10-28). Nothing implemented. The decisions in *What was decided*
+Status: **Stage 1 done, stages 2–7 planned** (2026-10-28). The decisions in *What was decided*
 below were taken with the owner before this was written; the rest is the reasoning and the
-staging.
+staging. What Stage 1 built is described in [docs/observability.md](../observability.md).
 
 ## Why, and the constraint that shapes everything
 
@@ -312,10 +312,16 @@ definition and go to a directory, never to the log stream.
 
 ## Staged plan
 
-**Stage 1 — logging.** `slog`, the three middlewares, the redaction helpers, the level and
-format settings, and the 18 call sites moved over. Tests: a panic returns 500 and logs once
-with a stack; the request id travels to the response header; a log-capture test fails on
-anything resembling a secret, an address, a token or a full room code.
+**Stage 1 — logging.** *Done (issue #28).* `slog`, the three middlewares, the redaction helpers,
+the level and format settings, and the 18 call sites moved over. Tests: a panic returns 500 and
+logs once with a stack; the request id travels to the response header; a log-capture test fails on
+anything resembling a secret, an address, a token or a full room code. Two things came out
+differently from the design above: the **recover middleware goes inside the access log, not
+outside it** (a panic unwinds past every middleware outside the one that recovers, so with the
+recover first a panicking request would be the one request never logged as a request — and, from
+Stage 2, never counted), and a **WebSocket is logged when it is accepted and when it closes**
+rather than as one request whose duration measures the whole visit. The redaction policy became
+ADR 0063, which Stage 2's label whitelist inherits.
 
 **Stage 2 — metrics and the listener.** `internal/metrics` with the custom registry, the
 HTTP middleware, the Go and process collectors, the second listener (and its token path),
@@ -381,6 +387,9 @@ either shows up, the span cap and the sample interval are the dials.
 
 ## Status log
 
+- 2026-10-28: Stage 1 landed: `internal/logging` (the logger, the redaction helpers and the three
+  middlewares), `BINGLE_LOG_LEVEL` and `BINGLE_LOG_FORMAT`, the 18 call sites, ADR 0063 and
+  `docs/observability.md`. A panic in a handler is recorded for the first time.
 - 2026-10-28: plan written after a design discussion. Decisions settled:
   `prometheus/client_golang` with a custom registry, a separate localhost metrics listener,
   client-side error collection, the slow-request journal instead of OTEL for now, and a
