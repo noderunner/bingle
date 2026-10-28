@@ -4,6 +4,23 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    ignore:
+      # chromedp and cdproto drive the browser tests and are not in the
+      # shipped binary (`go list -deps .` names neither). chromedp 0.21
+      # redesigned its API — Action became a generic function type, Run takes
+      # one action and returns its value, Tasks became Steps, Evaluate is
+      # generic — which is 214 Run call sites here, 102 of them with an
+      # Evaluate out-parameter across some 40 files. cdproto cannot move on
+      # its own either: its newer versions drop the input.Key* constants
+      # chromedp 0.16 itself uses, so the pair moves together or not at all.
+      # Deferred deliberately (2026-10-28) and recorded in
+      # docs/history/code-and-architecture-audit-plan.md; patch releases of
+      # the pinned line are still proposed. If a pseudo-version bump of
+      # cdproto still arrives, widen this to the whole dependency.
+      - dependency-name: github.com/chromedp/chromedp
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
+      - dependency-name: github.com/chromedp/cdproto
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: /
     schedule:
