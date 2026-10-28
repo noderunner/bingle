@@ -22,6 +22,7 @@ vocabulary and [mcp.md](mcp.md) for the training side (planes, action IDs).
 | **Havannah** (`havannah-8`) | 0.2.0 | hexagon, 8 per side | 2 | place | connect, end/draw, ring | `havannah-10` `havannah-4` `havannah-6` `havannah-8` |
 | **Hex** (`hex-11`) | 0.2.0 | hex 11×11 | 2 | place, swap | connect | `hex-11` `hex-13` `hex-7` `hex-9` |
 | **Hive** (`hive`) | 0.1.0 | hexagon, 10 per side | 2 | ruleset (Go) | victory points | `hive` `hive-base` |
+| **Meridians** (`meridians`) | 0.1.0 | hexagon, 6 and 7 per side | 2 | ruleset (Go) | victory points | `meridians` `meridians-5` `meridians-7` |
 | **Nyet!** (`nyet`) | 0.2.0 | 1×1 squares | 4 | ruleset (Go) | victory points | `nyet` `nyet-2` `nyet-3` `nyet-5` |
 | **Onitama** (`onitama`) | 0.1.0 | 5×5 squares | 2 | ruleset (Go) | victory points |  |
 | **Pente** (`pente`) | 0.2.0 | 13×13 points | 2 | place | end/draw, line, pool |  |

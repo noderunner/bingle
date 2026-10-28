@@ -126,7 +126,7 @@ Served by the same binary as static assets plus lightweight JS (no SPA build pip
   document), `classics` (Tic-Tac-Toe, Connect Four, Gomoku, Hex, Draughts,
   Breakthrough, Reversi, Go, Yavalath, Havannah, Amazons, Ataxx, Pente,
   Brandubh), `courtfall` (a Go ruleset with a JSON legend,
-  [courtfall.md](courtfall.md)), `fist` and `onitama` (Go rulesets, one move per turn), `blooms` (a Go ruleset, a turn of one or two placements), `hive` (a Go ruleset with stacks on a large hex field), `fendo` (a Go ruleset whose fences travel in the view), `yinsh` (a Go ruleset on an explicit 85-point graph), `nyet` (a Go ruleset on the card framework in `internal/engine/cards`),
+  [courtfall.md](courtfall.md)), `fist` and `onitama` (Go rulesets, one move per turn), `blooms` (a Go ruleset, a turn of one or two placements), `hive` (a Go ruleset with stacks on a large hex field), `fendo` (a Go ruleset whose fences travel in the view), `yinsh` (a Go ruleset on an explicit 85-point graph), `meridians` (a Go ruleset on a hexagon with no middle point, where a group that can see no friend dies), `nyet` (a Go ruleset on the card framework in `internal/engine/cards`),
   `cthulhuwars` (up to five of six cults on an area map
   with an embedded Markdown rules guide and setup options that derive a game
   per table, [cthulhu-wars.md](cthulhu-wars.md)).
