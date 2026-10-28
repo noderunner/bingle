@@ -111,3 +111,20 @@ browsers with Chrome's fake microphone (`--use-fake-ui-for-media-stream
 --use-fake-device-for-media-stream`) and checks two- and three-player calls, mute, deafen,
 push to talk and the refusal messages. Not covered by tests: the 45-second expiry, and
 connections through a TURN relay or a strict NAT (try two real machines).
+
+## The call of a direct message
+
+A call between two people who are not at the same table works the same way, with
+a person's **address** in place of a seat (see [api.md](api.md) and ADR 0059):
+`js/dm-call.js` keeps one `RTCPeerConnection`, the lower of the two addresses
+makes the offer, and `POST /api/dm/signal` relays the offer, the answer and the
+candidates to the other browser's `/ws-dm` socket. It borrows the microphone and
+the ICE servers from `js/voice.js` (`micStream`, `iceServers`), so both kinds of
+call ask for the same thing of the browser.
+
+**A person talks in one place at a time.** A browser that sends its secret when
+joining — a game's call or a direct one — is held to a single call: joining a new
+one takes it out of the old and tells it (the room gets a `voice` leave for that
+seat, the other end of a direct call a `dm-call` end marked `dropped`). The page
+that was dropped takes its call down and says why. An API client that sends no
+secret is not tracked.

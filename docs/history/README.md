@@ -13,3 +13,5 @@ truth, and [decisions/](../decisions/README.md) records what was decided and why
 | [email-notifications-plan.md](email-notifications-plan.md) | The plan and threat model for email notifications |
 | [batch-practice-plan.md](batch-practice-plan.md) | The plan for practice batches and bot tuning |
 | [auth-and-accounts-plan.md](auth-and-accounts-plan.md) | The plan for accounts, capabilities and a secure transport |
+| [observability-plan.md](observability-plan.md) | The plan for logging, metrics and the slow-request journal |
+

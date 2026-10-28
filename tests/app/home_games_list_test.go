@@ -95,11 +95,17 @@ func TestHomeGames_ListShowsBetaPlayersAndADetailsCard(t *testing.T) {
 	if got := evalString(t, ctx, `document.getElementById("game-tip").textContent`); strings.Contains(got, "Publisher") || strings.Contains(got, "null") {
 		t.Errorf("the Blooms card names a publisher nobody gave: %q", got)
 	}
-	// The setup of a game: the rules button just says Rules.
+	// The setup of a game: the rules button is the rule book, named Rules.
 	clickSel(t, ctx, `.game-card[data-family="tak-5x5"]`)
 	waitJS(t, ctx, "setup", `!document.getElementById("game-setup").hidden`, 5*time.Second)
-	if got := evalString(t, ctx, `document.getElementById("game-rules-button").textContent.trim()`); got != "Rules" {
-		t.Errorf("the rules button says %q", got)
+	if n := evalInt(t, ctx, `document.querySelectorAll('#game-rules-button svg[data-icon="rules"]').length`); n != 1 {
+		t.Errorf("the rules button does not carry the rule book (%d)", n)
+	}
+	if got := evalString(t, ctx, `document.getElementById("game-rules-button").getAttribute("aria-label")`); got != "Rules" {
+		t.Errorf("the rules button is named %q", got)
+	}
+	if got := evalString(t, ctx, `document.getElementById("game-rules-button").textContent.trim()`); got != "" {
+		t.Errorf("the rules button still holds the word %q", got)
 	}
 	if evalBool(t, ctx, `!document.getElementById("game-tip").hidden`) {
 		t.Error("the details card stays open after a game is picked")
@@ -114,7 +120,7 @@ func TestHomeGames_EmptyStartsShowASampleGame(t *testing.T) {
 	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/"), chromedp.WaitVisible(`.game-card[data-family="tak-5x5"]`, chromedp.ByQuery)); err != nil {
 		t.Fatal(err)
 	}
-	for _, family := range []string{"gomoku", "yavalath", "go-9x9", "hex-11", "havannah-8", "pente", "connect-four", "tic-tac-toe", "tak-5x5", "blooms", "yinsh", "courtfall"} {
+	for _, family := range []string{"gomoku", "yavalath", "go-9x9", "hex-11", "havannah-8", "pente", "connect-four", "tic-tac-toe", "tak-5x5", "blooms", "yinsh", "courtfall", "meridians"} {
 		waitJS(t, ctx, family+": pieces on the card", fmt.Sprintf(`document.querySelectorAll('.game-card[data-family=%q] .game-card-preview svg .piece').length >= 4`, family), 20*time.Second)
 	}
 	// Nyet! has no board: a picture of cards.

@@ -65,6 +65,19 @@ type Deriver interface {
 	FromSuffix(base *dsl.GameDefinition, suffix string) (patch map[string]any, err error)
 }
 
+// deriverFor returns what builds the derived games of a base game: the
+// ruleset's own Deriver, or the built-in one of the pie-rule option for a game
+// whose only choice that is.
+func deriverFor(src source, base *CompiledGame) (Deriver, bool) {
+	if d, ok := src.mod.Rules.(Deriver); ok {
+		return d, true
+	}
+	if base != nil && pieChoice(base.Definition.PieRule) {
+		return pieDeriver{}, true
+	}
+	return nil, false
+}
+
 // source remembers the document and module a registered game came from, so a
 // game derived from it can be built later.
 type source struct {
@@ -158,6 +171,11 @@ func (c *Catalog) RegisterWith(id string, defJSON []byte, cb callback.GameCallba
 		return fmt.Errorf("catalog: game %q has version %q, which is not major.minor.patch", id, def.Version)
 	}
 
+	// The pie rule brings an action and a setup option with it (ADR 0056).
+	if err := applyPieRule(id, def); err != nil {
+		return err
+	}
+
 	g, err := resolveBoard(def)
 	if err != nil {
 		return err
@@ -245,13 +263,17 @@ func (c *Catalog) Derive(baseID string, options map[string]any) (string, error) 
 	if !ok || base == nil {
 		return "", fmt.Errorf("catalog: game %q takes no setup options", baseID)
 	}
-	d, ok := src.mod.Rules.(Deriver)
+	d, ok := deriverFor(src, base)
 	if !ok {
 		return "", fmt.Errorf("catalog: game %q takes no setup options", baseID)
 	}
 	suffix, _, err := d.Derive(base.Definition, options)
 	if err != nil {
 		return "", err
+	}
+	if suffix == "" {
+		// The options describe the game's own layout: there is nothing to derive.
+		return baseID, nil
 	}
 	id := baseID + DerivedSep + suffix
 	if _, err := c.derive(baseID, suffix, options); err != nil {
@@ -277,7 +299,7 @@ func (c *Catalog) derive(baseID, suffix string, options map[string]any) (*Compil
 	if !ok || base == nil {
 		return nil, fmt.Errorf("catalog: no game %q to derive from", baseID)
 	}
-	d, ok := src.mod.Rules.(Deriver)
+	d, ok := deriverFor(src, base)
 	if !ok {
 		return nil, fmt.Errorf("catalog: game %q takes no setup options", baseID)
 	}

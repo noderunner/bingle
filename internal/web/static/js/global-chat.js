@@ -1,13 +1,23 @@
 // The global chat room of the home page: one room everybody who opens the page
 // can read and write in, like the table talk of a game but without a game.
 // New messages arrive over a WebSocket (/ws-chat); the page keeps the draft and
-// counts the messages that came in while another tab was showing.
+// counts the messages the person has not read — those that came in while
+// another tab was showing, and those said while this browser was away, as the
+// last message it has shown is remembered (localStorage bingle.chat.seen).
 
 import { h, store, lastName } from "./util.js";
 import { api } from "./api.js";
 import { emojiPicker } from "./chat.js";
 
 const MAX_LINES = 300;
+
+// The id of the newest message this browser has shown its person.
+const SEEN_KEY = "bingle.chat.seen";
+
+function lastSeenID() {
+	const v = store.get(SEEN_KEY, 0);
+	return typeof v === "number" ? v : 0;
+}
 
 function clock(iso) {
 	// SQLite stores "YYYY-MM-DD HH:MM:SS" in UTC.
@@ -23,6 +33,17 @@ export function mountGlobalChat(host, { visible = () => true, onUnread = () => {
 	const lines = [];
 	let unread = 0;
 	let sending = false;
+	let seenID = lastSeenID();
+
+	// Everything on screen has been read, up to the newest line.
+	const markSeen = () => {
+		if (!lines.length) return;
+		const newest = lines[lines.length - 1].id;
+		if (newest > seenID) {
+			seenID = newest;
+			store.set(SEEN_KEY, newest);
+		}
+	};
 
 	const log = h("ol", { class: "chat-log", id: "global-chat-log", "aria-live": "polite", "aria-label": "Global chat messages" });
 	const nameInput = h("input", {
@@ -74,7 +95,19 @@ export function mountGlobalChat(host, { visible = () => true, onUnread = () => {
 		log.querySelector(".chat-empty")?.remove();
 		log.append(lineNode(line));
 		if (atEnd || mine) log.scrollTop = log.scrollHeight;
-		if (!mine && !quiet && !visible()) onUnread(++unread);
+		const read = visible() && !quiet;
+		// A line the person wrote themselves is read, even one read back out of
+		// the history in a later visit.
+		const own = nameInput.value.trim();
+		if (own && line.name && line.name.toLowerCase() === own.toLowerCase()) mine = true;
+		if (!mine && !read) {
+			// Unread: either it came while another tab was showing, or it was
+			// said before this browser last looked (history, quiet) and is
+			// newer than the last message shown.
+			if (!quiet || line.id > seenID) onUnread(++unread);
+		} else if (read) {
+			markSeen();
+		}
 	};
 	const say = async () => {
 		const text = input.value.trim();
@@ -89,6 +122,7 @@ export function mountGlobalChat(host, { visible = () => true, onUnread = () => {
 		try {
 			const line = await api.sayGlobal(name, text);
 			input.value = "";
+			markSeen();
 			// The server's push may arrive first; receive ignores repeats.
 			receive(line, true);
 		} catch (err) {
@@ -159,6 +193,7 @@ export function mountGlobalChat(host, { visible = () => true, onUnread = () => {
 		seen() {
 			unread = 0;
 			onUnread(0);
+			markSeen();
 			log.scrollTop = log.scrollHeight;
 		},
 		focus: () => (nameInput.value.trim() ? input : nameInput).focus(),

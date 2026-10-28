@@ -269,3 +269,81 @@ func TestCourtfallAgainstABotPlaysThroughSetupAndTurns(t *testing.T) {
 		t.Errorf("scoreboards missing: %+v", st.State.Ext.View.Seats)
 	}
 }
+
+// Courtfall offers one setup option: the standard arena instead of the ten-tile
+// draft. A table that takes it plays a game of its own, which starts at the
+// choice of Courts with the terrain already down.
+func TestCourtfall_TheStandardArenaIsASetupOption(t *testing.T) {
+	baseURL := newRESTTestServer(t)
+	var def struct {
+		Options []struct {
+			ID      string `json:"id"`
+			Kind    string `json:"kind"`
+			Label   string `json:"label"`
+			Default any    `json:"default"`
+		} `json:"options"`
+	}
+	if code := doJSON(t, "GET", baseURL+"/api/game-defs/courtfall", nil, &def); code != 200 {
+		t.Fatalf("game def: %d", code)
+	}
+	if len(def.Options) != 1 || def.Options[0].ID != "standard-arena" || def.Options[0].Kind != "bool" || def.Options[0].Default == true {
+		t.Fatalf("the options are %+v, want one check box that starts off", def.Options)
+	}
+
+	open := func(options map[string]any) (string, string) {
+		var created struct {
+			RoomCode string `json:"room_code"`
+		}
+		body := map[string]any{"game_def_id": "courtfall", "player_name": "Ana", "also_seats": []int{2}}
+		if options != nil {
+			body["options"] = options
+		}
+		if code := doJSON(t, "POST", baseURL+"/api/games", body, &created); code != 200 {
+			t.Fatalf("create with %v: %d", options, code)
+		}
+		var game struct {
+			GameDefID string `json:"game_def_id"`
+		}
+		doJSON(t, "GET", baseURL+"/api/games/"+created.RoomCode, nil, &game)
+		return created.RoomCode, game.GameDefID
+	}
+
+	// With the option: its own game, the terrain down, and Courts to choose.
+	room, id := open(map[string]any{"standard-arena": true})
+	if id != "courtfall~arena" {
+		t.Fatalf("the game is %q, want courtfall~arena", id)
+	}
+	var st struct {
+		State struct {
+			Ext struct {
+				Phase string            `json:"phase"`
+				Tiles map[string]string `json:"tiles"`
+			} `json:"ext"`
+		} `json:"state"`
+	}
+	if code := doJSON(t, "GET", baseURL+"/api/games/"+room+"/state", nil, &st); code != 200 {
+		t.Fatalf("state: %d", code)
+	}
+	if st.State.Ext.Phase != "court" || len(st.State.Ext.Tiles) != 10 {
+		t.Errorf("the game starts as %q with %d tiles", st.State.Ext.Phase, len(st.State.Ext.Tiles))
+	}
+	// Without it, the draft is where the game starts, under the plain id.
+	room, id = open(nil)
+	if id != "courtfall" {
+		t.Errorf("a game without the option is %q", id)
+	}
+	// (A fresh value: decoding into the old one would keep its tiles, as JSON
+	// fills a map rather than replacing it.)
+	var plain struct {
+		State struct {
+			Ext struct {
+				Phase string            `json:"phase"`
+				Tiles map[string]string `json:"tiles"`
+			} `json:"ext"`
+		} `json:"state"`
+	}
+	doJSON(t, "GET", baseURL+"/api/games/"+room+"/state", nil, &plain)
+	if plain.State.Ext.Phase != "terrain" || len(plain.State.Ext.Tiles) != 0 {
+		t.Errorf("the plain game starts as %q with %d tiles", plain.State.Ext.Phase, len(plain.State.Ext.Tiles))
+	}
+}

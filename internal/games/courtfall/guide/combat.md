@@ -30,6 +30,30 @@ Ties go to defense. A pool with zero dice scores zero successes — total commit
 
 The arithmetic is the message: an unsupported attack at 6+ barely lands, a flank at 5+ is credible, and a flank against a worn unit at 4+ is a genuine threat. You don't roll your way into hits in this game — you *maneuver* your way into them.
 
+## The odds
+
+What a pool is worth, in percent. The row is the success number your Edges have earned you, the
+column how many dice you are rolling, and the figures in a cell are the chance of **at least** one
+success, then at least two, and so on — so `88/50/12` means three dice at 4+ land one success 88%
+of the time, two 50%, and all three 12%.
+
+| | 1 die | 2 dice | 3 dice | 4 dice |
+|---|---|---|---|---|
+| **4+** | 50 | 75/25 | 88/50/12 | 94/69/31/6 |
+| **5+** | 33 | 56/11 | 70/26/4 | 80/41/11/1 |
+| **6+** | 17 | 31/3 | 42/7/<1 | 52/13/2/<1 |
+
+Four dice is the cap, and Mire takes one away. Read it in pairs, because that is how an Exchange
+works: a Hit needs **strictly more** successes than the other pool, and ties go to defence. Three
+attack dice at 6+ (42% for one success) against two defence dice at 6+ (31% for one, 3% for two)
+is nearly an even fight that mostly produces nothing; the same three dice at 4+ (88/50/12) against
+those two is a different game altogether.
+
+Two things the table does not show, and they both matter. A pool of **zero** dice scores nothing at
+all, so an all-in attack hands the enemy any success they roll. And a **reroll** bought with
+Momentum is worth most where the odds are worst: a sixth of a die at 6+, a half at 4+ — one
+Momentum turns a 42% pool of three into roughly a 52% one.
+
 ---
 
 ## 7. Hits

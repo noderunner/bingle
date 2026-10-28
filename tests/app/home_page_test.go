@@ -35,8 +35,9 @@ func TestHomePage_IsTabbedAndTidy(t *testing.T) {
 	if got := evalString(t, ctx, `getComputedStyle(document.getElementById("fun-fact")).fontStyle`); got != "italic" {
 		t.Errorf("fun fact font-style = %q, want italic", got)
 	}
-	// Three tabs, Games first.
-	if got := evalString(t, ctx, `[...document.querySelectorAll('[role="tab"]')].map((x) => x.firstChild.textContent.trim()).join("|")`); got != "Games|Puzzles|Global Chat" {
+	// The tabs of the page itself, Games first. (The windows of the top bar
+	// have tabs of their own, in their own tablists.)
+	if got := evalString(t, ctx, `[...document.getElementById("tab-games").parentElement.querySelectorAll('[role="tab"]')].map((x) => x.firstChild.textContent.trim()).join("|")`); got != "Games|Puzzles|Analysis|Global Chat" {
 		t.Errorf("tabs = %q", got)
 	}
 	if !evalBool(t, ctx, `document.getElementById("tab-games").getAttribute("aria-selected") === "true" && document.getElementById("panel-puzzles").hidden`) {

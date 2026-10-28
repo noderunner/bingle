@@ -17,7 +17,7 @@
 // than the game of the call; the top bar then carries a button for the call
 // (topbar.js), and the card of the other game says where the call is.
 
-import { h, store } from "./util.js";
+import { h, store, sessionSecret, toast } from "./util.js";
 import { api, ApiError } from "./api.js";
 import { setKeepAlive, untracked, onNavigate } from "./nav.js";
 
@@ -359,6 +359,13 @@ export function voiceEvent(env, code) {
 	} else if (d.kind === "leave") {
 		V.roster.delete(d.seat);
 		if (d.seat !== V.me.seat) closePeer(d.seat);
+		else if (V.joined) {
+			// The server took us out of this call: a person talks in one place
+			// at a time, and we have joined another (a game, or somebody's
+			// direct call).
+			teardown();
+			toast("You left the voice chat of this game: you are in another call.");
+		}
 	}
 	paint();
 	return true;
@@ -438,6 +445,23 @@ function closeSocket() {
 
 // ---- joining and leaving ----------------------------------------------------------------
 
+/**
+ * The microphone, opened the way a call wants it. The direct calls of
+ * js/dm-call.js borrow it, so that both kinds of call ask for the same thing.
+ */
+export async function micStream() {
+	return openMicrophone();
+}
+
+/** The ICE servers the server offers (empty when it offers none). */
+export async function iceServers() {
+	try {
+		return (await api.rtcConfig()).ice_servers || [];
+	} catch (_) {
+		return [];
+	}
+}
+
 async function openMicrophone() {
 	const audio = { echoCancellation: true, noiseSuppression: true, autoGainControl: true };
 	if (prefs.input) audio.deviceId = { ideal: prefs.input };
@@ -483,10 +507,10 @@ async function join() {
 		// The socket first: the others offer the moment they hear we are in, and a message
 		// for a seat nobody listens for is lost.
 		await untracked(openSocket);
-		const r = await api.setVoice(V.code, V.me.name, true);
+		const r = await api.setVoice(V.code, V.me.name, true, sessionSecret());
 		untracked(() => {
 			V.beat = window.setInterval(() => {
-				api.setVoice(V.code, V.me.name, true)
+				api.setVoice(V.code, V.me.name, true, sessionSecret())
 					.then((x) => syncRoster(x.peers))
 					.catch(() => {});
 			}, HEARTBEAT_MS);
@@ -521,7 +545,7 @@ export function leaveVoice({ quiet = false } = {}) {
 	const code = V.code;
 	const name = V.me.name;
 	teardown();
-	if (!quiet) api.setVoice(code, name, false).catch(() => {});
+	if (!quiet) api.setVoice(code, name, false, sessionSecret()).catch(() => {});
 	adoptViewing();
 	paint();
 	if (viewing.code) voiceResync(viewing.code);

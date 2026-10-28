@@ -51,6 +51,8 @@ type moveEventData struct {
 	// ServerTime the server's clock, for timed games.
 	TurnDeadline string `json:"turn_deadline,omitempty"`
 	ServerTime   string `json:"server_time,omitempty"`
+	// Clock is the game clock after the move, for a game played with one.
+	Clock *ClockSnapshot `json:"clock,omitempty"`
 
 	// Auto: the server played the move for a person (a reaction they chose
 	// to pass automatically). AutoPlay: a tactical bot played it for a person
@@ -83,9 +85,10 @@ type stateEventData struct {
 	Lobby    bool `json:"lobby,omitempty"`
 	HostSeat int  `json:"host_seat,omitempty"`
 
-	MoveTimeLimit int    `json:"move_time_seconds,omitempty"`
-	TurnDeadline  string `json:"turn_deadline,omitempty"`
-	ServerTime    string `json:"server_time,omitempty"`
+	MoveTimeLimit int            `json:"move_time_seconds,omitempty"`
+	TurnDeadline  string         `json:"turn_deadline,omitempty"`
+	ServerTime    string         `json:"server_time,omitempty"`
+	Clock         *ClockSnapshot `json:"clock,omitempty"`
 
 	// DrawOfferSeat is the seat currently offering a draw (null if none).
 	DrawOfferSeat *int `json:"draw_offer_seat"`
@@ -126,6 +129,7 @@ func stateEventFrom(snap StateSnapshot, reason string, removed []int) stateEvent
 		BoardState:    json.RawMessage(snap.BoardState),
 		State:         json.RawMessage(snap.State),
 		MoveTimeLimit: snap.MoveTimeLimit,
+		Clock:         snap.Clock,
 		ServerTime:    snap.ServerTime.Format(time.RFC3339),
 		DrawOfferSeat: snap.DrawOfferSeat,
 
