@@ -220,7 +220,7 @@ because the runners have two cores and the suite is dominated by two packages:
 |---|---|---|
 | `lint` | `gofmt -l`, `go vet ./...`, `golangci-lint run` | |
 | `unit` | `go build ./...`, every package except `tests/app` and `tests/batch`, then the smoke test | ~1 minute of tests |
-| `browser` | `tests/app`, split four ways by `$BINGLE_TEST_SHARD` | ~2.5 minutes per shard |
+| `browser` | `tests/app`, split four ways by `$BINGLE_TEST_SHARD`; the Cthulhu Wars interface tests only on a full run | ~2 minutes per shard |
 | `sims` | `tests/batch` — short on a pull request, in full on main and nightly | 1 or 6 minutes |
 | `container` | the container image and `/healthz` against it | |
 | `ci` | nothing: it is green only when all of the above are | |
@@ -230,23 +230,52 @@ Measured on two pinned cores, which is what a free runner gives: `tests/app` tak
 split over four runners, the simulations get a runner of their own, and everything else shares one.
 A pull request finishes in the time of its slowest job rather than the sum of all of them.
 
-Two things follow from this that are worth knowing:
+Three things follow from this that are worth knowing:
 
 - **A pull request does not play the long bot simulations.** `tests/batch` runs with `-short`, which
   keeps the batch machinery, determinism and metrics tests and skips `TestBatchThroughput` (24 whole
   games of Cthulhu Wars) and `TestTunerRunsEndToEnd`. They measure throughput rather than
   correctness, and they run in full on every push to main and every night. Run them yourself with
   `make test-sims` when touching the bots, the batch runner or the tuner.
+- **A pull request does not run the Cthulhu Wars interface tests.** See below: they are 56 of the
+  172 browser tests, they drive one game's interface, and both CI failures the new workflow has
+  seen so far came from one of them. `make test-cw-ui` runs them, and so do main, the nightly run
+  and a manual run.
 - **Chrome is no longer competing with the bot simulations.** In one job the browser tests and the
   simulations ran side by side on two cores, which is the condition that made the browser tests
   flaky; each browser shard now has a runner to itself.
 
 Pushing again to a pull request cancels the run in progress.
 
+### The Cthulhu Wars interface tests
+
+`$BINGLE_TEST_CW_UI` turns them on; they are skipped without it:
+
+```sh
+make test-cw-ui                        # just those
+make test                              # the whole suite sets it for you
+BINGLE_TEST_CW_UI=1 make test-browser   # the browser suite with them in
+```
+
+Run them before pushing a change to Cthulhu Wars, or to anything they share with the rest of the
+interface — the game page, the options and rules windows, the dock, the seat strips, the home
+page's tables.
+
+**The rule is a test's name, not its file.** A `TestWebCthulhuWars...` test is gated wherever it
+lives, which is how the phone-layout test in `mobile_ui_test.go` is covered; and ten browser tests
+that live in the `cthulhuwars_*_ui_test.go` files are *not* gated, because what they exercise is
+shared code reached through a Cthulhu Wars table: the Markdown renderer's safety, the rules window,
+the lobby, and the home page's layouts and seat choices. A new Cthulhu Wars interface test has to
+be named `TestWebCthulhuWars...` to be covered by the gate.
+
+Everything else about the game runs everywhere, which is most of what pins its rules: the 276 tests
+in `tests/cthulhuwars`, and its REST and MCP surface in `tests/app`.
+
 ### Sharding the browser suite
 
 `$BINGLE_TEST_SHARD` is `i/n`: the run keeps the browser tests whose name hashes into bucket `i` of
-`n` and skips the others. The check lives in `newChromedpContextWith`, which every browser test
+`n` and skips the others. It composes with the gate above — the Cthulhu Wars tests spread over the
+shards on the runs that play them. The check lives in `newChromedpContextWith`, which every browser test
 calls, so a new test joins a shard on its own and the buckets stay even — `tests/app/shard_test.go`
 asserts that they do, and prints the distribution:
 

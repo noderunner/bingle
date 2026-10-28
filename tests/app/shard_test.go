@@ -9,6 +9,39 @@ import (
 	"testing"
 )
 
+// cwUIEnv turns the Cthulhu Wars browser tests back on. They are 56 of the 172
+// browser tests — a third of the longest part of the suite — and what they
+// drive is one game's interface, so they are run deliberately when that game
+// or the shared UI changes rather than on every pull request:
+//
+//	make test-cw-ui
+//
+// Everything else about Cthulhu Wars still runs everywhere: its rules
+// (tests/cthulhuwars, 276 tests), its REST and MCP surface, and the browser
+// tests that merely use a Cthulhu Wars table to exercise shared code.
+const cwUIEnv = "BINGLE_TEST_CW_UI"
+
+// skipCthulhuWarsUI skips a TestWebCthulhuWars* test unless $BINGLE_TEST_CW_UI
+// is set.
+//
+// The rule is the test's name, not the file it is in, and deliberately so: ten
+// of the browser tests in the cthulhuwars_*_ui_test.go files are about shared
+// code that happens to be reached through a Cthulhu Wars table — the Markdown
+// renderer's safety, the rules window, the lobby, the home page's layouts and
+// seat choices — and they keep running everywhere. A new Cthulhu Wars UI test
+// therefore has to be named TestWebCthulhuWars... to be covered by this, which
+// is also how the phone-layout test in mobile_ui_test.go is covered.
+func skipCthulhuWarsUI(t *testing.T) {
+	t.Helper()
+
+	if !strings.HasPrefix(t.Name(), "TestWebCthulhuWars") {
+		return
+	}
+	if os.Getenv(cwUIEnv) == "" {
+		t.Skipf("the Cthulhu Wars UI tests are off by default: set %s=1, or run `make test-cw-ui`", cwUIEnv)
+	}
+}
+
 // shardSpec is the "i/n" in $BINGLE_TEST_SHARD: this process runs the browser
 // tests in bucket i of n and skips the rest. CI uses it to spread the browser
 // suite over several runners at once, which is the only part of the suite long

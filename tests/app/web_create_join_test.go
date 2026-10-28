@@ -69,6 +69,7 @@ func newChromedpContextWith(t *testing.T, timeout time.Duration, extra ...chrome
 	if testing.Short() {
 		t.Skip("browser tests are skipped with -short")
 	}
+	skipCthulhuWarsUI(t)
 	skipOtherShards(t)
 	browser := findBrowser()
 	if browser == "" {
