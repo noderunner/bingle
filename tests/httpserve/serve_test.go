@@ -17,6 +17,8 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -30,25 +32,57 @@ var okHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write([]byte("ok"))
 })
 
-// freeAddr asks the OS for a free TCP port on 127.0.0.1, returning the
-// "host:port" string. httpserve.Config has no way to accept an
-// already-open net.Listener, so the only way to hand Serve a guaranteed-free
-// port is to open a listener ourselves just to discover the port number,
-// then close it immediately and pass that exact address to Serve. This is
-// inherently racy (another process could steal the port in between) but is
-// the standard Go testing idiom for this situation and is exceedingly
-// unlikely to flake in practice.
+// The window test ports are taken from. It sits below the ephemeral ports
+// the kernel hands out for outgoing connections (Linux's default range is
+// 32768-60999, macOS's 49152-65535), which is the whole point: see freeAddr.
+const (
+	portWindowBase = 14000
+	portWindowSize = 2000
+)
+
+// nextPort walks the window. It starts somewhere derived from the process id,
+// because `go test ./...` runs packages in parallel processes and two of them
+// setting off from the same place would walk into each other.
+var nextPort = func() *atomic.Uint32 {
+	var n atomic.Uint32
+	n.Store(uint32(os.Getpid()) * 7)
+	return &n
+}()
+
+// freeAddr returns a 127.0.0.1 address nothing is listening on, for a server
+// that binds by address — httpserve.Config cannot accept an already-open
+// net.Listener, so a test has to name a port before Serve binds it.
+//
+// It deliberately does NOT ask the kernel for one (listen on :0, read the
+// port, close). The port that comes back is from the ephemeral range, and
+// between the close and Serve's bind the kernel can hand that very port to
+// one of the many outgoing connections these tests make — the ACME probes to
+// the fake certificate authority, the TLS dials, the HTTP polling. That is
+// not theoretical: it is how this package failed in CI, either as
+// "bind: address already in use" on the redirect listener or as a listener
+// that never came up at all, and every port in those failures was inside
+// 32768-60999.
+//
+// So ports come from a fixed window below the ephemeral range instead, one at
+// a time and never the same one twice in a row: nothing the kernel allocates
+// can land on one, and no second call can return one that is still in use.
+// Each candidate is still bound once to check that nothing else on the
+// machine has it.
 func freeAddr(t *testing.T) string {
 	t.Helper()
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatalf("freeAddr: listen: %v", err)
+	for try := 0; try < portWindowSize; try++ {
+		addr := net.JoinHostPort("127.0.0.1", strconv.Itoa(portWindowBase+int(nextPort.Add(1)%portWindowSize)))
+		ln, err := net.Listen("tcp", addr)
+		if err != nil {
+			continue // something else on this machine has it
+		}
+		if err := ln.Close(); err != nil {
+			t.Fatalf("freeAddr: close %s: %v", addr, err)
+		}
+		return addr
 	}
-	addr := ln.Addr().String()
-	if err := ln.Close(); err != nil {
-		t.Fatalf("freeAddr: close: %v", err)
-	}
-	return addr
+	t.Fatalf("freeAddr: nothing free in %d-%d", portWindowBase, portWindowBase+portWindowSize-1)
+	return ""
 }
 
 // waitForHTTP polls url (expected to eventually succeed) with the given
@@ -70,6 +104,20 @@ func waitForHTTP(t *testing.T, client *http.Client, url string) *http.Response {
 	t.Fatalf("waitForHTTP: %s never became reachable: %v", url, lastErr)
 	return nil
 }
+
+// shutdownBudget is how long a graceful shutdown may take before a test calls
+// it a hang.
+//
+// It has to clear net/http's own rule, not just bingle's work: Server.Shutdown
+// treats a connection that has been accepted but has not yet sent its first
+// request header as abandonable only once it is more than five seconds old
+// (the StateNew case in closeIdleConns, Go issue 22682). These tests leave
+// exactly such connections behind — warmCertificates is dialling and
+// handshaking against the TLS port in the background for up to two minutes,
+// and TestServe_ACME_RefusesOtherNames dials it directly. A shutdown with one
+// of those in flight takes a little over five seconds every time, so the five
+// seconds this used to allow was a coin toss, and it is what failed in CI.
+const shutdownBudget = 30 * time.Second
 
 // runServeAndCancel starts httpserve.Serve(ctx, cfg, handler) in a
 // goroutine, waits for probe() to succeed (server is up), then cancels ctx
@@ -95,8 +143,8 @@ func runServeAndCancel(t *testing.T, cfg httpserve.Config, handler http.Handler,
 		if err != nil {
 			t.Fatalf("Serve returned non-nil error after context cancellation: %v", err)
 		}
-	case <-time.After(5 * time.Second):
-		t.Fatal("Serve did not return within 5s of context cancellation")
+	case <-time.After(shutdownBudget):
+		t.Fatalf("Serve did not return within %s of context cancellation", shutdownBudget)
 	}
 }
 
