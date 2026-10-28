@@ -12,3 +12,4 @@ truth, and [decisions/](../decisions/README.md) records what was decided and why
 | [webrtc-tls-plan.md](webrtc-tls-plan.md) | The plan for native TLS and voice chat |
 | [email-notifications-plan.md](email-notifications-plan.md) | The plan and threat model for email notifications |
 | [batch-practice-plan.md](batch-practice-plan.md) | The plan for practice batches and bot tuning |
+| [observability-plan.md](observability-plan.md) | The plan for logging, metrics and the slow-request journal |
