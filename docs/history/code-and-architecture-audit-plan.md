@@ -39,7 +39,8 @@ fan-out, dead code and unused exports (`staticcheck`'s unused passes plus the `d
 duplication across the ten game packages, and the slowest and flakiest tests. Facts first,
 opinions second, patches third.
 
-**The candidates I would expect it to find, stated now so the audit can confirm or refute them:**
+**The candidates I would expect it to find, stated now so the audit can confirm or refute them**
+(item 8 is not a prediction: it is measured and waiting):
 
 1. **`internal/session` has become several packages wearing one coat.** Room locks and the hub
    are the core; presence, direct messages, call claims, voice, notifications and clocks have
@@ -64,6 +65,18 @@ opinions second, patches third.
    per-test.
 7. **Error and logging consistency** will be touched by the observability plan anyway, so the
    audit should defer to it rather than invent a second convention.
+8. **The browser suite is pinned to chromedp 0.16**, and the migration is the audit's most
+   concrete piece of known work. chromedp 0.21 redesigned the API: `Action` is a generic function
+   type rather than an interface, `Run` takes one action and returns its value rather than a
+   variadic list, `Tasks` became `Steps`, and `Evaluate` is generic rather than taking an
+   out-parameter. That is 214 `Run` call sites, 102 of them with an `Evaluate` out-parameter over
+   some 40 files — mostly mechanical, since the new `Do` is a drop-in for the variadic `Run`, but
+   wide. cdproto is pinned with it: its newer versions drop the `input.Key*` constants chromedp
+   0.16 itself uses, so the pair moves together or not at all. Both are test-only, so nothing in
+   the shipped binary is held back. The interesting part for the audit is that the typed
+   `Evaluate` wants to live in the four eval helpers (`evalString`, `evalInt`, `evalBool`,
+   `waitJS`) rather than be repeated at every call site, which is the same "shared test kit"
+   theme as item 3.
 
 **Method: many small themed pull requests, each green, never one big one.** A platform that
 works is worth more than a platform that is elegant, and the browser suite is the safety net —
@@ -102,6 +115,9 @@ independent, and its findings would usefully inform both. So: measure early, ref
 
 ## Status log
 
+- 2026-10-28: added item 8, the chromedp 0.16 pin, after Dependabot's chromedp and cdproto bumps
+  both failed to compile. Dependabot is told to leave the pair alone until the migration is done
+  deliberately (PRs #1 and #3 closed, the ignore rules in their own pull request).
 - 2026-10-28: opened with initial thoughts, including measured sizes and seven predicted
   findings. Recommendation: a cheap measurement pass now, the refactoring after the
   observability and auth implementations, in many small themed pull requests. Planning in
