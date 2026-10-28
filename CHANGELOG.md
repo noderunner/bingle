@@ -4,6 +4,18 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.10.0 - 2026-10-27
+
+### Bingle Core 0.10.0
+- **An Analysis tab.** The home page has a fourth tab where you set bots against each other over
+  hundreds of games — in **any** game now, not only Cthulhu Wars — and read what it says: how often
+  each seat won (with an interval, so you know when to believe it), how long the games ran, how they
+  ended, and which bot came out ahead. Batches used to be a Cthulhu Wars wizard; the wizard stays
+  where it is, and every game can be studied here.
+- **A guide to the bots** under the tab: what random, tactical, minimax and MCTS each do, how
+  alpha-beta and Monte Carlo tree search work (with drawings), which bot suits which game, how to
+  read a batch, what a game designer should look at first, and where to go for training models.
+
 ## 0.9.0 - 2026-10-27
 
 ### Bingle Core 0.9.0

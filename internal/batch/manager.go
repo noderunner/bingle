@@ -132,7 +132,7 @@ func (m *Manager) run(id int64) {
 		}
 		_ = m.st.AddBatchGame(bg, store.BatchGame{
 			BatchID: id, Index: r.Index, Seed: r.Seed, GameID: r.GameID, Seating: string(seating),
-			Winner: r.Metrics.Winner, EndReason: r.Metrics.EndReason, Plies: r.Metrics.Plies, Rounds: r.Metrics.Rounds,
+			Winner: r.Winner, EndReason: r.EndReason, Plies: r.Plies, Rounds: r.Rounds,
 			Metrics: string(metrics), Events: events,
 		})
 	}, nil)
@@ -264,12 +264,25 @@ func (m *Manager) Report(ctx context.Context, id int64) (Report, error) {
 	if err != nil {
 		return Report{}, err
 	}
+	var spec Spec
+	_ = json.Unmarshal([]byte(b.Spec), &spec)
 	recs := make([]Record, 0, len(gs))
 	for _, g := range gs {
-		r := Record{Index: g.Index, Seed: g.Seed, GameID: g.GameID}
+		r := Record{
+			Index: g.Index, Seed: g.Seed, GameID: g.GameID,
+			Winner: g.Winner, EndReason: g.EndReason, Plies: g.Plies, Rounds: g.Rounds,
+		}
 		_ = json.Unmarshal([]byte(g.Seating), &r.Seating)
-		if err := json.Unmarshal([]byte(g.Metrics), &r.Metrics); err != nil {
-			continue
+		// Which bot sat where is the spec's own doing (a batch may move them
+		// round the seats), so it is worked out again rather than stored.
+		if len(spec.Players) > 0 {
+			_, seated := spec.layout(g.Index)
+			for _, p := range seated {
+				r.Bots = append(r.Bots, p.Bot)
+			}
+		}
+		if g.Metrics != "" {
+			_ = json.Unmarshal([]byte(g.Metrics), &r.Metrics)
 		}
 		recs = append(recs, r)
 	}
@@ -280,6 +293,8 @@ func (m *Manager) Report(ctx context.Context, id int64) (Report, error) {
 		}
 	}
 	rep := BuildReport(recs, names)
+	rep.Seats = seatReports(m.cat, b.GameDefID, recs)
+	rep.Bots = botReports(recs)
 	if final {
 		m.mu.Lock()
 		m.reports[id] = rep

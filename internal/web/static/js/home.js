@@ -6,6 +6,7 @@
 import { h, clear, store, rememberGame, lastName, toast } from "./util.js";
 import { api } from "./api.js";
 import { rulesIcon } from "./ui-icons.js";
+import { mountAnalysis } from "./analysis.js";
 import { renderBoard } from "./render.js";
 import { showRules as openRules } from "./rules.js";
 import { syncPractice } from "./practice.js";
@@ -1057,7 +1058,7 @@ async function startPuzzle(p) {
 
 // ---- tabs ---------------------------------------------------------------------------
 
-const TABS = ["games", "puzzles", "chat"];
+const TABS = ["games", "puzzles", "analysis", "chat"];
 let chat = null;
 
 function showTab(name, { focus = false } = {}) {
@@ -1074,6 +1075,9 @@ function showTab(name, { focus = false } = {}) {
 		chat.seen();
 		chat.focus();
 	}
+	// The Analysis tab is built the first time it is asked for: it reads the
+	// batches and the bots' guide, which the other tabs do not need.
+	if (name === "analysis") mountAnalysis(document.getElementById("panel-analysis"));
 	const url = new URL(window.location.href);
 	url.hash = name === "games" ? "" : name;
 	window.history.replaceState(null, "", url);
