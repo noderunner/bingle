@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -28,6 +28,7 @@ import (
 	"github.com/noderunner/bingle/internal/games/onitama"
 	"github.com/noderunner/bingle/internal/games/tak"
 	"github.com/noderunner/bingle/internal/games/yinsh"
+	"github.com/noderunner/bingle/internal/logging"
 	"github.com/noderunner/bingle/internal/mail"
 	"github.com/noderunner/bingle/internal/mcpserver"
 	"github.com/noderunner/bingle/internal/session"
@@ -49,13 +50,27 @@ type App struct {
 	publicURL string
 	rtc       api.RTCConfig
 	changelog string
+	log       *slog.Logger
+}
+
+// Option changes how New builds the App.
+type Option func(*App)
+
+// WithLogger hands the App the server's logger. Without it the App logs
+// through slog's default logger, which is what the tests want.
+func WithLogger(lg *slog.Logger) Option {
+	return func(a *App) {
+		if lg != nil {
+			a.log = lg
+		}
+	}
 }
 
 // New builds an App from cfg: it opens the store, builds a *catalog.Catalog
 // and registers every built-in game module into it, and mounts all routes.
 // If any module fails to register, New returns that error instead of a
 // usable *App — the server refuses to start rather than serve a broken game.
-func New(cfg config.Config) (*App, error) {
+func New(cfg config.Config, opts ...Option) (*App, error) {
 	st, err := store.Open(cfg.DBPath)
 	if err != nil {
 		return nil, err
@@ -75,13 +90,19 @@ func New(cfg config.Config) (*App, error) {
 	}
 
 	manager := session.NewManager(st, cat)
-	if err := enableNotify(manager, cfg); err != nil {
+
+	a := &App{store: st, catalog: cat, manager: manager, envs: envs.NewManager(cat), batches: batch.NewManager(st, cat), publicURL: cfg.PublicURL, changelog: cfg.Changelog,
+		rtc: api.RTCConfig{Stun: cfg.RTCStun, TurnURLs: cfg.RTCTurnURLs, TurnSecret: cfg.RTCTurnSecret}, log: slog.Default()}
+	for _, opt := range opts {
+		opt(a)
+	}
+	manager.SetLogger(a.log)
+
+	if err := enableNotify(manager, cfg, a.log); err != nil {
 		_ = st.Close()
 		return nil, err
 	}
 
-	a := &App{store: st, catalog: cat, manager: manager, envs: envs.NewManager(cat), batches: batch.NewManager(st, cat), publicURL: cfg.PublicURL, changelog: cfg.Changelog,
-		rtc: api.RTCConfig{Stun: cfg.RTCStun, TurnURLs: cfg.RTCTurnURLs, TurnSecret: cfg.RTCTurnSecret}}
 	a.router = a.newRouter()
 	return a, nil
 }
@@ -110,12 +131,12 @@ func recordGameVersions(st *store.Store, cat *catalog.Catalog) error {
 // enableNotify turns on email notifications when the mail is set up. Without a
 // public URL there is nowhere for the links in the mail to point, so the
 // feature stays off (with a log line saying why).
-func enableNotify(m *session.Manager, cfg config.Config) error {
+func enableNotify(m *session.Manager, cfg config.Config, lg *slog.Logger) error {
 	if !cfg.Mail.Enabled() {
 		return nil
 	}
 	if cfg.PublicURL == "" {
-		log.Printf("notify: email notifications are NOT enabled: set BINGLE_PUBLIC_URL (or BINGLE_TLS_DOMAIN) so the links in the mail have an address")
+		lg.Warn("notify: email notifications are NOT enabled: set BINGLE_PUBLIC_URL (or BINGLE_TLS_DOMAIN) so the links in the mail have an address")
 		return nil
 	}
 	sender, err := mail.NewSender(cfg.Mail)
@@ -161,9 +182,9 @@ func (a *App) RunRetention(ctx context.Context, days int) {
 	}
 	purge := func() {
 		if n, err := a.PurgeInactive(ctx, days); err != nil {
-			log.Printf("retention: %v", err)
+			a.log.Error("retention", "err", err)
 		} else if n > 0 {
-			log.Printf("retention: removed %d game(s) inactive for %d days", n, days)
+			a.log.Info("retention: removed games nobody had touched", "games", n, "days", days)
 		}
 	}
 	purge()
@@ -191,6 +212,15 @@ func (a *App) Close() error {
 
 func (a *App) newRouter() chi.Router {
 	r := chi.NewRouter()
+	// In this order: the request id is in the context before anything logs,
+	// and the recover sits INSIDE the access log rather than outside it (the
+	// order docs/history/observability-plan.md lists), because a panic
+	// unwinds past every middleware outside the one that recovers — so with
+	// the recover outermost a panicking request would be the one request
+	// never logged as a request. Neither middleware ever sees the path.
+	r.Use(logging.RequestID)
+	r.Use(logging.Access(a.log))
+	r.Use(logging.Recover(a.log))
 	r.Get("/healthz", a.handleHealthz)
 	r.Mount("/api", api.NewRouter(a.manager, api.WithEnvs(a.envs), api.WithBatches(a.batches), api.WithPublicURL(a.publicURL), api.WithRTC(a.rtc), api.WithChangelog(a.changelog)))
 	r.Get("/ws/{code}", api.NewWSHandler(a.manager))

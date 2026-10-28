@@ -4,7 +4,8 @@ package main
 import (
 	"context"
 	_ "embed" // CHANGELOG.md
-	"log"
+	"log/slog"
+	"os"
 	"os/signal"
 	"strings"
 	"syscall"
@@ -12,6 +13,7 @@ import (
 	"github.com/noderunner/bingle/internal/app"
 	"github.com/noderunner/bingle/internal/config"
 	"github.com/noderunner/bingle/internal/httpserve"
+	"github.com/noderunner/bingle/internal/logging"
 )
 
 // changelog is CHANGELOG.md, built into the binary for the help window.
@@ -20,15 +22,29 @@ import (
 var changelog string
 
 func main() {
+	// A logger at the defaults, so a complaint about the configuration has
+	// somewhere to go before the configuration has been read.
+	lg := logging.New(os.Stderr, slog.LevelInfo, logging.FormatText)
+	slog.SetDefault(lg)
+
 	cfg, err := config.Load()
 	if err != nil {
-		log.Fatalf("load config: %v", err)
+		lg.Error("the configuration was refused", "err", err)
+		os.Exit(1)
 	}
 	cfg.Changelog = changelog
 
-	a, err := app.New(cfg)
+	// The logger the server runs with. slog.SetDefault also points the
+	// standard log package at this handler, so a line from chi, the WebSocket
+	// library or the SQLite driver lands in the same stream at the same level
+	// rather than bypassing both.
+	lg = logging.New(os.Stderr, cfg.LogLevel, cfg.LogFormat)
+	slog.SetDefault(lg)
+
+	a, err := app.New(cfg, app.WithLogger(lg))
 	if err != nil {
-		log.Fatalf("build app: %v", err)
+		lg.Error("the server could not be built", "err", err)
+		os.Exit(1)
 	}
 	defer func() { _ = a.Close() }()
 
@@ -49,24 +65,27 @@ func main() {
 		HTTPAddr:    cfg.HTTPAddr,
 		ACMEURL:     cfg.ACMEURL,
 		HSTSSeconds: cfg.HSTSSeconds,
+		Logger:      lg,
 	}
 	if strings.HasPrefix(cfg.PublicURL, "https://") {
 		srvCfg.RedirectBase = cfg.PublicURL
 	}
 	switch {
 	case len(cfg.TLSDomains) > 0:
-		log.Printf("bingle listening on %s over HTTPS, certificates for %s from %s (cache %s); %s answers challenges and redirects to HTTPS",
-			cfg.Addr, strings.Join(cfg.TLSDomains, ", "), acmeName(cfg.ACMEURL), cfg.TLSCacheDir, cfg.HTTPAddr)
+		lg.Info("bingle listening over HTTPS with automatic certificates; the HTTP listener answers challenges and redirects to HTTPS",
+			"addr", cfg.Addr, "domains", strings.Join(cfg.TLSDomains, ", "), "authority", acmeName(cfg.ACMEURL),
+			"cache", cfg.TLSCacheDir, "http_addr", cfg.HTTPAddr)
 	case cfg.TLSEnabled():
-		log.Printf("bingle listening on %s over HTTPS (certificate %s)", cfg.Addr, cfg.TLSCert)
+		lg.Info("bingle listening over HTTPS", "addr", cfg.Addr, "certificate", cfg.TLSCert)
 	default:
 		if cfg.TLSCert != "" || cfg.TLSKey != "" {
-			log.Printf("warning: BINGLE_TLS_CERT and BINGLE_TLS_KEY must both be set for HTTPS; serving plain HTTP")
+			lg.Warn("BINGLE_TLS_CERT and BINGLE_TLS_KEY must both be set for HTTPS; serving plain HTTP")
 		}
-		log.Printf("bingle listening on %s (plain HTTP)", cfg.Addr)
+		lg.Info("bingle listening over plain HTTP", "addr", cfg.Addr)
 	}
 	if err := httpserve.Serve(ctx, srvCfg, a.Router()); err != nil {
-		log.Fatalf("serve: %v", err)
+		lg.Error("the listener stopped", "err", err)
+		os.Exit(1)
 	}
 }
 

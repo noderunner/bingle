@@ -9,7 +9,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"log"
 	"strings"
 	"sync"
 	"time"
@@ -135,7 +134,7 @@ func (m *Manager) RunNotifier(ctx context.Context) {
 		case <-tidy.C:
 			// Addresses nobody confirmed within a week, and old records of mail sent.
 			if err := m.store.PurgeContacts(ctx, m.now().Add(-7*24*time.Hour)); err != nil {
-				log.Printf("notify: tidying up: %v", err)
+				m.logger().Error("notify: tidying up", "err", err)
 			}
 		}
 	}
@@ -158,14 +157,14 @@ func (n *notifier) deliver(ctx context.Context, j notifyJob) {
 		n.mu.Lock()
 		n.authFailed = true
 		n.mu.Unlock()
-		log.Printf("notify: the mail server refused the login: email notifications are stopped until bingle is restarted (%v)", err)
+		n.m.logger().Error("notify: the mail server refused the login: email notifications are stopped until bingle is restarted", "err", err)
 	case mail.RateLimited:
 		n.mu.Lock()
 		n.pausedUntil = n.m.now().Add(breakerCooldown)
 		n.mu.Unlock()
-		log.Printf("notify: the mail server asks us to slow down: pausing for %s (%v)", breakerCooldown, err)
+		n.m.logger().Warn("notify: the mail server asks us to slow down", "pause", breakerCooldown, "err", err)
 	default:
-		log.Printf("notify: a message was not delivered: %v", err)
+		n.m.logger().Warn("notify: a message was not delivered", "err", err)
 	}
 }
 
@@ -178,7 +177,7 @@ func (n *notifier) enqueue(j notifyJob) {
 		default:
 			select {
 			case <-n.jobs:
-				log.Printf("notify: the mail queue is full, dropped the oldest message")
+				n.m.logger().Warn("notify: the mail queue is full, dropped the oldest message")
 			default:
 			}
 		}

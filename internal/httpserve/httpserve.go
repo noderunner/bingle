@@ -8,7 +8,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"net"
 	"net/http"
 	"net/url"
@@ -52,6 +52,17 @@ type Config struct {
 	// HSTSSeconds, when above zero, adds Strict-Transport-Security to the
 	// responses of an HTTPS server.
 	HSTSSeconds int
+
+	// Logger is the server's logger; nil means slog's default.
+	Logger *slog.Logger
+}
+
+// logger is cfg's logger, or slog's default for a Config built by a test.
+func (cfg Config) logger() *slog.Logger {
+	if cfg.Logger == nil {
+		return slog.Default()
+	}
+	return cfg.Logger
 }
 
 // Serve starts an HTTP server on cfg.Addr with the given handler, and shuts
@@ -116,7 +127,8 @@ func Serve(ctx context.Context, cfg Config, handler http.Handler) error {
 		// TLS-ALPN-01 challenge on the HTTPS port working, so it is not fatal.
 		go func() {
 			if err := redirectSrv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-				log.Printf("httpserve: the HTTP listener on %s (certificate challenges and the redirect to HTTPS) is not running: %v", cfg.HTTPAddr, err)
+				cfg.logger().Error("httpserve: the HTTP listener (certificate challenges and the redirect to HTTPS) is not running",
+					"addr", cfg.HTTPAddr, "err", err)
 			}
 		}()
 	}
@@ -222,10 +234,11 @@ func warmCertificates(ctx context.Context, cfg Config) {
 			return
 		}
 		if err := handshake(ctx, target, name); err != nil {
-			log.Printf("httpserve: no certificate for %s yet (%v). Check that the name leads to this server and that ports 80 and 443 reach it from the internet; the line above has the certificate authority's answer. Another try is made when a browser connects.", name, err)
+			cfg.logger().Warn("httpserve: no certificate yet. Check that the name leads to this server and that ports 80 and 443 reach it from the internet; the line above has the certificate authority's answer. Another try is made when a browser connects.",
+				"domain", name, "err", err)
 			continue
 		}
-		log.Printf("httpserve: certificate for %s is ready", name)
+		cfg.logger().Info("httpserve: certificate is ready", "domain", name)
 	}
 }
 
