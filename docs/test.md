@@ -210,6 +210,30 @@ find /run/user/$(id -u)/.flatpak/org.chromium.Chromium/tmp -maxdepth 1 -name 'ch
 
 This is purely a local-dev-machine concern with this specific Flatpak setup — CI runners start clean every time and never see it.
 
+### Known quirk: the ports `tests/httpserve` binds
+
+`httpserve.Config` names a listen address, and `httpserve.Serve` binds it — there is no way to
+hand it a listener that is already open, which is deliberate (only `main` binds; see
+`internal/app`'s doc comment). So a test there has to name a port *before* the server binds it,
+and the usual trick — listen on `:0`, read the port, close the listener, pass the address on —
+is a race these tests lose. The port comes out of the kernel's ephemeral range, and between
+the close and the bind the kernel can hand that very port to one of the many outgoing
+connections the ACME tests make. That is not theoretical: it is what made this package fail in
+CI, as `bind: address already in use` on the redirect listener or as a listener that never came
+up.
+
+`freeAddr` therefore takes ports from a fixed window (`portWindowBase`, `portWindowSize` in
+`tests/httpserve/serve_test.go`) **below** the ephemeral range, one at a time, binding each
+candidate once to check it is free. A test asserts the window really is below this machine's
+`/proc/sys/net/ipv4/ip_local_port_range`, so a tuned-down range is reported rather than left to
+flake. **A new test in this package should call `freeAddr` and never `net.Listen` on `:0`.**
+
+The other half of that flake was the shutdown budget. `net/http`'s `Server.Shutdown` waits a
+little over five seconds before it will abandon a connection that was accepted but never sent a
+request header (Go issue 22682), and these tests leave exactly those behind — the certificate
+warm-up handshakes against the TLS port, and the refusal test's dials. `shutdownBudget` allows
+30 seconds for that, where it used to allow 5.
+
 ## CI
 
 `.github/workflows/ci.yml` runs on every push and pull request, and nightly at 06:17 UTC. The
