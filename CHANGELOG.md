@@ -4,6 +4,19 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.9.0 - 2026-10-27
+
+### Bingle Core 0.9.0
+- **Direct messages.** The speech bubble in the top bar opens a window with everybody who is here:
+  pick one of them and write. A badge counts what you have not read.
+- **Talk to them.** A direct message has a *Call* button: a voice call between the two of you,
+  straight from one browser to the other, with mute and hang up. Somebody calling you shows as
+  *Answer*.
+- **One call at a time.** Joining a call — a game's or somebody's — leaves whatever call you were
+  in, and that call is told. No more being in two places and heard in neither.
+- Nothing you write here is stored: the server keeps a conversation in memory for a couple of
+  hours, and names are chosen by the people themselves, so a name is not proof of who somebody is.
+
 ## 0.8.0 - 2026-10-27
 
 ### Bingle Core 0.8.0

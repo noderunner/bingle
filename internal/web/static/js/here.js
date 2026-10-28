@@ -11,12 +11,15 @@ import { api } from "./api.js";
 import { lastName, sessionSecret } from "./util.js";
 
 // How often this browser says it is still here (the server forgets a browser
-// after two and a half minutes).
+// after two and a half minutes) — and how often while a window that shows the
+// list is open, where somebody arriving should appear at once.
 const BEAT_MS = 60000;
+const WATCH_MS = 8000;
 
 let people = [];
 let myAddress = "";
 let timer = null;
+let watching = 0; // how many open windows are showing the list
 const listeners = new Set();
 
 /** Everybody who is here now, the longest-standing first. */
@@ -65,19 +68,36 @@ export async function beat() {
 	}
 }
 
+function arm() {
+	if (timer) clearInterval(timer);
+	timer = setInterval(() => {
+		if (!document.hidden) beat();
+	}, watching > 0 ? WATCH_MS : BEAT_MS);
+}
+
 /**
  * Starts saying that somebody is here, and keeps it up while the tab lives. It
- * is called once per page by the top bar; calling it again only beats sooner.
+ * is called once per page by the top bar.
  */
 export function startHere() {
 	beat();
-	if (timer) return;
-	timer = setInterval(() => {
-		if (!document.hidden) beat();
-	}, BEAT_MS);
-	document.addEventListener("visibilitychange", () => {
-		if (!document.hidden) beat();
-	});
+	if (!timer) {
+		arm();
+		document.addEventListener("visibilitychange", () => {
+			if (!document.hidden) beat();
+		});
+	}
+}
+
+/**
+ * While a window that shows who is here is open, the list is read more often,
+ * so that somebody arriving or leaving shows up while it is being looked at.
+ * Every opener must call it again with false when it closes.
+ */
+export function watchHere(on) {
+	watching = Math.max(0, watching + (on ? 1 : -1));
+	if (on) beat();
+	arm();
 }
 
 /** The name this browser goes by, as the list shows it. */

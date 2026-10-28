@@ -8,8 +8,9 @@ import { api } from "./api.js";
 import { gameDefs, loadRows, isFinished, yourTurn, sortRows, gameRow, openGameRow } from "./mygames.js";
 import { navigate, onLeave } from "./nav.js";
 import { voiceStatus, onVoiceChange, toggleMute, toggleDeafen, leaveVoice } from "./voice.js";
-import { gamesIcon, joinIcon, micIcon, helpIcon, profileIcon } from "./ui-icons.js";
-import { whoIsHere, onHereChange, startHere } from "./here.js";
+import { gamesIcon, joinIcon, micIcon, helpIcon, profileIcon, messageIcon } from "./ui-icons.js";
+import { whoIsHere, onHereChange, startHere, watchHere, beat as beatHere } from "./here.js";
+import { mountDirectMessages, startDirectMessages, unreadCount } from "./dm.js";
 
 const REPO_URL = "https://github.com/noderunner/bingle";
 
@@ -18,6 +19,17 @@ const CHANGES_SEEN_KEY = "bingle.changelog.seen";
 
 // Which tab of the active-games window was last open ("mine" or "all").
 const TAB_KEY = "bingle.gamesTab";
+
+// The direct-message window of this page, so that the profile window can hand
+// it somebody to write to.
+let messages = null;
+
+/** Opens the direct messages on a correspondence with one person. */
+function writeTo(address, name) {
+	if (!messages) return;
+	document.getElementById("open-messages")?.click();
+	messages.open(address, name);
+}
 
 /** The version of the bingle engine, which the server puts in every page. */
 function engineVersion() {
@@ -196,6 +208,9 @@ export function installTopbar({ onRows = () => {}, manageTitle = true } = {}) {
 	});
 	joinForm.querySelector("#watch-game").addEventListener("click", () => join("spectator"));
 
+	// ---- direct messages -------------------------------------------------------
+	const messagesBtn = messagesWindow();
+
 	// ---- profile ---------------------------------------------------------------
 	const profile = profileWindow();
 
@@ -262,9 +277,11 @@ export function installTopbar({ onRows = () => {}, manageTitle = true } = {}) {
 	});
 
 	const voice = voiceChip();
-	host.append(voice, activeBtn, joinBtn, profile, helpBtn);
-	// Say that somebody is here, so the others' lists can show them.
+	host.append(voice, activeBtn, joinBtn, messagesBtn, profile, helpBtn);
+	// Say that somebody is here, so the others' lists can show them, and listen
+	// for anything written to us.
 	startHere();
+	startDirectMessages();
 
 	refresh().catch(() => toast("Could not read your games.", "error"));
 	// Keep "your turn" fresh while the page sits open in a tab.
@@ -274,6 +291,40 @@ export function installTopbar({ onRows = () => {}, manageTitle = true } = {}) {
 	setInterval(again, 20000);
 	document.addEventListener("visibilitychange", again);
 	return { refresh };
+}
+
+/**
+ * *Direct messages*: the people who are here, what has been said with one of
+ * them, and the voice call that can be put up inside it (js/dm.js). The badge
+ * on the icon counts what has not been read.
+ */
+function messagesWindow() {
+	const badge = h("span", { class: "icon-badge", id: "dm-badge", hidden: true, "aria-hidden": "true" }, "0");
+	const btn = h(
+		"button",
+		{ type: "button", class: "topbar-icon", id: "open-messages", "aria-haspopup": "dialog", title: "Direct messages", "aria-label": "Direct messages" },
+		messageIcon(),
+		badge
+	);
+	const body = h("div", { class: "dm-window" });
+	const dlg = dialog("messages-dialog", "Direct messages", body);
+	const paintBadge = (n) => {
+		badge.textContent = String(n);
+		badge.hidden = n === 0;
+		const label = n ? `Direct messages, ${n} unread` : "Direct messages";
+		btn.setAttribute("aria-label", label);
+		btn.title = label;
+	};
+	messages = mountDirectMessages(body, { onCount: paintBadge });
+	paintBadge(unreadCount());
+	btn.addEventListener("click", () => {
+		open(dlg);
+		watchHere(true);
+		messages.refresh();
+	});
+	dlg.addEventListener("close", () => watchHere(false));
+	onLeave(() => (messages = null));
+	return btn;
 }
 
 /**
@@ -314,7 +365,23 @@ function profileWindow() {
 					"li",
 					{ "data-address": p.address, class: isMe ? "me" : null },
 					h("span", { class: "grow" }, p.name),
-					isMe ? h("span", { class: "badge" }, "you") : null
+					isMe ? h("span", { class: "badge" }, "you") : null,
+					isMe
+						? null
+						: h(
+								"button",
+								{
+									type: "button",
+									class: "ghost small",
+									"data-write-to": p.address,
+									title: `Write to ${p.name}`,
+									onclick: () => {
+										dlg.close();
+										writeTo(p.address, p.name);
+									},
+								},
+								"Message"
+							)
 				)
 			);
 		}
@@ -332,16 +399,12 @@ function profileWindow() {
 		saved.textContent = "";
 		paint(whoIsHere());
 		open(dlg);
-		beatHere();
+		watchHere(true);
 	});
+	dlg.addEventListener("close", () => watchHere(false));
 	const stop = onHereChange(paint);
 	onLeave(stop);
 	return btn;
-}
-
-/** Tells the server we are here again (after a change of name, or on opening the window). */
-function beatHere() {
-	import("./here.js").then((m) => m.beat()).catch(() => {});
 }
 
 /**

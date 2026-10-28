@@ -84,6 +84,15 @@ export const peopleIcon = (size) =>
 		s("path", { d: "M15.5 5.8a3.1 3.1 0 0 1 0 5.9M17 13.9c2.2.5 3.6 2.2 4 5.1" })
 	);
 
+/** A speech bubble: the direct messages. */
+export const messageIcon = (size) =>
+	icon(
+		"message",
+		size,
+		s("path", { d: "M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v7a2.5 2.5 0 0 1-2.5 2.5H11l-4.6 3.4V16H6.5A2.5 2.5 0 0 1 4 13.5z" }),
+		s("path", { d: "M8 8.6h8M8 11.6h5" })
+	);
+
 /**
  * A rule book: a closed book with a ribbon, which stands for the word "Rules"
  * on every button that opens a game's rules.

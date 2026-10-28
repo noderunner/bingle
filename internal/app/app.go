@@ -194,6 +194,7 @@ func (a *App) newRouter() chi.Router {
 	r.Mount("/api", api.NewRouter(a.manager, api.WithEnvs(a.envs), api.WithBatches(a.batches), api.WithPublicURL(a.publicURL), api.WithRTC(a.rtc), api.WithChangelog(a.changelog)))
 	r.Get("/ws/{code}", api.NewWSHandler(a.manager))
 	r.Get("/ws-chat", api.NewGlobalChatWSHandler(a.manager))
+	r.Get("/ws-dm", api.NewDirectWSHandler(a.manager))
 	r.Mount("/mcp", mcpserver.NewServer(a.manager, a.envs, a.batches))
 	// Mounted last: internal/web acts as "/"'s catch-all/root, so every more
 	// specific path above must be registered first to take precedence.

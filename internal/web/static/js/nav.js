@@ -16,7 +16,19 @@
 
 const ROUTES = [/^\/$/, /^\/game\/[A-Za-z0-9]+\/?$/, /^\/profile\/?$/];
 
-let keepAlive = () => false;
+// Everything that must outlive a page says so here (a game's call, a direct
+// call): a soft navigation is needed while any of them answers true.
+const keepAlives = new Set();
+const keepAlive = () => {
+	for (const fn of keepAlives) {
+		try {
+			if (fn()) return true;
+		} catch (_) {
+			/* a module that is going away */
+		}
+	}
+	return false;
+};
 let installed = false;
 let tracking = false;
 let generation = 0;
@@ -31,9 +43,14 @@ function freshScope() {
 	return { listeners: [], timeouts: [], intervals: [], sockets: [] };
 }
 
-/** Says when a soft navigation is needed: voice.js answers "a call is up". */
+/**
+ * Says when a soft navigation is needed: voice.js answers "a call is up", and
+ * dm-call.js "a direct call is up". Every caller is kept, so one module cannot
+ * take another's answer away.
+ */
 export function setKeepAlive(fn) {
-	keepAlive = fn;
+	keepAlives.add(fn);
+	return () => keepAlives.delete(fn);
 }
 
 /** Runs fn without noting what it creates: for what must outlive the page. */

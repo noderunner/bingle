@@ -23,6 +23,12 @@ Position documents appear as `state` (full: `cells` = stacks bottom-to-top,
 | `GET /games` | `?limit=` (60 max) | `{games: [{room_code, game_def_id, name, family, status, lobby?, seats, open_seats, players[{seat,color,name,bot}], turn_seat, move_seq, updated_at}]}` — every unfinished game |
 | `GET /here` | | `{people: [{address, name, since, seen}]}` — the browsers that have said they are here lately |
 | `POST /here` | `{secret, player_name}` (an empty name leaves) | `{address, people[...]}` |
+| `POST /dm` | `{secret, to, text}` | the message `{id, from, name, to, text, at}` |
+| `POST /dm/history` | `{secret, with, after?}` | `{messages: [...]}` |
+| `POST /dm/threads` | `{secret}` | `{address, threads: [{with, name, last_id, last_at, text, count}]}` |
+| `POST /dm/call` | `{secret, to, join}` | `{ok}` — ring (or answer) somebody, or hang up |
+| `POST /dm/signal` | `{secret, to, kind, data}` | `{ok}` — one WebRTC message for the person being called |
+| `GET /ws-dm` | first frame `{type: "hello", secret}` | pushes `ready`, `dm`, `dm-call` and `dm-rtc` events for that browser |
 | `POST /games` | `{game_def_id, player_name, seat?, opponent?, seat_bots? (`{"2": "random"}`: a bot in chosen seats; the rest stay open), lobby? (wait for the host's `start` even with every seat filled), move_time_seconds?, clock_seconds?, options? (setup choices — see below), start_tps?, start_state?, start_seat?}` | `{room_code, seat, color, status, bot_moves?}` |
 | `GET /config` | | `{public_url}`: the configured `BINGLE_PUBLIC_URL` ("" when unset) |
 | `POST /bot-matches` | `{game_def_id, bot_a, bot_b, delay_ms?}`: a two-player room where two built-in bots play each other at a watchable pace (150 ms – 10 s per move); open it as a spectator (`/games/{code}/join` with role spectator, or the WebSocket). Stops when the game ends, after 2 minutes with nobody watching, or at the move cap; at most 12 run at once | `{room_code, status}` |
@@ -104,6 +110,30 @@ server and to nobody else; what the list carries is the **address** that secret
 hashes to (the first 8 bytes of its SHA-256), so a person can be found —
 and written to — without their address being forgeable. A browser is forgotten
 two and a half minutes after it last said anything, and nothing is stored.
+
+**Direct messages.** Two people who are here (`POST /here`) can write to each
+other and put a voice call up between them. A message is addressed to the
+**address** of a browser and sent with the sender's own **secret**, so the
+sender cannot be faked while anybody can be written to; what a message proves is
+that it came from the same browser as the last one, not whose browser that is.
+Nothing is stored: the last 200 messages of a pair live in memory and are
+forgotten two hours after the last one (and at a restart). A message to somebody
+who is not here is a `404`, writing without having said who you are a `403`, and
+a flood a `429`. The history is a POST because a secret belongs in a body, not
+in a URL that ends up in logs.
+
+The **call** is WebRTC between the two browsers, with `/dm/signal` relaying the
+offer, the answer and the candidates to the other side's `/ws-dm` socket, as a
+game's voice chat does over its room. Both sides must have joined
+(`/dm/call` with `join: true` — the second one is answering) before a signal is
+relayed; otherwise `409`.
+
+**One voice at a time.** A browser that sends its `secret` when joining a
+game's voice chat (`POST /games/{code}/voice`) or a direct call is held to one
+call: joining a new one takes it out of the old, which is told about it (the
+room gets a `voice` leave event, the other end of a direct call a `dm-call` end
+with `dropped: true`). An API client that sends no secret is not tracked and
+keeps the old free-for-all.
 
 **Custom start positions.** `start_tps` (PTN games such as Tak; the TPS says
 who moves first) or `start_state` (a position document — the `state` object of
