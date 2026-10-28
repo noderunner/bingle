@@ -7,25 +7,31 @@ this file is the working agreement.
 
 ## Secrets and host paths
 
-Everything secret comes from the environment. **Never write a token, a key, a key's path or a
-path on the maintainer's machine into a file in this repository**, including in a comment, a test
-fixture or a commit message.
+Credentials and identities come from the environment, and are referred to **only** by the name of
+the variable that holds them. **Never write a token, a key, an account name, a key's path or a path
+on the maintainer's machine into a file in this repository** — not in a comment, a test fixture, a
+commit message or a pull request. If you need one of these and the variable is unset, say so and
+stop; do not guess, and do not read it out of a dotfile into anything you commit.
 
-| Variable | What it is for |
+| Variable | What it holds |
 |---|---|
-| `BINGLE_AGENT_TOKEN` | the `mstevenson-agent` account's token: pushing, opening PRs, commenting on issues |
+| `BINGLE_GH_USER` | the account agent work acts as: its pushes, pull requests and comments |
+| `BINGLE_GH_TOKEN` | that account's token |
+| `BINGLE_GH_REMOTE` | the repository's HTTPS URL, for pushing |
 | `BINGLE_BROWSER` | path to Chrome or Chromium for the browser tests, if it is not on `PATH` |
 
-Repository administration uses a separate maintainer-held token that agent work never needs.
+Repository administration uses a separate maintainer-held credential that agent work never needs
+and should never look for.
 
 ## Branches, pushes and merges
 
 - Work on a branch and open a pull request. **Never merge.** The maintainer merges.
-- **Push as `mstevenson-agent` over HTTPS**, not with a key that authenticates as the maintainer:
+- **Push over HTTPS as the account in `$BINGLE_GH_USER`**, never with a key that authenticates as
+  the maintainer:
 
   ```sh
-  git -c credential.helper='!f() { echo username=mstevenson-agent; echo "password=$BINGLE_AGENT_TOKEN"; }; f' \
-      push https://github.com/noderunner/bingle <branch>
+  git -c credential.helper='!f() { echo "username=$BINGLE_GH_USER"; echo "password=$BINGLE_GH_TOKEN"; }; f' \
+      push "$BINGLE_GH_REMOTE" <branch>
   ```
 
   The `main` ruleset requires the most recent push to be approved by someone who did not make it,
@@ -37,8 +43,8 @@ Repository administration uses a separate maintainer-held token that agent work 
 
 ## Issues
 
-- **An issue assigned to `mstevenson-agent` is yours to act on. An unassigned one is not**, however
-  clear it looks.
+- **An issue assigned to the account in `$BINGLE_GH_USER` is yours to act on. An unassigned one is
+  not**, however clear it looks.
 - One issue, one branch, one pull request. Put `Fixes #N` in the PR body so the merge closes it.
 - Comment a short plan first on anything that is not a plain bug fix, and wait.
 - **Say so rather than build something wrong.** If the request conflicts with
