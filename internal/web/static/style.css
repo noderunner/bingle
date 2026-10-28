@@ -198,6 +198,37 @@ button.icon { padding: 0.35rem 0.6rem; min-width: 2.2rem; justify-content: cente
 
 .game-blurb { color: var(--muted); min-height: 3em; }
 
+/* The seats nobody holds, in a list of games. */
+.badge.open-seats { color: var(--accent); border-color: var(--accent); }
+/* A button that is only its icon (the rule book on the setup's Rules button). */
+button.icon-only { display: inline-flex; align-items: center; justify-content: center; padding: 0.3rem 0.5rem; }
+/* The direct messages window: the people on the left, the correspondence on the
+   right (js/dm.js); one column on a narrow screen. */
+.dm-window { min-width: min(46rem, 80vw); }
+.dm-panes { display: flex; gap: 1rem; align-items: stretch; }
+.dm-people-pane { flex: 0 0 12rem; border-right: 1px solid var(--border); padding-right: 0.8rem; }
+.dm-people-pane h3, .dm-thread-pane h3 { margin: 0 0 0.4rem; font-size: 1rem; }
+.dm-thread-pane { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 0.4rem; }
+.dm-thread-pane #dm-log { min-height: 12rem; max-height: 18rem; }
+.dm-send-row { gap: 0.4rem; }
+.dm-send-row #dm-input { flex: 1 1 auto; }
+.dm-call-row { gap: 0.4rem; align-items: center; min-height: 2rem; }
+#dm-people .dm-person { display: flex; align-items: center; gap: 0.4rem; width: 100%; background: none; border: 0; text-align: left; padding: 0.25rem 0.2rem; border-radius: 6px; cursor: pointer; }
+#dm-people .dm-person:hover { background: var(--surface-2); }
+#dm-people li.on .dm-person { background: var(--accent-soft); font-weight: 700; }
+@media (max-width: 700px) {
+	.dm-window { min-width: 0; }
+	.dm-panes { flex-direction: column; }
+	.dm-people-pane { flex: none; border-right: 0; border-bottom: 1px solid var(--border); padding: 0 0 0.6rem; max-height: 9rem; overflow-y: auto; }
+}
+
+/* Who is here, in the profile window (js/topbar.js, js/here.js). */
+.here-section { margin-top: 1rem; }
+.here-section h3 { margin: 0 0 0.4rem; font-size: 1rem; }
+.here-list { list-style: none; margin: 0 0 0.4rem; padding: 0; max-height: 14rem; overflow-y: auto; }
+.here-list li { display: flex; align-items: center; gap: 0.5rem; padding: 0.3rem 0.1rem; border-top: 1px solid var(--border); }
+.here-list li:first-child { border-top: 0; }
+.here-list li.me { font-weight: 700; }
 .my-games { list-style: none; margin: 0; padding: 0; }
 .my-games li {
 	display: flex; align-items: center; gap: 0.6rem; padding: 0.55rem 0;
@@ -438,6 +469,9 @@ details.debug pre {
 	padding: 0.05rem 0.5rem; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border);
 }
 .clock.low { color: var(--danger); border-color: var(--danger); }
+/* The clock of a game clock that is counting down now (js/game.js). */
+.clock.running { background: var(--accent-soft); border-color: var(--accent); }
+.clock.running.low { background: var(--surface-2); }
 
 /* ---- carried pieces & inspector --------------------------------------- */
 
@@ -1322,6 +1356,20 @@ td.heat { text-align: center !important; min-width: 3.2rem; }
 .batch-tabs { display: flex; gap: 0.3rem; flex-wrap: wrap; margin: 0.5rem 0; }
 .batch-tabs button { border-radius: 999px; padding: 0.2rem 0.8rem; }
 .batch-tabs button.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+/* The Analysis tab of the home page (js/analysis.js): the form and the batches
+   side by side on a wide screen, then the report, then the guide. */
+.analysis-top { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr)); gap: 1rem; align-items: start; }
+.analysis-top > .card { margin-bottom: 0; }
+.analysis-seat { gap: 0.5rem; align-items: center; }
+.analysis-seat .swatch { flex: none; }
+.analysis-report { margin-top: 1rem; }
+#analysis-batches li.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.analysis-guide { max-width: 60rem; }
+.analysis-guide .md-img, .analysis-guide figure img { width: 100%; height: auto; }
+.analysis-reasons { list-style: none; padding: 0; margin: 0.4rem 0 0; display: flex; flex-wrap: wrap; gap: 0.6rem; }
+.stat-list { display: grid; grid-template-columns: auto 1fr; gap: 0.2rem 0.8rem; margin: 0; }
+.stat-list dt { color: var(--muted); font-size: 0.9rem; }
+.stat-list dd { margin: 0; font-weight: 700; }
 .batch-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.5rem; }
 .batch-list li { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; justify-content: space-between; padding: 0.6rem 0.8rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
 .batch-events { max-height: 22rem; overflow: auto; font-family: ui-monospace, monospace; font-size: 0.8rem; columns: 3 14rem; }

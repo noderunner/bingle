@@ -58,9 +58,11 @@ Legend: ✅ done · 🟡 partial · ⬜ not started · ➖ deliberately out of s
 | ✅ | Resign | ends the game with `end_reason = resignation` |
 | ✅ | Draw offers | offer / cancel / accept / decline; any move withdraws the offer |
 | ✅ | Per-move time limits | `move_time_seconds`; loser on time; lazy server enforcement |
+| ✅ | Game clock (chess clock) | `clock_seconds` (one time per seat, handicaps allowed); the mover's own store runs down; forfeit on the flag |
 | ✅ | Replay at any point | `GET …/state?at_seq=N` (0 = starting position) |
 | ✅ | Simulate / analysis | `POST …/simulate` applies notation to any point without changing the game |
 | ✅ | Export | JSON game record + PTN document |
+| ✅ | Analysis tab | batches of bot games for any game, win rate per seat and per bot with intervals, and a guide to the bots |
 | ✅ | Built-in bots | random, tactical (1-ply), minimax (alpha-beta, node-budgeted, deterministic), MCTS; play first or second |
 | ✅ | WebSocket events | `move`, `state` (join / undo / resign) with full position |
 | ✅ | SQLite robustness | WAL + busy timeout + immediate write transactions (fixed `SQLITE_BUSY` under concurrent tabs) |

@@ -72,13 +72,36 @@ func TestWebGame_TheTopBarHasTheActiveGamesJoinAndProfile(t *testing.T) {
 	if n := evalInt(t, ctx, `document.querySelectorAll('#my-games li .badge.turn').length`); n != 2 {
 		t.Errorf("%d games say it is your turn, want 2", n)
 	}
-	// Joining by code, from inside a game.
+	// Joining by code, from inside a game. Its icon is two plugs coming
+	// together, not a door with an arrow through it (which reads as leaving).
 	clickSel(t, ctx, "#active-games-dialog .dialog-close")
+	if n := evalInt(t, ctx, `document.querySelectorAll('#open-join svg[data-icon="plugs"]').length`); n != 1 {
+		t.Errorf("the join button does not carry the plugs icon (%d)", n)
+	}
 	clickSel(t, ctx, "#open-join")
 	waitJS(t, ctx, "the join form", `document.getElementById("room_code") !== null && document.getElementById("join-dialog").open`, 5*time.Second)
-	// The profile is a link.
-	if got := evalString(t, ctx, `document.getElementById("open-profile").getAttribute("href")`); got != "/profile" {
-		t.Errorf("profile link = %q", got)
+	clickSel(t, ctx, "#join-dialog .dialog-close")
+	// The profile is a floating window with the name and who is here, and a
+	// way on to the page with the notifications and the finished games.
+	clickSel(t, ctx, "#open-profile")
+	waitJS(t, ctx, "the profile window", `document.getElementById("profile-dialog") !== null && document.getElementById("profile-dialog").open`, 5*time.Second)
+	if got := evalString(t, ctx, `document.getElementById("profile-window-name").value`); got != "Alice" {
+		t.Errorf("the profile window offers the name %q", got)
+	}
+	if got := evalString(t, ctx, `document.getElementById("profile-page-link").getAttribute("href")`); got != "/profile" {
+		t.Errorf("the link to the profile page = %q", got)
+	}
+	// Alice is in her own list of who is here.
+	waitJS(t, ctx, "Alice in the list", `[...document.querySelectorAll("#here-list li")].some(li => li.textContent.includes("Alice"))`, 10*time.Second)
+	if n := evalInt(t, ctx, `document.querySelectorAll("#here-list li.me").length`); n != 1 {
+		t.Errorf("%d entries of the list are marked as yourself, want 1", n)
+	}
+	// The rules of the game are a rule book, not the word.
+	if n := evalInt(t, ctx, `document.querySelectorAll('#show-rules svg[data-icon="rules"]').length`); n != 1 {
+		t.Errorf("the rules button does not carry the rule book (%d)", n)
+	}
+	if got := evalString(t, ctx, `document.getElementById("show-rules").getAttribute("aria-label")`); got != "Rules" {
+		t.Errorf("the rules button is named %q", got)
 	}
 }
 

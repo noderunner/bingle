@@ -27,6 +27,14 @@ The first player who has **no legal move** at the start of their turn loses.
 
 The game starts as a race to claim space. As the arrows build up, the board splits into separate regions, and what matters is **how many squares each side's queens can still reach in their own regions**. A queen stuck in a small pocket is a wasted queen, so you try to wall your opponent into small areas while keeping the large ones for yourself.
 
+### The pie rule
+
+The player who moves first has an advantage, so a table may play with the **pie rule** (tick
+*Pie rule* when the game is made). Instead of answering the opening move, the second player
+may **swap sides** on their first turn: every piece on the board changes hands and the first player
+moves again. It is then in the first player's interest to open with a move that is neither too
+strong nor too weak. The move is `swap`.
+
 ## Move notation
 
 A move is `from-to/arrow`: the queen's square, the square it moves to and the square the arrow lands on, for example `d1-d5/f5`. Columns are `a`–`j` and rows `1`–`10` from the bottom.

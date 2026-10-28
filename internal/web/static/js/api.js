@@ -47,6 +47,7 @@ export const api = {
 	batchEvents: (id, n) => call(`/api/batches/${enc(id)}/games/${n}/events`),
 	cancelBatch: (id) => call(`/api/batches/${enc(id)}/cancel`, { method: "POST" }),
 	deleteBatch: (id) => call(`/api/batches/${enc(id)}`, { method: "DELETE" }),
+	botGuide: () => fetch("/api/bot-guide").then((r) => (r.ok ? r.text() : Promise.reject(new Error("The guide could not be read.")))),
 	gameDefs: () => call("/api/game-defs"),
 	gameDef: (id) => call(`/api/game-defs/${enc(id)}`),
 	guide: (id) => call(`/api/game-defs/${enc(id)}/guide`),
@@ -96,7 +97,7 @@ export const api = {
 	gameNotify: (code, name, token) => call(`/api/games/${enc(code)}/notify?player_name=${enc(name)}`, { headers: { "X-Seat-Token": token } }),
 	setGameNotify: (code, body) => call(`/api/games/${enc(code)}/notify`, { method: "PUT", body }),
 	voice: (code) => call(`/api/games/${enc(code)}/voice`),
-	setVoice: (code, name, active) => call(`/api/games/${enc(code)}/voice`, { method: "POST", body: { player_name: name, active } }),
+	setVoice: (code, name, active, secret) => call(`/api/games/${enc(code)}/voice`, { method: "POST", body: { player_name: name, active, secret } }),
 	voiceSignal: (code, name, to, kind, data) => call(`/api/games/${enc(code)}/voice/signal`, { method: "POST", body: { player_name: name, to, kind, data } }),
 	state: (code, atSeq, name) => {
 		const q = [];
@@ -105,6 +106,14 @@ export const api = {
 		return call(`/api/games/${enc(code)}/state${q.length ? "?" + q.join("&") : ""}`);
 	},
 	moves: (code) => call(`/api/games/${enc(code)}/moves`),
+	openGames: (limit) => call("/api/games" + (limit ? `?limit=${limit}` : "")),
+	sendDirect: (secret, to, text) => call("/api/dm", { method: "POST", body: { secret, to, text } }),
+	directHistory: (secret, with_, after) => call("/api/dm/history", { method: "POST", body: { secret, with: with_, after: after || 0 } }),
+	directThreads: (secret) => call("/api/dm/threads", { method: "POST", body: { secret } }),
+	directCall: (secret, to, join) => call("/api/dm/call", { method: "POST", body: { secret, to, join } }),
+	directSignal: (secret, to, kind, data) => call("/api/dm/signal", { method: "POST", body: { secret, to, kind, data } }),
+	here: (secret, name) => call("/api/here", { method: "POST", body: { secret, player_name: name } }),
+	whoIsHere: () => call("/api/here"),
 	presence: (code) => call(`/api/games/${enc(code)}/presence`),
 	setPresence: (code, name, present) => call(`/api/games/${enc(code)}/presence`, { method: "POST", body: { player_name: name, present } }),
 	history: (code) => call(`/api/games/${enc(code)}/history`),

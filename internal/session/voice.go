@@ -178,12 +178,24 @@ func (m *Manager) humanSeat(ctx context.Context, roomCode, name string) (int, st
 // SetVoice puts the seat held by name in the voice chat of the game (or takes
 // it out), and tells the room when that changed. Calling it again with
 // active=true renews the seat's place; it lapses after voiceTTL without that.
-// Only people with a seat can talk: spectators cannot join.
-func (m *Manager) SetVoice(ctx context.Context, roomCode, name string, active bool) ([]VoicePeer, error) {
+// Only people with a seat can talk: spectators cannot join. secret, when given,
+// is the browser's own (see here.go): it is what makes "one call at a time"
+// hold across games and direct calls alike.
+func (m *Manager) SetVoice(ctx context.Context, roomCode, name string, active bool, secret string) ([]VoicePeer, error) {
 	roomCode = canonRoom(roomCode)
 	seat, who, err := m.humanSeat(ctx, roomCode, name)
 	if err != nil {
 		return nil, err
+	}
+	// A browser that says who it is can only be in one call at a time: joining
+	// this one leaves whatever else it was in (another game, or a direct call).
+	if secret != "" {
+		addr := Address(secret)
+		if active {
+			m.claimVoice(addr, CallWhere{Room: roomCode, Seat: seat, Name: who})
+		} else {
+			m.dropVoiceClaim(addr)
+		}
 	}
 	changed := m.voice.set(roomCode, seat, who, active, func() {
 		if m.voice.set(roomCode, seat, who, false, nil) {

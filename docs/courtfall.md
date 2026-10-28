@@ -65,3 +65,15 @@ treat it like any other game.
 
 The numbers (VP to win, Momentum cap, ply limit) are `params` of the
 definition, so a variant can change them with a JSON merge patch.
+
+## Setup options
+
+Courtfall offers one (`dsl.GameDefinition.Options`, ADR 0028 and ADR 0061): **Standard arena**
+(`standard-arena`), which lays a fixed, half-turn-symmetric terrain instead of drafting one and
+starts the game at the choice of Courts. The table that takes it plays `courtfall~arena`, derived
+by the ruleset's own `Derive`/`FromSuffix` from a patch of `params.arena`; the plain game keeps its
+plain id and its draft. The layout is in `internal/games/courtfall/arena.go`, and a test checks it
+against the draft's own constraints and its symmetry.
+
+It is also what a batch of bot games wants: the draft is ten decisions of noise before every game,
+and two batches of the same bots are not comparable when each game begins on different ground.

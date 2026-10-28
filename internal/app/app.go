@@ -23,6 +23,7 @@ import (
 	"github.com/noderunner/bingle/internal/games/fendo"
 	"github.com/noderunner/bingle/internal/games/fist"
 	"github.com/noderunner/bingle/internal/games/hive"
+	"github.com/noderunner/bingle/internal/games/meridians"
 	"github.com/noderunner/bingle/internal/games/nyet"
 	"github.com/noderunner/bingle/internal/games/onitama"
 	"github.com/noderunner/bingle/internal/games/tak"
@@ -131,7 +132,7 @@ func enableNotify(m *session.Manager, cfg config.Config) error {
 
 // BuiltinModules returns every game module bingle ships with.
 func BuiltinModules() []catalog.Module {
-	return append([]catalog.Module{tak.Module(), courtfall.Module(), fendo.Module(), fist.Module(), onitama.Module(), blooms.Module(), hive.Module(), nyet.Module(), yinsh.Module(), cthulhuwars.Module()}, classics.Modules()...)
+	return append([]catalog.Module{tak.Module(), courtfall.Module(), fendo.Module(), fist.Module(), meridians.Module(), onitama.Module(), blooms.Module(), hive.Module(), nyet.Module(), yinsh.Module(), cthulhuwars.Module()}, classics.Modules()...)
 }
 
 // Router returns the application's HTTP handler.
@@ -194,6 +195,7 @@ func (a *App) newRouter() chi.Router {
 	r.Mount("/api", api.NewRouter(a.manager, api.WithEnvs(a.envs), api.WithBatches(a.batches), api.WithPublicURL(a.publicURL), api.WithRTC(a.rtc), api.WithChangelog(a.changelog)))
 	r.Get("/ws/{code}", api.NewWSHandler(a.manager))
 	r.Get("/ws-chat", api.NewGlobalChatWSHandler(a.manager))
+	r.Get("/ws-dm", api.NewDirectWSHandler(a.manager))
 	r.Mount("/mcp", mcpserver.NewServer(a.manager, a.envs, a.batches))
 	// Mounted last: internal/web acts as "/"'s catch-all/root, so every more
 	// specific path above must be registered first to take precedence.

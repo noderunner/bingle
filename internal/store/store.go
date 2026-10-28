@@ -103,6 +103,9 @@ var columnMigrations = []struct{ table, column, ddl string }{
 	// autoplay: a tactical bot played the move for a person whose Auto-Play
 	// Timeout ran out.
 	{"moves", "autoplay", "INTEGER NOT NULL DEFAULT 0"},
+	// clock: the game clock of a game played with one (JSON; see
+	// session.GameClock), empty for a game played without.
+	{"games", "clock", "TEXT NOT NULL DEFAULT ''"},
 }
 
 func addMissingColumns(db *sql.DB) error {

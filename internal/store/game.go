@@ -27,6 +27,11 @@ type Game struct {
 	// MoveTimeLimit is the per-move time allowance in seconds (0 = none).
 	// The current turn started at UpdatedAt.
 	MoveTimeLimit int
+	// Clock is the game clock (a chess clock) as JSON, empty when the game
+	// is played without one: what each seat started with and what it has
+	// left (see session.GameClock). The clock of the seat to move has been
+	// running since UpdatedAt.
+	Clock string
 	// DrawOfferSeat is the seat currently offering a draw, or nil. Any move
 	// (or undo) withdraws the offer.
 	DrawOfferSeat *int
@@ -51,7 +56,7 @@ type Game struct {
 
 // gameColumns is the column list every games SELECT uses, matching
 // scanGameRow.
-const gameColumns = `id, room_code, game_def_id, status, board_state, turn_seat, move_seq, winner_seat, end_reason, end_detail, move_time_limit, draw_offer_seat, initial_state, initial_turn_seat, takeback_seat, takeback_seq, created_at, updated_at, lobby`
+const gameColumns = `id, room_code, game_def_id, status, board_state, turn_seat, move_seq, winner_seat, end_reason, end_detail, move_time_limit, draw_offer_seat, initial_state, initial_turn_seat, takeback_seat, takeback_seq, created_at, updated_at, lobby, clock`
 
 type rowScanner interface{ Scan(dest ...any) error }
 
@@ -61,7 +66,7 @@ func scanGameRow(row rowScanner) (Game, error) {
 	var lobby int
 	err := row.Scan(&g.ID, &g.RoomCode, &g.GameDefID, &g.Status, &g.BoardState, &turnSeat, &g.MoveSeq, &winnerSeat,
 		&g.EndReason, &g.EndDetail, &g.MoveTimeLimit, &drawOffer, &g.InitialState, &g.InitialTurnSeat,
-		&takebackSeat, &g.TakebackSeq, &g.CreatedAt, &g.UpdatedAt, &lobby)
+		&takebackSeat, &g.TakebackSeq, &g.CreatedAt, &g.UpdatedAt, &lobby, &g.Clock)
 	if err != nil {
 		return Game{}, err
 	}
@@ -204,6 +209,20 @@ func (s *Store) SetDrawOffer(ctx context.Context, gameID int64, seat *int) error
 	res, err := s.db.ExecContext(ctx, `UPDATE games SET draw_offer_seat = ? WHERE id = ?`, v, gameID)
 	if err != nil {
 		return fmt.Errorf("setting draw_offer_seat for game_id=%d: %w", gameID, err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+// SetGameClock stores a game's clock (JSON; empty for no clock). It is set
+// when the game is created and then only by RecordMove, which charges the
+// mover in the same transaction as their move.
+func (s *Store) SetGameClock(ctx context.Context, gameID int64, clock string) error {
+	res, err := s.db.ExecContext(ctx, `UPDATE games SET clock = ? WHERE id = ?`, clock, gameID)
+	if err != nil {
+		return fmt.Errorf("setting clock for game_id=%d: %w", gameID, err)
 	}
 	if n, _ := res.RowsAffected(); n == 0 {
 		return ErrNotFound
@@ -372,4 +391,54 @@ func (s *Store) SetPlayerBot(ctx context.Context, gameID int64, seat int, bot st
 		return ErrNotFound
 	}
 	return nil
+}
+
+// UnfinishedGame is one game that has not ended, for the list of games
+// anybody can look in on. It carries what such a list shows without reading
+// each game's position: who is seated, and when it last moved on.
+type UnfinishedGame struct {
+	GameID    int64
+	RoomCode  string
+	GameDefID string
+	Status    string
+	Lobby     bool
+	TurnSeat  *int
+	MoveSeq   int
+	// Seated is how many of the game's seats hold a player or a bot.
+	Seated    int
+	UpdatedAt string
+}
+
+// ListUnfinishedGames returns the games that are still going — waiting for
+// players, in a lobby, or being played — newest change first, at most limit of
+// them.
+func (s *Store) ListUnfinishedGames(ctx context.Context, limit int) ([]UnfinishedGame, error) {
+	if limit <= 0 {
+		limit = 50
+	}
+	rows, err := s.db.QueryContext(ctx,
+		`SELECT g.id, g.room_code, g.game_def_id, g.status, g.lobby, g.turn_seat, g.move_seq, g.updated_at,
+		        (SELECT COUNT(*) FROM players p WHERE p.game_id = g.id)
+		 FROM games g WHERE g.status != 'finished'
+		 ORDER BY g.updated_at DESC LIMIT ?`, limit)
+	if err != nil {
+		return nil, fmt.Errorf("listing unfinished games: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+	var out []UnfinishedGame
+	for rows.Next() {
+		var g UnfinishedGame
+		var lobby int
+		var turnSeat sql.NullInt64
+		if err := rows.Scan(&g.GameID, &g.RoomCode, &g.GameDefID, &g.Status, &lobby, &turnSeat, &g.MoveSeq, &g.UpdatedAt, &g.Seated); err != nil {
+			return nil, fmt.Errorf("scanning unfinished game: %w", err)
+		}
+		g.Lobby = lobby != 0
+		g.TurnSeat = nullInt64ToIntPtr(turnSeat)
+		out = append(out, g)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("listing unfinished games: %w", err)
+	}
+	return out, nil
 }

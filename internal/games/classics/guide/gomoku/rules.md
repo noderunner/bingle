@@ -20,6 +20,8 @@ Be the first to make an **unbroken row of five (or more) stones** of your own co
 
 Moving first is a big advantage. To balance it, White has one special option on their first turn: instead of placing a stone, White may **swap** sides. Black's stone then becomes White's, and Black moves next. A first move that is too strong gets swapped, so Black is encouraged to choose a modest one.
 
+This is the **pie rule**, and Gomoku is played with it here unless the table unticks *Pie rule* when the game is made.
+
 ## Strategy
 
 The key shapes are the **open three** (three in a row with room at both ends) and the **four** (four in a row with an empty end). A four must be blocked at once, and a player who makes two threats at the same time, such as a four and an open three, cannot be stopped.
