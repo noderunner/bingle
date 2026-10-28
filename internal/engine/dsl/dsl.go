@@ -101,6 +101,16 @@ type GameDefinition struct {
 	// merge patch (e.g. a different board size). See ExpandVariants.
 	Variants []VariantDef `json:"variants,omitempty"`
 
+	// PieRule says whether the game is played with the pie rule — the second
+	// player may take the first player's side instead of replying to the
+	// opening move — and whether the table may choose: "standard" (played
+	// with it unless the table turns it off), "optional" (played without it
+	// unless the table asks for it), "on" or "off" (settled: a game derived
+	// from one of the two above), or absent (the game has no pie rule).
+	// The catalog brings the swap action and the setup option with it; see
+	// catalog.applyPieRule and ADR 0056.
+	PieRule string `json:"pie_rule,omitempty"`
+
 	// Options lists the setup choices the game offers its creator (which
 	// cults sit at the table, an expansion to include). A ruleset that
 	// implements catalog.Deriver turns the chosen options into a game
@@ -229,10 +239,14 @@ type Canvas struct {
 // "orthogonal8"), a "hex" parallelogram of hexagonal cells, or a "hexhex"
 // hexagon with Size cells per side.
 type BoardGenerator struct {
-	Type      string `json:"type"`
-	Width     int    `json:"width"`
-	Height    int    `json:"height"`
-	Size      int    `json:"size,omitempty"`
+	Type   string `json:"type"`
+	Width  int    `json:"width"`
+	Height int    `json:"height"`
+	Size   int    `json:"size,omitempty"`
+	// Size2, for a "hexhex" board, is the length of its four long sides,
+	// Size being its two short ones: a hexagon with no middle cell, which
+	// Meridians is played on. Absent (or equal to Size) = every side alike.
+	Size2     int    `json:"size2,omitempty"`
 	Adjacency string `json:"adjacency"`
 	// Labels is "xy" (positions named "x,y", the default) or "algebraic"
 	// (positions named like chess squares: "a1" is bottom-left).

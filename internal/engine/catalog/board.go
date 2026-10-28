@@ -28,7 +28,11 @@ func resolveBoard(def *dsl.GameDefinition) (*board.Graph, error) {
 		case "hex":
 			g, err = board.GenerateHex(gen.Width, gen.Height)
 		case "hexhex":
-			g, err = board.GenerateHexHex(gen.Size)
+			if gen.Size2 > 0 && gen.Size2 != gen.Size {
+				g, err = board.GenerateHexHexSides(gen.Size, gen.Size2)
+			} else {
+				g, err = board.GenerateHexHex(gen.Size)
+			}
 		default:
 			return nil, fmt.Errorf("catalog: unsupported board generator type %q", gen.Type)
 		}

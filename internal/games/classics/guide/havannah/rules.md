@@ -24,6 +24,14 @@ You win by making any one of these shapes out of your own pieces:
 
 The three goals pull in different directions. A ring is made in the middle of the board and is the hardest to see coming; a bridge or a fork needs the edges. Players often make threats of one kind to force their opponent to answer, while building up a second. A piece placed next to the edge can often be an anchor for both a fork and a bridge.
 
+### The pie rule
+
+The player who moves first has an advantage, so a table may play with the **pie rule** (tick
+*Pie rule* when the game is made). Instead of answering the opening move, the second player
+may **swap sides** on their first turn: every piece on the board changes hands and the first player
+moves again. It is then in the first player's interest to open with a move that is neither too
+strong nor too weak. The move is `swap`.
+
 ## Move notation
 
 A move names the cell, such as `h8`. Columns are letters and rows are numbers, shown when you turn on the coordinates.

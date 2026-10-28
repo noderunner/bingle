@@ -18,6 +18,24 @@ import (
 )
 
 // createGameRequest is POST /games' request body.
+// clockSeconds is a game clock in a create call: either one number, which
+// both players get, or one time per seat for handicap play.
+type clockSeconds []int
+
+func (c *clockSeconds) UnmarshalJSON(b []byte) error {
+	var one int
+	if err := json.Unmarshal(b, &one); err == nil {
+		*c = clockSeconds{one, one}
+		return nil
+	}
+	var many []int
+	if err := json.Unmarshal(b, &many); err != nil {
+		return fmt.Errorf("clock_seconds: a number of seconds, or one per seat")
+	}
+	*c = many
+	return nil
+}
+
 type createGameRequest struct {
 	GameDefID  string `json:"game_def_id"`
 	PlayerName string `json:"player_name"`
@@ -36,6 +54,11 @@ type createGameRequest struct {
 	// MoveTimeSeconds optionally limits each move's thinking time; a player
 	// who runs out of time loses. Omitted or 0 means untimed.
 	MoveTimeSeconds int `json:"move_time_seconds,omitempty"`
+	// ClockSeconds plays the game with a game clock (a chess clock) instead:
+	// a number gives both players that many seconds, a list of two gives the
+	// seats their own times (handicap play). A player whose clock runs out
+	// forfeits. For a game of two seats, and not with MoveTimeSeconds.
+	ClockSeconds clockSeconds `json:"clock_seconds,omitempty"`
 	// Lobby makes the game wait, even with every seat filled, until its host
 	// starts it (POST /games/{code}/start).
 	Lobby bool `json:"lobby,omitempty"`
@@ -104,6 +127,7 @@ func (h *handlers) handleCreateGame(w http.ResponseWriter, r *http.Request) {
 		Also:        req.AlsoSeats,
 
 		MoveTimeSeconds: req.MoveTimeSeconds,
+		ClockSeconds:    req.ClockSeconds,
 		Lobby:           req.Lobby,
 		Options:         req.Options,
 
@@ -153,6 +177,9 @@ type getGameResponse struct {
 	MoveTimeSeconds int    `json:"move_time_seconds,omitempty"`
 	TurnDeadline    string `json:"turn_deadline,omitempty"`
 	ServerTime      string `json:"server_time"`
+	// Clock is the game clock of a game played with one: what each seat has
+	// left, and whose clock is running (it counts down from TurnDeadline).
+	Clock *session.ClockSnapshot `json:"clock,omitempty"`
 
 	// DrawOfferSeat is the seat offering a draw, or null.
 	DrawOfferSeat *int `json:"draw_offer_seat"`
@@ -213,6 +240,7 @@ func (h *handlers) handleGetGame(w http.ResponseWriter, r *http.Request) {
 		EndDetail:  snapshot.EndDetail,
 
 		MoveTimeSeconds: snapshot.MoveTimeLimit,
+		Clock:           snapshot.Clock,
 		ServerTime:      snapshot.ServerTime.Format(time.RFC3339),
 		DrawOfferSeat:   snapshot.DrawOfferSeat,
 

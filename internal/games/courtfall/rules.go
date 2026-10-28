@@ -239,6 +239,10 @@ func (rs *Ruleset) Start(game *catalog.CompiledGame, seed uint64) (*state.BoardS
 		Left:  [3]int{4, 3, 3},
 		RNG:   seed,
 	}
+	// A table that asked for the standard arena skips the draft (arena.go).
+	if standardArenaOn(game.Definition) {
+		layStandardArena(d)
+	}
 	st.SetExt(d)
 	return st, nil
 }

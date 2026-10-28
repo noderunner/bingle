@@ -22,6 +22,7 @@
 			<div class="tabs" role="tablist" aria-label="Games, puzzles and chat">
 				<button type="button" role="tab" class="tab" id="tab-games" data-tab="games" aria-controls="panel-games" aria-selected="true">Games</button>
 				<button type="button" role="tab" class="tab" id="tab-puzzles" data-tab="puzzles" aria-controls="panel-puzzles" aria-selected="false" tabindex="-1">Puzzles</button>
+				<button type="button" role="tab" class="tab" id="tab-analysis" data-tab="analysis" aria-controls="panel-analysis" aria-selected="false" tabindex="-1">Analysis</button>
 				<button type="button" role="tab" class="tab" id="tab-chat" data-tab="chat" aria-controls="panel-chat" aria-selected="false" tabindex="-1">Global Chat <span class="badge tab-badge" id="chat-tab-badge" hidden>0</span></button>
 			</div>
 
@@ -86,6 +87,10 @@
 								<span class="small muted">You watch from a spectator's seat, at a pace you can follow — a quick way to see how strong the bots are.</span>
 							</div>
 
+							<div class="field new-only" id="setup-options" hidden>
+								<label>This game</label>
+							</div>
+
 							<div class="field new-only human-only">
 								<label for="move_time_seconds">Time per move</label>
 								<select id="move_time_seconds" name="move_time_seconds">
@@ -97,6 +102,49 @@
 									<option value="259200">3 days</option>
 								</select>
 								<span class="small muted">A player who runs out of time loses.</span>
+							</div>
+
+							<div class="field new-only human-only" id="clock-field" hidden>
+								<label for="clock_seconds">Game clock</label>
+								<select id="clock_seconds" name="clock_seconds">
+									<option value="0" selected>No clock</option>
+									<option value="180">3 minutes each</option>
+										<option value="300">5 minutes each</option>
+										<option value="600">10 minutes each</option>
+										<option value="900">15 minutes each</option>
+										<option value="1800">30 minutes each</option>
+										<option value="3600">1 hour each</option>
+										<option value="7200">2 hours each</option>
+										<option value="86400">1 day each</option>
+								</select>
+								<label class="check"><input type="checkbox" id="clock-handicap"> <span>Give the players different times (handicap)</span></label>
+								<div class="row" id="clock-handicap-row" hidden>
+									<label class="inline" for="clock_seconds_1">First player
+										<select id="clock_seconds_1">
+											<option value="180">3 minutes</option>
+										<option value="300">5 minutes</option>
+										<option value="600">10 minutes</option>
+										<option value="900">15 minutes</option>
+										<option value="1800">30 minutes</option>
+										<option value="3600">1 hour</option>
+										<option value="7200">2 hours</option>
+										<option value="86400">1 day</option>
+										</select>
+									</label>
+									<label class="inline" for="clock_seconds_2">Second player
+										<select id="clock_seconds_2">
+											<option value="180">3 minutes</option>
+										<option value="300">5 minutes</option>
+										<option value="600">10 minutes</option>
+										<option value="900">15 minutes</option>
+										<option value="1800">30 minutes</option>
+										<option value="3600">1 hour</option>
+										<option value="7200">2 hours</option>
+										<option value="86400">1 day</option>
+										</select>
+									</label>
+								</div>
+								<span class="small muted">Each player's clock runs while it is their turn, and the first to run out forfeits. A game clock takes the place of a time per move.</span>
 							</div>
 
 							<div class="field new-only human-only" id="lobby-field">
@@ -137,6 +185,7 @@
 				<div class="puzzle-grid" id="puzzle-list"><p class="muted small">Loading puzzles…</p></div>
 			</div>
 
+			<div role="tabpanel" id="panel-analysis" aria-labelledby="tab-analysis" hidden></div>
 			<div role="tabpanel" id="panel-chat" aria-labelledby="tab-chat" class="chat-panel" hidden></div>
 		</section>
 

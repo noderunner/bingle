@@ -2,13 +2,14 @@
   "id": "connect-four",
   "name": "Connect Four",
   "description": "Drop discs into a seven-column grid; they fall to the lowest free square. The first player to line up four of their own discs in a row, a column or a diagonal wins.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "designers": ["Howard Wexler", "Ned Strongin"],
   "publisher": "Hasbro",
   "rules": [
     "Players alternate dropping a disc into any column that is not full; it falls to the lowest empty square.",
     "The first player to get four of their discs in a row — horizontally, vertically or diagonally — wins.",
-    "If the board fills up with no line, the game is a draw."
+    "If the board fills up with no line, the game is a draw.",
+    "Optional (chosen when the game is made): with the pie rule, the second player may swap sides on their first turn instead of replying, and every piece on the board changes hands."
   ],
   "guide": { "tabs": [ { "id": "rules", "title": "Rules", "file": "rules.md" } ] },
   "preview": [
@@ -39,6 +40,7 @@
   "pieces": {
     "disc": { "label": "Disc", "shape": "disc" }
   },
+  "pie_rule": "optional",
   "turn_order": { "type": "round-robin", "seats": [1, 2] },
   "actions": [
     { "id": "drop", "type": "place", "label": "Drop a disc", "pieces": ["disc"], "source": "supply", "gravity": "S" }

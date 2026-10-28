@@ -3,7 +3,7 @@
   "name": "Courtfall",
   "family": "courtfall",
   "description": "A two-player arena skirmish: five exiles each, fatigue as both action economy and health, secret dice allocation in every exchange, and a personal Clear Turn that cashes the crowd's favor into victory points.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "designers": ["Miles Stevenson"],
   "engine": "ruleset",
   "guide": {
@@ -27,6 +27,15 @@
     "Hits: Fresh becomes Fatigued, Fatigued becomes Exhausted (the attacker gains 1 Momentum, plus 1 more for exhausting the Champion); an already Exhausted unit is pushed a hex instead and the attacker gains nothing. Pushing an enemy into a Hazard or off the edge earns 1 Momentum.",
     "Courts: Bastion (all your units hold Shieldwall beside a non-Exhausted friend), Gale (nurse black stones with your free recovery), Stone (swap two empty tiles within 2 hexes at the start of a turn, once per Clear), Cinder (shoves push one hex further and pushing into fire pays 1 extra Momentum), Veiled (Isolation edge against enemies with no non-Exhausted friend beside them).",
     "Because every decision of a turn is a move in this implementation, a turn is a sequence of small moves: pick the unit, then each action, then answer any exchange. The game ends after 2000 plies on VP (equal VP is a draw)."
+  ],
+  "options": [
+    {
+      "id": "standard-arena",
+      "label": "Standard arena (no terrain draft)",
+      "kind": "bool",
+      "text": "Lay a fixed, symmetric arena instead of drafting one: ten decisions fewer before the first move, and the same ground every game, which is what a batch of bot games needs.",
+      "default": false
+    }
   ],
   "params": {
     "vp_to_win": 5,

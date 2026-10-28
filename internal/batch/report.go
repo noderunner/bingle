@@ -4,6 +4,7 @@ import (
 	"math"
 	"sort"
 
+	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/games/cthulhuwars"
 )
 
@@ -19,10 +20,132 @@ type Report struct {
 	// PlyBuckets is a histogram of game length: Counts[i] games had
 	// Lo + i*Width <= plies < Lo + (i+1)*Width.
 	PlyBuckets Histogram `json:"ply_buckets"`
-	// Factions are the cults that played, in line-up order.
+	// Factions are the cults that played, in line-up order (Cthulhu Wars).
 	Factions []FactionReport `json:"factions"`
+	// Seats is what every game has: how each seat of the table fared, which
+	// is where the advantage of moving first shows.
+	Seats []SeatReport `json:"seats,omitempty"`
+	// Bots is the same by bot, whichever seat it played: which bot is
+	// stronger, at the settings this batch gave them.
+	Bots []BotReport `json:"bots,omitempty"`
 	// AreaNames maps an area id to its name.
 	AreaNames map[string]string `json:"area_names,omitempty"`
+}
+
+// SeatReport is one seat of the table over a whole batch.
+type SeatReport struct {
+	Seat  int    `json:"seat"`
+	Label string `json:"label,omitempty"`
+	Color string `json:"color,omitempty"`
+	// Bots lists the bots that sat here (more than one when the batch moved
+	// them round the seats).
+	Bots  []string `json:"bots,omitempty"`
+	Games int      `json:"games"`
+	Wins  int      `json:"wins"`
+	// Draws counts the games that ended with nobody winning, which belong to
+	// every seat at once; Unfinished those that ran out of plies.
+	Draws      int `json:"draws"`
+	Unfinished int `json:"unfinished"`
+}
+
+// BotReport is one bot over a whole batch, whichever seat it played.
+type BotReport struct {
+	Bot   string `json:"bot"`
+	Games int    `json:"games"`
+	Wins  int    `json:"wins"`
+	Draws int    `json:"draws"`
+}
+
+// seatReports counts how each seat of the game fared. The seats come from the
+// definition, so they carry their label and colour even where no game was
+// played in one.
+func seatReports(cat *catalog.Catalog, gameDefID string, recs []Record) []SeatReport {
+	game, ok := cat.Get(gameDefID)
+	if !ok {
+		return nil
+	}
+	defs := game.Definition.Seats
+	out := make([]SeatReport, 0, len(defs))
+	at := map[int]int{}
+	for i, s := range defs {
+		label := s.Label
+		if label == "" {
+			label = s.Color
+		}
+		out = append(out, SeatReport{Seat: s.Seat, Label: label, Color: s.Color})
+		at[s.Seat] = i
+	}
+	seen := make([]map[string]bool, len(out))
+	for _, r := range recs {
+		for seat := 1; seat <= len(out); seat++ {
+			i, ok := at[seat]
+			if !ok {
+				continue
+			}
+			out[i].Games++
+			switch {
+			case r.Winner == seat:
+				out[i].Wins++
+			case r.Winner == 0 && isUnfinished(r.EndReason):
+				out[i].Unfinished++
+			case r.Winner == 0:
+				out[i].Draws++
+			}
+			if seat <= len(r.Bots) && r.Bots[seat-1] != "" {
+				if seen[i] == nil {
+					seen[i] = map[string]bool{}
+				}
+				if !seen[i][r.Bots[seat-1]] {
+					seen[i][r.Bots[seat-1]] = true
+					out[i].Bots = append(out[i].Bots, r.Bots[seat-1])
+				}
+			}
+		}
+	}
+	for i := range out {
+		sort.Strings(out[i].Bots)
+	}
+	return out
+}
+
+// botReports counts how each bot fared, wherever it sat.
+func botReports(recs []Record) []BotReport {
+	byBot := map[string]*BotReport{}
+	order := []string{}
+	for _, r := range recs {
+		for seat, bot := range r.Bots {
+			if bot == "" {
+				continue
+			}
+			b := byBot[bot]
+			if b == nil {
+				b = &BotReport{Bot: bot}
+				byBot[bot] = b
+				order = append(order, bot)
+			}
+			b.Games++
+			if r.Winner == seat+1 {
+				b.Wins++
+			} else if r.Winner == 0 && !isUnfinished(r.EndReason) {
+				b.Draws++
+			}
+		}
+	}
+	sort.Strings(order)
+	out := make([]BotReport, 0, len(order))
+	for _, k := range order {
+		out = append(out, *byBot[k])
+	}
+	return out
+}
+
+// isUnfinished reports whether a game ended without being played out.
+func isUnfinished(reason string) bool {
+	switch reason {
+	case "unfinished", "illegal-move", "no-legal-moves":
+		return true
+	}
+	return false
 }
 
 // Dist summarises a list of numbers.
@@ -173,12 +296,14 @@ func BuildReport(recs []Record, names map[string]string) Report {
 	for i := range recs {
 		r := &recs[i]
 		m := &r.Metrics
-		rep.EndReasons[m.EndReason]++
-		if m.Winner != 0 {
+		rep.EndReasons[r.EndReason]++
+		if r.Winner != 0 {
 			rep.Decided++
 		}
-		plies = append(plies, float64(m.Plies))
-		rounds = append(rounds, float64(m.Rounds))
+		plies = append(plies, float64(r.Plies))
+		if r.Rounds > 0 {
+			rounds = append(rounds, float64(r.Rounds))
+		}
 		for _, sm := range m.Seats {
 			if _, ok := byFac[sm.Faction]; !ok {
 				order = append(order, sm.Faction)

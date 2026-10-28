@@ -95,33 +95,46 @@ func GenerateHex(width, height int) (*Graph, error) {
 // "top", "bottom", "upper-left", "lower-left", "upper-right" and
 // "lower-right".
 func GenerateHexHex(size int) (*Graph, error) {
-	if size < 2 {
-		return nil, fmt.Errorf("board: a hexhex board needs size >= 2, got %d", size)
+	return GenerateHexHexSides(size, size)
+}
+
+// GenerateHexHexSides builds a hexagon whose sides are not all the same
+// length: four of them have long cells and the two between them short, which
+// makes a hexagon with **no middle cell** (its centre of symmetry falls
+// between cells). Meridians is played on the 6/7 board of 114 points; with
+// short == long it is the ordinary hexagon of GenerateHexHex.
+//
+// The shape is the same axial picture as GenerateHexHex, with the bounds no
+// longer symmetric: short + long - 1 columns, 2*long - 1 rows, and the
+// diagonal band long-1 <= q+r <= (columns-1) + (rows-1) - (long-1).
+func GenerateHexHexSides(short, long int) (*Graph, error) {
+	if short < 2 || long < 2 {
+		return nil, fmt.Errorf("board: a hexhex board needs sides >= 2, got %d and %d", short, long)
 	}
-	if size > 13 {
-		return nil, fmt.Errorf("board: hexhex boards support at most size 13, got %d", size)
+	if short > 13 || long > 13 {
+		return nil, fmt.Errorf("board: hexhex boards support sides up to 13, got %d and %d", short, long)
 	}
-	n := size - 1
-	span := 2*size - 1
-	abs := func(v int) int {
-		if v < 0 {
-			return -v
-		}
-		return v
+	if long < short {
+		return nil, fmt.Errorf("board: the second side of a hexhex board (%d) cannot be shorter than the first (%d)", long, short)
 	}
-	// (cq, cr) are centred axial coordinates in [-n, n].
-	inside := func(cq, cr int) bool { return abs(cq) <= n && abs(cr) <= n && abs(cq+cr) <= n }
+	width := short + long - 1
+	height := 2*long - 1
+	lo := long - 1
+	hi := (width - 1) + (height - 1) - lo
+	inside := func(q, r int) bool {
+		return q >= 0 && q < width && r >= 0 && r < height && q+r >= lo && q+r <= hi
+	}
 	name := func(q, r int) PositionID {
 		return PositionID(string(rune('a'+q)) + strconv.Itoa(r+1))
 	}
 
 	g := newGraph()
 	g.kind = "hex"
-	g.width, g.height = span, span
+	g.width, g.height = width, height
 
-	for r := 0; r < span; r++ {
-		for q := 0; q < span; q++ {
-			if !inside(q-n, r-n) {
+	for r := 0; r < height; r++ {
+		for q := 0; q < width; q++ {
+			if !inside(q, r) {
 				continue
 			}
 			id := name(q, r)
@@ -133,7 +146,7 @@ func GenerateHexHex(size int) (*Graph, error) {
 		c := g.coords[id]
 		for _, st := range hexSteps {
 			nq, nr := c.X+st.dx, c.Y+st.dy
-			if nq < 0 || nq >= span || nr < 0 || nr >= span || !inside(nq-n, nr-n) {
+			if !inside(nq, nr) {
 				continue
 			}
 			g.addEdge(id, name(nq, nr))
@@ -144,15 +157,18 @@ func GenerateHexHex(size int) (*Graph, error) {
 	var cornerOf [6]PositionID
 	for _, id := range g.order {
 		c := g.coords[id]
-		cq, cr := c.X-n, c.Y-n
-		ring := abs(cq) == n || abs(cr) == n || abs(cq+cr) == n
-		if !ring {
+		q, r := c.X, c.Y
+		onTop, onBottom := r == 0, r == height-1
+		onLeft, onRight := q == 0, q == width-1
+		onUL, onLR := q+r == lo, q+r == hi
+		onEdge := onTop || onBottom || onLeft || onRight || onUL || onLR
+		if !onEdge {
 			continue
 		}
 		edge = append(edge, id)
 		// A corner lies on two sides at once.
 		sides := 0
-		for _, on := range []bool{cr == -n, cr == n, cq+cr == -n, cq == -n, cq == n, cq+cr == n} {
+		for _, on := range []bool{onTop, onBottom, onUL, onLeft, onRight, onLR} {
 			if on {
 				sides++
 			}
@@ -160,15 +176,15 @@ func GenerateHexHex(size int) (*Graph, error) {
 		if sides >= 2 {
 			corners = append(corners, id)
 			switch {
-			case cr == -n && cq == 0:
+			case onTop && onUL:
 				cornerOf[0] = id
-			case cr == -n && cq == n:
+			case onTop && onRight:
 				cornerOf[1] = id
-			case cq == n && cr == 0:
+			case onRight && onLR:
 				cornerOf[2] = id
-			case cr == n && cq == 0:
+			case onBottom && onLR:
 				cornerOf[3] = id
-			case cq == -n && cr == n:
+			case onBottom && onLeft:
 				cornerOf[4] = id
 			default:
 				cornerOf[5] = id
@@ -176,17 +192,17 @@ func GenerateHexHex(size int) (*Graph, error) {
 			continue
 		}
 		switch {
-		case cr == -n:
+		case onTop:
 			top = append(top, id)
-		case cr == n:
+		case onBottom:
 			bottom = append(bottom, id)
-		case cq+cr == -n:
+		case onUL:
 			ul = append(ul, id)
-		case cq == -n:
+		case onLeft:
 			ll = append(ll, id)
-		case cq == n:
+		case onRight:
 			ur = append(ur, id)
-		case cq+cr == n:
+		case onLR:
 			lr = append(lr, id)
 		}
 	}

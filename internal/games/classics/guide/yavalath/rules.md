@@ -23,6 +23,14 @@ A line of four **beats** a line of three made by the same move, as in the right-
 
 You almost never want to make three in a row, so the first thing to learn is to look at every empty cell and ask what it would do for *you*. A cell where you would lose is a cell your opponent can use against you: they can leave it for you to be forced to fill. The surest way to win is to make a **double threat** of four, which cannot be stopped.
 
+### The pie rule
+
+The player who moves first has an advantage, so a table may play with the **pie rule** (tick
+*Pie rule* when the game is made). Instead of answering the opening move, the second player
+may **swap sides** on their first turn: every piece on the board changes hands and the first player
+moves again. It is then in the first player's interest to open with a move that is neither too
+strong nor too weak. The move is `swap`.
+
 ## Move notation
 
 A move names the cell, such as `e5`. The columns are letters and the rows numbers, as shown on the board when you turn on the coordinates.

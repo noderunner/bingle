@@ -463,6 +463,92 @@ def yavalath():
     panels(3 * 229 + 20, 250, "Yavalath: four wins, three loses", [("Win", p_four), ("Lose", p_three), ("Four beats three", p_both)], ("classics/guide/yavalath", "yavalath-lines"), gap=20)
 
 
+# =================================================================================================
+# Meridians
+# =================================================================================================
+
+def meridian_points(short, long_):
+    """The points of a Meridians board, as axial (q, r) centred on the middle."""
+    width, height = long_ + short - 1, 2 * long_ - 1
+    lo = long_ - 1
+    hi = (width - 1) + (height - 1) - lo
+    out = []
+    for r in range(height):
+        for q in range(width):
+            if lo <= q + r <= hi:
+                out.append((q, r))
+    return out, width, height
+
+
+def meridian_board(s, x, y, short, long_, size, stones=None, open_points=(), lines=(), crosses=(), paths=()):
+    """A board of intersections with its three families of straight lines.
+
+    stones maps (q, r) to "white"/"black"; open_points are rings on empty
+    points; lines are (from, to) pairs drawn as a line of sight; crosses mark
+    points with a red ✕; paths are (from, to) pairs drawn as a living path.
+    """
+    pts, width, height = meridian_points(short, long_)
+    px = lambda q, r: (x + size * (q + r / 2.0), y + size * r * math.sqrt(3) / 2.0)
+    # The grid itself: every maximal line in the three directions.
+    at = set(pts)
+    for step in ((1, 0), (0, 1), (1, -1)):
+        for q, r in pts:
+            back = (q - step[0], r - step[1])
+            if back in at:
+                continue
+            a, b = (q, r), (q, r)
+            while (b[0] + step[0], b[1] + step[1]) in at:
+                b = (b[0] + step[0], b[1] + step[1])
+            if a != b:
+                s.line(*px(*a), *px(*b), FRAME, 1, op=0.35)
+    for a, b in paths:
+        s.line(*px(*a), *px(*b), GREEN, 3.5, op=0.9)
+    for a, b in lines:
+        s.line(*px(*a), *px(*b), BLUE, 3, dash="6 4", op=0.9)
+    for q, r in pts:
+        cx, cy = px(q, r)
+        s.circle(cx, cy, 1.6, fill=FRAME, op=0.45)
+    for q, r in open_points:
+        cx, cy = px(q, r)
+        s.circle(cx, cy, size * 0.3, fill="none", stroke=BLUE, sw=2)
+    for (q, r), colour in (stones or {}).items():
+        cx, cy = px(q, r)
+        fill, edge = PIECE[colour]
+        s.circle(cx, cy, size * 0.33, fill=fill, stroke=edge, sw=1.6)
+    for q, r in crosses:
+        cx, cy = px(q, r)
+        d = size * 0.2
+        s.line(cx - d, cy - d, cx + d, cy + d, RED, 3)
+        s.line(cx - d, cy + d, cx + d, cy - d, RED, 3)
+    w = size * (width + (height - 1) / 2.0)
+    h = size * (height - 1) * math.sqrt(3) / 2.0
+    return w, h
+
+
+@game("meridians", "meridians/guide")
+def meridians():
+    short, long_, sz = 4, 5, 30
+
+    def p_sight(s, x, y):
+        # A stone of Light's, the points it can see, and a Dark stone in the way.
+        stones = {(3, 3): "white", (6, 3): "black"}
+        seen = [(0, 3), (1, 3), (2, 3), (4, 3), (5, 3), (3, 0), (3, 1), (3, 2), (3, 4), (3, 5), (0, 6), (1, 5), (2, 4), (4, 2), (5, 1), (6, 0)]
+        lines = [((3, 3), (0, 3)), ((3, 3), (5, 3)), ((3, 3), (3, 0)), ((3, 3), (3, 5)), ((3, 3), (0, 6)), ((3, 3), (6, 0))]
+        w, h = meridian_board(s, x + 24, y + 24, short, long_, sz, stones, seen, lines)
+        note(s, x + (w + 48) / 2, y + h + 48, "Light may play on any ringed point: along a line from its stone, with no dark stone in the way. The dark stone blocks the rest of that row.", 46, 12)
+        return w + 48, h + 86
+
+    def p_life(s, x, y):
+        # Two groups that see each other, and a lone group that sees nobody.
+        stones = {(2, 2): "white", (2, 3): "white", (5, 2): "white", (1, 6): "white", (4, 4): "black", (0, 4): "black"}
+        paths = [((2, 2), (5, 2))]
+        w, h = meridian_board(s, x + 24, y + 24, short, long_, sz, stones, (), (), crosses=[(1, 6)], paths=paths)
+        note(s, x + (w + 48) / 2, y + h + 48, "The two groups joined by the green path are alive. The stone marked ✕ can see no friend along any line: it comes off when Light's turn ends.", 46, 12)
+        return w + 48, h + 86
+
+    panels(2 * 300 + 24, 330, "Meridians: line of sight, and a group with no path", [("Where you may play", p_sight), ("Alive and dead", p_life)], ("meridians/guide", "meridians-sight"), gap=24)
+
+
 @game("havannah", "classics/guide/havannah")
 def havannah():
     n, sz = 4, 14

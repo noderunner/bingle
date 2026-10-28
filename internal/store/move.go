@@ -34,6 +34,10 @@ type MoveInput struct {
 	// Locked says the move rolled dice (or drew a hidden token): the game
 	// cannot be taken back across it.
 	Locked bool
+	// Clock, when set, replaces the game's clock: the mover's time, charged
+	// with the turn they have just taken, written in the same transaction as
+	// the move so that the two can never disagree.
+	Clock *string
 }
 
 // Move mirrors one row of the moves table (see schema.sql).
@@ -124,6 +128,11 @@ func (s *Store) RecordMove(ctx context.Context, gameID int64, in MoveInput) (Mov
 		in.ResultingBoardState, newSeq, turnSeat, status, winnerSeat, in.EndReason, in.EndDetail, gameID,
 	); err != nil {
 		return Move{}, fmt.Errorf("updating games row for game_id=%d: %w", gameID, err)
+	}
+	if in.Clock != nil {
+		if _, err := tx.ExecContext(ctx, `UPDATE games SET clock = ? WHERE id = ?`, *in.Clock, gameID); err != nil {
+			return Move{}, fmt.Errorf("updating the clock of game_id=%d: %w", gameID, err)
+		}
 	}
 
 	move, err := scanMoveByID(ctx, tx, moveID)

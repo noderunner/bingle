@@ -30,6 +30,14 @@ The game ends when **neither player can move**. This is usually when the board i
 
 The discs in the corners can never be flipped, so the corners and the edges that lead out of them are worth far more than having many discs early in the game.
 
+### The pie rule
+
+The player who moves first has an advantage, so a table may play with the **pie rule** (tick
+*Pie rule* when the game is made). Instead of answering the opening move, the second player
+may **swap sides** on their first turn: every piece on the board changes hands and the first player
+moves again. It is then in the first player's interest to open with a move that is neither too
+strong nor too weak. The move is `swap`.
+
 ## Move notation
 
 A move names the square the disc is placed on, such as `d3`. Columns are `a`–`h` and rows `1`–`8`.

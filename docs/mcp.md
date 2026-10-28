@@ -49,8 +49,10 @@ which `list_game_defs` does not show but every tool accepts as `game_def_id` —
 
 `create_game` also takes `also_seats` (a list of seats, besides yours, that you
 play too: a game against yourself; each is a player named
-`<you> · <faction or colour>`) and `move_time_seconds` (per-move limit; the player who
-runs out loses) — `get_observation` then reports `seconds_left` — and
+`<you> · <faction or colour>`), `move_time_seconds` (per-move limit; the player who
+runs out loses) or `clock_seconds` (a game clock for a game of two: the seconds
+each seat starts with, in seat order, which may differ; the player whose clock
+runs out forfeits) — `get_observation` then reports `seconds_left` — and
 `start_tps` / `start_state` + `start_seat` to begin from a given position
 (puzzles, endgames, curricula in persisted rooms; `env_reset` has `start_tps`
 for in-memory episodes).

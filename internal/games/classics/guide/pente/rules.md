@@ -31,6 +31,14 @@ Captured pairs are counted for each player, and the player who takes their **fif
 
 Because every stone you play can be part of a pair, your own threats have to avoid making pairs that can be flanked. A row of two is a weakness; a row of three (or more) can't be captured as a pair, which is why players try to build lines of three.
 
+### The pie rule
+
+The player who moves first has an advantage, so a table may play with the **pie rule** (tick
+*Pie rule* when the game is made). Instead of answering the opening move, the second player
+may **swap sides** on their first turn: every piece on the board changes hands and the first player
+moves again. It is then in the first player's interest to open with a move that is neither too
+strong nor too weak. The move is `swap`.
+
 ## Move notation
 
 A move names the intersection: `g7` is the middle of the board. Columns are `a`–`m` and rows `1`–`13`.

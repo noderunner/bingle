@@ -104,7 +104,7 @@ func TestGameVersions_AreRecordedInTheDatabaseOnce(t *testing.T) {
 			t.Errorf("%s %s: no first-seen time", v.Family, v.Version)
 		}
 	}
-	for family, want := range map[string]string{"tak-5x5": "0.1.0", "hive": "0.1.0", "cthulhu-wars": "0.1.0", "amazons": "0.1.0", "go-9x9": "0.1.0", "nyet": "0.2.0", "fist": "0.1.1"} {
+	for family, want := range map[string]string{"tak-5x5": "0.1.0", "hive": "0.1.0", "cthulhu-wars": "0.1.0", "amazons": "0.2.0", "go-9x9": "0.2.0", "nyet": "0.2.0", "fist": "0.1.1"} {
 		if got := seen[family]; len(got) != 1 || got[0] != want {
 			t.Errorf("%s: recorded versions %v, want [%s] (once, though the server started twice)", family, got, want)
 		}

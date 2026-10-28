@@ -20,11 +20,21 @@ Position documents appear as `state` (full: `cells` = stacks bottom-to-top,
 | `GET /bots` | | `[{id, label, description}]` |
 | `GET /puzzles` | `?game_def_id=&max_win_in=` | `[{id, game_def_id, title, to_move, win_in, plies, tps?, state}]` — positions where the side to move wins by force |
 | `GET /puzzles/{id}` | `?reveal=1` adds `first_moves` and a `solution` line | one puzzle; `404` if unknown |
-| `POST /games` | `{game_def_id, player_name, seat?, opponent?, seat_bots? (`{"2": "random"}`: a bot in chosen seats; the rest stay open), lobby? (wait for the host's `start` even with every seat filled), move_time_seconds?, options? (setup choices — see below), start_tps?, start_state?, start_seat?}` | `{room_code, seat, color, status, bot_moves?}` |
+| `GET /games` | `?limit=` (60 max) | `{games: [{room_code, game_def_id, name, family, status, lobby?, seats, open_seats, players[{seat,color,name,bot}], turn_seat, move_seq, updated_at}]}` — every unfinished game |
+| `GET /bot-guide` | | the guide to the bots as Markdown (its drawings under `/bot-guide/assets/`) |
+| `GET /here` | | `{people: [{address, name, since, seen}]}` — the browsers that have said they are here lately |
+| `POST /here` | `{secret, player_name}` (an empty name leaves) | `{address, people[...]}` |
+| `POST /dm` | `{secret, to, text}` | the message `{id, from, name, to, text, at}` |
+| `POST /dm/history` | `{secret, with, after?}` | `{messages: [...]}` |
+| `POST /dm/threads` | `{secret}` | `{address, threads: [{with, name, last_id, last_at, text, count}]}` |
+| `POST /dm/call` | `{secret, to, join}` | `{ok}` — ring (or answer) somebody, or hang up |
+| `POST /dm/signal` | `{secret, to, kind, data}` | `{ok}` — one WebRTC message for the person being called |
+| `GET /ws-dm` | first frame `{type: "hello", secret}` | pushes `ready`, `dm`, `dm-call` and `dm-rtc` events for that browser |
+| `POST /games` | `{game_def_id, player_name, seat?, opponent?, seat_bots? (`{"2": "random"}`: a bot in chosen seats; the rest stay open), lobby? (wait for the host's `start` even with every seat filled), move_time_seconds?, clock_seconds?, options? (setup choices — see below), start_tps?, start_state?, start_seat?}` | `{room_code, seat, color, status, bot_moves?}` |
 | `GET /config` | | `{public_url}`: the configured `BINGLE_PUBLIC_URL` ("" when unset) |
 | `POST /bot-matches` | `{game_def_id, bot_a, bot_b, delay_ms?}`: a two-player room where two built-in bots play each other at a watchable pace (150 ms – 10 s per move); open it as a spectator (`/games/{code}/join` with role spectator, or the WebSocket). Stops when the game ends, after 2 minutes with nobody watching, or at the move cap; at most 12 run at once | `{room_code, status}` |
 | `POST /games/import` | `{text, game_def_id?, player1?, player2?}`: load a PTN document or a plain move list into a new room (full history; the rules engine validates every move, an illegal one is reported by number; a `[TPS]` header sets the start) | `{room_code, game_def_id, status, moves, players}` |
-| `GET /games/{code}` | | `{game_def_id, status, seats[{seat,color,name,label,bot}], turn_seat, move_seq, winner_seat, end_reason, end_detail, move_time_seconds, turn_deadline, server_time, draw_offer_seat, takeback_seat, takeback_to_seq, start_state?, start_turn_seat?, lobby?, host_seat?, invite_url}` |
+| `GET /games/{code}` | | `{game_def_id, status, seats[{seat,color,name,label,bot}], turn_seat, move_seq, winner_seat, end_reason, end_detail, move_time_seconds, clock?, turn_deadline, server_time, draw_offer_seat, takeback_seat, takeback_to_seq, start_state?, start_turn_seat?, lobby?, host_seat?, invite_url}` |
 | `POST /games/{code}/join` | `{player_name, role: player\|spectator, seat?}`: `seat` asks for a particular open seat (`409` if taken); a player already seated keeps theirs | `{role, seat, color, status}` |
 | `POST /games/{code}/bots` | `{player_name, bot, seat?}`: a seated player fills the lowest open seat (or `seat`) of a **waiting** game with a built-in bot, named after the seat's faction/colour and its kind (`Black Goat (MCTS)`); a game without a lobby starts when the last seat fills | `{seat, name, color, bot, status}`; `403` not seated, `409` full or already started |
 | `POST /games/{code}/start` | `{player_name}`: the **host** begins a game waiting in its lobby; every seat must be filled | `{status, lobby, host_seat, move_seq, turn_seat}`; `403` not the host, `409` seats open / already started |
@@ -75,6 +85,56 @@ in every other seat (the game starts immediately); `seat` chooses the
 creator's seat; `move_time_seconds` gives each move a time limit — the player
 to move loses on time when it runs out (the clock only runs while the game is
 active, and is evaluated whenever the game is read or moved in).
+
+**The game clock.** `clock_seconds` plays the game with a chess clock instead:
+a number gives both players that many seconds, a list of one time per seat
+gives them their own (handicap play). It is for a game of two seats and not
+together with `move_time_seconds`; anything else is a `400`. Each player's
+clock runs only while it is their turn — a move takes the time it took off the
+mover's own clock — and the first player to run out forfeits, enforced the same
+lazy way as a per-move limit. `GET /games/{code}` reports it as
+`clock: {running, seats: [{seat, initial_seconds, seconds_left}]}`, the running
+seat counting down to `turn_deadline`; `move` and `state` events carry the same
+object, and `get_observation`'s `seconds_left` follows it.
+
+**Who is here, and what is going on.** `GET /games` lists every game on the
+server that has not finished — waiting for players, sitting in a lobby or being
+played — newest change first, with who is seated and how many seats nobody
+holds; the *Active games* window shows it beside the browser's own games, so a
+person can find a game to watch or an open seat to take. A room code is all it
+has ever taken to join a game, so this makes the rooms public to look at: a game
+nobody should find is one nobody should be able to join by code either.
+
+`POST /here` says that somebody is looking at bingle. There are no accounts, so
+a browser identifies itself with a `secret` of its own making, sent to the
+server and to nobody else; what the list carries is the **address** that secret
+hashes to (the first 8 bytes of its SHA-256), so a person can be found —
+and written to — without their address being forgeable. A browser is forgotten
+two and a half minutes after it last said anything, and nothing is stored.
+
+**Direct messages.** Two people who are here (`POST /here`) can write to each
+other and put a voice call up between them. A message is addressed to the
+**address** of a browser and sent with the sender's own **secret**, so the
+sender cannot be faked while anybody can be written to; what a message proves is
+that it came from the same browser as the last one, not whose browser that is.
+Nothing is stored: the last 200 messages of a pair live in memory and are
+forgotten two hours after the last one (and at a restart). A message to somebody
+who is not here is a `404`, writing without having said who you are a `403`, and
+a flood a `429`. The history is a POST because a secret belongs in a body, not
+in a URL that ends up in logs.
+
+The **call** is WebRTC between the two browsers, with `/dm/signal` relaying the
+offer, the answer and the candidates to the other side's `/ws-dm` socket, as a
+game's voice chat does over its room. Both sides must have joined
+(`/dm/call` with `join: true` — the second one is answering) before a signal is
+relayed; otherwise `409`.
+
+**One voice at a time.** A browser that sends its `secret` when joining a
+game's voice chat (`POST /games/{code}/voice`) or a direct call is held to one
+call: joining a new one takes it out of the old, which is told about it (the
+room gets a `voice` leave event, the other end of a direct call a `dm-call` end
+with `dropped: true`). An API client that sends no secret is not tracked and
+keeps the old free-for-all.
 
 **Custom start positions.** `start_tps` (PTN games such as Tak; the TPS says
 who moves first) or `start_state` (a position document — the `state` object of

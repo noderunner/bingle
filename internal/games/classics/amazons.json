@@ -2,13 +2,14 @@
   "id": "amazons",
   "name": "Amazons",
   "description": "Move a queen, then shoot an arrow that burns a square for good. The last player able to move wins.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "designers": ["Walter Zamkauskas"],
   "rules": [
     "Each side has four queens (Amazons). A turn has two parts: slide one of your queens like a chess queen — any distance in a straight line, orthogonally or diagonally, without jumping — and then shoot an arrow from where it landed, along any straight line, onto an empty square.",
     "Arrows stay: that square is blocked for everyone from now on, and nothing can pass over it. The square your queen just left counts as empty for the shot.",
     "The first player unable to move a queen loses; the board gradually fills up with arrows until someone is walled in.",
-    "Moves are written from-to/arrow, e.g. d1-d5/f5."
+    "Moves are written from-to/arrow, e.g. d1-d5/f5.",
+    "Optional (chosen when the game is made): with the pie rule, the second player may swap sides on their first turn instead of replying, and every piece on the board changes hands."
   ],
   "guide": { "tabs": [ { "id": "rules", "title": "Rules", "file": "rules.md" } ] },
   "board": {
@@ -32,6 +33,7 @@
     { "position": "g10", "piece": "queen", "color": "black" },
     { "position": "j7", "piece": "queen", "color": "black" }
   ],
+  "pie_rule": "optional",
   "turn_order": { "type": "round-robin", "seats": [1, 2] },
   "actions": [
     {

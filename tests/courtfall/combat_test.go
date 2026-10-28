@@ -1,6 +1,12 @@
 package courtfall_test
 
 import (
+	"math"
+	"os"
+	"path/filepath"
+	"regexp"
+	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/noderunner/bingle/internal/engine/state"
@@ -376,4 +382,80 @@ func TestLegalMovesAreAcceptedAndOthersRejected(t *testing.T) {
 	refuse(t, g, st, light, "Qxd4/9")
 	refuse(t, g, st, light, "respond/1")
 	refuse(t, g, st, light, "push>E")
+}
+
+// The odds table in the Combat page of the rules is arithmetic, so it is
+// checked against the arithmetic: every cell is the chance of at least k
+// successes out of n dice at that success number, to the nearest percent.
+func TestCombatGuide_TheOddsTableMatchesTheDice(t *testing.T) {
+	md, err := os.ReadFile(filepath.Join("..", "..", "internal", "games", "courtfall", "guide", "combat.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	rows := map[int]string{}
+	for _, line := range strings.Split(string(md), "\n") {
+		m := regexp.MustCompile(`^\| \*\*([456])\+\*\* \|(.*)\|\s*$`).FindStringSubmatch(line)
+		if m == nil {
+			continue
+		}
+		threshold, _ := strconv.Atoi(m[1])
+		rows[threshold] = strings.TrimSpace(m[2])
+	}
+	if len(rows) != 3 {
+		t.Fatalf("the table has %d rows (4+, 5+, 6+ expected): %v", len(rows), rows)
+	}
+	// atLeast is the chance of k or more successes out of n dice, each
+	// succeeding with probability p.
+	atLeast := func(n, k int, p float64) float64 {
+		total := 0.0
+		for i := k; i <= n; i++ {
+			total += float64(choose(n, i)) * math.Pow(p, float64(i)) * math.Pow(1-p, float64(n-i))
+		}
+		return total
+	}
+	for threshold, row := range rows {
+		p := float64(7-threshold) / 6
+		cells := strings.Split(row, "|")
+		if len(cells) != 4 {
+			t.Errorf("%d+: %d cells, want one for each of 1 to 4 dice", threshold, len(cells))
+			continue
+		}
+		for i, cell := range cells {
+			dice := i + 1
+			got := strings.Split(strings.TrimSpace(cell), "/")
+			if len(got) != dice {
+				t.Errorf("%d+ with %d dice reads %q: want %d figures", threshold, dice, cell, dice)
+				continue
+			}
+			for k, text := range got {
+				want := 100 * atLeast(dice, k+1, p)
+				if text == "<1" {
+					if want >= 0.5 {
+						t.Errorf("%d+ with %d dice, at least %d: the table says <1%%, the dice say %.1f%%", threshold, dice, k+1, want)
+					}
+					continue
+				}
+				n, err := strconv.Atoi(text)
+				if err != nil {
+					t.Errorf("%d+ with %d dice: %q is not a percentage", threshold, dice, text)
+					continue
+				}
+				if math.Abs(float64(n)-want) > 0.5 {
+					t.Errorf("%d+ with %d dice, at least %d: the table says %d%%, the dice say %.1f%%", threshold, dice, k+1, n, want)
+				}
+			}
+		}
+	}
+}
+
+// choose is the binomial coefficient.
+func choose(n, k int) int {
+	if k < 0 || k > n {
+		return 0
+	}
+	out := 1
+	for i := 0; i < k; i++ {
+		out = out * (n - i) / (i + 1)
+	}
+	return out
 }

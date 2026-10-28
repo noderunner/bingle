@@ -5,6 +5,8 @@
 
 import { h, clear, store, rememberGame, lastName, toast } from "./util.js";
 import { api } from "./api.js";
+import { rulesIcon } from "./ui-icons.js";
+import { mountAnalysis } from "./analysis.js";
 import { renderBoard } from "./render.js";
 import { showRules as openRules } from "./rules.js";
 import { syncPractice } from "./practice.js";
@@ -300,6 +302,8 @@ function renderSeatChoices(info) {
 	const lobbyBox = document.getElementById("lobby");
 	if (lobbyBox && lobbyBox.dataset.touched !== "1") lobbyBox.checked = info.seats.length > 2;
 	renderSlots(info);
+	renderSetupOptions(info);
+	renderClockField(info);
 	applyStartMode();
 }
 
@@ -323,6 +327,110 @@ const factionMemory = new Map();
 const flagMemory = new Map();
 // The neutral spellbook chosen to replace a cult's book, by cult id.
 const swapMemory = new Map();
+
+/**
+ * The game's `bool` setup options (an expansion, the pie rule) as check boxes.
+ * What was ticked is kept per family of games while the page lives — another
+ * layout of the same game keeps the choice, another game does not, as the
+ * default is the game's own: the pie rule starts on in Hex and off in Yavalath.
+ */
+function boolOptions(info) {
+	return (info.options || [])
+		.filter((o) => o.kind === "bool")
+		.map((opt) => {
+			const key = `${info.family || info.id}:${opt.id}`;
+			const box = h("input", { type: "checkbox", id: `option-${opt.id}`, "data-option": opt.id, "data-default": opt.default ? "1" : "0" });
+			box.checked = flagMemory.has(key) ? flagMemory.get(key) : !!opt.default;
+			box.addEventListener("change", () => flagMemory.set(key, box.checked));
+			return h(
+				"div",
+				{ class: "option-flag" },
+				h("label", { class: "check", title: opt.text || null }, box, h("span", {}, `${opt.label}`)),
+				opt.text ? h("span", { class: "small muted" }, opt.text) : null
+			);
+		});
+}
+
+/**
+ * The game clock (a chess clock) is offered to a game of two seats — which
+ * includes a game that seats a range when two are chosen, as each of those is a
+ * layout of its own. A clock and a time per move are the same question asked
+ * twice, so choosing one clears the other.
+ */
+function renderClockField(info) {
+	const field = document.getElementById("clock-field");
+	if (!field) return;
+	const two = info.seats.length === 2;
+	field.hidden = !two;
+	const clock = document.getElementById("clock_seconds");
+	const perMove = document.getElementById("move_time_seconds");
+	if (!two) {
+		if (clock) clock.value = "0";
+		const hc = document.getElementById("clock-handicap");
+		if (hc) hc.checked = false;
+		const row = document.getElementById("clock-handicap-row");
+		if (row) row.hidden = true;
+		return;
+	}
+	if (field.dataset.wired === "1") return;
+	field.dataset.wired = "1";
+	const handicap = document.getElementById("clock-handicap");
+	const row = document.getElementById("clock-handicap-row");
+	const first = document.getElementById("clock_seconds_1");
+	const second = document.getElementById("clock_seconds_2");
+	const sync = () => {
+		row.hidden = !handicap.checked;
+		clock.hidden = handicap.checked;
+		if (handicap.checked && clock.value !== "0") {
+			// Start the two sides at what both were set to.
+			for (const sel of [first, second]) if ([...sel.options].some((o) => o.value === clock.value)) sel.value = clock.value;
+		}
+		if (perMove && clockChoice().length) perMove.value = "0";
+	};
+	handicap.addEventListener("change", sync);
+	for (const el of [clock, first, second]) el.addEventListener("change", sync);
+	if (perMove) {
+		perMove.addEventListener("change", () => {
+			// A time per move takes the clock's place, as the clock takes its.
+			if (Number(perMove.value) > 0) {
+				clock.value = "0";
+				handicap.checked = false;
+				sync();
+			}
+		});
+	}
+	sync();
+}
+
+/**
+ * The clock chosen in the setup: the seconds for each seat in seat order, or
+ * nothing for a game played without one.
+ */
+function clockChoice() {
+	const field = document.getElementById("clock-field");
+	if (!field || field.hidden) return [];
+	const handicap = document.getElementById("clock-handicap");
+	if (handicap && handicap.checked) {
+		const a = Number(document.getElementById("clock_seconds_1").value);
+		const b = Number(document.getElementById("clock_seconds_2").value);
+		return a > 0 && b > 0 ? [a, b] : [];
+	}
+	const both = Number(document.getElementById("clock_seconds").value);
+	return both > 0 ? [both, both] : [];
+}
+
+/**
+ * The setup options of a game whose seats are not arranged one by one (a game
+ * of two): the check boxes stand in a field of their own.
+ */
+function renderSetupOptions(info) {
+	const field = document.getElementById("setup-options");
+	if (!field) return;
+	for (const old of [...field.children].slice(1)) old.remove();
+	const boxes = info.seats.length > 2 ? [] : boolOptions(info);
+	for (const node of boxes) field.append(node);
+	field.hidden = boxes.length === 0;
+}
 
 // renderSlots lets a table of three or more seats be arranged seat by seat:
 // who you are, which seats stay open for friends and which get a bot.
@@ -425,19 +533,7 @@ function renderSlots(info) {
 	}
 	field.append(rows, h("span", { class: "small muted" }, "Bots are named after their faction and kind (Black Goat (MCTS)). Open seats are for friends joining with the link — or bots you add in the lobby."));
 	// Expansions: a check box each.
-	for (const opt of (info.options || []).filter((o) => o.kind === "bool")) {
-		const box = h("input", { type: "checkbox", id: `option-${opt.id}`, "data-option": opt.id });
-		box.checked = flagMemory.has(opt.id) ? flagMemory.get(opt.id) : !!opt.default;
-		box.addEventListener("change", () => flagMemory.set(opt.id, box.checked));
-		field.append(
-			h(
-				"div",
-				{ class: "option-flag" },
-				h("label", { class: "check", title: opt.text || null }, box, h("span", {}, `${opt.label}`)),
-				opt.text ? h("span", { class: "small muted" }, opt.text) : null
-			)
-		);
-	}
+	for (const node of boolOptions(info)) field.append(node);
 	// A cult's spellbook that needs a clock may be swapped for a neutral one.
 	const swapOpt = (info.options || []).find((o) => o.kind === "book-swap");
 	if (swapOpt && choice) field.append(bookSwapBlock(swapOpt, rows));
@@ -502,8 +598,8 @@ function slotChoice() {
 		const defaults = fsels.map((s) => s.dataset.default);
 		if (chosen.join(",") !== defaults.join(",")) options.factions = chosen;
 	}
-	for (const box of document.querySelectorAll("#slots-field input[data-option]")) {
-		if (box.checked) options[box.dataset.option] = true;
+	for (const box of document.querySelectorAll("#create-game-form input[data-option]")) {
+		if (box.checked !== (box.dataset.default === "1")) options[box.dataset.option] = box.checked;
 	}
 	// Neutral spellbooks in place of the timer books of cults at the table.
 	const swaps = {};
@@ -774,7 +870,6 @@ if (createForm) {
 			if (slots.seat && slots.seat !== 1) body.seat = slots.seat;
 			if (slots.also.length) body.also_seats = slots.also;
 			if (Object.keys(slots.seatBots).length) body.seat_bots = slots.seatBots;
-			if (slots.options) body.options = slots.options;
 		} else {
 			const opp = selectedOpponent();
 			const seat = selectedSeat();
@@ -786,8 +881,14 @@ if (createForm) {
 			}
 			if (seat !== 1) body.seat = seat;
 		}
+		// The game's own options (the pie rule) are chosen whether or not the
+		// seats are arranged one by one.
+		const chosen = slotChoice();
+		if (chosen.options) body.options = chosen.options;
+		const clock = clockChoice();
+		if (clock.length) body.clock_seconds = clock;
 		const limit = Number(document.getElementById("move_time_seconds").value);
-		if (limit > 0) body.move_time_seconds = limit;
+		if (limit > 0 && !clock.length) body.move_time_seconds = limit;
 		const lobbyBox = document.getElementById("lobby");
 		if (lobbyBox && lobbyBox.checked) body.lobby = true;
 		const submit = createForm.querySelector('button[type="submit"]');
@@ -809,7 +910,14 @@ if (createForm) {
 	const lobbyBoxEl = document.getElementById("lobby");
 	if (lobbyBoxEl) lobbyBoxEl.addEventListener("change", () => (lobbyBoxEl.dataset.touched = "1"));
 	const rulesButton = document.getElementById("game-rules-button");
-	if (rulesButton) rulesButton.addEventListener("click", showRules);
+	if (rulesButton) {
+		// The rule book stands for the word (ui-icons.js).
+		rulesButton.replaceChildren(rulesIcon());
+		rulesButton.classList.add("icon-only");
+		rulesButton.setAttribute("aria-label", "Rules");
+		rulesButton.title = "Rules";
+		rulesButton.addEventListener("click", showRules);
+	}
 	document.getElementById("setup-back").addEventListener("click", closeSetup);
 	document.getElementById("opponent-choices").addEventListener("change", applyStartMode);
 	for (const radio of createForm.querySelectorAll('input[name="start_mode"]')) radio.addEventListener("change", applyStartMode);
@@ -950,7 +1058,7 @@ async function startPuzzle(p) {
 
 // ---- tabs ---------------------------------------------------------------------------
 
-const TABS = ["games", "puzzles", "chat"];
+const TABS = ["games", "puzzles", "analysis", "chat"];
 let chat = null;
 
 function showTab(name, { focus = false } = {}) {
@@ -967,6 +1075,9 @@ function showTab(name, { focus = false } = {}) {
 		chat.seen();
 		chat.focus();
 	}
+	// The Analysis tab is built the first time it is asked for: it reads the
+	// batches and the bots' guide, which the other tabs do not need.
+	if (name === "analysis") mountAnalysis(document.getElementById("panel-analysis"));
 	const url = new URL(window.location.href);
 	url.hash = name === "games" ? "" : name;
 	window.history.replaceState(null, "", url);
