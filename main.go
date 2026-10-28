@@ -14,6 +14,8 @@ import (
 	"github.com/noderunner/bingle/internal/config"
 	"github.com/noderunner/bingle/internal/httpserve"
 	"github.com/noderunner/bingle/internal/logging"
+	"github.com/noderunner/bingle/internal/metrics"
+	"github.com/noderunner/bingle/internal/version"
 )
 
 // changelog is CHANGELOG.md, built into the binary for the help window.
@@ -41,7 +43,14 @@ func main() {
 	lg = logging.New(os.Stderr, cfg.LogLevel, cfg.LogFormat)
 	slog.SetDefault(lg)
 
-	a, err := app.New(cfg, app.WithLogger(lg))
+	// With no metrics address nothing is registered and nothing is recorded:
+	// the middleware returns the handler untouched.
+	var mx *metrics.Metrics
+	if cfg.MetricsAddr != "" {
+		mx = metrics.New(version.Engine)
+	}
+
+	a, err := app.New(cfg, app.WithLogger(lg), app.WithMetrics(mx))
 	if err != nil {
 		lg.Error("the server could not be built", "err", err)
 		os.Exit(1)
@@ -50,6 +59,22 @@ func main() {
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
+
+	if cfg.MetricsAddr != "" {
+		priv, err := httpserve.ListenPrivate(cfg.MetricsAddr, cfg.MetricsToken.Reveal(), a.MetricsHandler(), lg)
+		if err != nil {
+			lg.Error("the metrics listener could not start", "err", err)
+			os.Exit(1)
+		}
+		local, _ := config.LoopbackAddr(priv.Addr())
+		lg.Info("metrics listening", "addr", priv.Addr(), "reachable_only_from_this_machine", local,
+			"token_required", cfg.MetricsToken.Set())
+		go func() {
+			if err := priv.Serve(ctx); err != nil {
+				lg.Error("the metrics listener stopped", "err", err)
+			}
+		}()
+	}
 
 	go a.RunRetention(ctx, cfg.RetentionDays)
 	go a.Manager().RunAutoPlay(ctx, 0)

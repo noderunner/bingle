@@ -27,6 +27,10 @@ const (
 	// defaultLogFormat and the format it is checked against are the formats
 	// internal/logging builds a handler for.
 	defaultLogFormat = "text"
+
+	// The private listener for metrics: loopback, and a port in the range
+	// Prometheus' own exporters use.
+	defaultMetricsAddr = "127.0.0.1:9095"
 )
 
 // Config holds bingle's runtime configuration.
@@ -76,6 +80,17 @@ type Config struct {
 	// LogFormat is "text" (the default: key=value lines) or "json", one
 	// object per line for a log collector (BINGLE_LOG_FORMAT).
 	LogFormat string
+
+	// MetricsAddr is the address of the private listener that serves
+	// /metrics, and from later stages the health page and the journal
+	// endpoints (BINGLE_METRICS_ADDR, default "127.0.0.1:9095"). Empty turns
+	// all of it off. It is deliberately not the public listener: the public
+	// site has no authentication of any kind, and metrics must not be on it.
+	MetricsAddr string
+	// MetricsToken is the bearer token the private listener requires
+	// (BINGLE_METRICS_TOKEN). It is required when MetricsAddr is not on the
+	// loopback interface, and optional when it is.
+	MetricsToken Secret
 
 	// Mail is the setup for email notifications (see Mail).
 	Mail Mail
@@ -174,9 +189,10 @@ func (c Config) TLSEnabled() bool {
 // defaults when unset.
 func Load() (Config, error) {
 	cfg := Config{
-		Addr:      defaultAddr,
-		DBPath:    defaultDBPath,
-		LogFormat: defaultLogFormat,
+		Addr:        defaultAddr,
+		DBPath:      defaultDBPath,
+		LogFormat:   defaultLogFormat,
+		MetricsAddr: defaultMetricsAddr,
 	}
 
 	// slog.Level parses "debug", "info", "warn" and "error" itself, in any
@@ -292,6 +308,10 @@ func Load() (Config, error) {
 		cfg.PublicURL = "https://" + cfg.TLSDomains[0]
 	}
 
+	if err := loadMetrics(&cfg); err != nil {
+		return Config{}, err
+	}
+
 	if v := os.Getenv("BINGLE_RETENTION_DAYS"); v != "" {
 		n, err := strconv.Atoi(v)
 		if err != nil || n < 0 {
@@ -301,6 +321,64 @@ func Load() (Config, error) {
 	}
 
 	return cfg, nil
+}
+
+// loadMetrics reads the private listener's settings. The listener is on the
+// loopback interface by default; putting it anywhere a network can reach
+// means a token, because everything it serves — which games are being played,
+// how busy the server is, and from later stages the health page — would
+// otherwise be readable by anyone who can reach the port.
+func loadMetrics(cfg *Config) error {
+	if v, ok := os.LookupEnv("BINGLE_METRICS_ADDR"); ok {
+		cfg.MetricsAddr = strings.TrimSpace(v)
+	}
+	if tok := strings.TrimSpace(os.Getenv("BINGLE_METRICS_TOKEN")); tok != "" {
+		if len(tok) < minMetricsToken {
+			return fmt.Errorf("config: BINGLE_METRICS_TOKEN must be at least %d characters", minMetricsToken)
+		}
+		cfg.MetricsToken = NewSecret(tok)
+	}
+	if cfg.MetricsAddr == "" {
+		if cfg.MetricsToken.Set() {
+			return fmt.Errorf("config: BINGLE_METRICS_TOKEN needs BINGLE_METRICS_ADDR (there is no listener to protect)")
+		}
+		return nil
+	}
+	local, err := LoopbackAddr(cfg.MetricsAddr)
+	if err != nil {
+		return fmt.Errorf("config: BINGLE_METRICS_ADDR: %w", err)
+	}
+	if !local && !cfg.MetricsToken.Set() {
+		return fmt.Errorf("config: BINGLE_METRICS_ADDR is %q, which is not on this machine's loopback interface, so BINGLE_METRICS_TOKEN must be set: everything that listener serves would otherwise be readable by anyone who can reach the port", cfg.MetricsAddr)
+	}
+	return nil
+}
+
+// minMetricsToken is the shortest bearer token worth having; a short one is a
+// guessable one.
+const minMetricsToken = 16
+
+// LoopbackAddr reports whether a listen address is reachable only from this
+// machine. A bare port (":9095") or an unspecified host ("0.0.0.0:9095") is
+// not: both accept from anywhere.
+func LoopbackAddr(addr string) (bool, error) {
+	host, port, err := net.SplitHostPort(addr)
+	if err != nil {
+		return false, fmt.Errorf("%q must be host:port, such as 127.0.0.1:9095: %w", addr, err)
+	}
+	if port == "" {
+		return false, fmt.Errorf("%q has no port", addr)
+	}
+	if host == "" {
+		return false, nil // ":9095" listens on every interface
+	}
+	ip := net.ParseIP(host)
+	if ip == nil {
+		// A name: "localhost" is the only one worth treating as loopback
+		// without resolving it, and resolution belongs nowhere near config.
+		return strings.EqualFold(host, "localhost"), nil
+	}
+	return ip.IsLoopback(), nil
 }
 
 // ParsePublicURL checks a public base URL and returns it without a trailing

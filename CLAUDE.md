@@ -1,7 +1,7 @@
 # Working on bingle, for an agent
 
 Bingle is one static Go binary (`CGO_ENABLED=0`) that serves abstract board games over a browser
-UI, a REST/WebSocket API and MCP, with an embedded SQLite database and seven direct dependencies.
+UI, a REST/WebSocket API and MCP, with an embedded SQLite database and eight direct dependencies.
 Keeping it small is a feature. [CONTRIBUTING.md](CONTRIBUTING.md) covers building and testing;
 this file is the working agreement.
 

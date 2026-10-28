@@ -1,7 +1,10 @@
 package config
 
 import (
+	"fmt"
 	"log/slog"
+	"os"
+	"strings"
 	"testing"
 )
 
@@ -246,6 +249,89 @@ func TestLoad_Logging(t *testing.T) {
 			t.Errorf("BINGLE_LOG_FORMAT=%q: %v", c.env, err)
 		case !c.bad && cfg.LogFormat != c.want:
 			t.Errorf("BINGLE_LOG_FORMAT=%q gave %q, want %q", c.env, cfg.LogFormat, c.want)
+		}
+	}
+}
+
+func TestLoad_Metrics(t *testing.T) {
+	t.Setenv("BINGLE_METRICS_ADDR", "")
+	t.Setenv("BINGLE_METRICS_TOKEN", "")
+
+	// Unset is not the same as empty here — empty turns the listener off —
+	// so this really has to remove it. t.Setenv above registered the cleanup
+	// that puts it back.
+	if err := os.Unsetenv("BINGLE_METRICS_ADDR"); err != nil {
+		t.Fatalf("unsetting BINGLE_METRICS_ADDR: %v", err)
+	}
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load() returned error: %v", err)
+	}
+	if cfg.MetricsAddr != defaultMetricsAddr {
+		t.Errorf("MetricsAddr = %q, want %q", cfg.MetricsAddr, defaultMetricsAddr)
+	}
+	if cfg.MetricsToken.Set() {
+		t.Error("a token was invented from nowhere")
+	}
+
+	const goodToken = "a-token-long-enough-to-be-worth-having"
+	for _, c := range []struct {
+		name, addr, token string
+		bad               bool
+	}{
+		{name: "off", addr: ""},
+		{name: "loopback, no token", addr: "127.0.0.1:9095"},
+		{name: "loopback by name", addr: "localhost:9095"},
+		{name: "IPv6 loopback", addr: "[::1]:9095"},
+		{name: "loopback with a token", addr: "127.0.0.1:9095", token: goodToken},
+		{name: "every interface needs a token", addr: ":9095", bad: true},
+		{name: "a routable address needs a token", addr: "10.0.0.5:9095", bad: true},
+		{name: "0.0.0.0 needs a token", addr: "0.0.0.0:9095", bad: true},
+		{name: "every interface with a token", addr: ":9095", token: goodToken},
+		{name: "a routable address with a token", addr: "10.0.0.5:9095", token: goodToken},
+		{name: "not host:port", addr: "9095", bad: true},
+		{name: "no port", addr: "127.0.0.1:", bad: true},
+		{name: "a token that is too short", addr: "127.0.0.1:9095", token: "short", bad: true},
+		{name: "a token with no listener", addr: "", token: goodToken, bad: true},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			t.Setenv("BINGLE_METRICS_ADDR", c.addr)
+			t.Setenv("BINGLE_METRICS_TOKEN", c.token)
+			cfg, err := Load()
+			switch {
+			case c.bad && err == nil:
+				t.Errorf("addr %q token %q was accepted", c.addr, c.token)
+			case !c.bad && err != nil:
+				t.Errorf("addr %q token %q: %v", c.addr, c.token, err)
+			case !c.bad && cfg.MetricsAddr != c.addr:
+				t.Errorf("MetricsAddr = %q, want %q", cfg.MetricsAddr, c.addr)
+			}
+		})
+	}
+}
+
+// The token is a Secret, so no way of printing the configuration can show it.
+func TestLoad_MetricsTokenIsNeverPrinted(t *testing.T) {
+	const token = "a-token-long-enough-to-be-worth-having"
+	t.Setenv("BINGLE_METRICS_ADDR", "127.0.0.1:9095")
+	t.Setenv("BINGLE_METRICS_TOKEN", token)
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load() returned error: %v", err)
+	}
+	if cfg.MetricsToken.Reveal() != token {
+		t.Fatalf("the token did not survive loading")
+	}
+	for _, printed := range []string{
+		fmt.Sprintf("%v", cfg),
+		fmt.Sprintf("%+v", cfg),
+		fmt.Sprintf("%#v", cfg),
+		fmt.Sprint(cfg.MetricsToken),
+		cfg.MetricsToken.LogValue().String(),
+	} {
+		if strings.Contains(printed, token) {
+			t.Errorf("the token was printed: %s", printed)
 		}
 	}
 }
