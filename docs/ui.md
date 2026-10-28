@@ -174,11 +174,13 @@ The person icon (`#open-profile`) opens **`#profile-dialog`**, a floating window
 rather than a page: the name this browser plays under
 (`#profile-window-name`, saved as you leave the field), **Here now**
 (`#here-list li[data-address]`, `#here-count`) — everybody whose browser has
-said it is here in the last few minutes, your own entry marked `.me` — and a
-link on to the profile page (`#profile-page-link`) for the email notifications
-and the finished games. `js/here.js` tells the server every minute that
-somebody is here, under the name of `bingle.name`, with this browser's own
-secret (`bingle.session`); names are self-chosen, which the window says.
+said it is here in the last few minutes, your own entry marked `.me`, with a
+*Message* button beside each of the others that opens the direct messages on
+that person — and a link on to the profile page (`#profile-page-link`) for the
+email notifications and the finished games. `js/here.js` tells the server every
+minute that somebody is here (every eight seconds while a window that shows the
+list is open), under the name of `bingle.name`, with this browser's own secret
+(`bingle.session`); names are self-chosen, which the window says.
 
 **The top bar of a game** carries the same icons as the main page — the active games with the
 count of those waiting for you (`#open-active-games`), joining a game (`#open-join`) and the
