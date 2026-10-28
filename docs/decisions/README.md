@@ -63,3 +63,4 @@ Short records of choices made for the `bingle` project during the requirements i
 | [0057](0057-the-game-clock.md) | The game clock: a store of time per seat in one JSON column, charged by the move, with the forfeit on the existing lazy enforcement |
 | [0058](0058-all-games-who-is-here-and-the-icons.md) | All the games of the server in a second tab, who is here (a browser's secret and the address it hashes to), the profile as a window, and the icons of the bar |
 | [0059](0059-direct-messages-and-their-calls.md) | Direct messages addressed to a browser and signed by its secret, kept in memory only, with a one-to-one voice call and one voice per person at a time |
+| [0060](0060-the-analysis-tab.md) | The Analysis tab: bot batches generalised to every game, win rates per seat and per bot with intervals, and an embedded guide to the bots |

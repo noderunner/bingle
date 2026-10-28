@@ -1356,6 +1356,20 @@ td.heat { text-align: center !important; min-width: 3.2rem; }
 .batch-tabs { display: flex; gap: 0.3rem; flex-wrap: wrap; margin: 0.5rem 0; }
 .batch-tabs button { border-radius: 999px; padding: 0.2rem 0.8rem; }
 .batch-tabs button.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+/* The Analysis tab of the home page (js/analysis.js): the form and the batches
+   side by side on a wide screen, then the report, then the guide. */
+.analysis-top { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr)); gap: 1rem; align-items: start; }
+.analysis-top > .card { margin-bottom: 0; }
+.analysis-seat { gap: 0.5rem; align-items: center; }
+.analysis-seat .swatch { flex: none; }
+.analysis-report { margin-top: 1rem; }
+#analysis-batches li.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.analysis-guide { max-width: 60rem; }
+.analysis-guide .md-img, .analysis-guide figure img { width: 100%; height: auto; }
+.analysis-reasons { list-style: none; padding: 0; margin: 0.4rem 0 0; display: flex; flex-wrap: wrap; gap: 0.6rem; }
+.stat-list { display: grid; grid-template-columns: auto 1fr; gap: 0.2rem 0.8rem; margin: 0; }
+.stat-list dt { color: var(--muted); font-size: 0.9rem; }
+.stat-list dd { margin: 0; font-weight: 700; }
 .batch-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.5rem; }
 .batch-list li { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; justify-content: space-between; padding: 0.6rem 0.8rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
 .batch-events { max-height: 22rem; overflow: auto; font-family: ui-monospace, monospace; font-size: 0.8rem; columns: 3 14rem; }

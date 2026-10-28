@@ -109,8 +109,9 @@ quoted — the number of ways a board can be filled within each side's pieces
 a generating function over the piece budgets), an upper bound on the positions
 that can arise: 2.6 × 10^37 for 5×5 and 3.7 × 10^53 for 6×6.
 
-**Tabs** (`#tab-games`, `#tab-puzzles`, `#tab-chat`; arrow keys move between
-them, and the URL hash — `/#puzzles`, `/#chat` — selects one).
+**Tabs** (`#tab-games`, `#tab-puzzles`, `#tab-analysis`, `#tab-chat`; arrow keys
+move between them, and the URL hash — `/#puzzles`, `/#analysis`, `/#chat` —
+selects one).
 
 * *Games*: the gallery (`.game-card`). Picking a game replaces the gallery by
   its **setup** (`#game-setup`: a preview, the description, the variants as
@@ -127,6 +128,17 @@ them, and the URL hash — `/#puzzles`, `/#chat` — selects one).
   and analysis. `[Player1]` / `[Player2]` headers name the seats and a `[TPS]`
   header sets the start position.
 * *Puzzles*: see *Puzzles* below.
+* *Analysis* (`js/analysis.js`, built the first time the tab is shown): where a
+  batch of bot-versus-bot games is set going for **any** game and read. The form
+  (`#analysis-game`, one `#analysis-seats .analysis-bot` per seat of the chosen
+  game, `#analysis-games`, `#analysis-rotate`, `#analysis-start`), the batches
+  (`#analysis-batches li[data-batch]`, with *Report* and a link to the full one
+  at `/batches/{id}`) and the report of the one picked (`#analysis-report`:
+  `#analysis-seat-card` — the win rate of each seat with a 95% Wilson interval
+  and a marker at an even share — `#analysis-endings` and, when two bots played,
+  `#analysis-bot-card`). Under it, **the guide to the bots** (`#analysis-guide`):
+  `GET /api/bot-guide`, Markdown rendered by `js/markdown.js` with its drawings
+  from `/api/bot-guide/assets/`, and a table of contents of its sections.
 * *Global Chat* (`js/global-chat.js`): one room everybody shares
   (`#global-chat-log`, `#global-chat-name`, `#global-chat-input`,
   `#global-chat-send`, the emoji picker of the game chat). History comes from

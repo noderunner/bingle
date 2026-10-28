@@ -47,6 +47,7 @@ export const api = {
 	batchEvents: (id, n) => call(`/api/batches/${enc(id)}/games/${n}/events`),
 	cancelBatch: (id) => call(`/api/batches/${enc(id)}/cancel`, { method: "POST" }),
 	deleteBatch: (id) => call(`/api/batches/${enc(id)}`, { method: "DELETE" }),
+	botGuide: () => fetch("/api/bot-guide").then((r) => (r.ok ? r.text() : Promise.reject(new Error("The guide could not be read.")))),
 	gameDefs: () => call("/api/game-defs"),
 	gameDef: (id) => call(`/api/game-defs/${enc(id)}`),
 	guide: (id) => call(`/api/game-defs/${enc(id)}/guide`),

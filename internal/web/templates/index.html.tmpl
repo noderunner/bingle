@@ -22,6 +22,7 @@
 			<div class="tabs" role="tablist" aria-label="Games, puzzles and chat">
 				<button type="button" role="tab" class="tab" id="tab-games" data-tab="games" aria-controls="panel-games" aria-selected="true">Games</button>
 				<button type="button" role="tab" class="tab" id="tab-puzzles" data-tab="puzzles" aria-controls="panel-puzzles" aria-selected="false" tabindex="-1">Puzzles</button>
+				<button type="button" role="tab" class="tab" id="tab-analysis" data-tab="analysis" aria-controls="panel-analysis" aria-selected="false" tabindex="-1">Analysis</button>
 				<button type="button" role="tab" class="tab" id="tab-chat" data-tab="chat" aria-controls="panel-chat" aria-selected="false" tabindex="-1">Global Chat <span class="badge tab-badge" id="chat-tab-badge" hidden>0</span></button>
 			</div>
 
@@ -184,6 +185,7 @@
 				<div class="puzzle-grid" id="puzzle-list"><p class="muted small">Loading puzzles…</p></div>
 			</div>
 
+			<div role="tabpanel" id="panel-analysis" aria-labelledby="tab-analysis" hidden></div>
 			<div role="tabpanel" id="panel-chat" aria-labelledby="tab-chat" class="chat-panel" hidden></div>
 		</section>
 

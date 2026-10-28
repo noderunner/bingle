@@ -62,6 +62,7 @@ Legend: ✅ done · 🟡 partial · ⬜ not started · ➖ deliberately out of s
 | ✅ | Replay at any point | `GET …/state?at_seq=N` (0 = starting position) |
 | ✅ | Simulate / analysis | `POST …/simulate` applies notation to any point without changing the game |
 | ✅ | Export | JSON game record + PTN document |
+| ✅ | Analysis tab | batches of bot games for any game, win rate per seat and per bot with intervals, and a guide to the bots |
 | ✅ | Built-in bots | random, tactical (1-ply), minimax (alpha-beta, node-budgeted, deterministic), MCTS; play first or second |
 | ✅ | WebSocket events | `move`, `state` (join / undo / resign) with full position |
 | ✅ | SQLite robustness | WAL + busy timeout + immediate write transactions (fixed `SQLITE_BUSY` under concurrent tabs) |

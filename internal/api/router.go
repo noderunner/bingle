@@ -37,6 +37,8 @@ func NewRouter(mgr *session.Manager, opts ...Option) chi.Router {
 	r.Get("/bots", h.handleListBots)
 	r.Get("/config", h.handleConfig)
 	r.Get("/changelog", h.handleChangelog)
+	r.Get("/bot-guide", h.handleBotGuide)
+	r.Get("/bot-guide/assets/*", h.handleBotGuideAsset)
 	r.Get("/puzzles", h.handleListPuzzles)
 	r.Get("/puzzles/{id}", h.handleGetPuzzle)
 	r.Get("/games", h.handleListOpenGames)

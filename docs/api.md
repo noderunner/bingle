@@ -21,6 +21,7 @@ Position documents appear as `state` (full: `cells` = stacks bottom-to-top,
 | `GET /puzzles` | `?game_def_id=&max_win_in=` | `[{id, game_def_id, title, to_move, win_in, plies, tps?, state}]` — positions where the side to move wins by force |
 | `GET /puzzles/{id}` | `?reveal=1` adds `first_moves` and a `solution` line | one puzzle; `404` if unknown |
 | `GET /games` | `?limit=` (60 max) | `{games: [{room_code, game_def_id, name, family, status, lobby?, seats, open_seats, players[{seat,color,name,bot}], turn_seat, move_seq, updated_at}]}` — every unfinished game |
+| `GET /bot-guide` | | the guide to the bots as Markdown (its drawings under `/bot-guide/assets/`) |
 | `GET /here` | | `{people: [{address, name, since, seen}]}` — the browsers that have said they are here lately |
 | `POST /here` | `{secret, player_name}` (an empty name leaves) | `{address, people[...]}` |
 | `POST /dm` | `{secret, to, text}` | the message `{id, from, name, to, text, at}` |
