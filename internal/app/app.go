@@ -31,6 +31,7 @@ import (
 	"github.com/noderunner/bingle/internal/logging"
 	"github.com/noderunner/bingle/internal/mail"
 	"github.com/noderunner/bingle/internal/mcpserver"
+	"github.com/noderunner/bingle/internal/metrics"
 	"github.com/noderunner/bingle/internal/session"
 	"github.com/noderunner/bingle/internal/store"
 	"github.com/noderunner/bingle/internal/version"
@@ -51,6 +52,7 @@ type App struct {
 	rtc       api.RTCConfig
 	changelog string
 	log       *slog.Logger
+	metrics   *metrics.Metrics
 }
 
 // Option changes how New builds the App.
@@ -64,6 +66,13 @@ func WithLogger(lg *slog.Logger) Option {
 			a.log = lg
 		}
 	}
+}
+
+// WithMetrics hands the App the registry to record into. Without it nothing
+// is recorded and the middleware costs nothing, which is what a server with
+// BINGLE_METRICS_ADDR empty does and what most tests want.
+func WithMetrics(m *metrics.Metrics) Option {
+	return func(a *App) { a.metrics = m }
 }
 
 // New builds an App from cfg: it opens the store, builds a *catalog.Catalog
@@ -220,6 +229,10 @@ func (a *App) newRouter() chi.Router {
 	// never logged as a request. Neither middleware ever sees the path.
 	r.Use(logging.RequestID)
 	r.Use(logging.Access(a.log))
+	// Inside the access log, which wraps the writer both of them read the
+	// status off, and outside the recover, so a request that panicked is
+	// counted as the 500 it became.
+	r.Use(a.metrics.Middleware)
 	r.Use(logging.Recover(a.log))
 	r.Get("/healthz", a.handleHealthz)
 	r.Mount("/api", api.NewRouter(a.manager, api.WithEnvs(a.envs), api.WithBatches(a.batches), api.WithPublicURL(a.publicURL), api.WithRTC(a.rtc), api.WithChangelog(a.changelog)))
@@ -230,6 +243,28 @@ func (a *App) newRouter() chi.Router {
 	// Mounted last: internal/web acts as "/"'s catch-all/root, so every more
 	// specific path above must be registered first to take precedence.
 	r.Mount("/", web.NewRouter(a.manager))
+	return r
+}
+
+// MetricsHandler is what the private listener serves: the exposition, and
+// nothing else yet. /healthz is on it as well so a scrape target and a health
+// check can be the same port, while the public /healthz stays where the
+// container's health check already looks for it.
+//
+// Note what is NOT here: this handler is never mounted on the public router.
+// The public site has no authentication of any kind, so what bingle is doing
+// and how busy it is must not be readable from it (ADR 0064), and a test
+// asserts /metrics is a 404 there.
+func (a *App) MetricsHandler() http.Handler {
+	r := chi.NewRouter()
+	r.Use(logging.RequestID)
+	r.Use(logging.Recover(a.log))
+	// No access log and no metrics middleware: a scraper calls this every few
+	// seconds for ever, and neither a line per scrape nor a series counting
+	// the scrapes of the series is worth having. promhttp counts its own
+	// requests, which is the part that matters.
+	r.Handle("/metrics", a.metrics.Handler())
+	r.Get("/healthz", a.handleHealthz)
 	return r
 }
 

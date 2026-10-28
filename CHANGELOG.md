@@ -4,6 +4,21 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.13.0 - 2026-10-28
+
+### Bingle Core 0.13.0
+- **The server can now be watched while it runs.** Whoever runs Bingle can see how many games are
+  being played, how quickly pages and moves are answered, which requests are being refused and
+  how much work the machine is doing — in the standard format every monitoring tool reads, with
+  nothing extra to install. If something feels slow, there is now a way to find out where the time
+  goes instead of guessing.
+- This is **off the public site on purpose.** The figures live on a separate address that only the
+  machine Bingle runs on can reach, and putting them anywhere a network can get to them requires
+  a password. Nothing about *you* is in them: not the code of the game you are in, not your name,
+  not what you typed.
+- For whoever runs the server: `BINGLE_METRICS_ADDR` (default `127.0.0.1:9095`, empty to turn it
+  off) and `BINGLE_METRICS_TOKEN`. See [docs/observability.md](docs/observability.md).
+
 ## 0.12.0 - 2026-10-28
 
 ### Bingle Core 0.12.0

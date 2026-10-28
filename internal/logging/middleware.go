@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+
+	"github.com/noderunner/bingle/internal/httpstat"
 )
 
 // RequestIDHeader is the header a request id is read from and echoed in.
@@ -76,7 +78,15 @@ func Recover(lg *slog.Logger) func(http.Handler) http.Handler {
 	lg = orDefault(lg)
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			rec := &recorder{ResponseWriter: w}
+			// Access has normally wrapped the writer already; wrap it here
+			// too when this middleware is used on its own.
+			rec := httpstat.From(r.Context())
+			if rec == nil {
+				var ctx context.Context
+				rec, ctx = httpstat.Wrap(r.Context(), w)
+				r = r.WithContext(ctx)
+				w = rec
+			}
 			defer func() {
 				v := recover()
 				if v == nil {
@@ -94,11 +104,11 @@ func Recover(lg *slog.Logger) func(http.Handler) http.Handler {
 					slog.Any("panic", v),
 					slog.String("stack", string(debug.Stack())),
 				)
-				if !rec.wrote {
+				if !rec.Wrote() {
 					http.Error(rec, "internal server error", http.StatusInternalServerError)
 				}
 			}()
-			next.ServeHTTP(rec, r)
+			next.ServeHTTP(w, r)
 		})
 	}
 }
@@ -120,19 +130,20 @@ func Access(lg *slog.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			start := time.Now()
-			rec := &recorder{ResponseWriter: w}
-			rec.onUpgrade = func() {
+			rec, ctx := httpstat.Wrap(r.Context(), w)
+			r = r.WithContext(ctx)
+			rec.AddOnUpgrade(func() {
 				lg.LogAttrs(r.Context(), slog.LevelDebug, "websocket open",
 					slog.String("method", r.Method),
 					slog.String("route", Route(r)),
 					slog.String("id", RequestIDFrom(r.Context())),
 				)
-			}
+			})
 
 			next.ServeHTTP(rec, r)
 
 			dur := time.Since(start)
-			if rec.statusOrOK() == http.StatusSwitchingProtocols {
+			if rec.Status() == http.StatusSwitchingProtocols {
 				lg.LogAttrs(r.Context(), slog.LevelDebug, "websocket closed",
 					slog.String("method", r.Method),
 					slog.String("route", Route(r)),
@@ -142,14 +153,14 @@ func Access(lg *slog.Logger) func(http.Handler) http.Handler {
 				return
 			}
 			level := slog.LevelDebug
-			if rec.statusOrOK() >= http.StatusInternalServerError {
+			if rec.Status() >= http.StatusInternalServerError {
 				level = slog.LevelInfo
 			}
 			lg.LogAttrs(r.Context(), level, "request",
 				slog.String("method", r.Method),
 				slog.String("route", Route(r)),
-				slog.Int("status", rec.statusOrOK()),
-				slog.Int64("bytes", rec.bytes),
+				slog.Int("status", rec.Status()),
+				slog.Int64("bytes", rec.Bytes()),
 				slog.Duration("dur", dur),
 				slog.String("id", RequestIDFrom(r.Context())),
 			)
@@ -163,56 +174,6 @@ func Access(lg *slog.Logger) func(http.Handler) http.Handler {
 func Route(r *http.Request) string {
 	return chi.RouteContext(r.Context()).RoutePattern()
 }
-
-// recorder is the http.ResponseWriter the middlewares wrap a handler's in, to
-// learn the status and the size of a response they do not write themselves.
-//
-// It deliberately implements nothing but Unwrap beyond that: net/http's
-// ResponseController and the WebSocket library both follow Unwrap to reach the
-// real writer, so hijacking and flushing keep working without this type
-// having to know about them.
-type recorder struct {
-	http.ResponseWriter
-	status    int
-	bytes     int64
-	wrote     bool
-	onUpgrade func() // called once, when an upgrade is accepted
-}
-
-func (rc *recorder) WriteHeader(status int) {
-	if rc.wrote {
-		rc.ResponseWriter.WriteHeader(status) // let net/http complain, as it would without us
-		return
-	}
-	rc.status = status
-	rc.wrote = true
-	rc.ResponseWriter.WriteHeader(status)
-	if status == http.StatusSwitchingProtocols && rc.onUpgrade != nil {
-		rc.onUpgrade()
-	}
-}
-
-// statusOrOK is the status the client saw: a handler that writes nothing at
-// all still ends in a 200 from net/http.
-func (rc *recorder) statusOrOK() int {
-	if rc.status == 0 {
-		return http.StatusOK
-	}
-	return rc.status
-}
-
-func (rc *recorder) Write(b []byte) (int, error) {
-	if !rc.wrote {
-		rc.WriteHeader(http.StatusOK) // what net/http does on a first Write
-	}
-	n, err := rc.ResponseWriter.Write(b)
-	rc.bytes += int64(n)
-	return n, err
-}
-
-// Unwrap returns the wrapped writer, for http.ResponseController and for the
-// WebSocket upgrade's hijack.
-func (rc *recorder) Unwrap() http.ResponseWriter { return rc.ResponseWriter }
 
 func orDefault(lg *slog.Logger) *slog.Logger {
 	if lg == nil {

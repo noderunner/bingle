@@ -1,6 +1,6 @@
 # Plan: logging, metrics and a slow-request journal
 
-Status: **Stage 1 done, stages 2–7 planned** (2026-10-28). The decisions in *What was decided*
+Status: **Stages 1 and 2 done, stages 3–7 planned** (2026-10-28). The decisions in *What was decided*
 below were taken with the owner before this was written; the rest is the reasoning and the
 staging. What Stage 1 built is described in [docs/observability.md](../observability.md).
 
@@ -323,11 +323,17 @@ Stage 2, never counted), and a **WebSocket is logged when it is accepted and whe
 rather than as one request whose duration measures the whole visit. The redaction policy became
 ADR 0063, which Stage 2's label whitelist inherits.
 
-**Stage 2 — metrics and the listener.** `internal/metrics` with the custom registry, the
+**Stage 2 — metrics and the listener.** *Done.* `internal/metrics` with the custom registry, the
 HTTP middleware, the Go and process collectors, the second listener (and its token path),
 `/metrics`. Tests: the exposition parses and holds the expected families; **`/metrics` is
 404 on the public listener**; the listener binds to localhost by default; the series ceiling
-holds; `-race` on concurrent requests.
+holds; `-race` on concurrent requests. Settled here and written down in ADR 0064: the histogram
+buckets (fourteen, a millisecond to thirty seconds), and that the private listener **binds before
+it serves** so a test can ask what port it got rather than guess one. Two additions: the
+`bingle_ws_connections` gauges, which the middleware can record from the upgrade it already sees,
+and a `nil *Metrics` meaning "switched off" so no call site needs a branch. Two things from the
+design above deliberately left to Stage 4: `bingle_ws_events_total` and `bingle_ws_dropped_total`,
+which come from the hub'"'"'s tap.
 
 **Stage 3 — the database.** Named statements across the ~74 call sites in
 `internal/store` (a thin wrapper, so the diffs are one line each), the busy counter, the
@@ -387,6 +393,11 @@ either shows up, the span cap and the sample interval are the dials.
 
 ## Status log
 
+- 2026-10-28: Stage 2 landed: `internal/metrics` (the registry, the HTTP middleware, the Go and
+  process collectors), `internal/httpstat` (one wrapped writer shared by the middlewares that
+  need the status), `httpserve.ListenPrivate` and its bearer token, `BINGLE_METRICS_ADDR` and
+  `BINGLE_METRICS_TOKEN`, and ADR 0064. Cost on a move: +0.9% in allocations, inside the budget;
+  cost in dependencies: one direct, seven indirect, 3.6 MB of binary.
 - 2026-10-28: Stage 1 landed: `internal/logging` (the logger, the redaction helpers and the three
   middlewares), `BINGLE_LOG_LEVEL` and `BINGLE_LOG_FORMAT`, the 18 call sites, ADR 0063 and
   `docs/observability.md`. A panic in a handler is recorded for the first time.

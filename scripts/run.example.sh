@@ -19,5 +19,8 @@ export BINGLE_SMTP_HOST=smtp.example.com              # email notifications (doc
 export BINGLE_SMTP_PASSWORD_FILE="$HOME/.config/bingle/smtp_password"
 export BINGLE_LOG_LEVEL=info                          # debug for a line per request (docs/observability.md)
 export BINGLE_LOG_FORMAT=text                         # json for a log collector
+export BINGLE_METRICS_ADDR=127.0.0.1:9095             # curl it for Prometheus metrics; off if empty
+# A token is required only if the line above leaves the loopback interface:
+# export BINGLE_METRICS_TOKEN="$(cat ~/.config/bingle/metrics_token)"
 
 exec ./bin/bingle
