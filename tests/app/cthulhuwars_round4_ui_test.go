@@ -519,6 +519,23 @@ func TestWebCthulhuWars_TheReactionChoiceCanBeChangedWhileOthersPlay(t *testing.
 	if code, _ := moveNotation(t, baseURL, room, "Alice", "pass"); code != 200 {
 		t.Fatalf("pass: %d", code)
 	}
+	// settled waits for the switch to reach want and returns what it finally
+	// shows. Three bots are playing, so the page is redrawing and the main
+	// thread is busy: the click handler may not have run yet a fixed moment
+	// after the mouse comes up, and reading the switch then is a coin toss on
+	// a loaded runner. Waiting for the change keeps the assertion ("the click
+	// moved the switch") while dropping the assumption about when.
+	settled := func(want bool) bool {
+		t.Helper()
+		deadline := time.Now().Add(5 * time.Second)
+		for {
+			got := evalBool(t, ctx, `document.getElementById("ask-devolve-all").checked`)
+			if got == want || time.Now().After(deadline) {
+				return got
+			}
+			time.Sleep(50 * time.Millisecond)
+		}
+	}
 	flip := func() (before, after bool) {
 		t.Helper()
 		var r struct{ X, Y, W, H float64 }
@@ -536,11 +553,10 @@ func TestWebCthulhuWars_TheReactionChoiceCanBeChangedWhileOthersPlay(t *testing.
 			chromedp.ActionFunc(func(c context.Context) error {
 				return input.DispatchMouseEvent(input.MouseReleased, x, y).WithButton(input.Left).WithClickCount(1).Do(c)
 			}),
-			chromedp.Sleep(150*time.Millisecond),
 		); err != nil {
 			t.Fatal(err)
 		}
-		return before, evalBool(t, ctx, `document.getElementById("ask-devolve-all").checked`)
+		return before, settled(!before)
 	}
 	for i := 1; i <= 8; i++ {
 		if before, after := flip(); before == after {
