@@ -105,6 +105,9 @@ export const api = {
 		return call(`/api/games/${enc(code)}/state${q.length ? "?" + q.join("&") : ""}`);
 	},
 	moves: (code) => call(`/api/games/${enc(code)}/moves`),
+	openGames: (limit) => call("/api/games" + (limit ? `?limit=${limit}` : "")),
+	here: (secret, name) => call("/api/here", { method: "POST", body: { secret, player_name: name } }),
+	whoIsHere: () => call("/api/here"),
 	presence: (code) => call(`/api/games/${enc(code)}/presence`),
 	setPresence: (code, name, present) => call(`/api/games/${enc(code)}/presence`, { method: "POST", body: { player_name: name, present } }),
 	history: (code) => call(`/api/games/${enc(code)}/history`),

@@ -392,3 +392,53 @@ func (s *Store) SetPlayerBot(ctx context.Context, gameID int64, seat int, bot st
 	}
 	return nil
 }
+
+// UnfinishedGame is one game that has not ended, for the list of games
+// anybody can look in on. It carries what such a list shows without reading
+// each game's position: who is seated, and when it last moved on.
+type UnfinishedGame struct {
+	GameID    int64
+	RoomCode  string
+	GameDefID string
+	Status    string
+	Lobby     bool
+	TurnSeat  *int
+	MoveSeq   int
+	// Seated is how many of the game's seats hold a player or a bot.
+	Seated    int
+	UpdatedAt string
+}
+
+// ListUnfinishedGames returns the games that are still going — waiting for
+// players, in a lobby, or being played — newest change first, at most limit of
+// them.
+func (s *Store) ListUnfinishedGames(ctx context.Context, limit int) ([]UnfinishedGame, error) {
+	if limit <= 0 {
+		limit = 50
+	}
+	rows, err := s.db.QueryContext(ctx,
+		`SELECT g.id, g.room_code, g.game_def_id, g.status, g.lobby, g.turn_seat, g.move_seq, g.updated_at,
+		        (SELECT COUNT(*) FROM players p WHERE p.game_id = g.id)
+		 FROM games g WHERE g.status != 'finished'
+		 ORDER BY g.updated_at DESC LIMIT ?`, limit)
+	if err != nil {
+		return nil, fmt.Errorf("listing unfinished games: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+	var out []UnfinishedGame
+	for rows.Next() {
+		var g UnfinishedGame
+		var lobby int
+		var turnSeat sql.NullInt64
+		if err := rows.Scan(&g.GameID, &g.RoomCode, &g.GameDefID, &g.Status, &lobby, &turnSeat, &g.MoveSeq, &g.UpdatedAt, &g.Seated); err != nil {
+			return nil, fmt.Errorf("scanning unfinished game: %w", err)
+		}
+		g.Lobby = lobby != 0
+		g.TurnSeat = nullInt64ToIntPtr(turnSeat)
+		out = append(out, g)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("listing unfinished games: %w", err)
+	}
+	return out, nil
+}

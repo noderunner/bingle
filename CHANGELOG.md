@@ -4,6 +4,21 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.8.0 - 2026-10-27
+
+### Bingle Core 0.8.0
+- **Every game on the server, in one place.** The *Active games* window now has two tabs: *My
+  games*, as before, and *All games* — every game that has not finished, whoever made it. Open one
+  to watch it, or take a seat where one is open. Games waiting in a lobby are listed too, and both
+  tabs say how many seats are still free.
+- **Who is here.** The person icon in the top bar opens *Your profile* as a window, with the name
+  you play under and everybody who is here right now. Names are chosen by the people themselves —
+  there are no accounts — so a name is not proof of who somebody is.
+- **The Global Chat tab says how much you have missed,** including what was said while you were
+  away, not only while you had another tab open.
+- **Two new icons.** *Join a game* is two plugs coming together, not a door with an arrow through
+  it, and every *Rules* button is a rule book.
+
 ## 0.7.0 - 2026-10-27
 
 ### Bingle Core 0.7.0

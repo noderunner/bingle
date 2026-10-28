@@ -19,6 +19,7 @@ import { statIcon } from "./icons.js";
 import { hoverCard, hideHoverCard } from "./tooltip.js";
 import { createOptionsWindow } from "./options.js";
 import { cardTable, choiceGrid, hideCardZoom } from "./cards.js";
+import { rulesIcon } from "./ui-icons.js";
 import { choiceIcon } from "./choice-icons.js";
 import { animalIcon, animalOf } from "./animals.js";
 import { themesFor, themeById } from "./themes.js";
@@ -4383,7 +4384,11 @@ let optionsWin = null;
 function initOptions() {
 	const host = document.getElementById("topbar-actions");
 	if (!host || optionsWin) return;
-	const rules = h("button", { id: "show-rules", class: "topbar-button", onclick: () => S.info && openRules(S.info), title: "Read the rules of this game" }, "Rules");
+	const rules = h(
+		"button",
+		{ id: "show-rules", class: "topbar-icon", onclick: () => S.info && openRules(S.info), title: "Rules — read the rules of this game", "aria-label": "Rules" },
+		rulesIcon()
+	);
 	const opts = h(
 		"button",
 		{ id: "open-options", class: "topbar-button", "aria-haspopup": "dialog", "aria-expanded": "false", title: "Settings, tools and the link to this game" },

@@ -120,6 +120,25 @@ export function setSeatToken(code, token) {
 	store.set(TOKENS_KEY, all);
 }
 
+const SECRET_KEY = "bingle.session";
+
+/**
+ * This browser's own secret, made the first time it is asked for. It is sent to
+ * the server (to say that somebody is here, and to write a direct message) and
+ * to nobody else: what others see is the address it hashes to, so a person can
+ * be written to without anyone being able to write *as* them.
+ */
+export function sessionSecret() {
+	let secret = store.get(SECRET_KEY, "");
+	if (typeof secret !== "string" || secret.length < 16) {
+		const bytes = new Uint8Array(16);
+		(window.crypto || window.msCrypto).getRandomValues(bytes);
+		secret = [...bytes].map((b) => b.toString(16).padStart(2, "0")).join("");
+		store.set(SECRET_KEY, secret);
+	}
+	return secret;
+}
+
 const PROFILE_KEY = "bingle.profile";
 
 /**
