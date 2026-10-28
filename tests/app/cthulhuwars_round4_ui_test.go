@@ -536,32 +536,94 @@ func TestWebCthulhuWars_TheReactionChoiceCanBeChangedWhileOthersPlay(t *testing.
 			time.Sleep(50 * time.Millisecond)
 		}
 	}
-	flip := func() (before, after bool) {
+	// The dock is redrawn while the bots play, and anything above it changing
+	// height moves the switch between the measurement and the click, so a
+	// click aimed at where the switch just was can land on something else.
+	// That is an artifact of driving a moving page, not the bug this test is
+	// about, so the page reports where each click really landed: a click is
+	// only aimed when the point still hits the switch, and only counted when
+	// the page says it arrived there.
+	evalString(t, ctx, `
+		window.__hit = null;
+		document.addEventListener("click", function (e) {
+			var el = document.getElementById("ask-devolve-all");
+			var label = el && el.closest("label");
+			window.__hit = !!(el && (e.target === el || (label && label.contains(e.target))));
+		}, true);
+		"ok"`)
+
+	// aimAndClick clicks the middle of the switch if a click there would reach
+	// it, and reports whether it did. It never dispatches at a point the switch
+	// has moved away from, so a miss costs nothing and disturbs nothing else.
+	aimAndClick := func() bool {
 		t.Helper()
-		var r struct{ X, Y, W, H float64 }
-		if err := chromedp.Run(ctx, chromedp.Evaluate(`(function () { var r = document.getElementById("ask-devolve-all").getBoundingClientRect(); return { X: r.x, Y: r.y, W: r.width, H: r.height }; })()`, &r)); err != nil {
+		var p struct {
+			X, Y float64
+			Hits bool
+		}
+		const aim = `(function () {
+			var el = document.getElementById("ask-devolve-all");
+			var r = el.getBoundingClientRect();
+			var x = r.x + r.width / 2, y = r.y + r.height / 2;
+			var at = document.elementFromPoint(x, y);
+			var label = el.closest("label");
+			return { X: x, Y: y, Hits: !!at && (at === el || (label && label.contains(at))) };
+		})()`
+		if err := chromedp.Run(ctx, chromedp.Evaluate(aim, &p)); err != nil {
 			t.Fatal(err)
 		}
-		before = evalBool(t, ctx, `document.getElementById("ask-devolve-all").checked`)
-		x, y := r.X+r.W/2, r.Y+r.H/2
+		if !p.Hits {
+			return false
+		}
+		evalString(t, ctx, `window.__hit = null; "ok"`)
 		// A human click: the button is down for a moment.
 		if err := chromedp.Run(ctx,
 			chromedp.ActionFunc(func(c context.Context) error {
-				return input.DispatchMouseEvent(input.MousePressed, x, y).WithButton(input.Left).WithClickCount(1).Do(c)
+				return input.DispatchMouseEvent(input.MousePressed, p.X, p.Y).WithButton(input.Left).WithClickCount(1).Do(c)
 			}),
 			chromedp.Sleep(120*time.Millisecond),
 			chromedp.ActionFunc(func(c context.Context) error {
-				return input.DispatchMouseEvent(input.MouseReleased, x, y).WithButton(input.Left).WithClickCount(1).Do(c)
+				return input.DispatchMouseEvent(input.MouseReleased, p.X, p.Y).WithButton(input.Left).WithClickCount(1).Do(c)
 			}),
 		); err != nil {
 			t.Fatal(err)
 		}
-		return before, settled(!before)
-	}
-	for i := 1; i <= 8; i++ {
-		if before, after := flip(); before == after {
-			t.Errorf("click %d had no effect (the switch stayed %v)", i, before)
+		deadline := time.Now().Add(5 * time.Second)
+		for {
+			switch evalString(t, ctx, `window.__hit === null ? "none" : (window.__hit ? "switch" : "other")`) {
+			case "switch":
+				return true
+			case "other":
+				return false
+			}
+			if time.Now().After(deadline) {
+				t.Fatal("the click never reached the page")
+			}
+			time.Sleep(50 * time.Millisecond)
 		}
+	}
+	misses := 0
+	for i := 1; i <= 8; i++ {
+		before := evalBool(t, ctx, `document.getElementById("ask-devolve-all").checked`)
+		landed := false
+		for try := 1; try <= 10 && !landed; try++ {
+			landed = aimAndClick()
+			if !landed {
+				misses++
+				time.Sleep(50 * time.Millisecond)
+			}
+		}
+		if !landed {
+			t.Fatalf("click %d never landed on the switch: the dock kept moving under the pointer", i)
+		}
+		if after := settled(!before); after == before {
+			t.Errorf("click %d landed on the switch and did not move it (it stayed %v)", i, before)
+		}
+	}
+	if misses > 0 {
+		// Worth seeing in the log: it is the condition this test is hardened
+		// against, and how often it happens says how busy the runner was.
+		t.Logf("the switch moved out from under the pointer %d time(s) across the eight clicks", misses)
 	}
 	// The page and the server agree on where it ended, and the bar is still
 	// the element it was.
