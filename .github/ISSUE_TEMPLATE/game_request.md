@@ -1,7 +1,7 @@
 ---
 name: Game request
 about: Suggest a game to add, or a rule that is implemented wrongly
-labels: game
+labels: enhancement, game
 ---
 
 **The game** (name, designer, publisher, a link to the rules)
