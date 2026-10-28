@@ -16,6 +16,16 @@ what the help window shows under *Recent changes*, so it is written for the peop
   alpha-beta and Monte Carlo tree search work (with drawings), which bot suits which game, how to
   read a batch, what a game designer should look at first, and where to go for training models.
 
+### Courtfall 0.2.0
+- **The odds of a pool, in the rules.** The Combat page now has a table of what dice are worth: the
+  success number down the side, the number of dice across, and each cell the chance of at least one
+  success, then two, then three — so you can see at a glance that three dice at 6+ is nearly
+  nothing and three at 4+ is a real threat.
+- **A standard arena.** Tick *Standard arena* when you make the game and the ten-tile draft is
+  skipped for a fixed terrain that obeys all the draft's rules and is the same for both players
+  (it maps onto itself under a half turn of the board). Ten decisions fewer before the first move,
+  and the steady ground a batch of bot games needs.
+
 ## 0.9.0 - 2026-10-27
 
 ### Bingle Core 0.9.0

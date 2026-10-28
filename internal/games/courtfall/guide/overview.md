@@ -37,6 +37,13 @@ Draft the terrain: starting with the player who lost the opening roll-off, alter
 
 **Deployment:** alternate placing one unit at a time in your back two rows, the roll-off loser placing first. The roll-off winner takes the first turn.
 
+**The standard arena.** Ticking *Standard arena* when the game is made skips the draft and lays a
+fixed terrain instead — Overgrowth in two pairs in opposite corners, two Hazards beside the Eye, the
+odd Mire and Hazard on the middle row — which obeys every rule of the draft above and maps onto
+itself under a half turn of the board, so neither player has the better ground. Ten decisions fewer
+before the first move, and the arena that batches of bot games need: the same ground every time, so
+two batches can be compared.
+
 ---
 
 ## 3. Conditions
