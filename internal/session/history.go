@@ -188,7 +188,9 @@ func (m *Manager) LegalMoves(ctx context.Context, roomCode string, seat int) (in
 	// LegalMoves and the notation it formats take no context and do no I/O
 	// (ADR 0025): the span goes around the call, never inside a ruleset.
 	_, legalSpan := trace.Start(ctx, "engine.Legal")
+	legalStart := time.Now()
 	out := legalMoveList(compiled, bs, seat)
+	m.mx.Legal(gameFamily(compiled), time.Since(legalStart), len(out))
 	legalSpan.Set("legal", len(out))
 	legalSpan.End()
 	return seat, out, nil

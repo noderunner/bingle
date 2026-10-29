@@ -27,6 +27,7 @@ import (
 
 	"github.com/noderunner/bingle/internal/bots"
 	"github.com/noderunner/bingle/internal/engine/catalog"
+	"github.com/noderunner/bingle/internal/metrics"
 	"github.com/noderunner/bingle/internal/store"
 	"github.com/noderunner/bingle/internal/trace"
 )
@@ -39,6 +40,8 @@ type Manager struct {
 	hub       *hub
 	bots      *bots.Registry
 	log       *slog.Logger           // the server's logger; tests may replace it via SetLogger
+	mx        *metrics.Metrics       // the registry; nil records nothing
+	debug     DebugOptions           // which games and rooms get the firehose
 	now       func() time.Time       // clock; tests may replace it via SetClock
 	mu        sync.Mutex             // guards roomLocks itself, not room state
 	roomLocks map[string]*sync.Mutex // lazily created, one per room code ever touched
@@ -72,6 +75,57 @@ func NewManager(st *store.Store, cat *catalog.Catalog) *Manager {
 // SetClock replaces the manager's time source (used by tests to exercise
 // move time limits without sleeping).
 func (m *Manager) SetClock(now func() time.Time) { m.now = now }
+
+// SetMetrics hands the manager the registry to record into. Without it
+// nothing is recorded, which is what a server with BINGLE_METRICS_ADDR empty
+// does and what most tests want.
+func (m *Manager) SetMetrics(mx *metrics.Metrics) {
+	m.mx = mx
+	mx.SetSlotSizes(map[metrics.Slot]int{
+		metrics.SlotHint: cap(hintSlots),
+		metrics.SlotBot:  cap(botSlots),
+	})
+}
+
+// DebugOptions narrow the debug firehose. `debug` across two dozen games is
+// unreadable, so these say which of it to keep.
+type DebugOptions struct {
+	// Games limits the per-move lines to these game families; empty means
+	// every game.
+	Games []string
+	// Room logs everything about one room whatever the level, for chasing a
+	// single report. It is a room code, matched case-insensitively.
+	Room string
+	// Secrets allows a full position in a debug line instead of the public
+	// view. Development only: a position carries committed dice, hidden
+	// hands and RNG state (ADR 0063, and the plan's section 6g).
+	Secrets bool
+	// Paranoid makes the move funnel check the engine against itself after
+	// every move. Development and CI only: it doubles Legal on every move.
+	Paranoid bool
+}
+
+// SetDebug narrows the debug firehose; see DebugOptions.
+func (m *Manager) SetDebug(o DebugOptions) { m.debug = o }
+
+// debugGame reports whether per-move debug lines are wanted for this family.
+func (m *Manager) debugGame(family string) bool {
+	if len(m.debug.Games) == 0 {
+		return true
+	}
+	for _, g := range m.debug.Games {
+		if strings.EqualFold(g, family) {
+			return true
+		}
+	}
+	return false
+}
+
+// watchedRoom reports whether this is the one room BINGLE_DEBUG_ROOM names, in
+// which case its lines are logged whatever the level.
+func (m *Manager) watchedRoom(roomCode string) bool {
+	return m.debug.Room != "" && strings.EqualFold(m.debug.Room, roomCode)
+}
 
 // SetLogger replaces the manager's logger. Without one it logs through slog's
 // default logger, which is what the tests want.
@@ -114,6 +168,16 @@ func gameFamily(compiled *catalog.CompiledGame) string {
 		return ""
 	}
 	return familyOf(compiled.Definition.Family, compiled.Definition.ID)
+}
+
+// familyOfGame is gameFamily by game definition id, for the few places that
+// have the id but not the compiled game.
+func (m *Manager) familyOfGame(defID string) string {
+	compiled, ok := m.catalog.Get(defID)
+	if !ok {
+		return ""
+	}
+	return gameFamily(compiled)
 }
 
 // lockRoom returns an unlock function for roomCode's mutex, creating that

@@ -4,6 +4,25 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.15.0 - 2026-10-28
+
+### Bingle Core 0.15.0
+- **When something is slow, the server now records why.** If a page or a move takes longer than it
+  should, Bingle writes down where the time actually went — waiting for the game to be free,
+  reading the database, working out the rules — instead of leaving it a mystery. The same happens
+  whenever the server fails a request, including the kind of failure that used to leave no trace
+  at all. If you report that a game felt sluggish at a particular moment, there is now something
+  to look at.
+- **Every move is accounted for.** How long the rules took to work out, how many moves a position
+  offered, how often a move was refused and why games end are all counted now, for every game.
+  Two of those are early warnings: a sudden rise in refused moves usually means a player's page is
+  out of date, and a sudden rise in games ending without a winner means a rule has stopped working.
+- For whoever runs the server: `BINGLE_SLOW_REQUEST` and `BINGLE_METRICS_DB` for the journal
+  (which is kept in its own file, so it can be deleted without touching a single game), and
+  `BINGLE_DEBUG_GAMES` / `BINGLE_DEBUG_ROOM` to follow one game or one room. What gets written
+  down still never includes the code of your game, your name, or anything you typed.
+  See [docs/observability.md](docs/observability.md).
+
 ## 0.14.0 - 2026-10-28
 
 ### Bingle Core 0.14.0

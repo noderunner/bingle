@@ -45,9 +45,13 @@ func (m *Manager) Resign(ctx context.Context, roomCode, name string) (StateSnaps
 	if opp, ok := compiled.Opponent(player.Seat); ok {
 		winner = &opp
 	}
+	// Counted here as well as in the move funnel: a game can end without a
+	// move being played, and bingle_games_finished_total is meant to be every
+	// game that ended, not only the ones that ended on the board.
 	if err := m.store.FinishGame(ctx, game.ID, winner, "resignation"); err != nil {
 		return StateSnapshot{}, err
 	}
+	m.mx.Finished(gameFamily(compiled), "resignation")
 
 	m.publishState(ctx, roomCode, "resign")
 	return m.GetState(ctx, roomCode, nil)
@@ -131,6 +135,7 @@ func (m *Manager) Draw(ctx context.Context, roomCode, name, action string) (Stat
 		if err := m.store.FinishGame(ctx, game.ID, nil, "agreement"); err != nil {
 			return StateSnapshot{}, err
 		}
+		m.mx.Finished(m.familyOfGame(game.GameDefID), "agreement")
 		m.publishState(ctx, roomCode, "draw-agreed")
 	default:
 		return StateSnapshot{}, fmt.Errorf("%w: unknown action %q (use offer, cancel, accept or decline)", ErrDrawNotAllowed, action)

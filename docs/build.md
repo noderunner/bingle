@@ -42,6 +42,12 @@ All configuration is via environment variables — there's no config file.
 | `BINGLE_LOG_FORMAT` | `text` | `text` is `key=value` lines for a person, `json` one object per line for a log collector |
 | `BINGLE_METRICS_ADDR` | `127.0.0.1:9095` | The private listener serving Prometheus metrics at `/metrics`. Empty turns the metrics off. It is deliberately not the public listener, which has no authentication. See [observability.md](observability.md) |
 | `BINGLE_METRICS_TOKEN` | *(unset)* | Bearer token for that listener; **required** (and at least 16 characters) when `BINGLE_METRICS_ADDR` is not on the loopback interface |
+| `BINGLE_METRICS_DB` | `bingle-metrics.db` beside the database | The slow-request journal's database, kept separate from the game database. Empty stores nothing |
+| `BINGLE_SLOW_REQUEST` | `250ms` | How slow a request must be before the journal writes it down; `0` turns the journal off. A failed request is written down however fast |
+| `BINGLE_DEBUG_GAMES` | *(every game)* | Comma-separated game families to log moves for, so `debug` is readable |
+| `BINGLE_DEBUG_ROOM` | *(unset)* | One room code logged at `info` whatever the level |
+| `BINGLE_DEBUG_SECRETS` | `off` | Full positions in the debug lines instead of the public view. **Development only** |
+| `BINGLE_PARANOID` | `off` | Check the engine against itself after every move. **Development and CI only**; it runs `Legal` twice per move |
 | `BINGLE_TLS_CERT` | *(unset)* | Path to a TLS certificate file |
 | `BINGLE_TLS_KEY` | *(unset)* | Path to a TLS private key file |
 | `BINGLE_PUBLIC_URL` | *(unset)* | Base URL players on other networks reach the server by, such as `https://games.example.com` (an absolute `http`/`https` URL, no query). Invite links in the lobby and `invite_url` are built from it; unset, the address the request came to is used |

@@ -74,9 +74,11 @@ type minimaxSearch struct {
 	// little).
 	useHeur bool
 	nodes   int
-	budget  int
-	ctx     context.Context
-	out     bool // budget or context exhausted
+	// botID is only for counting nodes (see nodes.go).
+	botID  string
+	budget int
+	ctx    context.Context
+	out    bool // budget or context exhausted
 }
 
 func (b *minimaxBot) Choose(ctx context.Context, game *catalog.CompiledGame, st *state.BoardState, seat int, legal []state.Move) (state.Move, error) {
@@ -106,7 +108,7 @@ func (b *minimaxBot) Evaluate(ctx context.Context, game *catalog.CompiledGame, s
 	// Search the world the seat can know (dice and hidden choices re-drawn).
 	st = state.Determinize(game, st, seat, rng)
 
-	s := &minimaxSearch{game: game, root: seat, budget: b.opts.NodeBudget, ctx: ctx, colors: map[int]string{}}
+	s := &minimaxSearch{game: game, root: seat, botID: b.ID(), budget: b.opts.NodeBudget, ctx: ctx, colors: map[int]string{}}
 	_, s.useHeur = state.HeuristicValue(game, st, seat)
 	for _, sd := range game.Definition.Seats {
 		s.colors[sd.Seat] = sd.Color
@@ -186,6 +188,8 @@ func (b *minimaxBot) Evaluate(ctx context.Context, game *catalog.CompiledGame, s
 			top = c
 		}
 	}
+	// One atomic add per search; see nodes.go.
+	addNodes(s.botID, s.nodes)
 	ev := Evaluation{Move: top.mv, WinRate: squash(top.score), Visits: s.nodes, Heuristic: true}
 	ev.Alternatives = append(ev.Alternatives, Candidate{Move: top.mv, WinRate: squash(top.score)})
 	for _, c := range best {

@@ -65,6 +65,13 @@ func main() {
 		lg.Info("the slow-request journal is on", "db", cfg.MetricsDB, "slower_than", cfg.SlowRequest)
 	}
 
+	if cfg.Debug.Paranoid {
+		lg.Warn("BINGLE_PARANOID is on: the engine is checked against itself after every move, which runs Legal twice. This is for development and CI, never for a server people are playing on.")
+	}
+	if cfg.Debug.Secrets {
+		lg.Warn("BINGLE_DEBUG_SECRETS is on: debug lines carry full positions, including committed dice, hidden hands and the random seed. This is for development only.")
+	}
+
 	a, err := app.New(cfg, app.WithLogger(lg), app.WithMetrics(mx), app.WithJournal(jdb, cfg.SlowRequest))
 	if err != nil {
 		lg.Error("the server could not be built", "err", err)

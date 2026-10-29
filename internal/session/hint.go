@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/noderunner/bingle/internal/bots"
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/engine/state"
+	"github.com/noderunner/bingle/internal/metrics"
 	"github.com/noderunner/bingle/internal/store"
 )
 
@@ -133,9 +135,15 @@ func (m *Manager) Hint(ctx context.Context, roomCode, name string, atSeq *int, n
 	legal = state.GuidedMoves(compiled, bs, *sim.TurnSeat, legal)
 	// A hint is a second or so of CPU; bound how many run at once so a
 	// burst of requests queues instead of starving everything else.
+	queued := time.Now()
 	select {
 	case hintSlots <- struct{}{}:
-		defer func() { <-hintSlots }()
+		m.mx.SlotWait(metrics.SlotHint, time.Since(queued))
+		m.mx.SlotEnter(metrics.SlotHint)
+		defer func() {
+			m.mx.SlotLeave(metrics.SlotHint)
+			<-hintSlots
+		}()
 	case <-ctx.Done():
 		return Hint{}, ctx.Err()
 	}
@@ -156,7 +164,9 @@ func (m *Manager) Hint(ctx context.Context, roomCode, name string, atSeq *int, n
 		mv = e.Move
 	} else {
 		var err error
+		searched := time.Now()
 		mv, err = bot.Choose(ctx, compiled, bs, *sim.TurnSeat, legal)
+		m.mx.BotSearch(bot.ID(), gameFamily(compiled), time.Since(searched))
 		if err != nil {
 			mv = legal[0]
 		}

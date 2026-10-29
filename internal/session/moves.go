@@ -11,6 +11,7 @@ import (
 	"github.com/noderunner/bingle/internal/engine/board"
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/engine/state"
+	"github.com/noderunner/bingle/internal/metrics"
 	"github.com/noderunner/bingle/internal/store"
 	"github.com/noderunner/bingle/internal/trace"
 )
@@ -183,10 +184,19 @@ func (m *Manager) applyAndRecordAs(ctx context.Context, compiled *catalog.Compil
 
 	// Apply takes no context and does no I/O (ADR 0025): the span goes
 	// around the call, never inside the ruleset.
+	family := gameFamily(compiled)
 	_, applySpan := trace.Start(ctx, "engine.Apply")
+	applyStart := time.Now()
 	result, err := state.Apply(compiled, bs, player.Seat, mv)
+	applyTook := time.Since(applyStart)
 	applySpan.End()
 	if err != nil {
+		// A refusal here is the ruleset's answer, not a fault: the client
+		// offered a move the rules do not allow. A spike in these means a
+		// rules change or a stale client, which is why they are counted
+		// apart from everything else.
+		m.mx.Move(family, metrics.MoveIllegal, applyTook)
+		m.logMove(ctx, compiled, game, player, mv, moveLine{err: err, dur: applyTook})
 		return MoveOutcome{}, err
 	}
 
@@ -246,7 +256,7 @@ func (m *Manager) applyAndRecordAs(ctx context.Context, compiled *catalog.Compil
 		clockJSON = &stored
 	}
 
-	move, err := m.store.RecordMove(ctx, game.ID, store.MoveInput{
+	recorded, err := m.store.RecordMove(ctx, game.ID, store.MoveInput{
 		Seat:                player.Seat,
 		Color:               player.Color,
 		From:                string(result.Move.From),
@@ -266,8 +276,10 @@ func (m *Manager) applyAndRecordAs(ctx context.Context, compiled *catalog.Compil
 		Clock:               clockJSON,
 	})
 	if err != nil {
+		m.mx.Move(family, metrics.MoveFailed, applyTook)
 		return MoveOutcome{}, err
 	}
+	move := recorded
 
 	finalStatus := "active"
 	if result.GameEnded {
@@ -339,6 +351,18 @@ func (m *Manager) applyAndRecordAs(ctx context.Context, compiled *catalog.Compil
 		Locked:       locked,
 	}})
 	publishSpan.End()
+
+	m.mx.Move(family, metrics.MoveApplied, applyTook)
+	if result.GameEnded {
+		m.mx.Finished(family, result.EndReason)
+	}
+	m.logMove(ctx, compiled, game, player, result.Move, moveLine{
+		seq: move.Seq, notation: result.Notation, dur: applyTook, locked: locked,
+		ended: result.GameEnded, endReason: result.EndReason, state: result.NewState,
+	})
+	if m.debug.Paranoid {
+		m.checkParanoid(ctx, compiled, game, bs, player.Seat, result)
+	}
 
 	return MoveOutcome{
 		Seq:          move.Seq,

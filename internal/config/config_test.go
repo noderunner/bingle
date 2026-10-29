@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestLoad_Defaults(t *testing.T) {
@@ -333,5 +334,115 @@ func TestLoad_MetricsTokenIsNeverPrinted(t *testing.T) {
 		if strings.Contains(printed, token) {
 			t.Errorf("the token was printed: %s", printed)
 		}
+	}
+}
+
+func TestLoad_Journal(t *testing.T) {
+	for _, v := range []string{"BINGLE_METRICS_DB", "BINGLE_SLOW_REQUEST"} {
+		t.Setenv(v, "")
+		if err := os.Unsetenv(v); err != nil {
+			t.Fatalf("unsetting %s: %v", v, err)
+		}
+	}
+	t.Setenv("BINGLE_DB_PATH", "/var/lib/bingle/bingle.db")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load() returned error: %v", err)
+	}
+	// The metrics database sits beside the game database, so a backup of the
+	// directory takes both.
+	if want := "/var/lib/bingle/" + defaultMetricsDBName; cfg.MetricsDB != want {
+		t.Errorf("MetricsDB = %q, want %q", cfg.MetricsDB, want)
+	}
+	if cfg.SlowRequest != defaultSlowRequest {
+		t.Errorf("SlowRequest = %v, want %v", cfg.SlowRequest, defaultSlowRequest)
+	}
+
+	// Empty keeps no history; the journal then only logs.
+	t.Setenv("BINGLE_METRICS_DB", "")
+	if cfg, err = Load(); err != nil || cfg.MetricsDB != "" {
+		t.Errorf("an empty BINGLE_METRICS_DB gave %q, %v", cfg.MetricsDB, err)
+	}
+
+	for _, c := range []struct {
+		env  string
+		want time.Duration
+		bad  bool
+	}{
+		{env: "500ms", want: 500 * time.Millisecond},
+		{env: "2s", want: 2 * time.Second},
+		{env: "0", want: 0}, // off
+		{env: "soon", bad: true},
+		{env: "-1s", bad: true},
+		{env: "250", bad: true}, // a duration needs a unit
+	} {
+		t.Setenv("BINGLE_SLOW_REQUEST", c.env)
+		cfg, err := Load()
+		switch {
+		case c.bad && err == nil:
+			t.Errorf("BINGLE_SLOW_REQUEST=%q was accepted", c.env)
+		case !c.bad && err != nil:
+			t.Errorf("BINGLE_SLOW_REQUEST=%q: %v", c.env, err)
+		case !c.bad && cfg.SlowRequest != c.want:
+			t.Errorf("BINGLE_SLOW_REQUEST=%q gave %v, want %v", c.env, cfg.SlowRequest, c.want)
+		}
+	}
+}
+
+func TestLoad_Debug(t *testing.T) {
+	for _, v := range []string{"BINGLE_DEBUG_GAMES", "BINGLE_DEBUG_ROOM", "BINGLE_DEBUG_SECRETS", "BINGLE_PARANOID"} {
+		t.Setenv(v, "")
+	}
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load() returned error: %v", err)
+	}
+	if len(cfg.Debug.Games) != 0 || cfg.Debug.Room != "" || cfg.Debug.Secrets || cfg.Debug.Paranoid {
+		t.Errorf("nothing is set and Debug = %+v", cfg.Debug)
+	}
+
+	t.Setenv("BINGLE_DEBUG_GAMES", " Courtfall , nyet ,, ")
+	t.Setenv("BINGLE_DEBUG_ROOM", "ab12cd")
+	if cfg, err = Load(); err != nil {
+		t.Fatalf("Load(): %v", err)
+	}
+	if strings.Join(cfg.Debug.Games, ",") != "courtfall,nyet" {
+		t.Errorf("Games = %v, want the names lower-cased and trimmed", cfg.Debug.Games)
+	}
+	if cfg.Debug.Room != "AB12CD" {
+		t.Errorf("Room = %q, want it upper-cased", cfg.Debug.Room)
+	}
+
+	t.Setenv("BINGLE_DEBUG_ROOM", "not a room code")
+	if _, err := Load(); err == nil {
+		t.Error("BINGLE_DEBUG_ROOM was accepted with a space in it")
+	}
+	t.Setenv("BINGLE_DEBUG_ROOM", "")
+
+	// The two development-only switches are refused rather than ignored when
+	// they say something ambiguous, because switching one on by accident is
+	// what their documentation warns about.
+	for _, name := range []string{"BINGLE_DEBUG_SECRETS", "BINGLE_PARANOID"} {
+		for _, on := range []string{"1", "on", "true", "yes"} {
+			t.Setenv(name, on)
+			cfg, err := Load()
+			if err != nil {
+				t.Fatalf("%s=%q: %v", name, on, err)
+			}
+			got := cfg.Debug.Secrets
+			if name == "BINGLE_PARANOID" {
+				got = cfg.Debug.Paranoid
+			}
+			if !got {
+				t.Errorf("%s=%q did not turn it on", name, on)
+			}
+		}
+		t.Setenv(name, "maybe")
+		if _, err := Load(); err == nil {
+			t.Errorf("%s=maybe was accepted", name)
+		}
+		t.Setenv(name, "")
 	}
 }

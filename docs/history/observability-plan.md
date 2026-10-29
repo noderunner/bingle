@@ -1,6 +1,6 @@
 # Plan: logging, metrics and a slow-request journal
 
-Status: **Stages 1 to 3 done, stages 4–7 planned** (2026-10-28). The decisions in *What was decided*
+Status: **Stages 1 to 4 done, stages 5–7 planned** (2026-10-28). The decisions in *What was decided*
 below were taken with the owner before this was written; the rest is the reasoning and the
 staging. What Stage 1 built is described in [docs/observability.md](../observability.md).
 
@@ -347,11 +347,23 @@ rather than a ticker, so a scrape shows what was true when it was scraped and co
 counted; and each statement's metrics are resolved once and kept, because three label lookups per
 statement was 1.2% on a move all by itself — with them cached it is 0.5%.
 
-**Stage 4 — games, bots and the journal.** The move-funnel log and metrics, the end-reason
+**Stage 4 — games, bots and the journal.** *Done.* The move-funnel log and metrics, the end-reason
 and illegal-move counters, slot waits, the `trace` package, the `slow_requests` writer, and
 the paranoid-mode assertions. Tests: a deliberately slow handler writes exactly one journal
 row with its spans in order; paranoid mode catches a ruleset that returns a move `Legal`
 does not list; the public view never carries a secret under debug logging.
+
+Notes on what came out differently. The journal needs somewhere to write, so **Stage 4 created
+`bingle-metrics.db`** with the `slow_requests` table; Stage 5 adds `samples`, `rollups` and
+`client_errors` to the same file. `lockRoom` grew a context, for the span and nothing else — it
+is the boundary this stage exists to expose. The debug knobs of section 6f and the public-view
+rule of 6g came with the move log, because the firehose is unreadable and unsafe without them.
+`bingle_games_finished_total` is also recorded where a game ends **without** a move — a
+resignation, an agreed draw, a forfeit on time — which the design above did not say but plainly
+means. Three things from section 6 are deliberately **not** here: the narration mirroring (6b),
+the `Diagnostic` interface and `/games/{code}/explain` (6c), and repro bundles (6d), which are
+Stage 7's. Paranoid mode therefore logs an `ERROR` where the design says it would also write a
+bundle.
 
 **Stage 5 — history and the Health page.** The metrics database, the sampler, compaction and
 retention, `/metrics/history`, the CSV export and the page. Tests: a sample tick writes one
@@ -399,6 +411,17 @@ either shows up, the span cap and the sample interval are the dials.
 
 ## Status log
 
+- 2026-10-28: Stage 4 landed: `internal/trace` (the OTEL-shaped span API and the pooled
+  collector), `internal/journal` (the metrics database, the `slow_requests` table and the
+  middleware that decides), spans at the nine boundaries, the move funnel's log, the game, bot
+  and slot families, the debug knobs and paranoid mode. `BINGLE_SLOW_REQUEST`,
+  `BINGLE_METRICS_DB`, `BINGLE_DEBUG_GAMES`, `BINGLE_DEBUG_ROOM`, `BINGLE_DEBUG_SECRETS` and
+  `BINGLE_PARANOID`. Outside a request a span costs one context lookup and no allocation, which
+  is the path every bot search and batch takes. On the budget: a move shows **no time difference
+  the measurement can resolve**, and **+32 allocations of about 1020** (3.1%) while the journal
+  collects — one `context.WithValue` per span, which is the parent chain the OTEL shape needs.
+  Read as time that is inside the 1% budget; read as allocations it is not, and the trade is
+  deliberate. Spans are returned by value, which halved it from 48.
 - 2026-10-28: Stage 3 landed: the statement wrapper in `internal/store/measure.go` and all 83 call
   sites named, the four outcomes, the busy counter, the snapshot collector in
   `internal/store/stats.go`, and the contract test that keeps new call sites honest. `app.New`

@@ -435,6 +435,9 @@ func (b *mctsBot) Evaluate(ctx context.Context, game *catalog.CompiledGame, st *
 		b.iterate(game, root, rng)
 	}
 
+	// One atomic add per search; see nodes.go.
+	addNodes(b.ID(), root.visits)
+
 	// Most-visited child is the move; the next few by visits are the
 	// alternatives.
 	children := append([]*mctsNode(nil), root.children...)

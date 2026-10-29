@@ -107,7 +107,7 @@ type Tx struct {
 	// under it however the caller passes its own context around.
 	ctx   context.Context
 	start time.Time
-	span  *trace.Span
+	span  trace.Span
 	ended bool
 }
 
@@ -168,7 +168,7 @@ type Row struct {
 	s     *Store
 	name  string
 	start time.Time
-	span  *trace.Span
+	span  trace.Span
 	done  bool
 }
 
@@ -195,7 +195,7 @@ type Rows struct {
 	s     *Store
 	name  string
 	start time.Time
-	span  *trace.Span
+	span  trace.Span
 	n     int64
 	done  bool
 }

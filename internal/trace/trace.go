@@ -149,25 +149,25 @@ func (c *Collector) Dropped() int {
 	return c.dropped
 }
 
-// Span is one boundary being timed. A span whose collector is nil does
-// nothing, which is what Start returns outside a request.
+// Span is one boundary being timed. Its zero value does nothing, which is
+// what Start returns outside a request.
+//
+// It is returned **by value**: a request opens about thirty spans, and one
+// heap allocation each was measurable against the plan's budget for nothing —
+// a Span is two words and its methods take a pointer receiver, so a local
+// variable or a struct field works exactly as a pointer did.
 type Span struct {
 	c   *Collector
 	idx int
 }
 
-// noop is handed out when nothing is being collected. Every method on it is a
-// nil check, and nothing about it is ever written, so one shared value is
-// safe for every goroutine.
-var noop = &Span{}
-
 // Start begins a span named name. The returned context makes it the parent of
 // any span started inside it, and the span must be ended — `defer span.End()`
 // on the line after is the shape to copy.
-func Start(ctx context.Context, name string) (context.Context, *Span) {
+func Start(ctx context.Context, name string) (context.Context, Span) {
 	c := FromContext(ctx)
 	if c == nil {
-		return ctx, noop
+		return ctx, Span{}
 	}
 	parent := -1
 	if p, ok := ctx.Value(parentKey{}).(int); ok {
@@ -178,7 +178,7 @@ func Start(ctx context.Context, name string) (context.Context, *Span) {
 	if len(c.spans) >= maxSpans {
 		c.dropped++
 		c.mu.Unlock()
-		return ctx, noop
+		return ctx, Span{}
 	}
 	idx := len(c.spans)
 	c.spans = append(c.spans, Record{
@@ -188,7 +188,7 @@ func Start(ctx context.Context, name string) (context.Context, *Span) {
 	})
 	c.mu.Unlock()
 
-	return context.WithValue(ctx, parentKey{}, idx), &Span{c: c, idx: idx}
+	return context.WithValue(ctx, parentKey{}, idx), Span{c: c, idx: idx}
 }
 
 // Set adds something worth knowing to the span: the statement a store span

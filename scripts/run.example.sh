@@ -22,5 +22,7 @@ export BINGLE_LOG_FORMAT=text                         # json for a log collector
 export BINGLE_METRICS_ADDR=127.0.0.1:9095             # curl it for Prometheus metrics; off if empty
 # A token is required only if the line above leaves the loopback interface:
 # export BINGLE_METRICS_TOKEN="$(cat ~/.config/bingle/metrics_token)"
+export BINGLE_SLOW_REQUEST=250ms                      # write slow requests down (docs/observability.md)
+# BINGLE_PARANOID and BINGLE_DEBUG_SECRETS are for development only; leave them off here.
 
 exec ./bin/bingle

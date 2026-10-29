@@ -13,6 +13,7 @@ import (
 
 	"github.com/noderunner/bingle/internal/api"
 	"github.com/noderunner/bingle/internal/batch"
+	"github.com/noderunner/bingle/internal/bots"
 	"github.com/noderunner/bingle/internal/config"
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/envs"
@@ -126,6 +127,15 @@ func New(cfg config.Config, opts ...Option) (*App, error) {
 
 	manager := session.NewManager(st, cat)
 	manager.SetLogger(a.log)
+	manager.SetMetrics(a.metrics)
+	manager.SetDebug(session.DebugOptions{
+		Games:    cfg.Debug.Games,
+		Room:     cfg.Debug.Room,
+		Secrets:  cfg.Debug.Secrets,
+		Paranoid: cfg.Debug.Paranoid,
+	})
+	a.metrics.SetBotNodeSource(bots.NodeCounts)
+	batch.SetMetrics(a.metrics)
 
 	a.store = st
 	a.catalog = cat

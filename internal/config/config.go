@@ -107,6 +107,10 @@ type Config struct {
 	// however fast it was.
 	SlowRequest time.Duration
 
+	// Debug narrows the debug firehose and turns on the development-only
+	// checks. See Debug.
+	Debug Debug
+
 	// MetricsToken is the bearer token the private listener requires
 	// (BINGLE_METRICS_TOKEN). It is required when MetricsAddr is not on the
 	// loopback interface, and optional when it is.
@@ -131,6 +135,26 @@ type Config struct {
 	// each player time-limited credentials for it. Unset: no relay.
 	RTCTurnURLs   []string
 	RTCTurnSecret string
+}
+
+// Debug holds the settings that make a verbose server readable, and the two
+// that are for development only.
+type Debug struct {
+	// Games limits the per-move debug lines to these game families
+	// (BINGLE_DEBUG_GAMES, comma separated). Empty means every game: debug
+	// across two dozen games is a firehose, which is what this narrows.
+	Games []string
+	// Room logs everything about one room whatever the level
+	// (BINGLE_DEBUG_ROOM), for chasing a single report.
+	Room string
+	// Secrets puts full positions in the debug lines instead of the public
+	// view (BINGLE_DEBUG_SECRETS). **Development only**: a position carries
+	// committed dice, hidden hands and RNG state.
+	Secrets bool
+	// Paranoid makes the move funnel check the engine against itself after
+	// every move (BINGLE_PARANOID). **Development and CI only**: it runs
+	// Legal a second time on every move.
+	Paranoid bool
 }
 
 // Secret is a credential that must never be printed: every way of formatting
@@ -335,6 +359,9 @@ func Load() (Config, error) {
 	if err := loadJournal(&cfg); err != nil {
 		return Config{}, err
 	}
+	if err := loadDebug(&cfg); err != nil {
+		return Config{}, err
+	}
 
 	if v := os.Getenv("BINGLE_RETENTION_DAYS"); v != "" {
 		n, err := strconv.Atoi(v)
@@ -421,6 +448,50 @@ func LoopbackAddr(addr string) (bool, error) {
 		return strings.EqualFold(host, "localhost"), nil
 	}
 	return ip.IsLoopback(), nil
+}
+
+// loadDebug reads the debug settings. The two development-only ones are
+// refused rather than ignored when they are set to something that is not a
+// plain on or off, because switching them on by accident in production is
+// exactly what their documentation warns about.
+func loadDebug(cfg *Config) error {
+	for _, part := range strings.Split(os.Getenv("BINGLE_DEBUG_GAMES"), ",") {
+		if g := strings.ToLower(strings.TrimSpace(part)); g != "" {
+			cfg.Debug.Games = append(cfg.Debug.Games, g)
+		}
+	}
+	if v := strings.TrimSpace(os.Getenv("BINGLE_DEBUG_ROOM")); v != "" {
+		if !roomCodeish.MatchString(v) {
+			return fmt.Errorf("config: BINGLE_DEBUG_ROOM: %q is not a room code", v)
+		}
+		cfg.Debug.Room = strings.ToUpper(v)
+	}
+	for name, dst := range map[string]*bool{
+		"BINGLE_DEBUG_SECRETS": &cfg.Debug.Secrets,
+		"BINGLE_PARANOID":      &cfg.Debug.Paranoid,
+	} {
+		on, err := parseBool(name, os.Getenv(name))
+		if err != nil {
+			return err
+		}
+		*dst = on
+	}
+	return nil
+}
+
+// roomCodeish is what a room code looks like: letters and digits, and short.
+var roomCodeish = regexp.MustCompile(`^[A-Za-z0-9]{4,12}$`)
+
+// parseBool reads an on/off setting, refusing anything ambiguous.
+func parseBool(name, raw string) (bool, error) {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "", "0", "off", "false", "no":
+		return false, nil
+	case "1", "on", "true", "yes":
+		return true, nil
+	default:
+		return false, fmt.Errorf("config: %s must be on or off (1/0, on/off, true/false), got %q", name, raw)
+	}
 }
 
 // ParsePublicURL checks a public base URL and returns it without a trailing

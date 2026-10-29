@@ -8,6 +8,7 @@ import (
 	"github.com/noderunner/bingle/internal/bots"
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/engine/state"
+	"github.com/noderunner/bingle/internal/metrics"
 	"github.com/noderunner/bingle/internal/store"
 )
 
@@ -164,11 +165,21 @@ func (m *Manager) botMove(ctx context.Context, bot bots.Bot, roomCode string, co
 	// Thinking is CPU; bound how many bots think at once.
 	var mv state.Move
 	var err error
+	queued := time.Now()
 	select {
 	case botSlots <- struct{}{}:
+		// Recorded inside the case, so it is the wait for a slot and not the
+		// thinking that follows it: queue wait is what grows first as load
+		// grows, because the pool stays full and each search takes as long
+		// as it always did.
+		m.mx.SlotWait(metrics.SlotBot, time.Since(queued))
+		m.mx.SlotEnter(metrics.SlotBot)
 		think, stop := context.WithTimeout(ctx, botThinkLimit)
+		searched := time.Now()
 		mv, err = bot.Choose(think, compiled, bs, seat, legal)
+		m.mx.BotSearch(bot.ID(), gameFamily(compiled), time.Since(searched))
 		stop()
+		m.mx.SlotLeave(metrics.SlotBot)
 		<-botSlots
 	case <-ctx.Done():
 		err = ctx.Err()
