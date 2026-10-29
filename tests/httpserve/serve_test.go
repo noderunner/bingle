@@ -218,7 +218,7 @@ func generateSelfSignedCert(t *testing.T) (certPath, keyPath string) {
 
 func TestServe_PlainHTTP_NoTLSConfigured(t *testing.T) {
 	addr := freeAddr(t)
-	cfg := httpserve.Config{Addr: addr, CertFile: "", KeyFile: ""}
+	cfg := httpserve.Config{Addr: addr, CertFile: "", KeyFile: "", LoopbackOK: true}
 
 	url := "http://" + addr + "/"
 	client := &http.Client{Timeout: 2 * time.Second}
@@ -300,7 +300,7 @@ func TestServe_OneOfCertOrKeySet_FallsBackToPlainHTTP(t *testing.T) {
 
 	t.Run("cert only", func(t *testing.T) {
 		addr := freeAddr(t)
-		cfg := httpserve.Config{Addr: addr, CertFile: certPath, KeyFile: ""}
+		cfg := httpserve.Config{Addr: addr, CertFile: certPath, KeyFile: "", LoopbackOK: true}
 
 		url := "http://" + addr + "/"
 		client := &http.Client{Timeout: 2 * time.Second}
@@ -321,7 +321,7 @@ func TestServe_OneOfCertOrKeySet_FallsBackToPlainHTTP(t *testing.T) {
 	t.Run("key only", func(t *testing.T) {
 		_, keyPath := generateSelfSignedCert(t)
 		addr := freeAddr(t)
-		cfg := httpserve.Config{Addr: addr, CertFile: "", KeyFile: keyPath}
+		cfg := httpserve.Config{Addr: addr, CertFile: "", KeyFile: keyPath, LoopbackOK: true}
 
 		url := "http://" + addr + "/"
 		client := &http.Client{Timeout: 2 * time.Second}

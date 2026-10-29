@@ -29,13 +29,39 @@ make run
 
 By default this listens on `:8080` (plain HTTP) and stores its SQLite database at `./bingle.db` in the current directory. Open <http://localhost:8080> in a browser to use the web UI.
 
+### The connection must be secure
+
+Bingle **refuses to start** on an address a network can reach unless the connection to it is
+secure, because it is about to start carrying passwords and session cookies
+([ADR 0065](decisions/0065-the-connection-must-be-secure.md)). One of these four:
+
+```sh
+BINGLE_TLS_DOMAIN=games.example.com   # automatic Let's Encrypt certificates (docs/tls.md)
+BINGLE_TLS_CERT=… BINGLE_TLS_KEY=…    # your own certificate
+BINGLE_TLS_SELFSIGNED=1               # one bingle generates and caches for itself
+BINGLE_TRUST_PROXY=1                  # a proxy in front of bingle terminates TLS
+```
+
+**A loopback bind needs none of them**, which is why the default is `127.0.0.1:8080`: run
+`./bin/bingle` and it serves the machine it is on, with nothing to configure. Making it reachable
+from elsewhere is a deliberate act, and that act comes with a certificate.
+
+The startup error names all four, so there is nothing to look up:
+
+```
+$ BINGLE_ADDR=:8080 ./bin/bingle
+ERROR the configuration was refused err="config: bingle is listening on \":8080\", which a
+network can reach, with no secure connection. Set BINGLE_TLS_DOMAIN for automatic certificates,
+… A loopback address such as 127.0.0.1:8080 needs none of these"
+```
+
 ### Configuration
 
 All configuration is via environment variables — there's no config file.
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `BINGLE_ADDR` | `:8080` | Address/port to listen on |
+| `BINGLE_ADDR` | `127.0.0.1:8080` | Address/port to listen on. **The default is loopback**: a bind a network can reach needs a secure connection as well (see below) |
 | `BINGLE_DB_PATH` | `./bingle.db` | Path to the SQLite database file |
 | `BINGLE_RETENTION_DAYS` | `0` (keep everything) | Delete games nobody has touched for this many days (checked hourly) |
 | `BINGLE_LOG_LEVEL` | `info` | How much the server says: `debug`, `info`, `warn` or `error`. `debug` is the verbose mode and adds a line per request. See [observability.md](observability.md) |
@@ -52,6 +78,9 @@ All configuration is via environment variables — there's no config file.
 | `BINGLE_DEBUG_SECRETS` | `off` | Full positions in the debug lines instead of the public view. **Development only** |
 | `BINGLE_DEBUG_DIR` | *(unset)* | Where repro bundles are written when something impossible happens; `scripts/replay` reproduces one. Unset writes none. A bundle carries a whole position, secrets and all — see [observability.md](observability.md) |
 | `BINGLE_PARANOID` | `off` | Check the engine against itself after every move. **Development and CI only**; it runs `Legal` twice per move |
+| `BINGLE_TLS_SELFSIGNED` | `off` | Generate and cache a certificate at startup, so a server reachable from a network can be run without obtaining one. **No browser will trust it**; the warning is clicked through once per browser |
+| `BINGLE_TRUST_PROXY` | `off` | Serve plain HTTP behind a proxy that terminates TLS. The proxy **must** set `X-Forwarded-Proto: https`; anything arriving as `http` is refused. Turns every loopback exemption off |
+| `BINGLE_DEV` | `off` | Deterministic development credentials (used from stage 3 of the accounts plan). Loopback binds only, and never with `BINGLE_TRUST_PROXY` |
 | `BINGLE_TLS_CERT` | *(unset)* | Path to a TLS certificate file |
 | `BINGLE_TLS_KEY` | *(unset)* | Path to a TLS private key file |
 | `BINGLE_PUBLIC_URL` | *(unset)* | Base URL players on other networks reach the server by, such as `https://games.example.com` (an absolute `http`/`https` URL, no query). Invite links in the lobby and `invite_url` are built from it; unset, the address the request came to is used |

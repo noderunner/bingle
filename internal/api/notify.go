@@ -1,20 +1,21 @@
 package api
 
 import (
-	"net"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
 )
 
-// clientIP is the address the request came from. Forwarding headers are not
-// trusted: nothing in front of bingle is known to set them honestly.
-func clientIP(r *http.Request) string {
-	host, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil {
-		return r.RemoteAddr
-	}
-	return host
+// clientIP is the address the request came from.
+//
+// Forwarding headers are believed only when the operator has said there is a
+// proxy in front of bingle (BINGLE_TRUST_PROXY); otherwise anyone could claim
+// any address. That matters here because this address is what the rate
+// limiters count against: behind an unread proxy every request in the world
+// shares one address, and the first visitor to trip a limit would trip it for
+// everybody.
+func (h *handlers) clientIP(r *http.Request) string {
+	return h.transport.PeerIP(r)
 }
 
 // handleNotifyConfig implements GET /notify/config: whether email
@@ -46,7 +47,7 @@ func (h *handlers) handleSaveContact(w http.ResponseWriter, r *http.Request) {
 	if !decodeBody(w, r, &req) {
 		return
 	}
-	info, err := h.mgr.SaveContact(r.Context(), clientIP(r), req.Address, req.ContactID, req.ContactSecret)
+	info, err := h.mgr.SaveContact(r.Context(), h.clientIP(r), req.Address, req.ContactID, req.ContactSecret)
 	if err != nil {
 		writeError(w, err)
 		return
@@ -77,7 +78,7 @@ func (h *handlers) handleContactResend(w http.ResponseWriter, r *http.Request) {
 	if !decodeBody(w, r, &req) {
 		return
 	}
-	info, err := h.mgr.ResendConfirmation(r.Context(), clientIP(r), req.ContactID, req.ContactSecret)
+	info, err := h.mgr.ResendConfirmation(r.Context(), h.clientIP(r), req.ContactID, req.ContactSecret)
 	if err != nil {
 		writeError(w, err)
 		return

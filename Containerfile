@@ -11,16 +11,23 @@ WORKDIR /app
 COPY --from=builder /out/bingle .
 ENV BINGLE_ADDR=:8080
 ENV BINGLE_DB_PATH=/data/bingle.db
+# A container's port is published to a network by definition, so the image must
+# satisfy the secure-connection rule (ADR 0065) rather than refuse to start.
+# It generates and caches its own certificate, which lives in the volume and so
+# survives a restart. Replace it for a real deployment:
+#
+#   automatic certificates:  -e BINGLE_TLS_SELFSIGNED=0 -e BINGLE_TLS_DOMAIN=games.example.com \
+#                            -e BINGLE_ADDR=:8443 -e BINGLE_HTTP_ADDR=:8081  (publish 443 and 80)
+#   your own certificate:    -e BINGLE_TLS_SELFSIGNED=0 -e BINGLE_TLS_CERT=… -e BINGLE_TLS_KEY=…
+#   behind a proxy:          -e BINGLE_TLS_SELFSIGNED=0 -e BINGLE_TRUST_PROXY=1
+ENV BINGLE_TLS_SELFSIGNED=1
 VOLUME ["/data"]
-# Plain HTTP uses 8080. For HTTPS see docs/tls.md: with BINGLE_TLS_DOMAIN set, run
-# the container with BINGLE_ADDR=:8443 and BINGLE_HTTP_ADDR=:8081 and publish
-# host ports 443 and 80 to them.
 EXPOSE 8080 8081 8443
-# Plain HTTP on 8080; HTTPS from files on 8080 (self-signed or private CA is fine
-# for a health check); with automatic certificates the HTTP listener on 8081.
+# HTTPS on 8080 by default (the generated certificate, hence -k); plain HTTP if
+# the image is reconfigured for a proxy; 8081 is the ACME challenge listener.
 HEALTHCHECK --interval=10s --timeout=3s --start-period=5s --retries=3 \
-    CMD curl -fsS "http://127.0.0.1:8080/healthz" \
-     || curl -fsSk "https://127.0.0.1:8080/healthz" \
+    CMD curl -fsSk "https://127.0.0.1:8080/healthz" \
+     || curl -fsS "http://127.0.0.1:8080/healthz" \
      || curl -fsS "http://127.0.0.1:8081/healthz" \
      || exit 1
 ENTRYPOINT ["/app/bingle"]

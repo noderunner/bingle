@@ -37,6 +37,7 @@ import (
 	"github.com/noderunner/bingle/internal/repro"
 	"github.com/noderunner/bingle/internal/session"
 	"github.com/noderunner/bingle/internal/store"
+	"github.com/noderunner/bingle/internal/transport"
 	"github.com/noderunner/bingle/internal/version"
 	"github.com/noderunner/bingle/internal/web"
 )
@@ -61,6 +62,14 @@ type App struct {
 	history   journal.PageOptions
 	// clientErrors mounts POST /api/client-error.
 	clientErrors bool
+	// transport says how to read a request's scheme and peer address.
+	transport transport.Policy
+}
+
+// WithTransport tells the App how to read a request's peer address: behind a
+// trusted proxy it comes from a header, and otherwise it does not.
+func WithTransport(p transport.Policy) Option {
+	return func(a *App) { a.transport = p }
 }
 
 // WithClientErrors mounts POST /api/client-error, where a browser reports what
@@ -304,7 +313,7 @@ func (a *App) newRouter() chi.Router {
 	r.Use(a.metrics.Middleware)
 	r.Use(logging.Recover(a.log))
 	r.Get("/healthz", a.handleHealthz)
-	apiOpts := []api.Option{api.WithEnvs(a.envs), api.WithBatches(a.batches), api.WithPublicURL(a.publicURL), api.WithRTC(a.rtc), api.WithChangelog(a.changelog)}
+	apiOpts := []api.Option{api.WithEnvs(a.envs), api.WithBatches(a.batches), api.WithPublicURL(a.publicURL), api.WithRTC(a.rtc), api.WithChangelog(a.changelog), api.WithTransport(a.transport)}
 	if a.clientErrors {
 		// The one observability route on the public listener: a browser has
 		// to be able to reach it. It is write-only, validated against closed

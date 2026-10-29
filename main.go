@@ -16,6 +16,7 @@ import (
 	"github.com/noderunner/bingle/internal/journal"
 	"github.com/noderunner/bingle/internal/logging"
 	"github.com/noderunner/bingle/internal/metrics"
+	"github.com/noderunner/bingle/internal/transport"
 	"github.com/noderunner/bingle/internal/version"
 )
 
@@ -88,7 +89,8 @@ func main() {
 	}
 
 	appOpts := []app.Option{app.WithLogger(lg), app.WithMetrics(mx),
-		app.WithJournal(jdb, cfg.SlowRequest), app.WithHistory(history)}
+		app.WithJournal(jdb, cfg.SlowRequest), app.WithHistory(history),
+		app.WithTransport(transport.Policy{TrustProxy: cfg.TrustProxy})}
 	if cfg.ClientErrors {
 		appOpts = append(appOpts, app.WithClientErrors())
 	}
@@ -135,6 +137,13 @@ func main() {
 		ACMEURL:     cfg.ACMEURL,
 		HSTSSeconds: cfg.HSTSSeconds,
 		Logger:      lg,
+		SelfSigned:  cfg.TLSSelfSigned,
+		TrustProxy:  cfg.TrustProxy,
+		// A bind only this machine can reach may serve plain HTTP: it is
+		// what makes running bingle with nothing configured, and the
+		// in-process test suites, work. config refuses any other insecure
+		// bind at startup.
+		LoopbackOK: cfg.LoopbackBind(),
 	}
 	if strings.HasPrefix(cfg.PublicURL, "https://") {
 		srvCfg.RedirectBase = cfg.PublicURL
@@ -144,13 +153,23 @@ func main() {
 		lg.Info("bingle listening over HTTPS with automatic certificates; the HTTP listener answers challenges and redirects to HTTPS",
 			"addr", cfg.Addr, "domains", strings.Join(cfg.TLSDomains, ", "), "authority", acmeName(cfg.ACMEURL),
 			"cache", cfg.TLSCacheDir, "http_addr", cfg.HTTPAddr)
+	case cfg.TLSSelfSigned:
+		lg.Info("bingle listening over HTTPS with a certificate it generates for itself",
+			"addr", cfg.Addr, "cache", cfg.TLSCacheDir)
 	case cfg.TLSEnabled():
 		lg.Info("bingle listening over HTTPS", "addr", cfg.Addr, "certificate", cfg.TLSCert)
+	case cfg.TrustProxy:
+		lg.Info("bingle listening over plain HTTP behind a proxy that terminates TLS",
+			"addr", cfg.Addr,
+			"note", "a request without X-Forwarded-Proto: https is refused; the proxy must set it")
 	default:
 		if cfg.TLSCert != "" || cfg.TLSKey != "" {
 			lg.Warn("BINGLE_TLS_CERT and BINGLE_TLS_KEY must both be set for HTTPS; serving plain HTTP")
 		}
-		lg.Info("bingle listening over plain HTTP", "addr", cfg.Addr)
+		lg.Info("bingle listening over plain HTTP, reachable only from this machine", "addr", cfg.Addr)
+	}
+	if cfg.Dev {
+		lg.Warn("BINGLE_DEV is on: deterministic development credentials are in force. This is for a laptop and for CI, never for a server anybody else can reach.")
 	}
 	if err := httpserve.Serve(ctx, srvCfg, a.Router()); err != nil {
 		lg.Error("the listener stopped", "err", err)

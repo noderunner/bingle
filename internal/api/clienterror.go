@@ -131,7 +131,7 @@ func (h *handlers) handlePostClientError(w http.ResponseWriter, r *http.Request)
 	defer w.WriteHeader(http.StatusNoContent)
 
 	lg := h.logger()
-	if !h.clientErrors.allow(clientIP(r), time.Now()) {
+	if !h.clientErrors.allow(h.clientIP(r), time.Now()) {
 		lg.Debug("a client error was refused: too many from one address")
 		h.metrics.ClientError("refused")
 		return
