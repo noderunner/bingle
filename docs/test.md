@@ -31,7 +31,10 @@ The suite has these kinds of tests, all driven by the one `go test ./...` comman
 - **Engine hardening** — `tests/tak/fuzz_test.go` holds native Go fuzz targets (move and TPS parsers, structured-move application, the definition compiler: none may panic); run one with `go test ./tests/tak -run xxx -fuzz FuzzParseMove -fuzztime 30s`. `tests/allgames` adds `FuzzApplyAnyMoveToAnyGame`: arbitrary structured moves (including `aim`) against a mid-game position of every game, asserting that anything `Apply` accepts is one `LegalMoves` lists. `tests/board/limits_test.go` checks the board-size cap. `tests/classics/amazons_test.go` brute-forces every from/to/aim triple against the slide enumerator, and `tests/tak/completeness_test.go` does the same for stack moves.
 - **Cross-game invariants** — `tests/allgames` runs one battery over every shipped game and variant (every enumerated move applies and round-trips through notation to the same position, the position document and planes keep their shape, action IDs exist, the start is playable); a new game JSON is covered the moment it is registered.
 - **Training support** — `tests/envs` (planes, fixed action IDs, batch stepping, recorded matches) and `tests/puzzles` (solver correctness and a re-proof of every shipped puzzle; `go run scripts/genpuzzles` regenerates them).
-- **Smoke test** — `scripts/smoke-test.sh`. Builds the real binary, runs it as a real OS process bound to a real port, and curls `/healthz`. This is the only check that exercises `main.go` and `internal/httpserve`'s actual `net.Listen` path end to end; everything else in `internal/app` is deliberately built to never bind a real listener itself, so it can be tested in-process (see `docs/history/plan.md` section 6.7).
+- **Smoke test** — `scripts/smoke-test.sh`, or `make smoke`. `make test` runs it after the Go
+  suites, because it is the only check that exercises `main.go` and so the only one that would
+  notice a start-up rule the Go tests never reach (the secure-connection rule of ADR 0065 broke it
+  without a single Go test failing). Builds the real binary, runs it as a real OS process bound to a real port, and curls `/healthz`. This is the only check that exercises `main.go` and `internal/httpserve`'s actual `net.Listen` path end to end; everything else in `internal/app` is deliberately built to never bind a real listener itself, so it can be tested in-process (see `docs/history/plan.md` section 6.7).
 
 ### Courtfall
 
@@ -186,7 +189,7 @@ The shared helper `newChromedpContext` (`tests/app/web_create_join_test.go`) giv
 `scripts/shot/main.go` (build-tagged `ignore`, run with `go run`) drives a running server with headless Chrome and saves screenshots of the lobby and a mid-game Tak position (desktop, mobile, dark, history, mid-move):
 
 ```sh
-BINGLE_ADDR=:18099 BINGLE_DB_PATH=/tmp/shot.db ./bin/bingle &
+BINGLE_ADDR=127.0.0.1:18099 BINGLE_DB_PATH=/tmp/shot.db ./bin/bingle &
 go run scripts/shot/main.go http://127.0.0.1:18099 /tmp/shots
 ```
 

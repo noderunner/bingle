@@ -100,7 +100,7 @@ TLS is **off by default** and optional: with none of the TLS variables set the s
 Example with a custom port and database location:
 
 ```sh
-BINGLE_ADDR=:9000 BINGLE_DB_PATH=/tmp/bingle-dev.db ./bin/bingle
+BINGLE_ADDR=127.0.0.1:9000 BINGLE_DB_PATH=/tmp/bingle-dev.db ./bin/bingle
 ```
 
 ## Building the container image

@@ -107,7 +107,7 @@ and the redirect listener's `/healthz`, so it works in each mode.
 ## Certificate files
 
 `BINGLE_TLS_CERT=/path/fullchain.pem BINGLE_TLS_KEY=/path/privkey.pem`: bingle serves HTTPS
-from them on `BINGLE_ADDR` (default `:8080`) and does not renew or reload them; restart it
+from them on `BINGLE_ADDR` (default `127.0.0.1:8080`, so set it to something reachable when serving certificates) and does not renew or reload them; restart it
 after renewing. This is also how to use a certificate from a DNS-01 client such as `lego`
 (for names that cannot be reached from the internet) or from `certbot`.
 

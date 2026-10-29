@@ -11,8 +11,13 @@ WORKDIR="$(mktemp -d)"
 trap 'kill "${PID:-}" 2>/dev/null || true; rm -rf "$WORKDIR"' EXIT
 
 PORT=18080
-export BINGLE_ADDR=":${PORT}"
+# Loopback, not ":${PORT}": a bind a network can reach now needs a secure
+# connection (ADR 0065), and this script only ever talks to 127.0.0.1 anyway.
+export BINGLE_ADDR="127.0.0.1:${PORT}"
 export BINGLE_DB_PATH="${WORKDIR}/smoke.db"
+# A port of its own for the metrics listener, rather than the fixed default:
+# a developer with bingle already running would otherwise collide with it.
+export BINGLE_METRICS_ADDR="127.0.0.1:$((PORT + 1))"
 
 go build -o "${WORKDIR}/bingle" .
 
