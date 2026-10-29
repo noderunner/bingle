@@ -28,6 +28,7 @@ import (
 	"github.com/noderunner/bingle/internal/bots"
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/metrics"
+	"github.com/noderunner/bingle/internal/repro"
 	"github.com/noderunner/bingle/internal/store"
 	"github.com/noderunner/bingle/internal/trace"
 )
@@ -42,6 +43,7 @@ type Manager struct {
 	log       *slog.Logger           // the server's logger; tests may replace it via SetLogger
 	mx        *metrics.Metrics       // the registry; nil records nothing
 	debug     DebugOptions           // which games and rooms get the firehose
+	repro     *repro.Writer          // where repro bundles go; nil writes none
 	now       func() time.Time       // clock; tests may replace it via SetClock
 	mu        sync.Mutex             // guards roomLocks itself, not room state
 	roomLocks map[string]*sync.Mutex // lazily created, one per room code ever touched
@@ -107,6 +109,11 @@ type DebugOptions struct {
 
 // SetDebug narrows the debug firehose; see DebugOptions.
 func (m *Manager) SetDebug(o DebugOptions) { m.debug = o }
+
+// SetRepro gives the manager somewhere to write repro bundles when something
+// impossible happens. Nil writes none, which is what a server without
+// BINGLE_DEBUG_DIR does.
+func (m *Manager) SetRepro(w *repro.Writer) { m.repro = w }
 
 // debugGame reports whether per-move debug lines are wanted for this family.
 func (m *Manager) debugGame(family string) bool {

@@ -1,6 +1,24 @@
 # Plan: logging, metrics and a slow-request journal
 
-Status: **Stages 1 to 6 done, stage 7 planned** (2026-10-28). The decisions in *What was decided*
+Status: **done** (2026-10-29). All seven stages are implemented; what each one settled is in its
+entry below and in ADRs 0063 and 0064. [docs/observability.md](../observability.md) describes what
+was built and is the page to read; this one is the reasoning and the record.
+
+**Three things in the design below were deliberately not built**, and are not pending either —
+they were judged not worth their cost once the rest existed:
+
+- the **narration mirroring** of section 6b (mirroring `ext.events` to the logger at `debug`): the
+  move funnel's own line, and `BINGLE_DEBUG_ROOM`, cover what it was for, and reaching into a
+  ruleset's opaque payload to find an events array would couple the platform to every game's
+  internal shape — the opposite of what ADR 0025 buys.
+- the **`Diagnostic` interface and `POST /games/{code}/explain`** of section 6c: "why is this move
+  not legal?" is answered by a repro bundle and `scripts/replay` without a new interface for ten
+  rulesets to implement one by one.
+- **`BINGLE_DEBUG_GAMES` applying to anything but the move log.** It narrows the per-move lines,
+  which is what made `debug` unreadable; the rest of `debug` is per-request and already quiet.
+
+If any of them is wanted later it is a small piece of work on top of what is here, not a
+prerequisite for anything. The decisions in *What was decided*
 below were taken with the owner before this was written; the rest is the reasoning and the
 staging. What Stage 1 built is described in [docs/observability.md](../observability.md).
 
@@ -22,7 +40,10 @@ only thing between a stranger and a game. So:
 2. Every endpoint is world-readable unless something is done about it, and metric *labels*
    are a leak channel: a label carrying a room code publishes the key to a game.
 
-## What exists today
+## What existed before this plan
+
+*(Kept as written, in 2026-10-28, because the plan's reasoning only makes sense against it. Every
+sentence in this section has since stopped being true.)*
 
 - **Logging:** 18 calls in total (`main.go` 7, `internal/session/notify.go` 5,
   `internal/httpserve` 3, `internal/app` 3), all `log.Printf`/`log.Fatalf`. No request log,
@@ -395,9 +416,22 @@ nothing around it still cannot be recognised, which is stated rather than papere
 the faults back is `GET /metrics/client-errors` on the private listener, which the design implied
 but did not name.
 
-**Stage 7 — repro bundles and `scripts/replay`.** The writer, the bundle format, the command
+**Stage 7 — repro bundles and `scripts/replay`.** *Done.* The writer, the bundle format, the command
 and `TestRepro`. Tests: a bundle written from a forced inconsistency replays to the same
 error, and nothing else in the suite writes one.
+
+Notes. A bundle carries `position` (the position immediately before the fault, in full) **as well
+as** `start_state` and `moves`, and the replay reports a divergence between them as a finding of
+its own — which is what caught a bug in this stage's own code: the path recorded by paranoid mode
+included the move it was reporting, because that move has already been written to the database by
+the time paranoid mode looks, so replaying it landed one move past the recorded position. Two
+things the design listed as triggers were given a cost: checking whether `Legal` listed a refused
+move needs a second run of `Legal`, so it happens only on the error path and only when
+`BINGLE_DEBUG_DIR` is set; and catching a ruleset's panic needed a sentinel error
+(`session.ErrRulesetPanic`) so that a panicking ruleset reports as a 500 rather than as the 400 an
+illegal move gets. Bundles are capped at 50 per run, because a ruleset that has gone wrong goes
+wrong on every move. `tests/repro/testdata/` is where a fixed fault's bundle lives as a regression
+test.
 
 Documentation goes with each stage: a new `docs/observability.md`, the variables in
 `docs/build.md`, the endpoints in `docs/api.md`, the game-debugging section in
@@ -432,6 +466,11 @@ either shows up, the span cap and the sample interval are the dials.
 
 ## Status log
 
+- 2026-10-29: Stage 7 landed, and with it the plan: `internal/repro` (the bundle, the writer and
+  the replayer), `scripts/replay`, `TestRepro` and `tests/repro/testdata/`, the six triggers in the
+  move funnel and paranoid mode, the two in the batch runner, and `BINGLE_DEBUG_DIR`.
+  502 moves across the built-in games write no bundles, which is the test that keeps the mechanism
+  worth having.
 - 2026-10-28: Stage 6 landed: `js/errors.js` on every page, `POST /api/client-error`,
   `client_errors` in the metrics database with deduplication by
   hash(message + stack + version), `bingle_client_errors_total{page}`,

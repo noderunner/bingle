@@ -491,7 +491,7 @@ func TestLoad_ClientErrors(t *testing.T) {
 }
 
 func TestLoad_Debug(t *testing.T) {
-	for _, v := range []string{"BINGLE_DEBUG_GAMES", "BINGLE_DEBUG_ROOM", "BINGLE_DEBUG_SECRETS", "BINGLE_PARANOID"} {
+	for _, v := range []string{"BINGLE_DEBUG_GAMES", "BINGLE_DEBUG_ROOM", "BINGLE_DEBUG_SECRETS", "BINGLE_PARANOID", "BINGLE_DEBUG_DIR"} {
 		t.Setenv(v, "")
 	}
 
@@ -499,7 +499,7 @@ func TestLoad_Debug(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Load() returned error: %v", err)
 	}
-	if len(cfg.Debug.Games) != 0 || cfg.Debug.Room != "" || cfg.Debug.Secrets || cfg.Debug.Paranoid {
+	if len(cfg.Debug.Games) != 0 || cfg.Debug.Room != "" || cfg.Debug.Secrets || cfg.Debug.Paranoid || cfg.Debug.Dir != "" {
 		t.Errorf("nothing is set and Debug = %+v", cfg.Debug)
 	}
 
@@ -513,6 +513,18 @@ func TestLoad_Debug(t *testing.T) {
 	}
 	if cfg.Debug.Room != "AB12CD" {
 		t.Errorf("Room = %q, want it upper-cased", cfg.Debug.Room)
+	}
+
+	t.Setenv("BINGLE_DEBUG_DIR", "/var/lib/bingle/debug")
+	if cfg, err = Load(); err != nil {
+		t.Fatalf("Load(): %v", err)
+	}
+	if cfg.Debug.Dir != "/var/lib/bingle/debug" {
+		t.Errorf("Dir = %q", cfg.Debug.Dir)
+	}
+	t.Setenv("BINGLE_DEBUG_DIR", "")
+	if cfg, err = Load(); err != nil || cfg.Debug.Dir != "" {
+		t.Errorf("an empty BINGLE_DEBUG_DIR gave %q, %v", cfg.Debug.Dir, err)
 	}
 
 	t.Setenv("BINGLE_DEBUG_ROOM", "not a room code")

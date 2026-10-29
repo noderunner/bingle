@@ -4,6 +4,23 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.18.0 - 2026-10-29
+
+### Bingle Core 0.18.0
+- **A game that goes wrong can now be put back exactly as it was.** If the rules of a game ever
+  contradict themselves — a move the board offers you that the server then refuses, or a position
+  the rules cannot make sense of — Bingle writes down the whole game at that moment, and whoever
+  fixes it can replay your exact position on their own machine. No more "it happened once and I
+  can't make it happen again", which is how this sort of bug usually survives.
+- Practice batches do the same for themselves: they play hundreds of games unattended, and if one
+  of them hits a hole in the rules it files the evidence on its own.
+- Once a fault is fixed, the record of it is kept as a test, so the same fault cannot come back
+  unnoticed.
+- For whoever runs the server: `BINGLE_DEBUG_DIR` turns this on, and `scripts/replay` replays what
+  it finds there. These files hold a whole game including the parts normally hidden from players,
+  so they are written only where you ask and never into the ordinary log. See
+  [docs/observability.md](docs/observability.md).
+
 ## 0.17.0 - 2026-10-28
 
 ### Bingle Core 0.17.0

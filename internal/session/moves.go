@@ -21,6 +21,11 @@ import (
 // "finished").
 var ErrGameNotActive = errors.New("session: game is not active")
 
+// ErrRulesetPanic is returned when a ruleset panicked while applying a move.
+// It is the server's fault and not the client's, so internal/api maps it to a
+// 500 rather than to the 400 an illegal move gets.
+var ErrRulesetPanic = errors.New("session: the game's rules panicked")
+
 // ErrNotYourTurn is returned by MakeMove when name doesn't hold the seat
 // whose turn it currently is — whether because name holds no seat in this
 // game at all, or because it's the other seat's turn.
@@ -187,16 +192,21 @@ func (m *Manager) applyAndRecordAs(ctx context.Context, compiled *catalog.Compil
 	family := gameFamily(compiled)
 	_, applySpan := trace.Start(ctx, "engine.Apply")
 	applyStart := time.Now()
-	result, err := state.Apply(compiled, bs, player.Seat, mv)
+	result, err := m.applyWatched(compiled, bs, player.Seat, mv)
 	applyTook := time.Since(applyStart)
 	applySpan.End()
 	if err != nil {
-		// A refusal here is the ruleset's answer, not a fault: the client
-		// offered a move the rules do not allow. A spike in these means a
-		// rules change or a stale client, which is why they are counted
-		// apart from everything else.
+		// A refusal here is usually the ruleset's answer and not a fault: the
+		// client offered a move the rules do not allow. A spike in these
+		// means a rules change or a stale client, which is why they are
+		// counted apart from everything else.
 		m.mx.Move(family, metrics.MoveIllegal, applyTook)
 		m.logMove(ctx, compiled, game, player, mv, moveLine{err: err, dur: applyTook})
+		// Unless Legal listed it, in which case the engine has contradicted
+		// itself and that is worth a bundle. Running Legal again costs
+		// something, so it only happens on this path and only when bundles
+		// are switched on at all.
+		m.reproRefusal(ctx, compiled, game, bs, player.Seat, mv, err)
 		return MoveOutcome{}, err
 	}
 
@@ -361,7 +371,7 @@ func (m *Manager) applyAndRecordAs(ctx context.Context, compiled *catalog.Compil
 		ended: result.GameEnded, endReason: result.EndReason, state: result.NewState,
 	})
 	if m.debug.Paranoid {
-		m.checkParanoid(ctx, compiled, game, bs, player.Seat, result)
+		m.checkParanoid(ctx, compiled, game, bs, player.Seat, result, move.Seq)
 	}
 
 	return MoveOutcome{

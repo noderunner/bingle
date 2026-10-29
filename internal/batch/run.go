@@ -23,6 +23,7 @@ import (
 	"github.com/noderunner/bingle/internal/engine/state"
 	"github.com/noderunner/bingle/internal/games/cthulhuwars"
 	"github.com/noderunner/bingle/internal/metrics"
+	"github.com/noderunner/bingle/internal/repro"
 )
 
 // Player is one seat of the table and the bot that plays it.
@@ -191,6 +192,34 @@ func (s *Spec) layout(i int) (string, []Player) {
 	return s.Base + "~" + suffix, seated
 }
 
+// batchRepro is where a batch writes repro bundles, set alongside the
+// registry. A nil writer writes none.
+var batchRepro *repro.Writer
+
+// SetRepro gives this package somewhere to write repro bundles.
+func SetRepro(w *repro.Writer) { batchRepro = w }
+
+// writeBatchRepro records one impossible thing a batch ran into. A batch plays
+// hundreds of games unattended, which makes it the likeliest place for a rules
+// hole to turn up and the least likely place for anybody to be watching — so
+// it files its own.
+func writeBatchRepro(kind repro.Kind, game *catalog.CompiledGame, spec Spec, rec Record, st *state.BoardState, seat int, mv *state.Move, cause error) {
+	if !batchRepro.On() {
+		return
+	}
+	b := repro.Of(kind, game, rec.GameID, st, seat, mv, cause)
+	b.Seed = uint64(rec.Seed)
+	b.Note = fmt.Sprintf("game %d of a %q batch, at ply %d", rec.Index, spec.Base, rec.Plies+1)
+	for _, ev := range rec.Events {
+		if ev.Move == "" {
+			b.Moves = nil
+			break
+		}
+		b.Moves = append(b.Moves, ev.Move)
+	}
+	batchRepro.Write(b)
+}
+
 // batchMetrics is the registry the worker count is reported to. It is a
 // package-level handle, like the bots' node counters, so that Run's signature
 // stays what every caller and test already passes; a nil one records nothing.
@@ -286,6 +315,9 @@ func PlayGame(ctx context.Context, cat *catalog.Catalog, spec Spec, i int) (Reco
 		legal := state.LegalMoves(game, st, seat)
 		if len(legal) == 0 {
 			reason = "no-legal-moves"
+			// A position with no moves and no win rule to end the game is a
+			// hole in the rules, and a batch is where it shows up first.
+			writeBatchRepro(repro.BatchNoLegalMoves, game, spec, rec, st, seat, nil, nil)
 			break
 		}
 		guided := legal
@@ -304,6 +336,9 @@ func PlayGame(ctx context.Context, cat *catalog.Catalog, spec Spec, i int) (Reco
 		r, err := state.Apply(game, st, seat, mv)
 		if err != nil {
 			reason = "illegal-move"
+			// mv came from Legal's own list, so this is Apply contradicting
+			// Legal: always impossible, never the bot's fault.
+			writeBatchRepro(repro.BatchIllegalMove, game, spec, rec, st, seat, &mv, err)
 			break
 		}
 		if obs != nil {

@@ -181,6 +181,11 @@ type Debug struct {
 	// every move (BINGLE_PARANOID). **Development and CI only**: it runs
 	// Legal a second time on every move.
 	Paranoid bool
+	// Dir is where repro bundles are written (BINGLE_DEBUG_DIR); empty
+	// writes none. A bundle is the full position, secrets and all, which is
+	// what makes it reproduce — so it goes to a directory and never to the
+	// log stream.
+	Dir string
 }
 
 // Secret is a credential that must never be printed: every way of formatting
@@ -514,6 +519,7 @@ func loadDebug(cfg *Config) error {
 			cfg.Debug.Games = append(cfg.Debug.Games, g)
 		}
 	}
+	cfg.Debug.Dir = strings.TrimSpace(os.Getenv("BINGLE_DEBUG_DIR"))
 	if v := strings.TrimSpace(os.Getenv("BINGLE_DEBUG_ROOM")); v != "" {
 		if !roomCodeish.MatchString(v) {
 			return fmt.Errorf("config: BINGLE_DEBUG_ROOM: %q is not a room code", v)
