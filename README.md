@@ -77,7 +77,10 @@ Configuration is by environment variable — see [docs/build.md](docs/build.md)
 (`BINGLE_ADDR`, `BINGLE_DB_PATH`, `BINGLE_TLS_CERT`/`KEY`,
 `BINGLE_RETENTION_DAYS`, `BINGLE_PUBLIC_URL` for invite links). HTTPS is
 optional: plain HTTP by default, or automatic Let's Encrypt certificates with
-`BINGLE_TLS_DOMAIN` — see [docs/tls.md](docs/tls.md). Players can talk in a game with the
+`BINGLE_TLS_DOMAIN` — see [docs/tls.md](docs/tls.md). Bingle listens on `127.0.0.1:8080` by
+default and refuses to start on an address a network can reach without a secure connection:
+a certificate, `BINGLE_TLS_SELFSIGNED=1`, or `BINGLE_TRUST_PROXY=1` behind a proxy
+([ADR 0065](docs/decisions/0065-the-connection-must-be-secure.md)). Players can talk in a game with the
 built-in voice chat (needs HTTPS or localhost) — see [docs/voice.md](docs/voice.md). Optional
 email notifications ("it is your turn") are set up with an SMTP server — see
 [docs/email.md](docs/email.md). [scripts/run.example.sh](scripts/run.example.sh) shows a

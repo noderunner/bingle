@@ -121,7 +121,9 @@ jobs:
         run: |
           docker run -d --name bingle-ci -p 18080:8080 bingle:ci
           for i in $(seq 1 20); do
-            if curl -fsS http://127.0.0.1:18080/healthz; then
+            # The image generates its own certificate (ADR 0065), so this is
+            # HTTPS with -k; the plain-HTTP fallback covers a reconfigured one.
+            if curl -fsSk https://127.0.0.1:18080/healthz || curl -fsS http://127.0.0.1:18080/healthz; then
               exit 0
             fi
             sleep 0.5

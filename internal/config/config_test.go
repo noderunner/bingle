@@ -26,15 +26,17 @@ func TestLoad_Defaults(t *testing.T) {
 }
 
 func TestLoad_EnvOverrides(t *testing.T) {
-	t.Setenv("BINGLE_ADDR", ":9090")
+	// A loopback bind, because an address a network can reach now needs a
+	// secure connection as well (see TestLoad_TheConnectionMustBeSecure).
+	t.Setenv("BINGLE_ADDR", "127.0.0.1:9090")
 	t.Setenv("BINGLE_DB_PATH", "/tmp/custom.db")
 
 	cfg, err := Load()
 	if err != nil {
 		t.Fatalf("Load() returned error: %v", err)
 	}
-	if cfg.Addr != ":9090" {
-		t.Errorf("Addr = %q, want %q", cfg.Addr, ":9090")
+	if cfg.Addr != "127.0.0.1:9090" {
+		t.Errorf("Addr = %q, want %q", cfg.Addr, "127.0.0.1:9090")
 	}
 	if cfg.DBPath != "/tmp/custom.db" {
 		t.Errorf("DBPath = %q, want %q", cfg.DBPath, "/tmp/custom.db")
@@ -556,5 +558,116 @@ func TestLoad_Debug(t *testing.T) {
 			t.Errorf("%s=maybe was accepted", name)
 		}
 		t.Setenv(name, "")
+	}
+}
+
+// The rule the whole auth plan rests on: a server a network can reach must
+// not come up without a secure connection. It is enforced at startup rather
+// than at the first request, because a server that would hand out passwords
+// over plain HTTP should not be running.
+func TestLoad_TheConnectionMustBeSecure(t *testing.T) {
+	clear := func(t *testing.T) {
+		t.Helper()
+		for _, v := range []string{
+			"BINGLE_ADDR", "BINGLE_TLS_CERT", "BINGLE_TLS_KEY", "BINGLE_TLS_DOMAIN",
+			"BINGLE_TLS_SELFSIGNED", "BINGLE_TRUST_PROXY", "BINGLE_DEV", "BINGLE_TLS_EMAIL",
+		} {
+			t.Setenv(v, "")
+		}
+	}
+
+	for _, c := range []struct {
+		name string
+		env  map[string]string
+		bad  bool
+	}{
+		// Loopback needs nothing: this is `./bin/bingle` on a laptop, and
+		// every in-process test.
+		{name: "loopback with nothing", env: map[string]string{"BINGLE_ADDR": "127.0.0.1:8080"}},
+		{name: "loopback by name", env: map[string]string{"BINGLE_ADDR": "localhost:8080"}},
+		{name: "IPv6 loopback", env: map[string]string{"BINGLE_ADDR": "[::1]:8080"}},
+
+		// A bind a network can reach needs one of the four.
+		{name: "every interface with nothing", env: map[string]string{"BINGLE_ADDR": ":8080"}, bad: true},
+		{name: "0.0.0.0 with nothing", env: map[string]string{"BINGLE_ADDR": "0.0.0.0:8080"}, bad: true},
+		{name: "a routable address with nothing", env: map[string]string{"BINGLE_ADDR": "10.0.0.5:8080"}, bad: true},
+		{name: "a generated certificate", env: map[string]string{"BINGLE_ADDR": ":8443", "BINGLE_TLS_SELFSIGNED": "1"}},
+		{name: "a trusted proxy", env: map[string]string{"BINGLE_ADDR": ":8080", "BINGLE_TRUST_PROXY": "1"}},
+		{name: "automatic certificates", env: map[string]string{
+			"BINGLE_ADDR": ":8443", "BINGLE_TLS_DOMAIN": "games.example.com", "BINGLE_TLS_EMAIL": "a@example.com"}},
+
+		// A proxy forwarding to bingle over TLS is unusual but not wrong: a
+		// request that arrives over TLS is secure whatever the headers say.
+		// Refusing it would make the container image — which generates a
+		// certificate for itself — impossible to put behind a proxy without
+		// first knowing to unset that.
+		{name: "a proxy and a certificate", env: map[string]string{
+			"BINGLE_ADDR": ":8443", "BINGLE_TRUST_PROXY": "1", "BINGLE_TLS_SELFSIGNED": "1"}},
+
+		// Two certificates, though, is a question nobody answered.
+		{name: "generated and automatic", env: map[string]string{
+			"BINGLE_ADDR": ":8443", "BINGLE_TLS_SELFSIGNED": "1",
+			"BINGLE_TLS_DOMAIN": "games.example.com", "BINGLE_TLS_EMAIL": "a@example.com"}, bad: true},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			clear(t)
+			for k, v := range c.env {
+				t.Setenv(k, v)
+			}
+			_, err := Load()
+			switch {
+			case c.bad && err == nil:
+				t.Errorf("%v was accepted", c.env)
+			case !c.bad && err != nil:
+				t.Errorf("%v: %v", c.env, err)
+			}
+		})
+	}
+}
+
+// BINGLE_DEV turns on deterministic credentials, so it is refused anywhere
+// they would not be a development convenience but a published account.
+func TestLoad_DevIsLoopbackOnly(t *testing.T) {
+	clear := func(t *testing.T) {
+		t.Helper()
+		for _, v := range []string{"BINGLE_ADDR", "BINGLE_DEV", "BINGLE_TRUST_PROXY", "BINGLE_TLS_SELFSIGNED"} {
+			t.Setenv(v, "")
+		}
+	}
+
+	clear(t)
+	t.Setenv("BINGLE_ADDR", "127.0.0.1:8080")
+	t.Setenv("BINGLE_DEV", "1")
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("BINGLE_DEV on loopback: %v", err)
+	}
+	if !cfg.Dev {
+		t.Error("BINGLE_DEV=1 did not turn it on")
+	}
+
+	// Anywhere a network can reach, however the connection is secured.
+	for _, env := range []map[string]string{
+		{"BINGLE_ADDR": "0.0.0.0:8080", "BINGLE_DEV": "1", "BINGLE_TRUST_PROXY": "1"},
+		{"BINGLE_ADDR": ":8443", "BINGLE_DEV": "1", "BINGLE_TLS_SELFSIGNED": "1"},
+		{"BINGLE_ADDR": "10.0.0.5:8443", "BINGLE_DEV": "1", "BINGLE_TLS_SELFSIGNED": "1"},
+	} {
+		clear(t)
+		for k, v := range env {
+			t.Setenv(k, v)
+		}
+		if _, err := Load(); err == nil {
+			t.Errorf("BINGLE_DEV was accepted with %v", env)
+		}
+	}
+
+	// And never behind a proxy, even on a loopback bind: behind one, every
+	// request looks local, so the exemptions BINGLE_DEV relies on do not hold.
+	clear(t)
+	t.Setenv("BINGLE_ADDR", "127.0.0.1:8080")
+	t.Setenv("BINGLE_DEV", "1")
+	t.Setenv("BINGLE_TRUST_PROXY", "1")
+	if _, err := Load(); err == nil {
+		t.Error("BINGLE_DEV and BINGLE_TRUST_PROXY were accepted together")
 	}
 }

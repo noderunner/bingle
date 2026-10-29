@@ -17,6 +17,7 @@ import (
 	"github.com/noderunner/bingle/internal/journal"
 	"github.com/noderunner/bingle/internal/metrics"
 	"github.com/noderunner/bingle/internal/session"
+	"github.com/noderunner/bingle/internal/transport"
 )
 
 // NewRouter returns a chi.Router for bingle's REST API, with routes
@@ -159,9 +160,18 @@ type handlers struct {
 	journal *journal.DB
 	// clientErrors counts reports per address (see clienterror.go).
 	clientErrors clientErrorLimiter
+	// transport says how to read a request's scheme and peer address: behind
+	// a trusted proxy both come from headers, and otherwise neither does.
+	transport transport.Policy
 	// clientErrorsOn mounts POST /client-error. It is off unless asked for,
 	// because it is the one observability route on the public listener.
 	clientErrorsOn bool
+}
+
+// WithTransport tells the API how to read a request's peer address. Without
+// it the zero policy applies: no proxy trusted, no forwarded header believed.
+func WithTransport(p transport.Policy) Option {
+	return func(h *handlers) { h.transport = p }
 }
 
 // WithClientErrors turns POST /client-error on, recording into lg, mx and db

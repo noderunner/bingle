@@ -1,4 +1,4 @@
-.PHONY: help build run test test-short test-unit test-browser test-cw-ui test-sims lint fmt vet cover clean
+.PHONY: help build run test test-short test-unit test-browser test-cw-ui test-sims smoke lint fmt vet cover clean
 
 help: ## list the targets
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | sed 's/:.*##/\t/'
@@ -9,8 +9,9 @@ build: ## build bin/bingle
 run: build ## build and run on http://localhost:8080
 	./bin/bingle
 
-test: ## the whole suite, including the Cthulhu Wars browser tests
+test: ## the whole suite, including the Cthulhu Wars browser tests and the smoke test
 	BINGLE_TEST_CW_UI=1 go test -timeout 25m ./...
+	@$(MAKE) --no-print-directory smoke
 
 test-short: ## skip the slowest tests
 	go test -short ./...
@@ -26,6 +27,9 @@ test-cw-ui: ## the Cthulhu Wars browser tests, which are off by default
 
 test-sims: ## the long bot simulations (about six minutes on two cores)
 	go test -timeout 20m ./tests/batch/
+
+smoke: ## run the real binary as a real process and exercise it over HTTP
+	./scripts/smoke-test.sh
 
 fmt: ## format the code
 	gofmt -w .

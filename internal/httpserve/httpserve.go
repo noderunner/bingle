@@ -18,6 +18,8 @@ import (
 
 	"golang.org/x/crypto/acme"
 	"golang.org/x/crypto/acme/autocert"
+
+	"github.com/noderunner/bingle/internal/transport"
 )
 
 // Config holds the settings needed to bind and run bingle's HTTP listener.
@@ -50,8 +52,22 @@ type Config struct {
 	RedirectBase string
 
 	// HSTSSeconds, when above zero, adds Strict-Transport-Security to the
-	// responses of an HTTPS server.
+	// responses of a server whose clients reach it over HTTPS.
 	HSTSSeconds int
+
+	// SelfSigned generates and caches a certificate in CacheDir and serves
+	// it. It takes the place of CertFile/KeyFile and cannot be combined with
+	// Domains.
+	SelfSigned bool
+	// TrustProxy says a terminating proxy is in front of bingle: it serves
+	// plain HTTP and refuses any request that did not arrive as https
+	// according to the proxy. See internal/transport.
+	TrustProxy bool
+	// LoopbackOK lets a request from this machine through the
+	// secure-connection check even when it is plain HTTP. It is what keeps
+	// `./bin/bingle` with nothing configured, and every in-process test,
+	// working.
+	LoopbackOK bool
 
 	// Logger is the server's logger; nil means slog's default.
 	Logger *slog.Logger
@@ -76,10 +92,52 @@ func (cfg Config) logger() *slog.Logger {
 // to plain HTTP.
 func Serve(ctx context.Context, cfg Config, handler http.Handler) error {
 	useACME := len(cfg.Domains) > 0
+
+	// A generated certificate is files, once it has been generated.
+	var generated SelfSigned
+	if cfg.SelfSigned && !useACME {
+		host, _, err := net.SplitHostPort(cfg.Addr)
+		if err != nil {
+			host = ""
+		}
+		if generated, err = EnsureSelfSigned(cfg.CacheDir, host); err != nil {
+			return err
+		}
+		cfg.CertFile, cfg.KeyFile = generated.CertFile, generated.KeyFile
+		cfg.logger().Info("serving a certificate bingle generated for itself",
+			"hosts", strings.Join(generated.Hosts, ", "),
+			"fingerprint", generated.Fingerprint,
+			"expires", generated.NotAfter.UTC().Format("2006-01-02"),
+			"generated_now", generated.Generated,
+			"cache", cfg.CacheDir,
+			"note", "no browser will trust this; it is for development and for a server reached over a tunnel")
+	}
+
 	useFiles := !useACME && cfg.CertFile != "" && cfg.KeyFile != ""
 
-	if useACME || useFiles {
-		handler = withHSTS(handler, cfg.HSTSSeconds)
+	// The connection must be secure. Enforced here rather than in the router,
+	// so app.Router() stays transport-agnostic and the in-process suites keep
+	// running over loopback HTTP (docs/history/auth-and-accounts-plan.md,
+	// section 2).
+	policy := transport.Policy{TrustProxy: cfg.TrustProxy}
+	var exempt func(*http.Request) bool
+	if cfg.LoopbackOK {
+		exempt = policy.Loopback
+	}
+	handler = policy.RequireSecure(exempt, handler)
+
+	// HSTS where a browser can act on it. Not with a generated certificate:
+	// HSTS plus a certificate nothing trusts is a warning page with no way
+	// through it, which would make BINGLE_TLS_SELFSIGNED a trap rather than a
+	// convenience.
+	if useACME || useFiles || cfg.TrustProxy {
+		if cfg.SelfSigned {
+			if cfg.HSTSSeconds > 0 {
+				cfg.logger().Warn("BINGLE_TLS_HSTS_SECONDS is ignored with a generated certificate: a browser told to insist on HTTPS cannot then be clicked past the warning about an untrusted certificate")
+			}
+		} else {
+			handler = withHSTS(handler, cfg.HSTSSeconds)
+		}
 	}
 	srv := &http.Server{
 		Addr:              cfg.Addr,

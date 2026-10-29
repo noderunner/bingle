@@ -16,7 +16,18 @@ import (
 )
 
 const (
-	defaultAddr   = ":8080"
+	// The default bind is **loopback**, not every interface.
+	//
+	// It used to be ":8080". The secure-connection rule
+	// (docs/history/auth-and-accounts-plan.md, section 2) exempts a bind only
+	// this machine can reach, and the one bind nobody chose must be the one
+	// the rule exempts — otherwise `./bin/bingle` with nothing configured
+	// would refuse to start, which is the opposite of what the plan is for.
+	//
+	// So bingle out of the box is a server for the machine it is on. Making
+	// it reachable is now a deliberate act, and that act comes with a
+	// certificate: see loadTransport.
+	defaultAddr   = "127.0.0.1:8080"
 	defaultDBPath = "./bingle.db"
 
 	// With automatic certificates bingle takes the standard ports: the
@@ -85,6 +96,22 @@ type Config struct {
 	// trying things out, which issues untrusted certificates but has far
 	// higher limits.
 	ACMEURL string
+	// TLSSelfSigned generates and caches a certificate at startup
+	// (BINGLE_TLS_SELFSIGNED), so "the connection must be secure" does not
+	// make development and CI painful. A browser will not trust it.
+	TLSSelfSigned bool
+	// TrustProxy says a terminating proxy is in front of bingle
+	// (BINGLE_TRUST_PROXY): bingle then serves plain HTTP, believes the
+	// proxy's X-Forwarded-Proto and X-Forwarded-For, refuses any request that
+	// arrives as http — and applies **no loopback exemption at all**, because
+	// a proxy on the same host makes every request look local.
+	TrustProxy bool
+	// Dev turns on the deterministic development conveniences that later
+	// stages of the auth plan add: a known admin password and API token
+	// (BINGLE_DEV). It is refused unless the bind is loopback, because it is
+	// a published admin account on anything else.
+	Dev bool
+
 	// HSTSSeconds, when above zero, adds a Strict-Transport-Security header of
 	// that many seconds to HTTPS responses (BINGLE_TLS_HSTS_SECONDS). Off by
 	// default: browsers refuse plain HTTP for the host while it is in force.
@@ -254,10 +281,24 @@ func (m Mail) Enabled() bool { return m.Host != "" && m.Password.Set() && m.From
 // DefaultRTCStun is the STUN server used when BINGLE_RTC_STUN is not set.
 const DefaultRTCStun = "stun:stun.l.google.com:19302"
 
-// TLSEnabled reports whether bingle serves HTTPS, by automatic certificates
-// or by a certificate and key from files.
+// TLSEnabled reports whether bingle serves HTTPS, by automatic certificates,
+// by a certificate and key from files, or by one it generates for itself.
 func (c Config) TLSEnabled() bool {
-	return len(c.TLSDomains) > 0 || (c.TLSCert != "" && c.TLSKey != "")
+	return len(c.TLSDomains) > 0 || (c.TLSCert != "" && c.TLSKey != "") || c.TLSSelfSigned
+}
+
+// LoopbackBind reports whether the public listener is reachable only from this
+// machine. It is what makes `./bin/bingle` with nothing configured, and every
+// in-process test, legal under the secure-connection rule.
+func (c Config) LoopbackBind() bool {
+	local, err := LoopbackAddr(c.Addr)
+	return err == nil && local
+}
+
+// SecureConnection reports whether a client's connection to bingle will be
+// secure: bingle terminates TLS, or a trusted proxy does.
+func (c Config) SecureConnection() bool {
+	return c.TLSEnabled() || c.TrustProxy
 }
 
 // Load reads configuration from environment variables, falling back to
@@ -331,7 +372,7 @@ func Load() (Config, error) {
 		if cfg.HTTPAddr == cfg.Addr {
 			return Config{}, fmt.Errorf("config: BINGLE_HTTP_ADDR and BINGLE_ADDR are both %q", cfg.Addr)
 		}
-		cfg.TLSCacheDir = filepath.Join(filepath.Dir(cfg.DBPath), "certs")
+		cfg.TLSCacheDir = defaultCacheDir(cfg.DBPath)
 		if c := strings.TrimSpace(os.Getenv("BINGLE_TLS_CACHE")); c != "" {
 			cfg.TLSCacheDir = c
 		}
@@ -341,6 +382,9 @@ func Load() (Config, error) {
 			}
 			cfg.ACMEURL = u
 		}
+	}
+	if err := loadTransport(&cfg); err != nil {
+		return Config{}, err
 	}
 	if err := loadMail(&cfg); err != nil {
 		return Config{}, err
@@ -629,6 +673,76 @@ func parseICEList(name, raw string, schemes []string) ([]string, error) {
 		out = append(out, u)
 	}
 	return out, nil
+}
+
+// loadTransport reads the settings that decide how a client reaches bingle,
+// and enforces the rule the whole of docs/history/auth-and-accounts-plan.md
+// rests on: **the connection must be secure**.
+//
+// Secure means TLS at bingle — certificate files, ACME, or one it generates —
+// or plain HTTP behind a proxy that terminates TLS and says so. The one
+// exemption is a bind only this machine can reach, which is what keeps
+// `./bin/bingle` on a laptop and every in-process test working with nothing
+// configured.
+//
+// It is enforced here, at startup, rather than at the first request: a server
+// that would hand out passwords over plain HTTP should not come up at all.
+func loadTransport(cfg *Config) error {
+	on, err := parseBool("BINGLE_TLS_SELFSIGNED", os.Getenv("BINGLE_TLS_SELFSIGNED"))
+	if err != nil {
+		return err
+	}
+	cfg.TLSSelfSigned = on
+	if cfg.TLSSelfSigned && len(cfg.TLSDomains) > 0 {
+		return fmt.Errorf("config: BINGLE_TLS_SELFSIGNED and BINGLE_TLS_DOMAIN (automatic certificates) cannot both be set: pick which certificate to serve")
+	}
+	if cfg.TLSSelfSigned && (cfg.TLSCert != "" || cfg.TLSKey != "") {
+		return fmt.Errorf("config: BINGLE_TLS_SELFSIGNED and BINGLE_TLS_CERT/BINGLE_TLS_KEY cannot both be set: pick which certificate to serve")
+	}
+	// A generated certificate needs somewhere to live across restarts.
+	if cfg.TLSSelfSigned && cfg.TLSCacheDir == "" {
+		cfg.TLSCacheDir = defaultCacheDir(cfg.DBPath)
+		if c := strings.TrimSpace(os.Getenv("BINGLE_TLS_CACHE")); c != "" {
+			cfg.TLSCacheDir = c
+		}
+	}
+
+	if on, err = parseBool("BINGLE_TRUST_PROXY", os.Getenv("BINGLE_TRUST_PROXY")); err != nil {
+		return err
+	}
+	cfg.TrustProxy = on
+	// BINGLE_TRUST_PROXY together with TLS is allowed, and deliberately not
+	// refused. It is unusual — a proxy forwarding to bingle over TLS — but it
+	// is not wrong: a request that arrives over TLS is secure whatever the
+	// headers say, and the forwarded scheme is only consulted when it does
+	// not. Refusing the combination would make the container image, which
+	// generates a certificate for itself, impossible to put behind a proxy
+	// without first knowing to unset that.
+
+	if on, err = parseBool("BINGLE_DEV", os.Getenv("BINGLE_DEV")); err != nil {
+		return err
+	}
+	cfg.Dev = on
+	if cfg.Dev && !cfg.LoopbackBind() {
+		return fmt.Errorf("config: BINGLE_DEV is on and bingle is listening on %q, which is not loopback. BINGLE_DEV turns on deterministic development credentials; on anything a network can reach, that is a published administrator account", cfg.Addr)
+	}
+	if cfg.Dev && cfg.TrustProxy {
+		return fmt.Errorf("config: BINGLE_DEV and BINGLE_TRUST_PROXY cannot both be set: behind a proxy every request looks local, so the loopback exemptions BINGLE_DEV relies on do not hold")
+	}
+
+	if !cfg.SecureConnection() && !cfg.LoopbackBind() {
+		return fmt.Errorf("config: bingle is listening on %q, which a network can reach, with no secure connection. "+
+			"Set BINGLE_TLS_DOMAIN for automatic certificates, BINGLE_TLS_CERT and BINGLE_TLS_KEY for your own, "+
+			"BINGLE_TLS_SELFSIGNED=1 for a generated one, or BINGLE_TRUST_PROXY=1 if a proxy in front of bingle terminates TLS. "+
+			"A loopback address such as 127.0.0.1:8080 needs none of these", cfg.Addr)
+	}
+	return nil
+}
+
+// defaultCacheDir is where certificates are kept: beside the database, so a
+// backup of that directory takes them.
+func defaultCacheDir(dbPath string) string {
+	return filepath.Join(filepath.Dir(dbPath), "certs")
 }
 
 // loadMail reads the BINGLE_SMTP_* and BINGLE_MAIL_* settings. Without

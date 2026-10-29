@@ -20,9 +20,13 @@ func acmeConfig(t *testing.T) httpserve.Config {
 	return httpserve.Config{
 		Addr:     freeAddr(t),
 		HTTPAddr: freeAddr(t),
-		Domains:  []string{"games.example.test"},
-		CacheDir: t.TempDir(),
-		ACMEURL:  "https://127.0.0.1:1/directory",
+		// These binds are loopback (freeAddr), which is how main calls Serve
+		// for one: the plain-HTTP challenge-and-redirect listener and
+		// /healthz on it are only reachable from this machine.
+		LoopbackOK: true,
+		Domains:    []string{"games.example.test"},
+		CacheDir:   t.TempDir(),
+		ACMEURL:    "https://127.0.0.1:1/directory",
 	}
 }
 

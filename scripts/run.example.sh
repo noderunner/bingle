@@ -2,7 +2,10 @@
 # An example of starting bingle with HTTPS, email notifications and a TURN relay.
 # Copy it to run_bingle.sh (which git ignores), fill in your own values, and run it
 # from the repository root after `make build`. Every setting is optional: plain
-# `./bin/bingle` serves http://localhost:8080 with nothing else set up.
+# `./bin/bingle` serves http://127.0.0.1:8080 with nothing else set up — but only
+# to this machine. Reaching it from elsewhere needs a secure connection; the
+# lines below use automatic certificates, and BINGLE_TLS_SELFSIGNED=1 or
+# BINGLE_TRUST_PROXY=1 are the other ways (docs/build.md).
 # See docs/build.md for the full list of variables.
 set -euo pipefail
 

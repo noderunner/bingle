@@ -68,3 +68,4 @@ Short records of choices made for the `bingle` project during the requirements i
 | [0062](0062-meridians.md) | Meridians: a centreless hexagon from the generalised hexhex generator, and a ruleset where a group with no path to a friend dies |
 | [0063](0063-what-a-log-line-may-say.md) | What a log line may say: route patterns not paths, a room code as two characters and a hash, and a test that enforces it |
 | [0064](0064-metrics-on-a-second-listener.md) | Metrics: `prometheus/client_golang` on a registry of our own, a private listener with a token off loopback, labels as a whitelist, and the histogram buckets chosen once |
+| [0065](0065-the-connection-must-be-secure.md) | The connection must be secure: TLS, a generated certificate or a trusted proxy; the default bind becomes loopback, and a trusted proxy turns every loopback exemption off |

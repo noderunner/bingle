@@ -4,6 +4,23 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.19.0 - 2026-10-29
+
+### Bingle Core 0.19.0
+- **Bingle now listens only to the machine it is running on, unless you tell it otherwise.** This
+  is the first step towards real accounts, and it is the one that may need something from you:
+  passwords and sign-ins are coming, and they must not travel over an unprotected connection.
+- **If you run Bingle for friends on your network or over the internet, read this.** On this
+  version Bingle will refuse to start on a public address until the connection is protected.
+  There are four ways, and the error message when it refuses names all of them:
+  a certificate of your own, automatic certificates (`BINGLE_TLS_DOMAIN`), one Bingle makes for
+  itself (`BINGLE_TLS_SELFSIGNED=1`), or `BINGLE_TRUST_PROXY=1` if something in front of Bingle
+  already handles it. **Nothing changes if you only play on your own machine.**
+- The certificate Bingle makes for itself is kept, so your browser only complains the first time
+  rather than after every restart. It prints its fingerprint so you can check what you are
+  agreeing to trust.
+- Nothing about how games work has changed.
+
 ## 0.18.0 - 2026-10-29
 
 ### Bingle Core 0.18.0

@@ -1,6 +1,7 @@
 # Plan: authenticated accounts, capabilities and a secure transport
 
-Status: **planned** (2026-10-28). Nothing implemented. The decisions in *What was decided*
+Status: **stage 1 done, stages 2–8 planned** (2026-10-29). Stage 1 (secure transport) is on
+`main`; what it settled is [ADR 0065](../decisions/0065-the-connection-must-be-secure.md). The decisions in *What was decided*
 were taken with the owner before this was written; the rest is the reasoning, the diagrams
 and the staging.
 
@@ -389,11 +390,22 @@ both nullable, so existing rows keep meaning what they mean.
 
 Each stage is one pull request that leaves a working server.
 
-**1. Secure transport.** The start-up rule, self-signed generation and caching,
+**1. Secure transport.** *Done.* The start-up rule, self-signed generation and caching,
 `BINGLE_TRUST_PROXY` with forwarded-header handling, the `BINGLE_DEV` gate, HSTS review.
 Tests: a non-loopback bind with no TLS refuses to start; a trusted proxy's `http` request is
 refused while a forwarded `https` one is served; a generated certificate is reused across
 restarts; the in-process suites still run on loopback HTTP.
+
+Notes. **The default bind had to change from `:8080` to `127.0.0.1:8080`**: the rule exempts a
+loopback bind, so the one bind nobody chose has to be the exempt one or `./bin/bingle` would
+refuse to start out of the box. That is the most disruptive thing in this plan and it arrived in
+its first stage — a server someone reaches from their LAN today stops answering until it is told
+how. `internal/transport` is new and owns the three questions (scheme, peer, locality), with the
+"a trusted proxy makes nothing local" rule enforced in one place. `clientIP` moved onto it, which
+the plan did not call for but had to happen in this stage: without it `BINGLE_TRUST_PROXY` would
+have made every request in the world share one address and the rate limiters would have throttled
+everybody at once. HSTS now applies behind a trusted proxy and is deliberately **not** sent with a
+generated certificate.
 
 **2. Principal plumbing.** One principal per request, resolved from what already exists
 (guest secret, seat token), carried in the context, with every endpoint moved onto it. No

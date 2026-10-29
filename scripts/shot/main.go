@@ -4,7 +4,7 @@
 // screenshots of the lobby and a mid-game Tak position, for visual review of
 // UI changes:
 //
-//	BINGLE_ADDR=:18099 BINGLE_DB_PATH=/tmp/shot.db ./bin/bingle &
+//	BINGLE_ADDR=127.0.0.1:18099 BINGLE_DB_PATH=/tmp/shot.db ./bin/bingle &
 //	go run scripts/shot/main.go http://127.0.0.1:18099 /tmp/shots
 package main
 
