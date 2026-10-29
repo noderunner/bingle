@@ -43,6 +43,8 @@ All configuration is via environment variables — there's no config file.
 | `BINGLE_METRICS_ADDR` | `127.0.0.1:9095` | The private listener serving Prometheus metrics at `/metrics`. Empty turns the metrics off. It is deliberately not the public listener, which has no authentication. See [observability.md](observability.md) |
 | `BINGLE_METRICS_TOKEN` | *(unset)* | Bearer token for that listener; **required** (and at least 16 characters) when `BINGLE_METRICS_ADDR` is not on the loopback interface |
 | `BINGLE_METRICS_DB` | `bingle-metrics.db` beside the database | The slow-request journal's database, kept separate from the game database. Empty stores nothing |
+| `BINGLE_METRICS_SAMPLE` | `5m` | How often the metric history is written; `0` keeps no history. Reachable at `/metrics/health` on the private listener |
+| `BINGLE_METRICS_RETAIN_DAYS` | `14` | Days of full-resolution history before it is compacted to hourly, then daily after a year; `0` keeps everything |
 | `BINGLE_SLOW_REQUEST` | `250ms` | How slow a request must be before the journal writes it down; `0` turns the journal off. A failed request is written down however fast |
 | `BINGLE_DEBUG_GAMES` | *(every game)* | Comma-separated game families to log moves for, so `debug` is readable |
 | `BINGLE_DEBUG_ROOM` | *(unset)* | One room code logged at `info` whatever the level |

@@ -38,6 +38,16 @@ const (
 	// A quarter of a second: past what anybody calls instant, and well short
 	// of what anybody calls broken.
 	defaultSlowRequest = 250 * time.Millisecond
+
+	// Five minutes: history that survives into the backup, not a time-series
+	// database. A scraper reads /metrics as often as it likes regardless.
+	defaultMetricsSample = 5 * time.Minute
+	// A fortnight at five-minute resolution is enough to see what happened
+	// and short enough to stay small.
+	defaultMetricsRetainDays = 14
+	// The shortest interval worth allowing: below this the history stops
+	// being history and starts being a second scrape loop.
+	minMetricsSample = 10 * time.Second
 )
 
 // Config holds bingle's runtime configuration.
@@ -101,6 +111,16 @@ type Config struct {
 	// and writes no row. It is a separate file so that measuring the server
 	// never writes to the database being measured.
 	MetricsDB string
+	// MetricsSample is how often the metric history is written
+	// (BINGLE_METRICS_SAMPLE, default 5m). Zero keeps no history, and the
+	// metrics are still served live.
+	MetricsSample time.Duration
+	// MetricsRetainDays is how long five-minute samples are kept at full
+	// resolution before they are compacted to hourly ones, then to daily
+	// after a year (BINGLE_METRICS_RETAIN_DAYS, default 14). Zero keeps
+	// everything at full resolution, which grows without bound.
+	MetricsRetainDays int
+
 	// SlowRequest is how slow a request has to be before the journal writes
 	// it down (BINGLE_SLOW_REQUEST, default 250ms). Zero turns the journal
 	// off, collector and all. A request the server failed is written down
@@ -238,6 +258,9 @@ func Load() (Config, error) {
 		LogFormat:   defaultLogFormat,
 		MetricsAddr: defaultMetricsAddr,
 		SlowRequest: defaultSlowRequest,
+
+		MetricsSample:     defaultMetricsSample,
+		MetricsRetainDays: defaultMetricsRetainDays,
 	}
 
 	// slog.Level parses "debug", "info", "warn" and "error" itself, in any
@@ -423,6 +446,23 @@ func loadJournal(cfg *Config) error {
 			return fmt.Errorf("config: BINGLE_SLOW_REQUEST must be a duration such as 250ms or 2s (0 turns the journal off), got %q", v)
 		}
 		cfg.SlowRequest = d
+	}
+	if v := strings.TrimSpace(os.Getenv("BINGLE_METRICS_SAMPLE")); v != "" {
+		d, err := time.ParseDuration(v)
+		switch {
+		case err != nil || d < 0:
+			return fmt.Errorf("config: BINGLE_METRICS_SAMPLE must be a duration such as 5m (0 keeps no history), got %q", v)
+		case d > 0 && d < minMetricsSample:
+			return fmt.Errorf("config: BINGLE_METRICS_SAMPLE is %s, which is less than %s: the history is written to disk, and below that it stops being history and becomes a second scrape loop", d, minMetricsSample)
+		}
+		cfg.MetricsSample = d
+	}
+	if v := strings.TrimSpace(os.Getenv("BINGLE_METRICS_RETAIN_DAYS")); v != "" {
+		n, err := strconv.Atoi(v)
+		if err != nil || n < 0 {
+			return fmt.Errorf("config: BINGLE_METRICS_RETAIN_DAYS must be a non-negative integer (0 keeps everything at full resolution), got %q", v)
+		}
+		cfg.MetricsRetainDays = n
 	}
 	return nil
 }

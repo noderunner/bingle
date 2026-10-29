@@ -390,6 +390,69 @@ func TestLoad_Journal(t *testing.T) {
 	}
 }
 
+func TestLoad_MetricsHistory(t *testing.T) {
+	for _, v := range []string{"BINGLE_METRICS_SAMPLE", "BINGLE_METRICS_RETAIN_DAYS"} {
+		t.Setenv(v, "")
+	}
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load() returned error: %v", err)
+	}
+	if cfg.MetricsSample != defaultMetricsSample || cfg.MetricsRetainDays != defaultMetricsRetainDays {
+		t.Errorf("by default the history is every %v for %d days, want %v and %d",
+			cfg.MetricsSample, cfg.MetricsRetainDays, defaultMetricsSample, defaultMetricsRetainDays)
+	}
+
+	for _, c := range []struct {
+		env  string
+		want time.Duration
+		bad  bool
+	}{
+		{env: "5m", want: 5 * time.Minute},
+		{env: "1h", want: time.Hour},
+		{env: "30s", want: 30 * time.Second},
+		{env: "0", want: 0},    // no history
+		{env: "1s", bad: true}, // too often to be history
+		{env: "often", bad: true},
+		{env: "-5m", bad: true},
+	} {
+		t.Setenv("BINGLE_METRICS_SAMPLE", c.env)
+		cfg, err := Load()
+		switch {
+		case c.bad && err == nil:
+			t.Errorf("BINGLE_METRICS_SAMPLE=%q was accepted", c.env)
+		case !c.bad && err != nil:
+			t.Errorf("BINGLE_METRICS_SAMPLE=%q: %v", c.env, err)
+		case !c.bad && cfg.MetricsSample != c.want:
+			t.Errorf("BINGLE_METRICS_SAMPLE=%q gave %v, want %v", c.env, cfg.MetricsSample, c.want)
+		}
+	}
+	t.Setenv("BINGLE_METRICS_SAMPLE", "")
+
+	for _, c := range []struct {
+		env  string
+		want int
+		bad  bool
+	}{
+		{env: "14", want: 14},
+		{env: "0", want: 0}, // everything at full resolution
+		{env: "-1", bad: true},
+		{env: "a fortnight", bad: true},
+	} {
+		t.Setenv("BINGLE_METRICS_RETAIN_DAYS", c.env)
+		cfg, err := Load()
+		switch {
+		case c.bad && err == nil:
+			t.Errorf("BINGLE_METRICS_RETAIN_DAYS=%q was accepted", c.env)
+		case !c.bad && err != nil:
+			t.Errorf("BINGLE_METRICS_RETAIN_DAYS=%q: %v", c.env, err)
+		case !c.bad && cfg.MetricsRetainDays != c.want:
+			t.Errorf("BINGLE_METRICS_RETAIN_DAYS=%q gave %d, want %d", c.env, cfg.MetricsRetainDays, c.want)
+		}
+	}
+}
+
 func TestLoad_Debug(t *testing.T) {
 	for _, v := range []string{"BINGLE_DEBUG_GAMES", "BINGLE_DEBUG_ROOM", "BINGLE_DEBUG_SECRETS", "BINGLE_PARANOID"} {
 		t.Setenv(v, "")

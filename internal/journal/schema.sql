@@ -20,3 +20,34 @@ CREATE TABLE IF NOT EXISTS slow_requests (
 
 CREATE INDEX IF NOT EXISTS idx_slow_requests_at ON slow_requests (at);
 CREATE INDEX IF NOT EXISTS idx_slow_requests_route ON slow_requests (route, at);
+
+-- Stage 5: the metric history.
+--
+-- One row per series per tick. Counters are kept as their monotonic total and
+-- rates are computed on read, as Prometheus does; gauges as their value;
+-- histograms as _count, _sum and one row per bucket (the bucket in labels).
+CREATE TABLE IF NOT EXISTS samples (
+  at     INTEGER NOT NULL,          -- unix seconds
+  name   TEXT    NOT NULL,          -- "bingle_http_requests_total"
+  labels TEXT    NOT NULL,          -- canonical "method=POST,route=/api/games", '' for none
+  value  REAL    NOT NULL,
+  PRIMARY KEY (name, labels, at)
+) WITHOUT ROWID;
+
+CREATE INDEX IF NOT EXISTS idx_samples_at ON samples (at);
+
+-- Older history, compacted. bucket is "hour" or "day"; at is the start of the
+-- bucket. min/mean/max/n describe the samples that went into it.
+CREATE TABLE IF NOT EXISTS rollups (
+  bucket TEXT    NOT NULL,
+  at     INTEGER NOT NULL,
+  name   TEXT    NOT NULL,
+  labels TEXT    NOT NULL,
+  min    REAL    NOT NULL,
+  mean   REAL    NOT NULL,
+  max    REAL    NOT NULL,
+  n      INTEGER NOT NULL,
+  PRIMARY KEY (bucket, name, labels, at)
+) WITHOUT ROWID;
+
+CREATE INDEX IF NOT EXISTS idx_rollups_at ON rollups (bucket, at);

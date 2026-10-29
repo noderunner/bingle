@@ -57,6 +57,7 @@ type App struct {
 	metrics   *metrics.Metrics
 	journal   *journal.DB
 	slower    time.Duration
+	history   journal.PageOptions
 }
 
 // Option changes how New builds the App.
@@ -77,6 +78,13 @@ func WithLogger(lg *slog.Logger) Option {
 // BINGLE_METRICS_ADDR empty does and what most tests want.
 func WithMetrics(m *metrics.Metrics) Option {
 	return func(a *App) { a.metrics = m }
+}
+
+// WithHistory mounts the metric history's endpoints and the Health page on
+// the private listener. Without it they are simply not there, which is what a
+// server with no metrics database serves and what most tests want.
+func WithHistory(opts journal.PageOptions) Option {
+	return func(a *App) { a.history = opts }
 }
 
 // WithJournal turns the slow-request journal on: requests slower than slower,
@@ -307,6 +315,12 @@ func (a *App) MetricsHandler() http.Handler {
 	// requests, which is the part that matters.
 	r.Handle("/metrics", a.metrics.Handler())
 	r.Get("/healthz", a.handleHealthz)
+	if a.history.DB != nil {
+		journal.Routes(r, a.history)
+		// The same stylesheet and the same charts the rest of the site uses,
+		// so the Health page needs no assets of its own.
+		r.Handle("/static/*", web.StaticHandler())
+	}
 	return r
 }
 

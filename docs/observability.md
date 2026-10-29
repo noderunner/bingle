@@ -3,8 +3,8 @@
 Bingle is one binary on one machine, so what it says about itself has to be useful with nothing
 else installed. [docs/history/observability-plan.md](history/observability-plan.md) stages the
 whole of that work; **this page covers what is built: the log, the metrics, the database, the
-slow-request journal and the games.** The metric history and the Health page are Stage 5, the
-browser's errors Stage 6, and repro bundles Stage 7; none of those are here yet.
+slow-request journal, the games, and the history behind the Health page.** The browser's errors are
+Stage 6 and repro bundles Stage 7; neither is here yet.
 
 ## The log
 
@@ -373,3 +373,56 @@ when it is on.
 Each failure is one `ERROR` line naming the check that failed. It runs `Legal` a second time on
 every move, so it is for development and CI; the server warns loudly at startup when it is on.
 Writing a repro bundle beside each failure is Stage 7.
+
+## The history, and the Health page
+
+`/metrics` is what is true now. The history is what was true at five past four last Tuesday, and
+it lives in the same file as the slow-request journal, beside the game database — so a backup of
+that directory takes it, and deleting it touches no game.
+
+| Variable | Default | What |
+|---|---|---|
+| `BINGLE_METRICS_SAMPLE` | `5m` | How often a sample is written. **0 keeps no history**; the metrics are still served live |
+| `BINGLE_METRICS_RETAIN_DAYS` | `14` | How long samples are kept at full resolution before they are compacted. 0 keeps everything, which grows without bound |
+
+One goroutine, one small transaction per tick. Five minutes rather than fifteen seconds is
+deliberate: the point is history that survives into the backup, not a time-series database. A
+Prometheus, if anyone runs one, scrapes `/metrics` as often as it likes and none of this changes.
+
+**Counters are kept as their monotonic total** and rates are worked out on read, exactly as
+Prometheus does — so a restart shows as the total returning to zero rather than as a spike, and
+the page drops that step instead of drawing a cliff. A histogram is kept as its `_count`, its
+`_sum` and one row per bucket, which is enough to derive a quantile afterwards.
+
+### How it stays small
+
+Five-minute samples are kept for `BINGLE_METRICS_RETAIN_DAYS`, then folded into one hourly rollup
+each; hourly rollups are kept for a year, then folded into daily ones. A rollup holds the `min`,
+the `mean`, the `max` and the `n` of what went into it, so the extremes survive compaction and
+nothing is silently averaged away. Compaction happens in the sampler's own tick — no second
+process — and writes the rollups **before** deleting what they came from, so an interrupted run
+loses no history. The slow-request journal is purged on the same window.
+
+A year of one series is then about 4,000 samples for the fortnight, 24 rows a day for the rest of
+the year, and 365 daily rows for ever.
+
+**One trap worth knowing:** a rollup is stamped with the **start** of its bucket, so the day
+bucket holding noon begins at midnight. A window that starts at noon will not include it. Ask for
+a little more than you need when reading old history.
+
+### Reading it back
+
+All of this is on the **private** listener only, and a test keeps it that way.
+
+```sh
+curl -s localhost:9095/metrics/series | jq            # what is kept, and how much
+curl -s 'localhost:9095/metrics/history?name=bingle_db_wal_bytes&hours=48' | jq
+curl -s 'localhost:9095/metrics/history.csv?name=bingle_http_requests_total&hours=24' > requests.csv
+curl -s -X POST localhost:9095/metrics/sample         # take a sample now
+```
+
+`GET /metrics/health` is the page: requests a minute by route, the slowest routes by 95th
+percentile, the database and its write-ahead log over time, the busiest statements, how games
+ended, and moves refused by the rules. It is drawn by `js/health.js` with the same inline-SVG
+charts the batch reports use, and the private listener serves the embedded static files, so the
+page needs no assets of its own.

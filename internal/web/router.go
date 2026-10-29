@@ -72,6 +72,20 @@ func staticContent() (fs.FS, error) {
 	return fs.Sub(staticFS, "static")
 }
 
+// StaticHandler serves the embedded static files under "/static/".
+//
+// It exists so the private metrics listener can serve the same stylesheet and
+// the same chart module the rest of the site uses: the Health page then needs
+// no assets of its own (docs/history/observability-plan.md section 5). It
+// serves files and nothing else — no page, no session, no manager.
+func StaticHandler() http.Handler {
+	sub, err := staticContent()
+	if err != nil {
+		panic(err) // see NewRouter: a build-time invariant, not a runtime case
+	}
+	return http.StripPrefix("/static/", http.FileServer(http.FS(sub)))
+}
+
 // handlers holds the dependencies shared by every handler in this package.
 type handlers struct {
 	mgr *session.Manager

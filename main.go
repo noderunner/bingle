@@ -55,14 +55,16 @@ func main() {
 	// the metric history). It is a separate file from the game database on
 	// purpose: measuring the server must not write to what is being measured.
 	var jdb *journal.DB
-	if cfg.MetricsDB != "" && cfg.SlowRequest > 0 {
+	if cfg.MetricsDB != "" && (cfg.SlowRequest > 0 || cfg.MetricsSample > 0) {
 		jdb, err = journal.Open(cfg.MetricsDB)
 		if err != nil {
 			lg.Error("the metrics database could not be opened", "path", cfg.MetricsDB, "err", err)
 			os.Exit(1)
 		}
 		defer func() { _ = jdb.Close() }()
-		lg.Info("the slow-request journal is on", "db", cfg.MetricsDB, "slower_than", cfg.SlowRequest)
+		if cfg.SlowRequest > 0 {
+			lg.Info("the slow-request journal is on", "db", cfg.MetricsDB, "slower_than", cfg.SlowRequest)
+		}
 	}
 
 	if cfg.Debug.Paranoid {
@@ -72,7 +74,21 @@ func main() {
 		lg.Warn("BINGLE_DEBUG_SECRETS is on: debug lines carry full positions, including committed dice, hidden hands and the random seed. This is for development only.")
 	}
 
-	a, err := app.New(cfg, app.WithLogger(lg), app.WithMetrics(mx), app.WithJournal(jdb, cfg.SlowRequest))
+	// The sampler writes the history and compacts it; the Health page and the
+	// history endpoints read it back. Both are on the private listener only.
+	sampler := &journal.Sampler{
+		DB: jdb, Every: cfg.MetricsSample, RetainDays: cfg.MetricsRetainDays, Logger: lg,
+	}
+	if mx != nil {
+		sampler.Source = mx.Samples
+	}
+	history := journal.PageOptions{
+		DB: jdb, Version: version.Engine, Every: cfg.MetricsSample,
+		RetainDays: cfg.MetricsRetainDays, Logger: lg, Sample: sampler.Tick,
+	}
+
+	a, err := app.New(cfg, app.WithLogger(lg), app.WithMetrics(mx),
+		app.WithJournal(jdb, cfg.SlowRequest), app.WithHistory(history))
 	if err != nil {
 		lg.Error("the server could not be built", "err", err)
 		os.Exit(1)
@@ -98,6 +114,7 @@ func main() {
 		}()
 	}
 
+	go sampler.Run(ctx)
 	go a.RunRetention(ctx, cfg.RetentionDays)
 	go a.Manager().RunAutoPlay(ctx, 0)
 	go a.Manager().RunNotifier(ctx)
