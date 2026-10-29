@@ -1346,6 +1346,9 @@ table.data { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
 table.data th, table.data td { padding: 0.3rem 0.5rem; text-align: right; border-bottom: 1px solid var(--border); white-space: nowrap; }
 table.data th:first-child, table.data td:first-child { text-align: left; }
 table.data th { font-size: 0.78rem; color: var(--muted); font-weight: 700; }
+/* A cell whose text is a sentence rather than a figure: the message of a
+   browser's fault on the Health page. */
+table.data td.wrap { white-space: normal; text-align: left; max-width: 34rem; }
 table.data th.sortable { cursor: pointer; }
 table.data tr.faint td { color: var(--muted); }
 .table-scroll { overflow-x: auto; }

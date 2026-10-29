@@ -1,6 +1,6 @@
 # Plan: logging, metrics and a slow-request journal
 
-Status: **Stages 1 to 5 done, stages 6 and 7 planned** (2026-10-28). The decisions in *What was decided*
+Status: **Stages 1 to 6 done, stage 7 planned** (2026-10-28). The decisions in *What was decided*
 below were taken with the owner before this was written; the rest is the reasoning and the
 staging. What Stage 1 built is described in [docs/observability.md](../observability.md).
 
@@ -381,9 +381,19 @@ reader can fall into at a window boundary; it is documented rather than papered 
 `internal/journal` now uses `internal/metrics`' `Sample` type rather than one of its own, so there
 is one shape and no conversion.
 
-**Stage 6 — client errors.** `js/errors.js`, the endpoint, deduplication, limits, the table
+**Stage 6 — client errors.** *Done.* `js/errors.js`, the endpoint, deduplication, limits, the table
 on the Health page. Tests: a browser test throws on purpose and the row appears with a count
 of 1, then 2; a flood is refused; no room code or token ever reaches the row.
+
+Notes. This is the first route in the whole plan that **has** to be on the public listener, which
+ADR 0064 otherwise keeps clear of observability, so it is write-only, answers 204 whatever it
+decided, checks every field against a closed set or a cap, and is rate limited per address — and
+a test asserts the faults are not readable from the public listener. The design said the browser
+scrubs token-shaped strings; the server scrubs them **again**, and strips room and batch paths as
+well, because the endpoint is public and a report can come from anything. A bare room code with
+nothing around it still cannot be recognised, which is stated rather than papered over. Reading
+the faults back is `GET /metrics/client-errors` on the private listener, which the design implied
+but did not name.
 
 **Stage 7 — repro bundles and `scripts/replay`.** The writer, the bundle format, the command
 and `TestRepro`. Tests: a bundle written from a forced inconsistency replays to the same
@@ -422,6 +432,11 @@ either shows up, the span cap and the sample interval are the dials.
 
 ## Status log
 
+- 2026-10-28: Stage 6 landed: `js/errors.js` on every page, `POST /api/client-error`,
+  `client_errors` in the metrics database with deduplication by
+  hash(message + stack + version), `bingle_client_errors_total{page}`,
+  `GET /metrics/client-errors` and the table on the Health page.
+  `BINGLE_CLIENT_ERRORS`. Faults are purged on the same window as the history.
 - 2026-10-28: Stage 5 landed: `samples` and `rollups`, `internal/metrics.Samples` (which flattens
   the gathered registry without taking prometheus/client_model as a direct dependency),
   `internal/journal`'s sampler, compaction and retention, `/metrics/history`, `/metrics/history.csv`,

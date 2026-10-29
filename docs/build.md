@@ -46,6 +46,7 @@ All configuration is via environment variables — there's no config file.
 | `BINGLE_METRICS_SAMPLE` | `5m` | How often the metric history is written; `0` keeps no history. Reachable at `/metrics/health` on the private listener |
 | `BINGLE_METRICS_RETAIN_DAYS` | `14` | Days of full-resolution history before it is compacted to hourly, then daily after a year; `0` keeps everything |
 | `BINGLE_SLOW_REQUEST` | `250ms` | How slow a request must be before the journal writes it down; `0` turns the journal off. A failed request is written down however fast |
+| `BINGLE_CLIENT_ERRORS` | `on` | `POST /api/client-error`, where a browser reports what went wrong in it. The only observability route on the public listener: write-only, validated against closed sets and rate limited. `off` removes it |
 | `BINGLE_DEBUG_GAMES` | *(every game)* | Comma-separated game families to log moves for, so `debug` is readable |
 | `BINGLE_DEBUG_ROOM` | *(unset)* | One room code logged at `info` whatever the level |
 | `BINGLE_DEBUG_SECRETS` | `off` | Full positions in the debug lines instead of the public view. **Development only** |

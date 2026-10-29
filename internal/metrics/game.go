@@ -153,6 +153,17 @@ func (m *Metrics) SetBatchWorkers(n int) {
 	m.batchWorkers.Set(float64(n))
 }
 
+// ClientError records one report from a browser, by the page it happened on.
+// "refused" is a report the endpoint would not take — too many from one
+// address, or nothing usable in it — which is worth seeing on its own: it says
+// whether the endpoint is being abused rather than used.
+func (m *Metrics) ClientError(page string) {
+	if m == nil {
+		return
+	}
+	m.clientErrors.WithLabelValues(page).Inc()
+}
+
 // botNodes is a Collector over however many positions each bot has looked at,
 // read from internal/bots at scrape time: the bots count their own nodes and
 // nothing has to be threaded through the search.

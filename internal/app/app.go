@@ -58,6 +58,15 @@ type App struct {
 	journal   *journal.DB
 	slower    time.Duration
 	history   journal.PageOptions
+	// clientErrors mounts POST /api/client-error.
+	clientErrors bool
+}
+
+// WithClientErrors mounts POST /api/client-error, where a browser reports what
+// went wrong in it. Off unless asked for, because it is the one observability
+// route on the public listener.
+func WithClientErrors() Option {
+	return func(a *App) { a.clientErrors = true }
 }
 
 // Option changes how New builds the App.
@@ -285,7 +294,14 @@ func (a *App) newRouter() chi.Router {
 	r.Use(a.metrics.Middleware)
 	r.Use(logging.Recover(a.log))
 	r.Get("/healthz", a.handleHealthz)
-	r.Mount("/api", api.NewRouter(a.manager, api.WithEnvs(a.envs), api.WithBatches(a.batches), api.WithPublicURL(a.publicURL), api.WithRTC(a.rtc), api.WithChangelog(a.changelog)))
+	apiOpts := []api.Option{api.WithEnvs(a.envs), api.WithBatches(a.batches), api.WithPublicURL(a.publicURL), api.WithRTC(a.rtc), api.WithChangelog(a.changelog)}
+	if a.clientErrors {
+		// The one observability route on the public listener: a browser has
+		// to be able to reach it. It is write-only, validated against closed
+		// sets and rate limited per address — see internal/api/clienterror.go.
+		apiOpts = append(apiOpts, api.WithClientErrors(a.log, a.metrics, a.journal))
+	}
+	r.Mount("/api", api.NewRouter(a.manager, apiOpts...))
 	r.Get("/ws/{code}", api.NewWSHandler(a.manager))
 	r.Get("/ws-chat", api.NewGlobalChatWSHandler(a.manager))
 	r.Get("/ws-dm", api.NewDirectWSHandler(a.manager))

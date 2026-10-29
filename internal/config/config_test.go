@@ -453,6 +453,43 @@ func TestLoad_MetricsHistory(t *testing.T) {
 	}
 }
 
+func TestLoad_ClientErrors(t *testing.T) {
+	t.Setenv("BINGLE_CLIENT_ERRORS", "")
+
+	// On by default: the UI is where there was no visibility at all.
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load() returned error: %v", err)
+	}
+	if !cfg.ClientErrors {
+		t.Error("the reporting endpoint is off by default")
+	}
+
+	for _, c := range []struct {
+		env  string
+		want bool
+		bad  bool
+	}{
+		{env: "off", want: false},
+		{env: "0", want: false},
+		{env: "false", want: false},
+		{env: "on", want: true},
+		{env: "1", want: true},
+		{env: "sometimes", bad: true},
+	} {
+		t.Setenv("BINGLE_CLIENT_ERRORS", c.env)
+		cfg, err := Load()
+		switch {
+		case c.bad && err == nil:
+			t.Errorf("BINGLE_CLIENT_ERRORS=%q was accepted", c.env)
+		case !c.bad && err != nil:
+			t.Errorf("BINGLE_CLIENT_ERRORS=%q: %v", c.env, err)
+		case !c.bad && cfg.ClientErrors != c.want:
+			t.Errorf("BINGLE_CLIENT_ERRORS=%q gave %v, want %v", c.env, cfg.ClientErrors, c.want)
+		}
+	}
+}
+
 func TestLoad_Debug(t *testing.T) {
 	for _, v := range []string{"BINGLE_DEBUG_GAMES", "BINGLE_DEBUG_ROOM", "BINGLE_DEBUG_SECRETS", "BINGLE_PARANOID"} {
 		t.Setenv(v, "")
