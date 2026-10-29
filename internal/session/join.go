@@ -62,7 +62,7 @@ func (m *Manager) JoinGame(ctx context.Context, roomCode, name string, role Role
 // seated keeps their seat.
 func (m *Manager) JoinGameAt(ctx context.Context, roomCode, name string, role Role, wantSeat int) (JoinResult, error) {
 	roomCode = canonRoom(roomCode)
-	unlock := m.lockRoom(roomCode)
+	unlock := m.lockRoom(ctx, roomCode)
 	defer unlock()
 
 	game, err := m.loadGame(ctx, roomCode, true)

@@ -32,7 +32,7 @@ type UndoOutcome struct {
 // resignation cannot be undone.
 func (m *Manager) Undo(ctx context.Context, roomCode, name string) (UndoOutcome, error) {
 	roomCode = canonRoom(roomCode)
-	unlock := m.lockRoom(roomCode)
+	unlock := m.lockRoom(ctx, roomCode)
 	defer unlock()
 
 	game, err := m.loadGame(ctx, roomCode, true)

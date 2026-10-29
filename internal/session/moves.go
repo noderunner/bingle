@@ -11,7 +11,9 @@ import (
 	"github.com/noderunner/bingle/internal/engine/board"
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/engine/state"
+	"github.com/noderunner/bingle/internal/metrics"
 	"github.com/noderunner/bingle/internal/store"
+	"github.com/noderunner/bingle/internal/trace"
 )
 
 // ErrGameNotActive is returned by MakeMove when roomCode's game isn't
@@ -105,7 +107,7 @@ func (m *Manager) PlayNotation(ctx context.Context, roomCode, name, text string)
 //     error is returned as-is, with nothing persisted.
 func (m *Manager) Play(ctx context.Context, roomCode, name string, mv state.Move) (MoveOutcome, error) {
 	roomCode = canonRoom(roomCode)
-	unlock := m.lockRoom(roomCode)
+	unlock := m.lockRoom(ctx, roomCode)
 	defer unlock()
 
 	game, err := m.loadGame(ctx, roomCode, true)
@@ -170,14 +172,31 @@ const (
 // the player's behalf: a reaction passed for them, or a turn a bot took after
 // their Auto-Play Timeout.
 func (m *Manager) applyAndRecordAs(ctx context.Context, compiled *catalog.CompiledGame, game store.Game, player store.Player, mv state.Move, how moveHow) (MoveOutcome, error) {
+	ctx, funnel := trace.Start(ctx, "session.ApplyMove")
+	funnel.Set("game", gameFamily(compiled))
+	defer funnel.End()
+
 	auto, autoPlay := how == passedForPlayer, how == playedForPlayer
 	bs := state.NewBoardState()
 	if err := bs.UnmarshalJSON([]byte(game.BoardState)); err != nil {
 		return MoveOutcome{}, fmt.Errorf("session: unmarshal board state for room %q: %w", game.RoomCode, err)
 	}
 
+	// Apply takes no context and does no I/O (ADR 0025): the span goes
+	// around the call, never inside the ruleset.
+	family := gameFamily(compiled)
+	_, applySpan := trace.Start(ctx, "engine.Apply")
+	applyStart := time.Now()
 	result, err := state.Apply(compiled, bs, player.Seat, mv)
+	applyTook := time.Since(applyStart)
+	applySpan.End()
 	if err != nil {
+		// A refusal here is the ruleset's answer, not a fault: the client
+		// offered a move the rules do not allow. A spike in these means a
+		// rules change or a stale client, which is why they are counted
+		// apart from everything else.
+		m.mx.Move(family, metrics.MoveIllegal, applyTook)
+		m.logMove(ctx, compiled, game, player, mv, moveLine{err: err, dur: applyTook})
 		return MoveOutcome{}, err
 	}
 
@@ -237,7 +256,7 @@ func (m *Manager) applyAndRecordAs(ctx context.Context, compiled *catalog.Compil
 		clockJSON = &stored
 	}
 
-	move, err := m.store.RecordMove(ctx, game.ID, store.MoveInput{
+	recorded, err := m.store.RecordMove(ctx, game.ID, store.MoveInput{
 		Seat:                player.Seat,
 		Color:               player.Color,
 		From:                string(result.Move.From),
@@ -257,8 +276,10 @@ func (m *Manager) applyAndRecordAs(ctx context.Context, compiled *catalog.Compil
 		Clock:               clockJSON,
 	})
 	if err != nil {
+		m.mx.Move(family, metrics.MoveFailed, applyTook)
 		return MoveOutcome{}, err
 	}
+	move := recorded
 
 	finalStatus := "active"
 	if result.GameEnded {
@@ -298,6 +319,7 @@ func (m *Manager) applyAndRecordAs(ctx context.Context, compiled *catalog.Compil
 	}
 	// A move that commits a secret (a strike's dice) is announced without it.
 	shownMove, shownNotation := state.PublicMove(compiled, result.NewState, result.Move, result.Notation)
+	_, publishSpan := trace.Start(ctx, "ws.publish")
 	m.hub.publish(game.RoomCode, Event{Type: "move", Data: moveEventData{
 		Seq:        move.Seq,
 		Seat:       player.Seat,
@@ -328,6 +350,19 @@ func (m *Manager) applyAndRecordAs(ctx context.Context, compiled *catalog.Compil
 		AutoPlay:     autoPlay,
 		Locked:       locked,
 	}})
+	publishSpan.End()
+
+	m.mx.Move(family, metrics.MoveApplied, applyTook)
+	if result.GameEnded {
+		m.mx.Finished(family, result.EndReason)
+	}
+	m.logMove(ctx, compiled, game, player, result.Move, moveLine{
+		seq: move.Seq, notation: result.Notation, dur: applyTook, locked: locked,
+		ended: result.GameEnded, endReason: result.EndReason, state: result.NewState,
+	})
+	if m.debug.Paranoid {
+		m.checkParanoid(ctx, compiled, game, bs, player.Seat, result)
+	}
 
 	return MoveOutcome{
 		Seq:          move.Seq,

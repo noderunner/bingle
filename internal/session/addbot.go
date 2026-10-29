@@ -28,7 +28,7 @@ func (m *Manager) AddBot(ctx context.Context, roomCode, by, botID string) (AddBo
 // named after the faction or colour of its seat and its kind.
 func (m *Manager) AddBotAt(ctx context.Context, roomCode, by, botID string, wantSeat int) (AddBotResult, error) {
 	roomCode = canonRoom(roomCode)
-	unlock := m.lockRoom(roomCode)
+	unlock := m.lockRoom(ctx, roomCode)
 	defer unlock()
 
 	game, err := m.loadGame(ctx, roomCode, true)

@@ -61,6 +61,19 @@ type Metrics struct {
 	db           *dbCollector
 	// dbHandles caches each statement name's metrics: see handles.
 	dbHandles sync.Map
+
+	gameMoves      *prometheus.CounterVec
+	gameApply      *prometheus.HistogramVec
+	gameLegal      *prometheus.HistogramVec
+	gameLegalMoves *prometheus.HistogramVec
+	gameFinished   *prometheus.CounterVec
+	gameIllegal    *prometheus.CounterVec
+	botSearch      *prometheus.HistogramVec
+	botNodes       *botNodes
+	slotWait       *prometheus.HistogramVec
+	slotInUse      *prometheus.GaugeVec
+	slotSize       *prometheus.GaugeVec
+	batchWorkers   prometheus.Gauge
 }
 
 // New builds the registry, registers the Go runtime and process collectors
@@ -131,6 +144,64 @@ func New(version string) *Metrics {
 		}),
 
 		db: newDBCollector(),
+
+		gameMoves: prometheus.NewCounterVec(prometheus.CounterOpts{
+			Namespace: Namespace, Subsystem: "game", Name: "moves_total",
+			Help: "Moves the engine applied or refused, by game family and outcome.",
+		}, []string{"game", "result"}),
+
+		gameApply: prometheus.NewHistogramVec(prometheus.HistogramOpts{
+			Namespace: Namespace, Subsystem: "game", Name: "apply_duration_seconds",
+			Help: "How long applying a move took, by game family.", Buckets: durationBuckets,
+		}, []string{"game"}),
+
+		gameLegal: prometheus.NewHistogramVec(prometheus.HistogramOpts{
+			Namespace: Namespace, Subsystem: "game", Name: "legal_duration_seconds",
+			Help: "How long working out the legal moves took, by game family.", Buckets: durationBuckets,
+		}, []string{"game"}),
+
+		gameLegalMoves: prometheus.NewHistogramVec(prometheus.HistogramOpts{
+			Namespace: Namespace, Subsystem: "game", Name: "legal_moves",
+			Help: "How many legal moves a position offered, by game family.", Buckets: moveBuckets,
+		}, []string{"game"}),
+
+		gameFinished: prometheus.NewCounterVec(prometheus.CounterOpts{
+			Namespace: Namespace, Subsystem: "games", Name: "finished_total",
+			Help: "Games that ended, by game family and why. A spike in ply-limit or no-legal-moves means a rule stopped working.",
+		}, []string{"game", "end_reason"}),
+
+		gameIllegal: prometheus.NewCounterVec(prometheus.CounterOpts{
+			Namespace: Namespace, Subsystem: "game", Name: "illegal_moves_total",
+			Help: "Moves a ruleset refused, by game family. A spike means a rules change or a stale client.",
+		}, []string{"game"}),
+
+		botSearch: prometheus.NewHistogramVec(prometheus.HistogramOpts{
+			Namespace: Namespace, Subsystem: "bot", Name: "search_duration_seconds",
+			Help: "How long a bot thought, by bot and game family.", Buckets: durationBuckets,
+		}, []string{"bot", "game"}),
+
+		botNodes: &botNodes{desc: prometheus.NewDesc(
+			Namespace+"_bot_nodes_total", "Positions each bot has looked at.", []string{"bot"}, nil)},
+
+		slotWait: prometheus.NewHistogramVec(prometheus.HistogramOpts{
+			Namespace: Namespace, Subsystem: "slot", Name: "wait_seconds",
+			Help: "How long a caller queued for one of the CPU pools. This is what grows first under load.", Buckets: durationBuckets,
+		}, []string{"pool"}),
+
+		slotInUse: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: Namespace, Subsystem: "slot", Name: "in_use",
+			Help: "Slots of each CPU pool in use right now.",
+		}, []string{"pool"}),
+
+		slotSize: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: Namespace, Subsystem: "slot", Name: "size",
+			Help: "How many slots each CPU pool has.",
+		}, []string{"pool"}),
+
+		batchWorkers: prometheus.NewGauge(prometheus.GaugeOpts{
+			Namespace: Namespace, Subsystem: "batch", Name: "workers",
+			Help: "Games a practice batch plays at once.",
+		}),
 	}
 
 	buildInfo := prometheus.NewGaugeVec(prometheus.GaugeOpts{
@@ -146,6 +217,8 @@ func New(version string) *Metrics {
 		m.httpRequests, m.httpDuration, m.httpInFlight, m.httpBytes, m.httpErrors,
 		m.wsConnections, m.wsTotal,
 		m.dbQueries, m.dbDuration, m.dbRows, m.dbTxDuration, m.dbBusy, m.db,
+		m.gameMoves, m.gameApply, m.gameLegal, m.gameLegalMoves, m.gameFinished, m.gameIllegal,
+		m.botSearch, m.botNodes, m.slotWait, m.slotInUse, m.slotSize, m.batchWorkers,
 	)
 	return m
 }

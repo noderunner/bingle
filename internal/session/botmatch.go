@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/noderunner/bingle/internal/engine/state"
+	"github.com/noderunner/bingle/internal/metrics"
 	"github.com/noderunner/bingle/internal/session/roomcode"
 	"github.com/noderunner/bingle/internal/store"
 )
@@ -136,7 +137,7 @@ func (m *Manager) autoplay(roomCode string, delay time.Duration) {
 			unwatchedSince = time.Time{}
 		}
 
-		unlock := m.lockRoom(roomCode)
+		unlock := m.lockRoom(ctx, roomCode)
 		done := m.autoplayOne(ctx, roomCode)
 		unlock()
 		if done {
@@ -186,9 +187,15 @@ func (m *Manager) autoplayOne(ctx context.Context, roomCode string) bool {
 	}
 	legal = m.botChoices(roomCode, compiled, bs, mover.Seat, legal)
 	var mv state.Move
+	queued := time.Now()
 	select {
 	case botSlots <- struct{}{}:
+		m.mx.SlotWait(metrics.SlotMatch, time.Since(queued))
+		m.mx.SlotEnter(metrics.SlotMatch)
+		searched := time.Now()
 		mv, err = bot.Choose(ctx, compiled, bs, mover.Seat, legal)
+		m.mx.BotSearch(bot.ID(), gameFamily(compiled), time.Since(searched))
+		m.mx.SlotLeave(metrics.SlotMatch)
 		<-botSlots
 	case <-ctx.Done():
 		err = ctx.Err()

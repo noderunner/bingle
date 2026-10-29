@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/noderunner/bingle/internal/app"
 	"github.com/noderunner/bingle/internal/config"
@@ -19,10 +20,10 @@ import (
 
 // A move needs a game nobody can finish by accident, so this plays
 // tic-tac-toe and resets by making a fresh game whenever the board fills.
-func benchMoveServer(b *testing.B, mx *metrics.Metrics) *httptest.Server {
+func benchMoveServer(b *testing.B, mx *metrics.Metrics, opts ...app.Option) *httptest.Server {
 	b.Helper()
 	cfg := config.Config{DBPath: b.TempDir() + "/bench.db"}
-	a, err := app.New(cfg, app.WithMetrics(mx))
+	a, err := app.New(cfg, append([]app.Option{app.WithMetrics(mx)}, opts...)...)
 	if err != nil {
 		b.Fatalf("app.New: %v", err)
 	}
@@ -54,8 +55,8 @@ func benchPost(b *testing.B, url string, body any, want int) []byte {
 
 // benchMoves plays one move after another through the real REST API, starting
 // a new game each time a board runs out of squares.
-func benchMoves(b *testing.B, mx *metrics.Metrics) {
-	srv := benchMoveServer(b, mx)
+func benchMoves(b *testing.B, mx *metrics.Metrics, opts ...app.Option) {
+	srv := benchMoveServer(b, mx, opts...)
 	type legalMoves struct {
 		Moves []struct {
 			Notation string `json:"notation"`
@@ -106,3 +107,11 @@ func BenchmarkMove_MetricsOff(b *testing.B) { benchMoves(b, nil) }
 
 // And recording, which is what Stage 2 adds.
 func BenchmarkMove_MetricsOn(b *testing.B) { benchMoves(b, metrics.New("9.9.9")) }
+
+// With the slow-request journal collecting as well: every boundary opens a
+// span, which is what Stage 4 adds to a move. The threshold is an hour, so
+// nothing is ever written down and this is the collection cost alone — which
+// is what every ordinary request pays.
+func BenchmarkMove_MetricsAndJournalOn(b *testing.B) {
+	benchMoves(b, metrics.New("9.9.9"), app.WithJournal(nil, time.Hour))
+}

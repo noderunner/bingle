@@ -13,6 +13,7 @@ import (
 
 	"github.com/noderunner/bingle/internal/api"
 	"github.com/noderunner/bingle/internal/batch"
+	"github.com/noderunner/bingle/internal/bots"
 	"github.com/noderunner/bingle/internal/config"
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/envs"
@@ -28,6 +29,7 @@ import (
 	"github.com/noderunner/bingle/internal/games/onitama"
 	"github.com/noderunner/bingle/internal/games/tak"
 	"github.com/noderunner/bingle/internal/games/yinsh"
+	"github.com/noderunner/bingle/internal/journal"
 	"github.com/noderunner/bingle/internal/logging"
 	"github.com/noderunner/bingle/internal/mail"
 	"github.com/noderunner/bingle/internal/mcpserver"
@@ -53,6 +55,8 @@ type App struct {
 	changelog string
 	log       *slog.Logger
 	metrics   *metrics.Metrics
+	journal   *journal.DB
+	slower    time.Duration
 }
 
 // Option changes how New builds the App.
@@ -73,6 +77,17 @@ func WithLogger(lg *slog.Logger) Option {
 // BINGLE_METRICS_ADDR empty does and what most tests want.
 func WithMetrics(m *metrics.Metrics) Option {
 	return func(a *App) { a.metrics = m }
+}
+
+// WithJournal turns the slow-request journal on: requests slower than slower,
+// and requests the server fails, are written to db (which may be nil to log
+// them and store nothing). A zero duration leaves the journal off, collector
+// and all, which is what most tests want.
+func WithJournal(db *journal.DB, slower time.Duration) Option {
+	return func(a *App) {
+		a.journal = db
+		a.slower = slower
+	}
 }
 
 // New builds an App from cfg: it opens the store, builds a *catalog.Catalog
@@ -112,6 +127,15 @@ func New(cfg config.Config, opts ...Option) (*App, error) {
 
 	manager := session.NewManager(st, cat)
 	manager.SetLogger(a.log)
+	manager.SetMetrics(a.metrics)
+	manager.SetDebug(session.DebugOptions{
+		Games:    cfg.Debug.Games,
+		Room:     cfg.Debug.Room,
+		Secrets:  cfg.Debug.Secrets,
+		Paranoid: cfg.Debug.Paranoid,
+	})
+	a.metrics.SetBotNodeSource(bots.NodeCounts)
+	batch.SetMetrics(a.metrics)
 
 	a.store = st
 	a.catalog = cat
@@ -244,9 +268,12 @@ func (a *App) newRouter() chi.Router {
 	// never logged as a request. Neither middleware ever sees the path.
 	r.Use(logging.RequestID)
 	r.Use(logging.Access(a.log))
-	// Inside the access log, which wraps the writer both of them read the
+	// Inside the access log, which wraps the writer all of them read the
 	// status off, and outside the recover, so a request that panicked is
-	// counted as the 500 it became.
+	// counted as the 500 it became and written down as the one nobody can
+	// otherwise explain. The journal is outermost of the three so its
+	// "handler" span covers what the other two measure.
+	r.Use(journal.Middleware(journal.Options{DB: a.journal, Logger: a.log, Slower: a.slower}))
 	r.Use(a.metrics.Middleware)
 	r.Use(logging.Recover(a.log))
 	r.Get("/healthz", a.handleHealthz)

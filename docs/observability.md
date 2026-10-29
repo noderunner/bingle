@@ -2,9 +2,9 @@
 
 Bingle is one binary on one machine, so what it says about itself has to be useful with nothing
 else installed. [docs/history/observability-plan.md](history/observability-plan.md) stages the
-whole of that work; **this page covers what is built: the log, the metrics and the database.** The
-slow-request journal, the metrics database and the Health page are later stages and are not here
-yet.
+whole of that work; **this page covers what is built: the log, the metrics, the database, the
+slow-request journal and the games.** The metric history and the Health page are Stage 5, the
+browser's errors Stage 6, and repro bundles Stage 7; none of those are here yet.
 
 ## The log
 
@@ -158,6 +158,14 @@ The container image does not publish 9095 by default, and the health check uses 
 | `bingle_db_table_rows{table}` | Rows in each table |
 | `bingle_db_pool_*` | `database/sql`'s own account of the connection pool |
 | `bingle_db_snapshot_ok` | 1 when the figures above could be read, 0 when they could not |
+| `bingle_game_moves_total{game,result}` | Moves applied, refused by the rules, or failed |
+| `bingle_game_illegal_moves_total{game}` | Moves a ruleset refused. A spike means a rules change or a stale client |
+| `bingle_games_finished_total{game,end_reason}` | Games that ended, and why. A spike in `ply-limit` or `no-legal-moves` means a rule stopped working |
+| `bingle_game_apply_duration_seconds{game}`, `bingle_game_legal_duration_seconds{game}` | How long the engine took |
+| `bingle_game_legal_moves{game}` | How many moves a position offered |
+| `bingle_bot_search_duration_seconds{bot,game}`, `bingle_bot_nodes_total{bot}` | How long and how hard a bot thought |
+| `bingle_slot_wait_seconds{pool}`, `bingle_slot_in_use{pool}`, `bingle_slot_size{pool}` | The CPU pools: `hint`, `bot`, `match`. **Wait is what grows first under load** |
+| `bingle_batch_workers` | Games a practice batch is playing at once |
 | `bingle_build_info{version}` | Always 1; the label is the engine's version |
 | `go_*`, `process_*` | The Go runtime and process collectors, registered explicitly |
 
@@ -258,3 +266,110 @@ nothing else: **+0.46 µs per statement, and no extra allocations** (35.6 µs �
 Each statement name's metrics are resolved once and kept, because looking a label value up in a
 Prometheus vector hashes it and takes a lock — doing that three times for each of ten statements
 was, measured, 1.2% on a move all by itself.
+
+## The slow-request journal
+
+A request that was slow, or that the server failed, leaves one row saying where its time went. So
+"the API is slow sometimes" becomes
+
+```
+WARN msg="a slow request" method=POST route=/api/games/{code}/moves status=200 dur=430ms
+  id=b397ca0d phases="room.lock 410.2ms, store x9 12.1ms, session.ApplyMove 8.0ms"
+```
+
+and the row beside it holds the whole breakdown:
+
+```
+handler 0.83ms
+  store GetGame 0.14 · room.lock 0.00 · store ListPlayers 0.06
+  session.ApplyMove 0.30
+    engine.Apply 0.02
+    store.tx RecordMove 0.23
+      readSeq 0.02 · insertMove 0.05 · updateGame 0.04 · readMove 0.03
+    ws.publish 0.00
+```
+
+| Variable | Default | What |
+|---|---|---|
+| `BINGLE_SLOW_REQUEST` | `250ms` | How slow is slow. **0 turns the journal off**, collector and all |
+| `BINGLE_METRICS_DB` | `bingle-metrics.db` beside the game database | Where the rows go. Empty logs the line and stores nothing |
+
+**Everything else is thrown away** when the request finishes. Keeping every request would be a
+trace store, and bingle has nowhere to put one. A request that panicked is always written down —
+a 500 nobody can explain is what this is for — and the spans recorded before the panic say how far
+it got. An accepted WebSocket is a connection, not a slow request, so it is never one.
+
+The rows live in **a database of their own** beside the game database: measuring the server must
+not write to what is being measured, and that file can be deleted or truncated without touching a
+single game. Stage 5 puts the metric history in the same file.
+
+### What it costs
+
+Measured through the real REST API against SQLite, on a move of roughly 0.9 ms: **no difference in
+time that the measurement can resolve** — the journal's medians land on both sides of the
+no-journal ones across runs — and **+32 allocations on about 1020**, or 3.1%.
+
+Those 32 are one `context.WithValue` per span: the parent chain is carried in the context, which
+is how OpenTelemetry does it and the reason the SDK could replace this package without touching a
+call site. Spans themselves are returned by value and allocate nothing. Measured as time, this is
+inside the plan's 1% budget; measured as allocations it is not, and that trade is deliberate — the
+alternative is giving up the shape that makes the journal replaceable. `BINGLE_SLOW_REQUEST=0`
+removes it entirely.
+
+### Timing something new
+
+```go
+ctx, span := trace.Start(ctx, "store.RecordMove")
+defer span.End()
+span.Set("stmt", "RecordMove")
+```
+
+The API is shaped like OpenTelemetry's on purpose, so that if traces ever have to leave the
+machine the OTEL SDK replaces `internal/trace` and no call site changes. **Outside a request
+nothing is collected** — a bot search, a batch of five hundred games and every call in a test run
+with no collector, and `Start` then returns a span whose methods are nil checks at zero
+allocations. Attribute values are never player data: a span ends up in the journal, which is read
+like a log.
+
+The boundaries timed today are the handler, the session funnel, the room-lock wait, every store
+statement and transaction, `Legal`, `Apply`, the template render and the publish to a room's
+sockets. `Legal` and `Apply` still take no context and do no I/O — the spans go **around** the
+calls, never inside a ruleset (ADR 0025).
+
+## Watching the games
+
+Every move in bingle goes through one funnel, so instrumenting it once covers every game, JSON
+definition or Go ruleset alike, and **no logging call goes into any game's code**:
+
+```
+DEBUG msg="move applied" game=tak room=X4-567673f2e96b seq=3 seat=1 move=c3 dur=15.5µs action=place
+```
+
+At the default level a server says nothing per move. A move the rules refused is at `info`,
+because that is worth seeing without turning the firehose on.
+
+| Variable | Default | What |
+|---|---|---|
+| `BINGLE_DEBUG_GAMES` | *(every game)* | Comma-separated game families. `debug` across two dozen games is unreadable; this narrows it |
+| `BINGLE_DEBUG_ROOM` | *(none)* | One room code, logged at `info` whatever else is set, for chasing a single report |
+| `BINGLE_DEBUG_SECRETS` | off | Put **full** positions in the lines instead of the public view. **Development only** |
+| `BINGLE_PARANOID` | off | Check the engine against itself after every move. **Development and CI only** |
+
+A position in a debug line is the **public** view: Courtfall commits dice in secret, Cthulhu Wars
+hides Elder Signs, Nyet! hides hands, and every position carries the game's random state.
+`BINGLE_DEBUG_SECRETS` is the only way to the full one, and the server logs a warning at startup
+when it is on.
+
+### Paranoid mode
+
+`BINGLE_PARANOID=1` makes the move funnel, after every move:
+
+1. re-run `Legal` and check the applied move is in it — the bug that otherwise reaches a player as
+   a game that cannot be continued;
+2. run `state.Validate` on the new position;
+3. check the notation survives `Format` → `Parse` → `Format`, or a replay will not reproduce it;
+4. check the ruleset's public view is not simply the whole position.
+
+Each failure is one `ERROR` line naming the check that failed. It runs `Legal` a second time on
+every move, so it is for development and CI; the server warns loudly at startup when it is on.
+Writing a repro bundle beside each failure is Stage 7.

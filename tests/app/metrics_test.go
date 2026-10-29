@@ -193,3 +193,50 @@ func TestMetrics_SeriesCountOfAFreshServerIsUnderTheCeiling(t *testing.T) {
 	}
 	t.Logf("a fresh server exposes %d series of the %d allowed", got, ceiling)
 }
+
+// A game played over the real API turns up in the game metrics: the moves,
+// how long the engine took, how many moves a position offered, and why the
+// game ended — and nothing about the game itself.
+func TestMetrics_RecordTheGameAndWhyItEnded(t *testing.T) {
+	baseURL, scrape := newMeasuredServer(t)
+
+	room := createRoom(t, baseURL, "Ana")
+	doJSON(t, "POST", baseURL+"/api/games/"+room+"/join", map[string]any{"player_name": "Bo", "role": "player"}, nil)
+
+	// Ana resigns, which is the shortest way to a finished game.
+	doJSON(t, "GET", baseURL+"/api/games/"+room+"/moves/legal", nil, nil)
+	if code := doJSON(t, "POST", baseURL+"/api/games/"+room+"/resign", map[string]any{"player_name": "Ana"}, nil); code != 200 {
+		t.Fatalf("Ana resigns: %d", code)
+	}
+
+	got := scrape()
+	for _, want := range []string{
+		`bingle_game_legal_duration_seconds_count{game="test-freeplay"}`,
+		`bingle_game_legal_moves_count{game="test-freeplay"}`,
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("the exposition does not say %s", want)
+		}
+	}
+	// A game that ended is counted with the reason it ended for.
+	if !strings.Contains(got, `bingle_games_finished_total{end_reason=`) {
+		t.Errorf("no finished game was counted:\n%s", firstLines(got, "bingle_games_finished_total"))
+	}
+	if strings.Contains(got, room) || strings.Contains(got, "Ana") {
+		t.Error("the exposition carries the room code or a player's name")
+	}
+}
+
+// The CPU pools report how big they are and how much of them is in use, so
+// "in use" can be read as a fraction. Queue wait is what grows first under
+// load, which is why it is a histogram rather than a gauge.
+func TestMetrics_ReportTheCPUPools(t *testing.T) {
+	_, scrape := newMeasuredServer(t)
+
+	got := scrape()
+	for _, pool := range []string{"hint", "bot"} {
+		if !strings.Contains(got, `bingle_slot_size{pool="`+pool+`"}`) {
+			t.Errorf("the %s pool does not report its size:\n%s", pool, firstLines(got, "bingle_slot_"))
+		}
+	}
+}

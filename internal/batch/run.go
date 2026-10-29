@@ -22,6 +22,7 @@ import (
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/engine/state"
 	"github.com/noderunner/bingle/internal/games/cthulhuwars"
+	"github.com/noderunner/bingle/internal/metrics"
 )
 
 // Player is one seat of the table and the bot that plays it.
@@ -190,6 +191,14 @@ func (s *Spec) layout(i int) (string, []Player) {
 	return s.Base + "~" + suffix, seated
 }
 
+// batchMetrics is the registry the worker count is reported to. It is a
+// package-level handle, like the bots' node counters, so that Run's signature
+// stays what every caller and test already passes; a nil one records nothing.
+var batchMetrics *metrics.Metrics
+
+// SetMetrics hands this package the registry to record into.
+func SetMetrics(m *metrics.Metrics) { batchMetrics = m }
+
 // Run plays the batch, calling sink with every finished game (from several
 // goroutines, in no particular order) and progress with the number of games
 // finished so far. It returns when all are played or ctx ends.
@@ -201,6 +210,10 @@ func Run(ctx context.Context, cat *catalog.Catalog, spec Spec, sink func(Record)
 	var wg sync.WaitGroup
 	var mu sync.Mutex
 	done := 0
+	// How many games a batch plays at once, so a server that feels slow
+	// while a batch runs says why.
+	batchMetrics.SetBatchWorkers(spec.Workers)
+	defer batchMetrics.SetBatchWorkers(0)
 	for w := 0; w < spec.Workers; w++ {
 		wg.Add(1)
 		go func() {

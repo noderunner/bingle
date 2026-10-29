@@ -216,7 +216,7 @@ func (m *Manager) loadGame(ctx context.Context, roomCode string, locked bool) (s
 		return game, nil
 	}
 	if !locked {
-		unlock := m.lockRoom(roomCode)
+		unlock := m.lockRoom(ctx, roomCode)
 		defer unlock()
 		if game, err = m.store.GetGame(ctx, roomCode); err != nil {
 			return game, err
@@ -237,6 +237,7 @@ func (m *Manager) loadGame(ctx context.Context, roomCode string, locked bool) (s
 	if err := m.store.FinishGame(ctx, game.ID, winner, "timeout"); err != nil {
 		return game, err
 	}
+	m.mx.Finished(gameFamily(compiled), "timeout")
 	if game, err = m.store.GetGame(ctx, roomCode); err != nil {
 		return game, err
 	}

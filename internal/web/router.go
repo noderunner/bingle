@@ -17,6 +17,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/noderunner/bingle/internal/session"
+	"github.com/noderunner/bingle/internal/trace"
 	"github.com/noderunner/bingle/internal/version"
 )
 
@@ -89,11 +90,20 @@ type gamePageData struct {
 // handleIndex implements GET /: render index.html.tmpl with the catalog's
 // current game definitions, so the create-game form's game_def_id select is
 // always populated from real, registered game defs.
+// render writes one template, timed as a span so that a page which is slow to
+// build says which template it was in the slow-request journal.
+func render(r *http.Request, w http.ResponseWriter, name string, data any) error {
+	_, span := trace.Start(r.Context(), "web.render")
+	span.Set("template", name)
+	defer span.End()
+	return templates.ExecuteTemplate(w, name, data)
+}
+
 func (h *handlers) handleIndex(w http.ResponseWriter, r *http.Request) {
 	data := indexPageData{GameDefs: h.mgr.ListGameDefs(r.Context())}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := templates.ExecuteTemplate(w, "index.html.tmpl", data); err != nil {
+	if err := render(r, w, "index.html.tmpl", data); err != nil {
 		http.Error(w, "web: rendering index page failed", http.StatusInternalServerError)
 		return
 	}
@@ -111,7 +121,7 @@ func (h *handlers) handleGame(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	// Only this page may use the microphone (voice chat), and nothing may use the camera.
 	w.Header().Set("Permissions-Policy", "microphone=(self), camera=()")
-	if err := templates.ExecuteTemplate(w, "game.html.tmpl", data); err != nil {
+	if err := render(r, w, "game.html.tmpl", data); err != nil {
 		http.Error(w, "web: rendering game page failed", http.StatusInternalServerError)
 		return
 	}
@@ -129,7 +139,7 @@ type batchesPageData struct {
 func (h *handlers) handleBatches(w http.ResponseWriter, r *http.Request) {
 	data := batchesPageData{ID: chi.URLParam(r, "id")}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := templates.ExecuteTemplate(w, "batches.html.tmpl", data); err != nil {
+	if err := render(r, w, "batches.html.tmpl", data); err != nil {
 		http.Error(w, "web: rendering batches page failed", http.StatusInternalServerError)
 		return
 	}
@@ -139,7 +149,7 @@ func (h *handlers) handleBatches(w http.ResponseWriter, r *http.Request) {
 // games, both kept in the browser, so the page is only a shell.
 func (h *handlers) handleProfile(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := templates.ExecuteTemplate(w, "profile.html.tmpl", nil); err != nil {
+	if err := render(r, w, "profile.html.tmpl", nil); err != nil {
 		http.Error(w, "web: rendering profile page failed", http.StatusInternalServerError)
 		return
 	}
@@ -159,7 +169,7 @@ func (h *handlers) handleNotifyPage(action string) http.HandlerFunc {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.Header().Set("Cache-Control", "no-store")
 		w.Header().Set("Referrer-Policy", "no-referrer")
-		if err := templates.ExecuteTemplate(w, "notify.html.tmpl", notifyPageData{Action: action}); err != nil {
+		if err := render(r, w, "notify.html.tmpl", notifyPageData{Action: action}); err != nil {
 			http.Error(w, "web: rendering notify page failed", http.StatusInternalServerError)
 		}
 	}

@@ -72,7 +72,7 @@ func (m *Manager) lobbyContext(ctx context.Context, roomCode, name string) (stor
 // filled (the host can fill open seats with bots first).
 func (m *Manager) StartGame(ctx context.Context, roomCode, name string) (StateSnapshot, error) {
 	roomCode = canonRoom(roomCode)
-	unlock := m.lockRoom(roomCode)
+	unlock := m.lockRoom(ctx, roomCode)
 	defer unlock()
 	game, players, me, err := m.lobbyContext(ctx, roomCode, name)
 	if err != nil {
@@ -100,7 +100,7 @@ func (m *Manager) StartGame(ctx context.Context, roomCode, name string) (StateSn
 // game starts.
 func (m *Manager) ChooseSeat(ctx context.Context, roomCode, name string, wanted int) (StateSnapshot, error) {
 	roomCode = canonRoom(roomCode)
-	unlock := m.lockRoom(roomCode)
+	unlock := m.lockRoom(ctx, roomCode)
 	defer unlock()
 	game, players, me, err := m.lobbyContext(ctx, roomCode, name)
 	if err != nil {
@@ -141,7 +141,7 @@ var ErrNoCultChoice = errors.New("session: the seats of this game have no cult t
 // the definition of the new table and a fresh starting position.
 func (m *Manager) SetSeatCult(ctx context.Context, roomCode, by string, seat int, cult string) (StateSnapshot, error) {
 	roomCode = canonRoom(roomCode)
-	unlock := m.lockRoom(roomCode)
+	unlock := m.lockRoom(ctx, roomCode)
 	defer unlock()
 	game, players, _, err := m.lobbyContext(ctx, roomCode, by)
 	if err != nil {
@@ -208,7 +208,7 @@ func (m *Manager) SetSeatCult(ctx context.Context, roomCode, by string, seat int
 // The host's role passes to the next person at the table.
 func (m *Manager) LeaveSeat(ctx context.Context, roomCode, name string) (StateSnapshot, error) {
 	roomCode = canonRoom(roomCode)
-	unlock := m.lockRoom(roomCode)
+	unlock := m.lockRoom(ctx, roomCode)
 	defer unlock()
 	game, _, me, err := m.lobbyContext(ctx, roomCode, name)
 	if err != nil {
@@ -225,7 +225,7 @@ func (m *Manager) LeaveSeat(ctx context.Context, roomCode, name string) (StateSn
 // there, or a bot to be replaced — before the game starts.
 func (m *Manager) RemoveSeat(ctx context.Context, roomCode, by string, seat int) (StateSnapshot, error) {
 	roomCode = canonRoom(roomCode)
-	unlock := m.lockRoom(roomCode)
+	unlock := m.lockRoom(ctx, roomCode)
 	defer unlock()
 	game, players, me, err := m.lobbyContext(ctx, roomCode, by)
 	if err != nil {

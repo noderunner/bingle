@@ -324,7 +324,7 @@ func (m *Manager) CreateGameWithOptions(ctx context.Context, opts CreateOptions)
 
 	// Fill every remaining seat — with the bot, or with the creator again —
 	// and start the game when the table is full.
-	unlock := m.lockRoom(game.RoomCode)
+	unlock := m.lockRoom(ctx, game.RoomCode)
 	defer unlock()
 
 	total := len(compiled.Definition.Seats)
