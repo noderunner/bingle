@@ -25,5 +25,6 @@ export BINGLE_METRICS_ADDR=127.0.0.1:9095             # curl it for Prometheus m
 export BINGLE_SLOW_REQUEST=250ms                      # write slow requests down (docs/observability.md)
 export BINGLE_METRICS_SAMPLE=5m                       # metric history, and the page at /metrics/health
 # BINGLE_PARANOID and BINGLE_DEBUG_SECRETS are for development only; leave them off here.
+# export BINGLE_DEBUG_DIR=/var/lib/bingle/debug    # repro bundles when something impossible happens
 
 exec ./bin/bingle

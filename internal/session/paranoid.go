@@ -7,6 +7,7 @@ import (
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/engine/state"
 	"github.com/noderunner/bingle/internal/logging"
+	"github.com/noderunner/bingle/internal/repro"
 	"github.com/noderunner/bingle/internal/store"
 )
 
@@ -19,15 +20,22 @@ import (
 // position that no longer validates, notation that does not survive a round
 // trip, and a ruleset leaking a secret into the view everyone sees.
 //
-// Each failure is one ERROR line naming what broke. Writing a repro bundle
-// beside it is Stage 7 of docs/history/observability-plan.md; until then the
-// line is the record.
+// Each failure is one ERROR line naming what broke, and — when
+// BINGLE_DEBUG_DIR is set — a repro bundle beside it, which is the thing that
+// actually gets the bug fixed: `go run ./scripts/replay <bundle>` reproduces
+// it in process with no server and no browser.
 
 // checkParanoid runs the assertions after a move has been applied and
 // recorded. before is the position the move was applied to.
-func (m *Manager) checkParanoid(ctx context.Context, compiled *catalog.CompiledGame, game store.Game, before *state.BoardState, seat int, result *state.MoveResult) {
+// seq is the sequence number the move was recorded as, so the path a bundle
+// records stops short of it.
+func (m *Manager) checkParanoid(ctx context.Context, compiled *catalog.CompiledGame, game store.Game, before *state.BoardState, seat int, result *state.MoveResult, seq int) {
 	lg := m.logger()
-	fail := func(what string, extra ...slog.Attr) {
+	// fail reports one failed check, and writes the bundle that reproduces it.
+	// kind says which impossible thing it was, and after is the position to
+	// hand the replay — the one before the move for a check about the move,
+	// the one after it for a check about the result.
+	fail := func(what string, kind repro.Kind, pos *state.BoardState, mv *state.Move, extra ...slog.Attr) {
 		attrs := append([]slog.Attr{
 			slog.String("check", what),
 			slog.String("game", gameFamily(compiled)),
@@ -36,6 +44,14 @@ func (m *Manager) checkParanoid(ctx context.Context, compiled *catalog.CompiledG
 			slog.String("move", result.Notation),
 		}, extra...)
 		lg.LogAttrs(ctx, slog.LevelError, "paranoid mode found an inconsistency", attrs...)
+
+		if !m.repro.On() {
+			return
+		}
+		b := repro.Of(kind, compiled, game.GameDefID, pos, seat, mv, nil)
+		b.Note = "paranoid mode: " + what
+		m.addHistory(ctx, &b, game, seq)
+		m.repro.Write(b)
 	}
 
 	// 1. Apply accepted a move Legal did not list. This is the one that makes
@@ -49,12 +65,13 @@ func (m *Manager) checkParanoid(ctx context.Context, compiled *catalog.CompiledG
 		}
 	}
 	if !listed {
-		fail("the applied move was not in Legal's list")
+		fail("the applied move was not in Legal's list", repro.LegalDidNotListAnAppliedMove, before, &result.Move)
 	}
 
 	// 2. The position after the move still validates.
 	if err := state.Validate(compiled, result.NewState); err != nil {
-		fail("the position does not validate after the move", slog.String("err", err.Error()))
+		fail("the position does not validate after the move", repro.ValidateFailed, before, &result.Move,
+			slog.String("err", err.Error()))
 	}
 
 	// 3. The notation survives Format -> Parse -> Format, or a replay of this
@@ -63,10 +80,11 @@ func (m *Manager) checkParanoid(ctx context.Context, compiled *catalog.CompiledG
 		parsed, err := state.ParseMove(compiled, result.Notation)
 		switch {
 		case err != nil:
-			fail("the notation does not parse back", slog.String("notation", result.Notation), slog.String("err", err.Error()))
+			fail("the notation does not parse back", repro.NotationDidNotRoundTrip, before, &result.Move,
+				slog.String("notation", result.Notation), slog.String("err", err.Error()))
 		default:
 			if again := state.FormatMove(compiled, parsed); again != result.Notation {
-				fail("the notation does not round-trip",
+				fail("the notation does not round-trip", repro.NotationDidNotRoundTrip, before, &result.Move,
 					slog.String("notation", result.Notation), slog.String("again", again))
 			}
 		}
@@ -77,7 +95,7 @@ func (m *Manager) checkParanoid(ctx context.Context, compiled *catalog.CompiledG
 	//    and nothing else in the server would notice.
 	pub := state.Public(compiled, result.NewState, 0)
 	if pub == result.NewState && state.IsRuleset(compiled) && hasSecrets(compiled, result.NewState) {
-		fail("the ruleset returned the full position as its public view")
+		fail("the ruleset returned the full position as its public view", repro.PublicViewLeaked, result.NewState, nil)
 	}
 }
 

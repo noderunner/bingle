@@ -34,6 +34,7 @@ import (
 	"github.com/noderunner/bingle/internal/mail"
 	"github.com/noderunner/bingle/internal/mcpserver"
 	"github.com/noderunner/bingle/internal/metrics"
+	"github.com/noderunner/bingle/internal/repro"
 	"github.com/noderunner/bingle/internal/session"
 	"github.com/noderunner/bingle/internal/store"
 	"github.com/noderunner/bingle/internal/version"
@@ -145,6 +146,15 @@ func New(cfg config.Config, opts ...Option) (*App, error) {
 	manager := session.NewManager(st, cat)
 	manager.SetLogger(a.log)
 	manager.SetMetrics(a.metrics)
+	if w := repro.NewWriter(cfg.Debug.Dir, version.Engine, a.log); w != nil {
+		// A bundle carries the full position, so it goes to a directory of
+		// its own and never to the log stream (ADR 0063). The move funnel
+		// writes them, and so does a batch, which plays hundreds of games
+		// with nobody watching.
+		manager.SetRepro(w)
+		batch.SetRepro(w)
+		a.log.Info("repro bundles are on", "dir", w.Dir())
+	}
 	manager.SetDebug(session.DebugOptions{
 		Games:    cfg.Debug.Games,
 		Room:     cfg.Debug.Room,

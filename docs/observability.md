@@ -4,7 +4,8 @@ Bingle is one binary on one machine, so what it says about itself has to be usef
 else installed. [docs/history/observability-plan.md](history/observability-plan.md) stages the
 whole of that work; **this page covers what is built: the log, the metrics, the database, the
 slow-request journal, the games, the history behind the Health page, and what goes wrong in
-browsers.** Repro bundles are Stage 7 and are not here yet.
+browsers, and the repro bundles that get a game bug fixed.** That is the whole of
+[the plan](history/observability-plan.md).
 
 ## The log
 
@@ -474,3 +475,82 @@ and digits is any short word — which is the residual risk and the reason `erro
 own before sending.
 
 A fault nobody has hit for `BINGLE_METRICS_RETAIN_DAYS` is purged with the rest of the history.
+
+## Repro bundles
+
+A game bug is diagnosed by **replaying the position**, not by reading a log. When something
+impossible happens, bingle writes down everything needed to reproduce it, and
+`scripts/replay` reproduces it: in process, deterministically, with no server, no database and no
+browser.
+
+| Variable | Default | What |
+|---|---|---|
+| `BINGLE_DEBUG_DIR` | *(unset — no bundles)* | Where bundles are written. The directory and the files are `0700`/`0600`, because a bundle carries a whole position |
+
+```
+ERROR msg="something impossible happened; a repro bundle was written"
+  kind=apply-rejected-a-legal-move id=3f9a1c22d4e5 game=courtfall~arena
+  bundle=/var/lib/bingle/debug/20261029T023447Z-apply-rejected-a-legal-move-3f9a1c22d4e5.json
+  replay="go run ./scripts/replay /var/lib/bingle/debug/20261029T023447Z-..."
+```
+
+```sh
+go run ./scripts/replay <bundle>           # exits 0 if it reproduced, 1 if not
+go run ./scripts/replay -board <bundle>    # and print the position first
+```
+
+### What writes one
+
+Nothing writes a bundle unless something impossible has happened. The move funnel notices two on
+its own:
+
+| Kind | What happened |
+|---|---|
+| `apply-rejected-a-legal-move` | `Legal` listed the move and `Apply` refused it. This is the fault that reaches a player as a game that cannot be continued |
+| `ruleset-panicked` | A ruleset panicked inside `Apply`. The request answers 500 instead of losing the connection, and the position is kept |
+
+Paranoid mode (`BINGLE_PARANOID`) goes looking for four more — `legal-did-not-list-an-applied-move`,
+`validate-failed`, `notation-did-not-round-trip`, `public-view-leaked` — and a batch files its own
+two, `batch-illegal-move` and `batch-no-legal-moves`, which matters because a batch plays hundreds
+of games with nobody watching.
+
+**Checking for `apply-rejected-a-legal-move` costs a second run of `Legal`**, so it happens only
+on a path that is already an error and only when `BINGLE_DEBUG_DIR` is set. At most 50 bundles are
+written per run of the server: a ruleset that has gone wrong goes wrong on every move, and the
+first few are the ones worth having.
+
+### What is in one
+
+```json
+{ "bingle": "0.18.0", "kind": "apply-rejected-a-legal-move", "id": "3f9a1c22d4e5",
+  "game_def_id": "courtfall~arena", "seed": 1234,
+  "start_state": {…}, "moves": ["…", "…"],
+  "position": {…}, "seat": 2, "move": {…}, "notation": "Q d5>d4 2/2",
+  "error": "…", "board": "<state.RenderText>" }
+```
+
+`position` is the position immediately before the thing that went wrong, **in full** — that is
+what makes a bundle reproduce rather than approximate. `start_state` and `moves` say how that
+position was reached, which is often the actual bug, and the replay reports a divergence between
+replaying them and `position` as a finding of its own. `board` is there so a person can read a
+bundle before running anything.
+
+### Bundles carry secrets, deliberately
+
+A bundle is **full fidelity by definition**: committed dice, hidden hands, the random state. That
+is exactly why it goes to a directory of its own and **never to the log stream**, which may be
+shipped somewhere else (ADR 0063). Only its id is logged. A bundle from a real server is a real
+game's secrets — look at what is in one before sending it anywhere.
+
+### Keeping one as a regression test
+
+Once the fault in a bundle is fixed, drop the bundle in `tests/repro/testdata/` and `TestRepro`
+replays it on every run, **failing if it ever reproduces again**. That is a regression test in the
+form the fault actually arrived in. To look at a bundle that is not fixed yet:
+
+```sh
+go test ./tests/repro/ -run 'TestRepro$' -bundle <bundle>
+```
+
+`TestRepro_NothingElseWritesABundle` plays every built-in two-seat game with paranoid mode on and
+fails if a single bundle is written, because a mechanism that cries wolf gets switched off.

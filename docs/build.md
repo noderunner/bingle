@@ -50,6 +50,7 @@ All configuration is via environment variables — there's no config file.
 | `BINGLE_DEBUG_GAMES` | *(every game)* | Comma-separated game families to log moves for, so `debug` is readable |
 | `BINGLE_DEBUG_ROOM` | *(unset)* | One room code logged at `info` whatever the level |
 | `BINGLE_DEBUG_SECRETS` | `off` | Full positions in the debug lines instead of the public view. **Development only** |
+| `BINGLE_DEBUG_DIR` | *(unset)* | Where repro bundles are written when something impossible happens; `scripts/replay` reproduces one. Unset writes none. A bundle carries a whole position, secrets and all — see [observability.md](observability.md) |
 | `BINGLE_PARANOID` | `off` | Check the engine against itself after every move. **Development and CI only**; it runs `Legal` twice per move |
 | `BINGLE_TLS_CERT` | *(unset)* | Path to a TLS certificate file |
 | `BINGLE_TLS_KEY` | *(unset)* | Path to a TLS private key file |
