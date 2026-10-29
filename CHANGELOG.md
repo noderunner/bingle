@@ -4,6 +4,22 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.16.0 - 2026-10-28
+
+### Bingle Core 0.16.0
+- **The server now remembers how it has been doing.** Until now it could only say how things stood
+  at the moment you asked. It now keeps a record — how busy it has been, how quickly it answered,
+  how fast the database is growing, how games have been ending — and there is a **Health page**
+  that draws it: a picture of the last day, or the last year, instead of a single number.
+- The record keeps itself small without anyone minding it. Recent history is kept in full detail,
+  older history is summarised by the hour and then by the day, and the summaries keep the highest
+  and lowest points rather than smoothing them away. It is kept in its own file beside the games,
+  so it travels with a backup and can be deleted without touching a single game.
+- For whoever runs the server: `BINGLE_METRICS_SAMPLE` and `BINGLE_METRICS_RETAIN_DAYS`, with the
+  page at `/metrics/health` and the figures downloadable as a spreadsheet. As before, none of it is
+  on the public site and none of it is about you. See
+  [docs/observability.md](docs/observability.md).
+
 ## 0.15.0 - 2026-10-28
 
 ### Bingle Core 0.15.0

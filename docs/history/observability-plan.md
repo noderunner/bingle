@@ -1,6 +1,6 @@
 # Plan: logging, metrics and a slow-request journal
 
-Status: **Stages 1 to 4 done, stages 5–7 planned** (2026-10-28). The decisions in *What was decided*
+Status: **Stages 1 to 5 done, stages 6 and 7 planned** (2026-10-28). The decisions in *What was decided*
 below were taken with the owner before this was written; the rest is the reasoning and the
 staging. What Stage 1 built is described in [docs/observability.md](../observability.md).
 
@@ -365,10 +365,21 @@ the `Diagnostic` interface and `/games/{code}/explain` (6c), and repro bundles (
 Stage 7's. Paranoid mode therefore logs an `ERROR` where the design says it would also write a
 bundle.
 
-**Stage 5 — history and the Health page.** The metrics database, the sampler, compaction and
+**Stage 5 — history and the Health page.** *Done.* The metrics database, the sampler, compaction and
 retention, `/metrics/history`, the CSV export and the page. Tests: a sample tick writes one
 transaction; compaction preserves totals; retention deletes nothing newer than its window;
-the page renders from a seeded history.
+the page renders from a seeded history — in a browser, because a page drawn entirely by a script
+is only proved by letting a browser run it.
+
+Notes. The database itself arrived in Stage 4, which needed somewhere to write the journal; this
+stage added `samples` and `rollups` to it. Two endpoints beyond the plan, both cheap and both
+earned while using the page: `/metrics/series` (what is kept, and how many rows), because
+`/metrics/history` needs a name and nothing said what the names were; and
+`POST /metrics/sample`, so somebody watching the page does not have to wait out the interval to
+see whether a change helped. A rollup is stamped with the start of its bucket, which is a trap a
+reader can fall into at a window boundary; it is documented rather than papered over.
+`internal/journal` now uses `internal/metrics`' `Sample` type rather than one of its own, so there
+is one shape and no conversion.
 
 **Stage 6 — client errors.** `js/errors.js`, the endpoint, deduplication, limits, the table
 on the Health page. Tests: a browser test throws on purpose and the row appears with a count
@@ -411,6 +422,11 @@ either shows up, the span cap and the sample interval are the dials.
 
 ## Status log
 
+- 2026-10-28: Stage 5 landed: `samples` and `rollups`, `internal/metrics.Samples` (which flattens
+  the gathered registry without taking prometheus/client_model as a direct dependency),
+  `internal/journal`'s sampler, compaction and retention, `/metrics/history`, `/metrics/history.csv`,
+  `/metrics/series`, `POST /metrics/sample` and the Health page. `BINGLE_METRICS_SAMPLE` and
+  `BINGLE_METRICS_RETAIN_DAYS`. A tick of a fresh server is about 300 rows.
 - 2026-10-28: Stage 4 landed: `internal/trace` (the OTEL-shaped span API and the pooled
   collector), `internal/journal` (the metrics database, the `slow_requests` table and the
   middleware that decides), spans at the nine boundaries, the move funnel's log, the game, bot

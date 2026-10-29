@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="bingle-version" content="{{.Version}}">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Health — Bingle</title>
+	<link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+	<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+	<header class="topbar">
+		<span class="brand"><span class="logo"></span>Bingle</span>
+		<span class="spacer"></span>
+		<span class="tagline">Health · this page is not on the public site</span>
+	</header>
+	<main class="page">
+		<div id="health-root" data-window-hours="{{.WindowHours}}"><p class="muted">Loading…</p></div>
+	</main>
+	<footer class="site-footer"><sub>bingle v{{.Version}} · history every {{.Every}} · full resolution for {{.RetainDays}} days</sub></footer>
+	<script type="module" src="/static/js/health.js"></script>
+</body>
+</html>
