@@ -116,5 +116,12 @@ func (s *Sampler) Tick(ctx context.Context) {
 		} else if n > 0 {
 			lg.Info("old slow requests were purged", "rows", n, "older_than_days", s.RetainDays)
 		}
+		// A fault nobody has hit for a fortnight has been fixed or has
+		// stopped mattering.
+		if n, err := s.DB.PurgeClientErrors(ctx, before); err != nil {
+			lg.Error("old client errors could not be purged", "err", err)
+		} else if n > 0 {
+			lg.Info("old client errors were purged", "rows", n, "older_than_days", s.RetainDays)
+		}
 	}
 }

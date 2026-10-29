@@ -87,8 +87,13 @@ func main() {
 		RetainDays: cfg.MetricsRetainDays, Logger: lg, Sample: sampler.Tick,
 	}
 
-	a, err := app.New(cfg, app.WithLogger(lg), app.WithMetrics(mx),
-		app.WithJournal(jdb, cfg.SlowRequest), app.WithHistory(history))
+	appOpts := []app.Option{app.WithLogger(lg), app.WithMetrics(mx),
+		app.WithJournal(jdb, cfg.SlowRequest), app.WithHistory(history)}
+	if cfg.ClientErrors {
+		appOpts = append(appOpts, app.WithClientErrors())
+	}
+
+	a, err := app.New(cfg, appOpts...)
 	if err != nil {
 		lg.Error("the server could not be built", "err", err)
 		os.Exit(1)

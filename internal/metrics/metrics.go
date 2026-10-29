@@ -74,6 +74,7 @@ type Metrics struct {
 	slotInUse      *prometheus.GaugeVec
 	slotSize       *prometheus.GaugeVec
 	batchWorkers   prometheus.Gauge
+	clientErrors   *prometheus.CounterVec
 }
 
 // New builds the registry, registers the Go runtime and process collectors
@@ -202,6 +203,11 @@ func New(version string) *Metrics {
 			Namespace: Namespace, Subsystem: "batch", Name: "workers",
 			Help: "Games a practice batch plays at once.",
 		}),
+
+		clientErrors: prometheus.NewCounterVec(prometheus.CounterOpts{
+			Namespace: Namespace, Name: "client_errors_total",
+			Help: "Faults reported by browsers, by the page they happened on; \"refused\" is a report the endpoint would not take.",
+		}, []string{"page"}),
 	}
 
 	buildInfo := prometheus.NewGaugeVec(prometheus.GaugeOpts{
@@ -219,6 +225,7 @@ func New(version string) *Metrics {
 		m.dbQueries, m.dbDuration, m.dbRows, m.dbTxDuration, m.dbBusy, m.db,
 		m.gameMoves, m.gameApply, m.gameLegal, m.gameLegalMoves, m.gameFinished, m.gameIllegal,
 		m.botSearch, m.botNodes, m.slotWait, m.slotInUse, m.slotSize, m.batchWorkers,
+		m.clientErrors,
 	)
 	return m
 }

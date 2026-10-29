@@ -57,6 +57,7 @@ func Routes(r chi.Router, opts PageOptions) {
 	r.Get("/metrics/history", h.history)
 	r.Get("/metrics/history.csv", h.historyCSV)
 	r.Get("/metrics/series", h.series)
+	r.Get("/metrics/client-errors", h.clientErrors)
 	r.Post("/metrics/sample", h.sampleNow)
 }
 
@@ -110,6 +111,26 @@ func (h *pageHandlers) series(w http.ResponseWriter, r *http.Request) {
 		"retain_days":  h.opts.RetainDays,
 		"window_hours": windowHours(r),
 	})
+}
+
+// clientErrors answers GET /metrics/client-errors: what has gone wrong in
+// people's browsers, newest first.
+//
+// The reporting endpoint is on the public listener because a browser has to
+// reach it; reading the faults back is here, where nothing public can.
+func (h *pageHandlers) clientErrors(w http.ResponseWriter, r *http.Request) {
+	limit := 0
+	if v := r.URL.Query().Get("limit"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil {
+			limit = n
+		}
+	}
+	errs, err := h.opts.DB.ClientErrors(r.Context(), limit)
+	if err != nil {
+		h.fail(w, r, err)
+		return
+	}
+	writeJSON(w, map[string]any{"errors": errs})
 }
 
 // history answers GET /metrics/history?name=…&since=…&labels=…

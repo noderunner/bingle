@@ -4,6 +4,23 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.17.0 - 2026-10-28
+
+### Bingle Core 0.17.0
+- **If something breaks in your browser, Bingle now finds out.** Until now, a fault in the page —
+  a board that would not draw, a button that did nothing — left no trace anywhere unless you
+  happened to mention it. The page now reports what went wrong, so it can be fixed without anyone
+  having to describe it.
+- **What it reports is deliberately thin.** The error itself, which page it happened on, and which
+  release you were on. Not the code of your game, not your name, not anything you typed, and not
+  the address of the page you were looking at. Anything that looks like a game code or a private
+  token is stripped out twice over before it is stored.
+- Repeats of the same fault are counted rather than piled up, so a bad release shows as one
+  problem that happened four hundred times instead of four hundred problems. Faults nobody has hit
+  for a fortnight are forgotten.
+- For whoever runs the server: `BINGLE_CLIENT_ERRORS=off` switches it off entirely, and the faults
+  are listed on the Health page. See [docs/observability.md](docs/observability.md).
+
 ## 0.16.0 - 2026-10-28
 
 ### Bingle Core 0.16.0

@@ -127,6 +127,12 @@ type Config struct {
 	// however fast it was.
 	SlowRequest time.Duration
 
+	// ClientErrors mounts POST /api/client-error, where a browser reports
+	// what went wrong in it (BINGLE_CLIENT_ERRORS, on by default; "off"
+	// removes the route). It is the one observability route on the public
+	// listener, because a browser has to be able to reach it.
+	ClientErrors bool
+
 	// Debug narrows the debug firehose and turns on the development-only
 	// checks. See Debug.
 	Debug Debug
@@ -261,6 +267,7 @@ func Load() (Config, error) {
 
 		MetricsSample:     defaultMetricsSample,
 		MetricsRetainDays: defaultMetricsRetainDays,
+		ClientErrors:      true,
 	}
 
 	// slog.Level parses "debug", "info", "warn" and "error" itself, in any
@@ -456,6 +463,13 @@ func loadJournal(cfg *Config) error {
 			return fmt.Errorf("config: BINGLE_METRICS_SAMPLE is %s, which is less than %s: the history is written to disk, and below that it stops being history and becomes a second scrape loop", d, minMetricsSample)
 		}
 		cfg.MetricsSample = d
+	}
+	if v, ok := os.LookupEnv("BINGLE_CLIENT_ERRORS"); ok && strings.TrimSpace(v) != "" {
+		on, err := parseBool("BINGLE_CLIENT_ERRORS", v)
+		if err != nil {
+			return err
+		}
+		cfg.ClientErrors = on
 	}
 	if v := strings.TrimSpace(os.Getenv("BINGLE_METRICS_RETAIN_DAYS")); v != "" {
 		n, err := strconv.Atoi(v)

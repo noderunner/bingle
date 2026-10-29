@@ -3,8 +3,8 @@
 Bingle is one binary on one machine, so what it says about itself has to be useful with nothing
 else installed. [docs/history/observability-plan.md](history/observability-plan.md) stages the
 whole of that work; **this page covers what is built: the log, the metrics, the database, the
-slow-request journal, the games, and the history behind the Health page.** The browser's errors are
-Stage 6 and repro bundles Stage 7; neither is here yet.
+slow-request journal, the games, the history behind the Health page, and what goes wrong in
+browsers.** Repro bundles are Stage 7 and are not here yet.
 
 ## The log
 
@@ -426,3 +426,51 @@ percentile, the database and its write-ahead log over time, the busiest statemen
 ended, and moves refused by the rules. It is drawn by `js/health.js` with the same inline-SVG
 charts the batch reports use, and the private listener serves the embedded static files, so the
 page needs no assets of its own.
+
+## What goes wrong in browsers
+
+The UI is where most of bingle's recent work went and where there was no visibility at all: a
+script that threw on one person's machine left no trace anywhere. `js/errors.js` hooks `error` and
+`unhandledrejection` on every page and posts to `POST /api/client-error`.
+
+| Variable | Default | What |
+|---|---|---|
+| `BINGLE_CLIENT_ERRORS` | `on` | `off` removes the route altogether |
+
+The faults are readable at `/metrics/client-errors` and on the Health page, newest first — **one
+row per distinct fault**, keyed by a hash of the message, the stack and the release, so a bad
+release is one row with four hundred hits rather than four hundred rows. Keeping the release in
+the key is what makes "this started with 0.17" answerable; the cost is that two unrelated faults
+with the same message and stack do merge, and a minified frame can make a stack unhelpful.
+
+### This is the one observability route on the public listener
+
+A browser has to be able to reach it, so everything about it is shaped by that:
+
+- **it is write-only.** Nothing public reads a fault back — a test keeps it that way — and the
+  endpoint answers `204` whatever it decided, because a browser can do nothing with a refusal and
+  telling a stranger which reports were kept is information it has no reason to give out;
+- **every field is checked against a closed set or a cap.** `page` becomes a metric label and a
+  stranger is posting it, so an unknown page is `other` and an unlikely version is `unknown`,
+  rather than a new series (ADR 0064);
+- **it is rate limited per address** (20 an hour) and the body is capped at 8 KiB, so it cannot be
+  used to fill the disk. The browser also sends at most three per page;
+- **token-shaped and room-shaped text is scrubbed twice** — once in the browser, once on the
+  server, because the endpoint is public and a report can come from anything.
+
+### What a report may carry
+
+`{message, stack, page, version, browser}` and nothing else. No name, no room code, no secret.
+`page` is a **route pattern** worked out in the browser (`/game/{code}`), never the URL, which
+carries the room code. The browser string is the engine and its major version plus `mobile` or
+`desktop` — the parts of a user agent that a fault actually depends on, and not the parts that
+identify a particular machine.
+
+Scrubbing is deliberately blunt: a run of 24 or more base64url characters becomes `[redacted]`,
+and a path naming a room or a batch loses that name. It occasionally eats a minified identifier or
+a hash in a filename; losing a frame's name is a smaller harm than publishing a seat token.
+**What it cannot catch** is a bare room code with nothing around it — six characters of letters
+and digits is any short word — which is the residual risk and the reason `errors.js` strips its
+own before sending.
+
+A fault nobody has hit for `BINGLE_METRICS_RETAIN_DAYS` is purged with the rest of the history.

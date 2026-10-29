@@ -51,3 +51,22 @@ CREATE TABLE IF NOT EXISTS rollups (
 ) WITHOUT ROWID;
 
 CREATE INDEX IF NOT EXISTS idx_rollups_at ON rollups (bucket, at);
+
+-- Stage 6: what went wrong in a browser.
+--
+-- One row per distinct fault, not per report: the key is a hash of the
+-- message, the stack and the version, so a broken release is one row with
+-- four hundred hits rather than four hundred rows.
+CREATE TABLE IF NOT EXISTS client_errors (
+  hash       TEXT PRIMARY KEY,          -- hash(message + stack + version)
+  first_seen INTEGER NOT NULL,
+  last_seen  INTEGER NOT NULL,
+  count      INTEGER NOT NULL,
+  version    TEXT NOT NULL,             -- the release it happened on
+  page       TEXT NOT NULL,             -- a route pattern, never a URL
+  message    TEXT NOT NULL,
+  stack      TEXT NOT NULL,
+  browser    TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_client_errors_last_seen ON client_errors (last_seen);

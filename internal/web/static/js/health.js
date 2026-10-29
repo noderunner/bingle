@@ -229,6 +229,40 @@ async function render() {
 		}
 	}
 
+	// What has gone wrong in people's browsers. Newest first, because after a
+	// release that is the order that matters.
+	try {
+		const { errors } = await getJSON("/metrics/client-errors?limit=50");
+		if (errors?.length) {
+			const rows = errors.map((e) =>
+				h(
+					"tr",
+					{},
+					h("td", {}, String(e.count)),
+					h("td", {}, e.page || ""),
+					h("td", {}, e.version || ""),
+					h("td", { class: "wrap" }, e.message || ""),
+					h("td", {}, e.browser || ""),
+					h("td", { title: `first seen ${e.first_seen}` }, new Date(e.last_seen).toLocaleString())
+				)
+			);
+			root.append(
+				card(
+					"What went wrong in people's browsers",
+					h(
+						"table",
+						{ class: "data" },
+						h("thead", {}, h("tr", {}, ...["hits", "page", "version", "message", "browser", "last seen"].map((t) => h("th", {}, t)))),
+						h("tbody", {}, ...rows)
+					),
+					h("p", { class: "muted" }, "One row per distinct fault: the same fault from four hundred readers is one row with four hundred hits.")
+				)
+			);
+		}
+	} catch (err) {
+		root.append(card("What went wrong in people's browsers", h("p", { class: "muted" }, `Could not be read: ${err.message}`)));
+	}
+
 	if (root.childElementCount === 1) {
 		root.append(h("p", { class: "muted" }, "There is no history yet. The first sample is written one interval after the server starts."));
 	}

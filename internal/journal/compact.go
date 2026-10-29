@@ -171,6 +171,7 @@ func (d *DB) Counts(ctx context.Context) (map[string]int64, error) {
 		{"rollups_hour", `SELECT COUNT(*) FROM rollups WHERE bucket = 'hour'`},
 		{"rollups_day", `SELECT COUNT(*) FROM rollups WHERE bucket = 'day'`},
 		{"slow_requests", `SELECT COUNT(*) FROM slow_requests`},
+		{"client_errors", `SELECT COUNT(*) FROM client_errors`},
 	} {
 		var n int64
 		if err := d.db.QueryRowContext(ctx, q.sql).Scan(&n); err != nil {

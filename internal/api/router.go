@@ -6,6 +6,7 @@
 package api
 
 import (
+	"log/slog"
 	"net/http"
 	"strings"
 
@@ -13,6 +14,8 @@ import (
 
 	"github.com/noderunner/bingle/internal/batch"
 	"github.com/noderunner/bingle/internal/envs"
+	"github.com/noderunner/bingle/internal/journal"
+	"github.com/noderunner/bingle/internal/metrics"
 	"github.com/noderunner/bingle/internal/session"
 )
 
@@ -25,6 +28,10 @@ func NewRouter(mgr *session.Manager, opts ...Option) chi.Router {
 	h := &handlers{mgr: mgr}
 	for _, opt := range opts {
 		opt(h)
+	}
+
+	if h.clientErrorsOn {
+		r.Post("/client-error", h.handlePostClientError)
 	}
 
 	r.Post("/games", h.handleCreateGame)
@@ -143,6 +150,29 @@ type handlers struct {
 	rtc RTCConfig
 	// changelog is the newest release of CHANGELOG.md (nil when there is none).
 	changelog *changelogEntry
+	// log is the server's logger; nil means slog's default.
+	log *slog.Logger
+	// metrics is the registry; nil records nothing.
+	metrics *metrics.Metrics
+	// journal is the metrics database, where a browser's faults are kept;
+	// nil counts them and keeps none.
+	journal *journal.DB
+	// clientErrors counts reports per address (see clienterror.go).
+	clientErrors clientErrorLimiter
+	// clientErrorsOn mounts POST /client-error. It is off unless asked for,
+	// because it is the one observability route on the public listener.
+	clientErrorsOn bool
+}
+
+// WithClientErrors turns POST /client-error on, recording into lg, mx and db
+// (any of which may be nil).
+func WithClientErrors(lg *slog.Logger, mx *metrics.Metrics, db *journal.DB) Option {
+	return func(h *handlers) {
+		h.clientErrorsOn = true
+		h.log = lg
+		h.metrics = mx
+		h.journal = db
+	}
 }
 
 // Option customises NewRouter.

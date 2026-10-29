@@ -159,3 +159,64 @@ func TestWebHealthPage_SaysWhenThereIsNoHistory(t *testing.T) {
 		t.Errorf("the page does not say the history is empty:\n%s", text)
 	}
 }
+
+// The faults a browser reported show up on the Health page, which is the only
+// place they are readable.
+func TestWebHealthPage_ShowsWhatWentWrongInBrowsers(t *testing.T) {
+	baseURL, private, db := newErrorServer(t)
+
+	// A fault, reported twice, exactly as a browser would.
+	report := map[string]any{
+		"message": "Cannot read properties of null (reading 'board')",
+		"stack":   "at draw (/static/js/game.js:120:7)",
+		"page":    "/game/{code}",
+		"version": "9.9.9",
+		"browser": "Firefox 142 desktop",
+	}
+	postError(t, baseURL, report)
+	postError(t, baseURL, report)
+	if n, err := db.Counts(context.Background()); err != nil || n["client_errors"] != 1 {
+		t.Fatalf("the database holds %v (%v)", n, err)
+	}
+
+	srv := httptest.NewServer(private)
+	t.Cleanup(srv.Close)
+
+	ctx, cancel := newChromedpContext(t, 60*time.Second)
+	defer cancel()
+
+	var mu sync.Mutex
+	var jsErrors []string
+	collectJSErrors(ctx, &mu, &jsErrors)
+
+	var text string
+	if err := chromedp.Run(ctx,
+		chromedp.Navigate(srv.URL+"/metrics/health"),
+		chromedp.WaitVisible(`#health-root table.data`, chromedp.ByQuery),
+		chromedp.Text(`#health-root`, &text, chromedp.ByQuery),
+	); err != nil {
+		t.Fatalf("driving the health page: %v", err)
+	}
+
+	mu.Lock()
+	errs := append([]string(nil), jsErrors...)
+	mu.Unlock()
+	if len(errs) > 0 {
+		t.Fatalf("the health page threw:\n%s", strings.Join(errs, "\n"))
+	}
+
+	for _, want := range []string{
+		"What went wrong in people's browsers",
+		"Cannot read properties of null",
+		"/game/{code}",
+		"Firefox 142 desktop",
+	} {
+		if !strings.Contains(text, want) {
+			t.Errorf("the page does not show %q:\n%s", want, text)
+		}
+	}
+	// Two reports of one fault is one row with two hits.
+	if strings.Count(text, "Cannot read properties of null") != 1 {
+		t.Errorf("the fault appears more than once:\n%s", text)
+	}
+}
