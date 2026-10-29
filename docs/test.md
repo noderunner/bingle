@@ -210,6 +210,16 @@ find /run/user/$(id -u)/.flatpak/org.chromium.Chromium/tmp -maxdepth 1 -name 'ch
 
 This is purely a local-dev-machine concern with this specific Flatpak setup — CI runners start clean every time and never see it.
 
+### The store's wrapper contract
+
+`tests/store/measure_test.go` reads `internal/store`'s own source and fails if a statement reaches
+for the database directly instead of going through the wrapper in `measure.go` — so every
+statement stays named and counted. If it fails on code you have just written, the fix is to call
+`s.exec` / `s.query` / `s.queryRow` / `s.begin` (or `tx.exec` / `tx.queryRow`) with a statement
+name; [observability.md](observability.md) says how names are chosen. Provoking `SQLITE_BUSY`
+means waiting out the ten-second busy timeout, so that one test is skipped by `-short` and runs in
+`make test` and on CI.
+
 ### Known quirk: the ports `tests/httpserve` binds
 
 `httpserve.Config` names a listen address, and `httpserve.Serve` binds it — there is no way to

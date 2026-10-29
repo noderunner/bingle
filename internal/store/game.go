@@ -108,13 +108,13 @@ func (s *Store) CreateGame(ctx context.Context, roomCode, gameDefID, initialBoar
 // CreateGameAt is CreateGame with the creator seated at creatorSeat rather
 // than seat 1.
 func (s *Store) CreateGameAt(ctx context.Context, roomCode, gameDefID, initialBoardState, creatorName, creatorColor string, creatorSeat int) (Game, Player, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.begin(ctx, "CreateGameAt")
 	if err != nil {
 		return Game{}, Player{}, fmt.Errorf("begin transaction: %w", err)
 	}
 	defer func() { _ = tx.Rollback() }()
 
-	res, err := tx.ExecContext(ctx,
+	res, err := tx.exec(ctx, "CreateGameAt.insertGame",
 		`INSERT INTO games (room_code, game_def_id, board_state) VALUES (?, ?, ?)`,
 		roomCode, gameDefID, initialBoardState,
 	)
@@ -126,7 +126,7 @@ func (s *Store) CreateGameAt(ctx context.Context, roomCode, gameDefID, initialBo
 		return Game{}, Player{}, fmt.Errorf("games insert LastInsertId: %w", err)
 	}
 
-	playerRes, err := tx.ExecContext(ctx,
+	playerRes, err := tx.exec(ctx, "CreateGameAt.insertPlayer",
 		`INSERT INTO players (game_id, seat, name, color) VALUES (?, ?, ?, ?)`,
 		gameID, creatorSeat, creatorName, creatorColor,
 	)
@@ -138,11 +138,11 @@ func (s *Store) CreateGameAt(ctx context.Context, roomCode, gameDefID, initialBo
 		return Game{}, Player{}, fmt.Errorf("players insert LastInsertId: %w", err)
 	}
 
-	game, err := scanGameByID(ctx, tx, gameID)
+	game, err := scanGameByID(ctx, tx, "CreateGameAt.readGame", gameID)
 	if err != nil {
 		return Game{}, Player{}, fmt.Errorf("reading back inserted game: %w", err)
 	}
-	player, err := scanPlayerByID(ctx, tx, playerID)
+	player, err := scanPlayerByID(ctx, tx, "CreateGameAt.readPlayer", playerID)
 	if err != nil {
 		return Game{}, Player{}, fmt.Errorf("reading back inserted player: %w", err)
 	}
@@ -157,7 +157,7 @@ func (s *Store) CreateGameAt(ctx context.Context, roomCode, gameDefID, initialBo
 // GetGame looks up a game by room code. Returns ErrNotFound (checkable via
 // errors.Is) if no game has that room code.
 func (s *Store) GetGame(ctx context.Context, roomCode string) (Game, error) {
-	g, err := scanGameRow(s.db.QueryRowContext(ctx, `SELECT `+gameColumns+` FROM games WHERE room_code = ?`, roomCode))
+	g, err := scanGameRow(s.queryRow(ctx, "GetGame", `SELECT `+gameColumns+` FROM games WHERE room_code = ?`, roomCode))
 	if errors.Is(err, sql.ErrNoRows) {
 		return Game{}, ErrNotFound
 	}
@@ -171,7 +171,7 @@ func (s *Store) GetGame(ctx context.Context, roomCode string) (Game, error) {
 // position document and the seat that moves first from it. It does not
 // touch board_state; callers create the game with the same document.
 func (s *Store) SetInitialPosition(ctx context.Context, gameID int64, doc string, turnSeat int) error {
-	res, err := s.db.ExecContext(ctx, `UPDATE games SET initial_state = ?, initial_turn_seat = ? WHERE id = ?`, doc, turnSeat, gameID)
+	res, err := s.exec(ctx, "SetInitialPosition", `UPDATE games SET initial_state = ?, initial_turn_seat = ? WHERE id = ?`, doc, turnSeat, gameID)
 	if err != nil {
 		return fmt.Errorf("setting initial position for game_id=%d: %w", gameID, err)
 	}
@@ -190,7 +190,7 @@ func (s *Store) SetTakebackRequest(ctx context.Context, gameID int64, seat *int,
 	} else {
 		toSeq = 0
 	}
-	res, err := s.db.ExecContext(ctx, `UPDATE games SET takeback_seat = ?, takeback_seq = ? WHERE id = ?`, v, toSeq, gameID)
+	res, err := s.exec(ctx, "SetTakebackRequest", `UPDATE games SET takeback_seat = ?, takeback_seq = ? WHERE id = ?`, v, toSeq, gameID)
 	if err != nil {
 		return fmt.Errorf("setting takeback request for game_id=%d: %w", gameID, err)
 	}
@@ -206,7 +206,7 @@ func (s *Store) SetDrawOffer(ctx context.Context, gameID int64, seat *int) error
 	if seat != nil {
 		v = sql.NullInt64{Int64: int64(*seat), Valid: true}
 	}
-	res, err := s.db.ExecContext(ctx, `UPDATE games SET draw_offer_seat = ? WHERE id = ?`, v, gameID)
+	res, err := s.exec(ctx, "SetDrawOffer", `UPDATE games SET draw_offer_seat = ? WHERE id = ?`, v, gameID)
 	if err != nil {
 		return fmt.Errorf("setting draw_offer_seat for game_id=%d: %w", gameID, err)
 	}
@@ -220,7 +220,7 @@ func (s *Store) SetDrawOffer(ctx context.Context, gameID int64, seat *int) error
 // when the game is created and then only by RecordMove, which charges the
 // mover in the same transaction as their move.
 func (s *Store) SetGameClock(ctx context.Context, gameID int64, clock string) error {
-	res, err := s.db.ExecContext(ctx, `UPDATE games SET clock = ? WHERE id = ?`, clock, gameID)
+	res, err := s.exec(ctx, "SetGameClock", `UPDATE games SET clock = ? WHERE id = ?`, clock, gameID)
 	if err != nil {
 		return fmt.Errorf("setting clock for game_id=%d: %w", gameID, err)
 	}
@@ -233,7 +233,7 @@ func (s *Store) SetGameClock(ctx context.Context, gameID int64, clock string) er
 // SetMoveTimeLimit sets a game's per-move time allowance in seconds (0
 // removes it). Returns ErrNotFound if gameID doesn't exist.
 func (s *Store) SetMoveTimeLimit(ctx context.Context, gameID int64, seconds int) error {
-	res, err := s.db.ExecContext(ctx, `UPDATE games SET move_time_limit = ? WHERE id = ?`, seconds, gameID)
+	res, err := s.exec(ctx, "SetMoveTimeLimit", `UPDATE games SET move_time_limit = ? WHERE id = ?`, seconds, gameID)
 	if err != nil {
 		return fmt.Errorf("setting move_time_limit for game_id=%d: %w", gameID, err)
 	}
@@ -243,20 +243,23 @@ func (s *Store) SetMoveTimeLimit(ctx context.Context, gameID int64, seconds int)
 	return nil
 }
 
-// queryRowContexter is the subset of *sql.Tx / *sql.DB used by
-// scanGameByID/scanPlayerByID, letting them run against either.
-type queryRowContexter interface {
-	QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row
+// rowQuerier is the subset of *Store and *Tx that scanGameByID and friends
+// use, so they run inside a transaction or outside one. Both measure the
+// statement, which is why these helpers take its name from their caller
+// rather than inventing one: the name says which operation the read belongs
+// to, and the same read belongs to several.
+type rowQuerier interface {
+	queryRow(ctx context.Context, name, query string, args ...any) *Row
 }
 
-func scanGameByID(ctx context.Context, q queryRowContexter, id int64) (Game, error) {
-	return scanGameRow(q.QueryRowContext(ctx, `SELECT `+gameColumns+` FROM games WHERE id = ?`, id))
+func scanGameByID(ctx context.Context, q rowQuerier, name string, id int64) (Game, error) {
+	return scanGameRow(q.queryRow(ctx, name, `SELECT `+gameColumns+` FROM games WHERE id = ?`, id))
 }
 
-func scanPlayerByID(ctx context.Context, q queryRowContexter, id int64) (Player, error) {
+func scanPlayerByID(ctx context.Context, q rowQuerier, name string, id int64) (Player, error) {
 	var p Player
 
-	row := q.QueryRowContext(ctx,
+	row := q.queryRow(ctx, name,
 		`SELECT id, game_id, seat, name, color, bot, joined_at, last_seen_at
 		 FROM players WHERE id = ?`,
 		id,
@@ -270,7 +273,7 @@ func scanPlayerByID(ctx context.Context, q queryRowContexter, id int64) (Player,
 
 // ListPlayers returns every players row for gameID, in seat order.
 func (s *Store) ListPlayers(ctx context.Context, gameID int64) ([]Player, error) {
-	rows, err := s.db.QueryContext(ctx,
+	rows, err := s.query(ctx, "ListPlayers",
 		`SELECT id, game_id, seat, name, color, bot, joined_at, last_seen_at
 		 FROM players WHERE game_id = ? ORDER BY seat`,
 		gameID,
@@ -312,13 +315,13 @@ func (s *Store) AddPlayer(ctx context.Context, gameID int64, seat int, name, col
 // AddBotPlayer is AddPlayer for a seat that may be played by a built-in bot
 // (bot != "" names which one; "" is an ordinary human player).
 func (s *Store) AddBotPlayer(ctx context.Context, gameID int64, seat int, name, color, bot, newStatus string, newTurnSeat *int) (Player, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.begin(ctx, "AddBotPlayer")
 	if err != nil {
 		return Player{}, fmt.Errorf("begin transaction: %w", err)
 	}
 	defer func() { _ = tx.Rollback() }()
 
-	res, err := tx.ExecContext(ctx,
+	res, err := tx.exec(ctx, "AddBotPlayer.insertPlayer",
 		`INSERT INTO players (game_id, seat, name, color, bot) VALUES (?, ?, ?, ?, ?)`,
 		gameID, seat, name, color, bot,
 	)
@@ -331,14 +334,14 @@ func (s *Store) AddBotPlayer(ctx context.Context, gameID int64, seat int, name, 
 	}
 
 	if newTurnSeat != nil {
-		if _, err := tx.ExecContext(ctx,
+		if _, err := tx.exec(ctx, "AddBotPlayer.updateGame",
 			`UPDATE games SET status = ?, turn_seat = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
 			newStatus, *newTurnSeat, gameID,
 		); err != nil {
 			return Player{}, fmt.Errorf("updating games row for game_id=%d: %w", gameID, err)
 		}
 	} else {
-		if _, err := tx.ExecContext(ctx,
+		if _, err := tx.exec(ctx, "AddBotPlayer.updateGame",
 			`UPDATE games SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
 			newStatus, gameID,
 		); err != nil {
@@ -346,7 +349,7 @@ func (s *Store) AddBotPlayer(ctx context.Context, gameID int64, seat int, name, 
 		}
 	}
 
-	player, err := scanPlayerByID(ctx, tx, playerID)
+	player, err := scanPlayerByID(ctx, tx, "AddBotPlayer.readPlayer", playerID)
 	if err != nil {
 		return Player{}, fmt.Errorf("reading back inserted player: %w", err)
 	}
@@ -372,7 +375,7 @@ func nullInt64ToIntPtr(n sql.NullInt64) *int {
 // cutoff, with its players and moves (ON DELETE CASCADE), and returns how
 // many games went.
 func (s *Store) DeleteInactiveGames(ctx context.Context, cutoff time.Time) (int64, error) {
-	res, err := s.db.ExecContext(ctx, `DELETE FROM games WHERE updated_at < ?`, cutoff.UTC().Format("2006-01-02 15:04:05"))
+	res, err := s.exec(ctx, "DeleteInactiveGames", `DELETE FROM games WHERE updated_at < ?`, cutoff.UTC().Format("2006-01-02 15:04:05"))
 	if err != nil {
 		return 0, fmt.Errorf("deleting inactive games: %w", err)
 	}
@@ -383,7 +386,7 @@ func (s *Store) DeleteInactiveGames(ctx context.Context, cutoff time.Time) (int6
 // SetPlayerBot marks the player at seat in gameID as played by the named
 // built-in bot (used for bot-versus-bot rooms).
 func (s *Store) SetPlayerBot(ctx context.Context, gameID int64, seat int, bot string) error {
-	res, err := s.db.ExecContext(ctx, `UPDATE players SET bot = ? WHERE game_id = ? AND seat = ?`, bot, gameID, seat)
+	res, err := s.exec(ctx, "SetPlayerBot", `UPDATE players SET bot = ? WHERE game_id = ? AND seat = ?`, bot, gameID, seat)
 	if err != nil {
 		return fmt.Errorf("setting bot for game_id=%d seat=%d: %w", gameID, seat, err)
 	}
@@ -416,7 +419,7 @@ func (s *Store) ListUnfinishedGames(ctx context.Context, limit int) ([]Unfinishe
 	if limit <= 0 {
 		limit = 50
 	}
-	rows, err := s.db.QueryContext(ctx,
+	rows, err := s.query(ctx, "ListUnfinishedGames",
 		`SELECT g.id, g.room_code, g.game_def_id, g.status, g.lobby, g.turn_seat, g.move_seq, g.updated_at,
 		        (SELECT COUNT(*) FROM players p WHERE p.game_id = g.id)
 		 FROM games g WHERE g.status != 'finished'

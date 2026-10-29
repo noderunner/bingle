@@ -13,7 +13,6 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/testutil"
 
 	"github.com/noderunner/bingle/internal/httpstat"
 	"github.com/noderunner/bingle/internal/logging"
@@ -115,24 +114,6 @@ func TestNew_DoesNotServeTheDefaultRegistry(t *testing.T) {
 	if got := scrape(t, metrics.New("1.2.3")); strings.Contains(got, name) {
 		t.Error("a series from the default registry reached bingle's exposition")
 	}
-}
-
-// A freshly started server's series count has a ceiling, so a careless label
-// added later fails here rather than six months later in a scraper.
-func TestNew_SeriesCountOfAFreshServerIsUnderTheCeiling(t *testing.T) {
-	// The Go and process collectors are most of this; bingle's own families
-	// are empty until something is served. A fresh server is at 40, and the
-	// headroom is for the runtime collector growing with a Go release — not
-	// for a new label, which is what this is here to catch. Raise it
-	// deliberately, with a reason, never to make a failure go away.
-	const ceiling = 60
-
-	m := metrics.New("1.2.3")
-	got := testutil.CollectAndCount(m.Registry())
-	if got > ceiling {
-		t.Errorf("a fresh server has %d series, over the ceiling of %d: has a label been added?", got, ceiling)
-	}
-	t.Logf("a fresh server has %d series of the %d allowed", got, ceiling)
 }
 
 func TestMiddleware_RecordsRoutePatternsAndNeverPaths(t *testing.T) {

@@ -9,6 +9,8 @@ import (
 	"strings"
 
 	_ "modernc.org/sqlite" // pure-Go SQLite driver, registered as "sqlite"
+
+	"github.com/noderunner/bingle/internal/metrics"
 )
 
 // schemaSQL holds the CREATE TABLE IF NOT EXISTS / CREATE INDEX IF NOT
@@ -22,6 +24,14 @@ var schemaSQL string
 // Store wraps the SQLite connection used by the application.
 type Store struct {
 	db *sql.DB
+	// path is the database file, kept so the metrics can report how big it
+	// and its write-ahead log have become (see stats.go).
+	path string
+	// mx is the registry statements are recorded into; nil records nothing
+	// (see measure.go).
+	mx *metrics.Metrics
+	// stats caches what Snapshot reports.
+	stats snapshotCache
 }
 
 // Open opens (creating if necessary) the SQLite database at dbPath and
@@ -73,7 +83,7 @@ func Open(dbPath string) (*Store, error) {
 		return nil, fmt.Errorf("migrate sqlite schema: %w", err)
 	}
 
-	return &Store{db: db}, nil
+	return &Store{db: db, path: dbPath}, nil
 }
 
 // columnMigrations lists columns added after the original schema. Each is
@@ -152,7 +162,7 @@ func hasColumn(db *sql.DB, table, column string) (bool, error) {
 // Ping verifies the database is reachable and responsive.
 func (s *Store) Ping(ctx context.Context) error {
 	var result int
-	if err := s.db.QueryRowContext(ctx, "SELECT 1").Scan(&result); err != nil {
+	if err := s.queryRow(ctx, "Ping", "SELECT 1").Scan(&result); err != nil {
 		return fmt.Errorf("select 1: %w", err)
 	}
 	return nil

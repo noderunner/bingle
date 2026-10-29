@@ -15,7 +15,7 @@ import (
 func (s *Store) GetStateAtSeq(ctx context.Context, gameID int64, seq int) (string, error) {
 	var resultingState string
 
-	row := s.db.QueryRowContext(ctx,
+	row := s.queryRow(ctx, "GetStateAtSeq",
 		`SELECT resulting_state FROM moves WHERE game_id = ? AND seq = ?`,
 		gameID, seq,
 	)

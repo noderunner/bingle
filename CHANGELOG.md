@@ -4,6 +4,20 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.14.0 - 2026-10-28
+
+### Bingle Core 0.14.0
+- **The database is now watched as closely as the rest of the server.** Every kind of question
+  Bingle asks its database is timed and counted by name, so a slow page can be traced to the thing
+  that is actually slow instead of guessed at. The size of the database, how fast it is growing and
+  how many games, moves and messages it holds are all visible too — which is what turns "the
+  server felt sluggish last night" into something anyone can look up.
+- It also notices the one failure that used to be silent: a save that could not go through because
+  something else was writing at the same time. If that ever starts happening to you, it now leaves
+  a trace.
+- As before, none of this is on the public site and none of it is about you — it counts
+  Bingle's own work. See [docs/observability.md](docs/observability.md).
+
 ## 0.13.0 - 2026-10-28
 
 ### Bingle Core 0.13.0
