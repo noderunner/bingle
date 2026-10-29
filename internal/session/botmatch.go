@@ -136,7 +136,7 @@ func (m *Manager) autoplay(roomCode string, delay time.Duration) {
 			unwatchedSince = time.Time{}
 		}
 
-		unlock := m.lockRoom(roomCode)
+		unlock := m.lockRoom(ctx, roomCode)
 		done := m.autoplayOne(ctx, roomCode)
 		unlock()
 		if done {

@@ -120,7 +120,7 @@ func (m *Manager) autoPlaySettings(ctx context.Context, game store.Game, name st
 // people: a bot does not need it.
 func (m *Manager) SetAutoPlay(ctx context.Context, roomCode, name string, enabled *bool, timeoutSeconds *int) (AutoPlaySettings, error) {
 	roomCode = canonRoom(roomCode)
-	unlock := m.lockRoom(roomCode)
+	unlock := m.lockRoom(ctx, roomCode)
 	defer unlock()
 	game, err := m.loadGame(ctx, roomCode, true)
 	if err != nil {
@@ -199,7 +199,7 @@ func (m *Manager) autoPlayRoom(ctx context.Context, roomCode string, seat int) b
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), botBackgroundLimit)
 	defer cancel()
 	roomCode = canonRoom(roomCode)
-	unlock := m.lockRoom(roomCode)
+	unlock := m.lockRoom(ctx, roomCode)
 	defer unlock()
 
 	game, err := m.loadGame(ctx, roomCode, true)

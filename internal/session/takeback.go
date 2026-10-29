@@ -27,7 +27,7 @@ var ErrTakebackNotAllowed = errors.New("session: takeback request not allowed")
 // Any move (or undo) withdraws an outstanding request.
 func (m *Manager) Takeback(ctx context.Context, roomCode, name, action string) (StateSnapshot, error) {
 	roomCode = canonRoom(roomCode)
-	unlock := m.lockRoom(roomCode)
+	unlock := m.lockRoom(ctx, roomCode)
 	defer unlock()
 
 	game, err := m.loadGame(ctx, roomCode, true)

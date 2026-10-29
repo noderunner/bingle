@@ -13,6 +13,7 @@ import (
 	"github.com/noderunner/bingle/internal/app"
 	"github.com/noderunner/bingle/internal/config"
 	"github.com/noderunner/bingle/internal/httpserve"
+	"github.com/noderunner/bingle/internal/journal"
 	"github.com/noderunner/bingle/internal/logging"
 	"github.com/noderunner/bingle/internal/metrics"
 	"github.com/noderunner/bingle/internal/version"
@@ -50,7 +51,21 @@ func main() {
 		mx = metrics.New(version.Engine)
 	}
 
-	a, err := app.New(cfg, app.WithLogger(lg), app.WithMetrics(mx))
+	// The metrics database holds the slow-request journal (and, from Stage 5,
+	// the metric history). It is a separate file from the game database on
+	// purpose: measuring the server must not write to what is being measured.
+	var jdb *journal.DB
+	if cfg.MetricsDB != "" && cfg.SlowRequest > 0 {
+		jdb, err = journal.Open(cfg.MetricsDB)
+		if err != nil {
+			lg.Error("the metrics database could not be opened", "path", cfg.MetricsDB, "err", err)
+			os.Exit(1)
+		}
+		defer func() { _ = jdb.Close() }()
+		lg.Info("the slow-request journal is on", "db", cfg.MetricsDB, "slower_than", cfg.SlowRequest)
+	}
+
+	a, err := app.New(cfg, app.WithLogger(lg), app.WithMetrics(mx), app.WithJournal(jdb, cfg.SlowRequest))
 	if err != nil {
 		lg.Error("the server could not be built", "err", err)
 		os.Exit(1)

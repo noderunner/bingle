@@ -11,6 +11,7 @@ import (
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/engine/state"
 	"github.com/noderunner/bingle/internal/store"
+	"github.com/noderunner/bingle/internal/trace"
 )
 
 // MoveRecord is one entry of ListMoves' return value, matching the REST
@@ -184,7 +185,13 @@ func (m *Manager) LegalMoves(ctx context.Context, roomCode string, seat int) (in
 	if err := bs.UnmarshalJSON([]byte(game.BoardState)); err != nil {
 		return 0, nil, fmt.Errorf("session: unmarshal board state for room %q: %w", roomCode, err)
 	}
-	return seat, legalMoveList(compiled, bs, seat), nil
+	// LegalMoves and the notation it formats take no context and do no I/O
+	// (ADR 0025): the span goes around the call, never inside a ruleset.
+	_, legalSpan := trace.Start(ctx, "engine.Legal")
+	out := legalMoveList(compiled, bs, seat)
+	legalSpan.Set("legal", len(out))
+	legalSpan.End()
+	return seat, out, nil
 }
 
 func legalMoveList(compiled *catalog.CompiledGame, bs *state.BoardState, seat int) []LegalMove {

@@ -19,6 +19,7 @@
 package session
 
 import (
+	"context"
 	"log/slog"
 	"strings"
 	"sync"
@@ -27,6 +28,7 @@ import (
 	"github.com/noderunner/bingle/internal/bots"
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/store"
+	"github.com/noderunner/bingle/internal/trace"
 )
 
 // Manager orchestrates game lifecycle operations against a Store and a
@@ -103,11 +105,30 @@ func (m *Manager) Subscribe(roomCode string) (<-chan Event, func()) {
 	return m.hub.subscribe(roomCode)
 }
 
+// gameFamily is the family of a compiled game ("courtfall" for
+// "courtfall~arena"), which is what a metric label or a span attribute may
+// carry: the family is a closed set of about twenty-five, while a definition
+// id with all its variants is not (ADR 0064).
+func gameFamily(compiled *catalog.CompiledGame) string {
+	if compiled == nil {
+		return ""
+	}
+	return familyOf(compiled.Definition.Family, compiled.Definition.ID)
+}
+
 // lockRoom returns an unlock function for roomCode's mutex, creating that
 // mutex on first use. It never removes entries (room codes are cheap and
 // bounded by how many games actually get created in a process's lifetime;
 // not worth the complexity of eviction for v1).
-func (m *Manager) lockRoom(roomCode string) (unlock func()) {
+//
+// ctx is only for the span: waiting here is one of the few things in bingle
+// that can take a long time while nothing appears to be happening, which is
+// why docs/history/observability-plan.md names it as a boundary to time. The
+// span covers the wait, not the time the lock is held.
+func (m *Manager) lockRoom(ctx context.Context, roomCode string) (unlock func()) {
+	_, span := trace.Start(ctx, "room.lock")
+	defer span.End()
+
 	m.mu.Lock()
 	roomMu, ok := m.roomLocks[roomCode]
 	if !ok {

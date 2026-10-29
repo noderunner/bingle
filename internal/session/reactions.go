@@ -259,7 +259,7 @@ func (m *Manager) reactionSettings(ctx context.Context, game store.Game, name st
 // right now it is declined at once, unless it is one they asked for.
 func (m *Manager) SetReactions(ctx context.Context, roomCode, name string, upd ReactionUpdate) (ReactionSettings, error) {
 	roomCode = canonRoom(roomCode)
-	unlock := m.lockRoom(roomCode)
+	unlock := m.lockRoom(ctx, roomCode)
 	defer unlock()
 	game, err := m.loadGame(ctx, roomCode, true)
 	if err != nil {
@@ -350,7 +350,7 @@ func (m *Manager) SetReactions(ctx context.Context, roomCode, name string, upd R
 // nothing is passed for it. It leaves a choice the player already made alone.
 func (m *Manager) AskEveryReaction(ctx context.Context, roomCode, name string) error {
 	roomCode = canonRoom(roomCode)
-	unlock := m.lockRoom(roomCode)
+	unlock := m.lockRoom(ctx, roomCode)
 	defer unlock()
 	game, err := m.loadGame(ctx, roomCode, true)
 	if err != nil {

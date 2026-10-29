@@ -13,7 +13,7 @@ import (
 // game; with more seats the game simply ends without a winner).
 func (m *Manager) Resign(ctx context.Context, roomCode, name string) (StateSnapshot, error) {
 	roomCode = canonRoom(roomCode)
-	unlock := m.lockRoom(roomCode)
+	unlock := m.lockRoom(ctx, roomCode)
 	defer unlock()
 
 	game, err := m.loadGame(ctx, roomCode, true)
@@ -64,7 +64,7 @@ var ErrDrawNotAllowed = errors.New("session: draw request not allowed")
 // can't be made to bots, which never respond.
 func (m *Manager) Draw(ctx context.Context, roomCode, name, action string) (StateSnapshot, error) {
 	roomCode = canonRoom(roomCode)
-	unlock := m.lockRoom(roomCode)
+	unlock := m.lockRoom(ctx, roomCode)
 	defer unlock()
 
 	game, err := m.loadGame(ctx, roomCode, true)

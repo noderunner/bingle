@@ -72,7 +72,9 @@ func (m *Manager) continueBots(roomCode string) {
 		}()
 		deadline := time.Now().Add(botBackgroundLimit)
 		for time.Now().Before(deadline) {
-			unlock := m.lockRoom(roomCode)
+			// A background run belongs to no request, so nothing is
+			// collecting and the span costs a context lookup.
+			unlock := m.lockRoom(context.Background(), roomCode)
 			_, more := m.runBotsFor(context.Background(), roomCode, 0, 1)
 			unlock()
 			if !more {

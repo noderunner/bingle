@@ -12,6 +12,7 @@ import (
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/engine/state"
 	"github.com/noderunner/bingle/internal/store"
+	"github.com/noderunner/bingle/internal/trace"
 )
 
 // ErrGameNotActive is returned by MakeMove when roomCode's game isn't
@@ -105,7 +106,7 @@ func (m *Manager) PlayNotation(ctx context.Context, roomCode, name, text string)
 //     error is returned as-is, with nothing persisted.
 func (m *Manager) Play(ctx context.Context, roomCode, name string, mv state.Move) (MoveOutcome, error) {
 	roomCode = canonRoom(roomCode)
-	unlock := m.lockRoom(roomCode)
+	unlock := m.lockRoom(ctx, roomCode)
 	defer unlock()
 
 	game, err := m.loadGame(ctx, roomCode, true)
@@ -170,13 +171,21 @@ const (
 // the player's behalf: a reaction passed for them, or a turn a bot took after
 // their Auto-Play Timeout.
 func (m *Manager) applyAndRecordAs(ctx context.Context, compiled *catalog.CompiledGame, game store.Game, player store.Player, mv state.Move, how moveHow) (MoveOutcome, error) {
+	ctx, funnel := trace.Start(ctx, "session.ApplyMove")
+	funnel.Set("game", gameFamily(compiled))
+	defer funnel.End()
+
 	auto, autoPlay := how == passedForPlayer, how == playedForPlayer
 	bs := state.NewBoardState()
 	if err := bs.UnmarshalJSON([]byte(game.BoardState)); err != nil {
 		return MoveOutcome{}, fmt.Errorf("session: unmarshal board state for room %q: %w", game.RoomCode, err)
 	}
 
+	// Apply takes no context and does no I/O (ADR 0025): the span goes
+	// around the call, never inside the ruleset.
+	_, applySpan := trace.Start(ctx, "engine.Apply")
 	result, err := state.Apply(compiled, bs, player.Seat, mv)
+	applySpan.End()
 	if err != nil {
 		return MoveOutcome{}, err
 	}
@@ -298,6 +307,7 @@ func (m *Manager) applyAndRecordAs(ctx context.Context, compiled *catalog.Compil
 	}
 	// A move that commits a secret (a strike's dice) is announced without it.
 	shownMove, shownNotation := state.PublicMove(compiled, result.NewState, result.Move, result.Notation)
+	_, publishSpan := trace.Start(ctx, "ws.publish")
 	m.hub.publish(game.RoomCode, Event{Type: "move", Data: moveEventData{
 		Seq:        move.Seq,
 		Seat:       player.Seat,
@@ -328,6 +338,7 @@ func (m *Manager) applyAndRecordAs(ctx context.Context, compiled *catalog.Compil
 		AutoPlay:     autoPlay,
 		Locked:       locked,
 	}})
+	publishSpan.End()
 
 	return MoveOutcome{
 		Seq:          move.Seq,
