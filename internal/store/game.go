@@ -252,6 +252,48 @@ type rowQuerier interface {
 	queryRow(ctx context.Context, name, query string, args ...any) *Row
 }
 
+// swapSeats exchanges the occupants of seats 1 and 2 of gameID: the players
+// (names and bots) trade rows — a seat keeps its colour — and the per-seat
+// choices that are a person's (Auto-Play Timeout, reaction asks) move with
+// them. It is the store half of the pie rule (ADR 0056): a swap changes who
+// sits where and nothing on the board. Call it inside the transaction that
+// records the move.
+func swapSeats(ctx context.Context, tx *Tx, gameID int64) error {
+	var ids [3]int64
+	var names [3]string
+	var bots [3]string
+	for seat := 1; seat <= 2; seat++ {
+		row := tx.queryRow(ctx, "swapSeats.readPlayer",
+			`SELECT id, name, bot FROM players WHERE game_id = ? AND seat = ?`, gameID, seat)
+		if err := row.Scan(&ids[seat], &names[seat], &bots[seat]); err != nil {
+			return fmt.Errorf("reading seat %d: %w", seat, err)
+		}
+	}
+	// A name is unique per game, so one side is parked under a name nobody
+	// can have while the other crosses over.
+	if _, err := tx.exec(ctx, "swapSeats.park", `UPDATE players SET name = char(31) || name, bot = '' WHERE id = ?`, ids[1]); err != nil {
+		return err
+	}
+	if _, err := tx.exec(ctx, "swapSeats.oneAcross", `UPDATE players SET name = ?, bot = ? WHERE id = ?`, names[1], bots[1], ids[2]); err != nil {
+		return err
+	}
+	if _, err := tx.exec(ctx, "swapSeats.twoAcross", `UPDATE players SET name = ?, bot = ? WHERE id = ?`, names[2], bots[2], ids[1]); err != nil {
+		return err
+	}
+	for _, table := range []string{"autoplay_prefs", "reaction_prefs"} {
+		if _, err := tx.exec(ctx, "swapSeats.parkPrefs", `UPDATE `+table+` SET seat = -1 WHERE game_id = ? AND seat = 1`, gameID); err != nil {
+			return err
+		}
+		if _, err := tx.exec(ctx, "swapSeats.twoToOne", `UPDATE `+table+` SET seat = 1 WHERE game_id = ? AND seat = 2`, gameID); err != nil {
+			return err
+		}
+		if _, err := tx.exec(ctx, "swapSeats.parkedToTwo", `UPDATE `+table+` SET seat = 2 WHERE game_id = ? AND seat = -1`, gameID); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func scanGameByID(ctx context.Context, q rowQuerier, name string, id int64) (Game, error) {
 	return scanGameRow(q.queryRow(ctx, name, `SELECT `+gameColumns+` FROM games WHERE id = ?`, id))
 }

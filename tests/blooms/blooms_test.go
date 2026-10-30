@@ -274,8 +274,9 @@ func TestPieRuleIsASetupChoice(t *testing.T) {
 }
 
 // With the pie rule the second player may answer the opening stone by taking
-// it: the stone changes to their colours where it stands, the first player
-// replies with an ordinary turn, and the swap is spent.
+// it: the stone stays exactly where and what it is (the players change seats,
+// which the session layer records), the turn stays with the second player's
+// seat — the opener holds it now — and the swap is spent.
 func TestPieRuleTheSecondPlayerMayTakeTheOpeningSide(t *testing.T) {
 	cat := catalog.NewCatalog()
 	if err := cat.RegisterModule(blooms.Module()); err != nil {
@@ -287,7 +288,7 @@ func TestPieRuleTheSecondPlayerMayTakeTheOpeningSide(t *testing.T) {
 	}
 	rs := blooms.New()
 
-	for first, want := range map[string]string{"red": "blue", "yellow": "black"} {
+	for _, first := range []string{"red", "yellow"} {
 		st, _ := rs.Start(g, 0)
 		c := centre(g)
 		st, res := play(t, g, st, 1, first+"@"+string(c))
@@ -306,31 +307,33 @@ func TestPieRuleTheSecondPlayerMayTakeTheOpeningSide(t *testing.T) {
 			t.Errorf("%s: notation %q, want swap", first, res.Notation)
 		}
 		occ, ok := st.Get(c)
-		if !ok || occ.Color != want || occ.Piece != want {
-			t.Errorf("%s: the opening stone is %v, want %s", first, occ, want)
+		if !ok || occ.Color != first || occ.Piece != first {
+			t.Errorf("%s: the opening stone is %v, want it unchanged (%s)", first, occ, first)
 		}
-		if res.NextTurnSeat != 1 || rs.ToMove(g, st) != 1 {
-			t.Errorf("%s: the first player replies (next %d)", first, res.NextTurnSeat)
+		if res.NextTurnSeat != 2 || rs.ToMove(g, st) != 2 {
+			t.Errorf("%s: the turn stays with the second player's seat (next %d)", first, res.NextTurnSeat)
+		}
+		if !data(st).Swapped {
+			t.Errorf("%s: the swap is not marked spent", first)
 		}
 		if err := state.Validate(g, st); err != nil {
 			t.Errorf("%s: %v", first, err)
 		}
-		// The swap is spent: for the first player now, and for the second
-		// player ever after.
-		for _, mv := range rs.Legal(g, st, 1) {
+		// The swap is spent, for either seat, now and later.
+		for _, mv := range rs.Legal(g, st, 2) {
 			if mv.Action == "swap" {
-				t.Errorf("%s: the first player is offered the swap", first)
+				t.Errorf("%s: the swap is still on offer after it was taken", first)
 			}
 		}
 		// The reply is an ordinary turn: one stone, then a second or done.
 		nb := neighbours(g, c)
-		st, res = play(t, g, st, 1, "red@"+string(nb[0]))
-		if res.NextTurnSeat != 1 {
+		st, res = play(t, g, st, 2, "blue@"+string(nb[0]))
+		if res.NextTurnSeat != 2 {
 			t.Errorf("%s: the reply after a swap is a one-or-two-stone turn (next %d)", first, res.NextTurnSeat)
 		}
-		st, res = play(t, g, st, 1, "done")
-		if res.NextTurnSeat != 2 {
-			t.Fatalf("%s: next %d, want 2", first, res.NextTurnSeat)
+		st, res = play(t, g, st, 2, "done")
+		if res.NextTurnSeat != 1 {
+			t.Fatalf("%s: next %d, want 1", first, res.NextTurnSeat)
 		}
 		for _, mv := range rs.Legal(g, st, 2) {
 			if mv.Action == "swap" {

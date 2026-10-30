@@ -24,8 +24,8 @@ A **bloom** is a connected group of stones of one colour (a single stone is a bl
 
 The player who moves first has an advantage, so a table may play with the **pie rule** (tick
 *Pie rule* when the game is made). Instead of answering the opening stone, the second player
-may **swap sides**: the stone on the board changes hands — it becomes one of the second player's
-colours where it stands — and the first player moves again, answering their own opening. It is
+may **swap sides**: the players change seats — the stone stays exactly where and what it is —
+and the first player moves again, answering their own opening from the other side. It is
 then in the first player's interest to open with a stone that is neither too strong nor too weak.
 The move is `swap`.
 

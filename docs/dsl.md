@@ -181,10 +181,11 @@ During the first `plies` plies only the listed actions/pieces are allowed;
 of the opponent's reserve (Tak's swap rule).
 
 **`swap`** (two seats): the pie rule — `{"id": "swap", "type": "swap", "plies": [1]}`
-(default: only the second player's first move). Taking it recolours every
-piece on the board to the other side (and exchanges the reserves), and play
-continues with the first player. Notation `swap`; the UI offers a *Swap
-sides* button.
+(default: only the second player's first move). Taking it changes nothing on
+the board: the players change seats, so the opening move belongs to the player
+who was second, and the first player answers it — the turn stays with the
+mover's seat (the session layer exchanges the seats' occupants). Notation
+`swap`; the UI offers a *Swap sides* button.
 
 Games do not usually declare the action themselves: **`pie_rule`** does it
 (ADR 0056). `"pie_rule": "standard"` is a game normally played with the rule
@@ -197,8 +198,8 @@ JSON game needs no Go code); choosing what the game does anyway keeps the
 plain id. The two settled values, `"on"` and `"off"`, are what those derived
 documents carry, and `catalog.PieRuleOn` reads them. A declaration is refused
 where the rule cannot work: a game of other than two seats, a seat with a
-`forward` direction (recolouring in place would leave its pieces facing the
-wrong way), or a game that declares a `swap` action of its own. A Go ruleset
+`forward` direction (the rule was weighed only for games whose two sides play
+alike), or a game that declares a `swap` action of its own. A Go ruleset
 may declare it too: the option and the derived games are the catalog's, but
 the swap move is the ruleset's own — offered and applied in its `Legal` and
 `Apply` when `PieRuleOn` holds (Blooms does: `swap` as the second player's

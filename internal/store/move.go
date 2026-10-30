@@ -38,6 +38,10 @@ type MoveInput struct {
 	// with the turn they have just taken, written in the same transaction as
 	// the move so that the two can never disagree.
 	Clock *string
+	// SwapSeats says the move is the pie-rule swap: the occupants of the two
+	// seats change places (the board itself the swap leaves untouched), in
+	// the same transaction as the move.
+	SwapSeats bool
 }
 
 // Move mirrors one row of the moves table (see schema.sql).
@@ -134,6 +138,11 @@ func (s *Store) RecordMove(ctx context.Context, gameID int64, in MoveInput) (Mov
 			return Move{}, fmt.Errorf("updating the clock of game_id=%d: %w", gameID, err)
 		}
 	}
+	if in.SwapSeats {
+		if err := swapSeats(ctx, tx, gameID); err != nil {
+			return Move{}, fmt.Errorf("swapping the seats of game_id=%d: %w", gameID, err)
+		}
+	}
 
 	move, err := scanMoveByID(ctx, tx, "RecordMove.readMove", moveID)
 	if err != nil {
@@ -217,9 +226,11 @@ func scanMoveByID(ctx context.Context, q rowQuerier, name string, id int64) (Mov
 // UndoToSeq deletes every move with seq > keepSeq and rewinds the game to
 // the position those moves came from: boardState becomes the game's current
 // snapshot, move_seq becomes keepSeq, turn_seat becomes turnSeat, and the
-// game is active again with no winner. All of it happens in one transaction.
+// game is active again with no winner. When the taken-back moves include the
+// pie-rule swap, swapBack says so, and the seats' occupants change back in
+// the same transaction. All of it happens in one transaction.
 // Returns ErrNotFound if gameID doesn't exist.
-func (s *Store) UndoToSeq(ctx context.Context, gameID int64, keepSeq int, boardState string, turnSeat int) error {
+func (s *Store) UndoToSeq(ctx context.Context, gameID int64, keepSeq int, boardState string, turnSeat int, swapBack bool) error {
 	tx, err := s.begin(ctx, "UndoToSeq")
 	if err != nil {
 		return fmt.Errorf("begin transaction: %w", err)
@@ -238,6 +249,11 @@ func (s *Store) UndoToSeq(ctx context.Context, gameID int64, keepSeq int, boardS
 	}
 	if n, _ := res.RowsAffected(); n == 0 {
 		return ErrNotFound
+	}
+	if swapBack {
+		if err := swapSeats(ctx, tx, gameID); err != nil {
+			return fmt.Errorf("swapping the seats back of game_id=%d: %w", gameID, err)
+		}
 	}
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("commit transaction: %w", err)

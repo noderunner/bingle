@@ -2,10 +2,10 @@
   "id": "gomoku",
   "name": "Gomoku (15×15)",
   "description": "Five in a row on a Go board. Black moves first.",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "rules": [
     "Players alternate placing a stone on an empty intersection; Black moves first.",
-    "Because Black has an advantage, White may instead swap sides on their first turn (the pie rule): the black stone becomes white and Black moves next. A table may leave the pie rule out when the game is made.",
+    "Because Black has an advantage, White may instead swap sides on their first turn (the pie rule): the players change seats, the stone stays as it is, and Black moves next from White's seat. A table may leave the pie rule out when the game is made.",
     "The first player to make an unbroken row of five (or more) stones — horizontally, vertically or diagonally — wins."
   ],
   "guide": { "tabs": [ { "id": "rules", "title": "Rules", "file": "rules.md" } ] },

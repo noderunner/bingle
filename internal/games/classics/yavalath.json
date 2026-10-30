@@ -2,7 +2,7 @@
   "id": "yavalath",
   "name": "Yavalath",
   "description": "Make four in a row to win — but make three in a row first and you lose. A misère-flavoured race on a hexagonal board.",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "designers": ["Cameron Browne"],
   "publisher": "nestorgames",
   "rules": [
@@ -10,7 +10,7 @@
     "A player who makes a line of four or more of their own pieces wins.",
     "A player who makes a line of exactly three of their own pieces — without also making four — loses.",
     "If the board fills up with neither, the game is a draw.",
-    "Optional (chosen when the game is made): with the pie rule, the second player may swap sides on their first turn instead of replying, and every piece on the board changes hands."
+    "Optional (chosen when the game is made): with the pie rule, the second player may swap sides on their first turn instead of replying; the players change seats and the opening move changes hands with them."
   ],
   "guide": { "tabs": [ { "id": "rules", "title": "Rules", "file": "rules.md" } ] },
   "preview": [

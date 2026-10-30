@@ -12,7 +12,7 @@
     "Player 1 starts by placing one stone of either of their colours. After that, on your turn you place one or two stones on empty cells; two stones must be of different colours. You may place just one.",
     "When your turn ends, you capture every fenced enemy bloom (removing it and counting its stones). Your own fenced blooms are not captured on your turn; they stay until the end of your opponent's turn, so a fenced bloom of yours can still be freed — or captured.",
     "The first player to capture the target number of enemy stones wins: 20 on this board (15 on base 4, 25 on base 6). Sacrificing stones to set up a bigger capture is the heart of the game.",
-    "Optional (chosen when the game is made): with the pie rule, the second player may swap sides instead of answering the opening stone — the stone takes the second player's colours and the first player replies.",
+    "Optional (chosen when the game is made): with the pie rule, the second player may swap sides instead of answering the opening stone — the players change seats and the first player answers their own opening from the second seat.",
     "Interpretation: the game is drawn or decided on captures after 500 plies."
   ],
   "params": { "capture_target": 20, "max_plies": 500 },

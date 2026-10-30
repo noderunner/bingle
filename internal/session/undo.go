@@ -77,9 +77,12 @@ func (m *Manager) Undo(ctx context.Context, roomCode, name string) (UndoOutcome,
 	if err != nil {
 		return UndoOutcome{}, err
 	}
+	// A pie-rule swap exchanged the seats' occupants: a move at or before it
+	// belongs to whoever now holds the other seat.
+	swapSeq := swapSeqOf(compiled, moves)
 	idx := -1
 	for i := len(moves) - 1; i >= 0; i-- {
-		if moves[i].Seat == player.Seat {
+		if moverSeatNow(moves[i], swapSeq) == player.Seat {
 			idx = i
 			break
 		}
@@ -88,7 +91,7 @@ func (m *Manager) Undo(ctx context.Context, roomCode, name string) (UndoOutcome,
 		return UndoOutcome{}, ErrNothingToUndo
 	}
 	for _, later := range moves[idx+1:] {
-		if !botSeats[later.Seat] && !later.Auto {
+		if !botSeats[moverSeatNow(later, swapSeq)] && !later.Auto {
 			return UndoOutcome{}, ErrCannotUndo
 		}
 	}
@@ -115,7 +118,14 @@ func (m *Manager) Undo(ctx context.Context, roomCode, name string) (UndoOutcome,
 		}
 	}
 
-	if err := m.store.UndoToSeq(ctx, game.ID, keepSeq, doc, player.Seat); err != nil {
+	// Taking back across the swap puts the players back in their first seats:
+	// the seat to move is the undoer's old one.
+	undoSwap := swapSeq > 0 && swapSeq > keepSeq
+	turnSeat := player.Seat
+	if undoSwap {
+		turnSeat = 3 - turnSeat
+	}
+	if err := m.store.UndoToSeq(ctx, game.ID, keepSeq, doc, turnSeat, undoSwap); err != nil {
 		return UndoOutcome{}, err
 	}
 

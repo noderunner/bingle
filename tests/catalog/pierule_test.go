@@ -166,7 +166,7 @@ func TestPieRuleIsRefusedWhereItCannotWork(t *testing.T) {
 	for name, tc := range map[string]struct{ def, says string }{
 		"an unknown value":    {pieDefJSON("sometimes", ""), "optional, standard, on or off"},
 		"a swap of its own":   {instead(actionsLine, `"actions": [ { "id": "place", "type": "place", "pieces": ["stone"], "source": "supply" }, { "id": "swap", "type": "swap" } ],`), "brings the action itself"},
-		"a direction of play": {instead(seatsLine, `"seats": [ { "seat": 1, "color": "black", "forward": "N" }, { "seat": 2, "color": "white", "forward": "S" } ],`), "facing the wrong way"},
+		"a direction of play": {instead(seatsLine, `"seats": [ { "seat": 1, "color": "black", "forward": "N" }, { "seat": 2, "color": "white", "forward": "S" } ],`), "sides play alike"},
 		"three seats":         {instead(seatsLine, `"seats": [ { "seat": 1, "color": "black" }, { "seat": 2, "color": "white" }, { "seat": 3, "color": "red" } ],`), "the pie rule is for two"},
 	} {
 		cat := catalog.NewCatalog()

@@ -108,7 +108,7 @@ func (e *eng) legal() []state.Move {
 	// The pie rule: the second player's first reply may be to take the
 	// opening side. The catalog brings the setup choice (pie_rule); the swap
 	// itself is the ruleset's own move.
-	if e.pieOn() && d.Turn == 2 && d.Turns == 1 && d.Stage == stageFirst {
+	if e.pieOn() && !d.Swapped && d.Turn == 2 && d.Turns == 1 && d.Stage == stageFirst {
 		out = append(out, state.Move{Action: actSwap})
 	}
 	return out
@@ -254,13 +254,11 @@ func (e *eng) execute(mv state.Move, seat int) {
 	switch mv.Action {
 	case actSwap:
 		// The pie rule: the second player takes the opening side. The stones
-		// take the other seat's colours where they stand (so the opening
-		// stone is now the swapper's), and the first player answers.
-		for i, c := range e.cells {
-			e.cells[i] = swapped(c)
-		}
-		e.say("%s swaps sides (the pie rule): the opening stone changes hands and %s answers it.", seatLabel(seat), seatLabel(other(seat)))
-		d.Turn = other(seat)
+		// stay exactly where and what they are — the players change seats
+		// (the session layer exchanges them) — so the turn stays with the
+		// mover's seat, held from now on by the player who opened.
+		d.Swapped = true
+		e.say("%s swaps seats (the pie rule): the opening stone changes hands, and the first player answers it.", seatLabel(seat))
 		return
 	case actPlace:
 		i := e.g.index[mv.To]
@@ -274,22 +272,6 @@ func (e *eng) execute(mv state.Move, seat int) {
 		}
 	}
 	e.endTurn(seat)
-}
-
-// swapped is the colour of the other seat: red and yellow change places with
-// blue and black.
-func swapped(color string) string {
-	switch color {
-	case "red":
-		return "blue"
-	case "yellow":
-		return "black"
-	case "blue":
-		return "red"
-	case "black":
-		return "yellow"
-	}
-	return color
 }
 
 func (e *eng) hasEmpty() bool {

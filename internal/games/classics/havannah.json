@@ -2,7 +2,7 @@
   "id": "havannah-8",
   "name": "Havannah (base 8)",
   "description": "Win with a ring, a bridge between two corners or a fork touching three sides — on a hexagonal board. A connection game with three ways to win.",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "designers": ["Christian Freeling"],
   "rules": [
     "White and Black alternate placing one piece on any empty cell of the hexagonal board; White moves first.",
@@ -10,7 +10,7 @@
     "A bridge is a connected group of your pieces touching two of the board's six corners.",
     "A fork is a connected group of your pieces touching three of the board's six sides (the corners are not part of a side).",
     "The first player to make a ring, a bridge or a fork wins. If the board fills up first, the game is a draw.",
-    "Optional (chosen when the game is made): with the pie rule, the second player may swap sides on their first turn instead of replying, and every piece on the board changes hands."
+    "Optional (chosen when the game is made): with the pie rule, the second player may swap sides on their first turn instead of replying; the players change seats and the opening move changes hands with them."
   ],
   "guide": { "tabs": [ { "id": "rules", "title": "Rules", "file": "rules.md" } ] },
   "preview": [

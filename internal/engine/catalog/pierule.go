@@ -13,11 +13,13 @@ import (
 // the game *can* be played with it (`pie_rule`) and the creator of a game
 // decides. What this file brings is the setup option clients draw and the
 // Deriver that turns the choice into a game of its own (see ADR 0056 and ADR
-// 0028); the move itself is the engine's "swap" action, which recolours every
-// piece and gives the turn back to the first player. A game on the generic
-// engine declares the rule and needs nothing else; a ruleset builds its own
-// moves, so it offers the swap itself when the rule is in play (Blooms does),
-// and the option and the derived games are all it gets from here.
+// 0028). The move itself changes who sits where, not what is on the board: the
+// engine's "swap" action leaves every piece as it is and keeps the turn with
+// the mover's seat, and the session layer exchanges the seats' occupants. A
+// game on the generic engine declares the rule and needs nothing else; a
+// ruleset builds its own moves, so it offers the swap itself when the rule is
+// in play (Blooms does), and the option and the derived games are all it gets
+// from here.
 
 // The values of dsl.GameDefinition.PieRule.
 const (
@@ -61,11 +63,12 @@ func applyPieRule(id string, def *dsl.GameDefinition) error {
 	if len(def.Seats) != 2 {
 		return fmt.Errorf("catalog: game %q declares pie_rule but seats %d players (the pie rule is for two)", id, len(def.Seats))
 	}
-	// Swapping recolours the pieces where they stand, so a game in which a
-	// seat has a direction of play would come out backwards.
+	// A game whose seats have a direction of play is left out: the rule was
+	// weighed only for games whose two sides play alike (ADR 0056), and the
+	// check keeps the offer from appearing where it was never considered.
 	for _, s := range def.Seats {
 		if s.Forward != "" {
-			return fmt.Errorf("catalog: game %q declares pie_rule but seat %d plays towards %q: swapping sides would leave its pieces facing the wrong way", id, s.Seat, s.Forward)
+			return fmt.Errorf("catalog: game %q declares pie_rule but seat %d plays towards %q: the pie rule is for games whose sides play alike", id, s.Seat, s.Forward)
 		}
 	}
 	for _, a := range def.Actions {
