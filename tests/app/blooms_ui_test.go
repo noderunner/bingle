@@ -78,3 +78,46 @@ func TestWebBlooms_PlayTurnsThroughTheUI(t *testing.T) {
 		t.Errorf("uncaught JS exceptions: %v", jsErrors)
 	}
 }
+
+// The pie rule in the UI: a game made with the box ticked offers the second
+// player a *Swap sides* button for their first reply, and taking it gives the
+// opening stone to their colours and the next move to the first player.
+func TestWebBlooms_PieRuleSwapThroughTheUI(t *testing.T) {
+	baseURL := newRESTTestServer(t)
+	var created struct {
+		RoomCode string `json:"room_code"`
+	}
+	body := map[string]any{"game_def_id": "blooms", "player_name": "Alice", "also_seats": []int{2}, "options": map[string]any{"pie-rule": true}}
+	if code := doJSON(t, "POST", baseURL+"/api/games", body, &created); code != 200 {
+		t.Fatalf("create: %d", code)
+	}
+	ctx, cancel := newChromedpContext(t, 90*time.Second)
+	defer cancel()
+	var mu sync.Mutex
+	var jsErrors []string
+	collectJSErrors(ctx, &mu, &jsErrors)
+	openGameAs(t, ctx, baseURL, created.RoomCode, "blooms", "Alice")
+	waitJS(t, ctx, "61 cells", `document.querySelectorAll('#board .cell').length === 61`, 15*time.Second)
+	// The opening stone (pick the colour, then a cell), then the swap is a
+	// button of the second player's.
+	waitJS(t, ctx, "the opening turn", `document.querySelector('.status-bar.your-turn') !== null`, 15*time.Second)
+	clickSel(t, ctx, "#piece-buttons button")
+	waitJS(t, ctx, "a cell to open on", `document.querySelector('#board .cell.clickable') !== null`, 10*time.Second)
+	// A board cell is SVG: it takes a dispatched click, not el.click().
+	if err := chromedp.Run(ctx, chromedp.Evaluate(`document.querySelector('#board .cell.clickable').dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }))`, nil)); err != nil {
+		t.Fatalf("click a cell: %v", err)
+	}
+	waitJS(t, ctx, "the swap button", `document.querySelector('.action-buttons button[data-action="swap"]') !== null`, 10*time.Second)
+	if got := evalString(t, ctx, `document.querySelector('.action-buttons button[data-action="swap"]').textContent`); got != "Swap sides" {
+		t.Errorf("the button reads %q, want Swap sides", got)
+	}
+	clickSel(t, ctx, `.action-buttons button[data-action="swap"]`)
+	// The stone changed hands where it stood, and the swap is spent.
+	waitJS(t, ctx, "the stone recoloured", `document.querySelector('#board .piece[data-color="blue"]') !== null`, 10*time.Second)
+	waitJS(t, ctx, "the swap spent", `document.querySelector('button[data-action="swap"]') === null`, 5*time.Second)
+	mu.Lock()
+	defer mu.Unlock()
+	if len(jsErrors) > 0 {
+		t.Errorf("uncaught JS exceptions: %v", jsErrors)
+	}
+}

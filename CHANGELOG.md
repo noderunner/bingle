@@ -4,6 +4,19 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.20.0 - 2026-10-29
+
+### Bingle Core 0.20.0
+- **Games whose rules are written in Go can offer the pie rule now.** The pie rule — the second
+  player may swap sides instead of answering the opening move — used to be only for the games
+  described in plain data; the tick box in the setup and the game that remembers the choice now
+  work for every game. Blooms is the first to use it.
+
+### Blooms 0.2.0
+- **The pie rule, for tables that want it.** Tick *Pie rule* when you make the game and the second
+  player may swap sides instead of answering the opening stone: the stone changes to their colours
+  where it stands, and the first player replies. Unticked, the game is exactly the one it was.
+
 ## 0.19.0 - 2026-10-29
 
 ### Bingle Core 0.19.0

@@ -19,6 +19,7 @@ func New() *Ruleset { return &Ruleset{} }
 const (
 	actPlace = "place"
 	actDone  = "done"
+	actSwap  = "swap"
 )
 
 // eng is a decoded position: cells[i] is the colour on cell i ("" for empty).
@@ -104,8 +105,17 @@ func (e *eng) legal() []state.Move {
 	if d.Stage == stageSecond {
 		out = append(out, state.Move{Action: actDone})
 	}
+	// The pie rule: the second player's first reply may be to take the
+	// opening side. The catalog brings the setup choice (pie_rule); the swap
+	// itself is the ruleset's own move.
+	if e.pieOn() && d.Turn == 2 && d.Turns == 1 && d.Stage == stageFirst {
+		out = append(out, state.Move{Action: actSwap})
+	}
 	return out
 }
+
+// pieOn reports whether this game is played with the pie rule.
+func (e *eng) pieOn() bool { return catalog.PieRuleOn(e.game.Definition) }
 
 // --- ruleset interface ----------------------------------------------------
 
@@ -242,6 +252,16 @@ func (e *eng) finish(winner int, reason string) {
 func (e *eng) execute(mv state.Move, seat int) {
 	d := e.d
 	switch mv.Action {
+	case actSwap:
+		// The pie rule: the second player takes the opening side. The stones
+		// take the other seat's colours where they stand (so the opening
+		// stone is now the swapper's), and the first player answers.
+		for i, c := range e.cells {
+			e.cells[i] = swapped(c)
+		}
+		e.say("%s swaps sides (the pie rule): the opening stone changes hands and %s answers it.", seatLabel(seat), seatLabel(other(seat)))
+		d.Turn = other(seat)
+		return
 	case actPlace:
 		i := e.g.index[mv.To]
 		e.cells[i] = mv.Piece
@@ -254,6 +274,22 @@ func (e *eng) execute(mv state.Move, seat int) {
 		}
 	}
 	e.endTurn(seat)
+}
+
+// swapped is the colour of the other seat: red and yellow change places with
+// blue and black.
+func swapped(color string) string {
+	switch color {
+	case "red":
+		return "blue"
+	case "yellow":
+		return "black"
+	case "blue":
+		return "red"
+	case "black":
+		return "yellow"
+	}
+	return color
 }
 
 func (e *eng) hasEmpty() bool {

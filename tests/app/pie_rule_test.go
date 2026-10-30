@@ -77,6 +77,8 @@ func TestPieRule_GamesSayWhetherTheyOfferIt(t *testing.T) {
 		"ataxx":        "off",
 		"reversi":      "off",
 		"go-9x9":       "off",
+		"blooms":       "off", // a ruleset offers it too
+		"blooms-4":     "off", // a variant inherits it
 		"tic-tac-toe":  "",
 		"draughts":     "",
 		"breakthrough": "",
@@ -228,6 +230,65 @@ func TestPieRule_YavalathTakesItWhenTheTableAsks(t *testing.T) {
 		if strings.Contains(m.Notation, "swap") {
 			t.Errorf("the plain game offers %q", m.Notation)
 		}
+	}
+}
+
+// Blooms is a Go ruleset, so the swap is the ruleset's own move rather than
+// the engine's generic action — but from outside it is the same pie rule: a
+// table that asks plays blooms~pie, the second player swaps, the opening
+// stone changes hands (red becomes blue) and the first player replies.
+func TestPieRule_BloomsSwapsWithinItsOwnRuleset(t *testing.T) {
+	baseURL := newRESTTestServer(t)
+	var created struct {
+		RoomCode string `json:"room_code"`
+	}
+	body := map[string]any{"game_def_id": "blooms", "player_name": "Ana", "also_seats": []int{2}, "options": map[string]any{"pie-rule": true}}
+	if code := doJSON(t, "POST", baseURL+"/api/games", body, &created); code != 200 {
+		t.Fatalf("create: %d", code)
+	}
+	room := created.RoomCode
+	var game struct {
+		GameDefID string `json:"game_def_id"`
+		Seats     []struct {
+			Seat  int    `json:"seat"`
+			Name  string `json:"name"`
+			Color string `json:"color"`
+		} `json:"seats"`
+	}
+	doJSON(t, "GET", baseURL+"/api/games/"+room, nil, &game)
+	if game.GameDefID != "blooms~pie" {
+		t.Fatalf("the game is %q, want blooms~pie", game.GameDefID)
+	}
+	first, second := game.Seats[0].Name, game.Seats[1].Name
+	// The opening stone, then the swap is on offer.
+	if code, out := moveNotation(t, baseURL, room, first, "red@d3"); code != 200 {
+		t.Fatalf("first move: %d %v", code, out)
+	}
+	if !swapIsLegal(t, baseURL, room) {
+		t.Fatal("the table asked for the pie rule but swapping is not on offer")
+	}
+	if code, out := moveNotation(t, baseURL, room, second, "swap"); code != 200 {
+		t.Fatalf("swap: %d %v", code, out)
+	}
+	var after struct {
+		TurnSeat   *int            `json:"turn_seat"`
+		BoardState json.RawMessage `json:"board_state"`
+	}
+	doJSON(t, "GET", baseURL+"/api/games/"+room+"/state", nil, &after)
+	if after.TurnSeat == nil || *after.TurnSeat != 1 {
+		t.Errorf("after the swap %v is to move, want the first player", after.TurnSeat)
+	}
+	stones := decodeOccupants(t, after.BoardState)
+	if len(stones) != 1 {
+		t.Fatalf("the board holds %d stones after the swap, want one", len(stones))
+	}
+	for pos, occ := range stones {
+		if occ.Color != "blue" || occ.Piece != "blue" {
+			t.Errorf("the stone on %s is %s/%s, want the second player's blue", pos, occ.Color, occ.Piece)
+		}
+	}
+	if swapIsLegal(t, baseURL, room) {
+		t.Error("the swap is still on offer after it was taken")
 	}
 }
 

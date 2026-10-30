@@ -45,7 +45,8 @@ the plain link. The id stays the only record of the choice; nothing new is store
 error and not a broken room: a game of other than two seats; a game whose seats have a `forward`
 direction (swapping recolours the pieces where they stand, so Draughts and Breakthrough would come
 out with every man facing the wrong way); a game that declares a `swap` action of its own; and a Go
-ruleset, which builds its own moves and would have to offer swapping sides itself.
+ruleset, which builds its own moves and would have to offer swapping sides itself. (The last was
+lifted by the amendment below: a ruleset may declare the rule and bring the swap itself.)
 
 **Which games offer it.** Where it would work means two seats, the generic engine, no chance, no
 direction of play, and a start that is symmetric between the colours:
@@ -73,3 +74,16 @@ only when its box differs from the game's default, which is what keeps `hex-11` 
 * The versions of the ten games that changed went up a minor step; the engine's did too, as the
   DSL grew an attribute.
 * A game created before this change is untouched: `hex-11` still means Hex with the swap.
+
+## Amendment (2026-10-29): a ruleset may declare it
+
+The refusal of a Go ruleset is lifted. The setup option and the derived games were always the
+catalog's, not the engine's, and they work the same for a ruleset; only the swap *action* could
+not be given, because a ruleset builds its own moves. So `pie_rule` now does for a ruleset what
+it can — the check box and `<id>~pie` / `<id>~nopie` — and the ruleset offers the swap in its own
+`Legal`/`Apply` when `PieRuleOn` holds, in whatever shape fits the game.
+
+Blooms is the first: `"pie_rule": "optional"`, and `swap` as the second player's first reply,
+recolouring red↔blue and yellow↔black where the stones stand so the opening stone changes hands
+and the first player replies. (Blooms' two-colours-a-side is why the swap is the game's own: the
+generic action recolours between exactly two colours.)

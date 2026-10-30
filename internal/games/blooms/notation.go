@@ -10,12 +10,13 @@ import (
 )
 
 // Notation: a stone is its colour, an @ and the cell (red@d4); a second stone
-// of the same turn is written the same way; done ends the turn after one stone.
+// of the same turn is written the same way; done ends the turn after one
+// stone; swap is the pie rule, the second player's possible first reply.
 
 // Format renders mv.
 func (rs *Ruleset) Format(game *catalog.CompiledGame, mv state.Move) string {
-	if mv.Action == actDone {
-		return actDone
+	if mv.Action == actDone || mv.Action == actSwap {
+		return mv.Action
 	}
 	return fmt.Sprintf("%s@%s", mv.Piece, mv.To)
 }
@@ -23,12 +24,12 @@ func (rs *Ruleset) Format(game *catalog.CompiledGame, mv state.Move) string {
 // Parse reads notation produced by Format (case-insensitively).
 func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Move, error) {
 	t := strings.ToLower(strings.TrimSpace(text))
-	if t == actDone {
-		return state.Move{Action: actDone}, nil
+	if t == actDone || t == actSwap {
+		return state.Move{Action: t}, nil
 	}
 	i := strings.IndexByte(t, '@')
 	if i < 0 {
-		return state.Move{}, fmt.Errorf("blooms: cannot read %q as a move (expected red@d4 or done)", text)
+		return state.Move{}, fmt.Errorf("blooms: cannot read %q as a move (expected red@d4, done or swap)", text)
 	}
 	color, cell := t[:i], board.PositionID(t[i+1:])
 	if ownerOf(color) == 0 {
@@ -40,10 +41,10 @@ func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Move, e
 	return state.Move{Action: actPlace, Piece: color, To: cell}, nil
 }
 
-// Steps: the stone's colour, then the cell; done is an action.
+// Steps: the stone's colour, then the cell; done and swap are an action.
 func (rs *Ruleset) Steps(game *catalog.CompiledGame, mv state.Move) []state.Step {
-	if mv.Action == actDone {
-		return []state.Step{{Kind: state.StepAction, Value: actDone}}
+	if mv.Action == actDone || mv.Action == actSwap {
+		return []state.Step{{Kind: state.StepAction, Value: mv.Action}}
 	}
 	return []state.Step{{Kind: state.StepPiece, Value: mv.Piece}, {Kind: state.StepPos, Value: string(mv.To)}}
 }
@@ -64,5 +65,9 @@ func (rs *Ruleset) Describe(game *catalog.CompiledGame) state.RulesetInfo {
 		}
 	}
 	info.Actions = []state.RulesetAction{{ID: actDone, Label: "End turn", Hint: "Place no second stone: end the turn and capture any fenced enemy blooms."}}
+	if catalog.PieRuleOn(game.Definition) {
+		info.NotationHelp = append(info.NotationHelp, "swap (the second player's first reply, with the pie rule): take the first player's side.")
+		info.Actions = append(info.Actions, state.RulesetAction{ID: actSwap, Label: "Swap sides", Hint: "The pie rule: take over the opening side — the placed stone changes hands and the first player answers it."})
+	}
 	return info
 }

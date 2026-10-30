@@ -14,7 +14,9 @@ version, designers[], publisher   the implementation's semver (raise it with eve
 family, variants[]            group sibling games / derive them from this document
 options[]                     setup choices a creator makes (bool, seat-choice, book-swap)
 pie_rule                      standard | optional: the game can be played with the pie rule, and
-                              the creator chooses (the catalog brings the swap action and the box)
+                              the creator chooses (the catalog brings the box, and the swap
+                              action for a game on the generic engine — a ruleset offers the
+                              swap in its own moves, as Blooms does)
 board                         required: generator or explicit graph, regions, style
                               (a "hexhex" board takes size2 as well: four long sides and two
                               short ones, a hexagon with no middle cell — Meridians)
@@ -187,16 +189,20 @@ sides* button.
 Games do not usually declare the action themselves: **`pie_rule`** does it
 (ADR 0056). `"pie_rule": "standard"` is a game normally played with the rule
 (Hex, Gomoku) and `"optional"` one that only offers it; either way the catalog
-adds the `swap` action when the rule is in play and a `bool` setup option,
-`pie-rule`, for the creator — whose check box starts at the game's own practice.
-A table that chooses otherwise plays a **derived game**, `<id>~pie` or
-`<id>~nopie` (the built-in `pieDeriver`, so a JSON game needs no Go code);
-choosing what the game does anyway keeps the plain id. The two settled values,
-`"on"` and `"off"`, are what those derived documents carry. A declaration is
-refused where the rule cannot work: a game of other than two seats, a seat with
-a `forward` direction (recolouring in place would leave its pieces facing the
-wrong way), a game that declares a `swap` action of its own, or a Go ruleset —
-which builds its own moves and would have to offer swapping sides itself.
+adds a `bool` setup option, `pie-rule`, for the creator — whose check box
+starts at the game's own practice — and, for a game on the generic engine, the
+`swap` action when the rule is in play. A table that chooses otherwise plays a
+**derived game**, `<id>~pie` or `<id>~nopie` (the built-in `pieDeriver`, so a
+JSON game needs no Go code); choosing what the game does anyway keeps the
+plain id. The two settled values, `"on"` and `"off"`, are what those derived
+documents carry, and `catalog.PieRuleOn` reads them. A declaration is refused
+where the rule cannot work: a game of other than two seats, a seat with a
+`forward` direction (recolouring in place would leave its pieces facing the
+wrong way), or a game that declares a `swap` action of its own. A Go ruleset
+may declare it too: the option and the derived games are the catalog's, but
+the swap move is the ruleset's own — offered and applied in its `Legal` and
+`Apply` when `PieRuleOn` holds (Blooms does: `swap` as the second player's
+first reply).
 
 ### slide (and compound moves)
 
