@@ -176,28 +176,13 @@ func (c *rctx) validate(act catalog.ResolvedAction, mv Move) (executor, error) {
 		if !act.SwapPlies[c.st.ply] {
 			return nil, fmt.Errorf("state: swapping sides is not allowed at this point of the game")
 		}
-		colors := c.game.Colors()
-		if len(colors) != 2 {
-			return nil, fmt.Errorf("state: swap needs exactly two colours")
-		}
-		a, b := colors[0], colors[1]
-		return func(ns *BoardState) []board.PositionID {
-			for id, stack := range ns.cells {
-				for i, o := range stack {
-					switch o.Color {
-					case a:
-						stack[i].Color = b
-					case b:
-						stack[i].Color = a
-					}
-				}
-				ns.cells[id] = stack
-			}
-			// The reserves change hands too.
-			ra, rb := ns.reserves[a], ns.reserves[b]
-			ns.reserves[a], ns.reserves[b] = rb, ra
-			return nil
-		}, nil
+		// The pie rule: the players change seats, so the pieces stay exactly
+		// where and what they are — the opening move now belongs to the player
+		// who was second. The board does not change; the turn does not advance
+		// either (see Apply): the mover's seat is to move again, held from now
+		// on by the player who opened. The session layer exchanges the seats'
+		// occupants when it records the move.
+		return func(ns *BoardState) []board.PositionID { return nil }, nil
 	case catalog.ActionPass:
 		if mv.Piece != "" || mv.From != "" || mv.To != "" || mv.Count != 0 || len(mv.Path) > 0 || len(mv.Drops) > 0 {
 			return nil, fmt.Errorf("state: a pass takes no parameters")
@@ -317,6 +302,11 @@ func Apply(game *catalog.CompiledGame, st *BoardState, seat int, mv Move) (*Move
 	nextSeat, err := nextTurnSeat(game, seat)
 	if err != nil {
 		return nil, err
+	}
+	if act.Type == catalog.ActionSwap {
+		// The pie rule: the players change seats, so the turn stays with the
+		// mover's seat — the player who opened holds it now and replies.
+		nextSeat = seat
 	}
 	if game.Definition.TurnOrder.PassWhenStuck {
 		nextSeat = skipStuckSeats(game, newState, nextSeat)

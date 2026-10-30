@@ -18,7 +18,7 @@ Be the first to make an **unbroken row of five (or more) stones** of your own co
 
 ### The swap
 
-Moving first is a big advantage. To balance it, White has one special option on their first turn: instead of placing a stone, White may **swap** sides. Black's stone then becomes White's, and Black moves next. A first move that is too strong gets swapped, so Black is encouraged to choose a modest one.
+Moving first is a big advantage. To balance it, White has one special option on their first turn: instead of placing a stone, White may **swap** sides. The players change seats — the stone stays exactly where and what it is — and Black moves next, answering their own opening from White's side. A first move that is too strong gets swapped, so Black is encouraged to choose a modest one.
 
 This is the **pie rule**, and Gomoku is played with it here unless the table unticks *Pie rule* when the game is made.
 

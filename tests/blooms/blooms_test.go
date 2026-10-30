@@ -237,6 +237,137 @@ func TestReachingTheTargetWins(t *testing.T) {
 	}
 }
 
+// The pie rule is a choice the table makes when the game is set up
+// (pie_rule: "optional"): the plain game never offers the swap, and a table
+// that asks plays a game of its own, blooms~pie, in which the second player
+// may take the opening side.
+func TestPieRuleIsASetupChoice(t *testing.T) {
+	cat := catalog.NewCatalog()
+	if err := cat.RegisterModule(blooms.Module()); err != nil {
+		t.Fatal(err)
+	}
+	id, err := cat.Derive("blooms", map[string]any{"pie-rule": true})
+	if err != nil || id != "blooms~pie" {
+		t.Fatalf("derive: %q, %v", id, err)
+	}
+	if _, ok := cat.Get("blooms~pie"); !ok {
+		t.Fatal("blooms~pie is not in the catalog")
+	}
+	// A variant inherits the choice.
+	if id, err := cat.Derive("blooms-4", map[string]any{"pie-rule": true}); err != nil || id != "blooms-4~pie" {
+		t.Errorf("derive blooms-4: %q, %v", id, err)
+	}
+
+	// The plain game has no swap to offer or to accept.
+	g, _ := cat.Get("blooms")
+	rs := blooms.New()
+	st, _ := rs.Start(g, 0)
+	st, _ = play(t, g, st, 1, "red@"+string(centre(g)))
+	for _, mv := range rs.Legal(g, st, 2) {
+		if mv.Action == "swap" {
+			t.Error("the plain game offers the swap")
+		}
+	}
+	if _, err := rs.Apply(g, st, 2, state.Move{Action: "swap"}); err == nil {
+		t.Error("the plain game accepted a swap")
+	}
+}
+
+// With the pie rule the second player may answer the opening stone by taking
+// it: the stone stays exactly where and what it is (the players change seats,
+// which the session layer records), the turn stays with the second player's
+// seat — the opener holds it now — and the swap is spent.
+func TestPieRuleTheSecondPlayerMayTakeTheOpeningSide(t *testing.T) {
+	cat := catalog.NewCatalog()
+	if err := cat.RegisterModule(blooms.Module()); err != nil {
+		t.Fatal(err)
+	}
+	g, ok := cat.Get("blooms~pie")
+	if !ok {
+		t.Fatal("blooms~pie is not in the catalog")
+	}
+	rs := blooms.New()
+
+	for _, first := range []string{"red", "yellow"} {
+		st, _ := rs.Start(g, 0)
+		c := centre(g)
+		st, res := play(t, g, st, 1, first+"@"+string(c))
+		if res.NextTurnSeat != 2 {
+			t.Fatalf("%s: next %d, want 2", first, res.NextTurnSeat)
+		}
+		hasSwap := false
+		for _, mv := range rs.Legal(g, st, 2) {
+			hasSwap = hasSwap || mv.Action == "swap"
+		}
+		if !hasSwap {
+			t.Fatalf("%s: the second player's first reply has no swap", first)
+		}
+		st, res = play(t, g, st, 2, "swap")
+		if res.Notation != "swap" {
+			t.Errorf("%s: notation %q, want swap", first, res.Notation)
+		}
+		occ, ok := st.Get(c)
+		if !ok || occ.Color != first || occ.Piece != first {
+			t.Errorf("%s: the opening stone is %v, want it unchanged (%s)", first, occ, first)
+		}
+		if res.NextTurnSeat != 2 || rs.ToMove(g, st) != 2 {
+			t.Errorf("%s: the turn stays with the second player's seat (next %d)", first, res.NextTurnSeat)
+		}
+		if !data(st).Swapped {
+			t.Errorf("%s: the swap is not marked spent", first)
+		}
+		if err := state.Validate(g, st); err != nil {
+			t.Errorf("%s: %v", first, err)
+		}
+		// The swap is spent, for either seat, now and later.
+		for _, mv := range rs.Legal(g, st, 2) {
+			if mv.Action == "swap" {
+				t.Errorf("%s: the swap is still on offer after it was taken", first)
+			}
+		}
+		// The reply is an ordinary turn: one stone, then a second or done.
+		nb := neighbours(g, c)
+		st, res = play(t, g, st, 2, "blue@"+string(nb[0]))
+		if res.NextTurnSeat != 2 {
+			t.Errorf("%s: the reply after a swap is a one-or-two-stone turn (next %d)", first, res.NextTurnSeat)
+		}
+		st, res = play(t, g, st, 2, "done")
+		if res.NextTurnSeat != 1 {
+			t.Fatalf("%s: next %d, want 1", first, res.NextTurnSeat)
+		}
+		for _, mv := range rs.Legal(g, st, 2) {
+			if mv.Action == "swap" {
+				t.Errorf("%s: the swap is still on offer a turn later", first)
+			}
+		}
+	}
+}
+
+// Once the second player has started placing, the swap is off the table.
+func TestPieRuleOnlyBeforeTheFirstReply(t *testing.T) {
+	cat := catalog.NewCatalog()
+	if err := cat.RegisterModule(blooms.Module()); err != nil {
+		t.Fatal(err)
+	}
+	g, _ := cat.Get("blooms~pie")
+	rs := blooms.New()
+	st, _ := rs.Start(g, 0)
+	c := centre(g)
+	st, _ = play(t, g, st, 1, "red@"+string(c))
+	st, res := play(t, g, st, 2, "blue@"+string(neighbours(g, c)[0]))
+	if res.NextTurnSeat != 2 {
+		t.Fatalf("the second stone of the reply is the second player's: next %d", res.NextTurnSeat)
+	}
+	for _, mv := range rs.Legal(g, st, 2) {
+		if mv.Action == "swap" {
+			t.Error("the swap is on offer after the reply has begun")
+		}
+	}
+	if _, err := rs.Apply(g, st, 2, state.Move{Action: "swap"}); err == nil {
+		t.Error("a swap was accepted after the reply had begun")
+	}
+}
+
 func TestRandomGamesAreValidAndEnd(t *testing.T) {
 	for _, id := range []string{"blooms-4", "blooms"} {
 		g := gameFor(t, id)

@@ -107,8 +107,9 @@ type GameDefinition struct {
 	// with it unless the table turns it off), "optional" (played without it
 	// unless the table asks for it), "on" or "off" (settled: a game derived
 	// from one of the two above), or absent (the game has no pie rule).
-	// The catalog brings the swap action and the setup option with it; see
-	// catalog.applyPieRule and ADR 0056.
+	// The catalog brings the setup option with it, and the swap action for a
+	// game on the generic engine; a ruleset game offers the swap in its own
+	// moves. See catalog.applyPieRule and ADR 0056.
 	PieRule string `json:"pie_rule,omitempty"`
 
 	// Options lists the setup choices the game offers its creator (which

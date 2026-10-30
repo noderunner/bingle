@@ -4,6 +4,24 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.20.0 - 2026-10-29
+
+### Bingle Core 0.20.0
+- **The pie rule now moves the players, not the pieces.** When the second player swaps sides,
+  nothing on the board moves or changes colour: the two of you change seats, the opening move is
+  the second player's now, and the first player answers it from the other seat. Taking the swap
+  back puts everyone in their first seats again.
+- **Games whose rules are written in Go can offer the pie rule now.** The tick box in the setup,
+  and the game that remembers the choice, used to be only for the games described in plain data.
+
+### Blooms 0.2.0
+- **The pie rule, for tables that want it.** Tick *Pie rule* when you make the game and the second
+  player may swap seats instead of answering the opening stone. Unticked, the game is exactly the
+  one it was.
+
+### Amazons 0.3.0, Ataxx 0.3.0, Connect Four 0.3.0, Go 0.3.0, Gomoku 0.3.0, Havannah 0.3.0, Hex 0.3.0, Pente 0.3.0, Reversi 0.3.0, Yavalath 0.3.0
+- The pie-rule swap changes seats, not colours; the rules pages say so.
+
 ## 0.19.0 - 2026-10-29
 
 ### Bingle Core 0.19.0

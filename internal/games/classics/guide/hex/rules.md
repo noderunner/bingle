@@ -19,7 +19,7 @@ The corner hexagons belong to both neighbouring sides. Each hexagon touches six 
 
 ### The swap
 
-The first player has a big advantage, so the second player may **swap** on their first turn. Instead of placing a stone, Blue takes over the first stone: it changes colour to Blue's and Red moves next. To make this fair, Red should open with a move that is neither too strong nor too weak.
+The first player has a big advantage, so the second player may **swap** on their first turn. Instead of placing a stone, Blue takes over Red's side: the players change seats — the first stone stays exactly where and what it is — and Red moves next, answering their own opening from Blue's side. To make this fair, Red should open with a move that is neither too strong nor too weak.
 
 This is the **pie rule**, and Hex is played with it here unless the table unticks *Pie rule* when the game is made.
 

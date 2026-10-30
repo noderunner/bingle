@@ -166,9 +166,8 @@ func TestPieRuleIsRefusedWhereItCannotWork(t *testing.T) {
 	for name, tc := range map[string]struct{ def, says string }{
 		"an unknown value":    {pieDefJSON("sometimes", ""), "optional, standard, on or off"},
 		"a swap of its own":   {instead(actionsLine, `"actions": [ { "id": "place", "type": "place", "pieces": ["stone"], "source": "supply" }, { "id": "swap", "type": "swap" } ],`), "brings the action itself"},
-		"a direction of play": {instead(seatsLine, `"seats": [ { "seat": 1, "color": "black", "forward": "N" }, { "seat": 2, "color": "white", "forward": "S" } ],`), "facing the wrong way"},
+		"a direction of play": {instead(seatsLine, `"seats": [ { "seat": 1, "color": "black", "forward": "N" }, { "seat": 2, "color": "white", "forward": "S" } ],`), "sides play alike"},
 		"three seats":         {instead(seatsLine, `"seats": [ { "seat": 1, "color": "black" }, { "seat": 2, "color": "white" }, { "seat": 3, "color": "red" } ],`), "the pie rule is for two"},
-		"a ruleset":           {pieDefJSON(catalog.PieStandard, `"engine": "ruleset",`), "has to offer swapping sides itself"},
 	} {
 		cat := catalog.NewCatalog()
 		err := cat.RegisterModule(catalog.Module{ID: "pietest", Definition: []byte(tc.def)})
@@ -182,6 +181,40 @@ func TestPieRuleIsRefusedWhereItCannotWork(t *testing.T) {
 		if _, ok := cat.Get("pietest"); ok {
 			t.Errorf("%s left the game in the catalog", name)
 		}
+	}
+}
+
+// A ruleset game may declare the pie rule too (Blooms does): the catalog
+// brings the choice and the derived games, but not the swap action — a ruleset
+// builds its own moves, and offering the swap is its own work.
+func TestPieRuleARulesetBringsItsOwnSwap(t *testing.T) {
+	cat := catalog.NewCatalog()
+	// Registration only asks that a ruleset is there; what it is plays no part
+	// in what the catalog brings.
+	err := cat.RegisterModule(catalog.Module{ID: "pietest", Definition: []byte(pieDefJSON(catalog.PieOptional, `"engine": "ruleset",`)), Rules: true})
+	if err != nil {
+		t.Fatalf("a ruleset declaring the pie rule was refused: %v", err)
+	}
+	cg, _ := cat.Get("pietest")
+	if hasSwap(cg) {
+		t.Error("the catalog gave a ruleset game the generic swap action")
+	}
+	if opt := pieOption(cg); opt == nil || opt.Default == true {
+		t.Errorf("the option is %+v, want a check box that starts off", opt)
+	}
+	id, err := cat.Derive("pietest", map[string]any{catalog.PieOption: true})
+	if err != nil || id != "pietest~pie" {
+		t.Fatalf("derive: %q, %v", id, err)
+	}
+	cg, ok := cat.Get(id)
+	if !ok || !catalog.PieRuleOn(cg.Definition) {
+		t.Fatalf("%s is not a game played with the pie rule (ok=%v)", id, ok)
+	}
+	if hasSwap(cg) {
+		t.Error("the derived ruleset game has the generic swap action")
+	}
+	if opt := pieOption(cg); opt != nil {
+		t.Errorf("%s still offers the choice", id)
 	}
 }
 

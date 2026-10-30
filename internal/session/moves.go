@@ -249,6 +249,11 @@ func (m *Manager) applyAndRecordAs(ctx context.Context, compiled *catalog.Compil
 		capturedStr = &v
 	}
 
+	// The pie rule (ADR 0056): a swap leaves the board untouched and changes
+	// who sits in which seat — recorded with the move, so the two can never
+	// disagree.
+	pieSwap := isPieSwap(compiled, result.Move)
+
 	// The clock of the seat to move has been running since the game row was
 	// last touched (its updated_at, which every turn change bumps): charge it
 	// in the transaction that records the move, so the two cannot disagree.
@@ -257,6 +262,10 @@ func (m *Manager) applyAndRecordAs(ctx context.Context, compiled *catalog.Compil
 	if charged != nil {
 		if started, ok := parseTimestamp(game.UpdatedAt); ok {
 			charged.charge(player.Seat, m.now().Sub(charged.startedAt(started)))
+		}
+		if pieSwap {
+			// Each player's time moves with them to the other seat.
+			charged.swapSeats()
 		}
 		charged.start(m.now())
 		stored, err := charged.marshal()
@@ -284,6 +293,7 @@ func (m *Manager) applyAndRecordAs(ctx context.Context, compiled *catalog.Compil
 		AutoPlay:            autoPlay,
 		Locked:              locked,
 		Clock:               clockJSON,
+		SwapSeats:           pieSwap,
 	})
 	if err != nil {
 		m.mx.Move(family, metrics.MoveFailed, applyTook)
@@ -362,6 +372,12 @@ func (m *Manager) applyAndRecordAs(ctx context.Context, compiled *catalog.Compil
 	}})
 	publishSpan.End()
 
+	if pieSwap {
+		// The seats changed hands: a state event makes every client re-read
+		// who sits where (and which seat is theirs).
+		m.publishState(ctx, game.RoomCode, "swap")
+	}
+
 	m.mx.Move(family, metrics.MoveApplied, applyTook)
 	if result.GameEnded {
 		m.mx.Finished(family, result.EndReason)
@@ -400,6 +416,38 @@ func (m *Manager) applyAndRecordAs(ctx context.Context, compiled *catalog.Compil
 		AutoPlay:     autoPlay,
 		Locked:       locked,
 	}, nil
+}
+
+// isPieSwap reports whether mv is the pie-rule swap of a game played with the
+// rule. Then the move is also a change of who sits in which seat: the board
+// is untouched, the turn stays with the mover's seat (the engine gives it
+// back), and the seats' occupants exchange.
+func isPieSwap(compiled *catalog.CompiledGame, mv state.Move) bool {
+	return catalog.PieRuleOn(compiled.Definition) && mv.Action == catalog.ActionSwap
+}
+
+// swapSeqOf is the seq of the game's pie-rule swap, 0 when the game has none.
+// The seats' occupants exchange at the swap, so a move at or before it was
+// made by whoever now holds the other seat.
+func swapSeqOf(compiled *catalog.CompiledGame, moves []store.Move) int {
+	if !catalog.PieRuleOn(compiled.Definition) {
+		return 0
+	}
+	for _, mv := range moves {
+		if mv.Notation == string(catalog.ActionSwap) {
+			return mv.Seq
+		}
+	}
+	return 0
+}
+
+// moverSeatNow is the seat whose present occupant made mv: the seat that made
+// it, or the other one when mv is the pie-rule swap or predates it.
+func moverSeatNow(mv store.Move, swapSeq int) int {
+	if swapSeq > 0 && mv.Seq <= swapSeq {
+		return 3 - mv.Seat
+	}
+	return mv.Seat
 }
 
 // publishState broadcasts the room's current state to every subscriber as a

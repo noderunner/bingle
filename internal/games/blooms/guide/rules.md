@@ -20,6 +20,15 @@ A **bloom** is a connected group of stones of one colour (a single stone is a bl
 - Player 1 starts the game with **one** stone of either of their colours.
 - After that, on your turn you place **one or two stones** on empty cells. If you place two they must be of **different colours** (one of each of your colours). You may place just one if you like.
 
+### The pie rule
+
+The player who moves first has an advantage, so a table may play with the **pie rule** (tick
+*Pie rule* when the game is made). Instead of answering the opening stone, the second player
+may **swap sides**: the players change seats — the stone stays exactly where and what it is —
+and the first player moves again, answering their own opening from the other side. It is
+then in the first player's interest to open with a stone that is neither too strong nor too weak.
+The move is `swap`.
+
 ## Capturing
 
 ![Not fenced, and fenced|520](blooms-fence.svg)
@@ -38,4 +47,4 @@ The first player to reach the target number of captured stones **wins**. If the 
 
 ## Move notation
 
-A stone is its colour, `@` and a cell: `red@d4`. Player 1 has red and yellow, player 2 blue and black. A turn is one stone or two stones of different colours (the second is a separate move); `done` ends the turn after one.
+A stone is its colour, `@` and a cell: `red@d4`. Player 1 has red and yellow, player 2 blue and black. A turn is one stone or two stones of different colours (the second is a separate move); `done` ends the turn after one. With the pie rule, `swap` is the second player's possible first reply.

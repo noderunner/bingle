@@ -11,11 +11,15 @@ import (
 // advantage of moving first, and whether a table plays with it is a choice of
 // the people playing, not a property of the game — so a definition says that
 // the game *can* be played with it (`pie_rule`) and the creator of a game
-// decides. The engine already has the move (the "swap" action, which recolours
-// every piece and gives the turn back to the first player), so a game that
-// declares the pie rule needs nothing else: this file brings the action, the
-// setup option clients draw, and the Deriver that turns the choice into a game
-// of its own (see ADR 0056 and ADR 0028).
+// decides. What this file brings is the setup option clients draw and the
+// Deriver that turns the choice into a game of its own (see ADR 0056 and ADR
+// 0028). The move itself changes who sits where, not what is on the board: the
+// engine's "swap" action leaves every piece as it is and keeps the turn with
+// the mover's seat, and the session layer exchanges the seats' occupants. A
+// game on the generic engine declares the rule and needs nothing else; a
+// ruleset builds its own moves, so it offers the swap itself when the rule is
+// in play (Blooms does), and the option and the derived games are all it gets
+// from here.
 
 // The values of dsl.GameDefinition.PieRule.
 const (
@@ -43,9 +47,11 @@ func PieRuleOn(def *dsl.GameDefinition) bool {
 }
 
 // applyPieRule checks a definition's pie_rule and expands it before the rules
-// are compiled: the swap action when the game is played with the rule, and the
-// setup option when its creator may still choose. A game that declares no pie
-// rule is left alone.
+// are compiled: the swap action when the generic engine plays the game with
+// the rule, and the setup option when its creator may still choose. A ruleset
+// game gets the option and the derived games but no action — its moves are its
+// own, and offering the swap when the rule is in play is its own work. A game
+// that declares no pie rule is left alone.
 func applyPieRule(id string, def *dsl.GameDefinition) error {
 	switch def.PieRule {
 	case "":
@@ -54,19 +60,15 @@ func applyPieRule(id string, def *dsl.GameDefinition) error {
 	default:
 		return fmt.Errorf("catalog: game %q has pie_rule %q (optional, standard, on or off)", id, def.PieRule)
 	}
-	// The pie rule is the engine's swap action, which only the generic engine
-	// plays; a ruleset builds its own moves and would have to offer it itself.
-	if def.Engine == "ruleset" {
-		return fmt.Errorf("catalog: game %q declares pie_rule, which the generic engine's swap action implements: a ruleset game has to offer swapping sides itself", id)
-	}
 	if len(def.Seats) != 2 {
 		return fmt.Errorf("catalog: game %q declares pie_rule but seats %d players (the pie rule is for two)", id, len(def.Seats))
 	}
-	// Swapping recolours the pieces where they stand, so a game in which a
-	// seat has a direction of play would come out backwards.
+	// A game whose seats have a direction of play is left out: the rule was
+	// weighed only for games whose two sides play alike (ADR 0056), and the
+	// check keeps the offer from appearing where it was never considered.
 	for _, s := range def.Seats {
 		if s.Forward != "" {
-			return fmt.Errorf("catalog: game %q declares pie_rule but seat %d plays towards %q: swapping sides would leave its pieces facing the wrong way", id, s.Seat, s.Forward)
+			return fmt.Errorf("catalog: game %q declares pie_rule but seat %d plays towards %q: the pie rule is for games whose sides play alike", id, s.Seat, s.Forward)
 		}
 	}
 	for _, a := range def.Actions {
@@ -74,7 +76,9 @@ func applyPieRule(id string, def *dsl.GameDefinition) error {
 			return fmt.Errorf("catalog: game %q declares pie_rule and the swap action %q: the pie rule brings the action itself", id, a.ID)
 		}
 	}
-	if PieRuleOn(def) {
+	// The swap action is the generic engine's; a ruleset builds its own moves
+	// and offers the swap itself when the rule is in play.
+	if def.Engine != "ruleset" && PieRuleOn(def) {
 		def.Actions = append(def.Actions, dsl.ActionDef{ID: ActionSwap, Type: ActionSwap, Label: "Swap sides"})
 	}
 	if pieChoice(def.PieRule) {

@@ -72,9 +72,12 @@ func (m *Manager) Takeback(ctx context.Context, roomCode, name, action string) (
 		if err != nil {
 			return StateSnapshot{}, err
 		}
+		// A pie-rule swap exchanged the seats' occupants: a move at or before
+		// it belongs to whoever now holds the other seat.
+		swapSeq := swapSeqOf(compiled, moves)
 		idx := -1
 		for i := len(moves) - 1; i >= 0; i-- {
-			if moves[i].Seat == player.Seat {
+			if moverSeatNow(moves[i], swapSeq) == player.Seat {
 				idx = i
 				break
 			}
@@ -147,7 +150,14 @@ func (m *Manager) Takeback(ctx context.Context, roomCode, name, action string) (
 		} else {
 			doc = moves[keepSeq-1].ResultingState
 		}
-		if err := m.store.UndoToSeq(ctx, game.ID, keepSeq, doc, *asked); err != nil {
+		// Taking back across the swap puts the players back in their first
+		// seats: the requester moves from the seat they held then.
+		undoSwap := swapSeqOf(compiled, moves) > keepSeq
+		turnSeat := *asked
+		if undoSwap {
+			turnSeat = 3 - turnSeat
+		}
+		if err := m.store.UndoToSeq(ctx, game.ID, keepSeq, doc, turnSeat, undoSwap); err != nil {
 			return StateSnapshot{}, err
 		}
 		removed := make([]int, 0, len(moves)-keepSeq)
