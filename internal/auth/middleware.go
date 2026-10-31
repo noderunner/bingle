@@ -44,6 +44,7 @@ type Guests interface {
 type Resolver struct {
 	guests    Guests
 	accounts  *Accounts
+	oidc      *OIDC
 	transport transport.Policy
 	idle      time.Duration
 	log       *slog.Logger
@@ -67,6 +68,8 @@ type Options struct {
 	// Accounts, when set, signs people in: the session cookie is read before
 	// any guest key.
 	Accounts *Accounts
+	// OIDC are the sign-in providers (nil for none).
+	OIDC *OIDC
 }
 
 // DefaultIdle is BINGLE_GUEST_IDLE's default.
@@ -88,7 +91,7 @@ func NewResolver(g Guests, o Options) *Resolver {
 	if o.Log == nil {
 		o.Log = slog.Default()
 	}
-	return &Resolver{guests: g, accounts: o.Accounts, transport: o.Transport, idle: o.Idle, log: o.Log, now: time.Now, made: windowLimiter{per: o.NewGuestsPerHour, window: time.Hour}}
+	return &Resolver{guests: g, accounts: o.Accounts, oidc: o.OIDC, transport: o.Transport, idle: o.Idle, log: o.Log, now: time.Now, made: windowLimiter{per: o.NewGuestsPerHour, window: time.Hour}}
 }
 
 // SetClock replaces the resolver's clock (tests).

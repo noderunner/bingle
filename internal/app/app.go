@@ -191,7 +191,8 @@ func New(cfg config.Config, opts ...Option) (*App, error) {
 	a.changelog = cfg.Changelog
 	a.rtc = api.RTCConfig{Stun: cfg.RTCStun, TurnURLs: cfg.RTCTurnURLs, TurnSecret: cfg.RTCTurnSecret}
 	a.accounts = auth.NewAccounts(st, auth.AccountOptions{Mailer: manager, Log: a.log, Signup: cfg.Signup, SessionIdle: cfg.SessionIdle, SessionMax: cfg.SessionMax, Argon2: a.argon2})
-	a.guests = auth.NewResolver(st, auth.Options{Transport: a.transport, Idle: cfg.GuestIdle, Log: a.log, Accounts: a.accounts})
+	a.guests = auth.NewResolver(st, auth.Options{Transport: a.transport, Idle: cfg.GuestIdle, Log: a.log, Accounts: a.accounts,
+		OIDC: auth.NewOIDC(cfg.PublicURL, cfg.OIDC)})
 
 	if err := enableNotify(manager, cfg, a.log); err != nil {
 		_ = st.Close()

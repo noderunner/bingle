@@ -18,6 +18,31 @@ function returnTo() {
 	return to.startsWith("/") && !to.startsWith("//") ? to : "/";
 }
 
+const params = new URLSearchParams(location.search);
+
+// providerButtons fills host with a "Sign in with …" link per provider.
+function providerButtons(host, providers, verb) {
+	if (!host || !providers || !providers.length) return;
+	for (const p of providers) {
+		const a = document.createElement("a");
+		a.className = "button ghost";
+		a.id = `oidc-${p.id}`;
+		a.href = `/auth/oidc/${encodeURIComponent(p.id)}/start?return=${encodeURIComponent(returnTo())}`;
+		a.textContent = `${verb} with ${p.label}`;
+		host.append(a);
+	}
+	host.hidden = false;
+}
+
+function showError(id) {
+	const el = document.getElementById(id);
+	const msg = params.get("error");
+	if (el && msg) {
+		el.textContent = msg.replace(/^auth: /, "");
+		el.hidden = false;
+	}
+}
+
 async function submit(form, button, run) {
 	form.addEventListener("submit", async (ev) => {
 		ev.preventDefault();
@@ -35,12 +60,19 @@ async function submit(form, button, run) {
 
 if (page === "login") {
 	const form = document.getElementById("login-form");
+	showError("login-error");
 	api.me()
 		.then((me) => {
 			document.getElementById("login-signup").hidden = !me.signup;
+			providerButtons(document.getElementById("oidc-buttons"), me.providers, "Sign in");
 		})
 		.catch(() => {});
 	const second = document.getElementById("second-form");
+	// A provider signed the person in; the code from the app is next.
+	if (params.get("second") === "1") {
+		form.hidden = true;
+		second.hidden = false;
+	}
 	const after = (me) => location.assign(me.must_change_password || me.needs_second_factor ? "/account" : returnTo());
 	submit(form, document.getElementById("login-go"), async () => {
 		const me = await api.login(document.getElementById("login-handle").value, document.getElementById("login-password").value);
@@ -74,6 +106,35 @@ if (page === "login") {
 	});
 } else if (page === "signup") {
 	const form = document.getElementById("signup-form");
+	const provider = params.get("provider");
+	api.me()
+		.then((me) => {
+			if (!provider) providerButtons(document.getElementById("signup-oidc-buttons"), me.providers, "Sign up");
+			const p = (me.providers || []).find((x) => x.id === provider);
+			if (p) document.getElementById("oidc-signup-who").textContent = `${p.label} vouched for your email address. Choose the handle others will see.`;
+		})
+		.catch(() => {});
+	if (provider) {
+		// A provider vouched for the person: only the handle is left.
+		form.hidden = true;
+		const of = document.getElementById("oidc-signup-form");
+		of.hidden = false;
+		of.addEventListener("submit", async (ev) => {
+			ev.preventDefault();
+			const go = document.getElementById("oidc-go");
+			const out = document.getElementById("oidc-result");
+			go.disabled = true;
+			try {
+				const res = await api.oidcFinish(document.getElementById("oidc-handle").value);
+				location.assign(res.return || "/");
+			} catch (err) {
+				out.className = "small error";
+				out.textContent = err instanceof ApiError ? err.message : "That did not work.";
+			} finally {
+				go.disabled = false;
+			}
+		});
+	}
 	submit(form, document.getElementById("signup-go"), async () => {
 		const res = await api.signup(document.getElementById("signup-handle").value, document.getElementById("signup-email").value, document.getElementById("signup-password").value);
 		say(res.status);
@@ -146,7 +207,46 @@ if (page === "login") {
 			: "Off: you sign in with your password alone.";
 		el("tf-off-actions").hidden = !!me.second_factor;
 		el("tf-on-actions").hidden = !me.second_factor;
+		// An account a provider made has no password yet: it sets one.
+		el("password-old-field").hidden = !me.password;
+		el("password-title").textContent = me.password ? "Change your password" : "Set a password";
+		showLinks(me);
 	};
+	const showLinks = (me) => {
+		const box = el("oidc-box");
+		const list = el("oidc-links");
+		if (!me.providers || !me.providers.length) return;
+		list.textContent = "";
+		for (const p of me.providers) {
+			const li = document.createElement("li");
+			const linked = (me.linked || []).includes(p.id);
+			li.append(`${p.label}: ${linked ? "you can sign in with it. " : "not linked. "}`);
+			if (linked) {
+				const b = document.createElement("button");
+				b.type = "button";
+				b.className = "ghost";
+				b.id = `oidc-unlink-${p.id}`;
+				b.textContent = "Unlink";
+				b.addEventListener("click", () =>
+					tf(b, async () => {
+						show(await api.oidcUnlink(p.id, el("tf-password").value));
+						tfSay(`${p.label} is unlinked.`);
+					})
+				);
+				li.append(b);
+			} else {
+				const a = document.createElement("a");
+				a.id = `oidc-link-${p.id}`;
+				a.href = `/auth/oidc/${encodeURIComponent(p.id)}/start?link=1&return=/account`;
+				a.textContent = `Link ${p.label}`;
+				li.append(a);
+			}
+			list.append(li);
+		}
+		box.hidden = false;
+	};
+	showError("oidc-error");
+	if (params.get("linked")) tfSay(`Linked: you can sign in with ${params.get("linked")} now.`);
 	// A request that may fail with a message for the two-step box.
 	const tf = async (button, run) => {
 		button.disabled = true;

@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -28,6 +30,10 @@ import (
 //	POST /auth/recovery {password}                  ten new recovery codes
 //	POST /auth/forgot   {who}                       mail a reset link
 //	POST /auth/reset    {token, password, code?}    a new password from the link
+//	GET  /auth/oidc/{p}/start?return=&link=1        off to a provider (ADR 0070)
+//	GET  /auth/oidc/{p}/callback                    and back
+//	POST /auth/oidc/finish {handle}                 a new account a provider vouched for
+//	POST /auth/oidc/unlink {provider, password}     stop signing in with one
 func (rs *Resolver) Routes() http.Handler {
 	r := chi.NewRouter()
 	r.Post("/signup", rs.handleSignup)
@@ -43,6 +49,10 @@ func (rs *Resolver) Routes() http.Handler {
 	r.Post("/recovery", rs.handleRecovery)
 	r.Post("/forgot", rs.handleForgot)
 	r.Post("/reset", rs.handleReset)
+	r.Get("/oidc/{provider}/start", rs.handleOIDCStart)
+	r.Get("/oidc/{provider}/callback", rs.handleOIDCCallback)
+	r.Post("/oidc/finish", rs.handleOIDCFinish)
+	r.Post("/oidc/unlink", rs.handleOIDCUnlink)
 	return r
 }
 
@@ -70,12 +80,15 @@ func statusOf(err error) int {
 		return http.StatusUnauthorized
 	case errors.Is(err, ErrSignupClosed), errors.Is(err, ErrSignupNoMail), errors.Is(err, ErrNotConfirmed), errors.Is(err, ErrMustChangePwd):
 		return http.StatusForbidden
-	case errors.Is(err, ErrHandleTaken):
+	case errors.Is(err, ErrHandleTaken), errors.Is(err, ErrLinkedElsewhere), errors.Is(err, ErrOIDCAddressUsed):
 		return http.StatusConflict
+	case errors.Is(err, ErrUnknownProvider):
+		return http.StatusNotFound
 	case errors.Is(err, ErrTooManyTries), errors.Is(err, ErrMailLater):
 		return http.StatusTooManyRequests
 	case errors.Is(err, ErrBadHandle), errors.Is(err, ErrReservedHandle), errors.Is(err, ErrWeakPassword), errors.Is(err, ErrBadLink),
-		errors.Is(err, ErrSamePassword), errors.Is(err, ErrNoSetup), errors.Is(err, ErrNoSecondFactor), mail.IsAddressError(err):
+		errors.Is(err, ErrSamePassword), errors.Is(err, ErrNoSetup), errors.Is(err, ErrNoSecondFactor), errors.Is(err, ErrOIDCUnverified),
+		errors.Is(err, ErrLastWayIn), errors.Is(err, ErrOIDCFailed), mail.IsAddressError(err):
 		return http.StatusBadRequest
 	}
 	return http.StatusInternalServerError
@@ -239,14 +252,26 @@ type me struct {
 	// whether a person can make one here.
 	Accounts bool `json:"accounts"`
 	Signup   bool `json:"signup"`
+	// Providers are the sign-in providers; Linked those the account signs
+	// in with, and Password whether it has one (a provider's account may
+	// not).
+	Providers []ProviderInfo `json:"providers,omitempty"`
+	Linked    []string       `json:"linked,omitempty"`
+	Password  bool           `json:"password,omitempty"`
 }
 
 func (rs *Resolver) meOf(r *http.Request, a store.Account) me {
 	out := me{Kind: store.KindAccount, Handle: a.Handle, DisplayName: a.DisplayName, MustChangePassword: a.MustChangePassword, Accounts: true,
 		SecondFactor: a.HasTOTP, NeedsSecondFactor: rs.needsSecondFactor(r, a)}
-	if a.HasTOTP && rs.accounts != nil {
-		out.RecoveryCodesLeft = rs.accounts.RecoveryCodesLeft(r.Context(), a)
+	if rs.accounts != nil {
+		if a.HasTOTP {
+			out.RecoveryCodesLeft = rs.accounts.RecoveryCodesLeft(r.Context(), a)
+		}
+		out.Linked = rs.accounts.Linked(r.Context(), a)
+		out.Password = rs.accounts.HasPassword(r.Context(), a)
 	}
+	out.Providers = rs.oidc.Providers()
+	out.Signup = rs.signupOpen()
 	return out
 }
 
@@ -268,7 +293,8 @@ func (rs *Resolver) handleMe(w http.ResponseWriter, r *http.Request) {
 	}
 	if rs.accounts != nil {
 		out.Accounts = true
-		out.Signup = rs.accounts.signup == SignupOpen && rs.accounts.mail != nil && rs.accounts.mail.MailEnabled()
+		out.Signup = rs.signupOpen()
+		out.Providers = rs.oidc.Providers()
 	}
 	writeJSON(w, http.StatusOK, out)
 }
@@ -424,4 +450,155 @@ func (rs *Resolver) handleReset(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]string{"status": "Your password is changed. Sign in with it."})
+}
+
+// signupOpen: a person can make an account here, with a password (which
+// needs mail) or with a provider (which vouches for the address itself).
+func (rs *Resolver) signupOpen() bool {
+	a := rs.accounts
+	return a != nil && a.signup == SignupOpen && (a.mail != nil && a.mail.MailEnabled() || rs.oidc != nil)
+}
+
+// The cookies of a provider sign-in: the state the callback must bring
+// back, and the identity waiting for a handle.
+const (
+	oidcCookie    = "bingle_oidc"
+	oidcNewCookie = "bingle_oidc_new"
+)
+
+// safeReturn is a path on this server to go back to, never an absolute URL.
+func safeReturn(to, fallback string) string {
+	if strings.HasPrefix(to, "/") && !strings.HasPrefix(to, "//") && !strings.HasPrefix(to, "/\\") {
+		return to
+	}
+	return fallback
+}
+
+// toPage sends the browser to a page with a message for it.
+func toPage(w http.ResponseWriter, r *http.Request, page, key, msg string) {
+	http.Redirect(w, r, page+"?"+url.Values{key: {msg}}.Encode(), http.StatusSeeOther)
+}
+
+func (rs *Resolver) handleOIDCStart(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "provider")
+	if rs.oidc == nil || rs.accounts == nil {
+		toPage(w, r, "/login", "error", ErrUnknownProvider.Error())
+		return
+	}
+	var link int64
+	back := "/login"
+	if r.URL.Query().Get("link") == "1" {
+		p, ok := From(r.Context())
+		if !ok || p.Account == nil {
+			toPage(w, r, "/login", "error", ErrNotSignedIn.Error())
+			return
+		}
+		link, back = p.Account.ID, "/account"
+	}
+	to, state, err := rs.oidc.Start(r.Context(), id, safeReturn(r.URL.Query().Get("return"), "/"), link, guestOf(r))
+	if err != nil {
+		rs.log.Warn("starting a provider sign-in", "provider", id, "err", err)
+		msg := ErrOIDCFailed.Error()
+		if errors.Is(err, ErrUnknownProvider) {
+			msg = err.Error()
+		}
+		toPage(w, r, back, "error", msg)
+		return
+	}
+	rs.setCookie(w, r, oidcCookie, state, int(oidcFlowFor/time.Second))
+	http.Redirect(w, r, to, http.StatusFound)
+}
+
+func (rs *Resolver) handleOIDCCallback(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "provider")
+	if rs.oidc == nil || rs.accounts == nil {
+		toPage(w, r, "/login", "error", ErrUnknownProvider.Error())
+		return
+	}
+	q := r.URL.Query()
+	cookie := ""
+	if c, err := r.Cookie(oidcCookie); err == nil {
+		cookie = c.Value
+	}
+	rs.setCookie(w, r, oidcCookie, "", -1)
+	if q.Get("error") != "" {
+		toPage(w, r, "/login", "error", "The provider did not sign you in.")
+		return
+	}
+	ident, flow, err := rs.oidc.Finish(r.Context(), id, q.Get("state"), cookie, q.Get("code"))
+	if err != nil {
+		rs.log.Warn("a provider sign-in failed", "provider", id, "err", err)
+		toPage(w, r, "/login", "error", ErrOIDCFailed.Error())
+		return
+	}
+	res, err := rs.accounts.OIDCSignIn(r.Context(), rs.oidc, ident, flow, rs.transport.PeerIP(r), r.UserAgent())
+	back := "/login"
+	if flow.link != 0 {
+		back = "/account"
+	}
+	switch {
+	case err != nil:
+		if statusOf(err) == http.StatusInternalServerError {
+			rs.log.Error("a provider sign-in failed", "err", err)
+			err = ErrOIDCFailed
+		}
+		toPage(w, r, back, "error", err.Error())
+	case res.Linked:
+		toPage(w, r, "/account", "linked", id)
+	case res.Pending != "":
+		rs.setCookie(w, r, loginCookie, res.Pending, int(pendingFor/time.Second))
+		http.Redirect(w, r, "/login?second=1&return="+url.QueryEscape(res.ReturnTo), http.StatusSeeOther)
+	case res.Fresh != "":
+		rs.setCookie(w, r, oidcNewCookie, res.Fresh, int(oidcFlowFor/time.Second))
+		http.Redirect(w, r, "/signup?provider="+url.QueryEscape(id), http.StatusSeeOther)
+	default:
+		rs.startSession(w, r, *res.Session)
+		http.Redirect(w, r, safeReturn(res.ReturnTo, "/"), http.StatusSeeOther)
+	}
+}
+
+func (rs *Resolver) handleOIDCFinish(w http.ResponseWriter, r *http.Request) {
+	if rs.noAccounts(w) || rs.oidc == nil {
+		writeError(w, http.StatusNotFound, ErrUnknownProvider.Error())
+		return
+	}
+	var req struct {
+		Handle string `json:"handle"`
+	}
+	if !decode(w, r, &req) {
+		return
+	}
+	c, err := r.Cookie(oidcNewCookie)
+	if err != nil || c.Value == "" {
+		rs.fail(w, ErrSignInAgain)
+		return
+	}
+	s, back, err := rs.accounts.FinishOIDCSignup(r.Context(), rs.oidc, c.Value, req.Handle, rs.transport.PeerIP(r), r.UserAgent())
+	if err != nil {
+		rs.fail(w, err)
+		return
+	}
+	rs.setCookie(w, r, oidcNewCookie, "", -1)
+	rs.startSession(w, r, s)
+	out := rs.meOf(r, s.Account)
+	writeJSON(w, http.StatusOK, map[string]any{"me": out, "return": safeReturn(back, "/")})
+}
+
+func (rs *Resolver) handleOIDCUnlink(w http.ResponseWriter, r *http.Request) {
+	acc, ok := rs.account(w, r)
+	if !ok {
+		return
+	}
+	var req struct {
+		Provider string `json:"provider"`
+		Password string `json:"password"`
+	}
+	if !decode(w, r, &req) {
+		return
+	}
+	if err := rs.accounts.UnlinkOIDC(r.Context(), *acc, req.Provider, req.Password, rs.transport.PeerIP(r)); err != nil {
+		rs.fail(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, rs.meOf(r, *acc))
 }

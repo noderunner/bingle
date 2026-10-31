@@ -73,3 +73,4 @@ Short records of choices made for the `bingle` project during the requirements i
 | [0067](0067-principals-and-guest-keys.md) | Principals and guest keys: a seat is its owner's, resolved once per request into the context; anonymous requests keep unowned seats; seat tokens retired |
 | [0068](0068-accounts-sessions-and-passwords.md) | Accounts, server-side sessions and Argon2id passwords; signing up with a confirmed address; the guest becomes the account; the seeded administrator changes its password first |
 | [0069](0069-second-factor-and-lockout.md) | TOTP on the standard library with replay protection, ten recovery codes, the admin group's second factor (waived on genuine loopback), backoff, and resetting a forgotten password by mail |
+| [0070](0070-oidc.md) | Generic OpenID Connect sign-in (x/oauth2, go-oidc): PKCE, a state bound to the browser, a nonce; links by address only when the provider and the server both vouch for it |

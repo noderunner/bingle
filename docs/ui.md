@@ -478,7 +478,11 @@ recovery code) and a link to **forgot** (`/forgot`: `#forgot-who`, `#forgot-go`)
 `#reset-password`, `#reset-code`, `#reset-go`). The account page's two-step box (`#tf-box`, ADR 0069) shows the state
 (`#tf-state`, `#tf-needed` for an administrator who must set it up), asks for the password (`#tf-password`), sets it up
 (`#tf-setup`, then `#tf-secret`, `#tf-uri`, `#tf-code`, `#tf-enable`), lists the recovery codes once (`#tf-codes`), and
-turns it off or renews the codes (`#tf-off-code`, `#tf-off`, `#tf-renew`). The profile page's `#account-box` says whether the browser is a guest (`#login-link`, `#signup-link`)
+turns it off or renews the codes (`#tf-off-code`, `#tf-off`, `#tf-renew`). Providers (ADR 0070) add a button each to sign in and sign up (`#oidc-buttons`, `#signup-oidc-buttons`: `#oidc-<id>`),
+the handle a newcomer chooses (`#oidc-signup-form`, `#oidc-handle`, `#oidc-go`), and the account page's linked sign-ins
+(`#oidc-box`: `#oidc-link-<id>`, `#oidc-unlink-<id>`, which takes the password from `#tf-password`). An account without a
+password sets one (`#password-title` reads "Set a password", with no old one to give). `#login-error` and `#oidc-error`
+show the `?error=` a provider's callback came back with. The profile page's `#account-box` says whether the browser is a guest (`#login-link`, `#signup-link`)
 or signed in (`#account-link`). None of them keeps anything in the browser's storage: the cookies are `HttpOnly`.
 
 ### Email notifications

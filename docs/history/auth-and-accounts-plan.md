@@ -1,7 +1,7 @@
 # Plan: authenticated accounts, capabilities and a secure transport
 
-Status: **stages 1–4 done, stages 5–8 planned** (2026-10-29; guests amended 2026-10-31). Stage 1
-(secure transport) settled [ADR 0065](../decisions/0065-the-connection-must-be-secure.md), stage 2 (principals and guest keys) [ADR 0067](../decisions/0067-principals-and-guest-keys.md), stage 3 (accounts, sessions, passwords) [ADR 0068](../decisions/0068-accounts-sessions-and-passwords.md), stage 4 (the second factor) [ADR 0069](../decisions/0069-second-factor-and-lockout.md). The decisions in *What was decided*
+Status: **stages 1–5 done, stages 6–8 planned** (2026-10-29; guests amended 2026-10-31). Stage 1
+(secure transport) settled [ADR 0065](../decisions/0065-the-connection-must-be-secure.md), stage 2 (principals and guest keys) [ADR 0067](../decisions/0067-principals-and-guest-keys.md), stage 3 (accounts, sessions, passwords) [ADR 0068](../decisions/0068-accounts-sessions-and-passwords.md), stage 4 (the second factor) [ADR 0069](../decisions/0069-second-factor-and-lockout.md), stage 5 (OIDC) [ADR 0070](../decisions/0070-oidc.md). The decisions in *What was decided*
 were taken with the owner before this was written; the rest is the reasoning, the diagrams
 and the staging. The 2026-10-31 amendment makes a guest a principal of its own, with an ID
 and a portable key (§3a), before stage 2 begins.
@@ -557,6 +557,10 @@ rule, the provider buttons, and an in-process fake provider modelled on `fakesmt
 the fake provider drives a full sign-in; an unverified provider address never links; a
 tampered state or a replayed code is refused.
 
+Notes. *Done* (ADR 0070). A provider replaces the password, not the second factor. An account a
+provider made has no password and may set one; its last way in cannot be unlinked. The redirect
+URL comes from `BINGLE_PUBLIC_URL`, never the request.
+
 **6. Capabilities and modes.** The YAML seed, the tables, enforcement at every call site, the
 admin permissions UI, `closed` behaviour, API tokens for REST and MCP, per-class rate limits.
 Tests: the YAML seeds once and is then ignored; a guest is refused each account-only
@@ -651,3 +655,5 @@ contact into an account without a second confirmation.
   confirmed address, the seeded administrator and `bingle account`.
 - 2026-10-31: stage 4 done (ADR 0069): TOTP with replay protection, recovery codes, the admin
   group's second factor, backoff, and password reset by mail.
+- 2026-10-31: stage 5 done (ADR 0070): generic OIDC with PKCE, state and nonce, the linking rule,
+  and an in-process fake provider.

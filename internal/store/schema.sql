@@ -286,3 +286,6 @@ CREATE TABLE IF NOT EXISTS auth_events (
     detail        TEXT NOT NULL DEFAULT '',
     ip_hash       TEXT NOT NULL DEFAULT ''
 );
+
+-- A provider's identity is one account's at most.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_credentials_oidc ON credentials(secret) WHERE kind = 'oidc';
