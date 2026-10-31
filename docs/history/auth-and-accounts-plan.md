@@ -1,5 +1,6 @@
 # Plan: authenticated accounts, capabilities and a secure transport
 
+
 Status: **stages 1–2 done, stages 3–8 planned** (2026-10-29; guests amended 2026-10-31). Stage 1
 (secure transport) settled [ADR 0065](../decisions/0065-the-connection-must-be-secure.md), stage 2 (principals and guest keys) [ADR 0067](../decisions/0067-principals-and-guest-keys.md). The decisions in *What was decided*
 were taken with the owner before this was written; the rest is the reasoning, the diagrams
@@ -525,6 +526,7 @@ request and lose its seat on the second. It stays anonymous and keeps unowned se
 for by name; whatever a browser or a keyed script takes is out of its reach. Private views show a
 non-owner a spectator's view instead of refusing, and the page's first state-changing request is
 sent alone so that two concurrent ones cannot make two guests.
+
 
 **3. Accounts, sessions and password login.** The schema, Argon2id, server-side sessions, the
 cookie and CSRF rules, the seeded admin with its forced password change, the login and signup
