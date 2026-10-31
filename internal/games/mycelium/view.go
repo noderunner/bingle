@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 
+	"github.com/noderunner/bingle/internal/engine/board"
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/engine/state"
 )
@@ -17,10 +18,24 @@ var (
 
 // View is what clients draw beyond the nodes.
 type View struct {
-	Phase  string            `json:"phase"`
-	ToMove int               `json:"to_move,omitempty"`
-	Prompt string            `json:"prompt"`
-	Tints  map[string]string `json:"tints,omitempty"`
+	Phase  string               `json:"phase"`
+	Stage  string               `json:"stage,omitempty"`
+	ToMove int                  `json:"to_move,omitempty"`
+	Prompt string               `json:"prompt"`
+	Tints  map[string]string    `json:"tints,omitempty"`
+	Seats  map[string]*SeatView `json:"seats"`
+}
+
+// SeatView is one player's scoreboard.
+type SeatView struct {
+	Counters []CounterView `json:"counters"`
+}
+
+// CounterView is a labelled number.
+type CounterView struct {
+	ID    string `json:"id"`
+	Label string `json:"label"`
+	Value int    `json:"value"`
 }
 
 // Redact attaches the derived view: Mycelium has nothing to hide.
@@ -46,29 +61,41 @@ func (rs *Ruleset) Determinize(game *catalog.CompiledGame, st *state.BoardState,
 
 func (e *eng) buildView() *View {
 	d := e.d
-	v := &View{Phase: "play", ToMove: d.Turn, Tints: map[string]string{}}
+	v := &View{Phase: "play", ToMove: d.Turn, Tints: map[string]string{}, Seats: map[string]*SeatView{}}
 	if d.Last != "" {
 		v.Tints[d.Last] = "last"
 	}
-	if d.Confluence != nil {
-		v.Tints[string(e.g.center)] = "confluence"
-	}
+	n := e.count()
+	cf := d.Confluence
 	switch {
 	case d.Turn == 0 && d.Winner != 0:
-		v.Prompt = fmt.Sprintf("%s wins (%s).", seatLabel(d.Winner), d.Reason)
+		v.Prompt = fmt.Sprintf("%s wins, %d nodes to %d", seatLabel(d.Winner), n[d.Winner-1], n[other(d.Winner)-1])
 	case d.Turn == 0:
-		v.Prompt = "The game is drawn."
-	case d.Confluence == nil:
-		v.Prompt = fmt.Sprintf("%s: place a node.", seatLabel(d.Turn))
+		v.Prompt = "The game is drawn"
+	case cf == nil:
+		v.Prompt = fmt.Sprintf("%s: place a node", seatLabel(d.Turn))
 	default:
-		cf := d.Confluence
-		v.Prompt = fmt.Sprintf("Confluence (initiative %d, %s phase). %s chooses a %s spread.",
-			cf.Initiative, cf.Phase, seatLabel(cf.NextSeat), cf.Phase)
+		v.Stage = cf.Phase
+		for _, c := range cf.Spent {
+			v.Tints[c] = "spent"
+		}
+		v.Tints[string(e.g.ids[e.g.centre])] = "confluence"
+		switch {
+		case cf.Head != "":
+			v.Prompt = fmt.Sprintf("%s: convert an enemy node touching %s (%d more at most), or stop", seatLabel(d.Turn), cf.Head, cf.Left)
+		case cf.Phase == phaseSpore:
+			v.Prompt = fmt.Sprintf("Confluence, spores of size %d: %s converts an enemy node in a line of sight", cf.Initiative, seatLabel(d.Turn))
+		default:
+			v.Prompt = fmt.Sprintf("Confluence, hyphae of size %d: %s spreads from the end of a strand", cf.Initiative, seatLabel(d.Turn))
+		}
+	}
+	for s := 1; s <= 2; s++ {
+		v.Seats[string(rune('0'+s))] = &SeatView{Counters: []CounterView{{ID: "nodes", Label: "Nodes", Value: n[s-1]}}}
 	}
 	return v
 }
 
-// Heuristic values a position for seat in [-1, 1] from material count.
+// Heuristic values a position for seat in [-1, 1] by its share of the nodes.
 func (rs *Ruleset) Heuristic(game *catalog.CompiledGame, st *state.BoardState, seat int) float64 {
 	d, err := dataOf(st)
 	if err != nil {
@@ -83,72 +110,101 @@ func (rs *Ruleset) Heuristic(game *catalog.CompiledGame, st *state.BoardState, s
 		}
 		return -1
 	}
-	e := newEng(game, st, d)
-	count := [2]int{}
-	for _, c := range e.cells {
-		if c == seatColors[1] {
-			count[0]++
-		}
-		if c == seatColors[2] {
-			count[1]++
-		}
-	}
-	diff := float64(count[seat-1] - count[other(seat)-1])
-	// Normalise roughly by board size.
-	if diff > 30 {
-		diff = 30
-	}
-	if diff < -30 {
-		diff = -30
-	}
-	return diff / 30
+	return lead(newEng(game, st, d).count(), seat) / float64(len(geoOf(game).ids))
 }
 
-// GuideMoves keeps a bot from useless spreads: it prefers placements that
-// create or enlarge clusters toward the centre, and confluence spreads that
-// gain material.
+func lead(n [2]int, seat int) float64 { return float64(n[seat-1] - n[other(seat)-1]) }
+
+// GuideMoves keeps a bot from throwing a confluence away. It takes the centre
+// only when the confluence that follows (played out greedily) leaves it better
+// off than a node placed anywhere else, and never when that confluence loses.
+// In a confluence it converts as far as a spread allows, starts a hyphae spread
+// from the end of its longest strand, and treats spreads that convert the same
+// node as one.
 func (rs *Ruleset) GuideMoves(game *catalog.CompiledGame, st *state.BoardState, seat int, legal []state.Move) []state.Move {
 	d, err := dataOf(st)
 	if err != nil {
 		return legal
 	}
+	e := newEng(game, st, d)
 	if d.Confluence != nil {
+		return e.guideSpreads(legal)
+	}
+	centre := e.g.ids[e.g.centre]
+	var rest []state.Move
+	take := -1
+	for i, mv := range legal {
+		if mv.To == centre {
+			take = i
+		} else {
+			rest = append(rest, mv)
+		}
+	}
+	if take < 0 || len(rest) == 0 {
 		return legal
 	}
-	best := -1e9
-	scores := make([]float64, len(legal))
-	g := geoOf(game)
-	centerI := g.centerI
-	for i, mv := range legal {
-		scores[i] = -1e9
-		if mv.Action != actPlace {
+	elsewhere := lead(e.count(), seat) + 1
+	switch after := rs.playOut(game, st, seat, legal[take]); {
+	case after > elsewhere:
+		return legal[take : take+1]
+	case after < elsewhere:
+		return rest
+	}
+	return legal
+}
+
+// guideSpreads narrows a confluence decision as GuideMoves describes.
+func (e *eng) guideSpreads(legal []state.Move) []state.Move {
+	// The length each hyphae start allows, and the longest for each target.
+	reach := make([]int, len(legal))
+	best := map[board.PositionID]int{}
+	for k, mv := range legal {
+		if mv.Action == actHyphae && mv.From != "" {
+			i, j := e.g.index[mv.From], e.g.index[mv.To]
+			reach[k] = e.strand(i, e.clusterAt(i), len(e.clusterAt(j)))
+			best[mv.To] = max(best[mv.To], reach[k])
+		}
+	}
+	seen := map[board.PositionID]bool{}
+	var out []state.Move
+	for k, mv := range legal {
+		switch {
+		case mv.Action == actDone && len(legal) > 1:
+			continue
+		case mv.Action == actHyphae && mv.From != "" && reach[k] < best[mv.To]:
+			continue
+		case mv.Action != actDone && seen[mv.To]:
 			continue
 		}
-		e := newEng(game, st, d)
-		e.cells[g.index[mv.To]] = mv.Piece
-		// Prefer the centre, then cells with friendly neighbours.
-		score := 0.0
-		if g.index[mv.To] == centerI {
-			score += 10
-		}
-		for _, n := range g.nbr[g.index[mv.To]] {
-			if e.cells[n] == mv.Piece {
-				score += 2
-			}
-		}
-		scores[i] = score
-		if score > best {
-			best = score
-		}
-	}
-	var out []state.Move
-	for i, mv := range legal {
-		if scores[i] >= best-0.5 {
-			out = append(out, mv)
-		}
-	}
-	if len(out) == 0 {
-		return legal
+		seen[mv.To] = true
+		out = append(out, mv)
 	}
 	return out
+}
+
+// playOut plays mv and the confluence it starts, each side taking its first
+// guided spread, and returns seat's lead in nodes at the end (±100 for a won
+// or lost game).
+func (rs *Ruleset) playOut(game *catalog.CompiledGame, st *state.BoardState, seat int, mv state.Move) float64 {
+	for guard := 0; guard < 4*len(geoOf(game).ids); guard++ {
+		res, err := rs.Apply(game, st, rs.ToMove(game, st), mv)
+		if err != nil {
+			return -100
+		}
+		st = res.NewState
+		d, _ := dataOf(st)
+		switch {
+		case res.GameEnded && res.WinnerSeat == nil:
+			return 0
+		case res.GameEnded && *res.WinnerSeat == seat:
+			return 100
+		case res.GameEnded:
+			return -100
+		case d.Confluence == nil:
+			return lead(newEng(game, st, d).count(), seat)
+		}
+		e := newEng(game, st, d)
+		mv = e.guideSpreads(e.legal())[0]
+	}
+	return 0
 }

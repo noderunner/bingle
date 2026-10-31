@@ -1,21 +1,21 @@
 {
   "id": "mycelium",
   "name": "Mycelium",
-  "description": "Miles Stevenson's game of dueling fungi on a hexagonal board: place nodes, trigger a confluence from the centre, and spread clusters to convert your rival.",
+  "description": "Two fungal colonies on a hexagonal board: place nodes, take the centre to start a confluence, and spread your clusters to convert your rival's nodes until one colony is gone.",
   "version": "0.1.0",
   "designers": ["Miles Stevenson"],
   "engine": "ruleset",
   "rules": [
-    "Mycelium is played on a size-5 hex-hex board (61 cells). Player 1 plays black nodes and player 2 plays green nodes; black moves first.",
-    "On a normal turn a player places one node on any empty cell. Placing a node in the centre cell (e5) triggers a confluence turn.",
-    "A cluster is a connected group of like-colour nodes. A spore cluster has no enemy neighbours; a hyphae cluster touches at least one enemy node. A strand is a straight line of nodes inside a hyphae cluster.",
-    "A confluence turn has two phases: first every spore cluster spreads in initiative order, then every hyphae cluster spreads. Initiative starts at 1 and counts up; clusters whose size matches the current initiative may spread.",
-    "During each initiative order, if both players have eligible clusters the player who did not start the confluence chooses first and the players alternate until all clusters of that size have spread.",
-    "A spore cluster spreads by selecting one of its nodes and tracing a straight line through empty cells to the first enemy node; that source node moves to the enemy node's cell and the enemy node is removed.",
-    "A hyphae cluster spreads by selecting one strand and converting up to that many adjacent enemy nodes in a straight line touching the strand. One strand per hyphae cluster may spread in a confluence turn.",
-    "Clusters created by conversion may also spread during the same confluence phase, provided their size's initiative order has not yet finished.",
-    "After all spreads finish, any node remaining in the centre is removed. A player with no nodes left loses; if both players have no nodes left, the player who initiated the confluence loses.",
-    "If neither player has lost, normal play resumes with the player who did not initiate the confluence placing the next node. The game is drawn if 500 plies are played without a confluence ending the game."
+    "Mycelium is played on a size-5 hex-hex board (61 cells). Player 1 plays black nodes and player 2 green nodes; Black places first, on an empty board.",
+    "On a normal turn a player places one node of their colour on any empty cell. A node placed on the centre cell (e5) starts a confluence.",
+    "A cluster is a connected group of nodes of one colour. A spore cluster touches no enemy node; a hyphae cluster touches at least one. A strand is a path of a cluster's nodes, each touching the next, which may bend.",
+    "A confluence has two phases: first the spore clusters spread, then the hyphae clusters. In each phase the clusters spread in initiative order: the clusters of size 1 first, then size 2, and so on.",
+    "Within an initiative step, the player who did not take the centre chooses first, and the players alternate, each spreading one of their eligible clusters, until neither has one left; a player with none left lets the other continue.",
+    "A spore spread: choose a node of the cluster and a straight line from it across empty cells; the first enemy node on that line becomes your colour. The spreading node stays where it is.",
+    "A hyphae spread: choose the end of a strand and convert an enemy node it touches, then optionally an enemy node touching that one, and so on, as many as the strand has nodes. The converted nodes may wind in any direction.",
+    "Each cluster spreads at most once in a phase. A cluster formed by conversion that holds no node of a cluster that has spread may spread too, if the initiative has not yet passed its size.",
+    "When neither phase has anything left to spread, the node on the centre is removed. A player with no nodes left loses; if neither player has any, the player who took the centre loses. Otherwise the player who did not take the centre places next.",
+    "The game is drawn if 500 plies are played without a confluence deciding it."
   ],
   "params": { "max_plies": 500 },
   "guide": {
@@ -48,8 +48,9 @@
   "display": {
     "no_hands": true,
     "tints": {
-      "last": { "label": "Last move", "color": "#c8dfa8", "text": "The node placed on the last normal turn." },
-      "confluence": { "label": "Confluence", "color": "#d8b8e8", "text": "The centre cell that triggers a confluence when occupied." }
+      "last": { "label": "Last placement", "color": "#c8dfa8", "text": "The node placed on the last normal turn." },
+      "spent": { "label": "Has spread", "color": "#e0d0a0", "text": "A node of a cluster that has spread in this phase of the confluence." },
+      "confluence": { "label": "Confluence", "color": "#d8b8e8", "text": "The centre during a confluence: its node is removed when the confluence ends." }
     }
   }
 }

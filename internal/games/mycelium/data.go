@@ -7,7 +7,7 @@ import (
 	"github.com/noderunner/bingle/internal/engine/state"
 )
 
-// Player 1 plays black nodes, player 2 plays green nodes.
+// Player 1 plays black nodes, player 2 green nodes.
 var seatColors = [3]string{"", "black", "green"}
 
 // ownerOf is the seat that owns nodes of colour c (0 for none).
@@ -29,21 +29,30 @@ func seatLabel(seat int) string {
 	return "Green"
 }
 
-// Confluence holds the state of a confluence turn. It is nil during normal
-// placement turns.
+// The two phases of a confluence.
+const (
+	phaseSpore  = "spore"
+	phaseHyphae = "hyphae"
+)
+
+// Confluence is a confluence under way. The seat that chooses the next spread
+// is Data.Turn.
 type Confluence struct {
-	// Initiator is the seat that placed the centre node and started the
-	// confluence.
+	// Initiator is the seat that took the centre.
 	Initiator int `json:"initiator"`
 	// Phase is "spore" or "hyphae".
 	Phase string `json:"phase"`
-	// Initiative is the current cluster size being resolved.
+	// Initiative is the cluster size whose spreads are being resolved.
 	Initiative int `json:"initiative"`
-	// NextSeat is the seat that chooses the next spread action.
-	NextSeat int `json:"next_seat"`
-	// Spread marks cluster keys that have already acted this confluence, so a
-	// cluster that still exists in the same shape is not offered again.
-	Spread map[string]bool `json:"spread,omitempty"`
+	// Spent lists the cells of the clusters that have spread in this phase: a
+	// cluster holding one of them has had its spread. A cell leaves the list
+	// when it changes colour.
+	Spent []string `json:"spent,omitempty"`
+	// Head and Left describe a hyphae spread under way: the node converted
+	// last, which the next conversion must touch, and how many more
+	// conversions the strand allows.
+	Head string `json:"head,omitempty"`
+	Left int    `json:"left,omitempty"`
 }
 
 func (c *Confluence) clone() *Confluence {
@@ -51,22 +60,18 @@ func (c *Confluence) clone() *Confluence {
 		return nil
 	}
 	d := *c
-	if c.Spread != nil {
-		d.Spread = make(map[string]bool, len(c.Spread))
-		for k, v := range c.Spread {
-			d.Spread[k] = v
-		}
-	}
+	d.Spent = append([]string(nil), c.Spent...)
 	return &d
 }
 
 // Data is the game-specific part of a position; the nodes are on the board.
 type Data struct {
-	// Turn is the seat to move (0 once the game is over).
+	// Turn is the seat to move (0 once the game is over); during a
+	// confluence, the seat that chooses the next spread.
 	Turn int `json:"turn"`
-	// Last is the cell stoned on the last normal turn, for highlighting.
+	// Last is the cell of the last placement.
 	Last string `json:"last,omitempty"`
-	// Confluence is non-nil during a confluence turn.
+	// Confluence is set while a confluence is being resolved.
 	Confluence *Confluence `json:"confluence,omitempty"`
 	// Result of a finished game.
 	Winner int    `json:"winner,omitempty"`

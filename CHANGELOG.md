@@ -4,16 +4,19 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
-## 0.21.0 - 2026-10-29
+## 0.21.0 - 2026-10-31
+
+### Mycelium 0.1.0 — a new game
+- **Mycelium**, by Miles Stevenson, joins the list, so it can be played and tested here. Two fungal
+  colonies place nodes on a hexagonal board; whoever takes the centre starts a **confluence**, in
+  which every cluster spreads in turn, smallest first. A spore that can see an enemy node down a
+  line of empty cells turns it to its own colour; a cluster touching the enemy grows into it along
+  a winding chain, as many nodes as its longest strand. A colony left with nothing when the
+  confluence ends has lost. You make each spread yourself, one node at a time, the board shows which
+  clusters have already spread, and the rules page walks through a confluence.
 
 ### Bingle Core 0.21.0
-- **New game: Mycelium.** The catalog now includes Miles Stevenson's fungal colony game.
-
-### Mycelium 0.1.0
-- **Initial release.** Place black or green nodes on a size-5 hex-hex board. Occupy the centre to
-trigger a confluence turn: spore clusters spread by leaping along empty lines to convert enemy
-nodes, then hyphae clusters spread by converting enemy nodes along a strand. Survive the confluence
-with nodes still on the board to win.
+- The catalog lists Mycelium.
 
 ## 0.20.0 - 2026-10-29
 

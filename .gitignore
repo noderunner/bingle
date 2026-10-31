@@ -33,3 +33,6 @@ __pycache__/
 .vscode/
 *.swp
 .DS_Store
+
+# Aider (an AI coding assistant) leaves its history and cache here.
+.aider*
