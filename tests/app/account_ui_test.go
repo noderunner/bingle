@@ -291,3 +291,24 @@ func TestAccountUI_AGuestsProfileHasNoTurnMail(t *testing.T) {
 	}
 	waitJS(t, ctx, "the note instead of the address", `!document.getElementById("notify-accounts-only").hidden && getComputedStyle(document.getElementById("profile-email-field")).display === "none" && getComputedStyle(document.getElementById("notify-box")).display === "none"`, 10*time.Second)
 }
+
+// The sign-in page asks for a username and a password, in boxes that look
+// alike.
+func TestAccountUI_TheSignInBoxesLookAlike(t *testing.T) {
+	_, base := membersServer(t)
+	ctx, cancel := newChromedpContext(t, 30*time.Second)
+	defer cancel()
+	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/login")); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "the form", `document.getElementById("login-password") !== null`, 10*time.Second)
+	if got := evalString(t, ctx, `document.querySelector('label[for="login-handle"]').textContent`); got != "Username" {
+		t.Errorf("the first box is labelled %q, want Username", got)
+	}
+	style := `(function (id) { var s = getComputedStyle(document.getElementById(id)); return [s.borderTopWidth, s.borderTopStyle, s.borderTopColor, s.borderTopLeftRadius, s.paddingTop, s.paddingLeft, s.backgroundColor, s.fontSize].join("|"); })`
+	user := evalString(t, ctx, style+`("login-handle")`)
+	pass := evalString(t, ctx, style+`("login-password")`)
+	if user != pass {
+		t.Errorf("the boxes differ:\n username %s\n password %s", user, pass)
+	}
+}

@@ -361,7 +361,7 @@ function profileWindow() {
 			saved,
 			h("span", { class: "small muted" }, "It is offered when you make or join a game, and it is what the others see while you are here.")
 		),
-		h("section", { class: "here-section" }, h("h3", {}, "Here now ", count), list, h("p", { class: "small muted" }, "The signed-in players who have been here in the last few minutes, by their handles. Guests are not listed: sign in to be listed and to write to anybody here.")),
+		h("section", { class: "here-section" }, h("h3", {}, "Here now ", count), list, h("p", { class: "small muted" }, "The signed-in players who have been here in the last few minutes, by their usernames. Guests are not listed: sign in to be listed and to write to anybody here.")),
 		h("div", { class: "row" }, h("a", { class: "button", id: "profile-page-link", href: "/profile" }, "Email notifications and finished games"))
 	);
 	const paintAccount = (me) => {

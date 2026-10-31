@@ -13,6 +13,8 @@ what the help window shows under *Recent changes*, so it is written for the peop
 - **Guests are no longer offered what needs an account.** The direct messages button, running bot
   batches and setting up turn emails only appear once you are signed in (or if the server's
   administrator opens them to guests); a guest is pointed to the sign-in instead.
+- The sign-in and account pages ask for a **username** (it was "handle"), and the password boxes
+  look like the rest.
 
 ## 0.28.0 - 2026-10-31
 

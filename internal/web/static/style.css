@@ -149,11 +149,11 @@ form { display: flex; flex-direction: column; gap: 0.6rem; }
 label { font-weight: 600; font-size: 0.9rem; }
 .field { display: flex; flex-direction: column; gap: 0.25rem; }
 
-input[type="text"], input[type="email"], input[type="number"], select {
+input[type="text"], input[type="email"], input[type="password"], input[type="number"], select {
 	font: inherit; color: inherit; background: var(--surface);
 	border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 0.65rem; min-width: 0;
 }
-input[type="text"]:focus, input[type="email"]:focus, select:focus { border-color: var(--focus); }
+input[type="text"]:focus, input[type="email"]:focus, input[type="password"]:focus, select:focus { border-color: var(--focus); }
 
 button, .button {
 	font: inherit; font-weight: 600; cursor: pointer; text-decoration: none;

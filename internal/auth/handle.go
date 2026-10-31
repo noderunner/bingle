@@ -18,10 +18,10 @@ var reserved = map[string]bool{
 }
 
 // ErrBadHandle is the answer to a handle that is not one.
-var ErrBadHandle = errors.New("auth: a handle is 3 to 24 letters, digits, '_' or '-'")
+var ErrBadHandle = errors.New("auth: a username is 3 to 24 letters, digits, '_' or '-'")
 
 // ErrReservedHandle is the answer to a handle nobody may have.
-var ErrReservedHandle = errors.New("auth: that handle is reserved")
+var ErrReservedHandle = errors.New("auth: that username is reserved")
 
 // CanonHandle returns the handle in its stored form (lower case, without a
 // leading "@"), or why it cannot be one. allowReserved lets the seeded
