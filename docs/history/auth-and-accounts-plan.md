@@ -1,9 +1,10 @@
 # Plan: authenticated accounts, capabilities and a secure transport
 
-Status: **stage 1 done, stages 2–8 planned** (2026-10-29). Stage 1 (secure transport) is on
-`main`; what it settled is [ADR 0065](../decisions/0065-the-connection-must-be-secure.md). The decisions in *What was decided*
+Status: **stage 1 done, stages 2–8 planned** (2026-10-29; guests amended 2026-10-31). Stage 1
+(secure transport) is on `main`; what it settled is [ADR 0065](../decisions/0065-the-connection-must-be-secure.md). The decisions in *What was decided*
 were taken with the owner before this was written; the rest is the reasoning, the diagrams
-and the staging.
+and the staging. The 2026-10-31 amendment makes a guest a principal of its own, with an ID
+and a portable key (§3a), before stage 2 begins.
 
 This plan **supersedes [ADR 0006](../decisions/0006-name-only-player-identity.md)** (name-only
 identity, no session token) and changes the "explicitly out of scope: accounts, auth, RBAC" line
@@ -37,10 +38,18 @@ Three partial identity mechanisms, which accounts must **subsume** rather than s
 | **Browser secret → address** | `bingle.session`, published as the first 8 bytes of its SHA-256 | this browser sent that direct message, or is "here" |
 | **Verified email contact** | `notify` tables: an address, its hash, a confirmation token, a suppression list | this browser controls that mailbox |
 
+None of the three owns a seat. The seat token is checked only by the notify endpoints, and the
+browser secret only by direct messages and who-is-here.
+
 Also true today, and relevant:
 
 - A player is a `player_name` the API is given; `players` has `UNIQUE(game_id, name COLLATE
-  NOCASE)`, so names are unique **per game** and owned by nobody.
+  NOCASE)`, so names are unique **per game** and owned by nobody. **A move is authorised by
+  the name alone** (`POST /api/games/{code}/moves` with `player_name`): whoever knows the room
+  code and a seated player's name can move for them, and resuming a seat means typing the name
+  again (ADR 0006).
+- "My games" is `bingle.games` in the browser's storage, for everybody: a game does not follow
+  its player to another browser, and is lost with the browser's storage.
 - A room code is the only access control, and since ADR 0058 every unfinished game is
   **listed** to everyone, so the code is not even obscure.
 - `golang.org/x/crypto` is already a direct dependency, so Argon2id costs nothing new.
@@ -67,6 +76,8 @@ Also true today, and relevant:
 | Signup | **Email required**, and therefore **signup is disabled when SMTP is not configured** (the admin creates accounts instead). |
 | First admin | Seeded when the accounts table is empty. **Deterministic `admin`/`bingle123` only under `BINGLE_DEV=1` or on loopback**; otherwise a random password printed once. Either way the first login forces a change. |
 | Guests | `play`, `join`, `chat_game`, `voice_game` and — by default, operator-configurable — `create_game`. |
+| Guest identity *(2026-10-31)* | **A guest is a principal with a server-issued ID**, like an account, and proves it with a **guest key**: a random secret, hashed at rest, disposable (rotate it, or start over as a new guest) and portable (the same key on another browser is the same guest, in every game). Seats, chat lines and games reference the principal, never a name. |
+| Moving a guest *(2026-10-31)* | **The guest can copy the key**, as text or as a link, and use it on another device to resume every game there. |
 | Accounts only | `dm`, `voice_direct`, `chat_global`, `notify`, `run_batch`. |
 | Operator only | `view_metrics`, `moderate`, `install_plugins`, `admin`. |
 | TURN relay | **Startup config, not a capability**: `BINGLE_RTC_RELAY=all\|accounts\|none`, with an option to force relay for guests so their addresses never reach a stranger. |
@@ -148,16 +159,79 @@ One principal per request, resolved once by middleware and carried in the contex
 
 - **Account** — a session cookie, looked up in `sessions` (server-side, so logging out
   everywhere is a delete). Idle and absolute lifetimes; rotated when privileges change.
-- **Guest** — the `bingle.session` browser secret that already exists, which keeps owning
-  guest seats so a guest can still resume a game in their own browser. Unused in `closed`.
+- **Guest** — a guest key (§3a), sent as the `bingle_guest` cookie by a browser or as
+  `Authorization: Bearer bgg_…` by a script. It replaces the `bingle.session` browser secret
+  and the seat tokens. Unused in `closed`.
 - **Token** — `Authorization: Bearer bgl_…`, hashed in `api_tokens`, scoped, revocable,
   created on the account page. Agents and scripts use these, never passwords. Admin actions
   are never available to a token.
+
+Every principal, of either kind, is a row in `principals` with a stable opaque ID
+(`p_` and 16 random bytes in base32). Everything that belongs to somebody refers to that ID:
+`players.principal_id`, `games.owner_principal_id`, chat lines, notify contacts and
+`auth_events`. Code below the middleware asks "which principal?", never "which name?" or
+"guest or account?", except where a capability check needs the class.
 
 **CSRF**: a state-changing request authenticated *by cookie* must carry `X-Bingle-Session`
 (the page sends it; token clients are unaffected). WebSocket upgrades check `Origin`.
 `/ws-dm` becomes session-authenticated and loses its hello-secret frame — a simplification
 that falls out of direct messages being account-only.
+
+### 3a. Guests: an ID and a disposable, portable key *(amended 2026-10-31)*
+
+A guest has two things, and they must not be confused:
+
+| | The guest **ID** | The guest **key** |
+|---|---|---|
+| Is | `principals.id`, e.g. `p_7kq2…` | `bgg_` and 32 random bytes, base64url |
+| Secret? | No: the server's name for the guest. Never shown in the interface, and logged only as a hash (ADR 0063) | Yes: a bearer credential. Whoever holds it *is* the guest |
+| Stored as | itself | SHA-256 in `guest_keys` (high-entropy, so no Argon2id needed) |
+| Lifetime | forever, so history keeps its owner | until rotated, discarded or idle for `BINGLE_GUEST_IDLE` (90 days) |
+
+**Issued lazily.** A guest principal and its key are made on the first request that needs a
+principal — create, join, chat, voice — not on every page view, so crawlers and passers-by
+leave no rows. The server sets the key in the `bingle_guest` cookie (`HttpOnly; Secure;
+SameSite=Lax; Path=/`, with `Secure` dropped on loopback as for accounts) and never in a URL.
+A REST or MCP client gets the key in the response body of `POST /api/guest` and sends it as a
+bearer token, so an anonymous agent becomes a real guest too, rather than a name.
+
+**Disposable.** The profile window offers, for a guest:
+
+- **Copy my guest key** — see *Moving to another device* below.
+- **New key, same me** — rotate: the old key stops working everywhere (a key copied somewhere
+  it should not be), the ID and every seat stay.
+- **Start over as a new guest** — the key is revoked and the next action makes a new principal.
+  The old guest's seats stay held under the old ID, so the confirmation says what is lost.
+
+A key idle for `BINGLE_GUEST_IDLE` stops working; the principal stays so history still
+displays.
+
+**Moving to another device.** "Copy my guest key" fetches the key from `GET /api/guest/key`
+(cookie and CSRF header required; the page never keeps the key in its own storage) and offers
+it as text and as a link, `https://<host>/#guest=bgg_…`. The key travels in the fragment, so it
+never reaches a server log, a proxy or a `Referer`. On the phone the link, or the key pasted into
+"Use a guest key from another device", is posted to `POST /api/guest/adopt`, which sets the
+phone's cookie. From then the phone is the same guest: the same seats, and the same server-side
+"My games" (§6), so every game the guest is in resumes there.
+
+- **What the phone had before** is merged into the adopted guest: its seats and games move
+  over and its own principal is marked `merged_into`. The phone loses nothing by adopting.
+- **Adoption is rate-limited** per address and answers uniformly, so keys cannot be guessed by
+  trying them.
+- **The key is a password with no username.** The copy dialog says so ("anyone with this key
+  can play as you"), and "New key, same me" is one click away from it.
+- **Considered and left for later:** a short one-time transfer code (eight characters, ten
+  minutes) that is easier to type on a phone than a 47-character key and harmless once used.
+  It can be added beside the key without changing anything below it.
+
+**Becoming an account.** Signing up, or signing in, from a guest browser **upgrades the
+principal in place**: the row gains an `account_id`, its keys are revoked, and the session cookie
+takes over. Every seat, game and chat line keeps its owner without being rewritten. This is the
+reason seats point at a principal, not at an account or a guest.
+
+**Seats from before this plan** have no principal. In stage 2 the first principal to act on such
+a seat by its name binds it, and from then the seat is that principal's. That is ADR 0006's
+"re-enter your name" for one last time, per seat. After that a name proves nothing.
 
 ### 4. Credentials
 
@@ -208,10 +282,12 @@ target (never an absolute URL — open redirects are not a feature).
   the move list and the who-is-here window.
 - The **profile window** (ADR 0058) gains *Sign in* / *Signed in as @ana* and a link to the
   full account page: email, password, TOTP, recovery codes, linked providers, sessions with
-  "log out everywhere", and API tokens.
-- **"My games" moves server-side** for accounts, which is the reason a friend would bother
-  signing up: today `bingle.games` is per-browser, so your games do not follow you to your
-  phone.
+  "log out everywhere", and API tokens. For a guest it holds the guest-key actions of §3a
+  (copy, use a key from another device, new key, start over) and *Sign up to keep your games*.
+- **"My games" moves server-side for every principal**, listed from `players.principal_id`.
+  A guest's games follow their key to the phone; an account's follow the account to any
+  device without a key to carry, which is still a reason to sign up. `bingle.games` survives
+  only as the offline cache of the list.
 - The admin area holds accounts, the capability matrix, invites, the audit log and — when the
   plugin plan lands — installation.
 
@@ -275,8 +351,9 @@ request
   ├─ secure?  TLS, or X-Forwarded-Proto=https from a trusted proxy ──── no ─► refuse
   ├─ request id · recover · access log                        (observability plan)
   ├─ principal:  session cookie ─► account
-  │              bingle.session ─► guest            (hybrid only)
+  │              bingle_guest cookie or Bearer bgg_… ─► guest   (hybrid only)
   │              Bearer bgl_…   ─► token
+  │              none, and the route needs one ─► a new guest   (hybrid only)
   ├─ CSRF:  cookie-authenticated and state-changing ─► X-Bingle-Session required
   ├─ mode:  closed ─► the principal must be an account
   ├─ capability for this route:  admin ─► all · user caps · guest caps
@@ -306,12 +383,27 @@ OIDC ("Sign in with Google")
 
 ```
  create   POST /api/games                      create_game
- join     POST /api/games/{code}/join          join       guest: bingle.session owns the seat
-                                                          account: the account owns the seat
- move     POST /api/games/{code}/moves         play
+ join     POST /api/games/{code}/join          join       the principal owns the seat
+ move     POST /api/games/{code}/moves         play       only the seat's principal; the name
+                                                          in the body is no longer enough
  chat     POST /api/games/{code}/chat          chat_game
- live     GET  /ws/{code}                      Origin checked; cookie or guest secret
+ live     GET  /ws/{code}                      Origin checked; session or guest cookie
  list     GET  /api/games                      join       (every unfinished game, ADR 0058)
+ mine     GET  /api/me/games                   —          the principal's own games
+```
+
+### Moving a guest to another device
+
+```
+ desktop                                server                              phone
+   │ GET /api/guest/key  (cookie + CSRF) ─►│
+   │◄── bgg_…  shown as text and as  https://host/#guest=bgg_…
+   │ ··· copied, AirDropped, messaged to oneself ··· ························►│
+   │                                       │◄── POST /api/guest/adopt {key} ──│  fragment read by
+   │                                       │    rate-limited, uniform answer  │  the page, never sent
+   │                                       │    the phone's old guest merged  │  in a URL
+   │                                       │──► Set-Cookie: bingle_guest ────►│
+   │                                       │◄── GET /api/me/games ────────────│  every game resumes
 ```
 
 ### Voice
@@ -345,7 +437,7 @@ OIDC ("Sign in with Google")
 
 ```
    agent ──Authorization: Bearer bgl_…──► /api/…   /mcp
-     hybrid:  a token is optional — an anonymous agent is a guest
+     hybrid:  a token is optional — an anonymous agent is a guest, with a key from POST /api/guest
      closed:  a token is required
      scopes:  play · create_game · read_metrics        (never admin)
      BINGLE_DEV=1 seeds a deterministic token so CI can exercise closed mode
@@ -354,6 +446,8 @@ OIDC ("Sign in with Google")
 ## Schema sketch
 
 ```sql
+principals(id, kind, account_id, created_at, last_seen_at, merged_into)  -- kind: guest|account
+guest_keys(id, principal_id, key_hash UNIQUE, created_at, last_used_at, revoked_at)
 accounts(id, handle, handle_lower UNIQUE, display_name, email, email_verified_at,
          status, created_at, deleted_at)
 credentials(id, account_id, kind, secret, params, created_at, last_used_at)  -- password|totp|recovery|oidc
@@ -366,8 +460,11 @@ invites(code_hash, created_by, expires_at, used_by, used_at)
 auth_events(id, at, account_id, kind, detail, ip_hash)
 ```
 
-Everything is additive: new tables plus `players.account_id` and `games.owner_account_id`,
-both nullable, so existing rows keep meaning what they mean.
+Everything is additive: new tables plus `players.principal_id` and
+`games.owner_principal_id`, both nullable, so existing rows keep meaning what they mean (a
+`NULL` principal is a seat from before stage 2, bound by name once, §3a). They point at a
+principal rather than an account so a guest who signs up keeps everything without a rewrite.
+`seat_tokens` is retired once the notify endpoints check the principal instead.
 
 ## Configuration
 
@@ -384,6 +481,7 @@ both nullable, so existing rows keep meaning what they mean.
 | `BINGLE_SIGNUP` | `open` | `open`, `invite` or `closed` |
 | `BINGLE_OIDC_*` | — | one block per provider: issuer, client id, secret, scopes, button label |
 | `BINGLE_SESSION_IDLE`, `BINGLE_SESSION_MAX` | `14d`, `90d` | session lifetimes |
+| `BINGLE_GUEST_IDLE` | `90d` | a guest key unused this long stops working (the guest's history stays) |
 | `BINGLE_RTC_RELAY` | `all` | `all`, `accounts` or `none`; plus force-relay-for-guests |
 
 ## Staged plan
@@ -407,16 +505,26 @@ have made every request in the world share one address and the rate limiters wou
 everybody at once. HSTS now applies behind a trusted proxy and is deliberately **not** sent with a
 generated certificate.
 
-**2. Principal plumbing.** One principal per request, resolved from what already exists
-(guest secret, seat token), carried in the context, with every endpoint moved onto it. No
-user-visible change, no credentials yet. Tests: every route resolves a principal; the seat
-token path behaves exactly as before; a contract test fails when a new endpoint reads
-`player_name` without a principal.
+**2. Principals and guest keys.** The `principals` and `guest_keys` tables, the lazily issued
+`bingle_guest` cookie and `POST /api/guest` for scripts, one principal per request carried in
+the context, and every endpoint moved onto it: seats, games, chat lines and notify contacts
+record `principal_id`, a move or a seat change is refused unless it comes from the seat's
+principal, and a seat from before this stage is bound by name on first use. The notify
+endpoints check the principal and `seat_tokens` goes. The web client stops sending names as
+proof and drops `bingle.tokens`; `bingle.session` stays only for direct messages until stage 8.
+The interface looks the same, except that typing a seated player's name no longer takes
+their seat. Tests: every route resolves a principal; a move with the right name from the
+wrong principal is refused; a pre-stage-2 seat binds once, then refuses a second principal;
+a guest key never appears in a log line or a URL; a bearer guest key and a cookie guest key
+are the same guest; a contract test fails when a new endpoint reads `player_name` without a
+principal.
 
 **3. Accounts, sessions and password login.** The schema, Argon2id, server-side sessions, the
 cookie and CSRF rules, the seeded admin with its forced password change, the login and signup
 pages, email confirmation through the existing mailer, and the `bingle account` commands.
+Signing up or in from a guest browser upgrades that principal in place (§3a).
 Tests: Argon2id parameters survive a round trip; a session is rotated on privilege change;
+a guest who signs up keeps every seat and game, and their guest key stops working;
 `Secure` is set off-loopback and omitted on it; signup is refused with no SMTP; enumeration
 responses are uniform; a CSRF-less cookie POST is refused.
 
@@ -438,13 +546,21 @@ token does not; `bingle caps reset` re-applies the file.
 
 **7. Identity in the interface.** Handles and the reserved list, the rename hold, guest
 markers everywhere a player is named, the account page (email, password, 2FA, providers,
-sessions, tokens), server-side "my games", and the audit-log view.
+sessions, tokens), server-side "my games" for every principal (`GET /api/me/games`), the
+guest-key actions in the profile window — copy as text or link, use a key from another device,
+new key, start over — with `GET /api/guest/key` and `POST /api/guest/adopt`, and the
+audit-log view. Moving a guest needs nothing from stages 3–6, so it can land right after
+stage 2 if it is wanted sooner.
 Tests: a guest cannot take a registered handle; a renamed handle is held; "my games" follows
-a second session; the account page never shows another account's address.
+a second session; the account page never shows another account's address; a guest key copied
+from one browser and adopted in another resumes every game there, and the second browser's own
+games are merged in; a rotated key stops working everywhere while the seats stay; "start over"
+leaves the old seats with the old ID; adoption is rate-limited and answers a wrong key exactly as
+an expired one; the `#guest=` fragment is removed from the address bar once read.
 
 **8. Migrating the account-only features.** Direct messages and who-is-here onto sessions
-(guests dropped from the list), `chat_global` and `notify` gated, confirmed contacts
-grandfathered and offered the upgrade path, and the documentation sweep that retires ADR 0006.
+(guests dropped from the list, and `bingle.session` retired with them), `chat_global` and
+`notify` gated, confirmed contacts grandfathered and offered the upgrade path, and the documentation sweep that retires ADR 0006.
 Tests: the existing direct-message and notify suites, rewritten to log in; a grandfathered
 contact still receives mail; a guest cannot create a contact; the upgrade path turns a
 contact into an account without a second confirmation.
@@ -478,7 +594,16 @@ contact into an account without a second confirmation.
   test gains a session, and ADR 0006's simplicity argument was real. The trade is made
   deliberately: plugins and observability cannot exist safely without it.
 - **Guests are still unauthenticated**, so a block or a mute against one is best-effort; only
-  accounts can be held to anything. The documentation should say so where it matters.
+  accounts can be held to anything. The documentation should say so where it matters. A guest
+  key identifies a browser that kept it, not a person, and "start over" makes a new guest at
+  will.
+- **A guest key is a bearer credential with no second factor.** Whoever holds it plays as that
+  guest until it is rotated. It lives in an `HttpOnly` cookie, is shown only on request, travels
+  in a fragment rather than a URL path, and is never logged; the copy dialog says what it is.
+- **Losing the key loses the seats.** Once a name no longer reclaims a seat, a guest whose
+  browser storage is cleared, and who never copied the key, cannot resume. That is the price of
+  nobody else being able to take the seat by typing the name. Handing an abandoned seat to
+  someone else (for example by the game's creator) is a separate, later decision.
 - **Email becomes load-bearing.** Signup, reset and verification all need SMTP, so a
   misconfigured mail server now blocks onboarding as well as notifications.
 
@@ -494,3 +619,10 @@ contact into an account without a second confirmation.
   are account-only; `voice_game` stays open to guests; TURN relay is startup config; live
   calls are never re-evaluated; deleted accounts are renamed `deleted-<uid>`. Nothing
   implemented.
+- 2026-10-31: guests amended before stage 2, at the owner's request. A guest becomes a principal
+  with a stable server-side ID and a disposable, portable guest key (§3a), so guest sessions can
+  be tracked across browsers and games; seats, games and chat refer to principals, not names or
+  accounts, and a guest who signs up keeps everything in place. The guest can copy the key, as text
+  or as a `#guest=` link, to resume their games on another device (stage 7, or straight after
+  stage 2). Found while reviewing: a move is authorised today by the player's name alone, which
+  stage 2 now closes. Nothing implemented.
