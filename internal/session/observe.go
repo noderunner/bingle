@@ -107,7 +107,7 @@ func (m *Manager) Observe(ctx context.Context, roomCode, name string) (Observati
 				viewer = &players[i]
 			}
 		}
-		if viewer != nil {
+		if viewer != nil && viewer.Bot == "" && m.mayView(ctx, viewer) {
 			obs.Seat, obs.Color = viewer.Seat, viewer.Color
 		}
 	}

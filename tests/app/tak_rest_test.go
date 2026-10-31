@@ -16,6 +16,13 @@ import (
 // response into out (if non-nil), returning the status code.
 func doJSON(t *testing.T, method, url string, body any, out any) int {
 	t.Helper()
+	return doJSONAs(t, "", method, url, body, out)
+}
+
+// doJSONAs is doJSON as the guest whose key is key ("" for an anonymous
+// request).
+func doJSONAs(t *testing.T, key, method, url string, body any, out any) int {
+	t.Helper()
 	var rdr io.Reader
 	if body != nil {
 		b, err := json.Marshal(body)
@@ -30,6 +37,9 @@ func doJSON(t *testing.T, method, url string, body any, out any) int {
 	}
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
+	}
+	if key != "" {
+		req.Header.Set("Authorization", "Bearer "+key)
 	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {

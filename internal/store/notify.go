@@ -139,27 +139,6 @@ func (s *Store) IsSuppressed(ctx context.Context, addrHash string) (bool, error)
 	return n > 0, err
 }
 
-// IssueSeatToken stores the hash of a seat's secret unless the seat already
-// has one. It reports whether it was stored.
-func (s *Store) IssueSeatToken(ctx context.Context, gameID int64, nameKey, hash string) (bool, error) {
-	res, err := s.exec(ctx, "IssueSeatToken", `INSERT OR IGNORE INTO seat_tokens (game_id, name_key, token_hash) VALUES (?, ?, ?)`, gameID, nameKey, hash)
-	if err != nil {
-		return false, err
-	}
-	n, _ := res.RowsAffected()
-	return n > 0, nil
-}
-
-// SeatTokenHash returns the hash of a seat's secret ("" with ErrNotFound when none).
-func (s *Store) SeatTokenHash(ctx context.Context, gameID int64, nameKey string) (string, error) {
-	var h string
-	err := s.queryRow(ctx, "SeatTokenHash", `SELECT token_hash FROM seat_tokens WHERE game_id = ? AND name_key = ?`, gameID, nameKey).Scan(&h)
-	if errors.Is(err, sql.ErrNoRows) {
-		return "", ErrNotFound
-	}
-	return h, err
-}
-
 // NotifyPref is a seat's notification setting. ContactID is 0 when no
 // address has been chosen for the seat.
 type NotifyPref struct {

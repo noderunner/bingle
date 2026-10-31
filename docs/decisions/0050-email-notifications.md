@@ -1,6 +1,6 @@
 # 0050. Email notifications: contacts, seat tokens, TLS-only SMTP
 
-Status: accepted (2026-10-25)
+Status: accepted (2026-10-25); seat tokens replaced by seat ownership in [ADR 0067](0067-principals-and-guest-keys.md)
 
 ## Context
 

@@ -118,12 +118,9 @@ CREATE TABLE IF NOT EXISTS batch_games (
 -- Email notifications (see session/notify.go and docs/history/email-notifications-plan.md).
 -- A secret that proves a seat belongs to the browser that took it (only a hash
 -- is kept), keyed by the player's name in the game.
-CREATE TABLE IF NOT EXISTS seat_tokens (
-    game_id       INTEGER NOT NULL REFERENCES games(id) ON DELETE CASCADE,
-    name_key      TEXT NOT NULL,
-    token_hash    TEXT NOT NULL,
-    PRIMARY KEY (game_id, name_key)
-);
+-- Seat tokens proved a seat for the notify endpoints until seats were owned by
+-- a principal (ADR 0067); the table is gone.
+DROP TABLE IF EXISTS seat_tokens;
 
 -- An address a browser asked to be notified at. It is mailed only once
 -- verified (verified_at set by the confirmation link). secret_hash proves the
@@ -182,3 +179,28 @@ CREATE TABLE IF NOT EXISTS game_versions (
     first_seen  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (family, version)
 );
+
+-- Whoever acts: a guest, or (later) an account (ADR 0067). The ID is the
+-- server's own name for them and is never shown; a guest proves it is one with
+-- a key, below. merged_into is set when a guest's key was adopted by another
+-- device's guest and its seats moved there.
+CREATE TABLE IF NOT EXISTS principals (
+    id            TEXT PRIMARY KEY,
+    kind          TEXT NOT NULL,
+    account_id    INTEGER,
+    created_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_seen_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    merged_into   TEXT NOT NULL DEFAULT ''
+);
+
+-- A guest's keys, as SHA-256 hashes: whoever holds a key is that guest.
+CREATE TABLE IF NOT EXISTS guest_keys (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    principal_id  TEXT NOT NULL REFERENCES principals(id),
+    key_hash      TEXT NOT NULL UNIQUE,
+    created_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_used_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    revoked_at    TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_guest_keys_principal ON guest_keys(principal_id);

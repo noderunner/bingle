@@ -281,8 +281,9 @@ func TestWebCthulhuWars_MovesAndHistoryShareACardAndUndoIsAmongTheActions(t *tes
 	if n := evalInt(t, ctx, `document.querySelectorAll('#undo-move').length`); n != 0 {
 		t.Errorf("undo is offered before any move")
 	}
-	if code, out := moveNotation(t, baseURL, room, "Alice", "recruit@south-pacific"); code != 200 {
-		t.Fatalf("recruit: %d %v", code, out)
+	// Alice's seat is the browser's now (ADR 0067), so she moves as it.
+	if code := moveAs(t, browserGuestKey(t, ctx), baseURL, room, "Alice", "recruit@south-pacific"); code != 200 {
+		t.Fatalf("recruit: %d", code)
 	}
 	// The bots reply; when it is Alice's turn again her last move can be taken back
 	// — from the list of actions.

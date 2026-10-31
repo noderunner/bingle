@@ -1,6 +1,9 @@
 // Thin fetch wrapper around bingle's REST API.
 
-import { setSeatToken } from "./util.js";
+// Every request says it comes from bingle's own page: the server refuses a
+// state-changing request that is proved by the guest cookie but lacks it, and
+// a page's first such request is the one that makes its guest (ADR 0067).
+export const PAGE_HEADER = "X-Bingle-Session";
 
 export class ApiError extends Error {
 	constructor(message, status) {
@@ -9,17 +12,36 @@ export class ApiError extends Error {
 	}
 }
 
-async function call(path, { method = "GET", body, headers } = {}) {
-	const init = { method, headers: { ...(headers || {}) } };
+// The first state-changing request of a page goes alone, and the rest wait
+// for its answer: a browser without a guest yet gets one from that answer's
+// cookie, and two such requests at once would make two guests, the second
+// cookie overwriting the first and leaving a seat with the guest nobody has.
+let first = null;
+
+async function call(path, { method = "GET", body, headers, keepalive } = {}) {
+	const init = { method, headers: { [PAGE_HEADER]: "1", ...(headers || {}) } };
+	if (keepalive) init.keepalive = true;
 	if (body !== undefined) {
 		init.headers["Content-Type"] = "application/json";
 		init.body = JSON.stringify(body);
 	}
 	let resp;
+	let done = null;
+	if (method !== "GET") {
+		if (first) await first;
+		else first = new Promise((resolve) => (done = resolve));
+	}
 	try {
 		resp = await fetch(path, init);
 	} catch (err) {
 		throw new ApiError("Could not reach the server.", 0);
+	} finally {
+		// After the first answer the cookie is there (or the server chose not
+		// to make a guest): nothing more to wait for.
+		if (done) {
+			done();
+			first = Promise.resolve();
+		}
 	}
 	let data = null;
 	const text = await resp.text();
@@ -54,19 +76,12 @@ export const api = {
 	bots: () => call("/api/bots"),
 	puzzles: (gameDefID) => call("/api/puzzles" + (gameDefID ? `?game_def_id=${enc(gameDefID)}` : "")),
 	puzzle: (id, reveal) => call(`/api/puzzles/${enc(id)}${reveal ? "?reveal=1" : ""}`),
-	createGame: (body) =>
-		call("/api/games", { method: "POST", body }).then((res) => {
-			if (res && res.room_code && res.seat_token) setSeatToken(res.room_code, res.seat_token);
-			return res;
-		}),
+	createGame: (body) => call("/api/games", { method: "POST", body }),
 	importGame: (body) => call("/api/games/import", { method: "POST", body }),
 	botMatch: (body) => call("/api/bot-matches", { method: "POST", body }),
 	game: (code) => call(`/api/games/${enc(code)}`),
 	join: (code, name, role = "player", seat) =>
-		call(`/api/games/${enc(code)}/join`, { method: "POST", body: { player_name: name, role, seat: seat || undefined } }).then((res) => {
-			if (res && res.seat_token) setSeatToken(String(code).toUpperCase(), res.seat_token);
-			return res;
-		}),
+		call(`/api/games/${enc(code)}/join`, { method: "POST", body: { player_name: name, role, seat: seat || undefined } }),
 	addBot: (code, name, bot, seat) =>
 		call(`/api/games/${enc(code)}/bots`, { method: "POST", body: { player_name: name, bot, seat: seat || undefined } }),
 	config: () => call("/api/config"),
@@ -94,10 +109,12 @@ export const api = {
 	notifyContactStatus: (id, secret) => call("/api/notify/contact/status", { method: "POST", body: { contact_id: id, contact_secret: secret } }),
 	notifyResend: (id, secret) => call("/api/notify/contact/resend", { method: "POST", body: { contact_id: id, contact_secret: secret } }),
 	notifyForget: (id, secret) => call("/api/notify/contact/forget", { method: "POST", body: { contact_id: id, contact_secret: secret } }),
-	gameNotify: (code, name, token) => call(`/api/games/${enc(code)}/notify?player_name=${enc(name)}`, { headers: { "X-Seat-Token": token } }),
+	gameNotify: (code, name) => call(`/api/games/${enc(code)}/notify?player_name=${enc(name)}`),
 	setGameNotify: (code, body) => call(`/api/games/${enc(code)}/notify`, { method: "PUT", body }),
 	voice: (code) => call(`/api/games/${enc(code)}/voice`),
 	setVoice: (code, name, active, secret) => call(`/api/games/${enc(code)}/voice`, { method: "POST", body: { player_name: name, active, secret } }),
+	// The tab is closing: a request that outlives the page.
+	leaveVoice: (code, name) => call(`/api/games/${enc(code)}/voice`, { method: "POST", body: { player_name: name, active: false }, keepalive: true }),
 	voiceSignal: (code, name, to, kind, data) => call(`/api/games/${enc(code)}/voice/signal`, { method: "POST", body: { player_name: name, to, kind, data } }),
 	state: (code, atSeq, name) => {
 		const q = [];

@@ -101,9 +101,9 @@ func (h *handlers) handleContactForget(w http.ResponseWriter, r *http.Request) {
 }
 
 // handleGetGameNotify implements GET /games/{code}/notify?player_name=: the
-// seat's setting. The seat's secret goes in the X-Seat-Token header.
+// seat's setting, for the seat's owner.
 func (h *handlers) handleGetGameNotify(w http.ResponseWriter, r *http.Request) {
-	got, err := h.mgr.GameNotify(r.Context(), chi.URLParam(r, "code"), r.URL.Query().Get("player_name"), r.Header.Get("X-Seat-Token"))
+	got, err := h.mgr.GameNotify(r.Context(), chi.URLParam(r, "code"), r.URL.Query().Get("player_name"))
 	if err != nil {
 		writeError(w, err)
 		return
@@ -115,7 +115,6 @@ func (h *handlers) handleGetGameNotify(w http.ResponseWriter, r *http.Request) {
 // gameNotifyRequest is PUT /games/{code}/notify's body.
 type gameNotifyRequest struct {
 	PlayerName    string `json:"player_name"`
-	SeatToken     string `json:"seat_token"`
 	ContactID     int64  `json:"contact_id"`
 	ContactSecret string `json:"contact_secret"`
 	Enabled       bool   `json:"enabled"`
@@ -123,7 +122,7 @@ type gameNotifyRequest struct {
 }
 
 // handleSetGameNotify implements PUT /games/{code}/notify: switch the seat's
-// turn mail on or off. Switching it on needs the seat's secret and a verified
+// turn mail on or off, for the seat's owner. Switching it on needs a verified
 // contact (contact_id and its contact_secret) the caller owns.
 func (h *handlers) handleSetGameNotify(w http.ResponseWriter, r *http.Request) {
 	var req gameNotifyRequest
@@ -134,7 +133,7 @@ func (h *handlers) handleSetGameNotify(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err)
 		return
 	}
-	got, err := h.mgr.SetGameNotify(r.Context(), chi.URLParam(r, "code"), req.PlayerName, req.SeatToken, req.ContactID, req.ContactSecret, req.Enabled, req.AwayMinutes)
+	got, err := h.mgr.SetGameNotify(r.Context(), chi.URLParam(r, "code"), req.PlayerName, req.ContactID, req.ContactSecret, req.Enabled, req.AwayMinutes)
 	if err != nil {
 		writeError(w, err)
 		return

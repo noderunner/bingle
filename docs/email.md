@@ -114,11 +114,10 @@ mail server never delays a move.
 ## How it works (short)
 
 * A browser's address is a **contact**: the server stores it with a secret (only its hash) that the browser
-  keeps, and a stop token. A seat's secret ("seat token") is given once when a person takes the seat
-  (`seat_token` in the create and join answers) and is needed to read or change that seat's setting; it stops
-  other people in the game from changing yours. (A seat taken before this feature existed gets its token the next time
-  its name rejoins; whoever does that first gets it.)
-* `PUT /api/games/{code}/notify` needs the seat token **and** a confirmed contact the caller owns.
+  keeps, and a stop token. A seat's setting is for the guest that holds the seat
+  ([ADR 0067](decisions/0067-principals-and-guest-keys.md)): the browser that took it, or a script with its guest key.
+  Nobody else in the game can read or change yours, and an anonymous request cannot change anybody's.
+* `PUT /api/games/{code}/notify` needs the seat's owner **and** a confirmed contact the caller owns.
 * The server watches the room's events; when the turn passes to a seat whose person has a confirmed address and
   the switch on, it mails them, unless the person has the game open (a connected WebSocket) in "every time" mode, or
   the turn has already moved on when the "N minutes" wait is over. Waits are kept in memory: a restart forgets them.

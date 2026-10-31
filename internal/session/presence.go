@@ -87,6 +87,9 @@ func (m *Manager) SetPresent(ctx context.Context, roomCode, name string, present
 	seat := 0
 	for _, p := range players {
 		if p.Bot == "" && strings.EqualFold(p.Name, strings.TrimSpace(name)) {
+			if err := m.mayActFor(ctx, &p); err != nil {
+				return err
+			}
 			seat = p.Seat
 		}
 	}

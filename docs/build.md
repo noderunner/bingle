@@ -81,6 +81,7 @@ All configuration is via environment variables — there's no config file.
 | `BINGLE_TLS_SELFSIGNED` | `off` | Generate and cache a certificate at startup, so a server reachable from a network can be run without obtaining one. **No browser will trust it**; the warning is clicked through once per browser |
 | `BINGLE_TRUST_PROXY` | `off` | Serve plain HTTP behind a proxy that terminates TLS. The proxy **must** set `X-Forwarded-Proto: https`; anything arriving as `http` is refused. Turns every loopback exemption off |
 | `BINGLE_DEV` | `off` | Deterministic development credentials (used from stage 3 of the accounts plan). Loopback binds only, and never with `BINGLE_TRUST_PROXY` |
+| `BINGLE_GUEST_IDLE` | `90d` | How long a guest key may go unused before it stops working (`90d`, `720h`; an hour at least). The guest's history stays ([ADR 0067](decisions/0067-principals-and-guest-keys.md)) |
 | `BINGLE_TLS_CERT` | *(unset)* | Path to a TLS certificate file |
 | `BINGLE_TLS_KEY` | *(unset)* | Path to a TLS private key file |
 | `BINGLE_PUBLIC_URL` | *(unset)* | Base URL players on other networks reach the server by, such as `https://games.example.com` (an absolute `http`/`https` URL, no query). Invite links in the lobby and `invite_url` are built from it; unset, the address the request came to is used |

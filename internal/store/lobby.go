@@ -95,8 +95,8 @@ type ChatMessage struct {
 }
 
 // AddChatMessage appends a message to the game's chat.
-func (s *Store) AddChatMessage(ctx context.Context, gameID int64, seat int, name, body string) (ChatMessage, error) {
-	res, err := s.exec(ctx, "AddChatMessage.insert", `INSERT INTO chat_messages (game_id, seat, name, body) VALUES (?, ?, ?, ?)`, gameID, seat, name, body)
+func (s *Store) AddChatMessage(ctx context.Context, gameID int64, seat int, name, principalID, body string) (ChatMessage, error) {
+	res, err := s.exec(ctx, "AddChatMessage.insert", `INSERT INTO chat_messages (game_id, seat, name, principal_id, body) VALUES (?, ?, ?, ?, ?)`, gameID, seat, name, principalID, body)
 	if err != nil {
 		return ChatMessage{}, fmt.Errorf("storing chat message (game_id=%d): %w", gameID, err)
 	}
@@ -162,8 +162,8 @@ type GlobalChatMessage struct {
 
 // AddGlobalChat appends a message to the global chat room, which keeps its
 // latest 500 lines.
-func (s *Store) AddGlobalChat(ctx context.Context, name, body string) (GlobalChatMessage, error) {
-	res, err := s.exec(ctx, "AddGlobalChat.insert", `INSERT INTO global_chat (name, body) VALUES (?, ?)`, name, body)
+func (s *Store) AddGlobalChat(ctx context.Context, name, principalID, body string) (GlobalChatMessage, error) {
+	res, err := s.exec(ctx, "AddGlobalChat.insert", `INSERT INTO global_chat (name, principal_id, body) VALUES (?, ?, ?)`, name, principalID, body)
 	if err != nil {
 		return GlobalChatMessage{}, fmt.Errorf("storing global chat message: %w", err)
 	}

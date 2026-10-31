@@ -58,11 +58,21 @@ func dialRoom(t *testing.T, base, room, name, role string) *roomConn {
 // dialRoomWith is dialRoom with extra query parameters ("" for the ordinary socket of a page).
 func dialRoomWith(t *testing.T, base, room, name, role, extra string) *roomConn {
 	t.Helper()
+	return dialRoomAs(t, "", base, room, name, role, extra)
+}
+
+// dialRoomAs is dialRoomWith as the guest whose key is key ("" for none).
+func dialRoomAs(t *testing.T, key, base, room, name, role, extra string) *roomConn {
+	t.Helper()
 	u := "ws" + strings.TrimPrefix(base, "http") + "/ws/" + room + "?name=" + url.QueryEscape(name) + "&role=" + role + extra
 	ctx, cancel := context.WithCancel(context.Background())
 	dctx, dcancel := context.WithTimeout(ctx, wsDialTimeout)
 	defer dcancel()
-	c, _, err := websocket.Dial(dctx, u, nil)
+	var opts *websocket.DialOptions
+	if key != "" {
+		opts = &websocket.DialOptions{HTTPHeader: http.Header{"Authorization": {"Bearer " + key}}}
+	}
+	c, _, err := websocket.Dial(dctx, u, opts)
 	if err != nil {
 		cancel()
 		t.Fatalf("dial %s as %s: %v", room, name, err)

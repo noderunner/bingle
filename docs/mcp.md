@@ -16,6 +16,11 @@ conditions and move notation as text) — and three **prompts**: `play_game`
 
 ## Playing in a room
 
+A tool that acts for a seat names it with `player_name`. Connect with a guest key —
+`Authorization: Bearer bgg_…`, from `POST /api/guest` — and the seats the agent takes are its
+own: nobody else can play them by naming them. Without a key the agent is anonymous and plays, as
+before, only seats nobody owns ([ADR 0067](decisions/0067-principals-and-guest-keys.md)).
+
 | Tool | Purpose |
 |---|---|
 | `list_game_defs` | games available (`id`, `name`, `description`, board size, `family`, `version`) |

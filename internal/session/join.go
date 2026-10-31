@@ -90,6 +90,10 @@ func (m *Manager) JoinGameAt(ctx context.Context, roomCode, name string, role Ro
 			if p.Bot != "" {
 				return JoinResult{}, ErrNameIsABot
 			}
+			// Coming back to one's own seat: only its owner may.
+			if err := m.mayActFor(ctx, &p); err != nil {
+				return JoinResult{}, err
+			}
 			return JoinResult{Role: RolePlayer, Seat: p.Seat, Color: p.Color, Status: game.Status}, nil
 		}
 		playersBySeat[p.Seat] = p
@@ -127,6 +131,9 @@ func (m *Manager) JoinGameAt(ctx context.Context, roomCode, name string, role Ro
 
 	player, err := m.store.AddPlayer(ctx, game.ID, openSeat, name, openSeatColor, newStatus, newTurnSeat)
 	if err != nil {
+		return JoinResult{}, err
+	}
+	if err := m.mayActFor(ctx, &player); err != nil {
 		return JoinResult{}, err
 	}
 

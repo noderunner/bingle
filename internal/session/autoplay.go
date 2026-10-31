@@ -70,6 +70,9 @@ func (m *Manager) personSeat(ctx context.Context, game store.Game, name string) 
 	}
 	for _, p := range players {
 		if p.Bot == "" && strings.EqualFold(p.Name, name) {
+			if err := m.mayActFor(ctx, &p); err != nil {
+				return store.Player{}, err
+			}
 			return p, nil
 		}
 	}

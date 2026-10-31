@@ -58,6 +58,9 @@ func (m *Manager) Undo(ctx context.Context, roomCode, name string) (UndoOutcome,
 	if player == nil || player.Bot != "" {
 		return UndoOutcome{}, ErrNotAPlayer
 	}
+	if err := m.mayActFor(ctx, player); err != nil {
+		return UndoOutcome{}, err
+	}
 	// The seats a person plays besides their own (a game against oneself) are
 	// theirs to take back too.
 	for seat, n := range names {

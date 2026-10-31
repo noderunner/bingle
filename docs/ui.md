@@ -468,8 +468,8 @@ the last move together with the later moves of one's other seats.
 ### Email notifications
 
 `js/notify-ui.js` holds the browser's side: the contact this browser made (`bingle.contact` = `{id, secret, address}`; the
-server never sends an address back), the seat secrets (`bingle.tokens`, by room code, saved by `api.createGame` and
-`api.join` from `seat_token`) and the per-game setting. The **profile page** has the address, the switch, the status
+server never sends an address back) and the per-game setting, which only the guest that holds the seat may read or
+change (ADR 0067): a browser that did not take the seat is told so (`#notify-no-token`). The **profile page** has the address, the switch, the status
 (`#notify-status`, polled while the address waits for its confirmation), *Send the confirmation again*
 (`#notify-resend`), *Forget my address* (`#notify-forget`) and the note naming the sender (`#notify-whitelist`,
 `.notify-from`); the game's **options window** has an *Email notifications* section (`#options-notify`: `#notify-on`,

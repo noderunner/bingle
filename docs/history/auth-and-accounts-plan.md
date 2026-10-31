@@ -1,7 +1,7 @@
 # Plan: authenticated accounts, capabilities and a secure transport
 
-Status: **stage 1 done, stages 2–8 planned** (2026-10-29; guests amended 2026-10-31). Stage 1
-(secure transport) is on `main`; what it settled is [ADR 0065](../decisions/0065-the-connection-must-be-secure.md). The decisions in *What was decided*
+Status: **stages 1–2 done, stages 3–8 planned** (2026-10-29; guests amended 2026-10-31). Stage 1
+(secure transport) settled [ADR 0065](../decisions/0065-the-connection-must-be-secure.md), stage 2 (principals and guest keys) [ADR 0067](../decisions/0067-principals-and-guest-keys.md). The decisions in *What was decided*
 were taken with the owner before this was written; the rest is the reasoning, the diagrams
 and the staging. The 2026-10-31 amendment makes a guest a principal of its own, with an ID
 and a portable key (§3a), before stage 2 begins.
@@ -519,6 +519,13 @@ a guest key never appears in a log line or a URL; a bearer guest key and a cooki
 are the same guest; a contract test fails when a new endpoint reads `player_name` without a
 principal.
 
+Notes. *Done* (ADR 0067). One departure, forced by the plan's own wording: an anonymous request
+is not made a guest, because every client without a cookie jar would then be a new guest per
+request and lose its seat on the second. It stays anonymous and keeps unowned seats only, acted
+for by name; whatever a browser or a keyed script takes is out of its reach. Private views show a
+non-owner a spectator's view instead of refusing, and the page's first state-changing request is
+sent alone so that two concurrent ones cannot make two guests.
+
 **3. Accounts, sessions and password login.** The schema, Argon2id, server-side sessions, the
 cookie and CSRF rules, the seeded admin with its forced password change, the login and signup
 pages, email confirmation through the existing mailer, and the `bingle account` commands.
@@ -626,3 +633,5 @@ contact into an account without a second confirmation.
   or as a `#guest=` link, to resume their games on another device (stage 7, or straight after
   stage 2). Found while reviewing: a move is authorised today by the player's name alone, which
   stage 2 now closes. Nothing implemented.
+- 2026-10-31: stage 2 done (ADR 0067): principals and guest keys, seats owned by their principal,
+  seat tokens retired; anonymous requests keep unowned seats only.

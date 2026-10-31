@@ -99,7 +99,7 @@ function flush() {
 	try {
 		fetch(ENDPOINT, {
 			method: "POST",
-			headers: { "Content-Type": "application/json" },
+			headers: { "Content-Type": "application/json", "X-Bingle-Session": "1" },
 			body: JSON.stringify(report),
 			keepalive: true,
 		}).catch(() => {});

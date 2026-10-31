@@ -36,6 +36,9 @@ func (m *Manager) Resign(ctx context.Context, roomCode, name string) (StateSnaps
 	if player == nil || player.Bot != "" {
 		return StateSnapshot{}, ErrNotAPlayer
 	}
+	if err := m.mayActFor(ctx, player); err != nil {
+		return StateSnapshot{}, err
+	}
 	compiled, ok := m.catalog.Get(game.GameDefID)
 	if !ok {
 		return StateSnapshot{}, fmt.Errorf("session: game definition %q not found for room %q", game.GameDefID, roomCode)
@@ -91,6 +94,9 @@ func (m *Manager) Draw(ctx context.Context, roomCode, name, action string) (Stat
 	}
 	if player == nil || player.Bot != "" {
 		return StateSnapshot{}, ErrNotAPlayer
+	}
+	if err := m.mayActFor(ctx, player); err != nil {
+		return StateSnapshot{}, err
 	}
 	for _, p := range players {
 		if p.Seat != player.Seat && p.Bot != "" {

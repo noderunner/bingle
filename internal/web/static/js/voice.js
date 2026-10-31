@@ -578,7 +578,9 @@ untracked(() =>
 	window.addEventListener("pagehide", () => {
 		if (!V.joined) return;
 		try {
-			navigator.sendBeacon(`/api/games/${encodeURIComponent(V.code)}/voice`, new Blob([JSON.stringify({ player_name: V.me.name, active: false })], { type: "application/json" }));
+			// Not a beacon: it cannot carry the header a request from the page
+			// needs (see api.js).
+			api.leaveVoice(V.code, V.me.name).catch(() => {});
 		} catch (_) {
 			/* the place lapses by itself */
 		}

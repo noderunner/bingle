@@ -12,6 +12,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/noderunner/bingle/internal/auth"
 	"github.com/noderunner/bingle/internal/batch"
 	"github.com/noderunner/bingle/internal/envs"
 	"github.com/noderunner/bingle/internal/journal"
@@ -35,6 +36,9 @@ func NewRouter(mgr *session.Manager, opts ...Option) chi.Router {
 		r.Post("/client-error", h.handlePostClientError)
 	}
 
+	if h.guests != nil {
+		r.Post("/guest", h.guests.HandleNewGuest)
+	}
 	r.Post("/games", h.handleCreateGame)
 	r.Post("/games/import", h.handleImportGame)
 	r.Post("/bot-matches", h.handleBotMatch)
@@ -140,8 +144,10 @@ func NewWSHandler(mgr *session.Manager) http.HandlerFunc {
 
 // handlers holds the dependencies shared by every handler in this package.
 type handlers struct {
-	mgr  *session.Manager
-	envs *envs.Manager
+	mgr *session.Manager
+	// guests makes guests for scripts (POST /guest); nil leaves it unmounted.
+	guests *auth.Resolver
+	envs   *envs.Manager
 	// batches runs bot practice batches (nil when not mounted).
 	batches *batch.Manager
 	// publicURL is the base URL clients on other networks reach the server by
@@ -167,6 +173,9 @@ type handlers struct {
 	// because it is the one observability route on the public listener.
 	clientErrorsOn bool
 }
+
+// WithGuests mounts POST /guest, which makes a guest for a script.
+func WithGuests(rs *auth.Resolver) Option { return func(h *handlers) { h.guests = rs } }
 
 // WithTransport tells the API how to read a request's peer address. Without
 // it the zero policy applies: no proxy trusted, no forwarded header believed.

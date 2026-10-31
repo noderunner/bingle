@@ -116,6 +116,12 @@ var columnMigrations = []struct{ table, column, ddl string }{
 	// clock: the game clock of a game played with one (JSON; see
 	// session.GameClock), empty for a game played without.
 	{"games", "clock", "TEXT NOT NULL DEFAULT ''"},
+	// principal_id: who owns the seat, the game or the line (ADR 0067); empty
+	// for a row written by an anonymous client or before principals existed.
+	{"players", "principal_id", "TEXT NOT NULL DEFAULT ''"},
+	{"games", "owner_principal_id", "TEXT NOT NULL DEFAULT ''"},
+	{"chat_messages", "principal_id", "TEXT NOT NULL DEFAULT ''"},
+	{"global_chat", "principal_id", "TEXT NOT NULL DEFAULT ''"},
 }
 
 func addMissingColumns(db *sql.DB) error {

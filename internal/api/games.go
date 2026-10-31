@@ -82,10 +82,6 @@ type createGameResponse struct {
 	Color    string      `json:"color"`
 	Status   string      `json:"status"`
 	BotMoves []wire.Move `json:"bot_moves,omitempty"`
-	// SeatToken is the secret of the creator's seat, shown once: it proves
-	// later that the seat is theirs (it is needed to change its email
-	// notification setting).
-	SeatToken string `json:"seat_token,omitempty"`
 }
 
 // handleCreateGame implements POST /games: decode {"game_def_id",
@@ -140,14 +136,12 @@ func (h *handlers) handleCreateGame(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, _ := h.mgr.IssueSeatToken(r.Context(), result.RoomCode, req.PlayerName)
 	writeJSON(w, http.StatusOK, createGameResponse{
-		RoomCode:  result.RoomCode,
-		Seat:      result.Seat,
-		Color:     result.Color,
-		Status:    result.Status,
-		BotMoves:  wire.MovesFromOutcomes(result.BotMoves),
-		SeatToken: token,
+		RoomCode: result.RoomCode,
+		Seat:     result.Seat,
+		Color:    result.Color,
+		Status:   result.Status,
+		BotMoves: wire.MovesFromOutcomes(result.BotMoves),
 	})
 }
 
@@ -280,8 +274,6 @@ type joinGameResponse struct {
 	Seat   int    `json:"seat,omitempty"`
 	Color  string `json:"color,omitempty"`
 	Status string `json:"status"`
-	// SeatToken is the secret of a seat, shown once (see createGameResponse).
-	SeatToken string `json:"seat_token,omitempty"`
 }
 
 // handleJoinGame implements POST /games/{code}/join: decode
@@ -320,16 +312,11 @@ func (h *handlers) handleJoinGame(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token := ""
-	if result.Role == session.RolePlayer {
-		token, _ = h.mgr.IssueSeatToken(r.Context(), code, req.PlayerName)
-	}
 	writeJSON(w, http.StatusOK, joinGameResponse{
-		Role:      string(result.Role),
-		Seat:      result.Seat,
-		Color:     result.Color,
-		Status:    result.Status,
-		SeatToken: token,
+		Role:   string(result.Role),
+		Seat:   result.Seat,
+		Color:  result.Color,
+		Status: result.Status,
 	})
 }
 

@@ -3,8 +3,19 @@
 Base path `/api` (JSON). Every error is `{"error": "<message>"}` with a status
 code: `400` bad input or an illegal move, `403` not your turn / not a player,
 `404` unknown room or game, `409` wrong game state (not active, seats full,
-nothing to undo). Room codes are case-insensitive. There is no
-authentication: a player is identified by the name they joined with.
+nothing to undo). Room codes are case-insensitive.
+
+**Who is asking** ([ADR 0067](decisions/0067-principals-and-guest-keys.md)). A request comes from a
+*guest* when it carries a guest key — the `bingle_guest` cookie of a browser, or
+`Authorization: Bearer bgg_…` from a script — and is anonymous otherwise. A seat belongs to the
+guest that took it: `player_name` says which seat a request means, and the seat's owner alone may
+act for it (`403` for anybody else). A seat taken by an anonymous request belongs to nobody and is
+acted for by name, as every seat once was, until the first guest to act for it becomes its owner.
+`POST /api/guest` makes a guest for a script (`201 {key}`; `429` past 60 an hour from one address);
+an unknown or expired bearer key is `401`. A browser never calls it: its first state-changing
+request from bingle's page makes its guest and sets the cookie. A state-changing request proved by
+the cookie must carry the header `X-Bingle-Session` (bingle's page sends it; a cross-site form
+cannot), or it is `403`. A key unused for `BINGLE_GUEST_IDLE` (90 days) stops working.
 
 Position documents appear as `state` (full: `cells` = stacks bottom-to-top,
 `reserves`, `ply`) next to the legacy `board_state` (position → top piece).
@@ -53,8 +64,8 @@ Position documents appear as `state` (full: `cells` = stacks bottom-to-top,
 | `GET /notify/config` | whether email notifications are set up | `{enabled, from?}` (`from`: the sender address, so players can allow it) |
 | `POST /notify/contact` | `{address, contact_id?, contact_secret?}`: ask to be mailed at an address. Without the id and secret a new contact is made (`contact_secret` is returned once); with them its address is changed. One confirmation link is mailed to the address, nothing else until it is followed. The address is never returned | `{contact_id, contact_secret?, status: pending\|verified\|stopped, masked, confirmation_sent, note?}`; `400` bad address, `403` wrong secret, `404` feature off, `409` the address was stopped |
 | `POST /notify/contact/status`, `/resend`, `/forget` | `{contact_id, contact_secret}`: the state of the contact, mail the confirmation again (limited), delete it and every game setting that used it | as above; `403` wrong secret |
-| `GET /games/{code}/notify` | `?player_name=` and the header `X-Seat-Token`: the seat's setting | `{configured, enabled, away_minutes, contact?: {status, masked}}`; `403` no or wrong seat token |
-| `PUT /games/{code}/notify` | `{player_name, seat_token, contact_id, contact_secret, enabled, away_minutes}`: mail the seat when it is its turn (`away_minutes` 0: every time; N: only when the turn waited N minutes; at most 1440). Needs the seat token and, to switch on, a confirmed contact the caller owns | the setting; `403` bad secrets, `409` address not confirmed or stopped |
+| `GET /games/{code}/notify` | `?player_name=`: the seat's setting, for the seat's owner (a guest; never an anonymous request) | `{configured, enabled, away_minutes, contact?: {status, masked}}`; `403` not the seat's owner |
+| `PUT /games/{code}/notify` | `{player_name, contact_id, contact_secret, enabled, away_minutes}`: mail the seat when it is its turn (`away_minutes` 0: every time; N: only when the turn waited N minutes; at most 1440). For the seat's owner and, to switch on, a confirmed contact the caller owns | the setting; `403` not the owner or a bad contact secret, `409` address not confirmed or stopped |
 | `GET /games/{code}/voice` | who is in the game's voice chat (see [voice.md](voice.md)) | `{peers: [{seat, name}]}` |
 | `POST /games/{code}/voice` | `{player_name, active}`: a seated player joins the call (`active: true`, repeated every ~15 s as a heartbeat; a place lapses after 45 s) or leaves it | `{peers}`; `403` not a player |
 | `POST /games/{code}/voice/signal` | `{player_name, to, kind, data}`: relay an `offer`, `answer`, `ice` or `retry` message (≤ 16 KB of JSON, ≤ 300 per 10 s) to seat `to`, delivered only to that seat's WebSocket | `{ok}`; `403` sender not in the call, `409` target not in it, `429` too fast |

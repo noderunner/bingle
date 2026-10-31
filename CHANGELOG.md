@@ -4,6 +4,20 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.22.0 - 2026-10-31
+
+### Bingle Core 0.22.0
+- **Your seat is yours.** Until now anybody who knew a game's code and your name could make moves
+  for you, read your hand or speak as you, just by typing your name. Now a seat belongs to the
+  browser that took it: other people in the game, and anybody else, are turned away. Nothing
+  changes in how you play — your browser remembers you by itself — but typing somebody else's
+  name no longer takes their seat, so finish a game in the browser you started it in. (Moving to
+  another device comes in a later version.)
+- Seats in games started before this version are claimed by the first browser to play them.
+- For people who write scripts against Bingle: `POST /api/guest` gives a script a guest key to send
+  as `Authorization: Bearer`, so its seats are protected too. A script that sends no key plays as
+  before, on seats it took the same way.
+
 ## 0.21.0 - 2026-10-31
 
 ### Mycelium 0.1.0 — a new game

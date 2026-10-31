@@ -23,6 +23,8 @@ const notifyFrom = "bingle_games@proton.me"
 type notifyEnv struct {
 	URL  string
 	SMTP *fakesmtp.Server
+	// keys are the guest keys of the seats this test took, by "ROOM/name".
+	keys map[string]string
 }
 
 type notifyMods func(*config.Config)
@@ -51,7 +53,7 @@ func newNotifyEnv(t *testing.T, smtpOpts fakesmtp.Options, mods ...notifyMods) *
 	t.Cleanup(func() { cancel(); _ = a.Close() })
 	srv := httptest.NewServer(a.Router())
 	t.Cleanup(srv.Close)
-	return &notifyEnv{URL: srv.URL, SMTP: smtp}
+	return &notifyEnv{URL: srv.URL, SMTP: smtp, keys: map[string]string{}}
 }
 
 type contactResp struct {
@@ -63,32 +65,60 @@ type contactResp struct {
 	Note             string `json:"note"`
 }
 
+// seatGame is a game and the guest key of the seat that made it: a seat's
+// email setting is its owner's alone (ADR 0067).
 type seatGame struct {
 	Room  string
 	Token string
 }
 
+// createGame makes a game as a guest of its own.
 func (e *notifyEnv) createGame(t *testing.T, def, name string) seatGame {
 	t.Helper()
+	key := newGuestKey(t, e.URL)
 	var out struct {
-		RoomCode  string `json:"room_code"`
-		SeatToken string `json:"seat_token"`
+		RoomCode string `json:"room_code"`
 	}
-	if code := doJSON(t, "POST", e.URL+"/api/games", map[string]any{"game_def_id": def, "player_name": name}, &out); code != 200 {
+	if code := doJSONAs(t, key, "POST", e.URL+"/api/games", map[string]any{"game_def_id": def, "player_name": name}, &out); code != 200 {
 		t.Fatalf("create: %d", code)
 	}
-	return seatGame{out.RoomCode, out.SeatToken}
+	e.keys[out.RoomCode+"/"+strings.ToLower(name)] = key
+	return seatGame{out.RoomCode, key}
 }
 
+// join takes a seat as a guest of its own, and returns the guest's key.
 func (e *notifyEnv) join(t *testing.T, room, name string) string {
 	t.Helper()
-	var out struct {
-		SeatToken string `json:"seat_token"`
-	}
-	if code := doJSON(t, "POST", e.URL+"/api/games/"+room+"/join", map[string]any{"player_name": name}, &out); code != 200 {
+	key := newGuestKey(t, e.URL)
+	if code := doJSONAs(t, key, "POST", e.URL+"/api/games/"+room+"/join", map[string]any{"player_name": name}, nil); code != 200 {
 		t.Fatalf("join: %d", code)
 	}
-	return out.SeatToken
+	e.keys[room+"/"+strings.ToLower(name)] = key
+	return key
+}
+
+// move plays a move for name, as the guest that holds the seat.
+func (e *notifyEnv) move(t *testing.T, room, name, notation string) {
+	t.Helper()
+	if code := doJSONAs(t, e.keys[room+"/"+strings.ToLower(name)], "POST", e.URL+"/api/games/"+room+"/moves", map[string]any{"player_name": name, "notation": notation}, nil); code != 200 {
+		t.Fatalf("%s plays %s: %d", name, notation, code)
+	}
+}
+
+// getNotify reads a seat's setting as the guest whose key is key.
+func (e *notifyEnv) getNotify(t *testing.T, room, name, key string) (int, []byte) {
+	t.Helper()
+	req, _ := http.NewRequest("GET", e.URL+"/api/games/"+room+"/notify?player_name="+name, nil)
+	if key != "" {
+		req.Header.Set("Authorization", "Bearer "+key)
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	b, _ := io.ReadAll(resp.Body)
+	return resp.StatusCode, b
 }
 
 // waitMails waits until the fake server holds n mails (or fails).
@@ -149,8 +179,8 @@ func post(t *testing.T, url string) (int, string) {
 func (e *notifyEnv) setNotify(t *testing.T, g seatGame, name string, c contactResp, enabled bool, away int) (int, map[string]any) {
 	t.Helper()
 	var out map[string]any
-	code := doJSON(t, "PUT", e.URL+"/api/games/"+g.Room+"/notify", map[string]any{
-		"player_name": name, "seat_token": g.Token, "contact_id": c.ID, "contact_secret": c.Secret, "enabled": enabled, "away_minutes": away}, &out)
+	code := doJSONAs(t, g.Token, "PUT", e.URL+"/api/games/"+g.Room+"/notify", map[string]any{
+		"player_name": name, "contact_id": c.ID, "contact_secret": c.Secret, "enabled": enabled, "away_minutes": away}, &out)
 	return code, out
 }
 
@@ -199,21 +229,20 @@ func TestNotify_ConfigNamesTheSender(t *testing.T) {
 	}
 }
 
-func TestNotify_SeatTokensAreIssuedOnce(t *testing.T) {
+// A seat's setting is for the guest that holds the seat: not for another
+// seat's guest, not for a request with no guest at all.
+func TestNotify_ASeatsSettingIsItsOwners(t *testing.T) {
 	e := newNotifyEnv(t, fakesmtp.Options{})
 	g := e.createGame(t, "tic-tac-toe", "Alice")
-	if g.Token == "" {
-		t.Fatal("the creator got no seat token")
-	}
 	bob := e.join(t, g.Room, "Bob")
-	if bob == "" || bob == g.Token {
-		t.Errorf("the joiner's token = %q", bob)
+	if code, _ := e.getNotify(t, g.Room, "Alice", g.Token); code != 200 {
+		t.Errorf("Alice reads her own setting: %d, want 200", code)
 	}
-	if again := e.join(t, g.Room, "Bob"); again != "" {
-		t.Errorf("the seat's token was handed out a second time: %q", again)
+	if code, _ := e.getNotify(t, g.Room, "Alice", bob); code != 403 {
+		t.Errorf("Bob reads Alice's setting: %d, want 403", code)
 	}
-	if again := e.join(t, g.Room, "alice"); again != "" {
-		t.Errorf("the creator's token was handed to a rejoin: %q", again)
+	if code, _ := e.getNotify(t, g.Room, "Alice", ""); code != 403 {
+		t.Errorf("an anonymous request reads Alice's setting: %d, want 403", code)
 	}
 }
 
@@ -290,8 +319,8 @@ func TestNotify_ConfirmationFlowAndTurnMail(t *testing.T) {
 	}
 
 	// Alice moves, Bob moves: it is Alice's turn again, but one mail per game per 15 minutes is the limit.
-	moveNotation(t, e.URL, g.Room, "Alice", "a1")
-	moveNotation(t, e.URL, g.Room, "Bob", "b2")
+	e.move(t, g.Room, "Alice", "a1")
+	e.move(t, g.Room, "Bob", "b2")
 	e.quiet(t, 2)
 }
 
@@ -303,7 +332,7 @@ func TestNotify_NoMailWhileThePlayerIsConnected(t *testing.T) {
 		t.Fatal(st)
 	}
 	n := len(e.SMTP.Mails())
-	_ = dialRoomWith(t, e.URL, g.Room, "Alice", "player", "") // Alice has the game open
+	_ = dialRoomAs(t, e.keys[g.Room+"/alice"], e.URL, g.Room, "Alice", "player", "") // Alice has the game open
 	time.Sleep(200 * time.Millisecond)
 	e.join(t, g.Room, "Bob")
 	e.quiet(t, n)
@@ -317,7 +346,7 @@ func TestNotify_AwayModeWaitsAndChecksTheTurn(t *testing.T) {
 		t.Fatal(st)
 	}
 	n := len(e.SMTP.Mails())
-	_ = dialRoomWith(t, e.URL, g.Room, "Alice", "player", "") // connected, but the away mode mails anyway
+	_ = dialRoomAs(t, e.keys[g.Room+"/alice"], e.URL, g.Room, "Alice", "player", "") // connected, but the away mode mails anyway
 	e.join(t, g.Room, "Bob")
 	e.quiet(t, n) // not yet: the wait (800 ms) has not passed
 	e.waitMails(t, n+1)
@@ -329,7 +358,7 @@ func TestNotify_AwayModeWaitsAndChecksTheTurn(t *testing.T) {
 		t.Fatal(st)
 	}
 	e.join(t, g2.Room, "Bob")
-	moveNotation(t, e.URL, g2.Room, "Alice", "a1")
+	e.move(t, g2.Room, "Alice", "a1")
 	time.Sleep(2500 * time.Millisecond)
 	if got := len(e.SMTP.Mails()); got != n+1 {
 		t.Errorf("%d mails, want %d: a mail came for a turn that had passed", got, n+1)
@@ -345,7 +374,7 @@ func TestNotify_BotsAndOthersAreNotMailed(t *testing.T) {
 	// Bob has no setting: his turn mails nobody.
 	e.join(t, g.Room, "Bob")
 	e.waitMails(t, n+1) // Alice's own first turn
-	moveNotation(t, e.URL, g.Room, "Alice", "a1")
+	e.move(t, g.Room, "Alice", "a1")
 	e.quiet(t, n+1)
 }
 
@@ -355,30 +384,30 @@ func TestNotify_WrongSecretsChangeNothing(t *testing.T) {
 	bobToken := e.join(t, g.Room, "Bob")
 	c := e.verified(t, "alice@example.com")
 
-	for name, req := range map[string]map[string]any{
-		"no seat token":          {"player_name": "Alice", "contact_id": c.ID, "contact_secret": c.Secret, "enabled": true},
-		"another seat's token":   {"player_name": "Alice", "seat_token": bobToken, "contact_id": c.ID, "contact_secret": c.Secret, "enabled": true},
-		"a made-up seat token":   {"player_name": "Alice", "seat_token": "nope", "contact_id": c.ID, "contact_secret": c.Secret, "enabled": true},
-		"no contact secret":      {"player_name": "Alice", "seat_token": g.Token, "contact_id": c.ID, "enabled": true},
-		"a wrong contact secret": {"player_name": "Alice", "seat_token": g.Token, "contact_id": c.ID, "contact_secret": "nope", "enabled": true},
+	for name, tc := range map[string]struct {
+		key  string
+		req  map[string]any
+		want int
+	}{
+		"no guest":               {"", map[string]any{"player_name": "Alice", "contact_id": c.ID, "contact_secret": c.Secret, "enabled": true}, 403},
+		"another seat's guest":   {bobToken, map[string]any{"player_name": "Alice", "contact_id": c.ID, "contact_secret": c.Secret, "enabled": true}, 403},
+		"a made-up guest key":    {"bgg_nope", map[string]any{"player_name": "Alice", "contact_id": c.ID, "contact_secret": c.Secret, "enabled": true}, 401},
+		"no contact secret":      {g.Token, map[string]any{"player_name": "Alice", "contact_id": c.ID, "enabled": true}, 403},
+		"a wrong contact secret": {g.Token, map[string]any{"player_name": "Alice", "contact_id": c.ID, "contact_secret": "nope", "enabled": true}, 403},
 	} {
 		var out map[string]any
-		if code := doJSON(t, "PUT", e.URL+"/api/games/"+g.Room+"/notify", req, &out); code != 403 {
-			t.Errorf("%s: %d, want 403", name, code)
+		if code := doJSONAs(t, tc.key, "PUT", e.URL+"/api/games/"+g.Room+"/notify", tc.req, &out); code != tc.want {
+			t.Errorf("%s: %d, want %d", name, code, tc.want)
 		}
 	}
-	// Reading needs the seat token too (it also shows the masked address).
+	// Reading is the owner's too (it also shows the masked address).
 	var out map[string]any
-	if code := doJSON(t, "GET", e.URL+"/api/games/"+g.Room+"/notify?player_name=Alice", nil, &out); code != 403 {
-		t.Errorf("GET without a token: %d, want 403", code)
+	if code, _ := e.getNotify(t, g.Room, "Alice", ""); code != 403 {
+		t.Errorf("GET with no guest: %d, want 403", code)
 	}
-	req, _ := http.NewRequest("GET", e.URL+"/api/games/"+g.Room+"/notify?player_name=Alice", nil)
-	req.Header.Set("X-Seat-Token", g.Token)
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil || resp.StatusCode != 200 {
-		t.Fatalf("GET with the token: %v %v", resp, err)
+	if code, _ := e.getNotify(t, g.Room, "Alice", g.Token); code != 200 {
+		t.Fatalf("GET as the owner: %d", code)
 	}
-	_ = resp.Body.Close()
 	// Nobody else's contact can be changed or read.
 	for _, path := range []string{"contact", "contact/status", "contact/resend", "contact/forget"} {
 		body := map[string]any{"contact_id": c.ID, "contact_secret": "guess", "address": "x@example.com"}
@@ -400,7 +429,7 @@ func TestNotify_AddressIsNeverReturned(t *testing.T) {
 	c := e.verified(t, addr)
 	e.setNotify(t, g, "Alice", c, true, 0)
 	e.join(t, g.Room, "Bob")
-	moveNotation(t, e.URL, g.Room, "Alice", "a1")
+	e.move(t, g.Room, "Alice", "a1")
 
 	paths := []string{"/api/games/" + g.Room, "/api/games/" + g.Room + "/state", "/api/games/" + g.Room + "/moves", "/api/games/" + g.Room + "/history",
 		"/api/games/" + g.Room + "/export", "/api/games/" + g.Room + "/chat", "/api/games/" + g.Room + "/presence", "/api/games/" + g.Room + "/voice",
@@ -418,18 +447,14 @@ func TestNotify_AddressIsNeverReturned(t *testing.T) {
 	}
 	// What the owner sees is masked.
 	var own map[string]any
-	req, _ := http.NewRequest("GET", e.URL+"/api/games/"+g.Room+"/notify?player_name=Alice", nil)
-	req.Header.Set("X-Seat-Token", g.Token)
-	resp, _ := http.DefaultClient.Do(req)
-	b, _ := io.ReadAll(resp.Body)
-	_ = resp.Body.Close()
+	_, b := e.getNotify(t, g.Room, "Alice", g.Token)
 	_ = json.Unmarshal(b, &own)
 	if strings.Contains(string(b), addr) || !strings.Contains(string(b), "v••••@example.org") {
 		t.Errorf("owner's view = %s", b)
 	}
 	// The WebSocket frames of the room carry no address either.
-	ws := dialRoomWith(t, e.URL, g.Room, "Bob", "player", "")
-	moveNotation(t, e.URL, g.Room, "Bob", "b2")
+	ws := dialRoomAs(t, e.keys[g.Room+"/bob"], e.URL, g.Room, "Bob", "player", "")
+	e.move(t, g.Room, "Bob", "b2")
 	if ev, ok := nextEvent(t, ws, "move", 3*time.Second); !ok || strings.Contains(string(ev.Data), "very.secret") {
 		t.Errorf("move event: %v %s", ok, ev.Data)
 	}
@@ -462,8 +487,8 @@ func TestNotify_StopLinkSilencesTheAddressForGood(t *testing.T) {
 	}
 	// No more turn mail ...
 	n := len(e.SMTP.Mails())
-	moveNotation(t, e.URL, g.Room, "Alice", "a1")
-	moveNotation(t, e.URL, g.Room, "Bob", "b2")
+	e.move(t, g.Room, "Alice", "a1")
+	e.move(t, g.Room, "Bob", "b2")
 	e.quiet(t, n)
 	// ... it cannot be switched on again, and nobody can have it mailed under another contact.
 	if st, _ := e.setNotify(t, g, "Alice", c, true, 0); st != 409 {
