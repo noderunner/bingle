@@ -110,8 +110,8 @@ func (a *Accounts) SetClock(now func() time.Time) { a.now = now }
 var (
 	ErrSignupClosed  = errors.New("auth: signing up is closed on this server: ask its administrator for an account")
 	ErrSignupNoMail  = errors.New("auth: signing up needs email, which this server is not set up to send: ask its administrator for an account")
-	ErrHandleTaken   = errors.New("auth: that handle is taken")
-	ErrBadLogin      = errors.New("auth: the handle or the password is wrong")
+	ErrHandleTaken   = errors.New("auth: that username is taken")
+	ErrBadLogin      = errors.New("auth: the username or the password is wrong")
 	ErrNotConfirmed  = errors.New("auth: confirm your email address first: the link is in the mail Bingle sent you")
 	ErrTooManyTries  = errors.New("auth: too many tries; wait a few minutes")
 	ErrMailLater     = errors.New("auth: the confirmation mail could not be sent just now; try again later")
@@ -453,7 +453,7 @@ func (a *Accounts) Create(ctx context.Context, handle, email string, admin bool)
 	id, err := a.st.CreateAccount(ctx, store.NewAccount{Handle: h, DisplayName: h, Email: addr, Verified: true, MustChangePassword: true,
 		PrincipalID: NewPrincipalID(), NewPrincipal: true, PasswordHash: HashPassword(pw, a.params), Groups: groups})
 	if errors.Is(err, store.ErrTaken) {
-		return "", fmt.Errorf("auth: the handle or the address is an account's already")
+		return "", fmt.Errorf("auth: the username or the address is an account's already")
 	}
 	if err != nil {
 		return "", err

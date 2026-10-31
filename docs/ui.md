@@ -492,7 +492,14 @@ and its `#guest=` link, `#guest-link`, `#guest-key`, copied to the clipboard), `
 `#guest-use-key` with `#guest-use` to adopt a key; any page opened with `#guest=bgg_…` adopts it, takes it out of the
 address and reloads. "My games" merges `GET /api/me/games` into `bingle.games`. The account page adds the address
 (`#account-email`), the handle (`#handle-new`, `#handle-go`) and the sessions (`#sessions-list`, `#sessions-end`); the
-admin page the audit log (`#events-rows`). The profile page's `#account-box` says whether the browser is a guest (`#login-link`, `#signup-link`)
+admin page the audit log (`#events-rows`). The top bar's profile window starts with who the browser is (`#profile-account`): a guest gets *Sign in*
+(`#profile-signin`, back to the page afterwards) and, where the server allows it, *Sign up* (`#profile-signup`); an
+account gets `#profile-account-who` ("Signed in as @ana"), *Your account* (`#profile-account-link`), *Administration*
+for an administrator (`#profile-admin-link`) and *Sign out* (`#profile-signout`). The icon's title says the same.
+A page offers only what the browser may do (its `caps` from `GET /auth/me`): without `dm` the direct-messages icon
+(`#open-messages`) stays hidden; without `run_batch` the home page's practice card is hidden and the Analysis tab shows
+`#analysis-signin` instead of its form; without `notify` the game options have no email section and the profile page
+shows `#notify-accounts-only` instead of the address and the switch. The profile page's `#account-box` says whether the browser is a guest (`#login-link`, `#signup-link`)
 or signed in (`#account-link`). None of them keeps anything in the browser's storage: the cookies are `HttpOnly`.
 
 ### Email notifications

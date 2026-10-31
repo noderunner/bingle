@@ -4,6 +4,18 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.28.1 - 2026-10-31
+
+### Bingle Core 0.28.1
+- **Signing in is where you would look for it.** The profile button in the top bar now says whether
+  you are signed in, and its window has *Sign in* and *Sign up* — or, once you are signed in, your
+  handle, your account page and *Sign out*. Before, they were only on the profile page.
+- **Guests are no longer offered what needs an account.** The direct messages button, running bot
+  batches and setting up turn emails only appear once you are signed in (or if the server's
+  administrator opens them to guests); a guest is pointed to the sign-in instead.
+- The sign-in and account pages ask for a **username** (it was "handle"), and the password boxes
+  look like the rest.
+
 ## 0.28.0 - 2026-10-31
 
 ### Bingle Core 0.28.0

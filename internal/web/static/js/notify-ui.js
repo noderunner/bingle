@@ -6,7 +6,7 @@
 // kept here, in this browser, to show in the form.
 
 import { h, store, getProfile } from "./util.js";
-import { api, ApiError } from "./api.js";
+import { api, ApiError, whoAmI } from "./api.js";
 
 const CONTACT_KEY = "bingle.contact";
 
@@ -126,7 +126,9 @@ export function insecureNote() {
  */
 export async function mountGameNotify(host, { code, name, onReady = () => {} }) {
 	const cfg = await notifyConfig();
-	if (!cfg.enabled) {
+	// Turn mail is set up by accounts (the notify capability).
+	const me = await whoAmI();
+	if (!cfg.enabled || !(me.caps || []).includes("notify")) {
 		onReady(false);
 		return;
 	}

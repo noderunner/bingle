@@ -5,7 +5,7 @@ import { clear, lastName, setLastName, getProfile, saveProfile } from "./util.js
 import { installTopbar } from "./topbar.js";
 import { isFinished, sortRows, gameRow } from "./mygames.js";
 import { installNav } from "./nav.js";
-import { api } from "./api.js";
+import { api, whoAmI } from "./api.js";
 import { notifyConfig, localContact, submitAddress, contactStatus, resendConfirmation, forgetAddress, statusText, whitelistNote, insecureNote } from "./notify-ui.js";
 
 installNav();
@@ -146,6 +146,15 @@ async function paintContact() {
 	server = await notifyConfig();
 	if (!server.enabled) {
 		document.getElementById("notify-off").hidden = false;
+		return;
+	}
+	// The address and the switch are an account's to set (notify).
+	const me = await whoAmI();
+	if (!(me.caps || []).includes("notify")) {
+		document.getElementById("profile-email-field").hidden = true;
+		document.getElementById("profile-notify-field").hidden = true;
+		document.getElementById("notify-accounts-only").hidden = false;
+		server = { enabled: false };
 		return;
 	}
 	box.hidden = false;

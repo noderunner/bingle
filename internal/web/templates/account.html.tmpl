@@ -23,7 +23,7 @@
 			<div class="row" id="oidc-buttons" hidden></div>
 			<form id="login-form" novalidate>
 				<div class="field">
-					<label for="login-handle">Handle</label>
+					<label for="login-handle">Username</label>
 					<input id="login-handle" type="text" maxlength="25" autocomplete="username" autocapitalize="none" spellcheck="false" required>
 				</div>
 				<div class="field">
@@ -56,9 +56,9 @@
 			<form id="oidc-signup-form" novalidate hidden>
 				<p class="small" id="oidc-signup-who"></p>
 				<div class="field">
-					<label for="oidc-handle">Choose a handle</label>
+					<label for="oidc-handle">Choose a username</label>
 					<input id="oidc-handle" type="text" maxlength="25" autocomplete="username" autocapitalize="none" spellcheck="false" required>
-					<span class="small muted">3 to 24 letters, digits, "_" or "-". Others see it as @handle.</span>
+					<span class="small muted">3 to 24 letters, digits, "_" or "-". Others see it as @username.</span>
 				</div>
 				<div class="row"><button type="submit" class="primary" id="oidc-go">Make my account</button></div>
 				<p class="small" id="oidc-result" role="status" aria-live="polite"></p>
@@ -66,9 +66,9 @@
 			<div class="row" id="signup-oidc-buttons" hidden></div>
 			<form id="signup-form" novalidate>
 				<div class="field">
-					<label for="signup-handle">Handle</label>
+					<label for="signup-handle">Username</label>
 					<input id="signup-handle" type="text" maxlength="25" autocomplete="username" autocapitalize="none" spellcheck="false" required>
-					<span class="small muted">3 to 24 letters, digits, "_" or "-". Others see it as @handle.</span>
+					<span class="small muted">3 to 24 letters, digits, "_" or "-". Others see it as @username.</span>
 				</div>
 				<div class="field">
 					<label for="signup-email">Email</label>
@@ -92,7 +92,7 @@
 			<h1>Forgot your password</h1>
 			<form id="forgot-form" novalidate>
 				<div class="field">
-					<label for="forgot-who">Your handle or email address</label>
+					<label for="forgot-who">Your username or email address</label>
 					<input id="forgot-who" type="text" maxlength="254" autocomplete="username" autocapitalize="none" spellcheck="false" required>
 				</div>
 				<div class="row"><button type="submit" class="primary" id="forgot-go">Mail me a link</button></div>
@@ -130,11 +130,11 @@
 			<p id="account-who"></p>
 			<p class="small" id="account-email"></p>
 			<form id="handle-form" novalidate>
-				<h2>Your handle</h2>
+				<h2>Your username</h2>
 				<div class="field">
-					<label for="handle-new">New handle</label>
+					<label for="handle-new">New username</label>
 					<input id="handle-new" type="text" maxlength="25" autocapitalize="none" spellcheck="false">
-					<span class="small muted">Your old handle is kept for you for 30 days, so nobody else can take it and pass for you.</span>
+					<span class="small muted">Your old username is kept for you for 30 days, so nobody else can take it and pass for you.</span>
 				</div>
 				<div class="row"><button type="submit" class="ghost" id="handle-go">Change it</button></div>
 				<p class="small" id="handle-result" role="status" aria-live="polite"></p>

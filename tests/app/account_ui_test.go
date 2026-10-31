@@ -225,3 +225,90 @@ func TestAccountUI_AGuestKeyLinkResumesTheGames(t *testing.T) {
 	}
 	waitJS(t, phone, "the seat, as the phone's own", `document.querySelector("#seat-1 .badge") && [...document.querySelectorAll("#seat-1 .badge")].some(b => b.textContent === "you") && [...document.querySelectorAll("#seat-1 .badge")].some(b => b.textContent === "guest")`, 15*time.Second)
 }
+
+// The profile window in the top bar says who the browser is: a guest is
+// offered the sign-in, an account its handle, its page and the sign-out.
+func TestAccountUI_TheProfileWindowSaysWhoYouAre(t *testing.T) {
+	a, base := membersServer(t)
+	ctx, cancel := newChromedpContext(t, 60*time.Second)
+	defer cancel()
+	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/")); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "the icon says guest", `document.getElementById("open-profile") && document.getElementById("open-profile").title === "Your profile (playing as a guest)"`, 10*time.Second)
+	clickSel(t, ctx, "#open-profile")
+	waitJS(t, ctx, "the sign-in in the window", `document.getElementById("profile-account-who").textContent === "You are playing as a guest." && document.getElementById("profile-signin").getAttribute("href") === "/login?return=%2F"`, 10*time.Second)
+	clickSel(t, ctx, "#profile-signin")
+	waitJS(t, ctx, "the sign-in page", `location.pathname === "/login" && document.getElementById("login-form") !== null`, 10*time.Second)
+
+	ana := member(t, a, base, "ana")
+	ctx2, cancel2 := newChromedpContext(t, 60*time.Second)
+	defer cancel2()
+	signInChrome(t, ctx2, base, ana.cookie(auth.SessionCookie))
+	if err := chromedp.Run(ctx2, chromedp.Navigate(base+"/")); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx2, "the icon says signed in", `document.getElementById("open-profile").title === "Your profile (signed in as @ana)"`, 10*time.Second)
+	clickSel(t, ctx2, "#open-profile")
+	waitJS(t, ctx2, "the account in the window", `document.getElementById("profile-account-who").textContent === "Signed in as @ana" && document.getElementById("profile-account-link") !== null && document.getElementById("profile-admin-link") === null`, 10*time.Second)
+	clickSel(t, ctx2, "#profile-signout")
+	waitJS(t, ctx2, "signed out", `document.getElementById("open-profile") && document.getElementById("open-profile").title === "Your profile (playing as a guest)"`, 15*time.Second)
+}
+
+// What a guest may not use is not offered to it: no direct messages, no
+// batches to run, no turn mail to set up — and an account sees all three.
+func TestAccountUI_AGuestIsNotOfferedWhatIsAnAccounts(t *testing.T) {
+	a, base := membersServer(t)
+	guest, cancel := newChromedpContext(t, 60*time.Second)
+	defer cancel()
+	if err := chromedp.Run(guest, chromedp.Navigate(base+"/")); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, guest, "the top bar, without direct messages", `document.getElementById("open-profile") && document.getElementById("open-profile").title.indexOf("guest") > 0 && getComputedStyle(document.getElementById("open-messages")).display === "none"`, 10*time.Second)
+	clickSel(t, guest, "#tab-analysis")
+	waitJS(t, guest, "the Analysis tab, without the form", `document.getElementById("analysis-signin") !== null && document.getElementById("analysis-start") === null`, 15*time.Second)
+
+	ana := member(t, a, base, "ana")
+	acc, cancel2 := newChromedpContext(t, 60*time.Second)
+	defer cancel2()
+	signInChrome(t, acc, base, ana.cookie(auth.SessionCookie))
+	if err := chromedp.Run(acc, chromedp.Navigate(base+"/")); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, acc, "the direct messages", `getComputedStyle(document.getElementById("open-messages")).display !== "none"`, 10*time.Second)
+	clickSel(t, acc, "#tab-analysis")
+	waitJS(t, acc, "the Analysis form", `document.getElementById("analysis-start") !== null && document.getElementById("analysis-signin") === null`, 15*time.Second)
+}
+
+// A guest's profile page says turn mail is for accounts instead of asking
+// for an address it could not use.
+func TestAccountUI_AGuestsProfileHasNoTurnMail(t *testing.T) {
+	e := accountsNotifyEnv(t) // mail set up, notifications accounts' only
+	ctx, cancel := newChromedpContext(t, 60*time.Second)
+	defer cancel()
+	if err := chromedp.Run(ctx, chromedp.Navigate(e.URL+"/profile")); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "the note instead of the address", `!document.getElementById("notify-accounts-only").hidden && getComputedStyle(document.getElementById("profile-email-field")).display === "none" && getComputedStyle(document.getElementById("notify-box")).display === "none"`, 10*time.Second)
+}
+
+// The sign-in page asks for a username and a password, in boxes that look
+// alike.
+func TestAccountUI_TheSignInBoxesLookAlike(t *testing.T) {
+	_, base := membersServer(t)
+	ctx, cancel := newChromedpContext(t, 30*time.Second)
+	defer cancel()
+	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/login")); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "the form", `document.getElementById("login-password") !== null`, 10*time.Second)
+	if got := evalString(t, ctx, `document.querySelector('label[for="login-handle"]').textContent`); got != "Username" {
+		t.Errorf("the first box is labelled %q, want Username", got)
+	}
+	style := `(function (id) { var s = getComputedStyle(document.getElementById(id)); return [s.borderTopWidth, s.borderTopStyle, s.borderTopColor, s.borderTopLeftRadius, s.paddingTop, s.paddingLeft, s.backgroundColor, s.fontSize].join("|"); })`
+	user := evalString(t, ctx, style+`("login-handle")`)
+	pass := evalString(t, ctx, style+`("login-password")`)
+	if user != pass {
+		t.Errorf("the boxes differ:\n username %s\n password %s", user, pass)
+	}
+}

@@ -3,7 +3,7 @@
 // result in the batch reports (/batches).
 
 import { h, clear, store } from "./util.js";
-import { api } from "./api.js";
+import { api, whoAmI } from "./api.js";
 import { FACTION_KEYS, factionName, factionColor, BOTS } from "./cw-names.js";
 
 const card = document.getElementById("practice-card");
@@ -245,6 +245,13 @@ export async function syncPractice(gameID) {
 	if (!card) return;
 	const isCW = typeof gameID === "string" && gameID.startsWith("cthulhu-wars");
 	card.classList.toggle("hidden", !isCW);
+	// Batches are accounts' (run_batch): no card for a browser that may not
+	// run one.
+	if (isCW) {
+		whoAmI().then((me) => {
+			if (!(me.caps || []).includes("run_batch")) card.classList.add("hidden");
+		});
+	}
 	if (!isCW) return;
 	if (!loaded) {
 		loaded = true;

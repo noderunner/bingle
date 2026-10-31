@@ -8,7 +8,7 @@
 // closely) a report of its own at /batches/{id}.
 
 import { h, clear, store, ago } from "./util.js";
-import { api } from "./api.js";
+import { api, whoAmI } from "./api.js";
 import { rateBars } from "./charts.js";
 import { renderMarkdown } from "./markdown.js";
 
@@ -306,8 +306,21 @@ export async function mountAnalysis(host) {
 		botList = botList || [];
 	}
 	// Only the bots that think are worth a batch, but random is kept: it is the
-	// baseline every other bot is measured against.
-	form(top);
+	// baseline every other bot is measured against. Running one is an
+	// account's (run_batch); reading the reports and the guide is anybody's.
+	const me = await whoAmI();
+	if ((me.caps || []).includes("run_batch")) {
+		form(top);
+	} else {
+		top.append(
+			h(
+				"div",
+				{ class: "card", id: "analysis-signin" },
+				h("h2", {}, "Run a batch"),
+				h("p", {}, "Setting bots against each other is for signed-in players. ", h("a", { href: "/login?return=" + encodeURIComponent("/#analysis") }, "Sign in"), " to run one; the reports below are for everybody.")
+			)
+		);
+	}
 	top.append(
 		h(
 			"div",
