@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/chromedp/chromedp"
+
+	"github.com/noderunner/bingle/internal/auth"
 )
 
 // The home page is a fun fact over one tabbed card; the games, joining and
@@ -203,23 +205,26 @@ func TestHomePage_JoinDialogJoinsAGame(t *testing.T) {
 	}
 }
 
-// The global chat: anyone can write, everyone sees it, live.
+// The global chat (ADR 0073): accounts write, under their handles; everyone
+// reads it, live.
 func TestGlobalChat_RESTAndLive(t *testing.T) {
-	baseURL := newRESTTestServer(t)
+	a, baseURL := membersServer(t)
+	ann, cy := member(t, a, baseURL, "ann"), member(t, a, baseURL, "cyd")
 
 	var out map[string]any
-	if code := doJSON(t, "POST", baseURL+"/api/chat", map[string]any{"player_name": "Ann", "text": "   "}, &out); code != 400 {
+	if code := ann.do("POST", "/api/chat", map[string]any{"player_name": "Ann", "text": "   "}, &out); code != 400 {
 		t.Errorf("an empty message: status %d, want 400", code)
 	}
-	if code := doJSON(t, "POST", baseURL+"/api/chat", map[string]any{"player_name": "", "text": "hi"}, &out); code != 400 {
-		t.Errorf("no name: status %d, want 400", code)
+	if code := newBrowser(t, baseURL).do("POST", "/api/chat", map[string]any{"player_name": "Gus", "text": "hi"}, &out); code != 403 {
+		t.Errorf("a guest writes: status %d, want 403", code)
 	}
 	var first struct {
 		ID   int64  `json:"id"`
 		Name string `json:"name"`
 		Text string `json:"text"`
 	}
-	if code := doJSON(t, "POST", baseURL+"/api/chat", map[string]any{"player_name": "Ann", "text": "hello  all"}, &first); code != 200 || first.ID == 0 || first.Text != "hello  all" {
+	// The name is the account's handle, whatever was typed.
+	if code := ann.do("POST", "/api/chat", map[string]any{"player_name": "Somebody Else", "text": "hello  all"}, &first); code != 200 || first.ID == 0 || first.Text != "hello  all" || first.Name != "@ann" {
 		t.Fatalf("say: %d %+v", code, first)
 	}
 	var log []struct {
@@ -227,35 +232,44 @@ func TestGlobalChat_RESTAndLive(t *testing.T) {
 		Name string `json:"name"`
 		Text string `json:"text"`
 	}
-	if code := doJSON(t, "GET", baseURL+"/api/chat", nil, &log); code != 200 || len(log) != 1 || log[0].Name != "Ann" {
+	if code := doJSON(t, "GET", baseURL+"/api/chat", nil, &log); code != 200 || len(log) != 1 || log[0].Name != "@ann" {
 		t.Fatalf("log: %d %+v", code, log)
 	}
 	if code := doJSON(t, "GET", baseURL+"/api/chat?after="+fmt.Sprint(first.ID), nil, &log); code != 200 || len(log) != 0 {
 		t.Errorf("log after the last message: %d %+v", code, log)
 	}
 
+	// A guest's page shows the room and says writing is for accounts.
+	guestCtx, cancelG := newChromedpContext(t, 60*time.Second)
+	defer cancelG()
+	if err := chromedp.Run(guestCtx, chromedp.Navigate(baseURL+"/#chat"), chromedp.WaitVisible("#global-chat-input", chromedp.ByID)); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, guestCtx, "a guest reads but does not write", `document.querySelector("#global-chat-log .chat-line .chat-text") && document.getElementById("global-chat-input").disabled`, 10*time.Second)
+
+	// An account's page writes.
+	dee := member(t, a, baseURL, "dee")
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
+	signInChrome(t, ctx, baseURL, dee.cookie(auth.SessionCookie))
 	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/#chat"), chromedp.WaitVisible("#global-chat-input", chromedp.ByID)); err != nil {
 		t.Fatal(err)
 	}
 	// The history is there ...
 	waitJS(t, ctx, "history", `document.querySelector("#global-chat-log .chat-line .chat-text").textContent === "hello  all"`, 10*time.Second)
+	waitJS(t, ctx, "the handle as the name", `document.getElementById("global-chat-name").value === "@dee" && !document.getElementById("global-chat-input").disabled`, 10*time.Second)
 	// ... a message from somebody else arrives by itself ...
 	time.Sleep(500 * time.Millisecond) // let the live feed connect
-	if code := doJSON(t, "POST", baseURL+"/api/chat", map[string]any{"player_name": "Cy", "text": "pushed"}, &out); code != 200 {
+	if code := cy.do("POST", "/api/chat", map[string]any{"player_name": "Cy", "text": "pushed"}, &out); code != 200 {
 		t.Fatalf("say: %d", code)
 	}
 	waitJS(t, ctx, "live line", `[...document.querySelectorAll("#global-chat-log .chat-text")].some((e) => e.textContent === "pushed")`, 10*time.Second)
 	// ... and the page can write too.
-	if err := chromedp.Run(ctx,
-		chromedp.SetValue("#global-chat-name", "Dee", chromedp.ByID),
-		chromedp.SendKeys("#global-chat-input", "from the page", chromedp.ByID),
-	); err != nil {
+	if err := chromedp.Run(ctx, chromedp.SendKeys("#global-chat-input", "from the page", chromedp.ByID)); err != nil {
 		t.Fatal(err)
 	}
 	clickSel(t, ctx, "#global-chat-send")
-	waitJS(t, ctx, "own line", `[...document.querySelectorAll("#global-chat-log .chat-line")].some((e) => e.textContent.indexOf("Dee") === 0 && e.textContent.indexOf("from the page") > 0)`, 10*time.Second)
+	waitJS(t, ctx, "own line", `[...document.querySelectorAll("#global-chat-log .chat-line")].some((e) => e.textContent.indexOf("@dee") === 0 && e.textContent.indexOf("from the page") > 0)`, 10*time.Second)
 	doJSON(t, "GET", baseURL+"/api/chat", nil, &log)
 	if len(log) != 3 || log[2].Text != "from the page" {
 		t.Errorf("stored log = %+v", log)
@@ -264,14 +278,15 @@ func TestGlobalChat_RESTAndLive(t *testing.T) {
 
 // Messages that come in while another tab shows are counted on the chat tab.
 func TestGlobalChat_UnreadCountOnTheTab(t *testing.T) {
-	baseURL := newRESTTestServer(t)
+	a, baseURL := membersServer(t)
+	cy := member(t, a, baseURL, "cyd")
 	ctx, cancel := newChromedpContext(t, 40*time.Second)
 	defer cancel()
 	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/"), chromedp.WaitVisible("#tab-chat", chromedp.ByID)); err != nil {
 		t.Fatal(err)
 	}
 	time.Sleep(600 * time.Millisecond)
-	doJSON(t, "POST", baseURL+"/api/chat", map[string]any{"player_name": "Cy", "text": "psst"}, nil)
+	cy.do("POST", "/api/chat", map[string]any{"player_name": "Cy", "text": "psst"}, nil)
 	waitJS(t, ctx, "unread", `(function(){ const b = document.getElementById("chat-tab-badge"); return !b.hidden && b.textContent === "1"; })()`, 10*time.Second)
 	clickSel(t, ctx, "#tab-chat")
 	waitJS(t, ctx, "read", `document.getElementById("chat-tab-badge").hidden`, 5*time.Second)

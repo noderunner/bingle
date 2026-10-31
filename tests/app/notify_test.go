@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"testing"
@@ -23,6 +24,7 @@ const notifyFrom = "bingle_games@proton.me"
 type notifyEnv struct {
 	URL  string
 	SMTP *fakesmtp.Server
+	App  *app.App
 	// keys are the guest keys of the seats this test took, by "ROOM/name".
 	keys map[string]string
 }
@@ -33,6 +35,10 @@ func newNotifyEnv(t *testing.T, smtpOpts fakesmtp.Options, mods ...notifyMods) *
 	t.Helper()
 	smtp := fakesmtp.Start(t, smtpOpts)
 	cfg := newTestConfig(t)
+	// Notifications are for accounts (ADR 0073); this suite tests how mail
+	// works, so it lets guests use them. notify_accounts_test.go tests the
+	// defaults.
+	cfg.CapsFile, _ = filepath.Abs("testdata/capabilities-guest-notify.yaml")
 	cfg.PublicURL = "https://bingle.example.test"
 	cfg.TLSEmail = notifyFrom
 	mode := "starttls"
@@ -53,7 +59,7 @@ func newNotifyEnv(t *testing.T, smtpOpts fakesmtp.Options, mods ...notifyMods) *
 	t.Cleanup(func() { cancel(); _ = a.Close() })
 	srv := httptest.NewServer(a.Router())
 	t.Cleanup(srv.Close)
-	return &notifyEnv{URL: srv.URL, SMTP: smtp, keys: map[string]string{}}
+	return &notifyEnv{URL: srv.URL, SMTP: smtp, App: a, keys: map[string]string{}}
 }
 
 type contactResp struct {
@@ -203,17 +209,23 @@ func (e *notifyEnv) verified(t *testing.T, address string) contactResp {
 }
 
 func TestNotify_OffWithoutMailSetup(t *testing.T) {
-	base := newRESTTestServer(t)
+	a, base := membersServer(t)
 	var cfg map[string]any
 	if code := doJSON(t, "GET", base+"/api/notify/config", nil, &cfg); code != 200 || cfg["enabled"] != false {
 		t.Errorf("config: %d %v", code, cfg)
 	}
 	var out map[string]any
-	if code := doJSON(t, "POST", base+"/api/notify/contact", map[string]any{"address": "a@example.com"}, &out); code != 404 {
+	// An account, who may have notifications (a guest may not, ADR 0073).
+	alice := member(t, a, base, "alice")
+	if code := alice.do("POST", "/api/notify/contact", map[string]any{"address": "a@example.com"}, &out); code != 404 {
 		t.Errorf("contact on a server without mail: %d, want 404", code)
 	}
-	room := newTakRoom(t, base, "tic-tac-toe", "Alice")
-	if code := doJSON(t, "GET", base+"/api/games/"+room+"/notify?player_name=Alice", nil, &out); code != 404 {
+	var created struct {
+		RoomCode string `json:"room_code"`
+	}
+	alice.do("POST", "/api/games", map[string]any{"game_def_id": "tic-tac-toe", "player_name": "Alice"}, &created)
+	room := created.RoomCode
+	if code := alice.do("GET", "/api/games/"+room+"/notify?player_name=Alice", nil, &out); code != 404 {
 		t.Errorf("game setting: %d, want 404", code)
 	}
 }

@@ -1,14 +1,12 @@
-// Who is here: this browser tells the server, every minute, that somebody is
-// looking at bingle (under the name they go by), and keeps the list of everyone
-// else who has said so lately. The profile window lists them.
+// Who is here: a signed-in account tells the server, every minute, that it is
+// looking at bingle, and keeps the list of every other account that has said
+// so lately. The profile window lists them. Guests are not listed and see no
+// list: who is here is who an account can write to (ADR 0073).
 //
-// A browser says who it is with a secret of its own (util.js sessionSecret),
-// sent to the server and to nobody else; what the list carries is the address
-// that secret hashes to, which is where a direct message to that person goes.
-// Names are self-chosen — there are no accounts — so the window says so.
+// The list carries each account's handle and its address, which is where a
+// direct message to it goes.
 
-import { api } from "./api.js";
-import { lastName, sessionSecret } from "./util.js";
+import { api, whoAmI } from "./api.js";
 
 // How often this browser says it is still here (the server forgets a browser
 // after two and a half minutes) — and how often while a window that shows the
@@ -18,6 +16,7 @@ const WATCH_MS = 8000;
 
 let people = [];
 let myAddress = "";
+let myHandle = "";
 let timer = null;
 let watching = 0; // how many open windows are showing the list
 const listeners = new Set();
@@ -50,15 +49,13 @@ function announce() {
 
 /** Says we are here (and reads the list), now and every minute. */
 export async function beat() {
-	const name = lastName();
 	try {
-		if (!name) {
-			// Nobody has given a name in this browser yet: read the list, but
-			// do not put an unnamed entry in it.
-			const res = await api.whoIsHere();
-			people = (res && res.people) || [];
+		const me = await whoAmI();
+		if (me.kind !== "account" || !(me.caps || []).includes("dm")) {
+			people = [];
 		} else {
-			const res = await api.here(sessionSecret(), name);
+			myHandle = me.handle;
+			const res = await api.here();
 			people = (res && res.people) || [];
 			myAddress = (res && res.address) || myAddress;
 		}
@@ -100,7 +97,7 @@ export function watchHere(on) {
 	arm();
 }
 
-/** The name this browser goes by, as the list shows it. */
+/** The name this browser goes by, as the list shows it: its account's handle. */
 export function myName() {
-	return lastName();
+	return myHandle ? "@" + myHandle : "";
 }

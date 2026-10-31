@@ -17,7 +17,7 @@
 // than the game of the call; the top bar then carries a button for the call
 // (topbar.js), and the card of the other game says where the call is.
 
-import { h, store, sessionSecret, toast } from "./util.js";
+import { h, store, toast } from "./util.js";
 import { api, ApiError } from "./api.js";
 import { setKeepAlive, untracked, onNavigate } from "./nav.js";
 
@@ -507,10 +507,10 @@ async function join() {
 		// The socket first: the others offer the moment they hear we are in, and a message
 		// for a seat nobody listens for is lost.
 		await untracked(openSocket);
-		const r = await api.setVoice(V.code, V.me.name, true, sessionSecret());
+		const r = await api.setVoice(V.code, V.me.name, true);
 		untracked(() => {
 			V.beat = window.setInterval(() => {
-				api.setVoice(V.code, V.me.name, true, sessionSecret())
+				api.setVoice(V.code, V.me.name, true)
 					.then((x) => syncRoster(x.peers))
 					.catch(() => {});
 			}, HEARTBEAT_MS);
@@ -545,7 +545,7 @@ export function leaveVoice({ quiet = false } = {}) {
 	const code = V.code;
 	const name = V.me.name;
 	teardown();
-	if (!quiet) api.setVoice(code, name, false, sessionSecret()).catch(() => {});
+	if (!quiet) api.setVoice(code, name, false).catch(() => {});
 	adoptViewing();
 	paint();
 	if (viewing.code) voiceResync(viewing.code);

@@ -4,6 +4,18 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.28.0 - 2026-10-31
+
+### Bingle Core 0.28.0
+- **Direct messages, the list of who is here and writing in the global chat are now for
+  signed-in players.** Everybody can still read the global chat, and guests still play, chat in
+  their games and talk in their games' voice chat. A message, and a name in the list or the global
+  chat, is now always the account it says: @handle.
+- **Email notifications are for signed-in players too.** If you set them up as a guest, nothing
+  stops: the games you switched them on for keep mailing you. And because your address is
+  confirmed already, your profile page can make it your account at once — choose a handle and a
+  password, and your games come with you.
+
 ## 0.27.0 - 2026-10-31
 
 ### Bingle Core 0.27.0

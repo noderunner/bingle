@@ -331,8 +331,8 @@ function messagesWindow() {
  * *Your profile*, as a floating window rather than a page of its own: the name
  * this browser plays under, the people who are here now, and a way on to the
  * full profile page (the email notifications and the games you have finished).
- * The list of people comes from js/here.js — self-chosen names, as there are no
- * accounts, which the window says.
+ * The list of people comes from js/here.js: signed-in accounts, by their
+ * handles (ADR 0073).
  */
 function profileWindow() {
 	const btn = h("button", { type: "button", class: "topbar-icon", id: "open-profile", "aria-haspopup": "dialog", title: "Your profile", "aria-label": "Your profile" }, profileIcon());
@@ -351,7 +351,7 @@ function profileWindow() {
 			saved,
 			h("span", { class: "small muted" }, "It is offered when you make or join a game, and it is what the others see while you are here.")
 		),
-		h("section", { class: "here-section" }, h("h3", {}, "Here now ", count), list, h("p", { class: "small muted" }, "Everybody whose browser has said it is here in the last few minutes. Names are chosen by the people themselves: there are no accounts, so a name is not proof of who somebody is.")),
+		h("section", { class: "here-section" }, h("h3", {}, "Here now ", count), list, h("p", { class: "small muted" }, "The signed-in players who have been here in the last few minutes, by their handles. Guests are not listed: sign in to be listed and to write to anybody here.")),
 		h("div", { class: "row" }, h("a", { class: "button", id: "profile-page-link", href: "/profile" }, "Email notifications and finished games"))
 	);
 	const paint = (people) => {

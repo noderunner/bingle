@@ -11,14 +11,12 @@ import (
 	"unicode/utf8"
 )
 
-// Direct messages: two people who are here (see here.go) write to each other,
-// and may put a voice call up between them.
+// Direct messages: two accounts that are here (see here.go) write to each
+// other, and may put a voice call up between them (ADR 0073).
 //
-// A message is addressed to the **address** of a browser, and sent with the
-// sender's own **secret**, so the sender of a message cannot be faked while
-// anybody can be written to. Names are self-chosen, as everywhere here, so what
-// a message proves is that it came from the same browser as the last one — not
-// who that browser belongs to, which the page says in as many words.
+// A message is addressed to the **address** of an account and sent by a
+// signed-in one, so its sender is the account it says — under its handle —
+// and anybody who is here can be written to.
 //
 // Nothing is stored: the messages live in memory, the last few hundred per
 // pair, and a correspondence is forgotten a couple of hours after its last
@@ -201,10 +199,9 @@ func (b *dmBox) threadsOf(addr string) []DirectThread {
 	return out
 }
 
-// SendDirect writes text from the browser whose secret this is to the address
+// SendDirect writes text from the account at address from to the address
 // to, and delivers it to both of them (so every tab of the sender sees it too).
-func (m *Manager) SendDirect(secret, to, text string) (DirectMessage, error) {
-	from := Address(secret)
+func (m *Manager) SendDirect(from, to, text string) (DirectMessage, error) {
 	name := m.NameHere(from)
 	if name == "" {
 		return DirectMessage{}, ErrNotHere
@@ -234,8 +231,8 @@ func (m *Manager) SendDirect(secret, to, text string) (DirectMessage, error) {
 
 // DirectMessages returns the correspondence between this browser and another,
 // after the message afterID (0 for all of it).
-func (m *Manager) DirectMessages(secret, with string, afterID int64) []DirectMessage {
-	out := m.dms.thread(Address(secret), with, afterID)
+func (m *Manager) DirectMessages(addr, with string, afterID int64) []DirectMessage {
+	out := m.dms.thread(addr, with, afterID)
 	if out == nil {
 		out = []DirectMessage{}
 	}
@@ -244,8 +241,8 @@ func (m *Manager) DirectMessages(secret, with string, afterID int64) []DirectMes
 
 // DirectThreads lists the correspondences of this browser, newest first, with
 // the names of the people who are still here.
-func (m *Manager) DirectThreads(secret string) []DirectThread {
-	out := m.dms.threadsOf(Address(secret))
+func (m *Manager) DirectThreads(addr string) []DirectThread {
+	out := m.dms.threadsOf(addr)
 	for i := range out {
 		out[i].Name = m.NameHere(out[i].With)
 	}
@@ -267,8 +264,7 @@ func (m *Manager) SubscribeDirect(address string) (<-chan Event, func()) {
 // JoinDirectCall says that this browser wants to talk to the address to (or,
 // when they are already calling, that it answers). The other side is told, and
 // any other call this browser was in is left: one voice at a time.
-func (m *Manager) JoinDirectCall(secret, to string) error {
-	from := Address(secret)
+func (m *Manager) JoinDirectCall(from, to string) error {
 	name := m.NameHere(from)
 	if name == "" {
 		return ErrNotHere
@@ -285,8 +281,7 @@ func (m *Manager) JoinDirectCall(secret, to string) error {
 }
 
 // LeaveDirectCall ends the call this browser is in, telling the other side.
-func (m *Manager) LeaveDirectCall(secret string) {
-	from := Address(secret)
+func (m *Manager) LeaveDirectCall(from string) {
 	where, ok := m.calls.release(from)
 	if !ok || where.Peer == "" {
 		return
@@ -297,8 +292,7 @@ func (m *Manager) LeaveDirectCall(secret string) {
 // SignalDirect relays one WebRTC message from this browser to the person it is
 // in a call with. The data is passed on untouched and never logged: it carries
 // network addresses.
-func (m *Manager) SignalDirect(secret, to, kind string, data json.RawMessage) error {
-	from := Address(secret)
+func (m *Manager) SignalDirect(from, to, kind string, data json.RawMessage) error {
 	switch kind {
 	case "offer", "answer", "ice", "retry":
 	default:
@@ -328,9 +322,8 @@ type CallWhere struct {
 	Peer string
 }
 
-// callRegistry remembers the one call each browser is in. A browser that says
-// nothing about itself (an API client with no secret) is not tracked, and keeps
-// the old free-for-all.
+// callRegistry remembers the one call each principal is in. An anonymous
+// client is not tracked, and keeps the old free-for-all.
 type callRegistry struct {
 	mu sync.Mutex
 	at map[string]CallWhere

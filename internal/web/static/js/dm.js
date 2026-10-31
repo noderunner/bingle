@@ -4,15 +4,14 @@
 //
 // What is said is kept by the server in memory only, for a couple of hours, and
 // nothing is stored anywhere: it is a way to say "fancy a game?", not a mailbox.
-// Names are chosen by the people themselves — there are no accounts — so a
-// message proves only that it came from the same browser as the last one, which
-// the window says in as many words.
+// Direct messages are between signed-in accounts (ADR 0073), so a message is
+// from the handle it says.
 //
 // Messages are sent over REST and arrive over the /ws-dm socket, which also
 // carries the ringing of a call and its WebRTC messages.
 
-import { h, clear, store, lastName, sessionSecret, toast } from "./util.js";
-import { api } from "./api.js";
+import { h, clear, store, lastName, toast } from "./util.js";
+import { api, whoAmI } from "./api.js";
 import { whoIsHere, onHereChange } from "./here.js";
 import { onLeave, setKeepAlive, untracked } from "./nav.js";
 import { callPerson, hangUp, toggleMute, callState, onCallChange, ringing, ended, directSignal, inDirectCall, setMyAddress } from "./dm-call.js";
@@ -64,7 +63,7 @@ function countUnread() {
 
 async function loadThreads() {
 	try {
-		const res = await api.directThreads(sessionSecret());
+		const res = await api.directThreads();
 		D.threads = (res && res.threads) || [];
 		D.address = (res && res.address) || D.address;
 		setMyAddress(D.address);
@@ -81,7 +80,7 @@ async function openThread(address, name) {
 	D.messages = [];
 	paintWindow();
 	try {
-		const res = await api.directHistory(sessionSecret(), address, 0);
+		const res = await api.directHistory(address, 0);
 		D.messages = (res && res.messages) || [];
 		if (D.messages.length) markSeen(address, D.messages[D.messages.length - 1].id);
 		delete D.unread[address];
@@ -103,7 +102,7 @@ function nameOf(address) {
 async function send(text) {
 	if (!D.open || !text.trim()) return;
 	try {
-		const msg = await api.sendDirect(sessionSecret(), D.open, text);
+		const msg = await api.sendDirect(D.open, text);
 		receive(msg);
 	} catch (err) {
 		toast(err.message || "The message was not sent.", "error");
@@ -139,9 +138,11 @@ function receive(msg) {
 
 // ---- the socket -------------------------------------------------------------
 
-function openSocket() {
+async function openSocket() {
 	closeSocket();
-	if (!lastName()) return; // nobody to be yet
+	// Direct messages are an account's (ADR 0073): a guest has no socket.
+	const me = await whoAmI();
+	if (me.kind !== "account" || !(me.caps || []).includes("dm")) return;
 	const proto = location.protocol === "https:" ? "wss://" : "ws://";
 	let ws;
 	try {
@@ -153,7 +154,6 @@ function openSocket() {
 	ws.addEventListener("open", () => {
 		if (sock !== ws) return;
 		sockTries = 0;
-		ws.send(JSON.stringify({ type: "hello", secret: sessionSecret() }));
 		loadThreads();
 	});
 	ws.addEventListener("message", (ev) => {
@@ -236,7 +236,7 @@ export function mountDirectMessages(host, { onCount = () => {} } = {}) {
 		h("div", { class: "row dm-call-row" }, callBtn, muteBtn, hangBtn, callState_),
 		log,
 		h("div", { class: "row dm-send-row" }, input, sendBtn),
-		h("p", { class: "small muted" }, "Kept for a couple of hours on the server and nowhere else. Names are chosen by the people themselves: a message says which browser wrote it, not who that is.")
+		h("p", { class: "small muted" }, "Kept for a couple of hours on the server and nowhere else. A message is from the signed-in account whose handle it shows.")
 	);
 	host.append(h("div", { class: "dm-panes" }, list, thread));
 

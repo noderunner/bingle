@@ -113,10 +113,13 @@ mail server never delays a move.
 
 ## How it works (short)
 
-* A browser's address is a **contact**: the server stores it with a secret (only its hash) that the browser
-  keeps, and a stop token. A seat's setting is for the guest that holds the seat
-  ([ADR 0067](decisions/0067-principals-and-guest-keys.md)): the browser that took it, or a script with its guest key.
-  Nobody else in the game can read or change yours, and an anonymous request cannot change anybody's.
+* Email notifications are for **accounts** ([ADR 0073](decisions/0073-account-only-features.md)): a guest
+  cannot make a contact. A browser's address is a **contact**: the server stores it with a secret (only its hash)
+  that the browser keeps, and a stop token. A seat's setting is for the account that holds the seat. Nobody else
+  in the game can read or change yours.
+* **A confirmed contact from before** keeps its turn mail: the settings it has go on working, and a guest whose
+  browser confirmed an address can make it an account at once (`POST /auth/signup` with `contact_id` and
+  `contact_secret` instead of `email`: a handle and a password, no second confirmation).
 * `PUT /api/games/{code}/notify` needs the seat's owner **and** a confirmed contact the caller owns.
 * The server watches the room's events; when the turn passes to a seat whose person has a confirmed address and
   the switch on, it mails them, unless the person has the game open (a connected WebSocket) in "every time" mode, or

@@ -10,16 +10,14 @@ import (
 	"time"
 )
 
-// Who is here: the browsers that have said lately that somebody is looking at
+// Who is here: the accounts that have said lately that they are looking at
 // bingle, so that the page can list the people who are about — to see who is
-// around, and (with direct messages) to write to one of them.
+// around, and to write to one of them (ADR 0073).
 //
-// There are no accounts (ADR 0006), so a browser says who it is with a secret
-// of its own making, kept in its localStorage and sent to the server only. The
-// server publishes the **address** that secret hashes to, never the secret, so
-// a person can be written to by address without anyone being able to claim
-// their address: knowing where to send a message does not let you send one as
-// them. Names are still self-chosen, so the page says as much.
+// A person is an account, signed in (guests are not listed: a direct message
+// is an account's). Each is listed under its **address**, a hash of its
+// principal that says nothing about it and never changes with a rename, and
+// its handle. Knowing an address lets you write to it, never as it.
 //
 // It lives in memory: who is here is worth nothing after a restart.
 
@@ -33,10 +31,14 @@ const maxHere = 500
 // ErrTooManyHere is returned when more browsers than that say they are here.
 var ErrTooManyHere = errors.New("session: too many browsers are here")
 
-// Address is the public name of a browser session: the first half of the
-// SHA-256 of its secret, so a secret can be proved but never guessed from it.
-func Address(secret string) string {
-	sum := sha256.Sum256([]byte(secret))
+// AddressOf is the public name of a principal for direct messages and
+// calls: eight bytes of a hash of its ID, which tell nothing about it and do
+// not change when an account changes its handle. "" for no principal.
+func AddressOf(principalID string) string {
+	if principalID == "" {
+		return ""
+	}
+	sum := sha256.Sum256([]byte("bingle-address:" + principalID))
 	return hex.EncodeToString(sum[:8])
 }
 
@@ -44,7 +46,7 @@ func Address(secret string) string {
 type Person struct {
 	// Address is where a direct message to them is sent.
 	Address string `json:"address"`
-	// Name is what they call themselves (self-chosen, like every name here).
+	// Name is the account's handle, "@ana".
 	Name string `json:"name"`
 	// Since is when this browser first said it was here, and Seen when it
 	// last did (RFC 3339).
@@ -65,11 +67,10 @@ type hereTracker struct {
 	who map[string]*hereEntry
 }
 
-// Here marks the browser whose secret this is as present, under name, and
-// returns everybody who is here now (including them). Calling it again renews
+// Here marks the account at addr as present, under name (its handle), and
+// returns everybody who is here now (including it). Calling it again renews
 // the mark; an empty name clears it.
-func (m *Manager) Here(secret, name string) ([]Person, error) {
-	addr := Address(secret)
+func (m *Manager) Here(addr, name string) ([]Person, error) {
 	name = strings.TrimSpace(name)
 	t := &m.here
 	t.mu.Lock()

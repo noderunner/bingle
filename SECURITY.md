@@ -2,14 +2,17 @@
 
 ## The model
 
-Bingle is built for a group of friends, with a deliberately small trust model (ADR 0006):
+Bingle is built for a group of friends that may grow ([the accounts plan](docs/history/auth-and-accounts-plan.md)):
 
-- There are **no accounts or passwords**. A seat in a game belongs to whoever uses its name in that
-  game; anyone with the game's link (the room code) can join an open seat or watch.
-- The email-notification endpoints are protected by a per-seat token and a per-browser secret
-  (ADR 0050). Nothing else is.
-- The API, the WebSocket and the MCP server (`/mcp`) are open to anyone who can reach the server.
-  The MCP server can create games and play any seat it is told to.
+- **Guests play without signing up.** A seat belongs to the guest (a browser, by the key in its
+  cookie, or a script with a guest key) or the account that took it (ADR 0067); anyone with the
+  game's link can join an open seat or watch. A guest is anybody who holds its key.
+- **Accounts** sign in with a password (Argon2id) or an OpenID Connect provider, and may add TOTP;
+  administrators must (ADR 0068–0070). Direct messages, the global chat, email notifications and
+  practice batches are accounts' (ADR 0071, 0073).
+- **`BINGLE_AUTH_MODE=closed`** makes a server for its members only; API tokens give scripts and
+  agents an account's scoped powers, never an administrator's.
+- An anonymous client — no key, no token — can still play seats nobody owns, on a `hybrid` server.
 - Voice chat sends audio directly between the players' browsers; players in a call can see each
   other's network addresses unless a TURN relay is used (docs/voice.md).
 

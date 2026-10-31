@@ -91,10 +91,14 @@ func TestWebGame_TheTopBarHasTheActiveGamesJoinAndProfile(t *testing.T) {
 	if got := evalString(t, ctx, `document.getElementById("profile-page-link").getAttribute("href")`); got != "/profile" {
 		t.Errorf("the link to the profile page = %q", got)
 	}
-	// Alice is in her own list of who is here.
-	waitJS(t, ctx, "Alice in the list", `[...document.querySelectorAll("#here-list li")].some(li => li.textContent.includes("Alice"))`, 10*time.Second)
-	if n := evalInt(t, ctx, `document.querySelectorAll("#here-list li.me").length`); n != 1 {
-		t.Errorf("%d entries of the list are marked as yourself, want 1", n)
+	// Who is here is accounts' (ADR 0073): Alice, a guest, is not listed, and
+	// the window says why.
+	time.Sleep(300 * time.Millisecond)
+	if n := evalInt(t, ctx, `document.querySelectorAll("#here-list li.me").length`); n != 0 {
+		t.Errorf("a guest is listed among who is here (%d)", n)
+	}
+	if got := evalString(t, ctx, `document.getElementById("profile-dialog").textContent`); !strings.Contains(got, "Guests are not listed") {
+		t.Errorf("the window does not say guests are not listed: %q", got)
 	}
 	// The rules of the game are a rule book, not the word.
 	if n := evalInt(t, ctx, `document.querySelectorAll('#show-rules svg[data-icon="rules"]').length`); n != 1 {

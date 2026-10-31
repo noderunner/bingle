@@ -6,7 +6,7 @@
 // last message it has shown is remembered (localStorage bingle.chat.seen).
 
 import { h, store, lastName } from "./util.js";
-import { api } from "./api.js";
+import { api, whoAmI } from "./api.js";
 import { emojiPicker } from "./chat.js";
 
 const MAX_LINES = 300;
@@ -70,6 +70,19 @@ export function mountGlobalChat(host, { visible = () => true, onUnread = () => {
 	const sendBtn = h("button", { type: "button", id: "global-chat-send", class: "primary" }, "Send");
 	const picker = emojiPicker(input);
 	const row = h("div", { class: "chat-entry" }, nameInput, picker.button, input, sendBtn);
+	// Everybody reads the room; an account writes in it, under its handle
+	// (ADR 0073).
+	whoAmI().then((me) => {
+		if (!(me.caps || []).includes("chat_global")) {
+			input.disabled = sendBtn.disabled = nameInput.disabled = true;
+			input.placeholder = "Sign in to write here";
+			return;
+		}
+		if (me.kind === "account") {
+			nameInput.value = "@" + me.handle;
+			nameInput.readOnly = true;
+		}
+	});
 
 	const lineNode = (line) => {
 		const mine = nameInput.value.trim() && line.name.toLowerCase() === nameInput.value.trim().toLowerCase();

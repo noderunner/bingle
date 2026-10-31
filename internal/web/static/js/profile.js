@@ -27,6 +27,9 @@ api.me()
 			line.append(`Signed in as @${me.handle}. `, link("/account", "Your account", "account-link"));
 		} else {
 			document.getElementById("guest-box").hidden = me.kind !== "guest";
+			// A guest whose browser confirmed an address: that is the
+			// quickest way to an account (ADR 0073).
+			if (localContact() && !(me.caps || []).includes("notify")) document.getElementById("upgrade-box").hidden = false;
 			line.append("You play as a guest in this browser. ", link("/login", "Sign in", "login-link"));
 			if (me.signup) line.append(" or ", link("/signup", "sign up", "signup-link"), " to keep your games on every device.");
 		}
@@ -223,3 +226,23 @@ function paint(rows, defs) {
 }
 
 installTopbar({ onRows: paint });
+
+// ---- a confirmed address becomes an account -----------------------------------------------
+
+document.getElementById("upgrade-form").addEventListener("submit", async (ev) => {
+	ev.preventDefault();
+	const c = localContact();
+	const out = document.getElementById("upgrade-result");
+	const go = document.getElementById("upgrade-go");
+	if (!c) return;
+	go.disabled = true;
+	try {
+		await api.signupWithContact(c.id, c.secret, document.getElementById("upgrade-handle").value, document.getElementById("upgrade-password").value);
+		location.reload();
+	} catch (err) {
+		out.className = "small error";
+		out.textContent = err.message || "That did not work.";
+	} finally {
+		go.disabled = false;
+	}
+});

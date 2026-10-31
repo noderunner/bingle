@@ -93,12 +93,11 @@ func TestOpenGames_ListsEveryUnfinishedGame(t *testing.T) {
 	}
 }
 
-// Who is here: a browser says so with a secret of its own and is listed under
-// the address that secret hashes to — never the secret itself — so a person can
-// be found without their address being forgeable. An empty name takes them off
-// the list again.
-func TestWhoIsHere_BrowsersSayTheyAreAboutByAddress(t *testing.T) {
-	baseURL := newRESTTestServer(t)
+// Who is here (ADR 0073): a signed-in account says so and is listed under its
+// handle and an address that is a hash of nothing it can be found by; saying
+// it is leaving takes it off. Guests are not listed and see no list.
+func TestWhoIsHere_AccountsSayTheyAreAbout(t *testing.T) {
+	a, baseURL := membersServer(t)
 	type hereResp struct {
 		Address string `json:"address"`
 		People  []struct {
@@ -108,24 +107,21 @@ func TestWhoIsHere_BrowsersSayTheyAreAboutByAddress(t *testing.T) {
 			Seen    string `json:"seen"`
 		} `json:"people"`
 	}
-	say := func(secret, name string) (hereResp, int) {
+	anaB, boB := member(t, a, baseURL, "ana"), member(t, a, baseURL, "bob")
+	say := func(b *browser, here bool) (hereResp, int) {
 		var out hereResp
-		code := doJSON(t, "POST", baseURL+"/api/here", map[string]any{"secret": secret, "player_name": name}, &out)
+		code := b.do("POST", "/api/here", map[string]any{"here": here}, &out)
 		return out, code
 	}
 	var empty hereResp
-	if code := doJSON(t, "GET", baseURL+"/api/here", nil, &empty); code != 200 || len(empty.People) != 0 {
+	if code := anaB.do("GET", "/api/here", nil, &empty); code != 200 || len(empty.People) != 0 {
 		t.Fatalf("a fresh server has %d people here (%d)", len(empty.People), code)
 	}
-
-	ana, code := say("secret-of-ana", "Ana")
-	if code != 200 || ana.Address == "" {
+	ana, code := say(anaB, true)
+	if code != 200 || len(ana.Address) != 16 {
 		t.Fatalf("Ana says she is here: %d %+v", code, ana)
 	}
-	if strings.Contains(ana.Address, "secret") || len(ana.Address) != 16 {
-		t.Errorf("the address %q is not a hash of the secret", ana.Address)
-	}
-	bo, _ := say("secret-of-bo", "Bo")
+	bo, _ := say(boB, true)
 	if len(bo.People) != 2 {
 		t.Fatalf("%d people are here, want two: %+v", len(bo.People), bo.People)
 	}
@@ -136,31 +132,26 @@ func TestWhoIsHere_BrowsersSayTheyAreAboutByAddress(t *testing.T) {
 			t.Errorf("%+v is missing its address or its times", p)
 		}
 	}
-	if got := strings.Join(names, ","); got != "Ana,Bo" {
-		t.Errorf("the list reads %q, want the longest-standing first", got)
+	if got := strings.Join(names, ","); got != "@ana,@bob" {
+		t.Errorf("the list reads %q, want the longest-standing first, by handle", got)
 	}
-	// The same browser under a new name is still one person, not two.
-	again, _ := say("secret-of-ana", "Ana the Second")
-	if len(again.People) != 2 {
-		t.Errorf("%d people after a change of name, want two", len(again.People))
+	// A rename keeps the address.
+	anaB.do("POST", "/auth/handle", map[string]any{"handle": "anabel"}, nil)
+	if again, _ := say(anaB, true); again.Address != ana.Address {
+		t.Errorf("a rename changed the address: %q, then %q", ana.Address, again.Address)
 	}
-	if again.Address != ana.Address {
-		t.Errorf("the address changed with the name: %q then %q", ana.Address, again.Address)
+	// Leaving takes her off.
+	gone, _ := say(anaB, false)
+	if len(gone.People) != 1 || gone.People[0].Name != "@bob" {
+		t.Errorf("after Ana left: %+v", gone.People)
 	}
-	// Leaving.
-	gone, _ := say("secret-of-bo", "")
-	if len(gone.People) != 1 || gone.People[0].Name != "Ana the Second" {
-		t.Errorf("after Bo left: %+v", gone.People)
+	// A guest is not listed, and sees nothing.
+	guest := newBrowser(t, baseURL)
+	if code := guest.do("POST", "/api/here", map[string]any{}, nil); code != 403 {
+		t.Errorf("a guest says it is here: %d, want 403", code)
 	}
-	// A browser with no secret, or a name nobody could use, is refused.
-	for name, body := range map[string]map[string]any{
-		"no secret":      {"player_name": "Ana"},
-		"an empty name ": {"secret": "s", "player_name": "   "},
-		"a long secret":  {"secret": strings.Repeat("x", 200), "player_name": "Ana"},
-	} {
-		if code := doJSON(t, "POST", baseURL+"/api/here", body, nil); code != 400 {
-			t.Errorf("%s: %d, want 400", name, code)
-		}
+	if code := doJSON(t, "GET", baseURL+"/api/here", nil, nil); code != 403 {
+		t.Errorf("an anonymous read of who is here: %d, want 403", code)
 	}
 }
 
@@ -232,7 +223,8 @@ func TestWebOpenGames_TheActiveGamesWindowHasTwoTabs(t *testing.T) {
 // said while another tab was showing, and those said while this browser was
 // away, which it knows from the last message it showed.
 func TestWebGlobalChat_TheTabSaysHowManyAreUnread(t *testing.T) {
-	baseURL := newRESTTestServer(t)
+	a, baseURL := membersServer(t)
+	bo := member(t, a, baseURL, "bob") // the global chat is written by accounts (ADR 0073)
 	ctx, cancel := newChromedpContext(t, 90*time.Second)
 	defer cancel()
 	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/")); err != nil {
@@ -240,7 +232,7 @@ func TestWebGlobalChat_TheTabSaysHowManyAreUnread(t *testing.T) {
 	}
 	waitJS(t, ctx, "the games tab", `document.getElementById("tab-chat") !== null`, 20*time.Second)
 	// Somebody says something while the Games tab is showing.
-	if code := doJSON(t, "POST", baseURL+"/api/chat", map[string]any{"player_name": "Bo", "text": "Anybody for Hex?"}, nil); code != 200 {
+	if code := bo.do("POST", "/api/chat", map[string]any{"player_name": "Bo", "text": "Anybody for Hex?"}, nil); code != 200 {
 		t.Fatalf("Bo says something: %d", code)
 	}
 	waitJS(t, ctx, "the badge", `document.getElementById("chat-tab-badge").hidden === false && document.getElementById("chat-tab-badge").textContent === "1"`, 10*time.Second)
@@ -255,7 +247,7 @@ func TestWebGlobalChat_TheTabSaysHowManyAreUnread(t *testing.T) {
 	}
 	waitJS(t, ctx, "the profile page", `document.getElementById("profile_name") !== null`, 20*time.Second)
 	for _, line := range []string{"I am about", "Still here"} {
-		if code := doJSON(t, "POST", baseURL+"/api/chat", map[string]any{"player_name": "Bo", "text": line}, nil); code != 200 {
+		if code := bo.do("POST", "/api/chat", map[string]any{"player_name": "Bo", "text": line}, nil); code != 200 {
 			t.Fatalf("Bo says %q: %d", line, code)
 		}
 	}

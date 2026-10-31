@@ -13,7 +13,6 @@
 
 import { h } from "./util.js";
 import { api } from "./api.js";
-import { sessionSecret } from "./util.js";
 import { leaveVoice, inCall as inGameCall, voiceUnsupported, micStream, iceServers } from "./voice.js";
 
 const C = {
@@ -89,7 +88,7 @@ export async function callPerson(address, name) {
 	C.state = answering ? "live" : "calling";
 	changed();
 	try {
-		await api.directCall(sessionSecret(), address, true);
+		await api.directCall(address, true);
 	} catch (err) {
 		C.error = err.message || "The call could not be made.";
 		hangUp({ quiet: true });
@@ -102,7 +101,7 @@ export async function callPerson(address, name) {
 export function hangUp({ quiet = false } = {}) {
 	const had = C.state !== "";
 	teardown();
-	if (had && !quiet) api.directCall(sessionSecret(), C.peer, false).catch(() => {});
+	if (had && !quiet) api.directCall(C.peer, false).catch(() => {});
 	C.peer = "";
 	C.name = "";
 	C.state = "";
@@ -208,7 +207,7 @@ async function start() {
 }
 
 function signal(kind, data) {
-	return api.directSignal(sessionSecret(), C.peer, kind, data).catch(() => {});
+	return api.directSignal(C.peer, kind, data).catch(() => {});
 }
 
 /** A WebRTC message from the other side (the "dm-rtc" event of /ws-dm). */

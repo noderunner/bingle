@@ -216,6 +216,11 @@ func (m *Manager) SendGlobalChat(ctx context.Context, name, text string) (Global
 		return GlobalChatLine{}, fmt.Errorf("session: a message is at most %d characters", maxChatRunes)
 	}
 	speaker := strings.TrimSpace(name)
+	// An account speaks in the global room under its handle, whatever it
+	// typed (ADR 0073).
+	if p, ok := auth.From(ctx); ok && p.Account != nil {
+		speaker = "@" + p.Account.Handle
+	}
 	if err := m.mayUseName(ctx, speaker); err != nil {
 		return GlobalChatLine{}, err
 	}

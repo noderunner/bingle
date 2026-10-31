@@ -93,9 +93,9 @@ func statusOf(err error) int {
 	case errors.Is(err, ErrBadLogin), errors.Is(err, ErrNotSignedIn), errors.Is(err, ErrBadCode), errors.Is(err, ErrSignInAgain), errors.Is(err, ErrNeedsCode):
 		return http.StatusUnauthorized
 	case errors.Is(err, ErrSignupClosed), errors.Is(err, ErrSignupNoMail), errors.Is(err, ErrNotConfirmed), errors.Is(err, ErrMustChangePwd),
-		errors.Is(err, ErrNeedsInvite), errors.Is(err, ErrNotAdmin):
+		errors.Is(err, ErrNeedsInvite), errors.Is(err, ErrNotAdmin), errors.Is(err, ErrNotYourContact):
 		return http.StatusForbidden
-	case errors.Is(err, ErrHandleTaken), errors.Is(err, ErrLinkedElsewhere), errors.Is(err, ErrOIDCAddressUsed):
+	case errors.Is(err, ErrHandleTaken), errors.Is(err, ErrLinkedElsewhere), errors.Is(err, ErrOIDCAddressUsed), errors.Is(err, ErrAddressUsed):
 		return http.StatusConflict
 	case errors.Is(err, ErrUnknownProvider):
 		return http.StatusNotFound
@@ -144,8 +144,22 @@ func (rs *Resolver) handleSignup(w http.ResponseWriter, r *http.Request) {
 		Email    string `json:"email"`
 		Password string `json:"password"`
 		Invite   string `json:"invite"`
+		// A confirmed contact of this browser, instead of an address: it
+		// becomes the account at once (ADR 0073).
+		ContactID     int64  `json:"contact_id"`
+		ContactSecret string `json:"contact_secret"`
 	}
 	if !decode(w, r, &req) {
+		return
+	}
+	if req.ContactID != 0 {
+		s, err := rs.accounts.SignupWithContact(r.Context(), req.ContactID, req.ContactSecret, req.Handle, req.Password, guestOf(r), req.Invite, rs.transport.PeerIP(r), r.UserAgent())
+		if err != nil {
+			rs.fail(w, err)
+			return
+		}
+		rs.startSession(w, r, s)
+		writeJSON(w, http.StatusOK, rs.meOf(r, s.Account))
 		return
 	}
 	if err := rs.accounts.Signup(r.Context(), req.Handle, req.Email, req.Password, guestOf(r), req.Invite, rs.transport.PeerIP(r)); err != nil {

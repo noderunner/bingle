@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -45,10 +44,6 @@ func statusForError(err error) int {
 		return http.StatusBadRequest
 	}
 }
-
-// errBadSecret is reported for a missing or overlong browser secret (POST
-// /here and the direct messages that build on it).
-var errBadSecret = errors.New("api: secret is required, and at most " + strconv.Itoa(maxSecretRunes) + " characters")
 
 // maxBodyBytes caps JSON request bodies; every real request is tiny.
 const maxBodyBytes = 1 << 20
