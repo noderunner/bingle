@@ -47,9 +47,9 @@ peer (WebRTC). Nothing is recorded and the audio never passes through the server
    another tab, still leaves the call (one call per tab).
 3. **The network helpers.** `GET /api/rtc/config` returns the `iceServers` for the browser:
    STUN servers, and a TURN relay with time-limited credentials when one is configured.
-4. **Trust.** Bingle has no accounts, so a seat is "whoever uses that player's name", the
+4. **Trust.** A seat is its owner's — the guest or the account that took it (ADR 0067) — the
    same trust as making a move. Only seated people can join, and signalling only flows
-   between seats in the call. Do not rely on voice to prove who someone is.
+   between seats in the call. A guest is anybody with the guest's key.
 
 ## Settings
 

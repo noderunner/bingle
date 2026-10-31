@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/noderunner/bingle/internal/app"
+	"github.com/noderunner/bingle/internal/auth"
 	"github.com/noderunner/bingle/internal/logging"
 )
 
@@ -38,7 +39,7 @@ func (b *logBuffer) String() string {
 
 // newLoggedTestServer is newRESTTestServer with the server's logger turned up
 // to debug and pointed at a buffer, which it returns beside the base URL.
-func newLoggedTestServer(t *testing.T) (string, *logBuffer) {
+func newLoggedTestServer(t *testing.T) (string, *logBuffer, *app.App) {
 	t.Helper()
 	buf := &logBuffer{}
 	cfg := newTestConfig(t)
@@ -52,7 +53,7 @@ func newLoggedTestServer(t *testing.T) (string, *logBuffer) {
 
 	srv := httptest.NewServer(a.Router())
 	t.Cleanup(srv.Close)
-	return srv.URL, buf
+	return srv.URL, buf, a
 }
 
 // A game played and talked about from end to end, with the log as verbose as
@@ -60,14 +61,12 @@ func newLoggedTestServer(t *testing.T) (string, *logBuffer) {
 // (docs/decisions/0063) says they never carry.
 func TestLog_NeverCarriesASecretEvenAtDebug(t *testing.T) {
 	const (
-		anaSecret = "ana-browser-secret-9f3a"
-		boSecret  = "bo-browser-secret-2c71"
-		chatText  = "well played, that was a trap"
-		dmText    = "fancy another after this one"
-		address   = "ana@example.com"
+		chatText = "well played, that was a trap"
+		dmText   = "fancy another after this one"
+		address  = "ana@example.com"
 	)
 
-	baseURL, buf := newLoggedTestServer(t)
+	baseURL, buf, a := newLoggedTestServer(t)
 
 	// A room, a second player, a move, a conversation in the room and a
 	// conversation beside it, a browser saying it is about, and a page.
@@ -80,12 +79,13 @@ func TestLog_NeverCarriesASecretEvenAtDebug(t *testing.T) {
 		map[string]any{"player_name": "Ana", "text": chatText}, nil); code != 200 {
 		t.Fatalf("Ana says something: %d", code)
 	}
-	ana := here(t, baseURL, anaSecret, "Ana")
-	bo := here(t, baseURL, boSecret, "Bo")
-	if code := doJSON(t, "POST", baseURL+"/api/dm",
-		map[string]any{"secret": anaSecret, "to": bo, "text": dmText}, nil); code != 200 {
+	// Two accounts, about, and a direct message between them (ADR 0073).
+	anaB, boB := member(t, a, baseURL, "anabel"), member(t, a, baseURL, "bobo")
+	ana, bo := anaB.here(), boB.here()
+	if code := anaB.do("POST", "/api/dm", map[string]any{"to": bo, "text": dmText}, nil); code != 200 {
 		t.Fatalf("Ana writes to Bo: %d", code)
 	}
+	session := anaB.cookie(auth.SessionCookie)
 	// Notifications are off in this config, so this is refused — the address
 	// still went through the handler, and must not have been logged.
 	doJSON(t, "POST", baseURL+"/api/notify/contact", map[string]any{"address": address}, nil)
@@ -107,12 +107,11 @@ func TestLog_NeverCarriesASecretEvenAtDebug(t *testing.T) {
 
 	for what, secret := range map[string]string{
 		"the room code":             room,
-		"a browser's secret":        anaSecret,
-		"the other secret":          boSecret,
+		"a session cookie":          session,
 		"what was said in the room": chatText,
 		"a direct message":          dmText,
 		"an email address":          address,
-		"a browser's address":       ana,
+		"an account's address":      ana,
 		"a player's name":           "Ana",
 	} {
 		if strings.Contains(got, secret) {
@@ -139,7 +138,7 @@ func TestLog_NeverCarriesASecretEvenAtDebug(t *testing.T) {
 // when it is accepted and again when it closes — not once at the end, as a
 // request whose duration measures the whole visit.
 func TestLog_WebSocketIsLoggedWhenItOpensAndWhenItCloses(t *testing.T) {
-	baseURL, buf := newLoggedTestServer(t)
+	baseURL, buf, _ := newLoggedTestServer(t)
 	room := createRoom(t, baseURL, "Ana")
 
 	conn, err := dialWS(t, baseURL, wsPath(room, "Bo", true, "player", true))

@@ -32,7 +32,7 @@ conversation, or identify a person.** Concretely, and at every level including `
 |---|---|
 | the path a request came to | chi's route pattern, `/api/games/{code}/chat` (`logging.Route`) |
 | a room code | its first two characters and twelve hex characters of its SHA-256 (`logging.Room`) |
-| a guest key or a browser's secret | nothing; these have no reference form (a test checks the keys, ADR 0067) |
+| a guest key, a session cookie or an API token | nothing; these have no reference form (a test checks the keys, ADR 0067) |
 | the body of a chat message or a direct message | nothing |
 | an email address | twelve hex characters of the SHA-256 of the lower-cased address (`logging.Addr`) |
 | a WebRTC offer, answer or candidate | nothing |

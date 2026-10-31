@@ -312,12 +312,6 @@ func (c *Caps) allow(class, kind, key string, now time.Time) bool {
 
 // ---- which capability a request needs ---------------------------------------------
 
-// laterCaps are capabilities the matrix holds but the routes do not check
-// yet: direct messages, direct calls, the global chat and email
-// notifications become account-only in stage 8 of the plan, together with
-// moving them onto accounts (and keeping the confirmed contacts working).
-var laterCaps = map[string]bool{CapDM: true, CapVoiceDirect: true, CapChatGlobal: true, CapNotify: true}
-
 type route struct {
 	method string // "" for any
 	re     *regexp.Regexp
@@ -345,7 +339,8 @@ var routes = func() []route {
 		r("POST", `/api/dm`, CapDM, LimitDM),
 		r("POST", `/api/dm/(history|threads)`, CapDM, ""),
 		r("GET", `/ws-dm`, CapDM, ""),
-		r("", `/api/notify/.*`, CapNotify, ""),
+		r("", `/api/here`, CapDM, ""),
+		r("POST", `/api/notify/.*`, CapNotify, ""),
 		r("PUT", `/api/games/[^/]+/notify`, CapNotify, ""),
 		r("POST", `/api/batches`, CapRunBatch, ""),
 		r("POST", `/api/batches/[^/]+/cancel`, CapRunBatch, ""),
@@ -423,7 +418,7 @@ func (c *Caps) check(w http.ResponseWriter, r *http.Request, p Principal, ok boo
 		return true
 	}
 	capability, limit := needs(r)
-	if capability == "" || laterCaps[capability] {
+	if capability == "" {
 		return false
 	}
 	if !c.may(p, ok, capability) {

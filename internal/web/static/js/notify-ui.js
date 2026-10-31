@@ -54,10 +54,14 @@ export async function contactStatus() {
 	try {
 		return await api.notifyContactStatus(c.id, c.secret);
 	} catch (err) {
-		if (err instanceof ApiError && err.status === 403) {
+		// A wrong secret: the contact is not this browser's any more. (A guest
+		// refused notifications altogether keeps it: it is how the address
+		// becomes an account, ADR 0073.)
+		if (err instanceof ApiError && err.status === 403 && !/needs "notify"/.test(err.message)) {
 			saveLocalContact(null);
 			return null;
 		}
+		if (err instanceof ApiError && err.status === 403) return null;
 		throw err;
 	}
 }

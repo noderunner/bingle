@@ -14,8 +14,9 @@ Plain ES modules served from `internal/web/static` — no build step
 
 ## Identity
 
-There are no accounts (ADR 0006). The browser remembers `{room code → name}`
-in `localStorage` (`bingle.games`). Opening a game you have no name for shows a
+A player is a guest (a browser, by its guest key) or a signed-in account ([ADR 0067](decisions/0067-principals-and-guest-keys.md),
+[ADR 0068](decisions/0068-accounts-sessions-and-passwords.md)); a seat is its owner's. The browser remembers
+`{room code → name}` in `localStorage` (`bingle.games`), merged with the server's "My games". Opening a game you have no name for shows a
 small gate: join an open seat, continue as a seated player's name, or watch.
 
 ## How moves are entered
@@ -191,16 +192,15 @@ said it is here in the last few minutes, your own entry marked `.me`, with a
 that person — and a link on to the profile page (`#profile-page-link`) for the
 email notifications and the finished games. `js/here.js` tells the server every
 minute that somebody is here (every eight seconds while a window that shows the
-list is open), under the name of `bingle.name`, with this browser's own secret
-(`bingle.session`); names are self-chosen, which the window says.
+list is open). Only a signed-in account is listed, under its handle; a guest is told that guests are not
+listed ([ADR 0073](decisions/0073-account-only-features.md)).
 
 **The top bar of a game** carries the same icons as the main page — the active games with the
 count of those waiting for you (`#open-active-games`), joining a game (`#open-join`) and the
 profile (`#open-profile`) — after *Rules* and *Options*, so it is easy to see that it is your turn in
 another game and to switch to it. The title and icon of the tab stay the game's own.
 
-**Profile** (`/profile`). The settings are kept in this browser, as there are
-no accounts: the name (`bingle.name`, offered when creating or joining), and
+**Profile** (`/profile`). The settings are kept in this browser: the name (`bingle.name`, offered when creating or joining), and
 `bingle.profile` = `{email, notify}`. The email and the switch are *stored
 only* — nothing is sent or read by the server until the email notifications
 (`docs/history/email-notifications-plan.md`) are built. *Finished games*

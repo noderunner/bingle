@@ -1,15 +1,21 @@
 package app_test
 
+// Direct messages, direct calls and who is here are accounts' (ADR 0073):
+// every test signs in.
+
 import (
 	"context"
-	"encoding/json"
-	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/chromedp/chromedp"
+
+	"github.com/noderunner/bingle/internal/app"
+	"github.com/noderunner/bingle/internal/auth"
 )
 
 type dmResp struct {
@@ -21,14 +27,44 @@ type dmResp struct {
 	At   string `json:"at"`
 }
 
-// here says that a browser with this secret is about, and returns its address.
-func here(t *testing.T, baseURL, secret, name string) string {
+// membersServer is a server whose tests make accounts of their own.
+func membersServer(t *testing.T) (*app.App, string) {
 	t.Helper()
+	a, err := app.New(newTestConfig(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = a.Close() })
+	srv := httptest.NewServer(a.Router())
+	t.Cleanup(srv.Close)
+	return a, srv.URL
+}
+
+// member makes the account @handle and returns a browser signed in to it.
+func member(t *testing.T, a *app.App, base, handle string) *browser {
+	t.Helper()
+	pw, err := a.Accounts().Create(context.Background(), handle, handle+"@example.com", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b := newBrowser(t, base)
+	if code := b.login(handle, pw); code != 200 {
+		t.Fatalf("@%s signs in: %d", handle, code)
+	}
+	if code := b.do("POST", "/auth/password", map[string]any{"old": pw, "new": handle + "'s own password"}, nil); code != 200 {
+		t.Fatalf("@%s sets a password: %d", handle, code)
+	}
+	return b
+}
+
+// here says the browser's account is about, and returns its address.
+func (b *browser) here() string {
+	b.t.Helper()
 	var out struct {
 		Address string `json:"address"`
 	}
-	if code := doJSON(t, "POST", baseURL+"/api/here", map[string]any{"secret": secret, "player_name": name}, &out); code != 200 {
-		t.Fatalf("%s says they are here: %d", name, code)
+	if code := b.do("POST", "/api/here", map[string]any{}, &out); code != 200 || out.Address == "" {
+		b.t.Fatalf("here: %d %+v", code, out)
 	}
 	return out.Address
 }
@@ -37,39 +73,39 @@ func here(t *testing.T, baseURL, secret, name string) string {
 // them, the correspondence can be read back, and the list of them names the
 // other person.
 func TestDirectMessages_TwoPeopleWriteToEachOther(t *testing.T) {
-	baseURL := newRESTTestServer(t)
-	ana := here(t, baseURL, "ana-secret", "Ana")
-	bo := here(t, baseURL, "bo-secret", "Bo")
+	a, baseURL := membersServer(t)
+	anaB, boB := member(t, a, baseURL, "ana"), member(t, a, baseURL, "bob")
+	ana, bo := anaB.here(), boB.here()
 
 	var msg dmResp
-	if code := doJSON(t, "POST", baseURL+"/api/dm", map[string]any{"secret": "ana-secret", "to": bo, "text": "Fancy a game of Hex?"}, &msg); code != 200 {
+	if code := anaB.do("POST", "/api/dm", map[string]any{"to": bo, "text": "Fancy a game of Hex?"}, &msg); code != 200 {
 		t.Fatalf("Ana writes to Bo: %d", code)
 	}
-	if msg.ID == 0 || msg.From != ana || msg.To != bo || msg.Name != "Ana" || msg.Text != "Fancy a game of Hex?" {
+	if msg.ID == 0 || msg.From != ana || msg.To != bo || msg.Name != "@ana" || msg.Text != "Fancy a game of Hex?" {
 		t.Fatalf("the message = %+v", msg)
 	}
 	// Bo reads it, and answers.
 	var read struct {
 		Messages []dmResp `json:"messages"`
 	}
-	if code := doJSON(t, "POST", baseURL+"/api/dm/history", map[string]any{"secret": "bo-secret", "with": ana}, &read); code != 200 {
+	if code := boB.do("POST", "/api/dm/history", map[string]any{"with": ana}, &read); code != 200 {
 		t.Fatalf("Bo reads: %d", code)
 	}
 	if len(read.Messages) != 1 || read.Messages[0].Text != "Fancy a game of Hex?" {
 		t.Fatalf("Bo sees %+v", read.Messages)
 	}
-	if code := doJSON(t, "POST", baseURL+"/api/dm", map[string]any{"secret": "bo-secret", "to": ana, "text": "Go on then"}, nil); code != 200 {
+	if code := boB.do("POST", "/api/dm", map[string]any{"to": ana, "text": "Go on then"}, nil); code != 200 {
 		t.Fatalf("Bo answers: %d", code)
 	}
 	// Ana sees both, in order, and only after the first when she asks for that.
-	doJSON(t, "POST", baseURL+"/api/dm/history", map[string]any{"secret": "ana-secret", "with": bo}, &read)
-	if len(read.Messages) != 2 || read.Messages[1].Name != "Bo" {
+	anaB.do("POST", "/api/dm/history", map[string]any{"with": bo}, &read)
+	if len(read.Messages) != 2 || read.Messages[1].Name != "@bob" {
 		t.Fatalf("Ana sees %+v", read.Messages)
 	}
 	var after struct {
 		Messages []dmResp `json:"messages"`
 	}
-	doJSON(t, "POST", baseURL+"/api/dm/history", map[string]any{"secret": "ana-secret", "with": bo, "after": read.Messages[0].ID}, &after)
+	anaB.do("POST", "/api/dm/history", map[string]any{"with": bo, "after": read.Messages[0].ID}, &after)
 	if len(after.Messages) != 1 || after.Messages[0].Text != "Go on then" {
 		t.Errorf("after the first message: %+v", after.Messages)
 	}
@@ -84,52 +120,63 @@ func TestDirectMessages_TwoPeopleWriteToEachOther(t *testing.T) {
 			LastID int64  `json:"last_id"`
 		} `json:"threads"`
 	}
-	if code := doJSON(t, "POST", baseURL+"/api/dm/threads", map[string]any{"secret": "ana-secret"}, &threads); code != 200 {
+	if code := anaB.do("POST", "/api/dm/threads", map[string]any{}, &threads); code != 200 {
 		t.Fatalf("Ana's threads: %d", code)
 	}
 	if threads.Address != ana || len(threads.Threads) != 1 {
 		t.Fatalf("Ana's threads = %+v", threads)
 	}
-	if th := threads.Threads[0]; th.With != bo || th.Name != "Bo" || th.Text != "Go on then" || th.Count != 2 {
+	if th := threads.Threads[0]; th.With != bo || th.Name != "@bob" || th.Text != "Go on then" || th.Count != 2 {
 		t.Errorf("the correspondence = %+v", th)
 	}
 	// A third person sees nothing of it.
-	here(t, baseURL, "cy-secret", "Cy")
+	cyB := member(t, a, baseURL, "cyd")
+	cyB.here()
 	var cy struct {
 		Messages []dmResp `json:"messages"`
 	}
-	doJSON(t, "POST", baseURL+"/api/dm/history", map[string]any{"secret": "cy-secret", "with": ana}, &cy)
+	cyB.do("POST", "/api/dm/history", map[string]any{"with": ana}, &cy)
 	if len(cy.Messages) != 0 {
 		t.Errorf("Cy can read somebody else's correspondence: %+v", cy.Messages)
 	}
 }
 
-// Writing is refused where it could not work or should not be allowed: without
-// saying who you are, to somebody who is not here, to yourself, with nothing in
-// it, or faster than anybody types.
+// Writing is refused where it could not work or should not be allowed: from a
+// guest, from an account not here, to somebody who is not here, to yourself,
+// with nothing in it, or faster than anybody types.
 func TestDirectMessages_AreRefusedWhereTheyShouldBe(t *testing.T) {
-	baseURL := newRESTTestServer(t)
-	ana := here(t, baseURL, "ana-secret", "Ana")
-	bo := here(t, baseURL, "bo-secret", "Bo")
+	a, baseURL := membersServer(t)
+	anaB, boB := member(t, a, baseURL, "ana"), member(t, a, baseURL, "bob")
+	ana, bo := anaB.here(), boB.here()
+	away := member(t, a, baseURL, "cyd")
+	guest := newBrowser(t, baseURL)
 	for name, want := range map[string]struct {
+		b    *browser
 		body map[string]any
 		code int
 	}{
-		"no secret":            {map[string]any{"to": bo, "text": "hi"}, 400},
-		"a browser not here":   {map[string]any{"secret": "nobody-secret", "to": bo, "text": "hi"}, 403},
-		"somebody not here":    {map[string]any{"secret": "ana-secret", "to": strings.Repeat("0", 16), "text": "hi"}, 404},
-		"writing to yourself":  {map[string]any{"secret": "ana-secret", "to": ana, "text": "hi"}, 404},
-		"an empty message":     {map[string]any{"secret": "ana-secret", "to": bo, "text": "   "}, 400},
-		"a message of a novel": {map[string]any{"secret": "ana-secret", "to": bo, "text": strings.Repeat("x", 501)}, 400},
+		"a guest":              {guest, map[string]any{"to": bo, "text": "hi"}, http.StatusForbidden},
+		"an account not here":  {away, map[string]any{"to": bo, "text": "hi"}, 403},
+		"somebody not here":    {anaB, map[string]any{"to": strings.Repeat("0", 16), "text": "hi"}, 404},
+		"writing to yourself":  {anaB, map[string]any{"to": ana, "text": "hi"}, 404},
+		"an empty message":     {anaB, map[string]any{"to": bo, "text": "   "}, 400},
+		"a message of a novel": {anaB, map[string]any{"to": bo, "text": strings.Repeat("x", 501)}, 400},
 	} {
-		if code := doJSON(t, "POST", baseURL+"/api/dm", want.body, nil); code != want.code {
+		if code := want.b.do("POST", "/api/dm", want.body, nil); code != want.code {
 			t.Errorf("%s: %d, want %d", name, code, want.code)
 		}
+	}
+	// A guest is not listed, and sees no list.
+	if code := guest.do("POST", "/api/here", map[string]any{}, nil); code != http.StatusForbidden {
+		t.Errorf("a guest says it is here: %d, want 403", code)
+	}
+	if code := guest.do("GET", "/api/here", nil, nil); code != http.StatusForbidden {
+		t.Errorf("a guest reads who is here: %d, want 403", code)
 	}
 	// A flood is refused rather than delivered.
 	refused := 0
 	for i := 0; i < 20; i++ {
-		if code := doJSON(t, "POST", baseURL+"/api/dm", map[string]any{"secret": "ana-secret", "to": bo, "text": "hi"}, nil); code == 429 {
+		if code := anaB.do("POST", "/api/dm", map[string]any{"to": bo, "text": "hi"}, nil); code == 429 {
 			refused++
 		}
 	}
@@ -141,16 +188,22 @@ func TestDirectMessages_AreRefusedWhereTheyShouldBe(t *testing.T) {
 // A person is in one voice call at a time: joining a direct call takes them out
 // of a game's call, and the game is told.
 func TestDirectCall_OneVoiceAtATime(t *testing.T) {
-	baseURL := newRESTTestServer(t)
-	room := newTakRoom(t, baseURL, "tic-tac-toe", "Ana")
-	joinRoom(t, baseURL, room, "Bo")
-	ana := here(t, baseURL, "ana-secret", "Ana")
-	bo := here(t, baseURL, "bo-secret", "Bo")
-	_ = ana
+	a, baseURL := membersServer(t)
+	anaB, boB := member(t, a, baseURL, "ana"), member(t, a, baseURL, "bob")
+	var created struct {
+		RoomCode string `json:"room_code"`
+	}
+	anaB.do("POST", "/api/games", map[string]any{"game_def_id": "tic-tac-toe", "player_name": "Ana"}, &created)
+	room := created.RoomCode
+	boB.do("POST", "/api/games/"+room+"/join", map[string]any{"player_name": "Bo"}, nil)
+	ana, bo := anaB.here(), boB.here()
 
 	// Both are in the game's call.
-	for _, who := range []struct{ name, secret string }{{"Ana", "ana-secret"}, {"Bo", "bo-secret"}} {
-		if code := doJSON(t, "POST", baseURL+"/api/games/"+room+"/voice", map[string]any{"player_name": who.name, "active": true, "secret": who.secret}, nil); code != 200 {
+	for _, who := range []struct {
+		name string
+		b    *browser
+	}{{"Ana", anaB}, {"Bo", boB}} {
+		if code := who.b.do("POST", "/api/games/"+room+"/voice", map[string]any{"player_name": who.name, "active": true}, nil); code != 200 {
 			t.Fatalf("%s joins the game's call: %d", who.name, code)
 		}
 	}
@@ -166,7 +219,7 @@ func TestDirectCall_OneVoiceAtATime(t *testing.T) {
 	}
 
 	// Ana rings Bo instead: she leaves the game's call by doing so.
-	if code := doJSON(t, "POST", baseURL+"/api/dm/call", map[string]any{"secret": "ana-secret", "to": bo, "join": true}, nil); code != 200 {
+	if code := anaB.do("POST", "/api/dm/call", map[string]any{"to": bo, "join": true}, nil); code != 200 {
 		t.Fatalf("Ana calls Bo: %d", code)
 	}
 	doJSON(t, "GET", baseURL+"/api/games/"+room+"/voice", nil, &call)
@@ -175,13 +228,13 @@ func TestDirectCall_OneVoiceAtATime(t *testing.T) {
 	}
 
 	// A WebRTC message needs a call with that person, and is refused otherwise.
-	if code := doJSON(t, "POST", baseURL+"/api/dm/signal", map[string]any{"secret": "bo-secret", "to": ana, "kind": "offer", "data": map[string]any{"sdp": "x"}}, nil); code != 409 {
+	if code := boB.do("POST", "/api/dm/signal", map[string]any{"to": ana, "kind": "offer", "data": map[string]any{"sdp": "x"}}, nil); code != 409 {
 		t.Errorf("Bo signals before answering: %d, want 409", code)
 	}
-	if code := doJSON(t, "POST", baseURL+"/api/dm/call", map[string]any{"secret": "bo-secret", "to": ana, "join": true}, nil); code != 200 {
+	if code := boB.do("POST", "/api/dm/call", map[string]any{"to": ana, "join": true}, nil); code != 200 {
 		t.Fatalf("Bo answers: %d", code)
 	}
-	if code := doJSON(t, "POST", baseURL+"/api/dm/signal", map[string]any{"secret": "bo-secret", "to": ana, "kind": "offer", "data": map[string]any{"sdp": "x"}}, nil); code != 200 {
+	if code := boB.do("POST", "/api/dm/signal", map[string]any{"to": ana, "kind": "offer", "data": map[string]any{"sdp": "x"}}, nil); code != 200 {
 		t.Errorf("Bo signals in the call: %d", code)
 	}
 	// Bo answering took him out of the game's call too, so nobody is left in it.
@@ -190,36 +243,35 @@ func TestDirectCall_OneVoiceAtATime(t *testing.T) {
 		t.Errorf("the game's call holds %+v, want nobody", call.Peers)
 	}
 	// Hanging up ends it; a signal afterwards is refused again.
-	if code := doJSON(t, "POST", baseURL+"/api/dm/call", map[string]any{"secret": "ana-secret", "join": false}, nil); code != 200 {
+	if code := anaB.do("POST", "/api/dm/call", map[string]any{"join": false}, nil); code != 200 {
 		t.Fatalf("Ana hangs up: %d", code)
 	}
-	if code := doJSON(t, "POST", baseURL+"/api/dm/signal", map[string]any{"secret": "ana-secret", "to": bo, "kind": "ice", "data": map[string]any{"candidate": "x"}}, nil); code != 409 {
+	if code := anaB.do("POST", "/api/dm/signal", map[string]any{"to": bo, "kind": "ice", "data": map[string]any{"candidate": "x"}}, nil); code != 409 {
 		t.Errorf("a signal after hanging up: %d, want 409", code)
 	}
 	// A call to somebody who is not here is refused.
-	if code := doJSON(t, "POST", baseURL+"/api/dm/call", map[string]any{"secret": "ana-secret", "to": strings.Repeat("f", 16), "join": true}, nil); code != 404 {
+	if code := anaB.do("POST", "/api/dm/call", map[string]any{"to": strings.Repeat("f", 16), "join": true}, nil); code != 404 {
 		t.Errorf("calling nobody: %d, want 404", code)
 	}
 }
 
-// openAs opens the home page in a browser that plays under the given name.
-func openAs(t *testing.T, ctx context.Context, baseURL, name string) {
+// openAs opens the home page in a browser signed in to the account @handle.
+func openAs(t *testing.T, ctx context.Context, a *app.App, baseURL, handle string) {
 	t.Helper()
-	nameJSON, _ := json.Marshal(name)
+	b := member(t, a, baseURL, handle)
+	signInChrome(t, ctx, baseURL, b.cookie(auth.SessionCookie))
 	if err := chromedp.Run(ctx,
-		chromedp.Navigate(baseURL+"/healthz"),
-		chromedp.Evaluate(fmt.Sprintf(`localStorage.setItem("bingle.name", %q); true`, nameJSON), nil),
 		chromedp.Navigate(baseURL+"/"),
 		chromedp.WaitVisible("#open-messages", chromedp.ByID),
 	); err != nil {
-		t.Fatalf("open the page as %s: %v", name, err)
+		t.Fatalf("open the page as @%s: %v", handle, err)
 	}
 }
 
 // Two people in two browsers find each other in the direct messages, write to
 // each other and see the badge count what has not been read.
 func TestWebDirectMessages_TwoBrowsersWriteToEachOther(t *testing.T) {
-	baseURL := newRESTTestServer(t)
+	a, baseURL := membersServer(t)
 	ana, cancelA := newChromedpContext(t, 90*time.Second)
 	defer cancelA()
 	bo, cancelB := newChromedpContext(t, 90*time.Second)
@@ -227,18 +279,18 @@ func TestWebDirectMessages_TwoBrowsersWriteToEachOther(t *testing.T) {
 	var mu sync.Mutex
 	var jsErrors []string
 	collectJSErrors(ana, &mu, &jsErrors)
-	openAs(t, ana, baseURL, "Ana")
-	openAs(t, bo, baseURL, "Bo")
+	openAs(t, ana, a, baseURL, "ana")
+	openAs(t, bo, a, baseURL, "bob")
 
 	// Each sees the other among the people who are here.
 	clickSel(t, ana, "#open-messages")
-	waitJS(t, ana, "Bo in the list", `[...document.querySelectorAll("#dm-people .dm-person")].some(b => b.textContent.includes("Bo"))`, 20*time.Second)
-	if evalBool(t, ana, `[...document.querySelectorAll("#dm-people .dm-person")].some(b => b.textContent.includes("Ana"))`) {
+	waitJS(t, ana, "Bo in the list", `[...document.querySelectorAll("#dm-people .dm-person")].some(b => b.textContent.includes("@bob"))`, 20*time.Second)
+	if evalBool(t, ana, `[...document.querySelectorAll("#dm-people .dm-person")].some(b => b.textContent.includes("@ana"))`) {
 		t.Error("Ana is offered as somebody to write to herself")
 	}
 	// Ana writes to Bo.
 	clickSel(t, ana, `#dm-people .dm-person`)
-	waitJS(t, ana, "the correspondence", `document.getElementById("dm-title").textContent === "With Bo" && !document.getElementById("dm-input").disabled`, 10*time.Second)
+	waitJS(t, ana, "the correspondence", `document.getElementById("dm-title").textContent === "With @bob" && !document.getElementById("dm-input").disabled`, 10*time.Second)
 	if err := chromedp.Run(ana, chromedp.Evaluate(`(function () {
 		var i = document.getElementById("dm-input");
 		i.value = "Fancy a game of Hex?";
@@ -252,7 +304,7 @@ func TestWebDirectMessages_TwoBrowsersWriteToEachOther(t *testing.T) {
 	// Bo's badge counts it, and his window shows it when he opens it.
 	waitJS(t, bo, "Bo's badge", `!document.getElementById("dm-badge").hidden && document.getElementById("dm-badge").textContent === "1"`, 15*time.Second)
 	clickSel(t, bo, "#open-messages")
-	waitJS(t, bo, "Ana in Bo's list", `[...document.querySelectorAll("#dm-people .dm-person")].some(b => b.textContent.includes("Ana"))`, 10*time.Second)
+	waitJS(t, bo, "Ana in Bo's list", `[...document.querySelectorAll("#dm-people .dm-person")].some(b => b.textContent.includes("@ana"))`, 10*time.Second)
 	clickSel(t, bo, `#dm-people .dm-person[data-address]`)
 	waitJS(t, bo, "the message on Bo's side", `[...document.querySelectorAll("#dm-log .chat-line")].some(li => li.textContent.includes("Fancy a game of Hex?"))`, 10*time.Second)
 	waitJS(t, bo, "Bo's badge cleared", `document.getElementById("dm-badge").hidden === true`, 10*time.Second)
@@ -276,16 +328,16 @@ func TestWebDirectMessages_TwoBrowsersWriteToEachOther(t *testing.T) {
 // A voice call inside a direct message: one rings, the other answers, and the
 // two browsers end up connected to each other.
 func TestWebDirectCall_TwoBrowsersTalk(t *testing.T) {
-	baseURL := newRESTTestServer(t)
+	a, baseURL := membersServer(t)
 	ana, cancelA := newChromedpContextWith(t, 120*time.Second, fakeMic...)
 	defer cancelA()
 	bo, cancelB := newChromedpContextWith(t, 120*time.Second, fakeMic...)
 	defer cancelB()
-	openAs(t, ana, baseURL, "Ana")
-	openAs(t, bo, baseURL, "Bo")
+	openAs(t, ana, a, baseURL, "ana")
+	openAs(t, bo, a, baseURL, "bob")
 
 	clickSel(t, ana, "#open-messages")
-	waitJS(t, ana, "Bo in the list", `[...document.querySelectorAll("#dm-people .dm-person")].some(b => b.textContent.includes("Bo"))`, 20*time.Second)
+	waitJS(t, ana, "Bo in the list", `[...document.querySelectorAll("#dm-people .dm-person")].some(b => b.textContent.includes("@bob"))`, 20*time.Second)
 	clickSel(t, ana, `#dm-people .dm-person`)
 	waitJS(t, ana, "the call button", `document.getElementById("dm-call") !== null && !document.getElementById("dm-call").hidden`, 10*time.Second)
 	clickSel(t, ana, "#dm-call")
@@ -309,14 +361,20 @@ func TestWebDirectCall_TwoBrowsersTalk(t *testing.T) {
 // A person talks in one place at a time: calling somebody from the direct
 // messages takes them out of the voice chat of a game, and the page says so.
 func TestWebDirectCall_LeavesTheGamesVoiceChat(t *testing.T) {
-	baseURL := newRESTTestServer(t)
-	room := newTakRoom(t, baseURL, "tic-tac-toe", "Ana")
-	joinRoom(t, baseURL, room, "Bo")
+	a, baseURL := membersServer(t)
+	anaB, boB := member(t, a, baseURL, "ana"), member(t, a, baseURL, "bob")
+	var created struct {
+		RoomCode string `json:"room_code"`
+	}
+	anaB.do("POST", "/api/games", map[string]any{"game_def_id": "tic-tac-toe", "player_name": "Ana"}, &created)
+	room := created.RoomCode
+	boB.do("POST", "/api/games/"+room+"/join", map[string]any{"player_name": "Bo"}, nil)
 	// Bo is about (in another browser, as far as this one knows).
-	bo := here(t, baseURL, "bo-secret", "Bo")
+	bo := boB.here()
 
 	ctx, cancel := newChromedpContextWith(t, 120*time.Second, fakeMic...)
 	defer cancel()
+	signInChrome(t, ctx, baseURL, anaB.cookie(auth.SessionCookie))
 	openGameAs(t, ctx, baseURL, room, "tic-tac-toe", "Ana")
 	waitJS(t, ctx, "the voice card", `document.getElementById("voice-join") !== null`, 15*time.Second)
 	clickSel(t, ctx, "#voice-join")

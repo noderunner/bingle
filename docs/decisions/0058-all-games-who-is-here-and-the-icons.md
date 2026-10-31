@@ -1,6 +1,6 @@
 # 0058. All games, who is here, and the icons of the bar
 
-Status: accepted (2026-10-27)
+Status: accepted (2026-10-27); who is here is accounts' only since [ADR 0073](0073-account-only-features.md), and the browser's secret is gone
 
 ## Context
 

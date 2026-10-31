@@ -9,7 +9,7 @@ Short records of choices made for the `bingle` project during the requirements i
 | [0003](0003-board-as-graph-model.md) | Board modeled as a generic graph, not a fixed grid |
 | [0004](0004-rest-and-websocket-transport.md) | REST + WebSocket transport |
 | [0005](0005-room-code-matchmaking.md) | Room codes over a public lobby |
-| [0006](0006-name-only-player-identity.md) | Name-only player identity, no session token |
+| [0006](0006-name-only-player-identity.md) | Name-only player identity, no session token (superseded by the accounts plan, ADR 0067–0073) |
 | [0007](0007-spectator-support.md) | Read-only spectators via room code |
 | [0008](0008-full-move-history-persistence.md) | Full move-history persistence |
 | [0009](0009-sqlite-database.md) | SQLite over PostgreSQL |
@@ -76,3 +76,4 @@ Short records of choices made for the `bingle` project during the requirements i
 | [0070](0070-oidc.md) | Generic OpenID Connect sign-in (x/oauth2, go-oidc): PKCE, a state bound to the browser, a nonce; links by address only when the provider and the server both vouch for it |
 | [0071](0071-capabilities-modes-and-tokens.md) | The capability matrix seeded from YAML and owned by the database, hybrid and closed, scoped API tokens that never carry admin powers, per-class limits, invitations |
 | [0072](0072-identity-in-the-interface.md) | Handles reserved for their accounts and held after a rename, seat and chat markers, "My games" on the server, and the guest key copied to another device |
+| [0073](0073-account-only-features.md) | Direct messages, who is here, the global chat and notifications are accounts'; confirmed contacts grandfathered and offered the way to an account; ADR 0006 retired |

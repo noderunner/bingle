@@ -61,6 +61,14 @@ async function call(path, { method = "GET", body, headers, keepalive } = {}) {
 
 const enc = encodeURIComponent;
 
+let mePromise = null;
+
+/** Who this browser is (GET /auth/me), asked once per page. */
+export function whoAmI() {
+	if (!mePromise) mePromise = call("/auth/me").catch(() => ({ kind: "anonymous", caps: [] }));
+	return mePromise;
+}
+
 // codeBody is a typed second factor as the server wants it: six digits are a
 // code from the app, anything else a recovery code.
 function codeBody(typed) {
@@ -74,6 +82,8 @@ export const api = {
 	me: () => call("/auth/me"),
 	login: (handle, password) => call("/auth/login", { method: "POST", body: { handle, password } }),
 	logout: () => call("/auth/logout", { method: "POST" }),
+	signupWithContact: (contactID, contactSecret, handle, password) =>
+		call("/auth/signup", { method: "POST", body: { contact_id: contactID, contact_secret: contactSecret, handle, password } }),
 	signup: (handle, email, password, invite) => call("/auth/signup", { method: "POST", body: { handle, email, password, invite: invite || undefined } }),
 	confirmAccount: (token) => call("/auth/confirm", { method: "POST", body: { token } }),
 	changePassword: (old, next) => call("/auth/password", { method: "POST", body: { old, new: next } }),
@@ -152,7 +162,7 @@ export const api = {
 	gameNotify: (code, name) => call(`/api/games/${enc(code)}/notify?player_name=${enc(name)}`),
 	setGameNotify: (code, body) => call(`/api/games/${enc(code)}/notify`, { method: "PUT", body }),
 	voice: (code) => call(`/api/games/${enc(code)}/voice`),
-	setVoice: (code, name, active, secret) => call(`/api/games/${enc(code)}/voice`, { method: "POST", body: { player_name: name, active, secret } }),
+	setVoice: (code, name, active) => call(`/api/games/${enc(code)}/voice`, { method: "POST", body: { player_name: name, active } }),
 	// The tab is closing: a request that outlives the page.
 	leaveVoice: (code, name) => call(`/api/games/${enc(code)}/voice`, { method: "POST", body: { player_name: name, active: false }, keepalive: true }),
 	voiceSignal: (code, name, to, kind, data) => call(`/api/games/${enc(code)}/voice/signal`, { method: "POST", body: { player_name: name, to, kind, data } }),
@@ -164,12 +174,12 @@ export const api = {
 	},
 	moves: (code) => call(`/api/games/${enc(code)}/moves`),
 	openGames: (limit) => call("/api/games" + (limit ? `?limit=${limit}` : "")),
-	sendDirect: (secret, to, text) => call("/api/dm", { method: "POST", body: { secret, to, text } }),
-	directHistory: (secret, with_, after) => call("/api/dm/history", { method: "POST", body: { secret, with: with_, after: after || 0 } }),
-	directThreads: (secret) => call("/api/dm/threads", { method: "POST", body: { secret } }),
-	directCall: (secret, to, join) => call("/api/dm/call", { method: "POST", body: { secret, to, join } }),
-	directSignal: (secret, to, kind, data) => call("/api/dm/signal", { method: "POST", body: { secret, to, kind, data } }),
-	here: (secret, name) => call("/api/here", { method: "POST", body: { secret, player_name: name } }),
+	sendDirect: (to, text) => call("/api/dm", { method: "POST", body: { to, text } }),
+	directHistory: (with_, after) => call("/api/dm/history", { method: "POST", body: { with: with_, after: after || 0 } }),
+	directThreads: () => call("/api/dm/threads", { method: "POST", body: {} }),
+	directCall: (to, join) => call("/api/dm/call", { method: "POST", body: { to, join } }),
+	directSignal: (to, kind, data) => call("/api/dm/signal", { method: "POST", body: { to, kind, data } }),
+	here: (present = true) => call("/api/here", { method: "POST", body: { here: present } }),
 	whoIsHere: () => call("/api/here"),
 	presence: (code) => call(`/api/games/${enc(code)}/presence`),
 	setPresence: (code, name, present) => call(`/api/games/${enc(code)}/presence`, { method: "POST", body: { player_name: name, present } }),

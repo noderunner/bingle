@@ -74,9 +74,6 @@ func (h *handlers) handleGetVoice(w http.ResponseWriter, r *http.Request) {
 type voiceRequest struct {
 	PlayerName string `json:"player_name"`
 	Active     bool   `json:"active"`
-	// Secret is the browser's own (see POST /here), which lets the server keep
-	// a person in one call at a time: joining this one leaves the other.
-	Secret string `json:"secret,omitempty"`
 }
 
 // handlePostVoice implements POST /games/{code}/voice: a player joins the call
@@ -91,7 +88,7 @@ func (h *handlers) handlePostVoice(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err)
 		return
 	}
-	peers, err := h.mgr.SetVoice(r.Context(), chi.URLParam(r, "code"), req.PlayerName, req.Active, req.Secret)
+	peers, err := h.mgr.SetVoice(r.Context(), chi.URLParam(r, "code"), req.PlayerName, req.Active)
 	if err != nil {
 		writeError(w, err)
 		return

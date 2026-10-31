@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"context"
 	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
@@ -636,4 +637,65 @@ func (a *Accounts) EndOtherSessions(ctx context.Context, acc store.Account, curr
 // Events is the latest of the audit log, for the admin page.
 func (a *Accounts) Events(ctx context.Context, limit int) ([]store.AuthEvent, error) {
 	return a.st.AuthEvents(ctx, limit)
+}
+
+// ---- a confirmed contact becomes an account -------------------------------------------
+
+// ErrAddressUsed is the answer to making an account with an address that is
+// another's.
+var ErrAddressUsed = errors.New("auth: an account here has that email address already: sign in to it")
+
+// ErrNotYourContact is the answer to an upgrade with a contact the browser
+// does not hold, or one that is not confirmed.
+var ErrNotYourContact = errors.New("auth: that email address is not this browser's confirmed one: sign up with it instead")
+
+// SignupWithContact turns a confirmed contact — an address this browser
+// proved for turn mail — into an account with a handle and a password,
+// without a second confirmation: the address is proven already. The guest
+// becomes the account, as with any sign-up, and the account is signed in.
+func (a *Accounts) SignupWithContact(ctx context.Context, contactID int64, contactSecret, handle, password, guest, invite, ip, agent string) (Session, error) {
+	if a.signup == SignupClosed {
+		return Session{}, ErrSignupClosed
+	}
+	h, err := CanonHandle(handle, false)
+	if err != nil {
+		return Session{}, err
+	}
+	if err := CheckPassword(password); err != nil {
+		return Session{}, err
+	}
+	if err := a.checkInvite(ctx, invite); err != nil {
+		return Session{}, err
+	}
+	if !a.signups.allow(ip, a.now()) {
+		return Session{}, ErrTooManyTries
+	}
+	c, err := a.st.GetContact(ctx, contactID)
+	if err != nil || contactSecret == "" || !c.Verified() || subtle.ConstantTimeCompare([]byte(c.SecretHash), []byte(hashSecret(contactSecret))) != 1 {
+		return Session{}, ErrNotYourContact
+	}
+	if a.handleTaken(ctx, h, 0) {
+		return Session{}, ErrHandleTaken
+	}
+	principal, fresh := guest, false
+	if principal == "" || a.principalHasAccount(ctx, principal) {
+		principal, fresh = NewPrincipalID(), true
+	}
+	id, err := a.st.CreateAccount(ctx, store.NewAccount{Handle: h, DisplayName: h, Email: c.Address, Verified: true, PrincipalID: principal, NewPrincipal: fresh,
+		PasswordHash: HashPassword(password, a.params)})
+	switch {
+	case errors.Is(err, store.ErrTaken):
+		return Session{}, ErrAddressUsed
+	case err != nil:
+		return Session{}, err
+	}
+	if err := a.spendInvite(ctx, invite, id); err != nil {
+		return Session{}, err
+	}
+	a.audit(ctx, id, "signup", "from a confirmed contact", ip)
+	acc, err := a.st.AccountByID(ctx, id)
+	if err != nil {
+		return Session{}, err
+	}
+	return a.finishLogin(ctx, acc, "", ip, agent, "sign-up")
 }

@@ -6,7 +6,7 @@
 A small server for playing **abstract strategy games** — with friends, against
 built-in bots, or as an environment for training and evaluating models. One Go
 binary, an embedded SQLite database, a browser UI, a REST/WebSocket API and an
-MCP server that all share one rules engine. No accounts, no external services,
+MCP server that all share one rules engine. No signup needed to play, no external services,
 no CGO: `go build` and run.
 
 > **AI-generated code.** Most of this project, its code, tests, documentation and rules
@@ -69,7 +69,8 @@ make build && ./bin/bingle           # http://localhost:8080
 Or without cloning: `go install github.com/noderunner/bingle@latest`, then run `bingle`.
 
 Open the lobby, pick a game, choose a friend or a bot, and play. Share the
-game link to invite someone; they join with a name (no accounts).
+game link to invite someone; they join with a name (no account needed — accounts are there for
+those who want their games on every device, direct messages and the global chat).
 
 With a container: `podman build -f Containerfile -t bingle . && podman run --rm -p 8080:8080 -v bingle-data:/data bingle`
 (or `docker`). See [docs/build.md](docs/build.md).
@@ -87,9 +88,11 @@ email notifications ("it is your turn") are set up with an SMTP server — see
 [docs/email.md](docs/email.md). [scripts/run.example.sh](scripts/run.example.sh) shows a
 complete setup.
 
-> **Security model.** Bingle has no accounts: a seat belongs to whoever uses its name in that
-> game, and anyone who knows a game's link can join or watch. It suits a group of friends, not
-> an open public service. Read [SECURITY.md](SECURITY.md) before exposing it.
+> **Security model.** A seat belongs to the browser (or account) that took it, and anyone who
+> knows a game's link can join an open seat or watch. Guests play without signing up; accounts,
+> administrators with a second factor, and a members-only mode are there for more. Read
+> [SECURITY.md](SECURITY.md) and the [accounts plan](docs/history/auth-and-accounts-plan.md)
+> before exposing it.
 
 ## Repository layout
 

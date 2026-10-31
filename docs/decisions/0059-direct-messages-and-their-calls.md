@@ -1,6 +1,6 @@
 # 0059. Direct messages, their voice calls, and one voice at a time
 
-Status: accepted (2026-10-27)
+Status: accepted (2026-10-27); direct messages and calls are between signed-in accounts since [ADR 0073](0073-account-only-features.md), with no browser secret
 
 ## Context
 

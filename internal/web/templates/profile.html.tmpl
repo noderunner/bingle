@@ -23,6 +23,23 @@
 			<p id="account-line"></p>
 		</section>
 
+		<section class="card" id="upgrade-box" hidden>
+			<h2>Make your address an account</h2>
+			<p class="small">Email notifications, direct messages and the global chat are for signed-in players now. This browser confirmed an email address already, so it can become your account at once: choose a handle and a password, and your games, and your turn mail, carry on.</p>
+			<form id="upgrade-form" novalidate>
+				<div class="field">
+					<label for="upgrade-handle">Handle</label>
+					<input id="upgrade-handle" type="text" maxlength="25" autocapitalize="none" spellcheck="false">
+				</div>
+				<div class="field">
+					<label for="upgrade-password">Password</label>
+					<input id="upgrade-password" type="password" minlength="10" maxlength="256" autocomplete="new-password">
+				</div>
+				<div class="row"><button type="submit" class="primary" id="upgrade-go">Make my account</button></div>
+				<p class="small" id="upgrade-result" role="status" aria-live="polite"></p>
+			</form>
+		</section>
+
 		<section class="card" id="guest-box" hidden>
 			<h2>Your guest key</h2>
 			<p class="small muted">This browser plays as a guest. Its key is what makes your seats yours: copy it to your phone, or another browser, to carry on your games there. Anybody with the key can play as you.</p>

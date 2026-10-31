@@ -1,7 +1,7 @@
 # Plan: authenticated accounts, capabilities and a secure transport
 
-Status: **stages 1–7 done, stage 8 planned** (2026-10-29; guests amended 2026-10-31). Stage 1
-(secure transport) settled [ADR 0065](../decisions/0065-the-connection-must-be-secure.md), stage 2 (principals and guest keys) [ADR 0067](../decisions/0067-principals-and-guest-keys.md), stage 3 (accounts, sessions, passwords) [ADR 0068](../decisions/0068-accounts-sessions-and-passwords.md), stage 4 (the second factor) [ADR 0069](../decisions/0069-second-factor-and-lockout.md), stage 5 (OIDC) [ADR 0070](../decisions/0070-oidc.md), stage 6 (capabilities and modes) [ADR 0071](../decisions/0071-capabilities-modes-and-tokens.md), stage 7 (identity in the interface) [ADR 0072](../decisions/0072-identity-in-the-interface.md). The decisions in *What was decided*
+Status: **done: stages 1–8** (2026-10-29; guests amended 2026-10-31). Stage 1
+(secure transport) settled [ADR 0065](../decisions/0065-the-connection-must-be-secure.md), stage 2 (principals and guest keys) [ADR 0067](../decisions/0067-principals-and-guest-keys.md), stage 3 (accounts, sessions, passwords) [ADR 0068](../decisions/0068-accounts-sessions-and-passwords.md), stage 4 (the second factor) [ADR 0069](../decisions/0069-second-factor-and-lockout.md), stage 5 (OIDC) [ADR 0070](../decisions/0070-oidc.md), stage 6 (capabilities and modes) [ADR 0071](../decisions/0071-capabilities-modes-and-tokens.md), stage 7 (identity in the interface) [ADR 0072](../decisions/0072-identity-in-the-interface.md), stage 8 (the account-only features) [ADR 0073](../decisions/0073-account-only-features.md). The decisions in *What was decided*
 were taken with the owner before this was written; the rest is the reasoning, the diagrams
 and the staging. The 2026-10-31 amendment makes a guest a principal of its own, with an ID
 and a portable key (§3a), before stage 2 begins.
@@ -602,6 +602,11 @@ Tests: the existing direct-message and notify suites, rewritten to log in; a gra
 contact still receives mail; a guest cannot create a contact; the upgrade path turns a
 contact into an account without a second confirmation.
 
+Notes. *Done* (ADR 0073). An account's address in the list is a hash of its principal, so a rename
+keeps it. The notify suite runs with notifications open to guests, to test how mail works; what
+the defaults mean is tested separately. A confirmed contact's upgrade is `POST /auth/signup` with
+the contact's ID and secret in place of an address.
+
 ## How this changes the other two plans
 
 - **Observability.** The localhost metrics listener **stays** as the operational path — it
@@ -675,3 +680,6 @@ contact into an account without a second confirmation.
   tokens, per-class limits, invitations.
 - 2026-10-31: stage 7 done (ADR 0072): handles reserved and held, seat and chat markers, "My games"
   on the server, the account page, the audit log, and the guest key carried to another device.
+- 2026-10-31: stage 8 done (ADR 0073): direct messages, who is here, the global chat and email
+  notifications are accounts'; confirmed contacts grandfathered and offered the way to an account;
+  the browser secret and ADR 0006 retired. The plan is complete.
