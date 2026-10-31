@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 )
@@ -28,16 +29,32 @@ type Account struct {
 	MustChangePassword bool
 	PrincipalID        string
 	CreatedAt          string
+	// HasTOTP says the account signs in with a second factor; Admin that it
+	// is in the admin group.
+	HasTOTP bool
+	Admin   bool
 }
 
 // ErrTaken is returned when a handle or an address is already an account's.
 var ErrTaken = errors.New("store: already taken")
 
-const accountColumns = `id, handle, display_name, email, email_verified_at IS NOT NULL, status, must_change_password, principal_id, created_at`
+// accountCols are an account's columns, the accounts table being called t.
+func accountCols(t string) string {
+	return t + `.id, ` + t + `.handle, ` + t + `.display_name, ` + t + `.email, ` + t + `.email_verified_at IS NOT NULL, ` + t + `.status, ` +
+		t + `.must_change_password, ` + t + `.principal_id, ` + t + `.created_at, ` +
+		`EXISTS (SELECT 1 FROM credentials c WHERE c.account_id = ` + t + `.id AND c.kind = 'totp'), ` +
+		`EXISTS (SELECT 1 FROM account_groups g WHERE g.account_id = ` + t + `.id AND g.group_name = '` + GroupAdmin + `')`
+}
+
+var accountColumns = accountCols("accounts")
+
+func (a *Account) fields() []any {
+	return []any{&a.ID, &a.Handle, &a.DisplayName, &a.Email, &a.EmailVerified, &a.Status, &a.MustChangePassword, &a.PrincipalID, &a.CreatedAt, &a.HasTOTP, &a.Admin}
+}
 
 func scanAccount(row interface{ Scan(...any) error }) (Account, error) {
 	var a Account
-	err := row.Scan(&a.ID, &a.Handle, &a.DisplayName, &a.Email, &a.EmailVerified, &a.Status, &a.MustChangePassword, &a.PrincipalID, &a.CreatedAt)
+	err := row.Scan(a.fields()...)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Account{}, ErrNotFound
 	}
@@ -269,9 +286,9 @@ func (s *Store) SessionAccount(ctx context.Context, idHash string, idleSince, no
 	var lastSeen string
 	var a Account
 	err := s.queryRow(ctx, "SessionAccount",
-		`SELECT s.last_seen_at, `+prefixed("a.", accountColumns)+` FROM sessions s JOIN accounts a ON a.id = s.account_id
+		`SELECT s.last_seen_at, `+accountCols("a")+` FROM sessions s JOIN accounts a ON a.id = s.account_id
 		 WHERE s.id_hash = ? AND s.expires_at > ? AND s.last_seen_at >= ? AND a.status = ? AND a.deleted_at IS NULL`,
-		idHash, stamp(now), stamp(idleSince), AccountActive).Scan(&lastSeen, &a.ID, &a.Handle, &a.DisplayName, &a.Email, &a.EmailVerified, &a.Status, &a.MustChangePassword, &a.PrincipalID, &a.CreatedAt)
+		idHash, stamp(now), stamp(idleSince), AccountActive).Scan(append([]any{&lastSeen}, a.fields()...)...)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Account{}, ErrNotFound
 	}
@@ -284,14 +301,6 @@ func (s *Store) SessionAccount(ctx context.Context, idHash string, idleSince, no
 		}
 	}
 	return a, nil
-}
-
-func prefixed(p, cols string) string {
-	parts := strings.Split(cols, ", ")
-	for i := range parts {
-		parts[i] = p + parts[i]
-	}
-	return strings.Join(parts, ", ")
 }
 
 // DeleteSession signs a browser out.
@@ -321,6 +330,17 @@ func (s *Store) CountSessions(ctx context.Context, accountID int64) (int, error)
 func (s *Store) CreateAccountToken(ctx context.Context, hash string, accountID int64, kind string, expires time.Time) error {
 	_, err := s.exec(ctx, "CreateAccountToken", `INSERT INTO account_tokens (hash, account_id, kind, expires_at) VALUES (?, ?, ?, ?)`, hash, accountID, kind, stamp(expires))
 	return err
+}
+
+// PeekAccountToken is the account a live token of the kind is for, without
+// spending it.
+func (s *Store) PeekAccountToken(ctx context.Context, hash, kind string, now time.Time) (int64, error) {
+	var id int64
+	err := s.queryRow(ctx, "PeekAccountToken", `SELECT account_id FROM account_tokens WHERE hash = ? AND kind = ? AND used_at IS NULL AND expires_at > ?`, hash, kind, stamp(now)).Scan(&id)
+	if errors.Is(err, sql.ErrNoRows) {
+		return 0, ErrNotFound
+	}
+	return id, err
 }
 
 // UseAccountToken spends a token of the kind: once, and before it expires.
@@ -423,4 +443,140 @@ func (s *Store) AuthEvents(ctx context.Context, limit int) ([]AuthEvent, error) 
 		out = append(out, e)
 	}
 	return out, rows.Err()
+}
+
+// ---- the second factor -----------------------------------------------------------
+
+// SetPendingTOTP keeps a TOTP secret an account is setting up, until a code
+// from it confirms the app has it.
+func (s *Store) SetPendingTOTP(ctx context.Context, accountID int64, secret string) error {
+	tx, err := s.begin(ctx, "SetPendingTOTP")
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+	if _, err := tx.exec(ctx, "SetPendingTOTP.delete", `DELETE FROM credentials WHERE account_id = ? AND kind = 'totp-pending'`, accountID); err != nil {
+		return err
+	}
+	if _, err := tx.exec(ctx, "SetPendingTOTP.insert", `INSERT INTO credentials (account_id, kind, secret) VALUES (?, 'totp-pending', ?)`, accountID, secret); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+// credential is the secret and params of an account's credential of a kind.
+func (s *Store) credential(ctx context.Context, accountID int64, kind string) (string, string, error) {
+	var secret, params string
+	err := s.queryRow(ctx, "credential", `SELECT secret, params FROM credentials WHERE account_id = ? AND kind = ? ORDER BY id DESC LIMIT 1`, accountID, kind).Scan(&secret, &params)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", "", ErrNotFound
+	}
+	return secret, params, err
+}
+
+// PendingTOTP is the secret an account is setting up.
+func (s *Store) PendingTOTP(ctx context.Context, accountID int64) (string, error) {
+	secret, _, err := s.credential(ctx, accountID, "totp-pending")
+	return secret, err
+}
+
+// TOTP is an account's TOTP secret and the last step a code was used for.
+func (s *Store) TOTP(ctx context.Context, accountID int64) (string, int64, error) {
+	secret, params, err := s.credential(ctx, accountID, "totp")
+	if err != nil {
+		return "", 0, err
+	}
+	var last int64
+	_, _ = fmt.Sscan(params, &last)
+	return secret, last, nil
+}
+
+// UseTOTPStep records that a code of step was used, if no later one has
+// been: it reports false when the step is spent, which is a replay.
+func (s *Store) UseTOTPStep(ctx context.Context, accountID, step int64) (bool, error) {
+	res, err := s.exec(ctx, "UseTOTPStep", `UPDATE credentials SET params = ?, last_used_at = CURRENT_TIMESTAMP
+		WHERE account_id = ? AND kind = 'totp' AND CAST(CASE params WHEN '' THEN '0' ELSE params END AS INTEGER) < ?`, fmt.Sprint(step), accountID, step)
+	if err != nil {
+		return false, err
+	}
+	n, _ := res.RowsAffected()
+	return n > 0, nil
+}
+
+// EnableTOTP makes the pending secret the account's second factor, at step
+// (the code that confirmed it), with the recovery codes' hashes.
+func (s *Store) EnableTOTP(ctx context.Context, accountID int64, step int64, recoveryHashes []string) error {
+	tx, err := s.begin(ctx, "EnableTOTP")
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+	if _, err := tx.exec(ctx, "EnableTOTP.old", `DELETE FROM credentials WHERE account_id = ? AND kind IN ('totp', 'recovery')`, accountID); err != nil {
+		return err
+	}
+	res, err := tx.exec(ctx, "EnableTOTP.promote", `UPDATE credentials SET kind = 'totp', params = ? WHERE account_id = ? AND kind = 'totp-pending'`, fmt.Sprint(step), accountID)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n != 1 {
+		return ErrNotFound
+	}
+	if err := insertRecovery(ctx, tx, accountID, recoveryHashes); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+func insertRecovery(ctx context.Context, tx *Tx, accountID int64, hashes []string) error {
+	for _, h := range hashes {
+		if _, err := tx.exec(ctx, "insertRecovery", `INSERT INTO credentials (account_id, kind, secret) VALUES (?, 'recovery', ?)`, accountID, h); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// ReplaceRecoveryCodes gives an account a fresh set of recovery codes.
+func (s *Store) ReplaceRecoveryCodes(ctx context.Context, accountID int64, hashes []string) error {
+	tx, err := s.begin(ctx, "ReplaceRecoveryCodes")
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+	if _, err := tx.exec(ctx, "ReplaceRecoveryCodes.delete", `DELETE FROM credentials WHERE account_id = ? AND kind = 'recovery'`, accountID); err != nil {
+		return err
+	}
+	if err := insertRecovery(ctx, tx, accountID, hashes); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+// UseRecoveryCode spends a recovery code: it reports false when the account
+// has no such code (any more).
+func (s *Store) UseRecoveryCode(ctx context.Context, accountID int64, hash string) (bool, error) {
+	res, err := s.exec(ctx, "UseRecoveryCode", `DELETE FROM credentials WHERE account_id = ? AND kind = 'recovery' AND secret = ?`, accountID, hash)
+	if err != nil {
+		return false, err
+	}
+	n, _ := res.RowsAffected()
+	return n > 0, nil
+}
+
+// CountRecoveryCodes is how many unused recovery codes an account has.
+func (s *Store) CountRecoveryCodes(ctx context.Context, accountID int64) (int, error) {
+	var n int
+	err := s.queryRow(ctx, "CountRecoveryCodes", `SELECT COUNT(*) FROM credentials WHERE account_id = ? AND kind = 'recovery'`, accountID).Scan(&n)
+	return n, err
+}
+
+// RemoveSecondFactor takes an account's TOTP and recovery codes away.
+func (s *Store) RemoveSecondFactor(ctx context.Context, accountID int64) error {
+	_, err := s.exec(ctx, "RemoveSecondFactor", `DELETE FROM credentials WHERE account_id = ? AND kind IN ('totp', 'totp-pending', 'recovery')`, accountID)
+	return err
+}
+
+// AccountByEmail finds the active account with an address, in any case.
+func (s *Store) AccountByEmail(ctx context.Context, email string) (Account, error) {
+	return scanAccount(s.queryRow(ctx, "AccountByEmail", `SELECT `+accountColumns+` FROM accounts WHERE email_lower = ? AND status = ? AND deleted_at IS NULL`, strings.ToLower(email), AccountActive))
 }

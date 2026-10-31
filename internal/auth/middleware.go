@@ -116,10 +116,17 @@ func (rs *Resolver) Middleware(next http.Handler) http.Handler {
 			return
 		}
 		// An account whose password must be changed may change it, sign out,
-		// and look; nothing else.
-		if ok && p.Account != nil && p.Account.MustChangePassword && unsafe && !strings.HasPrefix(r.URL.Path, "/auth/") {
-			writeError(w, http.StatusForbidden, ErrMustChangePwd.Error())
-			return
+		// and look; nothing else. Nor may an administrator who has no second
+		// factor yet, off this machine, until one is set up.
+		if ok && p.Account != nil && unsafe && !strings.HasPrefix(r.URL.Path, "/auth/") {
+			switch {
+			case p.Account.MustChangePassword:
+				writeError(w, http.StatusForbidden, ErrMustChangePwd.Error())
+				return
+			case rs.needsSecondFactor(r, *p.Account):
+				writeError(w, http.StatusForbidden, ErrAdminNeedsTOTP.Error())
+				return
+			}
 		}
 		if !ok && unsafe && fromPage {
 			if p, ok = rs.newGuest(w, r); ok {

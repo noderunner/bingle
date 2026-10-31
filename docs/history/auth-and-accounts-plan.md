@@ -1,7 +1,7 @@
 # Plan: authenticated accounts, capabilities and a secure transport
 
-Status: **stages 1–3 done, stages 4–8 planned** (2026-10-29; guests amended 2026-10-31). Stage 1
-(secure transport) settled [ADR 0065](../decisions/0065-the-connection-must-be-secure.md), stage 2 (principals and guest keys) [ADR 0067](../decisions/0067-principals-and-guest-keys.md), stage 3 (accounts, sessions, passwords) [ADR 0068](../decisions/0068-accounts-sessions-and-passwords.md). The decisions in *What was decided*
+Status: **stages 1–4 done, stages 5–8 planned** (2026-10-29; guests amended 2026-10-31). Stage 1
+(secure transport) settled [ADR 0065](../decisions/0065-the-connection-must-be-secure.md), stage 2 (principals and guest keys) [ADR 0067](../decisions/0067-principals-and-guest-keys.md), stage 3 (accounts, sessions, passwords) [ADR 0068](../decisions/0068-accounts-sessions-and-passwords.md), stage 4 (the second factor) [ADR 0069](../decisions/0069-second-factor-and-lockout.md). The decisions in *What was decided*
 were taken with the owner before this was written; the rest is the reasoning, the diagrams
 and the staging. The 2026-10-31 amendment makes a guest a principal of its own, with an ID
 and a portable key (§3a), before stage 2 begins.
@@ -547,6 +547,11 @@ group requirement with its loopback exemption, and `bingle account reset`. Tests
 vectors; a used recovery code cannot be reused; the loopback exemption does not apply behind
 a trusted proxy; brute-force backoff.
 
+Notes. *Done* (ADR 0069). The QR code stays out: the key and the `otpauth://` link are shown as
+text, which every app accepts. Resetting a forgotten password by mail, which §9 assumes and no
+stage named, landed here, with a second factor asked for too. Backoff and waiting sign-ins are in
+memory, so a restart clears them.
+
 **5. Generic OIDC.** The start and callback endpoints with PKCE, state and nonce, the linking
 rule, the provider buttons, and an in-process fake provider modelled on `fakesmtp`. Tests:
 the fake provider drives a full sign-in; an unverified provider address never links; a
@@ -644,3 +649,5 @@ contact into an account without a second confirmation.
   seat tokens retired; anonymous requests keep unowned seats only.
 - 2026-10-31: stage 3 done (ADR 0068): accounts, server-side sessions, Argon2id, signing up with a
   confirmed address, the seeded administrator and `bingle account`.
+- 2026-10-31: stage 4 done (ADR 0069): TOTP with replay protection, recovery codes, the admin
+  group's second factor, backoff, and password reset by mail.

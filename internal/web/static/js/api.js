@@ -61,6 +61,14 @@ async function call(path, { method = "GET", body, headers, keepalive } = {}) {
 
 const enc = encodeURIComponent;
 
+// codeBody is a typed second factor as the server wants it: six digits are a
+// code from the app, anything else a recovery code.
+function codeBody(typed) {
+	const t = String(typed || "").replace(/\s+/g, "");
+	if (!t) return {};
+	return /^\d{6}$/.test(t) ? { code: t } : { recovery_code: t };
+}
+
 export const api = {
 	// Accounts (ADR 0068).
 	me: () => call("/auth/me"),
@@ -69,6 +77,14 @@ export const api = {
 	signup: (handle, email, password) => call("/auth/signup", { method: "POST", body: { handle, email, password } }),
 	confirmAccount: (token) => call("/auth/confirm", { method: "POST", body: { token } }),
 	changePassword: (old, next) => call("/auth/password", { method: "POST", body: { old, new: next } }),
+	// A code, or a recovery code: what was typed decides which it is.
+	secondFactor: (typed) => call("/auth/second", { method: "POST", body: codeBody(typed) }),
+	totpSetup: (password) => call("/auth/totp/setup", { method: "POST", body: { password } }),
+	totpEnable: (code) => call("/auth/totp/enable", { method: "POST", body: { code } }),
+	totpDisable: (password, typed) => call("/auth/totp/disable", { method: "POST", body: { password, ...codeBody(typed) } }),
+	newRecoveryCodes: (password) => call("/auth/recovery", { method: "POST", body: { password } }),
+	forgot: (who) => call("/auth/forgot", { method: "POST", body: { who } }),
+	resetPassword: (token, password, typed) => call("/auth/reset", { method: "POST", body: { token, password, ...codeBody(typed) } }),
 	batches: () => call("/api/batches"),
 	startBatch: (body) => call("/api/batches", { method: "POST", body }),
 	batchReport: (id) => call(`/api/batches/${enc(id)}/report`),

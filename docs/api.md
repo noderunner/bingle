@@ -30,10 +30,19 @@ Position documents appear as `state` (full: `cells` = stacks bottom-to-top,
 | `POST /auth/login` | `{handle, password}` | `{kind, handle, display_name, must_change_password?}` and the `bingle_session` cookie; `401` the handle or the password is wrong (one answer for both); `403` not confirmed yet; `429` too many tries (10 a minute per address, 10 per 15 minutes per handle). The browser's guest, if it was one, becomes the account's |
 | `POST /auth/logout` | | ends this session |
 | `POST /auth/password` | `{old, new}` | a new session cookie; every other session of the account ends |
-| `GET /auth/me` | | `{kind: "account"\|"guest"\|"anonymous", handle?, display_name?, must_change_password?, accounts, signup}` |
+| `GET /auth/me` | | `{kind: "account"\|"guest"\|"anonymous", handle?, display_name?, must_change_password?, second_factor?, recovery_codes_left?, needs_second_factor?, accounts, signup}` |
+| `POST /auth/second` | `{code}` or `{recovery_code}` | the second step of a sign-in (ADR 0069): after a password answered `{second_factor: true}` and the `bingle_login` cookie (five minutes, five wrong codes). `401` a wrong or spent code, or the sign-in ran out |
+| `POST /auth/totp/setup` | `{password}` | `{secret, uri}`: a key for an authenticator app, not yet in use |
+| `POST /auth/totp/enable` | `{code}` | `{recovery_codes: [ten], me}`: on, a new session cookie, every other session ended |
+| `POST /auth/totp/disable` | `{password, code \| recovery_code}` | off; a new session cookie |
+| `POST /auth/recovery` | `{password}` | `{recovery_codes}`: ten new ones, the old ones gone |
+| `POST /auth/forgot` | `{who}` (a handle or an address) | `202` whether or not there is such an account; a reset link (an hour, once) is mailed if there is |
+| `POST /auth/reset` | `{token, password, code? \| recovery_code?}` | a new password, every session ended; an account with a second factor needs its code (`401` without) |
 
 An account whose password must be changed (a seeded or command-line one) gets `403` for any
-state-changing request outside `/auth` until it does.
+state-changing request outside `/auth` until it does; so does an administrator without a second
+factor, except on a genuine loopback connection. Five failures in a quarter of an hour (passwords
+for a handle, codes for an account) lock it for a minute, doubling, an hour at most (`429`).
 
 ## Games
 

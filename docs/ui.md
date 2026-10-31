@@ -473,7 +473,12 @@ template (`account.html.tmpl`) chosen by `data-page`: **sign in** (`/login`: `#l
 **sign up** (`/signup`: `#signup-handle`, `#signup-email`, `#signup-password`), **confirm** (`/account/confirm?t=`:
 `#confirm-go`, because following the link alone must not confirm) and **the account** (`/account`: `#account-who`,
 `#account-must-change`, the password form `#password-old`/`#password-new`/`#password-go`, `#logout-go`). Each reports in
-`#account-result`. The profile page's `#account-box` says whether the browser is a guest (`#login-link`, `#signup-link`)
+`#account-result`. Sign-in has a second step (`#second-form`, `#second-code`: six digits are a code, anything else a
+recovery code) and a link to **forgot** (`/forgot`: `#forgot-who`, `#forgot-go`) and **reset** (`/account/reset?t=`:
+`#reset-password`, `#reset-code`, `#reset-go`). The account page's two-step box (`#tf-box`, ADR 0069) shows the state
+(`#tf-state`, `#tf-needed` for an administrator who must set it up), asks for the password (`#tf-password`), sets it up
+(`#tf-setup`, then `#tf-secret`, `#tf-uri`, `#tf-code`, `#tf-enable`), lists the recovery codes once (`#tf-codes`), and
+turns it off or renews the codes (`#tf-off-code`, `#tf-off`, `#tf-renew`). The profile page's `#account-box` says whether the browser is a guest (`#login-link`, `#signup-link`)
 or signed in (`#account-link`). None of them keeps anything in the browser's storage: the cookies are `HttpOnly`.
 
 ### Email notifications

@@ -49,6 +49,8 @@ func NewRouter(mgr *session.Manager) http.Handler {
 	r.Get("/signup", h.handleAccountPage("signup", "Sign up"))
 	r.Get("/account", h.handleAccountPage("account", "Your account"))
 	r.Get("/account/confirm", h.handleAccountPage("confirm", "Confirm your account"))
+	r.Get("/forgot", h.handleAccountPage("forgot", "Forgot your password"))
+	r.Get("/account/reset", h.handleAccountPage("reset", "Choose a new password"))
 	r.Get("/notify/confirm", h.handleNotifyPage("confirm"))
 	r.Get("/notify/stop", h.handleNotifyPage("stop"))
 	r.Post("/notify/confirm", h.handleNotifyConfirm)

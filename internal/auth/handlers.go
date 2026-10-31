@@ -21,6 +21,13 @@ import (
 //	POST /auth/logout                               ends this session
 //	POST /auth/password {old, new}                  a new password, a new cookie
 //	GET  /auth/me                                   who this browser is
+//	POST /auth/second   {code | recovery_code}      the second step of a sign-in
+//	POST /auth/totp/setup   {password}               a secret for an app
+//	POST /auth/totp/enable  {code}                   on, with ten recovery codes
+//	POST /auth/totp/disable {password, code | recovery_code}
+//	POST /auth/recovery {password}                  ten new recovery codes
+//	POST /auth/forgot   {who}                       mail a reset link
+//	POST /auth/reset    {token, password, code?}    a new password from the link
 func (rs *Resolver) Routes() http.Handler {
 	r := chi.NewRouter()
 	r.Post("/signup", rs.handleSignup)
@@ -29,6 +36,13 @@ func (rs *Resolver) Routes() http.Handler {
 	r.Post("/logout", rs.handleLogout)
 	r.Post("/password", rs.handlePassword)
 	r.Get("/me", rs.handleMe)
+	r.Post("/second", rs.handleSecond)
+	r.Post("/totp/setup", rs.handleTOTPSetup)
+	r.Post("/totp/enable", rs.handleTOTPEnable)
+	r.Post("/totp/disable", rs.handleTOTPDisable)
+	r.Post("/recovery", rs.handleRecovery)
+	r.Post("/forgot", rs.handleForgot)
+	r.Post("/reset", rs.handleReset)
 	return r
 }
 
@@ -52,7 +66,7 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 // statusOf maps the service's answers to HTTP.
 func statusOf(err error) int {
 	switch {
-	case errors.Is(err, ErrBadLogin), errors.Is(err, ErrNotSignedIn):
+	case errors.Is(err, ErrBadLogin), errors.Is(err, ErrNotSignedIn), errors.Is(err, ErrBadCode), errors.Is(err, ErrSignInAgain), errors.Is(err, ErrNeedsCode):
 		return http.StatusUnauthorized
 	case errors.Is(err, ErrSignupClosed), errors.Is(err, ErrSignupNoMail), errors.Is(err, ErrNotConfirmed), errors.Is(err, ErrMustChangePwd):
 		return http.StatusForbidden
@@ -61,7 +75,7 @@ func statusOf(err error) int {
 	case errors.Is(err, ErrTooManyTries), errors.Is(err, ErrMailLater):
 		return http.StatusTooManyRequests
 	case errors.Is(err, ErrBadHandle), errors.Is(err, ErrReservedHandle), errors.Is(err, ErrWeakPassword), errors.Is(err, ErrBadLink),
-		errors.Is(err, ErrSamePassword), mail.IsAddressError(err):
+		errors.Is(err, ErrSamePassword), errors.Is(err, ErrNoSetup), errors.Is(err, ErrNoSecondFactor), mail.IsAddressError(err):
 		return http.StatusBadRequest
 	}
 	return http.StatusInternalServerError
@@ -141,13 +155,19 @@ func (rs *Resolver) handleLogin(w http.ResponseWriter, r *http.Request) {
 	if !decode(w, r, &req) {
 		return
 	}
-	s, err := rs.accounts.Login(r.Context(), req.Handle, req.Password, guestOf(r), rs.transport.PeerIP(r), r.UserAgent())
+	s, pending, err := rs.accounts.Login(r.Context(), req.Handle, req.Password, guestOf(r), rs.transport.PeerIP(r), r.UserAgent())
 	if err != nil {
 		rs.fail(w, err)
 		return
 	}
+	if pending != "" {
+		// The password was right; the code comes next, from this browser.
+		rs.setCookie(w, r, loginCookie, pending, int(pendingFor/time.Second))
+		writeJSON(w, http.StatusOK, map[string]bool{"second_factor": true})
+		return
+	}
 	rs.startSession(w, r, s)
-	writeJSON(w, http.StatusOK, meOf(s.Account))
+	writeJSON(w, http.StatusOK, rs.meOf(r, s.Account))
 }
 
 // startSession sets the session cookie, and drops the guest cookie: the
@@ -199,7 +219,7 @@ func (rs *Resolver) handlePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	rs.startSession(w, r, s)
-	writeJSON(w, http.StatusOK, meOf(s.Account))
+	writeJSON(w, http.StatusOK, rs.meOf(r, s.Account))
 }
 
 // me is GET /auth/me's answer.
@@ -208,21 +228,40 @@ type me struct {
 	Handle             string `json:"handle,omitempty"`
 	DisplayName        string `json:"display_name,omitempty"`
 	MustChangePassword bool   `json:"must_change_password,omitempty"`
+	// SecondFactor says the account signs in with a code too, and
+	// RecoveryCodesLeft how many recovery codes it has unused.
+	SecondFactor      bool `json:"second_factor,omitempty"`
+	RecoveryCodesLeft int  `json:"recovery_codes_left,omitempty"`
+	// NeedsSecondFactor: an administrator without one, off this machine,
+	// who may do nothing else until it is set up.
+	NeedsSecondFactor bool `json:"needs_second_factor,omitempty"`
 	// Accounts says whether this server has accounts at all, and Signup
 	// whether a person can make one here.
 	Accounts bool `json:"accounts"`
 	Signup   bool `json:"signup"`
 }
 
-func meOf(a store.Account) me {
-	return me{Kind: store.KindAccount, Handle: a.Handle, DisplayName: a.DisplayName, MustChangePassword: a.MustChangePassword, Accounts: true}
+func (rs *Resolver) meOf(r *http.Request, a store.Account) me {
+	out := me{Kind: store.KindAccount, Handle: a.Handle, DisplayName: a.DisplayName, MustChangePassword: a.MustChangePassword, Accounts: true,
+		SecondFactor: a.HasTOTP, NeedsSecondFactor: rs.needsSecondFactor(r, a)}
+	if a.HasTOTP && rs.accounts != nil {
+		out.RecoveryCodesLeft = rs.accounts.RecoveryCodesLeft(r.Context(), a)
+	}
+	return out
+}
+
+// needsSecondFactor: the admin group signs in with a second factor, except
+// on a genuine loopback connection (never behind a trusted proxy, where
+// every request looks local).
+func (rs *Resolver) needsSecondFactor(r *http.Request, a store.Account) bool {
+	return a.Admin && !a.HasTOTP && !rs.transport.Loopback(r)
 }
 
 func (rs *Resolver) handleMe(w http.ResponseWriter, r *http.Request) {
 	out := me{Kind: "anonymous"}
 	if p, ok := From(r.Context()); ok {
 		if p.Account != nil {
-			out = meOf(*p.Account)
+			out = rs.meOf(r, *p.Account)
 		} else {
 			out.Kind = store.KindGuest
 		}
@@ -232,4 +271,157 @@ func (rs *Resolver) handleMe(w http.ResponseWriter, r *http.Request) {
 		out.Signup = rs.accounts.signup == SignupOpen && rs.accounts.mail != nil && rs.accounts.mail.MailEnabled()
 	}
 	writeJSON(w, http.StatusOK, out)
+}
+
+// account is the signed-in account of the request, or an answer saying it
+// is not signed in.
+func (rs *Resolver) account(w http.ResponseWriter, r *http.Request) (*store.Account, bool) {
+	if rs.noAccounts(w) {
+		return nil, false
+	}
+	p, ok := From(r.Context())
+	if !ok || p.Account == nil {
+		rs.fail(w, ErrNotSignedIn)
+		return nil, false
+	}
+	return p.Account, true
+}
+
+type codeRequest struct {
+	Password string `json:"password"`
+	Code     string `json:"code"`
+	Recovery string `json:"recovery_code"`
+}
+
+func (rs *Resolver) handleSecond(w http.ResponseWriter, r *http.Request) {
+	if rs.noAccounts(w) {
+		return
+	}
+	var req codeRequest
+	if !decode(w, r, &req) {
+		return
+	}
+	c, err := r.Cookie(loginCookie)
+	if err != nil || c.Value == "" {
+		rs.fail(w, ErrSignInAgain)
+		return
+	}
+	s, err := rs.accounts.SecondFactor(r.Context(), c.Value, req.Code, req.Recovery, rs.transport.PeerIP(r), r.UserAgent())
+	if err != nil {
+		if errors.Is(err, ErrSignInAgain) {
+			rs.setCookie(w, r, loginCookie, "", -1)
+		}
+		rs.fail(w, err)
+		return
+	}
+	rs.setCookie(w, r, loginCookie, "", -1)
+	rs.startSession(w, r, s)
+	writeJSON(w, http.StatusOK, rs.meOf(r, s.Account))
+}
+
+func (rs *Resolver) handleTOTPSetup(w http.ResponseWriter, r *http.Request) {
+	acc, ok := rs.account(w, r)
+	if !ok {
+		return
+	}
+	var req codeRequest
+	if !decode(w, r, &req) {
+		return
+	}
+	secret, uri, err := rs.accounts.SetupTOTP(r.Context(), *acc, req.Password, rs.transport.PeerIP(r))
+	if err != nil {
+		rs.fail(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"secret": secret, "uri": uri})
+}
+
+func (rs *Resolver) handleTOTPEnable(w http.ResponseWriter, r *http.Request) {
+	acc, ok := rs.account(w, r)
+	if !ok {
+		return
+	}
+	var req codeRequest
+	if !decode(w, r, &req) {
+		return
+	}
+	codes, s, err := rs.accounts.EnableTOTP(r.Context(), *acc, req.Code, rs.transport.PeerIP(r), r.UserAgent())
+	if err != nil {
+		rs.fail(w, err)
+		return
+	}
+	rs.startSession(w, r, s)
+	writeJSON(w, http.StatusOK, map[string]any{"recovery_codes": codes, "me": rs.meOf(r, s.Account)})
+}
+
+func (rs *Resolver) handleTOTPDisable(w http.ResponseWriter, r *http.Request) {
+	acc, ok := rs.account(w, r)
+	if !ok {
+		return
+	}
+	var req codeRequest
+	if !decode(w, r, &req) {
+		return
+	}
+	s, err := rs.accounts.DisableTOTP(r.Context(), *acc, req.Password, req.Code, req.Recovery, rs.transport.PeerIP(r), r.UserAgent())
+	if err != nil {
+		rs.fail(w, err)
+		return
+	}
+	rs.startSession(w, r, s)
+	writeJSON(w, http.StatusOK, rs.meOf(r, s.Account))
+}
+
+func (rs *Resolver) handleRecovery(w http.ResponseWriter, r *http.Request) {
+	acc, ok := rs.account(w, r)
+	if !ok {
+		return
+	}
+	var req codeRequest
+	if !decode(w, r, &req) {
+		return
+	}
+	codes, err := rs.accounts.NewRecoveryCodes(r.Context(), *acc, req.Password, rs.transport.PeerIP(r))
+	if err != nil {
+		rs.fail(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"recovery_codes": codes})
+}
+
+func (rs *Resolver) handleForgot(w http.ResponseWriter, r *http.Request) {
+	if rs.noAccounts(w) {
+		return
+	}
+	var req struct {
+		Who string `json:"who"`
+	}
+	if !decode(w, r, &req) {
+		return
+	}
+	if err := rs.accounts.ForgotPassword(r.Context(), req.Who, rs.transport.PeerIP(r)); err != nil {
+		rs.fail(w, err)
+		return
+	}
+	writeJSON(w, http.StatusAccepted, map[string]string{"status": "If there is an account by that name or address, a link to reset its password is in its mail."})
+}
+
+func (rs *Resolver) handleReset(w http.ResponseWriter, r *http.Request) {
+	if rs.noAccounts(w) {
+		return
+	}
+	var req struct {
+		Token    string `json:"token"`
+		Password string `json:"password"`
+		Code     string `json:"code"`
+		Recovery string `json:"recovery_code"`
+	}
+	if !decode(w, r, &req) {
+		return
+	}
+	if err := rs.accounts.ResetWithLink(r.Context(), req.Token, req.Password, req.Code, req.Recovery, rs.transport.PeerIP(r)); err != nil {
+		rs.fail(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"status": "Your password is changed. Sign in with it."})
 }
