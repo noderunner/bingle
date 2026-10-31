@@ -51,6 +51,7 @@ func NewRouter(mgr *session.Manager) http.Handler {
 	r.Get("/account/confirm", h.handleAccountPage("confirm", "Confirm your account"))
 	r.Get("/forgot", h.handleAccountPage("forgot", "Forgot your password"))
 	r.Get("/account/reset", h.handleAccountPage("reset", "Choose a new password"))
+	r.Get("/admin", h.handleAdmin)
 	r.Get("/notify/confirm", h.handleNotifyPage("confirm"))
 	r.Get("/notify/stop", h.handleNotifyPage("stop"))
 	r.Post("/notify/confirm", h.handleNotifyConfirm)
@@ -189,6 +190,16 @@ func (h *handlers) handleAccountPage(page, title string) http.HandlerFunc {
 		if err := render(r, w, "account.html.tmpl", accountPageData{Page: page, Title: title}); err != nil {
 			http.Error(w, "web: rendering the account page failed", http.StatusInternalServerError)
 		}
+	}
+}
+
+// handleAdmin serves the administration page, a shell: /auth/admin/* says
+// whether the browser may see it.
+func (h *handlers) handleAdmin(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Cache-Control", "no-store")
+	if err := render(r, w, "admin.html.tmpl", nil); err != nil {
+		http.Error(w, "web: rendering the admin page failed", http.StatusInternalServerError)
 	}
 }
 

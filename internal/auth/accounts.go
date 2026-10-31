@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"cmp"
 	"context"
 	"crypto/sha256"
 	"encoding/base64"
@@ -25,6 +26,7 @@ type Mailer interface {
 // Signup modes (BINGLE_SIGNUP).
 const (
 	SignupOpen   = "open"
+	SignupInvite = "invite" // with an administrator's invitation
 	SignupClosed = "closed"
 )
 
@@ -69,6 +71,9 @@ type AccountOptions struct {
 	// Argon2 is the password hash's cost; zero means DefaultArgon2. Tests
 	// make it cheap.
 	Argon2 Argon2Params
+	// LoginsPerMinute caps the sign-ins one address may try in a minute (the
+	// capabilities file's guest login limit); zero means 10.
+	LoginsPerMinute int
 }
 
 // NewAccounts returns the account service over st.
@@ -90,7 +95,7 @@ func NewAccounts(st *store.Store, o AccountOptions) *Accounts {
 	}
 	return &Accounts{
 		st: st, mail: o.Mailer, log: o.Log, signup: o.Signup, idle: o.SessionIdle, max: o.SessionMax, params: o.Argon2, now: time.Now,
-		loginsByAddr:   windowLimiter{per: 10, window: time.Minute},
+		loginsByAddr:   windowLimiter{per: cmp.Or(o.LoginsPerMinute, 10), window: time.Minute},
 		loginsByHandle: windowLimiter{per: 10, window: 15 * time.Minute},
 		signups:        windowLimiter{per: 5, window: time.Hour},
 		forgots:        windowLimiter{per: 5, window: time.Hour},
@@ -113,7 +118,11 @@ var (
 	ErrSamePassword  = errors.New("auth: choose a password different from the old one")
 	ErrNotSignedIn   = errors.New("auth: you are not signed in")
 	ErrMustChangePwd = errors.New("auth: change your password first")
+	ErrNeedsInvite   = errors.New("auth: signing up here needs an invitation: ask the server's administrator for a link")
 )
+
+// inviteFor is how long an invitation works.
+const inviteFor = 7 * 24 * time.Hour
 
 // ---- signing up ------------------------------------------------------------------
 
@@ -122,12 +131,15 @@ var (
 // seats and games are the account's once the address is confirmed. An
 // address that is already an account's gets the same answer as a new one,
 // and no mail, so the answer does not say whose it is.
-func (a *Accounts) Signup(ctx context.Context, handle, email, password, guest, ip string) error {
+func (a *Accounts) Signup(ctx context.Context, handle, email, password, guest, invite, ip string) error {
 	switch {
 	case a.signup == SignupClosed:
 		return ErrSignupClosed
 	case a.mail == nil || !a.mail.MailEnabled():
 		return ErrSignupNoMail
+	}
+	if err := a.checkInvite(ctx, invite); err != nil {
+		return err
 	}
 	h, err := CanonHandle(handle, false)
 	if err != nil {
@@ -162,6 +174,10 @@ func (a *Accounts) Signup(ctx context.Context, handle, email, password, guest, i
 		// if it went through.
 		return nil
 	case err != nil:
+		return err
+	}
+	if err := a.spendInvite(ctx, invite, id); err != nil {
+		_ = a.st.DeletePendingAccount(ctx, id)
 		return err
 	}
 	token := newSecret()
@@ -498,3 +514,52 @@ func hashIP(ip string) string {
 // that "no such handle" takes as long as "wrong password". Made on first use,
 // not at start-up, which every test binary would pay for.
 var dummy = sync.OnceValue(func() string { return HashPassword("not anybody's password", DefaultArgon2) })
+
+// ---- invitations ---------------------------------------------------------------------
+
+// checkInvite: in invite mode, signing up needs a live invitation.
+func (a *Accounts) checkInvite(ctx context.Context, invite string) error {
+	if a.signup != SignupInvite {
+		return nil
+	}
+	if invite == "" {
+		return ErrNeedsInvite
+	}
+	live, err := a.st.InviteLive(ctx, hashSecret(invite), a.now())
+	if err != nil {
+		return err
+	}
+	if !live {
+		return ErrBadLink
+	}
+	return nil
+}
+
+// spendInvite uses the invitation on the account just made (invite mode).
+func (a *Accounts) spendInvite(ctx context.Context, invite string, accountID int64) error {
+	if a.signup != SignupInvite {
+		return nil
+	}
+	ok, err := a.st.UseInvite(ctx, hashSecret(invite), accountID, a.now())
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return ErrBadLink
+	}
+	return nil
+}
+
+// Invite mints an invitation to sign up, for a week, and returns its code.
+func (a *Accounts) Invite(ctx context.Context, by store.Account, ip string) (string, time.Time, error) {
+	code := newSecret()
+	until := a.now().Add(inviteFor)
+	if err := a.st.CreateInvite(ctx, hashSecret(code), by.ID, until); err != nil {
+		return "", time.Time{}, err
+	}
+	a.audit(ctx, by.ID, "invite-made", "", ip)
+	return code, until, nil
+}
+
+// SignupMode is "open", "invite" or "closed".
+func (a *Accounts) SignupMode() string { return a.signup }

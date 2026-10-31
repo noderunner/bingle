@@ -34,6 +34,10 @@ type Principal struct {
 	Cookie bool
 	// Account is the signed-in account (nil for a guest).
 	Account *store.Account
+	// Scopes are an API token's (nil when the principal is not a token's):
+	// what it may do, within its account's class, and never the admin
+	// group's powers.
+	Scopes []string
 	// session is the session cookie's value, for signing out and for a
 	// password change, which replaces it.
 	session string

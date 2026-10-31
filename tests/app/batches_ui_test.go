@@ -27,7 +27,7 @@ func shot(t *testing.T, ctx interface{ Done() <-chan struct{} }, name string, ru
 	_ = os.WriteFile(filepath.Join(dir, name+".png"), buf, 0o644)
 }
 
-func startSmokeBatch(t *testing.T, baseURL string, games int) int64 {
+func startSmokeBatch(t *testing.T, baseURL, member string, games int) int64 {
 	t.Helper()
 	players := []map[string]any{}
 	for _, f := range []string{"gc", "cc", "bg", "ys"} {
@@ -36,7 +36,7 @@ func startSmokeBatch(t *testing.T, baseURL string, games int) int64 {
 	var started struct {
 		ID int64 `json:"id"`
 	}
-	if code := doJSON(t, "POST", baseURL+"/api/batches", map[string]any{
+	if code := doJSONMember(t, member, "POST", baseURL+"/api/batches", map[string]any{
 		"name": "ui smoke", "base": "cthulhu-wars", "games": games, "seed": 11, "rotate": true, "event_games": 2, "workers": 4, "players": players,
 	}, &started); code != 201 {
 		t.Fatalf("start: %d", code)
@@ -46,9 +46,10 @@ func startSmokeBatch(t *testing.T, baseURL string, games int) int64 {
 
 // The wizard on the lobby page starts a batch and lands on its report.
 func TestWebBatchWizardStartsABatch(t *testing.T) {
-	baseURL := newRESTTestServer(t)
+	baseURL, member := newMemberServer(t)
 	ctx, cancel := newChromedpContext(t, 120*time.Second)
 	defer cancel()
+	signInChrome(t, ctx, baseURL, member) // batches are for accounts (ADR 0071)
 	var mu sync.Mutex
 	var jsErrors []string
 	collectJSErrors(ctx, &mu, &jsErrors)
@@ -110,8 +111,8 @@ func TestWebBatchWizardStartsABatch(t *testing.T) {
 
 // A report draws its charts and tables.
 func TestWebBatchReportShowsChartsAndInsights(t *testing.T) {
-	baseURL := newRESTTestServer(t)
-	id := startSmokeBatch(t, baseURL, 12)
+	baseURL, member := newMemberServer(t)
+	id := startSmokeBatch(t, baseURL, member, 12)
 	ctx, cancel := newChromedpContext(t, 150*time.Second)
 	defer cancel()
 	var mu sync.Mutex

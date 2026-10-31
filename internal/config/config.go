@@ -135,6 +135,13 @@ type Config struct {
 	// OIDC are the sign-in providers (BINGLE_OIDC_PROVIDERS and a
 	// BINGLE_OIDC_<ID>_* block each; ADR 0070).
 	OIDC []OIDCProvider
+	// AuthMode is "hybrid" (guests play) or "closed" (members only)
+	// (BINGLE_AUTH_MODE; ADR 0071).
+	AuthMode string
+	// CapsFile seeds the capabilities of a fresh database
+	// (BINGLE_CAPS_FILE, bingle-capabilities.yaml by default; the built-in
+	// defaults when there is no such file).
+	CapsFile string
 
 	// HSTSSeconds, when above zero, adds a Strict-Transport-Security header of
 	// that many seconds to HTTPS responses (BINGLE_TLS_HSTS_SECONDS). Off by
@@ -522,8 +529,8 @@ func loadJournal(cfg *Config) error {
 	}
 	cfg.Signup = "open"
 	if v := strings.ToLower(strings.TrimSpace(os.Getenv("BINGLE_SIGNUP"))); v != "" {
-		if v != "open" && v != "closed" {
-			return fmt.Errorf("config: BINGLE_SIGNUP must be open or closed, got %q (invitations come with the admin pages)", v)
+		if v != "open" && v != "invite" && v != "closed" {
+			return fmt.Errorf("config: BINGLE_SIGNUP must be open, invite or closed, got %q", v)
 		}
 		cfg.Signup = v
 	}
@@ -542,6 +549,17 @@ func loadJournal(cfg *Config) error {
 	}
 	if cfg.SessionIdle > cfg.SessionMax {
 		return fmt.Errorf("config: BINGLE_SESSION_IDLE (%s) is longer than BINGLE_SESSION_MAX (%s)", cfg.SessionIdle, cfg.SessionMax)
+	}
+	cfg.AuthMode = "hybrid"
+	if v := strings.ToLower(strings.TrimSpace(os.Getenv("BINGLE_AUTH_MODE"))); v != "" {
+		if v != "hybrid" && v != "closed" {
+			return fmt.Errorf("config: BINGLE_AUTH_MODE must be hybrid or closed, got %q", v)
+		}
+		cfg.AuthMode = v
+	}
+	cfg.CapsFile = "bingle-capabilities.yaml"
+	if v, ok := os.LookupEnv("BINGLE_CAPS_FILE"); ok {
+		cfg.CapsFile = strings.TrimSpace(v)
 	}
 	cfg.AdminHandle = "admin"
 	if v := strings.TrimSpace(os.Getenv("BINGLE_ADMIN_HANDLE")); v != "" {

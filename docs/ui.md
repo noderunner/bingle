@@ -482,7 +482,11 @@ turns it off or renews the codes (`#tf-off-code`, `#tf-off`, `#tf-renew`). Provi
 the handle a newcomer chooses (`#oidc-signup-form`, `#oidc-handle`, `#oidc-go`), and the account page's linked sign-ins
 (`#oidc-box`: `#oidc-link-<id>`, `#oidc-unlink-<id>`, which takes the password from `#tf-password`). An account without a
 password sets one (`#password-title` reads "Set a password", with no old one to give). `#login-error` and `#oidc-error`
-show the `?error=` a provider's callback came back with. The profile page's `#account-box` says whether the browser is a guest (`#login-link`, `#signup-link`)
+show the `?error=` a provider's callback came back with. The account page lists the account's API tokens (`#tokens-list`, `#token-revoke-<id>`), makes one (`#token-name`,
+`#token-scope-<scope>`, `#token-go`; `#token-new` shows it once) and links administrators to **administration**
+(`/admin`, `js/admin.js`, ADR 0071): the mode (`#caps-mode`), the drift badge (`#caps-drift`), a box per class and
+capability (`#cap-user-<cap>`, `#cap-guest-<cap>`, saved on change, `#caps-result`), the limits (`#caps-limits`), and
+invitations (`#invite-go`, `#invite-link`). Anybody else is told (`#admin-refused`). The profile page's `#account-box` says whether the browser is a guest (`#login-link`, `#signup-link`)
 or signed in (`#account-link`). None of them keeps anything in the browser's storage: the cookies are `HttpOnly`.
 
 ### Email notifications

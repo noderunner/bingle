@@ -21,7 +21,7 @@ func quoteJS(s string) string {
 // each seat fared, which bot played it, how the games ended and how long they
 // ran.
 func TestBatches_AnyGameCanBeBatched(t *testing.T) {
-	baseURL := newRESTTestServer(t)
+	baseURL, member := newMemberServer(t) // batches are for accounts (ADR 0071)
 	var started struct {
 		ID     int64  `json:"id"`
 		Status string `json:"status"`
@@ -35,7 +35,7 @@ func TestBatches_AnyGameCanBeBatched(t *testing.T) {
 		},
 		"games": 12, "rotate": true,
 	}
-	if code := doJSON(t, "POST", baseURL+"/api/batches", body, &started); code != 201 {
+	if code := doJSONMember(t, member, "POST", baseURL+"/api/batches", body, &started); code != 201 {
 		t.Fatalf("start a batch of Tic-Tac-Toe: %d", code)
 	}
 	// It finishes quickly: wait for it.
@@ -136,7 +136,7 @@ func TestBatches_AnyGameCanBeBatched(t *testing.T) {
 // A spec that names a cult for some seats but not others is refused, and so is
 // a Cthulhu Wars option on a game that has none.
 func TestBatches_SpecIsCheckedForEveryGame(t *testing.T) {
-	baseURL := newRESTTestServer(t)
+	baseURL, member := newMemberServer(t)
 	for name, tc := range map[string]struct {
 		body map[string]any
 		says string
@@ -147,7 +147,7 @@ func TestBatches_SpecIsCheckedForEveryGame(t *testing.T) {
 		"an unknown bot":        {map[string]any{"base": "tic-tac-toe", "games": 1, "players": []map[string]any{{"bot": "gandalf"}, {"bot": "random"}}}, "unknown bot"},
 	} {
 		var out map[string]any
-		code := doJSON(t, "POST", baseURL+"/api/batches", tc.body, &out)
+		code := doJSONMember(t, member, "POST", baseURL+"/api/batches", tc.body, &out)
 		if code != 400 {
 			t.Errorf("%s: %d, want 400", name, code)
 			continue
@@ -161,9 +161,10 @@ func TestBatches_SpecIsCheckedForEveryGame(t *testing.T) {
 // The Analysis tab is where a batch is set going: pick a game, pick the bots,
 // run it, and read the report — with the guide to the bots under it.
 func TestWebAnalysis_TheTabRunsABatchAndExplainsTheBots(t *testing.T) {
-	baseURL := newRESTTestServer(t)
+	baseURL, member := newMemberServer(t)
 	ctx, cancel := newChromedpContext(t, 120*time.Second)
 	defer cancel()
+	signInChrome(t, ctx, baseURL, member) // batches are for accounts (ADR 0071)
 	var mu sync.Mutex
 	var jsErrors []string
 	collectJSErrors(ctx, &mu, &jsErrors)

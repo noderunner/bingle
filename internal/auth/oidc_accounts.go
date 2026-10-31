@@ -79,6 +79,9 @@ func (a *Accounts) OIDCSignIn(ctx context.Context, o *OIDC, id *Identity, f *oid
 	case !id.EmailVerified:
 		return res, ErrOIDCUnverified
 	}
+	if err := a.checkInvite(ctx, id.invite); err != nil {
+		return res, err
+	}
 	if _, err := mail.ValidAddress(id.Email); err != nil {
 		return res, ErrOIDCUnverified
 	}
@@ -126,6 +129,9 @@ func (a *Accounts) FinishOIDCSignup(ctx context.Context, o *OIDC, token, handle,
 		if errors.Is(err, store.ErrTaken) {
 			return Session{}, "", ErrOIDCAddressUsed
 		}
+		return Session{}, "", err
+	}
+	if err := a.spendInvite(ctx, id.invite, accID); err != nil {
 		return Session{}, "", err
 	}
 	a.audit(ctx, accID, "signup", "by "+id.Provider, ip)

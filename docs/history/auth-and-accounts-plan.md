@@ -1,7 +1,7 @@
 # Plan: authenticated accounts, capabilities and a secure transport
 
-Status: **stages 1–5 done, stages 6–8 planned** (2026-10-29; guests amended 2026-10-31). Stage 1
-(secure transport) settled [ADR 0065](../decisions/0065-the-connection-must-be-secure.md), stage 2 (principals and guest keys) [ADR 0067](../decisions/0067-principals-and-guest-keys.md), stage 3 (accounts, sessions, passwords) [ADR 0068](../decisions/0068-accounts-sessions-and-passwords.md), stage 4 (the second factor) [ADR 0069](../decisions/0069-second-factor-and-lockout.md), stage 5 (OIDC) [ADR 0070](../decisions/0070-oidc.md). The decisions in *What was decided*
+Status: **stages 1–6 done, stages 7–8 planned** (2026-10-29; guests amended 2026-10-31). Stage 1
+(secure transport) settled [ADR 0065](../decisions/0065-the-connection-must-be-secure.md), stage 2 (principals and guest keys) [ADR 0067](../decisions/0067-principals-and-guest-keys.md), stage 3 (accounts, sessions, passwords) [ADR 0068](../decisions/0068-accounts-sessions-and-passwords.md), stage 4 (the second factor) [ADR 0069](../decisions/0069-second-factor-and-lockout.md), stage 5 (OIDC) [ADR 0070](../decisions/0070-oidc.md), stage 6 (capabilities and modes) [ADR 0071](../decisions/0071-capabilities-modes-and-tokens.md). The decisions in *What was decided*
 were taken with the owner before this was written; the rest is the reasoning, the diagrams
 and the staging. The 2026-10-31 amendment makes a guest a principal of its own, with an ID
 and a portable key (§3a), before stage 2 begins.
@@ -567,6 +567,14 @@ Tests: the YAML seeds once and is then ignored; a guest is refused each account-
 capability in hybrid and everything in closed; a token works and an admin action through a
 token does not; `bingle caps reset` re-applies the file.
 
+Notes. *Done* (ADR 0071). The mode and signing up are `BINGLE_AUTH_MODE` and `BINGLE_SIGNUP`
+only; the file holds the classes and the limits, and refuses `mode` and `signup`. `dm`,
+`voice_direct`, `chat_global` and `notify` are seeded account-only but enforced in stage 8, with
+the features' move onto accounts. The public Health page behind `view_metrics` is not built yet.
+Invitations, deferred by stage 3, are here. Tokens skip the interactive gates (a password to
+change, an administrator's second factor), since they use neither the password nor admin powers.
+The training environments and MCP need `play`.
+
 **7. Identity in the interface.** Handles and the reserved list, the rename hold, guest
 markers everywhere a player is named, the account page (email, password, 2FA, providers,
 sessions, tokens), server-side "my games" for every principal (`GET /api/me/games`), the
@@ -657,3 +665,5 @@ contact into an account without a second confirmation.
   group's second factor, backoff, and password reset by mail.
 - 2026-10-31: stage 5 done (ADR 0070): generic OIDC with PKCE, state and nonce, the linking rule,
   and an in-process fake provider.
+- 2026-10-31: stage 6 done (ADR 0071): the capability matrix and its admin page, closed mode, API
+  tokens, per-class limits, invitations.

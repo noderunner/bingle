@@ -1,0 +1,10 @@
+# The tests' capabilities: the built-in defaults with limits no test reaches,
+# since every test client shares one address. The defaults' own limits are
+# tested on their own (TestCaps_TheLimitsHold).
+classes:
+  guest:  [play, join, create_game, chat_game, voice_game]
+  user:   [play, join, create_game, chat_game, chat_global, voice_game,
+           voice_direct, dm, notify, run_batch]
+limits:
+  guest:  { chat: 100000, create_game: 100000, login: 100000 }
+  user:   { chat: 100000, create_game: 100000, dm: 100000 }

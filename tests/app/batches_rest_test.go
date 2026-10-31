@@ -9,10 +9,10 @@ import (
 // A practice batch runs in the background, reports progress and serves its
 // aggregated report.
 func TestRESTBatchRunsAndReports(t *testing.T) {
-	baseURL := newRESTTestServer(t)
+	baseURL, member := newMemberServer(t) // batches are for accounts (ADR 0071)
 
 	var errBody map[string]any
-	if code := doJSON(t, "POST", baseURL+"/api/batches", map[string]any{
+	if code := doJSONMember(t, member, "POST", baseURL+"/api/batches", map[string]any{
 		"base": "cthulhu-wars", "games": 2, "players": []map[string]any{{"faction": "gc", "bot": "tactical"}},
 	}, &errBody); code != 400 {
 		t.Errorf("a short line-up: %d, want 400", code)
@@ -27,7 +27,7 @@ func TestRESTBatchRunsAndReports(t *testing.T) {
 	for _, f := range []string{"gc", "cc", "bg", "ys"} {
 		players = append(players, map[string]any{"faction": f, "bot": "tactical"})
 	}
-	if code := doJSON(t, "POST", baseURL+"/api/batches", map[string]any{
+	if code := doJSONMember(t, member, "POST", baseURL+"/api/batches", map[string]any{
 		"name": "smoke", "base": "cthulhu-wars", "games": 3, "seed": 5, "rotate": true, "event_games": 1, "workers": 3, "players": players,
 	}, &started); code != 201 || started.ID == 0 || started.Games != 3 {
 		t.Fatalf("start: %d %+v", code, started)
@@ -99,7 +99,11 @@ func TestRESTBatchRunsAndReports(t *testing.T) {
 	if code := doJSON(t, "GET", baseURL+"/api/batches", nil, &list); code != 200 || len(list.Batches) != 1 {
 		t.Errorf("list: %d %+v", code, list)
 	}
-	if code := doJSON(t, "DELETE", url, nil, nil); code != 204 {
+	// Deleting is for an account, like starting.
+	if code := doJSON(t, "DELETE", url, nil, nil); code != 403 {
+		t.Errorf("an anonymous delete: %d, want 403", code)
+	}
+	if code := doJSONMember(t, member, "DELETE", url, nil, nil); code != 204 {
 		t.Errorf("delete: %d", code)
 	}
 	if code := doJSON(t, "GET", url, nil, &errBody); code != 404 {

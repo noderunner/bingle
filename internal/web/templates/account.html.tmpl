@@ -187,6 +187,19 @@
 				</div>
 				<p class="small" id="tf-result" role="status" aria-live="polite"></p>
 			</section>
+			<section id="tokens-box">
+				<h2>API tokens</h2>
+				<p class="small muted">For scripts and agents: send a token as <code>Authorization: Bearer …</code>. It acts as you, within what its scopes allow, and never with an administrator's powers.</p>
+				<ul id="tokens-list"></ul>
+				<div class="field">
+					<label for="token-name">Name</label>
+					<input id="token-name" type="text" maxlength="40">
+				</div>
+				<div class="row" id="token-scopes"></div>
+				<div class="row"><button type="button" class="ghost" id="token-go">Make a token</button></div>
+				<p class="small" id="token-new"></p>
+			</section>
+			<p class="small" id="admin-link" hidden><a href="/admin">Administration</a></p>
 			<div class="row"><button type="button" class="ghost" id="logout-go">Sign out</button></div>
 		</section>
 		{{end}}

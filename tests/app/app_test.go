@@ -24,10 +24,15 @@ func registerFixtures(t *testing.T, a *app.App) {
 // newTestConfig returns a config.Config pointing at a fresh, unique SQLite
 // file under a per-call temp directory, so each call to app.New in these
 // tests gets its own isolated store.
+// testCapsFile is the tests' capabilities: the defaults, with limits no test
+// reaches (every test client shares one address).
+var testCapsFile, _ = filepath.Abs("testdata/capabilities.yaml")
+
 func newTestConfig(t *testing.T) config.Config {
 	t.Helper()
 	return config.Config{
-		DBPath: filepath.Join(t.TempDir(), "test.db"),
+		DBPath:   filepath.Join(t.TempDir(), "test.db"),
+		CapsFile: testCapsFile,
 	}
 }
 

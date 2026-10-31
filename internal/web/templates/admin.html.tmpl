@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="bingle-version" content="{{engineVersion}}">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="referrer" content="no-referrer">
+	<title>Bingle — Administration</title>
+	<link rel="icon" type="image/svg+xml" href="/static/favicon.svg" id="favicon">
+	<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+	<header class="topbar">
+		<a class="brand" href="/"><span class="logo"></span>Bingle</a>
+		<span class="spacer"></span>
+	</header>
+	<main class="page narrow">
+		<h1>Administration</h1>
+		<p class="small error" id="admin-refused" hidden></p>
+		<section class="card" id="caps-card" hidden>
+			<h2>Who may do what</h2>
+			<p class="small" id="caps-mode"></p>
+			<p class="small" id="caps-drift" hidden>The database has drifted from the capabilities file. <code>bingle caps reset</code> applies the file again.</p>
+			<table class="caps" id="caps-table">
+				<thead><tr><th>Capability</th><th>Users</th><th>Guests</th></tr></thead>
+				<tbody id="caps-rows"></tbody>
+			</table>
+			<p class="small muted">Administrators may do everything. A change applies to whatever is started from now on; a call already up is not cut off.</p>
+			<h3>Limits per minute</h3>
+			<ul class="small" id="caps-limits"></ul>
+			<p class="small" id="caps-result" role="status" aria-live="polite"></p>
+		</section>
+		<section class="card" id="invite-card" hidden>
+			<h2>Invitations</h2>
+			<p class="small" id="invite-state"></p>
+			<div class="row"><button type="button" class="primary" id="invite-go">Make an invitation</button></div>
+			<p class="small" id="invite-link"></p>
+		</section>
+	</main>
+	<footer class="site-footer"><sub title="The version of the bingle engine">bingle v{{engineVersion}} · MIT License · <a href="https://github.com/noderunner/bingle" target="_blank" rel="noopener noreferrer">GitHub</a></sub></footer>
+	<script type="module" src="/static/js/errors.js"></script>
+	<script type="module" src="/static/js/admin.js"></script>
+</body>
+</html>

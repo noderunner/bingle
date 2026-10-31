@@ -82,7 +82,9 @@ All configuration is via environment variables — there's no config file.
 | `BINGLE_TRUST_PROXY` | `off` | Serve plain HTTP behind a proxy that terminates TLS. The proxy **must** set `X-Forwarded-Proto: https`; anything arriving as `http` is refused. Turns every loopback exemption off |
 | `BINGLE_DEV` | `off` | Deterministic development credentials (used from stage 3 of the accounts plan). Loopback binds only, and never with `BINGLE_TRUST_PROXY` |
 | `BINGLE_GUEST_IDLE` | `90d` | How long a guest key may go unused before it stops working (`90d`, `720h`; an hour at least). The guest's history stays ([ADR 0067](decisions/0067-principals-and-guest-keys.md)) |
-| `BINGLE_SIGNUP` | `open` | `open` or `closed`. Signing up also needs mail (`BINGLE_SMTP_*`): without it nobody can, and accounts are made with `bingle account create` |
+| `BINGLE_SIGNUP` | `open` | `open`, `invite` (an administrator's link, from `/admin`) or `closed`. A password sign-up also needs mail (`BINGLE_SMTP_*`); a provider's does not. Without either, accounts are made with `bingle account create` |
+| `BINGLE_AUTH_MODE` | `hybrid` | `hybrid` (guests play without an account) or `closed` (members only: everybody else sees the sign-in) ([ADR 0071](decisions/0071-capabilities-modes-and-tokens.md)) |
+| `BINGLE_CAPS_FILE` | `bingle-capabilities.yaml` | What each class may do and how often, read once, by a fresh database; the built-in defaults when there is no such file. `bingle-capabilities.yaml.example` is the built-in file. After that, the admin page (`/admin`) and `bingle caps reset` |
 | `BINGLE_SESSION_IDLE`, `BINGLE_SESSION_MAX` | `14d`, `90d` | A signed-in browser is signed out after this long unused, and after this long at all |
 | `BINGLE_ADMIN_HANDLE` | `admin` | The first administrator, made when there are no accounts |
 | `BINGLE_ADMIN_EMAIL` | the handle at the public URL's host | Its address |
@@ -118,6 +120,7 @@ otherwise. Its first sign-in (at `/login`) asks for a new password.
 ./bin/bingle account create ana ana@example.com        # a confirmed account; prints its password
 ./bin/bingle account create ops ops@example.com --admin
 ./bin/bingle account reset ana                         # a new password (printed), no second factor, every session signed out
+./bin/bingle caps reset                                # apply BINGLE_CAPS_FILE (or the defaults) to the capabilities again
 ```
 
 A password the command line prints must be changed at the next sign-in. The commands read the same

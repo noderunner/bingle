@@ -25,7 +25,7 @@ Position documents appear as `state` (full: `cells` = stacks bottom-to-top,
 
 | Method & path | Body | Response |
 |---|---|---|
-| `POST /auth/signup` | `{handle, email, password}` | `202 {status}`: a link to confirm the address is mailed. `400` a bad handle, address or password (10–256 characters); `409` the handle is taken; `403` signing up is closed or the server has no mail; `429` too many tries. An address that is an account's already gets the `202` and no mail |
+| `POST /auth/signup` | `{handle, email, password, invite?}` | `202 {status}`: a link to confirm the address is mailed. `400` a bad handle, address or password (10–256 characters); `409` the handle is taken; `403` signing up is closed or the server has no mail; `429` too many tries. An address that is an account's already gets the `202` and no mail |
 | `POST /auth/confirm` | `{token}` (from the mailed link, `/account/confirm?t=`) | `{handle}`; `400` used or too old (48 hours) |
 | `POST /auth/login` | `{handle, password}` | `{kind, handle, display_name, must_change_password?}` and the `bingle_session` cookie; `401` the handle or the password is wrong (one answer for both); `403` not confirmed yet; `429` too many tries (10 a minute per address, 10 per 15 minutes per handle). The browser's guest, if it was one, becomes the account's |
 | `POST /auth/logout` | | ends this session |
@@ -41,7 +41,20 @@ Position documents appear as `state` (full: `cells` = stacks bottom-to-top,
 | `GET /auth/oidc/{id}/callback` | the provider's `code` and `state` | to the `return` path signed in; to `/login?second=1` for a second factor; to `/signup?provider=` to choose a handle; to `/login?error=` (or `/account?error=`) otherwise |
 | `POST /auth/oidc/finish` | `{handle}` | `{me, return}`: the account a provider vouched for, signed in |
 | `POST /auth/oidc/unlink` | `{provider, password}` | the account, no longer signing in with it; `400` if it is the last way in |
+| `GET /auth/tokens` | | `{tokens: [{id, name, scopes, created_at, last_used_at?}], scopes}`: the account's API tokens (not through a token) |
+| `POST /auth/tokens` | `{name, scopes}` | `201 {token}`, shown once |
+| `DELETE /auth/tokens/{id}` | | the token stops working |
+| `GET /auth/admin/caps` | | `{mode, signup, caps: [{capability, user, guest}], limits: [{class, kind, per_minute}], drift}` (the admin group, signed in, never a token) |
+| `PUT /auth/admin/caps` | `{class, capability, allowed}` | the matrix, changed |
+| `POST /auth/admin/invites` | | `201 {code, path, expires}`: an invitation to sign up, a week, once (`BINGLE_SIGNUP=invite`) |
 | `POST /auth/reset` | `{token, password, code? \| recovery_code?}` | a new password, every session ended; an account with a second factor needs its code (`401` without) |
+
+**Capabilities** (ADR 0071). Each class (guest, user; administrators may do everything) holds a
+set of capabilities, and a request that needs one it lacks is `403`; one past its class's limit per
+minute is `429`. `GET /auth/me` lists the browser's `caps`. On a server in `closed` mode an API
+request from anybody not signed in is `401`, outside `/auth`. **API tokens** (`Authorization: Bearer
+bgl_…`, made on the account page) act as their account within their scopes (`play`, `create_game`,
+`read_metrics`), never with an administrator's powers.
 
 An account whose password must be changed (a seeded or command-line one) gets `403` for any
 state-changing request outside `/auth` until it does; so does an administrator without a second
