@@ -456,3 +456,47 @@ func TestRecordMove_SeqNumberingIsPerGameNotGlobal(t *testing.T) {
 		t.Errorf("moveB.GameID = %d, want %d (gameB.ID)", moveB.GameID, gameB.ID)
 	}
 }
+
+// A move recorded with SwapSeats (the pie rule) exchanges the occupants of
+// the two seats in the same transaction — the seats keep their colours — and
+// UndoToSeq with swapBack exchanges them again.
+func TestRecordMove_SwapSeatsExchangesThePlayers(t *testing.T) {
+	s := newRecordMoveTestStore(t)
+	ctx := t.Context()
+
+	game, _, err := s.CreateGame(ctx, "ROOMPIE", "test-freeplay", `{"positions":[]}`, "Alice", "white")
+	if err != nil {
+		t.Fatal(err)
+	}
+	two := 2
+	if _, err := s.AddPlayer(ctx, game.ID, 2, "Bob", "black", "active", &two); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := s.RecordMove(ctx, game.ID, store.MoveInput{
+		Seat: 1, Color: "white", To: "c3", ResultingBoardState: `{"one":1}`, NextTurnSeat: 2, SwapSeats: true,
+	}); err != nil {
+		t.Fatalf("RecordMove with SwapSeats: %v", err)
+	}
+	players, err := s.ListPlayers(ctx, game.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(players) != 2 || players[0].Name != "Bob" || players[1].Name != "Alice" {
+		t.Fatalf("after the swap the seats are %v, want Bob in 1 and Alice in 2", players)
+	}
+	if players[0].Color != "white" || players[1].Color != "black" {
+		t.Errorf("a seat keeps its colour: %s, %s", players[0].Color, players[1].Color)
+	}
+
+	if err := s.UndoToSeq(ctx, game.ID, 0, `{"zero":0}`, 1, true); err != nil {
+		t.Fatalf("UndoToSeq with swapBack: %v", err)
+	}
+	players, err = s.ListPlayers(ctx, game.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(players) != 2 || players[0].Name != "Alice" || players[1].Name != "Bob" {
+		t.Errorf("after the undo the seats are %v, want Alice in 1 and Bob in 2", players)
+	}
+}

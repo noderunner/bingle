@@ -45,7 +45,8 @@ the plain link. The id stays the only record of the choice; nothing new is store
 error and not a broken room: a game of other than two seats; a game whose seats have a `forward`
 direction (swapping recolours the pieces where they stand, so Draughts and Breakthrough would come
 out with every man facing the wrong way); a game that declares a `swap` action of its own; and a Go
-ruleset, which builds its own moves and would have to offer swapping sides itself.
+ruleset, which builds its own moves and would have to offer swapping sides itself. (The last was
+lifted by the amendment below: a ruleset may declare the rule and bring the swap itself.)
 
 **Which games offer it.** Where it would work means two seats, the generic engine, no chance, no
 direction of play, and a start that is symmetric between the colours:
@@ -59,6 +60,7 @@ direction of play, and a start that is symmetric between the colours:
   **Draughts** and **Breakthrough** (a direction of play), and every Go ruleset — Blooms, Fendo,
   Fist, Hive, Onitama, Yinsh, Courtfall, Cthulhu Wars, Nyet!. A ruleset that wants the pie rule can
   offer a swap of its own later; the attribute deliberately does not pretend to give it one.
+  (Later came with the amendment below: Blooms declares it and plays its own swap.)
 
 **The page.** A game's `bool` options were drawn only under the seats of a table of three or more,
 which no two-player game has, so they now also appear in a field of their own
@@ -73,3 +75,28 @@ only when its box differs from the game's default, which is what keeps `hex-11` 
 * The versions of the ten games that changed went up a minor step; the engine's did too, as the
   DSL grew an attribute.
 * A game created before this change is untouched: `hex-11` still means Hex with the swap.
+
+## Amendment (2026-10-29): the players change seats, and a ruleset may declare it
+
+Two changes landed together.
+
+**The swap exchanges the players, not the pieces.** The `swap` action no longer recolours the
+board and exchanges the reserves; it changes nothing on the board at all and keeps the turn with
+the mover's seat, and the session layer exchanges the two seats' occupants in the transaction
+that records the move — a seat keeps its colour, and clocks and per-seat choices move with the
+person. That is the physical rule (you take your opponent's chair), and it no longer repaints the
+board mid-game, which read as a bug to anyone who looked away. A move's owner is derived across
+the swap boundary, so undo and take-back attribute the swap to its maker, and taking it back
+changes the seats back. A game already under way keeps its recorded positions; only a swap not
+yet taken plays the new way.
+
+**A ruleset may declare `pie_rule`.** The setup option and the derived games were always the
+catalog's, not the engine's, and they work the same for a ruleset; only the swap *action* could
+not be given, because a ruleset builds its own moves. So `pie_rule` now does for a ruleset what
+it can — the check box and `<id>~pie` / `<id>~nopie` — and the ruleset offers the swap in its own
+`Legal`/`Apply` when `PieRuleOn` holds, in whatever shape fits the game. Blooms is the first:
+`"pie_rule": "optional"`, and `swap` as the second player's first reply.
+
+The exclusions above stand by choice, not by mechanism: with the seats exchanging, a direction of
+play or unlike armies would survive a swap fine (the recolouring rationale above is the old
+mechanism's), but Draughts, Breakthrough and Brandubh were not reconsidered for the rule.

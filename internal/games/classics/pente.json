@@ -2,14 +2,14 @@
   "id": "pente",
   "name": "Pente",
   "description": "Five in a row wins — or capture five pairs. Flank two enemy stones between your own and they are removed.",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "designers": ["Gary Gabrel"],
   "rules": [
     "Players alternate placing a stone on any empty intersection; the first player moves first.",
     "Make a row of five (or more) of your stones, in any direction, to win.",
     "Capture: when you place a stone so that exactly two adjacent enemy stones in a straight line are flanked by it and another stone of yours, both are removed. Placing a stone between two enemy stones is safe.",
     "Capturing five pairs (ten stones) also wins.",
-    "Optional (chosen when the game is made): with the pie rule, the second player may swap sides on their first turn instead of replying, and every piece on the board changes hands."
+    "Optional (chosen when the game is made): with the pie rule, the second player may swap sides on their first turn instead of replying; the players change seats and the opening move changes hands with them."
   ],
   "guide": { "tabs": [ { "id": "rules", "title": "Rules", "file": "rules.md" } ] },
   "preview": [

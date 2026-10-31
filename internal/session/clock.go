@@ -173,3 +173,14 @@ func (c *GameClock) charge(seat int, d time.Duration) {
 	}
 	c.Left[k] = left
 }
+
+// swapSeats exchanges the two seats' stores: a pie-rule swap moves each
+// player to the other seat, and a player's time goes with them.
+func (c *GameClock) swapSeats() {
+	if c == nil {
+		return
+	}
+	a, b := seatKey(1), seatKey(2)
+	c.Initial[a], c.Initial[b] = c.Initial[b], c.Initial[a]
+	c.Left[a], c.Left[b] = c.Left[b], c.Left[a]
+}

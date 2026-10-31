@@ -880,17 +880,18 @@ func TestPieRuleSwapOnTheSecondMoveOnly(t *testing.T) {
 		if sw.Notation != "swap" {
 			t.Errorf("%s: notation = %q", id, sw.Notation)
 		}
-		// The first stone changed hands and the first player moves next.
+		// The stone stays as it was — the players change seats — and the turn
+		// stays with the second seat (the first player holds it now).
 		top, ok := sw.NewState.Get(first.To)
 		if !ok || top.Color == "" {
 			t.Fatalf("%s: stone vanished", id)
 		}
 		orig, _ := res.NewState.Get(first.To)
-		if top.Color == orig.Color {
-			t.Errorf("%s: the stone should have changed colour", id)
+		if top.Color != orig.Color {
+			t.Errorf("%s: the stone changed colour", id)
 		}
-		if sw.NextTurnSeat != 1 {
-			t.Errorf("%s: next seat = %d, want 1", id, sw.NextTurnSeat)
+		if sw.NextTurnSeat != 2 {
+			t.Errorf("%s: next seat = %d, want 2", id, sw.NextTurnSeat)
 		}
 
 		// And never again.

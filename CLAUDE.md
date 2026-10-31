@@ -79,7 +79,7 @@ and should never look for.
 - `internal/session` — room locks, the event hub, clocks, presence, direct messages, notifications.
 - `internal/api`, `internal/mcpserver` — two front doors over the same session layer.
 - `internal/web/static/js` — plain ES modules, **no build step**.
-- `internal/games` — 15 games are a JSON definition and nothing else; 10 have a Go `state.Ruleset`.
+- `internal/games` — 15 games are a JSON definition and nothing else; 11 have a Go `state.Ruleset`.
   **`Legal` and `Apply` take no `context`, do no I/O, and must stay pure and deterministic.**
 - `docs/history/` holds the plans, several still marked *planning in progress*; `docs/decisions/`
   holds the ADRs. Read the relevant one before changing an area it covers.

@@ -42,6 +42,9 @@ type Data struct {
 	// Placed lists the cells stoned this turn, and Last the previous turn's.
 	Placed []string `json:"placed,omitempty"`
 	Last   []string `json:"last_placed,omitempty"`
+	// Swapped says the pie rule was taken: the players changed seats and the
+	// swap is spent.
+	Swapped bool `json:"swapped,omitempty"`
 	// Result of a finished game.
 	Winner int    `json:"winner,omitempty"`
 	Reason string `json:"reason,omitempty"`

@@ -6,10 +6,14 @@ package session_test
 import (
 	"context"
 	"errors"
+	"path/filepath"
 	"testing"
 	"time"
 
+	"github.com/noderunner/bingle/internal/engine/catalog"
+	"github.com/noderunner/bingle/internal/games/classics"
 	"github.com/noderunner/bingle/internal/session"
+	"github.com/noderunner/bingle/internal/store"
 )
 
 // clockLeft is the seconds the snapshot says a seat has left.
@@ -201,5 +205,59 @@ func TestGameClock_BotsAndObservations(t *testing.T) {
 	}
 	if *obs.SecondsLeft < 100 || *obs.SecondsLeft > 112 {
 		t.Errorf("the observation says %d seconds left, want about 110", *obs.SecondsLeft)
+	}
+}
+
+// A pie-rule swap moves each player to the other seat, and their clock goes
+// with them: the stores the seats show after the swap are the ones the two
+// players had before it.
+func TestGameClock_PieRuleSwapMovesTheClocksWithThePlayers(t *testing.T) {
+	st, err := store.Open(filepath.Join(t.TempDir(), "pieclock.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = st.Close() })
+	cat := catalog.NewCatalog()
+	for _, mod := range classics.Modules() {
+		if err := cat.RegisterModule(mod); err != nil {
+			t.Fatal(err)
+		}
+	}
+	m := session.NewManager(st, cat)
+	clock := &fakeClock{now: time.Now()}
+	m.SetClock(clock.Now)
+	ctx := context.Background()
+
+	created, err := m.CreateGameWithOptions(ctx, session.CreateOptions{
+		GameDefID: "yavalath", CreatorName: "Alice", ClockSeconds: []int{300, 600},
+		Options: map[string]any{"pie-rule": true},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := m.JoinGame(ctx, created.RoomCode, "Bob", session.RolePlayer); err != nil {
+		t.Fatal(err)
+	}
+	// Alice thinks a minute over her opening; Bob half a minute over the swap.
+	clock.Set(time.Now().Add(60 * time.Second))
+	if _, err := m.PlayNotation(ctx, created.RoomCode, "Alice", "e5"); err != nil {
+		t.Fatal(err)
+	}
+	clock.Set(time.Now().Add(90 * time.Second))
+	if _, err := m.PlayNotation(ctx, created.RoomCode, "Bob", "swap"); err != nil {
+		t.Fatal(err)
+	}
+	snap, _ := m.GetState(ctx, created.RoomCode, nil)
+	if len(snap.Seats) != 2 || snap.Seats[0].Name != "Bob" || snap.Seats[1].Name != "Alice" {
+		t.Fatalf("after the swap the seats are %+v, want Bob in 1 and Alice in 2", snap.Seats)
+	}
+	if got := clockLeft(t, snap, 1); got < 565 || got > 575 {
+		t.Errorf("seat 1 (Bob) has %v seconds, want his 600 less the half-minute swap", got)
+	}
+	if got := clockLeft(t, snap, 2); got < 235 || got > 245 {
+		t.Errorf("seat 2 (Alice) has %v seconds, want her 300 less the minute's opening", got)
+	}
+	if snap.Clock.Running != 2 {
+		t.Errorf("the clock running is seat %d's, want 2 (Alice answers)", snap.Clock.Running)
 	}
 }

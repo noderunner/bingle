@@ -85,6 +85,8 @@ func (e *eng) buildView() *View {
 		v.Prompt = fmt.Sprintf("%s: place a second stone (not %s), or end the turn", seatLabel(d.Turn), d.First)
 	case d.Turns == 0:
 		v.Prompt = "Red & Yellow: place one stone"
+	case d.Turn == 2 && d.Turns == 1 && d.Stage == stageFirst && e.pieOn():
+		v.Prompt = fmt.Sprintf("%s: answer the opening stone, or swap sides and take it (the pie rule)", seatLabel(d.Turn))
 	default:
 		v.Prompt = fmt.Sprintf("%s: place a stone", seatLabel(d.Turn))
 	}
