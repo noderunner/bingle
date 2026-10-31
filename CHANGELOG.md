@@ -10,6 +10,9 @@ what the help window shows under *Recent changes*, so it is written for the peop
 - **Signing in is where you would look for it.** The profile button in the top bar now says whether
   you are signed in, and its window has *Sign in* and *Sign up* — or, once you are signed in, your
   handle, your account page and *Sign out*. Before, they were only on the profile page.
+- **Guests are no longer offered what needs an account.** The direct messages button, running bot
+  batches and setting up turn emails only appear once you are signed in (or if the server's
+  administrator opens them to guests); a guest is pointed to the sign-in instead.
 
 ## 0.28.0 - 2026-10-31
 

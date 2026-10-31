@@ -70,12 +70,13 @@
 					<input id="profile_name" type="text" maxlength="32" autocomplete="nickname">
 					<span class="small muted">Games you already joined keep the name you used in them.</span>
 				</div>
-				<div class="field">
+				<p class="small muted" id="notify-accounts-only" hidden>Email notifications are for signed-in players: <a href="/login?return=%2Fprofile">sign in</a> to have Bingle mail you when it is your turn.</p>
+				<div class="field" id="profile-email-field">
 					<label for="profile_email">Email</label>
 					<input id="profile_email" type="email" maxlength="254" autocomplete="email" placeholder="you@example.com">
 					<span class="small muted">Only used for the turn notices you ask for. Bingle mails a link to confirm the address first, and never shows it to other players.</span>
 				</div>
-				<div class="field">
+				<div class="field" id="profile-notify-field">
 					<label class="check"><input type="checkbox" id="profile_notify"> <span>Send me an email when it is my turn</span></label>
 					<span class="small muted">Applies to games you join or open from now on; you can change it for each game in its options.</span>
 				</div>

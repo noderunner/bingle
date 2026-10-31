@@ -254,3 +254,40 @@ func TestAccountUI_TheProfileWindowSaysWhoYouAre(t *testing.T) {
 	clickSel(t, ctx2, "#profile-signout")
 	waitJS(t, ctx2, "signed out", `document.getElementById("open-profile") && document.getElementById("open-profile").title === "Your profile (playing as a guest)"`, 15*time.Second)
 }
+
+// What a guest may not use is not offered to it: no direct messages, no
+// batches to run, no turn mail to set up — and an account sees all three.
+func TestAccountUI_AGuestIsNotOfferedWhatIsAnAccounts(t *testing.T) {
+	a, base := membersServer(t)
+	guest, cancel := newChromedpContext(t, 60*time.Second)
+	defer cancel()
+	if err := chromedp.Run(guest, chromedp.Navigate(base+"/")); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, guest, "the top bar, without direct messages", `document.getElementById("open-profile") && document.getElementById("open-profile").title.indexOf("guest") > 0 && document.getElementById("open-messages").hidden`, 10*time.Second)
+	clickSel(t, guest, "#tab-analysis")
+	waitJS(t, guest, "the Analysis tab, without the form", `document.getElementById("analysis-signin") !== null && document.getElementById("analysis-start") === null`, 15*time.Second)
+
+	ana := member(t, a, base, "ana")
+	acc, cancel2 := newChromedpContext(t, 60*time.Second)
+	defer cancel2()
+	signInChrome(t, acc, base, ana.cookie(auth.SessionCookie))
+	if err := chromedp.Run(acc, chromedp.Navigate(base+"/")); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, acc, "the direct messages", `!document.getElementById("open-messages").hidden`, 10*time.Second)
+	clickSel(t, acc, "#tab-analysis")
+	waitJS(t, acc, "the Analysis form", `document.getElementById("analysis-start") !== null && document.getElementById("analysis-signin") === null`, 15*time.Second)
+}
+
+// A guest's profile page says turn mail is for accounts instead of asking
+// for an address it could not use.
+func TestAccountUI_AGuestsProfileHasNoTurnMail(t *testing.T) {
+	e := accountsNotifyEnv(t) // mail set up, notifications accounts' only
+	ctx, cancel := newChromedpContext(t, 60*time.Second)
+	defer cancel()
+	if err := chromedp.Run(ctx, chromedp.Navigate(e.URL+"/profile")); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "the note instead of the address", `!document.getElementById("notify-accounts-only").hidden && document.getElementById("profile-email-field").hidden && document.getElementById("notify-box").hidden`, 10*time.Second)
+}

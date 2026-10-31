@@ -317,6 +317,12 @@ function messagesWindow() {
 	};
 	messages = mountDirectMessages(body, { onCount: paintBadge });
 	paintBadge(unreadCount());
+	// Direct messages are accounts' (the dm capability): the icon stays away
+	// until the server says this browser may use them.
+	btn.hidden = true;
+	whoAmI().then((me) => {
+		btn.hidden = !(me.caps || []).includes("dm");
+	});
 	btn.addEventListener("click", () => {
 		open(dlg);
 		watchHere(true);
