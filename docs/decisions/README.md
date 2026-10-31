@@ -77,3 +77,4 @@ Short records of choices made for the `bingle` project during the requirements i
 | [0071](0071-capabilities-modes-and-tokens.md) | The capability matrix seeded from YAML and owned by the database, hybrid and closed, scoped API tokens that never carry admin powers, per-class limits, invitations |
 | [0072](0072-identity-in-the-interface.md) | Handles reserved for their accounts and held after a rename, seat and chat markers, "My games" on the server, and the guest key copied to another device |
 | [0073](0073-account-only-features.md) | Direct messages, who is here, the global chat and notifications are accounts'; confirmed contacts grandfathered and offered the way to an account; ADR 0006 retired |
+| [0074](0074-a-qr-code-of-our-own.md) | The second factor's QR code is drawn by `internal/qr`, a byte-mode, level-M, version 1–10 encoder of our own, rather than a dependency |

@@ -62,9 +62,16 @@ func totpKey(t *testing.T, secret string) []byte {
 // the recovery codes.
 func enableTOTP(t *testing.T, b *browser) ([]byte, []string) {
 	t.Helper()
-	var setup struct{ Secret, URI string }
+	var setup struct {
+		Secret, URI string
+		QR          string `json:"qr_svg"`
+	}
 	if code := b.do("POST", "/auth/totp/setup", map[string]any{"password": anaPassword}, &setup); code != 200 || setup.Secret == "" {
 		t.Fatalf("setup: %d %+v", code, setup)
+	}
+	// The link comes as a QR code too, for a phone's camera.
+	if !strings.HasPrefix(setup.QR, "<svg ") || !strings.HasSuffix(setup.QR, "</svg>") {
+		t.Errorf("no QR code with the setup: %.80q", setup.QR)
 	}
 	key := totpKey(t, setup.Secret)
 	var on struct {
@@ -192,6 +199,7 @@ type proxied struct {
 	t       *testing.T
 	base    string
 	cookies map[string]string
+	last    string // the body of the latest answer
 }
 
 func (p *proxied) do(method, path string, body any) int {
@@ -210,7 +218,8 @@ func (p *proxied) do(method, path string, body any) int {
 		p.t.Fatal(err)
 	}
 	defer func() { _ = resp.Body.Close() }()
-	_, _ = io.Copy(io.Discard, resp.Body)
+	raw, _ = io.ReadAll(resp.Body)
+	p.last = string(raw)
 	for _, c := range resp.Cookies() {
 		if c.MaxAge < 0 {
 			delete(p.cookies, c.Name)
@@ -255,6 +264,14 @@ func TestSecondFactor_AnAdministratorNeedsOneOffLoopback(t *testing.T) {
 			code := p.do("POST", "/api/games", map[string]any{"game_def_id": "tic-tac-toe", "player_name": "Ops"})
 			if tc.blocked && code != http.StatusForbidden {
 				t.Errorf("an administrator without a second factor plays: %d, want 403", code)
+			}
+			// The admin page says what is missing, not that they are no administrator.
+			admin := p.do("GET", "/auth/admin/caps", nil)
+			if tc.blocked && (admin != http.StatusForbidden || !strings.Contains(p.last, "need a second factor") || !strings.Contains(p.last, "account page")) {
+				t.Errorf("the admin page off loopback: %d %s", admin, p.last)
+			}
+			if !tc.blocked && admin != 200 {
+				t.Errorf("the admin page on loopback: %d %s", admin, p.last)
 			}
 			if !tc.blocked && code != 200 {
 				t.Errorf("an administrator on loopback plays: %d, want 200", code)

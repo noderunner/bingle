@@ -17,23 +17,36 @@
 	<main class="page narrow">
 		<h1>Administration</h1>
 		<p class="small error" id="admin-refused" hidden></p>
+		<p class="small" id="admin-second-factor" hidden><a class="button primary" href="/account#tf-box">Set up a second factor</a></p>
 		<section class="card" id="caps-card" hidden>
 			<h2>Who may do what</h2>
 			<p class="small" id="caps-mode"></p>
 			<p class="small" id="caps-drift" hidden>The database has drifted from the capabilities file. <code>bingle caps reset</code> applies the file again.</p>
-			<table class="caps" id="caps-table">
-				<thead><tr><th>Capability</th><th>Users</th><th>Guests</th></tr></thead>
-				<tbody id="caps-rows"></tbody>
-			</table>
+			<div class="admin-scroll">
+				<table class="admin-table caps" id="caps-table">
+					<thead><tr><th scope="col">Capability</th><th scope="col" class="col-check">Users</th><th scope="col" class="col-check">Guests</th></tr></thead>
+					<tbody id="caps-rows"></tbody>
+				</table>
+			</div>
 			<p class="small muted">Administrators may do everything. A change applies to whatever is started from now on; a call already up is not cut off.</p>
 			<h3>Limits per minute</h3>
-			<ul class="small" id="caps-limits"></ul>
+			<div class="admin-scroll">
+				<table class="admin-table limits">
+					<thead><tr><th scope="col">What</th><th scope="col" class="num">Users</th><th scope="col" class="num">Guests</th></tr></thead>
+					<tbody id="caps-limits"></tbody>
+				</table>
+			</div>
 			<p class="small" id="caps-result" role="status" aria-live="polite"></p>
 		</section>
 		<section class="card" id="events-card" hidden>
 			<h2>What happened</h2>
 			<p class="small muted">Sign-ins and their failures, sign-ups, changes to passwords, second factors, tokens and permissions: the latest 200.</p>
-			<table class="small" id="events-table"><tbody id="events-rows"></tbody></table>
+			<div class="admin-scroll">
+				<table class="admin-table events" id="events-table">
+					<thead><tr><th scope="col">When</th><th scope="col">Account</th><th scope="col">What</th><th scope="col">Detail</th></tr></thead>
+					<tbody id="events-rows"></tbody>
+				</table>
+			</div>
 		</section>
 		<section class="card" id="invite-card" hidden>
 			<h2>Invitations</h2>

@@ -4,6 +4,18 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.28.3 - 2026-10-31
+
+### Bingle Core 0.28.3
+- **Setting up two-step sign-in shows a QR code.** Point Google Authenticator (or any authenticator
+  app) at it instead of typing the key; the key and the link are still there beside it.
+- **An administrator without two-step sign-in is told what is missing.** Away from the server's own
+  machine, the administration page now says to set up two-step sign-in and links straight to it,
+  instead of saying it is only for administrators.
+- **The administration page is easier to read:** the permissions line up in even rows under their
+  headings, the limits are a table of users and guests, and the history has headings, local times
+  and the kind of each event picked out.
+
 ## 0.28.2 - 2026-10-31
 
 ### Bingle Core 0.28.2

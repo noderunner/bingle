@@ -1778,3 +1778,28 @@ form[data-opponent="bots"] .human-only { display: none; }
 .cg-legend { margin: 0; display: grid; grid-template-columns: 1fr; gap: 0.1rem 0; }
 .cg-legend dt { display: flex; align-items: center; gap: 0.4rem; margin-top: 0.5rem; color: var(--text); }
 .cg-legend dd { margin: 0 0 0 1.8rem; }
+
+/* The QR code of a second factor's setup link: dark on white in either
+   theme, with the quiet zone the code itself draws. */
+.tf-qr { display: block; width: 200px; height: 200px; margin: 0.5rem 0; image-rendering: pixelated; border-radius: 4px; }
+
+/* The administration page's tables: the matrix of who may do what, the
+   limits and the audit log. */
+.admin-scroll { overflow-x: auto; margin: 0.75rem 0; }
+table.admin-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+table.admin-table th, table.admin-table td { padding: 0.45rem 0.75rem; text-align: left; border-bottom: 1px solid var(--border); vertical-align: middle; }
+table.admin-table thead th { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); background: var(--surface-2); border-bottom-width: 2px; }
+table.admin-table tbody th { font-weight: 400; }
+table.admin-table tbody tr:last-child > * { border-bottom: none; }
+table.admin-table tbody tr:hover > * { background: var(--surface-2); }
+table.admin-table .col-check { width: 6.5rem; text-align: center; }
+table.admin-table .num { width: 6.5rem; text-align: right; font-variant-numeric: tabular-nums; }
+table.admin-table input[type="checkbox"] { width: 1.05rem; height: 1.05rem; margin: 0; vertical-align: middle; accent-color: var(--accent); cursor: pointer; }
+table.admin-table code { font-size: 0.88em; }
+table.admin-table.events td { font-size: 0.85rem; }
+table.admin-table.events td.when { white-space: nowrap; color: var(--muted); font-variant-numeric: tabular-nums; }
+table.admin-table.events td.who { white-space: nowrap; }
+.event-kind { display: inline-block; padding: 0.05rem 0.45rem; border-radius: 999px; font-size: 0.8rem; background: var(--accent-soft); color: var(--text); white-space: nowrap; }
+.event-kind.bad { background: color-mix(in srgb, var(--danger) 18%, transparent); }
+/* A long unbroken string (a link, a key) breaks anywhere rather than run out of its box. */
+code.wrap { overflow-wrap: anywhere; word-break: break-all; }
