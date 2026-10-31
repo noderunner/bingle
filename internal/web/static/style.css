@@ -1,6 +1,12 @@
 /* Bingle UI — one stylesheet for the lobby and the game page.
    Design tokens first; light and dark themes follow the OS setting. */
 
+/* An element with the hidden attribute is hidden, whatever display its
+   class gives it: the browser's own [hidden] rule loses to any author
+   display rule (.topbar-icon, .row, .notify-box), which once left hidden
+   buttons on the page. */
+[hidden] { display: none !important; }
+
 :root {
 	color-scheme: light dark;
 
