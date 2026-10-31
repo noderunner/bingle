@@ -148,3 +148,43 @@ func TestAccountUI_SignInWithAProvider(t *testing.T) {
 	}
 	waitJS(t, ctx, "the account, with the provider linked and no password", `document.getElementById("account-who").textContent === "Signed in as @uiuser." && document.getElementById("password-title").textContent === "Set a password" && document.getElementById("oidc-unlink-fake") !== null`, 10*time.Second)
 }
+
+// The administration page: the matrix, and a box that changes it.
+func TestAccountUI_TheAdminPage(t *testing.T) {
+	cfg := newTestConfig(t)
+	cfg.Addr = "127.0.0.1:0"
+	a, err := app.New(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = a.Close() })
+	srv := httptest.NewServer(a.Router())
+	t.Cleanup(srv.Close)
+	b := newBrowser(t, srv.URL)
+	b.do("POST", "/auth/login", map[string]any{"handle": "admin", "password": auth.DevPassword}, nil)
+	b.do("POST", "/auth/password", map[string]any{"old": auth.DevPassword, "new": "the admin's own"}, nil)
+
+	ctx, cancel := newChromedpContext(t, 60*time.Second)
+	defer cancel()
+	signInChrome(t, ctx, srv.URL, b.cookie(auth.SessionCookie))
+	if err := chromedp.Run(ctx, chromedp.Navigate(srv.URL+"/admin")); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "the matrix", `document.getElementById("cap-guest-create_game") && document.getElementById("cap-guest-create_game").checked && !document.getElementById("cap-guest-run_batch").checked`, 10*time.Second)
+	clickSel(t, ctx, "#cap-guest-create_game")
+	waitJS(t, ctx, "saved", `document.getElementById("caps-result").textContent.indexOf("Saved") === 0 && !document.getElementById("caps-drift").hidden`, 10*time.Second)
+	if code := createAs(t, newGuestKey(t, srv.URL), srv.URL); code != 403 {
+		t.Errorf("a guest after the box was unticked: %d, want 403", code)
+	}
+	// A member who is not an administrator is turned away.
+	pw, _ := a.Accounts().Create(context.Background(), "ana", "ana@example.com", false)
+	nb := newBrowser(t, srv.URL)
+	nb.login("ana", pw)
+	ctx2, cancel2 := newChromedpContext(t, 60*time.Second)
+	defer cancel2()
+	signInChrome(t, ctx2, srv.URL, nb.cookie(auth.SessionCookie))
+	if err := chromedp.Run(ctx2, chromedp.Navigate(srv.URL+"/admin")); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx2, "refused", `!document.getElementById("admin-refused").hidden && document.getElementById("caps-card").hidden`, 10*time.Second)
+}

@@ -189,7 +189,10 @@ func TestMetrics_SeriesCountOfAFreshServerIsUnderTheCeiling(t *testing.T) {
 	// first start also makes its first administrator, and the nine
 	// statements that takes are nine more duration histograms (about 140
 	// series with the six new tables' row gauges; 140 before, 280 after).
-	const ceiling = 300
+	// Raised to 350 with the capabilities (ADR 0071): the first start also
+	// seeds the capability matrix, three statements' histograms, and four
+	// more tables are counted (326 after).
+	const ceiling = 350
 
 	_, scrape := newMeasuredServer(t)
 	got := seriesCount(scrape())

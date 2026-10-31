@@ -74,3 +74,4 @@ Short records of choices made for the `bingle` project during the requirements i
 | [0068](0068-accounts-sessions-and-passwords.md) | Accounts, server-side sessions and Argon2id passwords; signing up with a confirmed address; the guest becomes the account; the seeded administrator changes its password first |
 | [0069](0069-second-factor-and-lockout.md) | TOTP on the standard library with replay protection, ten recovery codes, the admin group's second factor (waived on genuine loopback), backoff, and resetting a forgotten password by mail |
 | [0070](0070-oidc.md) | Generic OpenID Connect sign-in (x/oauth2, go-oidc): PKCE, a state bound to the browser, a nonce; links by address only when the provider and the server both vouch for it |
+| [0071](0071-capabilities-modes-and-tokens.md) | The capability matrix seeded from YAML and owned by the database, hybrid and closed, scoped API tokens that never carry admin powers, per-class limits, invitations |

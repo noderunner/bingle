@@ -4,6 +4,7 @@ package app
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -51,6 +52,7 @@ type App struct {
 	store    *store.Store
 	guests   *auth.Resolver
 	accounts *auth.Accounts
+	caps     *auth.Caps
 	// seeded is the administrator made for an empty database (nil if there
 	// were accounts), whose password main prints once.
 	seeded *auth.Seeded
@@ -190,9 +192,16 @@ func New(cfg config.Config, opts ...Option) (*App, error) {
 	a.publicURL = cfg.PublicURL
 	a.changelog = cfg.Changelog
 	a.rtc = api.RTCConfig{Stun: cfg.RTCStun, TurnURLs: cfg.RTCTurnURLs, TurnSecret: cfg.RTCTurnSecret}
-	a.accounts = auth.NewAccounts(st, auth.AccountOptions{Mailer: manager, Log: a.log, Signup: cfg.Signup, SessionIdle: cfg.SessionIdle, SessionMax: cfg.SessionMax, Argon2: a.argon2})
+	caps, err := auth.NewCaps(context.Background(), st, cfg.AuthMode, cfg.CapsFile)
+	if err != nil {
+		_ = st.Close()
+		return nil, err
+	}
+	a.caps = caps
+	a.accounts = auth.NewAccounts(st, auth.AccountOptions{Mailer: manager, Log: a.log, Signup: cfg.Signup, SessionIdle: cfg.SessionIdle, SessionMax: cfg.SessionMax, Argon2: a.argon2,
+		LoginsPerMinute: caps.Limit(auth.ClassGuest, auth.LimitLogin)})
 	a.guests = auth.NewResolver(st, auth.Options{Transport: a.transport, Idle: cfg.GuestIdle, Log: a.log, Accounts: a.accounts,
-		OIDC: auth.NewOIDC(cfg.PublicURL, cfg.OIDC)})
+		OIDC: auth.NewOIDC(cfg.PublicURL, cfg.OIDC), Caps: caps})
 
 	if err := enableNotify(manager, cfg, a.log); err != nil {
 		_ = st.Close()
@@ -206,6 +215,18 @@ func New(cfg config.Config, opts ...Option) (*App, error) {
 		return nil, err
 	}
 	a.seeded = seeded
+	// BINGLE_DEV (loopback only) gives the first administrator a known API
+	// token, so CI can drive a closed server.
+	if cfg.Dev {
+		handle := cfg.AdminHandle
+		if handle == "" {
+			handle = "admin"
+		}
+		if err := a.accounts.SeedDevToken(context.Background(), handle); err != nil && !errors.Is(err, store.ErrNotFound) {
+			_ = st.Close()
+			return nil, err
+		}
+	}
 
 	a.router = a.newRouter()
 	return a, nil
@@ -330,6 +351,9 @@ func (a *App) ListAccounts(ctx context.Context) ([]AccountRow, error) {
 	return out, nil
 }
 
+// Caps is the capability matrix (the command line's `caps reset`).
+func (a *App) Caps() *auth.Caps { return a.caps }
+
 // Accounts is the account service (the command line's way in).
 func (a *App) Accounts() *auth.Accounts { return a.accounts }
 
@@ -386,7 +410,9 @@ func (a *App) newRouter() chi.Router {
 	})
 	// Mounted last: internal/web acts as "/"'s catch-all/root, so every more
 	// specific path above must be registered first to take precedence.
-	r.Mount("/", web.NewRouter(a.manager))
+	// A closed server shows its pages to its members, and the sign-in to
+	// everybody else.
+	r.With(a.guests.ClosedPages).Mount("/", web.NewRouter(a.manager))
 	return r
 }
 

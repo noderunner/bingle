@@ -21,6 +21,7 @@ const usage = `usage:
                                             which must be changed at the first sign-in
   bingle account reset HANDLE               give an account a new password (printed), to be
                                             changed at the next sign-in, and sign it out everywhere
+  bingle caps reset                         apply the capabilities file (BINGLE_CAPS_FILE) again
 `
 
 // runCommand runs one command line and returns the exit status.
@@ -29,7 +30,7 @@ func runCommand(cfg config.Config, args []string) int {
 }
 
 func command(cfg config.Config, args []string, out, errOut io.Writer) int {
-	if len(args) < 2 || args[0] != "account" {
+	if len(args) < 2 || (args[0] != "account" && args[0] != "caps") {
 		_, _ = fmt.Fprint(errOut, usage)
 		return 2
 	}
@@ -42,6 +43,18 @@ func command(cfg config.Config, args []string, out, errOut io.Writer) int {
 	printSeededTo(errOut, a.Seeded())
 	ctx := context.Background()
 	acc := a.Accounts()
+	if args[0] == "caps" {
+		if args[1] != "reset" || len(args) != 2 {
+			_, _ = fmt.Fprint(errOut, usage)
+			return 2
+		}
+		if err := a.Caps().Reset(ctx); err != nil {
+			_, _ = fmt.Fprintln(errOut, "bingle:", err)
+			return 1
+		}
+		_, _ = fmt.Fprintf(out, "the capabilities are those of %s again\n", capsSource(cfg.CapsFile))
+		return 0
+	}
 	switch args[1] {
 	case "list":
 		list, err := a.ListAccounts(ctx)
@@ -109,4 +122,14 @@ func printSeededTo(w io.Writer, s *auth.Seeded) {
 		return
 	}
 	_, _ = fmt.Fprintf(w, "\nbingle: made the administrator @%s. Its password, shown only now, is:\n\n    %s\n\nSign in at /login; you will be asked to change it.\n\n", s.Handle, s.Password)
+}
+
+func capsSource(file string) string {
+	if file == "" {
+		return "the built-in defaults"
+	}
+	if _, err := os.Stat(file); err != nil {
+		return "the built-in defaults (there is no " + file + ")"
+	}
+	return file
 }

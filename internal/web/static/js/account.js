@@ -27,7 +27,8 @@ function providerButtons(host, providers, verb) {
 		const a = document.createElement("a");
 		a.className = "button ghost";
 		a.id = `oidc-${p.id}`;
-		a.href = `/auth/oidc/${encodeURIComponent(p.id)}/start?return=${encodeURIComponent(returnTo())}`;
+		const invite = params.get("invite");
+		a.href = `/auth/oidc/${encodeURIComponent(p.id)}/start?return=${encodeURIComponent(returnTo())}${invite ? `&invite=${encodeURIComponent(invite)}` : ""}`;
 		a.textContent = `${verb} with ${p.label}`;
 		host.append(a);
 	}
@@ -136,7 +137,7 @@ if (page === "login") {
 		});
 	}
 	submit(form, document.getElementById("signup-go"), async () => {
-		const res = await api.signup(document.getElementById("signup-handle").value, document.getElementById("signup-email").value, document.getElementById("signup-password").value);
+		const res = await api.signup(document.getElementById("signup-handle").value, document.getElementById("signup-email").value, document.getElementById("signup-password").value, params.get("invite"));
 		say(res.status);
 		form.querySelectorAll("input").forEach((i) => (i.disabled = true));
 		document.getElementById("signup-go").hidden = true;
@@ -211,7 +212,54 @@ if (page === "login") {
 		el("password-old-field").hidden = !me.password;
 		el("password-title").textContent = me.password ? "Change your password" : "Set a password";
 		showLinks(me);
+		el("admin-link").hidden = !me.admin;
 	};
+	const paintTokens = async () => {
+		const { tokens, scopes } = await api.tokens();
+		const list = el("tokens-list");
+		list.textContent = "";
+		for (const t of tokens) {
+			const li = document.createElement("li");
+			li.append(`${t.name} (${t.scopes.join(", ")}) `);
+			const b = document.createElement("button");
+			b.type = "button";
+			b.className = "ghost";
+			b.id = `token-revoke-${t.id}`;
+			b.textContent = "Revoke";
+			b.addEventListener("click", async () => {
+				await api.revokeToken(t.id);
+				paintTokens();
+			});
+			li.append(b);
+			list.append(li);
+		}
+		const host = el("token-scopes");
+		if (!host.childElementCount) {
+			for (const s of scopes) {
+				const label = document.createElement("label");
+				label.className = "check";
+				const box = document.createElement("input");
+				box.type = "checkbox";
+				box.id = `token-scope-${s}`;
+				box.value = s;
+				box.checked = s === "play";
+				label.append(box, ` ${s.replace("_", " ")}`);
+				host.append(label);
+			}
+		}
+	};
+	paintTokens().catch(() => {});
+	el("token-go").addEventListener("click", async () => {
+		const scopes = [...el("token-scopes").querySelectorAll("input:checked")].map((b) => b.value);
+		try {
+			const res = await api.newToken(el("token-name").value, scopes);
+			el("token-new").textContent = `Your new token, shown only now: ${res.token}`;
+			el("token-name").value = "";
+			paintTokens();
+		} catch (err) {
+			el("token-new").textContent = err instanceof ApiError ? err.message : "That did not work.";
+		}
+	});
 	const showLinks = (me) => {
 		const box = el("oidc-box");
 		const list = el("oidc-links");

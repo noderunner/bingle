@@ -289,3 +289,46 @@ CREATE TABLE IF NOT EXISTS auth_events (
 
 -- A provider's identity is one account's at most.
 CREATE UNIQUE INDEX IF NOT EXISTS idx_credentials_oidc ON credentials(secret) WHERE kind = 'oidc';
+
+-- What each class may do (stage 6 of the accounts plan, ADR 0071), seeded
+-- from bingle-capabilities.yaml on a fresh database and managed on the
+-- admin page from then on. The admin group may do everything and has no rows.
+CREATE TABLE IF NOT EXISTS capabilities (
+    class         TEXT NOT NULL,
+    capability    TEXT NOT NULL,
+    allowed       INTEGER NOT NULL,
+    PRIMARY KEY (class, capability)
+);
+
+-- Per-class rate limits, per minute: chat lines, games made, direct messages.
+CREATE TABLE IF NOT EXISTS cap_limits (
+    class         TEXT NOT NULL,
+    kind          TEXT NOT NULL,
+    per_minute    INTEGER NOT NULL,
+    PRIMARY KEY (class, kind)
+);
+
+-- API tokens: an account's, for scripts and agents, by the SHA-256 of the
+-- token. scopes is a comma-separated list; a token never carries the admin
+-- group's powers.
+CREATE TABLE IF NOT EXISTS api_tokens (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    account_id    INTEGER NOT NULL REFERENCES accounts(id),
+    name          TEXT NOT NULL,
+    hash          TEXT NOT NULL UNIQUE,
+    scopes        TEXT NOT NULL,
+    created_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_used_at  TIMESTAMP,
+    revoked_at    TIMESTAMP
+);
+
+-- Invitations to sign up, when BINGLE_SIGNUP=invite: by the SHA-256 of the
+-- code in the link, used once.
+CREATE TABLE IF NOT EXISTS invites (
+    code_hash     TEXT PRIMARY KEY,
+    created_by    INTEGER NOT NULL REFERENCES accounts(id),
+    created_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    expires_at    TIMESTAMP NOT NULL,
+    used_by       INTEGER,
+    used_at       TIMESTAMP
+);

@@ -4,6 +4,21 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.26.0 - 2026-10-31
+
+### Bingle Core 0.26.0
+- **Practice batches are for accounts now.** Running bot batches on the Analysis tab needs you to be
+  signed in; reading a batch's report does not.
+- **API tokens.** Your account page makes tokens for scripts and agents: each acts as you, within
+  what you allowed it (playing, making games), and can be revoked there too.
+- Guests can make three games a minute, and say ten things a minute in a game's chat; signed-in
+  players more.
+- For whoever runs the server: an **administration page** (`/admin`) says what guests and members
+  may do, and changes it. `BINGLE_AUTH_MODE=closed` makes a server for its members only, and
+  `BINGLE_SIGNUP=invite` lets people sign up only with an invitation link from that page. The
+  defaults come from `bingle-capabilities.yaml` the first time a server starts; `bingle caps reset`
+  applies the file again.
+
 ## 0.25.0 - 2026-10-31
 
 ### Bingle Core 0.25.0

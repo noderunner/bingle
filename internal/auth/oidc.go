@@ -57,9 +57,10 @@ type oidcFlow struct {
 	provider, verifier, nonce string
 	returnTo                  string
 	// link is the account to link the provider to (0: sign in instead).
-	link  int64
-	guest string
-	until time.Time
+	link   int64
+	guest  string
+	invite string
+	until  time.Time
 }
 
 // Identity is who a provider says signed in.
@@ -68,6 +69,7 @@ type Identity struct {
 	EmailVerified                  bool
 	guest                          string
 	returnTo                       string
+	invite                         string
 	until                          time.Time
 }
 
@@ -127,7 +129,7 @@ func (o *OIDC) load(ctx context.Context, id string) (*oidcProvider, error) {
 
 // Start begins a sign-in at a provider: the URL to send the browser to, and
 // the state to keep in its cookie, which the callback must bring back.
-func (o *OIDC) Start(ctx context.Context, id, returnTo string, link int64, guest string) (string, string, error) {
+func (o *OIDC) Start(ctx context.Context, id, returnTo string, link int64, guest, invite string) (string, string, error) {
 	p, err := o.load(ctx, id)
 	if err != nil {
 		return "", "", err
@@ -140,7 +142,7 @@ func (o *OIDC) Start(ctx context.Context, id, returnTo string, link int64, guest
 			delete(o.flows, k)
 		}
 	}
-	o.flows[hashSecret(state)] = &oidcFlow{provider: id, verifier: verifier, nonce: nonce, returnTo: returnTo, link: link, guest: guest, until: now.Add(oidcFlowFor)}
+	o.flows[hashSecret(state)] = &oidcFlow{provider: id, verifier: verifier, nonce: nonce, returnTo: returnTo, link: link, guest: guest, invite: invite, until: now.Add(oidcFlowFor)}
 	o.mu.Unlock()
 	url := p.oauth.AuthCodeURL(state, oauth2.S256ChallengeOption(verifier), oidc.Nonce(nonce))
 	return url, state, nil
@@ -186,7 +188,7 @@ func (o *OIDC) Finish(ctx context.Context, id, state, cookieState, code string) 
 	}
 	// Some providers send the flag as a string.
 	verified := claims.EmailVerified == true || claims.EmailVerified == "true"
-	return &Identity{Provider: id, Subject: idt.Subject, Email: claims.Email, Name: claims.Name, EmailVerified: verified, guest: f.guest, returnTo: f.returnTo}, f, nil
+	return &Identity{Provider: id, Subject: idt.Subject, Email: claims.Email, Name: claims.Name, EmailVerified: verified, guest: f.guest, returnTo: f.returnTo, invite: f.invite}, f, nil
 }
 
 // waitForHandle keeps an identity that will become a new account once its

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -45,6 +46,7 @@ type Resolver struct {
 	guests    Guests
 	accounts  *Accounts
 	oidc      *OIDC
+	caps      *Caps
 	transport transport.Policy
 	idle      time.Duration
 	log       *slog.Logger
@@ -70,6 +72,8 @@ type Options struct {
 	Accounts *Accounts
 	// OIDC are the sign-in providers (nil for none).
 	OIDC *OIDC
+	// Caps, when set, says who may do what, and the mode.
+	Caps *Caps
 }
 
 // DefaultIdle is BINGLE_GUEST_IDLE's default.
@@ -91,7 +95,7 @@ func NewResolver(g Guests, o Options) *Resolver {
 	if o.Log == nil {
 		o.Log = slog.Default()
 	}
-	return &Resolver{guests: g, accounts: o.Accounts, oidc: o.OIDC, transport: o.Transport, idle: o.Idle, log: o.Log, now: time.Now, made: windowLimiter{per: o.NewGuestsPerHour, window: time.Hour}}
+	return &Resolver{guests: g, accounts: o.Accounts, oidc: o.OIDC, caps: o.Caps, transport: o.Transport, idle: o.Idle, log: o.Log, now: time.Now, made: windowLimiter{per: o.NewGuestsPerHour, window: time.Hour}}
 }
 
 // SetClock replaces the resolver's clock (tests).
@@ -120,8 +124,10 @@ func (rs *Resolver) Middleware(next http.Handler) http.Handler {
 		}
 		// An account whose password must be changed may change it, sign out,
 		// and look; nothing else. Nor may an administrator who has no second
-		// factor yet, off this machine, until one is set up.
-		if ok && p.Account != nil && unsafe && !strings.HasPrefix(r.URL.Path, "/auth/") {
+		// factor yet, off this machine, until one is set up. A token is
+		// neither: it never uses the password, and never the admin group's
+		// powers.
+		if ok && p.Account != nil && p.Scopes == nil && unsafe && !strings.HasPrefix(r.URL.Path, "/auth/") {
 			switch {
 			case p.Account.MustChangePassword:
 				writeError(w, http.StatusForbidden, ErrMustChangePwd.Error())
@@ -131,10 +137,13 @@ func (rs *Resolver) Middleware(next http.Handler) http.Handler {
 				return
 			}
 		}
-		if !ok && unsafe && fromPage {
+		if !ok && unsafe && fromPage && (rs.caps == nil || rs.caps.Mode() != ModeClosed) {
 			if p, ok = rs.newGuest(w, r); ok {
 				p.Cookie = true
 			}
+		}
+		if rs.caps != nil && rs.caps.check(w, r, p, ok, rs.transport.PeerIP(r), rs.now()) {
+			return
 		}
 		if ok {
 			r = r.WithContext(WithPrincipal(r.Context(), p))
@@ -156,6 +165,27 @@ func (rs *Resolver) resolve(w http.ResponseWriter, r *http.Request) (Principal, 
 			rs.setCookie(w, r, SessionCookie, "", -1)
 		default:
 			rs.log.Error("reading a session", "err", err)
+			writeError(w, http.StatusServiceUnavailable, "auth: could not check who you are; try again")
+			return Principal{}, false, err
+		}
+	}
+	if tok := bearerToken(r); tok != "" {
+		if rs.accounts == nil {
+			writeError(w, http.StatusUnauthorized, ErrNoToken.Error())
+			return Principal{}, false, ErrNoToken
+		}
+		acc, scopes, err := rs.accounts.tokenAccount(r.Context(), tok)
+		switch {
+		case err == nil:
+			if scopes == nil {
+				scopes = []string{}
+			}
+			return Principal{ID: acc.PrincipalID, Kind: store.KindAccount, Account: &acc, Scopes: scopes}, true, nil
+		case errors.Is(err, store.ErrNotFound):
+			writeError(w, http.StatusUnauthorized, ErrNoToken.Error())
+			return Principal{}, false, err
+		default:
+			rs.log.Error("reading an API token", "err", err)
 			writeError(w, http.StatusServiceUnavailable, "auth: could not check who you are; try again")
 			return Principal{}, false, err
 		}
@@ -260,6 +290,19 @@ func bearerKey(r *http.Request) string {
 	return ""
 }
 
+// bearerToken is the API token in an Authorization header, if that is what
+// it holds.
+func bearerToken(r *http.Request) string {
+	v := r.Header.Get("Authorization")
+	if len(v) < len("Bearer ") || !strings.EqualFold(v[:len("Bearer ")], "Bearer ") {
+		return ""
+	}
+	if k := strings.TrimSpace(v[len("Bearer "):]); strings.HasPrefix(k, APITokenPrefix) {
+		return k
+	}
+	return ""
+}
+
 func writeError(w http.ResponseWriter, status int, msg string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
@@ -302,4 +345,32 @@ func (l *windowLimiter) allow(key string, now time.Time) bool {
 		}
 	}
 	return true
+}
+
+// pagesOpen are the pages a closed server shows to everybody: signing in
+// and up, and what their links lead to.
+var pagesOpen = []string{"/login", "/signup", "/forgot", "/account/confirm", "/account/reset", "/static/", "/favicon"}
+
+// ClosedPages is the page side of closed mode: whoever is not signed in is
+// sent to sign in (and back afterwards). On a hybrid server it does nothing.
+func (rs *Resolver) ClosedPages(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if rs.caps == nil || rs.caps.Mode() != ModeClosed || rs.accounts == nil {
+			next.ServeHTTP(w, r)
+			return
+		}
+		for _, p := range pagesOpen {
+			if strings.HasPrefix(r.URL.Path, p) {
+				next.ServeHTTP(w, r)
+				return
+			}
+		}
+		if c, err := r.Cookie(SessionCookie); err == nil && c.Value != "" {
+			if _, err := rs.accounts.account(r.Context(), c.Value); err == nil {
+				next.ServeHTTP(w, r)
+				return
+			}
+		}
+		http.Redirect(w, r, "/login?return="+url.QueryEscape(r.URL.RequestURI()), http.StatusSeeOther)
+	})
 }

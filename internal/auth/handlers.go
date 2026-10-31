@@ -3,6 +3,7 @@ package auth
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
@@ -34,6 +35,9 @@ import (
 //	GET  /auth/oidc/{p}/callback                    and back
 //	POST /auth/oidc/finish {handle}                 a new account a provider vouched for
 //	POST /auth/oidc/unlink {provider, password}     stop signing in with one
+//	GET|POST /auth/tokens, DELETE /auth/tokens/{id} API tokens (ADR 0071)
+//	GET|PUT  /auth/admin/caps                       the capability matrix
+//	POST /auth/admin/invites                        an invitation to sign up
 func (rs *Resolver) Routes() http.Handler {
 	r := chi.NewRouter()
 	r.Post("/signup", rs.handleSignup)
@@ -53,6 +57,12 @@ func (rs *Resolver) Routes() http.Handler {
 	r.Get("/oidc/{provider}/callback", rs.handleOIDCCallback)
 	r.Post("/oidc/finish", rs.handleOIDCFinish)
 	r.Post("/oidc/unlink", rs.handleOIDCUnlink)
+	r.Get("/tokens", rs.handleTokens)
+	r.Post("/tokens", rs.handleNewToken)
+	r.Delete("/tokens/{id}", rs.handleRevokeToken)
+	r.Get("/admin/caps", rs.handleAdminCaps)
+	r.Put("/admin/caps", rs.handleAdminSetCap)
+	r.Post("/admin/invites", rs.handleAdminInvite)
 	return r
 }
 
@@ -78,7 +88,8 @@ func statusOf(err error) int {
 	switch {
 	case errors.Is(err, ErrBadLogin), errors.Is(err, ErrNotSignedIn), errors.Is(err, ErrBadCode), errors.Is(err, ErrSignInAgain), errors.Is(err, ErrNeedsCode):
 		return http.StatusUnauthorized
-	case errors.Is(err, ErrSignupClosed), errors.Is(err, ErrSignupNoMail), errors.Is(err, ErrNotConfirmed), errors.Is(err, ErrMustChangePwd):
+	case errors.Is(err, ErrSignupClosed), errors.Is(err, ErrSignupNoMail), errors.Is(err, ErrNotConfirmed), errors.Is(err, ErrMustChangePwd),
+		errors.Is(err, ErrNeedsInvite), errors.Is(err, ErrNotAdmin):
 		return http.StatusForbidden
 	case errors.Is(err, ErrHandleTaken), errors.Is(err, ErrLinkedElsewhere), errors.Is(err, ErrOIDCAddressUsed):
 		return http.StatusConflict
@@ -88,7 +99,7 @@ func statusOf(err error) int {
 		return http.StatusTooManyRequests
 	case errors.Is(err, ErrBadHandle), errors.Is(err, ErrReservedHandle), errors.Is(err, ErrWeakPassword), errors.Is(err, ErrBadLink),
 		errors.Is(err, ErrSamePassword), errors.Is(err, ErrNoSetup), errors.Is(err, ErrNoSecondFactor), errors.Is(err, ErrOIDCUnverified),
-		errors.Is(err, ErrLastWayIn), errors.Is(err, ErrOIDCFailed), mail.IsAddressError(err):
+		errors.Is(err, ErrLastWayIn), errors.Is(err, ErrOIDCFailed), errors.Is(err, ErrBadScopes), errors.Is(err, ErrBadName), mail.IsAddressError(err):
 		return http.StatusBadRequest
 	}
 	return http.StatusInternalServerError
@@ -128,11 +139,12 @@ func (rs *Resolver) handleSignup(w http.ResponseWriter, r *http.Request) {
 		Handle   string `json:"handle"`
 		Email    string `json:"email"`
 		Password string `json:"password"`
+		Invite   string `json:"invite"`
 	}
 	if !decode(w, r, &req) {
 		return
 	}
-	if err := rs.accounts.Signup(r.Context(), req.Handle, req.Email, req.Password, guestOf(r), rs.transport.PeerIP(r)); err != nil {
+	if err := rs.accounts.Signup(r.Context(), req.Handle, req.Email, req.Password, guestOf(r), req.Invite, rs.transport.PeerIP(r)); err != nil {
 		rs.fail(w, err)
 		return
 	}
@@ -258,6 +270,13 @@ type me struct {
 	Providers []ProviderInfo `json:"providers,omitempty"`
 	Linked    []string       `json:"linked,omitempty"`
 	Password  bool           `json:"password,omitempty"`
+	// Admin: the account is in the admin group (and may use its powers from
+	// here). Mode is "hybrid" or "closed"; SignupMode "open", "invite" or
+	// "closed"; Caps what this browser may do.
+	Admin      bool     `json:"admin,omitempty"`
+	Mode       string   `json:"mode,omitempty"`
+	SignupMode string   `json:"signup_mode,omitempty"`
+	Caps       []string `json:"caps,omitempty"`
 }
 
 func (rs *Resolver) meOf(r *http.Request, a store.Account) me {
@@ -272,6 +291,8 @@ func (rs *Resolver) meOf(r *http.Request, a store.Account) me {
 	}
 	out.Providers = rs.oidc.Providers()
 	out.Signup = rs.signupOpen()
+	out.Admin = a.Admin && !out.NeedsSecondFactor
+	rs.decorate(r, &out)
 	return out
 }
 
@@ -295,6 +316,9 @@ func (rs *Resolver) handleMe(w http.ResponseWriter, r *http.Request) {
 		out.Accounts = true
 		out.Signup = rs.signupOpen()
 		out.Providers = rs.oidc.Providers()
+	}
+	if out.Kind != store.KindAccount {
+		rs.decorate(r, &out)
 	}
 	writeJSON(w, http.StatusOK, out)
 }
@@ -456,7 +480,172 @@ func (rs *Resolver) handleReset(w http.ResponseWriter, r *http.Request) {
 // needs mail) or with a provider (which vouches for the address itself).
 func (rs *Resolver) signupOpen() bool {
 	a := rs.accounts
-	return a != nil && a.signup == SignupOpen && (a.mail != nil && a.mail.MailEnabled() || rs.oidc != nil)
+	return a != nil && a.signup != SignupClosed && (a.mail != nil && a.mail.MailEnabled() || rs.oidc != nil)
+}
+
+// decorate adds the mode and the capabilities to an answer of /auth/me.
+func (rs *Resolver) decorate(r *http.Request, out *me) {
+	if rs.accounts != nil {
+		out.SignupMode = rs.accounts.signup
+	}
+	if rs.caps == nil {
+		return
+	}
+	out.Mode = rs.caps.Mode()
+	p, ok := From(r.Context())
+	out.Caps = rs.caps.Has(p, ok)
+}
+
+// ErrNotAdmin is the answer to an admin request from anybody else (or from
+// an API token, which never carries the admin group's powers).
+var ErrNotAdmin = errors.New("auth: that is for the server's administrators")
+
+// admin is the request's administrator, or an answer saying it is none.
+func (rs *Resolver) admin(w http.ResponseWriter, r *http.Request) (*store.Account, bool) {
+	acc, ok := rs.account(w, r)
+	if !ok {
+		return nil, false
+	}
+	p, _ := From(r.Context())
+	if !acc.Admin || p.Scopes != nil || rs.needsSecondFactor(r, *acc) || rs.caps == nil {
+		rs.fail(w, ErrNotAdmin)
+		return nil, false
+	}
+	return acc, true
+}
+
+// tokenOwner is the signed-in account managing its tokens; a token cannot
+// make or end tokens.
+func (rs *Resolver) tokenOwner(w http.ResponseWriter, r *http.Request) (*store.Account, bool) {
+	acc, ok := rs.account(w, r)
+	if !ok {
+		return nil, false
+	}
+	if p, _ := From(r.Context()); p.Scopes != nil {
+		rs.fail(w, ErrNotSignedIn)
+		return nil, false
+	}
+	return acc, true
+}
+
+func (rs *Resolver) handleTokens(w http.ResponseWriter, r *http.Request) {
+	acc, ok := rs.tokenOwner(w, r)
+	if !ok {
+		return
+	}
+	list, err := rs.accounts.Tokens(r.Context(), *acc)
+	if err != nil {
+		rs.fail(w, err)
+		return
+	}
+	type row struct {
+		ID         int64    `json:"id"`
+		Name       string   `json:"name"`
+		Scopes     []string `json:"scopes"`
+		CreatedAt  string   `json:"created_at"`
+		LastUsedAt string   `json:"last_used_at,omitempty"`
+	}
+	out := []row{}
+	for _, t := range list {
+		out = append(out, row{t.ID, t.Name, t.Scopes, t.CreatedAt, t.LastUsedAt})
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"tokens": out, "scopes": AllScopes})
+}
+
+func (rs *Resolver) handleNewToken(w http.ResponseWriter, r *http.Request) {
+	acc, ok := rs.tokenOwner(w, r)
+	if !ok {
+		return
+	}
+	var req struct {
+		Name   string   `json:"name"`
+		Scopes []string `json:"scopes"`
+	}
+	if !decode(w, r, &req) {
+		return
+	}
+	tok, err := rs.accounts.CreateToken(r.Context(), *acc, req.Name, req.Scopes, rs.transport.PeerIP(r))
+	if err != nil {
+		rs.fail(w, err)
+		return
+	}
+	writeJSON(w, http.StatusCreated, map[string]string{"token": tok})
+}
+
+func (rs *Resolver) handleRevokeToken(w http.ResponseWriter, r *http.Request) {
+	acc, ok := rs.tokenOwner(w, r)
+	if !ok {
+		return
+	}
+	var id int64
+	if _, err := fmt.Sscan(chi.URLParam(r, "id"), &id); err != nil {
+		writeError(w, http.StatusBadRequest, "auth: no such token")
+		return
+	}
+	if err := rs.accounts.RevokeToken(r.Context(), *acc, id, rs.transport.PeerIP(r)); err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			writeError(w, http.StatusNotFound, "auth: no such token")
+			return
+		}
+		rs.fail(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
+}
+
+func (rs *Resolver) handleAdminCaps(w http.ResponseWriter, r *http.Request) {
+	if _, ok := rs.admin(w, r); !ok {
+		return
+	}
+	rows, limits, drift, err := rs.caps.Matrix(r.Context())
+	if err != nil {
+		rs.fail(w, err)
+		return
+	}
+	type limit struct {
+		Class     string `json:"class"`
+		Kind      string `json:"kind"`
+		PerMinute int    `json:"per_minute"`
+	}
+	ls := []limit{}
+	for _, l := range limits {
+		ls = append(ls, limit{l.Class, l.Kind, l.PerMinute})
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"mode": rs.caps.Mode(), "signup": rs.accounts.signup, "caps": rows, "limits": ls, "drift": drift})
+}
+
+func (rs *Resolver) handleAdminSetCap(w http.ResponseWriter, r *http.Request) {
+	acc, ok := rs.admin(w, r)
+	if !ok {
+		return
+	}
+	var req struct {
+		Class      string `json:"class"`
+		Capability string `json:"capability"`
+		Allowed    bool   `json:"allowed"`
+	}
+	if !decode(w, r, &req) {
+		return
+	}
+	if err := rs.caps.Set(r.Context(), req.Class, req.Capability, req.Allowed); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	rs.accounts.audit(r.Context(), acc.ID, "capability-changed", fmt.Sprintf("%s %s %v", req.Class, req.Capability, req.Allowed), rs.transport.PeerIP(r))
+	rs.handleAdminCaps(w, r)
+}
+
+func (rs *Resolver) handleAdminInvite(w http.ResponseWriter, r *http.Request) {
+	acc, ok := rs.admin(w, r)
+	if !ok {
+		return
+	}
+	code, until, err := rs.accounts.Invite(r.Context(), *acc, rs.transport.PeerIP(r))
+	if err != nil {
+		rs.fail(w, err)
+		return
+	}
+	writeJSON(w, http.StatusCreated, map[string]string{"code": code, "path": "/signup?invite=" + url.QueryEscape(code), "expires": until.UTC().Format(time.RFC3339)})
 }
 
 // The cookies of a provider sign-in: the state the callback must bring
@@ -495,7 +684,7 @@ func (rs *Resolver) handleOIDCStart(w http.ResponseWriter, r *http.Request) {
 		}
 		link, back = p.Account.ID, "/account"
 	}
-	to, state, err := rs.oidc.Start(r.Context(), id, safeReturn(r.URL.Query().Get("return"), "/"), link, guestOf(r))
+	to, state, err := rs.oidc.Start(r.Context(), id, safeReturn(r.URL.Query().Get("return"), "/"), link, guestOf(r), r.URL.Query().Get("invite"))
 	if err != nil {
 		rs.log.Warn("starting a provider sign-in", "provider", id, "err", err)
 		msg := ErrOIDCFailed.Error()

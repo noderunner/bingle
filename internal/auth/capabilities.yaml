@@ -1,0 +1,15 @@
+# bingle-capabilities.yaml — what each class may do, and how often.
+#
+# Read once, when a database is new; from then on the database holds the
+# matrix and the admin page (/admin) changes it. `bingle caps reset`
+# applies this file again, deliberately. BINGLE_CAPS_FILE says where the
+# file is; without one, these defaults are used. The admin group may do
+# everything and is not listed. The mode and signing up are set with
+# BINGLE_AUTH_MODE and BINGLE_SIGNUP.
+classes:
+  guest:  [play, join, create_game, chat_game, voice_game]
+  user:   [play, join, create_game, chat_game, chat_global, voice_game,
+           voice_direct, dm, notify, run_batch]
+limits:                 # per class, per minute
+  guest:  { chat: 10, create_game: 3, login: 5 }
+  user:   { chat: 30, create_game: 10, dm: 20 }
