@@ -4,6 +4,17 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.25.0 - 2026-10-31
+
+### Bingle Core 0.25.0
+- **Sign in with Google**, or any other provider the server is set up with: a button on the sign-in
+  page. The first time, you choose your handle; after that the button signs you straight in. If you
+  already have an account with the same email address, it is used — as long as the provider has
+  checked the address. You can link and unlink providers on your account page, and an account made
+  this way can set a password there too.
+- For whoever runs the server: providers are set up with `BINGLE_OIDC_PROVIDERS` and a block of
+  settings each; see the build guide.
+
 ## 0.24.0 - 2026-10-31
 
 ### Bingle Core 0.24.0

@@ -87,6 +87,10 @@ All configuration is via environment variables — there's no config file.
 | `BINGLE_ADMIN_HANDLE` | `admin` | The first administrator, made when there are no accounts |
 | `BINGLE_ADMIN_EMAIL` | the handle at the public URL's host | Its address |
 | `BINGLE_ADMIN_PASSWORD` | — | Its first password; otherwise `bingle123` on loopback or under `BINGLE_DEV` (never behind `BINGLE_TRUST_PROXY`), and a random one printed once. It must be changed at the first sign-in |
+| `BINGLE_OIDC_PROVIDERS` | — | Sign-in providers, by name: `google,corp` ([ADR 0070](decisions/0070-oidc.md)). Each needs `BINGLE_PUBLIC_URL` and a block of its own: |
+| `BINGLE_OIDC_<ID>_ISSUER` | — | The issuer URL (`https://accounts.google.com`); its discovery document says the rest |
+| `BINGLE_OIDC_<ID>_CLIENT_ID`, `_CLIENT_SECRET` or `_CLIENT_SECRET_FILE` | — | The client registered at the provider, whose redirect URI is `<public URL>/auth/oidc/<id>/callback` |
+| `BINGLE_OIDC_<ID>_SCOPES`, `_LABEL` | `openid email profile`, the name | What is asked for, and the button's "Sign in with …" |
 | `BINGLE_TLS_CERT` | *(unset)* | Path to a TLS certificate file |
 | `BINGLE_TLS_KEY` | *(unset)* | Path to a TLS private key file |
 | `BINGLE_PUBLIC_URL` | *(unset)* | Base URL players on other networks reach the server by, such as `https://games.example.com` (an absolute `http`/`https` URL, no query). Invite links in the lobby and `invite_url` are built from it; unset, the address the request came to is used |

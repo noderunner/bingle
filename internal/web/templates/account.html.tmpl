@@ -19,6 +19,8 @@
 		{{if eq .Page "login"}}
 		<section class="card" id="login-card">
 			<h1>Sign in</h1>
+			<p class="small error" id="login-error" hidden></p>
+			<div class="row" id="oidc-buttons" hidden></div>
 			<form id="login-form" novalidate>
 				<div class="field">
 					<label for="login-handle">Handle</label>
@@ -51,6 +53,17 @@
 		<section class="card" id="signup-card">
 			<h1>Sign up</h1>
 			<p class="muted small">An account keeps your games with you on any device, and gets you direct messages and the global chat. The games you played as a guest in this browser become your account's.</p>
+			<form id="oidc-signup-form" novalidate hidden>
+				<p class="small" id="oidc-signup-who"></p>
+				<div class="field">
+					<label for="oidc-handle">Choose a handle</label>
+					<input id="oidc-handle" type="text" maxlength="25" autocomplete="username" autocapitalize="none" spellcheck="false" required>
+					<span class="small muted">3 to 24 letters, digits, "_" or "-". Others see it as @handle.</span>
+				</div>
+				<div class="row"><button type="submit" class="primary" id="oidc-go">Make my account</button></div>
+				<p class="small" id="oidc-result" role="status" aria-live="polite"></p>
+			</form>
+			<div class="row" id="signup-oidc-buttons" hidden></div>
 			<form id="signup-form" novalidate>
 				<div class="field">
 					<label for="signup-handle">Handle</label>
@@ -117,8 +130,8 @@
 			<p id="account-who"></p>
 			<p class="small error" id="account-must-change" hidden>Choose a new password before you go on: the one you signed in with was given to you.</p>
 			<form id="password-form" novalidate>
-				<h2>Change your password</h2>
-				<div class="field">
+				<h2 id="password-title">Change your password</h2>
+				<div class="field" id="password-old-field">
 					<label for="password-old">Current password</label>
 					<input id="password-old" type="password" maxlength="256" autocomplete="current-password" required>
 				</div>
@@ -132,6 +145,11 @@
 				</div>
 				<p class="small" id="account-result" role="status" aria-live="polite"></p>
 			</form>
+			<section id="oidc-box" hidden>
+				<h2>Signing in with another account</h2>
+				<p class="small error" id="oidc-error" hidden></p>
+				<ul id="oidc-links"></ul>
+			</section>
 			<section id="tf-box">
 				<h2>Two-step sign-in</h2>
 				<p class="small error" id="tf-needed" hidden>An administrator signs in with a code from an app as well as the password. Set it up before you go on.</p>

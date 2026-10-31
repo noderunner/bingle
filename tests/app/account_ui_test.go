@@ -10,6 +10,7 @@ import (
 
 	"github.com/noderunner/bingle/internal/app"
 	"github.com/noderunner/bingle/internal/auth"
+	"github.com/noderunner/bingle/internal/auth/fakeoidc"
 )
 
 // The pages: the profile offers a sign-in, the sign-in page signs in, and an
@@ -120,4 +121,30 @@ func TestAccountUI_TwoStepSignIn(t *testing.T) {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "signed in, home", `location.pathname === "/"`, 10*time.Second)
+}
+
+// The provider's button on the sign-in page, and the handle a newcomer
+// chooses afterwards.
+func TestAccountUI_SignInWithAProvider(t *testing.T) {
+	_, base, idp := oidcServer(t)
+	idp.SignInAs(fakeoidc.Identity{Subject: "s-ui", Email: "ui@example.com", EmailVerified: true})
+	ctx, cancel := newChromedpContext(t, 60*time.Second)
+	defer cancel()
+	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/login")); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "the provider's button", `document.getElementById("oidc-fake") && document.getElementById("oidc-fake").textContent === "Sign in with Fake"`, 10*time.Second)
+	clickSel(t, ctx, "#oidc-fake")
+	waitJS(t, ctx, "the handle form", `location.pathname === "/signup" && !document.getElementById("oidc-signup-form").hidden && document.getElementById("signup-form").hidden`, 10*time.Second)
+	if err := chromedp.Run(ctx,
+		chromedp.SendKeys("#oidc-handle", "uiuser", chromedp.ByID),
+		chromedp.Click("#oidc-go", chromedp.ByID),
+	); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "home", `location.pathname === "/"`, 10*time.Second)
+	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/account")); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "the account, with the provider linked and no password", `document.getElementById("account-who").textContent === "Signed in as @uiuser." && document.getElementById("password-title").textContent === "Set a password" && document.getElementById("oidc-unlink-fake") !== null`, 10*time.Second)
 }

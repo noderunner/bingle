@@ -132,6 +132,9 @@ type Config struct {
 	AdminHandle   string
 	AdminEmail    string
 	AdminPassword Secret
+	// OIDC are the sign-in providers (BINGLE_OIDC_PROVIDERS and a
+	// BINGLE_OIDC_<ID>_* block each; ADR 0070).
+	OIDC []OIDCProvider
 
 	// HSTSSeconds, when above zero, adds a Strict-Transport-Security header of
 	// that many seconds to HTTPS responses (BINGLE_TLS_HSTS_SECONDS). Off by
@@ -546,6 +549,11 @@ func loadJournal(cfg *Config) error {
 	}
 	cfg.AdminEmail = strings.TrimSpace(os.Getenv("BINGLE_ADMIN_EMAIL"))
 	cfg.AdminPassword = NewSecret(os.Getenv("BINGLE_ADMIN_PASSWORD"))
+	oidc, err := loadOIDC(cfg.PublicURL)
+	if err != nil {
+		return err
+	}
+	cfg.OIDC = oidc
 	cfg.GuestIdle = defaultGuestIdle
 	if v := strings.TrimSpace(os.Getenv("BINGLE_GUEST_IDLE")); v != "" {
 		d, err := parseDays(v)
@@ -918,4 +926,77 @@ func (c Config) SeedAdminEmail() string {
 		host = u.Hostname()
 	}
 	return handle + "@" + host
+}
+
+// OIDCProvider is one OpenID Connect provider people may sign in with.
+type OIDCProvider struct {
+	// ID is the provider's name in the URLs (/auth/oidc/<id>/…) and in the
+	// variables' names, lower case.
+	ID string
+	// Issuer is the provider's issuer URL, whose discovery document says
+	// the rest.
+	Issuer       string
+	ClientID     string
+	ClientSecret Secret
+	// Scopes are asked for; "openid email profile" by default.
+	Scopes []string
+	// Label is the button's: "Sign in with <Label>".
+	Label string
+}
+
+var oidcIDRe = regexp.MustCompile(`^[a-z][a-z0-9]{0,23}$`)
+
+// loadOIDC reads BINGLE_OIDC_PROVIDERS ("google,corp") and, for each,
+// BINGLE_OIDC_<ID>_ISSUER, _CLIENT_ID, _CLIENT_SECRET (or
+// _CLIENT_SECRET_FILE), _SCOPES and _LABEL. A provider needs a public URL:
+// it sends people back to it.
+func loadOIDC(publicURL string) ([]OIDCProvider, error) {
+	list := strings.TrimSpace(os.Getenv("BINGLE_OIDC_PROVIDERS"))
+	if list == "" {
+		return nil, nil
+	}
+	if publicURL == "" {
+		return nil, fmt.Errorf("config: BINGLE_OIDC_PROVIDERS needs BINGLE_PUBLIC_URL: a provider sends people back to it, at /auth/oidc/<id>/callback")
+	}
+	var out []OIDCProvider
+	seen := map[string]bool{}
+	for _, raw := range strings.Split(list, ",") {
+		id := strings.ToLower(strings.TrimSpace(raw))
+		if id == "" {
+			continue
+		}
+		if !oidcIDRe.MatchString(id) || seen[id] {
+			return nil, fmt.Errorf("config: BINGLE_OIDC_PROVIDERS: %q is not a provider name (a–z and digits, a letter first) or is there twice", raw)
+		}
+		seen[id] = true
+		env := "BINGLE_OIDC_" + strings.ToUpper(id) + "_"
+		p := OIDCProvider{ID: id, Issuer: strings.TrimSpace(os.Getenv(env + "ISSUER")), ClientID: strings.TrimSpace(os.Getenv(env + "CLIENT_ID")),
+			Label: strings.TrimSpace(os.Getenv(env + "LABEL")), Scopes: strings.Fields(os.Getenv(env + "SCOPES"))}
+		secret := os.Getenv(env + "CLIENT_SECRET")
+		if file := os.Getenv(env + "CLIENT_SECRET_FILE"); file != "" {
+			if secret != "" {
+				return nil, fmt.Errorf("config: set %sCLIENT_SECRET or %sCLIENT_SECRET_FILE, not both", env, env)
+			}
+			s, err := readSecretFile(file)
+			if err != nil {
+				return nil, fmt.Errorf("config: %sCLIENT_SECRET_FILE: %w", env, err)
+			}
+			secret = s
+		}
+		p.ClientSecret = NewSecret(secret)
+		if u, err := url.Parse(p.Issuer); err != nil || (u.Scheme != "https" && u.Scheme != "http") || u.Host == "" {
+			return nil, fmt.Errorf("config: %sISSUER must be the provider's issuer URL, got %q", env, p.Issuer)
+		}
+		if p.ClientID == "" || !p.ClientSecret.Set() {
+			return nil, fmt.Errorf("config: %sCLIENT_ID and %sCLIENT_SECRET are needed", env, env)
+		}
+		if len(p.Scopes) == 0 {
+			p.Scopes = []string{"openid", "email", "profile"}
+		}
+		if p.Label == "" {
+			p.Label = strings.ToUpper(id[:1]) + id[1:]
+		}
+		out = append(out, p)
+	}
+	return out, nil
 }

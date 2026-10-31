@@ -74,6 +74,9 @@ type NewAccount struct {
 	NewPrincipal bool
 	PasswordHash string
 	Groups       []string
+	// OIDC is a provider's identity ("provider:subject") the account signs
+	// in with, when a provider made it.
+	OIDC string
 }
 
 // CountAccounts is how many accounts there are, deleted ones aside.
@@ -117,8 +120,19 @@ func (s *Store) CreateAccount(ctx context.Context, a NewAccount) (int64, error) 
 			return 0, err
 		}
 	}
-	if _, err := tx.exec(ctx, "CreateAccount.password", `INSERT INTO credentials (account_id, kind, secret) VALUES (?, 'password', ?)`, id, a.PasswordHash); err != nil {
-		return 0, err
+	// An account made by a provider has no password until it sets one.
+	if a.PasswordHash != "" {
+		if _, err := tx.exec(ctx, "CreateAccount.password", `INSERT INTO credentials (account_id, kind, secret) VALUES (?, 'password', ?)`, id, a.PasswordHash); err != nil {
+			return 0, err
+		}
+	}
+	if a.OIDC != "" {
+		if _, err := tx.exec(ctx, "CreateAccount.oidc", `INSERT INTO credentials (account_id, kind, secret) VALUES (?, 'oidc', ?)`, id, a.OIDC); err != nil {
+			if strings.Contains(err.Error(), "UNIQUE") {
+				return 0, ErrTaken
+			}
+			return 0, err
+		}
 	}
 	for _, g := range a.Groups {
 		if _, err := tx.exec(ctx, "CreateAccount.group", `INSERT INTO account_groups (account_id, group_name) VALUES (?, ?)`, id, g); err != nil {
@@ -579,4 +593,51 @@ func (s *Store) RemoveSecondFactor(ctx context.Context, accountID int64) error {
 // AccountByEmail finds the active account with an address, in any case.
 func (s *Store) AccountByEmail(ctx context.Context, email string) (Account, error) {
 	return scanAccount(s.queryRow(ctx, "AccountByEmail", `SELECT `+accountColumns+` FROM accounts WHERE email_lower = ? AND status = ? AND deleted_at IS NULL`, strings.ToLower(email), AccountActive))
+}
+
+// ---- providers ------------------------------------------------------------------
+
+// OIDCKey is how a provider's identity is stored.
+func OIDCKey(provider, subject string) string { return provider + ":" + subject }
+
+// AccountByOIDC is the active account a provider's identity signs in to.
+func (s *Store) AccountByOIDC(ctx context.Context, key string) (Account, error) {
+	return scanAccount(s.queryRow(ctx, "AccountByOIDC", `SELECT `+accountColumns+` FROM accounts
+		WHERE id = (SELECT account_id FROM credentials WHERE kind = 'oidc' AND secret = ?) AND status = ? AND deleted_at IS NULL`, key, AccountActive))
+}
+
+// LinkOIDC lets an account sign in with a provider's identity. ErrTaken when
+// the identity is another account's.
+func (s *Store) LinkOIDC(ctx context.Context, accountID int64, key string) error {
+	_, err := s.exec(ctx, "LinkOIDC", `INSERT INTO credentials (account_id, kind, secret) VALUES (?, 'oidc', ?)`, accountID, key)
+	if err != nil && strings.Contains(err.Error(), "UNIQUE") {
+		return ErrTaken
+	}
+	return err
+}
+
+// UnlinkOIDC stops an account signing in with a provider.
+func (s *Store) UnlinkOIDC(ctx context.Context, accountID int64, provider string) error {
+	_, err := s.exec(ctx, "UnlinkOIDC", `DELETE FROM credentials WHERE account_id = ? AND kind = 'oidc' AND secret LIKE ?`, accountID, provider+":%")
+	return err
+}
+
+// OIDCLinks are the providers an account signs in with.
+func (s *Store) OIDCLinks(ctx context.Context, accountID int64) ([]string, error) {
+	rows, err := s.query(ctx, "OIDCLinks", `SELECT secret FROM credentials WHERE account_id = ? AND kind = 'oidc' ORDER BY id`, accountID)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+	var out []string
+	for rows.Next() {
+		var k string
+		if err := rows.Scan(&k); err != nil {
+			return nil, err
+		}
+		if p, _, ok := strings.Cut(k, ":"); ok {
+			out = append(out, p)
+		}
+	}
+	return out, rows.Err()
 }

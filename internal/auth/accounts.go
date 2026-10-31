@@ -321,12 +321,17 @@ func (a *Accounts) account(ctx context.Context, token string) (store.Account, er
 // a changed password is the moment a stolen session must stop working.
 func (a *Accounts) ChangePassword(ctx context.Context, acc store.Account, oldPw, newPw, ip, agent string) (Session, error) {
 	stored, err := a.st.PasswordHash(ctx, acc.ID)
-	if err != nil {
+	switch {
+	case errors.Is(err, store.ErrNotFound):
+		// An account a provider made sets its first password: there is no
+		// old one to give.
+	case err != nil:
 		return Session{}, err
-	}
-	if ok, _ := VerifyPassword(oldPw, stored, a.params); !ok {
-		a.audit(ctx, acc.ID, "password-change-failed", "", ip)
-		return Session{}, ErrBadLogin
+	default:
+		if ok, _ := VerifyPassword(oldPw, stored, a.params); !ok {
+			a.audit(ctx, acc.ID, "password-change-failed", "", ip)
+			return Session{}, ErrBadLogin
+		}
 	}
 	if err := CheckPassword(newPw); err != nil {
 		return Session{}, err
