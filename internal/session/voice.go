@@ -169,6 +169,9 @@ func (m *Manager) humanSeat(ctx context.Context, roomCode, name string) (int, st
 	}
 	for _, p := range players {
 		if p.Bot == "" && strings.EqualFold(p.Name, strings.TrimSpace(name)) {
+			if err := m.mayActFor(ctx, &p); err != nil {
+				return 0, "", err
+			}
 			return p.Seat, p.Name, nil
 		}
 	}

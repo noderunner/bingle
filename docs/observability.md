@@ -71,7 +71,7 @@ rather than trusted: `tests/app/logging_test.go` plays a game, talks in it, writ
 message, opens a socket and offers an address with the level turned up to `debug`, then fails if
 the log holds any of it.
 
-**Never logged, at any level:** seat tokens, browsers' secrets, chat and direct-message bodies,
+**Never logged, at any level:** guest keys, browsers' secrets, chat and direct-message bodies,
 email addresses, WebRTC payloads, and the paths requests came to (a path carries the room code).
 
 **Logged only as a reference:**

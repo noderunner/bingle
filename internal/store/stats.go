@@ -19,8 +19,8 @@ var measuredTables = []string{
 	"games", "players", "moves",
 	"reaction_prefs", "chat_messages", "global_chat", "autoplay_prefs",
 	"batches", "batch_games",
-	"seat_tokens", "notify_contacts", "notify_prefs", "notify_suppress", "notify_sent",
-	"game_versions",
+	"notify_contacts", "notify_prefs", "notify_suppress", "notify_sent",
+	"game_versions", "principals", "guest_keys",
 }
 
 // snapshotTTL is how long a snapshot is reused.

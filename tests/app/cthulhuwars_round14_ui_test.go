@@ -219,8 +219,9 @@ func TestWebCthulhuWars_EveryReactionHasItsOwnBoxesAndMadnessStartsTicked(t *tes
 		} `json:"choices"`
 	}
 	deadline := time.Now().Add(10 * time.Second)
+	alice := browserGuestKey(t, ctx) // the seat is the browser's
 	for {
-		doJSON(t, "GET", baseURL+"/api/games/"+room+"/reactions?player_name=Alice", nil, &set)
+		doJSONAs(t, alice, "GET", baseURL+"/api/games/"+room+"/reactions?player_name=Alice", nil, &set)
 		if !set.Choices["madness"].AskAll && set.Choices["unspeakable-oath"].AskAll {
 			break
 		}

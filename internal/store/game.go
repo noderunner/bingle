@@ -89,6 +89,10 @@ type Player struct {
 	Bot        string
 	JoinedAt   string
 	LastSeenAt string
+	// PrincipalID is who owns the seat (ADR 0067): only they may act for it.
+	// Empty for a seat taken by an anonymous client, or before principals
+	// existed, which the first principal to act for it by name binds.
+	PrincipalID string
 }
 
 // ErrNotFound is returned by lookups (e.g. GetGame) when no matching row
@@ -253,19 +257,18 @@ type rowQuerier interface {
 }
 
 // swapSeats exchanges the occupants of seats 1 and 2 of gameID: the players
-// (names and bots) trade rows — a seat keeps its colour — and the per-seat
+// (names, bots and owning principals) trade rows — a seat keeps its colour — and the per-seat
 // choices that are a person's (Auto-Play Timeout, reaction asks) move with
 // them. It is the store half of the pie rule (ADR 0056): a swap changes who
 // sits where and nothing on the board. Call it inside the transaction that
 // records the move.
 func swapSeats(ctx context.Context, tx *Tx, gameID int64) error {
 	var ids [3]int64
-	var names [3]string
-	var bots [3]string
+	var names, bots, owners [3]string
 	for seat := 1; seat <= 2; seat++ {
 		row := tx.queryRow(ctx, "swapSeats.readPlayer",
-			`SELECT id, name, bot FROM players WHERE game_id = ? AND seat = ?`, gameID, seat)
-		if err := row.Scan(&ids[seat], &names[seat], &bots[seat]); err != nil {
+			`SELECT id, name, bot, principal_id FROM players WHERE game_id = ? AND seat = ?`, gameID, seat)
+		if err := row.Scan(&ids[seat], &names[seat], &bots[seat], &owners[seat]); err != nil {
 			return fmt.Errorf("reading seat %d: %w", seat, err)
 		}
 	}
@@ -274,10 +277,10 @@ func swapSeats(ctx context.Context, tx *Tx, gameID int64) error {
 	if _, err := tx.exec(ctx, "swapSeats.park", `UPDATE players SET name = char(31) || name, bot = '' WHERE id = ?`, ids[1]); err != nil {
 		return err
 	}
-	if _, err := tx.exec(ctx, "swapSeats.oneAcross", `UPDATE players SET name = ?, bot = ? WHERE id = ?`, names[1], bots[1], ids[2]); err != nil {
+	if _, err := tx.exec(ctx, "swapSeats.oneAcross", `UPDATE players SET name = ?, bot = ?, principal_id = ? WHERE id = ?`, names[1], bots[1], owners[1], ids[2]); err != nil {
 		return err
 	}
-	if _, err := tx.exec(ctx, "swapSeats.twoAcross", `UPDATE players SET name = ?, bot = ? WHERE id = ?`, names[2], bots[2], ids[1]); err != nil {
+	if _, err := tx.exec(ctx, "swapSeats.twoAcross", `UPDATE players SET name = ?, bot = ?, principal_id = ? WHERE id = ?`, names[2], bots[2], owners[2], ids[1]); err != nil {
 		return err
 	}
 	for _, table := range []string{"autoplay_prefs", "reaction_prefs"} {
@@ -302,11 +305,11 @@ func scanPlayerByID(ctx context.Context, q rowQuerier, name string, id int64) (P
 	var p Player
 
 	row := q.queryRow(ctx, name,
-		`SELECT id, game_id, seat, name, color, bot, joined_at, last_seen_at
+		`SELECT id, game_id, seat, name, color, bot, joined_at, last_seen_at, principal_id
 		 FROM players WHERE id = ?`,
 		id,
 	)
-	if err := row.Scan(&p.ID, &p.GameID, &p.Seat, &p.Name, &p.Color, &p.Bot, &p.JoinedAt, &p.LastSeenAt); err != nil {
+	if err := row.Scan(&p.ID, &p.GameID, &p.Seat, &p.Name, &p.Color, &p.Bot, &p.JoinedAt, &p.LastSeenAt, &p.PrincipalID); err != nil {
 		return Player{}, err
 	}
 
@@ -316,7 +319,7 @@ func scanPlayerByID(ctx context.Context, q rowQuerier, name string, id int64) (P
 // ListPlayers returns every players row for gameID, in seat order.
 func (s *Store) ListPlayers(ctx context.Context, gameID int64) ([]Player, error) {
 	rows, err := s.query(ctx, "ListPlayers",
-		`SELECT id, game_id, seat, name, color, bot, joined_at, last_seen_at
+		`SELECT id, game_id, seat, name, color, bot, joined_at, last_seen_at, principal_id
 		 FROM players WHERE game_id = ? ORDER BY seat`,
 		gameID,
 	)
@@ -328,7 +331,7 @@ func (s *Store) ListPlayers(ctx context.Context, gameID int64) ([]Player, error)
 	var players []Player
 	for rows.Next() {
 		var p Player
-		if err := rows.Scan(&p.ID, &p.GameID, &p.Seat, &p.Name, &p.Color, &p.Bot, &p.JoinedAt, &p.LastSeenAt); err != nil {
+		if err := rows.Scan(&p.ID, &p.GameID, &p.Seat, &p.Name, &p.Color, &p.Bot, &p.JoinedAt, &p.LastSeenAt, &p.PrincipalID); err != nil {
 			return nil, fmt.Errorf("scanning players row (game_id=%d): %w", gameID, err)
 		}
 		players = append(players, p)

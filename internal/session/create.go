@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/noderunner/bingle/internal/auth"
 	"github.com/noderunner/bingle/internal/bots"
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/engine/dsl"
@@ -283,6 +284,16 @@ func (m *Manager) CreateGameWithOptions(ctx context.Context, opts CreateOptions)
 	if createErr != nil {
 		return CreateGameResult{}, fmt.Errorf("session: create game after %d attempts: %w", maxCreateGameAttempts, createErr)
 	}
+	// The game and the creator's seat are the creating principal's (none for
+	// an anonymous client).
+	if id := auth.IDFrom(ctx); id != "" {
+		if err := m.store.SetGameOwner(ctx, game.ID, id); err != nil {
+			return CreateGameResult{}, err
+		}
+		if err := m.mayActFor(ctx, &player); err != nil {
+			return CreateGameResult{}, err
+		}
+	}
 
 	if customStart {
 		if err := m.store.SetInitialPosition(ctx, game.ID, string(boardJSON), firstSeat); err != nil {
@@ -348,8 +359,15 @@ func (m *Manager) CreateGameWithOptions(ctx context.Context, opts CreateOptions)
 		} else {
 			name = aliasName(opts.CreatorName, sd)
 		}
-		if _, err := m.store.AddBotPlayer(ctx, game.ID, sd.Seat, name, sd.Color, botID, status, turn); err != nil {
+		p, err := m.store.AddBotPlayer(ctx, game.ID, sd.Seat, name, sd.Color, botID, status, turn)
+		if err != nil {
 			return CreateGameResult{}, fmt.Errorf("session: seating %q: %w", name, err)
+		}
+		// The creator's other seats are the creator's, like the first.
+		if !isBot {
+			if err := m.mayActFor(ctx, &p); err != nil {
+				return CreateGameResult{}, err
+			}
 		}
 		result.Status = status
 	}

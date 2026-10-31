@@ -89,6 +89,9 @@ func (m *Manager) Hint(ctx context.Context, roomCode, name string, atSeq *int, n
 	if me == nil {
 		return Hint{}, ErrNotAPlayer
 	}
+	if err := m.mayActFor(ctx, me); err != nil {
+		return Hint{}, err
+	}
 	if game.Status != "finished" {
 		if game.Status == "waiting" {
 			return Hint{}, ErrGameNotActive

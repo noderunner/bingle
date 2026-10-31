@@ -5,7 +5,7 @@
 // The server never sends an address back, so the one typed in the profile is
 // kept here, in this browser, to show in the form.
 
-import { h, store, getProfile, seatToken } from "./util.js";
+import { h, store, getProfile } from "./util.js";
 import { api, ApiError } from "./api.js";
 
 const CONTACT_KEY = "bingle.contact";
@@ -128,13 +128,21 @@ export async function mountGameNotify(host, { code, name, onReady = () => {} }) 
 	}
 	onReady(true);
 	host.textContent = "";
-	const token = seatToken(code);
-	if (!token) {
-		host.append(
-			h("p", { class: "small muted", id: "notify-no-token" }, "This browser did not take this seat when the game was set up, so it cannot change the email setting of the game. Open the game from the browser where you joined it."),
-			whitelistNote(cfg.from)
-		);
-		return;
+	// The seat's setting is its owner's: a browser that did not take the seat
+	// is told so (403) rather than shown a switch it cannot use.
+	let state = null;
+	let readErr = null;
+	try {
+		state = await api.gameNotify(code, name);
+	} catch (err) {
+		if (err && err.status === 403) {
+			host.append(
+				h("p", { class: "small muted", id: "notify-no-token" }, "This browser did not take this seat, so it cannot change the email setting of the game. Open the game from the browser where you joined it."),
+				whitelistNote(cfg.from)
+			);
+			return;
+		}
+		readErr = err;
 	}
 	const on = h("input", { type: "checkbox", id: "notify-on", role: "switch" });
 	const everyTime = h("input", { type: "radio", name: "notify-mode", id: "notify-mode-always", value: "always", checked: true });
@@ -175,12 +183,7 @@ export async function mountGameNotify(host, { code, name, onReady = () => {} }) 
 	} else {
 		hint.textContent = `Mail goes to ${info.masked}.`;
 	}
-	let state = null;
-	try {
-		state = await api.gameNotify(code, name, token);
-	} catch (err) {
-		hint.textContent = (err && err.message) || "The setting could not be read.";
-	}
+	if (readErr) hint.textContent = readErr.message || "The setting could not be read.";
 	paint(state);
 
 	const save = async () => {
@@ -189,7 +192,6 @@ export async function mountGameNotify(host, { code, name, onReady = () => {} }) 
 		try {
 			state = await api.setGameNotify(code, {
 				player_name: name,
-				seat_token: token,
 				contact_id: c ? c.id : 0,
 				contact_secret: c ? c.secret : "",
 				enabled: on.checked,
@@ -222,17 +224,16 @@ export async function applyProfileDefault({ code, name }) {
 	if (applied.has(key)) return;
 	applied.add(key);
 	if (!getProfile().notify) return;
-	const token = seatToken(code);
 	const c = localContact();
-	if (!token || !c) return;
+	if (!c) return;
 	const cfg = await notifyConfig();
 	if (!cfg.enabled) return;
 	try {
-		const state = await api.gameNotify(code, name, token);
+		const state = await api.gameNotify(code, name);
 		if (state.configured) return;
 		const info = await contactStatus();
 		if (!info || info.status !== "verified") return;
-		await api.setGameNotify(code, { player_name: name, seat_token: token, contact_id: c.id, contact_secret: c.secret, enabled: true, away_minutes: 0 });
+		await api.setGameNotify(code, { player_name: name, contact_id: c.id, contact_secret: c.secret, enabled: true, away_minutes: 0 });
 	} catch (_) {
 		/* a nicety: the game's options window has the setting */
 	}

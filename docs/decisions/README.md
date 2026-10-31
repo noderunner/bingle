@@ -70,3 +70,4 @@ Short records of choices made for the `bingle` project during the requirements i
 | [0064](0064-metrics-on-a-second-listener.md) | Metrics: `prometheus/client_golang` on a registry of our own, a private listener with a token off loopback, labels as a whitelist, and the histogram buckets chosen once |
 | [0065](0065-the-connection-must-be-secure.md) | The connection must be secure: TLS, a generated certificate or a trusted proxy; the default bind becomes loopback, and a trusted proxy turns every loopback exemption off |
 | [0066](0066-mycelium.md) | Mycelium: a confluence as one decision per spread and per hyphae conversion, curved strands found by a bounded exact search, and the spent cells that let a cluster spread once a phase |
+| [0067](0067-principals-and-guest-keys.md) | Principals and guest keys: a seat is its owner's, resolved once per request into the context; anonymous requests keep unowned seats; seat tokens retired |

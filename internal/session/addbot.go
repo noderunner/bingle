@@ -52,6 +52,9 @@ func (m *Manager) AddBotAt(ctx context.Context, roomCode, by, botID string, want
 	for _, p := range players {
 		taken[p.Seat] = true
 		if p.Bot == "" && strings.EqualFold(p.Name, by) {
+			if err := m.mayActFor(ctx, &p); err != nil {
+				return AddBotResult{}, err
+			}
 			seated = true
 		}
 	}

@@ -259,8 +259,9 @@ func (m *Manager) GetState(ctx context.Context, roomCode string, atSeq *int) (St
 }
 
 // GetStateFor is GetState as the player called name sees it: in a game with
-// secrets the player's own committed choices are visible (identity is
-// name-only, as everywhere else). An unknown or empty name is a spectator.
+// secrets the player's own committed choices are visible, to the seat's owner
+// (ADR 0067). An unknown or empty name, or a seat that is somebody else's, is a
+// spectator.
 func (m *Manager) GetStateFor(ctx context.Context, roomCode string, atSeq *int, name string) (StateSnapshot, error) {
 	snap, err := m.GetState(ctx, roomCode, atSeq)
 	if err != nil || name == "" {
@@ -277,6 +278,9 @@ func (m *Manager) GetStateFor(ctx context.Context, roomCode string, atSeq *int, 
 	}
 	game, err := m.store.GetGame(ctx, canonRoom(roomCode))
 	if err != nil {
+		return snap, nil
+	}
+	if !m.mayViewSeat(ctx, game.ID, seat) {
 		return snap, nil
 	}
 	compiled, ok := m.catalog.Get(game.GameDefID)

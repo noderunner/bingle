@@ -212,6 +212,9 @@ func (m *Manager) reactionSettings(ctx context.Context, game store.Game, name st
 	if me == nil {
 		return ReactionSettings{}, ErrNotAPlayer
 	}
+	if err := m.mayActFor(ctx, me); err != nil {
+		return ReactionSettings{}, err
+	}
 	compiled, ok := m.catalog.Get(game.GameDefID)
 	if !ok {
 		return ReactionSettings{}, fmt.Errorf("session: game definition %q not found", game.GameDefID)
@@ -363,6 +366,9 @@ func (m *Manager) AskEveryReaction(ctx context.Context, roomCode, name string) e
 	for _, p := range players {
 		if p.Bot != "" || !strings.EqualFold(p.Name, name) {
 			continue
+		}
+		if err := m.mayActFor(ctx, &p); err != nil {
+			return err
 		}
 		if _, found, err := m.store.ReactionPrefs(ctx, game.ID, p.Seat); err != nil || found {
 			return err

@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/noderunner/bingle/internal/auth"
 	"github.com/noderunner/bingle/internal/mail"
 	"github.com/noderunner/bingle/internal/store"
 )
@@ -245,28 +246,7 @@ func (n *notifier) reserve(ctx context.Context, kind, addr string, gameID int64,
 	return st.RecordSent(ctx, kind, addr, gameID, ip, now)
 }
 
-// ---- seat secrets --------------------------------------------------------------------
-
-// IssueSeatToken hands the person who took the seat of name a secret that
-// proves later that the seat is theirs. It returns "" when the seat already has
-// one (it is shown once). The secret is needed to change the seat's
-// notification setting.
-func (m *Manager) IssueSeatToken(ctx context.Context, roomCode, name string) (string, error) {
-	game, err := m.store.GetGame(ctx, canonRoom(roomCode))
-	if err != nil {
-		return "", err
-	}
-	_, p, err := m.humanByName(ctx, game.ID, name)
-	if err != nil {
-		return "", err
-	}
-	tok := newToken()
-	ok, err := m.store.IssueSeatToken(ctx, game.ID, nameKey(p.Name), hashOf(tok))
-	if err != nil || !ok {
-		return "", err
-	}
-	return tok, nil
-}
+// ---- whose seat -----------------------------------------------------------------------
 
 func (m *Manager) humanByName(ctx context.Context, gameID int64, name string) ([]store.Player, store.Player, error) {
 	players, err := m.store.ListPlayers(ctx, gameID)
@@ -281,12 +261,25 @@ func (m *Manager) humanByName(ctx context.Context, gameID int64, name string) ([
 	return players, store.Player{}, ErrNotSeated
 }
 
-func (m *Manager) checkSeatToken(ctx context.Context, gameID int64, name, token string) error {
-	h, err := m.store.SeatTokenHash(ctx, gameID, nameKey(name))
-	if err != nil || token == "" || !sameHash(h, hashOf(token)) {
-		return ErrBadToken
+// ErrNoPrincipal is the answer to an anonymous request for something only a
+// seat's owner may do.
+var ErrNoPrincipal = errors.New("session: only the seat's owner may do that: send its guest key (POST /api/guest makes one for a script)")
+
+// ownSeat is the seat held by name, if it is the request's principal's. A
+// seat's notifications are its owner's business only, so unlike most actions
+// an anonymous request cannot change them even for a seat nobody owns.
+func (m *Manager) ownSeat(ctx context.Context, gameID int64, name string) (store.Player, error) {
+	_, p, err := m.humanByName(ctx, gameID, name)
+	if err != nil {
+		return store.Player{}, err
 	}
-	return nil
+	if auth.IDFrom(ctx) == "" {
+		return store.Player{}, ErrNoPrincipal
+	}
+	if err := m.mayActFor(ctx, &p); err != nil {
+		return store.Player{}, err
+	}
+	return p, nil
 }
 
 // ---- contacts -------------------------------------------------------------------------
@@ -500,8 +493,8 @@ func (m *Manager) gameNotify(ctx context.Context, gameID int64, key string) Game
 	return out
 }
 
-// GameNotify returns the setting of the seat held by name, to whoever holds its secret.
-func (m *Manager) GameNotify(ctx context.Context, roomCode, name, seatToken string) (GameNotify, error) {
+// GameNotify returns the setting of the seat held by name, to its owner.
+func (m *Manager) GameNotify(ctx context.Context, roomCode, name string) (GameNotify, error) {
 	if _, err := m.mustNotify(); err != nil {
 		return GameNotify{}, err
 	}
@@ -509,19 +502,16 @@ func (m *Manager) GameNotify(ctx context.Context, roomCode, name, seatToken stri
 	if err != nil {
 		return GameNotify{}, err
 	}
-	_, p, err := m.humanByName(ctx, game.ID, name)
+	p, err := m.ownSeat(ctx, game.ID, name)
 	if err != nil {
-		return GameNotify{}, err
-	}
-	if err := m.checkSeatToken(ctx, game.ID, p.Name, seatToken); err != nil {
 		return GameNotify{}, err
 	}
 	return m.gameNotify(ctx, game.ID, nameKey(p.Name)), nil
 }
 
-// SetGameNotify changes the setting of the seat held by name. Switching it on
-// needs the seat's secret and a verified contact the caller owns.
-func (m *Manager) SetGameNotify(ctx context.Context, roomCode, name, seatToken string, contactID int64, contactSecret string, enabled bool, awayMinutes int) (GameNotify, error) {
+// SetGameNotify changes the setting of the seat held by name, for its owner.
+// Switching it on needs a verified contact the caller owns.
+func (m *Manager) SetGameNotify(ctx context.Context, roomCode, name string, contactID int64, contactSecret string, enabled bool, awayMinutes int) (GameNotify, error) {
 	if _, err := m.mustNotify(); err != nil {
 		return GameNotify{}, err
 	}
@@ -532,11 +522,8 @@ func (m *Manager) SetGameNotify(ctx context.Context, roomCode, name, seatToken s
 	if err != nil {
 		return GameNotify{}, err
 	}
-	_, p, err := m.humanByName(ctx, game.ID, name)
+	p, err := m.ownSeat(ctx, game.ID, name)
 	if err != nil {
-		return GameNotify{}, err
-	}
-	if err := m.checkSeatToken(ctx, game.ID, p.Name, seatToken); err != nil {
 		return GameNotify{}, err
 	}
 	key := nameKey(p.Name)

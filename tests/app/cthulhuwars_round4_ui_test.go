@@ -232,12 +232,15 @@ func (d reactionSettingsDoc) devolve() reactionChoice { return d.Choices["devolv
 // waitReactionSettings polls Alice's choice on the server until ok accepts it:
 // the page shows a choice at once and the server follows a moment later, so a
 // test that looks right after a click must wait for it.
-func waitReactionSettings(t *testing.T, baseURL, room string, what string, ok func(c reactionChoice) bool) {
+//
+// Alice's seat is the browser's (ADR 0067), so the server is asked as it.
+func waitReactionSettings(t *testing.T, ctx context.Context, baseURL, room string, what string, ok func(c reactionChoice) bool) {
 	t.Helper()
 	var doc reactionSettingsDoc
+	alice := browserGuestKey(t, ctx)
 	deadline := time.Now().Add(10 * time.Second)
 	for {
-		code := doJSON(t, "GET", baseURL+"/api/games/"+room+"/reactions?player_name=Alice", nil, &doc)
+		code := doJSONAs(t, alice, "GET", baseURL+"/api/games/"+room+"/reactions?player_name=Alice", nil, &doc)
 		set := doc.devolve()
 		if code == 200 && ok(set) {
 			return
@@ -289,14 +292,14 @@ func TestWebCthulhuWars_ReactionSettingsOfAPlayerWhoHoldsOne(t *testing.T) {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "saved", `document.getElementById("ask-devolve-state") && document.getElementById("ask-devolve-state").textContent.indexOf("Crawling Chaos") >= 0`, 10*time.Second)
-	waitReactionSettings(t, baseURL, room, "the Crawling Chaos player", func(c reactionChoice) bool {
+	waitReactionSettings(t, ctx, baseURL, room, "the Crawling Chaos player", func(c reactionChoice) bool {
 		return c.Targeted && !c.AskAll && len(c.AskSeats) == 1 && c.AskSeats[0] == 2
 	})
 	if err := chromedp.Run(ctx, chromedp.Click("#ask-devolve-all", chromedp.ByID)); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "everyone", `document.getElementById("ask-devolve-state").textContent.indexOf("after every other player's action") >= 0`, 10*time.Second)
-	waitReactionSettings(t, baseURL, room, "everyone", func(c reactionChoice) bool { return c.AskAll })
+	waitReactionSettings(t, ctx, baseURL, room, "everyone", func(c reactionChoice) bool { return c.AskAll })
 	// And back: switching it off returns to the chosen player.
 	if err := chromedp.Run(ctx, chromedp.Click("#ask-devolve-all", chromedp.ByID)); err != nil {
 		t.Fatal(err)
@@ -307,11 +310,11 @@ func TestWebCthulhuWars_ReactionSettingsOfAPlayerWhoHoldsOne(t *testing.T) {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "never asked", `document.getElementById("ask-devolve-state").textContent.indexOf("always passed for you") >= 0 && !document.querySelector("#options-reactions .auto-pass-option input:checked")`, 10*time.Second)
-	waitReactionSettings(t, baseURL, room, "never asked", func(c reactionChoice) bool { return !c.Targeted && !c.AskAll && len(c.AskSeats) == 0 })
+	waitReactionSettings(t, ctx, baseURL, room, "never asked", func(c reactionChoice) bool { return !c.Targeted && !c.AskAll && len(c.AskSeats) == 0 })
 	if err := chromedp.Run(ctx, chromedp.Click("#ask-devolve-targeted", chromedp.ByID)); err != nil {
 		t.Fatal(err)
 	}
-	waitReactionSettings(t, baseURL, room, "asked when targeted", func(c reactionChoice) bool { return c.Targeted })
+	waitReactionSettings(t, ctx, baseURL, room, "asked when targeted", func(c reactionChoice) bool { return c.Targeted })
 	// One bar for the viewer's own cult, not one per player.
 	if n := evalInt(t, ctx, `document.querySelectorAll("#reactions-devolve").length`); n != 1 {
 		t.Errorf("%d reaction lists", n)
@@ -376,7 +379,7 @@ func TestWebCthulhuWars_ReactionSettingsExistBeforeTheSpellbookIsEarned(t *testi
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "saved", `document.getElementById("ask-devolve-state").textContent.indexOf("after every other player's action") >= 0`, 10*time.Second)
-	waitReactionSettings(t, baseURL, room, "everyone", func(c reactionChoice) bool { return c.AskAll })
+	waitReactionSettings(t, ctx, baseURL, room, "everyone", func(c reactionChoice) bool { return c.AskAll })
 	// One bar for the viewer's own cult, not one per player.
 	if n := evalInt(t, ctx, `document.querySelectorAll("#reactions-devolve").length`); n != 1 {
 		t.Errorf("%d reaction lists", n)
@@ -440,7 +443,7 @@ func TestWebCthulhuWars_StopBeingAskedFromTheQuestionItself(t *testing.T) {
 		Choices map[string]reactionChoice `json:"choices"`
 		Pending any                       `json:"pending"`
 	}
-	if code := doJSON(t, "GET", baseURL+"/api/games/"+room+"/reactions?player_name=Alice", nil, &set); code != 200 || set.Choices["devolve"].AskAll || len(set.Choices["devolve"].AskSeats) != 0 || set.Pending != nil {
+	if code := doJSONAs(t, browserGuestKey(t, ctx), "GET", baseURL+"/api/games/"+room+"/reactions?player_name=Alice", nil, &set); code != 200 || set.Choices["devolve"].AskAll || len(set.Choices["devolve"].AskSeats) != 0 || set.Pending != nil {
 		t.Fatalf("settings %d %+v", code, set)
 	}
 }
@@ -477,7 +480,7 @@ func TestWebCthulhuWars_BeingTargetedAsksAndCanBeSwitchedOffFromTheQuestion(t *t
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the question is gone", `!document.getElementById("ask-stop-targeted")`, 15*time.Second)
-	waitReactionSettings(t, baseURL, room, "not asked when targeted", func(c reactionChoice) bool { return !c.Targeted })
+	waitReactionSettings(t, ctx, baseURL, room, "not asked when targeted", func(c reactionChoice) bool { return !c.Targeted })
 }
 
 // The choice must be changeable at any time — above all while the other
@@ -516,7 +519,7 @@ func TestWebCthulhuWars_TheReactionChoiceCanBeChangedWhileOthersPlay(t *testing.
 
 	// Alice passes and the three bots play on: a stream of moves, and of
 	// redraws of the page, while she changes her mind again and again.
-	if code, _ := moveNotation(t, baseURL, room, "Alice", "pass"); code != 200 {
+	if code := moveAs(t, browserGuestKey(t, ctx), baseURL, room, "Alice", "pass"); code != 200 {
 		t.Fatalf("pass: %d", code)
 	}
 	// settled waits for the switch to reach want and returns what it finally
@@ -629,9 +632,10 @@ func TestWebCthulhuWars_TheReactionChoiceCanBeChangedWhileOthersPlay(t *testing.
 	// the element it was.
 	final := evalBool(t, ctx, `document.getElementById("ask-devolve-all").checked`)
 	deadline := time.Now().Add(10 * time.Second)
+	alice := browserGuestKey(t, ctx)
 	for {
 		var doc reactionSettingsDoc
-		if code := doJSON(t, "GET", baseURL+"/api/games/"+room+"/reactions?player_name=Alice", nil, &doc); code != 200 {
+		if code := doJSONAs(t, alice, "GET", baseURL+"/api/games/"+room+"/reactions?player_name=Alice", nil, &doc); code != 200 {
 			t.Fatalf("settings: %d", code)
 		}
 		set := doc.devolve()

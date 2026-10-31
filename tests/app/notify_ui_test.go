@@ -93,9 +93,9 @@ func TestNotifyUI_GameOptionsSection(t *testing.T) {
 	e.seedBrowser(t, func(a ...chromedp.Action) error { return chromedp.Run(ctx, a...) }, map[string]any{
 		"bingle.games":   []map[string]any{{"code": g.Room, "def": "tic-tac-toe", "name": "Alice", "ts": time.Now().UnixMilli()}},
 		"bingle.name":    "Alice",
-		"bingle.tokens":  map[string]string{g.Room: g.Token},
 		"bingle.contact": map[string]any{"id": c.ID, "secret": c.Secret, "address": "alice@example.com"},
 	})
+	setBrowserGuest(t, ctx, e.URL, g.Token) // the browser that took Alice's seat
 	if err := chromedp.Run(ctx, chromedp.Navigate(e.URL+"/game/"+g.Room), chromedp.WaitReady("#board-svg", chromedp.ByQuery)); err != nil {
 		t.Fatal(err)
 	}
@@ -113,7 +113,7 @@ func TestNotifyUI_GameOptionsSection(t *testing.T) {
 	clickSel(t, ctx, "#notify-mode-away")
 	waitJS(t, ctx, "saved away", `document.getElementById("notify-hint").textContent.indexOf("Saved") === 0 && !document.getElementById("notify-away").disabled`, 10*time.Second)
 	req, _ := http.NewRequest("GET", e.URL+"/api/games/"+g.Room+"/notify?player_name=Alice", nil)
-	req.Header.Set("X-Seat-Token", g.Token)
+	req.Header.Set("Authorization", "Bearer "+g.Token)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		t.Fatal(err)
@@ -137,7 +137,7 @@ func TestNotifyUI_NoSeatSecretNoControls(t *testing.T) {
 	e.join(t, g.Room, "Bob")
 	ctx, cancel := newChromedpContext(t, 40*time.Second)
 	defer cancel()
-	openGameAs(t, ctx, e.URL, g.Room, "tic-tac-toe", "Alice") // no bingle.tokens
+	openGameAs(t, ctx, e.URL, g.Room, "tic-tac-toe", "Alice") // a browser that is not the guest who took the seat
 	clickSel(t, ctx, "#open-options")
 	waitJS(t, ctx, "the explanation", `document.getElementById("notify-no-token")`, 15*time.Second)
 	if evalBool(t, ctx, `!!document.getElementById("notify-on")`) {
@@ -160,17 +160,17 @@ func TestNotifyUI_ProfileSwitchAppliesToANewGame(t *testing.T) {
 	e.seedBrowser(t, func(a ...chromedp.Action) error { return chromedp.Run(ctx, a...) }, map[string]any{
 		"bingle.games":   []map[string]any{{"code": g.Room, "def": "tic-tac-toe", "name": "Alice", "ts": time.Now().UnixMilli()}},
 		"bingle.name":    "Alice",
-		"bingle.tokens":  map[string]string{g.Room: g.Token},
 		"bingle.contact": map[string]any{"id": c.ID, "secret": c.Secret, "address": "alice@example.com"},
 		"bingle.profile": map[string]any{"email": "alice@example.com", "notify": true},
 	})
+	setBrowserGuest(t, ctx, e.URL, g.Token) // the browser that took Alice's seat
 	if err := chromedp.Run(ctx, chromedp.Navigate(e.URL+"/game/"+g.Room), chromedp.WaitReady("#board-svg", chromedp.ByQuery)); err != nil {
 		t.Fatal(err)
 	}
 	deadline := time.Now().Add(15 * time.Second)
 	for time.Now().Before(deadline) {
 		req, _ := http.NewRequest("GET", e.URL+"/api/games/"+g.Room+"/notify?player_name=Alice", nil)
-		req.Header.Set("X-Seat-Token", g.Token)
+		req.Header.Set("Authorization", "Bearer "+g.Token)
 		resp, err := http.DefaultClient.Do(req)
 		if err == nil {
 			b, _ := io.ReadAll(resp.Body)

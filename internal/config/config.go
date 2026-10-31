@@ -49,6 +49,7 @@ const (
 	// A quarter of a second: past what anybody calls instant, and well short
 	// of what anybody calls broken.
 	defaultSlowRequest = 250 * time.Millisecond
+	defaultGuestIdle   = 90 * 24 * time.Hour
 
 	// Five minutes: history that survives into the backup, not a time-series
 	// database. A scraper reads /metrics as often as it likes regardless.
@@ -111,6 +112,10 @@ type Config struct {
 	// (BINGLE_DEV). It is refused unless the bind is loopback, because it is
 	// a published admin account on anything else.
 	Dev bool
+	// GuestIdle is how long a guest key may go unused before it stops working
+	// (BINGLE_GUEST_IDLE, "90d" by default; ADR 0067). The guest's history
+	// stays, under its ID.
+	GuestIdle time.Duration
 
 	// HSTSSeconds, when above zero, adds a Strict-Transport-Security header of
 	// that many seconds to HTTPS responses (BINGLE_TLS_HSTS_SECONDS). Off by
@@ -496,6 +501,14 @@ func loadJournal(cfg *Config) error {
 	if v, ok := os.LookupEnv("BINGLE_METRICS_DB"); ok {
 		cfg.MetricsDB = strings.TrimSpace(v)
 	}
+	cfg.GuestIdle = defaultGuestIdle
+	if v := strings.TrimSpace(os.Getenv("BINGLE_GUEST_IDLE")); v != "" {
+		d, err := parseDays(v)
+		if err != nil || d < time.Hour {
+			return fmt.Errorf("config: BINGLE_GUEST_IDLE must be a duration of an hour or more, such as 90d or 720h, got %q", v)
+		}
+		cfg.GuestIdle = d
+	}
 	if v := strings.TrimSpace(os.Getenv("BINGLE_SLOW_REQUEST")); v != "" {
 		d, err := time.ParseDuration(v)
 		if err != nil || d < 0 {
@@ -824,4 +837,16 @@ func readSecretFile(path string) (string, error) {
 		return "", fmt.Errorf("%s is empty", path)
 	}
 	return v, nil
+}
+
+// parseDays is time.ParseDuration with days as well: "90d", or "36h".
+func parseDays(v string) (time.Duration, error) {
+	if n, ok := strings.CutSuffix(v, "d"); ok {
+		days, err := strconv.Atoi(n)
+		if err != nil || days < 0 {
+			return 0, fmt.Errorf("not a number of days: %q", v)
+		}
+		return time.Duration(days) * 24 * time.Hour, nil
+	}
+	return time.ParseDuration(v)
 }

@@ -12,6 +12,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/noderunner/bingle/internal/api"
+	"github.com/noderunner/bingle/internal/auth"
 	"github.com/noderunner/bingle/internal/batch"
 	"github.com/noderunner/bingle/internal/bots"
 	"github.com/noderunner/bingle/internal/config"
@@ -48,6 +49,7 @@ import (
 // so it can be exercised entirely in-process by tests.
 type App struct {
 	store     *store.Store
+	guests    *auth.Resolver
 	catalog   *catalog.Catalog
 	manager   *session.Manager
 	envs      *envs.Manager
@@ -182,6 +184,7 @@ func New(cfg config.Config, opts ...Option) (*App, error) {
 	a.publicURL = cfg.PublicURL
 	a.changelog = cfg.Changelog
 	a.rtc = api.RTCConfig{Stun: cfg.RTCStun, TurnURLs: cfg.RTCTurnURLs, TurnSecret: cfg.RTCTurnSecret}
+	a.guests = auth.NewResolver(st, auth.Options{Transport: a.transport, Idle: cfg.GuestIdle, Log: a.log})
 
 	if err := enableNotify(manager, cfg, a.log); err != nil {
 		_ = st.Close()
@@ -321,11 +324,16 @@ func (a *App) newRouter() chi.Router {
 		// sets and rate limited per address — see internal/api/clienterror.go.
 		apiOpts = append(apiOpts, api.WithClientErrors(a.log, a.metrics, a.journal))
 	}
-	r.Mount("/api", api.NewRouter(a.manager, apiOpts...))
-	r.Get("/ws/{code}", api.NewWSHandler(a.manager))
-	r.Get("/ws-chat", api.NewGlobalChatWSHandler(a.manager))
-	r.Get("/ws-dm", api.NewDirectWSHandler(a.manager))
-	r.Mount("/mcp", mcpserver.NewServer(a.manager, a.envs, a.batches))
+	// Every route that acts for somebody resolves who that is first (ADR
+	// 0067). The pages and static files do not need to know.
+	r.Group(func(r chi.Router) {
+		r.Use(a.guests.Middleware)
+		r.Mount("/api", api.NewRouter(a.manager, append(apiOpts, api.WithGuests(a.guests))...))
+		r.Get("/ws/{code}", api.NewWSHandler(a.manager))
+		r.Get("/ws-chat", api.NewGlobalChatWSHandler(a.manager))
+		r.Get("/ws-dm", api.NewDirectWSHandler(a.manager))
+		r.Mount("/mcp", mcpserver.NewServer(a.manager, a.envs, a.batches))
+	})
 	// Mounted last: internal/web acts as "/"'s catch-all/root, so every more
 	// specific path above must be registered first to take precedence.
 	r.Mount("/", web.NewRouter(a.manager))

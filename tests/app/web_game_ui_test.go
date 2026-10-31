@@ -1127,8 +1127,9 @@ func TestWebGame_MovesAnimateAndCanBeSwitchedOff(t *testing.T) {
 	})()`, nil)); err != nil {
 		t.Fatal(err)
 	}
-	if code, out := moveNotation(t, baseURL, room, "Alice", "c3"); code != 200 {
-		t.Fatalf("c3: %d %v", code, out)
+	// Alice's seat is the browser's (ADR 0067); Bob's was taken anonymously.
+	if code := moveAs(t, browserGuestKey(t, ctx), baseURL, room, "Alice", "c3"); code != 200 {
+		t.Fatalf("c3: %d", code)
 	}
 	if code, out := moveNotation(t, baseURL, room, "Bob", "d4"); code != 200 {
 		t.Fatalf("d4: %d %v", code, out)
@@ -1140,8 +1141,8 @@ func TestWebGame_MovesAnimateAndCanBeSwitchedOff(t *testing.T) {
 	if err := chromedp.Run(ctx, chromedp.Evaluate(`window.__anims = 0; true`, nil)); err != nil {
 		t.Fatal(err)
 	}
-	if code, out := moveNotation(t, baseURL, room, "Alice", "b2"); code != 200 {
-		t.Fatalf("b2: %d %v", code, out)
+	if code := moveAs(t, browserGuestKey(t, ctx), baseURL, room, "Alice", "b2"); code != 200 {
+		t.Fatalf("b2: %d", code)
 	}
 	waitJS(t, ctx, "b2 drawn", `document.querySelector('#board .piece[data-position="b2"]')`, 10*time.Second)
 	if n := evalInt(t, ctx, `window.__anims`); n != 0 {

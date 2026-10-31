@@ -1,6 +1,6 @@
 # 0006. Name-only player identity, no session token
 
-Status: Accepted
+Status: Superseded in part by [ADR 0067](0067-principals-and-guest-keys.md): a seat a guest took is that guest's, and only an unowned seat is still acted for by name. The rest goes with the accounts plan.
 
 ## Context
 The brief explicitly rules out accounts/RBAC ("just ask users to provide a name"). Within that, identity could still be backed by a server-issued session token (cookie or client-stored) to survive reconnects/refreshes, or be purely name-based with no token at all.

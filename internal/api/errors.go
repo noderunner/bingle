@@ -29,7 +29,7 @@ func statusForError(err error) int {
 		errors.Is(err, session.ErrNothingToUndo), errors.Is(err, session.ErrCannotUndo),
 		errors.Is(err, session.ErrDrawNotAllowed), errors.Is(err, session.ErrTakebackNotAllowed), errors.Is(err, session.ErrHintNotAllowed), errors.Is(err, session.ErrTooManyBotMatches):
 		return http.StatusConflict
-	case errors.Is(err, session.ErrNotYourTurn), errors.Is(err, session.ErrNotAPlayer), errors.Is(err, session.ErrNotHost), errors.Is(err, session.ErrNotSeated), errors.Is(err, session.ErrVoiceNotJoined), errors.Is(err, session.ErrBadToken),
+	case errors.Is(err, session.ErrNotYourTurn), errors.Is(err, session.ErrNotAPlayer), errors.Is(err, session.ErrNotHost), errors.Is(err, session.ErrNotSeated), errors.Is(err, session.ErrVoiceNotJoined), errors.Is(err, session.ErrBadToken), errors.Is(err, session.ErrNotYourSeat), errors.Is(err, session.ErrNoPrincipal),
 		errors.Is(err, session.ErrNotHere):
 		return http.StatusForbidden
 	case errors.Is(err, session.ErrVoicePeerGone), errors.Is(err, session.ErrSuppressed), errors.Is(err, session.ErrNotVerified), errors.Is(err, session.ErrNotInCall), errors.Is(err, session.ErrTooManyHere):

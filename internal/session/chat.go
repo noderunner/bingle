@@ -10,6 +10,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"github.com/noderunner/bingle/internal/auth"
 	"github.com/noderunner/bingle/internal/store"
 )
 
@@ -109,13 +110,17 @@ func (m *Manager) SendChat(ctx context.Context, roomCode, name, text string) (Ch
 			if p.Bot != "" {
 				return ChatLine{}, ErrNameIsABot
 			}
+			// Speaking as a player is for that player alone.
+			if err := m.mayActFor(ctx, &p); err != nil {
+				return ChatLine{}, err
+			}
 			seat, color, speaker = p.Seat, p.Color, p.Name
 		}
 	}
 	if !m.chat.allow(roomCode+"|"+strings.ToLower(speaker), m.now()) {
 		return ChatLine{}, ErrChatTooFast
 	}
-	msg, err := m.store.AddChatMessage(ctx, game.ID, seat, speaker, text)
+	msg, err := m.store.AddChatMessage(ctx, game.ID, seat, speaker, auth.IDFrom(ctx), text)
 	if err != nil {
 		return ChatLine{}, err
 	}
@@ -182,7 +187,7 @@ func (m *Manager) SendGlobalChat(ctx context.Context, name, text string) (Global
 	if !m.chat.allow(GlobalChatRoom+"|"+strings.ToLower(speaker), m.now()) {
 		return GlobalChatLine{}, ErrChatTooFast
 	}
-	msg, err := m.store.AddGlobalChat(ctx, speaker, text)
+	msg, err := m.store.AddGlobalChat(ctx, speaker, auth.IDFrom(ctx), text)
 	if err != nil {
 		return GlobalChatLine{}, err
 	}

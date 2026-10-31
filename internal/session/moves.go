@@ -141,6 +141,9 @@ func (m *Manager) Play(ctx context.Context, roomCode, name string, mv state.Move
 	if !found || player.Bot != "" || game.TurnSeat == nil || player.Seat != *game.TurnSeat {
 		return MoveOutcome{}, ErrNotYourTurn
 	}
+	if err := m.mayActFor(ctx, &player); err != nil {
+		return MoveOutcome{}, err
+	}
 
 	compiled, ok := m.catalog.Get(game.GameDefID)
 	if !ok {

@@ -274,8 +274,9 @@ func TestWebCthulhuWars_AutoPlayTimeoutIsSetInTheOptions(t *testing.T) {
 		Deadline       string `json:"deadline"`
 	}
 	deadline := time.Now().Add(10 * time.Second)
+	alice := browserGuestKey(t, ctx) // the seat is the browser's
 	for {
-		doJSON(t, "GET", baseURL+"/api/games/"+room+"/autoplay?player_name=Alice", nil, &s)
+		doJSONAs(t, alice, "GET", baseURL+"/api/games/"+room+"/autoplay?player_name=Alice", nil, &s)
 		if s.Enabled && s.TimeoutSeconds == 120 {
 			break
 		}

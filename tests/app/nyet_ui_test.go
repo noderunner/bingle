@@ -177,7 +177,13 @@ func TestWebNyet_TheFirstPlayerCanPickTheTeam(t *testing.T) {
 	}
 	clickSel(t, ctx, `.action-buttons button[data-action^="team-"]`)
 	waitJS(t, ctx, "the team to be chosen", `document.querySelectorAll('.action-buttons button[data-action^="team-"]').length === 0`, 15*time.Second)
-	if after := cfGet(t, baseURL, created.RoomCode).MoveSeq; after <= before {
+	// The buttons go when the choice is made, which can be before the server
+	// has recorded the move: wait for it rather than read it at once.
+	after := cfGet(t, baseURL, created.RoomCode).MoveSeq
+	for deadline := time.Now().Add(10 * time.Second); after <= before && time.Now().Before(deadline); after = cfGet(t, baseURL, created.RoomCode).MoveSeq {
+		time.Sleep(50 * time.Millisecond)
+	}
+	if after <= before {
 		t.Errorf("move_seq %d after picking the team, was %d before", after, before)
 	}
 	mu.Lock()

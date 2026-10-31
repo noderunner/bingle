@@ -97,29 +97,6 @@ export function lastName() {
 	return store.get("bingle.name", "") || "";
 }
 
-const TOKENS_KEY = "bingle.tokens";
-
-/**
- * The secret of the seat this browser took in a game, given by the server once
- * when the seat was taken. It proves later that the seat is ours (it is needed
- * to change the seat's email notification setting).
- */
-export function seatToken(code) {
-	const m = store.get(TOKENS_KEY, {});
-	const key = String(code).toUpperCase();
-	return (m && typeof m === "object" && typeof m[key] === "string" && m[key]) || "";
-}
-
-export function setSeatToken(code, token) {
-	const m = store.get(TOKENS_KEY, {});
-	const all = m && typeof m === "object" ? m : {};
-	all[String(code).toUpperCase()] = token;
-	// Only the latest games are remembered, as with the list of games.
-	const keys = Object.keys(all);
-	if (keys.length > 60) for (const k of keys.slice(0, keys.length - 60)) delete all[k];
-	store.set(TOKENS_KEY, all);
-}
-
 const SECRET_KEY = "bingle.session";
 
 /**

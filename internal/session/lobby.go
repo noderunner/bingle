@@ -62,6 +62,9 @@ func (m *Manager) lobbyContext(ctx context.Context, roomCode, name string) (stor
 	if me == nil {
 		return store.Game{}, nil, nil, ErrNotAPlayer
 	}
+	if err := m.mayActFor(ctx, me); err != nil {
+		return store.Game{}, nil, nil, err
+	}
 	if game.Status != "waiting" {
 		return store.Game{}, nil, nil, ErrAlreadyStarted
 	}
