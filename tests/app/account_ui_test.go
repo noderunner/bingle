@@ -225,3 +225,32 @@ func TestAccountUI_AGuestKeyLinkResumesTheGames(t *testing.T) {
 	}
 	waitJS(t, phone, "the seat, as the phone's own", `document.querySelector("#seat-1 .badge") && [...document.querySelectorAll("#seat-1 .badge")].some(b => b.textContent === "you") && [...document.querySelectorAll("#seat-1 .badge")].some(b => b.textContent === "guest")`, 15*time.Second)
 }
+
+// The profile window in the top bar says who the browser is: a guest is
+// offered the sign-in, an account its handle, its page and the sign-out.
+func TestAccountUI_TheProfileWindowSaysWhoYouAre(t *testing.T) {
+	a, base := membersServer(t)
+	ctx, cancel := newChromedpContext(t, 60*time.Second)
+	defer cancel()
+	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/")); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "the icon says guest", `document.getElementById("open-profile") && document.getElementById("open-profile").title === "Your profile (playing as a guest)"`, 10*time.Second)
+	clickSel(t, ctx, "#open-profile")
+	waitJS(t, ctx, "the sign-in in the window", `document.getElementById("profile-account-who").textContent === "You are playing as a guest." && document.getElementById("profile-signin").getAttribute("href") === "/login?return=%2F"`, 10*time.Second)
+	clickSel(t, ctx, "#profile-signin")
+	waitJS(t, ctx, "the sign-in page", `location.pathname === "/login" && document.getElementById("login-form") !== null`, 10*time.Second)
+
+	ana := member(t, a, base, "ana")
+	ctx2, cancel2 := newChromedpContext(t, 60*time.Second)
+	defer cancel2()
+	signInChrome(t, ctx2, base, ana.cookie(auth.SessionCookie))
+	if err := chromedp.Run(ctx2, chromedp.Navigate(base+"/")); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx2, "the icon says signed in", `document.getElementById("open-profile").title === "Your profile (signed in as @ana)"`, 10*time.Second)
+	clickSel(t, ctx2, "#open-profile")
+	waitJS(t, ctx2, "the account in the window", `document.getElementById("profile-account-who").textContent === "Signed in as @ana" && document.getElementById("profile-account-link") !== null && document.getElementById("profile-admin-link") === null`, 10*time.Second)
+	clickSel(t, ctx2, "#profile-signout")
+	waitJS(t, ctx2, "signed out", `document.getElementById("open-profile") && document.getElementById("open-profile").title === "Your profile (playing as a guest)"`, 15*time.Second)
+}

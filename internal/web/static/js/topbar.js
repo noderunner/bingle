@@ -4,12 +4,12 @@
 // where to report problems) and — while a voice call is up — a button for the call.
 
 import { h, clear, toast, lastName, setLastName, rememberGame, setTurnBadge, store } from "./util.js";
-import { api } from "./api.js";
+import { api, whoAmI } from "./api.js";
 import { gameDefs, loadRows, isFinished, yourTurn, sortRows, gameRow, openGameRow } from "./mygames.js";
 import { navigate, onLeave } from "./nav.js";
 import { voiceStatus, onVoiceChange, toggleMute, toggleDeafen, leaveVoice } from "./voice.js";
 import { gamesIcon, joinIcon, micIcon, helpIcon, profileIcon, messageIcon } from "./ui-icons.js";
-import { whoIsHere, onHereChange, startHere, watchHere, beat as beatHere } from "./here.js";
+import { whoIsHere, onHereChange, startHere, watchHere, beat as beatHere, myName } from "./here.js";
 import { mountDirectMessages, startDirectMessages, unreadCount } from "./dm.js";
 
 const REPO_URL = "https://github.com/noderunner/bingle";
@@ -340,9 +340,13 @@ function profileWindow() {
 	const saved = h("span", { class: "small muted", id: "profile-window-saved", role: "status" });
 	const list = h("ul", { class: "here-list", id: "here-list" });
 	const count = h("span", { class: "small muted", id: "here-count" });
+	// Who this browser is: signed in, or a guest who could sign in (the
+	// accounts plan, §6).
+	const account = h("section", { class: "account-section", id: "profile-account" });
 	const dlg = dialog(
 		"profile-dialog",
 		"Your profile",
+		account,
 		h(
 			"div",
 			{ class: "field" },
@@ -354,9 +358,54 @@ function profileWindow() {
 		h("section", { class: "here-section" }, h("h3", {}, "Here now ", count), list, h("p", { class: "small muted" }, "The signed-in players who have been here in the last few minutes, by their handles. Guests are not listed: sign in to be listed and to write to anybody here.")),
 		h("div", { class: "row" }, h("a", { class: "button", id: "profile-page-link", href: "/profile" }, "Email notifications and finished games"))
 	);
+	const paintAccount = (me) => {
+		clear(account);
+		const back = encodeURIComponent(location.pathname + location.search);
+		if (me.kind === "account") {
+			const signOut = h("button", { type: "button", class: "ghost", id: "profile-signout" }, "Sign out");
+			signOut.addEventListener("click", async () => {
+				signOut.disabled = true;
+				try {
+					await api.logout();
+				} finally {
+					location.reload();
+				}
+			});
+			account.append(
+				h("p", { id: "profile-account-who" }, "Signed in as ", h("strong", {}, "@" + me.handle)),
+				h(
+					"div",
+					{ class: "row" },
+					h("a", { class: "button", id: "profile-account-link", href: "/account" }, "Your account"),
+					me.admin ? h("a", { class: "button", id: "profile-admin-link", href: "/admin" }, "Administration") : null,
+					signOut
+				)
+			);
+			return;
+		}
+		if (!me.accounts) return;
+		account.append(
+			h("p", { id: "profile-account-who" }, "You are playing as a guest."),
+			h(
+				"div",
+				{ class: "row" },
+				h("a", { class: "button primary", id: "profile-signin", href: `/login?return=${back}` }, "Sign in"),
+				me.signup ? h("a", { class: "button", id: "profile-signup", href: `/signup?return=${back}` }, "Sign up") : null
+			)
+		);
+	};
+	// The icon says it too, without opening the window.
+	whoAmI().then((me) => {
+		const label = me.kind === "account" ? `Your profile (signed in as @${me.handle})` : "Your profile (playing as a guest)";
+		btn.title = label;
+		btn.setAttribute("aria-label", label);
+		btn.classList.toggle("signed-in", me.kind === "account");
+		paintAccount(me);
+	});
 	const paint = (people) => {
 		clear(list);
-		const mine = (lastName() || "").toLowerCase();
+		// The list names accounts by handle: "you" is this account's.
+		const mine = (myName() || "").toLowerCase();
 		count.textContent = people.length ? `(${people.length})` : "";
 		for (const p of people) {
 			const isMe = p.name && p.name.toLowerCase() === mine;
