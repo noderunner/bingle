@@ -82,6 +82,11 @@ All configuration is via environment variables — there's no config file.
 | `BINGLE_TRUST_PROXY` | `off` | Serve plain HTTP behind a proxy that terminates TLS. The proxy **must** set `X-Forwarded-Proto: https`; anything arriving as `http` is refused. Turns every loopback exemption off |
 | `BINGLE_DEV` | `off` | Deterministic development credentials (used from stage 3 of the accounts plan). Loopback binds only, and never with `BINGLE_TRUST_PROXY` |
 | `BINGLE_GUEST_IDLE` | `90d` | How long a guest key may go unused before it stops working (`90d`, `720h`; an hour at least). The guest's history stays ([ADR 0067](decisions/0067-principals-and-guest-keys.md)) |
+| `BINGLE_SIGNUP` | `open` | `open` or `closed`. Signing up also needs mail (`BINGLE_SMTP_*`): without it nobody can, and accounts are made with `bingle account create` |
+| `BINGLE_SESSION_IDLE`, `BINGLE_SESSION_MAX` | `14d`, `90d` | A signed-in browser is signed out after this long unused, and after this long at all |
+| `BINGLE_ADMIN_HANDLE` | `admin` | The first administrator, made when there are no accounts |
+| `BINGLE_ADMIN_EMAIL` | the handle at the public URL's host | Its address |
+| `BINGLE_ADMIN_PASSWORD` | — | Its first password; otherwise `bingle123` on loopback or under `BINGLE_DEV` (never behind `BINGLE_TRUST_PROXY`), and a random one printed once. It must be changed at the first sign-in |
 | `BINGLE_TLS_CERT` | *(unset)* | Path to a TLS certificate file |
 | `BINGLE_TLS_KEY` | *(unset)* | Path to a TLS private key file |
 | `BINGLE_PUBLIC_URL` | *(unset)* | Base URL players on other networks reach the server by, such as `https://games.example.com` (an absolute `http`/`https` URL, no query). Invite links in the lobby and `invite_url` are built from it; unset, the address the request came to is used |
@@ -97,6 +102,22 @@ All configuration is via environment variables — there's no config file.
 | `BINGLE_SMTP_HOST` ... | *(unset = off)* | Email notifications: the SMTP server and login (`BINGLE_SMTP_PORT`, `_TLS`, `_USER`, `_PASSWORD_FILE`, `_CA_FILE`), mail limits (`BINGLE_MAIL_HOURLY_LIMIT`, `_DAILY_LIMIT`). The sender is `BINGLE_TLS_EMAIL`. See [email.md](email.md) |
 
 TLS is **off by default** and optional: with none of the TLS variables set the server runs plain HTTP, which is what you want for local development. HTTPS turns on either with `BINGLE_TLS_DOMAIN` (automatic certificates) or when **both** `BINGLE_TLS_CERT` and `BINGLE_TLS_KEY` are set to valid, readable files. Setting up a domain, the router and a first test is in [docs/tls.md](tls.md).
+
+### Accounts from the command line
+
+An empty database gets its first administrator when the server starts: `@admin`, with the password
+`bingle123` on a loopback bind or under `BINGLE_DEV`, and a random one printed once on the terminal
+otherwise. Its first sign-in (at `/login`) asks for a new password.
+
+```sh
+./bin/bingle account list                              # handles, status, groups
+./bin/bingle account create ana ana@example.com        # a confirmed account; prints its password
+./bin/bingle account create ops ops@example.com --admin
+./bin/bingle account reset ana                         # a new password (printed), every session signed out
+```
+
+A password the command line prints must be changed at the next sign-in. The commands read the same
+configuration as the server (`BINGLE_DB_PATH`), so run them where the server runs.
 
 Example with a custom port and database location:
 

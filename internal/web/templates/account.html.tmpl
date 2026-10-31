@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="bingle-version" content="{{engineVersion}}">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="referrer" content="no-referrer">
+	<title>Bingle — {{.Title}}</title>
+	<link rel="icon" type="image/svg+xml" href="/static/favicon.svg" id="favicon">
+	<link rel="stylesheet" href="/static/style.css">
+</head>
+<body data-page="{{.Page}}">
+	<header class="topbar">
+		<a class="brand" href="/"><span class="logo"></span>Bingle</a>
+		<span class="spacer"></span>
+	</header>
+
+	<main class="page narrow">
+		{{if eq .Page "login"}}
+		<section class="card" id="login-card">
+			<h1>Sign in</h1>
+			<form id="login-form" novalidate>
+				<div class="field">
+					<label for="login-handle">Handle</label>
+					<input id="login-handle" type="text" maxlength="25" autocomplete="username" autocapitalize="none" spellcheck="false" required>
+				</div>
+				<div class="field">
+					<label for="login-password">Password</label>
+					<input id="login-password" type="password" maxlength="256" autocomplete="current-password" required>
+				</div>
+				<div class="row">
+					<button type="submit" class="primary" id="login-go">Sign in</button>
+				</div>
+				<p class="small" id="account-result" role="status" aria-live="polite"></p>
+			</form>
+			<p class="small muted" id="login-signup" hidden>No account? <a href="/signup">Sign up</a>. You can also just play: games need no account.</p>
+		</section>
+		{{else if eq .Page "signup"}}
+		<section class="card" id="signup-card">
+			<h1>Sign up</h1>
+			<p class="muted small">An account keeps your games with you on any device, and gets you direct messages and the global chat. The games you played as a guest in this browser become your account's.</p>
+			<form id="signup-form" novalidate>
+				<div class="field">
+					<label for="signup-handle">Handle</label>
+					<input id="signup-handle" type="text" maxlength="25" autocomplete="username" autocapitalize="none" spellcheck="false" required>
+					<span class="small muted">3 to 24 letters, digits, "_" or "-". Others see it as @handle.</span>
+				</div>
+				<div class="field">
+					<label for="signup-email">Email</label>
+					<input id="signup-email" type="email" maxlength="254" autocomplete="email" required>
+					<span class="small muted">Bingle mails a link to confirm it, and never shows it to anybody.</span>
+				</div>
+				<div class="field">
+					<label for="signup-password">Password</label>
+					<input id="signup-password" type="password" minlength="10" maxlength="256" autocomplete="new-password" required>
+					<span class="small muted">At least 10 characters.</span>
+				</div>
+				<div class="row">
+					<button type="submit" class="primary" id="signup-go">Sign up</button>
+				</div>
+				<p class="small" id="account-result" role="status" aria-live="polite"></p>
+			</form>
+			<p class="small muted">Have an account? <a href="/login">Sign in</a>.</p>
+		</section>
+		{{else if eq .Page "confirm"}}
+		<section class="card" id="confirm-card">
+			<h1>Confirm your account</h1>
+			<p>Press the button to finish making your Bingle account. Nothing happens until you do.</p>
+			<div class="row"><button type="button" class="primary" id="confirm-go">Confirm</button></div>
+			<p class="small" id="account-result" role="status" aria-live="polite"></p>
+		</section>
+		{{else}}
+		<section class="card" id="account-card">
+			<h1>Your account</h1>
+			<p id="account-who"></p>
+			<p class="small error" id="account-must-change" hidden>Choose a new password before you go on: the one you signed in with was given to you.</p>
+			<form id="password-form" novalidate>
+				<h2>Change your password</h2>
+				<div class="field">
+					<label for="password-old">Current password</label>
+					<input id="password-old" type="password" maxlength="256" autocomplete="current-password" required>
+				</div>
+				<div class="field">
+					<label for="password-new">New password</label>
+					<input id="password-new" type="password" minlength="10" maxlength="256" autocomplete="new-password" required>
+					<span class="small muted">At least 10 characters. Every other device you are signed in on is signed out.</span>
+				</div>
+				<div class="row">
+					<button type="submit" class="primary" id="password-go">Change the password</button>
+				</div>
+				<p class="small" id="account-result" role="status" aria-live="polite"></p>
+			</form>
+			<div class="row"><button type="button" class="ghost" id="logout-go">Sign out</button></div>
+		</section>
+		{{end}}
+	</main>
+
+	<footer class="site-footer"><sub title="The version of the bingle engine">bingle v{{engineVersion}} · MIT License · <a href="https://github.com/noderunner/bingle" target="_blank" rel="noopener noreferrer">GitHub</a></sub></footer>
+
+	<!-- First, so a fault in any module below is reported (docs/observability.md). -->
+	<script type="module" src="/static/js/errors.js"></script>
+	<script type="module" src="/static/js/account.js"></script>
+</body>
+</html>

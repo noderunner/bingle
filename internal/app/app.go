@@ -48,8 +48,14 @@ import (
 // and never binds a real network listener itself (see internal/httpserve),
 // so it can be exercised entirely in-process by tests.
 type App struct {
-	store     *store.Store
-	guests    *auth.Resolver
+	store    *store.Store
+	guests   *auth.Resolver
+	accounts *auth.Accounts
+	// seeded is the administrator made for an empty database (nil if there
+	// were accounts), whose password main prints once.
+	seeded *auth.Seeded
+	// argon2 is the cost of a password hash; zero means auth's default.
+	argon2    auth.Argon2Params
 	catalog   *catalog.Catalog
 	manager   *session.Manager
 	envs      *envs.Manager
@@ -184,12 +190,21 @@ func New(cfg config.Config, opts ...Option) (*App, error) {
 	a.publicURL = cfg.PublicURL
 	a.changelog = cfg.Changelog
 	a.rtc = api.RTCConfig{Stun: cfg.RTCStun, TurnURLs: cfg.RTCTurnURLs, TurnSecret: cfg.RTCTurnSecret}
-	a.guests = auth.NewResolver(st, auth.Options{Transport: a.transport, Idle: cfg.GuestIdle, Log: a.log})
+	a.accounts = auth.NewAccounts(st, auth.AccountOptions{Mailer: manager, Log: a.log, Signup: cfg.Signup, SessionIdle: cfg.SessionIdle, SessionMax: cfg.SessionMax, Argon2: a.argon2})
+	a.guests = auth.NewResolver(st, auth.Options{Transport: a.transport, Idle: cfg.GuestIdle, Log: a.log, Accounts: a.accounts})
 
 	if err := enableNotify(manager, cfg, a.log); err != nil {
 		_ = st.Close()
 		return nil, err
 	}
+	// An empty server gets its first administrator (ADR 0068).
+	seeded, err := a.accounts.SeedAdmin(context.Background(), auth.SeedOptions{
+		Handle: cfg.AdminHandle, Email: cfg.SeedAdminEmail(), Password: cfg.AdminPassword.Reveal(), Deterministic: cfg.SeedPasswordDeterministic()})
+	if err != nil {
+		_ = st.Close()
+		return nil, err
+	}
+	a.seeded = seeded
 
 	a.router = a.newRouter()
 	return a, nil
@@ -288,6 +303,39 @@ func (a *App) RunRetention(ctx context.Context, days int) {
 	}
 }
 
+// Seeded is the administrator this App made for an empty database, or nil.
+func (a *App) Seeded() *auth.Seeded { return a.seeded }
+
+// AccountRow is an account as the command line lists it.
+type AccountRow struct {
+	Handle, Status, CreatedAt string
+	Groups                    []string
+}
+
+// ListAccounts lists the accounts with their groups.
+func (a *App) ListAccounts(ctx context.Context) ([]AccountRow, error) {
+	list, err := a.store.ListAccounts(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]AccountRow, 0, len(list))
+	for _, acc := range list {
+		groups, err := a.store.Groups(ctx, acc.ID)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, AccountRow{Handle: acc.Handle, Status: acc.Status, CreatedAt: acc.CreatedAt, Groups: groups})
+	}
+	return out, nil
+}
+
+// Accounts is the account service (the command line's way in).
+func (a *App) Accounts() *auth.Accounts { return a.accounts }
+
+// WithArgon2 sets the cost of a password hash: tests make it cheap, since
+// every App they start hashes the seeded administrator's password.
+func WithArgon2(p auth.Argon2Params) Option { return func(a *App) { a.argon2 = p } }
+
 // Manager returns the application's session manager.
 func (a *App) Manager() *session.Manager {
 	return a.manager
@@ -333,6 +381,7 @@ func (a *App) newRouter() chi.Router {
 		r.Get("/ws-chat", api.NewGlobalChatWSHandler(a.manager))
 		r.Get("/ws-dm", api.NewDirectWSHandler(a.manager))
 		r.Mount("/mcp", mcpserver.NewServer(a.manager, a.envs, a.batches))
+		r.Mount("/auth", a.guests.Routes())
 	})
 	// Mounted last: internal/web acts as "/"'s catch-all/root, so every more
 	// specific path above must be registered first to take precedence.

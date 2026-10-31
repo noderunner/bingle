@@ -4,6 +4,20 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.23.0 - 2026-10-31
+
+### Bingle Core 0.23.0
+- **Accounts, if you want one.** You can still just play, but you can now sign up with a handle
+  (shown as @handle), your email address and a password, and sign in from the profile page. The
+  games you played as a guest in that browser become your account's when you sign up, and signing
+  in on another browser brings that browser's games along too. Signing up needs the server to be
+  able to send email; the confirmation link works for two days.
+- Changing your password signs you out everywhere else.
+- For whoever runs the server: a new server makes an administrator, `@admin`, whose password is
+  printed when it first starts (or is `bingle123` on a server only this machine can reach), and
+  asks for a new one at the first sign-in. `bingle account list`, `create` and `reset` manage
+  accounts from the command line, and `BINGLE_SIGNUP=closed` turns signing up off.
+
 ## 0.22.0 - 2026-10-31
 
 ### Bingle Core 0.22.0

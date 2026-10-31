@@ -5,6 +5,7 @@
 package mail
 
 import (
+	"errors"
 	stdmail "net/mail"
 	"strings"
 	"unicode"
@@ -49,6 +50,12 @@ type addressError string
 func (e addressError) Error() string { return string(e) }
 
 const errBadAddress = addressError("that is not an email address")
+
+// IsAddressError reports whether err is ValidAddress refusing an address.
+func IsAddressError(err error) bool {
+	var ae addressError
+	return errors.As(err, &ae)
+}
 
 // Mask hides most of an address for display: the first character and the
 // domain are all that is left ("m••••@gmail.com"). The result cannot be used

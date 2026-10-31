@@ -38,6 +38,12 @@ func main() {
 	}
 	cfg.Changelog = changelog
 
+	// "bingle account …" manages accounts and exits; anything else runs the
+	// server.
+	if len(os.Args) > 1 {
+		os.Exit(runCommand(cfg, os.Args[1:]))
+	}
+
 	// The logger the server runs with. slog.SetDefault also points the
 	// standard log package at this handler, so a line from chi, the WebSocket
 	// library or the SQLite driver lands in the same stream at the same level
@@ -101,6 +107,7 @@ func main() {
 		os.Exit(1)
 	}
 	defer func() { _ = a.Close() }()
+	printSeeded(a.Seeded())
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()

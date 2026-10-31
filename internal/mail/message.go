@@ -153,3 +153,23 @@ func AddressChanged(to, base, stopToken string) Message {
 		UnsubscribeURL: StopURL(base, stopToken),
 	}
 }
+
+// AccountConfirmURL is the link that confirms a new account's address.
+func AccountConfirmURL(base, token string) string {
+	return base + "/account/confirm?t=" + url.QueryEscape(token)
+}
+
+// AccountConfirmation is the mail that confirms the address of a new account.
+// Doing nothing leaves it harmless: the account is never usable, and is
+// forgotten after two days.
+func AccountConfirmation(to, handle, base, token string) Message {
+	handle = Sanitize(handle, 24)
+	return Message{
+		To:      to,
+		Subject: "Confirm your Bingle account",
+		Body: fmt.Sprintf("Someone, probably you, made the Bingle account @%s with this email address.\n\n", handle) +
+			"To finish, open the link below and press Confirm (the link works for 48 hours):\n\n" +
+			AccountConfirmURL(base, token) + "\n\n" +
+			"If this was not you, ignore this message: the account is never usable and is removed in two days.\n",
+	}
+}

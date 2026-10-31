@@ -55,8 +55,8 @@ Ships as the first game module: a Go-style board, two piece colors, free movemen
 
 ## Sessions & matchmaking
 
-- No accounts, no auth. Creating a game returns a **room code** (and a shareable link).
-- Joining a room requires the room code and a display name — no password. The first two distinct names to join take seat 1 and seat 2.
+- No signup is needed to play. Creating a game returns a **room code** (and a shareable link).
+- Joining a room requires the room code and a display name — no password. A seat belongs to whoever took it: a guest (a browser, or a script with a guest key) or a signed-in account ([ADR 0067](decisions/0067-principals-and-guest-keys.md), [ADR 0068](decisions/0068-accounts-sessions-and-passwords.md)). Accounts are optional, and come with the [accounts plan](history/auth-and-accounts-plan.md).
 - Additional joiners with the same room code become **spectators**: read-only WebSocket subscribers to that room's state.
 - There is no session token. "Reconnecting" means re-entering the same room code and the same name you joined with — the server matches the name to your existing seat. This is intentionally lightweight per the brief's low-security, casual-app framing.
 
@@ -94,7 +94,7 @@ Served by the same binary as static assets plus lightweight JS (no SPA build pip
 
 ## Explicitly out of scope (per brief)
 
-- Accounts, auth, RBAC
+- RBAC beyond the admin group and per-class capabilities (the [accounts plan](history/auth-and-accounts-plan.md) adds accounts and those)
 - Full rule sets for real games beyond those shipped
 - Audio
 - Enforced turn clocks (async-only for v1)

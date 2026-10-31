@@ -204,3 +204,85 @@ CREATE TABLE IF NOT EXISTS guest_keys (
 );
 
 CREATE INDEX IF NOT EXISTS idx_guest_keys_principal ON guest_keys(principal_id);
+
+-- Accounts (the accounts plan, stage 3). A handle is unique case-blind and
+-- shown as @handle; status is "pending" until the address is confirmed,
+-- then "active". principal_id is the account's principal, which may have
+-- been the guest that signed up (ADR 0068).
+CREATE TABLE IF NOT EXISTS accounts (
+    id                   INTEGER PRIMARY KEY AUTOINCREMENT,
+    handle               TEXT NOT NULL,
+    handle_lower         TEXT NOT NULL UNIQUE,
+    display_name         TEXT NOT NULL,
+    email                TEXT NOT NULL,
+    email_lower          TEXT NOT NULL,
+    email_verified_at    TIMESTAMP,
+    status               TEXT NOT NULL,
+    must_change_password INTEGER NOT NULL DEFAULT 0,
+    principal_id         TEXT NOT NULL,
+    created_at           TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at           TIMESTAMP
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_accounts_email ON accounts(email_lower) WHERE deleted_at IS NULL;
+
+-- How an account proves itself: a password now; TOTP, recovery codes and
+-- providers later. secret is the encoded hash, params whatever the kind needs.
+CREATE TABLE IF NOT EXISTS credentials (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    account_id    INTEGER NOT NULL REFERENCES accounts(id),
+    kind          TEXT NOT NULL,
+    secret        TEXT NOT NULL,
+    params        TEXT NOT NULL DEFAULT '',
+    created_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_used_at  TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_credentials_account ON credentials(account_id, kind);
+
+CREATE TABLE IF NOT EXISTS groups (
+    name          TEXT PRIMARY KEY
+);
+
+INSERT OR IGNORE INTO groups (name) VALUES ('admin');
+
+CREATE TABLE IF NOT EXISTS account_groups (
+    account_id    INTEGER NOT NULL REFERENCES accounts(id),
+    group_name    TEXT NOT NULL REFERENCES groups(name),
+    PRIMARY KEY (account_id, group_name)
+);
+
+-- Signed-in browsers, by the SHA-256 of the cookie's value. Signing out is a
+-- delete, and so is signing out everywhere.
+CREATE TABLE IF NOT EXISTS sessions (
+    id_hash       TEXT PRIMARY KEY,
+    account_id    INTEGER NOT NULL REFERENCES accounts(id),
+    created_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_seen_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    expires_at    TIMESTAMP NOT NULL,
+    ip_hash       TEXT NOT NULL DEFAULT '',
+    agent         TEXT NOT NULL DEFAULT ''
+);
+
+CREATE INDEX IF NOT EXISTS idx_sessions_account ON sessions(account_id);
+
+-- One-time links mailed to an account (the confirmation of its address), by
+-- the SHA-256 of the token.
+CREATE TABLE IF NOT EXISTS account_tokens (
+    hash          TEXT PRIMARY KEY,
+    account_id    INTEGER NOT NULL REFERENCES accounts(id),
+    kind          TEXT NOT NULL,
+    expires_at    TIMESTAMP NOT NULL,
+    used_at       TIMESTAMP
+);
+
+-- What happened to whom: sign-ins and their failures, signups, password
+-- changes, the seeded administrator.
+CREATE TABLE IF NOT EXISTS auth_events (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    at            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    account_id    INTEGER,
+    kind          TEXT NOT NULL,
+    detail        TEXT NOT NULL DEFAULT '',
+    ip_hash       TEXT NOT NULL DEFAULT ''
+);

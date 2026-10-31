@@ -184,7 +184,12 @@ func TestMetrics_SeriesCountOfAFreshServerIsUnderTheCeiling(t *testing.T) {
 	// a statement or two more at startup — not for a new label, which would
 	// add dozens and is what this is here to catch. Raise it deliberately,
 	// with a reason, never to make a failure go away.
-	const ceiling = 200
+	//
+	// Raised from 200 to 300 with the accounts (ADR 0068): a fresh server's
+	// first start also makes its first administrator, and the nine
+	// statements that takes are nine more duration histograms (about 140
+	// series with the six new tables' row gauges; 140 before, 280 after).
+	const ceiling = 300
 
 	_, scrape := newMeasuredServer(t)
 	got := seriesCount(scrape())

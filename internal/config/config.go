@@ -117,6 +117,22 @@ type Config struct {
 	// stays, under its ID.
 	GuestIdle time.Duration
 
+	// Accounts (ADR 0068). Signup is "open" or "closed" (BINGLE_SIGNUP);
+	// open still needs mail, without which nobody can sign up.
+	Signup string
+	// SessionIdle and SessionMax end a session unused that long, and any
+	// session that old (BINGLE_SESSION_IDLE, BINGLE_SESSION_MAX: 14d, 90d).
+	SessionIdle, SessionMax time.Duration
+	// AdminHandle, AdminEmail and AdminPassword make the first administrator
+	// of an empty server (BINGLE_ADMIN_HANDLE, BINGLE_ADMIN_EMAIL,
+	// BINGLE_ADMIN_PASSWORD). The address defaults to the handle at the
+	// public host; the password to bingle123 under BINGLE_DEV or on a
+	// loopback bind (never behind a trusted proxy) and to a random one
+	// printed once otherwise. It must be changed at the first sign-in.
+	AdminHandle   string
+	AdminEmail    string
+	AdminPassword Secret
+
 	// HSTSSeconds, when above zero, adds a Strict-Transport-Security header of
 	// that many seconds to HTTPS responses (BINGLE_TLS_HSTS_SECONDS). Off by
 	// default: browsers refuse plain HTTP for the host while it is in force.
@@ -501,6 +517,35 @@ func loadJournal(cfg *Config) error {
 	if v, ok := os.LookupEnv("BINGLE_METRICS_DB"); ok {
 		cfg.MetricsDB = strings.TrimSpace(v)
 	}
+	cfg.Signup = "open"
+	if v := strings.ToLower(strings.TrimSpace(os.Getenv("BINGLE_SIGNUP"))); v != "" {
+		if v != "open" && v != "closed" {
+			return fmt.Errorf("config: BINGLE_SIGNUP must be open or closed, got %q (invitations come with the admin pages)", v)
+		}
+		cfg.Signup = v
+	}
+	cfg.SessionIdle, cfg.SessionMax = 14*24*time.Hour, 90*24*time.Hour
+	for _, d := range []struct {
+		name string
+		to   *time.Duration
+	}{{"BINGLE_SESSION_IDLE", &cfg.SessionIdle}, {"BINGLE_SESSION_MAX", &cfg.SessionMax}} {
+		if v := strings.TrimSpace(os.Getenv(d.name)); v != "" {
+			got, err := parseDays(v)
+			if err != nil || got < time.Hour {
+				return fmt.Errorf("config: %s must be a duration of an hour or more, such as 14d or 36h, got %q", d.name, v)
+			}
+			*d.to = got
+		}
+	}
+	if cfg.SessionIdle > cfg.SessionMax {
+		return fmt.Errorf("config: BINGLE_SESSION_IDLE (%s) is longer than BINGLE_SESSION_MAX (%s)", cfg.SessionIdle, cfg.SessionMax)
+	}
+	cfg.AdminHandle = "admin"
+	if v := strings.TrimSpace(os.Getenv("BINGLE_ADMIN_HANDLE")); v != "" {
+		cfg.AdminHandle = v
+	}
+	cfg.AdminEmail = strings.TrimSpace(os.Getenv("BINGLE_ADMIN_EMAIL"))
+	cfg.AdminPassword = NewSecret(os.Getenv("BINGLE_ADMIN_PASSWORD"))
 	cfg.GuestIdle = defaultGuestIdle
 	if v := strings.TrimSpace(os.Getenv("BINGLE_GUEST_IDLE")); v != "" {
 		d, err := parseDays(v)
@@ -849,4 +894,28 @@ func parseDays(v string) (time.Duration, error) {
 		return time.Duration(days) * 24 * time.Hour, nil
 	}
 	return time.ParseDuration(v)
+}
+
+// SeedPasswordDeterministic reports whether the first administrator may get
+// the well-known development password: under BINGLE_DEV, or on a loopback
+// bind — and never behind a trusted proxy, where every request looks local.
+func (c Config) SeedPasswordDeterministic() bool {
+	return !c.TrustProxy && (c.Dev || c.LoopbackBind())
+}
+
+// SeedAdminEmail is the first administrator's address: BINGLE_ADMIN_EMAIL, or
+// the handle at the public URL's host, or at localhost.
+func (c Config) SeedAdminEmail() string {
+	if c.AdminEmail != "" {
+		return c.AdminEmail
+	}
+	handle := c.AdminHandle
+	if handle == "" {
+		handle = "admin"
+	}
+	host := "localhost.localdomain"
+	if u, err := url.Parse(c.PublicURL); err == nil && u.Hostname() != "" && strings.Contains(u.Hostname(), ".") {
+		host = u.Hostname()
+	}
+	return handle + "@" + host
 }
