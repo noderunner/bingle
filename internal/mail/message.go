@@ -173,3 +173,21 @@ func AccountConfirmation(to, handle, base, token string) Message {
 			"If this was not you, ignore this message: the account is never usable and is removed in two days.\n",
 	}
 }
+
+// PasswordResetURL is the link that resets an account's password.
+func PasswordResetURL(base, token string) string {
+	return base + "/account/reset?t=" + url.QueryEscape(token)
+}
+
+// PasswordReset is the mail with a link to choose a new password.
+func PasswordReset(to, handle, base, token string) Message {
+	handle = Sanitize(handle, 24)
+	return Message{
+		To:      to,
+		Subject: "Reset your Bingle password",
+		Body: fmt.Sprintf("Someone, probably you, asked to reset the password of the Bingle account @%s.\n\n", handle) +
+			"To choose a new one, open the link below (it works for an hour, once):\n\n" +
+			PasswordResetURL(base, token) + "\n\n" +
+			"If this was not you, ignore this message: your password stays as it is.\n",
+	}
+}

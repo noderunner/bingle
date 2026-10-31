@@ -113,7 +113,7 @@ otherwise. Its first sign-in (at `/login`) asks for a new password.
 ./bin/bingle account list                              # handles, status, groups
 ./bin/bingle account create ana ana@example.com        # a confirmed account; prints its password
 ./bin/bingle account create ops ops@example.com --admin
-./bin/bingle account reset ana                         # a new password (printed), every session signed out
+./bin/bingle account reset ana                         # a new password (printed), no second factor, every session signed out
 ```
 
 A password the command line prints must be changed at the next sign-in. The commands read the same

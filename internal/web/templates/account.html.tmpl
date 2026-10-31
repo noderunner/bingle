@@ -33,6 +33,18 @@
 				</div>
 				<p class="small" id="account-result" role="status" aria-live="polite"></p>
 			</form>
+			<form id="second-form" novalidate hidden>
+				<div class="field">
+					<label for="second-code">Code from your authenticator app</label>
+					<input id="second-code" type="text" inputmode="numeric" maxlength="11" autocomplete="one-time-code" autocapitalize="none" spellcheck="false" required>
+					<span class="small muted">Or one of your recovery codes, if you do not have the app to hand.</span>
+				</div>
+				<div class="row">
+					<button type="submit" class="primary" id="second-go">Sign in</button>
+				</div>
+				<p class="small" id="second-result" role="status" aria-live="polite"></p>
+			</form>
+			<p class="small muted"><a href="/forgot" id="forgot-link">Forgot your password?</a></p>
 			<p class="small muted" id="login-signup" hidden>No account? <a href="/signup">Sign up</a>. You can also just play: games need no account.</p>
 		</section>
 		{{else if eq .Page "signup"}}
@@ -62,6 +74,36 @@
 			</form>
 			<p class="small muted">Have an account? <a href="/login">Sign in</a>.</p>
 		</section>
+		{{else if eq .Page "forgot"}}
+		<section class="card" id="forgot-card">
+			<h1>Forgot your password</h1>
+			<form id="forgot-form" novalidate>
+				<div class="field">
+					<label for="forgot-who">Your handle or email address</label>
+					<input id="forgot-who" type="text" maxlength="254" autocomplete="username" autocapitalize="none" spellcheck="false" required>
+				</div>
+				<div class="row"><button type="submit" class="primary" id="forgot-go">Mail me a link</button></div>
+				<p class="small" id="account-result" role="status" aria-live="polite"></p>
+			</form>
+		</section>
+		{{else if eq .Page "reset"}}
+		<section class="card" id="reset-card">
+			<h1>Choose a new password</h1>
+			<form id="reset-form" novalidate>
+				<div class="field">
+					<label for="reset-password">New password</label>
+					<input id="reset-password" type="password" minlength="10" maxlength="256" autocomplete="new-password" required>
+					<span class="small muted">At least 10 characters. Every device you are signed in on is signed out.</span>
+				</div>
+				<div class="field">
+					<label for="reset-code">Code from your authenticator app, or a recovery code</label>
+					<input id="reset-code" type="text" maxlength="11" autocomplete="one-time-code" autocapitalize="none" spellcheck="false">
+					<span class="small muted">Only if your account signs in with a code.</span>
+				</div>
+				<div class="row"><button type="submit" class="primary" id="reset-go">Set the password</button></div>
+				<p class="small" id="account-result" role="status" aria-live="polite"></p>
+			</form>
+		</section>
 		{{else if eq .Page "confirm"}}
 		<section class="card" id="confirm-card">
 			<h1>Confirm your account</h1>
@@ -90,6 +132,43 @@
 				</div>
 				<p class="small" id="account-result" role="status" aria-live="polite"></p>
 			</form>
+			<section id="tf-box">
+				<h2>Two-step sign-in</h2>
+				<p class="small error" id="tf-needed" hidden>An administrator signs in with a code from an app as well as the password. Set it up before you go on.</p>
+				<p class="small" id="tf-state"></p>
+				<div class="field" id="tf-password-field">
+					<label for="tf-password">Your password</label>
+					<input id="tf-password" type="password" maxlength="256" autocomplete="current-password">
+				</div>
+				<div class="row" id="tf-off-actions" hidden>
+					<button type="button" class="primary" id="tf-setup">Set it up</button>
+				</div>
+				<div id="tf-setting-up" hidden>
+					<p class="small">Add this to your authenticator app (any app that does "TOTP"), by typing the key or opening the link on your phone, then give the code it shows.</p>
+					<p class="small">Key: <code id="tf-secret"></code></p>
+					<p class="small">Link: <code id="tf-uri" class="wrap"></code></p>
+					<div class="field">
+						<label for="tf-code">Code</label>
+						<input id="tf-code" type="text" inputmode="numeric" maxlength="6" autocomplete="one-time-code">
+					</div>
+					<div class="row"><button type="button" class="primary" id="tf-enable">Turn it on</button></div>
+				</div>
+				<div id="tf-codes-box" hidden>
+					<p class="small">Your recovery codes. Each works once, instead of a code from the app. Keep them somewhere safe: they are shown only now.</p>
+					<ul class="mono" id="tf-codes"></ul>
+				</div>
+				<div id="tf-on-actions" hidden>
+					<div class="field">
+						<label for="tf-off-code">A code from the app (or a recovery code), to turn it off</label>
+						<input id="tf-off-code" type="text" maxlength="11" autocomplete="one-time-code">
+					</div>
+					<div class="row">
+						<button type="button" class="ghost" id="tf-renew">New recovery codes</button>
+						<button type="button" class="ghost" id="tf-off">Turn it off</button>
+					</div>
+				</div>
+				<p class="small" id="tf-result" role="status" aria-live="polite"></p>
+			</section>
 			<div class="row"><button type="button" class="ghost" id="logout-go">Sign out</button></div>
 		</section>
 		{{end}}

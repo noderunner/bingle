@@ -4,6 +4,19 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.24.0 - 2026-10-31
+
+### Bingle Core 0.24.0
+- **Two-step sign-in.** On your account page you can make signing in ask for a code from an
+  authenticator app on your phone as well as your password. You get ten recovery codes for the day
+  the phone is not to hand: each works once.
+- **Forgot your password?** The sign-in page mails you a link to choose a new one. If your account
+  uses two-step sign-in, the link asks for a code as well.
+- Too many wrong passwords or codes in a row now make you wait a while before trying again.
+- For whoever runs the server: administrators must set up two-step sign-in before they can do
+  anything else, unless they are on the server's own machine. `bingle account reset` now also
+  removes two-step sign-in, for somebody who lost their phone and their recovery codes.
+
 ## 0.23.0 - 2026-10-31
 
 ### Bingle Core 0.23.0

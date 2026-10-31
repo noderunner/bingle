@@ -19,7 +19,7 @@ import (
 // Mailer sends the mail an account needs (session.Manager is one).
 type Mailer interface {
 	MailEnabled() bool
-	SendAccountMail(ctx context.Context, addr, ip string, build func(base string) mail.Message) error
+	SendAccountMail(ctx context.Context, kind, addr, ip string, build func(base string) mail.Message) error
 }
 
 // Signup modes (BINGLE_SIGNUP).
@@ -52,6 +52,9 @@ type Accounts struct {
 	loginsByAddr   windowLimiter
 	loginsByHandle windowLimiter
 	signups        windowLimiter
+	forgots        windowLimiter
+	failures       backoff
+	pending        pendingLogins
 }
 
 // AccountOptions configures Accounts.
@@ -90,6 +93,7 @@ func NewAccounts(st *store.Store, o AccountOptions) *Accounts {
 		loginsByAddr:   windowLimiter{per: 10, window: time.Minute},
 		loginsByHandle: windowLimiter{per: 10, window: 15 * time.Minute},
 		signups:        windowLimiter{per: 5, window: time.Hour},
+		forgots:        windowLimiter{per: 5, window: time.Hour},
 	}
 }
 
@@ -164,7 +168,7 @@ func (a *Accounts) Signup(ctx context.Context, handle, email, password, guest, i
 	if err := a.st.CreateAccountToken(ctx, hashSecret(token), id, "confirm", now.Add(confirmFor)); err != nil {
 		return err
 	}
-	if err := a.mail.SendAccountMail(ctx, addr, ip, func(base string) mail.Message { return mail.AccountConfirmation(addr, h, base, token) }); err != nil {
+	if err := a.mail.SendAccountMail(ctx, "confirm", addr, ip, func(base string) mail.Message { return mail.AccountConfirmation(addr, h, base, token) }); err != nil {
 		// Without the mail the account can never be used: let the handle go.
 		_ = a.st.DeletePendingAccount(ctx, id)
 		a.log.Warn("the confirmation of a new account was not sent", "err", err)
@@ -217,42 +221,57 @@ type Session struct {
 	Account store.Account
 }
 
-// Login checks a handle and a password and starts a session. guest is the
-// guest the browser was (or ""): what it holds becomes the account's. Every
-// way of being wrong — no such handle, a wrong password — is the same answer
-// in the same time.
-func (a *Accounts) Login(ctx context.Context, handle, password, guest, ip, agent string) (Session, error) {
+// Login checks a handle and a password. guest is the guest the browser was
+// (or ""): what it holds becomes the account's. Every way of being wrong —
+// no such handle, a wrong password — is the same answer in the same time,
+// and five of them in a quarter of an hour lock the handle for a while.
+//
+// An account with a second factor is not signed in yet: Login returns the
+// token of a sign-in waiting for its code (SecondFactor finishes it).
+func (a *Accounts) Login(ctx context.Context, handle, password, guest, ip, agent string) (Session, string, error) {
 	h := strings.ToLower(strings.TrimPrefix(strings.TrimSpace(handle), "@"))
 	now := a.now()
-	if !a.loginsByAddr.allow(ip, now) || !a.loginsByHandle.allow(h, now) {
-		return Session{}, ErrTooManyTries
+	if !a.loginsByAddr.allow(ip, now) || !a.loginsByHandle.allow(h, now) || a.failures.locked("handle:"+h, now) {
+		return Session{}, "", ErrTooManyTries
 	}
 	acc, err := a.st.AccountByHandle(ctx, h)
 	if errors.Is(err, store.ErrNotFound) {
 		VerifyPassword(password, dummy(), a.params)
+		a.failures.fail("handle:"+h, now)
 		a.audit(ctx, 0, "login-failed", "", ip)
-		return Session{}, ErrBadLogin
+		return Session{}, "", ErrBadLogin
 	}
 	if err != nil {
-		return Session{}, err
+		return Session{}, "", err
 	}
 	stored, err := a.st.PasswordHash(ctx, acc.ID)
 	if err != nil && !errors.Is(err, store.ErrNotFound) {
-		return Session{}, err
+		return Session{}, "", err
 	}
 	ok, rehash := VerifyPassword(password, stored, a.params)
 	if !ok {
+		a.failures.fail("handle:"+h, now)
 		a.audit(ctx, acc.ID, "login-failed", "", ip)
-		return Session{}, ErrBadLogin
+		return Session{}, "", ErrBadLogin
 	}
 	if acc.Status != store.AccountActive {
-		return Session{}, ErrNotConfirmed
+		return Session{}, "", ErrNotConfirmed
 	}
+	a.failures.clear("handle:" + h)
 	if rehash {
 		if err := a.st.SetPassword(ctx, acc.ID, HashPassword(password, a.params), acc.MustChangePassword); err != nil {
-			return Session{}, err
+			return Session{}, "", err
 		}
 	}
+	if acc.HasTOTP {
+		return Session{}, a.pending.add(acc.ID, guest, now), nil
+	}
+	s, err := a.finishLogin(ctx, acc, guest, ip, agent, "password")
+	return s, "", err
+}
+
+// finishLogin signs a browser in to acc, once every factor is in.
+func (a *Accounts) finishLogin(ctx context.Context, acc store.Account, guest, ip, agent, how string) (Session, error) {
 	// What the browser did as a guest is the account's from now on.
 	if guest != "" && guest != acc.PrincipalID {
 		if err := a.st.MergePrincipal(ctx, guest, acc.PrincipalID); err != nil {
@@ -266,7 +285,7 @@ func (a *Accounts) Login(ctx context.Context, handle, password, guest, ip, agent
 	if err != nil {
 		return Session{}, err
 	}
-	a.audit(ctx, acc.ID, "login", "", ip)
+	a.audit(ctx, acc.ID, "login", how, ip)
 	return s, nil
 }
 
@@ -419,7 +438,8 @@ func (a *Accounts) Create(ctx context.Context, handle, email string, admin bool)
 }
 
 // ResetPassword gives an account a new random password, to be changed at its
-// next sign-in, and signs it out everywhere (the command line's way back in).
+// next sign-in, takes away its second factor and signs it out everywhere:
+// the command line's way back in.
 func (a *Accounts) ResetPassword(ctx context.Context, handle string) (string, error) {
 	acc, err := a.st.AccountByHandle(ctx, handle)
 	if err != nil {
@@ -429,10 +449,17 @@ func (a *Accounts) ResetPassword(ctx context.Context, handle string) (string, er
 	if err := a.st.SetPassword(ctx, acc.ID, HashPassword(pw, a.params), true); err != nil {
 		return "", err
 	}
+	// Lost the phone and the recovery codes too: that is what an operator
+	// is for, and the reset takes the second factor away with the password.
+	if err := a.st.RemoveSecondFactor(ctx, acc.ID); err != nil {
+		return "", err
+	}
 	if err := a.st.DeleteSessions(ctx, acc.ID, ""); err != nil {
 		return "", err
 	}
-	a.audit(ctx, acc.ID, "password-reset", "command line", "")
+	a.failures.clear("handle:" + acc.Handle)
+	a.failures.clear(accountKey(acc.ID))
+	a.audit(ctx, acc.ID, "password-reset", "command line, second factor removed", "")
 	return pw, nil
 }
 
