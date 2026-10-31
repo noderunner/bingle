@@ -128,6 +128,17 @@
 		<section class="card" id="account-card">
 			<h1>Your account</h1>
 			<p id="account-who"></p>
+			<p class="small" id="account-email"></p>
+			<form id="handle-form" novalidate>
+				<h2>Your handle</h2>
+				<div class="field">
+					<label for="handle-new">New handle</label>
+					<input id="handle-new" type="text" maxlength="25" autocapitalize="none" spellcheck="false">
+					<span class="small muted">Your old handle is kept for you for 30 days, so nobody else can take it and pass for you.</span>
+				</div>
+				<div class="row"><button type="submit" class="ghost" id="handle-go">Change it</button></div>
+				<p class="small" id="handle-result" role="status" aria-live="polite"></p>
+			</form>
 			<p class="small error" id="account-must-change" hidden>Choose a new password before you go on: the one you signed in with was given to you.</p>
 			<form id="password-form" novalidate>
 				<h2 id="password-title">Change your password</h2>
@@ -186,6 +197,11 @@
 					</div>
 				</div>
 				<p class="small" id="tf-result" role="status" aria-live="polite"></p>
+			</section>
+			<section id="sessions-box">
+				<h2>Where you are signed in</h2>
+				<ul class="small" id="sessions-list"></ul>
+				<div class="row"><button type="button" class="ghost" id="sessions-end">Sign out everywhere else</button></div>
 			</section>
 			<section id="tokens-box">
 				<h2>API tokens</h2>

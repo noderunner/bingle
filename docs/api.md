@@ -41,6 +41,10 @@ Position documents appear as `state` (full: `cells` = stacks bottom-to-top,
 | `GET /auth/oidc/{id}/callback` | the provider's `code` and `state` | to the `return` path signed in; to `/login?second=1` for a second factor; to `/signup?provider=` to choose a handle; to `/login?error=` (or `/account?error=`) otherwise |
 | `POST /auth/oidc/finish` | `{handle}` | `{me, return}`: the account a provider vouched for, signed in |
 | `POST /auth/oidc/unlink` | `{provider, password}` | the account, no longer signing in with it; `400` if it is the last way in |
+| `POST /auth/handle` | `{handle}` | the account, renamed; the old handle is held for it for 30 days (`409` a handle that is taken or held) |
+| `GET /auth/sessions` | | `{sessions: [{id, created_at, last_seen_at, agent, current?}]}` |
+| `POST /auth/sessions/end-others` | | every other session of the account ends |
+| `GET /auth/admin/events` | | `{events: [{at, account?, kind, detail?}]}`: the latest 200 of the audit log (the admin group) |
 | `GET /auth/tokens` | | `{tokens: [{id, name, scopes, created_at, last_used_at?}], scopes}`: the account's API tokens (not through a token) |
 | `POST /auth/tokens` | `{name, scopes}` | `201 {token}`, shown once |
 | `DELETE /auth/tokens/{id}` | | the token stops working |
@@ -60,6 +64,21 @@ An account whose password must be changed (a seeded or command-line one) gets `4
 state-changing request outside `/auth` until it does; so does an administrator without a second
 factor, except on a genuine loopback connection. Five failures in a quarter of an hour (passwords
 for a handle, codes for an account) lock it for a minute, doubling, an hour at most (`429`).
+
+## Guests and "My games" (ADR 0072)
+
+| Method & path | Body | Response |
+|---|---|---|
+| `GET /api/me/games` | | `{games: [{room_code, game_def_id, name, status, seats, updated_at}]}`: the games the asker (a guest or an account) has a seat in, the latest first |
+| `GET /api/guest/key` | (the page's header, the guest cookie) | `{key, link}`: this browser's guest key, to copy to another device; `409` for a browser that is not a guest |
+| `POST /api/guest/adopt` | `{key}` | this browser becomes that guest, its own merged in (a signed-in account takes the guest in instead); `400` for any key that does not work, `429` past ten tries an hour |
+| `POST /api/guest/rotate` | | a new key in the cookie; every copy of the old one stops working; the seats stay |
+| `POST /api/guest/discard` | | the guest's key stops working; this browser's next action makes a new guest |
+
+A seat in a game's answer and its state events carries `handle` (an account holds it) or `guest`
+(a guest does), and, in `GET /games/{code}`, `yours` when it is the asker's; so does a chat line
+(`handle`, `guest`). A name that is an account's handle, or a reserved one, is `409` for anybody but
+that account.
 
 ## Games
 

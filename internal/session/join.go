@@ -99,6 +99,11 @@ func (m *Manager) JoinGameAt(ctx context.Context, roomCode, name string, role Ro
 		playersBySeat[p.Seat] = p
 	}
 
+	// A new seat's name may not be somebody else's handle.
+	if err := m.mayUseName(ctx, name); err != nil {
+		return JoinResult{}, err
+	}
+
 	var openSeat int
 	var openSeatColor string
 	var foundOpenSeat bool

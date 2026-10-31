@@ -11,6 +11,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/noderunner/bingle/internal/auth"
 	"github.com/noderunner/bingle/internal/engine/board"
 	"github.com/noderunner/bingle/internal/engine/state"
 	"github.com/noderunner/bingle/internal/session"
@@ -204,6 +205,11 @@ type getGameSeat struct {
 	Name  string `json:"name"`
 	Label string `json:"label,omitempty"`
 	Bot   string `json:"bot,omitempty"`
+	// Handle is the account holding the seat, Guest says a guest does, and
+	// Yours that it is the asker's own (stage 7 of the accounts plan).
+	Handle string `json:"handle,omitempty"`
+	Guest  bool   `json:"guest,omitempty"`
+	Yours  bool   `json:"yours,omitempty"`
 }
 
 // handleGetGame implements GET /games/{code}: look up the room's current
@@ -220,7 +226,8 @@ func (h *handlers) handleGetGame(w http.ResponseWriter, r *http.Request) {
 
 	seats := make([]getGameSeat, len(snapshot.Seats))
 	for i, s := range snapshot.Seats {
-		seats[i] = getGameSeat{Seat: s.Seat, Color: s.Color, Name: s.Name, Label: s.Label, Bot: s.Bot}
+		seats[i] = getGameSeat{Seat: s.Seat, Color: s.Color, Name: s.Name, Label: s.Label, Bot: s.Bot, Handle: s.Handle, Guest: s.Guest,
+			Yours: s.PrincipalID != "" && s.PrincipalID == auth.IDFrom(r.Context())}
 	}
 
 	resp := getGameResponse{
@@ -565,4 +572,17 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(v)
+}
+
+// handleOwnGames implements GET /me/games: the games the asker has a seat
+// in, on whatever device it asks from ("My games", stage 7 of the accounts
+// plan).
+func (h *handlers) handleOwnGames(w http.ResponseWriter, r *http.Request) {
+	games, err := h.mgr.OwnGames(r.Context(), 60)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	w.Header().Set("Cache-Control", "no-store")
+	writeJSON(w, http.StatusOK, map[string]any{"games": games})
 }

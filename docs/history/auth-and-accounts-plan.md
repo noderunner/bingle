@@ -1,7 +1,7 @@
 # Plan: authenticated accounts, capabilities and a secure transport
 
-Status: **stages 1–6 done, stages 7–8 planned** (2026-10-29; guests amended 2026-10-31). Stage 1
-(secure transport) settled [ADR 0065](../decisions/0065-the-connection-must-be-secure.md), stage 2 (principals and guest keys) [ADR 0067](../decisions/0067-principals-and-guest-keys.md), stage 3 (accounts, sessions, passwords) [ADR 0068](../decisions/0068-accounts-sessions-and-passwords.md), stage 4 (the second factor) [ADR 0069](../decisions/0069-second-factor-and-lockout.md), stage 5 (OIDC) [ADR 0070](../decisions/0070-oidc.md), stage 6 (capabilities and modes) [ADR 0071](../decisions/0071-capabilities-modes-and-tokens.md). The decisions in *What was decided*
+Status: **stages 1–7 done, stage 8 planned** (2026-10-29; guests amended 2026-10-31). Stage 1
+(secure transport) settled [ADR 0065](../decisions/0065-the-connection-must-be-secure.md), stage 2 (principals and guest keys) [ADR 0067](../decisions/0067-principals-and-guest-keys.md), stage 3 (accounts, sessions, passwords) [ADR 0068](../decisions/0068-accounts-sessions-and-passwords.md), stage 4 (the second factor) [ADR 0069](../decisions/0069-second-factor-and-lockout.md), stage 5 (OIDC) [ADR 0070](../decisions/0070-oidc.md), stage 6 (capabilities and modes) [ADR 0071](../decisions/0071-capabilities-modes-and-tokens.md), stage 7 (identity in the interface) [ADR 0072](../decisions/0072-identity-in-the-interface.md). The decisions in *What was decided*
 were taken with the owner before this was written; the rest is the reasoning, the diagrams
 and the staging. The 2026-10-31 amendment makes a guest a principal of its own, with an ID
 and a portable key (§3a), before stage 2 begins.
@@ -589,6 +589,12 @@ games are merged in; a rotated key stops working everywhere while the seats stay
 leaves the old seats with the old ID; adoption is rate-limited and answers a wrong key exactly as
 an expired one; the `#guest=` fragment is removed from the address bar once read.
 
+Notes. *Done* (ADR 0072). Guest and account markers are badges beside the name rather than part
+of it ("Ana (guest)"), so a player's name stays what they typed. A game page with no name of its
+own for the game takes the seat the server says is `yours`, which is what makes an adopted key
+resume games. A signed-in account can adopt a guest key too, taking the guest's games. The one-time
+transfer code stays left out; changing an address is not on the account page yet.
+
 **8. Migrating the account-only features.** Direct messages and who-is-here onto sessions
 (guests dropped from the list, and `bingle.session` retired with them), `chat_global` and
 `notify` gated, confirmed contacts grandfathered and offered the upgrade path, and the documentation sweep that retires ADR 0006.
@@ -667,3 +673,5 @@ contact into an account without a second confirmation.
   and an in-process fake provider.
 - 2026-10-31: stage 6 done (ADR 0071): the capability matrix and its admin page, closed mode, API
   tokens, per-class limits, invitations.
+- 2026-10-31: stage 7 done (ADR 0072): handles reserved and held, seat and chat markers, "My games"
+  on the server, the account page, the audit log, and the guest key carried to another device.

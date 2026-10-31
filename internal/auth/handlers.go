@@ -63,6 +63,10 @@ func (rs *Resolver) Routes() http.Handler {
 	r.Get("/admin/caps", rs.handleAdminCaps)
 	r.Put("/admin/caps", rs.handleAdminSetCap)
 	r.Post("/admin/invites", rs.handleAdminInvite)
+	r.Get("/admin/events", rs.handleAdminEvents)
+	r.Post("/handle", rs.handleRename)
+	r.Get("/sessions", rs.handleSessions)
+	r.Post("/sessions/end-others", rs.handleEndOthers)
 	return r
 }
 
@@ -273,14 +277,16 @@ type me struct {
 	// Admin: the account is in the admin group (and may use its powers from
 	// here). Mode is "hybrid" or "closed"; SignupMode "open", "invite" or
 	// "closed"; Caps what this browser may do.
-	Admin      bool     `json:"admin,omitempty"`
+	Admin bool `json:"admin,omitempty"`
+	// Email is the account's own address (never another's).
+	Email      string   `json:"email,omitempty"`
 	Mode       string   `json:"mode,omitempty"`
 	SignupMode string   `json:"signup_mode,omitempty"`
 	Caps       []string `json:"caps,omitempty"`
 }
 
 func (rs *Resolver) meOf(r *http.Request, a store.Account) me {
-	out := me{Kind: store.KindAccount, Handle: a.Handle, DisplayName: a.DisplayName, MustChangePassword: a.MustChangePassword, Accounts: true,
+	out := me{Kind: store.KindAccount, Handle: a.Handle, DisplayName: a.DisplayName, MustChangePassword: a.MustChangePassword, Accounts: true, Email: a.Email,
 		SecondFactor: a.HasTOTP, NeedsSecondFactor: rs.needsSecondFactor(r, a)}
 	if rs.accounts != nil {
 		if a.HasTOTP {
@@ -790,4 +796,80 @@ func (rs *Resolver) handleOIDCUnlink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, rs.meOf(r, *acc))
+}
+
+func (rs *Resolver) handleRename(w http.ResponseWriter, r *http.Request) {
+	acc, ok := rs.tokenOwner(w, r)
+	if !ok {
+		return
+	}
+	var req struct {
+		Handle string `json:"handle"`
+	}
+	if !decode(w, r, &req) {
+		return
+	}
+	renamed, err := rs.accounts.Rename(r.Context(), *acc, req.Handle, rs.transport.PeerIP(r))
+	if err != nil {
+		rs.fail(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, rs.meOf(r, renamed))
+}
+
+func (rs *Resolver) handleSessions(w http.ResponseWriter, r *http.Request) {
+	acc, ok := rs.tokenOwner(w, r)
+	if !ok {
+		return
+	}
+	p, _ := From(r.Context())
+	list, err := rs.accounts.Sessions(r.Context(), *acc, p.session)
+	if err != nil {
+		rs.fail(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"sessions": list})
+}
+
+func (rs *Resolver) handleEndOthers(w http.ResponseWriter, r *http.Request) {
+	acc, ok := rs.tokenOwner(w, r)
+	if !ok {
+		return
+	}
+	p, _ := From(r.Context())
+	if err := rs.accounts.EndOtherSessions(r.Context(), *acc, p.session, rs.transport.PeerIP(r)); err != nil {
+		rs.fail(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
+}
+
+func (rs *Resolver) handleAdminEvents(w http.ResponseWriter, r *http.Request) {
+	if _, ok := rs.admin(w, r); !ok {
+		return
+	}
+	events, err := rs.accounts.Events(r.Context(), 200)
+	if err != nil {
+		rs.fail(w, err)
+		return
+	}
+	type row struct {
+		At      string `json:"at"`
+		Account string `json:"account,omitempty"`
+		Kind    string `json:"kind"`
+		Detail  string `json:"detail,omitempty"`
+	}
+	handles := map[int64]string{}
+	out := []row{}
+	for _, e := range events {
+		h, seen := handles[e.AccountID]
+		if !seen && e.AccountID != 0 {
+			if acc, err := rs.accounts.st.AccountByID(r.Context(), e.AccountID); err == nil {
+				h = acc.Handle
+			}
+			handles[e.AccountID] = h
+		}
+		out = append(out, row{At: e.At, Account: h, Kind: e.Kind, Detail: e.Detail})
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"events": out})
 }

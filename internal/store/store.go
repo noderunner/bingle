@@ -82,6 +82,11 @@ func Open(dbPath string) (*Store, error) {
 		_ = db.Close()
 		return nil, fmt.Errorf("migrate sqlite schema: %w", err)
 	}
+	// Indexes on columns that addMissingColumns may just have added.
+	if _, err := db.Exec(`CREATE INDEX IF NOT EXISTS idx_players_principal ON players(principal_id) WHERE principal_id != ''`); err != nil {
+		_ = db.Close()
+		return nil, fmt.Errorf("migrate sqlite schema: %w", err)
+	}
 
 	return &Store{db: db, path: dbPath}, nil
 }

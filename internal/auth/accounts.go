@@ -159,7 +159,7 @@ func (a *Accounts) Signup(ctx context.Context, handle, email, password, guest, i
 	if err := a.st.DeletePendingAccounts(ctx, now.Add(-confirmFor)); err != nil {
 		return err
 	}
-	if _, err := a.st.AccountByHandle(ctx, h); err == nil {
+	if a.handleTaken(ctx, h, 0) {
 		return ErrHandleTaken
 	}
 	hash := HashPassword(password, a.params)
@@ -437,6 +437,9 @@ func (a *Accounts) Create(ctx context.Context, handle, email string, admin bool)
 	if err != nil {
 		return "", err
 	}
+	if a.handleTaken(ctx, h, 0) {
+		return "", ErrHandleTaken
+	}
 	addr, err := mail.ValidAddress(email)
 	if err != nil {
 		return "", err
@@ -563,3 +566,74 @@ func (a *Accounts) Invite(ctx context.Context, by store.Account, ip string) (str
 
 // SignupMode is "open", "invite" or "closed".
 func (a *Accounts) SignupMode() string { return a.signup }
+
+// ---- handles, sessions, guests --------------------------------------------------------
+
+// handleHold is how long a handle given up by a rename stays its old owner's.
+const handleHold = 30 * 24 * time.Hour
+
+// handleTaken reports whether h is an account's, or held for one, other
+// than except.
+func (a *Accounts) handleTaken(ctx context.Context, h string, except int64) bool {
+	owner, err := a.st.HandleHeldBy(ctx, h, a.now())
+	return err != nil || (owner != 0 && owner != except)
+}
+
+// Rename gives acc a new handle; the old one is held for it for 30 days.
+func (a *Accounts) Rename(ctx context.Context, acc store.Account, handle, ip string) (store.Account, error) {
+	h, err := CanonHandle(handle, false)
+	if err != nil {
+		return store.Account{}, err
+	}
+	if h == acc.Handle {
+		return acc, nil
+	}
+	if a.handleTaken(ctx, h, acc.ID) {
+		return store.Account{}, ErrHandleTaken
+	}
+	if err := a.st.RenameAccount(ctx, acc.ID, h, a.now().Add(handleHold)); err != nil {
+		if errors.Is(err, store.ErrTaken) {
+			return store.Account{}, ErrHandleTaken
+		}
+		return store.Account{}, err
+	}
+	a.audit(ctx, acc.ID, "renamed", "@"+acc.Handle+" to @"+h, ip)
+	return a.st.AccountByID(ctx, acc.ID)
+}
+
+// SessionInfo is one of an account's sessions on its account page.
+type SessionInfo struct {
+	ID         string `json:"id"` // the first characters of its hash: enough to tell apart
+	CreatedAt  string `json:"created_at"`
+	LastSeenAt string `json:"last_seen_at"`
+	Agent      string `json:"agent"`
+	Current    bool   `json:"current,omitempty"`
+}
+
+// Sessions lists acc's sessions; current is the asking browser's cookie.
+func (a *Accounts) Sessions(ctx context.Context, acc store.Account, current string) ([]SessionInfo, error) {
+	rows, err := a.st.Sessions(ctx, acc.ID, a.now())
+	if err != nil {
+		return nil, err
+	}
+	out := make([]SessionInfo, 0, len(rows))
+	mine := hashSecret(current)
+	for _, r := range rows {
+		out = append(out, SessionInfo{ID: r.IDHash[:12], CreatedAt: r.CreatedAt, LastSeenAt: r.LastSeenAt, Agent: r.Agent, Current: r.IDHash == mine})
+	}
+	return out, nil
+}
+
+// EndOtherSessions signs acc out everywhere but the asking browser.
+func (a *Accounts) EndOtherSessions(ctx context.Context, acc store.Account, current, ip string) error {
+	if err := a.st.DeleteSessions(ctx, acc.ID, hashSecret(current)); err != nil {
+		return err
+	}
+	a.audit(ctx, acc.ID, "signed-out-elsewhere", "", ip)
+	return nil
+}
+
+// Events is the latest of the audit log, for the admin page.
+func (a *Accounts) Events(ctx context.Context, limit int) ([]store.AuthEvent, error) {
+	return a.st.AuthEvents(ctx, limit)
+}

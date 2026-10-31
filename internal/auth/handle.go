@@ -36,3 +36,13 @@ func CanonHandle(h string, allowReserved bool) (string, error) {
 	}
 	return h, nil
 }
+
+// HandleOf is a name as a handle would be written ("@Ana" is "ana"), and
+// whether it could be one at all.
+func HandleOf(name string) (string, bool) {
+	h := strings.ToLower(strings.TrimPrefix(strings.TrimSpace(name), "@"))
+	return h, handleRe.MatchString(h)
+}
+
+// IsReserved reports whether a handle is one nobody may have.
+func IsReserved(h string) bool { return reserved[h] }

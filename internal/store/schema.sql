@@ -332,3 +332,11 @@ CREATE TABLE IF NOT EXISTS invites (
     used_by       INTEGER,
     used_at       TIMESTAMP
 );
+
+-- A handle given up by a rename is held for its old owner for 30 days, so
+-- nobody can take it and be mistaken for them (stage 7 of the accounts plan).
+CREATE TABLE IF NOT EXISTS handle_holds (
+    handle_lower  TEXT PRIMARY KEY,
+    account_id    INTEGER NOT NULL REFERENCES accounts(id),
+    until         TIMESTAMP NOT NULL
+);

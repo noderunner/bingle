@@ -41,6 +41,12 @@ type SeatInfo struct {
 	Label string
 	Name  string // "" if this seat hasn't been filled yet
 	Bot   string // bot ID when a built-in bot plays this seat
+	// Handle is the account's handle when an account holds the seat, and
+	// Guest says a guest does (neither: an anonymous client, or nobody).
+	Handle string `json:",omitempty"`
+	Guest  bool   `json:",omitempty"`
+	// PrincipalID is who holds the seat: the server's own, never sent.
+	PrincipalID string `json:"-"`
 }
 
 // ErrGameDefNotFound is returned by CreateGame when gameDefID isn't
@@ -191,6 +197,9 @@ func (m *Manager) CreateGame(ctx context.Context, gameDefID, creatorName string)
 // CreateGameWithOptions is CreateGame with a choice of seat and an optional
 // built-in bot opponent.
 func (m *Manager) CreateGameWithOptions(ctx context.Context, opts CreateOptions) (CreateGameResult, error) {
+	if err := m.mayUseName(ctx, opts.CreatorName); err != nil {
+		return CreateGameResult{}, err
+	}
 	if len(opts.Options) > 0 {
 		id, err := m.catalog.Derive(opts.GameDefID, opts.Options)
 		if err != nil {

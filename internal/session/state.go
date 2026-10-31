@@ -90,6 +90,7 @@ func (m *Manager) snapshot(compiled *catalog.CompiledGame, game store.Game, play
 		if p, ok := playersBySeat[seatDef.Seat]; ok {
 			info.Name = p.Name
 			info.Bot = p.Bot
+			info.PrincipalID = p.PrincipalID
 		}
 		seats = append(seats, info)
 	}
@@ -339,7 +340,11 @@ func (m *Manager) readState(ctx context.Context, roomCode string, atSeq *int) (S
 		game = hist
 	}
 
-	return m.snapshot(compiled, game, players, doc)
+	snap, err := m.snapshot(compiled, game, players, doc)
+	if err == nil {
+		m.identify(ctx, snap.Seats)
+	}
+	return snap, err
 }
 
 // stateAtSeq returns the persisted state document after move seq (0 = the

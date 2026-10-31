@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/chromedp/cdproto/runtime"
 	"github.com/chromedp/chromedp"
 
 	"github.com/noderunner/bingle/internal/app"
@@ -187,4 +188,40 @@ func TestAccountUI_TheAdminPage(t *testing.T) {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx2, "refused", `!document.getElementById("admin-refused").hidden && document.getElementById("caps-card").hidden`, 10*time.Second)
+}
+
+// The guest key carried to another browser by its link: the fragment is
+// taken out of the address at once, and the game is there to resume.
+func TestAccountUI_AGuestKeyLinkResumesTheGames(t *testing.T) {
+	base := newRESTTestServer(t)
+	laptop, cancel := newChromedpContext(t, 60*time.Second)
+	defer cancel()
+	if err := chromedp.Run(laptop, chromedp.Navigate(base+"/")); err != nil {
+		t.Fatal(err)
+	}
+	// The laptop takes a seat in a game (as the page does: a POST from the page).
+	var room string
+	if err := chromedp.Run(laptop, chromedp.Evaluate(`fetch("/api/games", {method: "POST", headers: {"Content-Type": "application/json", "X-Bingle-Session": "1"}, body: JSON.stringify({game_def_id: "tic-tac-toe", player_name: "Lia"})}).then(r => r.json()).then(j => j.room_code)`, &room, func(p *runtime.EvaluateParams) *runtime.EvaluateParams { return p.WithAwaitPromise(true) })); err != nil {
+		t.Fatal(err)
+	}
+	doJSONAs(t, newGuestKey(t, base), "POST", base+"/api/games/"+room+"/join", map[string]any{"player_name": "Bob"}, nil)
+	if err := chromedp.Run(laptop, chromedp.Navigate(base+"/profile")); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, laptop, "the guest card", `!document.getElementById("guest-box").hidden`, 10*time.Second)
+	clickSel(t, laptop, "#guest-copy")
+	waitJS(t, laptop, "the link", `document.getElementById("guest-link").textContent.indexOf("#guest=bgg_") > 0`, 10*time.Second)
+	link := evalString(t, laptop, `document.getElementById("guest-link").textContent`)
+
+	phone, cancel2 := newChromedpContext(t, 60*time.Second)
+	defer cancel2()
+	if err := chromedp.Run(phone, chromedp.Navigate(link)); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, phone, "the key out of the address", `location.hash === ""`, 10*time.Second)
+	// After the reload, the game is among the phone's, and its seat is the phone's.
+	if err := chromedp.Run(phone, chromedp.Navigate(base+"/game/"+room)); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, phone, "the seat, as the phone's own", `document.querySelector("#seat-1 .badge") && [...document.querySelectorAll("#seat-1 .badge")].some(b => b.textContent === "you") && [...document.querySelectorAll("#seat-1 .badge")].some(b => b.textContent === "guest")`, 15*time.Second)
 }

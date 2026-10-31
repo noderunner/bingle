@@ -26,12 +26,71 @@ api.me()
 		if (me.kind === "account") {
 			line.append(`Signed in as @${me.handle}. `, link("/account", "Your account", "account-link"));
 		} else {
+			document.getElementById("guest-box").hidden = me.kind !== "guest";
 			line.append("You play as a guest in this browser. ", link("/login", "Sign in", "login-link"));
 			if (me.signup) line.append(" or ", link("/signup", "sign up", "signup-link"), " to keep your games on every device.");
 		}
 		box.hidden = false;
 	})
 	.catch(() => {});
+
+// ---- the guest key ------------------------------------------------------------------
+
+{
+	const el = (id) => document.getElementById(id);
+	const sayGuest = (text, kind = "") => {
+		el("guest-result").textContent = text;
+		el("guest-result").className = "small " + kind;
+	};
+	const run = async (button, f) => {
+		button.disabled = true;
+		sayGuest("");
+		try {
+			await f();
+		} catch (err) {
+			sayGuest(err.message || "That did not work.", "error");
+		} finally {
+			button.disabled = false;
+		}
+	};
+	el("guest-copy").addEventListener("click", () =>
+		run(el("guest-copy"), async () => {
+			const { key, link } = await api.guestKey();
+			const url = location.origin + link;
+			el("guest-link").textContent = url;
+			el("guest-key").textContent = key;
+			el("guest-shown").hidden = false;
+			try {
+				await navigator.clipboard.writeText(url);
+				sayGuest("The link is copied.");
+			} catch (_) {
+				sayGuest("Copy the link or the key by hand.");
+			}
+		})
+	);
+	el("guest-rotate").addEventListener("click", () =>
+		run(el("guest-rotate"), async () => {
+			await api.rotateGuest();
+			el("guest-shown").hidden = true;
+			sayGuest("This browser has a new key. The old one, wherever you copied it, no longer works; your games are still yours.");
+		})
+	);
+	el("guest-discard").addEventListener("click", () =>
+		run(el("guest-discard"), async () => {
+			if (!window.confirm("Start over as a new guest? This browser loses its seats: the games you play now stay with the old guest, which nobody can be again unless you copied its key.")) return;
+			await api.discardGuest();
+			sayGuest("This browser is a new guest from its next game on.");
+		})
+	);
+	el("guest-use").addEventListener("click", () =>
+		run(el("guest-use"), async () => {
+			const key = el("guest-use-key").value.trim();
+			await api.adoptGuest(key);
+			el("guest-use-key").value = "";
+			sayGuest("This browser is that guest now: its games are under Active games, and this browser's own came along.");
+		})
+	);
+}
 
 const name = document.getElementById("profile_name");
 const email = document.getElementById("profile_email");

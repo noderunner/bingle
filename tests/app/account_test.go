@@ -169,7 +169,9 @@ func TestAccount_SigningInBringsTheBrowsersGuestAlong(t *testing.T) {
 	var created struct {
 		RoomCode string `json:"room_code"`
 	}
-	if code := phone.do("POST", "/api/games", map[string]any{"game_def_id": "tic-tac-toe", "player_name": "Ana"}, &created); code != 200 {
+	// A guest may not go by @ana's handle (stage 7), so the phone's guest is
+	// "Ana Phone".
+	if code := phone.do("POST", "/api/games", map[string]any{"game_def_id": "tic-tac-toe", "player_name": "Ana Phone"}, &created); code != 200 {
 		t.Fatalf("create: %d", code)
 	}
 	e.join(t, created.RoomCode, "Bob")
@@ -180,7 +182,7 @@ func TestAccount_SigningInBringsTheBrowsersGuestAlong(t *testing.T) {
 	if code := laptop.login("ana", pw); code != 200 {
 		t.Fatalf("login: %d", code)
 	}
-	if code := laptop.do("POST", "/api/games/"+created.RoomCode+"/moves", map[string]any{"player_name": "Ana", "notation": "a1"}, nil); code != 200 {
+	if code := laptop.do("POST", "/api/games/"+created.RoomCode+"/moves", map[string]any{"player_name": "Ana Phone", "notation": "a1"}, nil); code != 200 {
 		t.Errorf("the account, on another device, plays the phone guest's seat: %d, want 200", code)
 	}
 }

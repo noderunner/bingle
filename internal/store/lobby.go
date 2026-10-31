@@ -92,6 +92,8 @@ type ChatMessage struct {
 	Name      string
 	Body      string
 	CreatedAt string
+	// PrincipalID is who said it ("" for an anonymous client).
+	PrincipalID string
 }
 
 // AddChatMessage appends a message to the game's chat.
@@ -111,8 +113,8 @@ func (s *Store) AddChatMessage(ctx context.Context, gameID int64, seat int, name
 		return ChatMessage{}, fmt.Errorf("trimming chat (game_id=%d): %w", gameID, err)
 	}
 	var m ChatMessage
-	err = s.queryRow(ctx, "AddChatMessage.readBack", `SELECT id, game_id, seat, name, body, created_at FROM chat_messages WHERE id = ?`, id).
-		Scan(&m.ID, &m.GameID, &m.Seat, &m.Name, &m.Body, &m.CreatedAt)
+	err = s.queryRow(ctx, "AddChatMessage.readBack", `SELECT id, game_id, seat, name, body, created_at, principal_id FROM chat_messages WHERE id = ?`, id).
+		Scan(&m.ID, &m.GameID, &m.Seat, &m.Name, &m.Body, &m.CreatedAt, &m.PrincipalID)
 	if err != nil {
 		return ChatMessage{}, err
 	}
@@ -129,12 +131,12 @@ func (s *Store) ListChat(ctx context.Context, gameID int64, afterID int64, limit
 	var err error
 	if afterID > 0 {
 		rows, err = s.query(ctx, "ListChat",
-			`SELECT id, game_id, seat, name, body, created_at FROM chat_messages
+			`SELECT id, game_id, seat, name, body, created_at, principal_id FROM chat_messages
 			 WHERE game_id = ? AND id > ? ORDER BY id LIMIT ?`, gameID, afterID, limit)
 	} else {
 		rows, err = s.query(ctx, "ListChat",
-			`SELECT id, game_id, seat, name, body, created_at FROM (
-			   SELECT id, game_id, seat, name, body, created_at FROM chat_messages
+			`SELECT id, game_id, seat, name, body, created_at, principal_id FROM (
+			   SELECT id, game_id, seat, name, body, created_at, principal_id FROM chat_messages
 			   WHERE game_id = ? ORDER BY id DESC LIMIT ?) ORDER BY id`, gameID, limit)
 	}
 	if err != nil {
@@ -144,7 +146,7 @@ func (s *Store) ListChat(ctx context.Context, gameID int64, afterID int64, limit
 	out := make([]ChatMessage, 0)
 	for rows.Next() {
 		var m ChatMessage
-		if err := rows.Scan(&m.ID, &m.GameID, &m.Seat, &m.Name, &m.Body, &m.CreatedAt); err != nil {
+		if err := rows.Scan(&m.ID, &m.GameID, &m.Seat, &m.Name, &m.Body, &m.CreatedAt, &m.PrincipalID); err != nil {
 			return nil, err
 		}
 		out = append(out, m)
@@ -154,10 +156,11 @@ func (s *Store) ListChat(ctx context.Context, gameID int64, afterID int64, limit
 
 // GlobalChatMessage is one line of the global chat room.
 type GlobalChatMessage struct {
-	ID        int64
-	Name      string
-	Body      string
-	CreatedAt string
+	ID          int64
+	Name        string
+	Body        string
+	CreatedAt   string
+	PrincipalID string
 }
 
 // AddGlobalChat appends a message to the global chat room, which keeps its
@@ -176,8 +179,8 @@ func (s *Store) AddGlobalChat(ctx context.Context, name, principalID, body strin
 		return GlobalChatMessage{}, fmt.Errorf("trimming global chat: %w", err)
 	}
 	var m GlobalChatMessage
-	if err := s.queryRow(ctx, "AddGlobalChat.readBack", `SELECT id, name, body, created_at FROM global_chat WHERE id = ?`, id).
-		Scan(&m.ID, &m.Name, &m.Body, &m.CreatedAt); err != nil {
+	if err := s.queryRow(ctx, "AddGlobalChat.readBack", `SELECT id, name, body, created_at, principal_id FROM global_chat WHERE id = ?`, id).
+		Scan(&m.ID, &m.Name, &m.Body, &m.CreatedAt, &m.PrincipalID); err != nil {
 		return GlobalChatMessage{}, err
 	}
 	return m, nil
@@ -193,11 +196,11 @@ func (s *Store) ListGlobalChat(ctx context.Context, afterID int64, limit int) ([
 	var err error
 	if afterID > 0 {
 		rows, err = s.query(ctx, "ListGlobalChat",
-			`SELECT id, name, body, created_at FROM global_chat WHERE id > ? ORDER BY id LIMIT ?`, afterID, limit)
+			`SELECT id, name, body, created_at, principal_id FROM global_chat WHERE id > ? ORDER BY id LIMIT ?`, afterID, limit)
 	} else {
 		rows, err = s.query(ctx, "ListGlobalChat",
-			`SELECT id, name, body, created_at FROM (
-			   SELECT id, name, body, created_at FROM global_chat ORDER BY id DESC LIMIT ?) ORDER BY id`, limit)
+			`SELECT id, name, body, created_at, principal_id FROM (
+			   SELECT id, name, body, created_at, principal_id FROM global_chat ORDER BY id DESC LIMIT ?) ORDER BY id`, limit)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("listing global chat: %w", err)
@@ -206,7 +209,7 @@ func (s *Store) ListGlobalChat(ctx context.Context, afterID int64, limit int) ([
 	out := make([]GlobalChatMessage, 0)
 	for rows.Next() {
 		var m GlobalChatMessage
-		if err := rows.Scan(&m.ID, &m.Name, &m.Body, &m.CreatedAt); err != nil {
+		if err := rows.Scan(&m.ID, &m.Name, &m.Body, &m.CreatedAt, &m.PrincipalID); err != nil {
 			return nil, err
 		}
 		out = append(out, m)

@@ -23,6 +23,27 @@
 			<p id="account-line"></p>
 		</section>
 
+		<section class="card" id="guest-box" hidden>
+			<h2>Your guest key</h2>
+			<p class="small muted">This browser plays as a guest. Its key is what makes your seats yours: copy it to your phone, or another browser, to carry on your games there. Anybody with the key can play as you.</p>
+			<div class="row">
+				<button type="button" class="ghost" id="guest-copy">Copy my guest key</button>
+				<button type="button" class="ghost" id="guest-rotate">New key, same me</button>
+				<button type="button" class="ghost" id="guest-discard">Start over as a new guest</button>
+			</div>
+			<div id="guest-shown" hidden>
+				<p class="small">Open this link on the other device (it is copied), or paste the key there:</p>
+				<p class="small"><code id="guest-link" class="wrap"></code></p>
+				<p class="small"><code id="guest-key" class="wrap"></code></p>
+			</div>
+			<div class="field">
+				<label for="guest-use-key">Use a guest key from another device</label>
+				<input id="guest-use-key" type="text" maxlength="60" autocapitalize="none" spellcheck="false" placeholder="bgg_…">
+			</div>
+			<div class="row"><button type="button" class="ghost" id="guest-use">Use this key</button></div>
+			<p class="small" id="guest-result" role="status" aria-live="polite"></p>
+		</section>
+
 		<section class="card" id="profile-card">
 			<h2>Settings</h2>
 			<p class="muted small">Saved in this browser: your name is simply offered whenever you create or join a game.</p>

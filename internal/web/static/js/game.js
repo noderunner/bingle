@@ -132,7 +132,11 @@ async function boot() {
 }
 
 function resolveIdentity() {
-	const name = nameFor(code);
+	// The seat the server says is this browser's (its guest's or account's),
+	// when this browser has no name of its own for the game: a phone that
+	// adopted the guest key of the laptop that took the seat.
+	const yours = (S.game.seats || []).find((s) => s.yours && !s.bot);
+	const name = nameFor(code) || (yours ? yours.name : null);
 	S.me = { name: null, seat: 0 };
 	S.mine = [];
 	S.homeSeat = 0;
@@ -2332,6 +2336,9 @@ function seatStrip(seat) {
 		head.append(h("span", { class: "seat-faction small muted" }, seatLabel(seat)));
 	}
 	if (si && si.bot) head.append(h("span", { class: "badge bot" }, "bot"));
+	// Who holds the seat: an account, by its handle, or a guest.
+	if (si && si.handle) head.append(h("span", { class: "badge account", title: "A signed-in account" }, "@" + si.handle));
+	else if (si && si.guest) head.append(h("span", { class: "badge guest", title: "A guest: anybody with no account" }, "guest"));
 	if (isMine(seat)) head.append(h("span", { class: "badge" }, "you"));
 	// The roles of a card game's round: the dealer, who holds the bonus card, who is on the leader's team.
 	const roles = S.info.cards ? rulesetView() : null;

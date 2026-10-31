@@ -101,18 +101,20 @@ type stateEventData struct {
 
 // seatEventData is one seat of a stateEventData.
 type seatEventData struct {
-	Seat  int    `json:"seat"`
-	Color string `json:"color"`
-	Label string `json:"label,omitempty"`
-	Name  string `json:"name"`
-	Bot   string `json:"bot,omitempty"`
+	Seat   int    `json:"seat"`
+	Color  string `json:"color"`
+	Label  string `json:"label,omitempty"`
+	Name   string `json:"name"`
+	Bot    string `json:"bot,omitempty"`
+	Handle string `json:"handle,omitempty"`
+	Guest  bool   `json:"guest,omitempty"`
 }
 
 // stateEventFrom builds a "state" event payload from a snapshot.
 func stateEventFrom(snap StateSnapshot, reason string, removed []int) stateEventData {
 	seats := make([]seatEventData, len(snap.Seats))
 	for i, s := range snap.Seats {
-		seats[i] = seatEventData(s)
+		seats[i] = seatEventData{Seat: s.Seat, Color: s.Color, Label: s.Label, Name: s.Name, Bot: s.Bot, Handle: s.Handle, Guest: s.Guest}
 	}
 	ev := stateEventData{
 		Reason:        reason,

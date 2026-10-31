@@ -60,6 +60,19 @@ api.adminCaps()
 		paint(m);
 		el("caps-card").hidden = false;
 		el("invite-card").hidden = false;
+		return api.adminEvents().then(({ events }) => {
+			const rows = el("events-rows");
+			for (const e of events) {
+				const tr = document.createElement("tr");
+				for (const v of [e.at, e.account ? "@" + e.account : "", e.kind, e.detail || ""]) {
+					const td = document.createElement("td");
+					td.textContent = v;
+					tr.append(td);
+				}
+				rows.append(tr);
+			}
+			el("events-card").hidden = false;
+		});
 	})
 	.catch((err) => {
 		el("admin-refused").textContent = err instanceof ApiError ? err.message : "This page could not be read.";
