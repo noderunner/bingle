@@ -3,6 +3,7 @@ package session
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"github.com/noderunner/bingle/internal/auth"
 	"github.com/noderunner/bingle/internal/store"
@@ -59,4 +60,82 @@ func (m *Manager) mayViewSeat(ctx context.Context, gameID int64, seat int) bool 
 		}
 	}
 	return false
+}
+
+// identify says who holds each seat: an account's handle, or a guest.
+func (m *Manager) identify(ctx context.Context, seats []SeatInfo) {
+	ids := make([]string, 0, len(seats))
+	for _, s := range seats {
+		ids = append(ids, s.PrincipalID)
+	}
+	who, err := m.store.Identities(ctx, ids)
+	if err != nil {
+		return
+	}
+	for i := range seats {
+		if id, ok := who[seats[i].PrincipalID]; ok {
+			seats[i].Handle, seats[i].Guest = id.Handle, id.Guest
+		}
+	}
+}
+
+// ErrNameIsAHandle is the answer to a name that is an account's handle (or
+// one nobody may have) from anybody but that account (stage 7 of the
+// accounts plan): a guest cannot pass for @ana by typing "ana".
+var ErrNameIsAHandle = errors.New("session: that name is an account's: choose another")
+
+// mayUseName reports whether the request may go by name in a game.
+func (m *Manager) mayUseName(ctx context.Context, name string) error {
+	h, ok := auth.HandleOf(name)
+	if !ok {
+		return nil
+	}
+	p, signedIn := auth.From(ctx)
+	mine := signedIn && p.Account != nil && strings.EqualFold(p.Account.Handle, h)
+	if auth.IsReserved(h) {
+		if mine {
+			return nil
+		}
+		return ErrNameIsAHandle
+	}
+	owner, err := m.store.HandleHeldBy(ctx, h, m.now())
+	if err != nil || owner == 0 {
+		return err
+	}
+	if signedIn && p.Account != nil && p.Account.ID == owner {
+		return nil
+	}
+	return ErrNameIsAHandle
+}
+
+// OwnGame is one of the request's principal's games, for "My games".
+type OwnGame struct {
+	RoomCode  string   `json:"room_code"`
+	GameDefID string   `json:"game_def_id"`
+	Name      string   `json:"name"`
+	Status    string   `json:"status"`
+	Seats     []string `json:"seats"` // the names the principal plays under
+	UpdatedAt string   `json:"updated_at"`
+}
+
+// OwnGames lists the games the request's principal has a seat in, the
+// latest first: "My games", on any device the principal is on.
+func (m *Manager) OwnGames(ctx context.Context, limit int) ([]OwnGame, error) {
+	id := auth.IDFrom(ctx)
+	if id == "" {
+		return []OwnGame{}, nil
+	}
+	rows, err := m.store.OwnGames(ctx, id, limit)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]OwnGame, 0, len(rows))
+	for _, g := range rows {
+		name := g.GameDefID
+		if c, ok := m.catalog.Get(g.GameDefID); ok {
+			name = c.Definition.Name
+		}
+		out = append(out, OwnGame{RoomCode: g.RoomCode, GameDefID: g.GameDefID, Name: name, Status: g.Status, Seats: g.Names, UpdatedAt: g.UpdatedAt})
+	}
+	return out, nil
 }

@@ -201,6 +201,7 @@ if (page === "login") {
 			return;
 		}
 		who.textContent = `Signed in as @${me.handle}.`;
+		if (me.email) el("account-email").textContent = `Your address: ${me.email}`;
 		el("account-must-change").hidden = !me.must_change_password;
 		el("tf-needed").hidden = !me.needs_second_factor;
 		el("tf-state").textContent = me.second_factor
@@ -249,6 +250,34 @@ if (page === "login") {
 		}
 	};
 	paintTokens().catch(() => {});
+	const paintSessions = async () => {
+		const { sessions } = await api.sessions();
+		const list = el("sessions-list");
+		list.textContent = "";
+		for (const s of sessions) {
+			const li = document.createElement("li");
+			li.textContent = `${s.agent || "a browser"}, since ${s.created_at}, last seen ${s.last_seen_at}${s.current ? " (this one)" : ""}`;
+			list.append(li);
+		}
+	};
+	paintSessions().catch(() => {});
+	el("sessions-end").addEventListener("click", async () => {
+		await api.endOtherSessions();
+		paintSessions();
+	});
+	el("handle-form").addEventListener("submit", async (ev) => {
+		ev.preventDefault();
+		const out = el("handle-result");
+		try {
+			show(await api.rename(el("handle-new").value));
+			out.className = "small";
+			out.textContent = "Done.";
+			el("handle-new").value = "";
+		} catch (err) {
+			out.className = "small error";
+			out.textContent = err instanceof ApiError ? err.message : "That did not work.";
+		}
+	});
 	el("token-go").addEventListener("click", async () => {
 		const scopes = [...el("token-scopes").querySelectorAll("input:checked")].map((b) => b.value);
 		try {

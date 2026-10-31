@@ -486,7 +486,13 @@ show the `?error=` a provider's callback came back with. The account page lists 
 `#token-scope-<scope>`, `#token-go`; `#token-new` shows it once) and links administrators to **administration**
 (`/admin`, `js/admin.js`, ADR 0071): the mode (`#caps-mode`), the drift badge (`#caps-drift`), a box per class and
 capability (`#cap-user-<cap>`, `#cap-guest-<cap>`, saved on change, `#caps-result`), the limits (`#caps-limits`), and
-invitations (`#invite-go`, `#invite-link`). Anybody else is told (`#admin-refused`). The profile page's `#account-box` says whether the browser is a guest (`#login-link`, `#signup-link`)
+invitations (`#invite-go`, `#invite-link`). Anybody else is told (`#admin-refused`). A seat's strip and a chat line show who holds it beside the name (ADR 0072): `.badge.account` (`@handle`) or
+`.badge.guest`, and `.chat-handle`, `.chat-guest`. The profile page of a guest has `#guest-box`: `#guest-copy` (the key
+and its `#guest=` link, `#guest-link`, `#guest-key`, copied to the clipboard), `#guest-rotate`, `#guest-discard`, and
+`#guest-use-key` with `#guest-use` to adopt a key; any page opened with `#guest=bgg_…` adopts it, takes it out of the
+address and reloads. "My games" merges `GET /api/me/games` into `bingle.games`. The account page adds the address
+(`#account-email`), the handle (`#handle-new`, `#handle-go`) and the sessions (`#sessions-list`, `#sessions-end`); the
+admin page the audit log (`#events-rows`). The profile page's `#account-box` says whether the browser is a guest (`#login-link`, `#signup-link`)
 or signed in (`#account-link`). None of them keeps anything in the browser's storage: the cookies are `HttpOnly`.
 
 ### Email notifications

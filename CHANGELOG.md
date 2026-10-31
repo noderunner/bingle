@@ -4,6 +4,21 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.27.0 - 2026-10-31
+
+### Bingle Core 0.27.0
+- **Take your games to your phone.** As a guest, your profile page can copy your guest key: open
+  the link it gives you on your phone (or another browser) and that device becomes you, with every
+  game you have going, ready to carry on. Whatever the phone was playing comes along too. If the
+  key ends up somewhere it should not, *New key, same me* makes the old one stop working.
+- **Your games follow you.** Active games now come from the server, so a game you started on one
+  device shows up on the others — your account's, or your guest's.
+- **Who is who.** Next to every player's name the game says whether they are a signed-in account
+  (@handle) or a guest, in the seats and in the chat. Nobody can take an account's handle as their
+  name in a game, and a handle you change is kept for you for a month.
+- Your account page shows your address, lets you change your handle, lists where you are signed in
+  and signs you out everywhere else. Administrators see the latest sign-ins and changes.
+
 ## 0.26.0 - 2026-10-31
 
 ### Bingle Core 0.26.0

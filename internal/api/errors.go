@@ -24,7 +24,7 @@ func statusForError(err error) int {
 	case errors.Is(err, store.ErrNotFound), errors.Is(err, store.ErrBatchNotFound), errors.Is(err, session.ErrGameDefNotFound), errors.Is(err, session.ErrAssetNotFound), errors.Is(err, session.ErrNotifyOff),
 		errors.Is(err, session.ErrNoSuchPerson):
 		return http.StatusNotFound
-	case errors.Is(err, session.ErrSeatsFull), errors.Is(err, session.ErrGameNotActive), errors.Is(err, session.ErrNameIsABot),
+	case errors.Is(err, session.ErrSeatsFull), errors.Is(err, session.ErrGameNotActive), errors.Is(err, session.ErrNameIsAHandle), errors.Is(err, session.ErrNameIsABot),
 		errors.Is(err, session.ErrAlreadyStarted), errors.Is(err, session.ErrSeatsOpen), errors.Is(err, session.ErrSeatTaken), errors.Is(err, session.ErrNoCultChoice),
 		errors.Is(err, session.ErrNothingToUndo), errors.Is(err, session.ErrCannotUndo),
 		errors.Is(err, session.ErrDrawNotAllowed), errors.Is(err, session.ErrTakebackNotAllowed), errors.Is(err, session.ErrHintNotAllowed), errors.Is(err, session.ErrTooManyBotMatches):

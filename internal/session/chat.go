@@ -38,6 +38,11 @@ type ChatLine struct {
 	Name  string `json:"name"`
 	Text  string `json:"text"`
 	At    string `json:"at"`
+	// Handle is the account that said it, and Guest says a guest did.
+	Handle string `json:"handle,omitempty"`
+	Guest  bool   `json:"guest,omitempty"`
+
+	principal string
 }
 
 // chatEventData is the wire form of a "chat" event.
@@ -117,6 +122,12 @@ func (m *Manager) SendChat(ctx context.Context, roomCode, name, text string) (Ch
 			seat, color, speaker = p.Seat, p.Color, p.Name
 		}
 	}
+	// Speaking as somebody's handle is for that account alone.
+	if seat == 0 {
+		if err := m.mayUseName(ctx, speaker); err != nil {
+			return ChatLine{}, err
+		}
+	}
 	if !m.chat.allow(roomCode+"|"+strings.ToLower(speaker), m.now()) {
 		return ChatLine{}, ErrChatTooFast
 	}
@@ -125,6 +136,9 @@ func (m *Manager) SendChat(ctx context.Context, roomCode, name, text string) (Ch
 		return ChatLine{}, err
 	}
 	line := chatLineOf(msg, color)
+	lines := []ChatLine{line}
+	m.identifyLines(ctx, lines)
+	line = lines[0]
 	m.hub.publish(roomCode, Event{Type: "chat", Data: chatEventData(line)})
 	return line, nil
 }
@@ -151,6 +165,7 @@ func (m *Manager) ChatLog(ctx context.Context, roomCode string, afterID int64, l
 	for i, mm := range msgs {
 		out[i] = chatLineOf(mm, colors[mm.Seat])
 	}
+	m.identifyLines(ctx, out)
 	return out, nil
 }
 
@@ -158,7 +173,24 @@ func chatLineOf(m store.ChatMessage, color string) ChatLine {
 	if m.Seat == 0 {
 		color = ""
 	}
-	return ChatLine{ID: m.ID, Seat: m.Seat, Color: color, Name: m.Name, Text: m.Body, At: m.CreatedAt}
+	return ChatLine{ID: m.ID, Seat: m.Seat, Color: color, Name: m.Name, Text: m.Body, At: m.CreatedAt, principal: m.PrincipalID}
+}
+
+// identifyLines says who said each line: an account's handle, or a guest.
+func (m *Manager) identifyLines(ctx context.Context, lines []ChatLine) {
+	ids := make([]string, len(lines))
+	for i, l := range lines {
+		ids[i] = l.principal
+	}
+	who, err := m.store.Identities(ctx, ids)
+	if err != nil {
+		return
+	}
+	for i := range lines {
+		if id, ok := who[lines[i].principal]; ok {
+			lines[i].Handle, lines[i].Guest = id.Handle, id.Guest
+		}
+	}
 }
 
 // GlobalChatRoom is the hub room the global chat publishes on. No game can
@@ -184,6 +216,9 @@ func (m *Manager) SendGlobalChat(ctx context.Context, name, text string) (Global
 		return GlobalChatLine{}, fmt.Errorf("session: a message is at most %d characters", maxChatRunes)
 	}
 	speaker := strings.TrimSpace(name)
+	if err := m.mayUseName(ctx, speaker); err != nil {
+		return GlobalChatLine{}, err
+	}
 	if !m.chat.allow(GlobalChatRoom+"|"+strings.ToLower(speaker), m.now()) {
 		return GlobalChatLine{}, ErrChatTooFast
 	}

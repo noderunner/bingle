@@ -52,6 +52,7 @@ type Resolver struct {
 	log       *slog.Logger
 	now       func() time.Time
 	made      windowLimiter
+	adopts    windowLimiter
 }
 
 // Options configures a Resolver.
@@ -95,7 +96,8 @@ func NewResolver(g Guests, o Options) *Resolver {
 	if o.Log == nil {
 		o.Log = slog.Default()
 	}
-	return &Resolver{guests: g, accounts: o.Accounts, oidc: o.OIDC, caps: o.Caps, transport: o.Transport, idle: o.Idle, log: o.Log, now: time.Now, made: windowLimiter{per: o.NewGuestsPerHour, window: time.Hour}}
+	return &Resolver{guests: g, accounts: o.Accounts, oidc: o.OIDC, caps: o.Caps, transport: o.Transport, idle: o.Idle, log: o.Log, now: time.Now, made: windowLimiter{per: o.NewGuestsPerHour, window: time.Hour},
+		adopts: windowLimiter{per: 10, window: time.Hour}}
 }
 
 // SetClock replaces the resolver's clock (tests).

@@ -83,6 +83,15 @@ export const api = {
 	totpEnable: (code) => call("/auth/totp/enable", { method: "POST", body: { code } }),
 	totpDisable: (password, typed) => call("/auth/totp/disable", { method: "POST", body: { password, ...codeBody(typed) } }),
 	newRecoveryCodes: (password) => call("/auth/recovery", { method: "POST", body: { password } }),
+	ownGames: () => call("/api/me/games"),
+	guestKey: () => call("/api/guest/key"),
+	adoptGuest: (key) => call("/api/guest/adopt", { method: "POST", body: { key } }),
+	rotateGuest: () => call("/api/guest/rotate", { method: "POST" }),
+	discardGuest: () => call("/api/guest/discard", { method: "POST" }),
+	rename: (handle) => call("/auth/handle", { method: "POST", body: { handle } }),
+	sessions: () => call("/auth/sessions"),
+	endOtherSessions: () => call("/auth/sessions/end-others", { method: "POST" }),
+	adminEvents: () => call("/auth/admin/events"),
 	tokens: () => call("/auth/tokens"),
 	newToken: (name, scopes) => call("/auth/tokens", { method: "POST", body: { name, scopes } }),
 	revokeToken: (id) => call(`/auth/tokens/${enc(id)}`, { method: "DELETE" }),
@@ -185,3 +194,14 @@ export const api = {
 			body: atSeq === undefined || atSeq === null ? { moves } : { moves, at_seq: atSeq },
 		}),
 };
+
+// A link from another device, "/#guest=bgg_…": this browser becomes that
+// guest, its own guest merged in so nothing is lost. The key is taken out of
+// the address at once, so it is not left in the history or a bookmark.
+const fromLink = /^#guest=(bgg_[A-Za-z0-9_-]+)$/.exec(window.location.hash || "");
+if (fromLink) {
+	window.history.replaceState(null, "", window.location.pathname + window.location.search);
+	api.adoptGuest(fromLink[1])
+		.then(() => window.location.reload())
+		.catch((err) => window.alert(err.message || "That guest key did not work."));
+}

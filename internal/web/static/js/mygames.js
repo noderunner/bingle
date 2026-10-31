@@ -2,7 +2,7 @@
 // drawing them as rows. The "Active games" window of the top bar lists the
 // unfinished ones, the profile page the finished ones.
 
-import { h, rememberedGames, forgetGame, ago } from "./util.js";
+import { h, rememberedGames, rememberGame, forgetGame, ago } from "./util.js";
 import { api } from "./api.js";
 
 let defsPromise = null;
@@ -20,6 +20,18 @@ export function gameDefs() {
 
 /** Reads every remembered game: [{g, info, missing}], info null when it could not be read. */
 export async function loadRows() {
+	// The server knows this browser's games too, wherever they were started:
+	// on another device whose guest key this one adopted, or under the
+	// account it signed in to (stage 7 of the accounts plan).
+	try {
+		const known = new Set(rememberedGames().map((g) => g.code));
+		const { games } = await api.ownGames();
+		for (const g of [...(games || [])].reverse()) {
+			if (!known.has(g.room_code) && g.seats && g.seats.length) rememberGame(g.room_code, g.game_def_id, g.seats[0]);
+		}
+	} catch (_) {
+		/* the browser's own list is still there */
+	}
 	return Promise.all(
 		rememberedGames().map(async (g) => {
 			try {

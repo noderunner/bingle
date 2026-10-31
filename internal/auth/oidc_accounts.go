@@ -112,7 +112,7 @@ func (a *Accounts) FinishOIDCSignup(ctx context.Context, o *OIDC, token, handle,
 	if err != nil {
 		return Session{}, "", err
 	}
-	if _, err := a.st.AccountByHandle(ctx, h); err == nil {
+	if a.handleTaken(ctx, h, 0) {
 		return Session{}, "", ErrHandleTaken
 	}
 	id, ok := o.takeFresh(token)

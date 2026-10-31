@@ -38,7 +38,12 @@ func NewRouter(mgr *session.Manager, opts ...Option) chi.Router {
 
 	if h.guests != nil {
 		r.Post("/guest", h.guests.HandleNewGuest)
+		r.Get("/guest/key", h.guests.HandleGuestKey)
+		r.Post("/guest/adopt", h.guests.HandleAdopt)
+		r.Post("/guest/rotate", h.guests.HandleRotate)
+		r.Post("/guest/discard", h.guests.HandleDiscard)
 	}
+	r.Get("/me/games", h.handleOwnGames)
 	r.Post("/games", h.handleCreateGame)
 	r.Post("/games/import", h.handleImportGame)
 	r.Post("/bot-matches", h.handleBotMatch)
