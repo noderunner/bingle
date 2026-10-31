@@ -3,10 +3,11 @@
 // middleware and carried in the request's context, so that the session layer
 // asks "which principal?" and never "which name?".
 //
-// Today a principal is a guest, proved by a guest key: the bingle_guest
-// cookie of a browser, or "Authorization: Bearer bgg_…" from a script. A
-// request with neither is anonymous, and keeps what an anonymous request has
-// always had: seats nobody owns, acted for by name.
+// A principal is an account, proved by the bingle_session cookie of a
+// signed-in browser (ADR 0068), or a guest, proved by a guest key: the
+// bingle_guest cookie of a browser, or "Authorization: Bearer bgg_…" from a
+// script. A request with none of them is anonymous, and keeps what an
+// anonymous request has always had: seats nobody owns, acted for by name.
 package auth
 
 import (
@@ -17,6 +18,8 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"strings"
+
+	"github.com/noderunner/bingle/internal/store"
 )
 
 // Principal is whoever a request acts for.
@@ -29,6 +32,11 @@ type Principal struct {
 	// Cookie reports that the principal was proved by a cookie, which a
 	// browser sends by itself, and so the cross-site rules apply to it.
 	Cookie bool
+	// Account is the signed-in account (nil for a guest).
+	Account *store.Account
+	// session is the session cookie's value, for signing out and for a
+	// password change, which replaces it.
+	session string
 }
 
 type ctxKey struct{}

@@ -45,6 +45,10 @@ func NewRouter(mgr *session.Manager) http.Handler {
 	r.Get("/", h.handleIndex)
 	r.Get("/game/{code}", h.handleGame)
 	r.Get("/profile", h.handleProfile)
+	r.Get("/login", h.handleAccountPage("login", "Sign in"))
+	r.Get("/signup", h.handleAccountPage("signup", "Sign up"))
+	r.Get("/account", h.handleAccountPage("account", "Your account"))
+	r.Get("/account/confirm", h.handleAccountPage("confirm", "Confirm your account"))
 	r.Get("/notify/confirm", h.handleNotifyPage("confirm"))
 	r.Get("/notify/stop", h.handleNotifyPage("stop"))
 	r.Post("/notify/confirm", h.handleNotifyConfirm)
@@ -166,6 +170,23 @@ func (h *handlers) handleProfile(w http.ResponseWriter, r *http.Request) {
 	if err := render(r, w, "profile.html.tmpl", nil); err != nil {
 		http.Error(w, "web: rendering profile page failed", http.StatusInternalServerError)
 		return
+	}
+}
+
+// accountPageData is account.html.tmpl's data: which of the account pages.
+type accountPageData struct {
+	Page, Title string
+}
+
+// handleAccountPage serves one of the account pages (ADR 0068). They are
+// shells: the script asks /auth/me who the browser is.
+func (h *handlers) handleAccountPage(page, title string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Header().Set("Cache-Control", "no-store")
+		if err := render(r, w, "account.html.tmpl", accountPageData{Page: page, Title: title}); err != nil {
+			http.Error(w, "web: rendering the account page failed", http.StatusInternalServerError)
+		}
 	}
 }
 

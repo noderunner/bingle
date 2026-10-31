@@ -62,6 +62,13 @@ async function call(path, { method = "GET", body, headers, keepalive } = {}) {
 const enc = encodeURIComponent;
 
 export const api = {
+	// Accounts (ADR 0068).
+	me: () => call("/auth/me"),
+	login: (handle, password) => call("/auth/login", { method: "POST", body: { handle, password } }),
+	logout: () => call("/auth/logout", { method: "POST" }),
+	signup: (handle, email, password) => call("/auth/signup", { method: "POST", body: { handle, email, password } }),
+	confirmAccount: (token) => call("/auth/confirm", { method: "POST", body: { token } }),
+	changePassword: (old, next) => call("/auth/password", { method: "POST", body: { old, new: next } }),
 	batches: () => call("/api/batches"),
 	startBatch: (body) => call("/api/batches", { method: "POST", body }),
 	batchReport: (id) => call(`/api/batches/${enc(id)}/report`),

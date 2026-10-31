@@ -11,7 +11,8 @@ nothing to undo). Room codes are case-insensitive.
 guest that took it: `player_name` says which seat a request means, and the seat's owner alone may
 act for it (`403` for anybody else). A seat taken by an anonymous request belongs to nobody and is
 acted for by name, as every seat once was, until the first guest to act for it becomes its owner.
-`POST /api/guest` makes a guest for a script (`201 {key}`; `429` past 60 an hour from one address);
+A browser signed in to an account (ADR 0068) carries the `bingle_session` cookie instead, and its
+seats are the account's; see *Accounts* below. `POST /api/guest` makes a guest for a script (`201 {key}`; `429` past 60 an hour from one address);
 an unknown or expired bearer key is `401`. A browser never calls it: its first state-changing
 request from bingle's page makes its guest and sets the cookie. A state-changing request proved by
 the cookie must carry the header `X-Bingle-Session` (bingle's page sends it; a cross-site form
@@ -19,6 +20,20 @@ cannot), or it is `403`. A key unused for `BINGLE_GUEST_IDLE` (90 days) stops wo
 
 Position documents appear as `state` (full: `cells` = stacks bottom-to-top,
 `reserves`, `ply`) next to the legacy `board_state` (position → top piece).
+
+## Accounts (`/auth`, ADR 0068)
+
+| Method & path | Body | Response |
+|---|---|---|
+| `POST /auth/signup` | `{handle, email, password}` | `202 {status}`: a link to confirm the address is mailed. `400` a bad handle, address or password (10–256 characters); `409` the handle is taken; `403` signing up is closed or the server has no mail; `429` too many tries. An address that is an account's already gets the `202` and no mail |
+| `POST /auth/confirm` | `{token}` (from the mailed link, `/account/confirm?t=`) | `{handle}`; `400` used or too old (48 hours) |
+| `POST /auth/login` | `{handle, password}` | `{kind, handle, display_name, must_change_password?}` and the `bingle_session` cookie; `401` the handle or the password is wrong (one answer for both); `403` not confirmed yet; `429` too many tries (10 a minute per address, 10 per 15 minutes per handle). The browser's guest, if it was one, becomes the account's |
+| `POST /auth/logout` | | ends this session |
+| `POST /auth/password` | `{old, new}` | a new session cookie; every other session of the account ends |
+| `GET /auth/me` | | `{kind: "account"\|"guest"\|"anonymous", handle?, display_name?, must_change_password?, accounts, signup}` |
+
+An account whose password must be changed (a seeded or command-line one) gets `403` for any
+state-changing request outside `/auth` until it does.
 
 ## Games
 

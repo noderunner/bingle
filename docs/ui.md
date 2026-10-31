@@ -465,6 +465,17 @@ no second browser; every reaction is put to the player there (it is not passed
 for them, and the page offers no reaction settings), and *Undo* takes back
 the last move together with the later moves of one's other seats.
 
+### Accounts
+
+`js/account.js` drives the four account pages ([ADR 0068](decisions/0068-accounts-sessions-and-passwords.md)), one
+template (`account.html.tmpl`) chosen by `data-page`: **sign in** (`/login`: `#login-handle`, `#login-password`,
+`#login-go`; a `?return=` path is where it goes after, and an account given its password goes to `/account` instead),
+**sign up** (`/signup`: `#signup-handle`, `#signup-email`, `#signup-password`), **confirm** (`/account/confirm?t=`:
+`#confirm-go`, because following the link alone must not confirm) and **the account** (`/account`: `#account-who`,
+`#account-must-change`, the password form `#password-old`/`#password-new`/`#password-go`, `#logout-go`). Each reports in
+`#account-result`. The profile page's `#account-box` says whether the browser is a guest (`#login-link`, `#signup-link`)
+or signed in (`#account-link`). None of them keeps anything in the browser's storage: the cookies are `HttpOnly`.
+
 ### Email notifications
 
 `js/notify-ui.js` holds the browser's side: the contact this browser made (`bingle.contact` = `{id, secret, address}`; the

@@ -5,9 +5,33 @@ import { clear, lastName, setLastName, getProfile, saveProfile } from "./util.js
 import { installTopbar } from "./topbar.js";
 import { isFinished, sortRows, gameRow } from "./mygames.js";
 import { installNav } from "./nav.js";
+import { api } from "./api.js";
 import { notifyConfig, localContact, submitAddress, contactStatus, resendConfirmation, forgetAddress, statusText, whitelistNote, insecureNote } from "./notify-ui.js";
 
 installNav();
+
+// Who this browser is: an account, or a guest who could sign in (ADR 0068).
+api.me()
+	.then((me) => {
+		if (!me.accounts) return;
+		const box = document.getElementById("account-box");
+		const line = document.getElementById("account-line");
+		const link = (href, text, id) => {
+			const a = document.createElement("a");
+			a.href = href;
+			a.id = id;
+			a.textContent = text;
+			return a;
+		};
+		if (me.kind === "account") {
+			line.append(`Signed in as @${me.handle}. `, link("/account", "Your account", "account-link"));
+		} else {
+			line.append("You play as a guest in this browser. ", link("/login", "Sign in", "login-link"));
+			if (me.signup) line.append(" or ", link("/signup", "sign up", "signup-link"), " to keep your games on every device.");
+		}
+		box.hidden = false;
+	})
+	.catch(() => {});
 
 const name = document.getElementById("profile_name");
 const email = document.getElementById("profile_email");

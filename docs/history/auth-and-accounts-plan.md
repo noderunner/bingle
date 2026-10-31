@@ -1,8 +1,7 @@
 # Plan: authenticated accounts, capabilities and a secure transport
 
-
-Status: **stages 1–2 done, stages 3–8 planned** (2026-10-29; guests amended 2026-10-31). Stage 1
-(secure transport) settled [ADR 0065](../decisions/0065-the-connection-must-be-secure.md), stage 2 (principals and guest keys) [ADR 0067](../decisions/0067-principals-and-guest-keys.md). The decisions in *What was decided*
+Status: **stages 1–3 done, stages 4–8 planned** (2026-10-29; guests amended 2026-10-31). Stage 1
+(secure transport) settled [ADR 0065](../decisions/0065-the-connection-must-be-secure.md), stage 2 (principals and guest keys) [ADR 0067](../decisions/0067-principals-and-guest-keys.md), stage 3 (accounts, sessions, passwords) [ADR 0068](../decisions/0068-accounts-sessions-and-passwords.md). The decisions in *What was decided*
 were taken with the owner before this was written; the rest is the reasoning, the diagrams
 and the staging. The 2026-10-31 amendment makes a guest a principal of its own, with an ID
 and a portable key (§3a), before stage 2 begins.
@@ -537,6 +536,12 @@ a guest who signs up keeps every seat and game, and their guest key stops workin
 `Secure` is set off-loopback and omitted on it; signup is refused with no SMTP; enumeration
 responses are uniform; a CSRF-less cookie POST is refused.
 
+Notes. *Done* (ADR 0068). A guest who signs up gives the account its principal, and signing in
+from another guest browser merges that guest in, so "in place" holds either way. The password
+rules are length only (10–256). Invitations wait for the admin pages of stage 6, so
+`BINGLE_SIGNUP` is `open` or `closed` for now; handles are validated and reserved, and keeping
+guests off a registered handle is stage 7's.
+
 **4. TOTP, recovery codes and lockout.** Enrolment, verification, the ten codes, the admin
 group requirement with its loopback exemption, and `bingle account reset`. Tests: RFC 6238
 vectors; a used recovery code cannot be reused; the loopback exemption does not apply behind
@@ -637,3 +642,5 @@ contact into an account without a second confirmation.
   stage 2 now closes. Nothing implemented.
 - 2026-10-31: stage 2 done (ADR 0067): principals and guest keys, seats owned by their principal,
   seat tokens retired; anonymous requests keep unowned seats only.
+- 2026-10-31: stage 3 done (ADR 0068): accounts, server-side sessions, Argon2id, signing up with a
+  confirmed address, the seeded administrator and `bingle account`.

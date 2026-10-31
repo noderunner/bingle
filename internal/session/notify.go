@@ -709,3 +709,29 @@ func (n *notifier) gameName(defID string) string {
 	}
 	return "your game"
 }
+
+// ---- mail for accounts ---------------------------------------------------------------
+
+// MailEnabled reports whether this server can send mail at all.
+func (m *Manager) MailEnabled() bool { return m.notify != nil }
+
+// SendAccountMail queues a mail about an account (the confirmation of a new
+// account's address) to addr, under the limits a contact's confirmation has:
+// per address, per sending address and for the whole server. build is given
+// the server's public URL. An address that asked never to be mailed is not,
+// and the caller is not told, so the answer does not say whose it is.
+func (m *Manager) SendAccountMail(ctx context.Context, addr, ip string, build func(base string) mail.Message) error {
+	n := m.notify
+	if n == nil {
+		return ErrNotifyOff
+	}
+	ah := addrHash(addr)
+	if stopped, err := m.store.IsSuppressed(ctx, ah); err != nil || stopped {
+		return err
+	}
+	if err := n.reserve(ctx, "confirm", ah, 0, ip); err != nil {
+		return err
+	}
+	n.enqueue(notifyJob{msg: build(n.opts.BaseURL)})
+	return nil
+}

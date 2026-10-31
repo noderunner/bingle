@@ -17,6 +17,9 @@ import (
 // CookieName is the cookie that carries a browser's guest key.
 const CookieName = "bingle_guest"
 
+// SessionCookie is the cookie of a signed-in browser.
+const SessionCookie = "bingle_session"
+
 // PageHeader marks a request from bingle's own pages. A state-changing
 // request proved by a cookie must carry it (a cross-site form or script can
 // send the cookie, but not a custom header), and a page's first such request
@@ -40,11 +43,12 @@ type Guests interface {
 // Resolver resolves the principal of each request.
 type Resolver struct {
 	guests    Guests
+	accounts  *Accounts
 	transport transport.Policy
 	idle      time.Duration
 	log       *slog.Logger
 	now       func() time.Time
-	made      newGuestLimiter
+	made      windowLimiter
 }
 
 // Options configures a Resolver.
@@ -60,6 +64,9 @@ type Options struct {
 	// NewGuestsPerHour caps the guests one address may make; zero means
 	// DefaultNewGuestsPerHour.
 	NewGuestsPerHour int
+	// Accounts, when set, signs people in: the session cookie is read before
+	// any guest key.
+	Accounts *Accounts
 }
 
 // DefaultIdle is BINGLE_GUEST_IDLE's default.
@@ -81,7 +88,7 @@ func NewResolver(g Guests, o Options) *Resolver {
 	if o.Log == nil {
 		o.Log = slog.Default()
 	}
-	return &Resolver{guests: g, transport: o.Transport, idle: o.Idle, log: o.Log, now: time.Now, made: newGuestLimiter{per: o.NewGuestsPerHour}}
+	return &Resolver{guests: g, accounts: o.Accounts, transport: o.Transport, idle: o.Idle, log: o.Log, now: time.Now, made: windowLimiter{per: o.NewGuestsPerHour, window: time.Hour}}
 }
 
 // SetClock replaces the resolver's clock (tests).
@@ -108,6 +115,12 @@ func (rs *Resolver) Middleware(next http.Handler) http.Handler {
 			writeError(w, http.StatusForbidden, "auth: a request from a browser must come from bingle's own page (the "+PageHeader+" header is missing)")
 			return
 		}
+		// An account whose password must be changed may change it, sign out,
+		// and look; nothing else.
+		if ok && p.Account != nil && p.Account.MustChangePassword && unsafe && !strings.HasPrefix(r.URL.Path, "/auth/") {
+			writeError(w, http.StatusForbidden, ErrMustChangePwd.Error())
+			return
+		}
 		if !ok && unsafe && fromPage {
 			if p, ok = rs.newGuest(w, r); ok {
 				p.Cookie = true
@@ -120,9 +133,23 @@ func (rs *Resolver) Middleware(next http.Handler) http.Handler {
 	})
 }
 
-// resolve reads the request's guest key, if it has one. It reports an error
-// when it has already answered the request.
+// resolve reads the request's session cookie, or else its guest key, if it
+// has one. It reports an error when it has already answered the request.
 func (rs *Resolver) resolve(w http.ResponseWriter, r *http.Request) (Principal, bool, error) {
+	if c, err := r.Cookie(SessionCookie); err == nil && c.Value != "" && rs.accounts != nil {
+		acc, err := rs.accounts.account(r.Context(), c.Value)
+		switch {
+		case err == nil:
+			return Principal{ID: acc.PrincipalID, Kind: store.KindAccount, Cookie: true, Account: &acc, session: c.Value}, true, nil
+		case errors.Is(err, store.ErrNotFound):
+			// Signed out elsewhere, or too old: the browser is not signed in.
+			rs.setCookie(w, r, SessionCookie, "", -1)
+		default:
+			rs.log.Error("reading a session", "err", err)
+			writeError(w, http.StatusServiceUnavailable, "auth: could not check who you are; try again")
+			return Principal{}, false, err
+		}
+	}
 	key, fromCookie := bearerKey(r), false
 	if key == "" {
 		if c, err := r.Cookie(CookieName); err == nil && c.Value != "" {
@@ -160,15 +187,7 @@ func (rs *Resolver) newGuest(w http.ResponseWriter, r *http.Request) (Principal,
 	if err != nil {
 		return Principal{}, false
 	}
-	http.SetCookie(w, &http.Cookie{
-		Name:     CookieName,
-		Value:    key,
-		Path:     "/",
-		MaxAge:   int(cookieMaxAge / time.Second),
-		HttpOnly: true,
-		Secure:   rs.transport.Secure(r),
-		SameSite: http.SameSiteLaxMode,
-	})
+	rs.setCookie(w, r, CookieName, key, int(cookieMaxAge/time.Second))
 	return Principal{ID: id, Kind: store.KindGuest}, true
 }
 
@@ -208,7 +227,14 @@ func (rs *Resolver) HandleNewGuest(w http.ResponseWriter, r *http.Request) {
 }
 
 func (rs *Resolver) clearCookie(w http.ResponseWriter, r *http.Request) {
-	http.SetCookie(w, &http.Cookie{Name: CookieName, Value: "", Path: "/", MaxAge: -1, HttpOnly: true, Secure: rs.transport.Secure(r), SameSite: http.SameSiteLaxMode})
+	rs.setCookie(w, r, CookieName, "", -1)
+}
+
+// setCookie sets one of bingle's cookies: HttpOnly, SameSite=Lax, for the
+// whole site, and Secure unless the connection is not (which only a loopback
+// one may be).
+func (rs *Resolver) setCookie(w http.ResponseWriter, r *http.Request, name, value string, maxAge int) {
+	http.SetCookie(w, &http.Cookie{Name: name, Value: value, Path: "/", MaxAge: maxAge, HttpOnly: true, Secure: rs.transport.Secure(r), SameSite: http.SameSiteLaxMode})
 }
 
 // bearerKey is the guest key in an Authorization header, if that is what it
@@ -230,37 +256,38 @@ func writeError(w http.ResponseWriter, status int, msg string) {
 	_ = json.NewEncoder(w).Encode(map[string]string{"error": msg})
 }
 
-// newGuestLimiter caps the guests made per address per hour.
-type newGuestLimiter struct {
-	per int
-	mu  sync.Mutex
-	at  map[string][]time.Time
+// windowLimiter allows per events for each key in any window.
+type windowLimiter struct {
+	per    int
+	window time.Duration
+	mu     sync.Mutex
+	at     map[string][]time.Time
 }
 
-func (l *newGuestLimiter) allow(addr string, now time.Time) bool {
+func (l *windowLimiter) allow(key string, now time.Time) bool {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	if l.at == nil {
 		l.at = map[string][]time.Time{}
 	}
-	cut := now.Add(-time.Hour)
-	kept := l.at[addr][:0]
-	for _, t := range l.at[addr] {
+	cut := now.Add(-l.window)
+	kept := l.at[key][:0]
+	for _, t := range l.at[key] {
 		if t.After(cut) {
 			kept = append(kept, t)
 		}
 	}
 	if len(kept) >= l.per {
-		l.at[addr] = kept
+		l.at[key] = kept
 		return false
 	}
-	l.at[addr] = append(kept, now)
-	// An address that has gone quiet is forgotten, so the map does not grow
-	// with every address ever seen.
+	l.at[key] = append(kept, now)
+	// A key that has gone quiet is forgotten, so the map does not grow with
+	// every address ever seen.
 	if len(l.at) > 10000 {
-		for a, ts := range l.at {
+		for k, ts := range l.at {
 			if len(ts) == 0 || !ts[len(ts)-1].After(cut) {
-				delete(l.at, a)
+				delete(l.at, k)
 			}
 		}
 	}
