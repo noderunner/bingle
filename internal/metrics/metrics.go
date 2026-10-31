@@ -75,6 +75,8 @@ type Metrics struct {
 	slotSize       *prometheus.GaugeVec
 	batchWorkers   prometheus.Gauge
 	clientErrors   *prometheus.CounterVec
+	mail           *prometheus.CounterVec
+	mailSend       prometheus.Histogram
 }
 
 // New builds the registry, registers the Go runtime and process collectors
@@ -208,6 +210,16 @@ func New(version string) *Metrics {
 			Namespace: Namespace, Name: "client_errors_total",
 			Help: "Faults reported by browsers, by the page they happened on; \"refused\" is a report the endpoint would not take.",
 		}, []string{"page"}),
+
+		mail: prometheus.NewCounterVec(prometheus.CounterOpts{
+			Namespace: Namespace, Name: "mail_total",
+			Help: "Mail, by kind (confirm, reset, turn, notice) and what became of it: queued, sent, failed, limited, suppressed, dropped, stopped, auth_failed, rate_limited.",
+		}, []string{"kind", "outcome"}),
+
+		mailSend: prometheus.NewHistogram(prometheus.HistogramOpts{
+			Namespace: Namespace, Subsystem: "mail", Name: "send_duration_seconds",
+			Help: "How long handing one message to the mail server took, sent or not.", Buckets: durationBuckets,
+		}),
 	}
 
 	buildInfo := prometheus.NewGaugeVec(prometheus.GaugeOpts{
@@ -225,7 +237,7 @@ func New(version string) *Metrics {
 		m.dbQueries, m.dbDuration, m.dbRows, m.dbTxDuration, m.dbBusy, m.db,
 		m.gameMoves, m.gameApply, m.gameLegal, m.gameLegalMoves, m.gameFinished, m.gameIllegal,
 		m.botSearch, m.botNodes, m.slotWait, m.slotInUse, m.slotSize, m.batchWorkers,
-		m.clientErrors,
+		m.clientErrors, m.mail, m.mailSend,
 	)
 	return m
 }

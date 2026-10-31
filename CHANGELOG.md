@@ -4,6 +4,17 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.28.2 - 2026-10-31
+
+### Bingle Core 0.28.2
+- **The server's log now says what happened to every email.** Whether mail is switched on, and for
+  each confirmation, password reset or turn email whether it was sent, held back by the limits, or
+  refused by the mail server — without ever writing the address down. The metrics count the same.
+- **Signing up with an address that already has an account now tells its owner.** The page still
+  answers as it always does, so it never says whose address it is, but the address gets an email
+  saying it has an account already, with links to sign in and to reset the password (at most one an
+  hour). The log and the administrator's audit log say so too.
+
 ## 0.28.1 - 2026-10-31
 
 ### Bingle Core 0.28.1

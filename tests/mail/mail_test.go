@@ -268,3 +268,22 @@ func TestConfigSecretIsNeverPrinted(t *testing.T) {
 		}
 	}
 }
+
+// The mail to an address someone tried to sign up with again names the
+// account, links only to the public sign-in pages and carries no token.
+func TestAccountExistsMail(t *testing.T) {
+	m := mail.AccountExists("p@example.com", "ana\r\nBcc: x", "https://bingle.example.com")
+	raw, err := m.Build("bingle_games@proton.me", "Bingle", time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := string(raw)
+	for _, want := range []string{"You already have a Bingle account", "@ana", "https://bingle.example.com/login", "https://bingle.example.com/forgot"} {
+		if !strings.Contains(s, want) {
+			t.Errorf("no %q in:\n%s", want, s)
+		}
+	}
+	if strings.Contains(s, "?t=") || strings.Contains(s, "\r\nBcc") {
+		t.Errorf("a token or a header in:\n%s", s)
+	}
+}

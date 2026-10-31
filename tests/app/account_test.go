@@ -218,12 +218,23 @@ func TestAccount_SignUpRefusals(t *testing.T) {
 		}
 	}
 	// An address that is an account's already gets the answer a new one
-	// gets, and no mail: the answer does not say whose it is.
+	// gets, so the answer does not say whose it is; the mail goes to the
+	// address's owner instead, and says they have an account, with no link
+	// that does anything.
 	before := len(e.SMTP.Mails())
 	if code := b.do("POST", "/auth/signup", map[string]any{"handle": "bob", "email": "Ana@Example.com", "password": "correct horse battery"}, nil); code != http.StatusAccepted {
 		t.Errorf("an address in use: %d, want 202", code)
 	}
-	e.quiet(t, before)
+	mails := e.waitMails(t, before+1)
+	got := mails[len(mails)-1]
+	if !strings.Contains(got.Data, "You already have a Bingle account") || !strings.Contains(got.Data, "@ana") || accountLinkRe.MatchString(got.Data) {
+		t.Errorf("the mail to the owner:\n%s", got.Data)
+	}
+	// Again at once: no second mail, so the form cannot flood a mailbox.
+	if code := b.do("POST", "/auth/signup", map[string]any{"handle": "cid", "email": "ana@example.com", "password": "correct horse battery"}, nil); code != http.StatusAccepted {
+		t.Errorf("an address in use, again: %d, want 202", code)
+	}
+	e.quiet(t, before+1)
 }
 
 // Every way of getting a sign-in wrong is the same answer.

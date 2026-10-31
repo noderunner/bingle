@@ -174,6 +174,24 @@ func AccountConfirmation(to, handle, base, token string) Message {
 	}
 }
 
+// AccountExists is the mail to an account's address when someone signs up
+// with it again: the sign-up page answers as it would for a new address, so
+// this is how the person learns they have an account already. It carries no
+// token; its links are the public sign-in and forgotten-password pages.
+func AccountExists(to, handle, base string) Message {
+	handle = Sanitize(handle, 24)
+	return Message{
+		To:      to,
+		Subject: "You already have a Bingle account",
+		Body: "Someone, probably you, tried to make a new Bingle account with this email address.\n\n" +
+			fmt.Sprintf("It already belongs to the account @%s, so no new account was made. To sign in:\n\n", handle) +
+			base + "/login\n\n" +
+			"If you have forgotten the password, you can choose a new one here:\n\n" +
+			base + "/forgot\n\n" +
+			"If this was not you, ignore this message: nothing about your account has changed.\n",
+	}
+}
+
 // PasswordResetURL is the link that resets an account's password.
 func PasswordResetURL(base, token string) string {
 	return base + "/account/reset?t=" + url.QueryEscape(token)

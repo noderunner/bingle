@@ -167,6 +167,8 @@ The container image does not publish 9095 by default, and the health check uses 
 | `bingle_bot_search_duration_seconds{bot,game}`, `bingle_bot_nodes_total{bot}` | How long and how hard a bot thought |
 | `bingle_slot_wait_seconds{pool}`, `bingle_slot_in_use{pool}`, `bingle_slot_size{pool}` | The CPU pools: `hint`, `bot`, `match`. **Wait is what grows first under load** |
 | `bingle_batch_workers` | Games a practice batch is playing at once |
+| `bingle_mail_total{kind,outcome}` | Mail by kind — `confirm`, `reset`, `turn`, `notice` — and what became of it: `queued`, `sent`, `failed`, `limited` (held by the sending limits), `suppressed` (the address asked not to be mailed), `dropped` (the queue was full), `stopped` (not tried while sending is stopped or paused), `auth_failed`, `rate_limited`. **`queued` without `sent` means the mail server is the problem** |
+| `bingle_mail_send_duration_seconds` | How long handing one message to the mail server took |
 | `bingle_build_info{version}` | Always 1; the label is the engine's version |
 | `go_*`, `process_*` | The Go runtime and process collectors, registered explicitly |
 

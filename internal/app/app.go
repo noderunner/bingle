@@ -258,6 +258,7 @@ func recordGameVersions(st *store.Store, cat *catalog.Catalog) error {
 // feature stays off (with a log line saying why).
 func enableNotify(m *session.Manager, cfg config.Config, lg *slog.Logger) error {
 	if !cfg.Mail.Enabled() {
+		lg.Info("notify: mail is off: set BINGLE_SMTP_HOST to send confirmations, password resets and turn notifications")
 		return nil
 	}
 	if cfg.PublicURL == "" {
@@ -273,6 +274,9 @@ func enableNotify(m *session.Manager, cfg config.Config, lg *slog.Logger) error 
 		HourlyLimit: cfg.Mail.HourlyLimit, DailyLimit: cfg.Mail.DailyLimit,
 		AwayUnit: cfg.Mail.AwayUnit,
 	})
+	// The sending address is an address like any other, so it is logged hashed.
+	lg.Info("notify: mail is on", "host", cfg.Mail.Host, "port", cfg.Mail.Port, "tls", cfg.Mail.Mode,
+		logging.Addr(cfg.Mail.From), "hourly_limit", cfg.Mail.HourlyLimit, "daily_limit", cfg.Mail.DailyLimit)
 	return nil
 }
 

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
@@ -15,7 +16,9 @@ import (
 
 	"github.com/noderunner/bingle/internal/app"
 	"github.com/noderunner/bingle/internal/config"
+	"github.com/noderunner/bingle/internal/logging"
 	"github.com/noderunner/bingle/internal/mail/fakesmtp"
+	"github.com/noderunner/bingle/internal/metrics"
 )
 
 const notifyFrom = "bingle_games@proton.me"
@@ -25,6 +28,9 @@ type notifyEnv struct {
 	URL  string
 	SMTP *fakesmtp.Server
 	App  *app.App
+	// Log is the server's log, at debug; Scrape reads its metrics.
+	Log    *logBuffer
+	Scrape func() string
 	// keys are the guest keys of the seats this test took, by "ROOM/name".
 	keys map[string]string
 }
@@ -50,7 +56,8 @@ func newNotifyEnv(t *testing.T, smtpOpts fakesmtp.Options, mods ...notifyMods) *
 	for _, m := range mods {
 		m(&cfg)
 	}
-	a, err := app.New(cfg)
+	buf := &logBuffer{}
+	a, err := app.New(cfg, app.WithLogger(logging.New(buf, slog.LevelDebug, logging.FormatText)), app.WithMetrics(metrics.New("9.9.9")))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -59,7 +66,13 @@ func newNotifyEnv(t *testing.T, smtpOpts fakesmtp.Options, mods ...notifyMods) *
 	t.Cleanup(func() { cancel(); _ = a.Close() })
 	srv := httptest.NewServer(a.Router())
 	t.Cleanup(srv.Close)
-	return &notifyEnv{URL: srv.URL, SMTP: smtp, App: a, keys: map[string]string{}}
+	private := a.MetricsHandler()
+	scrape := func() string {
+		w := httptest.NewRecorder()
+		private.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/metrics", nil))
+		return w.Body.String()
+	}
+	return &notifyEnv{URL: srv.URL, SMTP: smtp, App: a, Log: buf, Scrape: scrape, keys: map[string]string{}}
 }
 
 type contactResp struct {
