@@ -254,6 +254,24 @@ func (c *Catalog) Get(id string) (*CompiledGame, bool) {
 	return nil, false
 }
 
+// Tutorials returns the family a game belongs to (its base game: the
+// family of a variant, the base of a derived game) and the tutorials that
+// family's module carries (nil when it has none). ok is false for an unknown
+// game.
+func (c *Catalog) Tutorials(id string) (family string, fsys fs.FS, ok bool) {
+	cg, ok := c.Get(id)
+	if !ok {
+		return "", nil, false
+	}
+	family = cg.Definition.Family
+	if family == "" {
+		family, _, _ = strings.Cut(cg.Definition.ID, DerivedSep)
+	}
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return family, c.src[family].mod.Tutorials, true
+}
+
 // Retire records that the game id is no longer offered, under the name it
 // had. Games of it already played stay readable as a record (see Retired);
 // nothing can be played in them.

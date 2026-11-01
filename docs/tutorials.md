@@ -50,6 +50,15 @@ The usual YAML of a definition applies: includes, anchors, and every field name 
 and line ([dsl.md](dsl.md#the-file)). `docs/tutorial.schema.json` gives an editor completion; it is
 generated from `internal/tutorial` by `go run ./scripts/genschema`.
 
+## Tutorial rooms
+
+`POST /api/tutorials` opens a tutorial in a real room ([api.md](api.md#games)): the game it names,
+from the game's start with its chance seeded by `seed` and the `setup` played, the learner in their
+seat and in every other one (`Lia · Blue`, the solo seats of ADR 0029). The page plays the learner's
+moves as the learner and each `reply` as the seat that makes it, through the ordinary move endpoint,
+so the rules are the engine's. The room is marked as a tutorial (`tutorial: "family/id"` in
+`GET /api/games/{code}`) and stays out of "My games", the open games and turn notifications.
+
 ## The guarantee
 
 `go test ./tests/tutorials` replays every tutorial of every game as the page will: the setup, then

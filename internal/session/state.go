@@ -59,6 +59,8 @@ type StateSnapshot struct {
 	// StartTurnSeat who moved first from it.
 	StartState    string
 	StartTurnSeat int
+	// Tutorial is "family/id" of the tutorial the room plays, or empty.
+	Tutorial string
 }
 
 // snapshot assembles a StateSnapshot from a game row, its players and a
@@ -106,6 +108,7 @@ func (m *Manager) snapshot(compiled *catalog.CompiledGame, game store.Game, play
 		WinnerSeat:    game.WinnerSeat,
 		EndReason:     game.EndReason,
 		EndDetail:     game.EndDetail,
+		Tutorial:      game.Tutorial,
 		Seats:         seats,
 		Lobby:         game.Lobby,
 		HostSeat:      hostOf(players),

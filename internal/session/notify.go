@@ -567,6 +567,9 @@ func (m *Manager) SetGameNotify(ctx context.Context, roomCode, name string, cont
 	if err != nil {
 		return GameNotify{}, err
 	}
+	if game.Tutorial != "" {
+		return GameNotify{}, fmt.Errorf("%w: a tutorial room sends no turn notifications", ErrTutorialRoom)
+	}
 	p, err := m.ownSeat(ctx, game.ID, name)
 	if err != nil {
 		return GameNotify{}, err
