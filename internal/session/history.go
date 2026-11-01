@@ -119,9 +119,9 @@ func (m *Manager) ListLegalMoves(ctx context.Context, roomCode string, from boar
 		return nil, err
 	}
 
-	compiled, ok := m.catalog.Get(game.GameDefID)
-	if !ok {
-		return nil, fmt.Errorf("session: game definition %q not found for room %q", game.GameDefID, roomCode)
+	compiled, err := m.compiledFor(game)
+	if err != nil {
+		return nil, err
 	}
 
 	bs := state.NewBoardState()
@@ -174,9 +174,9 @@ func (m *Manager) LegalMoves(ctx context.Context, roomCode string, seat int) (in
 	if game.Status != "active" || game.TurnSeat == nil {
 		return 0, nil, ErrGameNotActive
 	}
-	compiled, ok := m.catalog.Get(game.GameDefID)
-	if !ok {
-		return 0, nil, fmt.Errorf("session: game definition %q not found for room %q", game.GameDefID, roomCode)
+	compiled, err := m.compiledFor(game)
+	if err != nil {
+		return 0, nil, err
 	}
 	if seat == 0 {
 		seat = *game.TurnSeat
@@ -235,9 +235,9 @@ func (m *Manager) Simulate(ctx context.Context, roomCode string, atSeq *int, not
 	if err != nil {
 		return Simulation{}, err
 	}
-	compiled, ok := m.catalog.Get(game.GameDefID)
-	if !ok {
-		return Simulation{}, fmt.Errorf("session: game definition %q not found for room %q", game.GameDefID, roomCode)
+	compiled, err := m.compiledFor(game)
+	if err != nil {
+		return Simulation{}, err
 	}
 
 	seq := game.MoveSeq

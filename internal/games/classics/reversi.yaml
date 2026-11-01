@@ -1,8 +1,8 @@
 # yaml-language-server: $schema=../../../docs/game-definition.schema.json
 id: reversi
-name: Reversi (Othello)
+name: Reversi
 description: Outflank your opponent's discs to flip them; the player with the most discs when nobody can move wins.
-version: 0.3.0
+version: 0.3.1
 designers: [Lewis Waterman, John W. Mollett]
 rules:
   - Players alternate placing a disc of their color; Black moves first. A disc must be placed so that it brackets at least one straight line (horizontal, vertical or diagonal) of opposing discs between the new disc and another disc of your color.

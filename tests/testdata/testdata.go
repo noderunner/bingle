@@ -4,9 +4,11 @@
 package testdata
 
 import (
-	_ "embed" // freeplay.json
+	"embed"
+	"sync"
 
 	"github.com/noderunner/bingle/internal/engine/catalog"
+	"github.com/noderunner/bingle/internal/engine/dsl"
 )
 
 //go:embed freeplay.json
@@ -21,4 +23,30 @@ const FreeplayID = "test-freeplay"
 // every move and starting position is known, and is not a game to play.
 func Freeplay() catalog.Module {
 	return catalog.Module{ID: FreeplayID, Definition: freeplayJSON}
+}
+
+//go:embed tictactoe.yaml connect4.yaml
+var retiredFS embed.FS
+
+var (
+	ticTacToe   = sync.OnceValue(func() []byte { return dsl.MustLoad(retiredFS, "tictactoe.yaml") })
+	connectFour = sync.OnceValue(func() []byte { return dsl.MustLoad(retiredFS, "connect4.yaml") })
+)
+
+// TicTacToe and ConnectFour are the two games bingle retired (ADR 0076),
+// kept for the tests under their old ids: Tic-Tac-Toe is the smallest
+// complete game, which many tests play to the end, and Connect Four is the
+// only game that drops its pieces (the place action's gravity).
+func TicTacToe() catalog.Module {
+	return catalog.Module{ID: "tic-tac-toe", Definition: ticTacToe()}
+}
+
+// ConnectFour: see TicTacToe.
+func ConnectFour() catalog.Module {
+	return catalog.Module{ID: "connect-four", Definition: connectFour()}
+}
+
+// Fixtures are every game only the tests use.
+func Fixtures() []catalog.Module {
+	return []catalog.Module{Freeplay(), TicTacToe(), ConnectFour()}
 }

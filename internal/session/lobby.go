@@ -84,9 +84,9 @@ func (m *Manager) StartGame(ctx context.Context, roomCode, name string) (StateSn
 	if hostOf(players) != me.Seat {
 		return StateSnapshot{}, ErrNotHost
 	}
-	compiled, ok := m.catalog.Get(game.GameDefID)
-	if !ok {
-		return StateSnapshot{}, fmt.Errorf("session: game definition %q not found for room %q", game.GameDefID, roomCode)
+	compiled, err := m.compiledFor(game)
+	if err != nil {
+		return StateSnapshot{}, err
 	}
 	if len(players) < len(compiled.Definition.Seats) {
 		return StateSnapshot{}, ErrSeatsOpen
@@ -109,9 +109,9 @@ func (m *Manager) ChooseSeat(ctx context.Context, roomCode, name string, wanted 
 	if err != nil {
 		return StateSnapshot{}, err
 	}
-	compiled, ok := m.catalog.Get(game.GameDefID)
-	if !ok {
-		return StateSnapshot{}, fmt.Errorf("session: game definition %q not found for room %q", game.GameDefID, roomCode)
+	compiled, err := m.compiledFor(game)
+	if err != nil {
+		return StateSnapshot{}, err
 	}
 	sd, ok := compiled.Seat(wanted)
 	if !ok {
@@ -150,9 +150,9 @@ func (m *Manager) SetSeatCult(ctx context.Context, roomCode, by string, seat int
 	if err != nil {
 		return StateSnapshot{}, err
 	}
-	compiled, ok := m.catalog.Get(game.GameDefID)
-	if !ok {
-		return StateSnapshot{}, fmt.Errorf("session: game definition %q not found for room %q", game.GameDefID, roomCode)
+	compiled, err := m.compiledFor(game)
+	if err != nil {
+		return StateSnapshot{}, err
 	}
 	if _, ok := compiled.Seat(seat); !ok {
 		return StateSnapshot{}, fmt.Errorf("%w: game %q has no seat %d", ErrInvalidSeat, game.GameDefID, seat)

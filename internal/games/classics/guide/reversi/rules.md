@@ -1,4 +1,4 @@
-# Reversi (Othello)
+# Reversi
 
 Reversi is a game of flipping: every disc you place can turn many of your opponent's discs into yours, and a lead can change hands in a single move.
 

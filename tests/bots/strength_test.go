@@ -10,6 +10,7 @@ import (
 	"github.com/noderunner/bingle/internal/envs"
 	"github.com/noderunner/bingle/internal/games/classics"
 	"github.com/noderunner/bingle/internal/games/tak"
+	"github.com/noderunner/bingle/tests/testdata"
 )
 
 // TestStrengthReport prints a bot-vs-bot results table. It is a development
@@ -21,7 +22,7 @@ func TestStrengthReport(t *testing.T) {
 		t.Skip("set BINGLE_STRENGTH=1 to print a bot strength table")
 	}
 	cat := catalog.NewCatalog()
-	for _, m := range append([]catalog.Module{tak.Module()}, classics.Modules()...) {
+	for _, m := range append([]catalog.Module{tak.Module(), testdata.TicTacToe(), testdata.ConnectFour()}, classics.Modules()...) {
 		if err := cat.RegisterModule(m); err != nil {
 			t.Fatal(err)
 		}

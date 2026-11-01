@@ -30,6 +30,7 @@ func appServer(t *testing.T) (base string, a *app.App, cfg config.Config) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	registerFixtures(t, a)
 	t.Cleanup(func() { _ = a.Close() })
 	srv := httptest.NewServer(a.Router())
 	t.Cleanup(srv.Close)

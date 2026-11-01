@@ -3,9 +3,9 @@
 A game is one definition, written in YAML (embedded with `go:embed`, loaded
 with `dsl.MustLoad` and registered with `catalog.Module`). Everything below is
 optional unless marked **required**. `internal/games/tak/tak.yaml` is the
-fullest worked example; the `internal/games/classics/*.yaml` files (Tic-Tac-Toe
-is the smallest; Amazons, Ataxx, Pente and Brandubh show the newer actions)
-cover the rest. *The file*, after this list, covers includes, anchors, the
+fullest worked example; the `internal/games/classics/*.yaml` files (Amazons, Ataxx, Pente and Brandubh show the newer actions)
+cover the rest, and `tests/testdata/tictactoe.yaml`, a test fixture, is the
+smallest complete game. *The file*, after this list, covers includes, anchors, the
 schema and converting from JSON.
 
 ```

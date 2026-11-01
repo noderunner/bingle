@@ -86,7 +86,8 @@ the largest connected group where the game is about connection) is the
 strongest opponent in Tak, where those two terms are the flat-win and road
 criteria. `mcts` (random playouts) does better where such a heuristic says
 little (Connect Four) and improves with more iterations or time. They are
-baselines, not engines — regenerate the table with
+baselines, not engines. Connect Four and Tic-Tac-Toe are no longer shipped,
+but the tests keep both as fixtures, so they stay in the table. Regenerate it with
 `BINGLE_STRENGTH=1 go test ./tests/bots -run StrengthReport -v`.
 
 Courtfall is a long, chancy game that the table's heuristics do not fit, so it

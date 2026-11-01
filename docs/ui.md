@@ -690,7 +690,7 @@ preview-and-confirm, turn notifications. Hovering a square shows what is on it (
 ### Illustrated board themes
 
 Games played with stones on a board of cells (Blooms, Hex, Havannah, Yavalath, Yinsh,
-Go, Gomoku, Pente, Reversi, Connect Four, Tak, Ataxx, Amazons, draughts and the like: every
+Go, Gomoku, Pente, Reversi, Tak, Ataxx, Amazons, draughts and the like: every
 piece is a disc, ring, chip, cross, cap, wall or flat stone, and the board is no map or free
 table) offer six more themes in the *Board theme* list of the options window, under
 *Illustrated themes*: **Hot Synthwave Vibes**, **Celtic Rune Fantasy**, **Southwestern

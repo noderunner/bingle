@@ -163,6 +163,18 @@ func New(cfg config.Config, opts ...Option) (*App, error) {
 		return nil, err
 	}
 
+	// Retired games stay readable; any still being played end now, with no
+	// result (docs/history/game-plugins-plan.md, ADR 0076).
+	for _, r := range RetiredGames {
+		cat.Retire(r.ID, r.Name)
+	}
+	if n, err := st.EndRetiredGames(context.Background(), cat.RetiredIDs()); err != nil {
+		_ = st.Close()
+		return nil, err
+	} else if n > 0 {
+		a.log.Info("ended the unfinished games of retired games", "games", n, "retired", cat.RetiredIDs())
+	}
+
 	manager := session.NewManager(st, cat)
 	manager.SetLogger(a.log)
 	manager.SetMetrics(a.metrics)
@@ -278,6 +290,13 @@ func enableNotify(m *session.Manager, cfg config.Config, lg *slog.Logger) error 
 	lg.Info("notify: mail is on", "host", cfg.Mail.Host, "port", cfg.Mail.Port, "tls", cfg.Mail.Mode,
 		logging.Addr(cfg.Mail.From), "hourly_limit", cfg.Mail.HourlyLimit, "daily_limit", cfg.Mail.DailyLimit)
 	return nil
+}
+
+// RetiredGames are the games bingle used to ship and no longer does. Games of
+// them already played stay readable, by these names, as a record.
+var RetiredGames = []struct{ ID, Name string }{
+	{"tic-tac-toe", "Tic-Tac-Toe"},
+	{"connect-four", "Connect Four"},
 }
 
 // BuiltinModules returns every game module bingle ships with.

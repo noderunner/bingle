@@ -134,6 +134,8 @@ func (m *Manager) OwnGames(ctx context.Context, limit int) ([]OwnGame, error) {
 		name := g.GameDefID
 		if c, ok := m.catalog.Get(g.GameDefID); ok {
 			name = c.Definition.Name
+		} else if retired, ok := m.catalog.Retired(g.GameDefID); ok {
+			name = retired
 		}
 		out = append(out, OwnGame{RoomCode: g.RoomCode, GameDefID: g.GameDefID, Name: name, Status: g.Status, Seats: g.Names, UpdatedAt: g.UpdatedAt})
 	}

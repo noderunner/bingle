@@ -443,3 +443,21 @@ func botName(bot bots.Bot, sd dsl.SeatDef, total int) string {
 	}
 	return who + " (" + bot.Label() + ")"
 }
+
+// ErrGameRetired is returned for a game whose kind this server no longer
+// offers (catalog.Retire): what was played stays readable through
+// RetiredGame, but nothing more can be done in it.
+var ErrGameRetired = errors.New("session: this game has been retired from this server")
+
+// compiledFor returns the compiled definition a stored game is played under:
+// ErrGameRetired when its kind was retired, ErrGameDefNotFound when it is
+// simply unknown.
+func (m *Manager) compiledFor(game store.Game) (*catalog.CompiledGame, error) {
+	if compiled, ok := m.catalog.Get(game.GameDefID); ok {
+		return compiled, nil
+	}
+	if name, ok := m.catalog.Retired(game.GameDefID); ok {
+		return nil, fmt.Errorf("%w: %s is no longer played here (room %s)", ErrGameRetired, name, game.RoomCode)
+	}
+	return nil, fmt.Errorf("%w: %q for room %q", ErrGameDefNotFound, game.GameDefID, game.RoomCode)
+}

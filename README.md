@@ -35,7 +35,7 @@ click-to-move for free.
 | **Nyet!** (Stefan Dorra's trick-taking game: cross choices off a board to set the round's terms, pick teams, take tricks and loot; 2–5 players, the four classic suits, a player for each animal — the first game on the card framework) | `internal/games/nyet/`, `internal/engine/cards/` ([ADR 0043](docs/decisions/0043-card-games.md)) |
 | **Cthulhu Wars** (core set with the Windwalker, Sleeper, Opener of the Way and Tcho-Tcho cults, the High Priests, the Azathoth neutral spellbooks and Monsters, the Dreamlands and Beyond Time and Space Loyalty Cards, the Hound of Tindalos and five Independent Great Old Ones, three to five players, simplified world map: Power, Gates, Doom, spellbooks, dice battles, hidden Elder Signs — rules in Go, map and rules guide as data) | `internal/games/cthulhuwars/` ([rules notes](docs/cthulhu-wars.md)) |
 | **Mycelium** (Miles Stevenson's game of two fungal colonies on a hex board: place nodes, take the centre to start a confluence, and spread clusters by spores and hyphae to convert the other colony — rules in Go; still being playtested) | `internal/games/mycelium/` ([ADR 0066](docs/decisions/0066-mycelium.md)) |
-| Go (9×9–19×19), Reversi, Hex, Havannah, Yavalath, Amazons, Ataxx, Pente, Brandubh, English Draughts, Breakthrough, Connect Four, Gomoku, Tic-Tac-Toe | `internal/games/classics/*.yaml` |
+| Go (9×9–19×19), Reversi, Hex, Havannah, Yavalath, Amazons, Ataxx, Pente, Brandubh, English Draughts, Breakthrough, Gomoku | `internal/games/classics/*.yaml` |
 
 ![The lobby: game gallery, puzzles, bots, time limits](docs/screenshots/lobby.png)
 
@@ -154,8 +154,8 @@ docs/                     the manual; docs/decisions has an ADR for each big dec
 
 ## Adding a game
 
-Write a YAML definition (start from `classics/tictactoe.yaml` — about 30 lines),
-embed it in a package with `catalog.Module`, and register it in
+Write a YAML definition (start from `tests/testdata/tictactoe.yaml`: Tic-Tac-Toe,
+about 30 lines, kept as a test fixture), embed it in a package with `catalog.Module`, and register it in
 `internal/app/app.go`. See [docs/dsl.md](docs/dsl.md). Rules a definition
 can't express go in a Go ruleset (`"engine": "ruleset"`, ADR 0025 — Courtfall and Cthulhu Wars)
 or a new engine action type (ADR 0022 describes how `slide` and `leap` were

@@ -428,6 +428,31 @@ func (s *Store) DeleteInactiveGames(ctx context.Context, cutoff time.Time) (int6
 	return n, nil
 }
 
+// EndReasonRetired is the end reason of a game whose kind was retired while
+// it was still being played.
+const EndReasonRetired = "retired"
+
+// EndRetiredGames ends every unfinished game (waiting, in a lobby or in play)
+// of the given game ids, and of games derived from them (id~suffix), with no
+// winner and EndReasonRetired, and returns how many it ended. The time of the
+// last activity is left as it was.
+func (s *Store) EndRetiredGames(ctx context.Context, ids []string) (int64, error) {
+	var total int64
+	for _, id := range ids {
+		res, err := s.exec(ctx, "EndRetiredGames",
+			`UPDATE games SET status = 'finished', turn_seat = NULL, winner_seat = NULL, end_reason = ?, end_detail = '',
+				draw_offer_seat = NULL, takeback_seat = NULL
+			 WHERE status IN ('waiting', 'active') AND (game_def_id = ? OR substr(game_def_id, 1, ?) = ?)`,
+			EndReasonRetired, id, len(id)+1, id+"~")
+		if err != nil {
+			return total, fmt.Errorf("ending the games of retired %q: %w", id, err)
+		}
+		n, _ := res.RowsAffected()
+		total += n
+	}
+	return total, nil
+}
+
 // SetPlayerBot marks the player at seat in gameID as played by the named
 // built-in bot (used for bot-versus-bot rooms).
 func (s *Store) SetPlayerBot(ctx context.Context, gameID int64, seat int, bot string) error {

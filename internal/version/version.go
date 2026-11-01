@@ -6,4 +6,4 @@ package version
 // Engine is the semantic version of bingle. Raise it with each change to the
 // engine or the platform (not for a change to one game alone, which raises
 // that game's own version). The footer of every page shows it.
-const Engine = "0.29.0"
+const Engine = "0.30.0"

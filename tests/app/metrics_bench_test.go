@@ -27,6 +27,7 @@ func benchMoveServer(b *testing.B, mx *metrics.Metrics, opts ...app.Option) *htt
 	if err != nil {
 		b.Fatalf("app.New: %v", err)
 	}
+	registerFixtures(b, a)
 	b.Cleanup(func() { _ = a.Close() })
 	srv := httptest.NewServer(a.Router())
 	b.Cleanup(srv.Close)

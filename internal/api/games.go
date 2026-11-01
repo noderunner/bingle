@@ -195,6 +195,13 @@ type getGameResponse struct {
 	Lobby     bool   `json:"lobby,omitempty"`
 	HostSeat  int    `json:"host_seat,omitempty"`
 	InviteURL string `json:"invite_url,omitempty"`
+
+	// Retired: this server no longer offers the game, GameName is what it
+	// was called. The answer is then a record: the seats, the result and
+	// move_seq; the moves come from GET .../moves, and nothing else about
+	// the game can be asked for or done.
+	Retired  bool   `json:"retired,omitempty"`
+	GameName string `json:"game_name,omitempty"`
 }
 
 // getGameSeat is one entry of getGameResponse's seats array, from
@@ -219,6 +226,10 @@ func (h *handlers) handleGetGame(w http.ResponseWriter, r *http.Request) {
 	code := chi.URLParam(r, "code")
 
 	snapshot, err := h.mgr.GetState(r.Context(), code, nil)
+	if errors.Is(err, session.ErrGameRetired) {
+		h.writeRetiredGame(w, r, code)
+		return
+	}
 	if err != nil {
 		writeError(w, err)
 		return
@@ -585,4 +596,25 @@ func (h *handlers) handleOwnGames(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Cache-Control", "no-store")
 	writeJSON(w, http.StatusOK, map[string]any{"games": games})
+}
+
+// writeRetiredGame answers GET /games/{code} for a game whose kind was
+// retired: its record, marked retired.
+func (h *handlers) writeRetiredGame(w http.ResponseWriter, r *http.Request, code string) {
+	rec, err := h.mgr.RetiredGame(r.Context(), code)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	seats := make([]getGameSeat, len(rec.Seats))
+	for i, s := range rec.Seats {
+		seats[i] = getGameSeat{Seat: s.Seat, Color: s.Color, Name: s.Name, Bot: s.Bot,
+			Yours: s.PrincipalID != "" && s.PrincipalID == auth.IDFrom(r.Context())}
+	}
+	writeJSON(w, http.StatusOK, getGameResponse{
+		GameDefID: rec.GameDefID, Status: rec.Status, Seats: seats, MoveSeq: rec.MoveSeq,
+		WinnerSeat: rec.WinnerSeat, EndReason: rec.EndReason, EndDetail: rec.EndDetail,
+		ServerTime: time.Now().UTC().Format(time.RFC3339),
+		Retired:    true, GameName: rec.Name,
+	})
 }

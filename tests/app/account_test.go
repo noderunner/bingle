@@ -314,6 +314,7 @@ func TestAccount_TheSeededAdministratorChangesItsPasswordFirst(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	registerFixtures(t, a)
 	t.Cleanup(func() { _ = a.Close() })
 	if s := a.Seeded(); s == nil || s.Handle != "admin" || s.Password != auth.DevPassword || !s.Deterministic {
 		t.Fatalf("seeded: %+v", s)
@@ -341,6 +342,7 @@ func TestAccount_TheSeededAdministratorChangesItsPasswordFirst(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	registerFixtures(t, again)
 	defer func() { _ = again.Close() }()
 	if again.Seeded() != nil {
 		t.Error("an administrator was seeded on a database that has one")
@@ -355,6 +357,7 @@ func TestAccount_TheSeededPasswordIsRandomOffLoopback(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	registerFixtures(t, a)
 	defer func() { _ = a.Close() }()
 	if s := a.Seeded(); s == nil || s.Deterministic || s.Password == auth.DevPassword || len(s.Password) != 16 {
 		t.Errorf("seeded: %+v", s)
@@ -365,6 +368,7 @@ func TestAccount_TheSeededPasswordIsRandomOffLoopback(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	registerFixtures(t, b)
 	defer func() { _ = b.Close() }()
 	if s := b.Seeded(); s == nil || s.Deterministic {
 		t.Errorf("behind a trusted proxy a loopback bind is not local: %+v", s)
@@ -385,6 +389,7 @@ func TestAccount_TheCookieIsSecureOffLoopback(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+			registerFixtures(t, a)
 			t.Cleanup(func() { _ = a.Close() })
 			pw, err := a.Accounts().Create(context.Background(), "ana", "ana@example.com", false)
 			if err != nil {
@@ -453,6 +458,7 @@ func TestAccount_AResetSignsOutEverywhere(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	registerFixtures(t, a)
 	t.Cleanup(func() { _ = a.Close() })
 	srv := httptest.NewServer(a.Router())
 	t.Cleanup(srv.Close)

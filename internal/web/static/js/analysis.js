@@ -25,7 +25,7 @@ let openReport = 0; // the batch whose report is on screen
 /** What the form was last set to, so the tab comes back as it was left. */
 function setup() {
 	const s = store.get(SETUP_KEY, {}) || {};
-	return { game: s.game || "tic-tac-toe", games: s.games || 100, rotate: s.rotate !== false, bots: s.bots || {} };
+	return { game: s.game || "", games: s.games || 100, rotate: s.rotate !== false, bots: s.bots || {} };
 }
 
 const pct = (v) => `${(v * 100).toFixed(1)}%`;

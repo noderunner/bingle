@@ -35,6 +35,8 @@ func statusForError(err error) int {
 		return http.StatusConflict
 	case errors.Is(err, session.ErrChatTooFast), errors.Is(err, session.ErrSignalTooFast), errors.Is(err, session.ErrNotifyLimited):
 		return http.StatusTooManyRequests
+	case errors.Is(err, session.ErrGameRetired):
+		return http.StatusGone
 	case errors.Is(err, session.ErrRulesetPanic):
 		// A ruleset that panicked is the server's fault, not the client's:
 		// the move may well have been perfectly legal. A repro bundle will

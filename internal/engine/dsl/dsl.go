@@ -437,7 +437,7 @@ type ActionDef struct {
 	// board edge (Connect Four).
 	Gravity string `json:"gravity,omitempty"`
 	// Flips makes a placement flip lines of opposing pieces bracketed by the
-	// new piece and another piece of the placer's color (Reversi/Othello).
+	// new piece and another piece of the placer's color (Reversi).
 	Flips *FlipsDef `json:"flips,omitempty"`
 	// Captures makes a placement capture opposing groups left without
 	// liberties (Go).

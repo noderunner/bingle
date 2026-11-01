@@ -79,3 +79,4 @@ Short records of choices made for the `bingle` project during the requirements i
 | [0073](0073-account-only-features.md) | Direct messages, who is here, the global chat and notifications are accounts'; confirmed contacts grandfathered and offered the way to an account; ADR 0006 retired |
 | [0074](0074-a-qr-code-of-our-own.md) | The second factor's QR code is drawn by `internal/qr`, a byte-mode, level-M, version 1–10 encoder of our own, rather than a dependency |
 | [0075](0075-yaml-definitions-and-includes.md) | Definitions written in YAML and loaded as JSON; `!include` within a game's own files, anchors, unknown fields refused with file and line, a generated JSON Schema, `bingle dsl convert` |
+| [0076](0076-retiring-games.md) | Retiring a game: unfinished games end at startup with no result, every game stays readable as a record (410 for anything more), the page shows it; Tic-Tac-Toe and Connect Four retired, kept as test fixtures |

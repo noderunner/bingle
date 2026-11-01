@@ -11,12 +11,13 @@ import (
 	"github.com/noderunner/bingle/internal/envs"
 	"github.com/noderunner/bingle/internal/games/classics"
 	"github.com/noderunner/bingle/internal/games/tak"
+	"github.com/noderunner/bingle/tests/testdata"
 )
 
 func manager(t testing.TB) *envs.Manager {
 	t.Helper()
 	cat := catalog.NewCatalog()
-	mods := append([]catalog.Module{tak.Module()}, classics.Modules()...)
+	mods := append([]catalog.Module{tak.Module(), testdata.TicTacToe(), testdata.ConnectFour()}, classics.Modules()...)
 	for _, m := range mods {
 		if err := cat.RegisterModule(m); err != nil {
 			t.Fatal(err)

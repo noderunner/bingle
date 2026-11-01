@@ -61,6 +61,7 @@ func newNotifyEnv(t *testing.T, smtpOpts fakesmtp.Options, mods ...notifyMods) *
 	if err != nil {
 		t.Fatal(err)
 	}
+	registerFixtures(t, a)
 	ctx, cancel := context.WithCancel(context.Background())
 	go a.Manager().RunNotifier(ctx)
 	t.Cleanup(func() { cancel(); _ = a.Close() })

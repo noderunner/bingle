@@ -88,9 +88,9 @@ func (m *Manager) PlayNotation(ctx context.Context, roomCode, name, text string)
 	if err != nil {
 		return MoveOutcome{}, err
 	}
-	compiled, ok := m.catalog.Get(game.GameDefID)
-	if !ok {
-		return MoveOutcome{}, fmt.Errorf("session: game definition %q not found for room %q", game.GameDefID, roomCode)
+	compiled, err := m.compiledFor(game)
+	if err != nil {
+		return MoveOutcome{}, err
 	}
 	mv, err := state.ParseMove(compiled, text)
 	if err != nil {
@@ -145,9 +145,9 @@ func (m *Manager) Play(ctx context.Context, roomCode, name string, mv state.Move
 		return MoveOutcome{}, err
 	}
 
-	compiled, ok := m.catalog.Get(game.GameDefID)
-	if !ok {
-		return MoveOutcome{}, fmt.Errorf("session: game definition %q not found for room %q", game.GameDefID, roomCode)
+	compiled, err := m.compiledFor(game)
+	if err != nil {
+		return MoveOutcome{}, err
 	}
 
 	outcome, err := m.applyAndRecord(ctx, compiled, game, player, mv)
