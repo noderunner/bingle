@@ -108,6 +108,9 @@ type CreateOptions struct {
 	StartTPS   string
 	StartState string
 	StartSeat  int
+	// Tutorial marks the room as playing a tutorial ("family/id"): it is set
+	// by StartTutorial, never by a client.
+	Tutorial string
 }
 
 // ErrInvalidStart is returned by CreateGame for a start position that does
@@ -292,6 +295,13 @@ func (m *Manager) CreateGameWithOptions(ctx context.Context, opts CreateOptions)
 	}
 	if createErr != nil {
 		return CreateGameResult{}, fmt.Errorf("session: create game after %d attempts: %w", maxCreateGameAttempts, createErr)
+	}
+	// A tutorial room is marked before anyone else is seated, so it never
+	// shows in a list of games.
+	if opts.Tutorial != "" {
+		if err := m.store.SetTutorial(ctx, game.ID, opts.Tutorial); err != nil {
+			return CreateGameResult{}, err
+		}
 	}
 	// The game and the creator's seat are the creating principal's (none for
 	// an anonymous client).

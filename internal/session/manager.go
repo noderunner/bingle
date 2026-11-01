@@ -47,6 +47,7 @@ type Manager struct {
 	now       func() time.Time       // clock; tests may replace it via SetClock
 	mu        sync.Mutex             // guards roomLocks itself, not room state
 	roomLocks map[string]*sync.Mutex // lazily created, one per room code ever touched
+	tutorials tutorialCache          // each family's tutorials, read once
 	shuffles  shuffleTracker         // recent piece arrangements of bots (see avoidShuffles)
 	chat      chatLimiter            // how often each name has spoken (see SendChat)
 	presence  presenceTracker        // who says they are watching right now (see SetPresent)

@@ -60,7 +60,7 @@ type OwnGame struct {
 // OwnGames lists the games a principal has a seat in, the latest first.
 func (s *Store) OwnGames(ctx context.Context, principalID string, limit int) ([]OwnGame, error) {
 	rows, err := s.query(ctx, "OwnGames", `SELECT g.room_code, g.game_def_id, g.status, g.updated_at, p.name FROM players p JOIN games g ON g.id = p.game_id
-		WHERE p.principal_id = ? ORDER BY g.updated_at DESC, g.id DESC, p.seat`, principalID)
+		WHERE p.principal_id = ? AND g.tutorial = '' ORDER BY g.updated_at DESC, g.id DESC, p.seat`, principalID)
 	if err != nil {
 		return nil, err
 	}

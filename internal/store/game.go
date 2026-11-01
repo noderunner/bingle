@@ -52,11 +52,14 @@ type Game struct {
 	Lobby     bool
 	CreatedAt string
 	UpdatedAt string
+	// Tutorial is "family/id" of the tutorial the room plays (SetTutorial),
+	// empty for an ordinary game.
+	Tutorial string
 }
 
 // gameColumns is the column list every games SELECT uses, matching
 // scanGameRow.
-const gameColumns = `id, room_code, game_def_id, status, board_state, turn_seat, move_seq, winner_seat, end_reason, end_detail, move_time_limit, draw_offer_seat, initial_state, initial_turn_seat, takeback_seat, takeback_seq, created_at, updated_at, lobby, clock`
+const gameColumns = `id, room_code, game_def_id, status, board_state, turn_seat, move_seq, winner_seat, end_reason, end_detail, move_time_limit, draw_offer_seat, initial_state, initial_turn_seat, takeback_seat, takeback_seq, created_at, updated_at, lobby, clock, tutorial`
 
 type rowScanner interface{ Scan(dest ...any) error }
 
@@ -66,7 +69,7 @@ func scanGameRow(row rowScanner) (Game, error) {
 	var lobby int
 	err := row.Scan(&g.ID, &g.RoomCode, &g.GameDefID, &g.Status, &g.BoardState, &turnSeat, &g.MoveSeq, &winnerSeat,
 		&g.EndReason, &g.EndDetail, &g.MoveTimeLimit, &drawOffer, &g.InitialState, &g.InitialTurnSeat,
-		&takebackSeat, &g.TakebackSeq, &g.CreatedAt, &g.UpdatedAt, &lobby, &g.Clock)
+		&takebackSeat, &g.TakebackSeq, &g.CreatedAt, &g.UpdatedAt, &lobby, &g.Clock, &g.Tutorial)
 	if err != nil {
 		return Game{}, err
 	}
@@ -428,6 +431,19 @@ func (s *Store) DeleteInactiveGames(ctx context.Context, cutoff time.Time) (int6
 	return n, nil
 }
 
+// SetTutorial marks a game as the room of a tutorial, "family/id": it is
+// left out of every list of games.
+func (s *Store) SetTutorial(ctx context.Context, gameID int64, ref string) error {
+	res, err := s.exec(ctx, "SetTutorial", `UPDATE games SET tutorial = ? WHERE id = ?`, ref, gameID)
+	if err != nil {
+		return fmt.Errorf("marking game_id=%d as a tutorial: %w", gameID, err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
 // EndReasonRetired is the end reason of a game whose kind was retired while
 // it was still being played.
 const EndReasonRetired = "retired"
@@ -492,7 +508,7 @@ func (s *Store) ListUnfinishedGames(ctx context.Context, limit int) ([]Unfinishe
 	rows, err := s.query(ctx, "ListUnfinishedGames",
 		`SELECT g.id, g.room_code, g.game_def_id, g.status, g.lobby, g.turn_seat, g.move_seq, g.updated_at,
 		        (SELECT COUNT(*) FROM players p WHERE p.game_id = g.id)
-		 FROM games g WHERE g.status != 'finished'
+		 FROM games g WHERE g.status != 'finished' AND g.tutorial = ''
 		 ORDER BY g.updated_at DESC LIMIT ?`, limit)
 	if err != nil {
 		return nil, fmt.Errorf("listing unfinished games: %w", err)

@@ -62,6 +62,28 @@ func Verify(cat *catalog.Catalog, family string, t Tutorial) error {
 	return nil
 }
 
+// Start returns the position a tutorial's room begins from — the game's
+// start, its chance seeded by t.Seed, with t.Setup played — and the seat to
+// move from it.
+func Start(game *catalog.CompiledGame, t Tutorial) (*state.BoardState, int, error) {
+	p, err := newPlayer(game, t.Seed)
+	if err != nil {
+		return nil, 0, fmt.Errorf("%s: %w", t.ID, err)
+	}
+	for i, mv := range t.Setup {
+		if err := p.play(mv, 0); err != nil {
+			return nil, 0, fmt.Errorf("%s: setup move %d: %w", t.ID, i+1, err)
+		}
+	}
+	if p.seat == 0 {
+		return nil, 0, fmt.Errorf("%s: the setup ends the game", t.ID)
+	}
+	return p.st, p.seat, nil
+}
+
+// LearnerSeat is the seat the learner holds (Seat, default 1).
+func (t Tutorial) LearnerSeat() int { return t.learnerSeat() }
+
 func familyOf(game *catalog.CompiledGame) string {
 	if f := game.Definition.Family; f != "" {
 		return f

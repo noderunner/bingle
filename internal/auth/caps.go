@@ -329,6 +329,9 @@ var routes = func() []route {
 		r("POST", `/api/games`, CapCreateGame, LimitCreateGame),
 		r("POST", `/api/games/import`, CapCreateGame, LimitCreateGame),
 		r("POST", `/api/bot-matches`, CapCreateGame, LimitCreateGame),
+		// A tutorial is the lowest barrier there is: playing is enough, but
+		// it opens a room, so it counts towards the limit on making games.
+		r("POST", `/api/tutorials`, CapPlay, LimitCreateGame),
 		r("POST", `/api/games/[^/]+/join`, CapJoin, ""),
 		r("GET", `/ws/[^/]+`, CapJoin, ""),
 		r("POST", `/api/games/[^/]+/chat`, CapChatGame, LimitChat),

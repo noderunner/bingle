@@ -202,6 +202,10 @@ type getGameResponse struct {
 	// the game can be asked for or done.
 	Retired  bool   `json:"retired,omitempty"`
 	GameName string `json:"game_name,omitempty"`
+
+	// Tutorial is "family/id" of the tutorial the room plays: the page
+	// fetches it from GET /game-defs/{family}/tutorials/{id}.
+	Tutorial string `json:"tutorial,omitempty"`
 }
 
 // getGameSeat is one entry of getGameResponse's seats array, from
@@ -250,6 +254,7 @@ func (h *handlers) handleGetGame(w http.ResponseWriter, r *http.Request) {
 		WinnerSeat: snapshot.WinnerSeat,
 		EndReason:  snapshot.EndReason,
 		EndDetail:  snapshot.EndDetail,
+		Tutorial:   snapshot.Tutorial,
 
 		MoveTimeSeconds: snapshot.MoveTimeLimit,
 		Clock:           snapshot.Clock,

@@ -127,6 +127,9 @@ var columnMigrations = []struct{ table, column, ddl string }{
 	{"games", "owner_principal_id", "TEXT NOT NULL DEFAULT ''"},
 	{"chat_messages", "principal_id", "TEXT NOT NULL DEFAULT ''"},
 	{"global_chat", "principal_id", "TEXT NOT NULL DEFAULT ''"},
+	// tutorial: "family/id" of the tutorial a room plays (ADR 0077), empty
+	// for an ordinary game. Tutorial rooms stay out of the lists of games.
+	{"games", "tutorial", "TEXT NOT NULL DEFAULT ''"},
 }
 
 func addMissingColumns(db *sql.DB) error {

@@ -4,6 +4,14 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.30.2 - 2026-11-01
+
+### Bingle Core 0.30.2
+- **A tutorial can now be opened, through the API, in a room of its own.** It plays on a real board
+  under the real rules, with you in every seat so its scripted replies can be played for you, and it
+  stays out of "My games", the list of games going and turn emails. The page that guides you
+  through one comes next.
+
 ## 0.30.1 - 2026-11-01
 
 ### Bingle Core 0.30.1
