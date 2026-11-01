@@ -77,6 +77,9 @@ type GameDef struct {
 	Version   string   `json:"version,omitempty"`
 	Designers []string `json:"designers,omitempty"`
 	Publisher string   `json:"publisher,omitempty"`
+	// Tutorials is how many tutorials the game's family has (see
+	// GET /game-defs/{id}/tutorials).
+	Tutorials int `json:"tutorials,omitempty"`
 }
 
 // GameDefs converts the manager's list of games.
@@ -86,7 +89,7 @@ func GameDefs(defs []session.GameDefSummary) []GameDef {
 		out[i] = GameDef{
 			ID: d.ID, Name: d.Name, SeatsRequired: d.SeatsRequired, Description: d.Description,
 			BoardWidth: d.BoardWidth, BoardHeight: d.BoardHeight, Family: d.Family,
-			Version: d.Version, Designers: d.Designers, Publisher: d.Publisher,
+			Version: d.Version, Designers: d.Designers, Publisher: d.Publisher, Tutorials: d.Tutorials,
 		}
 	}
 	return out

@@ -8,6 +8,7 @@ import { h, clear, store } from "./util.js";
 import { api } from "./api.js";
 import { renderMarkdown } from "./markdown.js";
 import { pieceIcon, cssColor, legendMarker } from "./render.js";
+import { tutorialList } from "./tutorials-ui.js";
 
 const KEY = "bingle.rules.";
 
@@ -145,13 +146,18 @@ export async function showRules(info, { tab } = {}) {
 	else dlg.setAttribute("open", "");
 
 	let guide;
+	let tutorials = null;
 	try {
-		guide = await api.guide(info.id);
+		[guide, tutorials] = await Promise.all([api.guide(info.id), api.tutorials(info.id).catch(() => null)]);
 	} catch (err) {
 		clear(body).append(h("p", { class: "error" }, "The rules could not be loaded: " + err.message));
 		return dlg;
 	}
 	const pages = [...guide.tabs];
+	// The game's tutorials teach by playing (ADR 0077): a tab of their own.
+	if (tutorials && tutorials.tutorials.length) {
+		pages.push({ id: "tutorials", title: "Tutorials", node: tutorialList(tutorials.family, tutorials.tutorials) });
+	}
 	const key = keyPage(info);
 	if (key) pages.push({ id: "key", title: "Key", markdown: key });
 	pages.push({ id: "controls", title: "Controls", markdown: controlsPage(info) });
@@ -188,7 +194,8 @@ function build(dlg, info, pages, { tablist, body, search, initial }) {
 	pages.forEach((page, idx) => {
 		const tabId = `rules-tab-${page.id}`;
 		const panelId = `rules-panel-${page.id}`;
-		const rendered = renderMarkdown(page.markdown, {
+		// A page is Markdown, or an element of its own (the tutorials).
+		const rendered = page.node ? { node: h("div", { class: "md" }, page.node), headings: [] } : renderMarkdown(page.markdown, {
 			assetBase,
 			idPrefix: `rules-${page.id}-`,
 			piece: (type, color) => {

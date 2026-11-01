@@ -59,6 +59,14 @@ moves as the learner and each `reply` as the seat that makes it, through the ord
 so the rules are the engine's. The room is marked as a tutorial (`tutorial: "family/id"` in
 `GET /api/games/{code}`) and stays out of "My games", the open games and turn notifications.
 
+## Where players find them
+
+- **The game picker** marks the games that have a tutorial with a *Tutorial* badge, and the chosen
+  game's setup lists its tutorials under **Learn to play**, started under the name in the form.
+- **The rules window**, from the game picker or a game, has a **Tutorials** tab for a game that has
+  any: by kind (*Learn the rules*, *Strategy*, *Variants*), each with its summary and a *✓ Done* mark
+  once this browser has finished it.
+
 ## The page
 
 A tutorial room's game page shows the step above the board, its highlighted squares ringed and its
