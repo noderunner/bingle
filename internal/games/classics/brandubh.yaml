@@ -1,0 +1,75 @@
+# yaml-language-server: $schema=../../../docs/game-definition.schema.json
+id: brandubh
+name: Brandubh
+description: 'An asymmetric Celtic hunt game: eight attackers surround the king and his four defenders, who must break out to a corner.'
+version: 0.1.0
+rules:
+  - 'The attackers (black) move first. Every piece moves like a rook: any distance in a straight line over empty squares, without jumping.'
+  - Only the king may stop on the four corners or on the central throne (any piece may pass over the empty throne).
+  - 'Capture by sandwiching: when you move a piece next to an enemy piece, and the square on its far side holds one of your pieces — or is an empty corner or the empty throne — that piece is captured. Moving between two enemies is safe.'
+  - The king is captured like any other piece. The defenders win by moving the king to a corner; the attackers win by capturing the king. A player who cannot move loses.
+guide:
+  tabs:
+    - {id: rules, title: Rules, file: rules.md}
+board:
+  generator: {type: grid, width: 7, height: 7, adjacency: orthogonal4, labels: algebraic}
+  regions:
+    corners: [a1, g1, a7, g7]
+    throne: [d4]
+    restricted: [a1, g1, a7, g7, d4]
+  borders: {corners: red, throne: yellow}
+seats:
+  - {seat: 1, color: black, label: Attackers}
+  - {seat: 2, color: white, label: Defenders}
+pieces:
+  attacker: {label: Attacker, shape: disc}
+  defender: {label: Defender, shape: square}
+  king: {label: King, shape: cap, code: K}
+setup:
+  - {position: d1, piece: attacker, color: black}
+  - {position: d2, piece: attacker, color: black}
+  - {position: d6, piece: attacker, color: black}
+  - {position: d7, piece: attacker, color: black}
+  - {position: a4, piece: attacker, color: black}
+  - {position: b4, piece: attacker, color: black}
+  - {position: f4, piece: attacker, color: black}
+  - {position: g4, piece: attacker, color: black}
+  - {position: d3, piece: defender, color: white}
+  - {position: d5, piece: defender, color: white}
+  - {position: c4, piece: defender, color: white}
+  - {position: e4, piece: defender, color: white}
+  - {position: d4, piece: king, color: white}
+turn_order:
+  type: round-robin
+  seats: [1, 2]
+actions:
+  - id: move
+    type: slide
+    label: Move
+    pieces: [attacker, defender]
+    forbid_region: restricted
+    custodian:
+      lengths: [1]
+      anvils: [corners, throne]
+  - id: move-king
+    type: slide
+    label: Move the king
+    pieces: [king]
+    custodian:
+      lengths: [1]
+      anvils: [corners, throne]
+win_condition:
+  type: rules
+  rules:
+    - id: escape
+      type: reach
+      seat: 2
+      piece: king
+      region: corners
+      reason: escape
+    - {id: captured, type: absent, piece: king, seat: 1, reason: king-captured}
+    - id: stuck
+      type: end
+      when: [no-legal-moves]
+      decide: {type: mover-wins}
+      reason: no-moves

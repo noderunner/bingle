@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=../../../docs/game-definition.schema.json
+id: draughts
+name: English Draughts (Checkers)
+description: Capture every opposing piece or leave your opponent without a move. Pieces move diagonally, jumps are mandatory, and a piece that reaches the far row is crowned a king.
+version: 0.1.0
+rules:
+  - Pieces move one square diagonally onto an empty dark square. Ordinary pieces (men) move forward only; kings move forward or backward.
+  - To capture, jump diagonally over an adjacent enemy piece onto the empty square beyond it, removing the jumped piece. Men capture forward only; kings capture in any diagonal direction.
+  - 'Captures are compulsory: if you can jump, you must. A piece that lands with another jump available must keep jumping in the same move, but a man that reaches the far row is crowned and its move ends there.'
+  - A man that reaches the far row becomes a king. You win when your opponent has no legal move (no pieces left, or all blocked). A game that reaches 200 plies is drawn.
+guide:
+  tabs:
+    - {id: rules, title: Rules, file: rules.md}
+board:
+  generator: {type: grid, width: 8, height: 8, adjacency: diagonal4, labels: algebraic}
+  style: squares
+seats:
+  - {seat: 1, color: black, label: Black, forward: N}
+  - {seat: 2, color: red, label: Red, forward: S}
+pieces:
+  man:
+    label: Man
+    code: m
+    shape: disc
+    movement:
+      primitive: step
+      occupancy: empty-only
+      directions: [forward-left, forward-right]
+    promote:
+      - {seat: 1, region: top, to: king}
+      - {seat: 2, region: bottom, to: king}
+  king:
+    label: King
+    code: K
+    shape: cap
+    movement: {primitive: step, occupancy: empty-only}
+setup:
+  - {position: a1, piece: man, color: black}
+  - {position: c1, piece: man, color: black}
+  - {position: e1, piece: man, color: black}
+  - {position: g1, piece: man, color: black}
+  - {position: b2, piece: man, color: black}
+  - {position: d2, piece: man, color: black}
+  - {position: f2, piece: man, color: black}
+  - {position: h2, piece: man, color: black}
+  - {position: a3, piece: man, color: black}
+  - {position: c3, piece: man, color: black}
+  - {position: e3, piece: man, color: black}
+  - {position: g3, piece: man, color: black}
+  - {position: b8, piece: man, color: red}
+  - {position: d8, piece: man, color: red}
+  - {position: f8, piece: man, color: red}
+  - {position: h8, piece: man, color: red}
+  - {position: a7, piece: man, color: red}
+  - {position: c7, piece: man, color: red}
+  - {position: e7, piece: man, color: red}
+  - {position: g7, piece: man, color: red}
+  - {position: b6, piece: man, color: red}
+  - {position: d6, piece: man, color: red}
+  - {position: f6, piece: man, color: red}
+  - {position: h6, piece: man, color: red}
+turn_order:
+  type: round-robin
+  seats: [1, 2]
+actions:
+  - {id: jump, type: jump, label: Capture, mandatory: true, chain: true}
+win_condition:
+  type: rules
+  rules:
+    - id: stuck
+      type: end
+      when: [no-legal-moves]
+      decide: {type: mover-wins}
+      reason: no-moves
+    - id: limit
+      type: end
+      when: [ply-limit]
+      plies: 200
+      decide: {type: draw}
+      reason: draw

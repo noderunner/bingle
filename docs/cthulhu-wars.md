@@ -11,7 +11,7 @@ five of the six cults (see *Setting up a table*).
 
 Like Courtfall it is a **Go ruleset** ([ADR 0025](decisions/0025-go-rulesets-and-hidden-information.md));
 the board, seats, pieces, legend and the multi-page rules guide are data
-(`internal/games/cthulhuwars/cthulhuwars.json`, `…/guide/*.md`). It is the
+(`internal/games/cthulhuwars/definition/*.yaml`, `…/guide/*.md`). It is the
 first game with **more than two seats**, an **area-map board**
 ([ADR 0026](decisions/0026-area-maps-and-rules-guides.md)) and a hand-written,
 tabbed **rules guide**.

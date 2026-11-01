@@ -5,7 +5,7 @@ Short records of choices made for the `bingle` project during the requirements i
 | # | Decision |
 |---|----------|
 | [0001](0001-json-dsl-with-go-escape-hatch.md) | Hybrid game definition: JSON DSL + Go escape hatch |
-| [0002](0002-json-over-yaml-for-dsl.md) | JSON over YAML for the DSL |
+| [0002](0002-json-over-yaml-for-dsl.md) | JSON over YAML for the DSL (superseded by 0075) |
 | [0003](0003-board-as-graph-model.md) | Board modeled as a generic graph, not a fixed grid |
 | [0004](0004-rest-and-websocket-transport.md) | REST + WebSocket transport |
 | [0005](0005-room-code-matchmaking.md) | Room codes over a public lobby |
@@ -78,3 +78,4 @@ Short records of choices made for the `bingle` project during the requirements i
 | [0072](0072-identity-in-the-interface.md) | Handles reserved for their accounts and held after a rename, seat and chat markers, "My games" on the server, and the guest key copied to another device |
 | [0073](0073-account-only-features.md) | Direct messages, who is here, the global chat and notifications are accounts'; confirmed contacts grandfathered and offered the way to an account; ADR 0006 retired |
 | [0074](0074-a-qr-code-of-our-own.md) | The second factor's QR code is drawn by `internal/qr`, a byte-mode, level-M, version 1–10 encoder of our own, rather than a dependency |
+| [0075](0075-yaml-definitions-and-includes.md) | Definitions written in YAML and loaded as JSON; `!include` within a game's own files, anchors, unknown fields refused with file and line, a generated JSON Schema, `bingle dsl convert` |

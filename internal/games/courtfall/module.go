@@ -5,7 +5,7 @@
 //
 // Its rules are written in Go (a state.Ruleset) because they need things
 // the declarative DSL does not have — per-unit conditions, dice, hidden
-// choices, turns made of many small decisions. courtfall.json still
+// choices, turns made of many small decisions. courtfall.yaml still
 // describes the board, seats, pieces and legend, so the lobby, the web UI,
 // the API, the MCP server and the bots treat it like any other game.
 package courtfall
@@ -15,12 +15,17 @@ import (
 	"embed"
 	"encoding/binary"
 	"io/fs"
+	"sync"
 
 	"github.com/noderunner/bingle/internal/engine/catalog"
+	"github.com/noderunner/bingle/internal/engine/dsl"
 )
 
-//go:embed courtfall.json
-var definitionJSON []byte
+//go:embed courtfall.yaml
+var definitionFS embed.FS
+
+// definition is the definition as JSON, converted once.
+var definition = sync.OnceValue(func() []byte { return dsl.MustLoad(definitionFS, "courtfall.yaml") })
 
 // guideFS holds the rules guide pages shown in the rules window.
 //
@@ -33,7 +38,7 @@ func Module() catalog.Module {
 	if err != nil {
 		panic(err)
 	}
-	return catalog.Module{ID: "courtfall", Definition: definitionJSON, Rules: New(), Assets: sub}
+	return catalog.Module{ID: "courtfall", Definition: definition(), Rules: New(), Assets: sub}
 }
 
 // freshSeed draws a dice generator state from the system's entropy.

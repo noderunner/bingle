@@ -4,6 +4,18 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.29.0 - 2026-10-31
+
+### Bingle Core 0.29.0
+- **Games are now written in YAML instead of JSON.** Nothing changes at the table: every game plays
+  exactly as before, and the API still speaks JSON. For anyone writing or changing a game, a
+  definition can now carry comments, be split across several files (Cthulhu Wars' map variants each
+  have their own), and reuse a block instead of copying it.
+- **A misspelled field in a game's definition is now an error** that names the file and line,
+  instead of being quietly ignored. Editors that read the new schema complete and check the fields
+  as you type.
+- `bingle dsl convert` turns a JSON game definition into YAML, and shows the JSON a YAML one becomes.
+
 ## 0.28.3 - 2026-10-31
 
 ### Bingle Core 0.28.3

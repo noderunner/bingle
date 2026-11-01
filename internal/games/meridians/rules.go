@@ -5,7 +5,7 @@
 //
 // The rules are a Go state.Ruleset — line of sight, paths between groups and
 // the removal of dead groups are none of them expressible in the JSON DSL —
-// and meridians.json describes the board (a hexagon with no middle point),
+// and meridians.yaml describes the board (a hexagon with no middle point),
 // the two seats and the one kind of stone. There are no secrets and no chance.
 package meridians
 

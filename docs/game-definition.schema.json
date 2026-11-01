@@ -1,0 +1,1272 @@
+{
+  "$defs": {
+    "ActionDef": {
+      "additionalProperties": false,
+      "description": "ActionDef declares one kind of action a player may take on their turn.",
+      "properties": {
+        "captures": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/CapturesDef"
+            }
+          ],
+          "description": "Captures makes a placement capture opposing groups left without liberties (Go)."
+        },
+        "carry_limit": {
+          "description": "CarryLimit is the maximum number of pieces that may be picked up from a stack: an integer, or \"board-size\".",
+          "type": [
+            "integer",
+            "string"
+          ]
+        },
+        "chain": {
+          "description": "Chain lets a piece keep jumping in the same move; a chain must then be played to its end.",
+          "type": "boolean"
+        },
+        "clone_distance": {
+          "description": "CloneDistance is the furthest a leap may go while the piece stays behind (a clone: Ataxx's step of one); beyond it, up to MaxDistance, the piece jumps and its origin is vacated.",
+          "type": "integer"
+        },
+        "custodian": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/CustodianDef"
+            }
+          ],
+          "description": "Custodian makes a placement (or a slide) capture runs of opposing pieces that are flanked by the moved piece and another piece of the mover's colour (Pente's captured pairs; Hnefatafl's sandwiches)."
+        },
+        "directions": {
+          "description": "Directions restricts the directions of an explicit step action (see MovementDef.Directions for the vocabulary); empty = every direction.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "flatten": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/FlattenDef"
+            }
+          ],
+          "description": "Flatten configures how a flattening piece may be used."
+        },
+        "flips": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/FlipsDef"
+            }
+          ],
+          "description": "Flips makes a placement flip lines of opposing pieces bracketed by the new piece and another piece of the placer's color (Reversi/Othello)."
+        },
+        "forbid_region": {
+          "description": "ForbidRegion names a board region the action's pieces may not land on (Hnefatafl's corners and throne, for everyone but the king).",
+          "type": "string"
+        },
+        "gravity": {
+          "description": "Gravity, if set to a direction name (\"S\"), only allows placement on squares that are supported in that direction by another piece or the board edge (Connect Four).",
+          "type": "string"
+        },
+        "id": {
+          "description": "ID names the action; moves carry it as their \"action\" field.",
+          "type": "string"
+        },
+        "infect": {
+          "description": "Infect makes every opposing piece adjacent to the landing square change to the mover's colour.",
+          "type": "boolean"
+        },
+        "ko": {
+          "description": "Ko forbids a placement that would recreate the position as it was before the opponent's last move (the simple ko rule).",
+          "type": "boolean"
+        },
+        "label": {
+          "type": "string"
+        },
+        "mandatory": {
+          "description": "Mandatory makes jumping compulsory: while any jump is available for the mover, only jumps are legal (draughts).",
+          "type": "boolean"
+        },
+        "max_distance": {
+          "description": "MaxDistance limits how many squares a slide may cover (0 = until blocked). Slides use Pieces, Directions and Occupancy like explicit step actions; the piece may not pass over other pieces. For a leap it is how far (in board steps) the piece may land.",
+          "type": "integer"
+        },
+        "occupancy": {
+          "description": "Occupancy is the explicit step's destination rule: \"empty-only\", \"capture-only\" or \"capture-or-empty\".",
+          "type": "string"
+        },
+        "pieces": {
+          "description": "Pieces lists the piece types that may be placed (first = default).",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "plies": {
+          "description": "Plies lists the plies (0 = before anything was played) at which a swap action may be taken; default [1], the second player's first move (the pie rule).",
+          "items": {
+            "type": "integer"
+          },
+          "type": "array"
+        },
+        "region": {
+          "description": "Region restricts placement to a named board region.",
+          "type": "string"
+        },
+        "source": {
+          "description": "Source is where placed pieces come from: \"reserve\" (default; the seat's hand is decremented) or \"supply\" (unlimited).",
+          "type": "string"
+        },
+        "then": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/ThenDef"
+            }
+          ],
+          "description": "Then is a compulsory follow-up to the slide (Amazons' arrow)."
+        },
+        "type": {
+          "description": "Type is \"place\", \"move-stack\", \"jump\", \"slide\", \"leap\", \"swap\", \"step\" or \"pass\". Pieces whose movement names a primitive get an implicit \"step\" action; declaring a \"step\" action explicitly instead gives per-direction control (Breakthrough's straight moves cannot capture while its diagonal moves can).",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Board": {
+      "additionalProperties": false,
+      "description": "Board describes the game's board graph as exactly one of: a built-in Generator (e.g. a grid), or an explicit hand-authored graph given as Positions and Edges (the escape hatch for irregular/hex boards). Which form is actually used is validated by the future board/catalog packages, not here.",
+      "properties": {
+        "borders": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Borders tints board edges for clients: region name -\u003e seat color (Hex: top/bottom belong to one player, left/right to the other).",
+          "type": "object"
+        },
+        "canvas": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Canvas"
+            }
+          ],
+          "description": "Canvas is the coordinate space of an area map's polygons."
+        },
+        "edges": {
+          "items": {
+            "$ref": "#/$defs/Edge"
+          },
+          "type": "array"
+        },
+        "generator": {
+          "$ref": "#/$defs/BoardGenerator"
+        },
+        "positions": {
+          "items": {
+            "$ref": "#/$defs/Position"
+          },
+          "type": "array"
+        },
+        "regions": {
+          "additionalProperties": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "description": "Regions names sets of positions (e.g. a player's home row) that win rules and placement restrictions can refer to. Grid boards always have \"left\", \"right\", \"top\" and \"bottom\" built in.",
+          "type": "object"
+        },
+        "style": {
+          "description": "Style is a rendering hint for clients: \"squares\" (cells are filled squares, the default) or \"points\" (pieces sit on line intersections, as in Go) \"none\" (no board at all, as in a card game), or, on a hex board, \"free\" (no board is drawn: only the tiles on the table and the cells a tile may go to, fitted to the picture, as in Hive). Hex boards are drawn as hexagons.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "BoardGenerator": {
+      "additionalProperties": false,
+      "description": "BoardGenerator configures a built-in board generator: a \"grid\" of Width x Height positions with a given Adjacency mode (\"orthogonal4\" / \"orthogonal8\"), a \"hex\" parallelogram of hexagonal cells, or a \"hexhex\" hexagon with Size cells per side.",
+      "properties": {
+        "adjacency": {
+          "type": "string"
+        },
+        "height": {
+          "type": "integer"
+        },
+        "labels": {
+          "description": "Labels is \"xy\" (positions named \"x,y\", the default) or \"algebraic\" (positions named like chess squares: \"a1\" is bottom-left).",
+          "type": "string"
+        },
+        "size": {
+          "type": "integer"
+        },
+        "size2": {
+          "description": "Size2, for a \"hexhex\" board, is the length of its four long sides, Size being its two short ones: a hexagon with no middle cell, which Meridians is played on. Absent (or equal to Size) = every side alike.",
+          "type": "integer"
+        },
+        "type": {
+          "type": "string"
+        },
+        "width": {
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "CallbackRefs": {
+      "additionalProperties": false,
+      "description": "CallbackRefs names optional Go-callback hooks a game definition wants wired in by the future catalog package. It is empty for games (like the demo) that use the no-op default; fields will be added here as games that need named hooks are built.",
+      "properties": {},
+      "type": "object"
+    },
+    "Canvas": {
+      "additionalProperties": false,
+      "description": "Canvas is the width and height of an area map's coordinate space.",
+      "properties": {
+        "height": {
+          "type": "number"
+        },
+        "width": {
+          "type": "number"
+        }
+      },
+      "type": "object"
+    },
+    "CapturesDef": {
+      "additionalProperties": false,
+      "description": "CapturesDef configures liberty captures for a place action: after a stone is placed, every opposing group of orthogonally connected stones with no empty neighbouring square is removed; a placement that leaves its own group without liberties (suicide) is illegal unless it captured something or AllowSuicide is set.",
+      "properties": {
+        "allow_suicide": {
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "CardBackDef": {
+      "additionalProperties": false,
+      "description": "CardBackDef is the back of a card.",
+      "properties": {
+        "color": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "CardDef": {
+      "additionalProperties": false,
+      "description": "CardDef is an explicit card.",
+      "properties": {
+        "count": {
+          "type": "integer"
+        },
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "suit": {
+          "type": "string"
+        },
+        "symbols": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "tags": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "text": {
+          "type": "string"
+        },
+        "value": {
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "CardsDef": {
+      "additionalProperties": false,
+      "description": "CardsDef describes the cards of a card game: the suits (or any other grouping of cards), the decks built from them, what a card's back looks like, and the zones cards live in (hands, piles, the table). It is data only; internal/engine/catalog expands the decks into card types and internal/engine/cards deals, shuffles and moves the cards of a game in progress. A deck is either a template (every suit × every rank, each rank with its own count, text and symbols) or an explicit list of cards, or both: \"cards\": { \"suits\": { \"red\": { \"label\": \"Red\", \"color\": \"#c0392b\", \"symbol\": \"♥\" } }, \"decks\": { \"main\": { \"ranks\": [ { \"id\": \"1\", \"value\": 1, \"count\": 3 }, { \"id\": \"2\", \"value\": 2 } ], \"extra\": [ { \"id\": \"joker\", \"label\": \"Joker\", \"text\": \"Wild\", \"value\": 0, \"count\": 2 } ] } }, \"zones\": [ { \"id\": \"hand\", \"scope\": \"seat\", \"visibility\": \"owner\", \"layout\": \"fan\" } ] }",
+      "properties": {
+        "back": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/CardBackDef"
+            }
+          ],
+          "description": "Back says how the back of a card looks."
+        },
+        "decks": {
+          "additionalProperties": {
+            "$ref": "#/$defs/DeckDef"
+          },
+          "description": "Decks are the decks the game uses, by name.",
+          "type": "object"
+        },
+        "suit_order": {
+          "description": "SuitOrder fixes the order suits are listed in (default: sorted by id).",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "suits": {
+          "additionalProperties": {
+            "$ref": "#/$defs/SuitDef"
+          },
+          "description": "Suits are the card groupings (suits, colours, factions), by id.",
+          "type": "object"
+        },
+        "zones": {
+          "description": "Zones are the places cards can be: each seat's hand, the table, piles.",
+          "items": {
+            "$ref": "#/$defs/ZoneDef"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "CustodianDef": {
+      "additionalProperties": false,
+      "description": "CustodianDef configures custodian captures for a place action: after the piece lands, along each direction a run of exactly Length opposing pieces closed off by one of the placer's own pieces is removed.",
+      "properties": {
+        "anvils": {
+          "description": "Anvils names board regions whose empty squares count as the closing piece (Hnefatafl's corners and empty throne).",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "count_in": {
+          "description": "CountIn names a reserve pool that is credited with the number of pieces captured (it must be declared in reserves, usually at 0), so a \"pool\" win rule can count captures.",
+          "type": "string"
+        },
+        "lengths": {
+          "description": "Lengths lists the capturable run lengths (default [2]).",
+          "items": {
+            "type": "integer"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "DecideDef": {
+      "additionalProperties": false,
+      "description": "DecideDef resolves an end rule's winner.",
+      "properties": {
+        "komi": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "description": "Komi maps a seat number (as a string) to bonus points for \"score\".",
+          "type": "object"
+        },
+        "piece": {
+          "type": "string"
+        },
+        "tag": {
+          "type": "string"
+        },
+        "type": {
+          "description": "Type is \"draw\", \"most\" (highest count of matching top pieces wins, tie = draw), \"score\" (area scoring: stones plus empty regions that border only that color, plus Komi), \"mover-wins\" or \"mover-loses\".",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "DeckDef": {
+      "additionalProperties": false,
+      "description": "DeckDef is a deck: a template of suits × ranks plus explicit cards.",
+      "properties": {
+        "extra": {
+          "description": "Extra are explicit cards added to the deck (jokers, specials, or the whole deck when there are no ranks).",
+          "items": {
+            "$ref": "#/$defs/CardDef"
+          },
+          "type": "array"
+        },
+        "label": {
+          "type": "string"
+        },
+        "ranks": {
+          "description": "Ranks are the ranks of a template deck: every listed suit has each.",
+          "items": {
+            "$ref": "#/$defs/RankDef"
+          },
+          "type": "array"
+        },
+        "remove": {
+          "description": "Remove lists card ids (suit-rank, or an extra card's id) left out of the deck; a game variant can use it to strip cards.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "suits": {
+          "description": "Suits lists the suits a template deck uses (default: all of them).",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "DisplayDef": {
+      "additionalProperties": false,
+      "description": "DisplayDef is the legend of a ruleset game's overlays: what each tint and badge key in the position's view means and how to draw it.",
+      "properties": {
+        "badges": {
+          "additionalProperties": {
+            "$ref": "#/$defs/OverlayDef"
+          },
+          "description": "Badges are small marks drawn on a cell (a unit's condition).",
+          "type": "object"
+        },
+        "no_hands": {
+          "description": "NoHands hides the generic reserve (\"hand\") panels: the ruleset's own view shows what a seat holds.",
+          "type": "boolean"
+        },
+        "terms": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Courts and other named choices a ruleset offers are described in text: key -\u003e one-line description.",
+          "type": "object"
+        },
+        "tints": {
+          "additionalProperties": {
+            "$ref": "#/$defs/OverlayDef"
+          },
+          "description": "Tints colours board cells by key (terrain).",
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
+    "Edge": {
+      "additionalProperties": false,
+      "description": "Edge connects two hand-authored positions (by ID) in an explicit board graph.",
+      "properties": {
+        "from": {
+          "type": "string"
+        },
+        "to": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "FlattenDef": {
+      "additionalProperties": false,
+      "description": "FlattenDef constrains when a flattener may flatten a flattenable piece.",
+      "properties": {
+        "alone_only": {
+          "description": "AloneOnly requires the flattener to be the only piece dropped there.",
+          "type": "boolean"
+        },
+        "final_square_only": {
+          "description": "FinalSquareOnly requires the flattening to happen on the last square of the move.",
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "FlipsDef": {
+      "additionalProperties": false,
+      "description": "FlipsDef configures bracketing flips for a place action.",
+      "properties": {
+        "require": {
+          "description": "Require makes a placement legal only if it flips at least one piece.",
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "GameDefinition": {
+      "additionalProperties": false,
+      "description": "GameDefinition is the top-level shape of a game-definition JSON document (see docs/history/plan.md section 6.1 for the annotated example this mirrors).",
+      "properties": {
+        "actions": {
+          "description": "Actions declares the non-movement-primitive things a player may do on their turn (placing a piece from the reserve, moving a stack, ...). Pieces whose movement names a primitive additionally get an implicit \"step\" action.",
+          "items": {
+            "$ref": "#/$defs/ActionDef"
+          },
+          "type": "array"
+        },
+        "board": {
+          "$ref": "#/$defs/Board"
+        },
+        "callbacks": {
+          "$ref": "#/$defs/CallbackRefs"
+        },
+        "cards": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/CardsDef"
+            }
+          ],
+          "description": "Cards defines the suits, decks and zones of a card game (see CardsDef)."
+        },
+        "description": {
+          "description": "Description is a short paragraph about the game, shown when the player hovers over the game in the picker.",
+          "type": "string"
+        },
+        "designers": {
+          "description": "Designers are the people who designed the game; Publisher is the most recent publisher, when there is one. Both are shown in the picker.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "display": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/DisplayDef"
+            }
+          ],
+          "description": "Display is data for clients to draw what the position document carries beyond pieces: terrain tints and per-unit badges of a ruleset game."
+        },
+        "engine": {
+          "description": "Engine says who implements the rules: \"\" (the declarative actions and win rules of this document) or \"ruleset\" (a Go ruleset registered with the module takes over move generation, validation and scoring; the document still describes the board, seats, pieces and display).",
+          "type": "string"
+        },
+        "extra_colors": {
+          "description": "ExtraColors are piece colours besides the seats' own that a position may hold (Fist's neutral verdigris pawn, Blooms' second colour of each player); no reserve may.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "family": {
+          "description": "Family groups sibling variants of one game in pickers; ExpandVariants sets it on every expanded document (to the base document's ID).",
+          "type": "string"
+        },
+        "guide": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/GuideDef"
+            }
+          ],
+          "description": "Guide is the game's long-form rules document: tabs of Markdown text (with tables and images) shown in the rules window."
+        },
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "notation": {
+          "description": "Notation selects the move-notation style: \"\" / \"generic\", or \"ptn\" (Tak's Portable Tak Notation; requires an algebraic grid).",
+          "type": "string"
+        },
+        "options": {
+          "description": "Options lists the setup choices the game offers its creator (which cults sit at the table, an expansion to include). A ruleset that implements catalog.Deriver turns the chosen options into a game definition of its own — a derived game, named base~suffix — so every combination is an ordinary game for the rest of the platform.",
+          "items": {
+            "$ref": "#/$defs/OptionDef"
+          },
+          "type": "array"
+        },
+        "params": {
+          "additionalProperties": {},
+          "description": "Params are free-form numbers and strings a ruleset reads (victory points needed, caps, ...). Variants change them with a merge patch.",
+          "type": "object"
+        },
+        "pie_rule": {
+          "description": "PieRule says whether the game is played with the pie rule — the second player may take the first player's side instead of replying to the opening move — and whether the table may choose: \"standard\" (played with it unless the table turns it off), \"optional\" (played without it unless the table asks for it), \"on\" or \"off\" (settled: a game derived from one of the two above), or absent (the game has no pie rule). The catalog brings the setup option with it, and the swap action for a game on the generic engine; a ruleset game offers the swap in its own moves. See catalog.applyPieRule and ADR 0056.",
+          "type": "string"
+        },
+        "pieces": {
+          "additionalProperties": {
+            "$ref": "#/$defs/PieceDef"
+          },
+          "type": "object"
+        },
+        "preview": {
+          "description": "Preview is a sample of a game in play, drawn in the list of games and on the setup page in place of an empty start (Gomoku, Hex, ...). Like setup, entries on one square stack from the bottom up. A square the board does not have (a smaller variant of the game) is left out.",
+          "items": {
+            "$ref": "#/$defs/SetupEntry"
+          },
+          "type": "array"
+        },
+        "publisher": {
+          "type": "string"
+        },
+        "reserves": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "description": "Reserves is each seat's starting hand: reserve pool -\u003e count. A pool is named by the \"pool\" attribute of piece types (default: the piece type's own name), so several piece types can draw on one supply (Tak's flat and standing stones). Every seat (color) gets its own copy of these counts.",
+          "type": "object"
+        },
+        "rules": {
+          "description": "Rules is human-readable rules text, one paragraph per element, shown in the UI and served to AI clients by the get_rules tool.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "seats": {
+          "items": {
+            "$ref": "#/$defs/SeatDef"
+          },
+          "type": "array"
+        },
+        "setup": {
+          "items": {
+            "$ref": "#/$defs/SetupEntry"
+          },
+          "type": "array"
+        },
+        "turn_order": {
+          "$ref": "#/$defs/TurnOrderDef"
+        },
+        "variants": {
+          "description": "Variants lists sibling games derived from this document by a JSON merge patch (e.g. a different board size). See ExpandVariants.",
+          "items": {
+            "$ref": "#/$defs/VariantDef"
+          },
+          "type": "array"
+        },
+        "version": {
+          "description": "Version is the semantic version (major.minor.patch) of this game's implementation: the definition and the Go code behind it. It is raised whenever either changes, and the picker marks every game below 1.0.0 as a beta. Variants share their base document's version.",
+          "type": "string"
+        },
+        "win_condition": {
+          "$ref": "#/$defs/WinConditionDef"
+        }
+      },
+      "type": "object"
+    },
+    "GuideDef": {
+      "additionalProperties": false,
+      "description": "GuideDef lists the tabs of a game's rules guide. A tab's File names a Markdown document in the module's assets.",
+      "properties": {
+        "tabs": {
+          "items": {
+            "$ref": "#/$defs/GuideTab"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "GuideTab": {
+      "additionalProperties": false,
+      "description": "GuideTab is one tab of a rules guide.",
+      "properties": {
+        "file": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "MovementDef": {
+      "additionalProperties": false,
+      "description": "MovementDef names a movement primitive (resolved against the primitive registry by the future catalog package) and its occupancy mode.",
+      "properties": {
+        "directions": {
+          "description": "Directions optionally restricts the directions the piece may step or jump in. Entries are compass names (\"N\", \"NE\", ...) or, relative to the owning seat's Forward: \"forward\", \"backward\", \"left\", \"right\", \"forward-left\", \"forward-right\", \"backward-left\", \"backward-right\". Empty means every direction the board offers.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "occupancy": {
+          "type": "string"
+        },
+        "primitive": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "OpeningDef": {
+      "additionalProperties": false,
+      "description": "OpeningDef restricts the game's first Plies plies: only the listed actions/pieces are allowed, and the piece placed may belong to the opponent (Tak's \"each player places an opposing flatstone first\").",
+      "properties": {
+        "actions": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "owner": {
+          "description": "Owner is \"mover\" (default) or \"opponent\": whose color — and whose reserve — a piece placed during the opening comes from.",
+          "type": "string"
+        },
+        "pieces": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "plies": {
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "OptionChoice": {
+      "additionalProperties": false,
+      "description": "OptionChoice is one value of a seat-choice option.",
+      "properties": {
+        "color": {
+          "description": "Color is the seat color the choice brings with it.",
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "OptionDef": {
+      "additionalProperties": false,
+      "description": "OptionDef is one setup choice of a game, described for clients.",
+      "properties": {
+        "choices": {
+          "description": "Choices are the values of a seat-choice option.",
+          "items": {
+            "$ref": "#/$defs/OptionChoice"
+          },
+          "type": "array"
+        },
+        "default": {
+          "description": "Default is the value when nothing is chosen: a bool, or for a seat-choice the choice ids per seat."
+        },
+        "id": {
+          "type": "string"
+        },
+        "kind": {
+          "description": "Kind is \"bool\" (a check box), \"seat-choice\" (each seat picks one of Choices, no two the same) or \"book-swap\" (a cult picks one of Choices to replace its Slot).",
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "slots": {
+          "description": "Slots (kind \"book-swap\") are the things a choice may replace, each in the cult named by its ID: the page offers a Choice for every Slot whose cult is at the table.",
+          "items": {
+            "$ref": "#/$defs/OptionChoice"
+          },
+          "type": "array"
+        },
+        "text": {
+          "description": "Text explains the option.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "OverlayDef": {
+      "additionalProperties": false,
+      "description": "OverlayDef is one entry of a DisplayDef legend.",
+      "properties": {
+        "color": {
+          "description": "Color is a CSS color (a hex string).",
+          "type": "string"
+        },
+        "glyph": {
+          "description": "Glyph is a short text mark (badges).",
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "text": {
+          "description": "Text explains the effect.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "PieceDef": {
+      "additionalProperties": false,
+      "description": "PieceDef describes one named piece type available to the game, and how it moves.",
+      "properties": {
+        "code": {
+          "description": "Code is a short ASCII code used in notation and text renderings (e.g. \"S\" for a Tak wall).",
+          "type": "string"
+        },
+        "color": {
+          "description": "Color is a fixed colour for a piece type that is its own colour (Blooms' four stones), used where the type is drawn on a button.",
+          "type": "string"
+        },
+        "label": {
+          "description": "Label is the human-readable name (\"Standing stone\").",
+          "type": "string"
+        },
+        "movement": {
+          "$ref": "#/$defs/MovementDef"
+        },
+        "pool": {
+          "description": "Pool names the reserve pool this piece type is drawn from when placed; empty means a pool named after the piece type itself.",
+          "type": "string"
+        },
+        "promote": {
+          "description": "Promote lists promotions: a piece of this type that ends a move in the given region becomes another type (draughts men becoming kings).",
+          "items": {
+            "$ref": "#/$defs/PromoteDef"
+          },
+          "type": "array"
+        },
+        "rules": {
+          "description": "Rules is a short explanation of how the piece moves, shown when the pointer rests on the piece's button.",
+          "type": "string"
+        },
+        "shape": {
+          "description": "Shape is a rendering hint: disc, square, flat, wall, cap, ring, diamond, triangle or cross.",
+          "type": "string"
+        },
+        "stack": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/StackDef"
+            }
+          ],
+          "description": "Stack describes how this piece interacts with stacking."
+        },
+        "tags": {
+          "description": "Tags classify the piece for win rules and stack rules (e.g. \"road\", \"flat\").",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "Position": {
+      "additionalProperties": false,
+      "description": "Position identifies a single hand-authored board position in an explicit (non-generated) board graph.",
+      "properties": {
+        "anchor": {
+          "description": "Anchor is where the area's name and its tokens are centred.",
+          "items": {
+            "type": "number"
+          },
+          "type": "array"
+        },
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "description": "Name is the area's display name.",
+          "type": "string"
+        },
+        "polygons": {
+          "description": "Polygons outline the area: each polygon is a list of [x, y] corners in the board's canvas. More than one polygon draws one area in several pieces (an ocean that wraps round the edge of the map).",
+          "items": {
+            "items": {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            "type": "array"
+          },
+          "type": "array"
+        },
+        "tags": {
+          "description": "Tags classify the area for rules and drawing (\"ocean\", \"land\", ...).",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "x": {
+          "description": "X and Y optionally give the position's layout coordinates (any unit; y grows downwards) for rendering.",
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "type": "object"
+    },
+    "PromoteDef": {
+      "additionalProperties": false,
+      "description": "PromoteDef is one promotion rule.",
+      "properties": {
+        "region": {
+          "description": "Region is the board region where promotion happens.",
+          "type": "string"
+        },
+        "seat": {
+          "description": "Seat restricts the rule to one seat (0 = every seat).",
+          "type": "integer"
+        },
+        "to": {
+          "description": "To is the piece type promoted to.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "RankDef": {
+      "additionalProperties": false,
+      "description": "RankDef is a rank of a template deck.",
+      "properties": {
+        "count": {
+          "description": "Count is how many copies each suit has (default 1).",
+          "type": "integer"
+        },
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "symbols": {
+          "description": "Symbols are extra marks drawn on the card.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "tags": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "text": {
+          "description": "Text is the card's rule text (drawn on the card).",
+          "type": "string"
+        },
+        "value": {
+          "description": "Value is the rank's number (compared by the rules).",
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "SeatDef": {
+      "additionalProperties": false,
+      "description": "SeatDef declares one seat a player can occupy, and the color of piece that seat plays.",
+      "properties": {
+        "color": {
+          "type": "string"
+        },
+        "forward": {
+          "description": "Forward is the seat's forward direction on a grid (\"N\", \"E\", \"S\" or \"W\"; N is towards the top of the screen). Movement directions such as \"forward-left\" are relative to it.",
+          "type": "string"
+        },
+        "label": {
+          "description": "Label is an optional display name for the seat (\"White\").",
+          "type": "string"
+        },
+        "seat": {
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "SetupEntry": {
+      "additionalProperties": false,
+      "description": "SetupEntry places one piece of a given color on a given board position at game start. Several entries naming the same position build a stack, bottom first.",
+      "properties": {
+        "color": {
+          "type": "string"
+        },
+        "piece": {
+          "type": "string"
+        },
+        "position": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "StackDef": {
+      "additionalProperties": false,
+      "description": "StackDef describes how a piece behaves when other pieces try to move onto its square.",
+      "properties": {
+        "coverable": {
+          "description": "Coverable, when explicitly false, forbids moving or dropping pieces onto a square whose top piece is this one. Absent means true.",
+          "type": "boolean"
+        },
+        "flatten_to": {
+          "description": "FlattenTo is the piece type this piece becomes when flattened.",
+          "type": "string"
+        },
+        "flattenable_by": {
+          "description": "FlattenableBy lists piece types that may flatten this piece (move onto it anyway, turning it into FlattenTo) despite it being uncoverable.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "SuitDef": {
+      "additionalProperties": false,
+      "description": "SuitDef is one suit: how it is named and drawn.",
+      "properties": {
+        "color": {
+          "description": "Color is a CSS colour for the suit's pips and card faces.",
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "symbol": {
+          "description": "Symbol is the text drawn as the suit's pip (a glyph or a short word).",
+          "type": "string"
+        },
+        "text": {
+          "description": "Text is a longer description (shown in the rules and on hover).",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ThenDef": {
+      "additionalProperties": false,
+      "description": "ThenDef is the second half of a compound move: after the slide, the same player puts a Piece from the unlimited supply on any empty square the slid piece could now slide to (the square it left counts as empty).",
+      "properties": {
+        "directions": {
+          "description": "Directions and MaxDistance default to the slide's own.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "max_distance": {
+          "type": "integer"
+        },
+        "piece": {
+          "type": "string"
+        },
+        "type": {
+          "description": "Type is \"shoot\".",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "TurnOrderDef": {
+      "additionalProperties": false,
+      "description": "TurnOrderDef describes how turns rotate among seats, e.g. a \"round-robin\" Type over the given ordered Seats.",
+      "properties": {
+        "opening": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/OpeningDef"
+            }
+          ],
+          "description": "Opening, if set, restricts the first few plies of the game."
+        },
+        "pass_when_stuck": {
+          "description": "PassWhenStuck makes the turn skip a seat that has no legal move (the next seat that can move plays instead), as in Reversi. When nobody can move, the turn stays where it would have gone and an end rule with the \"no-legal-moves\" trigger finishes the game.",
+          "type": "boolean"
+        },
+        "seats": {
+          "items": {
+            "type": "integer"
+          },
+          "type": "array"
+        },
+        "type": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "VariantDef": {
+      "additionalProperties": false,
+      "description": "VariantDef describes one variant of a base definition.",
+      "properties": {
+        "id": {
+          "description": "ID is the variant's complete game-definition ID.",
+          "type": "string"
+        },
+        "name": {
+          "description": "Name overrides the base name when non-empty.",
+          "type": "string"
+        },
+        "patch": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/GameDefinition"
+            }
+          ],
+          "description": "Patch is an RFC 7386 JSON merge patch applied to the base document."
+        }
+      },
+      "type": "object"
+    },
+    "WinConditionDef": {
+      "additionalProperties": false,
+      "description": "WinConditionDef names how the game decides a winner: \"none\" (no win condition), \"callback\" (deferred to GameCallbacks.CheckWinner) or \"rules\" (evaluate Rules in order after every move; the first that fires decides).",
+      "properties": {
+        "rules": {
+          "items": {
+            "$ref": "#/$defs/WinRuleDef"
+          },
+          "type": "array"
+        },
+        "type": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "WinRuleDef": {
+      "additionalProperties": false,
+      "description": "WinRuleDef is one declarative win/end rule.",
+      "properties": {
+        "at_least": {
+          "type": "integer"
+        },
+        "count": {
+          "description": "Count is the number of consecutive passes for the \"passes\" trigger.",
+          "type": "integer"
+        },
+        "decide": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/DecideDef"
+            }
+          ],
+          "description": "Decide says who wins when an end rule fires."
+        },
+        "id": {
+          "type": "string"
+        },
+        "length": {
+          "description": "Length is the required run length (line rules).",
+          "type": "integer"
+        },
+        "of": {
+          "description": "Of and Touch extend connect rules to \"a group touching at least Touch of these regions\" (Havannah's fork: three of the six sides; a bridge: two of the six corners). Use instead of Regions.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "piece": {
+          "type": "string"
+        },
+        "plies": {
+          "description": "Plies is the ply count for the \"ply-limit\" trigger.",
+          "type": "integer"
+        },
+        "pool": {
+          "description": "Pool and AtLeast configure \"pool\" rules: a seat wins (or loses, with result \"lose\") when its reserve pool holds at least AtLeast — e.g. Pente's ten captured stones.",
+          "type": "string"
+        },
+        "reason": {
+          "description": "Reason is reported as the game's end reason when the rule fires.",
+          "type": "string"
+        },
+        "region": {
+          "description": "Region names the target region of a reach rule: a seat wins when one of its matching pieces stands in it.",
+          "type": "string"
+        },
+        "regions": {
+          "description": "Regions lists pairs of board region names (connect rules): a seat wins by owning a connected group of matching squares touching both regions of any pair.",
+          "items": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "type": "array"
+        },
+        "result": {
+          "description": "Result says what the rule means for the seat that satisfies it: \"win\" (the default) or \"lose\" — e.g. Yavalath, where making a line of three loses. A lost game is won by the opponent (a draw when there are more than two seats).",
+          "type": "string"
+        },
+        "seat": {
+          "description": "Seat restricts a connect/line rule to one seat (0 = every seat). In Hex each player connects a different pair of edges.",
+          "type": "integer"
+        },
+        "tag": {
+          "description": "Tag/Piece select which pieces count (matched against the top piece of each square). Either may be empty to mean \"any piece\".",
+          "type": "string"
+        },
+        "touch": {
+          "type": "integer"
+        },
+        "type": {
+          "description": "\"connect\", \"line\", \"ring\", \"reach\", \"pool\", \"absent\" or \"end\"",
+          "type": "string"
+        },
+        "when": {
+          "description": "When lists end triggers (end rules): \"board-full\", \"reserve-empty\" (some seat has nothing left in hand), \"no-legal-moves\" (the seat to move has no legal action), \"ply-limit\" (Plies plies have been played) or \"passes\" (Count consecutive pass actions).",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "ZoneDef": {
+      "additionalProperties": false,
+      "description": "ZoneDef is a place cards can be.",
+      "properties": {
+        "counts": {
+          "description": "Hidden zones are not shown at all (only their counts, in the seat's panel): useful for a deck.",
+          "type": "boolean"
+        },
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "layout": {
+          "description": "Layout is how clients draw it: \"fan\" (a hand, overlapping, all faces), \"row\" (side by side), \"stack\" (a pile showing its top card and count), \"splay\" (a cascade, each card partly covering the last) or \"grid\".",
+          "type": "string"
+        },
+        "scope": {
+          "description": "Scope is \"seat\" (every seat has its own copy: a hand, a trick pile) or \"table\" (one shared by everyone: the deck, the play area).",
+          "type": "string"
+        },
+        "visibility": {
+          "description": "Visibility says who sees the faces: \"owner\" (only the seat the zone belongs to), \"all\" (everyone; face-down cards still show a back), \"flag\" (a card is seen by everyone when it is face up and by no one when face down), \"none\" (no one: a deck, discarded cards).",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "$id": "https://github.com/noderunner/bingle/docs/game-definition.schema.json",
+  "$ref": "#/$defs/GameDefinition",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "A game definition of the bingle engine, in YAML or JSON. Generated from internal/engine/dsl: do not edit.",
+  "required": [
+    "id",
+    "name",
+    "board",
+    "seats",
+    "pieces",
+    "turn_order",
+    "win_condition"
+  ],
+  "title": "Bingle game definition"
+}

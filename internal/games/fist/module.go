@@ -5,21 +5,25 @@
 //
 // Its rules are written in Go (a state.Ruleset) because pinning with allies,
 // jump chains with optional captures and the mage's Empower are not things
-// the declarative DSL expresses. fist.json still describes the board, seats
+// the declarative DSL expresses. fist.yaml still describes the board, seats
 // and pieces, so the lobby, UI, API, MCP server and bots treat it like any
 // other game. The game has no secrets and no chance.
 package fist
 
 import (
 	"embed"
-	_ "embed" // fist.json
 	"io/fs"
+	"sync"
 
 	"github.com/noderunner/bingle/internal/engine/catalog"
+	"github.com/noderunner/bingle/internal/engine/dsl"
 )
 
-//go:embed fist.json
-var definitionJSON []byte
+//go:embed fist.yaml
+var definitionFS embed.FS
+
+// definition is the definition as JSON, converted once.
+var definition = sync.OnceValue(func() []byte { return dsl.MustLoad(definitionFS, "fist.yaml") })
 
 //go:embed guide
 var guideFS embed.FS
@@ -30,5 +34,5 @@ func Module() catalog.Module {
 	if err != nil {
 		panic(err)
 	}
-	return catalog.Module{ID: "fist", Definition: definitionJSON, Rules: New(), Assets: sub}
+	return catalog.Module{ID: "fist", Definition: definition(), Rules: New(), Assets: sub}
 }

@@ -5,21 +5,25 @@
 // colour; it is captured when it has no empty space beside it.
 //
 // The rules are a Go state.Ruleset (a turn is one or two placements and an end
-// of turn that resolves the captures); blooms.json describes the board, seats
+// of turn that resolves the captures); blooms.yaml describes the board, seats
 // and the four stone colours, and carries the base-4 and base-6 boards as
 // variants. The game has no secrets and no chance.
 package blooms
 
 import (
 	"embed"
-	_ "embed" // the definition
 	"io/fs"
+	"sync"
 
 	"github.com/noderunner/bingle/internal/engine/catalog"
+	"github.com/noderunner/bingle/internal/engine/dsl"
 )
 
-//go:embed blooms.json
-var definitionJSON []byte
+//go:embed blooms.yaml
+var definitionFS embed.FS
+
+// definition is the definition as JSON, converted once.
+var definition = sync.OnceValue(func() []byte { return dsl.MustLoad(definitionFS, "blooms.yaml") })
 
 //go:embed guide
 var guideFS embed.FS
@@ -30,5 +34,5 @@ func Module() catalog.Module {
 	if err != nil {
 		panic(err)
 	}
-	return catalog.Module{ID: "blooms", Definition: definitionJSON, Rules: New(), Assets: sub}
+	return catalog.Module{ID: "blooms", Definition: definition(), Rules: New(), Assets: sub}
 }

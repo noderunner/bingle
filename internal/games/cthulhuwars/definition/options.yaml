@@ -1,0 +1,112 @@
+# Part of cthulhuwars.yaml, included by name.
+- id: factions
+  label: Factions
+  kind: seat-choice
+  text: Which cult sits in each seat. The seats are the players of the table; no cult can be chosen twice.
+  choices:
+    - id: gc
+      label: Great Cthulhu
+      color: green
+      text: Deep Ones, Shoggoths, Star Spawn and Cthulhu.
+    - id: cc
+      label: Crawling Chaos
+      color: blue
+      text: 'Nightgaunts, Flying Polyps, Hunting Horrors and Nyarlathotep: everything flies.'
+    - id: bg
+      label: Black Goat
+      color: red
+      text: Ghouls, Fungi, Dark Young and Shub-Niggurath.
+    - id: ys
+      label: Yellow Sign
+      color: yellow
+      text: Undead, Byakhee, the King in Yellow and Hastur.
+    - id: ww
+      label: Windwalker
+      color: white
+      text: 'Expansion: Wendigos, Gnoph-Keh, Rhan-Tegoth and Ithaqua. Needs the polar areas.'
+    - id: sl
+      label: Sleeper
+      color: orange
+      text: 'Expansion: Wizards, Serpent Men, Formless Spawn and Tsathoggua.'
+    - id: ow
+      label: Opener of the Way
+      color: purple
+      text: 'Expansion: Mutants, Abominations, Spawn of Yog-Sothoth and Yog-Sothoth, who is a Gate himself; moves Gates.'
+    - id: tt
+      label: Tcho-Tcho
+      color: brown
+      text: 'Expansion: High Priests, Proto-Shoggoths and Ubbo-Sathla, whose Growth counter feeds on the Doom phases.'
+  default: [gc, cc, bg, ys, ww]
+- id: high-priests
+  label: High Priests
+  kind: bool
+  default: false
+  text: 'The expansion: every cult has one High Priest, a Cultist that is recruited for 3 Power, gives 1 Power, can hold a Gate — and can be sacrificed for 2 Power (Unspeakable Oath).'
+- id: azathoth
+  label: Azathoth (neutral spellbooks and Monsters)
+  kind: bool
+  default: false
+  text: The neutral content of the Azathoth faction. Any cult may take one of the six neutral spellbooks (Shriveling, Stars Are Right, Recriminations, The Mao Ceremony, Umr at-Tawil, Undimensioned) in place of one of its own, and may buy the Loyalty Card of a neutral Monster (Dimensional Shambler, Star Vampire, Elder Thing, Servitor of the Outer Gods) for 2 Doom in the Doom phase.
+- id: dreamlands
+  label: Dreamlands Surface Monsters
+  kind: bool
+  default: false
+  text: 'Three neutral Monsters whose Loyalty Cards are bought with 2 Doom in the Doom phase: the Moonbeast (lies on an enemy spellbook), the Gnorri (extra Doom for two or three in play) and the Shantak (moves anywhere and carries a Cultist).'
+- id: beyond
+  label: Beyond Time and Space
+  kind: bool
+  default: false
+  text: Two neutral Monsters, the Wamp (an enemy places them where there is no Gate) and the Voonith (makes up Kills), and a Terror, the Hound of Tindalos, whose card costs 2 Doom and 2 Power.
+- id: igoo-abhoth
+  label: 'Independent: Abhoth (Great Old One Pack 1)'
+  kind: bool
+  default: false
+  text: An Independent Great Old One any cult may awaken (a Gate it controls in an area with one of its Great Old Ones). Filth Tokens as meat shields and a spellbook that spoils the others' Gates. For a first game use one Independent fewer than there are players.
+- id: igoo-chaugnar
+  label: 'Independent: Chaugnar Faugn (Great Old One Pack 1)'
+  kind: bool
+  default: false
+  text: An Independent Great Old One any cult may awaken (a Gate it controls in an area with one of its Great Old Ones). +3 dice in battles at your Gates, and a spellbook that lets you choose the Elder Signs others receive. For a first game use one Independent fewer than there are players.
+- id: igoo-cthugha
+  label: 'Independent: Cthugha (Great Old One Pack 1)'
+  kind: bool
+  default: false
+  text: An Independent Great Old One any cult may awaken (a Gate it controls in an area with one of its Great Old Ones). Replaces one of your Great Old Ones; spares the Units he Kills for Power. For a first game use one Independent fewer than there are players.
+- id: igoo-hydra
+  label: 'Independent: Mother Hydra (Great Old One Pack 1)'
+  kind: bool
+  default: false
+  text: An Independent Great Old One any cult may awaken (a Gate it controls in an area with one of its Great Old Ones). Drives Cultists out of an ocean, and a spellbook that places all your Acolytes at once. For a first game use one Independent fewer than there are players.
+- id: igoo-yig
+  label: 'Independent: Yig (Great Old One Pack 1)'
+  kind: bool
+  default: false
+  text: An Independent Great Old One any cult may awaken (a Gate it controls in an area with one of its Great Old Ones). Poisons your Cultists, and a spellbook that makes the others pay you Power or Doom. For a first game use one Independent fewer than there are players.
+- id: book-swaps
+  label: Neutral spellbook instead of a timer book
+  kind: book-swap
+  text: Ghroth (Black Goat) and The Thousand Forms (Crawling Chaos) need a clock, which is awkward when the turns are days apart. Replace the book with one of the six neutral spellbooks — even without the Azathoth option; each neutral spellbook can replace one book only.
+  slots:
+    - id: bg
+      label: Ghroth
+      text: 'Black Goat: the action that gives its enemies a minute to decide who loses Cultists.'
+    - id: cc
+      label: The Thousand Forms
+      text: 'Crawling Chaos: the negotiation over how much Power the others pay.'
+  choices:
+    - id: shrivel
+      label: Shriveling
+      text: 'Pre-Battle: eliminate an enemy Monster or Cultist in the battle; its owner gets Power equal to its cost.'
+    - id: stars
+      label: Stars Are Right
+      text: 'Ongoing: revealing Elder Signs in the Doom phase also gives Power equal to their value.'
+    - id: recrim
+      label: Recriminations
+      text: 'Action (1 Power): set aside any spellbook of yours and take another available one.'
+    - id: mao
+      label: The Mao Ceremony
+      text: 'Ongoing: after Gather Power sacrifice any number of your Cultists for 1 Power each.'
+    - {id: umr, label: Umr at-Tawil, text: 'Ongoing: Gates cost you 2 Power.'}
+    - id: undim
+      label: Undimensioned
+      text: 'Action (2 Power): rearrange your units among the areas where you already have some.'

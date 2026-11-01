@@ -11,7 +11,7 @@ Courtfall is the first game whose rules are **written in Go** (a
 `state.Ruleset`, see [ADR 0025](decisions/0025-go-rulesets-and-hidden-information.md))
 because it needs things the declarative DSL does not have: per-unit
 conditions, dice, hidden choices and turns made of many small decisions. Its
-definition (`internal/games/courtfall/courtfall.json`) still declares the
+definition (`internal/games/courtfall/courtfall.yaml`) still declares the
 board, seats, pieces and the display legend, so the lobby, the web UI, the
 REST/WebSocket API, the MCP server, the bots and the training environments
 treat it like any other game.

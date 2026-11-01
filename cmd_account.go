@@ -22,6 +22,7 @@ const usage = `usage:
   bingle account reset HANDLE               give an account a new password (printed), to be
                                             changed at the next sign-in, and sign it out everywhere
   bingle caps reset                         apply the capabilities file (BINGLE_CAPS_FILE) again
+  bingle dsl convert FILE|-                 convert a game definition between JSON and YAML
 `
 
 // runCommand runs one command line and returns the exit status.

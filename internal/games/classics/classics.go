@@ -1,5 +1,5 @@
 // Package classics ships a handful of well-known abstract games that are
-// defined entirely in JSON using the engine's declarative actions and win
+// defined entirely in YAML using the engine's declarative actions and win
 // rules — Tic-Tac-Toe, Connect Four (gravity), Gomoku, Hex (a hexagonal board
 // with per-seat connection rules), English Draughts (mandatory multi-jumps,
 // promotion, directional movement), Breakthrough (direction-specific capture
@@ -16,53 +16,28 @@ package classics
 
 import (
 	"embed"
-	_ "embed" // the definitions
 	"io/fs"
+	"sync"
 
 	"github.com/noderunner/bingle/internal/engine/catalog"
+	"github.com/noderunner/bingle/internal/engine/dsl"
 )
 
-//go:embed tictactoe.json
-var ticTacToeJSON []byte
+//go:embed *.yaml
+var definitionFS embed.FS
 
-//go:embed connect4.json
-var connectFourJSON []byte
-
-//go:embed gomoku.json
-var gomokuJSON []byte
-
-//go:embed hex.json
-var hexJSON []byte
-
-//go:embed draughts.json
-var draughtsJSON []byte
-
-//go:embed breakthrough.json
-var breakthroughJSON []byte
-
-//go:embed reversi.json
-var reversiJSON []byte
-
-//go:embed go.json
-var goJSON []byte
-
-//go:embed yavalath.json
-var yavalathJSON []byte
-
-//go:embed havannah.json
-var havannahJSON []byte
-
-//go:embed amazons.json
-var amazonsJSON []byte
-
-//go:embed ataxx.json
-var ataxxJSON []byte
-
-//go:embed pente.json
-var penteJSON []byte
-
-//go:embed brandubh.json
-var brandubhJSON []byte
+// definitions are the definitions as JSON by file name, converted once.
+var definitions = sync.OnceValue(func() map[string][]byte {
+	files, err := fs.Glob(definitionFS, "*.yaml")
+	if err != nil {
+		panic(err)
+	}
+	out := map[string][]byte{}
+	for _, f := range files {
+		out[f] = dsl.MustLoad(definitionFS, f)
+	}
+	return out
+})
 
 //go:embed guide
 var guideFS embed.FS
@@ -79,19 +54,19 @@ func guideOf(folder string) fs.FS {
 // Modules returns the classic games' catalog modules.
 func Modules() []catalog.Module {
 	return []catalog.Module{
-		{ID: "tic-tac-toe", Definition: ticTacToeJSON, Assets: guideOf("tictactoe")},
-		{ID: "connect-four", Definition: connectFourJSON, Assets: guideOf("connect4")},
-		{ID: "gomoku", Definition: gomokuJSON, Assets: guideOf("gomoku")},
-		{ID: "hex-11", Definition: hexJSON, Assets: guideOf("hex")},
-		{ID: "draughts", Definition: draughtsJSON, Assets: guideOf("draughts")},
-		{ID: "breakthrough", Definition: breakthroughJSON, Assets: guideOf("breakthrough")},
-		{ID: "reversi", Definition: reversiJSON, Assets: guideOf("reversi")},
-		{ID: "go-9x9", Definition: goJSON, Assets: guideOf("go")},
-		{ID: "yavalath", Definition: yavalathJSON, Assets: guideOf("yavalath")},
-		{ID: "havannah-8", Definition: havannahJSON, Assets: guideOf("havannah")},
-		{ID: "amazons", Definition: amazonsJSON, Assets: guideOf("amazons")},
-		{ID: "ataxx", Definition: ataxxJSON, Assets: guideOf("ataxx")},
-		{ID: "pente", Definition: penteJSON, Assets: guideOf("pente")},
-		{ID: "brandubh", Definition: brandubhJSON, Assets: guideOf("brandubh")},
+		{ID: "tic-tac-toe", Definition: definitions()["tictactoe.yaml"], Assets: guideOf("tictactoe")},
+		{ID: "connect-four", Definition: definitions()["connect4.yaml"], Assets: guideOf("connect4")},
+		{ID: "gomoku", Definition: definitions()["gomoku.yaml"], Assets: guideOf("gomoku")},
+		{ID: "hex-11", Definition: definitions()["hex.yaml"], Assets: guideOf("hex")},
+		{ID: "draughts", Definition: definitions()["draughts.yaml"], Assets: guideOf("draughts")},
+		{ID: "breakthrough", Definition: definitions()["breakthrough.yaml"], Assets: guideOf("breakthrough")},
+		{ID: "reversi", Definition: definitions()["reversi.yaml"], Assets: guideOf("reversi")},
+		{ID: "go-9x9", Definition: definitions()["go.yaml"], Assets: guideOf("go")},
+		{ID: "yavalath", Definition: definitions()["yavalath.yaml"], Assets: guideOf("yavalath")},
+		{ID: "havannah-8", Definition: definitions()["havannah.yaml"], Assets: guideOf("havannah")},
+		{ID: "amazons", Definition: definitions()["amazons.yaml"], Assets: guideOf("amazons")},
+		{ID: "ataxx", Definition: definitions()["ataxx.yaml"], Assets: guideOf("ataxx")},
+		{ID: "pente", Definition: definitions()["pente.yaml"], Assets: guideOf("pente")},
+		{ID: "brandubh", Definition: definitions()["brandubh.yaml"], Assets: guideOf("brandubh")},
 	}
 }

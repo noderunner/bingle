@@ -1,0 +1,64 @@
+# yaml-language-server: $schema=../../../../docs/game-definition.schema.json
+id: yinsh
+name: Yinsh
+description: "Kris Burm's game of rings and markers on an 85-point board: drop a marker in a ring and move the ring, turning over the markers it jumps. Make rows of five to remove your rings; remove three to win."
+version: 0.1.0
+designers: [Kris Burm]
+engine: ruleset
+rules:
+  - Yinsh is played on a board of 85 points joined by lines in three directions. Each player has 5 rings (white and black); the two share a pool of 51 markers, white on one side and black on the other.
+  - 'Setup: starting with White, the players take turns placing a ring each on any empty point, until all 10 rings are on the board. Then White makes the first move.'
+  - 'A turn: choose one of your rings and drop a marker of your colour inside it (the point it stands on). Then move that ring in a straight line along the lines, to any empty point: it may pass over empty points and over groups of markers, but it cannot pass over or land on another ring. If it jumps a group of markers, it must land on the first empty point after them, and every marker it jumped is turned over to the other colour.'
+  - 'A row of five markers of one colour in a line is removed by its owner: when you have such a row after your move, take the five markers and also one of your own rings off the board (that ring is your score). A row of more than five lets you pick any five in a row; several rows are removed one after the other, so overlapping rows may break each other. If a move makes rows for both players, you remove yours first, then your opponent removes theirs.'
+  - The first player to remove three rings wins. In the one-ring 'blitz' variant the first ring wins. If the last marker is placed on the board, the game ends and the player who removed more rings wins (equal is a draw).
+  - 'Interpretations: removed markers go back to the pool; a player who cannot move any ring passes. The game is decided on rings removed after 1000 plies.'
+params: {rings: 5, rings_to_win: 3, markers: 51, max_plies: 1000}
+guide:
+  tabs:
+    - {id: rules, title: Rules, file: rules.md}
+preview:
+  - {position: c4, piece: ring, color: white}
+  - {position: e7, piece: ring, color: white}
+  - {position: g6, piece: ring, color: white}
+  - {position: f3, piece: ring, color: white}
+  - {position: d6, piece: ring, color: white}
+  - {position: e4, piece: ring, color: black}
+  - {position: g5, piece: ring, color: black}
+  - {position: i8, piece: ring, color: black}
+  - {position: d4, piece: ring, color: black}
+  - {position: f8, piece: ring, color: black}
+  - {position: e5, piece: marker, color: white}
+  - {position: f5, piece: marker, color: white}
+  - {position: d5, piece: marker, color: black}
+  - {position: f6, piece: marker, color: black}
+board: !include board.yaml
+seats:
+  - {seat: 1, color: white, label: White}
+  - {seat: 2, color: black, label: Black}
+pieces:
+  ring: {label: Ring, code: R, shape: donut}
+  marker: {label: Marker, code: M, shape: chip}
+turn_order:
+  type: round-robin
+  seats: [1, 2]
+win_condition: {type: ruleset}
+display:
+  no_hands: true
+  tints:
+    last:
+      label: Last move
+      color: '#c8dfa8'
+      text: Where the last ring started and ended.
+    flipped:
+      label: Turned over
+      color: '#f0d98a'
+      text: Markers the last ring jumped and turned over.
+    row:
+      label: A row of five
+      color: '#e8a898'
+      text: 'Five markers in a row that may be removed: choose the two end markers.'
+variants:
+  - id: yinsh-blitz
+    name: Yinsh (blitz, one ring)
+    patch:
+      params: {rings_to_win: 1}

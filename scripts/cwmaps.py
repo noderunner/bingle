@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Builds the Cthulhu Wars map layouts of cthulhuwars.json from reference images.
+"""Builds the Cthulhu Wars map layouts of the game's definition from reference images.
 
-    python3 scripts/cwmaps.py temp            # rewrites the board parts of the JSON
+    python3 scripts/cwmaps.py temp            # rewrites the board parts of the definition
     python3 scripts/cwmaps.py temp --preview /tmp/maps   # also writes PNG previews
 
 The images (one per layout, "closeness centrality" diagrams of the printed
@@ -26,10 +26,16 @@ Windwalker fifth; the script writes both, so re-running it keeps them.
 
     python3 scripts/cwmaps.py --guide        # only rewrite the Map page's tables
 
-Needs numpy, scipy, shapely and Pillow.
+The definition is YAML split across files (definition/cthulhuwars.yaml and the
+files it includes); the script reads it, and writes the base board, the map
+variants and the main file back, through `go run . dsl convert`.
+
+Needs Go, numpy, scipy, shapely and Pillow.
 """
 import json
 import os
+import re
+import subprocess
 import sys
 
 import numpy as np
@@ -40,7 +46,14 @@ from shapely.geometry import LineString, Polygon
 from shapely.ops import polygonize, unary_union
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-JSON_PATH = os.path.join(HERE, "..", "internal", "games", "cthulhuwars", "cthulhuwars.json")
+REPO = os.path.join(HERE, "..")
+GAME_DIR = os.path.join(REPO, "internal", "games", "cthulhuwars")
+DEF_DIR = os.path.join(GAME_DIR, "definition")
+MAIN = os.path.join(DEF_DIR, "cthulhuwars.yaml")
+SCHEMA = "# yaml-language-server: $schema=../../../../docs/game-definition.schema.json\n"
+PART = "# Part of cthulhuwars.yaml, included by name.\n"
+# The parts of the main file that live in files of their own.
+PARTS = {"board": "board.yaml", "pieces": "pieces.yaml", "options": "options.yaml"}
 CANVAS = (1000, 490)
 MIN_EDGE = 15          # shared border (image px) needed for two areas to be adjacent
 MIN_FRAGMENT = 900     # smaller stray pieces of an area are merged into a neighbour
@@ -404,12 +417,46 @@ def guide_tables(doc, layouts):
 
 def write_guide(doc):
     """The Map page of the rules guide lists every layout's areas and borders."""
-    page = os.path.join(os.path.dirname(JSON_PATH), "guide", "map.md")
+    page = os.path.join(GAME_DIR, "guide", "map.md")
     text = open(page).read()
     marker = "## Areas and borders"
     head = text.split(marker)[0] if marker in text else text.rstrip() + "\n\n"
     with open(page, "w") as f:
         f.write(head + marker + "\n\n" + guide_tables(doc, LAYOUTS))
+
+
+def convert(arg, stdin=None):
+    """Runs `bingle dsl convert` on a file, or on JSON given as stdin ("-")."""
+    return subprocess.run(["go", "run", ".", "dsl", "convert", arg], cwd=REPO, input=stdin,
+                          capture_output=True, text=True, check=True).stdout
+
+
+def load_definition():
+    """The whole definition as JSON, its includes resolved."""
+    return json.loads(convert(MAIN))
+
+
+def to_yaml(value):
+    return convert("-", json.dumps(value, ensure_ascii=False))
+
+
+def write_definition(doc, parts):
+    """Writes the main file (the parts as includes), the named parts and
+    every variant, each in its own file."""
+    main = dict(doc)
+    for key, name in PARTS.items():
+        main[key] = "__include__" + name
+    main["variants"] = ["__include__variants/%s.yaml" % v["id"] for v in doc["variants"]]
+    text = re.sub(r"__include__(\S+)", r"!include \1", to_yaml(main))
+    with open(MAIN, "w") as f:
+        f.write(SCHEMA + text)
+    for key in parts:
+        with open(os.path.join(DEF_DIR, PARTS[key]), "w") as f:
+            f.write(PART + to_yaml(doc[key]))
+    os.makedirs(os.path.join(DEF_DIR, "variants"), exist_ok=True)
+    for v in doc["variants"]:
+        with open(os.path.join(DEF_DIR, "variants", v["id"] + ".yaml"), "w") as f:
+            f.write(PART + to_yaml(v))
 
 
 # The fifth seat of the five-player layout.
@@ -420,11 +467,11 @@ def main():
     if len(sys.argv) < 2:
         raise SystemExit(__doc__)
     if sys.argv[1] == "--guide":
-        write_guide(json.load(open(JSON_PATH)))
+        write_guide(load_definition())
         return
     src = sys.argv[1]
     prev = sys.argv[sys.argv.index("--preview") + 1] if "--preview" in sys.argv else None
-    doc = json.load(open(JSON_PATH))
+    doc = load_definition()
     doc.pop("_base_board", None)
     boards = {}
     for gid, spec in LAYOUTS.items():
@@ -461,9 +508,7 @@ def main():
             patch["seats"] = full_seats + [FIFTH_SEAT]
             patch["turn_order"] = {"type": "round-robin", "seats": [5, 1, 2, 3, 4]}
         doc["variants"].append({"id": gid, "name": spec["name"], "patch": patch})
-    with open(JSON_PATH, "w") as f:
-        json.dump(doc, f, indent=1, ensure_ascii=False)
-        f.write("\n")
+    write_definition(doc, parts=("board",))
     write_guide(doc)
 
 

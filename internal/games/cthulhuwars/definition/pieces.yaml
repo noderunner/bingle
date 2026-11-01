@@ -1,0 +1,241 @@
+# Part of cthulhuwars.yaml, included by name.
+cultist:
+  label: Acolyte Cultist
+  code: C
+  shape: cultist
+  tags: [cultist]
+deep-one:
+  label: Deep One
+  code: D
+  shape: deep-one
+  tags: [monster]
+shoggoth:
+  label: Shoggoth
+  code: S
+  shape: shoggoth
+  tags: [monster]
+starspawn:
+  label: Star Spawn
+  code: Sp
+  shape: starspawn
+  tags: [monster]
+cthulhu:
+  label: Cthulhu
+  code: Ct
+  shape: cthulhu
+  tags: [goo]
+nightgaunt:
+  label: Nightgaunt
+  code: N
+  shape: nightgaunt
+  tags: [monster]
+flying-polyp:
+  label: Flying Polyp
+  code: F
+  shape: flying-polyp
+  tags: [monster]
+hunting-horror:
+  label: Hunting Horror
+  code: H
+  shape: hunting-horror
+  tags: [monster]
+nyarlathotep:
+  label: Nyarlathotep
+  code: Ny
+  shape: nyarlathotep
+  tags: [goo]
+ghoul:
+  label: Ghoul
+  code: G
+  shape: ghoul
+  tags: [monster]
+fungi:
+  label: Fungi
+  code: Fu
+  shape: fungi
+  tags: [monster]
+dark-young:
+  label: Dark Young
+  code: Y
+  shape: dark-young
+  tags: [monster]
+shub-niggurath:
+  label: Shub-Niggurath
+  code: Sh
+  shape: shub-niggurath
+  tags: [goo]
+undead:
+  label: Undead
+  code: U
+  shape: undead
+  tags: [monster]
+byakhee:
+  label: Byakhee
+  code: B
+  shape: byakhee
+  tags: [monster]
+king-in-yellow:
+  label: King in Yellow
+  code: K
+  shape: king-in-yellow
+  tags: [goo]
+hastur:
+  label: Hastur
+  code: Ha
+  shape: hastur
+  tags: [goo]
+wendigo:
+  label: Wendigo
+  code: We
+  shape: wendigo
+  tags: [monster]
+gnoph-keh:
+  label: Gnoph-Keh
+  code: Gk
+  shape: gnoph-keh
+  tags: [monster]
+rhan-tegoth:
+  label: Rhan-Tegoth
+  code: Rh
+  shape: rhan-tegoth
+  tags: [goo]
+ithaqua:
+  label: Ithaqua
+  code: It
+  shape: ithaqua
+  tags: [goo]
+wizard:
+  label: Wizard
+  code: Wz
+  shape: wizard
+  tags: [monster]
+serpent-man:
+  label: Serpent Man
+  code: Sm
+  shape: serpent-man
+  tags: [monster]
+formless-spawn:
+  label: Formless Spawn
+  code: Fs
+  shape: formless-spawn
+  tags: [monster]
+tsathoggua:
+  label: Tsathoggua
+  code: Ts
+  shape: tsathoggua
+  tags: [goo]
+dimensional-shambler:
+  label: Dimensional Shambler
+  code: Ds
+  shape: dimensional-shambler
+  tags: [monster]
+star-vampire:
+  label: Star Vampire
+  code: Sv
+  shape: star-vampire
+  tags: [monster]
+elder-thing:
+  label: Elder Thing
+  code: Et
+  shape: elder-thing
+  tags: [monster]
+servitor:
+  label: Servitor of the Outer Gods
+  code: Sr
+  shape: servitor
+  tags: [monster]
+moonbeast:
+  label: Moonbeast
+  code: Mb
+  shape: moonbeast
+  tags: [monster]
+gnorri:
+  label: Gnorri
+  code: Gn
+  shape: gnorri
+  tags: [monster]
+shantak:
+  label: Shantak
+  code: Sk
+  shape: shantak
+  tags: [monster]
+wamp:
+  label: Wamp
+  code: Wa
+  shape: wamp
+  tags: [monster]
+voonith:
+  label: Voonith
+  code: Vo
+  shape: voonith
+  tags: [monster]
+hound-of-tindalos:
+  label: Hound of Tindalos
+  code: Hd
+  shape: hound-of-tindalos
+  tags: [terror]
+abhoth:
+  label: Abhoth
+  code: Ah
+  shape: abhoth
+  tags: [goo]
+chaugnar-faugn:
+  label: Chaugnar Faugn
+  code: Cf
+  shape: chaugnar-faugn
+  tags: [goo]
+cthugha:
+  label: Cthugha
+  code: Cg
+  shape: cthugha
+  tags: [goo]
+mother-hydra:
+  label: Mother Hydra
+  code: Mh
+  shape: mother-hydra
+  tags: [goo]
+yig:
+  label: Yig
+  code: Yi
+  shape: yig
+  tags: [goo]
+filth:
+  label: Filth
+  code: Fl
+  shape: filth
+  tags: [monster]
+mutant:
+  label: Mutant
+  code: Mu
+  shape: mutant
+  tags: [monster]
+abomination:
+  label: Abomination
+  code: Ab
+  shape: abomination
+  tags: [monster]
+spawn-of-yog-sothoth:
+  label: Spawn of Yog-Sothoth
+  code: Sp
+  shape: spawn-of-yog-sothoth
+  tags: [monster]
+yog-sothoth:
+  label: Yog-Sothoth
+  code: Yg
+  shape: yog-sothoth
+  tags: [goo]
+proto-shoggoth:
+  label: Proto-Shoggoth
+  code: Ps
+  shape: proto-shoggoth
+  tags: [monster]
+ubbo-sathla:
+  label: Ubbo-Sathla
+  code: Ub
+  shape: ubbo-sathla
+  tags: [goo]
+high-priest:
+  label: High Priest
+  code: HP
+  shape: high-priest
+  tags: [cultist]

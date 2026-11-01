@@ -1,0 +1,158 @@
+# yaml-language-server: $schema=../../../../docs/game-definition.schema.json
+id: cthulhu-wars
+name: Cthulhu Wars (4 players, 5-3 map)
+family: cthulhu-wars
+description: 'Three to five rival cults fight to wake their Great Old Ones and open the most gates: spend Power on recruiting, moving, summoning and battling over a simplified world map, earn spellbooks, and be first past 30 Doom with all six books. Six cults to choose from — Great Cthulhu, Crawling Chaos, Black Goat, Yellow Sign, Windwalker and Sleeper — and the High Priests as an optional expansion.'
+version: 0.1.0
+designers: [Sandy Petersen]
+publisher: Petersen Games
+engine: ruleset
+rules:
+  - 'Cthulhu Wars is a game of three to five cults — Great Cthulhu, Crawling Chaos, Black Goat, Yellow Sign and, from the first expansion, Windwalker and Sleeper — racing to open Gates, awaken their Great Old Ones and gain Doom. Each round: everyone spends Power on actions, gathers new Power from cultists and Gates, and then scores Doom for the Gates they control (and may perform a Ritual of Annihilation).'
+  - The first player to reach 30 Doom ends the game at the end of that Doom phase; the player with the most Doom and all six spellbooks wins. If nobody has all six spellbooks, humanity wins and every cult loses.
+  - 'Open the Guide tabs in this window for the full rules: the round, every action, battles, the factions and their spellbooks, the High Priests, the neutral cards (neutral spellbooks, Monsters and Terrors with Loyalty Cards), the Independent Great Old Ones and the map.'
+params:
+  doom_to_win: 30
+  start_power: 8
+  gate_cost: 3
+  elder_signs: [18, 12, 6]
+  starts: {gc: south-pacific, cc: asia, bg: south-america-west, ys: europe}
+  sigils:
+    ww: [arctic-ocean, antarctica]
+    sl: [north-america-west]
+board: !include board.yaml
+seats:
+  - {seat: 1, color: green, label: Great Cthulhu}
+  - {seat: 2, color: blue, label: Crawling Chaos}
+  - {seat: 3, color: red, label: Black Goat}
+  - {seat: 4, color: yellow, label: Yellow Sign}
+pieces: !include pieces.yaml
+reserves:
+  cultist: 6
+  deep-one: 4
+  shoggoth: 2
+  starspawn: 2
+  cthulhu: 1
+  nightgaunt: 3
+  flying-polyp: 3
+  hunting-horror: 2
+  nyarlathotep: 1
+  ghoul: 2
+  fungi: 4
+  dark-young: 3
+  shub-niggurath: 1
+  undead: 6
+  byakhee: 4
+  king-in-yellow: 1
+  hastur: 1
+  wendigo: 4
+  gnoph-keh: 4
+  rhan-tegoth: 1
+  ithaqua: 1
+  wizard: 2
+  serpent-man: 3
+  formless-spawn: 4
+  tsathoggua: 1
+  high-priest: 1
+  mutant: 4
+  abomination: 3
+  spawn-of-yog-sothoth: 2
+  yog-sothoth: 1
+  proto-shoggoth: 6
+  ubbo-sathla: 1
+  dimensional-shambler: 0
+  star-vampire: 0
+  elder-thing: 0
+  servitor: 0
+  moonbeast: 0
+  gnorri: 0
+  shantak: 0
+  wamp: 0
+  voonith: 0
+  hound-of-tindalos: 0
+  abhoth: 0
+  chaugnar-faugn: 0
+  cthugha: 0
+  mother-hydra: 0
+  yig: 0
+  filth: 0
+turn_order:
+  type: round-robin
+  seats: [1, 2, 3, 4]
+win_condition: {type: ruleset}
+display:
+  no_hands: true
+  tints:
+    ocean:
+      label: Ocean
+      color: '#b9d3e6'
+      text: "Ocean areas: Great Cthulhu's Submerge, Y'ha-Nthlei and gate requirements refer to them."
+    land: {label: Land, color: '#e5dcc0', text: Land areas.}
+    desecrated:
+      label: Desecrated
+      color: '#d8c76a'
+      text: A Desecration token lies here (Yellow Sign).
+  badges:
+    gate-0:
+      label: Abandoned Gate
+      color: '#8d8776'
+      glyph: ◌
+      text: 'A Gate nobody controls: it still gives 1 Power to every player in Gather Power. A unit that arrives takes it, and so does a unit of yours already there — select it, then click the Gate.'
+    gate-1:
+      label: Gate (Great Cthulhu)
+      color: '#3c9a4a'
+      glyph: ◉
+      text: 'A Gate controlled by Great Cthulhu. The figure on it is the unit that occupies it, apart from the others of its kind there: click yours to move it — that abandons the Gate.'
+    gate-2:
+      label: Gate (Crawling Chaos)
+      color: '#2f6fb5'
+      glyph: ◉
+      text: 'A Gate controlled by Crawling Chaos. The figure on it is the unit that occupies it, apart from the others of its kind there: click yours to move it — that abandons the Gate.'
+    gate-3:
+      label: Gate (Black Goat)
+      color: '#b3342b'
+      glyph: ◉
+      text: 'A Gate controlled by Black Goat. The figure on it is the unit that occupies it, apart from the others of its kind there: click yours to move it — that abandons the Gate.'
+    gate-4:
+      label: Gate (Yellow Sign)
+      color: '#c9a227'
+      glyph: ◉
+      text: 'A Gate controlled by Yellow Sign. The figure on it is the unit that occupies it, apart from the others of its kind there: click yours to move it — that abandons the Gate.'
+    desecrated:
+      label: Desecration
+      color: '#d8c76a'
+      glyph: ✠
+      text: A Desecration token (Yellow Sign).
+    target:
+      label: Battle
+      color: '#d1453b'
+      glyph: ✕
+      text: The area where a battle is being fought.
+    gate-5:
+      label: Gate (Windwalker)
+      color: '#7f9bb0'
+      glyph: ◉
+      text: 'A Gate controlled by Windwalker. The figure on it is the unit that occupies it, apart from the others of its kind there: click yours to move it — that abandons the Gate.'
+    iceage:
+      label: Ice Age
+      color: '#8fc3e6'
+      glyph: ❄
+      text: "Windwalker's Ice Age token: enemy Actions that end here cost 1 Power more."
+  terms: {}
+guide:
+  tabs:
+    - {id: overview, title: Overview, file: guide/overview.md}
+    - {id: round, title: The Round, file: guide/round.md}
+    - {id: actions, title: Actions, file: guide/actions.md}
+    - {id: battle, title: Battle, file: guide/battle.md}
+    - {id: factions, title: Factions, file: guide/factions.md}
+    - {id: neutral, title: Neutral, file: guide/neutral.md}
+    - {id: independents, title: Independents, file: guide/independents.md}
+    - {id: spellbooks, title: Spellbooks, file: guide/spellbooks.md}
+    - {id: map, title: Map, file: guide/map.md}
+    - {id: playing, title: Playing, file: guide/playing.md}
+variants:
+  - !include variants/cthulhu-wars-3-5.yaml
+  - !include variants/cthulhu-wars-3p.yaml
+  - !include variants/cthulhu-wars-5p.yaml
+options: !include options.yaml

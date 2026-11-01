@@ -3,20 +3,24 @@
 // the centre triggers a confluence turn in which clusters spread and convert
 // enemy nodes. Mycelium has no secrets and no chance.
 //
-// mycelium.json describes the board, seats and the two node colours; the Go
+// mycelium.yaml describes the board, seats and the two node colours; the Go
 // ruleset implements the confluence turn and the conversion mechanics.
 package mycelium
 
 import (
 	"embed"
-	_ "embed" // the definition
 	"io/fs"
+	"sync"
 
 	"github.com/noderunner/bingle/internal/engine/catalog"
+	"github.com/noderunner/bingle/internal/engine/dsl"
 )
 
-//go:embed mycelium.json
-var definitionJSON []byte
+//go:embed mycelium.yaml
+var definitionFS embed.FS
+
+// definition is the definition as JSON, converted once.
+var definition = sync.OnceValue(func() []byte { return dsl.MustLoad(definitionFS, "mycelium.yaml") })
 
 //go:embed guide
 var guideFS embed.FS
@@ -27,5 +31,5 @@ func Module() catalog.Module {
 	if err != nil {
 		panic(err)
 	}
-	return catalog.Module{ID: "mycelium", Definition: definitionJSON, Rules: New(), Assets: sub}
+	return catalog.Module{ID: "mycelium", Definition: definition(), Rules: New(), Assets: sub}
 }
