@@ -4,6 +4,15 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.31.0 - 2026-11-01
+
+### Bingle Core 0.31.0
+- **Tutorials, to learn a game by playing it.** Games that have one show a *Tutorial* badge in the
+  list of games. Choose the game and start it under **Learn to play**, or open the game's rules and
+  pick it from the new **Tutorials** tab, where a tutorial you have finished is marked done. The
+  first is for Blooms: placing stones and capturing a bloom. Tutorials for Meridians and Courtfall
+  come next.
+
 ## 0.30.3 - 2026-11-01
 
 ### Bingle Core 0.30.3

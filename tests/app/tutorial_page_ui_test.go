@@ -7,6 +7,7 @@ package app_test
 
 import (
 	"context"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -149,4 +150,96 @@ func TestWebTutorial_OffScript(t *testing.T) {
 	clickSel(t, ctx, "#tutorial-restart")
 	waitJS(t, ctx, "a fresh room", `location.pathname !== "/game/`+room+`" && !!document.getElementById("tutorial-count")`, 15*time.Second)
 	waitStep(t, ctx, "1")
+}
+
+// The game picker shows which games have tutorials, and the chosen game's
+// tutorials start under the name in its form.
+func TestWebTutorial_ListInTheGamePicker(t *testing.T) {
+	base := newRESTTestServer(t)
+	ctx, cancel := newChromedpContext(t, 60*time.Second)
+	defer cancel()
+	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/")); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "the gallery", `!!document.querySelector('.game-card[data-family="blooms"]')`, 15*time.Second)
+	if !evalBool(t, ctx, `!!document.querySelector('.game-card[data-family="blooms"] .badge.tutorial')`) {
+		t.Fatal("the Blooms card does not say it has a tutorial")
+	}
+	if evalBool(t, ctx, `!!document.querySelector('.game-card[data-family="gomoku"] .badge.tutorial')`) {
+		t.Fatal("the Gomoku card says it has a tutorial")
+	}
+	clickSel(t, ctx, `.game-card[data-family="blooms"]`)
+	waitJS(t, ctx, "the tutorials of the setup", `!document.getElementById("setup-tutorials").hidden && !!document.querySelector('#setup-tutorials button[data-tutorial="blooms-basics"]')`, 10*time.Second)
+	if text := evalString(t, ctx, `document.getElementById("setup-tutorials").innerText`); !strings.Contains(text, "Learn to play") || !strings.Contains(text, "Placing stones and capturing a bloom") {
+		t.Fatalf("the setup's tutorials: %q", text)
+	}
+
+	// Without a name it asks for one; with one it opens the tutorial.
+	setName(t, ctx, "")
+	clickSel(t, ctx, `#setup-tutorials button[data-tutorial="blooms-basics"]`)
+	waitJS(t, ctx, "the request for a name", `!document.querySelector("#setup-tutorials .tutorial-error").hidden`, 5*time.Second)
+	setName(t, ctx, "Nia")
+	clickSel(t, ctx, `#setup-tutorials button[data-tutorial="blooms-basics"]`)
+	waitJS(t, ctx, "the tutorial", `location.pathname.startsWith("/game/") && !!document.getElementById("tutorial-count")`, 15*time.Second)
+	waitStep(t, ctx, "1")
+	if name := evalString(t, ctx, `[...document.querySelectorAll(".seat-strip, .seat")].map(e => e.innerText).join(" ")`); !strings.Contains(name, "Nia") {
+		t.Fatalf("the learner's name is not Nia: %q", name)
+	}
+}
+
+// The rules window has a Tutorials tab, which marks a finished tutorial and
+// starts one under the name given there.
+func TestWebTutorial_TabInTheRulesWindow(t *testing.T) {
+	base := newRESTTestServer(t)
+	ctx, cancel := newChromedpContext(t, 60*time.Second)
+	defer cancel()
+	if err := chromedp.Run(ctx,
+		chromedp.Navigate(base+"/"),
+		chromedp.Evaluate(`localStorage.setItem("bingle.tutorials.done", JSON.stringify(["blooms/blooms-basics"])); localStorage.setItem("bingle.name", JSON.stringify("Oli")); true`, nil),
+		chromedp.Navigate(base+"/?game=blooms"),
+	); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "the setup", `!document.getElementById("game-setup").hidden`, 15*time.Second)
+	clickSel(t, ctx, "#game-rules-button")
+	waitJS(t, ctx, "the Tutorials tab", `!!document.querySelector('#rules-dialog [data-tab="tutorials"]')`, 10*time.Second)
+	clickSel(t, ctx, `#rules-dialog [data-tab="tutorials"]`)
+	waitJS(t, ctx, "the list", `!document.getElementById("rules-panel-tutorials").hidden`, 5*time.Second)
+	text := evalString(t, ctx, `document.getElementById("rules-panel-tutorials").innerText`)
+	for _, want := range []string{"Learn the rules", "Placing stones and capturing a bloom", "How a turn works", "✓ Done"} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("the Tutorials tab lacks %q: %q", want, text)
+		}
+	}
+	if v := evalString(t, ctx, `document.getElementById("tutorial-name").value`); v != "Oli" {
+		t.Fatalf("the name field: %q, want the remembered name", v)
+	}
+	// A finished tutorial can be taken again.
+	if label := evalString(t, ctx, `document.querySelector('#rules-panel-tutorials button[data-tutorial="blooms-basics"]').textContent`); label != "Again" {
+		t.Fatalf("the button of a finished tutorial: %q", label)
+	}
+	clickSel(t, ctx, `#rules-panel-tutorials button[data-tutorial="blooms-basics"]`)
+	waitJS(t, ctx, "the tutorial", `location.pathname.startsWith("/game/") && !!document.getElementById("tutorial-count")`, 15*time.Second)
+
+	// A game without tutorials has no such tab.
+	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/?game=gomoku")); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "the setup", `!document.getElementById("game-setup").hidden`, 15*time.Second)
+	clickSel(t, ctx, "#game-rules-button")
+	waitJS(t, ctx, "the rules", `!!document.querySelector('#rules-dialog [data-tab]')`, 10*time.Second)
+	if evalBool(t, ctx, `!!document.querySelector('#rules-dialog [data-tab="tutorials"]')`) {
+		t.Fatal("Gomoku's rules have a Tutorials tab")
+	}
+	if !evalBool(t, ctx, `document.getElementById("setup-tutorials").hidden`) {
+		t.Fatal("Gomoku's setup shows tutorials")
+	}
+}
+
+// setName types a name into the game picker's form.
+func setName(t *testing.T, ctx context.Context, name string) {
+	t.Helper()
+	if err := chromedp.Run(ctx, chromedp.Evaluate(`document.getElementById("create_player_name").value = `+strconv.Quote(name)+`; true`, nil)); err != nil {
+		t.Fatal(err)
+	}
 }

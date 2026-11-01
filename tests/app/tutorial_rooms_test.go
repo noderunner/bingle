@@ -210,3 +210,25 @@ func TestTutorials_NoTurnNotifications(t *testing.T) {
 		t.Fatalf("turn notifications in a tutorial room: %d %v, want 409", code, out)
 	}
 }
+
+// The list of games says which have tutorials, for every game of a family.
+func TestTutorials_CountedInTheGameList(t *testing.T) {
+	base := newRESTTestServer(t)
+	var defs []struct {
+		ID        string `json:"id"`
+		Tutorials int    `json:"tutorials"`
+	}
+	if code := doJSON(t, "GET", base+"/api/game-defs", nil, &defs); code != 200 {
+		t.Fatalf("GET /api/game-defs: %d", code)
+	}
+	got := map[string]int{}
+	for _, d := range defs {
+		got[d.ID] = d.Tutorials
+	}
+	if got["blooms"] < 1 || got["blooms-4"] != got["blooms"] || got["blooms-6"] != got["blooms"] {
+		t.Fatalf("the Blooms family's tutorials: %v", got)
+	}
+	if got["gomoku"] != 0 {
+		t.Fatalf("Gomoku has no tutorials: %d", got["gomoku"])
+	}
+}

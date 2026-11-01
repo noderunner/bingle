@@ -84,7 +84,7 @@ that account.
 
 | Method & path | Body / query | Response |
 |---|---|---|
-| `GET /game-defs` | | `[{id, name, seats_required, description, board_width, board_height, family, version, designers?, publisher?}]` (`version` is the game's semantic version: below 1.0.0 is a beta) |
+| `GET /game-defs` | | `[{id, name, seats_required, description, board_width, board_height, family, version, designers?, publisher?, tutorials?}]` (`version` is the game's semantic version: below 1.0.0 is a beta; `tutorials` how many tutorials the game's family has) |
 | `GET /game-defs/{id}` | | full description (`start` is the starting position; `preview`, when the game starts empty, a sample game in play for pictures): `rules`, `notation_help`, `board` (positions with layout, regions, borders), `pieces`, `pools`, `actions`, `opening`, `win_rules`, `scores` |
 | `GET /game-defs/{id}/guide` | | the rules guide as Markdown pages `{game, generated?, tabs:[{id, title, markdown}]}` — the game's own, or one generated from its definition (`generated: true`) |
 | `GET /game-defs/{id}/assets/{path}` | | a file of the game's guide (images); `board.svg` draws an area map. Served inert (`Content-Security-Policy: sandbox`, `nosniff`); `404` for anything outside the module's files |

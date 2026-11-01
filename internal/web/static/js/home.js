@@ -15,6 +15,7 @@ import { randomFact } from "./facts.js";
 import { mountGlobalChat } from "./global-chat.js";
 import { installNav, navigate } from "./nav.js";
 import { gameIcon } from "./game-icons.js";
+import { tutorialList } from "./tutorials-ui.js";
 
 installNav();
 
@@ -100,6 +101,7 @@ async function updateBlurb() {
 
 	markGallerySelection();
 	renderSetupHead(d);
+	renderSetupTutorials(d);
 	updateImportMode(d);
 	updateBotMatch(d);
 	try {
@@ -163,6 +165,35 @@ function renderSetupHead(d) {
 			)
 		);
 	}
+}
+
+// Each family's tutorials, fetched once.
+const tutorialsOf = new Map();
+
+/** "Learn to play": the chosen game's tutorials, played under the name in the form. */
+async function renderSetupTutorials(d) {
+	const host = document.getElementById("setup-tutorials");
+	if (!host) return;
+	if (!d || !d.tutorials) {
+		host.hidden = true;
+		clear(host);
+		return;
+	}
+	const family = d.family || d.id;
+	try {
+		if (!tutorialsOf.has(family)) tutorialsOf.set(family, (await api.tutorials(d.id)).tutorials || []);
+	} catch (_) {
+		host.hidden = true;
+		return;
+	}
+	// Another game may have been chosen while the list was on its way.
+	const now = defs.find((x) => x.id === document.getElementById("game_def_id").value);
+	if (!now || (now.family || now.id) !== family) return;
+	clear(host).append(
+		h("h3", { class: "setup-tutorials-title" }, "Learn to play"),
+		tutorialList(family, tutorialsOf.get(family), { nameField: document.getElementById("create_player_name"), compact: true })
+	);
+	host.hidden = false;
 }
 
 const sortedFamily = (list) => [...list].sort((a, b) => (a.board_width || 0) - (b.board_width || 0) || a.id.localeCompare(b.id));
@@ -664,6 +695,7 @@ function cardMeta(list, lead) {
 	}
 	const players = playerRange(list);
 	if (players) out.push(h("span", { class: "game-card-players muted" }, players));
+	if (lead.tutorials) out.push(h("span", { class: "badge tutorial", title: "This game has a tutorial that teaches it by playing" }, "Tutorial"));
 	return out;
 }
 
