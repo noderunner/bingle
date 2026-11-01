@@ -1,10 +1,11 @@
-// Command genschema regenerates docs/game-definition.schema.json, the JSON
-// Schema of a game definition, from the Go types of internal/engine/dsl:
+// Command genschema regenerates the JSON Schemas of the hand-written
+// documents from their Go types: docs/game-definition.schema.json (from
+// internal/engine/dsl) and docs/tutorial.schema.json (from internal/tutorial):
 //
 //	go run ./scripts/genschema
 //
 // Run it from the repository root after changing those types; a test fails
-// while the checked-in schema is out of date.
+// while a checked-in schema is out of date.
 package main
 
 import (
@@ -12,16 +13,26 @@ import (
 	"os"
 
 	"github.com/noderunner/bingle/internal/engine/dsl/schemagen"
+	"github.com/noderunner/bingle/internal/tutorial"
 )
 
 func main() {
-	data, err := schemagen.Generate("internal/engine/dsl")
+	def, err := schemagen.Generate("internal/engine/dsl")
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "genschema:", err)
-		os.Exit(1)
+		fail(err)
 	}
-	if err := os.WriteFile("docs/game-definition.schema.json", data, 0o644); err != nil {
-		fmt.Fprintln(os.Stderr, "genschema:", err)
-		os.Exit(1)
+	tut, err := tutorial.Schema("internal/tutorial")
+	if err != nil {
+		fail(err)
 	}
+	for path, data := range map[string][]byte{"docs/game-definition.schema.json": def, "docs/tutorial.schema.json": tut} {
+		if err := os.WriteFile(path, data, 0o644); err != nil {
+			fail(err)
+		}
+	}
+}
+
+func fail(err error) {
+	fmt.Fprintln(os.Stderr, "genschema:", err)
+	os.Exit(1)
 }

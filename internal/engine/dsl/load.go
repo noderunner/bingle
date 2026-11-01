@@ -46,13 +46,20 @@ const IncludeTag = "!include"
 // the fields of each variant's patch, and an unknown one is an error that
 // names the file and line it is on.
 func Load(fsys fs.FS, name string) ([]byte, error) {
+	return LoadAs(fsys, name, definitionType)
+}
+
+// LoadAs is Load for another kind of hand-written document (a tutorial, a
+// manifest): the same YAML, includes and limits, with field names checked
+// against the JSON fields of t.
+func LoadAs(fsys fs.FS, name string, t reflect.Type) ([]byte, error) {
 	l := &loader{fsys: fsys, files: map[*yaml.Node]string{}}
 	root, err := l.parse(name)
 	if err != nil {
 		return nil, err
 	}
 	var buf bytes.Buffer
-	if err := l.emit(&buf, root, reflect.TypeFor[GameDefinition](), 0); err != nil {
+	if err := l.emit(&buf, root, t, 0); err != nil {
 		return nil, err
 	}
 	if isJSON(name) {

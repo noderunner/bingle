@@ -1,0 +1,111 @@
+{
+  "$defs": {
+    "Step": {
+      "additionalProperties": false,
+      "description": "Step is one page of a tutorial: some prose, and what happens on the board.",
+      "properties": {
+        "arrow": {
+          "description": "Arrow draws an arrow from its first square to its second.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "highlight": {
+          "description": "Highlight are squares (or areas) to pick out on the board.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "hint": {
+          "description": "Hint is said when the learner tries another move.",
+          "type": "string"
+        },
+        "play": {
+          "description": "Play are the moves the learner is asked to make, in order, in the game's notation. Any other move is refused, with Hint.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "reply": {
+          "description": "Reply are the moves played for the other seats after the learner's, in order.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "text": {
+          "description": "Text is the step's prose, in Markdown (the game's guide images may be used, as in its rules pages).",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Tutorial": {
+      "additionalProperties": false,
+      "description": "Tutorial is one tutorial of a game.",
+      "properties": {
+        "game": {
+          "description": "Game is the game (or variant) the tutorial is played on, a member of the family whose files hold it.",
+          "type": "string"
+        },
+        "id": {
+          "description": "ID names the tutorial; unique among the game's tutorials.",
+          "type": "string"
+        },
+        "kind": {
+          "description": "Kind is rules, strategy or variant.",
+          "type": "string"
+        },
+        "order": {
+          "description": "Order sorts the game's tutorials of one kind (lowest first).",
+          "type": "integer"
+        },
+        "seat": {
+          "description": "Seat is the learner's seat (default 1); the page plays every other.",
+          "type": "integer"
+        },
+        "seed": {
+          "description": "Seed fixes the chance of a game that has any (its dice), so every roll of the scripted line comes out the same. Required for such a game.",
+          "type": "integer"
+        },
+        "setup": {
+          "description": "Setup are moves played, by whichever seat is to move, before the first step: the way to reach a position worth teaching from.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "steps": {
+          "description": "Steps are shown one after another.",
+          "items": {
+            "$ref": "#/$defs/Step"
+          },
+          "type": "array"
+        },
+        "summary": {
+          "type": "string"
+        },
+        "title": {
+          "description": "Title is what the list of tutorials shows; Summary is one line under it.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "$id": "https://github.com/noderunner/bingle/docs/tutorial.schema.json",
+  "$ref": "#/$defs/Tutorial",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "A tutorial of a bingle game, in YAML. Generated from internal/tutorial: do not edit.",
+  "required": [
+    "id",
+    "kind",
+    "title",
+    "game",
+    "steps"
+  ],
+  "title": "Bingle tutorial"
+}
