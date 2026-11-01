@@ -53,6 +53,27 @@ picture only — the room's game is untouched. It is how a tutorial shows the en
 teaching the start. A step that shows a position asks for no moves. A finished game to show is easiest
 taken from bots playing one out; the moves are then fixed in the file, and checked like the rest.
 
+**Or write a position out.** Where reaching a position by moves is impractical — a four-player game in
+its second round — a tutorial can begin from a position document instead, `start` (with `start_seat`
+for a game whose position does not say who moves), and a step can picture one with `position`. A
+document is checked as any custom start is (the game's own validation), carries its own state of
+chance, so no `seed` is needed, and every move after it is still replayed against the engine. Keep a
+long one in a file of its own:
+
+```yaml
+start: !include positions/round-2.yaml   # beside the tutorial, under tutorials/positions/
+```
+
+The easiest way to write one is to let bots play to roughly the right moment, take the position
+(`bingle dsl convert -` turns its JSON into YAML) and edit it: who has which units, where, and how much
+of what they spend. `internal/games/cthulhuwars/tutorials/` is the example: the High Priests tutorial
+starts from a written-out round 2.
+
+**Reactions.** In a game where a player can react on another's turn (Cthulhu Wars' Unspeakable Oath),
+every reaction in a tutorial room is asked — none is answered by the server — so the script decides
+each one: the other seats' answers are in `reply`, and so may be the learner's routine declines,
+which the page plays for them. A reaction worth making is the learner's own `play`.
+
 ## Writing a rules tutorial
 
 A rules tutorial teaches the whole game in this order, one step each unless a part needs more:

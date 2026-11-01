@@ -29,6 +29,9 @@
           },
           "type": "array"
         },
+        "position": {
+          "description": "Position depicts a position written out as a document instead, for this step only; like Show it asks for no moves."
+        },
         "reply": {
           "description": "Reply are the moves played for the other seats after the learner's, in order.",
           "items": {
@@ -84,6 +87,12 @@
             "type": "string"
           },
           "type": "array"
+        },
+        "start": {
+          "description": "Start is a position document the tutorial begins from instead of the game's start — a game well into play, which would take hundreds of moves to reach — usually kept in a file of its own with !include. The game checks it as it checks any custom start; its own state of chance is used, so no seed is needed. StartSeat is who moves first from it in a game whose position does not say (a game without a Go ruleset)."
+        },
+        "start_seat": {
+          "type": "integer"
         },
         "steps": {
           "description": "Steps are shown one after another.",

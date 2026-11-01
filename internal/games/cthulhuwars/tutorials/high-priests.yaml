@@ -1,0 +1,113 @@
+# yaml-language-server: $schema=../../../../docs/tutorial.schema.json
+id: high-priests
+kind: variant
+title: The High Priests
+summary: Recruiting a High Priest, holding a Gate with him, capturing one, and the Unspeakable Oath — on your turn and on another's.
+order: 1
+game: cthulhu-wars~gc-cc-bg-ys-hp   # four core cults, with the High Priests
+seat: 1                             # you play Great Cthulhu; the page plays the others
+# A game well into play, written out rather than played to.
+start: !include positions/round-2.yaml
+
+steps:
+  - text: |
+      With the **High Priests** in the game, every cult has one more
+      Cultist: its High Priest, who can be sacrificed at almost any moment
+      for 2 Power — even when it is not your turn.
+
+  - text: |
+      This is round 2 of a game of the four core cults, in the **Action
+      phase**. You are **Great Cthulhu** (green), with **5 Power**; it is
+      your action.
+
+      Your Gate in the South Pacific is held by a Cultist, a Deep One stands
+      beside an **abandoned Gate** in Antarctica, and your Star Spawn shares
+      the Indian Ocean with the **Yellow Sign's High Priest**. Crawling Chaos
+      has a Flying Polyp in the North Pacific, next to your Gate. The Black
+      Goat and the Yellow Sign have spent all their Power.
+    highlight: [south-pacific, antarctica, indian-ocean, north-pacific]
+
+  - text: |
+      Each cult has **one High Priest**, in its own colour. He is a
+      **Cultist** for every purpose: he gives 1 Power in Gather Power, can
+      build and hold a Gate, and can be captured. He costs **3 Power** to
+      recruit, where you already have a unit, like any Cultist.
+
+      His power is the **Unspeakable Oath**: sacrifice him — he goes back to
+      your pool — and gain **2 Power**.
+
+  - text: |
+      Recruit your High Priest in **Antarctica**, beside your Deep One:
+      press the button to recruit him, then click Antarctica.
+    play: [recruit:high-priest@antarctica]
+    hint: Recruit the High Priest in Antarctica, the highlighted area.
+    highlight: [antarctica]
+    reply: [done, gate@north-pacific]
+
+  - text: |
+      He stepped onto the abandoned Gate at once: **a High Priest holds a
+      Gate** like any Cultist, and Antarctica's Gate is yours.
+
+      The Yellow Sign was asked whether to take the Oath, and declined. Then
+      Crawling Chaos built a Gate in the North Pacific — and now **you are
+      asked**: whenever another player finishes an action, every cult with
+      its High Priest on the map may take the Oath. Not now: **pass**.
+    play: [done]
+    hint: Press Pass — you keep your High Priest.
+    reply: [done]
+
+  - text: |
+      A **High Priest can be captured**, like any Cultist: a Monster or
+      Great Old One in his area takes him, if no enemy Monster or Great Old
+      One is there to protect him. Your Star Spawn is alone with the Yellow
+      Sign's High Priest in the Indian Ocean. **Capture** him (1 Power).
+    play: [capture:high-priest@indian-ocean/ys]
+    hint: Capture the Yellow Sign's High Priest in the Indian Ocean.
+    highlight: [indian-ocean]
+    reply: [recruit@asia, done]
+
+  - text: |
+      Crawling Chaos recruited a Cultist, and you passed on the Oath. You
+      have **1 Power** left.
+
+      On your own turn the Oath is **free**: it does not use your action.
+      Take it now — your High Priest goes back to your pool and you gain
+      2 Power. He was holding the Gate in Antarctica, so that **Gate is
+      abandoned** again.
+    play: [oath]
+    hint: Take the Unspeakable Oath.
+
+  - text: |
+      With 3 Power, still on your turn, **recruit him again** — in the
+      South Pacific, with your Gate's defenders. That spends your last
+      Power: at **0 Power** a cult can take no more actions this phase.
+    play: [recruit:high-priest@south-pacific]
+    hint: Recruit the High Priest in the South Pacific.
+    highlight: [south-pacific]
+    reply: [go:flying-polyp@north-pacific>south-pacific, done]
+
+  - text: |
+      Crawling Chaos has moved its Flying Polyp onto **your Gate** in the
+      South Pacific. With no Power you could not answer it — but you are
+      asked about the Oath after its action, Power or none.
+
+      **Take the Oath**: your High Priest is sacrificed, you have 2 Power,
+      and you are back in the Action phase.
+    play: [oath]
+    hint: Take the Unspeakable Oath, not Pass.
+    highlight: [south-pacific]
+    reply: [recruit@north-pacific]
+
+  - text: |
+      Crawling Chaos has spent the last of its Power — and it is **your
+      action again**. Answer the threat: **summon a Deep One** in the South
+      Pacific to stand with your Gate (1 Power).
+    play: [summon:deep-one@south-pacific]
+    hint: Summon a Deep One in the South Pacific.
+    highlight: [south-pacific]
+
+  - text: |
+      That is the High Priest: a Cultist who holds Gates and can be
+      captured, worth 3 Power to recruit and 2 to sacrifice — and the one
+      way to find Power when you have none, in the middle of someone else's
+      turn.

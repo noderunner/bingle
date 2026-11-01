@@ -36,6 +36,14 @@ Added 2026-11-01, after the first tutorials were played:
   keeps its controls where they always are, picks out the expected one and makes the rest inert,
   rather than offering only the expected move.
 
+- **A tutorial can begin from a written-out position** (`start`) and a step can picture one
+  (`position`), checked by the game's own validation of a custom start; the moves after it are
+  replayed as ever. It is for a game well into play — the Cthulhu Wars High Priests tutorial starts in
+  round 2 of a four-player game — where the moves to reach it would be hundreds long.
+- **Every reaction in a tutorial room is put to the script**: the server answers none (a room where
+  one person holds every seat is asked everything), and a scripted reply may decline a reaction put
+  to the learner.
+
 ## Consequences
 
 - A rule change that breaks a tutorial fails the build instead of shipping a tutorial that lies.

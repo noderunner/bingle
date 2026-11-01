@@ -292,3 +292,45 @@ func TestTutorials_ServedWithTheirGuide(t *testing.T) {
 		t.Fatalf("the Blooms tutorial shows a position (%v) and asks for moves (%v)", sawShow, sawPlay)
 	}
 }
+
+// A tutorial with a written-out start opens its room from that position:
+// the High Priests tutorial's round 2, not a new game.
+func TestTutorials_RoomFromAWrittenStart(t *testing.T) {
+	base := newRESTTestServer(t)
+	key := newGuestKey(t, base)
+	var created createGameResponse
+	if code := doJSONAs(t, key, "POST", base+"/api/tutorials", map[string]any{"game_def_id": "cthulhu-wars", "tutorial": "high-priests", "player_name": "Lia"}, &created); code != 200 {
+		t.Fatalf("starting it: %d", code)
+	}
+	var st struct {
+		TurnSeat *int `json:"turn_seat"`
+		State    struct {
+			Cells map[string][]struct {
+				Piece string `json:"piece"`
+				Color string `json:"color"`
+			} `json:"cells"`
+			Ext struct {
+				Round int `json:"round"`
+			} `json:"ext"`
+		} `json:"state"`
+	}
+	if code := doJSONAs(t, key, "GET", base+"/api/games/"+created.RoomCode+"/state?player_name=Lia", nil, &st); code != 200 {
+		t.Fatalf("GET its state: %d", code)
+	}
+	var g struct {
+		GameDefID string `json:"game_def_id"`
+	}
+	doJSONAs(t, key, "GET", base+"/api/games/"+created.RoomCode, nil, &g)
+	if g.GameDefID != "cthulhu-wars~gc-cc-bg-ys-hp" || st.State.Ext.Round != 2 || st.TurnSeat == nil || *st.TurnSeat != 1 {
+		t.Fatalf("the room: %s, round %d, turn %v", g.GameDefID, st.State.Ext.Round, st.TurnSeat)
+	}
+	found := false
+	for _, u := range st.State.Cells["indian-ocean"] {
+		if u.Piece == "high-priest" && u.Color == "yellow" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("the Yellow Sign's High Priest is not in the Indian Ocean: %+v", st.State.Cells["indian-ocean"])
+	}
+}

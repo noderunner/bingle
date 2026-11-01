@@ -4,6 +4,15 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.33.0 - 2026-11-01
+
+### Bingle Core 0.33.0
+- **A tutorial for Cthulhu Wars' High Priests.** It opens in the second round of a four-player game
+  of the core cults and shows how a High Priest is recruited, holds a Gate, is captured, and is
+  sacrificed for Power with the Unspeakable Oath — on your own turn, and on another player's when you
+  have no Power left, to get back into the round.
+- Tutorials can now begin in the middle of a game, from a position written out rather than played to.
+
 ## 0.32.0 - 2026-11-01
 
 ### Bingle Core 0.32.0

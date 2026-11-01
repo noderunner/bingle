@@ -245,3 +245,53 @@ func TestGuide(t *testing.T) {
 		t.Fatalf("the second step's selections: %+v", g[2].PlaySteps)
 	}
 }
+
+// A tutorial can begin from a position written out (Start) instead of the
+// game's start, and a step can picture one (Position); both are checked as
+// a custom start is, and the steps are replayed from the written start.
+func TestStartAndPosition(t *testing.T) {
+	cat := shippedCatalog(t)
+	doc := `id: t
+kind: rules
+title: T
+game: gomoku
+start: {v: 2, cells: {h8: [{piece: stone, color: black}], h9: [{piece: stone, color: white}]}, ply: 2}
+start_seat: 1
+steps:
+  - text: A picture.
+    position: {v: 2, cells: {a1: [{piece: stone, color: black}]}, ply: 1}
+  - text: Play on from the written start.
+    play: [h10]
+`
+	tuts, err := load(t, map[string]string{"t.yaml": doc})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := tutorial.Verify(cat, "gomoku", tuts[0]); err != nil {
+		t.Fatalf("a written start: %v", err)
+	}
+	game, _ := cat.Get("gomoku")
+	st, seat, err := tutorial.Start(game, tuts[0])
+	if err != nil || seat != 1 {
+		t.Fatalf("Start: seat %d, %v", seat, err)
+	}
+	if top, ok := st.Get("h9"); !ok || top.Color != "white" {
+		t.Fatalf("the room does not begin from the written start: %v", top)
+	}
+	g, err := tutorial.Guide(game, tuts[0])
+	if err != nil || g[0].Shown == nil {
+		t.Fatalf("the pictured position: %+v %v", g, err)
+	}
+	if top, ok := g[0].Shown.Get("a1"); !ok || top.Color != "black" {
+		t.Fatal("the picture is not the written position")
+	}
+
+	// A move the written start already holds is not legal.
+	bad, _ := load(t, map[string]string{"t.yaml": strings.Replace(doc, "play: [h10]", "play: [h9]", 1)})
+	wantErr(t, tutorial.Verify(cat, "gomoku", bad[0]), "not legal")
+	// A written position the game refuses is caught.
+	bad, _ = load(t, map[string]string{"t.yaml": strings.Replace(doc, "color: white}]}, ply: 2}", "color: purple}]}, ply: 2}", 1)})
+	wantErr(t, tutorial.Verify(cat, "gomoku", bad[0]), "start")
+	_, err = load(t, map[string]string{"t.yaml": strings.Replace(doc, "    position: {v: 2", "    show: [h1]\n    position: {v: 2", 1)})
+	wantErr(t, err, "show or position, not both")
+}

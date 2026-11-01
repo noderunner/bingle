@@ -30,10 +30,10 @@ func Verify(cat *catalog.Catalog, family string, t Tutorial) error {
 	if _, ok := game.Seat(learner); !ok {
 		return fmt.Errorf("%s: %q has no seat %d", t.ID, t.Game, learner)
 	}
-	if state.NeedsStartRecord(game) && t.Seed == 0 {
+	if state.NeedsStartRecord(game) && t.Seed == 0 && len(t.Start) == 0 {
 		return fmt.Errorf("%s: %q has chance: name a seed, so the scripted line is the same every time", t.ID, t.Game)
 	}
-	p, err := newPlayer(game, t.Seed)
+	p, err := startPlayer(game, t)
 	if err != nil {
 		return fmt.Errorf("%s: %w", t.ID, err)
 	}
@@ -44,7 +44,7 @@ func Verify(cat *catalog.Catalog, family string, t Tutorial) error {
 	}
 	for i, s := range t.Steps {
 		at := fmt.Sprintf("%s: step %d", t.ID, i+1)
-		if len(s.Show) > 0 {
+		if len(s.Show) > 0 || len(s.Position) > 0 {
 			if _, err := Shown(game, t, i); err != nil {
 				return fmt.Errorf("%s: %w", at, err)
 			}
@@ -60,7 +60,14 @@ func Verify(cat *catalog.Catalog, family string, t Tutorial) error {
 			}
 		}
 		for _, mv := range s.Reply {
-			if err := p.play(mv, -learner); err != nil {
+			// The page may answer a reaction put to the learner (declining
+			// the Unspeakable Oath after another player's action); any other
+			// move of the learner's in a reply is a mistake.
+			who := -learner
+			if r := state.PendingReaction(game, p.st); r != nil && r.Seat == learner && p.seat == learner {
+				who = 0
+			}
+			if err := p.play(mv, who); err != nil {
 				return fmt.Errorf("%s: the reply %w", at, err)
 			}
 		}
@@ -72,7 +79,7 @@ func Verify(cat *catalog.Catalog, family string, t Tutorial) error {
 // start, its chance seeded by t.Seed, with t.Setup played — and the seat to
 // move from it.
 func Start(game *catalog.CompiledGame, t Tutorial) (*state.BoardState, int, error) {
-	p, err := newPlayer(game, t.Seed)
+	p, err := startPlayer(game, t)
 	if err != nil {
 		return nil, 0, fmt.Errorf("%s: %w", t.ID, err)
 	}
@@ -91,8 +98,11 @@ func Start(game *catalog.CompiledGame, t Tutorial) (*state.BoardState, int, erro
 // played from the game's start, seeded as the tutorial is. The moves may end
 // the game — showing how a game ends is what it is for.
 func Shown(game *catalog.CompiledGame, t Tutorial, i int) (*state.BoardState, error) {
-	if i < 0 || i >= len(t.Steps) || len(t.Steps[i].Show) == 0 {
+	if i < 0 || i >= len(t.Steps) || (len(t.Steps[i].Show) == 0 && len(t.Steps[i].Position) == 0) {
 		return nil, fmt.Errorf("step %d shows no position", i+1)
+	}
+	if doc := t.Steps[i].Position; len(doc) > 0 {
+		return document(game, doc)
 	}
 	p, err := newPlayer(game, t.Seed)
 	if err != nil {
@@ -118,7 +128,7 @@ type StepGuide struct {
 // Guide walks t as the page plays it and returns each step's guide. viewer
 // is the seat a shown position is seen from (its secrets only).
 func Guide(game *catalog.CompiledGame, t Tutorial) ([]StepGuide, error) {
-	p, err := newPlayer(game, t.Seed)
+	p, err := startPlayer(game, t)
 	if err != nil {
 		return nil, err
 	}
@@ -129,7 +139,7 @@ func Guide(game *catalog.CompiledGame, t Tutorial) ([]StepGuide, error) {
 	}
 	out := make([]StepGuide, len(t.Steps))
 	for i, s := range t.Steps {
-		if len(s.Show) > 0 {
+		if len(s.Show) > 0 || len(s.Position) > 0 {
 			st, err := Shown(game, t, i)
 			if err != nil {
 				return nil, err
@@ -181,6 +191,41 @@ type player struct {
 	game *catalog.CompiledGame
 	st   *state.BoardState
 	seat int // the seat to move, 0 once the game is over
+}
+
+// startPlayer is a player at the tutorial's start: its Start document, or
+// the game's own start seeded by its Seed.
+func startPlayer(game *catalog.CompiledGame, t Tutorial) (*player, error) {
+	if len(t.Start) == 0 {
+		return newPlayer(game, t.Seed)
+	}
+	st, err := document(game, t.Start)
+	if err != nil {
+		return nil, fmt.Errorf("start: %w", err)
+	}
+	p := &player{game: game, st: st, seat: t.StartSeat}
+	if p.seat == 0 {
+		p.seat = state.FirstSeat(game)
+	}
+	if rs, ok := state.RulesetOf(game); ok {
+		p.seat = rs.ToMove(game, st)
+	}
+	if p.seat == 0 {
+		return nil, fmt.Errorf("start: the position is already over")
+	}
+	return p, nil
+}
+
+// document reads a position document and checks it as a custom start is.
+func document(game *catalog.CompiledGame, doc []byte) (*state.BoardState, error) {
+	st := state.NewBoardState()
+	if err := st.UnmarshalJSON(doc); err != nil {
+		return nil, err
+	}
+	if err := state.Validate(game, st); err != nil {
+		return nil, err
+	}
+	return st, nil
 }
 
 func newPlayer(game *catalog.CompiledGame, seed uint64) (*player, error) {

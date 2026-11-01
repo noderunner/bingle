@@ -192,7 +192,8 @@ func TestWebCthulhuWars_RulesWindowHasTabsTablesAndImages(t *testing.T) {
 	if err := chromedp.Run(ctx, chromedp.Evaluate(`document.getElementById("show-rules").click(); true`, nil)); err != nil {
 		t.Fatal(err)
 	}
-	waitJS(t, ctx, "tabs", `document.querySelectorAll('#rules-dialog [role="tab"]').length === 12`, 10*time.Second)
+	// The guide's pages, the Tutorials tab (the High Priests tutorial), Key and Controls.
+	waitJS(t, ctx, "tabs", `document.querySelectorAll('#rules-dialog [role="tab"]').length === 13 && !!document.querySelector('#rules-dialog [data-tab="tutorials"]')`, 10*time.Second)
 	// Exactly one panel is visible, the first tab is selected.
 	if n := evalInt(t, ctx, `[...document.querySelectorAll('#rules-dialog [role="tabpanel"]')].filter(p => getComputedStyle(p).display !== "none").length`); n != 1 {
 		t.Fatalf("%d visible panels", n)

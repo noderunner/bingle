@@ -686,7 +686,10 @@ function tokenOk(pos, piece, color) {
 		const stack = currentCells()[pos] || [];
 		if (stack.some((pc) => pc.piece === piece && pc.color === mine)) return false;
 	}
-	return tokenSteps(activeBuilder(), pos, piece) !== null;
+	const path = tokenSteps(activeBuilder(), pos, piece);
+	// A tutorial takes only the token its step points at.
+	if (path && S.tut) return tutorialAllowsPath(path);
+	return path !== null;
 }
 
 /** The unit type of a piece value: the unit on a Gate is "gate:<type>". */
@@ -5366,7 +5369,9 @@ function tutorialTick() {
 	}
 	if (!p.next || p.next.who !== "reply") return;
 	const seat = S.game.turn_seat;
-	if (!seat || seat === (S.tut.doc.seat || 1)) return;
+	// A reply may be the learner's too: the page declines a reaction put to
+	// them (the Unspeakable Oath after another player's action).
+	if (!seat) return;
 	S.tut.pending = true;
 	window.setTimeout(async () => {
 		try {
@@ -5487,6 +5492,17 @@ function tutorialExpected() {
 /** Whether the learner may make this selection now: only the one the step points at. */
 function tutorialAllows(kind, value) {
 	return tutorialAllowed(tutorialExpected(), activeBuilder().steps, kind, value);
+}
+
+/** Whether a run of selections (a token click stands for several) is the one the step points at. */
+function tutorialAllowsPath(path) {
+	const expected = tutorialExpected();
+	const done = activeBuilder().steps.length;
+	if (!expected) return false;
+	return path.every((st, i) => {
+		const want = expected[done + i];
+		return !!want && want.kind === st.kind && String(want.value) === String(st.value);
+	});
 }
 
 /**
