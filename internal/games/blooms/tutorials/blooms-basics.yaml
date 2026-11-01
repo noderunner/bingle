@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=../../../../docs/tutorial.schema.json
+id: blooms-basics
+kind: rules
+title: Placing stones and capturing a bloom
+summary: How a turn works, what a bloom is, and how one is captured.
+order: 1
+game: blooms-4   # the small board: 37 cells, 15 captures to win
+seat: 1          # you play red and yellow; the page plays blue and black
+
+steps:
+  - text: |
+      **Blooms** is played on a board of hexagonal cells. You have stones of
+      two colours, **red** and **yellow**; your opponent has **blue** and
+      **black**.
+
+      The first player's first turn is a single stone. Place a red stone on
+      the highlighted cell.
+    play: [red@d4]
+    hint: Choose red, then the highlighted cell in the middle of the board.
+    highlight: [d4]
+    reply: [blue@a4, black@g1]
+
+  - text: |
+      Every other turn is **one or two stones**, and two stones must be of
+      **different colours**. Your opponent just placed a blue stone in the
+      corner and a black one on the far side.
+
+      A **bloom** is a group of touching stones of one colour; a single stone
+      is a bloom too. A bloom is **fenced** when no empty cell touches it.
+      The blue stone at a4 touches only three cells. Fill two of them: a red
+      stone on b3 and a yellow one on b4.
+    play: [red@b3, yellow@b4]
+    hint: Red on b3, then yellow on b4.
+    highlight: [b3, b4]
+    reply: [blue@f1, done]
+
+  - text: |
+      Your opponent placed a single stone and ended the turn (**done**). The
+      blue bloom at a4 has one empty cell left beside it, a5.
+
+      Fill it, and end your turn with **done**: at the end of your turn,
+      every enemy bloom that is fenced is **captured**.
+    play: [red@a5, done]
+    hint: Red on a5, then done.
+    highlight: [a5]
+    arrow: [a5, a4]
+
+  - text: |
+      The blue stone is gone, and you have captured one stone. On this board
+      the first player to capture **15** enemy stones wins.
+
+      Your own blooms are never captured on your turn: a fenced bloom of
+      yours stays until the end of your opponent's next turn, so you can
+      still free it. That is the heart of the game — giving up a few stones
+      to fence in more.

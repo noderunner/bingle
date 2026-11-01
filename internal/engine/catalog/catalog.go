@@ -43,6 +43,9 @@ type Module struct {
 	// Assets is the module's embedded files: the Markdown pages and images
 	// of its rules guide.
 	Assets fs.FS
+	// Tutorials holds the game's tutorials, one YAML document each at its
+	// root (see package tutorial); nil for a game without any.
+	Tutorials fs.FS
 }
 
 // DerivedSep separates the id of a base game from the suffix naming the

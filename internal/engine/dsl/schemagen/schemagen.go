@@ -29,20 +29,28 @@ const ID = "https://github.com/noderunner/bingle/docs/game-definition.schema.jso
 // variant's patch is checked against the same types without them).
 var required = []string{"id", "name", "board", "seats", "pieces", "turn_order", "win_condition"}
 
-// Generate returns the schema, reading doc comments from the Go source of
-// package dsl in dslDir.
+// Generate returns the schema of a game definition, reading doc comments
+// from the Go source of package dsl in dslDir.
 func Generate(dslDir string) ([]byte, error) {
-	docs, err := readDocs(dslDir)
+	return GenerateFor(reflect.TypeFor[dsl.GameDefinition](), dslDir, ID, "Bingle game definition",
+		"A game definition of the bingle engine, in YAML or JSON. Generated from internal/engine/dsl: do not edit.", required)
+}
+
+// GenerateFor returns the schema of another hand-written document whose
+// top-level type is t, with doc comments read from the Go source in srcDir
+// (the package that declares t and the types it uses).
+func GenerateFor(t reflect.Type, srcDir, id, title, description string, required []string) ([]byte, error) {
+	docs, err := readDocs(srcDir)
 	if err != nil {
 		return nil, err
 	}
 	g := &gen{docs: docs, defs: map[string]any{}}
-	root := g.schema(reflect.TypeFor[dsl.GameDefinition]())
+	root := g.schema(t)
 	out := map[string]any{
 		"$schema":     "https://json-schema.org/draft/2020-12/schema",
-		"$id":         ID,
-		"title":       "Bingle game definition",
-		"description": "A game definition of the bingle engine, in YAML or JSON. Generated from internal/engine/dsl: do not edit.",
+		"$id":         id,
+		"title":       title,
+		"description": description,
 		"$ref":        root["$ref"],
 		"required":    required,
 		"$defs":       g.defs,

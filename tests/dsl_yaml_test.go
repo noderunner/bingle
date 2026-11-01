@@ -314,7 +314,8 @@ func TestToYAML_RoundTripsEveryShippedDefinition(t *testing.T) {
 }
 
 // shippedDefinitions lists the top-level definition files of the games: the
-// files that carry the schema comment (included parts do not).
+// files that name the definition schema (included parts name none, and
+// tutorials name their own).
 func shippedDefinitions(t *testing.T) []string {
 	t.Helper()
 	var out []string
@@ -326,7 +327,8 @@ func shippedDefinitions(t *testing.T) []string {
 		if err != nil {
 			return err
 		}
-		if strings.HasPrefix(string(data), "# yaml-language-server: $schema=") {
+		first, _, _ := strings.Cut(string(data), "\n")
+		if strings.HasPrefix(first, "# yaml-language-server: $schema=") && strings.HasSuffix(first, "/game-definition.schema.json") {
 			out = append(out, p)
 		}
 		return nil

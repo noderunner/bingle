@@ -4,6 +4,12 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.30.1 - 2026-11-01
+
+### Bingle Core 0.30.1
+- **Groundwork for guided tutorials.** Games can now carry tutorials that teach by playing, and the
+  first one, for Blooms, is written. There is no way to open one yet: the tutorial page comes next.
+
 ## 0.30.0 - 2026-11-01
 
 ### Bingle Core 0.30.0
