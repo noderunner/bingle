@@ -371,9 +371,11 @@ func (a *Accounts) ForgotPassword(ctx context.Context, who, ip string) error {
 		acc, err = a.st.AccountByHandle(ctx, strings.TrimPrefix(who, "@"))
 	}
 	if err != nil || acc.Status != store.AccountActive {
+		a.log.Info("password reset: no active account by that name or address, so no mail was sent")
 		return nil
 	}
 	if a.failures.locked("reset:"+acc.Handle, now) {
+		a.log.Info("password reset: too many reset links for this account lately, so no mail was sent")
 		return nil
 	}
 	a.failures.fail("reset:"+acc.Handle, now) // five links a quarter, then slower

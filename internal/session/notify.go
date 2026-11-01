@@ -9,11 +9,13 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"log/slog"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/noderunner/bingle/internal/auth"
+	"github.com/noderunner/bingle/internal/logging"
 	"github.com/noderunner/bingle/internal/mail"
 	"github.com/noderunner/bingle/internal/store"
 )
@@ -69,7 +71,8 @@ const (
 type turnKey struct{ seat, seq int }
 
 type notifyJob struct {
-	msg mail.Message
+	kind string // confirm, reset, turn or notice: for the log and the metrics
+	msg  mail.Message
 }
 
 type notifier struct {
@@ -142,30 +145,46 @@ func (m *Manager) RunNotifier(ctx context.Context) {
 }
 
 func (n *notifier) deliver(ctx context.Context, j notifyJob) {
+	// Never log the address, the message or the server's conversation: the
+	// address only as its hash (ADR 0063).
+	lg := n.m.logger().With("kind", j.kind, logging.Addr(j.msg.To))
 	n.mu.Lock()
-	blocked := n.authFailed || n.m.now().Before(n.pausedUntil)
+	authFailed, paused := n.authFailed, n.pausedUntil
 	n.mu.Unlock()
-	if blocked {
+	if authFailed || n.m.now().Before(paused) {
+		why := "the mail server refused the login, so sending is stopped until bingle is restarted"
+		if !authFailed {
+			why = "the mail server asked us to slow down, so sending is paused until " + paused.UTC().Format(time.RFC3339)
+		}
+		lg.Warn("notify: a message was not sent: " + why)
+		n.m.mx.Mail(j.kind, "stopped")
 		return
 	}
+	start := time.Now()
 	err := n.opts.Mailer.Send(ctx, j.msg)
+	took := time.Since(start)
+	n.m.mx.MailSend(took)
 	if err == nil {
+		lg.Info("notify: sent a message", "took", took.Round(time.Millisecond))
+		n.m.mx.Mail(j.kind, "sent")
 		return
 	}
-	// Never log the address, the message or the server's conversation.
 	switch mail.Classify(err) {
 	case mail.BadCredentials:
 		n.mu.Lock()
 		n.authFailed = true
 		n.mu.Unlock()
-		n.m.logger().Error("notify: the mail server refused the login: email notifications are stopped until bingle is restarted", "err", err)
+		lg.Error("notify: the mail server refused the login: email notifications are stopped until bingle is restarted", "err", err)
+		n.m.mx.Mail(j.kind, "auth_failed")
 	case mail.RateLimited:
 		n.mu.Lock()
 		n.pausedUntil = n.m.now().Add(breakerCooldown)
 		n.mu.Unlock()
-		n.m.logger().Warn("notify: the mail server asks us to slow down", "pause", breakerCooldown, "err", err)
+		lg.Warn("notify: the mail server asks us to slow down", "pause", breakerCooldown, "err", err)
+		n.m.mx.Mail(j.kind, "rate_limited")
 	default:
-		n.m.logger().Warn("notify: a message was not delivered", "err", err)
+		lg.Warn("notify: a message was not delivered", "took", took.Round(time.Millisecond), "err", err)
+		n.m.mx.Mail(j.kind, "failed")
 	}
 }
 
@@ -174,15 +193,27 @@ func (n *notifier) enqueue(j notifyJob) {
 	for {
 		select {
 		case n.jobs <- j:
+			n.m.logger().Debug("notify: queued a message", "kind", j.kind, logging.Addr(j.msg.To), "queued", len(n.jobs))
+			n.m.mx.Mail(j.kind, "queued")
 			return
 		default:
 			select {
-			case <-n.jobs:
-				n.m.logger().Warn("notify: the mail queue is full, dropped the oldest message")
+			case old := <-n.jobs:
+				n.m.logger().Warn("notify: the mail queue is full, dropped the oldest message", "kind", old.kind, logging.Addr(old.msg.To))
+				n.m.mx.Mail(old.kind, "dropped")
 			default:
 			}
 		}
 	}
+}
+
+// addrAttr is the log attribute for an address known only by addrHash: the
+// same value logging.Addr gives for the address itself.
+func addrAttr(ah string) slog.Attr {
+	if len(ah) > 12 {
+		ah = ah[:12]
+	}
+	return slog.String("addr", ah)
 }
 
 // ---- tokens and hashes ---------------------------------------------------------
@@ -211,6 +242,19 @@ func nameKey(name string) string { return strings.ToLower(strings.TrimSpace(name
 // reserve checks the limits for a mail of the kind and, if it may go, records
 // it (so a burst cannot get past the limits before the worker sends).
 func (n *notifier) reserve(ctx context.Context, kind, addr string, gameID int64, ip string) error {
+	err := n.reserveLocked(ctx, kind, addr, gameID, ip)
+	switch {
+	case errors.Is(err, ErrNotifyLimited):
+		n.m.logger().Info("notify: a message was held back by the sending limits", "kind", kind, addrAttr(addr))
+		n.m.mx.Mail(kind, "limited")
+	case err != nil:
+		n.m.logger().Error("notify: could not record a message to send", "kind", kind, addrAttr(addr), "err", err)
+		n.m.mx.Mail(kind, "failed")
+	}
+	return err
+}
+
+func (n *notifier) reserveLocked(ctx context.Context, kind, addr string, gameID int64, ip string) error {
 	n.mu.Lock()
 	defer n.mu.Unlock()
 	st := n.m.store
@@ -336,6 +380,7 @@ func (m *Manager) SaveContact(ctx context.Context, ip, address string, id int64,
 	}
 	ah := addrHash(addr)
 	if stopped, _ := m.store.IsSuppressed(ctx, ah); stopped {
+		n.suppressed("confirm", ah)
 		return ContactInfo{}, ErrSuppressed
 	}
 	confirm := newToken()
@@ -375,14 +420,14 @@ func (m *Manager) SaveContact(ctx context.Context, ip, address string, id int64,
 	}
 	if oldAddr != "" {
 		if oa, _ := mail.ValidAddress(oldAddr); oa != "" && n.reserve(ctx, "notice", addrHash(oa), 0, ip) == nil {
-			n.enqueue(notifyJob{msg: mail.AddressChanged(oa, n.opts.BaseURL, oldStop)})
+			n.enqueue(notifyJob{kind: "notice", msg: mail.AddressChanged(oa, n.opts.BaseURL, oldStop)})
 		}
 	}
 	if err := n.reserve(ctx, "confirm", ah, 0, ip); err != nil {
 		info.Note = "A confirmation was already sent to this address lately (or this server is busy). Look in the inbox and the spam folder, or try again in a little while."
 		return info, nil
 	}
-	n.enqueue(notifyJob{msg: mail.Confirmation(addr, n.opts.BaseURL, confirm, c.StopToken)})
+	n.enqueue(notifyJob{kind: "confirm", msg: mail.Confirmation(addr, n.opts.BaseURL, confirm, c.StopToken)})
 	info.ConfirmationSent = true
 	return info, nil
 }
@@ -421,7 +466,7 @@ func (m *Manager) ResendConfirmation(ctx context.Context, ip string, id int64, s
 		info.Note = "A confirmation was sent to this address lately. Look in the inbox and the spam folder, or try again in a little while."
 		return info, nil
 	}
-	n.enqueue(notifyJob{msg: mail.Confirmation(c.Address, n.opts.BaseURL, confirm, c.StopToken)})
+	n.enqueue(notifyJob{kind: "confirm", msg: mail.Confirmation(c.Address, n.opts.BaseURL, confirm, c.StopToken)})
 	info.ConfirmationSent = true
 	return info, nil
 }
@@ -690,6 +735,7 @@ func (n *notifier) send(room string, seat, seq int, ignoreConnected bool) {
 		return
 	}
 	if stopped, _ := n.m.store.IsSuppressed(ctx, c.AddrHash); stopped {
+		n.suppressed("turn", c.AddrHash)
 		return
 	}
 	to, err := mail.ValidAddress(c.Address)
@@ -699,7 +745,13 @@ func (n *notifier) send(room string, seat, seq int, ignoreConnected bool) {
 	if err := n.reserve(ctx, "turn", c.AddrHash, game.ID, ""); err != nil {
 		return
 	}
-	n.enqueue(notifyJob{msg: mail.Turn(to, n.gameName(game.GameDefID), game.RoomCode, n.opts.BaseURL, c.StopToken)})
+	n.enqueue(notifyJob{kind: "turn", msg: mail.Turn(to, n.gameName(game.GameDefID), game.RoomCode, n.opts.BaseURL, c.StopToken)})
+}
+
+// suppressed notes a mail not sent because its address asked never to be mailed.
+func (n *notifier) suppressed(kind, ah string) {
+	n.m.logger().Info("notify: not sending a message: the address asked not to be mailed", "kind", kind, addrAttr(ah))
+	n.m.mx.Mail(kind, "suppressed")
 }
 
 func (n *notifier) gameName(defID string) string {
@@ -718,7 +770,8 @@ func (m *Manager) MailEnabled() bool { return m.notify != nil }
 // SendAccountMail queues a mail about an account to addr: kind "confirm"
 // (a new account's address, under the limits a contact's confirmation has:
 // per address, per sending address) or "reset" (a password reset link,
-// limited by the account service). Both count towards the whole server's
+// limited by the account service) or "notice" (to an account's address when
+// someone signs up with it again: once an hour per address). All count towards the whole server's
 // limits. build is given the server's public URL. An address that asked
 // never to be mailed is not, and the caller is not told, so the answer does
 // not say whose it is.
@@ -729,11 +782,14 @@ func (m *Manager) SendAccountMail(ctx context.Context, kind, addr, ip string, bu
 	}
 	ah := addrHash(addr)
 	if stopped, err := m.store.IsSuppressed(ctx, ah); err != nil || stopped {
+		if stopped {
+			n.suppressed(kind, ah)
+		}
 		return err
 	}
 	if err := n.reserve(ctx, kind, ah, 0, ip); err != nil {
 		return err
 	}
-	n.enqueue(notifyJob{msg: build(n.opts.BaseURL)})
+	n.enqueue(notifyJob{kind: kind, msg: build(n.opts.BaseURL)})
 	return nil
 }

@@ -96,12 +96,35 @@ All counted in the database, so they survive a restart:
 | Turn mails to one address in one game | 1 per 15 minutes |
 | Turn mails to one address | 20 per day |
 | Turn mails for one game | 100 per day |
+| Notices to one address (its address changed; someone signed up with it again) | 1 per hour |
 | Everything bingle sends | `BINGLE_MAIL_HOURLY_LIMIT` per hour, `BINGLE_MAIL_DAILY_LIMIT` per day |
 
 A **login failure** (`535`, `534`, `530`) stops all mail until bingle is restarted, so a wrong password is
 not retried into a lockout; a **rate error** from the server (`421`, `450`, `452`, `5.4.5`) pauses mail for an hour.
 Mail is sent by one background worker with a queue of 64 (the oldest message is dropped when it is full), so a slow
 mail server never delays a move.
+
+### Seeing what the mail did
+
+At startup the log says `notify: mail is on` with the host, port, TLS mode and limits, or
+`notify: mail is off` and why. After that every message has lines of its own, with its `kind`
+(`confirm`, `reset`, `turn` or `notice`) and its address only as `addr=`, twelve hex characters of a
+hash ([ADR 0063](decisions/0063-what-a-log-line-may-say.md)); `logging.Addr` gives the same value for
+an address you want to look for:
+
+| Level | Line | Meaning |
+|---|---|---|
+| debug | `notify: queued a message` | It will be sent |
+| info | `notify: sent a message` | The mail server took it, and how long that took |
+| info | `notify: a message was held back by the sending limits` | One of the limits above |
+| info | `notify: not sending a message: the address asked not to be mailed` | Its address followed a stop link |
+| info | `signup: the address already belongs to an account, so no confirmation was sent` | Sign-up answers as usual, so it does not say whose the address is. The account's owner is mailed *You already have a Bingle account* instead (a `notice`, at most one an hour), and the audit log gets `signup-address-in-use` |
+| info | `password reset: …, so no mail was sent` | No such account, or too many links lately |
+| warn | `notify: a message was not delivered` / `…asks us to slow down` / `…not sent: …` | The server refused it, paused us, or sending is stopped |
+| error | `notify: the mail server refused the login` | All mail stops until a restart |
+
+The same outcomes are counted in `bingle_mail_total{kind,outcome}` on the metrics listener
+([observability.md](observability.md#what-is-measured)).
 
 ### Maintenance
 

@@ -14,6 +14,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/noderunner/bingle/internal/logging"
 	"github.com/noderunner/bingle/internal/mail"
 	"github.com/noderunner/bingle/internal/store"
 )
@@ -172,7 +173,16 @@ func (a *Accounts) Signup(ctx context.Context, handle, email, password, guest, i
 	switch {
 	case errors.Is(err, store.ErrTaken):
 		// The handle was checked a moment ago, so it is the address: answer as
-		// if it went through.
+		// if it went through, so the answer does not say whose address it is,
+		// and tell the address's owner instead — at most once an hour (the
+		// "notice" limit), so the form cannot be used to flood a mailbox.
+		a.log.Info("signup: the address already belongs to an account, so no confirmation was sent", logging.Addr(addr))
+		if owner, err := a.st.AccountByEmail(ctx, addr); err == nil {
+			a.audit(ctx, owner.ID, "signup-address-in-use", "", ip)
+			if err := a.mail.SendAccountMail(ctx, "notice", owner.Email, ip, func(base string) mail.Message { return mail.AccountExists(owner.Email, owner.Handle, base) }); err != nil {
+				a.log.Info("signup: the owner of the address was not told", logging.Addr(addr), "err", err)
+			}
+		}
 		return nil
 	case err != nil:
 		return err
@@ -188,7 +198,7 @@ func (a *Accounts) Signup(ctx context.Context, handle, email, password, guest, i
 	if err := a.mail.SendAccountMail(ctx, "confirm", addr, ip, func(base string) mail.Message { return mail.AccountConfirmation(addr, h, base, token) }); err != nil {
 		// Without the mail the account can never be used: let the handle go.
 		_ = a.st.DeletePendingAccount(ctx, id)
-		a.log.Warn("the confirmation of a new account was not sent", "err", err)
+		a.log.Warn("the confirmation of a new account was not sent", logging.Addr(addr), "err", err)
 		return ErrMailLater
 	}
 	a.audit(ctx, id, "signup", "", ip)
