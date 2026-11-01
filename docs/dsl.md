@@ -1,10 +1,12 @@
-# Writing a game in JSON
+# Writing a game definition
 
-A game is one JSON document (embedded with `go:embed` and registered with
-`catalog.Module`). Everything below is optional unless marked **required**.
-`internal/games/tak/tak.json` is the fullest worked example; the
-`internal/games/classics/*.json` files (Tic-Tac-Toe is the smallest; Amazons,
-Ataxx, Pente and Brandubh show the newer actions) cover the rest.
+A game is one definition, written in YAML (embedded with `go:embed`, loaded
+with `dsl.MustLoad` and registered with `catalog.Module`). Everything below is
+optional unless marked **required**. `internal/games/tak/tak.yaml` is the
+fullest worked example; the `internal/games/classics/*.yaml` files (Tic-Tac-Toe
+is the smallest; Amazons, Ataxx, Pente and Brandubh show the newer actions)
+cover the rest. *The file*, after this list, covers includes, anchors, the
+schema and converting from JSON.
 
 ```
 id, name                      required
@@ -33,14 +35,71 @@ notation                      generic (default) | ptn
 cards                         suits, decks and zones of a card game
 ```
 
+## The file
+
+YAML is only how a definition is written. It is turned into JSON as it is
+loaded, and everything after that — variants, the catalog, the API, the bots,
+the MCP tools — sees JSON, so a client never needs a YAML parser
+([ADR 0075](decisions/0075-yaml-definitions-and-includes.md)). A `.json`
+definition still loads, unchanged.
+
+**Every field name is checked.** A field the engine does not know, including
+one inside a variant's patch, is an error that names the file, line and column
+(`dsl: tak.yaml:12:5: unknown field "lable" in PieceDef`), instead of being
+ignored. Names are matched exactly, case included.
+
+**Includes** split a large definition across files. `!include` replaces any
+value with the contents of another file, named relative to the file that
+includes it:
+
+```yaml
+board: !include board.yaml
+pieces: !include pieces.yaml
+variants:
+  - !include variants/cthulhu-wars-3p.yaml
+```
+
+An include stays inside the game's own files: no absolute paths, no `..` out
+of the folder, no symbolic links, no cycles, at most 16 deep. A game split
+this way lives in a `definition/` folder (`internal/games/cthulhuwars/` and
+`internal/games/yinsh/` are examples): the main file holds the identity, rules
+text, seats and display, and the long parts sit beside it. A JSON definition
+cannot include.
+
+**Anchors, aliases and merge keys** repeat a block without copying it:
+
+```yaml
+pieces:
+  knight: &unit {shape: round, tags: [unit], stack: {coverable: false}}
+  archer: {<<: *unit, shape: square}   # every key of knight, shape replaced
+```
+
+A definition may expand to at most 64 MB, aliases included.
+
+**The schema.** `docs/game-definition.schema.json` is the JSON Schema of a
+definition, generated from the Go types with each field's comment as its
+description (`go run ./scripts/genschema` after changing them; a test fails
+while it is out of date). A top-level definition names it on its first line,
+
+```yaml
+# yaml-language-server: $schema=../../../docs/game-definition.schema.json
+```
+
+so an editor with the YAML language server (VS Code's YAML extension, for one)
+completes field names and flags mistakes as you type. Tell it about includes
+with the setting `"yaml.customTags": ["!include scalar"]`; it checks the value at
+an include as the file name it is, so it may flag that line as the wrong type.
+
+**Converting.** `bingle dsl convert game.json` prints a JSON definition as
+YAML, keys in their order; `bingle dsl convert game.yaml` prints the JSON a
+YAML definition loads as, its includes resolved and its fields checked.
+
 ## board
 
-```json
-"board": {
-  "generator": { "type": "grid", "width": 5, "height": 5,
-                 "adjacency": "orthogonal4", "labels": "algebraic" },
-  "style": "squares"
-}
+```yaml
+board:
+  generator: {type: grid, width: 5, height: 5, adjacency: orthogonal4, labels: algebraic}
+  style: squares
 ```
 
 * `generator.type` is `grid` (rectangular; `adjacency` is `orthogonal4`,
@@ -67,16 +126,27 @@ cards                         suits, decks and zones of a card game
 
 ## seats, pieces, setup
 
-```json
-"seats": [ {"seat": 1, "color": "white", "label": "White"},
-           {"seat": 2, "color": "black"} ],
-"pieces": {
-  "flat": { "label": "Flat stone", "code": "F", "shape": "square",
-            "pool": "stone", "tags": ["road", "flat"] },
-  "wall": { "label": "Standing stone", "code": "S", "shape": "wall",
-            "pool": "stone", "tags": ["blocker"],
-            "stack": { "coverable": false, "flattenable_by": ["cap"], "flatten_to": "flat" } }
-}
+```yaml
+seats:
+  - {seat: 1, color: white, label: White}
+  - {seat: 2, color: black}
+pieces:
+  flat:
+    label: Flat stone
+    code: F
+    shape: square
+    pool: stone
+    tags: [road, flat]
+  wall:
+    label: Standing stone
+    code: S
+    shape: wall
+    pool: stone
+    tags: [blocker]
+    stack:
+      coverable: false
+      flattenable_by: [cap]
+      flatten_to: flat
 ```
 
 * Colors are CSS-ish names; the UI has palettes for `white`, `black`, `red`,
@@ -104,13 +174,17 @@ cards                         suits, decks and zones of a card game
 
 ## reserves and actions
 
-```json
-"reserves": { "stone": 21, "cap": 1 },
-"actions": [
-  { "id": "place", "type": "place", "pieces": ["flat","wall","cap"], "source": "reserve" },
-  { "id": "move", "type": "move-stack", "carry_limit": "board-size",
-    "flatten": { "final_square_only": true, "alone_only": true } }
-]
+```yaml
+reserves: {stone: 21, cap: 1}
+actions:
+  - id: place
+    type: place
+    pieces: [flat, wall, cap]
+    source: reserve
+  - id: move
+    type: move-stack
+    carry_limit: board-size
+    flatten: {final_square_only: true, alone_only: true}
 ```
 
 **`place`** puts a piece on an empty square.
@@ -144,11 +218,17 @@ carried group is dropped first.
 straight moves must not capture but its diagonal moves may — declare steps as
 actions instead of per-piece movement:
 
-```json
-{ "id": "advance",  "type": "step", "pieces": ["pawn"], "directions": ["forward"],
-  "occupancy": "empty-only" },
-{ "id": "diagonal", "type": "step", "pieces": ["pawn"],
-  "directions": ["forward-left", "forward-right"], "occupancy": "capture-or-empty" }
+```yaml
+- id: advance
+  type: step
+  pieces: [pawn]
+  directions: [forward]
+  occupancy: empty-only
+- id: diagonal
+  type: step
+  pieces: [pawn]
+  directions: [forward-left, forward-right]
+  occupancy: capture-or-empty
 ```
 
 **`jump`** (grid boards): capture by hopping over an adjacent enemy piece onto
@@ -165,11 +245,15 @@ are removed. Notation: `c1xe3xg5`.
 
 The turn can also *start* with a restricted phase:
 
-```json
-"turn_order": {
-  "type": "round-robin", "seats": [1, 2],
-  "opening": { "plies": 2, "actions": ["place"], "pieces": ["flat"], "owner": "opponent" }
-}
+```yaml
+turn_order:
+  type: round-robin
+  seats: [1, 2]
+  opening:
+    plies: 2
+    actions: [place]
+    pieces: [flat]
+    owner: opponent
 ```
 
 `"pass_when_stuck": true` on `turn_order` skips a seat that has no legal move
@@ -194,7 +278,7 @@ adds a `bool` setup option, `pie-rule`, for the creator — whose check box
 starts at the game's own practice — and, for a game on the generic engine, the
 `swap` action when the rule is in play. A table that chooses otherwise plays a
 **derived game**, `<id>~pie` or `<id>~nopie` (the built-in `pieDeriver`, so a
-JSON game needs no Go code); choosing what the game does anyway keeps the
+declarative game needs no Go code); choosing what the game does anyway keeps the
 plain id. The two settled values, `"on"` and `"off"`, are what those derived
 documents carry, and `catalog.PieRuleOn` reads them. A declaration is refused
 where the rule cannot work: a game of other than two seats, a seat with a
@@ -207,10 +291,13 @@ first reply).
 
 ### slide (and compound moves)
 
-```json
-{ "id": "move", "type": "slide", "pieces": ["queen"],
-  "occupancy": "empty-only", "max_distance": 0,
-  "then": { "type": "shoot", "piece": "arrow" } }
+```yaml
+id: move
+type: slide
+pieces: [queen]
+occupancy: empty-only
+max_distance: 0
+then: {type: shoot, piece: arrow}
 ```
 
 A piece in `pieces` slides any distance (up to `max_distance` when set) along
@@ -227,13 +314,18 @@ a `piece` from the unlimited supply on any empty square reachable by a slide
 from the destination (the square just left counts as empty). Notation is
 `from-to/aim` (`d1-d5/f5`), structured moves carry `aim`, and the UI builds it
 as three clicks (piece, destination, target). Amazons is this
-and nothing else (`internal/games/classics/amazons.json`).
+and nothing else (`internal/games/classics/amazons.yaml`).
 
 ### custodian captures
 
-```json
-{ "id": "place", "type": "place", "pieces": ["stone"], "source": "supply",
-  "custodian": { "lengths": [2], "count_in": "captured" } }
+```yaml
+id: place
+type: place
+pieces: [stone]
+source: supply
+custodian:
+  lengths: [2]
+  count_in: captured
 ```
 
 After a placement or slide, along each direction a run of exactly `length`
@@ -246,9 +338,13 @@ piece draws from are shown as per-seat counters next to the player's name.
 
 ### leap
 
-```json
-{ "id": "move", "type": "leap", "pieces": ["blob"],
-  "max_distance": 2, "clone_distance": 1, "infect": true }
+```yaml
+id: move
+type: leap
+pieces: [blob]
+max_distance: 2
+clone_distance: 1
+infect: true
 ```
 
 A piece lands on an empty square at most `max_distance` board steps away
@@ -260,13 +356,22 @@ opposing piece adjacent to the landing square (Ataxx).
 
 ## win_condition
 
-```json
-"win_condition": { "type": "rules", "rules": [
-  { "id": "road", "type": "connect", "tag": "road",
-    "regions": [["left","right"],["top","bottom"]], "reason": "road" },
-  { "id": "flats", "type": "end", "when": ["reserve-empty","board-full"],
-    "decide": { "type": "most", "tag": "flat" }, "reason": "flat-win" }
-]}
+```yaml
+win_condition:
+  type: rules
+  rules:
+    - id: road
+      type: connect
+      tag: road
+      regions:
+        - [left, right]
+        - [top, bottom]
+      reason: road
+    - id: flats
+      type: end
+      when: [reserve-empty, board-full]
+      decide: {type: most, tag: flat}
+      reason: flat-win
 ```
 
 Rules are evaluated in order after every move; the first that fires decides.
@@ -304,35 +409,47 @@ Rules are evaluated in order after every move; the first that fires decides.
 * `reason` is stored as the game's `end_reason`.
 
 `"type": "none"` means free play (no win condition); `"type": "callback"` defers to a
-Go `GameCallbacks.CheckWinner` for rules JSON cannot express.
+Go `GameCallbacks.CheckWinner` for rules a definition cannot express.
 
 ## variants
 
-```json
-"variants": [
-  { "id": "tak-3x3", "name": "Tak (3×3)",
-    "patch": { "board": {"generator": {"width": 3, "height": 3}},
-               "reserves": {"stone": 10, "cap": 0} } }
-]
+```yaml
+variants:
+  - id: tak-3x3
+    name: Tak (3×3)
+    patch:
+      board:
+        generator: {width: 3, height: 3}
+      reserves: {stone: 10, cap: 0}
 ```
 
-`patch` is an RFC 7386 JSON merge patch against the base document; register
+`patch` is an RFC 7386 JSON merge patch against the base document (written
+in YAML like the rest: `null` removes a field); register
 with `Catalog.RegisterModule` and every variant becomes a game of its own
 (grouped by `family` in the lobby).
 
 ## options
 
-```json
-"options": [
-  { "id": "factions", "label": "Factions", "kind": "seat-choice",
-    "text": "Which cult sits in each seat.",
-    "choices": [ {"id": "gc", "label": "Great Cthulhu", "color": "green"}, … ],
-    "default": ["gc", "cc", "bg", "ys", "ww"] },
-  { "id": "high-priests", "label": "High Priests", "kind": "bool", "default": false },
-  { "id": "book-swaps", "label": "Neutral spellbook instead of a timer book", "kind": "book-swap",
-    "slots":   [ {"id": "bg", "label": "Ghroth"}, … ],
-    "choices": [ {"id": "shrivel", "label": "Shriveling"}, … ] }
-]
+```yaml
+options:
+  - id: factions
+    label: Factions
+    kind: seat-choice
+    text: Which cult sits in each seat.
+    choices:
+      - {id: gc, label: Great Cthulhu, color: green}
+      # … one per cult
+    default: [gc, cc, bg, ys, ww]
+  - {id: high-priests, label: High Priests, kind: bool, default: false}
+  - id: book-swaps
+    label: Neutral spellbook instead of a timer book
+    kind: book-swap
+    slots:
+      - {id: bg, label: Ghroth}
+      # …
+    choices:
+      - {id: shrivel, label: Shriveling}
+      # …
 ```
 
 Options describe the choices of a creator for clients: `bool` is a check box,
@@ -342,7 +459,7 @@ entry whose cult (the slot's `id`) sits at the table. The values travel in the c
 are turned into a **derived game**, `<id>~<suffix>`, by the game's
 `catalog.Deriver` — a ruleset implements `Derive`/`FromSuffix` and returns a
 merge patch of this document; see
-[ADR 0028](decisions/0028-derived-games-and-setup-options.md). JSON-only games
+[ADR 0028](decisions/0028-derived-games-and-setup-options.md). Games without Go code
 have no `Deriver`: a create call that passes `options` for one is refused with
 400 (*invalid setup options*).
 
@@ -360,24 +477,25 @@ have no `Deriver`: a create call that passes `options` for one is refused with
 
 Some games need more than declarative actions: hidden choices, dice,
 per-unit conditions, turns made of many decisions. Such a game keeps its
-JSON document for what *is* data — board, seats, pieces, regions, text — and
+definition for what *is* data — board, seats, pieces, regions, text — and
 says who implements the rules:
 
-```json
-{
-  "engine": "ruleset",
-  "params": { "vp_to_win": 5, "momentum_cap": 5 },
-  "turn_order": { "type": "round-robin", "seats": [1, 2] },
-  "win_condition": { "type": "ruleset" },
-  "display": {
-    "tints":  { "green": { "label": "Overgrowth", "color": "#5f9e5b", "glyph": "♣", "text": "…" } },
-    "badges": { "fatigued": { "label": "Fatigued", "color": "#f4f1e8", "text": "…" } }
-  }
-}
+```yaml
+engine: ruleset
+params: {vp_to_win: 5, momentum_cap: 5}
+turn_order:
+  type: round-robin
+  seats: [1, 2]
+win_condition: {type: ruleset}
+display:
+  tints:
+    green: {label: Overgrowth, color: '#5f9e5b', glyph: ♣, text: …}
+  badges:
+    fatigued: {label: Fatigued, color: '#f4f1e8', text: …}
 ```
 
 The module registers a Go value implementing `state.Ruleset` next to the
-JSON: `catalog.Module{ID, Definition, Rules: courtfall.New()}`. `actions` and
+definition: `catalog.Module{ID, Definition, Rules: courtfall.New()}`. `actions` and
 `win_condition.rules` are not used. A ruleset
 
 * generates and validates every decision (`Legal`, `Apply`) — a turn is a
@@ -399,19 +517,35 @@ A board of irregular areas — continents, oceans, a wrapped sea — instead of 
 grid. Positions are declared with their graph edges, so movement and
 adjacency are ordinary; the polygons only say how to draw them:
 
-```json
-"board": {
-  "type": "explicit",
-  "style": "areas",
-  "canvas": { "width": 1000, "height": 600 },
-  "positions": [
-    { "id": "asia", "name": "Asia", "anchor": [800, 140], "tags": ["land", "glyph-dragon"],
-      "polygons": [[[690,60],[842,60],[915,245],[690,230]]] },
-    { "id": "north-pacific", "name": "North Pacific", "tags": ["ocean"],
-      "polygons": [[[0,60],[130,60],[130,320],[0,320]], [[915,60],[1000,60],[1000,320],[915,320]]] }
-  ],
-  "edges": [{ "from": "asia", "to": "north-pacific" }]
-}
+```yaml
+board:
+  type: explicit
+  style: areas
+  canvas: {width: 1000, height: 600}
+  positions:
+    - id: asia
+      name: Asia
+      anchor: [800, 140]
+      tags: [land, glyph-dragon]
+      polygons:
+        - - [690, 60]
+          - [842, 60]
+          - [915, 245]
+          - [690, 230]
+    - id: north-pacific
+      name: North Pacific
+      tags: [ocean]
+      polygons:
+        - - [0, 60]
+          - [130, 60]
+          - [130, 320]
+          - [0, 320]
+        - - [915, 60]
+          - [1000, 60]
+          - [1000, 320]
+          - [915, 320]
+  edges:
+    - {from: asia, to: north-pacific}
 ```
 
 * `polygons` — one or more outlines (`[x, y]` corners, at least three) on the
@@ -424,11 +558,11 @@ adjacency are ordinary; the polygons only say how to draw them:
 
 ## Rules guide (`guide`)
 
-```json
-"guide": { "tabs": [
-  { "id": "overview", "title": "Overview", "file": "guide/overview.md" },
-  { "id": "battle",   "title": "Battle",   "file": "guide/battle.md" }
-] }
+```yaml
+guide:
+  tabs:
+    - {id: overview, title: Overview, file: guide/overview.md}
+    - {id: battle, title: Battle, file: guide/battle.md}
 ```
 
 The files are embedded with the module (`catalog.Module.Assets`, an `fs.FS`;
@@ -447,22 +581,28 @@ ruleset that draws its own.
 A card game defines its cards in `cards` (see ADR 0043). A deck is a
 template of every suit × every rank, plus explicit cards:
 
-```json
-"cards": {
-  "suits": { "red": { "label": "Red", "color": "#c0392b", "symbol": "●" } },
-  "suit_order": ["red", "blue"],
-  "decks": { "main": {
-    "ranks": [ { "id": "1", "value": 1, "count": 3 }, { "id": "2", "value": 2 } ],
-    "extra": [ { "id": "joker", "label": "Joker", "text": "Wild", "symbols": ["★"], "count": 2 } ],
-    "remove": ["red-2"]
-  } },
-  "back": { "color": "#5b4a8a", "text": "NYET!" },
-  "zones": [
-    { "id": "deck",  "scope": "table", "visibility": "none",  "layout": "stack", "counts": true },
-    { "id": "hand",  "scope": "seat",  "visibility": "owner", "layout": "fan" },
-    { "id": "trick", "scope": "table", "visibility": "flag",  "layout": "row" }
-  ]
-}
+```yaml
+cards:
+  suits:
+    red: {label: Red, color: '#c0392b', symbol: ●}
+  suit_order: [red, blue]
+  decks:
+    main:
+      ranks:
+        - {id: "1", value: 1, count: 3}
+        - {id: "2", value: 2}
+      extra:
+        - id: joker
+          label: Joker
+          text: Wild
+          symbols: [★]
+          count: 2
+      remove: [red-2]
+  back: {color: '#5b4a8a', text: NYET!}
+  zones:
+    - {id: deck, scope: table, visibility: none, layout: stack, counts: true}
+    - {id: hand, scope: seat, visibility: owner, layout: fan}
+    - {id: trick, scope: table, visibility: flag, layout: row}
 ```
 
 * A card type is `<suit>-<rank>` (or an extra card's `id`); a `count` above one
@@ -486,7 +626,7 @@ template of every suit × every rank, plus explicit cards:
   `static/js/cards.js` (the card table, with flip and deal animations) and a
   generic board of choices (`view.grid`).
 
-## What JSON can't express
+## What a definition can't express
 
 Anything outside the above — hidden information, randomness, rules that depend
 on long position history — needs either a new action type in

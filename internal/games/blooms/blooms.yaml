@@ -1,0 +1,69 @@
+# yaml-language-server: $schema=../../../docs/game-definition.schema.json
+id: blooms
+name: Blooms
+description: "Nick Bentley's colourful Go-like game on a hexagonal board: place one or two stones of different colours, and capture every enemy bloom you fence in."
+version: 0.2.0
+designers: [Nick Bentley]
+engine: ruleset
+pie_rule: optional
+rules:
+  - Blooms is played on a hexagonal board (5 cells per side here; 4 and 6 are variants). Player 1 owns red and yellow stones, player 2 blue and black.
+  - A bloom is a connected group of stones of one colour (a lone stone counts). A bloom is fenced when no empty cell touches any of its stones.
+  - Player 1 starts by placing one stone of either of their colours. After that, on your turn you place one or two stones on empty cells; two stones must be of different colours. You may place just one.
+  - When your turn ends, you capture every fenced enemy bloom (removing it and counting its stones). Your own fenced blooms are not captured on your turn; they stay until the end of your opponent's turn, so a fenced bloom of yours can still be freed — or captured.
+  - 'The first player to capture the target number of enemy stones wins: 20 on this board (15 on base 4, 25 on base 6). Sacrificing stones to set up a bigger capture is the heart of the game.'
+  - 'Optional (chosen when the game is made): with the pie rule, the second player may swap sides instead of answering the opening stone — the players change seats and the first player answers their own opening from the second seat.'
+  - 'Interpretation: the game is drawn or decided on captures after 500 plies.'
+params: {capture_target: 20, max_plies: 500}
+guide:
+  tabs:
+    - {id: rules, title: Rules, file: rules.md}
+preview:
+  - {position: e5, piece: red, color: red}
+  - {position: f5, piece: red, color: red}
+  - {position: d6, piece: yellow, color: yellow}
+  - {position: g4, piece: yellow, color: yellow}
+  - {position: e4, piece: blue, color: blue}
+  - {position: f4, piece: blue, color: blue}
+  - {position: e6, piece: blue, color: blue}
+  - {position: d5, piece: black, color: black}
+  - {position: g5, piece: black, color: black}
+board:
+  generator: {type: hexhex, size: 5}
+seats:
+  - {seat: 1, color: red, label: Red & Yellow}
+  - {seat: 2, color: blue, label: Blue & Black}
+extra_colors: [yellow, black]
+pieces:
+  red: {label: Red stone, code: R, shape: disc, color: red}
+  yellow: {label: Yellow stone, code: Y, shape: disc, color: yellow}
+  blue: {label: Blue stone, code: B, shape: disc, color: blue}
+  black: {label: Black stone, code: K, shape: disc, color: black}
+turn_order:
+  type: round-robin
+  seats: [1, 2]
+win_condition: {type: ruleset}
+display:
+  no_hands: true
+  tints:
+    last:
+      label: Last turn
+      color: '#c8dfa8'
+      text: Where stones were placed on the last turn (and this one).
+    fenced:
+      label: Fenced bloom
+      color: '#e8a898'
+      text: "A bloom with no empty cell beside it: its owner's opponent captures it when their turn ends."
+variants:
+  - id: blooms-4
+    name: Blooms (base 4)
+    patch:
+      board:
+        generator: {size: 4}
+      params: {capture_target: 15}
+  - id: blooms-6
+    name: Blooms (base 6)
+    patch:
+      board:
+        generator: {size: 6}
+      params: {capture_target: 25}

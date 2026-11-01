@@ -1,7 +1,7 @@
 # Game catalog
 
 Generated from the registered definitions by `go run scripts/gendocs/main.go`;
-each game is one JSON document under `internal/games`. See [dsl.md](dsl.md) for the
+each game is one definition under `internal/games`. See [dsl.md](dsl.md) for the
 vocabulary and [mcp.md](mcp.md) for the training side (planes, action IDs).
 
 | Game | Version | Board | Seats | Actions | Ends by | Variants |
@@ -35,6 +35,6 @@ vocabulary and [mcp.md](mcp.md) for the training side (planes, action IDs).
 
 Variants are separate games derived from the base document by a JSON merge patch.
 
-**Version** is the game implementation's semantic version (`version` in its JSON). Raise it with
+**Version** is the game implementation's semantic version (`version` in its definition). Raise it with
 every change to the game's definition or Go code; a version below 1.0.0 is shown as a Beta in the
 list of games. The server records each version it has run in the `game_versions` table.

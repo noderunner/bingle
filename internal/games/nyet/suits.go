@@ -5,7 +5,7 @@ import "strconv"
 // The deck has four colours and the players see four classic suits. The
 // engine, the saved games and the notation keep the colours' own names (red-9,
 // nyet:trump:blue), so that nothing stored changes; everything a player reads
-// says the suit instead. The pairing is fixed, and cards.suits of nyet.json
+// says the suit instead. The pairing is fixed, and cards.suits of nyet.yaml
 // gives each suit its symbol and colour to match.
 var suitOfColour = map[string]string{"red": "hearts", "blue": "spades", "yellow": "diamonds", "green": "clubs"}
 

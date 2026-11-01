@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=../../../docs/game-definition.schema.json
+id: amazons
+name: Amazons
+description: Move a queen, then shoot an arrow that burns a square for good. The last player able to move wins.
+version: 0.3.0
+designers: [Walter Zamkauskas]
+rules:
+  - 'Each side has four queens (Amazons). A turn has two parts: slide one of your queens like a chess queen — any distance in a straight line, orthogonally or diagonally, without jumping — and then shoot an arrow from where it landed, along any straight line, onto an empty square.'
+  - 'Arrows stay: that square is blocked for everyone from now on, and nothing can pass over it. The square your queen just left counts as empty for the shot.'
+  - The first player unable to move a queen loses; the board gradually fills up with arrows until someone is walled in.
+  - Moves are written from-to/arrow, e.g. d1-d5/f5.
+  - 'Optional (chosen when the game is made): with the pie rule, the second player may swap sides on their first turn instead of replying; the players change seats and the opening move changes hands with them.'
+guide:
+  tabs:
+    - {id: rules, title: Rules, file: rules.md}
+board:
+  generator: {type: grid, width: 10, height: 10, adjacency: orthogonal8, labels: algebraic}
+seats:
+  - {seat: 1, color: white, label: White}
+  - {seat: 2, color: black, label: Black}
+pieces:
+  queen: {label: Amazon, shape: cap, code: Q}
+  arrow: {label: Arrow, shape: cross, code: x}
+setup:
+  - {position: a4, piece: queen, color: white}
+  - {position: d1, piece: queen, color: white}
+  - {position: g1, piece: queen, color: white}
+  - {position: j4, piece: queen, color: white}
+  - {position: a7, piece: queen, color: black}
+  - {position: d10, piece: queen, color: black}
+  - {position: g10, piece: queen, color: black}
+  - {position: j7, piece: queen, color: black}
+pie_rule: optional
+turn_order:
+  type: round-robin
+  seats: [1, 2]
+actions:
+  - id: move
+    type: slide
+    label: Move an Amazon and shoot
+    pieces: [queen]
+    then: {type: shoot, piece: arrow}
+win_condition:
+  type: rules
+  rules:
+    - id: stuck
+      type: end
+      when: [no-legal-moves]
+      decide: {type: mover-wins}
+      reason: no-moves
+variants:
+  - id: amazons-6
+    name: Amazons (6×6)
+    patch:
+      board:
+        generator: {width: 6, height: 6}
+      setup:
+        - {position: a3, piece: queen, color: white}
+        - {position: d1, piece: queen, color: white}
+        - {position: c6, piece: queen, color: black}
+        - {position: f4, piece: queen, color: black}

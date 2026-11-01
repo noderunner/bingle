@@ -5,7 +5,7 @@
 // The rules are written in Go (a state.Ruleset): four cults spend Power on
 // recruiting, moving, summoning and battling, gather Power from Cultists and
 // Gates, score Doom for the Gates they control, earn spellbooks and race to
-// 30 Doom with all six books. cthulhuwars.json describes the board, the
+// 30 Doom with all six books. definition/cthulhuwars.yaml describes the board, the
 // pieces and the legend; guide/ holds the long-form rules shown in the
 // rules window.
 package cthulhuwars
@@ -15,12 +15,17 @@ import (
 	"embed"
 	"encoding/binary"
 	"io/fs"
+	"sync"
 
 	"github.com/noderunner/bingle/internal/engine/catalog"
+	"github.com/noderunner/bingle/internal/engine/dsl"
 )
 
-//go:embed cthulhuwars.json
-var definitionJSON []byte
+//go:embed definition
+var definitionFS embed.FS
+
+// definition is the definition as JSON, converted once.
+var definition = sync.OnceValue(func() []byte { return dsl.MustLoad(definitionFS, "definition/cthulhuwars.yaml") })
 
 //go:embed guide
 var guideFS embed.FS
@@ -31,7 +36,7 @@ func Module() catalog.Module {
 	if err != nil {
 		panic(err)
 	}
-	return catalog.Module{ID: "cthulhu-wars", Definition: definitionJSON, Rules: New(), Assets: sub}
+	return catalog.Module{ID: "cthulhu-wars", Definition: definition(), Rules: New(), Assets: sub}
 }
 
 // freshSeed draws a dice generator state from the system's entropy.

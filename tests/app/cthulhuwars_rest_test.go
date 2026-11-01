@@ -118,8 +118,8 @@ func TestGuideAssetsAreServedInertAndSafely(t *testing.T) {
 
 	for _, path := range []string{
 		"/api/game-defs/cthulhu-wars/assets/nope.png",
-		"/api/game-defs/cthulhu-wars/assets/../cthulhuwars.json",
-		"/api/game-defs/cthulhu-wars/assets/..%2Fcthulhuwars.json",
+		"/api/game-defs/cthulhu-wars/assets/../definition/cthulhuwars.yaml",
+		"/api/game-defs/cthulhu-wars/assets/..%2Fdefinition%2Fcthulhuwars.yaml",
 		"/api/game-defs/cthulhu-wars/assets/%2e%2e/%2e%2e/etc/passwd",
 		"/api/game-defs/tak/assets/board.svg",
 		"/api/game-defs/no-such-game/assets/board.svg",

@@ -28,7 +28,7 @@ set to its path; without one they are skipped. `make test-short` skips the slowe
 4. **Document it**: a user-visible change goes in the relevant file under `docs/`; a decision that
    was hard or that someone will ask about later gets an ADR in `docs/decisions/`
    (copy the newest one for the shape, and add it to the index).
-5. **Version it**: change a game's definition or Go code and you raise its `version` in its JSON
+5. **Version it**: change a game's definition or Go code and you raise its `version` in its definition
    (patch for a fix, minor for a new rule or option; a game stays below 1.0.0 until its owner
    calls it finished). A change to the engine or platform raises `internal/version`.
 6. **Say it in the changelog**: add what changed, for players, to the newest entry of
@@ -39,9 +39,9 @@ set to its path; without one they are skipped. `make test-short` skips the slowe
 
 ## Adding a game
 
-Most games are one JSON file: board, pieces, actions, win rules. Start from
-`internal/games/classics/tictactoe.json` and read [docs/dsl.md](docs/dsl.md). Games with chance,
-hidden information or rules the JSON cannot say are a Go `state.Ruleset` behind the same API
+Most games are one YAML file: board, pieces, actions, win rules. Start from
+`internal/games/classics/tictactoe.yaml` and read [docs/dsl.md](docs/dsl.md). Games with chance,
+hidden information or rules a definition cannot say are a Go `state.Ruleset` behind the same API
 (ADR 0025; Courtfall and Hive are good examples). Every game needs:
 
 - a definition with `version`, `designers`, `publisher` (when known) and a short `description`;

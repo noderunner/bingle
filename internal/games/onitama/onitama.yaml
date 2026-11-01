@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=../../../docs/game-definition.schema.json
+id: onitama
+name: Onitama
+description: 'A two-player martial-arts game on a 5×5 board: five Move cards decide how your pieces may move, and the card you use is passed on to your opponent.'
+version: 0.1.0
+designers: [Shimpei Sato]
+publisher: Arcane Wonders
+engine: ruleset
+rules:
+  - 'Each player has a Master and four students on opposite home ranks, the Master on the Temple Arch (the middle square, c1 for Red and c5 for Blue). Sixteen Move cards exist; five are dealt at random: two to each player, face up, and one to the side. Red always starts (the printed game lets the stamp on the side card decide).'
+  - Win by capturing your opponent's Master (the Way of the Stone), or by moving your own Master onto your opponent's Temple Arch (the Way of the Stream).
+  - On your turn choose one of your two cards and move one of your pieces as the card shows (the black square is the piece, the coloured squares where it may go; Blue's cards are read upside down). Pieces may jump over others; you may not move off the board or onto your own piece. Landing on an enemy piece captures it.
+  - 'Then swap: the card you used goes to the side, and you take the card that was waiting there. You may use it from your next turn.'
+  - You must move if you can. If no card lets you move any piece, you pass, but you still choose a card and exchange it.
+params: {max_plies: 300}
+guide:
+  tabs:
+    - {id: rules, title: Rules, file: rules.md}
+    - {id: cards, title: Cards, file: cards.md}
+board:
+  generator: {type: grid, width: 5, height: 5, adjacency: orthogonal8, labels: algebraic}
+  style: squares
+  regions:
+    arch-red: [c1]
+    arch-blue: [c5]
+seats:
+  - {seat: 1, color: red, label: Red}
+  - {seat: 2, color: blue, label: Blue}
+pieces:
+  master: {label: Master, code: M, shape: king}
+  student: {label: Student, code: S, shape: pawn}
+turn_order:
+  type: round-robin
+  seats: [1, 2]
+win_condition: {type: ruleset}
+display:
+  no_hands: true
+  tints:
+    arch-red:
+      label: Red's Temple Arch
+      color: '#e3a39a'
+      text: Blue's Master wins by reaching this square.
+    arch-blue:
+      label: Blue's Temple Arch
+      color: '#9fb6e0'
+      text: Red's Master wins by reaching this square.
+    last:
+      label: Last move
+      color: '#b9d6a0'
+      text: Where the last piece started and ended.

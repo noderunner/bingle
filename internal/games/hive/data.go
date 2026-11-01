@@ -7,7 +7,7 @@ import (
 	"github.com/noderunner/bingle/internal/engine/state"
 )
 
-// Insect kinds (the keys of "pieces" in hive.json).
+// Insect kinds (the keys of "pieces" in hive.yaml).
 const (
 	kQueen = iota
 	kBeetle

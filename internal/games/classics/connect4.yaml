@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=../../../docs/game-definition.schema.json
+id: connect-four
+name: Connect Four
+description: Drop discs into a seven-column grid; they fall to the lowest free square. The first player to line up four of their own discs in a row, a column or a diagonal wins.
+version: 0.3.0
+designers: [Howard Wexler, Ned Strongin]
+publisher: Hasbro
+rules:
+  - Players alternate dropping a disc into any column that is not full; it falls to the lowest empty square.
+  - The first player to get four of their discs in a row — horizontally, vertically or diagonally — wins.
+  - If the board fills up with no line, the game is a draw.
+  - 'Optional (chosen when the game is made): with the pie rule, the second player may swap sides on their first turn instead of replying; the players change seats and the opening move changes hands with them.'
+guide:
+  tabs:
+    - {id: rules, title: Rules, file: rules.md}
+preview:
+  - {position: a1, piece: disc, color: red}
+  - {position: b2, piece: disc, color: red}
+  - {position: c1, piece: disc, color: red}
+  - {position: c2, piece: disc, color: red}
+  - {position: d3, piece: disc, color: red}
+  - {position: d4, piece: disc, color: red}
+  - {position: e1, piece: disc, color: red}
+  - {position: a2, piece: disc, color: yellow}
+  - {position: b1, piece: disc, color: yellow}
+  - {position: b3, piece: disc, color: yellow}
+  - {position: c3, piece: disc, color: yellow}
+  - {position: d1, piece: disc, color: yellow}
+  - {position: d2, piece: disc, color: yellow}
+  - {position: e2, piece: disc, color: yellow}
+  - {position: f1, piece: disc, color: yellow}
+board:
+  generator: {type: grid, width: 7, height: 6, adjacency: orthogonal4, labels: algebraic}
+  style: squares
+seats:
+  - {seat: 1, color: red, label: Red}
+  - {seat: 2, color: yellow, label: Yellow}
+pieces:
+  disc: {label: Disc, shape: disc}
+pie_rule: optional
+turn_order:
+  type: round-robin
+  seats: [1, 2]
+actions:
+  - id: drop
+    type: place
+    label: Drop a disc
+    pieces: [disc]
+    source: supply
+    gravity: S
+win_condition:
+  type: rules
+  rules:
+    - {id: line, type: line, length: 4, reason: line}
+    - id: full
+      type: end
+      when: [board-full]
+      decide: {type: draw}
+      reason: draw

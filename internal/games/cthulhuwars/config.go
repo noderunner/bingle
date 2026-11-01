@@ -186,7 +186,7 @@ func seatOfKey(game *catalog.CompiledGame, k string) int {
 
 // --- setup options and derived games ------------------------------------------------
 
-// The options a game takes (declared in cthulhuwars.json under "options").
+// The options a game takes (declared in definition/cthulhuwars.yaml under "options").
 const (
 	optFactions    = "factions"
 	optHighPriests = "high-priests"

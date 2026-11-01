@@ -31,6 +31,11 @@ func main() {
 	lg := logging.New(os.Stderr, slog.LevelInfo, logging.FormatText)
 	slog.SetDefault(lg)
 
+	// "bingle dsl …" works on definition files and needs no configuration.
+	if len(os.Args) > 1 && os.Args[1] == "dsl" {
+		os.Exit(dslCommand(os.Args[2:], os.Stdin, os.Stdout, os.Stderr))
+	}
+
 	cfg, err := config.Load()
 	if err != nil {
 		lg.Error("the configuration was refused", "err", err)

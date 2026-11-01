@@ -5,20 +5,25 @@
 // moving your own Master onto their Temple Arch.
 //
 // The rules are a Go state.Ruleset (a turn names a card, a piece and a
-// square, and exchanges cards), with onitama.json describing board, seats and
+// square, and exchanges cards), with onitama.yaml describing board, seats and
 // pieces. The game has no secrets; only the deal at the start is random.
 package onitama
 
 import (
-	_ "embed"
+	"embed"
+	"sync"
 
 	"github.com/noderunner/bingle/internal/engine/catalog"
+	"github.com/noderunner/bingle/internal/engine/dsl"
 )
 
-//go:embed onitama.json
-var definitionJSON []byte
+//go:embed onitama.yaml
+var definitionFS embed.FS
+
+// definition is the definition as JSON, converted once.
+var definition = sync.OnceValue(func() []byte { return dsl.MustLoad(definitionFS, "onitama.yaml") })
 
 // Module returns Onitama's catalog.Module.
 func Module() catalog.Module {
-	return catalog.Module{ID: "onitama", Definition: definitionJSON, Rules: New(), Assets: newGuideAssets()}
+	return catalog.Module{ID: "onitama", Definition: definition(), Rules: New(), Assets: newGuideAssets()}
 }

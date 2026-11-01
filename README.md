@@ -18,14 +18,14 @@ no CGO: `go build` and run.
 > **Status: beta.** Every game is still below version 1.0 and is marked *Beta* in the
 > game list. Expect rough edges and changes to the games' rules code and the API.
 
-Games are declared in **JSON** (a board graph, pieces, actions, win rules); the
+Games are declared in **YAML** (a board graph, pieces, actions, win rules); the
 engine supplies the move generation, validation, notation and the UI supplies
 click-to-move for free.
 
 | Game | Definition |
 |---|---|
-| **Tak** 3×3 – 8×8 (stacks, walls, capstone, roads, PTN) | `internal/games/tak/tak.json` |
-| **Courtfall** (hex arena skirmish: terrain draft, five Courts, secret dice splits, Momentum, Clear Turns — rules in Go, legend in JSON) | `internal/games/courtfall/` ([rules notes](docs/courtfall.md)) |
+| **Tak** 3×3 – 8×8 (stacks, walls, capstone, roads, PTN) | `internal/games/tak/tak.yaml` |
+| **Courtfall** (hex arena skirmish: terrain draft, five Courts, secret dice splits, Momentum, Clear Turns — rules in Go, legend in YAML) | `internal/games/courtfall/` ([rules notes](docs/courtfall.md)) |
 | **Fist** (the game from *The Verdigris Pawn*: pinning with allies, jump chains, the mage's Empower, a neutral pawn both sides can seize — rules in Go) | `internal/games/fist/` ([ADR 0036](docs/decisions/0036-fist-one-move-is-one-turn.md)) |
 | **Onitama** (5×5 martial-arts duel: the sixteen Move cards, the card exchange, the Ways of the Stone and the Stream — rules in Go) | `internal/games/onitama/` ([ADR 0037](docs/decisions/0037-onitama-cards-in-the-view.md)) |
 | **Blooms** (Nick Bentley's Go-like game on a hex board: two colours each, one or two stones a turn, capture fenced blooms; bases 4, 5, 6 — rules in Go) | `internal/games/blooms/` ([ADR 0038](docs/decisions/0038-blooms-two-stage-turns.md)) |
@@ -35,7 +35,7 @@ click-to-move for free.
 | **Nyet!** (Stefan Dorra's trick-taking game: cross choices off a board to set the round's terms, pick teams, take tricks and loot; 2–5 players, the four classic suits, a player for each animal — the first game on the card framework) | `internal/games/nyet/`, `internal/engine/cards/` ([ADR 0043](docs/decisions/0043-card-games.md)) |
 | **Cthulhu Wars** (core set with the Windwalker, Sleeper, Opener of the Way and Tcho-Tcho cults, the High Priests, the Azathoth neutral spellbooks and Monsters, the Dreamlands and Beyond Time and Space Loyalty Cards, the Hound of Tindalos and five Independent Great Old Ones, three to five players, simplified world map: Power, Gates, Doom, spellbooks, dice battles, hidden Elder Signs — rules in Go, map and rules guide as data) | `internal/games/cthulhuwars/` ([rules notes](docs/cthulhu-wars.md)) |
 | **Mycelium** (Miles Stevenson's game of two fungal colonies on a hex board: place nodes, take the centre to start a confluence, and spread clusters by spores and hyphae to convert the other colony — rules in Go; still being playtested) | `internal/games/mycelium/` ([ADR 0066](docs/decisions/0066-mycelium.md)) |
-| Go (9×9–19×19), Reversi, Hex, Havannah, Yavalath, Amazons, Ataxx, Pente, Brandubh, English Draughts, Breakthrough, Connect Four, Gomoku, Tic-Tac-Toe | `internal/games/classics/*.json` |
+| Go (9×9–19×19), Reversi, Hex, Havannah, Yavalath, Amazons, Ataxx, Pente, Brandubh, English Draughts, Breakthrough, Connect Four, Gomoku, Tic-Tac-Toe | `internal/games/classics/*.yaml` |
 
 ![The lobby: game gallery, puzzles, bots, time limits](docs/screenshots/lobby.png)
 
@@ -99,9 +99,9 @@ complete setup.
 ```
 main.go                   the server's entry point
 internal/
-  engine/                 the rules machinery: dsl (the JSON format), catalog (compiles a
+  engine/                 the rules machinery: dsl (the definition format), catalog (compiles a
                           definition), board, primitives, state (positions, moves, rulesets), cards
-  games/<name>/           one package per game: its JSON definition, Go rules where it needs
+  games/<name>/           one package per game: its YAML definition, Go rules where it needs
                           them, and its rules guide (Markdown + SVG)
   session/                games as the rest of the system sees them: create, join, move, undo,
                           bots, reactions, chat, voice, notifications
@@ -154,10 +154,10 @@ docs/                     the manual; docs/decisions has an ADR for each big dec
 
 ## Adding a game
 
-Write a JSON document (start from `classics/tictactoe.json` — about 40 lines),
+Write a YAML definition (start from `classics/tictactoe.yaml` — about 30 lines),
 embed it in a package with `catalog.Module`, and register it in
-`internal/app/app.go`. See [docs/dsl.md](docs/dsl.md). Rules JSON can't
-express go in a Go ruleset (`"engine": "ruleset"`, ADR 0025 — Courtfall and Cthulhu Wars)
+`internal/app/app.go`. See [docs/dsl.md](docs/dsl.md). Rules a definition
+can't express go in a Go ruleset (`"engine": "ruleset"`, ADR 0025 — Courtfall and Cthulhu Wars)
 or a new engine action type (ADR 0022 describes how `slide` and `leap` were
 added).
 
@@ -178,7 +178,7 @@ More helpers: `go run scripts/genpuzzles/main.go` (the proven puzzle set),
 `python3 scripts/guide_diagrams.py` (the diagrams in the rules guides).
 
 Contributions are welcome: see [CONTRIBUTING.md](CONTRIBUTING.md) — adding a game, fixing a bug,
-improving a rules page. Each game carries a version in its JSON (`version`): raise it when you
+improving a rules page. Each game carries a version in its definition (`version`): raise it when you
 change the game. The engine has a version of its own in `internal/version`.
 
 Docs: [architecture](docs/architecture.md) · [roadmap & status](docs/roadmap.md) ·
@@ -192,7 +192,7 @@ Bingle is released under the [MIT License](LICENSE).
 
 The games are independent implementations of published rules. Their names, art and designs belong
 to their designers and publishers, who are credited in each game's information (`designers` and
-`publisher` in its JSON) and are not affiliated with this project. In particular, Cthulhu Wars is a
+`publisher` in its definition) and are not affiliated with this project. In particular, Cthulhu Wars is a
 product of Petersen Games; this is an unofficial fan implementation for private play, and its
 sigil drawings and map layouts were traced or drawn from pictures on the Cthulhu Wars wiki and
 other fan sites. If you are a rights holder and would like something changed or removed, please

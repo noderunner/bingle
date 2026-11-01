@@ -1,8 +1,10 @@
 package dsl
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"strings"
 )
 
@@ -34,9 +36,17 @@ func Parse(data []byte) (*GameDefinition, error) {
 		return nil, fmt.Errorf("dsl: parse game definition: %w", err)
 	}
 
+	// Unknown fields are refused: a misspelled field would otherwise be
+	// ignored without a word. Load reports the same mistake with its file
+	// and line; this catches definitions that reach the engine another way.
 	var def GameDefinition
-	if err := json.Unmarshal(data, &def); err != nil {
+	dec := json.NewDecoder(bytes.NewReader(data))
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(&def); err != nil {
 		return nil, fmt.Errorf("dsl: parse game definition: %w", err)
+	}
+	if _, err := dec.Token(); err != io.EOF {
+		return nil, fmt.Errorf("dsl: parse game definition: text after the definition")
 	}
 
 	if err := validateRequiredFields(raw, &def); err != nil {

@@ -6,7 +6,7 @@
 // and the round is played as a trick-taking game with trumps, super trumps
 // and loot.
 //
-// It is the first game built on the card framework: nyet.json defines the
+// It is the first game built on the card framework: nyet.yaml defines the
 // deck (four colours, thirteen ranks, three 1s of each) and the zones of the
 // table in the DSL's "cards" section, and the rules are a Go state.Ruleset
 // that keeps its cards in a cards.Table, so hands are private, the trick is a
@@ -15,14 +15,18 @@ package nyet
 
 import (
 	"embed"
-	_ "embed" // nyet.json
 	"io/fs"
+	"sync"
 
 	"github.com/noderunner/bingle/internal/engine/catalog"
+	"github.com/noderunner/bingle/internal/engine/dsl"
 )
 
-//go:embed nyet.json
-var definitionJSON []byte
+//go:embed nyet.yaml
+var definitionFS embed.FS
+
+// definition is the definition as JSON, converted once.
+var definition = sync.OnceValue(func() []byte { return dsl.MustLoad(definitionFS, "nyet.yaml") })
 
 //go:embed guide
 var guideFS embed.FS
@@ -33,5 +37,5 @@ func Module() catalog.Module {
 	if err != nil {
 		panic(err)
 	}
-	return catalog.Module{ID: "nyet", Definition: definitionJSON, Rules: New(), Assets: sub}
+	return catalog.Module{ID: "nyet", Definition: definition(), Rules: New(), Assets: sub}
 }

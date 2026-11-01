@@ -5,21 +5,25 @@
 // last open area is closed the player who owns the most squares wins.
 //
 // The rules are a Go state.Ruleset (a turn is a single decision: a move with
-// its fence, an added piece or a pass); fendo.json describes the board, the
+// its fence, an added piece or a pass); fendo.yaml describes the board, the
 // seats and the pieces, and carries the 9×9 and 11×11 boards as variants. The
 // game has no secrets and no chance.
 package fendo
 
 import (
 	"embed"
-	_ "embed" // the definition
 	"io/fs"
+	"sync"
 
 	"github.com/noderunner/bingle/internal/engine/catalog"
+	"github.com/noderunner/bingle/internal/engine/dsl"
 )
 
-//go:embed fendo.json
-var definitionJSON []byte
+//go:embed fendo.yaml
+var definitionFS embed.FS
+
+// definition is the definition as JSON, converted once.
+var definition = sync.OnceValue(func() []byte { return dsl.MustLoad(definitionFS, "fendo.yaml") })
 
 //go:embed guide
 var guideFS embed.FS
@@ -30,5 +34,5 @@ func Module() catalog.Module {
 	if err != nil {
 		panic(err)
 	}
-	return catalog.Module{ID: "fendo", Definition: definitionJSON, Rules: New(), Assets: sub}
+	return catalog.Module{ID: "fendo", Definition: definition(), Rules: New(), Assets: sub}
 }

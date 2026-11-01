@@ -1,6 +1,7 @@
 # 0002. JSON over YAML for the DSL
 
-Status: Accepted
+Status: Superseded by [ADR 0075](0075-yaml-definitions-and-includes.md) (2026-10-31): definitions are
+written in YAML and loaded as JSON, the preprocessing step foreseen below.
 
 ## Context
 The game-definition DSL (see [0001](0001-json-dsl-with-go-escape-hatch.md)) needs a concrete serialization format. YAML is more pleasant to hand-author (comments, less punctuation); JSON is simpler to parse/validate with `encoding/json` and easier for tooling and AI agents to generate programmatically.

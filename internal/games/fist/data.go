@@ -13,7 +13,7 @@ const (
 	seatKing       = 2
 )
 
-// Piece kinds (the keys of "pieces" in fist.json).
+// Piece kinds (the keys of "pieces" in fist.yaml).
 const (
 	kNone uint8 = iota
 	kYellow

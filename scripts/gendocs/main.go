@@ -1,7 +1,7 @@
 //go:build ignore
 
 // Command gendocs writes docs/games.md, the catalog of shipped games, from
-// the registered definitions so the table never drifts from the JSON:
+// the registered definitions so the table never drifts from the definitions:
 //
 //	go run scripts/gendocs/main.go > docs/games.md
 package main
@@ -40,7 +40,7 @@ func main() {
 	fmt.Println("# Game catalog")
 	fmt.Println()
 	fmt.Println("Generated from the registered definitions by `go run scripts/gendocs/main.go`;")
-	fmt.Println("each game is one JSON document under `internal/games`. See [dsl.md](dsl.md) for the")
+	fmt.Println("each game is one definition under `internal/games`. See [dsl.md](dsl.md) for the")
 	fmt.Println("vocabulary and [mcp.md](mcp.md) for the training side (planes, action IDs).")
 	fmt.Println()
 	fmt.Println("| Game | Version | Board | Seats | Actions | Ends by | Variants |")
@@ -105,7 +105,7 @@ func main() {
 	fmt.Println()
 	fmt.Println("Variants are separate games derived from the base document by a JSON merge patch.")
 	fmt.Println()
-	fmt.Println("**Version** is the game implementation's semantic version (`version` in its JSON). Raise it with")
+	fmt.Println("**Version** is the game implementation's semantic version (`version` in its definition). Raise it with")
 	fmt.Println("every change to the game's definition or Go code; a version below 1.0.0 is shown as a Beta in the")
 	fmt.Println("list of games. The server records each version it has run in the `game_versions` table.")
 }

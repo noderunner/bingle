@@ -65,8 +65,8 @@ and should never look for.
 - A test covers the change. For a bug, one that fails before the fix.
 - `CHANGELOG.md` gets an entry, written for the people who play rather than for developers. The
   newest entry's version is `internal/version`. Bump `internal/version` for engine or platform
-  changes and each game's JSON `version` separately; minor or patch by judgement, major only when
-  told.
+  changes and each game's definition `version` separately; minor or patch by judgement, major
+  only when told.
 - `docs/` updated, and an ADR in `docs/decisions/` when the change settles a question rather than
   just adding a mechanism.
 - Push back, in the PR or the issue, on anything that hurts performance, simplicity, security or
@@ -74,12 +74,12 @@ and should never look for.
 
 ## The shape of the code
 
-- `internal/engine` — `dsl` (the JSON game definition), `catalog` (compiles definitions, variants
-  by merge patch, derived games), `state` (the engine), `board`, `cards`.
+- `internal/engine` — `dsl` (the YAML game definition, loaded as JSON), `catalog` (compiles
+  definitions, variants by merge patch, derived games), `state` (the engine), `board`, `cards`.
 - `internal/session` — room locks, the event hub, clocks, presence, direct messages, notifications.
 - `internal/api`, `internal/mcpserver` — two front doors over the same session layer.
 - `internal/web/static/js` — plain ES modules, **no build step**.
-- `internal/games` — 15 games are a JSON definition and nothing else; 11 have a Go `state.Ruleset`.
+- `internal/games` — 15 games are a definition and nothing else; 11 have a Go `state.Ruleset`.
   **`Legal` and `Apply` take no `context`, do no I/O, and must stay pure and deterministic.**
 - `docs/history/` holds the plans, several still marked *planning in progress*; `docs/decisions/`
   holds the ADRs. Read the relevant one before changing an area it covers.

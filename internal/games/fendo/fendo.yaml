@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=../../../docs/game-definition.schema.json
+id: fendo
+name: Fendo
+description: "Dieter Stein's territory game of pieces and fences: move a piece and build a fence beside it, or add a piece. An area fenced off round exactly one piece belongs to that piece's owner."
+version: 0.1.0
+designers: [Dieter Stein]
+engine: ruleset
+rules:
+  - Fendo is played on a 7×7 board (9×9 and 11×11 are variants). Each player has 7 pieces, and starts with one on the middle square of their own side; the other 6 wait in stock. White moves first. The outer edge of the board is already a wall.
+  - On your turn you must do one of two things. Either select one of your pieces, optionally move it, and then build a fence on one free side of the square it ends on; or add a piece from your stock. A player with no action passes.
+  - 'A piece must be in the open area to be selected. The open area is the region that still holds more than one piece; at the start the whole board is open. A piece moves like a rook with one turn: any distance in a straight line (not diagonally), and it may turn once, at a right angle. It may not cross a fence, pass over a piece or land on one.'
+  - A fence is a wall along one side of a square. It may stand inside the open area without closing anything off, or it may close off an area that holds exactly one piece (of either colour). It may not close off an empty area, or a second area holding several pieces. A move is illegal if no legal fence can be built from the square where the piece ends.
+  - 'Adding a piece: put a piece from your stock on an empty square that one of your pieces in the open area could move to (one move as above, with at most one turn). No fence is built.'
+  - A closed area holds one piece and belongs to that piece's owner. The game ends when a fence closes the last open area, so every area is closed. Each player counts the squares of the areas they own; the larger total wins. Pieces left in stock count for nothing.
+  - On the 9×9 and 11×11 boards the first player to own a majority of the squares (41 of 81, 61 of 121) wins at once.
+  - 'Interpretations: a piece may stay where it is and just build a fence; the fence must be legal from the square where the piece ends. A tie is a draw. Two passes in a row, or 400 plies, end the game and the closed areas are counted.'
+params: {pieces: 7, majority: 0, max_plies: 400}
+guide:
+  tabs:
+    - {id: rules, title: Rules, file: rules.md}
+board:
+  generator: {type: grid, width: 7, height: 7, adjacency: orthogonal4, labels: algebraic}
+  style: squares
+seats:
+  - {seat: 1, color: white, label: White}
+  - {seat: 2, color: orange, label: Orange}
+pieces:
+  piece: {label: Piece, code: P, shape: disc}
+turn_order:
+  type: round-robin
+  seats: [1, 2]
+win_condition: {type: ruleset}
+display:
+  no_hands: true
+  tints:
+    area1:
+      label: White's area
+      color: '#c9d3e6'
+      text: 'An area fenced off round one white piece: its squares count for White.'
+    area2:
+      label: Orange's area
+      color: '#f2c28d'
+      text: 'An area fenced off round one orange piece: its squares count for Orange.'
+variants:
+  - id: fendo-9
+    name: Fendo (9×9)
+    patch:
+      board:
+        generator: {width: 9, height: 9}
+      params: {majority: 41}
+  - id: fendo-11
+    name: Fendo (11×11)
+    patch:
+      board:
+        generator: {width: 11, height: 11}
+      params: {majority: 61}
