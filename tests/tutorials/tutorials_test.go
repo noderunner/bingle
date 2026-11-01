@@ -198,3 +198,50 @@ func TestVerify_CanonicalNotation(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+// A step can show another position (Step.Show), reached by legal moves from
+// the start; it asks for no moves of its own.
+func TestShow(t *testing.T) {
+	cat := shippedCatalog(t)
+	withShow := strings.Replace(good, "  - text: Then.\n", "  - text: A picture.\n    show: [red@e5, blue@d4, black@d3]\n  - text: Then.\n", 1)
+	tuts, err := load(t, map[string]string{"t.yaml": withShow})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := tutorial.Verify(cat, "blooms", tuts[0]); err != nil {
+		t.Fatalf("a legal picture: %v", err)
+	}
+	tuts, _ = load(t, map[string]string{"t.yaml": strings.Replace(withShow, "black@d3", "black@e5", 1)})
+	wantErr(t, tutorial.Verify(cat, "blooms", tuts[0]), "shown move 3")
+	_, err = load(t, map[string]string{"t.yaml": strings.Replace(good, "    play: [red@d4]\n", "    play: [red@d4]\n    show: [red@d4]\n", 1)})
+	wantErr(t, err, "cannot ask for moves too")
+}
+
+// The guide tells a client what to point the learner at: each expected
+// move's selections, and the position a step shows.
+func TestGuide(t *testing.T) {
+	cat := shippedCatalog(t)
+	game, _ := cat.Get("blooms-4")
+	withShow := strings.Replace(good, "  - text: Then.\n", "  - text: A picture.\n    show: [red@e5]\n  - text: Then.\n", 1)
+	tuts, _ := load(t, map[string]string{"t.yaml": withShow})
+	g, err := tutorial.Guide(game, tuts[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(g) != 3 {
+		t.Fatalf("%d steps guided", len(g))
+	}
+	first := g[0].PlaySteps
+	if len(first) != 1 || len(first[0]) != 2 || first[0][0].Kind != "piece" || first[0][0].Value != "red" || first[0][1].Kind != "pos" || first[0][1].Value != "d4" {
+		t.Fatalf("the first move's selections: %+v", first)
+	}
+	if g[1].Shown == nil || len(g[1].PlaySteps) != 0 {
+		t.Fatalf("the picture: %+v", g[1])
+	}
+	if top, ok := g[1].Shown.Get("e5"); !ok || top.Piece != "red" {
+		t.Fatalf("the picture lacks its stone: %v %v", top, ok)
+	}
+	if len(g[2].PlaySteps) != 2 || g[2].PlaySteps[1][0].Value != "yellow" {
+		t.Fatalf("the second step's selections: %+v", g[2].PlaySteps)
+	}
+}

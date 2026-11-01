@@ -23,7 +23,7 @@ import { rulesIcon } from "./ui-icons.js";
 import { choiceIcon } from "./choice-icons.js";
 import { animalIcon, animalOf } from "./animals.js";
 import { themesFor, themeById } from "./themes.js";
-import { progress as tutorialProgress, isExpected, markFinished } from "./tutorial.js";
+import { progress as tutorialProgress, isExpected, markFinished, allowed as tutorialAllowed } from "./tutorial.js";
 import { renderMarkdown } from "./markdown.js";
 
 installNav();
@@ -272,22 +272,10 @@ async function loadLegal() {
 		} catch (_) {
 			S.legal = [];
 		}
-		// A tutorial accepts only the move its step asks for: the board offers
-		// nothing else to click.
-		if (S.tut) {
-			const p = tutorialState();
-			S.legal = S.legal.filter((m) => isExpected(p.next, m.notation));
-		}
 	}
 	MoveBuilder.manual = (rulesetView() || {}).panel_actions || [];
 	S.builder = new MoveBuilder(S.legal);
 	S.builder.autoAdvance();
-	// With one move on offer, a move that is only an action ("done") would
-	// be taken as forced and wait unsent: the learner presses its button.
-	if (S.tut) {
-		const b = S.builder;
-		while (b.finished() && b.steps.length && b.steps[b.steps.length - 1].kind === "action") b.pop();
-	}
 }
 
 // ---------------------------------------------------------------------------
@@ -447,6 +435,8 @@ function placementColor() {
 }
 
 function currentCells() {
+	const shown = tutorialShown();
+	if (shown) return shown.cells || {};
 	if (inAnalysis() && S.analysis.sim) return S.analysis.sim.state.cells;
 	if (!isLive()) {
 		const v = S.viewCache.get(S.viewSeq);
@@ -457,6 +447,8 @@ function currentCells() {
 }
 
 function currentState() {
+	const shown = tutorialShown();
+	if (shown) return shown;
 	if (inAnalysis() && S.analysis.sim) return S.analysis.sim.state;
 	if (!isLive()) return S.viewCache.get(S.viewSeq) || { cells: {}, reserves: {}, ply: 0 };
 	return S.state || { cells: {}, reserves: {}, ply: 0 };
@@ -590,6 +582,8 @@ async function requestPreview(notation) {
 function onCell(pos, ev) {
 	if (!actingSeat()) return;
 	const b = activeBuilder();
+	// A tutorial takes only the selection its step points at.
+	if (S.tut && !tutorialAllows("pos", pos)) return;
 	if (!b.nextPositions().has(pos)) {
 		// Quick placement: an empty square clicked with nothing selected
 		// places a piece straight away. No modifier uses the piece used last
@@ -613,6 +607,7 @@ function onCell(pos, ev) {
 
 function choosePiece(piece) {
 	if (!actingSeat()) return;
+	if (S.tut && !tutorialAllows("piece", piece)) return;
 	const b = activeBuilder();
 	if (!b.nextPieces().has(piece)) return;
 	S.lastPiece = piece;
@@ -622,6 +617,7 @@ function choosePiece(piece) {
 
 function chooseAction(id) {
 	if (!actingSeat()) return;
+	if (S.tut && !tutorialAllows("action", id)) return;
 	const b = activeBuilder();
 	if (!b.nextActions().includes(id)) return;
 	b.push("action", id);
@@ -629,6 +625,7 @@ function chooseAction(id) {
 }
 
 function chooseCount(n) {
+	if (S.tut && !tutorialAllows("count", n)) return;
 	if (!actingSeat()) return;
 	activeBuilder().push("count", n);
 	afterBuilderChange();
@@ -1583,7 +1580,11 @@ function render() {
 		return;
 	}
 	rememberMobileScroll();
-	if (S.tut) queueMicrotask(tutorialTick);
+	if (S.tut)
+		queueMicrotask(() => {
+			tutorialMarkControls();
+			tutorialTick();
+		});
 	clear(root);
 	document.body.classList.remove("m-mode");
 	hideHoverCard();
@@ -1799,7 +1800,7 @@ function renderMobile(seats, bottomSeat) {
 		chips.cults.push({ page: id, label: seatLabel(seat) || `Seat ${seat}`, color: cssColor(colorOf(seat)) });
 	}
 	pages.push({ id: "log", label: "History", group: "log", node: h("div", { class: "m-stack" }, historyCard()) });
-	pages.push({ id: "chat", label: "Chat", group: "chat", node: h("div", { class: "m-stack" }, voiceCard({ code, me: S.me, seats: S.game.seats }), chatCard({ code, me: S.me })) });
+	if (!S.tut) pages.push({ id: "chat", label: "Chat", group: "chat", node: h("div", { class: "m-stack" }, voiceCard({ code, me: S.me, seats: S.game.seats }), chatCard({ code, me: S.me })) });
 
 	const unread = S.mPage === "chat" ? 0 : chatUnread();
 	const shell = mobileShell({
@@ -1878,7 +1879,7 @@ function renderMobileCards(seats, bottomSeat) {
 	for (const seat of seatsFrom(bottomSeat)) players.append(seatStrip(seat));
 	pages.push({ id: "players", label: "Players", group: "players", node: players });
 	pages.push({ id: "log", label: "History", group: "log", node: h("div", { class: "m-stack" }, historyCard()) });
-	pages.push({ id: "chat", label: "Chat", group: "chat", node: h("div", { class: "m-stack" }, voiceCard({ code, me: S.me, seats: S.game.seats }), chatCard({ code, me: S.me })) });
+	if (!S.tut) pages.push({ id: "chat", label: "Chat", group: "chat", node: h("div", { class: "m-stack" }, voiceCard({ code, me: S.me, seats: S.game.seats }), chatCard({ code, me: S.me })) });
 
 	const unread = S.mPage === "chat" ? 0 : chatUnread();
 	const shell = mobileShell({
@@ -2048,7 +2049,9 @@ function drawBoard(host) {
 	// On an area map, units are picked by clicking their tokens: the areas
 	// they stand in are not themselves targets until a choice is under way.
 	const tokensFirst = S.info.board.style === "areas" && b.steps.length === 0;
-	const targets = interactive && !tokensFirst ? b.nextPositions() : new Set();
+	let targets = interactive && !tokensFirst ? b.nextPositions() : new Set();
+	// In a tutorial only the square the step points at can be clicked.
+	if (S.tut) targets = new Set([...targets].filter((pos) => tutorialAllows("pos", pos)));
 	renderBoard(
 		host,
 		S.info,
@@ -2062,7 +2065,7 @@ function drawBoard(host) {
 			// Every square chosen so far: the origin, then each landing/drop.
 			selected: interactive ? b.steps.filter((st) => st.kind === "pos").map((st) => st.value) : null,
 			targets,
-			quick: interactive && !isRuleset() ? new Set(b.quickPlacements().keys()) : null,
+			quick: interactive && !isRuleset() && !S.tut ? new Set(b.quickPlacements().keys()) : null,
 			pathCounts: interactive ? b.dropCounts() : new Map(),
 			interactive,
 			showCoords: S.settings.coords,
@@ -4383,10 +4386,12 @@ function sidePanel(top, below) {
 		return side;
 	}
 
-	// Voice and table talk.
-	side.append(voiceCard({ code, me: S.me, seats: S.game.seats }) || "");
-	side.append(chatCard({ code, me: S.me }));
-	chatSeen();
+	// Voice and table talk — not in a tutorial, where there is nobody to talk to.
+	if (!S.tut) {
+		side.append(voiceCard({ code, me: S.me, seats: S.game.seats }) || "");
+		side.append(chatCard({ code, me: S.me }));
+		chatSeen();
+	}
 
 	// The moves played and, for games that tell it, what happened.
 	place(historyCard());
@@ -5462,4 +5467,43 @@ function tutorialCard() {
 	}
 	card.append(actions);
 	return card;
+}
+
+/** The position the current step shows instead of the game's (Step.show), or null. */
+function tutorialShown() {
+	if (!S.tut || !isLive()) return null;
+	const g = (S.tut.doc.guide || [])[tutorialState().step];
+	return g && g.show_state ? g.show_state : null;
+}
+
+/** The selections of the move the learner is asked for now, or null. */
+function tutorialExpected() {
+	const p = tutorialState();
+	if (!p.next || p.next.who !== "learner") return null;
+	const g = (S.tut.doc.guide || [])[p.step];
+	return g && g.play_steps ? g.play_steps[p.next.index] || null : null;
+}
+
+/** Whether the learner may make this selection now: only the one the step points at. */
+function tutorialAllows(kind, value) {
+	return tutorialAllowed(tutorialExpected(), activeBuilder().steps, kind, value);
+}
+
+/**
+ * The page's own controls stay where they always are; in a tutorial the one
+ * the step points at is picked out and the others are made inert.
+ */
+function tutorialMarkControls() {
+	if (!S.tut) return;
+	const asking = !!tutorialExpected() && isMyTurn();
+	for (const el of document.querySelectorAll("button[data-action], button[data-piece], button[data-count]")) {
+		if (el.closest("#tutorial, #rules-dialog, .options-window")) continue;
+		const [kind, value] = el.dataset.action ? ["action", el.dataset.action] : el.dataset.piece ? ["piece", el.dataset.piece] : ["count", el.dataset.count];
+		const on = asking && tutorialAllows(kind, value);
+		el.classList.toggle("tutorial-target", on);
+		if (!on) {
+			el.disabled = true;
+			el.classList.add("tutorial-inert");
+		}
+	}
 }

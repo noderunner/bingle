@@ -44,6 +44,11 @@ func Verify(cat *catalog.Catalog, family string, t Tutorial) error {
 	}
 	for i, s := range t.Steps {
 		at := fmt.Sprintf("%s: step %d", t.ID, i+1)
+		if len(s.Show) > 0 {
+			if _, err := Shown(game, t, i); err != nil {
+				return fmt.Errorf("%s: %w", at, err)
+			}
+		}
 		for _, sq := range append(append([]string{}, s.Highlight...), s.Arrow...) {
 			if !game.Board.HasPosition(board.PositionID(sq)) {
 				return fmt.Errorf("%s: %q is not a square of %q", at, sq, t.Game)
@@ -80,6 +85,85 @@ func Start(game *catalog.CompiledGame, t Tutorial) (*state.BoardState, int, erro
 		return nil, 0, fmt.Errorf("%s: the setup ends the game", t.ID)
 	}
 	return p.st, p.seat, nil
+}
+
+// Shown returns the position step i of t depicts (Step.Show): its moves
+// played from the game's start, seeded as the tutorial is. The moves may end
+// the game — showing how a game ends is what it is for.
+func Shown(game *catalog.CompiledGame, t Tutorial, i int) (*state.BoardState, error) {
+	if i < 0 || i >= len(t.Steps) || len(t.Steps[i].Show) == 0 {
+		return nil, fmt.Errorf("step %d shows no position", i+1)
+	}
+	p, err := newPlayer(game, t.Seed)
+	if err != nil {
+		return nil, err
+	}
+	for j, mv := range t.Steps[i].Show {
+		if err := p.play(mv, 0); err != nil {
+			return nil, fmt.Errorf("shown move %d: %w", j+1, err)
+		}
+	}
+	return p.st, nil
+}
+
+// StepGuide is what a client needs, besides the tutorial itself, to guide a
+// learner through one step: the selections each of the learner's moves is
+// made of ("piece red", then "pos d4") to point them at in its own way, and
+// the position a step that shows one depicts.
+type StepGuide struct {
+	PlaySteps [][]state.Step    `json:"play_steps,omitempty"`
+	Shown     *state.BoardState `json:"show_state,omitempty"`
+}
+
+// Guide walks t as the page plays it and returns each step's guide. viewer
+// is the seat a shown position is seen from (its secrets only).
+func Guide(game *catalog.CompiledGame, t Tutorial) ([]StepGuide, error) {
+	p, err := newPlayer(game, t.Seed)
+	if err != nil {
+		return nil, err
+	}
+	for i, mv := range t.Setup {
+		if err := p.play(mv, 0); err != nil {
+			return nil, fmt.Errorf("%s: setup move %d: %w", t.ID, i+1, err)
+		}
+	}
+	out := make([]StepGuide, len(t.Steps))
+	for i, s := range t.Steps {
+		if len(s.Show) > 0 {
+			st, err := Shown(game, t, i)
+			if err != nil {
+				return nil, err
+			}
+			out[i].Shown = state.Public(game, st, t.learnerSeat())
+		}
+		for _, text := range s.Play {
+			steps, err := p.stepsOf(text)
+			if err != nil {
+				return nil, fmt.Errorf("%s: step %d: %w", t.ID, i+1, err)
+			}
+			out[i].PlaySteps = append(out[i].PlaySteps, steps)
+			if err := p.play(text, 0); err != nil {
+				return nil, err
+			}
+		}
+		for _, text := range s.Reply {
+			if err := p.play(text, 0); err != nil {
+				return nil, err
+			}
+		}
+	}
+	return out, nil
+}
+
+// stepsOf is the selections of the legal move written text, as the engine
+// lists it for the seat to move.
+func (p *player) stepsOf(text string) ([]state.Step, error) {
+	for _, mv := range state.LegalMoves(p.game, p.st, p.seat) {
+		if strings.EqualFold(state.FormatMove(p.game, mv), strings.TrimSpace(text)) {
+			return state.Steps(p.game, mv), nil
+		}
+	}
+	return nil, fmt.Errorf("move %q is not among the legal moves", text)
 }
 
 // LearnerSeat is the seat the learner holds (Seat, default 1).

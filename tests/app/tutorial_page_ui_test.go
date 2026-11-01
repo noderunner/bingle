@@ -20,12 +20,18 @@ import (
 // tutorials will, and opens its room.
 func openTutorial(t *testing.T, ctx context.Context, base string) string {
 	t.Helper()
+	return openTutorialOf(t, ctx, base, "blooms", "blooms-basics")
+}
+
+// openTutorialOf starts a tutorial of a game from the browser and opens its room.
+func openTutorialOf(t *testing.T, ctx context.Context, base, game, id string) string {
+	t.Helper()
 	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/")); err != nil {
 		t.Fatal(err)
 	}
 	var room string
 	start := `fetch("/api/tutorials", {method: "POST", headers: {"Content-Type": "application/json", "X-Bingle-Session": "1"},
-		body: JSON.stringify({game_def_id: "blooms", tutorial: "blooms-basics", player_name: "Lia"})}).then(r => r.json()).then(j => j.room_code)`
+		body: JSON.stringify({game_def_id: "` + game + `", tutorial: "` + id + `", player_name: "Lia"})}).then(r => r.json()).then(j => j.room_code)`
 	if err := chromedp.Run(ctx, chromedp.Evaluate(start, &room, func(p *runtime.EvaluateParams) *runtime.EvaluateParams { return p.WithAwaitPromise(true) })); err != nil || room == "" {
 		t.Fatalf("starting the tutorial: %q %v", room, err)
 	}
@@ -38,7 +44,7 @@ func openTutorial(t *testing.T, ctx context.Context, base string) string {
 
 func waitStep(t *testing.T, ctx context.Context, n string) {
 	t.Helper()
-	waitJS(t, ctx, "step "+n, `(document.getElementById("tutorial-count") || {}).textContent === "Step `+n+` of 4"`, 15*time.Second)
+	waitJS(t, ctx, "step "+n, `/^Step `+n+` of \d+$/.test((document.getElementById("tutorial-count") || {}).textContent || "")`, 15*time.Second)
 }
 
 // clickables are the board's squares that can be clicked.
@@ -52,58 +58,87 @@ func TestWebTutorial_PlaysThroughTheBloomsTutorial(t *testing.T) {
 	ctx, cancel := newChromedpContext(t, 120*time.Second)
 	defer cancel()
 	room := openTutorial(t, ctx, base)
+	next := func() { t.Helper(); clickSel(t, ctx, "#tutorial-next") }
+	stones := `[...document.querySelectorAll("#board .cell")].filter(c => c.dataset.height !== "0").length`
 
-	// Step 1: the prose, the highlighted cell, and only that cell to click.
+	// Step 1: what the game is about. There is nobody to talk to: no chat, no voice.
 	waitStep(t, ctx, "1")
 	if text := evalString(t, ctx, `document.getElementById("tutorial-text").innerText`); !strings.Contains(text, "Blooms") {
 		t.Fatalf("the first step's text: %q", text)
 	}
-	if !evalBool(t, ctx, `!!document.querySelector('#board .cell[data-position="d4"] .hint-ring')`) {
-		t.Fatal("d4 is not highlighted")
+	if evalBool(t, ctx, `!!document.getElementById("chat-card") || !!document.querySelector(".voice-card, #voice-card")`) {
+		t.Fatal("a tutorial shows the chat or the voice card")
 	}
-	waitJS(t, ctx, "d4 to be the only move", `[...document.querySelectorAll("#board .cell.clickable")].map(c => c.dataset.position).join(",") === "d4"`, 10*time.Second)
-	clickSel(t, ctx, "#tutorial-show-hint")
-	waitJS(t, ctx, "the hint", `(document.getElementById("tutorial-hint") || {}).textContent === "Click the highlighted cell in the middle of the board."`, 5*time.Second)
+	next()
 
-	clickCell(t, ctx, "d4")
-	// The page plays the two scripted replies for the other seat.
+	// Step 2 shows a finished game; the room's own board is untouched.
 	waitStep(t, ctx, "2")
-	waitJS(t, ctx, "the replies on the board", `!!document.querySelector('#board .cell[data-position="a4"] .piece, #board .cell[data-position="a4"] [class*="stone"], #board .cell[data-position="a4"][data-height="1"]')`, 10*time.Second)
-	if evalBool(t, ctx, `!!document.getElementById("tutorial-hint")`) {
-		t.Fatal("the first step's hint is still shown")
+	waitJS(t, ctx, "the finished game on the board", stones+` > 15`, 10*time.Second)
+	if text := evalString(t, ctx, `document.getElementById("tutorial-text").innerText`); !strings.Contains(text, "captured 17 stones") {
+		t.Fatalf("the end of a game: %q", text)
 	}
+	next()
+	waitStep(t, ctx, "3")
+	waitJS(t, ctx, "the room's empty board again", stones+` === 0`, 10*time.Second)
+	next()
+	waitStep(t, ctx, "4")
+	next()
 
-	// Step 2: two stones of different colours.
-	waitJS(t, ctx, "b3 to be the move", `[...document.querySelectorAll("#board .cell.clickable")].map(c => c.dataset.position).join(",") === "b3"`, 10*time.Second)
+	// Step 5: the colour buttons stay where they are; red is picked out, yellow is inert.
+	waitStep(t, ctx, "5")
+	waitJS(t, ctx, "red picked out", `!!document.querySelector('button[data-piece="red"].tutorial-target')`, 10*time.Second)
+	if !evalBool(t, ctx, `document.querySelector('button[data-piece="yellow"]').disabled`) {
+		t.Fatal("the yellow button is not inert")
+	}
+	if got := clickables(t, ctx); got != "" {
+		t.Fatalf("cells can be clicked before the colour is chosen: %q", got)
+	}
+	clickSel(t, ctx, "#tutorial-show-hint")
+	waitJS(t, ctx, "the hint", `/Press the red stone/.test((document.getElementById("tutorial-hint") || {}).textContent || "")`, 5*time.Second)
+	clickSel(t, ctx, `button[data-piece="red"]`)
+	waitJS(t, ctx, "d4 to be the only cell", `[...document.querySelectorAll("#board .cell.clickable")].map(c => c.dataset.position).join(",") === "d4"`, 10*time.Second)
+	clickCell(t, ctx, "d4")
+
+	// The page plays the two scripted replies for the other seat.
+	waitStep(t, ctx, "6")
+	waitJS(t, ctx, "the replies on the board", `document.querySelector('#board .cell[data-position="a4"]').dataset.height === "1"`, 10*time.Second)
+
+	// Step 6: red on b3, then yellow on b4.
+	waitJS(t, ctx, "red picked out", `!!document.querySelector('button[data-piece="red"].tutorial-target')`, 10*time.Second)
+	clickSel(t, ctx, `button[data-piece="red"]`)
+	waitJS(t, ctx, "b3", `[...document.querySelectorAll("#board .cell.clickable")].map(c => c.dataset.position).join(",") === "b3"`, 10*time.Second)
 	clickCell(t, ctx, "b3")
-	waitJS(t, ctx, "b4 to be the move", `[...document.querySelectorAll("#board .cell.clickable")].map(c => c.dataset.position).join(",") === "b4"`, 10*time.Second)
+	waitJS(t, ctx, "yellow picked out", `!!document.querySelector('button[data-piece="yellow"].tutorial-target')`, 10*time.Second)
 
 	// Progress comes from the moves played: a reload finds the same step.
 	if err := chromedp.Run(ctx, chromedp.Reload()); err != nil {
 		t.Fatal(err)
 	}
-	waitStep(t, ctx, "2")
-	waitJS(t, ctx, "b4 to be the move again", `[...document.querySelectorAll("#board .cell.clickable")].map(c => c.dataset.position).join(",") === "b4"`, 10*time.Second)
+	waitStep(t, ctx, "6")
+	waitJS(t, ctx, "yellow picked out again", `!!document.querySelector('button[data-piece="yellow"].tutorial-target')`, 10*time.Second)
+	clickSel(t, ctx, `button[data-piece="yellow"]`)
+	waitJS(t, ctx, "b4", `[...document.querySelectorAll("#board .cell.clickable")].map(c => c.dataset.position).join(",") === "b4"`, 10*time.Second)
 	clickCell(t, ctx, "b4")
 
-	// Step 3: the arrow, a5, then done; the blue stone at a4 is captured.
-	waitStep(t, ctx, "3")
+	// Step 7: the arrow, red on a5, then End turn; the blue stone at a4 is captured.
+	waitStep(t, ctx, "7")
 	if !evalBool(t, ctx, `!!document.querySelector("#board .board-arrow")`) {
-		t.Fatal("step 3 draws no arrow")
+		t.Fatal("step 7 draws no arrow")
 	}
-	waitJS(t, ctx, "a5 to be the move", `[...document.querySelectorAll("#board .cell.clickable")].map(c => c.dataset.position).join(",") === "a5"`, 10*time.Second)
+	waitJS(t, ctx, "red picked out", `!!document.querySelector('button[data-piece="red"].tutorial-target')`, 10*time.Second)
+	clickSel(t, ctx, `button[data-piece="red"]`)
+	waitJS(t, ctx, "a5", `[...document.querySelectorAll("#board .cell.clickable")].map(c => c.dataset.position).join(",") === "a5"`, 10*time.Second)
 	clickCell(t, ctx, "a5")
+	waitJS(t, ctx, "End turn picked out", `!!document.querySelector('#move-bar button[data-action="done"].tutorial-target')`, 10*time.Second)
 	finishTurn(t, ctx)
 
-	// Step 4 is to read: Finish ends the tutorial.
-	waitStep(t, ctx, "4")
-	if !evalBool(t, ctx, `document.querySelector('#board .cell[data-position="a4"]').dataset.height === "0"`) {
-		t.Fatal("the blue stone at a4 was not captured")
-	}
+	// Step 8 is to read: Finish ends the tutorial.
+	waitStep(t, ctx, "8")
+	waitJS(t, ctx, "the capture", `document.querySelector('#board .cell[data-position="a4"]').dataset.height === "0"`, 10*time.Second)
 	if got := clickables(t, ctx); got != "" {
 		t.Fatalf("a step to read offers moves: %q", got)
 	}
-	clickSel(t, ctx, "#tutorial-next")
+	next()
 	waitJS(t, ctx, "the end", `!!document.getElementById("tutorial-done")`, 10*time.Second)
 	if !evalBool(t, ctx, `JSON.parse(localStorage.getItem("bingle.tutorials.done") || "[]").includes("blooms/blooms-basics")`) {
 		t.Fatal("the tutorial is not marked finished in the browser")
@@ -170,7 +205,7 @@ func TestWebTutorial_ListInTheGamePicker(t *testing.T) {
 	}
 	clickSel(t, ctx, `.game-card[data-family="blooms"]`)
 	waitJS(t, ctx, "the tutorials of the setup", `!document.getElementById("setup-tutorials").hidden && !!document.querySelector('#setup-tutorials button[data-tutorial="blooms-basics"]')`, 10*time.Second)
-	if text := evalString(t, ctx, `document.getElementById("setup-tutorials").innerText`); !strings.Contains(text, "Learn to play") || !strings.Contains(text, "Placing stones and capturing a bloom") {
+	if text := evalString(t, ctx, `document.getElementById("setup-tutorials").innerText`); !strings.Contains(text, "Learn to play") || !strings.Contains(text, "How to play Blooms") {
 		t.Fatalf("the setup's tutorials: %q", text)
 	}
 
@@ -206,7 +241,7 @@ func TestWebTutorial_TabInTheRulesWindow(t *testing.T) {
 	clickSel(t, ctx, `#rules-dialog [data-tab="tutorials"]`)
 	waitJS(t, ctx, "the list", `!document.getElementById("rules-panel-tutorials").hidden`, 5*time.Second)
 	text := evalString(t, ctx, `document.getElementById("rules-panel-tutorials").innerText`)
-	for _, want := range []string{"Learn the rules", "Placing stones and capturing a bloom", "How a turn works", "✓ Done"} {
+	for _, want := range []string{"Learn the rules", "How to play Blooms", "how a bloom is captured", "✓ Done"} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("the Tutorials tab lacks %q: %q", want, text)
 		}
@@ -242,4 +277,50 @@ func setName(t *testing.T, ctx context.Context, name string) {
 	if err := chromedp.Run(ctx, chromedp.Evaluate(`document.getElementById("create_player_name").value = `+strconv.Quote(name)+`; true`, nil)); err != nil {
 		t.Fatal(err)
 	}
+}
+
+// The Meridians tutorial, played through: a shown end, a line of sight, and
+// a Dark stone that comes off when nothing can see it any more.
+func TestWebTutorial_PlaysThroughTheMeridiansTutorial(t *testing.T) {
+	base := newRESTTestServer(t)
+	ctx, cancel := newChromedpContext(t, 120*time.Second)
+	defer cancel()
+	openTutorialOf(t, ctx, base, "meridians", "meridians-basics")
+	next := func() { t.Helper(); clickSel(t, ctx, "#tutorial-next") }
+	stones := `[...document.querySelectorAll("#board .cell")].filter(c => c.dataset.height !== "0").length`
+	only := func(pos string) {
+		t.Helper()
+		waitJS(t, ctx, pos+" to be the only point", `[...document.querySelectorAll("#board .cell.clickable")].map(c => c.dataset.position).join(",") === "`+pos+`"`, 10*time.Second)
+		clickCell(t, ctx, pos)
+	}
+
+	waitStep(t, ctx, "1")
+	next()
+	waitStep(t, ctx, "2")
+	waitJS(t, ctx, "the finished game", stones+` > 20`, 10*time.Second)
+	next()
+	waitStep(t, ctx, "3")
+	waitJS(t, ctx, "the empty board", stones+` === 0`, 10*time.Second)
+	if !evalBool(t, ctx, `!!document.querySelector('#board .cell[data-position="e6"] .hint-ring')`) {
+		t.Fatal("the line is not highlighted")
+	}
+	next()
+	waitStep(t, ctx, "4")
+	next()
+	waitStep(t, ctx, "5")
+	only("g6")
+	waitStep(t, ctx, "6")
+	only("g3")
+	waitStep(t, ctx, "7")
+	if !evalBool(t, ctx, `!!document.querySelector("#board .board-arrow")`) {
+		t.Fatal("step 7 draws no arrow")
+	}
+	only("c6")
+	waitStep(t, ctx, "8")
+	waitJS(t, ctx, "Dark's reply", `document.querySelector('#board .cell[data-position="f4"]').dataset.height === "1"`, 10*time.Second)
+	if !evalBool(t, ctx, `document.querySelector('#board .cell[data-position="c8"]').dataset.height === "0"`) {
+		t.Fatal("Dark's stone on c8 is still on the board")
+	}
+	next()
+	waitJS(t, ctx, "the end", `!!document.getElementById("tutorial-done")`, 10*time.Second)
 }

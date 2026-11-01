@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	"github.com/go-chi/chi/v5"
+
+	"github.com/noderunner/bingle/internal/tutorial"
 )
 
 // tutorialSummary is one entry of a game's list of tutorials.
@@ -35,15 +37,23 @@ func (h *handlers) handleListTutorials(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"family": family, "tutorials": out})
 }
 
+// tutorialResponse is one tutorial as written, with each step's guide: the
+// selections of the learner's moves, for a client to point them at, and the
+// position a step shows.
+type tutorialResponse struct {
+	tutorial.Tutorial
+	Guide []tutorial.StepGuide `json:"guide"`
+}
+
 // handleGetTutorial implements GET /game-defs/{id}/tutorials/{tutorial}: one
-// tutorial with its steps, for the tutorial page.
+// tutorial with its steps and their guide, for the tutorial page.
 func (h *handlers) handleGetTutorial(w http.ResponseWriter, r *http.Request) {
-	_, t, err := h.mgr.Tutorial(chi.URLParam(r, "id"), chi.URLParam(r, "tutorial"))
+	t, guide, err := h.mgr.TutorialGuide(chi.URLParam(r, "id"), chi.URLParam(r, "tutorial"))
 	if err != nil {
 		writeError(w, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, t)
+	writeJSON(w, http.StatusOK, tutorialResponse{Tutorial: t, Guide: guide})
 }
 
 // startTutorialRequest is the body of POST /tutorials.

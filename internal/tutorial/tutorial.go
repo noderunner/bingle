@@ -76,6 +76,11 @@ type Step struct {
 	Highlight []string `json:"highlight,omitempty"`
 	// Arrow draws an arrow from its first square to its second.
 	Arrow []string `json:"arrow,omitempty"`
+	// Show depicts another position for this step only — the end of a
+	// game, say — reached by these moves from the game's start (seeded as
+	// the tutorial is). The room's game is not touched. A step that shows a
+	// position asks for no moves.
+	Show []string `json:"show,omitempty"`
 }
 
 // SchemaID is the $id of docs/tutorial.schema.json; Required are the fields
@@ -176,6 +181,9 @@ func (t Tutorial) check() error {
 		}
 		if len(s.Arrow) != 0 && len(s.Arrow) != 2 {
 			return fmt.Errorf("%s: step %d: an arrow is two squares, from and to", t.ID, i+1)
+		}
+		if len(s.Show) > 0 && (len(s.Play) > 0 || len(s.Reply) > 0) {
+			return fmt.Errorf("%s: step %d shows a position, so it cannot ask for moves too", t.ID, i+1)
 		}
 	}
 	return nil

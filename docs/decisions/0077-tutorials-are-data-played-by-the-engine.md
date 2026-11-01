@@ -26,6 +26,16 @@ tutorial's knowledge of the game lives, and what stops a tutorial from going sta
 - **No achievements** for tutorials.
 - `docs/tutorial.schema.json` is generated beside the definition's schema.
 
+Added 2026-11-01, after the first tutorials were played:
+
+- **A step can show another position** (`show`: moves from the start, for that step only), so a
+  rules tutorial can begin with how a game ends. Rules tutorials follow one order: what you are
+  doing, how it ends, the board, the pieces, the turn, then each phase ([tutorials.md](../tutorials.md)).
+- **What the learner is to select is a signal**: the served tutorial's `guide` gives each expected
+  move's selections and each shown position, and a client presents them its own way. The web page
+  keeps its controls where they always are, picks out the expected one and makes the rest inert,
+  rather than offering only the expected move.
+
 ## Consequences
 
 - A rule change that breaks a tutorial fails the build instead of shipping a tutorial that lies.

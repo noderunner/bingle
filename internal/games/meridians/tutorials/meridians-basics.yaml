@@ -1,0 +1,95 @@
+# yaml-language-server: $schema=../../../../docs/tutorial.schema.json
+id: meridians-basics
+kind: rules
+title: How to play Meridians
+summary: The goal, the board, the stones, a turn, seeing, and how a group dies.
+order: 1
+game: meridians-5   # the small 5/6 board
+seat: 1             # you play Light; the page plays Dark
+
+steps:
+  - text: |
+      In **Meridians** you place stones that must always be able to see
+      another group of your own colour. A group that sees none dies, and you
+      win by leaving your opponent with nothing on the board.
+
+  - text: |
+      This is how a game ends. **Light has no stones left**, so Dark has
+      won: a player loses when their turn would begin with none of their
+      stones on the board.
+
+      That happens when a player's last groups lose sight of one another —
+      or when they are down to a single group, which has nobody to see.
+      A game where nobody can place a stone, or one that reaches 1,200
+      plies, is a draw.
+    show: [
+      j2, f5, g2, h3, i3, b9, i2, e3, a11, e4, e2, c8, j5, d8, i1, f6, j6, h1, g6, i5,
+      g1, c5, f9, j4, g7, h2, a7, e7, e11, d5, c10, a11, h5, h4, c9, a6, f8, i2, i7, d6,
+      f10, i4, f7, d10, b10, c6, a10, e10, d3, d4, f1, j2, g8, i1, h6, d9, f4, c4, e5,
+      b10, h8, e8, e6, c11, g4, g5, h7, i3, f2, g9, d7, g7, a7, f8, a9, e9, a10, j5, b8,
+      h6, f3, h5, b7, b5, g3, b6, a11, f10, b11, i6, a8, f9, c10, h8, c9, h7, c7
+    ]
+
+  - text: |
+      The board is a hexagon of triangles, and stones go on the
+      **intersections**, as in Go. It has five intersections along two of
+      its sides and six along the other four, so it has **no middle point**.
+
+      Every point lies on **three straight lines**, one in each direction
+      of the grid. The highlighted points are one such line.
+    highlight: [c6, d6, e6, f6, g6, h6]
+
+  - text: |
+      Each player has an unlimited supply of **stones** — Light's are pale,
+      Dark's are dark. Stones never move once placed, and are never captured
+      one at a time.
+
+      A **group** is your stones that touch one another; a single stone is
+      a group too.
+
+  - text: |
+      Players take turns placing **one stone** each; Light goes first.
+
+      **Your first stone** goes on any empty point. Place it on the
+      highlighted point.
+    play: [g6]
+    hint: Click the highlighted point, g6.
+    highlight: [g6]
+    reply: [c4]
+
+  - text: |
+      **Your second stone** must not touch your first — if it did, the two
+      would be one group with nobody to see.
+
+      Place it on g3, down the same line. Your two groups now have a
+      **path**: a straight line of empty points joining them (g4 and g5).
+      A group with a path to another of your groups is **alive**.
+    play: [g3]
+    hint: Click g3.
+    highlight: [g3, g4, g5]
+    reply: [c8]
+
+  - text: |
+      From now on, a stone must go where one of your stones can **see**:
+      along a straight line, with **no stone of the other colour in
+      between**.
+
+      Dark's two stones, c4 and c8, see each other down the c line. Your
+      stone on g6 can see c6, along its row — and a stone there **cuts**
+      Dark's path.
+    play: [c6]
+    hint: Click c6, at the end of the arrow.
+    highlight: [c6]
+    arrow: [g6, c6]
+    reply: [f4]
+
+  - text: |
+      **When your turn ends, every group of yours with no path to another
+      comes off the board.** Dark found a new stone for c4 to see, f4 —
+      but nothing could see c8 any more, so it came off when Dark's turn
+      ended.
+
+      This does not happen until a player has had two turns, so opening
+      stones are safe. A group your opponent cuts off can still be saved,
+      by giving it a new path on your next turn. Keep two groups at the very
+      least, three to be comfortable — and take your opponent's sight away.

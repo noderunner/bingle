@@ -57,7 +57,7 @@ func TestTutorials_ListedAndServed(t *testing.T) {
 	if code := doJSON(t, "GET", base+"/api/game-defs/blooms/tutorials/blooms-basics", nil, &doc); code != 200 {
 		t.Fatalf("GET the tutorial: %d", code)
 	}
-	if doc.ID != "blooms-basics" || len(doc.Steps) < 3 || doc.Steps[0].Play[0] != "red@d4" {
+	if doc.ID != "blooms-basics" || len(doc.Steps) < 3 || firstPlay(doc) != "red@d4" {
 		t.Fatalf("the tutorial: %+v", doc)
 	}
 	if code := doJSON(t, "GET", base+"/api/game-defs/blooms/tutorials/nope", nil, nil); code != 404 {
@@ -230,5 +230,65 @@ func TestTutorials_CountedInTheGameList(t *testing.T) {
 	}
 	if got["gomoku"] != 0 {
 		t.Fatalf("Gomoku has no tutorials: %d", got["gomoku"])
+	}
+}
+
+// firstPlay is the first move a tutorial asks the learner for.
+func firstPlay(doc tutorialDoc) string {
+	for _, s := range doc.Steps {
+		if len(s.Play) > 0 {
+			return s.Play[0]
+		}
+	}
+	return ""
+}
+
+// A served tutorial carries its guide: what to point the learner at, for any
+// client to show in its own way, and the positions its steps show.
+func TestTutorials_ServedWithTheirGuide(t *testing.T) {
+	base := newRESTTestServer(t)
+	var doc struct {
+		Steps []struct {
+			Play []string `json:"play"`
+			Show []string `json:"show"`
+		} `json:"steps"`
+		Guide []struct {
+			PlaySteps [][]struct {
+				Kind  string `json:"kind"`
+				Value string `json:"value"`
+			} `json:"play_steps"`
+			ShowState *struct {
+				Cells map[string]any `json:"cells"`
+			} `json:"show_state"`
+		} `json:"guide"`
+	}
+	if code := doJSON(t, "GET", base+"/api/game-defs/blooms/tutorials/blooms-basics", nil, &doc); code != 200 {
+		t.Fatalf("GET: %d", code)
+	}
+	if len(doc.Guide) != len(doc.Steps) {
+		t.Fatalf("%d steps, %d guided", len(doc.Steps), len(doc.Guide))
+	}
+	sawShow, sawPlay := false, false
+	for i, s := range doc.Steps {
+		g := doc.Guide[i]
+		if len(s.Show) > 0 {
+			sawShow = true
+			if g.ShowState == nil || len(g.ShowState.Cells) < 10 {
+				t.Fatalf("step %d shows no position: %+v", i+1, g.ShowState)
+			}
+		}
+		if len(s.Play) != len(g.PlaySteps) {
+			t.Fatalf("step %d: %d moves, %d guided", i+1, len(s.Play), len(g.PlaySteps))
+		}
+		if len(s.Play) > 0 && !sawPlay {
+			sawPlay = true
+			sel := g.PlaySteps[0]
+			if len(sel) != 2 || sel[0].Kind != "piece" || sel[0].Value != "red" || sel[1].Kind != "pos" || sel[1].Value != "d4" {
+				t.Fatalf("the first move's selections: %+v", sel)
+			}
+		}
+	}
+	if !sawShow || !sawPlay {
+		t.Fatalf("the Blooms tutorial shows a position (%v) and asks for moves (%v)", sawShow, sawPlay)
 	}
 }

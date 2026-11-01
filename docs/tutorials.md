@@ -40,11 +40,33 @@ steps:
     highlight: [d4]        # squares (or areas) to pick out
     arrow: [d4, e5]        # an arrow from one square to another
     reply: [blue@a4, black@g1]   # then played for the other seats
+  - text: This is how a game ends.
+    show: [red@e5, blue@d4, ...]   # a picture: another position, for this step only
 ```
 
 **Positions are moves, never documents.** Every position is reached by playing `setup` and the steps'
 moves from the game's start, so nothing is written out by hand and the engine checks everything. A
 step without `play` or `reply` is just a page to read.
+
+**A step can show another position** with `show`: moves from the game's start, played for that step's
+picture only — the room's game is untouched. It is how a tutorial shows the end of a game before
+teaching the start. A step that shows a position asks for no moves. A finished game to show is easiest
+taken from bots playing one out; the moves are then fixed in the file, and checked like the rest.
+
+## Writing a rules tutorial
+
+A rules tutorial teaches the whole game in this order, one step each unless a part needs more:
+
+1. **What you are doing**, in one or two sentences.
+2. **How the game ends**: `show` a finished game, and explain how it ends and what wins.
+3. **The board**, and any other play areas or zones.
+4. **The pieces**, and any cards or resources.
+5. **The turn**, and the rounds if there are any — usually the learner's first move.
+6. **Each phase of the game in turn**, one step each, with the rules and mechanics unique to it — the
+   learner making the moves that show them, the replies answering.
+
+A big game splits its rules across several rules tutorials by topic, each following the same order
+for its part.
 
 The usual YAML of a definition applies: includes, anchors, and every field name checked with its file
 and line ([dsl.md](dsl.md#the-file)). `docs/tutorial.schema.json` gives an editor completion; it is
@@ -70,9 +92,15 @@ so the rules are the engine's. The room is marked as a tutorial (`tutorial: "fam
 ## The page
 
 A tutorial room's game page shows the step above the board, its highlighted squares ringed and its
-arrow drawn. While a step waits for the learner's move, **that move is the only one the board
-offers**: nothing else can be clicked, and a move that is only an action (Blooms' *End turn*) waits
-for its button. *Need a hint?* shows the step's `hint`. When the learner's moves are made, the page
+arrow drawn, and a shown position in place of the game's. The chat and the voice call are left out:
+there is nobody to talk to.
+
+**What to select is a signal, not a page of its own.** The tutorial the API serves carries a `guide`
+for each step: the selections each of the learner's moves is made of (`piece red`, then `pos d4`) and
+the position a step shows ([api.md](api.md#games)). A client shows them its own way. The web page
+keeps every control where it always is — the colour buttons, *End turn* — picks out the one to press,
+makes the others inert, and lets only the square to click be clicked. *Need a hint?* shows the step's
+`hint`. When the learner's moves are made, the page
 plays the step's `reply` for the other seats, a moment apart so they can be followed, and moves on.
 A step without `play` waits for **Next** (**Finish** on the last). Where the learner is comes from the
 moves the room has played, so a reload, another tab or a phone find the same step; moves that are not
