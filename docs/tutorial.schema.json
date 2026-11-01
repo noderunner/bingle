@@ -19,11 +19,11 @@
           "type": "array"
         },
         "hint": {
-          "description": "Hint is said when the learner tries another move.",
+          "description": "Hint is shown when the learner asks for one (\"Need a hint?\").",
           "type": "string"
         },
         "play": {
-          "description": "Play are the moves the learner is asked to make, in order, in the game's notation. Any other move is refused, with Hint.",
+          "description": "Play are the moves the learner is asked to make, in order, in the game's notation as the engine writes it. The page offers only these.",
           "items": {
             "type": "string"
           },

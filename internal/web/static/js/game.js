@@ -23,6 +23,8 @@ import { rulesIcon } from "./ui-icons.js";
 import { choiceIcon } from "./choice-icons.js";
 import { animalIcon, animalOf } from "./animals.js";
 import { themesFor, themeById } from "./themes.js";
+import { progress as tutorialProgress, isExpected, markFinished } from "./tutorial.js";
+import { renderMarkdown } from "./markdown.js";
 
 installNav();
 
@@ -79,6 +81,7 @@ const S = {
 	autoplay: null, // interval handle while history auto-play runs
 	fatal: null,
 	retired: null, // {name, moves}: a game the server no longer offers, shown as a record
+	tut: null, // {family, ref, doc, read, hint (the step whose hint shows), pending}: the tutorial this room plays (ADR 0077)
 	spectating: !!store.get("bingle.watch." + code, false),
 	bots: null, // built-in bots, fetched when a waiting table could use one
 	reactions: null, // {abilities, targeted, ask_all, ask_seats, others, pending}: this player's reaction settings
@@ -111,6 +114,7 @@ async function boot() {
 			return;
 		}
 		S.info = await api.gameDef(S.game.game_def_id);
+		if (S.game.tutorial) await loadTutorial();
 	} catch (err) {
 		S.fatal = err instanceof ApiError && err.status === 404 ? `No game with room code “${code}”.` : String(err.message || err);
 		render();
@@ -160,6 +164,16 @@ function resolveIdentity() {
 			.map((s) => ({ seat: s.seat, name: s.name }));
 		S.homeSeat = seat.seat;
 		S.me = { name: seat.name, seat: seat.seat };
+		// In a tutorial the learner plays their own seat; the page plays the others.
+		if (S.tut) {
+			const learner = S.tut.doc.seat || 1;
+			const own = S.mine.find((m) => m.seat === learner);
+			if (own) {
+				S.mine = [own];
+				S.me = { name: own.name, seat: own.seat };
+				S.homeSeat = own.seat;
+			}
+		}
 		syncMe();
 		if (!S.flippedByUser) S.flipped = defaultFlipped();
 	}
@@ -258,10 +272,22 @@ async function loadLegal() {
 		} catch (_) {
 			S.legal = [];
 		}
+		// A tutorial accepts only the move its step asks for: the board offers
+		// nothing else to click.
+		if (S.tut) {
+			const p = tutorialState();
+			S.legal = S.legal.filter((m) => isExpected(p.next, m.notation));
+		}
 	}
 	MoveBuilder.manual = (rulesetView() || {}).panel_actions || [];
 	S.builder = new MoveBuilder(S.legal);
 	S.builder.autoAdvance();
+	// With one move on offer, a move that is only an action ("done") would
+	// be taken as forced and wait unsent: the learner presses its button.
+	if (S.tut) {
+		const b = S.builder;
+		while (b.finished() && b.steps.length && b.steps[b.steps.length - 1].kind === "action") b.pop();
+	}
 }
 
 // ---------------------------------------------------------------------------
@@ -950,6 +976,12 @@ async function playFromHere() {
 async function submitMove() {
 	const mv = S.builder.complete();
 	if (!mv || S.busy) return;
+	if (S.tut && !isExpected(tutorialState().next, mv.notation)) {
+		S.tut.hint = tutorialState().step;
+		S.builder.reset();
+		render();
+		return;
+	}
 	S.busy = true;
 	render();
 	try {
@@ -1551,6 +1583,7 @@ function render() {
 		return;
 	}
 	rememberMobileScroll();
+	if (S.tut) queueMicrotask(tutorialTick);
 	clear(root);
 	document.body.classList.remove("m-mode");
 	hideHoverCard();
@@ -1621,6 +1654,7 @@ function render() {
 		return;
 	}
 	main.append(statusBar());
+	if (S.tut) main.append(tutorialCard());
 	const banner = drawOfferBanner();
 	if (banner) main.append(banner);
 	const tbBanner = takebackBanner();
@@ -1720,6 +1754,7 @@ function renderMobile(seats, bottomSeat) {
 	const boardHost = h("div", { id: "board" });
 	const mapPage = h("div", { class: "m-map-page" });
 	mapPage.append(statusBar());
+	if (S.tut) mapPage.append(tutorialCard());
 	for (const banner of [drawOfferBanner(), takebackBanner(), hintBanner()]) if (banner) mapPage.append(banner);
 	if (!S.me.seat && !S.spectating) {
 		const gate = identityGate();
@@ -1818,6 +1853,7 @@ function renderMobileCards(seats, bottomSeat) {
 
 	const play = h("div", { class: "m-map-page m-cards-page" });
 	play.append(statusBar());
+	if (S.tut) play.append(tutorialCard());
 	for (const banner of [drawOfferBanner(), takebackBanner(), hintBanner()]) if (banner) play.append(banner);
 	if (!S.me.seat && !S.spectating) {
 		const gate = identityGate();
@@ -2020,7 +2056,8 @@ function drawBoard(host) {
 			cells: currentCells(),
 			flipped: S.flipped,
 			lastMove: S.preview || !S.settings.lastMove ? [] : lastMoveSquares(),
-			hint: hintSquares(),
+			hint: S.tut ? tutorialStep().highlight || [] : hintSquares(),
+			arrows: S.tut && (tutorialStep().arrow || []).length === 2 ? [tutorialStep().arrow] : null,
 			ghost: ghostPiece(),
 			// Every square chosen so far: the origin, then each landing/drop.
 			selected: interactive ? b.steps.filter((st) => st.kind === "pos").map((st) => st.value) : null,
@@ -5284,3 +5321,145 @@ window.addEventListener("beforeunload", () => {
 });
 
 boot();
+
+
+// ---------------------------------------------------------------------------
+// Tutorials (ADR 0077): the room plays a tutorial. The learner plays their
+// seat — only the move each step asks for — and the page plays the scripted
+// replies for the other seats through the ordinary move endpoint.
+// ---------------------------------------------------------------------------
+
+const TUTORIAL_PAUSE = 700; // ms before a scripted reply, so it can be seen
+
+async function loadTutorial() {
+	const [family, id] = String(S.game.tutorial).split("/");
+	const doc = await api.tutorial(family, id);
+	S.tut = { family, ref: S.game.tutorial, doc, read: Number(store.get(tutorialReadKey(), 0)) || 0, hint: -1, pending: false };
+}
+
+function tutorialReadKey() {
+	return "bingle.tutorial.read." + code;
+}
+
+/** Where the learner is, from the moves this room has played. */
+function tutorialState() {
+	return tutorialProgress(S.tut.doc, (S.moves || []).map((m) => m.notation), S.tut.read);
+}
+
+function tutorialStep() {
+	const steps = S.tut.doc.steps || [];
+	return steps[tutorialState().step] || {};
+}
+
+/** Plays the next scripted reply, if one is due; called after every redraw. */
+function tutorialTick() {
+	if (!S.tut || S.tut.pending || S.busy || !isLive() || S.game.status !== "active") return;
+	const p = tutorialState();
+	if (p.finished) {
+		markFinished(store, S.tut.ref);
+		return;
+	}
+	if (!p.next || p.next.who !== "reply") return;
+	const seat = S.game.turn_seat;
+	if (!seat || seat === (S.tut.doc.seat || 1)) return;
+	S.tut.pending = true;
+	window.setTimeout(async () => {
+		try {
+			await api.move(code, seatName(seat), p.next.notation);
+			await settle();
+		} catch (err) {
+			toast(err.message || "The tutorial's reply was refused.", "error");
+		} finally {
+			S.tut.pending = false;
+			render();
+		}
+	}, TUTORIAL_PAUSE);
+}
+
+/** The learner has read a step without a move of their own: on to its replies, or the next step. */
+function tutorialNext() {
+	const p = tutorialState();
+	S.tut.read = Math.max(S.tut.read, p.step + 1);
+	store.set(tutorialReadKey(), S.tut.read);
+	render();
+}
+
+async function tutorialRestart() {
+	const [family, id] = S.tut.ref.split("/");
+	try {
+		const res = await api.startTutorial({ game_def_id: family, tutorial: id, player_name: ownerName() });
+		location.assign(`/game/${res.room_code}`);
+	} catch (err) {
+		toast(err.message, "error");
+	}
+}
+
+/** Plays on from here, as an ordinary game against a bot. */
+async function tutorialFinishAgainstBot() {
+	const learner = S.tut.doc.seat || 1;
+	try {
+		const res = await api.createGame({
+			game_def_id: S.game.game_def_id,
+			player_name: ownerName(),
+			seat: learner,
+			opponent: "tactical",
+			start_state: S.state,
+			start_seat: S.game.turn_seat,
+		});
+		location.assign(`/game/${res.room_code}`);
+	} catch (err) {
+		toast(err.message, "error");
+	}
+}
+
+/** The learner's own name, without a seat's alias. */
+function ownerName() {
+	return String(S.me.name || "").split(" · ")[0];
+}
+
+function tutorialCard() {
+	const t = S.tut.doc;
+	const p = tutorialState();
+	const steps = t.steps || [];
+	const step = steps[p.step] || {};
+	const card = h("div", { class: "card tutorial-card", id: "tutorial" });
+	card.append(
+		h("div", { class: "tutorial-head" }, h("strong", {}, t.title), h("span", { class: "muted small", id: "tutorial-count" }, p.finished ? "Done" : `Step ${p.step + 1} of ${steps.length}`))
+	);
+	if (p.offScript) {
+		card.append(
+			h("p", { id: "tutorial-off" }, "This game has left the tutorial's script, so it cannot guide you any further from here."),
+			h(
+				"div",
+				{ class: "tutorial-actions" },
+				h("button", { type: "button", id: "tutorial-restart", onclick: tutorialRestart }, "Start the tutorial again"),
+				S.game.status === "active" ? h("button", { type: "button", class: "secondary", id: "tutorial-bot", onclick: tutorialFinishAgainstBot }, "Play on against a bot") : null
+			)
+		);
+		return card;
+	}
+	const base = `/api/game-defs/${encodeURIComponent(S.tut.family)}/assets/`;
+	card.append(h("div", { class: "tutorial-text", id: "tutorial-text" }, renderMarkdown(step.text || "", { assetBase: base }).node));
+	const actions = h("div", { class: "tutorial-actions" });
+	if (p.finished) {
+		card.append(h("p", { class: "tutorial-done", id: "tutorial-done" }, "Tutorial complete."));
+		if (S.game.status === "active") actions.append(h("button", { type: "button", id: "tutorial-bot", onclick: tutorialFinishAgainstBot }, "Finish this game against a bot"));
+		actions.append(h("button", { type: "button", class: "secondary", id: "tutorial-restart", onclick: tutorialRestart }, "Start again"));
+		actions.append(h("a", { class: "button secondary", href: "/" }, "Back to the games"));
+	} else if (p.needsNext) {
+		const last = p.step === steps.length - 1 && !(step.reply || []).length;
+		actions.append(h("button", { type: "button", id: "tutorial-next", onclick: tutorialNext }, last ? "Finish" : "Next"));
+	} else if (p.next && p.next.who === "learner") {
+		if (step.hint) {
+			if (S.tut.hint === p.step) actions.append(h("p", { class: "tutorial-hint", id: "tutorial-hint" }, step.hint));
+			else
+				actions.append(
+					h("button", { type: "button", class: "secondary", id: "tutorial-show-hint", onclick: () => ((S.tut.hint = p.step), render()) }, "Need a hint?")
+				);
+		}
+	} else if (p.next) {
+		actions.append(h("p", { class: "muted small", id: "tutorial-wait" }, "Your opponent is moving…"));
+	}
+	card.append(actions);
+	return card;
+}

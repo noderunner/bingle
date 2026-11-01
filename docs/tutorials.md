@@ -35,8 +35,8 @@ seat: 1                    # the learner's seat (default 1); the page plays the 
 steps:
   - text: |                # Markdown, as in the rules pages
       Place a red stone on the highlighted cell.
-    play: [red@d4]         # what the learner must play, in order, in the game's notation
-    hint: Choose red, then the highlighted cell.   # said when they try anything else
+    play: [red@d4]         # what the learner must play, in order, as the move list writes it
+    hint: Click the highlighted cell.   # shown when they ask for a hint
     highlight: [d4]        # squares (or areas) to pick out
     arrow: [d4, e5]        # an arrow from one square to another
     reply: [blue@a4, black@g1]   # then played for the other seats
@@ -58,6 +58,20 @@ seat and in every other one (`Lia · Blue`, the solo seats of ADR 0029). The pag
 moves as the learner and each `reply` as the seat that makes it, through the ordinary move endpoint,
 so the rules are the engine's. The room is marked as a tutorial (`tutorial: "family/id"` in
 `GET /api/games/{code}`) and stays out of "My games", the open games and turn notifications.
+
+## The page
+
+A tutorial room's game page shows the step above the board, its highlighted squares ringed and its
+arrow drawn. While a step waits for the learner's move, **that move is the only one the board
+offers**: nothing else can be clicked, and a move that is only an action (Blooms' *End turn*) waits
+for its button. *Need a hint?* shows the step's `hint`. When the learner's moves are made, the page
+plays the step's `reply` for the other seats, a moment apart so they can be followed, and moves on.
+A step without `play` waits for **Next** (**Finish** on the last). Where the learner is comes from the
+moves the room has played, so a reload, another tab or a phone find the same step; moves that are not
+the script's (an undo) leave the tutorial *off script*, with a way to start again.
+
+At the end the tutorial is marked done in the browser, and **Finish this game against a bot** starts
+an ordinary game from the position on the board.
 
 ## The guarantee
 
