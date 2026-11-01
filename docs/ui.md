@@ -477,7 +477,7 @@ template (`account.html.tmpl`) chosen by `data-page`: **sign in** (`/login`: `#l
 recovery code) and a link to **forgot** (`/forgot`: `#forgot-who`, `#forgot-go`) and **reset** (`/account/reset?t=`:
 `#reset-password`, `#reset-code`, `#reset-go`). The account page's two-step box (`#tf-box`, ADR 0069) shows the state
 (`#tf-state`, `#tf-needed` for an administrator who must set it up), asks for the password (`#tf-password`), sets it up
-(`#tf-setup`, then `#tf-secret`, `#tf-uri`, `#tf-code`, `#tf-enable`), lists the recovery codes once (`#tf-codes`), and
+(`#tf-setup`, then the QR code `#tf-qr` (ADR 0074), `#tf-secret`, `#tf-uri`, `#tf-code`, `#tf-enable`), lists the recovery codes once (`#tf-codes`), and
 turns it off or renews the codes (`#tf-off-code`, `#tf-off`, `#tf-renew`). Providers (ADR 0070) add a button each to sign in and sign up (`#oidc-buttons`, `#signup-oidc-buttons`: `#oidc-<id>`),
 the handle a newcomer chooses (`#oidc-signup-form`, `#oidc-handle`, `#oidc-go`), and the account page's linked sign-ins
 (`#oidc-box`: `#oidc-link-<id>`, `#oidc-unlink-<id>`, which takes the password from `#tf-password`). An account without a
@@ -485,14 +485,15 @@ password sets one (`#password-title` reads "Set a password", with no old one to 
 show the `?error=` a provider's callback came back with. The account page lists the account's API tokens (`#tokens-list`, `#token-revoke-<id>`), makes one (`#token-name`,
 `#token-scope-<scope>`, `#token-go`; `#token-new` shows it once) and links administrators to **administration**
 (`/admin`, `js/admin.js`, ADR 0071): the mode (`#caps-mode`), the drift badge (`#caps-drift`), a box per class and
-capability (`#cap-user-<cap>`, `#cap-guest-<cap>`, saved on change, `#caps-result`), the limits (`#caps-limits`), and
-invitations (`#invite-go`, `#invite-link`). Anybody else is told (`#admin-refused`). A seat's strip and a chat line show who holds it beside the name (ADR 0072): `.badge.account` (`@handle`) or
+capability (`#cap-user-<cap>`, `#cap-guest-<cap>`, saved on change, `#caps-result`), the limits (`#caps-limits`, a row a kind and a column a class), and
+invitations (`#invite-go`, `#invite-link`); its tables are `table.admin-table`. Anybody else is told (`#admin-refused`); an
+administrator who only lacks the second factor off the server's own machine is told so, with a link to it (`#admin-second-factor`). A seat's strip and a chat line show who holds it beside the name (ADR 0072): `.badge.account` (`@handle`) or
 `.badge.guest`, and `.chat-handle`, `.chat-guest`. The profile page of a guest has `#guest-box`: `#guest-copy` (the key
 and its `#guest=` link, `#guest-link`, `#guest-key`, copied to the clipboard), `#guest-rotate`, `#guest-discard`, and
 `#guest-use-key` with `#guest-use` to adopt a key; any page opened with `#guest=bgg_…` adopts it, takes it out of the
 address and reloads. "My games" merges `GET /api/me/games` into `bingle.games`. The account page adds the address
 (`#account-email`), the handle (`#handle-new`, `#handle-go`) and the sessions (`#sessions-list`, `#sessions-end`); the
-admin page the audit log (`#events-rows`). The top bar's profile window starts with who the browser is (`#profile-account`): a guest gets *Sign in*
+admin page the audit log (`#events-rows`: local time, account, the kind as a tag, `.event-kind.bad` for failures). The top bar's profile window starts with who the browser is (`#profile-account`): a guest gets *Sign in*
 (`#profile-signin`, back to the page afterwards) and, where the server allows it, *Sign up* (`#profile-signup`); an
 account gets `#profile-account-who` ("Signed in as @ana"), *Your account* (`#profile-account-link`), *Administration*
 for an administrator (`#profile-admin-link`) and *Sign out* (`#profile-signout`). The icon's title says the same.

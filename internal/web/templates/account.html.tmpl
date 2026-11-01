@@ -173,7 +173,8 @@
 					<button type="button" class="primary" id="tf-setup">Set it up</button>
 				</div>
 				<div id="tf-setting-up" hidden>
-					<p class="small">Add this to your authenticator app (any app that does "TOTP"), by typing the key or opening the link on your phone, then give the code it shows.</p>
+					<p class="small">Scan this with your authenticator app (Google Authenticator, or any app that does "TOTP"), or type the key into it, then give the code it shows.</p>
+					<img id="tf-qr" class="tf-qr" alt="A QR code of the link below, for an authenticator app" width="200" height="200" hidden>
 					<p class="small">Key: <code id="tf-secret"></code></p>
 					<p class="small">Link: <code id="tf-uri" class="wrap"></code></p>
 					<div class="field">

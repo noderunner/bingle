@@ -12,6 +12,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/noderunner/bingle/internal/mail"
+	"github.com/noderunner/bingle/internal/qr"
 	"github.com/noderunner/bingle/internal/store"
 )
 
@@ -25,7 +26,7 @@ import (
 //	POST /auth/password {old, new}                  a new password, a new cookie
 //	GET  /auth/me                                   who this browser is
 //	POST /auth/second   {code | recovery_code}      the second step of a sign-in
-//	POST /auth/totp/setup   {password}               a secret for an app
+//	POST /auth/totp/setup   {password}               a secret for an app, its link and a QR code of it
 //	POST /auth/totp/enable  {code}                   on, with ten recovery codes
 //	POST /auth/totp/disable {password, code | recovery_code}
 //	POST /auth/recovery {password}                  ten new recovery codes
@@ -93,7 +94,7 @@ func statusOf(err error) int {
 	case errors.Is(err, ErrBadLogin), errors.Is(err, ErrNotSignedIn), errors.Is(err, ErrBadCode), errors.Is(err, ErrSignInAgain), errors.Is(err, ErrNeedsCode):
 		return http.StatusUnauthorized
 	case errors.Is(err, ErrSignupClosed), errors.Is(err, ErrSignupNoMail), errors.Is(err, ErrNotConfirmed), errors.Is(err, ErrMustChangePwd),
-		errors.Is(err, ErrNeedsInvite), errors.Is(err, ErrNotAdmin), errors.Is(err, ErrNotYourContact):
+		errors.Is(err, ErrNeedsInvite), errors.Is(err, ErrNotAdmin), errors.Is(err, ErrAdminNeedsSecondFactor), errors.Is(err, ErrNotYourContact):
 		return http.StatusForbidden
 	case errors.Is(err, ErrHandleTaken), errors.Is(err, ErrLinkedElsewhere), errors.Is(err, ErrOIDCAddressUsed), errors.Is(err, ErrAddressUsed):
 		return http.StatusConflict
@@ -403,7 +404,13 @@ func (rs *Resolver) handleTOTPSetup(w http.ResponseWriter, r *http.Request) {
 		rs.fail(w, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]string{"secret": secret, "uri": uri})
+	out := map[string]string{"secret": secret, "uri": uri}
+	// The same link as a QR code for a phone's camera. It holds nothing the
+	// answer does not hold already.
+	if code, err := qr.Encode([]byte(uri)); err == nil {
+		out["qr_svg"] = code.SVG()
+	}
+	writeJSON(w, http.StatusOK, out)
 }
 
 func (rs *Resolver) handleTOTPEnable(w http.ResponseWriter, r *http.Request) {
@@ -520,6 +527,11 @@ func (rs *Resolver) decorate(r *http.Request, out *me) {
 // an API token, which never carries the admin group's powers).
 var ErrNotAdmin = errors.New("auth: that is for the server's administrators")
 
+// ErrAdminNeedsSecondFactor is the answer to an administrator without a
+// second factor, off the server's own machine (ADR 0069): they are one, so
+// "that is for the administrators" would only puzzle them.
+var ErrAdminNeedsSecondFactor = errors.New("auth: administrators need a second factor away from the server's own machine: set one up on your account page, then come back")
+
 // admin is the request's administrator, or an answer saying it is none.
 func (rs *Resolver) admin(w http.ResponseWriter, r *http.Request) (*store.Account, bool) {
 	acc, ok := rs.account(w, r)
@@ -527,8 +539,12 @@ func (rs *Resolver) admin(w http.ResponseWriter, r *http.Request) (*store.Accoun
 		return nil, false
 	}
 	p, _ := From(r.Context())
-	if !acc.Admin || p.Scopes != nil || rs.needsSecondFactor(r, *acc) || rs.caps == nil {
+	if !acc.Admin || p.Scopes != nil || rs.caps == nil {
 		rs.fail(w, ErrNotAdmin)
+		return nil, false
+	}
+	if rs.needsSecondFactor(r, *acc) {
+		rs.fail(w, ErrAdminNeedsSecondFactor)
 		return nil, false
 	}
 	return acc, true

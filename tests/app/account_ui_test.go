@@ -94,6 +94,10 @@ func TestAccountUI_TwoStepSignIn(t *testing.T) {
 	}
 	clickSel(t, ctx, "#tf-setup")
 	waitJS(t, ctx, "the key", `document.getElementById("tf-secret").textContent.length > 20 && !document.getElementById("tf-setting-up").hidden`, 10*time.Second)
+	// The QR code is there and the browser could draw it: a phone's camera
+	// is how most people add it.
+	waitJS(t, ctx, "the QR code", `(() => { const q = document.getElementById("tf-qr"); return !q.hidden && q.complete && q.naturalWidth > 0 && getComputedStyle(q).display !== "none"; })()`, 10*time.Second)
+	shot(t, ctx, "totp-setup", func(b *[]byte) error { return chromedp.Run(ctx, chromedp.FullScreenshot(b, 90)) })
 	key := totpKey(t, evalString(t, ctx, `document.getElementById("tf-secret").textContent`))
 	if err := chromedp.Run(ctx, chromedp.SendKeys("#tf-code", auth.TOTPCode(key, time.Now(), 6), chromedp.ByID)); err != nil {
 		t.Fatal(err)
@@ -172,6 +176,8 @@ func TestAccountUI_TheAdminPage(t *testing.T) {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the matrix", `document.getElementById("cap-guest-create_game") && document.getElementById("cap-guest-create_game").checked && !document.getElementById("cap-guest-run_batch").checked`, 10*time.Second)
+	waitJS(t, ctx, "the events", `!document.getElementById("events-card").hidden`, 10*time.Second)
+	shot(t, ctx, "admin", func(b *[]byte) error { return chromedp.Run(ctx, chromedp.FullScreenshot(b, 90)) })
 	clickSel(t, ctx, "#cap-guest-create_game")
 	waitJS(t, ctx, "saved", `document.getElementById("caps-result").textContent.indexOf("Saved") === 0 && !document.getElementById("caps-drift").hidden`, 10*time.Second)
 	if code := createAs(t, newGuestKey(t, srv.URL), srv.URL); code != 403 {

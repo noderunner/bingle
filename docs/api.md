@@ -32,7 +32,7 @@ Position documents appear as `state` (full: `cells` = stacks bottom-to-top,
 | `POST /auth/password` | `{old, new}` | a new session cookie; every other session of the account ends |
 | `GET /auth/me` | | `{kind: "account"\|"guest"\|"anonymous", handle?, display_name?, must_change_password?, second_factor?, recovery_codes_left?, needs_second_factor?, password?, linked?, providers?: [{id, label}], accounts, signup}` |
 | `POST /auth/second` | `{code}` or `{recovery_code}` | the second step of a sign-in (ADR 0069): after a password answered `{second_factor: true}` and the `bingle_login` cookie (five minutes, five wrong codes). `401` a wrong or spent code, or the sign-in ran out |
-| `POST /auth/totp/setup` | `{password}` | `{secret, uri}`: a key for an authenticator app, not yet in use |
+| `POST /auth/totp/setup` | `{password}` | `{secret, uri, qr_svg}`: a key for an authenticator app, not yet in use; `qr_svg` is the link as a QR code (ADR 0074) |
 | `POST /auth/totp/enable` | `{code}` | `{recovery_codes: [ten], me}`: on, a new session cookie, every other session ended |
 | `POST /auth/totp/disable` | `{password, code \| recovery_code}` | off; a new session cookie |
 | `POST /auth/recovery` | `{password}` | `{recovery_codes}`: ten new ones, the old ones gone |

@@ -351,6 +351,9 @@ if (page === "login") {
 			const res = await api.totpSetup(el("tf-password").value);
 			el("tf-secret").textContent = res.secret;
 			el("tf-uri").textContent = res.uri;
+			// An image, not markup: an SVG in an <img> cannot run anything.
+			el("tf-qr").hidden = !res.qr_svg;
+			if (res.qr_svg) el("tf-qr").src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(res.qr_svg);
 			el("tf-setting-up").hidden = false;
 			el("tf-code").focus();
 		})
