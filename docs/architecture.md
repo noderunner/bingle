@@ -122,8 +122,8 @@ Served by the same binary as static assets plus lightweight JS (no SPA build pip
   instead bring a Go `state.Ruleset` (`engine: "ruleset"`) that implements
   the same functions itself — with chance, hidden information and
   multi-decision turns — behind the same entry points (ADR 0025).
-* **Games** (`internal/games`): `tak` (3×3–8×8 from one JSON
-  document), `classics` (Tic-Tac-Toe, Connect Four, Gomoku, Hex, Draughts,
+* **Games** (`internal/games`): `tak` (3×3–8×8 from one YAML
+  definition), `classics` (Gomoku, Hex, Draughts,
   Breakthrough, Reversi, Go, Yavalath, Havannah, Amazons, Ataxx, Pente,
   Brandubh), `courtfall` (a Go ruleset with a JSON legend,
   [courtfall.md](courtfall.md)), `fist` and `onitama` (Go rulesets, one move per turn), `blooms` (a Go ruleset, a turn of one or two placements), `hive` (a Go ruleset with stacks on a large hex field), `fendo` (a Go ruleset whose fences travel in the view), `yinsh` (a Go ruleset on an explicit 85-point graph), `meridians` (a Go ruleset on a hexagon with no middle point, where a group that can see no friend dies), `mycelium` (a Go ruleset whose confluence is a run of single-spread decisions), `nyet` (a Go ruleset on the card framework in `internal/engine/cards`),

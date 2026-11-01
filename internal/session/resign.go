@@ -39,9 +39,9 @@ func (m *Manager) Resign(ctx context.Context, roomCode, name string) (StateSnaps
 	if err := m.mayActFor(ctx, player); err != nil {
 		return StateSnapshot{}, err
 	}
-	compiled, ok := m.catalog.Get(game.GameDefID)
-	if !ok {
-		return StateSnapshot{}, fmt.Errorf("session: game definition %q not found for room %q", game.GameDefID, roomCode)
+	compiled, err := m.compiledFor(game)
+	if err != nil {
+		return StateSnapshot{}, err
 	}
 
 	var winner *int

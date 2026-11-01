@@ -72,9 +72,9 @@ func (m *Manager) Observe(ctx context.Context, roomCode, name string) (Observati
 	if err != nil {
 		return Observation{}, err
 	}
-	compiled, ok := m.catalog.Get(game.GameDefID)
-	if !ok {
-		return Observation{}, fmt.Errorf("session: game definition %q not found for room %q", game.GameDefID, roomCode)
+	compiled, err := m.compiledFor(game)
+	if err != nil {
+		return Observation{}, err
 	}
 	snap, err := m.snapshot(compiled, game, players, game.BoardState)
 	if err != nil {
@@ -201,9 +201,9 @@ func (m *Manager) Export(ctx context.Context, roomCode string) (GameRecord, erro
 	if err != nil {
 		return GameRecord{}, err
 	}
-	compiled, ok := m.catalog.Get(game.GameDefID)
-	if !ok {
-		return GameRecord{}, fmt.Errorf("session: game definition %q not found for room %q", game.GameDefID, roomCode)
+	compiled, err := m.compiledFor(game)
+	if err != nil {
+		return GameRecord{}, err
 	}
 	snap, err := m.snapshot(compiled, game, players, game.BoardState)
 	if err != nil {

@@ -78,6 +78,7 @@ const S = {
 	unitInfo: null, // {pos, piece, color}: the unit whose card is open (area maps)
 	autoplay: null, // interval handle while history auto-play runs
 	fatal: null,
+	retired: null, // {name, moves}: a game the server no longer offers, shown as a record
 	spectating: !!store.get("bingle.watch." + code, false),
 	bots: null, // built-in bots, fetched when a waiting table could use one
 	reactions: null, // {abilities, targeted, ask_all, ask_seats, others, pending}: this player's reaction settings
@@ -102,6 +103,13 @@ async function boot() {
 	installTopbar({ manageTitle: false });
 	try {
 		S.game = await api.game(code);
+		if (S.game.retired) {
+			// The server no longer offers this game: what was played is a record.
+			S.retired = { name: S.game.game_name || S.game.game_def_id, moves: (await api.moves(code)) || [] };
+			titleBase = S.retired.name;
+			render();
+			return;
+		}
 		S.info = await api.gameDef(S.game.game_def_id);
 	} catch (err) {
 		S.fatal = err instanceof ApiError && err.status === 404 ? `No game with room code “${code}”.` : String(err.message || err);
@@ -1552,6 +1560,10 @@ function render() {
 	initOptions();
 	refreshOptions();
 
+	if (S.retired) {
+		root.append(retiredRecord());
+		return;
+	}
 	if (S.fatal) {
 		root.append(h("div", { class: "card", id: "board-error" }, h("h2", {}, "Can’t open this game"), h("p", {}, "Failed to load game state: " + S.fatal), h("a", { class: "button", href: "/" }, "Back to the lobby")));
 		return;
@@ -2147,6 +2159,33 @@ function rematchControl() {
 	return h("a", { class: "button primary", id: "new-game", href: `/?game=${encodeURIComponent(S.game.game_def_id)}` }, "New game");
 }
 
+/** The page of a game this server no longer offers: who played, how it ended, the moves. */
+function retiredRecord() {
+	const g = S.game;
+	const seats = g.seats || [];
+	const who = (seat) => {
+		const s = seats.find((x) => x.seat === seat);
+		return s && s.name ? s.name : `Seat ${seat}`;
+	};
+	let ending;
+	if (g.end_reason === "retired") ending = "It was still being played when the server stopped offering the game, so it ended with no result.";
+	else if (g.status !== "finished") ending = "It was never finished.";
+	else if (g.winner_seat === null || g.winner_seat === undefined) ending = "It ended in a draw.";
+	else ending = `${who(g.winner_seat)} won.`;
+	const players = seats.filter((s) => s.name).map((s) => s.name + (s.bot ? " (bot)" : ""));
+	return h(
+		"div",
+		{ class: "card", id: "retired-game" },
+		h("h2", {}, `${S.retired.name} is no longer played here`),
+		h("p", {}, `This server no longer offers ${S.retired.name}. This game is kept as a record: the board can't be shown any more, but the moves can.`),
+		players.length ? h("p", {}, `Played by ${players.join(" and ")}. ${ending}`) : h("p", {}, ending),
+		S.retired.moves.length
+			? h("ol", { class: "retired-moves" }, S.retired.moves.map((m) => h("li", {}, `${who(m.seat)}: ${m.notation || m.to || "—"}`)))
+			: h("p", { class: "muted" }, "No moves were made."),
+		h("a", { class: "button", href: "/" }, "Back to the lobby")
+	);
+}
+
 function resultMessage() {
 	const g = S.game;
 	const reasons = {
@@ -2165,6 +2204,7 @@ function resultMessage() {
 		doom: "with the most Doom and all six spellbooks",
 		"instant-death": "after Instant Death",
 		draw: "",
+		retired: "",
 	};
 	const how = g.end_reason ? ` ${reasons[g.end_reason] || "(" + g.end_reason + ")"}` : "";
 	const detail = g.end_detail ? ` [${g.end_detail}]` : "";

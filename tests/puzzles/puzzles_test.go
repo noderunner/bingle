@@ -10,12 +10,13 @@ import (
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/engine/state"
 	"github.com/noderunner/bingle/internal/puzzles"
+	"github.com/noderunner/bingle/tests/testdata"
 )
 
 func testCatalog(t testing.TB) *catalog.Catalog {
 	t.Helper()
 	cat := catalog.NewCatalog()
-	for _, m := range app.BuiltinModules() {
+	for _, m := range append(app.BuiltinModules(), testdata.TicTacToe()) {
 		if err := cat.RegisterModule(m); err != nil {
 			t.Fatal(err)
 		}

@@ -1,6 +1,6 @@
 // Package classics ships a handful of well-known abstract games that are
 // defined entirely in YAML using the engine's declarative actions and win
-// rules — Tic-Tac-Toe, Connect Four (gravity), Gomoku, Hex (a hexagonal board
+// rules — Gomoku, Hex (a hexagonal board
 // with per-seat connection rules), English Draughts (mandatory multi-jumps,
 // promotion, directional movement), Breakthrough (direction-specific capture
 // and a "reach the far row" win) Reversi (bracketing flips and passing) and Go (liberty captures, ko, passing,
@@ -54,8 +54,6 @@ func guideOf(folder string) fs.FS {
 // Modules returns the classic games' catalog modules.
 func Modules() []catalog.Module {
 	return []catalog.Module{
-		{ID: "tic-tac-toe", Definition: definitions()["tictactoe.yaml"], Assets: guideOf("tictactoe")},
-		{ID: "connect-four", Definition: definitions()["connect4.yaml"], Assets: guideOf("connect4")},
 		{ID: "gomoku", Definition: definitions()["gomoku.yaml"], Assets: guideOf("gomoku")},
 		{ID: "hex-11", Definition: definitions()["hex.yaml"], Assets: guideOf("hex")},
 		{ID: "draughts", Definition: definitions()["draughts.yaml"], Assets: guideOf("draughts")},

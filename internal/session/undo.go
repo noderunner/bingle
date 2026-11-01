@@ -68,9 +68,9 @@ func (m *Manager) Undo(ctx context.Context, roomCode, name string) (UndoOutcome,
 			botSeats[seat] = true
 		}
 	}
-	compiled, ok := m.catalog.Get(game.GameDefID)
-	if !ok {
-		return UndoOutcome{}, fmt.Errorf("session: game definition %q not found for room %q", game.GameDefID, roomCode)
+	compiled, err := m.compiledFor(game)
+	if err != nil {
+		return UndoOutcome{}, err
 	}
 	if game.Status == "finished" && game.EndReason == "resignation" {
 		return UndoOutcome{}, ErrCannotUndo

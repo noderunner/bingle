@@ -317,9 +317,9 @@ func (m *Manager) readState(ctx context.Context, roomCode string, atSeq *int) (S
 		return StateSnapshot{}, err
 	}
 
-	compiled, ok := m.catalog.Get(game.GameDefID)
-	if !ok {
-		return StateSnapshot{}, fmt.Errorf("session: game definition %q not found for room %q", game.GameDefID, roomCode)
+	compiled, err := m.compiledFor(game)
+	if err != nil {
+		return StateSnapshot{}, err
 	}
 
 	doc := game.BoardState

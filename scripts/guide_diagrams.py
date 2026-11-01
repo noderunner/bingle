@@ -184,47 +184,6 @@ def panels(width, height, title, items, save_as, gap=18, lead=34, note=None):
     save(*save_as, s)
 
 
-@game("tictactoe", "classics/guide/tictactoe")
-def tictactoe():
-    s = Svg(300, 250, "Three in a row wins")
-    bd = Board(s, 54, 20, 3, 3, 64, checker=None)
-    marks = {(0, 2): "x", (1, 2): "o", (2, 2): "x", (1, 1): "x", (0, 1): "o", (2, 0): "x", (0, 0): "o"}
-    for (c, r), m in marks.items():
-        bd.put(c, r, m, "red" if m == "x" else "blue", scale=1.0)
-    bd.tint([(0, 0), (1, 1), (2, 2)] if False else [(2, 0), (1, 1), (0, 2)], AMBER, 0.55)
-    # redraw the marks over the tint
-    for (c, r), m in marks.items():
-        bd.put(c, r, m, "red" if m == "x" else "blue", scale=1.0)
-    caption(s, 150, 232, "Red completes the diagonal from c1 to a3", 12.5)
-    save("classics/guide/tictactoe", "ttt-win", s)
-
-
-@game("connect4", "classics/guide/connect4")
-def connect4():
-    s = Svg(430, 350, "Connect Four")
-    bd = Board(s, 38, 16, 7, 6, 46, checker=None, labels=True, edge="#2d5fc4", light="#3f74d6")
-    cols = {
-        0: ["red", "yellow"],
-        1: ["yellow", "red", "yellow"],
-        2: ["yellow", "yellow", "red"],
-        3: ["red", "yellow", "red", "red"],
-        4: ["yellow", "red"],
-        5: ["red"],
-        6: [],
-    }
-    for c, stack in cols.items():
-        for r, col in enumerate(stack):
-            bd.put(c, r, "disc", col, scale=0.88)
-    for c in range(7):
-        for r in range(len(cols[c]), 6):
-            x, y = bd.at(c, r)
-            s.circle(x, y, 17, "#1f4aa6", op=0.55)
-    for c, r in [(0, 0), (1, 1), (2, 2), (3, 3)]:
-        bd.ring_mark(c, r, HIGH, 4)
-    note(s, 215, 334, "Discs fall to the lowest free square. Red has four in a diagonal.", 52, 12.5)
-    save("classics/guide/connect4", "connect4-win", s)
-
-
 @game("gomoku", "classics/guide/gomoku")
 def gomoku():
     s = Svg(340, 350, "Five in a row")

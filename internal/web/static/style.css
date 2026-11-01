@@ -1803,3 +1803,8 @@ table.admin-table.events td.who { white-space: nowrap; }
 .event-kind.bad { background: color-mix(in srgb, var(--danger) 18%, transparent); }
 /* A long unbroken string (a link, a key) breaks anywhere rather than run out of its box. */
 code.wrap { overflow-wrap: anywhere; word-break: break-all; }
+
+/* A game the server no longer offers: its moves as a record, in columns. */
+#retired-game { max-width: 48rem; margin: 1rem auto; }
+#retired-game .retired-moves { columns: 12rem; column-gap: 2rem; padding-left: 2.2rem; }
+#retired-game .retired-moves li { break-inside: avoid; }

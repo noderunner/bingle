@@ -92,6 +92,8 @@ type Catalog struct {
 	src   map[string]source
 	// dmu serialises the building of derived games.
 	dmu sync.Mutex
+	// retired names the games this server no longer offers, by id.
+	retired map[string]string
 }
 
 // NewCatalog returns an empty Catalog ready for Register/Get calls.
@@ -247,6 +249,45 @@ func (c *Catalog) Get(id string) (*CompiledGame, bool) {
 		}
 	}
 	return nil, false
+}
+
+// Retire records that the game id is no longer offered, under the name it
+// had. Games of it already played stay readable as a record (see Retired);
+// nothing can be played in them.
+func (c *Catalog) Retire(id, name string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.retired == nil {
+		c.retired = map[string]string{}
+	}
+	c.retired[id] = name
+}
+
+// Retired reports whether id is a retired game that is not registered, and
+// the name it had. A derived id (base~suffix) is retired with its base.
+func (c *Catalog) Retired(id string) (name string, ok bool) {
+	base, _, _ := strings.Cut(id, DerivedSep)
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	if _, registered := c.games[id]; registered {
+		return "", false
+	}
+	name, ok = c.retired[base]
+	return name, ok
+}
+
+// RetiredIDs lists the retired games that are not registered.
+func (c *Catalog) RetiredIDs() []string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	var out []string
+	for id := range c.retired {
+		if _, registered := c.games[id]; !registered {
+			out = append(out, id)
+		}
+	}
+	sort.Strings(out)
+	return out
 }
 
 // Derive turns the setup options of a game into the id of the game they

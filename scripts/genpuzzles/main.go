@@ -42,7 +42,6 @@ var plans = []plan{
 	{"tak-4x4", 500, []int{1, 3}, 4, 10 * time.Second},
 	{"tak-5x5", 600, []int{1, 3}, 5, 15 * time.Second},
 	{"tak-6x6", 300, []int{1, 3}, 3, 25 * time.Second},
-	{"connect-four", 500, []int{1, 3, 5}, 4, 10 * time.Second},
 	{"yavalath", 500, []int{1, 3}, 3, 10 * time.Second},
 	{"havannah-4", 400, []int{1, 3}, 3, 10 * time.Second},
 	{"hex-7", 400, []int{1, 3}, 3, 10 * time.Second},

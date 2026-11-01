@@ -84,6 +84,7 @@ func TestGameVersions_AreRecordedInTheDatabaseOnce(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		registerFixtures(t, a)
 		if err := a.Close(); err != nil {
 			t.Fatal(err)
 		}

@@ -115,9 +115,9 @@ func (m *Manager) Hint(ctx context.Context, roomCode, name string, atSeq *int, n
 	if sim.GameEnded || sim.TurnSeat == nil || len(sim.Legal) == 0 {
 		return Hint{}, fmt.Errorf("%w: there is no move to suggest here", ErrGameNotActive)
 	}
-	compiled, ok := m.catalog.Get(game.GameDefID)
-	if !ok {
-		return Hint{}, fmt.Errorf("session: game definition %q not found for room %q", game.GameDefID, roomCode)
+	compiled, err := m.compiledFor(game)
+	if err != nil {
+		return Hint{}, err
 	}
 	if botID == "" {
 		botID = defaultHintBot(compiled)

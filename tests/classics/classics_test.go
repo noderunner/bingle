@@ -11,6 +11,7 @@ import (
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/engine/state"
 	"github.com/noderunner/bingle/internal/games/classics"
+	"github.com/noderunner/bingle/tests/testdata"
 )
 
 func boardID(s string) board.PositionID { return board.PositionID(s) }
@@ -18,7 +19,7 @@ func boardID(s string) board.PositionID { return board.PositionID(s) }
 func load(t testing.TB, id string) *catalog.CompiledGame {
 	t.Helper()
 	cat := catalog.NewCatalog()
-	for _, m := range classics.Modules() {
+	for _, m := range append(classics.Modules(), testdata.TicTacToe(), testdata.ConnectFour()) {
 		if err := cat.RegisterModule(m); err != nil {
 			t.Fatalf("RegisterModule(%s): %v", m.ID, err)
 		}

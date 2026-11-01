@@ -36,6 +36,7 @@ func oidcServer(t *testing.T, mods ...func(*config.Config)) (*app.App, string, *
 	if err != nil {
 		t.Fatal(err)
 	}
+	registerFixtures(t, a)
 	t.Cleanup(func() { _ = a.Close() })
 	srv.Config.Handler = a.Router()
 	return a, srv.URL, idp

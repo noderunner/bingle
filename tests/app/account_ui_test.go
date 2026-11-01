@@ -22,6 +22,7 @@ func TestAccountUI_SignInAndChangeTheGivenPassword(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	registerFixtures(t, a)
 	t.Cleanup(func() { _ = a.Close() })
 	pw, err := a.Accounts().Create(context.Background(), "ana", "ana@example.com", false)
 	if err != nil {
@@ -162,6 +163,7 @@ func TestAccountUI_TheAdminPage(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	registerFixtures(t, a)
 	t.Cleanup(func() { _ = a.Close() })
 	srv := httptest.NewServer(a.Router())
 	t.Cleanup(srv.Close)

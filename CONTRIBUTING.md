@@ -40,8 +40,8 @@ set to its path; without one they are skipped. `make test-short` skips the slowe
 ## Adding a game
 
 Most games are one YAML file: board, pieces, actions, win rules. Start from
-`internal/games/classics/tictactoe.yaml` and read [docs/dsl.md](docs/dsl.md). Games with chance,
-hidden information or rules a definition cannot say are a Go `state.Ruleset` behind the same API
+`tests/testdata/tictactoe.yaml` (Tic-Tac-Toe, kept as a test fixture) and read
+[docs/dsl.md](docs/dsl.md). Games with chance, hidden information or rules a definition cannot say are a Go `state.Ruleset` behind the same API
 (ADR 0025; Courtfall and Hive are good examples). Every game needs:
 
 - a definition with `version`, `designers`, `publisher` (when known) and a short `description`;

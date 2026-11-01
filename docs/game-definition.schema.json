@@ -56,7 +56,7 @@
               "$ref": "#/$defs/FlipsDef"
             }
           ],
-          "description": "Flips makes a placement flip lines of opposing pieces bracketed by the new piece and another piece of the placer's color (Reversi/Othello)."
+          "description": "Flips makes a placement flip lines of opposing pieces bracketed by the new piece and another piece of the placer's color (Reversi)."
         },
         "forbid_region": {
           "description": "ForbidRegion names a board region the action's pieces may not land on (Hnefatafl's corners and throne, for everyone but the king).",

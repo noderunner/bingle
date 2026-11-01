@@ -431,6 +431,7 @@ func TestReactionChoicesSavedByTheEarlierWayStillMean(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	registerFixtures(t, a)
 	t.Cleanup(func() { _ = a.Close() })
 	srv := httptest.NewServer(a.Router())
 	t.Cleanup(srv.Close)

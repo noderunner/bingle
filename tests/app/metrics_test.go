@@ -192,7 +192,10 @@ func TestMetrics_SeriesCountOfAFreshServerIsUnderTheCeiling(t *testing.T) {
 	// Raised to 350 with the capabilities (ADR 0071): the first start also
 	// seeds the capability matrix, three statements' histograms, and four
 	// more tables are counted (326 after).
-	const ceiling = 350
+	// Raised to 400 with retiring games (ADR 0076): every start ends the
+	// unfinished games of retired ones, one more statement's histogram (24
+	// series; 344 before, 368 after).
+	const ceiling = 400
 
 	_, scrape := newMeasuredServer(t)
 	got := seriesCount(scrape())

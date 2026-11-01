@@ -39,9 +39,9 @@ func (m *Manager) AddBotAt(ctx context.Context, roomCode, by, botID string, want
 	if !ok {
 		return AddBotResult{}, fmt.Errorf("%w: %q", ErrUnknownBot, botID)
 	}
-	compiled, ok := m.catalog.Get(game.GameDefID)
-	if !ok {
-		return AddBotResult{}, fmt.Errorf("session: game definition %q not found for room %q", game.GameDefID, roomCode)
+	compiled, err := m.compiledFor(game)
+	if err != nil {
+		return AddBotResult{}, err
 	}
 	players, err := m.store.ListPlayers(ctx, game.ID)
 	if err != nil {

@@ -4,6 +4,19 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.30.0 - 2026-11-01
+
+### Bingle Core 0.30.0
+- **Tic-Tac-Toe and Connect Four are no longer offered.** The bots and the other games now show
+  everything they were there to show. If you have played them, your games are still there as a
+  record: open one to see who played, how it ended and every move. A game of either that was still
+  going ends now, with no result.
+- **Reversi is just "Reversi"**, without "(Othello)", which is a trademark.
+- Twelve Connect Four puzzles are gone with the game.
+
+### Reversi 0.3.1
+- Called Reversi everywhere.
+
 ## 0.29.0 - 2026-10-31
 
 ### Bingle Core 0.29.0

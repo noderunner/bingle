@@ -6,13 +6,14 @@ import (
 
 	"github.com/noderunner/bingle/internal/engine/state"
 	"github.com/noderunner/bingle/internal/games/classics"
+	"github.com/noderunner/bingle/tests/testdata"
 )
 
 // For every game with a fixed action space, any legal move reached in random
 // play must have an action ID (the space is a superset of the legal moves),
 // IDs must be unique, and the planes must keep a constant, correct shape.
 func TestActionSpaceCoversLegalMovesAndPlanesAreWellFormed(t *testing.T) {
-	for _, mod := range classics.Modules() {
+	for _, mod := range append(classics.Modules(), testdata.TicTacToe(), testdata.ConnectFour()) {
 		g := load(t, mod.ID)
 		as := state.ActionSpaceOf(g)
 		names, h, w, err := state.PlaneChannels(g, state.PlaneOptions{})

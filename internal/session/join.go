@@ -79,9 +79,9 @@ func (m *Manager) JoinGameAt(ctx context.Context, roomCode, name string, role Ro
 		return JoinResult{}, err
 	}
 
-	compiled, ok := m.catalog.Get(game.GameDefID)
-	if !ok {
-		return JoinResult{}, fmt.Errorf("session: game definition %q not found for room %q", game.GameDefID, roomCode)
+	compiled, err := m.compiledFor(game)
+	if err != nil {
+		return JoinResult{}, err
 	}
 
 	playersBySeat := make(map[int]store.Player, len(players))
