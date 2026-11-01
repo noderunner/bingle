@@ -182,3 +182,19 @@ func TestSchema_UpToDate(t *testing.T) {
 		t.Fatal("docs/tutorial.schema.json is out of date: run go run ./scripts/genschema")
 	}
 }
+
+// The page compares the learner's move with the script by its notation, so
+// the script must spell each move as the engine writes it.
+func TestVerify_CanonicalNotation(t *testing.T) {
+	cat := shippedCatalog(t)
+	doc := "id: t\nkind: rules\ntitle: T\ngame: gomoku\nsteps:\n  - text: Go.\n    play: [stone@h8]\n"
+	tuts, err := load(t, map[string]string{"t.yaml": doc})
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantErr(t, tutorial.Verify(cat, "gomoku", tuts[0]), `write it as the game does, "h8"`)
+	tuts, _ = load(t, map[string]string{"t.yaml": strings.Replace(doc, "stone@h8", "h8", 1)})
+	if err := tutorial.Verify(cat, "gomoku", tuts[0]); err != nil {
+		t.Fatal(err)
+	}
+}

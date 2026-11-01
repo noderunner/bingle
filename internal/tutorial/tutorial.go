@@ -65,9 +65,9 @@ type Step struct {
 	// used, as in its rules pages).
 	Text string `json:"text"`
 	// Play are the moves the learner is asked to make, in order, in the
-	// game's notation. Any other move is refused, with Hint.
+	// game's notation as the engine writes it. The page offers only these.
 	Play []string `json:"play,omitempty"`
-	// Hint is said when the learner tries another move.
+	// Hint is shown when the learner asks for one ("Need a hint?").
 	Hint string `json:"hint,omitempty"`
 	// Reply are the moves played for the other seats after the learner's,
 	// in order.

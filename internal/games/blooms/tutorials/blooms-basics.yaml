@@ -16,7 +16,7 @@ steps:
       The first player's first turn is a single stone. Place a red stone on
       the highlighted cell.
     play: [red@d4]
-    hint: Choose red, then the highlighted cell in the middle of the board.
+    hint: Click the highlighted cell in the middle of the board.
     highlight: [d4]
     reply: [blue@a4, black@g1]
 
@@ -35,13 +35,13 @@ steps:
     reply: [blue@f1, done]
 
   - text: |
-      Your opponent placed a single stone and ended the turn (**done**). The
-      blue bloom at a4 has one empty cell left beside it, a5.
+      Your opponent placed a single stone and ended the turn there. The blue
+      bloom at a4 has one empty cell left beside it, a5.
 
-      Fill it, and end your turn with **done**: at the end of your turn,
-      every enemy bloom that is fenced is **captured**.
+      Fill it with one red stone, then press **End turn**: at the end of your
+      turn, every enemy bloom that is fenced is **captured**.
     play: [red@a5, done]
-    hint: Red on a5, then done.
+    hint: Red on a5, then End turn.
     highlight: [a5]
     arrow: [a5, a4]
 

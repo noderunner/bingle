@@ -4,6 +4,14 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.30.3 - 2026-11-01
+
+### Bingle Core 0.30.3
+- **The tutorial page.** A tutorial's room now guides you: each step's explanation above the board,
+  the cells it talks about ringed and an arrow where it points, only the move it asks for offered,
+  a hint when you want one, your opponent's scripted replies played for you, and at the end a button
+  to finish the game against a bot. The list to open tutorials from comes next.
+
 ## 0.30.2 - 2026-11-01
 
 ### Bingle Core 0.30.2

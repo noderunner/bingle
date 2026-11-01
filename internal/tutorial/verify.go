@@ -2,6 +2,7 @@ package tutorial
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/noderunner/bingle/internal/engine/board"
 	"github.com/noderunner/bingle/internal/engine/catalog"
@@ -129,6 +130,11 @@ func (p *player) play(text string, who int) error {
 	res, err := state.Apply(p.game, p.st, p.seat, mv)
 	if err != nil {
 		return fmt.Errorf("move %q is not legal for seat %d: %w", text, p.seat, err)
+	}
+	// The page compares the learner's move with the script by its
+	// notation, so the script must spell each move as the engine does.
+	if res.Notation != "" && !strings.EqualFold(res.Notation, strings.TrimSpace(text)) {
+		return fmt.Errorf("move %q: write it as the game does, %q", text, res.Notation)
 	}
 	p.st = res.NewState
 	switch {

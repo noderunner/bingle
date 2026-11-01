@@ -1808,3 +1808,13 @@ code.wrap { overflow-wrap: anywhere; word-break: break-all; }
 #retired-game { max-width: 48rem; margin: 1rem auto; }
 #retired-game .retired-moves { columns: 12rem; column-gap: 2rem; padding-left: 2.2rem; }
 #retired-game .retired-moves li { break-inside: avoid; }
+
+/* A tutorial (ADR 0077): the step above the board, and its arrows on it. */
+.tutorial-card { border-left: 4px solid var(--focus); }
+.tutorial-card .tutorial-head { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; margin-bottom: 0.4rem; }
+.tutorial-card .tutorial-text .md p:last-child { margin-bottom: 0.4rem; }
+.tutorial-card .tutorial-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+.tutorial-card .tutorial-hint { margin: 0; font-style: italic; }
+.tutorial-card .tutorial-done { font-weight: 600; }
+.board-arrow { stroke: var(--focus); stroke-width: 6; stroke-linecap: round; opacity: 0.85; pointer-events: none; }
+.board-arrowhead { fill: var(--focus); }

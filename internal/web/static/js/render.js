@@ -224,6 +224,8 @@ function describeStack(info, stack) {
  *   cells:      {positionId: [{piece, color}, ...]}  (bottom first)
  *   flipped:    boolean
  *   lastMove:   [positionId, ...]    squares to tint as "last move"
+ *   hint:       [positionId, ...]    squares to ring (a bot's hint, a tutorial's highlight)
+ *   arrows:     [[from, to], ...]    arrows to draw over the board (a tutorial)
  *   selected:   positionId | null
  *   targets:    Set<positionId>      squares that may be clicked next
  *   pathCounts: Map<positionId, n>   pieces already dropped on a square
@@ -688,8 +690,42 @@ function drawBoard(host, info, view, handlers = {}) {
 		svg.append(fences);
 	}
 
+	const byId = new Map(b.positions.map((p) => [p.id, p]));
+	drawArrows(svg, view.arrows, (id) => (byId.has(id) ? L.place(byId.get(id)) : null));
 	clear(host).append(svg);
 	return svg;
+}
+
+let arrowCount = 0;
+
+/**
+ * Draws arrows over a board — a tutorial pointing from one square to another
+ * — as [[from, to], ...]; centerOf gives a square's centre in the board's
+ * coordinates, or null for a square not drawn.
+ */
+function drawArrows(parent, arrows, centerOf) {
+	if (!arrows || !arrows.length) return;
+	const id = `board-arrowhead-${++arrowCount}`;
+	parent.append(
+		s("defs", {}, s("marker", { id, viewBox: "0 0 10 10", refX: 7, refY: 5, markerWidth: 4, markerHeight: 4, orient: "auto-start-reverse" }, s("path", { d: "M0,0 L10,5 L0,10 z", class: "board-arrowhead" })))
+	);
+	const g = s("g", { class: "board-arrows", "aria-hidden": "true" });
+	for (const [from, to] of arrows) {
+		const a = centerOf(from);
+		const c = centerOf(to);
+		if (!a || !c) continue;
+		const dx = c.x - a.x;
+		const dy = c.y - a.y;
+		const len = Math.hypot(dx, dy) || 1;
+		// Start and stop short of the centres, clear of the pieces' middles.
+		const trim = Math.min(14, len / 4);
+		const x1 = a.x + (dx / len) * trim;
+		const y1 = a.y + (dy / len) * trim;
+		const x2 = c.x - (dx / len) * trim;
+		const y2 = c.y - (dy / len) * trim;
+		g.append(s("line", { class: "board-arrow", x1, y1, x2, y2, "marker-end": `url(#${id})` }));
+	}
+	parent.append(g);
 }
 
 // selectionSet accepts a single position, an array of positions, or null.
@@ -958,6 +994,8 @@ function renderHexBoard(host, info, view, handlers) {
 		}
 	}
 
+	const byId = new Map(b.positions.map((p) => [p.id, p]));
+	drawArrows(svg, view.arrows, (id) => (byId.has(id) ? place(byId.get(id)) : null));
 	clear(host).append(svg);
 	return svg;
 }
@@ -1657,6 +1695,8 @@ function renderAreaMap(host, info, view, handlers) {
 	for (const area of lands) svg.append(drawArea(area));
 	svg.append(s("g", { class: "map-labels", "aria-hidden": "true" }, ...labelNodes));
 	svg.append(s("g", { class: "map-tokens" }, ...tokenNodes));
+	const anchors = new Map(b.areas.map((area) => [area.id, area.anchor ? { x: area.anchor[0], y: area.anchor[1] } : null]));
+	drawArrows(svg, view.arrows, (id) => anchors.get(id) || null);
 
 	clear(host).append(svg);
 	let full = { x: -M, y: -M, w: width, h: height };
