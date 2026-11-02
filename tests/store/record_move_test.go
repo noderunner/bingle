@@ -489,7 +489,7 @@ func TestRecordMove_SwapSeatsExchangesThePlayers(t *testing.T) {
 		t.Errorf("a seat keeps its colour: %s, %s", players[0].Color, players[1].Color)
 	}
 
-	if err := s.UndoToSeq(ctx, game.ID, 0, `{"zero":0}`, 1, true); err != nil {
+	if err := s.UndoToSeq(ctx, game.ID, 0, `{"zero":0}`, 1, true, nil); err != nil {
 		t.Fatalf("UndoToSeq with swapBack: %v", err)
 	}
 	players, err = s.ListPlayers(ctx, game.ID)

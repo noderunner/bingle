@@ -45,6 +45,7 @@ type Manager struct {
 	debug     DebugOptions           // which games and rooms get the firehose
 	repro     *repro.Writer          // where repro bundles go; nil writes none
 	now       func() time.Time       // clock; tests may replace it via SetClock
+	upSince   time.Time              // when this server came up, by that clock (see turnStart)
 	mu        sync.Mutex             // guards roomLocks itself, not room state
 	roomLocks map[string]*sync.Mutex // lazily created, one per room code ever touched
 	tutorials tutorialCache          // each family's tutorials, read once
@@ -71,13 +72,17 @@ func NewManager(st *store.Store, cat *catalog.Catalog) *Manager {
 		hub:       newHub(),
 		bots:      bots.NewRegistry(),
 		now:       time.Now,
+		upSince:   time.Now(),
 		roomLocks: make(map[string]*sync.Mutex),
 	}
 }
 
 // SetClock replaces the manager's time source (used by tests to exercise
 // move time limits without sleeping).
-func (m *Manager) SetClock(now func() time.Time) { m.now = now }
+func (m *Manager) SetClock(now func() time.Time) {
+	m.now = now
+	m.upSince = now()
+}
 
 // SetMetrics hands the manager the registry to record into. Without it
 // nothing is recorded, which is what a server with BINGLE_METRICS_ADDR empty

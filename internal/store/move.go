@@ -228,9 +228,10 @@ func scanMoveByID(ctx context.Context, q rowQuerier, name string, id int64) (Mov
 // snapshot, move_seq becomes keepSeq, turn_seat becomes turnSeat, and the
 // game is active again with no winner. When the taken-back moves include the
 // pie-rule swap, swapBack says so, and the seats' occupants change back in
-// the same transaction. All of it happens in one transaction.
+// the same transaction. clock, when set, replaces the game's clock. All of it
+// happens in one transaction.
 // Returns ErrNotFound if gameID doesn't exist.
-func (s *Store) UndoToSeq(ctx context.Context, gameID int64, keepSeq int, boardState string, turnSeat int, swapBack bool) error {
+func (s *Store) UndoToSeq(ctx context.Context, gameID int64, keepSeq int, boardState string, turnSeat int, swapBack bool, clock *string) error {
 	tx, err := s.begin(ctx, "UndoToSeq")
 	if err != nil {
 		return fmt.Errorf("begin transaction: %w", err)
@@ -249,6 +250,11 @@ func (s *Store) UndoToSeq(ctx context.Context, gameID int64, keepSeq int, boardS
 	}
 	if n, _ := res.RowsAffected(); n == 0 {
 		return ErrNotFound
+	}
+	if clock != nil {
+		if _, err := tx.exec(ctx, "UndoToSeq.updateClock", `UPDATE games SET clock = ? WHERE id = ?`, *clock, gameID); err != nil {
+			return fmt.Errorf("updating the clock of game_id=%d: %w", gameID, err)
+		}
 	}
 	if swapBack {
 		if err := swapSeats(ctx, tx, gameID); err != nil {

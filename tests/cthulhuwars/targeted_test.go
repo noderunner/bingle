@@ -198,3 +198,27 @@ func TestAPostBattleEffectIsNotAnAction(t *testing.T) {
 		t.Fatalf("Great Cthulhu's window after the battle: %+v", r)
 	}
 }
+
+// A game clock runs for the seat the game names next, so a reaction must name
+// the seat that has to answer it, or the wrong player would lose time.
+func TestAReactionWindowIsTheReactorsTurn(t *testing.T) {
+	g := game(t)
+	mv, err := state.ParseMove(g, "recruit@south-pacific")
+	if err != nil {
+		t.Fatal(err)
+	}
+	res, err := state.Apply(g, targetBoard().build(), cc, mv)
+	if err != nil {
+		t.Fatal(err)
+	}
+	r := state.PendingReaction(g, res.NewState)
+	if r == nil {
+		t.Fatal("no reaction window opened")
+	}
+	if res.NextTurnSeat != r.Seat {
+		t.Errorf("a window for seat %d names seat %d next", r.Seat, res.NextTurnSeat)
+	}
+	if r.Seat == cc {
+		t.Errorf("the window is for the seat that acted")
+	}
+}

@@ -264,7 +264,10 @@ func (m *Manager) applyAndRecordAs(ctx context.Context, compiled *catalog.Compil
 	charged := parseGameClock(game.Clock)
 	if charged != nil {
 		if started, ok := parseTimestamp(game.UpdatedAt); ok {
-			charged.charge(player.Seat, m.now().Sub(charged.startedAt(started)))
+			charged.charge(player.Seat, m.now().Sub(charged.startedAt(m.turnStart(started))))
+		}
+		if earnsIncrement(how, result.GameEnded, pieSwap, player.Seat, result.NextTurnSeat) {
+			charged.gain(player.Seat)
 		}
 		if pieSwap {
 			// Each player's time moves with them to the other seat.

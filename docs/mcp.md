@@ -58,7 +58,7 @@ play too: a game against yourself; each is a player named
 `<you> · <faction or colour>`), `move_time_seconds` (per-move limit; the player who
 runs out loses) or `clock_seconds` (a game clock for a game of two: the seconds
 each seat starts with, in seat order, which may differ; the player whose clock
-runs out forfeits) — `get_observation` then reports `seconds_left` — and
+runs out forfeits; `clock_increment_seconds` adds time each time they hand the turn on) — `get_observation` then reports `seconds_left` — and
 `start_tps` / `start_state` + `start_seat` to begin from a given position
 (puzzles, endgames, curricula in persisted rooms; `env_reset` has `start_tps`
 for in-memory episodes).

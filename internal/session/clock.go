@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"strconv"
 	"time"
+
+	"github.com/noderunner/bingle/internal/store"
 )
 
 // A game clock (a chess clock) gives each player a store of time instead of an
@@ -22,14 +24,23 @@ import (
 // every move. The turn therefore began at the later of the two — the clock's own
 // mark, and the last time anything else moved the game on (an undo, the game
 // starting) — and the time left is read without writing anything.
+//
+// An increment (ADR 0079) adds a fixed time to a player's store each time they
+// hand the turn on, so that a player short of time is not beaten by the network
+// alone. Time the server was down is charged to nobody: see Manager.turnStart.
 
 // MaxClockSeconds bounds one side's clock (30 days), as MaxMoveTimeSeconds
 // bounds a per-move allowance.
 const MaxClockSeconds = 30 * 24 * 60 * 60
 
+// MaxClockIncrementSeconds bounds the time a move adds to a clock (a day, which
+// is what a long correspondence game might want).
+const MaxClockIncrementSeconds = 24 * 60 * 60
+
 // ErrInvalidClock is returned by CreateGame for a clock that cannot be played
 // with: a time out of range, one time per seat where the game has other than
-// two, or a clock together with a per-move limit.
+// two, an increment with no clock or out of range, or a clock together with a
+// per-move limit.
 var ErrInvalidClock = errors.New("session: invalid game clock")
 
 // GameClock is a game's clock: what each seat started with and what it has
@@ -41,12 +52,21 @@ type GameClock struct {
 	// Since is when the running clock last started (RFC 3339 with
 	// nanoseconds), empty before the first move of the game.
 	Since string `json:"since,omitempty"`
+	// Increment is the seconds a seat gains each time it hands the turn on.
+	Increment int `json:"increment,omitempty"`
 }
 
 // newGameClock returns the clock a game starts with: seconds[i] is the time of
-// the i-th seat of seats. It fails unless there is one positive time per seat.
-func newGameClock(seats []int, seconds []int) (*GameClock, error) {
+// the i-th seat of seats, and increment what each gains by handing the turn on.
+// It fails unless there is one positive time per seat.
+func newGameClock(seats []int, seconds []int, increment int) (*GameClock, error) {
+	if increment < 0 || increment > MaxClockIncrementSeconds {
+		return nil, fmt.Errorf("%w: an increment of %d seconds (0 to %d)", ErrInvalidClock, increment, MaxClockIncrementSeconds)
+	}
 	if len(seconds) == 0 {
+		if increment > 0 {
+			return nil, fmt.Errorf("%w: an increment needs a game clock", ErrInvalidClock)
+		}
 		return nil, nil
 	}
 	if len(seats) != 2 {
@@ -55,7 +75,7 @@ func newGameClock(seats []int, seconds []int) (*GameClock, error) {
 	if len(seconds) != len(seats) {
 		return nil, fmt.Errorf("%w: %d times for %d seats", ErrInvalidClock, len(seconds), len(seats))
 	}
-	c := &GameClock{Initial: map[string]int{}, Left: map[string]float64{}}
+	c := &GameClock{Initial: map[string]int{}, Left: map[string]float64{}, Increment: increment}
 	for i, seat := range seats {
 		if seconds[i] <= 0 || seconds[i] > MaxClockSeconds {
 			return nil, fmt.Errorf("%w: %d seconds for seat %d (1 to %d)", ErrInvalidClock, seconds[i], seat, MaxClockSeconds)
@@ -154,7 +174,7 @@ func (c *GameClock) snapshot(running int) *ClockSnapshot {
 	if c == nil {
 		return nil
 	}
-	out := &ClockSnapshot{Running: running}
+	out := &ClockSnapshot{Running: running, Increment: c.Increment}
 	for _, seat := range c.Seats() {
 		out.Seats = append(out.Seats, SeatClock{Seat: seat, Initial: c.InitialFor(seat), Left: c.LeftFor(seat)})
 	}
@@ -172,6 +192,72 @@ func (c *GameClock) charge(seat int, d time.Duration) {
 		left = 0
 	}
 	c.Left[k] = left
+}
+
+// gain adds the increment to the seat's clock.
+func (c *GameClock) gain(seat int) {
+	if c != nil {
+		c.Left[seatKey(seat)] += float64(c.Increment)
+	}
+}
+
+// earnsIncrement says whether a move adds the increment to its mover's clock:
+// it was the player's own decision, and the game goes on with somebody else to
+// act. A pie-rule swap always hands the turn on, whatever the seat numbers say,
+// because the players exchange seats with it.
+func earnsIncrement(how moveHow, gameEnded, pieSwap bool, seat, nextSeat int) bool {
+	return how == madeByPlayer && !gameEnded && (pieSwap || nextSeat != seat)
+}
+
+// rewound is the clock after the moves are taken back, latest last: what they
+// earned goes back, and a pie-rule swap among them (seq swapSeq) is reversed,
+// which puts each player's time back with them. nextSeat is the seat the game
+// was waiting on after the last of the moves, 0 if none. The time the moves
+// took is not refunded (ADR 0057), and because of that a clock can hold less
+// than was earned: taking a move back never runs a clock out, or it would lose
+// a player the game, so at least a second of what they had is left.
+func (c *GameClock) rewound(moves []store.Move, swapSeq, nextSeat int) {
+	if c == nil {
+		return
+	}
+	for i := len(moves) - 1; i >= 0; i-- {
+		mv := moves[i]
+		next := nextSeat
+		if i+1 < len(moves) {
+			next = moves[i+1].Seat
+		}
+		swap := mv.Seq == swapSeq
+		if swap {
+			c.swapSeats()
+		}
+		how := madeByPlayer
+		if mv.Auto || mv.AutoPlay {
+			how = passedForPlayer
+		}
+		if earnsIncrement(how, next == 0, swap, mv.Seat, next) {
+			k := seatKey(mv.Seat)
+			c.Left[k] = max(c.Left[k]-float64(c.Increment), min(c.Left[k], 1))
+		}
+	}
+}
+
+// rewoundClock is rewound on a game's stored clock, as it is stored again; nil
+// for a game without one.
+func rewoundClock(game store.Game, moves []store.Move, swapSeq int) (*string, error) {
+	c := parseGameClock(game.Clock)
+	if c == nil {
+		return nil, nil
+	}
+	next := 0
+	if game.TurnSeat != nil {
+		next = *game.TurnSeat
+	}
+	c.rewound(moves, swapSeq, next)
+	stored, err := c.marshal()
+	if err != nil {
+		return nil, err
+	}
+	return &stored, nil
 }
 
 // swapSeats exchanges the two seats' stores: a pie-rule swap moves each

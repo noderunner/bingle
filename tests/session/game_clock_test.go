@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/noderunner/bingle/internal/engine/catalog"
+	"github.com/noderunner/bingle/internal/games/blooms"
 	"github.com/noderunner/bingle/internal/games/classics"
 	"github.com/noderunner/bingle/internal/session"
 	"github.com/noderunner/bingle/internal/store"
@@ -260,4 +261,320 @@ func TestGameClock_PieRuleSwapMovesTheClocksWithThePlayers(t *testing.T) {
 	if snap.Clock.Running != 2 {
 		t.Errorf("the clock running is seat %d's, want 2 (Alice answers)", snap.Clock.Running)
 	}
+}
+
+// clockGame starts Alice and Bob on a clock, made by options, in a manager over
+// the classics.
+func clockGame(t *testing.T, opts session.CreateOptions) (*session.Manager, *fakeClock, string) {
+	t.Helper()
+	st, err := store.Open(filepath.Join(t.TempDir(), "clock.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = st.Close() })
+	cat := catalog.NewCatalog()
+	for _, mod := range classics.Modules() {
+		if err := cat.RegisterModule(mod); err != nil {
+			t.Fatal(err)
+		}
+	}
+	m := session.NewManager(st, cat)
+	clock := &fakeClock{now: time.Now()}
+	m.SetClock(clock.Now)
+	opts.CreatorName = "Alice"
+	created, err := m.CreateGameWithOptions(context.Background(), opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := m.JoinGame(context.Background(), created.RoomCode, "Bob", session.RolePlayer); err != nil {
+		t.Fatal(err)
+	}
+	return m, clock, created.RoomCode
+}
+
+// near fails unless the seat has about want seconds left.
+func near(t *testing.T, snap session.StateSnapshot, seat int, want float64) {
+	t.Helper()
+	if got := clockLeft(t, snap, seat); got < want-5 || got > want+5 {
+		t.Errorf("seat %d has %v seconds, want about %v", seat, got, want)
+	}
+}
+
+// A restart costs nobody time: a player whose turn was running when the server
+// went down does not lose on time because of it, and is charged only from when
+// the server came back.
+func TestGameClock_ARestartCostsNobodyTime(t *testing.T) {
+	st, err := store.Open(filepath.Join(t.TempDir(), "restart.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = st.Close() })
+	cat := catalog.NewCatalog()
+	for _, mod := range classics.Modules() {
+		if err := cat.RegisterModule(mod); err != nil {
+			t.Fatal(err)
+		}
+	}
+	ctx := context.Background()
+	before := session.NewManager(st, cat)
+	clock := &fakeClock{now: time.Now()}
+	before.SetClock(clock.Now)
+	created, err := before.CreateGameWithOptions(ctx, session.CreateOptions{GameDefID: "yavalath", CreatorName: "Alice", ClockSeconds: []int{300, 300}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := before.JoinGame(ctx, created.RoomCode, "Bob", session.RolePlayer); err != nil {
+		t.Fatal(err)
+	}
+
+	// Down for ten minutes, twice Alice's whole clock.
+	clock.Advance(10 * time.Minute)
+	after := session.NewManager(st, cat)
+	after.SetClock(clock.Now)
+	snap, err := after.GetState(ctx, created.RoomCode, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if snap.Status != "active" {
+		t.Fatalf("after the restart the game is %q (%s), want it still going", snap.Status, snap.EndReason)
+	}
+	if left := snap.TurnDeadline.Sub(clock.Now()); left < 295*time.Second || left > 300*time.Second {
+		t.Errorf("Alice has %v to move after the restart, want her whole five minutes", left)
+	}
+
+	// Time after the restart counts as usual.
+	clock.Advance(time.Minute)
+	if _, err := after.PlayNotation(ctx, created.RoomCode, "Alice", "e5"); err != nil {
+		t.Fatal(err)
+	}
+	snap, _ = after.GetState(ctx, created.RoomCode, nil)
+	near(t, snap, 1, 240)
+
+	// And a flag that falls after the restart still falls.
+	clock.Advance(6 * time.Minute)
+	snap, _ = after.GetState(ctx, created.RoomCode, nil)
+	if snap.Status != "finished" || snap.EndReason != "timeout" {
+		t.Errorf("Bob's clock ran out and the game is %q (%s)", snap.Status, snap.EndReason)
+	}
+}
+
+// A per-move limit is measured the same way.
+func TestTimeLimit_ARestartCostsNobodyTime(t *testing.T) {
+	st, err := store.Open(filepath.Join(t.TempDir(), "restart.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = st.Close() })
+	cat := catalog.NewCatalog()
+	for _, mod := range classics.Modules() {
+		if err := cat.RegisterModule(mod); err != nil {
+			t.Fatal(err)
+		}
+	}
+	ctx := context.Background()
+	before := session.NewManager(st, cat)
+	clock := &fakeClock{now: time.Now()}
+	before.SetClock(clock.Now)
+	created, err := before.CreateGameWithOptions(ctx, session.CreateOptions{GameDefID: "yavalath", CreatorName: "Alice", MoveTimeSeconds: 60})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := before.JoinGame(ctx, created.RoomCode, "Bob", session.RolePlayer); err != nil {
+		t.Fatal(err)
+	}
+	clock.Advance(10 * time.Minute)
+	after := session.NewManager(st, cat)
+	after.SetClock(clock.Now)
+	snap, err := after.GetState(ctx, created.RoomCode, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if snap.Status != "active" {
+		t.Errorf("after the restart the game is %q (%s), want it still going", snap.Status, snap.EndReason)
+	}
+}
+
+// The increment is added when a player hands the turn on, after their time is
+// charged, and is reported with the clock.
+func TestGameClock_IncrementIsAddedWhenTheTurnPasses(t *testing.T) {
+	m, clock, room := clockGame(t, session.CreateOptions{GameDefID: "yavalath", ClockSeconds: []int{300, 300}, ClockIncrementSeconds: 30})
+	ctx := context.Background()
+
+	snap, _ := m.GetState(ctx, room, nil)
+	if snap.Clock.Increment != 30 {
+		t.Errorf("the clock reports an increment of %d, want 30", snap.Clock.Increment)
+	}
+	clock.Advance(time.Minute)
+	if _, err := m.PlayNotation(ctx, room, "Alice", "e5"); err != nil {
+		t.Fatal(err)
+	}
+	snap, _ = m.GetState(ctx, room, nil)
+	near(t, snap, 1, 270)
+	near(t, snap, 2, 300)
+	if left := snap.TurnDeadline.Sub(clock.Now()); left < 295*time.Second || left > 300*time.Second {
+		t.Errorf("Bob has %v to move, want his own five minutes", left)
+	}
+}
+
+// A clock can run past what it started with, and a game without an increment is
+// unchanged.
+func TestGameClock_NoIncrementAddsNothing(t *testing.T) {
+	m, clock, room := clockGame(t, session.CreateOptions{GameDefID: "yavalath", ClockSeconds: []int{300, 300}})
+	ctx := context.Background()
+	clock.Advance(time.Minute)
+	if _, err := m.PlayNotation(ctx, room, "Alice", "e5"); err != nil {
+		t.Fatal(err)
+	}
+	snap, _ := m.GetState(ctx, room, nil)
+	near(t, snap, 1, 240)
+	if snap.Clock.Increment != 0 {
+		t.Errorf("a clock without an increment reports %d", snap.Clock.Increment)
+	}
+}
+
+// An increment needs a clock and a sensible size.
+func TestGameClock_IncrementIsValidated(t *testing.T) {
+	st, err := store.Open(filepath.Join(t.TempDir(), "inc.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = st.Close() })
+	cat := catalog.NewCatalog()
+	for _, mod := range classics.Modules() {
+		if err := cat.RegisterModule(mod); err != nil {
+			t.Fatal(err)
+		}
+	}
+	m := session.NewManager(st, cat)
+	for name, opts := range map[string]session.CreateOptions{
+		"no clock": {ClockIncrementSeconds: 5},
+		"negative": {ClockSeconds: []int{60, 60}, ClockIncrementSeconds: -1},
+		"too long": {ClockSeconds: []int{60, 60}, ClockIncrementSeconds: session.MaxClockIncrementSeconds + 1},
+	} {
+		opts.GameDefID, opts.CreatorName = "yavalath", "Alice"
+		if _, err := m.CreateGameWithOptions(context.Background(), opts); !errors.Is(err, session.ErrInvalidClock) {
+			t.Errorf("%s: %v, want ErrInvalidClock", name, err)
+		}
+	}
+}
+
+// Moving and undoing again and again must not earn time.
+func TestGameClock_UndoGivesTheIncrementBack(t *testing.T) {
+	m, _, room := clockGame(t, session.CreateOptions{GameDefID: "yavalath", ClockSeconds: []int{300, 300}, ClockIncrementSeconds: 30})
+	ctx := context.Background()
+	for range 3 {
+		if _, err := m.PlayNotation(ctx, room, "Alice", "e5"); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := m.Undo(ctx, room, "Alice"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	snap, _ := m.GetState(ctx, room, nil)
+	near(t, snap, 1, 300)
+}
+
+// A take-back gives back what each of the moves earned, and only those.
+func TestGameClock_TakebackGivesTheIncrementBack(t *testing.T) {
+	m, _, room := clockGame(t, session.CreateOptions{GameDefID: "yavalath", ClockSeconds: []int{300, 300}, ClockIncrementSeconds: 30})
+	ctx := context.Background()
+	for _, mv := range []struct{ who, notation string }{{"Alice", "e5"}, {"Bob", "d4"}, {"Alice", "f6"}, {"Bob", "c3"}} {
+		if _, err := m.PlayNotation(ctx, room, mv.who, mv.notation); err != nil {
+			t.Fatal(err)
+		}
+	}
+	snap, _ := m.GetState(ctx, room, nil)
+	near(t, snap, 1, 360)
+	near(t, snap, 2, 360)
+	// Alice takes back her last move and Bob's reply to it, and Bob agrees.
+	if _, err := m.Takeback(ctx, room, "Alice", "request"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := m.Takeback(ctx, room, "Bob", "accept"); err != nil {
+		t.Fatal(err)
+	}
+	snap, _ = m.GetState(ctx, room, nil)
+	near(t, snap, 1, 330)
+	near(t, snap, 2, 330)
+}
+
+// Taking back a pie-rule swap puts each player's time back with them, along
+// with the seats.
+func TestGameClock_UndoingTheSwapPutsTheClocksBack(t *testing.T) {
+	m, _, room := clockGame(t, session.CreateOptions{
+		GameDefID: "yavalath", ClockSeconds: []int{300, 600}, ClockIncrementSeconds: 10,
+		Options: map[string]any{"pie-rule": true},
+	})
+	ctx := context.Background()
+	if _, err := m.PlayNotation(ctx, room, "Alice", "e5"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := m.PlayNotation(ctx, room, "Bob", "swap"); err != nil {
+		t.Fatal(err)
+	}
+	snap, _ := m.GetState(ctx, room, nil)
+	// The swapped players: Bob in 1 with his 600 and 10 for the swap, Alice in
+	// 2 with her 300 and 10 for the opening.
+	near(t, snap, 1, 610)
+	near(t, snap, 2, 310)
+	if _, err := m.Undo(ctx, room, "Bob"); err != nil {
+		t.Fatal(err)
+	}
+	snap, _ = m.GetState(ctx, room, nil)
+	if snap.Seats[0].Name != "Alice" || snap.Seats[1].Name != "Bob" {
+		t.Fatalf("after the undo the seats are %+v", snap.Seats)
+	}
+	near(t, snap, 1, 310)
+	near(t, snap, 2, 600)
+}
+
+// A turn of several decisions earns the increment once, on the decision that
+// hands the turn on.
+func TestGameClock_ATurnOfSeveralDecisionsEarnsOnce(t *testing.T) {
+	st, err := store.Open(filepath.Join(t.TempDir(), "blooms.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = st.Close() })
+	cat := catalog.NewCatalog()
+	if err := cat.RegisterModule(blooms.Module()); err != nil {
+		t.Fatal(err)
+	}
+	m := session.NewManager(st, cat)
+	ctx := context.Background()
+	created, err := m.CreateGameWithOptions(ctx, session.CreateOptions{GameDefID: "blooms", CreatorName: "Alice", ClockSeconds: []int{300, 300}, ClockIncrementSeconds: 30})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := m.JoinGame(ctx, created.RoomCode, "Bob", session.RolePlayer); err != nil {
+		t.Fatal(err)
+	}
+	playFirst := func(who string, seat int) session.MoveOutcome {
+		t.Helper()
+		_, legal, err := m.LegalMoves(ctx, created.RoomCode, seat)
+		if err != nil || len(legal) == 0 {
+			t.Fatalf("legal moves of seat %d: %d, %v", seat, len(legal), err)
+		}
+		out, err := m.PlayNotation(ctx, created.RoomCode, who, legal[0].Notation)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return out
+	}
+	// Alice's opening is a single stone, and hands the turn on.
+	if out := playFirst("Alice", 1); out.NextTurnSeat != 2 {
+		t.Fatalf("after the opening seat %d is next", out.NextTurnSeat)
+	}
+	// Bob's first stone leaves the turn with him: nothing earned yet.
+	if out := playFirst("Bob", 2); out.NextTurnSeat != 2 {
+		t.Fatalf("after one stone of two seat %d is next", out.NextTurnSeat)
+	}
+	snap, _ := m.GetState(ctx, created.RoomCode, nil)
+	near(t, snap, 2, 300)
+	// His second does.
+	if out := playFirst("Bob", 2); out.NextTurnSeat != 1 {
+		t.Fatalf("after two stones seat %d is next", out.NextTurnSeat)
+	}
+	snap, _ = m.GetState(ctx, created.RoomCode, nil)
+	near(t, snap, 2, 330)
 }
