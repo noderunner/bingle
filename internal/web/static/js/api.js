@@ -159,6 +159,7 @@ export const api = {
 	setReactions: (code, name, patch) => call(`/api/games/${enc(code)}/reactions`, { method: "PUT", body: { player_name: name, ...patch } }),
 	autoplay: (code, name) => call(`/api/games/${enc(code)}/autoplay?player_name=${enc(name)}`),
 	// patch: {enabled?, timeout_seconds?}
+	autoPlayTurn: (code, name) => call(`/api/games/${enc(code)}/auto-play-turn`, { method: "POST", body: { player_name: name } }),
 	setAutoplay: (code, name, patch) => call(`/api/games/${enc(code)}/autoplay`, { method: "PUT", body: { player_name: name, ...patch } }),
 	chat: (code, after) => call(`/api/games/${enc(code)}/chat?limit=100${after ? `&after=${after}` : ""}`),
 	say: (code, name, text) => call(`/api/games/${enc(code)}/chat`, { method: "POST", body: { player_name: name, text } }),

@@ -220,6 +220,18 @@ func (m *Manager) autoPlayRoom(ctx context.Context, roomCode string, seat int) b
 	if !ok || m.now().Before(since.Add(time.Duration(prefs.TimeoutSeconds)*time.Second)) {
 		return false
 	}
+	if !m.playTurnFor(ctx, roomCode, game, seat) {
+		return false
+	}
+	// The bots and the passes the others asked for carry on from here.
+	m.runBots(ctx, roomCode)
+	return true
+}
+
+// playTurnFor has a tactical bot take the decisions of seat's person until play
+// passes to someone else, marked as auto-play. It reports whether it played any. The
+// caller holds the room lock.
+func (m *Manager) playTurnFor(ctx context.Context, roomCode string, game store.Game, seat int) bool {
 	compiled, ok := m.catalog.Get(game.GameDefID)
 	if !ok {
 		return false
@@ -262,10 +274,5 @@ func (m *Manager) autoPlayRoom(ctx context.Context, roomCode string, seat int) b
 		}
 		played++
 	}
-	if played == 0 {
-		return false
-	}
-	// The bots and the passes the others asked for carry on from here.
-	m.runBots(ctx, roomCode)
-	return true
+	return played > 0
 }

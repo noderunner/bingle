@@ -87,6 +87,10 @@ func Open(dbPath string) (*Store, error) {
 		_ = db.Close()
 		return nil, fmt.Errorf("migrate sqlite schema: %w", err)
 	}
+	if _, err := db.Exec(`CREATE INDEX IF NOT EXISTS idx_games_real_time ON games(status) WHERE real_time != ''`); err != nil {
+		_ = db.Close()
+		return nil, fmt.Errorf("migrate sqlite schema: %w", err)
+	}
 	if _, err := db.Exec(`CREATE INDEX IF NOT EXISTS idx_players_principal ON players(principal_id) WHERE principal_id != ''`); err != nil {
 		_ = db.Close()
 		return nil, fmt.Errorf("migrate sqlite schema: %w", err)
@@ -150,6 +154,9 @@ var columnMigrations = []struct{ table, column, ddl string }{
 	// card_set: the themed set of cards the table plays with (ADR 0085), empty
 	// for the game's own cards.
 	{"games", "card_set", "TEXT NOT NULL DEFAULT ''"},
+	// real_time: the settings of a game played in real time (ADR 0089), empty
+	// for any other.
+	{"games", "real_time", "TEXT NOT NULL DEFAULT ''"},
 }
 
 func addMissingColumns(db *sql.DB) error {

@@ -49,6 +49,8 @@ type StateSnapshot struct {
 	// Clock is the game clock, nil for a game played without one: what each
 	// seat has left (the seat to move counts down from TurnDeadline).
 	Clock *ClockSnapshot
+	// RealTime is set in a game played in real time.
+	RealTime *RealTimeSnapshot
 	// TurnDeadline is when the player to move runs out of time; nil when
 	// the game is untimed or not in progress.
 	TurnDeadline *time.Time
@@ -122,6 +124,7 @@ func (m *Manager) snapshot(compiled *catalog.CompiledGame, game store.Game, play
 		HostSeat:      hostOf(players),
 		MoveTimeLimit: game.MoveTimeLimit,
 		Clock:         clockSnapshot(game),
+		RealTime:      m.realTimeSnapshot(game, players),
 		TurnDeadline:  m.deadline(game),
 		ServerTime:    m.now().UTC(),
 		DrawOfferSeat: game.DrawOfferSeat,

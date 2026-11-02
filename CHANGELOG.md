@@ -4,6 +4,16 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.45.0 - 2026-11-02
+
+### Bingle Core 0.45.0
+- **Real-time games.** Tick *Real-time game* when you set up any game for two or more, and everyone is expected to stay
+  until it ends. If the game has a clock or a time per move, running out of time is the only consequence, and it now
+  happens on time even when nobody is looking.
+- **No more waiting forever.** With no timer, a slow player gets a reminder after 2 minutes. After 5 more, the table is
+  told, and anyone else who is connected can **let a bot play that one turn**, or you can all keep waiting. You choose
+  both times at setup. A player who has left has their turns played until they come back.
+
 ## 0.44.0 - 2026-11-02
 
 ### Bingle Core 0.44.0

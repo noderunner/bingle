@@ -130,7 +130,13 @@ func (m *Manager) runBotsFor(ctx context.Context, roomCode string, soft time.Dur
 			// automatically, the game waits for them.
 			mv, pass := m.autoPass(ctx, compiled, game, bs, *seatPlayer)
 			if !pass {
-				return played, false
+				// Or a bot is playing for them, until they reconnect.
+				outcome, ok := m.playAbsentTurn(ctx, roomCode, game, *seatPlayer, bs, i)
+				if !ok {
+					return played, false
+				}
+				played = append(played, outcome)
+				continue
 			}
 			outcome, err := m.applyAndRecordAs(ctx, compiled, game, *seatPlayer, mv, passedForPlayer)
 			if err != nil {

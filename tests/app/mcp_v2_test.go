@@ -62,7 +62,7 @@ func TestMCP_ToolListIncludesNewTools(t *testing.T) {
 		"env_reset", "env_step", "env_observe", "env_fork", "env_close", "env_list", "match_bots", "draw",
 		"env_spec", "env_batch_step", "get_game_guide", "add_bot", "get_leaderboard",
 		"list_tournaments", "get_tournament", "enter_tournament", "leave_tournament",
-		"start_game", "set_seat_cult", "send_chat", "get_chat", "get_reactions", "set_reactions",
+		"start_game", "set_seat_cult", "send_chat", "get_chat", "get_reactions", "set_reactions", "auto_play_turn",
 	} {
 		if !have[want] {
 			t.Errorf("tool %q not registered", want)

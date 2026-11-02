@@ -63,6 +63,9 @@ type createGameRequest struct {
 	// ClockIncrementSeconds adds that many seconds to a player's clock each
 	// time they hand the turn on. It needs ClockSeconds.
 	ClockIncrementSeconds int `json:"clock_increment_seconds,omitempty"`
+	// RealTime plays the game in real time; {} takes the default warnings, which
+	// only matter in a game with no clock and no time per move.
+	RealTime *session.RealTimeSettings `json:"real_time,omitempty"`
 	// Rated makes the game move its players' ratings when it ends. It takes two
 	// accounts, a game of two seats and the same clock for both.
 	Rated bool `json:"rated,omitempty"`
@@ -136,6 +139,7 @@ func (h *handlers) handleCreateGame(w http.ResponseWriter, r *http.Request) {
 		ClockSeconds:    req.ClockSeconds,
 
 		ClockIncrementSeconds: req.ClockIncrementSeconds,
+		RealTime:              req.RealTime,
 		Rated:                 req.Rated,
 		CardSet:               strings.TrimSpace(req.CardSet),
 
@@ -197,6 +201,8 @@ type getGameResponse struct {
 	// Clock is the game clock of a game played with one: what each seat has
 	// left, and whose clock is running (it counts down from TurnDeadline).
 	Clock *session.ClockSnapshot `json:"clock,omitempty"`
+	// RealTime is set in a game played in real time.
+	RealTime *session.RealTimeSnapshot `json:"real_time,omitempty"`
 
 	// DrawOfferSeat is the seat offering a draw, or null.
 	DrawOfferSeat *int `json:"draw_offer_seat"`
@@ -285,6 +291,7 @@ func (h *handlers) handleGetGame(w http.ResponseWriter, r *http.Request) {
 
 		MoveTimeSeconds: snapshot.MoveTimeLimit,
 		Clock:           snapshot.Clock,
+		RealTime:        snapshot.RealTime,
 		ServerTime:      snapshot.ServerTime.Format(time.RFC3339),
 		DrawOfferSeat:   snapshot.DrawOfferSeat,
 

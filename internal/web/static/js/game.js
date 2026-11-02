@@ -4,7 +4,7 @@
 // turn notifications. See docs/ui.md for the interaction model.
 
 import { FAIR_PLAY, ratingText } from "./ratings.js";
-import { h, s, clear, store, rememberGame, nameFor, lastName, ago, titleCase, toast, setTurnBadge } from "./util.js";
+import { h, s, clear, store, rememberGame, nameFor, lastName, ago, titleCase, toast, setTurnBadge, reconnectDelay } from "./util.js";
 import { api, ApiError } from "./api.js";
 import { MoveBuilder } from "./builder.js";
 import { renderBoard, pieceIcon, cssColor, ONGATE, hasHexStyles, defaultHexStyle } from "./render.js";
@@ -1129,6 +1129,41 @@ async function doDraw(action) {
 	}
 }
 
+/**
+ * A real-time game waiting too long on someone. The element is always there, empty when
+ * there is nothing to say, so that a warning can be painted in without a re-render.
+ */
+function slowTurnBanner() {
+	const wait = S.game.real_time && S.game.real_time.wait;
+	const stage = wait && S.game.status === "active" && isLive() ? wait.stage : 0;
+	if (!stage || (stage === 1 && !isMine(wait.seat))) return h("div", { id: "slow-turn", hidden: true });
+	const who = seatName(wait.seat) || seatLabel(wait.seat);
+	if (isMine(wait.seat)) {
+		const text = stage === 1 ? "The table is waiting for your move." : "The table has waited a long time, and any of them can now have a bot play your turn.";
+		return h("div", { class: "notice attention", id: "slow-turn" }, text);
+	}
+	if (!S.me.seat) return h("div", { class: "notice", id: "slow-turn" }, `${who} is taking a long time.`);
+	return h(
+		"div",
+		{ class: "notice attention", id: "slow-turn" },
+		h("span", {}, `${who} is taking a long time. You can keep waiting, or have a bot play this one turn.`),
+		h("button", { id: "slow-turn-bot", onclick: askBotToPlay }, "Let a bot play this turn")
+	);
+}
+
+function paintSlowTurn() {
+	const old = document.getElementById("slow-turn");
+	if (old) old.replaceWith(slowTurnBanner());
+}
+
+async function askBotToPlay() {
+	try {
+		await api.autoPlayTurn(code, S.me.name);
+	} catch (err) {
+		toast(err instanceof ApiError ? err.message : "Could not ask for a bot.", "error");
+	}
+}
+
 function drawOfferBanner() {
 	const g = S.game;
 	if (g.status !== "active" || g.draw_offer_seat === null || g.draw_offer_seat === undefined) return null;
@@ -1395,14 +1430,8 @@ function connect() {
 				/* try again on the next reconnect */
 			}
 			connect();
-		}, reconnectDelay(wsRetry));
+		}, reconnectDelay(wsRetry, !!(S.game && S.game.real_time)));
 	});
-}
-
-/** How long to wait before reconnecting: not long in a real-time game, whose players are waiting. */
-function reconnectDelay(retry) {
-	const wait = 700 * 2 ** retry;
-	return S.game && S.game.real_time ? Math.min(wait, 3000) : wait;
 }
 
 function updateConn() {
@@ -1463,6 +1492,7 @@ async function onEvent(env) {
 			S.game.turn_deadline = d.turn_deadline || "";
 			S.game.clock = d.clock || null;
 			S.game.draw_offer_seat = null; // any move withdraws an offer
+			if (S.game.real_time) S.game.real_time.wait = null; // and a move restarts the wait
 			noteServerTime(d.server_time);
 			S.viewCache.clear();
 			await Promise.all([loadLegal(), loadReactions(), loadAutoPlay()]);
@@ -1488,6 +1518,16 @@ async function onEvent(env) {
 			if (d.connected) S.connected.add(d.seat);
 			else S.connected.delete(d.seat);
 			paintConnections();
+		} else if (env.type === "slow_turn") {
+			if (!S.game.real_time) return;
+			const d = env.data || {};
+			S.game.real_time.wait = { seat: d.seat, stage: d.stage };
+			paintSlowTurn();
+			if (isMine(d.seat)) {
+				toast(d.stage >= 2 ? "The table can now have a bot play your turn." : "The table is waiting for your move.");
+				lastNotifiedSeq = -1;
+				notifyIfMyTurn(true);
+			}
 		} else if (env.type === "chat") {
 			const line = env.data || {};
 			receiveChat(line, { mine: !!S.me.name && String(line.name || "").toLowerCase() === S.me.name.toLowerCase() });
@@ -1676,6 +1716,7 @@ function render() {
 	}
 	main.append(statusBar());
 	if (S.tut) main.append(tutorialCard());
+	main.append(slowTurnBanner());
 	const banner = drawOfferBanner();
 	if (banner) main.append(banner);
 	const hintNotice = hintBanner();
@@ -1774,7 +1815,7 @@ function renderMobile(seats, bottomSeat) {
 	const mapPage = h("div", { class: "m-map-page" });
 	mapPage.append(statusBar());
 	if (S.tut) mapPage.append(tutorialCard());
-	for (const banner of [drawOfferBanner(), hintBanner()]) if (banner) mapPage.append(banner);
+	for (const banner of [slowTurnBanner(), drawOfferBanner(), hintBanner()]) if (banner) mapPage.append(banner);
 	if (!S.me.seat && !S.spectating) {
 		const gate = identityGate();
 		if (gate) mapPage.append(gate);
@@ -1873,7 +1914,7 @@ function renderMobileCards(seats, bottomSeat) {
 	const play = h("div", { class: "m-map-page m-cards-page" });
 	play.append(statusBar());
 	if (S.tut) play.append(tutorialCard());
-	for (const banner of [drawOfferBanner(), hintBanner()]) if (banner) play.append(banner);
+	for (const banner of [slowTurnBanner(), drawOfferBanner(), hintBanner()]) if (banner) play.append(banner);
 	if (!S.me.seat && !S.spectating) {
 		const gate = identityGate();
 		if (gate) play.append(gate);
@@ -2169,6 +2210,7 @@ function statusBar() {
 	}
 	if (g.status === "finished") badges.push(h("span", { class: "badge done" }, "Finished"));
 	if (g.rated) badges.push(h("span", { class: "badge rated", id: "rated-badge", title: FAIR_PLAY }, "Rated"));
+	if (g.real_time) badges.push(h("span", { class: "badge", id: "real-time-badge", title: "The players are expected to stay until the game ends" }, "Real-time"));
 	if (g.tournament) badges.push(h("a", { class: "badge", id: "tournament-badge", href: `/tournament/${g.tournament.id}`, title: "This game is part of a tournament" }, g.tournament.name));
 	const uncounted = { no_moves: "Not counted: a player made no move", daily_limit: "Not counted: enough rated games between these two today", void: "Not counted" }[g.rating_status];
 	if (uncounted) badges.push(h("span", { class: "badge", id: "rating-note" }, uncounted));

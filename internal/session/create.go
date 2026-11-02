@@ -2,6 +2,7 @@ package session
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -92,6 +93,9 @@ type CreateOptions struct {
 	// may differ for handicap play. A player whose clock runs out forfeits.
 	// It is for a game of two seats, and not together with MoveTimeSeconds.
 	ClockSeconds []int
+	// RealTime, when set, plays the game in real time (see realtime.go). It works
+	// with a clock, a time per move or neither; the warnings are for neither.
+	RealTime *RealTimeSettings
 	// ClockIncrementSeconds is what a seat's clock gains each time it hands the
 	// turn on (0 = nothing). It needs ClockSeconds.
 	ClockIncrementSeconds int
@@ -296,6 +300,18 @@ func (m *Manager) CreateGameWithOptions(ctx context.Context, opts CreateOptions)
 	if len(opts.ClockSeconds) > 0 && opts.MoveTimeSeconds > 0 {
 		return CreateGameResult{}, fmt.Errorf("%w: a game clock and a time per move cannot both be set", ErrInvalidClock)
 	}
+	var realTime string
+	if opts.RealTime != nil && opts.Tutorial == "" { // a tutorial room is never real-time
+		settings, err := opts.RealTime.resolved()
+		if err != nil {
+			return CreateGameResult{}, err
+		}
+		stored, err := json.Marshal(settings)
+		if err != nil {
+			return CreateGameResult{}, err
+		}
+		realTime = string(stored)
+	}
 	seatNumbers := make([]int, 0, len(compiled.Definition.Seats))
 	for _, s := range compiled.Definition.Seats {
 		seatNumbers = append(seatNumbers, s.Seat)
@@ -365,6 +381,12 @@ func (m *Manager) CreateGameWithOptions(ctx context.Context, opts CreateOptions)
 			return CreateGameResult{}, fmt.Errorf("session: setting the game clock: %w", err)
 		}
 		game.Clock = stored
+	}
+	if realTime != "" {
+		if err := m.store.SetRealTime(ctx, game.ID, realTime); err != nil {
+			return CreateGameResult{}, err
+		}
+		game.RealTime = realTime
 	}
 	if opts.Rated {
 		if err := m.store.SetRated(ctx, game.ID); err != nil {

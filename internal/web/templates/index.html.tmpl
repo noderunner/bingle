@@ -154,6 +154,20 @@
 								<span class="small muted">Each player's clock runs while it is their turn, and the first to run out forfeits. A game clock takes the place of a time per move.</span>
 							</div>
 
+							<div class="field new-only human-only" id="real-time-field">
+								<label class="check"><input type="checkbox" id="real-time" name="real_time"> <span>Real-time game</span></label>
+								<span class="small muted">Everyone is expected to stay until the game ends, and the page shows anyone who has lost their connection.</span>
+								<div class="row" id="real-time-warnings" hidden>
+									<label class="inline" for="real-time-first">Warn a slow player after
+										<input type="number" id="real-time-first" min="1" max="60" step="1" value="2" aria-label="Minutes before a slow player is warned, from 1 to 60"> min
+									</label>
+									<label class="inline" for="real-time-second">Then offer a bot after
+										<input type="number" id="real-time-second" min="1" max="60" step="1" value="5" aria-label="Minutes after that before the table can have a bot play the turn, from 1 to 60"> more min
+									</label>
+									<span class="small muted">With no clock, the table can then have a bot play that turn, or keep waiting.</span>
+								</div>
+							</div>
+
 							<div class="field new-only human-only" id="rated-field" hidden>
 								<label class="check"><input type="checkbox" id="rated" name="rated"> <span>Rated game</span></label>
 								<span class="small muted">The result changes both players' ratings for this game. It takes another signed-in player and the same game clock for both. Using a bot or another program to choose your moves is against the rules.</span>
