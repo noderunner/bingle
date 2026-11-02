@@ -23,9 +23,9 @@ type tutorialSummary struct {
 }
 
 // handleListTutorials implements GET /game-defs/{id}/tutorials: the
-// tutorials of the family the game belongs to, by kind then order.
+// tutorials offered with this game, by kind then order.
 func (h *handlers) handleListTutorials(w http.ResponseWriter, r *http.Request) {
-	family, list, err := h.mgr.Tutorials(chi.URLParam(r, "id"))
+	family, list, err := h.mgr.TutorialsFor(chi.URLParam(r, "id"))
 	if err != nil {
 		writeError(w, err)
 		return

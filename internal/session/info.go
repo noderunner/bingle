@@ -65,6 +65,9 @@ type GameInfo struct {
 	// games that start with an empty board; absent when the start is picture
 	// enough.
 	Preview map[string][]PieceOnBoardDTO `json:"preview,omitempty"`
+	// SampleView is a game in progress, in the shape of the state's ext.view, for a
+	// game whose table is not a board (state.Sampler).
+	SampleView any `json:"sample_view,omitempty"`
 }
 
 // StartDTO is a starting position: stacks per square (bottom first) and each
@@ -380,6 +383,7 @@ func buildGameInfo(cg *catalog.CompiledGame) GameInfo {
 			ID: a.ID, Type: a.Type, Label: a.Label, Pieces: a.Pieces, CarryLimit: a.CarryLimit,
 		})
 	}
+	info.SampleView = state.SampleOf(cg)
 	if ri, ok := state.DescribeRuleset(cg); ok {
 		info.Engine = "ruleset"
 		info.Display = def.Display

@@ -4,13 +4,17 @@
 package tutorials_test
 
 import (
+	"context"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"testing/fstest"
 
 	"github.com/noderunner/bingle/internal/app"
 	"github.com/noderunner/bingle/internal/engine/catalog"
+	"github.com/noderunner/bingle/internal/session"
+	"github.com/noderunner/bingle/internal/store"
 	"github.com/noderunner/bingle/internal/tutorial"
 )
 
@@ -334,5 +338,50 @@ func TestPictures(t *testing.T) {
 		"arrow off board":  {"    pieces: [red@d4]\n    arrow: [d4, z9]\n    illegal: true\n", "not a square"},
 	} {
 		t.Run(name, func(t *testing.T) { wantErr(t, verifyPicture(t, c.extra), c.want) })
+	}
+}
+
+// A variant's own tutorial is offered with that variant only; a tutorial without the mark
+// is the whole family's, whichever board it is played on.
+func TestTutorialsAreOfferedWithTheirVariant(t *testing.T) {
+	st, err := store.Open(filepath.Join(t.TempDir(), "t.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = st.Close() }()
+	m := session.NewManager(st, shippedCatalog(t))
+	offered := func(game string) []string {
+		t.Helper()
+		_, list, err := m.TutorialsFor(game)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var ids []string
+		for _, tu := range list {
+			ids = append(ids, tu.ID)
+		}
+		return ids
+	}
+	for game, want := range map[string]string{
+		"solitaire": "", "spider": "", "freecell": "", "bowling-solitaire": "bowling-basics",
+		"blooms": "blooms-basics", "blooms-4": "blooms-basics", "blooms-6": "blooms-basics",
+	} {
+		if got := strings.Join(offered(game), ","); got != want {
+			t.Errorf("%s offers %q, want %q", game, got, want)
+		}
+	}
+	// It can still be asked for by its family's name, which is how it is started.
+	if _, tu, err := m.Tutorial("solitaire", "bowling-basics"); err != nil || tu.Game != "bowling-solitaire" {
+		t.Errorf("by the family: %v, %+v", err, tu.Game)
+	}
+	summaries := m.ListGameDefs(context.Background())
+	for _, d := range summaries {
+		want := 0
+		if d.ID == "bowling-solitaire" {
+			want = 1
+		}
+		if d.Family == "solitaire" && d.Tutorials != want {
+			t.Errorf("%s counts %d tutorials", d.ID, d.Tutorials)
+		}
 	}
 }

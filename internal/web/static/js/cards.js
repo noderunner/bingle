@@ -120,14 +120,22 @@ function showCardZoom(card) {
 	if (top < 8) top = Math.min(r.bottom + 10, Math.max(8, window.innerHeight - hh - 8));
 	z.style.width = `${w}px`;
 	z.style.height = `${hh}px`;
+	z.style.setProperty("--cw", `${w}px`);
+	z.style.setProperty("--ch", `${hh}px`);
 	z.style.left = `${left}px`;
 	z.style.top = `${top}px`;
 	document.body.append(z);
 	zoomed = z;
 }
 
+/** While a card is being dragged, nothing it passes over is enlarged. */
+export function holdCardZoom(on) {
+	reordering = on;
+	if (on) hideCardZoom();
+}
+
 /** Makes the faces of a zone show large while the pointer or the focus is on one. */
-function enableZoom(zone) {
+export function enableZoom(zone) {
 	const faceOf = (el) => (el && el.closest ? el.closest(".pcard.face") : null);
 	zone.addEventListener("pointerover", (ev) => {
 		if (ev.pointerType === "touch" || reordering) return;

@@ -19,7 +19,7 @@ type GameDefSummary struct {
 	Version   string
 	Designers []string
 	Publisher string
-	// Tutorials is how many tutorials the game's family has.
+	// Tutorials is how many tutorials a player of this game is offered.
 	Tutorials int
 }
 
@@ -42,7 +42,7 @@ func (m *Manager) ListGameDefs(ctx context.Context) []GameDefSummary {
 			Designers:     cg.Definition.Designers,
 			Publisher:     cg.Definition.Publisher,
 		}
-		if _, list, err := m.Tutorials(cg.Definition.ID); err == nil {
+		if _, list, err := m.TutorialsFor(cg.Definition.ID); err == nil {
 			summaries[i].Tutorials = len(list)
 		}
 	}

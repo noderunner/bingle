@@ -81,7 +81,7 @@ func TestWebHome_ChooseTheCultsOfAFivePlayerTableAndTheHighPriests(t *testing.T)
 
 	// The choice survives choosing another layout and coming back.
 	evalString(t, ctx, `window.__oldSlots = document.getElementById("slots-field"); "ok"`)
-	clickSel(t, ctx, `#setup-variants .chip[data-id="cthulhu-wars"]`)
+	chooseVariant(t, ctx, "cthulhu-wars")
 	waitJS(t, ctx, "the four-player layout", `document.getElementById("game_def_id").value === "cthulhu-wars" && document.getElementById("slots-field") && document.getElementById("slots-field") !== window.__oldSlots`, 15*time.Second)
 	if n := evalInt(t, ctx, `document.querySelectorAll("#slots-field select.faction-select").length`); n != 4 {
 		t.Fatalf("%d cult lists on the four-player layout", n)
@@ -99,7 +99,7 @@ func TestWebHome_ChooseTheCultsOfAFivePlayerTableAndTheHighPriests(t *testing.T)
 		t.Errorf("High Priests box = %q after another layout", got)
 	}
 	evalString(t, ctx, `window.__oldSlots = document.getElementById("slots-field"); "ok"`)
-	clickSel(t, ctx, `#setup-variants .chip[data-id="cthulhu-wars-5p"]`)
+	chooseVariant(t, ctx, "cthulhu-wars-5p")
 	waitJS(t, ctx, "the five-player layout", `document.getElementById("game_def_id").value === "cthulhu-wars-5p" && document.getElementById("slots-field") && document.getElementById("slots-field") !== window.__oldSlots`, 15*time.Second)
 	if got := evalString(t, ctx, cultsJS); got != "sl,ww,bg,ys,gc" {
 		t.Errorf("cults on coming back = %q", got)

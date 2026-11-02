@@ -5,6 +5,7 @@ title: How to play Bowling Solitaire
 summary: The pins and the balls, adding up, what you may knock down, a spare and the score.
 order: 1
 game: bowling-solitaire
+variant_only: true
 seed: 4
 
 steps:

@@ -4,6 +4,21 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.43.0 - 2026-11-02
+
+### Bingle Core 0.43.0
+- **Variants are a list now.** Setting up a game with variants, you choose from a *Variant* list with their full names,
+  in place of the row of little badges. This goes for every game that has them.
+- **A game's own title.** A family of variants is always shown under the name of its main game.
+- **A tutorial can belong to one variant.** It is then offered only while that variant is chosen.
+
+### Solitaire 0.1.1
+- The game is called **Solitaire** on the main page. It was showing up as Bowling Solitaire.
+- Choosing a variant now shows a game of it in progress, in the set of cards you have chosen.
+- The Bowling Solitaire tutorial is offered only when Bowling Solitaire is chosen.
+- **Hover over a card on the table to see it twice as large**, as with a hand of cards, even one mostly covered
+  by others. It goes away while you drag.
+
 ## 0.42.0 - 2026-11-02
 
 ### Bingle Core 0.42.0

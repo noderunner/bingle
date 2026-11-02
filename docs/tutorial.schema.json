@@ -118,6 +118,10 @@
         "title": {
           "description": "Title is what the list of tutorials shows; Summary is one line under it.",
           "type": "string"
+        },
+        "variant_only": {
+          "description": "VariantOnly says the tutorial teaches the game it names and no other of its family, so it is offered only with that game. Without it a tutorial is offered for the whole family, and Game is merely the board it is played on.",
+          "type": "boolean"
         }
       },
       "type": "object"

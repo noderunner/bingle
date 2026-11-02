@@ -142,8 +142,8 @@ move between them, and the URL hash — `/#puzzles`, `/#analysis`, `/#chat` —
 selects one).
 
 * *Games*: the gallery (`.game-card`). Picking a game replaces the gallery by
-  its **setup** (`#game-setup`: a preview, the description, the variants as
-  `#setup-variants .chip[data-id]`, then `#create-game-form`); *All games*
+  its **setup** (`#game-setup`: a preview, the description, the variants as the list
+  `#setup-variant` in `#setup-variants`, then `#create-game-form`); *All games*
   goes back, and `/?game=ID` opens the setup of a game directly. For a game of
   two seats the *Opponent* list also has **Two bots** (`@bots`: nobody plays;
   `#botmatch-a|b|speed` choose the bots and the pace, and you watch the match
@@ -291,6 +291,10 @@ Where colours are the rule (`view.alternate`), a card at a table with a themed s
 `#sol-gone`. Pins are chosen in any order and held in the page, and a ball (`button[data-throw]`) is offered only when
 it can take exactly those. Throwing it sends the steps in the server's order: the pins by letter, then
 `ball-<pile>`. In a tutorial only the step's pins can be chosen (`sol-wanted`).
+
+A face-up card anywhere on the table shows twice as large under the pointer or with the focus (`.pc-zoom`, as in a
+hand), and not while one is being dragged. In a game's setup, `#setup-preview` draws `.sol-preview`, a table with nothing
+to click, from the game info's `sample_view`, and it wears the set chosen under *Cards*.
 
 A game with one seat has no Submit, its Resign button says **Give up**, and the setup form asks for no opponent.
 
@@ -743,7 +747,7 @@ the name, a **Beta** badge (`.badge.beta`, while the game's `version` is below 1
 is the version) and the players it takes (`.game-card-players`: the range of the seat counts of
 the game and its variants). While the pointer is over a card, or it has the focus, `#game-tip`
 shows the name, designers, publisher, description and version. The board size of a game is
-chosen in the setup (`#setup-variants`), whose button for the rules is `#game-rules-button`
+chosen in the setup (`#setup-variant`), whose button for the rules is `#game-rules-button`
 ("Rules").
 
 ## Puzzles

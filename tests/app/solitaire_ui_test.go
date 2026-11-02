@@ -1,6 +1,7 @@
 package app_test
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"testing"
@@ -327,8 +328,17 @@ func TestWebBowling_ChoosingPinsAndABall(t *testing.T) {
 	waitJS(t, ctx, "the pins down", fmt.Sprintf(`document.querySelectorAll('#sol-rack .sol-pin.down').length === %d`, len(letters)), 10*time.Second)
 }
 
-// The game is on the home page, for one player, with its variants; the form asks for
-// no opponent and offers the sets of cards.
+// chooseVariant picks a game of the family in the setup's list of variants.
+func chooseVariant(t *testing.T, ctx context.Context, id string) {
+	t.Helper()
+	js := fmt.Sprintf(`(function(){ const s = document.getElementById("setup-variant"); s.value = %q; s.dispatchEvent(new Event("change", {bubbles: true})); return s.value })()`, id)
+	if got := evalString(t, ctx, js); got != id {
+		t.Fatalf("the list of variants has no %q (it says %q)", id, got)
+	}
+}
+
+// The game is on the home page under its own name, for one player. Its setup names the
+// family and describes the game chosen, asks for no opponent, and offers the sets of cards.
 func TestWebSolitaire_SettingUp(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
@@ -336,19 +346,169 @@ func TestWebSolitaire_SettingUp(t *testing.T) {
 	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/")); err != nil {
 		t.Fatal(err)
 	}
-	waitJS(t, ctx, "the card", `document.querySelector('.game-card[data-family="solitaire"]')`, 15*time.Second)
-	if got := evalString(t, ctx, `document.querySelector('.game-card[data-family="solitaire"] .game-card-players').textContent`); got != "1 player" {
+	card := `.game-card[data-family="solitaire"]`
+	waitJS(t, ctx, "the card", `document.querySelector('`+card+`')`, 15*time.Second)
+	if got := evalString(t, ctx, `document.querySelector('`+card+` .game-card-title').textContent`); got != "Solitaire" {
+		t.Errorf("the card is called %q", got)
+	}
+	if got := evalString(t, ctx, `document.querySelector('`+card+` .game-card-players').textContent`); got != "1 player" {
 		t.Errorf("the card says %q", got)
 	}
-	clickSel(t, ctx, `.game-card[data-family="solitaire"]`)
-	waitJS(t, ctx, "the setup", `document.querySelectorAll('#setup-variants .chip[data-id]').length === 7`, 10*time.Second)
+	// It has a tutorial, though not for the game it leads with.
+	if n := evalInt(t, ctx, `document.querySelectorAll('`+card+` .badge.tutorial').length`); n != 1 {
+		t.Errorf("%d tutorial marks on the card", n)
+	}
+	clickSel(t, ctx, card)
+	waitJS(t, ctx, "the list of variants", `document.querySelectorAll('#setup-variant option').length === 7`, 10*time.Second)
+	if got := evalString(t, ctx, `document.getElementById("setup-title").textContent`); got != "Solitaire" {
+		t.Errorf("the setup is called %q", got)
+	}
+	if got := evalString(t, ctx, `document.getElementById("setup-variant").value`); got != "solitaire" {
+		t.Errorf("the setup starts on %q", got)
+	}
+	if blurb := evalString(t, ctx, `document.getElementById("game-blurb").textContent`); strings.Contains(blurb, "Sackson") || !strings.Contains(blurb, "Solitaire") {
+		t.Errorf("the description is %q", blurb)
+	}
+	got := evalString(t, ctx, `[...document.querySelectorAll('#setup-variant option')].map(o => o.textContent).join("|")`)
+	if want := "Solitaire|Bowling Solitaire|FreeCell|Solitaire (draw three)|Spider|Spider (one suit)|Spider (two suits)"; got != want {
+		t.Errorf("the list says %q, want %q", got, want)
+	}
+	if n := evalInt(t, ctx, `document.querySelectorAll('#setup-variants .chip').length`); n != 0 {
+		t.Errorf("%d badges are left", n)
+	}
 	waitJS(t, ctx, "no opponent to choose", `document.getElementById('opponent-choices').closest('.field').hidden`, 10*time.Second)
 	waitJS(t, ctx, "the sets of cards", `!document.getElementById('card-set-field').hidden`, 10*time.Second)
-	clickSel(t, ctx, `#setup-variants .chip[data-id="bowling-solitaire"]`)
-	waitJS(t, ctx, "the tutorial offered", `document.body.textContent.includes("How to play Bowling Solitaire")`, 10*time.Second)
+	chooseVariant(t, ctx, "bowling-solitaire")
+	waitJS(t, ctx, "the description of the variant", `document.getElementById("game-blurb").textContent.includes("Sackson")`, 10*time.Second)
 	if err := chromedp.Run(ctx, chromedp.SetValue(`#create_player_name`, "Ana", chromedp.ByQuery)); err != nil {
 		t.Fatal(err)
 	}
 	clickSel(t, ctx, `#create-game-form button[type="submit"]`)
 	waitJS(t, ctx, "the game, started", `document.querySelectorAll('#sol-rack .sol-pin').length === 10`, 15*time.Second)
+}
+
+// Choosing a variant shows a game of it in progress, in the set of cards chosen.
+func TestWebSolitaire_ThePreviewIsTheVariantInProgress(t *testing.T) {
+	baseURL := newRESTTestServer(t)
+	ctx, cancel := newChromedpContext(t, 60*time.Second)
+	defer cancel()
+	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/?game=solitaire")); err != nil {
+		t.Fatal(err)
+	}
+	preview := `#setup-preview .sol-preview`
+	waitJS(t, ctx, "Klondike", `document.querySelector('`+preview+`[data-mode="klondike"]')`, 15*time.Second)
+	progress := map[string]string{
+		"solitaire":         `document.querySelectorAll('` + preview + `[data-mode="klondike"] .sol-column').length === 7 && document.querySelectorAll('` + preview + ` [data-pile^="f"] .pcard.face').length > 0`,
+		"solitaire-draw-3":  `document.querySelectorAll('` + preview + `[data-mode="klondike"] .sol-waste .pcard.face').length > 0`,
+		"spider":            `document.querySelectorAll('` + preview + `[data-mode="spider"] .sol-column').length === 10 && document.querySelectorAll('` + preview + ` .sol-column .pcard.face').length > 10`,
+		"spider-1":          `document.querySelectorAll('` + preview + `[data-mode="spider"] .sol-column').length === 10`,
+		"freecell":          `document.querySelectorAll('` + preview + `[data-mode="freecell"] .sol-column').length === 8 && document.querySelectorAll('` + preview + ` [data-pile^="c"] .pcard.face, ` + preview + ` [data-pile^="f"] .pcard.face').length > 0`,
+		"bowling-solitaire": `document.querySelectorAll('` + preview + `[data-mode="bowling"] .sol-pin.down').length > 0 && document.querySelector('` + preview + ` .sol-frame[data-frame="1"] .sol-mark').textContent !== ""`,
+	}
+	for id, shown := range progress {
+		chooseVariant(t, ctx, id)
+		waitJS(t, ctx, id+" in progress", shown, 10*time.Second)
+		if n := evalInt(t, ctx, `document.querySelectorAll('`+preview+` button:not([disabled])').length`); n != 0 {
+			t.Errorf("%s: %d things to click in a picture", id, n)
+		}
+	}
+	// Nothing hidden is drawn: a game in progress has backs, and the set wears through.
+	chooseVariant(t, ctx, "solitaire")
+	waitJS(t, ctx, "Klondike again", `document.querySelector('`+preview+`[data-mode="klondike"]')`, 10*time.Second)
+	if n := evalInt(t, ctx, `document.querySelectorAll('`+preview+` .pcard.back').length`); n == 0 {
+		t.Error("no card lies face down")
+	}
+	js := `(function(){ const s = document.getElementById("card-set"); s.value = "amphibians"; s.dispatchEvent(new Event("change")); return true })()`
+	if err := chromedp.Run(ctx, chromedp.Evaluate(js, nil)); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "the set", `document.querySelector('`+preview+` .pcard.face[data-set="amphibians"]')`, 10*time.Second)
+	if n := evalInt(t, ctx, `document.querySelectorAll('`+preview+` .pcard.face:not([data-set="amphibians"])').length`); n != 0 {
+		t.Errorf("%d cards do not wear the set", n)
+	}
+}
+
+// A tutorial of one variant is offered with that variant and not with the others, and
+// a tutorial for the whole family is offered with them all.
+func TestWebSetup_TutorialsFollowTheVariant(t *testing.T) {
+	baseURL := newRESTTestServer(t)
+	ctx, cancel := newChromedpContext(t, 60*time.Second)
+	defer cancel()
+	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/?game=solitaire")); err != nil {
+		t.Fatal(err)
+	}
+	bowling := `document.querySelector('#setup-tutorials button[data-tutorial="bowling-basics"]')`
+	waitJS(t, ctx, "the setup", `document.querySelector('#setup-variant')`, 15*time.Second)
+	waitJS(t, ctx, "no tutorial", `document.getElementById("setup-tutorials").hidden`, 10*time.Second)
+	chooseVariant(t, ctx, "bowling-solitaire")
+	waitJS(t, ctx, "Bowling's tutorial", bowling+` && !document.getElementById("setup-tutorials").hidden`, 10*time.Second)
+	chooseVariant(t, ctx, "freecell")
+	waitJS(t, ctx, "FreeCell has none", `document.getElementById("setup-tutorials").hidden`, 10*time.Second)
+	// Blooms is taught on its small board, for every board.
+	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/?game=blooms")); err != nil {
+		t.Fatal(err)
+	}
+	blooms := `document.querySelector('#setup-tutorials button[data-tutorial="blooms-basics"]')`
+	waitJS(t, ctx, "the tutorial", blooms, 15*time.Second)
+	chooseVariant(t, ctx, "blooms-6")
+	waitJS(t, ctx, "the other board", `document.getElementById("game_def_id").value === "blooms-6"`, 10*time.Second)
+	waitJS(t, ctx, "the tutorial still", blooms+` && !document.getElementById("setup-tutorials").hidden`, 10*time.Second)
+}
+
+// A card in the play area shows large under the pointer, as a card of a hand does, even
+// one partly covered; a card face down does not, and dragging puts the large card away.
+func TestWebSolitaire_ACardUnderThePointerShowsLarge(t *testing.T) {
+	baseURL := newRESTTestServer(t)
+	room := solitaireRoom(t, baseURL, "freecell", "")
+	ctx, cancel := newChromedpContext(t, 60*time.Second)
+	defer cancel()
+	openGameAs(t, ctx, baseURL, room, "freecell", "Ana")
+	waitJS(t, ctx, "the table", `document.querySelectorAll('.sol-column .pcard.face').length === 52`, 15*time.Second)
+	var at []float64
+	// The top of a card under others: only its corner shows.
+	if err := chromedp.Run(ctx, chromedp.Evaluate(`(function(){ const e = document.querySelector('.sol-column[data-pile="t1"] .sol-card .pcard'); const r = e.getBoundingClientRect(); return [r.left + 8, r.top + 6, r.width, r.height] })()`, &at)); err != nil {
+		t.Fatal(err)
+	}
+	if err := chromedp.Run(ctx, chromedp.MouseEvent("mouseMoved", at[0]-40, at[1]-40), chromedp.MouseEvent("mouseMoved", at[0], at[1])); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "the enlarged card", `document.querySelectorAll(".pc-zoom").length === 1`, 5*time.Second)
+	zoom := evalString(t, ctx, `(function () { const z = document.querySelector(".pc-zoom").getBoundingClientRect(); return [Math.round(z.width), Math.round(z.height)].join("x") })()`)
+	if want := fmt.Sprintf("%dx%d", int(at[2]*2+0.5), int(at[3]*2+0.5)); zoom != want {
+		t.Errorf("the enlarged card is %s, want %s", zoom, want)
+	}
+	if err := chromedp.Run(ctx, chromedp.MouseEvent("mouseMoved", 4, 4)); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "gone", `document.querySelectorAll(".pc-zoom").length === 0`, 5*time.Second)
+	// A drag has no large card over the piles it passes.
+	js := `(function(){
+		const c = [...document.querySelectorAll('.sol-column button.sol-movable')].pop();
+		const r = c.getBoundingClientRect();
+		const opt = (x, y) => ({bubbles:true, clientX:x, clientY:y, button:0, pointerId:1});
+		c.dispatchEvent(new PointerEvent('pointerdown', opt(r.left+5, r.top+5)));
+		window.dispatchEvent(new PointerEvent('pointermove', opt(r.left+40, r.top+40)));
+		const other = document.querySelector('.sol-column[data-pile="t1"] .pcard.face');
+		other.dispatchEvent(new PointerEvent('pointerover', {bubbles:true, pointerType:'mouse'}));
+		const large = document.querySelectorAll('.pc-zoom').length;
+		window.dispatchEvent(new PointerEvent('pointerup', opt(4, 4)));
+		other.dispatchEvent(new PointerEvent('pointerover', {bubbles:true, pointerType:'mouse'}));
+		const after = document.querySelectorAll('.pc-zoom').length;
+		return large + "," + after })()`
+	if got := evalString(t, ctx, js); got != "0,1" {
+		t.Errorf("large cards during and after a drag: %s, want 0,1", got)
+	}
+	// A face-down card has nothing to show.
+	room = solitaireRoom(t, baseURL, "solitaire", "")
+	openGameAs(t, ctx, baseURL, room, "solitaire", "Ana")
+	waitJS(t, ctx, "the table", `document.querySelector('.sol-column .pcard.back')`, 15*time.Second)
+	if err := chromedp.Run(ctx, chromedp.Evaluate(`(function(){ const e = document.querySelector('.sol-column .pcard.back'); const r = e.getBoundingClientRect(); return [r.left + 8, r.top + 4] })()`, &at)); err != nil {
+		t.Fatal(err)
+	}
+	if err := chromedp.Run(ctx, chromedp.MouseEvent("mouseMoved", at[0]-40, at[1]-40), chromedp.MouseEvent("mouseMoved", at[0], at[1])); err != nil {
+		t.Fatal(err)
+	}
+	if n := evalInt(t, ctx, `document.querySelectorAll(".pc-zoom").length`); n != 0 {
+		t.Errorf("a card face down was enlarged")
+	}
 }

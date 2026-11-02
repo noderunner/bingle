@@ -56,6 +56,7 @@ steps:
 | `summary` | no | One line under the title. |
 | `order` | no | Sorts the game's tutorials of one kind, lowest first. |
 | `game` | yes | The game or variant it is played on, of the family whose files hold it (`blooms-4`). |
+| `variant_only` | no | `true` when it teaches only that game, so that it is offered only with it (`bowling-basics`). Without it the tutorial is offered for the whole family, and `game` is merely the board it is played on, as Blooms is taught on its small board. |
 | `seat` | no | The learner's seat, 1 by default. The page plays every other seat. |
 | `seed` | for a game with chance | Fixes the dice or draws, so every roll of the script comes out the same. Not needed with `start`. |
 | `setup` | no | Moves played by whichever seat is to move, before the first step. |

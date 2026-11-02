@@ -656,3 +656,64 @@ func TestRandomPlayKeepsEveryCard(t *testing.T) {
 		}
 	}
 }
+
+// The picture of a game in progress is really in progress, the same every time, and
+// shows nothing face down.
+func TestTheSampleIsAGameInProgress(t *testing.T) {
+	for _, id := range allVariants {
+		g := game(t, id)
+		sample := state.SampleOf(g)
+		b, err := json.Marshal(sample)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var v struct {
+			Solitaire string `json:"solitaire"`
+			Home      int    `json:"home"`
+			Table     []struct {
+				ID    string `json:"id"`
+				Count int    `json:"count"`
+				Cards []card `json:"cards"`
+			} `json:"table"`
+			Bowling *struct {
+				Frame  int `json:"frame"`
+				Frames []struct {
+					Marks []string `json:"marks"`
+				} `json:"frames"`
+			} `json:"bowling"`
+		}
+		if err := json.Unmarshal(b, &v); err != nil {
+			t.Fatal(err)
+		}
+		if v.Solitaire != g.ParamString("mode", "") {
+			t.Errorf("%s: a sample of %q", id, v.Solitaire)
+		}
+		switch v.Solitaire {
+		case "klondike", "freecell":
+			if v.Home == 0 {
+				t.Errorf("%s: no card is home", id)
+			}
+		case "spider":
+			up := 0
+			for _, z := range v.Table {
+				for _, c := range z.Cards {
+					if c.ID != "" {
+						up++
+					}
+				}
+			}
+			if up <= 10 {
+				t.Errorf("%s: only %d cards are showing", id, up)
+			}
+		case "bowling":
+			if v.Bowling == nil || v.Bowling.Frame < 2 || len(v.Bowling.Frames[0].Marks) == 0 {
+				t.Errorf("%s: %+v", id, v.Bowling)
+			}
+		}
+		// Worked out once, by a new ruleset too: the same.
+		again, _ := json.Marshal(state.SampleOf(game(t, id)))
+		if string(again) != string(b) {
+			t.Errorf("%s: the sample changed", id)
+		}
+	}
+}

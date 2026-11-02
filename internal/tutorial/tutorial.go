@@ -47,6 +47,10 @@ type Tutorial struct {
 	// Game is the game (or variant) the tutorial is played on, a member of
 	// the family whose files hold it.
 	Game string `json:"game"`
+	// VariantOnly says the tutorial teaches the game it names and no other of its
+	// family, so it is offered only with that game. Without it a tutorial is
+	// offered for the whole family, and Game is merely the board it is played on.
+	VariantOnly bool `json:"variant_only,omitempty"`
 	// Seat is the learner's seat (default 1); the page plays every other.
 	Seat int `json:"seat,omitempty"`
 	// Seed fixes the chance of a game that has any (its dice), so every

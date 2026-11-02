@@ -162,6 +162,24 @@ func GuidedMoves(game *catalog.CompiledGame, st *BoardState, seat int, legal []M
 	return legal
 }
 
+// Sampler is implemented by rulesets whose game cannot be pictured by pieces on a
+// board. Sample returns the view of a game in progress, as Redact would send it to a
+// spectator, for a client to draw where it offers the game. It must come out the same
+// every time: nothing about it is random but the fixed deal it starts from.
+type Sampler interface {
+	Sample(game *catalog.CompiledGame) any
+}
+
+// SampleOf returns a game's sample view, or nil for a game that has none.
+func SampleOf(game *catalog.CompiledGame) any {
+	if rs, ok := RulesetOf(game); ok {
+		if s, ok := rs.(Sampler); ok {
+			return s.Sample(game)
+		}
+	}
+	return nil
+}
+
 // Reactor is implemented by rulesets with reactions: abilities a player may
 // use on another player's turn, in the gap after that player's action (an
 // interrupt, as card and board games have them). Such a decision asks a

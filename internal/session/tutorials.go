@@ -47,6 +47,23 @@ func (m *Manager) Tutorials(gameID string) (string, []tutorial.Tutorial, error) 
 	return family, list, nil
 }
 
+// TutorialsFor returns the tutorials to offer a player of gameID: the family's, but
+// for those that teach another variant of it. A tutorial is still started by its
+// family's name; this only decides who is offered it.
+func (m *Manager) TutorialsFor(gameID string) (string, []tutorial.Tutorial, error) {
+	family, list, err := m.Tutorials(gameID)
+	if err != nil {
+		return "", nil, err
+	}
+	out := make([]tutorial.Tutorial, 0, len(list))
+	for _, t := range list {
+		if !t.VariantOnly || t.Game == gameID {
+			out = append(out, t)
+		}
+	}
+	return family, out, nil
+}
+
 // Tutorial returns one tutorial of gameID's family.
 func (m *Manager) Tutorial(gameID, id string) (string, tutorial.Tutorial, error) {
 	family, list, err := m.Tutorials(gameID)
