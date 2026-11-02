@@ -270,6 +270,30 @@ there is no way to change it at the table. `js/card-sets.js` holds the sets and 
 tooltip gives the set's name for the suit and the one the rules use: *9 of Tree Frogs (hearts)*. The
 suit pictures on Nyet!'s board of terms follow the set.
 
+## Games of patience (Solitaire)
+
+A view with `solitaire` is drawn by `js/solitaire.js` (`.sol-table`, still `#card-table`), not `cards.js`'s
+table. **Klondike, Spider and FreeCell** have `.sol-top` (`#sol-stock`, `.sol-waste`, the free cells and
+foundations) over `.sol-columns` of `.sol-column`; a pile has `data-pile` (`t3`, `w`, `f1`, `c2`) and a pile that
+takes the cards in hand now has the class `sol-target`.
+
+A move is the server's two steps, `from-<pile>-<count>` and `to-<pile>`: a card a move can start with is a
+`button[data-from]`. Clicking one picks it up (`sol-picked`), or plays it at once if it has one place to go. Clicking
+it again sends it to its foundation if it can go, and otherwise lets go. It can also be dragged: `.sol-ghost` follows
+the pointer, the cards on top of it come along, and a drop on a pile that does not take them plays nothing. The width
+of the table decides the size of the cards, so ten columns fit a phone.
+
+Where colours are the rule (`view.alternate`), a card at a table with a themed set also shows its classic suit,
+`.sol-colour`, since the set's suits are not red and black.
+
+**Bowling Solitaire** has `#sol-sheet` (ten `.sol-frame[data-frame]`, each with `.sol-mark`s and `.sol-frame-total`),
+`#sol-rack` (`.sol-pin[data-pin]`, a button when it can be part of a play, `.down` when it is down), `#sol-balls` and
+`#sol-gone`. Pins are chosen in any order and held in the page, and a ball (`button[data-throw]`) is offered only when
+it can take exactly those. Throwing it sends the steps in the server's order: the pins by letter, then
+`ball-<pile>`. In a tutorial only the step's pins can be chosen (`sol-wanted`).
+
+A game with one seat has no Submit, its Resign button says **Give up**, and the setup form asks for no opponent.
+
 ## Card tables and hands (Nyet!)
 
 A game with a `cards` section draws a **card table** (`js/cards.js`, `#card-table`): what the

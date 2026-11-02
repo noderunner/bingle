@@ -1,0 +1,223 @@
+# yaml-language-server: $schema=../../../docs/game-definition.schema.json
+id: solitaire
+name: Solitaire
+description: "The patience game most people mean by Solitaire, for one player: build four piles from ace to king, and turn up the seven columns' hidden cards on the way. Spider, FreeCell and Bowling Solitaire are here too."
+version: 0.1.0
+engine: ruleset
+rules:
+  - 'Klondike, one card at a time. 52 cards are dealt into seven columns of 1 to 7 cards, the top card of each face up; the rest are the stock. You win by moving every card to the four foundations, one per suit, each built up from ace to king.'
+  - 'In a column, cards build down in alternating colours: a black 6 goes on a red 7. A face-up card may be moved with the cards on top of it, as long as they are in that order. A column that is emptied can only be filled with a king. When a face-down card is uncovered it turns up.'
+  - 'Click the stock to turn one card onto the waste. The top card of the waste can be played to a column or a foundation. When the stock runs out, the waste can be turned over to make a new stock, as often as you like.'
+  - 'The top card of a foundation may be brought back to a column. The game ends when you win, when no move is left, or when you give up.'
+params: {mode: klondike, columns: 7, draw: 1}
+board:
+  generator: {type: grid, width: 1, height: 1, adjacency: orthogonal4}
+  style: none
+seats:
+  - {seat: 1, color: red, label: Player}
+pieces:
+  token: {label: Token, code: T, shape: disc}
+turn_order:
+  type: round-robin
+  seats: [1]
+win_condition: {type: ruleset}
+cards:
+  suits:
+    hearts: {label: Hearts, color: '#c62f2f', symbol: ♥}
+    spades: {label: Spades, color: '#1f2630', symbol: ♠}
+    diamonds: {label: Diamonds, color: '#c62f2f', symbol: ♦}
+    clubs: {label: Clubs, color: '#1f2630', symbol: ♣}
+  # In this order the colours alternate: the rules read red and black from a suit's
+  # place, and a themed set of cards wears the suits by place too.
+  suit_order: [hearts, spades, diamonds, clubs]
+  decks:
+    main:
+      label: Standard deck
+      rank_list: A 2 3 4 5 6 7 8 9 10 J Q K
+  back: {color: '#2f6f5e'}
+  zones:
+    - {id: stock, label: Stock, scope: table, visibility: none, layout: stack, counts: true}
+    - {id: waste, label: Waste, scope: table, visibility: all, layout: stack}
+    - {id: f1, label: Foundation, scope: table, visibility: all, layout: stack}
+    - {id: f2, label: Foundation, scope: table, visibility: all, layout: stack}
+    - {id: f3, label: Foundation, scope: table, visibility: all, layout: stack}
+    - {id: f4, label: Foundation, scope: table, visibility: all, layout: stack}
+    - {id: c1, label: Free cell, scope: table, visibility: all, layout: stack}
+    - {id: c2, label: Free cell, scope: table, visibility: all, layout: stack}
+    - {id: c3, label: Free cell, scope: table, visibility: all, layout: stack}
+    - {id: c4, label: Free cell, scope: table, visibility: all, layout: stack}
+    - {id: t1, label: Column, scope: table, visibility: flag, layout: splay}
+    - {id: t2, label: Column, scope: table, visibility: flag, layout: splay}
+    - {id: t3, label: Column, scope: table, visibility: flag, layout: splay}
+    - {id: t4, label: Column, scope: table, visibility: flag, layout: splay}
+    - {id: t5, label: Column, scope: table, visibility: flag, layout: splay}
+    - {id: t6, label: Column, scope: table, visibility: flag, layout: splay}
+    - {id: t7, label: Column, scope: table, visibility: flag, layout: splay}
+    - {id: t8, label: Column, scope: table, visibility: flag, layout: splay}
+    - {id: t9, label: Column, scope: table, visibility: flag, layout: splay}
+    - {id: t10, label: Column, scope: table, visibility: flag, layout: splay}
+    - {id: done, label: Finished suits, scope: table, visibility: all, layout: stack}
+    - {id: pina, label: Pin a, scope: table, visibility: all, layout: row}
+    - {id: pinb, label: Pin b, scope: table, visibility: all, layout: row}
+    - {id: pinc, label: Pin c, scope: table, visibility: all, layout: row}
+    - {id: pind, label: Pin d, scope: table, visibility: all, layout: row}
+    - {id: pine, label: Pin e, scope: table, visibility: all, layout: row}
+    - {id: pinf, label: Pin f, scope: table, visibility: all, layout: row}
+    - {id: ping, label: Pin g, scope: table, visibility: all, layout: row}
+    - {id: pinh, label: Pin h, scope: table, visibility: all, layout: row}
+    - {id: pini, label: Pin i, scope: table, visibility: all, layout: row}
+    - {id: pinj, label: Pin j, scope: table, visibility: all, layout: row}
+    - {id: ball1, label: Ball pile 1, scope: table, visibility: flag, layout: stack}
+    - {id: ball2, label: Ball pile 2, scope: table, visibility: flag, layout: stack}
+    - {id: ball3, label: Ball pile 3, scope: table, visibility: flag, layout: stack}
+    - {id: gone, label: Out of play, scope: table, visibility: all, layout: row}
+guide:
+  tabs:
+    - {id: rules, title: Rules, file: klondike.md}
+variants:
+  - id: solitaire-draw-3
+    name: Solitaire (draw three)
+    patch:
+      description: "Klondike the harder way: the stock turns over three cards at a time, and only the top one can be played."
+      params: {draw: 3}
+      rules:
+        - 'Klondike, three cards at a time. 52 cards are dealt into seven columns of 1 to 7 cards, the top card of each face up; the rest are the stock. You win by moving every card to the four foundations, one per suit, each built up from ace to king.'
+        - 'In a column, cards build down in alternating colours: a black 6 goes on a red 7. A face-up card may be moved with the cards on top of it, as long as they are in that order. A column that is emptied can only be filled with a king. When a face-down card is uncovered it turns up.'
+        - 'Click the stock to turn three cards onto the waste (fewer if fewer are left). Only the top card of the waste can be played; playing it frees the one under it. When the stock runs out, the waste can be turned over to make a new stock, as often as you like.'
+        - 'The top card of a foundation may be brought back to a column. The game ends when you win, when no move is left, or when you give up.'
+      guide:
+        tabs:
+          - {id: rules, title: Rules, file: klondike-draw-3.md}
+  - id: spider
+    name: Spider
+    patch:
+      description: "Two decks, ten columns: build runs from king to ace of one suit, and each finished run leaves the table. All four suits."
+      params: {mode: spider, columns: 10}
+      rules:
+        - 'Spider, with two decks. 104 cards are dealt into ten columns, 6 cards in the first four and 5 in the others, the top card of each face up; the rest are the stock, five deals of ten cards. You win by finishing all eight suits.'
+        - 'Any card can go on a card one rank higher, whatever its suit: a 6 of hearts goes on a 7 of clubs. But only cards of one suit in order can be moved together. An empty column takes anything. When a face-down card is uncovered it turns up.'
+        - 'A run from king to ace of one suit leaves the table by itself. Click the stock to deal one card onto every column; that cannot be done while a column is empty. The game ends when you win, when no move is left, or when you give up.'
+      guide:
+        tabs:
+          - {id: rules, title: Rules, file: spider.md}
+      cards:
+        decks:
+          main:
+            label: Two decks
+            rank_list: null
+            ranks:
+              - {id: A, value: 1, count: 2}
+              - {id: "2", value: 2, count: 2}
+              - {id: "3", value: 3, count: 2}
+              - {id: "4", value: 4, count: 2}
+              - {id: "5", value: 5, count: 2}
+              - {id: "6", value: 6, count: 2}
+              - {id: "7", value: 7, count: 2}
+              - {id: "8", value: 8, count: 2}
+              - {id: "9", value: 9, count: 2}
+              - {id: "10", value: 10, count: 2}
+              - {id: J, value: 11, count: 2}
+              - {id: Q, value: 12, count: 2}
+              - {id: K, value: 13, count: 2}
+  - id: spider-2
+    name: Spider (two suits)
+    patch:
+      description: "Spider with hearts and spades only, four decks' worth of each: 104 cards, and fewer runs broken by the wrong suit."
+      params: {mode: spider, columns: 10}
+      rules:
+        - 'Spider, with two suits. 104 cards, hearts and spades only, are dealt into ten columns, 6 cards in the first four and 5 in the others, the top card of each face up; the rest are the stock, five deals of ten cards. You win by finishing all eight runs.'
+        - 'Any card can go on a card one rank higher, whatever its suit: a 6 of hearts goes on a 7 of spades. But only cards of one suit in order can be moved together. An empty column takes anything. When a face-down card is uncovered it turns up.'
+        - 'A run from king to ace of one suit leaves the table by itself. Click the stock to deal one card onto every column; that cannot be done while a column is empty. The game ends when you win, when no move is left, or when you give up.'
+      guide:
+        tabs:
+          - {id: rules, title: Rules, file: spider.md}
+      cards:
+        suits: {diamonds: null, clubs: null}
+        suit_order: [hearts, spades]
+        decks:
+          main:
+            label: Two suits
+            rank_list: null
+            ranks:
+              - {id: A, value: 1, count: 4}
+              - {id: "2", value: 2, count: 4}
+              - {id: "3", value: 3, count: 4}
+              - {id: "4", value: 4, count: 4}
+              - {id: "5", value: 5, count: 4}
+              - {id: "6", value: 6, count: 4}
+              - {id: "7", value: 7, count: 4}
+              - {id: "8", value: 8, count: 4}
+              - {id: "9", value: 9, count: 4}
+              - {id: "10", value: 10, count: 4}
+              - {id: J, value: 11, count: 4}
+              - {id: Q, value: 12, count: 4}
+              - {id: K, value: 13, count: 4}
+  - id: spider-1
+    name: Spider (one suit)
+    patch:
+      description: "Spider where every card is a spade: the gentle way to learn it, and very often winnable."
+      params: {mode: spider, columns: 10}
+      rules:
+        - 'Spider, with one suit. 104 cards, all spades, are dealt into ten columns, 6 cards in the first four and 5 in the others, the top card of each face up; the rest are the stock, five deals of ten cards. You win by finishing all eight runs.'
+        - 'Any card can go on a card one rank higher, and cards in order can be moved together. An empty column takes anything. When a face-down card is uncovered it turns up.'
+        - 'A run from king to ace leaves the table by itself. Click the stock to deal one card onto every column; that cannot be done while a column is empty. The game ends when you win, when no move is left, or when you give up.'
+      guide:
+        tabs:
+          - {id: rules, title: Rules, file: spider.md}
+      cards:
+        suits: {hearts: null, diamonds: null, clubs: null}
+        suit_order: [spades]
+        decks:
+          main:
+            label: One suit
+            rank_list: null
+            ranks:
+              - {id: A, value: 1, count: 8}
+              - {id: "2", value: 2, count: 8}
+              - {id: "3", value: 3, count: 8}
+              - {id: "4", value: 4, count: 8}
+              - {id: "5", value: 5, count: 8}
+              - {id: "6", value: 6, count: 8}
+              - {id: "7", value: 7, count: 8}
+              - {id: "8", value: 8, count: 8}
+              - {id: "9", value: 9, count: 8}
+              - {id: "10", value: 10, count: 8}
+              - {id: J, value: 11, count: 8}
+              - {id: Q, value: 12, count: 8}
+              - {id: K, value: 13, count: 8}
+  - id: freecell
+    name: FreeCell
+    patch:
+      description: "Every card is face up from the start, and four free cells give you room to work: nearly every deal can be won, with thought rather than luck."
+      params: {mode: freecell, columns: 8, cells: 4}
+      rules:
+        - 'FreeCell. All 52 cards are dealt face up into eight columns, 7 cards in the first four and 6 in the others. You win by moving every card to the four foundations, one per suit, each built up from ace to king.'
+        - 'In a column, cards build down in alternating colours: a black 6 goes on a red 7. An empty column takes any card. Each of the four free cells holds one card, any card, and it can be played from there to a column or a foundation.'
+        - 'Strictly one card moves at a time, but a run in order can be moved in one go as long as there is room to do it card by card: with F empty free cells and E empty columns, (F + 1) × 2^E cards, or half that when the run goes to an empty column.'
+        - 'A card on a foundation stays there. The game ends when you win, when no move is left, or when you give up.'
+      guide:
+        tabs:
+          - {id: rules, title: Rules, file: freecell.md}
+  - id: bowling-solitaire
+    name: Bowling Solitaire
+    patch:
+      description: "Sid Sackson's little masterpiece: twenty cards are the pins and the balls of ten frames of bowling, and you aim to knock the pins down by adding them up."
+      designers: [Sid Sackson]
+      params: {mode: bowling}
+      rules:
+        - 'Bowling Solitaire, by Sid Sackson (A Gamut of Games, 1969). Twenty cards are used, ace to 10 of two suits; suits do not matter and an ace counts 1. For each frame all twenty are shuffled: ten go face up in a triangle as the pins (a b c d at the back, then e f g, then h i, and j at the front), and ten go face down as three ball piles of 5, 3 and 2 cards, the top card of each turned up.'
+        - 'A play uses one face-up ball card to knock down one pin, or two or three pins that touch one another. A single pin goes if its value ends in the same digit as the ball; two or three go if the last digit of their sum does. So a 6 can knock down a 6, or a 2 and a 4, or a 7 and a 9, or a 1, a 2 and a 3; a 10 counts as 0. The ball card and the pins leave the table, and the next card of that pile turns up.'
+        - 'The first play on a rack cannot touch the back row (a, b, c, d) or take the centre pin (f) by itself. Every later play must include a pin next to one already down.'
+        - 'The first ball lasts until no play is left, or until you choose to end it. If all ten pins went, that is a strike. Otherwise the top card of each ball pile is thrown away, the next is turned up, and you go on against the pins still standing with the second ball. Clearing them now is a spare.'
+        - 'Ten frames are scored as in ten-pin bowling: a frame scores the pins it knocked down, a spare adds the next ball and a strike the next two. A spare in the tenth frame earns one more ball and a strike two, on a new rack of the same twenty cards. A perfect game is 300.'
+        - 'Interpretations: pins in a group of three touch in a chain, not necessarily all at once. "First play" is the first made on the rack, whichever ball it comes on. After a strike in the tenth frame the next rack plays its own first and second ball.'
+      guide:
+        tabs:
+          - {id: rules, title: Rules, file: bowling.md}
+      cards:
+        suits: {diamonds: null, clubs: null}
+        suit_order: [hearts, spades]
+        decks:
+          main:
+            label: Twenty cards
+            rank_list: A 2 3 4 5 6 7 8 9 10

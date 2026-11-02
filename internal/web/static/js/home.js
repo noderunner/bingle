@@ -603,8 +603,10 @@ function renderSlots(info) {
 	const oppField = opp ? opp.closest(".field") : null;
 	const seatField = document.getElementById("seat-choices")?.closest(".field");
 	const many = info.seats.length > 2;
-	if (oppField) oppField.hidden = many;
-	if (seatField) seatField.hidden = many;
+	// A game for one player has no opponent to choose and only the one seat.
+	const alone = info.seats.length === 1;
+	if (oppField) oppField.hidden = many || alone;
+	if (seatField) seatField.hidden = many || alone;
 	if (!many || !oppField) return;
 	const field = h("div", { class: "field", id: "slots-field" }, h("label", {}, "Seats"));
 	const rows = h("div", { class: "stack" });
@@ -815,6 +817,7 @@ function playerRange(list) {
 	if (!seats.length) return "";
 	const lo = Math.min(...seats);
 	const hi = Math.max(...seats);
+	if (lo === 1 && hi === 1) return "1 player";
 	return lo === hi ? `${lo} players` : `${lo}\u2013${hi} players`;
 }
 

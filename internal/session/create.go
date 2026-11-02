@@ -389,6 +389,15 @@ func (m *Manager) CreateGameWithOptions(ctx context.Context, opts CreateOptions)
 		Status:   game.Status,
 	}
 
+	// A game for one player has nobody to wait for (ADR 0086).
+	if len(compiled.Definition.Seats) == 1 {
+		if err := m.store.StartGame(ctx, game.ID, firstSeat); err != nil {
+			return CreateGameResult{}, fmt.Errorf("session: starting a game for one: %w", err)
+		}
+		result.Status = "active"
+		return result, nil
+	}
+
 	if len(fill) == 0 && len(also) == 0 {
 		return result, nil
 	}

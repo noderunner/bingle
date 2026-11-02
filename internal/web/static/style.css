@@ -1614,6 +1614,53 @@ button.move-card { cursor: pointer; }
 @media (prefers-reduced-motion: reduce) { .layout-fan .pc-slot { transition: none; } }
 
 /* The board of terms: pictures in a grid whose cells are all the same size, every line centred under the widest. */
+/* A game of patience (js/solitaire.js): the page's width decides the size of the cards. */
+.sol-table { container-type: inline-size; gap: 12px; background: color-mix(in srgb, var(--accent) 10%, var(--surface-2)); border-radius: 12px; padding: 10px; }
+.sol-top, .sol-columns { --gap: clamp(2px, 1cqw, 8px); --cw: min(84px, calc((100cqw - (var(--n, 7) - 1) * var(--gap)) / var(--n, 7))); --ch: calc(var(--cw) * 1.39); }
+.sol-top { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--gap); }
+.sol-row { display: flex; gap: var(--gap); align-items: flex-start; }
+.sol-columns { display: grid; grid-template-columns: repeat(var(--n, 7), var(--cw)); gap: var(--gap); justify-content: space-between; align-items: start; }
+.sol-column { display: flex; flex-direction: column; min-height: var(--ch); border-radius: 7px; }
+.sol-card { display: block; padding: 0; margin: 0; border: 0; background: none; line-height: 0; color: inherit; }
+.sol-column .sol-card + .sol-card, .sol-ghost .sol-card + .sol-card { margin-top: calc(var(--ch) * -0.76); }
+.sol-column .sol-card:has(> .pcard.back) + .sol-card { margin-top: calc(var(--ch) * -0.86); }
+.sol-movable { cursor: grab; touch-action: none; }
+.sol-picked > .pcard, .sol-pin.sol-picked > .pcard { outline: 3px solid var(--accent); outline-offset: 1px; box-shadow: 0 0 10px var(--accent); }
+.sol-slot { position: relative; display: block; width: var(--cw); height: var(--ch); padding: 0; border: 0; background: none; color: inherit; }
+button.sol-stock { cursor: pointer; }
+.sol-waste { width: calc(var(--cw) * (1 + (var(--shown, 1) - 1) * 0.3)); }
+.sol-waste .sol-card { position: absolute; top: 0; left: calc(var(--i, 0) * var(--cw) * 0.3); }
+.sol-empty { display: flex; align-items: center; justify-content: center; width: var(--cw); height: var(--ch); box-sizing: border-box; border: 2px dashed color-mix(in srgb, var(--fg, #888) 28%, transparent); border-radius: 7px; font: 700 calc(var(--cw) * 0.34) system-ui, sans-serif; color: color-mix(in srgb, var(--fg, #888) 45%, transparent); }
+.sol-target > .sol-card:last-child > .pcard, .sol-target > .sol-card:last-child > .sol-empty, .sol-target > .sol-empty { outline: 3px solid var(--accent); outline-offset: 1px; }
+.sol-target .sol-card { cursor: pointer; }
+.sol-stock .pile-count, .sol-ball .pile-count { position: absolute; right: 3px; bottom: 3px; }
+.sol-done { align-self: center; }
+.sol-colour { position: absolute; top: 2%; right: 7%; font: 700 calc(var(--cw, 66px) * 0.24) / 1 system-ui, sans-serif; background: #fffdf6; border-radius: 3px; padding: 0 1px; }
+.sol-ghost { position: fixed; z-index: 50; pointer-events: none; width: var(--cw); }
+.sol-ghost .pcard { box-shadow: 0 10px 24px rgba(0,0,0,.45); }
+.sol-ghost .sol-colour { font-size: calc(var(--cw) * 0.24); }
+.sol-sheet { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)) minmax(0, 1.45fr); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--surface); font: 600 13px system-ui, sans-serif; }
+.sol-frame { border-left: 1px solid var(--border); text-align: center; min-width: 0; }
+.sol-frame:first-child { border-left: 0; }
+.sol-frame.current { background: var(--accent-soft); }
+.sol-frame-no { font-size: 10px; opacity: .65; }
+.sol-marks { display: flex; justify-content: center; min-height: 1.3em; }
+.sol-mark { flex: 1 1 0; min-width: 0; }
+.sol-frame-total { min-height: 1.3em; font-weight: 800; }
+.sol-lanes { --cw: min(72px, calc((100cqw - 24px) / 8)); --ch: calc(var(--cw) * 1.39); display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; align-items: flex-start; }
+.sol-rack { display: flex; flex-direction: column; gap: 6px; }
+.sol-pin-row { display: flex; justify-content: center; gap: 6px; }
+.sol-pin { position: relative; display: block; padding: 0; border: 0; background: none; line-height: 0; color: inherit; }
+button.sol-pin { cursor: pointer; }
+button.sol-pin:hover > .pcard { transform: translateY(-3px); }
+.sol-pin-name { position: absolute; left: 50%; bottom: 3px; transform: translateX(-50%); font: 700 11px/1.3 system-ui, sans-serif; background: var(--surface); color: var(--fg, inherit); border-radius: 4px; padding: 0 4px; }
+.sol-pin.sol-wanted:not(.sol-picked) > .pcard { outline: 3px dashed var(--accent); outline-offset: 1px; }
+.sol-side { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 0 1 calc(var(--cw) * 3.6); }
+.sol-balls { display: flex; gap: 6px; margin-bottom: 6px; }
+.sol-ball { position: relative; line-height: 0; }
+.sol-ball-card { display: block; }
+.sol-gone { display: flex; flex-wrap: wrap; row-gap: 4px; min-height: calc(var(--ch) * 0.3); }
+@media (prefers-reduced-motion: reduce) { button.sol-pin:hover > .pcard { transform: none; } }
 .ct-grid-wrap { margin: 8px 0; }
 .ct-round { margin: 0 0 4px 2px; }
 .choice-grid { --cell: 46px; display: flex; flex-direction: column; gap: 6px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 10px; width: max-content; max-width: 100%; }
