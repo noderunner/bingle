@@ -8,6 +8,7 @@
 //	join.go, connection.go   taking a seat or watching; whose sockets are open
 //	state.go, history.go     reading a game: snapshots, moves, legal moves, simulation
 //	moves.go, botturns.go    playing a move and everything that follows it (bots, clocks)
+//	realtime.go              warnings, and a bot on offer, in a game played in real time
 //	undo.go                  taking back a step of the turn being played
 //	resign.go                resigning and draws
 //	lobby.go, reactions.go,
@@ -59,6 +60,7 @@ type Manager struct {
 	chat               chatLimiter            // how often each name has spoken (see SendChat)
 	conns              connTracker            // the seats with a socket open (see connection.go)
 	connTimes          ConnectionTimes        // how those sockets are watched
+	rtWarned           realTimeWarned         // the real-time warnings already given (see realtime.go)
 	here               hereTracker            // the browsers that are about (see here.go)
 	dms                dmBox                  // the direct messages, in memory (see dm.go)
 	calls              callRegistry           // the one voice call each browser is in (see dm.go)

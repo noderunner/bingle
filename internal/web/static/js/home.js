@@ -330,6 +330,7 @@ function renderSeatChoices(info) {
 	renderSlots(info);
 	renderSetupOptions(info);
 	renderClockField(info);
+	renderRealTimeField(info);
 	renderRatedField(info);
 	renderCardSetField(info);
 	applyStartMode();
@@ -564,6 +565,43 @@ function renderRatedField(info) {
 	field.dataset.wired = "1";
 	rated.addEventListener("change", sync);
 	for (const el of [clock, handicap, perMove]) el.addEventListener("change", giveUp);
+}
+
+/** Real time needs someone else to play with, and its warnings are for a game with no timer. */
+function renderRealTimeField(info) {
+	const field = document.getElementById("real-time-field");
+	const box = document.getElementById("real-time");
+	if (!field || !box) return;
+	field.hidden = info.seats.length < 2;
+	if (field.hidden) box.checked = false;
+	const sync = () => {
+		document.getElementById("real-time-warnings").hidden = !box.checked || !realTimeWarns();
+	};
+	if (!field.dataset.wired) {
+		field.dataset.wired = "1";
+		for (const id of ["real-time", "clock_seconds", "clock_seconds_1", "clock_seconds_2", "clock-handicap", "move_time_seconds"]) {
+			const el = document.getElementById(id);
+			if (el) el.addEventListener("change", sync);
+		}
+	}
+	sync();
+}
+
+/** Whether the game being set up has no timer, so that the warnings apply. */
+function realTimeWarns() {
+	return clockChoice().length === 0 && !(Number(document.getElementById("move_time_seconds").value) > 0);
+}
+
+/** What the setup asks for in real time, or null for a game that is not. */
+function realTimeChoice() {
+	const box = document.getElementById("real-time");
+	if (!box || !box.checked || document.getElementById("real-time-field").hidden) return null;
+	if (!realTimeWarns()) return {};
+	const minutes = (id, fallback) => {
+		const n = Math.round(Number(document.getElementById(id).value));
+		return (n >= 1 && n <= 60 ? n : fallback) * 60;
+	};
+	return { first_warning_seconds: minutes("real-time-first", 2), second_warning_seconds: minutes("real-time-second", 5) };
 }
 
 /**
@@ -1059,6 +1097,8 @@ if (createForm) {
 		}
 		const limit = Number(document.getElementById("move_time_seconds").value);
 		if (limit > 0 && !clock.length) body.move_time_seconds = limit;
+		const realTime = realTimeChoice();
+		if (realTime) body.real_time = realTime;
 		const lobbyBox = document.getElementById("lobby");
 		if (lobbyBox && lobbyBox.checked) body.lobby = true;
 		const ratedBox = document.getElementById("rated");

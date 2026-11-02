@@ -92,3 +92,4 @@ Short records of choices made for the `bingle` project during the requirements i
 | [0087](0087-the-setup-shows-the-variant-chosen.md) | Variants are chosen from a list; a table of cards shows a game in progress from its own rules; a tutorial can belong to one variant |
 | [0086](0086-games-for-one-player.md) | A game can have one seat: it starts at once, moves never wait for Submit, every move can be taken back, and only clearing the table is a win |
 | [0088](0088-connection-replaces-presence.md) | A seat is connected while a socket that joined for it is open: server pings, a grace period, and the opt-in presence mark gone |
+| [0089](0089-real-time-games.md) | A real-time game is chosen at setup; without a timer the slow player and then the table are warned, and another connected player may have a bot play the turn |

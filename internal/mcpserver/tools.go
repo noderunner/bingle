@@ -39,6 +39,9 @@ func registerTools(mcpServer *server.MCPServer, mgr *session.Manager) {
 			mcp.WithNumber("move_time_seconds", mcp.Description("Optional per-move time limit in seconds; a player who runs out of time loses. Omit or 0 for no limit.")),
 			mcp.WithArray("clock_seconds", mcp.Description("Optional game clock (a chess clock) instead of a per-move limit, for a game of two seats: the seconds each seat starts with, in seat order (the two may differ for handicap play). A player whose clock runs out forfeits."), mcp.WithNumberItems()),
 			mcp.WithNumber("clock_increment_seconds", mcp.Description("Optional seconds added to a player's clock each time they hand the turn on. Needs clock_seconds. Omit or 0 for none.")),
+			mcp.WithBoolean("real_time", mcp.Description("Play in real time: the players are expected to stay until the game ends. With no clock and no time per move, a slow player is warned, then the table is, and another connected player may have a bot play the turn.")),
+			mcp.WithNumber("first_warning_seconds", mcp.Description("With real_time: seconds before the slow player is warned (30 to 3600; 120 if omitted).")),
+			mcp.WithNumber("second_warning_seconds", mcp.Description("With real_time: seconds after that before the table is told and a bot is on offer (30 to 3600; 300 if omitted).")),
 			mcp.WithBoolean("rated", mcp.Description("Make the game move both players' ratings when it ends. It takes two accounts, a game of two seats and the same clock for both; Auto-Play is off. Using an outside engine in a rated game is against the rules.")),
 			mcp.WithString("card_set", mcp.Description("Optional themed set of cards for everybody at the table, in a game with a standard deck (get_game_info: cards.standard): ancient, amphibians, fantasy, lovecraftian or atomic. It changes how the cards look, never the notation. Omit for the game's own cards.")),
 			mcp.WithBoolean("lobby", mcp.Description("Wait in a lobby until the host starts the game (start_game), even with every seat filled: other players join (with a seat of their choice), add bots and chat first.")),
@@ -162,6 +165,7 @@ func handleCreateGame(mgr *session.Manager) server.ToolHandlerFunc {
 			MoveTimeSeconds:       request.GetInt("move_time_seconds", 0),
 			ClockSeconds:          intsArg(request.GetArguments()["clock_seconds"]),
 			ClockIncrementSeconds: request.GetInt("clock_increment_seconds", 0),
+			RealTime:              realTimeArg(request),
 			Rated:                 request.GetBool("rated", false),
 			CardSet:               strings.TrimSpace(request.GetString("card_set", "")),
 			Lobby:                 request.GetBool("lobby", false),
@@ -310,13 +314,15 @@ func handleJoinGame(mgr *session.Manager) server.ToolHandlerFunc {
 // JSON string from state.BoardState.MarshalJSON), not a plain string field,
 // so it appears nested rather than doubly-encoded.
 type getStateResult struct {
-	BoardState json.RawMessage `json:"board_state"`
-	State      json.RawMessage `json:"state,omitempty"`
-	TurnSeat   *int            `json:"turn_seat"`
-	Status     string          `json:"status"`
-	MoveSeq    int             `json:"move_seq"`
-	WinnerSeat *int            `json:"winner_seat"`
-	EndReason  string          `json:"end_reason,omitempty"`
+	// RealTime is set in a game played in real time.
+	RealTime   *session.RealTimeSnapshot `json:"real_time,omitempty"`
+	BoardState json.RawMessage           `json:"board_state"`
+	State      json.RawMessage           `json:"state,omitempty"`
+	TurnSeat   *int                      `json:"turn_seat"`
+	Status     string                    `json:"status"`
+	MoveSeq    int                       `json:"move_seq"`
+	WinnerSeat *int                      `json:"winner_seat"`
+	EndReason  string                    `json:"end_reason,omitempty"`
 	// DrawOfferSeat is the seat with an open draw offer (null when none).
 	DrawOfferSeat *int `json:"draw_offer_seat"`
 }
@@ -344,6 +350,7 @@ func handleGetState(mgr *session.Manager) server.ToolHandlerFunc {
 		}
 
 		return mcp.NewToolResultStructuredOnly(getStateResult{
+			RealTime:   snapshot.RealTime,
 			BoardState: json.RawMessage(snapshot.BoardState),
 			State:      json.RawMessage(snapshot.State),
 			TurnSeat:   snapshot.TurnSeat,
@@ -536,5 +543,16 @@ func handleGetMoves(mgr *session.Manager) server.ToolHandlerFunc {
 		}
 
 		return mcp.NewToolResultStructuredOnly(history), nil
+	}
+}
+
+// realTimeArg reads the real-time arguments of create_game (nil when not asked for).
+func realTimeArg(request mcp.CallToolRequest) *session.RealTimeSettings {
+	if !request.GetBool("real_time", false) {
+		return nil
+	}
+	return &session.RealTimeSettings{
+		FirstWarningSeconds:  request.GetInt("first_warning_seconds", 0),
+		SecondWarningSeconds: request.GetInt("second_warning_seconds", 0),
 	}
 }

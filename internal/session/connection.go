@@ -72,6 +72,8 @@ type seatConn struct {
 type connTracker struct {
 	mu    sync.Mutex
 	rooms map[string]map[int]*seatConn
+	// absent holds the seats a bot is playing until their player reconnects.
+	absent map[string]map[int]bool
 }
 
 func (m *Manager) publishConnection(room string, seat int, connected bool) {
@@ -109,6 +111,7 @@ func (m *Manager) TrackConnection(roomCode string, seat int) func() {
 		sc.grace = nil
 	}
 	sc.sockets++
+	t.clearAbsent(roomCode, seat)
 	var once sync.Once
 	return func() { once.Do(func() { m.socketClosed(roomCode, sc) }) }
 }
@@ -179,6 +182,17 @@ func (m *Manager) seatsSwapped(room string, a, b int) {
 	t := &m.conns
 	t.mu.Lock()
 	defer t.mu.Unlock()
+	if abs := t.absent[room]; abs != nil {
+		wasA, wasB := abs[a], abs[b]
+		delete(abs, a)
+		delete(abs, b)
+		if wasA {
+			abs[b] = true
+		}
+		if wasB {
+			abs[a] = true
+		}
+	}
 	seats := t.rooms[room]
 	sa, sb := seats[a], seats[b]
 	if sa == nil && sb == nil {
@@ -225,5 +239,44 @@ func (m *Manager) seatVacated(room string, seat int) {
 	if sc := t.rooms[room][seat]; sc != nil {
 		t.forget(room, sc)
 		m.publishConnection(room, seat, false)
+	}
+}
+
+// seatConnected says the seat shows as connected, the grace period included.
+func (m *Manager) seatConnected(room string, seat int) bool {
+	t := &m.conns
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	return t.rooms[room][seat] != nil
+}
+
+// markAbsent says a bot is playing the seat's turns until its player reconnects
+// (see AutoPlayTurn). It lives in memory like the rest: a restart forgets it, and the
+// warnings start again.
+func (m *Manager) markAbsent(room string, seat int) {
+	t := &m.conns
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	if t.absent == nil {
+		t.absent = map[string]map[int]bool{}
+	}
+	if t.absent[room] == nil {
+		t.absent[room] = map[int]bool{}
+	}
+	t.absent[room][seat] = true
+}
+
+func (m *Manager) seatAbsent(room string, seat int) bool {
+	t := &m.conns
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	return t.absent[room][seat]
+}
+
+// clearAbsent is the player coming back. The caller holds the lock.
+func (t *connTracker) clearAbsent(room string, seat int) {
+	delete(t.absent[room], seat)
+	if len(t.absent[room]) == 0 {
+		delete(t.absent, room)
 	}
 }

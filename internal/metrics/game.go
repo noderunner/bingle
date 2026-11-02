@@ -166,6 +166,25 @@ func (m *Metrics) SetSlotSizes(sizes map[Slot]int) {
 	}
 }
 
+// RealTimeEvent is something the real-time rules did.
+type RealTimeEvent string
+
+// What the real-time rules can do.
+const (
+	RealTimeFirstWarning  RealTimeEvent = "first_warning"
+	RealTimeSecondWarning RealTimeEvent = "second_warning"
+	RealTimeOfferTaken    RealTimeEvent = "offer_taken"
+	RealTimeAbsentMove    RealTimeEvent = "absent_move"
+)
+
+// RealTime counts what the real-time rules did. It has no label for the room.
+func (m *Metrics) RealTime(ev RealTimeEvent) {
+	if m == nil {
+		return
+	}
+	m.realTime.WithLabelValues(string(ev)).Inc()
+}
+
 // SetBatchWorkers records how many games a batch plays at once.
 func (m *Metrics) SetBatchWorkers(n int) {
 	if m == nil {

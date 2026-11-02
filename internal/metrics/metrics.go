@@ -75,6 +75,7 @@ type Metrics struct {
 	slotInUse      *prometheus.GaugeVec
 	slotSize       *prometheus.GaugeVec
 	batchWorkers   prometheus.Gauge
+	realTime       *prometheus.CounterVec
 	clientErrors   *prometheus.CounterVec
 	mail           *prometheus.CounterVec
 	mailSend       prometheus.Histogram
@@ -205,6 +206,10 @@ func New(version string) *Metrics {
 			Help: "How many slots each CPU pool has.",
 		}, []string{"pool"}),
 
+		realTime: prometheus.NewCounterVec(prometheus.CounterOpts{
+			Namespace: Namespace, Subsystem: "game", Name: "real_time_events_total",
+			Help: "What the real-time rules did: warnings given, slow turns a bot played when asked, and moves a bot made for a player who stayed away.",
+		}, []string{"event"}),
 		batchWorkers: prometheus.NewGauge(prometheus.GaugeOpts{
 			Namespace: Namespace, Subsystem: "batch", Name: "workers",
 			Help: "Games a practice batch plays at once.",
@@ -240,7 +245,7 @@ func New(version string) *Metrics {
 		m.wsConnections, m.wsTotal,
 		m.dbQueries, m.dbDuration, m.dbRows, m.dbTxDuration, m.dbBusy, m.db,
 		m.gameMoves, m.gameApply, m.gameLegal, m.gameLegalMoves, m.gameFinished, m.gameIllegal, m.ratedResults,
-		m.botSearch, m.botNodes, m.slotWait, m.slotInUse, m.slotSize, m.batchWorkers,
+		m.botSearch, m.botNodes, m.slotWait, m.slotInUse, m.slotSize, m.batchWorkers, m.realTime,
 		m.clientErrors, m.mail, m.mailSend,
 	)
 	return m

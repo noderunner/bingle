@@ -171,3 +171,12 @@ export function setTurnBadge(on) {
 		"</svg>";
 	link.href = "data:image/svg+xml," + encodeURIComponent(svg);
 }
+
+/**
+ * How long a page waits before reconnecting its socket: doubling up to about 45
+ * seconds, or up to 3 in a real-time game, where others are waiting on the player.
+ */
+export function reconnectDelay(retry, realTime) {
+	const wait = 700 * 2 ** retry;
+	return realTime ? Math.min(wait, 3000) : wait;
+}

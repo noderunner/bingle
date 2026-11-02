@@ -55,6 +55,9 @@ type Game struct {
 	// CardSet is the themed set of cards the table plays with (empty for the
 	// game's own cards).
 	CardSet string
+	// RealTime is the real-time settings as JSON, empty for a game not played
+	// in real time (see session.RealTimeSettings). It never changes after setup.
+	RealTime string
 	// Tutorial is "family/id" of the tutorial the room plays (SetTutorial),
 	// empty for an ordinary game.
 	Tutorial string
@@ -62,7 +65,7 @@ type Game struct {
 
 // gameColumns is the column list every games SELECT uses, matching
 // scanGameRow.
-const gameColumns = `id, room_code, game_def_id, status, board_state, turn_seat, move_seq, winner_seat, end_reason, end_detail, move_time_limit, draw_offer_seat, initial_state, initial_turn_seat, created_at, updated_at, lobby, clock, tutorial, rated, rating_status, tournament_id, card_set`
+const gameColumns = `id, room_code, game_def_id, status, board_state, turn_seat, move_seq, winner_seat, end_reason, end_detail, move_time_limit, draw_offer_seat, initial_state, initial_turn_seat, created_at, updated_at, lobby, clock, tutorial, rated, rating_status, tournament_id, card_set, real_time`
 
 type rowScanner interface{ Scan(dest ...any) error }
 
@@ -72,7 +75,7 @@ func scanGameRow(row rowScanner) (Game, error) {
 	var lobby, rated int
 	err := row.Scan(&g.ID, &g.RoomCode, &g.GameDefID, &g.Status, &g.BoardState, &turnSeat, &g.MoveSeq, &winnerSeat,
 		&g.EndReason, &g.EndDetail, &g.MoveTimeLimit, &drawOffer, &g.InitialState, &g.InitialTurnSeat,
-		&g.CreatedAt, &g.UpdatedAt, &lobby, &g.Clock, &g.Tutorial, &rated, &g.RatingStatus, &g.TournamentID, &g.CardSet)
+		&g.CreatedAt, &g.UpdatedAt, &lobby, &g.Clock, &g.Tutorial, &rated, &g.RatingStatus, &g.TournamentID, &g.CardSet, &g.RealTime)
 	if err != nil {
 		return Game{}, err
 	}
@@ -205,6 +208,32 @@ func (s *Store) SetDrawOffer(ctx context.Context, gameID int64, seat *int) error
 		return ErrNotFound
 	}
 	return nil
+}
+
+// SetRealTime stores a game's real-time settings. It is set once, at creation.
+func (s *Store) SetRealTime(ctx context.Context, gameID int64, settings string) error {
+	if _, err := s.exec(ctx, "SetRealTime", `UPDATE games SET real_time = ? WHERE id = ?`, settings, gameID); err != nil {
+		return fmt.Errorf("setting real_time for game_id=%d: %w", gameID, err)
+	}
+	return nil
+}
+
+// RealTimeGames lists the active games played in real time.
+func (s *Store) RealTimeGames(ctx context.Context) ([]Game, error) {
+	rows, err := s.query(ctx, "RealTimeGames", `SELECT `+gameColumns+` FROM games WHERE status = 'active' AND real_time != ''`)
+	if err != nil {
+		return nil, fmt.Errorf("listing real-time games: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+	var out []Game
+	for rows.Next() {
+		g, err := scanGameRow(rows)
+		if err != nil {
+			return nil, fmt.Errorf("scanning real-time game: %w", err)
+		}
+		out = append(out, g)
+	}
+	return out, rows.Err()
 }
 
 // SetGameClock stores a game's clock (JSON; empty for no clock). It is set

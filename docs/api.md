@@ -315,6 +315,7 @@ subscribed before it sends `joined`, so a client that waits for `joined` misses 
 
 * `{"type":"chat","data":{id, seat, color, name, text, at}}` — a chat message.
 * `{"type":"connection","data":{seat, connected}}` — a seat connected or disconnected (see [Connection](#connection)).
+* `{"type":"slow_turn","data":{seat, stage}}` — a real-time game has waited on `seat` past its first (1) or second (2) warning (see [Real-time games](#real-time-games)).
 * `{"type":"voice","data":{kind: "join"|"leave", seat, name}}` — somebody joined or left the voice chat.
 * `{"type":"rtc","data":{from, kind, data}}` — a voice-call message from seat `from`; sent
   **only to the `only=voice` connection of the seat it is addressed to** (a player's socket), never to the room.
@@ -364,6 +365,12 @@ MCP: `start_batch`, `get_batch`, `list_batches`, `cancel_batch`. Pages: `/batche
 ### GET /api/games/{code}/history
 
 What every move of the game did, as the game narrated it, oldest first: `[{"ply":12,"seat":2,"lines":["..."]}]`. A position's own `ext.log` keeps only the latest events; this joins the part each move added. `[]` for a game that does not narrate. The Cthulhu Wars History tab reads it.
+
+### Real-time games
+
+`POST /api/games` with `"real_time":{}` plays a game in real time, fixed from then on and shown as `real_time` on the game. Its players are expected to stay until it ends. It works with a clock, a time per move or neither, and a flag falls within a few seconds even with nobody looking. A tutorial room is never real-time.
+
+With no timer, at a table with at least one other person, `real_time` takes `first_warning_seconds` (default 120) and `second_warning_seconds` (default 300, counted from the first), each from 30 to 3600. The game's `real_time.wait` then says `{seat, stage, first_warning_at, second_warning_at}` for the person it is waiting on, and restarts at every decision the game accepts. Each warning is pushed as a `slow_turn` event. Past the second, `POST /api/games/{code}/auto-play-turn` with `{"player_name":"Alice"}` has a tactical bot play that one turn, marked as auto-play. It takes another player whose seat shows as connected, and answers 409 otherwise, or when no turn is on offer. If the slow player's seat shows as disconnected at that moment, the bot goes on playing their turns without a wait until they reconnect.
 
 ### Connection
 
