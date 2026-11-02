@@ -55,6 +55,14 @@ type Tutorial struct {
 	// Setup are moves played, by whichever seat is to move, before the
 	// first step: the way to reach a position worth teaching from.
 	Setup []string `json:"setup,omitempty"`
+	// Start is a position document the tutorial begins from instead of the
+	// game's start — a game well into play, which would take hundreds of
+	// moves to reach — usually kept in a file of its own with !include. The
+	// game checks it as it checks any custom start; its own state of chance
+	// is used, so no seed is needed. StartSeat is who moves first from it in
+	// a game whose position does not say (a game without a Go ruleset).
+	Start     json.RawMessage `json:"start,omitempty"`
+	StartSeat int             `json:"start_seat,omitempty"`
 	// Steps are shown one after another.
 	Steps []Step `json:"steps"`
 }
@@ -76,6 +84,14 @@ type Step struct {
 	Highlight []string `json:"highlight,omitempty"`
 	// Arrow draws an arrow from its first square to its second.
 	Arrow []string `json:"arrow,omitempty"`
+	// Show depicts another position for this step only — the end of a
+	// game, say — reached by these moves from the game's start (seeded as
+	// the tutorial is). The room's game is not touched. A step that shows a
+	// position asks for no moves.
+	Show []string `json:"show,omitempty"`
+	// Position depicts a position written out as a document instead, for
+	// this step only; like Show it asks for no moves.
+	Position json.RawMessage `json:"position,omitempty"`
 }
 
 // SchemaID is the $id of docs/tutorial.schema.json; Required are the fields
@@ -176,6 +192,13 @@ func (t Tutorial) check() error {
 		}
 		if len(s.Arrow) != 0 && len(s.Arrow) != 2 {
 			return fmt.Errorf("%s: step %d: an arrow is two squares, from and to", t.ID, i+1)
+		}
+		pictured := len(s.Show) > 0 || len(s.Position) > 0
+		if pictured && (len(s.Play) > 0 || len(s.Reply) > 0) {
+			return fmt.Errorf("%s: step %d shows a position, so it cannot ask for moves too", t.ID, i+1)
+		}
+		if len(s.Show) > 0 && len(s.Position) > 0 {
+			return fmt.Errorf("%s: step %d: show or position, not both", t.ID, i+1)
 		}
 	}
 	return nil

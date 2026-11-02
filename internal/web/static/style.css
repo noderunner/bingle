@@ -1829,3 +1829,6 @@ code.wrap { overflow-wrap: anywhere; word-break: break-all; }
 .setup-tutorials .setup-tutorials-title { font-size: 1rem; margin: 0.8rem 0 0.4rem; }
 .badge.done { background: color-mix(in srgb, var(--focus) 18%, transparent); color: inherit; }
 .badge.tutorial { background: color-mix(in srgb, var(--focus) 18%, transparent); color: inherit; }
+/* In a tutorial: the control the step points at, and the others, inert. */
+.tutorial-target { outline: 3px solid var(--focus); outline-offset: 2px; box-shadow: 0 0 0 6px color-mix(in srgb, var(--focus) 25%, transparent); }
+.tutorial-inert { opacity: 0.45; cursor: not-allowed; }

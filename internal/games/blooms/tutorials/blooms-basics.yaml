@@ -1,55 +1,92 @@
 # yaml-language-server: $schema=../../../../docs/tutorial.schema.json
 id: blooms-basics
 kind: rules
-title: Placing stones and capturing a bloom
-summary: How a turn works, what a bloom is, and how one is captured.
+title: How to play Blooms
+summary: The goal, the board, the stones, a turn, and how a bloom is captured.
 order: 1
 game: blooms-4   # the small board: 37 cells, 15 captures to win
 seat: 1          # you play red and yellow; the page plays blue and black
 
 steps:
   - text: |
-      **Blooms** is played on a board of hexagonal cells. You have stones of
-      two colours, **red** and **yellow**; your opponent has **blue** and
-      **black**.
+      In **Blooms** you place stones of your two colours to build groups,
+      and capture your opponent's groups by fencing them in.
 
-      The first player's first turn is a single stone. Place a red stone on
-      the highlighted cell.
+  - text: |
+      This is how a game ends. **Red & Yellow captured 17 stones**, and won:
+      the first player to capture **15** enemy stones on this board wins
+      (20 on the standard board, 25 on the large one).
+
+      Captures happen at the end of a turn, so a single turn can take a
+      player past the target. If 500 plies pass first, the player with more
+      captures wins, and equal captures are a draw.
+    show: [
+      yellow@c6, blue@b3, black@d2, red@c3, yellow@b5, blue@e6, black@c4, yellow@d4,
+      red@f4, black@g2, blue@d6, yellow@d7, done, blue@d5, black@e5, yellow@a4, red@g3,
+      blue@a6, done, yellow@e2, red@g1, blue@g4, black@e1, yellow@d3, red@d1, black@c2,
+      blue@f5, yellow@c7, red@a5, blue@f3, black@f2, yellow@e4, red@e3, black@d1,
+      blue@c5, yellow@b6, red@b7, blue@b4, black@f1, red@e5, yellow@c3, blue@g1,
+      black@f5, yellow@a5, red@f3
+    ]
+
+  - text: |
+      The board is a hexagon of **37 cells**, four along each side; the
+      standard board has five, the large one six. Each cell is named by a
+      letter and a number — **d4** is the middle one. Every cell touches up
+      to six others.
+
+      Stones are placed on empty cells and never move.
+    highlight: [d4]
+
+  - text: |
+      The first player has **red** and **yellow** stones, the second
+      **blue** and **black**, and neither ever runs out. Beside each
+      player's name is how many enemy stones they have captured.
+
+      You are red and yellow; this tutorial plays blue and black.
+
+  - text: |
+      Players take turns. The very first turn of the game is **a single
+      stone**; every turn after it is **one or two stones**, and two stones
+      must be of **different colours**. To stop after one, press
+      **End turn**. When a turn ends, captures are made.
+
+      Take the first turn: choose the **red** stone, then the highlighted
+      cell.
     play: [red@d4]
-    hint: Click the highlighted cell in the middle of the board.
+    hint: Press the red stone, then click the highlighted cell, d4.
     highlight: [d4]
     reply: [blue@a4, black@g1]
 
   - text: |
-      Every other turn is **one or two stones**, and two stones must be of
-      **different colours**. Your opponent just placed a blue stone in the
-      corner and a black one on the far side.
+      Your opponent placed two stones, a blue one in the corner and a black
+      one on the far side.
 
-      A **bloom** is a group of touching stones of one colour; a single stone
-      is a bloom too. A bloom is **fenced** when no empty cell touches it.
-      The blue stone at a4 touches only three cells. Fill two of them: a red
-      stone on b3 and a yellow one on b4.
+      A **bloom** is a group of touching stones of one colour; a single
+      stone is a bloom too. A bloom is **fenced** when no empty cell touches
+      it. The blue stone at a4 touches only three cells. Fill two of them:
+      a **red** stone on b3, then a **yellow** one on b4.
     play: [red@b3, yellow@b4]
-    hint: Red on b3, then yellow on b4.
+    hint: Press red and click b3, then press yellow and click b4.
     highlight: [b3, b4]
     reply: [blue@f1, done]
 
   - text: |
-      Your opponent placed a single stone and ended the turn there. The blue
-      bloom at a4 has one empty cell left beside it, a5.
+      Your opponent placed one stone and ended the turn. The blue bloom at
+      a4 has one empty cell left beside it, a5.
 
-      Fill it with one red stone, then press **End turn**: at the end of your
-      turn, every enemy bloom that is fenced is **captured**.
+      Fill it with a **red** stone, then press **End turn**: at the end of
+      your turn, every enemy bloom that is fenced is **captured**.
     play: [red@a5, done]
-    hint: Red on a5, then End turn.
+    hint: Press red and click a5, then press End turn.
     highlight: [a5]
     arrow: [a5, a4]
 
   - text: |
-      The blue stone is gone, and you have captured one stone. On this board
-      the first player to capture **15** enemy stones wins.
+      The blue stone is gone, and you have captured one stone.
 
-      Your own blooms are never captured on your turn: a fenced bloom of
-      yours stays until the end of your opponent's next turn, so you can
-      still free it. That is the heart of the game — giving up a few stones
-      to fence in more.
+      Your **own** fenced blooms are not captured on your turn: they stay
+      until the end of your opponent's turn, so you get a chance to free one
+      — for example by capturing an enemy bloom that was part of its fence,
+      which leaves empty cells beside it. Giving up a few stones to fence in
+      more is the heart of the game.

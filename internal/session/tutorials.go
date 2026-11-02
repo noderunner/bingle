@@ -94,3 +94,21 @@ func (m *Manager) StartTutorial(ctx context.Context, gameID, id, name string) (C
 		StartState: string(doc), StartSeat: toMove, Tutorial: family + "/" + t.ID,
 	})
 }
+
+// TutorialGuide is Tutorial with each step's guide (tutorial.Guide): the
+// selections of the learner's moves and the positions shown.
+func (m *Manager) TutorialGuide(gameID, id string) (tutorial.Tutorial, []tutorial.StepGuide, error) {
+	_, t, err := m.Tutorial(gameID, id)
+	if err != nil {
+		return tutorial.Tutorial{}, nil, err
+	}
+	compiled, ok := m.catalog.Get(t.Game)
+	if !ok {
+		return tutorial.Tutorial{}, nil, fmt.Errorf("%w: %q", ErrGameDefNotFound, t.Game)
+	}
+	guide, err := tutorial.Guide(compiled, t)
+	if err != nil {
+		return tutorial.Tutorial{}, nil, err
+	}
+	return t, guide, nil
+}

@@ -18,7 +18,8 @@ export function stepMoves(step) {
  * progress(tutorial, played, read) says where the learner is:
  *   {step, next, needsNext, finished, offScript}
  * step:      the index of the step to show
- * next:      the move expected next ({who, notation}), or null
+ * next:      the move expected next ({who, notation, index}), or null; index
+ *            is its place among the step's moves (the learner's come first)
  * needsNext: the step waits for the learner to press Next
  * finished:  every step is done
  * offScript: the moves played are not the script's
@@ -33,11 +34,13 @@ export function progress(tut, played, read) {
 		for (let j = 0; j < seq.length; j++) {
 			if (k + j >= moves.length) {
 				if (reading) return { step: i, next: null, needsNext: true, finished: false, offScript: false };
-				return { step: i, next: seq[j], needsNext: false, finished: false, offScript: false };
+				return { step: i, next: { ...seq[j], index: j }, needsNext: false, finished: false, offScript: false };
 			}
 			if (!same(moves[k + j], seq[j].notation)) return { step: i, next: null, needsNext: false, finished: false, offScript: true };
 		}
 		k += seq.length;
+		// A move played beyond the script while a step waits to be read.
+		if (reading && k < moves.length) return { step: i, next: null, needsNext: false, finished: false, offScript: true };
 		if (reading) return { step: i, next: null, needsNext: true, finished: false, offScript: false };
 	}
 	if (k < moves.length) return { step: Math.max(steps.length - 1, 0), next: null, needsNext: false, finished: false, offScript: true };
@@ -63,4 +66,15 @@ export function markFinished(store, ref) {
 	if (done.has(ref)) return;
 	done.add(ref);
 	store.set(DONE_KEY, [...done]);
+}
+
+/**
+ * allowed(expected, chosen, kind, value): whether a selection may be made
+ * now. expected are the selections of the move the step asks for, chosen
+ * those made so far; only the next expected one is allowed.
+ */
+export function allowed(expected, chosen, kind, value) {
+	if (!expected) return false;
+	const next = expected[chosen.length];
+	return !!next && next.kind === kind && String(next.value) === String(value);
 }
