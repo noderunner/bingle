@@ -245,7 +245,7 @@ func TestWebClockMinutesAndTheGamesDefault(t *testing.T) {
 		t.Helper()
 		return evalString(t, ctx, `document.getElementById("clock_minutes").value`)
 	}
-	for game, want := range map[string]string{"blooms": "15", "blooms-4": "10", "blooms-6": "25", "tak-5x5": "10"} {
+	for game, want := range map[string]string{"blooms": "10", "blooms-4": "5", "blooms-6": "15", "tak-5x5": "10"} {
 		open(game)
 		waitJS(t, ctx, game+"'s time", fmt.Sprintf(`document.getElementById("clock_minutes").value === %q`, want), 5*time.Second)
 		if got := evalString(t, ctx, `document.getElementById("clock_seconds").value`); got != "0" {
@@ -264,8 +264,8 @@ func TestWebClockMinutesAndTheGamesDefault(t *testing.T) {
 		return "ok";
 	})()`)
 	waitJS(t, ctx, "the minutes", `document.getElementById("clock_minutes").hidden === false`, 5*time.Second)
-	if got := minutes(); got != "25" {
-		t.Errorf("choosing a clock on the big board suggests %s minutes, want 25", got)
+	if got := minutes(); got != "15" {
+		t.Errorf("choosing a clock on the big board suggests %s minutes, want 15", got)
 	}
 	// What is typed stays within the range, in whole minutes.
 	const typeMinutes = `(function (v) {
@@ -275,7 +275,7 @@ func TestWebClockMinutesAndTheGamesDefault(t *testing.T) {
 		b.dispatchEvent(new Event("change", { bubbles: true }));
 		return b.value;
 	})`
-	for _, c := range []struct{ typed, want string }{{"90", "60"}, {"0", "1"}, {"-3", "1"}, {"7.4", "7"}, {"", "25"}, {"17", "17"}} {
+	for _, c := range []struct{ typed, want string }{{"90", "60"}, {"0", "1"}, {"-3", "1"}, {"7.4", "7"}, {"", "15"}, {"17", "17"}} {
 		if got := evalString(t, ctx, typeMinutes+fmt.Sprintf(`(%q)`, c.typed)); got != c.want {
 			t.Errorf("typing %q leaves %q, want %q", c.typed, got, c.want)
 		}

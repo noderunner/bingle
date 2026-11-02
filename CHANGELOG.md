@@ -14,7 +14,7 @@ what the help window shows under *Recent changes*, so it is written for the peop
   and the size of its board. The clock is still off until you choose it.
 
 ### Blooms 0.2.1
-- A game clock now suggests 10 minutes on the small board, 15 on the standard board and 25 on the big
+- A game clock now suggests 5 minutes on the small board, 10 on the standard board and 15 on the big
   one.
 
 ## 0.37.1 - 2026-11-02

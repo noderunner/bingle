@@ -27,5 +27,5 @@ makes for a longer game. Tournament setup will need the same control.
 
 - A game is free to declare a default whatever it seats, as a clock is only offered at two seats today.
   The real-time plan's clocks for bigger tables can use the same field.
-- Only Blooms names a time so far (10, 15 and 25 minutes by board size). These are estimates, not
-  measurements, and other games suggest 10 until they name their own.
+- Only Blooms names a time so far (5, 10 and 15 minutes by board size), chosen by the maintainer. Other
+  games suggest 10 until they name their own.
