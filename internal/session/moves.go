@@ -306,6 +306,9 @@ func (m *Manager) applyAndRecordAs(ctx context.Context, compiled *catalog.Compil
 		return MoveOutcome{}, err
 	}
 	move := recorded
+	if pieSwap {
+		m.seatsSwapped(canonRoom(game.RoomCode), 1, 2)
+	}
 
 	finalStatus := "active"
 	if result.GameEnded {

@@ -4,6 +4,17 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.44.0 - 2026-11-02
+
+### Bingle Core 0.44.0
+- **See who is connected.** A player whose connection has gone now shows as *disconnected* beside their name, in every
+  game, until they are back. A reload or a brief drop won't flag anyone. In a game played over days, your opponent will
+  usually show this, which only means they don't have the game open.
+- **The "watching" eye is gone**, along with clicking your colour box to switch it on. Bingle now works this out from
+  the connection, so there is nothing to set.
+- **Turn mail is more reliable.** A page whose connection has quietly died no longer counts as you being there, so the
+  mail for your turn still goes out.
+
 ## 0.43.0 - 2026-11-02
 
 ### Bingle Core 0.43.0

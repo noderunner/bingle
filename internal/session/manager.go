@@ -5,7 +5,7 @@
 // grouped by what they do:
 //
 //	create.go, gamedefs.go   starting a game; the list of game definitions
-//	join.go, presence.go     taking a seat or watching; who is looking now
+//	join.go, connection.go   taking a seat or watching; whose sockets are open
 //	state.go, history.go     reading a game: snapshots, moves, legal moves, simulation
 //	moves.go, botturns.go    playing a move and everything that follows it (bots, clocks)
 //	undo.go                  taking back a step of the turn being played
@@ -57,7 +57,8 @@ type Manager struct {
 	tutorials          tutorialCache          // each family's tutorials, read once
 	shuffles           shuffleTracker         // recent piece arrangements of bots (see avoidShuffles)
 	chat               chatLimiter            // how often each name has spoken (see SendChat)
-	presence           presenceTracker        // who says they are watching right now (see SetPresent)
+	conns              connTracker            // the seats with a socket open (see connection.go)
+	connTimes          ConnectionTimes        // how those sockets are watched
 	here               hereTracker            // the browsers that are about (see here.go)
 	dms                dmBox                  // the direct messages, in memory (see dm.go)
 	calls              callRegistry           // the one voice call each browser is in (see dm.go)

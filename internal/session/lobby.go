@@ -126,6 +126,7 @@ func (m *Manager) ChooseSeat(ctx context.Context, roomCode, name string, wanted 
 		if err := m.store.MovePlayerSeat(ctx, game.ID, me.Seat, wanted, sd.Color); err != nil {
 			return StateSnapshot{}, err
 		}
+		m.seatMoved(roomCode, me.Seat, wanted)
 		m.publishState(ctx, roomCode, "seat")
 	}
 	return m.readState(ctx, roomCode, nil)
@@ -220,6 +221,7 @@ func (m *Manager) LeaveSeat(ctx context.Context, roomCode, name string) (StateSn
 	if err := m.store.RemovePlayer(ctx, game.ID, me.Seat); err != nil {
 		return StateSnapshot{}, err
 	}
+	m.seatVacated(roomCode, me.Seat)
 	m.publishState(ctx, roomCode, "leave")
 	return m.readState(ctx, roomCode, nil)
 }
@@ -252,6 +254,7 @@ func (m *Manager) RemoveSeat(ctx context.Context, roomCode, by string, seat int)
 	if err := m.store.RemovePlayer(ctx, game.ID, seat); err != nil {
 		return StateSnapshot{}, err
 	}
+	m.seatVacated(roomCode, seat)
 	m.publishState(ctx, roomCode, "leave")
 	return m.readState(ctx, roomCode, nil)
 }

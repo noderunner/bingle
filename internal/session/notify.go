@@ -83,7 +83,6 @@ type notifier struct {
 
 	mu          sync.Mutex // guards everything below and serialises limit checks
 	lastTurn    map[string]turnKey
-	conns       map[string]map[int]int
 	timers      map[string]*time.Timer
 	pausedUntil time.Time
 	authFailed  bool
@@ -106,7 +105,7 @@ func (m *Manager) EnableNotify(o NotifyOptions) {
 	}
 	o.BaseURL = strings.TrimRight(o.BaseURL, "/")
 	n := &notifier{m: m, opts: o, jobs: make(chan notifyJob, 64),
-		lastTurn: map[string]turnKey{}, conns: map[string]map[int]int{}, timers: map[string]*time.Timer{}}
+		lastTurn: map[string]turnKey{}, timers: map[string]*time.Timer{}}
 	m.notify = n
 	m.hub.setTap(n.tap)
 }
@@ -605,44 +604,6 @@ func (m *Manager) SetGameNotify(ctx context.Context, roomCode, name string, cont
 	return m.gameNotify(ctx, game.ID, key), nil
 }
 
-// ---- who is connected ------------------------------------------------------------------
-
-// TrackConnection notes that a player's page is connected for the seat (so no
-// "it is your turn" mail is sent while they are watching). Call the returned
-// function when the connection ends.
-func (m *Manager) TrackConnection(roomCode string, seat int) func() {
-	n := m.notify
-	if n == nil || seat <= 0 {
-		return func() {}
-	}
-	roomCode = canonRoom(roomCode)
-	n.mu.Lock()
-	if n.conns[roomCode] == nil {
-		n.conns[roomCode] = map[int]int{}
-	}
-	n.conns[roomCode][seat]++
-	n.mu.Unlock()
-	var once sync.Once
-	return func() {
-		once.Do(func() {
-			n.mu.Lock()
-			defer n.mu.Unlock()
-			if n.conns[roomCode][seat]--; n.conns[roomCode][seat] <= 0 {
-				delete(n.conns[roomCode], seat)
-				if len(n.conns[roomCode]) == 0 {
-					delete(n.conns, roomCode)
-				}
-			}
-		})
-	}
-}
-
-func (n *notifier) connected(room string, seat int) bool {
-	n.mu.Lock()
-	defer n.mu.Unlock()
-	return n.conns[room][seat] > 0
-}
-
 // ---- the turn passes -------------------------------------------------------------------------
 
 // tap looks at every event of every room and notices a turn passing to a seat.
@@ -730,7 +691,7 @@ func (n *notifier) send(room string, seat, seq int, ignoreConnected bool) {
 	if !ok || game.Status != "active" || game.TurnSeat == nil || *game.TurnSeat != seat || game.MoveSeq != seq {
 		return // the turn moved on
 	}
-	if !ignoreConnected && n.connected(room, seat) {
+	if !ignoreConnected && n.m.seatHasSocket(room, seat) {
 		return
 	}
 	pref, err := n.m.store.GetNotifyPref(ctx, game.ID, nameKey(player.Name))

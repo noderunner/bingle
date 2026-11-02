@@ -192,8 +192,6 @@ export const api = {
 	directSignal: (to, kind, data) => call("/api/dm/signal", { method: "POST", body: { to, kind, data } }),
 	here: (present = true) => call("/api/here", { method: "POST", body: { here: present } }),
 	whoIsHere: () => call("/api/here"),
-	presence: (code) => call(`/api/games/${enc(code)}/presence`),
-	setPresence: (code, name, present) => call(`/api/games/${enc(code)}/presence`, { method: "POST", body: { player_name: name, present } }),
 	history: (code) => call(`/api/games/${enc(code)}/history`),
 	legal: (code) => call(`/api/games/${enc(code)}/moves/legal?steps=1`),
 	move: (code, name, notation) =>

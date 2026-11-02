@@ -458,7 +458,7 @@ func TestNotify_AddressIsNeverReturned(t *testing.T) {
 	e.move(t, g.Room, "Alice", "a1")
 
 	paths := []string{"/api/games/" + g.Room, "/api/games/" + g.Room + "/state", "/api/games/" + g.Room + "/moves", "/api/games/" + g.Room + "/history",
-		"/api/games/" + g.Room + "/export", "/api/games/" + g.Room + "/chat", "/api/games/" + g.Room + "/presence", "/api/games/" + g.Room + "/voice",
+		"/api/games/" + g.Room + "/export", "/api/games/" + g.Room + "/chat", "/api/games/" + g.Room + "/connections", "/api/games/" + g.Room + "/voice",
 		"/api/games/" + g.Room + "/reactions?player_name=Alice", "/api/config", "/api/notify/config", "/api/chat", "/game/" + g.Room, "/", "/profile"}
 	for _, p := range paths {
 		resp, err := http.Get(e.URL + p)

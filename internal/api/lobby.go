@@ -396,33 +396,8 @@ func (h *handlers) handlePostGlobalChat(w http.ResponseWriter, r *http.Request) 
 	writeJSON(w, http.StatusOK, line)
 }
 
-// presenceRequest is POST /games/{code}/presence's body.
-type presenceRequest struct {
-	PlayerName string `json:"player_name"`
-	Present    bool   `json:"present"`
-}
-
-// handleGetPresence implements GET /games/{code}/presence: the seats whose
-// players say they are watching the game right now.
-func (h *handlers) handleGetPresence(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, http.StatusOK, map[string][]int{"seats": h.mgr.Present(chi.URLParam(r, "code"))})
-}
-
-// handlePostPresence implements POST /games/{code}/presence: a player marks
-// themselves present (or away). A present mark lapses after a couple of
-// minutes unless it is renewed by posting it again.
-func (h *handlers) handlePostPresence(w http.ResponseWriter, r *http.Request) {
-	var req presenceRequest
-	if !decodeBody(w, r, &req) {
-		return
-	}
-	if err := checkName(req.PlayerName); err != nil {
-		writeError(w, err)
-		return
-	}
-	if err := h.mgr.SetPresent(r.Context(), chi.URLParam(r, "code"), req.PlayerName, req.Present); err != nil {
-		writeError(w, err)
-		return
-	}
-	writeJSON(w, http.StatusOK, map[string][]int{"seats": h.mgr.Present(chi.URLParam(r, "code"))})
+// handleGetConnections implements GET /games/{code}/connections: the seats with
+// a socket open, or that lost their last one within the grace period.
+func (h *handlers) handleGetConnections(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, http.StatusOK, map[string][]int{"seats": h.mgr.ConnectedSeats(chi.URLParam(r, "code"))})
 }
