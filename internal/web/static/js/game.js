@@ -238,15 +238,27 @@ async function loadReactions() {
 		return;
 	}
 	const epoch = reactionsEpoch;
+	// A choice made while this answer was on its way is newer than it, and so
+	// is one still on its way to the server, which the answer cannot know of.
+	const current = () => epoch === reactionsEpoch && savesInFlight === 0;
+	let answered = false;
 	try {
 		const res = await api.reactions(code, S.me.name);
-		// A choice made while this answer was on its way is newer than it.
+		answered = current();
 		// A fixed choice (a tutorial's room, whose script answers every
 		// reaction) offers no settings and no shortcuts under the question.
-		if (epoch === reactionsEpoch) S.reactions = res.fixed ? null : res;
+		if (answered) S.reactions = res.fixed ? null : res;
 	} catch (err) {
+		answered = current();
 		// A hiccup keeps what the page knows; a refusal means there is nothing to set.
-		if (epoch === reactionsEpoch && err instanceof ApiError && err.status >= 400 && err.status < 500) S.reactions = null;
+		if (answered && err instanceof ApiError && err.status >= 400 && err.status < 500) S.reactions = null;
+	}
+	// An answer set aside may also have carried news of the game (a reaction
+	// now pending), and the game may wait for this player without another
+	// move to bring it: ask again once the choice is safely saved.
+	if (!answered) {
+		if (savesInFlight > 0) reactionsToReload = true;
+		else return loadReactions();
 	}
 	updateReactionDock();
 }
@@ -2643,11 +2655,13 @@ function capturedZone(seat, sv) {
 // The page is rebuilt on every move, which would swallow a click that
 // straddles one. So the control lives in the options window, outside the
 // rebuilt area, is built once and only updated in place, and what the player
-// chose is shown at once, before the server has answered.
+// chose is shown at once, before the server has answered. Until it has, a
+// refresh of the settings cannot know of the choice, so its answer is set aside.
 
 let dockSig = ""; // the structure the dock was built for
 let reactionsEpoch = 0; // moves on whenever the player changes the choice
 let savesInFlight = 0;
+let reactionsToReload = false; // an answer was set aside for a save in flight
 let saveQueue = Promise.resolve();
 
 /** "Black Goat" for an open seat, "Black Goat (Bex)" for a named one. */
@@ -2885,7 +2899,9 @@ function saveReactions(patch, id) {
 			if (savesInFlight === 1) {
 				// Fall back to what the server holds.
 				try {
-					S.reactions = await api.reactions(code, S.me.name);
+					const epoch = reactionsEpoch;
+					const res = await api.reactions(code, S.me.name);
+					if (epoch === reactionsEpoch) S.reactions = res;
 				} catch (_) {
 					/* the next move brings it up to date */
 				}
@@ -2893,6 +2909,10 @@ function saveReactions(patch, id) {
 		} finally {
 			savesInFlight--;
 			updateReactionDock();
+			if (savesInFlight === 0 && reactionsToReload) {
+				reactionsToReload = false;
+				loadReactions();
+			}
 		}
 	});
 	return saveQueue;

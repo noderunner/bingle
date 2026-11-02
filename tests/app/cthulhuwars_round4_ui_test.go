@@ -655,6 +655,76 @@ func TestWebCthulhuWars_TheReactionChoiceCanBeChangedWhileOthersPlay(t *testing.
 	}
 }
 
+// A refresh that reads the settings while a click is still on its way to the
+// server gets the choice from before the click, and must not show it: the
+// switch used to flip back under the pointer, so the next click did the
+// opposite of what the player was looking at. The save is held back here, so
+// that the refreshes are sure to come back first.
+func TestWebCthulhuWars_ARefreshDuringASaveLeavesTheSwitchAlone(t *testing.T) {
+	baseURL := newRESTTestServer(t)
+	doc := cwPosition(t,
+		[]cwUnit{{1, "cultist", "south-pacific", 3}, {2, "cultist", "asia", 3}, {3, "cultist", "south-america-west", 3}, {4, "cultist", "europe", 3}},
+		map[string]int{"south-pacific": 1, "asia": 2, "south-america-west": 3, "europe": 4},
+		[5]int{0, 1, 14, 14, 14}, [5]uint8{0, 1 << 1, 0, 0, 0}, nil)
+	var created struct {
+		RoomCode string `json:"room_code"`
+	}
+	body := map[string]any{
+		"game_def_id": "cthulhu-wars", "player_name": "Alice",
+		"seat_bots":   map[string]string{"2": "random", "3": "random", "4": "random"},
+		"start_state": json.RawMessage(doc), "start_seat": 1,
+	}
+	if code := doJSON(t, "POST", baseURL+"/api/games", body, &created); code != 200 {
+		t.Fatalf("create: %d", code)
+	}
+	room := created.RoomCode
+	ctx, cancel := newChromedpContext(t, 120*time.Second)
+	defer cancel()
+	openGameAs(t, ctx, baseURL, room, "cthulhu-wars", "Alice")
+	openOptions(t, ctx)
+	waitJS(t, ctx, "the bar", `document.getElementById("ask-devolve-all")`, 10*time.Second)
+	if evalBool(t, ctx, `document.getElementById("ask-devolve-all").checked`) {
+		t.Fatal("the switch should start off")
+	}
+	// Hold every save back until told, and count the refreshes that come back.
+	evalString(t, ctx, `
+		window.__reads = 0;
+		var release, held = new Promise(function (r) { release = r; });
+		window.__release = release;
+		var real = window.fetch;
+		window.fetch = function (url, opts) {
+			if (String(url).indexOf("/reactions") < 0) return real.apply(this, arguments);
+			if (opts && opts.method === "PUT") {
+				var self = this, args = arguments;
+				return held.then(function () { return real.apply(self, args); });
+			}
+			return real.apply(this, arguments).then(function (res) { window.__reads++; return res; });
+		};
+		"ok"`)
+	if err := chromedp.Run(ctx, chromedp.Click("#ask-devolve-all", chromedp.ByID)); err != nil {
+		t.Fatal(err)
+	}
+	if !evalBool(t, ctx, `document.getElementById("ask-devolve-all").checked`) {
+		t.Fatal("the click did not turn the switch on")
+	}
+
+	// Alice passes and the bots play on, each move refreshing the settings,
+	// which the server still holds as they were.
+	if code := moveAs(t, browserGuestKey(t, ctx), baseURL, room, "Alice", "pass"); code != 200 {
+		t.Fatalf("pass: %d", code)
+	}
+	waitJS(t, ctx, "refreshes during the save", `window.__reads >= 3`, 15*time.Second)
+	if !evalBool(t, ctx, `document.getElementById("ask-devolve-all").checked`) {
+		t.Fatal("a refresh put the switch back while the click was being saved")
+	}
+
+	evalString(t, ctx, `window.__release(); "ok"`)
+	waitReactionSettings(t, ctx, baseURL, room, "the choice saved", func(c reactionChoice) bool { return c.AskAll })
+	if !evalBool(t, ctx, `document.getElementById("ask-devolve-all").checked`) {
+		t.Error("the switch went off after the save")
+	}
+}
+
 // The bar is for a seat whose faction has a reaction, in a game that is being
 // played: not for Yellow Sign (none), not in a lobby, not for a spectator.
 func TestWebCthulhuWars_ReactionBarOnlyWhereThereIsAReaction(t *testing.T) {
