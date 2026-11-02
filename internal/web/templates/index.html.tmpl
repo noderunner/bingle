@@ -159,6 +159,13 @@
 								<span class="small muted">The result changes both players' ratings for this game. It takes another signed-in player and the same game clock for both. Using a bot or another program to choose your moves is against the rules.</span>
 							</div>
 
+							<div class="field new-only" id="card-set-field" hidden>
+								<label for="card-set">Cards</label>
+								<select id="card-set" name="card_set"><option value="">The game's own cards</option></select>
+								<span class="small muted">Everyone at the table plays with this set, and it stays for the whole game. Only the look of the cards changes, never the rules.</span>
+								<div id="card-set-preview"></div>
+							</div>
+
 							<div class="field new-only human-only" id="lobby-field">
 								<label class="check"><input type="checkbox" id="lobby" name="lobby"> <span>Wait in a lobby until I start the game</span></label>
 								<span class="small muted">Players you invite gather first, pick their factions or seats and add bots; nobody plays until you press Start.</span>

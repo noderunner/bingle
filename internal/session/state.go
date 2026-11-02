@@ -38,6 +38,9 @@ type StateSnapshot struct {
 	// says what became of that, and RatingChanges what it did to them.
 	Rated        bool
 	RatingStatus string
+	// CardSet is the themed set of cards the table plays with (empty for the
+	// game's own cards).
+	CardSet string
 	// Tournament is the tournament the game is part of.
 	Tournament    *TournamentRef
 	RatingChanges []RatingChange
@@ -112,6 +115,7 @@ func (m *Manager) snapshot(compiled *catalog.CompiledGame, game store.Game, play
 		EndDetail:     game.EndDetail,
 		Tutorial:      game.Tutorial,
 		Rated:         game.Rated,
+		CardSet:       game.CardSet,
 		RatingStatus:  game.RatingStatus,
 		Seats:         seats,
 		Lobby:         game.Lobby,

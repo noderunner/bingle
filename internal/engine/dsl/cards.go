@@ -49,6 +49,12 @@ type DeckDef struct {
 	Suits []string `json:"suits,omitempty"`
 	// Ranks are the ranks of a template deck: every listed suit has each.
 	Ranks []RankDef `json:"ranks,omitempty"`
+	// RankList is the short way to write Ranks when a rank needs nothing but its
+	// name: the ranks in rising order, integers or letters, separated by spaces
+	// ("A 2 3 4 5 6 7 8 9 10 J Q K"). An integer is worth itself and a letter one
+	// more than the rank before it (1 when it comes first), so "2 ... 10 J Q K A"
+	// is aces high. Use one or the other, not both.
+	RankList string `json:"rank_list,omitempty"`
 	// Extra are explicit cards added to the deck (jokers, specials, or the
 	// whole deck when there are no ranks).
 	Extra []CardDef `json:"extra,omitempty"`
@@ -72,7 +78,8 @@ type RankDef struct {
 	Tags    []string `json:"tags,omitempty"`
 }
 
-// CardDef is an explicit card.
+// CardDef is an explicit card. A card with the tag "joker" is a joker: it needs
+// no suit, and a themed set of cards draws it as one of the set's jokers.
 type CardDef struct {
 	ID      string   `json:"id"`
 	Label   string   `json:"label,omitempty"`

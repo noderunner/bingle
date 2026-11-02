@@ -47,7 +47,7 @@ const L = 30;
 const C = 50;
 const R = 70;
 // Where the pips of each rank go (x, y in the 100×140 face); the lower half is drawn upside down.
-const LAYOUTS = {
+export const LAYOUTS = {
 	2: [[C, 34], [C, 106]],
 	3: [[C, 34], [C, 70], [C, 106]],
 	4: [[L, 34], [R, 34], [L, 106], [R, 106]],
@@ -60,12 +60,24 @@ const LAYOUTS = {
 };
 const PIP = 17;
 
+const LETTER_RANKS = { A: 1, J: 11, Q: 12, K: 13 };
+
 /**
- * The face of a card: symbol is the suit's, label the rank as printed (a number
- * from 1 to 13 here). The picture takes the colour of its container.
+ * A printed rank as a number, for choosing how its card is laid out: its own
+ * value when it is an integer, 1 for an ace and 11 to 13 for the usual court
+ * cards. Any other letter is NaN, and draws as a court card.
+ */
+export function rankNumber(label) {
+	const text = String(label).trim().toUpperCase();
+	return text in LETTER_RANKS ? LETTER_RANKS[text] : text === "" ? NaN : Number(text);
+}
+
+/**
+ * The face of a card: symbol is the suit's, label the rank as printed (an
+ * integer or letters). The picture takes the colour of its container.
  */
 export function cardFaceSvg(symbol, label) {
-	const n = Number(label);
+	const n = rankNumber(label);
 	const svg = s("svg", { viewBox: "0 0 100 140", class: "pc-svg", preserveAspectRatio: "xMidYMid meet", "aria-hidden": "true", focusable: "false" });
 	// The index in two opposite corners.
 	const index = (flip) => {

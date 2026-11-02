@@ -256,6 +256,20 @@ that applies (Activate, Strike, Shove…) and, where it asks, a number (attack
 dice, VP to buy). Decisions are submitted at once — there is no preview step
 for these games — and moves that depend on dice are never previewed.
 
+## Themed sets of cards
+
+The create form has a **Cards** field (`#card-set-field`, `#card-set`) for a game whose deck is
+standard (`cards.standard` in the game's info: at most eight suits, and nothing but plain cards of a
+suit and a rank, and jokers). `#card-set-preview` shows a set's back, its eight suits (those the game
+does not reach dimmed, `.ts-unused`) and its four jokers.
+
+The set belongs to the table ([ADR 0085](decisions/0085-card-sets-belong-to-the-table.md)): it is
+stored with the game, sent to everyone as `card_set`, kept by a rematch and by *Play from here*, and
+there is no way to change it at the table. `js/card-sets.js` holds the sets and draws them;
+`js/card-lettering.js` letters the ranks. A themed card has the class `themed` and `data-set`. Its
+tooltip gives the set's name for the suit and the one the rules use: *9 of Tree Frogs (hearts)*. The
+suit pictures on Nyet!'s board of terms follow the set.
+
 ## Card tables and hands (Nyet!)
 
 A game with a `cards` section draws a **card table** (`js/cards.js`, `#card-table`): what the

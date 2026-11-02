@@ -98,6 +98,10 @@ type CreateOptions struct {
 	// Rated makes the game move its players' ratings when it ends (see
 	// checkRatable for what that takes).
 	Rated bool
+	// CardSet is the themed set of cards the whole table plays with (see
+	// catalog.CardSetIDs); empty for the game's own cards. It is settled here and
+	// never changes, so that a suit means the same to everyone at the table.
+	CardSet string
 	// Lobby makes the game wait, with every seat filled, until its host
 	// starts it: players gather through the invite link, choose their seats
 	// and add bots first.
@@ -194,6 +198,10 @@ func startDoc(compiled *catalog.CompiledGame, game store.Game) (string, error) {
 // MaxMoveTimeSeconds bounds a per-move time limit (90 days).
 const MaxMoveTimeSeconds = 90 * 24 * 3600
 
+// ErrInvalidCardSet is returned by CreateGame for a set of cards that does not
+// exist, or a game whose deck cannot wear one.
+var ErrInvalidCardSet = errors.New("session: invalid card set")
+
 // ErrInvalidTimeLimit is returned by CreateGame for an out-of-range limit.
 var ErrInvalidTimeLimit = errors.New("session: invalid move time limit")
 
@@ -266,6 +274,15 @@ func (m *Manager) CreateGameWithOptions(ctx context.Context, opts CreateOptions)
 
 	if opts.MoveTimeSeconds < 0 || opts.MoveTimeSeconds > MaxMoveTimeSeconds {
 		return CreateGameResult{}, fmt.Errorf("%w: %d seconds (use 0 for none, at most %d)", ErrInvalidTimeLimit, opts.MoveTimeSeconds, MaxMoveTimeSeconds)
+	}
+
+	if opts.CardSet != "" {
+		if !catalog.IsCardSet(opts.CardSet) {
+			return CreateGameResult{}, fmt.Errorf("%w: no set of cards is called %q", ErrInvalidCardSet, opts.CardSet)
+		}
+		if !compiled.Cards.Standard() {
+			return CreateGameResult{}, fmt.Errorf("%w: game %q does not use a standard deck of suits and ranks", ErrInvalidCardSet, opts.GameDefID)
+		}
 	}
 
 	if opts.Rated {
@@ -351,6 +368,11 @@ func (m *Manager) CreateGameWithOptions(ctx context.Context, opts CreateOptions)
 	}
 	if opts.Rated {
 		if err := m.store.SetRated(ctx, game.ID); err != nil {
+			return CreateGameResult{}, err
+		}
+	}
+	if opts.CardSet != "" {
+		if err := m.store.SetCardSet(ctx, game.ID, opts.CardSet); err != nil {
 			return CreateGameResult{}, err
 		}
 	}

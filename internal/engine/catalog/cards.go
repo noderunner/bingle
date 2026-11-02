@@ -111,6 +111,16 @@ func compileCards(cg *CompiledGame) error {
 	sort.Strings(deckNames)
 	for _, name := range deckNames {
 		deck := def.Decks[name]
+		if deck.RankList != "" {
+			if len(deck.Ranks) > 0 {
+				return fmt.Errorf("catalog: deck %q has both ranks and rank_list", name)
+			}
+			ranks, err := parseRankList(deck.RankList)
+			if err != nil {
+				return fmt.Errorf("catalog: deck %q: %w", name, err)
+			}
+			deck.Ranks = ranks
+		}
 		removed := map[string]bool{}
 		for _, id := range deck.Remove {
 			removed[id] = true
@@ -242,4 +252,69 @@ func knownRemoval(deck dsl.DeckDef, id string) bool {
 		}
 	}
 	return false
+}
+
+// parseRankList expands a deck's rank_list: integers are worth themselves and a
+// letter one more than the rank before it (see dsl.DeckDef.RankList).
+func parseRankList(list string) ([]dsl.RankDef, error) {
+	var ranks []dsl.RankDef
+	seen := map[string]bool{}
+	value := 0
+	for _, name := range strings.Fields(list) {
+		if seen[name] {
+			return nil, fmt.Errorf("rank_list repeats %q", name)
+		}
+		seen[name] = true
+		if n, err := strconv.Atoi(name); err == nil {
+			value = n
+		} else {
+			for _, c := range name {
+				if (c < 'A' || c > 'Z') && (c < 'a' || c > 'z') && (c < '0' || c > '9') {
+					return nil, fmt.Errorf("rank_list: %q is not an integer or letters", name)
+				}
+			}
+			value++
+		}
+		ranks = append(ranks, dsl.RankDef{ID: name, Value: value})
+	}
+	if len(ranks) == 0 {
+		return nil, fmt.Errorf("rank_list names no ranks")
+	}
+	return ranks, nil
+}
+
+// CardSetIDs are the themed sets of cards a game can be set up with. The web
+// client draws them (static/js/card-sets.js); a test holds the two lists together.
+var CardSetIDs = []string{"ancient", "amphibians", "fantasy", "lovecraftian", "atomic"}
+
+// MaxSetSuits is how many suits a themed set of cards has.
+const MaxSetSuits = 8
+
+// IsCardSet reports whether id names a themed set of cards.
+func IsCardSet(id string) bool {
+	for _, x := range CardSetIDs {
+		if x == id {
+			return true
+		}
+	}
+	return false
+}
+
+// Standard reports whether the deck can wear a themed set of cards: at most
+// MaxSetSuits suits, and nothing but plain cards of a suit and a rank, and
+// jokers. A card with rule text or symbols of its own says something that the art
+// of a set would lose.
+func (c *CompiledCards) Standard() bool {
+	if c == nil || len(c.Types) == 0 || len(c.Suits) == 0 || len(c.Suits) > MaxSetSuits {
+		return false
+	}
+	for _, t := range c.Types {
+		if t.HasTag("joker") {
+			continue
+		}
+		if t.Suit == "" || t.Text != "" || len(t.Symbols) > 0 {
+			return false
+		}
+	}
+	return true
 }

@@ -147,6 +147,9 @@ var columnMigrations = []struct{ table, column, ddl string }{
 	{"rating_history", "tournament_id", "INTEGER NOT NULL DEFAULT 0"},
 	// account_id: the contact is an account's own, for its tournament games.
 	{"notify_contacts", "account_id", "INTEGER NOT NULL DEFAULT 0"},
+	// card_set: the themed set of cards the table plays with (ADR 0085), empty
+	// for the game's own cards.
+	{"games", "card_set", "TEXT NOT NULL DEFAULT ''"},
 }
 
 func addMissingColumns(db *sql.DB) error {

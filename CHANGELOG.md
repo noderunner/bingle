@@ -4,6 +4,17 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.41.0 - 2026-11-02
+
+### Bingle Core 0.41.0
+- **Themed sets of cards.** When you set up a game played with ordinary suits and ranks (Nyet! today), the
+  new *Cards* choice lets you play with one of five sets: **Ancient Civilizations**, **Amphibians**, **Fantasy
+  Creatures**, **Lovecraftian** or the **Atomic Age**. Each has its own card back, colours and lettering for the
+  ranks, eight suits and four jokers.
+- **Everyone at the table gets the same cards.** The set is chosen once, by whoever creates the game, and
+  stays for the whole game, so "the frogs are trump" means the same to all of you. A rematch keeps it. Only
+  the look changes: hover over a card or a trump box to see what the rules call that suit.
+
 ## 0.40.0 - 2026-11-02
 
 ### Bingle Core 0.40.0

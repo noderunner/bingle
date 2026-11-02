@@ -1565,6 +1565,27 @@ button.move-card { cursor: pointer; }
 .pc-svg .pc-svg-ring, .pc-svg .pc-svg-frame { fill: none; stroke: currentColor; stroke-width: 1.6; opacity: .4; }
 .suit-icon { display: inline-block; vertical-align: middle; }
 .suit-icon path, .suit-icon circle { fill: currentColor; }
+/* Themed sets of cards (js/card-sets.js draws them; a card or a chip sets the colours). */
+.pcard.face.themed { background: var(--paper); border-color: var(--edge); color: var(--suit); }
+.pcard.back.themed { background: none; border: 1.5px solid rgba(255, 255, 255, 0.55); overflow: hidden; display: inline-block; }
+.pcard .ts-svg { display: block; width: 100%; height: 100%; }
+.pcard.back.themed .ts-svg { border-radius: 5px; }
+.ts-chip { color: var(--suit); flex: none; overflow: visible; }
+.ts-preview { display: block; width: 100%; max-width: 360px; margin-top: 8px; }
+.ts-preview .ts-unused { opacity: 0.32; }
+.ts-chip-paper { fill: var(--paper); stroke: var(--edge); stroke-width: 1; }
+.ts-f { fill: currentColor; }
+.ts-g { fill: var(--suit2, currentColor); }
+.ts-k { fill: var(--paper); }
+.ts-l, .ts-m, .ts-x { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.ts-l { stroke: currentColor; }
+.ts-m { stroke: var(--suit2, currentColor); }
+.ts-x { stroke: var(--paper); }
+.ts-trim { fill: none; stroke: var(--edge); stroke-width: 1; opacity: 0.7; }
+.ts-ring { fill: none; stroke: currentColor; stroke-width: 1.4; opacity: 0.35; }
+.ts-rank-text { fill: currentColor; font-family: Georgia, "Times New Roman", serif; font-weight: 700; }
+.cicon.ci-themed { color: var(--suit); }
+.cicon.ci-themed .ci-face { fill: var(--paper); stroke: var(--edge); }
 /* The card under the pointer, twice as large (js/cards.js). */
 .pc-zoom { position: fixed; z-index: 80; pointer-events: none; margin: 0; box-shadow: 0 8px 28px rgba(0,0,0,.45); transition: none; animation: none; transform: none; }
 .pc-btn { background: none; border: 0; padding: 0; cursor: pointer; border-radius: 7px; }

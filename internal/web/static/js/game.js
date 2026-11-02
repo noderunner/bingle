@@ -24,6 +24,7 @@ import { rulesIcon } from "./ui-icons.js";
 import { choiceIcon } from "./choice-icons.js";
 import { animalIcon, animalOf } from "./animals.js";
 import { themesFor, themeById } from "./themes.js";
+import { useCardSet } from "./card-sets.js";
 import { progress as tutorialProgress, isExpected, markFinished, allowed as tutorialAllowed } from "./tutorial.js";
 import { renderMarkdown } from "./markdown.js";
 
@@ -1008,6 +1009,7 @@ async function playFromHere() {
 						seat: Number(seatSel.value),
 						start_state: a.sim.state,
 						start_seat: a.sim.turn_seat,
+						card_set: S.game.card_set || undefined,
 					});
 					rememberGame(res.room_code, S.game.game_def_id, name);
 					navigate("/game/" + res.room_code);
@@ -1574,6 +1576,7 @@ function applyTheme() {
 // ---------------------------------------------------------------------------
 
 function render() {
+	useCardSet(S.game ? S.game.card_set : "");
 	// Typing a chat message on a phone: the keyboard stays up. The page is
 	// redrawn when the field is left.
 	const typing = document.activeElement;
@@ -2192,6 +2195,7 @@ function rematchControl() {
 							player_name: S.me.name,
 							opponent: opp.bot,
 							seat: custom ? S.me.seat : other ? other.seat : 1,
+							card_set: S.game.card_set || undefined,
 						};
 						if (custom) {
 							body.start_state = S.game.start_state;
