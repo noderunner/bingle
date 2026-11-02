@@ -6,7 +6,7 @@
 import { h, s, clear, store, rememberGame, nameFor, lastName, ago, titleCase, toast, setTurnBadge } from "./util.js";
 import { api, ApiError } from "./api.js";
 import { MoveBuilder } from "./builder.js";
-import { renderBoard, pieceIcon, cssColor, ONGATE } from "./render.js";
+import { renderBoard, pieceIcon, cssColor, ONGATE, hasHexStyles, defaultHexStyle } from "./render.js";
 import { showRules as openRules } from "./rules.js";
 import { loadChat, receiveChat, chatCard, chatSeen, chatUnread } from "./chat.js";
 import { voiceCard, voiceEvent, voiceResync } from "./voice.js";
@@ -2074,6 +2074,7 @@ function drawBoard(host) {
 			pathCounts: interactive ? b.dropCounts() : new Map(),
 			interactive,
 			showCoords: S.settings.coords,
+			hexStyle: hexStyle(),
 			tints: (rulesetView() || {}).tints || null,
 			badges: (rulesetView() || {}).badges || null,
 			walls: (rulesetView() || {}).walls || null,
@@ -4520,6 +4521,13 @@ function glyphLayerOn() {
 	return S.settings.glyphs === null ? yellowSignAtTable() : S.settings.glyphs;
 }
 
+// How this game's hex board is drawn is remembered per game, not across games:
+// each has a default of its own, which a choice made in another must not override.
+const hexStyleKey = () => `bingle.hexStyle.${S.info.family || S.info.id}`;
+function hexStyle() {
+	return store.get(hexStyleKey(), defaultHexStyle(S.info));
+}
+
 /** A labelled check box that keeps a setting and redraws the page. */
 function settingToggle(key, id, label, storeKey, redraw = true) {
 	const box = h("input", { type: "checkbox", id, checked: key === "glyphs" ? glyphLayerOn() : S.settings[key] });
@@ -4556,7 +4564,7 @@ function refreshOptions() {
 	}
 
 	// Display.
-	w.update("display", [isRuleset(), S.settings.confirm, boardTheme(), S.settings.tileScale, areas, layoutChoice()], (el) => {
+	w.update("display", [isRuleset(), S.settings.confirm, boardTheme(), S.settings.tileScale, areas, layoutChoice(), hexStyle()], (el) => {
 		if (areas) {
 			// The phone layout is picked by screen by default; a player may force either.
 			const layoutSel = h("select", { id: "opt-layout", "aria-label": "Page layout" });
@@ -4578,6 +4586,17 @@ function refreshOptions() {
 			settingToggle("lastMove", "opt-lastmove", "Highlight the last move", "bingle.lastMove"),
 			settingToggle("animate", "opt-animate", "Animate moves", "bingle.animate")
 		);
+		if (hasHexStyles(S.info)) {
+			const styleSel = h("select", { id: "opt-hex-style", "aria-label": "Board style" });
+			for (const [value, label] of [["cells", "Hexagons"], ["grid", "Hex grid"]]) {
+				styleSel.append(h("option", { value, selected: hexStyle() === value }, label));
+			}
+			styleSel.addEventListener("change", () => {
+				store.set(hexStyleKey(), styleSel.value);
+				render();
+			});
+			el.append(h("label", { class: "field" }, h("span", { class: "small" }, "Board style"), styleSel));
+		}
 		const themeSel = h("select", { id: "opt-board", "aria-label": "Board theme" });
 		const chosen = boardTheme();
 		for (const [value, label] of [["wood", "Wood"], ["slate", "Slate"], ["green", "Green felt"], ["paper", "Paper"]]) {

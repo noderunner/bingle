@@ -771,6 +771,7 @@ function attachHover(g, id, handlers) {
 // ---------------------------------------------------------------------------
 
 const HEX_R = CELL * 0.5773503; // centre-to-corner so a cell is CELL wide
+const HEX_ROW = 0.8660254; // rows apart, in cells (the server lays out positions the same way)
 
 function hexPoints(cx, cy, r) {
 	const pts = [];
@@ -781,9 +782,42 @@ function hexPoints(cx, cy, r) {
 	return pts.join(" ");
 }
 
+/** Whether a board can be drawn either way: a hex board that is a board at all (Hive's table is not). */
+export function hasHexStyles(info) {
+	return info.board.kind === "hex" && info.board.style !== "free";
+}
+
+/** How a hex board is drawn until the player says otherwise: the definition's `style: points` asks for the grid. */
+export function defaultHexStyle(info) {
+	return info.board.style === "points" ? "grid" : "cells";
+}
+
+// The lines of the "hex grid" style, as one path: every pair of neighbouring
+// points once. Positions come in units of a cell, so a neighbour is half a cell
+// or a whole cell across and zero or one row down.
+function hexLattice(positions, place) {
+	const key = (col, row) => `${col},${row}`;
+	const colOf = (p) => Math.round(p.x * 2);
+	const rowOf = (p) => Math.round(p.y / HEX_ROW);
+	const at = new Map(positions.map((p) => [key(colOf(p), rowOf(p)), p]));
+	const d = [];
+	for (const p of positions) {
+		const a = place(p);
+		for (const [dc, dr] of [[2, 0], [1, 1], [-1, 1]]) {
+			const q = at.get(key(colOf(p) + dc, rowOf(p) + dr));
+			if (!q) continue;
+			const c = place(q);
+			d.push(`M${a.x.toFixed(2)} ${a.y.toFixed(2)}L${c.x.toFixed(2)} ${c.y.toFixed(2)}`);
+		}
+	}
+	return d.join("");
+}
+
 function renderHexBoard(host, info, view, handlers) {
 	const b = info.board;
 	const M = 34;
+	// The "hex grid" style: the spaces are the points of a triangular lattice, as on a Go board.
+	const grid = hasHexStyles(info) && (view.hexStyle || defaultHexStyle(info)) === "grid";
 	// A "free" board (Hive) has no board to draw: only the tiles on the table
 	// and the cells a tile may go to appear, and the picture is fitted to them.
 	const free = b.style === "free";
@@ -838,12 +872,17 @@ function renderHexBoard(host, info, view, handlers) {
 		role: "group",
 		"aria-label": `${info.name} board`,
 		preserveAspectRatio: "xMidYMid meet",
-		class: free ? "free-board" : null,
+		class: free ? "free-board" : grid ? "hex-grid-board" : null,
 	});
 	if (!free) {
 		svg.append(s("rect", { class: "board-frame", x: 0, y: 0, width, height, rx: 14 }));
 		const decor = frameDecor(width, height, M);
 		if (decor) svg.append(decor);
+	}
+	if (grid) {
+		// The same lines twice: a wide round stroke is the board, a thin one the lattice on it.
+		const d = hexLattice(b.positions, place);
+		svg.append(s("path", { class: "hex-backing", d, fill: "none", "stroke-width": CELL * 0.86, "stroke-linecap": "round" }), s("path", { class: "grid-line hex-lattice", d, fill: "none" }));
 	}
 
 	const pieceDefs = new Map(info.pieces.map((p) => [p.type, p]));
@@ -877,26 +916,32 @@ function renderHexBoard(host, info, view, handlers) {
 		const edge = edgeOf.get(p.id);
 		const tint = tints[p.id];
 		const tintDef = tint && legend.tints ? legend.tints[tint] : null;
-		if (!free || !stack.length) g.append(
-			s("polygon", {
-				class: `cell-bg ${free ? "free-slot" : shade}` + (edge ? ` edge-${cssColor(edge)}` : "") + (tint ? ` tint tint-${cssColor(tint)}` : ""),
-				points: hexPoints(pt.x, pt.y, HEX_R),
-				stroke: "var(--board-line)",
-				"stroke-width": 1.5,
-				style: tintDef && tintDef.color ? `fill: color-mix(in srgb, ${tintDef.color} 78%, var(--board-light))` : null,
-				"data-tint": tint || null,
-			})
-		);
+		// A mark that fills a space: the hexagon of a cell, or the disc round a point.
+		const mark = (cls, r) => (grid ? s("circle", { class: cls, cx: pt.x, cy: pt.y, r: r * 0.85 }) : s("polygon", { class: cls, points: hexPoints(pt.x, pt.y, r) }));
+		const spaceAttrs = {
+			class: `cell-bg ${free ? "free-slot" : grid ? "light" : shade}` + (edge ? ` edge-${cssColor(edge)}` : "") + (tint ? ` tint tint-${cssColor(tint)}` : ""),
+			stroke: "var(--board-line)",
+			"stroke-width": 1.5,
+			style: tintDef && tintDef.color ? `fill: color-mix(in srgb, ${tintDef.color} 78%, var(--board-light))` : null,
+			"data-tint": tint || null,
+		};
+		if (grid) {
+			// A plain point is a dot on the lattice; only a tint or a player's edge needs a disc.
+			if (edge || tint) g.append(s("circle", { ...spaceAttrs, cx: pt.x, cy: pt.y, r: tint ? HEX_R * 0.72 : HEX_R * 0.4 }));
+			g.append(s("circle", { class: "grid-point", cx: pt.x, cy: pt.y, r: CELL * 0.09 }));
+		} else if (!free || !stack.length) {
+			g.append(s("polygon", { ...spaceAttrs, points: hexPoints(pt.x, pt.y, HEX_R) }));
+		}
 		if (tintDef && tintDef.glyph) {
 			g.append(s("text", { class: "tint-glyph", x: pt.x, y: pt.y + HEX_R * 0.62, "text-anchor": "middle" }, tintDef.glyph));
 		}
-		if (lastMove.has(p.id)) g.append(s("polygon", { class: "last-move", points: hexPoints(pt.x, pt.y, HEX_R) }));
-		if (hinted.has(p.id)) g.append(s("polygon", { class: "hint-ring", points: hexPoints(pt.x, pt.y, HEX_R * 0.85) }));
-		if (selectionSet(view.selected).has(p.id)) g.append(s("polygon", { class: "selected-ring", points: hexPoints(pt.x, pt.y, HEX_R) }));
+		if (lastMove.has(p.id)) g.append(mark("last-move", HEX_R));
+		if (hinted.has(p.id)) g.append(mark("hint-ring", HEX_R * 0.85));
+		if (selectionSet(view.selected).has(p.id)) g.append(mark("selected-ring", HEX_R));
 		if (quick && !view.quietTargets) {
 			g.append(s("circle", { class: "quick-dot", cx: pt.x, cy: pt.y, r: 6 }));
 		} else if (isTarget && view.interactive && !view.quietTargets) {
-			g.append(s("polygon", { class: "target-ring", points: hexPoints(pt.x, pt.y, HEX_R * 0.78) }));
+			g.append(mark("target-ring", HEX_R * 0.78));
 			if (stack.length === 0) g.append(s("circle", { class: "target-dot", cx: pt.x, cy: pt.y, r: 7 }));
 		}
 

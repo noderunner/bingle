@@ -116,7 +116,9 @@ board:
   `algebraic` (`a1` is bottom-left, files are letters, ranks numbers; up to
   26 columns).
 * `style`: `squares` (default; filled checkered cells) or `points` (pieces sit
-  on line intersections, as in Go).
+  on line intersections, as in Go). On a hex board these are the default of a
+  choice the player can change in the options window: `squares` draws hexagons,
+  `points` a hex grid of points and lines, as Meridians does.
 * Every grid and parallelogram hex board has the regions `left`, `right`,
   `top`, `bottom`.
   Add your own with `"regions": {"home-1": ["a1","b1"]}`.
