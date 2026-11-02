@@ -377,3 +377,131 @@ func TestTournaments_WhoMayNotEnterCannotAndCanStillLeave(t *testing.T) {
 		t.Errorf("entering past the route: %v, want it refused", err)
 	}
 }
+
+// Turn mail that came by itself can be turned off where the changelog says it can:
+// in the game, from a browser that never set up an address of its own.
+func TestTournaments_TurnMailCanBeTurnedOffInTheGame(t *testing.T) {
+	e := newNotifyEnv(t, fakesmtp.Options{}, func(c *config.Config) { c.CapsFile = testCapsFile })
+	org := administrator(t, e.App, e.URL, "org")
+	players := map[string]*browser{"ana": member(t, e.App, e.URL, "ana"), "bea": member(t, e.App, e.URL, "bea")}
+	var made session.TournamentDetail
+	body := cupBody()
+	body["games_per_pairing"] = 1
+	if code := org.do("POST", "/api/tournaments", body, &made); code != http.StatusCreated {
+		t.Fatalf("making it: %d", code)
+	}
+	path := fmt.Sprintf("/api/tournaments/%d", made.ID)
+	org.do("POST", path+"/open", nil, nil)
+	for _, p := range players {
+		p.do("POST", path+"/enter", nil, nil)
+	}
+	var running session.TournamentDetail
+	if code := org.do("POST", path+"/start", nil, &running); code != 200 {
+		t.Fatalf("starting it: %d", code)
+	}
+	g := running.Games[0].Games[0]
+	first, second := players[g.First], players[g.Second]
+	e.waitMails(t, 1)
+
+	ctx, cancel := newChromedpContext(t, 60*time.Second)
+	defer cancel()
+	signInChrome(t, ctx, e.URL, first.cookie(auth.SessionCookie))
+	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1400, 1000), chromedp.Navigate(e.URL+"/game/"+g.RoomCode), chromedp.WaitReady("#board-svg", chromedp.ByQuery)); err != nil {
+		t.Fatal(err)
+	}
+	clickSel(t, ctx, "#open-options")
+	waitJS(t, ctx, "the switch, on and usable", `document.getElementById("notify-on") && !document.getElementById("notify-on").disabled && document.getElementById("notify-on").checked`, 15*time.Second)
+	if got := evalString(t, ctx, `document.getElementById("notify-hint").textContent`); !strings.Contains(got, "@example.com") {
+		t.Errorf("the page should say where the mail goes: %q", got)
+	}
+	clickSel(t, ctx, "#notify-on")
+	waitJS(t, ctx, "saved", `document.getElementById("notify-hint").textContent.indexOf("Saved") === 0 && !document.getElementById("notify-on").checked`, 10*time.Second)
+
+	// The turn comes back to the first player, and no mail comes with it.
+	move := func(b *browser, name, notation string) {
+		t.Helper()
+		if code := b.do("POST", "/api/games/"+g.RoomCode+"/moves", map[string]any{"player_name": name, "notation": notation}, nil); code != 200 {
+			t.Fatalf("%s plays %s: %d", name, notation, code)
+		}
+	}
+	move(first, g.First, "e5")
+	n := len(e.waitMails(t, 2)) // the second player's turn
+	move(second, g.Second, "d4")
+	e.quiet(t, n)
+
+	// And it can be turned on again, with no address set up here either.
+	clickSel(t, ctx, "#notify-on")
+	waitJS(t, ctx, "saved on", `document.getElementById("notify-hint").textContent.indexOf("Saved") === 0 && document.getElementById("notify-on").checked`, 10*time.Second)
+}
+
+// The games that had no Submit and no test of playing with it: a whole run of turns
+// through the page, pressing Submit whenever it is asked for.
+func TestWebSubmit_TheOtherGamesPlayWithIt(t *testing.T) {
+	for game, step := range map[string]string{"fist": autoStepJS, "fendo": fendoStepJS, "nyet": nyetStepJS, "mycelium": autoStepJS} {
+		t.Run(game, func(t *testing.T) {
+			baseURL := newRESTTestServer(t)
+			var created struct {
+				RoomCode string `json:"room_code"`
+			}
+			if code := doJSON(t, "POST", baseURL+"/api/games", map[string]any{"game_def_id": game, "player_name": "Alice", "opponent": "random"}, &created); code != 200 {
+				t.Fatalf("create: %d", code)
+			}
+			ctx, cancel := newChromedpContext(t, 90*time.Second)
+			defer cancel()
+			openGameAs(t, ctx, baseURL, created.RoomCode, game, "Alice")
+			if err := chromedp.Run(ctx,
+				chromedp.Evaluate(`localStorage.setItem("bingle.confirm", "true"); location.reload(); true`, nil),
+				chromedp.Sleep(300*time.Millisecond),
+				chromedp.WaitReady("#board-svg, #card-table", chromedp.ByQuery),
+			); err != nil {
+				t.Fatal(err)
+			}
+			withSubmit := `(function () {
+				var submit = document.getElementById("submit-move");
+				if (submit && !submit.disabled) { submit.click(); return "submit"; }
+				return ` + step + `;
+			})()`
+			progress := func() (st struct {
+				MoveSeq int    `json:"move_seq"`
+				Status  string `json:"status"`
+			}) {
+				t.Helper()
+				doJSON(t, "GET", baseURL+"/api/games/"+created.RoomCode, nil, &st)
+				return st
+			}
+			var steps []string
+			submits, stuck := 0, 0
+			for i := 0; i < 300 && stuck < 60; i++ {
+				var what string
+				if err := chromedp.Run(ctx, chromedp.Evaluate(withSubmit, &what)); err != nil {
+					t.Fatalf("step %d: %v", i, err)
+				}
+				if what != "wait" {
+					steps = append(steps, what)
+				}
+				switch what {
+				case "submit":
+					submits++
+					stuck = 0
+				case "wait", "stuck":
+					stuck++
+				default:
+					stuck = 0
+				}
+				time.Sleep(70 * time.Millisecond)
+				if st := progress(); st.MoveSeq >= 8 || st.Status == "finished" {
+					break
+				}
+			}
+			st := progress()
+			if st.MoveSeq < 4 && st.Status != "finished" {
+				t.Errorf("the page should have played turns: %d moves", st.MoveSeq)
+			}
+			// Whatever the position, a player to move must have something to press:
+			// a forced pass used to leave them nothing, until their clock ran out.
+			if stuck >= 60 && st.Status != "finished" {
+				t.Errorf("the page offered nothing to press after %d moves; steps: %v", st.MoveSeq, steps)
+			}
+		})
+	}
+}
