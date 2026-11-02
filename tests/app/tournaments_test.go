@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -503,5 +504,125 @@ func TestWebSubmit_TheOtherGamesPlayWithIt(t *testing.T) {
 				t.Errorf("the page offered nothing to press after %d moves; steps: %v", st.MoveSeq, steps)
 			}
 		})
+	}
+}
+
+// The whole of a real-time tournament in the browser: the organiser's form, checking
+// in, the player's game, the first-move deadline, and being told of the next game.
+func TestTournaments_RealTimeUI(t *testing.T) {
+	a, base := membersServer(t)
+	var offset atomic.Int64
+	offset.Store(int64(-time.Hour))
+	a.Manager().SetClock(func() time.Time { return time.Now().Add(time.Duration(offset.Load())) })
+	org := administrator(t, a, base, "org")
+	ana := member(t, a, base, "ana")
+	bea := member(t, a, base, "bea")
+
+	// The organiser's form shows what a real-time tournament needs, and sends it.
+	orgCtx, cancelOrg := newChromedpContext(t, 120*time.Second)
+	defer cancelOrg()
+	signInChrome(t, orgCtx, base, org.cookie(auth.SessionCookie))
+	if err := chromedp.Run(orgCtx, chromedp.EmulateViewport(1400, 1000), chromedp.Navigate(base+"/")); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, orgCtx, "the tab", `document.getElementById("tab-tournaments") !== null`, 20*time.Second)
+	clickSel(t, orgCtx, "#tab-tournaments")
+	waitJS(t, orgCtx, "the button", `document.getElementById("tournament-new") !== null`, 10*time.Second)
+	clickSel(t, orgCtx, "#tournament-new")
+	waitJS(t, orgCtx, "the form", `document.getElementById("t-game") && document.getElementById("t-game").options.length > 1`, 10*time.Second)
+	if !evalBool(t, orgCtx, `document.getElementById("t-real-time-fields").hidden`) {
+		t.Error("the real-time fields show before it is chosen")
+	}
+	starts := time.Now().UTC().Format("2006-01-02T15:04:05Z")
+	evalString(t, orgCtx, `(function () {
+		document.getElementById("t-name").value = "The live cup";
+		var s = document.getElementById("t-game"); s.value = "yavalath"; s.dispatchEvent(new Event("change", { bubbles: true }));
+		var c = document.getElementById("t-clock"); c.value = "minutes"; c.dispatchEvent(new Event("change", { bubbles: true }));
+		document.getElementById("t-real-time").click();
+		return "ok";
+	})()`)
+	if evalBool(t, orgCtx, `document.getElementById("t-real-time-fields").hidden`) {
+		t.Error("the real-time fields are hidden once it is chosen")
+	}
+	if got := evalString(t, orgCtx, `(function () {
+		var s = document.getElementById("t-starts");
+		var d = new Date(`+"`"+starts+"`"+`);
+		var pad = function (n) { return String(n).padStart(2, "0"); };
+		s.value = d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()) + "T" + pad(d.getHours()) + ":" + pad(d.getMinutes());
+		return s.value ? "ok" : "empty";
+	})()`); got != "ok" {
+		t.Fatalf("setting the start: %s", got)
+	}
+	clickSel(t, orgCtx, "#t-save")
+	loc := pollLocation(t, orgCtx, regexp.MustCompile(`/tournament/[0-9]+$`))
+	id := loc[strings.LastIndex(loc, "/")+1:]
+	path := "/api/tournaments/" + id
+	waitJS(t, orgCtx, "the draft", `document.getElementById("t-open") !== null`, 15*time.Second)
+	clickSel(t, orgCtx, "#t-open")
+	waitJS(t, orgCtx, "open", `document.getElementById("tournament-status").textContent === "Open for entries"`, 10*time.Second)
+	if evalBool(t, orgCtx, `document.getElementById("t-start") !== null`) {
+		t.Error("the organiser is offered a Start button")
+	}
+	for _, p := range []*browser{ana, bea} {
+		if code := p.do("POST", path+"/enter", nil, nil); code != 200 {
+			t.Fatalf("entering: %d", code)
+		}
+	}
+
+	// Check-in opens, and Ana checks in on the page.
+	offset.Store(int64(-10 * time.Minute))
+	a.Manager().AdvanceRealTimeTournaments(context.Background())
+	anaCtx, cancelAna := newChromedpContext(t, 120*time.Second)
+	defer cancelAna()
+	signInChrome(t, anaCtx, base, ana.cookie(auth.SessionCookie))
+	if err := chromedp.Run(anaCtx, chromedp.EmulateViewport(1400, 1000), chromedp.Navigate(base+"/tournament/"+id)); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, anaCtx, "the check-in", `document.getElementById("t-check-in") !== null`, 15*time.Second)
+	clickSel(t, anaCtx, "#t-check-in")
+	waitJS(t, anaCtx, "checked in", `document.getElementById("t-check-in") === null && document.getElementById("tournament-check-in").textContent.includes("You are checked in")`, 10*time.Second)
+	if code := bea.do("POST", path+"/check-in", nil, nil); code != 200 {
+		t.Fatalf("Bea checks in: %d", code)
+	}
+
+	// It starts, and the page takes her to her game.
+	offset.Store(0)
+	time.Sleep(1100 * time.Millisecond) // past the start, which has no seconds on the form
+	a.Manager().AdvanceRealTimeTournaments(context.Background())
+	waitJS(t, anaCtx, "her game", `document.querySelector("#tournament-your-game a") !== null`, 15*time.Second)
+	room := evalString(t, anaCtx, `document.querySelector("#tournament-your-game a").getAttribute("href").split("/").pop()`)
+
+	clickSel(t, anaCtx, "#tournament-your-game a")
+	waitJS(t, anaCtx, "the game", `document.getElementById("real-time-badge") !== null`, 15*time.Second)
+	var game struct {
+		RealTime struct {
+			FirstMove *struct {
+				Seat int `json:"seat"`
+			} `json:"first_move"`
+		} `json:"real_time"`
+		Seats []struct {
+			Seat int    `json:"seat"`
+			Name string `json:"name"`
+		} `json:"seats"`
+	}
+	if code := ana.do("GET", "/api/games/"+room, nil, &game); code != 200 || game.RealTime.FirstMove == nil {
+		t.Fatalf("the game: %d %+v", code, game)
+	}
+	mine := evalBool(t, anaCtx, `document.getElementById("first-move") !== null`)
+	anaFirst := false
+	for _, s := range game.Seats {
+		anaFirst = anaFirst || (s.Name == "ana" && s.Seat == game.RealTime.FirstMove.Seat)
+	}
+	if mine != anaFirst {
+		t.Errorf("the first-move notice shows: %v; Ana moves first: %v", mine, anaFirst)
+	}
+
+	// The game ends, the second of the pairing starts, and she hears of it on this page.
+	if code := bea.do("POST", "/api/games/"+room+"/resign", map[string]any{"player_name": "bea"}, nil); code != 200 {
+		t.Fatalf("Bea resigns: %d", code)
+	}
+	waitJS(t, anaCtx, "the next game", `document.querySelector("#next-game a") !== null`, 15*time.Second)
+	if got := evalString(t, anaCtx, `document.querySelector("#next-game a").getAttribute("href")`); strings.HasSuffix(got, room) {
+		t.Errorf("sent back to the same game: %s", got)
 	}
 }

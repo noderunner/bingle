@@ -12,6 +12,7 @@ import (
 const (
 	TournamentDraft        = "draft"
 	TournamentRegistration = "registration"
+	TournamentCheckIn      = "check_in" // real-time only
 	TournamentRunning      = "running"
 	TournamentFinished     = "finished"
 	TournamentAbandoned    = "abandoned"
@@ -22,6 +23,8 @@ const (
 const (
 	EndReasonForfeit   = "forfeit"   // a player dropped out, or was removed
 	EndReasonAbandoned = "abandoned" // the tournament stopped
+	EndReasonNoShow    = "no_show"   // a player missed the first-move deadline
+	EndReasonNoShows   = "no_shows"  // both did: nobody scores
 	ResultBye          = "bye"
 )
 
@@ -59,37 +62,48 @@ type Tournament struct {
 	CreatedAt       string
 	StartedAt       string
 	EndedAt         string
+
+	// A real-time tournament (ADR 0090). StartsAt and NextRoundAt are RFC 3339;
+	// NextRoundAt is empty but for the break between two rounds.
+	RealTime         bool
+	StartsAt         string
+	CheckInSeconds   int
+	RoundBreak       int
+	FirstMoveSeconds int
+	NextRoundAt      string
 }
 
 const tournamentCols = `t.id, t.name, t.description, t.game_def_id, t.game_name, t.format, t.clock_seconds, t.clock_increment, t.games_per_pairing,
 	t.rated, t.pie_rule, t.min_players, t.max_players, t.rounds, t.total_rounds, t.current_round, t.status, t.end_detail, t.seed, t.organiser_id, a.handle,
 	(SELECT COUNT(*) FROM tournament_entries e WHERE e.tournament_id = t.id AND e.withdrawn = 0),
-	t.created_at, COALESCE(t.started_at, ''), COALESCE(t.ended_at, '')`
+	t.created_at, COALESCE(t.started_at, ''), COALESCE(t.ended_at, ''),
+	t.real_time, t.starts_at, t.check_in_seconds, t.round_break_seconds, t.first_move_seconds, t.next_round_at`
 
 const tournamentFrom = ` FROM tournaments t JOIN accounts a ON a.id = t.organiser_id `
 
 func scanTournament(row rowScanner) (Tournament, error) {
 	var t Tournament
-	var rated, pie int
+	var rated, pie, realTime int
 	err := row.Scan(&t.ID, &t.Name, &t.Description, &t.GameDefID, &t.GameName, &t.Format, &t.ClockSeconds, &t.ClockIncrement, &t.GamesPerPairing,
 		&rated, &pie, &t.MinPlayers, &t.MaxPlayers, &t.Rounds, &t.TotalRounds, &t.CurrentRound, &t.Status, &t.EndDetail, &t.Seed, &t.OrganiserID, &t.Organiser,
-		&t.Entries, &t.CreatedAt, &t.StartedAt, &t.EndedAt)
+		&t.Entries, &t.CreatedAt, &t.StartedAt, &t.EndedAt,
+		&realTime, &t.StartsAt, &t.CheckInSeconds, &t.RoundBreak, &t.FirstMoveSeconds, &t.NextRoundAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Tournament{}, ErrNotFound
 	}
 	if err != nil {
 		return Tournament{}, err
 	}
-	t.Rated, t.PieRule = rated != 0, pie != 0
+	t.Rated, t.PieRule, t.RealTime = rated != 0, pie != 0, realTime != 0
 	return t, nil
 }
 
 // CreateTournament stores a new draft and returns its id.
 func (s *Store) CreateTournament(ctx context.Context, t Tournament) (int64, error) {
 	res, err := s.exec(ctx, "CreateTournament",
-		`INSERT INTO tournaments (name, description, game_def_id, game_name, format, clock_seconds, clock_increment, games_per_pairing, rated, pie_rule, min_players, max_players, rounds, organiser_id)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		t.Name, t.Description, t.GameDefID, t.GameName, t.Format, t.ClockSeconds, t.ClockIncrement, t.GamesPerPairing, boolToInt(t.Rated), boolToInt(t.PieRule), t.MinPlayers, t.MaxPlayers, t.Rounds, t.OrganiserID)
+		`INSERT INTO tournaments (name, description, game_def_id, game_name, format, clock_seconds, clock_increment, games_per_pairing, rated, pie_rule, min_players, max_players, rounds, organiser_id, real_time, starts_at, check_in_seconds, round_break_seconds, first_move_seconds)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		t.Name, t.Description, t.GameDefID, t.GameName, t.Format, t.ClockSeconds, t.ClockIncrement, t.GamesPerPairing, boolToInt(t.Rated), boolToInt(t.PieRule), t.MinPlayers, t.MaxPlayers, t.Rounds, t.OrganiserID, boolToInt(t.RealTime), t.StartsAt, t.CheckInSeconds, t.RoundBreak, t.FirstMoveSeconds)
 	if err != nil {
 		return 0, fmt.Errorf("creating a tournament: %w", err)
 	}
@@ -99,9 +113,9 @@ func (s *Store) CreateTournament(ctx context.Context, t Tournament) (int64, erro
 // UpdateTournament changes the settings of a draft.
 func (s *Store) UpdateTournament(ctx context.Context, t Tournament) error {
 	res, err := s.exec(ctx, "UpdateTournament",
-		`UPDATE tournaments SET name = ?, description = ?, game_def_id = ?, game_name = ?, format = ?, clock_seconds = ?, clock_increment = ?, games_per_pairing = ?, rated = ?, pie_rule = ?, min_players = ?, max_players = ?, rounds = ?
+		`UPDATE tournaments SET name = ?, description = ?, game_def_id = ?, game_name = ?, format = ?, clock_seconds = ?, clock_increment = ?, games_per_pairing = ?, rated = ?, pie_rule = ?, min_players = ?, max_players = ?, rounds = ?, real_time = ?, starts_at = ?, check_in_seconds = ?, round_break_seconds = ?, first_move_seconds = ?
 		 WHERE id = ? AND status = ?`,
-		t.Name, t.Description, t.GameDefID, t.GameName, t.Format, t.ClockSeconds, t.ClockIncrement, t.GamesPerPairing, boolToInt(t.Rated), boolToInt(t.PieRule), t.MinPlayers, t.MaxPlayers, t.Rounds, t.ID, TournamentDraft)
+		t.Name, t.Description, t.GameDefID, t.GameName, t.Format, t.ClockSeconds, t.ClockIncrement, t.GamesPerPairing, boolToInt(t.Rated), boolToInt(t.PieRule), t.MinPlayers, t.MaxPlayers, t.Rounds, boolToInt(t.RealTime), t.StartsAt, t.CheckInSeconds, t.RoundBreak, t.FirstMoveSeconds, t.ID, TournamentDraft)
 	if err != nil {
 		return fmt.Errorf("changing tournament %d: %w", t.ID, err)
 	}
@@ -121,8 +135,8 @@ func (s *Store) GetTournament(ctx context.Context, id int64) (Tournament, error)
 func (s *Store) ListTournaments(ctx context.Context, organiserID int64, allDrafts bool, limit int) ([]Tournament, error) {
 	rows, err := s.query(ctx, "ListTournaments", `SELECT `+tournamentCols+tournamentFrom+`
 		WHERE (t.status != ? AND (t.status != ? OR t.started_at IS NOT NULL)) OR t.organiser_id = ? OR ?
-		ORDER BY CASE t.status WHEN ? THEN 0 WHEN ? THEN 1 ELSE 2 END, t.id DESC LIMIT ?`,
-		TournamentDraft, TournamentAbandoned, organiserID, boolToInt(allDrafts), TournamentRegistration, TournamentRunning, limit)
+		ORDER BY CASE t.status WHEN ? THEN 0 WHEN ? THEN 0 WHEN ? THEN 1 ELSE 2 END, t.id DESC LIMIT ?`,
+		TournamentDraft, TournamentAbandoned, organiserID, boolToInt(allDrafts), TournamentRegistration, TournamentCheckIn, TournamentRunning, limit)
 	if err != nil {
 		return nil, fmt.Errorf("listing tournaments: %w", err)
 	}
@@ -175,6 +189,7 @@ type TournamentEntry struct {
 	Rating    float64
 	SeedNo    int
 	Withdrawn bool
+	CheckedIn bool
 }
 
 // AddTournamentEntry enters an account, while there is room. Entering twice
@@ -213,11 +228,11 @@ func (s *Store) AddTournamentEntry(ctx context.Context, tournamentID, accountID 
 	return tx.Commit()
 }
 
-// RemoveTournamentEntry takes an entry out while registration is open.
+// RemoveTournamentEntry takes an entry out before the tournament starts.
 func (s *Store) RemoveTournamentEntry(ctx context.Context, tournamentID, accountID int64) error {
 	res, err := s.exec(ctx, "RemoveTournamentEntry",
 		`DELETE FROM tournament_entries WHERE tournament_id = ? AND account_id = ?
-		   AND (SELECT status FROM tournaments WHERE id = ?) = ?`, tournamentID, accountID, tournamentID, TournamentRegistration)
+		   AND (SELECT status FROM tournaments WHERE id = ?) IN (?, ?)`, tournamentID, accountID, tournamentID, TournamentRegistration, TournamentCheckIn)
 	if err != nil {
 		return fmt.Errorf("leaving tournament %d: %w", tournamentID, err)
 	}
@@ -242,7 +257,7 @@ func (s *Store) WithdrawTournamentEntry(ctx context.Context, tournamentID, accou
 // TournamentEntries lists a tournament's players.
 func (s *Store) TournamentEntries(ctx context.Context, tournamentID int64) ([]TournamentEntry, error) {
 	rows, err := s.query(ctx, "TournamentEntries",
-		`SELECT e.account_id, a.handle, e.rating, e.seed_no, e.withdrawn FROM tournament_entries e JOIN accounts a ON a.id = e.account_id
+		`SELECT e.account_id, a.handle, e.rating, e.seed_no, e.withdrawn, e.checked_in FROM tournament_entries e JOIN accounts a ON a.id = e.account_id
 		 WHERE e.tournament_id = ? ORDER BY e.seed_no, e.entered_at, e.account_id`, tournamentID)
 	if err != nil {
 		return nil, fmt.Errorf("reading the entries of tournament %d: %w", tournamentID, err)
@@ -251,19 +266,19 @@ func (s *Store) TournamentEntries(ctx context.Context, tournamentID int64) ([]To
 	out := []TournamentEntry{}
 	for rows.Next() {
 		var e TournamentEntry
-		var withdrawn int
-		if err := rows.Scan(&e.AccountID, &e.Handle, &e.Rating, &e.SeedNo, &withdrawn); err != nil {
+		var withdrawn, checkedIn int
+		if err := rows.Scan(&e.AccountID, &e.Handle, &e.Rating, &e.SeedNo, &withdrawn, &checkedIn); err != nil {
 			return nil, err
 		}
-		e.Withdrawn = withdrawn != 0
+		e.Withdrawn, e.CheckedIn = withdrawn != 0, checkedIn != 0
 		out = append(out, e)
 	}
 	return out, rows.Err()
 }
 
-// StartTournament moves a tournament from registration to running with its seed,
+// StartTournament moves a tournament from the given state to running with its seed,
 // the seeding of its players and the number of its rounds.
-func (s *Store) StartTournament(ctx context.Context, id, seed int64, totalRounds int, entries []TournamentEntry, now time.Time) error {
+func (s *Store) StartTournament(ctx context.Context, id int64, from string, seed int64, totalRounds int, entries []TournamentEntry, now time.Time) error {
 	tx, err := s.begin(ctx, "StartTournament")
 	if err != nil {
 		return fmt.Errorf("begin transaction: %w", err)
@@ -271,7 +286,7 @@ func (s *Store) StartTournament(ctx context.Context, id, seed int64, totalRounds
 	defer func() { _ = tx.Rollback() }()
 	res, err := tx.exec(ctx, "StartTournament.status",
 		`UPDATE tournaments SET status = ?, seed = ?, total_rounds = ?, started_at = ? WHERE id = ? AND status = ?`,
-		TournamentRunning, seed, totalRounds, now.UTC().Format(time.RFC3339Nano), id, TournamentRegistration)
+		TournamentRunning, seed, totalRounds, now.UTC().Format(time.RFC3339Nano), id, from)
 	if err != nil {
 		return fmt.Errorf("starting tournament %d: %w", id, err)
 	}
@@ -375,17 +390,19 @@ func (s *Store) SetTournamentResult(ctx context.Context, id int64, scoreA, score
 }
 
 // NewTournamentGame is one game of a round to be made. With no RoomCode no game
-// is made, and the scores are its result: a bye or a forfeit.
+// is made, and the scores are its result: a bye or a forfeit. Deferred, it has no
+// result either, and the game comes later (StartTournamentGame).
 type NewTournamentGame struct {
 	Board, GameNo    int
 	PlayerA, PlayerB int64
 	ScoreA, ScoreB   float64
 	Reason           string
+	Deferred         bool
 
-	RoomCode, GameDefID, BoardState, Clock string
-	FirstSeat                              int
-	Rated                                  bool
-	Seats                                  [2]NewSeat
+	RoomCode, GameDefID, BoardState, Clock, RealTime string
+	FirstSeat                                        int
+	Rated                                            bool
+	Seats                                            [2]NewSeat
 }
 
 // NewSeat is a seat of a tournament game.
@@ -406,7 +423,7 @@ func (s *Store) CreateTournamentRound(ctx context.Context, tournamentID int64, r
 	}
 	defer func() { _ = tx.Rollback() }()
 	res, err := tx.exec(ctx, "CreateTournamentRound.round",
-		`UPDATE tournaments SET current_round = ? WHERE id = ? AND status = ? AND current_round = ?`, round, tournamentID, TournamentRunning, round-1)
+		`UPDATE tournaments SET current_round = ?, next_round_at = '' WHERE id = ? AND status = ? AND current_round = ?`, round, tournamentID, TournamentRunning, round-1)
 	if err != nil {
 		return nil, fmt.Errorf("starting round %d of tournament %d: %w", round, tournamentID, err)
 	}
@@ -421,27 +438,17 @@ func (s *Store) CreateTournamentRound(ctx context.Context, tournamentID int64, r
 			playerB = sql.NullInt64{Int64: g.PlayerB, Valid: true}
 		}
 		var scoreA, scoreB sql.NullFloat64
-		if g.RoomCode == "" {
+		switch {
+		case g.Deferred:
+		case g.RoomCode == "":
 			scoreA, scoreB = sql.NullFloat64{Float64: g.ScoreA, Valid: true}, sql.NullFloat64{Float64: g.ScoreB, Valid: true}
-		} else {
-			res, err := tx.exec(ctx, "CreateTournamentRound.game",
-				`INSERT INTO games (room_code, game_def_id, board_state, status, turn_seat, clock, rated, tournament_id) VALUES (?, ?, ?, 'active', ?, ?, ?, ?)`,
-				g.RoomCode, g.GameDefID, g.BoardState, g.FirstSeat, g.Clock, boolToInt(g.Rated), tournamentID)
-			if err != nil {
-				return nil, fmt.Errorf("making a game of tournament %d: %w", tournamentID, err)
-			}
-			id, err := res.LastInsertId()
+		default:
+			id, err := insertTournamentGame(ctx, tx, tournamentID, g)
 			if err != nil {
 				return nil, err
 			}
 			gameID = sql.NullInt64{Int64: id, Valid: true}
 			ids[i] = id
-			for _, seat := range g.Seats {
-				if _, err := tx.exec(ctx, "CreateTournamentRound.player",
-					`INSERT INTO players (game_id, seat, name, color, principal_id) VALUES (?, ?, ?, ?, ?)`, id, seat.Seat, seat.Name, seat.Color, seat.PrincipalID); err != nil {
-					return nil, fmt.Errorf("seating a game of tournament %d: %w", tournamentID, err)
-				}
-			}
 		}
 		if _, err := tx.exec(ctx, "CreateTournamentRound.line",
 			`INSERT INTO tournament_games (tournament_id, round, board, game_no, player_a, player_b, game_id, room_code, score_a, score_b, reason) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -493,4 +500,133 @@ func (s *Store) AccountContact(ctx context.Context, accountID int64, address, ad
 		}
 	}
 	return id, nil
+}
+
+// PendingRealTimeTournaments lists the real-time tournaments that have not started,
+// for the sweep to open their check-in and start them on time.
+func (s *Store) PendingRealTimeTournaments(ctx context.Context) ([]Tournament, error) {
+	rows, err := s.query(ctx, "PendingRealTimeTournaments",
+		`SELECT `+tournamentCols+tournamentFrom+`WHERE t.status IN (?, ?) AND t.real_time = 1 ORDER BY t.id`, TournamentRegistration, TournamentCheckIn)
+	if err != nil {
+		return nil, fmt.Errorf("listing real-time tournaments to start: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+	var out []Tournament
+	for rows.Next() {
+		t, err := scanTournament(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, t)
+	}
+	return out, rows.Err()
+}
+
+// OpenTournamentCheckIn moves a tournament from registration to check-in.
+func (s *Store) OpenTournamentCheckIn(ctx context.Context, id int64) error {
+	if _, err := s.exec(ctx, "OpenTournamentCheckIn", `UPDATE tournaments SET status = ? WHERE id = ? AND status = ?`, TournamentCheckIn, id, TournamentRegistration); err != nil {
+		return fmt.Errorf("opening the check-in of tournament %d: %w", id, err)
+	}
+	return nil
+}
+
+// CheckInTournamentEntry checks a player in, and says whether they have an entry.
+// Doing it twice changes nothing.
+func (s *Store) CheckInTournamentEntry(ctx context.Context, tournamentID, accountID int64) (bool, error) {
+	res, err := s.exec(ctx, "CheckInTournamentEntry",
+		`UPDATE tournament_entries SET checked_in = 1 WHERE tournament_id = ? AND account_id = ?`, tournamentID, accountID)
+	if err != nil {
+		return false, fmt.Errorf("checking in to tournament %d: %w", tournamentID, err)
+	}
+	n, _ := res.RowsAffected()
+	return n > 0, nil
+}
+
+// DropUncheckedTournamentEntries takes out the players who have not checked in.
+func (s *Store) DropUncheckedTournamentEntries(ctx context.Context, tournamentID int64) error {
+	if _, err := s.exec(ctx, "DropUncheckedTournamentEntries",
+		`DELETE FROM tournament_entries WHERE tournament_id = ? AND checked_in = 0`, tournamentID); err != nil {
+		return fmt.Errorf("dropping the players who did not check in to tournament %d: %w", tournamentID, err)
+	}
+	return nil
+}
+
+// MarkTournamentStarted notes when a tournament that never got to play was due to
+// start, which keeps it in the list for the people who entered it.
+func (s *Store) MarkTournamentStarted(ctx context.Context, id int64, now time.Time) error {
+	if _, err := s.exec(ctx, "MarkTournamentStarted", `UPDATE tournaments SET started_at = ? WHERE id = ?`, now.UTC().Format(time.RFC3339Nano), id); err != nil {
+		return fmt.Errorf("marking tournament %d started: %w", id, err)
+	}
+	return nil
+}
+
+// SetTournamentNextRound notes when the next round starts, after a break.
+func (s *Store) SetTournamentNextRound(ctx context.Context, id int64, at time.Time) error {
+	if _, err := s.exec(ctx, "SetTournamentNextRound", `UPDATE tournaments SET next_round_at = ? WHERE id = ?`, at.UTC().Format(time.RFC3339), id); err != nil {
+		return fmt.Errorf("setting the next round of tournament %d: %w", id, err)
+	}
+	return nil
+}
+
+// SeatsWithMoves lists the seats with a move of their own in a game, as
+// SeatsThatMoved counts them.
+func (s *Store) SeatsWithMoves(ctx context.Context, gameID int64) ([]int, error) {
+	rows, err := s.query(ctx, "SeatsWithMoves", `SELECT DISTINCT seat FROM moves WHERE game_id = ? AND auto = 0 AND autoplay = 0`, gameID)
+	if err != nil {
+		return nil, fmt.Errorf("listing the seats that moved in game_id=%d: %w", gameID, err)
+	}
+	defer func() { _ = rows.Close() }()
+	var out []int
+	for rows.Next() {
+		var seat int
+		if err := rows.Scan(&seat); err != nil {
+			return nil, err
+		}
+		out = append(out, seat)
+	}
+	return out, rows.Err()
+}
+
+// insertTournamentGame makes the game of a line and seats its players.
+func insertTournamentGame(ctx context.Context, tx *Tx, tournamentID int64, g NewTournamentGame) (int64, error) {
+	res, err := tx.exec(ctx, "insertTournamentGame.game",
+		`INSERT INTO games (room_code, game_def_id, board_state, status, turn_seat, clock, rated, tournament_id, real_time) VALUES (?, ?, ?, 'active', ?, ?, ?, ?, ?)`,
+		g.RoomCode, g.GameDefID, g.BoardState, g.FirstSeat, g.Clock, boolToInt(g.Rated), tournamentID, g.RealTime)
+	if err != nil {
+		return 0, fmt.Errorf("making a game of tournament %d: %w", tournamentID, err)
+	}
+	id, err := res.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
+	for _, seat := range g.Seats {
+		if _, err := tx.exec(ctx, "insertTournamentGame.player",
+			`INSERT INTO players (game_id, seat, name, color, principal_id) VALUES (?, ?, ?, ?, ?)`, id, seat.Seat, seat.Name, seat.Color, seat.PrincipalID); err != nil {
+			return 0, fmt.Errorf("seating a game of tournament %d: %w", tournamentID, err)
+		}
+	}
+	return id, nil
+}
+
+// StartTournamentGame makes the game of a line that was waiting for one: the second
+// game of a real-time pairing, once the first is over.
+func (s *Store) StartTournamentGame(ctx context.Context, lineID, tournamentID int64, g NewTournamentGame) error {
+	tx, err := s.begin(ctx, "StartTournamentGame")
+	if err != nil {
+		return fmt.Errorf("begin transaction: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	id, err := insertTournamentGame(ctx, tx, tournamentID, g)
+	if err != nil {
+		return err
+	}
+	res, err := tx.exec(ctx, "StartTournamentGame.line",
+		`UPDATE tournament_games SET game_id = ?, room_code = ? WHERE id = ? AND room_code = '' AND score_a IS NULL`, id, g.RoomCode, lineID)
+	if err != nil {
+		return fmt.Errorf("recording a game of tournament %d: %w", tournamentID, err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrWrongTournamentState
+	}
+	return tx.Commit()
 }

@@ -80,6 +80,7 @@ func registerPlayTools(s *server.MCPServer, mgr *session.Manager) {
 	}
 	tournamentTool("get_tournament", "Read a tournament: its settings, standings and schedule, with the room code of each game.", mgr.Tournament, mcp.WithReadOnlyHintAnnotation(true))
 	tournamentTool("enter_tournament", "Enter a tournament that is open for entries. It takes an account. Tournament games are for people playing their own moves: using a bot or another program to choose them is against the rules.", mgr.EnterTournament)
+	tournamentTool("check_in_tournament", "Check in to a real-time tournament you have entered, during its check-in window. Whoever has not checked in by its start time is dropped from it.", mgr.CheckInTournament)
 	tournamentTool("leave_tournament", "Leave a tournament. Once it is running you forfeit your games in progress and take no further part, and what you have played stands.", func(ctx context.Context, id int64) (session.TournamentDetail, error) {
 		return mgr.LeaveTournament(ctx, id, "")
 	})

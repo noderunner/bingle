@@ -4,6 +4,16 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.46.0 - 2026-11-02
+
+### Bingle Core 0.46.0
+- **Real-time tournaments.** An organiser can now set a tournament to start at a set time, with everybody playing at
+  once. Check in on the tournament's page before the start, or you are dropped from it.
+- **One game at a time.** When a pairing plays two games, the second starts as soon as the first ends, and you are told
+  so with a link to it. The next round starts after a short break that the organiser chooses.
+- **Make your first move in time.** In these tournaments, a player who has not made their first move by the deadline
+  forfeits that game. If neither player came, nobody scores. Ratings don't change either way.
+
 ## 0.45.0 - 2026-11-02
 
 ### Bingle Core 0.45.0

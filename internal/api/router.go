@@ -56,6 +56,7 @@ func NewRouter(mgr *session.Manager, opts ...Option) chi.Router {
 	r.Post("/tournaments/{id}/start", h.tournamentAction(h.mgr.StartTournament))
 	r.Post("/tournaments/{id}/abandon", h.tournamentAction(h.mgr.AbandonTournament))
 	r.Post("/tournaments/{id}/enter", h.tournamentAction(h.mgr.EnterTournament))
+	r.Post("/tournaments/{id}/check-in", h.tournamentAction(h.mgr.CheckInTournament))
 	r.Post("/tournaments/{id}/leave", h.handleLeaveTournament)
 	r.Get("/game-defs", h.handleListGameDefs)
 	r.Get("/game-defs/{id}", h.handleGameDef)

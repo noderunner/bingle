@@ -97,6 +97,19 @@ type RealTimeWait struct {
 type RealTimeSnapshot struct {
 	RealTimeSettings
 	Wait *RealTimeWait `json:"wait,omitempty"`
+	// FirstMove is set while a seat of a real-time tournament's game must make its
+	// first move in time, or forfeit.
+	FirstMove *FirstMove `json:"first_move,omitempty"`
+}
+
+// realTimeOfTournamentGame is what a real-time tournament's games store. They have a
+// clock, so the warnings never apply, and the settings say only that it is real-time.
+const realTimeOfTournamentGame = `{"first_warning_seconds":120,"second_warning_seconds":300}`
+
+// FirstMove is the deadline for a first move in a real-time tournament's game.
+type FirstMove struct {
+	Seat int    `json:"seat"`
+	By   string `json:"by"`
 }
 
 // slowTurnEventData is the wire DTO of a "slow_turn" Event.
@@ -111,6 +124,22 @@ func (m *Manager) realTimeSnapshot(game store.Game, players []store.Player) *Rea
 		return nil
 	}
 	return &RealTimeSnapshot{RealTimeSettings: *s, Wait: m.realTimeWait(game, players)}
+}
+
+// firstMoveOf is the first-move deadline a real-time tournament's game is under, if any.
+func (m *Manager) firstMoveOf(ctx context.Context, game store.Game) *FirstMove {
+	if game.TournamentID == 0 || game.RealTime == "" || game.Status != "active" {
+		return nil
+	}
+	t, err := m.store.GetTournament(ctx, game.TournamentID)
+	if err != nil {
+		return nil
+	}
+	seat, by, _, due := m.firstMoveDue(ctx, t, game)
+	if !due {
+		return nil
+	}
+	return &FirstMove{Seat: seat, By: by.UTC().Format(time.RFC3339)}
 }
 
 func samePerson(a, b store.Player) bool {

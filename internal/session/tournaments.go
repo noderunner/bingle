@@ -42,6 +42,17 @@ const (
 	maxTournamentList        = 100
 	tournamentSweep          = time.Minute
 	roundAttempts            = 5
+
+	// A real-time tournament's sweep is this much quicker: a start, a round and a
+	// first-move deadline have people waiting on them.
+	realTimeTournamentSweep = 5 * time.Second
+	minCheckIn              = 60
+	maxCheckIn              = 24 * 60 * 60
+	defaultCheckIn          = 15 * 60
+	maxRoundBreak           = 60 * 60
+	defaultRoundBreak       = 60
+	minFirstMove            = 10
+	defaultFirstMove        = 2 * 60
 )
 
 // TournamentSettings is what an organiser chooses. A pointer that is nil takes
@@ -59,6 +70,14 @@ type TournamentSettings struct {
 	MinPlayers            int    `json:"min_players,omitempty"`
 	MaxPlayers            int    `json:"max_players,omitempty"`
 	Rounds                int    `json:"rounds,omitempty"` // Swiss; 0: from the number of players
+
+	// RealTime makes it a real-time tournament (ADR 0090), with a start time and a
+	// check-in before it. The rest belong to it.
+	RealTime          bool   `json:"real_time,omitempty"`
+	StartsAt          string `json:"starts_at,omitempty"`           // RFC 3339
+	CheckInSeconds    int    `json:"check_in_seconds,omitempty"`    // 0: a quarter of an hour
+	RoundBreakSeconds *int   `json:"round_break_seconds,omitempty"` // default a minute
+	FirstMoveSeconds  int    `json:"first_move_seconds,omitempty"`  // 0: two minutes, or half the clock if that is shorter
 }
 
 // settled checks settings and gives the row they make.
@@ -112,12 +131,42 @@ func (m *Manager) settled(s TournamentSettings) (store.Tournament, error) {
 	if s.Format == tournament.RoundRobin && s.Rounds != 0 {
 		return bad("a round robin takes as many rounds as it takes")
 	}
-	return store.Tournament{
+	out := store.Tournament{
 		Name: name, Description: strings.TrimSpace(s.Description), GameDefID: s.GameDefID, GameName: compiled.Definition.Name, Format: s.Format,
 		ClockSeconds: s.ClockSeconds, ClockIncrement: s.ClockIncrementSeconds, GamesPerPairing: games,
 		Rated: s.Rated == nil || *s.Rated, PieRule: s.PieRule == nil || *s.PieRule,
 		MinPlayers: lo, MaxPlayers: hi, Rounds: s.Rounds,
-	}, nil
+	}
+	if !s.RealTime {
+		return out, nil
+	}
+	starts, err := time.Parse(time.RFC3339, s.StartsAt)
+	if err != nil {
+		return bad("a real-time tournament needs a start time")
+	}
+	checkIn := s.CheckInSeconds
+	if checkIn == 0 {
+		checkIn = defaultCheckIn
+	}
+	if checkIn < minCheckIn || checkIn > maxCheckIn {
+		return bad("a check-in of %d seconds to a day", minCheckIn)
+	}
+	roundBreak := defaultRoundBreak
+	if s.RoundBreakSeconds != nil {
+		roundBreak = *s.RoundBreakSeconds
+	}
+	if roundBreak < 0 || roundBreak > maxRoundBreak {
+		return bad("a break between rounds of at most an hour")
+	}
+	firstMove := s.FirstMoveSeconds
+	if firstMove == 0 {
+		firstMove = min(defaultFirstMove, s.ClockSeconds/2)
+	}
+	if firstMove < minFirstMove || firstMove >= s.ClockSeconds {
+		return bad("a first-move deadline of at least %d seconds, and shorter than the clock", minFirstMove)
+	}
+	out.RealTime, out.StartsAt, out.CheckInSeconds, out.RoundBreak, out.FirstMoveSeconds = true, starts.UTC().Format(time.RFC3339), checkIn, roundBreak, firstMove
+	return out, nil
 }
 
 // signedIn is the account of the request.
@@ -204,8 +253,14 @@ func (m *Manager) UpdateTournament(ctx context.Context, id int64, s TournamentSe
 
 // OpenTournament opens a draft to entries.
 func (m *Manager) OpenTournament(ctx context.Context, id int64) (TournamentDetail, error) {
-	if _, err := m.organised(ctx, id); err != nil {
+	t, err := m.organised(ctx, id)
+	if err != nil {
 		return TournamentDetail{}, err
+	}
+	if t.RealTime {
+		if starts, err := time.Parse(time.RFC3339, t.StartsAt); err != nil || !starts.After(m.now()) {
+			return TournamentDetail{}, fmt.Errorf("%w: its start time has passed", ErrInvalidTournament)
+		}
 	}
 	if err := m.store.OpenTournament(ctx, id); err != nil {
 		return TournamentDetail{}, err
@@ -263,7 +318,7 @@ func (m *Manager) LeaveTournament(ctx context.Context, id int64, handle string) 
 		who = other.ID
 	}
 	switch t.Status {
-	case store.TournamentRegistration:
+	case store.TournamentRegistration, store.TournamentCheckIn:
 		if err := m.store.RemoveTournamentEntry(ctx, id, who); err != nil {
 			return TournamentDetail{}, err
 		}
@@ -357,6 +412,9 @@ func (m *Manager) StartTournament(ctx context.Context, id int64) (TournamentDeta
 	if t.Status != store.TournamentRegistration {
 		return TournamentDetail{}, store.ErrWrongTournamentState
 	}
+	if t.RealTime {
+		return TournamentDetail{}, fmt.Errorf("%w: a real-time tournament starts by itself at its start time", store.ErrWrongTournamentState)
+	}
 	entries, err := m.store.TournamentEntries(ctx, id)
 	if err != nil {
 		return TournamentDetail{}, err
@@ -364,13 +422,24 @@ func (m *Manager) StartTournament(ctx context.Context, id int64) (TournamentDeta
 	if len(entries) < t.MinPlayers {
 		return TournamentDetail{}, fmt.Errorf("%w: %d of at least %d", ErrTooFewEntries, len(entries), t.MinPlayers)
 	}
+	m.tournamentsMu.Lock()
+	defer m.tournamentsMu.Unlock()
+	if err := m.beginTournament(ctx, t, entries); err != nil {
+		return TournamentDetail{}, err
+	}
+	return m.Tournament(ctx, id)
+}
+
+// beginTournament seeds the players and plays the first round. The caller holds
+// tournamentsMu.
+func (m *Manager) beginTournament(ctx context.Context, t store.Tournament, entries []store.TournamentEntry) error {
 	compiled, ok := m.catalog.Get(t.GameDefID)
 	if !ok {
-		return TournamentDetail{}, fmt.Errorf("%w: %q", ErrGameDefNotFound, t.GameDefID)
+		return fmt.Errorf("%w: %q", ErrGameDefNotFound, t.GameDefID)
 	}
 	seed, err := newSeed()
 	if err != nil {
-		return TournamentDetail{}, err
+		return err
 	}
 	family, now := gameFamily(compiled), m.now()
 	ids := make([]int64, len(entries))
@@ -378,7 +447,7 @@ func (m *Manager) StartTournament(ctx context.Context, id int64) (TournamentDeta
 		ids[i] = entries[i].AccountID
 		r, err := m.ratingNow(ctx, entries[i].AccountID, family, now)
 		if err != nil {
-			return TournamentDetail{}, err
+			return err
 		}
 		entries[i].Rating = r.Rating
 	}
@@ -398,16 +467,14 @@ func (m *Manager) StartTournament(ctx context.Context, id int64) (TournamentDeta
 		}
 		rounds = min(rounds, most)
 	}
-	m.tournamentsMu.Lock()
-	defer m.tournamentsMu.Unlock()
-	if err := m.store.StartTournament(ctx, id, seed, rounds, entries, now); err != nil {
-		return TournamentDetail{}, err
+	if err := m.store.StartTournament(ctx, t.ID, t.Status, seed, rounds, entries, now); err != nil {
+		return err
 	}
-	if t, err = m.store.GetTournament(ctx, id); err != nil {
-		return TournamentDetail{}, err
+	if t, err = m.store.GetTournament(ctx, t.ID); err != nil {
+		return err
 	}
 	m.advance(ctx, t)
-	return m.Tournament(ctx, id)
+	return nil
 }
 
 func newSeed() (int64, error) {
@@ -482,14 +549,19 @@ func (m *Manager) voidRoom(ctx context.Context, room string) error {
 // A game that ends says so at once; this is for the clock, and for a crash.
 func (m *Manager) RunTournaments(ctx context.Context) {
 	m.AdvanceTournaments(ctx)
-	t := time.NewTicker(tournamentSweep)
+	t := time.NewTicker(realTimeTournamentSweep)
 	defer t.Stop()
-	for {
+	everyOne := int(tournamentSweep / realTimeTournamentSweep)
+	for tick := 1; ; tick++ {
 		select {
 		case <-ctx.Done():
 			return
 		case <-t.C:
-			m.AdvanceTournaments(ctx)
+			if tick%everyOne == 0 {
+				m.AdvanceTournaments(ctx)
+			} else {
+				m.AdvanceRealTimeTournaments(ctx)
+			}
 		}
 	}
 }
@@ -497,16 +569,110 @@ func (m *Manager) RunTournaments(ctx context.Context) {
 // AdvanceTournaments looks at every running tournament once. It is exported so
 // that a test can wait for it.
 func (m *Manager) AdvanceTournaments(ctx context.Context) {
+	m.sweepTournaments(ctx, false)
+}
+
+// AdvanceRealTimeTournaments starts the real-time tournaments that are due, and looks
+// at the running ones. The correspondence tournaments can wait for the slower sweep.
+func (m *Manager) AdvanceRealTimeTournaments(ctx context.Context) {
+	m.sweepTournaments(ctx, true)
+}
+
+func (m *Manager) sweepTournaments(ctx context.Context, realTimeOnly bool) {
 	m.tournamentsMu.Lock()
 	defer m.tournamentsMu.Unlock()
+	m.startDueTournaments(ctx)
 	list, err := m.store.RunningTournaments(ctx)
 	if err != nil {
 		m.logger().Error("reading the running tournaments", "err", err)
 		return
 	}
 	for _, t := range list {
-		m.advance(ctx, t)
+		if t.RealTime || !realTimeOnly {
+			m.advance(ctx, t)
+		}
 	}
+}
+
+// startDueTournaments opens the check-in of each real-time tournament at its time,
+// and starts it at its start time. The caller holds tournamentsMu.
+func (m *Manager) startDueTournaments(ctx context.Context) {
+	list, err := m.store.PendingRealTimeTournaments(ctx)
+	if err != nil {
+		m.logger().Error("reading the real-time tournaments to start", "err", err)
+		return
+	}
+	now := m.now()
+	for _, t := range list {
+		starts, err := time.Parse(time.RFC3339, t.StartsAt)
+		if err != nil {
+			m.logger().Error("a real-time tournament's start time", "tournament", t.ID, "err", err)
+			continue
+		}
+		if t.Status == store.TournamentRegistration {
+			if now.Before(starts.Add(-time.Duration(t.CheckInSeconds) * time.Second)) {
+				continue
+			}
+			if err := m.store.OpenTournamentCheckIn(ctx, t.ID); err != nil {
+				m.logger().Error("opening a tournament's check-in", "tournament", t.ID, "err", err)
+				continue
+			}
+			t.Status = store.TournamentCheckIn
+		}
+		if now.Before(starts) {
+			continue
+		}
+		if err := m.startRealTimeTournament(ctx, t); err != nil {
+			m.logger().Error("starting a real-time tournament", "tournament", t.ID, "err", err)
+		}
+	}
+}
+
+// startRealTimeTournament drops whoever has not checked in and plays, or abandons a
+// tournament left with too few.
+func (m *Manager) startRealTimeTournament(ctx context.Context, t store.Tournament) error {
+	if err := m.store.DropUncheckedTournamentEntries(ctx, t.ID); err != nil {
+		return err
+	}
+	entries, err := m.store.TournamentEntries(ctx, t.ID)
+	if err != nil {
+		return err
+	}
+	if len(entries) < max(t.MinPlayers, 2) {
+		// Marked as started, or it would vanish from the list of those who entered.
+		if err := m.store.MarkTournamentStarted(ctx, t.ID, m.now()); err != nil {
+			return err
+		}
+		return m.abandon(ctx, t, "Too few players checked in.")
+	}
+	return m.beginTournament(ctx, t, entries)
+}
+
+// CheckInTournament says the request's account is here for a real-time tournament.
+// Someone who has not done so by the start is dropped from it.
+func (m *Manager) CheckInTournament(ctx context.Context, id int64) (TournamentDetail, error) {
+	acc, ok := signedIn(ctx)
+	if !ok {
+		return TournamentDetail{}, ErrTournamentAccount
+	}
+	t, err := m.store.GetTournament(ctx, id)
+	if err != nil {
+		return TournamentDetail{}, err
+	}
+	if !mayView(ctx, t) {
+		return TournamentDetail{}, store.ErrNotFound
+	}
+	if t.Status != store.TournamentCheckIn {
+		return TournamentDetail{}, store.ErrWrongTournamentState
+	}
+	in, err := m.store.CheckInTournamentEntry(ctx, id, acc.ID)
+	if err != nil {
+		return TournamentDetail{}, err
+	}
+	if !in {
+		return TournamentDetail{}, ErrNotEntered
+	}
+	return m.Tournament(ctx, id)
 }
 
 // advance moves one tournament on as far as it can go. A failure is logged and
@@ -529,7 +695,17 @@ func (m *Manager) advanceErr(ctx context.Context, t store.Tournament) error {
 			return err
 		}
 		waiting := false
+		playing := map[int]bool{} // the pairings with a game going on
+		var later []store.TournamentGame
 		for _, line := range open {
+			if line.RoomCode == "" {
+				waiting = true
+				later = append(later, line)
+				continue
+			}
+			if err := m.enforceFirstMove(ctx, t, line); err != nil {
+				return err
+			}
 			done, abandoned, err := m.readResult(ctx, line)
 			if err != nil {
 				return err
@@ -538,12 +714,30 @@ func (m *Manager) advanceErr(ctx context.Context, t store.Tournament) error {
 				return m.abandon(ctx, t, "")
 			}
 			waiting = waiting || !done
+			playing[line.Board] = playing[line.Board] || !done
+		}
+		// The second game of a real-time pairing starts when the first has ended. If
+		// nobody needed to play it, that may have ended the round, so look again.
+		looked := false
+		for _, line := range later {
+			if !playing[line.Board] {
+				if err := m.startLater(ctx, t, line); err != nil {
+					return err
+				}
+				looked = true
+			}
+		}
+		if looked {
+			continue
 		}
 		if waiting {
 			return nil
 		}
 		if t.CurrentRound >= t.TotalRounds {
 			return m.finishTournament(ctx, t)
+		}
+		if rest, err := m.roundBreak(ctx, t); rest || err != nil {
+			return err
 		}
 		more, err := m.startRound(ctx, t)
 		if err != nil {
@@ -556,6 +750,131 @@ func (m *Manager) advanceErr(ctx context.Context, t store.Tournament) error {
 			return err
 		}
 	}
+}
+
+// roundBreak says a real-time tournament is resting between two rounds, and starts
+// the rest when the last game of a round has only just ended. A round nobody played
+// needs no rest.
+func (m *Manager) roundBreak(ctx context.Context, t store.Tournament) (bool, error) {
+	if !t.RealTime || t.RoundBreak == 0 || t.CurrentRound == 0 {
+		return false, nil
+	}
+	if t.NextRoundAt == "" {
+		record, err := m.store.TournamentGames(ctx, t.ID)
+		if err != nil {
+			return false, err
+		}
+		played := false
+		for _, g := range record {
+			played = played || (g.Round == t.CurrentRound && g.RoomCode != "")
+		}
+		if !played {
+			return false, nil
+		}
+		return true, m.store.SetTournamentNextRound(ctx, t.ID, m.now().Add(time.Duration(t.RoundBreak)*time.Second))
+	}
+	at, err := time.Parse(time.RFC3339, t.NextRoundAt)
+	if err != nil {
+		return false, err
+	}
+	return m.now().Before(at), nil
+}
+
+// startLater makes the game of a line that was waiting for one, or scores it if a
+// player has withdrawn since, as a new round's would be.
+func (m *Manager) startLater(ctx context.Context, t store.Tournament, line store.TournamentGame) error {
+	entries, err := m.store.TournamentEntries(ctx, t.ID)
+	if err != nil {
+		return err
+	}
+	withdrawn := map[int64]bool{}
+	for _, e := range entries {
+		withdrawn[e.AccountID] = e.Withdrawn
+	}
+	switch a, b := withdrawn[line.PlayerA], withdrawn[line.PlayerB]; {
+	case a && b:
+		return m.store.SetTournamentResult(ctx, line.ID, 0, 0, store.EndReasonForfeit)
+	case a:
+		return m.store.SetTournamentResult(ctx, line.ID, 0, 1, store.EndReasonForfeit)
+	case b:
+		return m.store.SetTournamentResult(ctx, line.ID, 1, 0, store.EndReasonForfeit)
+	}
+	compiled, err := m.tournamentGameDef(t)
+	if err != nil {
+		return err
+	}
+	var lastErr error
+	for range roundAttempts {
+		fresh := store.NewTournamentGame{Board: line.Board, GameNo: line.GameNo, PlayerA: line.PlayerA, PlayerB: line.PlayerB}
+		if err := m.fillGame(ctx, t, compiled, &fresh); err != nil {
+			return err
+		}
+		if lastErr = m.store.StartTournamentGame(ctx, line.ID, t.ID, fresh); lastErr == nil {
+			m.announceRound(ctx, t, []store.NewTournamentGame{fresh})
+			return nil
+		}
+		if errors.Is(lastErr, store.ErrWrongTournamentState) {
+			return lastErr
+		}
+	}
+	return lastErr
+}
+
+// firstMoveDue is the deadline for a first move in a real-time tournament's game: the
+// seat to move, if it has not moved yet, and when it must. noneMoved says neither has.
+func (m *Manager) firstMoveDue(ctx context.Context, t store.Tournament, game store.Game) (seat int, by time.Time, noneMoved, due bool) {
+	if !t.RealTime || t.FirstMoveSeconds <= 0 || game.Status != "active" || game.TurnSeat == nil {
+		return 0, time.Time{}, false, false
+	}
+	moved, err := m.store.SeatsWithMoves(ctx, game.ID)
+	if err != nil || len(moved) >= 2 || (len(moved) == 1 && moved[0] == *game.TurnSeat) {
+		return 0, time.Time{}, false, false
+	}
+	started, ok := parseTimestamp(game.UpdatedAt)
+	if !ok {
+		return 0, time.Time{}, false, false
+	}
+	return *game.TurnSeat, m.turnStart(started).Add(time.Duration(t.FirstMoveSeconds) * time.Second), len(moved) == 0, true
+}
+
+// enforceFirstMove ends a game whose player to move has missed the first-move
+// deadline, and has not moved yet. They forfeit, unless they were the first player and
+// the other is not connected either, so that neither of them came: then nobody scores.
+func (m *Manager) enforceFirstMove(ctx context.Context, t store.Tournament, line store.TournamentGame) error {
+	if !t.RealTime {
+		return nil
+	}
+	unlock := m.lockRoom(ctx, line.RoomCode)
+	defer unlock()
+	game, err := m.loadGame(ctx, line.RoomCode, true)
+	if errors.Is(err, store.ErrNotFound) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	seat, by, noneMoved, due := m.firstMoveDue(ctx, t, game)
+	if !due || m.now().Before(by) {
+		return nil
+	}
+	compiled, err := m.compiledFor(game)
+	if err != nil {
+		return err
+	}
+	other, ok := compiled.Opponent(seat)
+	if !ok {
+		return nil
+	}
+	winner, reason := &other, store.EndReasonNoShow
+	if noneMoved && !m.seatConnected(canonRoom(line.RoomCode), other) {
+		winner, reason = nil, store.EndReasonNoShows
+	}
+	if err := m.store.FinishGame(ctx, game.ID, winner, reason); err != nil {
+		return err
+	}
+	m.finished(game, gameFamily(compiled), reason)
+	m.publishState(ctx, line.RoomCode, reason)
+	return nil
 }
 
 func (m *Manager) finishTournament(ctx context.Context, t store.Tournament) error {
@@ -593,7 +912,7 @@ func (m *Manager) readResult(ctx context.Context, line store.TournamentGame) (do
 		if winner == line.PlayerA {
 			a, b = 1, 0
 		}
-	case game.EndReason == store.EndReasonRetired:
+	case game.EndReason == store.EndReasonRetired, game.EndReason == store.EndReasonNoShows:
 		a, b = 0, 0
 	}
 	return true, false, m.store.SetTournamentResult(ctx, line.ID, a, b, game.EndReason)
@@ -653,7 +972,7 @@ func (m *Manager) startRound(ctx context.Context, t store.Tournament) (bool, err
 			return false, err
 		}
 		if _, err = m.store.CreateTournamentRound(ctx, t.ID, round, lines); err == nil {
-			m.announceRound(ctx, lines)
+			m.announceRound(ctx, t, lines)
 			return true, nil
 		}
 		if errors.Is(err, store.ErrWrongTournamentState) {
@@ -729,6 +1048,9 @@ func (m *Manager) roundLines(ctx context.Context, t store.Tournament, pairs []to
 				line.ScoreB = 1
 			case withdrawn[b]:
 				line.ScoreA = 1
+			case t.RealTime && no > 1:
+				// Nobody can watch two boards: it starts when the first has ended.
+				line.Deferred, line.Reason = true, ""
 			default:
 				if err := m.fillGame(ctx, t, compiled, &line); err != nil {
 					return nil, err
@@ -795,6 +1117,9 @@ func (m *Manager) fillGame(ctx context.Context, t store.Tournament, compiled *ca
 		return err
 	}
 	line.RoomCode, line.GameDefID, line.BoardState, line.Clock, line.FirstSeat, line.Rated = roomcode.New(), compiled.Definition.ID, string(board), stored, first, t.Rated
+	if t.RealTime {
+		line.RealTime = realTimeOfTournamentGame
+	}
 	line.Seats = [2]store.NewSeat{
 		{Seat: s1.Seat, Name: a.Handle, Color: s1.Color, PrincipalID: a.PrincipalID},
 		{Seat: s2.Seat, Name: b.Handle, Color: s2.Color, PrincipalID: b.PrincipalID},
@@ -802,8 +1127,17 @@ func (m *Manager) fillGame(ctx context.Context, t store.Tournament, compiled *ca
 	return nil
 }
 
-// announceRound sets the turn mail of a new round's players and tells the rooms.
-func (m *Manager) announceRound(ctx context.Context, lines []store.NewTournamentGame) {
+// announceRound sets the turn mail of a new round's players and tells the rooms. In
+// a real-time tournament it also tells the room each player was last in, where they may
+// well still be: the first-move deadline has started.
+func (m *Manager) announceRound(ctx context.Context, t store.Tournament, lines []store.NewTournamentGame) {
+	var record []store.TournamentGame
+	if t.RealTime {
+		var err error
+		if record, err = m.store.TournamentGames(ctx, t.ID); err != nil {
+			m.logger().Warn("reading a tournament's record", "tournament", t.ID, "err", err)
+		}
+	}
 	for _, line := range lines {
 		if line.RoomCode == "" {
 			continue
@@ -815,7 +1149,30 @@ func (m *Manager) announceRound(ctx context.Context, lines []store.NewTournament
 		m.tournamentMail(ctx, game.ID, line.PlayerA, line.Seats[0].Name)
 		m.tournamentMail(ctx, game.ID, line.PlayerB, line.Seats[1].Name)
 		m.publishState(ctx, line.RoomCode, "tournament")
+		for i, player := range []int64{line.PlayerA, line.PlayerB} {
+			if room := lastRoomOf(record, player, line.RoomCode); room != "" {
+				m.hub.publish(room, Event{Type: "next_game", Data: nextGameEventData{Player: line.Seats[i].Name, RoomCode: line.RoomCode}})
+			}
+		}
 	}
+}
+
+// nextGameEventData is the wire DTO of a "next_game" Event, sent to the room a player
+// of a real-time tournament has just finished in.
+type nextGameEventData struct {
+	Player   string `json:"player"`
+	RoomCode string `json:"room_code"`
+}
+
+// lastRoomOf is the room of a player's last game before the one in room.
+func lastRoomOf(record []store.TournamentGame, player int64, room string) string {
+	last := ""
+	for _, g := range record {
+		if g.RoomCode != "" && g.RoomCode != room && (g.PlayerA == player || g.PlayerB == player) {
+			last = g.RoomCode
+		}
+	}
+	return last
 }
 
 // tournamentMail asks for turn mail for a player's tournament game, at their
@@ -864,6 +1221,13 @@ type TournamentSummary struct {
 	CreatedAt       string `json:"created_at"`
 	StartedAt       string `json:"started_at,omitempty"`
 	EndedAt         string `json:"ended_at,omitempty"`
+
+	RealTime          bool   `json:"real_time,omitempty"`
+	StartsAt          string `json:"starts_at,omitempty"`
+	CheckInSeconds    int    `json:"check_in_seconds,omitempty"`
+	RoundBreakSeconds int    `json:"round_break_seconds,omitempty"`
+	FirstMoveSeconds  int    `json:"first_move_seconds,omitempty"`
+	NextRoundAt       string `json:"next_round_at,omitempty"`
 }
 
 func summaryOf(t store.Tournament) TournamentSummary {
@@ -872,6 +1236,7 @@ func summaryOf(t store.Tournament) TournamentSummary {
 		ClockSeconds: t.ClockSeconds, ClockIncrement: t.ClockIncrement, GamesPerPairing: t.GamesPerPairing, Rated: t.Rated, PieRule: t.PieRule,
 		MinPlayers: t.MinPlayers, MaxPlayers: t.MaxPlayers, Rounds: t.Rounds, Players: t.Entries, Organiser: t.Organiser,
 		CurrentRound: t.CurrentRound, TotalRounds: t.TotalRounds, CreatedAt: t.CreatedAt, StartedAt: t.StartedAt, EndedAt: t.EndedAt,
+		RealTime: t.RealTime, StartsAt: t.StartsAt, CheckInSeconds: t.CheckInSeconds, RoundBreakSeconds: t.RoundBreak, FirstMoveSeconds: t.FirstMoveSeconds, NextRoundAt: t.NextRoundAt,
 	}
 }
 
@@ -880,6 +1245,7 @@ func summaryOf(t store.Tournament) TournamentSummary {
 type TournamentEntryInfo struct {
 	Handle    string  `json:"handle"`
 	Withdrawn bool    `json:"withdrawn,omitempty"`
+	CheckedIn bool    `json:"checked_in,omitempty"`
 	Place     int     `json:"place,omitempty"`
 	Score     float64 `json:"score"`
 	Played    int     `json:"played"`
@@ -912,6 +1278,9 @@ type TournamentYou struct {
 	Entered   bool `json:"entered"`
 	Withdrawn bool `json:"withdrawn,omitempty"`
 	Organiser bool `json:"organiser"`
+	CheckedIn bool `json:"checked_in,omitempty"`
+	// Game is the room of the account's game in progress.
+	Game string `json:"game,omitempty"`
 }
 
 // TournamentDetail is the whole of a tournament.
@@ -965,14 +1334,20 @@ func (m *Manager) Tournament(ctx context.Context, id int64) (TournamentDetail, e
 
 	handles := make(map[int64]string, len(entries))
 	withdrawn := make(map[int64]bool, len(entries))
+	checkedIn := make(map[int64]bool, len(entries))
 	ids := make([]int64, 0, len(entries))
 	for _, e := range entries {
-		handles[e.AccountID], withdrawn[e.AccountID] = e.Handle, e.Withdrawn
+		handles[e.AccountID], withdrawn[e.AccountID], checkedIn[e.AccountID] = e.Handle, e.Withdrawn, e.CheckedIn
 		ids = append(ids, e.AccountID)
 	}
 	if acc, ok := signedIn(ctx); ok {
 		if _, in := handles[acc.ID]; in {
-			out.You.Entered, out.You.Withdrawn = true, withdrawn[acc.ID]
+			out.You.Entered, out.You.Withdrawn, out.You.CheckedIn = true, withdrawn[acc.ID], checkedIn[acc.ID]
+		}
+		for _, g := range record {
+			if !g.Done && g.RoomCode != "" && (g.PlayerA == acc.ID || g.PlayerB == acc.ID) {
+				out.You.Game = g.RoomCode
+			}
 		}
 	}
 	var results []tournament.Result
@@ -993,7 +1368,7 @@ func (m *Manager) Tournament(ctx context.Context, id int64) (TournamentDetail, e
 	started := t.StartedAt != ""
 	for _, s := range tournament.Standings(t.Format, ids, results) {
 		line := TournamentEntryInfo{
-			Handle: handles[s.ID], Withdrawn: withdrawn[s.ID], Score: s.Score, Played: s.Games, Won: s.Won, Drawn: s.Drawn, Lost: s.Lost,
+			Handle: handles[s.ID], Withdrawn: withdrawn[s.ID], CheckedIn: checkedIn[s.ID], Score: s.Score, Played: s.Games, Won: s.Won, Drawn: s.Drawn, Lost: s.Lost,
 			SonnebornBerger: s.SonnebornBerger,
 		}
 		if started {

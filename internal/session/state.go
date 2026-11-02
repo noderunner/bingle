@@ -371,6 +371,9 @@ func (m *Manager) readState(ctx context.Context, roomCode string, atSeq *int) (S
 		m.identify(ctx, snap.Seats)
 		snap.RatingChanges = m.fillRatings(ctx, compiled, game, snap.Seats)
 		snap.Tournament = m.tournamentRef(ctx, game)
+		if snap.RealTime != nil && atSeq == nil {
+			snap.RealTime.FirstMove = m.firstMoveOf(ctx, game)
+		}
 	}
 	return snap, err
 }

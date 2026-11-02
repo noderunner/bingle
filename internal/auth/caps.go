@@ -379,6 +379,7 @@ var routes = func() []route {
 		r("PUT", `/api/games/[^/]+/notify`, CapNotify, ""),
 		r("POST", `/api/tournaments`, CapCreateTournament, LimitCreateGame),
 		r("POST", `/api/tournaments/[^/]+/enter`, CapEnterTournament, ""),
+		r("POST", `/api/tournaments/[^/]+/check-in`, CapEnterTournament, ""),
 		r("POST", `/api/batches`, CapRunBatch, ""),
 		r("POST", `/api/batches/[^/]+/cancel`, CapRunBatch, ""),
 		r("DELETE", `/api/batches/[^/]+`, CapRunBatch, ""),
