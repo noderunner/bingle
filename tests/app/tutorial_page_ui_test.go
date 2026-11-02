@@ -7,13 +7,18 @@ package app_test
 
 import (
 	"context"
+	"net/http/httptest"
 	"strconv"
 	"strings"
 	"testing"
+	"testing/fstest"
 	"time"
 
+	"github.com/chromedp/cdproto/page"
 	"github.com/chromedp/cdproto/runtime"
 	"github.com/chromedp/chromedp"
+	"github.com/noderunner/bingle/internal/app"
+	"github.com/noderunner/bingle/internal/engine/catalog"
 )
 
 // openTutorial starts the Blooms tutorial from the browser, as the list of
@@ -74,18 +79,33 @@ func TestWebTutorial_PlaysThroughTheBloomsTutorial(t *testing.T) {
 	// Step 2 shows a finished game; the room's own board is untouched.
 	waitStep(t, ctx, "2")
 	waitJS(t, ctx, "the finished game on the board", stones+` > 15`, 10*time.Second)
-	if text := evalString(t, ctx, `document.getElementById("tutorial-text").innerText`); !strings.Contains(text, "captured 17 stones") {
+	if text := evalString(t, ctx, `document.getElementById("tutorial-text").innerText`); !strings.Contains(text, "17 stones captured") {
 		t.Fatalf("the end of a game: %q", text)
 	}
 	next()
 	waitStep(t, ctx, "3")
 	waitJS(t, ctx, "the room's empty board again", stones+` === 0`, 10*time.Second)
-	next()
-	waitStep(t, ctx, "4")
+	if got := evalString(t, ctx, `document.getElementById("status-message").textContent`); strings.Contains(got, "example") {
+		t.Errorf("the room's own board is called an example: %q", got)
+	}
 	next()
 
-	// Step 5: the colour buttons stay where they are; red is picked out, yellow is inert.
+	// Steps 4 and 5 draw examples: a fenced bloom, then the board once it is captured.
+	waitStep(t, ctx, "4")
+	waitJS(t, ctx, "the fenced bloom", stones+` === 7 && document.querySelector('#board .cell[data-position="g2"]').dataset.height === "1"`, 10*time.Second)
+	if got := evalString(t, ctx, `document.getElementById("status-message").textContent`); !strings.Contains(got, "example") {
+		t.Errorf("an example says %q", got)
+	}
+	if evalBool(t, ctx, `[...document.querySelectorAll(".status-bar .badge")].some((b) => b.textContent === "Your turn")`) {
+		t.Error("an example says it is your turn")
+	}
+	next()
 	waitStep(t, ctx, "5")
+	waitJS(t, ctx, "the bloom gone", stones+` === 5 && document.querySelector('#board .cell[data-position="g2"]').dataset.height === "0"`, 10*time.Second)
+	next()
+
+	// Step 6: the colour buttons stay where they are; red is picked out, yellow is inert.
+	waitStep(t, ctx, "6")
 	waitJS(t, ctx, "red picked out", `!!document.querySelector('button[data-piece="red"].tutorial-target')`, 10*time.Second)
 	if !evalBool(t, ctx, `document.querySelector('button[data-piece="yellow"]').disabled`) {
 		t.Fatal("the yellow button is not inert")
@@ -100,10 +120,10 @@ func TestWebTutorial_PlaysThroughTheBloomsTutorial(t *testing.T) {
 	clickCell(t, ctx, "d4")
 
 	// The page plays the two scripted replies for the other seat.
-	waitStep(t, ctx, "6")
+	waitStep(t, ctx, "7")
 	waitJS(t, ctx, "the replies on the board", `document.querySelector('#board .cell[data-position="a4"]').dataset.height === "1"`, 10*time.Second)
 
-	// Step 6: red on b3, then yellow on b4.
+	// Step 7: red on b3, then yellow on b4.
 	waitJS(t, ctx, "red picked out", `!!document.querySelector('button[data-piece="red"].tutorial-target')`, 10*time.Second)
 	clickSel(t, ctx, `button[data-piece="red"]`)
 	waitJS(t, ctx, "b3", `[...document.querySelectorAll("#board .cell.clickable")].map(c => c.dataset.position).join(",") === "b3"`, 10*time.Second)
@@ -114,16 +134,16 @@ func TestWebTutorial_PlaysThroughTheBloomsTutorial(t *testing.T) {
 	if err := chromedp.Run(ctx, chromedp.Reload()); err != nil {
 		t.Fatal(err)
 	}
-	waitStep(t, ctx, "6")
+	waitStep(t, ctx, "7")
 	waitJS(t, ctx, "yellow picked out again", `!!document.querySelector('button[data-piece="yellow"].tutorial-target')`, 10*time.Second)
 	clickSel(t, ctx, `button[data-piece="yellow"]`)
 	waitJS(t, ctx, "b4", `[...document.querySelectorAll("#board .cell.clickable")].map(c => c.dataset.position).join(",") === "b4"`, 10*time.Second)
 	clickCell(t, ctx, "b4")
 
-	// Step 7: the arrow, red on a5, then End turn; the blue stone at a4 is captured.
-	waitStep(t, ctx, "7")
+	// Step 8: the arrow, red on a5, then End turn; the blue stone at a4 is captured.
+	waitStep(t, ctx, "8")
 	if !evalBool(t, ctx, `!!document.querySelector("#board .board-arrow")`) {
-		t.Fatal("step 7 draws no arrow")
+		t.Fatal("step 8 draws no arrow")
 	}
 	waitJS(t, ctx, "red picked out", `!!document.querySelector('button[data-piece="red"].tutorial-target')`, 10*time.Second)
 	clickSel(t, ctx, `button[data-piece="red"]`)
@@ -132,8 +152,8 @@ func TestWebTutorial_PlaysThroughTheBloomsTutorial(t *testing.T) {
 	waitJS(t, ctx, "End turn picked out", `!!document.querySelector('#move-bar button[data-action="done"].tutorial-target')`, 10*time.Second)
 	finishTurn(t, ctx)
 
-	// Step 8 is to read: Finish ends the tutorial.
-	waitStep(t, ctx, "8")
+	// Step 9 is to read: Finish ends the tutorial.
+	waitStep(t, ctx, "9")
 	waitJS(t, ctx, "the capture", `document.querySelector('#board .cell[data-position="a4"]').dataset.height === "0"`, 10*time.Second)
 	if got := clickables(t, ctx); got != "" {
 		t.Fatalf("a step to read offers moves: %q", got)
@@ -473,4 +493,88 @@ func TestWebCthulhuWars_TheHighPriestsTutorial(t *testing.T) {
 	}
 	next()
 	waitJS(t, ctx, "the end", `!!document.getElementById("tutorial-done")`, 10*time.Second)
+}
+
+// A step can mark a move as what must not be done, on a board no game reached.
+func TestWebTutorial_AnIllegalMoveIsMarked(t *testing.T) {
+	cfg := newTestConfig(t)
+	a, err := app.New(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = a.Close() })
+	registerFixtures(t, a)
+	mod := catalog.Module{ID: "marked", Definition: []byte(`{
+		"id": "marked", "name": "Marked", "version": "0.1.0",
+		"board": {"generator": {"type": "grid", "width": 3, "height": 3, "adjacency": "orthogonal4"}},
+		"seats": [{"seat": 1, "color": "black"}, {"seat": 2, "color": "white"}],
+		"pieces": {"stone": {"shape": "disc"}},
+		"actions": [{"id": "place", "type": "place", "pieces": ["stone"], "source": "supply"}],
+		"turn_order": {"type": "round-robin", "seats": [1, 2]},
+		"win_condition": {"type": "none"}
+	}`), Tutorials: fstest.MapFS{"marked.yaml": &fstest.MapFile{Data: []byte(`
+id: marked
+kind: rules
+title: Marked
+game: marked
+steps:
+  - text: Not like this.
+    pieces: ["stone:black@0,0", "stone:white@1,1"]
+    arrow: ["0,0", "2,2"]
+    illegal: true
+  - text: Nor here.
+    pieces: ["stone:black@0,0"]
+    highlight: ["1,0", "2,0"]
+    illegal: true
+  - text: A step to read, on the room's own board.
+`)}}}
+	if err := a.Catalog().RegisterModule(mod); err != nil {
+		t.Fatal(err)
+	}
+	srv := httptest.NewServer(a.Router())
+	t.Cleanup(srv.Close)
+	ctx, cancel := newChromedpContext(t, 60*time.Second)
+	defer cancel()
+	openTutorialOf(t, ctx, srv.URL, "marked", "marked")
+	waitStep(t, ctx, "1")
+	waitJS(t, ctx, "the arrow and its cross", `!!document.querySelector("#board-svg.illegal-marks .board-arrow") && document.querySelectorAll("#board-svg .illegal-cross").length === 2`, 10*time.Second)
+	if got := evalInt(t, ctx, `[...document.querySelectorAll("#board .cell")].filter(c => c.dataset.height !== "0").length`); got != 2 {
+		t.Errorf("the picture has %d pieces, want 2", got)
+	}
+	clickSel(t, ctx, "#tutorial-next")
+	waitStep(t, ctx, "2")
+	waitJS(t, ctx, "a cross on each square", `document.querySelectorAll("#board-svg.illegal-marks .hint-ring").length === 2 && document.querySelectorAll("#board-svg .illegal-cross").length === 4`, 10*time.Second)
+	clickSel(t, ctx, "#tutorial-next")
+	waitStep(t, ctx, "3")
+	waitJS(t, ctx, "the marks gone", `!document.querySelector("#board-svg.illegal-marks") && !document.querySelector("#board-svg .illegal-cross")`, 10*time.Second)
+}
+
+// The map of a game of areas draws a marked step like any other board. No shipped
+// tutorial marks a move on a map yet, so the page is told that one does.
+func TestWebTutorial_AnIllegalMoveIsMarkedOnAMap(t *testing.T) {
+	base := newRESTTestServer(t)
+	ctx, cancel := newChromedpContext(t, 60*time.Second)
+	defer cancel()
+	const marked = `(function () {
+		var real = window.fetch;
+		window.fetch = function (url, opts) {
+			return real.call(this, url, opts).then(function (res) {
+				if (String(url).indexOf("/tutorials/high-priests") < 0) return res;
+				return res.clone().json().then(function (doc) {
+					doc.steps[0].arrow = ["europe", "asia"];
+					doc.steps[0].highlight = ["africa"];
+					doc.steps[0].illegal = true;
+					return new Response(JSON.stringify(doc), { status: res.status, headers: { "Content-Type": "application/json" } });
+				});
+			});
+		};
+	})()`
+	if err := chromedp.Run(ctx, chromedp.ActionFunc(func(c context.Context) error {
+		_, err := page.AddScriptToEvaluateOnNewDocument(marked).Do(c)
+		return err
+	})); err != nil {
+		t.Fatal(err)
+	}
+	openTutorialOf(t, ctx, base, "cthulhu-wars", "high-priests")
+	waitJS(t, ctx, "the arrow, the ring and their crosses", `!!document.querySelector(".illegal-marks .board-arrow") && document.querySelectorAll(".illegal-cross").length === 4`, 15*time.Second)
 }

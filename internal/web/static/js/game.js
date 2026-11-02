@@ -2063,6 +2063,7 @@ function drawBoard(host) {
 			lastMove: S.preview || !S.settings.lastMove ? [] : lastMoveSquares(),
 			hint: S.tut ? tutorialStep().highlight || [] : hintSquares(),
 			arrows: S.tut && (tutorialStep().arrow || []).length === 2 ? [tutorialStep().arrow] : null,
+			illegal: !!S.tut && !!tutorialStep().illegal,
 			ghost: ghostPiece(),
 			// Every square chosen so far: the origin, then each landing/drop.
 			selected: interactive ? b.steps.filter((st) => st.kind === "pos").map((st) => st.value) : null,
@@ -2110,6 +2111,10 @@ function statusBar() {
 		const seq = S.viewSeq;
 		const rec = seq > 0 ? S.moves[seq - 1] : null;
 		msg = seq === 0 ? "Viewing the starting position." : `Viewing the position after move ${seq}${rec ? ` (${rec.notation})` : ""}.`;
+	} else if (tutorialShown()) {
+		// A picture, not the room's game: nobody's turn, and no result.
+		cls.push("history");
+		msg = "An example position. Nothing here is played.";
 	} else if (g.status === "waiting") {
 		msg = inLobby()
 			? "Waiting in the lobby — send the invite link to the players you want, choose your seats, then start the game."
@@ -2132,7 +2137,7 @@ function statusBar() {
 
 	const bar = h("div", { class: cls.join(" ") });
 	bar.append(h("div", { class: "message", id: "status-message", "aria-live": "polite" }, msg));
-	if (isLive() && !inAnalysis() && g.status === "active") {
+	if (isLive() && !inAnalysis() && g.status === "active" && !tutorialShown()) {
 		if (isMyTurn()) badges.push(h("span", { class: "badge turn" }, "Your turn"));
 		{
 			const rv = rulesetView();

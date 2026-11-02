@@ -12,14 +12,23 @@ steps:
       In **Blooms** you place stones of your two colours to build groups,
       and capture your opponent's groups by fencing them in.
 
-  - text: |
-      This is how a game ends. **Red & Yellow captured 17 stones**, and won:
-      the first player to capture **15** enemy stones on this board wins
-      (20 on the standard board, 25 on the large one).
+      Each player controls two different colors of stones. Typically, one player uses "warm"
+      colored stones (e.g. red and yellow), while the other player uses "cold" colors
+      (e.g., blue and black). Each player has an unlimited number of each color stone in their
+      supply.
 
-      Captures happen at the end of a turn, so a single turn can take a
-      player past the target. If 500 plies pass first, the player with more
-      captures wins, and equal captures are a draw.
+  - text: |
+      The game ends when either player captures a set number of their opponent's stones.
+      The number of captured stones needed to win is determined by the size of the board:
+
+      - *Size 4 board:* 15 stones.
+      - *Size 5 board:* 20 stones.
+      - *Size 6 board:* 25 stones.
+      - *Size 8 board:* 40 stones.
+      - *Size 10 board:* 50 stones.
+
+      In the example game below, the warm player has won the game by ending a turn with 17
+      stones captured on a size 4 board.
     show: [
       yellow@c6, blue@b3, black@d2, red@c3, yellow@b5, blue@e6, black@c4, yellow@d4,
       red@f4, black@g2, blue@d6, yellow@d7, done, blue@d5, black@e5, yellow@a4, red@g3,
@@ -30,29 +39,46 @@ steps:
     ]
 
   - text: |
-      The board is a hexagon of **37 cells**, four along each side; the
-      standard board has five, the large one six. Each cell is named by a
-      letter and a number — **d4** is the middle one. Every cell touches up
-      to six others.
-
-      Stones are placed on empty cells and never move.
-    highlight: [d4]
+      In Blooms, stones are only placed on empty cells and never move once played, unless
+      they are captured and removed from the board.
 
   - text: |
-      The first player has **red** and **yellow** stones, the second
-      **blue** and **black**, and neither ever runs out. Beside each
-      player's name is how many enemy stones they have captured.
+      **Fenced Blooms:**
+      Take a look at the following position. The two red stones are a single group, or "bloom"
+      of stones that is completely surrounded, with no free spaces adjacent to any of the red
+      stones in the bloom. A bloom that is surrounded like this is "Fenced" and will be
+      captured at the end of the next Blue/Black player's turn.
 
-      You are red and yellow; this tutorial plays blue and black.
+      *Important:* It does not matter that the **yellow** stone at g4 belongs to the same
+      player as the red stones. It is still a different *color* and counts as part of the "fence".
+      In other words, it is entirely possible to fence your own stones for capture. In fact, it is
+      sometimes a good strategy!
+    pieces: [blue@g1, blue@f2, black@f3, black@f4, yellow@g4, red@g2, red@g3]
 
   - text: |
-      Players take turns. The very first turn of the game is **a single
-      stone**; every turn after it is **one or two stones**, and two stones
-      must be of **different colours**. To stop after one, press
-      **End turn**. When a turn ends, captures are made.
+      Player turns are split into two steps:
 
-      Take the first turn: choose the **red** stone, then the highlighted
-      cell.
+      **Placement:** The active player *must* play a stone of either color to an empty space
+      on the board. Then, the player *may* play a 2nd stone of their **other** color to
+      an empty space on the board. The second stone is not required, but if two stones are
+      placed, they *must be of different colors*.
+
+      **Capture:** After placement, the active player then captures all *opponent* blooms
+      that have been fenced.
+
+      Using the previous example at the end of the Blue/Black player turn, the two red stones
+      that were fenced are captured and removed from the board.
+    pieces: [blue@g1, blue@f2, black@f3, black@f4, yellow@g4]
+    highlight: [g2, g3]
+
+  - text: |
+      The first turn of the game is slightly different: the "warm" player may only
+      place a single stone of either color onto an empty space. After this, the
+      game turns continue as normal, with *both* players able to place up to two
+      stones on their turn.
+
+      You are the "warm" player. Place one of your red stones onto the highlighted
+      space.
     play: [red@d4]
     hint: Press the red stone, then click the highlighted cell, d4.
     highlight: [d4]
@@ -63,9 +89,11 @@ steps:
       one on the far side.
 
       A **bloom** is a group of touching stones of one colour; a single
-      stone is a bloom too. A bloom is **fenced** when no empty cell touches
-      it. The blue stone at a4 touches only three cells. Fill two of them:
-      a **red** stone on b3, then a **yellow** one on b4.
+      stone counts as a bloom.
+
+      A bloom is **fenced** when no empty cell touches it. The blue stone at a4
+      touches only three cells. Fill two of them: a **red** stone on b3, then a
+      **yellow** one on b4.
     play: [red@b3, yellow@b4]
     hint: Press red and click b3, then press yellow and click b4.
     highlight: [b3, b4]
@@ -88,5 +116,10 @@ steps:
       Your **own** fenced blooms are not captured on your turn: they stay
       until the end of your opponent's turn, so you get a chance to free one
       — for example by capturing an enemy bloom that was part of its fence,
-      which leaves empty cells beside it. Giving up a few stones to fence in
-      more is the heart of the game.
+      which leaves empty cells beside it.
+
+      Knowing when to sacrifice some of your own stones in order to capture
+      a larger group of your opponent is a key part of the strategy.
+
+      This wraps up the tutorial, you may continue playing this game against
+      a bot if you wish, otherwise good luck in your future games of Blooms!

@@ -1824,6 +1824,9 @@ code.wrap { overflow-wrap: anywhere; word-break: break-all; }
 .tutorial-card .tutorial-done { font-weight: 600; }
 .board-arrow { stroke: var(--focus); stroke-width: 6; stroke-linecap: round; opacity: 0.85; pointer-events: none; }
 .board-arrowhead { fill: var(--focus); }
+.illegal-marks .board-arrow, .illegal-marks .hint-ring { stroke: var(--danger); }
+.illegal-marks .board-arrowhead { fill: var(--danger); }
+.illegal-cross { stroke: var(--danger); stroke-width: 6; stroke-linecap: round; pointer-events: none; }
 
 /* The list of a game's tutorials, in the rules window and the game picker. */
 .tutorial-list h3 { margin: 1rem 0 0.4rem; }
