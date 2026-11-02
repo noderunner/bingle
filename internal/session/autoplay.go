@@ -146,7 +146,7 @@ func (m *Manager) SetAutoPlay(ctx context.Context, roomCode, name string, enable
 		}
 		prefs.TimeoutSeconds = *timeoutSeconds
 	}
-	if game.Rated && prefs.Enabled {
+	if game.Competitive() && prefs.Enabled {
 		return AutoPlaySettings{}, fmt.Errorf("%w: every move is your own", ErrRatedGame)
 	}
 	if err := m.store.SetAutoPlay(ctx, game.ID, me.Seat, prefs); err != nil {

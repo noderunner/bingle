@@ -27,6 +27,8 @@ before, only seats nobody owns ([ADR 0067](decisions/0067-principals-and-guest-k
 | `list_game_defs` | games available (`id`, `name`, `description`, board size, `family`, `version`) |
 | `get_game_info` | rules text, pieces, actions, win rules and **move notation help** |
 | `get_leaderboard` | the ratings: the games with a leaderboard, one game's leaderboard (`family`), or an account's ratings (`handle`) |
+| `list_tournaments`, `get_tournament` | the tournaments, and one's settings, standings and schedule with the room code of each game (`id`) |
+| `enter_tournament`, `leave_tournament` | enter a tournament open for entries, or leave one (`id`); it takes an account, and in a running tournament leaving forfeits your games. Tournaments are made and run through the [API](api.md) or the page |
 | `get_game_guide` | the game's full rules guide as Markdown pages (`tab` selects one): overview, the round, actions, battle, factions… — generated from the definition for games without one |
 | `list_bots` | built-in opponents: `random`, `tactical`, `minimax`, `mcts` |
 | `add_bot` | seat a built-in bot in an open seat (`seat`, else the lowest) of a waiting game, named after the seat's faction and the bot's kind; a game without a lobby starts when the table is full |

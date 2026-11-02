@@ -48,6 +48,43 @@ func registerPlayTools(s *server.MCPServer, mgr *session.Manager) {
 	)
 
 	s.AddTool(
+		mcp.NewTool("list_tournaments",
+			mcp.WithDescription("List the tournaments: those open for entries first, then those being played, then finished ones."),
+			mcp.WithReadOnlyHintAnnotation(true),
+		),
+		func(ctx context.Context, _ mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			list, err := mgr.ListTournaments(ctx)
+			if err != nil {
+				return mcp.NewToolResultError(err.Error()), nil
+			}
+			return mcp.NewToolResultStructuredOnly(map[string]any{"tournaments": list}), nil
+		},
+	)
+
+	tournamentTool := func(name, description string, do func(context.Context, int64) (session.TournamentDetail, error), opts ...mcp.ToolOption) {
+		opts = append([]mcp.ToolOption{
+			mcp.WithDescription(description),
+			mcp.WithNumber("id", mcp.Required(), mcp.Description("The tournament's id, from list_tournaments.")),
+		}, opts...)
+		s.AddTool(mcp.NewTool(name, opts...), func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			id, err := request.RequireInt("id")
+			if err != nil {
+				return mcp.NewToolResultError(err.Error()), nil
+			}
+			out, err := do(ctx, int64(id))
+			if err != nil {
+				return mcp.NewToolResultError(err.Error()), nil
+			}
+			return mcp.NewToolResultStructuredOnly(out), nil
+		})
+	}
+	tournamentTool("get_tournament", "Read a tournament: its settings, standings and schedule, with the room code of each game.", mgr.Tournament, mcp.WithReadOnlyHintAnnotation(true))
+	tournamentTool("enter_tournament", "Enter a tournament that is open for entries. It takes an account. Tournament games are for people playing their own moves: using a bot or another program to choose them is against the rules.", mgr.EnterTournament)
+	tournamentTool("leave_tournament", "Leave a tournament. Once it is running you forfeit your games in progress and take no further part, and what you have played stands.", func(ctx context.Context, id int64) (session.TournamentDetail, error) {
+		return mgr.LeaveTournament(ctx, id, "")
+	})
+
+	s.AddTool(
 		mcp.NewTool("get_leaderboard",
 			mcp.WithDescription("Read the ratings: with no arguments, the games that have a leaderboard; with family, that game's leaderboard, highest first; with handle, that account's ratings. Rated games are chosen with create_game (rated=true)."),
 			mcp.WithString("family", mcp.Description("The game family, as the list of games with a leaderboard names it (\"hex-11\").")),

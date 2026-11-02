@@ -4,6 +4,23 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.39.0 - 2026-11-02
+
+### Bingle Core 0.39.0
+- **Tournaments.** The new **Tournaments** tab lists round robin and Swiss tournaments for signed-in
+  players. Enter one, and your games appear round by round. They are played by correspondence, so you
+  move when you have time, and everybody's clock keeps running until they do.
+- **How it works.** Each pairing plays two games with sides swapped, unless the organiser chooses one.
+  A win scores 1, a draw ½, and a bye scores as winning the pairing's games. Ties are broken by
+  Sonneborn-Berger, with Buchholz first in Swiss, and a tie that remains is a shared place.
+- **Moves stand.** There is no undo, take-back or Auto-Play in a tournament game, and it is rated unless
+  the organiser says otherwise. Using a bot or another program to choose your moves is against the rules.
+- **Turn mail comes by itself.** If your account's email address is confirmed, you are mailed when it is
+  your turn in a tournament game. You can turn that off in the game.
+- **Leaving.** You can withdraw at any time. You forfeit your games in progress and any still to come,
+  and what you have played stands.
+- **Who can run one.** Administrators, for now. They can open it up to every account on the admin page.
+
 ## 0.38.0 - 2026-11-02
 
 ### Bingle Core 0.38.0

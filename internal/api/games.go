@@ -180,6 +180,7 @@ type getGameResponse struct {
 	// Rated games: what became of the result once the game has ended, and what
 	// it did to the players' ratings.
 	Rated         bool                   `json:"rated,omitempty"`
+	Tournament    *session.TournamentRef `json:"tournament,omitempty"`
 	RatingStatus  string                 `json:"rating_status,omitempty"`
 	RatingChanges []session.RatingChange `json:"rating_changes,omitempty"`
 
@@ -275,6 +276,7 @@ func (h *handlers) handleGetGame(w http.ResponseWriter, r *http.Request) {
 		EndDetail:  snapshot.EndDetail,
 
 		Rated:         snapshot.Rated,
+		Tournament:    snapshot.Tournament,
 		RatingStatus:  snapshot.RatingStatus,
 		RatingChanges: snapshot.RatingChanges,
 

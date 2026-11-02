@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="bingle-version" content="{{engineVersion}}">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Bingle — Tournament</title>
+	<link rel="icon" type="image/svg+xml" href="/static/favicon.svg" id="favicon">
+	<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+	<header class="topbar">
+		<a class="brand" href="/"><span class="logo"></span>Bingle</a>
+		<span class="spacer"></span>
+		<span class="topbar-actions" id="topbar-actions"></span>
+	</header>
+
+	<main class="page narrow"><section class="card" id="tournament-page"><p class="muted small">Loading…</p></section></main>
+
+	<footer class="site-footer"><sub title="The version of the bingle engine">bingle v{{engineVersion}} · MIT License · <a href="https://github.com/noderunner/bingle" target="_blank" rel="noopener noreferrer">GitHub</a></sub></footer>
+
+	<!-- First, so a fault in any module below is reported (docs/observability.md). -->
+	<script type="module" src="/static/js/errors.js"></script>
+	<script type="module" src="/static/js/tournament-page.js"></script>
+</body>
+</html>

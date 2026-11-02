@@ -35,7 +35,7 @@ func (m *Manager) AddBotAt(ctx context.Context, roomCode, by, botID string, want
 	if err != nil {
 		return AddBotResult{}, err
 	}
-	if game.Rated {
+	if game.Competitive() {
 		return AddBotResult{}, fmt.Errorf("%w: bots do not play rated games", ErrRatedGame)
 	}
 	bot, ok := m.bots.Get(botID)

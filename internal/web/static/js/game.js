@@ -1259,7 +1259,7 @@ function takebackBanner() {
 // canAskTakeback: you moved, a human replied since (so undo alone is not
 // possible), the opponent is human and no request is open.
 function canAskTakeback() {
-	if (!S.me.seat || !isActive() || S.moves.length === 0 || S.game.rated) return false;
+	if (!S.me.seat || !isActive() || S.moves.length === 0 || S.game.rated || S.game.tournament) return false;
 	if (S.game.takeback_seat !== null && S.game.takeback_seat !== undefined) return false;
 	if ((S.game.seats || []).some((x) => x.bot)) return false;
 	if (canUndo()) return false;
@@ -1267,7 +1267,7 @@ function canAskTakeback() {
 }
 
 function canUndo() {
-	if (!S.me.seat || S.moves.length === 0 || S.game.rated) return false;
+	if (!S.me.seat || S.moves.length === 0 || S.game.rated || S.game.tournament) return false;
 	if (S.game.status === "finished" && S.game.end_reason === "resignation") return false;
 	const botSeats = new Set((S.game.seats || []).filter((s) => s.bot).map((s) => s.seat));
 	let idx = -1;
@@ -2164,6 +2164,7 @@ function statusBar() {
 	}
 	if (g.status === "finished") badges.push(h("span", { class: "badge done" }, "Finished"));
 	if (g.rated) badges.push(h("span", { class: "badge rated", id: "rated-badge", title: FAIR_PLAY }, "Rated"));
+	if (g.tournament) badges.push(h("a", { class: "badge", id: "tournament-badge", href: `/tournament/${g.tournament.id}`, title: "This game is part of a tournament" }, g.tournament.name));
 	const uncounted = { no_moves: "Not counted: a player made no move", daily_limit: "Not counted: enough rated games between these two today", void: "Not counted" }[g.rating_status];
 	if (uncounted) badges.push(h("span", { class: "badge", id: "rating-note" }, uncounted));
 	badges.push(h("span", { class: "badge", id: "conn-badge" }, S.conn === "online" ? "live" : S.conn === "offline" ? "reconnecting…" : "connecting…"));
@@ -2232,6 +2233,7 @@ function retiredRecord() {
 	};
 	let ending;
 	if (g.end_reason === "retired") ending = "It was still being played when the server stopped offering the game, so it ended with no result.";
+	else if (g.end_reason === "abandoned") ending = "It ended with no result when its tournament was abandoned.";
 	else if (g.status !== "finished") ending = "It was never finished.";
 	else if (g.winner_seat === null || g.winner_seat === undefined) ending = "It ended in a draw.";
 	else ending = `${who(g.winner_seat)} won.`;
@@ -2255,6 +2257,7 @@ function resultMessage() {
 		road: "by road",
 		"flat-win": "on flats",
 		resignation: "by resignation",
+		forfeit: "by forfeit: the player left the tournament",
 		timeout: "on time",
 		agreement: "by agreement",
 		line: "with a line",
@@ -2272,6 +2275,7 @@ function resultMessage() {
 	const how = g.end_reason ? ` ${reasons[g.end_reason] || "(" + g.end_reason + ")"}` : "";
 	const detail = g.end_detail ? ` [${g.end_detail}]` : "";
 	if (g.winner_seat === null || g.winner_seat === undefined) {
+		if (g.end_reason === "abandoned") return "Game over — its tournament was abandoned, so it has no result.";
 		if (g.end_reason === "humanity") return `Game over — humanity survives: no cult had all six spellbooks${detail}.`;
 		return `Game over — a draw${how ? " " + how : ""}${detail}.`;
 	}
@@ -3002,7 +3006,7 @@ function timeoutText(secs) {
 /** Loads this player's Auto-Play Timeout (people only: bots and spectators have none). */
 async function loadAutoPlay() {
 	// In a rated game every move is the player's own.
-	if (!S.me.seat || !S.me.name || S.mine.length > 1 || !S.game || S.game.status === "waiting" || S.game.rated) {
+	if (!S.me.seat || !S.me.name || S.mine.length > 1 || !S.game || S.game.status === "waiting" || S.game.rated || S.game.tournament) {
 		S.autoPlayTimeout = null;
 		updateAutoPlay();
 		return;

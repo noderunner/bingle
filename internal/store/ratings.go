@@ -190,9 +190,9 @@ func (s *Store) RecordRatedGame(ctx context.Context, game Game, family, familyNa
 			return fmt.Errorf("writing a rating: %w", err)
 		}
 		if _, err := tx.exec(ctx, "RecordRatedGame.history",
-			`INSERT INTO rating_history (account_id, opponent_id, family, family_name, game_def_id, room_code, seat, score, rating_before, rating_after, deviation_after, played_at)
-			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-			r.AccountID, r.OpponentID, family, familyName, game.GameDefID, game.RoomCode, r.Seat, r.Score, r.Before, r.Rating, r.Deviation, stamp); err != nil {
+			`INSERT INTO rating_history (account_id, opponent_id, family, family_name, game_def_id, room_code, seat, score, rating_before, rating_after, deviation_after, played_at, tournament_id)
+			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			r.AccountID, r.OpponentID, family, familyName, game.GameDefID, game.RoomCode, r.Seat, r.Score, r.Before, r.Rating, r.Deviation, stamp, game.TournamentID); err != nil {
 			return fmt.Errorf("writing the rating history: %w", err)
 		}
 		outcome := "drawn"

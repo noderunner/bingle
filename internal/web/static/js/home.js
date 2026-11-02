@@ -8,6 +8,7 @@ import { api, whoAmI } from "./api.js";
 import { rulesIcon } from "./ui-icons.js";
 import { mountAnalysis } from "./analysis.js";
 import { mountRatings } from "./ratings.js";
+import { mountTournaments } from "./tournaments.js";
 import { renderBoard } from "./render.js";
 import { showRules as openRules } from "./rules.js";
 import { syncPractice } from "./practice.js";
@@ -1201,7 +1202,7 @@ async function startPuzzle(p) {
 
 // ---- tabs ---------------------------------------------------------------------------
 
-const TABS = ["games", "puzzles", "analysis", "ratings", "chat"];
+const TABS = ["games", "puzzles", "analysis", "ratings", "tournaments", "chat"];
 let chat = null;
 
 function showTab(name, { focus = false } = {}) {
@@ -1222,6 +1223,7 @@ function showTab(name, { focus = false } = {}) {
 	// batches and the bots' guide, which the other tabs do not need.
 	if (name === "analysis") mountAnalysis(document.getElementById("panel-analysis"));
 	if (name === "ratings") mountRatings(document.getElementById("panel-ratings"));
+	if (name === "tournaments") mountTournaments(document.getElementById("panel-tournaments"));
 	const url = new URL(window.location.href);
 	url.hash = name === "games" ? "" : name;
 	window.history.replaceState(null, "", url);

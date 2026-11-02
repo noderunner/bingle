@@ -36,8 +36,10 @@ type StateSnapshot struct {
 
 	// Rated says the game moves its players' ratings when it ends; RatingStatus
 	// says what became of that, and RatingChanges what it did to them.
-	Rated         bool
-	RatingStatus  string
+	Rated        bool
+	RatingStatus string
+	// Tournament is the tournament the game is part of.
+	Tournament    *TournamentRef
 	RatingChanges []RatingChange
 	// MoveTimeLimit is the per-move allowance in seconds (0 = untimed).
 	MoveTimeLimit int
@@ -368,6 +370,7 @@ func (m *Manager) readState(ctx context.Context, roomCode string, atSeq *int) (S
 	if err == nil {
 		m.identify(ctx, snap.Seats)
 		snap.RatingChanges = m.fillRatings(ctx, compiled, game, snap.Seats)
+		snap.Tournament = m.tournamentRef(ctx, game)
 	}
 	return snap, err
 }

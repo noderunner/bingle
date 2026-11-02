@@ -84,6 +84,15 @@ that account.
 
 | Method & path | Body / query | Response |
 |---|---|---|
+| `GET /tournaments` | | `{tournaments:[{id, name, game_def_id, game_name, format, status, clock_seconds, clock_increment_seconds?, games_per_pairing, rated, pie_rule, min_players, max_players, rounds?, players, organiser, current_round, total_rounds?, created_at, started_at?, ended_at?}]}`: open for entries first, then running, then the rest; drafts only for who runs them |
+| `POST /tournaments` | `{name, description?, game_def_id, format (round_robin, swiss), clock_seconds, clock_increment_seconds?, games_per_pairing? (1 or 2; default 2), rated? (default true), pie_rule? (default true), min_players?, max_players?, rounds? (Swiss)}` | `201` and the tournament, a draft. Needs `create_tournament` |
+| `GET /tournaments/{id}` | | the fields above and `description?, end_detail?, standings:[{handle, withdrawn?, place?, score, played, won, drawn, lost, buchholz?, sonneborn_berger}], schedule:[{round, games:[{first, second?, room_code?, done, scores?, reason?}]}], you:{entered, withdrawn?, organiser}` |
+| `PUT /tournaments/{id}` | the same as `POST` | a draft's new settings. The organiser's |
+| `POST /tournaments/{id}/open` | | a draft opens for entries. The organiser's |
+| `POST /tournaments/{id}/enter` | | enters the caller's account. Needs `enter_tournament` |
+| `POST /tournaments/{id}/leave` | `{handle?}` | the caller leaves, or the organiser removes `handle`; in a running tournament that forfeits their games (below) |
+| `POST /tournaments/{id}/start` | | closes the entries and plays round 1. The organiser's |
+| `POST /tournaments/{id}/abandon` | | ends it, and its games with no result. The organiser's; an administrator may do all the organiser may |
 | `GET /game-defs` | | `[{id, name, seats_required, description, board_width, board_height, family, version, designers?, publisher?, tutorials?}]` (`version` is the game's semantic version: below 1.0.0 is a beta; `tutorials` how many tutorials the game's family has) |
 | `GET /game-defs/{id}` | | full description (`start` is the starting position; `preview`, when the game starts empty, a sample game in play for pictures): `rules`, `notation_help`, `board` (positions with layout, regions, borders), `pieces`, `pools`, `actions`, `opening`, `win_rules`, `scores`, `default_clock_minutes?` |
 | `GET /game-defs/{id}/guide` | | the rules guide as Markdown pages `{game, generated?, tabs:[{id, title, markdown}]}` — the game's own, or one generated from its definition (`generated: true`) |
@@ -159,6 +168,16 @@ in every other seat (the game starts immediately); `seat` chooses the
 creator's seat; `move_time_seconds` gives each move a time limit — the player
 to move loses on time when it runs out (the clock only runs while the game is
 active, and is evaluated whenever the game is read or moved in).
+
+**Tournaments** (ADR 0082) are for accounts and games of two seats. A round starts when the last game
+of the one before ends. A game with no moves from one player forfeits on the clock and leaves ratings
+alone; the server ends a game whose flag has fallen within about a minute, with nobody looking. A game
+says which tournament it belongs to as `tournament: {id, name}`, and takes no undo, take-back or
+Auto-Play. A player who leaves a running tournament forfeits their games in progress
+(`end_reason: "forfeit"`) and any round-robin games still to come, is not paired again in Swiss, and what
+they have played stands. An abandoned tournament ends its games with `end_reason: "abandoned"`, no
+winner and no rating change. Standings are public, and worked out from the tournament's own record, so
+they last after retention deletes the games. Retention leaves the games of a running tournament alone.
 
 **The game clock.** `clock_seconds` plays the game with a chess clock instead:
 a number gives both players that many seconds, a list of one time per seat

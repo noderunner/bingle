@@ -84,6 +84,16 @@ square previews the piece a click would place, in the colour it will have.
   `#leaderboard-game` and `#leaderboard tr[data-handle]`, and the profile has
   `#ratings-box`.
 
+* **Tournaments.** The home page's *Tournaments* tab (`#panel-tournaments`,
+  `js/tournaments.js`) lists them in `#tournament-list`, and offers `#tournament-new`
+  to whoever holds `create_tournament`. `/tournament/{id}` (`#tournament-page`) has
+  `#tournament-status`, `#tournament-actions` (`#t-open`, `#t-enter`, `#t-leave`,
+  `#t-start`, `#t-abandon`, `#t-edit`: only what the server would allow),
+  `#tournament-entries` before it starts, `#tournament-standings` after, and
+  `#tournament-schedule`. It reads the tournament again every 30 seconds while it is
+  open or running. A tournament game has `#tournament-badge`, a link back, and no undo,
+  take-back or Auto-Play. No rule of a tournament lives in the page.
+
 ## History, undo, analysis
 
 * The move list and ⏮ ◀ ▶ ⏭ browse any past position read-only (the position

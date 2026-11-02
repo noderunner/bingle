@@ -56,6 +56,8 @@ type Game struct {
 	// RatingStatus what became of that (see RatingPending).
 	Rated        bool
 	RatingStatus string
+	// TournamentID is the tournament the game is part of (0 for none).
+	TournamentID int64
 	// Tutorial is "family/id" of the tutorial the room plays (SetTutorial),
 	// empty for an ordinary game.
 	Tutorial string
@@ -63,7 +65,7 @@ type Game struct {
 
 // gameColumns is the column list every games SELECT uses, matching
 // scanGameRow.
-const gameColumns = `id, room_code, game_def_id, status, board_state, turn_seat, move_seq, winner_seat, end_reason, end_detail, move_time_limit, draw_offer_seat, initial_state, initial_turn_seat, takeback_seat, takeback_seq, created_at, updated_at, lobby, clock, tutorial, rated, rating_status`
+const gameColumns = `id, room_code, game_def_id, status, board_state, turn_seat, move_seq, winner_seat, end_reason, end_detail, move_time_limit, draw_offer_seat, initial_state, initial_turn_seat, takeback_seat, takeback_seq, created_at, updated_at, lobby, clock, tutorial, rated, rating_status, tournament_id`
 
 type rowScanner interface{ Scan(dest ...any) error }
 
@@ -73,7 +75,7 @@ func scanGameRow(row rowScanner) (Game, error) {
 	var lobby, rated int
 	err := row.Scan(&g.ID, &g.RoomCode, &g.GameDefID, &g.Status, &g.BoardState, &turnSeat, &g.MoveSeq, &winnerSeat,
 		&g.EndReason, &g.EndDetail, &g.MoveTimeLimit, &drawOffer, &g.InitialState, &g.InitialTurnSeat,
-		&takebackSeat, &g.TakebackSeq, &g.CreatedAt, &g.UpdatedAt, &lobby, &g.Clock, &g.Tutorial, &rated, &g.RatingStatus)
+		&takebackSeat, &g.TakebackSeq, &g.CreatedAt, &g.UpdatedAt, &lobby, &g.Clock, &g.Tutorial, &rated, &g.RatingStatus, &g.TournamentID)
 	if err != nil {
 		return Game{}, err
 	}
@@ -428,7 +430,8 @@ func nullInt64ToIntPtr(n sql.NullInt64) *int {
 // cutoff, with its players and moves (ON DELETE CASCADE), and returns how
 // many games went.
 func (s *Store) DeleteInactiveGames(ctx context.Context, cutoff time.Time) (int64, error) {
-	res, err := s.exec(ctx, "DeleteInactiveGames", `DELETE FROM games WHERE updated_at < ?`, cutoff.UTC().Format("2006-01-02 15:04:05"))
+	res, err := s.exec(ctx, "DeleteInactiveGames", `DELETE FROM games WHERE updated_at < ?
+		AND tournament_id NOT IN (SELECT id FROM tournaments WHERE status = 'running')`, cutoff.UTC().Format("2006-01-02 15:04:05"))
 	if err != nil {
 		return 0, fmt.Errorf("deleting inactive games: %w", err)
 	}
@@ -538,3 +541,7 @@ func (s *Store) ListUnfinishedGames(ctx context.Context, limit int) ([]Unfinishe
 	}
 	return out, nil
 }
+
+// Competitive says the game's result must stand: it is rated, or part of a
+// tournament, so nothing may take a move back or play for a player.
+func (g Game) Competitive() bool { return g.Rated || g.TournamentID != 0 }
