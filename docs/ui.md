@@ -91,7 +91,11 @@ square previews the piece a click would place, in the colour it will have.
   `#tournament-entries` before it starts, `#tournament-standings` after, and
   `#tournament-schedule`. It reads the tournament again every 30 seconds while it is
   open or running. A tournament game has `#tournament-badge`, a link back, and no
-  Auto-Play. No rule of a tournament lives in the page.
+  Auto-Play. No rule of a tournament lives in the page. A real-time tournament reads
+  itself every 5 seconds and adds `#t-check-in` and `#tournament-check-in` during its
+  check-in, `#tournament-your-game` while the player has a game going on and
+  `#tournament-break` between rounds. Its game has `#first-move` until the player's first
+  move, and `#next-game` once their next game has started.
 
 ## History, Back, analysis
 

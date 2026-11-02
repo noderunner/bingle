@@ -157,6 +157,14 @@ var columnMigrations = []struct{ table, column, ddl string }{
 	// real_time: the settings of a game played in real time (ADR 0089), empty
 	// for any other.
 	{"games", "real_time", "TEXT NOT NULL DEFAULT ''"},
+	// A real-time tournament (ADR 0090), and who has checked in to it.
+	{"tournaments", "real_time", "INTEGER NOT NULL DEFAULT 0"},
+	{"tournaments", "starts_at", "TEXT NOT NULL DEFAULT ''"},
+	{"tournaments", "check_in_seconds", "INTEGER NOT NULL DEFAULT 0"},
+	{"tournaments", "round_break_seconds", "INTEGER NOT NULL DEFAULT 0"},
+	{"tournaments", "first_move_seconds", "INTEGER NOT NULL DEFAULT 0"},
+	{"tournaments", "next_round_at", "TEXT NOT NULL DEFAULT ''"},
+	{"tournament_entries", "checked_in", "INTEGER NOT NULL DEFAULT 0"},
 }
 
 func addMissingColumns(db *sql.DB) error {

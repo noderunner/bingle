@@ -88,6 +88,7 @@ const S = {
 	spectating: !!store.get("bingle.watch." + code, false),
 	bots: null, // built-in bots, fetched when a waiting table could use one
 	reactions: null, // {abilities, targeted, ask_all, ask_seats, others, pending}: this player's reaction settings
+	nextGame: null, // the room of the player's next game of a real-time tournament
 	autoPlayTimeout: null, // {enabled, timeout_seconds, deadline}: this player's Auto-Play Timeout
 	cults: null, // the cults an open seat can be given in the lobby ([] when the game has none)
 	lobbyBusy: false,
@@ -1151,6 +1152,28 @@ function slowTurnBanner() {
 	);
 }
 
+/** The deadline for a first move in a real-time tournament's game, for whoever it is on. */
+function firstMoveBanner() {
+	const first = S.game.real_time && S.game.real_time.first_move;
+	if (!first || !isMine(first.seat) || !isLive()) return null;
+	const by = new Date(first.by).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+	return h("div", { class: "notice attention", id: "first-move" }, `Make your first move by ${by}, or you forfeit this game.`);
+}
+
+/** The next game of a real-time tournament has started, and its clock with it. */
+function nextGameBanner() {
+	if (!S.nextGame) return null;
+	return h("div", { class: "notice attention", id: "next-game" }, h("span", {}, "Your next tournament game has started. "), h("a", { class: "button primary", href: `/game/${encodeURIComponent(S.nextGame)}` }, "Go to it"));
+}
+
+function showNextGame(room) {
+	S.nextGame = room;
+	const old = document.getElementById("next-game");
+	if (old) old.remove();
+	const place = document.getElementById("slow-turn");
+	if (place) place.before(nextGameBanner());
+}
+
 function paintSlowTurn() {
 	const old = document.getElementById("slow-turn");
 	if (old) old.replaceWith(slowTurnBanner());
@@ -1493,6 +1516,7 @@ async function onEvent(env) {
 			S.game.clock = d.clock || null;
 			S.game.draw_offer_seat = null; // any move withdraws an offer
 			if (S.game.real_time) S.game.real_time.wait = null; // and a move restarts the wait
+			if (S.game.real_time && S.game.real_time.first_move) await refreshGame(); // the other player's deadline starts
 			noteServerTime(d.server_time);
 			S.viewCache.clear();
 			await Promise.all([loadLegal(), loadReactions(), loadAutoPlay()]);
@@ -1518,6 +1542,9 @@ async function onEvent(env) {
 			if (d.connected) S.connected.add(d.seat);
 			else S.connected.delete(d.seat);
 			paintConnections();
+		} else if (env.type === "next_game") {
+			const d = env.data || {};
+			if (S.me.name && String(d.player || "").toLowerCase() === S.me.name.toLowerCase() && d.room_code !== code) showNextGame(d.room_code);
 		} else if (env.type === "slow_turn") {
 			if (!S.game.real_time) return;
 			const d = env.data || {};
@@ -1717,6 +1744,7 @@ function render() {
 	main.append(statusBar());
 	if (S.tut) main.append(tutorialCard());
 	main.append(slowTurnBanner());
+	for (const notice of [nextGameBanner(), firstMoveBanner()]) if (notice) main.append(notice);
 	const banner = drawOfferBanner();
 	if (banner) main.append(banner);
 	const hintNotice = hintBanner();
@@ -1815,7 +1843,7 @@ function renderMobile(seats, bottomSeat) {
 	const mapPage = h("div", { class: "m-map-page" });
 	mapPage.append(statusBar());
 	if (S.tut) mapPage.append(tutorialCard());
-	for (const banner of [slowTurnBanner(), drawOfferBanner(), hintBanner()]) if (banner) mapPage.append(banner);
+	for (const banner of [slowTurnBanner(), nextGameBanner(), firstMoveBanner(), drawOfferBanner(), hintBanner()]) if (banner) mapPage.append(banner);
 	if (!S.me.seat && !S.spectating) {
 		const gate = identityGate();
 		if (gate) mapPage.append(gate);
@@ -1914,7 +1942,7 @@ function renderMobileCards(seats, bottomSeat) {
 	const play = h("div", { class: "m-map-page m-cards-page" });
 	play.append(statusBar());
 	if (S.tut) play.append(tutorialCard());
-	for (const banner of [slowTurnBanner(), drawOfferBanner(), hintBanner()]) if (banner) play.append(banner);
+	for (const banner of [slowTurnBanner(), nextGameBanner(), firstMoveBanner(), drawOfferBanner(), hintBanner()]) if (banner) play.append(banner);
 	if (!S.me.seat && !S.spectating) {
 		const gate = identityGate();
 		if (gate) play.append(gate);
@@ -2307,6 +2335,8 @@ function resultMessage() {
 		resignation: "by resignation",
 		forfeit: "by forfeit: the player left the tournament",
 		timeout: "on time",
+		no_show: "for missing the first move",
+		no_shows: "as neither player came",
 		agreement: "by agreement",
 		line: "with a line",
 		five: "with five in a row",

@@ -638,7 +638,7 @@ func TestTournament_StartingRefusesAStaleListOfEntries(t *testing.T) {
 	org, ana, bea := w.account("org"), w.account("ana"), w.account("bea")
 	id := w.openTournament(tournamentSettings("round_robin"), org, ana, bea)
 	stale := []store.TournamentEntry{{AccountID: ana.id}}
-	err := w.st.StartTournament(context.Background(), id, 1, 1, stale, time.Now())
+	err := w.st.StartTournament(context.Background(), id, store.TournamentRegistration, 1, 1, stale, time.Now())
 	if !errors.Is(err, store.ErrWrongTournamentState) {
 		t.Errorf("a stale list: %v", err)
 	}
