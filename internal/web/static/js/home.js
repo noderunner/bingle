@@ -401,6 +401,8 @@ function renderClockField(info) {
 		if (hc) hc.checked = false;
 		const row = document.getElementById("clock-handicap-row");
 		if (row) row.hidden = true;
+		const inc = document.getElementById("clock_increment");
+		if (inc) inc.value = "0";
 		return;
 	}
 	if (field.dataset.wired === "1") return;
@@ -417,6 +419,10 @@ function renderClockField(info) {
 			for (const sel of [first, second]) if ([...sel.options].some((o) => o.value === clock.value)) sel.value = clock.value;
 		}
 		if (perMove && clockChoice().length) perMove.value = "0";
+		// An increment is part of a clock: without one there is nothing to add to.
+		const timed = clockChoice().length > 0;
+		document.getElementById("clock-increment-row").hidden = !timed;
+		if (!timed) document.getElementById("clock_increment").value = "0";
 	};
 	handicap.addEventListener("change", sync);
 	for (const el of [clock, first, second]) el.addEventListener("change", sync);
@@ -918,7 +924,11 @@ if (createForm) {
 		const chosen = slotChoice();
 		if (chosen.options) body.options = chosen.options;
 		const clock = clockChoice();
-		if (clock.length) body.clock_seconds = clock;
+		if (clock.length) {
+			body.clock_seconds = clock;
+			const inc = Number(document.getElementById("clock_increment").value);
+			if (inc > 0) body.clock_increment_seconds = inc;
+		}
 		const limit = Number(document.getElementById("move_time_seconds").value);
 		if (limit > 0 && !clock.length) body.move_time_seconds = limit;
 		const lobbyBox = document.getElementById("lobby");

@@ -95,6 +95,24 @@ func TestGameClock_OverREST(t *testing.T) {
 		}
 	}
 
+	// An increment comes with the clock, and needs one.
+	room, code = open(map[string]any{"game_def_id": "tak-3x3", "player_name": "Cy", "also_seats": []int{2}, "clock_seconds": 300, "clock_increment_seconds": 5})
+	if code != 200 {
+		t.Fatalf("create with an increment: %d", code)
+	}
+	var withInc struct {
+		Clock struct {
+			Increment int `json:"increment_seconds"`
+		} `json:"clock"`
+	}
+	doJSON(t, "GET", baseURL+"/api/games/"+room, nil, &withInc)
+	if withInc.Clock.Increment != 5 {
+		t.Errorf("the game reports an increment of %d, want 5", withInc.Clock.Increment)
+	}
+	if _, code := open(map[string]any{"game_def_id": "tak-3x3", "player_name": "Di", "clock_increment_seconds": 5}); code != 400 {
+		t.Errorf("an increment with no clock: %d, want 400", code)
+	}
+
 	// A game made without one has no clock at all. (A fresh value: the field
 	// is left out of the answer, so an old one would stay behind.)
 	room, _ = open(map[string]any{"game_def_id": "tak-3x3", "player_name": "Cy", "also_seats": []int{2}})
@@ -142,6 +160,16 @@ func TestWebGameClock_SetupAndTheSeatStrips(t *testing.T) {
 	if !evalBool(t, ctx, `document.getElementById("clock-handicap-row").hidden`) {
 		t.Error("the handicap times show before they are asked for")
 	}
+	// The increment appears with a clock, and goes when the clock does.
+	if !evalBool(t, ctx, `document.getElementById("clock-increment-row").hidden`) {
+		t.Error("the increment shows with no clock chosen")
+	}
+	setClock := `(function (v) { var s = document.getElementById("clock_seconds"); s.value = v; s.dispatchEvent(new Event("change", { bubbles: true })); return "ok"; })`
+	evalString(t, ctx, setClock+`("300")`)
+	waitJS(t, ctx, "the increment", `document.getElementById("clock-increment-row").hidden === false`, 5*time.Second)
+	evalString(t, ctx, setClock+`("0")`)
+	waitJS(t, ctx, "the increment to go", `document.getElementById("clock-increment-row").hidden === true`, 5*time.Second)
+
 	// Different times for the two players, and a game made with them.
 	evalString(t, ctx, `document.getElementById("clock-handicap").click(); "ok"`)
 	waitJS(t, ctx, "the handicap times", `document.getElementById("clock-handicap-row").hidden === false`, 5*time.Second)
@@ -149,6 +177,7 @@ func TestWebGameClock_SetupAndTheSeatStrips(t *testing.T) {
 		var set = function (id, v) { var s = document.getElementById(id); s.value = v; s.dispatchEvent(new Event("change", { bubbles: true })); };
 		set("clock_seconds_1", "180");
 		set("clock_seconds_2", "600");
+		set("clock_increment", "5");
 		document.getElementById("move_time_seconds").value = "0";
 		document.getElementById("create_player_name").value = "Ana";
 		return "ok";
@@ -166,6 +195,15 @@ func TestWebGameClock_SetupAndTheSeatStrips(t *testing.T) {
 	doJSON(t, "GET", baseURL+"/api/games/"+room, nil, &game)
 	if game.Clock == nil || game.Clock.Seats[0].Initial != 180 || game.Clock.Seats[1].Initial != 600 {
 		t.Fatalf("the game was made with %+v, want three minutes against ten", game.Clock)
+	}
+	var inc struct {
+		Clock struct {
+			Increment int `json:"increment_seconds"`
+		} `json:"clock"`
+	}
+	doJSON(t, "GET", baseURL+"/api/games/"+room, nil, &inc)
+	if inc.Clock.Increment != 5 {
+		t.Errorf("the page asked for an increment of %d, want 5", inc.Clock.Increment)
 	}
 
 	// Both clocks are on the page; only the one to move counts down.

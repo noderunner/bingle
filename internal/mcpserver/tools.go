@@ -38,6 +38,7 @@ func registerTools(mcpServer *server.MCPServer, mgr *session.Manager) {
 			mcp.WithArray("also_seats", mcp.Description("Optional seats, besides yours, that you play too (a game against yourself): each is a player of its own named \"<you> · <faction or colour>\"."), mcp.WithNumberItems()),
 			mcp.WithNumber("move_time_seconds", mcp.Description("Optional per-move time limit in seconds; a player who runs out of time loses. Omit or 0 for no limit.")),
 			mcp.WithArray("clock_seconds", mcp.Description("Optional game clock (a chess clock) instead of a per-move limit, for a game of two seats: the seconds each seat starts with, in seat order (the two may differ for handicap play). A player whose clock runs out forfeits."), mcp.WithNumberItems()),
+			mcp.WithNumber("clock_increment_seconds", mcp.Description("Optional seconds added to a player's clock each time they hand the turn on. Needs clock_seconds. Omit or 0 for none.")),
 			mcp.WithBoolean("lobby", mcp.Description("Wait in a lobby until the host starts the game (start_game), even with every seat filled: other players join (with a seat of their choice), add bots and chat first.")),
 			mcp.WithObject("options", mcp.Description("Setup choices of games that offer them (see get_game_info \"options\"). Cthulhu Wars: {\"factions\": [\"gc\",\"cc\",\"bg\",\"ys\",\"ww\"] (one per seat, in seat order), \"high-priests\": true}.")),
 			mcp.WithString("start_tps", mcp.Description("Optional starting position in TPS (Tak) instead of the standard start; the TPS says who moves first. For puzzles and endgame practice.")),
@@ -156,10 +157,11 @@ func handleCreateGame(mgr *session.Manager) server.ToolHandlerFunc {
 			Opponent:    strings.TrimSpace(request.GetString("opponent", "")),
 			Also:        intsArg(request.GetArguments()["also_seats"]),
 
-			MoveTimeSeconds: request.GetInt("move_time_seconds", 0),
-			ClockSeconds:    intsArg(request.GetArguments()["clock_seconds"]),
-			Lobby:           request.GetBool("lobby", false),
-			Options:         optionsArg(request.GetArguments()["options"]),
+			MoveTimeSeconds:       request.GetInt("move_time_seconds", 0),
+			ClockSeconds:          intsArg(request.GetArguments()["clock_seconds"]),
+			ClockIncrementSeconds: request.GetInt("clock_increment_seconds", 0),
+			Lobby:                 request.GetBool("lobby", false),
+			Options:               optionsArg(request.GetArguments()["options"]),
 
 			StartTPS:   strings.TrimSpace(request.GetString("start_tps", "")),
 			StartState: startStateArg(request.GetArguments()["start_state"]),

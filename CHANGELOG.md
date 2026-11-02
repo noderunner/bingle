@@ -4,6 +4,19 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.36.0 - 2026-11-01
+
+### Bingle Core 0.36.0
+- **Clocks can add time for each move.** When you set up a game with a game clock, *Added per move*
+  gives each player a few extra seconds, up to a day in a long game, whenever they finish a turn. A
+  player short of time then still has a chance to finish, rather than losing to a slow connection.
+- **A server restart no longer costs you time.** If the server goes down during your turn, on a game
+  clock or a time per move, you can no longer lose on time because of it. You get the whole of that
+  turn's time back, too.
+- **Taking back moves now puts the clocks right.** Undoing a move or agreeing to a take-back removes
+  any time those moves added. Taking back a pie-rule swap now returns each player's own time to them;
+  before, the players kept each other's clocks.
+
 ## 0.35.0 - 2026-11-01
 
 ### Bingle Core 0.35.0

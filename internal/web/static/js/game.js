@@ -2445,7 +2445,7 @@ function seatStrip(seat) {
 				{
 					class: "clock" + (running ? " running" : "") + (onClock < 60000 ? " low" : ""),
 					"data-clock": String(seat),
-					title: running ? "This clock is running" : "Time left on this player's clock",
+					title: (running ? "This clock is running" : "Time left on this player's clock") + (c.increment_seconds ? `, plus ${c.increment_seconds} s for each move` : ""),
 				},
 				"⏱ " + formatClock(onClock)
 			)

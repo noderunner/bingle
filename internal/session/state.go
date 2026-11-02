@@ -159,6 +159,8 @@ func parseTimestamp(ts string) (time.Time, bool) {
 type ClockSnapshot struct {
 	Seats   []SeatClock `json:"seats"`
 	Running int         `json:"running,omitempty"`
+	// Increment is the seconds a seat gains each time it hands the turn on.
+	Increment int `json:"increment_seconds,omitempty"`
 }
 
 // SeatClock is one seat's clock: what it started with and what is left of it
@@ -194,6 +196,7 @@ func (m *Manager) deadline(game store.Game) *time.Time {
 	if !ok {
 		return nil
 	}
+	started = m.turnStart(started)
 	var out *time.Time
 	if game.MoveTimeLimit > 0 {
 		d := started.Add(time.Duration(game.MoveTimeLimit) * time.Second)
@@ -206,6 +209,17 @@ func (m *Manager) deadline(game store.Game) *time.Time {
 		}
 	}
 	return out
+}
+
+// turnStart is when a turn that began at started began to cost its player time:
+// not before this server came up, because nobody can play while it is down. A
+// player gets back what they had used of a turn the restart interrupted, which
+// is simpler than recording the time as it passes and a small gift at worst.
+func (m *Manager) turnStart(started time.Time) time.Time {
+	if m.upSince.After(started) {
+		return m.upSince
+	}
+	return started
 }
 
 // loadGame reads a game and, when its per-move clock has run out, ends it

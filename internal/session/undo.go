@@ -128,7 +128,11 @@ func (m *Manager) Undo(ctx context.Context, roomCode, name string) (UndoOutcome,
 	if undoSwap {
 		turnSeat = 3 - turnSeat
 	}
-	if err := m.store.UndoToSeq(ctx, game.ID, keepSeq, doc, turnSeat, undoSwap); err != nil {
+	clock, err := rewoundClock(game, moves[idx:], swapSeq)
+	if err != nil {
+		return UndoOutcome{}, err
+	}
+	if err := m.store.UndoToSeq(ctx, game.ID, keepSeq, doc, turnSeat, undoSwap, clock); err != nil {
 		return UndoOutcome{}, err
 	}
 

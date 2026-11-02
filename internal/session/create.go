@@ -90,6 +90,9 @@ type CreateOptions struct {
 	// may differ for handicap play. A player whose clock runs out forfeits.
 	// It is for a game of two seats, and not together with MoveTimeSeconds.
 	ClockSeconds []int
+	// ClockIncrementSeconds is what a seat's clock gains each time it hands the
+	// turn on (0 = nothing). It needs ClockSeconds.
+	ClockIncrementSeconds int
 	// Lobby makes the game wait, with every seat filled, until its host
 	// starts it: players gather through the invite link, choose their seats
 	// and add bots first.
@@ -269,7 +272,7 @@ func (m *Manager) CreateGameWithOptions(ctx context.Context, opts CreateOptions)
 	for _, s := range compiled.Definition.Seats {
 		seatNumbers = append(seatNumbers, s.Seat)
 	}
-	clock, err := newGameClock(seatNumbers, opts.ClockSeconds)
+	clock, err := newGameClock(seatNumbers, opts.ClockSeconds, opts.ClockIncrementSeconds)
 	if err != nil {
 		return CreateGameResult{}, err
 	}

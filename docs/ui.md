@@ -67,7 +67,9 @@ square previews the piece a click would place, in the colour it will have.
   setup is `#clock-field` (`#clock_seconds`, or `#clock-handicap` with
   `#clock_seconds_1` and `#clock_seconds_2` for two different times); choosing
   a clock clears the time per move and the other way round, as a game is
-  played with one or the other.
+  played with one or the other. With a clock chosen, `#clock-increment-row`
+  offers `#clock_increment`, the time added for each move, which the seat's
+  clock mentions in its tooltip.
 
 ## History, undo, analysis
 
@@ -736,7 +738,7 @@ legal-target overlays. Piece appearance comes from `shape` and the seat color.
 `#submit-move`, `#reset-move`, `#undo-step`, `#undo-move`, `#resign`,
 `.seat-strip .clock[data-clock]` (a seat number with a game clock, `turn` for a
 per-move allowance), `#clock-field` with `#clock_seconds`, `#clock-handicap`,
-`#clock_seconds_1|2`,
+`#clock_seconds_1|2`, `#clock-increment-row` with `#clock_increment`,
 `#move-list button.mv[data-seq]`, `#hist-*`, `#analyze`, `#exit-analysis`,
 `#rematch`, `#status-message`, `#conn-badge`, `#hint`, `#open-options`,
 `#game-options`, `#share-link`,

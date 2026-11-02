@@ -171,6 +171,15 @@ lazy way as a per-move limit. `GET /games/{code}` reports it as
 seat counting down to `turn_deadline`; `move` and `state` events carry the same
 object, and `get_observation`'s `seconds_left` follows it.
 
+`clock_increment_seconds` (up to a day; it needs `clock_seconds`) adds that time to
+a player's clock each time they hand the turn on, and the clock reports it as
+`increment_seconds`. A turn of several decisions earns it once, a move the server
+makes for a player does not earn it, and taking a move back removes it. A clock can
+pass what it started with.
+
+**Restarts.** Time while the server is down costs nobody anything: a turn in
+progress, with a clock or a per-move limit, starts again when the server comes up.
+
 **Who is here, and what is going on.** `GET /games` lists every game on the
 server that has not finished — waiting for players, sitting in a lobby or being
 played — newest change first, with who is seated and how many seats nobody

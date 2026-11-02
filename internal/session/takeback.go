@@ -155,12 +155,17 @@ func (m *Manager) Takeback(ctx context.Context, roomCode, name, action string) (
 		}
 		// Taking back across the swap puts the players back in their first
 		// seats: the requester moves from the seat they held then.
-		undoSwap := swapSeqOf(compiled, moves) > keepSeq
+		swapSeq := swapSeqOf(compiled, moves)
+		undoSwap := swapSeq > keepSeq
 		turnSeat := *asked
 		if undoSwap {
 			turnSeat = 3 - turnSeat
 		}
-		if err := m.store.UndoToSeq(ctx, game.ID, keepSeq, doc, turnSeat, undoSwap); err != nil {
+		clock, err := rewoundClock(game, moves[keepSeq:], swapSeq)
+		if err != nil {
+			return StateSnapshot{}, err
+		}
+		if err := m.store.UndoToSeq(ctx, game.ID, keepSeq, doc, turnSeat, undoSwap, clock); err != nil {
 			return StateSnapshot{}, err
 		}
 		removed := make([]int, 0, len(moves)-keepSeq)

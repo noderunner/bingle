@@ -60,6 +60,9 @@ type createGameRequest struct {
 	// seats their own times (handicap play). A player whose clock runs out
 	// forfeits. For a game of two seats, and not with MoveTimeSeconds.
 	ClockSeconds clockSeconds `json:"clock_seconds,omitempty"`
+	// ClockIncrementSeconds adds that many seconds to a player's clock each
+	// time they hand the turn on. It needs ClockSeconds.
+	ClockIncrementSeconds int `json:"clock_increment_seconds,omitempty"`
 	// Lobby makes the game wait, even with every seat filled, until its host
 	// starts it (POST /games/{code}/start).
 	Lobby bool `json:"lobby,omitempty"`
@@ -125,8 +128,11 @@ func (h *handlers) handleCreateGame(w http.ResponseWriter, r *http.Request) {
 
 		MoveTimeSeconds: req.MoveTimeSeconds,
 		ClockSeconds:    req.ClockSeconds,
-		Lobby:           req.Lobby,
-		Options:         req.Options,
+
+		ClockIncrementSeconds: req.ClockIncrementSeconds,
+
+		Lobby:   req.Lobby,
+		Options: req.Options,
 
 		StartTPS:   strings.TrimSpace(req.StartTPS),
 		StartState: string(req.StartState),
