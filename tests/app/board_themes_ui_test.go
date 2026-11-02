@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/chromedp/cdproto/emulation"
 	"github.com/chromedp/chromedp"
 )
 
@@ -167,5 +168,53 @@ func TestWebBoardThemes_CoordinatesStandOutsideTheDecoratedFrame(t *testing.T) {
 			}
 		}
 		cancel()
+	}
+}
+
+// Mycelium's centre stands out from the cells around it on every board theme,
+// light and dark, in both styles of hex board.
+func TestWebMycelium_TheCentreStandsOutOnEveryTheme(t *testing.T) {
+	baseURL := newRESTTestServer(t)
+	ctx, cancel := newChromedpContext(t, 120*time.Second)
+	defer cancel()
+	openNewGame(t, ctx, baseURL, "mycelium")
+	waitJS(t, ctx, "the centre", `document.querySelector('#board .cell[data-position="e5"] .cell-bg[data-tint="centre"]') !== null`, 20*time.Second)
+	clickSel(t, ctx, "#open-options")
+	waitJS(t, ctx, "the options", `document.getElementById("opt-board") !== null && document.getElementById("opt-hex-style") !== null`, 10*time.Second)
+	themes := strings.Split(evalString(t, ctx, `[...document.getElementById("opt-board").options].map(o => o.value).join(",")`), ",")
+	if len(themes) < 10 {
+		t.Fatalf("only the themes %v", themes)
+	}
+
+	// The smallest distance, 0 to 441 in RGB, between the centre and a cell of
+	// the theme's light, middle or dark shade.
+	const contrast = `(function () {
+		const paint = (css) => {
+			const c = document.createElement("canvas").getContext("2d", { willReadFrequently: true });
+			c.fillStyle = css;
+			c.fillRect(0, 0, 1, 1);
+			return [...c.getImageData(0, 0, 1, 1).data].slice(0, 3);
+		};
+		const vars = getComputedStyle(document.documentElement);
+		const light = paint(vars.getPropertyValue("--board-light").trim());
+		const dark = paint(vars.getPropertyValue("--board-dark").trim());
+		const mid = light.map((v, i) => (v + dark[i]) / 2);
+		const centre = paint(getComputedStyle(document.querySelector('#board .cell[data-position="e5"] .cell-bg')).fill);
+		return Math.round(Math.min(...[light, mid, dark].map((s) => Math.hypot(...s.map((v, i) => v - centre[i])))));
+	})()`
+	for _, scheme := range []string{"light", "dark"} {
+		if err := chromedp.Run(ctx, emulation.SetEmulatedMedia().WithFeatures([]*emulation.MediaFeature{{Name: "prefers-color-scheme", Value: scheme}})); err != nil {
+			t.Fatal(err)
+		}
+		for _, style := range []string{"cells", "grid"} {
+			setHexStyle(t, ctx, style)
+			waitJS(t, ctx, style, `document.querySelector('#board .cell[data-position="e5"] .cell-bg[data-tint="centre"]') !== null`, 10*time.Second)
+			for _, theme := range themes {
+				evalString(t, ctx, `document.documentElement.dataset.board = "`+theme+`"`)
+				if got := evalInt(t, ctx, contrast); got < 100 {
+					t.Errorf("%s, %s, %s: the centre is only %d from the cells", theme, scheme, style, got)
+				}
+			}
+		}
 	}
 }

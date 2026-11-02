@@ -4,6 +4,15 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.34.2 - 2026-11-01
+
+### Bingle Core 0.34.2
+- No changes of its own: this release carries the Mycelium update below.
+
+### Mycelium 0.1.1
+- **You can always see the centre.** The cell that starts a confluence is now bright magenta all game,
+  on every board theme and in both the hexagon and hex grid styles.
+
 ## 0.34.1 - 2026-11-01
 
 ### Bingle Core 0.34.1

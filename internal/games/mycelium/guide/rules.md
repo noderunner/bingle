@@ -13,7 +13,8 @@ in 2024. It is still being playtested, and Bingle is one of the places it is tes
 The board starts empty and Black places first. On your turn, place one node of your colour on any
 empty cell.
 
-A node placed on the **centre** (e5) starts a **confluence**. Normal turns stop until it is over.
+A node placed on the **centre** (e5), the coloured cell in the middle of the board, starts a
+**confluence**. Normal turns stop until it is over.
 
 ## Clusters and strands
 

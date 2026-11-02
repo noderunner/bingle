@@ -2,7 +2,7 @@
 id: mycelium
 name: Mycelium
 description: "Two fungal colonies on a hexagonal board: place nodes, take the centre to start a confluence, and spread your clusters to convert your rival's nodes until one colony is gone."
-version: 0.1.0
+version: 0.1.1
 designers: [Miles Stevenson]
 engine: ruleset
 rules:
@@ -51,7 +51,7 @@ display:
       label: Has spread
       color: '#e0d0a0'
       text: A node of a cluster that has spread in this phase of the confluence.
-    confluence:
-      label: Confluence
-      color: '#d8b8e8'
-      text: 'The centre during a confluence: its node is removed when the confluence ends.'
+    centre:
+      label: Centre
+      color: '#c026d3'   # saturated, to stand out from the cells of every board theme
+      text: A node placed here starts a confluence, and is removed when the confluence ends.

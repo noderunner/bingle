@@ -79,7 +79,6 @@ func (e *eng) buildView() *View {
 		for _, c := range cf.Spent {
 			v.Tints[c] = "spent"
 		}
-		v.Tints[string(e.g.ids[e.g.centre])] = "confluence"
 		switch {
 		case cf.Head != "":
 			v.Prompt = fmt.Sprintf("%s: convert an enemy node touching %s (%d more at most), or stop", seatLabel(d.Turn), cf.Head, cf.Left)
@@ -89,6 +88,9 @@ func (e *eng) buildView() *View {
 			v.Prompt = fmt.Sprintf("Confluence, hyphae of size %d: %s spreads from the end of a strand", cf.Initiative, seatLabel(d.Turn))
 		}
 	}
+	// Last, so that the centre always looks like the centre, whatever else
+	// could be said of it.
+	v.Tints[string(e.g.ids[e.g.centre])] = "centre"
 	for s := 1; s <= 2; s++ {
 		v.Seats[string(rune('0'+s))] = &SeatView{Counters: []CounterView{{ID: "nodes", Label: "Nodes", Value: n[s-1]}}}
 	}
