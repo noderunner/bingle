@@ -1935,7 +1935,8 @@ function ghostPiece() {
 		}
 	}
 	const def = piece && S.info.pieces.find((p) => p.type === piece);
-	return def ? { shape: def.shape, color: placementColor() } : null;
+	// A piece type that is its own colour (Blooms' stones) is drawn in it.
+	return def ? { shape: def.shape, color: def.color || placementColor() } : null;
 }
 
 /** The game waits for its players: its lobby is on screen, not the board. */

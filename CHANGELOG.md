@@ -4,6 +4,13 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.34.1 - 2026-11-01
+
+### Bingle Core 0.34.1
+- **The stone under your mouse is now the colour you chose.** In Blooms, picking yellow still showed
+  a red stone on the board until you placed it; the preview now matches your choice. The same goes
+  for the black and green nodes of Mycelium.
+
 ## 0.34.0 - 2026-11-01
 
 ### Bingle Core 0.34.0
