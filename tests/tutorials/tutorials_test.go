@@ -293,5 +293,46 @@ steps:
 	bad, _ = load(t, map[string]string{"t.yaml": strings.Replace(doc, "color: white}]}, ply: 2}", "color: purple}]}, ply: 2}", 1)})
 	wantErr(t, tutorial.Verify(cat, "gomoku", bad[0]), "start")
 	_, err = load(t, map[string]string{"t.yaml": strings.Replace(doc, "    position: {v: 2", "    show: [h1]\n    position: {v: 2", 1)})
-	wantErr(t, err, "show or position, not both")
+	wantErr(t, err, "only one of them")
+}
+
+func pictureStep(extra string) string {
+	return "id: pic\nkind: rules\ntitle: Pictures\ngame: blooms-4\nsteps:\n  - text: A picture.\n" + extra
+}
+
+func verifyPicture(t *testing.T, extra string) error {
+	t.Helper()
+	tuts, err := load(t, map[string]string{"pic.yaml": pictureStep(extra)})
+	if err != nil {
+		return err
+	}
+	return tutorial.Verify(shippedCatalog(t), "blooms", tuts[0])
+}
+
+// A picture need not be a position play could reach, but it must be one the game
+// can draw, and a step is only one kind of thing.
+func TestPictures(t *testing.T) {
+	if err := verifyPicture(t, "    pieces: [blue@g1, red@g2, red@g3, yellow@g4]\n"); err != nil {
+		t.Errorf("a board no legal game has: %v", err)
+	}
+	if err := verifyPicture(t, "    pieces: [red@g2]\n    arrow: [g2, g3]\n    illegal: true\n"); err != nil {
+		t.Errorf("an illegal arrow: %v", err)
+	}
+	if err := verifyPicture(t, "    highlight: [d4]\n    illegal: true\n"); err != nil {
+		t.Errorf("an illegal highlight on the room's own board: %v", err)
+	}
+	for name, c := range map[string]struct{ extra, want string }{
+		"no such square":   {"    pieces: [red@z9]\n", "not a square"},
+		"not a piece":      {"    pieces: [red]\n", "piece@square"},
+		"unknown piece":    {"    pieces: [dragon@d4]\n", "dragon"},
+		"unknown colour":   {"    pieces: [\"red:plaid@d4\"]\n", "plaid"},
+		"two on one cell":  {"    pieces: [red@d4, blue@d4]\n", "two stones"},
+		"two kinds":        {"    pieces: [red@d4]\n    show: [red@d4]\n", "only one"},
+		"and moves":        {"    pieces: [red@d4]\n    play: [red@d4]\n", "cannot ask for moves"},
+		"illegal, nothing": {"    illegal: true\n", "no arrow or highlight"},
+		"illegal, moves":   {"    highlight: [d4]\n    play: [red@d4]\n    illegal: true\n", "cannot ask for moves"},
+		"arrow off board":  {"    pieces: [red@d4]\n    arrow: [d4, z9]\n    illegal: true\n", "not a square"},
+	} {
+		t.Run(name, func(t *testing.T) { wantErr(t, verifyPicture(t, c.extra), c.want) })
+	}
 }

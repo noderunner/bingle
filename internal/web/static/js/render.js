@@ -226,6 +226,7 @@ function describeStack(info, stack) {
  *   lastMove:   [positionId, ...]    squares to tint as "last move"
  *   hint:       [positionId, ...]    squares to ring (a bot's hint, a tutorial's highlight)
  *   arrows:     [[from, to], ...]    arrows to draw over the board (a tutorial)
+ *   illegal:    boolean              the arrows and rings are what must not be done
  *   selected:   positionId | null
  *   targets:    Set<positionId>      squares that may be clicked next
  *   pathCounts: Map<positionId, n>   pieces already dropped on a square
@@ -691,7 +692,7 @@ function drawBoard(host, info, view, handlers = {}) {
 	}
 
 	const byId = new Map(b.positions.map((p) => [p.id, p]));
-	drawArrows(svg, view.arrows, (id) => (byId.has(id) ? L.place(byId.get(id)) : null));
+	drawArrows(svg, view, (id) => (byId.has(id) ? L.place(byId.get(id)) : null));
 	clear(host).append(svg);
 	return svg;
 }
@@ -699,33 +700,54 @@ function drawBoard(host, info, view, handlers = {}) {
 let arrowCount = 0;
 
 /**
- * Draws arrows over a board — a tutorial pointing from one square to another
- * — as [[from, to], ...]; centerOf gives a square's centre in the board's
- * coordinates, or null for a square not drawn.
+ * Draws a tutorial's arrows over a board, from one square to another, and marks
+ * them and its rings with crosses when they show what must not be done. centerOf
+ * gives a square's centre in the board's coordinates, or null for a square not
+ * drawn.
  */
-function drawArrows(parent, arrows, centerOf) {
-	if (!arrows || !arrows.length) return;
-	const id = `board-arrowhead-${++arrowCount}`;
-	parent.append(
-		s("defs", {}, s("marker", { id, viewBox: "0 0 10 10", refX: 7, refY: 5, markerWidth: 4, markerHeight: 4, orient: "auto-start-reverse" }, s("path", { d: "M0,0 L10,5 L0,10 z", class: "board-arrowhead" })))
-	);
-	const g = s("g", { class: "board-arrows", "aria-hidden": "true" });
+function drawArrows(parent, view, centerOf) {
+	const arrows = view.arrows || [];
+	if (arrows.length) {
+		const id = `board-arrowhead-${++arrowCount}`;
+		parent.append(
+			s("defs", {}, s("marker", { id, viewBox: "0 0 10 10", refX: 7, refY: 5, markerWidth: 4, markerHeight: 4, orient: "auto-start-reverse" }, s("path", { d: "M0,0 L10,5 L0,10 z", class: "board-arrowhead" })))
+		);
+		const g = s("g", { class: "board-arrows", "aria-hidden": "true" });
+		for (const [from, to] of arrows) {
+			const a = centerOf(from);
+			const c = centerOf(to);
+			if (!a || !c) continue;
+			const dx = c.x - a.x;
+			const dy = c.y - a.y;
+			const len = Math.hypot(dx, dy) || 1;
+			// Start and stop short of the centres, clear of the pieces' middles.
+			const trim = Math.min(14, len / 4);
+			const x1 = a.x + (dx / len) * trim;
+			const y1 = a.y + (dy / len) * trim;
+			const x2 = c.x - (dx / len) * trim;
+			const y2 = c.y - (dy / len) * trim;
+			g.append(s("line", { class: "board-arrow", x1, y1, x2, y2, "marker-end": `url(#${id})` }));
+		}
+		parent.append(g);
+	}
+	if (!view.illegal) return;
+	parent.classList.add("illegal-marks");
+	const crosses = s("g", { class: "illegal-crosses", "aria-hidden": "true" });
+	const cross = (at) => {
+		if (!at) return;
+		const r = 11;
+		crosses.append(
+			s("line", { class: "illegal-cross", x1: at.x - r, y1: at.y - r, x2: at.x + r, y2: at.y + r }),
+			s("line", { class: "illegal-cross", x1: at.x - r, y1: at.y + r, x2: at.x + r, y2: at.y - r })
+		);
+	};
+	for (const id of view.hint || []) cross(centerOf(id));
 	for (const [from, to] of arrows) {
 		const a = centerOf(from);
 		const c = centerOf(to);
-		if (!a || !c) continue;
-		const dx = c.x - a.x;
-		const dy = c.y - a.y;
-		const len = Math.hypot(dx, dy) || 1;
-		// Start and stop short of the centres, clear of the pieces' middles.
-		const trim = Math.min(14, len / 4);
-		const x1 = a.x + (dx / len) * trim;
-		const y1 = a.y + (dy / len) * trim;
-		const x2 = c.x - (dx / len) * trim;
-		const y2 = c.y - (dy / len) * trim;
-		g.append(s("line", { class: "board-arrow", x1, y1, x2, y2, "marker-end": `url(#${id})` }));
+		if (a && c) cross({ x: (a.x + c.x) / 2, y: (a.y + c.y) / 2 });
 	}
-	parent.append(g);
+	parent.append(crosses);
 }
 
 // selectionSet accepts a single position, an array of positions, or null.
@@ -1040,7 +1062,7 @@ function renderHexBoard(host, info, view, handlers) {
 	}
 
 	const byId = new Map(b.positions.map((p) => [p.id, p]));
-	drawArrows(svg, view.arrows, (id) => (byId.has(id) ? place(byId.get(id)) : null));
+	drawArrows(svg, view, (id) => (byId.has(id) ? place(byId.get(id)) : null));
 	clear(host).append(svg);
 	return svg;
 }
@@ -1741,7 +1763,7 @@ function renderAreaMap(host, info, view, handlers) {
 	svg.append(s("g", { class: "map-labels", "aria-hidden": "true" }, ...labelNodes));
 	svg.append(s("g", { class: "map-tokens" }, ...tokenNodes));
 	const anchors = new Map(b.areas.map((area) => [area.id, area.anchor ? { x: area.anchor[0], y: area.anchor[1] } : null]));
-	drawArrows(svg, view.arrows, (id) => anchors.get(id) || null);
+	drawArrows(svg, view, (id) => anchors.get(id) || null);
 
 	clear(host).append(svg);
 	let full = { x: -M, y: -M, w: width, h: height };

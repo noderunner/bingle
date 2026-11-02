@@ -24,41 +24,106 @@ is played on, so a private game's tutorials travel with it.
 ```yaml
 # yaml-language-server: $schema=../../../../docs/tutorial.schema.json
 id: blooms-basics
-kind: rules                # rules | strategy | variant
+kind: rules
 title: Placing stones and capturing a bloom
 summary: How a turn works, what a bloom is, and how one is captured.
-order: 1                   # among the game's tutorials of this kind
-game: blooms-4             # the game or variant it is played on
-seat: 1                    # the learner's seat (default 1); the page plays the others
-# seed: 7                  # required for a game with chance (Courtfall's dice)
-# setup: [red@d4, ...]     # moves played before the first step, to reach a position
+order: 1
+game: blooms-4
+seat: 1
 steps:
-  - text: |                # Markdown, as in the rules pages
+  - text: |
       Place a red stone on the highlighted cell.
-    play: [red@d4]         # what the learner must play, in order, as the move list writes it
-    hint: Click the highlighted cell.   # shown when they ask for a hint
-    highlight: [d4]        # squares (or areas) to pick out
-    arrow: [d4, e5]        # an arrow from one square to another
-    reply: [blue@a4, black@g1]   # then played for the other seats
-  - text: This is how a game ends.
-    show: [red@e5, blue@d4, ...]   # a picture: another position, for this step only
+    play: [red@d4]
+    hint: Click the highlighted cell.
+    highlight: [d4]
+    reply: [blue@a4, black@g1]
+  - text: A bloom with no empty cell beside it is fenced.
+    pieces: [blue@g1, blue@f2, black@f3, black@f4, yellow@g4, red@g2, red@g3]
+    highlight: [g2, g3]
+  - text: You can't place two stones of one colour in a turn.
+    pieces: [red@d4]
+    highlight: [e4]
+    illegal: true
 ```
 
-**Positions are moves, never documents.** Every position is reached by playing `setup` and the steps'
-moves from the game's start, so nothing is written out by hand and the engine checks everything. A
-step without `play` or `reply` is just a page to read.
+### Every key of a tutorial
 
-**A step can show another position** with `show`: moves from the game's start, played for that step's
-picture only — the room's game is untouched. It is how a tutorial shows the end of a game before
-teaching the start. A step that shows a position asks for no moves. A finished game to show is easiest
-taken from bots playing one out; the moves are then fixed in the file, and checked like the rest.
+| Key | Required | What it is |
+|---|---|---|
+| `id` | yes | The tutorial's name, unique among the game's tutorials. Name the file after it. |
+| `kind` | yes | `rules`, `strategy` or `variant`. |
+| `title` | yes | What the list of tutorials shows. |
+| `summary` | no | One line under the title. |
+| `order` | no | Sorts the game's tutorials of one kind, lowest first. |
+| `game` | yes | The game or variant it is played on, of the family whose files hold it (`blooms-4`). |
+| `seat` | no | The learner's seat, 1 by default. The page plays every other seat. |
+| `seed` | for a game with chance | Fixes the dice or draws, so every roll of the script comes out the same. Not needed with `start`. |
+| `setup` | no | Moves played by whichever seat is to move, before the first step. |
+| `start` | no | A position document to begin from instead of the game's start, for a game well into play. Usually `!include positions/name.yaml`. |
+| `start_seat` | no | Who moves first from `start`, in a game whose position does not say (one without a Go ruleset). |
+| `steps` | yes | The pages of the tutorial, in order. |
 
-**Or write a position out.** Where reaching a position by moves is impractical — a four-player game in
-its second round — a tutorial can begin from a position document instead, `start` (with `start_seat`
-for a game whose position does not say who moves), and a step can picture one with `position`. A
-document is checked as any custom start is (the game's own validation), carries its own state of
-chance, so no `seed` is needed, and every move after it is still replayed against the engine. Keep a
-long one in a file of its own:
+### Every key of a step
+
+| Key | What it is | Rules |
+|---|---|---|
+| `text` | The page's prose, in Markdown. The game's guide images may be used. | Required. |
+| `play` | The moves the learner must make, in order, written as the move list writes them. The page offers only these. | A step with none waits for **Next**. |
+| `hint` | Shown when the learner asks for a hint. | Needs `play`. |
+| `reply` | Moves played for the other seats after the learner's. | |
+| `highlight` | Squares or areas to ring. | Must be on the board. |
+| `arrow` | An arrow, as `[from, to]`. | Exactly two squares, both on the board. |
+| `illegal` | `true` draws the step's `arrow` and `highlight` red with a cross: what must not be done. | Needs one of them. No `play` or `reply`. |
+| `pieces` | A picture: the board with just these pieces on it. | Only one of `pieces`, `show` and `position`. No `play` or `reply`. |
+| `show` | A picture: the position these moves reach from the game's start. | As above. Every move must be legal, in turn. |
+| `position` | A picture: a position written out as a document. | As above. |
+
+`play`, `reply`, `setup` and `show` all use the game's move notation, the same text as the move list.
+A square in `highlight`, `arrow` or `pieces` is a position id of the board (`d4`, or `south-pacific` on
+a map).
+
+### The game, and pictures
+
+**The game is reached by moves.** The room really plays `setup` and each step's `play` and `reply` from
+the start, and the engine checks each one, so a rule change can never leave a tutorial teaching rules the
+engine no longer has. A step without any of these is just a page to read.
+
+**A picture is not part of the game.** A step with `pieces`, `show` or `position` draws that position in
+place of the room's for that one step, and asks for no moves. The room's game is untouched, and the next
+step without a picture shows it again. The status line says it is an example, and there is no turn in it.
+Pick whichever of the three is easiest:
+
+- **`pieces`** is for an example. It lists what is on the board, and nothing asks whether play could get
+  there, so it can show a position that could never arise. Write `piece@square`, or
+  `piece:color@square` for a piece not named after its colour (`cultist:green@asia`). List a stack bottom
+  first. Everything else, such as captures and reserves, stays as it is at the start of the tutorial.
+- **`show`** is for a real game, such as a finished one. The moves must be a legal game from the start, every
+  seat in its turn: in Blooms, Red & Yellow's one stone first, with `done` ending any later turn of one
+  stone. Taking them from bots playing a game out is easiest.
+- **`position`** is for what `pieces` cannot say, such as the units, Power and phase of a game with more
+  state than its board. It is the whole document, including the game's own `ext`:
+
+  ```yaml
+  position:
+    v: 2
+    ext: {turn: 2, turns: 3}
+    cells:
+      g1: [{piece: blue, color: blue}]
+  ```
+
+**A game can still refuse a picture.** `pieces` and `position` pass through the game's check of a custom
+start, which refuses what it could not draw: an unknown piece, a square not on the board, or two stones on
+one cell of Blooms. Reachability is not part of that check, so a bloom that should already have been
+captured is fine.
+
+**Showing an illegal move:** draw the position with `pieces`, then mark the move with `arrow` or
+`highlight` and `illegal: true`. Nothing is played, so the move does not have to be legal, and Verify only
+checks that its squares exist.
+
+**Starting from a written-out position.** Where reaching the game's position by moves is impractical — a
+four-player game in its second round — a tutorial can begin from `start`. It is checked as any custom start
+is, carries its own state of chance, so no `seed` is needed, and every move after it is still replayed
+against the engine. Keep a long one in a file of its own:
 
 ```yaml
 start: !include positions/round-2.yaml   # beside the tutorial, under tutorials/positions/
@@ -116,7 +181,8 @@ so the rules are the engine's. The room is marked as a tutorial (`tutorial: "fam
 ## The page
 
 A tutorial room's game page shows the step above the board, its highlighted squares ringed and its
-arrow drawn, and a shown position in place of the game's. The chat and the voice call are left out:
+arrow drawn (`.illegal-marks`, with `.illegal-cross` over them, for an `illegal` step), and a picture in
+place of the game's, with `#status-message` saying it is an example. The chat and the voice call are left out:
 there is nobody to talk to.
 
 **What to select is a signal, not a page of its own.** The tutorial the API serves carries a `guide`
@@ -137,7 +203,7 @@ an ordinary game from the position on the board.
 
 `go test ./tests/tutorials` replays every tutorial of every game as the page will: the setup, then
 each step's moves for the learner's seat and its replies for the others. A move that is not legal,
-made by the wrong seat, or a square that is not on the board fails the test — so a rule change can
+made by the wrong seat, a square that is not on the board, or a picture its game refuses fails the test — so a rule change can
 never leave a tutorial teaching rules the engine no longer has.
 
 The replay proves the moves, not the prose: when a step says "the blue stone is captured", play the

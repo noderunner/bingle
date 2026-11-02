@@ -4,6 +4,17 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.40.0 - 2026-11-02
+
+### Bingle Core 0.40.0
+- **Tutorials can show examples that aren't part of the game.** A step can now draw any board, whether or
+  not a real game could reach it, and can mark a move in red with a cross to show what you mustn't do.
+- **Example boards are labelled.** While a tutorial shows an example, the top of the page says so, instead of
+  telling you it's your turn.
+
+### Blooms 0.2.2
+- The tutorial is rewritten, with worked examples of a fenced bloom and how it is captured.
+
 ## 0.39.1 - 2026-11-02
 
 ### Bingle Core 0.39.1

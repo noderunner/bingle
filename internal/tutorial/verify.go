@@ -44,7 +44,7 @@ func Verify(cat *catalog.Catalog, family string, t Tutorial) error {
 	}
 	for i, s := range t.Steps {
 		at := fmt.Sprintf("%s: step %d", t.ID, i+1)
-		if len(s.Show) > 0 || len(s.Position) > 0 {
+		if s.pictured() {
 			if _, err := Shown(game, t, i); err != nil {
 				return fmt.Errorf("%s: %w", at, err)
 			}
@@ -98,11 +98,14 @@ func Start(game *catalog.CompiledGame, t Tutorial) (*state.BoardState, int, erro
 // played from the game's start, seeded as the tutorial is. The moves may end
 // the game — showing how a game ends is what it is for.
 func Shown(game *catalog.CompiledGame, t Tutorial, i int) (*state.BoardState, error) {
-	if i < 0 || i >= len(t.Steps) || (len(t.Steps[i].Show) == 0 && len(t.Steps[i].Position) == 0) {
+	if i < 0 || i >= len(t.Steps) || !t.Steps[i].pictured() {
 		return nil, fmt.Errorf("step %d shows no position", i+1)
 	}
 	if doc := t.Steps[i].Position; len(doc) > 0 {
 		return document(game, doc)
+	}
+	if pieces := t.Steps[i].Pieces; len(pieces) > 0 {
+		return drawn(game, t, pieces)
 	}
 	p, err := newPlayer(game, t.Seed)
 	if err != nil {
@@ -114,6 +117,38 @@ func Shown(game *catalog.CompiledGame, t Tutorial, i int) (*state.BoardState, er
 		}
 	}
 	return p.st, nil
+}
+
+// drawn is the tutorial's starting position with its board replaced by pieces: a
+// picture. The game still says whether it is one it can draw (two stones on a
+// square of Blooms are not), but nothing asks whether play could reach it.
+func drawn(game *catalog.CompiledGame, t Tutorial, pieces []string) (*state.BoardState, error) {
+	p, err := startPlayer(game, t)
+	if err != nil {
+		return nil, err
+	}
+	st := p.st.Clone()
+	for _, id := range st.Occupied() {
+		st.Remove(id)
+	}
+	for _, text := range pieces {
+		what, square, ok := strings.Cut(text, "@")
+		if !ok {
+			return nil, fmt.Errorf("piece %q is not piece@square or piece:color@square", text)
+		}
+		piece, color, named := strings.Cut(what, ":")
+		if !named {
+			color = piece
+		}
+		if !game.Board.HasPosition(board.PositionID(square)) {
+			return nil, fmt.Errorf("piece %q: %q is not a square of %q", text, square, t.Game)
+		}
+		st.Push(board.PositionID(square), state.Occupant{Piece: piece, Color: color})
+	}
+	if err := state.Validate(game, st); err != nil {
+		return nil, err
+	}
+	return st, nil
 }
 
 // StepGuide is what a client needs, besides the tutorial itself, to guide a
@@ -139,7 +174,7 @@ func Guide(game *catalog.CompiledGame, t Tutorial) ([]StepGuide, error) {
 	}
 	out := make([]StepGuide, len(t.Steps))
 	for i, s := range t.Steps {
-		if len(s.Show) > 0 || len(s.Position) > 0 {
+		if s.pictured() {
 			st, err := Shown(game, t, i)
 			if err != nil {
 				return nil, err

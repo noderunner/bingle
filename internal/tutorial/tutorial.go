@@ -3,11 +3,12 @@
 //
 // A tutorial is a hand-written YAML document in the game's own files
 // (catalog.Module.Tutorials). It is played in a real room: the learner holds
-// one seat, the page plays the scripted replies for the others, and every
-// position is reached by playing moves, never written out by hand. That is
-// what lets Verify replay every tutorial in the tests: a tutorial whose moves
-// stop being legal after a rule change fails, rather than teaching the wrong
-// rules.
+// one seat, the page plays the scripted replies for the others, and the game
+// is reached by playing moves. That is what lets Verify replay every tutorial
+// in the tests: a tutorial whose moves stop being legal after a rule change
+// fails, rather than teaching the wrong rules. A step may also draw a picture
+// that is no part of the game, and such a picture need not be a position the
+// rules can reach (ADR 0084).
 package tutorial
 
 import (
@@ -84,6 +85,10 @@ type Step struct {
 	Highlight []string `json:"highlight,omitempty"`
 	// Arrow draws an arrow from its first square to its second.
 	Arrow []string `json:"arrow,omitempty"`
+	// Illegal marks the step's arrow and highlighted squares as what must not
+	// be done: drawn red, with a cross. It needs one of them, and such a step
+	// asks for no moves.
+	Illegal bool `json:"illegal,omitempty"`
 	// Show depicts another position for this step only — the end of a
 	// game, say — reached by these moves from the game's start (seeded as
 	// the tutorial is). The room's game is not touched. A step that shows a
@@ -92,6 +97,16 @@ type Step struct {
 	// Position depicts a position written out as a document instead, for
 	// this step only; like Show it asks for no moves.
 	Position json.RawMessage `json:"position,omitempty"`
+	// Pieces depicts the board with just these pieces on it, for this step only:
+	// piece@square, or piece:color@square where the piece is not named after its
+	// colour, bottom first where several share a square. It need not be a position
+	// play can reach, and like Show it asks for no moves.
+	Pieces []string `json:"pieces,omitempty"`
+}
+
+// pictured says the step depicts a position other than the room's.
+func (s Step) pictured() bool {
+	return len(s.Show) > 0 || len(s.Position) > 0 || len(s.Pieces) > 0
 }
 
 // SchemaID is the $id of docs/tutorial.schema.json; Required are the fields
@@ -193,12 +208,23 @@ func (t Tutorial) check() error {
 		if len(s.Arrow) != 0 && len(s.Arrow) != 2 {
 			return fmt.Errorf("%s: step %d: an arrow is two squares, from and to", t.ID, i+1)
 		}
-		pictured := len(s.Show) > 0 || len(s.Position) > 0
-		if pictured && (len(s.Play) > 0 || len(s.Reply) > 0) {
+		if s.pictured() && (len(s.Play) > 0 || len(s.Reply) > 0) {
 			return fmt.Errorf("%s: step %d shows a position, so it cannot ask for moves too", t.ID, i+1)
 		}
-		if len(s.Show) > 0 && len(s.Position) > 0 {
-			return fmt.Errorf("%s: step %d: show or position, not both", t.ID, i+1)
+		pictures := 0
+		for _, set := range []bool{len(s.Show) > 0, len(s.Position) > 0, len(s.Pieces) > 0} {
+			if set {
+				pictures++
+			}
+		}
+		if pictures > 1 {
+			return fmt.Errorf("%s: step %d: show, position or pieces, only one of them", t.ID, i+1)
+		}
+		if s.Illegal && len(s.Arrow) == 0 && len(s.Highlight) == 0 {
+			return fmt.Errorf("%s: step %d is marked illegal, but has no arrow or highlight to mark", t.ID, i+1)
+		}
+		if s.Illegal && (len(s.Play) > 0 || len(s.Reply) > 0) {
+			return fmt.Errorf("%s: step %d is marked illegal, so it cannot ask for moves too", t.ID, i+1)
 		}
 	}
 	return nil
