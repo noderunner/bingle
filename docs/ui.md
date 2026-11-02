@@ -44,7 +44,7 @@ button appears; otherwise the move is sent immediately.
 
 Because the UI only follows the server's list, any new game works without UI
 changes. (Keyboard play is described at the end.) Hovering an empty target
-square previews the piece a click would place.
+square previews the piece a click would place, in the colour it will have.
 
 ## Turn tracking
 

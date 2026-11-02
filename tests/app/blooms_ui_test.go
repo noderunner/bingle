@@ -79,6 +79,31 @@ func TestWebBlooms_PlayTurnsThroughTheUI(t *testing.T) {
 	}
 }
 
+// The stone previewed on a hovered cell is the colour the player picked, not
+// the seat's own colour: Red & Yellow picking yellow sees a yellow stone.
+func TestWebBlooms_PreviewIsTheChosenColour(t *testing.T) {
+	baseURL := newRESTTestServer(t)
+	var created struct {
+		RoomCode string `json:"room_code"`
+	}
+	if code := doJSON(t, "POST", baseURL+"/api/games", map[string]any{"game_def_id": "blooms", "player_name": "Alice", "opponent": "random"}, &created); code != 200 {
+		t.Fatalf("create: %d", code)
+	}
+	ctx, cancel := newChromedpContext(t, 60*time.Second)
+	defer cancel()
+	openGameAs(t, ctx, baseURL, created.RoomCode, "blooms", "Alice")
+	for _, stone := range []string{"yellow", "red"} {
+		waitJS(t, ctx, "the stone buttons", `document.querySelector('#piece-buttons button[data-piece="`+stone+`"]') !== null`, 15*time.Second)
+		clickSel(t, ctx, `#piece-buttons button[data-piece="`+stone+`"]`)
+		waitJS(t, ctx, "the previews", `document.querySelectorAll('#board .ghost-piece').length > 0`, 10*time.Second)
+		if n := evalInt(t, ctx, `document.querySelectorAll('#board .ghost-piece:not(.color-`+stone+`)').length`); n != 0 {
+			t.Errorf("after picking %s, %d previews are another colour", stone, n)
+		}
+		clickSel(t, ctx, "#reset-move")
+		waitJS(t, ctx, "the previews gone", `document.querySelectorAll('#board .ghost-piece').length === 0`, 10*time.Second)
+	}
+}
+
 // The pie rule in the UI: a game made with the box ticked offers the second
 // player a *Swap sides* button for their first reply, and taking it leaves
 // the stone as it is and spends the swap.
