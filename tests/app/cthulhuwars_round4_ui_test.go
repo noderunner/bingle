@@ -856,7 +856,7 @@ func TestWebHome_SeatChoicesSurviveChoosingAnotherLayout(t *testing.T) {
 		{"cthulhu-wars-3-5", chosen},
 	} {
 		evalString(t, ctx, `window.__oldSlots = document.getElementById("slots-field"); "ok"`)
-		clickSel(t, ctx, `#setup-variants .chip[data-id="`+c.layout+`"]`)
+		chooseVariant(t, ctx, c.layout)
 		waitJS(t, ctx, "the layout "+c.layout, `document.getElementById("game_def_id").value === "`+c.layout+`" && document.getElementById("slots-field") && document.getElementById("slots-field") !== window.__oldSlots`, 15*time.Second)
 		if got := evalString(t, ctx, slotsJS); got != c.want {
 			t.Errorf("seats on %s = %q, want %q", c.layout, got, c.want)

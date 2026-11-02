@@ -1639,6 +1639,9 @@ button.sol-stock { cursor: pointer; }
 .sol-ghost { position: fixed; z-index: 50; pointer-events: none; width: var(--cw); }
 .sol-ghost .pcard { box-shadow: 0 10px 24px rgba(0,0,0,.45); }
 .sol-ghost .sol-colour { font-size: calc(var(--cw) * 0.24); }
+.sol-preview { padding: 6px; margin: 0; pointer-events: none; }
+.setup-preview .sol-preview svg { height: 100%; }
+.setup-preview:has(.sol-preview) { max-width: none; }
 .sol-sheet { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)) minmax(0, 1.45fr); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--surface); font: 600 13px system-ui, sans-serif; }
 .sol-frame { border-left: 1px solid var(--border); text-align: center; min-width: 0; }
 .sol-frame:first-child { border-left: 0; }
@@ -1758,7 +1761,9 @@ dialog.bar-dialog .field input { width: 100%; }
 @media (min-width: 860px) { .setup-layout { grid-template-columns: minmax(14rem, 2fr) 3fr; align-items: start; } }
 .setup-preview { max-width: 22rem; }
 .setup-preview svg { width: 100%; height: auto; display: block; }
-.setup-side .variants { margin-top: 0.5rem; }
+.setup-side .variants { margin-top: 0.6rem; display: grid; gap: 0.2rem; }
+.setup-variant-label { font-weight: 600; }
+#setup-variant { width: 100%; }
 .setup-side .game-blurb { min-height: 0; margin: 0.6rem 0 0; }
 .import-only { display: none; }
 form[data-mode="import"] .import-only { display: flex; }

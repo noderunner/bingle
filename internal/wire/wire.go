@@ -77,7 +77,7 @@ type GameDef struct {
 	Version   string   `json:"version,omitempty"`
 	Designers []string `json:"designers,omitempty"`
 	Publisher string   `json:"publisher,omitempty"`
-	// Tutorials is how many tutorials the game's family has (see
+	// Tutorials is how many tutorials a player of this game is offered (see
 	// GET /game-defs/{id}/tutorials).
 	Tutorials int `json:"tutorials,omitempty"`
 }

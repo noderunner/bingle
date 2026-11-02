@@ -3,7 +3,7 @@
 // under a fun fact. Joining a game and the games already going live in the
 // icons of the top bar (topbar.js).
 
-import { CARD_SETS, cardSetById, setPreview } from "./card-sets.js";
+import { CARD_SETS, cardSetById, setPreview, useCardSet } from "./card-sets.js";
 import { h, clear, store, rememberGame, lastName, toast } from "./util.js";
 import { api, whoAmI } from "./api.js";
 import { rulesIcon } from "./ui-icons.js";
@@ -19,6 +19,7 @@ import { mountGlobalChat } from "./global-chat.js";
 import { installNav, navigate } from "./nav.js";
 import { gameIcon } from "./game-icons.js";
 import { tutorialList } from "./tutorials-ui.js";
+import { solitairePreview } from "./solitaire.js";
 
 installNav();
 
@@ -51,7 +52,7 @@ function groupedDefs() {
 
 function familyName(list) {
 	// "Tak (5×5)" -> "Tak"; a lone game keeps its name without the size of its board ("Gomoku (15×15)" -> "Gomoku").
-	const first = list[0].name;
+	const first = (list.find((d) => d.id === (d.family || d.id)) || list[0]).name;
 	return list.length > 1 ? first.replace(/\s*\([^)]*\)\s*$/, "") : first.replace(/\s*\(\d+\s*[×x]\s*\d+\)\s*$/, "");
 }
 
@@ -152,25 +153,13 @@ function renderSetupHead(d) {
 	title.textContent = list.length > 1 ? familyName(sortedFamily(list)) : d.name;
 	clear(host);
 	if (list.length < 2) return;
-	for (const v of sortedFamily(list)) {
-		host.append(
-			h(
-				"button",
-				{
-					type: "button",
-					class: "chip" + (v.id === d.id ? " on" : ""),
-					"data-id": v.id,
-					title: v.name,
-					"aria-pressed": v.id === d.id ? "true" : "false",
-					onclick: () => chooseGame(v.id),
-				},
-				variantLabel(v)
-			)
-		);
-	}
+	const picker = h("select", { id: "setup-variant", onchange: (ev) => chooseGame(ev.target.value) });
+	for (const v of sortedFamily(list)) picker.append(h("option", { value: v.id, selected: v.id === d.id }, v.name));
+	picker.value = d.id;
+	host.append(h("label", { class: "setup-variant-label", for: "setup-variant" }, "Variant"), picker);
 }
 
-// Each family's tutorials, fetched once.
+// The tutorials offered with each game, fetched once.
 const tutorialsOf = new Map();
 
 /** "Learn to play": the chosen game's tutorials, played under the name in the form. */
@@ -184,28 +173,25 @@ async function renderSetupTutorials(d) {
 	}
 	const family = d.family || d.id;
 	try {
-		if (!tutorialsOf.has(family)) tutorialsOf.set(family, (await api.tutorials(d.id)).tutorials || []);
+		if (!tutorialsOf.has(d.id)) tutorialsOf.set(d.id, (await api.tutorials(d.id)).tutorials || []);
 	} catch (_) {
 		host.hidden = true;
 		return;
 	}
 	// Another game may have been chosen while the list was on its way.
-	const now = defs.find((x) => x.id === document.getElementById("game_def_id").value);
-	if (!now || (now.family || now.id) !== family) return;
+	if (document.getElementById("game_def_id").value !== d.id) return;
 	clear(host).append(
 		h("h3", { class: "setup-tutorials-title" }, "Learn to play"),
-		tutorialList(family, tutorialsOf.get(family), { nameField: document.getElementById("create_player_name"), compact: true })
+		tutorialList(family, tutorialsOf.get(d.id), { nameField: document.getElementById("create_player_name"), compact: true })
 	);
 	host.hidden = false;
 }
 
-const sortedFamily = (list) => [...list].sort((a, b) => (a.board_width || 0) - (b.board_width || 0) || a.id.localeCompare(b.id));
-
-/** "Havannah (base 8)" -> "base 8"; falls back to the board size. */
-function variantLabel(d) {
-	const paren = /\(([^)]+)\)\s*$/.exec(d.name);
-	return paren ? paren[1] : d.board_width ? `${d.board_width}×${d.board_height}` : d.name;
-}
+/** A family in the order its picker lists it: smallest board first, and among equals the base game, then by name. */
+const sortedFamily = (list) => {
+	const isBase = (d) => (d.id === (d.family || d.id) ? 0 : 1);
+	return [...list].sort((a, b) => (a.board_width || 0) - (b.board_width || 0) || isBase(a) - isBase(b) || a.name.localeCompare(b.name));
+};
 
 let previewFor = "";
 function renderSetupPreview(id, info) {
@@ -213,6 +199,12 @@ function renderSetupPreview(id, info) {
 	if (!slot || previewFor === id) return;
 	previewFor = id;
 	try {
+		clear(slot);
+		// A table of cards has no board to draw: it shows a game in progress.
+		if (info.sample_view && info.sample_view.solitaire) {
+			slot.append(solitairePreview(info, info.sample_view));
+			return;
+		}
 		renderBoard(slot, info, { cells: info.preview || info.start.cells, flipped: false, interactive: false, showCoords: false, preview: true }, {});
 	} catch (_) {
 		clear(slot);
@@ -515,8 +507,16 @@ function renderCardSetField(info) {
 	const show = () => {
 		const set = cardSetById(select.value);
 		preview.replaceChildren(...(set ? [setPreview(set, suits)] : []));
+		useCardSet(select.value);
 	};
-	select.onchange = show;
+	select.onchange = () => {
+		show();
+		// A game in progress in the preview wears the set too.
+		if (info.sample_view) {
+			previewFor = "";
+			renderSetupPreview(info.id, info);
+		}
+	};
 	show();
 }
 
@@ -829,7 +829,7 @@ function cardMeta(list, lead) {
 	}
 	const players = playerRange(list);
 	if (players) out.push(h("span", { class: "game-card-players muted" }, players));
-	if (lead.tutorials) out.push(h("span", { class: "badge tutorial", title: "This game has a tutorial that teaches it by playing" }, "Tutorial"));
+	if (list.some((d) => d.tutorials)) out.push(h("span", { class: "badge tutorial", title: "This game has a tutorial that teaches it by playing" }, "Tutorial"));
 	return out;
 }
 

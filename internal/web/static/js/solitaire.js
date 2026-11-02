@@ -5,7 +5,7 @@
 // the server's, and a card can be picked up exactly when a move starts with it.
 
 import { h } from "./util.js";
-import { cardBack, cardFace } from "./cards.js";
+import { cardBack, cardFace, enableZoom, holdCardZoom } from "./cards.js";
 import { currentCardSet, setSuitIcon } from "./card-sets.js";
 
 const pinRows = ["abcd", "efg", "hi", "j"];
@@ -202,6 +202,7 @@ function startDrag(ctx, ev, from) {
 		window.removeEventListener("pointerup", up);
 		window.removeEventListener("pointercancel", cancel);
 		if (!ghost) return;
+		holdCardZoom(false);
 		ghost.remove();
 		ghost = null;
 		dragged = true;
@@ -217,6 +218,7 @@ function startDrag(ctx, ev, from) {
 			ghost = h("div", { class: "sol-ghost", style: `left:${r.left}px;top:${r.top}px;--cw:${r.width}px;--ch:${(r.width * 92) / 66}px`, "aria-hidden": "true" });
 			for (const el of rest) ghost.append(el.cloneNode(true));
 			document.body.append(ghost);
+			holdCardZoom(true);
 		}
 		ghost.style.transform = `translate(${e.clientX - startX}px, ${e.clientY - startY}px)`;
 	}
@@ -383,7 +385,24 @@ function scoreSheet(b) {
 	return table;
 }
 
+function table(ctx) {
+	return ctx.view.bowling ? bowling(ctx) : patience(ctx);
+}
+
 /** The table of a game of patience, as cards.js's cardTable draws any other card game: {node, state}. */
 export function solitaireTable(ctx) {
-	return { node: ctx.view.bowling ? bowling(ctx) : patience(ctx), state: new Map() };
+	const node = table(ctx);
+	enableZoom(node);
+	return { node, state: new Map() };
+}
+
+/** A game in progress, to look at: the sample view of a game (state.Sampler), and nothing to click. */
+export function solitairePreview(info, view) {
+	const none = () => [];
+	const node = table({ info, view, room: "", options: none, picked: none, playsList: none, tutorialSteps: () => null });
+	node.removeAttribute("id");
+	node.classList.add("sol-preview");
+	node.setAttribute("role", "img");
+	node.setAttribute("aria-label", `${info.name}: a game in progress`);
+	return node;
 }

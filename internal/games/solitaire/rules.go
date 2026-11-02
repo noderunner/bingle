@@ -3,6 +3,7 @@ package solitaire
 import (
 	"fmt"
 	"math/rand"
+	"sync"
 
 	"github.com/noderunner/bingle/internal/engine/cards"
 	"github.com/noderunner/bingle/internal/engine/catalog"
@@ -10,7 +11,10 @@ import (
 )
 
 // Ruleset plays every game of the family; the definition's param "mode" says which.
-type Ruleset struct{}
+type Ruleset struct {
+	// samples holds each game's sample view, worked out once: it never changes.
+	samples sync.Map
+}
 
 // New returns the ruleset.
 func New() *Ruleset { return &Ruleset{} }
@@ -308,7 +312,52 @@ func (rs *Ruleset) GuideMoves(game *catalog.CompiledGame, st *state.BoardState, 
 	return out
 }
 
+// sampleSeed is the deal the sample of a game is played from.
+const sampleSeed = 21
+
+// samplePlies is how far a sample of patience is played: enough to have turned cards
+// over and sent some home, and far from the end.
+const samplePlies = 45
+
+// Sample plays the game's own hints from a fixed deal, and returns the view of where
+// that gets to, as a spectator sees it.
+func (rs *Ruleset) Sample(game *catalog.CompiledGame) any {
+	if v, ok := rs.samples.Load(game.Definition.ID); ok {
+		return v
+	}
+	st, err := rs.Start(game, sampleSeed)
+	if err != nil {
+		return nil
+	}
+	for ply := 0; ply < samplePlies; ply++ {
+		d, err := dataOf(st)
+		if err != nil || (d.Mode == modeBowling && d.Frame >= 4 && !d.Fresh) {
+			break
+		}
+		moves := state.GuidedMoves(game, st, player, rs.Legal(game, st, player))
+		if len(moves) == 0 {
+			break
+		}
+		res, err := rs.Apply(game, st, player, moves[0])
+		if err != nil || res.GameEnded {
+			break
+		}
+		st = res.NewState
+	}
+	d, err := dataOf(st)
+	if err != nil {
+		return nil
+	}
+	v := newEng(game, d).buildView(0)
+	v.ToMove = 0
+	v.Prompt = ""
+	v.Hint = ""
+	rs.samples.Store(game.Definition.ID, v)
+	return v
+}
+
 var (
+	_ state.Sampler    = (*Ruleset)(nil)
 	_ state.HiddenInfo = (*Ruleset)(nil)
 	_ state.Heuristic  = (*Ruleset)(nil)
 	_ state.Describer  = (*Ruleset)(nil)
