@@ -516,6 +516,10 @@
           ],
           "description": "Cards defines the suits, decks and zones of a card game (see CardsDef)."
         },
+        "default_clock_minutes": {
+          "description": "DefaultClockMinutes is the time each player starts with that the setup suggests when a game clock is chosen, in whole minutes from 1 to 60 (absent: 10). It does not turn a clock on. A variant with longer games, such as a bigger board, can set its own. See ADR 0081.",
+          "type": "integer"
+        },
         "description": {
           "description": "Description is a short paragraph about the game, shown when the player hovers over the game in the picker.",
           "type": "string"

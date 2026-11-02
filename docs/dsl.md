@@ -19,6 +19,9 @@ pie_rule                      standard | optional: the game can be played with t
                               the creator chooses (the catalog brings the box, and the swap
                               action for a game on the generic engine — a ruleset offers the
                               swap in its own moves, as Blooms does)
+default_clock_minutes         the time the setup suggests when a game clock is chosen, 1 to 60
+                              (absent: 10); does not turn a clock on; a variant's patch can
+                              set its own, for a bigger board with longer games (ADR 0081)
 board                         required: generator or explicit graph, regions, style
                               (a "hexhex" board takes size2 as well: four long sides and two
                               short ones, a hexagon with no middle cell — Meridians)

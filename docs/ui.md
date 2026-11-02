@@ -64,8 +64,11 @@ square previews the piece a click would place, in the colour it will have.
   (`.clock[data-clock="<seat>"]`), the running one marked `.running` and
   counting down to the turn's deadline while the others hold still. The first
   player to run out forfeits, told to the page the same way. The field in the
-  setup is `#clock-field` (`#clock_seconds`, or `#clock-handicap` with
-  `#clock_seconds_1` and `#clock_seconds_2` for two different times); choosing
+  setup is `#clock-field`: `#clock_seconds` chooses no clock, minutes or a long
+  time (2 hours, 1 day), and with minutes `#clock_minutes` takes any whole number
+  from 1 to 60, starting at the game's `default_clock_minutes` (10 if it names
+  none) until the player types their own. `#clock-handicap` gives each player the
+  same pair (`#clock_seconds_1` with `#clock_minutes_1`, and `_2`); choosing
   a clock clears the time per move and the other way round, as a game is
   played with one or the other. With a clock chosen, `#clock-increment-row`
   offers `#clock_increment`, the time added for each move, which the seat's

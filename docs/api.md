@@ -85,7 +85,7 @@ that account.
 | Method & path | Body / query | Response |
 |---|---|---|
 | `GET /game-defs` | | `[{id, name, seats_required, description, board_width, board_height, family, version, designers?, publisher?, tutorials?}]` (`version` is the game's semantic version: below 1.0.0 is a beta; `tutorials` how many tutorials the game's family has) |
-| `GET /game-defs/{id}` | | full description (`start` is the starting position; `preview`, when the game starts empty, a sample game in play for pictures): `rules`, `notation_help`, `board` (positions with layout, regions, borders), `pieces`, `pools`, `actions`, `opening`, `win_rules`, `scores` |
+| `GET /game-defs/{id}` | | full description (`start` is the starting position; `preview`, when the game starts empty, a sample game in play for pictures): `rules`, `notation_help`, `board` (positions with layout, regions, borders), `pieces`, `pools`, `actions`, `opening`, `win_rules`, `scores`, `default_clock_minutes?` |
 | `GET /game-defs/{id}/guide` | | the rules guide as Markdown pages `{game, generated?, tabs:[{id, title, markdown}]}` — the game's own, or one generated from its definition (`generated: true`) |
 | `GET /game-defs/{id}/assets/{path}` | | a file of the game's guide (images); `board.svg` draws an area map. Served inert (`Content-Security-Policy: sandbox`, `nosniff`); `404` for anything outside the module's files |
 | `GET /game-defs/{id}/tutorials` | | `{family, tutorials:[{id, kind, title, summary?, order?, game, steps}]}` — the tutorials of the game's family (any game or variant of it names it), rules first, then strategy, then variant tutorials; an empty list for a game without any ([tutorials.md](tutorials.md)) |
@@ -170,6 +170,11 @@ lazy way as a per-move limit. `GET /games/{code}` reports it as
 `clock: {running, seats: [{seat, initial_seconds, seconds_left}]}`, the running
 seat counting down to `turn_deadline`; `move` and `state` events carry the same
 object, and `get_observation`'s `seconds_left` follows it.
+
+The API takes any time up to 30 days. The page offers 1 to 60 minutes and a few
+longer times, and starts at the definition's `default_clock_minutes`, which
+`GET /game-defs/{id}` carries when the game names one; the server never applies
+it, so a game made without `clock_seconds` has no clock.
 
 `clock_increment_seconds` (up to a day; it needs `clock_seconds`) adds that time to
 a player's clock each time they hand the turn on, and the clock reports it as

@@ -165,7 +165,7 @@ func TestWebGameClock_SetupAndTheSeatStrips(t *testing.T) {
 		t.Error("the increment shows with no clock chosen")
 	}
 	setClock := `(function (v) { var s = document.getElementById("clock_seconds"); s.value = v; s.dispatchEvent(new Event("change", { bubbles: true })); return "ok"; })`
-	evalString(t, ctx, setClock+`("300")`)
+	evalString(t, ctx, setClock+`("minutes")`)
 	waitJS(t, ctx, "the increment", `document.getElementById("clock-increment-row").hidden === false`, 5*time.Second)
 	evalString(t, ctx, setClock+`("0")`)
 	waitJS(t, ctx, "the increment to go", `document.getElementById("clock-increment-row").hidden === true`, 5*time.Second)
@@ -175,8 +175,8 @@ func TestWebGameClock_SetupAndTheSeatStrips(t *testing.T) {
 	waitJS(t, ctx, "the handicap times", `document.getElementById("clock-handicap-row").hidden === false`, 5*time.Second)
 	evalString(t, ctx, `(function () {
 		var set = function (id, v) { var s = document.getElementById(id); s.value = v; s.dispatchEvent(new Event("change", { bubbles: true })); };
-		set("clock_seconds_1", "180");
-		set("clock_seconds_2", "600");
+		set("clock_minutes_1", "3");
+		set("clock_minutes_2", "10");
 		set("clock_increment", "5");
 		document.getElementById("move_time_seconds").value = "0";
 		document.getElementById("create_player_name").value = "Ana";
@@ -224,5 +224,94 @@ func TestWebGameClock_SetupAndTheSeatStrips(t *testing.T) {
 	defer mu.Unlock()
 	if len(jsErrors) > 0 {
 		t.Errorf("uncaught JS exceptions: %v", jsErrors)
+	}
+}
+
+// The setup takes any whole number of minutes from 1 to 60, suggests the time
+// the game's definition names (a bigger board its own), and keeps a time the
+// player typed when they look at another size. A clock stays off until chosen.
+func TestWebClockMinutesAndTheGamesDefault(t *testing.T) {
+	baseURL := newRESTTestServer(t)
+	ctx, cancel := newChromedpContext(t, 90*time.Second)
+	defer cancel()
+	open := func(game string) {
+		t.Helper()
+		if err := chromedp.Run(ctx, chromedp.EmulateViewport(1400, 1000), chromedp.Navigate(baseURL+"/?game="+game)); err != nil {
+			t.Fatal(err)
+		}
+		waitJS(t, ctx, "the setup of "+game, `document.getElementById("clock-field").hidden === false && !document.getElementById("game-setup").hidden`, 20*time.Second)
+	}
+	minutes := func() string {
+		t.Helper()
+		return evalString(t, ctx, `document.getElementById("clock_minutes").value`)
+	}
+	for game, want := range map[string]string{"blooms": "15", "blooms-4": "10", "blooms-6": "25", "tak-5x5": "10"} {
+		open(game)
+		waitJS(t, ctx, game+"'s time", fmt.Sprintf(`document.getElementById("clock_minutes").value === %q`, want), 5*time.Second)
+		if got := evalString(t, ctx, `document.getElementById("clock_seconds").value`); got != "0" {
+			t.Errorf("%s starts with the clock at %q, want no clock", game, got)
+		}
+		if !evalBool(t, ctx, `document.getElementById("clock_minutes").hidden`) {
+			t.Errorf("%s shows the minutes with no clock chosen", game)
+		}
+	}
+
+	open("blooms-6")
+	evalString(t, ctx, `(function () {
+		var s = document.getElementById("clock_seconds");
+		s.value = "minutes";
+		s.dispatchEvent(new Event("change", { bubbles: true }));
+		return "ok";
+	})()`)
+	waitJS(t, ctx, "the minutes", `document.getElementById("clock_minutes").hidden === false`, 5*time.Second)
+	if got := minutes(); got != "25" {
+		t.Errorf("choosing a clock on the big board suggests %s minutes, want 25", got)
+	}
+	// What is typed stays within the range, in whole minutes.
+	const typeMinutes = `(function (v) {
+		var b = document.getElementById("clock_minutes");
+		b.value = v;
+		b.dispatchEvent(new Event("input", { bubbles: true }));
+		b.dispatchEvent(new Event("change", { bubbles: true }));
+		return b.value;
+	})`
+	for _, c := range []struct{ typed, want string }{{"90", "60"}, {"0", "1"}, {"-3", "1"}, {"7.4", "7"}, {"", "25"}, {"17", "17"}} {
+		if got := evalString(t, ctx, typeMinutes+fmt.Sprintf(`(%q)`, c.typed)); got != c.want {
+			t.Errorf("typing %q leaves %q, want %q", c.typed, got, c.want)
+		}
+	}
+	evalString(t, ctx, `document.getElementById("create_player_name").value = "Ana"; "ok"`)
+	clickSel(t, ctx, `#create-game-form button[type="submit"]`)
+	loc := pollLocation(t, ctx, regexp.MustCompile(`/game/[A-Z0-9]+$`))
+	var game gameWithClock
+	doJSON(t, "GET", baseURL+"/api/games/"+loc[strings.LastIndex(loc, "/")+1:], nil, &game)
+	if game.Clock == nil || game.Clock.Seats[0].Initial != 17*60 || game.Clock.Seats[1].Initial != 17*60 {
+		t.Fatalf("the game was made with %+v, want 17 minutes each", game.Clock)
+	}
+}
+
+// A longer time is still on offer, for a game played over days.
+func TestWebClockKeepsTheLongTimes(t *testing.T) {
+	baseURL := newRESTTestServer(t)
+	ctx, cancel := newChromedpContext(t, 90*time.Second)
+	defer cancel()
+	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1400, 1000), chromedp.Navigate(baseURL+"/?game=tak-5x5")); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "the setup", `document.getElementById("clock-field").hidden === false && !document.getElementById("game-setup").hidden`, 20*time.Second)
+	evalString(t, ctx, `(function () {
+		var s = document.getElementById("clock_seconds");
+		s.value = "86400";
+		s.dispatchEvent(new Event("change", { bubbles: true }));
+		document.getElementById("create_player_name").value = "Ana";
+		return "ok";
+	})()`)
+	waitJS(t, ctx, "no minutes for a day", `document.getElementById("clock_minutes").hidden === true`, 5*time.Second)
+	clickSel(t, ctx, `#create-game-form button[type="submit"]`)
+	loc := pollLocation(t, ctx, regexp.MustCompile(`/game/[A-Z0-9]+$`))
+	var game gameWithClock
+	doJSON(t, "GET", baseURL+"/api/games/"+loc[strings.LastIndex(loc, "/")+1:], nil, &game)
+	if game.Clock == nil || game.Clock.Seats[0].Initial != 86400 {
+		t.Fatalf("the game was made with %+v, want a day each", game.Clock)
 	}
 }

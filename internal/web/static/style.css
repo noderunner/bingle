@@ -1141,6 +1141,8 @@ td svg.legend-marker, .md svg.legend-marker { width: 28px; height: 28px; vertica
 dialog.help-dialog { max-width: min(36rem, 92vw); }
 dialog.help-dialog p, dialog.help-dialog li { line-height: 1.45; }
 dialog.help-dialog li { margin: 0.35rem 0; }
+.clock-time { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem 0.45rem; }
+.clock-time input[type="number"] { width: 4.5rem; }
 .autoplay-timeout { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem 0.45rem; }
 .autoplay-field { display: inline-flex; align-items: center; gap: 0.2rem; font-size: 0.85rem; }
 .autoplay-field input[type="number"] { width: 3rem; padding: 0.2rem 0.25rem; }

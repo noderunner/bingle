@@ -112,6 +112,12 @@ type GameDefinition struct {
 	// moves. See catalog.applyPieRule and ADR 0056.
 	PieRule string `json:"pie_rule,omitempty"`
 
+	// DefaultClockMinutes is the time each player starts with that the setup
+	// suggests when a game clock is chosen, in whole minutes from 1 to 60
+	// (absent: 10). It does not turn a clock on. A variant with longer games,
+	// such as a bigger board, can set its own. See ADR 0081.
+	DefaultClockMinutes int `json:"default_clock_minutes,omitempty"`
+
 	// Options lists the setup choices the game offers its creator (which
 	// cults sit at the table, an expansion to include). A ruleset that
 	// implements catalog.Deriver turns the chosen options into a game

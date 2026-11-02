@@ -108,43 +108,35 @@
 
 							<div class="field new-only human-only" id="clock-field" hidden>
 								<label for="clock_seconds">Game clock</label>
-								<select id="clock_seconds" name="clock_seconds">
-									<option value="0" selected>No clock</option>
-									<option value="180">3 minutes each</option>
-										<option value="300">5 minutes each</option>
-										<option value="600">10 minutes each</option>
-										<option value="900">15 minutes each</option>
-										<option value="1800">30 minutes each</option>
-										<option value="3600">1 hour each</option>
+								<div class="clock-time">
+									<select id="clock_seconds" name="clock_seconds">
+										<option value="0" selected>No clock</option>
+										<option value="minutes">Minutes each</option>
 										<option value="7200">2 hours each</option>
 										<option value="86400">1 day each</option>
-								</select>
+									</select>
+									<input type="number" id="clock_minutes" min="1" max="60" step="1" value="10" aria-label="Minutes each, from 1 to 60" hidden>
+								</div>
 								<label class="check"><input type="checkbox" id="clock-handicap"> <span>Give the players different times (handicap)</span></label>
 								<div class="row" id="clock-handicap-row" hidden>
-									<label class="inline" for="clock_seconds_1">First player
+									<div class="inline clock-time">
+										<label for="clock_seconds_1">First player</label>
 										<select id="clock_seconds_1">
-											<option value="180">3 minutes</option>
-										<option value="300">5 minutes</option>
-										<option value="600">10 minutes</option>
-										<option value="900">15 minutes</option>
-										<option value="1800">30 minutes</option>
-										<option value="3600">1 hour</option>
-										<option value="7200">2 hours</option>
-										<option value="86400">1 day</option>
+											<option value="minutes" selected>Minutes</option>
+											<option value="7200">2 hours</option>
+											<option value="86400">1 day</option>
 										</select>
-									</label>
-									<label class="inline" for="clock_seconds_2">Second player
+										<input type="number" id="clock_minutes_1" min="1" max="60" step="1" value="10" aria-label="First player's minutes, from 1 to 60">
+									</div>
+									<div class="inline clock-time">
+										<label for="clock_seconds_2">Second player</label>
 										<select id="clock_seconds_2">
-											<option value="180">3 minutes</option>
-										<option value="300">5 minutes</option>
-										<option value="600">10 minutes</option>
-										<option value="900">15 minutes</option>
-										<option value="1800">30 minutes</option>
-										<option value="3600">1 hour</option>
-										<option value="7200">2 hours</option>
-										<option value="86400">1 day</option>
+											<option value="minutes" selected>Minutes</option>
+											<option value="7200">2 hours</option>
+											<option value="86400">1 day</option>
 										</select>
-									</label>
+										<input type="number" id="clock_minutes_2" min="1" max="60" step="1" value="10" aria-label="Second player's minutes, from 1 to 60">
+									</div>
 								</div>
 								<label class="inline" id="clock-increment-row" for="clock_increment" hidden>Added per move
 									<select id="clock_increment">
