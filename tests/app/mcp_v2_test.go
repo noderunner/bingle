@@ -60,7 +60,8 @@ func TestMCP_ToolListIncludesNewTools(t *testing.T) {
 		"list_game_defs", "create_game", "join_game", "get_state", "list_legal_moves", "make_move", "get_moves",
 		"get_game_info", "list_bots", "get_observation", "get_legal_moves", "undo_move", "resign", "simulate", "export_game",
 		"env_reset", "env_step", "env_observe", "env_fork", "env_close", "env_list", "match_bots", "draw",
-		"env_spec", "env_batch_step", "takeback", "get_game_guide", "add_bot", "get_leaderboard",
+		"env_spec", "env_batch_step", "get_game_guide", "add_bot", "get_leaderboard",
+		"list_tournaments", "get_tournament", "enter_tournament", "leave_tournament",
 		"start_game", "set_seat_cult", "send_chat", "get_chat", "get_reactions", "set_reactions",
 	} {
 		if !have[want] {
@@ -128,10 +129,10 @@ func TestMCP_PlayTakVsBotWithObservations(t *testing.T) {
 		t.Errorf("get_legal_moves = seat %d, %d moves; observation had %d", lm.Seat, len(lm.Moves), len(obs.LegalMoves))
 	}
 
-	// Undo, then export.
+	// A move stands once the bot has replied; then export.
 	res = callTool(t, c, "undo_move", map[string]any{"room_code": created.RoomCode, "player_name": "Agent"})
-	if res.IsError {
-		t.Errorf("undo_move: %s", toolText(res))
+	if !res.IsError {
+		t.Error("undo_move took back a move with the turn passed")
 	}
 	res = callTool(t, c, "export_game", map[string]any{"room_code": created.RoomCode})
 	var rec struct {
@@ -139,7 +140,7 @@ func TestMCP_PlayTakVsBotWithObservations(t *testing.T) {
 		PTN      string   `json:"ptn"`
 	}
 	decodeToolResult(t, res, &rec)
-	if len(rec.Notation) != 6 || !strings.Contains(rec.PTN, "[Size \"5\"]") {
+	if len(rec.Notation) != 8 || !strings.Contains(rec.PTN, "[Size \"5\"]") {
 		t.Errorf("export = %+v", rec)
 	}
 

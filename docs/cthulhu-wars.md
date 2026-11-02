@@ -107,7 +107,7 @@ five-player table.
   fights, until they change it ([ADR 0052](decisions/0052-calls-across-pages-top-bar-and-per-reaction-choices.md)).
   Built-in bots, and AI clients that joined over MCP, are asked every time. The
   passes the session makes are recorded as `auto` moves, marked *(auto)* in the
-  move list and ignored by Undo. The engine side is the optional
+  move list, and do not end a turn for *Back*. The engine side is the optional
   `state.Reactor` interface ([ADR 0027](decisions/0027-reactions-lobbies-and-chat.md),
   [ADR 0033](decisions/0033-first-player-reactions-reversed-and-auto-play.md)).
 * **Targeted.** The engine records what each *action* is aimed at (`Data.Aim`,
@@ -301,7 +301,7 @@ players to agree, the engine stands in for them:
   behind a choice, and the move that rolled it is *locked*: the session stores
   `moves.locked` (`CanTakeBack` false — or the same seat's next move straight
   after one that was, like the unit it places), the move list and the move events
-  say `locked`, and the page offers no *Undo my move* across a roll (the server
+  say `locked`, and the page offers no *Back* across a roll (the server
   refuses it with 409 in any case). A spellbook the glyph earns is chosen after
   the unit. Yellow Sign's card counts the tokens in play (`counters[0]`,
   `desecrations`).

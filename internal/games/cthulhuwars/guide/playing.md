@@ -35,7 +35,7 @@ clears it ([[Esc]]).
 | Move units | *Click a unit on the map to move* — a glowing unit token → its destination, repeat for more units, then *Done* |
 | Give a Gate up | the figure on the Gate → the Gate again (free, where it stands) or another area (a Move step): the Gate is abandoned |
 | Put a unit on a Gate | one of the units standing beside it → the Gate (free; also in the middle of a Move) |
-| Take your last move back | *Undo my move*, among the actions |
+| Take back a step of this turn | *Back*, among the actions, until the turn has passed or a die has been rolled |
 | Battle | *Battle* → the area → the enemy faction |
 | Retreat after a battle | the unit token → a highlighted area |
 | End your turn | *Pass* (drops your Power to 0) |

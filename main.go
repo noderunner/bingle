@@ -137,6 +137,7 @@ func main() {
 	go a.RunRetention(ctx, cfg.RetentionDays)
 	go a.Manager().RunAutoPlay(ctx, 0)
 	go a.Manager().RunResults(ctx)
+	go a.Manager().RunTournaments(ctx)
 	go a.Manager().RunNotifier(ctx)
 
 	srvCfg := httpserve.Config{

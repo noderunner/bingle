@@ -214,7 +214,7 @@ func TestWebCthulhuWars_SteppingOffTheGateInPlaceIsFreeAndAsksForNothing(t *test
 	if n := evalInt(t, ctx, `document.querySelectorAll('#action-done').length`); n != 0 {
 		t.Errorf("a Done button after a free step-off")
 	}
-	if n := evalInt(t, ctx, `document.querySelectorAll('#undo-move').length`); n != 0 {
+	if n := evalInt(t, ctx, `document.querySelectorAll('#undo-step').length`); n != 0 {
 		t.Errorf("an Undo button after a free step-off")
 	}
 	// The turn goes on as before: the main actions are all there.

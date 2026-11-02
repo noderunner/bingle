@@ -1838,3 +1838,12 @@ code.wrap { overflow-wrap: anywhere; word-break: break-all; }
 /* In a tutorial: the control the step points at, and the others, inert. */
 .tutorial-target { outline: 3px solid var(--focus); outline-offset: 2px; box-shadow: 0 0 0 6px color-mix(in srgb, var(--focus) 25%, transparent); }
 .tutorial-inert { opacity: 0.45; cursor: not-allowed; }
+
+/* Tournaments. */
+.tournament-rows, .tournament-games { list-style: none; padding: 0; margin: 0; }
+.tournament-rows li { padding: 0.5rem 0; border-bottom: 1px solid var(--border); }
+.tournament-game { padding: 0.15rem 0; }
+.tournament-form { margin: 0.75rem 0; }
+.tournament-description { white-space: pre-wrap; overflow-wrap: anywhere; }
+#tournament-page h1, #tournament-name { overflow-wrap: anywhere; }
+#tournament-actions { flex-wrap: wrap; gap: 0.5rem; }

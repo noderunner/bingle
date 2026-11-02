@@ -458,8 +458,7 @@ func TestRecordMove_SeqNumberingIsPerGameNotGlobal(t *testing.T) {
 }
 
 // A move recorded with SwapSeats (the pie rule) exchanges the occupants of
-// the two seats in the same transaction — the seats keep their colours — and
-// UndoToSeq with swapBack exchanges them again.
+// the two seats in the same transaction, and the seats keep their colours.
 func TestRecordMove_SwapSeatsExchangesThePlayers(t *testing.T) {
 	s := newRecordMoveTestStore(t)
 	ctx := t.Context()
@@ -487,16 +486,5 @@ func TestRecordMove_SwapSeatsExchangesThePlayers(t *testing.T) {
 	}
 	if players[0].Color != "white" || players[1].Color != "black" {
 		t.Errorf("a seat keeps its colour: %s, %s", players[0].Color, players[1].Color)
-	}
-
-	if err := s.UndoToSeq(ctx, game.ID, 0, `{"zero":0}`, 1, true, nil); err != nil {
-		t.Fatalf("UndoToSeq with swapBack: %v", err)
-	}
-	players, err = s.ListPlayers(ctx, game.ID)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(players) != 2 || players[0].Name != "Alice" || players[1].Name != "Bob" {
-		t.Errorf("after the undo the seats are %v, want Alice in 1 and Bob in 2", players)
 	}
 }

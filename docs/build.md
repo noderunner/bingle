@@ -63,7 +63,7 @@ All configuration is via environment variables — there's no config file.
 |---|---|---|
 | `BINGLE_ADDR` | `127.0.0.1:8080` | Address/port to listen on. **The default is loopback**: a bind a network can reach needs a secure connection as well (see below) |
 | `BINGLE_DB_PATH` | `./bingle.db` | Path to the SQLite database file |
-| `BINGLE_RETENTION_DAYS` | `0` (keep everything) | Delete games nobody has touched for this many days (checked hourly) |
+| `BINGLE_RETENTION_DAYS` | `0` (keep everything) | Delete games nobody has touched for this many days (never the games of a running tournament) (checked hourly) |
 | `BINGLE_LOG_LEVEL` | `info` | How much the server says: `debug`, `info`, `warn` or `error`. `debug` is the verbose mode and adds a line per request. See [observability.md](observability.md) |
 | `BINGLE_LOG_FORMAT` | `text` | `text` is `key=value` lines for a person, `json` one object per line for a log collector |
 | `BINGLE_METRICS_ADDR` | `127.0.0.1:9095` | The private listener serving Prometheus metrics at `/metrics`. Empty turns the metrics off. It is deliberately not the public listener, which has no authentication. See [observability.md](observability.md) |

@@ -5,7 +5,7 @@
 // the page for the other seats). A step without `play` waits for the learner
 // to read it and press Next before its replies are played; `read` is how many
 // steps they have pressed Next on. Moves that do not follow the script (an
-// undo, a move made elsewhere) leave the tutorial "off script".
+// a step taken back, a move made elsewhere) leave the tutorial "off script".
 
 const same = (a, b) => String(a).trim().toLowerCase() === String(b).trim().toLowerCase();
 

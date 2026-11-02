@@ -351,9 +351,10 @@ func TestReactionsArePassedUnlessThePlayerAsksToBeAsked(t *testing.T) {
 	if !found {
 		t.Fatalf("the auto-passed move is recorded as such: %+v", moves)
 	}
-	// What the server passed for Alice does not stop Bob from taking his move back.
-	if code := doJSON(t, "POST", base+"/api/games/"+room+"/undo", map[string]any{"player_name": "Bob"}, nil); code != 200 {
-		t.Fatalf("undo after an automatic pass: %d", code)
+	// Bob's action handed the turn on, and what the server passed for Alice does
+	// not change that.
+	if code := doJSON(t, "POST", base+"/api/games/"+room+"/undo", map[string]any{"player_name": "Bob"}, nil); code != 409 {
+		t.Fatalf("undo after an automatic pass: %d, want 409", code)
 	}
 
 	// Targeted: Bob recruits in the South Pacific, where Alice has her Gate.

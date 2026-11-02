@@ -252,8 +252,8 @@ func TestPieRule_YavalathTakesItWhenTheTableAsks(t *testing.T) {
 	}
 }
 
-// Taking back the swap puts the players back in their first seats.
-func TestPieRule_ASwapUndoneSwapsBack(t *testing.T) {
+// A swap cannot be taken back.
+func TestPieRule_ASwapStands(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	var created struct {
 		RoomCode string `json:"room_code"`
@@ -276,27 +276,18 @@ func TestPieRule_ASwapUndoneSwapsBack(t *testing.T) {
 	if code, out := moveNotation(t, baseURL, room, "Bob", "swap"); code != 200 {
 		t.Fatalf("swap: %d %v", code, out)
 	}
-	// The swap was Bob's move, made from the seat he no longer holds: undo
-	// attributes it to him all the same.
-	if code := doJSON(t, "POST", baseURL+"/api/games/"+room+"/undo", map[string]any{"player_name": "Bob"}, nil); code != 200 {
-		t.Fatalf("undo the swap: %d", code)
+	// It handed the turn on, so it stands, and the players stay where it put them.
+	if code := doJSON(t, "POST", baseURL+"/api/games/"+room+"/undo", map[string]any{"player_name": "Bob"}, nil); code != 409 {
+		t.Fatalf("undo the swap: %d, want 409", code)
 	}
 	var game struct {
-		TurnSeat *int `json:"turn_seat"`
-		Seats    []struct {
-			Seat int    `json:"seat"`
+		Seats []struct {
 			Name string `json:"name"`
 		} `json:"seats"`
 	}
 	doJSON(t, "GET", baseURL+"/api/games/"+room, nil, &game)
-	if len(game.Seats) != 2 || game.Seats[0].Name != "Ana" || game.Seats[1].Name != "Bob" {
-		t.Errorf("after the undo the seats are %v, want Ana in 1 and Bob in 2", game.Seats)
-	}
-	if game.TurnSeat == nil || *game.TurnSeat != 2 {
-		t.Errorf("after the undo %v is to move, want the second seat", game.TurnSeat)
-	}
-	if !swapIsLegal(t, baseURL, room) {
-		t.Error("the swap is not on offer again after it was undone")
+	if len(game.Seats) != 2 || game.Seats[0].Name != "Bob" || game.Seats[1].Name != "Ana" {
+		t.Errorf("after trying, the seats are %v, want Bob in 1 and Ana in 2", game.Seats)
 	}
 }
 

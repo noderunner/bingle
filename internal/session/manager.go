@@ -8,7 +8,7 @@
 //	join.go, presence.go     taking a seat or watching; who is looking now
 //	state.go, history.go     reading a game: snapshots, moves, legal moves, simulation
 //	moves.go, botturns.go    playing a move and everything that follows it (bots, clocks)
-//	undo.go, takeback.go     taking moves back
+//	undo.go                  taking back a step of the turn being played
 //	resign.go                resigning and draws
 //	lobby.go, reactions.go,
 //	autoplay.go, chat.go,
@@ -40,25 +40,30 @@ type Manager struct {
 	catalog   *catalog.Catalog
 	hub       *hub
 	bots      *bots.Registry
-	log       *slog.Logger           // the server's logger; tests may replace it via SetLogger
-	mx        *metrics.Metrics       // the registry; nil records nothing
-	debug     DebugOptions           // which games and rooms get the firehose
-	repro     *repro.Writer          // where repro bundles go; nil writes none
-	now       func() time.Time       // clock; tests may replace it via SetClock
-	resultsMu sync.Mutex             // one writer of rated results at a time
-	upSince   time.Time              // when this server came up, by that clock (see turnStart)
-	mu        sync.Mutex             // guards roomLocks itself, not room state
-	roomLocks map[string]*sync.Mutex // lazily created, one per room code ever touched
-	tutorials tutorialCache          // each family's tutorials, read once
-	shuffles  shuffleTracker         // recent piece arrangements of bots (see avoidShuffles)
-	chat      chatLimiter            // how often each name has spoken (see SendChat)
-	presence  presenceTracker        // who says they are watching right now (see SetPresent)
-	here      hereTracker            // the browsers that are about (see here.go)
-	dms       dmBox                  // the direct messages, in memory (see dm.go)
-	calls     callRegistry           // the one voice call each browser is in (see dm.go)
-	voice     voiceTracker           // who is in the voice chat of each game (see SetVoice)
-	notify    *notifier              // email notifications (nil when not set up; see EnableNotify)
-	botsBusy  map[string]bool        // rooms with a background bot run, guarded by mu
+	log       *slog.Logger     // the server's logger; tests may replace it via SetLogger
+	mx        *metrics.Metrics // the registry; nil records nothing
+	debug     DebugOptions     // which games and rooms get the firehose
+	repro     *repro.Writer    // where repro bundles go; nil writes none
+	now       func() time.Time // clock; tests may replace it via SetClock
+	resultsMu sync.Mutex       // one writer of rated results at a time
+	// tournamentsMu: one thing at a time moves tournaments on. It is taken before any room lock.
+	tournamentsMu sync.Mutex
+	// mayEnterTournament is the capability check for entering (nil: anybody with
+	// an account).
+	mayEnterTournament func(context.Context) bool
+	upSince            time.Time              // when this server came up, by that clock (see turnStart)
+	mu                 sync.Mutex             // guards roomLocks itself, not room state
+	roomLocks          map[string]*sync.Mutex // lazily created, one per room code ever touched
+	tutorials          tutorialCache          // each family's tutorials, read once
+	shuffles           shuffleTracker         // recent piece arrangements of bots (see avoidShuffles)
+	chat               chatLimiter            // how often each name has spoken (see SendChat)
+	presence           presenceTracker        // who says they are watching right now (see SetPresent)
+	here               hereTracker            // the browsers that are about (see here.go)
+	dms                dmBox                  // the direct messages, in memory (see dm.go)
+	calls              callRegistry           // the one voice call each browser is in (see dm.go)
+	voice              voiceTracker           // who is in the voice chat of each game (see SetVoice)
+	notify             *notifier              // email notifications (nil when not set up; see EnableNotify)
+	botsBusy           map[string]bool        // rooms with a background bot run, guarded by mu
 	// autoPlayFrom is when the Auto-Play watcher started (zero when it is not
 	// running, as in tests): a wait that ran while the server was down does
 	// not count, see autoPlaySince. Guarded by mu.

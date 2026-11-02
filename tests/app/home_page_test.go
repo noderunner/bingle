@@ -39,7 +39,7 @@ func TestHomePage_IsTabbedAndTidy(t *testing.T) {
 	}
 	// The tabs of the page itself, Games first. (The windows of the top bar
 	// have tabs of their own, in their own tablists.)
-	if got := evalString(t, ctx, `[...document.getElementById("tab-games").parentElement.querySelectorAll('[role="tab"]')].map((x) => x.firstChild.textContent.trim()).join("|")`); got != "Games|Puzzles|Analysis|Ratings|Global Chat" {
+	if got := evalString(t, ctx, `[...document.getElementById("tab-games").parentElement.querySelectorAll('[role="tab"]')].map((x) => x.firstChild.textContent.trim()).join("|")`); got != "Games|Puzzles|Analysis|Ratings|Tournaments|Global Chat" {
 		t.Errorf("tabs = %q", got)
 	}
 	if !evalBool(t, ctx, `document.getElementById("tab-games").getAttribute("aria-selected") === "true" && document.getElementById("panel-puzzles").hidden`) {

@@ -66,7 +66,7 @@ Invisibility on enemies and the Yellow Sign grant. `contract_test.go` plays rand
 every legal move applies and round-trips through notation, `Apply` never
 mutates its input, the action space is fixed and complete, planes are in
 range, no decision leaves the position unchanged, only the seat to move has moves, public views hide the generator and
-other players' signs, runs are reproducible by seed and take-back is refused
+other players' signs, runs are reproducible by seed and taking a step back is refused
 across a roll; `FuzzParseMove` fuzzes the parser. `playtest_test.go` pins
 what the playtests asked for: Gates taken by arriving Cultists, revealing all
 Elder Signs at once and keeping them private, the bag count, the phases of the
@@ -121,7 +121,7 @@ lobby, a bot Windwalker beginning by itself), `cthulhuwars_round6_ui_test.go`
 stepped off, a unit put back on it, the game options window with its
 sections and layers, a button and hover card for every monster, the pictograms
 and pool icons of the cult cards, one card with the Moves and History tabs and
-Undo among the actions, a game against oneself from the home page),
+Back among the actions, a game against oneself from the home page),
 `cthulhuwars_round7_ui_test.go` (the units of a cult all listed with those away
 greyed out and their place on hover, the price and rule card of the action
 buttons, a button for each Great Old One, the words above the buttons, the
@@ -130,7 +130,7 @@ pictograms instead of ticks in the cult cards, on the buttons of spellbook
 abilities and — greyed out — of the requirement actions, the Captured zone, a
 free step-off that asks for nothing, the steps of awakening in every card of a
 Great Old One and in the rules window), `cthulhuwars_round9_ui_test.go` (Desecrate
-rolling at once and asking for its unit after, no Undo across a roll — in the page
+rolling at once and asking for its unit after, no Back across a roll — in the page
 and over REST, where the move is marked `locked` and the undo is a 409 — Yellow
 Sign's Desecration token count first among its numbers, and the abilities of every
 Great Old One in its cards and in the rules), `cthulhuwars_round10_ui_test.go`

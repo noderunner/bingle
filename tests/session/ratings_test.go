@@ -203,11 +203,8 @@ func TestRated_MovesStand(t *testing.T) {
 	ana, bea := w.account("ana"), w.account("bea")
 	room := w.start(ana, bea)
 	w.moveEach(room, ana, bea)
-	if _, err := w.m.Undo(bea.ctx, room, bea.handle); !errors.Is(err, session.ErrRatedGame) {
+	if _, err := w.m.Undo(ana.ctx, room, ana.handle); !errors.Is(err, session.ErrCannotUndo) {
 		t.Errorf("undo: %v", err)
-	}
-	if _, err := w.m.Takeback(ana.ctx, room, ana.handle, "request"); !errors.Is(err, session.ErrRatedGame) {
-		t.Errorf("take-back: %v", err)
 	}
 	on := true
 	if _, err := w.m.SetAutoPlay(ana.ctx, room, ana.handle, &on, nil); !errors.Is(err, session.ErrRatedGame) {
@@ -217,7 +214,7 @@ func TestRated_MovesStand(t *testing.T) {
 		t.Fatal(err)
 	}
 	w.m.RecordResults(context.Background())
-	if _, err := w.m.Undo(bea.ctx, room, bea.handle); !errors.Is(err, session.ErrRatedGame) {
+	if _, err := w.m.Undo(bea.ctx, room, bea.handle); !errors.Is(err, session.ErrCannotUndo) {
 		t.Errorf("undo after the game: %v", err)
 	}
 }

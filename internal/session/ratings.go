@@ -26,7 +26,7 @@ import (
 var ErrCannotBeRated = errors.New("session: this game cannot be rated")
 
 // ErrRatedGame is the answer to something a rated game does not allow.
-var ErrRatedGame = errors.New("session: not in a rated game")
+var ErrRatedGame = errors.New("session: not in a rated or tournament game")
 
 // resultsRetry is how often pending results are looked at again, in case writing
 // one failed.
@@ -82,6 +82,9 @@ func (m *Manager) finished(game store.Game, family, reason string) {
 	if game.Rated {
 		// The caller's context ends with its request, and the result must not.
 		go m.RecordResults(context.Background())
+	}
+	if game.TournamentID != 0 {
+		go m.AdvanceTournaments(context.Background())
 	}
 }
 

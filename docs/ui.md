@@ -79,12 +79,21 @@ square previews the piece a click would place, in the colour it will have.
   and sets a clock if there is none; a handicap, a time per move or taking the clock
   away gives the choice up. The game page has `#rated-badge`, each seat a
   `.badge.rating[data-rating]` with the change once the game is over, and
-  `#rating-note` when a result did not count. Undo, take-backs and Auto-Play are not
-  offered. The home page's *Ratings* tab (`#panel-ratings`, `js/ratings.js`) has
+  `#rating-note` when a result did not count. Auto-Play is not offered. The home page's *Ratings* tab (`#panel-ratings`, `js/ratings.js`) has
   `#leaderboard-game` and `#leaderboard tr[data-handle]`, and the profile has
   `#ratings-box`.
 
-## History, undo, analysis
+* **Tournaments.** The home page's *Tournaments* tab (`#panel-tournaments`,
+  `js/tournaments.js`) lists them in `#tournament-list`, and offers `#tournament-new`
+  to whoever holds `create_tournament`. `/tournament/{id}` (`#tournament-page`) has
+  `#tournament-status`, `#tournament-actions` (`#t-open`, `#t-enter`, `#t-leave`,
+  `#t-start`, `#t-abandon`, `#t-edit`: only what the server would allow),
+  `#tournament-entries` before it starts, `#tournament-standings` after, and
+  `#tournament-schedule`. It reads the tournament again every 30 seconds while it is
+  open or running. A tournament game has `#tournament-badge`, a link back, and no
+  Auto-Play. No rule of a tournament lives in the page.
+
+## History, Back, analysis
 
 * The move list and ⏮ ◀ ▶ ⏭ browse any past position read-only (the position
   comes from `GET …/state?at_seq=N`).
@@ -92,11 +101,14 @@ square previews the piece a click would place, in the colour it will have.
   carries `#move=N` while you browse so a position can be shared.
 * **Offer draw** / **Resign**: a draw offer shows as a banner on the
   opponent's page with *Accept* / *Decline*; any move withdraws it.
-* **Undo** takes back your last move (and a bot's reply) if nobody else has
-  moved since; **Resign** concedes. Both need a second click to confirm.
-* **Ask to take back** appears once a human opponent has replied: they get a
-  banner with *Allow* / *Refuse*; allowing rewinds to before your move with you
-  to move. Any move withdraws an open request.
+* **A move stands once the turn has passed**, in every game ([ADR 0083](decisions/0083-a-move-stands.md)).
+  A move that cannot come back waits for *Submit* (`#submit-move`, Enter), unless
+  the player turns off `#opt-confirm`. **Back** (`#undo-step`, Backspace) clears a
+  selection, then takes back a step of this turn already sent, one at a time, and is
+  not offered once the turn has passed or a die has been rolled. A button such as
+  *End turn* plays at once: pressing it is the Submit. The steps of a turn stay out
+  of the move list and the History tab until the turn is over.
+* **Resign** concedes, and needs a second click to confirm.
 * **Hint** (only in games against bots, or in analysis / review of a finished
   game) asks a bot what it would play (minimax where piece counts matter, MCTS
   elsewhere): the squares are ringed, the banner shows the move — with MCTS its
@@ -402,11 +414,11 @@ timing and text). A button that exists because of an unlocked spellbook wears th
 coloured spellbook pictogram, one that meets a spellbook requirement the greyed
 one (`button[data-source="book"|"requirement"]`, from the action's `source`).
 Move events and the move list carry `locked` for a move that rolled a die: the
-page offers no *Undo my move* across it. The line above the buttons says what is being asked
+page offers no *Back* across it. The line above the buttons says what is being asked
 (`#move-hint`): *Click a unit on the map to move, or choose an action:* on a
 normal turn, *Choose a spellbook to unlock:* when a requirement earned one.
-*Undo my move* is one of the actions too (`#undo-move`, offered only while there
-is a move of yours to take back; it asks twice).
+*Back* is one of the actions too (`#undo-step`, offered only while there is a step
+of this turn to take back).
 
 **Gates and their occupants.** A Gate is a chip among the tokens; the figure
 drawn on it is the unit that occupies it (`.gate-holder[data-holder]`, from
@@ -419,7 +431,7 @@ Gate (`leave:<unit>@<area>>…`). To put a unit on a Gate (free), pick one of th
 units standing beside it and click the Gate (`.gate-chip.gate-target`;
 `control:<unit>@<area>`), also in the middle of a Move. Clicking the Gate itself
 after picking its figure steps the figure off where it stands: free, no Move, no
-Done and no *Undo my move* offered (`leave:<unit>@<area>><area>`). There is no
+Done and no *Back* offered (`leave:<unit>@<area>><area>`). There is no
 Abandon button.
 The glyphs and sigils are badges of their own: a faction glyph is the cult's own
 ring-shaped drawing on a dark disc before the name, so it is not taken for a Gate. The water and the ice carry no
@@ -443,7 +455,7 @@ cult that has a book it may give up while that cult sits at the table
 list is taken from the others). The choice is sent as `options` only when the
 table differs from the layout's own. An open seat of
 a waiting table can be filled with a bot (in the options window); draw offers and
-take-back requests (two-party concepts) are hidden and *Resign* becomes *End game*.
+two-party concepts are hidden and *Resign* becomes *End game*.
 
 ### The game options window
 
@@ -466,7 +478,7 @@ Its sections:
 * **Tools** — *Flip board*, *Analyze*, *Hint*, *Image*, *Export*, *TPS*/*PTN*;
 * **Share this game** — the link (`#share-link`, `#copy-link`);
 * **Table** — fill an open seat with a bot, or take one as a spectator;
-* **Game** — *Ask to take back*, *Offer draw*, *Resign*/*End game* (`#resign`).
+* **Game** — *Offer draw*, *Resign*/*End game* (`#resign`).
 
 There is no Players card or Tools card in the side column any more: the cult
 panels (or the seat strips of a two-player game) show who sits where.
@@ -488,8 +500,7 @@ for several seats of a table) seats the creator more than once: the other seats
 are players of their own, named *Alice · Black Goat*. The page knows them by
 that name (`S.mine`) and acts for the one to move, so a mock game alone needs
 no second browser; every reaction is put to the player there (it is not passed
-for them, and the page offers no reaction settings), and *Undo* takes back
-the last move together with the later moves of one's other seats.
+for them, and the page offers no reaction settings).
 
 ### Accounts
 
@@ -748,14 +759,14 @@ legal-target overlays. Piece appearance comes from `shape` and the seat color.
 `#board svg`, `.cell[data-position]` (`.clickable` when a legal next click),
 `.piece[data-position,data-piece,data-color,data-level,data-top]`,
 `button.hand-piece[data-piece]`, `#count-picker button[data-count]`,
-`#submit-move`, `#reset-move`, `#undo-step`, `#undo-move`, `#resign`,
+`#submit-move`, `#reset-move`, `#undo-step`, `#resign`,
 `.seat-strip .clock[data-clock]` (a seat number with a game clock, `turn` for a
 per-move allowance), `#clock-field` with `#clock_seconds`, `#clock-handicap`,
 `#clock_seconds_1|2`, `#clock-increment-row` with `#clock_increment`,
 `#move-list button.mv[data-seq]`, `#hist-*`, `#analyze`, `#exit-analysis`,
 `#rematch`, `#status-message`, `#conn-badge`, `#hint`, `#open-options`,
 `#game-options`, `#share-link`,
-`#save-image`, `#request-takeback`, `#takeback-accept`, `.ghost-piece`,
+`#save-image`, `.ghost-piece`,
 `.hint-ring`, `#puzzle-list .puzzle-card` (the name for a puzzle game is `#puzzle_player_name`),
 `#import-text`, `#fun-fact`, `#game-setup`, `#global-chat-log`,
 `#active-games-dialog` with `#tab-my-games` / `#tab-all-games`, `#my-games li`,

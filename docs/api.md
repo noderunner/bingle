@@ -84,6 +84,15 @@ that account.
 
 | Method & path | Body / query | Response |
 |---|---|---|
+| `GET /tournaments` | | `{tournaments:[{id, name, game_def_id, game_name, format, status, clock_seconds, clock_increment_seconds?, games_per_pairing, rated, pie_rule, min_players, max_players, rounds?, players, organiser, current_round, total_rounds?, created_at, started_at?, ended_at?}]}`: open for entries first, then running, then the rest; drafts only for who runs them |
+| `POST /tournaments` | `{name, description?, game_def_id, format (round_robin, swiss), clock_seconds, clock_increment_seconds?, games_per_pairing? (1 or 2; default 2), rated? (default true), pie_rule? (default true), min_players?, max_players?, rounds? (Swiss)}` | `201` and the tournament, a draft. Needs `create_tournament` |
+| `GET /tournaments/{id}` | | the fields above and `description?, end_detail?, standings:[{handle, withdrawn?, place?, score, played, won, drawn, lost, buchholz?, sonneborn_berger}], schedule:[{round, games:[{first, second?, room_code?, done, scores?, reason?}]}], you:{entered, withdrawn?, organiser}` |
+| `PUT /tournaments/{id}` | the same as `POST` | a draft's new settings. The organiser's |
+| `POST /tournaments/{id}/open` | | a draft opens for entries. The organiser's |
+| `POST /tournaments/{id}/enter` | | enters the caller's account. Needs `enter_tournament` |
+| `POST /tournaments/{id}/leave` | `{handle?}` | the caller leaves, or the organiser removes `handle`; in a running tournament that forfeits their games (below) |
+| `POST /tournaments/{id}/start` | | closes the entries and plays round 1. The organiser's |
+| `POST /tournaments/{id}/abandon` | | ends it, and its games with no result. The organiser's; an administrator may do all the organiser may |
 | `GET /game-defs` | | `[{id, name, seats_required, description, board_width, board_height, family, version, designers?, publisher?, tutorials?}]` (`version` is the game's semantic version: below 1.0.0 is a beta; `tutorials` how many tutorials the game's family has) |
 | `GET /game-defs/{id}` | | full description (`start` is the starting position; `preview`, when the game starts empty, a sample game in play for pictures): `rules`, `notation_help`, `board` (positions with layout, regions, borders), `pieces`, `pools`, `actions`, `opening`, `win_rules`, `scores`, `default_clock_minutes?` |
 | `GET /game-defs/{id}/guide` | | the rules guide as Markdown pages `{game, generated?, tabs:[{id, title, markdown}]}` — the game's own, or one generated from its definition (`generated: true`) |
@@ -108,7 +117,7 @@ that account.
 | `GET /config` | | `{public_url}`: the configured `BINGLE_PUBLIC_URL` ("" when unset) |
 | `POST /bot-matches` | `{game_def_id, bot_a, bot_b, delay_ms?}`: a two-player room where two built-in bots play each other at a watchable pace (150 ms – 10 s per move); open it as a spectator (`/games/{code}/join` with role spectator, or the WebSocket). Stops when the game ends, after 2 minutes with nobody watching, or at the move cap; at most 12 run at once | `{room_code, status}` |
 | `POST /games/import` | `{text, game_def_id?, player1?, player2?}`: load a PTN document or a plain move list into a new room (full history; the rules engine validates every move, an illegal one is reported by number; a `[TPS]` header sets the start) | `{room_code, game_def_id, status, moves, players}` |
-| `GET /games/{code}` | | `{game_def_id, status, seats[{seat,color,name,label,bot}], turn_seat, move_seq, winner_seat, end_reason, end_detail, move_time_seconds, clock?, turn_deadline, server_time, draw_offer_seat, takeback_seat, takeback_to_seq, start_state?, start_turn_seat?, lobby?, host_seat?, invite_url}` |
+| `GET /games/{code}` | | `{game_def_id, status, seats[{seat,color,name,label,bot}], turn_seat, move_seq, winner_seat, end_reason, end_detail, move_time_seconds, clock?, turn_deadline, server_time, draw_offer_seat, start_state?, start_turn_seat?, lobby?, host_seat?, invite_url}` |
 | `POST /games/{code}/join` | `{player_name, role: player\|spectator, seat?}`: `seat` asks for a particular open seat (`409` if taken); a player already seated keeps theirs | `{role, seat, color, status}` |
 | `POST /games/{code}/bots` | `{player_name, bot, seat?}`: a seated player fills the lowest open seat (or `seat`) of a **waiting** game with a built-in bot, named after the seat's faction/colour and its kind (`Black Goat (MCTS)`); a game without a lobby starts when the last seat fills | `{seat, name, color, bot, status}`; `403` not seated, `409` full or already started |
 | `POST /games/{code}/start` | `{player_name}`: the **host** begins a game waiting in its lobby; every seat must be filled | `{status, lobby, host_seat, move_seq, turn_seat}`; `403` not the host, `409` seats open / already started |
@@ -140,8 +149,7 @@ too (besides `seat`): each is a player of its own named after the creator and th
 seat (`Alice · Black Goat`, at most 40 characters), so the game still has a
 player for every seat — it starts at once when the table is full (or waits in the
 lobby for the host's `start`). Moves are made with the name of the seat to move;
-`undo` takes back the last move together with the later moves of one's other
-seats. An unknown seat is a `400`.
+An unknown seat is a `400`.
 
 **Setup options.** A game may list `options` in `GET /game-defs/{id}` — for
 Cthulhu Wars `factions` (a `seat-choice`: which of the six cults sits in each
@@ -159,6 +167,15 @@ in every other seat (the game starts immediately); `seat` chooses the
 creator's seat; `move_time_seconds` gives each move a time limit — the player
 to move loses on time when it runs out (the clock only runs while the game is
 active, and is evaluated whenever the game is read or moved in).
+
+**Tournaments** (ADR 0082) are for accounts and games of two seats. A round starts when the last game
+of the one before ends. A game with no moves from one player forfeits on the clock and leaves ratings
+alone; the server ends a game whose flag has fallen within about a minute, with nobody looking. A game
+says which tournament it belongs to as `tournament: {id, name}`, and takes no Auto-Play. A player who leaves a running tournament forfeits their games in progress
+(`end_reason: "forfeit"`) and any round-robin games still to come, is not paired again in Swiss, and what
+they have played stands. An abandoned tournament ends its games with `end_reason: "abandoned"`, no
+winner and no rating change. Standings are public, and worked out from the tournament's own record, so
+they last after retention deletes the games. Retention leaves the games of a running tournament alone.
 
 **The game clock.** `clock_seconds` plays the game with a chess clock instead:
 a number gives both players that many seconds, a list of one time per seat
@@ -185,8 +202,8 @@ pass what it started with.
 **Rated games.** `rated: true` makes the game move both players' ratings when it
 ends. It takes a signed-in account, a game of two seats, `clock_seconds` with the
 same time for both, no bots, and the standard start; anything else is a `400`, as
-is joining as a guest or as the account already in the other seat. Undo, take-backs
-and Auto-Play answer `409`. `GET /games/{code}` reports `rated`, each seat's
+is joining as a guest or as the account already in the other seat. Auto-Play answers
+`409`. `GET /games/{code}` reports `rated`, each seat's
 `rating: {rating, provisional}`, and once the game has ended `rating_status`
 (`pending`, `rated`, `no_moves`, `daily_limit` or `void`) and `rating_changes:
 [{seat, before, after}]`; a `state` event with reason `rated` says the result has
@@ -241,7 +258,7 @@ default is the game's first seat) begins the game from that position instead
 of the standard one: puzzles, endgame practice, "play from here". The
 position is validated (squares, pieces and colours must exist) and must not
 already be decided; otherwise `400`. The room remembers it: `?at_seq=0`,
-undo-to-start and `export` use it, and `GET /games/{code}` returns it as
+and `export` use it, and `GET /games/{code}` returns it as
 `start_state` / `start_turn_seat`.
 
 Games with `engine: "ruleset"` (Courtfall, Cthulhu Wars) return a *public view* of every
@@ -251,8 +268,7 @@ a live game carry no seed. `GET /api/game-defs/{id}` adds `engine`, `display`
 (tint/badge legend), `count_labels`, `params` and — for `board.style: "areas"` —
 `board.canvas` and `board.areas[{id, name, polygons, anchor, tags}]`; `guide` lists the
 tabs of a hand-written rules guide; its `actions` list the verbs
-that appear as buttons. Undo and take-back are refused (409) once a die has
-been rolled since the move.
+that appear as buttons.
 
 ## Moves
 
@@ -262,10 +278,10 @@ been rolled since the move.
 | `GET /games/{code}/moves` | history `[{seq, seat, color, from, to, captured, action, piece, count, path, drops, aim, notation, created_at}]`; `?since_seq=N` |
 | `GET /games/{code}/moves/legal` | every legal move for the seat to move (`?seat=N`): `{seat, moves:[{notation, action, piece, from, to, count, path, drops, aim, steps?}]}`; `?steps=1` adds the click-by-click selection steps |
 | `GET /games/{code}/legal-moves?from=SQ` | v1: destinations reachable from one square |
-| `POST /games/{code}/undo` | `{player_name}`: take back your last move (and bot replies). `409` once another human has moved |
+| `POST /games/{code}/undo` | `{player_name}`: take back the last step of the turn you are still playing. `409` once the turn has passed to anyone, the game has ended or a die has been rolled: a move then stands, in every game (ADR 0083) |
+| `POST /games/{code}/move-final` | `{player_name, notation}`: `{final}`, whether that move could not be taken back once played, as it hands the turn on, ends the game or brings in chance. Nothing is played. The page asks this before sending a move, to ask for a Submit only when it matters |
 | `POST /games/{code}/resign` | `{player_name}` |
 | `POST /games/{code}/hint` | `{player_name, at_seq?, moves?, bot?}`: a bot's choice (default: `minimax` where piece counts matter — Tak, Reversi, draughts — otherwise `mcts`) for the current position, or after `at_seq` + a variation → `{notation, steps, turn_seat, bot, win_rate?, alternatives?}` (MCTS reports its estimated chance of winning, 0–1, and the best few moves; minimax only the move). Only for players, and only against bots or after the game (`409` otherwise) |
-| `POST /games/{code}/takeback` | `{player_name, action: request\|cancel\|accept\|decline}`: once a human opponent has replied, ask to take back your last move; accepting rewinds to the position before it, requester to move. Any move withdraws a request. `409` for nonsensical requests (nothing to take back, `undo` would work directly, bot opponent). Open requests are `takeback_seat` / `takeback_to_seq` in game/state responses. |
 | `POST /games/{code}/draw` | `{player_name, action: offer\|cancel\|accept\|decline}`: offer a draw to a human opponent; accepting ends the game (`end_reason: agreement`); any move withdraws an offer. `409` for nonsensical requests (no offer to answer, bot opponent). The offer is `draw_offer_seat` in game/state responses. |
 | `POST /games/{code}/simulate` | `{moves:[notation…], at_seq?}`: apply a line to the current or a past position without changing the game; returns the resulting `state`, `turn_seat`, `game_ended`, `legal_moves` and, for Tak, the position as `tps` |
 
@@ -288,10 +304,8 @@ subscribed before it sends `joined`, so a client that waits for `joined` misses 
 * `{"type":"state","data":{reason, removed?, status, turn_seat, move_seq, winner_seat, end_reason, seats[], board_state, state, …}}`
   — sent when something other than a move changed the game (`reason` is
   `join`, `leave`, `seat`, `cult`, `start`, `undo`, `resign`, `timeout`, `draw-offer`, `draw-declined`,
-  `draw-cancelled`, `draw-agreed`, `takeback-request`, `takeback-declined` or
-  `takeback-cancelled`; an accepted take-back arrives as `undo` with
-  `removed`). State events also carry `draw_offer_seat`, `takeback_seat` and
-  `takeback_to_seq`.
+  or `draw-cancelled`, `draw-agreed`; an `undo` carries `removed`). State events
+  also carry `draw_offer_seat`.
 
 * `{"type":"chat","data":{id, seat, color, name, text, at}}` — a chat message.
 * `{"type":"voice","data":{kind: "join"|"leave", seat, name}}` — somebody joined or left the voice chat.

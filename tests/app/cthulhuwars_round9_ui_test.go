@@ -71,7 +71,7 @@ func TestWebCthulhuWars_DesecrateRollsAtOnceThenPlacesAUnitAndCannotBeTakenBack(
 		}
 	}
 	// The die has been rolled: nothing offers to take it back.
-	if n := evalInt(t, ctx, `document.querySelectorAll('#undo-move').length`); n != 0 {
+	if n := evalInt(t, ctx, `document.querySelectorAll('#undo-step').length`); n != 0 {
 		t.Errorf("an Undo button after the roll")
 	}
 	// The log has the die and what it was set against.
@@ -80,7 +80,7 @@ func TestWebCthulhuWars_DesecrateRollsAtOnceThenPlacesAUnitAndCannotBeTakenBack(
 	clickSel(t, ctx, `#move-bar .piece-choice[data-piece="byakhee"]`)
 	waitJS(t, ctx, "the Byakhee", `document.querySelector('#board .token[data-position="europe"][data-piece="byakhee"]') !== null`, 15*time.Second)
 	// And the roll is still final.
-	if n := evalInt(t, ctx, `document.querySelectorAll('#undo-move').length`); n != 0 {
+	if n := evalInt(t, ctx, `document.querySelectorAll('#undo-step').length`); n != 0 {
 		t.Errorf("an Undo button after the unit was placed")
 	}
 	mu.Lock()
@@ -236,8 +236,61 @@ func TestCthulhuWarsARolledMoveIsLockedAndCannotBeUndone(t *testing.T) {
 	if mv2["move"].(map[string]any)["locked"] == true {
 		t.Errorf("a recruit rolled nothing: %v", mv2["move"])
 	}
-	var undone map[string]any
-	if code := doJSON(t, "POST", baseURL+"/api/games/"+room2+"/undo", map[string]any{"player_name": "Alice"}, &undone); code != 200 {
-		t.Errorf("undo of a recruit: %d %v", code, undone)
+	// It handed the turn on, though, so it stands.
+	if code := doJSON(t, "POST", baseURL+"/api/games/"+room2+"/undo", map[string]any{"player_name": "Alice"}, nil); code != 409 {
+		t.Errorf("undo of a recruit with the turn passed: %d, want 409", code)
+	}
+}
+
+// A unit moved in a Move action is a step of the turn: it comes back, from the
+// start position if it was the first step, until the turn is done.
+func TestCthulhuWarsAStepOfAMoveComesBack(t *testing.T) {
+	baseURL := newRESTTestServer(t)
+	doc := cwPosition(t,
+		[]cwUnit{{4, "cultist", "europe", 2}, {1, "cultist", "south-pacific", 1}},
+		map[string]int{"south-pacific": 1},
+		[5]int{0, 3, 3, 3, 6}, [5]uint8{},
+		func(d *cthulhuwars.Data) { d.Turn.Seat = 4 })
+	room := ysGame(t, baseURL, doc)
+	var legal struct {
+		Moves []struct {
+			Notation string `json:"notation"`
+		} `json:"moves"`
+	}
+	doJSON(t, "GET", baseURL+"/api/games/"+room+"/moves/legal", nil, &legal)
+	step := ""
+	for _, m := range legal.Moves {
+		if strings.HasPrefix(m.Notation, "go:") {
+			step = m.Notation
+			break
+		}
+	}
+	if step == "" {
+		t.Fatalf("no unit to move: %+v", legal.Moves)
+	}
+	var final struct {
+		Final bool `json:"final"`
+	}
+	if code := doJSON(t, "POST", baseURL+"/api/games/"+room+"/move-final", map[string]any{"player_name": "Alice", "notation": step}, &final); code != 200 || final.Final {
+		t.Errorf("a unit of a Move: %d, final %v", code, final.Final)
+	}
+	if code, out := moveNotation(t, baseURL, room, "Alice", step); code != 200 {
+		t.Fatalf("the move: %d %v", code, out)
+	}
+	var undone struct {
+		State restState `json:"state"`
+	}
+	if code := doJSON(t, "POST", baseURL+"/api/games/"+room+"/undo", map[string]any{"player_name": "Alice"}, &undone); code != 200 {
+		t.Fatalf("taking it back: %d", code)
+	}
+	if undone.State.MoveSeq != 0 {
+		t.Errorf("after taking it back: move %d", undone.State.MoveSeq)
+	}
+	// Now the rest of the turn: a Move that ends hands the turn on.
+	if code, out := moveNotation(t, baseURL, room, "Alice", step); code != 200 {
+		t.Fatalf("the move again: %d %v", code, out)
+	}
+	if code := doJSON(t, "POST", baseURL+"/api/games/"+room+"/move-final", map[string]any{"player_name": "Alice", "notation": "done"}, &final); code != 200 || !final.Final {
+		t.Errorf("ending the Move: %d, final %v", code, final.Final)
 	}
 }

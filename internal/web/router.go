@@ -45,6 +45,7 @@ func NewRouter(mgr *session.Manager) http.Handler {
 	r.Get("/", h.handleIndex)
 	r.Get("/game/{code}", h.handleGame)
 	r.Get("/profile", h.handleProfile)
+	r.Get("/tournament/{id}", h.handleTournament)
 	r.Get("/login", h.handleAccountPage("login", "Sign in"))
 	r.Get("/signup", h.handleAccountPage("signup", "Sign up"))
 	r.Get("/account", h.handleAccountPage("account", "Your account"))
@@ -162,6 +163,15 @@ func (h *handlers) handleBatches(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := render(r, w, "batches.html.tmpl", data); err != nil {
 		http.Error(w, "web: rendering batches page failed", http.StatusInternalServerError)
+		return
+	}
+}
+
+// handleTournament serves a tournament's page, which reads the tournament itself.
+func (h *handlers) handleTournament(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if err := render(r, w, "tournament.html.tmpl", nil); err != nil {
+		http.Error(w, "web: rendering tournament page failed", http.StatusInternalServerError)
 		return
 	}
 }

@@ -1,5 +1,7 @@
 # 0018 — Undo, resign and built-in bots
 
+> Its undo is replaced by [ADR 0083](0083-a-move-stands.md): a move stands once the turn has passed.
+
 ## Context
 
 Async casual play wants take-backs and the ability to play alone; model

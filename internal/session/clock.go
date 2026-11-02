@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"strconv"
 	"time"
-
-	"github.com/noderunner/bingle/internal/store"
 )
 
 // A game clock (a chess clock) gives each player a store of time instead of an
@@ -207,57 +205,6 @@ func (c *GameClock) gain(seat int) {
 // because the players exchange seats with it.
 func earnsIncrement(how moveHow, gameEnded, pieSwap bool, seat, nextSeat int) bool {
 	return how == madeByPlayer && !gameEnded && (pieSwap || nextSeat != seat)
-}
-
-// rewound is the clock after the moves are taken back, latest last: what they
-// earned goes back, and a pie-rule swap among them (seq swapSeq) is reversed,
-// which puts each player's time back with them. nextSeat is the seat the game
-// was waiting on after the last of the moves, 0 if none. The time the moves
-// took is not refunded (ADR 0057), and because of that a clock can hold less
-// than was earned: taking a move back never runs a clock out, or it would lose
-// a player the game, so at least a second of what they had is left.
-func (c *GameClock) rewound(moves []store.Move, swapSeq, nextSeat int) {
-	if c == nil {
-		return
-	}
-	for i := len(moves) - 1; i >= 0; i-- {
-		mv := moves[i]
-		next := nextSeat
-		if i+1 < len(moves) {
-			next = moves[i+1].Seat
-		}
-		swap := mv.Seq == swapSeq
-		if swap {
-			c.swapSeats()
-		}
-		how := madeByPlayer
-		if mv.Auto || mv.AutoPlay {
-			how = passedForPlayer
-		}
-		if earnsIncrement(how, next == 0, swap, mv.Seat, next) {
-			k := seatKey(mv.Seat)
-			c.Left[k] = max(c.Left[k]-float64(c.Increment), min(c.Left[k], 1))
-		}
-	}
-}
-
-// rewoundClock is rewound on a game's stored clock, as it is stored again; nil
-// for a game without one.
-func rewoundClock(game store.Game, moves []store.Move, swapSeq int) (*string, error) {
-	c := parseGameClock(game.Clock)
-	if c == nil {
-		return nil, nil
-	}
-	next := 0
-	if game.TurnSeat != nil {
-		next = *game.TurnSeat
-	}
-	c.rewound(moves, swapSeq, next)
-	stored, err := c.marshal()
-	if err != nil {
-		return nil, err
-	}
-	return &stored, nil
 }
 
 // swapSeats exchanges the two seats' stores: a pie-rule swap moves each

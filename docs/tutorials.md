@@ -128,7 +128,7 @@ makes the others inert, and lets only the square to click be clicked. *Need a hi
 plays the step's `reply` for the other seats, a moment apart so they can be followed, and moves on.
 A step without `play` waits for **Next** (**Finish** on the last). Where the learner is comes from the
 moves the room has played, so a reload, another tab or a phone find the same step; moves that are not
-the script's (an undo) leave the tutorial *off script*, with a way to start again.
+the script's (a step taken back) leave the tutorial *off script*, with a way to start again.
 
 At the end the tutorial is marked done in the browser, and **Finish this game against a bot** starts
 an ordinary game from the position on the board.

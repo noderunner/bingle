@@ -4,7 +4,7 @@
 classes:
   guest:  [play, join, create_game, chat_game, voice_game]
   user:   [play, join, create_game, chat_game, chat_global, voice_game,
-           voice_direct, dm, notify, run_batch]
+           voice_direct, dm, notify, run_batch, enter_tournament]
 limits:
   guest:  { chat: 100000, create_game: 100000, login: 100000 }
   user:   { chat: 100000, create_game: 100000, dm: 100000 }

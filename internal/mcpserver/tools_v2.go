@@ -48,6 +48,43 @@ func registerPlayTools(s *server.MCPServer, mgr *session.Manager) {
 	)
 
 	s.AddTool(
+		mcp.NewTool("list_tournaments",
+			mcp.WithDescription("List the tournaments: those open for entries first, then those being played, then finished ones."),
+			mcp.WithReadOnlyHintAnnotation(true),
+		),
+		func(ctx context.Context, _ mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			list, err := mgr.ListTournaments(ctx)
+			if err != nil {
+				return mcp.NewToolResultError(err.Error()), nil
+			}
+			return mcp.NewToolResultStructuredOnly(map[string]any{"tournaments": list}), nil
+		},
+	)
+
+	tournamentTool := func(name, description string, do func(context.Context, int64) (session.TournamentDetail, error), opts ...mcp.ToolOption) {
+		opts = append([]mcp.ToolOption{
+			mcp.WithDescription(description),
+			mcp.WithNumber("id", mcp.Required(), mcp.Description("The tournament's id, from list_tournaments.")),
+		}, opts...)
+		s.AddTool(mcp.NewTool(name, opts...), func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			id, err := request.RequireInt("id")
+			if err != nil {
+				return mcp.NewToolResultError(err.Error()), nil
+			}
+			out, err := do(ctx, int64(id))
+			if err != nil {
+				return mcp.NewToolResultError(err.Error()), nil
+			}
+			return mcp.NewToolResultStructuredOnly(out), nil
+		})
+	}
+	tournamentTool("get_tournament", "Read a tournament: its settings, standings and schedule, with the room code of each game.", mgr.Tournament, mcp.WithReadOnlyHintAnnotation(true))
+	tournamentTool("enter_tournament", "Enter a tournament that is open for entries. It takes an account. Tournament games are for people playing their own moves: using a bot or another program to choose them is against the rules.", mgr.EnterTournament)
+	tournamentTool("leave_tournament", "Leave a tournament. Once it is running you forfeit your games in progress and take no further part, and what you have played stands.", func(ctx context.Context, id int64) (session.TournamentDetail, error) {
+		return mgr.LeaveTournament(ctx, id, "")
+	})
+
+	s.AddTool(
 		mcp.NewTool("get_leaderboard",
 			mcp.WithDescription("Read the ratings: with no arguments, the games that have a leaderboard; with family, that game's leaderboard, highest first; with handle, that account's ratings. Rated games are chosen with create_game (rated=true)."),
 			mcp.WithString("family", mcp.Description("The game family, as the list of games with a leaderboard names it (\"hex-11\").")),
@@ -105,7 +142,7 @@ func registerPlayTools(s *server.MCPServer, mgr *session.Manager) {
 
 	s.AddTool(
 		mcp.NewTool("undo_move",
-			mcp.WithDescription("Take back your most recent move (and any built-in bot replies to it). Only possible while no other human has moved since."),
+			mcp.WithDescription("Take back the last step of the turn you are still playing, in a game whose turn has several steps. A move stands once the turn has passed to anyone, a die has been rolled or a card drawn."),
 			mcp.WithString("room_code", mcp.Required(), mcp.Description("The room code of the game.")),
 			mcp.WithString("player_name", mcp.Required(), mcp.Description("Your player name.")),
 		),
@@ -138,30 +175,6 @@ func registerPlayTools(s *server.MCPServer, mgr *session.Manager) {
 				return mcp.NewToolResultError("action is required"), nil
 			}
 			snap, err := mgr.Draw(ctx, room, player, action)
-			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
-			}
-			return mcp.NewToolResultStructuredOnly(stateResultFromSnapshot(snap)), nil
-		},
-	)
-
-	s.AddTool(
-		mcp.NewTool("takeback",
-			mcp.WithDescription("Ask a human opponent to let you take back your last move after they have replied (undo_move works on its own until then), or answer their request. Accepting rewinds to the position before the requester's move, with the requester to move; any move withdraws an outstanding request."),
-			mcp.WithString("room_code", mcp.Required(), mcp.Description("The room code of the game.")),
-			mcp.WithString("player_name", mcp.Required(), mcp.Description("Your player name.")),
-			mcp.WithString("action", mcp.Required(), mcp.Description("One of: request, cancel, accept, decline.")),
-		),
-		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-			room, player, errRes := requireRoomAndPlayer(request)
-			if errRes != nil {
-				return errRes, nil
-			}
-			action, err := request.RequireString("action")
-			if err != nil {
-				return mcp.NewToolResultError("action is required"), nil
-			}
-			snap, err := mgr.Takeback(ctx, room, player, action)
 			if err != nil {
 				return mcp.NewToolResultError(err.Error()), nil
 			}
@@ -503,7 +516,6 @@ func stateResultFromSnapshot(s session.StateSnapshot) getStateResult {
 		EndReason:  s.EndReason,
 
 		DrawOfferSeat: s.DrawOfferSeat,
-		TakebackSeat:  s.TakebackSeat,
 	}
 }
 

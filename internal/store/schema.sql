@@ -386,3 +386,65 @@ CREATE TABLE IF NOT EXISTS stats (
     value         INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (account_id, key)
 );
+
+-- A tournament (the tournaments plan, ADR 0082). Its results live here and not
+-- in the games, which retention may delete once the tournament is over.
+CREATE TABLE IF NOT EXISTS tournaments (
+    id                INTEGER PRIMARY KEY AUTOINCREMENT,
+    name              TEXT NOT NULL,
+    description       TEXT NOT NULL DEFAULT '',
+    game_def_id       TEXT NOT NULL,
+    game_name         TEXT NOT NULL,
+    format            TEXT NOT NULL,                  -- round_robin | swiss
+    clock_seconds     INTEGER NOT NULL,
+    clock_increment   INTEGER NOT NULL DEFAULT 0,
+    games_per_pairing INTEGER NOT NULL DEFAULT 2,
+    rated             INTEGER NOT NULL DEFAULT 1,
+    pie_rule          INTEGER NOT NULL DEFAULT 1,
+    min_players       INTEGER NOT NULL DEFAULT 2,
+    max_players       INTEGER NOT NULL DEFAULT 0,     -- 0: the server's limit
+    rounds            INTEGER NOT NULL DEFAULT 0,     -- Swiss; 0: from the number of players
+    total_rounds      INTEGER NOT NULL DEFAULT 0,     -- settled at the start
+    current_round     INTEGER NOT NULL DEFAULT 0,
+    status            TEXT NOT NULL DEFAULT 'draft',  -- draft | registration | running | finished | abandoned
+    end_detail        TEXT NOT NULL DEFAULT '',
+    seed              INTEGER NOT NULL DEFAULT 0,
+    organiser_id      INTEGER NOT NULL REFERENCES accounts(id),
+    created_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    started_at        TIMESTAMP,
+    ended_at          TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_tournaments_status ON tournaments(status);
+
+CREATE TABLE IF NOT EXISTS tournament_entries (
+    tournament_id  INTEGER NOT NULL REFERENCES tournaments(id) ON DELETE CASCADE,
+    account_id     INTEGER NOT NULL REFERENCES accounts(id),
+    rating         REAL NOT NULL DEFAULT 0,              -- at the start, for the seeding
+    seed_no        INTEGER NOT NULL DEFAULT 0,           -- the place in a round robin's table
+    withdrawn      INTEGER NOT NULL DEFAULT 0,
+    entered_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (tournament_id, account_id)
+);
+
+-- One game of a pairing, or what stands in for one: a bye (player_b NULL), or a
+-- forfeit nobody needed to play (game_id NULL). score_a is NULL until the result
+-- is in. A game's row may go when retention deletes it; this row stays.
+CREATE TABLE IF NOT EXISTS tournament_games (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    tournament_id  INTEGER NOT NULL REFERENCES tournaments(id) ON DELETE CASCADE,
+    round          INTEGER NOT NULL,
+    board          INTEGER NOT NULL,
+    game_no        INTEGER NOT NULL,
+    player_a       INTEGER NOT NULL REFERENCES accounts(id),  -- first seat at the start
+    player_b       INTEGER REFERENCES accounts(id),
+    game_id        INTEGER REFERENCES games(id) ON DELETE SET NULL,
+    room_code      TEXT NOT NULL DEFAULT '',
+    score_a        REAL,
+    score_b        REAL,
+    reason         TEXT NOT NULL DEFAULT ''
+);
+
+CREATE INDEX IF NOT EXISTS idx_tournament_games_t ON tournament_games(tournament_id, round);
+CREATE INDEX IF NOT EXISTS idx_tournament_games_game ON tournament_games(game_id);
+CREATE INDEX IF NOT EXISTS idx_tournament_games_open ON tournament_games(tournament_id) WHERE score_a IS NULL;

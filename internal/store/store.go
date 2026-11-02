@@ -106,6 +106,8 @@ var columnMigrations = []struct{ table, column, ddl string }{
 	{"games", "end_detail", "TEXT NOT NULL DEFAULT ''"},
 	{"games", "initial_state", "TEXT NOT NULL DEFAULT ''"},
 	{"games", "initial_turn_seat", "INTEGER NOT NULL DEFAULT 0"},
+	// takeback_seat, takeback_seq: unused since take-backs went (ADR 0083). They
+	// stay so that an older database opens as it did.
 	{"games", "takeback_seat", "INTEGER"},
 	{"games", "takeback_seq", "INTEGER NOT NULL DEFAULT 0"},
 	{"moves", "notation", "TEXT NOT NULL DEFAULT ''"},
@@ -139,6 +141,12 @@ var columnMigrations = []struct{ table, column, ddl string }{
 	// the transaction that ends it.
 	{"games", "rated", "INTEGER NOT NULL DEFAULT 0"},
 	{"games", "rating_status", "TEXT NOT NULL DEFAULT ''"},
+	// tournament_id: the tournament the game is part of (0 for none).
+	{"games", "tournament_id", "INTEGER NOT NULL DEFAULT 0"},
+	// tournament_id: the tournament a rated result came from (0 for none).
+	{"rating_history", "tournament_id", "INTEGER NOT NULL DEFAULT 0"},
+	// account_id: the contact is an account's own, for its tournament games.
+	{"notify_contacts", "account_id", "INTEGER NOT NULL DEFAULT 0"},
 }
 
 func addMissingColumns(db *sql.DB) error {

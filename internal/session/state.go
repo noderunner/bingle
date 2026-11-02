@@ -36,8 +36,10 @@ type StateSnapshot struct {
 
 	// Rated says the game moves its players' ratings when it ends; RatingStatus
 	// says what became of that, and RatingChanges what it did to them.
-	Rated         bool
-	RatingStatus  string
+	Rated        bool
+	RatingStatus string
+	// Tournament is the tournament the game is part of.
+	Tournament    *TournamentRef
 	RatingChanges []RatingChange
 	// MoveTimeLimit is the per-move allowance in seconds (0 = untimed).
 	MoveTimeLimit int
@@ -53,11 +55,6 @@ type StateSnapshot struct {
 
 	// DrawOfferSeat is the seat currently offering a draw (nil if none).
 	DrawOfferSeat *int
-
-	// TakebackSeat is the seat asking to take back its last move (nil if
-	// none), and TakebackToSeq the number of moves that would remain.
-	TakebackSeat  *int
-	TakebackToSeq int
 
 	// StartState is the starting position document when the game began
 	// from a custom position (empty for the standard start), and
@@ -125,8 +122,6 @@ func (m *Manager) snapshot(compiled *catalog.CompiledGame, game store.Game, play
 		ServerTime:    m.now().UTC(),
 		DrawOfferSeat: game.DrawOfferSeat,
 
-		TakebackSeat:  game.TakebackSeat,
-		TakebackToSeq: game.TakebackSeq,
 		StartState:    publicDoc(compiled, game.InitialState),
 		StartTurnSeat: game.InitialTurnSeat,
 	}, nil
@@ -368,6 +363,7 @@ func (m *Manager) readState(ctx context.Context, roomCode string, atSeq *int) (S
 	if err == nil {
 		m.identify(ctx, snap.Seats)
 		snap.RatingChanges = m.fillRatings(ctx, compiled, game, snap.Seats)
+		snap.Tournament = m.tournamentRef(ctx, game)
 	}
 	return snap, err
 }

@@ -21,10 +21,10 @@ Short records of choices made for the `bingle` project during the requirements i
 | [0015](0015-engine-v2-stacks-and-actions.md) | Engine v2: stacks, reserves and declarative actions |
 | [0016](0016-compatible-state-views.md) | Position document with a compatible legacy view |
 | [0017](0017-notation-and-move-steps.md) | Canonical notation and click-by-click move steps |
-| [0018](0018-undo-resign-and-bots.md) | Undo, resign and built-in bots |
+| [0018](0018-undo-resign-and-bots.md) | Undo (replaced by 0083), resign and built-in bots |
 | [0019](0019-training-environments.md) | In-memory gym-style environments for training |
 | [0020](0020-move-time-limits.md) | Optional per-move time limits, enforced lazily |
-| [0021](0021-custom-start-positions-and-takebacks.md) | Custom start positions and take-backs with consent |
+| [0021](0021-custom-start-positions-and-takebacks.md) | Custom start positions, and take-backs with consent (replaced by 0083) |
 | [0022](0022-slides-and-compound-moves.md) | Slides and compound moves |
 | [0023](0023-model-observations-and-puzzles.md) | Model-ready observations and proven puzzles |
 | [0024](0024-hints-imports-and-http-environments.md) | Hints, game import and environments over HTTP |
@@ -85,3 +85,5 @@ Short records of choices made for the `bingle` project during the requirements i
 | [0079](0079-clock-increments-and-restarts.md) | The clock gains an increment that taking a move back removes, and a restart costs nobody time, on a clock or a per-move limit |
 | [0080](0080-rated-games-and-results.md) | Rated games: Glicko-2 per family, chosen at setup, written after the game ends from a mark made in the transaction that ends it, and kept apart from the games retention deletes |
 | [0081](0081-clock-minutes-and-game-defaults.md) | The setup takes 1 to 60 minutes and keeps two long times, and a game's definition can suggest a time, which never turns a clock on |
+| [0082](0082-correspondence-tournaments.md) | Correspondence tournaments: round robin and Swiss, a sweep instead of a scheduler, results copied to the tournament's own tables, and turn mail by default |
+| [0083](0083-a-move-stands.md) | A move stands once the turn has passed: take-backs are gone, Back takes back steps of the turn still being played, and a move that cannot come back waits for Submit in every game |

@@ -210,6 +210,7 @@ func New(cfg config.Config, opts ...Option) (*App, error) {
 		return nil, err
 	}
 	a.caps = caps
+	manager.SetMayEnterTournament(caps.MayEnterTournament)
 	a.accounts = auth.NewAccounts(st, auth.AccountOptions{Mailer: manager, Log: a.log, Signup: cfg.Signup, SessionIdle: cfg.SessionIdle, SessionMax: cfg.SessionMax, Argon2: a.argon2,
 		LoginsPerMinute: caps.Limit(auth.ClassGuest, auth.LimitLogin)})
 	a.guests = auth.NewResolver(st, auth.Options{Transport: a.transport, Idle: cfg.GuestIdle, Log: a.log, Accounts: a.accounts,

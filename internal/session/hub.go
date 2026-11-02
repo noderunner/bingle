@@ -92,11 +92,6 @@ type stateEventData struct {
 
 	// DrawOfferSeat is the seat currently offering a draw (null if none).
 	DrawOfferSeat *int `json:"draw_offer_seat"`
-
-	// TakebackSeat is the seat asking to take back its last move (null if
-	// none) and TakebackToSeq how many moves would remain.
-	TakebackSeat  *int `json:"takeback_seat"`
-	TakebackToSeq int  `json:"takeback_to_seq,omitempty"`
 }
 
 // seatEventData is one seat of a stateEventData.
@@ -134,9 +129,6 @@ func stateEventFrom(snap StateSnapshot, reason string, removed []int) stateEvent
 		Clock:         snap.Clock,
 		ServerTime:    snap.ServerTime.Format(time.RFC3339),
 		DrawOfferSeat: snap.DrawOfferSeat,
-
-		TakebackSeat:  snap.TakebackSeat,
-		TakebackToSeq: snap.TakebackToSeq,
 	}
 	if snap.TurnDeadline != nil {
 		ev.TurnDeadline = snap.TurnDeadline.Format(time.RFC3339)

@@ -26,25 +26,29 @@ import (
 
 // The capabilities.
 const (
-	CapPlay           = "play"
-	CapJoin           = "join"
-	CapCreateGame     = "create_game"
-	CapChatGame       = "chat_game"
-	CapChatGlobal     = "chat_global"
-	CapVoiceGame      = "voice_game"
-	CapVoiceDirect    = "voice_direct"
-	CapDM             = "dm"
-	CapNotify         = "notify"
-	CapRunBatch       = "run_batch"
-	CapViewMetrics    = "view_metrics"
-	CapModerate       = "moderate"
-	CapInstallPlugins = "install_plugins"
-	CapAdmin          = "admin"
+	CapPlay        = "play"
+	CapJoin        = "join"
+	CapCreateGame  = "create_game"
+	CapChatGame    = "chat_game"
+	CapChatGlobal  = "chat_global"
+	CapVoiceGame   = "voice_game"
+	CapVoiceDirect = "voice_direct"
+	CapDM          = "dm"
+	CapNotify      = "notify"
+	CapRunBatch    = "run_batch"
+	// Making tournaments is the administrators' until /admin grants it; entering
+	// is for accounts (the tournaments plan).
+	CapCreateTournament = "create_tournament"
+	CapEnterTournament  = "enter_tournament"
+	CapViewMetrics      = "view_metrics"
+	CapModerate         = "moderate"
+	CapInstallPlugins   = "install_plugins"
+	CapAdmin            = "admin"
 )
 
 // AllCaps lists every capability, in the order the admin page shows them.
 var AllCaps = []string{CapPlay, CapJoin, CapCreateGame, CapChatGame, CapChatGlobal, CapVoiceGame, CapVoiceDirect, CapDM, CapNotify,
-	CapRunBatch, CapViewMetrics, CapModerate, CapInstallPlugins, CapAdmin}
+	CapRunBatch, CapCreateTournament, CapEnterTournament, CapViewMetrics, CapModerate, CapInstallPlugins, CapAdmin}
 
 // The classes. The admin group holds every capability and has no column.
 const (
@@ -190,8 +194,36 @@ func NewCaps(ctx context.Context, st *store.Store, mode, file string) (*Caps, er
 		if err := c.Reset(ctx); err != nil {
 			return nil, err
 		}
+		return c, nil
+	}
+	if err := c.addNewCaps(ctx); err != nil {
+		return nil, err
 	}
 	return c, nil
+}
+
+// addNewCaps gives a database made before a capability existed that capability,
+// as the file seeds it, and touches nothing else the admin page may have changed.
+func (c *Caps) addNewCaps(ctx context.Context) error {
+	seed, _, err := ReadCapsFile(c.file)
+	if err != nil {
+		return err
+	}
+	rows, _ := seed.rows()
+	changed := false
+	for _, r := range rows {
+		if _, has := c.allowed[r.Class+"/"+r.Capability]; has {
+			continue
+		}
+		if err := c.st.SetCap(ctx, r.Class, r.Capability, r.Allowed); err != nil {
+			return err
+		}
+		changed = true
+	}
+	if changed {
+		return c.load(ctx)
+	}
+	return nil
 }
 
 // Reset re-applies the file (or the built-in seed): `bingle caps reset`.
@@ -345,6 +377,8 @@ var routes = func() []route {
 		r("", `/api/here`, CapDM, ""),
 		r("POST", `/api/notify/.*`, CapNotify, ""),
 		r("PUT", `/api/games/[^/]+/notify`, CapNotify, ""),
+		r("POST", `/api/tournaments`, CapCreateTournament, LimitCreateGame),
+		r("POST", `/api/tournaments/[^/]+/enter`, CapEnterTournament, ""),
 		r("POST", `/api/batches`, CapRunBatch, ""),
 		r("POST", `/api/batches/[^/]+/cancel`, CapRunBatch, ""),
 		r("DELETE", `/api/batches/[^/]+`, CapRunBatch, ""),
@@ -379,8 +413,8 @@ func classOf(p Principal, ok bool) string {
 
 // scopeCaps are what a token's scopes let it do (within its account's class).
 var scopeCaps = map[string][]string{
-	ScopePlay:        {CapPlay, CapJoin, CapChatGame, CapVoiceGame},
-	ScopeCreateGame:  {CapCreateGame},
+	ScopePlay:        {CapPlay, CapJoin, CapChatGame, CapVoiceGame, CapEnterTournament},
+	ScopeCreateGame:  {CapCreateGame, CapCreateTournament},
 	ScopeReadMetrics: {CapViewMetrics},
 }
 
@@ -398,6 +432,13 @@ func (c *Caps) may(p Principal, ok bool, capability string) bool {
 		return false
 	}
 	return true
+}
+
+// MayEnterTournament says whether the request's principal may enter a tournament.
+// MCP reaches the session layer through one route, so the rule is checked there.
+func (c *Caps) MayEnterTournament(ctx context.Context) bool {
+	p, ok := From(ctx)
+	return c.may(p, ok, CapEnterTournament)
 }
 
 // Has is the capabilities p holds (for /auth/me, so a page can say what it

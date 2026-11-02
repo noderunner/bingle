@@ -149,6 +149,11 @@ export const api = {
 	setSeatCult: (code, name, seat, cult) => call(`/api/games/${enc(code)}/seat-cult`, { method: "POST", body: { player_name: name, seat, cult } }),
 	leave: (code, name) => call(`/api/games/${enc(code)}/leave`, { method: "POST", body: { player_name: name } }),
 	removeSeat: (code, name, seat) => call(`/api/games/${enc(code)}/remove`, { method: "POST", body: { player_name: name, seat } }),
+	tournaments: () => call("/api/tournaments"),
+	tournament: (id) => call(`/api/tournaments/${enc(id)}`),
+	createTournament: (body) => call("/api/tournaments", { method: "POST", body }),
+	updateTournament: (id, body) => call(`/api/tournaments/${enc(id)}`, { method: "PUT", body }),
+	tournamentAction: (id, action, body) => call(`/api/tournaments/${enc(id)}/${action}`, { method: "POST", body: body || {} }),
 	reactions: (code, name) => call(`/api/games/${enc(code)}/reactions?player_name=${enc(name)}`),
 	// patch: {targeted?, ask_all?, ask_seats?}: when the player wants to be asked (the rest is passed for them).
 	setReactions: (code, name, patch) => call(`/api/games/${enc(code)}/reactions`, { method: "PUT", body: { player_name: name, ...patch } }),
@@ -193,6 +198,7 @@ export const api = {
 	legal: (code) => call(`/api/games/${enc(code)}/moves/legal?steps=1`),
 	move: (code, name, notation) =>
 		call(`/api/games/${enc(code)}/moves`, { method: "POST", body: { player_name: name, notation } }),
+	moveFinal: (code, name, notation) => call(`/api/games/${enc(code)}/move-final`, { method: "POST", body: { player_name: name, notation } }),
 	undo: (code, name) => call(`/api/games/${enc(code)}/undo`, { method: "POST", body: { player_name: name } }),
 	resign: (code, name) => call(`/api/games/${enc(code)}/resign`, { method: "POST", body: { player_name: name } }),
 	hint: (code, name, atSeq, moves) =>
@@ -200,8 +206,6 @@ export const api = {
 			method: "POST",
 			body: { player_name: name, at_seq: atSeq === undefined || atSeq === null ? undefined : atSeq, moves: moves || [] },
 		}),
-	takeback: (code, name, action) =>
-		call(`/api/games/${enc(code)}/takeback`, { method: "POST", body: { player_name: name, action } }),
 	draw: (code, name, action) =>
 		call(`/api/games/${enc(code)}/draw`, { method: "POST", body: { player_name: name, action } }),
 	simulate: (code, moves, atSeq) =>

@@ -84,45 +84,6 @@ func TestGameStartsFromTPSAndKeepsItThroughUndoAndExport(t *testing.T) {
 	}
 }
 
-func TestUndoReturnsToTheCustomStart(t *testing.T) {
-	baseURL := newRESTTestServer(t)
-	code, out := createFrom(t, baseURL, map[string]any{
-		"game_def_id": "tak-5x5", "player_name": "Alice", "opponent": "random",
-		"start_tps": "x2,2,x2/x5/x5/x5/1,x4 2 5",
-	})
-	if code != 200 {
-		t.Fatalf("create: %d %v", code, out)
-	}
-	room := out["room_code"].(string)
-	// Seat 2 (black) moves first from this TPS; Alice plays seat 1 against
-	// the bot, so the bot moved already.
-	var st restState
-	doJSON(t, "GET", baseURL+"/api/games/"+room+"/state", nil, &st)
-	if st.MoveSeq != 1 {
-		t.Fatalf("the bot should have opened from the custom position, move_seq=%d", st.MoveSeq)
-	}
-	// Alice undoes: nothing of hers to undo yet.
-	if code := doJSON(t, "POST", baseURL+"/api/games/"+room+"/undo", map[string]any{"player_name": "Alice"}, nil); code != 409 {
-		t.Errorf("undo with no move of her own: %d, want 409", code)
-	}
-	// Any legal move of hers will do (the bot's random opening may have taken c3).
-	var legal struct {
-		Moves []struct {
-			Notation string `json:"notation"`
-		} `json:"moves"`
-	}
-	if code := doJSON(t, "GET", baseURL+"/api/games/"+room+"/moves/legal", nil, &legal); code != 200 || len(legal.Moves) == 0 {
-		t.Fatalf("legal moves: %d %+v", code, legal)
-	}
-	own := legal.Moves[0].Notation
-	if code, out := moveNotation(t, baseURL, room, "Alice", own); code != 200 {
-		t.Fatalf("%s: %d %v", own, code, out)
-	}
-	if code := doJSON(t, "POST", baseURL+"/api/games/"+room+"/undo", map[string]any{"player_name": "Alice"}, &st); code != 200 {
-		t.Fatalf("undo: %d", code)
-	}
-}
-
 func TestGameStartsFromAStateDocument(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	// Tic-tac-toe, X (seat 1) has two in a row on top; O to move first.

@@ -1,6 +1,6 @@
 # 0080. Rated games, and a result written from a mark
 
-Status: accepted (2026-11-02)
+Status: accepted (2026-11-02). [ADR 0083](0083-a-move-stands.md) replaces what this says about taking moves back.
 
 ## Context
 
