@@ -1,6 +1,6 @@
 # 0079. Clock increments, and a restart costs nobody time
 
-Status: accepted (2026-11-01)
+Status: accepted (2026-11-01). [ADR 0083](0083-a-move-stands.md) replaces what this says about taking moves back.
 
 ## Context
 

@@ -196,11 +196,6 @@ type getGameResponse struct {
 	// DrawOfferSeat is the seat offering a draw, or null.
 	DrawOfferSeat *int `json:"draw_offer_seat"`
 
-	// TakebackSeat is the seat asking to take back its last move, or null;
-	// TakebackToSeq is how many moves would remain.
-	TakebackSeat  *int `json:"takeback_seat"`
-	TakebackToSeq int  `json:"takeback_to_seq,omitempty"`
-
 	// StartState is the position the game began from, present only for
 	// games that did not start from the standard position.
 	StartState    json.RawMessage `json:"start_state,omitempty"`
@@ -286,9 +281,6 @@ func (h *handlers) handleGetGame(w http.ResponseWriter, r *http.Request) {
 		Clock:           snapshot.Clock,
 		ServerTime:      snapshot.ServerTime.Format(time.RFC3339),
 		DrawOfferSeat:   snapshot.DrawOfferSeat,
-
-		TakebackSeat:  snapshot.TakebackSeat,
-		TakebackToSeq: snapshot.TakebackToSeq,
 
 		Lobby:     snapshot.Lobby,
 		HostSeat:  snapshot.HostSeat,
@@ -387,10 +379,6 @@ type getGameStateResponse struct {
 	EndDetail  string          `json:"end_detail,omitempty"`
 	// DrawOfferSeat is the seat currently offering a draw, or null.
 	DrawOfferSeat *int `json:"draw_offer_seat"`
-	// TakebackSeat is the seat asking to take back its last move, or null;
-	// TakebackToSeq is how many moves would remain.
-	TakebackSeat  *int `json:"takeback_seat"`
-	TakebackToSeq int  `json:"takeback_to_seq,omitempty"`
 }
 
 // handleGetGameState implements GET /games/{code}/state: look up the room's

@@ -52,9 +52,8 @@ Legend: ✅ done · 🟡 partial · ⬜ not started · ➖ deliberately out of s
 |---|---|---|
 | ✅ | Full position document | `state` (v2: cells/stacks, reserves, ply); legacy flat `board_state` kept |
 | ✅ | Move notation + payload stored | `moves.notation`, `moves.move_json`; additive column migrations |
-| ✅ | Undo | takes back your last move (and bot replies); blocked once another human moved |
-| ✅ | Take-back with consent | `POST …/takeback`: request / accept / decline once a human has replied |
-| ✅ | Custom start positions | `start_tps` / `start_state` on create; remembered for replay, undo and export |
+| ✅ | Back | takes back a step of the turn still being played; a move stands once the turn has passed (ADR 0083) |
+| ✅ | Custom start positions | `start_tps` / `start_state` on create; remembered for replay and export |
 | ✅ | Resign | ends the game with `end_reason = resignation` |
 | ✅ | Draw offers | offer / cancel / accept / decline; any move withdraws the offer |
 | ✅ | Per-move time limits | `move_time_seconds`; loser on time; lazy server enforcement |
@@ -78,7 +77,7 @@ Legend: ✅ done · 🟡 partial · ⬜ not started · ➖ deliberately out of s
 | ✅ | Decision-ready observation | `get_observation`: text board, TPS, legal moves, reward, done |
 | ✅ | Whole-position legal moves | `get_legal_moves` (no starting square needed) |
 | ✅ | Notation / structured moves | `make_move` accepts `notation` or action/piece/from/to/count/path/drops |
-| ✅ | Undo / resign / simulate / export | `undo_move`, `resign`, `simulate`, `export_game` |
+| ✅ | Back / resign / simulate / export | `undo_move`, `resign`, `simulate`, `export_game` |
 | ✅ | Gym-style environments | `env_reset`, `env_step`, `env_observe`, `env_fork`, `env_close`, `env_list`; in-memory, seedable, self-play, TPS start |
 | ✅ | Opponent bots in rooms and envs | `opponent: random \| tactical \| minimax \| mcts` |
 | ✅ | Bot-vs-bot matches | `match_bots`: tallies and move records for baselines / datasets |
@@ -97,7 +96,7 @@ Legend: ✅ done · 🟡 partial · ⬜ not started · ➖ deliberately out of s
 | ✅ | Hand/reserve panels, counters | per-seat pools; piece buttons for placement; capture counters |
 | ✅ | Turn tracking | status bar, to-move highlighting, move counter, title marker, browser notifications |
 | ✅ | Move list + history navigation | click any move; ⏮ ◀ ▶ ⏭ and arrow keys; read-only past positions |
-| ✅ | Undo / resign / flip / rules / export | two-step confirmation; rules dialog with pieces legend and notation help |
+| ✅ | Back / resign / flip / rules / export | resign asks twice; rules dialog with pieces legend and notation help |
 | ✅ | Lobby | game picker grouped by family, bot opponents, play first/second, "Your games" with your-turn flags |
 | ✅ | Live updates & reconnect | WebSocket with backoff; opponents joining/undoing show immediately |
 | ✅ | Light/dark theme, responsive layout | follows OS preference |

@@ -119,7 +119,7 @@ func NewRouter(mgr *session.Manager, opts ...Option) chi.Router {
 	r.Post("/games/{code}/undo", h.handleUndo)
 	r.Post("/games/{code}/resign", h.handleResign)
 	r.Post("/games/{code}/draw", h.handleDraw)
-	r.Post("/games/{code}/takeback", h.handleTakeback)
+	r.Post("/games/{code}/move-final", h.handleMoveFinal)
 	r.Post("/games/{code}/simulate", h.handleSimulate)
 	r.Post("/games/{code}/hint", h.handleHint)
 	r.Get("/games/{code}/export", h.handleExport)

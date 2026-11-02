@@ -128,7 +128,7 @@ func (s *Store) RecordMove(ctx context.Context, gameID int64, in MoveInput) (Mov
 	}
 
 	if _, err := tx.exec(ctx, "RecordMove.updateGame",
-		`UPDATE games SET board_state = ?, move_seq = ?, updated_at = CURRENT_TIMESTAMP, turn_seat = ?, status = ?, winner_seat = ?, end_reason = ?, end_detail = ?, rating_status = CASE WHEN rated = 1 AND ? = 'finished' THEN 'pending' ELSE '' END, draw_offer_seat = NULL, takeback_seat = NULL, takeback_seq = 0 WHERE id = ?`,
+		`UPDATE games SET board_state = ?, move_seq = ?, updated_at = CURRENT_TIMESTAMP, turn_seat = ?, status = ?, winner_seat = ?, end_reason = ?, end_detail = ?, rating_status = CASE WHEN rated = 1 AND ? = 'finished' THEN 'pending' ELSE '' END, draw_offer_seat = NULL WHERE id = ?`,
 		in.ResultingBoardState, newSeq, turnSeat, status, winnerSeat, in.EndReason, in.EndDetail, status, gameID,
 	); err != nil {
 		return Move{}, fmt.Errorf("updating games row for game_id=%d: %w", gameID, err)
@@ -223,15 +223,11 @@ func scanMoveByID(ctx context.Context, q rowQuerier, name string, id int64) (Mov
 	return m, nil
 }
 
-// UndoToSeq deletes every move with seq > keepSeq and rewinds the game to
-// the position those moves came from: boardState becomes the game's current
-// snapshot, move_seq becomes keepSeq, turn_seat becomes turnSeat, and the
-// game is active again with no winner. When the taken-back moves include the
-// pie-rule swap, swapBack says so, and the seats' occupants change back in
-// the same transaction. clock, when set, replaces the game's clock. All of it
-// happens in one transaction.
+// UndoToSeq deletes every move with seq > keepSeq and rewinds the game to the
+// position those moves came from, all in one transaction: boardState becomes the
+// game's current snapshot, move_seq becomes keepSeq and turn_seat turnSeat.
 // Returns ErrNotFound if gameID doesn't exist.
-func (s *Store) UndoToSeq(ctx context.Context, gameID int64, keepSeq int, boardState string, turnSeat int, swapBack bool, clock *string) error {
+func (s *Store) UndoToSeq(ctx context.Context, gameID int64, keepSeq int, boardState string, turnSeat int) error {
 	tx, err := s.begin(ctx, "UndoToSeq")
 	if err != nil {
 		return fmt.Errorf("begin transaction: %w", err)
@@ -242,7 +238,7 @@ func (s *Store) UndoToSeq(ctx context.Context, gameID int64, keepSeq int, boardS
 		return fmt.Errorf("deleting moves for game_id=%d: %w", gameID, err)
 	}
 	res, err := tx.exec(ctx, "UndoToSeq.updateGame",
-		`UPDATE games SET board_state = ?, move_seq = ?, turn_seat = ?, status = 'active', winner_seat = NULL, end_reason = '', end_detail = '', draw_offer_seat = NULL, takeback_seat = NULL, takeback_seq = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+		`UPDATE games SET board_state = ?, move_seq = ?, turn_seat = ? WHERE id = ?`,
 		boardState, keepSeq, turnSeat, gameID,
 	)
 	if err != nil {
@@ -251,33 +247,16 @@ func (s *Store) UndoToSeq(ctx context.Context, gameID int64, keepSeq int, boardS
 	if n, _ := res.RowsAffected(); n == 0 {
 		return ErrNotFound
 	}
-	if clock != nil {
-		if _, err := tx.exec(ctx, "UndoToSeq.updateClock", `UPDATE games SET clock = ? WHERE id = ?`, *clock, gameID); err != nil {
-			return fmt.Errorf("updating the clock of game_id=%d: %w", gameID, err)
-		}
-	}
-	if swapBack {
-		if err := swapSeats(ctx, tx, gameID); err != nil {
-			return fmt.Errorf("swapping the seats back of game_id=%d: %w", gameID, err)
-		}
-	}
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("commit transaction: %w", err)
-	}
-	return nil
+	return tx.Commit()
 }
 
-// FinishGame ends a game without a move (resignation, agreed draw, ...):
-// status becomes "finished", turn_seat NULL, winner_seat the given seat (nil
-// = draw) and end_reason the given reason. Returns ErrNotFound if gameID
-// doesn't exist.
 func (s *Store) FinishGame(ctx context.Context, gameID int64, winnerSeat *int, reason string) error {
 	var winner sql.NullInt64
 	if winnerSeat != nil {
 		winner = sql.NullInt64{Int64: int64(*winnerSeat), Valid: true}
 	}
 	res, err := s.exec(ctx, "FinishGame",
-		`UPDATE games SET status = 'finished', turn_seat = NULL, winner_seat = ?, end_reason = ?, rating_status = CASE rated WHEN 1 THEN 'pending' ELSE '' END, draw_offer_seat = NULL, takeback_seat = NULL, takeback_seq = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+		`UPDATE games SET status = 'finished', turn_seat = NULL, winner_seat = ?, end_reason = ?, rating_status = CASE rated WHEN 1 THEN 'pending' ELSE '' END, draw_offer_seat = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
 		winner, reason, gameID,
 	)
 	if err != nil {

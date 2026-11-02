@@ -226,42 +226,29 @@ func stateResponseFromSnapshot(s session.StateSnapshot) getGameStateResponse {
 		EndDetail:  s.EndDetail,
 
 		DrawOfferSeat: s.DrawOfferSeat,
-
-		TakebackSeat:  s.TakebackSeat,
-		TakebackToSeq: s.TakebackToSeq,
 	}
 }
 
 // maxSimulatedMoves bounds one simulate call.
 const maxSimulatedMoves = 400
 
-// takebackRequest is POST /games/{code}/takeback's body.
-type takebackRequest struct {
-	PlayerName string `json:"player_name"`
-	// Action is "request", "cancel", "accept" or "decline".
-	Action string `json:"action"`
-}
-
-// handleTakeback implements POST /games/{code}/takeback.
-func (h *handlers) handleTakeback(w http.ResponseWriter, r *http.Request) {
-	code := chi.URLParam(r, "code")
-
-	var req takebackRequest
+// handleMoveFinal implements POST /games/{code}/move-final: whether a move could
+// not be taken back once played, so that a page can ask for a Submit first.
+func (h *handlers) handleMoveFinal(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		PlayerName string `json:"player_name"`
+		Notation   string `json:"notation"`
+	}
 	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxBodyBytes)).Decode(&req); err != nil {
 		writeError(w, errors.New("api: malformed JSON body"))
 		return
 	}
-	if err := checkName(req.PlayerName); err != nil {
-		writeError(w, err)
-		return
-	}
-
-	snap, err := h.mgr.Takeback(r.Context(), code, req.PlayerName, req.Action)
+	final, err := h.mgr.MoveIsFinal(r.Context(), chi.URLParam(r, "code"), req.PlayerName, req.Notation)
 	if err != nil {
 		writeError(w, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, stateResponseFromSnapshot(snap))
+	writeJSON(w, http.StatusOK, map[string]bool{"final": final})
 }
 
 // drawRequest is POST /games/{code}/draw's body.

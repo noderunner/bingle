@@ -365,11 +365,8 @@ func TestTournament_GamesCannotBeTakenBackRatedOrNot(t *testing.T) {
 	if _, err := w.m.PlayNotation(first.ctx, g.RoomCode, first.handle, "e5"); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := w.m.Undo(first.ctx, g.RoomCode, first.handle); !errors.Is(err, session.ErrRatedGame) {
+	if _, err := w.m.Undo(first.ctx, g.RoomCode, first.handle); !errors.Is(err, session.ErrCannotUndo) {
 		t.Errorf("an undo: %v", err)
-	}
-	if _, err := w.m.Takeback(first.ctx, g.RoomCode, first.handle, "request"); !errors.Is(err, session.ErrRatedGame) {
-		t.Errorf("a take-back: %v", err)
 	}
 	if _, err := w.m.PlayNotation(second.ctx, g.RoomCode, second.handle, "d4"); err != nil {
 		t.Fatal(err)

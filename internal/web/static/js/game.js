@@ -58,7 +58,7 @@ const S = {
 	hint: null, // {notation, steps, bot, key}: a bot's suggestion for the position shown
 	hintBusy: false,
 	conn: "connecting",
-	confirmUndo: false,
+	finalMove: null, // the notation the server said cannot be taken back: it waits for Submit
 	confirmResign: false,
 	settings: {
 		confirm: store.get("bingle.confirm", true),
@@ -533,8 +533,17 @@ function rulesetEvents() {
 }
 
 /** Moves of ruleset games are small decisions: they go in without a preview. */
+/**
+ * Whether the finished move waits for Submit. A move stands once it is played, so
+ * one that cannot be taken back is looked at first (the player can turn this off).
+ * In a game whose turn has several steps the server says which those are; a
+ * tutorial's script has already said what to play.
+ */
 function needsConfirm() {
-	return S.settings.confirm && !isRuleset();
+	if (!S.settings.confirm || S.tut) return false;
+	if (!isRuleset()) return true;
+	const done = activeBuilder().complete();
+	return !!done && done.notation === S.finalMove;
 }
 
 function actionDef(id) {
@@ -572,12 +581,44 @@ function afterBuilderChange() {
 		render();
 		return;
 	}
+	S.finalMove = null;
+	if (done && b.finished() && isRuleset() && S.settings.confirm && !S.tut && !clickedAButton(b)) {
+		askIfFinal(done.notation);
+		return;
+	}
 	if (done && b.finished() && !needsConfirm()) {
 		submitMove();
 		return;
 	}
 	render();
 	if (done && needsConfirm() && previewable(done.notation)) requestPreview(done.notation);
+}
+
+/** A button says what it does, so pressing it is the decision: End turn is a Submit. */
+function clickedAButton(b) {
+	const manual = b.manualSteps();
+	return manual.length > 0 && manual[manual.length - 1].kind === "action";
+}
+
+/** Sends a step that can be taken back; one that cannot waits for Submit. */
+async function askIfFinal(notation) {
+	const token = ++S.previewToken;
+	let final = false;
+	try {
+		final = (await api.moveFinal(code, S.me.name, notation)).final;
+	} catch (_) {
+		/* the move itself will get the answer that matters */
+	}
+	if (token !== S.previewToken) return;
+	const done = activeBuilder().complete();
+	if (!done || done.notation !== notation) return;
+	if (!final) {
+		submitMove();
+		return;
+	}
+	S.finalMove = notation;
+	render();
+	if (previewable(notation)) requestPreview(notation);
 }
 
 async function requestPreview(notation) {
@@ -755,7 +796,10 @@ function resetMove() {
 
 function undoStep() {
 	const b = activeBuilder();
-	if (!b.manualSteps().length) return;
+	if (!b.manualSteps().length) {
+		if (canUndo() && !S.busy) backStep();
+		return;
+	}
 	b.pop();
 	// Step back past any forced choices as well.
 	while (b.steps.length > 0 && b.options().length === 1 && b.options()[0].kind !== "pos") {
@@ -1020,25 +1064,14 @@ async function settle() {
 	notifyIfMyTurn(false);
 }
 
-async function doUndo() {
-	if (!S.confirmUndo) {
-		S.confirmUndo = true;
-		clearTimeout(confirmTimer);
-		confirmTimer = setTimeout(() => {
-			S.confirmUndo = false;
-			render();
-		}, 4000);
-		render();
-		return;
-	}
-	S.confirmUndo = false;
+/** Takes back the last step of the turn being played, which the server has. */
+async function backStep() {
 	S.busy = true;
 	render();
 	try {
 		await api.undo(code, S.me.name);
 		S.viewSeq = null;
 		await settle();
-		toast("Move taken back.");
 	} catch (err) {
 		toast(err.message, "error");
 	} finally {
@@ -1208,80 +1241,35 @@ function hintSquares() {
 	return h.steps.filter((st) => st.kind === "pos").map((st) => st.value);
 }
 
-async function doTakeback(action) {
-	if (S.busy) return;
-	S.busy = true;
-	render();
-	try {
-		await api.takeback(code, S.me.name, action);
-		if (action === "accept") S.viewSeq = null;
-		await settle();
-		if (action === "accept") toast("Move taken back.");
-	} catch (err) {
-		toast(err.message, "error");
-	} finally {
-		S.busy = false;
-		render();
-	}
-}
-
-// takebackBanner shows an open take-back request: the requester can
-// withdraw it, the opponent can accept (rewinding the game) or decline.
-function takebackBanner() {
-	const g = S.game;
-	if (g.status !== "active" || g.takeback_seat === null || g.takeback_seat === undefined) return null;
-	const asker = g.takeback_seat;
-	const who = seatName(asker) || seatLabel(asker);
-	const rec = S.moves[(g.takeback_to_seq || 0)];
-	const what = rec ? `move ${(g.takeback_to_seq || 0) + 1} (${rec.notation})` : "their last move";
-	if (!S.me.seat) return h("div", { class: "notice", id: "takeback-banner" }, `${who} asked to take back ${what}.`);
-	if (asker === S.me.seat) {
-		return h(
-			"div",
-			{ class: "notice", id: "takeback-banner" },
-			h("span", {}, "You asked to take back your last move — waiting for your opponent."),
-			h("button", { id: "takeback-cancel", class: "ghost", onclick: () => doTakeback("cancel") }, "Withdraw")
-		);
-	}
-	return h(
-		"div",
-		{ class: "notice attention", id: "takeback-banner" },
-		h("span", {}, `${who} asks to take back ${what}.`),
-		h(
-			"span",
-			{ class: "move-actions" },
-			h("button", { id: "takeback-accept", class: "primary", onclick: () => doTakeback("accept") }, "Allow"),
-			h("button", { id: "takeback-decline", onclick: () => doTakeback("decline") }, "Refuse")
-		)
-	);
-}
-
-// canAskTakeback: you moved, a human replied since (so undo alone is not
-// possible), the opponent is human and no request is open.
-function canAskTakeback() {
-	if (!S.me.seat || !isActive() || S.moves.length === 0 || S.game.rated || S.game.tournament) return false;
-	if (S.game.takeback_seat !== null && S.game.takeback_seat !== undefined) return false;
-	if ((S.game.seats || []).some((x) => x.bot)) return false;
-	if (canUndo()) return false;
-	return S.moves.some((m) => m.seat === S.me.seat);
-}
-
-function canUndo() {
-	if (!S.me.seat || S.moves.length === 0 || S.game.rated || S.game.tournament) return false;
-	if (S.game.status === "finished" && S.game.end_reason === "resignation") return false;
-	const botSeats = new Set((S.game.seats || []).filter((s) => s.bot).map((s) => s.seat));
-	let idx = -1;
+/**
+ * How many moves at the end of the list are steps of the turn still being played.
+ * They count only once the turn is over, so the move list leaves them out, and the
+ * server takes them back one at a time.
+ */
+function openSteps() {
+	if (!isActive()) return 0;
+	const seat = S.game.turn_seat;
+	let n = 0;
 	for (let i = S.moves.length - 1; i >= 0; i--) {
-		if (S.moves[i].seat === S.me.seat) {
-			idx = i;
-			break;
+		const m = S.moves[i];
+		if (m.auto) {
+			n++;
+			continue;
 		}
+		// A roll has counted, whoever is to move next: it cannot come back, and the
+		// player has to see it to go on.
+		if (m.seat !== seat || m.notation === "swap" || m.locked) break;
+		n++;
 	}
-	if (idx < 0) return false;
-	// Dice rolled since (by this move or any after it) lock the game in: the
-	// server refuses, so the page does not offer it.
-	if (S.moves.slice(idx).some((m) => m.locked)) return false;
-	return S.moves.slice(idx + 1).every((m) => botSeats.has(m.seat) || m.auto);
+	// Reactions passed after the last step alone are not a step of this turn.
+	let auto = 0;
+	while (auto < S.moves.length && S.moves[S.moves.length - 1 - auto].auto) auto++;
+	return n === auto ? 0 : n;
+}
+
+/** A step of this turn that can still be taken back. */
+function canUndo() {
+	return !!S.me.seat && S.game.turn_seat === S.me.seat && openSteps() > 0;
 }
 
 // ---------------------------------------------------------------------------
@@ -1462,7 +1450,6 @@ async function onEvent(env) {
 			S.game.turn_deadline = d.turn_deadline || "";
 			S.game.clock = d.clock || null;
 			S.game.draw_offer_seat = null; // any move withdraws an offer
-			S.game.takeback_seat = null; // ... and a take-back request
 			noteServerTime(d.server_time);
 			S.viewCache.clear();
 			await Promise.all([loadLegal(), loadReactions(), loadAutoPlay()]);
@@ -1492,8 +1479,6 @@ async function onEvent(env) {
 			paintMobileBadges();
 		} else if (env.type === "state") {
 			if (env.data && env.data.reason === "draw-offer") toast("A draw was offered.");
-		if (env.data && env.data.reason === "takeback-request") toast("Your opponent asked to take back a move.");
-		if (env.data && env.data.reason === "takeback-declined") toast("Take-back declined.");
 		await refreshGame();
 		if (env.data && env.data.reason === "undo") S.viewSeq = null;
 		notifyIfMyTurn(true);
@@ -1676,8 +1661,6 @@ function render() {
 	if (S.tut) main.append(tutorialCard());
 	const banner = drawOfferBanner();
 	if (banner) main.append(banner);
-	const tbBanner = takebackBanner();
-	if (tbBanner) main.append(tbBanner);
 	const hintNotice = hintBanner();
 	if (hintNotice) main.append(hintNotice);
 
@@ -1774,7 +1757,7 @@ function renderMobile(seats, bottomSeat) {
 	const mapPage = h("div", { class: "m-map-page" });
 	mapPage.append(statusBar());
 	if (S.tut) mapPage.append(tutorialCard());
-	for (const banner of [drawOfferBanner(), takebackBanner(), hintBanner()]) if (banner) mapPage.append(banner);
+	for (const banner of [drawOfferBanner(), hintBanner()]) if (banner) mapPage.append(banner);
 	if (!S.me.seat && !S.spectating) {
 		const gate = identityGate();
 		if (gate) mapPage.append(gate);
@@ -1873,7 +1856,7 @@ function renderMobileCards(seats, bottomSeat) {
 	const play = h("div", { class: "m-map-page m-cards-page" });
 	play.append(statusBar());
 	if (S.tut) play.append(tutorialCard());
-	for (const banner of [drawOfferBanner(), takebackBanner(), hintBanner()]) if (banner) play.append(banner);
+	for (const banner of [drawOfferBanner(), hintBanner()]) if (banner) play.append(banner);
 	if (!S.me.seat && !S.spectating) {
 		const gate = identityGate();
 		if (gate) play.append(gate);
@@ -3702,8 +3685,8 @@ function moveBar() {
 				isLive() ? (S.me.seat ? "" : S.game.status === "waiting" ? "" : "You are watching this game.") : "Browsing history — the board is read-only."
 			)
 		);
-		const undo = undoButton();
-		if (undo) bar.append(h("span", { class: "move-actions" }, undo));
+		const back = backButton();
+		if (back) bar.append(h("span", { class: "move-actions" }, back));
 		return bar;
 	}
 	const b = activeBuilder();
@@ -3817,8 +3800,8 @@ function moveBar() {
 			}
 			group.append(actionButton(id, def, label, rv));
 		}
-		const undoInGroup = undoButton();
-		if (undoInGroup) group.append(undoInGroup);
+		const backInGroup = backButton();
+		if (backInGroup) group.append(backInGroup);
 		bar.append(group);
 		// Under the question of a reaction: a way to stop being asked.
 		if (rv && rv.reaction && rv.reaction.seat === acting && acting === S.me.seat && S.reactions) {
@@ -3881,11 +3864,11 @@ function moveBar() {
 		actions.append(h("button", { id: "undo-step", class: "ghost", onclick: undoStep, title: "Undo last selection (Backspace)" }, "↶ Back"));
 		actions.append(h("button", { id: "reset-move", class: "ghost", onclick: resetMove, title: "Clear the move (Esc)" }, "Reset"));
 	}
-	// Taking your last move back is one of the things to choose from — in the
-	// list of actions when there is one, else beside the move controls.
-	if (!actionIds.length && !inAnalysis()) {
-		const undo = undoButton();
-		if (undo) actions.append(undo);
+	// Taking back a step already sent: in the list of actions when there is one,
+	// else here. With a selection on the go, Back clears that first.
+	if (!actionIds.length && !inAnalysis() && !(acting && b.manualSteps().length)) {
+		const back = backButton();
+		if (back) actions.append(back);
 	}
 	if (acting && !inAnalysis() && b.complete() && (needsConfirm() || b.options().length)) {
 		actions.append(
@@ -3900,19 +3883,19 @@ function moveBar() {
 	return bar;
 }
 
-/** "Undo my move": offered while there is a move of yours to take back. */
-function undoButton() {
+/**
+ * Back: the way out of a move not played yet, and of a step of this turn already
+ * sent. It is the only way back there is, and needs no second click, because what
+ * it takes back has not counted yet.
+ */
+function backButton() {
 	if (inAnalysis() || !isLive() || !S.me.seat || !S.me.name || !canUndo() || S.busy) return null;
 	// Stepping off a Gate in place is free and needs no confirming: putting the
 	// unit back is the way back, and nothing offers to take it back.
 	const last = S.moves[S.moves.length - 1];
 	const off = last && /^leave:[^@]+@([^>]+)>(.+)$/.exec(last.notation || "");
 	if (off && off[1] === off[2] && last.seat === S.me.seat) return null;
-	return h(
-		"button",
-		{ id: "undo-move", class: "undo-action", onclick: doUndo, title: "Take back your last move" },
-		S.confirmUndo ? "Really undo?" : "↶ Undo my move"
-	);
+	return h("button", { id: "undo-step", class: "ghost", onclick: undoStep, title: "Take back the last step of this turn (Backspace)" }, "↶ Back");
 }
 
 /**
@@ -4616,9 +4599,7 @@ function refreshOptions() {
 			});
 			el.append(h("label", { class: "field" }, h("span", { class: "small" }, "Page layout"), layoutSel));
 		}
-		if (!isRuleset()) {
-			el.append(settingToggle("confirm", "opt-confirm", "Preview and confirm moves before playing them", "bingle.confirm"));
-		}
+		el.append(settingToggle("confirm", "opt-confirm", "Confirm a move with Submit before it counts, as it cannot be taken back", "bingle.confirm"));
 		if (!areas) {
 			el.append(settingToggle("coords", "opt-coords", "Show coordinates", "bingle.coords"));
 		}
@@ -4795,24 +4776,11 @@ function refreshOptions() {
 	w.hide("game", !seated);
 	w.update(
 		"game",
-		[seated, twoParty, isActive(), S.busy, S.confirmResign, canAskTakeback(), S.game.draw_offer_seat, (S.game.seats || []).map((x) => !!x.bot)],
+		[seated, twoParty, isActive(), S.busy, S.confirmResign, S.game.draw_offer_seat, (S.game.seats || []).map((x) => !!x.bot)],
 		(el) => {
 			if (!seated) return;
 			const row = h("div", { class: "row" });
-			if (twoParty && canAskTakeback()) {
-				row.append(
-					h(
-						"button",
-						{
-							id: "request-takeback",
-							disabled: S.busy,
-							title: "Ask your opponent to let you take back your last move",
-							onclick: () => doTakeback("request"),
-						},
-						"↶ Ask to take back"
-					)
-				);
-			}
+
 			if (isActive()) {
 				const opponentIsBot = (S.game.seats || []).some((x) => x.bot && x.seat !== S.me.seat);
 				const offered = S.game.draw_offer_seat !== null && S.game.draw_offer_seat !== undefined;
@@ -4954,13 +4922,14 @@ function rulesetLog() {
 	// fetch for the newest move arrives, the story so far gets the position's
 	// own latest events added.
 	if (!S.fullLog || S.fullLog.count !== S.moves.length) loadFullLog();
+	// The steps of the turn being played are not told until the turn is over.
+	const upTo = isLive() ? S.moves.length - openSteps() : S.viewSeq;
 	if (S.fullLog) {
-		const upTo = isLive() ? Infinity : S.viewSeq;
 		const seen = S.fullLog.entries.length ? S.fullLog.entries[S.fullLog.entries.length - 1].ply : 0;
 		const all = S.fullLog.entries.concat(latest.filter((e) => e.ply > seen)).filter((e) => e.ply <= upTo);
 		if (all.length) return all;
 	}
-	return latest;
+	return latest.filter((e) => e.ply <= upTo);
 }
 
 async function loadFullLog() {
@@ -5103,7 +5072,7 @@ function eventsPane() {
 			since = "full history";
 		}
 	} else {
-		const events = rulesetEvents();
+		const events = isLive() && openSteps() ? [] : rulesetEvents();
 		if (events.length) entries = [{ seat: 0, lines: events }];
 	}
 	const card = h("div", { class: "history-pane", id: "history-pane" });
@@ -5193,7 +5162,9 @@ function eventsPane() {
 function moveList() {
 	const n = S.info.seats.length;
 	const list = h("ol", { class: "move-list" + (isRuleset() ? " flat" : ""), id: "move-list" });
-	if (!S.moves.length) {
+	// The steps of the turn being played are not moves yet.
+	const moves = S.moves.slice(0, S.moves.length - openSteps());
+	if (!moves.length) {
 		list.append(h("li", { class: "empty-row" }, h("span", { class: "empty" }, "No moves yet.")));
 		return list;
 	}
@@ -5201,7 +5172,7 @@ function moveList() {
 	if (isRuleset()) {
 		// A turn is several decisions, often by the same seat, so the list is
 		// flat: one entry per decision, tinted by who made it.
-		for (const m of S.moves) {
+		for (const m of moves) {
 			list.append(
 				h(
 					"li",
@@ -5227,10 +5198,10 @@ function moveList() {
 		});
 		return list;
 	}
-	for (let i = 0; i < S.moves.length; i += n) {
+	for (let i = 0; i < moves.length; i += n) {
 		const li = h("li", {}, h("span", { class: "num" }, `${i / n + 1}.`));
 		for (let j = 0; j < n; j++) {
-			const m = S.moves[i + j];
+			const m = moves[i + j];
 			if (!m) {
 				li.append(h("span", {}));
 				continue;

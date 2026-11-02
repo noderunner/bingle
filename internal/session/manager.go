@@ -8,7 +8,7 @@
 //	join.go, presence.go     taking a seat or watching; who is looking now
 //	state.go, history.go     reading a game: snapshots, moves, legal moves, simulation
 //	moves.go, botturns.go    playing a move and everything that follows it (bots, clocks)
-//	undo.go, takeback.go     taking moves back
+//	undo.go                  taking back a step of the turn being played
 //	resign.go                resigning and draws
 //	lobby.go, reactions.go,
 //	autoplay.go, chat.go,

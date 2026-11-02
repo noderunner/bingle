@@ -39,11 +39,24 @@ func openGameAs(t *testing.T, ctx context.Context, baseURL, room, def, name stri
 	if err := chromedp.Run(ctx,
 		chromedp.Navigate(baseURL+"/healthz"),
 		chromedp.Evaluate(fmt.Sprintf(`localStorage.setItem("bingle.games", %q); localStorage.setItem("bingle.name", %q); true`, games, nameJSON), nil),
+		chromedp.Evaluate(fmt.Sprintf(`localStorage.setItem("bingle.confirm", %q); true`, confirmSetting(def)), nil),
 		chromedp.Navigate(baseURL+"/game/"+room),
 		chromedp.WaitReady("#board-svg, #card-table", chromedp.ByQuery),
 	); err != nil {
 		t.Fatalf("open /game/%s as %s: %v", room, name, err)
 	}
+}
+
+// confirmSetting is the "Confirm moves" setting a test opens a game with. The tests
+// of the games whose rules are in Go click their way through a game and are about
+// something else, so they turn it off; TestWebSubmit_* is about it.
+func confirmSetting(def string) string {
+	base, _, _ := strings.Cut(def, "-")
+	switch base {
+	case "blooms", "courtfall", "cthulhu", "fendo", "fist", "hive", "nyet", "onitama", "yinsh", "meridians", "mycelium":
+		return "false"
+	}
+	return "true"
 }
 
 // waitJS polls expr until it evaluates truthy, failing after timeout.
@@ -493,7 +506,7 @@ func TestWebGame_TakPlacementAndStackMoveByClicking(t *testing.T) {
 		`document.querySelectorAll('#board .piece[data-position="a2"]').length === 1 && document.querySelectorAll('#board .piece[data-position="a3"]').length === 1 && document.querySelectorAll('#board .piece[data-position="a1"]').length === 0`, 10*time.Second)
 }
 
-func TestWebGame_HistoryNavigationAndUndo(t *testing.T) {
+func TestWebGame_HistoryNavigation(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	room := newTakRoom(t, baseURL, "test-freeplay", "Alice")
 	joinRoom(t, baseURL, room, "Bob")
@@ -526,18 +539,14 @@ func TestWebGame_HistoryNavigationAndUndo(t *testing.T) {
 	clickSel(t, ctx, "#hist-last")
 	waitJS(t, ctx, "live again", `!document.getElementById("return-live") && document.querySelector('#board .piece[data-position="4,1"]')`, 10*time.Second)
 
-	// Alice undoes her last move (two-step confirmation).
+	// A move stands: with the turn passed, Alice is offered no way back.
 	ctxA, cancelA := newChromedpContext(t, 40*time.Second)
 	defer cancelA()
 	openGameAs(t, ctxA, baseURL, room, "test-freeplay", "Alice")
-	waitJS(t, ctxA, "undo offered", `document.getElementById("undo-move") && !document.getElementById("undo-move").disabled`, 10*time.Second)
-	clickSel(t, ctxA, "#undo-move")
-	waitJS(t, ctxA, "confirmation", `document.getElementById("undo-move").textContent.indexOf("Really") >= 0`, 5*time.Second)
-	clickSel(t, ctxA, "#undo-move")
-	waitJS(t, ctxA, "move taken back", `document.querySelectorAll('#move-list button.mv').length === 2 && document.querySelector('#board .piece[data-position="4,0"]')`, 10*time.Second)
-
-	// Bob's open tab sees the undo live.
-	waitJS(t, ctx, "Bob's tab follows the undo", `document.querySelectorAll('#move-list button.mv').length === 2 && document.querySelector('#board .piece[data-position="4,0"]')`, 10*time.Second)
+	waitJS(t, ctxA, "the moves", `document.querySelectorAll('#move-list button.mv').length >= 3`, 10*time.Second)
+	if n := evalInt(t, ctxA, `document.querySelectorAll('#undo-step').length`); n != 0 {
+		t.Error("Back is offered for a move that stands")
+	}
 }
 
 func TestWebGame_TitleAnnouncesYourTurn(t *testing.T) {
@@ -1016,42 +1025,6 @@ func TestWebGame_PlayFromAnalysisPositionStartsANewGame(t *testing.T) {
 	// Three stones of the analysed position (a5, e1, c3), not an empty board.
 	if len(st.State.Cells) != 3 {
 		t.Errorf("new game's start has %d occupied squares, want 3 (the analysed position)", len(st.State.Cells))
-	}
-}
-
-func TestWebGame_TakebackRequestAcceptedByOpponent(t *testing.T) {
-	baseURL := newRESTTestServer(t)
-	room := newTakRoom(t, baseURL, "tak-5x5", "Alice")
-	joinRoom(t, baseURL, room, "Bob")
-	// Alice a5, Bob e1, Alice c3, Bob c4: Alice cannot undo directly now.
-	for _, m := range []struct{ who, mv string }{{"Alice", "a5"}, {"Bob", "e1"}, {"Alice", "c3"}, {"Bob", "c4"}} {
-		if code, out := moveNotation(t, baseURL, room, m.who, m.mv); code != 200 {
-			t.Fatalf("%s %s: %d %v", m.who, m.mv, code, out)
-		}
-	}
-
-	alice, cancelA := newChromedpContext(t, 40*time.Second)
-	defer cancelA()
-	openGameAs(t, alice, baseURL, room, "tak-5x5", "Alice")
-	waitJS(t, alice, "request button", `document.getElementById("request-takeback")`, 10*time.Second)
-	if got := evalString(t, alice, `String(document.getElementById("undo-move") === null)`); got != "true" {
-		t.Errorf("undo should not be offered once the opponent replied")
-	}
-	clickSel(t, alice, "#request-takeback")
-	waitJS(t, alice, "waiting banner", `document.getElementById("takeback-banner") && /waiting for your opponent/.test(document.getElementById("takeback-banner").textContent)`, 10*time.Second)
-
-	bob, cancelB := newChromedpContext(t, 40*time.Second)
-	defer cancelB()
-	openGameAs(t, bob, baseURL, room, "tak-5x5", "Bob")
-	waitJS(t, bob, "request banner", `document.getElementById("takeback-accept")`, 10*time.Second)
-	clickSel(t, bob, "#takeback-accept")
-
-	// Alice's page follows live: the game is back at move 2 with Alice to move.
-	waitJS(t, alice, "rewound", `document.querySelectorAll('#move-list button.mv').length === 2 && !document.getElementById("takeback-banner")`, 10*time.Second)
-	var st restState
-	doJSON(t, "GET", baseURL+"/api/games/"+room+"/state", nil, &st)
-	if st.MoveSeq != 2 || st.TurnSeat == nil || *st.TurnSeat != 1 || st.State.Cells["c3"] != nil {
-		t.Errorf("after takeback: move_seq=%d turn=%v c3=%v", st.MoveSeq, st.TurnSeat, st.State.Cells["c3"])
 	}
 }
 

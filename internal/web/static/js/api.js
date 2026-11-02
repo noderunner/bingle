@@ -198,6 +198,7 @@ export const api = {
 	legal: (code) => call(`/api/games/${enc(code)}/moves/legal?steps=1`),
 	move: (code, name, notation) =>
 		call(`/api/games/${enc(code)}/moves`, { method: "POST", body: { player_name: name, notation } }),
+	moveFinal: (code, name, notation) => call(`/api/games/${enc(code)}/move-final`, { method: "POST", body: { player_name: name, notation } }),
 	undo: (code, name) => call(`/api/games/${enc(code)}/undo`, { method: "POST", body: { player_name: name } }),
 	resign: (code, name) => call(`/api/games/${enc(code)}/resign`, { method: "POST", body: { player_name: name } }),
 	hint: (code, name, atSeq, moves) =>
@@ -205,8 +206,6 @@ export const api = {
 			method: "POST",
 			body: { player_name: name, at_seq: atSeq === undefined || atSeq === null ? undefined : atSeq, moves: moves || [] },
 		}),
-	takeback: (code, name, action) =>
-		call(`/api/games/${enc(code)}/takeback`, { method: "POST", body: { player_name: name, action } }),
 	draw: (code, name, action) =>
 		call(`/api/games/${enc(code)}/draw`, { method: "POST", body: { player_name: name, action } }),
 	simulate: (code, moves, atSeq) =>

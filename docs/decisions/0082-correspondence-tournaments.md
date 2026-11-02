@@ -1,6 +1,6 @@
 # 0082. Correspondence tournaments
 
-Status: accepted (2026-11-02)
+Status: accepted (2026-11-02). [ADR 0083](0083-a-move-stands.md) replaces what this says about taking moves back.
 
 ## Context
 
@@ -19,8 +19,7 @@ open, and where building it changed something.
   game has finished is all the sweep needs, so nothing was added to the transaction that ends a game. The
   score is credited by account and not by seat, because a pie-rule swap changes who sits where.
 - **A game is ordinary**, between two accounts on equal clocks, with `games.tournament_id` set. It need
-  not be rated, so `Game.Competitive()` (rated, or in a tournament) is what refuses undo, take-backs and
-  Auto-Play: undo can reopen a finished game, and a result that came back would corrupt the standings.
+  not be rated, so `Game.Competitive()` (rated, or in a tournament) is what refuses Auto-Play.
 - **Standings are worked out on reading** from the tournament's record. There are too few games for this
   to cost anything, and nothing can drift out of step.
 - **A no-show in correspondence is the clock.** The first player's clock runs from the game's start, so

@@ -95,24 +95,11 @@ func pieSwapOwnership(t *testing.T, ana, bob *browser, accounts bool) {
 	if code := bob.do("POST", "/api/games/"+room+"/moves", map[string]any{"player_name": "Ana", "notation": move}, nil); code != http.StatusForbidden {
 		t.Errorf("Bob plays Ana's new seat: %d, want 403", code)
 	}
-	// The swap was Bob's: he takes it back, from the seat he holds now, and
-	// the seats go back to their first owners.
-	if code := ana.do("POST", "/api/games/"+room+"/undo", map[string]any{"player_name": "Ana"}, nil); code == 200 {
-		t.Errorf("Ana took back Bob's swap")
-	}
-	if code := bob.do("POST", "/api/games/"+room+"/undo", map[string]any{"player_name": "Bob"}, nil); code != 200 {
-		t.Fatalf("Bob takes the swap back: %d", code)
-	}
-	turn, seats = pieGame(t, ana, room)
-	if seats[0].Name != "Ana" || seats[1].Name != "Bob" || turn != 2 || !seats[0].Yours || seats[1].Yours {
-		t.Fatalf("after the undo: turn %d, seats %+v", turn, seats)
-	}
-	// Each plays their first seat again, and only theirs.
-	if code := ana.do("POST", "/api/games/"+room+"/moves", map[string]any{"player_name": "Bob", "notation": firstLegal(t, ana, room)}, nil); code != http.StatusForbidden {
-		t.Errorf("Ana plays Bob's seat after the undo: %d, want 403", code)
-	}
-	if code := bob.do("POST", "/api/games/"+room+"/moves", map[string]any{"player_name": "Bob", "notation": firstLegal(t, bob, room)}, nil); code != 200 {
-		t.Errorf("Bob plays his own seat after the undo: %d", code)
+	// The swap stands, for both of them.
+	for name, b := range map[string]*browser{"Ana": ana, "Bob": bob} {
+		if code := b.do("POST", "/api/games/"+room+"/undo", map[string]any{"player_name": name}, nil); code != 409 {
+			t.Errorf("%s takes the swap back: %d, want 409", name, code)
+		}
 	}
 }
 

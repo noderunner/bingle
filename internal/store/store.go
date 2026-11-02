@@ -106,6 +106,8 @@ var columnMigrations = []struct{ table, column, ddl string }{
 	{"games", "end_detail", "TEXT NOT NULL DEFAULT ''"},
 	{"games", "initial_state", "TEXT NOT NULL DEFAULT ''"},
 	{"games", "initial_turn_seat", "INTEGER NOT NULL DEFAULT 0"},
+	// takeback_seat, takeback_seq: unused since take-backs went (ADR 0083). They
+	// stay so that an older database opens as it did.
 	{"games", "takeback_seat", "INTEGER"},
 	{"games", "takeback_seq", "INTEGER NOT NULL DEFAULT 0"},
 	{"moves", "notation", "TEXT NOT NULL DEFAULT ''"},

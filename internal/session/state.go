@@ -56,11 +56,6 @@ type StateSnapshot struct {
 	// DrawOfferSeat is the seat currently offering a draw (nil if none).
 	DrawOfferSeat *int
 
-	// TakebackSeat is the seat asking to take back its last move (nil if
-	// none), and TakebackToSeq the number of moves that would remain.
-	TakebackSeat  *int
-	TakebackToSeq int
-
 	// StartState is the starting position document when the game began
 	// from a custom position (empty for the standard start), and
 	// StartTurnSeat who moved first from it.
@@ -127,8 +122,6 @@ func (m *Manager) snapshot(compiled *catalog.CompiledGame, game store.Game, play
 		ServerTime:    m.now().UTC(),
 		DrawOfferSeat: game.DrawOfferSeat,
 
-		TakebackSeat:  game.TakebackSeat,
-		TakebackToSeq: game.TakebackSeq,
 		StartState:    publicDoc(compiled, game.InitialState),
 		StartTurnSeat: game.InitialTurnSeat,
 	}, nil

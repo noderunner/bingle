@@ -196,21 +196,14 @@ func TestCourtfallSecretsStayOffTheWire(t *testing.T) {
 		}
 	}
 
-	// Before anyone answers, the attacker may still undo: no dice rolled.
+	// A strike hands the turn to the defender, so it stands.
 	if code, out := moveNotation(t, base, room, attacker, "end"); code == 200 {
 		t.Errorf("the attacker moved out of turn: %v", out)
 	}
-	var undone map[string]any
-	if code := doJSON(t, "POST", base+"/api/games/"+room+"/undo", map[string]any{"player_name": attacker}, &undone); code != 200 {
-		t.Fatalf("undo before the answer: %d %v", code, undone)
+	if code := doJSON(t, "POST", base+"/api/games/"+room+"/undo", map[string]any{"player_name": attacker}, nil); code != 409 {
+		t.Errorf("undo with the defender to answer: %d, want 409", code)
 	}
-	if cfGet(t, base, room).State.Ext.Stage != "act" {
-		t.Error("undo should return to the activation")
-	}
-	// Strike again and let the defender answer: the dice are rolled.
-	if code, out := moveNotation(t, base, room, attacker, strike); code != 200 {
-		t.Fatalf("restrike: %d %v", code, out)
-	}
+	// The defender answers: the dice are rolled.
 	if code, out := moveNotation(t, base, room, defender, "respond/0"); code != 200 {
 		t.Fatalf("respond: %d %v", code, out)
 	}
@@ -224,9 +217,6 @@ func TestCourtfallSecretsStayOffTheWire(t *testing.T) {
 		if code := doJSON(t, "POST", base+"/api/games/"+room+"/undo", map[string]any{"player_name": who}, &refused); code != 409 {
 			t.Errorf("undo by %s across a roll: %d %v, want 409", who, code, refused)
 		}
-	}
-	if s, _ := refused["error"].(string); !strings.Contains(s, "dice") {
-		t.Errorf("the refusal should explain: %v", refused)
 	}
 	// Import of recorded moves is refused: replays would roll new dice.
 	if code := doJSON(t, "POST", base+"/api/games/import", map[string]any{"game_def_id": "courtfall", "moves": "tile:green@d3"}, &refused); code == 200 {

@@ -42,8 +42,7 @@ before, only seats nobody owns ([ADR 0067](decisions/0067-principals-and-guest-k
 | `get_legal_moves` | every legal move for the player to move (notation + structured fields) |
 | `make_move` | play `notation` (preferred), or structured action/piece/from/to/count/path/drops/aim |
 | `suggest_move` | a built-in bot's choice for the position (or a variation); only in games against bots or after the game |
-| `undo_move` / `resign` | take back your last move / concede |
-| `takeback` | ask a human opponent to let you take back a move once they have replied (`action`: request / cancel / accept / decline) |
+| `undo_move` / `resign` | take back the last step of the turn you are still playing (a move stands once the turn has passed) / concede |
 | `draw` | offer / cancel / accept / decline a draw (human opponents only) |
 | `simulate` | what-if: apply a line of moves to the current or a past position |
 | `import_game` | load a PTN document or move list into a new room (validated, full history) for replay and `simulate` / `suggest_move` analysis |
@@ -159,8 +158,7 @@ few ways that matter to an agent:
   player's own `get_observation`. `simulate`, `suggest_move` and forked
   environments run on a *determinization*: dice and unknowable choices are
   re-drawn, so they estimate rather than reveal.
-* **No undo across dice.** `undo_move` and take-backs are refused once a die
-  has been rolled since the move.
+* **No undo across dice.** `undo_move` is refused once a die has been rolled.
 * **Seeding.** `env_reset seed=N` fixes the game's dice as well as the bot's
   play; `match_bots seed=N` does the same per game, so seeded runs replay
   exactly. Planes (`env_spec`) are viewer-relative: units by type, conditions,

@@ -142,7 +142,7 @@ func registerPlayTools(s *server.MCPServer, mgr *session.Manager) {
 
 	s.AddTool(
 		mcp.NewTool("undo_move",
-			mcp.WithDescription("Take back your most recent move (and any built-in bot replies to it). Only possible while no other human has moved since."),
+			mcp.WithDescription("Take back the last step of the turn you are still playing, in a game whose turn has several steps. A move stands once the turn has passed to anyone, a die has been rolled or a card drawn."),
 			mcp.WithString("room_code", mcp.Required(), mcp.Description("The room code of the game.")),
 			mcp.WithString("player_name", mcp.Required(), mcp.Description("Your player name.")),
 		),
@@ -175,30 +175,6 @@ func registerPlayTools(s *server.MCPServer, mgr *session.Manager) {
 				return mcp.NewToolResultError("action is required"), nil
 			}
 			snap, err := mgr.Draw(ctx, room, player, action)
-			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
-			}
-			return mcp.NewToolResultStructuredOnly(stateResultFromSnapshot(snap)), nil
-		},
-	)
-
-	s.AddTool(
-		mcp.NewTool("takeback",
-			mcp.WithDescription("Ask a human opponent to let you take back your last move after they have replied (undo_move works on its own until then), or answer their request. Accepting rewinds to the position before the requester's move, with the requester to move; any move withdraws an outstanding request."),
-			mcp.WithString("room_code", mcp.Required(), mcp.Description("The room code of the game.")),
-			mcp.WithString("player_name", mcp.Required(), mcp.Description("Your player name.")),
-			mcp.WithString("action", mcp.Required(), mcp.Description("One of: request, cancel, accept, decline.")),
-		),
-		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-			room, player, errRes := requireRoomAndPlayer(request)
-			if errRes != nil {
-				return errRes, nil
-			}
-			action, err := request.RequireString("action")
-			if err != nil {
-				return mcp.NewToolResultError("action is required"), nil
-			}
-			snap, err := mgr.Takeback(ctx, room, player, action)
 			if err != nil {
 				return mcp.NewToolResultError(err.Error()), nil
 			}
@@ -540,7 +516,6 @@ func stateResultFromSnapshot(s session.StateSnapshot) getStateResult {
 		EndReason:  s.EndReason,
 
 		DrawOfferSeat: s.DrawOfferSeat,
-		TakebackSeat:  s.TakebackSeat,
 	}
 }
 

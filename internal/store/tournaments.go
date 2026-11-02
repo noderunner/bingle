@@ -459,7 +459,7 @@ func (s *Store) CreateTournamentRound(ctx context.Context, tournamentID int64, r
 // write, so that nothing can ever pick its result up.
 func (s *Store) VoidGame(ctx context.Context, gameID int64, reason string) error {
 	if _, err := s.exec(ctx, "VoidGame",
-		`UPDATE games SET status = 'finished', turn_seat = NULL, winner_seat = NULL, end_reason = ?, draw_offer_seat = NULL, takeback_seat = NULL,
+		`UPDATE games SET status = 'finished', turn_seat = NULL, winner_seat = NULL, end_reason = ?, draw_offer_seat = NULL,
 			rating_status = CASE rated WHEN 1 THEN ? ELSE rating_status END, updated_at = CURRENT_TIMESTAMP
 		 WHERE id = ? AND status != 'finished'`, reason, RatingVoid, gameID); err != nil {
 		return fmt.Errorf("voiding game_id=%d: %w", gameID, err)

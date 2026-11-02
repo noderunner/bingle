@@ -306,7 +306,7 @@ func TestLegalMovesAllWithSteps(t *testing.T) {
 	}
 }
 
-func TestUndoRestoresPreviousPosition(t *testing.T) {
+func TestUndoIsRefusedOnceTheTurnHasPassed(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	room := newTakRoom(t, baseURL, "tak-5x5", "Alice")
 	joinRoom(t, baseURL, room, "Bob")
@@ -320,39 +320,14 @@ func TestUndoRestoresPreviousPosition(t *testing.T) {
 		t.Fatalf("undo after opponent moved: %d %v, want 409", code, errBody)
 	}
 
-	// Bob can take back his move.
-	var out struct {
-		Removed []int     `json:"removed"`
-		State   restState `json:"state"`
+	// Nor can Bob take back his, with the turn passed to Alice.
+	if code := doJSON(t, "POST", baseURL+"/api/games/"+room+"/undo", map[string]any{"player_name": "Bob"}, nil); code != 409 {
+		t.Fatalf("undo with the turn passed: %d, want 409", code)
 	}
-	if code := doJSON(t, "POST", baseURL+"/api/games/"+room+"/undo", map[string]any{"player_name": "Bob"}, &out); code != 200 {
-		t.Fatalf("undo status %d", code)
-	}
-	if len(out.Removed) != 1 || out.Removed[0] != 2 || out.State.MoveSeq != 1 || out.State.TurnSeat == nil || *out.State.TurnSeat != 2 {
-		t.Errorf("undo result = %+v", out)
-	}
-	if _, ok := out.State.BoardState["e5"]; ok {
-		t.Error("e5 still occupied after undo")
-	}
-	if out.State.State.Reserves["white"]["stone"] != 21 {
-		t.Errorf("white reserve after undo = %v, want restored to 21", out.State.State.Reserves)
-	}
-
-	// Moves history shrank and Bob can play again.
 	var hist []map[string]any
 	doJSON(t, "GET", baseURL+"/api/games/"+room+"/moves", nil, &hist)
-	if len(hist) != 1 {
-		t.Errorf("history length = %d, want 1", len(hist))
-	}
-	if code, _ := moveNotation(t, baseURL, room, "Bob", "d4"); code != 200 {
-		t.Errorf("replaying after undo: %d", code)
-	}
-
-	// Nothing to undo for a player who hasn't moved... after Alice undoes
-	// everything of hers there is nothing left.
-	moveNotation(t, baseURL, room, "Alice", "Sc3")
-	if code := doJSON(t, "POST", baseURL+"/api/games/"+room+"/undo", map[string]any{"player_name": "Alice"}, nil); code != 200 {
-		t.Errorf("undo own last move: %d", code)
+	if len(hist) != 2 {
+		t.Errorf("history length = %d, want 2", len(hist))
 	}
 }
 
@@ -434,15 +409,9 @@ func TestBotOpponentPlaysBack(t *testing.T) {
 		t.Errorf("after move vs bot: bot_moves=%d move_seq=%d turn=%v", len(out.BotMoves), out.State.MoveSeq, out.State.TurnSeat)
 	}
 
-	// Undo takes back Alice's move AND the bot's reply.
-	var undone struct {
-		Removed []int `json:"removed"`
-	}
-	if code := doJSON(t, "POST", baseURL+"/api/games/"+created.RoomCode+"/undo", map[string]any{"player_name": "Alice"}, &undone); code != 200 {
-		t.Fatalf("undo vs bot: %d", code)
-	}
-	if len(undone.Removed) != 2 {
-		t.Errorf("removed = %v, want both plies", undone.Removed)
+	// The bot's reply passed the turn, so Alice's move stands.
+	if code := doJSON(t, "POST", baseURL+"/api/games/"+created.RoomCode+"/undo", map[string]any{"player_name": "Alice"}, nil); code != 409 {
+		t.Fatalf("undo vs bot: %d, want 409", code)
 	}
 
 	// Playing second: the bot opens.

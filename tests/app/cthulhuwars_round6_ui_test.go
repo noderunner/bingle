@@ -278,16 +278,18 @@ func TestWebCthulhuWars_MovesAndHistoryShareACardAndUndoIsAmongTheActions(t *tes
 	openGameAs(t, ctx, baseURL, room, "cthulhu-wars", "Alice")
 	waitJS(t, ctx, "the board", `document.querySelectorAll('#board .cell.area').length === 17`, 15*time.Second)
 	// Nothing to take back yet.
-	if n := evalInt(t, ctx, `document.querySelectorAll('#undo-move').length`); n != 0 {
+	if n := evalInt(t, ctx, `document.querySelectorAll('#undo-step').length`); n != 0 {
 		t.Errorf("undo is offered before any move")
 	}
 	// Alice's seat is the browser's now (ADR 0067), so she moves as it.
 	if code := moveAs(t, browserGuestKey(t, ctx), baseURL, room, "Alice", "recruit@south-pacific"); code != 200 {
 		t.Fatalf("recruit: %d", code)
 	}
-	// The bots reply; when it is Alice's turn again her last move can be taken back
-	// — from the list of actions.
-	waitJS(t, ctx, "undo among the actions", `document.querySelector('.action-buttons #undo-move, #move-bar #undo-move') !== null`, 40*time.Second)
+	// The bots reply, and her recruit stands: nothing is offered to take it back.
+	waitJS(t, ctx, "her turn again", `document.querySelector('.action-buttons') !== null && document.getElementById("move-list") !== null || document.querySelectorAll('.action-buttons button').length > 0`, 40*time.Second)
+	if n := evalInt(t, ctx, `document.querySelectorAll('#undo-step').length`); n != 0 {
+		t.Errorf("Back is offered for a move that stands")
+	}
 	if n := evalInt(t, ctx, `document.querySelectorAll('#players, .side-players').length`); n != 0 {
 		t.Errorf("the Players window is still there")
 	}

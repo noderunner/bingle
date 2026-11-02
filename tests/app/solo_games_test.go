@@ -55,14 +55,10 @@ func TestSoloTwoPlayerGame(t *testing.T) {
 	if code, _ := moveNotation(t, baseURL, created.RoomCode, "Alice", "c3"); code != 403 {
 		t.Errorf("seat 1 moved out of turn: %d", code)
 	}
-	// Taking back: the last move of Alice's own seat, and the alias's after it.
-	if code := doJSON(t, "POST", baseURL+"/api/games/"+created.RoomCode+"/undo", map[string]any{"player_name": "Alice"}, nil); code != 200 {
-		t.Errorf("undo: %d", code)
-	}
-	var st soloInfo
-	doJSON(t, "GET", baseURL+"/api/games/"+created.RoomCode, nil, &st)
-	if st.TurnSeat != 1 {
-		t.Errorf("after the undo it is seat %d's turn, want 1", st.TurnSeat)
+	// Playing both sides does not change the rule: a move stands once the turn has
+	// passed, even to oneself.
+	if code := doJSON(t, "POST", baseURL+"/api/games/"+created.RoomCode+"/undo", map[string]any{"player_name": "Alice"}, nil); code != 409 {
+		t.Errorf("undo: %d, want 409", code)
 	}
 }
 

@@ -121,9 +121,6 @@ func TestRatedGames_API(t *testing.T) {
 	if code := ana.do("POST", path+"/undo", map[string]any{"player_name": "ana"}, nil); code != 409 {
 		t.Errorf("undo: %d, want 409", code)
 	}
-	if code := ana.do("POST", path+"/takeback", map[string]any{"player_name": "ana", "action": "request"}, nil); code != 409 {
-		t.Errorf("take-back: %d, want 409", code)
-	}
 	if code := bea.do("POST", path+"/moves", map[string]any{"player_name": "bea", "notation": "d4"}, nil); code != 200 {
 		t.Fatalf("a move: %d", code)
 	}
@@ -230,7 +227,7 @@ func TestRatedGames_UI(t *testing.T) {
 		t.Fatalf("a move: %d", code)
 	}
 	waitJS(t, ctx, "the move", `document.querySelector('#move-list button.mv') !== null`, 15*time.Second)
-	if evalBool(t, ctx, `document.getElementById("undo-move") !== null`) {
+	if evalBool(t, ctx, `document.getElementById("undo-step") !== null`) {
 		t.Error("a rated game offers an undo")
 	}
 	if code := bea.do("POST", path+"/moves", map[string]any{"player_name": "bea", "notation": "d4"}, nil); code != 200 {

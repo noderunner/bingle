@@ -1,5 +1,7 @@
 # 0021 — Custom start positions and take-backs with consent
 
+> Its take-backs are removed by [ADR 0083](0083-a-move-stands.md).
+
 ## Context
 
 Puzzles, endgame practice, "play from this analysis position" and curriculum
