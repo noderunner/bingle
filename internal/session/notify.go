@@ -679,6 +679,10 @@ func (n *notifier) turnPassed(room string, seat, seq int) {
 	if !ok {
 		return
 	}
+	// Alone at a table, it is always your turn, and you are the one who stopped.
+	if compiled, err := n.m.compiledFor(game); err == nil && len(compiled.Definition.Seats) == 1 {
+		return
+	}
 	pref, err := n.m.store.GetNotifyPref(ctx, game.ID, nameKey(player.Name))
 	if err != nil || !pref.Enabled || pref.ContactID == 0 {
 		return

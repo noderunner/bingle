@@ -4,6 +4,26 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.42.0 - 2026-11-02
+
+### Bingle Core 0.42.0
+- **Games for one player.** A game can now have a single seat. It starts as soon as you create it, with no
+  opponent to choose. **Give up** ends it whenever you like, and **← Back** takes moves back as far as you want,
+  since there is nobody to wrong. Moves go straight in, without waiting for Submit.
+
+### Solitaire 0.1.0
+- **Solitaire is here**, all of it for one player, and every game can be played with any of the themed sets of cards:
+  - **Solitaire** (Klondike), turning over one card at a time or, in the harder version, three.
+  - **Spider**, with four suits, two suits, or one for learning it.
+  - **FreeCell**, with every card face up and almost every deal winnable.
+  - **Bowling Solitaire**, Sid Sackson's game of ten frames played with twenty cards, with a score sheet and
+    a tutorial under *Learn to play*.
+- Click a card and then where it should go, or drag it. A card with only one place to go goes straight
+  there, and clicking a selected card again sends it to its foundation. **Finish** appears when everything can go
+  home by itself.
+- With a themed set of cards, the suits are not red and black any more. So in Solitaire and FreeCell, where
+  colours matter, each card also shows a small mark with the classic suit it stands for.
+
 ## 0.41.0 - 2026-11-02
 
 ### Bingle Core 0.41.0

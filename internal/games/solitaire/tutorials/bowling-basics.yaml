@@ -1,0 +1,90 @@
+# yaml-language-server: $schema=../../../../docs/tutorial.schema.json
+id: bowling-basics
+kind: rules
+title: How to play Bowling Solitaire
+summary: The pins and the balls, adding up, what you may knock down, a spare and the score.
+order: 1
+game: bowling-solitaire
+seed: 4
+
+steps:
+  - text: |
+      **Bowling Solitaire** is ten frames of bowling played with twenty cards,
+      ace to 10 of two suits. Suits do not matter, and an ace counts 1.
+
+      Ten cards are the **pins**, in a triangle with its point towards you:
+      a b c d at the back, then e f g, then h i, and j at the front. Each card
+      shows its letter.
+
+      The other ten are the **balls**, face down in three piles of 5, 3 and 2,
+      with the top card of each turned up. Those three are all you can throw.
+
+  - text: |
+      A **play** uses one face-up ball to knock down pins, and it is all about
+      the last digit.
+
+      - **One pin** goes if it ends in the same digit as the ball.
+      - **Two or three pins that touch** go if the last digit of their sum does.
+
+      So a 6 can take a 6, or a 2 and a 4, or a 7 and a 9 (16), or a 1, a 2 and
+      a 3. A 10 counts as 0.
+
+  - text: |
+      The **first play** on a rack has two limits: it cannot touch the back row,
+      a b c d, and it cannot take the centre pin, f, by itself.
+
+      Pile 1 is showing an ace, and so is pin e. Click **pin e**, then the **ace**
+      on pile 1. Pins always come first and the ball second: the ball lights up
+      once it fits.
+    play: ['e@1']
+    hint: Click pin e, on the left of the middle row, then the ace on the first ball pile.
+
+  - text: |
+      The ace and the pin are gone, and the next card of pile 1 has turned up: a 7.
+      Cards out of play stay in view, so you can always count what is left.
+
+      From now on, **every play must include a pin next to one already down**. Take
+      three together: h, i and j come to 6 + 7 + 4 = 17, which ends in 7, and h
+      touches the gap at e.
+
+      Click **h**, **i** and **j**, in any order, then the **7**.
+    play: ['h+i+j@1']
+    hint: Click the three pins at the front, h, i and j, then the 7 on the first pile.
+
+  - text: |
+      Six pins are left, and pile 3 is showing a 9. Pins a, b and f come to
+      2 + 5 + 2 = 9. They do not all have to touch one another: a touches b, and
+      b touches f, and that will do. And f is next to a gap.
+
+      Click **a**, **b** and **f**, then the **9** on pile 3.
+    play: ['a+b+f@3']
+    hint: Click pins a, b and f, then the 9 on the third pile.
+
+  - text: |
+      Look at what happened. With 9, 4 and 3 standing, nothing showing could take
+      them: a 5, a 10 and an 8. So the **first ball** ended by itself, at 7 pins,
+      and the score sheet says so.
+
+      Now the **top card of each pile was thrown away**, and the next one turned
+      up. That is your **second ball**: a 6 and a 3 to play with, against the same
+      three pins. (You can also end a ball yourself, while a play is left, with
+      **End this ball**. A poor play can cost you more than the cards you give up.)
+
+  - text: |
+      9 + 4 + 3 = 16, which ends in 6, and c, d and g touch in a chain.
+
+      Click **c**, **d** and **g**, then the **6** on pile 1.
+    play: ['c+d+g@1']
+    hint: Click pins c, d and g, then the 6 on the first pile.
+
+  - text: |
+      All the pins are down on the second ball: a **spare**, marked **/**. The
+      twenty cards were shuffled again for frame 2.
+
+      The score is ten-pin bowling's. A frame scores the pins it knocked down. A
+      spare adds the next ball, so this frame's total waits for it. Clearing all
+      ten on the first ball is a **strike**, marked **X**, and adds the next two
+      balls. Anything else is just the pins, and a 300 is a perfect game.
+
+      In the tenth frame, a spare earns one more ball and a strike two, on a new
+      rack. That is the whole game: from here on, the frames are yours.

@@ -30,6 +30,7 @@ import (
 	"github.com/noderunner/bingle/internal/games/mycelium"
 	"github.com/noderunner/bingle/internal/games/nyet"
 	"github.com/noderunner/bingle/internal/games/onitama"
+	"github.com/noderunner/bingle/internal/games/solitaire"
 	"github.com/noderunner/bingle/internal/games/tak"
 	"github.com/noderunner/bingle/internal/games/yinsh"
 	"github.com/noderunner/bingle/internal/journal"
@@ -302,7 +303,7 @@ var RetiredGames = []struct{ ID, Name string }{
 
 // BuiltinModules returns every game module bingle ships with.
 func BuiltinModules() []catalog.Module {
-	return append([]catalog.Module{tak.Module(), courtfall.Module(), fendo.Module(), fist.Module(), meridians.Module(), onitama.Module(), blooms.Module(), hive.Module(), nyet.Module(), yinsh.Module(), cthulhuwars.Module(), mycelium.Module()}, classics.Modules()...)
+	return append([]catalog.Module{tak.Module(), courtfall.Module(), fendo.Module(), fist.Module(), meridians.Module(), onitama.Module(), blooms.Module(), hive.Module(), nyet.Module(), solitaire.Module(), yinsh.Module(), cthulhuwars.Module(), mycelium.Module()}, classics.Modules()...)
 }
 
 // Router returns the application's HTTP handler.

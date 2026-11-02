@@ -20,6 +20,7 @@ import { statIcon } from "./icons.js";
 import { hoverCard, hideHoverCard } from "./tooltip.js";
 import { createOptionsWindow } from "./options.js";
 import { cardTable, choiceGrid, hideCardZoom } from "./cards.js";
+import { solitaireTable } from "./solitaire.js";
 import { rulesIcon } from "./ui-icons.js";
 import { choiceIcon } from "./choice-icons.js";
 import { animalIcon, animalOf } from "./animals.js";
@@ -521,6 +522,11 @@ function isRuleset() {
 	return !!S.info && S.info.engine === "ruleset";
 }
 
+/** A game with one seat: there is no turn to hand on, so a move never waits for Submit. */
+function playingAlone() {
+	return !!S.info && S.info.seats.length === 1;
+}
+
 function rulesetView() {
 	if (!isRuleset()) return null;
 	const st = currentState();
@@ -541,7 +547,7 @@ function rulesetEvents() {
  * tutorial's script has already said what to play.
  */
 function needsConfirm() {
-	if (!S.settings.confirm || S.tut) return false;
+	if (!S.settings.confirm || S.tut || playingAlone()) return false;
 	if (!isRuleset()) return true;
 	const done = activeBuilder().complete();
 	return !!done && done.notation === S.finalMove;
@@ -583,7 +589,7 @@ function afterBuilderChange() {
 		return;
 	}
 	S.finalMove = null;
-	if (done && b.finished() && isRuleset() && S.settings.confirm && !S.tut && !clickedAButton(b)) {
+	if (done && b.finished() && isRuleset() && S.settings.confirm && !S.tut && !playingAlone() && !clickedAButton(b)) {
 		askIfFinal(done.notation);
 		return;
 	}
@@ -1865,7 +1871,7 @@ function renderMobileCards(seats, bottomSeat) {
 		if (gate) play.append(gate);
 	}
 	play.append(moveBar());
-	const table = cardTable(ctx);
+	const table = drawCardTable(ctx);
 	S.ctPrev = table.state;
 	play.append(table.node);
 
@@ -2263,9 +2269,15 @@ function resultMessage() {
 		"instant-death": "after Instant Death",
 		draw: "",
 		retired: "",
+		cleared: "with every card home",
 	};
 	const how = g.end_reason ? ` ${reasons[g.end_reason] || "(" + g.end_reason + ")"}` : "";
 	const detail = g.end_detail ? ` [${g.end_detail}]` : "";
+	if (playingAlone() && (g.winner_seat === null || g.winner_seat === undefined)) {
+		if (g.end_reason === "resignation") return "Game over — you gave up.";
+		if (g.end_reason === "stuck") return `Game over — no move is left${detail}.`;
+		return `Game over${g.end_detail ? `: ${g.end_detail}` : ""}.`;
+	}
 	if (g.winner_seat === null || g.winner_seat === undefined) {
 		if (g.end_reason === "abandoned") return "Game over — its tournament was abandoned, so it has no result.";
 		if (g.end_reason === "humanity") return `Game over — humanity survives: no cult had all six spellbooks${detail}.`;
@@ -3291,9 +3303,14 @@ function cardPanels() {
 	const ctx = cardContext(v);
 	// The board of terms stands beside the trick (under it on a narrow screen).
 	if (v.grid) ctx.top = termsBoard(v, ctx);
-	const table = cardTable(ctx);
+	const table = drawCardTable(ctx);
 	S.ctPrev = table.state;
 	return [table.node];
+}
+
+/** The table of a card game: a game of patience lays its cards out its own way. */
+function drawCardTable(ctx) {
+	return ctx.view.solitaire ? solitaireTable(ctx) : cardTable(ctx);
 }
 
 /** What the card table and the board of terms need to draw this position and to act on it. */
@@ -3315,6 +3332,17 @@ function cardContext(v) {
 		playable: (tid) => actions.has(`card-${tid}`),
 		onCard: (tid) => chooseAction(`card-${tid}`),
 		onAction: (id) => chooseAction(id),
+		// A game of patience chooses in two clicks, and works out the second itself.
+		options: () => (actingSeat() ? activeBuilder().nextActions() : []),
+		cancelMove: () => {
+			if (!actingSeat()) return;
+			activeBuilder().reset();
+			render();
+		},
+		picked: () => (actingSeat() ? activeBuilder().steps.map((st) => st.value) : []),
+		tutorialSteps: () => (S.tut && isLive() ? tutorialExpected() : null),
+		redraw: () => render(),
+		playsList: () => (actingSeat() ? activeBuilder().moves.map((m) => m.notation) : []),
 		prev: S.ctPrev,
 		seatIconByLabel: seatAnimalByLabel,
 	};
@@ -3731,7 +3759,7 @@ function moveBar() {
 					? `Click a highlighted ${cell}.`
 					: hasAct
 					? (rulesetView() || {}).panel_actions
-						? "Click a card or a box on the table, or choose from the buttons."
+						? (rulesetView() || {}).hint || "Click a card or a box on the table, or choose from the buttons."
 						: "Choose an action."
 					: opts.some((o) => o.kind === "count")
 					? "Choose a number."
@@ -3766,7 +3794,7 @@ function moveBar() {
 					? "Click a highlighted piece to move it."
 					: opts.some((o) => o.kind === "action")
 					? (rulesetView() || {}).panel_actions
-						? "Click a card or a box on the table, or choose from the buttons."
+						? (rulesetView() || {}).hint || "Click a card or a box on the table, or choose from the buttons."
 						: "Choose an action."
 					: "No moves available."
 			)
@@ -4809,7 +4837,7 @@ function refreshOptions() {
 						)
 					);
 				}
-				const leave = twoParty ? "Resign" : "End game";
+				const leave = playingAlone() ? "Give up" : twoParty ? "Resign" : "End game";
 				row.append(
 					h(
 						"button",
@@ -4817,7 +4845,7 @@ function refreshOptions() {
 							id: "resign",
 							class: "danger",
 							disabled: S.busy,
-							title: twoParty ? null : "Ends the game for every player, with no winner",
+							title: twoParty || playingAlone() ? null : "Ends the game for every player, with no winner",
 							onclick: doResign,
 						},
 						S.confirmResign ? `Really ${leave.toLowerCase()}?` : leave

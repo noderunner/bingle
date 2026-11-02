@@ -1423,7 +1423,7 @@ func TestWebGame_EveryGameOpensDrawsAndTakesAFirstClick(t *testing.T) {
 		// Something is clickable when it is the player's turn (the random
 		// bot never moved first for seat 1).
 		if len(legal.Moves) > 0 {
-			waitJS(t, ctx, id+" clickable", `document.querySelectorAll('#board .cell.clickable, #hand-white .choosable, #hand-black .choosable, .hand-piece.choosable, #board .cell.quick, #action-pass, #action-swap, #action-cw, .action-buttons button[data-action^="card-"], #piece-buttons button, .pc-btn.playable, .cg-box.clickable').length > 0`, 10*time.Second)
+			waitJS(t, ctx, id+" clickable", `document.querySelectorAll('#board .cell.clickable, #hand-white .choosable, #hand-black .choosable, .hand-piece.choosable, #board .cell.quick, #action-pass, #action-swap, #action-cw, .action-buttons button[data-action^="card-"], #piece-buttons button, .pc-btn.playable, .cg-box.clickable, .sol-movable, button.sol-pin, button#sol-stock').length > 0`, 10*time.Second)
 		}
 	}
 	mu.Lock()

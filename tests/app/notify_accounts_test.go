@@ -8,6 +8,7 @@ import (
 	"context"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/noderunner/bingle/internal/auth"
 	"github.com/noderunner/bingle/internal/config"
@@ -132,5 +133,31 @@ func TestNotifyAccounts_AConfirmedContactBecomesAnAccount(t *testing.T) {
 	other := newBrowser(t, e.URL)
 	if code := other.do("POST", "/auth/signup", map[string]any{"contact_id": c.ID, "contact_secret": "guess", "handle": "mallory", "password": "mallory's password"}, nil); code != http.StatusForbidden {
 		t.Errorf("a wrong contact secret: %d, want 403", code)
+	}
+}
+
+// Alone at a table it is always your turn, and you are the one who stopped: no mail.
+func TestNotifyAccounts_AGameForOneSendsNoTurnMail(t *testing.T) {
+	e := accountsNotifyEnv(t)
+	alice := member(t, e.App, e.URL, "alice")
+	var g struct {
+		RoomCode string `json:"room_code"`
+	}
+	if code := alice.do("POST", "/api/games", map[string]any{"game_def_id": "solitaire", "player_name": "Alice"}, &g); code != 200 {
+		t.Fatalf("create: %d", code)
+	}
+	c := e.confirmAs(t, alice, "alice@example.com")
+	if code := setGameNotifyAs(t, alice, g.RoomCode, "Alice", c); code != 200 {
+		t.Fatalf("switch on: %d", code)
+	}
+	n := len(e.SMTP.Mails())
+	for i := 0; i < 2; i++ {
+		if code := alice.do("POST", "/api/games/"+g.RoomCode+"/moves", map[string]any{"player_name": "Alice", "notation": "draw"}, nil); code != 200 {
+			t.Fatalf("draw: %d", code)
+		}
+	}
+	time.Sleep(500 * time.Millisecond)
+	if got := len(e.SMTP.Mails()); got != n {
+		t.Errorf("%d mails about a game for one", got-n)
 	}
 }
