@@ -25,11 +25,18 @@ var definition = sync.OnceValue(func() []byte { return dsl.MustLoad(definitionFS
 //go:embed guide
 var guideFS embed.FS
 
+//go:embed tutorials
+var tutorialsFS embed.FS
+
 // Module returns Mycelium's catalog.Module.
 func Module() catalog.Module {
 	sub, err := fs.Sub(guideFS, "guide")
 	if err != nil {
 		panic(err)
 	}
-	return catalog.Module{ID: "mycelium", Definition: definition(), Rules: New(), Assets: sub}
+	tutorials, err := fs.Sub(tutorialsFS, "tutorials")
+	if err != nil {
+		panic(err)
+	}
+	return catalog.Module{ID: "mycelium", Definition: definition(), Rules: New(), Assets: sub, Tutorials: tutorials}
 }

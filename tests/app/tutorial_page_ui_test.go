@@ -325,6 +325,68 @@ func TestWebTutorial_PlaysThroughTheMeridiansTutorial(t *testing.T) {
 	waitJS(t, ctx, "the end", `!!document.getElementById("tutorial-done")`, 10*time.Second)
 }
 
+// The Mycelium tutorial is played through a whole confluence: spreads are two
+// clicks on the board, the second conversion of a hyphae spread one, and what
+// each step says has happened to the nodes is what the board shows.
+func TestWebTutorial_PlaysThroughTheMyceliumTutorial(t *testing.T) {
+	base := newRESTTestServer(t)
+	ctx, cancel := newChromedpContext(t, 120*time.Second)
+	defer cancel()
+	openTutorialOf(t, ctx, base, "mycelium", "mycelium-basics")
+	next := func() { t.Helper(); clickSel(t, ctx, "#tutorial-next") }
+	nodes := `[...document.querySelectorAll("#board .cell")].filter(c => c.dataset.height !== "0").length`
+	clickable := `[...document.querySelectorAll("#board .cell.clickable")].map(c => c.dataset.position).join(",")`
+	// play makes one step's move, cell by cell: each click must have taken, the
+	// next cell being offered or the step having moved on, since a click that
+	// lands in a redraw is lost.
+	play := func(n string, cells ...string) {
+		t.Helper()
+		waitStep(t, ctx, n)
+		for i, c := range cells {
+			waitJS(t, ctx, c+" to be the only cell", clickable+` === "`+c+`"`, 10*time.Second)
+			took := `!/^Step ` + n + ` of /.test(document.getElementById("tutorial-count").textContent)`
+			if i+1 < len(cells) {
+				took = clickable + ` === "` + cells[i+1] + `"`
+			}
+			clickCellUntil(t, ctx, c, took, 10*time.Second)
+		}
+	}
+	colours := func(want string) {
+		t.Helper()
+		js := `[...document.querySelectorAll("#board .cell")].filter(c => c.dataset.height !== "0").map(c => c.dataset.position + ":" + c.querySelector("[data-color]").dataset.color[0]).sort().join(",")`
+		waitJS(t, ctx, "the nodes "+want, js+` === "`+want+`"`, 10*time.Second)
+	}
+
+	waitStep(t, ctx, "1")
+	next()
+	waitStep(t, ctx, "2")
+	waitJS(t, ctx, "the finished game", nodes+` === 18`, 10*time.Second)
+	next()
+	waitStep(t, ctx, "3")
+	waitJS(t, ctx, "the empty board", nodes+` === 0`, 10*time.Second)
+	next()
+	waitStep(t, ctx, "4")
+	next()
+	play("5", "i4")
+	play("6", "f7")
+	play("7", "b8")
+	play("8", "b9")
+	play("9", "e5")
+	waitStep(t, ctx, "10")
+	colours("b8:b,b9:b,c8:g,d7:g,d8:g,e5:b,f2:g,f7:g,i4:b")
+	next()
+	play("11", "i4", "f7")
+	play("12", "f7", "f2")
+	play("13", "b9", "c8")
+	play("14", "d8")
+	waitStep(t, ctx, "15")
+	colours("b8:b,b9:b,c8:b,d7:g,d8:b,e7:g,f2:b,f7:b,i4:b")
+	next()
+	waitStep(t, ctx, "16")
+	next()
+	waitJS(t, ctx, "the end", `!!document.getElementById("tutorial-done")`, 10*time.Second)
+}
+
 // tutorialDoNext makes the selection the step points at, however the page
 // offers it: the picked-out button, the one unit that can be chosen, or the
 // one area or square that can be clicked. It returns what it clicked.

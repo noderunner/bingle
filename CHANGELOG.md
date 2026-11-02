@@ -4,6 +4,13 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.35.0 - 2026-11-01
+
+### Bingle Core 0.35.0
+- **A tutorial for Mycelium.** *How to play Mycelium* teaches the game by playing it: you place your
+  first nodes, take the centre, and make the spore and hyphae spreads of a whole confluence. Find it
+  under **Learn to play** when you choose the game, or in the *Tutorials* tab of its rules.
+
 ## 0.34.1 - 2026-11-01
 
 ### Bingle Core 0.34.1

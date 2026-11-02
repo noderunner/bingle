@@ -1,0 +1,186 @@
+# yaml-language-server: $schema=../../../../docs/tutorial.schema.json
+id: mycelium-basics
+kind: rules
+title: How to play Mycelium
+summary: The goal, the board, clusters, and one whole confluence, from taking the centre to its end.
+order: 1
+game: mycelium
+seat: 1   # you play Black; the page plays Green
+
+steps:
+  - text: |
+      In **Mycelium** two fungal colonies fight over a hexagonal board. You
+      place nodes, and taking the centre sets off a **confluence**, in which
+      clusters spread and convert enemy nodes to their own colour. You win by
+      wiping out the other colony.
+
+  - text: |
+      This is how a game ends. **Black has no nodes left**, so Green has won.
+
+      A game can only be won when a confluence ends: a player left with no
+      nodes then loses, and if it wipes out both colonies, the player who took
+      the centre loses. A game that no confluence has decided after 500 plies
+      is a draw.
+    show: [
+      black@a8, green@h5, black@c5, green@i1, black@f5, green@b7, black@b6, green@d9, black@c9, green@e3,
+      black@g5, green@f4, black@d6, green@g2, black@h2, green@f8, black@h3, green@b5, black@e5,
+      spore f8 a8, spore e3 h3, hyphae i1 h2, hyphae c9 d9, hyphae f4 e5, hyphae d6 e5, hyphae b5 b6,
+      hyphae c5 b6, hyphae h5 g5, hyphae b7 b6, hyphae c5, green@e5,
+      spore f8 f5, spore c9 c5, hyphae d6 e5, hyphae c5 b6, hyphae b5 c5, hyphae b6 c5, hyphae b7 b6,
+      hyphae c5, hyphae f4 e5, hyphae d6, black@e5,
+      spore e3 e5, spore c9 c5, spore e5 c5, green@e5,
+      spore c9 c5, spore d6 d9, hyphae c5 b5, hyphae d9 c9, hyphae b6 c5, hyphae b5
+    ]
+
+  - text: |
+      The board is a hexagon of **61 cells**, five along each side. Each cell
+      is named by a letter and a number, touches up to six others, and lies on
+      three straight lines.
+
+      The cell that matters most is the **centre**, e5.
+    highlight: [e5]
+
+  - text: |
+      Black has **black nodes** and Green has **green nodes**, and neither
+      ever runs out. A node never moves. It can only change colour, when it is
+      converted, or leave the board from the centre, as you will see.
+
+      You are Black; this tutorial plays Green.
+
+  - text: |
+      On a normal turn you place **one node of your colour on any empty
+      cell**. The board starts empty and Black goes first.
+
+      Place your first node on i4.
+    play: [black@i4]
+    hint: Click i4.
+    highlight: [i4]
+    reply: [green@f2]
+
+  - text: |
+      A **cluster** is a connected group of nodes of one colour, and a single
+      node is a cluster of one. A **spore cluster** touches no enemy node, so
+      your i4 and Green's f2 are both spore clusters.
+
+      Place another on f7. It touches nothing either, so it is a spore cluster
+      of its own.
+    play: [black@f7]
+    hint: Click f7.
+    highlight: [f7]
+    reply: [green@d8]
+
+  - text: |
+      Green has started a new cluster on d8. Place a node on b8, with one
+      empty cell, c8, between it and d8.
+    play: [black@b8]
+    hint: Click b8.
+    highlight: [b8]
+    reply: [green@d7]
+
+  - text: |
+      Green's d7 touches d8, so they are one cluster of two. Make one of your
+      own: place a node on b9, touching b8.
+
+      A **strand** is a path through a cluster's nodes, each touching the next.
+      It may bend as it likes but visits no node twice, and its length is the
+      number of nodes on it. b9 and b8 make a strand of two.
+    play: [black@b9]
+    hint: Click b9.
+    highlight: [b9]
+    reply: [green@c8]
+
+  - text: |
+      Green's c8 joins its cluster, which now has three nodes, and it touches
+      your b8 and b9. A cluster touching an enemy node is a **hyphae cluster**,
+      so Green's three and your two are both hyphae clusters now.
+
+      Now take the centre. **A node placed on e5 starts a confluence**, and
+      normal turns stop until it is over.
+    play: [black@e5]
+    hint: Click the centre, e5.
+    highlight: [e5]
+    reply: [spore f2 f7]
+
+  - text: |
+      A confluence has two phases: first the **spore** clusters spread, then
+      the **hyphae** clusters.
+
+      Each phase goes in **initiative order**: the clusters of one node, then
+      those of two, then three, and so on. At each size the player who did
+      **not** take the centre chooses first, then the players take turns. You
+      took the centre, so Green's cluster of one has already spread.
+    highlight: [f2, f7]
+    arrow: [f2, f7]
+
+  - text: |
+      In a **spore spread** you choose a node of the cluster and a straight
+      line from it across empty cells. **The first enemy node on that line
+      becomes your colour**, and the node that spread stays where it is. That
+      is how Green's f2 converted your f7.
+
+      A cluster with a legal spread must spread. It is your turn at this size,
+      and i4 can see f7. Convert it back.
+    play: [spore i4 f7]
+    hint: Click i4, then f7.
+    highlight: [i4, f7]
+    arrow: [i4, f7]
+
+  - text: |
+      Each cluster spreads at most once in each phase, and the board tints the
+      nodes that have. But a node just converted is new to its colony: **f7 has
+      not spread for you yet**, and the initiative is still at clusters of one,
+      so it must spread too. Green has nothing left to spread at this size, so
+      the turn stays with you.
+
+      f7 can see two enemy nodes, f2 and d7. Convert f2.
+    play: [spore f7 f2]
+    hint: Click f7, then f2.
+    highlight: [f7, f2]
+    arrow: [f7, f2]
+
+  - text: |
+      Nothing else can spread, so **the hyphae phase** begins, with the
+      initiative back at clusters of one. No hyphae cluster has one node, so it
+      moves on to two: your b8 and b9. Green's three would come after.
+
+      In a **hyphae spread** you choose a node as the end of a strand and
+      convert an enemy node touching it. You may then convert an enemy node
+      touching that one, and so on, up to **as many nodes as the longest strand
+      ending at the node you chose**. In a line of three, that is three from an
+      end but only two from the middle.
+
+      Your strand is two long, so you get two conversions. Start from b9.
+    play: [hyphae b9 c8]
+    hint: Click b9, then c8.
+    highlight: [b9, c8]
+    arrow: [b9, c8]
+
+  - text: |
+      The nodes you convert need not follow a straight line, and you can press
+      **done** to stop early. Here c8 touches two more enemy nodes, d8 and d7.
+
+      Make your second conversion on d8.
+    play: [hyphae d8]
+    hint: Click d8.
+    highlight: [d8]
+    reply: [green@e7]
+
+  - text: |
+      Green's cluster of three has been cut down to one node, d7, and the
+      initiative has already passed clusters of one, so **it never got to
+      spread**. A cluster's size and kind are looked at when its turn comes, so
+      a small cluster can break up a big one before it acts.
+
+      With nothing left to spread, the confluence ended. **The node on the
+      centre is removed, whichever colour it is.** Both colonies still have
+      nodes, so **the player who did not take the centre places next**: Green,
+      on e7.
+    highlight: [e5, d7, e7]
+
+  - text: |
+      Normal turns now go on until someone takes the centre again. Taking it
+      starts the fight when you choose, but your opponent chooses first at every
+      size and places first afterwards.
+
+      Green is down to two nodes. A confluence that leaves it with none wins
+      you the game.
