@@ -47,6 +47,8 @@ type SeatInfo struct {
 	Guest  bool   `json:",omitempty"`
 	// PrincipalID is who holds the seat: the server's own, never sent.
 	PrincipalID string `json:"-"`
+	// Rating is the player's rating, at the seat of a rated game.
+	Rating *SeatRating `json:",omitempty"`
 }
 
 // ErrGameDefNotFound is returned by CreateGame when gameDefID isn't
@@ -93,6 +95,9 @@ type CreateOptions struct {
 	// ClockIncrementSeconds is what a seat's clock gains each time it hands the
 	// turn on (0 = nothing). It needs ClockSeconds.
 	ClockIncrementSeconds int
+	// Rated makes the game move its players' ratings when it ends (see
+	// checkRatable for what that takes).
+	Rated bool
 	// Lobby makes the game wait, with every seat filled, until its host
 	// starts it: players gather through the invite link, choose their seats
 	// and add bots first.
@@ -263,6 +268,12 @@ func (m *Manager) CreateGameWithOptions(ctx context.Context, opts CreateOptions)
 		return CreateGameResult{}, fmt.Errorf("%w: %d seconds (use 0 for none, at most %d)", ErrInvalidTimeLimit, opts.MoveTimeSeconds, MaxMoveTimeSeconds)
 	}
 
+	if opts.Rated {
+		if err := checkRatable(ctx, compiled, opts); err != nil {
+			return CreateGameResult{}, err
+		}
+	}
+
 	// A game is played with a clock or with a per-move allowance, not both:
 	// two deadlines on one turn would be a riddle rather than a rule.
 	if len(opts.ClockSeconds) > 0 && opts.MoveTimeSeconds > 0 {
@@ -337,6 +348,11 @@ func (m *Manager) CreateGameWithOptions(ctx context.Context, opts CreateOptions)
 			return CreateGameResult{}, fmt.Errorf("session: setting the game clock: %w", err)
 		}
 		game.Clock = stored
+	}
+	if opts.Rated {
+		if err := m.store.SetRated(ctx, game.ID); err != nil {
+			return CreateGameResult{}, err
+		}
 	}
 	if opts.Lobby {
 		if err := m.store.SetLobby(ctx, game.ID, true); err != nil {

@@ -72,6 +72,9 @@ func (m *Manager) Undo(ctx context.Context, roomCode, name string) (UndoOutcome,
 	if err != nil {
 		return UndoOutcome{}, err
 	}
+	if game.Rated {
+		return UndoOutcome{}, fmt.Errorf("%w: moves stand", ErrRatedGame)
+	}
 	if game.Status == "finished" && game.EndReason == "resignation" {
 		return UndoOutcome{}, ErrCannotUndo
 	}

@@ -34,6 +34,11 @@ type StateSnapshot struct {
 	Lobby    bool
 	HostSeat int
 
+	// Rated says the game moves its players' ratings when it ends; RatingStatus
+	// says what became of that, and RatingChanges what it did to them.
+	Rated         bool
+	RatingStatus  string
+	RatingChanges []RatingChange
 	// MoveTimeLimit is the per-move allowance in seconds (0 = untimed).
 	MoveTimeLimit int
 	// Clock is the game clock, nil for a game played without one: what each
@@ -109,6 +114,8 @@ func (m *Manager) snapshot(compiled *catalog.CompiledGame, game store.Game, play
 		EndReason:     game.EndReason,
 		EndDetail:     game.EndDetail,
 		Tutorial:      game.Tutorial,
+		Rated:         game.Rated,
+		RatingStatus:  game.RatingStatus,
 		Seats:         seats,
 		Lobby:         game.Lobby,
 		HostSeat:      hostOf(players),
@@ -255,7 +262,7 @@ func (m *Manager) loadGame(ctx context.Context, roomCode string, locked bool) (s
 	if err := m.store.FinishGame(ctx, game.ID, winner, "timeout"); err != nil {
 		return game, err
 	}
-	m.mx.Finished(gameFamily(compiled), "timeout")
+	m.finished(game, gameFamily(compiled), "timeout")
 	if game, err = m.store.GetGame(ctx, roomCode); err != nil {
 		return game, err
 	}
@@ -360,6 +367,7 @@ func (m *Manager) readState(ctx context.Context, roomCode string, atSeq *int) (S
 	snap, err := m.snapshot(compiled, game, players, doc)
 	if err == nil {
 		m.identify(ctx, snap.Seats)
+		snap.RatingChanges = m.fillRatings(ctx, compiled, game, snap.Seats)
 	}
 	return snap, err
 }

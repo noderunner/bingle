@@ -71,6 +71,27 @@ func (m *Metrics) Finished(game, endReason string) {
 	m.gameFinished.WithLabelValues(game, safeReason(endReason)).Inc()
 }
 
+// RatedOutcome is what became of a rated game that ended: a closed set of labels.
+type RatedOutcome string
+
+const (
+	RatedRecorded   RatedOutcome = "rated"
+	RatedNoMoves    RatedOutcome = "no_moves"
+	RatedDailyLimit RatedOutcome = "daily_limit"
+	RatedVoid       RatedOutcome = "void"
+	RatedFailed     RatedOutcome = "failed"
+)
+
+// RatedResult records what became of a rated game. "failed" is the one to watch:
+// a result is written away from the move that ended the game, so nothing else
+// would say that it stopped working.
+func (m *Metrics) RatedResult(outcome RatedOutcome) {
+	if m == nil {
+		return
+	}
+	m.ratedResults.WithLabelValues(string(outcome)).Inc()
+}
+
 // safeReason keeps the end-reason label a closed set.
 func safeReason(reason string) string {
 	if reason == "" {

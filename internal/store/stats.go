@@ -23,6 +23,7 @@ var measuredTables = []string{
 	"game_versions", "principals", "guest_keys",
 	"accounts", "credentials", "account_groups", "sessions", "account_tokens", "auth_events",
 	"capabilities", "cap_limits", "api_tokens", "invites", "handle_holds",
+	"ratings", "rating_history", "stats",
 }
 
 // snapshotTTL is how long a snapshot is reused.

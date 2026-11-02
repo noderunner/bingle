@@ -104,7 +104,7 @@ that account.
 | `POST /dm/call` | `{to, join}` | `{ok}` — ring (or answer) somebody, or hang up |
 | `POST /dm/signal` | `{to, kind, data}` | `{ok}` — one WebRTC message for the person being called |
 | `GET /ws-dm` | (the session) | pushes `ready`, `dm`, `dm-call` and `dm-rtc` events for that account |
-| `POST /games` | `{game_def_id, player_name, seat?, opponent?, seat_bots? (`{"2": "random"}`: a bot in chosen seats; the rest stay open), lobby? (wait for the host's `start` even with every seat filled), move_time_seconds?, clock_seconds?, options? (setup choices — see below), start_tps?, start_state?, start_seat?}` | `{room_code, seat, color, status, bot_moves?}` |
+| `POST /games` | `{game_def_id, player_name, seat?, opponent?, seat_bots? (`{"2": "random"}`: a bot in chosen seats; the rest stay open), lobby? (wait for the host's `start` even with every seat filled), move_time_seconds?, clock_seconds?, clock_increment_seconds?, rated?, options? (setup choices — see below), start_tps?, start_state?, start_seat?}` | `{room_code, seat, color, status, bot_moves?}` |
 | `GET /config` | | `{public_url}`: the configured `BINGLE_PUBLIC_URL` ("" when unset) |
 | `POST /bot-matches` | `{game_def_id, bot_a, bot_b, delay_ms?}`: a two-player room where two built-in bots play each other at a watchable pace (150 ms – 10 s per move); open it as a spectator (`/games/{code}/join` with role spectator, or the WebSocket). Stops when the game ends, after 2 minutes with nobody watching, or at the move cap; at most 12 run at once | `{room_code, status}` |
 | `POST /games/import` | `{text, game_def_id?, player1?, player2?}`: load a PTN document or a plain move list into a new room (full history; the rules engine validates every move, an illegal one is reported by number; a `[TPS]` header sets the start) | `{room_code, game_def_id, status, moves, players}` |
@@ -176,6 +176,23 @@ a player's clock each time they hand the turn on, and the clock reports it as
 `increment_seconds`. A turn of several decisions earns it once, a move the server
 makes for a player does not earn it, and taking a move back removes it. A clock can
 pass what it started with.
+
+**Rated games.** `rated: true` makes the game move both players' ratings when it
+ends. It takes a signed-in account, a game of two seats, `clock_seconds` with the
+same time for both, no bots, and the standard start; anything else is a `400`, as
+is joining as a guest or as the account already in the other seat. Undo, take-backs
+and Auto-Play answer `409`. `GET /games/{code}` reports `rated`, each seat's
+`rating: {rating, provisional}`, and once the game has ended `rating_status`
+(`pending`, `rated`, `no_moves`, `daily_limit` or `void`) and `rating_changes:
+[{seat, before, after}]`; a `state` event with reason `rated` says the result has
+been written. A game a player never moved in, and a game past 5 in 24 hours between
+the same two accounts in one game family, change nothing.
+
+| Endpoint | Returns |
+|---|---|
+| `GET /ratings` | `{games: [{family, name, players}]}`: the games with a leaderboard |
+| `GET /ratings/{family}?limit=` | `{family, players: [{rank, handle, rating, provisional?, games}]}`, highest first, at most 100 |
+| `GET /players/{handle}/ratings` | `{ratings: [{family, name, rating, provisional?, games, won, drawn, lost, listed}]}`: others see only the `listed` ones (5 rated games against at least 3 opponents); the account itself sees all |
 
 **Restarts.** Time while the server is down costs nobody anything: a turn in
 progress, with a clock or a per-move limit, starts again when the server comes up.

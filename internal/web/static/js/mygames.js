@@ -82,6 +82,7 @@ export function openGameRow(g, defs, isMine) {
 	meta.push(g.status === "active" ? `move ${g.move_seq}` : g.lobby ? "waiting for its host" : "waiting for players");
 	if (g.updated_at) meta.push(ago(g.updated_at));
 	const badges = [];
+	if (g.rated) badges.push(h("span", { class: "badge rated" }, "Rated"));
 	if (g.lobby) badges.push(h("span", { class: "badge waiting" }, "In the lobby"));
 	else if (g.status === "waiting") badges.push(h("span", { class: "badge waiting" }, "Waiting"));
 	if (g.open_seats > 0) badges.push(h("span", { class: "badge open-seats", "data-open-seats": g.open_seats }, openSeatsText(g.open_seats)));
@@ -116,6 +117,7 @@ export function gameRow(r, defs, onForget) {
 		const others = r.info.seats.filter((s) => s.name && s.name.toLowerCase() !== r.g.name.toLowerCase()).map((s) => s.name);
 		meta.push(others.length ? `vs ${others.join(", ")}` : "waiting for an opponent");
 		meta.push(`move ${r.info.move_seq}`);
+		if (r.info.rated) badges.push(h("span", { class: "badge rated" }, "Rated"));
 		if (yourTurn(r)) badges.push(h("span", { class: "badge turn" }, "Your turn"));
 		else if (r.info.status === "finished") badges.push(h("span", { class: "badge done" }, "Finished"));
 		else if (r.info.status === "waiting") badges.push(h("span", { class: "badge waiting" }, r.info.lobby ? "In the lobby" : "Waiting"));

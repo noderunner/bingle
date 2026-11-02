@@ -63,6 +63,9 @@ type createGameRequest struct {
 	// ClockIncrementSeconds adds that many seconds to a player's clock each
 	// time they hand the turn on. It needs ClockSeconds.
 	ClockIncrementSeconds int `json:"clock_increment_seconds,omitempty"`
+	// Rated makes the game move its players' ratings when it ends. It takes two
+	// accounts, a game of two seats and the same clock for both.
+	Rated bool `json:"rated,omitempty"`
 	// Lobby makes the game wait, even with every seat filled, until its host
 	// starts it (POST /games/{code}/start).
 	Lobby bool `json:"lobby,omitempty"`
@@ -130,6 +133,7 @@ func (h *handlers) handleCreateGame(w http.ResponseWriter, r *http.Request) {
 		ClockSeconds:    req.ClockSeconds,
 
 		ClockIncrementSeconds: req.ClockIncrementSeconds,
+		Rated:                 req.Rated,
 
 		Lobby:   req.Lobby,
 		Options: req.Options,
@@ -172,6 +176,12 @@ type getGameResponse struct {
 	WinnerSeat *int          `json:"winner_seat"`
 	EndReason  string        `json:"end_reason,omitempty"`
 	EndDetail  string        `json:"end_detail,omitempty"`
+
+	// Rated games: what became of the result once the game has ended, and what
+	// it did to the players' ratings.
+	Rated         bool                   `json:"rated,omitempty"`
+	RatingStatus  string                 `json:"rating_status,omitempty"`
+	RatingChanges []session.RatingChange `json:"rating_changes,omitempty"`
 
 	// Timed games: the per-move allowance, when the player to move runs
 	// out of time (RFC 3339) and the server's clock for skew correction.
@@ -225,8 +235,10 @@ type getGameSeat struct {
 	// Handle is the account holding the seat, Guest says a guest does, and
 	// Yours that it is the asker's own (stage 7 of the accounts plan).
 	Handle string `json:"handle,omitempty"`
-	Guest  bool   `json:"guest,omitempty"`
-	Yours  bool   `json:"yours,omitempty"`
+	// Rating is the player's rating, at the seat of a rated game.
+	Rating *session.SeatRating `json:"rating,omitempty"`
+	Guest  bool                `json:"guest,omitempty"`
+	Yours  bool                `json:"yours,omitempty"`
 }
 
 // handleGetGame implements GET /games/{code}: look up the room's current
@@ -248,7 +260,8 @@ func (h *handlers) handleGetGame(w http.ResponseWriter, r *http.Request) {
 	seats := make([]getGameSeat, len(snapshot.Seats))
 	for i, s := range snapshot.Seats {
 		seats[i] = getGameSeat{Seat: s.Seat, Color: s.Color, Name: s.Name, Label: s.Label, Bot: s.Bot, Handle: s.Handle, Guest: s.Guest,
-			Yours: s.PrincipalID != "" && s.PrincipalID == auth.IDFrom(r.Context())}
+			Rating: s.Rating,
+			Yours:  s.PrincipalID != "" && s.PrincipalID == auth.IDFrom(r.Context())}
 	}
 
 	resp := getGameResponse{
@@ -260,7 +273,12 @@ func (h *handlers) handleGetGame(w http.ResponseWriter, r *http.Request) {
 		WinnerSeat: snapshot.WinnerSeat,
 		EndReason:  snapshot.EndReason,
 		EndDetail:  snapshot.EndDetail,
-		Tutorial:   snapshot.Tutorial,
+
+		Rated:         snapshot.Rated,
+		RatingStatus:  snapshot.RatingStatus,
+		RatingChanges: snapshot.RatingChanges,
+
+		Tutorial: snapshot.Tutorial,
 
 		MoveTimeSeconds: snapshot.MoveTimeLimit,
 		Clock:           snapshot.Clock,

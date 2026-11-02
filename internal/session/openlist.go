@@ -31,6 +31,7 @@ type OpenGame struct {
 	// Status is "waiting" or "active"; Lobby says it waits for its host.
 	Status string `json:"status"`
 	Lobby  bool   `json:"lobby,omitempty"`
+	Rated  bool   `json:"rated,omitempty"`
 	// Seats is how many seats the game has, OpenSeats how many nobody holds.
 	Seats     int `json:"seats"`
 	OpenSeats int `json:"open_seats"`
@@ -72,6 +73,7 @@ func (m *Manager) ListOpenGames(ctx context.Context, limit int) ([]OpenGame, err
 			Family:    familyOf(compiled.Definition.Family, g.GameDefID),
 			Status:    g.Status,
 			Lobby:     g.Lobby,
+			Rated:     g.Rated,
 			Seats:     seats,
 			OpenSeats: seats - len(players),
 			TurnSeat:  g.TurnSeat,

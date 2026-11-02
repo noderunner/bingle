@@ -62,6 +62,9 @@ func (m *Manager) Takeback(ctx context.Context, roomCode, name, action string) (
 		return StateSnapshot{}, err
 	}
 
+	if game.Rated {
+		return StateSnapshot{}, fmt.Errorf("%w: moves stand", ErrRatedGame)
+	}
 	asked := game.TakebackSeat
 	switch action {
 	case "request":

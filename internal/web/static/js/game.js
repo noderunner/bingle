@@ -3,6 +3,7 @@
 // legal moves), and offers history navigation, undo, resign, export and
 // turn notifications. See docs/ui.md for the interaction model.
 
+import { FAIR_PLAY, ratingText } from "./ratings.js";
 import { h, s, clear, store, rememberGame, nameFor, lastName, ago, titleCase, toast, setTurnBadge } from "./util.js";
 import { api, ApiError } from "./api.js";
 import { MoveBuilder } from "./builder.js";
@@ -1246,7 +1247,7 @@ function takebackBanner() {
 // canAskTakeback: you moved, a human replied since (so undo alone is not
 // possible), the opponent is human and no request is open.
 function canAskTakeback() {
-	if (!S.me.seat || !isActive() || S.moves.length === 0) return false;
+	if (!S.me.seat || !isActive() || S.moves.length === 0 || S.game.rated) return false;
 	if (S.game.takeback_seat !== null && S.game.takeback_seat !== undefined) return false;
 	if ((S.game.seats || []).some((x) => x.bot)) return false;
 	if (canUndo()) return false;
@@ -1254,7 +1255,7 @@ function canAskTakeback() {
 }
 
 function canUndo() {
-	if (!S.me.seat || S.moves.length === 0) return false;
+	if (!S.me.seat || S.moves.length === 0 || S.game.rated) return false;
 	if (S.game.status === "finished" && S.game.end_reason === "resignation") return false;
 	const botSeats = new Set((S.game.seats || []).filter((s) => s.bot).map((s) => s.seat));
 	let idx = -1;
@@ -2150,6 +2151,9 @@ function statusBar() {
 		}
 	}
 	if (g.status === "finished") badges.push(h("span", { class: "badge done" }, "Finished"));
+	if (g.rated) badges.push(h("span", { class: "badge rated", id: "rated-badge", title: FAIR_PLAY }, "Rated"));
+	const uncounted = { no_moves: "Not counted: a player made no move", daily_limit: "Not counted: enough rated games between these two today", void: "Not counted" }[g.rating_status];
+	if (uncounted) badges.push(h("span", { class: "badge", id: "rating-note" }, uncounted));
 	badges.push(h("span", { class: "badge", id: "conn-badge" }, S.conn === "online" ? "live" : S.conn === "offline" ? "reconnecting…" : "connecting…"));
 	for (const b of badges) bar.append(b);
 	if (inAnalysis()) {
@@ -2426,6 +2430,17 @@ function seatStrip(seat) {
 	// Who holds the seat: an account, by its handle, or a guest.
 	if (si && si.handle) head.append(h("span", { class: "badge account", title: "A signed-in account" }, "@" + si.handle));
 	else if (si && si.guest) head.append(h("span", { class: "badge guest", title: "A guest: anybody with no account" }, "guest"));
+	if (si && si.rating) {
+		const change = (S.game.rating_changes || []).find((c) => c.seat === seat);
+		const moved = change ? change.after - change.before : 0;
+		head.append(
+			h(
+				"span",
+				{ class: "badge rating", "data-rating": String(si.rating.rating), title: si.rating.provisional ? "Rating, provisional: few recent games, so it could move a long way" : "Rating" },
+				ratingText(si.rating.rating, si.rating.provisional) + (change ? ` (${moved >= 0 ? "+" : ""}${moved})` : "")
+			)
+		);
+	}
 	if (isMine(seat)) head.append(h("span", { class: "badge" }, "you"));
 	// The roles of a card game's round: the dealer, who holds the bonus card, who is on the leader's team.
 	const roles = S.info.cards ? rulesetView() : null;
@@ -2966,7 +2981,8 @@ function timeoutText(secs) {
 
 /** Loads this player's Auto-Play Timeout (people only: bots and spectators have none). */
 async function loadAutoPlay() {
-	if (!S.me.seat || !S.me.name || S.mine.length > 1 || !S.game || S.game.status === "waiting") {
+	// In a rated game every move is the player's own.
+	if (!S.me.seat || !S.me.name || S.mine.length > 1 || !S.game || S.game.status === "waiting" || S.game.rated) {
 		S.autoPlayTimeout = null;
 		updateAutoPlay();
 		return;

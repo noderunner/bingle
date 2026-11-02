@@ -6,9 +6,32 @@ import { installTopbar } from "./topbar.js";
 import { isFinished, sortRows, gameRow } from "./mygames.js";
 import { installNav } from "./nav.js";
 import { api, whoAmI } from "./api.js";
+import { ratingText } from "./ratings.js";
 import { notifyConfig, localContact, submitAddress, contactStatus, resendConfirmation, forgetAddress, statusText, whitelistNote, insecureNote } from "./notify-ui.js";
 
 installNav();
+
+/** An account's own ratings, including those not on a leaderboard yet. */
+function paintRatings(handle) {
+	api.playerRatings(handle)
+		.then(({ ratings }) => {
+			if (!ratings.length) return;
+			const rows = document.getElementById("ratings-rows");
+			for (const r of ratings) {
+				const row = document.createElement("tr");
+				row.dataset.family = r.family;
+				for (const text of [r.name, ratingText(r.rating, r.provisional), r.won, r.drawn, r.lost, r.listed ? "" : "Not listed yet"]) {
+					const cell = document.createElement("td");
+					cell.textContent = String(text);
+					row.append(cell);
+				}
+				rows.append(row);
+			}
+			document.getElementById("ratings-note").textContent = `A question mark means the rating is provisional. You appear on a game's leaderboard after 5 rated games against at least 3 different people.`;
+			document.getElementById("ratings-box").hidden = false;
+		})
+		.catch(() => {});
+}
 
 // Who this browser is: an account, or a guest who could sign in (ADR 0068).
 api.me()
@@ -25,6 +48,7 @@ api.me()
 		};
 		if (me.kind === "account") {
 			line.append(`Signed in as @${me.handle}. `, link("/account", "Your account", "account-link"));
+			paintRatings(me.handle);
 		} else {
 			document.getElementById("guest-box").hidden = me.kind !== "guest";
 			// A guest whose browser confirmed an address: that is the

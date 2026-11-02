@@ -161,6 +161,7 @@ The container image does not publish 9095 by default, and the health check uses 
 | `bingle_db_snapshot_ok` | 1 when the figures above could be read, 0 when they could not |
 | `bingle_game_moves_total{game,result}` | Moves applied, refused by the rules, or failed |
 | `bingle_game_illegal_moves_total{game}` | Moves a ruleset refused. A spike means a rules change or a stale client |
+| `bingle_rated_results_total{outcome}` | Rated games that ended: `rated`, `no_moves`, `daily_limit`, `void`, or `failed`, the one to watch, because a result is written away from the move that ended the game |
 | `bingle_games_finished_total{game,end_reason}` | Games that ended, and why. A spike in `ply-limit` or `no-legal-moves` means a rule stopped working |
 | `bingle_game_apply_duration_seconds{game}`, `bingle_game_legal_duration_seconds{game}` | How long the engine took |
 | `bingle_game_legal_moves{game}` | How many moves a position offered |

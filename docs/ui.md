@@ -71,6 +71,16 @@ square previews the piece a click would place, in the colour it will have.
   offers `#clock_increment`, the time added for each move, which the seat's
   clock mentions in its tooltip.
 
+* **Rated games.** The setup offers `#rated-field` with `#rated` to a signed-in
+  player at a table of two. Choosing it picks *A friend*, shuts the other opponents,
+  and sets a clock if there is none; a handicap, a time per move or taking the clock
+  away gives the choice up. The game page has `#rated-badge`, each seat a
+  `.badge.rating[data-rating]` with the change once the game is over, and
+  `#rating-note` when a result did not count. Undo, take-backs and Auto-Play are not
+  offered. The home page's *Ratings* tab (`#panel-ratings`, `js/ratings.js`) has
+  `#leaderboard-game` and `#leaderboard tr[data-handle]`, and the profile has
+  `#ratings-box`.
+
 ## History, undo, analysis
 
 * The move list and ⏮ ◀ ▶ ⏭ browse any past position read-only (the position

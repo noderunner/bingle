@@ -58,6 +58,7 @@ Legend: ✅ done · 🟡 partial · ⬜ not started · ➖ deliberately out of s
 | ✅ | Resign | ends the game with `end_reason = resignation` |
 | ✅ | Draw offers | offer / cancel / accept / decline; any move withdraws the offer |
 | ✅ | Per-move time limits | `move_time_seconds`; loser on time; lazy server enforcement |
+| ✅ | Ratings | Glicko-2 per game family; `rated` games between accounts; leaderboards and profiles (ADR 0080) |
 | ✅ | Game clock (chess clock) | `clock_seconds` (one time per seat, handicaps allowed); the mover's own store runs down; forfeit on the flag; `clock_increment_seconds`; a restart costs no time |
 | ✅ | Replay at any point | `GET …/state?at_seq=N` (0 = starting position) |
 | ✅ | Simulate / analysis | `POST …/simulate` applies notation to any point without changing the game |

@@ -386,7 +386,7 @@ func (m *Manager) applyAndRecordAs(ctx context.Context, compiled *catalog.Compil
 
 	m.mx.Move(family, metrics.MoveApplied, applyTook)
 	if result.GameEnded {
-		m.mx.Finished(family, result.EndReason)
+		m.finished(game, family, result.EndReason)
 	}
 	m.logMove(ctx, compiled, game, player, result.Move, moveLine{
 		seq: move.Seq, notation: result.Notation, dur: applyTook, locked: locked,
