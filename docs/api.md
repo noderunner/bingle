@@ -304,7 +304,7 @@ Server-push only. With `only=voice` the socket belongs to a **voice call**, not 
 carries just the `voice` and `rtc` events (below), is the only one that receives `rtc`, and does
 not count as the player looking at the game (no effect on "your turn" mail). The server has
 subscribed before it sends `joined`, so a client that waits for `joined` misses no call message. The first message is
-`{"type":"joined","data":{role,seat,color,status}}`; afterwards:
+`{"type":"joined","data":{role,seat,color,status,connected[]}}`; afterwards:
 
 * `{"type":"move","data":{seq, seat, color, notation, from, to, action, piece, count, path, drops, aim, turn_seat, game_ended, winner_seat, end_reason, status, board_state, state, auto?, auto_play?, locked?, turn_deadline?, server_time?}}`
 * `{"type":"state","data":{reason, removed?, status, turn_seat, move_seq, winner_seat, end_reason, seats[], board_state, state, …}}`
@@ -314,6 +314,7 @@ subscribed before it sends `joined`, so a client that waits for `joined` misses 
   also carry `draw_offer_seat`.
 
 * `{"type":"chat","data":{id, seat, color, name, text, at}}` — a chat message.
+* `{"type":"connection","data":{seat, connected}}` — a seat connected or disconnected (see [Connection](#connection)).
 * `{"type":"voice","data":{kind: "join"|"leave", seat, name}}` — somebody joined or left the voice chat.
 * `{"type":"rtc","data":{from, kind, data}}` — a voice-call message from seat `from`; sent
   **only to the `only=voice` connection of the seat it is addressed to** (a player's socket), never to the room.
@@ -364,6 +365,6 @@ MCP: `start_batch`, `get_batch`, `list_batches`, `cancel_batch`. Pages: `/batche
 
 What every move of the game did, as the game narrated it, oldest first: `[{"ply":12,"seat":2,"lines":["..."]}]`. A position's own `ext.log` keeps only the latest events; this joins the part each move added. `[]` for a game that does not narrate. The Cthulhu Wars History tab reads it.
 
-### Presence (present / away)
+### Connection
 
-`GET /api/games/{code}/presence` returns `{"seats":[1,3]}`: the seats whose players say they are watching the game right now. `POST /api/games/{code}/presence` with `{"player_name":"Alice","present":true}` sets or clears the caller's own seat (403 for a name without a human seat) and returns the same list. A mark lapses after 150 seconds unless posted again (the page renews it every minute); it lives in memory only. Every change is pushed to the room as a WebSocket event `{"type":"presence","data":{"seat":1,"present":true}}`.
+`GET /api/games/{code}/connections` returns `{"seats":[1,3]}`: the seats that show as connected. A seat is connected while at least one WebSocket that joined for it is open (`GET /ws/{code}` as a player, not as a spectator and not with `only=voice`). The server pings each game socket every 15 seconds and closes one that does not answer within 10, and a seat with no socket left shows as disconnected after 20 seconds, so a reload goes unnoticed. A client that holds no socket shows as disconnected. It lives in memory only. The socket's first event, `joined`, carries the same list as `connected`, and every change is pushed to the room as `{"type":"connection","data":{"seat":1,"connected":true}}`.

@@ -203,6 +203,10 @@ type Config struct {
 	// Mail is the setup for email notifications (see Mail).
 	Mail Mail
 
+	// Connection shortens how game sockets are watched, for tests. It has no
+	// environment variable, and zero values mean the normal times.
+	Connection Connection
+
 	// Changelog is the text of CHANGELOG.md, whose newest release the help
 	// window shows. It is not read from the environment: main sets it from the
 	// copy built into the binary.
@@ -274,6 +278,13 @@ func (Secret) MarshalText() ([]byte, error) { return []byte("[redacted]"), nil }
 
 // LogValue implements slog.LogValuer.
 func (Secret) LogValue() slog.Value { return slog.StringValue("[redacted]") }
+
+// Connection is how game sockets are watched (see session.ConnectionTimes).
+type Connection struct {
+	PingEvery   time.Duration
+	PingTimeout time.Duration
+	Grace       time.Duration
+}
 
 // Mail is the outgoing mail setup for email notifications. The feature is on
 // only when Host, Password and From are all set (Enabled).

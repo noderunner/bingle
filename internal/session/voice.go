@@ -49,6 +49,10 @@ var ErrSignalTooFast = errors.New("session: too many voice messages")
 // ErrBadSignal is returned for a relayed message that is not allowed.
 var ErrBadSignal = errors.New("session: bad voice message")
 
+// ErrNotSeated is returned when a name that holds no human seat tries to do
+// something only a player can.
+var ErrNotSeated = errors.New("session: only a player with a seat can do that")
+
 // VoicePeer is a seat that is in the call.
 type VoicePeer struct {
 	Seat int    `json:"seat"`
@@ -86,6 +90,7 @@ type voiceTracker struct {
 
 // set puts a seat in the call (or takes it out) and arms the expiry. It
 // reports whether the membership changed.
+
 func (v *voiceTracker) set(room string, seat int, name string, active bool, expire func()) bool {
 	v.mu.Lock()
 	defer v.mu.Unlock()

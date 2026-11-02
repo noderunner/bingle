@@ -1,8 +1,10 @@
 package api
 
 import (
+	"context"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
@@ -21,7 +23,7 @@ import (
 // With only=voice the socket belongs to a voice call, not to a page: it
 // carries just the call's events (who is in it and the messages for the
 // player's seat), it stays open while the player moves from page to page, and
-// it does not count as the player looking at the game.
+// it does not count as the player being connected to the game.
 //
 // Every rejection here (bad input, unknown room, seats full, ...) happens
 // BEFORE websocket.Accept, as a plain http.Error — an HTTP error response
@@ -70,7 +72,11 @@ func (h *handlers) handleWS(w http.ResponseWriter, r *http.Request) {
 	events, unsubscribe := h.mgr.Subscribe(code)
 	defer unsubscribe()
 	voiceOnly := r.URL.Query().Get("only") == "voice"
-	// While a player's page is connected no "your turn" mail is sent to them.
+	// A socket that stops answering is closed, which ends this handler like any
+	// other close and so disconnects the seat.
+	go pingUntilDead(ctx, conn, h.mgr.ConnectionTimes())
+	// This socket connects the seat, and while it does no "your turn" mail is
+	// sent to its player.
 	if !voiceOnly && result.Role == session.RolePlayer && result.Seat > 0 {
 		defer h.mgr.TrackConnection(code, result.Seat)()
 	}
@@ -86,11 +92,16 @@ func (h *handlers) handleWS(w http.ResponseWriter, r *http.Request) {
 
 	// Subscribed before the player is told they are joined: a client that waits
 	// for "joined" then loses nothing (a call must not miss the first offer).
-	joined := joinGameResponse{
-		Role:   string(result.Role),
-		Seat:   result.Seat,
-		Color:  result.Color,
-		Status: result.Status,
+	// It also says who is connected, read after this socket's own seat has been
+	// counted, so the client has no gap to fill between that and the events.
+	joined := wsJoined{
+		joinGameResponse: joinGameResponse{
+			Role:   string(result.Role),
+			Seat:   result.Seat,
+			Color:  result.Color,
+			Status: result.Status,
+		},
+		Connected: h.mgr.ConnectedSeats(code),
 	}
 	if err := wsjson.Write(ctx, conn, session.Event{Type: "joined", Data: joined}); err != nil {
 		return
@@ -100,6 +111,10 @@ func (h *handlers) handleWS(w http.ResponseWriter, r *http.Request) {
 		var ev session.Event
 		var ok bool
 		select {
+		case <-ctx.Done():
+			// Without this a closed socket would count as open until the room's
+			// next event happened to fail to write to it.
+			return
 		case ev, ok = <-events:
 		case ev, ok = <-rtc:
 		}
@@ -110,6 +125,34 @@ func (h *handlers) handleWS(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		if err := wsjson.Write(ctx, conn, ev); err != nil {
+			return
+		}
+	}
+}
+
+// wsJoined is the data of the "joined" event a game socket starts with.
+type wsJoined struct {
+	joinGameResponse
+	// Connected lists the seats that show as connected.
+	Connected []int `json:"connected"`
+}
+
+// pingUntilDead pings conn until ctx ends, and closes it at the first ping not
+// answered in time. A connection that dies silently is noticed no other way.
+func pingUntilDead(ctx context.Context, conn *websocket.Conn, times session.ConnectionTimes) {
+	tick := time.NewTicker(times.PingEvery)
+	defer tick.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-tick.C:
+		}
+		pingCtx, cancel := context.WithTimeout(ctx, times.PingTimeout)
+		err := conn.Ping(pingCtx)
+		cancel()
+		if err != nil {
+			_ = conn.CloseNow()
 			return
 		}
 	}

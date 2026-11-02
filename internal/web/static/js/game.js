@@ -35,7 +35,7 @@ const root = document.getElementById("game-root");
 const code = document.body.dataset.roomCode;
 
 const S = {
-	present: new Set(), // seats whose players say they are watching right now
+	connected: null, // the seats that show as connected; null until the socket says
 	code,
 	info: null,
 	game: null,
@@ -1368,7 +1368,6 @@ function connect() {
 		S.conn = "online";
 		wsRetry = 0;
 		updateConn();
-		loadPresence();
 		voiceResync(code);
 	});
 	sock.addEventListener("message", (ev) => {
@@ -1396,8 +1395,14 @@ function connect() {
 				/* try again on the next reconnect */
 			}
 			connect();
-		}, 700 * 2 ** wsRetry);
+		}, reconnectDelay(wsRetry));
 	});
+}
+
+/** How long to wait before reconnecting: not long in a real-time game, whose players are waiting. */
+function reconnectDelay(retry) {
+	const wait = 700 * 2 ** retry;
+	return S.game && S.game.real_time ? Math.min(wait, 3000) : wait;
 }
 
 function updateConn() {
@@ -1474,12 +1479,15 @@ async function onEvent(env) {
 		}
 		notifyIfMyTurn(true);
 			render();
-		} else if (env.type === "presence") {
+		} else if (env.type === "joined") {
+			S.connected = new Set((env.data && env.data.connected) || []);
+			paintConnections();
+		} else if (env.type === "connection") {
 			const d = env.data || {};
-			if (d.present) S.present.add(d.seat);
-			else S.present.delete(d.seat);
-			if (d.seat === S.me.seat && !d.present && presenceBeat) keepPresence(false);
-			render();
+			if (!S.connected) return;
+			if (d.connected) S.connected.add(d.seat);
+			else S.connected.delete(d.seat);
+			paintConnections();
 		} else if (env.type === "chat") {
 			const line = env.data || {};
 			receiveChat(line, { mine: !!S.me.name && String(line.name || "").toLowerCase() === S.me.name.toLowerCase() });
@@ -2329,15 +2337,7 @@ function turnPrompt() {
 	return "Continue your move.";
 }
 
-// ---- present / away ---------------------------------------------------------------------
-
-const eyeIcon = () =>
-	s(
-		"svg",
-		{ viewBox: "0 0 16 16", width: 11, height: 11, "aria-hidden": "true" },
-		s("path", { d: "M1 8s2.6-4.5 7-4.5S15 8 15 8s-2.6 4.5-7 4.5S1 8 1 8z", fill: "none", stroke: "#fff", "stroke-width": 1.5 }),
-		s("circle", { cx: 8, cy: 8, r: 2.2, fill: "#fff" })
-	);
+// ---- connected / disconnected ---------------------------------------------------------------
 
 /**
  * The picture of a player who is an animal (Nyet!: Wolf, Crane, Tiger, Bear,
@@ -2357,78 +2357,32 @@ function seatAnimalByLabel(label, px) {
 }
 
 /**
- * The coloured box beside a player's name (in a game of animals, the animal).
- * When the player says they are
- * watching the game right now it turns into a round eye, for everyone to see;
- * the player's own box is the switch.
+ * Whether to show a seat as disconnected: a person holds it, the game is not over,
+ * and the socket has told us who is connected, so nobody flickers as the page loads.
  */
-function presenceSwatch(seat, color, isBot) {
-	const on = S.present.has(seat);
+function seatDisconnected(seat) {
+	if (!S.connected || !S.game || S.game.status === "finished") return false;
+	const si = seatInfo(seat);
+	return !!seatName(seat) && !(si && si.bot) && !S.connected.has(seat);
+}
+
+/**
+ * Paints who is connected onto the seat strips, in place: a connection coming and
+ * going must not re-render the page, which would close a card the viewer is reading.
+ */
+function paintConnections() {
+	for (const strip of document.querySelectorAll(".seat-strip[data-seat]")) {
+		const off = seatDisconnected(Number(strip.dataset.seat));
+		const label = strip.querySelector(".seat-conn");
+		if (label) label.textContent = off ? "disconnected" : "";
+		strip.classList.toggle("disconnected", off);
+	}
+}
+
+/** The coloured box beside a player's name (in a game of animals, the animal). */
+function seatSwatch(seat, color) {
 	const animal = seatAnimal(seat, 30);
-	const cls = animal ? `seat-icon${on ? " present" : ""}` : `swatch color-${cssColor(color)}${on ? " present" : ""}`;
-	const label = on ? "Watching the game right now" : "Not marked as watching";
-	const eye = on ? h("span", { class: "eye" }, eyeIcon()) : null;
-	const inner = animal ? [animal, eye] : eye;
-	if (isBot || !isMine(seat) || !S.me.name) {
-		return h("span", { class: cls, "data-presence": on ? "present" : "away", title: isBot ? "" : label }, inner);
-	}
-	return h(
-		"button",
-		{
-			type: "button",
-			class: cls + " presence-toggle",
-			"data-presence": on ? "present" : "away",
-			"aria-pressed": on ? "true" : "false",
-			title: on ? "You are shown as watching. Click to show as away." : "Click to show the others you are watching the game right now.",
-			onclick: () => setMyPresence(!S.present.has(seat)),
-		},
-		inner
-	);
-}
-
-let presenceBeat = null;
-
-async function setMyPresence(on) {
-	if (!S.me.name || !S.me.seat) return;
-	const seat = S.me.seat;
-	if (on) S.present.add(seat);
-	else S.present.delete(seat);
-	render();
-	keepPresence(on);
-	try {
-		await api.setPresence(code, S.me.name, on);
-	} catch (err) {
-		if (on) S.present.delete(seat);
-		else S.present.add(seat);
-		keepPresence(false);
-		render();
-		toast(err instanceof ApiError ? err.message : "Could not update your presence.");
-	}
-}
-
-/** While present, say so again every minute: the mark lapses by itself otherwise. */
-function keepPresence(on) {
-	if (presenceBeat) window.clearInterval(presenceBeat);
-	presenceBeat = null;
-	if (!on) return;
-	presenceBeat = window.setInterval(() => {
-		api.setPresence(code, S.me.name, true).catch(() => {});
-	}, 60000);
-}
-
-async function loadPresence() {
-	try {
-		const r = await api.presence(code);
-		const next = new Set((r && r.seats) || []);
-		const same = next.size === S.present.size && [...next].every((x) => S.present.has(x));
-		S.present = next;
-		// A reloaded page picks up where the player left off.
-		if (S.me.seat && S.present.has(S.me.seat) && !presenceBeat) keepPresence(true);
-		// Nothing changed: leave the page alone (a render would close a card the viewer is reading).
-		if (!same) render();
-	} catch (_) {
-		/* the icons simply stay as they are */
-	}
+	return animal ? h("span", { class: "seat-icon" }, animal) : h("span", { class: `swatch color-${cssColor(color)}` });
 }
 
 function seatStrip(seat) {
@@ -2437,10 +2391,12 @@ function seatStrip(seat) {
 	const toMove = inAnalysis()
 		? !!S.analysis.sim && !S.analysis.sim.game_ended && S.analysis.sim.turn_seat === seat
 		: isActive() && S.game.turn_seat === seat && isLive();
-	const strip = h("div", { class: "seat-strip" + (toMove ? " to-move" : ""), id: `seat-${seat}`, "data-seat": seat });
+	const off = seatDisconnected(seat);
+	const strip = h("div", { class: "seat-strip" + (toMove ? " to-move" : "") + (off ? " disconnected" : ""), id: `seat-${seat}`, "data-seat": seat });
 	const head = h("div", { class: "seat-head" });
-	head.append(presenceSwatch(seat, color, !!(si && si.bot)));
+	head.append(seatSwatch(seat, color));
 	head.append(h("span", { class: "name" }, seatName(seat) || "(open seat)"));
+	head.append(h("span", { class: "badge waiting seat-conn", title: "No connection to this player right now. It may be back in a moment." }, off ? "disconnected" : ""));
 	// At a table of many cults the faction is named beside its player (a bot's
 	// name already is the faction's).
 	if (S.info.seats.length > 2 && seatLabel(seat) && !(seatName(seat) || "").startsWith(seatLabel(seat))) {

@@ -179,6 +179,7 @@ func New(cfg config.Config, opts ...Option) (*App, error) {
 	manager := session.NewManager(st, cat)
 	manager.SetLogger(a.log)
 	manager.SetMetrics(a.metrics)
+	manager.SetConnectionTimes(session.ConnectionTimes(cfg.Connection))
 	if w := repro.NewWriter(cfg.Debug.Dir, version.Engine, a.log); w != nil {
 		// A bundle carries the full position, so it goes to a directory of
 		// its own and never to the log stream (ADR 0063). The move funnel

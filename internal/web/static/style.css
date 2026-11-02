@@ -1400,15 +1400,9 @@ tr.weak td { color: var(--danger, #c0392b); font-weight: 600; }
 .log-since { display: flex; align-items: center; gap: 0.6rem; margin: 0.9rem 0 0.5rem; color: var(--accent); font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
 .log-since::before, .log-since::after { content: ""; flex: 1; border-top: 2px solid var(--accent); }
 
-/* Present / away: the colour box beside a player's name becomes a round eye
-   while that player says they are watching the game. Their own box is the switch. */
-.seat-strip .swatch.present { border-radius: 50%; box-shadow: 0 0 0 2px var(--accent-soft), 0 0 7px var(--accent); display: inline-flex; align-items: center; justify-content: center; }
-.seat-strip .swatch .eye { display: inline-flex; line-height: 0; filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.6)); }
-/* The switch is a button but must take exactly the room of the plain box. */
-.seat-strip button.swatch.presence-toggle { display: inline-block; box-sizing: content-box; width: 1.1rem; height: 1.1rem; padding: 0; margin: 0; min-width: 0; border-width: 2px; border-radius: 4px; gap: 0; font: inherit; line-height: 0; cursor: pointer; }
-.seat-strip button.swatch.presence-toggle.present { display: inline-flex; border-radius: 50%; }
-button.swatch.presence-toggle:hover { filter: brightness(1.12); transform: scale(1.08); }
-button.swatch.presence-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* A player with no connection: the box fades and a word says why. Colour alone would not. */
+.seat-conn:empty { display: none; }
+.seat-strip.disconnected .seat-head .swatch, .seat-strip.disconnected .seat-head .seat-icon { opacity: 0.4; }
 
 /* ---- the phone layout --------------------------------------------------------------------
    One full-screen view at a time under a slim top bar, swiped between, with a bar of
@@ -1839,12 +1833,8 @@ form[data-opponent="bots"] .human-only { display: none; }
 .help-links { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.8rem; }
 .help-version { margin: 0 0 0.4rem; font-size: 1.05rem; }
 
-/* ---- a player who is an animal: the icon beside the name, with the eye of "watching" on it -------- */
+/* ---- a player who is an animal: the icon beside the name --------  */
 .seat-strip .seat-icon, .players-list .seat-icon { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0; border: 0; background: none; border-radius: 8px; flex: none; }
-.seat-strip .seat-icon.presence-toggle { cursor: pointer; }
-.seat-strip .seat-icon.presence-toggle:hover { background: var(--accent-soft); }
-.seat-icon .eye { position: absolute; right: -3px; bottom: -3px; display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px; border-radius: 50%; background: var(--accent); border: 1.5px solid var(--surface); }
-.seat-icon .eye svg { width: 9px; height: 9px; }
 .seat-strip .stat-cards { vertical-align: -2px; }
 
 /* ---- the phone layout of a card game (game.js: renderMobileCards) ---------------------------- */
