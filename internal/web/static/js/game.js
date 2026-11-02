@@ -240,7 +240,9 @@ async function loadReactions() {
 	try {
 		const res = await api.reactions(code, S.me.name);
 		// A choice made while this answer was on its way is newer than it.
-		if (epoch === reactionsEpoch) S.reactions = res;
+		// A fixed choice (a tutorial's room, whose script answers every
+		// reaction) offers no settings and no shortcuts under the question.
+		if (epoch === reactionsEpoch) S.reactions = res.fixed ? null : res;
 	} catch (err) {
 		// A hiccup keeps what the page knows; a refusal means there is nothing to set.
 		if (epoch === reactionsEpoch && err instanceof ApiError && err.status >= 400 && err.status < 500) S.reactions = null;

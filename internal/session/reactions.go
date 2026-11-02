@@ -49,6 +49,10 @@ type ReactionSettings struct {
 	Others  []ReactionSeat               `json:"others"`
 	// Pending is set while a reaction waits for this player's answer.
 	Pending *state.Reaction `json:"pending,omitempty"`
+	// Fixed: the choice cannot be changed here — a tutorial's room, whose
+	// script answers every reaction itself, asks every one. A client offers
+	// no settings and no shortcuts.
+	Fixed bool `json:"fixed,omitempty"`
 }
 
 // ReactionUpdate is a change to a player's choice: the fields that are set
@@ -102,6 +106,11 @@ func soloSeat(players []store.Player, seat int) bool {
 // ask every time until the person says otherwise (Madness). abilities are the
 // seat's reactions.
 func (m *Manager) reactionPrefs(ctx context.Context, game store.Game, compiled *catalog.CompiledGame, seat int, abilities []state.ReactionAbility) (store.ReactionPrefs, error) {
+	if game.Tutorial != "" {
+		// The tutorial's script answers each reaction, so each must be asked:
+		// one passed for the learner would leave the script behind.
+		return store.ReactionPrefs{V: 2, Targeted: true, AskAll: true, AskSeats: []int{}}, nil
+	}
 	p, found, err := m.store.ReactionPrefs(ctx, game.ID, seat)
 	if err != nil {
 		return store.ReactionPrefs{}, err
@@ -219,7 +228,7 @@ func (m *Manager) reactionSettings(ctx context.Context, game store.Game, name st
 	if !ok {
 		return ReactionSettings{}, fmt.Errorf("session: game definition %q not found", game.GameDefID)
 	}
-	out := ReactionSettings{Seat: me.Seat, Abilities: []state.ReactionAbility{}, Targeted: true, AskSeats: []int{}, Choices: map[string]store.AbilityPref{}, Others: []ReactionSeat{}}
+	out := ReactionSettings{Seat: me.Seat, Abilities: []state.ReactionAbility{}, Targeted: true, AskSeats: []int{}, Choices: map[string]store.AbilityPref{}, Others: []ReactionSeat{}, Fixed: game.Tutorial != ""}
 	for _, sd := range compiled.Definition.Seats {
 		if sd.Seat == me.Seat {
 			continue
@@ -275,6 +284,9 @@ func (m *Manager) SetReactions(ctx context.Context, roomCode, name string, upd R
 	cur, err := m.reactionSettings(ctx, game, name)
 	if err != nil {
 		return ReactionSettings{}, err
+	}
+	if cur.Fixed {
+		return ReactionSettings{}, fmt.Errorf("%w: the tutorial asks every reaction, and its script answers each one", ErrTutorialRoom)
 	}
 	abilities := cur.Abilities
 	if game.Status == "waiting" {

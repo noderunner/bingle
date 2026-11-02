@@ -12,6 +12,8 @@ what the help window shows under *Recent changes*, so it is written for the peop
   sacrificed for Power with the Unspeakable Oath — on your own turn, and on another player's when you
   have no Power left, to get back into the round.
 - Tutorials can now begin in the middle of a game, from a position written out rather than played to.
+- In a tutorial you are asked about every reaction, as the tutorial expects, and the buttons to stop
+  being asked are gone: pressing one could leave the tutorial stuck.
 
 ## 0.32.0 - 2026-11-01
 

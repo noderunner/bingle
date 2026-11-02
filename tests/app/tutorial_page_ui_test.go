@@ -396,8 +396,14 @@ func TestWebCthulhuWars_TheHighPriestsTutorial(t *testing.T) {
 	if units("indian-ocean", "high-priest", "yellow") {
 		t.Fatal("the Yellow Sign's High Priest was not captured")
 	}
-	play("8")  // the Oath on our own turn
-	play("9")  // recruit him again: 0 Power
+	play("8") // the Oath on our own turn
+	play("9") // recruit him again: 0 Power
+	// Asked about the Oath on Crawling Chaos's turn, the learner is offered
+	// no way to stop being asked: the script answers every reaction.
+	waitJS(t, ctx, "the Oath asked", `/oath/i.test((document.querySelector("button.tutorial-target") || {}).textContent || "")`, 20*time.Second)
+	if evalBool(t, ctx, `!!document.getElementById("ask-shortcuts")`) {
+		t.Fatal("the reaction question offers shortcuts in a tutorial")
+	}
 	play("10") // the Oath at 0 Power, on Crawling Chaos's turn
 	play("11") // a Deep One for the Gate
 	if !units("south-pacific", "deep-one", "green") {

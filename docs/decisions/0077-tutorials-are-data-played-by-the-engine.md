@@ -42,7 +42,10 @@ Added 2026-11-01, after the first tutorials were played:
   round 2 of a four-player game — where the moves to reach it would be hundreds long.
 - **Every reaction in a tutorial room is put to the script**: the server answers none (a room where
   one person holds every seat is asked everything), and a scripted reply may decline a reaction put
-  to the learner.
+  to the learner. That choice is fixed for the room, whatever is saved for the seat: the learner
+  cannot change it (`PUT /reactions` is refused, `GET` says `fixed`), so no reaction is passed behind
+  the script's back. It is fixed for the whole tutorial rather than step by step, because every
+  reaction of a scripted line is part of the script.
 
 ## Consequences
 

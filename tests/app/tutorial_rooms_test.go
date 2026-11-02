@@ -334,3 +334,36 @@ func TestTutorials_RoomFromAWrittenStart(t *testing.T) {
 		t.Fatalf("the Yellow Sign's High Priest is not in the Indian Ocean: %+v", st.State.Cells["indian-ocean"])
 	}
 }
+
+// A tutorial's script answers every reaction, so a tutorial room asks every
+// one and its choice cannot be changed: one passed for the learner would leave
+// the script behind.
+func TestTutorials_ReactionChoiceIsFixed(t *testing.T) {
+	base := newRESTTestServer(t)
+	key := newGuestKey(t, base)
+	var created createGameResponse
+	if code := doJSONAs(t, key, "POST", base+"/api/tutorials", map[string]any{"game_def_id": "cthulhu-wars", "tutorial": "high-priests", "player_name": "Lia"}, &created); code != 200 {
+		t.Fatalf("starting it: %d", code)
+	}
+	url := base + "/api/games/" + created.RoomCode + "/reactions"
+	var got struct {
+		Fixed  bool `json:"fixed"`
+		AskAll bool `json:"ask_all"`
+	}
+	if code := doJSONAs(t, key, "GET", url+"?player_name=Lia", nil, &got); code != 200 || !got.Fixed || !got.AskAll {
+		t.Fatalf("GET reactions: %d %+v, want fixed and asking every reaction", code, got)
+	}
+	for _, body := range []map[string]any{
+		{"player_name": "Lia", "ask_all": false},
+		{"player_name": "Lia", "targeted": false, "ability": "unspeakable-oath"},
+		{"player_name": "Lia", "all": true},
+	} {
+		var out map[string]any
+		if code := doJSONAs(t, key, "PUT", url, body, &out); code != 409 {
+			t.Errorf("PUT reactions %v: %d %v, want 409", body, code, out)
+		}
+	}
+	if code := doJSONAs(t, key, "GET", url+"?player_name=Lia", nil, &got); code != 200 || !got.AskAll {
+		t.Fatalf("after the refusals: %d %+v", code, got)
+	}
+}

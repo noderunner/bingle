@@ -72,7 +72,10 @@ starts from a written-out round 2.
 **Reactions.** In a game where a player can react on another's turn (Cthulhu Wars' Unspeakable Oath),
 every reaction in a tutorial room is asked — none is answered by the server — so the script decides
 each one: the other seats' answers are in `reply`, and so may be the learner's routine declines,
-which the page plays for them. A reaction worth making is the learner's own `play`.
+which the page plays for them. A reaction worth making is the learner's own `play`. The choice of
+when to be asked is fixed for the whole room: `GET /reactions` reports `fixed`, `PUT` is refused, and
+the page offers neither the reaction settings nor the "stop being asked" shortcuts under a question,
+since a reaction passed for the learner would leave the script behind.
 
 ## Writing a rules tutorial
 
