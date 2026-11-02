@@ -218,7 +218,8 @@ type Board struct {
 	// squares, the default) or "points" (pieces sit on line intersections,
 	// as in Go) "none" (no board at all, as in a card game), or, on a hex board, "free" (no board is drawn: only the
 	// tiles on the table and the cells a tile may go to, fitted to the
-	// picture, as in Hive). Hex boards are drawn as hexagons.
+	// picture, as in Hive). A hex board is drawn as hexagons, or with "points" as a
+	// grid of intersections joined by lines; either way the player may switch.
 	Style string `json:"style,omitempty"`
 
 	// Borders tints board edges for clients: region name -> seat color

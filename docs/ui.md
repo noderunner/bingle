@@ -446,7 +446,8 @@ Its sections:
 * **Map layers** (area maps) — *Area names*, *Glyphs*, *Sigils*
   (`#opt-layer-names|glyphs|sigils`, remembered as `bingle.layer.*`);
 * **Display** — coordinates, legal-move and last-move highlights, animation,
-  the board theme, preview-and-confirm (games without dice), turn notifications;
+  the board style of a hex board (`#opt-hex-style`, below), the board theme,
+  preview-and-confirm (games without dice), turn notifications;
 * **Tools** — *Flip board*, *Analyze*, *Hint*, *Image*, *Export*, *TPS*/*PTN*;
 * **Share this game** — the link (`#share-link`, `#copy-link`);
 * **Table** — fill an open seat with a bot, or take one as a spectator;
@@ -454,6 +455,16 @@ Its sections:
 
 There is no Players card or Tools card in the side column any more: the cult
 panels (or the seat strips of a two-player game) show who sits where.
+
+### The board style of a hex board
+
+A hex board can be drawn as **Hexagons** or as a **Hex grid**, where each space is a point of a
+triangular lattice and the stones sit on the points, as on a Go board. The choice is the browser's,
+per game family (`bingle.hexStyle.<family>`), and changes only the picture: the positions, their
+names and the moves are the same. Until a player chooses, the definition's `board.style` decides
+(`points` is the grid, so Meridians starts there). The board keeps its orientation in either style.
+Hive offers no choice, because it has no board to draw. See
+[ADR 0078](decisions/0078-hex-board-styles.md).
 
 ### Playing several seats
 

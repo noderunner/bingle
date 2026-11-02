@@ -4,6 +4,15 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.34.0 - 2026-11-01
+
+### Bingle Core 0.34.0
+- **A new way to see hex boards.** In any game on a hex board, *Options* now has a *Board style*:
+  *Hexagons*, or *Hex grid*, where the spaces are points joined by lines and the stones sit on the
+  points, as on a Go board. Your choice is remembered for each game.
+- **Meridians now starts on the hex grid**, the way the game is printed. You can switch it back to
+  hexagons in *Options*.
+
 ## 0.33.0 - 2026-11-01
 
 ### Bingle Core 0.33.0
