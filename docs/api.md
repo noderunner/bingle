@@ -113,7 +113,7 @@ that account.
 | `POST /dm/call` | `{to, join}` | `{ok}` — ring (or answer) somebody, or hang up |
 | `POST /dm/signal` | `{to, kind, data}` | `{ok}` — one WebRTC message for the person being called |
 | `GET /ws-dm` | (the session) | pushes `ready`, `dm`, `dm-call` and `dm-rtc` events for that account |
-| `POST /games` | `{game_def_id, player_name, seat?, opponent?, seat_bots? (`{"2": "random"}`: a bot in chosen seats; the rest stay open), lobby? (wait for the host's `start` even with every seat filled), move_time_seconds?, clock_seconds?, clock_increment_seconds?, rated?, options? (setup choices — see below), start_tps?, start_state?, start_seat?}` | `{room_code, seat, color, status, bot_moves?}` |
+| `POST /games` | `{game_def_id, player_name, seat?, opponent?, seat_bots? (`{"2": "random"}`: a bot in chosen seats; the rest stay open), lobby? (wait for the host's `start` even with every seat filled), move_time_seconds?, clock_seconds?, clock_increment_seconds?, rated?, card_set? (a themed set of cards for the table — see below), options? (setup choices — see below), start_tps?, start_state?, start_seat?}` | `{room_code, seat, color, status, bot_moves?}` |
 | `GET /config` | | `{public_url}`: the configured `BINGLE_PUBLIC_URL` ("" when unset) |
 | `POST /bot-matches` | `{game_def_id, bot_a, bot_b, delay_ms?}`: a two-player room where two built-in bots play each other at a watchable pace (150 ms – 10 s per move); open it as a spectator (`/games/{code}/join` with role spectator, or the WebSocket). Stops when the game ends, after 2 minutes with nobody watching, or at the move cap; at most 12 run at once | `{room_code, status}` |
 | `POST /games/import` | `{text, game_def_id?, player1?, player2?}`: load a PTN document or a plain move list into a new room (full history; the rules engine validates every move, an illegal one is reported by number; a `[TPS]` header sets the start) | `{room_code, game_def_id, status, moves, players}` |
@@ -198,6 +198,12 @@ a player's clock each time they hand the turn on, and the clock reports it as
 `increment_seconds`. A turn of several decisions earns it once, a move the server
 makes for a player does not earn it, and taking a move back removes it. A clock can
 pass what it started with.
+
+**Card sets.** `card_set` draws the cards of a game with a standard deck (`cards.standard`
+in the game's definition) in a themed set, for everybody at the table: `ancient`, `amphibians`,
+`fantasy`, `lovecraftian` or `atomic`. An unknown set, or a game whose deck cannot wear one, is a
+`400`. `GET /games/{code}` reports it as `card_set`. It is fixed when the game is created and changes
+how the cards look, never the notation: `blue-9` is still `blue-9`.
 
 **Rated games.** `rated: true` makes the game move both players' ratings when it
 ends. It takes a signed-in account, a game of two seats, `clock_seconds` with the

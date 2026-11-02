@@ -267,3 +267,73 @@ func TestOwnHandComesOutBySuitAndValue(t *testing.T) {
 		}
 	}
 }
+
+// A deck can list its ranks in one line, integers and letters: an integer is
+// worth itself and a letter one more than the rank before it.
+func TestRankListGivesRanksTheirValues(t *testing.T) {
+	cases := map[string]map[string]int{
+		"A 2 3 10 J Q K": {"A": 1, "2": 2, "3": 3, "10": 10, "J": 11, "Q": 12, "K": 13},
+		"2 3 4 J Q K A":  {"2": 2, "4": 4, "J": 5, "K": 7, "A": 8},
+		"9 10 J Q K A":   {"9": 9, "A": 14},
+		"I II III":       {"I": 1, "II": 2, "III": 3},
+		"0 1 2":          {"0": 0, "2": 2},
+	}
+	for list, want := range cases {
+		g, err := register(t, fmt.Sprintf(`{"suits":{"a":{"label":"A"},"b":{"label":"B"}},"decks":{"main":{"rank_list":%q}}}`, list))
+		if err != nil {
+			t.Errorf("%q: %v", list, err)
+			continue
+		}
+		for rank, value := range want {
+			if ty := g.Cards.Types["b-"+rank]; ty == nil || ty.Value != value || ty.Label != rank {
+				t.Errorf("%q: card b-%s is %+v, want value %d", list, rank, ty, value)
+			}
+		}
+	}
+}
+
+func TestRankListIsRefusedWhenItCannotBeRead(t *testing.T) {
+	for name, deck := range map[string]string{
+		"both":      `{"rank_list":"1 2","ranks":[{"id":"3","value":3}]}`,
+		"repeated":  `{"rank_list":"1 2 1"}`,
+		"empty":     `{"rank_list":"   "}`,
+		"not ranks": `{"rank_list":"1 a-b"}`,
+	} {
+		if _, err := register(t, fmt.Sprintf(`{"suits":{"a":{"label":"A"}},"decks":{"main":%s}}`, deck)); err == nil {
+			t.Errorf("%s: a deck with %s compiled", name, deck)
+		}
+	}
+}
+
+// What may wear a themed set: up to eight suits of plain cards, with jokers.
+func TestStandardDecksAreSuitsRanksAndJokers(t *testing.T) {
+	suits := func(n int) string {
+		var parts []string
+		for i := 0; i < n; i++ {
+			parts = append(parts, fmt.Sprintf(`"s%d":{"label":"S%d"}`, i, i))
+		}
+		return strings.Join(parts, ",")
+	}
+	joker := `"extra":[{"id":"joker","label":"Joker","tags":["joker"],"text":"Wild","count":2}]`
+	for name, c := range map[string]struct {
+		json string
+		want bool
+	}{
+		"four suits":   {fmt.Sprintf(`{"suits":{%s},"decks":{"m":{"rank_list":"A 2 K"}}}`, suits(4)), true},
+		"eight suits":  {fmt.Sprintf(`{"suits":{%s},"decks":{"m":{"rank_list":"A 2 K"}}}`, suits(8)), true},
+		"jokers":       {fmt.Sprintf(`{"suits":{%s},"decks":{"m":{"rank_list":"A 2 K",%s}}}`, suits(4), joker), true},
+		"nine suits":   {fmt.Sprintf(`{"suits":{%s},"decks":{"m":{"rank_list":"A 2 K"}}}`, suits(9)), false},
+		"no suits":     {`{"decks":{"m":{"extra":[{"id":"x","label":"X"}]}}}`, false},
+		"rule text":    {fmt.Sprintf(`{"suits":{%s},"decks":{"m":{"ranks":[{"id":"1","value":1,"text":"Draw two"}]}}}`, suits(2)), false},
+		"special card": {fmt.Sprintf(`{"suits":{%s},"decks":{"m":{"rank_list":"1 2","extra":[{"id":"x","label":"Special"}]}}}`, suits(2)), false},
+	} {
+		g, err := register(t, c.json)
+		if err != nil {
+			t.Errorf("%s: %v", name, err)
+			continue
+		}
+		if got := g.Cards.Standard(); got != c.want {
+			t.Errorf("%s: Standard() = %v, want %v", name, got, c.want)
+		}
+	}
+}

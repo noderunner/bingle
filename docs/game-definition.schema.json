@@ -255,7 +255,7 @@
     },
     "CardDef": {
       "additionalProperties": false,
-      "description": "CardDef is an explicit card.",
+      "description": "CardDef is an explicit card. A card with the tag \"joker\" is a joker: it needs no suit, and a themed set of cards draws it as one of the set's jokers.",
       "properties": {
         "count": {
           "type": "integer"
@@ -394,6 +394,10 @@
           "type": "array"
         },
         "label": {
+          "type": "string"
+        },
+        "rank_list": {
+          "description": "RankList is the short way to write Ranks when a rank needs nothing but its name: the ranks in rising order, integers or letters, separated by spaces (\"A 2 3 4 5 6 7 8 9 10 J Q K\"). An integer is worth itself and a letter one more than the rank before it (1 when it comes first), so \"2 ... 10 J Q K A\" is aces high. Use one or the other, not both.",
           "type": "string"
         },
         "ranks": {

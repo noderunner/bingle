@@ -52,6 +52,9 @@ type Game struct {
 	RatingStatus string
 	// TournamentID is the tournament the game is part of (0 for none).
 	TournamentID int64
+	// CardSet is the themed set of cards the table plays with (empty for the
+	// game's own cards).
+	CardSet string
 	// Tutorial is "family/id" of the tutorial the room plays (SetTutorial),
 	// empty for an ordinary game.
 	Tutorial string
@@ -59,7 +62,7 @@ type Game struct {
 
 // gameColumns is the column list every games SELECT uses, matching
 // scanGameRow.
-const gameColumns = `id, room_code, game_def_id, status, board_state, turn_seat, move_seq, winner_seat, end_reason, end_detail, move_time_limit, draw_offer_seat, initial_state, initial_turn_seat, created_at, updated_at, lobby, clock, tutorial, rated, rating_status, tournament_id`
+const gameColumns = `id, room_code, game_def_id, status, board_state, turn_seat, move_seq, winner_seat, end_reason, end_detail, move_time_limit, draw_offer_seat, initial_state, initial_turn_seat, created_at, updated_at, lobby, clock, tutorial, rated, rating_status, tournament_id, card_set`
 
 type rowScanner interface{ Scan(dest ...any) error }
 
@@ -69,7 +72,7 @@ func scanGameRow(row rowScanner) (Game, error) {
 	var lobby, rated int
 	err := row.Scan(&g.ID, &g.RoomCode, &g.GameDefID, &g.Status, &g.BoardState, &turnSeat, &g.MoveSeq, &winnerSeat,
 		&g.EndReason, &g.EndDetail, &g.MoveTimeLimit, &drawOffer, &g.InitialState, &g.InitialTurnSeat,
-		&g.CreatedAt, &g.UpdatedAt, &lobby, &g.Clock, &g.Tutorial, &rated, &g.RatingStatus, &g.TournamentID)
+		&g.CreatedAt, &g.UpdatedAt, &lobby, &g.Clock, &g.Tutorial, &rated, &g.RatingStatus, &g.TournamentID, &g.CardSet)
 	if err != nil {
 		return Game{}, err
 	}

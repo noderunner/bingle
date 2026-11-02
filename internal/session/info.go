@@ -612,6 +612,9 @@ type CardsDTO struct {
 	Types     []CardTypeDTO          `json:"types"`
 	Back      dsl.CardBackDef        `json:"back"`
 	Zones     []dsl.ZoneDef          `json:"zones"`
+	// Standard says the deck can wear a themed set of cards (see card_set on
+	// creating a game).
+	Standard bool `json:"standard,omitempty"`
 }
 
 // CardTypeDTO is one kind of card.
@@ -631,7 +634,7 @@ func cardsDTO(cg *catalog.CompiledGame) *CardsDTO {
 	if cc == nil {
 		return nil
 	}
-	out := &CardsDTO{Suits: cc.Def.Suits, SuitOrder: cc.Suits, Back: cc.Def.Back, Zones: cc.Def.Zones}
+	out := &CardsDTO{Suits: cc.Def.Suits, SuitOrder: cc.Suits, Back: cc.Def.Back, Zones: cc.Def.Zones, Standard: cc.Standard()}
 	if out.Suits == nil {
 		out.Suits = map[string]dsl.SuitDef{}
 	}

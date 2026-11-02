@@ -601,6 +601,7 @@ cards:
           label: Joker
           text: Wild
           symbols: [★]
+          tags: [joker]
           count: 2
       remove: [red-2]
   back: {color: '#5b4a8a', text: NYET!}
@@ -614,6 +615,15 @@ cards:
   makes identical copies, named `blue-1#0`, `blue-1#1`, … (`catalog.TypeID`
   strips the `#n`). Suit, rank, value, text, symbols and tags travel to clients
   in the game info; a position names a card by its id only.
+* `rank_list` is the short way to write `ranks` when a rank needs nothing but its
+  name: `rank_list: A 2 3 4 5 6 7 8 9 10 J Q K`. The ranks come in rising order, as
+  integers or letters. An integer is worth itself and a letter one more than the
+  rank before it (1 when it comes first), so `2 3 ... 10 J Q K A` is aces high.
+* A deck is **standard** when it has at most eight suits and nothing but plain cards
+  of a suit and a rank (no `text`, no `symbols`), and jokers: cards with the tag
+  `joker`, which need no suit. A game with a standard deck can be set up with a
+  [themed set of cards](decisions/0085-card-sets-belong-to-the-table.md) without
+  anything in its definition: it wears the first suits of the set, in `suit_order`.
 * A zone is a place cards can be: `scope` `seat` (one per seat: a hand, tricks
   won) or `table`. `visibility` says who sees faces: `owner`, `all`, `flag`
   (face-up cards only) or `none`. `layout` is how clients draw it: `fan`, `row`,

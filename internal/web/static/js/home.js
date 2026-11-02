@@ -3,6 +3,7 @@
 // under a fun fact. Joining a game and the games already going live in the
 // icons of the top bar (topbar.js).
 
+import { CARD_SETS, cardSetById, setPreview } from "./card-sets.js";
 import { h, clear, store, rememberGame, lastName, toast } from "./util.js";
 import { api, whoAmI } from "./api.js";
 import { rulesIcon } from "./ui-icons.js";
@@ -338,6 +339,7 @@ function renderSeatChoices(info) {
 	renderSetupOptions(info);
 	renderClockField(info);
 	renderRatedField(info);
+	renderCardSetField(info);
 	applyStartMode();
 }
 
@@ -493,6 +495,29 @@ function renderClockField(info) {
 		});
 	}
 	sync();
+}
+
+/**
+ * "Cards" is offered by a game with a standard deck: a themed set for the whole
+ * table, chosen here and nowhere else (ADR 0085). The picture shows the set, with
+ * the suits this game does not reach dimmed.
+ */
+function renderCardSetField(info) {
+	const field = document.getElementById("card-set-field");
+	const select = document.getElementById("card-set");
+	const preview = document.getElementById("card-set-preview");
+	if (!field || !select || !preview) return;
+	field.hidden = !(info.cards && info.cards.standard);
+	if (select.options.length === 1) {
+		for (const set of CARD_SETS) select.append(h("option", { value: set.id }, set.label));
+	}
+	const suits = info.cards ? (info.cards.suit_order || []).length : 0;
+	const show = () => {
+		const set = cardSetById(select.value);
+		preview.replaceChildren(...(set ? [setPreview(set, suits)] : []));
+	};
+	select.onchange = show;
+	show();
 }
 
 /**
@@ -1035,6 +1060,8 @@ if (createForm) {
 		if (lobbyBox && lobbyBox.checked) body.lobby = true;
 		const ratedBox = document.getElementById("rated");
 		if (ratedBox && ratedBox.checked && !document.getElementById("rated-field").hidden) body.rated = true;
+		const cardSet = document.getElementById("card-set");
+		if (cardSet && cardSet.value && !document.getElementById("card-set-field").hidden) body.card_set = cardSet.value;
 		const submit = createForm.querySelector('button[type="submit"]');
 		submit.disabled = true;
 		try {

@@ -15,6 +15,7 @@
 import { s } from "./util.js";
 import { animalIcon } from "./animals.js";
 import { isClassicSuit, suitIcon } from "./card-art.js";
+import { currentCardSet, setSuitArt, setSuitIcon } from "./card-sets.js";
 
 const svg = (cls, ...kids) => s("svg", { viewBox: "0 0 32 32", class: `cicon ${cls}`, "aria-hidden": "true", focusable: "false" }, ...kids);
 const path = (d, cls = "") => s("path", { d, class: cls });
@@ -48,11 +49,16 @@ const LINES = {
 };
 
 /** A card with its value in the corner and the suit big in the middle, and a star when it is a super trump. */
-function oneOf(suit, star) {
+function oneOf(suit, star, themed) {
 	const symbol = suit && suit.symbol;
 	const kids = [card(16, 16, 17, "ci-face"), text(11.2, 12.6, 9, "1", "ci-bold")];
 	const g = svg("ci-super", ...kids);
-	if (symbol && isClassicSuit(symbol)) {
+	if (themed) {
+		// The set's own paper and colours, so that a pale suit stays legible on a pale box.
+		g.setAttribute("style", themed.style);
+		g.classList.add("ci-themed");
+		g.append(themed.group(16, 21.4, 12));
+	} else if (symbol && isClassicSuit(symbol)) {
 		const pip = suitIcon(symbol, 12);
 		pip.setAttribute("x", "10");
 		pip.setAttribute("y", "15.4");
@@ -75,7 +81,10 @@ export function choiceIcon(desc, ctx = {}, size = 34) {
 			return animalIcon(a, { color: b, size });
 		case "suit": {
 			const suit = ((ctx.info && ctx.info.cards && ctx.info.cards.suits) || {})[a] || {};
-			if (isClassicSuit(suit.symbol)) {
+			const set = currentCardSet(ctx.info);
+			if (set) {
+				node = setSuitIcon(set, ctx.info, a, size);
+			} else if (isClassicSuit(suit.symbol)) {
 				node = suitIcon(suit.symbol, size);
 				node.style.color = suit.color || "";
 			} else {
@@ -90,7 +99,8 @@ export function choiceIcon(desc, ctx = {}, size = 34) {
 				break;
 			}
 			const suit = ((ctx.info && ctx.info.cards && ctx.info.cards.suits) || {})[a];
-			node = oneOf(suit, true);
+			const set = currentCardSet(ctx.info);
+			node = oneOf(suit, true, set ? setSuitArt(set, ctx.info, a) : null);
 			break;
 		}
 		case "discard":

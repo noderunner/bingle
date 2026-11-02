@@ -21,6 +21,7 @@
 import { h, store } from "./util.js";
 import { cardFaceSvg, isClassicSuit } from "./card-art.js";
 import { choiceIcon } from "./choice-icons.js";
+import { backSvg, currentCardSet, setFace, setSuitName } from "./card-sets.js";
 
 /** The type id of a card instance ("blue-1#2" → "blue-1"). */
 export function typeId(id) {
@@ -35,13 +36,29 @@ function typeOf(info, id) {
 	return c._byId.get(typeId(id)) || null;
 }
 
+/** A box's words; a box about a suit speaks of that suit as the table's set draws it. */
+function setWords(box, info) {
+	const set = currentCardSet(info);
+	const [kind, suit] = String(box.icon || "").split(":");
+	if (!set || !(info.cards.suits || {})[suit]) return box.label;
+	if (kind === "suit") return setSuitName(set, info, suit);
+	if (kind === "super") return `1s of ${setSuitName(set, info, suit)}`;
+	return box.label;
+}
+
 /**
  * The face of a card. The four classic suits are drawn as pictures (the rank in
  * two corners, the pips of its value); any other deck gets the rank and pip in
- * two corners, the pip large in the middle and its text below.
+ * two corners, the pip large in the middle and its text below. A game set up
+ * with a set of cards draws its cards from that set (card-sets.js).
  */
 export function cardFace(info, id, extra = {}) {
 	const t = typeOf(info, id);
+	const set = t ? currentCardSet(info) : null;
+	if (set) {
+		const face = setFace(set, info, t, id);
+		return h("span", { class: "pcard face themed" + (extra.class ? " " + extra.class : ""), style: face.style, "data-card": id, "data-type": typeId(id), "data-set": set.id, title: face.title }, face.picture);
+	}
 	const suit = t && t.suit ? info.cards.suits[t.suit] || {} : {};
 	const label = t ? t.label : "?";
 	const pip = suit.symbol || "";
@@ -65,6 +82,8 @@ export function cardFace(info, id, extra = {}) {
 
 /** The back of a card. */
 export function cardBack(info, extra = {}) {
+	const set = currentCardSet(info);
+	if (set) return h("span", { class: "pcard back themed" + (extra.class ? " " + extra.class : ""), "data-set": set.id, "aria-label": "A face-down card" }, backSvg(set));
 	const back = (info.cards && info.cards.back) || {};
 	return h(
 		"span",
@@ -431,7 +450,7 @@ export function choiceGrid(grid, ctx) {
 			const id = `cross-${line.id}-${b.id}`;
 			const can = b.state === "open" && ctx.actions.has(id);
 			const crosser = b.by ? ctx.seats.find((s) => s.seat === b.by) : null;
-			let words = b.label;
+			let words = setWords(b, ctx.info);
 			if (b.state === "crossed") words += crosser ? `: crossed off by ${crosser.label}` : ": crossed off";
 			else if (b.state === "chosen") words += ": left open, the rule of the round";
 			else if (b.state === "covered") words += ": not at the table";

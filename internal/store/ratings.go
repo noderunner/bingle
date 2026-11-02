@@ -54,6 +54,14 @@ func (s *Store) SetRated(ctx context.Context, gameID int64) error {
 	return nil
 }
 
+// SetCardSet records the themed set of cards a game was set up with.
+func (s *Store) SetCardSet(ctx context.Context, gameID int64, set string) error {
+	if _, err := s.exec(ctx, "SetCardSet", `UPDATE games SET card_set = ? WHERE id = ?`, set, gameID); err != nil {
+		return fmt.Errorf("setting the card set of game_id=%d: %w", gameID, err)
+	}
+	return nil
+}
+
 // PendingRatedGames lists the rated games that have ended and whose results are
 // still to be written. A game ending marks itself in the transaction that ends
 // it, so a crash can delay a result and never lose one.

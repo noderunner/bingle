@@ -66,6 +66,9 @@ type createGameRequest struct {
 	// Rated makes the game move its players' ratings when it ends. It takes two
 	// accounts, a game of two seats and the same clock for both.
 	Rated bool `json:"rated,omitempty"`
+	// CardSet draws the cards of a game with a standard deck in a themed set
+	// ("amphibians"), for everybody at the table. Omitted: the game's own cards.
+	CardSet string `json:"card_set,omitempty"`
 	// Lobby makes the game wait, even with every seat filled, until its host
 	// starts it (POST /games/{code}/start).
 	Lobby bool `json:"lobby,omitempty"`
@@ -134,6 +137,7 @@ func (h *handlers) handleCreateGame(w http.ResponseWriter, r *http.Request) {
 
 		ClockIncrementSeconds: req.ClockIncrementSeconds,
 		Rated:                 req.Rated,
+		CardSet:               strings.TrimSpace(req.CardSet),
 
 		Lobby:   req.Lobby,
 		Options: req.Options,
@@ -180,6 +184,7 @@ type getGameResponse struct {
 	// Rated games: what became of the result once the game has ended, and what
 	// it did to the players' ratings.
 	Rated         bool                   `json:"rated,omitempty"`
+	CardSet       string                 `json:"card_set,omitempty"`
 	Tournament    *session.TournamentRef `json:"tournament,omitempty"`
 	RatingStatus  string                 `json:"rating_status,omitempty"`
 	RatingChanges []session.RatingChange `json:"rating_changes,omitempty"`
@@ -271,6 +276,7 @@ func (h *handlers) handleGetGame(w http.ResponseWriter, r *http.Request) {
 		EndDetail:  snapshot.EndDetail,
 
 		Rated:         snapshot.Rated,
+		CardSet:       snapshot.CardSet,
 		Tournament:    snapshot.Tournament,
 		RatingStatus:  snapshot.RatingStatus,
 		RatingChanges: snapshot.RatingChanges,

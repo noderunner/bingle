@@ -88,3 +88,4 @@ Short records of choices made for the `bingle` project during the requirements i
 | [0082](0082-correspondence-tournaments.md) | Correspondence tournaments: round robin and Swiss, a sweep instead of a scheduler, results copied to the tournament's own tables, and turn mail by default |
 | [0083](0083-a-move-stands.md) | A move stands once the turn has passed: take-backs are gone, Back takes back steps of the turn still being played, and a move that cannot come back waits for Submit in every game |
 | [0084](0084-tutorial-pictures-need-not-be-reachable.md) | A tutorial's `pieces` draws any board the game can draw, reachable or not, and `illegal` marks what must not be done |
+| [0085](0085-card-sets-belong-to-the-table.md) | A themed set of cards is chosen when a game is set up and is the same for everyone at the table; its art and its lettering are drawn in code |

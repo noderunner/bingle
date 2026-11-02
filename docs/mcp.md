@@ -61,7 +61,8 @@ play too: a game against yourself; each is a player named
 runs out loses) or `clock_seconds` (a game clock for a game of two: the seconds
 each seat starts with, in seat order, which may differ; the player whose clock
 runs out forfeits; `clock_increment_seconds` adds time each time they hand the turn on),
-`rated` (the game moves both accounts' ratings: see [the API](api.md); `get_leaderboard` reads them) — `get_observation` then reports `seconds_left` — and
+`rated` (the game moves both accounts' ratings: see [the API](api.md); `get_leaderboard` reads them) — `get_observation` then reports `seconds_left` — `card_set`
+(a themed set of cards for everybody at the table: see [the API](api.md)) and
 `start_tps` / `start_state` + `start_seat` to begin from a given position
 (puzzles, endgames, curricula in persisted rooms; `env_reset` has `start_tps`
 for in-memory episodes).
