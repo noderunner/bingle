@@ -54,7 +54,7 @@ func (m *Manager) Resign(ctx context.Context, roomCode, name string) (StateSnaps
 	if err := m.store.FinishGame(ctx, game.ID, winner, "resignation"); err != nil {
 		return StateSnapshot{}, err
 	}
-	m.mx.Finished(gameFamily(compiled), "resignation")
+	m.finished(game, gameFamily(compiled), "resignation")
 
 	m.publishState(ctx, roomCode, "resign")
 	return m.GetState(ctx, roomCode, nil)
@@ -141,7 +141,7 @@ func (m *Manager) Draw(ctx context.Context, roomCode, name, action string) (Stat
 		if err := m.store.FinishGame(ctx, game.ID, nil, "agreement"); err != nil {
 			return StateSnapshot{}, err
 		}
-		m.mx.Finished(m.familyOfGame(game.GameDefID), "agreement")
+		m.finished(game, m.familyOfGame(game.GameDefID), "agreement")
 		m.publishState(ctx, roomCode, "draw-agreed")
 	default:
 		return StateSnapshot{}, fmt.Errorf("%w: unknown action %q (use offer, cancel, accept or decline)", ErrDrawNotAllowed, action)

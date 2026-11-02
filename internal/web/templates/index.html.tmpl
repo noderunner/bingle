@@ -23,6 +23,7 @@
 				<button type="button" role="tab" class="tab" id="tab-games" data-tab="games" aria-controls="panel-games" aria-selected="true">Games</button>
 				<button type="button" role="tab" class="tab" id="tab-puzzles" data-tab="puzzles" aria-controls="panel-puzzles" aria-selected="false" tabindex="-1">Puzzles</button>
 				<button type="button" role="tab" class="tab" id="tab-analysis" data-tab="analysis" aria-controls="panel-analysis" aria-selected="false" tabindex="-1">Analysis</button>
+				<button type="button" role="tab" class="tab" id="tab-ratings" data-tab="ratings" aria-controls="panel-ratings" aria-selected="false" tabindex="-1">Ratings</button>
 				<button type="button" role="tab" class="tab" id="tab-chat" data-tab="chat" aria-controls="panel-chat" aria-selected="false" tabindex="-1">Global Chat <span class="badge tab-badge" id="chat-tab-badge" hidden>0</span></button>
 			</div>
 
@@ -160,6 +161,11 @@
 								<span class="small muted">Each player's clock runs while it is their turn, and the first to run out forfeits. A game clock takes the place of a time per move.</span>
 							</div>
 
+							<div class="field new-only human-only" id="rated-field" hidden>
+								<label class="check"><input type="checkbox" id="rated" name="rated"> <span>Rated game</span></label>
+								<span class="small muted">The result changes both players' ratings for this game. It takes another signed-in player and the same game clock for both, and moves can't be taken back. Using a bot or another program to choose your moves is against the rules.</span>
+							</div>
+
 							<div class="field new-only human-only" id="lobby-field">
 								<label class="check"><input type="checkbox" id="lobby" name="lobby"> <span>Wait in a lobby until I start the game</span></label>
 								<span class="small muted">Players you invite gather first, pick their factions or seats and add bots; nobody plays until you press Start.</span>
@@ -199,6 +205,7 @@
 			</div>
 
 			<div role="tabpanel" id="panel-analysis" aria-labelledby="tab-analysis" hidden></div>
+			<div role="tabpanel" id="panel-ratings" aria-labelledby="tab-ratings" hidden></div>
 			<div role="tabpanel" id="panel-chat" aria-labelledby="tab-chat" class="chat-panel" hidden></div>
 		</section>
 

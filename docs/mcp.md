@@ -26,6 +26,7 @@ before, only seats nobody owns ([ADR 0067](decisions/0067-principals-and-guest-k
 |---|---|
 | `list_game_defs` | games available (`id`, `name`, `description`, board size, `family`, `version`) |
 | `get_game_info` | rules text, pieces, actions, win rules and **move notation help** |
+| `get_leaderboard` | the ratings: the games with a leaderboard, one game's leaderboard (`family`), or an account's ratings (`handle`) |
 | `get_game_guide` | the game's full rules guide as Markdown pages (`tab` selects one): overview, the round, actions, battle, factions… — generated from the definition for games without one |
 | `list_bots` | built-in opponents: `random`, `tactical`, `minimax`, `mcts` |
 | `add_bot` | seat a built-in bot in an open seat (`seat`, else the lowest) of a waiting game, named after the seat's faction and the bot's kind; a game without a lobby starts when the table is full |
@@ -58,7 +59,8 @@ play too: a game against yourself; each is a player named
 `<you> · <faction or colour>`), `move_time_seconds` (per-move limit; the player who
 runs out loses) or `clock_seconds` (a game clock for a game of two: the seconds
 each seat starts with, in seat order, which may differ; the player whose clock
-runs out forfeits; `clock_increment_seconds` adds time each time they hand the turn on) — `get_observation` then reports `seconds_left` — and
+runs out forfeits; `clock_increment_seconds` adds time each time they hand the turn on),
+`rated` (the game moves both accounts' ratings: see [the API](api.md); `get_leaderboard` reads them) — `get_observation` then reports `seconds_left` — and
 `start_tps` / `start_state` + `start_seat` to begin from a given position
 (puzzles, endgames, curricula in persisted rooms; `env_reset` has `start_tps`
 for in-memory episodes).

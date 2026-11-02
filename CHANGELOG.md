@@ -4,6 +4,22 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.37.0 - 2026-11-02
+
+### Bingle Core 0.37.0
+- **Ratings.** Every game of two now has a rating of its own, across all its sizes and variants. Tick
+  **Rated game** when you set up a game with a game clock, and the result changes both players'
+  ratings. You need to be signed in, and so does your opponent.
+- **A rated game is played straight.** Both players get the same clock, there are no bots, and undo,
+  take-backs and Auto-Play are off. Using a bot or another program to choose your moves is against the
+  rules.
+- **See how you stand.** Your rating shows beside your name during a rated game, with how much it
+  changed when the game ends, and all your ratings are on your profile. The new **Ratings** tab on the
+  home page has a leaderboard for each game, once you have played 5 rated games against at least 3
+  different people. A question mark means a rating is provisional and could still move a long way.
+- **What doesn't count:** a game where a player never made a move, and more than 5 rated games of one
+  game between the same two people in a day.
+
 ## 0.36.0 - 2026-11-01
 
 ### Bingle Core 0.36.0

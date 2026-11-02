@@ -136,6 +136,7 @@ func main() {
 	go sampler.Run(ctx)
 	go a.RunRetention(ctx, cfg.RetentionDays)
 	go a.Manager().RunAutoPlay(ctx, 0)
+	go a.Manager().RunResults(ctx)
 	go a.Manager().RunNotifier(ctx)
 
 	srvCfg := httpserve.Config{

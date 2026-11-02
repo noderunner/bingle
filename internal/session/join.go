@@ -104,6 +104,12 @@ func (m *Manager) JoinGameAt(ctx context.Context, roomCode, name string, role Ro
 		return JoinResult{}, err
 	}
 
+	if game.Rated {
+		if err := m.mayJoinRated(ctx, players); err != nil {
+			return JoinResult{}, err
+		}
+	}
+
 	var openSeat int
 	var openSeatColor string
 	var foundOpenSeat bool

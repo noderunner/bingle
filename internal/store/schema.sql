@@ -340,3 +340,49 @@ CREATE TABLE IF NOT EXISTS handle_holds (
     account_id    INTEGER NOT NULL REFERENCES accounts(id),
     until         TIMESTAMP NOT NULL
 );
+
+-- Ratings (the tournaments plan). Everything here is written when a rated game
+-- ends and needs no games row afterwards, because retention deletes those.
+-- family_name is kept so that a game no longer in the build can still be named.
+CREATE TABLE IF NOT EXISTS ratings (
+    account_id    INTEGER NOT NULL REFERENCES accounts(id),
+    family        TEXT NOT NULL,
+    family_name   TEXT NOT NULL,
+    rating        REAL NOT NULL,
+    deviation     REAL NOT NULL,
+    volatility    REAL NOT NULL,
+    games         INTEGER NOT NULL DEFAULT 0,
+    opponents     INTEGER NOT NULL DEFAULT 0,
+    last_game_at  TIMESTAMP NOT NULL,
+    PRIMARY KEY (account_id, family)
+);
+
+CREATE INDEX IF NOT EXISTS idx_ratings_board ON ratings(family, rating DESC);
+
+-- One row per player per rated result, never changed: score is 1, 0.5 or 0.
+CREATE TABLE IF NOT EXISTS rating_history (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    account_id     INTEGER NOT NULL REFERENCES accounts(id),
+    opponent_id    INTEGER NOT NULL REFERENCES accounts(id),
+    family         TEXT NOT NULL,
+    family_name    TEXT NOT NULL,
+    game_def_id    TEXT NOT NULL,
+    room_code      TEXT NOT NULL,
+    seat           INTEGER NOT NULL,
+    score          REAL NOT NULL,
+    rating_before  REAL NOT NULL,
+    rating_after   REAL NOT NULL,
+    deviation_after REAL NOT NULL,
+    played_at      TIMESTAMP NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_rating_history_pair ON rating_history(account_id, opponent_id, family, played_at);
+CREATE INDEX IF NOT EXISTS idx_rating_history_room ON rating_history(room_code);
+
+-- Counters per account, shared with the achievements plan, which adds keys.
+CREATE TABLE IF NOT EXISTS stats (
+    account_id    INTEGER NOT NULL REFERENCES accounts(id),
+    key           TEXT NOT NULL,
+    value         INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (account_id, key)
+);

@@ -4,9 +4,10 @@
 // icons of the top bar (topbar.js).
 
 import { h, clear, store, rememberGame, lastName, toast } from "./util.js";
-import { api } from "./api.js";
+import { api, whoAmI } from "./api.js";
 import { rulesIcon } from "./ui-icons.js";
 import { mountAnalysis } from "./analysis.js";
+import { mountRatings } from "./ratings.js";
 import { renderBoard } from "./render.js";
 import { showRules as openRules } from "./rules.js";
 import { syncPractice } from "./practice.js";
@@ -335,6 +336,7 @@ function renderSeatChoices(info) {
 	renderSlots(info);
 	renderSetupOptions(info);
 	renderClockField(info);
+	renderRatedField(info);
 	applyStartMode();
 }
 
@@ -437,6 +439,52 @@ function renderClockField(info) {
 		});
 	}
 	sync();
+}
+
+/**
+ * "Rated game" is offered to a signed-in player at a table of two. The server
+ * says what a rated game takes; the page only saves asking for one it would
+ * refuse: choosing it means a friend for an opponent and one clock for both, and
+ * giving up either of those gives up the choice.
+ */
+function renderRatedField(info) {
+	const field = document.getElementById("rated-field");
+	const rated = document.getElementById("rated");
+	if (!field || !rated) return;
+	const clock = document.getElementById("clock_seconds");
+	const handicap = document.getElementById("clock-handicap");
+	const perMove = document.getElementById("move_time_seconds");
+	const sync = () => {
+		const on = rated.checked && !field.hidden;
+		for (const radio of document.querySelectorAll('#opponent-choices input[name="opponent"]')) {
+			radio.disabled = on && radio.value !== "";
+			if (on && radio.value === "") radio.checked = true;
+		}
+		if (!on) return;
+		if (handicap.checked) handicap.click();
+		if (perMove) perMove.value = "0";
+		// A sensible clock rather than a refusal.
+		if (!clockChoice().length) {
+			clock.value = "600";
+			clock.dispatchEvent(new Event("change", { bubbles: true }));
+		}
+	};
+	const giveUp = () => {
+		if (rated.checked && (handicap.checked || !clockChoice().length || Number(perMove.value) > 0)) {
+			rated.checked = false;
+			sync();
+		}
+	};
+	field.hidden = true;
+	whoAmI().then((me) => {
+		field.hidden = info.seats.length !== 2 || me.kind !== "account";
+		if (field.hidden) rated.checked = false;
+		sync();
+	});
+	if (field.dataset.wired === "1") return;
+	field.dataset.wired = "1";
+	rated.addEventListener("change", sync);
+	for (const el of [clock, handicap, perMove]) el.addEventListener("change", giveUp);
 }
 
 /**
@@ -933,6 +981,8 @@ if (createForm) {
 		if (limit > 0 && !clock.length) body.move_time_seconds = limit;
 		const lobbyBox = document.getElementById("lobby");
 		if (lobbyBox && lobbyBox.checked) body.lobby = true;
+		const ratedBox = document.getElementById("rated");
+		if (ratedBox && ratedBox.checked && !document.getElementById("rated-field").hidden) body.rated = true;
 		const submit = createForm.querySelector('button[type="submit"]');
 		submit.disabled = true;
 		try {
@@ -1100,7 +1150,7 @@ async function startPuzzle(p) {
 
 // ---- tabs ---------------------------------------------------------------------------
 
-const TABS = ["games", "puzzles", "analysis", "chat"];
+const TABS = ["games", "puzzles", "analysis", "ratings", "chat"];
 let chat = null;
 
 function showTab(name, { focus = false } = {}) {
@@ -1120,6 +1170,7 @@ function showTab(name, { focus = false } = {}) {
 	// The Analysis tab is built the first time it is asked for: it reads the
 	// batches and the bots' guide, which the other tabs do not need.
 	if (name === "analysis") mountAnalysis(document.getElementById("panel-analysis"));
+	if (name === "ratings") mountRatings(document.getElementById("panel-ratings"));
 	const url = new URL(window.location.href);
 	url.hash = name === "games" ? "" : name;
 	window.history.replaceState(null, "", url);

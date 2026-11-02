@@ -45,6 +45,7 @@ type Manager struct {
 	debug     DebugOptions           // which games and rooms get the firehose
 	repro     *repro.Writer          // where repro bundles go; nil writes none
 	now       func() time.Time       // clock; tests may replace it via SetClock
+	resultsMu sync.Mutex             // one writer of rated results at a time
 	upSince   time.Time              // when this server came up, by that clock (see turnStart)
 	mu        sync.Mutex             // guards roomLocks itself, not room state
 	roomLocks map[string]*sync.Mutex // lazily created, one per room code ever touched

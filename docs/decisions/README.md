@@ -83,3 +83,4 @@ Short records of choices made for the `bingle` project during the requirements i
 | [0077](0077-tutorials-are-data-played-by-the-engine.md) | Tutorials are YAML in the game's files, positions given as moves, rules/strategy/variant kinds, a seed for games with chance, every tutorial replayed against the engine in the tests |
 | [0078](0078-hex-board-styles.md) | A hex board is drawn as hexagons or as a grid of points: the player's choice per game family, kept in the browser, with `board.style` as the default |
 | [0079](0079-clock-increments-and-restarts.md) | The clock gains an increment that taking a move back removes, and a restart costs nobody time, on a clock or a per-move limit |
+| [0080](0080-rated-games-and-results.md) | Rated games: Glicko-2 per family, chosen at setup, written after the game ends from a mark made in the transaction that ends it, and kept apart from the games retention deletes |

@@ -128,8 +128,8 @@ func (s *Store) RecordMove(ctx context.Context, gameID int64, in MoveInput) (Mov
 	}
 
 	if _, err := tx.exec(ctx, "RecordMove.updateGame",
-		`UPDATE games SET board_state = ?, move_seq = ?, updated_at = CURRENT_TIMESTAMP, turn_seat = ?, status = ?, winner_seat = ?, end_reason = ?, end_detail = ?, draw_offer_seat = NULL, takeback_seat = NULL, takeback_seq = 0 WHERE id = ?`,
-		in.ResultingBoardState, newSeq, turnSeat, status, winnerSeat, in.EndReason, in.EndDetail, gameID,
+		`UPDATE games SET board_state = ?, move_seq = ?, updated_at = CURRENT_TIMESTAMP, turn_seat = ?, status = ?, winner_seat = ?, end_reason = ?, end_detail = ?, rating_status = CASE WHEN rated = 1 AND ? = 'finished' THEN 'pending' ELSE '' END, draw_offer_seat = NULL, takeback_seat = NULL, takeback_seq = 0 WHERE id = ?`,
+		in.ResultingBoardState, newSeq, turnSeat, status, winnerSeat, in.EndReason, in.EndDetail, status, gameID,
 	); err != nil {
 		return Move{}, fmt.Errorf("updating games row for game_id=%d: %w", gameID, err)
 	}
@@ -277,7 +277,7 @@ func (s *Store) FinishGame(ctx context.Context, gameID int64, winnerSeat *int, r
 		winner = sql.NullInt64{Int64: int64(*winnerSeat), Valid: true}
 	}
 	res, err := s.exec(ctx, "FinishGame",
-		`UPDATE games SET status = 'finished', turn_seat = NULL, winner_seat = ?, end_reason = ?, draw_offer_seat = NULL, takeback_seat = NULL, takeback_seq = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+		`UPDATE games SET status = 'finished', turn_seat = NULL, winner_seat = ?, end_reason = ?, rating_status = CASE rated WHEN 1 THEN 'pending' ELSE '' END, draw_offer_seat = NULL, takeback_seat = NULL, takeback_seq = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
 		winner, reason, gameID,
 	)
 	if err != nil {

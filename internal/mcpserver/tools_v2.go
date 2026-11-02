@@ -48,6 +48,35 @@ func registerPlayTools(s *server.MCPServer, mgr *session.Manager) {
 	)
 
 	s.AddTool(
+		mcp.NewTool("get_leaderboard",
+			mcp.WithDescription("Read the ratings: with no arguments, the games that have a leaderboard; with family, that game's leaderboard, highest first; with handle, that account's ratings. Rated games are chosen with create_game (rated=true)."),
+			mcp.WithString("family", mcp.Description("The game family, as the list of games with a leaderboard names it (\"hex-11\").")),
+			mcp.WithString("handle", mcp.Description("An account's handle, without the @.")),
+		),
+		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			if handle := request.GetString("handle", ""); handle != "" {
+				list, err := mgr.PlayerRatings(ctx, handle)
+				if err != nil {
+					return mcp.NewToolResultError(err.Error()), nil
+				}
+				return mcp.NewToolResultStructuredOnly(map[string]any{"ratings": list}), nil
+			}
+			if family := request.GetString("family", ""); family != "" {
+				list, err := mgr.Leaderboard(ctx, family, 0)
+				if err != nil {
+					return mcp.NewToolResultError(err.Error()), nil
+				}
+				return mcp.NewToolResultStructuredOnly(map[string]any{"family": family, "players": list}), nil
+			}
+			list, err := mgr.RatedFamilies(ctx)
+			if err != nil {
+				return mcp.NewToolResultError(err.Error()), nil
+			}
+			return mcp.NewToolResultStructuredOnly(map[string]any{"games": list}), nil
+		},
+	)
+
+	s.AddTool(
 		mcp.NewTool("list_bots",
 			mcp.WithDescription("List the built-in computer opponents that create_game (opponent=...) and env_reset (opponent=...) accept."),
 		),

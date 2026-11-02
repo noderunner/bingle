@@ -83,6 +83,10 @@ func Open(dbPath string) (*Store, error) {
 		return nil, fmt.Errorf("migrate sqlite schema: %w", err)
 	}
 	// Indexes on columns that addMissingColumns may just have added.
+	if _, err := db.Exec(`CREATE INDEX IF NOT EXISTS idx_games_rating_pending ON games(rating_status) WHERE rating_status = 'pending'`); err != nil {
+		_ = db.Close()
+		return nil, fmt.Errorf("migrate sqlite schema: %w", err)
+	}
 	if _, err := db.Exec(`CREATE INDEX IF NOT EXISTS idx_players_principal ON players(principal_id) WHERE principal_id != ''`); err != nil {
 		_ = db.Close()
 		return nil, fmt.Errorf("migrate sqlite schema: %w", err)
@@ -130,6 +134,11 @@ var columnMigrations = []struct{ table, column, ddl string }{
 	// tutorial: "family/id" of the tutorial a room plays (ADR 0077), empty
 	// for an ordinary game. Tutorial rooms stay out of the lists of games.
 	{"games", "tutorial", "TEXT NOT NULL DEFAULT ''"},
+	// rated: the game moves its players' ratings when it ends. rating_status:
+	// what became of that (see RatingPending); the game is marked pending in
+	// the transaction that ends it.
+	{"games", "rated", "INTEGER NOT NULL DEFAULT 0"},
+	{"games", "rating_status", "TEXT NOT NULL DEFAULT ''"},
 }
 
 func addMissingColumns(db *sql.DB) error {
