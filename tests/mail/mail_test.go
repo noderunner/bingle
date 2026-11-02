@@ -287,3 +287,15 @@ func TestAccountExistsMail(t *testing.T) {
 		t.Errorf("a token or a header in:\n%s", s)
 	}
 }
+
+// Turn mail may have been turned on by a tournament rather than asked for, so it
+// says neither, and says where to turn it off.
+func TestTurnMailSaysWhereToTurnItOff(t *testing.T) {
+	msg := mail.Turn("a@example.com", "Hex", "ABC123", "https://bingle.example", "tok")
+	if strings.Contains(msg.Body, "you asked") {
+		t.Errorf("the mail says it was asked for: %s", msg.Body)
+	}
+	if !strings.Contains(msg.Body, "turn them off in the game's options") {
+		t.Errorf("the mail does not say where to turn it off: %s", msg.Body)
+	}
+}

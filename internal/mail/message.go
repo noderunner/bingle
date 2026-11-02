@@ -136,7 +136,7 @@ func Turn(to, game, room, base, stopToken string) Message {
 		To:      to,
 		Subject: fmt.Sprintf("It is your turn in %s (%s)", game, room),
 		Body: fmt.Sprintf("It is your turn in %s, room %s.\n\nPlay here: %s/game/%s\n\n", game, room, base, url.PathEscape(room)) +
-			"You get this mail because you asked Bingle for turn notices. To stop all mail from Bingle, open:\n\n" +
+			"You get this mail because turn notices are on for this game: you can turn them off in the game's options. To stop all mail from Bingle, open:\n\n" +
 			StopURL(base, stopToken) + "\n",
 		UnsubscribeURL: StopURL(base, stopToken),
 	}

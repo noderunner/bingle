@@ -3870,7 +3870,9 @@ function moveBar() {
 		const back = backButton();
 		if (back) actions.append(back);
 	}
-	if (acting && !inAnalysis() && b.complete() && (needsConfirm() || b.options().length)) {
+	// With only one thing to do (a forced pass) the move is complete before any
+	// click, and this button is the only way to play it.
+	if (acting && !inAnalysis() && b.complete() && (needsConfirm() || b.options().length || !b.manualSteps().length)) {
 		actions.append(
 			h(
 				"button",

@@ -106,7 +106,7 @@ square previews the piece a click would place, in the colour it will have.
   the player turns off `#opt-confirm`. **Back** (`#undo-step`, Backspace) clears a
   selection, then takes back a step of this turn already sent, one at a time, and is
   not offered once the turn has passed or a die has been rolled. A button such as
-  *End turn* plays at once: pressing it is the Submit. The steps of a turn stay out
+  *End turn* plays at once: pressing it is the Submit. A move with nothing left to choose, such as a forced pass, always gets `#submit-move`, as nothing else could play it. The steps of a turn stay out
   of the move list and the History tab until the turn is over.
 * **Resign** concedes, and needs a second click to confirm.
 * **Hint** (only in games against bots, or in analysis / review of a finished

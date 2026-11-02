@@ -179,8 +179,11 @@ export async function mountGameNotify(host, { code, name, onReady = () => {} }) 
 		for (const el of [on, everyTime, whenAway, minutes]) el.disabled = !verified;
 		minutes.disabled = !verified || !whenAway.checked;
 	};
-	const info = await contactStatus().catch(() => null);
-	verified = !!info && info.status === "verified";
+	// The address may not be this browser's: a tournament game mails the account's
+	// own, and the player must be able to turn that off here.
+	const local = await contactStatus().catch(() => null);
+	const info = (state && state.contact) || local;
+	verified = [local, state && state.contact].some((c) => c && c.status === "verified");
 	hint.textContent = "";
 	if (!info) {
 		hint.append("Set your email address in your ", h("a", { href: "/profile" }, "profile"), " first.");

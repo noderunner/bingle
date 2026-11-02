@@ -4,6 +4,16 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.39.1 - 2026-11-02
+
+### Bingle Core 0.39.1
+- **You can turn off turn mail for a tournament game.** The switch in the game's options was greyed out
+  and asked you to set up an address you already had. It now works, and says where the mail goes.
+- **A forced pass can be played.** When passing was your only legal move, in Fendo for example, the page
+  showed nothing to press and the game stopped until your clock ran out. It now offers the move.
+- **Turn mail says why it came.** It no longer says you asked for it, as a tournament game turns it on for
+  you, and it tells you where to turn it off.
+
 ## 0.39.0 - 2026-11-02
 
 ### Bingle Core 0.39.0
