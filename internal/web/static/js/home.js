@@ -384,6 +384,30 @@ function boolOptions(info) {
 		});
 }
 
+// The minutes a clock suggests for a game whose definition names none.
+const CLOCK_MINUTES_DEFAULT = 10;
+// Each time a clock can be set to: the choice of kind, and the minutes it may hold.
+const CLOCK_TIMES = [
+	["clock_seconds", "clock_minutes"],
+	["clock_seconds_1", "clock_minutes_1"],
+	["clock_seconds_2", "clock_minutes_2"],
+];
+
+/** Whole minutes from 1 to 60, or fallback for a box left empty. */
+function clockMinutes(value, fallback) {
+	const n = Math.round(Number(value));
+	if (value === "" || !Number.isFinite(n)) return fallback;
+	return Math.min(60, Math.max(1, n));
+}
+
+/** The seconds one of CLOCK_TIMES is set to (0: no clock). */
+function clockTimeSeconds([choice, minutes]) {
+	const value = document.getElementById(choice).value;
+	if (value !== "minutes") return Number(value);
+	const box = document.getElementById(minutes);
+	return clockMinutes(box.value, Number(box.dataset.suggested) || CLOCK_MINUTES_DEFAULT) * 60;
+}
+
 /**
  * The game clock (a chess clock) is offered to a game of two seats — which
  * includes a game that seats a range when two are chosen, as each of those is a
@@ -395,6 +419,14 @@ function renderClockField(info) {
 	if (!field) return;
 	const two = info.seats.length === 2;
 	field.hidden = !two;
+	// The game's own time, unless the player has typed one of theirs.
+	const suggested = String(info.default_clock_minutes || CLOCK_MINUTES_DEFAULT);
+	for (const [, id] of CLOCK_TIMES) {
+		const box = document.getElementById(id);
+		if (!box) continue;
+		box.dataset.suggested = suggested;
+		if (box.dataset.touched !== "1") box.value = suggested;
+	}
 	const clock = document.getElementById("clock_seconds");
 	const perMove = document.getElementById("move_time_seconds");
 	if (!two) {
@@ -415,10 +447,9 @@ function renderClockField(info) {
 	const second = document.getElementById("clock_seconds_2");
 	const sync = () => {
 		row.hidden = !handicap.checked;
-		clock.hidden = handicap.checked;
-		if (handicap.checked && clock.value !== "0") {
-			// Start the two sides at what both were set to.
-			for (const sel of [first, second]) if ([...sel.options].some((o) => o.value === clock.value)) sel.value = clock.value;
+		clock.parentElement.hidden = handicap.checked;
+		for (const [choice, minutes] of CLOCK_TIMES) {
+			document.getElementById(minutes).hidden = document.getElementById(choice).value !== "minutes";
 		}
 		if (perMove && clockChoice().length) perMove.value = "0";
 		// An increment is part of a clock: without one there is nothing to add to.
@@ -426,8 +457,30 @@ function renderClockField(info) {
 		document.getElementById("clock-increment-row").hidden = !timed;
 		if (!timed) document.getElementById("clock_increment").value = "0";
 	};
-	handicap.addEventListener("change", sync);
+	handicap.addEventListener("change", () => {
+		if (handicap.checked && clock.value !== "0") {
+			// Start the two sides at what both were set to.
+			const both = document.getElementById("clock_minutes");
+			for (const [sel, id] of [[first, "clock_minutes_1"], [second, "clock_minutes_2"]]) {
+				sel.value = clock.value;
+				const box = document.getElementById(id);
+				box.value = both.value;
+				box.dataset.touched = both.dataset.touched || "";
+			}
+		}
+		sync();
+	});
 	for (const el of [clock, first, second]) el.addEventListener("change", sync);
+	for (const [, id] of CLOCK_TIMES) {
+		const box = document.getElementById(id);
+		box.addEventListener("input", () => {
+			box.dataset.touched = "1";
+		});
+		box.addEventListener("change", () => {
+			box.value = clockMinutes(box.value, Number(box.dataset.suggested));
+			sync();
+		});
+	}
 	if (perMove) {
 		perMove.addEventListener("change", () => {
 			// A time per move takes the clock's place, as the clock takes its.
@@ -465,7 +518,7 @@ function renderRatedField(info) {
 		if (perMove) perMove.value = "0";
 		// A sensible clock rather than a refusal.
 		if (!clockChoice().length) {
-			clock.value = "600";
+			clock.value = "minutes";
 			clock.dispatchEvent(new Event("change", { bubbles: true }));
 		}
 	};
@@ -496,11 +549,9 @@ function clockChoice() {
 	if (!field || field.hidden) return [];
 	const handicap = document.getElementById("clock-handicap");
 	if (handicap && handicap.checked) {
-		const a = Number(document.getElementById("clock_seconds_1").value);
-		const b = Number(document.getElementById("clock_seconds_2").value);
-		return a > 0 && b > 0 ? [a, b] : [];
+		return [clockTimeSeconds(CLOCK_TIMES[1]), clockTimeSeconds(CLOCK_TIMES[2])];
 	}
-	const both = Number(document.getElementById("clock_seconds").value);
+	const both = clockTimeSeconds(CLOCK_TIMES[0]);
 	return both > 0 ? [both, both] : [];
 }
 

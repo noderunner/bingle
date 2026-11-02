@@ -4,6 +4,19 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.38.0 - 2026-11-02
+
+### Bingle Core 0.38.0
+- **Set the game clock to the minute.** Instead of a short list of times, type any whole number of
+  minutes from 1 to 60, for both players or for each one. 2 hours and 1 day are still on the list, for
+  slower games.
+- **Each game suggests its own time.** Choosing a game clock now starts from a time that suits the game
+  and the size of its board. The clock is still off until you choose it.
+
+### Blooms 0.2.1
+- A game clock now suggests 5 minutes on the small board, 10 on the standard board and 15 on the big
+  one.
+
 ## 0.37.1 - 2026-11-02
 
 ### Bingle Core 0.37.1

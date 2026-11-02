@@ -204,7 +204,7 @@ func TestRatedGames_UI(t *testing.T) {
 	}
 	waitJS(t, ctx, "the choice", `document.getElementById("rated-field").hidden === false`, 20*time.Second)
 	evalString(t, ctx, `document.getElementById("rated").click(); "ok"`)
-	waitJS(t, ctx, "a clock chosen for it", `document.getElementById("clock_seconds").value === "600"`, 5*time.Second)
+	waitJS(t, ctx, "a clock chosen for it", `document.getElementById("clock_seconds").value === "minutes" && document.getElementById("clock_minutes").value === "10"`, 5*time.Second)
 	if !evalBool(t, ctx, `[...document.querySelectorAll('#opponent-choices input[name="opponent"]')].every((r) => r.disabled === (r.value !== ""))`) {
 		t.Error("the bots can still be chosen for a rated game")
 	}

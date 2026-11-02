@@ -176,6 +176,10 @@ func (c *Catalog) RegisterWith(id string, defJSON []byte, cb callback.GameCallba
 		return fmt.Errorf("catalog: game %q has version %q, which is not major.minor.patch", id, def.Version)
 	}
 
+	if m := def.DefaultClockMinutes; m != 0 && (m < 1 || m > 60) {
+		return fmt.Errorf("catalog: game %q has default_clock_minutes %d (1 to 60)", id, m)
+	}
+
 	// The pie rule brings an action and a setup option with it (ADR 0056).
 	if err := applyPieRule(id, def); err != nil {
 		return err

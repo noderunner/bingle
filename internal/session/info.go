@@ -55,6 +55,9 @@ type GameInfo struct {
 	// sit at the table, an expansion); send the chosen ones as "options" when
 	// creating the game.
 	Options []dsl.OptionDef `json:"options,omitempty"`
+	// DefaultClockMinutes is the time the setup suggests for a game clock, when
+	// the game names one (ADR 0081).
+	DefaultClockMinutes int `json:"default_clock_minutes,omitempty"`
 	// Start is the starting position (what a new game looks like), for
 	// previews.
 	Start StartDTO `json:"start"`
@@ -400,6 +403,7 @@ func buildGameInfo(cg *catalog.CompiledGame) GameInfo {
 	info.WinRules = describeWinRules(cg)
 	info.Family = familyOf(def.Family, def.ID)
 	info.Options = def.Options
+	info.DefaultClockMinutes = def.DefaultClockMinutes
 
 	start := state.InitialState(cg)
 	info.Start = StartDTO{Cells: map[string][]PieceOnBoardDTO{}, Reserves: start.Reserves()}
