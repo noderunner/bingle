@@ -4,6 +4,17 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.48.0 - 2026-11-02
+
+### Bingle Core 0.48.0
+- **Blooms fits your screen.** A game of Blooms no longer scrolls: the whole board stays in view, with the players,
+  chat, history and tutorial in a column beside it (below it on an upright phone). That column scrolls by itself and
+  leaves the board where it is. Blooms is the first game to get this page, so tell us how it plays before the others follow.
+- **Your move stands out.** On your turn, the card with your stones and buttons lights up and stays in view however far
+  you have scrolled the column, without moving anything else.
+- **Keep typing.** A move arriving while you are typing a chat message no longer takes the cursor out of the message box,
+  in any game.
+
 ## 0.47.0 - 2026-11-02
 
 ### Bingle Core 0.47.0

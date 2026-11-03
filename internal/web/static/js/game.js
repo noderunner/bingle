@@ -9,7 +9,7 @@ import { api, ApiError } from "./api.js";
 import { MoveBuilder } from "./builder.js";
 import { renderBoard, pieceIcon, cssColor, ONGATE, hasHexStyles, defaultHexStyle } from "./render.js";
 import { showRules as openRules } from "./rules.js";
-import { loadChat, receiveChat, chatCard, chatSeen, chatUnread } from "./chat.js";
+import { keepChatFocus, loadChat, receiveChat, chatCard, chatSeen, chatUnread } from "./chat.js";
 import { voiceCard, voiceEvent, voiceResync } from "./voice.js";
 import { installNav, navigate } from "./nav.js";
 import { installTopbar } from "./topbar.js";
@@ -1531,7 +1531,7 @@ function updateConn() {
 	const el = document.getElementById("conn-badge");
 	if (el) {
 		el.textContent = S.conn === "online" ? "live" : S.conn === "offline" ? "reconnecting…" : "connecting…";
-		el.className = "badge " + (S.conn === "online" ? "" : "waiting");
+		el.className = "badge " + (S.conn === "online" ? "online" : "waiting");
 	}
 }
 
@@ -1748,13 +1748,17 @@ function render() {
 		return;
 	}
 	rememberMobileScroll();
+	rememberRailScroll();
 	if (S.tut)
 		queueMicrotask(() => {
 			tutorialMarkControls();
 			tutorialTick();
 		});
+	// Taking the field off the page blurs it, which would lose the player's place in it.
+	const stillTyping = typing && typing.id === "chat-input";
 	clear(root);
-	document.body.classList.remove("m-mode");
+	if (stillTyping) keepChatFocus();
+	document.body.classList.remove("m-mode", "fit-screen");
 	hideHoverCard();
 	hideCardZoom();
 	updateTitle();
@@ -1806,6 +1810,10 @@ function render() {
 	}
 	if (S.info.cards && !lobby && isMobileLayout() && rulesetView()) {
 		renderMobileCards(seats, bottomSeat);
+		return;
+	}
+	if (!lobby && fitsTheScreen()) {
+		renderFitted(seats, bottomSeat);
 		return;
 	}
 	const layout = h("div", { class: "game-layout" + (areas && !lobby ? " areas" : "") + (lobby ? " lobby-layout" : "") });
@@ -1874,6 +1882,76 @@ function render() {
 	layout.querySelector(".side-panel").append(debugPanel());
 }
 
+
+// ---- the fitted layout --------------------------------------------------------------------
+//
+// The page is exactly as tall as the window and never scrolls: the board fills the
+// space on the left and the cards beside it scroll on their own (ADR 0092).
+
+/** The games laid out this way so far. The rest follow once it has been played and refined. */
+const FITTED_GAMES = /^blooms(-\d+)?$/;
+
+function fitsTheScreen() {
+	return FITTED_GAMES.test(S.game.game_def_id);
+}
+
+/** The page is rebuilt on every move: the cards must stay where the player scrolled them. */
+function rememberRailScroll() {
+	const rail = document.getElementById("play-rail");
+	if (rail) S.railScroll = rail.scrollTop;
+}
+
+/**
+ * What the player can do now. On their turn it is drawn out and pinned inside the
+ * column, so it is in view however far the cards were scrolled, without moving them
+ * or taking the keyboard from a chat message being typed.
+ */
+function actionCard() {
+	// Not actingSeat(): that lapses while a step is being sent, and the card would jump.
+	const acting = inAnalysis() ? !!actingSeat() : isLive() && isMyTurn();
+	const bar = moveBar();
+	const waiting = !acting && isLive() && !inAnalysis() && isActive() && !!S.me.seat;
+	const text = bar.textContent.trim();
+	// Kept while the opponent plays, so that the cards below do not jump at each turn.
+	if (!acting && !waiting && !text) return null;
+	const card = h("section", { class: "card action-card" + (acting ? " acting" : ""), id: "action-card", "aria-label": "Your actions" });
+	card.append(h("h3", {}, inAnalysis() ? "Analysis" : acting ? "Your move" : "Actions"));
+	if (waiting && !text) card.append(h("p", { class: "small muted", id: "action-idle" }, "Your choices appear here on your turn."));
+	card.append(bar);
+	return card;
+}
+
+function renderFitted(seats, bottomSeat) {
+	document.body.classList.add("fit-screen");
+	const boardHost = h("div", { id: "board" });
+	const main = h(
+		"div",
+		{ class: "board-column" },
+		statusBar(),
+		h("div", { class: "board-wrap" }, boardHost, h("div", { class: "inspector small muted", id: "inspector", "aria-live": "off" }, inspectorText()))
+	);
+
+	// The first in the column is what asks for the player's attention.
+	const first = [];
+	if (S.tut) first.push(tutorialCard());
+	first.push(kickVoteBanner(), slowTurnBanner(), nextGameBanner(), firstMoveBanner(), drawOfferBanner(), hintBanner());
+	if (!S.me.seat && !S.spectating) first.push(identityGate());
+	first.push(actionCard());
+	const players = h("section", { class: "card players-card", id: "players-card", "aria-label": "Players" });
+	for (const ts of seats.filter((s) => s.seat !== bottomSeat)) players.append(seatStrip(ts.seat));
+	players.append(seatStrip(bottomSeat));
+	first.push(players);
+
+	const rail = sidePanel(null);
+	rail.classList.add("play-rail");
+	rail.id = "play-rail";
+	rail.prepend(...first.filter(Boolean));
+	rail.append(debugPanel());
+
+	root.append(h("div", { class: "game-layout play-screen" }, main, rail));
+	rail.scrollTop = S.railScroll || 0;
+	drawBoard(boardHost);
+}
 
 // ---- the phone layout --------------------------------------------------------------------
 //
@@ -2312,7 +2390,7 @@ function statusBar() {
 			badges.push(
 				h(
 					"span",
-					{ class: "badge" },
+					{ class: "badge ply" },
 					rv && rv.round ? `Round ${rv.round}` : isRuleset() ? `Ply ${S.moves.length}` : `Move ${Math.floor(S.moves.length / S.info.seats.length) + 1}`
 				)
 			);
@@ -2324,7 +2402,7 @@ function statusBar() {
 	if (g.tournament) badges.push(h("a", { class: "badge", id: "tournament-badge", href: `/tournament/${g.tournament.id}`, title: "This game is part of a tournament" }, g.tournament.name));
 	const uncounted = { no_moves: "Not counted: a player made no move", daily_limit: "Not counted: enough rated games between these two today", void: "Not counted" }[g.rating_status];
 	if (uncounted) badges.push(h("span", { class: "badge", id: "rating-note" }, uncounted));
-	badges.push(h("span", { class: "badge", id: "conn-badge" }, S.conn === "online" ? "live" : S.conn === "offline" ? "reconnecting…" : "connecting…"));
+	badges.push(h("span", { class: "badge" + (S.conn === "online" ? " online" : ""), id: "conn-badge" }, S.conn === "online" ? "live" : S.conn === "offline" ? "reconnecting…" : "connecting…"));
 	for (const b of badges) bar.append(b);
 	if (inAnalysis()) {
 		const sim = S.analysis.sim;

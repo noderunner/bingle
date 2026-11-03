@@ -19,6 +19,18 @@ A player is a guest (a browser, by its guest key) or a signed-in account ([ADR 0
 `{room code → name}` in `localStorage` (`bingle.games`), merged with the server's "My games". Opening a game you have no name for shows a
 small gate: join an open seat, continue as a seated player's name, or watch.
 
+## The fitted game page
+
+A game named by `FITTED_GAMES` in `js/game.js` (so far only Blooms and its variants, once out of the lobby)
+is drawn by `renderFitted` ([ADR 0092](decisions/0092-a-game-page-that-fits-the-screen.md)). `body.fit-screen` makes
+the page exactly as tall as the window, with no page scroll and no footer. The `.board-column` holds the status bar
+and the board, which takes all the height left. `#play-rail` holds the cards and scrolls by itself, keeping its place
+across redraws: the tutorial and any notices, `#action-card`, `#players-card`, voice, chat and history. On an upright
+screen under 980px wide, the rail goes under the board.
+
+`#action-card` holds the move bar. On the player's turn it has `.acting`, which pins it to the edges of the rail, so it
+is in view however far the rail is scrolled. It neither moves the rail nor takes the keyboard.
+
 ## How moves are entered
 
 The server lists every legal move of the position
