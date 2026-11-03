@@ -114,7 +114,7 @@ func TestWebTutorial_PlaysThroughTheBloomsTutorial(t *testing.T) {
 		t.Fatalf("cells can be clicked before the colour is chosen: %q", got)
 	}
 	clickSel(t, ctx, "#tutorial-show-hint")
-	waitJS(t, ctx, "the hint", `/Press the red stone/.test((document.getElementById("tutorial-hint") || {}).textContent || "")`, 5*time.Second)
+	waitJS(t, ctx, "the hint", `/Press Place on the red stone/.test((document.getElementById("tutorial-hint") || {}).textContent || "")`, 5*time.Second)
 	clickSel(t, ctx, `button[data-piece="red"]`)
 	waitJS(t, ctx, "d4 to be the only cell", `[...document.querySelectorAll("#board .cell.clickable")].map(c => c.dataset.position).join(",") === "d4"`, 10*time.Second)
 	clickCell(t, ctx, "d4")

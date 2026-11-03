@@ -56,7 +56,7 @@ func (rs *Ruleset) Describe(game *catalog.CompiledGame) state.RulesetInfo {
 			fmt.Sprintf("Be the first to capture %d enemy stones (blooms captured when the turn ends).", game.ParamInt("capture_target", 20)),
 			fmt.Sprintf("After %d plies the player with more captures wins (equal is a draw).", game.ParamInt("max_plies", 500)),
 		}, NotationHelp: []string{
-			"A stone is its colour, @ and a cell: red@d4. Player 1 has red and yellow, player 2 blue and black.",
+			"A stone is its colour, @ and a cell: red@d4. Warm (player 1) has red and yellow, Cool (player 2) blue and black.",
 			"A turn is one stone, or two stones of different colours (the second is another move); done ends the turn after one.",
 		}}
 	if st, err := rs.Start(game, 0); err == nil {
@@ -64,7 +64,7 @@ func (rs *Ruleset) Describe(game *catalog.CompiledGame) state.RulesetInfo {
 			info.NotationHelp = append(info.NotationHelp, "Example of a legal first move: '"+rs.Format(game, moves[0])+"'.")
 		}
 	}
-	info.Actions = []state.RulesetAction{{ID: actDone, Label: "End turn", Hint: "Place no second stone: end the turn and capture any fenced enemy blooms."}}
+	info.Actions = []state.RulesetAction{{ID: actDone, Label: "End", Hint: "Place no second stone: end the turn and capture any fenced enemy blooms."}}
 	if catalog.PieRuleOn(game.Definition) {
 		info.NotationHelp = append(info.NotationHelp, "swap (the second player's first reply, with the pie rule): take the first player's side.")
 		info.Actions = append(info.Actions, state.RulesetAction{ID: actSwap, Label: "Swap sides", Hint: "The pie rule: take over the opening side — the placed stone changes hands and the first player answers it."})

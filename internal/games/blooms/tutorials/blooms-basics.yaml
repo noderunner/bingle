@@ -5,17 +5,16 @@ title: How to play Blooms
 summary: The goal, the board, the stones, a turn, and how a bloom is captured.
 order: 1
 game: blooms-4   # the small board: 37 cells, 15 captures to win
-seat: 1          # you play red and yellow; the page plays blue and black
+seat: 1          # you play Warm, red and yellow; the page plays Cool, blue and black
 
 steps:
   - text: |
       In **Blooms** you place stones of your two colours to build groups,
       and capture your opponent's groups by fencing them in.
 
-      Each player controls two different colors of stones. Typically, one player uses "warm"
-      colored stones (e.g. red and yellow), while the other player uses "cold" colors
-      (e.g., blue and black). Each player has an unlimited number of each color stone in their
-      supply.
+      Each player controls two different colors of stones. The **Warm** player has red and
+      yellow stones, and the **Cool** player has blue and black. Each player has an unlimited
+      number of each color stone in their supply.
 
   - text: |
       The game ends when either player captures a set number of their opponent's stones.
@@ -27,7 +26,7 @@ steps:
       - *Size 8 board:* 40 stones.
       - *Size 10 board:* 50 stones.
 
-      In the example game below, the warm player has won the game by ending a turn with 17
+      In the example game below, the Warm player has won the game by ending a turn with 17
       stones captured on a size 4 board.
     show: [
       yellow@c6, blue@b3, black@d2, red@c3, yellow@b5, blue@e6, black@c4, yellow@d4,
@@ -47,7 +46,7 @@ steps:
       Take a look at the following position. The two red stones are a single group, or "bloom"
       of stones that is completely surrounded, with no free spaces adjacent to any of the red
       stones in the bloom. A bloom that is surrounded like this is "Fenced" and will be
-      captured at the end of the next Blue/Black player's turn.
+      captured at the end of the Cool player's next turn.
 
       *Important:* It does not matter that the **yellow** stone at g4 belongs to the same
       player as the red stones. It is still a different *color* and counts as part of the "fence".
@@ -66,21 +65,21 @@ steps:
       **Capture:** After placement, the active player then captures all *opponent* blooms
       that have been fenced.
 
-      Using the previous example at the end of the Blue/Black player turn, the two red stones
+      Using the previous example, at the end of the Cool player's turn the two red stones
       that were fenced are captured and removed from the board.
     pieces: [blue@g1, blue@f2, black@f3, black@f4, yellow@g4]
     highlight: [g2, g3]
 
   - text: |
-      The first turn of the game is slightly different: the "warm" player may only
+      The first turn of the game is slightly different: the Warm player may only
       place a single stone of either color onto an empty space. After this, the
       game turns continue as normal, with *both* players able to place up to two
       stones on their turn.
 
-      You are the "warm" player. Place one of your red stones onto the highlighted
-      space.
+      You are the Warm player. Press **Place** on the red stone, then click the
+      highlighted space.
     play: [red@d4]
-    hint: Press the red stone, then click the highlighted cell, d4.
+    hint: Press Place on the red stone, then click the highlighted cell, d4.
     highlight: [d4]
     reply: [blue@a4, black@g1]
 
@@ -95,7 +94,7 @@ steps:
       touches only three cells. Fill two of them: a **red** stone on b3, then a
       **yellow** one on b4.
     play: [red@b3, yellow@b4]
-    hint: Press red and click b3, then press yellow and click b4.
+    hint: Press Place on red and click b3, then Place on yellow and click b4.
     highlight: [b3, b4]
     reply: [blue@f1, done]
 
@@ -103,10 +102,10 @@ steps:
       Your opponent placed one stone and ended the turn. The blue bloom at
       a4 has one empty cell left beside it, a5.
 
-      Fill it with a **red** stone, then press **End turn**: at the end of
+      Fill it with a **red** stone, then press **End**: at the end of
       your turn, every enemy bloom that is fenced is **captured**.
     play: [red@a5, done]
-    hint: Press red and click a5, then press End turn.
+    hint: Press Place on red and click a5, then press End.
     highlight: [a5]
     arrow: [a5, a4]
 

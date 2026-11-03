@@ -369,6 +369,9 @@ type SeatDef struct {
 	Color string `json:"color"`
 	// Label is an optional display name for the seat ("White").
 	Label string `json:"label,omitempty"`
+	// Blend names the two colours of a seat that plays with both ("black",
+	// "blue"): its swatch and its label are drawn as a gradient between them.
+	Blend []string `json:"blend,omitempty"`
 	// Forward is the seat's forward direction on a grid ("N", "E", "S" or
 	// "W"; N is towards the top of the screen). Movement directions such as
 	// "forward-left" are relative to it.

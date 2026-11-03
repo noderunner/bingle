@@ -26,7 +26,7 @@ import { choiceIcon } from "./choice-icons.js";
 import { animalIcon, animalOf } from "./animals.js";
 import { themesFor, themeById } from "./themes.js";
 import { useCardSet } from "./card-sets.js";
-import { progress as tutorialProgress, isExpected, markFinished, allowed as tutorialAllowed } from "./tutorial.js";
+import { stepMoves, progress as tutorialProgress, isExpected, markFinished, allowed as tutorialAllowed } from "./tutorial.js";
 import { renderMarkdown } from "./markdown.js";
 
 installNav();
@@ -406,6 +406,7 @@ function inAnalysis() {
 
 /** The seat the board accepts clicks for right now, or 0. */
 function actingSeat() {
+	if (tutorialLookingBack()) return 0;
 	if (inAnalysis()) {
 		const sim = S.analysis.sim;
 		return sim && !sim.game_ended && sim.turn_seat ? sim.turn_seat : 0;
@@ -420,6 +421,28 @@ function activeBuilder() {
 function seatLabel(seat) {
 	const d = seatDef(seat);
 	return d ? d.label : `Seat ${seat}`;
+}
+
+/** The CSS gradient of a seat of two colours, or null. `stop` writes each colour. */
+function seatGradient(seat, stop = (c) => `var(--piece-${c}-fill)`) {
+	const blend = (seatDef(seat) || {}).blend;
+	return blend && blend.length === 2 ? `linear-gradient(90deg, ${stop(cssColor(blend[0]))}, ${stop(cssColor(blend[1]))})` : null;
+}
+
+/** A seat's name in its colours. Mixed with the text colour, so that yellow or black can be read on any theme. */
+function seatWord(seat) {
+	const gradient = seatGradient(seat, (c) => `color-mix(in srgb, var(--piece-${c}-fill) 72%, var(--text))`);
+	return h("span", { class: "seat-word", style: gradient ? `background-image: ${gradient}` : null }, seatLabel(seat));
+}
+
+/** Text with the names of the seats of two colours drawn in them: a line of the log, the result of the game. */
+function withSeatWords(text) {
+	const seats = S.info.seats.filter((s) => seatGradient(s.seat));
+	if (!seats.length) return [text];
+	const names = new RegExp(`\\b(${seats.map((s) => escapeRegExp(s.label)).join("|")})\\b`);
+	return String(text)
+		.split(names)
+		.map((part, i) => (i % 2 ? seatWord(seats.find((s) => s.label === part).seat) : part));
 }
 
 /** Who held the seat at move seq: a bot's seat was somebody's until it took over. */
@@ -1405,7 +1428,7 @@ function openSteps() {
 
 /** A step of this turn that can still be taken back. */
 function canUndo() {
-	return !!S.me.seat && S.game.turn_seat === S.me.seat && openSteps() > 0;
+	return !tutorialLookingBack() && !!S.me.seat && S.game.turn_seat === S.me.seat && openSteps() > 0;
 }
 
 // ---------------------------------------------------------------------------
@@ -1908,9 +1931,9 @@ function rememberRailScroll() {
  */
 function actionCard() {
 	// Not actingSeat(): that lapses while a step is being sent, and the card would jump.
-	const acting = inAnalysis() ? !!actingSeat() : isLive() && isMyTurn();
+	const acting = inAnalysis() ? !!actingSeat() : isLive() && isMyTurn() && !tutorialLookingBack();
 	const bar = moveBar();
-	const waiting = !acting && isLive() && !inAnalysis() && isActive() && !!S.me.seat;
+	const waiting = !acting && isLive() && !inAnalysis() && isActive() && !!S.me.seat && !S.tut;
 	const text = bar.textContent.trim();
 	// Kept while the opponent plays, so that the cards below do not jump at each turn.
 	if (!acting && !waiting && !text) return null;
@@ -1924,15 +1947,24 @@ function actionCard() {
 function renderFitted(seats, bottomSeat) {
 	document.body.classList.add("fit-screen");
 	const boardHost = h("div", { id: "board" });
-	const main = h(
-		"div",
-		{ class: "board-column" },
-		statusBar(),
-		h("div", { class: "board-wrap" }, boardHost, h("div", { class: "inspector small muted", id: "inspector", "aria-live": "off" }, inspectorText()))
-	);
+	const main = h("div", { class: "board-column" }, h("div", { class: "board-wrap" }, boardHost, h("div", { class: "inspector small muted", id: "inspector", "aria-live": "off" }, inspectorText())));
+
+	// While the game goes on the cards say whose turn it is, and the bar is not drawn. Its
+	// words stay for a screen reader, and a game's badges go with the players. The bar is
+	// there when it has something to say or a button to press: a result, history, analysis.
+	const bar = statusBar();
+	const quiet = !inAnalysis() && (tutorialLookingBack() || (isLive() && isActive()));
+	const first = [];
+	let last = null;
+	if (quiet) {
+		const words = bar.querySelector("#status-message");
+		words.classList.add("sr-only");
+		last = words;
+	} else {
+		first.push(bar);
+	}
 
 	// The first in the column is what asks for the player's attention.
-	const first = [];
 	if (S.tut) first.push(tutorialCard());
 	first.push(kickVoteBanner(), slowTurnBanner(), nextGameBanner(), firstMoveBanner(), drawOfferBanner(), hintBanner());
 	if (!S.me.seat && !S.spectating) first.push(identityGate());
@@ -1940,6 +1972,10 @@ function renderFitted(seats, bottomSeat) {
 	const players = h("section", { class: "card players-card", id: "players-card", "aria-label": "Players" });
 	for (const ts of seats.filter((s) => s.seat !== bottomSeat)) players.append(seatStrip(ts.seat));
 	players.append(seatStrip(bottomSeat));
+	if (quiet) {
+		const badges = bar.querySelectorAll("#rated-badge, #real-time-badge, #tournament-badge, #rating-note, #conn-badge");
+		players.append(h("div", { class: "table-badges" }, ...badges));
+	}
 	first.push(players);
 
 	const rail = sidePanel(null);
@@ -1947,6 +1983,7 @@ function renderFitted(seats, bottomSeat) {
 	rail.id = "play-rail";
 	rail.prepend(...first.filter(Boolean));
 	rail.append(debugPanel());
+	if (last) rail.append(last);
 
 	root.append(h("div", { class: "game-layout play-screen" }, main, rail));
 	rail.scrollTop = S.railScroll || 0;
@@ -2344,7 +2381,10 @@ function statusBar() {
 	const g = S.game;
 	const badges = [];
 
-	if (inAnalysis()) {
+	if (tutorialLookingBack()) {
+		cls.push("history");
+		msg = "An earlier step of the tutorial.";
+	} else if (inAnalysis()) {
 		cls.push("history");
 		const a = S.analysis;
 		const sim = a.sim;
@@ -2382,8 +2422,8 @@ function statusBar() {
 	}
 
 	const bar = h("div", { class: cls.join(" ") });
-	bar.append(h("div", { class: "message", id: "status-message", "aria-live": "polite" }, msg));
-	if (isLive() && !inAnalysis() && g.status === "active" && !tutorialShown()) {
+	bar.append(h("div", { class: "message", id: "status-message", "aria-live": "polite" }, ...withSeatWords(msg)));
+	if (isLive() && !inAnalysis() && g.status === "active" && !tutorialShown() && !tutorialLookingBack()) {
 		if (isMyTurn()) badges.push(h("span", { class: "badge turn" }, "Your turn"));
 		{
 			const rv = rulesetView();
@@ -2410,6 +2450,8 @@ function statusBar() {
 			bar.append(h("button", { id: "play-from-here", onclick: playFromHere, title: "Start a new game from this position" }, "Play from here…"));
 		}
 		bar.append(h("button", { class: "primary", id: "exit-analysis", onclick: exitAnalysis }, "Exit analysis"));
+	} else if (tutorialLookingBack()) {
+		// Next and Back are in the tutorial's own card.
 	} else if (!isLive()) {
 		bar.append(h("button", { id: "analyze-here", onclick: startAnalysis }, "Analyze from here"));
 		bar.append(h("button", { class: "primary", id: "return-live", onclick: () => viewMove(null) }, "Return to live"));
@@ -2593,7 +2635,8 @@ function seatAnimalByLabel(label, px) {
  * and the socket has told us who is connected, so nobody flickers as the page loads.
  */
 function seatDisconnected(seat) {
-	if (!S.connected || !S.game || S.game.status === "finished") return false;
+	// In a tutorial the page plays the other seat itself.
+	if (!S.connected || !S.game || S.game.status === "finished" || S.tut) return false;
 	const si = seatInfo(seat);
 	return !!seatName(seat) && !(si && si.bot) && !S.connected.has(seat);
 }
@@ -2616,7 +2659,9 @@ function paintConnections() {
 /** The coloured box beside a player's name (in a game of animals, the animal). */
 function seatSwatch(seat, color) {
 	const animal = seatAnimal(seat, 30);
-	return animal ? h("span", { class: "seat-icon" }, animal) : h("span", { class: `swatch color-${cssColor(color)}` });
+	if (animal) return h("span", { class: "seat-icon" }, animal);
+	const gradient = seatGradient(seat);
+	return h("span", { class: `swatch color-${cssColor(color)}`, style: gradient ? `background: ${gradient}` : null });
 }
 
 function seatStrip(seat) {
@@ -2631,6 +2676,8 @@ function seatStrip(seat) {
 	head.append(seatSwatch(seat, color));
 	head.append(h("span", { class: "name" }, seatName(seat) || "(open seat)"));
 	head.append(h("span", { class: "badge waiting seat-conn", title: "No connection to this player right now. It may be back in a moment." }, off ? "disconnected" : ""));
+	// A seat of two colours says which it is: the players know each other by these.
+	if (seatGradient(seat) && !(seatName(seat) || "").includes(seatLabel(seat))) head.append(seatWord(seat));
 	// At a table of many cults the faction is named beside its player (a bot's
 	// name already is the faction's).
 	if (S.info.seats.length > 2 && seatLabel(seat) && !(seatName(seat) || "").startsWith(seatLabel(seat))) {
@@ -2712,10 +2759,15 @@ function seatStrip(seat) {
 			}
 			const pips = h("span", { class: "counter-pip", "aria-hidden": "true" });
 			for (let i = 0; i < (c.max && c.max <= 10 ? c.max : 0); i++) pips.append(h("i", { class: `${c.id}${i < c.value ? " on" : ""}` }));
-			stats.append(h("span", { class: "score counter", title, "data-counter": c.id }, `${c.label}: `, h("strong", {}, String(c.value)), pips));
+			stats.append(h("span", { class: "score counter", title, "data-counter": c.id }, `${c.label}: `, h("strong", {}, String(c.value)), c.show_max ? `/${c.max}` : null, pips));
 		}
 	}
 	strip.append(head);
+	if (sv && sv.taken && sv.taken.length) {
+		const stones = h("div", { class: "taken-stones", "aria-label": `Stones captured: ${sv.taken.join(", ")}` });
+		for (const stone of sv.taken) stones.append(h("span", { class: "taken-stone", "data-stone": stone }, pieceIcon("disc", stone, 16)));
+		strip.append(stones);
+	}
 	if (sv && sv.cards && sv.cards.length) strip.append(factionCards(seat, sv));
 	const hand = handPanel(seat);
 	if (hand) strip.append(hand);
@@ -3913,7 +3965,15 @@ function moveBar() {
 			h(
 				"span",
 				{ class: "hint" },
-				isLive() ? (S.me.seat ? "" : S.game.status === "waiting" ? "" : "You are watching this game.") : "Browsing history — the board is read-only."
+				tutorialLookingBack()
+					? "Looking back at an earlier step. Press Next to come forward again."
+					: isLive()
+					? S.me.seat
+						? ""
+						: S.game.status === "waiting"
+						? ""
+						: "You are watching this game."
+					: "Browsing history — the board is read-only."
 			)
 		);
 		const back = backButton();
@@ -3939,7 +3999,9 @@ function moveBar() {
 			h(
 				"span",
 				{ class: "hint", id: "move-hint" },
-				choosingBook
+				rvh && rvh.move_hint
+					? rvh.move_hint
+					: choosingBook
 					? "Choose a spellbook to unlock:"
 					: hasPiece && !hasPos && rvh && rvh.stage === "prompt"
 					? "Choose the unit to place:"
@@ -4055,6 +4117,7 @@ function moveBar() {
 						{
 							class: "piece-choice" + (look.onGate ? " on-gate" : ""),
 							"data-piece": type,
+							"aria-label": (rulesetView() || {}).piece_action ? `${rulesetView().piece_action}: ${look.label}` : null,
 							title: look.onGate
 								? b.steps.some((st) => st.kind === "action" && st.value === "capture")
 									? `${look.label}: capturing it leaves the Gate abandoned, and your own Cultist takes it`
@@ -4063,7 +4126,7 @@ function moveBar() {
 							onclick: () => choosePiece(type),
 						},
 						pieceIcon(look.shape, look.color || color, 22),
-						h("span", {}, look.label)
+						h("span", {}, (rulesetView() || {}).piece_action || look.label)
 					)
 				);
 			}
@@ -5237,7 +5300,7 @@ function logLine(text) {
 		const re = new RegExp(names, "g");
 		for (let m = re.exec(text); m; m = re.exec(text)) {
 			const sd = S.info.seats.find((x) => x.label === m[0]);
-			marks.push({ start: m.index, end: m.index + m[0].length, node: () => h("span", { class: `log-fac color-${cssColor(sd.color)}` }, m[0]) });
+			marks.push({ start: m.index, end: m.index + m[0].length, node: () => (seatGradient(sd.seat) ? seatWord(sd.seat) : h("span", { class: `log-fac color-${cssColor(sd.color)}` }, m[0])) });
 		}
 	}
 	const label = /^([A-Z][A-Za-z'’ -]{1,30}):(?=\s)/.exec(text);
@@ -5348,8 +5411,8 @@ function eventsPane() {
 				h(
 					"div",
 					{ class: `log-actor color-${cssColor(colorOf(g.seat))}`, "data-seat": g.seat, "data-auto-play": some ? "1" : null },
-					h("span", { class: `swatch color-${cssColor(colorOf(g.seat))}` }),
-					h("strong", {}, sd ? sd.label : `Seat ${g.seat}`),
+					h("span", { class: `swatch color-${cssColor(colorOf(g.seat))}`, style: seatGradient(g.seat) ? `background: ${seatGradient(g.seat)}` : null }),
+					h("strong", {}, ...withSeatWords(sd ? sd.label : `Seat ${g.seat}`)),
 					who ? h("span", { class: "muted small" }, g.seat === S.me.seat && who === seatName(g.seat) ? ` · ${who} (you)` : ` · ${who}`) : null,
 					some ? badge(all) : null
 				)
@@ -5411,7 +5474,7 @@ function moveList() {
 					"li",
 					{ class: `by-seat-${m.seat}` },
 					h("span", { class: "num" }, `${m.seq}.`),
-					h("span", { class: `seat-dot color-${cssColor(colorOf(m.seat))}`, title: seatNameAt(m.seat, m.seq) || seatLabel(m.seat) }),
+					h("span", { class: `seat-dot color-${cssColor(colorOf(m.seat))}`, style: seatGradient(m.seat) ? `background: ${seatGradient(m.seat)}` : null, title: seatNameAt(m.seat, m.seq) || seatLabel(m.seat) }),
 					h(
 						"button",
 						{
@@ -5608,7 +5671,28 @@ const TUTORIAL_PAUSE = 700; // ms before a scripted reply, so it can be seen
 async function loadTutorial() {
 	const [family, id] = String(S.game.tutorial).split("/");
 	const doc = await api.tutorial(family, id);
-	S.tut = { family, ref: S.game.tutorial, doc, read: Number(store.get(tutorialReadKey(), 0)) || 0, hint: -1, pending: false };
+	S.tut = { family, ref: S.game.tutorial, doc, read: Number(store.get(tutorialReadKey(), 0)) || 0, hint: -1, pending: false, back: null };
+}
+
+/** The learner has gone back to read an earlier step: nothing can be played until they return. */
+function tutorialLookingBack() {
+	return !!S.tut && S.tut.back !== null;
+}
+
+/** The step on the page: the one the learner has reached, or the earlier one they went back to. */
+function tutorialViewed() {
+	return tutorialLookingBack() ? S.tut.back : tutorialState().step;
+}
+
+/** Shows step i with its board as it stood. Going back changes nothing, as a move stands. */
+async function tutorialGoTo(i) {
+	const steps = S.tut.doc.steps || [];
+	const current = i >= tutorialState().step;
+	S.tut.back = current ? null : i;
+	const shown = (S.tut.doc.guide || [])[i];
+	const before = steps.slice(0, i).reduce((n, step) => n + stepMoves(step).length, 0);
+	await viewMove(current || (shown && shown.show_state) ? null : before);
+	setHash(null);
 }
 
 function tutorialReadKey() {
@@ -5622,12 +5706,12 @@ function tutorialState() {
 
 function tutorialStep() {
 	const steps = S.tut.doc.steps || [];
-	return steps[tutorialState().step] || {};
+	return steps[tutorialViewed()] || {};
 }
 
 /** Plays the next scripted reply, if one is due; called after every redraw. */
 function tutorialTick() {
-	if (!S.tut || S.tut.pending || S.busy || !isLive() || S.game.status !== "active") return;
+	if (!S.tut || S.tut.pending || S.busy || !isLive() || tutorialLookingBack() || S.game.status !== "active") return;
 	const p = tutorialState();
 	if (p.finished) {
 		markFinished(store, S.tut.ref);
@@ -5697,10 +5781,12 @@ function tutorialCard() {
 	const t = S.tut.doc;
 	const p = tutorialState();
 	const steps = t.steps || [];
-	const step = steps[p.step] || {};
+	const viewed = tutorialViewed();
+	const lookingBack = tutorialLookingBack();
+	const step = steps[viewed] || {};
 	const card = h("div", { class: "card tutorial-card", id: "tutorial" });
 	card.append(
-		h("div", { class: "tutorial-head" }, h("strong", {}, t.title), h("span", { class: "muted small", id: "tutorial-count" }, p.finished ? "Done" : `Step ${p.step + 1} of ${steps.length}`))
+		h("div", { class: "tutorial-head" }, h("strong", {}, t.title), h("span", { class: "muted small", id: "tutorial-count" }, p.finished && !lookingBack ? "Done" : `Step ${viewed + 1} of ${steps.length}`))
 	);
 	if (p.offScript) {
 		card.append(
@@ -5717,7 +5803,10 @@ function tutorialCard() {
 	const base = `/api/game-defs/${encodeURIComponent(S.tut.family)}/assets/`;
 	card.append(h("div", { class: "tutorial-text", id: "tutorial-text" }, renderMarkdown(step.text || "", { assetBase: base }).node));
 	const actions = h("div", { class: "tutorial-actions" });
-	if (p.finished) {
+	if (viewed > 0) actions.append(h("button", { type: "button", class: "secondary", id: "tutorial-back", onclick: () => tutorialGoTo(viewed - 1) }, "Back"));
+	if (lookingBack) {
+		actions.append(h("button", { type: "button", id: "tutorial-next", onclick: () => tutorialGoTo(viewed + 1) }, "Next"));
+	} else if (p.finished) {
 		card.append(h("p", { class: "tutorial-done", id: "tutorial-done" }, "Tutorial complete."));
 		if (S.game.status === "active") actions.append(h("button", { type: "button", id: "tutorial-bot", onclick: tutorialFinishAgainstBot }, "Finish this game against a bot"));
 		actions.append(h("button", { type: "button", class: "secondary", id: "tutorial-restart", onclick: tutorialRestart }, "Start again"));
@@ -5743,12 +5832,13 @@ function tutorialCard() {
 /** The position the current step shows instead of the game's (Step.show), or null. */
 function tutorialShown() {
 	if (!S.tut || !isLive()) return null;
-	const g = (S.tut.doc.guide || [])[tutorialState().step];
+	const g = (S.tut.doc.guide || [])[tutorialViewed()];
 	return g && g.show_state ? g.show_state : null;
 }
 
 /** The selections of the move the learner is asked for now, or null. */
 function tutorialExpected() {
+	if (tutorialLookingBack()) return null;
 	const p = tutorialState();
 	if (!p.next || p.next.who !== "learner") return null;
 	const g = (S.tut.doc.guide || [])[p.step];

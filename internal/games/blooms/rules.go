@@ -293,6 +293,7 @@ func (e *eng) endTurn(seat int) {
 		taken += len(group)
 		for _, i := range group {
 			gone = append(gone, string(e.g.ids[i]))
+			d.CapturedStones[seat-1] = append(d.CapturedStones[seat-1], e.cells[i])
 			e.cells[i] = ""
 		}
 	}

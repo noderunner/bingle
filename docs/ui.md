@@ -23,10 +23,14 @@ small gate: join an open seat, continue as a seated player's name, or watch.
 
 A game named by `FITTED_GAMES` in `js/game.js` (so far only Blooms and its variants, once out of the lobby)
 is drawn by `renderFitted` ([ADR 0092](decisions/0092-a-game-page-that-fits-the-screen.md)). `body.fit-screen` makes
-the page exactly as tall as the window, with no page scroll and no footer. The `.board-column` holds the status bar
-and the board, which takes all the height left. `#play-rail` holds the cards and scrolls by itself, keeping its place
-across redraws: the tutorial and any notices, `#action-card`, `#players-card`, voice, chat and history. On an upright
-screen under 980px wide, the rail goes under the board.
+the page exactly as tall as the window, with no page scroll and no footer. The `.board-column` holds the board, which
+takes all the height left. `#play-rail` holds the cards and scrolls by itself, keeping its place across redraws: the
+tutorial and any notices, `#action-card`, `#players-card`, voice, chat and history. On an upright screen under 980px
+wide, the rail goes under the board.
+
+While a game is being played no `.status-bar` is drawn: `#status-message` stays as `.sr-only` for screen readers, and the
+game's badges are in `.table-badges`, with `#conn-badge` shown only when the connection is not live. The bar is the first
+card of the rail for a result, history, analysis or a game waiting for an opponent.
 
 `#action-card` holds the move bar. On the player's turn it has `.acting`, which pins it to the edges of the rail, so it
 is in view however far the rail is scrolled. It neither moves the rail nor takes the keyboard.

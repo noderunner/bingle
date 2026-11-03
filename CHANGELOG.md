@@ -14,6 +14,19 @@ what the help window shows under *Recent changes*, so it is written for the peop
   you have scrolled the column, without moving anything else.
 - **Keep typing.** A move arriving while you are typing a chat message no longer takes the cursor out of the message box,
   in any game.
+- **Tutorials can go back.** A Back button returns to any earlier step of a tutorial, so you can read it again with
+  the board as it stood. Next brings you forward to where you were.
+
+### Blooms 0.3.0
+- **Warm and Cool.** The two sides are now called Warm (red and yellow) and Cool (black and blue), everywhere including
+  the history, and their names and colour swatches blend their two colours.
+- **The captured stones are on show.** Each player's card shows the stones they have captured, in their colours, and how
+  many are needed to win, such as *Captured: 3/15*.
+- **Shorter words on the controls.** Each stone's button says *Place*, *End turn* is now *End*, and the line above them
+  says what you can do next.
+- **More room for the board.** The bar above the board is gone while a game is being played. It comes back in the column
+  beside the board for the result of a game, for looking through its history and for analysis.
+- The tutorial uses the new names and buttons.
 
 ## 0.47.0 - 2026-11-02
 

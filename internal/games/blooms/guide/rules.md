@@ -10,8 +10,8 @@ Be the first player to **capture enough enemy stones**. The target depends on th
 
 Each player has **two colours** of stone, and a stone's colour matters: stones only join up with others of the same colour.
 
-- Player 1 has **red** and **yellow** stones.
-- Player 2 has **blue** and **black** stones.
+- **Warm** (player 1) has **red** and **yellow** stones.
+- **Cool** (player 2) has **blue** and **black** stones.
 
 A **bloom** is a connected group of stones of one colour (a single stone is a bloom too). Two stones are connected when they touch along an edge of the hexagons. A red stone touching a yellow stone is two separate blooms.
 
@@ -47,4 +47,4 @@ The first player to reach the target number of captured stones **wins**. If the 
 
 ## Move notation
 
-A stone is its colour, `@` and a cell: `red@d4`. Player 1 has red and yellow, player 2 blue and black. A turn is one stone or two stones of different colours (the second is a separate move); `done` ends the turn after one. With the pie rule, `swap` is the second player's possible first reply.
+A stone is its colour, `@` and a cell: `red@d4`. Warm (player 1) has red and yellow, Cool (player 2) blue and black. A turn is one stone or two stones of different colours (the second is a separate move); `done` ends the turn after one. With the pie rule, `swap` is the second player's possible first reply.

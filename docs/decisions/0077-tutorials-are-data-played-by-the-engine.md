@@ -47,6 +47,13 @@ Added 2026-11-01, after the first tutorials were played:
   the script's back. It is fixed for the whole tutorial rather than step by step, because every
   reaction of a scripted line is part of the script.
 
+Added 2026-11-02:
+
+- **Back looks back, and takes nothing back.** The learner can return to any earlier step, shown with the board from
+  when that step began, but cannot play it again. The moves are real moves in a real room, and a move stands
+  ([ADR 0083](0083-a-move-stands.md)). Rewinding the room would need an exception to that rule, and replaying into a new
+  room would leave a room behind at every press. *Start again* still replays the tutorial from the top.
+
 ## Consequences
 
 - A rule change that breaks a tutorial fails the build instead of shipping a tutorial that lies.

@@ -13,8 +13,7 @@ import (
 
 // bloomsStepJS picks a stone colour, then a cell, or ends a turn.
 const bloomsStepJS = `(function () {
-	var bar = document.querySelector(".status-bar");
-	if (!bar || !bar.classList.contains("your-turn")) return "wait";
+	if (!document.querySelector("#action-card.acting")) return "wait";
 	function click(el, what) {
 		el.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
 		return what;
