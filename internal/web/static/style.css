@@ -1406,16 +1406,21 @@ tr.weak td { color: var(--danger, #c0392b); font-weight: 600; }
 .seat-strip.disconnected .seat-head .swatch, .seat-strip.disconnected .seat-head .seat-icon { opacity: 0.4; }
 
 /* ---- the fitted layout ----------------------------------------------------------------
-   The page is as tall as the window and does not scroll: the board fills the left and the
-   cards beside it scroll on their own (renderFitted in js/game.js, ADR 0092). */
+   The page is as tall as the window and does not scroll. The board's column is as wide as the
+   board can be drawn at that height, and the cards beside it have the rest and scroll on their
+   own (renderFitted in js/game.js, ADR 0092). */
 body.fit-screen { display: flex; flex-direction: column; height: 100vh; height: 100dvh; overflow: hidden; }
 body.fit-screen .topbar { flex: none; }
 body.fit-screen .site-footer { display: none; }
 body.fit-screen main.page { flex: 1; min-height: 0; width: 100%; max-width: none; margin: 0; padding: 0.6rem 0.75rem; box-sizing: border-box; }
-body.fit-screen #game-root { height: 100%; }
-body.fit-screen .play-screen { height: 100%; grid-template-columns: minmax(0, 1fr) min(380px, 42%); grid-template-rows: minmax(0, 1fr); align-items: stretch; gap: 0.75rem; }
+body.fit-screen #game-root { height: 100%; container: fit-page / size; }
+body.fit-screen .play-screen {
+	--rail-least: min(21rem, 42cqw);
+	--inspector-room: 1.75rem;
+	height: 100%; gap: 0.75rem; align-items: stretch; grid-template-rows: minmax(0, 1fr);
+	grid-template-columns: min((100cqh - var(--inspector-room)) * var(--board-aspect, 1.1), 100cqw - var(--rail-least) - 0.75rem) minmax(0, 1fr);
+}
 .play-screen .board-column { display: flex; flex-direction: column; min-height: 0; }
-.play-rail .status-bar { margin-bottom: 0; }
 .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
 .play-screen .board-wrap { flex: 1; min-height: 0; gap: 0.25rem; }
 .play-screen #board { flex: 1; min-height: 0; max-width: none; }
@@ -1424,10 +1429,22 @@ body.fit-screen .play-screen { height: 100%; grid-template-columns: minmax(0, 1f
 /* A seat's name in its two colours (seatWord in js/game.js). */
 .seat-word { font-weight: 700; color: transparent; -webkit-background-clip: text; background-clip: text; }
 /* The little padding keeps the outline of a card clear of the column's edge. */
-.play-rail { min-height: 0; overflow-y: auto; overscroll-behavior: contain; gap: 0.6rem; padding: 3px; scrollbar-gutter: stable; }
-.play-rail > * { flex: none; }
+.play-rail { position: relative; display: block; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 3px; scrollbar-gutter: stable; container: play-rail / inline-size; }
+.rail-cards { display: flex; flex-direction: column; gap: 0.6rem; }
+.rail-cards > .rail-stack { display: contents; }
+.rail-stack > * { flex: none; }
+/* Room for two columns of cards: what asks for attention, then the talk and the moves. */
+@container play-rail (min-width: 44rem) {
+	.rail-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
+	.rail-cards > .rail-stack { display: flex; flex-direction: column; gap: 0.6rem; min-width: 0; }
+}
 .action-card h3 { margin-bottom: 0.3rem; }
 .action-card p { margin: 0; }
+.action-card.over { border-color: var(--text); }
+.action-card.history { border-color: var(--warn); }
+.action-card .message { font-weight: 700; }
+.action-card .note-buttons { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.6rem; }
+.action-card .move-bar:not(:first-child) { margin-top: 0.4rem; }
 .action-card .move-bar { max-width: none; min-height: 0; }
 .action-card .hint:empty { display: none; }
 /* The question, then what answers it in the order it is played: the stones, then End and Back. */
@@ -1446,7 +1463,7 @@ body.fit-screen .play-screen { height: 100%; grid-template-columns: minmax(0, 1f
 /* A phone or a tablet held upright: the cards go under the board, which stays put. */
 @media (max-width: 979px) and (orientation: portrait) {
 	body.fit-screen main.page { padding: 0.4rem; }
-	body.fit-screen .play-screen { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, min(58%, 100vw + 2rem)) minmax(0, 1fr); gap: 0.4rem; }
+	body.fit-screen .play-screen { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, min(58cqh, 100cqw / var(--board-aspect, 1.1))) minmax(0, 1fr); gap: 0.4rem; }
 	.play-screen .inspector { display: none; }
 }
 /* Where height or width is short the board gets what the page can give up. */

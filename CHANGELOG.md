@@ -8,8 +8,9 @@ what the help window shows under *Recent changes*, so it is written for the peop
 
 ### Bingle Core 0.48.0
 - **Blooms fits your screen.** A game of Blooms no longer scrolls: the whole board stays in view, with the players,
-  chat, history and tutorial in a column beside it (below it on an upright phone). That column scrolls by itself and
-  leaves the board where it is. Blooms is the first game to get this page, so tell us how it plays before the others follow.
+  chat, history and tutorial beside it (below it on an upright phone). The board and the cards share the whole window as
+  it grows or shrinks, and on a wide screen the cards stand in two columns. The cards scroll by themselves and leave the
+  board where it is. Blooms is the first game to get this page, so tell us how it plays before the others follow.
 - **Your move stands out.** On your turn, the card with your stones and buttons lights up and stays in view however far
   you have scrolled the column, without moving anything else.
 - **Keep typing.** A move arriving while you are typing a chat message no longer takes the cursor out of the message box,
@@ -25,8 +26,8 @@ what the help window shows under *Recent changes*, so it is written for the peop
 - **Shorter words on the controls.** Each stone's button says *Place*, *End turn* is now *End*, and the line above them
   says what you can do next. Once you pick a stone, the card says *Place* with a picture of it, and *Back* puts it down
   again; there is no separate *Reset* button.
-- **More room for the board.** The bar above the board is gone while a game is being played. It comes back in the column
-  beside the board for the result of a game, for looking through its history and for analysis.
+- **More room for the board.** The bar above the board is gone. The result of a game and its *Rematch* button are in the
+  card with your stones, as are the controls for looking through the history and for analysis.
 - **A longer tutorial.** It uses the new names and buttons, and now explains blooms and liberties with two boards to count
   on yourself. *Need a hint?* gives the answer.
 

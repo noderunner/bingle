@@ -3,6 +3,7 @@ package app_test
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -165,7 +166,7 @@ func TestWebFitScreen_TheTutorialIsBesideTheBoard(t *testing.T) {
 		t.Fatal(err)
 	}
 	openTutorialOf(t, ctx, base, "blooms", "blooms-basics")
-	if !evalBool(t, ctx, `document.querySelector("#play-rail > #tutorial") === document.getElementById("play-rail").firstElementChild`) {
+	if !evalBool(t, ctx, `document.querySelector("#play-rail .rail-stack > #tutorial") === document.querySelector("#play-rail .rail-stack").firstElementChild`) {
 		t.Error("the tutorial should come first among the cards")
 	}
 	if !evalBool(t, ctx, fitsTheWindowJS) {
@@ -251,6 +252,101 @@ func TestWebFitScreen_TheCardsSayWhatTheBarSaid(t *testing.T) {
 	waitJS(t, ctx, "the second stone", `document.getElementById("move-hint") && document.getElementById("move-hint").textContent === "Place or end."`, 10*time.Second)
 	if got := evalString(t, ctx, `document.querySelector('#move-bar button[data-action="done"]').innerText.trim()`); got != "End" {
 		t.Errorf("the end of the turn says %q", got)
+	}
+}
+
+// The board's column is as wide as the board: the space goes to the cards, not to a gap
+// between them. Where the cards have the room they stand in two columns.
+func TestWebFitScreen_TheBoardAndTheCardsShareTheWidth(t *testing.T) {
+	base := newRESTTestServer(t)
+	ctx, cancel := newChromedpContext(t, 90*time.Second)
+	defer cancel()
+	rect := func(sel string) string { return `document.querySelector("` + sel + `").getBoundingClientRect()` }
+	for _, size := range []struct {
+		w, h    int64
+		columns bool
+	}{{1920, 1080, true}, {2560, 1080, true}, {1280, 720, false}, {1024, 600, false}} {
+		name := fmt.Sprintf("%dx%d", size.w, size.h)
+		fittedGame(t, ctx, base, "blooms", size.w, size.h)
+		if !evalBool(t, ctx, fitsTheWindowJS) {
+			t.Errorf("%s: the page does not fit the window", name)
+		}
+		if gap := evalInt(t, ctx, `Math.round(`+rect("#play-rail")+`.left - `+rect("#board svg")+`.right)`); gap > 16 {
+			t.Errorf("%s: %dpx between the board and the cards", name, gap)
+		}
+		// The svg is drawn at the board's own shape: nothing is left over inside it.
+		if !evalBool(t, ctx, `(function () {
+			var svg = document.querySelector("#board svg"), box = svg.getBoundingClientRect(), v = svg.viewBox.baseVal;
+			return Math.abs(box.width / box.height - v.width / v.height) < 0.03;
+		})()`) {
+			t.Errorf("%s: the board does not fill its column: %s", name, evalString(t, ctx, boardPlaceJS))
+		}
+		if w := evalInt(t, ctx, `Math.round(`+rect("#play-rail")+`.width)`); w <= 380 {
+			t.Errorf("%s: the cards are only %dpx wide", name, w)
+		}
+		side := evalBool(t, ctx, rect("#chat-card")+`.left >= `+rect("#action-card")+`.right`)
+		if side != size.columns {
+			t.Errorf("%s: chat beside the actions is %v", name, side)
+		}
+	}
+	// Upright, the board's row is no taller than the board.
+	fittedGame(t, ctx, base, "blooms", 390, 844)
+	if gap := evalInt(t, ctx, `Math.round(`+rect("#play-rail")+`.top - `+rect("#board svg")+`.bottom)`); gap > 16 {
+		t.Errorf("upright: %dpx between the board and the cards", gap)
+	}
+}
+
+// No bar on this page, whatever it would have said: the result, history and analysis
+// are in the actions card, with their buttons.
+func TestWebFitScreen_TheActionCardSaysWhatTheBarSaid(t *testing.T) {
+	base := newRESTTestServer(t)
+	ctx, cancel := newChromedpContext(t, 90*time.Second)
+	defer cancel()
+	fittedGame(t, ctx, base, "blooms", 1280, 720)
+	inCard := func(id string) string { return `document.querySelector("#action-card #` + id + `") !== null` }
+	title := func(want string) {
+		t.Helper()
+		if got := evalString(t, ctx, `document.querySelector("#action-card h3").textContent`); got != want {
+			t.Errorf("the card is called %q, not %q", got, want)
+		}
+		if evalBool(t, ctx, `document.querySelector(".status-bar") !== null`) {
+			t.Errorf("%s: a status bar is drawn", want)
+		}
+	}
+
+	// A move for the history to show, then the end of the game.
+	title("Your move")
+	clickSel(t, ctx, `#piece-buttons button[data-piece="red"]`)
+	waitJS(t, ctx, "the cells", `document.querySelector("#board .cell.clickable") !== null`, 10*time.Second)
+	evalBool(t, ctx, `(document.querySelector("#board .cell.clickable").dispatchEvent(new MouseEvent("click", {bubbles: true})), true)`)
+	waitJS(t, ctx, "the turn back", `document.querySelector("#action-card.acting #piece-buttons button") !== null`, 20*time.Second)
+	waitJS(t, ctx, "resign", `document.getElementById("resign") && !document.getElementById("resign").disabled`, 10*time.Second)
+	clickSel(t, ctx, "#resign")
+	clickSel(t, ctx, "#resign")
+	waitJS(t, ctx, "the rematch in the card", inCard("rematch"), 10*time.Second)
+	title("Game over")
+	if got := evalString(t, ctx, `document.querySelector("#action-card #status-message").textContent`); !strings.Contains(got, "won by resignation") {
+		t.Errorf("the result says %q", got)
+	}
+
+	// Looking back through the game.
+	clickSel(t, ctx, "#tab-moves")
+	waitJS(t, ctx, "the first move", `document.getElementById("hist-first") && !document.getElementById("hist-first").disabled`, 10*time.Second)
+	clickSel(t, ctx, "#hist-first")
+	waitJS(t, ctx, "return to live in the card", inCard("return-live"), 10*time.Second)
+	title("History")
+	if got := evalString(t, ctx, `document.getElementById("action-card").innerText`); strings.Contains(got, "Browsing history") {
+		t.Errorf("the card says it twice: %q", got)
+	}
+
+	// Analysis from there.
+	clickSel(t, ctx, "#analyze-here")
+	waitJS(t, ctx, "exit in the card", inCard("exit-analysis"), 10*time.Second)
+	title("Analysis")
+	clickSel(t, ctx, "#exit-analysis")
+	waitJS(t, ctx, "out of analysis", `document.getElementById("exit-analysis") === null`, 10*time.Second)
+	if evalBool(t, ctx, `document.querySelector(".status-bar") !== null`) {
+		t.Error("a status bar is drawn after analysis")
 	}
 }
 

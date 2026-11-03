@@ -1929,18 +1929,32 @@ function rememberRailScroll() {
  * column, so it is in view however far the cards were scrolled, without moving them
  * or taking the keyboard from a chat message being typed.
  */
-function actionCard() {
+/**
+ * The card of what the player can do now. `note` is what the bar says on other pages when it
+ * has something to tell or a button to press: a result, history, analysis, a wait.
+ */
+function actionCard(note) {
 	// Not actingSeat(): that lapses while a step is being sent, and the card would jump.
 	const acting = inAnalysis() ? !!actingSeat() : isLive() && isMyTurn() && !tutorialLookingBack();
 	const bar = moveBar();
+	const g = S.game;
+	// The note says it already: "Browsing history" under "Viewing the position after move 3".
+	if (note && !inAnalysis()) bar.querySelector(":scope > .hint")?.remove();
 	const waiting = !acting && isLive() && !inAnalysis() && isActive() && !!S.me.seat && !S.tut;
 	const text = bar.textContent.trim();
 	// Kept while the opponent plays, so that the cards below do not jump at each turn.
-	if (!acting && !waiting && !text) return null;
+	if (!acting && !waiting && !text && !note) return null;
+	const title = inAnalysis() ? "Analysis" : !isLive() ? "History" : acting ? "Your move" : g.status === "finished" ? "Game over" : g.status === "waiting" ? "Waiting" : "Actions";
 	const card = h("section", { class: "card action-card" + (acting ? " acting" : ""), id: "action-card", "aria-label": "Your actions" });
-	card.append(h("h3", {}, inAnalysis() ? "Analysis" : acting ? "Your move" : "Actions"));
+	card.append(h("h3", {}, title));
+	if (note) {
+		card.classList.toggle("over", note.over);
+		card.classList.toggle("history", note.history);
+		card.append(note.words);
+	}
 	if (waiting && !text) card.append(h("p", { class: "small muted", id: "action-idle" }, "Your choices appear here on your turn."));
-	card.append(bar);
+	if (bar.childNodes.length) card.append(bar);
+	if (note && note.buttons.length) card.append(h("div", { class: "note-buttons" }, ...note.buttons));
 	return card;
 }
 
@@ -1949,45 +1963,44 @@ function renderFitted(seats, bottomSeat) {
 	const boardHost = h("div", { id: "board" });
 	const main = h("div", { class: "board-column" }, h("div", { class: "board-wrap" }, boardHost, h("div", { class: "inspector small muted", id: "inspector", "aria-live": "off" }, inspectorText())));
 
-	// While the game goes on the cards say whose turn it is, and the bar is not drawn. Its
-	// words stay for a screen reader, and a game's badges go with the players. The bar is
-	// there when it has something to say or a button to press: a result, history, analysis.
+	// No bar on this page: what it would say goes in the cards. While the game goes on they
+	// say whose turn it is, and its words are only for a screen reader.
 	const bar = statusBar();
 	const quiet = !inAnalysis() && (tutorialLookingBack() || (isLive() && isActive()));
-	const first = [];
-	let last = null;
-	if (quiet) {
-		const words = bar.querySelector("#status-message");
-		words.classList.add("sr-only");
-		last = words;
-	} else {
-		first.push(bar);
-	}
+	const words = bar.querySelector("#status-message");
+	const note = quiet
+		? null
+		: { words, over: bar.classList.contains("over"), history: bar.classList.contains("history"), buttons: [...bar.querySelectorAll(":scope > button, :scope > a.button")] };
+	if (quiet) words.classList.add("sr-only");
 
 	// The first in the column is what asks for the player's attention.
+	const first = [];
 	if (S.tut) first.push(tutorialCard());
 	first.push(kickVoteBanner(), slowTurnBanner(), nextGameBanner(), firstMoveBanner(), drawOfferBanner(), hintBanner());
 	if (!S.me.seat && !S.spectating) first.push(identityGate());
-	first.push(actionCard());
+	first.push(actionCard(note));
 	const players = h("section", { class: "card players-card", id: "players-card", "aria-label": "Players" });
 	for (const ts of seats.filter((s) => s.seat !== bottomSeat)) players.append(seatStrip(ts.seat));
 	players.append(seatStrip(bottomSeat));
-	if (quiet) {
-		const badges = bar.querySelectorAll("#rated-badge, #real-time-badge, #tournament-badge, #rating-note, #conn-badge");
-		players.append(h("div", { class: "table-badges" }, ...badges));
-	}
+	const badges = bar.querySelectorAll("#rated-badge, #real-time-badge, #tournament-badge, #rating-note, #conn-badge");
+	players.append(h("div", { class: "table-badges" }, ...badges));
 	first.push(players);
 
+	// Two stacks of cards: they run together in a narrow column and stand side by side in a wide one.
 	const rail = sidePanel(null);
+	const rest = h("div", { class: "rail-stack" }, ...rail.childNodes, debugPanel());
 	rail.classList.add("play-rail");
 	rail.id = "play-rail";
-	rail.prepend(...first.filter(Boolean));
-	rail.append(debugPanel());
-	if (last) rail.append(last);
+	rail.append(h("div", { class: "rail-cards" }, h("div", { class: "rail-stack" }, ...first.filter(Boolean)), rest));
+	if (quiet) rail.append(words);
 
-	root.append(h("div", { class: "game-layout play-screen" }, main, rail));
+	const screen = h("div", { class: "game-layout play-screen" }, main, rail);
+	root.append(screen);
 	rail.scrollTop = S.railScroll || 0;
 	drawBoard(boardHost);
+	// The board's column is as wide as the board can be drawn: the cards have the rest.
+	const view = boardHost.querySelector("svg")?.viewBox.baseVal;
+	if (view && view.height) screen.style.setProperty("--board-aspect", view.width / view.height);
 }
 
 // ---- the phone layout --------------------------------------------------------------------
