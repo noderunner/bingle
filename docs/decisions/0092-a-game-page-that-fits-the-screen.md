@@ -42,4 +42,6 @@ tried on one game before the others move.
 ## Consequences
 
 A card in the column can be scrolled out of sight, a seat's clock among them, and on a map it can be behind a tab. Phones
-keep their own pages for the area maps and the card games, swiped between one at a time.
+keep their own pages for the area maps and the card games. On a phone a map is shown only with the phone on its side, and
+the cards only with it upright: each gets the whole screen, and turning the phone is the way between them. A player with
+rotation locked cannot reach the map until they unlock it.

@@ -1541,11 +1541,11 @@ body.m-mode button, body.m-mode select, body.m-mode summary { touch-action: mani
 .m-board-box { position: relative; flex: 1; min-height: 8rem; display: flex; align-items: center; justify-content: center; background: var(--surface-2); }
 body.m-mode .m-board-box #board { width: 100%; height: 100%; max-width: none; }
 body.m-mode .m-board-box #board svg { width: 100%; height: 100%; touch-action: none; }
-.m-edge { position: absolute; top: 0; bottom: 0; width: 22px; touch-action: pan-x; z-index: 3; }
-.m-edge.left { left: 0; }
-.m-edge.right { right: 0; }
-.m-dock { flex: none; max-height: 38%; overflow-y: auto; padding: 0.4rem 0.6rem; border-top: 1px solid var(--border); background: var(--surface); }
-.m-dock .move-bar { margin: 0; }
+body.m-mode .site-footer { display: none; }
+/* A phone on its side: the whole screen is the map, past the notch. */
+body.m-landscape .topbar { display: none; }
+.m-landscape-map { position: relative; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); box-sizing: border-box; }
+.m-turn-note { position: absolute; left: 50%; top: calc(0.3rem + env(safe-area-inset-top)); transform: translateX(-50%); z-index: 3; max-width: 80%; padding: 0.15rem 0.7rem; border-radius: 999px; background: var(--accent); color: var(--accent-ink); font-size: 0.8rem; font-weight: 700; pointer-events: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; box-shadow: var(--shadow); }
 
 /* Large touch targets for everything that is tapped to play. */
 body.m-mode .move-bar button, body.m-mode .move-bar .piece-choice, body.m-mode .action-buttons button { min-height: 2.75rem; padding: 0.5rem 0.85rem; font-size: 1rem; }
@@ -1564,7 +1564,7 @@ body.m-mode .round-bar { flex-wrap: wrap; }
 .m-chip { flex: none; display: inline-flex; align-items: center; gap: 0.4rem; min-height: 2.5rem; border-radius: 999px; padding: 0.2rem 0.8rem; font-size: 0.9rem; }
 .m-chip.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
 .m-chip .swatch { width: 0.8rem; height: 0.8rem; border-radius: 50%; border: 2px solid var(--piece-white-stroke); }
-.m-nav { flex: none; display: grid; grid-template-columns: repeat(6, 1fr); border-top: 1px solid var(--border); background: var(--surface); padding-bottom: env(safe-area-inset-bottom); padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }
+.m-nav { flex: none; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; border-top: 1px solid var(--border); background: var(--surface); padding-bottom: env(safe-area-inset-bottom); padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }
 .m-nav-item { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.1rem; min-height: 3.4rem; padding: 0.25rem 0; border: 0; border-radius: 0; background: transparent; color: var(--muted); font-weight: 600; }
 .m-nav-item.on { color: var(--accent); box-shadow: inset 0 3px 0 var(--accent); }
 .m-nav-icon { font-size: 1.35rem; line-height: 1; }

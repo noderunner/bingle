@@ -672,7 +672,7 @@ func TestWebCthulhuWars_TheMapIsAFaintLayerUnderThePieces(t *testing.T) {
 	waitJS(t, ctx, "the enemy back", foes+` > 0`, 5*time.Second)
 }
 
-// A phone has no hover: there, tapping a unit still opens its card.
+// A phone has no hover: there, tapping a unit still opens its card, to read upright.
 func TestWebCthulhuWars_APhoneStillHasTheUnitCard(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	doc := cwPosition(t,
@@ -683,14 +683,18 @@ func TestWebCthulhuWars_APhoneStillHasTheUnitCard(t *testing.T) {
 	room := cwGameFrom(t, baseURL, doc)
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.EmulateViewport(420, 800), chromedp.Navigate(baseURL+"/")); err != nil {
+	if err := chromedp.Run(ctx, chromedp.EmulateViewport(800, 420), chromedp.Navigate(baseURL+"/")); err != nil {
 		t.Fatal(err)
 	}
 	evalBool(t, ctx, `(localStorage.setItem("bingle.layout", JSON.stringify("phone")), true)`)
 	openGameAs(t, ctx, baseURL, room, "cthulhu-wars", "Alice")
 	waitJS(t, ctx, "the phone page", `document.body.classList.contains("m-mode") && document.querySelector('#board .token[data-color="blue"]') !== null`, 15*time.Second)
 	clickSVG(t, ctx, `#board .token[data-color="blue"]`)
-	waitJS(t, ctx, "the card", `document.getElementById("unit-info") !== null`, 5*time.Second)
+	// Tapped on the map, and read with the phone upright: the card is among the actions.
+	if err := chromedp.Run(ctx, chromedp.EmulateViewport(420, 800)); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "the card", `document.querySelector("#m-page-actions #unit-info") !== null`, 5*time.Second)
 	if n := evalInt(t, ctx, `document.querySelectorAll(".seat-more[hidden]").length + document.querySelectorAll(".expand-toggle").length`); n != 0 {
 		t.Errorf("%d closed cards on a phone", n)
 	}

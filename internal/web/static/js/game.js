@@ -14,7 +14,7 @@ import { voiceCard, voiceEvent, voiceResync } from "./voice.js";
 import { installNav, navigate } from "./nav.js";
 import { installTopbar } from "./topbar.js";
 import { mountGameNotify, applyProfileDefault } from "./notify-ui.js";
-import { LAYOUTS, isMobileLayout, layoutChoice, setLayoutChoice, mobileShell, onScreenChange } from "./mobile.js";
+import { LAYOUTS, isMobileLayout, isLandscape, layoutChoice, setLayoutChoice, mobileShell, onScreenChange } from "./mobile.js";
 import { lobbyCard } from "./lobby.js";
 import { statIcon } from "./icons.js";
 import { hoverCard, hideHoverCard } from "./tooltip.js";
@@ -1783,7 +1783,7 @@ function render() {
 	const stillTyping = typing && typing.id === "chat-input";
 	clear(root);
 	if (stillTyping) keepChatFocus();
-	document.body.classList.remove("m-mode", "fit-screen");
+	document.body.classList.remove("m-mode", "m-landscape", "fit-screen");
 	hideHoverCard();
 	hideCardZoom();
 	updateTitle();
@@ -2048,34 +2048,21 @@ function paintMobileBadges() {
 function renderMobile(seats, bottomSeat) {
 	document.body.classList.add("m-mode");
 	const myTurn = isLive() && S.game.status === "active" && isMyTurn();
+	if (isLandscape()) {
+		renderMobileMap(myTurn);
+		return;
+	}
 
-	// The map, with what is needed to act on it close below.
-	const boardHost = h("div", { id: "board" });
-	const mapPage = h("div", { class: "m-map-page" });
-	mapPage.append(statusBar());
-	if (S.tut) mapPage.append(tutorialCard());
-	for (const banner of [kickVoteBanner(), slowTurnBanner(), nextGameBanner(), firstMoveBanner(), drawOfferBanner(), hintBanner()]) if (banner) mapPage.append(banner);
+	// Held upright, the phone has the cards, and the map is a turn of the wrist away.
+	// Everything about acting, in large controls, under what asks for attention.
+	const actions = h("div", { class: "m-stack" }, statusBar());
+	if (S.tut) actions.append(tutorialCard());
+	for (const banner of [kickVoteBanner(), slowTurnBanner(), nextGameBanner(), firstMoveBanner(), drawOfferBanner(), hintBanner()]) if (banner) actions.append(banner);
 	if (!S.me.seat && !S.spectating) {
 		const gate = identityGate();
-		if (gate) mapPage.append(gate);
+		if (gate) actions.append(gate);
 	}
-	mapPage.append(
-		h(
-			"div",
-			{ class: "m-board-box" },
-			boardHost,
-			// Swipes that start at the edges turn the page: the map itself takes
-			// every other touch (drag, pinch, tap).
-			h("div", { class: "m-edge left", "aria-hidden": "true" }),
-			h("div", { class: "m-edge right", "aria-hidden": "true" })
-		),
-		h("div", { class: "m-dock" }, moveBar())
-	);
-
-	// Everything about acting, in large controls.
-	const actions = h("div", { class: "m-stack" }, h("h2", {}, "Actions"));
-	actions.append(withoutIds(moveBar()));
-	actions.append(h("div", { class: "inspector small muted", id: "inspector", "aria-live": "off" }, inspectorText()));
+	actions.append(moveBar());
 	for (const part of [unitInfoCard(), battlePanel(), exchangePanel()]) if (part) actions.append(part);
 
 	const round = h("div", { class: "m-stack" }, h("h2", {}, "Round"));
@@ -2087,7 +2074,6 @@ function renderMobile(seats, bottomSeat) {
 	if (neutral) round.append(neutral);
 
 	const pages = [
-		{ id: "map", label: "Map", group: "map", node: mapPage },
 		{ id: "actions", label: "Actions", group: "actions", node: actions },
 		{ id: "round", label: "Round", group: "round", node: round },
 	];
@@ -2105,14 +2091,13 @@ function renderMobile(seats, bottomSeat) {
 		pages,
 		chips,
 		groups: [
-			{ id: "map", label: "Map", icon: "🗺️" },
 			{ id: "actions", label: "Actions", icon: "⚡", pulse: myTurn && S.mPage !== "actions" },
 			{ id: "round", label: "Round", icon: "⏳" },
 			{ id: "cults", label: "Cults", icon: "👥" },
 			{ id: "log", label: "History", icon: "📜" },
 			{ id: "chat", label: "Chat", icon: "💬", badge: unread || 0 },
 		],
-		current: S.mPage || "map",
+		current: S.mPage || "actions",
 		onChange: (id) => {
 			S.mPage = id;
 			if (id === "chat") chatSeen();
@@ -2127,17 +2112,38 @@ function renderMobile(seats, bottomSeat) {
 		}
 	}
 	if (S.mPage === "chat") chatSeen();
-	drawBoard(boardHost);
 	paintMobileBadges();
-	if (!store.get("bingle.mobileHint", false)) {
-		store.set("bingle.mobileHint", true);
-		toast("Pinch the map to zoom and drag to pan. Swipe from the screen edge, or use the bar below, to change view.");
+	mobileHintOnce();
+	buzzOnMyTurn(myTurn);
+}
+
+/** On its side, the phone is all map: to tap areas, move units, pinch and drag. */
+function renderMobileMap(myTurn) {
+	document.body.classList.add("m-landscape");
+	const boardHost = h("div", { id: "board" });
+	const page = h("div", { class: "m-map-page m-landscape-map" }, h("div", { class: "m-board-box" }, boardHost));
+	// The map cannot say whose turn it is, or that the next choice is a button.
+	if (myTurn) {
+		const onMap = activeBuilder().options().some((o) => o.kind === "pos");
+		page.append(h("div", { class: "m-turn-note", id: "m-turn-note", role: "status" }, onMap ? "Your turn" : "Your turn: hold the phone upright to choose"));
 	}
-	// A turn that has just come to the player buzzes the phone, once.
-	if (myTurn && S.mBuzzed !== S.moves.length) {
-		S.mBuzzed = S.moves.length;
-		if (navigator.vibrate && document.visibilityState === "visible") navigator.vibrate(60);
-	}
+	root.append(page);
+	drawBoard(boardHost);
+	mobileHintOnce();
+	buzzOnMyTurn(myTurn);
+}
+
+function mobileHintOnce() {
+	if (store.get("bingle.mobileHint2", false)) return;
+	store.set("bingle.mobileHint2", true);
+	toast("Turn your phone on its side for the map, and upright for your actions, the cults and the chat.");
+}
+
+/** A turn that has just come to the player buzzes the phone, once. */
+function buzzOnMyTurn(myTurn) {
+	if (!myTurn || S.mBuzzed === S.moves.length) return;
+	S.mBuzzed = S.moves.length;
+	if (navigator.vibrate && document.visibilityState === "visible") navigator.vibrate(60);
 }
 
 /**

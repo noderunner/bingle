@@ -23,6 +23,8 @@ what the help window shows under *Recent changes*, so it is written for the peop
 - **A calmer map.** Area names sit in the middle of their areas, and they and the glyphs are faded, so pieces stand clearly
   on top. Glyphs stay inside their areas' borders. The gold stars on upgraded units are gone, and so is the card under the
   map when you click a unit (it stays on phones), along with the zoom buttons: the mouse wheel and dragging still work.
+- **Turn your phone to switch views.** In Cthulhu Wars on a phone, hold it upright for your actions, the cults, the history
+  and the chat, and turn it on its side for the whole map, to tap areas, move units, pinch and drag.
 - **Hide the units.** The game options can now turn the units off to study the map, next to the names, glyphs and sigils.
   Any unit you can move right then stays visible.
 ### Cthulhu Wars 0.1.2

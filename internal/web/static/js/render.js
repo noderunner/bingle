@@ -1810,18 +1810,8 @@ function renderAreaMap(host, info, view, handlers) {
 	drawArrows(svg, view, (id) => anchors.get(id) || null);
 
 	clear(host).append(svg);
-	let full = { x: -M, y: -M, w: width, h: height };
-	let key = info.id;
-	// On a phone the map has a tall box to fill: give the view that shape, so
-	// zooming in uses all of it (the whole map still fits the width).
-	if (document.body.classList.contains("m-mode")) {
-		const r = host.getBoundingClientRect();
-		if (r.width > 0 && r.height > 0 && r.width / r.height < width / height) {
-			const tall = width / (r.width / r.height);
-			full = { x: -M, y: -M - (tall - height) / 2, w: width, h: tall };
-			key += ":fill";
-		}
-	}
+	const full = { x: -M, y: -M, w: width, h: height };
+	const key = info.id;
 	svg.setAttribute("viewBox", `${full.x} ${full.y} ${full.w} ${full.h}`);
 	// A preview (the home page's cards) is a picture: no buttons, no panning.
 	if (!view.preview) setupZoom(host, svg, full, key);

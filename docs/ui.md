@@ -22,7 +22,7 @@ small gate: join an open seat, continue as a seated player's name, or watch.
 ## The fitted game page
 
 Every game, once out of the lobby, is drawn by `renderFitted` (a phone has its own pages for the area maps and the card
-games, in `renderMobile` and `renderMobileCards`) ([ADR 0092](decisions/0092-a-game-page-that-fits-the-screen.md)). `body.fit-screen` makes
+games, in `renderMobile` and `renderMobileCards`: see [the phone page of a map](#the-phone-page-of-a-map)) ([ADR 0092](decisions/0092-a-game-page-that-fits-the-screen.md)). `body.fit-screen` makes
 the page exactly as tall as the window, with no page scroll and no footer. The `.board-column` is as wide as the board
 can be drawn at that height (`--board-aspect`, from the board's `viewBox`; the map's canvas; a fixed shape for a board
 that grows, such as Hive's), leaving `#play-rail` at least `--rail-least`.
@@ -56,6 +56,19 @@ is in view however far the rail is scrolled. It neither moves the rail nor takes
 Once a piece is chosen, `#pending-move` shows the game's `piece_action` word and the piece's picture. *Back* (`#undo-step`)
 is the only button that undoes a selection here: `#reset-move` is not drawn, and Esc still clears the move. A move in Blooms
 is a stone and a cell, so the two did the same thing; a game with longer moves will need to look at this when it joins.
+
+## The phone page of a map
+
+Turning the phone changes what it shows (`renderMobile`). Upright, it has the cards, swiped between: the actions (with the
+status, any tutorial and notices), the round, each cult, the history and the chat. On its side, `body.m-landscape`
+gives the whole screen to the map, with no bars, for tapping areas, moving units, pinching and dragging. On the player's
+turn `#m-turn-note` says so, and asks them to hold the phone upright when the next choice is not on the map. A selection
+under way carries across the turn of the phone.
+
+`isLandscape` asks the device (`screen.orientation`), not the window: an on-screen keyboard makes an upright window
+wider than it is tall. With a mouse, on the phone layout asked for in the options, the window's shape decides. A touch
+screen no taller than 500px counts as a phone, since a large phone on its side is wider than the 900px that otherwise
+marks one. A player with the phone's rotation locked sees only the cards.
 
 ## How moves are entered
 
