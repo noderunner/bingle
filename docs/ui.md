@@ -59,7 +59,7 @@ square previews the piece a click would place, in the colour it will have.
   appears on the strip of the player to move, turns red in the last minute,
   and when it reaches zero the page asks the server, which ends the game on
   time and tells everyone.
-* An optional **game clock** (a chess clock, for a game of two seats; off
+* An optional **game clock** (a chess clock, for a game of two seats or more, with `#clock-handicap` only at two; off
   unless the setup asks for it): *every* seat strip carries its own clock
   (`.clock[data-clock="<seat>"]`), the running one marked `.running` and
   counting down to the turn's deadline while the others hold still. The first

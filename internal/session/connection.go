@@ -236,6 +236,7 @@ func (m *Manager) seatVacated(room string, seat int) {
 	t := &m.conns
 	t.mu.Lock()
 	defer t.mu.Unlock()
+	t.clearAbsent(room, seat)
 	if sc := t.rooms[room][seat]; sc != nil {
 		t.forget(room, sc)
 		m.publishConnection(room, seat, false)

@@ -415,6 +415,28 @@ func (h *handlers) handleAutoPlayTurn(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, statusFromSnapshot(snap))
 }
 
+// handleKickVote implements POST /games/{code}/kick-vote: a player's vote, opening one
+// if none is open, to have a bot take the seats of the person at seat.
+func (h *handlers) handleKickVote(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		PlayerName string `json:"player_name"`
+		Seat       int    `json:"seat"`
+	}
+	if !decodeBody(w, r, &req) {
+		return
+	}
+	if err := checkName(req.PlayerName); err != nil {
+		writeError(w, err)
+		return
+	}
+	snap, err := h.mgr.VoteKick(r.Context(), chi.URLParam(r, "code"), req.PlayerName, req.Seat)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, statusFromSnapshot(snap))
+}
+
 // handleGetConnections implements GET /games/{code}/connections: the seats with
 // a socket open, or that lost their last one within the grace period.
 func (h *handlers) handleGetConnections(w http.ResponseWriter, r *http.Request) {

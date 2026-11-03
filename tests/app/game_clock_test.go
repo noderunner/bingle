@@ -85,7 +85,8 @@ func TestGameClock_OverREST(t *testing.T) {
 	// What cannot be played with is refused.
 	for name, body := range map[string]map[string]any{
 		"a clock and a time per move": {"game_def_id": "tak-3x3", "player_name": "X", "clock_seconds": 300, "move_time_seconds": 60},
-		"a clock for four players":    {"game_def_id": "nyet", "player_name": "X", "clock_seconds": 300},
+		"three times for four seats":  {"game_def_id": "nyet", "player_name": "X", "clock_seconds": []int{300, 300, 300}},
+		"a clock for one player":      {"game_def_id": "freecell", "player_name": "X", "clock_seconds": 300},
 		"a clock of no time":          {"game_def_id": "tak-3x3", "player_name": "X", "clock_seconds": 0},
 		"one time for two seats":      {"game_def_id": "tak-3x3", "player_name": "X", "clock_seconds": []int{300}},
 		"a clock that is not a time":  {"game_def_id": "tak-3x3", "player_name": "X", "clock_seconds": "five minutes"},

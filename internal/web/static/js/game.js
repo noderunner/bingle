@@ -422,6 +422,12 @@ function seatLabel(seat) {
 	return d ? d.label : `Seat ${seat}`;
 }
 
+/** Who held the seat at move seq: a bot's seat was somebody's until it took over. */
+function seatNameAt(seat, seq) {
+	const was = (seatInfo(seat) || {}).replaced;
+	return was && seq && seq <= was.move_seq ? was.name : seatName(seat);
+}
+
 function seatName(seat) {
 	const si = seatInfo(seat);
 	if (si && si.name) return si.name;
@@ -1174,6 +1180,70 @@ function showNextGame(room) {
 	if (place) place.before(nextGameBanner());
 }
 
+/** Other people at the table who show as connected, not counting the seat's own player. */
+function connectedOthers(seat) {
+	const person = (name) => name.split(" · ")[0].toLowerCase();
+	const target = person(seatName(seat) || "");
+	const people = new Set();
+	for (const s of S.game.seats || []) {
+		if (s.name && !s.bot && S.connected && S.connected.has(s.seat) && person(s.name) !== target) people.add(person(s.name));
+	}
+	return people.size;
+}
+
+/** Whether this viewer can open a vote to replace the player at seat (the server has the last word). */
+function canVoteKick(seat) {
+	const g = S.game;
+	const si = seatInfo(seat);
+	if (!g.real_time || g.rated || g.tournament || g.status !== "active" || !isLive()) return false;
+	if (!S.me.seat || !si || !si.name || si.bot || isMine(seat)) return false;
+	if ((g.real_time.kick_votes || []).some((v) => v.seat === seat)) return false;
+	return connectedOthers(seat) >= 2;
+}
+
+/** The votes open to replace a player. Always there, so that a vote can be painted in without a re-render. */
+function kickVoteBanner() {
+	const votes = (S.game.real_time && S.game.real_time.kick_votes) || [];
+	const box = h("div", { id: "kick-vote", hidden: !votes.length || S.game.status !== "active" || !isLive() });
+	for (const v of votes) {
+		const who = seatName(v.seat) || seatLabel(v.seat);
+		const count = `${v.votes} of ${v.needed} votes`;
+		const voted = (v.voters || []).some((seat) => isMine(seat));
+		if (isMine(v.seat)) box.append(h("div", { class: "notice attention" }, `The table is voting to have a bot take your seat for good: ${count}.`));
+		else if (!S.me.seat || voted) box.append(h("div", { class: "notice" }, `A vote to have a bot replace ${who}: ${count}.`));
+		else {
+			box.append(
+				h(
+					"div",
+					{ class: "notice attention" },
+					h("span", {}, `A vote to have a bot replace ${who} for good: ${count}. `),
+					h("button", { class: "kick-vote-yes", onclick: () => voteKick(v.seat) }, "Vote to replace")
+				)
+			);
+		}
+	}
+	return box;
+}
+
+function paintKickVotes() {
+	const old = document.getElementById("kick-vote");
+	if (old) old.replaceWith(kickVoteBanner());
+	paintConnections();
+}
+
+function confirmKick(seat) {
+	const who = seatName(seat) || seatLabel(seat);
+	if (window.confirm(`Start a vote to have a bot take ${who}'s seat for good? They could not play in this game again.`)) voteKick(seat);
+}
+
+async function voteKick(seat) {
+	try {
+		await api.voteKick(code, S.me.name, seat);
+	} catch (err) {
+		toast(err instanceof ApiError ? err.message : "Could not vote.", "error");
+	}
+}
+
 function paintSlowTurn() {
 	const old = document.getElementById("slow-turn");
 	if (old) old.replaceWith(slowTurnBanner());
@@ -1545,6 +1615,17 @@ async function onEvent(env) {
 		} else if (env.type === "next_game") {
 			const d = env.data || {};
 			if (S.me.name && String(d.player || "").toLowerCase() === S.me.name.toLowerCase() && d.room_code !== code) showNextGame(d.room_code);
+		} else if (env.type === "kick_vote") {
+			if (!S.game.real_time) return;
+			S.game.real_time.kick_votes = (env.data && env.data.votes) || [];
+			paintKickVotes();
+		} else if (env.type === "seat_replaced") {
+			const d = env.data || {};
+			const mine = isMine(d.seat);
+			const why = d.reason === "timeout" ? "ran out of time" : "was voted out";
+			toast(mine ? `A bot has taken your seat: you ${why}. You can go on watching.` : `A bot has taken ${d.name}'s seat: they ${why}.`, mine ? "error" : undefined);
+			await refreshGame();
+			render();
 		} else if (env.type === "slow_turn") {
 			if (!S.game.real_time) return;
 			const d = env.data || {};
@@ -1743,6 +1824,7 @@ function render() {
 	}
 	main.append(statusBar());
 	if (S.tut) main.append(tutorialCard());
+	main.append(kickVoteBanner());
 	main.append(slowTurnBanner());
 	for (const notice of [nextGameBanner(), firstMoveBanner()]) if (notice) main.append(notice);
 	const banner = drawOfferBanner();
@@ -1843,7 +1925,7 @@ function renderMobile(seats, bottomSeat) {
 	const mapPage = h("div", { class: "m-map-page" });
 	mapPage.append(statusBar());
 	if (S.tut) mapPage.append(tutorialCard());
-	for (const banner of [slowTurnBanner(), nextGameBanner(), firstMoveBanner(), drawOfferBanner(), hintBanner()]) if (banner) mapPage.append(banner);
+	for (const banner of [kickVoteBanner(), slowTurnBanner(), nextGameBanner(), firstMoveBanner(), drawOfferBanner(), hintBanner()]) if (banner) mapPage.append(banner);
 	if (!S.me.seat && !S.spectating) {
 		const gate = identityGate();
 		if (gate) mapPage.append(gate);
@@ -1942,7 +2024,7 @@ function renderMobileCards(seats, bottomSeat) {
 	const play = h("div", { class: "m-map-page m-cards-page" });
 	play.append(statusBar());
 	if (S.tut) play.append(tutorialCard());
-	for (const banner of [slowTurnBanner(), nextGameBanner(), firstMoveBanner(), drawOfferBanner(), hintBanner()]) if (banner) play.append(banner);
+	for (const banner of [kickVoteBanner(), slowTurnBanner(), nextGameBanner(), firstMoveBanner(), drawOfferBanner(), hintBanner()]) if (banner) play.append(banner);
 	if (!S.me.seat && !S.spectating) {
 		const gate = identityGate();
 		if (gate) play.append(gate);
@@ -2448,6 +2530,8 @@ function paintConnections() {
 		const label = strip.querySelector(".seat-conn");
 		if (label) label.textContent = off ? "disconnected" : "";
 		strip.classList.toggle("disconnected", off);
+		const kick = strip.querySelector(".seat-kick");
+		if (kick) kick.hidden = !canVoteKick(Number(strip.dataset.seat));
 	}
 }
 
@@ -2475,6 +2559,10 @@ function seatStrip(seat) {
 		head.append(h("span", { class: "seat-faction small muted" }, seatLabel(seat)));
 	}
 	if (si && si.bot) head.append(h("span", { class: "badge bot" }, "bot"));
+	if (si && si.replaced) head.append(h("span", { class: "seat-replaced small muted" }, `replaced ${si.replaced.name}, who ${si.replaced.reason === "timeout" ? "ran out of time" : "was voted out"}`));
+	if (S.game.real_time && !(si && si.bot) && !isMine(seat) && S.me.seat) {
+		head.append(h("button", { class: "seat-kick small", hidden: !canVoteKick(seat), title: "Start a vote to have a tactical bot take this seat for good", onclick: () => confirmKick(seat) }, "Vote to replace"));
+	}
 	// Who holds the seat: an account, by its handle, or a guest.
 	if (si && si.handle) head.append(h("span", { class: "badge account", title: "A signed-in account" }, "@" + si.handle));
 	else if (si && si.guest) head.append(h("span", { class: "badge guest", title: "A guest: anybody with no account" }, "guest"));
@@ -5177,14 +5265,14 @@ function eventsPane() {
 		let group = h("ul", { class: turnClass });
 		if (g.seat) {
 			const sd = seatDef(g.seat);
-			const who = seatName(g.seat);
+			const who = seatNameAt(g.seat, g.entries[0].ply);
 			box.append(
 				h(
 					"div",
 					{ class: `log-actor color-${cssColor(colorOf(g.seat))}`, "data-seat": g.seat, "data-auto-play": some ? "1" : null },
 					h("span", { class: `swatch color-${cssColor(colorOf(g.seat))}` }),
 					h("strong", {}, sd ? sd.label : `Seat ${g.seat}`),
-					who ? h("span", { class: "muted small" }, g.seat === S.me.seat ? ` · ${who} (you)` : ` · ${who}`) : null,
+					who ? h("span", { class: "muted small" }, g.seat === S.me.seat && who === seatName(g.seat) ? ` · ${who} (you)` : ` · ${who}`) : null,
 					some ? badge(all) : null
 				)
 			);
@@ -5245,13 +5333,13 @@ function moveList() {
 					"li",
 					{ class: `by-seat-${m.seat}` },
 					h("span", { class: "num" }, `${m.seq}.`),
-					h("span", { class: `seat-dot color-${cssColor(colorOf(m.seat))}`, title: seatName(m.seat) || seatLabel(m.seat) }),
+					h("span", { class: `seat-dot color-${cssColor(colorOf(m.seat))}`, title: seatNameAt(m.seat, m.seq) || seatLabel(m.seat) }),
 					h(
 						"button",
 						{
 							class: "mv" + (m.seq === cur ? " current" : ""),
 							"data-seq": m.seq,
-							title: `Move ${m.seq} by ${seatName(m.seat) || seatLabel(m.seat)}${m.auto ? " — passed automatically (auto-pass)" : ""}${m.auto_play ? " — played by a tactical bot: the Auto-Play Timeout ran out" : ""}`,
+							title: `Move ${m.seq} by ${seatNameAt(m.seat, m.seq) || seatLabel(m.seat)}${m.auto ? " — passed automatically (auto-pass)" : ""}${m.auto_play ? " — played by a tactical bot: the Auto-Play Timeout ran out" : ""}`,
 							onclick: () => viewMove(m.seq >= S.moves.length ? null : m.seq),
 						},
 						m.notation + (m.auto ? " (auto)" : "") + (m.auto_play ? " (auto-play)" : "")
@@ -5279,7 +5367,7 @@ function moveList() {
 					{
 						class: "mv" + (m.seq === cur ? " current" : ""),
 						"data-seq": m.seq,
-						title: `Move ${m.seq} by ${seatName(m.seat) || seatLabel(m.seat)}${m.created_at ? " — " + ago(m.created_at) : ""}${m.auto_play ? " — played by a tactical bot: the Auto-Play Timeout ran out" : ""}`,
+						title: `Move ${m.seq} by ${seatNameAt(m.seat, m.seq) || seatLabel(m.seat)}${m.created_at ? " — " + ago(m.created_at) : ""}${m.auto_play ? " — played by a tactical bot: the Auto-Play Timeout ran out" : ""}`,
 						onclick: () => viewMove(m.seq >= S.moves.length ? null : m.seq),
 					},
 					(m.notation || `${m.from}-${m.to}`) + (m.auto_play ? " 🤖" : "")

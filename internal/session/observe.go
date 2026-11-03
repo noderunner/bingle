@@ -76,7 +76,7 @@ func (m *Manager) Observe(ctx context.Context, roomCode, name string) (Observati
 	if err != nil {
 		return Observation{}, err
 	}
-	snap, err := m.snapshot(compiled, game, players, game.BoardState)
+	snap, err := m.snapshot(ctx, compiled, game, players, game.BoardState)
 	if err != nil {
 		return Observation{}, err
 	}
@@ -205,7 +205,7 @@ func (m *Manager) Export(ctx context.Context, roomCode string) (GameRecord, erro
 	if err != nil {
 		return GameRecord{}, err
 	}
-	snap, err := m.snapshot(compiled, game, players, game.BoardState)
+	snap, err := m.snapshot(ctx, compiled, game, players, game.BoardState)
 	if err != nil {
 		return GameRecord{}, err
 	}

@@ -20,20 +20,27 @@ import (
 
 // createGameRequest is POST /games' request body.
 // clockSeconds is a game clock in a create call: either one number, which
-// both players get, or one time per seat for handicap play.
-type clockSeconds []int
+// every player gets, or one time per seat for handicap play.
+type clockSeconds struct {
+	each  int
+	seats []int
+}
 
 func (c *clockSeconds) UnmarshalJSON(b []byte) error {
 	var one int
 	if err := json.Unmarshal(b, &one); err == nil {
-		*c = clockSeconds{one, one}
+		c.each = one
+		if one == 0 {
+			// Refused like any other time out of range: each == 0 would mean no clock.
+			c.seats = []int{0}
+		}
 		return nil
 	}
 	var many []int
 	if err := json.Unmarshal(b, &many); err != nil {
 		return fmt.Errorf("clock_seconds: a number of seconds, or one per seat")
 	}
-	*c = many
+	c.seats = many
 	return nil
 }
 
@@ -56,10 +63,11 @@ type createGameRequest struct {
 	// who runs out of time loses. Omitted or 0 means untimed.
 	MoveTimeSeconds int `json:"move_time_seconds,omitempty"`
 	// ClockSeconds plays the game with a game clock (a chess clock) instead:
-	// a number gives both players that many seconds, a list of two gives the
+	// a number gives every player that many seconds, a list gives the
 	// seats their own times (handicap play). A player whose clock runs out
-	// forfeits. For a game of two seats, and not with MoveTimeSeconds.
-	ClockSeconds clockSeconds `json:"clock_seconds,omitempty"`
+	// forfeits, or at three seats or more is replaced by a bot. Not for a game of
+	// one seat, and not with MoveTimeSeconds.
+	ClockSeconds clockSeconds `json:"clock_seconds"`
 	// ClockIncrementSeconds adds that many seconds to a player's clock each
 	// time they hand the turn on. It needs ClockSeconds.
 	ClockIncrementSeconds int `json:"clock_increment_seconds,omitempty"`
@@ -136,7 +144,8 @@ func (h *handlers) handleCreateGame(w http.ResponseWriter, r *http.Request) {
 		Also:        req.AlsoSeats,
 
 		MoveTimeSeconds: req.MoveTimeSeconds,
-		ClockSeconds:    req.ClockSeconds,
+		ClockSeconds:    req.ClockSeconds.seats,
+		ClockEach:       req.ClockSeconds.each,
 
 		ClockIncrementSeconds: req.ClockIncrementSeconds,
 		RealTime:              req.RealTime,
@@ -246,6 +255,8 @@ type getGameSeat struct {
 	Rating *session.SeatRating `json:"rating,omitempty"`
 	Guest  bool                `json:"guest,omitempty"`
 	Yours  bool                `json:"yours,omitempty"`
+	// Replaced says who held the seat until a bot took it.
+	Replaced *session.SeatReplaced `json:"replaced,omitempty"`
 }
 
 // handleGetGame implements GET /games/{code}: look up the room's current
@@ -267,8 +278,8 @@ func (h *handlers) handleGetGame(w http.ResponseWriter, r *http.Request) {
 	seats := make([]getGameSeat, len(snapshot.Seats))
 	for i, s := range snapshot.Seats {
 		seats[i] = getGameSeat{Seat: s.Seat, Color: s.Color, Name: s.Name, Label: s.Label, Bot: s.Bot, Handle: s.Handle, Guest: s.Guest,
-			Rating: s.Rating,
-			Yours:  s.PrincipalID != "" && s.PrincipalID == auth.IDFrom(r.Context())}
+			Rating: s.Rating, Replaced: s.Replaced,
+			Yours: s.PrincipalID != "" && s.PrincipalID == auth.IDFrom(r.Context())}
 	}
 
 	resp := getGameResponse{

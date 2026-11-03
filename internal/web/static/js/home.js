@@ -405,16 +405,18 @@ function clockTimeSeconds([choice, minutes]) {
 }
 
 /**
- * The game clock (a chess clock) is offered to a game of two seats — which
- * includes a game that seats a range when two are chosen, as each of those is a
- * layout of its own. A clock and a time per move are the same question asked
+ * The game clock (a chess clock) is offered to a game of two seats or more, with
+ * different times for a game of two (a game that seats a range is a layout of its
+ * own for each number). A clock and a time per move are the same question asked
  * twice, so choosing one clears the other.
  */
 function renderClockField(info) {
 	const field = document.getElementById("clock-field");
 	if (!field) return;
+	const timed = info.seats.length >= 2;
 	const two = info.seats.length === 2;
-	field.hidden = !two;
+	field.hidden = !timed;
+	field.dataset.seats = String(info.seats.length);
 	// The game's own time, unless the player has typed one of theirs.
 	const suggested = String(info.default_clock_minutes || CLOCK_MINUTES_DEFAULT);
 	for (const [, id] of CLOCK_TIMES) {
@@ -425,10 +427,16 @@ function renderClockField(info) {
 	}
 	const clock = document.getElementById("clock_seconds");
 	const perMove = document.getElementById("move_time_seconds");
-	if (!two) {
+	const hc = document.getElementById("clock-handicap");
+	if (hc) {
+		hc.parentElement.hidden = !two;
+		if (!two && hc.checked) {
+			hc.checked = false;
+			hc.dispatchEvent(new Event("change", { bubbles: true }));
+		}
+	}
+	if (!timed) {
 		if (clock) clock.value = "0";
-		const hc = document.getElementById("clock-handicap");
-		if (hc) hc.checked = false;
 		const row = document.getElementById("clock-handicap-row");
 		if (row) row.hidden = true;
 		const inc = document.getElementById("clock_increment");
@@ -616,7 +624,7 @@ function clockChoice() {
 		return [clockTimeSeconds(CLOCK_TIMES[1]), clockTimeSeconds(CLOCK_TIMES[2])];
 	}
 	const both = clockTimeSeconds(CLOCK_TIMES[0]);
-	return both > 0 ? [both, both] : [];
+	return both > 0 ? Array(Number(field.dataset.seats) || 2).fill(both) : [];
 }
 
 /**

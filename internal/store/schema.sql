@@ -448,3 +448,16 @@ CREATE TABLE IF NOT EXISTS tournament_games (
 CREATE INDEX IF NOT EXISTS idx_tournament_games_t ON tournament_games(tournament_id, round);
 CREATE INDEX IF NOT EXISTS idx_tournament_games_game ON tournament_games(game_id);
 CREATE INDEX IF NOT EXISTS idx_tournament_games_open ON tournament_games(tournament_id) WHERE score_a IS NULL;
+
+-- A seat a bot took over from its player during a game, for good (ADR 0091): who
+-- played its moves up to move_seq, and who may not take a seat in this game again.
+CREATE TABLE IF NOT EXISTS seat_replacements (
+    game_id        INTEGER NOT NULL REFERENCES games(id) ON DELETE CASCADE,
+    seat           INTEGER NOT NULL,
+    name           TEXT NOT NULL,
+    principal_id   TEXT NOT NULL DEFAULT '',
+    reason         TEXT NOT NULL,                        -- kicked, timeout
+    move_seq       INTEGER NOT NULL,
+    replaced_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (game_id, seat)
+);

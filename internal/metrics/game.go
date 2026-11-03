@@ -175,6 +175,9 @@ const (
 	RealTimeSecondWarning RealTimeEvent = "second_warning"
 	RealTimeOfferTaken    RealTimeEvent = "offer_taken"
 	RealTimeAbsentMove    RealTimeEvent = "absent_move"
+	RealTimeKickVote      RealTimeEvent = "kick_vote"
+	RealTimeKick          RealTimeEvent = "kick"
+	RealTimeTimeoutBot    RealTimeEvent = "timeout_bot"
 )
 
 // RealTime counts what the real-time rules did. It has no label for the room.

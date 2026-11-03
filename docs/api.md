@@ -181,9 +181,10 @@ they last after retention deletes the games. Retention leaves the games of a run
 A **real-time tournament** (ADR 0090, `real_time: true`) has `status: "check_in"` for its `check_in_seconds` before `starts_at`, when entries are closed and players check in. It starts by itself at `starts_at`: whoever has not checked in is dropped, and with too few left it is abandoned, with `end_detail` saying so. Its games are real-time. A pairing's two games are played one after the other: the second is in the schedule with no `room_code` until the first ends, and a `{"type":"next_game","data":{player, room_code}}` event in the room the player was last in says it has started. A round's next round starts `round_break_seconds` after its last game ends, `next_round_at` meanwhile. While the player to move has not yet moved, the game's `real_time.first_move` says `{seat, by}`: missing it forfeits the game (`end_reason: "no_show"`), and if that was the first player and the other seat shows as disconnected, nobody scores (`end_reason: "no_shows"`). Either way a rated game leaves both ratings unchanged.
 
 **The game clock.** `clock_seconds` plays the game with a chess clock instead:
-a number gives both players that many seconds, a list of one time per seat
-gives them their own (handicap play). It is for a game of two seats and not
-together with `move_time_seconds`; anything else is a `400`. Each player's
+a number gives every player that many seconds, a list of one time per seat
+gives them their own (handicap play). It is for a game of two seats or more and not
+together with `move_time_seconds`; running out forfeits at two seats, and at three or
+more a tactical bot takes the seat for good (see [Real-time games](#real-time-games)); anything else is a `400`. Each player's
 clock runs only while it is their turn — a move takes the time it took off the
 mover's own clock — and the first player to run out forfeits, enforced the same
 lazy way as a per-move limit. `GET /games/{code}` reports it as
@@ -318,6 +319,8 @@ subscribed before it sends `joined`, so a client that waits for `joined` misses 
 
 * `{"type":"chat","data":{id, seat, color, name, text, at}}` — a chat message.
 * `{"type":"connection","data":{seat, connected}}` — a seat connected or disconnected (see [Connection](#connection)).
+* `{"type":"kick_vote","data":{votes:[{seat, votes, needed, voters, expires_at}]}}` — the votes open to replace a player have changed (see [Real-time games](#real-time-games)).
+* `{"type":"seat_replaced","data":{seat, name, reason}}` — a bot has taken the seat from `name`, for `kicked` or `timeout`.
 * `{"type":"slow_turn","data":{seat, stage}}` — a real-time game has waited on `seat` past its first (1) or second (2) warning (see [Real-time games](#real-time-games)).
 * `{"type":"voice","data":{kind: "join"|"leave", seat, name}}` — somebody joined or left the voice chat.
 * `{"type":"rtc","data":{from, kind, data}}` — a voice-call message from seat `from`; sent
@@ -374,6 +377,10 @@ What every move of the game did, as the game narrated it, oldest first: `[{"ply"
 `POST /api/games` with `"real_time":{}` plays a game in real time, fixed from then on and shown as `real_time` on the game. Its players are expected to stay until it ends. It works with a clock, a time per move or neither, and a flag falls within a few seconds even with nobody looking. A tutorial room is never real-time.
 
 With no timer, at a table with at least one other person, `real_time` takes `first_warning_seconds` (default 120) and `second_warning_seconds` (default 300, counted from the first), each from 30 to 3600. The game's `real_time.wait` then says `{seat, stage, first_warning_at, second_warning_at}` for the person it is waiting on, and restarts at every decision the game accepts. Each warning is pushed as a `slow_turn` event. Past the second, `POST /api/games/{code}/auto-play-turn` with `{"player_name":"Alice"}` has a tactical bot play that one turn, marked as auto-play. It takes another player whose seat shows as connected, and answers 409 otherwise, or when no turn is on offer. If the slow player's seat shows as disconnected at that moment, the bot goes on playing their turns without a wait until they reconnect.
+
+**Replacing a player** (ADR 0091). In a real-time game that is not rated, `POST /api/games/{code}/kick-vote` with `{"player_name":"Alice","seat":2}` is Alice's vote to have a tactical bot take that player's seats for good, opening a vote if none is open against them. It answers 409 if she has no connected seat, if fewer than two other people are connected, if the seat is hers or a bot's, or if she opened a vote against that player that failed in the last 5 minutes. The game's `real_time.kick_votes` lists `{seat, votes, needed, voters, expires_at}`, and each change is pushed as a `kick_vote` event. Those counted are the connected people plus the target, a vote counts while its voter is connected, and it passes with more than half of those counted. It lapses after 2 minutes, and lives in memory, so a restart forgets it.
+
+When a bot takes a seat, for this or because its time ran out at a table of three or more (see [the game clock](#games)), the seat's `name` and `bot` become the bot's, and `replaced` says `{name, reason ("kicked" or "timeout"), move_seq}`: that person played the seat's moves up to and including `move_seq`. The seat is off the clock, and a `seat_replaced` event says so. That person can watch but not take a seat in the game again: joining as a player answers 409.
 
 ### Connection
 

@@ -4,6 +4,19 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.47.0 - 2026-11-02
+
+### Bingle Core 0.47.0
+- **Vote someone out of a real-time game.** When a player has stopped playing, the others can vote to have a bot take
+  their seat for good, using *Vote to replace* beside their name. It takes more than half of the connected players,
+  counting the player in question, and the vote lapses after 2 minutes. It needs at least two others connected, and
+  rated games don't have it. Whoever is voted out can go on watching, but can't play in that game again.
+- **Game clocks at bigger tables.** Any game for two or more can now have a game clock. At a table of three or more,
+  running out of time, on a clock or a time per move, no longer ends the game for everyone: a bot takes your seat and
+  the others play on. If no other person is left at the table, the game ends with no winner.
+- **Who played what stays on the record.** A seat a bot has taken says who it replaced, and the history still shows that
+  person beside the moves they made.
+
 ## 0.46.0 - 2026-11-02
 
 ### Bingle Core 0.46.0
