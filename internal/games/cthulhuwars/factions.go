@@ -80,6 +80,7 @@ const (
 	facOW        // Opener of the Way
 	facTT        // Tcho-Tcho
 	facAN        // The Ancients
+	facBU        // Bubastis
 
 	nFactions
 )
@@ -499,6 +500,7 @@ var factions = [nFactions]faction{
 		},
 	},
 	ancientsFaction,
+	bubastisFaction,
 }
 
 // hpSpec is the High Priest of the High Priests expansion: a Cultist of its

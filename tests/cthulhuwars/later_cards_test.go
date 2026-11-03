@@ -527,3 +527,84 @@ func TestGuidedGamesWithTheAncients(t *testing.T) {
 		t.Errorf("only %d of 6 guided games finished", finished)
 	}
 }
+
+// --- Bubastis ------------------------------------------------------------------------------------
+
+func TestBubastisBeginsOnTheMoonWithItsGate(t *testing.T) {
+	g := packTable(t, "cthulhu-wars", []string{"bu", "gc", "cc", "bg"}, map[string]any{})
+	st, err := state.InitialStateSeeded(g, 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	d := data(t, st)
+	if d.Gates["the-moon"] != 1 {
+		t.Errorf("gates: %v", d.Gates)
+	}
+	if err := state.Validate(g, st); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestRandomGamesWithBubastis(t *testing.T) {
+	for _, c := range []struct {
+		base string
+		keys []string
+		opts map[string]any
+	}{
+		{"cthulhu-wars", []string{"bu", "gc", "cc", "bg"}, map[string]any{}},
+		{"cthulhu-wars-5p", []string{"bu", "an", "tt", "ww", "ow"}, allCards},
+		{"cthulhu-wars-primeval-3p", []string{"bu", "ys", "sl"}, map[string]any{}},
+	} {
+		g := packTable(t, c.base, c.keys, c.opts)
+		for seed := int64(1); seed <= 8; seed++ {
+			randomGame(t, g, seed, 8000, func(ply int, st *state.BoardState, seat int, mv state.Move) {
+				if err := state.Validate(g, st); err != nil {
+					t.Fatalf("%s seed %d ply %d after %s: %v", g.Definition.ID, seed, ply, state.FormatMove(g, mv), err)
+				}
+			})
+		}
+	}
+	checkEngineContract(t, packTable(t, "cthulhu-wars", []string{"bu", "an", "tt", "ow"}, allCards), 3, 1500)
+}
+
+func TestGuidedGamesWithBubastis(t *testing.T) {
+	g := packTable(t, "cthulhu-wars", []string{"bu", "gc", "bg", "ys"}, map[string]any{})
+	finished := 0
+	for seed := int64(1); seed <= 6; seed++ {
+		if playGuided(t, g, seed, 9000).ended {
+			finished++
+		}
+	}
+	if finished < 3 {
+		t.Errorf("only %d of 6 guided games finished", finished)
+	}
+}
+
+func TestOnlyBubastisCanReachTheMoon(t *testing.T) {
+	g := packTable(t, "cthulhu-wars", []string{"bu", "gc", "cc", "bg"}, map[string]any{})
+	st, err := state.InitialStateSeeded(g, 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	seat := state.FirstSeat(g)
+	rng := rand.New(rand.NewSource(1))
+	for ply := 0; ply < 1500; ply++ {
+		legal := state.LegalMoves(g, st, seat)
+		if len(legal) == 0 {
+			t.Fatalf("no legal moves at %d", ply)
+		}
+		for _, mv := range legal {
+			if mv.Action == "go" && mv.To == "the-moon" && seat != 1 {
+				t.Fatalf("seat %d can move to the Moon", seat)
+			}
+		}
+		res, err := state.Apply(g, st, seat, legal[rng.Intn(len(legal))])
+		if err != nil {
+			t.Fatal(err)
+		}
+		if res.GameEnded {
+			break
+		}
+		st, seat = res.NewState, res.NextTurnSeat
+	}
+}

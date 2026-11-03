@@ -96,6 +96,11 @@ func (e *eng) combatOf(seat, a int, b *Battle, foe int) int {
 		total += n(uMutant) + 2*n(uAbom) + 3*n(uSpawn)
 	case facAN:
 		total += 2*n(uReanimated) + 7*n(uYothan)
+	case facBU:
+		total += n(uMars) + 2*n(uSaturn) + 3*n(uUranus)
+		if b != nil && b.Savage {
+			total += 4 * n(uSaturn)
+		}
 	case facTT:
 		total += n(uProto)
 		// Terror: lower the enemy's Combat or raise one's own.
@@ -346,6 +351,16 @@ func (e *eng) preMoves(seat int) []state.Move {
 	b := d.Bat
 	a := e.areaIdx(b.Area)
 	var out []state.Move
+	if e.bubastisIn(seat) && d.hasBook(seat, bkSavagery) && !b.Savage && d.Power[seat] >= 1 && e.battleUnits(b, seat, uSaturn) > 0 {
+		out = append(out, state.Move{Action: actCard, Piece: "savagery"})
+	}
+	if e.battleUnits(b, seat, uMercury) > 0 && e.pool(seat, uCultist) > 0 {
+		for _, typ := range e.battleTypes(b, seat) {
+			if unitClassOf(typ) == classMonster {
+				out = append(out, state.Move{Action: actCard, Piece: "affection." + typ})
+			}
+		}
+	}
 	switch e.fac(seat) {
 	case facGC:
 		if d.hasBook(seat, bkAbsorb) && e.battleUnits(b, seat, uShoggoth) > 0 {
@@ -518,6 +533,16 @@ func (e *eng) doPre(seat int, mv state.Move) {
 		b.Done[seat] = true
 		e.advancePre(seat)
 		return
+	case actCard:
+		if act, unit := cardActOf(mv.Piece); act.ID == "savagery" {
+			d.Power[seat]--
+			b.Savage = true
+			e.say("Savagery: %s's Cats from Saturn roll 4 more dice each.", e.seatName(seat))
+		} else if e.take(a, seat, unit) {
+			e.setPool(seat, unit, e.pool(seat, unit)+1)
+			e.place(a, seat, uCultist)
+			e.say("Needs Affection: %s replaces %s with an Acolyte.", e.seatName(seat), article(unitNameOf(unit)))
+		}
 	case actAbsorb:
 		e.eliminate(a, seat, mv.Piece, 0)
 		b.Absorbed++
@@ -588,6 +613,9 @@ func (e *eng) rollBattle() {
 	a := e.areaIdx(b.Area)
 	e.cosmicUnity(b)
 	for _, s := range []int{b.Att, b.Def} {
+		if e.bubastisIn(s) && e.battleUnits(b, s, uUranus) > 0 {
+			b.Uranus = true
+		}
 		b.Quachil[s] = e.battleUnits(b, s, uQuachil) > 0
 		b.FoeGOO[s] = e.classBattle(b, b.foeOf(s), classGOO) > 0
 	}
@@ -645,6 +673,19 @@ func (e *eng) tallyBattle() {
 		if v := e.battleUnits(b, s, uVoonith); v > kills {
 			e.say("Vicious: %s's %s add %s (%d in all).", e.seatName(s), plural(v, "Voonith", "Vooniths"), plural(v-kills, "Kill", "Kills"), v)
 			kills = v
+		}
+		// Zagazig: with a Cat from Mars the results change places.
+		if e.bubastisIn(s) && e.d.hasBook(s, bkZagazig) && e.battleUnits(b, s, uMars) > 0 {
+			kills, pains = pains, kills
+			e.say("Zagazig: %s's Pains are Kills and its Kills are Pains.", e.seatName(s))
+		}
+		// Bastet rolls nothing: 1 Kill more for her side and 1 fewer for the enemy.
+		if e.battleUnits(b, s, uBastet) > 0 {
+			kills++
+			e.say("Bastet adds 1 Kill for %s.", e.seatName(s))
+		}
+		if e.battleUnits(b, other, uBastet) > 0 && kills > 0 {
+			kills--
 		}
 		// Hagarg Ryonis rolls nothing and adds 3 Pains.
 		if e.battleUnits(b, s, uHagarg) > 0 {
@@ -1084,6 +1125,7 @@ func (e *eng) postMoves(seat int) []state.Move {
 	// The Million Favored Ones: units are replaced by the next kind up.
 	out = append(out, e.upgradeMoves(seat)...)
 	out = append(out, e.unholyMoves(seat)...)
+	out = append(out, e.predatorMoves(seat)...)
 	// Cannibalism: after enemy units died the Windwalker may place a Wendigo
 	// or an Acolyte in the battle area — in any battle.
 	if e.is(seat, facWW) && d.hasBook(seat, bkCannibal) && b.Killed > 0 {
@@ -1191,6 +1233,10 @@ func (e *eng) doPost(seat int, mv state.Move) {
 		}
 		return
 	case actCard:
+		if act, unit := cardActOf(mv.Piece); act.ID == "predator" {
+			e.predator(seat, unit)
+			return
+		}
 		e.unholy(seat, mv)
 		return
 	case actCannibal:
@@ -1252,7 +1298,7 @@ func (e *eng) retreatAreas(seat int) []int {
 	a := e.areaIdx(b.Area)
 	enemy := b.foeOf(seat)
 	var out []int
-	for _, n := range e.m.adj[a] {
+	for _, n := range e.reachWithMoon(seat, a, e.m.adj[a]) {
 		if e.total(n, enemy) == 0 {
 			out = append(out, n)
 		}

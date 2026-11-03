@@ -83,6 +83,10 @@ func (e *eng) gatherPower() {
 				parts = append(parts, text)
 			}
 		}
+		add(e.catsInPlay(s), fmt.Sprintf("%d %s", e.catsInPlay(s), plural1(e.catsInPlay(s), "Cat", "Cats")))
+		if e.is(s, facBU) && e.hasHP() {
+			add(1, "1 for the High Priests")
+		}
 		cultists := e.cultistsInPlay(s) - e.mummiesOf(s)
 		add(cultists, fmt.Sprintf("%d %s", cultists, plural1(cultists, "Cultist", "Cultists")))
 		gates := e.gateCount(s)
@@ -303,6 +307,7 @@ func (e *eng) startDoomPhase() {
 	d.Phase = phaseDoom
 	e.say("— Doom Phase —")
 	e.doomStartCards()
+	e.ailurophobia()
 	// Blasphemous Obeisance: the Moonbeasts come back to their owners' Gates.
 	e.moonReturn()
 	// Spellbooks that arrive in the Doom phase.
@@ -395,6 +400,11 @@ func (e *eng) doomMoves(seat int) []state.Move {
 			out = append(out, state.Move{Action: actRitual, Piece: "descend"})
 		}
 	}
+	if !x.Ritualled && d.Power[seat] >= cost {
+		if _, ok := e.bastetRitualArea(seat); ok {
+			out = append(out, state.Move{Action: actCard, Piece: "bastet-ritual"})
+		}
+	}
 	if !x.Ritualled && e.igooBook(seat, uTulzscha) {
 		out = append(out, state.Move{Action: actCard, Piece: "ceremony"})
 	}
@@ -466,6 +476,11 @@ func (e *eng) doDoom(seat int, mv state.Move) {
 			e.thenAfterPrompts("doom")
 			e.beginPrompts("doom")
 			return
+		}
+		if mv.Piece == "bastet-ritual" {
+			x.Ritualled = true
+			e.bastetRitual(seat)
+			break
 		}
 		// Ceremony of Annihilation: the Ritual pays instead of costing.
 		gain := e.ritualCost()

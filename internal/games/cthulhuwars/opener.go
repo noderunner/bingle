@@ -294,6 +294,20 @@ func (e *eng) dropPained(b *Battle, seat int, from string, n int, to string) {
 // Gates and, with They Break Through, every enemy-controlled or abandoned Gate.
 func (e *eng) summonAreas(seat int) []int {
 	gates := e.gatesOf(seat)
+	// Catabolism: Earth Cats bring Monsters into play where they stand.
+	if e.is(seat, facBU) && e.d.hasBook(seat, bkCatabolism) {
+		seen := map[int]bool{}
+		for _, a := range gates {
+			seen[a] = true
+		}
+		for a := range e.m.ids {
+			if !seen[a] && e.count(a, seat, uEarthCat) > 0 {
+				gates = append(gates, a)
+			}
+		}
+		sort.Ints(gates)
+		return gates
+	}
 	if !e.is(seat, facOW) || !e.d.hasBook(seat, bkBreak) {
 		return gates
 	}

@@ -22,6 +22,12 @@ The wiki lists many more neutral units and Independent Great Old Ones than ADR 0
 - Mummified Acolytes are counted per area and cult, as Cultists are not told apart.
 - Y'Golonac's new owner earns his spellbook at once, as the requirement says.
 
+## The Ancients and Bubastis
+
+Two more cults go through the same `card` action. Each brings a new table colour, teal and sand. Bubastis's Moon is a real area, added by the derive patch only at tables with Bubastis, so no other game changes. It has no edges, and `reachWithMoon` carries its one-way movement.
+
 ## Not done
+
+Daemon Sultan, The Invasion and Azathoth as a faction, and the Yuggoth, Dreamlands, Shaggai and Library at Celaeno maps. Those maps are large rules packages: two-board tunnels, non-player units, new tomes. Lunacy's rule that Cultist abilities can target Earth Cats is also not in.
 
 Insects from Shaggai (Mind Parasite gives another cult control of Acolytes) and Eihort (the Brood are a new kind of Cultist that every Cultist rule would have to know). From Below does not give Nyogtha his free second Capture or second Battle. Laziness has no alternative against a hibernating Windwalker.

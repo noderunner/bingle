@@ -378,6 +378,8 @@ func (e *eng) units(seat int) []unitSpec {
 	switch {
 	case e.is(seat, facTT):
 		out = append(append([]unitSpec(nil), out...), ttHP)
+	case e.is(seat, facBU):
+		// Bubastis has no Cultists; with the High Priests it gets 1 Power instead.
 	case e.hasHP():
 		out = append(append([]unitSpec(nil), out...), hpSpec)
 	}
@@ -497,6 +499,11 @@ func (e *eng) syncGate(a int) {
 		delete(e.d.Holders, id)
 		return
 	}
+	// The Moon is Bubastis's Gate, held by nobody and never lost.
+	if id == moonArea {
+		delete(e.d.Holders, id)
+		return
+	}
 	if t := e.d.Holders[id]; t != "" && e.count(a, ctl, t) > 0 && e.holdsGates(ctl, t) {
 		return
 	}
@@ -587,6 +594,7 @@ func (e *eng) eliminate(a, seat int, typ string, by int) {
 		e.goneAdd(seat, typ)
 		e.say("Extinction: the Yothan leaves the game.")
 	}
+	e.catFell(seat, typ)
 	// An Independent that dies goes back to the general pool, card and all.
 	if isIndependent(typ) {
 		e.igooDies(seat, typ)

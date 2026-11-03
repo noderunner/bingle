@@ -88,6 +88,10 @@ type Assign struct {
 
 // Battle is a battle being fought.
 type Battle struct {
+	// Bubastis: Savagery bought, a Cat from Uranus present, and Predator used.
+	Savage bool `json:"savage,omitempty"`
+	Uranus bool `json:"uranus,omitempty"`
+	Preyed bool `json:"preyed,omitempty"`
 	// Later cards: the units lost, who fights with Quachil Uttaus and against a
 	// Great Old One, the Great Old One Cosmic Unity silences, the seat whose
 	// Y'Golonac was Killed, and that Gobogeg was Killed.
@@ -346,6 +350,8 @@ type Data struct {
 	Webs []string `json:"webs,omitempty"`
 	// Cathedrals are the areas with a Cathedral of the Ancients.
 	Cathedrals []string `json:"cathedrals,omitempty"`
+	// CatsFell marks Bubastis's fallen cats: 1 Mars or Saturn, 2 Uranus.
+	CatsFell int `json:"cats_fell,omitempty"`
 	// Glaciers are the areas under a Glacier (the Primeval Map);
 	// GlaciersBegun says the first of them has been placed.
 	Glaciers      []string        `json:"glaciers,omitempty"`

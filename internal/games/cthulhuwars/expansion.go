@@ -19,11 +19,12 @@ const (
 	abBeyond            // Opener of the Way: move a unit with a Gate
 	abSycophancy        // Tcho-Tcho: a Ritual of an enemy gives it Doom or costs the enemy one
 	abDemat             // The Ancients: relocate units in the Doom phase
+	abLunacy            // Bubastis: the cats give Power, and it has no Cultists
 )
 
 var factionAbility = [nFactions]int{
 	facGC: abImmortal, facCC: abFlight, facBG: abFertility, facYS: abFeast, facWW: abHibernate, facSL: abDeath,
-	facOW: abBeyond, facTT: abSycophancy, facAN: abDemat,
+	facOW: abBeyond, facTT: abSycophancy, facAN: abDemat, facBU: abLunacy,
 }
 
 // ability reports whether seat has the unique ability ab: its own, or — for

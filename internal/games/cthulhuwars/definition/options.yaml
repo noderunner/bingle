@@ -40,6 +40,10 @@
       label: The Ancients
       color: teal
       text: 'Expansion: Un-Men, Reanimated and Yothans, and no Great Old One at all. Builds Cathedrals and leans on its enemies.'
+    - id: bu
+      label: Bubastis
+      color: sand
+      text: 'Expansion: Earth Cats and Cats from Mars, Saturn and Uranus, with Bastet. No Cultists: the Moon is its Gate, and every cat gives Power.'
   default: [gc, cc, bg, ys, ww]
 - id: high-priests
   label: High Priests

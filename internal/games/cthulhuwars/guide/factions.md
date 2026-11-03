@@ -294,6 +294,39 @@ From the wiki:
 - Yothans roll more dice than any Great Old One. Do not worry unduly about losing them, but pace it out.
 - A sample start: begin next to as many glyphs as possible, move next door and build a Cathedral for 1 Power, and take Festival. Build a Gate there, guard it with an Un-Man, and give the Power to someone far away. Then build a second Cathedral somewhere not adjacent, undefended, in the hope another player occupies it.
 
+## Bubastis
+
+![Bubastis glyph|96](guide/glyphs/bu.svg "Bubastis's glyph.")
+
+The cats on the Moon. A table with Bubastis gets one more area, **The Moon**, in the corner of the map.
+
+**Lunacy.** Bubastis has **no Cultists**, cannot create or control a Gate, and cannot be captured. **The Moon is its Gate**: it counts for Power and Doom like any other, and control of it can never be taken. It begins with 8 Power and six Earth Cats on the Moon. **Each cat in play gives 1 Power** in Gather Power. With the High Priests option it has no High Priest, and gathers 1 more Power instead.
+
+**The Moon.** Bubastis's units Move and are Pained between the Moon and any area, freely. Other cults may Move or be Pained from the Moon to any area, but never to it. Only Catnapping brings them there.
+
+| | Unit | Class | Pieces | Cost | Combat | Notes |
+|---|---|---|---|---|---|---|
+| ![](piece:earth-cat:sand) | **Earth Cat** | Monster | 6 | 1 | 0 | Catabolism |
+| ![](piece:cat-from-mars:sand) | **Cat from Mars** | Monster | 2 | 2 | 1 | Zagazig |
+| ![](piece:cat-from-saturn:sand) | **Cat from Saturn** | Monster | 2 | 3 | 2 | Savagery |
+| ![](piece:cat-from-uranus:sand) | **Cat from Uranus** | Monster | 2 | 4 | 3 | Predator |
+| ![](piece:bastet:sand) | **Bastet** | Elder God | 1 | 6 | no dice | Adds 1 Kill to your total, and lowers the enemy's by 1. Awakens with all four kinds of cat in play, in an area with no enemy. |
+
+**Requires Attention** (Bastet, Doom phase): if she shares an area with an enemy Cultist, you may perform a Ritual worth exactly 4 Doom, with 1 Elder Sign if an enemy Gate is there and 2 if an enemy Great Old One is.
+
+| Spellbook | When | Text |
+|---|---|---|
+| **Ailurophobia** | Doom Phase | 1 Doom per variety of Monster cat sharing an area, off the Moon, with enemy units. |
+| **Catabolism** | Ongoing | Earth Cats bring Monsters into play where they stand, without a Gate. |
+| **Catnapping** | Action: Cost 1 | Every unit but Bastet in her area goes to the Moon. An enemy leaving the Moon pays you the Power it spends. |
+| **Predator** | Post-Battle | With a Cat from Uranus in the battle, choose a unit the enemy lost. It must eliminate another of that type, anywhere. |
+| **Savagery** | Pre-Battle | Pay 1 Power: each Cat from Saturn rolls 4 more dice this battle. |
+| **Zagazig** | Pre-Battle | With a Cat from Mars in the battle, your rolled Pains become Kills and your rolled Kills become Pains. |
+
+**Requirements:** as your Action, pay 2 Power; no Earth Cats on the Moon; a cat in every enemy's start area (and 1 Power per enemy); a Cat from Mars or Saturn is Killed or Eliminated; a Cat from Uranus is Killed or Eliminated; awaken Bastet.
+
+How Bingle reads it: the second half of Lunacy, where abilities aimed at Cultists can target Earth Cats, is not in yet. Zagazig always applies, since Pains are twice as likely as Kills. An enemy with no fixed start area (the Tcho-Tcho, the Opener, the Ancients) keeps the "every start area" requirement from being met. The wiki has no strategy for Bubastis.
+
 ## The High Priests
 
 An option chosen when the game is created. Every cult then has **one High Priest**, a unit of its own colour:
@@ -313,7 +346,6 @@ Petersen Games has published more factions than this game plays. Their glyphs ar
 
 | | Faction | State |
 |---|---|---|
-| ![Bubastis glyph](guide/glyphs/bu.svg) | **Bubastis** | placeholder |
 | ![Daemon Sultan glyph](guide/glyphs/ds.svg) | **Daemon Sultan** | placeholder |
 | ![The Invasion glyph](guide/glyphs/in.svg) | **The Invasion** | placeholder |
 | ![Azathoth glyph](guide/glyphs/az.svg) | **Azathoth** | neutral spellbooks and Monsters only |

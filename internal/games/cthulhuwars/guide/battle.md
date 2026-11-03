@@ -55,6 +55,8 @@ Killed is gone before it can be Pained.
 | Cthugha | the Combat of an enemy Great Old One in the battle (the best one) |
 | Mother Hydra | 6 minus the number of enemy units in the area, at least 1 |
 | Yig | 2 |
+| Earth Cat / Cat from Mars / Saturn / Uranus | 0 / 1 / 2 / 3 |
+| Bastet | no dice: +1 Kill for her side, −1 Kill for the enemy |
 | Un-Men / Reanimated / Yothan (a Terror) | 0 / 2 / 7 |
 | Ghast / Leng Spider / Gug / Satyr / each Cat (Mercury, Venus, Asteroid) | 0 / 1 / 3 / 1 / 1 |
 | Great Race of Yith / Dhole / Quachil Uttaus / Cat from Neptune (Terrors) | 3 / 5 / 1 / 3 |

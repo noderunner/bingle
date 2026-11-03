@@ -225,6 +225,11 @@ var cardActs = []cardAct{
 	{ID: "unholy", Label: "Unholy Ground", Text: "Give up the Cathedral in this area: an enemy Great Old One in the battle is Eliminated.", Area: true},
 	{ID: "demat", Label: "Dematerialization", Text: "Relocate your units from this area, all but the one on a Gate.", Area: true},
 	{ID: "demat-to", Label: "Relocate here", Text: "Dematerialization: your units arrive in this area.", Area: true},
+	{ID: "bu-pay", Label: "Pay 2 Power", Text: "Bubastis's requirement: it earns a spellbook.", Cost: 2},
+	{ID: "catnap", Label: "Catnapping", Text: "Every unit in Bastet's area but her goes to the Moon.", Cost: 1},
+	{ID: "savagery", Label: "Savagery", Text: "Pay 1 Power: every Cat from Saturn rolls 4 more dice this battle.", Cost: 1},
+	{ID: "predator", Label: "Predator", Text: "The enemy must eliminate another unit of this type, anywhere.", Units: true},
+	{ID: "bastet-ritual", Label: "Ritual of Requires Attention", Text: "Bastet shares an area with an enemy Cultist: a Ritual worth exactly 4 Doom, and Elder Signs if an enemy Gate or Great Old One is there."},
 	{ID: "glacier", Label: "Place a Glacier", Text: "The Primeval Map: a Glacier covers this area with a Glacier glyph, and any Gate there is abandoned for good.", Area: true},
 }
 
@@ -593,7 +598,7 @@ func cardPromptAuto(p Prompt) bool { return p.Why != "blood" }
 // cardTurnMoves lists the "card" Actions seat may take in its turn.
 func (e *eng) cardTurnMoves(seat int) []state.Move {
 	d := e.d
-	out := e.ancientsTurnMoves(seat)
+	out := append(e.ancientsTurnMoves(seat), e.bubastisTurnMoves(seat)...)
 	add := func(mv state.Move) {
 		if d.Power[seat] >= e.cardActCost(mv) {
 			out = append(out, mv)
@@ -687,6 +692,15 @@ func (e *eng) cardTurnAction(seat int, mv state.Move) bool {
 		to = e.areaIdx(string(mv.To))
 	}
 	switch act.ID {
+	case "bu-pay":
+		e.say("%s pays 2 Power to the Moon.", e.seatName(seat))
+		e.fulfil(seat, rqBUPay)
+		e.mainTaken()
+		e.thenAfterPrompts("after")
+		e.beginPrompts("after")
+		return true
+	case "catnap":
+		e.catnap(seat)
 	case "cathedral":
 		e.buildCathedral(seat, to)
 		e.mainTaken()
@@ -1076,7 +1090,7 @@ func (e *eng) orifice(owner, foe int, typ string) {
 // every decision.
 func (e *eng) cardSweep() {
 	d := e.d
-	if d.Phase == phaseOver || d.Loyal == ([nSeats + 1]uint64{}) {
+	if d.Phase == phaseOver {
 		return
 	}
 	for _, s := range e.playing() {
@@ -1361,7 +1375,7 @@ func (e *eng) glacierChoices() []int {
 // unit that held it stays in the area. Yog-Sothoth, who is a Gate, is not covered.
 func (e *eng) glacierOn(a int) {
 	d := e.d
-	if e.hasGlacier(a) {
+	if e.hasGlacier(a) || e.isMoon(a) {
 		return
 	}
 	id := e.areaID(a)

@@ -369,3 +369,28 @@ yothan:
   code: Yo
   shape: yothan
   tags: [terror]
+earth-cat:
+  label: "Earth Cat"
+  code: Ec
+  shape: earth-cat
+  tags: [monster]
+cat-from-mars:
+  label: "Cat from Mars"
+  code: Ma
+  shape: cat-from-mars
+  tags: [monster]
+cat-from-saturn:
+  label: "Cat from Saturn"
+  code: St
+  shape: cat-from-saturn
+  tags: [monster]
+cat-from-uranus:
+  label: "Cat from Uranus"
+  code: Ur
+  shape: cat-from-uranus
+  tags: [monster]
+bastet:
+  label: "Bastet"
+  code: Ba
+  shape: bastet
+  tags: [goo]

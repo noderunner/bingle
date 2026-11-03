@@ -175,6 +175,14 @@ func (rs *Ruleset) Start(game *catalog.CompiledGame, seed uint64) (*state.BoardS
 		}
 		start := startArea(game, *f)
 		a := e.areaIdx(start)
+		// Bubastis begins with six Earth Cats on the Moon, which is its Gate.
+		if e.is(seat, facBU) {
+			for i := 0; i < 6; i++ {
+				e.place(a, seat, uEarthCat)
+			}
+			d.Gates[moonArea] = seat
+			continue
+		}
 		for i := 0; i < 6; i++ {
 			e.place(a, seat, uCultist)
 		}
@@ -525,6 +533,7 @@ func (e *eng) execute(seat int, mv state.Move) {
 		e.openPicks()
 	}
 	e.cardSweep()
+	e.bubastisSweep()
 	if len(d.Pending) > 0 {
 		e.openPending()
 	}

@@ -646,12 +646,21 @@ func deriveFrom(base *dsl.GameDefinition, keys []string, hp, az bool, packs, ind
 		params[po.key] = packs&po.bit != 0
 	}
 	params["independents"] = indepUnits
+	withMoon := false
+	for _, k := range keys {
+		withMoon = withMoon || k == "bu"
+	}
 	patch := map[string]any{
 		"name":       name,
 		"seats":      seats,
 		"turn_order": map[string]any{"type": "round-robin", "seats": order},
 		"params":     params,
 		"display":    map[string]any{"badges": badges},
+	}
+	if withMoon {
+		if err := addMoonToPatch(base, patch); err != nil {
+			return "", nil, err
+		}
 	}
 	return suffix, patch, nil
 }
@@ -712,6 +721,8 @@ func gateColor(color string) string {
 		return "#8f6035"
 	case "teal":
 		return "#1f8f98"
+	case "sand":
+		return "#a79d64"
 	}
 	return "#888888"
 }

@@ -14,9 +14,9 @@ func boardID(s string) board.PositionID { return board.PositionID(s) }
 // slice is shared: callers must not change it).
 func (e *eng) reach(seat, a int) []int {
 	if e.ability(seat, abFlight) { // Flight
-		return e.m.reach2[a]
+		return e.reachWithMoon(seat, a, e.m.reach2[a])
 	}
-	return e.m.adj[a]
+	return e.reachWithMoon(seat, a, e.m.adj[a])
 }
 
 // summonCost is the Power cost to summon a monster.
@@ -84,6 +84,8 @@ func (e *eng) awakenCost(seat int, typ string) int {
 		return 4
 	case uCthugha:
 		return 6
+	case uBastet:
+		return 6
 	case uAtlach, uBokrug, uDagon, uGhatan, uGobogeg, uByatis, uNyogtha, uTulzscha, uGlaaki, uDaoloth, uYgolonac, uHagarg:
 		return cards[cardIndex(typ)].Unit.Cost
 	case uUbbo:
@@ -103,6 +105,18 @@ func (e *eng) awakenAreas(seat int, typ string) []int {
 	}
 	var out []int
 	switch typ {
+	case uBastet:
+		// All four varieties in play, and an area with no enemy.
+		for _, c := range []string{uEarthCat, uMars, uSaturn, uUranus} {
+			if e.onMap(seat, c) == 0 {
+				return nil
+			}
+		}
+		for a := range e.m.ids {
+			if e.enemiesIn(a, seat) == 0 {
+				out = append(out, a)
+			}
+		}
 	case uCthulhu:
 		// Only in the faction's starting area, which must hold a Gate — its
 		// own, an abandoned one or an enemy's.
@@ -1081,6 +1095,7 @@ func (e *eng) doMoving(seat int, mv state.Move) {
 	}
 	d.Power[seat] -= cost
 	d.Move.Spent += cost
+	e.moonToll(seat, string(mv.From), cost)
 	d.Move.Moved = append(d.Move.Moved, e.areaID(to)+"|"+mv.Piece)
 	// Horror Steed: the Shantak may carry a Cultist of the area it left, for free.
 	if mv.Piece == uShantak {
