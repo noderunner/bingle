@@ -37,6 +37,12 @@ wide, the rail goes under the board, whose row is no taller than the board.
   under it shares the height left: the battle, the card of a unit, an exchange, and the history when at least 110px is
   free. The rail's cards take turns behind `.rail-tabs`: `#rail-tab-cults`, `#rail-tab-talk`, and `#rail-tab-history`
   when the history is not under the map. Every pane stays on the page, so a message being typed survives a change of tab.
+  The talk and the history fill the height the rail has left.
+- **A cult's card** is a summary: its numbers and an `.expand-toggle`. Open (`.seat-more`), it has a `.faction-heading` for
+  each of its sections. `.spellbook-grid` holds `.spell-tile`s in two columns: the six requirements, then the spellbooks
+  to come. A spellbook earned takes the place of a met requirement, in listed order, since the server keeps which are
+  met and which are held but not which paid for which. `S.expanded` is the one card open, a cult's or `#neutral-window`.
+  A phone shows each cult whole, on a page of its own.
 
 No `.status-bar` is drawn on this page. While a game is being played, `#status-message` stays as `.sr-only` for screen
 readers. For a result, history, analysis or a game waiting for an opponent, the message and the bar's buttons (`#rematch`,
@@ -367,7 +373,7 @@ cult's colour; dashed grey when abandoned) and a ✠ chip for a Desecration amon
 the tokens, a red outline for the battle, and one token per (cult, unit kind)
 with a count badge. Names and tokens are laid out so they stay inside their
 area and clear of each other, and are drawn above every outline. The map
-**zooms** (wheel, pinch, +/−) and **pans** (drag); the view survives redraws.
+**zooms** (wheel, pinch) and **pans** (drag); the view survives redraws.
 
 Tokens are clickable when the move being built can use them: a token click is
 translated to the `piece`/`pos` steps of the move by searching the builder's
@@ -380,9 +386,15 @@ move bar for games without hands.
 card lists the unit's cost, Combat, how many stand here, on the map and in the
 pool, its ability text and the spellbooks that bear on it, ticked once earned
 (from `view.seats[n].units`). A second click, ×, or Esc closes it; the
-clicked token carries a dashed ring (`.token-inspected`). Units a spellbook of
-their cult enhances wear a small gold star at a corner of their icon
-(`.token-enhanced`, the star itself `.token-star`) — no ring is drawn round them.
+clicked token carries a dashed ring (`.token-inspected`). This card is for a phone,
+which has no hover: a click on a token elsewhere only picks it up.
+
+An area's name and its glyphs are a faint layer under the pieces. The name sits at
+the area's visual centre (`areaCentre`: the centre of the largest circle that fits,
+with the land counting as the edge of a sea), and the glyphs go above, below or
+beside it, wherever they stay inside the border (`marksPlace`). The options turn
+each layer off: names, glyphs, sigils and units. A unit the player can pick up now
+stays drawn with the units off, so a move can still be made.
 
 **Icons** (`js/icons.js`): every unit has its own silhouette, drawn as path data
 in the cult's colour — all Cultists share one hooded figure (the High Priest
@@ -858,7 +870,7 @@ picked), `#round-bar`, `#battle-panel`, `.seat-grid`, `.faction-card`,
 `.pool-unit`, `.gate-chip .gate-holder[data-holder]`, `#history-card` with
 `#tab-moves` / `#tab-history`,
 `#phase-steps`, `#turn-order`, `#elder-bag`, `#ritual-track .ritual-step`,
-`.token-star`, `#events .log-fac`, `#options-reactions` with, per reaction (`<id>`:
+`#events .log-fac`, `#options-reactions` with, per reaction (`<id>`:
 `devolve`, `madness`, `unspeakable-oath`…), `#ask-<id>-targeted` (and its ?,
 `#ask-<id>-help`), `#ask-<id>-all`, `#reactions-<id>` (the list),
 `#ask-<id>-seat-<seat>` and `#ask-<id>-state`, `#options-autoplay` with `#autoplay-on`,

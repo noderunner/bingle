@@ -15,7 +15,18 @@ what the help window shows under *Recent changes*, so it is written for the peop
 - **Card games get the whole table.** Nyet and the games of patience take all the width they can, with bigger cards on a
   bigger window.
 - **Cthulhu Wars.** The map sits right under the round, with the history and any battle below it. The cults and the chat share the column beside the map, behind tabs, under your actions, and a badge tells
-  you when a message comes in. Tell us what you would want to see differently: this is the first go.
+  you when a message comes in.
+- **Tidier cult cards.** Each cult is one line of numbers until you open it with its triangle, and only one is open at a
+  time, as with the neutral items. Open, a cult's spellbooks and requirements stand in two columns of tiles. A spellbook you
+  earn replaces a requirement, so the list gets shorter as you go. Hover over a tile for the full rule.
+- **Smaller summon buttons.** Summoning a monster is its picture and its price; hover over it for the rest.
+- **A calmer map.** Area names sit in the middle of their areas, and they and the glyphs are faded, so pieces stand clearly
+  on top. Glyphs stay inside their areas' borders. The gold stars on upgraded units are gone, and so is the card under the
+  map when you click a unit (it stays on phones), along with the zoom buttons: the mouse wheel and dragging still work.
+- **Hide the units.** The game options can now turn the units off to study the map, next to the names, glyphs and sigils.
+  Any unit you can move right then stays visible.
+### Cthulhu Wars 0.1.2
+- The guide no longer mentions the gold stars or clicking a unit for its card.
 
 ## 0.48.0 - 2026-11-02
 

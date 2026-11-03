@@ -226,7 +226,7 @@ func TestWebCthulhuWars_TheCultCardsUsePictogramsAndShowTheUnitsInThePool(t *tes
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
 	openGameAs(t, ctx, baseURL, created.RoomCode, "cthulhu-wars", "Alice")
-	waitJS(t, ctx, "the cards", `document.querySelectorAll('#seat-1 .faction-card').length === 5`, 15*time.Second)
+	waitJS(t, ctx, "the cards", `document.querySelectorAll('#seat-1 .faction-card').length === 4`, 15*time.Second)
 	// The faction ability comes first.
 	if got := evalString(t, ctx, `document.querySelector('#seat-1 .faction-card').getAttribute("data-card")`); got != "ability" {
 		t.Errorf("first section %q", got)

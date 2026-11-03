@@ -27,6 +27,17 @@ func TestWebCthulhuWars_TheNeutralWindowShowsWhatIsLeftToTake(t *testing.T) {
 	collectJSErrors(ctx, &mu, &jsErrors)
 	openGameAs(t, ctx, baseURL, room, id, "Alice")
 	waitJS(t, ctx, "the window", `document.getElementById("neutral-window") !== null`, 20*time.Second)
+	// A summary until it is opened, and it shares the one open card with the cults.
+	if evalBool(t, ctx, `document.getElementById("neutral-items").offsetParent !== null`) {
+		t.Error("the neutral items should start closed")
+	}
+	clickSel(t, ctx, `[data-expand="seat-1"]`)
+	waitJS(t, ctx, "a cult open", `document.querySelector("#seat-1 .seat-more").offsetParent !== null`, 5*time.Second)
+	clickSel(t, ctx, `[data-expand="neutral"]`)
+	waitJS(t, ctx, "the items open", `document.getElementById("neutral-items").offsetParent !== null`, 5*time.Second)
+	if n := evalInt(t, ctx, `document.querySelectorAll(".seat-more:not([hidden])").length`); n != 1 {
+		t.Errorf("%d cards open at once", n)
+	}
 	// Units are icons alone, spellbooks the book and the name.
 	if n := evalInt(t, ctx, `document.querySelectorAll('#neutral-window .neutral-unit svg').length`); n != 8+1+5 {
 		t.Errorf("%d unit icons, want 14 (8 Monsters, a Terror, 5 Great Old Ones)", n)

@@ -77,6 +77,7 @@ const S = {
 		// null until the player chooses: then the glyphs show when Yellow Sign is at the table.
 		glyphs: store.get("bingle.layer.glyphs", null),
 		sigils: store.get("bingle.layer.sigils", true),
+		units: store.get("bingle.layer.units", true),
 	},
 	lastPiece: null, // piece type most recently placed (quick placement)
 	inspect: null, // square under the pointer, for the stack inspector
@@ -804,14 +805,15 @@ function onToken(pos, piece, color) {
 	const onGate = kind !== piece;
 	const same = !!S.unitInfo && S.unitInfo.pos === pos && S.unitInfo.piece === kind && S.unitInfo.color === color && !!S.unitInfo.onGate === onGate;
 	if (tokenOk(pos, piece, color)) {
-		// A unit that is a legal choice is picked up — and its card opens too.
-		S.unitInfo = { pos, piece: kind, color, onGate };
+		// A unit that is a legal choice is picked up. A phone has no hover, and opens its card too.
+		if (isMobileLayout()) S.unitInfo = { pos, piece: kind, color, onGate };
 		const b = activeBuilder();
 		for (const st of tokenSteps(b, pos, piece)) b.push(st.kind, st.value);
 		afterBuilderChange();
 		return;
 	}
 	// Any other unit just shows its card (a second click closes it).
+	if (!isMobileLayout()) return;
 	S.unitInfo = same ? null : { pos, piece: kind, color, onGate };
 	render();
 }
@@ -1898,7 +1900,7 @@ function renderFitted(seats, bottomSeat, cults) {
 	for (const panel of cardPanels()) wrap.append(panel);
 	wrap.append(h("div", { class: "inspector small muted", id: "inspector", "aria-live": "off" }, inspectorText()));
 	// A map leaves height under it, and what happens on the map is best read next to it.
-	if (areas) for (const part of [unitInfoCard(), battlePanel(), exchangePanel()]) if (part) wrap.append(part);
+	if (areas) for (const part of [battlePanel(), exchangePanel()]) if (part) wrap.append(part);
 	const main = h("div", { class: "board-column" }, wrap);
 
 	// The play area comes first: the cards take what room it leaves them.
@@ -2372,7 +2374,7 @@ function drawBoard(host) {
 			badges: (rulesetView() || {}).badges || null,
 			walls: (rulesetView() || {}).walls || null,
 			holders: (rulesetView() || {}).holders || null,
-			layers: { names: S.settings.names, glyphs: glyphLayerOn(), sigils: S.settings.sigils },
+			layers: { names: S.settings.names, glyphs: glyphLayerOn(), sigils: S.settings.sigils, units: S.settings.units },
 			legend: isRuleset() ? S.info.display || null : null,
 			tokenOk: interactive ? tokenOk : null,
 			enhanced: enhancedUnits(),
@@ -2780,7 +2782,13 @@ function seatStrip(seat) {
 		for (const stone of sv.taken) stones.append(h("span", { class: "taken-stone", "data-stone": stone }, pieceIcon("disc", stone, 16)));
 		strip.append(stones);
 	}
-	if (sv && sv.cards && sv.cards.length) strip.append(factionCards(seat, sv));
+	if (sv && sv.cards && sv.cards.length) {
+		// A phone gives each cult a page of its own: there is the room to show it all.
+		const whole = isMobileLayout();
+		const key = `seat-${seat}`;
+		strip.append(h("div", { class: "seat-more", hidden: !whole && S.expanded !== key }, factionCards(seat, sv)));
+		if (!whole) strip.append(expandToggle(key, `${seatLabel(seat) || seatName(seat)}'s details`));
+	}
 	const hand = handPanel(seat);
 	if (hand) strip.append(hand);
 	return strip;
@@ -3441,28 +3449,12 @@ function saveAutoPlay(patch) {
 	return autoplaySaves;
 }
 
-/**
- * A cult's sections: faction ability, spellbooks, requirements, Elder Signs
- * and units, each a collapsible list. What the player opened is remembered.
- */
-const cardState = new Map(Object.entries(store.get("bingle.cards2", {})));
-// Sections that start open; the rest start closed.
-const OPEN_BY_DEFAULT = new Set(["units"]);
+/** A cult's details under a heading each: faction ability, spellbooks and requirements, Elder Signs, units. */
 
 function factionCards(seat, sv) {
 	const wrap = h("div", { class: "faction-cards", "data-seat": seat });
 	const section = (id, title, count, body) => {
-		const key = `${S.info.id}:${seat}:${id}`;
-		const open = cardState.has(key) ? cardState.get(key) : OPEN_BY_DEFAULT.has(id);
-		const d = h("details", { class: "faction-card", "data-card": id });
-		if (open) d.setAttribute("open", "");
-		// Remember what the player opened: every move redraws the page.
-		d.addEventListener("toggle", () => {
-			cardState.set(key, d.open);
-			store.set("bingle.cards2", Object.fromEntries(cardState));
-		});
-		d.append(h("summary", {}, title, count ? h("span", { class: "muted small" }, ` ${count}`) : null), body);
-		wrap.append(d);
+		wrap.append(h("section", { class: "faction-card", "data-card": id }, h("h4", { class: "faction-heading" }, title, count ? h("span", { class: "muted small" }, ` ${count}`) : null), body));
 	};
 	const rowsBody = (card) => {
 		const ul = h("ul", { class: "card-rows" });
@@ -3470,7 +3462,7 @@ function factionCards(seat, sv) {
 			ul.append(
 				h(
 					"li",
-					{ class: r.state || (r.detail ? "info-row" : null), title: r.detail || null },
+					{ class: r.state || (r.detail ? "info-row" : null) },
 					r.state ? h("span", { class: "row-mark" }, spellMark(r.state === "done", r.state === "done" ? "Done" : "Not yet")) : null,
 					h("span", { class: "row-text" }, r.state || !r.detail ? r.text : h("strong", {}, r.text)),
 					r.detail && !r.state ? h("span", { class: "muted small row-detail" }, " — " + r.detail) : null
@@ -3487,29 +3479,101 @@ function factionCards(seat, sv) {
 	const bySlot = new Map((sv.cards || []).map((c) => [c.id, c]));
 	// The faction ability first, then what the cult may earn, its Elder Signs
 	// and the units still to be placed. Games with other cards list them as sent.
-	const known = ["ability", "books", "reqs"];
-	for (const id of known) {
-		const card = bySlot.get(id);
-		if (card) section(card.id, card.title, counted(card), rowsBody(card));
-	}
+	const ability = bySlot.get("ability");
+	if (ability) section(ability.id, ability.title, "", rowsBody(ability));
+	const books = bySlot.get("books");
+	if (books) section(books.id, books.title, spellbookCount(sv, books), spellbookGrid(sv, books, bySlot.get("reqs")));
 	for (const card of sv.cards || []) {
-		if (known.includes(card.id) || card.id === "units") continue;
+		if (["ability", "books", "reqs", "units"].includes(card.id)) continue;
 		section(card.id, card.title, counted(card), rowsBody(card));
 	}
 	if (sv.hidden_signs !== undefined) {
 		const total = (sv.hidden_signs || 0) + (sv.shown_signs || []).length;
-		if (total > 0) {
-			section("signs", "Elder Signs", String(total), elderSignsBody(seat, sv));
-		} else {
-			// Nothing to show: a heading that does not open.
-			wrap.append(h("div", { class: "faction-card faction-static", "data-card": "signs", id: `signs-${seat}` }, "Elder Signs", h("span", { class: "muted small" }, " 0")));
-		}
+		section("signs", "Elder Signs", String(total), total ? elderSignsBody(seat, sv) : null);
 	}
 	if (bySlot.has("units")) {
 		const inPool = (sv.units || []).reduce((n, u) => n + (u.pool || 0), 0);
 		section("units", "Units", `${inPool} in the pool`, poolBody(seat, sv));
 	}
 	return wrap;
+}
+
+/** How many spellbooks a cult holds of its six, the neutral ones among them. */
+function spellbookCount(sv, books) {
+	const counter = (sv.counters || []).find((c) => c.id === "books");
+	return `${counter ? counter.value : books.rows.filter((r) => r.state === "done").length}/${books.rows.length}`;
+}
+
+/**
+ * A cult's requirements, then its spellbooks still to be earned, in two columns. A spellbook
+ * earned takes the place of a requirement met, so the list shortens as the cult grows. The
+ * server keeps what is met and what is held, not which paid for which: they pair up in order.
+ */
+function spellbookGrid(sv, books, reqs) {
+	const grid = h("div", { class: "spellbook-grid" });
+	const held = books.rows.filter((r) => r.state === "done");
+	const earned = [...held];
+	for (const r of reqs ? reqs.rows : []) grid.append(r.state === "done" && earned.length ? bookTile(earned.shift()) : requirementTile(r));
+	// A spellbook held with no requirement to its name: a position set up that way.
+	for (const r of earned) grid.append(bookTile(r));
+	// With all six a cult can earn no more, even if a neutral one took the place of its own.
+	const counter = (sv.counters || []).find((c) => c.id === "books");
+	if (!counter || counter.value < books.rows.length) for (const r of books.rows) if (r.state !== "done") grid.append(bookTile(r));
+	return grid;
+}
+
+/** A spellbook, by its name; the hover card has its rule. */
+function bookTile(row) {
+	const on = row.state === "done";
+	const tile = h("span", { class: "spell-tile book " + (on ? "held" : "locked"), tabindex: "0", "aria-label": `${on ? "Spellbook" : "Spellbook to earn"}: ${row.text}` }, spellMark(on, on ? "Unlocked" : "Not yet", 14), h("span", { class: "spell-text" }, row.text));
+	hoverCard(tile, () => {
+		const i = (row.detail || "").indexOf(": ");
+		return h(
+			"div",
+			{ class: "unit-tip action-tip" },
+			h("div", { class: "unit-tip-head" }, h("div", { class: "unit-tip-title" }, h("strong", {}, row.text), i > 0 ? h("span", { class: "muted small" }, row.detail.slice(0, i)) : null)),
+			h("p", { class: "unit-text small" }, i > 0 ? row.detail.slice(i + 2) : row.detail || "")
+		);
+	});
+	return tile;
+}
+
+/** A requirement, cut to fit; the hover card has all of it. */
+function requirementTile(row) {
+	const met = row.state === "done";
+	const tile = h("span", { class: "spell-tile req" + (met ? " met" : ""), tabindex: "0", "aria-label": `${met ? "Requirement met" : "Requirement"}: ${row.text}` }, h("span", { class: "spell-text" }, row.text));
+	hoverCard(tile, () =>
+		h(
+			"div",
+			{ class: "unit-tip action-tip" },
+			h("div", { class: "unit-tip-head" }, h("div", { class: "unit-tip-title" }, h("strong", {}, met ? "Requirement met" : "Spellbook requirement"), met ? h("span", { class: "muted small" }, "A spellbook is earned for it") : null)),
+			h("p", { class: "unit-text small" }, row.text)
+		)
+	);
+	return tile;
+}
+
+/** The triangle under a card in summary. One card is open at a time, across the cults and the neutral items. */
+function expandToggle(key, label) {
+	const open = S.expanded === key;
+	return h(
+		"button",
+		{
+			type: "button",
+			class: "expand-toggle",
+			"data-expand": key,
+			"aria-expanded": open ? "true" : "false",
+			"aria-label": `${open ? "Hide" : "Show"} ${label}`,
+			title: `${open ? "Hide" : "Show"} ${label}`,
+			onclick: () => {
+				S.expanded = open ? null : key;
+				render();
+				// Closing a card above can carry this one out of view.
+				document.querySelector(`[data-expand="${key}"]`)?.scrollIntoView({ block: "nearest" });
+			},
+		},
+		h("span", { "aria-hidden": "true" }, open ? "▲" : "▼")
+	);
 }
 
 /** Seats in table order starting at `first`, wrapping round (clockwise). */
@@ -4276,12 +4340,14 @@ function neutralCard() {
 	const rv = rulesetView();
 	const nv = rv && rv.neutral;
 	if (!nv) return null;
-	const card = h("div", { class: "card neutral-card", id: "neutral-window" }, h("h3", {}, "Neutral items"));
 	const items = nv.items || [];
+	const card = h("div", { class: "card neutral-card", id: "neutral-window" }, h("h3", {}, "Neutral items", items.length ? h("span", { class: "muted small" }, ` ${items.length}`) : null));
 	if (!items.length) {
 		card.append(h("p", { class: "muted small", id: "neutral-empty" }, "Everything has been taken."));
 		return card;
 	}
+	const whole = isMobileLayout();
+	const body = h("div", { class: "seat-more", id: "neutral-items", hidden: !whole && S.expanded !== "neutral" });
 	for (const [kind, title] of NEUTRAL_GROUPS) {
 		const group = items.filter((it) => it.kind === kind);
 		if (!group.length) continue;
@@ -4298,8 +4364,10 @@ function neutralCard() {
 			hoverCard(node, () => neutralTip(item));
 			row.append(node);
 		}
-		card.append(h("p", { class: "neutral-title small muted" }, title), row);
+		body.append(h("p", { class: "neutral-title small muted" }, title), row);
 	}
+	card.append(body);
+	if (!whole) card.append(expandToggle("neutral", "the neutral items"));
 	return card;
 }
 
@@ -4428,7 +4496,8 @@ function unitButton(kind, type, seat) {
 			"aria-label": `${verb} ${unit.name} for ${cost} Power`,
 		},
 		pieceIcon(piece ? piece.shape : "disc", color, 22),
-		h("span", { class: "summon-name" }, `${verb} ${unit.name}`),
+		// The hover card names the unit. A phone has no hover, and keeps the words.
+		kind === "summon" && !isMobileLayout() ? null : h("span", { class: "summon-name" }, `${verb} ${unit.name}`),
 		h("span", { class: "summon-cost", title: "Power" }, `${cost}`, statIcon("power", "Power", 13))
 	);
 	hoverCard(button, () => unitTip(unit, color, cost));
@@ -4878,11 +4947,12 @@ function refreshOptions() {
 	// The layers of an area map.
 	w.hide("layers", !areas);
 	if (areas) {
-		w.update("layers", ["v2", glyphLayerOn()], (el) => {
+		w.update("layers", ["v3", glyphLayerOn()], (el) => {
 			el.append(
 				settingToggle("names", "opt-layer-names", "Area names", "bingle.layer.names"),
 				settingToggle("glyphs", "opt-layer-glyphs", "Glyphs", "bingle.layer.glyphs"),
-				settingToggle("sigils", "opt-layer-sigils", "Sigils", "bingle.layer.sigils")
+				settingToggle("sigils", "opt-layer-sigils", "Sigils", "bingle.layer.sigils"),
+				settingToggle("units", "opt-layer-units", "Units", "bingle.layer.units")
 			);
 		});
 	}

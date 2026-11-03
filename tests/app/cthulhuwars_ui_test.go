@@ -75,7 +75,7 @@ func TestWebCthulhuWars_AreaMapTokensAndFactionPanels(t *testing.T) {
 		t.Errorf("%d pictograms in the header, want power, doom, signs and gates", n)
 	}
 	// The sections: the faction ability, spellbooks, requirements, Elder Signs and units.
-	if got := evalString(t, ctx, `[...document.querySelectorAll('#seat-1 .faction-card')].map(c => c.getAttribute("data-card")).join(",")`); got != "ability,books,reqs,signs,units" {
+	if got := evalString(t, ctx, `[...document.querySelectorAll('#seat-1 .faction-card')].map(c => c.getAttribute("data-card")).join(",")`); got != "ability,books,signs,units" {
 		t.Errorf("faction cards %q", got)
 	}
 	// The units are icons, one each: 6 Acolytes, 4 Deep Ones, 2 Shoggoths, 2 Star
@@ -511,3 +511,187 @@ const autoStepCW = `(function () {
 	if (btn) { click(btn); return "button " + btn.id; }
 	return "stuck";
 })()`
+
+// A cult's card is a line of numbers until it is opened, and one card is open at a time. Open, it
+// has headings, and two columns of tiles: a spellbook earned takes the place of a requirement, so
+// the list runs from twelve tiles at the start to six.
+func TestWebCthulhuWars_TheCultCardsOpenOneAtATime(t *testing.T) {
+	baseURL := newRESTTestServer(t)
+	doc := cwPosition(t,
+		[]cwUnit{{1, "cultist", "south-pacific", 2}, {2, "cultist", "asia", 1}},
+		map[string]int{"south-pacific": 1, "asia": 2},
+		[5]int{0, 5, 3, 3, 3}, [5]uint8{0, 1 << 1, 63},
+		func(d *cthulhuwars.Data) { d.Reqs[1] = 1<<0 | 1<<2; d.Reqs[2] = 63 })
+	room := cwGameFrom(t, baseURL, doc)
+	ctx, cancel := newChromedpContext(t, 60*time.Second)
+	defer cancel()
+	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1600, 1000)); err != nil {
+		t.Fatal(err)
+	}
+	openGameAs(t, ctx, baseURL, room, "cthulhu-wars", "Alice")
+	waitJS(t, ctx, "the cards", `document.querySelector('[data-expand="seat-1"]') !== null`, 15*time.Second)
+	open := func() int { return evalInt(t, ctx, `document.querySelectorAll(".seat-more:not([hidden])").length`) }
+	tiles := func(seat string) int {
+		return evalInt(t, ctx, `document.querySelectorAll('#seat-`+seat+` .spell-tile').length`)
+	}
+	if n := open(); n != 0 {
+		t.Errorf("%d cards open to begin with", n)
+	}
+	if !evalBool(t, ctx, `document.querySelector('#seat-1 [data-counter="power"]').offsetParent !== null`) {
+		t.Error("the summary should show the numbers")
+	}
+	if got := evalString(t, ctx, `document.querySelector('[data-expand="seat-1"]').getAttribute("aria-expanded")`); got != "false" {
+		t.Errorf("aria-expanded = %q", got)
+	}
+
+	clickSel(t, ctx, `[data-expand="seat-1"]`)
+	waitJS(t, ctx, "the first open", `document.querySelector('#seat-1 .spellbook-grid').offsetParent !== null`, 5*time.Second)
+	if got := evalString(t, ctx, `[...document.querySelectorAll('#seat-1 .faction-heading')].map(h => h.firstChild.textContent.trim()).join()`); got != "Faction Ability,Spellbooks,Elder Signs,Units" {
+		t.Errorf("headings %q", got)
+	}
+	if n := evalInt(t, ctx, `document.querySelectorAll('#seat-1 details').length`); n != 0 {
+		t.Errorf("%d lists to open inside an open card", n)
+	}
+	if n := tiles("1"); n != 11 { // six slots, one holding the book earned, and five books to come
+		t.Errorf("%d tiles with one book earned", n)
+	}
+	if !evalBool(t, ctx, `getComputedStyle(document.querySelector('#seat-1 .spellbook-grid')).gridTemplateColumns.trim().split(/\s+/).length === 2`) {
+		t.Error("the tiles should stand in two columns")
+	}
+	// A spellbook is its name, with the rule on hover; a requirement says all of it there.
+	hoverOver(t, ctx, `#seat-1 .spell-tile.book.held`)
+	waitJS(t, ctx, "the rule", `/Devolve/.test((document.querySelector(".hover-card") || {}).textContent || "") && document.querySelector(".hover-card .unit-text").textContent.length > 20`, 5*time.Second)
+	hoverOver(t, ctx, `#seat-1 .spell-tile.req:not(.met)`)
+	waitJS(t, ctx, "the requirement", `/Spellbook requirement/.test((document.querySelector(".hover-card") || {}).textContent || "")`, 5*time.Second)
+
+	// Opening another closes the first. Six books earned: six tiles, in three rows.
+	clickSel(t, ctx, `[data-expand="seat-2"]`)
+	waitJS(t, ctx, "the second open", `document.querySelector('#seat-2 .spellbook-grid').offsetParent !== null`, 5*time.Second)
+	if n := open(); n != 1 {
+		t.Errorf("%d cards open at once", n)
+	}
+	if n := tiles("2"); n != 6 {
+		t.Errorf("%d tiles with all six", n)
+	}
+	if n := evalInt(t, ctx, `document.querySelectorAll('#seat-2 .spell-tile.req, #seat-2 .spell-tile.locked').length`); n != 0 {
+		t.Errorf("%d requirements or locked books left with all six", n)
+	}
+	clickSel(t, ctx, `[data-expand="seat-2"]`)
+	waitJS(t, ctx, "all closed", `document.querySelectorAll(".seat-more:not([hidden])").length === 0`, 5*time.Second)
+
+	// A monster's button is its picture and its price, and still says what it does to a screen reader.
+	waitJS(t, ctx, "the summon buttons", `document.querySelector(".summon-button") !== null`, 10*time.Second)
+	if got := evalString(t, ctx, `document.querySelector('.summon-button[data-action^="summon-"]').innerText.replace(/\s/g, "")`); got != evalString(t, ctx, `document.querySelector('.summon-button[data-action^="summon-"]').dataset.cost`) {
+		t.Errorf("the button says %q", got)
+	}
+	if got := evalString(t, ctx, `document.querySelector('.summon-button[data-action^="summon-"]').getAttribute("aria-label")`); !strings.HasPrefix(got, "Summon ") {
+		t.Errorf("aria-label %q", got)
+	}
+
+	// The talk and the history use the height the column has left.
+	column := `document.getElementById("play-rail").getBoundingClientRect().bottom`
+	clickSel(t, ctx, "#rail-tab-talk")
+	waitJS(t, ctx, "the chat", `document.getElementById("chat-card").offsetParent !== null`, 5*time.Second)
+	if gap := evalInt(t, ctx, `Math.round(`+column+` - document.getElementById("chat-card").getBoundingClientRect().bottom)`); gap > 60 {
+		t.Errorf("%dpx left under the chat", gap)
+	}
+	// Under the map, the history fills what the map leaves.
+	if gap := evalInt(t, ctx, `Math.round(document.querySelector(".board-column").getBoundingClientRect().bottom - document.getElementById("history-card").getBoundingClientRect().bottom)`); gap > 8 {
+		t.Errorf("%dpx left under the history", gap)
+	}
+	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1280, 680)); err != nil {
+		t.Fatal(err)
+	}
+	openGameAs(t, ctx, baseURL, room, "cthulhu-wars", "Alice")
+	waitJS(t, ctx, "the history tab", `document.getElementById("rail-tab-history") !== null`, 15*time.Second)
+	clickSel(t, ctx, "#rail-tab-history")
+	waitJS(t, ctx, "the history", `document.getElementById("history-card").offsetParent !== null`, 5*time.Second)
+	if gap := evalInt(t, ctx, `Math.round(`+column+` - document.getElementById("history-card").getBoundingClientRect().bottom)`); gap > 60 {
+		t.Errorf("%dpx left under the history tab", gap)
+	}
+}
+
+// The names and glyphs of the map: every name lies in its own area, every glyph inside its border,
+// and all of them under the pieces. No stars, no zoom buttons, and a layer of the units to hide.
+func TestWebCthulhuWars_TheMapIsAFaintLayerUnderThePieces(t *testing.T) {
+	baseURL := newRESTTestServer(t)
+	doc := cwPosition(t,
+		[]cwUnit{{1, "cultist", "south-pacific", 2}, {1, "shoggoth", "asia", 1}, {2, "cultist", "asia", 1}, {2, "flying-polyp", "asia", 1}},
+		map[string]int{"south-pacific": 1, "asia": 2},
+		[5]int{0, 5, 3, 3, 3}, [5]uint8{0, 63},
+		func(d *cthulhuwars.Data) { d.Reqs[1] = 63 })
+	room := cwGameFrom(t, baseURL, doc)
+	ctx, cancel := newChromedpContext(t, 60*time.Second)
+	defer cancel()
+	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1600, 1000)); err != nil {
+		t.Fatal(err)
+	}
+	openGameAs(t, ctx, baseURL, room, "cthulhu-wars", "Alice")
+	waitJS(t, ctx, "the map", `document.querySelector("#board .area-label") !== null`, 15*time.Second)
+
+	// The middle of each is in a shape of its own area, and for a sea, on no land drawn over it.
+	strays := evalString(t, ctx, `(function () {
+		var svg = document.querySelector("#board svg"), out = [];
+		var inShape = function (poly, pt) { var m = poly.getScreenCTM().inverse(), p = svg.createSVGPoint(); p.x = pt.x; p.y = pt.y; return poly.isPointInFill(p.matrixTransform(m)); };
+		for (const el of document.querySelectorAll("#board .area-label, #board .area-glyph-badge, #board .area-sigil-badge")) {
+			var r = el.getBoundingClientRect(), pt = {x: r.left + r.width / 2, y: r.top + r.height / 2}, id = el.dataset.area;
+			var own = [...document.querySelectorAll('#board .cell[data-position="' + id + '"] polygon.area-bg')].some(function (q) { return inShape(q, pt); });
+			var drowned = document.querySelector('#board .cell.ocean[data-position="' + id + '"]') && [...document.querySelectorAll("#board .cell.land polygon.area-bg")].some(function (q) { return inShape(q, pt); });
+			if (!own || drowned) out.push(el.getAttribute("class") + " of " + id);
+		}
+		return out.join("; ");
+	})()`)
+	if strays != "" {
+		t.Errorf("out of their areas: %s", strays)
+	}
+	if !evalBool(t, ctx, `Number(getComputedStyle(document.querySelector("#board .area-label")).opacity) < 1`) {
+		t.Error("the names should be faint")
+	}
+	if !evalBool(t, ctx, `!!(document.querySelector("#board .map-labels").compareDocumentPosition(document.querySelector("#board .map-tokens")) & Node.DOCUMENT_POSITION_FOLLOWING)`) {
+		t.Error("the pieces should be drawn over the names")
+	}
+	if n := evalInt(t, ctx, `document.querySelectorAll(".token-star, .map-zoom").length`); n != 0 {
+		t.Errorf("%d stars or zoom buttons on the map", n)
+	}
+	if !evalBool(t, ctx, `document.querySelector("#board .token-enhanced") !== null`) {
+		t.Error("this position should have an enhanced unit")
+	}
+
+	// With the units off, only what can be picked up now is drawn. The Gates stay.
+	waitJS(t, ctx, "a unit to pick up", `document.querySelector("#board .token.token-target") !== null`, 15*time.Second)
+	foes := `document.querySelectorAll('#board .token[data-color="blue"]').length`
+	if n := evalInt(t, ctx, foes); n == 0 {
+		t.Fatal("no enemy unit to hide")
+	}
+	evalBool(t, ctx, `(function () { var b = document.getElementById("opt-layer-units"); b.checked = false; b.dispatchEvent(new Event("change")); return true; })()`)
+	waitJS(t, ctx, "the enemy hidden", foes+` === 0`, 5*time.Second)
+	if !evalBool(t, ctx, `document.querySelector("#board .token.token-target") !== null && document.querySelector("#board .gate-chip") !== null`) {
+		t.Error("what can be moved, and the Gates, should stay")
+	}
+	evalBool(t, ctx, `(function () { var b = document.getElementById("opt-layer-units"); b.checked = true; b.dispatchEvent(new Event("change")); return true; })()`)
+	waitJS(t, ctx, "the enemy back", foes+` > 0`, 5*time.Second)
+}
+
+// A phone has no hover: there, tapping a unit still opens its card.
+func TestWebCthulhuWars_APhoneStillHasTheUnitCard(t *testing.T) {
+	baseURL := newRESTTestServer(t)
+	doc := cwPosition(t,
+		[]cwUnit{{1, "cultist", "south-pacific", 2}, {2, "cultist", "asia", 1}, {2, "flying-polyp", "asia", 1}},
+		map[string]int{"south-pacific": 1, "asia": 2},
+		[5]int{0, 5, 3, 3, 3}, [5]uint8{},
+		func(d *cthulhuwars.Data) {})
+	room := cwGameFrom(t, baseURL, doc)
+	ctx, cancel := newChromedpContext(t, 60*time.Second)
+	defer cancel()
+	if err := chromedp.Run(ctx, chromedp.EmulateViewport(420, 800), chromedp.Navigate(baseURL+"/")); err != nil {
+		t.Fatal(err)
+	}
+	evalBool(t, ctx, `(localStorage.setItem("bingle.layout", JSON.stringify("phone")), true)`)
+	openGameAs(t, ctx, baseURL, room, "cthulhu-wars", "Alice")
+	waitJS(t, ctx, "the phone page", `document.body.classList.contains("m-mode") && document.querySelector('#board .token[data-color="blue"]') !== null`, 15*time.Second)
+	clickSVG(t, ctx, `#board .token[data-color="blue"]`)
+	waitJS(t, ctx, "the card", `document.getElementById("unit-info") !== null`, 5*time.Second)
+	if n := evalInt(t, ctx, `document.querySelectorAll(".seat-more[hidden]").length + document.querySelectorAll(".expand-toggle").length`); n != 0 {
+		t.Errorf("%d closed cards on a phone", n)
+	}
+}

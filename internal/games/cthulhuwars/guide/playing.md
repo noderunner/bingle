@@ -11,10 +11,7 @@ retreats"…). Everything you can do is **highlighted**:
   Free actions show nothing.
 - **Areas** with a dashed outline are legal targets — click one.
 - **Tokens** with a golden glow can be picked — click the unit itself.
-- **Any unit** can be clicked to see its card: what it costs, how many dice it rolls, how many are left in the
-  pool, and which of its cult's spellbooks enhance it (and whether they are earned). A unit that a spellbook of its
-  cult enhances wears a small **golden star** in the corner of its icon on the map. Units are drawn in proportion to
-  their class — Cultists smallest, then Monsters then Terrors (the Hound of Tindalos), Great Old Ones largest.
+- **Units** are drawn in proportion to their class — Cultists smallest, then Monsters then Terrors (the Hound of Tindalos), Great Old Ones largest.
 
 **Spellbook marks.** A small spellbook on a button means the action is an ability of a spellbook you have
 unlocked; a greyed-out one means the action meets a spellbook *requirement* (paying Power, giving Doom or Power,

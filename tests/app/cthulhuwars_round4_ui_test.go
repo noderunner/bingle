@@ -81,13 +81,13 @@ func TestWebCthulhuWars_UnitsAreSizedByClassAndMarkedWithACornerStar(t *testing.
 	if n := evalInt(t, ctx, `new Set([...document.querySelectorAll('#board .token.color-green .unit-icon')].map(e => e.closest(".token").dataset.piece)).size`); n != 3 {
 		t.Errorf("%d green icons", n)
 	}
-	if n := evalInt(t, ctx, `document.querySelectorAll('#board .token[data-piece="cthulhu"] .token-star').length`); n != 1 {
-		t.Errorf("Cthulhu's star: %d", n)
+	if n := evalInt(t, ctx, `document.querySelectorAll('#board .token.token-enhanced[data-piece="cthulhu"]').length`); n != 1 {
+		t.Errorf("Cthulhu enhanced: %d", n)
 	}
-	if n := evalInt(t, ctx, `document.querySelectorAll('#board .token[data-piece="deep-one"] .token-star, #board .token[data-piece="cultist"] .token-star').length`); n != 0 {
-		t.Errorf("%d stars on units no spellbook enhances", n)
+	if n := evalInt(t, ctx, `document.querySelectorAll('#board .token.token-enhanced[data-piece="deep-one"], #board .token.token-enhanced[data-piece="cultist"]').length`); n != 0 {
+		t.Errorf("%d enhanced units no spellbook enhances", n)
 	}
-	// No ring any more: just the star.
+	// No ring, and no star.
 	if n := evalInt(t, ctx, `document.querySelectorAll('#board .token-ring, #board .token-ring-edge').length`); n != 0 {
 		t.Errorf("%d rings", n)
 	}

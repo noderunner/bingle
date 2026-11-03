@@ -71,10 +71,9 @@ five-player table.
 * **Clicking.** Actions are buttons; targets are dashed-outline areas; units
   are tokens that glow when they can be picked (a Move's origin, a unit that
   takes a result, the unit that retreats or is sacrificed, a unit that sinks
-  with Cthulhu). Forced choices are taken automatically. **Any** token can be
-  clicked for its card — cost, Combat, units in the pool and the spellbooks
-  that enhance it, earned or not (`view.seats[n].units`); a unit one of whose
-  spellbooks has been earned wears a small gold star at a corner of its icon.
+  with Cthulhu). Forced choices are taken automatically. On a phone, **any** token
+  can be tapped for its card — cost, Combat, units in the pool and the spellbooks
+  that enhance it, earned or not (`view.seats[n].units`).
   **Icons** are silhouettes per unit — every faction's Cultist is the same
   hooded figure in its colour — and their size follows the unit's class,
   Cultist < Monster < Terror (no cult has one yet) < Great Old One, so the
