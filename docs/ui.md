@@ -25,10 +25,10 @@ A game named by `FITTED_GAMES` in `js/game.js` (so far only Blooms and its varia
 is drawn by `renderFitted` ([ADR 0092](decisions/0092-a-game-page-that-fits-the-screen.md)). `body.fit-screen` makes
 the page exactly as tall as the window, with no page scroll and no footer. The `.board-column` is as wide as the board
 can be drawn at that height (`--board-aspect`, from the board's `viewBox`), leaving `#play-rail` at least `--rail-least`.
-The rail has all the rest of the width. It holds the cards and scrolls by itself, keeping its place across redraws, in
-two `.rail-stack`s: the tutorial and any notices, `#action-card` and `#players-card`; then voice, chat and history. The
-stacks run together as one column until the rail is 44rem wide, and stand side by side from there. On an upright screen
-under 980px wide, the rail goes under the board, whose row is no taller than the board.
+The rail has what is left, up to 40rem, and any width beyond that is shared by the outer margins. It holds the cards in
+one column and scrolls by itself, keeping its place across redraws: the tutorial and any notices, `#action-card`,
+`#players-card`, voice, chat and history. On an upright screen under 980px wide, the rail goes under the board, whose
+row is no taller than the board.
 
 No `.status-bar` is drawn on this page. While a game is being played, `#status-message` stays as `.sr-only` for screen
 readers. For a result, history, analysis or a game waiting for an opponent, the message and the bar's buttons (`#rematch`,

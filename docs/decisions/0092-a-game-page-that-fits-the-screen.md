@@ -15,9 +15,10 @@ tried on one game before the others move.
   shrinks to fit. Everything else is a card in a column beside it, which scrolls by itself. On an
   upright screen under 980px wide the column goes under the board. The footer is not shown: the version is also in the
   help window.
-- **The board and the cards share the whole width.** The board's column is as wide as the board can be drawn at that
-  height, and the cards have the rest, so the space goes to them and not to a gap around a board that cannot fill its
-  column. With room for it, the cards stand in two columns rather than stretching across the window.
+- **Two columns at most, with spare width outside them.** The board's column is as wide as the board can be drawn at
+  that height, and the cards have what is left in a single column, up to 40rem. Width beyond that goes to the outer
+  margins, so the board and the cards are always next to each other. A third column was tried on wide screens, and the
+  page was harder to read for it.
 - **On the player's turn the actions are pinned, not scrolled to.** The card sticks to the top and bottom edges of the
   column, so it is in view whatever the scroll position. Scrolling the column to it would pull away a player reading
   the chat, and taking the keyboard would interrupt one typing in it. The card stays in place on the other player's

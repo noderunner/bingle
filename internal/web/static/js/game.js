@@ -1986,19 +1986,18 @@ function renderFitted(seats, bottomSeat) {
 	players.append(h("div", { class: "table-badges" }, ...badges));
 	first.push(players);
 
-	// Two stacks of cards: they run together in a narrow column and stand side by side in a wide one.
 	const rail = sidePanel(null);
-	const rest = h("div", { class: "rail-stack" }, ...rail.childNodes, debugPanel());
 	rail.classList.add("play-rail");
 	rail.id = "play-rail";
-	rail.append(h("div", { class: "rail-cards" }, h("div", { class: "rail-stack" }, ...first.filter(Boolean)), rest));
+	rail.prepend(...first.filter(Boolean));
+	rail.append(debugPanel());
 	if (quiet) rail.append(words);
 
 	const screen = h("div", { class: "game-layout play-screen" }, main, rail);
 	root.append(screen);
 	rail.scrollTop = S.railScroll || 0;
 	drawBoard(boardHost);
-	// The board's column is as wide as the board can be drawn: the cards have the rest.
+	// The board's column is as wide as the board can be drawn: the cards have what is left, up to a limit.
 	const view = boardHost.querySelector("svg")?.viewBox.baseVal;
 	if (view && view.height) screen.style.setProperty("--board-aspect", view.width / view.height);
 }

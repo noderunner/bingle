@@ -166,7 +166,7 @@ func TestWebFitScreen_TheTutorialIsBesideTheBoard(t *testing.T) {
 		t.Fatal(err)
 	}
 	openTutorialOf(t, ctx, base, "blooms", "blooms-basics")
-	if !evalBool(t, ctx, `document.querySelector("#play-rail .rail-stack > #tutorial") === document.querySelector("#play-rail .rail-stack").firstElementChild`) {
+	if !evalBool(t, ctx, `document.querySelector("#play-rail > #tutorial") === document.getElementById("play-rail").firstElementChild`) {
 		t.Error("the tutorial should come first among the cards")
 	}
 	if !evalBool(t, ctx, fitsTheWindowJS) {
@@ -255,17 +255,14 @@ func TestWebFitScreen_TheCardsSayWhatTheBarSaid(t *testing.T) {
 	}
 }
 
-// The board's column is as wide as the board: the space goes to the cards, not to a gap
-// between them. Where the cards have the room they stand in two columns.
+// The board's column is as wide as the board, and the cards stand next to it in one column.
+// Width that neither can use goes to the outer margins, not between them.
 func TestWebFitScreen_TheBoardAndTheCardsShareTheWidth(t *testing.T) {
 	base := newRESTTestServer(t)
 	ctx, cancel := newChromedpContext(t, 90*time.Second)
 	defer cancel()
 	rect := func(sel string) string { return `document.querySelector("` + sel + `").getBoundingClientRect()` }
-	for _, size := range []struct {
-		w, h    int64
-		columns bool
-	}{{1920, 1080, true}, {2560, 1080, true}, {1280, 720, false}, {1024, 600, false}} {
+	for _, size := range []struct{ w, h int64 }{{1920, 1080}, {2560, 1080}, {1280, 720}, {1024, 600}} {
 		name := fmt.Sprintf("%dx%d", size.w, size.h)
 		fittedGame(t, ctx, base, "blooms", size.w, size.h)
 		if !evalBool(t, ctx, fitsTheWindowJS) {
@@ -284,9 +281,16 @@ func TestWebFitScreen_TheBoardAndTheCardsShareTheWidth(t *testing.T) {
 		if w := evalInt(t, ctx, `Math.round(`+rect("#play-rail")+`.width)`); w <= 380 {
 			t.Errorf("%s: the cards are only %dpx wide", name, w)
 		}
-		side := evalBool(t, ctx, rect("#chat-card")+`.left >= `+rect("#action-card")+`.right`)
-		if side != size.columns {
-			t.Errorf("%s: chat beside the actions is %v", name, side)
+		if w := evalInt(t, ctx, `Math.round(`+rect("#play-rail")+`.width)`); w > 640 {
+			t.Errorf("%s: the cards are %dpx wide", name, w)
+		}
+		if !evalBool(t, ctx, rect("#chat-card")+`.top >= `+rect("#action-card")+`.bottom`) {
+			t.Errorf("%s: the cards should stand in one column", name)
+		}
+		// What is left over is shared by the two sides of the page.
+		left, right := evalInt(t, ctx, `Math.round(`+rect("#board svg")+`.left)`), evalInt(t, ctx, `Math.round(innerWidth - `+rect("#play-rail")+`.right)`)
+		if left-right > 16 || right-left > 16 {
+			t.Errorf("%s: margins of %dpx and %dpx", name, left, right)
 		}
 	}
 	// Upright, the board's row is no taller than the board.
