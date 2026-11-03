@@ -187,6 +187,8 @@ type UnitBookView struct {
 	Timing   string `json:"timing"`
 	Text     string `json:"text"`
 	Unlocked bool   `json:"unlocked"`
+	// Req is what earns the spellbook of an Independent Great Old One.
+	Req string `json:"req,omitempty"`
 }
 
 // CounterView is a labelled number.
@@ -552,30 +554,30 @@ func (e *eng) seatView(s, viewer int) *SeatView {
 	}
 	// Spellbooks.
 	books := CardView{ID: "books", Title: "Spellbooks"}
-	for i, b := range f.Books {
-		// A cult that set up with a neutral spellbook in place of its timer
-		// book shows that one in the slot.
-		if i == e.swappedOut(s) {
-			n := e.swapOf(s)
-			nb := neutralBooks[n]
-			row := RowView{Text: nb.Name + " (neutral, in place of " + b.Name + ")", Detail: nb.Timing + ": " + nb.Text, State: "todo"}
-			if d.heldNeutral(s, n) {
-				row.State = "done"
-				if d.mooned(s, bookSlots+n) {
-					row.Text += " — a Moonbeast lies on it"
-				}
-			}
-			books.Rows = append(books.Rows, row)
-			continue
-		}
+	bookRow := func(b bookSpec, slot int) RowView {
 		row := RowView{Text: b.Name, Detail: b.Timing + ": " + b.Text, State: "todo"}
-		if d.holds(s, i) {
+		if d.holds(s, slot) {
 			row.State = "done"
-			if d.mooned(s, i) {
+			if d.mooned(s, slot) {
 				row.Text += " — a Moonbeast lies on it"
 			}
 		}
-		books.Rows = append(books.Rows, row)
+		return row
+	}
+	for i, b := range f.Books {
+		// A neutral spellbook swapped in at setup is one of the cult's own.
+		if i == e.swappedOut(s) {
+			n := e.swapOf(s)
+			books.Rows = append(books.Rows, bookRow(neutralBooks[n], bookSlots+n))
+			continue
+		}
+		books.Rows = append(books.Rows, bookRow(b, i))
+	}
+	// A neutral spellbook taken since then is listed once it is held.
+	for n, b := range neutralBooks {
+		if n != e.swapOf(s) && d.heldNeutral(s, n) {
+			books.Rows = append(books.Rows, bookRow(b, bookSlots+n))
+		}
 	}
 	reqs := CardView{ID: "reqs", Title: "Requirements"}
 	for i, r := range f.Reqs {
@@ -651,12 +653,6 @@ func (e *eng) seatView(s, viewer int) *SeatView {
 		}
 	}
 	sv.Cards = []CardView{ability, books, reqs, units}
-	if neutral := e.neutralCard(s); neutral != nil {
-		sv.Cards = append(sv.Cards, *neutral)
-	}
-	if loyalty := e.loyaltyCard(s); loyalty != nil {
-		sv.Cards = append(sv.Cards, *loyalty)
-	}
 	for _, u := range e.units(s) {
 		sv.Units = append(sv.Units, e.unitView(s, f, u))
 	}
@@ -890,7 +886,7 @@ func (e *eng) unitView(seat int, f *faction, u unitSpec) UnitView {
 			continue
 		}
 		on := e.igooBook(seat, ig)
-		uv.Books = append(uv.Books, UnitBookView{ID: b.ID, Name: b.Name, Timing: b.Timing, Text: b.Text, Unlocked: on})
+		uv.Books = append(uv.Books, UnitBookView{ID: b.ID, Name: b.Name, Timing: b.Timing, Text: b.Text, Unlocked: on, Req: cards[cardIndex(ig)].Req})
 		if on {
 			uv.Enhanced = true
 		}

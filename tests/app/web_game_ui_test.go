@@ -1222,7 +1222,7 @@ func TestWebGame_NoStrayNullOrUndefinedText(t *testing.T) {
 	clickSel(t, ctx, "#exit-analysis")
 	clickSel(t, ctx, "#resign")
 	clickSel(t, ctx, "#resign")
-	waitJS(t, ctx, "finished", `document.querySelector(".status-bar.over, #rematch")`, 10*time.Second)
+	waitJS(t, ctx, "finished", `document.getElementById("rematch") !== null`, 10*time.Second)
 	check("finished game")
 }
 

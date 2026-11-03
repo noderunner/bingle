@@ -75,7 +75,7 @@ func TestWebCthulhuWars_DesecrateRollsAtOnceThenPlacesAUnitAndCannotBeTakenBack(
 		t.Errorf("an Undo button after the roll")
 	}
 	// The log has the die and what it was set against.
-	waitJS(t, ctx, "the roll in the log", `document.body.innerText.indexOf("the die shows") >= 0`, 10*time.Second)
+	waitJS(t, ctx, "the roll in the log", `document.body.textContent.indexOf("the die shows") >= 0`, 10*time.Second)
 	// Place a Byakhee: it stands there, whatever the die said.
 	clickSel(t, ctx, `#move-bar .piece-choice[data-piece="byakhee"]`)
 	waitJS(t, ctx, "the Byakhee", `document.querySelector('#board .token[data-position="europe"][data-piece="byakhee"]') !== null`, 15*time.Second)

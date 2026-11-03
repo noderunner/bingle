@@ -17,9 +17,12 @@ export const LAYOUTS = [
 	["desktop", "Desktop"],
 ];
 
-// A touch screen of phone or portrait-tablet width. A narrow desktop window
+// A touch screen of phone or portrait-tablet width, or as short as a phone on its
+// side: a large phone is wider than that when it is turned. A narrow desktop window
 // (a mouse) keeps the desktop page: it can ask for the phone layout itself.
-const smallTouch = window.matchMedia("(pointer: coarse) and (max-width: 900px)");
+const smallTouch = window.matchMedia("(pointer: coarse) and (max-width: 900px), (pointer: coarse) and (max-height: 500px)");
+const coarse = window.matchMedia("(pointer: coarse)");
+const wideWindow = window.matchMedia("(orientation: landscape)");
 
 export function layoutChoice() {
 	const v = store.get(KEY, "auto");
@@ -36,12 +39,33 @@ export function isMobileLayout() {
 	return c === "phone" || (c === "auto" && smallTouch.matches);
 }
 
+/**
+ * Is the phone on its side? It asks the device, not the window: an on-screen keyboard makes an
+ * upright window wider than it is tall, and typing a message must not swap the chat for the map.
+ * With a mouse (the phone layout asked for on a desktop) the window's shape is all there is.
+ */
+export function isLandscape() {
+	const type = window.screen && window.screen.orientation && window.screen.orientation.type;
+	return coarse.matches && type ? type.startsWith("landscape") : window.innerWidth > window.innerHeight;
+}
+
 /** Calls fn when the screen changes in a way that could change the answer. */
 export function onScreenChange(fn) {
+	let was = isLandscape();
+	const turned = () => {
+		if (isLandscape() === was) return;
+		was = isLandscape();
+		fn();
+	};
 	smallTouch.addEventListener("change", fn);
-	window.addEventListener("orientationchange", fn);
-	// smallTouch belongs to the module, not to a page: the page's listener goes with the page.
-	onLeave(() => smallTouch.removeEventListener("change", fn));
+	wideWindow.addEventListener("change", turned);
+	window.addEventListener("orientationchange", turned);
+	// These belong to the module, not to a page: the page's listeners go with the page.
+	onLeave(() => {
+		smallTouch.removeEventListener("change", fn);
+		wideWindow.removeEventListener("change", turned);
+		window.removeEventListener("orientationchange", turned);
+	});
 }
 
 /**

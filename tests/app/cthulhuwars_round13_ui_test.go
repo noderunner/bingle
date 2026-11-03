@@ -155,11 +155,19 @@ func TestWebCthulhuWars_TheGlyphsOfTheCultsAreOnTheMapAndTheNewUnitsHaveIcons(t 
 	if got := evalString(t, ctx, `document.querySelector('#board .area-sigil-badge[data-sigil="ys"] path.area-sigil').getAttribute("fill")`); got == "" {
 		t.Error("the glyph has no colour")
 	}
-	// The cards: Great Cthulhu holds eleven Loyalty Cards.
-	waitJS(t, ctx, "the loyalty card", `document.querySelector('[data-card="loyalty"]') !== null`, 10*time.Second)
-	if got := evalString(t, ctx, `document.querySelector('[data-card="loyalty"]').textContent`); !strings.Contains(got, "Abhoth") || !strings.Contains(got, "Hound of Tindalos") {
-		t.Errorf("the Loyalty Cards panel: %q", got)
+	// The cards Great Cthulhu holds show as its units, with no list of everyone's.
+	if n := evalInt(t, ctx, `document.querySelectorAll('[data-card="neutral"], [data-card="loyalty"]').length`); n != 0 {
+		t.Errorf("%d neutral or Loyalty Card lists on the cults", n)
 	}
+	clickSel(t, ctx, `[data-expand="seat-1"]`)
+	for _, unit := range []string{"abhoth", "hound-of-tindalos"} {
+		if n := evalInt(t, ctx, `document.querySelectorAll('#seat-1 [data-card="units"] [data-piece="`+unit+`"]').length`); n == 0 {
+			t.Errorf("%s is not among the units", unit)
+		}
+	}
+	// An Independent's hover card says what earns its spellbook.
+	hoverOver(t, ctx, `#seat-1 [data-card="units"] [data-piece="abhoth"]`)
+	waitJS(t, ctx, "the requirement", `/Requirement:.*4\+ different Monster types/.test((document.querySelector(".hover-card") || {}).textContent || "")`, 5*time.Second)
 	mu.Lock()
 	defer mu.Unlock()
 	if len(jsErrors) > 0 {
@@ -279,5 +287,46 @@ func TestWebCthulhuWars_CthughaIsAwakenedByChoosingTheGreatOldOneHeReplaces(t *t
 	defer mu.Unlock()
 	if len(jsErrors) > 0 {
 		t.Errorf("uncaught JS exceptions: %v", jsErrors)
+	}
+}
+
+// A neutral spellbook held takes a requirement's place like any other, and a cult that holds six,
+// one of them neutral, is down to six tiles.
+func TestWebCthulhuWars_AHeldNeutralSpellbookCoversARequirement(t *testing.T) {
+	baseURL := newRESTTestServer(t)
+	room, id := cardGame(t, baseURL, func(d *cthulhuwars.Data, st *state.BoardState) {
+		d.Neutral[1] = 1 << 0
+		d.Reqs[1] = 1 << 0
+		d.Books[2] = 0b011111
+		d.Neutral[2] = 1 << 1
+		d.Reqs[2] = 63
+	})
+	ctx, cancel := newChromedpContext(t, 60*time.Second)
+	defer cancel()
+	openGameAs(t, ctx, baseURL, room, id, "Alice")
+	waitJS(t, ctx, "the cards", `document.querySelector('#seat-1 .spellbook-grid') !== null`, 15*time.Second)
+	if got := evalString(t, ctx, `document.querySelector('#seat-1 .spell-tile.book.held').textContent`); got != "Shriveling" {
+		t.Errorf("the tile in the first slot: %q", got)
+	}
+	if n := evalInt(t, ctx, `document.querySelectorAll('#seat-1 .spell-tile').length`); n != 12 {
+		t.Errorf("%d tiles with one neutral book: one held, five requirements, six books to come", n)
+	}
+	count := func(seat string) string {
+		return evalString(t, ctx, `document.querySelector('#seat-`+seat+` [data-card="books"] .faction-heading span').textContent.trim()`)
+	}
+	if got := count("1"); got != "1/6" {
+		t.Errorf("seat 1 holds %q", got)
+	}
+	if got := count("2"); got != "6/6" {
+		t.Errorf("seat 2 holds %q", got)
+	}
+	if n := evalInt(t, ctx, `document.querySelectorAll('#seat-2 .spell-tile').length`); n != 6 {
+		t.Errorf("%d tiles with all six", n)
+	}
+	if n := evalInt(t, ctx, `document.querySelectorAll('#seat-2 .spell-tile.book.held').length`); n != 6 {
+		t.Errorf("%d books held with all six", n)
+	}
+	if got := evalString(t, ctx, `document.querySelector('#neutral-items').textContent`); strings.Contains(got, "Shriveling") {
+		t.Errorf("a held book is still in the neutral items: %q", got)
 	}
 }

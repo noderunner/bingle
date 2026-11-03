@@ -735,9 +735,6 @@ dialog.rules-window[open] { display: flex; flex-direction: column; }
 kbd { font: 600 0.8em ui-monospace, Menlo, Consolas, monospace; border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 4px; padding: 0 0.35em; background: var(--surface-2); }
 
 /* --- area maps and multi-seat tables (Cthulhu Wars) ----------------------- */
-.board-wrap.wide #board, .board-wrap.wide .move-bar, .board-wrap.wide .round-bar, .board-wrap.wide .exchange,
-.board-wrap.wide .inspector { width: 100%; max-width: min(100%, calc((100vh - 235px) * var(--aspect, 2))); }
-.board-wrap.wide .move-bar, .board-wrap.wide .exchange, .board-wrap.wide .inspector { min-height: 0; }
 .area-map { display: block; }
 .area-bg { fill: #e5dcc0; stroke-linejoin: round; transition: filter 0.12s; }
 .cell.area.clickable { cursor: pointer; }
@@ -776,7 +773,22 @@ kbd { font: 600 0.8em ui-monospace, Menlo, Consolas, monospace; border: 1px soli
 	background: var(--surface); border: 1px solid var(--border); font-size: 0.9rem; width: 100%;
 }
 .round-item.alarm { color: var(--danger); font-weight: 700; }
-.faction-cards { display: flex; flex-direction: column; gap: 0.15rem; }
+.faction-cards { display: flex; flex-direction: column; gap: 0.5rem; }
+.faction-heading { margin: 0 0 0.3rem; padding-bottom: 0.15rem; font-size: 0.86rem; font-weight: 700; border-bottom: 1px solid var(--border); }
+.seat-more { margin-top: 0.5rem; }
+.seat-more[hidden] { display: none; }
+.expand-toggle { display: block; width: 100%; min-height: 0; margin-top: 0.2rem; padding: 0.1rem 0; border: 0; background: transparent; color: var(--muted); font-size: 0.7rem; line-height: 1; box-shadow: none; }
+.expand-toggle:hover { color: var(--text); background: var(--surface-2); }
+.neutral-card h3 { margin-bottom: 0; }
+/* The requirements and the spellbooks to come: a spellbook earned takes a requirement's place. */
+.spellbook-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.3rem; }
+.spell-tile { display: flex; align-items: center; gap: 0.3rem; min-width: 0; min-height: 2.7em; padding: 0.2rem 0.4rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.78rem; line-height: 1.25; cursor: help; }
+.spell-tile:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+.spell-text { display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.spell-tile.req { background: var(--surface-2); }
+.spell-tile.req.met { border-color: var(--accent); }
+.spell-tile.book.held { background: var(--accent-soft); border-color: var(--accent); font-weight: 600; }
+.spell-tile.book.locked { border-style: dashed; color: var(--muted); }
 .faction-card > summary { cursor: pointer; font-weight: 600; font-size: 0.86rem; padding: 0.1rem 0; }
 .card-rows { list-style: none; margin: 0.15rem 0 0.4rem; padding: 0; font-size: 0.82rem; }
 .card-rows li { display: flex; gap: 0.4rem; padding: 0.12rem 0; line-height: 1.3; }
@@ -791,7 +803,6 @@ kbd { font: 600 0.8em ui-monospace, Menlo, Consolas, monospace; border: 1px soli
 .battle .who { font-weight: 700; }
 .board-wrap > * { min-width: 0; }
 @media (max-width: 640px) {
-	.board-wrap.wide #board { margin-inline: -0.25rem; }
 	.move-bar .action-buttons button, .move-bar .piece-choice { padding: 0.35rem 0.6rem; font-size: 0.9rem; }
 }
 
@@ -800,8 +811,6 @@ kbd { font: 600 0.8em ui-monospace, Menlo, Consolas, monospace; border: 1px soli
 .area-glyph-badge:hover circle { fill: #7a1f1f; }
 .token { filter: drop-shadow(0 1.5px 1px rgba(0, 0, 0, 0.45)); }
 .token .piece-body { stroke-width: 1.8; }
-.map-zoom { position: absolute; right: 8px; top: 8px; display: flex; flex-direction: column; gap: 4px; z-index: 2; }
-.map-zoom button { width: 2rem; height: 2rem; padding: 0; justify-content: center; font-size: 1.1rem; line-height: 1; opacity: 0.9; }
 #board:has(.area-map) { position: relative; }
 .area-map { touch-action: none; cursor: grab; }
 .area-map.panning { cursor: grabbing; }
@@ -878,6 +887,10 @@ kbd { font: 600 0.8em ui-monospace, Menlo, Consolas, monospace; border: 1px soli
 .cell.area.clickable:hover .area-bg { filter: brightness(1.1) drop-shadow(0 1.5px 1.5px rgba(0, 0, 0, 0.32)); }
 .shore polygon { fill: none; stroke: rgba(255, 255, 255, 0.6); stroke-width: 10; stroke-linejoin: round; }
 @media (prefers-color-scheme: dark) { .shore polygon { stroke: rgba(150, 200, 255, 0.28); } }
+/* The names and the glyphs are a faint layer under the pieces: they may be covered, and do not compete. */
+.map-labels .area-label { opacity: 0.5; }
+.map-labels .area-glyph-badge, .map-labels .area-sigil-badge { opacity: 0.5; transition: opacity 0.1s; }
+.map-labels .area-glyph-badge:hover, .map-labels .area-sigil-badge:hover { opacity: 1; }
 .area-label { font: 700 12.5px system-ui, sans-serif; fill: #1f2a1a; stroke: rgba(255, 255, 255, 0.85); stroke-width: 3.2px; }
 .area-label.ocean-label { font: italic 600 13px Georgia, "Times New Roman", serif; letter-spacing: 0.1em; fill: #123a5e; stroke: rgba(255, 255, 255, 0.55); }
 @media (prefers-color-scheme: dark) {
@@ -945,18 +958,12 @@ kbd { font: 600 0.8em ui-monospace, Menlo, Consolas, monospace; border: 1px soli
 /* ---- big screens: bigger boards, panes that fill the window -------------- */
 @media (min-width: 1400px) {
 	.game-layout { grid-template-columns: minmax(0, 1fr) 380px; gap: 1.25rem; }
-	.game-layout.areas { grid-template-columns: minmax(0, 1fr) 430px; }
-}
-@media (min-width: 2200px) {
-	.game-layout.areas { grid-template-columns: minmax(0, 1fr) 500px; }
 }
 .cult-stack { display: flex; flex-direction: column; gap: 0.5rem; }
 .cult-stack .seat-strip { max-width: none; width: 100%; }
 .side-panel .seat-strip .seat-head { row-gap: 0.1rem; }
 
 /* Wide screens: the move list and the log sit right under the map. */
-.below-map { display: grid; grid-template-columns: repeat(auto-fit, minmax(22rem, 1fr)); gap: 1rem; margin-top: 1rem; width: 100%; align-items: start; }
-.below-map .card { margin: 0; }
 
 /* ---- round bar: the phases in order, who plays when ----------------------- */
 .round-bar { align-items: center; row-gap: 0.4rem; }
@@ -1016,13 +1023,11 @@ kbd { font: 600 0.8em ui-monospace, Menlo, Consolas, monospace; border: 1px soli
 /* Units: marked when a spellbook of their cult enhances them; clickable. */
 .piece-eye { fill: #1b1a17; stroke: none; opacity: 0.9; pointer-events: none; }
 .token .unit-icon .piece-body { stroke-linejoin: round; }
-.token-star { fill: #ffd24a; stroke: #2a1f00; stroke-width: 1.1; stroke-linejoin: round; pointer-events: none; }
 .token-inspect-ring { fill: rgba(74, 163, 255, 0.22); stroke: #1e7bff; stroke-width: 3; stroke-dasharray: 5 3; pointer-events: none; }
 .map-tokens .token { cursor: pointer; }
 .token:focus-visible { outline: none; }
 .token:focus-visible .piece-body { stroke: var(--focus); stroke-width: 3.4; }
 .unit-info { margin: 0.5rem 0 0; padding: 0.6rem 0.8rem; width: 100%; max-width: 46rem; }
-.board-wrap.wide .unit-info { max-width: min(100%, calc((100vh - 235px) * var(--aspect, 2))); }
 .unit-info-head { display: flex; align-items: center; gap: 0.6rem; }
 .unit-info-head svg { flex: none; }
 .unit-info-title { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; flex: 1; }
@@ -1209,7 +1214,6 @@ dialog.help-dialog li { margin: 0.35rem 0; }
 .pool-unit.away:hover, .pool-unit.away:focus-visible { opacity: 0.6; }
 .unit-where { margin: 0.3rem 0 0; }
 /* The neutral items still there to take: icons for units, the book pictogram and a name for spellbooks. */
-.neutral-card h3 { margin-bottom: 0.3rem; }
 .neutral-title { margin: 0.4rem 0 0.1rem; }
 .neutral-items { display: flex; flex-wrap: wrap; gap: 0.25rem 0.4rem; }
 .neutral-item { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.15rem 0.3rem; border-radius: 6px; cursor: help; }
@@ -1427,6 +1431,21 @@ body.fit-screen .play-screen {
 .play-screen #board { flex: 1; min-height: 0; max-width: none; }
 .play-screen #board svg { height: 100%; }
 .play-screen .inspector { flex: none; max-width: none; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.play-screen.boardless .inspector:empty { display: none; }
+/* A map: its own shape at the top of the column. What is under it shares the height left. */
+body.fit-screen .play-screen.areas { --rail-least: min(27rem, 42cqw); --inspector-room: 7rem; }
+.play-screen.areas .board-wrap { align-items: stretch; }
+.play-screen.areas .round-bar { flex: none; margin: 0; }
+.play-screen.areas #board { flex: 0 1 auto; min-height: 45%; aspect-ratio: var(--board-aspect, 2); }
+.play-screen.areas #board svg { width: 100%; height: 100%; }
+.play-screen.areas .board-wrap > .card { flex: 0 1 auto; min-height: 0; overflow-y: auto; margin: 0; }
+/* A table of cards has no shape of its own: it takes the width, and scrolls if a column runs long. */
+body.fit-screen .play-screen.boardless { justify-content: stretch; grid-template-columns: minmax(0, 1fr) minmax(var(--rail-least), 26rem); }
+.play-screen.boardless .board-column { overflow-y: auto; }
+.play-screen.boardless .board-wrap { flex: none; align-items: stretch; }
+.play-screen.boardless .card-table { margin: 0; }
+.play-screen.boardless .card-table:not(.sol-table) { --cw: clamp(66px, min(13cqh, 5.5cqw), 110px); --ch: calc(var(--cw) * 1.39); }
+body.fit-screen .sol-top, body.fit-screen .sol-columns { --cw: min(112px, 14cqh, calc((100cqw - (var(--n, 7) - 1) * var(--gap)) / var(--n, 7))); }
 /* A seat's name in its two colours (seatWord in js/game.js). */
 .seat-word { font-weight: 700; color: transparent; -webkit-background-clip: text; background-clip: text; }
 /* The little padding keeps the outline of a card clear of the column's edge. */
@@ -1439,13 +1458,27 @@ body.fit-screen .play-screen {
 .action-card .message { font-weight: 700; }
 .action-card .note-buttons { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.6rem; }
 .action-card .move-bar:not(:first-child) { margin-top: 0.4rem; }
+.action-card > .hand, .action-card > .cards-panel { margin-top: 0.5rem; }
+.rail-tabs { margin: 0.2rem 0 0; flex: none; }
+/* Smaller to start with in a column, and the player's own tile size still applies. */
+.play-rail .hand-piece.tile svg { width: calc(4.4rem * var(--tile-scale, 1)); height: calc(4.4rem * var(--tile-scale, 1)); }
+.rail-pane { display: flex; flex-direction: column; gap: 0.6rem; }
+.rail-pane[hidden] { display: none; }
+/* The talk and the history take all the height the column has left, and scroll inside. */
+.play-rail > #rail-pane-talk, .play-rail > #rail-pane-history { flex: 1 1 0; min-height: 18rem; }
+#rail-pane-talk > .chat { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
+#rail-pane-talk .chat-log { flex: 1 1 0; max-height: none; }
+#rail-pane-talk > .chat > h3 { display: none; }
+#rail-pane-history > .side-moves, .play-screen.areas .board-wrap > .side-moves { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
+.play-screen .side-moves > :last-child { flex: 1 1 0; min-height: 0; overflow-y: auto; }
+.play-screen.areas .events, .play-screen.areas .move-list { max-height: none; }
 .action-card .move-bar { max-width: none; min-height: 0; }
 .action-card .hint:empty { display: none; }
 /* The question, then what answers it in the order it is played: the stones, then End and Back. */
 .action-card #move-hint { flex-basis: 100%; order: -2; }
 .action-card .piece-buttons { display: inline-flex; flex-wrap: wrap; gap: 0.4rem; order: -1; }
 /* Pinned at both edges: in view whether the player has scrolled past it or not yet down to it. */
-.action-card.acting { position: sticky; top: 0; bottom: 0; z-index: 2; border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent), var(--shadow); }
+.action-card.acting { position: sticky; top: 0; bottom: 0; z-index: 2; max-height: calc(100cqh - 8px); overflow-y: auto; border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent), var(--shadow); }
 .action-card.acting h3 { color: var(--accent); }
 .players-card { display: flex; flex-direction: column; gap: 0.4rem; padding: 0.5rem; }
 .players-card .seat-strip { max-width: none; box-sizing: border-box; }
@@ -1459,6 +1492,7 @@ body.fit-screen .play-screen {
 	body.fit-screen main.page { padding: 0.4rem; }
 	body.fit-screen .play-screen { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, min(58cqh, 100cqw / var(--board-aspect, 1.1))) minmax(0, 1fr); gap: 0.4rem; }
 	.play-screen .inspector { display: none; }
+	body.fit-screen .play-screen.boardless { grid-template-rows: minmax(0, 58cqh) minmax(0, 1fr); grid-template-columns: minmax(0, 1fr); }
 }
 /* Where height or width is short the board gets what the page can give up. */
 @media (max-width: 1100px), (max-height: 560px) {
@@ -1507,13 +1541,11 @@ body.m-mode button, body.m-mode select, body.m-mode summary { touch-action: mani
 .m-board-box { position: relative; flex: 1; min-height: 8rem; display: flex; align-items: center; justify-content: center; background: var(--surface-2); }
 body.m-mode .m-board-box #board { width: 100%; height: 100%; max-width: none; }
 body.m-mode .m-board-box #board svg { width: 100%; height: 100%; touch-action: none; }
-.m-edge { position: absolute; top: 0; bottom: 0; width: 22px; touch-action: pan-x; z-index: 3; }
-.m-edge.left { left: 0; }
-.m-edge.right { right: 0; }
-.m-dock { flex: none; max-height: 38%; overflow-y: auto; padding: 0.4rem 0.6rem; border-top: 1px solid var(--border); background: var(--surface); }
-.m-dock .move-bar { margin: 0; }
-body.m-mode .map-zoom { right: 30px; top: 8px; }
-body.m-mode .map-zoom button { width: 2.75rem; height: 2.75rem; font-size: 1.3rem; }
+body.m-mode .site-footer { display: none; }
+/* A phone on its side: the whole screen is the map, past the notch. */
+body.m-landscape .topbar { display: none; }
+.m-landscape-map { position: relative; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); box-sizing: border-box; }
+.m-turn-note { position: absolute; left: 50%; top: calc(0.3rem + env(safe-area-inset-top)); transform: translateX(-50%); z-index: 3; max-width: 80%; padding: 0.15rem 0.7rem; border-radius: 999px; background: var(--accent); color: var(--accent-ink); font-size: 0.8rem; font-weight: 700; pointer-events: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; box-shadow: var(--shadow); }
 
 /* Large touch targets for everything that is tapped to play. */
 body.m-mode .move-bar button, body.m-mode .move-bar .piece-choice, body.m-mode .action-buttons button { min-height: 2.75rem; padding: 0.5rem 0.85rem; font-size: 1rem; }
@@ -1532,7 +1564,7 @@ body.m-mode .round-bar { flex-wrap: wrap; }
 .m-chip { flex: none; display: inline-flex; align-items: center; gap: 0.4rem; min-height: 2.5rem; border-radius: 999px; padding: 0.2rem 0.8rem; font-size: 0.9rem; }
 .m-chip.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
 .m-chip .swatch { width: 0.8rem; height: 0.8rem; border-radius: 50%; border: 2px solid var(--piece-white-stroke); }
-.m-nav { flex: none; display: grid; grid-template-columns: repeat(6, 1fr); border-top: 1px solid var(--border); background: var(--surface); padding-bottom: env(safe-area-inset-bottom); padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }
+.m-nav { flex: none; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; border-top: 1px solid var(--border); background: var(--surface); padding-bottom: env(safe-area-inset-bottom); padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }
 .m-nav-item { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.1rem; min-height: 3.4rem; padding: 0.25rem 0; border: 0; border-radius: 0; background: transparent; color: var(--muted); font-weight: 600; }
 .m-nav-item.on { color: var(--accent); box-shadow: inset 0 3px 0 var(--accent); }
 .m-nav-icon { font-size: 1.35rem; line-height: 1; }

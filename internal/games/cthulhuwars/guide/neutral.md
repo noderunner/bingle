@@ -71,7 +71,7 @@ In Bingle:
 
 - In your turn of the **Doom phase** every card still in the pool of the packs in the game has a button: **Buy the … card (2 Doom)**. Buying costs no Ritual and does not end your turn: you may still perform the Ritual of Annihilation (and so pay for the card out of the Doom the Ritual just earned) or reveal your Elder Signs.
 - **One Loyalty Card in a Doom phase** — Monster or Terror (a Terror and a Monster cannot be bought in the same phase) — and as many cards as you like over the game.
-- The card's figures go to your **pool**; the card itself shows in your *Loyalty Cards* panel. You will usually place one for free (at a Gate you control), as the card says.
+- The card's figures go to your **pool** and show under *Units* on your cult's card. You will usually place one for free (at a Gate you control), as the card says.
 - Your units of that kind are summoned like any Monster (a button each, with its cost). Nobody else ever has them.
 
 ### The Azathoth faction's Monsters

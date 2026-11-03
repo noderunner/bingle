@@ -183,24 +183,140 @@ func TestWebFitScreen_TheTutorialIsBesideTheBoard(t *testing.T) {
 	})()`, 5*time.Second)
 }
 
-// Only Blooms has this layout so far, and a game of Blooms in its lobby does not.
-func TestWebFitScreen_OtherGamesKeepTheirPage(t *testing.T) {
+// Every kind of game gets this page: a board and a hand, a board that grows, a board with
+// cards to choose from, a table of cards, a game of patience and a map.
+func TestWebFitScreen_EveryKindOfGameFits(t *testing.T) {
+	base := newRESTTestServer(t)
+	ctx, cancel := newChromedpContext(t, 150*time.Second)
+	defer cancel()
+	for _, g := range []struct {
+		def    string
+		solo   bool
+		play   string // the play area
+		pinned string // what the player chooses from goes in the actions card
+	}{
+		{"tak-5x5", false, "#board svg", "#action-card .hand button"},
+		{"hive-base", false, "#board svg", "#action-card .hand button"},
+		{"onitama", false, "#board svg", "#action-card #cards-panel"},
+		{"go-9x9", false, "#board svg", "#action-card"},
+		{"nyet", false, ".card-table", "#action-card"},
+		{"spider", true, ".sol-table", "#action-card"},
+		{"cthulhu-wars", false, "#board svg", "#action-card .action-buttons"},
+	} {
+		body := map[string]any{"game_def_id": g.def, "player_name": "Alice"}
+		if !g.solo {
+			body["opponent"] = "random"
+		}
+		var created struct {
+			RoomCode string `json:"room_code"`
+		}
+		if code := doJSON(t, "POST", base+"/api/games", body, &created); code != 200 {
+			t.Fatalf("%s: create: %d", g.def, code)
+		}
+		for _, size := range [][2]int64{{1920, 1080}, {1366, 768}} {
+			name := fmt.Sprintf("%s at %dx%d", g.def, size[0], size[1])
+			if err := chromedp.Run(ctx, chromedp.EmulateViewport(size[0], size[1])); err != nil {
+				t.Fatal(err)
+			}
+			openGameAs(t, ctx, base, created.RoomCode, g.def, "Alice")
+			waitJS(t, ctx, name+": the choices", `document.querySelector("`+g.pinned+`") !== null`, 20*time.Second)
+			if !evalBool(t, ctx, fitsTheWindowJS) {
+				t.Errorf("%s: the page does not fit the window", name)
+			}
+			if evalBool(t, ctx, `document.querySelector(".status-bar") !== null`) {
+				t.Errorf("%s: a status bar is drawn", name)
+			}
+			if !evalBool(t, ctx, `document.getElementById("play-rail").getBoundingClientRect().left >= document.querySelector("`+g.play+`").getBoundingClientRect().right`) {
+				t.Errorf("%s: the cards are not beside the play area", name)
+			}
+			if evalInt(t, ctx, `Math.round(document.querySelector("`+g.play+`").getBoundingClientRect().width)`) < 500 {
+				t.Errorf("%s: the play area is too small", name)
+			}
+		}
+	}
+}
+
+// A board that grows as tiles are laid keeps its shape, or the columns would move at each turn.
+func TestWebFitScreen_ColumnsStayPutAsHiveGrows(t *testing.T) {
 	base := newRESTTestServer(t)
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
 	var created struct {
 		RoomCode string `json:"room_code"`
 	}
-	if code := doJSON(t, "POST", base+"/api/games", map[string]any{"game_def_id": "tak-5x5", "player_name": "Alice", "opponent": "random"}, &created); code != 200 {
+	if code := doJSON(t, "POST", base+"/api/games", map[string]any{"game_def_id": "hive-base", "player_name": "Alice", "opponent": "random"}, &created); code != 200 {
 		t.Fatalf("create: %d", code)
 	}
-	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1280, 720)); err != nil {
+	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1366, 768)); err != nil {
 		t.Fatal(err)
 	}
-	openGameAs(t, ctx, base, created.RoomCode, "tak-5x5", "Alice")
-	waitJS(t, ctx, "the page", `document.querySelector(".game-layout") !== null`, 15*time.Second)
-	if evalBool(t, ctx, `document.body.classList.contains("fit-screen") || document.getElementById("play-rail") !== null`) {
-		t.Error("Tak was given the fitted layout")
+	openGameAs(t, ctx, base, created.RoomCode, "hive-base", "Alice")
+	left := `Math.round(document.getElementById("play-rail").getBoundingClientRect().left)`
+	waitJS(t, ctx, "a tile", `document.querySelector(".hand-piece.choosable") !== null`, 15*time.Second)
+	before := evalInt(t, ctx, left)
+	evalBool(t, ctx, hiveStepJS+` !== null`)
+	waitJS(t, ctx, "the cell", `document.querySelector("#board .cell.clickable") !== null`, 10*time.Second)
+	evalBool(t, ctx, hiveStepJS+` !== null`)
+	for deadline := time.Now().Add(20 * time.Second); cfGet(t, base, created.RoomCode).MoveSeq < 2 && time.Now().Before(deadline); {
+		time.Sleep(200 * time.Millisecond)
+	}
+	waitJS(t, ctx, "the turn back", `document.querySelector("#action-card.acting") !== null`, 10*time.Second)
+	if after := evalInt(t, ctx, left); after != before {
+		t.Errorf("the cards moved from %d to %d", before, after)
+	}
+}
+
+// A map has more to show than a column can: the cults, the talk and the history take turns,
+// and the history goes under the map when there is the height for it.
+func TestWebFitScreen_TheCardsOfAMapTakeTurns(t *testing.T) {
+	base := newRESTTestServer(t)
+	ctx, cancel := newChromedpContext(t, 90*time.Second)
+	defer cancel()
+	var created struct {
+		RoomCode string `json:"room_code"`
+	}
+	if code := doJSON(t, "POST", base+"/api/games", map[string]any{"game_def_id": "cthulhu-wars", "player_name": "Alice", "opponent": "random"}, &created); code != 200 {
+		t.Fatalf("create: %d", code)
+	}
+	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1920, 1080)); err != nil {
+		t.Fatal(err)
+	}
+	openGameAs(t, ctx, base, created.RoomCode, "cthulhu-wars", "Alice")
+	waitJS(t, ctx, "the tabs", `document.getElementById("rail-tab-cults") !== null`, 20*time.Second)
+	if !evalBool(t, ctx, `document.querySelector(".board-wrap > #history-card") !== null && document.getElementById("rail-tab-history") === null`) {
+		t.Error("the history should be under the map")
+	}
+	// The map starts right under the round: no gap to lose its top to.
+	if gap := evalInt(t, ctx, `Math.round(document.querySelector("#board svg").getBoundingClientRect().top - document.querySelector(".round-bar").getBoundingClientRect().bottom)`); gap > 16 {
+		t.Errorf("%dpx between the round and the map", gap)
+	}
+	visible := func(id string) bool {
+		return evalBool(t, ctx, `document.getElementById("`+id+`").offsetParent !== null`)
+	}
+	if !visible("cult-stack") || visible("chat-input") {
+		t.Error("the cults should be showing, and the chat not")
+	}
+	evalBool(t, ctx, `(document.getElementById("chat-input").value = "half a thought", true)`)
+	clickSel(t, ctx, "#rail-tab-talk")
+	waitJS(t, ctx, "the chat", `document.getElementById("chat-input").offsetParent !== null`, 10*time.Second)
+	if visible("cult-stack") {
+		t.Error("the cults should be behind their tab")
+	}
+	// The actions stay in view whichever tab is open.
+	if !visible("action-card") {
+		t.Error("the actions went with the tab")
+	}
+	clickSel(t, ctx, "#rail-tab-cults")
+	waitJS(t, ctx, "the cults", `document.getElementById("cult-stack").offsetParent !== null`, 10*time.Second)
+
+	// With no height to spare the history is a tab like the others.
+	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1200, 640)); err != nil {
+		t.Fatal(err)
+	}
+	openGameAs(t, ctx, base, created.RoomCode, "cthulhu-wars", "Alice")
+	waitJS(t, ctx, "the history tab", `document.getElementById("rail-tab-history") !== null`, 20*time.Second)
+	if !evalBool(t, ctx, fitsTheWindowJS) {
+		t.Error("the map does not fit the smaller window")
 	}
 }
 

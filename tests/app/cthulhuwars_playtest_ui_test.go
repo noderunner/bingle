@@ -101,41 +101,28 @@ func TestWebCthulhuWars_AnyUnitOpensItsCard(t *testing.T) {
 		}
 	}
 
-	// An enemy Cultist is not a legal choice: the click only opens its card.
+	// An enemy Cultist is not a legal choice: the click does nothing, and starts no move.
 	click(`#board .token[data-piece="cultist"][data-color="blue"]`)
-	waitJS(t, ctx, "unit card", `document.getElementById("unit-info") !== null`, 5*time.Second)
-	card := evalString(t, ctx, `document.getElementById("unit-info").textContent`)
-	for _, want := range []string{"Acolyte Cultist", "Crawling Chaos", "Pool", "Combat"} {
-		if !strings.Contains(card, want) {
-			t.Errorf("the card lacks %q: %q", want, card)
-		}
+	time.Sleep(200 * time.Millisecond)
+	if evalBool(t, ctx, `document.getElementById("unit-info") !== null`) {
+		t.Error("a unit's card opened under the map")
 	}
-	if n := evalInt(t, ctx, `document.querySelectorAll('#board .token.token-inspected').length`); n != 1 {
-		t.Errorf("%d inspected tokens", n)
-	}
-	// No move was started by it.
 	if n := evalInt(t, ctx, `document.querySelectorAll('#board .cell.area.clickable').length`); n != 0 {
-		t.Errorf("%d clickable areas after looking at a foe", n)
+		t.Errorf("%d clickable areas after clicking a foe", n)
 	}
 
-	// A second click closes it; Esc does too.
-	click(`#board .token[data-piece="cultist"][data-color="blue"]`)
-	waitJS(t, ctx, "card closed", `document.getElementById("unit-info") === null`, 5*time.Second)
-	click(`#board .token[data-piece="cultist"][data-color="red"]`)
-	waitJS(t, ctx, "another card", `document.getElementById("unit-info") !== null && document.getElementById("unit-info").textContent.indexOf("Black Goat") >= 0`, 5*time.Second)
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`document.dispatchEvent(new KeyboardEvent("keydown", {key: "Escape", bubbles: true})); true`, nil)); err != nil {
-		t.Fatal(err)
-	}
-	waitJS(t, ctx, "closed by Esc", `document.getElementById("unit-info") === null`, 5*time.Second)
-
-	// One's own glowing unit is picked up — and its card opens as well.
+	// One's own glowing unit is picked up, with no card under the map to push it about.
+	place := `JSON.stringify(document.querySelector("#board svg").getBoundingClientRect())`
+	before := evalString(t, ctx, place)
 	click(`#board .token.token-target[data-piece="cultist"]`)
-	waitJS(t, ctx, "own card", `document.getElementById("unit-info") !== null && document.getElementById("unit-info").textContent.indexOf("Great Cthulhu") >= 0`, 5*time.Second)
 	// Its six neighbours: it stands beside the Gate, not on it.
 	waitJS(t, ctx, "destinations", `document.querySelectorAll('#board .cell.area.clickable').length === 6`, 10*time.Second)
-	// Close with the × button.
-	click(`#unit-info-close`)
-	waitJS(t, ctx, "closed by the button", `document.getElementById("unit-info") === null`, 5*time.Second)
+	if evalBool(t, ctx, `document.getElementById("unit-info") !== null`) {
+		t.Error("a unit's card opened under the map")
+	}
+	if after := evalString(t, ctx, place); after != before {
+		t.Errorf("the map moved: %s then %s", before, after)
+	}
 	mu.Lock()
 	defer mu.Unlock()
 	if len(jsErrors) > 0 {

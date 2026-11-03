@@ -124,7 +124,7 @@ func TestWebCthulhuWars_TheUnitsOfTheCultAreAllListedAndThoseAwayAreGreyedOut(t 
 	if n := evalInt(t, ctx, `document.querySelectorAll('#pool-1 .pool-unit.away[data-piece="cultist"]').length`); n != 4 {
 		t.Errorf("%d Acolytes away, want 4", n)
 	}
-	if got := evalString(t, ctx, `document.querySelector('#seat-1 [data-card="units"] summary').textContent`); !strings.Contains(got, "10 in the pool") {
+	if got := evalString(t, ctx, `document.querySelector('#seat-1 [data-card="units"] .faction-heading').textContent`); !strings.Contains(got, "10 in the pool") {
 		t.Errorf("summary = %q", got)
 	}
 	// An icon away says where that unit is.

@@ -14,7 +14,7 @@ import { voiceCard, voiceEvent, voiceResync } from "./voice.js";
 import { installNav, navigate } from "./nav.js";
 import { installTopbar } from "./topbar.js";
 import { mountGameNotify, applyProfileDefault } from "./notify-ui.js";
-import { LAYOUTS, isMobileLayout, layoutChoice, setLayoutChoice, mobileShell, onScreenChange } from "./mobile.js";
+import { LAYOUTS, isMobileLayout, isLandscape, layoutChoice, setLayoutChoice, mobileShell, onScreenChange } from "./mobile.js";
 import { lobbyCard } from "./lobby.js";
 import { statIcon } from "./icons.js";
 import { hoverCard, hideHoverCard } from "./tooltip.js";
@@ -77,6 +77,7 @@ const S = {
 		// null until the player chooses: then the glyphs show when Yellow Sign is at the table.
 		glyphs: store.get("bingle.layer.glyphs", null),
 		sigils: store.get("bingle.layer.sigils", true),
+		units: store.get("bingle.layer.units", true),
 	},
 	lastPiece: null, // piece type most recently placed (quick placement)
 	inspect: null, // square under the pointer, for the stack inspector
@@ -804,14 +805,15 @@ function onToken(pos, piece, color) {
 	const onGate = kind !== piece;
 	const same = !!S.unitInfo && S.unitInfo.pos === pos && S.unitInfo.piece === kind && S.unitInfo.color === color && !!S.unitInfo.onGate === onGate;
 	if (tokenOk(pos, piece, color)) {
-		// A unit that is a legal choice is picked up — and its card opens too.
-		S.unitInfo = { pos, piece: kind, color, onGate };
+		// A unit that is a legal choice is picked up. A phone has no hover, and opens its card too.
+		if (isMobileLayout()) S.unitInfo = { pos, piece: kind, color, onGate };
 		const b = activeBuilder();
 		for (const st of tokenSteps(b, pos, piece)) b.push(st.kind, st.value);
 		afterBuilderChange();
 		return;
 	}
 	// Any other unit just shows its card (a second click closes it).
+	if (!isMobileLayout()) return;
 	S.unitInfo = same ? null : { pos, piece: kind, color, onGate };
 	render();
 }
@@ -1781,7 +1783,7 @@ function render() {
 	const stillTyping = typing && typing.id === "chat-input";
 	clear(root);
 	if (stillTyping) keepChatFocus();
-	document.body.classList.remove("m-mode", "fit-screen");
+	document.body.classList.remove("m-mode", "m-landscape", "fit-screen");
 	hideHoverCard();
 	hideCardZoom();
 	updateTitle();
@@ -1835,88 +1837,20 @@ function render() {
 		renderMobileCards(seats, bottomSeat);
 		return;
 	}
-	if (!lobby && fitsTheScreen()) {
-		renderFitted(seats, bottomSeat);
+	if (!lobby) {
+		renderFitted(seats, bottomSeat, cults);
 		return;
 	}
-	const layout = h("div", { class: "game-layout" + (areas && !lobby ? " areas" : "") + (lobby ? " lobby-layout" : "") });
-	const main = h("div", { class: "board-column" });
-	// On a wide screen the move list and the log go under the map, where
-	// there is room, so the side column holds just the cults and the table.
-	const below = areas && many && window.matchMedia("(min-width: 1500px)").matches ? [] : null;
-	layout.append(main, sidePanel(lobby ? null : cults, below));
-	root.append(layout);
-
-	if (lobby) {
-		main.append(statusBar());
-		main.append(lobbyCard(lobbyContext()));
-		layout.querySelector(".side-panel").append(debugPanel());
-		return;
-	}
-	main.append(statusBar());
-	if (S.tut) main.append(tutorialCard());
-	main.append(kickVoteBanner());
-	main.append(slowTurnBanner());
-	for (const notice of [nextGameBanner(), firstMoveBanner()]) if (notice) main.append(notice);
-	const banner = drawOfferBanner();
-	if (banner) main.append(banner);
-	const hintNotice = hintBanner();
-	if (hintNotice) main.append(hintNotice);
-
-	if (!S.me.seat && !S.spectating) {
-		const gate = identityGate();
-		if (gate) main.append(gate);
-	}
-
-	const wrap = h("div", { class: "board-wrap" + (areas ? " wide" : "") });
-	const boardHost = h("div", { id: "board" });
-	if (areas) {
-		const b = S.info.board.canvas || { width: 1000, height: 490 };
-		wrap.style.setProperty("--aspect", String((b.width + 16) / (b.height + 16)));
-	}
-	if (many) {
-		const rb = roundBar();
-		if (rb) wrap.append(rb);
-		wrap.append(boardHost);
-		wrap.append(moveBar());
-		for (const panel of cardPanels()) wrap.append(panel);
-		wrap.append(h("div", { class: "inspector small muted", id: "inspector", "aria-live": "off" }, inspectorText()));
-		const unitCard = unitInfoCard();
-		if (unitCard) wrap.append(unitCard);
-		const bp = battlePanel();
-		if (bp) wrap.append(bp);
-	} else {
-		const topSeats = seats.filter((s) => s.seat !== bottomSeat);
-		for (const ts of topSeats) wrap.append(seatStrip(ts.seat));
-		wrap.append(boardHost);
-		wrap.append(seatStrip(bottomSeat));
-		wrap.append(moveBar());
-		const cards = cardsPanel();
-		if (cards) wrap.append(cards);
-		for (const panel of cardPanels()) wrap.append(panel);
-		wrap.append(h("div", { class: "inspector small muted", id: "inspector", "aria-live": "off" }, inspectorText()));
-	}
-	const exchange = exchangePanel();
-	if (exchange) wrap.append(exchange);
-	main.append(wrap);
-	if (below && below.length) main.append(h("div", { class: "below-map" }, ...below));
-
-	drawBoard(boardHost);
-	layout.querySelector(".side-panel").append(debugPanel());
+	const side = h("aside", { class: "side-panel" }, voiceCard({ code, me: S.me, seats: S.game.seats }) || "", chatCard({ code, me: S.me }), debugPanel());
+	chatSeen();
+	root.append(h("div", { class: "game-layout lobby-layout" }, h("div", { class: "board-column" }, statusBar(), lobbyCard(lobbyContext())), side));
 }
 
 
 // ---- the fitted layout --------------------------------------------------------------------
 //
-// The page is exactly as tall as the window and never scrolls: the board fills the
+// The page is exactly as tall as the window and never scrolls: the play area fills the
 // space on the left and the cards beside it scroll on their own (ADR 0092).
-
-/** The games laid out this way so far. The rest follow once it has been played and refined. */
-const FITTED_GAMES = /^blooms(-\d+)?$/;
-
-function fitsTheScreen() {
-	return FITTED_GAMES.test(S.game.game_def_id);
-}
 
 /** The page is rebuilt on every move: the cards must stay where the player scrolled them. */
 function rememberRailScroll() {
@@ -1925,15 +1859,10 @@ function rememberRailScroll() {
 }
 
 /**
- * What the player can do now. On their turn it is drawn out and pinned inside the
- * column, so it is in view however far the cards were scrolled, without moving them
- * or taking the keyboard from a chat message being typed.
- */
-/**
  * The card of what the player can do now. `note` is what the bar says on other pages when it
  * has something to tell or a button to press: a result, history, analysis, a wait.
  */
-function actionCard(note) {
+function actionCard(note, choices = []) {
 	// Not actingSeat(): that lapses while a step is being sent, and the card would jump.
 	const acting = inAnalysis() ? !!actingSeat() : isLive() && isMyTurn() && !tutorialLookingBack();
 	const bar = moveBar();
@@ -1943,7 +1872,7 @@ function actionCard(note) {
 	const waiting = !acting && isLive() && !inAnalysis() && isActive() && !!S.me.seat && !S.tut;
 	const text = bar.textContent.trim();
 	// Kept while the opponent plays, so that the cards below do not jump at each turn.
-	if (!acting && !waiting && !text && !note) return null;
+	if (!acting && !waiting && !text && !note && !choices.length) return null;
 	const title = inAnalysis() ? "Analysis" : !isLive() ? "History" : acting ? "Your move" : g.status === "finished" ? "Game over" : g.status === "waiting" ? "Waiting" : "Actions";
 	const card = h("section", { class: "card action-card" + (acting ? " acting" : ""), id: "action-card", "aria-label": "Your actions" });
 	card.append(h("h3", {}, title));
@@ -1952,16 +1881,42 @@ function actionCard(note) {
 		card.classList.toggle("history", note.history);
 		card.append(note.words);
 	}
-	if (waiting && !text) card.append(h("p", { class: "small muted", id: "action-idle" }, "Your choices appear here on your turn."));
+	if (waiting && !text && !choices.length) card.append(h("p", { class: "small muted", id: "action-idle" }, "Your choices appear here on your turn."));
 	if (bar.childNodes.length) card.append(bar);
+	card.append(...choices);
 	if (note && note.buttons.length) card.append(h("div", { class: "note-buttons" }, ...note.buttons));
 	return card;
 }
 
-function renderFitted(seats, bottomSeat) {
+function renderFitted(seats, bottomSeat, cults) {
 	document.body.classList.add("fit-screen");
+	const areas = S.info.board.style === "areas";
+	const boardless = S.info.board.style === "none";
 	const boardHost = h("div", { id: "board" });
-	const main = h("div", { class: "board-column" }, h("div", { class: "board-wrap" }, boardHost, h("div", { class: "inspector small muted", id: "inspector", "aria-live": "off" }, inspectorText())));
+	const wrap = h("div", { class: "board-wrap" });
+	const round = roundBar();
+	if (round) wrap.append(round);
+	wrap.append(boardHost);
+	for (const panel of cardPanels()) wrap.append(panel);
+	wrap.append(h("div", { class: "inspector small muted", id: "inspector", "aria-live": "off" }, inspectorText()));
+	// A map leaves height under it, and what happens on the map is best read next to it.
+	if (areas) for (const part of [battlePanel(), exchangePanel()]) if (part) wrap.append(part);
+	const main = h("div", { class: "board-column" }, wrap);
+
+	// The play area comes first: the cards take what room it leaves them.
+	const screen = h("div", { class: "game-layout play-screen" + (areas ? " areas" : "") + (boardless ? " boardless" : "") }, main);
+	root.append(screen);
+	drawBoard(boardHost);
+	// The board's column is as wide as the board can be drawn: the cards have what is left, up to a limit.
+	const view = boardHost.querySelector("svg")?.viewBox.baseVal;
+	const canvas = S.info.board.canvas;
+	if (areas && canvas) screen.style.setProperty("--board-aspect", (canvas.width + 16) / (canvas.height + 16));
+	// A board that grows with the game (Hive) keeps one shape, or the columns would move at each turn.
+	else if (S.info.board.style === "free") screen.style.setProperty("--board-aspect", 1.25);
+	else if (view && view.height) screen.style.setProperty("--board-aspect", view.width / view.height);
+	const history = historyCard();
+	const historyUnderMap = areas && wrap.getBoundingClientRect().bottom - wrap.lastElementChild.getBoundingClientRect().bottom >= 110;
+	if (historyUnderMap) wrap.append(history);
 
 	// No bar on this page: what it would say goes in the cards. While the game goes on they
 	// say whose turn it is, and its words are only for a screen reader.
@@ -1973,33 +1928,75 @@ function renderFitted(seats, bottomSeat) {
 		: { words, over: bar.classList.contains("over"), history: bar.classList.contains("history"), buttons: [...bar.querySelectorAll(":scope > button, :scope > a.button")] };
 	if (quiet) words.classList.add("sr-only");
 
+	const players = cults || h("section", { class: "card players-card", id: "players-card", "aria-label": "Players" });
+	if (!cults) {
+		for (const ts of seats.filter((s) => s.seat !== bottomSeat)) players.append(seatStrip(ts.seat));
+		players.append(seatStrip(bottomSeat));
+	}
+	const badges = bar.querySelectorAll("#rated-badge, #real-time-badge, #tournament-badge, #rating-note, #conn-badge");
+	players.append(h("div", { class: "table-badges" }, ...badges));
+
+	// What the player chooses from goes with the actions, and is pinned with them.
+	const choices = [players.querySelector(`#seat-${S.me.seat} .hand`), cardsPanel()];
+	if (!areas) choices.push(exchangePanel());
+
 	// The first in the column is what asks for the player's attention.
 	const first = [];
 	if (S.tut) first.push(tutorialCard());
 	first.push(kickVoteBanner(), slowTurnBanner(), nextGameBanner(), firstMoveBanner(), drawOfferBanner(), hintBanner());
 	if (!S.me.seat && !S.spectating) first.push(identityGate());
-	first.push(actionCard(note));
-	const players = h("section", { class: "card players-card", id: "players-card", "aria-label": "Players" });
-	for (const ts of seats.filter((s) => s.seat !== bottomSeat)) players.append(seatStrip(ts.seat));
-	players.append(seatStrip(bottomSeat));
-	const badges = bar.querySelectorAll("#rated-badge, #real-time-badge, #tournament-badge, #rating-note, #conn-badge");
-	players.append(h("div", { class: "table-badges" }, ...badges));
-	first.push(players);
+	first.push(actionCard(note, choices.filter(Boolean)));
+	const talk = !S.tut ? [voiceCard({ code, me: S.me, seats: S.game.seats }), chatCard({ code, me: S.me })].filter(Boolean) : [];
 
-	const rail = sidePanel(null);
-	rail.classList.add("play-rail");
-	rail.id = "play-rail";
-	rail.prepend(...first.filter(Boolean));
+	const rail = h("aside", { class: "side-panel play-rail", id: "play-rail" }, ...first.filter(Boolean));
+	if (areas) {
+		// More than a column can show at once: the cults, the table talk and the history take turns.
+		const panes = [{ id: "cults", label: seats.length > 2 ? "Cults" : "Players", nodes: [players, neutralCard()] }];
+		if (talk.length) panes.push({ id: "talk", label: "Chat", nodes: talk });
+		if (!historyUnderMap) panes.push({ id: "history", label: "History", nodes: [history] });
+		rail.append(...railTabs(panes));
+	} else {
+		rail.append(players, ...(cults ? [neutralCard()].filter(Boolean) : []), ...talk, history);
+		if (talk.length) chatSeen();
+	}
 	rail.append(debugPanel());
 	if (quiet) rail.append(words);
-
-	const screen = h("div", { class: "game-layout play-screen" }, main, rail);
-	root.append(screen);
+	screen.append(rail);
 	rail.scrollTop = S.railScroll || 0;
-	drawBoard(boardHost);
-	// The board's column is as wide as the board can be drawn: the cards have what is left, up to a limit.
-	const view = boardHost.querySelector("svg")?.viewBox.baseVal;
-	if (view && view.height) screen.style.setProperty("--board-aspect", view.width / view.height);
+}
+
+/** The tabs of the column of cards, and their panes: all stay on the page, so a message typed there is kept. */
+function railTabs(panes) {
+	const saved = S.railTab || store.get("bingle.railTab", panes[0].id);
+	const current = panes.some((p) => p.id === saved) ? saved : panes[0].id;
+	const tabs = h("div", { class: "card-tabs rail-tabs", role: "tablist", "aria-label": "Cards" });
+	const out = [tabs];
+	for (const pane of panes) {
+		const on = pane.id === current;
+		const label = [pane.label];
+		if (pane.id === "talk") label.push(h("span", { class: "badge chat-unread", id: "rail-chat-unread", hidden: on || !chatUnread() }, String(chatUnread())));
+		tabs.append(
+			h(
+				"button",
+				{
+					type: "button",
+					class: "card-tab" + (on ? " active" : ""),
+					id: `rail-tab-${pane.id}`,
+					role: "tab",
+					"aria-selected": on ? "true" : "false",
+					onclick: () => {
+						S.railTab = pane.id;
+						store.set("bingle.railTab", pane.id);
+						render();
+					},
+				},
+				...label
+			)
+		);
+		out.push(h("div", { class: "rail-pane", id: `rail-pane-${pane.id}`, role: "tabpanel", hidden: !on }, ...pane.nodes.filter(Boolean)));
+	}
+	if (current === "talk") chatSeen();
+	return out;
 }
 
 // ---- the phone layout --------------------------------------------------------------------
@@ -2026,6 +2023,11 @@ function rememberMobileScroll() {
 
 /** The chat badge and the "your turn" mark of the bottom bar, kept current without a redraw. */
 function paintMobileBadges() {
+	const railBadge = document.getElementById("rail-chat-unread");
+	if (railBadge) {
+		railBadge.textContent = String(chatUnread());
+		railBadge.hidden = !chatUnread() || !document.getElementById("rail-pane-talk").hidden;
+	}
 	const nav = document.getElementById("m-nav");
 	if (!nav) return;
 	const chatItem = nav.querySelector('[data-group="chat"]');
@@ -2046,34 +2048,21 @@ function paintMobileBadges() {
 function renderMobile(seats, bottomSeat) {
 	document.body.classList.add("m-mode");
 	const myTurn = isLive() && S.game.status === "active" && isMyTurn();
+	if (isLandscape()) {
+		renderMobileMap(myTurn);
+		return;
+	}
 
-	// The map, with what is needed to act on it close below.
-	const boardHost = h("div", { id: "board" });
-	const mapPage = h("div", { class: "m-map-page" });
-	mapPage.append(statusBar());
-	if (S.tut) mapPage.append(tutorialCard());
-	for (const banner of [kickVoteBanner(), slowTurnBanner(), nextGameBanner(), firstMoveBanner(), drawOfferBanner(), hintBanner()]) if (banner) mapPage.append(banner);
+	// Held upright, the phone has the cards, and the map is a turn of the wrist away.
+	// Everything about acting, in large controls, under what asks for attention.
+	const actions = h("div", { class: "m-stack" }, statusBar());
+	if (S.tut) actions.append(tutorialCard());
+	for (const banner of [kickVoteBanner(), slowTurnBanner(), nextGameBanner(), firstMoveBanner(), drawOfferBanner(), hintBanner()]) if (banner) actions.append(banner);
 	if (!S.me.seat && !S.spectating) {
 		const gate = identityGate();
-		if (gate) mapPage.append(gate);
+		if (gate) actions.append(gate);
 	}
-	mapPage.append(
-		h(
-			"div",
-			{ class: "m-board-box" },
-			boardHost,
-			// Swipes that start at the edges turn the page: the map itself takes
-			// every other touch (drag, pinch, tap).
-			h("div", { class: "m-edge left", "aria-hidden": "true" }),
-			h("div", { class: "m-edge right", "aria-hidden": "true" })
-		),
-		h("div", { class: "m-dock" }, moveBar())
-	);
-
-	// Everything about acting, in large controls.
-	const actions = h("div", { class: "m-stack" }, h("h2", {}, "Actions"));
-	actions.append(withoutIds(moveBar()));
-	actions.append(h("div", { class: "inspector small muted", id: "inspector", "aria-live": "off" }, inspectorText()));
+	actions.append(moveBar());
 	for (const part of [unitInfoCard(), battlePanel(), exchangePanel()]) if (part) actions.append(part);
 
 	const round = h("div", { class: "m-stack" }, h("h2", {}, "Round"));
@@ -2085,7 +2074,6 @@ function renderMobile(seats, bottomSeat) {
 	if (neutral) round.append(neutral);
 
 	const pages = [
-		{ id: "map", label: "Map", group: "map", node: mapPage },
 		{ id: "actions", label: "Actions", group: "actions", node: actions },
 		{ id: "round", label: "Round", group: "round", node: round },
 	];
@@ -2103,14 +2091,13 @@ function renderMobile(seats, bottomSeat) {
 		pages,
 		chips,
 		groups: [
-			{ id: "map", label: "Map", icon: "🗺️" },
 			{ id: "actions", label: "Actions", icon: "⚡", pulse: myTurn && S.mPage !== "actions" },
 			{ id: "round", label: "Round", icon: "⏳" },
 			{ id: "cults", label: "Cults", icon: "👥" },
 			{ id: "log", label: "History", icon: "📜" },
 			{ id: "chat", label: "Chat", icon: "💬", badge: unread || 0 },
 		],
-		current: S.mPage || "map",
+		current: S.mPage || "actions",
 		onChange: (id) => {
 			S.mPage = id;
 			if (id === "chat") chatSeen();
@@ -2125,17 +2112,38 @@ function renderMobile(seats, bottomSeat) {
 		}
 	}
 	if (S.mPage === "chat") chatSeen();
-	drawBoard(boardHost);
 	paintMobileBadges();
-	if (!store.get("bingle.mobileHint", false)) {
-		store.set("bingle.mobileHint", true);
-		toast("Pinch the map to zoom and drag to pan. Swipe from the screen edge, or use the bar below, to change view.");
+	mobileHintOnce();
+	buzzOnMyTurn(myTurn);
+}
+
+/** On its side, the phone is all map: to tap areas, move units, pinch and drag. */
+function renderMobileMap(myTurn) {
+	document.body.classList.add("m-landscape");
+	const boardHost = h("div", { id: "board" });
+	const page = h("div", { class: "m-map-page m-landscape-map" }, h("div", { class: "m-board-box" }, boardHost));
+	// The map cannot say whose turn it is, or that the next choice is a button.
+	if (myTurn) {
+		const onMap = activeBuilder().options().some((o) => o.kind === "pos");
+		page.append(h("div", { class: "m-turn-note", id: "m-turn-note", role: "status" }, onMap ? "Your turn" : "Your turn: hold the phone upright to choose"));
 	}
-	// A turn that has just come to the player buzzes the phone, once.
-	if (myTurn && S.mBuzzed !== S.moves.length) {
-		S.mBuzzed = S.moves.length;
-		if (navigator.vibrate && document.visibilityState === "visible") navigator.vibrate(60);
-	}
+	root.append(page);
+	drawBoard(boardHost);
+	mobileHintOnce();
+	buzzOnMyTurn(myTurn);
+}
+
+function mobileHintOnce() {
+	if (store.get("bingle.mobileHint2", false)) return;
+	store.set("bingle.mobileHint2", true);
+	toast("Turn your phone on its side for the map, and upright for your actions, the cults and the chat.");
+}
+
+/** A turn that has just come to the player buzzes the phone, once. */
+function buzzOnMyTurn(myTurn) {
+	if (!myTurn || S.mBuzzed === S.moves.length) return;
+	S.mBuzzed = S.moves.length;
+	if (navigator.vibrate && document.visibilityState === "visible") navigator.vibrate(60);
 }
 
 /**
@@ -2372,7 +2380,7 @@ function drawBoard(host) {
 			badges: (rulesetView() || {}).badges || null,
 			walls: (rulesetView() || {}).walls || null,
 			holders: (rulesetView() || {}).holders || null,
-			layers: { names: S.settings.names, glyphs: glyphLayerOn(), sigils: S.settings.sigils },
+			layers: { names: S.settings.names, glyphs: glyphLayerOn(), sigils: S.settings.sigils, units: S.settings.units },
 			legend: isRuleset() ? S.info.display || null : null,
 			tokenOk: interactive ? tokenOk : null,
 			enhanced: enhancedUnits(),
@@ -2780,7 +2788,13 @@ function seatStrip(seat) {
 		for (const stone of sv.taken) stones.append(h("span", { class: "taken-stone", "data-stone": stone }, pieceIcon("disc", stone, 16)));
 		strip.append(stones);
 	}
-	if (sv && sv.cards && sv.cards.length) strip.append(factionCards(seat, sv));
+	if (sv && sv.cards && sv.cards.length) {
+		// A phone gives each cult a page of its own: there is the room to show it all.
+		const whole = isMobileLayout();
+		const key = `seat-${seat}`;
+		strip.append(h("div", { class: "seat-more", hidden: !whole && S.expanded !== key }, factionCards(seat, sv)));
+		if (!whole) strip.append(expandToggle(key, `${seatLabel(seat) || seatName(seat)}'s details`));
+	}
 	const hand = handPanel(seat);
 	if (hand) strip.append(hand);
 	return strip;
@@ -3441,28 +3455,12 @@ function saveAutoPlay(patch) {
 	return autoplaySaves;
 }
 
-/**
- * A cult's sections: faction ability, spellbooks, requirements, Elder Signs
- * and units, each a collapsible list. What the player opened is remembered.
- */
-const cardState = new Map(Object.entries(store.get("bingle.cards2", {})));
-// Sections that start open; the rest start closed.
-const OPEN_BY_DEFAULT = new Set(["units"]);
+/** A cult's details under a heading each: faction ability, spellbooks and requirements, Elder Signs, units. */
 
 function factionCards(seat, sv) {
 	const wrap = h("div", { class: "faction-cards", "data-seat": seat });
 	const section = (id, title, count, body) => {
-		const key = `${S.info.id}:${seat}:${id}`;
-		const open = cardState.has(key) ? cardState.get(key) : OPEN_BY_DEFAULT.has(id);
-		const d = h("details", { class: "faction-card", "data-card": id });
-		if (open) d.setAttribute("open", "");
-		// Remember what the player opened: every move redraws the page.
-		d.addEventListener("toggle", () => {
-			cardState.set(key, d.open);
-			store.set("bingle.cards2", Object.fromEntries(cardState));
-		});
-		d.append(h("summary", {}, title, count ? h("span", { class: "muted small" }, ` ${count}`) : null), body);
-		wrap.append(d);
+		wrap.append(h("section", { class: "faction-card", "data-card": id }, h("h4", { class: "faction-heading" }, title, count ? h("span", { class: "muted small" }, ` ${count}`) : null), body));
 	};
 	const rowsBody = (card) => {
 		const ul = h("ul", { class: "card-rows" });
@@ -3470,7 +3468,7 @@ function factionCards(seat, sv) {
 			ul.append(
 				h(
 					"li",
-					{ class: r.state || (r.detail ? "info-row" : null), title: r.detail || null },
+					{ class: r.state || (r.detail ? "info-row" : null) },
 					r.state ? h("span", { class: "row-mark" }, spellMark(r.state === "done", r.state === "done" ? "Done" : "Not yet")) : null,
 					h("span", { class: "row-text" }, r.state || !r.detail ? r.text : h("strong", {}, r.text)),
 					r.detail && !r.state ? h("span", { class: "muted small row-detail" }, " — " + r.detail) : null
@@ -3487,29 +3485,101 @@ function factionCards(seat, sv) {
 	const bySlot = new Map((sv.cards || []).map((c) => [c.id, c]));
 	// The faction ability first, then what the cult may earn, its Elder Signs
 	// and the units still to be placed. Games with other cards list them as sent.
-	const known = ["ability", "books", "reqs"];
-	for (const id of known) {
-		const card = bySlot.get(id);
-		if (card) section(card.id, card.title, counted(card), rowsBody(card));
-	}
+	const ability = bySlot.get("ability");
+	if (ability) section(ability.id, ability.title, "", rowsBody(ability));
+	const books = bySlot.get("books");
+	if (books) section(books.id, books.title, spellbookCount(sv), spellbookGrid(sv, books, bySlot.get("reqs")));
 	for (const card of sv.cards || []) {
-		if (known.includes(card.id) || card.id === "units") continue;
+		if (["ability", "books", "reqs", "units"].includes(card.id)) continue;
 		section(card.id, card.title, counted(card), rowsBody(card));
 	}
 	if (sv.hidden_signs !== undefined) {
 		const total = (sv.hidden_signs || 0) + (sv.shown_signs || []).length;
-		if (total > 0) {
-			section("signs", "Elder Signs", String(total), elderSignsBody(seat, sv));
-		} else {
-			// Nothing to show: a heading that does not open.
-			wrap.append(h("div", { class: "faction-card faction-static", "data-card": "signs", id: `signs-${seat}` }, "Elder Signs", h("span", { class: "muted small" }, " 0")));
-		}
+		section("signs", "Elder Signs", String(total), total ? elderSignsBody(seat, sv) : null);
 	}
 	if (bySlot.has("units")) {
 		const inPool = (sv.units || []).reduce((n, u) => n + (u.pool || 0), 0);
 		section("units", "Units", `${inPool} in the pool`, poolBody(seat, sv));
 	}
 	return wrap;
+}
+
+/** How many spellbooks a cult holds of its six, the neutral ones among them. */
+function spellbookCount(sv) {
+	const counter = (sv.counters || []).find((c) => c.id === "books");
+	return `${counter.value}/${counter.max}`;
+}
+
+/**
+ * A cult's requirements, then its spellbooks still to be earned, in two columns. A spellbook
+ * earned takes the place of a requirement met, so the list shortens as the cult grows. The
+ * server keeps what is met and what is held, not which paid for which: they pair up in order.
+ */
+function spellbookGrid(sv, books, reqs) {
+	const grid = h("div", { class: "spellbook-grid" });
+	const held = books.rows.filter((r) => r.state === "done");
+	const earned = [...held];
+	for (const r of reqs ? reqs.rows : []) grid.append(r.state === "done" && earned.length ? bookTile(earned.shift()) : requirementTile(r));
+	// A spellbook held with no requirement to its name: a position set up that way.
+	for (const r of earned) grid.append(bookTile(r));
+	// With all six a cult can earn no more, even if a neutral one took the place of its own.
+	const counter = (sv.counters || []).find((c) => c.id === "books");
+	if (counter.value < counter.max) for (const r of books.rows) if (r.state !== "done") grid.append(bookTile(r));
+	return grid;
+}
+
+/** A spellbook, by its name; the hover card has its rule. */
+function bookTile(row) {
+	const on = row.state === "done";
+	const tile = h("span", { class: "spell-tile book " + (on ? "held" : "locked"), tabindex: "0", "aria-label": `${on ? "Spellbook" : "Spellbook to earn"}: ${row.text}` }, spellMark(on, on ? "Unlocked" : "Not yet", 14), h("span", { class: "spell-text" }, row.text));
+	hoverCard(tile, () => {
+		const i = (row.detail || "").indexOf(": ");
+		return h(
+			"div",
+			{ class: "unit-tip action-tip" },
+			h("div", { class: "unit-tip-head" }, h("div", { class: "unit-tip-title" }, h("strong", {}, row.text), i > 0 ? h("span", { class: "muted small" }, row.detail.slice(0, i)) : null)),
+			h("p", { class: "unit-text small" }, i > 0 ? row.detail.slice(i + 2) : row.detail || "")
+		);
+	});
+	return tile;
+}
+
+/** A requirement, cut to fit; the hover card has all of it. */
+function requirementTile(row) {
+	const met = row.state === "done";
+	const tile = h("span", { class: "spell-tile req" + (met ? " met" : ""), tabindex: "0", "aria-label": `${met ? "Requirement met" : "Requirement"}: ${row.text}` }, h("span", { class: "spell-text" }, row.text));
+	hoverCard(tile, () =>
+		h(
+			"div",
+			{ class: "unit-tip action-tip" },
+			h("div", { class: "unit-tip-head" }, h("div", { class: "unit-tip-title" }, h("strong", {}, met ? "Requirement met" : "Spellbook requirement"), met ? h("span", { class: "muted small" }, "A spellbook is earned for it") : null)),
+			h("p", { class: "unit-text small" }, row.text)
+		)
+	);
+	return tile;
+}
+
+/** The triangle under a card in summary. One card is open at a time, across the cults and the neutral items. */
+function expandToggle(key, label) {
+	const open = S.expanded === key;
+	return h(
+		"button",
+		{
+			type: "button",
+			class: "expand-toggle",
+			"data-expand": key,
+			"aria-expanded": open ? "true" : "false",
+			"aria-label": `${open ? "Hide" : "Show"} ${label}`,
+			title: `${open ? "Hide" : "Show"} ${label}`,
+			onclick: () => {
+				S.expanded = open ? null : key;
+				render();
+				// Closing a card above can carry this one out of view.
+				document.querySelector(`[data-expand="${key}"]`)?.scrollIntoView({ block: "nearest" });
+			},
+		},
+		h("span", { "aria-hidden": "true" }, open ? "▲" : "▼")
+	);
 }
 
 /** Seats in table order starting at `first`, wrapping round (clockwise). */
@@ -3852,7 +3922,7 @@ function unitInfoCard() {
 				)
 			);
 		}
-		card.append(ul);
+		card.append(ul, ...bookRequirements(unit));
 	} else {
 		card.append(h("p", { class: "small muted" }, "No spellbook enhances this unit."));
 	}
@@ -4168,8 +4238,8 @@ function moveBar() {
 	}
 	if (acting && b.manualSteps().length) {
 		actions.append(h("button", { id: "undo-step", class: "ghost", onclick: undoStep, title: "Undo last selection (Backspace)" }, "↶ Back"));
-		// On the fitted page Back is enough for now: a move there is a stone and a cell.
-		if (!fitsTheScreen()) actions.append(h("button", { id: "reset-move", class: "ghost", onclick: resetMove, title: "Clear the move (Esc)" }, "Reset"));
+		// A move that is a word and a cell (Blooms): Back is enough.
+		if (!(rulesetView() || {}).piece_action) actions.append(h("button", { id: "reset-move", class: "ghost", onclick: resetMove, title: "Clear the move (Esc)" }, "Reset"));
 	}
 	// Taking back a step already sent: in the list of actions when there is one,
 	// else here. With a selection on the go, Back clears that first.
@@ -4228,6 +4298,11 @@ function enterBlock(unit) {
 	return null;
 }
 
+/** What earns the spellbook of an Independent Great Old One, until it is earned. */
+function bookRequirements(unit) {
+	return unit.books.filter((b) => b.req && !b.unlocked).map((b) => h("p", { class: "unit-enter small" }, h("strong", {}, "Requirement: "), b.req));
+}
+
 /** The named abilities of a unit's card (a Great Old One's Desecrate, Vengeance, Devour…). */
 function abilitiesBlock(unit) {
 	if (!unit.abilities || !unit.abilities.length) return null;
@@ -4276,12 +4351,14 @@ function neutralCard() {
 	const rv = rulesetView();
 	const nv = rv && rv.neutral;
 	if (!nv) return null;
-	const card = h("div", { class: "card neutral-card", id: "neutral-window" }, h("h3", {}, "Neutral items"));
 	const items = nv.items || [];
+	const card = h("div", { class: "card neutral-card", id: "neutral-window" }, h("h3", {}, "Neutral items", items.length ? h("span", { class: "muted small" }, ` ${items.length}`) : null));
 	if (!items.length) {
 		card.append(h("p", { class: "muted small", id: "neutral-empty" }, "Everything has been taken."));
 		return card;
 	}
+	const whole = isMobileLayout();
+	const body = h("div", { class: "seat-more", id: "neutral-items", hidden: !whole && S.expanded !== "neutral" });
 	for (const [kind, title] of NEUTRAL_GROUPS) {
 		const group = items.filter((it) => it.kind === kind);
 		if (!group.length) continue;
@@ -4298,8 +4375,10 @@ function neutralCard() {
 			hoverCard(node, () => neutralTip(item));
 			row.append(node);
 		}
-		card.append(h("p", { class: "neutral-title small muted" }, title), row);
+		body.append(h("p", { class: "neutral-title small muted" }, title), row);
 	}
+	card.append(body);
+	if (!whole) card.append(expandToggle("neutral", "the neutral items"));
 	return card;
 }
 
@@ -4395,7 +4474,7 @@ function unitTip(unit, color, cost, where) {
 				)
 			);
 		}
-		box.append(h("p", { class: "small muted unit-books-title" }, "Spellbooks"), ul);
+		box.append(h("p", { class: "small muted unit-books-title" }, "Spellbooks"), ul, ...bookRequirements(unit));
 	}
 	return box;
 }
@@ -4428,7 +4507,8 @@ function unitButton(kind, type, seat) {
 			"aria-label": `${verb} ${unit.name} for ${cost} Power`,
 		},
 		pieceIcon(piece ? piece.shape : "disc", color, 22),
-		h("span", { class: "summon-name" }, `${verb} ${unit.name}`),
+		// The hover card names the unit. A phone has no hover, and keeps the words.
+		kind === "summon" && !isMobileLayout() ? null : h("span", { class: "summon-name" }, `${verb} ${unit.name}`),
 		h("span", { class: "summon-cost", title: "Power" }, `${cost}`, statIcon("power", "Power", 13))
 	);
 	hoverCard(button, () => unitTip(unit, color, cost));
@@ -4728,34 +4808,6 @@ function addBotControl() {
 	return row;
 }
 
-function sidePanel(top, below) {
-	const side = h("aside", { class: "side-panel" });
-	if (top) side.append(top);
-	if (top) side.append(neutralCard() || "");
-	// `below`, when given, takes the move list and the log instead.
-	const place = (card) => (below ? below.push(card) : side.append(card));
-
-	// A game that has not started: the table talk, nothing else (the rules and
-	// the options are in the bar at the top of the page).
-	if (inLobby()) {
-		side.append(voiceCard({ code, me: S.me, seats: S.game.seats }) || "");
-		side.append(chatCard({ code, me: S.me }));
-		chatSeen();
-		return side;
-	}
-
-	// Voice and table talk — not in a tutorial, where there is nobody to talk to.
-	if (!S.tut) {
-		side.append(voiceCard({ code, me: S.me, seats: S.game.seats }) || "");
-		side.append(chatCard({ code, me: S.me }));
-		chatSeen();
-	}
-
-	// The moves played and, for games that tell it, what happened.
-	place(historyCard());
-	return side;
-}
-
 /** The moves played, with the history controls (and the log, in its own tab). */
 function movesPane() {
 	const pane = h("div", { class: "history-pane", id: "moves-pane" });
@@ -4906,11 +4958,12 @@ function refreshOptions() {
 	// The layers of an area map.
 	w.hide("layers", !areas);
 	if (areas) {
-		w.update("layers", ["v2", glyphLayerOn()], (el) => {
+		w.update("layers", ["v3", glyphLayerOn()], (el) => {
 			el.append(
 				settingToggle("names", "opt-layer-names", "Area names", "bingle.layer.names"),
 				settingToggle("glyphs", "opt-layer-glyphs", "Glyphs", "bingle.layer.glyphs"),
-				settingToggle("sigils", "opt-layer-sigils", "Sigils", "bingle.layer.sigils")
+				settingToggle("sigils", "opt-layer-sigils", "Sigils", "bingle.layer.sigils"),
+				settingToggle("units", "opt-layer-units", "Units", "bingle.layer.units")
 			);
 		});
 	}

@@ -7,8 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chromedp/chromedp"
-
 	"github.com/noderunner/bingle/internal/games/cthulhuwars"
 )
 
@@ -31,31 +29,25 @@ func TestWebCthulhuWars_SpellbooksAndRequirementsWearSpellbooksNotTicks(t *testi
 	var jsErrors []string
 	collectJSErrors(ctx, &mu, &jsErrors)
 	openGameAs(t, ctx, baseURL, room, "cthulhu-wars", "Alice")
-	waitJS(t, ctx, "the cult card", `document.querySelectorAll('#seat-1 .faction-card').length === 5`, 15*time.Second)
-	// Open the two sections.
-	for _, card := range []string{"books", "reqs"} {
-		if err := chromedp.Run(ctx, chromedp.Evaluate(`document.querySelector('#seat-1 .faction-card[data-card="`+card+`"]').open = true; true`, nil)); err != nil {
-			t.Fatal(err)
-		}
-	}
+	waitJS(t, ctx, "the cult card", `document.querySelector('#seat-1 .spellbook-grid') !== null`, 15*time.Second)
 	count := func(sel string) int { return evalInt(t, ctx, `document.querySelectorAll('`+sel+`').length`) }
 	// Spellbooks: one unlocked (colour), five to come (greyed out).
-	if n := count(`#seat-1 [data-card="books"] .row-mark svg.spell-mark.on`); n != 1 {
+	if n := count(`#seat-1 .spell-tile.book svg.spell-mark.on`); n != 1 {
 		t.Errorf("%d unlocked spellbook icons, want 1", n)
 	}
-	if n := count(`#seat-1 [data-card="books"] .row-mark svg.spell-mark.off`); n != 5 {
+	if n := count(`#seat-1 .spell-tile.book svg.spell-mark.off`); n != 5 {
 		t.Errorf("%d greyed spellbook icons, want 5", n)
 	}
-	// Requirements: two met (colour), four not yet (greyed out).
-	if n := count(`#seat-1 [data-card="reqs"] .row-mark svg.spell-mark.on`); n != 2 {
-		t.Errorf("%d met requirement icons, want 2", n)
+	// Requirements: two met, and the book earned takes the place of the first of them.
+	if n := count(`#seat-1 .spell-tile.req.met`); n != 1 {
+		t.Errorf("%d met requirements still showing, want 1", n)
 	}
-	if n := count(`#seat-1 [data-card="reqs"] .row-mark svg.spell-mark.off`); n != 4 {
-		t.Errorf("%d greyed requirement icons, want 4", n)
+	if n := count(`#seat-1 .spell-tile.req:not(.met)`); n != 4 {
+		t.Errorf("%d requirements to meet, want 4", n)
 	}
 	// No green ticks.
-	for _, card := range []string{"books", "reqs"} {
-		if got := evalString(t, ctx, `[...document.querySelectorAll('#seat-1 [data-card="`+card+`"] .row-mark')].map(e => e.textContent).join("")`); strings.ContainsAny(got, "✓○") {
+	for _, card := range []string{"books"} {
+		if got := evalString(t, ctx, `[...document.querySelectorAll('#seat-1 [data-card="`+card+`"] .spell-tile')].map(e => e.textContent).join("")`); strings.ContainsAny(got, "✓○") {
 			t.Errorf("%s still has ticks: %q", card, got)
 		}
 	}
@@ -258,12 +250,6 @@ func TestWebCthulhuWars_EveryCardOfAGreatOldOneSaysHowToAwakenIt(t *testing.T) {
 	}
 	if n := evalInt(t, ctx, `document.querySelectorAll('.hover-card ol.awaken-steps li').length`); n != 3 {
 		t.Errorf("%d steps, want 3", n)
-	}
-	// The card that opens when the unit is clicked on the map.
-	clickSVG(t, ctx, `#board .token[data-position="south-pacific"][data-piece="cthulhu"]`)
-	waitJS(t, ctx, "the unit card", `document.getElementById("unit-info") !== null`, 5*time.Second)
-	if got := evalString(t, ctx, `document.getElementById("unit-info").textContent`); !strings.Contains(got, "How to awaken") || !strings.Contains(got, "Pay 10 Power") {
-		t.Errorf("the unit card lacks the steps: %s", got)
 	}
 	// The rules window: every Great Old One, on the Actions tab.
 	clickSel(t, ctx, "#show-rules")

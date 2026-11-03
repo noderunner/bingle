@@ -11,8 +11,7 @@ import (
 
 // fendoStepJS selects a piece and builds a fence beside it.
 const fendoStepJS = `(function () {
-	var bar = document.querySelector(".status-bar");
-	if (!bar || !bar.classList.contains("your-turn")) return "wait";
+	if (!document.querySelector("#action-card.acting")) return "wait";
 	function click(el, what) {
 		el.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
 		return what;

@@ -526,51 +526,6 @@ func minInt(a, b int) int {
 	return b
 }
 
-// neutralCard is the card of what the Azathoth faction offers seat: its
-// neutral spellbooks and Loyalty Cards, and who holds each. It is nil when the
-// faction is not in the game and nothing was swapped in.
-func (e *eng) neutralCard(seat int) *CardView {
-	if !e.m.cfg.az && e.swapOf(seat) < 0 {
-		return nil
-	}
-	card := &CardView{ID: "neutral", Title: "Neutral (Azathoth)"}
-	for n, b := range neutralBooks {
-		row := RowView{Text: b.Name, Detail: b.Timing + ": " + b.Text}
-		switch holder := e.neutralHolder(n); {
-		case holder == seat:
-			row.State = "done"
-		case holder != 0:
-			row.Text += " — held by " + e.seatName(holder)
-		case e.swapOf(seat) == n:
-			row.State = "todo"
-			row.Text += " — set aside for you"
-		case e.reservedElsewhere(seat, n):
-			row.Text += " — set aside for another cult"
-		case e.m.cfg.az:
-			row.State = "todo"
-			row.Text += " — available"
-		default:
-			continue
-		}
-		card.Rows = append(card.Rows, row)
-	}
-	if e.m.cfg.az {
-		for i, u := range neutralUnits {
-			row := RowView{Text: u.Name, Detail: loyaltyText[u.ID] + " " + u.Text}
-			switch owner := e.cardOwner(i); {
-			case owner == seat:
-				row.State = "done"
-			case owner != 0:
-				row.Text += " — card held by " + e.seatName(owner)
-			default:
-				row.Text += " — available for 2 Doom"
-			}
-			card.Rows = append(card.Rows, row)
-		}
-	}
-	return card
-}
-
 // neutralHolder is the seat holding the neutral spellbook n, 0 if none.
 func (e *eng) neutralHolder(n int) int {
 	for _, s := range e.playing() {
@@ -592,50 +547,4 @@ func costOfType(typ string) int {
 		}
 	}
 	return 0
-}
-
-// loyaltyCard is the card of the other Loyalty Cards in the game — the
-// Dreamlands and Beyond Time and Space Monsters, the Terror, the Independent
-// Great Old Ones — and who holds each. It is nil when none is in the box.
-func (e *eng) loyaltyCard(seat int) *CardView {
-	card := &CardView{ID: "loyalty", Title: "Loyalty Cards"}
-	for i := len(neutralUnits); i < len(cards); i++ {
-		if !e.cardInGame(i) {
-			continue
-		}
-		c := cards[i]
-		u := c.Unit
-		row := RowView{Text: u.Name, Detail: c.Buy + " " + u.Text}
-		owner := e.cardOwner(i)
-		switch {
-		case c.Kind == cardIndependent:
-			ib := cards[i].Book
-			row.Detail = "Awaken: " + numbered(c.Awaken) + " Spellbook " + ib.Name + " (" + ib.Timing + "): " + ib.Text + " Requirement: " + c.Req
-			switch {
-			case owner == seat:
-				row.State = "done"
-				row.Text += " — yours"
-				if e.igooBook(seat, u.ID) {
-					row.Text += ", spellbook earned"
-				} else {
-					row.Text += ", spellbook not yet earned"
-				}
-			case owner != 0:
-				row.Text += " — controlled by " + e.seatName(owner)
-			default:
-				row.Text += " — in the pool: awaken for " + cardCostText(c)
-			}
-		case owner == seat:
-			row.State = "done"
-		case owner != 0:
-			row.Text += " — card held by " + e.seatName(owner)
-		default:
-			row.Text += " — available for " + cardCostText(c)
-		}
-		card.Rows = append(card.Rows, row)
-	}
-	if len(card.Rows) == 0 {
-		return nil
-	}
-	return card
 }

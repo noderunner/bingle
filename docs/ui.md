@@ -21,26 +21,54 @@ small gate: join an open seat, continue as a seated player's name, or watch.
 
 ## The fitted game page
 
-A game named by `FITTED_GAMES` in `js/game.js` (so far only Blooms and its variants, once out of the lobby)
-is drawn by `renderFitted` ([ADR 0092](decisions/0092-a-game-page-that-fits-the-screen.md)). `body.fit-screen` makes
+Every game, once out of the lobby, is drawn by `renderFitted` (a phone has its own pages for the area maps and the card
+games, in `renderMobile` and `renderMobileCards`: see [the phone page of a map](#the-phone-page-of-a-map)) ([ADR 0092](decisions/0092-a-game-page-that-fits-the-screen.md)). `body.fit-screen` makes
 the page exactly as tall as the window, with no page scroll and no footer. The `.board-column` is as wide as the board
-can be drawn at that height (`--board-aspect`, from the board's `viewBox`), leaving `#play-rail` at least `--rail-least`.
+can be drawn at that height (`--board-aspect`, from the board's `viewBox`; the map's canvas; a fixed shape for a board
+that grows, such as Hive's), leaving `#play-rail` at least `--rail-least`.
 The rail has what is left, up to 40rem, and any width beyond that is shared by the outer margins. It holds the cards in
 one column and scrolls by itself, keeping its place across redraws: the tutorial and any notices, `#action-card`,
-`#players-card`, voice, chat and history. On an upright screen under 980px wide, the rail goes under the board, whose
-row is no taller than the board.
+`#players-card` (`#cult-stack` at a table of three or more), voice, chat and history. On an upright screen under 980px
+wide, the rail goes under the board, whose row is no taller than the board.
+
+- **A table of cards** (`.boardless`) has no shape of its own. The rail is at most 26rem and the table takes the rest of
+  the width, with cards sized to the window. The column scrolls if a pile of cards runs long.
+- **A map** (`.areas`) sits at the top of its column under the round bar, with a wider rail (`--rail-least`). What is
+  under it shares the height left: the battle, the card of a unit, an exchange, and the history when at least 110px is
+  free. The rail's cards take turns behind `.rail-tabs`: `#rail-tab-cults`, `#rail-tab-talk`, and `#rail-tab-history`
+  when the history is not under the map. Every pane stays on the page, so a message being typed survives a change of tab.
+  The talk and the history fill the height the rail has left.
+- **A cult's card** is a summary: its numbers and an `.expand-toggle`. Open (`.seat-more`), it has a `.faction-heading` for
+  each of its sections. `.spellbook-grid` holds `.spell-tile`s in two columns: the six requirements, then the spellbooks
+  to come. A spellbook earned takes the place of a met requirement, in listed order, since the server keeps which are
+  met and which are held but not which paid for which. `S.expanded` is the one card open, a cult's or `#neutral-window`.
+  A phone shows each cult whole, on a page of its own.
 
 No `.status-bar` is drawn on this page. While a game is being played, `#status-message` stays as `.sr-only` for screen
 readers. For a result, history, analysis or a game waiting for an opponent, the message and the bar's buttons (`#rematch`,
 `#return-live`, `#analyze-here`, `#exit-analysis`, `#play-from-here`) are in `#action-card`, whose heading says which it
 is. The game's badges are in `.table-badges`, with `#conn-badge` shown only when the connection is not live.
 
-`#action-card` holds the move bar. On the player's turn it has `.acting`, which pins it to the edges of the rail, so it
+`#action-card` holds the move bar and what the player chooses from: their hand and the move cards (`#cards-panel`).
+Its height is limited to the rail's, and it scrolls inside if it needs more. On the player's turn it has `.acting`, which pins it to the edges of the rail, so it
 is in view however far the rail is scrolled. It neither moves the rail nor takes the keyboard.
 
 Once a piece is chosen, `#pending-move` shows the game's `piece_action` word and the piece's picture. *Back* (`#undo-step`)
 is the only button that undoes a selection here: `#reset-move` is not drawn, and Esc still clears the move. A move in Blooms
 is a stone and a cell, so the two did the same thing; a game with longer moves will need to look at this when it joins.
+
+## The phone page of a map
+
+Turning the phone changes what it shows (`renderMobile`). Upright, it has the cards, swiped between: the actions (with the
+status, any tutorial and notices), the round, each cult, the history and the chat. On its side, `body.m-landscape`
+gives the whole screen to the map, with no bars, for tapping areas, moving units, pinching and dragging. On the player's
+turn `#m-turn-note` says so, and asks them to hold the phone upright when the next choice is not on the map. A selection
+under way carries across the turn of the phone.
+
+`isLandscape` asks the device (`screen.orientation`), not the window: an on-screen keyboard makes an upright window
+wider than it is tall. With a mouse, on the phone layout asked for in the options, the window's shape decides. A touch
+screen no taller than 500px counts as a phone, since a large phone on its side is wider than the 900px that otherwise
+marks one. A player with the phone's rotation locked sees only the cards.
 
 ## How moves are entered
 
@@ -358,7 +386,7 @@ cult's colour; dashed grey when abandoned) and a ✠ chip for a Desecration amon
 the tokens, a red outline for the battle, and one token per (cult, unit kind)
 with a count badge. Names and tokens are laid out so they stay inside their
 area and clear of each other, and are drawn above every outline. The map
-**zooms** (wheel, pinch, +/−) and **pans** (drag); the view survives redraws.
+**zooms** (wheel, pinch) and **pans** (drag); the view survives redraws.
 
 Tokens are clickable when the move being built can use them: a token click is
 translated to the `piece`/`pos` steps of the move by searching the builder's
@@ -371,9 +399,15 @@ move bar for games without hands.
 card lists the unit's cost, Combat, how many stand here, on the map and in the
 pool, its ability text and the spellbooks that bear on it, ticked once earned
 (from `view.seats[n].units`). A second click, ×, or Esc closes it; the
-clicked token carries a dashed ring (`.token-inspected`). Units a spellbook of
-their cult enhances wear a small gold star at a corner of their icon
-(`.token-enhanced`, the star itself `.token-star`) — no ring is drawn round them.
+clicked token carries a dashed ring (`.token-inspected`). This card is for a phone,
+which has no hover: a click on a token elsewhere only picks it up.
+
+An area's name and its glyphs are a faint layer under the pieces. The name sits at
+the area's visual centre (`areaCentre`: the centre of the largest circle that fits,
+with the land counting as the edge of a sea), and the glyphs go above, below or
+beside it, wherever they stay inside the border (`marksPlace`). The options turn
+each layer off: names, glyphs, sigils and units. A unit the player can pick up now
+stays drawn with the units off, so a move can still be made.
 
 **Icons** (`js/icons.js`): every unit has its own silhouette, drawn as path data
 in the cult's colour — all Cultists share one hooded figure (the High Priest
@@ -418,7 +452,8 @@ numbers as pictograms — ⚡ Power, ☠ Doom, ★ Elder Signs, ◎ Gates
 `js/icons.js` `STAT_ICONS`) — and under it collapsible sections, remembered
 between moves (`bingle.cards2`): **Faction Ability** (`data-card="ability"`,
 first; for the Sleeper also the abilities it borrows), **Spellbooks**,
-**Requirements**, **Elder Signs** (`data-card="signs"`, tokens: your own with
+**Requirements** (a neutral spellbook a cult holds, or one swapped in at setup, is one more
+of its spellbooks; what is left to take is under Neutral items), **Elder Signs** (`data-card="signs"`, tokens: your own with
 their values, the others' face down, revealed ones public — a cult with none
 shows a heading that does not open, `.faction-static`, and no "None yet") and **Units**
 (`data-card="units"`, open by default: one icon for every unit of the cult,
@@ -849,7 +884,7 @@ picked), `#round-bar`, `#battle-panel`, `.seat-grid`, `.faction-card`,
 `.pool-unit`, `.gate-chip .gate-holder[data-holder]`, `#history-card` with
 `#tab-moves` / `#tab-history`,
 `#phase-steps`, `#turn-order`, `#elder-bag`, `#ritual-track .ritual-step`,
-`.token-star`, `#events .log-fac`, `#options-reactions` with, per reaction (`<id>`:
+`#events .log-fac`, `#options-reactions` with, per reaction (`<id>`:
 `devolve`, `madness`, `unspeakable-oath`…), `#ask-<id>-targeted` (and its ?,
 `#ask-<id>-help`), `#ask-<id>-all`, `#reactions-<id>` (the list),
 `#ask-<id>-seat-<seat>` and `#ask-<id>-state`, `#options-autoplay` with `#autoplay-on`,

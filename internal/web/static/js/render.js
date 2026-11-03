@@ -1272,57 +1272,39 @@ function vspanAt(poly, x, y) {
 }
 
 /**
- * Finds where the name and the tokens of an area go: the largest tokens
- * (scale k, as many columns as fit) whose block, with the name above it,
- * stays inside the polygon around its anchor and clear of what has been
- * placed already (`placed`: rectangles). Returns {k, cols, rows, pitch, cx,
- * labelY, blockTop, rect}; the caller adds `rect` to `placed`.
+ * Finds where the tokens of an area go: the largest tokens (scale k, as many
+ * columns as fit) whose block stays inside the polygon around `anchor` and
+ * clear of what has been placed already (`placed`: rectangles). Returns {k,
+ * cols, rows, pitch, cx, blockTop, rect}; the caller adds `rect` to `placed`.
  */
-function fitBlock(area, poly, n, nameW, lines, placed, badge) {
-	const labelH = 5 + 13 * lines;
-	const [ax, ay] = area.anchor;
+function fitBlock(anchor, poly, n, placed) {
+	const [ax, ay] = anchor;
+	if (!n) return { k: 1, cols: 0, rows: 0, pitch: 0, cx: ax, blockTop: ay, rect: [] };
 	const clear = (r) => !placed.some((p) => r.x0 < p.x1 + 4 && r.x1 > p.x0 - 4 && r.y0 < p.y1 + 2 && r.y1 > p.y0 - 2);
 	const tryAt = (cx, top, rows, cols, pitch) => {
 		const width = cols * pitch;
-		const total = labelH + rows * pitch;
-		const l = spanAt(poly, top + labelH / 2, cx);
-		if (!l || l[1] - l[0] < Math.min(nameW, Math.max(width, 40)) * 0.8) return null;
+		const total = rows * pitch;
 		for (let r = 0; r < rows; r++) {
-			const sp = spanAt(poly, top + labelH + pitch * (r + 0.5), cx);
+			const sp = spanAt(poly, top + pitch * (r + 0.5), cx);
 			if (!sp || sp[1] - sp[0] < width + 2) return null;
 		}
 		const v = vspanAt(poly, cx, ay);
 		if (!v || v[0] > top + 1 || v[1] < top + total - 1) return null;
-		const label = { x0: cx - nameW / 2, x1: cx + nameW / 2 + badge, y0: top, y1: top + labelH };
-		const chips = rows ? { x0: cx - width / 2, x1: cx + width / 2, y0: top + labelH, y1: top + total } : null;
-		if (!clear(label) || (chips && !clear(chips))) return null;
-		return { label, chips };
+		const chips = { x0: cx - width / 2, x1: cx + width / 2, y0: top, y1: top + total };
+		return clear(chips) ? chips : null;
 	};
 	const dys = [0, -5, 5, -10, 10, -16, 16, -24, 24, -32, 32];
 	const dxs = [0, -16, 16, -32, 32, -48, 48];
-	if (!n) {
-		const top0 = ay - labelH / 2;
-		for (const dx of dxs) {
-			for (const dy of dys) {
-				const hit = tryAt(ax + dx, top0 + dy, 0, 0, 0);
-				if (hit) return { k: 1, cols: 0, rows: 0, pitch: 0, cx: ax + dx, labelY: top0 + dy + 12, blockTop: ay, rect: [hit.label] };
-			}
-		}
-		return { k: 1, cols: 0, rows: 0, pitch: 0, cx: ax, labelY: ay + 4 - (13 * (lines - 1)) / 2, blockTop: ay, rect: [] };
-	}
 	for (let k = 1; k >= 0.45; k -= 0.05) {
 		const pitch = (2 * CHIP_R + CHIP_GAP) * k;
 		for (let rows = 1; rows <= n; rows++) {
 			const cols = Math.ceil(n / rows);
 			if (cols > 9) continue;
-			const total = labelH + rows * pitch;
 			for (const dx of dxs) {
 				for (const dy of dys) {
-					const top = ay - total / 2 + dy;
-					const hit = tryAt(ax + dx, top, rows, cols, pitch);
-					if (hit) {
-						return { k, cols, rows, pitch, cx: ax + dx, labelY: top + 12, blockTop: top + labelH, rect: [hit.label, hit.chips] };
-					}
+					const top = ay - (rows * pitch) / 2 + dy;
+					const chips = tryAt(ax + dx, top, rows, cols, pitch);
+					if (chips) return { k, cols, rows, pitch, cx: ax + dx, blockTop: top, rect: [chips] };
 				}
 			}
 		}
@@ -1332,19 +1314,83 @@ function fitBlock(area, poly, n, nameW, lines, placed, badge) {
 	const pitch = (2 * CHIP_R + CHIP_GAP) * k;
 	const cols = Math.min(n, 6);
 	const rows = Math.ceil(n / cols);
-	const top = ay - (labelH + rows * pitch) / 2;
-	return { k, cols, rows, pitch, cx: ax, labelY: top + 12, blockTop: top + labelH, rect: [] };
+	return { k, cols, rows, pitch, cx: ax, blockTop: ay - (rows * pitch) / 2, rect: [] };
 }
 
-/** A five-pointed star of outer radius r, centred on the origin. */
-function starPath(r) {
-	const pts = [];
-	for (let k = 0; k < 10; k++) {
-		const rad = k % 2 === 0 ? r : r * 0.45;
-		const a = (Math.PI / 5) * k - Math.PI / 2;
-		pts.push(`${(rad * Math.cos(a)).toFixed(2)} ${(rad * Math.sin(a)).toFixed(2)}`);
+/** How far a point is from the nearest edge of a polygon: negative outside it. */
+function clearanceIn(pt, poly) {
+	let best = Infinity;
+	for (let i = 0; i < poly.length; i++) {
+		const [ax, ay] = poly[i];
+		const [bx, by] = poly[(i + 1) % poly.length];
+		const dx = bx - ax;
+		const dy = by - ay;
+		const t = Math.max(0, Math.min(1, ((pt[0] - ax) * dx + (pt[1] - ay) * dy) / (dx * dx + dy * dy || 1)));
+		best = Math.min(best, Math.hypot(pt[0] - ax - t * dx, pt[1] - ay - t * dy));
 	}
-	return `M ${pts.join(" L ")} Z`;
+	return inPolygon(pt, poly) ? best : -best;
+}
+
+// How far apart an area's glyphs stand, and the room each needs from the area's border.
+const MARK_PITCH = 26;
+const MARK_ROOM = 12;
+
+/**
+ * Where an area's row of `n` glyphs goes: above or below its name if they fit there, else
+ * beside it, and always as far inside the border as the area allows.
+ */
+function marksPlace(poly, centre, n, lines, named, lands) {
+	const [cx, cy] = centre;
+	const half = ((n - 1) / 2) * MARK_PITCH;
+	const room = (x, y) => {
+		let c = Infinity;
+		for (const px of [x - half, x + half]) {
+			c = Math.min(c, clearanceIn([px, y], poly));
+			for (const land of lands) c = Math.min(c, -clearanceIn([px, y], land));
+		}
+		return c;
+	};
+	const off = named ? 6.5 * lines + 13 : 0;
+	const side = 40 + half;
+	const spots = [[cx, cy - off], [cx, cy + off], [cx + side, cy], [cx - side, cy], [cx, cy]];
+	const fits = spots.find(([x, y]) => room(x, y) >= MARK_ROOM);
+	if (fits) return fits;
+	let best = spots[0];
+	for (const spot of spots) if (room(...spot) > room(...best)) best = spot;
+	return best;
+}
+
+const areaCentres = new WeakMap();
+
+/**
+ * The middle of an area as the eye sees it: the centre of the largest circle that fits in
+ * it, which stays inside a crooked shape as an average of its corners would not. A sea runs
+ * under the land drawn over it, so the land counts as its edge.
+ */
+function areaCentre(area, poly, lands) {
+	const known = areaCentres.get(area);
+	if (known) return known;
+	const room = (pt) => {
+		let c = clearanceIn(pt, poly);
+		for (const land of lands) if (c > 0) c = Math.min(c, -clearanceIn(pt, land));
+		return c;
+	};
+	const box = polygonBox(poly);
+	let best = { pt: [box.minX + box.w / 2, box.minY + box.h / 2], room: -Infinity };
+	const scan = (x0, y0, w, h) => {
+		for (let i = 0; i <= 20; i++) {
+			for (let j = 0; j <= 20; j++) {
+				const pt = [x0 + (w * i) / 20, y0 + (h * j) / 20];
+				const r = room(pt);
+				if (r > best.room) best = { pt, room: r };
+			}
+		}
+	};
+	scan(box.minX, box.minY, box.w, box.h);
+	// A closer look around the best of the first pass.
+	for (const span of [box.w / 10, box.w / 50]) scan(best.pt[0] - span, best.pt[1] - (span * box.h) / box.w, span * 2, (span * 2 * box.h) / box.w);
+	areaCentres.set(area, best);
+	return best;
 }
 
 // One hidden SVG holds the gradients and the wave pattern every map uses
@@ -1404,15 +1450,19 @@ function renderAreaMap(host, info, view, handlers) {
 	const enhancedUnits = view.enhanced || new Set();
 	const inspect = view.inspect || null;
 	const holders = view.holders || null;
-	// Which layers of the map are drawn: the names, the glyph badges, the sigils.
-	const layers = { names: true, glyphs: true, sigils: true, ...(view.layers || {}) };
+	// Which layers of the map are drawn: the names, the glyph badges, the sigils, the units.
+	const layers = { names: true, glyphs: true, sigils: true, units: true, ...(view.layers || {}) };
 	const glyphMarks = glyphAreas(info);
+	const landShapes = b.areas.filter((a) => !a.tags.includes("ocean")).flatMap((a) => a.polygons);
+	// Hidden units stay in play: one the player can pick up now is still drawn, or there would be no way to move it.
 	const pts = (poly) => poly.map((p) => p.join(",")).join(" ");
 
 	// Where each area's name and tokens go. Small areas are planned first,
 	// so they claim the room they need and the big ones work around them.
 	const placed = [];
 	const planOf = (area) => {
+		// Hidden units stay in play: one the player can pick up now is still drawn, or there would be no way to move it.
+		const shownUnit = (piece, color) => layers.units || !!(view.interactive && tokenOk && tokenOk(area.id, piece, color));
 		const stack = (view.cells && view.cells[area.id]) || [];
 		const groups = groupTokens(info, stack, seatOrder, pieceDefs);
 		// Everything that stands in the area, for its description.
@@ -1428,7 +1478,8 @@ function renderAreaMap(host, info, view, handlers) {
 			// The figure that stands on the Gate, when it has one: it is one of
 			// the units of its kind there, drawn on the Gate and not in the
 			// stack beside it.
-			const holder = owner !== 0 && holders ? pieceDefs.get(holders[area.id]) || null : null;
+			let holder = owner !== 0 && holders ? pieceDefs.get(holders[area.id]) || null : null;
+			if (holder && !shownUnit(ONGATE + holder.type, ownerColor)) holder = null;
 			if (holder) {
 				const gi = groups.findIndex((g) => g.piece === holder.type && g.color === ownerColor);
 				if (gi >= 0) {
@@ -1440,12 +1491,13 @@ function renderAreaMap(host, info, view, handlers) {
 		}
 		if (rowBadges.includes("desecrated")) chips.push({ special: "desecrated", def: (legend.badges || {}).desecrated || {} });
 		if (rowBadges.includes("iceage")) chips.push({ special: "iceage", def: (legend.badges || {}).iceage || {} });
-		for (const grp of groups) chips.push(grp);
+		for (const grp of groups) if (shownUnit(grp.piece, grp.color)) chips.push(grp);
 
 		// The name, on two lines when the area is too narrow for one.
 		const perChar = ocean ? 9.0 : 8.3;
 		const home = homePolygon(area);
-		const mid = spanAt(home, area.anchor[1], area.anchor[0]);
+		const centre = areaCentre(area, home, ocean ? landShapes : []).pt;
+		const mid = spanAt(home, centre[1], centre[0]);
 		const avail = mid ? mid[1] - mid[0] : polygonBox(home).w;
 		let nameLines = [area.name];
 		if (area.name.length * perChar > avail * 0.92 && area.name.includes(" ")) {
@@ -1461,13 +1513,7 @@ function renderAreaMap(host, info, view, handlers) {
 		}
 		const lineW = nameLines.map((l) => l.length * perChar);
 		const nameW = Math.max(...lineW);
-		const glyphTag = (area.tags.find((t) => t.startsWith("glyph-")) || "").slice(6);
-		// The glyph badge sits just past the end of the name's longest line,
-		// at the height of the first line, so it never covers any text.
-		const badgeLine = 0;
-		const badgeX = nameW / 2 + 13;
-		const badge = glyphTag && GLYPHS[glyphTag] ? 24 : 0;
-		return { stack, groups, everyone, ocean, rowBadges, chips, home, nameLines, nameW, badgeX, badgeLine, badge, fit: null };
+		return { stack, groups, everyone, ocean, rowBadges, chips, home, centre, nameLines, fit: null };
 	};
 	const plans = new Map(b.areas.map((area) => [area.id, planOf(area)]));
 	const sizeOf = (area) => {
@@ -1480,12 +1526,13 @@ function renderAreaMap(host, info, view, handlers) {
 	};
 	for (const area of [...b.areas].sort((x, y) => sizeOf(x) - sizeOf(y))) {
 		const pl = plans.get(area.id);
-		pl.fit = fitBlock(area, pl.home, pl.chips.length, pl.nameW, pl.nameLines.length, placed, pl.badge);
+		// The pieces stand a little below the middle, where they leave more of the name to read.
+		pl.fit = fitBlock([pl.centre[0], pl.centre[1] + 10], pl.home, pl.chips.length, placed);
 		for (const r of pl.fit.rect) if (r) placed.push(r);
 	}
 
 	const drawArea = (area) => {
-		const { stack, everyone, ocean, rowBadges, chips, nameLines, nameW, badgeX, badgeLine, fit } = plans.get(area.id);
+		const { stack, everyone, ocean, rowBadges, chips, home, centre, nameLines, fit } = plans.get(area.id);
 		const isTarget = view.interactive && targets.has(area.id);
 		const tint = tints[area.id] || (ocean ? "ocean" : "land");
 		const g = s("g", {
@@ -1513,20 +1560,25 @@ function renderAreaMap(host, info, view, handlers) {
 		for (const poly of area.polygons) g.append(s("polygon", { class: "cell-hit", points: pts(poly), fill: "transparent" }));
 
 		const cx = fit.cx;
+		// The name is at the middle of the area, whatever stands there: it is a faint layer under the pieces.
 		const label = s("text", { class: "area-label" + (ocean ? " ocean-label" : ""), "data-area": area.id, "text-anchor": "middle" });
 		nameLines.forEach((line, i) => {
-			label.append(s("tspan", { x: cx, y: (fit.labelY + i * 13).toFixed(1) }, line));
+			label.append(s("tspan", { x: centre[0].toFixed(1), y: (centre[1] + 4 + (i - (nameLines.length - 1) / 2) * 13).toFixed(1) }, line));
 		});
 		if (layers.names) labelNodes.push(label);
-		// The glyphs of the cults at the table, left of the name: where a cult
-		// begins, and the areas marked with the Windwalker's and the Sleeper's
-		// sigils — drawn as the sigil itself, a ring that is no Gate.
-		for (const sg of glyphMarks) {
-			if (!layers.sigils) break;
-			if (sg.area !== area.id) continue;
+		// Its marks: the glyphs of the cults at the table (where a cult begins, and the areas
+		// marked with the Windwalker's and the Sleeper's sigils, drawn as the sigil itself, a
+		// ring that is no Gate), and Yellow Sign's glyph. They stay inside the area's border.
+		const sigils = layers.sigils ? glyphMarks.filter((sg) => sg.area === area.id && CW_GLYPHS[sg.key] && glyphShape(sg.key, 23)) : [];
+		const glyph = (area.tags.find((t) => t.startsWith("glyph-")) || "").slice(6);
+		const showGlyph = !!(layers.glyphs && glyph && GLYPHS[glyph]);
+		const marks = sigils.length + (showGlyph ? 1 : 0);
+		const markAt = marks ? marksPlace(home, centre, marks, nameLines.length, layers.names, ocean ? landShapes : []) : null;
+		let mark = 0;
+		const nextMark = () => `translate(${(markAt[0] + (mark++ - (marks - 1) / 2) * MARK_PITCH).toFixed(1)} ${markAt[1].toFixed(1)})`;
+		for (const sg of sigils) {
 			const gl = CW_GLYPHS[sg.key];
 			const shape = glyphShape(sg.key, 23);
-			if (!shape) continue;
 			labelNodes.push(
 				s(
 					"g",
@@ -1534,7 +1586,7 @@ function renderAreaMap(host, info, view, handlers) {
 						class: `area-sigil-badge color-${FACTION_COLORS[sg.key]}`,
 						"data-area": area.id,
 						"data-sigil": sg.key,
-						transform: `translate(${(cx - (layers.names ? nameW / 2 : 0) - 15).toFixed(1)} ${(fit.labelY - 4).toFixed(1)})`,
+						transform: nextMark(),
 					},
 					s("title", {}, `${gl.name} glyph: where that cult begins${sg.key === "ww" ? " and awakens Rhan-Tegoth and Ithaqua" : ""}`),
 					s("circle", { class: "sigil-disc", r: 12.5 }),
@@ -1542,13 +1594,11 @@ function renderAreaMap(host, info, view, handlers) {
 				)
 			);
 		}
-		const glyph = (area.tags.find((t) => t.startsWith("glyph-")) || "").slice(6);
-		if (layers.glyphs && glyph && GLYPHS[glyph]) {
-			const gy = fit.labelY - 4 + badgeLine * 13;
+		if (showGlyph) {
 			labelNodes.push(
 				s(
 					"g",
-					{ class: "area-glyph-badge", "data-area": area.id, transform: `translate(${(cx + badgeX).toFixed(1)} ${gy.toFixed(1)})` },
+					{ class: "area-glyph-badge", "data-area": area.id, transform: nextMark() },
 					s("title", {}, `${glyph[0].toUpperCase() + glyph.slice(1)} glyph (Yellow Sign's Desecrate requirement)`),
 					s("circle", { r: 11 }),
 					s("path", { class: "area-glyph", d: GLYPHS[glyph], transform: "scale(0.8)" })
@@ -1684,18 +1734,12 @@ function renderAreaMap(host, info, view, handlers) {
 						s(
 							"title",
 							{},
-							`${grp.n} × ${grp.def ? grp.def.label : grp.piece} (${grp.color})` + (enhanced ? " — a spellbook enhances this unit" : "") + " — click for details"
+							`${grp.n} × ${grp.def ? grp.def.label : grp.piece} (${grp.color})` + (enhanced ? " — a spellbook enhances this unit" : "") + (document.body.classList.contains("m-mode") ? " — tap for details" : "")
 						)
 					);
 					if (inspected) tok.append(s("circle", { class: "token-inspect-ring", r: Math.max(U, S * 0.8) * 0.72 }));
 					const shape = grp.def ? grp.def.shape : "disc";
 					for (const part of pieceShape(shape, U)) tok.append(part);
-					// Units with a spellbook earned wear a small golden star in
-					// the corner: nothing else about the icon changes.
-					if (enhanced) {
-						const sr = Math.max(S * 0.2, U * 0.26);
-						tok.append(s("path", { class: "token-star", d: starPath(sr), transform: `translate(${(U * 0.4).toFixed(1)} ${(-U * 0.4).toFixed(1)})` }));
-					}
 					// Placeholder shapes (no icon of their own) carry a code.
 					if (grp.def && grp.def.code && !hasUnitIcon(shape) && shape !== "cultist") {
 						tok.append(s("text", { class: "token-code", x: 0, y: 1, "text-anchor": "middle", "dominant-baseline": "central", "font-size": S * 0.36 }, grp.def.code));
@@ -1766,18 +1810,8 @@ function renderAreaMap(host, info, view, handlers) {
 	drawArrows(svg, view, (id) => anchors.get(id) || null);
 
 	clear(host).append(svg);
-	let full = { x: -M, y: -M, w: width, h: height };
-	let key = info.id;
-	// On a phone the map has a tall box to fill: give the view that shape, so
-	// zooming in uses all of it (the whole map still fits the width).
-	if (document.body.classList.contains("m-mode")) {
-		const r = host.getBoundingClientRect();
-		if (r.width > 0 && r.height > 0 && r.width / r.height < width / height) {
-			const tall = width / (r.width / r.height);
-			full = { x: -M, y: -M - (tall - height) / 2, w: width, h: tall };
-			key += ":fill";
-		}
-	}
+	const full = { x: -M, y: -M, w: width, h: height };
+	const key = info.id;
 	svg.setAttribute("viewBox", `${full.x} ${full.y} ${full.w} ${full.h}`);
 	// A preview (the home page's cards) is a picture: no buttons, no panning.
 	if (!view.preview) setupZoom(host, svg, full, key);
@@ -1787,7 +1821,7 @@ function renderAreaMap(host, info, view, handlers) {
 // The zoom of the map survives re-rendering (every move redraws the board).
 let mapView = null;
 
-/** Mouse-wheel / pinch zoom, drag to pan, and +/−/reset buttons. */
+/** Mouse-wheel / pinch zoom, and drag to pan. */
 function setupZoom(host, svg, full, key) {
 	const v = mapView && mapView.key === key ? { ...mapView.v } : { ...full };
 	const clamp = (x, lo, hi) => Math.min(Math.max(x, lo), Math.max(lo, hi));
@@ -1798,7 +1832,6 @@ function setupZoom(host, svg, full, key) {
 		v.y = clamp(v.y, full.y, full.y + full.h - v.h);
 		svg.setAttribute("viewBox", `${v.x} ${v.y} ${v.w} ${v.h}`);
 		mapView = { key, v: { ...v } };
-		reset.disabled = v.w >= full.w - 0.5;
 	};
 	const zoomAt = (cx, cy, factor) => {
 		const r = svg.getBoundingClientRect();
@@ -1813,24 +1846,6 @@ function setupZoom(host, svg, full, key) {
 		v.w = nw;
 		apply();
 	};
-	const button = (label, title, fn) => h("button", { type: "button", class: "ghost", title, "aria-label": title, onclick: fn }, label);
-	const centre = () => {
-		const r = svg.getBoundingClientRect();
-		return [r.left + r.width / 2, r.top + r.height / 2];
-	};
-	const reset = button("⟲", "Show the whole map", () => {
-		Object.assign(v, full);
-		apply();
-	});
-	host.append(
-		h(
-			"div",
-			{ class: "map-zoom" },
-			button("+", "Zoom in", () => zoomAt(...centre(), 0.7)),
-			button("−", "Zoom out", () => zoomAt(...centre(), 1 / 0.7)),
-			reset
-		)
-	);
 	apply();
 
 	svg.addEventListener(
