@@ -28,6 +28,7 @@ before, only seats nobody owns ([ADR 0067](decisions/0067-principals-and-guest-k
 | `get_game_info` | rules text, pieces, actions, win rules and **move notation help** |
 | `get_leaderboard` | the ratings: the games with a leaderboard, one game's leaderboard (`family`), or an account's ratings (`handle`) |
 | `list_tournaments`, `get_tournament` | the tournaments, and one's settings, standings and schedule with the room code of each game (`id`) |
+| `vote_kick` | in a real-time game that is not rated, vote to have a tactical bot take another player's seats for good (`seat`), opening a vote if none is open. It takes a seat that shows as connected, so an agent with no WebSocket is refused |
 | `enter_tournament`, `check_in_tournament`, `leave_tournament` | enter a tournament open for entries, check in to a real-time one, or leave one (`id`); it takes an account, and in a running tournament leaving forfeits your games. Tournaments are made and run through the [API](api.md) or the page |
 | `get_game_guide` | the game's full rules guide as Markdown pages (`tab` selects one): overview, the round, actions, battle, factions… — generated from the definition for games without one |
 | `list_bots` | built-in opponents: `random`, `tactical`, `minimax`, `mcts` |
@@ -58,9 +59,9 @@ which `list_game_defs` does not show but every tool accepts as `game_def_id` —
 `create_game` also takes `also_seats` (a list of seats, besides yours, that you
 play too: a game against yourself; each is a player named
 `<you> · <faction or colour>`), `move_time_seconds` (per-move limit; the player who
-runs out loses) or `clock_seconds` (a game clock for a game of two: the seconds
+runs out loses) or `clock_seconds` (a game clock for a game of two or more: the seconds
 each seat starts with, in seat order, which may differ; the player whose clock
-runs out forfeits; `clock_increment_seconds` adds time each time they hand the turn on),
+runs out forfeits at two seats, and at three or more a tactical bot takes their seat for good; `clock_increment_seconds` adds time each time they hand the turn on),
 `rated` (the game moves both accounts' ratings: see [the API](api.md); `get_leaderboard` reads them) — `get_observation` then reports `seconds_left` — `card_set`
 (a themed set of cards for everybody at the table: see [the API](api.md)) and
 `start_tps` / `start_state` + `start_seat` to begin from a given position

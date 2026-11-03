@@ -95,6 +95,7 @@ func NewRouter(mgr *session.Manager, opts ...Option) chi.Router {
 	r.Get("/games/{code}/autoplay", h.handleGetAutoPlay)
 	r.Put("/games/{code}/autoplay", h.handleSetAutoPlay)
 	r.Post("/games/{code}/auto-play-turn", h.handleAutoPlayTurn)
+	r.Post("/games/{code}/kick-vote", h.handleKickVote)
 	r.Get("/chat", h.handleGetGlobalChat)
 	r.Post("/chat", h.handlePostGlobalChat)
 	r.Get("/games/{code}/chat", h.handleGetChat)

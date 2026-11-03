@@ -100,6 +100,8 @@ type RealTimeSnapshot struct {
 	// FirstMove is set while a seat of a real-time tournament's game must make its
 	// first move in time, or forfeit.
 	FirstMove *FirstMove `json:"first_move,omitempty"`
+	// KickVotes are the votes open to have a bot replace a player.
+	KickVotes []KickVote `json:"kick_votes,omitempty"`
 }
 
 // realTimeOfTournamentGame is what a real-time tournament's games store. They have a
@@ -123,7 +125,11 @@ func (m *Manager) realTimeSnapshot(game store.Game, players []store.Player) *Rea
 	if s == nil {
 		return nil
 	}
-	return &RealTimeSnapshot{RealTimeSettings: *s, Wait: m.realTimeWait(game, players)}
+	snap := &RealTimeSnapshot{RealTimeSettings: *s, Wait: m.realTimeWait(game, players)}
+	if game.Status == "active" {
+		snap.KickVotes = m.kickVoteViews(game.RoomCode, players)
+	}
+	return snap
 }
 
 // firstMoveOf is the first-move deadline a real-time tournament's game is under, if any.
@@ -325,6 +331,7 @@ func (m *Manager) RealTimeDue(ctx context.Context) {
 			m.logger().Info("a real-time turn is slow", "room", game.RoomCode, "seat", wait.Seat, "stage", wait.Stage)
 		}
 	}
+	m.sweepKickVotes(ctx)
 	m.forgetEndedRealTime(running)
 }
 
@@ -353,6 +360,14 @@ func (m *Manager) forgetEndedRealTime(running map[string]bool) {
 		}
 	}
 	w.mu.Unlock()
+	k := &m.kicks
+	k.mu.Lock()
+	for room := range k.again {
+		if !running[room] {
+			delete(k.again, room)
+		}
+	}
+	k.mu.Unlock()
 	t := &m.conns
 	t.mu.Lock()
 	defer t.mu.Unlock()

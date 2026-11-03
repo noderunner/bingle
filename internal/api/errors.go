@@ -31,7 +31,8 @@ func statusForError(err error) int {
 		errors.Is(err, session.ErrAlreadyStarted), errors.Is(err, session.ErrSeatsOpen), errors.Is(err, session.ErrSeatTaken), errors.Is(err, session.ErrNoCultChoice),
 		errors.Is(err, session.ErrNothingToUndo), errors.Is(err, session.ErrCannotUndo), errors.Is(err, session.ErrTutorialRoom),
 		errors.Is(err, session.ErrDrawNotAllowed), errors.Is(err, session.ErrHintNotAllowed), errors.Is(err, session.ErrTooManyBotMatches), errors.Is(err, session.ErrRatedGame),
-		errors.Is(err, session.ErrNoAutoPlayOffer), errors.Is(err, session.ErrOwnTurnOffer), errors.Is(err, session.ErrNotConnected):
+		errors.Is(err, session.ErrNoAutoPlayOffer), errors.Is(err, session.ErrOwnTurnOffer), errors.Is(err, session.ErrNotConnected),
+		errors.Is(err, session.ErrKickNotAllowed), errors.Is(err, session.ErrWasReplaced):
 		return http.StatusConflict
 	case errors.Is(err, session.ErrNotYourTurn), errors.Is(err, session.ErrNotAPlayer), errors.Is(err, session.ErrNotHost), errors.Is(err, session.ErrNotSeated), errors.Is(err, session.ErrVoiceNotJoined), errors.Is(err, session.ErrBadToken), errors.Is(err, session.ErrNotYourSeat), errors.Is(err, session.ErrNoPrincipal),
 		errors.Is(err, session.ErrNotHere):

@@ -93,4 +93,5 @@ Short records of choices made for the `bingle` project during the requirements i
 | [0086](0086-games-for-one-player.md) | A game can have one seat: it starts at once, moves never wait for Submit, every move can be taken back, and only clearing the table is a win |
 | [0088](0088-connection-replaces-presence.md) | A seat is connected while a socket that joined for it is open: server pings, a grace period, and the opt-in presence mark gone |
 | [0089](0089-real-time-games.md) | A real-time game is chosen at setup; without a timer the slow player and then the table are warned, and another connected player may have a bot play the turn |
+| [0091](0091-taking-over-a-seat.md) | A bot can take a seat for good: by a vote in a real-time game, or when time runs out at a table of three or more, and the clock now works at any number of seats |
 | [0090](0090-real-time-tournaments.md) | A real-time tournament starts by itself at its start time: check-in, one game of a pairing at a time, a break between rounds, and a first-move deadline where a no-show forfeits |

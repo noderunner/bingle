@@ -42,6 +42,8 @@ type SeatInfo struct {
 	Label string
 	Name  string // "" if this seat hasn't been filled yet
 	Bot   string // bot ID when a built-in bot plays this seat
+	// Replaced says who held the seat until a bot took it.
+	Replaced *SeatReplaced `json:",omitempty"`
 	// Handle is the account's handle when an account holds the seat, and
 	// Guest says a guest does (neither: an anonymous client, or nobody).
 	Handle string `json:",omitempty"`
@@ -93,6 +95,8 @@ type CreateOptions struct {
 	// may differ for handicap play. A player whose clock runs out forfeits.
 	// It is for a game of two seats, and not together with MoveTimeSeconds.
 	ClockSeconds []int
+	// ClockEach gives every seat this many seconds, instead of ClockSeconds.
+	ClockEach int
 	// RealTime, when set, plays the game in real time (see realtime.go). It works
 	// with a clock, a time per move or neither; the warnings are for neither.
 	RealTime *RealTimeSettings
@@ -233,6 +237,11 @@ func (m *Manager) CreateGameWithOptions(ctx context.Context, opts CreateOptions)
 	compiled, ok := m.catalog.Get(opts.GameDefID)
 	if !ok {
 		return CreateGameResult{}, fmt.Errorf("%w: %q", ErrGameDefNotFound, opts.GameDefID)
+	}
+	if opts.ClockEach != 0 && len(opts.ClockSeconds) == 0 {
+		for range compiled.Definition.Seats {
+			opts.ClockSeconds = append(opts.ClockSeconds, opts.ClockEach)
+		}
 	}
 
 	// also names the seats the creator plays too.

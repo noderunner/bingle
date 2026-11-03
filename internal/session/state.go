@@ -72,7 +72,7 @@ type StateSnapshot struct {
 
 // snapshot assembles a StateSnapshot from a game row, its players and a
 // board-state document (the game's current one, or a historical one).
-func (m *Manager) snapshot(compiled *catalog.CompiledGame, game store.Game, players []store.Player, stateDoc string) (StateSnapshot, error) {
+func (m *Manager) snapshot(ctx context.Context, compiled *catalog.CompiledGame, game store.Game, players []store.Player, stateDoc string) (StateSnapshot, error) {
 	bs := state.NewBoardState()
 	if err := bs.UnmarshalJSON([]byte(stateDoc)); err != nil {
 		return StateSnapshot{}, fmt.Errorf("session: unmarshal board state for room %q: %w", game.RoomCode, err)
@@ -93,9 +93,20 @@ func (m *Manager) snapshot(compiled *catalog.CompiledGame, game store.Game, play
 	for _, p := range players {
 		playersBySeat[p.Seat] = p
 	}
+	// Only a table of three or more can have had a seat taken over.
+	replaced := map[int]*SeatReplaced{}
+	if len(compiled.Definition.Seats) >= takeoverSeats && game.Status != "waiting" {
+		rows, err := m.store.SeatReplacements(ctx, game.ID)
+		if err != nil {
+			return StateSnapshot{}, err
+		}
+		for _, r := range rows {
+			replaced[r.Seat] = &SeatReplaced{Name: r.Name, Reason: r.Reason, MoveSeq: r.MoveSeq}
+		}
+	}
 	seats := make([]SeatInfo, 0, len(compiled.Definition.Seats))
 	for _, seatDef := range compiled.Definition.Seats {
-		info := SeatInfo{Seat: seatDef.Seat, Color: seatDef.Color, Label: seatDef.Label}
+		info := SeatInfo{Seat: seatDef.Seat, Color: seatDef.Color, Label: seatDef.Label, Replaced: replaced[seatDef.Seat]}
 		if p, ok := playersBySeat[seatDef.Seat]; ok {
 			info.Name = p.Name
 			info.Bot = p.Bot
@@ -211,7 +222,7 @@ func (m *Manager) deadline(game store.Game) *time.Time {
 		d := started.Add(time.Duration(game.MoveTimeLimit) * time.Second)
 		out = &d
 	}
-	if c := parseGameClock(game.Clock); c != nil {
+	if c := parseGameClock(game.Clock); c.holds(*game.TurnSeat) {
 		d := c.startedAt(started).Add(time.Duration(c.LeftFor(*game.TurnSeat) * float64(time.Second)))
 		if out == nil || d.Before(*out) {
 			out = &d
@@ -256,6 +267,9 @@ func (m *Manager) loadGame(ctx context.Context, roomCode string, locked bool) (s
 	compiled, ok := m.catalog.Get(game.GameDefID)
 	if !ok || game.TurnSeat == nil {
 		return game, nil
+	}
+	if len(compiled.Definition.Seats) >= takeoverSeats {
+		return m.flagAtLargeTable(ctx, game, compiled)
 	}
 	var winner *int
 	if opp, ok := compiled.Opponent(*game.TurnSeat); ok {
@@ -366,7 +380,7 @@ func (m *Manager) readState(ctx context.Context, roomCode string, atSeq *int) (S
 		game = hist
 	}
 
-	snap, err := m.snapshot(compiled, game, players, doc)
+	snap, err := m.snapshot(ctx, compiled, game, players, doc)
 	if err == nil {
 		m.identify(ctx, snap.Seats)
 		snap.RatingChanges = m.fillRatings(ctx, compiled, game, snap.Seats)

@@ -11,8 +11,9 @@ import (
 // A game clock (a chess clock) gives each player a store of time instead of an
 // allowance per move: the clock of the player to move runs, and the first
 // player to run out forfeits the game. It is a choice made when the game is
-// created, for a game of two seats, and each seat's time can differ so that a
-// stronger player can give a weaker one odds.
+// created, for a game of two seats or more, and each seat's time can differ so
+// that a stronger player can give a weaker one odds. Out of time at two seats is a
+// forfeit; at three or more a bot takes the seat, which then has no clock (ADR 0091).
 //
 // What each seat has left lives in the games row as JSON, with the moment the
 // running clock started. That moment is written by the transaction that records
@@ -36,8 +37,7 @@ const MaxClockSeconds = 30 * 24 * 60 * 60
 const MaxClockIncrementSeconds = 24 * 60 * 60
 
 // ErrInvalidClock is returned by CreateGame for a clock that cannot be played
-// with: a time out of range, one time per seat where the game has other than
-// two, an increment with no clock or out of range, or a clock together with a
+// with: a time out of range, a game for one, other than one time per seat, an increment with no clock or out of range, or a clock together with a
 // per-move limit.
 var ErrInvalidClock = errors.New("session: invalid game clock")
 
@@ -67,8 +67,8 @@ func newGameClock(seats []int, seconds []int, increment int) (*GameClock, error)
 		}
 		return nil, nil
 	}
-	if len(seats) != 2 {
-		return nil, fmt.Errorf("%w: a game clock is for two players, and this game seats %d", ErrInvalidClock, len(seats))
+	if len(seats) < 2 {
+		return nil, fmt.Errorf("%w: a game clock is for two or more players, and this game seats %d", ErrInvalidClock, len(seats))
 	}
 	if len(seconds) != len(seats) {
 		return nil, fmt.Errorf("%w: %d times for %d seats", ErrInvalidClock, len(seconds), len(seats))
@@ -145,6 +145,23 @@ func (c *GameClock) Seats() []int {
 	return out
 }
 
+// holds says the seat has a clock. A seat a bot has taken has none.
+func (c *GameClock) holds(seat int) bool {
+	if c == nil {
+		return false
+	}
+	_, ok := c.Left[seatKey(seat)]
+	return ok
+}
+
+// drop takes the seat off the clock.
+func (c *GameClock) drop(seat int) {
+	if c != nil {
+		delete(c.Left, seatKey(seat))
+		delete(c.Initial, seatKey(seat))
+	}
+}
+
 // startedAt is when the turn in progress began: the later of the clock's own
 // mark and whatever else last moved the game on (fallback, the game row's
 // updated_at, which is truncated to the second).
@@ -181,7 +198,7 @@ func (c *GameClock) snapshot(running int) *ClockSnapshot {
 
 // charge takes the time a turn took off the seat's clock, never below zero.
 func (c *GameClock) charge(seat int, d time.Duration) {
-	if c == nil || d <= 0 {
+	if !c.holds(seat) || d <= 0 {
 		return
 	}
 	k := seatKey(seat)
@@ -194,7 +211,7 @@ func (c *GameClock) charge(seat int, d time.Duration) {
 
 // gain adds the increment to the seat's clock.
 func (c *GameClock) gain(seat int) {
-	if c != nil {
+	if c.holds(seat) {
 		c.Left[seatKey(seat)] += float64(c.Increment)
 	}
 }

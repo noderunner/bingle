@@ -61,6 +61,7 @@ type Manager struct {
 	conns              connTracker            // the seats with a socket open (see connection.go)
 	connTimes          ConnectionTimes        // how those sockets are watched
 	rtWarned           realTimeWarned         // the real-time warnings already given (see realtime.go)
+	kicks              kickVotes              // the votes to replace a player (see takeover.go)
 	here               hereTracker            // the browsers that are about (see here.go)
 	dms                dmBox                  // the direct messages, in memory (see dm.go)
 	calls              callRegistry           // the one voice call each browser is in (see dm.go)

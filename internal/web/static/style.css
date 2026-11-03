@@ -1913,3 +1913,7 @@ code.wrap { overflow-wrap: anywhere; word-break: break-all; }
 .tournament-description { white-space: pre-wrap; overflow-wrap: anywhere; }
 #tournament-page h1, #tournament-name { overflow-wrap: anywhere; }
 #tournament-actions { flex-wrap: wrap; gap: 0.5rem; }
+
+.seat-replaced { white-space: nowrap; }
+.seat-kick[hidden] { display: none; }
+#kick-vote[hidden] { display: none; }

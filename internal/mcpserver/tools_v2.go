@@ -179,6 +179,26 @@ func registerPlayTools(s *server.MCPServer, mgr *session.Manager) {
 	)
 
 	s.AddTool(
+		mcp.NewTool("vote_kick",
+			mcp.WithDescription("In a real-time game that is not rated, vote to have a tactical bot take the seats of another player for good, opening a vote if none is open. It passes when more than half of the connected players and the target have voted, and lapses after 2 minutes. It takes a seat that shows as connected, which takes an open WebSocket: an agent with none is refused."),
+			mcp.WithString("room_code", mcp.Required(), mcp.Description("The room code of the game.")),
+			mcp.WithString("player_name", mcp.Required(), mcp.Description("Your player name.")),
+			mcp.WithNumber("seat", mcp.Required(), mcp.Description("The seat of the player to replace.")),
+		),
+		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			room, player, errRes := requireRoomAndPlayer(request)
+			if errRes != nil {
+				return errRes, nil
+			}
+			snap, err := mgr.VoteKick(ctx, room, player, request.GetInt("seat", 0))
+			if err != nil {
+				return mcp.NewToolResultError(err.Error()), nil
+			}
+			return mcp.NewToolResultStructuredOnly(stateResultFromSnapshot(snap)), nil
+		},
+	)
+
+	s.AddTool(
 		mcp.NewTool("draw",
 			mcp.WithDescription("Offer, withdraw, accept or decline a draw with a human opponent. Accepting ends the game as a draw; any move withdraws an outstanding offer. Bots never answer offers."),
 			mcp.WithString("room_code", mcp.Required(), mcp.Description("The room code of the game.")),
