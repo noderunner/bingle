@@ -96,6 +96,8 @@ type SeatDefDTO struct {
 	Seat  int    `json:"seat"`
 	Color string `json:"color"`
 	Label string `json:"label"`
+	// Blend is the two colours a seat is drawn in, when it has two.
+	Blend []string `json:"blend,omitempty"`
 }
 
 // BoardDTO describes the board graph and how to draw it.
@@ -221,7 +223,7 @@ func buildGameInfo(cg *catalog.CompiledGame) GameInfo {
 		if label == "" {
 			label = strings.ToUpper(s.Color[:1]) + s.Color[1:]
 		}
-		info.Seats = append(info.Seats, SeatDefDTO{Seat: s.Seat, Color: s.Color, Label: label})
+		info.Seats = append(info.Seats, SeatDefDTO{Seat: s.Seat, Color: s.Color, Label: label, Blend: s.Blend})
 	}
 
 	// Board.

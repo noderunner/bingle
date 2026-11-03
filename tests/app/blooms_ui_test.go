@@ -13,8 +13,7 @@ import (
 
 // bloomsStepJS picks a stone colour, then a cell, or ends a turn.
 const bloomsStepJS = `(function () {
-	var bar = document.querySelector(".status-bar");
-	if (!bar || !bar.classList.contains("your-turn")) return "wait";
+	if (!document.querySelector("#action-card.acting")) return "wait";
 	function click(el, what) {
 		el.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
 		return what;
@@ -101,7 +100,17 @@ func TestWebBlooms_PreviewIsTheChosenColour(t *testing.T) {
 		if n := evalInt(t, ctx, `document.querySelectorAll('#board .ghost-piece:not(.color-`+stone+`)').length`); n != 0 {
 			t.Errorf("after picking %s, %d previews are another colour", stone, n)
 		}
-		clickSel(t, ctx, "#reset-move")
+		// The card says what is in hand, in a picture, and Back alone puts it down.
+		if got := evalString(t, ctx, `document.getElementById("pending-move").innerText.trim()`); got != "Place" {
+			t.Errorf("after picking %s, the card says %q", stone, got)
+		}
+		if n := evalInt(t, ctx, `document.querySelectorAll('#pending-move svg .color-`+stone+`').length`); n != 1 {
+			t.Errorf("after picking %s, %d pictures of it in the card", stone, n)
+		}
+		if evalBool(t, ctx, `document.getElementById("reset-move") !== null`) {
+			t.Error("a Reset button beside Back")
+		}
+		clickSel(t, ctx, "#undo-step")
 		waitJS(t, ctx, "the previews gone", `document.querySelectorAll('#board .ghost-piece').length === 0`, 10*time.Second)
 	}
 }

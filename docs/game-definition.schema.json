@@ -974,6 +974,13 @@
       "additionalProperties": false,
       "description": "SeatDef declares one seat a player can occupy, and the color of piece that seat plays.",
       "properties": {
+        "blend": {
+          "description": "Blend names the two colours of a seat that plays with both (\"black\", \"blue\"): its swatch and its label are drawn as a gradient between them.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
         "color": {
           "type": "string"
         },

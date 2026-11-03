@@ -19,6 +19,29 @@ A player is a guest (a browser, by its guest key) or a signed-in account ([ADR 0
 `{room code → name}` in `localStorage` (`bingle.games`), merged with the server's "My games". Opening a game you have no name for shows a
 small gate: join an open seat, continue as a seated player's name, or watch.
 
+## The fitted game page
+
+A game named by `FITTED_GAMES` in `js/game.js` (so far only Blooms and its variants, once out of the lobby)
+is drawn by `renderFitted` ([ADR 0092](decisions/0092-a-game-page-that-fits-the-screen.md)). `body.fit-screen` makes
+the page exactly as tall as the window, with no page scroll and no footer. The `.board-column` is as wide as the board
+can be drawn at that height (`--board-aspect`, from the board's `viewBox`), leaving `#play-rail` at least `--rail-least`.
+The rail has what is left, up to 40rem, and any width beyond that is shared by the outer margins. It holds the cards in
+one column and scrolls by itself, keeping its place across redraws: the tutorial and any notices, `#action-card`,
+`#players-card`, voice, chat and history. On an upright screen under 980px wide, the rail goes under the board, whose
+row is no taller than the board.
+
+No `.status-bar` is drawn on this page. While a game is being played, `#status-message` stays as `.sr-only` for screen
+readers. For a result, history, analysis or a game waiting for an opponent, the message and the bar's buttons (`#rematch`,
+`#return-live`, `#analyze-here`, `#exit-analysis`, `#play-from-here`) are in `#action-card`, whose heading says which it
+is. The game's badges are in `.table-badges`, with `#conn-badge` shown only when the connection is not live.
+
+`#action-card` holds the move bar. On the player's turn it has `.acting`, which pins it to the edges of the rail, so it
+is in view however far the rail is scrolled. It neither moves the rail nor takes the keyboard.
+
+Once a piece is chosen, `#pending-move` shows the game's `piece_action` word and the piece's picture. *Back* (`#undo-step`)
+is the only button that undoes a selection here: `#reset-move` is not drawn, and Esc still clears the move. A move in Blooms
+is a stone and a cell, so the two did the same thing; a game with longer moves will need to look at this when it joins.
+
 ## How moves are entered
 
 The server lists every legal move of the position

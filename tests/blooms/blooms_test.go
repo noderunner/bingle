@@ -4,7 +4,9 @@
 package blooms_test
 
 import (
+	"encoding/json"
 	"math/rand"
+	"strings"
 	"testing"
 
 	"github.com/noderunner/bingle/internal/engine/board"
@@ -152,6 +154,33 @@ func TestSurroundedBloomIsCapturedAtTheEndOfTheTurn(t *testing.T) {
 	}
 	if res.NextTurnSeat != 2 {
 		t.Errorf("then player 2 moves")
+	}
+}
+
+// What a seat has captured is kept stone by stone, in the view by colour, with the
+// target to reach beside the count.
+func TestTheColoursOfTheCapturedStonesAreKept(t *testing.T) {
+	g := game(t)
+	c := centre(g)
+	nb := neighbours(g, c)
+	stones := map[board.PositionID]string{c: "blue"}
+	for _, n := range nb[:5] {
+		stones[n] = "red"
+	}
+	st := build(g, stones, blooms.Data{Turn: 1, Turns: 4})
+	st, _ = play(t, g, st, 1, "yellow@"+string(nb[5]))
+	st, _ = play(t, g, st, 1, "done")
+	if got := data(st).CapturedStones[0]; len(got) != 1 || got[0] != "blue" {
+		t.Fatalf("the captured stones: %v", got)
+	}
+	view, err := json.Marshal((&blooms.Ruleset{}).Redact(g, st, 0).Ext())
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{`"taken":["blue"]`, `"show_max":true`, `"piece_action":"Place"`} {
+		if !strings.Contains(string(view), want) {
+			t.Errorf("the view lacks %s: %s", want, view)
+		}
 	}
 }
 

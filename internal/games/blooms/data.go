@@ -39,6 +39,8 @@ type Data struct {
 	Turns int `json:"turns"`
 	// Captured counts the enemy stones each seat has captured (index seat-1).
 	Captured [2]int `json:"captured"`
+	// CapturedStones lists the colours of those stones, as they were taken.
+	CapturedStones [2][]string `json:"captured_stones,omitempty"`
 	// Placed lists the cells stoned this turn, and Last the previous turn's.
 	Placed []string `json:"placed,omitempty"`
 	Last   []string `json:"last_placed,omitempty"`
@@ -60,6 +62,9 @@ func (d *Data) clone() *Data {
 	c.Placed = append([]string(nil), d.Placed...)
 	c.Last = append([]string(nil), d.Last...)
 	c.Events = append([]string(nil), d.Events...)
+	for i := range c.CapturedStones {
+		c.CapturedStones[i] = append([]string(nil), d.CapturedStones[i]...)
+	}
 	return &c
 }
 

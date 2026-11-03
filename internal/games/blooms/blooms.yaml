@@ -2,13 +2,13 @@
 id: blooms
 name: Blooms
 description: "Nick Bentley's colourful Go-like game on a hexagonal board: place one or two stones of different colours, and capture every enemy bloom you fence in."
-version: 0.2.2
+version: 0.3.0
 designers: [Nick Bentley]
 engine: ruleset
 pie_rule: optional
 default_clock_minutes: 10
 rules:
-  - Blooms is played on a hexagonal board (5 cells per side here; 4 and 6 are variants). Player 1 owns red and yellow stones, player 2 blue and black.
+  - Blooms is played on a hexagonal board (5 cells per side here; 4 and 6 are variants). Warm (player 1) owns red and yellow stones, Cool (player 2) blue and black.
   - A bloom is a connected group of stones of one colour (a lone stone counts). A bloom is fenced when no empty cell touches any of its stones.
   - Player 1 starts by placing one stone of either of their colours. After that, on your turn you place one or two stones on empty cells; two stones must be of different colours. You may place just one.
   - When your turn ends, you capture every fenced enemy bloom (removing it and counting its stones). Your own fenced blooms are not captured on your turn; they stay until the end of your opponent's turn, so a fenced bloom of yours can still be freed — or captured.
@@ -32,8 +32,8 @@ preview:
 board:
   generator: {type: hexhex, size: 5}
 seats:
-  - {seat: 1, color: red, label: Red & Yellow}
-  - {seat: 2, color: blue, label: Blue & Black}
+  - {seat: 1, color: red, label: Warm, blend: [red, yellow]}
+  - {seat: 2, color: blue, label: Cool, blend: [black, blue]}
 extra_colors: [yellow, black]
 pieces:
   red: {label: Red stone, code: R, shape: disc, color: red}

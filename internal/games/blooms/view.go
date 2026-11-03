@@ -17,17 +17,23 @@ var (
 
 // View is what clients draw beyond the stones.
 type View struct {
-	Phase  string               `json:"phase"`
-	Stage  string               `json:"stage,omitempty"`
-	ToMove int                  `json:"to_move,omitempty"`
-	Prompt string               `json:"prompt"`
-	Tints  map[string]string    `json:"tints,omitempty"`
-	Seats  map[string]*SeatView `json:"seats"`
+	Phase  string `json:"phase"`
+	Stage  string `json:"stage,omitempty"`
+	ToMove int    `json:"to_move,omitempty"`
+	Prompt string `json:"prompt"`
+	// MoveHint says what the player to move can do, over the controls.
+	MoveHint string `json:"move_hint,omitempty"`
+	// PieceAction is the word on the button of each stone: its colour is in its picture.
+	PieceAction string               `json:"piece_action,omitempty"`
+	Tints       map[string]string    `json:"tints,omitempty"`
+	Seats       map[string]*SeatView `json:"seats"`
 }
 
 // SeatView is one player's scoreboard.
 type SeatView struct {
 	Counters []CounterView `json:"counters"`
+	// Taken is the colour of each stone this seat has captured, one colour after the other.
+	Taken []string `json:"taken,omitempty"`
 }
 
 // CounterView is a labelled number.
@@ -36,6 +42,8 @@ type CounterView struct {
 	Label string `json:"label"`
 	Value int    `json:"value"`
 	Max   int    `json:"max,omitempty"`
+	// ShowMax draws the counter as "value/max".
+	ShowMax bool `json:"show_max,omitempty"`
 }
 
 // Redact attaches the derived view: Blooms has nothing to hide.
@@ -61,7 +69,7 @@ func (rs *Ruleset) Determinize(game *catalog.CompiledGame, st *state.BoardState,
 
 func (e *eng) buildView() *View {
 	d := e.d
-	v := &View{Phase: "play", Stage: d.Stage, ToMove: d.Turn, Tints: map[string]string{}, Seats: map[string]*SeatView{}}
+	v := &View{Phase: "play", Stage: d.Stage, ToMove: d.Turn, PieceAction: "Place", Tints: map[string]string{}, Seats: map[string]*SeatView{}}
 	for _, c := range d.Last {
 		v.Tints[c] = "last"
 	}
@@ -83,15 +91,22 @@ func (e *eng) buildView() *View {
 		v.Prompt = "The game is drawn"
 	case d.Stage == stageSecond:
 		v.Prompt = fmt.Sprintf("%s: place a second stone (not %s), or end the turn", seatLabel(d.Turn), d.First)
+		v.MoveHint = "Place or end."
 	case d.Turns == 0:
-		v.Prompt = "Red & Yellow: place one stone"
+		v.Prompt = fmt.Sprintf("%s: place one stone", seatLabel(d.Turn))
+		v.MoveHint = "Choose a stone to place."
 	case d.Turn == 2 && d.Turns == 1 && d.Stage == stageFirst && e.pieOn():
 		v.Prompt = fmt.Sprintf("%s: answer the opening stone, or swap sides and take it (the pie rule)", seatLabel(d.Turn))
+		v.MoveHint = "Choose a stone to place, or swap sides."
 	default:
 		v.Prompt = fmt.Sprintf("%s: place a stone", seatLabel(d.Turn))
+		v.MoveHint = "Choose a stone to place."
 	}
 	for s := 1; s <= 2; s++ {
-		v.Seats[string(rune('0'+s))] = &SeatView{Counters: []CounterView{{ID: "captured", Label: "Captured", Value: d.Captured[s-1], Max: e.target()}}}
+		v.Seats[string(rune('0'+s))] = &SeatView{
+			Counters: []CounterView{{ID: "captured", Label: "Captured", Value: d.Captured[s-1], Max: e.target(), ShowMax: true}},
+			Taken:    byColour(d.CapturedStones[s-1]),
+		}
 	}
 	return v
 }
@@ -183,7 +198,20 @@ func (e *eng) apply(mv state.Move) {
 
 func seatLabel(seat int) string {
 	if seat == 1 {
-		return "Red & Yellow"
+		return "Warm"
 	}
-	return "Blue & Black"
+	return "Cool"
+}
+
+// byColour puts captured stones in the order of the colours, so they can be counted at a glance.
+func byColour(stones []string) []string {
+	out := make([]string, 0, len(stones))
+	for _, colour := range [...]string{"red", "yellow", "blue", "black"} {
+		for _, stone := range stones {
+			if stone == colour {
+				out = append(out, stone)
+			}
+		}
+	}
+	return out
 }

@@ -135,6 +135,8 @@ board:
 seats:
   - {seat: 1, color: white, label: White}
   - {seat: 2, color: black}
+# A seat that plays two colours can name them, to be drawn as a gradient:
+#   - {seat: 1, color: red, label: Warm, blend: [red, yellow]}
 pieces:
   flat:
     label: Flat stone

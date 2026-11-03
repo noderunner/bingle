@@ -4,6 +4,32 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.48.0 - 2026-11-02
+
+### Bingle Core 0.48.0
+- **Blooms fits your screen.** A game of Blooms no longer scrolls: the whole board stays in view, with the players,
+  chat, history and tutorial beside it (below it on an upright phone). The board and the cards sit side by side and grow with
+  the window, with any spare width on the outside. The cards scroll by themselves and leave the board where it is. Blooms is the first game to get this page, so tell us how it plays before the others follow.
+- **Your move stands out.** On your turn, the card with your stones and buttons lights up and stays in view however far
+  you have scrolled the column, without moving anything else.
+- **Keep typing.** A move arriving while you are typing a chat message no longer takes the cursor out of the message box,
+  in any game.
+- **Tutorials can go back.** A Back button returns to any earlier step of a tutorial, so you can read it again with
+  the board as it stood. Next brings you forward to where you were.
+
+### Blooms 0.3.0
+- **Warm and Cool.** The two sides are now called Warm (red and yellow) and Cool (black and blue), everywhere including
+  the history, and their names and colour swatches blend their two colours.
+- **The captured stones are on show.** Each player's card shows the stones they have captured, in their colours, and how
+  many are needed to win, such as *Captured: 3/15*.
+- **Shorter words on the controls.** Each stone's button says *Place*, *End turn* is now *End*, and the line above them
+  says what you can do next. Once you pick a stone, the card says *Place* with a picture of it, and *Back* puts it down
+  again; there is no separate *Reset* button.
+- **More room for the board.** The bar above the board is gone. The result of a game and its *Rematch* button are in the
+  card with your stones, as are the controls for looking through the history and for analysis.
+- **A longer tutorial.** It uses the new names and buttons, and now explains blooms and liberties with two boards to count
+  on yourself. *Need a hint?* gives the answer.
+
 ## 0.47.0 - 2026-11-02
 
 ### Bingle Core 0.47.0

@@ -19,7 +19,7 @@
           "type": "array"
         },
         "hint": {
-          "description": "Hint is shown when the learner asks for one (\"Need a hint?\").",
+          "description": "Hint is shown when the learner asks for one (\"Need a hint?\"). On a step with no move to make, it can answer a question the text asks.",
           "type": "string"
         },
         "illegal": {

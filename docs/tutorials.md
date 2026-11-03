@@ -70,7 +70,7 @@ steps:
 |---|---|---|
 | `text` | The page's prose, in Markdown. The game's guide images may be used. | Required. |
 | `play` | The moves the learner must make, in order, written as the move list writes them. The page offers only these. | A step with none waits for **Next**. |
-| `hint` | Shown when the learner asks for a hint. | Needs `play`. |
+| `hint` | Shown when the learner asks for a hint. On a step without `play`, it can hold the answer to a question the text asks. | |
 | `reply` | Moves played for the other seats after the learner's. | |
 | `highlight` | Squares or areas to ring. | Must be on the board. |
 | `arrow` | An arrow, as `[from, to]`. | Exactly two squares, both on the board. |
@@ -99,7 +99,7 @@ Pick whichever of the three is easiest:
   `piece:color@square` for a piece not named after its colour (`cultist:green@asia`). List a stack bottom
   first. Everything else, such as captures and reserves, stays as it is at the start of the tutorial.
 - **`show`** is for a real game, such as a finished one. The moves must be a legal game from the start, every
-  seat in its turn: in Blooms, Red & Yellow's one stone first, with `done` ending any later turn of one
+  seat in its turn: in Blooms, Warm's one stone first, with `done` ending any later turn of one
   stone. Taking them from bots playing a game out is easiest.
 - **`position`** is for what `pieces` cannot say, such as the units, Power and phase of a game with more
   state than its board. It is the whole document, including the game's own `ext`:
@@ -189,11 +189,17 @@ there is nobody to talk to.
 **What to select is a signal, not a page of its own.** The tutorial the API serves carries a `guide`
 for each step: the selections each of the learner's moves is made of (`piece red`, then `pos d4`) and
 the position a step shows ([api.md](api.md#games)). A client shows them its own way. The web page
-keeps every control where it always is — the colour buttons, *End turn* — picks out the one to press,
+keeps every control where it always is — the colour buttons, *End* — picks out the one to press,
 makes the others inert, and lets only the square to click be clicked. *Need a hint?* shows the step's
 `hint`. When the learner's moves are made, the page
 plays the step's `reply` for the other seats, a moment apart so they can be followed, and moves on.
-A step without `play` waits for **Next** (**Finish** on the last). Where the learner is comes from the
+A step without `play` waits for **Next** (**Finish** on the last).
+
+**Back** (`#tutorial-back`) returns to any earlier step, to read it again with its board as it stood. Looking
+back changes nothing: the moves of the room stand ([ADR 0083](decisions/0083-a-move-stands.md)), the board cannot be
+played on, no reply is played, and **Next** comes forward again to where the learner was.
+
+Where the learner is comes from the
 moves the room has played, so a reload, another tab or a phone find the same step; moves that are not
 the script's (a step taken back) leave the tutorial *off script*, with a way to start again.
 

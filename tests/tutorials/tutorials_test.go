@@ -139,7 +139,6 @@ func TestLoad_Mistakes(t *testing.T) {
 		"a wrong kind":        {map[string]string{"t.yaml": strings.Replace(good, "kind: rules", "kind: lore", 1)}, "not rules, strategy or variant"},
 		"no steps":            {map[string]string{"t.yaml": "id: t\nkind: rules\ntitle: T\ngame: g\nsteps: []\n"}, "needs steps"},
 		"a step without text": {map[string]string{"t.yaml": strings.Replace(good, "text: Then.", "text: ' '", 1)}, "step 2 has no text"},
-		"a hint, no move":     {map[string]string{"t.yaml": good + "  - text: More.\n    hint: Nothing to do.\n"}, "hint but asks for no move"},
 		"a one-square arrow":  {map[string]string{"t.yaml": good + "  - text: More.\n    arrow: [d4]\n"}, "two squares"},
 		"misnamed file":       {map[string]string{"other.yaml": good}, "name the file after the tutorial"},
 	}

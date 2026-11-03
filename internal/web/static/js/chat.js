@@ -225,6 +225,11 @@ function lineNode(line, mine) {
 	);
 }
 
+/** The next chat card takes the keyboard: the page is redrawing around a message being typed. */
+export function keepChatFocus() {
+	chat.focused = true;
+}
+
 /**
  * The chat card. `me` is {name, seat} of the viewer (name null when they only
  * watch); `canSay` false hides the entry row.
