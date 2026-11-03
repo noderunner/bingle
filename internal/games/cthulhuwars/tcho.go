@@ -14,7 +14,7 @@ import (
 
 // hpFor says seat has High Priests: every cult with the option, and the
 // Tcho-Tcho always (three of them).
-func (e *eng) hpFor(seat int) bool { return e.hasHP() || e.is(seat, facTT) }
+func (e *eng) hpFor(seat int) bool { return (e.hasHP() && !e.is(seat, facBU)) || e.is(seat, facTT) }
 
 // ttHP is the Tcho-Tcho's High Priest: three of them, cost 3.
 var ttHP = func() unitSpec {

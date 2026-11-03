@@ -88,13 +88,13 @@ func TestTheNeutralWindowListsWhatIsLeftToTake(t *testing.T) {
 	if got := len(n.ids("book")); got != 6 {
 		t.Errorf("%d neutral spellbooks, want 6", got)
 	}
-	if got := strings.Join(n.ids("monster"), " "); got != "dimensional-shambler elder-thing gnorri moonbeast servitor shantak star-vampire voonith wamp" {
+	if got := strings.Join(n.ids("monster"), " "); got != "asteroid-cat cat-from-mercury cat-from-venus dimensional-shambler elder-thing ghast gnorri gug leng-spider moonbeast satyr servitor shantak star-vampire voonith wamp" {
 		t.Errorf("monsters: %s", got)
 	}
-	if got := strings.Join(n.ids("terror"), " "); got != "hound-of-tindalos" {
+	if got := strings.Join(n.ids("terror"), " "); got != "cat-from-neptune dhole great-race-of-yith hound-of-tindalos quachil-uttaus" {
 		t.Errorf("terrors: %s", got)
 	}
-	if got := strings.Join(n.ids("goo"), " "); got != "abhoth chaugnar-faugn cthugha mother-hydra yig" {
+	if got := strings.Join(n.ids("goo"), " "); got != "abhoth atlach-nacha bokrug byatis chaugnar-faugn cthugha daoloth father-dagon ghatanothoa glaaki gobogeg hagarg-ryonis mother-hydra nyogtha tulzscha ygolonac yig" {
 		t.Errorf("Great Old Ones: %s", got)
 	}
 	for _, it := range n.Items {
@@ -104,7 +104,7 @@ func TestTheNeutralWindowListsWhatIsLeftToTake(t *testing.T) {
 				t.Errorf("%s: no rules", it.Name)
 			}
 		case "goo":
-			if len(it.Awaken) == 0 || it.Book == nil || it.Req == "" || it.Cost == 0 {
+			if len(it.Awaken) == 0 || it.Book == nil || it.Req == "" || (it.Cost == 0 && it.ID != "gobogeg") {
 				t.Errorf("%s: awaken %v book %v req %q cost %d", it.Name, it.Awaken, it.Book, it.Req, it.Cost)
 			}
 		default:

@@ -355,7 +355,7 @@ func TestWebLobby_TheCultOfAnOpenSeatIsChosenInTheLobby(t *testing.T) {
 		t.Errorf("the seats Alice and the bot hold have a cult list (%d)", n)
 	}
 	// The cults played by the taken seats cannot be chosen; the others can.
-	if got := evalString(t, ctx, `[...document.querySelectorAll('#cult-3 option')].map(o => o.value + (o.disabled ? "!" : "")).join(",")`); got != "gc!,cc!,bg,ys,ww,sl,ow,tt" {
+	if got := evalString(t, ctx, `[...document.querySelectorAll('#cult-3 option')].map(o => o.value + (o.disabled ? "!" : "")).join(",")`); got != "gc!,cc!,bg,ys,ww,sl,ow,tt,an,bu" {
 		t.Errorf("options of seat 3 = %q", got)
 	}
 	// Seat 3 becomes the Sleeper.
@@ -369,7 +369,7 @@ func TestWebLobby_TheCultOfAnOpenSeatIsChosenInTheLobby(t *testing.T) {
 		t.Errorf("the game is %q", g.GameDefID)
 	}
 	// The join row of a visitor names the new cult.
-	if got := evalString(t, ctx, `[...document.querySelectorAll('#cult-4 option')].map(o => o.value + (o.disabled ? "!" : "")).join(",")`); got != "gc!,cc!,bg,ys,ww,sl,ow,tt" {
+	if got := evalString(t, ctx, `[...document.querySelectorAll('#cult-4 option')].map(o => o.value + (o.disabled ? "!" : "")).join(",")`); got != "gc!,cc!,bg,ys,ww,sl,ow,tt,an,bu" {
 		t.Errorf("options of seat 4 after the change = %q", got)
 	}
 	// A friend arrives through the link and sees the Sleeper in seat 3.

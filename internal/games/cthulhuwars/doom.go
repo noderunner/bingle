@@ -64,6 +64,7 @@ func (e *eng) oathAtGather(seat int) bool {
 
 func (e *eng) gatherPower() {
 	d := e.d
+	herd := e.tombHerd()
 	abandoned := 0
 	for _, ctl := range d.Gates {
 		if ctl == 0 {
@@ -82,7 +83,11 @@ func (e *eng) gatherPower() {
 				parts = append(parts, text)
 			}
 		}
-		cultists := e.cultistsInPlay(s)
+		add(e.catsInPlay(s), fmt.Sprintf("%d %s", e.catsInPlay(s), plural1(e.catsInPlay(s), "Cat", "Cats")))
+		if e.is(s, facBU) && e.hasHP() {
+			add(1, "1 for the High Priests")
+		}
+		cultists := e.cultistsInPlay(s) - e.mummiesOf(s)
 		add(cultists, fmt.Sprintf("%d %s", cultists, plural1(cultists, "Cultist", "Cultists")))
 		gates := e.gateCount(s)
 		add(2*gates, fmt.Sprintf("%d %s × 2 = %d", gates, plural1(gates, "Gate", "Gates"), 2*gates)+asleep(e.slumberGates(s)))
@@ -94,6 +99,18 @@ func (e *eng) gatherPower() {
 			worth := 1
 			if e.is(owner, facTT) && d.hasBook(owner, bkSoulless) {
 				worth = 0
+			}
+			// Green Decay: an Elder Sign instead of the Power.
+			if e.igooBook(s, uGlaaki) && d.Captured[s][owner]+d.CapHP[s][owner] > 0 {
+				worth = 0
+				for i := d.Captured[s][owner] + d.CapHP[s][owner]; i > 0; i-- {
+					e.gainSign(s)
+				}
+				e.say("Green Decay: %s takes Elder Signs for its captives.", e.seatName(s))
+			}
+			// Possession: the Great Race of Yith earns 1 Power more for each.
+			if e.onMap(s, uYith) > 0 {
+				add(d.Captured[s][owner]+d.CapHP[s][owner], fmt.Sprintf("Possession: %d", d.Captured[s][owner]+d.CapHP[s][owner]))
 			}
 			n := d.Captured[s][owner]
 			if n > 0 {
@@ -108,6 +125,7 @@ func (e *eng) gatherPower() {
 			}
 		}
 		add(captives, fmt.Sprintf("%d %s", captives, plural1(captives, "captive", "captives")))
+		add(herd[s], fmt.Sprintf("The Tomb-Herd: %d", herd[s]))
 		// Monsters the Sleeper captured are sacrificed for 1 Power each.
 		if e.is(s, facSL) && len(d.Held) > 0 {
 			n := len(d.Held)
@@ -165,6 +183,8 @@ func (e *eng) gatherPower() {
 			d.Power[s] = half
 		}
 	}
+	e.undyingFlame()
+	e.worshipServices()
 }
 
 // plural1 picks the singular or plural noun for n.
@@ -286,6 +306,8 @@ func (e *eng) startDoomPhase() {
 	d := e.d
 	d.Phase = phaseDoom
 	e.say("— Doom Phase —")
+	e.doomStartCards()
+	e.ailurophobia()
 	// Blasphemous Obeisance: the Moonbeasts come back to their owners' Gates.
 	e.moonReturn()
 	// Spellbooks that arrive in the Doom phase.
@@ -378,6 +400,14 @@ func (e *eng) doomMoves(seat int) []state.Move {
 			out = append(out, state.Move{Action: actRitual, Piece: "descend"})
 		}
 	}
+	if !x.Ritualled && d.Power[seat] >= cost {
+		if _, ok := e.bastetRitualArea(seat); ok {
+			out = append(out, state.Move{Action: actCard, Piece: "bastet-ritual"})
+		}
+	}
+	if !x.Ritualled && e.igooBook(seat, uTulzscha) {
+		out = append(out, state.Move{Action: actCard, Piece: "ceremony"})
+	}
 	// Ubbo-Sathla is awakened for nothing in the Doom phase.
 	if d.Phase == phaseDoom {
 		for _, a := range e.ubboAreas(seat) {
@@ -413,6 +443,7 @@ func (e *eng) doomMoves(seat int) []state.Move {
 		out = append(out, state.Move{Action: actReveal})
 	}
 	out = append(out, e.buyMoves(seat)...)
+	out = append(out, e.dematMoves(seat)...)
 	// Crypt Dweller: an enemy places the Wamps of the pool.
 	if !x.Crypt {
 		out = append(out, e.cryptMoves(seat)...)
@@ -435,9 +466,28 @@ func (e *eng) doDoom(seat int, mv state.Move) {
 	switch mv.Action {
 	case actSkip:
 		x.Order = x.Order[1:]
-		x.Ritualled, x.Sacrificed, x.Death, x.Bought, x.Crypt = false, false, false, false, false
+		x.Ritualled, x.Sacrificed, x.Death, x.Bought, x.Crypt, x.Demat = false, false, false, false, false, false
 		e.settleDoom()
 		return
+	case actCard:
+		if mv.Piece == "demat" {
+			x.Demat = true
+			d.Prompts = append(d.Prompts, Prompt{Kind: "card", Why: "demat-to", Seat: seat, Area: string(mv.To)})
+			e.thenAfterPrompts("doom")
+			e.beginPrompts("doom")
+			return
+		}
+		if mv.Piece == "bastet-ritual" {
+			x.Ritualled = true
+			e.bastetRitual(seat)
+			break
+		}
+		// Ceremony of Annihilation: the Ritual pays instead of costing.
+		gain := e.ritualCost()
+		d.Power[seat] += gain
+		x.Ritualled = true
+		e.say("Ceremony of Annihilation: %s gains %s and the marker advances.", e.seatName(seat), plural(gain, "Power", "Power"))
+		e.advanceRitual()
 	case actRitual:
 		cost := e.ritualCostFor(seat)
 		d.Power[seat] -= cost
@@ -458,6 +508,8 @@ func (e *eng) doDoom(seat int, mv state.Move) {
 		for i := 0; i < signs; i++ {
 			e.gainSign(seat)
 		}
+		e.subversion(seat, signs)
+		e.consecration(seat)
 		// Tablets of the Gods: more Elder Signs, and the High Priests go.
 		if e.is(seat, facTT) && d.hasBook(seat, bkTablets) {
 			e.tablets(seat)
@@ -531,6 +583,9 @@ func (e *eng) continueDoom() {
 func (e *eng) endDoomPhase() {
 	d := e.d
 	d.Doomx = nil
+	if !d.EndPending && !d.Instant {
+		e.doomEndCards()
+	}
 	// Ancient Sorcery wears off with the Doom phase: each Serpent Man comes
 	// back (its owner places him) and brings 1 Power.
 	if len(d.Sorcery) > 0 && !d.EndPending && !d.Instant {
@@ -543,6 +598,8 @@ func (e *eng) endDoomPhase() {
 			}
 		}
 		e.say("Ancient Sorcery wears off: the Sleeper gains %s and takes its Serpent Men back.", plural(len(d.Sorcery), "Power", "Power"))
+	}
+	if len(d.Prompts) > 0 {
 		e.thenAfterPrompts("doom-end")
 		e.beginPrompts("doom-end")
 		return
@@ -577,6 +634,7 @@ func (e *eng) finishDoomPhase() {
 	}
 	d.Round++
 	d.Phase = phaseAction
+	d.ZeroFirst = 0
 	d.Stage = stageTurn
 	d.Turn = &TurnState{Seat: d.First}
 	for s := range d.Battled {

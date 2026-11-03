@@ -377,6 +377,27 @@ func (e *eng) buildView(viewer int) *View {
 		v.Reaction = &ReactionView{Seat: r.Seat, Trigger: r.Trigger, Ability: r.Ability, Targeted: r.Targeted}
 	}
 	v.Costs = e.actionCosts()
+	for _, id := range d.Webs {
+		v.Badges[id] = append(v.Badges[id], "web")
+	}
+	for _, id := range d.Cathedrals {
+		v.Badges[id] = append(v.Badges[id], "cathedral")
+	}
+	for _, id := range d.Glaciers {
+		v.Badges[id] = append(v.Badges[id], "glacier")
+	}
+	for a := range e.m.ids {
+		for _, o := range e.playing() {
+			if n := e.mummies(a, o); n > 0 {
+				id := e.areaID(a)
+				note := plural(n, "Mummified Acolyte", "Mummified Acolytes") + " of " + e.seatName(o)
+				if v.Notes[id] != "" {
+					note = v.Notes[id] + "; " + note
+				}
+				v.Notes[id] = note
+			}
+		}
+	}
 	v.Neutral = e.neutralView()
 	v.Phases = e.phaseViews()
 	v.Order = OrderView{CW: e.turnOrder(d.First, 1), CCW: e.turnOrder(d.First, -1)}
@@ -826,7 +847,7 @@ func (e *eng) unitView(seat int, f *faction, u unitSpec) UnitView {
 		uv.Abilities = append(uv.Abilities, AbilityView(a))
 	}
 	if u.Class == classGOO {
-		if i := cardIndex(u.ID); i >= firstIndependent {
+		if i := cardIndex(u.ID); i >= 0 && cards[i].Kind == cardIndependent {
 			uv.Awaken = cards[i].Awaken
 			uv.Enter = "An Independent Great Old One: awakened in the Action phase, never summoned."
 		} else {

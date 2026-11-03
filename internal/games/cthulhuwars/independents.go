@@ -93,8 +93,11 @@ var independents = []independent{
 // igooIndex is the number of an Independent among the five (the bit of
 // Data.IBooks), -1 for any other unit.
 func igooIndex(typ string) int {
-	if i := cardIndex(typ); i >= firstIndependent {
-		return i - firstIndependent
+	i := cardIndex(typ)
+	for n, c := range independentCards {
+		if c == i {
+			return n
+		}
 	}
 	return -1
 }
@@ -114,17 +117,23 @@ func (e *eng) independentAwakenMoves(seat int) []state.Move {
 		return nil
 	}
 	var out []state.Move
-	for i := firstIndependent; i < len(cards); i++ {
+	for _, i := range independentCards {
 		typ := cards[i].Unit.ID
 		if e.cardOwner(i) != 0 || !e.cardInGame(i) {
 			continue
 		}
+		// Gobogeg: at least one player has six spellbooks.
+		if typ == uGobogeg && !e.anyoneHasSix() {
+			continue
+		}
 		for _, a := range e.gatesOf(seat) {
 			goos := e.seatGOOAt(a, seat)
-			if len(goos) == 0 {
+			// With all four Cathedrals the Ancients need no Great Old One.
+			free := e.is(seat, facAN) && len(e.d.Cathedrals) >= maxCathedrals
+			if len(goos) == 0 && !free {
 				continue
 			}
-			if typ != uCthugha {
+			if typ != uCthugha || (free && len(goos) == 0) {
 				out = append(out, state.Move{Action: actAwaken, Piece: typ, To: e.m.ids[a]})
 				continue
 			}
@@ -166,13 +175,15 @@ func (e *eng) awakenIndependent(seat int, mv state.Move) {
 		e.say("Cthugha replaces %s's %s in %s.", e.seatName(seat), unitNameOf(g), e.areaName(a))
 	}
 	d.Loyal[seat] |= 1 << uint(i)
-	d.IBooks &^= 1 << uint(i-firstIndependent)
-	e.setPool(seat, typ, 1)
+	d.IBooks &^= 1 << uint(igooIndex(typ))
+	e.setPool(seat, typ, cards[i].Unit.Count)
 	if typ == uAbhoth {
 		// The twelve Filth Tokens that are not on the map already.
 		e.setPool(seat, uFilth, filthSpec.Count-e.filthInPlay())
 	}
-	e.place(a, seat, typ)
+	for n := 0; n < cards[i].Unit.Count; n++ {
+		e.place(a, seat, typ)
+	}
 	if cost >= 0 {
 		e.say("%s awakens the Independent %s in %s (%d Power).", e.seatName(seat), unitNameOf(typ), e.areaName(a), cost)
 	} else {
@@ -195,7 +206,7 @@ func (e *eng) earnIGOOBook(seat int, typ string) {
 		return
 	}
 	e.d.IBooks |= 1 << uint(i)
-	e.say("%s earns the spellbook %s of %s.", e.seatName(seat), cards[firstIndependent+i].Book.Name, unitNameOf(typ))
+	e.say("%s earns the spellbook %s of %s.", e.seatName(seat), cards[independentCards[i]].Book.Name, unitNameOf(typ))
 }
 
 // abilityWorks says seat can use the special ability of its Independent typ:
@@ -325,8 +336,9 @@ func (e *eng) sting(seat, a int) {
 // stingTargets are the land areas next to the ocean of a "sting" prompt.
 func (e *eng) stingTargets(p Prompt) []int {
 	var out []int
+	// Tsunami goes the other way: from the land into the oceans.
 	for _, n := range e.m.adj[e.areaIdx(p.Area)] {
-		if !e.m.ocean[n] {
+		if e.m.ocean[n] == (p.Why == "tsunami") {
 			out = append(out, n)
 		}
 	}
@@ -683,6 +695,7 @@ func (e *eng) independentActions(seat int) []state.Move {
 	}
 	out = append(out, e.discardMoves(seat)...)
 	out = append(out, e.gateOffMoves(seat)...)
+	out = append(out, e.cardTurnMoves(seat)...)
 	return out
 }
 
@@ -750,4 +763,14 @@ func (e *eng) zygotePlace(seat, a int) {
 		e.say("The Zygote: %s places an Acolyte in %s.", e.seatName(seat), e.areaName(a))
 		e.takeAbandonedGate(a, seat)
 	}
+}
+
+// anyoneHasSix says a cult holds six spellbooks.
+func (e *eng) anyoneHasSix() bool {
+	for _, s := range e.playing() {
+		if e.d.bookCount(s) >= 6 {
+			return true
+		}
+	}
+	return false
 }

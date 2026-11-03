@@ -160,6 +160,8 @@ func (rs *Ruleset) Format(game *catalog.CompiledGame, mv state.Move) string {
 			return mv.Action + at()
 		}
 		return mv.Action + ":" + keyOfSeat(game, mv.Count)
+	case actCard:
+		return formatCard(mv, func(s int) string { return keyOfSeat(game, s) })
 	case actFilth, actGateOff:
 		return mv.Action + at()
 	case actSting:
@@ -292,6 +294,13 @@ func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Move, e
 		return id, ok
 	}
 	unit := func(s string) bool { _, ok := unitTypeIndex[s]; return ok }
+	if strings.HasPrefix(t, actCard+":") {
+		mv, ok := parseCard(t, func(k string) int { return seatOfKey(game, k) }, func(s string) bool { _, ok := area(s); return ok })
+		if !ok {
+			return bad("expected card:id[@area][/faction]")
+		}
+		return mv, nil
+	}
 	if plainActions[t] {
 		return state.Move{Action: t}, nil
 	}
@@ -766,6 +775,12 @@ func (rs *Ruleset) Steps(game *catalog.CompiledGame, mv state.Move) []state.Step
 			return []state.Step{pos(mv.To)}
 		}
 		return []state.Step{act("crypt-" + keyOfSeat(game, mv.Count))}
+	case actCard:
+		id := cardStepID(mv, func(s int) string { return keyOfSeat(game, s) })
+		if mv.To != "" {
+			return []state.Step{act(id), pos(mv.To)}
+		}
+		return []state.Step{act(id)}
 	case actFilth, actGateOff:
 		return []state.Step{act(mv.Action), pos(mv.To)}
 	case actSting:
@@ -1159,6 +1174,69 @@ func cardNotations(m *mapData, add func(state.Move)) {
 		}
 	}
 	add(state.Move{Action: actZygote})
+	// The abilities that can reach any unit, whichever cult or card it came with
+	// (moves the lists above already have are not added twice).
+	for _, typ := range unitTypes {
+		add(state.Move{Action: actShrivel, Piece: typ})
+		add(state.Move{Action: actSwap, Piece: typ})
+		add(state.Move{Action: actAbsorb, Piece: typ})
+		add(state.Move{Action: actCannibal, Piece: typ})
+		add(state.Move{Action: actDesecrate, Piece: typ})
+		add(state.Move{Action: actAssign, Piece: typ})
+		for s := 1; s <= nSeats; s++ {
+			add(state.Move{Action: actInvisible, Piece: typ, Count: s})
+			add(state.Move{Action: actAssign, Piece: typ, Count: s})
+			add(state.Move{Action: actSpare, Piece: typ, Count: s})
+		}
+		for _, id := range m.ids {
+			add(state.Move{Action: actLose, Piece: typ, To: id})
+			add(state.Move{Action: actRetreat, Piece: typ, To: id})
+			add(state.Move{Action: actMao, Piece: typ, To: id})
+			add(state.Move{Action: actBring, Piece: typ, From: id})
+			for s := 1; s <= nSeats; s++ {
+				add(state.Move{Action: actRetreat, Piece: typ, To: id, Count: s})
+				add(state.Move{Action: actCapture, Piece: typ, To: id, Count: s})
+			}
+		}
+		for a := range m.ids {
+			for b := range m.ids {
+				if a != b {
+					add(state.Move{Action: actRearrange, Piece: typ, From: m.ids[a], To: m.ids[b]})
+					// A Shantak carries a Cultist anywhere.
+					add(state.Move{Action: actGo, Piece: typ, From: m.ids[a], To: m.ids[b]})
+					add(state.Move{Action: actLeave, Piece: typ, From: m.ids[a], To: m.ids[b]})
+				}
+			}
+		}
+	}
+	// The "card" action, every shape of it.
+	for _, c := range cardActs {
+		pieces := []string{c.ID}
+		if c.Units {
+			pieces = nil
+			for _, typ := range unitTypes {
+				pieces = append(pieces, c.ID+"."+typ)
+			}
+		}
+		seats := []int{0}
+		if c.Seat {
+			seats = nil
+			for s := 1; s <= nSeats; s++ {
+				seats = append(seats, s)
+			}
+		}
+		for _, p := range pieces {
+			for _, s := range seats {
+				if !c.Area {
+					add(state.Move{Action: actCard, Piece: p, Count: s})
+					continue
+				}
+				for _, id := range m.ids {
+					add(state.Move{Action: actCard, Piece: p, To: id, Count: s})
+				}
+			}
+		}
+	}
 	for _, f := range factions {
 		for _, b := range f.Books {
 			for s := 1; s <= nSeats; s++ {
@@ -1251,7 +1329,7 @@ func (rs *Ruleset) Describe(game *catalog.CompiledGame) state.RulesetInfo {
 	seenMonster := map[string]bool{}
 	for _, f := range factions {
 		for _, u := range f.Units {
-			if u.Class != classMonster || seenMonster[u.ID] {
+			if (u.Class != classMonster && u.Class != classTerror) || seenMonster[u.ID] {
 				continue
 			}
 			seenMonster[u.ID] = true
@@ -1387,6 +1465,20 @@ func (rs *Ruleset) Describe(game *catalog.CompiledGame) state.RulesetInfo {
 	add(actMoon, "Lay the Moonbeast", abilityText(uMoonbeast))
 	add(actRansom, "Pay 1 Doom: free the spellbook", "A Moonbeast lies on your spellbook: pay 1 Doom (any time it is your turn, no Action) and it goes back to the map.")
 	add(actCrypt, "Crypt Dweller", abilityText(uWamp))
+	for _, c := range cardActs {
+		switch {
+		case c.Units:
+			for _, typ := range unitTypes {
+				add(actCard+"-"+c.ID+"."+typ, c.Label+": "+unitNameOf(typ), c.Text)
+			}
+		case c.Seat:
+			for _, f := range factions {
+				add(actCard+"-"+c.ID+"-"+f.Key, c.Label+": "+f.Name, c.Text)
+			}
+		default:
+			add(actCard+"-"+c.ID, c.Label, c.Text)
+		}
+	}
 	add(actFilth, "Filth", abilityText(uAbhoth))
 	add(actSting, "The Agony Sting", abilityText(uHydra))
 	add(actZygote, "The Zygote", cards[cardIndex(uHydra)].Book.Timing+" — "+cards[cardIndex(uHydra)].Book.Text)

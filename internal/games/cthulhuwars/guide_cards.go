@@ -45,6 +45,18 @@ func (g *guide) cardBuyScore(mv state.Move) float64 {
 		return 55
 	case uElderThing, uStarVamp:
 		return 49
+	case uLeng, uSatyr, uMercury, uVenus, uAsteroid:
+		return 47
+	case uGug:
+		return 50 + gates
+	case uGhast:
+		if gates >= 1 {
+			return 45
+		}
+	case uYith, uDhole, uQuachil, uNeptune:
+		if d.Power[seat] >= 4 {
+			return 51
+		}
 	}
 	return 0
 }
@@ -53,6 +65,8 @@ func (g *guide) cardBuyScore(mv state.Move) float64 {
 func (g *guide) scoreCards(mv state.Move, area int) (float64, bool) {
 	e, d, seat := g.e, g.e.d, g.seat
 	switch mv.Action {
+	case actCard:
+		return g.scoreCardAct(mv), true
 	case actAwaken:
 		if !isIndependent(mv.Piece) {
 			return 0, false
@@ -133,6 +147,14 @@ func (g *guide) scoreIndependent(mv state.Move, area int) float64 {
 			return 78
 		}
 		return 18
+	case uAtlach:
+		return 66
+	case uGobogeg:
+		return 90 // free, and pays 6 Power
+	case uTulzscha, uByatis, uGlaaki, uDagon, uGhatan, uHagarg:
+		return 60
+	case uBokrug, uYgolonac, uDaoloth, uNyogtha:
+		return 55
 	case uChaugnar:
 		return 78 + float64(e.cultists(area, seat))
 	case uHydra:
@@ -148,6 +170,9 @@ func (g *guide) scoreIndependent(mv state.Move, area int) float64 {
 // guideCardsPrompt answers the prompts of the Loyalty Cards, reporting
 // whether it handled the kind.
 func (g *guide) guideCardsPrompt(p Prompt, legal []state.Move) ([]state.Move, bool) {
+	if p.Kind == "card" {
+		return g.answerCardPrompt(p, legal), true
+	}
 	e, d, seat := g.e, g.e.d, g.seat
 	var list []scoredMove
 	switch p.Kind {
@@ -274,4 +299,149 @@ func (g *guide) guideCardsPrompt(p Prompt, legal []state.Move) ([]state.Move, bo
 		return top(list, 0.01), true
 	}
 	return nil, false
+}
+
+// scoreCardAct values the "card" Actions of the later Independents.
+func (e *eng) anGlyphDone(seat, a int) bool {
+	switch e.m.glyph[a] {
+	case "dragon":
+		return e.d.reqDone(seat, rqANDragon)
+	case "thorns":
+		return e.d.reqDone(seat, rqANThorns)
+	case "chevron":
+		return e.d.reqDone(seat, rqANChevron)
+	}
+	return e.d.reqDone(seat, rqANPlain)
+}
+
+func (g *guide) scoreCardAct(mv state.Move) float64 {
+	e, d, seat := g.e, g.e.d, g.seat
+	act, _ := cardActOf(mv.Piece)
+	switch act.ID {
+	case "cathedral":
+		a := e.areaIdx(string(mv.To))
+		s := 40.0
+		if !e.anGlyphDone(seat, a) {
+			s = 78 // it earns a spellbook
+		}
+		if d.Gates[e.areaID(a)] != 0 && d.Gates[e.areaID(a)] != seat {
+			s += 4
+		}
+		return s
+	case "an-lowest":
+		if d.bookCount(seat) >= 1 {
+			return 46
+		}
+		return 20
+	case "an-highest":
+		if d.bookCount(seat) >= 3 {
+			return 44
+		}
+		return 12
+	case "cosmic-web":
+		return 1000 // the game
+	case "spin":
+		return 58 + 6*float64(len(d.Webs))
+	case "ghatan-pay":
+		return 24
+	case "tulzscha-gift":
+		// Two Power per enemy is a real price: late, when the book is worth it.
+		if d.Round >= 3 {
+			return 26
+		}
+		return 2
+	case "mummify":
+		return 48
+	case "forget":
+		return 44
+	case "nightmare":
+		return 40
+	case "laziness":
+		return 60
+	case "lust":
+		return 18
+	case "tsunami":
+		// Worth it where it empties an enemy Gate.
+		a := e.areaIdx(string(mv.To))
+		if ctl, ok := d.Gates[e.areaID(a)]; ok && ctl != 0 && ctl != seat {
+			return 52
+		}
+		return 6
+	case "give-bokrug":
+		// To the leader: the book hurts its holder.
+		best := true
+		for _, o := range e.others(seat) {
+			if d.Doom[o] > d.Doom[mv.Count] {
+				best = false
+			}
+		}
+		if best && d.Round >= 3 {
+			return 30
+		}
+		return 1
+	}
+	return 10
+}
+
+// answerCardPrompt chooses an answer to a "card" prompt.
+func (g *guide) answerCardPrompt(p Prompt, legal []state.Move) []state.Move {
+	e, d, seat := g.e, g.e.d, g.seat
+	var list []scoredMove
+	for _, mv := range legal {
+		act, unit := cardActOf(mv.Piece)
+		s := 0.0
+		switch act.ID {
+		case "festival":
+			// The poorest in Doom gets the gift.
+			s = -float64(d.Doom[mv.Count])
+		case "demat-to":
+			// Next to nothing of the enemy's, somewhere the cult has a Gate.
+			a := e.areaIdx(string(mv.To))
+			s = -2 * float64(g.enemyRank(a))
+			if d.Gates[e.areaID(a)] == seat {
+				s += 6
+			}
+		case "blood":
+			// A Kill on the enemy, never on ourselves.
+			if mv.Count != seat {
+				s = 10
+			} else {
+				s = -10
+			}
+		case "glacier":
+			// Over an enemy's Gate, never our own.
+			a := e.areaIdx(string(mv.To))
+			switch ctl := d.Gates[e.areaID(a)]; {
+			case ctl == seat:
+				s = -10
+			case ctl != 0:
+				s = 10 + float64(d.Doom[ctl])
+			}
+		case "planet-power":
+			s = 5
+		case "planet-doom":
+			s = 1
+		case "final-ritual":
+			s = 5
+		case "ghost":
+			s = float64(e.total(e.areaIdx(string(mv.To)), seat))
+		case "horde", "innsmouth":
+			a := e.areaIdx(string(mv.To))
+			s = -float64(e.count(a, seat, uCultist))
+		case "sarnath-unit", "sarnath-sign":
+			// The enemy with the least Doom takes it.
+			s = -float64(d.Doom[mv.Count])
+		case "elim", "orifice", "dust":
+			s = float64(e.summonCost(p.By, unit))
+			if act.ID == "dust" {
+				s = -s
+			}
+		case "dust-sign":
+			s = -1.5
+		case "subvert":
+			s = float64(e.gooInPlay(mv.Count))
+		}
+		list = append(list, scoredMove{mv, s})
+	}
+	return top(list, 0.01)
 }

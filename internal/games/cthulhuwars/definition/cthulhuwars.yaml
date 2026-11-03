@@ -3,7 +3,7 @@ id: cthulhu-wars
 name: Cthulhu Wars (4 players, 5-3 map)
 family: cthulhu-wars
 description: 'Three to five rival cults fight to wake their Great Old Ones and open the most gates: spend Power on recruiting, moving, summoning and battling over a simplified world map, earn spellbooks, and be first past 30 Doom with all six books. Six cults to choose from — Great Cthulhu, Crawling Chaos, Black Goat, Yellow Sign, Windwalker and Sleeper — and the High Priests as an optional expansion.'
-version: 0.1.2
+version: 0.2.0
 designers: [Sandy Petersen]
 publisher: Petersen Games
 engine: ruleset
@@ -70,6 +70,37 @@ reserves:
   wamp: 0
   voonith: 0
   hound-of-tindalos: 0
+  un-men: 0
+  reanimated: 0
+  yothan: 0
+  earth-cat: 0
+  cat-from-mars: 0
+  cat-from-saturn: 0
+  cat-from-uranus: 0
+  bastet: 0
+  ghast: 0
+  leng-spider: 0
+  gug: 0
+  great-race-of-yith: 0
+  dhole: 0
+  quachil-uttaus: 0
+  cat-from-mercury: 0
+  cat-from-venus: 0
+  asteroid-cat: 0
+  cat-from-neptune: 0
+  satyr: 0
+  atlach-nacha: 0
+  bokrug: 0
+  father-dagon: 0
+  ghatanothoa: 0
+  gobogeg: 0
+  byatis: 0
+  nyogtha: 0
+  tulzscha: 0
+  glaaki: 0
+  daoloth: 0
+  ygolonac: 0
+  hagarg-ryonis: 0
   abhoth: 0
   chaugnar-faugn: 0
   cthugha: 0
@@ -155,4 +186,6 @@ variants:
   - !include variants/cthulhu-wars-3-5.yaml
   - !include variants/cthulhu-wars-3p.yaml
   - !include variants/cthulhu-wars-5p.yaml
+  - !include variants/cthulhu-wars-primeval-5p.yaml
+  - !include variants/cthulhu-wars-primeval-3p.yaml
 options: !include options.yaml

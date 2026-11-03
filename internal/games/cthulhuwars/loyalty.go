@@ -110,10 +110,19 @@ var cards = func() []cardSpec {
 					{Name: "Angles of Time", Timing: "Ongoing", Text: "The Hound cannot be assigned a Kill in Battle. However, if a Hound is ever in an Area without a Gate (due to being Pained to such an Area, or the Gate itself being destroyed or moved, etc.), it is Eliminated. It can also be Eliminated if it cannot be Pained due to Enemy presence in adjacent Areas (per normal Pain rules)."}}}},
 	)
 	for _, ind := range independents {
-		out = append(out, cardSpec{Unit: ind.Unit, Kind: cardIndependent, Pack: packGOO1, Buy: ind.Unit.Name + " is awakened in the Action phase (see Awaken).", Book: ind.Book, Req: ind.Req, Awaken: ind.Awaken})
+		out = append(out, independentCard(ind))
+	}
+	// Later packs come after, so that the bits of stored positions do not move.
+	out = append(out, laterMonsters...)
+	for _, ind := range laterIndependents {
+		out = append(out, independentCard(ind))
 	}
 	return out
 }()
+
+func independentCard(ind independent) cardSpec {
+	return cardSpec{Unit: ind.Unit, Kind: cardIndependent, Pack: packGOO1, Buy: ind.Unit.Name + " is awakened in the Action phase (see Awaken).", Book: ind.Book, Req: ind.Req, Awaken: ind.Awaken}
+}
 
 // cardUnits lists the figures of the Loyalty Cards, in card order.
 var cardUnits = func() []unitSpec {
@@ -155,18 +164,21 @@ func isMonsterOrCultist(typ string) bool {
 // lateCard says typ is a figure added after the first neutral Monsters: it
 // comes last in the lists the agents' action space is made of.
 func lateCard(typ string) bool {
+	// (the later cards come after these, see unitTypes)
 	i := cardIndex(typ)
 	return i >= len(neutralUnits) || typ == uFilth
 }
 
-// firstIndependent is the number of the first Independent Great Old One card.
-var firstIndependent = func() int {
+// independentCards lists the numbers of the Independent Great Old One cards; the
+// position of a card here is its bit in Data.IBooks and gameCfg.indep.
+var independentCards = func() []int {
+	var out []int
 	for i, c := range cards {
 		if c.Kind == cardIndependent {
-			return i
+			out = append(out, i)
 		}
 	}
-	return len(cards)
+	return out
 }()
 
 // --- what the table plays with ------------------------------------------------------------
@@ -178,7 +190,7 @@ func (e *eng) cardInGame(i int) bool {
 	case c.Pack == packAzathoth:
 		return e.m.cfg.az
 	case c.Kind == cardIndependent:
-		return e.m.cfg.indep&(1<<uint(i-firstIndependent)) != 0
+		return e.m.cfg.indep&(1<<uint(igooIndex(c.Unit.ID))) != 0
 	}
 	return e.m.cfg.packs&c.Pack != 0
 }
@@ -208,7 +220,7 @@ func (e *eng) holdsCard(seat int, typ string) bool {
 // independentsOf lists the Independent Great Old Ones seat controls.
 func (e *eng) independentsOf(seat int) []string {
 	var out []string
-	for i := firstIndependent; i < len(cards); i++ {
+	for _, i := range independentCards {
 		if e.d.loyal(seat, i) {
 			out = append(out, cards[i].Unit.ID)
 		}
@@ -344,6 +356,7 @@ func (e *eng) buy(seat int, mv state.Move) {
 		if mv.To != "" {
 			e.place(e.areaIdx(string(mv.To)), seat, u.ID)
 			e.say("%s appears at the Gate in %s.", article(u.Name), e.areaName(e.areaIdx(string(mv.To))))
+			e.cardArrived(seat, e.areaIdx(string(mv.To)), u.ID)
 		}
 	}
 }
@@ -355,12 +368,24 @@ func (e *eng) buy(seat int, mv state.Move) {
 // map stay where they are).
 func (e *eng) igooDies(seat int, typ string) {
 	i := cardIndex(typ)
-	if i < firstIndependent || i < 0 || !e.d.loyal(seat, i) {
+	if i < 0 || cards[i].Kind != cardIndependent || !e.d.loyal(seat, i) {
 		return
 	}
 	d := e.d
+	switch typ {
+	case uBokrug:
+		// Ghosts of Ib: the card stays; he comes back after the next Doom phase.
+		d.Ghost = seat
+		e.say("Ghosts of Ib: Bokrug waits on %s's card for the end of the next Doom phase.", e.seatName(seat))
+		return
+	case uNyogtha:
+		// The card goes only with the second figure.
+		if e.onMap(seat, uNyogtha) > 0 {
+			return
+		}
+	}
 	d.Loyal[seat] &^= 1 << uint(i)
-	d.IBooks &^= 1 << uint(i-firstIndependent)
+	d.IBooks &^= 1 << uint(igooIndex(typ))
 	e.setPool(seat, typ, 0)
 	if typ == uAbhoth {
 		e.setPool(seat, uFilth, 0)

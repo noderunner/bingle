@@ -40,6 +40,10 @@ func packTable(t testing.TB, base string, keys []string, opts map[string]any) *c
 var allCards = map[string]any{
 	"azathoth": true, "dreamlands": true, "beyond": true,
 	"igoo-abhoth": true, "igoo-chaugnar": true, "igoo-cthugha": true, "igoo-hydra": true, "igoo-yig": true,
+	"underworld": true, "cosmic-terrors": true, "cats": true, "satyr": true,
+	"igoo-atlach": true, "igoo-bokrug": true, "igoo-dagon": true, "igoo-ghatanothoa": true, "igoo-gobogeg": true,
+	"igoo-byatis": true, "igoo-nyogtha": true, "igoo-tulzscha": true, "igoo-glaaki": true, "igoo-daoloth": true,
+	"igoo-ygolonac": true, "igoo-hagarg": true,
 }
 
 // Random games with every pack of Loyalty Cards in the box stay valid and end.

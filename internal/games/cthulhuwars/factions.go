@@ -79,6 +79,8 @@ const (
 	facSL        // Sleeper
 	facOW        // Opener of the Way
 	facTT        // Tcho-Tcho
+	facAN        // The Ancients
+	facBU        // Bubastis
 
 	nFactions
 )
@@ -497,6 +499,8 @@ var factions = [nFactions]faction{
 			{ID: "awaken", Text: "Awaken Ubbo-Sathla."},
 		},
 	},
+	ancientsFaction,
+	bubastisFaction,
 }
 
 // hpSpec is the High Priest of the High Priests expansion: a Cultist of its
@@ -544,12 +548,18 @@ var unitTypes = func() []string {
 	}
 	// The Opener's and the Tcho-Tcho's units come last: the numbers of the
 	// others do not move.
-	add(facOW, nFactions)
+	add(facOW, facAN)
 	// The Loyalty Cards after the first neutral Monsters, and Abhoth's Filth.
-	for _, u := range cardUnits[len(neutralUnits):] {
+	const firstCards = 15 // the cards from before the later packs: their numbers do not move
+	for _, u := range cardUnits[len(neutralUnits):firstCards] {
 		out = append(out, u.ID)
 	}
 	out = append(out, uFilth)
+	for _, u := range cardUnits[firstCards:] {
+		out = append(out, u.ID)
+	}
+	// Cults added after the cards.
+	add(facAN, nFactions)
 	return out
 }()
 

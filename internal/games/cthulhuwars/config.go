@@ -35,7 +35,9 @@ type gameCfg struct {
 	// is in the game); indep says which Independent Great Old Ones are: bit i is
 	// cards[firstIndependent+i].
 	packs int
-	indep int
+	// glaciers says the map is the Primeval Map, with its Glaciers.
+	glaciers bool
+	indep    int
 	// swap is, per faction, the neutral spellbook that replaces its timer
 	// book (Black Goat's Ghroth, Crawling Chaos' The Thousand Forms), -1 when
 	// it keeps its own. It needs no Azathoth faction in the game.
@@ -86,6 +88,9 @@ func buildCfg(def *dsl.GameDefinition) *gameCfg {
 	}
 	if b, ok := def.Params["azathoth"].(bool); ok {
 		c.az = b
+	}
+	if b, ok := def.Params["glaciers"].(bool); ok {
+		c.glaciers = b
 	}
 	for key, bit := range packParams {
 		if b, ok := def.Params[key].(bool); ok && b {
@@ -199,7 +204,7 @@ const (
 // packParams are the definition parameters of the packs of Loyalty Cards, the
 // option that sets each, its short name in the id of a derived game and its
 // title.
-var packParams = map[string]int{"dreamlands": packDreamlands, "beyond": packBeyond}
+var packParams = map[string]int{"dreamlands": packDreamlands, "beyond": packBeyond, "underworld": packUnderworld, "cosmic_terrors": packCosmic, "cats": packCats, "satyr": packCampbell}
 
 var packOptions = []struct {
 	bit               int
@@ -208,6 +213,10 @@ var packOptions = []struct {
 }{
 	{packDreamlands, optDreamlands, "dreamlands", "dl", "Dreamlands Surface Monsters"},
 	{packBeyond, optBeyond, "beyond", "bt", "Beyond Time and Space"},
+	{packUnderworld, "underworld", "underworld", "uw", "Dreamlands Underworld Monsters"},
+	{packCosmic, "cosmic-terrors", "cosmic_terrors", "ct", "Cosmic Terrors"},
+	{packCats, "cats", "cats", "ca", "Something About Cats"},
+	{packCampbell, "satyr", "satyr", "sa", "Satyr (Ramsey Campbell Horrors 2)"},
 }
 
 // igooKeys are the options (and, after "g1", the letters of a derived game's
@@ -219,6 +228,18 @@ var igooKeys = []struct{ option, letter, unit string }{
 	{"igoo-cthugha", "t", uCthugha},
 	{"igoo-hydra", "h", uHydra},
 	{"igoo-yig", "y", uYig},
+	{"igoo-atlach", "n", uAtlach},
+	{"igoo-bokrug", "b", uBokrug},
+	{"igoo-dagon", "d", uDagon},
+	{"igoo-ghatanothoa", "m", uGhatan},
+	{"igoo-gobogeg", "g", uGobogeg},
+	{"igoo-byatis", "z", uByatis},
+	{"igoo-nyogtha", "o", uNyogtha},
+	{"igoo-tulzscha", "u", uTulzscha},
+	{"igoo-glaaki", "l", uGlaaki},
+	{"igoo-daoloth", "k", uDaoloth},
+	{"igoo-ygolonac", "v", uYgolonac},
+	{"igoo-hagarg", "j", uHagarg},
 }
 
 // igooOption is the Independent an option names (-1: not one).
@@ -318,7 +339,7 @@ func (rs *Ruleset) Derive(base *dsl.GameDefinition, options map[string]any) (str
 				return "", nil, err
 			}
 			swaps = m
-		case optDreamlands, optBeyond:
+		case optDreamlands, optBeyond, "underworld", "cosmic-terrors", "cats", "satyr":
 			b, ok := v.(bool)
 			if !ok {
 				return "", nil, fmt.Errorf("cthulhuwars: option %q must be true or false", k)
@@ -565,6 +586,8 @@ func deriveFrom(base *dsl.GameDefinition, keys []string, hp, az bool, packs, ind
 	for i, k := range keys {
 		r := 3
 		switch k {
+		case "an":
+			r = -1
 		case "tt":
 			r = 0
 		case "ww":
@@ -623,12 +646,21 @@ func deriveFrom(base *dsl.GameDefinition, keys []string, hp, az bool, packs, ind
 		params[po.key] = packs&po.bit != 0
 	}
 	params["independents"] = indepUnits
+	withMoon := false
+	for _, k := range keys {
+		withMoon = withMoon || k == "bu"
+	}
 	patch := map[string]any{
 		"name":       name,
 		"seats":      seats,
 		"turn_order": map[string]any{"type": "round-robin", "seats": order},
 		"params":     params,
 		"display":    map[string]any{"badges": badges},
+	}
+	if withMoon {
+		if err := addMoonToPatch(base, patch); err != nil {
+			return "", nil, err
+		}
 	}
 	return suffix, patch, nil
 }
@@ -687,6 +719,10 @@ func gateColor(color string) string {
 		return "#8a5bd0"
 	case "brown":
 		return "#8f6035"
+	case "teal":
+		return "#1f8f98"
+	case "sand":
+		return "#a79d64"
 	}
 	return "#888888"
 }

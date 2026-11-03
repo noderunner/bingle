@@ -256,6 +256,77 @@ His Combat is the Growth counter, which starts at 0, grows by a die each Doom ph
 - Awaken Ubbo in the **Doom phase**: it costs nothing, and the counter starts feeding in the next one.
 - The Tsang tribe is played here: **Hierophants, Soulless, Terror, Idolatry, Martyrdom** and **Tablets of the Gods**. (The Leng and Sarkomand tribes of Final Onslaught are not in the game.)
 
+## The Ancients
+
+![The Ancients glyph|96](guide/glyphs/an.svg "The Ancients' glyph.")
+
+A cult with **no Great Old One**, focused on diplomacy and social engineering. It saves the Power others spend awakening, and spends it on Cathedrals instead. It sets up after the others, except the Tcho-Tcho, the Windwalker and the Opener, in an empty area with no start glyph.
+
+**Dematerialization** (Doom phase): relocate your units from one area to a single other area, anywhere on the map. In Bingle, everything goes but the unit holding a Gate.
+
+**Cathedrals.** As an Action, build one where you have a Cultist, for **3 Power**, or **1 Power** if it is not adjacent to another Cathedral. You have four, and they do not need a Gate. With all four in play you may awaken an Independent Great Old One without a Great Old One of your own (Cthugha then just costs 6 Power). On the map a Cathedral is a † chip.
+
+| | Unit | Class | Pieces | Cost | Combat | Notes |
+|---|---|---|---|---|---|---|
+| ![](piece:cultist:teal) | **Acolyte Cultist** | Cultist | 6 | 1 | 0 | |
+| ![](piece:un-men:teal) | **Un-Men** | Monster | 3 | 3 | 0 | 0 with Festival |
+| ![](piece:reanimated:teal) | **Reanimated** | Monster | 3 | 4 | 2 | 1 with Brainless |
+| ![](piece:yothan:teal) | **Yothan** | Terror | 3 | 6 | 7 | 3 with Extinction |
+
+| Spellbook | When | Text |
+|---|---|---|
+| **Brainless** | Ongoing | Reanimated cost 1 Power. They may only Move, Capture or declare Battle if they share an area with another unit of yours. |
+| **Consecration** | Doom Phase | A Ritual gains 1 Elder Sign with at least one Cathedral in play, or 2 with all four. |
+| **Extinction** | Ongoing | Yothans cost 3 Power. One that is Killed or Eliminated leaves the game for good. |
+| **Festival** | Ongoing | Un-Men cost 0 Power. Each one summoned gives an enemy of your choice 1 Power. |
+| **Unholy Ground** | Post-Battle | With a Cathedral in the battle area, you may remove a Cathedral from anywhere. If you do, an enemy Great Old One in the battle is Eliminated. |
+| **Worship Services** | Gather Power | 1 Power for each Cathedral that shares an area with an enemy Gate. Those enemies each gain 1 Power too. |
+
+**Requirements:** a Cathedral in an area with the Dragon glyph; with the Thorns glyph; with the Chevron glyph; in an area with none of them; as your Action, each enemy Summons its lowest cost Monster at its Gate for free; as your Action, each enemy Summons its highest cost Monster the same way.
+
+### Playing it
+
+From the wiki:
+
+- Your advantages are cost-effective Monsters and "social engineering". Your weaknesses are the lack of a Great Old One, which leaves your Cultists vulnerable, and your need to travel around the map.
+- The real menace of enemy Great Old Ones is that they Capture your Cultists. Threaten battle (they will fear Cathedrals once you have Unholy Ground) or offer to withhold Festival and your Cathedrals.
+- Un-Men let you walk in place for a turn for free, while boosting another player against a mutual enemy. A Reanimated is often worth losing instead of a Cultist.
+- Yothans roll more dice than any Great Old One. Do not worry unduly about losing them, but pace it out.
+- A sample start: begin next to as many glyphs as possible, move next door and build a Cathedral for 1 Power, and take Festival. Build a Gate there, guard it with an Un-Man, and give the Power to someone far away. Then build a second Cathedral somewhere not adjacent, undefended, in the hope another player occupies it.
+
+## Bubastis
+
+![Bubastis glyph|96](guide/glyphs/bu.svg "Bubastis's glyph.")
+
+The cats on the Moon. A table with Bubastis gets one more area, **The Moon**, in the corner of the map.
+
+**Lunacy.** Bubastis has **no Cultists**, cannot create or control a Gate, and cannot be captured. **The Moon is its Gate**: it counts for Power and Doom like any other, and control of it can never be taken. It begins with 8 Power and six Earth Cats on the Moon. **Each cat in play gives 1 Power** in Gather Power. With the High Priests option it has no High Priest, and gathers 1 more Power instead.
+
+**The Moon.** Bubastis's units Move and are Pained between the Moon and any area, freely. Other cults may Move or be Pained from the Moon to any area, but never to it. Only Catnapping brings them there.
+
+| | Unit | Class | Pieces | Cost | Combat | Notes |
+|---|---|---|---|---|---|---|
+| ![](piece:earth-cat:sand) | **Earth Cat** | Monster | 6 | 1 | 0 | Catabolism |
+| ![](piece:cat-from-mars:sand) | **Cat from Mars** | Monster | 2 | 2 | 1 | Zagazig |
+| ![](piece:cat-from-saturn:sand) | **Cat from Saturn** | Monster | 2 | 3 | 2 | Savagery |
+| ![](piece:cat-from-uranus:sand) | **Cat from Uranus** | Monster | 2 | 4 | 3 | Predator |
+| ![](piece:bastet:sand) | **Bastet** | Elder God | 1 | 6 | no dice | Adds 1 Kill to your total, and lowers the enemy's by 1. Awakens with all four kinds of cat in play, in an area with no enemy. |
+
+**Requires Attention** (Bastet, Doom phase): if she shares an area with an enemy Cultist, you may perform a Ritual worth exactly 4 Doom, with 1 Elder Sign if an enemy Gate is there and 2 if an enemy Great Old One is.
+
+| Spellbook | When | Text |
+|---|---|---|
+| **Ailurophobia** | Doom Phase | 1 Doom per variety of Monster cat sharing an area, off the Moon, with enemy units. |
+| **Catabolism** | Ongoing | Earth Cats bring Monsters into play where they stand, without a Gate. |
+| **Catnapping** | Action: Cost 1 | Every unit but Bastet in her area goes to the Moon. An enemy leaving the Moon pays you the Power it spends. |
+| **Predator** | Post-Battle | With a Cat from Uranus in the battle, choose a unit the enemy lost. It must eliminate another of that type, anywhere. |
+| **Savagery** | Pre-Battle | Pay 1 Power: each Cat from Saturn rolls 4 more dice this battle. |
+| **Zagazig** | Pre-Battle | With a Cat from Mars in the battle, your rolled Pains become Kills and your rolled Kills become Pains. |
+
+**Requirements:** as your Action, pay 2 Power; no Earth Cats on the Moon; a cat in every enemy's start area (and 1 Power per enemy); a Cat from Mars or Saturn is Killed or Eliminated; a Cat from Uranus is Killed or Eliminated; awaken Bastet.
+
+How Bingle reads it: the second half of Lunacy, where abilities aimed at Cultists can target Earth Cats, is not in yet. Zagazig always applies, since Pains are twice as likely as Kills. An enemy with no fixed start area (the Tcho-Tcho, the Opener, the Ancients) keeps the "every start area" requirement from being met. The wiki has no strategy for Bubastis.
+
 ## The High Priests
 
 An option chosen when the game is created. Every cult then has **one High Priest**, a unit of its own colour:
@@ -275,8 +346,6 @@ Petersen Games has published more factions than this game plays. Their glyphs ar
 
 | | Faction | State |
 |---|---|---|
-| ![The Ancients glyph](guide/glyphs/an.svg) | **The Ancients** | placeholder |
-| ![Bubastis glyph](guide/glyphs/bu.svg) | **Bubastis** | placeholder |
 | ![Daemon Sultan glyph](guide/glyphs/ds.svg) | **Daemon Sultan** | placeholder |
 | ![The Invasion glyph](guide/glyphs/in.svg) | **The Invasion** | placeholder |
 | ![Azathoth glyph](guide/glyphs/az.svg) | **Azathoth** | neutral spellbooks and Monsters only |

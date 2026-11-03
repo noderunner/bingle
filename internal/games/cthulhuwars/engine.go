@@ -22,6 +22,8 @@ type mapData struct {
 	reach2 [][]int
 	ocean  []bool
 	glyph  []string
+	// glacier says the printed map has a Glacier glyph in the area.
+	glacier []bool
 	// cfg is the table: who sits where, which expansion is in the box.
 	cfg *gameCfg
 	// sigil lists, per faction, the areas marked with its sigil (indexes).
@@ -52,6 +54,7 @@ func buildMap(game *catalog.CompiledGame) *mapData {
 	m.reach2 = make([][]int, n)
 	m.ocean = make([]bool, n)
 	m.glyph = make([]string, n)
+	m.glacier = make([]bool, n)
 	m.cfg = buildCfg(game.Definition)
 	tags := map[string][]string{}
 	names := map[string]string{}
@@ -72,6 +75,8 @@ func buildMap(game *catalog.CompiledGame) *mapData {
 			switch {
 			case t == "ocean":
 				m.ocean[i] = true
+			case t == "glacier":
+				m.glacier[i] = true
 			case strings.HasPrefix(t, "glyph-"):
 				m.glyph[i] = strings.TrimPrefix(t, "glyph-")
 			}
@@ -373,6 +378,8 @@ func (e *eng) units(seat int) []unitSpec {
 	switch {
 	case e.is(seat, facTT):
 		out = append(append([]unitSpec(nil), out...), ttHP)
+	case e.is(seat, facBU):
+		// Bubastis has no Cultists; with the High Priests it gets 1 Power instead.
 	case e.hasHP():
 		out = append(append([]unitSpec(nil), out...), hpSpec)
 	}
@@ -398,6 +405,9 @@ func (e *eng) cultists(a, seat int) int {
 
 // canControlGate reports whether seat has a unit in a that can control a Gate.
 func (e *eng) canControlGate(seat, a int) bool {
+	if e.hasGlacier(a) {
+		return false
+	}
 	return e.pickHolder(a, seat) != ""
 }
 
@@ -445,6 +455,13 @@ func (e *eng) holderAt(a int) string {
 // typ when it stands there, else the unit seat would choose.
 func (e *eng) occupy(a, seat int, typ string) {
 	id := e.areaID(a)
+	// A Gate under a Glacier is abandoned for good, even one just created.
+	if e.hasGlacier(a) {
+		e.d.Gates[id] = 0
+		delete(e.d.Holders, id)
+		e.say("The Glacier in %s closes over the Gate.", e.areaName(a))
+		return
+	}
 	e.d.Gates[id] = seat
 	if typ == "" || e.count(a, seat, typ) == 0 {
 		typ = e.pickHolder(a, seat)
@@ -479,6 +496,11 @@ func (e *eng) syncGate(a int) {
 		return
 	}
 	if ctl == 0 {
+		delete(e.d.Holders, id)
+		return
+	}
+	// The Moon is Bubastis's Gate, held by nobody and never lost.
+	if id == moonArea {
 		delete(e.d.Holders, id)
 		return
 	}
@@ -558,6 +580,21 @@ func (e *eng) eliminate(a, seat int, typ string, by int) {
 		return
 	}
 	e.setPool(seat, typ, e.pool(seat, typ)+1)
+	// Planetary Destruction: the Dhole, Killed or Eliminated in a battle.
+	if typ == uDhole && e.d.Bat != nil {
+		foe := e.d.Bat.foeOf(seat)
+		e.say("Planetary Destruction: %s earns 2 Elder Signs.", e.seatName(seat))
+		e.gainSign(seat)
+		e.gainSign(seat)
+		e.d.Pending = append(e.d.Pending, cardPrompt("planet", seat, foe, 0))
+	}
+	// Extinction: a Yothan that falls is gone.
+	if typ == uYothan && e.is(seat, facAN) && e.d.hasBook(seat, bkExtinction) {
+		e.setPool(seat, typ, e.pool(seat, typ)-1)
+		e.goneAdd(seat, typ)
+		e.say("Extinction: the Yothan leaves the game.")
+	}
+	e.catFell(seat, typ)
 	// An Independent that dies goes back to the general pool, card and all.
 	if isIndependent(typ) {
 		e.igooDies(seat, typ)

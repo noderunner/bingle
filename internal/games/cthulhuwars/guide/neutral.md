@@ -13,6 +13,10 @@ Everything on this page is optional. On the setup page switch on the packs you w
 | **Azathoth (neutral spellbooks and Monsters)** | the six neutral spellbooks and four Monsters: Dimensional Shambler, Star Vampire, Elder Thing, Servitor |
 | **Dreamlands Surface Monsters** | three Monsters: Moonbeast, Gnorri, Shantak |
 | **Beyond Time and Space** | two Monsters, Wamp and Voonith, and the Terror Hound of Tindalos |
+| **Dreamlands Underworld Monsters** | three Monsters: Ghast, Leng Spider, Gug |
+| **Cosmic Terrors** | three Terrors: the Great Race of Yith, the Dhole, Quachil Uttaus |
+| **Something About Cats** | the Cats from Mercury and Venus, the Asteroid Cat, and the Terror Cat from Neptune |
+| **Satyr** | the Monster of Ramsey Campbell Horrors 2 |
 | **Independent: …** | Independent Great Old Ones, one check box each (see [Independents](tab:independents)) |
 
 Besides, a cult that has Ghroth or The Thousand Forms may swap that book for a neutral one at the setup page even without the Azathoth option (see below).
@@ -149,3 +153,23 @@ In Bingle a Terror stands between the Monsters and the Great Old Ones (its token
 ## Bots
 
 The bots buy a card when it is worth 2 Doom (see above) and the game is long enough for it, use the cards' abilities as described, and leave Recriminations and Undimensioned to people; they take neutral spellbooks only when nothing of their own is left.
+
+## The later packs
+
+| Figure | Name | Count | Summon | Combat | Ability |
+|---|---|---|---|---|---|
+| ![](piece:ghast:green) | **Ghast** | 4 | 2 | 0 | **Hordeling:** 2 Power brings all the Ghasts of your pool to your Gates. |
+| ![](piece:leng-spider:green) | **Leng Spider** | 3 | 2 | 1 | **Bloodthirst:** once per Spider in the battle, turn two Pains into a Kill, on either side. |
+| ![](piece:gug:green) | **Gug** | 2 | 1 | 3 | **Clumsy:** a Gug cannot capture a Cultist. It still guards one. |
+| ![](piece:great-race-of-yith:green) | **Great Race of Yith** (Terror) | 1 | 4 | 3 | **Possession:** captures a Cultist whatever guards it, even past Ferox. In play, earns 1 more Power per captive in Gather Power. |
+| ![](piece:dhole:green) | **Dhole** (Terror) | 1 | 4 | 5 | **Planetary Destruction:** Killed or Eliminated in a battle, it earns you 2 Elder Signs, and your opponent 2 Doom or 2 Power, as you choose. |
+| ![](piece:quachil-uttaus:green) | **Quachil Uttaus** (Terror) | 1 | 4 | 1 | **Dust to Dust:** an enemy who lost units in its battle removes one from the game, or gives you an Elder Sign. |
+| ![](piece:cat-from-mercury:green) | **Cat from Mercury** | 2 | 1 | 1 | **Needs Affection:** before a battle it is in, swap your Monsters there for Acolytes of your pool. |
+| ![](piece:cat-from-venus:green) | **Cat from Venus** | 2 | 1 | 1 | **Honeymoon:** a Cultist it captures earns you 1 Power and goes straight home. |
+| ![](piece:asteroid-cat:green) | **Asteroid Cat** | 2 | 1 | 1 | **Abandoned to Lusts:** free Action. It leaves for an empty spellbook slot of an enemy beside it. When that enemy earns a book you choose which, and the Cat comes home. |
+| ![](piece:cat-from-neptune:green) | **Cat from Neptune** (Terror) | 1 | 1 | 3 | **The Final Ritual:** Killed in a battle, it lets you perform a Ritual at once. If that reaches Instant Death, the game ends after the battle. |
+| ![](piece:satyr:green) | **Satyr** | 3 | 2 | 1 | **Fecund:** each Satyr summoned brings an Acolyte of your pool. |
+
+How Bingle reads them: a capture in an area with a Cat from Venus is always the Cat's, and a Gug's rank counts only if some other unit stands with it. Summoning a Monster and buying its card work as for the others.
+
+**Strategy (from the wiki).** As Great Cthulhu, Absorb all four Ghasts to bump up a Shoggoth to 14 dice, then summon them back next round for 2 Power. As Black Goat, use Necrophagy to add more Pains to an attack, which feeds the Leng Spiders.
