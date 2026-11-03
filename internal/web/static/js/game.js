@@ -3983,7 +3983,7 @@ function moveBar() {
 	const b = activeBuilder();
 
 	if (acting && b.manualSteps().length) {
-		bar.append(h("span", { class: "pending", id: "pending-move" }, describeSteps(b.steps)));
+		bar.append(pendingMove(b));
 	} else if (acting && !inAnalysis() && isRuleset()) {
 		const opts = b.options();
 		const hasPos = opts.some((o) => o.kind === "pos");
@@ -4156,7 +4156,8 @@ function moveBar() {
 	}
 	if (acting && b.manualSteps().length) {
 		actions.append(h("button", { id: "undo-step", class: "ghost", onclick: undoStep, title: "Undo last selection (Backspace)" }, "↶ Back"));
-		actions.append(h("button", { id: "reset-move", class: "ghost", onclick: resetMove, title: "Clear the move (Esc)" }, "Reset"));
+		// On the fitted page Back is enough for now: a move there is a stone and a cell.
+		if (!fitsTheScreen()) actions.append(h("button", { id: "reset-move", class: "ghost", onclick: resetMove, title: "Clear the move (Esc)" }, "Reset"));
 	}
 	// Taking back a step already sent: in the list of actions when there is one,
 	// else here. With a selection on the go, Back clears that first.
@@ -4522,6 +4523,25 @@ function carryDisplay(b, carried, dropped) {
 	});
 	wrap.append(h("span", { class: "small muted" }, `${carried - dropped} to drop`));
 	return wrap;
+}
+
+/**
+ * The move so far. A game with a word for its piece buttons says it again here,
+ * with the picture of the piece chosen: "Place" and a yellow stone.
+ */
+function pendingMove(b) {
+	const word = (rulesetView() || {}).piece_action;
+	const [first, ...rest] = b.steps;
+	if (!word || !first || first.kind !== "piece") return h("span", { class: "pending", id: "pending-move" }, describeSteps(b.steps));
+	const look = pieceLook(first.value);
+	const so_far = describeSteps(rest);
+	return h(
+		"span",
+		{ class: "pending worded", id: "pending-move", "aria-label": `${word}: ${look.label}${so_far ? ` ${so_far}` : ""}` },
+		word,
+		pieceIcon(look.shape, look.color || colorOf(actingSeat()), 22),
+		so_far
+	);
 }
 
 function describeSteps(steps) {
@@ -5814,19 +5834,21 @@ function tutorialCard() {
 	} else if (p.needsNext) {
 		const last = p.step === steps.length - 1 && !(step.reply || []).length;
 		actions.append(h("button", { type: "button", id: "tutorial-next", onclick: tutorialNext }, last ? "Finish" : "Next"));
+		// A step to read may ask a question, and keep its answer here.
+		if (step.hint) actions.append(tutorialHint(step, p.step));
 	} else if (p.next && p.next.who === "learner") {
-		if (step.hint) {
-			if (S.tut.hint === p.step) actions.append(h("p", { class: "tutorial-hint", id: "tutorial-hint" }, step.hint));
-			else
-				actions.append(
-					h("button", { type: "button", class: "secondary", id: "tutorial-show-hint", onclick: () => ((S.tut.hint = p.step), render()) }, "Need a hint?")
-				);
-		}
+		if (step.hint) actions.append(tutorialHint(step, p.step));
 	} else if (p.next) {
 		actions.append(h("p", { class: "muted small", id: "tutorial-wait" }, "Your opponent is moving…"));
 	}
 	card.append(actions);
 	return card;
+}
+
+/** A step's hint, or the button that shows it. */
+function tutorialHint(step, index) {
+	if (S.tut.hint === index) return h("p", { class: "tutorial-hint", id: "tutorial-hint" }, step.hint);
+	return h("button", { type: "button", class: "secondary", id: "tutorial-show-hint", onclick: () => ((S.tut.hint = index), render()) }, "Need a hint?");
 }
 
 /** The position the current step shows instead of the game's (Step.show), or null. */

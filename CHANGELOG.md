@@ -23,10 +23,12 @@ what the help window shows under *Recent changes*, so it is written for the peop
 - **The captured stones are on show.** Each player's card shows the stones they have captured, in their colours, and how
   many are needed to win, such as *Captured: 3/15*.
 - **Shorter words on the controls.** Each stone's button says *Place*, *End turn* is now *End*, and the line above them
-  says what you can do next.
+  says what you can do next. Once you pick a stone, the card says *Place* with a picture of it, and *Back* puts it down
+  again; there is no separate *Reset* button.
 - **More room for the board.** The bar above the board is gone while a game is being played. It comes back in the column
   beside the board for the result of a game, for looking through its history and for analysis.
-- The tutorial uses the new names and buttons.
+- **A longer tutorial.** It uses the new names and buttons, and now explains blooms and liberties with two boards to count
+  on yourself. *Need a hint?* gives the answer.
 
 ## 0.47.0 - 2026-11-02
 

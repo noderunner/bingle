@@ -9,24 +9,23 @@ seat: 1          # you play Warm, red and yellow; the page plays Cool, blue and 
 
 steps:
   - text: |
-      In **Blooms** you place stones of your two colours to build groups,
+      In **Blooms** you place stones of your two colours to build groups
       and capture your opponent's groups by fencing them in.
 
-      Each player controls two different colors of stones. The **Warm** player has red and
-      yellow stones, and the **Cool** player has blue and black. Each player has an unlimited
-      number of each color stone in their supply.
+      Each player controls two different colors of stones. The **warm** player has red and
+      yellow stones, and the **cool** player has blue and black.
 
   - text: |
-      The game ends when either player captures a set number of their opponent's stones.
+      The game ends when either player captures enough of their opponent's stones to win the game.
       The number of captured stones needed to win is determined by the size of the board:
 
-      - *Size 4 board:* 15 stones.
-      - *Size 5 board:* 20 stones.
-      - *Size 6 board:* 25 stones.
-      - *Size 8 board:* 40 stones.
+      - *Size  4 board:* 15 stones.
+      - *Size  5 board:* 20 stones.
+      - *Size  6 board:* 25 stones.
+      - *Size  8 board:* 40 stones.
       - *Size 10 board:* 50 stones.
 
-      In the example game below, the Warm player has won the game by ending a turn with 17
+      In the example game shown, the warm player has won the game by ending a turn with 17
       stones captured on a size 4 board.
     show: [
       yellow@c6, blue@b3, black@d2, red@c3, yellow@b5, blue@e6, black@c4, yellow@d4,
@@ -38,20 +37,44 @@ steps:
     ]
 
   - text: |
-      In Blooms, stones are only placed on empty cells and never move once played, unless
-      they are captured and removed from the board.
+      In Blooms, stones are only placed on empty cells and never move once placed, only captured.
 
   - text: |
-      **Fenced Blooms:**
-      Take a look at the following position. The two red stones are a single group, or "bloom"
-      of stones that is completely surrounded, with no free spaces adjacent to any of the red
-      stones in the bloom. A bloom that is surrounded like this is "Fenced" and will be
-      captured at the end of the Cool player's next turn.
+      A group of one or more connected stones of the same color is called a *bloom*. A single, isolated
+      stone is also a bloom.
+
+      The board position shown contains 2 blue blooms and 1 black bloom. How many red and yellow
+      blooms are shown?
+    hint: There are 3 red blooms and 2 yellow blooms. 
+    pieces: [
+      blue@g1, blue@f1, blue@c3, black@c4, black@b5, black@a5, black@c5, black@c6,
+      red@d1, red@e6, red@e3, red@f2, yellow@g2, yellow@d7, yellow@c7
+      ]
+
+  - text: |
+      Here is another board position, this time showing only a single bloom for each color. Notice
+      the yellow bloom of only a single stone has only a single adjacent space that is free. Much 
+      like in the game of Go, this yellow bloom is said to have only a single *liberty*.
+
+      If you count the open spaces touching the blue bloom on all sides, it has 3 liberties. The
+      red bloom has zero liberties (it is completely surrounded).
+
+      How many liberties does the black bloom have?
+    hint: The black bloom has 4 liberties.
+    pieces: [blue@g1, blue@f2, black@f3, black@f4, yellow@g4, red@g2, red@g3]
+
+  - text: |
+      The red bloom is completely surrounded (no liberties). Since pieces can never move once placed, this means
+      that the red bloom has no more free space to grow.
+      
+      A bloom that is surrounded like this is **fenced.**
+      
+      Blooms that are fenced are captured by the opposing player at the end of every opposing player's turn. 
 
       *Important:* It does not matter that the **yellow** stone at g4 belongs to the same
-      player as the red stones. It is still a different *color* and counts as part of the "fence".
-      In other words, it is entirely possible to fence your own stones for capture. In fact, it is
-      sometimes a good strategy!
+      player as the red stones. It is still a different color and counts as part of the fence.
+      In other words, it is entirely possible to fence your own stones knowing your opponent will capture them. 
+      In fact, it is sometimes a good strategy!
     pieces: [blue@g1, blue@f2, black@f3, black@f4, yellow@g4, red@g2, red@g3]
 
   - text: |
@@ -65,18 +88,21 @@ steps:
       **Capture:** After placement, the active player then captures all *opponent* blooms
       that have been fenced.
 
-      Using the previous example, at the end of the Cool player's turn the two red stones
+      Using the previous example, at the end of the cool player's turn the two red stones
       that were fenced are captured and removed from the board.
     pieces: [blue@g1, blue@f2, black@f3, black@f4, yellow@g4]
     highlight: [g2, g3]
 
   - text: |
-      The first turn of the game is slightly different: the Warm player may only
-      place a single stone of either color onto an empty space. After this, the
-      game turns continue as normal, with *both* players able to place up to two
-      stones on their turn.
+      The first turn of the game is slightly different from all the following turns since the 
+      warm player gets to go first, which is a slight advantage.
+      
+      On the first turn only, the warm player may only place a single stone of either color. They 
+      do not get to place a second stone on the first turn. All subsequent turns after the first
+      are played normally, with both the cool and the warm player allowed to place up to two
+      stones on their turn for the rest of the game. 
 
-      You are the Warm player. Press **Place** on the red stone, then click the
+      You are the warm player. Press **Place** on the red stone, then click the
       highlighted space.
     play: [red@d4]
     hint: Press Place on the red stone, then click the highlighted cell, d4.
@@ -90,7 +116,7 @@ steps:
       A **bloom** is a group of touching stones of one colour; a single
       stone counts as a bloom.
 
-      A bloom is **fenced** when no empty cell touches it. The blue stone at a4
+      A bloom is **fenced** when no empty cell touches it (no liberties). The blue stone at a4
       touches only three cells. Fill two of them: a **red** stone on b3, then a
       **yellow** one on b4.
     play: [red@b3, yellow@b4]

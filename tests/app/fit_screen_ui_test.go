@@ -269,30 +269,40 @@ func TestWebTutorial_BackLooksAtEarlierSteps(t *testing.T) {
 	if evalBool(t, ctx, `document.getElementById("tutorial-back") !== null`) {
 		t.Error("the first step has nothing to go back to")
 	}
-	for _, n := range []string{"2", "3", "4", "5", "6"} {
+	for _, n := range []string{"2", "3", "4"} {
+		clickSel(t, ctx, "#tutorial-next")
+		waitStep(t, ctx, n)
+	}
+	// A step that asks a question keeps its answer behind the hint, with Next still there.
+	if evalBool(t, ctx, `document.getElementById("tutorial-hint") !== null`) {
+		t.Error("the answer should wait to be asked for")
+	}
+	clickSel(t, ctx, "#tutorial-show-hint")
+	waitJS(t, ctx, "the answer", `(document.getElementById("tutorial-hint") || {}).textContent === "There are 3 red blooms and 2 yellow blooms."`, 10*time.Second)
+	for _, n := range []string{"5", "6", "7", "8"} {
 		clickSel(t, ctx, "#tutorial-next")
 		waitStep(t, ctx, n)
 	}
 	// A step to read, and a picture.
 	clickSel(t, ctx, "#tutorial-back")
-	waitStep(t, ctx, "5")
+	waitStep(t, ctx, "7")
 	waitJS(t, ctx, "its picture", stones+` === 5`, 10*time.Second)
 	clickSel(t, ctx, "#tutorial-next")
-	waitStep(t, ctx, "6")
+	waitStep(t, ctx, "8")
 	waitJS(t, ctx, "the room's board", stones+` === 0`, 10*time.Second)
 
-	// Play on to step 7, where moves have been made.
+	// Play on to step 9, where moves have been made.
 	waitJS(t, ctx, "red picked out", `!!document.querySelector('button[data-piece="red"].tutorial-target')`, 10*time.Second)
 	clickSel(t, ctx, `button[data-piece="red"]`)
 	waitJS(t, ctx, "d4", `[...document.querySelectorAll("#board .cell.clickable")].map(c => c.dataset.position).join(",") === "d4"`, 10*time.Second)
 	clickCell(t, ctx, "d4")
-	waitStep(t, ctx, "7")
+	waitStep(t, ctx, "9")
 	waitJS(t, ctx, "the replies", stones+` === 3`, 10*time.Second)
 	played := cfGet(t, base, room).MoveSeq
 
 	// Back to the step before them: the board without the moves, and nothing to click.
 	clickSel(t, ctx, "#tutorial-back")
-	waitStep(t, ctx, "6")
+	waitStep(t, ctx, "8")
 	waitJS(t, ctx, "the board before the moves", stones+` === 0`, 10*time.Second)
 	if got := clickables(t, ctx); got != "" {
 		t.Errorf("a step looked back on can be played: %q", got)
@@ -307,7 +317,7 @@ func TestWebTutorial_BackLooksAtEarlierSteps(t *testing.T) {
 
 	// Forward again, to go on with the tutorial as if nothing had happened.
 	clickSel(t, ctx, "#tutorial-next")
-	waitStep(t, ctx, "7")
+	waitStep(t, ctx, "9")
 	waitJS(t, ctx, "the board as it is", stones+` === 3`, 10*time.Second)
 	waitJS(t, ctx, "red picked out", `!!document.querySelector('button[data-piece="red"].tutorial-target')`, 10*time.Second)
 	clickSel(t, ctx, `button[data-piece="red"]`)

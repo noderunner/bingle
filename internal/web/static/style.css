@@ -328,6 +328,7 @@ button.hand-piece:disabled:not(.chosen) { opacity: 0.55; cursor: default; }
 	max-width: var(--board-max); min-height: 2.75rem;
 }
 .move-bar .pending { font-family: ui-monospace, Menlo, Consolas, monospace; font-weight: 700; }
+.move-bar .pending.worded { display: inline-flex; align-items: center; gap: 0.35rem; font-family: inherit; }
 .move-bar .hint { color: var(--muted); }
 .move-actions { margin-left: auto; display: inline-flex; gap: 0.4rem; flex-wrap: wrap; justify-content: flex-end; }
 .count-picker { display: inline-flex; gap: 0.3rem; align-items: center; flex-wrap: wrap; }

@@ -90,8 +90,16 @@ func TestWebTutorial_PlaysThroughTheBloomsTutorial(t *testing.T) {
 	}
 	next()
 
-	// Steps 4 and 5 draw examples: a fenced bloom, then the board once it is captured.
+	// Steps 4 and 5 draw boards to count on, each with its answer as the hint.
 	waitStep(t, ctx, "4")
+	waitJS(t, ctx, "the blooms to count", stones+` === 15`, 10*time.Second)
+	next()
+	waitStep(t, ctx, "5")
+	waitJS(t, ctx, "the liberties to count", stones+` === 7`, 10*time.Second)
+	next()
+
+	// Steps 6 and 7 draw examples: a fenced bloom, then the board once it is captured.
+	waitStep(t, ctx, "6")
 	waitJS(t, ctx, "the fenced bloom", stones+` === 7 && document.querySelector('#board .cell[data-position="g2"]').dataset.height === "1"`, 10*time.Second)
 	if got := evalString(t, ctx, `document.getElementById("status-message").textContent`); !strings.Contains(got, "example") {
 		t.Errorf("an example says %q", got)
@@ -100,12 +108,12 @@ func TestWebTutorial_PlaysThroughTheBloomsTutorial(t *testing.T) {
 		t.Error("an example says it is your turn")
 	}
 	next()
-	waitStep(t, ctx, "5")
+	waitStep(t, ctx, "7")
 	waitJS(t, ctx, "the bloom gone", stones+` === 5 && document.querySelector('#board .cell[data-position="g2"]').dataset.height === "0"`, 10*time.Second)
 	next()
 
-	// Step 6: the colour buttons stay where they are; red is picked out, yellow is inert.
-	waitStep(t, ctx, "6")
+	// Step 8: the colour buttons stay where they are; red is picked out, yellow is inert.
+	waitStep(t, ctx, "8")
 	waitJS(t, ctx, "red picked out", `!!document.querySelector('button[data-piece="red"].tutorial-target')`, 10*time.Second)
 	if !evalBool(t, ctx, `document.querySelector('button[data-piece="yellow"]').disabled`) {
 		t.Fatal("the yellow button is not inert")
@@ -120,10 +128,10 @@ func TestWebTutorial_PlaysThroughTheBloomsTutorial(t *testing.T) {
 	clickCell(t, ctx, "d4")
 
 	// The page plays the two scripted replies for the other seat.
-	waitStep(t, ctx, "7")
+	waitStep(t, ctx, "9")
 	waitJS(t, ctx, "the replies on the board", `document.querySelector('#board .cell[data-position="a4"]').dataset.height === "1"`, 10*time.Second)
 
-	// Step 7: red on b3, then yellow on b4.
+	// Step 9: red on b3, then yellow on b4.
 	waitJS(t, ctx, "red picked out", `!!document.querySelector('button[data-piece="red"].tutorial-target')`, 10*time.Second)
 	clickSel(t, ctx, `button[data-piece="red"]`)
 	waitJS(t, ctx, "b3", `[...document.querySelectorAll("#board .cell.clickable")].map(c => c.dataset.position).join(",") === "b3"`, 10*time.Second)
@@ -134,16 +142,16 @@ func TestWebTutorial_PlaysThroughTheBloomsTutorial(t *testing.T) {
 	if err := chromedp.Run(ctx, chromedp.Reload()); err != nil {
 		t.Fatal(err)
 	}
-	waitStep(t, ctx, "7")
+	waitStep(t, ctx, "9")
 	waitJS(t, ctx, "yellow picked out again", `!!document.querySelector('button[data-piece="yellow"].tutorial-target')`, 10*time.Second)
 	clickSel(t, ctx, `button[data-piece="yellow"]`)
 	waitJS(t, ctx, "b4", `[...document.querySelectorAll("#board .cell.clickable")].map(c => c.dataset.position).join(",") === "b4"`, 10*time.Second)
 	clickCell(t, ctx, "b4")
 
-	// Step 8: the arrow, red on a5, then End turn; the blue stone at a4 is captured.
-	waitStep(t, ctx, "8")
+	// Step 10: the arrow, red on a5, then End turn; the blue stone at a4 is captured.
+	waitStep(t, ctx, "10")
 	if !evalBool(t, ctx, `!!document.querySelector("#board .board-arrow")`) {
-		t.Fatal("step 8 draws no arrow")
+		t.Fatal("step 10 draws no arrow")
 	}
 	waitJS(t, ctx, "red picked out", `!!document.querySelector('button[data-piece="red"].tutorial-target')`, 10*time.Second)
 	clickSel(t, ctx, `button[data-piece="red"]`)
@@ -152,8 +160,8 @@ func TestWebTutorial_PlaysThroughTheBloomsTutorial(t *testing.T) {
 	waitJS(t, ctx, "End turn picked out", `!!document.querySelector('#move-bar button[data-action="done"].tutorial-target')`, 10*time.Second)
 	finishTurn(t, ctx)
 
-	// Step 9 is to read: Finish ends the tutorial.
-	waitStep(t, ctx, "9")
+	// Step 11 is to read: Finish ends the tutorial.
+	waitStep(t, ctx, "11")
 	waitJS(t, ctx, "the capture", `document.querySelector('#board .cell[data-position="a4"]').dataset.height === "0"`, 10*time.Second)
 	if got := clickables(t, ctx); got != "" {
 		t.Fatalf("a step to read offers moves: %q", got)

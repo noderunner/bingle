@@ -70,7 +70,7 @@ steps:
 |---|---|---|
 | `text` | The page's prose, in Markdown. The game's guide images may be used. | Required. |
 | `play` | The moves the learner must make, in order, written as the move list writes them. The page offers only these. | A step with none waits for **Next**. |
-| `hint` | Shown when the learner asks for a hint. | Needs `play`. |
+| `hint` | Shown when the learner asks for a hint. On a step without `play`, it can hold the answer to a question the text asks. | |
 | `reply` | Moves played for the other seats after the learner's. | |
 | `highlight` | Squares or areas to ring. | Must be on the board. |
 | `arrow` | An arrow, as `[from, to]`. | Exactly two squares, both on the board. |

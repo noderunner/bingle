@@ -35,6 +35,10 @@ card of the rail for a result, history, analysis or a game waiting for an oppone
 `#action-card` holds the move bar. On the player's turn it has `.acting`, which pins it to the edges of the rail, so it
 is in view however far the rail is scrolled. It neither moves the rail nor takes the keyboard.
 
+Once a piece is chosen, `#pending-move` shows the game's `piece_action` word and the piece's picture. *Back* (`#undo-step`)
+is the only button that undoes a selection here: `#reset-move` is not drawn, and Esc still clears the move. A move in Blooms
+is a stone and a cell, so the two did the same thing; a game with longer moves will need to look at this when it joins.
+
 ## How moves are entered
 
 The server lists every legal move of the position

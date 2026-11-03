@@ -80,7 +80,8 @@ type Step struct {
 	// Play are the moves the learner is asked to make, in order, in the
 	// game's notation as the engine writes it. The page offers only these.
 	Play []string `json:"play,omitempty"`
-	// Hint is shown when the learner asks for one ("Need a hint?").
+	// Hint is shown when the learner asks for one ("Need a hint?"). On a step
+	// with no move to make, it can answer a question the text asks.
 	Hint string `json:"hint,omitempty"`
 	// Reply are the moves played for the other seats after the learner's,
 	// in order.
@@ -205,9 +206,6 @@ func (t Tutorial) check() error {
 	for i, s := range t.Steps {
 		if strings.TrimSpace(s.Text) == "" {
 			return fmt.Errorf("%s: step %d has no text", t.ID, i+1)
-		}
-		if s.Hint != "" && len(s.Play) == 0 {
-			return fmt.Errorf("%s: step %d has a hint but asks for no move", t.ID, i+1)
 		}
 		if len(s.Arrow) != 0 && len(s.Arrow) != 2 {
 			return fmt.Errorf("%s: step %d: an arrow is two squares, from and to", t.ID, i+1)
