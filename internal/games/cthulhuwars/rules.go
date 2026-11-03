@@ -585,6 +585,8 @@ func (e *eng) prompt() string {
 			return fmt.Sprintf("%s: choose an empty area marked with a faction glyph where your cult begins.", who)
 		case facOW:
 			return fmt.Sprintf("%s: choose an empty area where your cult begins — after all the others have set up.", who)
+		case facAN:
+			return fmt.Sprintf("%s: choose an empty area with no start glyph where your cult begins.", who)
 		}
 		return fmt.Sprintf("%s: choose the area marked with your sigil where your cult begins.", who)
 	case stageTurn:

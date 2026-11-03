@@ -251,6 +251,8 @@ type SorceryState struct {
 
 // DoomState tracks the Doom phase.
 type DoomState struct {
+	// Demat says Dematerialization has been used this turn.
+	Demat bool `json:"demat,omitempty"`
 	// Order lists the seats still to act; Rituals and Sacrificed mark what
 	// the current seat has already done.
 	Order      []int `json:"order"`
@@ -342,6 +344,8 @@ type Data struct {
 	// that the game ends with this action; Pending the questions that wait for
 	// the end of what is going on.
 	Webs []string `json:"webs,omitempty"`
+	// Cathedrals are the areas with a Cathedral of the Ancients.
+	Cathedrals []string `json:"cathedrals,omitempty"`
 	// Glaciers are the areas under a Glacier (the Primeval Map);
 	// GlaciersBegun says the first of them has been placed.
 	Glaciers      []string        `json:"glaciers,omitempty"`
@@ -567,6 +571,7 @@ func (d *Data) clone() *Data {
 	c.Picks = append([]int(nil), d.Picks...)
 	c.Moon = append([]MoonState(nil), d.Moon...)
 	c.Webs = append([]string(nil), d.Webs...)
+	c.Cathedrals = append([]string(nil), d.Cathedrals...)
 	c.Glaciers = append([]string(nil), d.Glaciers...)
 	c.Gone = cloneInt(d.Gone)
 	c.Mummies = cloneInt(d.Mummies)

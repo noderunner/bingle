@@ -380,6 +380,9 @@ func (e *eng) buildView(viewer int) *View {
 	for _, id := range d.Webs {
 		v.Badges[id] = append(v.Badges[id], "web")
 	}
+	for _, id := range d.Cathedrals {
+		v.Badges[id] = append(v.Badges[id], "cathedral")
+	}
 	for _, id := range d.Glaciers {
 		v.Badges[id] = append(v.Badges[id], "glacier")
 	}

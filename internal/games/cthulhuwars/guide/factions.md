@@ -256,6 +256,44 @@ His Combat is the Growth counter, which starts at 0, grows by a die each Doom ph
 - Awaken Ubbo in the **Doom phase**: it costs nothing, and the counter starts feeding in the next one.
 - The Tsang tribe is played here: **Hierophants, Soulless, Terror, Idolatry, Martyrdom** and **Tablets of the Gods**. (The Leng and Sarkomand tribes of Final Onslaught are not in the game.)
 
+## The Ancients
+
+![The Ancients glyph|96](guide/glyphs/an.svg "The Ancients' glyph.")
+
+A cult with **no Great Old One**, focused on diplomacy and social engineering. It saves the Power others spend awakening, and spends it on Cathedrals instead. It sets up after the others, except the Tcho-Tcho, the Windwalker and the Opener, in an empty area with no start glyph.
+
+**Dematerialization** (Doom phase): relocate your units from one area to a single other area, anywhere on the map. In Bingle, everything goes but the unit holding a Gate.
+
+**Cathedrals.** As an Action, build one where you have a Cultist, for **3 Power**, or **1 Power** if it is not adjacent to another Cathedral. You have four, and they do not need a Gate. With all four in play you may awaken an Independent Great Old One without a Great Old One of your own (Cthugha then just costs 6 Power). On the map a Cathedral is a † chip.
+
+| | Unit | Class | Pieces | Cost | Combat | Notes |
+|---|---|---|---|---|---|---|
+| ![](piece:cultist:teal) | **Acolyte Cultist** | Cultist | 6 | 1 | 0 | |
+| ![](piece:un-men:teal) | **Un-Men** | Monster | 3 | 3 | 0 | 0 with Festival |
+| ![](piece:reanimated:teal) | **Reanimated** | Monster | 3 | 4 | 2 | 1 with Brainless |
+| ![](piece:yothan:teal) | **Yothan** | Terror | 3 | 6 | 7 | 3 with Extinction |
+
+| Spellbook | When | Text |
+|---|---|---|
+| **Brainless** | Ongoing | Reanimated cost 1 Power. They may only Move, Capture or declare Battle if they share an area with another unit of yours. |
+| **Consecration** | Doom Phase | A Ritual gains 1 Elder Sign with at least one Cathedral in play, or 2 with all four. |
+| **Extinction** | Ongoing | Yothans cost 3 Power. One that is Killed or Eliminated leaves the game for good. |
+| **Festival** | Ongoing | Un-Men cost 0 Power. Each one summoned gives an enemy of your choice 1 Power. |
+| **Unholy Ground** | Post-Battle | With a Cathedral in the battle area, you may remove a Cathedral from anywhere. If you do, an enemy Great Old One in the battle is Eliminated. |
+| **Worship Services** | Gather Power | 1 Power for each Cathedral that shares an area with an enemy Gate. Those enemies each gain 1 Power too. |
+
+**Requirements:** a Cathedral in an area with the Dragon glyph; with the Thorns glyph; with the Chevron glyph; in an area with none of them; as your Action, each enemy Summons its lowest cost Monster at its Gate for free; as your Action, each enemy Summons its highest cost Monster the same way.
+
+### Playing it
+
+From the wiki:
+
+- Your advantages are cost-effective Monsters and "social engineering". Your weaknesses are the lack of a Great Old One, which leaves your Cultists vulnerable, and your need to travel around the map.
+- The real menace of enemy Great Old Ones is that they Capture your Cultists. Threaten battle (they will fear Cathedrals once you have Unholy Ground) or offer to withhold Festival and your Cathedrals.
+- Un-Men let you walk in place for a turn for free, while boosting another player against a mutual enemy. A Reanimated is often worth losing instead of a Cultist.
+- Yothans roll more dice than any Great Old One. Do not worry unduly about losing them, but pace it out.
+- A sample start: begin next to as many glyphs as possible, move next door and build a Cathedral for 1 Power, and take Festival. Build a Gate there, guard it with an Un-Man, and give the Power to someone far away. Then build a second Cathedral somewhere not adjacent, undefended, in the hope another player occupies it.
+
 ## The High Priests
 
 An option chosen when the game is created. Every cult then has **one High Priest**, a unit of its own colour:
@@ -275,7 +313,6 @@ Petersen Games has published more factions than this game plays. Their glyphs ar
 
 | | Faction | State |
 |---|---|---|
-| ![The Ancients glyph](guide/glyphs/an.svg) | **The Ancients** | placeholder |
 | ![Bubastis glyph](guide/glyphs/bu.svg) | **Bubastis** | placeholder |
 | ![Daemon Sultan glyph](guide/glyphs/ds.svg) | **Daemon Sultan** | placeholder |
 | ![The Invasion glyph](guide/glyphs/in.svg) | **The Invasion** | placeholder |

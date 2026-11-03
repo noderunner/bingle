@@ -586,6 +586,8 @@ func deriveFrom(base *dsl.GameDefinition, keys []string, hp, az bool, packs, ind
 	for i, k := range keys {
 		r := 3
 		switch k {
+		case "an":
+			r = -1
 		case "tt":
 			r = 0
 		case "ww":
@@ -708,6 +710,8 @@ func gateColor(color string) string {
 		return "#8a5bd0"
 	case "brown":
 		return "#8f6035"
+	case "teal":
+		return "#1f8f98"
 	}
 	return "#888888"
 }

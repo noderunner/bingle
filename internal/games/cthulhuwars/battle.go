@@ -94,6 +94,8 @@ func (e *eng) combatOf(seat, a int, b *Battle, foe int) int {
 		}
 	case facOW:
 		total += n(uMutant) + 2*n(uAbom) + 3*n(uSpawn)
+	case facAN:
+		total += 2*n(uReanimated) + 7*n(uYothan)
 	case facTT:
 		total += n(uProto)
 		// Terror: lower the enemy's Combat or raise one's own.
@@ -1081,6 +1083,7 @@ func (e *eng) postMoves(seat int) []state.Move {
 	}
 	// The Million Favored Ones: units are replaced by the next kind up.
 	out = append(out, e.upgradeMoves(seat)...)
+	out = append(out, e.unholyMoves(seat)...)
 	// Cannibalism: after enemy units died the Windwalker may place a Wendigo
 	// or an Acolyte in the battle area — in any battle.
 	if e.is(seat, facWW) && d.hasBook(seat, bkCannibal) && b.Killed > 0 {
@@ -1186,6 +1189,9 @@ func (e *eng) doPost(seat int, mv state.Move) {
 			b.Done[seat] = true
 			e.advancePost(seat, false)
 		}
+		return
+	case actCard:
+		e.unholy(seat, mv)
 		return
 	case actCannibal:
 		if e.place(a, seat, mv.Piece) {

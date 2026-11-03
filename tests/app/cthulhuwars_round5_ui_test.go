@@ -33,8 +33,8 @@ func TestWebHome_ChooseTheCultsOfAFivePlayerTableAndTheHighPriests(t *testing.T)
 		t.Fatalf("default cults = %q", got)
 	}
 	// The eight cults are on offer in every seat.
-	if n := evalInt(t, ctx, `document.querySelectorAll('#slots-field select.faction-select[data-cult-seat="1"] option').length`); n != 8 {
-		t.Errorf("%d cults on offer, want 8", n)
+	if n := evalInt(t, ctx, `document.querySelectorAll('#slots-field select.faction-select[data-cult-seat="1"] option').length`); n != 9 {
+		t.Errorf("%d cults on offer, want 9", n)
 	}
 	// The expansion is a check box, off by default.
 	if got := evalString(t, ctx, `String(document.getElementById("option-high-priests") && document.getElementById("option-high-priests").checked)`); got != "false" {

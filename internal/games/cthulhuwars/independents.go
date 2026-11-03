@@ -128,10 +128,12 @@ func (e *eng) independentAwakenMoves(seat int) []state.Move {
 		}
 		for _, a := range e.gatesOf(seat) {
 			goos := e.seatGOOAt(a, seat)
-			if len(goos) == 0 {
+			// With all four Cathedrals the Ancients need no Great Old One.
+			free := e.is(seat, facAN) && len(e.d.Cathedrals) >= maxCathedrals
+			if len(goos) == 0 && !free {
 				continue
 			}
-			if typ != uCthugha {
+			if typ != uCthugha || (free && len(goos) == 0) {
 				out = append(out, state.Move{Action: actAwaken, Piece: typ, To: e.m.ids[a]})
 				continue
 			}

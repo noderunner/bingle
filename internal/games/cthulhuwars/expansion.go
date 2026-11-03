@@ -18,11 +18,12 @@ const (
 	abDeath             // Sleeper: a free Monster in the Doom phase
 	abBeyond            // Opener of the Way: move a unit with a Gate
 	abSycophancy        // Tcho-Tcho: a Ritual of an enemy gives it Doom or costs the enemy one
+	abDemat             // The Ancients: relocate units in the Doom phase
 )
 
 var factionAbility = [nFactions]int{
 	facGC: abImmortal, facCC: abFlight, facBG: abFertility, facYS: abFeast, facWW: abHibernate, facSL: abDeath,
-	facOW: abBeyond, facTT: abSycophancy,
+	facOW: abBeyond, facTT: abSycophancy, facAN: abDemat,
 }
 
 // ability reports whether seat has the unique ability ab: its own, or — for
@@ -187,7 +188,7 @@ func (e *eng) sigilAreas(f int) []int {
 // of the Way.
 func (e *eng) setsUpLater(seat int) bool {
 	switch e.fac(seat) {
-	case facTT, facOW:
+	case facTT, facOW, facAN:
 		return true
 	case facWW:
 		return len(e.sigilAreas(facWW)) > 0
@@ -200,6 +201,8 @@ func (e *eng) setsUpLater(seat int) bool {
 // players have set up").
 func setupRank(f int) int {
 	switch f {
+	case facAN:
+		return -1
 	case facTT:
 		return 0
 	case facWW:
@@ -221,6 +224,17 @@ func (e *eng) legalSetup() []state.Move {
 		areas = e.glyphAreas()
 		if len(areas) == 0 {
 			areas = e.emptyAreas()
+		}
+	case facAN:
+		// An empty area with no game symbol; Yellow Sign's three glyphs are allowed.
+		taken := map[int]bool{}
+		for _, a := range e.startGlyphAreas(e.d.Setup) {
+			taken[a] = true
+		}
+		for _, a := range e.emptyAreas() {
+			if !taken[a] && !e.m.glacier[a] {
+				areas = append(areas, a)
+			}
 		}
 	default:
 		areas = e.emptyAreas()

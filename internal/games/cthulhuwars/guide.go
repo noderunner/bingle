@@ -851,6 +851,7 @@ var bookOrder = [nFactions][]int{
 	facSL: {bkBurrow, bkDemand, bkCaptureMonster, bkSlumber, bkNexus, bkSorcery},
 	facOW: {bkMillion, bkBreak, bkChannel, bkDescend, bkAscend, bkCurse},
 	facTT: {bkHiero, bkTerror, bkMartyr, bkTablets, bkSoulless, bkIdolatry},
+	facAN: {bkFestival, bkBrainless, bkWorship, bkConsecration, bkExtinction, bkUnholy},
 }
 
 func (g *guide) prompt(legal []state.Move) []state.Move {

@@ -180,6 +180,7 @@ func (e *eng) gatherPower() {
 		}
 	}
 	e.undyingFlame()
+	e.worshipServices()
 }
 
 // plural1 picks the singular or plural noun for n.
@@ -432,6 +433,7 @@ func (e *eng) doomMoves(seat int) []state.Move {
 		out = append(out, state.Move{Action: actReveal})
 	}
 	out = append(out, e.buyMoves(seat)...)
+	out = append(out, e.dematMoves(seat)...)
 	// Crypt Dweller: an enemy places the Wamps of the pool.
 	if !x.Crypt {
 		out = append(out, e.cryptMoves(seat)...)
@@ -454,10 +456,17 @@ func (e *eng) doDoom(seat int, mv state.Move) {
 	switch mv.Action {
 	case actSkip:
 		x.Order = x.Order[1:]
-		x.Ritualled, x.Sacrificed, x.Death, x.Bought, x.Crypt = false, false, false, false, false
+		x.Ritualled, x.Sacrificed, x.Death, x.Bought, x.Crypt, x.Demat = false, false, false, false, false, false
 		e.settleDoom()
 		return
 	case actCard:
+		if mv.Piece == "demat" {
+			x.Demat = true
+			d.Prompts = append(d.Prompts, Prompt{Kind: "card", Why: "demat-to", Seat: seat, Area: string(mv.To)})
+			e.thenAfterPrompts("doom")
+			e.beginPrompts("doom")
+			return
+		}
 		// Ceremony of Annihilation: the Ritual pays instead of costing.
 		gain := e.ritualCost()
 		d.Power[seat] += gain
@@ -485,6 +494,7 @@ func (e *eng) doDoom(seat int, mv state.Move) {
 			e.gainSign(seat)
 		}
 		e.subversion(seat, signs)
+		e.consecration(seat)
 		// Tablets of the Gods: more Elder Signs, and the High Priests go.
 		if e.is(seat, facTT) && d.hasBook(seat, bkTablets) {
 			e.tablets(seat)

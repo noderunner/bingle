@@ -47,9 +47,11 @@
 	--piece-yellow-stroke: #6a5410;
 	--piece-orange-fill: #e8923a;
 	--piece-purple-fill: #9b6bd6;
+	--piece-teal-fill: #2aa6ae;
 	--piece-brown-fill: #a8723f;
 	--piece-orange-stroke: #6b3a0a;
 	--piece-purple-stroke: #34185e;
+	--piece-teal-stroke: #0c4347;
 	--piece-brown-stroke: #3c2410;
 
 	--radius: 10px;
@@ -398,6 +400,7 @@ dialog ul { padding-left: 1.2rem; }
 .cell-bg.edge-yellow { fill: color-mix(in srgb, var(--piece-yellow-fill) 55%, var(--board-light)); }
 .cell-bg.edge-orange { fill: color-mix(in srgb, var(--piece-orange-fill) 55%, var(--board-light)); }
 .cell-bg.edge-purple { fill: color-mix(in srgb, var(--piece-purple-fill) 55%, var(--board-light)); }
+.cell-bg.edge-teal { fill: color-mix(in srgb, var(--piece-teal-fill) 55%, var(--board-light)); }
 .cell-bg.edge-brown { fill: color-mix(in srgb, var(--piece-brown-fill) 55%, var(--board-light)); }
 .cell-bg.edge-black { fill: color-mix(in srgb, var(--piece-black-fill) 55%, var(--board-light)); }
 .cell-bg.edge-white { fill: color-mix(in srgb, var(--piece-white-fill) 80%, var(--board-light)); }
@@ -438,9 +441,11 @@ dialog ul { padding-left: 1.2rem; }
 .piece.color-yellow .piece-detail, .ghost-piece.color-yellow .piece-detail { stroke: var(--piece-yellow-stroke); }
 .piece.color-orange .piece-body, .ghost-piece.color-orange .piece-body { fill: var(--piece-orange-fill); stroke: var(--piece-orange-stroke); }
 .piece.color-purple .piece-body, .ghost-piece.color-purple .piece-body { fill: var(--piece-purple-fill); stroke: var(--piece-purple-stroke); }
+.piece.color-teal .piece-body, .ghost-piece.color-teal .piece-body { fill: var(--piece-teal-fill); stroke: var(--piece-teal-stroke); }
 .piece.color-brown .piece-body, .ghost-piece.color-brown .piece-body { fill: var(--piece-brown-fill); stroke: var(--piece-brown-stroke); }
 .piece.color-orange .piece-detail, .ghost-piece.color-orange .piece-detail { stroke: var(--piece-orange-stroke); }
 .piece.color-purple .piece-detail, .ghost-piece.color-purple .piece-detail { stroke: var(--piece-purple-stroke); }
+.piece.color-teal .piece-detail, .ghost-piece.color-teal .piece-detail { stroke: var(--piece-teal-stroke); }
 .piece.color-brown .piece-detail, .ghost-piece.color-brown .piece-detail { stroke: var(--piece-brown-stroke); }
 .piece.ghost { opacity: 0.55; }
 .swatch.color-white { background: var(--piece-white-fill); border-color: var(--piece-white-stroke); }
@@ -451,6 +456,7 @@ dialog ul { padding-left: 1.2rem; }
 .swatch.color-yellow { background: var(--piece-yellow-fill); border-color: var(--piece-yellow-stroke); }
 .swatch.color-orange { background: var(--piece-orange-fill); border-color: var(--piece-orange-stroke); }
 .swatch.color-purple { background: var(--piece-purple-fill); border-color: var(--piece-purple-stroke); }
+.swatch.color-teal { background: var(--piece-teal-fill); border-color: var(--piece-teal-stroke); }
 .swatch.color-brown { background: var(--piece-brown-fill); border-color: var(--piece-brown-stroke); }
 
 .stack-popover {
@@ -758,6 +764,7 @@ kbd { font: 600 0.8em ui-monospace, Menlo, Consolas, monospace; border: 1px soli
 .token-code { fill: #fff; font: 700 10px system-ui, sans-serif; pointer-events: none; }
 .token.color-yellow .token-code, .token.color-white .token-code, .token.color-orange .token-code { fill: #2b2926; }
 .token.color-yellow .token-code, .token.color-white .token-code, .token.color-purple .token-code { fill: #2b2926; }
+.token.color-yellow .token-code, .token.color-white .token-code, .token.color-teal .token-code { fill: #2b2926; }
 .token.color-yellow .token-code, .token.color-white .token-code, .token.color-brown .token-code { fill: #2b2926; }
 .token-count-bg { fill: #fff; stroke: #2b2926; stroke-width: 1.3; }
 .token-count { fill: #111; font-weight: 800; font-family: system-ui, sans-serif; pointer-events: none; }
@@ -823,6 +830,7 @@ kbd { font: 600 0.8em ui-monospace, Menlo, Consolas, monospace; border: 1px soli
 .slot-row .swatch.color-yellow { background: var(--piece-yellow-fill); }
 .slot-row .swatch.color-orange { background: var(--piece-orange-fill); }
 .slot-row .swatch.color-purple { background: var(--piece-purple-fill); }
+.slot-row .swatch.color-teal { background: var(--piece-teal-fill); }
 .slot-row .swatch.color-brown { background: var(--piece-brown-fill); }
 .slot-row .swatch.color-white { background: var(--piece-white-fill); }
 /* A seat whose cult is chosen: the name column is a list of the cults. */
@@ -907,6 +915,7 @@ kbd { font: 600 0.8em ui-monospace, Menlo, Consolas, monospace; border: 1px soli
 .gate-chip.color-yellow .gate-ring { stroke: var(--piece-yellow-fill); }
 .gate-chip.color-orange .gate-ring { stroke: var(--piece-orange-fill); }
 .gate-chip.color-purple .gate-ring { stroke: var(--piece-purple-fill); }
+.gate-chip.color-teal .gate-ring { stroke: var(--piece-teal-fill); }
 .gate-chip.color-brown .gate-ring { stroke: var(--piece-brown-fill); }
 .gate-chip.color-white .gate-ring { stroke: var(--piece-white-fill); }
 .gate-chip.abandoned .gate-ring { stroke: #8d8776; stroke-dasharray: 4 3; }
@@ -938,6 +947,7 @@ kbd { font: 600 0.8em ui-monospace, Menlo, Consolas, monospace; border: 1px soli
 .tgs-yellow-0 { stop-color: color-mix(in srgb, var(--piece-yellow-fill) 55%, #fff); } .tgs-yellow-1 { stop-color: var(--piece-yellow-fill); } .tgs-yellow-2 { stop-color: color-mix(in srgb, var(--piece-yellow-fill) 72%, #000); }
 .tgs-orange-0 { stop-color: color-mix(in srgb, var(--piece-orange-fill) 55%, #fff); } .tgs-orange-1 { stop-color: var(--piece-orange-fill); } .tgs-orange-2 { stop-color: color-mix(in srgb, var(--piece-orange-fill) 72%, #000); }
 .tgs-purple-0 { stop-color: color-mix(in srgb, var(--piece-purple-fill) 55%, #fff); } .tgs-purple-1 { stop-color: var(--piece-purple-fill); } .tgs-purple-2 { stop-color: color-mix(in srgb, var(--piece-purple-fill) 72%, #000); }
+.tgs-teal-0 { stop-color: color-mix(in srgb, var(--piece-teal-fill) 55%, #fff); } .tgs-teal-1 { stop-color: var(--piece-teal-fill); } .tgs-teal-2 { stop-color: color-mix(in srgb, var(--piece-teal-fill) 72%, #000); }
 .tgs-brown-0 { stop-color: color-mix(in srgb, var(--piece-brown-fill) 55%, #fff); } .tgs-brown-1 { stop-color: var(--piece-brown-fill); } .tgs-brown-2 { stop-color: color-mix(in srgb, var(--piece-brown-fill) 72%, #000); }
 .tgs-black-0 { stop-color: color-mix(in srgb, var(--piece-black-fill) 60%, #fff); } .tgs-black-1 { stop-color: var(--piece-black-fill); } .tgs-black-2 { stop-color: color-mix(in srgb, var(--piece-black-fill) 70%, #000); }
 .tgs-white-0 { stop-color: #ffffff; } .tgs-white-1 { stop-color: var(--piece-white-fill); } .tgs-white-2 { stop-color: color-mix(in srgb, var(--piece-white-fill) 80%, #000); }
@@ -947,6 +957,7 @@ kbd { font: 600 0.8em ui-monospace, Menlo, Consolas, monospace; border: 1px soli
 .token.color-yellow .piece-body { fill: url(#tg-yellow); }
 .token.color-orange .piece-body { fill: url(#tg-orange); }
 .token.color-purple .piece-body { fill: url(#tg-purple); }
+.token.color-teal .piece-body { fill: url(#tg-teal); }
 .token.color-brown .piece-body { fill: url(#tg-brown); }
 .token.color-black .piece-body { fill: url(#tg-black); }
 .token.color-white .piece-body { fill: url(#tg-white); }
@@ -994,6 +1005,7 @@ kbd { font: 600 0.8em ui-monospace, Menlo, Consolas, monospace; border: 1px soli
 .order-seat .swatch.color-yellow, .log-actor .swatch.color-yellow { background: var(--piece-yellow-fill); }
 .order-seat .swatch.color-orange, .log-actor .swatch.color-orange { background: var(--piece-orange-fill); }
 .order-seat .swatch.color-purple, .log-actor .swatch.color-purple { background: var(--piece-purple-fill); }
+.order-seat .swatch.color-teal, .log-actor .swatch.color-teal { background: var(--piece-teal-fill); }
 .order-seat .swatch.color-brown, .log-actor .swatch.color-brown { background: var(--piece-brown-fill); }
 .order-seat .swatch.color-white, .log-actor .swatch.color-white { background: var(--piece-white-fill); }
 .seat-order-note { margin: 0.1rem 0.2rem 0; }
@@ -1058,6 +1070,7 @@ kbd { font: 600 0.8em ui-monospace, Menlo, Consolas, monospace; border: 1px soli
 .log-fac.color-yellow { color: #8a6a00; }
 .log-fac.color-orange { color: #b35a0a; }
 .log-fac.color-purple { color: #6d3fb3; }
+.log-fac.color-teal { color: #14757d; }
 .log-fac.color-brown { color: #7d5128; }
 .log-fac.color-white { color: #5a6f80; }
 @media (prefers-color-scheme: dark) {
@@ -1067,6 +1080,7 @@ kbd { font: 600 0.8em ui-monospace, Menlo, Consolas, monospace; border: 1px soli
 	.log-fac.color-yellow { color: #f0cf5a; }
 	.log-fac.color-orange { color: #ffb066; }
 	.log-fac.color-purple { color: #c9a8ff; }
+	.log-fac.color-teal { color: #7fdde4; }
 	.log-fac.color-brown { color: #e0b88f; }
 	.log-fac.color-white { color: #cfe0ee; }
 }
@@ -1168,6 +1182,7 @@ dialog.help-dialog li { margin: 0.35rem 0; }
 .auto-pass-option .swatch.color-yellow { background: var(--piece-yellow-fill); }
 .auto-pass-option .swatch.color-orange { background: var(--piece-orange-fill); }
 .auto-pass-option .swatch.color-purple { background: var(--piece-purple-fill); }
+.auto-pass-option .swatch.color-teal { background: var(--piece-teal-fill); }
 .auto-pass-option .swatch.color-brown { background: var(--piece-brown-fill); }
 .auto-pass-option .swatch.color-white { background: var(--piece-white-fill); }
 
@@ -1257,6 +1272,7 @@ dialog.help-dialog li { margin: 0.35rem 0; }
 .chat-who.color-yellow { color: #8a6a00; }
 .chat-who.color-orange { color: #b35a0a; }
 .chat-who.color-purple { color: #6d3fb3; }
+.chat-who.color-teal { color: #14757d; }
 .chat-who.color-brown { color: #7d5128; }
 .chat-who.color-white { color: #5a6f80; }
 .chat-line.spectator .chat-who { color: var(--muted); font-weight: 600; font-style: italic; }
@@ -1284,6 +1300,7 @@ dialog.help-dialog li { margin: 0.35rem 0; }
 	.chat-who.color-yellow { color: #f0cf5a; }
 	.chat-who.color-orange { color: #ffb066; }
 	.chat-who.color-purple { color: #c9a8ff; }
+	.chat-who.color-teal { color: #7fdde4; }
 	.chat-who.color-brown { color: #e0b88f; }
 	.chat-who.color-white { color: #cfe0ee; }
 }

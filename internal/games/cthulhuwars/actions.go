@@ -36,6 +36,16 @@ func (e *eng) summonCost(seat int, typ string) int {
 			cost--
 		}
 	}
+	if e.is(seat, facAN) {
+		switch {
+		case typ == uUnMen && e.d.hasBook(seat, bkFestival):
+			cost = 0
+		case typ == uReanimated && e.d.hasBook(seat, bkBrainless):
+			cost = 1
+		case typ == uYothan && e.d.hasBook(seat, bkExtinction):
+			cost = 3
+		}
+	}
 	if cost < 0 {
 		cost = 0
 	}
@@ -234,7 +244,7 @@ func (e *eng) moveCost(seat int, mv state.Move) int {
 	case actFilth, actSting, actZygote:
 		c = 1
 	case actCard:
-		c = cardCost(mv)
+		c = e.cardActCost(mv)
 		tax = false
 	case actDreams, actGhroth:
 		c = 2
@@ -416,7 +426,7 @@ func (e *eng) battleMoves(seat int) []state.Move {
 			continue
 		}
 		for _, enemy := range e.others(seat) {
-			if e.canBattle(seat, enemy, a) {
+			if e.canBattle(seat, enemy, a) && !e.brainless(a, seat) {
 				mv := state.Move{Action: actBattle, To: e.m.ids[a], Count: enemy}
 				if e.d.Power[seat] < e.moveCost(seat, mv) {
 					continue
@@ -585,6 +595,9 @@ func (e *eng) unitMoves(seat int, moved []string) []state.Move {
 			// The Hound of Tindalos moves only with the others (houndHops) and the
 			// Filth never moves at all.
 			if n <= 0 || typ == uHound || typ == uFilth || typ == uByatis {
+				continue
+			}
+			if typ == uReanimated && e.brainless(a, seat) {
 				continue
 			}
 			// A Mummified Acolyte cannot use the Move Action.

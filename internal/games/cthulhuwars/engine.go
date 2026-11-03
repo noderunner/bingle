@@ -581,6 +581,12 @@ func (e *eng) eliminate(a, seat int, typ string, by int) {
 		e.gainSign(seat)
 		e.d.Pending = append(e.d.Pending, cardPrompt("planet", seat, foe, 0))
 	}
+	// Extinction: a Yothan that falls is gone.
+	if typ == uYothan && e.is(seat, facAN) && e.d.hasBook(seat, bkExtinction) {
+		e.setPool(seat, typ, e.pool(seat, typ)-1)
+		e.goneAdd(seat, typ)
+		e.say("Extinction: the Yothan leaves the game.")
+	}
 	// An Independent that dies goes back to the general pool, card and all.
 	if isIndependent(typ) {
 		e.igooDies(seat, typ)

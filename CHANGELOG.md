@@ -28,6 +28,8 @@ what the help window shows under *Recent changes*, so it is written for the peop
 - **Hide the units.** The game options can now turn the units off to study the map, next to the names, glyphs and sigils.
   Any unit you can move right then stays visible.
 ### Cthulhu Wars 0.2.0
+- **A new cult: The Ancients.** A cult with no Great Old One, who build Cathedrals, give their enemies gifts and move their
+  army across the world in the Doom phase. They play in teal.
 - **Many more neutral units.** New options at the setup page: the Dreamlands Underworld Monsters (Ghast, Leng Spider, Gug),
   the Cosmic Terrors (Great Race of Yith, Dhole, Quachil Uttaus), Something About Cats and the Satyr.
 - **The Primeval Map.** A prehistoric Earth for three or five players, where Glaciers creep over the map and abandon Gates

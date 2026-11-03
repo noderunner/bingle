@@ -1329,7 +1329,7 @@ func (rs *Ruleset) Describe(game *catalog.CompiledGame) state.RulesetInfo {
 	seenMonster := map[string]bool{}
 	for _, f := range factions {
 		for _, u := range f.Units {
-			if u.Class != classMonster || seenMonster[u.ID] {
+			if (u.Class != classMonster && u.Class != classTerror) || seenMonster[u.ID] {
 				continue
 			}
 			seenMonster[u.ID] = true

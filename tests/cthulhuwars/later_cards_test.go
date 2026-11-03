@@ -399,3 +399,131 @@ func TestAGlacierAbandonsAGateForGood(t *testing.T) {
 }
 
 func primevalData(t testing.TB, st *state.BoardState) *cthulhuwars.Data { return data(t, st) }
+
+// --- The Ancients -------------------------------------------------------------------------------
+
+func ancients(t testing.TB) *table {
+	return cardTable(t, []string{"an", "gc", "cc", "bg"}, map[string]any{})
+}
+
+func TestTheAncientsBeginAfterTheOthersInAnAreaWithNoStartGlyph(t *testing.T) {
+	g := packTable(t, "cthulhu-wars", []string{"an", "gc", "cc", "bg"}, map[string]any{})
+	st, err := state.InitialStateSeeded(g, 3)
+	if err != nil {
+		t.Fatal(err)
+	}
+	legal := state.LegalMoves(g, st, state.FirstSeat(g))
+	if len(legal) == 0 || legal[0].Action != "start" {
+		t.Fatalf("the first decision: %v", legal)
+	}
+	for _, mv := range legal {
+		switch string(mv.To) {
+		case "south-pacific", "asia", "south-america-west", "europe":
+			t.Errorf("%s holds a start glyph", mv.To)
+		}
+	}
+}
+
+func TestACathedralCostsOneAloneAndEarnsTheBookOfItsGlyph(t *testing.T) {
+	tb := ancients(t)
+	st := tb.build(xp{
+		units: []xu{{who: "an", typ: "cultist", area: "africa", n: 2}, {who: "an", typ: "cultist", area: "north-atlantic", n: 2}},
+		gates: map[string]string{"africa": "an"},
+		power: map[string]int{"an": 8},
+	})
+	st = tb.as(st, "an", "card:cathedral@africa") // Africa has the Chevron
+	d := tb.data(st)
+	if d.Power[tb.seat("an")] != 7 {
+		t.Errorf("Power %d: a Cathedral on its own costs 1", d.Power[tb.seat("an")])
+	}
+	if d.Reqs[tb.seat("an")]&(1<<2) == 0 {
+		t.Errorf("the Chevron requirement is not met: %b", d.Reqs[tb.seat("an")])
+	}
+}
+
+func TestACathedralNextToAnotherCostsThree(t *testing.T) {
+	tb := ancients(t)
+	st := tb.build(xp{
+		units: []xu{{who: "an", typ: "cultist", area: "north-atlantic", n: 2}},
+		power: map[string]int{"an": 8},
+		edit:  func(d *cthulhuwars.Data) { d.Cathedrals = []string{"africa"} },
+	})
+	before := tb.data(st).Power[tb.seat("an")]
+	st = tb.as(st, "an", "card:cathedral@north-atlantic")
+	if got := tb.data(st).Power[tb.seat("an")]; before-got != 3 {
+		t.Errorf("paid %d", before-got)
+	}
+}
+
+func TestFestivalAndBrainlessChangeTheCosts(t *testing.T) {
+	tb := ancients(t)
+	st := tb.build(xp{
+		units: []xu{{who: "an", typ: "cultist", area: "africa"}},
+		gates: map[string]string{"africa": "an"},
+		power: map[string]int{"an": 1},
+		books: map[string][]int{"an": {0, 3}},
+	})
+	got := tb.can(st, "an")
+	for _, want := range []string{"summon:un-men@africa", "summon:reanimated@africa"} {
+		if !has(got, want) {
+			t.Errorf("%s is not on offer with 1 Power: %v", want, got)
+		}
+	}
+	if has(got, "summon:yothan@africa") {
+		t.Errorf("a Yothan costs 6 without Extinction: %v", got)
+	}
+}
+
+func TestBrainlessReanimatedDoNotMoveAlone(t *testing.T) {
+	tb := ancients(t)
+	st := tb.build(xp{
+		units: []xu{{who: "an", typ: "reanimated", area: "africa"}, {who: "gc", typ: "cultist", area: "africa"}},
+		power: map[string]int{"an": 6},
+		books: map[string][]int{"an": {0}},
+	})
+	got := tb.can(st, "an")
+	for _, mv := range got {
+		if strings.HasPrefix(mv, "go:reanimated") || strings.HasPrefix(mv, "battle") || strings.HasPrefix(mv, "capture") {
+			t.Errorf("a Reanimated alone did %s", mv)
+		}
+	}
+}
+
+func TestRandomGamesWithTheAncients(t *testing.T) {
+	for _, c := range []struct {
+		base string
+		keys []string
+	}{
+		{"cthulhu-wars", []string{"an", "gc", "cc", "bg"}},
+		{"cthulhu-wars-5p", []string{"an", "tt", "ww", "ow", "sl"}},
+		{"cthulhu-wars-primeval-3p", []string{"an", "ys", "cc"}},
+	} {
+		g := packTable(t, c.base, c.keys, allCards)
+		seen := 0
+		for seed := int64(1); seed <= 8; seed++ {
+			st, _, _ := randomGame(t, g, seed, 8000, func(ply int, st *state.BoardState, seat int, mv state.Move) {
+				if err := state.Validate(g, st); err != nil {
+					t.Fatalf("%s seed %d ply %d after %s: %v", g.Definition.ID, seed, ply, state.FormatMove(g, mv), err)
+				}
+			})
+			seen += len(data(t, st).Cathedrals)
+		}
+		if seen == 0 {
+			t.Errorf("%s: no Cathedral was ever built", g.Definition.ID)
+		}
+	}
+	checkEngineContract(t, packTable(t, "cthulhu-wars", []string{"an", "ww", "tt", "ow"}, allCards), 3, 1500)
+}
+
+func TestGuidedGamesWithTheAncients(t *testing.T) {
+	g := packTable(t, "cthulhu-wars", []string{"an", "gc", "bg", "ys"}, map[string]any{})
+	finished := 0
+	for seed := int64(1); seed <= 6; seed++ {
+		if playGuided(t, g, seed, 9000).ended {
+			finished++
+		}
+	}
+	if finished < 3 {
+		t.Errorf("only %d of 6 guided games finished", finished)
+	}
+}

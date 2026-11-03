@@ -14,7 +14,7 @@
 
 import { s } from "./util.js";
 
-const SVG_COLORS = ["red", "yellow", "orange", "white", "blue", "black", "green", "purple", "brown"];
+const SVG_COLORS = ["red", "yellow", "orange", "white", "blue", "black", "green", "purple", "teal", "brown"];
 
 // ---------------------------------------------------------------------------
 // Small helpers
@@ -170,6 +170,7 @@ const SYNTH = {
 		black: stone("#2a1458", { hi: "#7a4dc2", lo: "#07021a", rim: "#3df5ff", glow: "#7d3cff", glowSize: 4 }),
 		green: stone("#3dffa2", { glow: "#3dffa2", glowSize: 4 }),
 		purple: stone("#b86bff", { glow: "#b86bff", glowSize: 4 }),
+		teal: stone("#2aa6ae", { glow: "#39d4dd", glowSize: 4 }),
 		brown: stone("#c4642a", { glow: "#ff8a3a", glowSize: 3 }),
 	},
 };
@@ -188,6 +189,7 @@ const CELTIC = {
 		black: stone("#262b33", { hi: "#707a88", lo: "#07090c", rim: "#b8c2d0" }),
 		green: stone("#4f9a5b"),
 		purple: stone("#7a56b8"),
+		teal: stone("#2aa6ae"),
 		brown: stone("#8a5a32"),
 	},
 };
@@ -206,6 +208,7 @@ const SOLSTICE = {
 		black: stone("#26223a", { hi: "#6a6488", lo: "#08070f", rim: "#46d6c4" }),
 		green: stone("#5a9a4a"),
 		purple: stone("#7a5aa0"),
+		teal: stone("#2aa6ae"),
 		brown: stone("#8a5a32"),
 	},
 };
@@ -224,6 +227,7 @@ const BAZAAR = {
 		black: stone("#1e1d22", { hi: "#5a5a66", lo: "#050507", rim: "#d6ad4a" }),
 		green: stone("#1f8f6a"),
 		purple: stone("#6a3a9a"),
+		teal: stone("#2aa6ae"),
 		brown: stone("#8a5a32"),
 	},
 };
@@ -242,6 +246,7 @@ const ABYSS = {
 		black: stone("#1a2540", { hi: "#7088b0", lo: "#02040a", rim: "#7a9cff", glow: "#4f6bff", glowSize: 4 }),
 		green: stone("#3adf9a", { glow: "#3adf9a", glowSize: 3 }),
 		purple: stone("#a07aff", { glow: "#a07aff", glowSize: 3 }),
+		teal: stone("#2aa6ae", { glow: "#55c8d0", glowSize: 3 }),
 		brown: stone("#c08a5a"),
 	},
 };
@@ -260,6 +265,7 @@ const GEMS = {
 		black: stone("#1e1a30", { hi: "#7a6aa8", lo: "#05040c", rim: "#c8a6ff", glow: "#8a5cff", glowSize: 2.5 }),
 		green: stone("#14a864", { hi: "#9cf0c4", lo: "#04502c", rim: "#c0f6da", glow: "#2ce08a", glowSize: 2.5 }),
 		purple: stone("#9a58e0", { hi: "#e0c0ff", lo: "#3e1672", rim: "#e8d0ff", glow: "#b47aff", glowSize: 2.5 }),
+		teal: stone("#2aa6ae", { hi: "#b8f0f4", lo: "#0f474c", rim: "#c8f4f7", glow: "#b47aff", glowSize: 2.5 }),
 		brown: stone("#8a6a4a", { hi: "#d8b896", lo: "#3a2814", rim: "#e8d0b0" }),
 	},
 };
@@ -851,7 +857,7 @@ export function stoneMarks(shape, color, size) {
 			break;
 		}
 		case "celtic": {
-			const name = { red: "fehu", yellow: "sowilo", orange: "kenaz", white: "othala", blue: "isa", black: "algiz", green: "berkano", purple: "mannaz", brown: "ansuz" }[color] || "fehu";
+			const name = { red: "fehu", yellow: "sowilo", orange: "kenaz", white: "othala", blue: "isa", black: "algiz", green: "berkano", purple: "mannaz", brown: "ansuz", teal: "laguz" }[color] || "fehu";
 			const hh = r * 1.1;
 			const d = runePath(name, -hh / 4, -hh / 2, hh);
 			const sw = f1(Math.max(1.4, size * 0.055));

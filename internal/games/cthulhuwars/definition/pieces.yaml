@@ -354,3 +354,18 @@ hagarg-ryonis:
   code: Hr
   shape: hagarg-ryonis
   tags: [goo]
+un-men:
+  label: "Un-Men"
+  code: Um
+  shape: un-men
+  tags: [monster]
+reanimated:
+  label: "Reanimated"
+  code: Ra
+  shape: reanimated
+  tags: [monster]
+yothan:
+  label: "Yothan"
+  code: Yo
+  shape: yothan
+  tags: [terror]

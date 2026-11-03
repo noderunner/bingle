@@ -302,10 +302,42 @@ func (g *guide) guideCardsPrompt(p Prompt, legal []state.Move) ([]state.Move, bo
 }
 
 // scoreCardAct values the "card" Actions of the later Independents.
+func (e *eng) anGlyphDone(seat, a int) bool {
+	switch e.m.glyph[a] {
+	case "dragon":
+		return e.d.reqDone(seat, rqANDragon)
+	case "thorns":
+		return e.d.reqDone(seat, rqANThorns)
+	case "chevron":
+		return e.d.reqDone(seat, rqANChevron)
+	}
+	return e.d.reqDone(seat, rqANPlain)
+}
+
 func (g *guide) scoreCardAct(mv state.Move) float64 {
 	e, d, seat := g.e, g.e.d, g.seat
 	act, _ := cardActOf(mv.Piece)
 	switch act.ID {
+	case "cathedral":
+		a := e.areaIdx(string(mv.To))
+		s := 40.0
+		if !e.anGlyphDone(seat, a) {
+			s = 78 // it earns a spellbook
+		}
+		if d.Gates[e.areaID(a)] != 0 && d.Gates[e.areaID(a)] != seat {
+			s += 4
+		}
+		return s
+	case "an-lowest":
+		if d.bookCount(seat) >= 1 {
+			return 46
+		}
+		return 20
+	case "an-highest":
+		if d.bookCount(seat) >= 3 {
+			return 44
+		}
+		return 12
 	case "cosmic-web":
 		return 1000 // the game
 	case "spin":
@@ -359,6 +391,16 @@ func (g *guide) answerCardPrompt(p Prompt, legal []state.Move) []state.Move {
 		act, unit := cardActOf(mv.Piece)
 		s := 0.0
 		switch act.ID {
+		case "festival":
+			// The poorest in Doom gets the gift.
+			s = -float64(d.Doom[mv.Count])
+		case "demat-to":
+			// Next to nothing of the enemy's, somewhere the cult has a Gate.
+			a := e.areaIdx(string(mv.To))
+			s = -2 * float64(g.enemyRank(a))
+			if d.Gates[e.areaID(a)] == seat {
+				s += 6
+			}
 		case "blood":
 			// A Kill on the enemy, never on ourselves.
 			if mv.Count != seat {

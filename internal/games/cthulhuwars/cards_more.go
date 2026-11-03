@@ -218,6 +218,13 @@ var cardActs = []cardAct{
 	{ID: "planet-power", Label: "They earn 2 Power", Text: "Planetary Destruction: your opponent earns 2 Power."},
 	{ID: "final-ritual", Label: "Perform the Final Ritual", Text: "The Final Ritual: perform a Ritual of Annihilation now."},
 	{ID: "final-pass", Label: "No Ritual", Text: "The Final Ritual: do not perform a Ritual."},
+	{ID: "cathedral", Label: "Build a Cathedral", Text: "The Ancients: build a Cathedral where you have a Cultist, for 3 Power, or 1 if not adjacent to another. Its glyph earns a spellbook.", Area: true},
+	{ID: "an-lowest", Label: "Each enemy summons its cheapest Monster", Text: "The Ancients' requirement: each enemy Summons their lowest cost Monster at their Controlled Gate for free. It earns a spellbook."},
+	{ID: "an-highest", Label: "Each enemy summons its dearest Monster", Text: "The Ancients' requirement: each enemy Summons their highest cost Monster at their Controlled Gate for free. It earns a spellbook."},
+	{ID: "festival", Label: "Festival", Text: "This enemy gains 1 Power.", Seat: true},
+	{ID: "unholy", Label: "Unholy Ground", Text: "Give up the Cathedral in this area: an enemy Great Old One in the battle is Eliminated.", Area: true},
+	{ID: "demat", Label: "Dematerialization", Text: "Relocate your units from this area, all but the one on a Gate.", Area: true},
+	{ID: "demat-to", Label: "Relocate here", Text: "Dematerialization: your units arrive in this area.", Area: true},
 	{ID: "glacier", Label: "Place a Glacier", Text: "The Primeval Map: a Glacier covers this area with a Glacier glyph, and any Gate there is abandoned for good.", Area: true},
 }
 
@@ -235,9 +242,12 @@ func cardActOf(piece string) (cardAct, string) {
 	return cardActIndex[id], unit
 }
 
-// cardCost is the Power a "card" move costs.
-func cardCost(mv state.Move) int {
+// cardActCost is the Power a "card" move costs.
+func (e *eng) cardActCost(mv state.Move) int {
 	a, _ := cardActOf(mv.Piece)
+	if a.ID == "cathedral" && mv.To != "" {
+		return e.cathedralCost(e.areaIdx(string(mv.To)))
+	}
 	return a.Cost
 }
 
@@ -335,6 +345,16 @@ func (e *eng) cardPromptMoves(p Prompt) []state.Move {
 	one := func(piece string) state.Move { return state.Move{Action: actCard, Piece: piece} }
 	var out []state.Move
 	switch p.Why {
+	case "festival":
+		for _, o := range e.others(p.Seat) {
+			out = append(out, state.Move{Action: actCard, Piece: "festival", Count: o})
+		}
+	case "demat-to":
+		for a := range e.m.ids {
+			if e.m.ids[a] != board.PositionID(p.Area) {
+				out = append(out, state.Move{Action: actCard, Piece: "demat-to", To: e.m.ids[a]})
+			}
+		}
 	case "glacier":
 		if p.Left <= 0 {
 			return nil
@@ -426,6 +446,10 @@ func (e *eng) cardPromptMoves(p Prompt) []state.Move {
 // cardPromptText is what a "card" prompt asks.
 func (e *eng) cardPromptText(who string, p Prompt) string {
 	switch p.Why {
+	case "festival":
+		return fmt.Sprintf("%s: Festival — choose the enemy that gains 1 Power.", who)
+	case "demat-to":
+		return fmt.Sprintf("%s: Dematerialization — click the area your units go to.", who)
 	case "glacier":
 		return fmt.Sprintf("%s: click an area with a Glacier glyph for the next Glacier (%d left).", who, p.Left)
 	case "horde":
@@ -460,6 +484,13 @@ func (e *eng) cardPromptAnswer(p Prompt, mv state.Move) {
 	act, unit := cardActOf(mv.Piece)
 	seat := p.Seat
 	switch act.ID {
+	case "festival":
+		e.dropPrompt()
+		d.Power[mv.Count]++
+		e.say("Festival: %s gains 1 Power.", e.seatName(mv.Count))
+	case "demat-to":
+		e.dropPrompt()
+		e.dematerialize(seat, e.areaIdx(p.Area), e.areaIdx(string(mv.To)))
 	case "glacier":
 		e.glacierOn(e.areaIdx(string(mv.To)))
 		d.Prompts[0].Left--
@@ -562,9 +593,9 @@ func cardPromptAuto(p Prompt) bool { return p.Why != "blood" }
 // cardTurnMoves lists the "card" Actions seat may take in its turn.
 func (e *eng) cardTurnMoves(seat int) []state.Move {
 	d := e.d
-	var out []state.Move
+	out := e.ancientsTurnMoves(seat)
 	add := func(mv state.Move) {
-		if d.Power[seat] >= cardCost(mv) {
+		if d.Power[seat] >= e.cardActCost(mv) {
 			out = append(out, mv)
 		}
 	}
@@ -649,13 +680,30 @@ func (e *eng) cardTurnMoves(seat int) []state.Move {
 // action has routed the game onward itself.
 func (e *eng) cardTurnAction(seat int, mv state.Move) bool {
 	d := e.d
-	d.Power[seat] -= cardCost(mv)
+	d.Power[seat] -= e.cardActCost(mv)
 	act, _ := cardActOf(mv.Piece)
 	var to int
 	if mv.To != "" {
 		to = e.areaIdx(string(mv.To))
 	}
 	switch act.ID {
+	case "cathedral":
+		e.buildCathedral(seat, to)
+		e.mainTaken()
+		e.thenAfterPrompts("after")
+		e.beginPrompts("after")
+		return true
+	case "an-lowest", "an-highest":
+		e.giftMonsters(seat, act.ID == "an-highest")
+		if act.ID == "an-highest" {
+			e.fulfil(seat, rqANHighest)
+		} else {
+			e.fulfil(seat, rqANLowest)
+		}
+		e.mainTaken()
+		e.thenAfterPrompts("after")
+		e.beginPrompts("after")
+		return true
 	case "spin":
 		a, _ := e.gooArea(seat, uAtlach)
 		d.Webs = append(d.Webs, e.areaID(a))
@@ -732,6 +780,10 @@ func (e *eng) cardArrived(seat, a int, typ string) {
 		if e.pool(seat, uGhast) > 0 {
 			e.d.Prompts = append(e.d.Prompts, cardPrompt("horde", seat, 0, 0))
 		}
+	case uUnMen:
+		if e.is(seat, facAN) && e.d.hasBook(seat, bkFestival) {
+			e.d.Prompts = append(e.d.Prompts, cardPrompt("festival", seat, 0, 0))
+		}
 	case uSatyr:
 		if e.place(a, seat, uCultist) {
 			e.say("Fecund: an Acolyte of %s comes with the Satyr in %s.", e.seatName(seat), e.areaName(a))
@@ -757,6 +809,9 @@ func (e *eng) bloodthirst(b *Battle) {
 func (e *eng) captureRank(a, seat int) int {
 	if e.classCount(a, seat, classGOO) > 0 {
 		return 2
+	}
+	if e.brainless(a, seat) {
+		return 0
 	}
 	if e.classCount(a, seat, classMonster)+e.classCount(a, seat, classTerror)-e.count(a, seat, uGug) > 0 {
 		return 1

@@ -1088,7 +1088,7 @@ const GLYPHS = {
 // cult begins, and — for the Windwalker and the Sleeper — the areas marked with
 // their sigil. The drawings come from cw-glyphs.js (traced from the wiki's
 // icons); a cult's table colour tints the ring round its badge.
-const FACTION_COLORS = { gc: "green", cc: "blue", bg: "red", ys: "yellow", ww: "white", sl: "orange", ow: "purple", tt: "brown" };
+const FACTION_COLORS = { gc: "green", cc: "blue", bg: "red", ys: "yellow", ww: "white", sl: "orange", ow: "purple", tt: "brown", an: "teal" };
 
 /** A faction's glyph drawn at the origin, `size` units across. */
 export function glyphShape(key, size, cls = "area-sigil") {
@@ -1406,7 +1406,7 @@ function ensureMapDefs() {
 	for (const id of ["c-na", "c-sa", "c-eu", "c-me", "c-af", "c-as", "c-au", "c-ice", "desecrated"]) {
 		defs.append(mk("radialGradient", { id: `g-${id}`, cx: 0.5, cy: 0.42, r: 0.82 }, ...stops(`gs-${id}`, 2)));
 	}
-	for (const c of ["green", "blue", "red", "yellow", "orange", "purple", "brown", "black", "white"]) {
+	for (const c of ["green", "blue", "red", "yellow", "orange", "purple", "brown", "teal", "black", "white"]) {
 		defs.append(mk("radialGradient", { id: `tg-${c}`, cx: 0.36, cy: 0.3, r: 0.85 }, ...stops(`tgs-${c}`, 3)));
 	}
 	const holder = s("svg", { id: "map-defs", "data-persist": "1", width: 0, height: 0, "aria-hidden": "true", style: "position:absolute;width:0;height:0;overflow:hidden" }, defs);
@@ -1491,6 +1491,7 @@ function renderAreaMap(host, info, view, handlers) {
 		}
 		if (rowBadges.includes("desecrated")) chips.push({ special: "desecrated", def: (legend.badges || {}).desecrated || {} });
 		if (rowBadges.includes("iceage")) chips.push({ special: "iceage", def: (legend.badges || {}).iceage || {} });
+		if (rowBadges.includes("cathedral")) chips.push({ special: "desecrated", badge: "cathedral", def: { label: "Cathedral (The Ancients)", glyph: "†" } });
 		if (rowBadges.includes("glacier")) chips.push({ special: "desecrated", badge: "glacier", def: { label: "Glacier: any Gate here is abandoned for good", glyph: "❄" } });
 		if (rowBadges.includes("web")) chips.push({ special: "desecrated", badge: "web", def: { label: "Web Token (Atlach-Nacha)", glyph: "✳" } });
 		for (const grp of groups) if (shownUnit(grp.piece, grp.color)) chips.push(grp);

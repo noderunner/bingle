@@ -10,6 +10,7 @@ export const FACTIONS = {
 	sl: { name: "Sleeper", color: "orange" },
 	ow: { name: "Opener of the Way", color: "purple" },
 	tt: { name: "Tcho-Tcho", color: "brown" },
+	an: { name: "The Ancients", color: "teal" },
 };
 
 export const FACTION_KEYS = Object.keys(FACTIONS);

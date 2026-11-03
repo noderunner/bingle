@@ -36,6 +36,10 @@
       label: Tcho-Tcho
       color: brown
       text: 'Expansion: High Priests, Proto-Shoggoths and Ubbo-Sathla, whose Growth counter feeds on the Doom phases.'
+    - id: an
+      label: The Ancients
+      color: teal
+      text: 'Expansion: Un-Men, Reanimated and Yothans, and no Great Old One at all. Builds Cathedrals and leans on its enemies.'
   default: [gc, cc, bg, ys, ww]
 - id: high-priests
   label: High Priests
