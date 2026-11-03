@@ -1491,6 +1491,8 @@ function renderAreaMap(host, info, view, handlers) {
 		}
 		if (rowBadges.includes("desecrated")) chips.push({ special: "desecrated", def: (legend.badges || {}).desecrated || {} });
 		if (rowBadges.includes("iceage")) chips.push({ special: "iceage", def: (legend.badges || {}).iceage || {} });
+		if (rowBadges.includes("glacier")) chips.push({ special: "desecrated", badge: "glacier", def: { label: "Glacier: any Gate here is abandoned for good", glyph: "❄" } });
+		if (rowBadges.includes("web")) chips.push({ special: "desecrated", badge: "web", def: { label: "Web Token (Atlach-Nacha)", glyph: "✳" } });
 		for (const grp of groups) if (shownUnit(grp.piece, grp.color)) chips.push(grp);
 
 		// The name, on two lines when the area is too narrow for one.
@@ -1685,7 +1687,7 @@ function renderAreaMap(host, info, view, handlers) {
 					if (chip.special === "desecrated") {
 						const mark = s(
 							"g",
-							{ class: "desecration-chip", transform: at, "data-badge": "desecrated", "data-position": area.id },
+							{ class: "desecration-chip", transform: at, "data-badge": chip.badge || "desecrated", "data-position": area.id },
 							s("title", {}, chip.def.label || "Desecrated"),
 							s("rect", { x: -S * 0.4, y: -S * 0.4, width: S * 0.8, height: S * 0.8, rx: S * 0.18, transform: "rotate(45)" }),
 							s("text", { x: 0, y: 1, "text-anchor": "middle", "dominant-baseline": "central", "font-size": S * 0.62 }, chip.def.glyph || "✠")

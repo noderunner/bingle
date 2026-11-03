@@ -116,6 +116,8 @@ func (e *eng) combatOf(seat, a int, b *Battle, foe int) int {
 	// The neutral Monsters and Terrors of the Loyalty Cards.
 	total += 2*n(uShambler) + n(uStarVamp) + 2*n(uElderThing) - n(uServitor)
 	total += 2*n(uGnorri) + 2*n(uShantak) + n(uVoonith) + 4*n(uHound)
+	total += n(uLeng) + 3*n(uGug) + n(uSatyr) + n(uMercury) + n(uVenus) + n(uAsteroid)
+	total += 3*n(uYith) + 5*n(uDhole) + n(uQuachil) + 3*n(uNeptune)
 	// Miri Nigri: Chaugnar Faugn adds 3 dice to a battle at a Gate its owner controls.
 	if e.miriNigri(seat, a) {
 		total += 3
@@ -130,6 +132,9 @@ func (e *eng) combatOf(seat, a int, b *Battle, foe int) int {
 // area a against foe (b may be nil outside a battle).
 func (e *eng) gooDice(seat int, typ string, a int, b *Battle, foe int) int {
 	d := e.d
+	if b != nil && b.Unity == typ && b.UnitySeat == seat {
+		return 0
+	}
 	switch typ {
 	case uCthulhu:
 		return 6
@@ -174,6 +179,27 @@ func (e *eng) gooDice(seat int, typ string, a int, b *Battle, foe int) int {
 		return 3
 	case uYig:
 		return 2
+	case uAtlach, uByatis:
+		return 4
+	case uBokrug, uTulzscha, uYgolonac:
+		return 1
+	case uDagon:
+		if e.m.ocean[a] {
+			return 6
+		}
+		return 2
+	case uGhatan:
+		if foe == 0 {
+			return 0
+		}
+		return e.cultistsInPlay(foe)
+	case uNyogtha:
+		if b == nil || b.Att == seat {
+			return 4
+		}
+		return 1
+	case uGlaaki:
+		return e.pool(seat, uCultist)
 	case uHydra:
 		// 6 minus the enemy units in the Area, at least 1.
 		enemies := 0
@@ -558,6 +584,11 @@ func (e *eng) rollBattle() {
 	d := e.d
 	b := d.Bat
 	a := e.areaIdx(b.Area)
+	e.cosmicUnity(b)
+	for _, s := range []int{b.Att, b.Def} {
+		b.Quachil[s] = e.battleUnits(b, s, uQuachil) > 0
+		b.FoeGOO[s] = e.classBattle(b, b.foeOf(s), classGOO) > 0
+	}
 	last := &LastBattle{Area: b.Area, Att: b.Att, Def: b.Def}
 	for _, s := range []int{b.Att, b.Def} {
 		other := b.foeOf(s)
@@ -613,6 +644,11 @@ func (e *eng) tallyBattle() {
 			e.say("Vicious: %s's %s add %s (%d in all).", e.seatName(s), plural(v, "Voonith", "Vooniths"), plural(v-kills, "Kill", "Kills"), v)
 			kills = v
 		}
+		// Hagarg Ryonis rolls nothing and adds 3 Pains.
+		if e.battleUnits(b, s, uHagarg) > 0 {
+			pains += 3
+			e.say("Hagarg Ryonis adds 3 Pains for %s.", e.seatName(s))
+		}
 		b.Kills[other] = kills
 		b.Pains[other] = pains
 		last.Kills[other] = kills
@@ -631,6 +667,12 @@ func (e *eng) tallyBattle() {
 		}
 	}
 	b.Rolled = true
+	e.bloodthirst(b)
+	if len(d.Prompts) > 0 {
+		e.thenAfterPrompts("battle-tallied")
+		e.beginPrompts("battle-tallied")
+		return
+	}
 	e.startAssign()
 }
 
@@ -746,6 +788,12 @@ func (e *eng) afterKills() {
 	b.Assigned = true
 	b.Step = "post"
 	e.snakebite(b)
+	// Orifices: Y'Golonac replaces a surviving enemy, if there is one.
+	if b.Orifice != 0 {
+		d.Prompts = append(d.Prompts, cardPrompt("orifice", b.Orifice, b.foeOf(b.Orifice), 0))
+		b.Orifice = 0
+	}
+	e.dustPrompts(b)
 	// Berserkergang: for each Gnoph-Keh that took a Kill the enemy
 	// eliminates a Monster or Cultist of its own — the card names no area,
 	// so anywhere on the map, and never a Great Old One.
@@ -756,11 +804,11 @@ func (e *eng) afterKills() {
 			d.Prompts = append(d.Prompts, Prompt{Kind: "lose", Seat: foe, Why: "berserkergang", Left: b.Berserk, By: ww, Only: e.berserkTargets(foe)})
 		}
 		b.Berserk = 0
-		if len(d.Prompts) > 0 {
-			e.thenAfterPrompts("battle-post")
-			e.beginPrompts("battle-post")
-			return
-		}
+	}
+	if len(d.Prompts) > 0 {
+		e.thenAfterPrompts("battle-post")
+		e.beginPrompts("battle-post")
+		return
 	}
 	e.advancePost(b.Att, true)
 }
@@ -942,6 +990,17 @@ func (e *eng) killUnit(seat int, typ string, killer int) {
 	e.say("%s's %s is killed.", e.seatName(seat), unitNameOf(typ))
 	e.eliminate(a, seat, typ, killer)
 	b.Slain[killer]++
+	b.Lost = append(b.Lost, PU{Seat: seat, Type: typ})
+	switch typ {
+	case uYgolonac:
+		b.Orifice = seat
+	case uGobogeg:
+		b.AllPain = true
+	case uNeptune:
+		if d.Power[seat] >= e.ritualCostFor(seat) {
+			d.Pending = append(d.Pending, cardPrompt("final", seat, 0, 0))
+		}
+	}
 	if isCultist(typ) {
 		b.CultistKills[seat]++
 	}
@@ -1200,6 +1259,7 @@ func (e *eng) startRetreat() {
 	b := d.Bat
 	b.Step = "retreat"
 	b.Retreater = 0
+	e.gobogegPains(b)
 	// A seat whose pained units cannot retreat loses one of them instead.
 	for _, s := range []int{b.Att, b.Def} {
 		var kinds []string
@@ -1382,6 +1442,7 @@ func (e *eng) battleFinish() {
 	}
 	gc := e.seatOf(facGC)
 	d.Bat = nil
+	e.battleFinishCards(b)
 	// The Sleeper's requirement: six dice or more in one battle.
 	if sl := e.seatOf(facSL); sl != 0 && b.SixDice[sl] {
 		e.fulfil(sl, rqSLRoll)

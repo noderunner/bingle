@@ -239,3 +239,118 @@ high-priest:
   code: HP
   shape: high-priest
   tags: [cultist]
+ghast:
+  label: "Ghast"
+  code: Gh
+  shape: ghast
+  tags: [monster]
+leng-spider:
+  label: "Leng Spider"
+  code: Ls
+  shape: leng-spider
+  tags: [monster]
+gug:
+  label: "Gug"
+  code: Gg
+  shape: gug
+  tags: [monster]
+great-race-of-yith:
+  label: "Great Race of Yith"
+  code: Yi
+  shape: great-race-of-yith
+  tags: [terror]
+dhole:
+  label: "Dhole"
+  code: Dh
+  shape: dhole
+  tags: [terror]
+quachil-uttaus:
+  label: "Quachil Uttaus"
+  code: Qu
+  shape: quachil-uttaus
+  tags: [terror]
+cat-from-mercury:
+  label: "Cat from Mercury"
+  code: Cm
+  shape: cat-from-mercury
+  tags: [monster]
+cat-from-venus:
+  label: "Cat from Venus"
+  code: Cv
+  shape: cat-from-venus
+  tags: [monster]
+asteroid-cat:
+  label: "Asteroid Cat"
+  code: Ac
+  shape: asteroid-cat
+  tags: [monster]
+cat-from-neptune:
+  label: "Cat from Neptune"
+  code: Cn
+  shape: cat-from-neptune
+  tags: [terror]
+satyr:
+  label: "Satyr"
+  code: Sy
+  shape: satyr
+  tags: [monster]
+atlach-nacha:
+  label: "Atlach-Nacha"
+  code: An
+  shape: atlach-nacha
+  tags: [goo]
+bokrug:
+  label: "Bokrug"
+  code: Bk
+  shape: bokrug
+  tags: [goo]
+father-dagon:
+  label: "Father Dagon"
+  code: Fd
+  shape: father-dagon
+  tags: [goo]
+ghatanothoa:
+  label: "Ghatanothoa"
+  code: Gt
+  shape: ghatanothoa
+  tags: [goo]
+gobogeg:
+  label: "Gobogeg"
+  code: Gb
+  shape: gobogeg
+  tags: [goo]
+byatis:
+  label: "Byatis"
+  code: By
+  shape: byatis
+  tags: [goo]
+nyogtha:
+  label: "Nyogtha"
+  code: Ny
+  shape: nyogtha
+  tags: [goo]
+tulzscha:
+  label: "Tulzscha"
+  code: Tz
+  shape: tulzscha
+  tags: [goo]
+glaaki:
+  label: "Gla'aki"
+  code: Gl
+  shape: glaaki
+  tags: [goo]
+daoloth:
+  label: "Daoloth"
+  code: Da
+  shape: daoloth
+  tags: [goo]
+ygolonac:
+  label: "Y'Golonac"
+  code: Yg
+  shape: ygolonac
+  tags: [goo]
+hagarg-ryonis:
+  label: "Hagarg Ryonis"
+  code: Hr
+  shape: hagarg-ryonis
+  tags: [goo]

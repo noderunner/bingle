@@ -74,6 +74,8 @@ func (e *eng) awakenCost(seat int, typ string) int {
 		return 4
 	case uCthugha:
 		return 6
+	case uAtlach, uBokrug, uDagon, uGhatan, uGobogeg, uByatis, uNyogtha, uTulzscha, uGlaaki, uDaoloth, uYgolonac, uHagarg:
+		return cards[cardIndex(typ)].Unit.Cost
 	case uUbbo:
 		// Free in the Doom phase, 6 Power in the Action phase.
 		if e.d.Phase == phaseDoom {
@@ -231,6 +233,9 @@ func (e *eng) moveCost(seat int, mv state.Move) int {
 		c = 1
 	case actFilth, actSting, actZygote:
 		c = 1
+	case actCard:
+		c = cardCost(mv)
+		tax = false
 	case actDreams, actGhroth:
 		c = 2
 	case actBeyond, actIdolatry:
@@ -429,12 +434,14 @@ func (e *eng) battleMoves(seat int) []state.Move {
 func (e *eng) captureMoves(seat int) []state.Move {
 	var out []state.Move
 	for a := range e.m.ids {
-		mine := e.protectionRank(a, seat)
-		if mine == 0 {
+		mine := e.captureRank(a, seat)
+		// Possession: the Great Race of Yith captures whatever guards the Cultist.
+		yith := e.count(a, seat, uYith) > 0
+		if mine == 0 && !yith {
 			continue
 		}
 		for _, enemy := range e.others(seat) {
-			if e.protectionRank(a, enemy) >= mine {
+			if e.protectionRank(a, enemy) >= mine && !yith {
 				continue
 			}
 			base := state.Move{Action: actCapture, To: e.m.ids[a], Count: enemy}
@@ -443,7 +450,7 @@ func (e *eng) captureMoves(seat int) []state.Move {
 			}
 			// Ferox: while Ithaqua is in play only a Great Old One can capture
 			// the Windwalker's Cultists.
-			safe := e.is(enemy, facWW) && e.onMap(enemy, uIthaqua) > 0 && mine < 2
+			safe := e.is(enemy, facWW) && e.onMap(enemy, uIthaqua) > 0 && mine < 2 && !yith
 			if !safe {
 				if n := e.count(a, enemy, uCultist); n > 0 {
 					if n > 1 && e.gateHolderOf(a, enemy) == uCultist {
@@ -577,8 +584,15 @@ func (e *eng) unitMoves(seat int, moved []string) []state.Move {
 			n := e.cnt[e.idx(a, seat, t)]
 			// The Hound of Tindalos moves only with the others (houndHops) and the
 			// Filth never moves at all.
-			if n <= 0 || typ == uHound || typ == uFilth {
+			if n <= 0 || typ == uHound || typ == uFilth || typ == uByatis {
 				continue
+			}
+			// A Mummified Acolyte cannot use the Move Action.
+			if typ == uCultist {
+				n -= e.mummies(a, seat)
+				if n <= 0 {
+					continue
+				}
 			}
 			// Units that arrived during this action may not move again.
 			arrived := 0
@@ -826,6 +840,7 @@ func (e *eng) doTurn(seat int, mv state.Move) {
 		default:
 			e.place(to, seat, mv.Piece)
 			e.say("%s summons %s in %s (%d Power).", e.seatName(seat), article(unitNameOf(mv.Piece)), e.areaName(to), cost)
+			e.cardArrived(seat, to, mv.Piece)
 		}
 		if !e.ability(seat, abFertility) {
 			e.mainTaken()
@@ -843,10 +858,12 @@ func (e *eng) doTurn(seat int, mv state.Move) {
 				e.say("Immortal: %s gains an Elder Sign for awakening %s.", e.seatName(seat), unitNameOf(mv.Piece))
 				e.gainSign(seat)
 			}
+			e.bookOfLaw(seat)
 			e.mainTaken()
 			break
 		}
 		e.awaken(seat, mv.Piece, to)
+		e.bookOfLaw(seat)
 	case actGate:
 		e.pay(seat, mv)
 		e.occupy(to, seat, "")
@@ -888,6 +905,10 @@ func (e *eng) doTurn(seat int, mv state.Move) {
 		return
 	case actRansom:
 		e.ransom(seat, mv)
+	case actCard:
+		if e.cardTurnAction(seat, mv) {
+			return
+		}
 	case actFilth:
 		e.filth(seat, to)
 	case actSting:
@@ -1296,6 +1317,7 @@ func (e *eng) capture(seat, enemy, a int, piece string) {
 	} else {
 		e.syncGate(a)
 	}
+	e.honeymoon(seat, enemy, a, piece)
 	e.passion(enemy)
 	if e.is(seat, facCC) {
 		e.fulfil(seat, rqCCCapture)

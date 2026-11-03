@@ -1,0 +1,457 @@
+# Part of cthulhuwars.yaml, included by name. Written by scripts/cwprimeval.py.
+id: cthulhu-wars-primeval-5p
+name: Cthulhu Wars (5 players, Primeval map)
+patch:
+  board:
+    style: areas
+    canvas: {width: 1000, height: 500}
+    positions:
+      - id: antarctica
+        name: Antarctica
+        tags: [land, c-ice, glacier]
+        anchor: [465.2, 428.9]
+        polygons:
+          - - [692.8, 499.7]
+            - [341.3, 499.7]
+            - [340.9, 499.3]
+            - [436.0, 387.9]
+            - [501.4, 405.7]
+            - [557.2, 452.0]
+            - [584.5, 465.6]
+      - id: atlantis
+        name: Atlantis
+        tags: [land, c-me, glyph-thorns]
+        anchor: [555.4, 199.6]
+        polygons:
+          - - [498.6, 308.9]
+            - [442.4, 296.3]
+            - [469.7, 272.5]
+            - [490.1, 225.5]
+            - [476.5, 143.1]
+            - [500.3, 129.4]
+            - [509.5, 103.2]
+            - [525.2, 123.0]
+            - [599.5, 142.7]
+            - [643.4, 173.7]
+            - [583.8, 257.8]
+            - [545.0, 272.1]
+      - id: central-mu
+        name: Central Mu
+        tags: [land, c-me, glyph-dragon]
+        anchor: [785.1, 274.7]
+        polygons:
+          - - [752.0, 334.1]
+            - [721.7, 299.7]
+            - [708.1, 272.5]
+            - [701.3, 231.6]
+            - [722.1, 217.6]
+            - [786.8, 234.7]
+            - [838.6, 267.4]
+            - [855.6, 266.0]
+            - [862.1, 270.4]
+            - [860.4, 276.9]
+            - [816.8, 306.9]
+      - id: east-lemuria
+        name: East Lemuria
+        tags: [land, c-sa, glyph-chevron]
+        anchor: [268.1, 350.5]
+        polygons:
+          - - [209.1, 442.4]
+            - [193.8, 360.4]
+            - [189.7, 275.2]
+            - [230.2, 262.6]
+            - [238.4, 255.1]
+            - [272.5, 272.1]
+            - [340.9, 340.6]
+            - [347.8, 374.7]
+            - [299.7, 402.2]
+            - [266.3, 405.0]
+      - id: hyperborea
+        name: Hyperborea
+        tags: [land, c-eu, glyph-chevron, glacier]
+        anchor: [133.9, 93.5]
+        polygons:
+          - - [126.0, 157.7]
+            - [84.8, 132.8]
+            - [71.2, 102.9]
+            - [70.2, 67.8]
+            - [115.8, 59.6]
+            - [148.5, 84.1]
+            - [129.1, 47.7]
+            - [143.1, 20.1]
+            - [197.5, 20.1]
+            - [253.1, 46.3]
+            - [208.4, 79.4]
+            - [172.3, 123.6]
+      - id: iapetus-ocean
+        name: Iapetus Ocean
+        tags: [ocean, pacific, glacier]
+        anchor: [28.9, 370.2]
+        polygons:
+          - - [340.6, 499.7]
+            - [0.0, 499.7]
+            - [-0.3, 231.6]
+            - [91.6, 267.7]
+            - [54.2, 333.8]
+            - [65.7, 353.5]
+            - [50.1, 386.9]
+            - [44.3, 426.1]
+            - [68.1, 432.9]
+            - [151.2, 426.1]
+            - [207.8, 443.1]
+            - [265.0, 405.7]
+            - [284.1, 403.6]
+            - [320.2, 436.3]
+            - [377.7, 459.8]
+          - - [999.3, 498.3]
+            - [987.4, 435.3]
+            - [953.3, 341.3]
+            - [983.3, 248.0]
+            - [999.3, 235.4]
+      - id: lomar
+        name: Lomar
+        tags: [land, c-sa, glacier]
+        anchor: [507.7, 69.2]
+        polygons:
+          - - [508.2, 103.2]
+            - [501.7, 89.9]
+            - [420.6, 0.0]
+            - [598.8, -0.3]
+            - [543.9, 48.4]
+            - [515.3, 100.1]
+      - id: lower-mu
+        name: Lower Mu
+        tags: [land, c-af, glyph-dragon, glacier]
+        anchor: [847.5, 320.4]
+        polygons:
+          - - [878.7, 371.6]
+            - [803.8, 361.4]
+            - [752.4, 333.8]
+            - [816.8, 306.9]
+            - [860.4, 276.9]
+            - [862.4, 270.8]
+            - [923.4, 333.8]
+      - id: mezcalera-ocean
+        name: Mezcalera Ocean
+        tags: [ocean, atlantic]
+        anchor: [321.5, 152.2]
+        polygons:
+          - - [295.0, 294.6]
+            - [272.5, 272.1]
+            - [238.4, 255.1]
+            - [230.2, 262.6]
+            - [191.4, 274.9]
+            - [169.6, 268.1]
+            - [126.0, 226.5]
+            - [117.5, 228.2]
+            - [92.0, 268.1]
+            - [0.7, 231.9]
+            - [-0.3, 0.0]
+            - [142.7, 0.0]
+            - [146.8, 19.8]
+            - [129.1, 47.7]
+            - [148.2, 83.1]
+            - [115.8, 59.6]
+            - [70.2, 67.8]
+            - [71.2, 102.9]
+            - [85.1, 133.2]
+            - [125.3, 157.7]
+            - [173.7, 203.3]
+            - [265.7, 142.7]
+            - [272.5, 146.8]
+            - [381.5, 140.0]
+            - [407.7, 171.0]
+            - [370.9, 197.5]
+            - [364.1, 233.7]
+            - [369.6, 243.9]
+            - [361.0, 241.5]
+          - - [985.7, 244.2]
+            - [971.0, 205.0]
+            - [984.7, 104.2]
+            - [971.4, -0.3]
+            - [999.7, 0.0]
+            - [999.7, 235.0]
+      - id: mirovia-ocean
+        name: Mirovia Ocean
+        tags: [ocean, pacific, glacier]
+        anchor: [828.8, 124.2]
+        polygons:
+          - - [855.6, 266.0]
+            - [838.2, 267.0]
+            - [897.8, 219.7]
+            - [920.0, 190.7]
+            - [913.1, 146.5]
+            - [844.7, 146.1]
+            - [769.8, 152.9]
+            - [721.7, 201.0]
+            - [721.7, 218.0]
+            - [702.3, 231.3]
+            - [680.9, 155.3]
+            - [672.7, 102.2]
+            - [678.1, 38.1]
+            - [688.7, -0.3]
+            - [971.0, 0.0]
+            - [984.7, 100.1]
+            - [971.0, 205.0]
+            - [985.4, 244.6]
+            - [944.8, 260.6]
+            - [885.6, 234.7]
+      - id: ocean-trench
+        name: Ocean Trench
+        tags: [ocean, indian]
+        anchor: [654.8, 216.3]
+        polygons:
+          - - [655.3, 355.2]
+            - [626.4, 320.2]
+            - [626.4, 299.7]
+            - [615.5, 284.1]
+            - [599.5, 264.0]
+            - [584.1, 257.5]
+            - [642.7, 175.1]
+            - [663.1, 103.5]
+            - [672.3, 101.8]
+            - [708.1, 273.2]
+            - [667.9, 320.2]
+      - id: paratethys-ocean
+        name: Paratethys Ocean
+        tags: [ocean, indian, glacier]
+        anchor: [396.7, 78.7]
+        polygons:
+          - - [408.0, 170.6]
+            - [381.5, 140.0]
+            - [272.5, 146.8]
+            - [266.0, 142.4]
+            - [286.4, 129.4]
+            - [303.5, 89.2]
+            - [300.1, 68.1]
+            - [197.5, 20.1]
+            - [147.1, 20.1]
+            - [142.7, 0.0]
+            - [420.3, -0.3]
+            - [501.7, 89.9]
+            - [506.5, 105.6]
+            - [498.0, 131.1]
+      - id: poseidonis
+        name: Poseidonis
+        tags: [land, c-af, glyph-thorns, glacier]
+        anchor: [602.6, 74.0]
+        polygons:
+          - - [643.7, 172.7]
+            - [599.5, 142.7]
+            - [525.2, 123.0]
+            - [508.5, 102.9]
+            - [515.3, 100.1]
+            - [543.9, 48.4]
+            - [599.5, -0.3]
+            - [688.4, 0.0]
+            - [678.1, 38.1]
+            - [673.4, 99.5]
+            - [663.1, 103.5]
+      - id: rheic-ocean
+        name: Rheic Ocean
+        tags: [ocean, atlantic, glacier]
+        anchor: [751.0, 365.5]
+        polygons:
+          - - [999.3, 499.7]
+            - [693.5, 499.7]
+            - [599.8, 467.3]
+            - [654.0, 463.6]
+            - [695.2, 436.0]
+            - [654.3, 355.6]
+            - [667.9, 320.2]
+            - [708.4, 272.8]
+            - [721.7, 299.7]
+            - [752.7, 334.8]
+            - [803.8, 361.4]
+            - [881.5, 369.6]
+            - [923.4, 333.8]
+            - [855.9, 266.3]
+            - [885.6, 234.7]
+            - [944.8, 260.6]
+            - [984.0, 247.3]
+            - [953.3, 341.3]
+            - [987.4, 435.3]
+      - id: rutas
+        name: Rutas
+        tags: [land, c-eu, glyph-thorns]
+        anchor: [566.3, 355.6]
+        polygons:
+          - - [558.6, 452.0]
+            - [499.0, 404.6]
+            - [514.0, 360.4]
+            - [498.3, 309.3]
+            - [545.0, 272.1]
+            - [584.5, 257.8]
+            - [599.5, 264.0]
+            - [626.4, 299.7]
+            - [623.6, 350.8]
+            - [585.5, 401.9]
+      - id: shasta
+        name: Shasta
+        tags: [land, c-af, glyph-chevron]
+        anchor: [131.6, 304.5]
+        polygons:
+          - - [158.0, 364.1]
+            - [88.6, 347.1]
+            - [66.1, 352.5]
+            - [54.2, 333.8]
+            - [119.2, 227.2]
+            - [128.1, 227.9]
+            - [163.5, 264.6]
+            - [189.7, 275.2]
+            - [193.8, 361.0]
+      - id: south-lemuria
+        name: South Lemuria
+        tags: [land, c-as, glyph-chevron, glacier]
+        anchor: [124.5, 406.5]
+        polygons:
+          - - [207.8, 443.1]
+            - [151.2, 426.1]
+            - [68.1, 432.9]
+            - [44.3, 426.1]
+            - [50.1, 386.9]
+            - [65.7, 352.9]
+            - [88.6, 347.1]
+            - [147.8, 364.1]
+            - [194.1, 360.7]
+      - id: terra-australis
+        name: Terra Australis
+        tags: [land, c-au, glyph-thorns, glacier]
+        anchor: [635.0, 379.1]
+        polygons:
+          - - [654.0, 463.6]
+            - [584.5, 465.6]
+            - [558.2, 452.3]
+            - [585.5, 401.9]
+            - [623.0, 354.2]
+            - [626.7, 320.5]
+            - [655.0, 356.3]
+            - [695.2, 436.0]
+      - id: tethys-ocean
+        name: Tethys Ocean
+        tags: [ocean, indian]
+        anchor: [426.9, 350.5]
+        polygons:
+          - - [378.1, 459.5]
+            - [320.2, 436.3]
+            - [284.4, 404.0]
+            - [299.7, 402.2]
+            - [347.8, 374.7]
+            - [340.9, 340.6]
+            - [295.3, 294.3]
+            - [361.0, 241.5]
+            - [442.8, 296.7]
+            - [498.0, 308.9]
+            - [514.0, 360.4]
+            - [498.6, 405.0]
+            - [436.0, 387.9]
+      - id: thule
+        name: Thule
+        tags: [land, c-as, glyph-chevron]
+        anchor: [228.0, 126.5]
+        polygons:
+          - - [173.7, 203.3]
+            - [125.7, 158.0]
+            - [172.3, 123.6]
+            - [208.4, 79.4]
+            - [253.4, 46.0]
+            - [299.7, 67.8]
+            - [303.5, 89.2]
+            - [286.4, 129.4]
+      - id: upper-mu
+        name: Upper Mu
+        tags: [land, c-na, glyph-dragon, glacier]
+        anchor: [813.9, 209.7]
+        polygons:
+          - - [838.6, 266.7]
+            - [786.8, 234.7]
+            - [722.8, 218.3]
+            - [721.7, 201.0]
+            - [769.8, 152.9]
+            - [912.8, 146.1]
+            - [920.0, 190.7]
+            - [897.8, 219.7]
+      - id: west-atlantis
+        name: West Atlantis
+        tags: [land, c-na, glyph-thorns]
+        anchor: [427.9, 212.6]
+        polygons:
+          - - [442.8, 296.0]
+            - [401.9, 272.8]
+            - [369.6, 244.6]
+            - [364.1, 233.7]
+            - [370.2, 199.6]
+            - [408.7, 170.0]
+            - [476.2, 143.4]
+            - [490.1, 225.5]
+            - [469.7, 272.5]
+    edges:
+      - {from: antarctica, to: iapetus-ocean}
+      - {from: antarctica, to: rheic-ocean}
+      - {from: antarctica, to: rutas}
+      - {from: antarctica, to: terra-australis}
+      - {from: antarctica, to: tethys-ocean}
+      - {from: atlantis, to: ocean-trench}
+      - {from: atlantis, to: paratethys-ocean}
+      - {from: atlantis, to: poseidonis}
+      - {from: atlantis, to: rutas}
+      - {from: atlantis, to: tethys-ocean}
+      - {from: atlantis, to: west-atlantis}
+      - {from: central-mu, to: lower-mu}
+      - {from: central-mu, to: mirovia-ocean}
+      - {from: central-mu, to: ocean-trench}
+      - {from: central-mu, to: rheic-ocean}
+      - {from: central-mu, to: upper-mu}
+      - {from: east-lemuria, to: iapetus-ocean}
+      - {from: east-lemuria, to: mezcalera-ocean}
+      - {from: east-lemuria, to: shasta}
+      - {from: east-lemuria, to: south-lemuria}
+      - {from: east-lemuria, to: tethys-ocean}
+      - {from: hyperborea, to: mezcalera-ocean}
+      - {from: hyperborea, to: paratethys-ocean}
+      - {from: hyperborea, to: thule}
+      - {from: iapetus-ocean, to: mezcalera-ocean}
+      - {from: iapetus-ocean, to: mirovia-ocean}
+      - {from: iapetus-ocean, to: rheic-ocean}
+      - {from: iapetus-ocean, to: shasta}
+      - {from: iapetus-ocean, to: south-lemuria}
+      - {from: iapetus-ocean, to: tethys-ocean}
+      - {from: lomar, to: paratethys-ocean}
+      - {from: lomar, to: poseidonis}
+      - {from: lower-mu, to: rheic-ocean}
+      - {from: mezcalera-ocean, to: mirovia-ocean}
+      - {from: mezcalera-ocean, to: paratethys-ocean}
+      - {from: mezcalera-ocean, to: shasta}
+      - {from: mezcalera-ocean, to: tethys-ocean}
+      - {from: mezcalera-ocean, to: thule}
+      - {from: mezcalera-ocean, to: west-atlantis}
+      - {from: mirovia-ocean, to: ocean-trench}
+      - {from: mirovia-ocean, to: poseidonis}
+      - {from: mirovia-ocean, to: rheic-ocean}
+      - {from: mirovia-ocean, to: upper-mu}
+      - {from: ocean-trench, to: poseidonis}
+      - {from: ocean-trench, to: rheic-ocean}
+      - {from: ocean-trench, to: rutas}
+      - {from: ocean-trench, to: terra-australis}
+      - {from: paratethys-ocean, to: thule}
+      - {from: paratethys-ocean, to: west-atlantis}
+      - {from: rheic-ocean, to: terra-australis}
+      - {from: rutas, to: terra-australis}
+      - {from: rutas, to: tethys-ocean}
+      - {from: shasta, to: south-lemuria}
+      - {from: tethys-ocean, to: west-atlantis}
+  params:
+    glaciers: true
+    starts: {gc: iapetus-ocean, cc: upper-mu, bg: hyperborea, ys: terra-australis}
+    sigils:
+      ww: [antarctica, poseidonis]
+      sl: [lower-mu]
+  seats:
+    - {seat: 1, color: green, label: Great Cthulhu}
+    - {seat: 2, color: blue, label: Crawling Chaos}
+    - {seat: 3, color: red, label: Black Goat}
+    - {seat: 4, color: yellow, label: Yellow Sign}
+    - {seat: 5, color: white, label: Windwalker}
+  turn_order:
+    type: round-robin
+    seats: [5, 1, 2, 3, 4]

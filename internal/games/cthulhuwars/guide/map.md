@@ -2,7 +2,7 @@
 
 ![The map of this game|900](board.svg "The map of this game. Seas have blue gradients and waves, lands their own colours; the dark badge after a name is a glyph.")
 
-The world comes in **four layouts**. You choose one when you create the game; the layout also decides how many cults sit
+The world comes in **six layouts**, four of Earth and two of the Primeval Map. You choose one when you create the game; the layout also decides how many cults sit
 at the table (which cults, and whether the High Priests are in, is chosen separately).
 
 | Layout | Seats | Areas | Variant id |
@@ -11,6 +11,8 @@ at the table (which cults, and whether the High Priests are in, is chosen separa
 | 4 players, **5-3** map | four cults — the Americas are split into five areas (North America West / East, Central America, South America West / East) and Australia has New Zealand beside it | 17 | `cthulhu-wars` |
 | 4 players, **3-5** map | four cults — one North America and one South America, but Europe has Scandinavia, and Asia and Africa are cut into North / South Asia, Arabia, West / East Africa | 17 | `cthulhu-wars-3-5` |
 | 5 players, 21-area map | five cults — both splits at once (the board made for five players) | 21 | `cthulhu-wars-5p` |
+| 3 players, **Primeval** map | three cults, on the expansion's prehistoric Earth, with Glaciers (below) | 14 | `cthulhu-wars-primeval-3p` |
+| 5 players, **Primeval** map | five cults, with Glaciers (below) | 22 | `cthulhu-wars-primeval-5p` |
 
 A table of any layout can seat any of the six cults. A game made with other cults than the layout's own, or with the High
 Priests, has an id of its own made of the layout and the choice: `cthulhu-wars-5p~ww-sl-gc-cc-ys-hp` means the
@@ -145,3 +147,14 @@ Glyph badges sit right after an area's name. Yellow Sign needs to Desecrate one 
 | South Atlantic | Ocean | — |  |  | Antarctica, East Africa, Indian Ocean, North Atlantic, South America East, South Pacific, West Africa |
 | South Pacific | Ocean | — | Great Cthulhu |  | Antarctica, Indian Ocean, New Zealand, North Pacific, South America West, South Atlantic |
 | West Africa | Land | Chevron |  |  | Arabia, East Africa, North Atlantic, South Atlantic |
+
+## The Primeval Map and its Glaciers
+
+The Primeval Map's main mechanic is the slow arrival of Glaciers, which abandon Gates for good and so make the map rich in Power. Its outlines were drawn by eye from pictures of the printed board.
+
+- At the end of the **first Doom phase**, after everyone has had the chance to perform a Ritual, a Glacier appears in each cult's start area, whether or not it has a Glacier glyph. Any unit holding a Gate there stays in the area, and the Gate is abandoned.
+- At the end of **each later Doom phase**, the first player chooses **two areas with a Glacier glyph** that have no Glacier yet. Once every such area has one, no more are placed. Glaciers never move or leave.
+- A Gate under a Glacier is **abandoned for good**. Nobody can ever control it, and it gives every cult Power in Gather Power, like any abandoned Gate. Creating a Gate in a Glacier's area gets the same result straight away.
+- Yog-Sothoth, who is a Gate himself, is not covered.
+
+On the map a Glacier is a ❄ chip in its area. On this map, every area with "Ocean" in its name is an ocean, and no others.

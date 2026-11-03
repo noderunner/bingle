@@ -546,10 +546,14 @@ var unitTypes = func() []string {
 	// others do not move.
 	add(facOW, nFactions)
 	// The Loyalty Cards after the first neutral Monsters, and Abhoth's Filth.
-	for _, u := range cardUnits[len(neutralUnits):] {
+	const firstCards = 15 // the cards from before the later packs: their numbers do not move
+	for _, u := range cardUnits[len(neutralUnits):firstCards] {
 		out = append(out, u.ID)
 	}
 	out = append(out, uFilth)
+	for _, u := range cardUnits[firstCards:] {
+		out = append(out, u.ID)
+	}
 	return out
 }()
 

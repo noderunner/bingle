@@ -21,6 +21,11 @@ func (e *eng) fulfil(seat, req int) bool {
 	if d.bookCount(seat) >= 6 {
 		return true
 	}
+	// Abandoned to Lusts: the owner of the Asteroid Cat on the slot chooses.
+	if owner := e.lustTakes(seat); owner != 0 {
+		d.Prompts = append(d.Prompts, Prompt{Kind: "book", Seat: owner, By: seat})
+		return true
+	}
 	d.Prompts = append(d.Prompts, Prompt{Kind: "book", Seat: seat})
 	return true
 }
@@ -310,14 +315,15 @@ func (e *eng) normalizePrompts() {
 		p := d.Prompts[0]
 		switch p.Kind {
 		case "book":
-			un := e.bookChoices(p.Seat, p.Skip-1)
+			taker := bookTaker(p)
+			un := e.bookChoices(taker, p.Skip-1)
 			if len(un) == 0 {
 				e.dropPrompt()
 				continue
 			}
 			if len(un) == 1 {
 				e.dropPrompt()
-				e.awardBook(p.Seat, un[0])
+				e.awardBook(taker, un[0])
 				continue
 			}
 			return
@@ -496,6 +502,17 @@ func (e *eng) normalizePrompts() {
 			case 1:
 				e.dropPrompt()
 				e.moonLand(p.Seat, e.areaIdx(string(opts[0].To)))
+				continue
+			}
+			return
+		case "card":
+			opts := e.cardPromptMoves(p)
+			if len(opts) == 0 {
+				e.dropPrompt()
+				continue
+			}
+			if len(opts) == 1 && cardPromptAuto(p) {
+				e.cardPromptAnswer(p, opts[0])
 				continue
 			}
 			return
@@ -721,8 +738,9 @@ func (e *eng) legalPrompt() []state.Move {
 	var out []state.Move
 	switch p.Kind {
 	case "book":
-		for _, b := range e.bookChoices(p.Seat, p.Skip-1) {
-			out = append(out, state.Move{Action: actBook, Piece: e.bookSpecOf(p.Seat, b).ID, Count: b + 1})
+		taker := bookTaker(p)
+		for _, b := range e.bookChoices(taker, p.Skip-1) {
+			out = append(out, state.Move{Action: actBook, Piece: e.bookSpecOf(taker, b).ID, Count: b + 1})
 		}
 	case "mao":
 		out = e.maoMoves(p)
@@ -798,6 +816,8 @@ func (e *eng) legalPrompt() []state.Move {
 		}
 	case "nexus":
 		out = []state.Move{{Action: actNexus}, {Action: actDone}}
+	case "card":
+		out = e.cardPromptMoves(p)
 	case "moon":
 		out = e.moonOptions(p.Seat)
 	case "moonland":
@@ -831,7 +851,7 @@ func (e *eng) doPrompt(seat int, mv state.Move) {
 	switch mv.Action {
 	case actBook:
 		e.dropPrompt()
-		e.awardBook(seat, mv.Count-1)
+		e.awardBook(bookTaker(p), mv.Count-1)
 	case actMao:
 		e.mao(seat, mv)
 	case actCurse:
@@ -895,6 +915,8 @@ func (e *eng) doPrompt(seat int, mv state.Move) {
 		}
 	case actWalk:
 		e.walk(seat, e.areaIdx(string(mv.To)))
+	case actCard:
+		e.cardPromptAnswer(p, mv)
 	case actMoon:
 		e.dropPrompt()
 		if p.Kind == "moonland" {
@@ -1024,6 +1046,8 @@ func (e *eng) runThen() {
 	switch then {
 	case "after":
 		e.afterAction()
+	case "battle-tallied":
+		e.startAssign()
 	case "turn":
 		d.Stage = stageTurn
 		e.continueTurn()

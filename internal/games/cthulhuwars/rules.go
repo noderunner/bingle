@@ -358,6 +358,14 @@ func (rs *Ruleset) Validate(game *catalog.CompiledGame, st *state.BoardState) er
 			if e.is(seat, facSL) && u.ID == uSerpent {
 				n += len(d.Sorcery)
 			}
+			n += d.Gone[fmt.Sprintf("%d|%s", seat, u.ID)]
+			if u.ID == uAsteroid {
+				for _, l := range d.Lust {
+					if l.Owner == seat {
+						n++
+					}
+				}
+			}
 			for _, h := range d.Held {
 				if h.Seat == seat && h.Type == u.ID {
 					n++
@@ -516,6 +524,14 @@ func (e *eng) execute(seat int, mv state.Move) {
 	if len(d.Picks) > 0 {
 		e.openPicks()
 	}
+	e.cardSweep()
+	if len(d.Pending) > 0 {
+		e.openPending()
+	}
+	if d.EndNow && d.Bat == nil && d.Stage != stagePrompt && d.Phase != phaseOver {
+		d.EndNow = false
+		e.finishGame("instant-death")
+	}
 	// After another player's action the players holding reactions are asked.
 	if d.ReactOwed != 0 {
 		switch {
@@ -603,7 +619,13 @@ func (e *eng) prompt() string {
 	case stagePrompt:
 		if len(d.Prompts) > 0 {
 			p := d.Prompts[0]
+			if p.Kind == "card" {
+				return e.cardPromptText(who, p)
+			}
 			if p.Kind == "book" {
+				if p.By != 0 {
+					return fmt.Sprintf("%s: Abandoned to Lusts — choose the spellbook %s must take.", who, e.seatName(p.By))
+				}
 				if p.Skip != 0 {
 					return fmt.Sprintf("%s: Recriminations — choose the spellbook that takes the place of the one you set aside.", who)
 				}
@@ -670,6 +692,9 @@ func (e *eng) prompt() string {
 			case "crypt":
 				return fmt.Sprintf("%s: Crypt Dweller — place a Wamp of %s in an area without a Gate (%d left).", who, e.seatName(p.By), p.Left)
 			case "sting":
+				if p.Why == "tsunami" {
+					return fmt.Sprintf("%s: Tsunami — move a Cultist out of %s into an adjacent ocean.", who, e.areaName(e.areaIdx(p.Area)))
+				}
 				return fmt.Sprintf("%s: The Agony Sting — move a Cultist out of %s into an adjacent land area.", who, e.areaName(e.areaIdx(p.Area)))
 			case "spare":
 				return fmt.Sprintf("%s: Fire Vampires — click a unit that took a Kill to spare it (it is Pained instead, and you gain 1 Power), or press Done to let the rest die.", who)

@@ -27,7 +27,13 @@ what the help window shows under *Recent changes*, so it is written for the peop
   and the chat, and turn it on its side for the whole map, to tap areas, move units, pinch and drag.
 - **Hide the units.** The game options can now turn the units off to study the map, next to the names, glyphs and sigils.
   Any unit you can move right then stays visible.
-### Cthulhu Wars 0.1.2
+### Cthulhu Wars 0.2.0
+- **Many more neutral units.** New options at the setup page: the Dreamlands Underworld Monsters (Ghast, Leng Spider, Gug),
+  the Cosmic Terrors (Great Race of Yith, Dhole, Quachil Uttaus), Something About Cats and the Satyr.
+- **The Primeval Map.** A prehistoric Earth for three or five players, where Glaciers creep over the map and abandon Gates
+  for good, which makes everyone rich in Power. Choose it as the layout when you create a game.
+- **Twelve more Independent Great Old Ones.** Atlach-Nacha, Bokrug, Father Dagon, Ghatanothoa, Gobogeg, Byatis, Nyogtha,
+  Tulzscha, Gla'aki, Daoloth, Y'Golonac and Hagarg Ryonis, each with a check box. The guide has their rules and strategy.
 - The guide no longer mentions the gold stars or clicking a unit for its card.
 - **Neutral spellbooks are spellbooks.** One you hold covers a requirement like any other, and one swapped in for Ghroth or
   The Thousand Forms at setup reads as your cult's own. Those still to take are under *Neutral items*.

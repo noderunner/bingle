@@ -88,6 +88,17 @@ type Assign struct {
 
 // Battle is a battle being fought.
 type Battle struct {
+	// Later cards: the units lost, who fights with Quachil Uttaus and against a
+	// Great Old One, the Great Old One Cosmic Unity silences, the seat whose
+	// Y'Golonac was Killed, and that Gobogeg was Killed.
+	Lost      []PU             `json:"lost,omitempty"`
+	Quachil   [nSeats + 1]bool `json:"quachil,omitempty"`
+	FoeGOO    [nSeats + 1]bool `json:"foe_goo,omitempty"`
+	Unity     string           `json:"unity,omitempty"`
+	UnitySeat int              `json:"unity_seat,omitempty"`
+	Orifice   int              `json:"orifice,omitempty"`
+	AllPain   bool             `json:"all_pain,omitempty"`
+
 	Area string `json:"area"`
 	Att  int    `json:"att"`
 	Def  int    `json:"def"`
@@ -322,14 +333,34 @@ type Data struct {
 	// Loyal is, per seat, the mask of neutral Monsters whose Loyalty Card it
 	// holds (bit i is neutralUnits[i]); Card counts the Dimensional Shamblers
 	// waiting on its faction card (Walk Between Worlds).
-	Loyal [nSeats + 1]uint16 `json:"loyal,omitempty"`
-	Card  [nSeats + 1]int    `json:"card,omitempty"`
+	Loyal [nSeats + 1]uint64 `json:"loyal,omitempty"`
+	// Later Loyalty Cards. Webs are the areas with Atlach-Nacha's tokens; Ghost
+	// the seat whose Bokrug waits on the card; Gone counts the units out of the
+	// game ("seat|type"); Mummies the Acolytes laid low ("area|seat"); Lust the
+	// Asteroid Cats on spellbook slots; Subvert who each Hagarg Ryonis is
+	// watching; ZeroFirst who first reached 0 Power this Action phase; EndNow
+	// that the game ends with this action; Pending the questions that wait for
+	// the end of what is going on.
+	Webs []string `json:"webs,omitempty"`
+	// Glaciers are the areas under a Glacier (the Primeval Map);
+	// GlaciersBegun says the first of them has been placed.
+	Glaciers      []string        `json:"glaciers,omitempty"`
+	GlaciersBegun bool            `json:"glaciers_begun,omitempty"`
+	Ghost         int             `json:"ghost,omitempty"`
+	Gone          map[string]int  `json:"gone,omitempty"`
+	Mummies       map[string]int  `json:"mummies,omitempty"`
+	Lust          []LustState     `json:"lust,omitempty"`
+	Subvert       [nSeats + 1]int `json:"subvert,omitempty"`
+	ZeroFirst     int             `json:"zero_first,omitempty"`
+	EndNow        bool            `json:"end_now,omitempty"`
+	Pending       []Prompt        `json:"pending,omitempty"`
+	Card          [nSeats + 1]int `json:"card,omitempty"`
 	// IBooks says which Independent Great Old Ones' spellbooks lie on their cards
-	// (bit i is cards[firstIndependent+i]); Picks lists the seats that received
+	// (bit i is cards[independentCards[i]]); Picks lists the seats that received
 	// an Elder Sign whose value the holder of Chaugnar Faugn's Curse has still to
 	// choose (the sign is in Signs as 0). Moon lists the Moonbeasts lying on
 	// spellbooks.
-	IBooks uint8       `json:"ibooks,omitempty"`
+	IBooks uint32      `json:"ibooks,omitempty"`
 	Picks  []int       `json:"picks,omitempty"`
 	Moon   []MoonState `json:"moon,omitempty"`
 
@@ -524,6 +555,7 @@ func (d *Data) clone() *Data {
 		b.Hit = append([]PU(nil), d.Bat.Hit...)
 		b.Fallen = append([]PU(nil), d.Bat.Fallen...)
 		b.Doomed = append([]PU(nil), d.Bat.Doomed...)
+		b.Lost = append([]PU(nil), d.Bat.Lost...)
 		c.Bat = &b
 	}
 	if d.Doomx != nil {
@@ -534,6 +566,12 @@ func (d *Data) clone() *Data {
 	c.SetupLater = append([]int(nil), d.SetupLater...)
 	c.Picks = append([]int(nil), d.Picks...)
 	c.Moon = append([]MoonState(nil), d.Moon...)
+	c.Webs = append([]string(nil), d.Webs...)
+	c.Glaciers = append([]string(nil), d.Glaciers...)
+	c.Gone = cloneInt(d.Gone)
+	c.Mummies = cloneInt(d.Mummies)
+	c.Lust = append([]LustState(nil), d.Lust...)
+	c.Pending = append([]Prompt(nil), d.Pending...)
 	c.Curse = d.Curse.clone()
 	c.Prompts = append([]Prompt(nil), d.Prompts...)
 	c.TiedFirst = append([]int(nil), d.TiedFirst...)
