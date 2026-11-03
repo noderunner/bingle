@@ -14,7 +14,7 @@ description, rules[]          shown in the lobby, rules dialog and MCP get_game_
 version, designers[], publisher   the implementation's semver (raise it with every change to the
                               definition or Go code; below 1.0.0 shows a Beta mark), and who made the game
 family, variants[]            group sibling games / derive them from this document
-options[]                     setup choices a creator makes (bool, seat-choice, book-swap)
+options[]                     setup choices a creator makes (bool, seat-choice, multi-choice, book-swap)
 pie_rule                      standard | optional: the game can be played with the pie rule, and
                               the creator chooses (the catalog brings the box, and the swap
                               action for a game on the generic engine — a ruleset offers the

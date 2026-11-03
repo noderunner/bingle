@@ -83,11 +83,16 @@ clears it ([[Esc]]).
 
 Pick *Cthulhu Wars* on the home page and choose
 
-- **the layout** (3, 4 or 5 players, and which map) with the layout chips,
-- **who sits where**: for every seat of the table a list of the six cults (no cult twice; choosing one that sits
-  elsewhere swaps the two) and who plays it — you, an open seat for a friend, or a bot of a kind you choose,
-- **the High Priests** and **the neutral cards** — Azathoth's spellbooks and Monsters, the Dreamlands Surface Monsters,
-  Beyond Time and Space and any of the five Independent Great Old Ones — with the check boxes under the seats.
+- **the map** (3, 4 or 5 players, and which map) in the *Maps* tab,
+- **the cults** in the *Factions* tab: each one you choose takes the next open seat. Under *Seats* you say who plays each
+  one — you, an open seat for a friend, or a bot of a kind you choose,
+- **the neutral cards** one by one in the *Monsters & Terrors*, *IGOOs* and *Other* tabs, with **the High Priests** under
+  *Other*. Hover over a tile for its rules.
+
+*Current selections* shows the table so far: click a tile there to take it out. A notice appears when you have more neutral
+units and Independents than one fewer than the players, which is only advice. *Shuffle* fills open seats and deals random
+neutral units and Independents up to that number; press it again for another deal. *Start from a setup* offers ready-made
+tables and any that players have shared, and with an account you can save your own.
 
 Every seat can be *You*: play more than one — or all of them — to try a cult or a position out alone. The other seats of
 yours are players of their own, named after you and the cult (*Alice · Black Goat*); the page plays for whichever one

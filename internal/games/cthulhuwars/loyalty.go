@@ -183,16 +183,21 @@ var independentCards = func() []int {
 
 // --- what the table plays with ------------------------------------------------------------
 
-// cardInGame says the pack of card i is in the box of this game.
-func (e *eng) cardInGame(i int) bool {
-	c := cards[i]
+// cardInGame says card i is in the box of this game: chosen by itself or
+// through its pack.
+func (e *eng) cardInGame(i int) bool { return e.m.cfg.cardInGame(i) }
+
+func (c *gameCfg) cardInGame(i int) bool {
+	card := cards[i]
 	switch {
-	case c.Pack == packAzathoth:
-		return e.m.cfg.az
-	case c.Kind == cardIndependent:
-		return e.m.cfg.indep&(1<<uint(igooIndex(c.Unit.ID))) != 0
+	case card.Kind == cardIndependent:
+		return c.indep&(1<<uint(igooIndex(card.Unit.ID))) != 0
+	case c.units&(1<<uint(i)) != 0:
+		return true
+	case card.Pack == packAzathoth:
+		return c.az
 	}
-	return e.m.cfg.packs&c.Pack != 0
+	return c.packs&card.Pack != 0
 }
 
 // independentsInGame says the Independent Great Old Ones are in the game.

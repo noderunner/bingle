@@ -461,3 +461,20 @@ CREATE TABLE IF NOT EXISTS seat_replacements (
     replaced_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (game_id, seat)
 );
+
+-- Setups an account has saved to start games from (ADR 0094): a layout and the
+-- options of its create call. shared puts one in everyone's list, guests' too.
+CREATE TABLE IF NOT EXISTS setup_profiles (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    account_id   INTEGER NOT NULL REFERENCES accounts(id),
+    family       TEXT NOT NULL,
+    name         TEXT NOT NULL,
+    name_lower   TEXT NOT NULL,
+    game_def_id  TEXT NOT NULL,
+    options      TEXT NOT NULL,
+    shared       INTEGER NOT NULL DEFAULT 0,
+    updated_at   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (account_id, family, name_lower)
+);
+
+CREATE INDEX IF NOT EXISTS idx_setup_profiles_shared ON setup_profiles(family, updated_at DESC) WHERE shared = 1;

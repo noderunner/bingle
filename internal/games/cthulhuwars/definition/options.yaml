@@ -85,6 +85,43 @@
   kind: bool
   default: false
   text: "A neutral Monster that brings an Acolyte of your pool each time it is summoned."
+- id: neutral-units
+  label: Neutral Monsters and Terrors, one by one
+  kind: multi-choice
+  text: Individual Loyalty Cards to put in the game, whatever pack they come from. A pack option brings all of its own besides these.
+  choices:
+    - {id: dimensional-shambler, label: Dimensional Shambler}
+    - {id: star-vampire, label: Star Vampire}
+    - {id: elder-thing, label: Elder Thing}
+    - {id: servitor, label: Servitor of the Outer Gods}
+    - {id: moonbeast, label: Moonbeast}
+    - {id: gnorri, label: Gnorri}
+    - {id: shantak, label: Shantak}
+    - {id: wamp, label: Wamp}
+    - {id: voonith, label: Voonith}
+    - {id: hound-of-tindalos, label: Hound of Tindalos}
+    - {id: ghast, label: Ghast}
+    - {id: leng-spider, label: Leng Spider}
+    - {id: gug, label: Gug}
+    - {id: great-race-of-yith, label: Great Race of Yith}
+    - {id: dhole, label: Dhole}
+    - {id: quachil-uttaus, label: Quachil Uttaus}
+    - {id: cat-from-mercury, label: Cat from Mercury}
+    - {id: cat-from-venus, label: Cat from Venus}
+    - {id: asteroid-cat, label: Asteroid Cat}
+    - {id: cat-from-neptune, label: Cat from Neptune}
+    - {id: satyr, label: Satyr}
+- id: neutral-books
+  label: Neutral spellbooks, one by one
+  kind: multi-choice
+  text: Individual neutral spellbooks any cult may take in place of one of its own. The Azathoth option brings all six.
+  choices:
+    - {id: shrivel, label: Shriveling}
+    - {id: stars, label: Stars Are Right}
+    - {id: recrim, label: Recriminations}
+    - {id: mao, label: The Mao Ceremony}
+    - {id: umr, label: Umr at-Tawil}
+    - {id: undim, label: Undimensioned}
 - id: igoo-abhoth
   label: 'Independent: Abhoth (Great Old One Pack 1)'
   kind: bool

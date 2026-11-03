@@ -35,7 +35,10 @@ type NeutralItem struct {
 }
 
 // neutralInPlay says the table plays with neutral spellbooks or Loyalty Cards.
-func (e *eng) neutralInPlay() bool { return e.m.cfg.az || e.m.cfg.packs != 0 }
+func (e *eng) neutralInPlay() bool {
+	c := e.m.cfg
+	return c.az || c.packs != 0 || c.units != 0 || c.books != 0
+}
 
 // neutralView lists what is left to take, nil when no neutral content is in
 // play at this table.
@@ -44,45 +47,53 @@ func (e *eng) neutralView() *NeutralView {
 		return nil
 	}
 	nv := &NeutralView{Items: []NeutralItem{}}
-	if e.m.cfg.az {
-		for n, b := range neutralBooks {
-			if e.neutralHeld(n) || e.setAside(n) {
-				continue
-			}
-			nv.Items = append(nv.Items, NeutralItem{
-				Kind: "book", ID: b.ID, Name: b.Name, Timing: b.Timing, Text: b.Text,
-				Obtain: "A spellbook slot",
-				How:    "Take it in place of one of your own spellbooks when a requirement of your faction earns you one.",
-			})
+	for n, b := range neutralBooks {
+		if !e.m.cfg.bookInGame(n) || e.neutralHeld(n) || e.setAside(n) {
+			continue
 		}
+		nv.Items = append(nv.Items, neutralBookItem(b))
 	}
 	for i, c := range cards {
 		if !e.cardInGame(i) || e.cardOwner(i) != 0 {
 			continue
 		}
-		u := c.Unit
-		item := NeutralItem{
-			ID: u.ID, Name: u.Name, How: c.Buy, Obtain: cardCostText(c), Cost: u.Cost,
-			Combat: e.combatText(0, u), Total: u.Count, Enter: enterText(u.ID), Text: u.Text,
-		}
-		for _, a := range u.Abilities {
-			item.Abilities = append(item.Abilities, AbilityView(a))
-		}
-		switch c.Kind {
-		case cardTerror:
-			item.Kind = "terror"
-		case cardIndependent:
-			item.Kind = "goo"
-			item.Awaken = c.Awaken
-			item.Enter = "An Independent Great Old One: awakened in the Action phase, never summoned."
-			item.Book = &UnitBookView{ID: c.Book.ID, Name: c.Book.Name, Timing: c.Book.Timing, Text: c.Book.Text}
-			item.Req = c.Req
-		default:
-			item.Kind = "monster"
-		}
-		nv.Items = append(nv.Items, item)
+		nv.Items = append(nv.Items, cardItem(c, e.combatText(0, c.Unit)))
 	}
 	return nv
+}
+
+// neutralBookItem describes a neutral spellbook.
+func neutralBookItem(b bookSpec) NeutralItem {
+	return NeutralItem{
+		Kind: "book", ID: b.ID, Name: b.Name, Timing: b.Timing, Text: b.Text,
+		Obtain: "A spellbook slot",
+		How:    "Take it in place of one of your own spellbooks when a requirement of your faction earns you one.",
+	}
+}
+
+// cardItem describes a Loyalty Card, with its Combat as worded for the table.
+func cardItem(c cardSpec, combat string) NeutralItem {
+	u := c.Unit
+	item := NeutralItem{
+		ID: u.ID, Name: u.Name, How: c.Buy, Obtain: cardCostText(c), Cost: u.Cost,
+		Combat: combat, Total: u.Count, Enter: enterText(u.ID), Text: u.Text,
+	}
+	for _, a := range u.Abilities {
+		item.Abilities = append(item.Abilities, AbilityView(a))
+	}
+	switch c.Kind {
+	case cardTerror:
+		item.Kind = "terror"
+	case cardIndependent:
+		item.Kind = "goo"
+		item.Awaken = c.Awaken
+		item.Enter = "An Independent Great Old One: awakened in the Action phase, never summoned."
+		item.Book = &UnitBookView{ID: c.Book.ID, Name: c.Book.Name, Timing: c.Book.Timing, Text: c.Book.Text}
+		item.Req = c.Req
+	default:
+		item.Kind = "monster"
+	}
+	return item
 }
 
 // setAside says the neutral spellbook n was put aside at setup for some cult.

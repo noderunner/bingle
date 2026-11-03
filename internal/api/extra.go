@@ -13,6 +13,7 @@ import (
 
 	"github.com/noderunner/bingle/internal/engine/state"
 	"github.com/noderunner/bingle/internal/session"
+	"github.com/noderunner/bingle/internal/store"
 	"github.com/noderunner/bingle/internal/wire"
 )
 
@@ -25,6 +26,58 @@ func (h *handlers) handleGameDef(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, info)
+}
+
+// handleSetupCatalog implements GET /game-defs/{id}/setup-catalog: what the
+// picker of a game's setup page shows.
+func (h *handlers) handleSetupCatalog(w http.ResponseWriter, r *http.Request) {
+	out, err := h.mgr.SetupCatalog(chi.URLParam(r, "id"))
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, out)
+}
+
+// handleSetupProfiles implements GET /setup-profiles?family=: the setups anyone
+// may start from, and the caller's own.
+func (h *handlers) handleSetupProfiles(w http.ResponseWriter, r *http.Request) {
+	out, err := h.mgr.SetupProfiles(r.Context(), r.URL.Query().Get("family"))
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"profiles": out})
+}
+
+// handleSaveSetupProfile implements POST /setup-profiles: an account saves a
+// setup, replacing one it saved under the same name.
+func (h *handlers) handleSaveSetupProfile(w http.ResponseWriter, r *http.Request) {
+	var req session.SetupProfileRequest
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxBodyBytes)).Decode(&req); err != nil {
+		writeError(w, err)
+		return
+	}
+	out, err := h.mgr.SaveSetupProfile(r.Context(), req)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, out)
+}
+
+// handleDeleteSetupProfile implements DELETE /setup-profiles/{id}.
+func (h *handlers) handleDeleteSetupProfile(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+	if err != nil {
+		writeError(w, store.ErrNotFound)
+		return
+	}
+	if err := h.mgr.DeleteSetupProfile(r.Context(), id); err != nil {
+		writeError(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // handleGameGuide implements GET /game-defs/{id}/guide: the Markdown pages

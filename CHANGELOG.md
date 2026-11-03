@@ -4,6 +4,23 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.50.0 - 2026-11-03
+
+### Bingle Core 0.50.0
+- **Saved setups.** A game whose setup has many parts can keep it: with an account, save the table you have chosen under a
+  name and share it if you like. Anyone, guests too, can start from a shared setup. Cthulhu Wars is the first such game.
+
+### Cthulhu Wars 0.3.0
+- **A new setup page.** The long list of check boxes is gone. Maps, Factions, Monsters & Terrors, IGOOs and Other are tabs
+  of pictures, each with its name; hover over one for a summary of its rules, click to add it.
+- **Pick single units.** You no longer take a whole expansion: choose just the Gnorri, one Terror, or a single neutral
+  spellbook.
+- **Current selections.** A card shows the table so far, and a click there takes something out again. A small notice appears
+  when you have more neutral units and Independents than one fewer than the players, which is only advice.
+- **Shuffle.** One button fills any open seats and deals random neutral units and Independents up to the recommended number.
+  Press it again for another deal; what you chose yourself stays.
+- **Start from a setup.** Four ready-made tables to begin with, and your own or other players' saved ones.
+
 ## 0.49.0 - 2026-11-02
 
 ### Bingle Core 0.49.0

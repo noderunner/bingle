@@ -2,6 +2,7 @@ package cthulhuwars
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/noderunner/bingle/internal/engine/catalog"
@@ -38,6 +39,12 @@ type gameCfg struct {
 	// glaciers says the map is the Primeval Map, with its Glaciers.
 	glaciers bool
 	indep    int
+	// units holds the Loyalty Cards in the game one by one, whatever their
+	// pack: bit i is cards[i]. books does the same for the neutral spellbooks:
+	// bit n is neutralBooks[n]. A pack or the Azathoth option brings all of its
+	// own besides these.
+	units uint64
+	books int
 	// swap is, per faction, the neutral spellbook that replaces its timer
 	// book (Black Goat's Ghroth, Crawling Chaos' The Thousand Forms), -1 when
 	// it keeps its own. It needs no Azathoth faction in the game.
@@ -107,6 +114,24 @@ func buildCfg(def *dsl.GameDefinition) *gameCfg {
 		}
 		if c.indep != 0 {
 			c.packs |= packGOO1
+		}
+	}
+	if l, ok := def.Params["neutral_units"].([]any); ok {
+		for _, v := range l {
+			if name, ok := v.(string); ok {
+				if i := soloCardIndex(name); i >= 0 {
+					c.units |= 1 << uint(i)
+				}
+			}
+		}
+	}
+	if l, ok := def.Params["neutral_books"].([]any); ok {
+		for _, v := range l {
+			if name, ok := v.(string); ok {
+				if n := neutralBookByKey(name); n >= 0 {
+					c.books |= 1 << uint(n)
+				}
+			}
 		}
 	}
 	if m, ok := def.Params["book_swaps"].(map[string]any); ok {
@@ -199,6 +224,8 @@ const (
 	optDreamlands  = "dreamlands"
 	optBeyond      = "beyond"
 	optBookSwaps   = "book-swaps"
+	optUnits       = "neutral-units"
+	optBooks       = "neutral-books"
 )
 
 // packParams are the definition parameters of the packs of Loyalty Cards, the
@@ -297,7 +324,7 @@ var _ catalog.Deriver = (*Ruleset)(nil)
 func (rs *Ruleset) Derive(base *dsl.GameDefinition, options map[string]any) (string, map[string]any, error) {
 	n := len(base.Seats)
 	keys := make([]string, 0, n)
-	hp, az, packs, indep := false, false, 0, 0
+	tbl := extras{}
 	var swaps map[string]string
 	for k, v := range options {
 		switch k {
@@ -326,19 +353,43 @@ func (rs *Ruleset) Derive(base *dsl.GameDefinition, options map[string]any) (str
 			if !ok {
 				return "", nil, fmt.Errorf("cthulhuwars: option %q must be true or false", k)
 			}
-			hp = b
+			tbl.hp = b
 		case optAzathoth:
 			b, ok := v.(bool)
 			if !ok {
 				return "", nil, fmt.Errorf("cthulhuwars: option %q must be true or false", k)
 			}
-			az = b
+			tbl.az = b
 		case optBookSwaps:
 			m, err := swapOption(v)
 			if err != nil {
 				return "", nil, err
 			}
 			swaps = m
+		case optUnits:
+			names, err := nameList(k, v)
+			if err != nil {
+				return "", nil, err
+			}
+			for _, name := range names {
+				i := soloCardIndex(name)
+				if i < 0 {
+					return "", nil, fmt.Errorf("cthulhuwars: option %q: %q is not a neutral Monster or Terror", k, name)
+				}
+				tbl.units |= 1 << uint(i)
+			}
+		case optBooks:
+			names, err := nameList(k, v)
+			if err != nil {
+				return "", nil, err
+			}
+			for _, name := range names {
+				n := neutralBookByKey(name)
+				if n < 0 {
+					return "", nil, fmt.Errorf("cthulhuwars: option %q: unknown neutral spellbook %q (use %s)", k, name, strings.Join(neutralKeys[:], ", "))
+				}
+				tbl.books |= 1 << uint(n)
+			}
 		case optDreamlands, optBeyond, "underworld", "cosmic-terrors", "cats", "satyr":
 			b, ok := v.(bool)
 			if !ok {
@@ -347,7 +398,7 @@ func (rs *Ruleset) Derive(base *dsl.GameDefinition, options map[string]any) (str
 			if b {
 				for _, po := range packOptions {
 					if po.option == k {
-						packs |= po.bit
+						tbl.packs |= po.bit
 					}
 				}
 			}
@@ -358,7 +409,7 @@ func (rs *Ruleset) Derive(base *dsl.GameDefinition, options map[string]any) (str
 					return "", nil, fmt.Errorf("cthulhuwars: option %q must be true or false", k)
 				}
 				if b {
-					indep |= 1 << uint(i)
+					tbl.indep |= 1 << uint(i)
 				}
 				break
 			}
@@ -371,7 +422,26 @@ func (rs *Ruleset) Derive(base *dsl.GameDefinition, options map[string]any) (str
 			keys = append(keys, factions[defaultFaction(base, i+1)].Key)
 		}
 	}
-	return deriveFrom(base, keys, hp, az, packs, indep, swaps)
+	return deriveFrom(base, keys, tbl, swaps)
+}
+
+// nameList reads an option that is a list of names.
+func nameList(option string, v any) ([]string, error) {
+	switch l := v.(type) {
+	case []string:
+		return l, nil
+	case []any:
+		out := make([]string, len(l))
+		for i, x := range l {
+			s, ok := x.(string)
+			if !ok {
+				return nil, fmt.Errorf("cthulhuwars: option %q must be a list of names", option)
+			}
+			out[i] = s
+		}
+		return out, nil
+	}
+	return nil, fmt.Errorf("cthulhuwars: option %q must be a list of names", option)
 }
 
 // swapOption reads the book-swaps option: faction key → neutral spellbook key.
@@ -434,6 +504,12 @@ func (rs *Ruleset) SeatCultOptions(game *catalog.CompiledGame, seat int, cult st
 	for i, x := range igooKeys {
 		out[x.option] = c.indep&(1<<uint(i)) != 0
 	}
+	if c.units != 0 {
+		out[optUnits] = stringsToAny(soloCardNames(c.units))
+	}
+	if c.books != 0 {
+		out[optBooks] = stringsToAny(bookNames(c.books))
+	}
 	// A swapped book stays with its cult (a cult that moves seats takes it
 	// along; one that was swapped out of the table loses it).
 	swaps := map[string]any{}
@@ -465,19 +541,23 @@ func defaultFaction(base *dsl.GameDefinition, seat int) int {
 // FromSuffix implements catalog.Deriver.
 func (rs *Ruleset) FromSuffix(base *dsl.GameDefinition, suffix string) (map[string]any, error) {
 	parts := strings.Split(suffix, "-")
-	hp, az, packs, indep := false, false, 0, 0
+	tbl := extras{}
 	var keys []string
 	swaps := map[string]string{}
 	for _, p := range parts {
 		switch {
 		case p == "hp":
-			hp = true
+			tbl.hp = true
 		case p == "az":
-			az = true
+			tbl.az = true
 		case packFlag(p) != 0:
-			packs |= packFlag(p)
+			tbl.packs |= packFlag(p)
 		case igooFlag(p) != 0:
-			indep |= igooFlag(p)
+			tbl.indep |= igooFlag(p)
+		case maskPart(p, "nu") != 0:
+			tbl.units |= maskPart(p, "nu")
+		case maskPart(p, "nb") != 0:
+			tbl.books |= int(maskPart(p, "nb"))
 		case strings.Contains(p, "."):
 			// "bg.shrivel": the cult and the neutral spellbook that replaces its timer book.
 			k, n, _ := strings.Cut(p, ".")
@@ -486,12 +566,14 @@ func (rs *Ruleset) FromSuffix(base *dsl.GameDefinition, suffix string) (map[stri
 			keys = append(keys, p)
 		}
 	}
-	_, patch, err := deriveFrom(base, keys, hp, az, packs, indep, swaps)
+	_, patch, err := deriveFrom(base, keys, tbl, swaps)
 	return patch, err
 }
 
 // deriveFrom validates a line-up and builds the suffix and merge patch.
-func deriveFrom(base *dsl.GameDefinition, keys []string, hp, az bool, packs, indep int, swaps map[string]string) (string, map[string]any, error) {
+func deriveFrom(base *dsl.GameDefinition, keys []string, tbl extras, swaps map[string]string) (string, map[string]any, error) {
+	tbl = tbl.canonical()
+	hp, az, packs, indep := tbl.hp, tbl.az, tbl.packs, tbl.indep
 	n := len(base.Seats)
 	if len(keys) != n {
 		return "", nil, fmt.Errorf("cthulhuwars: this layout seats %d players: name %d factions (got %d)", n, n, len(keys))
@@ -557,6 +639,12 @@ func deriveFrom(base *dsl.GameDefinition, keys []string, hp, az bool, packs, ind
 	if g := igooSuffix(indep); g != "" {
 		suffix += "-" + g
 	}
+	if tbl.units != 0 {
+		suffix += fmt.Sprintf("-nu%x", tbl.units)
+	}
+	if tbl.books != 0 {
+		suffix += fmt.Sprintf("-nb%x", tbl.books)
+	}
 	for _, s := range swapKeys {
 		suffix += "-" + s
 	}
@@ -617,6 +705,16 @@ func deriveFrom(base *dsl.GameDefinition, keys []string, hp, az bool, packs, ind
 			name += " + " + po.title
 		}
 	}
+	var extraNames []string
+	for _, id := range soloCardNames(tbl.units) {
+		extraNames = append(extraNames, unitNameOf(id))
+	}
+	for _, key := range bookNames(tbl.books) {
+		extraNames = append(extraNames, neutralBooks[neutralBookByKey(key)].Name)
+	}
+	if len(extraNames) > 0 {
+		name += " + " + strings.Join(extraNames, ", ")
+	}
 	var indepNames, indepUnits []any
 	for i, x := range igooKeys {
 		if indep&(1<<uint(i)) != 0 {
@@ -646,6 +744,8 @@ func deriveFrom(base *dsl.GameDefinition, keys []string, hp, az bool, packs, ind
 		params[po.key] = packs&po.bit != 0
 	}
 	params["independents"] = indepUnits
+	params["neutral_units"] = stringsToAny(soloCardNames(tbl.units))
+	params["neutral_books"] = stringsToAny(bookNames(tbl.books))
 	withMoon := false
 	for _, k := range keys {
 		withMoon = withMoon || k == "bu"
@@ -663,6 +763,103 @@ func deriveFrom(base *dsl.GameDefinition, keys []string, hp, az bool, packs, ind
 		}
 	}
 	return suffix, patch, nil
+}
+
+// extras is what a table plays with besides its cults.
+type extras struct {
+	hp, az       bool
+	packs, indep int
+	units        uint64
+	books        int
+}
+
+// canonical says the same table in one way only, so that it has one id: a
+// card or spellbook that a pack or the Azathoth option already brings is not
+// named again, and a pack with every card chosen is that pack.
+func (x extras) canonical() extras {
+	allBooks := 1<<nNeutralBooks - 1
+	for i, c := range cards {
+		if c.Kind == cardIndependent {
+			continue
+		}
+		bit := uint64(1) << uint(i)
+		if (c.Pack == packAzathoth && x.az) || x.packs&c.Pack != 0 {
+			x.units &^= bit
+		}
+	}
+	if x.az {
+		x.books = 0
+	}
+	// Every card of a pack named one by one is the pack.
+	for _, po := range packOptions {
+		mask := packCardMask(po.bit)
+		if x.units&mask == mask {
+			x.packs |= po.bit
+			x.units &^= mask
+		}
+	}
+	if mask := packCardMask(packAzathoth); x.units&mask == mask && x.books == allBooks {
+		x.az = true
+		x.units &^= mask
+		x.books = 0
+	}
+	return x
+}
+
+// packCardMask holds the bits of the cards of a pack.
+func packCardMask(pack int) uint64 {
+	var m uint64
+	for i, c := range cards {
+		if c.Kind != cardIndependent && c.Pack == pack {
+			m |= 1 << uint(i)
+		}
+	}
+	return m
+}
+
+// soloCardIndex is the card of a neutral Monster or Terror (-1: not one).
+func soloCardIndex(id string) int {
+	for i, c := range cards {
+		if c.Kind != cardIndependent && c.Unit.ID == id {
+			return i
+		}
+	}
+	return -1
+}
+
+// soloCardNames lists the unit ids of the cards in a mask, in card order.
+func soloCardNames(mask uint64) []string {
+	var out []string
+	for i, c := range cards {
+		if c.Kind != cardIndependent && mask&(1<<uint(i)) != 0 {
+			out = append(out, c.Unit.ID)
+		}
+	}
+	return out
+}
+
+// bookNames lists the keys of the neutral spellbooks in a mask.
+func bookNames(mask int) []string {
+	var out []string
+	for n, k := range neutralKeys {
+		if mask&(1<<uint(n)) != 0 {
+			out = append(out, k)
+		}
+	}
+	return out
+}
+
+// maskPart reads the part of a derived game's id that names cards ("nu3f") or
+// spellbooks ("nb5"): 0 if it is no such part.
+func maskPart(p, prefix string) uint64 {
+	if !strings.HasPrefix(p, prefix) {
+		return 0
+	}
+	v, err := strconv.ParseUint(p[len(prefix):], 16, 64)
+	if err != nil {
+		return 0
+	}
+	return v
 }
 
 // packFlag is the pack a short name in the id of a derived game stands for

@@ -293,6 +293,29 @@ func SeatCultOptions(game *catalog.CompiledGame, seat int, cult string, taken ma
 	return options, true, err
 }
 
+// SetupCatalogs is implemented by rulesets whose setup page draws a picker of
+// what can be in the game (Cthulhu Wars) rather than a list of check boxes. What
+// it returns is JSON for that page; what is chosen still reaches the game as
+// ordinary setup options (see catalog.Deriver).
+type SetupCatalogs interface {
+	SetupCatalog(game *catalog.CompiledGame) (any, error)
+}
+
+// SetupCatalogOf is the catalog of a game's setup page; ok is false for a game
+// that has none.
+func SetupCatalogOf(game *catalog.CompiledGame) (out any, ok bool, err error) {
+	rs, found := RulesetOf(game)
+	if !found {
+		return nil, false, nil
+	}
+	sc, found := rs.(SetupCatalogs)
+	if !found {
+		return nil, false, nil
+	}
+	out, err = sc.SetupCatalog(game)
+	return out, true, err
+}
+
 // PlaneEncoder is implemented by rulesets with their own numeric encoding.
 type PlaneEncoder interface {
 	// PlaneLayout names the channels (viewer-relative) and the plane size.

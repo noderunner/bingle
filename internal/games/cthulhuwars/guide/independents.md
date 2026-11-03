@@ -2,7 +2,7 @@
 
 An **Independent Great Old One** belongs to no cult. Whoever has a Great Old One of its own standing with a Gate it controls may wake one — and then it is theirs until it dies. Great Old One Pack 1 brings five: **Abhoth**, **Chaugnar Faugn**, **Cthugha**, **Mother Hydra** and **Yig**.
 
-Switch them on at the setup page with the check boxes *Independent: …* (any number of them; the wiki recommends, for a first game, **one Independent fewer than there are players**). Azathoth himself, the Independent of the Azathoth faction, is not in the game — only that faction's neutral spellbooks and Monsters (see [Neutral](tab:neutral)).
+Choose them at the setup page in the *IGOOs* tab (any number of them; the rule book recommends, for a first game, **one Independent fewer than there are players**). Azathoth himself, the Independent of the Azathoth faction, is not in the game — only that faction's neutral spellbooks and Monsters (see [Neutral](tab:neutral)).
 
 ## The rules
 
@@ -138,7 +138,7 @@ The bots awaken the Independents when they have the Power to spare (Chaugnar Fau
 
 ## The later Independents
 
-Each has a check box of its own at the setup page, and each is awakened at a Gate you control with a Great Old One of your own, for the Power shown.
+Each has a tile of its own at the setup page, and each is awakened at a Gate you control with a Great Old One of your own, for the Power shown.
 
 | Figure | Name | Power | Combat | Ability | Spellbook, and what earns it |
 |---|---|---|---|---|---|

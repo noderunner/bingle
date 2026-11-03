@@ -96,6 +96,10 @@ that account.
 | `POST /tournaments/{id}/abandon` | | ends it, and its games with no result. The organiser's; an administrator may do all the organiser may |
 | `GET /game-defs` | | `[{id, name, seats_required, description, board_width, board_height, family, version, designers?, publisher?, tutorials?}]` (`version` is the game's semantic version: below 1.0.0 is a beta; `tutorials` how many tutorials are offered with this game) |
 | `GET /game-defs/{id}` | | full description (`start` is the starting position; `preview`, when the game starts empty, a sample game in play for pictures; `sample_view`, for a game whose table is not a board, a game in progress in the shape of a state's `ext.view`): `rules`, `notation_help`, `board` (positions with layout, regions, borders), `pieces`, `pools`, `actions`, `opening`, `win_rules`, `scores`, `default_clock_minutes?` |
+| `GET /game-defs/{id}/setup-catalog` | | what the setup page's picker draws, for a game whose description says `setup_catalog: true`: `{tabs:[{id, label, items:[{kind, id, name, option, value?, group?, budget?, …}]}], presets:[{id, name, game_def_id, options}], swaps?}`. An item's `option` and `value` are what to send in `options` to choose it; `404` for any other game |
+| `GET /setup-profiles?family=` | | `{profiles:[{id, name, owner, mine, shared, game_def_id, options}]}`: the caller's own saved setups for that family of games, then up to 100 that others shared. Open to guests |
+| `POST /setup-profiles` | `{name, game_def_id, options, shared}` | an account saves a setup, replacing its own of the same name (any case). `name` up to 40 characters; `options` must make a game of `game_def_id`, else `400`. `403` for a guest; `409` past 30 per family |
+| `DELETE /setup-profiles/{id}` | | `204`. The owner's to do, or an administrator's (signed in by hand) for a shared one. `403` for a guest, `404` for anyone else |
 | `GET /game-defs/{id}/guide` | | the rules guide as Markdown pages `{game, generated?, tabs:[{id, title, markdown}]}` — the game's own, or one generated from its definition (`generated: true`) |
 | `GET /game-defs/{id}/assets/{path}` | | a file of the game's guide (images); `board.svg` draws an area map. Served inert (`Content-Security-Policy: sandbox`, `nosniff`); `404` for anything outside the module's files |
 | `GET /game-defs/{id}/tutorials` | | `{family, tutorials:[{id, kind, title, summary?, order?, game, steps}]}` — the tutorials offered with this game (those of its family, but for any marked `variant_only` for another of its variants), rules first, then strategy, then variant tutorials; an empty list for a game without any ([tutorials.md](tutorials.md)) |
@@ -162,6 +166,9 @@ takes their values as `"options": {"factions": ["ww","sl","gc","cc","ys"],
 like any other (see [ADR 0028](decisions/0028-derived-games-and-setup-options.md));
 `GET /game-defs` lists only the base games. Options that do not fit the
 layout (wrong number of cults, a cult twice, an unknown key) are a `400`.
+Cthulhu Wars takes whole packs as `bool`s (`dreamlands`, `azathoth`, …) and single
+items as lists: `"neutral-units": ["gnorri", "hound-of-tindalos"]` and
+`"neutral-books": ["shrivel"]`. One table has one id: every card of a pack named singly is that pack.
 
 `status` is `waiting`, `active` or `finished`. `opponent` seats a built-in bot
 in every other seat (the game starts immediately); `seat` chooses the

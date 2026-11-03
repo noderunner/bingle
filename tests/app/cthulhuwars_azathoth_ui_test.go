@@ -24,16 +24,14 @@ func TestWebHome_NeutralSpellbooksAndAzathothAreChosenOnTheSetupPage(t *testing.
 	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/?game=cthulhu-wars")); err != nil {
 		t.Fatal(err)
 	}
-	waitJS(t, ctx, "four seats", `document.querySelectorAll("#slots-field select.faction-select").length === 4`, 20*time.Second)
+	waitJS(t, ctx, "four seats", seatsReady(4), 20*time.Second)
+	openPickerTab(t, ctx, "other")
 	// Both cults with a timer book are at the table: both rows show.
 	if n := evalInt(t, ctx, `document.querySelectorAll("#book-swaps .swap-row:not([hidden])").length`); n != 2 {
 		t.Fatalf("%d swap rows, want 2 (Black Goat and Crawling Chaos)", n)
 	}
 	if got := evalString(t, ctx, `[...document.querySelectorAll("#book-swaps .swap-row")].map(r => r.textContent.split(":")[0]).join("|")`); !strings.Contains(got, "Ghroth") || !strings.Contains(got, "The Thousand Forms") {
 		t.Errorf("swap rows %q", got)
-	}
-	if got := evalString(t, ctx, `String(document.getElementById("option-azathoth") && document.getElementById("option-azathoth").checked)`); got != "false" {
-		t.Errorf("Azathoth box checked = %q", got)
 	}
 	set := func(cult, value string) {
 		evalString(t, ctx, `(function () {
@@ -50,22 +48,23 @@ func TestWebHome_NeutralSpellbooksAndAzathothAreChosenOnTheSetupPage(t *testing.
 	}
 	set("cc", "mao")
 	// A cult that leaves the table takes its row with it.
-	evalString(t, ctx, `(function () {
-		var s = document.querySelector('#slots-field select.faction-select[data-cult-seat="2"]');
-		s.value = "ww";
-		s.dispatchEvent(new Event("change", { bubbles: true }));
-		return "ok";
-	})()`)
+	openPickerTab(t, ctx, "factions")
+	clickSel(t, ctx, `#cw-panel [data-item="cc"]`)
+	openPickerTab(t, ctx, "other")
 	if n := evalInt(t, ctx, `document.querySelectorAll("#book-swaps .swap-row:not([hidden])").length`); n != 1 {
 		t.Errorf("%d swap rows after Crawling Chaos left, want 1", n)
 	}
-	evalString(t, ctx, `(function () {
-		var s = document.querySelector('#slots-field select.faction-select[data-cult-seat="2"]');
-		s.value = "cc";
-		s.dispatchEvent(new Event("change", { bubbles: true }));
-		return "ok";
-	})()`)
-	evalString(t, ctx, `document.getElementById("option-azathoth").click(); "ok"`)
+	openPickerTab(t, ctx, "factions")
+	clickSel(t, ctx, `#cw-panel [data-item="cc"]`)
+	// All of the Azathoth faction, tile by tile, is that faction.
+	openPickerTab(t, ctx, "neutrals")
+	for _, id := range []string{"dimensional-shambler", "star-vampire", "elder-thing", "servitor"} {
+		clickSel(t, ctx, `#cw-panel [data-item="`+id+`"]`)
+	}
+	openPickerTab(t, ctx, "other")
+	for _, id := range []string{"Shriveling", "Stars Are Right", "Recriminations", "The Mao Ceremony", "Umr at-Tawil", "Undimensioned"} {
+		evalString(t, ctx, `[...document.querySelectorAll("#cw-panel .cw-tile")].find(b => b.textContent === "`+id+`").click(); "ok"`)
+	}
 	evalString(t, ctx, `document.getElementById("create_player_name").value = "Alice"; "ok"`)
 	clickSel(t, ctx, `#create-game-form button[type="submit"]`)
 	loc := pollLocation(t, ctx, regexp.MustCompile(`/game/[A-Z0-9]+$`))

@@ -25,14 +25,14 @@ func statusForError(err error) int {
 		return http.StatusNotFound
 	case errors.Is(err, store.ErrWrongTournamentState), errors.Is(err, store.ErrTournamentFull), errors.Is(err, session.ErrTooFewEntries), errors.Is(err, session.ErrNotEntered):
 		return http.StatusConflict
-	case errors.Is(err, session.ErrNotOrganiser), errors.Is(err, session.ErrTournamentAccount), errors.Is(err, session.ErrMayNotEnter):
+	case errors.Is(err, session.ErrNotOrganiser), errors.Is(err, session.ErrTournamentAccount), errors.Is(err, session.ErrSetupAccount), errors.Is(err, session.ErrMayNotEnter):
 		return http.StatusForbidden
 	case errors.Is(err, session.ErrSeatsFull), errors.Is(err, session.ErrGameNotActive), errors.Is(err, session.ErrNameIsAHandle), errors.Is(err, session.ErrNameIsABot),
 		errors.Is(err, session.ErrAlreadyStarted), errors.Is(err, session.ErrSeatsOpen), errors.Is(err, session.ErrSeatTaken), errors.Is(err, session.ErrNoCultChoice),
 		errors.Is(err, session.ErrNothingToUndo), errors.Is(err, session.ErrCannotUndo), errors.Is(err, session.ErrTutorialRoom),
 		errors.Is(err, session.ErrDrawNotAllowed), errors.Is(err, session.ErrHintNotAllowed), errors.Is(err, session.ErrTooManyBotMatches), errors.Is(err, session.ErrRatedGame),
 		errors.Is(err, session.ErrNoAutoPlayOffer), errors.Is(err, session.ErrOwnTurnOffer), errors.Is(err, session.ErrNotConnected),
-		errors.Is(err, session.ErrKickNotAllowed), errors.Is(err, session.ErrWasReplaced):
+		errors.Is(err, session.ErrKickNotAllowed), errors.Is(err, session.ErrWasReplaced), errors.Is(err, session.ErrTooManySetups):
 		return http.StatusConflict
 	case errors.Is(err, session.ErrNotYourTurn), errors.Is(err, session.ErrNotAPlayer), errors.Is(err, session.ErrNotHost), errors.Is(err, session.ErrNotSeated), errors.Is(err, session.ErrVoiceNotJoined), errors.Is(err, session.ErrBadToken), errors.Is(err, session.ErrNotYourSeat), errors.Is(err, session.ErrNoPrincipal),
 		errors.Is(err, session.ErrNotHere):
