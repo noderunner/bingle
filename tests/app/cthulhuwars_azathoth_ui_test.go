@@ -92,12 +92,17 @@ func TestWebHome_NeutralSpellbooksAndAzathothAreChosenOnTheSetupPage(t *testing.
 		t.Fatalf("create: %d", code)
 	}
 	openGameAs(t, ctx, baseURL, created.RoomCode, info.GameDefID, "Alice")
-	waitJS(t, ctx, "the neutral cards", `document.querySelectorAll('[data-card="neutral"]').length >= 1`, 30*time.Second)
-	if got := evalString(t, ctx, `document.querySelector('[data-card="neutral"]').textContent`); !strings.Contains(got, "Undimensioned") || !strings.Contains(got, "Dimensional Shambler") {
-		t.Errorf("neutral card: %q", got)
-	}
-	if got := evalString(t, ctx, `[...document.querySelectorAll('[data-card="books"]')].map(c => c.textContent).join("|")`); !strings.Contains(got, "in place of Ghroth") || !strings.Contains(got, "in place of The Thousand Forms") {
+	// Swapped in at setup, a neutral spellbook reads as one of the cult's own.
+	waitJS(t, ctx, "the cards", `document.querySelectorAll('[data-card="books"]').length === 4`, 30*time.Second)
+	got := evalString(t, ctx, `[...document.querySelectorAll('[data-card="books"]')].map(c => c.textContent).join("|")`)
+	if !strings.Contains(got, "Shriveling") || !strings.Contains(got, "The Mao Ceremony") {
 		t.Errorf("book cards: %q", got)
+	}
+	if strings.Contains(got, "in place of") || strings.Contains(got, "Ghroth") || strings.Contains(got, "The Thousand Forms") {
+		t.Errorf("the swap still shows: %q", got)
+	}
+	if n := evalInt(t, ctx, `document.querySelectorAll('[data-card="neutral"], [data-card="loyalty"]').length`); n != 0 {
+		t.Errorf("%d neutral or Loyalty Card lists on the cults", n)
 	}
 	mu.Lock()
 	defer mu.Unlock()

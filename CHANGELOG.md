@@ -29,6 +29,10 @@ what the help window shows under *Recent changes*, so it is written for the peop
   Any unit you can move right then stays visible.
 ### Cthulhu Wars 0.1.2
 - The guide no longer mentions the gold stars or clicking a unit for its card.
+- **Neutral spellbooks are spellbooks.** One you hold covers a requirement like any other, and one swapped in for Ghroth or
+  The Thousand Forms at setup reads as your cult's own. Those still to take are under *Neutral items*.
+- **No more lists of Loyalty Cards on the cults.** A cult's cards show under its *Units*. An Independent Great Old One's
+  spellbook and requirement are on its hover card.
 
 ## 0.48.0 - 2026-11-02
 

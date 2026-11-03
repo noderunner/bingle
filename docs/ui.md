@@ -452,7 +452,8 @@ numbers as pictograms — ⚡ Power, ☠ Doom, ★ Elder Signs, ◎ Gates
 `js/icons.js` `STAT_ICONS`) — and under it collapsible sections, remembered
 between moves (`bingle.cards2`): **Faction Ability** (`data-card="ability"`,
 first; for the Sleeper also the abilities it borrows), **Spellbooks**,
-**Requirements**, **Elder Signs** (`data-card="signs"`, tokens: your own with
+**Requirements** (a neutral spellbook a cult holds, or one swapped in at setup, is one more
+of its spellbooks; what is left to take is under Neutral items), **Elder Signs** (`data-card="signs"`, tokens: your own with
 their values, the others' face down, revealed ones public — a cult with none
 shows a heading that does not open, `.faction-static`, and no "None yet") and **Units**
 (`data-card="units"`, open by default: one icon for every unit of the cult,

@@ -3488,7 +3488,7 @@ function factionCards(seat, sv) {
 	const ability = bySlot.get("ability");
 	if (ability) section(ability.id, ability.title, "", rowsBody(ability));
 	const books = bySlot.get("books");
-	if (books) section(books.id, books.title, spellbookCount(sv, books), spellbookGrid(sv, books, bySlot.get("reqs")));
+	if (books) section(books.id, books.title, spellbookCount(sv), spellbookGrid(sv, books, bySlot.get("reqs")));
 	for (const card of sv.cards || []) {
 		if (["ability", "books", "reqs", "units"].includes(card.id)) continue;
 		section(card.id, card.title, counted(card), rowsBody(card));
@@ -3505,9 +3505,9 @@ function factionCards(seat, sv) {
 }
 
 /** How many spellbooks a cult holds of its six, the neutral ones among them. */
-function spellbookCount(sv, books) {
+function spellbookCount(sv) {
 	const counter = (sv.counters || []).find((c) => c.id === "books");
-	return `${counter ? counter.value : books.rows.filter((r) => r.state === "done").length}/${books.rows.length}`;
+	return `${counter.value}/${counter.max}`;
 }
 
 /**
@@ -3524,7 +3524,7 @@ function spellbookGrid(sv, books, reqs) {
 	for (const r of earned) grid.append(bookTile(r));
 	// With all six a cult can earn no more, even if a neutral one took the place of its own.
 	const counter = (sv.counters || []).find((c) => c.id === "books");
-	if (!counter || counter.value < books.rows.length) for (const r of books.rows) if (r.state !== "done") grid.append(bookTile(r));
+	if (counter.value < counter.max) for (const r of books.rows) if (r.state !== "done") grid.append(bookTile(r));
 	return grid;
 }
 
@@ -3922,7 +3922,7 @@ function unitInfoCard() {
 				)
 			);
 		}
-		card.append(ul);
+		card.append(ul, ...bookRequirements(unit));
 	} else {
 		card.append(h("p", { class: "small muted" }, "No spellbook enhances this unit."));
 	}
@@ -4298,6 +4298,11 @@ function enterBlock(unit) {
 	return null;
 }
 
+/** What earns the spellbook of an Independent Great Old One, until it is earned. */
+function bookRequirements(unit) {
+	return unit.books.filter((b) => b.req && !b.unlocked).map((b) => h("p", { class: "unit-enter small" }, h("strong", {}, "Requirement: "), b.req));
+}
+
 /** The named abilities of a unit's card (a Great Old One's Desecrate, Vengeance, Devour…). */
 function abilitiesBlock(unit) {
 	if (!unit.abilities || !unit.abilities.length) return null;
@@ -4469,7 +4474,7 @@ function unitTip(unit, color, cost, where) {
 				)
 			);
 		}
-		box.append(h("p", { class: "small muted unit-books-title" }, "Spellbooks"), ul);
+		box.append(h("p", { class: "small muted unit-books-title" }, "Spellbooks"), ul, ...bookRequirements(unit));
 	}
 	return box;
 }
