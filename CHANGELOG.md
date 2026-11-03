@@ -4,6 +4,19 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.49.0 - 2026-11-02
+
+### Bingle Core 0.49.0
+- **Every game fits your screen.** The page Blooms has been trying out is now every game's: the whole play area stays in
+  view with the cards beside it, and nothing scrolls but the cards. The status bar is gone too: the result of a game and
+  its *Rematch* button are in the card with your moves, as are the controls for history and analysis.
+- **Your pieces are with your moves.** Your hand of pieces, and Onitama's move cards, are in the card that stays in view on
+  your turn.
+- **Card games get the whole table.** Nyet and the games of patience take all the width they can, with bigger cards on a
+  bigger window.
+- **Cthulhu Wars.** The map sits right under the round, with the history and any battle below it. The cults and the chat share the column beside the map, behind tabs, under your actions, and a badge tells
+  you when a message comes in. Tell us what you would want to see differently: this is the first go.
+
 ## 0.48.0 - 2026-11-02
 
 ### Bingle Core 0.48.0

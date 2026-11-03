@@ -14,8 +14,7 @@ import (
 // nyetStepJS plays a card if one can be played, else crosses the first open
 // box of the board, else picks the first team or bonus button.
 const nyetStepJS = `(function () {
-	var bar = document.querySelector(".status-bar");
-	if (!bar || !bar.classList.contains("your-turn")) return "wait";
+	if (!document.querySelector("#action-card.acting")) return "wait";
 	function click(el, what) {
 		el.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
 		return what;
@@ -76,7 +75,7 @@ func TestWebNyet_PlayARoundThroughTheUI(t *testing.T) {
 	}
 	if st := cfGet(t, baseURL, created.RoomCode); st.MoveSeq < 40 {
 		var where string
-		_ = chromedp.Run(ctx, chromedp.Evaluate(`document.querySelector(".status-bar").innerText.replace(/\n/g, " ") + " | buttons: " + [...document.querySelectorAll(".action-buttons button")].map(b => b.dataset.action).join(",") + " | cards: " + document.querySelectorAll("#card-table .pc-btn.playable").length`, &where))
+		_ = chromedp.Run(ctx, chromedp.Evaluate(`document.getElementById("status-message").textContent.replace(/\n/g, " ") + " | buttons: " + [...document.querySelectorAll(".action-buttons button")].map(b => b.dataset.action).join(",") + " | cards: " + document.querySelectorAll("#card-table .pc-btn.playable").length`, &where))
 		var legal struct {
 			Moves []struct {
 				Notation string `json:"notation"`

@@ -27,20 +27,19 @@ tried on one game before the others move.
   for a screen reader, and the rated, real-time and tournament badges move to the players card. When there is something
   else to say or a button to press (the result and a rematch, looking through history, analysis, or a game still waiting
   for an opponent), that goes in the actions card, under a heading that says which it is.
-- **Rollout is a list of games in `game.js`**, not a field of the game definition. Which page a game gets is a
-  temporary fact about the client, and the definition language should not have to keep a field that goes away once all
-  games have moved.
+- **Every game has this page.** Blooms came first, to be played and refined, and the rest followed. The old page
+  remains only for the lobby, which has no board to keep in view.
+- **What the player chooses from is an action.** A hand of pieces and Onitama's move cards go in the actions card and are
+  pinned with it. Everything else about a seat stays in the players card.
+- **The shape of the play area decides the columns.** A board takes the width its height allows, a board that grows
+  keeps one shape so the columns stay put between turns, and a table of cards, which has no shape, takes all the width
+  but a narrow column of cards.
+- **Tabs are in the column of cards, not the play area.** On a map, the play area is one thing, and what crowds the page
+  is the cards beside it: the cults, the talk and the history take turns, under the pinned actions. What belongs to the
+  map (a battle, a unit's card) and the history go under it, in the height a wide map leaves.
 - **The lobby keeps its page.** It has no board to keep in view.
-
-## Not done yet
-
-- **Tabs for a large play area.** A hex board has one thing to show. The games that may need tabs, such as Cthulhu
-  Wars with its map and its cult panels, are where that gets decided.
-- **The other games.** Their panels (hands, card tables, cult sheets) live in the board column today and each will need
-  a place in the column. Games of three or more seats, and the phone layouts of the area maps and card games, may
-  replace or be replaced by this page.
 
 ## Consequences
 
-Two code paths draw a game page until every game has moved. The cards themselves are the same functions in both, so
-only the arrangement is duplicated. A card in the column can be scrolled out of sight, a seat's clock among them.
+A card in the column can be scrolled out of sight, a seat's clock among them, and on a map it can be behind a tab. Phones
+keep their own pages for the area maps and the card games, swiped between one at a time.

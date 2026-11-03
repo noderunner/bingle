@@ -104,9 +104,6 @@ func TestWebTutorial_PlaysThroughTheBloomsTutorial(t *testing.T) {
 	if got := evalString(t, ctx, `document.getElementById("status-message").textContent`); !strings.Contains(got, "example") {
 		t.Errorf("an example says %q", got)
 	}
-	if evalBool(t, ctx, `[...document.querySelectorAll(".status-bar .badge")].some((b) => b.textContent === "Your turn")`) {
-		t.Error("an example says it is your turn")
-	}
 	next()
 	waitStep(t, ctx, "7")
 	waitJS(t, ctx, "the bloom gone", stones+` === 5 && document.querySelector('#board .cell[data-position="g2"]').dataset.height === "0"`, 10*time.Second)

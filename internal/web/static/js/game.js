@@ -1835,88 +1835,20 @@ function render() {
 		renderMobileCards(seats, bottomSeat);
 		return;
 	}
-	if (!lobby && fitsTheScreen()) {
-		renderFitted(seats, bottomSeat);
+	if (!lobby) {
+		renderFitted(seats, bottomSeat, cults);
 		return;
 	}
-	const layout = h("div", { class: "game-layout" + (areas && !lobby ? " areas" : "") + (lobby ? " lobby-layout" : "") });
-	const main = h("div", { class: "board-column" });
-	// On a wide screen the move list and the log go under the map, where
-	// there is room, so the side column holds just the cults and the table.
-	const below = areas && many && window.matchMedia("(min-width: 1500px)").matches ? [] : null;
-	layout.append(main, sidePanel(lobby ? null : cults, below));
-	root.append(layout);
-
-	if (lobby) {
-		main.append(statusBar());
-		main.append(lobbyCard(lobbyContext()));
-		layout.querySelector(".side-panel").append(debugPanel());
-		return;
-	}
-	main.append(statusBar());
-	if (S.tut) main.append(tutorialCard());
-	main.append(kickVoteBanner());
-	main.append(slowTurnBanner());
-	for (const notice of [nextGameBanner(), firstMoveBanner()]) if (notice) main.append(notice);
-	const banner = drawOfferBanner();
-	if (banner) main.append(banner);
-	const hintNotice = hintBanner();
-	if (hintNotice) main.append(hintNotice);
-
-	if (!S.me.seat && !S.spectating) {
-		const gate = identityGate();
-		if (gate) main.append(gate);
-	}
-
-	const wrap = h("div", { class: "board-wrap" + (areas ? " wide" : "") });
-	const boardHost = h("div", { id: "board" });
-	if (areas) {
-		const b = S.info.board.canvas || { width: 1000, height: 490 };
-		wrap.style.setProperty("--aspect", String((b.width + 16) / (b.height + 16)));
-	}
-	if (many) {
-		const rb = roundBar();
-		if (rb) wrap.append(rb);
-		wrap.append(boardHost);
-		wrap.append(moveBar());
-		for (const panel of cardPanels()) wrap.append(panel);
-		wrap.append(h("div", { class: "inspector small muted", id: "inspector", "aria-live": "off" }, inspectorText()));
-		const unitCard = unitInfoCard();
-		if (unitCard) wrap.append(unitCard);
-		const bp = battlePanel();
-		if (bp) wrap.append(bp);
-	} else {
-		const topSeats = seats.filter((s) => s.seat !== bottomSeat);
-		for (const ts of topSeats) wrap.append(seatStrip(ts.seat));
-		wrap.append(boardHost);
-		wrap.append(seatStrip(bottomSeat));
-		wrap.append(moveBar());
-		const cards = cardsPanel();
-		if (cards) wrap.append(cards);
-		for (const panel of cardPanels()) wrap.append(panel);
-		wrap.append(h("div", { class: "inspector small muted", id: "inspector", "aria-live": "off" }, inspectorText()));
-	}
-	const exchange = exchangePanel();
-	if (exchange) wrap.append(exchange);
-	main.append(wrap);
-	if (below && below.length) main.append(h("div", { class: "below-map" }, ...below));
-
-	drawBoard(boardHost);
-	layout.querySelector(".side-panel").append(debugPanel());
+	const side = h("aside", { class: "side-panel" }, voiceCard({ code, me: S.me, seats: S.game.seats }) || "", chatCard({ code, me: S.me }), debugPanel());
+	chatSeen();
+	root.append(h("div", { class: "game-layout lobby-layout" }, h("div", { class: "board-column" }, statusBar(), lobbyCard(lobbyContext())), side));
 }
 
 
 // ---- the fitted layout --------------------------------------------------------------------
 //
-// The page is exactly as tall as the window and never scrolls: the board fills the
+// The page is exactly as tall as the window and never scrolls: the play area fills the
 // space on the left and the cards beside it scroll on their own (ADR 0092).
-
-/** The games laid out this way so far. The rest follow once it has been played and refined. */
-const FITTED_GAMES = /^blooms(-\d+)?$/;
-
-function fitsTheScreen() {
-	return FITTED_GAMES.test(S.game.game_def_id);
-}
 
 /** The page is rebuilt on every move: the cards must stay where the player scrolled them. */
 function rememberRailScroll() {
@@ -1925,15 +1857,10 @@ function rememberRailScroll() {
 }
 
 /**
- * What the player can do now. On their turn it is drawn out and pinned inside the
- * column, so it is in view however far the cards were scrolled, without moving them
- * or taking the keyboard from a chat message being typed.
- */
-/**
  * The card of what the player can do now. `note` is what the bar says on other pages when it
  * has something to tell or a button to press: a result, history, analysis, a wait.
  */
-function actionCard(note) {
+function actionCard(note, choices = []) {
 	// Not actingSeat(): that lapses while a step is being sent, and the card would jump.
 	const acting = inAnalysis() ? !!actingSeat() : isLive() && isMyTurn() && !tutorialLookingBack();
 	const bar = moveBar();
@@ -1943,7 +1870,7 @@ function actionCard(note) {
 	const waiting = !acting && isLive() && !inAnalysis() && isActive() && !!S.me.seat && !S.tut;
 	const text = bar.textContent.trim();
 	// Kept while the opponent plays, so that the cards below do not jump at each turn.
-	if (!acting && !waiting && !text && !note) return null;
+	if (!acting && !waiting && !text && !note && !choices.length) return null;
 	const title = inAnalysis() ? "Analysis" : !isLive() ? "History" : acting ? "Your move" : g.status === "finished" ? "Game over" : g.status === "waiting" ? "Waiting" : "Actions";
 	const card = h("section", { class: "card action-card" + (acting ? " acting" : ""), id: "action-card", "aria-label": "Your actions" });
 	card.append(h("h3", {}, title));
@@ -1952,16 +1879,42 @@ function actionCard(note) {
 		card.classList.toggle("history", note.history);
 		card.append(note.words);
 	}
-	if (waiting && !text) card.append(h("p", { class: "small muted", id: "action-idle" }, "Your choices appear here on your turn."));
+	if (waiting && !text && !choices.length) card.append(h("p", { class: "small muted", id: "action-idle" }, "Your choices appear here on your turn."));
 	if (bar.childNodes.length) card.append(bar);
+	card.append(...choices);
 	if (note && note.buttons.length) card.append(h("div", { class: "note-buttons" }, ...note.buttons));
 	return card;
 }
 
-function renderFitted(seats, bottomSeat) {
+function renderFitted(seats, bottomSeat, cults) {
 	document.body.classList.add("fit-screen");
+	const areas = S.info.board.style === "areas";
+	const boardless = S.info.board.style === "none";
 	const boardHost = h("div", { id: "board" });
-	const main = h("div", { class: "board-column" }, h("div", { class: "board-wrap" }, boardHost, h("div", { class: "inspector small muted", id: "inspector", "aria-live": "off" }, inspectorText())));
+	const wrap = h("div", { class: "board-wrap" });
+	const round = roundBar();
+	if (round) wrap.append(round);
+	wrap.append(boardHost);
+	for (const panel of cardPanels()) wrap.append(panel);
+	wrap.append(h("div", { class: "inspector small muted", id: "inspector", "aria-live": "off" }, inspectorText()));
+	// A map leaves height under it, and what happens on the map is best read next to it.
+	if (areas) for (const part of [unitInfoCard(), battlePanel(), exchangePanel()]) if (part) wrap.append(part);
+	const main = h("div", { class: "board-column" }, wrap);
+
+	// The play area comes first: the cards take what room it leaves them.
+	const screen = h("div", { class: "game-layout play-screen" + (areas ? " areas" : "") + (boardless ? " boardless" : "") }, main);
+	root.append(screen);
+	drawBoard(boardHost);
+	// The board's column is as wide as the board can be drawn: the cards have what is left, up to a limit.
+	const view = boardHost.querySelector("svg")?.viewBox.baseVal;
+	const canvas = S.info.board.canvas;
+	if (areas && canvas) screen.style.setProperty("--board-aspect", (canvas.width + 16) / (canvas.height + 16));
+	// A board that grows with the game (Hive) keeps one shape, or the columns would move at each turn.
+	else if (S.info.board.style === "free") screen.style.setProperty("--board-aspect", 1.25);
+	else if (view && view.height) screen.style.setProperty("--board-aspect", view.width / view.height);
+	const history = historyCard();
+	const historyUnderMap = areas && wrap.getBoundingClientRect().bottom - wrap.lastElementChild.getBoundingClientRect().bottom >= 110;
+	if (historyUnderMap) wrap.append(history);
 
 	// No bar on this page: what it would say goes in the cards. While the game goes on they
 	// say whose turn it is, and its words are only for a screen reader.
@@ -1973,33 +1926,75 @@ function renderFitted(seats, bottomSeat) {
 		: { words, over: bar.classList.contains("over"), history: bar.classList.contains("history"), buttons: [...bar.querySelectorAll(":scope > button, :scope > a.button")] };
 	if (quiet) words.classList.add("sr-only");
 
+	const players = cults || h("section", { class: "card players-card", id: "players-card", "aria-label": "Players" });
+	if (!cults) {
+		for (const ts of seats.filter((s) => s.seat !== bottomSeat)) players.append(seatStrip(ts.seat));
+		players.append(seatStrip(bottomSeat));
+	}
+	const badges = bar.querySelectorAll("#rated-badge, #real-time-badge, #tournament-badge, #rating-note, #conn-badge");
+	players.append(h("div", { class: "table-badges" }, ...badges));
+
+	// What the player chooses from goes with the actions, and is pinned with them.
+	const choices = [players.querySelector(`#seat-${S.me.seat} .hand`), cardsPanel()];
+	if (!areas) choices.push(exchangePanel());
+
 	// The first in the column is what asks for the player's attention.
 	const first = [];
 	if (S.tut) first.push(tutorialCard());
 	first.push(kickVoteBanner(), slowTurnBanner(), nextGameBanner(), firstMoveBanner(), drawOfferBanner(), hintBanner());
 	if (!S.me.seat && !S.spectating) first.push(identityGate());
-	first.push(actionCard(note));
-	const players = h("section", { class: "card players-card", id: "players-card", "aria-label": "Players" });
-	for (const ts of seats.filter((s) => s.seat !== bottomSeat)) players.append(seatStrip(ts.seat));
-	players.append(seatStrip(bottomSeat));
-	const badges = bar.querySelectorAll("#rated-badge, #real-time-badge, #tournament-badge, #rating-note, #conn-badge");
-	players.append(h("div", { class: "table-badges" }, ...badges));
-	first.push(players);
+	first.push(actionCard(note, choices.filter(Boolean)));
+	const talk = !S.tut ? [voiceCard({ code, me: S.me, seats: S.game.seats }), chatCard({ code, me: S.me })].filter(Boolean) : [];
 
-	const rail = sidePanel(null);
-	rail.classList.add("play-rail");
-	rail.id = "play-rail";
-	rail.prepend(...first.filter(Boolean));
+	const rail = h("aside", { class: "side-panel play-rail", id: "play-rail" }, ...first.filter(Boolean));
+	if (areas) {
+		// More than a column can show at once: the cults, the table talk and the history take turns.
+		const panes = [{ id: "cults", label: seats.length > 2 ? "Cults" : "Players", nodes: [players, neutralCard()] }];
+		if (talk.length) panes.push({ id: "talk", label: "Chat", nodes: talk });
+		if (!historyUnderMap) panes.push({ id: "history", label: "History", nodes: [history] });
+		rail.append(...railTabs(panes));
+	} else {
+		rail.append(players, ...(cults ? [neutralCard()].filter(Boolean) : []), ...talk, history);
+		if (talk.length) chatSeen();
+	}
 	rail.append(debugPanel());
 	if (quiet) rail.append(words);
-
-	const screen = h("div", { class: "game-layout play-screen" }, main, rail);
-	root.append(screen);
+	screen.append(rail);
 	rail.scrollTop = S.railScroll || 0;
-	drawBoard(boardHost);
-	// The board's column is as wide as the board can be drawn: the cards have what is left, up to a limit.
-	const view = boardHost.querySelector("svg")?.viewBox.baseVal;
-	if (view && view.height) screen.style.setProperty("--board-aspect", view.width / view.height);
+}
+
+/** The tabs of the column of cards, and their panes: all stay on the page, so a message typed there is kept. */
+function railTabs(panes) {
+	const saved = S.railTab || store.get("bingle.railTab", panes[0].id);
+	const current = panes.some((p) => p.id === saved) ? saved : panes[0].id;
+	const tabs = h("div", { class: "card-tabs rail-tabs", role: "tablist", "aria-label": "Cards" });
+	const out = [tabs];
+	for (const pane of panes) {
+		const on = pane.id === current;
+		const label = [pane.label];
+		if (pane.id === "talk") label.push(h("span", { class: "badge chat-unread", id: "rail-chat-unread", hidden: on || !chatUnread() }, String(chatUnread())));
+		tabs.append(
+			h(
+				"button",
+				{
+					type: "button",
+					class: "card-tab" + (on ? " active" : ""),
+					id: `rail-tab-${pane.id}`,
+					role: "tab",
+					"aria-selected": on ? "true" : "false",
+					onclick: () => {
+						S.railTab = pane.id;
+						store.set("bingle.railTab", pane.id);
+						render();
+					},
+				},
+				...label
+			)
+		);
+		out.push(h("div", { class: "rail-pane", id: `rail-pane-${pane.id}`, role: "tabpanel", hidden: !on }, ...pane.nodes.filter(Boolean)));
+	}
+	if (current === "talk") chatSeen();
+	return out;
 }
 
 // ---- the phone layout --------------------------------------------------------------------
@@ -2026,6 +2021,11 @@ function rememberMobileScroll() {
 
 /** The chat badge and the "your turn" mark of the bottom bar, kept current without a redraw. */
 function paintMobileBadges() {
+	const railBadge = document.getElementById("rail-chat-unread");
+	if (railBadge) {
+		railBadge.textContent = String(chatUnread());
+		railBadge.hidden = !chatUnread() || !document.getElementById("rail-pane-talk").hidden;
+	}
 	const nav = document.getElementById("m-nav");
 	if (!nav) return;
 	const chatItem = nav.querySelector('[data-group="chat"]');
@@ -4168,8 +4168,8 @@ function moveBar() {
 	}
 	if (acting && b.manualSteps().length) {
 		actions.append(h("button", { id: "undo-step", class: "ghost", onclick: undoStep, title: "Undo last selection (Backspace)" }, "↶ Back"));
-		// On the fitted page Back is enough for now: a move there is a stone and a cell.
-		if (!fitsTheScreen()) actions.append(h("button", { id: "reset-move", class: "ghost", onclick: resetMove, title: "Clear the move (Esc)" }, "Reset"));
+		// A move that is a word and a cell (Blooms): Back is enough.
+		if (!(rulesetView() || {}).piece_action) actions.append(h("button", { id: "reset-move", class: "ghost", onclick: resetMove, title: "Clear the move (Esc)" }, "Reset"));
 	}
 	// Taking back a step already sent: in the list of actions when there is one,
 	// else here. With a selection on the go, Back clears that first.
@@ -4726,34 +4726,6 @@ function addBotControl() {
 		)
 	);
 	return row;
-}
-
-function sidePanel(top, below) {
-	const side = h("aside", { class: "side-panel" });
-	if (top) side.append(top);
-	if (top) side.append(neutralCard() || "");
-	// `below`, when given, takes the move list and the log instead.
-	const place = (card) => (below ? below.push(card) : side.append(card));
-
-	// A game that has not started: the table talk, nothing else (the rules and
-	// the options are in the bar at the top of the page).
-	if (inLobby()) {
-		side.append(voiceCard({ code, me: S.me, seats: S.game.seats }) || "");
-		side.append(chatCard({ code, me: S.me }));
-		chatSeen();
-		return side;
-	}
-
-	// Voice and table talk — not in a tutorial, where there is nobody to talk to.
-	if (!S.tut) {
-		side.append(voiceCard({ code, me: S.me, seats: S.game.seats }) || "");
-		side.append(chatCard({ code, me: S.me }));
-		chatSeen();
-	}
-
-	// The moves played and, for games that tell it, what happened.
-	place(historyCard());
-	return side;
 }
 
 /** The moves played, with the history controls (and the log, in its own tab). */

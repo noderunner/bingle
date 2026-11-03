@@ -21,21 +21,30 @@ small gate: join an open seat, continue as a seated player's name, or watch.
 
 ## The fitted game page
 
-A game named by `FITTED_GAMES` in `js/game.js` (so far only Blooms and its variants, once out of the lobby)
-is drawn by `renderFitted` ([ADR 0092](decisions/0092-a-game-page-that-fits-the-screen.md)). `body.fit-screen` makes
+Every game, once out of the lobby, is drawn by `renderFitted` (a phone has its own pages for the area maps and the card
+games, in `renderMobile` and `renderMobileCards`) ([ADR 0092](decisions/0092-a-game-page-that-fits-the-screen.md)). `body.fit-screen` makes
 the page exactly as tall as the window, with no page scroll and no footer. The `.board-column` is as wide as the board
-can be drawn at that height (`--board-aspect`, from the board's `viewBox`), leaving `#play-rail` at least `--rail-least`.
+can be drawn at that height (`--board-aspect`, from the board's `viewBox`; the map's canvas; a fixed shape for a board
+that grows, such as Hive's), leaving `#play-rail` at least `--rail-least`.
 The rail has what is left, up to 40rem, and any width beyond that is shared by the outer margins. It holds the cards in
 one column and scrolls by itself, keeping its place across redraws: the tutorial and any notices, `#action-card`,
-`#players-card`, voice, chat and history. On an upright screen under 980px wide, the rail goes under the board, whose
-row is no taller than the board.
+`#players-card` (`#cult-stack` at a table of three or more), voice, chat and history. On an upright screen under 980px
+wide, the rail goes under the board, whose row is no taller than the board.
+
+- **A table of cards** (`.boardless`) has no shape of its own. The rail is at most 26rem and the table takes the rest of
+  the width, with cards sized to the window. The column scrolls if a pile of cards runs long.
+- **A map** (`.areas`) sits at the top of its column under the round bar, with a wider rail (`--rail-least`). What is
+  under it shares the height left: the battle, the card of a unit, an exchange, and the history when at least 110px is
+  free. The rail's cards take turns behind `.rail-tabs`: `#rail-tab-cults`, `#rail-tab-talk`, and `#rail-tab-history`
+  when the history is not under the map. Every pane stays on the page, so a message being typed survives a change of tab.
 
 No `.status-bar` is drawn on this page. While a game is being played, `#status-message` stays as `.sr-only` for screen
 readers. For a result, history, analysis or a game waiting for an opponent, the message and the bar's buttons (`#rematch`,
 `#return-live`, `#analyze-here`, `#exit-analysis`, `#play-from-here`) are in `#action-card`, whose heading says which it
 is. The game's badges are in `.table-badges`, with `#conn-badge` shown only when the connection is not live.
 
-`#action-card` holds the move bar. On the player's turn it has `.acting`, which pins it to the edges of the rail, so it
+`#action-card` holds the move bar and what the player chooses from: their hand and the move cards (`#cards-panel`).
+Its height is limited to the rail's, and it scrolls inside if it needs more. On the player's turn it has `.acting`, which pins it to the edges of the rail, so it
 is in view however far the rail is scrolled. It neither moves the rail nor takes the keyboard.
 
 Once a piece is chosen, `#pending-move` shows the game's `piece_action` word and the piece's picture. *Back* (`#undo-step`)

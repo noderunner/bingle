@@ -117,6 +117,11 @@ func TestWebCthulhuWars_ChatBetweenAPlayerAndASpectator(t *testing.T) {
 	waitJS(t, alice, "chat", `document.getElementById("chat-input")`, 10*time.Second)
 	waitJS(t, watcher, "chat", `document.getElementById("chat-input") && document.getElementById("chat-name")`, 10*time.Second)
 	waitJS(t, watcher, "live", `document.getElementById("conn-badge") && document.getElementById("conn-badge").textContent === "live"`, 10*time.Second)
+	// The chat is a tab of the column beside the map.
+	clickSel(t, alice, "#rail-tab-talk")
+	clickSel(t, watcher, "#rail-tab-talk")
+	waitJS(t, alice, "the chat tab", `document.getElementById("chat-input").offsetParent !== null`, 10*time.Second)
+	waitJS(t, watcher, "the chat tab", `document.getElementById("chat-input").offsetParent !== null`, 10*time.Second)
 
 	if err := chromedp.Run(alice,
 		chromedp.SendKeys("#chat-input", "Who takes the Black Goat?\r", chromedp.ByID),

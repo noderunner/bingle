@@ -735,9 +735,6 @@ dialog.rules-window[open] { display: flex; flex-direction: column; }
 kbd { font: 600 0.8em ui-monospace, Menlo, Consolas, monospace; border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 4px; padding: 0 0.35em; background: var(--surface-2); }
 
 /* --- area maps and multi-seat tables (Cthulhu Wars) ----------------------- */
-.board-wrap.wide #board, .board-wrap.wide .move-bar, .board-wrap.wide .round-bar, .board-wrap.wide .exchange,
-.board-wrap.wide .inspector { width: 100%; max-width: min(100%, calc((100vh - 235px) * var(--aspect, 2))); }
-.board-wrap.wide .move-bar, .board-wrap.wide .exchange, .board-wrap.wide .inspector { min-height: 0; }
 .area-map { display: block; }
 .area-bg { fill: #e5dcc0; stroke-linejoin: round; transition: filter 0.12s; }
 .cell.area.clickable { cursor: pointer; }
@@ -791,7 +788,6 @@ kbd { font: 600 0.8em ui-monospace, Menlo, Consolas, monospace; border: 1px soli
 .battle .who { font-weight: 700; }
 .board-wrap > * { min-width: 0; }
 @media (max-width: 640px) {
-	.board-wrap.wide #board { margin-inline: -0.25rem; }
 	.move-bar .action-buttons button, .move-bar .piece-choice { padding: 0.35rem 0.6rem; font-size: 0.9rem; }
 }
 
@@ -945,18 +941,12 @@ kbd { font: 600 0.8em ui-monospace, Menlo, Consolas, monospace; border: 1px soli
 /* ---- big screens: bigger boards, panes that fill the window -------------- */
 @media (min-width: 1400px) {
 	.game-layout { grid-template-columns: minmax(0, 1fr) 380px; gap: 1.25rem; }
-	.game-layout.areas { grid-template-columns: minmax(0, 1fr) 430px; }
-}
-@media (min-width: 2200px) {
-	.game-layout.areas { grid-template-columns: minmax(0, 1fr) 500px; }
 }
 .cult-stack { display: flex; flex-direction: column; gap: 0.5rem; }
 .cult-stack .seat-strip { max-width: none; width: 100%; }
 .side-panel .seat-strip .seat-head { row-gap: 0.1rem; }
 
 /* Wide screens: the move list and the log sit right under the map. */
-.below-map { display: grid; grid-template-columns: repeat(auto-fit, minmax(22rem, 1fr)); gap: 1rem; margin-top: 1rem; width: 100%; align-items: start; }
-.below-map .card { margin: 0; }
 
 /* ---- round bar: the phases in order, who plays when ----------------------- */
 .round-bar { align-items: center; row-gap: 0.4rem; }
@@ -1022,7 +1012,6 @@ kbd { font: 600 0.8em ui-monospace, Menlo, Consolas, monospace; border: 1px soli
 .token:focus-visible { outline: none; }
 .token:focus-visible .piece-body { stroke: var(--focus); stroke-width: 3.4; }
 .unit-info { margin: 0.5rem 0 0; padding: 0.6rem 0.8rem; width: 100%; max-width: 46rem; }
-.board-wrap.wide .unit-info { max-width: min(100%, calc((100vh - 235px) * var(--aspect, 2))); }
 .unit-info-head { display: flex; align-items: center; gap: 0.6rem; }
 .unit-info-head svg { flex: none; }
 .unit-info-title { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; flex: 1; }
@@ -1427,6 +1416,22 @@ body.fit-screen .play-screen {
 .play-screen #board { flex: 1; min-height: 0; max-width: none; }
 .play-screen #board svg { height: 100%; }
 .play-screen .inspector { flex: none; max-width: none; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.play-screen.boardless .inspector:empty { display: none; }
+/* A map: its own shape at the top of the column. What is under it shares the height left. */
+body.fit-screen .play-screen.areas { --rail-least: min(27rem, 42cqw); --inspector-room: 7rem; }
+.play-screen.areas .board-wrap { align-items: stretch; }
+.play-screen.areas .round-bar { flex: none; margin: 0; }
+.play-screen.areas #board { flex: 0 1 auto; min-height: 45%; aspect-ratio: var(--board-aspect, 2); }
+.play-screen.areas #board svg { width: 100%; height: 100%; }
+.play-screen.areas .board-wrap > .card { flex: 0 1 auto; min-height: 0; overflow-y: auto; margin: 0; }
+.play-screen.areas .board-wrap > .side-moves { flex: 1 1 0; }
+/* A table of cards has no shape of its own: it takes the width, and scrolls if a column runs long. */
+body.fit-screen .play-screen.boardless { justify-content: stretch; grid-template-columns: minmax(0, 1fr) minmax(var(--rail-least), 26rem); }
+.play-screen.boardless .board-column { overflow-y: auto; }
+.play-screen.boardless .board-wrap { flex: none; align-items: stretch; }
+.play-screen.boardless .card-table { margin: 0; }
+.play-screen.boardless .card-table:not(.sol-table) { --cw: clamp(66px, min(13cqh, 5.5cqw), 110px); --ch: calc(var(--cw) * 1.39); }
+body.fit-screen .sol-top, body.fit-screen .sol-columns { --cw: min(112px, 14cqh, calc((100cqw - (var(--n, 7) - 1) * var(--gap)) / var(--n, 7))); }
 /* A seat's name in its two colours (seatWord in js/game.js). */
 .seat-word { font-weight: 700; color: transparent; -webkit-background-clip: text; background-clip: text; }
 /* The little padding keeps the outline of a card clear of the column's edge. */
@@ -1439,13 +1444,19 @@ body.fit-screen .play-screen {
 .action-card .message { font-weight: 700; }
 .action-card .note-buttons { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.6rem; }
 .action-card .move-bar:not(:first-child) { margin-top: 0.4rem; }
+.action-card > .hand, .action-card > .cards-panel { margin-top: 0.5rem; }
+.rail-tabs { margin: 0.2rem 0 0; flex: none; }
+/* Smaller to start with in a column, and the player's own tile size still applies. */
+.play-rail .hand-piece.tile svg { width: calc(4.4rem * var(--tile-scale, 1)); height: calc(4.4rem * var(--tile-scale, 1)); }
+.rail-pane { display: flex; flex-direction: column; gap: 0.6rem; }
+.rail-pane[hidden] { display: none; }
 .action-card .move-bar { max-width: none; min-height: 0; }
 .action-card .hint:empty { display: none; }
 /* The question, then what answers it in the order it is played: the stones, then End and Back. */
 .action-card #move-hint { flex-basis: 100%; order: -2; }
 .action-card .piece-buttons { display: inline-flex; flex-wrap: wrap; gap: 0.4rem; order: -1; }
 /* Pinned at both edges: in view whether the player has scrolled past it or not yet down to it. */
-.action-card.acting { position: sticky; top: 0; bottom: 0; z-index: 2; border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent), var(--shadow); }
+.action-card.acting { position: sticky; top: 0; bottom: 0; z-index: 2; max-height: calc(100cqh - 8px); overflow-y: auto; border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent), var(--shadow); }
 .action-card.acting h3 { color: var(--accent); }
 .players-card { display: flex; flex-direction: column; gap: 0.4rem; padding: 0.5rem; }
 .players-card .seat-strip { max-width: none; box-sizing: border-box; }
@@ -1459,6 +1470,7 @@ body.fit-screen .play-screen {
 	body.fit-screen main.page { padding: 0.4rem; }
 	body.fit-screen .play-screen { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, min(58cqh, 100cqw / var(--board-aspect, 1.1))) minmax(0, 1fr); gap: 0.4rem; }
 	.play-screen .inspector { display: none; }
+	body.fit-screen .play-screen.boardless { grid-template-rows: minmax(0, 58cqh) minmax(0, 1fr); grid-template-columns: minmax(0, 1fr); }
 }
 /* Where height or width is short the board gets what the page can give up. */
 @media (max-width: 1100px), (max-height: 560px) {

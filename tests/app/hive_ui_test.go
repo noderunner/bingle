@@ -12,8 +12,7 @@ import (
 // hiveStepJS picks a tile from the supply, then a cell; once tiles are down it
 // also selects a tile and its destination.
 const hiveStepJS = `(function () {
-	var bar = document.querySelector(".status-bar");
-	if (!bar || !bar.classList.contains("your-turn")) return "wait";
+	if (!document.querySelector("#action-card.acting")) return "wait";
 	function click(el, what) {
 		el.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
 		return what;
