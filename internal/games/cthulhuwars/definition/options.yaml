@@ -229,9 +229,11 @@
   slots:
     - id: bg
       label: Ghroth
+      recommended: undim
       text: 'Black Goat: the action that gives its enemies a minute to decide who loses Cultists.'
     - id: cc
       label: The Thousand Forms
+      recommended: stars
       text: 'Crawling Chaos: the negotiation over how much Power the others pay.'
   choices:
     - id: shrivel

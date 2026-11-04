@@ -380,7 +380,7 @@ func TestWebSolitaire_SettingUp(t *testing.T) {
 	waitJS(t, ctx, "the sets of cards", `!document.getElementById('card-set-field').hidden`, 10*time.Second)
 	chooseVariant(t, ctx, "bowling-solitaire")
 	waitJS(t, ctx, "the description of the variant", `document.getElementById("game-blurb").textContent.includes("Sackson")`, 10*time.Second)
-	if err := chromedp.Run(ctx, chromedp.SetValue(`#create_player_name`, "Ana", chromedp.ByQuery)); err != nil {
+	if err := chromedp.Run(ctx, chromedp.Evaluate(`localStorage.setItem("bingle.name", JSON.stringify("Ana"))`, nil)); err != nil {
 		t.Fatal(err)
 	}
 	clickSel(t, ctx, `#create-game-form button[type="submit"]`)

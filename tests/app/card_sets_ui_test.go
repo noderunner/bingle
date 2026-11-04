@@ -83,7 +83,7 @@ func TestWebCardSets_ChosenWhenSettingUpTheGame(t *testing.T) {
 		t.Errorf("%d suits are dimmed, want the 4 a game of 4 suits does not reach", n)
 	}
 	// Starting the game carries the choice to the table.
-	if err := chromedp.Run(ctx, chromedp.SetValue(`#create_player_name`, "Ana", chromedp.ByQuery)); err != nil {
+	if err := chromedp.Run(ctx, chromedp.Evaluate(`localStorage.setItem("bingle.name", JSON.stringify("Ana"))`, nil)); err != nil {
 		t.Fatal(err)
 	}
 	clickSel(t, ctx, `#create-game-form button[type="submit"]`)

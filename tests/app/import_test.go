@@ -148,9 +148,6 @@ func TestWebLobby_SetupCanImportAMoveLog(t *testing.T) {
 	}
 	evalString(t, ctx, `document.querySelector('input[name="start_mode"][value="import"]').click(); "ok"`)
 	waitJS(t, ctx, "the move log box", `document.getElementById("import-text").offsetParent !== null`, 5*time.Second)
-	if evalBool(t, ctx, `document.getElementById("create_player_name").offsetParent !== null`) {
-		t.Error("the name field stays while importing")
-	}
 	if err := chromedp.Run(ctx, chromedp.SetValue("#import-text", importedPTN, chromedp.ByID)); err != nil {
 		t.Fatal(err)
 	}
@@ -253,9 +250,6 @@ func TestWebLobby_SetupCanStartTwoBotsToWatch(t *testing.T) {
 		document.getElementById("botmatch-speed").value = "250";
 		return "ok";
 	})()`)
-	if evalBool(t, ctx, `document.getElementById("create_player_name").offsetParent !== null`) {
-		t.Error("a name is asked although nobody plays")
-	}
 	clickSel(t, ctx, "#create-submit")
 	waitJS(t, ctx, "game page", `location.pathname.indexOf("/game/") === 0`, 15*time.Second)
 	// Moves arrive live over the WebSocket while we watch.

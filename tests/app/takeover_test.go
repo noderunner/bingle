@@ -146,7 +146,7 @@ func TestWebClock_TheSetupOfALargeTable(t *testing.T) {
 	base := newRESTTestServer(t)
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/?game=nyet-3"), chromedp.WaitVisible(`#create_player_name`, chromedp.ByQuery)); err != nil {
+	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/?game=nyet-3"), chromedp.WaitVisible(`#create-submit`, chromedp.ByQuery)); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the clock is offered", `document.getElementById("clock-field").hidden === false`, 10*time.Second)
@@ -155,7 +155,7 @@ func TestWebClock_TheSetupOfALargeTable(t *testing.T) {
 	}
 	evalString(t, ctx, `(() => { const c = document.getElementById("clock_seconds"); c.value = "7200"; c.dispatchEvent(new Event("change")); return "ok"; })()`)
 	if err := chromedp.Run(ctx,
-		chromedp.SendKeys(`#create_player_name`, "Ann", chromedp.ByQuery),
+		chromedp.Evaluate(`localStorage.setItem("bingle.name", JSON.stringify("Ann"))`, nil),
 		submitClosestForm(ctx, `select[name="game_def_id"]`),
 	); err != nil {
 		t.Fatal(err)

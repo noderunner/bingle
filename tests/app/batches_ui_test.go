@@ -58,6 +58,8 @@ func TestWebBatchWizardStartsABatch(t *testing.T) {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the practice card", `!document.getElementById("practice-card").classList.contains("hidden")`, 10*time.Second)
+	waitJS(t, ctx, "the practice tab", `!document.getElementById("setup-tab-practice").hidden`, 10*time.Second)
+	clickSel(t, ctx, "#setup-tab-practice")
 	clickSel(t, ctx, "#practice-toggle")
 	waitJS(t, ctx, "the table step", `document.querySelectorAll("[data-practice-cult]").length === 4`, 5*time.Second)
 	shot(t, ctx, "wizard-1-table", func(b *[]byte) error { return chromedp.Run(ctx, chromedp.FullScreenshot(b, 90)) })

@@ -167,7 +167,7 @@ func submitClosestForm(ctx context.Context, fieldSelector string) chromedp.Actio
 // TestWebIndex_CreateGameForm_SubmitsAndCreatesRealGame covers backlog item
 // 37's AC end-to-end via a real headless browser: loading "/" renders a
 // create-game form (a select for game_def_id offering "test-freeplay", and
-// a text input for player_name); filling it in and submitting navigates the
+// the player's name comes from the profile); submitting it navigates the
 // browser to /game/<6-char-code>; and that code corresponds to a real game
 // (a plain REST GET /api/games/{code} against the same server succeeds and
 // shows "Alice" seated at seat 1).
@@ -181,7 +181,7 @@ func TestWebIndex_CreateGameForm_SubmitsAndCreatesRealGame(t *testing.T) {
 		// A link with ?game= opens the setup of that game (the game is
 		// otherwise picked from the gallery).
 		chromedp.Navigate(baseURL+"/?game=test-freeplay"),
-		chromedp.WaitVisible(`#create_player_name`, chromedp.ByQuery),
+		chromedp.WaitVisible(`#create-submit`, chromedp.ByQuery),
 	); err != nil {
 		t.Fatalf("navigate to / and locate create-game form fields: %v", err)
 	}
@@ -202,8 +202,8 @@ func TestWebIndex_CreateGameForm_SubmitsAndCreatesRealGame(t *testing.T) {
 
 	if err := chromedp.Run(ctx,
 		// A guest's made-up name is already there: this is typing their own.
-		chromedp.Evaluate(`document.getElementById("create_player_name").value = ""`, nil),
-		chromedp.SendKeys(`#create_player_name`, "Alice", chromedp.ByQuery),
+		chromedp.Evaluate(`localStorage.setItem("bingle.name", JSON.stringify(""))`, nil),
+		chromedp.Evaluate(`localStorage.setItem("bingle.name", JSON.stringify("Alice"))`, nil),
 		submitClosestForm(ctx, `select[name="game_def_id"]`),
 	); err != nil {
 		t.Fatalf("fill in and submit create-game form: %v", err)
@@ -252,52 +252,6 @@ func TestWebIndex_CreateGameForm_SubmitsAndCreatesRealGame(t *testing.T) {
 	}
 }
 
-// TestWebIndex_CreateGameForm_MissingPlayerName_DoesNotNavigate is an edge
-// case for item 37: submitting the create-game form with player_name left
-// blank must not produce a working room. Either the browser-side form
-// simply refuses to submit (native "required" validation, no navigation at
-// all) or the server rejects the resulting POST /api/games (per the REST
-// contract's "blank player_name -> 400", tested directly in
-// rest_create_game_test.go) and the page does not navigate to /game/<code>.
-// Either way, the browser must NOT end up on a /game/<code> URL.
-func TestWebIndex_CreateGameForm_MissingPlayerName_DoesNotNavigate(t *testing.T) {
-	baseURL := newRESTTestServer(t)
-
-	ctx, cancel := newChromedpContext(t, 15*time.Second)
-	defer cancel()
-
-	if err := chromedp.Run(ctx,
-		chromedp.Navigate(baseURL+"/?game=test-freeplay"),
-		chromedp.WaitVisible(`#create_player_name`, chromedp.ByQuery),
-		// A guest's made-up name is already there: the player has emptied the box.
-		chromedp.Evaluate(`document.getElementById("create_player_name").value = ""`, nil),
-	); err != nil {
-		t.Fatalf("navigate to / and locate create-game form: %v", err)
-	}
-
-	if err := chromedp.Run(ctx,
-		submitClosestForm(ctx, `select[name="game_def_id"]`),
-	); err != nil {
-		t.Fatalf("submit create-game form with blank player_name: %v", err)
-	}
-
-	// Give any (mis-)navigation a bounded moment to happen, then assert it
-	// didn't reach a /game/<code> URL. This deliberately does not use
-	// pollLocation (which waits FOR a match); here we want a bounded wait
-	// and then a negative assertion.
-	deadline := time.Now().Add(2 * time.Second)
-	var url string
-	for time.Now().Before(deadline) {
-		if err := chromedp.Run(ctx, chromedp.Location(&url)); err != nil {
-			t.Fatalf("chromedp.Location: %v", err)
-		}
-		if gamePageURLPattern.MatchString(url) {
-			t.Fatalf("browser navigated to %q after submitting create-game form with blank player_name, want no navigation to a /game/<code> URL", url)
-		}
-		time.Sleep(100 * time.Millisecond)
-	}
-}
-
 // TestWebIndex_ServedHTML_CreateFormPostsToAPIGames is the lighter-weight,
 // non-browser-driven counterpart of the AC test above: it fetches "/" via a
 // plain net/http GET (no browser, no JS execution) and confirms the raw
@@ -329,7 +283,7 @@ func TestWebIndex_ServedHTML_CreateFormPostsToAPIGames(t *testing.T) {
 
 // TestWebIndex_ServedHTML_HasCreateGameFormFields is a light structural
 // check (no browser) that the served "/" page contains a game_def_id select
-// offering "test-freeplay" and a player_name text input — the two form
+// offering "test-freeplay" and no box for the name — the two form
 // controls the AC test above drives via chromedp. This exists so a
 // regression in the static template (e.g. renaming a field, dropping the
 // test-freeplay option) is caught even without spinning up a browser.
@@ -343,8 +297,9 @@ func TestWebIndex_ServedHTML_HasCreateGameFormFields(t *testing.T) {
 	if !regexp.MustCompile(`(?is)value=["']test-freeplay["']`).MatchString(html) {
 		t.Errorf(`served "/" page has no element with value="test-freeplay" (expected an <option> inside the game_def_id select). Page body:\n%s`, html)
 	}
-	if !regexp.MustCompile(`(?is)<input[^>]*name=["']player_name["']`).MatchString(html) {
-		t.Errorf(`served "/" page has no <input name="player_name" ...>. Page body:\n%s`, html)
+	// The name comes from the profile, not from a box in the form.
+	if regexp.MustCompile(`(?is)<input[^>]*name=["']player_name["']`).MatchString(html) {
+		t.Error(`served "/" page still has an <input name="player_name">`)
 	}
 }
 

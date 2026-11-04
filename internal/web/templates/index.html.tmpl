@@ -41,8 +41,21 @@
 						<button type="button" class="ghost" id="game-rules-button">Rules</button>
 					</div>
 					<div class="tabs" role="tablist" aria-label="Set up this game or see its games">
-						<button type="button" role="tab" class="tab" id="setup-tab-new" aria-controls="setup-layout" aria-selected="true">New game</button>
+						<button type="button" role="tab" class="tab" id="setup-tab-new" aria-controls="setup-layout" aria-selected="true">Create Game</button>
+						<button type="button" role="tab" class="tab" id="setup-tab-tutorials" aria-controls="setup-tutorials-panel" aria-selected="false" hidden>Tutorials</button>
+						<button type="button" role="tab" class="tab" id="setup-tab-practice" aria-controls="setup-practice" aria-selected="false" hidden>Practice Batches</button>
 						<button type="button" role="tab" class="tab" id="setup-tab-active" aria-controls="setup-active" aria-selected="false">Active Games</button>
+					</div>
+					<div role="tabpanel" id="setup-tutorials-panel" aria-labelledby="setup-tab-tutorials" hidden>
+						<div class="setup-tutorials" id="setup-tutorials" hidden></div>
+					</div>
+					<div role="tabpanel" id="setup-practice" aria-labelledby="setup-tab-practice" hidden>
+		<section class="hidden" id="practice-card">
+						<p class="muted small">Let bots play hundreds of games of this table in the background and study the results — win rates, units built, abilities used, areas held — to see what wins and to tune the bots.</p>
+			<div class="row"><button type="button" class="primary" id="practice-toggle">Set up a batch</button></div>
+			<div id="practice-wizard" class="hidden"><div id="practice-body"></div></div>
+			<div id="practice-recent"></div>
+		</section>
 					</div>
 					<div role="tabpanel" id="setup-active" aria-labelledby="setup-tab-active" hidden>
 						<ul class="my-games" id="setup-active-list"></ul>
@@ -53,7 +66,6 @@
 							<div class="setup-preview" id="setup-preview"></div>
 							<p class="game-blurb small" id="game-blurb"></p>
 							<div class="variants" id="setup-variants"></div>
-							<div class="setup-tutorials" id="setup-tutorials" hidden></div>
 						</div>
 
 						<form id="create-game-form">
@@ -69,11 +81,6 @@
 									<label><input type="radio" name="start_mode" value="new" checked><span>A new game</span></label>
 									<label><input type="radio" name="start_mode" value="import"><span>A move log</span></label>
 								</div>
-							</div>
-
-							<div class="field new-only human-only">
-								<label for="create_player_name">Your name</label>
-								<input id="create_player_name" name="player_name" type="text" required maxlength="32" autocomplete="nickname">
 							</div>
 
 							<div class="field new-only">
@@ -98,12 +105,14 @@
 								<span class="small muted">You watch from a spectator's seat, at a pace you can follow — a quick way to see how strong the bots are.</span>
 							</div>
 
+							<div class="section-head new-only" id="other-options-head"><h3>Other Options</h3></div>
+							<div class="other-options" id="other-options">
 							<div class="field new-only" id="setup-options" hidden>
 								<label>This game</label>
 							</div>
 
 							<div class="field new-only human-only">
-								<label for="move_time_seconds">Time per move</label>
+								<label for="move_time_seconds">Time per Move</label>
 								<select id="move_time_seconds" name="move_time_seconds">
 									<option value="0" selected>No limit</option>
 									<option value="60">1 minute</option>
@@ -116,7 +125,7 @@
 							</div>
 
 							<div class="field new-only human-only" id="clock-field" hidden>
-								<label for="clock_seconds">Game clock</label>
+								<label for="clock_seconds">Game Clock</label>
 								<div class="clock-time">
 									<select id="clock_seconds" name="clock_seconds">
 										<option value="0" selected>No clock</option>
@@ -163,7 +172,7 @@
 							</div>
 
 							<div class="field new-only human-only" id="real-time-field">
-								<label class="check"><input type="checkbox" id="real-time" name="real_time"> <span>Real-time game</span></label>
+								<label class="check"><input type="checkbox" id="real-time" name="real_time"> <span>Real-Time Game</span></label>
 								<span class="small muted">Everyone is expected to stay until the game ends, and the page shows anyone who has lost their connection.</span>
 								<div class="row" id="real-time-warnings" hidden>
 									<label class="inline" for="real-time-first">Warn a slow player after
@@ -177,7 +186,7 @@
 							</div>
 
 							<div class="field new-only human-only" id="rated-field" hidden>
-								<label class="check"><input type="checkbox" id="rated" name="rated"> <span>Rated game</span></label>
+								<label class="check"><input type="checkbox" id="rated" name="rated"> <span>Rated Game</span></label>
 								<span class="small muted">The result changes both players' ratings for this game. It takes another signed-in player and the same game clock for both. Using a bot or another program to choose your moves is against the rules.</span>
 							</div>
 
@@ -194,11 +203,13 @@
 							</div>
 
 							<div class="field new-only human-only">
-								<label>Play as</label>
+								<label>Play As</label>
 								<div class="segmented" id="seat-choices">
 									<label><input type="radio" name="seat" value="1" checked><span>First</span></label>
 									<label><input type="radio" name="seat" value="2"><span>Second</span></label>
 								</div>
+							</div>
+
 							</div>
 
 							<div class="field import-only" id="import-fields">
@@ -210,7 +221,7 @@
 							</div>
 
 							<div class="error-text" id="create-error" role="alert"></div>
-							<div class="row"><button type="submit" class="primary" id="create-submit">Create game</button></div>
+							<div class="row"><button type="submit" class="primary" id="create-submit">Create Game</button></div>
 						</form>
 					</div>
 				</div>
@@ -218,10 +229,6 @@
 
 			<div role="tabpanel" id="panel-puzzles" aria-labelledby="tab-puzzles" hidden>
 				<p class="muted small">Positions where the side to move has a forced win. Find it — the opponent defends as well as a bot can.</p>
-				<div class="field puzzle-name">
-					<label for="puzzle_player_name">Your name</label>
-					<input id="puzzle_player_name" type="text" maxlength="32" autocomplete="nickname">
-				</div>
 				<div class="chips" id="puzzle-games"></div>
 				<div class="puzzle-grid" id="puzzle-list"><p class="muted small">Loading puzzles…</p></div>
 			</div>
@@ -232,13 +239,6 @@
 			<div role="tabpanel" id="panel-chat" aria-labelledby="tab-chat" class="chat-panel" hidden></div>
 		</section>
 
-		<section class="card hidden" id="practice-card">
-			<h2>Practice batches</h2>
-			<p class="muted small">Let bots play hundreds of games of this table in the background and study the results — win rates, units built, abilities used, areas held — to see what wins and to tune the bots.</p>
-			<div class="row"><button type="button" class="primary" id="practice-toggle">Set up a batch</button></div>
-			<div id="practice-wizard" class="hidden"><div id="practice-body"></div></div>
-			<div id="practice-recent"></div>
-		</section>
 	</main>
 
 	<footer class="site-footer"><sub title="The version of the bingle engine">bingle v{{engineVersion}} · MIT License · <a href="https://github.com/noderunner/bingle" target="_blank" rel="noopener noreferrer">GitHub</a></sub></footer>

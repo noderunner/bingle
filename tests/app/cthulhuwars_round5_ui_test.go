@@ -74,7 +74,7 @@ func TestWebHome_ChooseTheCultsOfAFivePlayerTableAndTheHighPriests(t *testing.T)
 	waitJS(t, ctx, "the five-player layout", `document.getElementById("game_def_id").value === "cthulhu-wars-5p" && `+seatsReady(5), 20*time.Second)
 
 	// Create the game: the choice reaches the server.
-	evalString(t, ctx, `document.getElementById("create_player_name").value = "Alice"; "ok"`)
+	evalString(t, ctx, `localStorage.setItem("bingle.name", JSON.stringify("Alice")); "ok"`)
 	clickSel(t, ctx, `#create-game-form button[type="submit"]`)
 	loc := pollLocation(t, ctx, regexp.MustCompile(`/game/[A-Z0-9]+$`))
 	room := loc[strings.LastIndex(loc, "/")+1:]
@@ -115,7 +115,7 @@ func TestWebHome_AnUnchangedTableKeepsThePlainLayout(t *testing.T) {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "five seats", seatsReady(5), 20*time.Second)
-	evalString(t, ctx, `document.getElementById("create_player_name").value = "Alice"; "ok"`)
+	evalString(t, ctx, `localStorage.setItem("bingle.name", JSON.stringify("Alice")); "ok"`)
 	clickSel(t, ctx, `#create-game-form button[type="submit"]`)
 	loc := pollLocation(t, ctx, regexp.MustCompile(`/game/[A-Z0-9]+$`))
 	room := loc[strings.LastIndex(loc, "/")+1:]

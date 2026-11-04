@@ -321,7 +321,7 @@ func TestWebHome_PlayAGameAgainstMyself(t *testing.T) {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the opponents", `document.querySelector('input[name="opponent"][value="@self"]') !== null`, 20*time.Second)
-	evalString(t, ctx, `document.querySelector('input[name="opponent"][value="@self"]').click(); document.getElementById("create_player_name").value = "Sol"; "ok"`)
+	evalString(t, ctx, `document.querySelector('input[name="opponent"][value="@self"]').click(); localStorage.setItem("bingle.name", JSON.stringify("Sol")); "ok"`)
 	clickSel(t, ctx, `#create-game-form button[type="submit"]`)
 	loc := pollLocation(t, ctx, regexp.MustCompile(`/game/[A-Z0-9]+$`))
 	room := loc[strings.LastIndex(loc, "/")+1:]
@@ -365,7 +365,7 @@ func TestWebHome_EverySeatOfATableCanBeMine(t *testing.T) {
 		s.value = "me"; s.dispatchEvent(new Event("change", { bubbles: true }));
 		var t3 = document.querySelector('#slots-field select.slot-select[data-seat="3"]');
 		t3.value = "me"; t3.dispatchEvent(new Event("change", { bubbles: true }));
-		document.getElementById("create_player_name").value = "Ana";
+		localStorage.setItem("bingle.name", JSON.stringify("Ana"));
 		// A change event, as a click would fire, so the page keeps the choice
 		// when it redraws the seats (it checks the lobby for a table of three).
 		var lobby = document.getElementById("lobby");

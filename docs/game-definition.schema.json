@@ -747,6 +747,10 @@
         "label": {
           "type": "string"
         },
+        "recommended": {
+          "description": "Recommended (a Slot of a book-swap) is the id of the Choice that suits it best.",
+          "type": "string"
+        },
         "text": {
           "type": "string"
         }

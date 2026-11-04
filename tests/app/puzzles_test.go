@@ -170,7 +170,7 @@ func TestWebLobby_PuzzleCardStartsAGameFromThePosition(t *testing.T) {
 	waitJS(t, ctx, "puzzle cards", `document.querySelectorAll('#puzzle-list .puzzle-card').length > 0`, 10*time.Second)
 	waitJS(t, ctx, "puzzle board previews", `document.querySelector('#puzzle-list .puzzle-preview svg')`, 10*time.Second)
 	// Needs a name.
-	if err := chromedp.Run(ctx, chromedp.SetValue("#puzzle_player_name", "Alice", chromedp.ByID)); err != nil {
+	if err := chromedp.Run(ctx, chromedp.Evaluate(`localStorage.setItem("bingle.name", JSON.stringify("Alice"))`, nil)); err != nil {
 		t.Fatal(err)
 	}
 	clickSel(t, ctx, "#puzzle-list .puzzle-card button.primary")
