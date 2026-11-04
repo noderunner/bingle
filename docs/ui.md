@@ -246,25 +246,20 @@ the plain game keeps the plain id and the other choice opens `<id>~pie` or
 `js/ui-icons.js` (each `svg.ui-icon[data-icon]`, so a page or a test can tell
 which picture a button carries).
 
-*Active games* (`#open-active-games`) opens `#active-games-dialog`, which has
-**two tabs** (`#tab-my-games`, `#tab-all-games`; the last one open is
-remembered in `bingle.gamesTab`):
+*Active games* (`#open-active-games`) opens `#active-games-dialog`: the list of this browser's games that are not finished
+(`#my-games li`), with title, opponent, *Your turn* / *Their turn* / *Waiting* / *In the
+lobby*, how many seats are still open (`.badge.open-seats[data-open-seats]`), *Open*, and
+✕. The ✕ resigns from a game in play after asking, and says so if that ends it for the whole
+table; a game that has not started only leaves the list, after asking
+([ADR 0101](decisions/0101-the-x-resigns-and-games-are-found-where-they-are-wanted.md)).
 
-* *My games* (`#my-games li`): the games of this browser that are not finished,
-  in the layout of the former *Your games* card — title, opponent, *Your turn* /
-  *Their turn* / *Waiting* / *In the lobby*, how many seats are still open
-  (`.badge.open-seats[data-open-seats]`), *Open*, remove;
-* *All games* (`#all-games li`): every unfinished game on the server
-  (`GET /api/games`), whoever made it — who is at the table, how far it has
-  gone, *In the lobby* and the open seats, and *Open* (or *Watch* at a full
-  table), with *yours* on the browser's own. It is how a person finds a game to
-  watch or a seat to take without being sent a link.
+The games of a game are in its setup (`#setup-tab-active`: `#setup-active-list li`, each with
+*Watch*), and *Join a game* (`#open-join`) lists the tables waiting for players
+(`#join-open-games li`, each with `button[data-join]`).
 
 Its badge (`#active-badge`) counts the games where it is your turn, which also
-shows in the tab title and on the tab icon. *Join a game* (`#open-join`, two
-plugs coming together — `data-icon="plugs"`, not a door with an arrow, which
-reads as leaving) opens `#join-dialog` (`#join-game-form`: `#room_code`,
-`#join_player_name`, *Join*, `#watch-game`).
+shows in the tab title and on the tab icon. *Join a game* (`#open-join`, a plus, `data-icon="plus"`) opens `#join-dialog` (`#join-game-form`: `#room_code`,
+`#join_player_name`, *Join*, `#watch-game`, and the tables waiting for players).
 
 The person icon (`#open-profile`) opens **`#profile-dialog`**, a floating window
 rather than a page: the name this browser plays under
@@ -881,8 +876,7 @@ per-move allowance), `#clock-field` with `#clock_seconds`, `#clock-handicap`,
 `#save-image`, `.ghost-piece`,
 `.hint-ring`, `#puzzle-list .puzzle-card` (the name for a puzzle game is `#puzzle_player_name`),
 `#import-text`, `#fun-fact`, `#game-setup`, `#global-chat-log`,
-`#active-games-dialog` with `#tab-my-games` / `#tab-all-games`, `#my-games li`,
-`#all-games li` and `.badge.open-seats`, `#profile-dialog` with
+`#active-games-dialog` with `#my-games li` and `.badge.open-seats`, `#setup-active-list li`, `#join-open-games li`, `#profile-dialog` with
 `#profile-window-name`, `#here-list li[data-address]` and `#profile-page-link`,
 and `svg.ui-icon[data-icon]` for the icons of the bar;
 area maps add `.cell.area[data-position]` with `.area-bg`, `.mark-gate`,

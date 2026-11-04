@@ -40,7 +40,15 @@
 						<h2 id="setup-title"></h2>
 						<button type="button" class="ghost" id="game-rules-button">Rules</button>
 					</div>
-					<div class="setup-layout">
+					<div class="tabs" role="tablist" aria-label="Set up this game or see its games">
+						<button type="button" role="tab" class="tab" id="setup-tab-new" aria-controls="setup-layout" aria-selected="true">New game</button>
+						<button type="button" role="tab" class="tab" id="setup-tab-active" aria-controls="setup-active" aria-selected="false">Active Games</button>
+					</div>
+					<div role="tabpanel" id="setup-active" aria-labelledby="setup-tab-active" hidden>
+						<ul class="my-games" id="setup-active-list"></ul>
+						<p class="muted" id="setup-active-empty" hidden>No games of this one are going just now.</p>
+					</div>
+					<div class="setup-layout" id="setup-layout" role="tabpanel" aria-labelledby="setup-tab-new">
 						<div class="setup-side">
 							<div class="setup-preview" id="setup-preview"></div>
 							<p class="game-blurb small" id="game-blurb"></p>

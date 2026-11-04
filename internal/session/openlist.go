@@ -43,15 +43,29 @@ type OpenGame struct {
 	UpdatedAt string `json:"updated_at"`
 }
 
+// OpenGameFilter narrows the list: to one family of games, or to those that have
+// not started and have a seat for somebody.
+type OpenGameFilter struct {
+	Family    string
+	OpenSeats bool
+}
+
+// openGamesScanned is how many unfinished games a filtered list looks through.
+const openGamesScanned = 1000
+
 // ListOpenGames returns the games that are still going, newest change first:
 // the games of this server that anybody may watch, and those with an open seat
 // that anybody may join. Games whose definition is no longer registered are
 // left out, as nothing could be shown or joined.
-func (m *Manager) ListOpenGames(ctx context.Context, limit int) ([]OpenGame, error) {
+func (m *Manager) ListOpenGames(ctx context.Context, limit int, filter OpenGameFilter) ([]OpenGame, error) {
 	if limit <= 0 || limit > maxOpenGames {
 		limit = maxOpenGames
 	}
-	games, err := m.store.ListUnfinishedGames(ctx, limit)
+	scan := limit
+	if filter != (OpenGameFilter{}) {
+		scan = openGamesScanned
+	}
+	games, err := m.store.ListUnfinishedGames(ctx, scan)
 	if err != nil {
 		return nil, fmt.Errorf("session: %w", err)
 	}
@@ -60,6 +74,15 @@ func (m *Manager) ListOpenGames(ctx context.Context, limit int) ([]OpenGame, err
 		compiled, ok := m.catalog.Get(g.GameDefID)
 		if !ok {
 			continue
+		}
+		if filter.Family != "" && familyOf(compiled.Definition.Family, g.GameDefID) != filter.Family {
+			continue
+		}
+		if filter.OpenSeats && g.Status != "waiting" {
+			continue
+		}
+		if len(out) == limit {
+			break
 		}
 		players, err := m.store.ListPlayers(ctx, g.GameID)
 		if err != nil {
@@ -87,6 +110,9 @@ func (m *Manager) ListOpenGames(ctx context.Context, limit int) ([]OpenGame, err
 			entry.Players = append(entry.Players, SeatInfo{Seat: p.Seat, Color: p.Color, Name: p.Name, Bot: p.Bot})
 		}
 		sort.Slice(entry.Players, func(i, j int) bool { return entry.Players[i].Seat < entry.Players[j].Seat })
+		if filter.OpenSeats && entry.OpenSeats == 0 {
+			continue
+		}
 		out = append(out, entry)
 	}
 	return out, nil

@@ -15,7 +15,10 @@ import (
 // server, newest change first, with who is seated and how many seats are open.
 func (h *handlers) handleListOpenGames(w http.ResponseWriter, r *http.Request) {
 	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
-	games, err := h.mgr.ListOpenGames(r.Context(), limit)
+	games, err := h.mgr.ListOpenGames(r.Context(), limit, session.OpenGameFilter{
+		Family:    r.URL.Query().Get("family"),
+		OpenSeats: r.URL.Query().Get("open_seats") != "",
+	})
 	if err != nil {
 		writeError(w, err)
 		return

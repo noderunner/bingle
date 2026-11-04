@@ -108,7 +108,7 @@ that account.
 | `GET /bots` | | `[{id, label, description}]` |
 | `GET /puzzles` | `?game_def_id=&max_win_in=` | `[{id, game_def_id, title, impulse_seat, win_in, plies, tps?, state}]` — positions where the side to move wins by force |
 | `GET /puzzles/{id}` | `?reveal=1` adds `first_moves` and a `solution` line | one puzzle; `404` if unknown |
-| `GET /games` | `?limit=` (60 max) | `{games: [{room_code, game_def_id, name, family, status, lobby?, seats, open_seats, players[{seat,color,name,bot}], impulse_seat, move_seq, updated_at}]}` — every unfinished game |
+| `GET /games` | `?limit=` (60 max), `?family=` (one game's), `?open_seats=1` (those not started, with a seat free) | `{games: [{room_code, game_def_id, name, family, status, lobby?, seats, open_seats, players[{seat,color,name,bot}], impulse_seat, move_seq, updated_at}]}` — every unfinished game |
 | `GET /bot-guide` | | the guide to the bots as Markdown (its drawings under `/bot-guide/assets/`) |
 | `GET /here` | | `{people: [{address, name, since, seen}]}` — the accounts that have said they are here lately, by handle (accounts only) |
 | `POST /here` | `{here?}` (`false` leaves) | `{address, people[...]}` (accounts only) |

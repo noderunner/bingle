@@ -45,25 +45,11 @@ export const gamesIcon = (size) =>
 		s("circle", { cx: 17.6, cy: 13.4, r: 0.5 })
 	);
 
-/**
- * Two plugs coming together: joining a game. (It used to be a door with an
- * arrow through it, which reads as *leaving*.) A plug on the left with two
- * pins, a socket on the right with two sleeves, and the gap closing between
- * them.
- */
-export const joinIcon = (size) =>
-	icon(
-		"plugs",
-		size,
-		// The plug: its body, its lead, and the two pins reaching right.
-		s("path", { d: "M3 9.5h3.2v5H3z" }),
-		s("path", { d: "M6.2 10.6h3.1M6.2 13.4h3.1" }),
-		// The socket: its body, its lead, and the two sleeves reaching left.
-		s("path", { d: "M21 9.5h-3.2v5H21z" }),
-		s("path", { d: "M17.8 10.6h-3.1M17.8 13.4h-3.1" }),
-		// The join itself.
-		s("path", { d: "M11.4 12h1.2", "stroke-width": 2.6 })
-	);
+/** A plus: joining a game. */
+export const joinIcon = (size) => icon("plus", size, s("path", { d: "M12 5v14M5 12h14" }));
+
+/** An arrow pointing left: going back. */
+export const backIcon = (size) => icon("back", size, s("path", { d: "M19 12H5M11 6l-6 6 6 6" }));
 
 /** A microphone: a voice call. */
 export const micIcon = (size) => icon("mic", size, s("rect", { x: 9, y: 3, width: 6, height: 11, rx: 3 }), s("path", { d: "M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21" }));

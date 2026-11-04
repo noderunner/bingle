@@ -4,7 +4,7 @@
 // icons of the top bar (topbar.js).
 
 import { CARD_SETS, cardSetById, setPreview, useCardSet } from "./card-sets.js";
-import { h, clear, store, rememberGame, lastName, toast } from "./util.js";
+import { h, clear, store, rememberGame, rememberedGames, lastName, toast } from "./util.js";
 import { api, gameTitle, whoAmI } from "./api.js";
 import { rulesIcon } from "./ui-icons.js";
 import { mountAnalysis } from "./analysis.js";
@@ -14,6 +14,7 @@ import { renderBoard } from "./render.js";
 import { showRules as openRules } from "./rules.js";
 import { syncPractice } from "./practice.js";
 import { installTopbar } from "./topbar.js";
+import { openGameRow } from "./mygames.js";
 import { randomFact } from "./facts.js";
 import { mountGlobalChat } from "./global-chat.js";
 import { installNav, navigate } from "./nav.js";
@@ -127,6 +128,7 @@ async function updateBlurb() {
 
 	markGallerySelection();
 	renderSetupHead(d);
+	if (!document.getElementById("setup-active").hidden) renderSetupActive();
 	renderSetupTutorials(d);
 	updateImportMode(d);
 	updateBotMatch(d);
@@ -155,8 +157,42 @@ function openSetup() {
 	document.getElementById("browser-card").scrollIntoView({ block: "nearest" });
 }
 
+// ---- the games of the chosen game ---------------------------------------------
+
+/** Which tab of the setup shows: the form, or the games of this game going on. */
+function showSetupTab(which) {
+	const active = which === "active";
+	document.getElementById("setup-tab-new").setAttribute("aria-selected", active ? "false" : "true");
+	document.getElementById("setup-tab-active").setAttribute("aria-selected", active ? "true" : "false");
+	document.getElementById("setup-layout").hidden = active;
+	document.getElementById("setup-active").hidden = !active;
+	if (active) renderSetupActive();
+}
+
+/** The games of the family of the chosen game that have not finished, each to watch. */
+async function renderSetupActive() {
+	const list = document.getElementById("setup-active-list");
+	const empty = document.getElementById("setup-active-empty");
+	const id = document.getElementById("game_def_id").value;
+	const d = defs.find((x) => x.id === id);
+	if (!d) return;
+	let games = [];
+	try {
+		games = (await api.openGames({ family: d.family || d.id })).games || [];
+	} catch (_) {
+		/* an empty list says the same */
+	}
+	// Another game may have been chosen while the list was on its way.
+	if (document.getElementById("game_def_id").value !== id) return;
+	const mine = new Set(rememberedGames().map((g) => g.code));
+	clear(list);
+	for (const g of games) list.append(openGameRow(g, defs, mine.has(g.room_code)));
+	empty.hidden = games.length > 0;
+}
+
 function closeSetup() {
 	setupOpen = false;
+	showSetupTab("new");
 	document.getElementById("game-setup").hidden = true;
 	document.getElementById("gallery-view").hidden = false;
 	syncPractice("");
@@ -1172,6 +1208,8 @@ if (createForm) {
 		rulesButton.addEventListener("click", showRules);
 	}
 	document.getElementById("setup-back").addEventListener("click", closeSetup);
+	document.getElementById("setup-tab-new").addEventListener("click", () => showSetupTab("new"));
+	document.getElementById("setup-tab-active").addEventListener("click", () => showSetupTab("active"));
 	document.getElementById("opponent-choices").addEventListener("change", applyStartMode);
 	for (const radio of createForm.querySelectorAll('input[name="start_mode"]')) radio.addEventListener("change", applyStartMode);
 	// A file fills the box for the move log.

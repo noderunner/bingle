@@ -75,7 +75,7 @@ func TestWebCthulhuWarsSetup_PickingUnitsOneByOne(t *testing.T) {
 	openPickerTab(t, ctx, "neutrals")
 	if err := chromedp.Run(ctx, chromedp.ActionFunc(func(c context.Context) error {
 		var p []float64
-		if err := chromedp.Evaluate(`(function(){const b=document.querySelector('#cw-panel [data-item="gnorri"]').getBoundingClientRect();return [b.x+b.width/2,b.y+b.height/2]})()`, &p).Do(c); err != nil {
+		if err := chromedp.Evaluate(`(function(){const el=document.querySelector('#cw-panel [data-item="gnorri"]');el.scrollIntoView({block:"center"});const b=el.getBoundingClientRect();return [b.x+b.width/2,b.y+b.height/2]})()`, &p).Do(c); err != nil {
 			return err
 		}
 		return chromedp.MouseEvent("mouseMoved", p[0], p[1]).Do(c)

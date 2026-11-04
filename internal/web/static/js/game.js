@@ -23,7 +23,7 @@ import { hoverCard, hideHoverCard } from "./tooltip.js";
 import { createOptionsWindow } from "./options.js";
 import { cardTable, choiceGrid, hideCardZoom } from "./cards.js";
 import { solitaireTable } from "./solitaire.js";
-import { rulesIcon } from "./ui-icons.js";
+import { backIcon, rulesIcon } from "./ui-icons.js";
 import { choiceIcon } from "./choice-icons.js";
 import { animalIcon, animalOf } from "./animals.js";
 import { themesFor, themeById } from "./themes.js";
@@ -2083,8 +2083,21 @@ function cellWord() {
 	return style === "areas" ? "area" : style === "points" ? "point" : kind === "hex" ? "hex" : "square";
 }
 
+/** "Place a stone.": a game whose every move places the one piece it has (a pass or a swap aside). */
+function placeOnlyImpulse() {
+	const acts = (S.info.actions || []).filter((a) => a.type !== "pass" && a.type !== "swap");
+	if (!acts.length || acts.some((a) => a.type !== "place")) return null;
+	const kinds = [...new Set(acts.flatMap((a) => a.pieces || []))];
+	if (kinds.length !== 1) return null;
+	const def = S.info.pieces.find((p) => p.type === kinds[0]);
+	const name = String((def && def.label) || kinds[0]).toLowerCase();
+	return `Place ${/^[aeiou]/.test(name) ? "an" : "a"} ${name}.`;
+}
+
 /** "Place a stone or move a stack.": a game with no words of its own says what its actions are. */
 function genericImpulse() {
+	const placing = placeOnlyImpulse();
+	if (placing) return placing;
 	const acts = (S.info.actions || []).map((a) => a.label).filter(Boolean);
 	if (!acts.length) return "Choose a move.";
 	const text = acts.map((label, i) => (i ? label.toLowerCase() : label)).join(" or ");
@@ -2127,6 +2140,8 @@ function genericActingImpulse(b) {
 		return hasPos ? "Choose a highlighted square." : "Continue your move.";
 	}
 	if (openingActive() && S.info.opening.owner === "opponent") return "Opening: place a flat stone of your opponent’s color on any square.";
+	const placeOnly = placeOnlyImpulse();
+	if (placeOnly) return placeOnly;
 	// A forced piece choice was taken automatically: the squares on offer are places to put it.
 	const placing = hasPos && !hasPiece && b.steps.length > 0 && b.steps[0].kind === "piece";
 	const points = S.info.board.style === "points";
@@ -4521,7 +4536,7 @@ function neutralCard() {
 	const nv = rv && rv.neutral;
 	if (!nv) return null;
 	const items = nv.items || [];
-	const card = h("div", { class: "card neutral-card", id: "neutral-window" }, h("h3", {}, "Neutral items", items.length ? h("span", { class: "muted small" }, ` ${items.length}`) : null));
+	const card = h("div", { class: "card neutral-card", id: "neutral-window" }, h("h3", {}, "Neutral items"));
 	if (!items.length) {
 		card.append(h("p", { class: "muted small", id: "neutral-empty" }, "Everything has been taken."));
 		return card;
@@ -5597,6 +5612,11 @@ function eventsPane() {
 	// anything since.
 	const quiet = markSeen && recent.every((e) => e.seat === S.me.seat);
 	const sinceRule = () => h("div", { class: "log-since", id: "history-since", role: "separator" }, h("span", {}, "Since your last move"));
+	// A way back through what happened since: each click goes one move further back.
+	const rewind = () => {
+		const earliest = !isLive() && S.viewSeq === 0;
+		return h("button", { type: "button", class: "ghost icon history-rewind", id: "history-rewind", title: "Go back to the previous move", "aria-label": "Go back to the previous move", disabled: earliest || !S.moves.length, onclick: () => stepHistory(-1) }, backIcon(16));
+	};
 	// Consecutive decisions of one seat read as one turn, except that the mark
 	// always starts a new one. Decisions a tactical bot took for a person whose
 	// Auto-Play Timeout ran out are marked.
@@ -5614,7 +5634,7 @@ function eventsPane() {
 		h("span", { class: "badge auto-play", title: "A tactical bot played this for the player: their Auto-Play Timeout ran out" }, all ? "auto-play" : "partly auto-play");
 	for (const g of groups) {
 		if (g.mark) {
-			box.append(sinceRule());
+			box.append(sinceRule(), rewind());
 			if (quiet) box.append(h("p", { class: "muted small empty-history", id: "history-quiet" }, "Nothing new from the others since your last move."));
 		}
 		const all = g.entries.every(botPlayed);
