@@ -454,7 +454,7 @@ func TestWebFitScreen_TheActionCardSaysWhatTheBarSaid(t *testing.T) {
 	}
 
 	// Looking back through the game.
-	clickSel(t, ctx, "#tab-moves")
+	clickSel(t, ctx, "#history-notation")
 	waitJS(t, ctx, "the first move", `document.getElementById("hist-first") && !document.getElementById("hist-first").disabled`, 10*time.Second)
 	clickSel(t, ctx, "#hist-first")
 	waitJS(t, ctx, "return to live in the card", inCard("return-live"), 10*time.Second)

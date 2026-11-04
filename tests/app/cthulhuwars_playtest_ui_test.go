@@ -296,11 +296,11 @@ func TestWebCthulhuWars_TheLogShowsWhatOthersDidInTheirColours(t *testing.T) {
 	collectJSErrors(ctx, &mu, &jsErrors)
 	openGameAs(t, ctx, baseURL, room, "cthulhu-wars", "Alice")
 	waitJS(t, ctx, "log card", `document.getElementById("history-card") !== null && document.getElementById("events") !== null`, 15*time.Second)
-	// One card, two tabs: Moves and History (the second is open).
-	if got := evalString(t, ctx, `document.getElementById("tab-history").textContent`); got != "History" {
-		t.Errorf("history tab %q", got)
+	// One card, written out in words (the default) or as notation.
+	if got := evalString(t, ctx, `document.getElementById("history-friendly").textContent`); got != "Friendly" {
+		t.Errorf("the toggle says %q", got)
 	}
-	if got := evalString(t, ctx, `[...document.querySelectorAll("#history-card .card-tab")].map(b => b.id).join(",")`); got != "tab-moves,tab-history" {
+	if got := evalString(t, ctx, `[...document.querySelectorAll("#history-card .history-format button")].map(b => b.id).join(",")`); got != "history-friendly,history-notation" {
 		t.Errorf("tabs %q", got)
 	}
 	// Every other cult that acted has its own header in its colour...

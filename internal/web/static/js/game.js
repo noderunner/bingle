@@ -1712,16 +1712,12 @@ async function viewMove(seq) {
 	render();
 }
 
-/** Goes to a move in the list of moves, with Next under the player's hand. */
+/** Goes to a move of the history, with Next under the player's hand. */
 async function jumpToMove(seq) {
 	stopAutoplay();
-	S.historyTab = "moves";
 	S.railTab = "history";
 	await viewMove(seq);
-	requestAnimationFrame(() => {
-		document.querySelector("#move-list .mv.current")?.scrollIntoView({ block: "nearest" });
-		document.getElementById("hist-next")?.focus();
-	});
+	requestAnimationFrame(() => document.getElementById("hist-next")?.focus());
 }
 
 function stepHistory(delta) {
@@ -4970,11 +4966,16 @@ function addBotControl() {
 
 /** The moves played, with the history controls (and the log, in its own tab). */
 function movesPane() {
-	const pane = h("div", { class: "history-pane", id: "moves-pane" });
-	pane.append(moveList());
+	return h("div", { class: "history-pane", id: "moves-pane" }, moveList());
+}
+
+/** The buttons that step through the moves, whichever way they are written out. */
+function historyControls() {
 	const total = S.moves.length;
 	const cur = isLive() ? total : S.viewSeq;
-	pane.append(
+	return h(
+		"div",
+		{ class: "history-steps" },
 		h(
 			"div",
 			{ class: "history-controls" },
@@ -4989,13 +4990,8 @@ function movesPane() {
 			S.autoplay ? "⏸ Pause replay" : "↻ Replay game"
 		)
 	);
-	return pane;
 }
 
-/**
- * One card for the moves and for what happened: two tabs, "Moves" and
- * "History" (the second only for games that narrate their turns).
- */
 /** Brings the newest entry of the history and the moves into view, once the page has been laid out. */
 function showLogEnd() {
 	const go = () => {
@@ -5008,39 +5004,48 @@ function showLogEnd() {
 	setTimeout(go, 250);
 }
 
+/**
+ * The history of the game, on one card with one set of buttons to step through it.
+ * A game that narrates its turns can write it out in words or as its notation; the
+ * choice is remembered. One that does not has only the notation.
+ */
 function historyCard() {
 	const log = eventsPane();
 	const card = h("div", { class: "card side-moves", id: "history-card" });
+	const head = h("div", { class: "history-head" }, h("h3", {}, "History"));
+	card.append(head);
 	if (!log) {
-		card.append(h("h3", {}, "Moves"), movesPane());
+		card.append(movesPane(), historyControls());
 		return card;
 	}
-	// What happened is what a player wants to see first; the move list is a tab away.
-	let tab = (S.historyTab || store.get("bingle.historyTab", "history")) === "moves" ? "moves" : "history";
-	const tabs = h("div", { class: "card-tabs", role: "tablist", "aria-label": "Moves and history" });
-	for (const [id, label] of [["moves", "Moves"], ["history", "History"]]) {
-		tabs.append(
+	const format = S.historyFormat || (store.get("bingle.historyFormat", "") || (store.get("bingle.historyTab", "") === "moves" ? "notation" : "friendly"));
+	const toggle = h("div", { class: "history-format", role: "group", "aria-label": "How the history is written" });
+	for (const [id, label, title] of [
+		["friendly", "Friendly", "What happened, in words"],
+		["notation", "Notation", "The moves, in the game's notation"],
+	]) {
+		toggle.append(
 			h(
 				"button",
 				{
-					class: "card-tab" + (tab === id ? " active" : ""),
-					id: `tab-${id}`,
-					role: "tab",
-					"aria-selected": tab === id ? "true" : "false",
-					"aria-controls": `${id}-pane`,
+					type: "button",
+					id: `history-${id}`,
+					class: format === id ? "on" : null,
+					title,
+					"aria-pressed": format === id ? "true" : "false",
 					onclick: () => {
-						S.historyTab = id;
-						store.set("bingle.historyTab", id);
+						S.historyFormat = id;
+						store.set("bingle.historyFormat", id);
 						render();
-						showLogEnd();
+						if (isLive()) showLogEnd();
 					},
 				},
 				label
 			)
 		);
 	}
-	card.append(tabs);
-	card.append(tab === "history" ? log.node : movesPane());
+	head.append(toggle);
+	card.append(format === "notation" ? movesPane() : log.node, historyControls());
 	return card;
 }
 
@@ -5469,7 +5474,8 @@ function rerollDie(k) {
 // ---- the log: what happened since your last move --------------------------------
 
 /** What the latest decisions did, newest last: [{ply, seat, lines}]. */
-function rulesetLog() {
+/** The story of the game up to the position in view, or with `whole` as far as it has gone. */
+function rulesetLog(whole = false) {
 	if (!isRuleset()) return [];
 	const st = currentState();
 	const latest = (st && st.ext && st.ext.log) || [];
@@ -5479,7 +5485,7 @@ function rulesetLog() {
 	// own latest events added.
 	if (!S.fullLog || S.fullLog.count !== S.moves.length) loadFullLog();
 	// The steps of the turn being played are not told until the turn is over.
-	const upTo = isLive() ? S.moves.length - openSteps() : S.viewSeq;
+	const upTo = whole || isLive() ? S.moves.length - openSteps() : S.viewSeq;
 	if (S.fullLog) {
 		const seen = S.fullLog.entries.length ? S.fullLog.entries[S.fullLog.entries.length - 1].ply : 0;
 		const all = S.fullLog.entries.concat(latest.filter((e) => e.ply > seen)).filter((e) => e.ply <= upTo);
@@ -5609,6 +5615,62 @@ function moveStory(seq) {
 	return box;
 }
 
+/**
+ * Where the viewer's last move is in the log: the first entry of it (`mark`), whether they
+ * have moved before (`markSeen`) and the entries from there on (`recent`). It is from the
+ * player's last decision that someone else's followed, so a turn in progress keeps the
+ * others' summary on view and adds the player's own decisions to it.
+ */
+function lastMoveMark(log) {
+	const none = { mark: null, markSeen: false, recent: [] };
+	if (!log.length || !S.me.seat) return none;
+	let from = 0;
+	let found = false;
+	let seenOther = false;
+	for (let i = log.length - 1; i >= 0; i--) {
+		if (log[i].seat !== S.me.seat) seenOther = true;
+		else if (seenOther) {
+			from = i;
+			found = true;
+			break;
+		}
+	}
+	if (!found) return none;
+	// The whole of that turn, not just its last decision (a Done says nothing:
+	// what the turn did is in the decisions before it).
+	while (from > 0 && log[from - 1].seat === S.me.seat) from--;
+	const recent = log.slice(from).filter((e) => e.lines && e.lines.length);
+	return { mark: recent[0] || null, markSeen: true, recent };
+}
+
+/** The rule at the viewer's last move: a way back to it, to step on from there. */
+function sinceRule(seq) {
+	return h(
+		"div",
+		{ class: "log-since", id: "history-since" },
+		h("button", { type: "button", class: "log-since-button", id: "history-rewind", title: "Go to your last move, and step on from there", disabled: !seq, onclick: () => jumpToMove(seq) }, "Since your last move")
+	);
+}
+
+/** One entry's line of the log, which goes to its move when clicked. */
+function logStep(line, e) {
+	const li = e.silent ? h("li", { class: "log-silent muted" }, line) : logLine(line);
+	if (!e.ply) return li;
+	li.classList.add("log-step");
+	if (!isLive() && S.viewSeq === e.ply) li.classList.add("current");
+	li.dataset.seq = e.ply;
+	li.tabIndex = 0;
+	const go = () => viewMove(e.ply >= S.moves.length ? null : e.ply);
+	li.addEventListener("click", go);
+	li.addEventListener("keydown", (ev) => {
+		if (ev.key === "Enter" || ev.key === " ") {
+			ev.preventDefault();
+			go();
+		}
+	});
+	return li;
+}
+
 // eventsPane narrates the whole game so far, with a rule marking where the
 // viewer's last decision was (what the other cults did meanwhile comes after
 // it). A spectator sees the whole log without the mark. It returns
@@ -5618,44 +5680,26 @@ function moveStory(seq) {
 // tab says so instead of vanishing and leaving only Moves.
 function eventsPane() {
 	if (!isRuleset()) return null;
-	const log = rulesetLog();
+	const log = rulesetLog(true);
 	let entries = [];
 	let since = "";
-	let mark = null; // the first entry after the viewer's last move
-	let markSeen = false; // the viewer has moved before, so there is something to mark
-	let recent = []; // the entries from the mark on
+	const { mark, markSeen, recent } = lastMoveMark(log);
 	if (log.length) {
 		entries = log.filter((e) => e.lines && e.lines.length);
-		if (S.me.seat) {
-			// From the player's last decision that someone else's followed
-			// (so a turn in progress keeps the others' summary on view and
-			// adds the player's own decisions to it).
-			let from = 0;
-			let found = false;
-			let seenOther = false;
-			for (let i = log.length - 1; i >= 0; i--) {
-				if (log[i].seat !== S.me.seat) seenOther = true;
-				else if (seenOther) {
-					from = i;
-					found = true;
-					break;
-				}
-			}
-			// The whole of that turn, not just its last decision (a Done
-			// says nothing: what the turn did is in the decisions before it).
-			while (found && from > 0 && log[from - 1].seat === S.me.seat) from--;
-			since = found ? "since your last move" : "so far";
-			recent = log.slice(from).filter((e) => e.lines && e.lines.length);
-			if (found) {
-				markSeen = true;
-				mark = recent[0] || null;
-			}
-		} else {
-			since = "full history";
-		}
+		since = !S.me.seat ? "full history" : markSeen ? "since your last move" : "so far";
 	} else {
 		const events = isLive() && openSteps() ? [] : rulesetEvents();
 		if (events.length) entries = [{ seat: 0, lines: events }];
+	}
+	// A move that told nothing (a Done, say) has its notation here while it is the one in
+	// view, so that a step never looks as if it did nothing.
+	const viewed = isLive() ? null : S.viewSeq;
+	if (viewed && !entries.some((e) => e.ply === viewed)) {
+		const mv = S.moves[viewed - 1];
+		if (mv) {
+			entries.push({ seat: mv.seat, ply: viewed, lines: [mv.notation || `${mv.from}-${mv.to}`], silent: true });
+			entries.sort((x, y) => (x.ply || 0) - (y.ply || 0));
+		}
 	}
 	const card = h("div", { class: "history-pane", id: "history-pane" });
 	const box = h("div", { class: "events", id: "events" });
@@ -5665,13 +5709,6 @@ function eventsPane() {
 	// Only the viewer's own turn is told after the mark: nobody else has said
 	// anything since.
 	const quiet = markSeen && recent.every((e) => e.seat === S.me.seat);
-	// The rule is a way back: to the player's last move, in the list of moves, to go on from.
-	const sinceRule = () =>
-		h(
-			"div",
-			{ class: "log-since", id: "history-since" },
-			h("button", { type: "button", class: "log-since-button", id: "history-rewind", title: "Go to your last move, and step on from there", onclick: () => jumpToMove(mark.ply) }, "Since your last move")
-		);
 	// Consecutive decisions of one seat read as one turn, except that the mark
 	// always starts a new one. Decisions a tactical bot took for a person whose
 	// Auto-Play Timeout ran out are marked.
@@ -5689,7 +5726,7 @@ function eventsPane() {
 		h("span", { class: "badge auto-play", title: "A tactical bot played this for the player: their Auto-Play Timeout ran out" }, all ? "auto-play" : "partly auto-play");
 	for (const g of groups) {
 		if (g.mark) {
-			box.append(sinceRule());
+			box.append(sinceRule(mark && mark.ply));
 			if (quiet) box.append(h("p", { class: "muted small empty-history", id: "history-quiet" }, "Nothing new from the others since your last move."));
 		}
 		const all = g.entries.every(botPlayed);
@@ -5709,7 +5746,7 @@ function eventsPane() {
 					box.append(group);
 					return;
 				}
-				const li = logLine(line);
+				const li = logStep(line, e);
 				if (auto) {
 					li.classList.add("auto-play");
 					// The turn's header says it when the whole turn was the bot's.
@@ -5720,7 +5757,7 @@ function eventsPane() {
 		}
 	}
 	if (markSeen && !mark) {
-		box.append(sinceRule(), h("p", { class: "muted small empty-history", id: "history-quiet" }, "Nothing new since your last move."));
+		box.append(sinceRule(null), h("p", { class: "muted small empty-history", id: "history-quiet" }, "Nothing new since your last move."));
 	}
 	card.append(box);
 	// Open on what is new: the rule marking the viewer's last move at the top,
@@ -5728,6 +5765,10 @@ function eventsPane() {
 	queueMicrotask(() => {
 		const el = document.getElementById("events");
 		if (!el) return;
+		if (!isLive()) {
+			el.querySelector(".log-step.current")?.scrollIntoView({ block: "nearest" });
+			return;
+		}
 		const rule = document.getElementById("history-since");
 		el.scrollTop = rule ? Math.max(0, rule.getBoundingClientRect().top - el.getBoundingClientRect().top + el.scrollTop - 6) : el.scrollHeight;
 	});
@@ -5747,7 +5788,9 @@ function moveList() {
 	if (isRuleset()) {
 		// A turn is several decisions, often by the same seat, so the list is
 		// flat: one entry per decision, tinted by who made it.
+		const { mark } = lastMoveMark(rulesetLog(true));
 		for (const m of moves) {
+			if (mark && mark.ply === m.seq) list.append(h("li", { class: "empty-row" }, sinceRule(m.seq)));
 			list.append(
 				h(
 					"li",
@@ -5767,10 +5810,7 @@ function moveList() {
 				)
 			);
 		}
-		queueMicrotask(() => {
-			const el = document.getElementById("move-list");
-			if (el) el.scrollTop = el.scrollHeight;
-		});
+		queueMicrotask(showMoveInList);
 		return list;
 	}
 	for (let i = 0; i < moves.length; i += n) {
@@ -5796,11 +5836,16 @@ function moveList() {
 		}
 		list.append(li);
 	}
-	queueMicrotask(() => {
-		const el = document.getElementById("move-list");
-		if (el) el.scrollTop = el.scrollHeight;
-	});
+	queueMicrotask(showMoveInList);
 	return list;
+}
+
+/** The list of moves on the move in view, or on its end when the game is live. */
+function showMoveInList() {
+	const el = document.getElementById("move-list");
+	if (!el) return;
+	if (isLive()) el.scrollTop = el.scrollHeight;
+	else el.querySelector(".mv.current")?.scrollIntoView({ block: "nearest" });
 }
 
 
