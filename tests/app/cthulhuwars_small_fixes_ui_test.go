@@ -110,13 +110,13 @@ func TestWebCthulhuWars_TheLogOpensOnItsEnd(t *testing.T) {
 	defer cancel()
 	cwTable(t, ctx, baseURL, "cthulhu-wars", nil, threeBots)
 	clickSel(t, ctx, "#action-cw")
-	waitJS(t, ctx, "some history", `document.getElementById("tab-moves") !== null`, 30*time.Second)
+	waitJS(t, ctx, "some history", `document.getElementById("history-notation") !== null`, 30*time.Second)
 	// Small enough that even a log of one line has somewhere to scroll.
 	evalString(t, ctx, `(function(){ var s = document.createElement("style"); s.textContent = "#events, #move-list { height: 6px !important; min-height: 0 !important; max-height: 6px !important; overflow-y: auto !important; }"; document.head.append(s); return "ok"; })()`)
 	evalString(t, ctx, `(function(){ var b = document.getElementById("rail-tab-history"); if (b) b.click(); return "ok"; })()`)
-	clickSel(t, ctx, "#tab-moves")
+	clickSel(t, ctx, "#history-notation")
 	waitJS(t, ctx, "the moves at their end", logAtEndJS, 5*time.Second)
-	clickSel(t, ctx, "#tab-history")
+	clickSel(t, ctx, "#history-friendly")
 	waitJS(t, ctx, "the history at its end", logAtEndJS, 5*time.Second)
 }
 

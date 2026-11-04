@@ -112,18 +112,18 @@ func TestWebCthulhuWars_TheHistoryTabIsAlwaysThere(t *testing.T) {
 	ctx, cancel := newChromedpContext(t, 90*time.Second)
 	defer cancel()
 	openGameAs(t, ctx, baseURL, created.RoomCode, "cthulhu-wars", "Alice")
-	tabs := `[...document.querySelectorAll("#history-card .card-tab")].map(b => b.id).join(",")`
+	tabs := `[...document.querySelectorAll("#history-card .history-format button")].map(b => b.id).join(",")`
 	// At the very start nothing has been told: both tabs, and the History says so.
-	waitJS(t, ctx, "the tabs", tabs+` === "tab-moves,tab-history"`, 15*time.Second)
+	waitJS(t, ctx, "the tabs", tabs+` === "history-friendly,history-notation"`, 15*time.Second)
 	if got := evalString(t, ctx, `document.getElementById("history-pane") ? document.getElementById("history-pane").textContent : ""`); !strings.Contains(got, "Nothing to tell yet") {
 		t.Errorf("history at the start: %q", got)
 	}
-	clickSel(t, ctx, "#tab-moves")
+	clickSel(t, ctx, "#history-notation")
 	waitJS(t, ctx, "the moves", `document.getElementById("moves-pane") !== null`, 5*time.Second)
-	if got := evalString(t, ctx, tabs); got != "tab-moves,tab-history" {
+	if got := evalString(t, ctx, tabs); got != "history-friendly,history-notation" {
 		t.Errorf("tabs after choosing Moves: %q", got)
 	}
-	clickSel(t, ctx, "#tab-history")
+	clickSel(t, ctx, "#history-friendly")
 	waitJS(t, ctx, "the history", `document.getElementById("history-pane") !== null`, 5*time.Second)
 }
 
@@ -141,23 +141,23 @@ func TestWebCthulhuWars_TheHistoryTabSurvivesQuietStretches(t *testing.T) {
 	ctx, cancel := newChromedpContext(t, 90*time.Second)
 	defer cancel()
 	openGameAs(t, ctx, baseURL, room, "cthulhu-wars", "Bob")
-	waitJS(t, ctx, "the tabs", `[...document.querySelectorAll("#history-card .card-tab")].map(b => b.id).join(",") === "tab-moves,tab-history"`, 15*time.Second)
+	waitJS(t, ctx, "the tabs", `[...document.querySelectorAll("#history-card .history-format button")].map(b => b.id).join(",") === "history-friendly,history-notation"`, 15*time.Second)
 	got := evalString(t, ctx, `document.getElementById("history-pane").textContent`)
 	if !strings.Contains(got, "Nothing new from the others since your last move") || !strings.Contains(got, "moves an Acolyte Cultist") {
 		t.Errorf("the quiet stretch is told, with Bob's own turn: %q", got)
 	}
 	// Looking back at an earlier move and returning does not lose the tab.
-	clickSel(t, ctx, "#tab-moves")
+	clickSel(t, ctx, "#history-notation")
 	waitJS(t, ctx, "the moves", `document.querySelector("#move-list .mv") !== null`, 5*time.Second)
 	clickSel(t, ctx, `#move-list .mv[data-seq="1"]`)
 	waitJS(t, ctx, "the earlier position", `document.querySelector("#move-list .mv.current") && document.querySelector("#move-list .mv.current").getAttribute("data-seq") === "1"`, 10*time.Second)
-	tabs := `[...document.querySelectorAll("#history-card .card-tab")].map(b => b.id).join(",")`
-	if got := evalString(t, ctx, tabs); got != "tab-moves,tab-history" {
+	tabs := `[...document.querySelectorAll("#history-card .history-format button")].map(b => b.id).join(",")`
+	if got := evalString(t, ctx, tabs); got != "history-friendly,history-notation" {
 		t.Errorf("tabs at an earlier move: %q", got)
 	}
 	clickSel(t, ctx, "#hist-last")
 	waitJS(t, ctx, "back to the present", `!document.querySelector("#move-list .mv.current") || document.querySelector("#move-list .mv.current").getAttribute("data-seq") !== "1"`, 10*time.Second)
-	if got := evalString(t, ctx, tabs); got != "tab-moves,tab-history" {
+	if got := evalString(t, ctx, tabs); got != "history-friendly,history-notation" {
 		t.Errorf("tabs back at the present: %q", got)
 	}
 }
@@ -311,7 +311,7 @@ func TestWebCthulhuWars_AutoPlayTimeoutIsSetInTheOptions(t *testing.T) {
 	if got := a.Manager().AutoPlayDue(context.Background()); len(got) != 1 {
 		t.Fatalf("due: %v", got)
 	}
-	clickSel(t, ctx, "#tab-moves")
+	clickSel(t, ctx, "#history-notation")
 	waitJS(t, ctx, "auto-play in the Moves tab", `document.querySelectorAll("#move-list .mv").length > 1 && [...document.querySelectorAll("#move-list .mv")].some(b => b.textContent.indexOf("(auto-play)") >= 0)`, 20*time.Second)
 	if n := evalInt(t, ctx, `[...document.querySelectorAll("#move-list .mv")].filter(b => b.textContent.indexOf("(auto-play)") >= 0 && b.parentElement.className.indexOf("by-seat-1") >= 0).length`); n == 0 {
 		t.Error("the bot's moves are Alice's, marked auto-play")
@@ -319,7 +319,7 @@ func TestWebCthulhuWars_AutoPlayTimeoutIsSetInTheOptions(t *testing.T) {
 	if got := evalString(t, ctx, `[...document.querySelectorAll("#move-list .mv")].find(b => b.textContent.indexOf("(auto-play)") >= 0).title`); !strings.Contains(got, "tactical bot") {
 		t.Errorf("title %q", got)
 	}
-	clickSel(t, ctx, "#tab-history")
+	clickSel(t, ctx, "#history-friendly")
 	waitJS(t, ctx, "the history", `document.getElementById("history-pane") !== null`, 5*time.Second)
 	// The History shows the turn the bot took for Alice, marked.
 	got := evalString(t, ctx, `document.getElementById("history-pane").textContent`)

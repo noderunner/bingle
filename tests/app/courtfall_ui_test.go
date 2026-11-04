@@ -91,7 +91,7 @@ func TestWebCourtfall_PlayThroughSetupIntoTheGame(t *testing.T) {
 		t.Errorf("only %d tinted hexes", n)
 	}
 	waitJS(t, ctx, "scoreboards", `document.querySelectorAll('.seat-strip [data-counter="momentum"]').length === 2 && document.querySelectorAll('.seat-strip .court-tag').length === 2`, 5*time.Second)
-	waitJS(t, ctx, "the history tab", `document.getElementById("events") !== null && document.getElementById("tab-history") !== null && document.getElementById("tab-moves") !== null`, 5*time.Second)
+	waitJS(t, ctx, "the history tab", `document.getElementById("events") !== null && document.getElementById("history-friendly") !== null && document.getElementById("history-notation") !== null`, 5*time.Second)
 	// The terrain legend is in the rules window now, as its Key tab.
 	clickSel(t, ctx, "#show-rules")
 	waitJS(t, ctx, "the key", `document.querySelector('.rules-tab[data-tab="key"]') !== null`, 5*time.Second)

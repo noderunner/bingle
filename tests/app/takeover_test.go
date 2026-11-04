@@ -212,7 +212,7 @@ func TestWebVoteKick(t *testing.T) {
 	evalString(t, calCtx, `document.querySelector('#kick-vote .kick-vote-yes').click(); "ok"`)
 	waitJS(t, annCtx, "the seat shows who it replaced", `document.querySelector('#seat-2 .seat-replaced') !== null && document.querySelector('#seat-2 .seat-replaced').textContent.includes("Ben")`, 15*time.Second)
 	waitJS(t, annCtx, "the vote is gone", `document.getElementById("kick-vote").hidden`, 15*time.Second)
-	evalString(t, annCtx, `document.getElementById("tab-moves").click(); "ok"`)
+	evalString(t, annCtx, `document.getElementById("history-notation").click(); "ok"`)
 	waitJS(t, annCtx, "the move list still says Ben played the move before", `document.querySelector('#move-list [title*="by Ben"]') !== null`, 15*time.Second)
 	waitJS(t, benCtx, "Ben no longer has a seat", `document.querySelector('#seat-2 .badge.bot') !== null && ![...document.querySelectorAll('.seat-strip .badge')].some((b) => b.textContent === "you")`, 15*time.Second)
 }

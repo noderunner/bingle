@@ -4,6 +4,14 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.61.0 - 2026-11-04
+
+### Bingle Core 0.61.0
+- **One History card.** The Moves and History tabs are now a single card with a *Friendly* / *Notation* switch, and the same
+  buttons step through the game either way. Click a line in either view to go to that move.
+- **The whole story while you step.** The friendly view keeps every move on screen and highlights the one you are on, instead of
+  cutting off at it. *Since your last move* is in both views.
+
 ## 0.60.0 - 2026-11-04
 
 ### Bingle Core 0.60.0

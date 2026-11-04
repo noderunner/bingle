@@ -61,7 +61,7 @@ func TestWebMeridians_PlayThroughTheUI(t *testing.T) {
 	if got := evalString(t, ctx, `document.getElementById("events").textContent`); !strings.Contains(got, "lays a stone") {
 		t.Errorf("the history reads %q", got)
 	}
-	clickSel(t, ctx, "#tab-moves")
+	clickSel(t, ctx, "#history-notation")
 	waitJS(t, ctx, "the moves", `document.querySelectorAll('#move-list button.mv[data-seq]').length === 4`, 15*time.Second)
 	if got := evalString(t, ctx, `[...document.querySelectorAll('#move-list button.mv[data-seq]')].map(b => b.textContent.trim()).join(" ")`); !regexp.MustCompile(`[a-l](\d|1[0-3])`).MatchString(got) {
 		t.Errorf("the move list reads %q, want the points the stones went on", got)

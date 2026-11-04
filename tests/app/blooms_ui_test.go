@@ -184,7 +184,7 @@ func TestWebSubmit_ATurnOfSeveralSteps(t *testing.T) {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the stones", `document.querySelectorAll('#piece-buttons button').length === 2`, 15*time.Second)
-	evalString(t, ctx, `(function () { var tab = document.getElementById("tab-moves"); if (tab) tab.click(); return "ok"; })()`)
+	evalString(t, ctx, `(function () { var tab = document.getElementById("history-notation"); if (tab) tab.click(); return "ok"; })()`)
 
 	clickCell := func(pos string) {
 		t.Helper()
@@ -237,12 +237,12 @@ func TestWebSubmit_ATurnOfSeveralSteps(t *testing.T) {
 	if evalBool(t, ctx, `document.getElementById("submit-move") !== null`) {
 		t.Error("a step that can come back asks for Submit")
 	}
-	clickSel(t, ctx, "#tab-history")
+	clickSel(t, ctx, "#history-friendly")
 	waitJS(t, ctx, "the history", `document.getElementById("history-pane") !== null`, 5*time.Second)
 	if got := evalString(t, ctx, `document.getElementById("history-pane").textContent`); strings.Contains(got, "e4") {
 		t.Errorf("the history tells a step of an unfinished turn: %q", got)
 	}
-	clickSel(t, ctx, "#tab-moves")
+	clickSel(t, ctx, "#history-notation")
 	// Back takes it back straight away, and the turn is still hers.
 	clickSel(t, ctx, "#undo-step")
 	waitMoves(3, "Back did not take the step back")
@@ -259,6 +259,6 @@ func TestWebSubmit_ATurnOfSeveralSteps(t *testing.T) {
 	}
 	clickSel(t, ctx, "#submit-move")
 	waitJS(t, ctx, "the whole turn in the list", `document.querySelectorAll('#move-list button.mv').length === 5`, 10*time.Second)
-	clickSel(t, ctx, "#tab-history")
+	clickSel(t, ctx, "#history-friendly")
 	waitJS(t, ctx, "the turn told", `document.getElementById("history-pane") !== null && document.getElementById("history-pane").textContent.indexOf("e6") >= 0`, 10*time.Second)
 }

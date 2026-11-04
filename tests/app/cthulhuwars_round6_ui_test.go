@@ -293,21 +293,21 @@ func TestWebCthulhuWars_MovesAndHistoryShareACardAndUndoIsAmongTheActions(t *tes
 	if n := evalInt(t, ctx, `document.querySelectorAll('#players, .side-players').length`); n != 0 {
 		t.Errorf("the Players window is still there")
 	}
-	// One card, two tabs.
-	if got := evalString(t, ctx, `[...document.querySelectorAll("#history-card .card-tab")].map(b => b.textContent.replace(/\s+/g, " ").trim().split(" ")[0]).join(",")`); got != "Moves,History" {
+	// One card, two ways of writing it out.
+	if got := evalString(t, ctx, `[...document.querySelectorAll("#history-card .history-format button")].map(b => b.textContent.replace(/\s+/g, " ").trim().split(" ")[0]).join(",")`); got != "Friendly,Notation" {
 		t.Errorf("tabs %q", got)
 	}
-	clickSel(t, ctx, "#tab-moves")
+	clickSel(t, ctx, "#history-notation")
 	waitJS(t, ctx, "the moves", `document.getElementById("moves-pane") !== null && document.getElementById("move-list") !== null && document.getElementById("events") === null`, 5*time.Second)
-	clickSel(t, ctx, "#tab-history")
+	clickSel(t, ctx, "#history-friendly")
 	waitJS(t, ctx, "the history", `document.getElementById("events") !== null && document.getElementById("move-list") === null`, 5*time.Second)
 	// The choice is remembered across redraws.
-	clickSel(t, ctx, "#tab-moves")
+	clickSel(t, ctx, "#history-notation")
 	if code, out := moveNotation(t, baseURL, room, "Alice", "pass"); code != 200 {
 		t.Logf("pass: %d %v", code, out)
 	}
 	time.Sleep(500 * time.Millisecond)
-	if got := evalString(t, ctx, `document.querySelector("#history-card .card-tab.active").id`); got != "tab-moves" {
+	if got := evalString(t, ctx, `document.querySelector("#history-card .history-format button.on").id`); got != "history-notation" {
 		t.Errorf("active tab %q", got)
 	}
 }

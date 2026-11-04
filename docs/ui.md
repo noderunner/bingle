@@ -481,9 +481,9 @@ chosen with two buttons (`#action-cw`, `#action-ccw`) that spell out who plays
 after whom. A cult's Elder Signs (`#signs-<seat>`) show their values to their
 owner only; revealed ones are public.
 
-**Moves and History** share one card (`#history-card`) with two tabs
-(`#tab-moves`, `#tab-history`; the choice is remembered, History is the default
-of a game that narrates): the move list, and what happened since your own last
+**The history** is one card (`#history-card`) with one set of buttons to step through it (`#hist-prev`, `#hist-next`…), written
+out in one of two ways by the toggle in its head (`#history-friendly`, `#history-notation`; the choice is remembered, Friendly is the default
+of a game that narrates, and a game that does not has no toggle): what happened since your own last
 turn (`ext.log`; the whole of your last turn, not only its last decision),
 grouped by player, cults in their colours (`.log-fac`), verbs in bold
 (`.log-verb`). The History tab is always there in a game that narrates: where
@@ -886,7 +886,7 @@ area maps add `.cell.area[data-position]` with `.area-bg`, `.mark-gate`,
 picked), `#round-bar`, `#battle-panel`, `.seat-grid`, `.faction-card`,
 `.summon-button[data-piece,data-cost]`, `#unit-info`, `.token-enhanced`, `.sign-chip`,
 `.pool-unit`, `.gate-chip .gate-holder[data-holder]`, `#history-card` with
-`#tab-moves` / `#tab-history`,
+`#history-friendly` / `#history-notation`, `.log-step[data-seq]`,
 `#phase-steps`, `#turn-order`, `#elder-bag`, `#ritual-track .ritual-step`,
 `#events .log-fac`, `#options-reactions` with, per reaction (`<id>`:
 `devolve`, `madness`, `unspeakable-oath`…), `#ask-<id>-targeted` (and its ?,

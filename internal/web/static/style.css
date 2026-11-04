@@ -373,6 +373,19 @@ button.hand-piece:disabled:not(.chosen) { opacity: 0.55; cursor: default; }
 .move-list .empty { color: var(--muted); font-style: italic; }
 .move-list li.empty-row { display: block; }
 
+.history-head { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; margin-bottom: 0.5rem; }
+.history-head h3 { margin: 0; }
+/* A tab of the rail already says History. */
+#rail-pane-history .history-head h3 { display: none; }
+#rail-pane-history .history-head { justify-content: flex-end; }
+.history-format { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.history-format button { padding: 0.15rem 0.6rem; border: 0; border-radius: 0; background: transparent; color: var(--muted); font-size: 0.8rem; font-weight: 600; }
+.history-format button + button { border-left: 1px solid var(--border); }
+.history-format button.on { background: var(--accent); color: var(--accent-ink); }
+.log-step { cursor: pointer; border-radius: 4px; }
+.log-step:hover { background: var(--surface-2); }
+.log-step.current { background: var(--accent-soft); outline: 1px solid var(--accent); }
+.log-silent { font-family: ui-monospace, monospace; font-size: 0.8rem; }
 .history-controls { display: flex; gap: 0.3rem; margin-top: 0.5rem; }
 .history-controls button { flex: 1; justify-content: center; }
 
@@ -1454,7 +1467,7 @@ tr.weak td { color: var(--danger, #c0392b); font-weight: 600; }
 
 /* Where "since your last move" starts in the full history. */
 .log-since { display: flex; align-items: center; gap: 0.6rem; margin: 0.9rem 0 0.5rem; color: var(--accent); font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
-.log-since-button { padding: 0.1rem 0.55rem; border: 1px solid var(--accent); border-radius: 999px; background: transparent; color: var(--accent); font: inherit; font-size: 0.8rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.log-since-button { padding: 0.1rem 0.55rem; border: 1px solid var(--accent); border-radius: 999px; background: transparent; color: var(--accent); font: 600 0.8rem system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; cursor: pointer; white-space: nowrap; }
 .log-since-button:hover { background: var(--accent-soft); }
 .log-since::before, .log-since::after { content: ""; flex: 1; border-top: 2px solid var(--accent); }
 
@@ -1532,7 +1545,9 @@ a.button .unread-count { display: inline-block; margin-left: 0.4rem; min-width: 
 #rail-pane-talk .chat-log { flex: 1 1 0; max-height: none; }
 #rail-pane-talk > .chat > h3 { display: none; }
 #rail-pane-history > .side-moves { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
-.play-screen .side-moves > :last-child { flex: 1 1 0; min-height: 0; overflow-y: auto; }
+.play-screen .side-moves > .history-pane { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
+.play-screen .side-moves > .history-pane > .events, .play-screen .side-moves > .history-pane > .move-list { flex: 1 1 0; min-height: 0; overflow-y: auto; }
+.play-screen .side-moves > .history-head, .play-screen .side-moves > .history-steps { flex: none; }
 .play-screen.areas .events, .play-screen.areas .move-list { max-height: none; }
 .impulse-card .move-bar { max-width: none; min-height: 0; }
 .impulse-card .hint:empty { display: none; }

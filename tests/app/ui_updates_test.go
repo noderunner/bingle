@@ -218,8 +218,8 @@ func TestWebCthulhuWars_TheHistoryStepsBackFromTheMark(t *testing.T) {
 		t.Errorf("the rule says %q", got)
 	}
 	evalBool(t, ctx, `(document.getElementById("history-rewind").click(), true)`)
-	// It lands in the Moves tab, on the player's move, with Next under the hand.
-	waitJS(t, ctx, "Alice's move, in the Moves tab", `location.hash === "#move=1" && document.getElementById("moves-pane") !== null && document.querySelector("#move-list .mv.current") !== null`, 10*time.Second)
+	// It lands on the player's move, in the same view, with Next under the hand.
+	waitJS(t, ctx, "Alice's move", `location.hash === "#move=1" && document.getElementById("events") !== null && document.querySelector('#events .log-step.current[data-seq="1"]') !== null`, 10*time.Second)
 	waitJS(t, ctx, "the focus on Next", `document.activeElement && document.activeElement.id === "hist-next"`, 5*time.Second)
 	// The card is titled with the move, and tells it as the History tab does: the
 	// seat's colour and label over the words, not the notation.
@@ -236,6 +236,94 @@ func TestWebCthulhuWars_TheHistoryStepsBackFromTheMark(t *testing.T) {
 	waitJS(t, ctx, "the next move", `location.hash === "#move=2" && document.getElementById("impulse-title").textContent === "History: 2"`, 10*time.Second)
 	if evalBool(t, ctx, told+` !== null && `+told+`.textContent === `+strconv.Quote(first)) {
 		t.Error("the card did not change with the move")
+	}
+}
+
+// One card, one set of buttons: the toggle writes the same history two ways, and the
+// story stays whole while it is stepped through, its current move marked.
+func TestWebCthulhuWars_TheHistoryIsOneCardWithAToggle(t *testing.T) {
+	baseURL := newRESTTestServer(t)
+	doc := cwPosition(t,
+		[]cwUnit{{1, "cultist", "south-pacific", 2}, {2, "cultist", "asia", 1}},
+		map[string]int{"south-pacific": 1, "asia": 2},
+		[5]int{0, 2, 1, 1, 1}, [5]uint8{}, nil)
+	room := cwGameFrom(t, baseURL, doc)
+	ctx, cancel := newChromedpContext(t, 120*time.Second)
+	defer cancel()
+	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1400, 900)); err != nil {
+		t.Fatal(err)
+	}
+	openGameAs(t, ctx, baseURL, room, "cthulhu-wars", "Alice")
+	waitJS(t, ctx, "the buttons", `document.getElementById("action-recruit") !== null`, 15*time.Second)
+	clickSel(t, ctx, "#action-recruit")
+	waitJS(t, ctx, "an area", `document.querySelector('#board .cell.area.clickable[data-position="south-pacific"]') !== null`, 10*time.Second)
+	clickCell(t, ctx, "south-pacific")
+	waitJS(t, ctx, "the rule", `document.getElementById("history-rewind") !== null`, 60*time.Second)
+	if n := evalInt(t, ctx, `document.querySelectorAll("#history-card .card-tab").length`); n != 0 {
+		t.Errorf("the card still has %d tabs", n)
+	}
+	// Everything fits: the story scrolls, and the buttons stay in the card, in both views.
+	inCard := `(function () { var c = document.getElementById("history-card").getBoundingClientRect(); var b = document.getElementById("hist-play").getBoundingClientRect(); return b.height > 0 && b.bottom <= c.bottom + 1; })()`
+	evalString(t, ctx, `(document.getElementById("rail-tab-history").click(), "ok")`)
+	waitJS(t, ctx, "the buttons in the card", inCard, 5*time.Second)
+	lines := evalInt(t, ctx, `document.querySelectorAll("#events .log-step").length`)
+	if lines < 2 {
+		t.Fatalf("%d lines in the story", lines)
+	}
+	if !evalBool(t, ctx, `document.getElementById("hist-prev") !== null`) {
+		t.Error("the step buttons are not with the friendly view")
+	}
+
+	// A step back keeps the whole story, and marks where it is.
+	clickSel(t, ctx, "#hist-prev")
+	waitJS(t, ctx, "a step back", `location.hash.indexOf("#move=") === 0 && document.querySelector("#events .log-step.current") !== null`, 10*time.Second)
+	if n := evalInt(t, ctx, `document.querySelectorAll("#events .log-step:not(.log-silent)").length`); n != lines {
+		t.Errorf("%d lines after a step back, want the %d of the whole story", n, lines)
+	}
+
+	// A line goes to its move.
+	evalBool(t, ctx, `(document.querySelector('#events .log-step[data-seq="1"]').click(), true)`)
+	waitJS(t, ctx, "the first move", `location.hash === "#move=1" && document.getElementById("impulse-title").textContent === "History: 1"`, 10*time.Second)
+
+	// The toggle keeps the place, and the same buttons go on stepping.
+	clickSel(t, ctx, "#history-notation")
+	waitJS(t, ctx, "the notation", `document.querySelector('#move-list .mv.current[data-seq="1"]') !== null && document.getElementById("events") === null`, 5*time.Second)
+	if got := evalString(t, ctx, `location.hash`); got != "#move=1" {
+		t.Errorf("the toggle moved to %q", got)
+	}
+	if !evalBool(t, ctx, `document.getElementById("history-since") !== null`) {
+		t.Error("the rule is not in the notation")
+	}
+	waitJS(t, ctx, "the buttons in the card, written as notation", inCard, 5*time.Second)
+	if got := evalString(t, ctx, `getComputedStyle(document.getElementById("history-rewind")).fontFamily`); strings.Contains(got, "monospace") {
+		t.Errorf("the rule is in the notation's font: %q", got)
+	}
+	clickSel(t, ctx, "#hist-next")
+	waitJS(t, ctx, "the next move", `document.querySelector('#move-list .mv.current[data-seq="2"]') !== null`, 10*time.Second)
+	// The card goes on telling it in words.
+	waitJS(t, ctx, "the move told", `document.getElementById("history-told") !== null`, 5*time.Second)
+
+	// The choice is remembered.
+	if err := chromedp.Run(ctx, chromedp.Reload()); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "the notation again", `document.getElementById("history-notation") !== null && document.getElementById("history-notation").classList.contains("on")`, 15*time.Second)
+}
+
+// A game that does not narrate has only its notation, and no toggle.
+func TestWebHistory_AGameWithNoStoryHasNoToggle(t *testing.T) {
+	baseURL := newRESTTestServer(t)
+	room := newTakRoom(t, baseURL, "gomoku", "Alice")
+	joinRoom(t, baseURL, room, "Bob")
+	ctx, cancel := newChromedpContext(t, 60*time.Second)
+	defer cancel()
+	openGameAs(t, ctx, baseURL, room, "gomoku", "Alice")
+	waitJS(t, ctx, "the card", `document.getElementById("history-card") !== null && document.getElementById("hist-prev") !== null`, 15*time.Second)
+	if n := evalInt(t, ctx, `document.querySelectorAll("#history-card .history-format").length`); n != 0 {
+		t.Errorf("%d toggles", n)
+	}
+	if got := evalString(t, ctx, `document.querySelector("#history-card h3").textContent`); got != "History" {
+		t.Errorf("the card is called %q", got)
 	}
 }
 
