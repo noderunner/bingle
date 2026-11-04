@@ -213,10 +213,12 @@ func TestAccountUI_AGuestKeyLinkResumesTheGames(t *testing.T) {
 		t.Fatal(err)
 	}
 	doJSONAs(t, newGuestKey(t, base), "POST", base+"/api/games/"+room+"/join", map[string]any{"player_name": "Bob"}, nil)
-	if err := chromedp.Run(laptop, chromedp.Navigate(base+"/profile")); err != nil {
+	if err := chromedp.Run(laptop, chromedp.Navigate(base+"/")); err != nil {
 		t.Fatal(err)
 	}
-	waitJS(t, laptop, "the guest card", `!document.getElementById("guest-box").hidden`, 10*time.Second)
+	waitJS(t, laptop, "the top bar", `document.getElementById("open-profile") !== null`, 10*time.Second)
+	clickSel(t, laptop, "#open-profile")
+	waitJS(t, laptop, "the guest key in the window", `document.getElementById("guest-copy") !== null && !document.getElementById("guest-box").hidden`, 10*time.Second)
 	clickSel(t, laptop, "#guest-copy")
 	waitJS(t, laptop, "the link", `document.getElementById("guest-link").textContent.indexOf("#guest=bgg_") > 0`, 10*time.Second)
 	link := evalString(t, laptop, `document.getElementById("guest-link").textContent`)
@@ -232,6 +234,54 @@ func TestAccountUI_AGuestKeyLinkResumesTheGames(t *testing.T) {
 		t.Fatal(err)
 	}
 	waitJS(t, phone, "the seat, as the phone's own", `document.querySelector("#seat-1 .badge") && [...document.querySelectorAll("#seat-1 .badge")].some(b => b.textContent === "you") && [...document.querySelectorAll("#seat-1 .badge")].some(b => b.textContent === "guest")`, 15*time.Second)
+}
+
+// The profile window moves a guest: a key pasted there brings its seats, and a browser
+// that starts over is told when it gets a key again. A signed-in account has no key to move.
+func TestAccountUI_TheProfileWindowMovesAGuest(t *testing.T) {
+	a, base := membersServer(t)
+	key := newGuestKey(t, base)
+	var room struct {
+		RoomCode string `json:"room_code"`
+	}
+	if code := doJSONAs(t, key, "POST", base+"/api/games", map[string]any{"game_def_id": "gomoku", "player_name": "Ana"}, &room); code != 200 {
+		t.Fatalf("create: %d", code)
+	}
+	ctx, cancel := newChromedpContext(t, 60*time.Second)
+	defer cancel()
+	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/")); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "the top bar", `document.getElementById("open-profile") !== null`, 10*time.Second)
+	clickSel(t, ctx, "#open-profile")
+	waitJS(t, ctx, "the key to copy, under its heading", `document.getElementById("guest-copy") !== null && document.querySelector("#guest-box h3").textContent === "Move to another device"`, 10*time.Second)
+	evalBool(t, ctx, `(document.getElementById("guest-use-key").value = "`+key+`", document.getElementById("guest-use").click(), true)`)
+	waitJS(t, ctx, "the key taken", `document.getElementById("guest-result").textContent.indexOf("that guest now") >= 0`, 10*time.Second)
+	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/game/"+room.RoomCode)); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "the seat, as this browser's own", `document.querySelector("#seat-1 .badge") && [...document.querySelectorAll("#seat-1 .badge")].some(b => b.textContent === "you")`, 15*time.Second)
+
+	// Starting over leaves no key to copy until the next game.
+	clickSel(t, ctx, "#open-profile")
+	waitJS(t, ctx, "the key to copy", `document.getElementById("guest-discard") !== null`, 10*time.Second)
+	evalBool(t, ctx, `(window.confirm = () => true, document.getElementById("guest-discard").click(), true)`)
+	waitJS(t, ctx, "the note about the key", `document.getElementById("guest-no-key") !== null && document.getElementById("guest-copy") === null && document.getElementById("guest-use-key") !== null`, 10*time.Second)
+
+	ana := member(t, a, base, "ana")
+	acc, cancelAcc := newChromedpContext(t, 60*time.Second)
+	defer cancelAcc()
+	signInChrome(t, acc, base, ana.cookie(auth.SessionCookie))
+	if err := chromedp.Run(acc, chromedp.Navigate(base+"/")); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, acc, "the top bar", `document.getElementById("open-profile") !== null`, 10*time.Second)
+	clickSel(t, acc, "#open-profile")
+	waitJS(t, acc, "the account", `document.getElementById("profile-account-who") !== null`, 10*time.Second)
+	time.Sleep(500 * time.Millisecond)
+	if !evalBool(t, acc, `document.getElementById("guest-box").hidden`) {
+		t.Error("a signed-in account is offered a guest key")
+	}
 }
 
 // The profile window in the top bar says who the browser is: a guest is

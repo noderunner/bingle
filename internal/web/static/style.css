@@ -234,6 +234,11 @@ button.icon-only { display: inline-flex; align-items: center; justify-content: c
 }
 
 /* Who is here, in the profile window (js/topbar.js, js/here.js). */
+.guest-section { margin-top: 1rem; }
+.guest-section h3 { margin: 0 0 0.4rem; font-size: 1rem; }
+.guest-section .wrap { overflow-wrap: anywhere; }
+.guest-use { margin-top: 0.7rem; }
+.guest-more { margin-top: 0.6rem; }
 .here-section { margin-top: 1rem; }
 .here-section h3 { margin: 0 0 0.4rem; font-size: 1rem; }
 .here-list { list-style: none; margin: 0 0 0.4rem; padding: 0; max-height: 14rem; overflow-y: auto; }

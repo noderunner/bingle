@@ -4,6 +4,13 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.59.0 - 2026-11-04
+
+### Bingle Core 0.59.0
+- **Carry on as a guest on another device.** The person icon's window now has *Move to another device*: copy your guest key
+  there, as a link or as text, and use it on your phone or another browser to carry on your games. It used to be on the profile
+  page, where it was easy to miss.
+
 ## 0.58.0 - 2026-11-04
 
 ### Bingle Core 0.58.0
