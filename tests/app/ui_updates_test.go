@@ -455,3 +455,17 @@ func TestWebProfile_AGuestIsGivenAName(t *testing.T) {
 		t.Errorf("the settings say %q, not %q", got, name)
 	}
 }
+
+// All Settings says nothing of email to a guest.
+func TestWebProfile_AGuestSeesNoEmailSettings(t *testing.T) {
+	baseURL := newRESTTestServer(t)
+	ctx, cancel := newChromedpContext(t, 60*time.Second)
+	defer cancel()
+	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/profile")); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "the section hidden", `document.getElementById("profile-email-section") !== null && document.getElementById("profile-email-section").hidden`, 10*time.Second)
+	if got := evalString(t, ctx, `document.querySelector("main").innerText`); strings.Contains(got, "Email") {
+		t.Errorf("the page mentions email: %q", got)
+	}
+}

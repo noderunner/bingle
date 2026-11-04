@@ -1352,7 +1352,7 @@ func (rs *Ruleset) Describe(game *catalog.CompiledGame) state.RulesetInfo {
 	add(actBattle, "Battle", "Fight one enemy cult in an area where you both have units. Each unit rolls as many dice as its Combat: a 6 is a Kill, a 4 or a 5 a Pain; whoever keeps units wins. With all six spellbooks Battle is an unlimited action, once per area in an Action phase.")
 	add(actCapture, "Capture Cultist", "A Great Old One takes an enemy Cultist in its area when the enemy has no Great Old One there; a monster only when the enemy has neither a monster nor a Great Old One there. The Cultist goes home in Gather Power and its captor gains 1 Power. When the enemy has Cultists beside the one that holds a Gate you choose which; capturing the one on the Gate leaves it abandoned and your own Cultist in the area takes it.")
 	add(actControl, "Put a unit on the Gate", "Free, and it does not end your turn: a unit of yours that stands in the area of a Gate goes onto it — taking control of an abandoned Gate, or replacing the unit on a Gate of your own. Select the unit, then click the Gate.")
-	add(actPass, "Pass (drop to 0 Power)", "Give up your remaining Power: you take no more actions in this Action phase.")
+	add(actPass, "Pass", "Give up your remaining Power: you take no more actions in this Action phase.")
 	add(actDone, "Done", "Finish this part of the turn.")
 	add(actReveal, "Reveal Elder Signs", "Turn all your Elder Signs face up: their total is added to your Doom and everyone sees them. Signs you gain later stay hidden until you reveal again.")
 	add("pay-4", "Pay 4 Power", "Crawling Chaos requirement: "+req("cc", "pay-4")+" It earns a spellbook of your choice.")

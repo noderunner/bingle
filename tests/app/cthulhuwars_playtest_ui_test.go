@@ -185,8 +185,11 @@ func TestWebCthulhuWars_TheDirectionIsChosenBetweenSpelledOutOrders(t *testing.T
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "doom phase", `document.querySelector('#phase-steps .phase-step[data-phase="doom"]').getAttribute("data-state") === "current"`, 15*time.Second)
-	if got := evalString(t, ctx, `document.getElementById("turn-order").textContent`); !strings.Contains(got, "Counter-clockwise") {
-		t.Errorf("the order bar says %q", got)
+	if evalBool(t, ctx, `document.getElementById("turn-order") !== null`) {
+		t.Error("the turn order is still over the map")
+	}
+	if got := evalString(t, ctx, `document.getElementById("first-mark").textContent`); got != "↺" {
+		t.Errorf("the first player's mark is %q", got)
 	}
 	mu.Lock()
 	defer mu.Unlock()

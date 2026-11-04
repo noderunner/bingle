@@ -327,7 +327,7 @@ func TestWebCthulhuWars_AutoPlayTimeoutIsSetInTheOptions(t *testing.T) {
 		t.Errorf("the history does not mark the bot's turn: %q", got)
 	}
 	// ... and the count began again: the option says when the next one is due.
-	waitJS(t, ctx, "a new deadline", `document.getElementById("autoplay-state").textContent.indexOf("2 minutes") >= 0 || document.getElementById("autoplay-state").textContent.indexOf("plays for you at") >= 0`, 10*time.Second)
+	waitJS(t, ctx, "a new deadline", `document.getElementById("autoplay-state").textContent.indexOf("2 minutes") >= 0 || document.getElementById("autoplay-state").textContent.indexOf("plays for you in") >= 0`, 10*time.Second)
 }
 
 // In the lobby anyone at the table can change the cult of an open seat.

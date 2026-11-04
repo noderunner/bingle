@@ -108,13 +108,15 @@ async function paintContact() {
 }
 
 (async () => {
+	const me = await whoAmI();
+	// A guest cannot have email unless this server lets guests: then nothing is said of it.
+	document.getElementById("profile-email-section").hidden = me.kind !== "account" && !(me.caps || []).includes("notify");
 	server = await notifyConfig();
 	if (!server.enabled) {
 		document.getElementById("notify-off").hidden = false;
 		return;
 	}
 	// The address and the switch are an account's to set (notify).
-	const me = await whoAmI();
 	if (!(me.caps || []).includes("notify")) {
 		document.getElementById("profile-email-field").hidden = true;
 		document.getElementById("profile-notify-field").hidden = true;

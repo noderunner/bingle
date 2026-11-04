@@ -15,8 +15,8 @@ import { h, clear } from "./util.js";
  *   update(id, sig, build)     rebuilds the section when sig changed
  *   hide(id, on)               hides or shows a whole section
  */
-export function createOptionsWindow({ title = "Game options", onToggle = () => {} } = {}) {
-	const closeBtn = h("button", { class: "options-close", id: "options-close", "aria-label": "Close the game options", title: "Close (Esc)" }, "×");
+export function createOptionsWindow({ title = "Game Options", onToggle = () => {} } = {}) {
+	const closeBtn = h("button", { class: "options-close", id: "options-close", "aria-label": "Close Game Options", title: "Close (Esc)" }, "×");
 	const body = h("div", { class: "options-body", id: "options-body" });
 	const win = h(
 		"section",
