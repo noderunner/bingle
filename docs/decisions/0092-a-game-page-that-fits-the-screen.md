@@ -36,7 +36,8 @@ tried on one game before the others move.
   but a narrow column of cards.
 - **Tabs are in the column of cards, not the play area.** On a map, the play area is one thing, and what crowds the page
   is the cards beside it: the cults, the talk and the history take turns, under the pinned actions. What belongs to the
-  map (a battle, a unit's card) and the history go under it, in the height a wide map leaves.
+  map (a battle, a unit's card) goes under it, in the height a wide map leaves. The history first went there too when
+  110px was free, but that moved it between games and in mid-game as the room changed, so it is always a tab of the column.
 - **The lobby keeps its page.** It has no board to keep in view.
 
 ## Consequences

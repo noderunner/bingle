@@ -595,8 +595,9 @@ func TestWebCthulhuWars_TheCultCardsOpenOneAtATime(t *testing.T) {
 	if gap := evalInt(t, ctx, `Math.round(`+column+` - document.getElementById("chat-card").getBoundingClientRect().bottom)`); gap > 60 {
 		t.Errorf("%dpx left under the chat", gap)
 	}
-	// Under the map, the history fills what the map leaves.
-	if gap := evalInt(t, ctx, `Math.round(document.querySelector(".board-column").getBoundingClientRect().bottom - document.getElementById("history-card").getBoundingClientRect().bottom)`); gap > 8 {
+	clickSel(t, ctx, "#rail-tab-history")
+	waitJS(t, ctx, "the history in a tall window", `document.getElementById("history-card").offsetParent !== null`, 5*time.Second)
+	if gap := evalInt(t, ctx, `Math.round(`+column+` - document.getElementById("history-card").getBoundingClientRect().bottom)`); gap > 60 {
 		t.Errorf("%dpx left under the history", gap)
 	}
 	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1280, 680)); err != nil {

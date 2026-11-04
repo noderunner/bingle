@@ -1917,8 +1917,6 @@ function renderFitted(seats, bottomSeat, cults) {
 	else if (S.info.board.style === "free") screen.style.setProperty("--board-aspect", 1.25);
 	else if (view && view.height) screen.style.setProperty("--board-aspect", view.width / view.height);
 	const history = historyCard();
-	const historyUnderMap = areas && wrap.getBoundingClientRect().bottom - wrap.lastElementChild.getBoundingClientRect().bottom >= 110;
-	if (historyUnderMap) wrap.append(history);
 
 	// No bar on this page: what it would say goes in the cards. While the game goes on they
 	// say whose turn it is, and its words are only for a screen reader.
@@ -1955,7 +1953,7 @@ function renderFitted(seats, bottomSeat, cults) {
 		// More than a column can show at once: the cults, the table talk and the history take turns.
 		const panes = [{ id: "cults", label: seats.length > 2 ? "Cults" : "Players", nodes: [players, neutralCard()] }];
 		if (talk.length) panes.push({ id: "talk", label: "Chat", nodes: talk });
-		if (!historyUnderMap) panes.push({ id: "history", label: "History", nodes: [history] });
+		panes.push({ id: "history", label: "History", nodes: [history] });
 		rail.append(...railTabs(panes));
 	} else {
 		rail.append(players, ...(cults ? [neutralCard()].filter(Boolean) : []), ...talk, history);

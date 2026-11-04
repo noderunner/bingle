@@ -1507,7 +1507,7 @@ body.fit-screen .sol-top, body.fit-screen .sol-columns { --cw: min(112px, 14cqh,
 #rail-pane-talk > .chat { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
 #rail-pane-talk .chat-log { flex: 1 1 0; max-height: none; }
 #rail-pane-talk > .chat > h3 { display: none; }
-#rail-pane-history > .side-moves, .play-screen.areas .board-wrap > .side-moves { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
+#rail-pane-history > .side-moves { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
 .play-screen .side-moves > :last-child { flex: 1 1 0; min-height: 0; overflow-y: auto; }
 .play-screen.areas .events, .play-screen.areas .move-list { max-height: none; }
 .action-card .move-bar { max-width: none; min-height: 0; }
