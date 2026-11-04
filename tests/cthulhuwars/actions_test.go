@@ -142,6 +142,15 @@ func TestMoveRunsOutWithPower(t *testing.T) {
 	if d.Power[1] != 0 {
 		t.Fatalf("power %d", d.Power[1])
 	}
+	// The Move waits for Done, so that the player can see it and take it back.
+	if d.Stage != "moving" || d.Turn.Seat != 1 {
+		t.Fatalf("the Move should wait for Done: stage %q, %+v", d.Stage, d.Turn)
+	}
+	// (Stepping off the Gate is free, and still there.)
+	if got := notations(g, st, 1); hasPrefix(got, "go:") || !hasPrefix(got, "done") {
+		t.Fatalf("with no Power left nothing moves, and Done is there: %v", got)
+	}
+	d = data(t, play(t, g, st, 1, "done"))
 	if d.Turn.Seat == 1 {
 		t.Fatalf("a player at 0 Power is done: %+v", d.Turn)
 	}

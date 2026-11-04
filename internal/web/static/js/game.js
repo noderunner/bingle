@@ -47,6 +47,8 @@ const S = {
 	viewCache: new Map(),
 	legal: [],
 	builder: new MoveBuilder([]),
+	moveQueue: null, // {from, units: Map(piece -> count)}: the units of a Move on their way to a destination
+	moveGroup: null, // {count, seq}: how many steps the last destination sent, and where that left the move list
 	preview: null, // {notation, cells} for a complete, not-yet-submitted move
 	previewToken: 0,
 	me: { name: null, seat: 0 },
@@ -292,6 +294,12 @@ async function refreshGame() {
 	await loadPosition();
 }
 
+/** Actions that stay a click even when nothing else is left. Done confirms a Move. */
+function manualActions() {
+	const rv = rulesetView() || {};
+	return [...(rv.panel_actions || []), ...(rv.stage === "moving" ? ["done"] : [])];
+}
+
 async function loadLegal() {
 	S.builder = new MoveBuilder([]);
 	S.preview = null;
@@ -304,8 +312,10 @@ async function loadLegal() {
 			S.legal = [];
 		}
 	}
-	MoveBuilder.manual = (rulesetView() || {}).panel_actions || [];
+	MoveBuilder.manual = manualActions();
 	S.builder = new MoveBuilder(S.legal);
+	// The position moved on under a queue: keep it only if it can still be played.
+	if (S.moveQueue && !queuedUnits().every((piece) => unitCost(queueMoves(), piece, S.moveQueue.from) !== null)) S.moveQueue = null;
 	S.builder.autoAdvance();
 }
 
@@ -618,7 +628,7 @@ function previewable(notation) {
 // ---------------------------------------------------------------------------
 
 function afterBuilderChange() {
-	MoveBuilder.manual = (rulesetView() || {}).panel_actions || [];
+	MoveBuilder.manual = manualActions();
 	const b = activeBuilder();
 	b.autoAdvance();
 	S.preview = null;
@@ -687,6 +697,10 @@ async function requestPreview(notation) {
 
 function onCell(pos, ev) {
 	if (!actingSeat()) return;
+	if (S.moveQueue) {
+		if (queueDestinations().has(pos)) sendMoveQueue(pos);
+		return;
+	}
 	const b = activeBuilder();
 	// A tutorial takes only the selection its step points at.
 	if (S.tut && !tutorialAllows("pos", pos)) return;
@@ -782,10 +796,165 @@ function tokenSteps(b, pos, piece) {
 	return null;
 }
 
+// ---- the queue of a Move ------------------------------------------------------
+// Units of a Move are gathered here, from one area, and sent together when the
+// player clicks their destination: one go or leave for each, which the rules judge
+// as they do any other. Nothing reaches the server until then.
+
+/** The moves of units on offer: {piece, from, to, notation}. */
+function queueMoves() {
+	const stage = (rulesetView() || {}).stage;
+	if (!isMyImpulse() || (stage !== "turn" && stage !== "moving")) return [];
+	const out = [];
+	for (const m of activeBuilder().moves) {
+		const found = /^(go|leave):([^@]+)@([^>]+)>(.+)$/.exec(m.notation || "");
+		if (found) out.push({ piece: found[1] === "leave" ? ONGATE + found[2] : found[2], from: found[3], to: found[4], notation: m.notation });
+		// A unit put on the Gate of the area it stands in goes nowhere, for free.
+		const onto = /^control:([^@]+)@(.+)$/.exec(m.notation || "");
+		if (onto) out.push({ piece: onto[1], from: onto[2], to: onto[2], notation: m.notation, free: true });
+	}
+	return out;
+}
+
+/** The Power one step costs. Nearly every step costs 1, and the server names the rest. */
+function stepCost(mv) {
+	if (mv.free) return 0;
+	const cost = ((rulesetView() || {}).move_costs || {})[`${plainPiece(mv.piece)}|${mv.from}|${mv.to}`];
+	return cost === undefined ? 1 : cost;
+}
+
+/** The units in the queue, one entry per unit. */
+function queuedUnits() {
+	return [...S.moveQueue.units.entries()].flatMap(([piece, n]) => Array(n).fill(piece));
+}
+
+/** The least a unit can cost from where it stands: its destination may be dearer or free. */
+function unitCost(moves, piece, from) {
+	const costs = moves.filter((m) => m.piece === piece && m.from === from).map(stepCost);
+	return costs.length ? Math.min(...costs) : null;
+}
+
+/** The running cost of the queue, before its destination is known. */
+function queueCost(moves = queueMoves()) {
+	return queuedUnits().reduce((sum, piece) => sum + (unitCost(moves, piece, S.moveQueue.from) || 0), 0);
+}
+
+function powerOf(seat) {
+	const counters = ((((rulesetView() || {}).seats || {})[String(seat)] || {}).counters || []);
+	return (counters.find((c) => c.id === "power") || { value: 0 }).value;
+}
+
+/** The areas every unit of the queue can reach and the player can pay to send them to. */
+function queueDestinations(extra = null) {
+	const moves = queueMoves();
+	const units = queuedUnits();
+	if (extra) units.push(extra);
+	const out = new Set();
+	const from = S.moveQueue.from;
+	const places = new Set(moves.filter((m) => m.from === from && m.piece === units[0]).map((m) => m.to));
+	for (const to of places) {
+		// Stepping off a Gate or onto one where it stands is for one unit alone.
+		if (to === from && units.length > 1) continue;
+		// A surcharge (the Ice Age) is paid once in a Move.
+		const costs = units.map((piece) => moves.find((m) => m.piece === piece && m.from === from && m.to === to)).map((m) => (m ? stepCost(m) : null));
+		if (costs.includes(null)) continue;
+		const dear = costs.filter((c) => c > 1).length;
+		const total = costs.reduce((a, c) => a + c, 0) - Math.max(0, dear - 1);
+		if (total <= powerOf(S.game.impulse_seat)) out.add(to);
+	}
+	return out;
+}
+
+/** Whether a click on this token adds its unit to the queue. */
+function queueTakes(pos, piece) {
+	if (S.busy || activeBuilder().manualSteps().length) return false;
+	const moves = queueMoves();
+	const cost = unitCost(moves, piece, pos);
+	if (cost === null) return false;
+	const q = S.moveQueue;
+	if (!q) return cost <= powerOf(S.game.impulse_seat) && (!S.tut || tutorialAllowsPath(tokenSteps(activeBuilder(), pos, piece) || []));
+	// A tutorial's step is a single move.
+	if (S.tut || q.from !== pos) return false;
+	const have = q.units.get(piece) || 0;
+	const stack = ((rulesetView() || {}).move_stacks || {})[`${piece}|${pos}`] || 0;
+	if (have >= stack || queueCost(moves) + cost > powerOf(S.game.impulse_seat)) return false;
+	return queueDestinations(piece).size > 0;
+}
+
+function addToQueue(pos, piece) {
+	if (!S.moveQueue) S.moveQueue = { from: pos, units: new Map() };
+	S.moveQueue.units.set(piece, (S.moveQueue.units.get(piece) || 0) + 1);
+	render();
+}
+
+function removeFromQueue(piece) {
+	const q = S.moveQueue;
+	if (!q || S.busy) return;
+	const left = (q.units.get(piece) || 0) - 1;
+	if (left > 0) q.units.set(piece, left);
+	else q.units.delete(piece);
+	if (!q.units.size) S.moveQueue = null;
+	render();
+}
+
+/** Sends the queue to its destination, the units beside a Gate before the one on it. */
+async function sendMoveQueue(to) {
+	const q = S.moveQueue;
+	const moves = queueMoves();
+	const units = queuedUnits().sort((a, b) => Number(a.startsWith(ONGATE)) - Number(b.startsWith(ONGATE)));
+	const notations = units.map((piece) => moves.find((m) => m.piece === piece && m.from === q.from && m.to === to)?.notation).filter(Boolean);
+	if (S.tut && !isExpected(tutorialState().next, notations[0])) {
+		S.tut.hint = tutorialState().step;
+		S.moveQueue = null;
+		render();
+		return;
+	}
+	S.moveQueue = null;
+	S.busy = true;
+	render();
+	let sent = 0;
+	try {
+		for (const notation of notations) {
+			await api.move(code, S.me.name, notation);
+			sent++;
+		}
+	} catch (err) {
+		toast(err.message || "That move was rejected.", "error");
+	}
+	try {
+		await settle();
+		S.moveGroup = sent ? { count: sent, seq: S.moves.length } : null;
+	} finally {
+		S.busy = false;
+		render();
+	}
+}
+
+/** The units on their way and what they cost: a click on a unit takes it out again. */
+function moveQueueDisplay() {
+	const q = S.moveQueue;
+	const seat = S.game.impulse_seat;
+	const wrap = h("span", { class: "move-queue", id: "move-queue" });
+	for (const [piece, n] of q.units) {
+		const look = pieceLook(piece);
+		const icon = h(
+			"button",
+			{ class: "queue-unit" + (look.onGate ? " on-gate" : ""), "data-piece": piece, title: `Take ${look.label} out of this move`, "aria-label": `Take ${look.label} out of this move`, onclick: () => removeFromQueue(piece) },
+			pieceIcon(look.shape, look.color || colorOf(seat), 30)
+		);
+		if (n > 1) icon.append(h("span", { class: "queue-count" }, String(n)));
+		wrap.append(icon);
+	}
+	wrap.append(h("span", { class: "queue-cost", id: "move-queue-cost", title: "The Power this move costs" }, statIcon("power", "Power", 16), String(queueCost())));
+	return wrap;
+}
+
 function tokenOk(pos, piece, color) {
 	const acting = actingSeat();
 	if (!acting || inAnalysis()) return false;
 	const mine = colorOf(acting);
+	if (color === mine && queueMoves().length && (S.moveQueue || queueTakes(pos, piece))) return queueTakes(pos, piece);
+	if (S.moveQueue) return false;
 	if (color !== mine) {
 		// Another faction's unit may only be chosen when the rules say so
 		// (Hastur's Vengeance); never when we have the same kind here.
@@ -819,6 +988,10 @@ function onToken(pos, piece, color) {
 	if (tokenOk(pos, piece, color)) {
 		// A unit that is a legal choice is picked up. A phone has no hover, and opens its card too.
 		if (isMobileLayout()) S.unitInfo = { pos, piece: kind, color, onGate };
+		if (color === colorOf(actingSeat()) && queueTakes(pos, piece)) {
+			addToQueue(pos, piece);
+			return;
+		}
 		const b = activeBuilder();
 		for (const st of tokenSteps(b, pos, piece)) b.push(st.kind, st.value);
 		afterBuilderChange();
@@ -837,6 +1010,7 @@ function closeUnitInfo() {
 }
 
 function resetMove() {
+	S.moveQueue = null;
 	const b = activeBuilder();
 	b.reset();
 	b.autoAdvance();
@@ -846,6 +1020,11 @@ function resetMove() {
 }
 
 function undoStep() {
+	if (S.moveQueue) {
+		S.moveQueue = null;
+		render();
+		return;
+	}
 	const b = activeBuilder();
 	if (!b.manualSteps().length) {
 		if (canUndo() && !S.busy) backStep();
@@ -1121,7 +1300,10 @@ async function backStep() {
 	S.busy = true;
 	render();
 	try {
-		await api.undo(code, S.me.name);
+		// The units of one destination went together, and come back together.
+		const group = S.moveGroup && S.moveGroup.seq === S.moves.length ? S.moveGroup.count : 1;
+		S.moveGroup = null;
+		for (let i = 0; i < group; i++) await api.undo(code, S.me.name);
 		S.viewSeq = null;
 		await settle();
 	} catch (err) {
@@ -1891,13 +2073,6 @@ function genericImpulse() {
 function rulesetStepImpulse(b, rv) {
 	const opts = b.options();
 	if (!opts.length) return needsConfirm() ? "Check the preview, then submit." : "Submitting…";
-	if (rv && rv.stage === "moving") {
-		const from = b.steps.find((st) => st.kind === "pos");
-		const piece = b.steps.find((st) => st.kind === "piece");
-		const label = piece ? (S.info.pieces.find((p) => p.type === piece.value) || {}).label || piece.value : "";
-		if (from && piece) return `Choose an area to send your ${label} from ${areaName(from.value)} to.`;
-		if (from) return `Choose a unit to move out of ${areaName(from.value)}.`;
-	}
 	const manual = b.manualSteps();
 	const last = manual[manual.length - 1];
 	const lastAction = [...manual].reverse().find((st) => st.kind === "action");
@@ -1950,6 +2125,7 @@ function impulseText() {
 	const rv = rulesetView();
 	const said = rv && (rv.impulse || rv.prompt);
 	if (!isMyImpulse()) return said || genericImpulse();
+	if (S.moveQueue) return `Select remaining units in ${areaName(S.moveQueue.from)} to move, followed by a destination.`;
 	const b = activeBuilder();
 	if (!isRuleset()) return genericActingImpulse(b);
 	return b.manualSteps().length ? rulesetStepImpulse(b, rv) : said || genericActingImpulse(b);
@@ -2469,7 +2645,7 @@ function drawBoard(host) {
 	// On an area map, units are picked by clicking their tokens: the areas
 	// they stand in are not themselves targets until a choice is under way.
 	const tokensFirst = S.info.board.style === "areas" && b.steps.length === 0;
-	let targets = interactive && !tokensFirst ? b.nextPositions() : new Set();
+	let targets = S.moveQueue && interactive ? queueDestinations() : interactive && !tokensFirst ? b.nextPositions() : new Set();
 	// In a tutorial only the square the step points at can be clicked.
 	if (S.tut) targets = new Set([...targets].filter((pos) => tutorialAllows("pos", pos)));
 	renderBoard(
@@ -2484,7 +2660,7 @@ function drawBoard(host) {
 			illegal: !!S.tut && !!tutorialStep().illegal,
 			ghost: ghostPiece(),
 			// Every square chosen so far: the origin, then each landing/drop.
-			selected: interactive ? b.steps.filter((st) => st.kind === "pos").map((st) => st.value) : null,
+			selected: !interactive ? null : S.moveQueue ? [S.moveQueue.from] : b.steps.filter((st) => st.kind === "pos").map((st) => st.value),
 			targets,
 			quick: interactive && !isRuleset() && !S.tut ? new Set(b.quickPlacements().keys()) : null,
 			pathCounts: interactive ? b.dropCounts() : new Map(),
@@ -4152,6 +4328,11 @@ function moveBar() {
 	}
 	const b = activeBuilder();
 
+	if (acting && S.moveQueue) {
+		bar.append(moveQueueDisplay(), h("span", { class: "move-actions" }, h("button", { id: "undo-step", class: "ghost", onclick: undoStep, title: "Put these units back (Backspace)" }, "↶ Back")));
+		return bar;
+	}
+
 	if (acting && b.manualSteps().length) {
 		bar.append(pendingMove(b));
 	}
@@ -4255,8 +4436,8 @@ function moveBar() {
 	}
 	if (acting && b.manualSteps().length) {
 		actions.append(h("button", { id: "undo-step", class: "ghost", onclick: undoStep, title: "Undo last selection (Backspace)" }, "↶ Back"));
-		// A move that is a word and a cell (Blooms): Back is enough.
-		if (!(rulesetView() || {}).piece_action) actions.append(h("button", { id: "reset-move", class: "ghost", onclick: resetMove, title: "Clear the move (Esc)" }, "Reset"));
+		// A move that is a word and a cell (Blooms), or anything on a map: Back is enough.
+		if (!(rulesetView() || {}).piece_action && S.info.board.style !== "areas") actions.append(h("button", { id: "reset-move", class: "ghost", onclick: resetMove, title: "Clear the move (Esc)" }, "Reset"));
 	}
 	// Taking back a step already sent: in the list of actions when there is one,
 	// else here. With a selection on the go, Back clears that first.

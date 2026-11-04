@@ -633,7 +633,7 @@ func (e *eng) impulse() string {
 		}
 		return "Choose an action."
 	case stageMoving:
-		return "Choose a unit to move (1 Power each) and its destination, or press Done."
+		return e.moveSummary()
 	case stagePre:
 		return "Choose a pre-battle ability or pass."
 	case stagePost:
@@ -749,4 +749,41 @@ func (e *eng) impulse() string {
 		return fmt.Sprintf("Choose a Doom phase action: a Ritual of Annihilation (%d Power), reveal Elder Signs, buy a Loyalty Card (2 Doom; a Terror also 2 Power) when a pack with cards is in play, or finish.", e.ritualCost())
 	}
 	return ""
+}
+
+// moveSummary says what the Move action has done so far, for the card that asks to
+// confirm it: "Moved 2 Acolyte Cultists and a Deep One to Asia for 3 Power."
+func (e *eng) moveSummary() string {
+	m := e.d.Move
+	if m == nil || len(m.Moved) == 0 {
+		return "Choose a unit to move, or press Done."
+	}
+	var areas []string
+	counts := map[string]map[string]int{}
+	types := map[string][]string{}
+	for _, k := range m.Moved {
+		area, typ, _ := strings.Cut(k, "|")
+		if counts[area] == nil {
+			counts[area] = map[string]int{}
+			areas = append(areas, area)
+		}
+		if counts[area][typ] == 0 {
+			types[area] = append(types[area], typ)
+		}
+		counts[area][typ]++
+	}
+	var parts []string
+	for _, area := range areas {
+		var units []string
+		for _, typ := range types[area] {
+			name := unitNameOf(typ)
+			if n := counts[area][typ]; n > 1 {
+				units = append(units, fmt.Sprintf("%d %ss", n, name))
+			} else {
+				units = append(units, article(name))
+			}
+		}
+		parts = append(parts, strings.Join(units, " and ")+" to "+e.areaName(e.areaIdx(area)))
+	}
+	return fmt.Sprintf("Moved %s for %d Power. Press Done, or choose more units to move.", strings.Join(parts, ", "), m.Spent)
 }

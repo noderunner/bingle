@@ -605,40 +605,14 @@ func (e *eng) unitMoves(seat int, moved []string) []state.Move {
 			occupant = e.holderAt(a)
 		}
 		for t, typ := range unitTypes {
-			n := e.cnt[e.idx(a, seat, t)]
-			// The Hound of Tindalos moves only with the others (houndHops) and the
-			// Filth never moves at all.
-			if n <= 0 || typ == uHound || typ == uFilth || typ == uByatis {
-				continue
-			}
-			if typ == uReanimated && e.brainless(a, seat) {
-				continue
-			}
-			// A Mummified Acolyte cannot use the Move Action.
-			if typ == uCultist {
-				n -= e.mummies(a, seat)
-				if n <= 0 {
-					continue
-				}
-			}
-			// Units that arrived during this action may not move again.
-			arrived := 0
-			if len(moved) > 0 {
-				key := e.areaID(a) + "|" + typ
-				for _, k := range moved {
-					if k == key {
-						arrived++
-					}
-				}
-			}
-			free := n - arrived
+			free := e.freeToMove(seat, a, t, typ, moved)
 			if free <= 0 {
 				continue
 			}
 			stack := free
 			if typ == occupant {
 				// One of them stands on the Gate; the rest stand beside it.
-				stack = n - 1 - arrived
+				stack = free - 1
 			}
 			if stack > 0 {
 				for _, to := range e.reachFor(seat, a, typ) {
@@ -654,6 +628,85 @@ func (e *eng) unitMoves(seat int, moved []string) []state.Move {
 		}
 	}
 	return out
+}
+
+// freeToMove is how many units of a type in an area can take part in a Move action
+// (the unit on a Gate among them).
+func (e *eng) freeToMove(seat, a, t int, typ string, moved []string) int {
+	n := e.cnt[e.idx(a, seat, t)]
+	// The Hound of Tindalos moves only with the others (houndHops) and the
+	// Filth never moves at all.
+	if n <= 0 || typ == uHound || typ == uFilth || typ == uByatis {
+		return 0
+	}
+	if typ == uReanimated && e.brainless(a, seat) {
+		return 0
+	}
+	// A Mummified Acolyte cannot use the Move Action.
+	if typ == uCultist {
+		n -= e.mummies(a, seat)
+	}
+	// Units that arrived during this action may not move again.
+	key := e.areaID(a) + "|" + typ
+	for _, k := range moved {
+		if k == key {
+			n--
+		}
+	}
+	return n
+}
+
+// moveChoices says what the page needs to queue up units for a Move: how many of
+// each type stand free in each area ("cultist|asia", and "gate:cultist|asia" for
+// the unit on the Gate), and the steps that do not cost 1 Power
+// ("cultist|asia|europe"). The rules still decide each step when it is played.
+func (e *eng) moveChoices() (stacks, costs map[string]int) {
+	d := e.d
+	seat := impulseSeat(d)
+	if seat == 0 || (d.Stage != stageTurn && d.Stage != stageMoving) {
+		return nil, nil
+	}
+	var moved []string
+	if d.Move != nil {
+		moved = d.Move.Moved
+	}
+	stacks, costs = map[string]int{}, map[string]int{}
+	for a := range e.m.ids {
+		occupant := ""
+		if d.Gates[e.areaID(a)] == seat {
+			occupant = e.holderAt(a)
+		}
+		for t, typ := range unitTypes {
+			// The Hound hops on its own terms, and legal moves say where.
+			if n := e.cnt[e.idx(a, seat, t)]; typ == uHound && n > 0 {
+				stacks[typ+"|"+e.areaID(a)] = n
+			}
+			free := e.freeToMove(seat, a, t, typ, moved)
+			if free <= 0 {
+				continue
+			}
+			if typ == occupant {
+				stacks[onGate+typ+"|"+e.areaID(a)] = 1
+				free--
+			}
+			if free > 0 {
+				stacks[typ+"|"+e.areaID(a)] = free
+			}
+		}
+	}
+	for _, mv := range e.legal() {
+		if mv.Action != actGo && mv.Action != actLeave {
+			continue
+		}
+		cost := e.stepCost(seat, mv)
+		if mv.From == mv.To {
+			cost = 0 // stepping off a Gate where it stands
+		}
+		if cost != 1 {
+			costs[mv.Piece+"|"+string(mv.From)+"|"+string(mv.To)] = cost
+		}
+	}
+	return stacks, costs
 }
 
 // stepOffMoves lists the free actions that give a Gate up without moving: the
@@ -736,22 +789,6 @@ func (e *eng) stepCost(seat int, mv state.Move) int {
 		}
 	}
 	return 1 + e.iceTax(seat, e.areaIdx(string(mv.To)))
-}
-
-// moveOver says the Move action has nothing left to pay for: no unit can move
-// any more. (Free actions — a unit put on a Gate, a step off one — are no
-// reason to keep it open: they are there after it, too.)
-func (e *eng) moveOver() bool {
-	for _, mv := range e.legalMoving() {
-		switch {
-		case mv.Action == actDone, mv.Action == actControl:
-			continue
-		case mv.Action == actLeave && mv.From == mv.To:
-			continue
-		}
-		return false
-	}
-	return true
 }
 
 func (e *eng) legalMoving() []state.Move {
@@ -1071,17 +1108,11 @@ func (e *eng) doMoving(seat int, mv state.Move) {
 	if mv.Action == actControl {
 		// Free, and in the middle of a Move: a unit goes onto a Gate.
 		e.putOnGate(seat, mv)
-		if e.moveOver() {
-			e.finishMove()
-		}
 		return
 	}
 	if mv.Action == actLeave && mv.From == mv.To {
 		// Free, and in the middle of a Move: the unit steps off its Gate.
 		e.stepOff(seat, mv)
-		if e.moveOver() {
-			e.finishMove()
-		}
 		return
 	}
 	from, to := e.areaIdx(string(mv.From)), e.areaIdx(string(mv.To))
@@ -1111,9 +1142,6 @@ func (e *eng) doMoving(seat int, mv state.Move) {
 		d.Turn.Toggled = append(d.Turn.Toggled, e.areaID(from))
 		e.say("%s moves %s off the Gate in %s to %s: the Gate is abandoned.", e.seatName(seat), article(unitNameOf(mv.Piece)), e.areaName(from), e.areaName(to))
 		e.takeAbandonedGate(to, seat)
-		if e.moveOver() {
-			e.finishMove()
-		}
 		return
 	}
 	e.take(from, seat, mv.Piece)
@@ -1125,9 +1153,6 @@ func (e *eng) doMoving(seat int, mv state.Move) {
 	e.say("%s moves %s from %s to %s.", e.seatName(seat), article(unitNameOf(mv.Piece)), e.areaName(from), e.areaName(to))
 	e.syncGate(from)
 	e.takeAbandonedGate(to, seat)
-	if e.moveOver() {
-		e.finishMove()
-	}
 }
 
 func (e *eng) finishMove() {

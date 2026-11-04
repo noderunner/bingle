@@ -59,6 +59,10 @@ type View struct {
 	// decide, as it stands now (the cheapest way to take it): keyed by the
 	// id of the action.
 	Costs map[string]int `json:"costs,omitempty"`
+	// MoveStacks and MoveCosts are what the page needs to queue up units for a
+	// Move (see moveChoices).
+	MoveStacks map[string]int `json:"move_stacks,omitempty"`
+	MoveCosts  map[string]int `json:"move_costs,omitempty"`
 	// Seats holds each cult's scoreboard and cards, keyed "1".."4".
 	Seats map[string]*SeatView `json:"seats"`
 	// Battle is the battle being fought, or the last one fought.
@@ -379,6 +383,7 @@ func (e *eng) buildView(viewer int) *View {
 		v.Reaction = &ReactionView{Seat: r.Seat, Trigger: r.Trigger, Ability: r.Ability, Targeted: r.Targeted}
 	}
 	v.Costs = e.actionCosts()
+	v.MoveStacks, v.MoveCosts = e.moveChoices()
 	for _, id := range d.Webs {
 		v.Badges[id] = append(v.Badges[id], "web")
 	}
