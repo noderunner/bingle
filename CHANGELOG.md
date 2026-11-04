@@ -4,6 +4,19 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.63.0 - 2026-11-04
+
+### Bingle Core 0.63.0
+- **No more name box when setting up a game.** You play under the name in your profile. The same goes for puzzles and tutorials.
+- **Tabs in the setup.** *New game* is now *Create Game*, and tutorials and practice batches have tabs of their own.
+
+### Cthulhu Wars 0.9.2
+- **A clearer setup.** *Expansions*, *Seats* and *Other Options* each have a title and a line, and the other options are small cards in
+  two columns. The maps tab shows the real pictures of the maps.
+- **Sand-timer spellbooks.** A table with Ghroth or The Thousand Forms gets a card for each, to replace it for a correspondence game, with
+  a recommended choice.
+- **Fewer words.** *Set every bot to…* and the note on bot names are gone. The Factions tab explains how open seats choose.
+
 ## 0.62.0 - 2026-11-04
 
 ### Bingle Core 0.62.0

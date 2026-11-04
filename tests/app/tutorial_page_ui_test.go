@@ -230,14 +230,11 @@ func TestWebTutorial_ListInTheGamePicker(t *testing.T) {
 	}
 	clickSel(t, ctx, `.game-card[data-family="blooms"]`)
 	waitJS(t, ctx, "the tutorials of the setup", `!document.getElementById("setup-tutorials").hidden && !!document.querySelector('#setup-tutorials button[data-tutorial="blooms-basics"]')`, 10*time.Second)
-	if text := evalString(t, ctx, `document.getElementById("setup-tutorials").innerText`); !strings.Contains(text, "Learn to play") || !strings.Contains(text, "How to play Blooms") {
+	if text := evalString(t, ctx, `document.getElementById("setup-tutorials").innerText`); !strings.Contains(text, "How to play Blooms") {
 		t.Fatalf("the setup's tutorials: %q", text)
 	}
 
-	// Without a name it asks for one; with one it opens the tutorial.
-	setName(t, ctx, "")
-	clickSel(t, ctx, `#setup-tutorials button[data-tutorial="blooms-basics"]`)
-	waitJS(t, ctx, "the request for a name", `!document.querySelector("#setup-tutorials .tutorial-error").hidden`, 5*time.Second)
+	// It plays under the profile's name, and asks for none.
 	setName(t, ctx, "Nia")
 	clickSel(t, ctx, `#setup-tutorials button[data-tutorial="blooms-basics"]`)
 	waitJS(t, ctx, "the tutorial", `location.pathname.startsWith("/game/") && !!document.getElementById("tutorial-count")`, 15*time.Second)
@@ -271,8 +268,8 @@ func TestWebTutorial_TabInTheRulesWindow(t *testing.T) {
 			t.Fatalf("the Tutorials tab lacks %q: %q", want, text)
 		}
 	}
-	if v := evalString(t, ctx, `document.getElementById("tutorial-name").value`); v != "Oli" {
-		t.Fatalf("the name field: %q, want the remembered name", v)
+	if evalBool(t, ctx, `document.getElementById("tutorial-name") !== null`) {
+		t.Fatal("the tutorials ask for a name")
 	}
 	// A finished tutorial can be taken again.
 	if label := evalString(t, ctx, `document.querySelector('#rules-panel-tutorials button[data-tutorial="blooms-basics"]').textContent`); label != "Again" {
@@ -299,7 +296,7 @@ func TestWebTutorial_TabInTheRulesWindow(t *testing.T) {
 // setName types a name into the game picker's form.
 func setName(t *testing.T, ctx context.Context, name string) {
 	t.Helper()
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`document.getElementById("create_player_name").value = `+strconv.Quote(name)+`; true`, nil)); err != nil {
+	if err := chromedp.Run(ctx, chromedp.Evaluate(`localStorage.setItem("bingle.name", JSON.stringify(`+strconv.Quote(name)+`)); true`, nil)); err != nil {
 		t.Fatal(err)
 	}
 }

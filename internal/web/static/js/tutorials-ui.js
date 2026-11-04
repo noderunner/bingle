@@ -2,7 +2,7 @@
 // the game picker: by kind, each with its summary, a mark when this browser
 // has finished it, and a button that opens it in a room of its own.
 
-import { h, store, lastName, setLastName } from "./util.js";
+import { h, store, lastName } from "./util.js";
 import { api } from "./api.js";
 import { finishedTutorials } from "./tutorial.js";
 
@@ -13,39 +13,26 @@ const KINDS = [
 ];
 
 /**
- * tutorialList(family, tutorials, {nameField, compact}) returns the list.
+ * tutorialList(family, tutorials, {compact}) returns the list.
  * nameField is an input that already holds the player's name (the game
  * picker's); without one the list asks for the name itself. compact leaves out
  * the headings and summaries (a line under the game picker).
  */
-export function tutorialList(family, tutorials, { nameField = null, compact = false } = {}) {
+export function tutorialList(family, tutorials, { compact = false } = {}) {
 	const root = h("div", { class: "tutorial-list" + (compact ? " compact" : ""), "data-family": family });
 	if (!tutorials.length) {
 		root.append(h("p", { class: "muted" }, "This game has no tutorials yet."));
 		return root;
 	}
 	const error = h("p", { class: "error tutorial-error", role: "alert", hidden: true });
-	let ownName = null;
-	if (!nameField) {
-		ownName = h("input", { type: "text", id: "tutorial-name", maxlength: 40, autocomplete: "nickname", value: lastName(), placeholder: "Your name" });
-		root.append(h("label", { class: "tutorial-name" }, "Your name ", ownName));
-	}
 	const done = finishedTutorials(store);
 
 	const start = async (t, button) => {
-		const field = nameField || ownName;
-		const name = (field.value || "").trim();
-		if (!name) {
-			error.textContent = "Enter your name first: it is the name you play the tutorial under.";
-			error.hidden = false;
-			field.focus();
-			return;
-		}
+		const name = lastName();
 		error.hidden = true;
 		button.disabled = true;
 		try {
 			const res = await api.startTutorial({ game_def_id: family, tutorial: t.id, player_name: name });
-			setLastName(name);
 			location.assign(`/game/${res.room_code}`);
 		} catch (err) {
 			button.disabled = false;

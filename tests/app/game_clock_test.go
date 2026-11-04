@@ -180,7 +180,7 @@ func TestWebGameClock_SetupAndTheSeatStrips(t *testing.T) {
 		set("clock_minutes_2", "10");
 		set("clock_increment", "5");
 		document.getElementById("move_time_seconds").value = "0";
-		document.getElementById("create_player_name").value = "Ana";
+		localStorage.setItem("bingle.name", JSON.stringify("Ana"));
 		return "ok";
 	})()`)
 	// Play both seats, so the page can watch its own clock run.
@@ -281,7 +281,7 @@ func TestWebClockMinutesAndTheGamesDefault(t *testing.T) {
 			t.Errorf("typing %q leaves %q, want %q", c.typed, got, c.want)
 		}
 	}
-	evalString(t, ctx, `document.getElementById("create_player_name").value = "Ana"; "ok"`)
+	evalString(t, ctx, `localStorage.setItem("bingle.name", JSON.stringify("Ana")); "ok"`)
 	clickSel(t, ctx, `#create-game-form button[type="submit"]`)
 	loc := pollLocation(t, ctx, regexp.MustCompile(`/game/[A-Z0-9]+$`))
 	var game gameWithClock
@@ -304,7 +304,7 @@ func TestWebClockKeepsTheLongTimes(t *testing.T) {
 		var s = document.getElementById("clock_seconds");
 		s.value = "86400";
 		s.dispatchEvent(new Event("change", { bubbles: true }));
-		document.getElementById("create_player_name").value = "Ana";
+		localStorage.setItem("bingle.name", JSON.stringify("Ana"));
 		return "ok";
 	})()`)
 	waitJS(t, ctx, "no minutes for a day", `document.getElementById("clock_minutes").hidden === true`, 5*time.Second)

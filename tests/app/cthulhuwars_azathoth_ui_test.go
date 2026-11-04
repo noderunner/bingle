@@ -65,7 +65,7 @@ func TestWebHome_NeutralSpellbooksAndAzathothAreChosenOnTheSetupPage(t *testing.
 	for _, id := range []string{"Shriveling", "Stars Are Right", "Recriminations", "The Mao Ceremony", "Umr at-Tawil", "Undimensioned"} {
 		evalString(t, ctx, `[...document.querySelectorAll("#cw-panel .cw-tile")].find(b => b.textContent === "`+id+`").click(); "ok"`)
 	}
-	evalString(t, ctx, `document.getElementById("create_player_name").value = "Alice"; "ok"`)
+	evalString(t, ctx, `localStorage.setItem("bingle.name", JSON.stringify("Alice")); "ok"`)
 	clickSel(t, ctx, `#create-game-form button[type="submit"]`)
 	loc := pollLocation(t, ctx, regexp.MustCompile(`/game/[A-Z0-9]+$`))
 	room := loc[strings.LastIndex(loc, "/")+1:]

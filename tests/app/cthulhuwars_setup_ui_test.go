@@ -107,7 +107,7 @@ func TestWebCthulhuWarsSetup_PickingUnitsOneByOne(t *testing.T) {
 	waitJS(t, ctx, "no notice", `document.getElementById("cw-notice").hidden`, 5*time.Second)
 
 	// What is chosen is what the game has.
-	evalString(t, ctx, `document.getElementById("create_player_name").value = "Alice"; "ok"`)
+	evalString(t, ctx, `localStorage.setItem("bingle.name", JSON.stringify("Alice")); "ok"`)
 	clickSel(t, ctx, `#create-game-form button[type="submit"]`)
 	loc := pollLocation(t, ctx, regexp.MustCompile(`/game/[A-Z0-9]+$`))
 	var info struct {
@@ -138,7 +138,7 @@ func TestWebCthulhuWarsSetup_EverySeatNeedsAFaction(t *testing.T) {
 	waitJS(t, ctx, "four seats", seatsReady(4), 20*time.Second)
 	clickSel(t, ctx, `#cw-chosen [data-item="bg"]`)
 	waitJS(t, ctx, "an open seat", seatCultsIs("gc,cc,,ys"), 5*time.Second)
-	evalString(t, ctx, `document.getElementById("create_player_name").value = "Alice"; "ok"`)
+	evalString(t, ctx, `localStorage.setItem("bingle.name", JSON.stringify("Alice")); "ok"`)
 	clickSel(t, ctx, `#create-game-form button[type="submit"]`)
 	waitJS(t, ctx, "the refusal", `document.body.textContent.includes("Choose a faction for every seat.")`, 5*time.Second)
 	if strings.Contains(evalString(t, ctx, `location.pathname`), "/game/") {
@@ -172,7 +172,7 @@ func TestWebCthulhuWarsSetup_Shuffle(t *testing.T) {
 		}
 	}
 	// Faction and extras together still make a game.
-	evalString(t, ctx, `document.getElementById("create_player_name").value = "Alice"; "ok"`)
+	evalString(t, ctx, `localStorage.setItem("bingle.name", JSON.stringify("Alice")); "ok"`)
 	clickSel(t, ctx, `#create-game-form button[type="submit"]`)
 	pollLocation(t, ctx, regexp.MustCompile(`/game/[A-Z0-9]+$`))
 }
@@ -271,7 +271,7 @@ func TestWebCthulhuWarsSetup_MoreFactionsThanSeats(t *testing.T) {
 	waitJS(t, ctx, "a pool again", `document.getElementById("lobby").disabled`, 5*time.Second)
 	// Open seats keep a friend's place: the lobby is where the choice is made.
 	evalString(t, ctx, `document.querySelectorAll("#slots-field .slot-select").forEach((s, i) => { if (i) { s.value = "open"; s.dispatchEvent(new Event("change", {bubbles: true})); } }); "ok"`)
-	evalString(t, ctx, `document.getElementById("create_player_name").value = "Alice"; "ok"`)
+	evalString(t, ctx, `localStorage.setItem("bingle.name", JSON.stringify("Alice")); "ok"`)
 	clickSel(t, ctx, `#create-game-form button[type="submit"]`)
 	pollLocation(t, ctx, regexp.MustCompile(`/game/[A-Z0-9]+$`))
 	waitJS(t, ctx, "the lobby", `document.getElementById("lobby-pool") !== null && document.getElementById("cult-1") !== null`, 20*time.Second)

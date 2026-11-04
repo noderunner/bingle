@@ -196,8 +196,8 @@ move between them, and the URL hash — `/#puzzles`, `/#analysis`, `/#chat` —
 selects one).
 
 * *Games*: the gallery (`.game-card`). Picking a game replaces the gallery by
-  its **setup** (`#game-setup`: a preview, the description, the variants as the list
-  `#setup-variant` in `#setup-variants`, then `#create-game-form`); *All games*
+  its **setup** (`#game-setup`, with tabs: `#setup-tab-new` *Create Game*, `#setup-tab-tutorials`, `#setup-tab-practice`, `#setup-tab-active`;
+  a preview, the description, the variants as the list `#setup-variant` in `#setup-variants`, then `#create-game-form`, whose name is the profile's); *All games*
   goes back, and `/?game=ID` opens the setup of a game directly. For a game of
   two seats the *Opponent* list also has **Two bots** (`@bots`: nobody plays;
   `#botmatch-a|b|speed` choose the bots and the pace, and you watch the match
@@ -557,10 +557,9 @@ A faction takes the first open seat, and taking one out leaves its seat open, so
 `.slot-cult[data-cult-seat]`, `data-value` empty for an open seat, which the Create button refuses. `#cw-seat-notice` says so. A faction past the last seat is spare: the table then sends `faction-pool`, `#lobby` is ticked and disabled, and taking out a seated faction seats a spare one;
 `#cw-notice` says when the neutral units and Independents pass one fewer than the seats. `#cw-shuffle` fills open
 seats and deals up to that number, keeping what was chosen by hand and replacing what it dealt before. `#cw-profile` lists ready-made and saved setups;
-`#cw-profile-save` (accounts only) opens `#cw-save`, and `#cw-profile-delete` shows for one's own. The Other tab also holds the *book-swap* option,
-one list per cult that has a book it may give up while that cult sits at the table
-(`#book-swaps select.swap-select[data-swap]`; a neutral spellbook chosen in one
-list is taken from the others). The choice is sent as `options` only when the
+`#cw-profile-save` (accounts only) opens `#cw-save`, and `#cw-profile-delete` shows for one's own. A table with a sand-timer spellbook has a card for each among *Other Options* (`#book-swaps select.swap-select[data-swap]`,
+`.swap-row[data-swap-card]`; a neutral spellbook chosen in one list is taken from the others, and a slot's `recommended` choice says so).
+The choice is sent as `options` only when the
 table differs from the layout's own. An open seat of
 a waiting table can be filled with a bot (in the options window); draw offers and
 two-party concepts are hidden and *Resign* becomes *End game*.

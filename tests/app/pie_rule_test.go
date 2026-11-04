@@ -411,7 +411,7 @@ func TestWebPieRule_TheSetupOffersIt(t *testing.T) {
 	if evalBool(t, ctx, box+`.checked`) {
 		t.Fatal("the box is still ticked after a click")
 	}
-	evalString(t, ctx, `document.getElementById("create_player_name").value = "Ana"; "ok"`)
+	evalString(t, ctx, `localStorage.setItem("bingle.name", JSON.stringify("Ana")); "ok"`)
 	clickSel(t, ctx, `#create-game-form button[type="submit"]`)
 	loc := pollLocation(t, ctx, regexp.MustCompile(`/game/[A-Z0-9]+$`))
 	room := loc[strings.LastIndex(loc, "/")+1:]

@@ -156,8 +156,10 @@ type OptionDef struct {
 
 // OptionChoice is one value of a seat-choice option.
 type OptionChoice struct {
-	ID    string `json:"id"`
-	Label string `json:"label"`
+	// Recommended (a Slot of a book-swap) is the id of the Choice that suits it best.
+	Recommended string `json:"recommended,omitempty"`
+	ID          string `json:"id"`
+	Label       string `json:"label"`
 	// Color is the seat color the choice brings with it.
 	Color string `json:"color,omitempty"`
 	Text  string `json:"text,omitempty"`

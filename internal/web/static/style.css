@@ -881,8 +881,6 @@ kbd { font: 600 0.8em ui-monospace, Menlo, Consolas, monospace; border: 1px soli
 /* A seat whose cult is chosen: the name column is a list of the cults. */
 .slot-row.with-faction { grid-template-columns: minmax(11rem, 13rem) 1fr; }
 .option-flag { margin-top: 0.4rem; display: flex; flex-direction: column; gap: 0.1rem; }
-.book-swap .swap-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin-top: 0.2rem; }
-.book-swap .swap-row[hidden] { display: none; }
 @media (max-width: 520px) {
 	.slot-row.with-faction { grid-template-columns: 1fr; }
 }
@@ -1956,7 +1954,6 @@ dialog.bar-dialog .field input { width: 100%; }
 form[data-mode="import"] .import-only { display: flex; }
 form[data-mode="import"] .new-only { display: none; }
 #import-text { width: 100%; font-family: ui-monospace, Menlo, Consolas, monospace; }
-.puzzle-name { max-width: 18rem; margin: 0.4rem 0; }
 
 .chat-panel .chat-log {
 	list-style: none; margin: 0.6rem 0 0; padding: 0; height: min(24rem, 55vh); overflow-y: auto;
@@ -2113,6 +2110,15 @@ code.wrap { overflow-wrap: anywhere; word-break: break-all; }
 
 /* ---- the picker of a setup with many parts (Cthulhu Wars) -------------------------------- */
 .setup-layout.with-picker { grid-template-columns: 1fr; }
+/* A section of the setup: its title and whatever goes with it, over a rule. */
+.section-head { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin: 1.2rem 0 0.7rem; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border); }
+.section-head h3 { margin: 0 auto 0 0; font-size: 1.05rem; }
+.other-options, .swap-cards { display: contents; }
+.setup-layout:not(.with-picker) #other-options-head { display: none; }
+.with-picker .other-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.7rem; margin-bottom: 1rem; }
+.with-picker .other-options .field { margin: 0; padding: 0.7rem 0.8rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
+@media (max-width: 620px) { .with-picker .other-options { grid-template-columns: minmax(0, 1fr); } }
+.cw-factions-note { margin: 0 0 0.6rem; }
 /* The tutorials stand beside the preview: the tabs and tiles get the height. */
 .setup-layout.with-picker .setup-side { display: grid; grid-template-columns: 15rem minmax(0, 1fr); align-items: start; gap: 0.5rem 1.2rem; }
 .setup-layout.with-picker .setup-preview { grid-row: 1 / span 3; }
@@ -2157,7 +2163,6 @@ code.wrap { overflow-wrap: anywhere; word-break: break-all; }
 .cw-tip-units { list-style: none; margin: 0.35rem 0; padding: 0; display: grid; gap: 0.1rem; }
 .cw-tip-units li { display: grid; grid-template-columns: 22px 1fr auto; align-items: center; gap: 0.35rem; }
 .slot-cult { display: inline-flex; align-items: center; gap: 0.4rem; min-width: 0; }
-#book-swaps { margin-top: 0.6rem; display: grid; gap: 0.25rem; }
 
 /* A map with a picture behind it: the areas are only what can be clicked and lit up. */
 .map-art { pointer-events: none; }

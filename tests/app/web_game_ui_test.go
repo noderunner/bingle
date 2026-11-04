@@ -605,7 +605,7 @@ func TestWebLobby_CreateAgainstBotOpensPlayableGame(t *testing.T) {
 	waitJS(t, ctx, "bot choices", `document.querySelector('input[name="opponent"][value="tactical"]')`, 10*time.Second)
 
 	if err := chromedp.Run(ctx,
-		chromedp.SendKeys("#create_player_name", "Zoe", chromedp.ByID),
+		chromedp.Evaluate(`localStorage.setItem("bingle.name", JSON.stringify("Zoe"))`, nil),
 		chromedp.Evaluate(`document.querySelector('input[name="opponent"][value="random"]').click(); true`, nil),
 		chromedp.Evaluate(`document.querySelector('#create-game-form button[type=submit]').click(); true`, nil),
 	); err != nil {

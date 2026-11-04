@@ -40,7 +40,7 @@ export function createCwSetup({ family, catalog, layouts, loadInfo, onLayout, on
 	const items = new Map();
 	for (const tab of catalog.tabs) for (const item of tab.items) items.set(item.id, item);
 	const maps = layouts
-		.map((def) => ({ kind: "map", id: def.id, name: mapName(def), seats: def.seats_required }))
+		.map((def) => ({ kind: "map", id: def.id, name: mapName(def), seats: def.seats_required, art: def.map_art || "" }))
 		.sort((a, b) => a.seats - b.seats || a.name.localeCompare(b.name));
 	const mapById = new Map(maps.map((m) => [m.id, m]));
 	const swapOpt = catalog.swaps || null;
@@ -67,14 +67,14 @@ export function createCwSetup({ family, catalog, layouts, loadInfo, onLayout, on
 	}
 
 	/** A map as the server draws it: a small file, where the full description of a layout is a large one. */
-	function mapPicture(id, cls) {
-		return h("img", { class: cls, src: `/api/game-defs/${encodeURIComponent(id)}/assets/board.svg`, alt: "", loading: "lazy" });
+	function mapPicture(item, cls) {
+		return h("img", { class: cls, src: `/api/game-defs/${encodeURIComponent(item.id)}/assets/${item.art || "board.svg"}`, alt: "", loading: "lazy" });
 	}
 
 	function icon(item, px = 52) {
 		switch (item.kind) {
 			case "map":
-				return mapPicture(item.id, "cw-map-thumb");
+				return mapPicture(item, "cw-map-thumb");
 			case "faction":
 				return glyph(item.id, px);
 			case "book":
@@ -104,7 +104,7 @@ export function createCwSetup({ family, catalog, layouts, loadInfo, onLayout, on
 	}
 
 	function mapTip(item) {
-		return h("div", { class: "unit-tip cw-tip cw-map-tip", "data-item": item.id }, h("strong", {}, item.name), mapPicture(item.id, "cw-map-large"));
+		return h("div", { class: "unit-tip cw-tip cw-map-tip", "data-item": item.id }, h("strong", {}, item.name), mapPicture(item, "cw-map-large"));
 	}
 
 	function tip(item) {
@@ -344,25 +344,36 @@ export function createCwSetup({ family, catalog, layouts, loadInfo, onLayout, on
 		return out;
 	}
 
-	function swapBlock() {
-		const block = h("div", { class: "book-swap", id: "book-swaps" }, h("p", { class: "cw-group small muted", title: swapOpt.text || null }, swapOpt.label));
+	// A card of the setup's other options for each sand-timer spellbook of the cults at the table.
+	const swapCards = h("div", { class: "swap-cards", id: "book-swaps" });
+
+	function paintSwapCards() {
+		clear(swapCards);
+		if (!swapOpt) return;
 		const taken = new Set([...swaps].filter(([cult]) => seats.includes(cult)).map(([, book]) => book));
 		for (const slot of swapOpt.slots || []) {
+			if (!seats.includes(slot.id)) continue;
 			const select = h("select", { class: "swap-select", "data-swap": slot.id, "aria-label": `Spellbook to replace ${slot.label}` }, h("option", { value: "" }, `Keep ${slot.label}`));
 			const mine = swaps.get(slot.id) || "";
 			for (const c of swapOpt.choices || []) {
-				select.append(h("option", { value: c.id, title: c.text || null, disabled: c.id !== mine && taken.has(c.id) }, `Replace with ${c.label}`));
+				select.append(h("option", { value: c.id, title: c.text || null, disabled: c.id !== mine && taken.has(c.id) }, c.id === slot.recommended ? `${c.label} (Recommended)` : c.label));
 			}
 			select.value = mine;
 			select.addEventListener("change", () => {
 				if (select.value) swaps.set(slot.id, select.value);
 				else swaps.delete(slot.id);
 				changed(false, true);
-				paintPanel();
 			});
-			block.append(h("label", { class: "swap-row", title: slot.text || null, hidden: !seats.includes(slot.id) }, h("span", { class: "small" }, `${slot.label}: `), select));
+			swapCards.append(
+				h(
+					"div",
+					{ class: "field swap-row", "data-swap-card": slot.id, title: slot.text || null },
+					h("label", {}, slot.label),
+					select,
+					h("span", { class: "small muted" }, "This spellbook uses a sand-timer and is not recommended for correspondence games. You may select a different spellbook to replace it with.")
+				)
+			);
 		}
-		return block;
 	}
 
 	function paintPanel() {
@@ -372,6 +383,7 @@ export function createCwSetup({ family, catalog, layouts, loadInfo, onLayout, on
 			panel.append(grid(maps, toggle));
 		} else {
 			const tab = catalog.tabs.find((t) => t.id === currentTab);
+			if (currentTab === "factions") panel.append(h("p", { class: "small muted cw-factions-note", id: "cw-factions-note" }, "Open seats will only be allowed to choose from the factions selected here. Select more factions than seats to allow more choices."));
 			const groups = new Map();
 			for (const item of tab.items) {
 				const g = item.group || "";
@@ -382,7 +394,6 @@ export function createCwSetup({ family, catalog, layouts, loadInfo, onLayout, on
 				if (name) panel.append(h("p", { class: "cw-group small muted" }, name));
 				panel.append(grid(list, toggle));
 			}
-			if (currentTab === "other" && swapOpt) panel.append(swapBlock());
 		}
 		paintTiles();
 	}
@@ -419,7 +430,6 @@ export function createCwSetup({ family, catalog, layouts, loadInfo, onLayout, on
 				tile(item, () => {
 					swaps.delete(cult);
 					changed(false, true);
-					if (currentTab === "other") paintPanel();
 				})
 			);
 		}
@@ -434,10 +444,8 @@ export function createCwSetup({ family, catalog, layouts, loadInfo, onLayout, on
 		paintTiles();
 		paintSelection();
 		paintNotices();
-		if (seatsToo) {
-			onChange();
-			if (currentTab === "other") paintPanel();
-		}
+		paintSwapCards();
+		if (seatsToo) onChange();
 	}
 
 	function showTab(id) {
@@ -552,7 +560,8 @@ export function createCwSetup({ family, catalog, layouts, loadInfo, onLayout, on
 		{ class: "cw-setup", id: "cw-setup" },
 		h(
 			"div",
-			{ class: "cw-toolbar" },
+			{ class: "section-head cw-toolbar" },
+			h("h3", {}, "Expansions"),
 			profileSelect,
 			deleteBtn,
 			saveBtn,
@@ -574,6 +583,7 @@ export function createCwSetup({ family, catalog, layouts, loadInfo, onLayout, on
 
 	return {
 		el,
+		swapCards,
 		/** The game being set up changed: its seats follow. */
 		setLayout(layout) {
 			const same = info && info.id === layout.id && seats.length === layout.seats.length;

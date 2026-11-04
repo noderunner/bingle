@@ -241,15 +241,26 @@ async function renderRecent() {
 }
 
 /** Called by the lobby whenever the selected game changes. */
+/** The setup's tab for this card: one that goes while it is open gives way to the form. */
+function offer(on) {
+	const tab = document.getElementById("setup-tab-practice");
+	if (!tab) return;
+	tab.hidden = !on;
+	if (!on && tab.getAttribute("aria-selected") === "true") document.getElementById("setup-tab-new").click();
+}
+
 export async function syncPractice(gameID) {
 	if (!card) return;
 	const isCW = typeof gameID === "string" && gameID.startsWith("cthulhu-wars");
 	card.classList.toggle("hidden", !isCW);
-	// Batches are accounts' (run_batch): no card for a browser that may not
+	offer(isCW);
+	// Batches are accounts' (run_batch): no tab for a browser that may not
 	// run one.
 	if (isCW) {
 		whoAmI().then((me) => {
-			if (!(me.caps || []).includes("run_batch")) card.classList.add("hidden");
+			if ((me.caps || []).includes("run_batch")) return;
+			card.classList.add("hidden");
+			offer(false);
 		});
 	}
 	if (!isCW) return;

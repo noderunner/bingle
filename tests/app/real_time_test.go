@@ -72,7 +72,7 @@ func TestWebRealTime_TheSetup(t *testing.T) {
 	base := newRESTTestServer(t)
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/?game=gomoku"), chromedp.WaitVisible(`#create_player_name`, chromedp.ByQuery)); err != nil {
+	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/?game=gomoku"), chromedp.WaitVisible(`#create-submit`, chromedp.ByQuery)); err != nil {
 		t.Fatal(err)
 	}
 	warnings := `document.getElementById("real-time-warnings").hidden`
@@ -91,7 +91,7 @@ func TestWebRealTime_TheSetup(t *testing.T) {
 	evalString(t, ctx, `(() => { const c = document.getElementById("clock_seconds"); c.value = "0"; c.dispatchEvent(new Event("change")); document.getElementById("real-time-first").value = "3"; return "ok"; })()`)
 
 	if err := chromedp.Run(ctx,
-		chromedp.SendKeys(`#create_player_name`, "Alice", chromedp.ByQuery),
+		chromedp.Evaluate(`localStorage.setItem("bingle.name", JSON.stringify("Alice"))`, nil),
 		submitClosestForm(ctx, `select[name="game_def_id"]`),
 	); err != nil {
 		t.Fatal(err)

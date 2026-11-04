@@ -152,21 +152,27 @@ function openSetup() {
 	document.getElementById("game-setup").hidden = false;
 	const select = document.getElementById("game_def_id");
 	syncPractice(select.value);
-	const name = document.getElementById("create_player_name");
-	if (name && !name.value) name.value = lastName();
 	document.getElementById("browser-card").scrollIntoView({ block: "nearest" });
 }
 
 // ---- the games of the chosen game ---------------------------------------------
 
-/** Which tab of the setup shows: the form, or the games of this game going on. */
+const SETUP_TABS = { new: "setup-layout", tutorials: "setup-tutorials-panel", practice: "setup-practice", active: "setup-active" };
+
+/** Which tab of the setup shows. */
 function showSetupTab(which) {
-	const active = which === "active";
-	document.getElementById("setup-tab-new").setAttribute("aria-selected", active ? "false" : "true");
-	document.getElementById("setup-tab-active").setAttribute("aria-selected", active ? "true" : "false");
-	document.getElementById("setup-layout").hidden = active;
-	document.getElementById("setup-active").hidden = !active;
-	if (active) renderSetupActive();
+	for (const [id, panel] of Object.entries(SETUP_TABS)) {
+		document.getElementById(`setup-tab-${id}`).setAttribute("aria-selected", id === which ? "true" : "false");
+		document.getElementById(panel).hidden = id !== which;
+	}
+	if (which === "active") renderSetupActive();
+}
+
+/** Offers a tab of the setup or not: one that goes while it is open gives way to the form. */
+function offerSetupTab(id, on) {
+	const tab = document.getElementById(`setup-tab-${id}`);
+	tab.hidden = !on;
+	if (!on && tab.getAttribute("aria-selected") === "true") showSetupTab("new");
 }
 
 /** The games of the family of the chosen game that have not finished, each to watch. */
@@ -247,6 +253,7 @@ const tutorialsOf = new Map();
 async function renderSetupTutorials(d) {
 	const host = document.getElementById("setup-tutorials");
 	if (!host) return;
+	offerSetupTab("tutorials", !!(d && d.tutorials));
 	if (!d || !d.tutorials) {
 		host.hidden = true;
 		clear(host);
@@ -261,8 +268,7 @@ async function renderSetupTutorials(d) {
 	// Another game may have been chosen while the list was on its way.
 	if (document.getElementById("game_def_id").value !== d.id) return;
 	clear(host).append(
-		h("h3", { class: "setup-tutorials-title" }, "Learn to play"),
-		tutorialList(tutorialsOf.get(d.id).family, tutorialsOf.get(d.id).tutorials || [], { nameField: document.getElementById("create_player_name"), compact: true })
+		tutorialList(tutorialsOf.get(d.id).family, tutorialsOf.get(d.id).tutorials || [], { compact: true })
 	);
 	host.hidden = false;
 }
@@ -316,8 +322,7 @@ function applyStartMode() {
 	const bots = botMatchChosen();
 	createForm.dataset.mode = importing ? "import" : "new";
 	createForm.dataset.opponent = bots ? "bots" : "";
-	document.getElementById("create-submit").textContent = importing ? "Import game" : bots ? "Watch the bots" : "Create game";
-	document.getElementById("create_player_name").required = !importing && !bots;
+	document.getElementById("create-submit").textContent = importing ? "Import Game" : bots ? "Watch the Bots" : "Create Game";
 }
 
 // ---- two bots playing each other ---------------------------------------------------------
@@ -788,6 +793,7 @@ function renderSlots(info) {
 	const many = info.seats.length > 2;
 	syncPoolLobby();
 	if (!many) {
+		document.querySelector(".other-options > .swap-cards")?.remove();
 		const box = document.querySelector(".setup-layout");
 		if (box) box.classList.remove("with-picker");
 		const variants = document.getElementById("setup-variants");
@@ -804,7 +810,7 @@ function renderSlots(info) {
 	const variants = document.getElementById("setup-variants");
 	if (variants) variants.hidden = !!picker;
 	if (picker) field.append(picker.el);
-	field.append(h("label", {}, "Seats"));
+	field.append(h("div", { class: "section-head" }, h("h3", {}, "Seats")));
 	const rows = h("div", { class: "stack" });
 	const remember = () => {
 		for (const sel of rows.querySelectorAll(".slot-select")) slotMemory.set(Number(sel.dataset.seat), sel.value);
@@ -838,27 +844,16 @@ function renderSlots(info) {
 	// may not have arrived yet when the first draw happens.)
 	const mine = [...rows.querySelectorAll(".slot-select")].filter((o) => o.value === "me");
 	if (!mine.length) rows.querySelector(".slot-select").value = "me";
-	// Setting every bot at once saves opening each list.
-	if (botList.length) {
-		const all = h("select", { id: "slots-all", "aria-label": "Kind for every bot seat" }, h("option", { value: "" }, "Set every bot to…"));
-		for (const b of botList) all.append(h("option", { value: b.id }, `${b.label} bot`));
-		all.addEventListener("change", () => {
-			if (!all.value) return;
-			for (const sel of rows.querySelectorAll(".slot-select")) {
-				if (sel.value.startsWith("bot:")) sel.value = "bot:" + all.value;
-			}
-			all.value = "";
-			remember();
-		});
-		field.append(all);
-	}
-	field.append(rows, h("span", { class: "small muted" }, "Bots are named after their faction and kind (Black Goat (MCTS)). Open seats are for friends joining with the link — or bots you add in the lobby."));
+	field.append(rows);
 	// Expansions: a check box each, where no picker offers them.
 	if (!picker) for (const node of boolOptions(info)) field.append(node);
 	oppField.before(field);
 	if (picker) {
+		document.getElementById("other-options").append(picker.swapCards);
 		picker.setLayout(info);
 		paintSeatCults();
+	} else {
+		document.querySelector(".other-options > .swap-cards")?.remove();
 	}
 }
 
@@ -1117,8 +1112,6 @@ async function setupBots() {
 }
 
 if (createForm) {
-	const nameInput = document.getElementById("create_player_name");
-	if (nameInput && !nameInput.value) nameInput.value = lastName();
 	const err = document.getElementById("create-error");
 
 	createForm.addEventListener("submit", async (event) => {
@@ -1133,11 +1126,7 @@ if (createForm) {
 			return;
 		}
 		const gameDefID = document.getElementById("game_def_id").value;
-		const playerName = nameInput.value.trim();
-		if (!playerName) {
-			nameInput.focus();
-			return;
-		}
+		const playerName = lastName();
 		const body = { game_def_id: gameDefID, player_name: playerName };
 		if (picker && !picker.complete()) {
 			showError(err, "Choose a faction for every seat.");
@@ -1208,8 +1197,7 @@ if (createForm) {
 		rulesButton.addEventListener("click", showRules);
 	}
 	document.getElementById("setup-back").addEventListener("click", closeSetup);
-	document.getElementById("setup-tab-new").addEventListener("click", () => showSetupTab("new"));
-	document.getElementById("setup-tab-active").addEventListener("click", () => showSetupTab("active"));
+	for (const id of Object.keys(SETUP_TABS)) document.getElementById(`setup-tab-${id}`).addEventListener("click", () => showSetupTab(id));
 	document.getElementById("opponent-choices").addEventListener("change", applyStartMode);
 	for (const radio of createForm.querySelectorAll('input[name="start_mode"]')) radio.addEventListener("change", applyStartMode);
 	// A file fills the box for the move log.
@@ -1323,13 +1311,7 @@ async function renderPuzzles() {
 }
 
 async function startPuzzle(p) {
-	const nameInput = document.getElementById("puzzle_player_name");
-	const name = ((nameInput && nameInput.value) || lastName() || "").trim();
-	if (!name) {
-		toast("Enter your name first.", "error");
-		if (nameInput) nameInput.focus();
-		return;
-	}
+	const name = lastName();
 	try {
 		const res = await api.createGame({
 			game_def_id: p.game_def_id,
@@ -1406,8 +1388,6 @@ function setupTabs() {
 	if (fact) fact.textContent = randomFact();
 	installTopbar();
 	setupTabs();
-	const name = document.getElementById("puzzle_player_name");
-	if (name) name.value = lastName();
 	try {
 		defs = await api.gameDefs();
 	} catch (e) {

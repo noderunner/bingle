@@ -212,7 +212,7 @@ func TestRatedGames_UI(t *testing.T) {
 		t.Error("the opponents stay shut after giving the choice up")
 	}
 	evalString(t, ctx, `document.getElementById("rated").click(); "ok"`)
-	evalString(t, ctx, `document.getElementById("create_player_name").value = "ana"; "ok"`)
+	evalString(t, ctx, `localStorage.setItem("bingle.name", JSON.stringify("ana")); "ok"`)
 	clickSel(t, ctx, `#create-game-form button[type="submit"]`)
 	loc := pollLocation(t, ctx, regexp.MustCompile(`/game/[A-Z0-9]+$`))
 	room := loc[strings.LastIndex(loc, "/")+1:]
