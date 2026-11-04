@@ -51,7 +51,7 @@ func randomGame(t testing.TB, g *catalog.CompiledGame, seed int64, maxPlies int,
 		if res.GameEnded {
 			return res.NewState, ply, true
 		}
-		st, seat = res.NewState, res.NextTurnSeat
+		st, seat = res.NewState, res.NextImpulseSeat
 	}
 	return st, maxPlies, false
 }

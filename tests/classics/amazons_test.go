@@ -119,7 +119,7 @@ func TestAmazonsEnumerationMatchesValidation(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		st, seat = res.NewState, res.NextTurnSeat
+		st, seat = res.NewState, res.NextImpulseSeat
 	}
 }
 
@@ -150,7 +150,7 @@ func TestAmazonsLastPlayerToMoveWins(t *testing.T) {
 				finished++
 				break
 			}
-			st, seat = res.NewState, res.NextTurnSeat
+			st, seat = res.NewState, res.NextImpulseSeat
 		}
 	}
 	if finished < 18 {

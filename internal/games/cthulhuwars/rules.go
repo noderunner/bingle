@@ -218,16 +218,16 @@ func startArea(game *catalog.CompiledGame, f faction) string {
 	return f.Start
 }
 
-// ToMove says whose decision the position waits for.
-func (rs *Ruleset) ToMove(game *catalog.CompiledGame, st *state.BoardState) int {
+// ImpulseSeat says whose decision the position waits for.
+func (rs *Ruleset) ImpulseSeat(game *catalog.CompiledGame, st *state.BoardState) int {
 	d, err := dataOf(st)
 	if err != nil {
 		return 0
 	}
-	return toMove(d)
+	return impulseSeat(d)
 }
 
-func toMove(d *Data) int {
+func impulseSeat(d *Data) int {
 	if d.Phase == phaseOver {
 		return 0
 	}
@@ -398,7 +398,7 @@ func (rs *Ruleset) Apply(game *catalog.CompiledGame, st *state.BoardState, seat 
 	if d.Phase == phaseOver {
 		return nil, fmt.Errorf("cthulhuwars: the game is over")
 	}
-	want := toMove(d)
+	want := impulseSeat(d)
 	if seat != want {
 		return nil, fmt.Errorf("cthulhuwars: it is not seat %d's decision (waiting for seat %d)", seat, want)
 	}
@@ -426,7 +426,7 @@ func (rs *Ruleset) Apply(game *catalog.CompiledGame, st *state.BoardState, seat 
 	res := &state.MoveResult{NewState: ns, Move: legal, Notation: rs.Format(game, legal)}
 	if nd.Phase == phaseOver {
 		res.GameEnded = true
-		res.NextTurnSeat = seat
+		res.NextImpulseSeat = seat
 		if nd.Winner != 0 {
 			w := nd.Winner
 			res.WinnerSeat = &w
@@ -434,7 +434,7 @@ func (rs *Ruleset) Apply(game *catalog.CompiledGame, st *state.BoardState, seat 
 		res.EndReason = nd.Reason
 		res.EndDetail = doomLine(e)
 	} else {
-		res.NextTurnSeat = toMove(nd)
+		res.NextImpulseSeat = impulseSeat(nd)
 	}
 	return res, nil
 }
@@ -442,7 +442,7 @@ func (rs *Ruleset) Apply(game *catalog.CompiledGame, st *state.BoardState, seat 
 // Legal lists seat's decisions.
 func (rs *Ruleset) Legal(game *catalog.CompiledGame, st *state.BoardState, seat int) []state.Move {
 	d, err := dataOf(st)
-	if err != nil || d.Phase == phaseOver || toMove(d) != seat {
+	if err != nil || d.Phase == phaseOver || impulseSeat(d) != seat {
 		return nil
 	}
 	return rs.newEng(game, st, d).legal()
@@ -575,7 +575,7 @@ func (e *eng) orderNames(first, dir int) string {
 // prompt says what the position is waiting for, in a sentence.
 func (e *eng) prompt() string {
 	d := e.d
-	seat := toMove(d)
+	seat := impulseSeat(d)
 	who := ""
 	if seat > 0 {
 		who = e.seatName(seat)

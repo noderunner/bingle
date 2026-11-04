@@ -61,7 +61,7 @@ func play(t *testing.T, g *catalog.CompiledGame, st *state.BoardState, text stri
 	if err != nil {
 		t.Fatal(err)
 	}
-	res, err := rs.Apply(g, st, rs.ToMove(g, st), mv)
+	res, err := rs.Apply(g, st, rs.ImpulseSeat(g, st), mv)
 	if err != nil {
 		t.Fatalf("%s: %v", text, err)
 	}
@@ -76,7 +76,7 @@ func data(st *state.BoardState) *mycelium.Data { d, _ := st.Ext().(*mycelium.Dat
 func legalTexts(g *catalog.CompiledGame, st *state.BoardState) []string {
 	rs := mycelium.New()
 	var out []string
-	for _, mv := range rs.Legal(g, st, rs.ToMove(g, st)) {
+	for _, mv := range rs.Legal(g, st, rs.ImpulseSeat(g, st)) {
 		out = append(out, rs.Format(g, mv))
 	}
 	return out
@@ -118,15 +118,15 @@ func TestPlacementsAlternate(t *testing.T) {
 	g := game(t)
 	st, _ := mycelium.New().Start(g, 0)
 	st, res := play(t, g, st, "black@d4")
-	if res.NextTurnSeat != 2 || data(st).Confluence != nil {
-		t.Fatalf("after a placement off the centre: next %d, confluence %v", res.NextTurnSeat, data(st).Confluence)
+	if res.NextImpulseSeat != 2 || data(st).Confluence != nil {
+		t.Fatalf("after a placement off the centre: next %d, confluence %v", res.NextImpulseSeat, data(st).Confluence)
 	}
 	if _, err := mycelium.New().Parse(g, "black@d4"); err != nil {
 		t.Fatal(err)
 	}
 	_, res = play(t, g, st, "green@f6")
-	if res.NextTurnSeat != 1 {
-		t.Fatalf("turn should pass back to Black, got %d", res.NextTurnSeat)
+	if res.NextImpulseSeat != 1 {
+		t.Fatalf("turn should pass back to Black, got %d", res.NextImpulseSeat)
 	}
 }
 
@@ -160,7 +160,7 @@ func TestSporeSpreadsConvertAndChain(t *testing.T) {
 	st, _ = play(t, g, st, "spore e9 e5")
 	wantColor(t, st, "black", "e5", "e9")
 	// Green's e2 has spread; Black's new node on e5 has not, and sees e2.
-	if seat := mycelium.New().ToMove(g, st); seat != 1 {
+	if seat := mycelium.New().ImpulseSeat(g, st); seat != 1 {
 		t.Fatalf("Black should spread again, %d is to move", seat)
 	}
 	wantLegal(t, g, st, "spore e5 e2")
@@ -277,7 +277,7 @@ func TestRandomGames(t *testing.T) {
 		st, _ := rs.Start(g, 0)
 		guided := n%2 == 0
 		for ply := 0; ply < 600; ply++ {
-			seat := rs.ToMove(g, st)
+			seat := rs.ImpulseSeat(g, st)
 			legal := rs.Legal(g, st, seat)
 			if len(legal) == 0 {
 				t.Fatalf("no legal move for seat %d", seat)

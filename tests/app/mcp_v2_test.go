@@ -18,22 +18,22 @@ func toolText(res *mcp.CallToolResult) string {
 }
 
 type envObs struct {
-	EnvID      string   `json:"env_id"`
-	AgentSeat  int      `json:"agent_seat"`
-	ToMove     int      `json:"to_move"`
-	YourTurn   bool     `json:"your_turn"`
-	Ply        int      `json:"ply"`
-	BoardText  string   `json:"board_text"`
-	TPS        string   `json:"tps"`
-	LegalMoves []string `json:"legal_moves"`
-	LastMoves  []string `json:"last_moves"`
-	History    []string `json:"history"`
-	Done       bool     `json:"done"`
-	Truncated  bool     `json:"truncated"`
-	WinnerSeat *int     `json:"winner_seat"`
-	EndReason  string   `json:"end_reason"`
-	Reward     float64  `json:"reward"`
-	Result     string   `json:"result"`
+	EnvID       string   `json:"env_id"`
+	AgentSeat   int      `json:"agent_seat"`
+	ImpulseSeat int      `json:"impulse_seat"`
+	YourImpulse bool     `json:"your_impulse"`
+	Ply         int      `json:"ply"`
+	BoardText   string   `json:"board_text"`
+	TPS         string   `json:"tps"`
+	LegalMoves  []string `json:"legal_moves"`
+	LastMoves   []string `json:"last_moves"`
+	History     []string `json:"history"`
+	Done        bool     `json:"done"`
+	Truncated   bool     `json:"truncated"`
+	WinnerSeat  *int     `json:"winner_seat"`
+	EndReason   string   `json:"end_reason"`
+	Reward      float64  `json:"reward"`
+	Result      string   `json:"result"`
 
 	Planes *struct {
 		Shape    [3]int    `json:"shape"`
@@ -93,14 +93,14 @@ func TestMCP_PlayTakVsBotWithObservations(t *testing.T) {
 	}
 
 	var obs struct {
-		YourTurn   bool     `json:"your_turn"`
-		LegalMoves []string `json:"legal_moves"`
-		BoardText  string   `json:"board_text"`
-		Done       bool     `json:"done"`
+		YourImpulse bool     `json:"your_impulse"`
+		LegalMoves  []string `json:"legal_moves"`
+		BoardText   string   `json:"board_text"`
+		Done        bool     `json:"done"`
 	}
 	res = callTool(t, c, "get_observation", map[string]any{"room_code": created.RoomCode, "player_name": "Agent"})
 	decodeToolResult(t, res, &obs)
-	if !obs.YourTurn || len(obs.LegalMoves) != 25 || !strings.Contains(toolText(res), "Legal moves (25)") {
+	if !obs.YourImpulse || len(obs.LegalMoves) != 25 || !strings.Contains(toolText(res), "Legal moves (25)") {
 		t.Fatalf("observation = %+v text=%.300s", obs, toolText(res))
 	}
 
@@ -113,7 +113,7 @@ func TestMCP_PlayTakVsBotWithObservations(t *testing.T) {
 		}
 		res = callTool(t, c, "get_observation", map[string]any{"room_code": created.RoomCode, "player_name": "Agent"})
 		decodeToolResult(t, res, &obs)
-		if !obs.Done && (!obs.YourTurn || len(obs.LegalMoves) == 0) {
+		if !obs.Done && (!obs.YourImpulse || len(obs.LegalMoves) == 0) {
 			t.Fatalf("after move %d the agent should be to move again: %+v", i, obs)
 		}
 	}
@@ -180,7 +180,7 @@ func TestMCP_EnvEpisodeAgainstRandomBot(t *testing.T) {
 		t.Fatalf("env_reset: %s", toolText(res))
 	}
 	decodeToolResult(t, res, &obs)
-	if obs.EnvID == "" || !obs.YourTurn || len(obs.LegalMoves) != 9 || obs.AgentSeat != 1 || obs.Done {
+	if obs.EnvID == "" || !obs.YourImpulse || len(obs.LegalMoves) != 9 || obs.AgentSeat != 1 || obs.Done {
 		t.Fatalf("reset observation = %+v", obs)
 	}
 	id := obs.EnvID
@@ -202,8 +202,8 @@ func TestMCP_EnvEpisodeAgainstRandomBot(t *testing.T) {
 		}
 		decodeToolResult(t, res, &obs)
 		steps++
-		if !obs.Done && (!obs.YourTurn || len(obs.LastMoves) != 2) {
-			t.Fatalf("step %d: your_turn=%v last_moves=%v (want own move + bot reply)", steps, obs.YourTurn, obs.LastMoves)
+		if !obs.Done && (!obs.YourImpulse || len(obs.LastMoves) != 2) {
+			t.Fatalf("step %d: your_impulse=%v last_moves=%v (want own move + bot reply)", steps, obs.YourImpulse, obs.LastMoves)
 		}
 	}
 	if !obs.Done {
@@ -246,7 +246,7 @@ func TestMCP_EnvSelfPlayAndStartTPS(t *testing.T) {
 		t.Fatalf("env_reset: %s", toolText(res))
 	}
 	decodeToolResult(t, res, &obs)
-	if obs.ToMove != 1 || !obs.YourTurn {
+	if obs.ImpulseSeat != 1 || !obs.YourImpulse {
 		t.Fatalf("obs = %+v", obs)
 	}
 	found := false
@@ -512,12 +512,12 @@ func TestMCP_CreateGameFromTPSPosition(t *testing.T) {
 		t.Fatalf("get_observation: %s", toolText(res))
 	}
 	var obs struct {
-		YourTurn   bool     `json:"your_turn"`
-		LegalMoves []string `json:"legal_moves"`
-		Ply        int      `json:"ply"`
+		YourImpulse bool     `json:"your_impulse"`
+		LegalMoves  []string `json:"legal_moves"`
+		Ply         int      `json:"ply"`
 	}
 	decodeToolResult(t, res, &obs)
-	if !obs.YourTurn || obs.Ply != 10 {
+	if !obs.YourImpulse || obs.Ply != 10 {
 		t.Fatalf("observation = %+v, want my turn at ply 10", obs)
 	}
 	winning := false

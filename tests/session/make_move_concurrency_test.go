@@ -81,7 +81,7 @@ func newConcurrencyTestManager(t *testing.T) *session.Manager {
 }
 
 // createAndActivateConcurrencyGame runs CreateGame(Alice) + JoinGame(Bob,
-// RolePlayer), which activates the game and sets turn_seat to seat 1 (the
+// RolePlayer), which activates the game and sets impulse_seat to seat 1 (the
 // first entry in the fixture's round-robin turn order). Returns the
 // resulting room code.
 func createAndActivateConcurrencyGame(t *testing.T, mgr *session.Manager, ctx context.Context) string {

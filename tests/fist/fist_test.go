@@ -106,7 +106,7 @@ func TestStartingPosition(t *testing.T) {
 			t.Errorf("%s: %d, want %d", k, counts[k], n)
 		}
 	}
-	if rs.ToMove(g, st) != 1 {
+	if rs.ImpulseSeat(g, st) != 1 {
 		t.Error("the challenger moves first")
 	}
 	if len(rs.Legal(g, st, 1)) == 0 {
@@ -328,6 +328,6 @@ func TestNotationRoundTripAndRandomGamesFinish(t *testing.T) {
 		if res.GameEnded {
 			return
 		}
-		seat = res.NextTurnSeat
+		seat = res.NextImpulseSeat
 	}
 }

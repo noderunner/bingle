@@ -42,8 +42,8 @@ const MaxRecordedGames = 50
 
 // PositionRecord is one training example from a recorded game.
 type PositionRecord struct {
-	Ply    int `json:"ply"`
-	ToMove int `json:"to_move"`
+	Ply         int `json:"ply"`
+	ImpulseSeat int `json:"impulse_seat"`
 	// State is the position document before the move.
 	State json.RawMessage `json:"state"`
 	// Move is the move played, in notation, and ActionID its fixed action ID
@@ -205,7 +205,7 @@ func playOne(ctx context.Context, game *catalog.CompiledGame, start *state.Board
 			switch {
 			case winner == nil:
 				out.Positions[i].Result = 0
-			case *winner == out.Positions[i].ToMove:
+			case *winner == out.Positions[i].ImpulseSeat:
 				out.Positions[i].Result = 1
 			default:
 				out.Positions[i].Result = -1
@@ -241,7 +241,7 @@ func playOne(ctx context.Context, game *catalog.CompiledGame, start *state.Board
 			out.Moves = append(out.Moves, r.Notation)
 		}
 		if opts.Record {
-			rec := PositionRecord{Ply: ply, ToMove: seat, Move: r.Notation, ActionID: -1}
+			rec := PositionRecord{Ply: ply, ImpulseSeat: seat, Move: r.Notation, ActionID: -1}
 			if doc, err := state.Public(game, st, seat).MarshalJSON(); err == nil {
 				rec.State = json.RawMessage(doc)
 			}
@@ -267,7 +267,7 @@ func playOne(ctx context.Context, game *catalog.CompiledGame, start *state.Board
 			finish(r.WinnerSeat)
 			return out
 		}
-		st, seat = r.NewState, r.NextTurnSeat
+		st, seat = r.NewState, r.NextImpulseSeat
 	}
 	out.Winner = "unfinished"
 	finish(nil)

@@ -1287,7 +1287,7 @@ func (rs *Ruleset) Describe(game *catalog.CompiledGame) state.RulesetInfo {
 	}
 	if st, err := rs.Start(game, 1); err == nil {
 		// The first decision may be another seat's (the Windwalker begins).
-		if moves := rs.Legal(game, st, rs.ToMove(game, st)); len(moves) > 0 {
+		if moves := rs.Legal(game, st, rs.ImpulseSeat(game, st)); len(moves) > 0 {
 			info.NotationHelp = append(info.NotationHelp, "Example of a legal first move: '"+rs.Format(game, moves[0])+"'.")
 		}
 	}

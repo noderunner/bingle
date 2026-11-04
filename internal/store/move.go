@@ -18,7 +18,7 @@ type MoveInput struct {
 	To                  string
 	Captured            *string // nil ⇒ no capture on this move
 	ResultingBoardState string  // the JSON board_state after this move
-	NextTurnSeat        int     // ignored (games.turn_seat set NULL) if GameEnded
+	NextImpulseSeat     int     // ignored (games.impulse_seat set NULL) if GameEnded
 	GameEnded           bool
 	WinnerSeat          *int   // nil unless GameEnded (nil + GameEnded = draw)
 	EndReason           string // why the game ended; "" unless GameEnded
@@ -69,10 +69,10 @@ type Move struct {
 
 // RecordMove inserts one moves row (seq = the game's current move_seq + 1,
 // read and incremented inside the same transaction) and updates the parent
-// games row's board_state/move_seq/turn_seat/winner_seat/status to match, as
-// a single transaction — both happen or neither does. If GameEnded, turn_seat
-// becomes NULL and status becomes "finished"; otherwise turn_seat becomes
-// NextTurnSeat and status is left as whatever it already was (RecordMove
+// games row's board_state/move_seq/impulse_seat/winner_seat/status to match, as
+// a single transaction — both happen or neither does. If GameEnded, impulse_seat
+// becomes NULL and status becomes "finished"; otherwise impulse_seat becomes
+// NextImpulseSeat and status is left as whatever it already was (RecordMove
 // doesn't itself manage the waiting→active transition — that's a session-
 // layer concern, e.g. when a second player joins). Returns store.ErrNotFound
 // if gameID doesn't exist.
@@ -114,12 +114,12 @@ func (s *Store) RecordMove(ctx context.Context, gameID int64, in MoveInput) (Mov
 		return Move{}, fmt.Errorf("moves insert LastInsertId: %w", err)
 	}
 
-	var turnSeat sql.NullInt64
+	var impulseSeat sql.NullInt64
 	status := currentStatus
 	if in.GameEnded {
 		status = "finished"
 	} else {
-		turnSeat = sql.NullInt64{Int64: int64(in.NextTurnSeat), Valid: true}
+		impulseSeat = sql.NullInt64{Int64: int64(in.NextImpulseSeat), Valid: true}
 	}
 
 	var winnerSeat sql.NullInt64
@@ -128,8 +128,8 @@ func (s *Store) RecordMove(ctx context.Context, gameID int64, in MoveInput) (Mov
 	}
 
 	if _, err := tx.exec(ctx, "RecordMove.updateGame",
-		`UPDATE games SET board_state = ?, move_seq = ?, updated_at = CURRENT_TIMESTAMP, turn_seat = ?, status = ?, winner_seat = ?, end_reason = ?, end_detail = ?, rating_status = CASE WHEN rated = 1 AND ? = 'finished' THEN 'pending' ELSE '' END, draw_offer_seat = NULL WHERE id = ?`,
-		in.ResultingBoardState, newSeq, turnSeat, status, winnerSeat, in.EndReason, in.EndDetail, status, gameID,
+		`UPDATE games SET board_state = ?, move_seq = ?, updated_at = CURRENT_TIMESTAMP, impulse_seat = ?, status = ?, winner_seat = ?, end_reason = ?, end_detail = ?, rating_status = CASE WHEN rated = 1 AND ? = 'finished' THEN 'pending' ELSE '' END, draw_offer_seat = NULL WHERE id = ?`,
+		in.ResultingBoardState, newSeq, impulseSeat, status, winnerSeat, in.EndReason, in.EndDetail, status, gameID,
 	); err != nil {
 		return Move{}, fmt.Errorf("updating games row for game_id=%d: %w", gameID, err)
 	}
@@ -225,9 +225,9 @@ func scanMoveByID(ctx context.Context, q rowQuerier, name string, id int64) (Mov
 
 // UndoToSeq deletes every move with seq > keepSeq and rewinds the game to the
 // position those moves came from, all in one transaction: boardState becomes the
-// game's current snapshot, move_seq becomes keepSeq and turn_seat turnSeat.
+// game's current snapshot, move_seq becomes keepSeq and impulse_seat impulseSeat.
 // Returns ErrNotFound if gameID doesn't exist.
-func (s *Store) UndoToSeq(ctx context.Context, gameID int64, keepSeq int, boardState string, turnSeat int) error {
+func (s *Store) UndoToSeq(ctx context.Context, gameID int64, keepSeq int, boardState string, impulseSeat int) error {
 	tx, err := s.begin(ctx, "UndoToSeq")
 	if err != nil {
 		return fmt.Errorf("begin transaction: %w", err)
@@ -238,8 +238,8 @@ func (s *Store) UndoToSeq(ctx context.Context, gameID int64, keepSeq int, boardS
 		return fmt.Errorf("deleting moves for game_id=%d: %w", gameID, err)
 	}
 	res, err := tx.exec(ctx, "UndoToSeq.updateGame",
-		`UPDATE games SET board_state = ?, move_seq = ?, turn_seat = ? WHERE id = ?`,
-		boardState, keepSeq, turnSeat, gameID,
+		`UPDATE games SET board_state = ?, move_seq = ?, impulse_seat = ? WHERE id = ?`,
+		boardState, keepSeq, impulseSeat, gameID,
 	)
 	if err != nil {
 		return fmt.Errorf("updating games row for game_id=%d: %w", gameID, err)
@@ -256,7 +256,7 @@ func (s *Store) FinishGame(ctx context.Context, gameID int64, winnerSeat *int, r
 		winner = sql.NullInt64{Int64: int64(*winnerSeat), Valid: true}
 	}
 	res, err := s.exec(ctx, "FinishGame",
-		`UPDATE games SET status = 'finished', turn_seat = NULL, winner_seat = ?, end_reason = ?, rating_status = CASE rated WHEN 1 THEN 'pending' ELSE '' END, draw_offer_seat = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+		`UPDATE games SET status = 'finished', impulse_seat = NULL, winner_seat = ?, end_reason = ?, rating_status = CASE rated WHEN 1 THEN 'pending' ELSE '' END, draw_offer_seat = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
 		winner, reason, gameID,
 	)
 	if err != nil {

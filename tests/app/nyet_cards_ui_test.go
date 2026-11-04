@@ -113,7 +113,7 @@ func TestWebNyet_PlayersAreAnimalsWithTheirCardsCounted(t *testing.T) {
 	room := nyetTable(t, baseURL, "nyet-5", 5)
 	// One card into the trick, so that it has a caption.
 	var st struct {
-		TurnSeat int `json:"turn_seat"`
+		ImpulseSeat int `json:"impulse_seat"`
 	}
 	doJSON(t, "GET", baseURL+"/api/games/"+room+"/state", nil, &st)
 	var legal struct {
@@ -121,7 +121,7 @@ func TestWebNyet_PlayersAreAnimalsWithTheirCardsCounted(t *testing.T) {
 			Notation string `json:"notation"`
 		} `json:"moves"`
 	}
-	doJSON(t, "GET", fmt.Sprintf("%s/api/games/%s/moves/legal?seat=%d", baseURL, room, st.TurnSeat), nil, &legal)
+	doJSON(t, "GET", fmt.Sprintf("%s/api/games/%s/moves/legal?seat=%d", baseURL, room, st.ImpulseSeat), nil, &legal)
 	var info struct {
 		Seats []struct {
 			Seat int    `json:"seat"`
@@ -129,7 +129,7 @@ func TestWebNyet_PlayersAreAnimalsWithTheirCardsCounted(t *testing.T) {
 		} `json:"seats"`
 	}
 	doJSON(t, "GET", baseURL+"/api/games/"+room, nil, &info)
-	if code, out := moveNotation(t, baseURL, room, info.Seats[st.TurnSeat-1].Name, legal.Moves[0].Notation); code != 200 {
+	if code, out := moveNotation(t, baseURL, room, info.Seats[st.ImpulseSeat-1].Name, legal.Moves[0].Notation); code != 200 {
 		t.Fatalf("play a card: %d %v", code, out)
 	}
 	ctx, cancel := newChromedpContext(t, 60*time.Second)

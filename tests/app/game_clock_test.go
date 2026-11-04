@@ -21,10 +21,10 @@ type clockResp struct {
 }
 
 type gameWithClock struct {
-	Status       string     `json:"status"`
-	TurnDeadline string     `json:"turn_deadline"`
-	Clock        *clockResp `json:"clock"`
-	Seats        []struct {
+	Status          string     `json:"status"`
+	ImpulseDeadline string     `json:"impulse_deadline"`
+	Clock           *clockResp `json:"clock"`
+	Seats           []struct {
 		Seat int    `json:"seat"`
 		Name string `json:"name"`
 	} `json:"seats"`
@@ -56,8 +56,8 @@ func TestGameClock_OverREST(t *testing.T) {
 	if len(game.Clock.Seats) != 2 || game.Clock.Seats[0].Initial != 300 || game.Clock.Seats[1].Initial != 300 {
 		t.Errorf("the clock = %+v, want five minutes each", game.Clock.Seats)
 	}
-	if game.Clock.Running != 1 || game.TurnDeadline == "" {
-		t.Errorf("running = %d, deadline %q: seat 1's clock should be ticking", game.Clock.Running, game.TurnDeadline)
+	if game.Clock.Running != 1 || game.ImpulseDeadline == "" {
+		t.Errorf("running = %d, deadline %q: seat 1's clock should be ticking", game.Clock.Running, game.ImpulseDeadline)
 	}
 
 	// A move takes the mover's time off their own clock, and starts the other.

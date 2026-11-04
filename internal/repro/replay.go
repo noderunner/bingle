@@ -234,7 +234,7 @@ func checkPath(cat *catalog.Catalog, compiled *catalog.CompiledGame, b Bundle, w
 			res.note("move %d of the path, %q, no longer applies (%v) — the way the position was reached has itself changed", i+1, notation, err)
 			return
 		}
-		st, seat = r.NewState, r.NextTurnSeat
+		st, seat = r.NewState, r.NextImpulseSeat
 	}
 
 	got, err1 := st.MarshalJSON()

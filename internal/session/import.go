@@ -142,7 +142,7 @@ func (m *Manager) ImportGame(ctx context.Context, opts ImportOptions) (ImportRes
 		if res.GameEnded && i < len(moves)-1 {
 			return ImportResult{}, fmt.Errorf("%w: the game is over after move %d (%q) but %d more move(s) follow", ErrInvalidImport, i+1, text, len(moves)-i-1)
 		}
-		st, seat = res.NewState, res.NextTurnSeat
+		st, seat = res.NewState, res.NextImpulseSeat
 	}
 
 	names := [2]string{strings.TrimSpace(opts.Player1), strings.TrimSpace(opts.Player2)}
@@ -179,10 +179,10 @@ func (m *Manager) ImportGame(ctx context.Context, opts ImportOptions) (ImportRes
 		if err != nil {
 			return ImportResult{}, err
 		}
-		if snap.TurnSeat == nil {
+		if snap.ImpulseSeat == nil {
 			return ImportResult{}, fmt.Errorf("%w: the game ended before move %d", ErrInvalidImport, i+1)
 		}
-		if _, err := m.Play(ctx, created.RoomCode, nameFor[*snap.TurnSeat], mv); err != nil {
+		if _, err := m.Play(ctx, created.RoomCode, nameFor[*snap.ImpulseSeat], mv); err != nil {
 			return ImportResult{}, fmt.Errorf("%w: replaying move %d: %v", ErrInvalidImport, i+1, err)
 		}
 	}

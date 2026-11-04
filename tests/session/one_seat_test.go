@@ -42,8 +42,8 @@ func TestOneSeat_StartsAtOnceAndPlays(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if snap.TurnSeat == nil || *snap.TurnSeat != 1 {
-		t.Fatalf("turn %v", snap.TurnSeat)
+	if snap.ImpulseSeat == nil || *snap.ImpulseSeat != 1 {
+		t.Fatalf("turn %v", snap.ImpulseSeat)
 	}
 	// Moves that show a new card each: they can be taken back all the same.
 	playMove(t, m, res.RoomCode, "Ana", "draw")

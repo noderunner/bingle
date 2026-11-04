@@ -153,8 +153,8 @@ func (b *minimaxBot) Evaluate(ctx context.Context, game *catalog.CompiledGame, s
 			default:
 				// Negamax from the opponent's side, scores relative to
 				// the next mover; flip back for the root.
-				v := s.search(res.NewState, res.NextTurnSeat, depth-1, -minimaxInf, minimaxInf, 1)
-				if res.NextTurnSeat == seat {
+				v := s.search(res.NewState, res.NextImpulseSeat, depth-1, -minimaxInf, minimaxInf, 1)
+				if res.NextImpulseSeat == seat {
 					score = v
 				} else {
 					score = -v
@@ -355,12 +355,12 @@ func (s *minimaxSearch) search(st *state.BoardState, seat, depth, alpha, beta, p
 				v = -v
 			}
 		} else {
-			if res.NextTurnSeat == seat {
+			if res.NextImpulseSeat == seat {
 				// The same seat moves again (the opponent had to pass): no
 				// sign change, so the window is kept as it is.
-				v = s.search(res.NewState, res.NextTurnSeat, depth-1, alpha, beta, ply+1)
+				v = s.search(res.NewState, res.NextImpulseSeat, depth-1, alpha, beta, ply+1)
 			} else {
-				v = -s.search(res.NewState, res.NextTurnSeat, depth-1, -beta, -alpha, ply+1)
+				v = -s.search(res.NewState, res.NextImpulseSeat, depth-1, -beta, -alpha, ply+1)
 			}
 		}
 		if s.out {

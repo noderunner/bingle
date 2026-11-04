@@ -90,6 +90,10 @@ func TestOpen_UpgradesAV1DatabaseInPlace(t *testing.T) {
 	if g.Status != "active" || g.MoveSeq != 1 || g.EndReason != "" {
 		t.Errorf("game = %+v", g)
 	}
+	// The seat to act came through the renaming of its column.
+	if g.ImpulseSeat == nil || *g.ImpulseSeat != 2 {
+		t.Errorf("impulse seat = %v, want 2", g.ImpulseSeat)
+	}
 	players, err := st.ListPlayers(ctx, g.ID)
 	if err != nil || len(players) != 2 || players[0].Bot != "" {
 		t.Errorf("players = %+v err=%v", players, err)
@@ -102,7 +106,7 @@ func TestOpen_UpgradesAV1DatabaseInPlace(t *testing.T) {
 	// New writes use the new columns.
 	_, err = st.RecordMove(ctx, g.ID, store.MoveInput{
 		Seat: 2, Color: "white", From: "0,8", To: "0,7", ResultingBoardState: "{}",
-		NextTurnSeat: 1, Notation: "0,8-0,7", MoveJSON: `{"from":"0,8"}`,
+		NextImpulseSeat: 1, Notation: "0,8-0,7", MoveJSON: `{"from":"0,8"}`,
 	})
 	if err != nil {
 		t.Fatalf("RecordMove after upgrade: %v", err)

@@ -10,9 +10,9 @@ import (
 // View is what clients draw.
 type View struct {
 	// Solitaire names the game, and tells the page to draw this table.
-	Solitaire string `json:"solitaire"`
-	ToMove    int    `json:"to_move,omitempty"`
-	Prompt    string `json:"prompt"`
+	Solitaire   string `json:"solitaire"`
+	ImpulseSeat int    `json:"impulse_seat,omitempty"`
+	Prompt      string `json:"prompt"`
 	// Hint says how to play on this table, under the prompt.
 	Hint string `json:"hint"`
 	// Table is every zone of cards, as far as the viewer may see it.
@@ -49,10 +49,10 @@ type FrameScore struct {
 
 func (e *eng) buildView(viewer int) *View {
 	v := &View{
-		Solitaire: e.d.Mode,
-		ToMove:    e.d.Turn,
-		Table:     e.d.Table.View(e.game.Cards, viewer),
-		Total:     len(e.game.Cards.Deck("main")),
+		Solitaire:   e.d.Mode,
+		ImpulseSeat: e.d.Turn,
+		Table:       e.d.Table.View(e.game.Cards, viewer),
+		Total:       len(e.game.Cards.Deck("main")),
 		PanelActions: []string{
 			"from-", "to-", "pin-", "ball-", moveDraw, moveRecycle, moveDeal,
 		},

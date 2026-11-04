@@ -28,13 +28,13 @@ var (
 // It is derived from the position and carried in the "view" key of a
 // public position's ext payload.
 type View struct {
-	Phase  string `json:"phase"`
-	Stage  string `json:"stage,omitempty"`
-	Round  int    `json:"round"`
-	ToMove int    `json:"to_move,omitempty"`
-	Prompt string `json:"prompt"`
-	First  int    `json:"first"`
-	Dir    int    `json:"dir"`
+	Phase       string `json:"phase"`
+	Stage       string `json:"stage,omitempty"`
+	Round       int    `json:"round"`
+	ImpulseSeat int    `json:"impulse_seat,omitempty"`
+	Prompt      string `json:"prompt"`
+	First       int    `json:"first"`
+	Dir         int    `json:"dir"`
 	// Ritual is the Ritual of Annihilation marker.
 	Ritual RitualView `json:"ritual"`
 	// Reaction is set while the decision waiting is a reaction window.
@@ -334,7 +334,7 @@ func (rs *Ruleset) WorthSearching(game *catalog.CompiledGame, st *state.BoardSta
 func (e *eng) buildView(viewer int) *View {
 	d := e.d
 	v := &View{
-		Phase: d.Phase, Stage: d.Stage, Round: d.Round, ToMove: toMove(d),
+		Phase: d.Phase, Stage: d.Stage, Round: d.Round, ImpulseSeat: impulseSeat(d),
 		Prompt: e.prompt(), First: d.First, Dir: d.Dir,
 		Ritual: RitualView{Track: e.ritualTrack(), Cost: e.ritualCost(), Marker: d.Ritual, Instant: d.Instant},
 		Tints:  map[string]string{}, Badges: map[string][]string{}, Notes: map[string]string{},
@@ -987,7 +987,7 @@ func (e *eng) placesOf(seat int, typ string) []string {
 // decide: the cheapest of the moves that start with the action.
 func (e *eng) actionCosts() map[string]int {
 	d := e.d
-	seat := toMove(d)
+	seat := impulseSeat(d)
 	if seat == 0 || d.Phase == phaseOver {
 		return nil
 	}
@@ -1231,7 +1231,7 @@ func (rs *Ruleset) PlaneLayout(game *catalog.CompiledGame) ([]string, int, int) 
 			names = append(names, k+"/"+rel)
 		}
 	}
-	names = append(names, "ritual-cost", "round", "to-move", "first")
+	names = append(names, "ritual-cost", "round", "on-impulse", "first")
 	for _, s := range planeStages {
 		names = append(names, "stage/"+s)
 	}
@@ -1317,8 +1317,8 @@ func (rs *Ruleset) EncodePlanes(game *catalog.CompiledGame, st *state.BoardState
 	}
 	fill("ritual-cost", float32(e.ritualCost())/10)
 	fill("round", float32(d.Round)/20)
-	if toMove(d) == viewer {
-		fill("to-move", 1)
+	if impulseSeat(d) == viewer {
+		fill("on-impulse", 1)
 	}
 	if d.First == viewer {
 		fill("first", 1)

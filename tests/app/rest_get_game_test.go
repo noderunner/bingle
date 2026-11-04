@@ -11,13 +11,13 @@ import (
 
 // getGameResponse mirrors GET /api/games/{code}'s 200 response shape from
 // docs/history/plan.md section 6.8: {"game_def_id", "status", "seats": [{"seat",
-// "color", "name"}], "turn_seat"} — deliberately no board_state/move_seq,
+// "color", "name"}], "impulse_seat"} — deliberately no board_state/move_seq,
 // those live at .../state.
 type getGameResponse struct {
-	GameDefID string        `json:"game_def_id"`
-	Status    string        `json:"status"`
-	Seats     []getGameSeat `json:"seats"`
-	TurnSeat  *int          `json:"turn_seat"`
+	GameDefID   string        `json:"game_def_id"`
+	Status      string        `json:"status"`
+	Seats       []getGameSeat `json:"seats"`
+	ImpulseSeat *int          `json:"impulse_seat"`
 }
 
 type getGameSeat struct {
@@ -28,15 +28,15 @@ type getGameSeat struct {
 
 // getGameStateResponse mirrors GET /api/games/{code}/state's 200 response
 // shape from docs/history/plan.md section 6.8: {"board_state": <raw JSON>,
-// "turn_seat", "status", "move_seq"}. board_state is decoded as
+// "impulse_seat", "status", "move_seq"}. board_state is decoded as
 // json.RawMessage specifically so the test can assert it's a JSON object
 // (starts with '{'), not a doubly-encoded JSON string (which would start
 // with '"').
 type getGameStateResponse struct {
-	BoardState json.RawMessage `json:"board_state"`
-	TurnSeat   *int            `json:"turn_seat"`
-	Status     string          `json:"status"`
-	MoveSeq    int             `json:"move_seq"`
+	BoardState  json.RawMessage `json:"board_state"`
+	ImpulseSeat *int            `json:"impulse_seat"`
+	Status      string          `json:"status"`
+	MoveSeq     int             `json:"move_seq"`
 }
 
 // occupant mirrors internal/engine/state.Occupant's JSON shape (no json
@@ -90,7 +90,7 @@ func getJSON(t *testing.T, baseURL, path string) (*http.Response, []byte) {
 // covers GET /api/games/{code} right after POST /api/games: 200,
 // game_def_id == "test-freeplay", status == "waiting", exactly 2 seats
 // declared (seat 1 filled with the creator's name, seat 2 open/empty name),
-// and turn_seat is JSON null (the game hasn't activated — only one seat is
+// and impulse_seat is JSON null (the game hasn't activated — only one seat is
 // filled).
 func TestGetGame_ImmediatelyAfterCreation_ReturnsWaitingWithOneSeatFilled(t *testing.T) {
 	baseURL := newRESTTestServer(t)
@@ -101,17 +101,17 @@ func TestGetGame_ImmediatelyAfterCreation_ReturnsWaitingWithOneSeatFilled(t *tes
 		t.Fatalf("status = %d, want %d (body: %s)", resp.StatusCode, http.StatusOK, raw)
 	}
 
-	// Confirm turn_seat is literally JSON null in the wire payload (present
+	// Confirm impulse_seat is literally JSON null in the wire payload (present
 	// with a null value), not merely absent from the object.
 	var raw2 map[string]json.RawMessage
 	if err := json.Unmarshal(raw, &raw2); err != nil {
 		t.Fatalf("decode response body as map: %v (body: %s)", err, raw)
 	}
-	turnSeatRaw, ok := raw2["turn_seat"]
+	impulseSeatRaw, ok := raw2["impulse_seat"]
 	if !ok {
-		t.Errorf("response body missing \"turn_seat\" key entirely (body: %s)", raw)
-	} else if string(turnSeatRaw) != "null" {
-		t.Errorf("turn_seat raw JSON = %s, want literal null (body: %s)", turnSeatRaw, raw)
+		t.Errorf("response body missing \"impulse_seat\" key entirely (body: %s)", raw)
+	} else if string(impulseSeatRaw) != "null" {
+		t.Errorf("impulse_seat raw JSON = %s, want literal null (body: %s)", impulseSeatRaw, raw)
 	}
 
 	var body getGameResponse
@@ -125,8 +125,8 @@ func TestGetGame_ImmediatelyAfterCreation_ReturnsWaitingWithOneSeatFilled(t *tes
 	if body.Status != "waiting" {
 		t.Errorf("status = %q, want %q", body.Status, "waiting")
 	}
-	if body.TurnSeat != nil {
-		t.Errorf("turn_seat = %v, want nil (JSON null)", *body.TurnSeat)
+	if body.ImpulseSeat != nil {
+		t.Errorf("impulse_seat = %v, want nil (JSON null)", *body.ImpulseSeat)
 	}
 	if len(body.Seats) != 2 {
 		t.Fatalf("len(seats) = %d, want 2 (seats: %+v)", len(body.Seats), body.Seats)
@@ -164,7 +164,7 @@ func TestGetGame_ImmediatelyAfterCreation_ReturnsWaitingWithOneSeatFilled(t *tes
 // TestGetGameState_ImmediatelyAfterCreation_ReturnsInitialBoardState covers
 // this backlog item's AC itself: GET /api/games/{code}/state, called right
 // after POST /api/games with no moves made yet, returns 200 with
-// status == "waiting", move_seq == 0, turn_seat == null, and board_state
+// status == "waiting", move_seq == 0, impulse_seat == null, and board_state
 // decoded as a JSON *object* (not an escaped JSON string) whose occupied
 // positions match tests/testdata/freeplay.json's setup entries exactly:
 // 6 stones total, including (2,0)=black and (2,8)=white.
@@ -188,8 +188,8 @@ func TestGetGameState_ImmediatelyAfterCreation_ReturnsInitialBoardState(t *testi
 	if body.MoveSeq != 0 {
 		t.Errorf("move_seq = %d, want 0", body.MoveSeq)
 	}
-	if body.TurnSeat != nil {
-		t.Errorf("turn_seat = %v, want nil (JSON null)", *body.TurnSeat)
+	if body.ImpulseSeat != nil {
+		t.Errorf("impulse_seat = %v, want nil (JSON null)", *body.ImpulseSeat)
 	}
 
 	if len(body.BoardState) == 0 {

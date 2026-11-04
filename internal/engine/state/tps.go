@@ -24,7 +24,7 @@ import (
 // pieces of that color on the board".
 
 // FormatTPS renders st, with seat to move, as a TPS string.
-func FormatTPS(game *catalog.CompiledGame, st *BoardState, seatToMove int) (string, error) {
+func FormatTPS(game *catalog.CompiledGame, st *BoardState, impulseSeat int) (string, error) {
 	if IsRuleset(game) {
 		return "", errNoTPS(game)
 	}
@@ -90,7 +90,7 @@ func FormatTPS(game *catalog.CompiledGame, st *BoardState, seatToMove int) (stri
 	}
 
 	moveNumber := st.Ply()/len(game.Definition.Seats) + 1
-	return fmt.Sprintf("%s %d %d", strings.Join(rows, "/"), seatToMove, moveNumber), nil
+	return fmt.Sprintf("%s %d %d", strings.Join(rows, "/"), impulseSeat, moveNumber), nil
 }
 
 // ParseTPS builds the position described by a TPS string. It returns the

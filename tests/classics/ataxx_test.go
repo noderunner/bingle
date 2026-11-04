@@ -120,7 +120,7 @@ func TestAtaxxPassesAndCounts(t *testing.T) {
 				}
 				break
 			}
-			st, seat = res.NewState, res.NextTurnSeat
+			st, seat = res.NewState, res.NextImpulseSeat
 		}
 	}
 	if finished != 12 {
@@ -158,6 +158,6 @@ func TestAtaxxEnumerationMatchesValidation(t *testing.T) {
 			t.Fatalf("ply %d: validation accepted %d, enumeration listed %d", ply, accepted, len(legal))
 		}
 		res, _ := state.Apply(g, st, seat, legal[rng.Intn(len(legal))])
-		st, seat = res.NewState, res.NextTurnSeat
+		st, seat = res.NewState, res.NextImpulseSeat
 	}
 }

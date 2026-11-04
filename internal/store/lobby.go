@@ -229,11 +229,11 @@ func (s *Store) SetLobby(ctx context.Context, gameID int64, on bool) error {
 	return nil
 }
 
-// StartGame makes a waiting game active with turnSeat to move.
-func (s *Store) StartGame(ctx context.Context, gameID int64, turnSeat int) error {
+// StartGame makes a waiting game active with impulseSeat to move.
+func (s *Store) StartGame(ctx context.Context, gameID int64, impulseSeat int) error {
 	res, err := s.exec(ctx, "StartGame",
-		`UPDATE games SET status = 'active', turn_seat = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND status = 'waiting'`,
-		turnSeat, gameID)
+		`UPDATE games SET status = 'active', impulse_seat = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND status = 'waiting'`,
+		impulseSeat, gameID)
 	if err != nil {
 		return fmt.Errorf("starting game_id=%d: %w", gameID, err)
 	}
@@ -335,7 +335,7 @@ type DueAutoPlay struct {
 func (s *Store) AutoPlayCandidates(ctx context.Context) ([]DueAutoPlay, error) {
 	rows, err := s.query(ctx, "AutoPlayCandidates",
 		`SELECT g.room_code, a.seat, a.timeout_seconds, g.updated_at
-		 FROM games g JOIN autoplay_prefs a ON a.game_id = g.id AND a.seat = g.turn_seat
+		 FROM games g JOIN autoplay_prefs a ON a.game_id = g.id AND a.seat = g.impulse_seat
 		 WHERE g.status = 'active' AND a.enabled = 1`)
 	if err != nil {
 		return nil, fmt.Errorf("listing auto-play candidates: %w", err)
@@ -356,7 +356,7 @@ func (s *Store) AutoPlayCandidates(ctx context.Context) ([]DueAutoPlay, error) {
 // cults of its open seats were changed) and the new starting position.
 func (s *Store) ChangeLobbyGame(ctx context.Context, gameID int64, gameDefID, boardState string) error {
 	res, err := s.exec(ctx, "ChangeLobbyGame",
-		`UPDATE games SET game_def_id = ?, board_state = ?, initial_state = '', initial_turn_seat = 0, updated_at = CURRENT_TIMESTAMP
+		`UPDATE games SET game_def_id = ?, board_state = ?, initial_state = '', initial_impulse_seat = 0, updated_at = CURRENT_TIMESTAMP
 		 WHERE id = ? AND status = 'waiting'`,
 		gameDefID, boardState, gameID)
 	if err != nil {

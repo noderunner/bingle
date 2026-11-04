@@ -83,11 +83,11 @@ func TestTutorials_TheRoomPlaysTheScript(t *testing.T) {
 	room, key := startTutorial(t, base, "Lia")
 
 	var g struct {
-		GameDefID string `json:"game_def_id"`
-		Status    string `json:"status"`
-		TurnSeat  *int   `json:"turn_seat"`
-		Tutorial  string `json:"tutorial"`
-		Seats     []struct {
+		GameDefID   string `json:"game_def_id"`
+		Status      string `json:"status"`
+		ImpulseSeat *int   `json:"impulse_seat"`
+		Tutorial    string `json:"tutorial"`
+		Seats       []struct {
 			Seat  int    `json:"seat"`
 			Name  string `json:"name"`
 			Bot   string `json:"bot"`
@@ -97,7 +97,7 @@ func TestTutorials_TheRoomPlaysTheScript(t *testing.T) {
 	if code := doJSONAs(t, key, "GET", base+"/api/games/"+room, nil, &g); code != 200 {
 		t.Fatalf("GET the room: %d", code)
 	}
-	if g.GameDefID != "blooms-4" || g.Status != "active" || g.Tutorial != "blooms/blooms-basics" || g.TurnSeat == nil || *g.TurnSeat != 1 {
+	if g.GameDefID != "blooms-4" || g.Status != "active" || g.Tutorial != "blooms/blooms-basics" || g.ImpulseSeat == nil || *g.ImpulseSeat != 1 {
 		t.Fatalf("the room: %+v", g)
 	}
 	names := map[int]string{}
@@ -303,8 +303,8 @@ func TestTutorials_RoomFromAWrittenStart(t *testing.T) {
 		t.Fatalf("starting it: %d", code)
 	}
 	var st struct {
-		TurnSeat *int `json:"turn_seat"`
-		State    struct {
+		ImpulseSeat *int `json:"impulse_seat"`
+		State       struct {
 			Cells map[string][]struct {
 				Piece string `json:"piece"`
 				Color string `json:"color"`
@@ -321,8 +321,8 @@ func TestTutorials_RoomFromAWrittenStart(t *testing.T) {
 		GameDefID string `json:"game_def_id"`
 	}
 	doJSONAs(t, key, "GET", base+"/api/games/"+created.RoomCode, nil, &g)
-	if g.GameDefID != "cthulhu-wars~gc-cc-bg-ys-hp" || st.State.Ext.Round != 2 || st.TurnSeat == nil || *st.TurnSeat != 1 {
-		t.Fatalf("the room: %s, round %d, turn %v", g.GameDefID, st.State.Ext.Round, st.TurnSeat)
+	if g.GameDefID != "cthulhu-wars~gc-cc-bg-ys-hp" || st.State.Ext.Round != 2 || st.ImpulseSeat == nil || *st.ImpulseSeat != 1 {
+		t.Fatalf("the room: %s, round %d, turn %v", g.GameDefID, st.State.Ext.Round, st.ImpulseSeat)
 	}
 	found := false
 	for _, u := range st.State.Cells["indian-ocean"] {

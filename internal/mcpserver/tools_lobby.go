@@ -28,7 +28,7 @@ func registerLobbyTools(s *server.MCPServer, mgr *session.Manager) {
 			if err != nil {
 				return mcp.NewToolResultError(err.Error()), nil
 			}
-			return mcp.NewToolResultStructuredOnly(map[string]any{"status": snap.Status, "turn_seat": snap.TurnSeat, "move_seq": snap.MoveSeq}), nil
+			return mcp.NewToolResultStructuredOnly(map[string]any{"status": snap.Status, "impulse_seat": snap.ImpulseSeat, "move_seq": snap.MoveSeq}), nil
 		},
 	)
 

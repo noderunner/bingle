@@ -13,9 +13,9 @@ import (
 // someone to move for every seat — a mock game alone.
 
 type soloInfo struct {
-	Status   string `json:"status"`
-	TurnSeat int    `json:"turn_seat"`
-	Seats    []struct {
+	Status      string `json:"status"`
+	ImpulseSeat int    `json:"impulse_seat"`
+	Seats       []struct {
 		Seat  int    `json:"seat"`
 		Name  string `json:"name"`
 		Label string `json:"label"`
@@ -134,11 +134,11 @@ func TestAGameAgainstOneselfAsksEveryReaction(t *testing.T) {
 	}
 	// Nothing is aimed at Great Cthulhu, but Alice is asked all the same.
 	var st struct {
-		TurnSeat int `json:"turn_seat"`
+		ImpulseSeat int `json:"impulse_seat"`
 	}
 	doJSON(t, "GET", base+"/api/games/"+created.RoomCode, nil, &st)
-	if st.TurnSeat != 1 {
-		t.Fatalf("seat %d is to move: the reaction was passed for her", st.TurnSeat)
+	if st.ImpulseSeat != 1 {
+		t.Fatalf("seat %d is to move: the reaction was passed for her", st.ImpulseSeat)
 	}
 	if code, out := moveNotation(t, base, created.RoomCode, "Alice", "done"); code != 200 {
 		t.Fatalf("pass: %d %v", code, out)

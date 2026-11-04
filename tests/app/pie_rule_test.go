@@ -197,13 +197,13 @@ func TestPieRule_YavalathTakesItWhenTheTableAsks(t *testing.T) {
 		t.Fatalf("swap: %d %v", code, out)
 	}
 	var after struct {
-		TurnSeat   *int            `json:"turn_seat"`
-		BoardState json.RawMessage `json:"board_state"`
+		ImpulseSeat *int            `json:"impulse_seat"`
+		BoardState  json.RawMessage `json:"board_state"`
 	}
 	doJSON(t, "GET", baseURL+"/api/games/"+room+"/state", nil, &after)
 	// The turn stays with the second seat: the first player holds it now.
-	if after.TurnSeat == nil || *after.TurnSeat != 2 {
-		t.Errorf("after the swap %v is to move, want the second seat", after.TurnSeat)
+	if after.ImpulseSeat == nil || *after.ImpulseSeat != 2 {
+		t.Errorf("after the swap %v is to move, want the second seat", after.ImpulseSeat)
 	}
 	// The stone that was placed is exactly as it was — it is the players who
 	// changed seats.
@@ -324,12 +324,12 @@ func TestPieRule_BloomsSwapsWithinItsOwnRuleset(t *testing.T) {
 		t.Fatalf("swap: %d %v", code, out)
 	}
 	var after struct {
-		TurnSeat   *int            `json:"turn_seat"`
-		BoardState json.RawMessage `json:"board_state"`
+		ImpulseSeat *int            `json:"impulse_seat"`
+		BoardState  json.RawMessage `json:"board_state"`
 	}
 	doJSON(t, "GET", baseURL+"/api/games/"+room+"/state", nil, &after)
-	if after.TurnSeat == nil || *after.TurnSeat != 2 {
-		t.Errorf("after the swap %v is to move, want the second seat", after.TurnSeat)
+	if after.ImpulseSeat == nil || *after.ImpulseSeat != 2 {
+		t.Errorf("after the swap %v is to move, want the second seat", after.ImpulseSeat)
 	}
 	stones := decodeOccupants(t, after.BoardState)
 	if len(stones) != 1 {

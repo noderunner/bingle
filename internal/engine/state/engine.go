@@ -41,10 +41,10 @@ type MoveResult struct {
 	Captured *board.PositionID
 	// Captures lists every captured position (a draughts-style jump
 	// captures several); Captured is the first of them.
-	Captures     []board.PositionID
-	NextTurnSeat int
-	GameEnded    bool
-	WinnerSeat   *int
+	Captures        []board.PositionID
+	NextImpulseSeat int
+	GameEnded       bool
+	WinnerSeat      *int
 
 	// Move is the normalized move that was applied.
 	Move Move
@@ -299,7 +299,7 @@ func Apply(game *catalog.CompiledGame, st *BoardState, seat int, mv Move) (*Move
 		return nil, err
 	}
 
-	nextSeat, err := nextTurnSeat(game, seat)
+	nextSeat, err := nextImpulseSeat(game, seat)
 	if err != nil {
 		return nil, err
 	}
@@ -318,16 +318,16 @@ func Apply(game *catalog.CompiledGame, st *BoardState, seat int, mv Move) (*Move
 	}
 
 	return &MoveResult{
-		NewState:     newState,
-		Captured:     captured,
-		Captures:     captures,
-		NextTurnSeat: nextSeat,
-		GameEnded:    outcome.Ended,
-		WinnerSeat:   outcome.Winner,
-		Move:         mv,
-		Notation:     FormatMove(game, mv),
-		EndReason:    outcome.Reason,
-		EndDetail:    outcome.Detail,
+		NewState:        newState,
+		Captured:        captured,
+		Captures:        captures,
+		NextImpulseSeat: nextSeat,
+		GameEnded:       outcome.Ended,
+		WinnerSeat:      outcome.Winner,
+		Move:            mv,
+		Notation:        FormatMove(game, mv),
+		EndReason:       outcome.Reason,
+		EndDetail:       outcome.Detail,
 	}, nil
 }
 
@@ -449,7 +449,7 @@ func skipStuckSeats(game *catalog.CompiledGame, st *BoardState, candidate int) i
 		if HasLegalMove(game, st, seat) {
 			return seat
 		}
-		next, err := nextTurnSeat(game, seat)
+		next, err := nextImpulseSeat(game, seat)
 		if err != nil {
 			return candidate
 		}
@@ -458,17 +458,17 @@ func skipStuckSeats(game *catalog.CompiledGame, st *BoardState, candidate int) i
 	return candidate
 }
 
-// TurnAfter returns the seat to move in st when seat has just moved: the next
+// ImpulseAfter returns the seat to move in st when seat has just moved: the next
 // seat in turn order, skipping seats with no legal move when the game passes
-// stuck seats. It mirrors what Apply puts in MoveResult.NextTurnSeat.
-func TurnAfter(game *catalog.CompiledGame, st *BoardState, seat int) (int, error) {
+// stuck seats. It mirrors what Apply puts in MoveResult.NextImpulseSeat.
+func ImpulseAfter(game *catalog.CompiledGame, st *BoardState, seat int) (int, error) {
 	if rs, ok := RulesetOf(game); ok {
-		if next := rs.ToMove(game, st); next != 0 {
+		if next := rs.ImpulseSeat(game, st); next != 0 {
 			return next, nil
 		}
 		return seat, nil
 	}
-	next, err := nextTurnSeat(game, seat)
+	next, err := nextImpulseSeat(game, seat)
 	if err != nil {
 		return 0, err
 	}
@@ -486,10 +486,10 @@ func FirstSeat(game *catalog.CompiledGame) int {
 	return 1
 }
 
-// nextTurnSeat computes the seat whose turn follows seat, per
+// nextImpulseSeat computes the seat whose turn follows seat, per
 // game.Definition.TurnOrder. Only turn_order.type == "round-robin" is
 // supported; any other value is an error.
-func nextTurnSeat(game *catalog.CompiledGame, seat int) (int, error) {
+func nextImpulseSeat(game *catalog.CompiledGame, seat int) (int, error) {
 	turnOrder := game.Definition.TurnOrder
 	if turnOrder.Type != "round-robin" {
 		return 0, fmt.Errorf("state: unsupported turn_order.type %q", turnOrder.Type)

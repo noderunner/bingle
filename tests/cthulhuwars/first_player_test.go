@@ -59,7 +59,7 @@ func TestTheFirstPlayerOfTheGameIsGreatCthulhuElseTheFirstCultByName(t *testing.
 			if got := state.FirstSeat(tb.g); got != mover {
 				t.Fatalf("the platform starts with seat %d, want seat %d", got, mover)
 			}
-			if got := toMove(tb.g, st); got != mover {
+			if got := seatOnImpulse(tb.g, st); got != mover {
 				t.Fatalf("the position waits for seat %d, want seat %d", got, mover)
 			}
 			if mover != want {
@@ -90,7 +90,7 @@ func TestTheFirstPlayerOfTheGameIsGreatCthulhuElseTheFirstCultByName(t *testing.
 			if d.Stage != "turn" || d.Opening || d.Turn == nil || d.Turn.Seat != want || d.Dir != 1 || d.Phase != "action" || d.Round != 1 {
 				t.Fatalf("after cw: stage %q opening %v turn %+v dir %d phase %q round %d", d.Stage, d.Opening, d.Turn, d.Dir, d.Phase, d.Round)
 			}
-			if got := toMove(tb.g, cw); got != want {
+			if got := seatOnImpulse(tb.g, cw); got != want {
 				t.Fatalf("the first player takes the first Action: seat %d is to move", got)
 			}
 			lines := lastLines(d)
@@ -137,7 +137,7 @@ func TestTheDirectionOfTheFirstRoundIsFollowedFromTheFirstPlayer(t *testing.T) {
 		}
 		st = play(t, tb.g, st, 3, mv)
 		st = play(t, tb.g, st, 3, "done")
-		if got := toMove(tb.g, st); got != c.next {
+		if got := seatOnImpulse(tb.g, st); got != c.next {
 			t.Errorf("%s: after Great Cthulhu seat %d acts, want seat %d", c.dir, got, c.next)
 		}
 	}
@@ -186,11 +186,11 @@ func lastLines(d *cthulhuwars.Data) string {
 	return strings.Join(d.Log[len(d.Log)-1].Lines, "\n")
 }
 
-// toMove is the seat a position waits for.
-func toMove(g *catalog.CompiledGame, st *state.BoardState) int {
+// seatOnImpulse is the seat a position waits for.
+func seatOnImpulse(g *catalog.CompiledGame, st *state.BoardState) int {
 	rs, ok := state.RulesetOf(g)
 	if !ok {
 		return 0
 	}
-	return rs.ToMove(g, st)
+	return rs.ImpulseSeat(g, st)
 }

@@ -49,8 +49,8 @@ func TestSeatTwoLetsTheBotOpen(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if obs.Ply != 1 || len(obs.History) != 1 || len(obs.LastMoves) != 1 || !obs.YourTurn || obs.ToMove != 2 {
-		t.Errorf("obs = ply %d history %v last %v yourTurn %v toMove %d", obs.Ply, obs.History, obs.LastMoves, obs.YourTurn, obs.ToMove)
+	if obs.Ply != 1 || len(obs.History) != 1 || len(obs.LastMoves) != 1 || !obs.YourImpulse || obs.ImpulseSeat != 2 {
+		t.Errorf("obs = ply %d history %v last %v yourImpulse %v impulseSeat %d", obs.Ply, obs.History, obs.LastMoves, obs.YourImpulse, obs.ImpulseSeat)
 	}
 }
 
@@ -347,7 +347,7 @@ func TestMatchRecordsTrainingPositions(t *testing.T) {
 		var winner = -2 // -2 unknown, 0 draw
 		for _, p := range g.Positions {
 			if p.Result == 1 {
-				winner = p.ToMove
+				winner = p.ImpulseSeat
 			}
 		}
 		for i, p := range g.Positions {
@@ -357,14 +357,14 @@ func TestMatchRecordsTrainingPositions(t *testing.T) {
 			if p.ActionID < 0 || spec.Actions.Moves[p.ActionID] != p.Move {
 				t.Errorf("game %d ply %d: action %d is %q, move was %q", gi, i, p.ActionID, spec.Actions.Moves[p.ActionID], p.Move)
 			}
-			if len(p.State) == 0 || p.ToMove == 0 {
+			if len(p.State) == 0 || p.ImpulseSeat == 0 {
 				t.Errorf("game %d ply %d: incomplete record", gi, i)
 			}
 			// Results are consistent: the mover who wins sees +1, the
 			// opponent -1.
 			if g.Winner != "unfinished" && g.Winner != "draw" && winner > 0 {
 				want := -1
-				if p.ToMove == winner {
+				if p.ImpulseSeat == winner {
 					want = 1
 				}
 				if p.Result != want {

@@ -54,8 +54,8 @@ func TestStrikeCommitsInSecretAndTheTargetAnswers(t *testing.T) {
 	if d.Stage != "respond" || d.Con == nil || d.Con.AAtk != 3 || d.Con.Rolled {
 		t.Fatalf("after the commit: stage %q con %+v", d.Stage, d.Con)
 	}
-	if res.NextTurnSeat != dark {
-		t.Fatalf("the target must answer next, got seat %d", res.NextTurnSeat)
+	if res.NextImpulseSeat != dark {
+		t.Fatalf("the target must answer next, got seat %d", res.NextImpulseSeat)
 	}
 	if len(notations(g, st, light)) != 0 {
 		t.Fatal("the committed side has no further decisions")

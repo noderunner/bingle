@@ -25,9 +25,9 @@ type Observation struct {
 	// Seat/Color identify the observer's seat (0/"" for a spectator).
 	Seat  int
 	Color string
-	// YourTurn is true when the observer is seated and it is their move.
-	YourTurn bool
-	TurnSeat *int
+	// YourImpulse is true when the observer is seated and it is their move.
+	YourImpulse bool
+	ImpulseSeat *int
 
 	MoveSeq int
 	Ply     int
@@ -86,18 +86,18 @@ func (m *Manager) Observe(ctx context.Context, roomCode, name string) (Observati
 	}
 
 	obs := Observation{
-		RoomCode:   roomCode,
-		GameDefID:  game.GameDefID,
-		Status:     game.Status,
-		Seats:      snap.Seats,
-		TurnSeat:   game.TurnSeat,
-		MoveSeq:    game.MoveSeq,
-		Ply:        bs.Ply(),
-		BoardText:  state.RenderText(compiled, bs),
-		State:      snap.State,
-		Done:       game.Status == "finished",
-		WinnerSeat: game.WinnerSeat,
-		EndReason:  game.EndReason,
+		RoomCode:    roomCode,
+		GameDefID:   game.GameDefID,
+		Status:      game.Status,
+		Seats:       snap.Seats,
+		ImpulseSeat: game.ImpulseSeat,
+		MoveSeq:     game.MoveSeq,
+		Ply:         bs.Ply(),
+		BoardText:   state.RenderText(compiled, bs),
+		State:       snap.State,
+		Done:        game.Status == "finished",
+		WinnerSeat:  game.WinnerSeat,
+		EndReason:   game.EndReason,
 	}
 
 	if name != "" {
@@ -122,8 +122,8 @@ func (m *Manager) Observe(ctx context.Context, roomCode, name string) (Observati
 		}
 	}
 
-	if game.Status == "active" && game.TurnSeat != nil && obs.Seat != 0 && *game.TurnSeat == obs.Seat {
-		obs.YourTurn = true
+	if game.Status == "active" && game.ImpulseSeat != nil && obs.Seat != 0 && *game.ImpulseSeat == obs.Seat {
+		obs.YourImpulse = true
 		for _, lm := range legalMoveList(compiled, bs, obs.Seat) {
 			obs.LegalMoves = append(obs.LegalMoves, lm.Notation)
 		}
@@ -164,8 +164,8 @@ func (m *Manager) Observe(ctx context.Context, roomCode, name string) (Observati
 }
 
 func turnOrFirst(game store.Game, compiled *catalog.CompiledGame) int {
-	if game.TurnSeat != nil {
-		return *game.TurnSeat
+	if game.ImpulseSeat != nil {
+		return *game.ImpulseSeat
 	}
 	return firstSeatOf(compiled, game)
 }

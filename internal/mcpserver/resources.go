@@ -84,15 +84,15 @@ func registerResourcesAndPrompts(s *server.MCPServer, mgr *session.Manager) {
 				return nil, err
 			}
 			type item struct {
-				ID        string `json:"id"`
-				GameDefID string `json:"game_def_id"`
-				Title     string `json:"title"`
-				ToMove    int    `json:"to_move"`
-				WinIn     int    `json:"win_in"`
+				ID          string `json:"id"`
+				GameDefID   string `json:"game_def_id"`
+				Title       string `json:"title"`
+				ImpulseSeat int    `json:"impulse_seat"`
+				WinIn       int    `json:"win_in"`
 			}
 			out := make([]item, len(list))
 			for i, p := range list {
-				out[i] = item{ID: p.ID, GameDefID: p.GameDefID, Title: p.Title, ToMove: p.ToMove, WinIn: p.WinIn}
+				out[i] = item{ID: p.ID, GameDefID: p.GameDefID, Title: p.Title, ImpulseSeat: p.ImpulseSeat, WinIn: p.WinIn}
 			}
 			data, err := json.MarshalIndent(out, "", "  ")
 			if err != nil {

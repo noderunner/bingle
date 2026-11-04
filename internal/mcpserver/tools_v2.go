@@ -246,7 +246,7 @@ func registerPlayTools(s *server.MCPServer, mgr *session.Manager) {
 				return mcp.NewToolResultError(err.Error()), nil
 			}
 			out := map[string]any{
-				"notation": hint.Notation, "steps": hint.Steps, "turn_seat": hint.TurnSeat, "bot": hint.Bot,
+				"notation": hint.Notation, "steps": hint.Steps, "impulse_seat": hint.ImpulseSeat, "bot": hint.Bot,
 			}
 			text := fmt.Sprintf("Suggested move: %s", hint.Notation)
 			if hint.Estimated {
@@ -396,25 +396,25 @@ func handleAddBot(mgr *session.Manager) server.ToolHandlerFunc {
 
 // observationResult is the get_observation tool's result shape.
 type observationResult struct {
-	RoomCode   string          `json:"room_code"`
-	GameDefID  string          `json:"game_def_id"`
-	Status     string          `json:"status"`
-	Seat       int             `json:"seat"`
-	Color      string          `json:"color"`
-	YourTurn   bool            `json:"your_turn"`
-	TurnSeat   *int            `json:"turn_seat"`
-	MoveSeq    int             `json:"move_seq"`
-	Ply        int             `json:"ply"`
-	BoardText  string          `json:"board_text"`
-	TPS        string          `json:"tps,omitempty"`
-	State      json.RawMessage `json:"state"`
-	LegalMoves []string        `json:"legal_moves"`
-	LastMove   *wire.Move      `json:"last_move"`
-	Done       bool            `json:"done"`
-	WinnerSeat *int            `json:"winner_seat"`
-	EndReason  string          `json:"end_reason,omitempty"`
-	Result     string          `json:"result,omitempty"`
-	Reward     float64         `json:"reward"`
+	RoomCode    string          `json:"room_code"`
+	GameDefID   string          `json:"game_def_id"`
+	Status      string          `json:"status"`
+	Seat        int             `json:"seat"`
+	Color       string          `json:"color"`
+	YourImpulse bool            `json:"your_impulse"`
+	ImpulseSeat *int            `json:"impulse_seat"`
+	MoveSeq     int             `json:"move_seq"`
+	Ply         int             `json:"ply"`
+	BoardText   string          `json:"board_text"`
+	TPS         string          `json:"tps,omitempty"`
+	State       json.RawMessage `json:"state"`
+	LegalMoves  []string        `json:"legal_moves"`
+	LastMove    *wire.Move      `json:"last_move"`
+	Done        bool            `json:"done"`
+	WinnerSeat  *int            `json:"winner_seat"`
+	EndReason   string          `json:"end_reason,omitempty"`
+	Result      string          `json:"result,omitempty"`
+	Reward      float64         `json:"reward"`
 
 	// Timed games: the per-move limit and what is left for the player to
 	// move.
@@ -434,7 +434,7 @@ func handleGetObservation(mgr *session.Manager) server.ToolHandlerFunc {
 		}
 		res := observationResult{
 			RoomCode: o.RoomCode, GameDefID: o.GameDefID, Status: o.Status, Seat: o.Seat, Color: o.Color,
-			YourTurn: o.YourTurn, TurnSeat: o.TurnSeat, MoveSeq: o.MoveSeq, Ply: o.Ply,
+			YourImpulse: o.YourImpulse, ImpulseSeat: o.ImpulseSeat, MoveSeq: o.MoveSeq, Ply: o.Ply,
 			BoardText: o.BoardText, TPS: o.TPS, State: json.RawMessage(o.State), LegalMoves: o.LegalMoves,
 			Done: o.Done, WinnerSeat: o.WinnerSeat, EndReason: o.EndReason, Result: o.Result, Reward: o.Reward,
 			MoveTimeSeconds: o.MoveTimeLimit, SecondsLeft: o.SecondsLeft,
@@ -455,7 +455,7 @@ func handleGetObservation(mgr *session.Manager) server.ToolHandlerFunc {
 				fmt.Fprintf(&b, " by %s", o.EndReason)
 			}
 			b.WriteString(".\n")
-		case o.YourTurn:
+		case o.YourImpulse:
 			fmt.Fprintf(&b, "You are seat %d (%s) — YOUR TURN (move %d).\n", o.Seat, o.Color, o.MoveSeq+1)
 		default:
 			fmt.Fprintf(&b, "You are seat %d (%s) — waiting for the opponent.\n", o.Seat, o.Color)
@@ -468,7 +468,7 @@ func handleGetObservation(mgr *session.Manager) server.ToolHandlerFunc {
 		if o.TPS != "" {
 			fmt.Fprintf(&b, "TPS: %s\n", o.TPS)
 		}
-		if o.YourTurn {
+		if o.YourImpulse {
 			fmt.Fprintf(&b, "Legal moves (%d): %s\n", len(o.LegalMoves), strings.Join(o.LegalMoves, " "))
 		}
 		return mcp.NewToolResultStructured(res, b.String()), nil
@@ -547,14 +547,14 @@ func handleUndoMove(mgr *session.Manager) server.ToolHandlerFunc {
 
 func stateResultFromSnapshot(s session.StateSnapshot) getStateResult {
 	return getStateResult{
-		RealTime:   s.RealTime,
-		BoardState: json.RawMessage(s.BoardState),
-		State:      json.RawMessage(s.State),
-		TurnSeat:   s.TurnSeat,
-		Status:     s.Status,
-		MoveSeq:    s.MoveSeq,
-		WinnerSeat: s.WinnerSeat,
-		EndReason:  s.EndReason,
+		RealTime:    s.RealTime,
+		BoardState:  json.RawMessage(s.BoardState),
+		State:       json.RawMessage(s.State),
+		ImpulseSeat: s.ImpulseSeat,
+		Status:      s.Status,
+		MoveSeq:     s.MoveSeq,
+		WinnerSeat:  s.WinnerSeat,
+		EndReason:   s.EndReason,
 
 		DrawOfferSeat: s.DrawOfferSeat,
 	}
@@ -594,23 +594,23 @@ func handleSimulate(mgr *session.Manager) server.ToolHandlerFunc {
 			return mcp.NewToolResultError(err.Error()), nil
 		}
 		return mcp.NewToolResultStructuredOnly(struct {
-			BoardState json.RawMessage   `json:"board_state"`
-			State      json.RawMessage   `json:"state"`
-			TurnSeat   *int              `json:"turn_seat"`
-			GameEnded  bool              `json:"game_ended"`
-			WinnerSeat *int              `json:"winner_seat"`
-			EndReason  string            `json:"end_reason,omitempty"`
-			Applied    []string          `json:"applied"`
-			Legal      []legalMoveResult `json:"legal_moves"`
+			BoardState  json.RawMessage   `json:"board_state"`
+			State       json.RawMessage   `json:"state"`
+			ImpulseSeat *int              `json:"impulse_seat"`
+			GameEnded   bool              `json:"game_ended"`
+			WinnerSeat  *int              `json:"winner_seat"`
+			EndReason   string            `json:"end_reason,omitempty"`
+			Applied     []string          `json:"applied"`
+			Legal       []legalMoveResult `json:"legal_moves"`
 		}{
-			BoardState: json.RawMessage(sim.BoardState),
-			State:      json.RawMessage(sim.State),
-			TurnSeat:   sim.TurnSeat,
-			GameEnded:  sim.GameEnded,
-			WinnerSeat: sim.WinnerSeat,
-			EndReason:  sim.EndReason,
-			Applied:    sim.Applied,
-			Legal:      legalMoveResults(sim.Legal),
+			BoardState:  json.RawMessage(sim.BoardState),
+			State:       json.RawMessage(sim.State),
+			ImpulseSeat: sim.ImpulseSeat,
+			GameEnded:   sim.GameEnded,
+			WinnerSeat:  sim.WinnerSeat,
+			EndReason:   sim.EndReason,
+			Applied:     sim.Applied,
+			Legal:       legalMoveResults(sim.Legal),
 		}), nil
 	}
 }
@@ -713,19 +713,19 @@ func registerEnvTools(s *server.MCPServer, em *envs.Manager) {
 			}
 			reveal := request.GetBool("reveal", false)
 			type item struct {
-				ID         string          `json:"id"`
-				GameDefID  string          `json:"game_def_id"`
-				Title      string          `json:"title"`
-				ToMove     int             `json:"to_move"`
-				WinIn      int             `json:"win_in"`
-				TPS        string          `json:"tps,omitempty"`
-				State      json.RawMessage `json:"state"`
-				FirstMoves []string        `json:"first_moves,omitempty"`
-				Solution   []string        `json:"solution,omitempty"`
+				ID          string          `json:"id"`
+				GameDefID   string          `json:"game_def_id"`
+				Title       string          `json:"title"`
+				ImpulseSeat int             `json:"impulse_seat"`
+				WinIn       int             `json:"win_in"`
+				TPS         string          `json:"tps,omitempty"`
+				State       json.RawMessage `json:"state"`
+				FirstMoves  []string        `json:"first_moves,omitempty"`
+				Solution    []string        `json:"solution,omitempty"`
 			}
 			items := make([]item, 0, len(list))
 			for _, p := range list {
-				it := item{ID: p.ID, GameDefID: p.GameDefID, Title: p.Title, ToMove: p.ToMove, WinIn: p.WinIn, TPS: p.TPS, State: p.State}
+				it := item{ID: p.ID, GameDefID: p.GameDefID, Title: p.Title, ImpulseSeat: p.ImpulseSeat, WinIn: p.WinIn, TPS: p.TPS, State: p.State}
 				if reveal {
 					it.FirstMoves, it.Solution = p.FirstMoves, p.Solution
 				}
@@ -969,7 +969,7 @@ func envObservationResult(o envs.Observation) *mcp.CallToolResult {
 			fmt.Fprintf(&b, " by %s", o.EndReason)
 		}
 		b.WriteString(".\n")
-	case o.YourTurn:
+	case o.YourImpulse:
 		b.WriteString("Your turn.\n")
 	}
 	b.WriteString(o.BoardText)
@@ -977,7 +977,7 @@ func envObservationResult(o envs.Observation) *mcp.CallToolResult {
 	if o.TPS != "" {
 		fmt.Fprintf(&b, "TPS: %s\n", o.TPS)
 	}
-	if o.YourTurn {
+	if o.YourImpulse {
 		fmt.Fprintf(&b, "Legal moves (%d): %s\n", len(o.LegalMoves), strings.Join(o.LegalMoves, " "))
 	}
 	return mcp.NewToolResultStructured(o, b.String())

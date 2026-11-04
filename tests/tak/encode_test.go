@@ -49,7 +49,7 @@ func TestTakActionSpaceCoversRandomGames(t *testing.T) {
 				if res.GameEnded {
 					break
 				}
-				st, seat = res.NewState, res.NextTurnSeat
+				st, seat = res.NewState, res.NextImpulseSeat
 			}
 		}
 	}
@@ -78,15 +78,15 @@ func TestTakPlanesShowStackDepthAndReserves(t *testing.T) {
 	if at("height", 2, 2) != 2 {
 		t.Errorf("height = %v, want 2", at("height", 2, 2))
 	}
-	if at("to-move", 0, 0) != 1 {
-		t.Errorf("to-move should be 1 for the viewer on move")
+	if at("on-impulse", 0, 0) != 1 {
+		t.Errorf("on-impulse should be 1 for the viewer on move")
 	}
-	// Seen from the other seat the roles swap and to-move is 0.
+	// Seen from the other seat the roles swap and on-impulse is 0.
 	q, err := state.EncodePlanes(g, st, 2, seat, state.PlaneOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if q.Data[idx["top/me/flat"]*cells+2*5+2] != 1 || q.Data[idx["to-move"]*cells] != 0 {
+	if q.Data[idx["top/me/flat"]*cells+2*5+2] != 1 || q.Data[idx["on-impulse"]*cells] != 0 {
 		t.Errorf("viewer-relative encoding broken for seat 2")
 	}
 }

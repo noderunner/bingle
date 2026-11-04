@@ -17,10 +17,10 @@ var (
 
 // View is what clients draw beyond the tiles.
 type View struct {
-	Phase  string            `json:"phase"`
-	ToMove int               `json:"to_move,omitempty"`
-	Prompt string            `json:"prompt"`
-	Tints  map[string]string `json:"tints,omitempty"`
+	Phase       string            `json:"phase"`
+	ImpulseSeat int               `json:"impulse_seat,omitempty"`
+	Prompt      string            `json:"prompt"`
+	Tints       map[string]string `json:"tints,omitempty"`
 }
 
 // Redact attaches the derived view: Hive has nothing to hide.
@@ -46,7 +46,7 @@ func (rs *Ruleset) Determinize(game *catalog.CompiledGame, st *state.BoardState,
 
 func (e *eng) buildView() *View {
 	d := e.d
-	v := &View{Phase: "play", ToMove: d.Turn, Tints: map[string]string{}}
+	v := &View{Phase: "play", ImpulseSeat: d.Turn, Tints: map[string]string{}}
 	for _, c := range d.Last {
 		v.Tints[c] = "last"
 	}

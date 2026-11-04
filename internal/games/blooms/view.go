@@ -17,10 +17,10 @@ var (
 
 // View is what clients draw beyond the stones.
 type View struct {
-	Phase  string `json:"phase"`
-	Stage  string `json:"stage,omitempty"`
-	ToMove int    `json:"to_move,omitempty"`
-	Prompt string `json:"prompt"`
+	Phase       string `json:"phase"`
+	Stage       string `json:"stage,omitempty"`
+	ImpulseSeat int    `json:"impulse_seat,omitempty"`
+	Prompt      string `json:"prompt"`
 	// MoveHint says what the player to move can do, over the controls.
 	MoveHint string `json:"move_hint,omitempty"`
 	// PieceAction is the word on the button of each stone: its colour is in its picture.
@@ -69,7 +69,7 @@ func (rs *Ruleset) Determinize(game *catalog.CompiledGame, st *state.BoardState,
 
 func (e *eng) buildView() *View {
 	d := e.d
-	v := &View{Phase: "play", Stage: d.Stage, ToMove: d.Turn, PieceAction: "Place", Tints: map[string]string{}, Seats: map[string]*SeatView{}}
+	v := &View{Phase: "play", Stage: d.Stage, ImpulseSeat: d.Turn, PieceAction: "Place", Tints: map[string]string{}, Seats: map[string]*SeatView{}}
 	for _, c := range d.Last {
 		v.Tints[c] = "last"
 	}

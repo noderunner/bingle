@@ -79,7 +79,7 @@ func TestConcurrentReadersAndWriters_NoBusyErrors(t *testing.T) {
 				}
 				_, err := st.RecordMove(ctx, ids[i], store.MoveInput{
 					Seat: 1 + m%2, Color: "black", From: "0,0", To: "0,1",
-					ResultingBoardState: "{}", NextTurnSeat: 1 + (m+1)%2,
+					ResultingBoardState: "{}", NextImpulseSeat: 1 + (m+1)%2,
 				})
 				if err != nil {
 					writeErrs <- fmt.Errorf("game %d move %d: %w", i, m, err)

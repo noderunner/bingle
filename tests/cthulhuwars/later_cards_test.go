@@ -310,7 +310,7 @@ func TestTheLaterCardsPlayFromAnArrangedTable(t *testing.T) {
 			if res.GameEnded {
 				break
 			}
-			st, seat = res.NewState, res.NextTurnSeat
+			st, seat = res.NewState, res.NextImpulseSeat
 		}
 	}
 	t.Logf("abilities reached: %v", seen)
@@ -382,7 +382,7 @@ func TestAGlacierAbandonsAGateForGood(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		st, seat = res.NewState, res.NextTurnSeat
+		st, seat = res.NewState, res.NextImpulseSeat
 		d = primevalData(t, st)
 		if len(d.Glaciers) > 0 {
 			break
@@ -605,6 +605,6 @@ func TestOnlyBubastisCanReachTheMoon(t *testing.T) {
 		if res.GameEnded {
 			break
 		}
-		st, seat = res.NewState, res.NextTurnSeat
+		st, seat = res.NewState, res.NextImpulseSeat
 	}
 }

@@ -49,7 +49,7 @@ func has(list []string, s string) bool {
 func play(t *testing.T, g *catalog.CompiledGame, st *state.BoardState, text string) *state.BoardState {
 	t.Helper()
 	rs := nyet.New()
-	seat := rs.ToMove(g, st)
+	seat := rs.ImpulseSeat(g, st)
 	mv, err := rs.Parse(g, text)
 	if err != nil {
 		t.Fatalf("parse %q: %v", text, err)
@@ -155,7 +155,7 @@ func TestCrossingBoxesFixesTheTerms(t *testing.T) {
 	// Cross everything but a chosen box on each line, taking turns.
 	keep := map[string]string{"first": "tiger", "discard": "none", "trump": "blue", "super": "red", "points": "2"}
 	for guard := 0; guard < 60; guard++ {
-		seat := rs.ToMove(g, st)
+		seat := rs.ImpulseSeat(g, st)
 		d := data(st)
 		if d.Phase != "nyet" {
 			break
@@ -203,7 +203,7 @@ func TestAnyLineStopsAtOneBox(t *testing.T) {
 	for _, c := range []string{"red", "blue", "yellow"} {
 		st = play(t, g, st, "nyet:trump:"+c)
 	}
-	for _, m := range names(g, st, rs.ToMove(g, st)) {
+	for _, m := range names(g, st, rs.ImpulseSeat(g, st)) {
 		if strings.HasPrefix(m, "nyet:trump:") {
 			t.Errorf("a decided line still offers %s", m)
 		}
@@ -461,7 +461,7 @@ func TestRandomGamesAreValidAndTerminate(t *testing.T) {
 		for n := 0; n < games; n++ {
 			st, _ := rs.Start(g, uint64(n+1))
 			for ply := 0; ply < 5000; ply++ {
-				seat := rs.ToMove(g, st)
+				seat := rs.ImpulseSeat(g, st)
 				if seat == 0 {
 					break
 				}
@@ -484,7 +484,7 @@ func TestRandomGamesAreValidAndTerminate(t *testing.T) {
 				}
 				st = res.NewState
 			}
-			if rs.ToMove(g, st) != 0 {
+			if rs.ImpulseSeat(g, st) != 0 {
 				t.Errorf("%s: game %d did not finish", id, n)
 			}
 			if o := rs.Outcome(g, st); !o.Ended {
@@ -639,7 +639,7 @@ func TestWhatThePlayersReadNamesTheSuits(t *testing.T) {
 	start, _ := rs.Start(g, 7)
 	keep := map[string]string{"first": "tiger", "discard": "none", "trump": "blue", "super": "red", "points": "2"}
 	for guard := 0; guard < 60 && data(start).Phase == "nyet"; guard++ {
-		seat := rs.ToMove(g, start)
+		seat := rs.ImpulseSeat(g, start)
 		var pick string
 		for _, m := range names(g, start, seat) {
 			if parts := strings.Split(m, ":"); keep[parts[1]] != parts[2] {

@@ -26,10 +26,10 @@ var ErrGameNotActive = errors.New("session: game is not active")
 // 500 rather than to the 400 an illegal move gets.
 var ErrRulesetPanic = errors.New("session: the game's rules panicked")
 
-// ErrNotYourTurn is returned by MakeMove when name doesn't hold the seat
+// ErrNotYourImpulse is returned by MakeMove when name doesn't hold the seat
 // whose turn it currently is — whether because name holds no seat in this
 // game at all, or because it's the other seat's turn.
-var ErrNotYourTurn = errors.New("session: not your turn")
+var ErrNotYourImpulse = errors.New("session: not your turn")
 
 // ErrNotAPlayer is returned by operations that need a seated player (undo,
 // resign) when name holds no seat in the game.
@@ -54,14 +54,14 @@ type MoveOutcome struct {
 	Aim      string
 	Notation string
 
-	NextTurnSeat int
-	GameEnded    bool
-	WinnerSeat   *int
-	EndReason    string
-	EndDetail    string
-	Status       string // "active" or "finished" after this move
-	BoardState   string // the resulting v1 flat board state JSON
-	State        string // the resulting full state document JSON
+	NextImpulseSeat int
+	GameEnded       bool
+	WinnerSeat      *int
+	EndReason       string
+	EndDetail       string
+	Status          string // "active" or "finished" after this move
+	BoardState      string // the resulting v1 flat board state JSON
+	State           string // the resulting full state document JSON
 	// Auto says the server played this move for a person: a reaction they
 	// chose to decline automatically. AutoPlay says a tactical bot played it
 	// for a person whose Auto-Play Timeout ran out.
@@ -106,7 +106,7 @@ func (m *Manager) PlayNotation(ctx context.Context, roomCode, name, text string)
 //
 //   - The game must be "active" (ErrGameNotActive otherwise).
 //   - name must match an existing player whose seat is the game's current
-//     turn_seat (ErrNotYourTurn otherwise — covering both "name holds no
+//     impulse_seat (ErrNotYourImpulse otherwise — covering both "name holds no
 //     seat here" and "it's the other seat's turn").
 //   - The move itself must be legal per state.Apply; an illegal move's
 //     error is returned as-is, with nothing persisted.
@@ -138,8 +138,8 @@ func (m *Manager) Play(ctx context.Context, roomCode, name string, mv state.Move
 			break
 		}
 	}
-	if !found || player.Bot != "" || game.TurnSeat == nil || player.Seat != *game.TurnSeat {
-		return MoveOutcome{}, ErrNotYourTurn
+	if !found || player.Bot != "" || game.ImpulseSeat == nil || player.Seat != *game.ImpulseSeat {
+		return MoveOutcome{}, ErrNotYourImpulse
 	}
 	if err := m.mayActFor(ctx, &player); err != nil {
 		return MoveOutcome{}, err
@@ -266,7 +266,7 @@ func (m *Manager) applyAndRecordAs(ctx context.Context, compiled *catalog.Compil
 		if started, ok := parseTimestamp(game.UpdatedAt); ok {
 			charged.charge(player.Seat, m.now().Sub(charged.startedAt(m.turnStart(started))))
 		}
-		if earnsIncrement(how, result.GameEnded, pieSwap, player.Seat, result.NextTurnSeat) {
+		if earnsIncrement(how, result.GameEnded, pieSwap, player.Seat, result.NextImpulseSeat) {
 			charged.gain(player.Seat)
 		}
 		if pieSwap {
@@ -288,7 +288,7 @@ func (m *Manager) applyAndRecordAs(ctx context.Context, compiled *catalog.Compil
 		To:                  string(result.Move.To),
 		Captured:            capturedStr,
 		ResultingBoardState: string(newStateJSON),
-		NextTurnSeat:        result.NextTurnSeat,
+		NextImpulseSeat:     result.NextImpulseSeat,
 		GameEnded:           result.GameEnded,
 		WinnerSeat:          result.WinnerSeat,
 		EndReason:           result.EndReason,
@@ -320,18 +320,18 @@ func (m *Manager) applyAndRecordAs(ctx context.Context, compiled *catalog.Compil
 		path[i] = string(p)
 	}
 
-	var eventTurnSeat *int
+	var eventImpulseSeat *int
 	var eventDeadline string
 	var eventClock *ClockSnapshot
 	if !result.GameEnded {
-		eventTurnSeat = &result.NextTurnSeat
+		eventImpulseSeat = &result.NextImpulseSeat
 		deadline := time.Time{}
 		if game.MoveTimeLimit > 0 {
 			deadline = m.now().UTC().Add(time.Duration(game.MoveTimeLimit) * time.Second)
 		}
 		if charged != nil {
 			// The next player's clock starts running now.
-			d := m.now().UTC().Add(time.Duration(charged.LeftFor(result.NextTurnSeat) * float64(time.Second)))
+			d := m.now().UTC().Add(time.Duration(charged.LeftFor(result.NextImpulseSeat) * float64(time.Second)))
 			if deadline.IsZero() || d.Before(deadline) {
 				deadline = d
 			}
@@ -341,7 +341,7 @@ func (m *Manager) applyAndRecordAs(ctx context.Context, compiled *catalog.Compil
 		}
 	}
 	if charged != nil {
-		eventClock = charged.snapshot(result.NextTurnSeat)
+		eventClock = charged.snapshot(result.NextImpulseSeat)
 		if result.GameEnded {
 			eventClock.Running = 0
 		}
@@ -350,34 +350,34 @@ func (m *Manager) applyAndRecordAs(ctx context.Context, compiled *catalog.Compil
 	shownMove, shownNotation := state.PublicMove(compiled, result.NewState, result.Move, result.Notation)
 	_, publishSpan := trace.Start(ctx, "ws.publish")
 	m.hub.publish(game.RoomCode, Event{Type: "move", Data: moveEventData{
-		Seq:        move.Seq,
-		Seat:       player.Seat,
-		Color:      player.Color,
-		From:       string(shownMove.From),
-		To:         string(shownMove.To),
-		Captured:   capturedStr,
-		Action:     shownMove.Action,
-		Piece:      shownMove.Piece,
-		Count:      shownMove.Count,
-		Path:       path,
-		Drops:      shownMove.Drops,
-		Aim:        string(shownMove.Aim),
-		Notation:   shownNotation,
-		TurnSeat:   eventTurnSeat,
-		GameEnded:  result.GameEnded,
-		WinnerSeat: result.WinnerSeat,
-		EndReason:  result.EndReason,
-		EndDetail:  result.EndDetail,
-		Status:     finalStatus,
-		BoardState: json.RawMessage(legacyJSON),
-		State:      json.RawMessage(publicJSON),
+		Seq:         move.Seq,
+		Seat:        player.Seat,
+		Color:       player.Color,
+		From:        string(shownMove.From),
+		To:          string(shownMove.To),
+		Captured:    capturedStr,
+		Action:      shownMove.Action,
+		Piece:       shownMove.Piece,
+		Count:       shownMove.Count,
+		Path:        path,
+		Drops:       shownMove.Drops,
+		Aim:         string(shownMove.Aim),
+		Notation:    shownNotation,
+		ImpulseSeat: eventImpulseSeat,
+		GameEnded:   result.GameEnded,
+		WinnerSeat:  result.WinnerSeat,
+		EndReason:   result.EndReason,
+		EndDetail:   result.EndDetail,
+		Status:      finalStatus,
+		BoardState:  json.RawMessage(legacyJSON),
+		State:       json.RawMessage(publicJSON),
 
-		TurnDeadline: eventDeadline,
-		Clock:        eventClock,
-		ServerTime:   m.now().UTC().Format(time.RFC3339),
-		Auto:         auto,
-		AutoPlay:     autoPlay,
-		Locked:       locked,
+		ImpulseDeadline: eventDeadline,
+		Clock:           eventClock,
+		ServerTime:      m.now().UTC().Format(time.RFC3339),
+		Auto:            auto,
+		AutoPlay:        autoPlay,
+		Locked:          locked,
 	}})
 	publishSpan.End()
 
@@ -400,30 +400,30 @@ func (m *Manager) applyAndRecordAs(ctx context.Context, compiled *catalog.Compil
 	}
 
 	return MoveOutcome{
-		Seq:          move.Seq,
-		Seat:         player.Seat,
-		Color:        player.Color,
-		From:         string(result.Move.From),
-		To:           string(result.Move.To),
-		Captured:     capturedStr,
-		Action:       shownMove.Action,
-		Piece:        shownMove.Piece,
-		Count:        shownMove.Count,
-		Path:         path,
-		Drops:        shownMove.Drops,
-		Aim:          string(shownMove.Aim),
-		Notation:     shownNotation,
-		NextTurnSeat: result.NextTurnSeat,
-		GameEnded:    result.GameEnded,
-		WinnerSeat:   result.WinnerSeat,
-		EndReason:    result.EndReason,
-		EndDetail:    result.EndDetail,
-		Status:       finalStatus,
-		BoardState:   string(legacyJSON),
-		State:        string(publicJSON),
-		Auto:         auto,
-		AutoPlay:     autoPlay,
-		Locked:       locked,
+		Seq:             move.Seq,
+		Seat:            player.Seat,
+		Color:           player.Color,
+		From:            string(result.Move.From),
+		To:              string(result.Move.To),
+		Captured:        capturedStr,
+		Action:          shownMove.Action,
+		Piece:           shownMove.Piece,
+		Count:           shownMove.Count,
+		Path:            path,
+		Drops:           shownMove.Drops,
+		Aim:             string(shownMove.Aim),
+		Notation:        shownNotation,
+		NextImpulseSeat: result.NextImpulseSeat,
+		GameEnded:       result.GameEnded,
+		WinnerSeat:      result.WinnerSeat,
+		EndReason:       result.EndReason,
+		EndDetail:       result.EndDetail,
+		Status:          finalStatus,
+		BoardState:      string(legacyJSON),
+		State:           string(publicJSON),
+		Auto:            auto,
+		AutoPlay:        autoPlay,
+		Locked:          locked,
 	}, nil
 }
 

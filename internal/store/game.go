@@ -11,14 +11,14 @@ import (
 // Game mirrors one row of the games table (see schema.sql and docs/history/plan.md
 // section 6.6a).
 type Game struct {
-	ID         int64
-	RoomCode   string
-	GameDefID  string
-	Status     string
-	BoardState string
-	TurnSeat   *int // nil ⇒ SQL NULL (game is waiting/finished)
-	MoveSeq    int
-	WinnerSeat *int // nil ⇒ SQL NULL
+	ID          int64
+	RoomCode    string
+	GameDefID   string
+	Status      string
+	BoardState  string
+	ImpulseSeat *int // nil ⇒ SQL NULL (game is waiting/finished)
+	MoveSeq     int
+	WinnerSeat  *int // nil ⇒ SQL NULL
 	// EndReason says why a finished game ended ("road", "resignation", ...);
 	// empty while the game is unfinished.
 	EndReason string
@@ -37,10 +37,10 @@ type Game struct {
 	DrawOfferSeat *int
 	// InitialState is the starting position document when the game began
 	// from a custom position (a puzzle, a position from analysis); empty
-	// means the game definition's standard start. InitialTurnSeat is who
+	// means the game definition's standard start. InitialImpulseSeat is who
 	// moves first from it (0 = the definition's first seat).
-	InitialState    string
-	InitialTurnSeat int
+	InitialState       string
+	InitialImpulseSeat int
 	// Lobby says the game waits for its host to start it: it does not begin
 	// by itself when the last seat fills.
 	Lobby     bool
@@ -65,23 +65,23 @@ type Game struct {
 
 // gameColumns is the column list every games SELECT uses, matching
 // scanGameRow.
-const gameColumns = `id, room_code, game_def_id, status, board_state, turn_seat, move_seq, winner_seat, end_reason, end_detail, move_time_limit, draw_offer_seat, initial_state, initial_turn_seat, created_at, updated_at, lobby, clock, tutorial, rated, rating_status, tournament_id, card_set, real_time`
+const gameColumns = `id, room_code, game_def_id, status, board_state, impulse_seat, move_seq, winner_seat, end_reason, end_detail, move_time_limit, draw_offer_seat, initial_state, initial_impulse_seat, created_at, updated_at, lobby, clock, tutorial, rated, rating_status, tournament_id, card_set, real_time`
 
 type rowScanner interface{ Scan(dest ...any) error }
 
 func scanGameRow(row rowScanner) (Game, error) {
 	var g Game
-	var turnSeat, winnerSeat, drawOffer sql.NullInt64
+	var impulseSeat, winnerSeat, drawOffer sql.NullInt64
 	var lobby, rated int
-	err := row.Scan(&g.ID, &g.RoomCode, &g.GameDefID, &g.Status, &g.BoardState, &turnSeat, &g.MoveSeq, &winnerSeat,
-		&g.EndReason, &g.EndDetail, &g.MoveTimeLimit, &drawOffer, &g.InitialState, &g.InitialTurnSeat,
+	err := row.Scan(&g.ID, &g.RoomCode, &g.GameDefID, &g.Status, &g.BoardState, &impulseSeat, &g.MoveSeq, &winnerSeat,
+		&g.EndReason, &g.EndDetail, &g.MoveTimeLimit, &drawOffer, &g.InitialState, &g.InitialImpulseSeat,
 		&g.CreatedAt, &g.UpdatedAt, &lobby, &g.Clock, &g.Tutorial, &rated, &g.RatingStatus, &g.TournamentID, &g.CardSet, &g.RealTime)
 	if err != nil {
 		return Game{}, err
 	}
 	g.Lobby = lobby != 0
 	g.Rated = rated != 0
-	g.TurnSeat = nullInt64ToIntPtr(turnSeat)
+	g.ImpulseSeat = nullInt64ToIntPtr(impulseSeat)
 	g.WinnerSeat = nullInt64ToIntPtr(winnerSeat)
 	g.DrawOfferSeat = nullInt64ToIntPtr(drawOffer)
 	return g, nil
@@ -109,7 +109,7 @@ type Player struct {
 var ErrNotFound = errors.New("store: not found")
 
 // CreateGame inserts one games row (status "waiting", the given
-// initialBoardState, move_seq 0, turn_seat and winner_seat left NULL) and one
+// initialBoardState, move_seq 0, impulse_seat and winner_seat left NULL) and one
 // players row for the creator at seat 1, in a single transaction — both rows
 // exist or neither does. Returns the freshly-inserted Game and Player
 // (re-read after commit, so DEFAULT-populated columns like timestamps are
@@ -183,8 +183,8 @@ func (s *Store) GetGame(ctx context.Context, roomCode string) (Game, error) {
 // SetInitialPosition records that a game began from a custom position: the
 // position document and the seat that moves first from it. It does not
 // touch board_state; callers create the game with the same document.
-func (s *Store) SetInitialPosition(ctx context.Context, gameID int64, doc string, turnSeat int) error {
-	res, err := s.exec(ctx, "SetInitialPosition", `UPDATE games SET initial_state = ?, initial_turn_seat = ? WHERE id = ?`, doc, turnSeat, gameID)
+func (s *Store) SetInitialPosition(ctx context.Context, gameID int64, doc string, impulseSeat int) error {
+	res, err := s.exec(ctx, "SetInitialPosition", `UPDATE games SET initial_state = ?, initial_impulse_seat = ? WHERE id = ?`, doc, impulseSeat, gameID)
 	if err != nil {
 		return fmt.Errorf("setting initial position for game_id=%d: %w", gameID, err)
 	}
@@ -360,22 +360,22 @@ func (s *Store) ListPlayers(ctx context.Context, gameID int64) ([]Player, error)
 }
 
 // AddPlayer inserts one players row (gameID, seat, name, color) and updates
-// the game's status (and, only when newTurnSeat is non-nil, its turn_seat
+// the game's status (and, only when newImpulseSeat is non-nil, its impulse_seat
 // too) in one transaction — both happen or neither does. Used when a new
 // (non-reconnecting) player joins; newStatus is whatever the caller
 // (Manager) has already decided the game's status should become (e.g.
-// "active" once the last seat fills, or unchanged otherwise). newTurnSeat is
+// "active" once the last seat fills, or unchanged otherwise). newImpulseSeat is
 // non-nil only when this join is the one that activates the game, in which
 // case it's the first seat in the game definition's turn order; when nil,
-// turn_seat is left untouched. Returns the freshly-inserted Player (re-read
+// impulse_seat is left untouched. Returns the freshly-inserted Player (re-read
 // after commit, so DEFAULT-populated columns like timestamps are accurate).
-func (s *Store) AddPlayer(ctx context.Context, gameID int64, seat int, name, color, newStatus string, newTurnSeat *int) (Player, error) {
-	return s.AddBotPlayer(ctx, gameID, seat, name, color, "", newStatus, newTurnSeat)
+func (s *Store) AddPlayer(ctx context.Context, gameID int64, seat int, name, color, newStatus string, newImpulseSeat *int) (Player, error) {
+	return s.AddBotPlayer(ctx, gameID, seat, name, color, "", newStatus, newImpulseSeat)
 }
 
 // AddBotPlayer is AddPlayer for a seat that may be played by a built-in bot
 // (bot != "" names which one; "" is an ordinary human player).
-func (s *Store) AddBotPlayer(ctx context.Context, gameID int64, seat int, name, color, bot, newStatus string, newTurnSeat *int) (Player, error) {
+func (s *Store) AddBotPlayer(ctx context.Context, gameID int64, seat int, name, color, bot, newStatus string, newImpulseSeat *int) (Player, error) {
 	tx, err := s.begin(ctx, "AddBotPlayer")
 	if err != nil {
 		return Player{}, fmt.Errorf("begin transaction: %w", err)
@@ -394,10 +394,10 @@ func (s *Store) AddBotPlayer(ctx context.Context, gameID int64, seat int, name, 
 		return Player{}, fmt.Errorf("players insert LastInsertId: %w", err)
 	}
 
-	if newTurnSeat != nil {
+	if newImpulseSeat != nil {
 		if _, err := tx.exec(ctx, "AddBotPlayer.updateGame",
-			`UPDATE games SET status = ?, turn_seat = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
-			newStatus, *newTurnSeat, gameID,
+			`UPDATE games SET status = ?, impulse_seat = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+			newStatus, *newImpulseSeat, gameID,
 		); err != nil {
 			return Player{}, fmt.Errorf("updating games row for game_id=%d: %w", gameID, err)
 		}
@@ -470,7 +470,7 @@ func (s *Store) EndRetiredGames(ctx context.Context, ids []string) (int64, error
 	var total int64
 	for _, id := range ids {
 		res, err := s.exec(ctx, "EndRetiredGames",
-			`UPDATE games SET status = 'finished', turn_seat = NULL, winner_seat = NULL, end_reason = ?, end_detail = '',
+			`UPDATE games SET status = 'finished', impulse_seat = NULL, winner_seat = NULL, end_reason = ?, end_detail = '',
 				draw_offer_seat = NULL
 			 WHERE status IN ('waiting', 'active') AND (game_def_id = ? OR substr(game_def_id, 1, ?) = ?)`,
 			EndReasonRetired, id, len(id)+1, id+"~")
@@ -500,13 +500,13 @@ func (s *Store) SetPlayerBot(ctx context.Context, gameID int64, seat int, bot st
 // anybody can look in on. It carries what such a list shows without reading
 // each game's position: who is seated, and when it last moved on.
 type UnfinishedGame struct {
-	GameID    int64
-	RoomCode  string
-	GameDefID string
-	Status    string
-	Lobby     bool
-	TurnSeat  *int
-	MoveSeq   int
+	GameID      int64
+	RoomCode    string
+	GameDefID   string
+	Status      string
+	Lobby       bool
+	ImpulseSeat *int
+	MoveSeq     int
 	// Seated is how many of the game's seats hold a player or a bot.
 	Seated    int
 	UpdatedAt string
@@ -521,7 +521,7 @@ func (s *Store) ListUnfinishedGames(ctx context.Context, limit int) ([]Unfinishe
 		limit = 50
 	}
 	rows, err := s.query(ctx, "ListUnfinishedGames",
-		`SELECT g.id, g.room_code, g.game_def_id, g.status, g.lobby, g.rated, g.turn_seat, g.move_seq, g.updated_at,
+		`SELECT g.id, g.room_code, g.game_def_id, g.status, g.lobby, g.rated, g.impulse_seat, g.move_seq, g.updated_at,
 		        (SELECT COUNT(*) FROM players p WHERE p.game_id = g.id)
 		 FROM games g WHERE g.status != 'finished' AND g.tutorial = ''
 		 ORDER BY g.updated_at DESC LIMIT ?`, limit)
@@ -533,13 +533,13 @@ func (s *Store) ListUnfinishedGames(ctx context.Context, limit int) ([]Unfinishe
 	for rows.Next() {
 		var g UnfinishedGame
 		var lobby, rated int
-		var turnSeat sql.NullInt64
-		if err := rows.Scan(&g.GameID, &g.RoomCode, &g.GameDefID, &g.Status, &lobby, &rated, &turnSeat, &g.MoveSeq, &g.UpdatedAt, &g.Seated); err != nil {
+		var impulseSeat sql.NullInt64
+		if err := rows.Scan(&g.GameID, &g.RoomCode, &g.GameDefID, &g.Status, &lobby, &rated, &impulseSeat, &g.MoveSeq, &g.UpdatedAt, &g.Seated); err != nil {
 			return nil, fmt.Errorf("scanning unfinished game: %w", err)
 		}
 		g.Lobby = lobby != 0
 		g.Rated = rated != 0
-		g.TurnSeat = nullInt64ToIntPtr(turnSeat)
+		g.ImpulseSeat = nullInt64ToIntPtr(impulseSeat)
 		out = append(out, g)
 	}
 	if err := rows.Err(); err != nil {

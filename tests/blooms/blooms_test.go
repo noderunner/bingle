@@ -95,18 +95,18 @@ func TestPlayerOneOpensWithOneStoneThenOneOrTwoEach(t *testing.T) {
 	g := game(t)
 	rs := blooms.New()
 	st, _ := rs.Start(g, 0)
-	if rs.ToMove(g, st) != 1 {
+	if rs.ImpulseSeat(g, st) != 1 {
 		t.Fatal("player 1 starts")
 	}
 	c := centre(g)
 	st, res := play(t, g, st, 1, "red@"+string(c))
-	if res.NextTurnSeat != 2 {
-		t.Fatalf("player 1's first turn is a single stone: next %d", res.NextTurnSeat)
+	if res.NextImpulseSeat != 2 {
+		t.Fatalf("player 1's first turn is a single stone: next %d", res.NextImpulseSeat)
 	}
 	// Player 2 may place two stones of different colours.
 	nb := neighbours(g, c)
 	st, res = play(t, g, st, 2, "blue@"+string(nb[0]))
-	if res.NextTurnSeat != 2 {
+	if res.NextImpulseSeat != 2 {
 		t.Fatal("player 2 may place a second stone")
 	}
 	legal := rs.Legal(g, st, 2)
@@ -123,8 +123,8 @@ func TestPlayerOneOpensWithOneStoneThenOneOrTwoEach(t *testing.T) {
 		t.Fatal("the turn can end after one stone")
 	}
 	st, res = play(t, g, st, 2, "black@"+string(nb[2]))
-	if res.NextTurnSeat != 1 {
-		t.Fatalf("two stones end the turn: next %d", res.NextTurnSeat)
+	if res.NextImpulseSeat != 1 {
+		t.Fatalf("two stones end the turn: next %d", res.NextImpulseSeat)
 	}
 	if st.Height(nb[2]) != 1 {
 		t.Fatal("the stone is on the board")
@@ -142,7 +142,7 @@ func TestSurroundedBloomIsCapturedAtTheEndOfTheTurn(t *testing.T) {
 	st := build(g, stones, blooms.Data{Turn: 1, Turns: 4})
 	// The last neighbour is the enemy bloom's only liberty: red fills it.
 	st, res := play(t, g, st, 1, "yellow@"+string(nb[5]))
-	if res.NextTurnSeat == 1 {
+	if res.NextImpulseSeat == 1 {
 		// stage second: end the turn to capture
 		st, res = play(t, g, st, 1, "done")
 	}
@@ -152,7 +152,7 @@ func TestSurroundedBloomIsCapturedAtTheEndOfTheTurn(t *testing.T) {
 	if data(st).Captured[0] != 1 {
 		t.Errorf("one stone captured: %v", data(st).Captured)
 	}
-	if res.NextTurnSeat != 2 {
+	if res.NextImpulseSeat != 2 {
 		t.Errorf("then player 2 moves")
 	}
 }
@@ -202,7 +202,7 @@ func TestOwnFencedBloomWaitsForTheOpponentsTurn(t *testing.T) {
 	}
 	// Blue now closes the last liberty: the red stone is captured.
 	st, res := play(t, g, st, 2, "black@"+string(nb[5]))
-	if res.NextTurnSeat == 2 {
+	if res.NextImpulseSeat == 2 {
 		st, _ = play(t, g, st, 2, "done")
 	}
 	if _, ok := st.Get(c); ok {
@@ -234,7 +234,7 @@ func TestOnlySameColourStonesFormABloom(t *testing.T) {
 		}
 	}
 	st, res := play(t, g, st, 2, "black@"+string(spare))
-	if res.NextTurnSeat == 2 {
+	if res.NextImpulseSeat == 2 {
 		st, _ = play(t, g, st, 2, "done")
 	}
 	if _, ok := st.Get(c); ok {
@@ -321,8 +321,8 @@ func TestPieRuleTheSecondPlayerMayTakeTheOpeningSide(t *testing.T) {
 		st, _ := rs.Start(g, 0)
 		c := centre(g)
 		st, res := play(t, g, st, 1, first+"@"+string(c))
-		if res.NextTurnSeat != 2 {
-			t.Fatalf("%s: next %d, want 2", first, res.NextTurnSeat)
+		if res.NextImpulseSeat != 2 {
+			t.Fatalf("%s: next %d, want 2", first, res.NextImpulseSeat)
 		}
 		hasSwap := false
 		for _, mv := range rs.Legal(g, st, 2) {
@@ -339,8 +339,8 @@ func TestPieRuleTheSecondPlayerMayTakeTheOpeningSide(t *testing.T) {
 		if !ok || occ.Color != first || occ.Piece != first {
 			t.Errorf("%s: the opening stone is %v, want it unchanged (%s)", first, occ, first)
 		}
-		if res.NextTurnSeat != 2 || rs.ToMove(g, st) != 2 {
-			t.Errorf("%s: the turn stays with the second player's seat (next %d)", first, res.NextTurnSeat)
+		if res.NextImpulseSeat != 2 || rs.ImpulseSeat(g, st) != 2 {
+			t.Errorf("%s: the turn stays with the second player's seat (next %d)", first, res.NextImpulseSeat)
 		}
 		if !data(st).Swapped {
 			t.Errorf("%s: the swap is not marked spent", first)
@@ -357,12 +357,12 @@ func TestPieRuleTheSecondPlayerMayTakeTheOpeningSide(t *testing.T) {
 		// The reply is an ordinary turn: one stone, then a second or done.
 		nb := neighbours(g, c)
 		st, res = play(t, g, st, 2, "blue@"+string(nb[0]))
-		if res.NextTurnSeat != 2 {
-			t.Errorf("%s: the reply after a swap is a one-or-two-stone turn (next %d)", first, res.NextTurnSeat)
+		if res.NextImpulseSeat != 2 {
+			t.Errorf("%s: the reply after a swap is a one-or-two-stone turn (next %d)", first, res.NextImpulseSeat)
 		}
 		st, res = play(t, g, st, 2, "done")
-		if res.NextTurnSeat != 1 {
-			t.Fatalf("%s: next %d, want 1", first, res.NextTurnSeat)
+		if res.NextImpulseSeat != 1 {
+			t.Fatalf("%s: next %d, want 1", first, res.NextImpulseSeat)
 		}
 		for _, mv := range rs.Legal(g, st, 2) {
 			if mv.Action == "swap" {
@@ -384,8 +384,8 @@ func TestPieRuleOnlyBeforeTheFirstReply(t *testing.T) {
 	c := centre(g)
 	st, _ = play(t, g, st, 1, "red@"+string(c))
 	st, res := play(t, g, st, 2, "blue@"+string(neighbours(g, c)[0]))
-	if res.NextTurnSeat != 2 {
-		t.Fatalf("the second stone of the reply is the second player's: next %d", res.NextTurnSeat)
+	if res.NextImpulseSeat != 2 {
+		t.Fatalf("the second stone of the reply is the second player's: next %d", res.NextImpulseSeat)
 	}
 	for _, mv := range rs.Legal(g, st, 2) {
 		if mv.Action == "swap" {
@@ -425,7 +425,7 @@ func TestRandomGamesAreValidAndEnd(t *testing.T) {
 				if err := state.Validate(g, res.NewState); err != nil {
 					t.Fatal(err)
 				}
-				st, seat = res.NewState, res.NextTurnSeat
+				st, seat = res.NewState, res.NextImpulseSeat
 				if res.GameEnded {
 					ended++
 					break

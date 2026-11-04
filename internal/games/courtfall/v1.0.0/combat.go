@@ -679,7 +679,7 @@ func (e *eng) doShift(mv state.Move) {
 // prompt says what the position is waiting for, in a sentence.
 func (e *eng) prompt() string {
 	d := e.d
-	seat := toMove(d)
+	seat := impulseSeat(d)
 	who := e.seatLabel(seat)
 	switch d.Phase {
 	case phaseTerrain:

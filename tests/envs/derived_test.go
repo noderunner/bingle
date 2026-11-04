@@ -32,8 +32,8 @@ func TestDerivedGamesWorkAsEnvironments(t *testing.T) {
 		t.Fatalf("reset %s: %v", id, err)
 	}
 	// The Windwalker (seat 1 here) begins: it chooses a sigil area.
-	if !obs.YourTurn || len(obs.LegalMoves) != 2 {
-		t.Fatalf("first decision: your turn %v, %d moves %v", obs.YourTurn, len(obs.LegalMoves), obs.LegalMoves)
+	if !obs.YourImpulse || len(obs.LegalMoves) != 2 {
+		t.Fatalf("first decision: your turn %v, %d moves %v", obs.YourImpulse, len(obs.LegalMoves), obs.LegalMoves)
 	}
 	for i := 0; i < 40 && !obs.Done; i++ {
 		if len(obs.LegalActionIDs) == 0 {

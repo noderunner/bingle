@@ -106,9 +106,9 @@ that account.
 | `GET /game-defs/{id}/tutorials/{tutorial}` | | one tutorial with its steps, as written ([tutorials.md](tutorials.md#the-format)), and `guide`: one entry per step, `{play_steps?: [[{kind, value}]], show_state?}` — the selections each of the learner's moves is made of (a client points the learner at them its own way) and the position a step with `show` depicts, as the learner sees it; `404` if unknown |
 | `POST /tutorials` | `{game_def_id, tutorial, player_name}` | as `POST /games`: a room for the tutorial, on the game it names, from its start (seeded, its `setup` played), with `player_name` in the learner's seat and in every other seat as `player_name · <seat>` for the scripted replies. The room's `GET /games/{code}` says `tutorial: "family/id"`; it is left out of `GET /games` and `/me/games`, and turn notifications are refused (`409`). Needs `play`; counts towards the limit on making games |
 | `GET /bots` | | `[{id, label, description}]` |
-| `GET /puzzles` | `?game_def_id=&max_win_in=` | `[{id, game_def_id, title, to_move, win_in, plies, tps?, state}]` — positions where the side to move wins by force |
+| `GET /puzzles` | `?game_def_id=&max_win_in=` | `[{id, game_def_id, title, impulse_seat, win_in, plies, tps?, state}]` — positions where the side to move wins by force |
 | `GET /puzzles/{id}` | `?reveal=1` adds `first_moves` and a `solution` line | one puzzle; `404` if unknown |
-| `GET /games` | `?limit=` (60 max) | `{games: [{room_code, game_def_id, name, family, status, lobby?, seats, open_seats, players[{seat,color,name,bot}], turn_seat, move_seq, updated_at}]}` — every unfinished game |
+| `GET /games` | `?limit=` (60 max) | `{games: [{room_code, game_def_id, name, family, status, lobby?, seats, open_seats, players[{seat,color,name,bot}], impulse_seat, move_seq, updated_at}]}` — every unfinished game |
 | `GET /bot-guide` | | the guide to the bots as Markdown (its drawings under `/bot-guide/assets/`) |
 | `GET /here` | | `{people: [{address, name, since, seen}]}` — the accounts that have said they are here lately, by handle (accounts only) |
 | `POST /here` | `{here?}` (`false` leaves) | `{address, people[...]}` (accounts only) |
@@ -122,10 +122,10 @@ that account.
 | `GET /config` | | `{public_url}`: the configured `BINGLE_PUBLIC_URL` ("" when unset) |
 | `POST /bot-matches` | `{game_def_id, bot_a, bot_b, delay_ms?}`: a two-player room where two built-in bots play each other at a watchable pace (150 ms – 10 s per move); open it as a spectator (`/games/{code}/join` with role spectator, or the WebSocket). Stops when the game ends, after 2 minutes with nobody watching, or at the move cap; at most 12 run at once | `{room_code, status}` |
 | `POST /games/import` | `{text, game_def_id?, player1?, player2?}`: load a PTN document or a plain move list into a new room (full history; the rules engine validates every move, an illegal one is reported by number; a `[TPS]` header sets the start) | `{room_code, game_def_id, status, moves, players}` |
-| `GET /games/{code}` | | `{game_def_id, status, seats[{seat,color,name,label,bot}], turn_seat, move_seq, winner_seat, end_reason, end_detail, move_time_seconds, clock?, turn_deadline, server_time, draw_offer_seat, start_state?, start_turn_seat?, lobby?, host_seat?, invite_url}` |
+| `GET /games/{code}` | | `{game_def_id, status, seats[{seat,color,name,label,bot}], impulse_seat, move_seq, winner_seat, end_reason, end_detail, move_time_seconds, clock?, impulse_deadline, server_time, draw_offer_seat, start_state?, start_impulse_seat?, lobby?, host_seat?, invite_url}` |
 | `POST /games/{code}/join` | `{player_name, role: player\|spectator, seat?}`: `seat` asks for a particular open seat (`409` if taken); a player already seated keeps theirs | `{role, seat, color, status}` |
 | `POST /games/{code}/bots` | `{player_name, bot, seat?}`: a seated player fills the lowest open seat (or `seat`) of a **waiting** game with a built-in bot, named after the seat's faction/colour and its kind (`Black Goat (MCTS)`); a game without a lobby starts when the last seat fills | `{seat, name, color, bot, status}`; `403` not seated, `409` full or already started |
-| `POST /games/{code}/start` | `{player_name}`: the **host** begins a game waiting in its lobby; every seat must be filled | `{status, lobby, host_seat, move_seq, turn_seat}`; `403` not the host, `409` seats open / already started |
+| `POST /games/{code}/start` | `{player_name}`: the **host** begins a game waiting in its lobby; every seat must be filled | `{status, lobby, host_seat, move_seq, impulse_seat}`; `403` not the host, `409` seats open / already started |
 | `POST /games/{code}/seat` | `{player_name, seat}`: before the game starts, move to an open seat | as `start`; `409` seat taken |
 | `POST /games/{code}/leave` | `{player_name}`: give up your seat before the game starts (the host role passes to the next human) | as `start` |
 | `POST /games/{code}/remove` | `{player_name, seat}`: the host clears another seat (a person or a bot) before the game starts | as `start`; `403` not the host |
@@ -147,7 +147,7 @@ that account.
 | `POST /games/{code}/voice` | `{player_name, active}`: a seated player joins the call (`active: true`, repeated every ~15 s as a heartbeat; a place lapses after 45 s) or leaves it | `{peers}`; `403` not a player |
 | `POST /games/{code}/voice/signal` | `{player_name, to, kind, data}`: relay an `offer`, `answer`, `ice` or `retry` message (≤ 16 KB of JSON, ≤ 300 per 10 s) to seat `to`, delivered only to that seat's WebSocket | `{ok}`; `403` sender not in the call, `409` target not in it, `429` too fast |
 | `GET /rtc/config` | the `iceServers` a voice call uses: STUN, and a TURN relay with credentials that expire after 6 hours when configured | `{ice_servers: [{urls, username?, credential?}]}` |
-| `GET /games/{code}/state` | `?at_seq=N` (0 = start) | `{board_state, state, turn_seat, status, move_seq, winner_seat, end_reason}` |
+| `GET /games/{code}/state` | `?at_seq=N` (0 = start) | `{board_state, state, impulse_seat, status, move_seq, winner_seat, end_reason}` |
 
 **A game against oneself.** `also_seats: [2, 3]` seats the creator in those seats
 too (besides `seat`): each is a player of its own named after the creator and the
@@ -199,7 +199,7 @@ clock runs only while it is their turn — a move takes the time it took off the
 mover's own clock — and the first player to run out forfeits, enforced the same
 lazy way as a per-move limit. `GET /games/{code}` reports it as
 `clock: {running, seats: [{seat, initial_seconds, seconds_left}]}`, the running
-seat counting down to `turn_deadline`; `move` and `state` events carry the same
+seat counting down to `impulse_deadline`; `move` and `state` events carry the same
 object, and `get_observation`'s `seconds_left` follows it.
 
 The API takes any time up to 30 days. The page offers 1 to 60 minutes and a few
@@ -279,7 +279,7 @@ of the standard one: puzzles, endgame practice, "play from here". The
 position is validated (squares, pieces and colours must exist) and must not
 already be decided; otherwise `400`. The room remembers it: `?at_seq=0`,
 and `export` use it, and `GET /games/{code}` returns it as
-`start_state` / `start_turn_seat`.
+`start_state` / `start_impulse_seat`.
 
 Games with `engine: "ruleset"` (Courtfall, Cthulhu Wars) return a *public view* of every
 position: secrets (the dice generator, a committed choice) are masked, the
@@ -301,9 +301,9 @@ that appear as buttons.
 | `POST /games/{code}/undo` | `{player_name}`: take back the last step of the turn you are still playing. `409` once the turn has passed to anyone, the game has ended or a die has been rolled: a move then stands, in every game (ADR 0083) |
 | `POST /games/{code}/move-final` | `{player_name, notation}`: `{final}`, whether that move could not be taken back once played, as it hands the turn on, ends the game or brings in chance. Nothing is played. The page asks this before sending a move, to ask for a Submit only when it matters |
 | `POST /games/{code}/resign` | `{player_name}` |
-| `POST /games/{code}/hint` | `{player_name, at_seq?, moves?, bot?}`: a bot's choice (default: `minimax` where piece counts matter — Tak, Reversi, draughts — otherwise `mcts`) for the current position, or after `at_seq` + a variation → `{notation, steps, turn_seat, bot, win_rate?, alternatives?}` (MCTS reports its estimated chance of winning, 0–1, and the best few moves; minimax only the move). Only for players, and only against bots or after the game (`409` otherwise) |
+| `POST /games/{code}/hint` | `{player_name, at_seq?, moves?, bot?}`: a bot's choice (default: `minimax` where piece counts matter — Tak, Reversi, draughts — otherwise `mcts`) for the current position, or after `at_seq` + a variation → `{notation, steps, impulse_seat, bot, win_rate?, alternatives?}` (MCTS reports its estimated chance of winning, 0–1, and the best few moves; minimax only the move). Only for players, and only against bots or after the game (`409` otherwise) |
 | `POST /games/{code}/draw` | `{player_name, action: offer\|cancel\|accept\|decline}`: offer a draw to a human opponent; accepting ends the game (`end_reason: agreement`); any move withdraws an offer. `409` for nonsensical requests (no offer to answer, bot opponent). The offer is `draw_offer_seat` in game/state responses. |
-| `POST /games/{code}/simulate` | `{moves:[notation…], at_seq?}`: apply a line to the current or a past position without changing the game; returns the resulting `state`, `turn_seat`, `game_ended`, `legal_moves` and, for Tak, the position as `tps` |
+| `POST /games/{code}/simulate` | `{moves:[notation…], at_seq?}`: apply a line to the current or a past position without changing the game; returns the resulting `state`, `impulse_seat`, `game_ended`, `legal_moves` and, for Tak, the position as `tps` |
 
 ## Agent and archive helpers
 
@@ -320,8 +320,8 @@ not count as the player looking at the game (no effect on "your turn" mail). The
 subscribed before it sends `joined`, so a client that waits for `joined` misses no call message. The first message is
 `{"type":"joined","data":{role,seat,color,status,connected[]}}`; afterwards:
 
-* `{"type":"move","data":{seq, seat, color, notation, from, to, action, piece, count, path, drops, aim, turn_seat, game_ended, winner_seat, end_reason, status, board_state, state, auto?, auto_play?, locked?, turn_deadline?, server_time?}}`
-* `{"type":"state","data":{reason, removed?, status, turn_seat, move_seq, winner_seat, end_reason, seats[], board_state, state, …}}`
+* `{"type":"move","data":{seq, seat, color, notation, from, to, action, piece, count, path, drops, aim, impulse_seat, game_ended, winner_seat, end_reason, status, board_state, state, auto?, auto_play?, locked?, impulse_deadline?, server_time?}}`
+* `{"type":"state","data":{reason, removed?, status, impulse_seat, move_seq, winner_seat, end_reason, seats[], board_state, state, …}}`
   — sent when something other than a move changed the game (`reason` is
   `join`, `leave`, `seat`, `cult`, `start`, `undo`, `resign`, `timeout`, `draw-offer`, `draw-declined`,
   or `draw-cancelled`, `draw-agreed`; an `undo` carries `removed`). State events

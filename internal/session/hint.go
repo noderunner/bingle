@@ -24,10 +24,10 @@ var ErrHintNotAllowed = errors.New("session: hints are only available against bo
 
 // Hint is a bot's suggestion for a position.
 type Hint struct {
-	Notation string
-	Steps    []state.Step
-	TurnSeat int
-	Bot      string
+	Notation    string
+	Steps       []state.Step
+	ImpulseSeat int
+	Bot         string
 	// WinRate is the bot's estimate of the side to move winning with the
 	// suggested move (0 when the bot does not estimate); Alternatives are
 	// the best few moves with their estimates.
@@ -112,7 +112,7 @@ func (m *Manager) Hint(ctx context.Context, roomCode, name string, atSeq *int, n
 	if err != nil {
 		return Hint{}, err
 	}
-	if sim.GameEnded || sim.TurnSeat == nil || len(sim.Legal) == 0 {
+	if sim.GameEnded || sim.ImpulseSeat == nil || len(sim.Legal) == 0 {
 		return Hint{}, fmt.Errorf("%w: there is no move to suggest here", ErrGameNotActive)
 	}
 	compiled, err := m.compiledFor(game)
@@ -135,7 +135,7 @@ func (m *Manager) Hint(ctx context.Context, roomCode, name string, atSeq *int, n
 		legal[i] = lm.Move
 	}
 	// A hint follows the game's strategy guide like a computer player does.
-	legal = state.GuidedMoves(compiled, bs, *sim.TurnSeat, legal)
+	legal = state.GuidedMoves(compiled, bs, *sim.ImpulseSeat, legal)
 	// A hint is a second or so of CPU; bound how many run at once so a
 	// burst of requests queues instead of starving everything else.
 	queued := time.Now()
@@ -152,9 +152,9 @@ func (m *Manager) Hint(ctx context.Context, roomCode, name string, atSeq *int, n
 	}
 
 	var mv state.Move
-	h := Hint{TurnSeat: *sim.TurnSeat, Bot: botID}
+	h := Hint{ImpulseSeat: *sim.ImpulseSeat, Bot: botID}
 	if ev, ok := bot.(bots.Evaluator); ok {
-		e, err := ev.Evaluate(ctx, compiled, bs, *sim.TurnSeat, legal)
+		e, err := ev.Evaluate(ctx, compiled, bs, *sim.ImpulseSeat, legal)
 		if err != nil {
 			e.Move = legal[0]
 			e.WinRate = 0
@@ -168,7 +168,7 @@ func (m *Manager) Hint(ctx context.Context, roomCode, name string, atSeq *int, n
 	} else {
 		var err error
 		searched := time.Now()
-		mv, err = bot.Choose(ctx, compiled, bs, *sim.TurnSeat, legal)
+		mv, err = bot.Choose(ctx, compiled, bs, *sim.ImpulseSeat, legal)
 		m.mx.BotSearch(bot.ID(), gameFamily(compiled), time.Since(searched))
 		if err != nil {
 			mv = legal[0]

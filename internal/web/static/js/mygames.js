@@ -44,10 +44,10 @@ export async function loadRows() {
 }
 
 /** True when it is this browser's player's turn in the game. */
-export function yourTurn(r) {
+export function yourImpulse(r) {
 	if (!r.info || r.info.status !== "active") return false;
 	const me = r.info.seats.find((s) => s.name && s.name.toLowerCase() === r.g.name.toLowerCase());
-	return !!me && r.info.turn_seat === me.seat;
+	return !!me && r.info.impulse_seat === me.seat;
 }
 
 export const isFinished = (r) => !!r.info && r.info.status === "finished";
@@ -65,7 +65,7 @@ function openSeatsText(n) {
 
 /** Games where it is your turn float to the top, then the newest. */
 export function sortRows(rows) {
-	return [...rows].sort((a, b) => Number(yourTurn(b)) - Number(yourTurn(a)) || b.g.ts - a.g.ts);
+	return [...rows].sort((a, b) => Number(yourImpulse(b)) - Number(yourImpulse(a)) || b.g.ts - a.g.ts);
 }
 
 /**
@@ -118,7 +118,7 @@ export function gameRow(r, defs, onForget) {
 		meta.push(others.length ? `vs ${others.join(", ")}` : "waiting for an opponent");
 		meta.push(`move ${r.info.move_seq}`);
 		if (r.info.rated) badges.push(h("span", { class: "badge rated" }, "Rated"));
-		if (yourTurn(r)) badges.push(h("span", { class: "badge turn" }, "Your turn"));
+		if (yourImpulse(r)) badges.push(h("span", { class: "badge turn" }, "Your turn"));
 		else if (r.info.status === "finished") badges.push(h("span", { class: "badge done" }, "Finished"));
 		else if (r.info.status === "waiting") badges.push(h("span", { class: "badge waiting" }, r.info.lobby ? "In the lobby" : "Waiting"));
 		else badges.push(h("span", { class: "badge" }, "Their turn"));

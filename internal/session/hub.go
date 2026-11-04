@@ -19,38 +19,38 @@ type Event struct {
 // (docs/history/plan.md section 6.9). It mirrors
 // REST's POST .../moves response shape rather than the raw (untagged)
 // MoveOutcome: BoardState is json.RawMessage so it's sent as a nested JSON
-// object, not double-encoded as an escaped string, and TurnSeat is nullable
+// object, not double-encoded as an escaped string, and ImpulseSeat is nullable
 // (nil when the move ended the game), matching the convention REST's
 // handleMakeMove already uses for the same reason.
 type moveEventData struct {
-	Seq        int      `json:"seq"`
-	Seat       int      `json:"seat"`
-	Color      string   `json:"color"`
-	From       string   `json:"from"`
-	To         string   `json:"to"`
-	Captured   *string  `json:"captured"`
-	Action     string   `json:"action,omitempty"`
-	Piece      string   `json:"piece,omitempty"`
-	Count      int      `json:"count,omitempty"`
-	Path       []string `json:"path,omitempty"`
-	Drops      []int    `json:"drops,omitempty"`
-	Aim        string   `json:"aim,omitempty"`
-	Notation   string   `json:"notation,omitempty"`
-	TurnSeat   *int     `json:"turn_seat"`
-	GameEnded  bool     `json:"game_ended"`
-	WinnerSeat *int     `json:"winner_seat"`
-	EndReason  string   `json:"end_reason,omitempty"`
-	EndDetail  string   `json:"end_detail,omitempty"`
-	Status     string   `json:"status"`
+	Seq         int      `json:"seq"`
+	Seat        int      `json:"seat"`
+	Color       string   `json:"color"`
+	From        string   `json:"from"`
+	To          string   `json:"to"`
+	Captured    *string  `json:"captured"`
+	Action      string   `json:"action,omitempty"`
+	Piece       string   `json:"piece,omitempty"`
+	Count       int      `json:"count,omitempty"`
+	Path        []string `json:"path,omitempty"`
+	Drops       []int    `json:"drops,omitempty"`
+	Aim         string   `json:"aim,omitempty"`
+	Notation    string   `json:"notation,omitempty"`
+	ImpulseSeat *int     `json:"impulse_seat"`
+	GameEnded   bool     `json:"game_ended"`
+	WinnerSeat  *int     `json:"winner_seat"`
+	EndReason   string   `json:"end_reason,omitempty"`
+	EndDetail   string   `json:"end_detail,omitempty"`
+	Status      string   `json:"status"`
 	// BoardState is the v1 flat top-of-stack view; State is the full
 	// position document (stacks, reserves, ply).
 	BoardState json.RawMessage `json:"board_state"`
 	State      json.RawMessage `json:"state"`
 
-	// TurnDeadline is when the next player runs out of time (RFC 3339), and
+	// ImpulseDeadline is when the next player runs out of time (RFC 3339), and
 	// ServerTime the server's clock, for timed games.
-	TurnDeadline string `json:"turn_deadline,omitempty"`
-	ServerTime   string `json:"server_time,omitempty"`
+	ImpulseDeadline string `json:"impulse_deadline,omitempty"`
+	ServerTime      string `json:"server_time,omitempty"`
 	// Clock is the game clock after the move, for a game played with one.
 	Clock *ClockSnapshot `json:"clock,omitempty"`
 
@@ -68,27 +68,27 @@ type moveEventData struct {
 // when something other than a move changed the game — a player took a seat
 // ("join"), a move was taken back ("undo") or a player resigned ("resign").
 type stateEventData struct {
-	Reason     string          `json:"reason"`
-	Removed    []int           `json:"removed,omitempty"` // undo: sequence numbers taken back
-	Status     string          `json:"status"`
-	TurnSeat   *int            `json:"turn_seat"`
-	MoveSeq    int             `json:"move_seq"`
-	WinnerSeat *int            `json:"winner_seat"`
-	EndReason  string          `json:"end_reason,omitempty"`
-	EndDetail  string          `json:"end_detail,omitempty"`
-	Seats      []seatEventData `json:"seats"`
-	BoardState json.RawMessage `json:"board_state"`
-	State      json.RawMessage `json:"state"`
+	Reason      string          `json:"reason"`
+	Removed     []int           `json:"removed,omitempty"` // undo: sequence numbers taken back
+	Status      string          `json:"status"`
+	ImpulseSeat *int            `json:"impulse_seat"`
+	MoveSeq     int             `json:"move_seq"`
+	WinnerSeat  *int            `json:"winner_seat"`
+	EndReason   string          `json:"end_reason,omitempty"`
+	EndDetail   string          `json:"end_detail,omitempty"`
+	Seats       []seatEventData `json:"seats"`
+	BoardState  json.RawMessage `json:"board_state"`
+	State       json.RawMessage `json:"state"`
 
 	// Lobby: the game waits for its host to start it; HostSeat is the host's
 	// seat.
 	Lobby    bool `json:"lobby,omitempty"`
 	HostSeat int  `json:"host_seat,omitempty"`
 
-	MoveTimeLimit int            `json:"move_time_seconds,omitempty"`
-	TurnDeadline  string         `json:"turn_deadline,omitempty"`
-	ServerTime    string         `json:"server_time,omitempty"`
-	Clock         *ClockSnapshot `json:"clock,omitempty"`
+	MoveTimeLimit   int            `json:"move_time_seconds,omitempty"`
+	ImpulseDeadline string         `json:"impulse_deadline,omitempty"`
+	ServerTime      string         `json:"server_time,omitempty"`
+	Clock           *ClockSnapshot `json:"clock,omitempty"`
 
 	// DrawOfferSeat is the seat currently offering a draw (null if none).
 	DrawOfferSeat *int `json:"draw_offer_seat"`
@@ -115,7 +115,7 @@ func stateEventFrom(snap StateSnapshot, reason string, removed []int) stateEvent
 		Reason:        reason,
 		Removed:       removed,
 		Status:        snap.Status,
-		TurnSeat:      snap.TurnSeat,
+		ImpulseSeat:   snap.ImpulseSeat,
 		MoveSeq:       snap.MoveSeq,
 		WinnerSeat:    snap.WinnerSeat,
 		EndReason:     snap.EndReason,
@@ -130,8 +130,8 @@ func stateEventFrom(snap StateSnapshot, reason string, removed []int) stateEvent
 		ServerTime:    snap.ServerTime.Format(time.RFC3339),
 		DrawOfferSeat: snap.DrawOfferSeat,
 	}
-	if snap.TurnDeadline != nil {
-		ev.TurnDeadline = snap.TurnDeadline.Format(time.RFC3339)
+	if snap.ImpulseDeadline != nil {
+		ev.ImpulseDeadline = snap.ImpulseDeadline.Format(time.RFC3339)
 	}
 	return ev
 }

@@ -63,11 +63,11 @@ type restState struct {
 		Reserves map[string]map[string]int                  `json:"reserves"`
 		Ply      int                                        `json:"ply"`
 	} `json:"state"`
-	TurnSeat   *int   `json:"turn_seat"`
-	Status     string `json:"status"`
-	MoveSeq    int    `json:"move_seq"`
-	WinnerSeat *int   `json:"winner_seat"`
-	EndReason  string `json:"end_reason"`
+	ImpulseSeat *int   `json:"impulse_seat"`
+	Status      string `json:"status"`
+	MoveSeq     int    `json:"move_seq"`
+	WinnerSeat  *int   `json:"winner_seat"`
+	EndReason   string `json:"end_reason"`
 }
 
 func newTakRoom(t *testing.T, baseURL, def, name string) string {
@@ -354,17 +354,17 @@ func TestSimulateDoesNotChangeGame(t *testing.T) {
 	joinRoom(t, baseURL, room, "Bob")
 
 	var sim struct {
-		Applied   []string                    `json:"applied"`
-		GameEnded bool                        `json:"game_ended"`
-		TurnSeat  *int                        `json:"turn_seat"`
-		Legal     []struct{ Notation string } `json:"legal_moves"`
+		Applied     []string                    `json:"applied"`
+		GameEnded   bool                        `json:"game_ended"`
+		ImpulseSeat *int                        `json:"impulse_seat"`
+		Legal       []struct{ Notation string } `json:"legal_moves"`
 	}
 	code := doJSON(t, "POST", baseURL+"/api/games/"+room+"/simulate",
 		map[string]any{"moves": []string{"a1", "c3", "b2"}}, &sim)
 	if code != 200 {
 		t.Fatalf("simulate: %d", code)
 	}
-	if len(sim.Applied) != 3 || sim.GameEnded || sim.TurnSeat == nil || *sim.TurnSeat != 2 || len(sim.Legal) == 0 {
+	if len(sim.Applied) != 3 || sim.GameEnded || sim.ImpulseSeat == nil || *sim.ImpulseSeat != 2 || len(sim.Legal) == 0 {
 		t.Errorf("simulation = %+v", sim)
 	}
 
@@ -405,8 +405,8 @@ func TestBotOpponentPlaysBack(t *testing.T) {
 		map[string]any{"player_name": "Alice", "notation": "c3"}, &out); code != 200 {
 		t.Fatalf("move: %d", code)
 	}
-	if len(out.BotMoves) != 1 || out.State.MoveSeq != 2 || out.State.TurnSeat == nil || *out.State.TurnSeat != 1 {
-		t.Errorf("after move vs bot: bot_moves=%d move_seq=%d turn=%v", len(out.BotMoves), out.State.MoveSeq, out.State.TurnSeat)
+	if len(out.BotMoves) != 1 || out.State.MoveSeq != 2 || out.State.ImpulseSeat == nil || *out.State.ImpulseSeat != 1 {
+		t.Errorf("after move vs bot: bot_moves=%d move_seq=%d turn=%v", len(out.BotMoves), out.State.MoveSeq, out.State.ImpulseSeat)
 	}
 
 	// The bot's reply passed the turn, so Alice's move stands.
@@ -441,24 +441,24 @@ func TestObserveForAgents(t *testing.T) {
 	moveNotation(t, baseURL, room, "Alice", "a1")
 
 	var obs struct {
-		Seat       int      `json:"seat"`
-		YourTurn   bool     `json:"your_turn"`
-		LegalMoves []string `json:"legal_moves"`
-		BoardText  string   `json:"board_text"`
-		TPS        string   `json:"tps"`
-		Reward     float64  `json:"reward"`
+		Seat        int      `json:"seat"`
+		YourImpulse bool     `json:"your_impulse"`
+		LegalMoves  []string `json:"legal_moves"`
+		BoardText   string   `json:"board_text"`
+		TPS         string   `json:"tps"`
+		Reward      float64  `json:"reward"`
 	}
 	doJSON(t, "GET", baseURL+"/api/games/"+room+"/observe?player_name=Bob", nil, &obs)
-	if obs.Seat != 2 || !obs.YourTurn || len(obs.LegalMoves) != 24 {
-		t.Errorf("Bob's observation = seat %d turn %v legal %d", obs.Seat, obs.YourTurn, len(obs.LegalMoves))
+	if obs.Seat != 2 || !obs.YourImpulse || len(obs.LegalMoves) != 24 {
+		t.Errorf("Bob's observation = seat %d turn %v legal %d", obs.Seat, obs.YourImpulse, len(obs.LegalMoves))
 	}
 	if !strings.Contains(obs.BoardText, "bF") || obs.TPS == "" {
 		t.Errorf("board text/TPS missing: %q %q", obs.BoardText, obs.TPS)
 	}
 
 	doJSON(t, "GET", baseURL+"/api/games/"+room+"/observe?player_name=Alice", nil, &obs)
-	if obs.YourTurn || len(obs.LegalMoves) != 0 {
-		t.Errorf("Alice's observation = turn %v legal %d, want waiting", obs.YourTurn, len(obs.LegalMoves))
+	if obs.YourImpulse || len(obs.LegalMoves) != 0 {
+		t.Errorf("Alice's observation = turn %v legal %d, want waiting", obs.YourImpulse, len(obs.LegalMoves))
 	}
 }
 
@@ -508,13 +508,13 @@ func TestTimedGameOverREST(t *testing.T) {
 	var game struct {
 		Status          string `json:"status"`
 		MoveTimeSeconds int    `json:"move_time_seconds"`
-		TurnDeadline    string `json:"turn_deadline"`
+		ImpulseDeadline string `json:"impulse_deadline"`
 		ServerTime      string `json:"server_time"`
 		EndReason       string `json:"end_reason"`
 		WinnerSeat      *int   `json:"winner_seat"`
 	}
 	doJSON(t, "GET", baseURL+"/api/games/"+created.RoomCode, nil, &game)
-	if game.Status != "active" || game.MoveTimeSeconds != 2 || game.TurnDeadline == "" || game.ServerTime == "" {
+	if game.Status != "active" || game.MoveTimeSeconds != 2 || game.ImpulseDeadline == "" || game.ServerTime == "" {
 		t.Fatalf("timed game = %+v", game)
 	}
 
@@ -628,7 +628,7 @@ func TestHumansCannotTakeABotsSeatByName(t *testing.T) {
 	}
 }
 
-func TestHistoricalTurnSeatAccountsForPasses(t *testing.T) {
+func TestHistoricalImpulseSeatAccountsForPasses(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	names := map[int]string{1: "Alice", 2: "Bob"}
 
@@ -665,8 +665,8 @@ func TestHistoricalTurnSeatAccountsForPasses(t *testing.T) {
 		}
 		var st restState
 		doJSON(t, "GET", baseURL+"/api/games/"+room+"/state?at_seq="+strconv.Itoa(passedAt), nil, &st)
-		if st.TurnSeat == nil || *st.TurnSeat != seats[passedAt-1] {
-			t.Errorf("turn seat after move %d = %v, want %d (the opponent had to pass)", passedAt, st.TurnSeat, seats[passedAt-1])
+		if st.ImpulseSeat == nil || *st.ImpulseSeat != seats[passedAt-1] {
+			t.Errorf("turn seat after move %d = %v, want %d (the opponent had to pass)", passedAt, st.ImpulseSeat, seats[passedAt-1])
 		}
 		return
 	}

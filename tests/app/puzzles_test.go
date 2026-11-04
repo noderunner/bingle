@@ -10,15 +10,15 @@ import (
 )
 
 type puzzleResp struct {
-	ID         string          `json:"id"`
-	GameDefID  string          `json:"game_def_id"`
-	Title      string          `json:"title"`
-	ToMove     int             `json:"to_move"`
-	WinIn      int             `json:"win_in"`
-	TPS        string          `json:"tps"`
-	State      json.RawMessage `json:"state"`
-	FirstMoves []string        `json:"first_moves"`
-	Solution   []string        `json:"solution"`
+	ID          string          `json:"id"`
+	GameDefID   string          `json:"game_def_id"`
+	Title       string          `json:"title"`
+	ImpulseSeat int             `json:"impulse_seat"`
+	WinIn       int             `json:"win_in"`
+	TPS         string          `json:"tps"`
+	State       json.RawMessage `json:"state"`
+	FirstMoves  []string        `json:"first_moves"`
+	Solution    []string        `json:"solution"`
 }
 
 func TestPuzzlesRESTListsAndHidesSolutions(t *testing.T) {
@@ -34,7 +34,7 @@ func TestPuzzlesRESTListsAndHidesSolutions(t *testing.T) {
 		if len(p.Solution) != 0 || len(p.FirstMoves) != 0 {
 			t.Fatalf("%s: list leaked the solution", p.ID)
 		}
-		if len(p.State) == 0 || p.ToMove == 0 || p.WinIn == 0 {
+		if len(p.State) == 0 || p.ImpulseSeat == 0 || p.WinIn == 0 {
 			t.Fatalf("%s: incomplete %+v", p.ID, p)
 		}
 	}
@@ -76,7 +76,7 @@ func TestPuzzleCanBeSolvedInARoom(t *testing.T) {
 	}
 	code := doJSON(t, "POST", baseURL+"/api/games", map[string]any{
 		"game_def_id": p.GameDefID, "player_name": "Alice", "opponent": "tactical",
-		"seat": p.ToMove, "start_state": p.State, "start_seat": p.ToMove,
+		"seat": p.ImpulseSeat, "start_state": p.State, "start_seat": p.ImpulseSeat,
 	}, &created)
 	if code != 200 {
 		t.Fatalf("create from puzzle: %d", code)
@@ -88,8 +88,8 @@ func TestPuzzleCanBeSolvedInARoom(t *testing.T) {
 	}
 	var st restState
 	doJSON(t, "GET", baseURL+"/api/games/"+created.RoomCode+"/state", nil, &st)
-	if st.Status != "finished" || st.WinnerSeat == nil || *st.WinnerSeat != p.ToMove {
-		t.Errorf("after the solving move: status %q winner %v, want seat %d", st.Status, st.WinnerSeat, p.ToMove)
+	if st.Status != "finished" || st.WinnerSeat == nil || *st.WinnerSeat != p.ImpulseSeat {
+		t.Errorf("after the solving move: status %q winner %v, want seat %d", st.Status, st.WinnerSeat, p.ImpulseSeat)
 	}
 }
 
@@ -119,7 +119,7 @@ func TestMCP_PuzzlesAsEnvironments(t *testing.T) {
 	}
 	var obs envObs
 	decodeToolResult(t, res, &obs)
-	if !obs.YourTurn || obs.AgentSeat != p.ToMove || obs.Done {
+	if !obs.YourImpulse || obs.AgentSeat != p.ImpulseSeat || obs.Done {
 		t.Fatalf("puzzle observation = %+v", obs)
 	}
 	isFirst := false
@@ -194,7 +194,7 @@ func TestWebGame_FailedPuzzleOffersTryAgainFromTheSamePosition(t *testing.T) {
 	}
 	doJSON(t, "POST", baseURL+"/api/games", map[string]any{
 		"game_def_id": p.GameDefID, "player_name": "Alice", "opponent": "tactical",
-		"seat": p.ToMove, "start_state": p.State, "start_seat": p.ToMove,
+		"seat": p.ImpulseSeat, "start_state": p.State, "start_seat": p.ImpulseSeat,
 	}, &created)
 	// Give up: resign.
 	doJSON(t, "POST", baseURL+"/api/games/"+created.RoomCode+"/resign", map[string]any{"player_name": "Alice"}, nil)

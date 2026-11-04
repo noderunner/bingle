@@ -169,15 +169,15 @@ func (h *handlers) handleRemoveSeat(w http.ResponseWriter, r *http.Request) {
 
 // gameStatusResponse is the small answer of the lobby actions.
 type gameStatusResponse struct {
-	Status   string `json:"status"`
-	Lobby    bool   `json:"lobby"`
-	HostSeat int    `json:"host_seat,omitempty"`
-	MoveSeq  int    `json:"move_seq"`
-	TurnSeat *int   `json:"turn_seat"`
+	Status      string `json:"status"`
+	Lobby       bool   `json:"lobby"`
+	HostSeat    int    `json:"host_seat,omitempty"`
+	MoveSeq     int    `json:"move_seq"`
+	ImpulseSeat *int   `json:"impulse_seat"`
 }
 
 func statusFromSnapshot(snap session.StateSnapshot) gameStatusResponse {
-	return gameStatusResponse{Status: snap.Status, Lobby: snap.Lobby, HostSeat: snap.HostSeat, MoveSeq: snap.MoveSeq, TurnSeat: snap.TurnSeat}
+	return gameStatusResponse{Status: snap.Status, Lobby: snap.Lobby, HostSeat: snap.HostSeat, MoveSeq: snap.MoveSeq, ImpulseSeat: snap.ImpulseSeat}
 }
 
 // --- reactions ------------------------------------------------------------------

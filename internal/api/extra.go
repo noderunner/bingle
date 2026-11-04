@@ -269,14 +269,14 @@ func (h *handlers) handleResign(w http.ResponseWriter, r *http.Request) {
 
 func stateResponseFromSnapshot(s session.StateSnapshot) getGameStateResponse {
 	return getGameStateResponse{
-		BoardState: json.RawMessage(s.BoardState),
-		State:      json.RawMessage(s.State),
-		TurnSeat:   s.TurnSeat,
-		Status:     s.Status,
-		MoveSeq:    s.MoveSeq,
-		WinnerSeat: s.WinnerSeat,
-		EndReason:  s.EndReason,
-		EndDetail:  s.EndDetail,
+		BoardState:  json.RawMessage(s.BoardState),
+		State:       json.RawMessage(s.State),
+		ImpulseSeat: s.ImpulseSeat,
+		Status:      s.Status,
+		MoveSeq:     s.MoveSeq,
+		WinnerSeat:  s.WinnerSeat,
+		EndReason:   s.EndReason,
+		EndDetail:   s.EndDetail,
 
 		DrawOfferSeat: s.DrawOfferSeat,
 	}
@@ -343,15 +343,15 @@ type simulateRequest struct {
 
 // simulateResponse is POST /games/{code}/simulate's body.
 type simulateResponse struct {
-	BoardState json.RawMessage `json:"board_state"`
-	State      json.RawMessage `json:"state"`
-	TurnSeat   *int            `json:"turn_seat"`
-	GameEnded  bool            `json:"game_ended"`
-	WinnerSeat *int            `json:"winner_seat"`
-	EndReason  string          `json:"end_reason,omitempty"`
-	Applied    []string        `json:"applied"`
-	Legal      []legalMoveDTO  `json:"legal_moves"`
-	TPS        string          `json:"tps,omitempty"`
+	BoardState  json.RawMessage `json:"board_state"`
+	State       json.RawMessage `json:"state"`
+	ImpulseSeat *int            `json:"impulse_seat"`
+	GameEnded   bool            `json:"game_ended"`
+	WinnerSeat  *int            `json:"winner_seat"`
+	EndReason   string          `json:"end_reason,omitempty"`
+	Applied     []string        `json:"applied"`
+	Legal       []legalMoveDTO  `json:"legal_moves"`
+	TPS         string          `json:"tps,omitempty"`
 }
 
 // handleSimulate implements POST /games/{code}/simulate: apply moves to a
@@ -376,15 +376,15 @@ func (h *handlers) handleSimulate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, simulateResponse{
-		BoardState: json.RawMessage(sim.BoardState),
-		State:      json.RawMessage(sim.State),
-		TurnSeat:   sim.TurnSeat,
-		GameEnded:  sim.GameEnded,
-		WinnerSeat: sim.WinnerSeat,
-		EndReason:  sim.EndReason,
-		Applied:    sim.Applied,
-		Legal:      legalMoveDTOs(sim.Legal, true),
-		TPS:        sim.TPS,
+		BoardState:  json.RawMessage(sim.BoardState),
+		State:       json.RawMessage(sim.State),
+		ImpulseSeat: sim.ImpulseSeat,
+		GameEnded:   sim.GameEnded,
+		WinnerSeat:  sim.WinnerSeat,
+		EndReason:   sim.EndReason,
+		Applied:     sim.Applied,
+		Legal:       legalMoveDTOs(sim.Legal, true),
+		TPS:         sim.TPS,
 	})
 }
 
@@ -412,25 +412,25 @@ func (h *handlers) handleExport(w http.ResponseWriter, r *http.Request) {
 
 // observationResponse is GET /games/{code}/observe's body.
 type observationResponse struct {
-	RoomCode   string          `json:"room_code"`
-	GameDefID  string          `json:"game_def_id"`
-	Status     string          `json:"status"`
-	Seat       int             `json:"seat"`
-	Color      string          `json:"color"`
-	YourTurn   bool            `json:"your_turn"`
-	TurnSeat   *int            `json:"turn_seat"`
-	MoveSeq    int             `json:"move_seq"`
-	Ply        int             `json:"ply"`
-	BoardText  string          `json:"board_text"`
-	TPS        string          `json:"tps,omitempty"`
-	State      json.RawMessage `json:"state"`
-	LegalMoves []string        `json:"legal_moves"`
-	LastMove   *wire.Move      `json:"last_move"`
-	Done       bool            `json:"done"`
-	WinnerSeat *int            `json:"winner_seat"`
-	EndReason  string          `json:"end_reason,omitempty"`
-	Result     string          `json:"result,omitempty"`
-	Reward     float64         `json:"reward"`
+	RoomCode    string          `json:"room_code"`
+	GameDefID   string          `json:"game_def_id"`
+	Status      string          `json:"status"`
+	Seat        int             `json:"seat"`
+	Color       string          `json:"color"`
+	YourImpulse bool            `json:"your_impulse"`
+	ImpulseSeat *int            `json:"impulse_seat"`
+	MoveSeq     int             `json:"move_seq"`
+	Ply         int             `json:"ply"`
+	BoardText   string          `json:"board_text"`
+	TPS         string          `json:"tps,omitempty"`
+	State       json.RawMessage `json:"state"`
+	LegalMoves  []string        `json:"legal_moves"`
+	LastMove    *wire.Move      `json:"last_move"`
+	Done        bool            `json:"done"`
+	WinnerSeat  *int            `json:"winner_seat"`
+	EndReason   string          `json:"end_reason,omitempty"`
+	Result      string          `json:"result,omitempty"`
+	Reward      float64         `json:"reward"`
 
 	MoveTimeSeconds int  `json:"move_time_seconds,omitempty"`
 	SecondsLeft     *int `json:"seconds_left,omitempty"`
@@ -439,7 +439,7 @@ type observationResponse struct {
 func observationToResponse(o session.Observation) observationResponse {
 	resp := observationResponse{
 		RoomCode: o.RoomCode, GameDefID: o.GameDefID, Status: o.Status, Seat: o.Seat, Color: o.Color,
-		YourTurn: o.YourTurn, TurnSeat: o.TurnSeat, MoveSeq: o.MoveSeq, Ply: o.Ply,
+		YourImpulse: o.YourImpulse, ImpulseSeat: o.ImpulseSeat, MoveSeq: o.MoveSeq, Ply: o.Ply,
 		BoardText: o.BoardText, TPS: o.TPS, State: json.RawMessage(o.State), LegalMoves: o.LegalMoves,
 		Done: o.Done, WinnerSeat: o.WinnerSeat, EndReason: o.EndReason, Result: o.Result, Reward: o.Reward,
 		MoveTimeSeconds: o.MoveTimeLimit, SecondsLeft: o.SecondsLeft,
@@ -476,10 +476,10 @@ type hintRequest struct {
 
 // hintResponse is POST /games/{code}/hint's body.
 type hintResponse struct {
-	Notation string       `json:"notation"`
-	Steps    []state.Step `json:"steps,omitempty"`
-	TurnSeat int          `json:"turn_seat"`
-	Bot      string       `json:"bot"`
+	Notation    string       `json:"notation"`
+	Steps       []state.Step `json:"steps,omitempty"`
+	ImpulseSeat int          `json:"impulse_seat"`
+	Bot         string       `json:"bot"`
 	// WinRate is the bot's estimate (0..1) of the side to move winning
 	// with this move, present when the bot estimates; Alternatives lists
 	// the best few moves with their estimates.
@@ -515,7 +515,7 @@ func (h *handlers) handleHint(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err)
 		return
 	}
-	resp := hintResponse{Notation: hint.Notation, Steps: hint.Steps, TurnSeat: hint.TurnSeat, Bot: hint.Bot}
+	resp := hintResponse{Notation: hint.Notation, Steps: hint.Steps, ImpulseSeat: hint.ImpulseSeat, Bot: hint.Bot}
 	if hint.Estimated {
 		wr := hint.WinRate
 		resp.WinRate = &wr

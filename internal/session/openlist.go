@@ -36,9 +36,9 @@ type OpenGame struct {
 	Seats     int `json:"seats"`
 	OpenSeats int `json:"open_seats"`
 	// Players are the seats that are taken, people and bots.
-	Players  []SeatInfo `json:"players"`
-	TurnSeat *int       `json:"turn_seat"`
-	MoveSeq  int        `json:"move_seq"`
+	Players     []SeatInfo `json:"players"`
+	ImpulseSeat *int       `json:"impulse_seat"`
+	MoveSeq     int        `json:"move_seq"`
 	// UpdatedAt is when the game last moved on (a database timestamp).
 	UpdatedAt string `json:"updated_at"`
 }
@@ -67,18 +67,18 @@ func (m *Manager) ListOpenGames(ctx context.Context, limit int) ([]OpenGame, err
 		}
 		seats := len(compiled.Definition.Seats)
 		entry := OpenGame{
-			RoomCode:  g.RoomCode,
-			GameDefID: g.GameDefID,
-			Name:      compiled.Definition.Title(),
-			Family:    familyOf(compiled.Definition.Family, g.GameDefID),
-			Status:    g.Status,
-			Lobby:     g.Lobby,
-			Rated:     g.Rated,
-			Seats:     seats,
-			OpenSeats: seats - len(players),
-			TurnSeat:  g.TurnSeat,
-			MoveSeq:   g.MoveSeq,
-			UpdatedAt: g.UpdatedAt,
+			RoomCode:    g.RoomCode,
+			GameDefID:   g.GameDefID,
+			Name:        compiled.Definition.Title(),
+			Family:      familyOf(compiled.Definition.Family, g.GameDefID),
+			Status:      g.Status,
+			Lobby:       g.Lobby,
+			Rated:       g.Rated,
+			Seats:       seats,
+			OpenSeats:   seats - len(players),
+			ImpulseSeat: g.ImpulseSeat,
+			MoveSeq:     g.MoveSeq,
+			UpdatedAt:   g.UpdatedAt,
 		}
 		if entry.OpenSeats < 0 {
 			entry.OpenSeats = 0

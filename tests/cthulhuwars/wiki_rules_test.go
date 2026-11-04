@@ -24,10 +24,10 @@ func gameID(t testing.TB, id string) *catalog.CompiledGame {
 	return g
 }
 
-// toMoveSeat is whose decision the position waits for.
-func toMoveSeat(t testing.TB, g *catalog.CompiledGame, st *state.BoardState) int {
+// impulseSeat is whose decision the position waits for.
+func impulseSeat(t testing.TB, g *catalog.CompiledGame, st *state.BoardState) int {
 	t.Helper()
-	seat, err := state.TurnAfter(g, st, 0)
+	seat, err := state.ImpulseAfter(g, st, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -225,7 +225,7 @@ func TestTwoKillsMeetOneRequirementThreeMeetBoth(t *testing.T) {
 			if d.Stage != "prompt" && d.Stage != "assign" {
 				break
 			}
-			seat := toMoveSeat(t, g, st)
+			seat := impulseSeat(t, g, st)
 			legal := notations(g, st, seat)
 			if len(legal) == 0 {
 				break
@@ -583,7 +583,7 @@ func TestRegenerateLetsAStarSpawnTakeTwoResults(t *testing.T) {
 	st = play(t, g, st, gc, "assign:starspawn")
 	// Nothing else was hurt: the Deep One stays, the Star Spawn retreats.
 	for guard := 0; guard < 4 && data(t, st).Phase == "action" && data(t, st).Bat != nil; guard++ {
-		seat := toMoveSeat(t, g, st)
+		seat := impulseSeat(t, g, st)
 		legal := notations(g, st, seat)
 		st = play(t, g, st, seat, legal[0])
 	}

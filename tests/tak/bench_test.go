@@ -24,7 +24,7 @@ func midGame(tb testing.TB, id string, n int, seed int64) (*state.BoardState, in
 		if res.GameEnded {
 			break
 		}
-		st, seat = res.NewState, res.NextTurnSeat
+		st, seat = res.NewState, res.NextImpulseSeat
 	}
 	return st, seat
 }
@@ -64,7 +64,7 @@ func BenchmarkRandomPlayout5x5(b *testing.B) {
 			if res.GameEnded {
 				break
 			}
-			st, seat = res.NewState, res.NextTurnSeat
+			st, seat = res.NewState, res.NextImpulseSeat
 		}
 	}
 	b.ReportMetric(float64(plies)/float64(b.N), "plies/game")

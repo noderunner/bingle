@@ -46,7 +46,7 @@ func playAll(t testing.TB, g *catalog.CompiledGame, moves ...string) *state.Move
 		if err != nil {
 			t.Fatalf("move %d %q: %v", i+1, text, err)
 		}
-		st, seat = res.NewState, res.NextTurnSeat
+		st, seat = res.NewState, res.NextImpulseSeat
 	}
 	return res
 }
@@ -166,7 +166,7 @@ func TestRandomPlayoutsAreConsistent(t *testing.T) {
 				if err != nil {
 					t.Fatalf("%s: legal move %q rejected: %v", id, text, err)
 				}
-				st, seat = res.NewState, res.NextTurnSeat
+				st, seat = res.NewState, res.NextImpulseSeat
 				if res.GameEnded {
 					break
 				}
@@ -235,7 +235,7 @@ func TestHexRandomGamesAlwaysHaveAWinner(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			st, seat = res.NewState, res.NextTurnSeat
+			st, seat = res.NewState, res.NextImpulseSeat
 			if res.GameEnded {
 				if res.WinnerSeat == nil {
 					t.Fatal("Hex cannot end in a draw")
@@ -445,7 +445,7 @@ func TestDraughtsRandomGamesTerminateConsistently(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			st, seat = res.NewState, res.NextTurnSeat
+			st, seat = res.NewState, res.NextImpulseSeat
 			if res.GameEnded {
 				break
 			}
@@ -522,7 +522,7 @@ func TestBreakthroughRandomGamesHaveAWinner(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			st, seat = res.NewState, res.NextTurnSeat
+			st, seat = res.NewState, res.NextImpulseSeat
 			if res.GameEnded {
 				if res.WinnerSeat == nil {
 					t.Fatal("Breakthrough cannot be drawn")
@@ -606,7 +606,7 @@ func TestReversiRandomGamesFinish(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if !res.GameEnded && res.NextTurnSeat == seat {
+			if !res.GameEnded && res.NextImpulseSeat == seat {
 				// A pass: the opponent really had no move and the mover does.
 				passes++
 				opp, _ := g.Opponent(seat)
@@ -617,7 +617,7 @@ func TestReversiRandomGamesFinish(t *testing.T) {
 					t.Fatal("the turn stayed with a seat that cannot move, but the game did not end")
 				}
 			}
-			st, seat = res.NewState, res.NextTurnSeat
+			st, seat = res.NewState, res.NextImpulseSeat
 			if res.GameEnded {
 				break
 			}
@@ -822,7 +822,7 @@ func TestGoRandomGamesTerminateAndNotationRoundTrips(t *testing.T) {
 			if err != nil {
 				t.Fatalf("legal move %s rejected: %v", text, err)
 			}
-			st, seat = res.NewState, res.NextTurnSeat
+			st, seat = res.NewState, res.NextImpulseSeat
 			if res.GameEnded {
 				if res.EndDetail == "" {
 					t.Error("a scored game has no detail")
@@ -891,8 +891,8 @@ func TestPieRuleSwapOnTheSecondMoveOnly(t *testing.T) {
 		if top.Color != orig.Color {
 			t.Errorf("%s: the stone changed colour", id)
 		}
-		if sw.NextTurnSeat != 2 {
-			t.Errorf("%s: next seat = %d, want 2", id, sw.NextTurnSeat)
+		if sw.NextImpulseSeat != 2 {
+			t.Errorf("%s: next seat = %d, want 2", id, sw.NextImpulseSeat)
 		}
 
 		// And never again.

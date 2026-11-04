@@ -265,7 +265,7 @@ button.icon-only { display: inline-flex; align-items: center; justify-content: c
 	background: var(--surface); border: 1px solid var(--border); box-shadow: var(--shadow);
 }
 .status-bar .message { font-weight: 700; flex: 1; min-width: 12rem; }
-.status-bar.your-turn { border-color: var(--accent); background: var(--accent-soft); }
+.status-bar.your-impulse { border-color: var(--accent); background: var(--accent-soft); }
 .status-bar.over { border-color: var(--text); }
 .status-bar.history { border-color: var(--warn); }
 
@@ -280,7 +280,7 @@ button.icon-only { display: inline-flex; align-items: center; justify-content: c
 	display: flex; flex-direction: column; gap: 0.35rem; width: 100%; max-width: var(--board-max);
 	padding: 0.45rem 0.7rem; border-radius: 8px; background: var(--surface); border: 1px solid var(--border);
 }
-.seat-strip.to-move { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.seat-strip.on-impulse { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
 .seat-head { display: flex; align-items: center; gap: 0.5rem; min-width: 0; }
 .seat-strip .swatch {
 	width: 1.1rem; height: 1.1rem; border-radius: 4px; border: 2px solid var(--piece-white-stroke);
@@ -1630,7 +1630,7 @@ body.m-mode .options-window { top: 0; left: 0; right: 0; bottom: 0; width: auto;
 /* Move cards (Onitama) */
 .cards-panel { display: flex; flex-wrap: wrap; gap: 10px 18px; margin: 10px 0; align-items: flex-start; }
 .card-group-title { margin-bottom: 4px; }
-.card-group.to-move .card-group-title { font-weight: 700; color: var(--text); }
+.card-group.on-impulse .card-group-title { font-weight: 700; color: var(--text); }
 .card-row { display: flex; gap: 8px; }
 .move-card { display: inline-flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-2); font: inherit; color: inherit; }
 button.move-card { cursor: pointer; }
@@ -1669,7 +1669,7 @@ button.move-card { cursor: pointer; }
 .ct-top > .ct-center { flex: 1 1 24rem; }
 .ct-seat { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 8px 10px; min-width: 150px; }
 .ct-seat.me { border-color: var(--accent); }
-.ct-seat.to-move { box-shadow: 0 0 0 2px var(--accent-soft), 0 0 0 3px var(--accent); }
+.ct-seat.on-impulse { box-shadow: 0 0 0 2px var(--accent-soft), 0 0 0 3px var(--accent); }
 .ct-badge { font: 700 11px system-ui, sans-serif; background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px; padding: 0 6px; }
 .ct-badge.bonus { background: #f3dc8a; color: #3b2f05; }
 .ct-badge.team { background: var(--accent-soft); }

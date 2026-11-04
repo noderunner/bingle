@@ -199,7 +199,7 @@ function resolveIdentity() {
 /** Several seats are mine: `me` is the one to move (else the one I last was). */
 function syncMe() {
 	if (S.mine.length < 2 || !S.game) return;
-	const onMove = isActive() ? S.mine.find((m) => m.seat === S.game.turn_seat) : null;
+	const onMove = isActive() ? S.mine.find((m) => m.seat === S.game.impulse_seat) : null;
 	const cur = onMove || S.mine.find((m) => m.seat === S.me.seat) || S.mine[0];
 	S.me = { name: cur.name, seat: cur.seat };
 }
@@ -234,7 +234,7 @@ async function loadPosition() {
 	S.state = st.state;
 	S.moves = mv;
 	S.game.status = st.status;
-	S.game.turn_seat = st.turn_seat;
+	S.game.impulse_seat = st.impulse_seat;
 	S.game.move_seq = st.move_seq;
 	S.game.winner_seat = st.winner_seat;
 	S.game.end_reason = st.end_reason;
@@ -296,7 +296,7 @@ async function loadLegal() {
 	S.builder = new MoveBuilder([]);
 	S.preview = null;
 	S.legal = [];
-	if (isMyTurn()) {
+	if (isMyImpulse()) {
 		try {
 			const res = await api.legal(code);
 			S.legal = res.moves || [];
@@ -321,8 +321,8 @@ function noteServerTime(iso) {
 /** Milliseconds left on the current turn's clock, or null when untimed. */
 function msLeft() {
 	const g = S.game;
-	if (!g || g.status !== "active" || !g.turn_deadline) return null;
-	const deadline = Date.parse(g.turn_deadline);
+	if (!g || g.status !== "active" || !g.impulse_deadline) return null;
+	const deadline = Date.parse(g.impulse_deadline);
 	if (Number.isNaN(deadline)) return null;
 	return deadline - (Date.now() + S.skewMs);
 }
@@ -405,8 +405,8 @@ function isActive() {
 	return S.game && S.game.status === "active";
 }
 
-function isMyTurn() {
-	return isActive() && S.me.seat !== 0 && S.game.turn_seat === S.me.seat;
+function isMyImpulse() {
+	return isActive() && S.me.seat !== 0 && S.game.impulse_seat === S.me.seat;
 }
 
 function isLive() {
@@ -422,9 +422,9 @@ function actingSeat() {
 	if (tutorialLookingBack()) return 0;
 	if (inAnalysis()) {
 		const sim = S.analysis.sim;
-		return sim && !sim.game_ended && sim.turn_seat ? sim.turn_seat : 0;
+		return sim && !sim.game_ended && sim.impulse_seat ? sim.impulse_seat : 0;
 	}
-	return isLive() && isMyTurn() && !S.busy ? S.me.seat : 0;
+	return isLive() && isMyImpulse() && !S.busy ? S.me.seat : 0;
 }
 
 function activeBuilder() {
@@ -1027,7 +1027,7 @@ async function playFromHere() {
 	}
 	const dlg = h("dialog", { id: "from-here-dialog" });
 	dlg.append(h("h2", {}, "Play from this position"));
-	dlg.append(h("p", { class: "muted" }, `${seatLabel(a.sim.turn_seat)} moves first from here.`));
+	dlg.append(h("p", { class: "muted" }, `${seatLabel(a.sim.impulse_seat)} moves first from here.`));
 
 	const opp = h("select", { id: "fh-opponent" }, h("option", { value: "" }, "A friend (share the link)"));
 	for (const b of bots) opp.append(h("option", { value: b.id }, b.label || b.id));
@@ -1035,7 +1035,7 @@ async function playFromHere() {
 
 	const seatSel = h("select", { id: "fh-seat" });
 	for (const sd of S.info.seats) seatSel.append(h("option", { value: String(sd.seat) }, sd.label));
-	seatSel.value = String(a.sim.turn_seat);
+	seatSel.value = String(a.sim.impulse_seat);
 
 	const nameInput = h("input", { id: "fh-name", type: "text", maxlength: "40", value: S.me.name || lastName() || "" });
 	const err = h("p", { class: "error small", id: "fh-error" });
@@ -1058,7 +1058,7 @@ async function playFromHere() {
 						opponent: opp.value || undefined,
 						seat: Number(seatSel.value),
 						start_state: a.sim.state,
-						start_seat: a.sim.turn_seat,
+						start_seat: a.sim.impulse_seat,
 						card_set: S.game.card_set || undefined,
 					});
 					rememberGame(res.room_code, S.game.game_def_id, name);
@@ -1113,7 +1113,7 @@ async function submitMove() {
 // same change are harmless because they are applied idempotently.
 async function settle() {
 	await refreshGame();
-	notifyIfMyTurn(false);
+	notifyIfMyImpulse(false);
 }
 
 /** Takes back the last step of the turn being played, which the server has. */
@@ -1355,7 +1355,7 @@ async function askHint() {
 			bot: h.bot,
 			winRate: typeof h.win_rate === "number" ? h.win_rate : null,
 			alternatives: h.alternatives || [],
-			seat: h.turn_seat,
+			seat: h.impulse_seat,
 			key: positionKey(),
 		};
 	} catch (err) {
@@ -1421,7 +1421,7 @@ function hintSquares() {
  */
 function openSteps() {
 	if (!isActive()) return 0;
-	const seat = S.game.turn_seat;
+	const seat = S.game.impulse_seat;
 	let n = 0;
 	for (let i = S.moves.length - 1; i >= 0; i--) {
 		const m = S.moves[i];
@@ -1442,7 +1442,7 @@ function openSteps() {
 
 /** A step of this turn that can still be taken back. */
 function canUndo() {
-	return !tutorialLookingBack() && !!S.me.seat && S.game.turn_seat === S.me.seat && openSteps() > 0;
+	return !tutorialLookingBack() && !!S.me.seat && S.game.impulse_seat === S.me.seat && openSteps() > 0;
 }
 
 // ---------------------------------------------------------------------------
@@ -1600,7 +1600,7 @@ async function onEvent(env) {
 			});
 			S.state = d.state;
 			// In a game against oneself the seat that acts changes with the turn.
-			S.game.turn_seat = d.turn_seat;
+			S.game.impulse_seat = d.impulse_seat;
 			S.game.status = d.status;
 			syncMe();
 			// The broadcast position is the public one: a player's own
@@ -1614,12 +1614,12 @@ async function onEvent(env) {
 				}
 			}
 			S.game.status = d.status;
-			S.game.turn_seat = d.turn_seat;
+			S.game.impulse_seat = d.impulse_seat;
 			S.game.move_seq = d.seq;
 			S.game.winner_seat = d.winner_seat;
 			S.game.end_reason = d.end_reason;
 			S.game.end_detail = d.end_detail;
-			S.game.turn_deadline = d.turn_deadline || "";
+			S.game.impulse_deadline = d.impulse_deadline || "";
 			S.game.clock = d.clock || null;
 			S.game.draw_offer_seat = null; // any move withdraws an offer
 			if (S.game.real_time) S.game.real_time.wait = null; // and a move restarts the wait
@@ -1627,7 +1627,7 @@ async function onEvent(env) {
 			noteServerTime(d.server_time);
 			S.viewCache.clear();
 			await Promise.all([loadLegal(), loadReactions(), loadAutoPlay()]);
-			if (!d.game_ended && d.turn_seat === d.seat && S.info.seats.length > 1 && !isRuleset()) {
+			if (!d.game_ended && d.impulse_seat === d.seat && S.info.seats.length > 1 && !isRuleset()) {
 				// The next seat had no legal move and was skipped. (A ruleset's
 				// turn is a run of decisions by the same seat: nothing to say.)
 				const other = S.info.seats.find((x) => x.seat !== d.seat);
@@ -1638,7 +1638,7 @@ async function onEvent(env) {
 		} else {
 			return; // already applied (our own move's echo)
 		}
-		notifyIfMyTurn(true);
+		notifyIfMyImpulse(true);
 			render();
 		} else if (env.type === "joined") {
 			S.connected = new Set((env.data && env.data.connected) || []);
@@ -1671,7 +1671,7 @@ async function onEvent(env) {
 			if (isMine(d.seat)) {
 				toast(d.stage >= 2 ? "The table can now have a bot play your turn." : "The table is waiting for your move.");
 				lastNotifiedSeq = -1;
-				notifyIfMyTurn(true);
+				notifyIfMyImpulse(true);
 			}
 		} else if (env.type === "chat") {
 			const line = env.data || {};
@@ -1681,7 +1681,7 @@ async function onEvent(env) {
 			if (env.data && env.data.reason === "draw-offer") toast("A draw was offered.");
 		await refreshGame();
 		if (env.data && env.data.reason === "undo") S.viewSeq = null;
-		notifyIfMyTurn(true);
+		notifyIfMyImpulse(true);
 		render();
 	}
 }
@@ -1692,8 +1692,8 @@ async function onEvent(env) {
 
 let lastNotifiedSeq = -1;
 
-function notifyIfMyTurn(fromEvent) {
-	if (!isMyTurn()) return;
+function notifyIfMyImpulse(fromEvent) {
+	if (!isMyImpulse()) return;
 	updateTitle();
 	if (!fromEvent || lastNotifiedSeq === S.moves.length) return;
 	lastNotifiedSeq = S.moves.length;
@@ -1707,8 +1707,8 @@ function notifyIfMyTurn(fromEvent) {
 }
 
 function updateTitle() {
-	document.title = (isMyTurn() ? "● Your turn — " : "") + titleBase + " · " + code;
-	setTurnBadge(isMyTurn());
+	document.title = (isMyImpulse() ? "● Your turn — " : "") + titleBase + " · " + code;
+	setTurnBadge(isMyImpulse());
 }
 
 document.addEventListener("visibilitychange", updateTitle);
@@ -1866,7 +1866,7 @@ function rememberRailScroll() {
  */
 function actionCard(note, choices = []) {
 	// Not actingSeat(): that lapses while a step is being sent, and the card would jump.
-	const acting = inAnalysis() ? !!actingSeat() : isLive() && isMyTurn() && !tutorialLookingBack();
+	const acting = inAnalysis() ? !!actingSeat() : isLive() && isMyImpulse() && !tutorialLookingBack();
 	const bar = moveBar();
 	const g = S.game;
 	// The note says it already: "Browsing history" under "Viewing the position after move 3".
@@ -2057,9 +2057,9 @@ function paintMobileBadges() {
 
 function renderMobile(seats, bottomSeat) {
 	document.body.classList.add("m-mode");
-	const myTurn = isLive() && S.game.status === "active" && isMyTurn();
+	const myImpulse = isLive() && S.game.status === "active" && isMyImpulse();
 	if (isLandscape()) {
-		renderMobileMap(myTurn);
+		renderMobileMap(myImpulse);
 		return;
 	}
 
@@ -2100,7 +2100,7 @@ function renderMobile(seats, bottomSeat) {
 		pages,
 		chips,
 		groups: [
-			{ id: "actions", label: "Actions", icon: "⚡", pulse: myTurn && S.mPage !== "actions" },
+			{ id: "actions", label: "Actions", icon: "⚡", pulse: myImpulse && S.mPage !== "actions" },
 			{ id: "round", label: "Round", icon: "⏳" },
 			{ id: "cults", label: "Cults", icon: "👥" },
 			{ id: "log", label: "History", icon: "📜" },
@@ -2124,23 +2124,23 @@ function renderMobile(seats, bottomSeat) {
 	if (S.mPage === "chat") chatSeen();
 	paintMobileBadges();
 	mobileHintOnce();
-	buzzOnMyTurn(myTurn);
+	buzzOnMyImpulse(myImpulse);
 }
 
 /** On its side, the phone is all map: to tap areas, move units, pinch and drag. */
-function renderMobileMap(myTurn) {
+function renderMobileMap(myImpulse) {
 	document.body.classList.add("m-landscape");
 	const boardHost = h("div", { id: "board" });
 	const page = h("div", { class: "m-map-page m-landscape-map" }, h("div", { class: "m-board-box" }, boardHost));
 	// The map cannot say whose turn it is, or that the next choice is a button.
-	if (myTurn) {
+	if (myImpulse) {
 		const onMap = activeBuilder().options().some((o) => o.kind === "pos");
 		page.append(h("div", { class: "m-turn-note", id: "m-turn-note", role: "status" }, onMap ? "Your turn" : "Your turn: hold the phone upright to choose"));
 	}
 	root.append(page);
 	drawBoard(boardHost);
 	mobileHintOnce();
-	buzzOnMyTurn(myTurn);
+	buzzOnMyImpulse(myImpulse);
 }
 
 function mobileHintOnce() {
@@ -2150,8 +2150,8 @@ function mobileHintOnce() {
 }
 
 /** A turn that has just come to the player buzzes the phone, once. */
-function buzzOnMyTurn(myTurn) {
-	if (!myTurn || S.mBuzzed === S.moves.length) return;
+function buzzOnMyImpulse(myImpulse) {
+	if (!myImpulse || S.mBuzzed === S.moves.length) return;
 	S.mBuzzed = S.moves.length;
 	if (navigator.vibrate && document.visibilityState === "visible") navigator.vibrate(60);
 }
@@ -2162,7 +2162,7 @@ function buzzOnMyTurn(myTurn) {
  */
 function renderMobileCards(seats, bottomSeat) {
 	document.body.classList.add("m-mode");
-	const myTurn = isLive() && S.game.status === "active" && isMyTurn();
+	const myImpulse = isLive() && S.game.status === "active" && isMyImpulse();
 	const v = rulesetView();
 	const ctx = cardContext(v);
 
@@ -2199,7 +2199,7 @@ function renderMobileCards(seats, bottomSeat) {
 	const shell = mobileShell({
 		pages,
 		groups: [
-			{ id: "play", label: "Play", icon: "🃏", pulse: myTurn && S.mPage !== "play" },
+			{ id: "play", label: "Play", icon: "🃏", pulse: myImpulse && S.mPage !== "play" },
 			...(v.grid ? [{ id: "terms", label: "Terms", icon: "📋" }] : []),
 			{ id: "players", label: "Players", icon: "👥" },
 			{ id: "log", label: "History", icon: "📜" },
@@ -2223,7 +2223,7 @@ function renderMobileCards(seats, bottomSeat) {
 	if (S.mPage === "chat") chatSeen();
 	paintMobileBadges();
 	// A turn that has just come to the player buzzes the phone, once.
-	if (myTurn && S.mBuzzed !== S.moves.length) {
+	if (myImpulse && S.mBuzzed !== S.moves.length) {
 		S.mBuzzed = S.moves.length;
 		if (navigator.vibrate && document.visibilityState === "visible") navigator.vibrate(60);
 	}
@@ -2428,7 +2428,7 @@ function statusBar() {
 		const where = a.base === null ? "the current position" : `the position after move ${a.base}`;
 		if (!sim) msg = "Analysis — loading…";
 		else if (sim.game_ended) msg = `Analysis: the variation ends the game${sim.winner_seat ? ` — ${seatLabel(sim.winner_seat)} wins` : " in a draw"}.`;
-		else msg = `Analysis from ${where}: ${seatLabel(sim.turn_seat)} to move. Nothing here is played.`;
+		else msg = `Analysis from ${where}: ${seatLabel(sim.impulse_seat)} to move. Nothing here is played.`;
 	} else if (!isLive()) {
 		cls.push("history");
 		const seq = S.viewSeq;
@@ -2445,23 +2445,23 @@ function statusBar() {
 	} else if (g.status === "finished") {
 		cls.push("over");
 		msg = resultMessage();
-	} else if (isMyTurn()) {
-		cls.push("your-turn");
+	} else if (isMyImpulse()) {
+		cls.push("your-impulse");
 		msg = turnPrompt();
 	} else if (S.me.seat) {
-		const n = seatName(g.turn_seat);
-		const si = seatInfo(g.turn_seat);
-		msg = si && si.bot ? `${n} is thinking…` : `Waiting for ${n || seatLabel(g.turn_seat)} to move…`;
+		const n = seatName(g.impulse_seat);
+		const si = seatInfo(g.impulse_seat);
+		msg = si && si.bot ? `${n} is thinking…` : `Waiting for ${n || seatLabel(g.impulse_seat)} to move…`;
 		const rv = rulesetView();
 		if (rv && rv.prompt) msg = si && si.bot ? `${rv.prompt} (${n} is thinking…)` : rv.prompt;
 	} else {
-		msg = `${seatLabel(g.turn_seat)} (${displayName(g.turn_seat)}) to move.`;
+		msg = `${seatLabel(g.impulse_seat)} (${displayName(g.impulse_seat)}) to move.`;
 	}
 
 	const bar = h("div", { class: cls.join(" ") });
 	bar.append(h("div", { class: "message", id: "status-message", "aria-live": "polite" }, ...withSeatWords(msg)));
 	if (isLive() && !inAnalysis() && g.status === "active" && !tutorialShown() && !tutorialLookingBack()) {
-		if (isMyTurn()) badges.push(h("span", { class: "badge turn" }, "Your turn"));
+		if (isMyImpulse()) badges.push(h("span", { class: "badge turn" }, "Your turn"));
 		{
 			const rv = rulesetView();
 			badges.push(
@@ -2522,7 +2522,7 @@ function rematchControl() {
 						};
 						if (custom) {
 							body.start_state = S.game.start_state;
-							body.start_seat = S.game.start_turn_seat || undefined;
+							body.start_seat = S.game.start_impulse_seat || undefined;
 						}
 						const res = await api.createGame(body);
 						rememberGame(res.room_code, S.game.game_def_id, S.me.name);
@@ -2711,11 +2711,11 @@ function seatGlyph(seat) {
 function seatStrip(seat) {
 	const color = colorOf(seat);
 	const si = seatInfo(seat);
-	const toMove = inAnalysis()
-		? !!S.analysis.sim && !S.analysis.sim.game_ended && S.analysis.sim.turn_seat === seat
-		: isActive() && S.game.turn_seat === seat && isLive();
+	const impulseSeat = inAnalysis()
+		? !!S.analysis.sim && !S.analysis.sim.game_ended && S.analysis.sim.impulse_seat === seat
+		: isActive() && S.game.impulse_seat === seat && isLive();
 	const off = seatDisconnected(seat);
-	const strip = h("div", { class: "seat-strip" + (toMove ? " to-move" : "") + (off ? " disconnected" : ""), id: `seat-${seat}`, "data-seat": seat });
+	const strip = h("div", { class: "seat-strip" + (impulseSeat ? " on-impulse" : "") + (off ? " disconnected" : ""), id: `seat-${seat}`, "data-seat": seat });
 	const head = h("div", { class: "seat-head" });
 	head.append(seatSwatch(seat, color));
 	const glyph = seatGlyph(seat);
@@ -2772,7 +2772,7 @@ function seatStrip(seat) {
 				"⏱ " + formatClock(onClock)
 			)
 		);
-	} else if (toMove && msLeft() !== null) {
+	} else if (impulseSeat && msLeft() !== null) {
 		head.append(h("span", { class: "clock", "data-clock": "turn", title: "Time left to move" }, "⏱ " + formatClock(msLeft())));
 	}
 	for (const sc of scores()) {
@@ -3324,7 +3324,7 @@ async function loadAutoPlay() {
 function autoplayState(a) {
 	if (!a.enabled) return "Off. Switch it on and a tactical bot plays for you when it is your turn and you have not acted within the time above.";
 	const wait = timeoutText(a.timeout_seconds);
-	if (a.deadline && isActive() && S.game.turn_seat === S.me.seat) {
+	if (a.deadline && isActive() && S.game.impulse_seat === S.me.seat) {
 		const at = new Date(a.deadline);
 		const left = at.getTime() - (Date.now() + S.skewMs);
 		return `On. It is your turn: a tactical bot plays for you at ${at.toLocaleString()} (${left > 0 ? "in " + formatClock(left) : "now"}) unless you act first.`;
@@ -3685,7 +3685,7 @@ function cardContext(v) {
 		// The room is the key the order of a hand is remembered under.
 		room: code,
 		me: S.me.seat || 0,
-		toMove: v.to_move,
+		impulseSeat: v.impulse_seat,
 		dealer: v.dealer,
 		bonus: v.bonus,
 		team: v.team,
@@ -3718,7 +3718,7 @@ function cardsPanel() {
 	const v = rulesetView();
 	if (!v || !v.cards) return null;
 	const seats = S.game.seats || [];
-	const mover = v.to_move || 0;
+	const mover = v.impulse_seat || 0;
 	const b = actingSeat() ? activeBuilder() : null;
 	const picked = b && b.steps[0] && b.steps[0].kind === "action" ? b.steps[0].value : null;
 	const playable = b ? new Set(b.nextActions()) : new Set();
@@ -3751,7 +3751,7 @@ function cardsPanel() {
 	};
 	const panel = h("div", { class: "cards-panel", id: "cards-panel", "aria-label": "Move cards" });
 	const group = (title, cards, seat, turn, own) => {
-		const g = h("div", { class: "card-group" + (turn ? " to-move" : "") }, h("div", { class: "card-group-title small muted" }, title));
+		const g = h("div", { class: "card-group" + (turn ? " on-impulse" : "") }, h("div", { class: "card-group-title small muted" }, title));
 		const row = h("div", { class: "card-row" });
 		for (const c of cards) row.append(one(c, seat, own));
 		return g.append(row), g;
@@ -5176,7 +5176,7 @@ function exchangePanel() {
 	if (!v || !v.contest) return null;
 	const c = v.contest;
 	const mine = actingSeat();
-	const rerolling = !c.resolved && v.stage === "reroll" && mine && v.to_move === mine;
+	const rerolling = !c.resolved && v.stage === "reroll" && mine && v.impulse_seat === mine;
 	const kind = { strike: "Strike", shoot: "Shot", shove: "Shove" }[c.kind] || c.kind;
 	const [a, t] = c.sides;
 	const card = h("div", { class: "exchange", id: "exchange", "data-kind": c.kind, "data-resolved": c.resolved ? "1" : "0" });
@@ -5627,7 +5627,7 @@ function debugPanel() {
 				{
 					board_state: legacyView(),
 					state: currentState(),
-					turn_seat: S.game.turn_seat,
+					impulse_seat: S.game.impulse_seat,
 					status: S.game.status,
 					move_seq: S.game.move_seq,
 				},
@@ -5657,7 +5657,7 @@ document.addEventListener("keydown", (ev) => {
 	if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
 	switch (ev.key) {
 		case "Enter":
-			if (!inAnalysis() && isMyTurn() && S.builder.complete() && !S.busy) submitMove();
+			if (!inAnalysis() && isMyImpulse() && S.builder.complete() && !S.busy) submitMove();
 			break;
 		case "Escape":
 			if (activeBuilder().manualSteps().length) resetMove();
@@ -5751,7 +5751,7 @@ function tutorialTick() {
 		return;
 	}
 	if (!p.next || p.next.who !== "reply") return;
-	const seat = S.game.turn_seat;
+	const seat = S.game.impulse_seat;
 	// A reply may be the learner's too: the page declines a reaction put to
 	// them (the Unspeakable Oath after another player's action).
 	if (!seat) return;
@@ -5797,7 +5797,7 @@ async function tutorialFinishAgainstBot() {
 			seat: learner,
 			opponent: "tactical",
 			start_state: S.state,
-			start_seat: S.game.turn_seat,
+			start_seat: S.game.impulse_seat,
 		});
 		location.assign(`/game/${res.room_code}`);
 	} catch (err) {
@@ -5902,7 +5902,7 @@ function tutorialAllowsPath(path) {
  */
 function tutorialMarkControls() {
 	if (!S.tut) return;
-	const asking = !!tutorialExpected() && isMyTurn();
+	const asking = !!tutorialExpected() && isMyImpulse();
 	for (const el of document.querySelectorAll("button[data-action], button[data-piece], button[data-count]")) {
 		if (el.closest("#tutorial, #rules-dialog, .options-window")) continue;
 		const [kind, value] = el.dataset.action ? ["action", el.dataset.action] : el.dataset.piece ? ["piece", el.dataset.piece] : ["count", el.dataset.count];

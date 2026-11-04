@@ -59,11 +59,11 @@ func main() {
 		who := "Alice"
 		if resp, err := http.Get(base + "/api/games/" + room + "/state"); err == nil {
 			var st struct {
-				TurnSeat int `json:"turn_seat"`
+				ImpulseSeat int `json:"impulse_seat"`
 			}
 			_ = json.NewDecoder(resp.Body).Decode(&st)
 			resp.Body.Close()
-			if st.TurnSeat == 2 {
+			if st.ImpulseSeat == 2 {
 				who = "Bob"
 			}
 		}

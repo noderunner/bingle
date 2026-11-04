@@ -185,14 +185,14 @@ func (h *handlers) handleListGameDefs(w http.ResponseWriter, r *http.Request) {
 // session.StateSnapshot — deliberately omits board_state/move_seq, which
 // live at GET /games/{code}/state instead.
 type getGameResponse struct {
-	GameDefID  string        `json:"game_def_id"`
-	Status     string        `json:"status"`
-	Seats      []getGameSeat `json:"seats"`
-	TurnSeat   *int          `json:"turn_seat"`
-	MoveSeq    int           `json:"move_seq"`
-	WinnerSeat *int          `json:"winner_seat"`
-	EndReason  string        `json:"end_reason,omitempty"`
-	EndDetail  string        `json:"end_detail,omitempty"`
+	GameDefID   string        `json:"game_def_id"`
+	Status      string        `json:"status"`
+	Seats       []getGameSeat `json:"seats"`
+	ImpulseSeat *int          `json:"impulse_seat"`
+	MoveSeq     int           `json:"move_seq"`
+	WinnerSeat  *int          `json:"winner_seat"`
+	EndReason   string        `json:"end_reason,omitempty"`
+	EndDetail   string        `json:"end_detail,omitempty"`
 
 	// Rated games: what became of the result once the game has ended, and what
 	// it did to the players' ratings.
@@ -205,10 +205,10 @@ type getGameResponse struct {
 	// Timed games: the per-move allowance, when the player to move runs
 	// out of time (RFC 3339) and the server's clock for skew correction.
 	MoveTimeSeconds int    `json:"move_time_seconds,omitempty"`
-	TurnDeadline    string `json:"turn_deadline,omitempty"`
+	ImpulseDeadline string `json:"impulse_deadline,omitempty"`
 	ServerTime      string `json:"server_time"`
 	// Clock is the game clock of a game played with one: what each seat has
-	// left, and whose clock is running (it counts down from TurnDeadline).
+	// left, and whose clock is running (it counts down from ImpulseDeadline).
 	Clock *session.ClockSnapshot `json:"clock,omitempty"`
 	// RealTime is set in a game played in real time.
 	RealTime *session.RealTimeSnapshot `json:"real_time,omitempty"`
@@ -218,8 +218,8 @@ type getGameResponse struct {
 
 	// StartState is the position the game began from, present only for
 	// games that did not start from the standard position.
-	StartState    json.RawMessage `json:"start_state,omitempty"`
-	StartTurnSeat int             `json:"start_turn_seat,omitempty"`
+	StartState       json.RawMessage `json:"start_state,omitempty"`
+	StartImpulseSeat int             `json:"start_impulse_seat,omitempty"`
 
 	// Lobby: the game waits for its host to start it; HostSeat is the seat of
 	// the person who created it. InviteURL is the link that brings a person
@@ -261,7 +261,7 @@ type getGameSeat struct {
 
 // handleGetGame implements GET /games/{code}: look up the room's current
 // state (no at_seq support here — that's .../state's job) and respond with
-// its game_def_id/status/seats/turn_seat.
+// its game_def_id/status/seats/impulse_seat.
 func (h *handlers) handleGetGame(w http.ResponseWriter, r *http.Request) {
 	code := chi.URLParam(r, "code")
 
@@ -283,14 +283,14 @@ func (h *handlers) handleGetGame(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := getGameResponse{
-		GameDefID:  snapshot.GameDefID,
-		Status:     snapshot.Status,
-		Seats:      seats,
-		TurnSeat:   snapshot.TurnSeat,
-		MoveSeq:    snapshot.MoveSeq,
-		WinnerSeat: snapshot.WinnerSeat,
-		EndReason:  snapshot.EndReason,
-		EndDetail:  snapshot.EndDetail,
+		GameDefID:   snapshot.GameDefID,
+		Status:      snapshot.Status,
+		Seats:       seats,
+		ImpulseSeat: snapshot.ImpulseSeat,
+		MoveSeq:     snapshot.MoveSeq,
+		WinnerSeat:  snapshot.WinnerSeat,
+		EndReason:   snapshot.EndReason,
+		EndDetail:   snapshot.EndDetail,
 
 		Rated:         snapshot.Rated,
 		CardSet:       snapshot.CardSet,
@@ -312,10 +312,10 @@ func (h *handlers) handleGetGame(w http.ResponseWriter, r *http.Request) {
 	}
 	if snapshot.StartState != "" {
 		resp.StartState = json.RawMessage(snapshot.StartState)
-		resp.StartTurnSeat = snapshot.StartTurnSeat
+		resp.StartImpulseSeat = snapshot.StartImpulseSeat
 	}
-	if snapshot.TurnDeadline != nil {
-		resp.TurnDeadline = snapshot.TurnDeadline.Format(time.RFC3339)
+	if snapshot.ImpulseDeadline != nil {
+		resp.ImpulseDeadline = snapshot.ImpulseDeadline.Format(time.RFC3339)
 	}
 	writeJSON(w, http.StatusOK, resp)
 }
@@ -393,21 +393,21 @@ type getGameStateResponse struct {
 	// BoardState is the v1 flat view (position -> top piece), kept for
 	// backwards compatibility; State is the complete position (stacks,
 	// reserves, ply) and what new clients should read.
-	BoardState json.RawMessage `json:"board_state"`
-	State      json.RawMessage `json:"state,omitempty"`
-	TurnSeat   *int            `json:"turn_seat"`
-	Status     string          `json:"status"`
-	MoveSeq    int             `json:"move_seq"`
-	WinnerSeat *int            `json:"winner_seat"`
-	EndReason  string          `json:"end_reason,omitempty"`
-	EndDetail  string          `json:"end_detail,omitempty"`
+	BoardState  json.RawMessage `json:"board_state"`
+	State       json.RawMessage `json:"state,omitempty"`
+	ImpulseSeat *int            `json:"impulse_seat"`
+	Status      string          `json:"status"`
+	MoveSeq     int             `json:"move_seq"`
+	WinnerSeat  *int            `json:"winner_seat"`
+	EndReason   string          `json:"end_reason,omitempty"`
+	EndDetail   string          `json:"end_detail,omitempty"`
 	// DrawOfferSeat is the seat currently offering a draw, or null.
 	DrawOfferSeat *int `json:"draw_offer_seat"`
 }
 
 // handleGetGameState implements GET /games/{code}/state: look up the room's
 // current state, or its historical state at ?at_seq=N if given, and respond
-// with its board_state/turn_seat/status/move_seq.
+// with its board_state/impulse_seat/status/move_seq.
 func (h *handlers) handleGetGameState(w http.ResponseWriter, r *http.Request) {
 	code := chi.URLParam(r, "code")
 
@@ -429,14 +429,14 @@ func (h *handlers) handleGetGameState(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, getGameStateResponse{
-		BoardState: json.RawMessage(snapshot.BoardState),
-		State:      json.RawMessage(snapshot.State),
-		TurnSeat:   snapshot.TurnSeat,
-		Status:     snapshot.Status,
-		MoveSeq:    snapshot.MoveSeq,
-		WinnerSeat: snapshot.WinnerSeat,
-		EndReason:  snapshot.EndReason,
-		EndDetail:  snapshot.EndDetail,
+		BoardState:  json.RawMessage(snapshot.BoardState),
+		State:       json.RawMessage(snapshot.State),
+		ImpulseSeat: snapshot.ImpulseSeat,
+		Status:      snapshot.Status,
+		MoveSeq:     snapshot.MoveSeq,
+		WinnerSeat:  snapshot.WinnerSeat,
+		EndReason:   snapshot.EndReason,
+		EndDetail:   snapshot.EndDetail,
 
 		DrawOfferSeat: snapshot.DrawOfferSeat,
 	})
@@ -530,22 +530,22 @@ func (h *handlers) handleMakeMove(w http.ResponseWriter, r *http.Request) {
 	for _, b := range outcome.BotMoves {
 		final = b
 	}
-	var turnSeat *int
+	var impulseSeat *int
 	if !final.GameEnded {
-		turnSeat = &final.NextTurnSeat
+		impulseSeat = &final.NextImpulseSeat
 	}
 
 	writeJSON(w, http.StatusOK, makeMoveResponse{
 		Move: wire.MoveFromOutcome(outcome),
 		State: getGameStateResponse{
-			BoardState: json.RawMessage(final.BoardState),
-			State:      json.RawMessage(final.State),
-			TurnSeat:   turnSeat,
-			Status:     final.Status,
-			MoveSeq:    final.Seq,
-			WinnerSeat: final.WinnerSeat,
-			EndReason:  final.EndReason,
-			EndDetail:  final.EndDetail,
+			BoardState:  json.RawMessage(final.BoardState),
+			State:       json.RawMessage(final.State),
+			ImpulseSeat: impulseSeat,
+			Status:      final.Status,
+			MoveSeq:     final.Seq,
+			WinnerSeat:  final.WinnerSeat,
+			EndReason:   final.EndReason,
+			EndDetail:   final.EndDetail,
 		},
 		BotMoves: wire.MovesFromOutcomes(outcome.BotMoves),
 	})

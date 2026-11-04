@@ -46,7 +46,7 @@ func TestEnvironmentsPlayCourtfallWithPlanesAndActionIDs(t *testing.T) {
 		if err != nil {
 			t.Fatalf("step %d: %v", i, err)
 		}
-		if !obs.Done && !obs.YourTurn {
+		if !obs.Done && !obs.YourImpulse {
 			t.Fatalf("step %d: the agent should be asked to move again", i)
 		}
 	}

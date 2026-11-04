@@ -122,7 +122,7 @@ func TestEveryGameStaysConsistentInRandomPlay(t *testing.T) {
 					if res.GameEnded {
 						break
 					}
-					st, seat = res.NewState, res.NextTurnSeat
+					st, seat = res.NewState, res.NextImpulseSeat
 				}
 			}
 		})
@@ -176,7 +176,7 @@ func FuzzApplyAnyMoveToAnyGame(f *testing.F) {
 			if err != nil || res.GameEnded {
 				break
 			}
-			st, seat = res.NewState, res.NextTurnSeat
+			st, seat = res.NewState, res.NextImpulseSeat
 		}
 		positions[i] = pos{st, seat}
 	}

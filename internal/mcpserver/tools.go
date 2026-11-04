@@ -315,21 +315,21 @@ func handleJoinGame(mgr *session.Manager) server.ToolHandlerFunc {
 // so it appears nested rather than doubly-encoded.
 type getStateResult struct {
 	// RealTime is set in a game played in real time.
-	RealTime   *session.RealTimeSnapshot `json:"real_time,omitempty"`
-	BoardState json.RawMessage           `json:"board_state"`
-	State      json.RawMessage           `json:"state,omitempty"`
-	TurnSeat   *int                      `json:"turn_seat"`
-	Status     string                    `json:"status"`
-	MoveSeq    int                       `json:"move_seq"`
-	WinnerSeat *int                      `json:"winner_seat"`
-	EndReason  string                    `json:"end_reason,omitempty"`
+	RealTime    *session.RealTimeSnapshot `json:"real_time,omitempty"`
+	BoardState  json.RawMessage           `json:"board_state"`
+	State       json.RawMessage           `json:"state,omitempty"`
+	ImpulseSeat *int                      `json:"impulse_seat"`
+	Status      string                    `json:"status"`
+	MoveSeq     int                       `json:"move_seq"`
+	WinnerSeat  *int                      `json:"winner_seat"`
+	EndReason   string                    `json:"end_reason,omitempty"`
 	// DrawOfferSeat is the seat with an open draw offer (null when none).
 	DrawOfferSeat *int `json:"draw_offer_seat"`
 }
 
 // handleGetState implements the get_state tool: read {"room_code"}, reject
 // a blank/whitespace-only value with a tool-level error before calling
-// Manager, then respond with the room's current board_state/turn_seat/
+// Manager, then respond with the room's current board_state/impulse_seat/
 // status/move_seq (no at_seq support, unlike REST's .../state endpoint).
 // Business-logic failures (e.g. an unknown room_code, store.ErrNotFound)
 // are reported as a tool-level error via mcp.NewToolResultError, not a
@@ -350,14 +350,14 @@ func handleGetState(mgr *session.Manager) server.ToolHandlerFunc {
 		}
 
 		return mcp.NewToolResultStructuredOnly(getStateResult{
-			RealTime:   snapshot.RealTime,
-			BoardState: json.RawMessage(snapshot.BoardState),
-			State:      json.RawMessage(snapshot.State),
-			TurnSeat:   snapshot.TurnSeat,
-			Status:     snapshot.Status,
-			MoveSeq:    snapshot.MoveSeq,
-			WinnerSeat: snapshot.WinnerSeat,
-			EndReason:  snapshot.EndReason,
+			RealTime:    snapshot.RealTime,
+			BoardState:  json.RawMessage(snapshot.BoardState),
+			State:       json.RawMessage(snapshot.State),
+			ImpulseSeat: snapshot.ImpulseSeat,
+			Status:      snapshot.Status,
+			MoveSeq:     snapshot.MoveSeq,
+			WinnerSeat:  snapshot.WinnerSeat,
+			EndReason:   snapshot.EndReason,
 		}), nil
 	}
 }
@@ -418,7 +418,7 @@ type makeMoveResult struct {
 // tool-level error before calling Manager (same pre-validation discipline as
 // handleCreateGame/handleJoinGame), then apply the move and respond with the
 // resulting move/state. Business-logic failures (e.g. an illegal move,
-// session.ErrGameNotActive, session.ErrNotYourTurn, store.ErrNotFound) are
+// session.ErrGameNotActive, session.ErrNotYourImpulse, store.ErrNotFound) are
 // reported as a tool-level error via mcp.NewToolResultError, not a
 // transport-level error, per docs/history/plan.md section 6.10. This call goes
 // through the same Manager.MakeMove REST uses, so it also triggers
@@ -491,21 +491,21 @@ func handleMakeMove(mgr *session.Manager) server.ToolHandlerFunc {
 		for _, b := range outcome.BotMoves {
 			final = b
 		}
-		var turnSeat *int
+		var impulseSeat *int
 		if !final.GameEnded {
-			turnSeat = &final.NextTurnSeat
+			impulseSeat = &final.NextImpulseSeat
 		}
 
 		return mcp.NewToolResultStructuredOnly(makeMoveResult{
 			Move: wire.MoveFromOutcome(outcome),
 			State: getStateResult{
-				BoardState: json.RawMessage(final.BoardState),
-				State:      json.RawMessage(final.State),
-				TurnSeat:   turnSeat,
-				Status:     final.Status,
-				MoveSeq:    final.Seq,
-				WinnerSeat: final.WinnerSeat,
-				EndReason:  final.EndReason,
+				BoardState:  json.RawMessage(final.BoardState),
+				State:       json.RawMessage(final.State),
+				ImpulseSeat: impulseSeat,
+				Status:      final.Status,
+				MoveSeq:     final.Seq,
+				WinnerSeat:  final.WinnerSeat,
+				EndReason:   final.EndReason,
 			},
 			BotMoves: wire.MovesFromOutcomes(outcome.BotMoves),
 		}), nil

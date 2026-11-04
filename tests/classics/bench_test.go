@@ -24,7 +24,7 @@ func midGame(b testing.TB, id string, n int) (*state.BoardState, int) {
 		if res.GameEnded {
 			break
 		}
-		st, seat = res.NewState, res.NextTurnSeat
+		st, seat = res.NewState, res.NextImpulseSeat
 	}
 	return st, seat
 }

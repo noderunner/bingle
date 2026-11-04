@@ -156,12 +156,12 @@ func samePerson(a, b store.Player) bool {
 // waiting on a person, at a table with at least one other person.
 func (m *Manager) realTimeWait(game store.Game, players []store.Player) *RealTimeWait {
 	s := parseRealTime(game.RealTime)
-	if s == nil || game.Status != "active" || game.TurnSeat == nil || game.Clock != "" || game.MoveTimeLimit > 0 {
+	if s == nil || game.Status != "active" || game.ImpulseSeat == nil || game.Clock != "" || game.MoveTimeLimit > 0 {
 		return nil
 	}
 	var waitingOn *store.Player
 	for i := range players {
-		if players[i].Seat == *game.TurnSeat && players[i].Bot == "" {
+		if players[i].Seat == *game.ImpulseSeat && players[i].Bot == "" {
 			waitingOn = &players[i]
 		}
 	}
@@ -191,7 +191,7 @@ func (m *Manager) realTimeWait(game store.Game, players []store.Player) *RealTim
 		stage = 1
 	}
 	return &RealTimeWait{
-		Seat: *game.TurnSeat, Stage: stage,
+		Seat: *game.ImpulseSeat, Stage: stage,
 		FirstWarningAt:  first.UTC().Format(time.RFC3339),
 		SecondWarningAt: second.UTC().Format(time.RFC3339),
 	}

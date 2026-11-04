@@ -31,12 +31,12 @@ type CardsView struct {
 
 // View is what clients draw beyond the pieces.
 type View struct {
-	Phase  string               `json:"phase"`
-	ToMove int                  `json:"to_move,omitempty"`
-	Prompt string               `json:"prompt"`
-	Tints  map[string]string    `json:"tints,omitempty"`
-	Seats  map[string]*SeatView `json:"seats"`
-	Cards  *CardsView           `json:"cards,omitempty"`
+	Phase       string               `json:"phase"`
+	ImpulseSeat int                  `json:"impulse_seat,omitempty"`
+	Prompt      string               `json:"prompt"`
+	Tints       map[string]string    `json:"tints,omitempty"`
+	Seats       map[string]*SeatView `json:"seats"`
+	Cards       *CardsView           `json:"cards,omitempty"`
 }
 
 // SeatView is one player's scoreboard.
@@ -90,7 +90,7 @@ func (e *eng) count(seat int) int {
 
 func (e *eng) buildView() *View {
 	d := e.d
-	v := &View{Phase: "play", ToMove: d.Turn, Tints: map[string]string{}, Seats: map[string]*SeatView{}}
+	v := &View{Phase: "play", ImpulseSeat: d.Turn, Tints: map[string]string{}, Seats: map[string]*SeatView{}}
 	v.Tints[cellName(arch(seatRed))] = "arch-red"
 	v.Tints[cellName(arch(seatBlue))] = "arch-blue"
 	if d.LastFrom != "" {

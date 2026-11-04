@@ -280,11 +280,11 @@ func TestWebCthulhuWars_TheLogShowsWhatOthersDidInTheirColours(t *testing.T) {
 	deadline := time.Now().Add(40 * time.Second)
 	for time.Now().Before(deadline) {
 		var st struct {
-			Status   string `json:"status"`
-			TurnSeat *int   `json:"turn_seat"`
+			Status      string `json:"status"`
+			ImpulseSeat *int   `json:"impulse_seat"`
 		}
 		doJSON(t, "GET", baseURL+"/api/games/"+room+"/state", nil, &st)
-		if st.TurnSeat != nil && *st.TurnSeat == 1 && st.Status == "active" {
+		if st.ImpulseSeat != nil && *st.ImpulseSeat == 1 && st.Status == "active" {
 			break
 		}
 		time.Sleep(200 * time.Millisecond)

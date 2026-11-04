@@ -103,7 +103,7 @@ class BingleEnv:
             "legal_moves": obs.get("legal_moves", []),
             "legal_action_ids": obs.get("legal_action_ids", []),
             "board_text": obs.get("board_text", ""),
-            "to_move": obs.get("to_move"),
+            "impulse_seat": obs.get("impulse_seat"),
             "ply": obs.get("ply"),
             "winner_seat": obs.get("winner_seat"),
             "result": obs.get("result"),

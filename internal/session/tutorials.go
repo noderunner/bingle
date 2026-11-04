@@ -91,7 +91,7 @@ func (m *Manager) StartTutorial(ctx context.Context, gameID, id, name string) (C
 	if !ok {
 		return CreateGameResult{}, fmt.Errorf("%w: %q", ErrGameDefNotFound, t.Game)
 	}
-	st, toMove, err := tutorial.Start(compiled, t)
+	st, impulseSeat, err := tutorial.Start(compiled, t)
 	if err != nil {
 		return CreateGameResult{}, err
 	}
@@ -108,7 +108,7 @@ func (m *Manager) StartTutorial(ctx context.Context, gameID, id, name string) (C
 	}
 	return m.CreateGameWithOptions(ctx, CreateOptions{
 		GameDefID: t.Game, CreatorName: name, Seat: learner, Also: others,
-		StartState: string(doc), StartSeat: toMove, Tutorial: family + "/" + t.ID,
+		StartState: string(doc), StartSeat: impulseSeat, Tutorial: family + "/" + t.ID,
 	})
 }
 

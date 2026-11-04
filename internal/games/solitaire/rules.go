@@ -105,8 +105,8 @@ func (rs *Ruleset) Start(game *catalog.CompiledGame, seed uint64) (*state.BoardS
 	return st, nil
 }
 
-// ToMove is the player, or 0 once the game is over.
-func (rs *Ruleset) ToMove(game *catalog.CompiledGame, st *state.BoardState) int {
+// ImpulseSeat is the player, or 0 once the game is over.
+func (rs *Ruleset) ImpulseSeat(game *catalog.CompiledGame, st *state.BoardState) int {
 	d, err := dataOf(st)
 	if err != nil {
 		return 0
@@ -206,7 +206,7 @@ func (rs *Ruleset) Apply(game *catalog.CompiledGame, st *state.BoardState, seat 
 	ns := st.Clone()
 	ns.SetExt(nd)
 	ns.SetPly(st.Ply() + 1)
-	res := &state.MoveResult{NewState: ns, Move: state.Move{Action: actMove, Piece: mv.Piece}, Notation: mv.Piece, NextTurnSeat: seat}
+	res := &state.MoveResult{NewState: ns, Move: state.Move{Action: actMove, Piece: mv.Piece}, Notation: mv.Piece, NextImpulseSeat: seat}
 	if nd.Turn == 0 {
 		res.GameEnded = true
 		res.EndReason = nd.Reason
@@ -349,7 +349,7 @@ func (rs *Ruleset) Sample(game *catalog.CompiledGame) any {
 		return nil
 	}
 	v := newEng(game, d).buildView(0)
-	v.ToMove = 0
+	v.ImpulseSeat = 0
 	v.Prompt = ""
 	v.Hint = ""
 	rs.samples.Store(game.Definition.ID, v)

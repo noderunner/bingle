@@ -43,7 +43,7 @@ func Evaluate(game *catalog.CompiledGame, st *BoardState, moverSeat int) (Outcom
 	if rs, ok := RulesetOf(game); ok {
 		return rs.Outcome(game, st), nil
 	}
-	next, err := nextTurnSeat(game, moverSeat)
+	next, err := nextImpulseSeat(game, moverSeat)
 	if err != nil {
 		return Outcome{}, err
 	}

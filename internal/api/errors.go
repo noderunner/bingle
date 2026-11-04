@@ -34,7 +34,7 @@ func statusForError(err error) int {
 		errors.Is(err, session.ErrNoAutoPlayOffer), errors.Is(err, session.ErrOwnTurnOffer), errors.Is(err, session.ErrNotConnected),
 		errors.Is(err, session.ErrKickNotAllowed), errors.Is(err, session.ErrWasReplaced), errors.Is(err, session.ErrTooManySetups):
 		return http.StatusConflict
-	case errors.Is(err, session.ErrNotYourTurn), errors.Is(err, session.ErrNotAPlayer), errors.Is(err, session.ErrNotHost), errors.Is(err, session.ErrNotSeated), errors.Is(err, session.ErrVoiceNotJoined), errors.Is(err, session.ErrBadToken), errors.Is(err, session.ErrNotYourSeat), errors.Is(err, session.ErrNoPrincipal),
+	case errors.Is(err, session.ErrNotYourImpulse), errors.Is(err, session.ErrNotAPlayer), errors.Is(err, session.ErrNotHost), errors.Is(err, session.ErrNotSeated), errors.Is(err, session.ErrVoiceNotJoined), errors.Is(err, session.ErrBadToken), errors.Is(err, session.ErrNotYourSeat), errors.Is(err, session.ErrNoPrincipal),
 		errors.Is(err, session.ErrNotHere):
 		return http.StatusForbidden
 	case errors.Is(err, session.ErrVoicePeerGone), errors.Is(err, session.ErrSuppressed), errors.Is(err, session.ErrNotVerified), errors.Is(err, session.ErrNotInCall), errors.Is(err, session.ErrTooManyHere):

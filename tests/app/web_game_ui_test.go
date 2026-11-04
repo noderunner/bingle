@@ -382,8 +382,8 @@ func TestWebGame_LiveUpdateAcrossTabsWithoutReload(t *testing.T) {
 	}
 	// The move appears in the move list and the turn passed to Bob.
 	waitJS(t, ctx2, "move list entry", `document.querySelector('#move-list button.mv[data-seq="1"]')`, 5*time.Second)
-	if got := evalString(t, ctx2, `document.querySelector('#seat-2').className`); !strings.Contains(got, "to-move") {
-		t.Errorf("seat 2 strip classes = %q, want it marked to-move", got)
+	if got := evalString(t, ctx2, `document.querySelector('#seat-2').className`); !strings.Contains(got, "on-impulse") {
+		t.Errorf("seat 2 strip classes = %q, want it marked on-impulse", got)
 	}
 }
 
@@ -549,7 +549,7 @@ func TestWebGame_HistoryNavigation(t *testing.T) {
 	}
 }
 
-func TestWebGame_TitleAnnouncesYourTurn(t *testing.T) {
+func TestWebGame_TitleAnnouncesYourImpulse(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	room := newTakRoom(t, baseURL, "tak-3x3", "Alice")
 	joinRoom(t, baseURL, room, "Bob")
@@ -754,7 +754,7 @@ func TestWebGame_SpectatorSeesBoardButCannotMove(t *testing.T) {
 	waitJS(t, ctx, "live move for the spectator", `document.querySelector('#board .piece[data-position="c3"]')`, 10*time.Second)
 }
 
-func TestWebLobby_ListsYourGamesWithYourTurnFlag(t *testing.T) {
+func TestWebLobby_ListsYourGamesWithYourImpulseFlag(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	room := newTakRoom(t, baseURL, "tak-3x3", "Alice")
 	joinRoom(t, baseURL, room, "Bob")
@@ -775,7 +775,7 @@ func TestWebLobby_ListsYourGamesWithYourTurnFlag(t *testing.T) {
 	clickSel(t, ctx, "#open-active-games")
 	waitJS(t, ctx, "my games list", `document.querySelector("#active-games-dialog[open] #my-games li .badge.turn")`, 10*time.Second)
 	if got := evalString(t, ctx, `document.querySelector("#my-games li").textContent`); !strings.Contains(got, "vs Bob") || !strings.Contains(got, "Your turn") {
-		t.Errorf("my-games row = %q, want opponent and a your-turn flag", got)
+		t.Errorf("my-games row = %q, want opponent and a your-impulse flag", got)
 	}
 }
 
@@ -1346,8 +1346,8 @@ func TestWebGame_PieRuleSwapButton(t *testing.T) {
 	if len(cell) != 1 || cell[0].Color != "red" {
 		t.Errorf("f6 after the swap = %+v, want the stone unchanged (red)", cell)
 	}
-	if st.TurnSeat == nil || *st.TurnSeat != 2 {
-		t.Errorf("turn after the swap = %v, want seat 2", st.TurnSeat)
+	if st.ImpulseSeat == nil || *st.ImpulseSeat != 2 {
+		t.Errorf("turn after the swap = %v, want seat 2", st.ImpulseSeat)
 	}
 }
 

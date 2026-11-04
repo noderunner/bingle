@@ -829,18 +829,18 @@ func (m *Manager) startLater(ctx context.Context, t store.Tournament, line store
 // firstMoveDue is the deadline for a first move in a real-time tournament's game: the
 // seat to move, if it has not moved yet, and when it must. noneMoved says neither has.
 func (m *Manager) firstMoveDue(ctx context.Context, t store.Tournament, game store.Game) (seat int, by time.Time, noneMoved, due bool) {
-	if !t.RealTime || t.FirstMoveSeconds <= 0 || game.Status != "active" || game.TurnSeat == nil {
+	if !t.RealTime || t.FirstMoveSeconds <= 0 || game.Status != "active" || game.ImpulseSeat == nil {
 		return 0, time.Time{}, false, false
 	}
 	moved, err := m.store.SeatsWithMoves(ctx, game.ID)
-	if err != nil || len(moved) >= 2 || (len(moved) == 1 && moved[0] == *game.TurnSeat) {
+	if err != nil || len(moved) >= 2 || (len(moved) == 1 && moved[0] == *game.ImpulseSeat) {
 		return 0, time.Time{}, false, false
 	}
 	started, ok := parseTimestamp(game.UpdatedAt)
 	if !ok {
 		return 0, time.Time{}, false, false
 	}
-	return *game.TurnSeat, m.turnStart(started).Add(time.Duration(t.FirstMoveSeconds) * time.Second), len(moved) == 0, true
+	return *game.ImpulseSeat, m.turnStart(started).Add(time.Duration(t.FirstMoveSeconds) * time.Second), len(moved) == 0, true
 }
 
 // enforceFirstMove ends a game whose player to move has missed the first-move

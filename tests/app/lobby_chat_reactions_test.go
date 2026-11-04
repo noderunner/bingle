@@ -32,12 +32,12 @@ func newServerWith(t *testing.T, mod func(*config.Config)) string {
 }
 
 type lobbyGame struct {
-	Status    string `json:"status"`
-	Lobby     bool   `json:"lobby"`
-	HostSeat  int    `json:"host_seat"`
-	InviteURL string `json:"invite_url"`
-	TurnSeat  *int   `json:"turn_seat"`
-	Seats     []struct {
+	Status      string `json:"status"`
+	Lobby       bool   `json:"lobby"`
+	HostSeat    int    `json:"host_seat"`
+	InviteURL   string `json:"invite_url"`
+	ImpulseSeat *int   `json:"impulse_seat"`
+	Seats       []struct {
 		Seat int    `json:"seat"`
 		Name string `json:"name"`
 		Bot  string `json:"bot"`
@@ -139,7 +139,7 @@ func TestALobbyWaitsForItsHostToStartTheGame(t *testing.T) {
 	if code := post("/start", "Alice", nil); code != 200 {
 		t.Fatalf("start: %d", code)
 	}
-	if g = getLobbyGame(t, base, room); g.Status != "active" || g.TurnSeat == nil || *g.TurnSeat != 1 {
+	if g = getLobbyGame(t, base, room); g.Status != "active" || g.ImpulseSeat == nil || *g.ImpulseSeat != 1 {
 		t.Fatalf("started: %+v", g)
 	}
 	if code := post("/start", "Alice", nil); code != 409 {

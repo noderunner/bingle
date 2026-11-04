@@ -21,12 +21,12 @@ var (
 // View is what clients draw beyond the (empty) board: the cards as this
 // viewer may see them, the board of terms, and the scoreboard.
 type View struct {
-	Phase  string `json:"phase"`
-	ToMove int    `json:"to_move,omitempty"`
-	Prompt string `json:"prompt"`
-	Round  int    `json:"round"`
-	Rounds int    `json:"rounds"`
-	Dealer int    `json:"dealer"`
+	Phase       string `json:"phase"`
+	ImpulseSeat int    `json:"impulse_seat,omitempty"`
+	Prompt      string `json:"prompt"`
+	Round       int    `json:"round"`
+	Rounds      int    `json:"rounds"`
+	Dealer      int    `json:"dealer"`
 	// Table is every zone of cards the viewer may see.
 	Table []cards.ZoneView `json:"table"`
 	// Grid is the board the players cross boxes off.
@@ -153,7 +153,7 @@ func (rs *Ruleset) Determinize(game *catalog.CompiledGame, st *state.BoardState,
 func (e *eng) buildView(viewer int) *View {
 	d := e.d
 	v := &View{
-		Phase: d.Phase, ToMove: d.Turn, Round: d.Round, Rounds: e.rounds(), Dealer: d.Dealer,
+		Phase: d.Phase, ImpulseSeat: d.Turn, Round: d.Round, Rounds: e.rounds(), Dealer: d.Dealer,
 		Team: d.Team, Bonus: d.Bonus, Seats: map[string]*SeatView{}, Labels: map[string]string{},
 		PanelActions: []string{"card-", "cross-"},
 	}

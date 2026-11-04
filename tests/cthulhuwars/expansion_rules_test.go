@@ -706,8 +706,8 @@ func TestHowlSendsAnEnemyUnitAwayBeforeTheBattle(t *testing.T) {
 	}
 	st = tb.as(st, "ww", "howl")
 	// The enemy chooses which unit goes, and where.
-	if tb.toMoveSeat(st) != tb.seat("gc") {
-		t.Fatalf("the enemy does not choose: seat %d", tb.toMoveSeat(st))
+	if tb.impulseSeat(st) != tb.seat("gc") {
+		t.Fatalf("the enemy does not choose: seat %d", tb.impulseSeat(st))
 	}
 	opts := tb.can(st, "gc")
 	if !hasPrefix(opts, "retreat:cultist>") || !hasPrefix(opts, "retreat:deep-one>") {
@@ -722,9 +722,9 @@ func TestHowlSendsAnEnemyUnitAwayBeforeTheBattle(t *testing.T) {
 	}
 }
 
-// toMoveSeat is the seat the position waits for.
-func (tb *table) toMoveSeat(st *state.BoardState) int {
-	return cthulhuwars.New().ToMove(tb.g, st)
+// impulseSeat is the seat the position waits for.
+func (tb *table) impulseSeat(st *state.BoardState) int {
+	return cthulhuwars.New().ImpulseSeat(tb.g, st)
 }
 
 func TestBerserkergangMakesTheEnemyEliminateAUnitPerGnophKehKilled(t *testing.T) {
@@ -1233,7 +1233,7 @@ func TestSixDiceInOneBattleMeetsTheSleepersRequirement(t *testing.T) {
 	// 3 Serpent Men (1 each) + a Formless Spawn (1 die for itself): 4 dice: not six.
 	st = tb.as(st, "sl", "battle@north-atlantic/gc")
 	for i := 0; i < 12 && tb.data(st).Bat != nil; i++ {
-		seat := tb.toMoveSeat(st)
+		seat := tb.impulseSeat(st)
 		st = tb.as(st, tb.keys[seat-1], tb.can(st, tb.keys[seat-1])[0])
 	}
 	if d := tb.data(st); d.Reqs[1]&(1<<rqSLRoll) != 0 {
@@ -1250,7 +1250,7 @@ func TestSixDiceInOneBattleMeetsTheSleepersRequirement(t *testing.T) {
 		if d.Reqs[1]&(1<<rqSLRoll) != 0 || d.Stage == "turn" {
 			break
 		}
-		seat := tb.toMoveSeat(st)
+		seat := tb.impulseSeat(st)
 		if seat == 0 {
 			break
 		}

@@ -247,16 +247,16 @@ func (rs *Ruleset) Start(game *catalog.CompiledGame, seed uint64) (*state.BoardS
 	return st, nil
 }
 
-// ToMove says whose decision the position waits for.
-func (rs *Ruleset) ToMove(game *catalog.CompiledGame, st *state.BoardState) int {
+// ImpulseSeat says whose decision the position waits for.
+func (rs *Ruleset) ImpulseSeat(game *catalog.CompiledGame, st *state.BoardState) int {
 	d, err := dataOf(st)
 	if err != nil {
 		return 0
 	}
-	return toMove(d)
+	return impulseSeat(d)
 }
 
-func toMove(d *Data) int {
+func impulseSeat(d *Data) int {
 	switch d.Phase {
 	case phaseTerrain, phaseDeploy:
 		return 1 + d.N%2
@@ -389,7 +389,7 @@ func (rs *Ruleset) Validate(game *catalog.CompiledGame, st *state.BoardState) er
 // Legal lists seat's decisions.
 func (rs *Ruleset) Legal(game *catalog.CompiledGame, st *state.BoardState, seat int) []state.Move {
 	d, err := dataOf(st)
-	if err != nil || toMove(d) != seat || seat == 0 {
+	if err != nil || impulseSeat(d) != seat || seat == 0 {
 		return nil
 	}
 	e := rs.newEng(game, st, d)
@@ -641,7 +641,7 @@ func (e *eng) legalTiles() []state.Move {
 }
 
 func (e *eng) legalDeploys() []state.Move {
-	seat := toMove(e.d)
+	seat := impulseSeat(e.d)
 	var out []state.Move
 	for _, p := range unitTypes {
 		if e.st.Reserve(e.color[seat], p) == 0 {
@@ -844,7 +844,7 @@ func (rs *Ruleset) Apply(game *catalog.CompiledGame, st *state.BoardState, seat 
 	if d.Phase == phaseOver {
 		return nil, fmt.Errorf("courtfall: the game is over")
 	}
-	next := toMove(d)
+	next := impulseSeat(d)
 	if seat != next {
 		return nil, fmt.Errorf("courtfall: it is not seat %d's decision (waiting for seat %d: %s)", seat, next, rs.waiting(game, st, d))
 	}
@@ -909,7 +909,7 @@ func (rs *Ruleset) Apply(game *catalog.CompiledGame, st *state.BoardState, seat 
 	}
 	if nd.Phase == phaseOver {
 		res.GameEnded = true
-		res.NextTurnSeat = seat
+		res.NextImpulseSeat = seat
 		if nd.Winner != 0 {
 			w := nd.Winner
 			res.WinnerSeat = &w
@@ -917,7 +917,7 @@ func (rs *Ruleset) Apply(game *catalog.CompiledGame, st *state.BoardState, seat 
 		res.EndReason = nd.Reason
 		res.EndDetail = fmt.Sprintf("%d–%d VP", nd.VP[0], nd.VP[1])
 	} else {
-		res.NextTurnSeat = toMove(nd)
+		res.NextImpulseSeat = impulseSeat(nd)
 	}
 	return res, nil
 }
@@ -992,7 +992,7 @@ func (e *eng) execute(mv state.Move) {
 
 func (e *eng) doTile(mv state.Move) {
 	d := e.d
-	seat := toMove(d)
+	seat := impulseSeat(d)
 	cell := e.g.index[mv.To]
 	e.setTile(cell, tileCode[mv.Piece])
 	d.Left[tileIndex(mv.Piece)]--
@@ -1028,7 +1028,7 @@ func courtLabel(c string) string {
 
 func (e *eng) doCourt(mv state.Move) {
 	d := e.d
-	seat := toMove(d)
+	seat := impulseSeat(d)
 	d.Courts[seat-1] = mv.Piece
 	d.N++
 	e.say("%s chooses the %s.", e.seatLabel(seat), courtLabel(mv.Piece))
@@ -1040,7 +1040,7 @@ func (e *eng) doCourt(mv state.Move) {
 
 func (e *eng) doDeploy(mv state.Move) {
 	d := e.d
-	seat := toMove(d)
+	seat := impulseSeat(d)
 	color := e.color[seat]
 	e.st.Set(mv.To, state.Occupant{Piece: mv.Piece, Color: color})
 	e.st.SetReserve(color, mv.Piece, e.st.Reserve(color, mv.Piece)-1)

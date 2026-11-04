@@ -171,7 +171,7 @@ func (m *Manager) LegalMoves(ctx context.Context, roomCode string, seat int) (in
 	if err != nil {
 		return 0, nil, err
 	}
-	if game.Status != "active" || game.TurnSeat == nil {
+	if game.Status != "active" || game.ImpulseSeat == nil {
 		return 0, nil, ErrGameNotActive
 	}
 	compiled, err := m.compiledFor(game)
@@ -179,7 +179,7 @@ func (m *Manager) LegalMoves(ctx context.Context, roomCode string, seat int) (in
 		return 0, nil, err
 	}
 	if seat == 0 {
-		seat = *game.TurnSeat
+		seat = *game.ImpulseSeat
 	}
 	bs := state.NewBoardState()
 	if err := bs.UnmarshalJSON([]byte(game.BoardState)); err != nil {
@@ -209,12 +209,12 @@ func legalMoveList(compiled *catalog.CompiledGame, bs *state.BoardState, seat in
 // moves to a (possibly historical) position without persisting anything.
 type Simulation struct {
 	// BoardState is the v1 flat view; State is the full document.
-	BoardState string
-	State      string
-	TurnSeat   *int // nil when the simulated game ended
-	GameEnded  bool
-	WinnerSeat *int
-	EndReason  string
+	BoardState  string
+	State       string
+	ImpulseSeat *int // nil when the simulated game ended
+	GameEnded   bool
+	WinnerSeat  *int
+	EndReason   string
 	// Applied lists the canonical notation of each applied move.
 	Applied []string
 	// Legal lists the legal moves for the seat to move (empty when ended).
@@ -263,7 +263,7 @@ func (m *Manager) Simulate(ctx context.Context, roomCode string, atSeq *int, not
 	if seq == game.MoveSeq && game.Status == "finished" {
 		return Simulation{}, ErrGameNotActive
 	}
-	if ts := m.turnSeatAt(ctx, compiled, game, seq); ts != nil {
+	if ts := m.impulseSeatAt(ctx, compiled, game, seq); ts != nil {
 		seat = *ts
 	} else {
 		return Simulation{}, ErrGameNotActive
@@ -283,7 +283,7 @@ func (m *Manager) Simulate(ctx context.Context, roomCode string, atSeq *int, not
 		if err != nil {
 			return Simulation{}, fmt.Errorf("move %d (%q): %w", i+1, text, err)
 		}
-		bs, seat = res.NewState, res.NextTurnSeat
+		bs, seat = res.NewState, res.NextImpulseSeat
 		sim.Applied = append(sim.Applied, res.Notation)
 		if res.GameEnded {
 			ended = true
@@ -304,7 +304,7 @@ func (m *Manager) Simulate(ctx context.Context, roomCode string, atSeq *int, not
 	}
 	sim.State, sim.BoardState = string(full), string(legacy)
 	if !ended {
-		sim.TurnSeat = &seat
+		sim.ImpulseSeat = &seat
 		sim.Legal = legalMoveList(compiled, bs, seat)
 		if compiled.Definition.Notation == "ptn" {
 			if tps, err := state.FormatTPS(compiled, bs, seat); err == nil {

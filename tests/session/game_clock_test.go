@@ -47,8 +47,8 @@ func TestGameClock_OnlyTheMoversClockRuns(t *testing.T) {
 	}
 	// Waiting for an opponent: the clock is reported but nothing runs.
 	snap, _ := m.GetState(ctx, created.RoomCode, nil)
-	if snap.Clock == nil || snap.Clock.Running != 0 || snap.TurnDeadline != nil {
-		t.Fatalf("waiting: clock %+v deadline %v", snap.Clock, snap.TurnDeadline)
+	if snap.Clock == nil || snap.Clock.Running != 0 || snap.ImpulseDeadline != nil {
+		t.Fatalf("waiting: clock %+v deadline %v", snap.Clock, snap.ImpulseDeadline)
 	}
 	if got := clockLeft(t, snap, 1); got != 300 {
 		t.Errorf("seat 1 starts with %v seconds, want 300", got)
@@ -62,10 +62,10 @@ func TestGameClock_OnlyTheMoversClockRuns(t *testing.T) {
 		t.Fatal(err)
 	}
 	snap, _ = m.GetState(ctx, created.RoomCode, nil)
-	if snap.Clock.Running != 1 || snap.TurnDeadline == nil {
-		t.Fatalf("after the game starts: running %d deadline %v", snap.Clock.Running, snap.TurnDeadline)
+	if snap.Clock.Running != 1 || snap.ImpulseDeadline == nil {
+		t.Fatalf("after the game starts: running %d deadline %v", snap.Clock.Running, snap.ImpulseDeadline)
 	}
-	if left := snap.TurnDeadline.Sub(snap.ServerTime); left < 290*time.Second || left > 301*time.Second {
+	if left := snap.ImpulseDeadline.Sub(snap.ServerTime); left < 290*time.Second || left > 301*time.Second {
 		t.Errorf("seat 1 has %v to move, want about its whole clock", left)
 	}
 
@@ -87,7 +87,7 @@ func TestGameClock_OnlyTheMoversClockRuns(t *testing.T) {
 		t.Errorf("seat %d's clock runs after Alice moved, want seat 2's", snap.Clock.Running)
 	}
 	// And the deadline is now Bob's whole clock, not Alice's remainder.
-	if left := snap.TurnDeadline.Sub(snap.ServerTime); left < 590*time.Second || left > 601*time.Second {
+	if left := snap.ImpulseDeadline.Sub(snap.ServerTime); left < 590*time.Second || left > 601*time.Second {
 		t.Errorf("seat 2 has %v to move, want about 600s", left)
 	}
 }
@@ -130,7 +130,7 @@ func TestGameClock_RunningOutForfeitsTheGame(t *testing.T) {
 	if snap.Clock == nil || snap.Clock.Running != 0 {
 		t.Errorf("a finished game still has a clock running: %+v", snap.Clock)
 	}
-	if snap.TurnDeadline != nil {
+	if snap.ImpulseDeadline != nil {
 		t.Error("a finished game has a deadline")
 	}
 	// Bob's clock was never touched by Alice's loss.
@@ -338,7 +338,7 @@ func TestGameClock_ARestartCostsNobodyTime(t *testing.T) {
 	if snap.Status != "active" {
 		t.Fatalf("after the restart the game is %q (%s), want it still going", snap.Status, snap.EndReason)
 	}
-	if left := snap.TurnDeadline.Sub(clock.Now()); left < 295*time.Second || left > 300*time.Second {
+	if left := snap.ImpulseDeadline.Sub(clock.Now()); left < 295*time.Second || left > 300*time.Second {
 		t.Errorf("Alice has %v to move after the restart, want her whole five minutes", left)
 	}
 
@@ -411,7 +411,7 @@ func TestGameClock_IncrementIsAddedWhenTheTurnPasses(t *testing.T) {
 	snap, _ = m.GetState(ctx, room, nil)
 	near(t, snap, 1, 270)
 	near(t, snap, 2, 300)
-	if left := snap.TurnDeadline.Sub(clock.Now()); left < 295*time.Second || left > 300*time.Second {
+	if left := snap.ImpulseDeadline.Sub(clock.Now()); left < 295*time.Second || left > 300*time.Second {
 		t.Errorf("Bob has %v to move, want his own five minutes", left)
 	}
 }
@@ -492,18 +492,18 @@ func TestGameClock_ATurnOfSeveralDecisionsEarnsOnce(t *testing.T) {
 		return out
 	}
 	// Alice's opening is a single stone, and hands the turn on.
-	if out := playFirst("Alice", 1); out.NextTurnSeat != 2 {
-		t.Fatalf("after the opening seat %d is next", out.NextTurnSeat)
+	if out := playFirst("Alice", 1); out.NextImpulseSeat != 2 {
+		t.Fatalf("after the opening seat %d is next", out.NextImpulseSeat)
 	}
 	// Bob's first stone leaves the turn with him: nothing earned yet.
-	if out := playFirst("Bob", 2); out.NextTurnSeat != 2 {
-		t.Fatalf("after one stone of two seat %d is next", out.NextTurnSeat)
+	if out := playFirst("Bob", 2); out.NextImpulseSeat != 2 {
+		t.Fatalf("after one stone of two seat %d is next", out.NextImpulseSeat)
 	}
 	snap, _ := m.GetState(ctx, created.RoomCode, nil)
 	near(t, snap, 2, 300)
 	// His second does.
-	if out := playFirst("Bob", 2); out.NextTurnSeat != 1 {
-		t.Fatalf("after two stones seat %d is next", out.NextTurnSeat)
+	if out := playFirst("Bob", 2); out.NextImpulseSeat != 1 {
+		t.Fatalf("after two stones seat %d is next", out.NextImpulseSeat)
 	}
 	snap, _ = m.GetState(ctx, created.RoomCode, nil)
 	near(t, snap, 2, 330)

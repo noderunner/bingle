@@ -154,7 +154,7 @@ func (m *Manager) autoplayOne(ctx context.Context, roomCode string) bool {
 	defer cancel()
 
 	game, err := m.store.GetGame(ctx, roomCode)
-	if err != nil || game.Status != "active" || game.TurnSeat == nil {
+	if err != nil || game.Status != "active" || game.ImpulseSeat == nil {
 		return true
 	}
 	players, err := m.store.ListPlayers(ctx, game.ID)
@@ -163,7 +163,7 @@ func (m *Manager) autoplayOne(ctx context.Context, roomCode string) bool {
 	}
 	var mover *store.Player
 	for i := range players {
-		if players[i].Seat == *game.TurnSeat {
+		if players[i].Seat == *game.ImpulseSeat {
 			mover = &players[i]
 		}
 	}

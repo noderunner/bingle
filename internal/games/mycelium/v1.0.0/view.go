@@ -18,12 +18,12 @@ var (
 
 // View is what clients draw beyond the nodes.
 type View struct {
-	Phase  string               `json:"phase"`
-	Stage  string               `json:"stage,omitempty"`
-	ToMove int                  `json:"to_move,omitempty"`
-	Prompt string               `json:"prompt"`
-	Tints  map[string]string    `json:"tints,omitempty"`
-	Seats  map[string]*SeatView `json:"seats"`
+	Phase       string               `json:"phase"`
+	Stage       string               `json:"stage,omitempty"`
+	ImpulseSeat int                  `json:"impulse_seat,omitempty"`
+	Prompt      string               `json:"prompt"`
+	Tints       map[string]string    `json:"tints,omitempty"`
+	Seats       map[string]*SeatView `json:"seats"`
 }
 
 // SeatView is one player's scoreboard.
@@ -61,7 +61,7 @@ func (rs *Ruleset) Determinize(game *catalog.CompiledGame, st *state.BoardState,
 
 func (e *eng) buildView() *View {
 	d := e.d
-	v := &View{Phase: "play", ToMove: d.Turn, Tints: map[string]string{}, Seats: map[string]*SeatView{}}
+	v := &View{Phase: "play", ImpulseSeat: d.Turn, Tints: map[string]string{}, Seats: map[string]*SeatView{}}
 	if d.Last != "" {
 		v.Tints[d.Last] = "last"
 	}
@@ -187,7 +187,7 @@ func (e *eng) guideSpreads(legal []state.Move) []state.Move {
 // or lost game).
 func (rs *Ruleset) playOut(game *catalog.CompiledGame, st *state.BoardState, seat int, mv state.Move) float64 {
 	for guard := 0; guard < 4*len(geoOf(game).ids); guard++ {
-		res, err := rs.Apply(game, st, rs.ToMove(game, st), mv)
+		res, err := rs.Apply(game, st, rs.ImpulseSeat(game, st), mv)
 		if err != nil {
 			return -100
 		}

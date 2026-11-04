@@ -63,8 +63,8 @@ func TestOpeningPlacesOpponentFlat(t *testing.T) {
 	if got := res.NewState.Reserve("white", "stone"); got != 21 {
 		t.Errorf("white stone reserve = %d, want 21 (untouched)", got)
 	}
-	if res.NextTurnSeat != 2 {
-		t.Errorf("NextTurnSeat = %d, want 2", res.NextTurnSeat)
+	if res.NextImpulseSeat != 2 {
+		t.Errorf("NextImpulseSeat = %d, want 2", res.NextImpulseSeat)
 	}
 
 	// Black's first move places a WHITE flat.
@@ -344,8 +344,8 @@ func TestStackMoveGameContinues(t *testing.T) {
 	if res.GameEnded {
 		t.Error("game should not end after a plain placement")
 	}
-	if res.NextTurnSeat != 2 {
-		t.Errorf("next seat = %d, want 2", res.NextTurnSeat)
+	if res.NextImpulseSeat != 2 {
+		t.Errorf("next seat = %d, want 2", res.NextImpulseSeat)
 	}
 }
 

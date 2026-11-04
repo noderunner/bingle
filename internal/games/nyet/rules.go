@@ -734,8 +734,8 @@ func (rs *Ruleset) Start(game *catalog.CompiledGame, seed uint64) (*state.BoardS
 	return st, nil
 }
 
-// ToMove is the seat that decides next, or 0 once the game is over.
-func (rs *Ruleset) ToMove(game *catalog.CompiledGame, st *state.BoardState) int {
+// ImpulseSeat is the seat that decides next, or 0 once the game is over.
+func (rs *Ruleset) ImpulseSeat(game *catalog.CompiledGame, st *state.BoardState) int {
 	d, err := dataOf(st)
 	if err != nil {
 		return 0
@@ -836,10 +836,10 @@ func (rs *Ruleset) Apply(game *catalog.CompiledGame, st *state.BoardState, seat 
 	ns := st.Clone()
 	ns.SetExt(nd)
 	ns.SetPly(st.Ply() + 1)
-	res := &state.MoveResult{NewState: ns, Move: legal, Notation: rs.Format(game, legal), NextTurnSeat: nd.Turn}
+	res := &state.MoveResult{NewState: ns, Move: legal, Notation: rs.Format(game, legal), NextImpulseSeat: nd.Turn}
 	if nd.Turn == 0 {
 		res.GameEnded = true
-		res.NextTurnSeat = seat
+		res.NextImpulseSeat = seat
 		res.EndReason = nd.Reason
 		res.EndDetail = scoreLine(e)
 		if nd.Winner != 0 {

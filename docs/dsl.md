@@ -508,7 +508,7 @@ definition: `catalog.Module{ID, Definition, Rules: courtfall.New()}`. `actions` 
 `win_condition.rules` are not used. A ruleset
 
 * generates and validates every decision (`Legal`, `Apply`) — a turn is a
-  sequence of decisions, and `ToMove` says whose the position waits for;
+  sequence of decisions, and `ImpulseSeat` says whose the position waits for;
 * keeps its data in the position's `ext` payload and publishes a derived
   `ext.view` (`tints`, `badges`, `seats[].counters`, `prompt`, `contest`…)
   that the generic UI draws using the `display` legend;

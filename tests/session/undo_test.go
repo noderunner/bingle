@@ -126,14 +126,14 @@ func TestUndo_AStepOfTheTurnComesBack(t *testing.T) {
 	playMove(t, m, room, "Alice", "red@e5")
 	playMove(t, m, room, "Bob", "blue@d4")
 	snap, err := m.GetState(ctx, room, nil)
-	if err != nil || snap.TurnSeat == nil || *snap.TurnSeat != 2 {
-		t.Fatalf("after one stone of two: %+v, %v", snap.TurnSeat, err)
+	if err != nil || snap.ImpulseSeat == nil || *snap.ImpulseSeat != 2 {
+		t.Fatalf("after one stone of two: %+v, %v", snap.ImpulseSeat, err)
 	}
 	out, err := m.Undo(ctx, room, "Bob")
 	if err != nil {
 		t.Fatalf("the first stone: %v", err)
 	}
-	if len(out.Removed) != 1 || out.Snapshot.MoveSeq != 1 || *out.Snapshot.TurnSeat != 2 {
+	if len(out.Removed) != 1 || out.Snapshot.MoveSeq != 1 || *out.Snapshot.ImpulseSeat != 2 {
 		t.Errorf("after taking it back: %+v at move %d", out.Removed, out.Snapshot.MoveSeq)
 	}
 	// Nothing of Alice's comes back with a second press.
@@ -213,7 +213,7 @@ func TestMoveIsFinal(t *testing.T) {
 	if err != nil || snap.MoveSeq != 2 {
 		t.Errorf("after asking: move %d, %v", snap.MoveSeq, err)
 	}
-	if _, err := m.MoveIsFinal(ctx, room, "Alice", "red@a1"); !errors.Is(err, session.ErrNotYourTurn) {
+	if _, err := m.MoveIsFinal(ctx, room, "Alice", "red@a1"); !errors.Is(err, session.ErrNotYourImpulse) {
 		t.Errorf("out of turn: %v", err)
 	}
 	if _, err := m.MoveIsFinal(ctx, room, "Bob", "black@e5"); err == nil {

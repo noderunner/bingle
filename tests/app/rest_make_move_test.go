@@ -26,7 +26,7 @@ type moveResult struct {
 
 // makeMoveResponse mirrors POST /api/games/{code}/moves's 200 response body
 // from docs/history/plan.md section 6.8: {"move": {...}, "state": {"board_state":
-// <raw JSON>, "turn_seat", "status", "move_seq"}}.
+// <raw JSON>, "impulse_seat", "status", "move_seq"}}.
 type makeMoveResponse struct {
 	Move  moveResult           `json:"move"`
 	State getGameStateResponse `json:"state"`
@@ -66,7 +66,7 @@ func postMove(t *testing.T, baseURL, code string, body any, rawBody string) (*ht
 // setupActiveGame creates a test-freeplay room with Alice (seat 1, black),
 // has Bob join to fill seat 2 (white) and activate the game, and returns
 // the room code. Per the turn-order-init fix (backlog item 20), the newly
-// activated game's turn_seat is seat 1 (black / Alice).
+// activated game's impulse_seat is seat 1 (black / Alice).
 func setupActiveGame(t *testing.T, baseURL string) string {
 	t.Helper()
 	roomCode := createRoom(t, baseURL, "Alice")
@@ -151,8 +151,8 @@ func TestPostMove_IllegalMove_Returns400AndBoardUnchanged(t *testing.T) {
 	if after.Status != "active" {
 		t.Errorf("status after rejected illegal move = %q, want %q (unchanged)", after.Status, "active")
 	}
-	if after.TurnSeat == nil || *after.TurnSeat != 1 {
-		t.Errorf("turn_seat after rejected illegal move = %v, want 1 (unchanged: still Alice/black's turn)", after.TurnSeat)
+	if after.ImpulseSeat == nil || *after.ImpulseSeat != 1 {
+		t.Errorf("impulse_seat after rejected illegal move = %v, want 1 (unchanged: still Alice/black's turn)", after.ImpulseSeat)
 	}
 
 	// board_state bytes should be byte-for-byte identical; fall back to a
@@ -239,8 +239,8 @@ func TestPostMove_LegalMove_Returns200WithMoveAndState(t *testing.T) {
 	if body.State.MoveSeq != 1 {
 		t.Errorf("state.move_seq = %d, want 1", body.State.MoveSeq)
 	}
-	if body.State.TurnSeat == nil || *body.State.TurnSeat != 2 {
-		t.Errorf("state.turn_seat = %v, want 2 (Bob/white's turn next)", body.State.TurnSeat)
+	if body.State.ImpulseSeat == nil || *body.State.ImpulseSeat != 2 {
+		t.Errorf("state.impulse_seat = %v, want 2 (Bob/white's turn next)", body.State.ImpulseSeat)
 	}
 	if body.State.Status != "active" {
 		t.Errorf("state.status = %q, want %q", body.State.Status, "active")
@@ -271,14 +271,14 @@ func TestPostMove_LegalMove_Returns200WithMoveAndState(t *testing.T) {
 	if after.MoveSeq != 1 {
 		t.Errorf("GET .../state move_seq = %d, want 1", after.MoveSeq)
 	}
-	if after.TurnSeat == nil || *after.TurnSeat != 2 {
-		t.Errorf("GET .../state turn_seat = %v, want 2", after.TurnSeat)
+	if after.ImpulseSeat == nil || *after.ImpulseSeat != 2 {
+		t.Errorf("GET .../state impulse_seat = %v, want 2", after.ImpulseSeat)
 	}
 }
 
 // TestPostMove_WrongTurn_Returns403AndStateUnchanged covers docs/history/plan.md
 // section 7's "move submitted by a name that is not the seat whose
-// turn_seat it is -> 403, no state change" edge case: after Alice's legal
+// impulse_seat it is -> 403, no state change" edge case: after Alice's legal
 // move above hands the turn to Bob (seat 2), Alice attempts a second move
 // immediately -> 403 with a non-empty {"error"}, and a following GET
 // .../state shows move_seq still 1 (unchanged by the rejected attempt).
@@ -318,8 +318,8 @@ func TestPostMove_WrongTurn_Returns403AndStateUnchanged(t *testing.T) {
 	if after.MoveSeq != 1 {
 		t.Errorf("move_seq after rejected out-of-turn move = %d, want 1 (unchanged)", after.MoveSeq)
 	}
-	if after.TurnSeat == nil || *after.TurnSeat != 2 {
-		t.Errorf("turn_seat after rejected out-of-turn move = %v, want 2 (unchanged: still Bob/white's turn)", after.TurnSeat)
+	if after.ImpulseSeat == nil || *after.ImpulseSeat != 2 {
+		t.Errorf("impulse_seat after rejected out-of-turn move = %v, want 2 (unchanged: still Bob/white's turn)", after.ImpulseSeat)
 	}
 }
 
@@ -448,7 +448,7 @@ func TestPostMove_BlankRequiredFields_Returns400(t *testing.T) {
 // TestPostMove_SpectatorCannotMove covers docs/history/plan.md section 7's
 // "Spectator attempts POST /api/games/{code}/moves -> 403 (no seat to move
 // from)" edge case: a spectator holds no seat, so Manager.MakeMove can't
-// match their name to game.TurnSeat, resulting in ErrNotYourTurn -> 403.
+// match their name to game.ImpulseSeat, resulting in ErrNotYourImpulse -> 403.
 func TestPostMove_SpectatorCannotMove(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	roomCode := setupActiveGame(t, baseURL)

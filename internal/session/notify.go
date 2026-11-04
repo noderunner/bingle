@@ -611,15 +611,15 @@ func (n *notifier) tap(room string, ev Event) {
 	var seat, seq int
 	switch d := ev.Data.(type) {
 	case moveEventData:
-		if d.TurnSeat == nil || d.Status != "active" {
+		if d.ImpulseSeat == nil || d.Status != "active" {
 			return
 		}
-		seat, seq = *d.TurnSeat, d.Seq
+		seat, seq = *d.ImpulseSeat, d.Seq
 	case stateEventData:
-		if d.TurnSeat == nil || d.Status != "active" || d.Lobby {
+		if d.ImpulseSeat == nil || d.Status != "active" || d.Lobby {
 			return
 		}
-		seat, seq = *d.TurnSeat, d.MoveSeq
+		seat, seq = *d.ImpulseSeat, d.MoveSeq
 	default:
 		return
 	}
@@ -688,7 +688,7 @@ func (n *notifier) seatPlayer(ctx context.Context, room string, seat int) (store
 func (n *notifier) send(room string, seat, seq int, ignoreConnected bool) {
 	ctx := context.Background()
 	game, player, ok := n.seatPlayer(ctx, room, seat)
-	if !ok || game.Status != "active" || game.TurnSeat == nil || *game.TurnSeat != seat || game.MoveSeq != seq {
+	if !ok || game.Status != "active" || game.ImpulseSeat == nil || *game.ImpulseSeat != seat || game.MoveSeq != seq {
 		return // the turn moved on
 	}
 	if !ignoreConnected && n.m.seatHasSocket(room, seat) {

@@ -384,21 +384,21 @@ func TestVoteKick_AndTheClock(t *testing.T) {
 	m, clock := bigTableManager(t)
 	room := table(t, m, session.CreateOptions{RealTime: realTime, ClockEach: 600}, "Ann", "Ben", "Cal")
 	connect(t, m, room, 3)
-	turn := *stateOf(t, m, room).TurnSeat
+	turn := *stateOf(t, m, room).ImpulseSeat
 	names := map[int]string{1: "Ann", 2: "Ben", 3: "Cal"}
 	other := turn%3 + 1
 	voters := []string{names[turn], names[other%3+1]}
 
 	clock.Advance(30 * time.Second)
-	before := stateOf(t, m, room).TurnDeadline
+	before := stateOf(t, m, room).ImpulseDeadline
 	for _, name := range voters {
 		if _, err := m.VoteKick(ctx, room, name, other); err != nil {
 			t.Fatal(err)
 		}
 	}
 	snap := stateOf(t, m, room)
-	if snap.TurnDeadline == nil || !snap.TurnDeadline.Equal(*before) {
-		t.Errorf("the deadline moved from %v to %v", before, snap.TurnDeadline)
+	if snap.ImpulseDeadline == nil || !snap.ImpulseDeadline.Equal(*before) {
+		t.Errorf("the deadline moved from %v to %v", before, snap.ImpulseDeadline)
 	}
 	for _, s := range snap.Clock.Seats {
 		if s.Seat == other {
@@ -421,7 +421,7 @@ func TestLargeTableClock_ChargesTheSeatToMove(t *testing.T) {
 		t.Fatalf("the clock: %+v", snap.Clock)
 	}
 	for range 4 {
-		seat := *snap.TurnSeat
+		seat := *snap.ImpulseSeat
 		left := map[int]float64{}
 		for _, s := range snap.Clock.Seats {
 			left[s.Seat] = s.Left
@@ -473,7 +473,7 @@ func waitForPerson(t *testing.T, m *session.Manager, room string) session.StateS
 	t.Helper()
 	for deadline := time.Now().Add(20 * time.Second); time.Now().Before(deadline); time.Sleep(10 * time.Millisecond) {
 		snap := stateOf(t, m, room)
-		if snap.Status != "active" || snap.TurnSeat == nil || seatOf(t, snap, *snap.TurnSeat).Bot == "" {
+		if snap.Status != "active" || snap.ImpulseSeat == nil || seatOf(t, snap, *snap.ImpulseSeat).Bot == "" {
 			return snap
 		}
 	}
@@ -491,7 +491,7 @@ func TestLargeTableClock_ABotTakesTheSeat(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			m, clock := bigTableManager(t)
 			room := table(t, m, opts, "Ann", "Ben", "Cal")
-			first := *stateOf(t, m, room).TurnSeat
+			first := *stateOf(t, m, room).ImpulseSeat
 			clock.Advance(61 * time.Second)
 
 			snap := waitForPerson(t, m, room)
@@ -499,7 +499,7 @@ func TestLargeTableClock_ABotTakesTheSeat(t *testing.T) {
 			if seat.Bot != "tactical" || seat.Replaced == nil || seat.Replaced.Reason != session.ReasonTimeout {
 				t.Fatalf("after the flag: %s, %+v", snap.Status, seat)
 			}
-			if snap.Status == "active" && *snap.TurnSeat == first {
+			if snap.Status == "active" && *snap.ImpulseSeat == first {
 				t.Errorf("the game is still waiting on the seat that went")
 			}
 			if snap.Clock != nil {
@@ -530,7 +530,7 @@ func TestLargeTableClock_ABotTakesTheSeat(t *testing.T) {
 func TestLargeTableClock_TheWatcherSeesAFlag(t *testing.T) {
 	m, clock := bigTableManager(t)
 	room := table(t, m, session.CreateOptions{RealTime: realTime, ClockEach: 60}, "Ann", "Ben", "Cal")
-	first := *stateOf(t, m, room).TurnSeat
+	first := *stateOf(t, m, room).ImpulseSeat
 	events, stop := m.Subscribe(room)
 	defer stop()
 	clock.Advance(61 * time.Second)
@@ -551,7 +551,7 @@ func TestLargeTableClock_TheWatcherSeesAFlag(t *testing.T) {
 func TestTakeover_TheReplacedPersonHoldsNoSeat(t *testing.T) {
 	m, clock := bigTableManager(t)
 	room := table(t, m, session.CreateOptions{ClockEach: 60}, "Ann", "Ben", "Cal")
-	first := *stateOf(t, m, room).TurnSeat
+	first := *stateOf(t, m, room).ImpulseSeat
 	clock.Advance(61 * time.Second)
 	snap := waitForPerson(t, m, room)
 	for _, name := range []string{"Ann", "Ben", "Cal"} {

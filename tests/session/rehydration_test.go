@@ -96,9 +96,9 @@ func newRehydrationManagerAt(t *testing.T, dbPath string) (*session.Manager, *st
 }
 
 // createActivateAndMove runs CreateGame(Alice) + JoinGame(Bob, RolePlayer)
-// (which activates the game and sets turn_seat to seat 1) + one legal
+// (which activates the game and sets impulse_seat to seat 1) + one legal
 // capturing move by Alice (seat 1), leaving real, non-trivial state: a
-// specific board_state and turn_seat flipped to seat 2. Returns the room
+// specific board_state and impulse_seat flipped to seat 2. Returns the room
 // code.
 func createActivateAndMove(t *testing.T, mgr *session.Manager, ctx context.Context) string {
 	t.Helper()
@@ -126,7 +126,7 @@ func createActivateAndMove(t *testing.T, mgr *session.Manager, ctx context.Conte
 }
 
 // --- 1. The AC itself: a fresh Manager against the same DB file returns the
-//        exact same board_state/turn_seat (plus move_seq/status) GetState
+//        exact same board_state/impulse_seat (plus move_seq/status) GetState
 //        reported before the "restart" ---------------------------------------
 
 func TestManagerRehydration_GetState_MatchesPreRestartState(t *testing.T) {
@@ -145,8 +145,8 @@ func TestManagerRehydration_GetState_MatchesPreRestartState(t *testing.T) {
 	if preRestart.MoveSeq != 1 {
 		t.Fatalf("fixture setup: Manager #1 GetState() MoveSeq = %d, want 1 (precondition for this test)", preRestart.MoveSeq)
 	}
-	if preRestart.TurnSeat == nil || *preRestart.TurnSeat != 2 {
-		t.Fatalf("fixture setup: Manager #1 GetState() TurnSeat = %v, want pointer to 2 (precondition for this test)", preRestart.TurnSeat)
+	if preRestart.ImpulseSeat == nil || *preRestart.ImpulseSeat != 2 {
+		t.Fatalf("fixture setup: Manager #1 GetState() ImpulseSeat = %v, want pointer to 2 (precondition for this test)", preRestart.ImpulseSeat)
 	}
 
 	// Simulate the process actually restarting: close the first store, then
@@ -169,13 +169,13 @@ func TestManagerRehydration_GetState_MatchesPreRestartState(t *testing.T) {
 		t.Errorf("Manager #2 GetState() BoardState = %s, want unchanged from pre-restart %s",
 			postRestart.BoardState, preRestart.BoardState)
 	}
-	if (postRestart.TurnSeat == nil) != (preRestart.TurnSeat == nil) {
-		t.Fatalf("Manager #2 GetState() TurnSeat = %v, want same nilness as pre-restart %v",
-			postRestart.TurnSeat, preRestart.TurnSeat)
+	if (postRestart.ImpulseSeat == nil) != (preRestart.ImpulseSeat == nil) {
+		t.Fatalf("Manager #2 GetState() ImpulseSeat = %v, want same nilness as pre-restart %v",
+			postRestart.ImpulseSeat, preRestart.ImpulseSeat)
 	}
-	if postRestart.TurnSeat != nil && *postRestart.TurnSeat != *preRestart.TurnSeat {
-		t.Errorf("Manager #2 GetState() TurnSeat = %d, want %d (unchanged from pre-restart)",
-			*postRestart.TurnSeat, *preRestart.TurnSeat)
+	if postRestart.ImpulseSeat != nil && *postRestart.ImpulseSeat != *preRestart.ImpulseSeat {
+		t.Errorf("Manager #2 GetState() ImpulseSeat = %d, want %d (unchanged from pre-restart)",
+			*postRestart.ImpulseSeat, *preRestart.ImpulseSeat)
 	}
 	if postRestart.MoveSeq != preRestart.MoveSeq {
 		t.Errorf("Manager #2 GetState() MoveSeq = %d, want %d (unchanged from pre-restart)",
@@ -228,8 +228,8 @@ func TestManagerRehydration_SecondManagerCanMakeNextMove(t *testing.T) {
 	if outcome.Seat != 2 {
 		t.Errorf("Manager #2 MakeMove() Seat = %d, want 2 (Bob holds seat 2)", outcome.Seat)
 	}
-	if outcome.NextTurnSeat != 1 {
-		t.Errorf("Manager #2 MakeMove() NextTurnSeat = %d, want 1 (flipped back from seat 2)", outcome.NextTurnSeat)
+	if outcome.NextImpulseSeat != 1 {
+		t.Errorf("Manager #2 MakeMove() NextImpulseSeat = %d, want 1 (flipped back from seat 2)", outcome.NextImpulseSeat)
 	}
 	if outcome.Status != "active" {
 		t.Errorf("Manager #2 MakeMove() Status = %q, want %q", outcome.Status, "active")
@@ -243,11 +243,11 @@ func TestManagerRehydration_SecondManagerCanMakeNextMove(t *testing.T) {
 	if snap.MoveSeq != 2 {
 		t.Errorf("Manager #2 GetState() MoveSeq = %d, want 2", snap.MoveSeq)
 	}
-	if snap.TurnSeat == nil {
-		t.Fatalf("Manager #2 GetState() TurnSeat = nil, want pointer to 1")
+	if snap.ImpulseSeat == nil {
+		t.Fatalf("Manager #2 GetState() ImpulseSeat = nil, want pointer to 1")
 	}
-	if *snap.TurnSeat != 1 {
-		t.Errorf("Manager #2 GetState() TurnSeat = %d, want 1 (flipped back from seat 2 by move 2)", *snap.TurnSeat)
+	if *snap.ImpulseSeat != 1 {
+		t.Errorf("Manager #2 GetState() ImpulseSeat = %d, want 1 (flipped back from seat 2 by move 2)", *snap.ImpulseSeat)
 	}
 }
 
@@ -267,7 +267,7 @@ func TestManagerRehydration_MultipleRoomsSurviveIndependently(t *testing.T) {
 	roomA := createActivateAndMove(t, mgr1, ctx)
 
 	// Room B: created only, never joined -- left in "waiting" status with an
-	// untouched initial board state and no turn_seat.
+	// untouched initial board state and no impulse_seat.
 	createdB, err := mgr1.CreateGame(ctx, rehydrationFixtureGameDefID, "Carol")
 	if err != nil {
 		t.Fatalf("CreateGame() [room B] error = %v, want nil", err)
@@ -289,8 +289,8 @@ func TestManagerRehydration_MultipleRoomsSurviveIndependently(t *testing.T) {
 	if preB.Status != "waiting" {
 		t.Fatalf("fixture setup: Manager #1 GetState(room B) Status = %q, want %q (precondition for this test)", preB.Status, "waiting")
 	}
-	if preB.TurnSeat != nil {
-		t.Fatalf("fixture setup: Manager #1 GetState(room B) TurnSeat = %v, want nil (precondition: never activated)", *preB.TurnSeat)
+	if preB.ImpulseSeat != nil {
+		t.Fatalf("fixture setup: Manager #1 GetState(room B) ImpulseSeat = %v, want nil (precondition: never activated)", *preB.ImpulseSeat)
 	}
 
 	if err := st1.Close(); err != nil {
@@ -313,11 +313,11 @@ func TestManagerRehydration_MultipleRoomsSurviveIndependently(t *testing.T) {
 	if postA.BoardState != preA.BoardState {
 		t.Errorf("Manager #2 GetState(room A) BoardState = %s, want %s", postA.BoardState, preA.BoardState)
 	}
-	if postA.TurnSeat == nil || preA.TurnSeat == nil {
-		t.Fatalf("Manager #2 GetState(room A) TurnSeat = %v, preA.TurnSeat = %v, want both non-nil", postA.TurnSeat, preA.TurnSeat)
+	if postA.ImpulseSeat == nil || preA.ImpulseSeat == nil {
+		t.Fatalf("Manager #2 GetState(room A) ImpulseSeat = %v, preA.ImpulseSeat = %v, want both non-nil", postA.ImpulseSeat, preA.ImpulseSeat)
 	}
-	if *postA.TurnSeat != *preA.TurnSeat {
-		t.Errorf("Manager #2 GetState(room A) TurnSeat = %d, want %d", *postA.TurnSeat, *preA.TurnSeat)
+	if *postA.ImpulseSeat != *preA.ImpulseSeat {
+		t.Errorf("Manager #2 GetState(room A) ImpulseSeat = %d, want %d", *postA.ImpulseSeat, *preA.ImpulseSeat)
 	}
 	if postA.MoveSeq != preA.MoveSeq {
 		t.Errorf("Manager #2 GetState(room A) MoveSeq = %d, want %d", postA.MoveSeq, preA.MoveSeq)
@@ -327,12 +327,12 @@ func TestManagerRehydration_MultipleRoomsSurviveIndependently(t *testing.T) {
 	}
 
 	// Room B: still "waiting", untouched by rehydration, and NOT contaminated
-	// with room A's board state or turn_seat.
+	// with room A's board state or impulse_seat.
 	if postB.Status != "waiting" {
 		t.Errorf("Manager #2 GetState(room B) Status = %q, want %q (rehydration must not disturb a waiting game)", postB.Status, "waiting")
 	}
-	if postB.TurnSeat != nil {
-		t.Errorf("Manager #2 GetState(room B) TurnSeat = %v, want nil (never activated, before or after restart)", *postB.TurnSeat)
+	if postB.ImpulseSeat != nil {
+		t.Errorf("Manager #2 GetState(room B) ImpulseSeat = %v, want nil (never activated, before or after restart)", *postB.ImpulseSeat)
 	}
 	if postB.MoveSeq != preB.MoveSeq {
 		t.Errorf("Manager #2 GetState(room B) MoveSeq = %d, want %d", postB.MoveSeq, preB.MoveSeq)

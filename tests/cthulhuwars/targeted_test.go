@@ -123,7 +123,7 @@ func settle(t *testing.T, st *state.BoardState) *state.BoardState {
 		if d := data(t, st); d.Stage == "turn" || d.Stage == "" {
 			return st
 		}
-		seat, _ := state.TurnAfter(g, st, 1)
+		seat, _ := state.ImpulseAfter(g, st, 1)
 		legal := state.LegalMoves(g, st, seat)
 		if len(legal) == 0 {
 			t.Fatalf("seat %d has nothing to decide\n%s", seat, state.RenderText(g, st))
@@ -215,8 +215,8 @@ func TestAReactionWindowIsTheReactorsTurn(t *testing.T) {
 	if r == nil {
 		t.Fatal("no reaction window opened")
 	}
-	if res.NextTurnSeat != r.Seat {
-		t.Errorf("a window for seat %d names seat %d next", r.Seat, res.NextTurnSeat)
+	if res.NextImpulseSeat != r.Seat {
+		t.Errorf("a window for seat %d names seat %d next", r.Seat, res.NextImpulseSeat)
 	}
 	if r.Seat == cc {
 		t.Errorf("the window is for the seat that acted")

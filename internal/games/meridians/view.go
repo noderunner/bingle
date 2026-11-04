@@ -17,9 +17,9 @@ var (
 // (and so die when their owner's turn ends), where the last stone went, and how
 // many stones each player has.
 type View struct {
-	Phase  string `json:"phase"`
-	ToMove int    `json:"to_move,omitempty"`
-	Prompt string `json:"prompt"`
+	Phase       string `json:"phase"`
+	ImpulseSeat int    `json:"impulse_seat,omitempty"`
+	Prompt      string `json:"prompt"`
 	// Tints marks points by legend key, Badges the stones of a dead group.
 	Tints  map[string]string   `json:"tints,omitempty"`
 	Badges map[string][]string `json:"badges,omitempty"`
@@ -62,7 +62,7 @@ func (rs *Ruleset) Determinize(game *catalog.CompiledGame, st *state.BoardState,
 
 func (e *eng) buildView() *View {
 	d := e.d
-	v := &View{Phase: "play", ToMove: d.Turn, Tints: map[string]string{}, Badges: map[string][]string{}, Seats: map[string]*SeatView{}}
+	v := &View{Phase: "play", ImpulseSeat: d.Turn, Tints: map[string]string{}, Badges: map[string][]string{}, Seats: map[string]*SeatView{}}
 	if d.Last != "" {
 		v.Tints[d.Last] = "last"
 	}

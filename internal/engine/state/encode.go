@@ -44,7 +44,7 @@ type planeLayout struct {
 }
 
 // channelNames lists the channels in order: piece one-hots per depth level,
-// the stack height, reserve scalars, then side-to-move and ply.
+// the stack height, reserve scalars, then seat on impulse and ply.
 func (l *planeLayout) channelNames() []string {
 	var names []string
 	rels := relativeNames(len(l.seats))
@@ -65,7 +65,7 @@ func (l *planeLayout) channelNames() []string {
 			names = append(names, "reserve/"+rel+"/"+pool)
 		}
 	}
-	return append(names, "to-move", "ply")
+	return append(names, "on-impulse", "ply")
 }
 
 // PlaneChannels returns the channel names EncodePlanes uses for game as seen
@@ -158,9 +158,9 @@ func relativeNames(n int) []string {
 	return out
 }
 
-// EncodePlanes encodes st from viewerSeat's point of view. toMoveSeat is the
-// seat whose turn it is (feeds the to-move scalar).
-func EncodePlanes(game *catalog.CompiledGame, st *BoardState, viewerSeat, toMoveSeat int, opts PlaneOptions) (*Planes, error) {
+// EncodePlanes encodes st from viewerSeat's point of view. impulseSeat is the
+// seat on impulse (feeds the on-impulse scalar).
+func EncodePlanes(game *catalog.CompiledGame, st *BoardState, viewerSeat, impulseSeat int, opts PlaneOptions) (*Planes, error) {
 	if rs, ok := RulesetOf(game); ok {
 		pe, ok := rs.(PlaneEncoder)
 		if !ok {
@@ -238,7 +238,7 @@ func EncodePlanes(game *catalog.CompiledGame, st *BoardState, viewerSeat, toMove
 			ch++
 		}
 	}
-	if toMoveSeat == viewerSeat {
+	if impulseSeat == viewerSeat {
 		fill(data, ch, cells, 1)
 	}
 	ch++

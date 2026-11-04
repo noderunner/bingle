@@ -21,13 +21,13 @@ import (
 // session, API, MCP, bots, environments and the web UI work unchanged.
 //
 // A decision is one move: a ruleset turn is a sequence of moves, often by
-// the same seat, and ToMove says whose decision the position is waiting for.
+// the same seat, and ImpulseSeat says whose decision the position is waiting for.
 type Ruleset interface {
 	// Start returns the opening position. seed seeds the game's chance (0
 	// is valid but predictable).
 	Start(game *catalog.CompiledGame, seed uint64) (*BoardState, error)
-	// ToMove is the seat the position waits for, or 0 once it is over.
-	ToMove(game *catalog.CompiledGame, st *BoardState) int
+	// ImpulseSeat is the seat the position waits for, or 0 once it is over.
+	ImpulseSeat(game *catalog.CompiledGame, st *BoardState) int
 	// Legal lists every decision seat may make, in a deterministic order.
 	Legal(game *catalog.CompiledGame, st *BoardState, seat int) []Move
 	// Apply validates and applies one decision. It must reject exactly the

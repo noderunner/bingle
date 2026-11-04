@@ -233,7 +233,7 @@ func TestATableOfSinglePicksPlays(t *testing.T) {
 		t.Fatal(err)
 	}
 	for i := 0; i < 400; i++ {
-		seat := rs.ToMove(tb.g, st)
+		seat := rs.ImpulseSeat(tb.g, st)
 		legal := rs.Legal(tb.g, st, seat)
 		if len(legal) == 0 {
 			break

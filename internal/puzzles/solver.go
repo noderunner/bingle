@@ -55,18 +55,18 @@ func (s *Solver) winsAfter(ctx context.Context, res *state.MoveResult, target, p
 	if plies <= 0 || ctx.Err() != nil {
 		return false
 	}
-	return s.solve(ctx, res.NewState, res.NextTurnSeat, target, plies)
+	return s.solve(ctx, res.NewState, res.NextImpulseSeat, target, plies)
 }
 
-// solve: with toMove to play in st, does target force a win within plies?
-func (s *Solver) solve(ctx context.Context, st *state.BoardState, toMove, target, plies int) bool {
-	legal := state.LegalMoves(s.game, st, toMove)
+// solve: with impulseSeat to play in st, does target force a win within plies?
+func (s *Solver) solve(ctx context.Context, st *state.BoardState, impulseSeat, target, plies int) bool {
+	legal := state.LegalMoves(s.game, st, impulseSeat)
 	if len(legal) == 0 {
 		return false // stalemate: not a win for anyone we can prove
 	}
-	if toMove == target {
+	if impulseSeat == target {
 		for _, mv := range legal {
-			res, err := state.Apply(s.game, st, toMove, mv)
+			res, err := state.Apply(s.game, st, impulseSeat, mv)
 			s.Nodes++
 			if err != nil {
 				continue
@@ -79,7 +79,7 @@ func (s *Solver) solve(ctx context.Context, st *state.BoardState, toMove, target
 	}
 	// The opponent picks the defence that hurts most: every reply must lose.
 	for _, mv := range legal {
-		res, err := state.Apply(s.game, st, toMove, mv)
+		res, err := state.Apply(s.game, st, impulseSeat, mv)
 		s.Nodes++
 		if err != nil {
 			continue
@@ -96,9 +96,9 @@ func (s *Solver) solve(ctx context.Context, st *state.BoardState, toMove, target
 // notation. It assumes mv is a winning first move within plies.
 func (s *Solver) Line(ctx context.Context, st *state.BoardState, seat int, mv state.Move, plies int) []string {
 	var out []string
-	cur, toMove, move := st, seat, mv
+	cur, impulseSeat, move := st, seat, mv
 	for plies > 0 {
-		res, err := state.Apply(s.game, cur, toMove, move)
+		res, err := state.Apply(s.game, cur, impulseSeat, move)
 		if err != nil {
 			return out
 		}
@@ -107,16 +107,16 @@ func (s *Solver) Line(ctx context.Context, st *state.BoardState, seat int, mv st
 		if res.GameEnded {
 			return out
 		}
-		cur, toMove = res.NewState, res.NextTurnSeat
-		legal := state.LegalMoves(s.game, cur, toMove)
+		cur, impulseSeat = res.NewState, res.NextImpulseSeat
+		legal := state.LegalMoves(s.game, cur, impulseSeat)
 		if len(legal) == 0 {
 			return out
 		}
-		if toMove == seat {
+		if impulseSeat == seat {
 			// Attacker: pick a move that still wins.
 			found := false
 			for _, m := range legal {
-				r, err := state.Apply(s.game, cur, toMove, m)
+				r, err := state.Apply(s.game, cur, impulseSeat, m)
 				if err != nil {
 					continue
 				}
@@ -134,7 +134,7 @@ func (s *Solver) Line(ctx context.Context, st *state.BoardState, seat int, mv st
 			// immediately, else the first).
 			move = legal[0]
 			for _, m := range legal {
-				r, err := state.Apply(s.game, cur, toMove, m)
+				r, err := state.Apply(s.game, cur, impulseSeat, m)
 				if err != nil {
 					continue
 				}

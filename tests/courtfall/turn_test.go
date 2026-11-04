@@ -125,8 +125,8 @@ func TestActivationIsTwoActionsThenAWhiteStone(t *testing.T) {
 	if d.Cond["white/knight"] != 1 {
 		t.Fatalf("the Outrider should carry a white stone: %v", d.Cond)
 	}
-	if res.NextTurnSeat != dark {
-		t.Fatalf("NextTurnSeat = %d", res.NextTurnSeat)
+	if res.NextImpulseSeat != dark {
+		t.Fatalf("NextImpulseSeat = %d", res.NextImpulseSeat)
 	}
 }
 

@@ -21,15 +21,15 @@ type mcpJoinResult struct {
 }
 
 // mcpGetStateResult mirrors get_state's result shape from docs/history/plan.md
-// section 6.10: {"board_state","turn_seat","status","move_seq"} — no
+// section 6.10: {"board_state","impulse_seat","status","move_seq"} — no
 // "at_seq" field (that's REST-only). board_state is decoded as
 // json.RawMessage, mirroring REST's getGameStateResponse, so it can be
 // compared structurally against the REST response rather than byte-for-byte.
 type mcpGetStateResult struct {
-	BoardState json.RawMessage `json:"board_state"`
-	TurnSeat   *int            `json:"turn_seat"`
-	Status     string          `json:"status"`
-	MoveSeq    int             `json:"move_seq"`
+	BoardState  json.RawMessage `json:"board_state"`
+	ImpulseSeat *int            `json:"impulse_seat"`
+	Status      string          `json:"status"`
+	MoveSeq     int             `json:"move_seq"`
 }
 
 // TestMCPJoinGame_NewPlayerFillsLastSeat_ActivatesGameAndVisibleViaREST
@@ -263,7 +263,7 @@ func TestMCPJoinGame_UnknownRoomCode_IsToolLevelError(t *testing.T) {
 // making at least one legal move via REST (so state isn't the trivial
 // initial board), a call to the get_state MCP tool for that room and a
 // plain REST GET /api/games/{code}/state call for the SAME room must return
-// EQUIVALENT data — same status, same turn_seat, same move_seq, and the same
+// EQUIVALENT data — same status, same impulse_seat, same move_seq, and the same
 // board_state (compared structurally, decoding both as
 // map[string]occupant, since exact byte formatting between the two surfaces
 // might differ even if semantically identical; a raw string/byte compare is
@@ -295,14 +295,14 @@ func TestMCPGetState_MatchesRESTGetState_ForSameRoom(t *testing.T) {
 	var mcpState mcpGetStateResult
 	decodeToolResult(t, res, &mcpState)
 
-	// Same status, turn_seat, move_seq.
+	// Same status, impulse_seat, move_seq.
 	if mcpState.Status != restState.Status {
 		t.Errorf("MCP status = %q, REST status = %q, want equal", mcpState.Status, restState.Status)
 	}
-	if (mcpState.TurnSeat == nil) != (restState.TurnSeat == nil) {
-		t.Errorf("MCP turn_seat = %v, REST turn_seat = %v, want both nil or both non-nil", mcpState.TurnSeat, restState.TurnSeat)
-	} else if mcpState.TurnSeat != nil && restState.TurnSeat != nil && *mcpState.TurnSeat != *restState.TurnSeat {
-		t.Errorf("MCP turn_seat = %d, REST turn_seat = %d, want equal", *mcpState.TurnSeat, *restState.TurnSeat)
+	if (mcpState.ImpulseSeat == nil) != (restState.ImpulseSeat == nil) {
+		t.Errorf("MCP impulse_seat = %v, REST impulse_seat = %v, want both nil or both non-nil", mcpState.ImpulseSeat, restState.ImpulseSeat)
+	} else if mcpState.ImpulseSeat != nil && restState.ImpulseSeat != nil && *mcpState.ImpulseSeat != *restState.ImpulseSeat {
+		t.Errorf("MCP impulse_seat = %d, REST impulse_seat = %d, want equal", *mcpState.ImpulseSeat, *restState.ImpulseSeat)
 	}
 	if mcpState.MoveSeq != restState.MoveSeq {
 		t.Errorf("MCP move_seq = %d, REST move_seq = %d, want equal", mcpState.MoveSeq, restState.MoveSeq)
@@ -354,7 +354,7 @@ func TestMCPGetState_UnknownRoomCode_IsToolLevelError(t *testing.T) {
 
 // TestMCPGetState_ImmediatelyAfterCreation_ReturnsWaitingWithZeroMoveSeq is a
 // second, simpler data point for get_state (no moves made, game not even
-// active yet): status "waiting", move_seq 0, turn_seat nil (JSON null), and
+// active yet): status "waiting", move_seq 0, impulse_seat nil (JSON null), and
 // board_state reflecting the initial setup — mirroring
 // TestGetGameState_ImmediatelyAfterCreation_ReturnsInitialBoardState.
 func TestMCPGetState_ImmediatelyAfterCreation_ReturnsWaitingWithZeroMoveSeq(t *testing.T) {
@@ -377,8 +377,8 @@ func TestMCPGetState_ImmediatelyAfterCreation_ReturnsWaitingWithZeroMoveSeq(t *t
 	if mcpState.MoveSeq != 0 {
 		t.Errorf("move_seq = %d, want 0", mcpState.MoveSeq)
 	}
-	if mcpState.TurnSeat != nil {
-		t.Errorf("turn_seat = %v, want nil (JSON null)", *mcpState.TurnSeat)
+	if mcpState.ImpulseSeat != nil {
+		t.Errorf("impulse_seat = %v, want nil (JSON null)", *mcpState.ImpulseSeat)
 	}
 
 	occupants := decodeOccupants(t, mcpState.BoardState)

@@ -17,12 +17,12 @@ var (
 
 // View is what clients draw beyond the pieces.
 type View struct {
-	Phase  string               `json:"phase"`
-	Stage  string               `json:"stage,omitempty"`
-	ToMove int                  `json:"to_move,omitempty"`
-	Prompt string               `json:"prompt"`
-	Tints  map[string]string    `json:"tints,omitempty"`
-	Seats  map[string]*SeatView `json:"seats"`
+	Phase       string               `json:"phase"`
+	Stage       string               `json:"stage,omitempty"`
+	ImpulseSeat int                  `json:"impulse_seat,omitempty"`
+	Prompt      string               `json:"prompt"`
+	Tints       map[string]string    `json:"tints,omitempty"`
+	Seats       map[string]*SeatView `json:"seats"`
 }
 
 // SeatView is one player's scoreboard.
@@ -61,7 +61,7 @@ func (rs *Ruleset) Determinize(game *catalog.CompiledGame, st *state.BoardState,
 
 func (e *eng) buildView() *View {
 	d := e.d
-	v := &View{Phase: "play", Stage: d.Stage, ToMove: d.Turn, Tints: map[string]string{}, Seats: map[string]*SeatView{}}
+	v := &View{Phase: "play", Stage: d.Stage, ImpulseSeat: d.Turn, Tints: map[string]string{}, Seats: map[string]*SeatView{}}
 	for _, c := range d.Last {
 		v.Tints[c] = "last"
 	}
