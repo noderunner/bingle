@@ -513,7 +513,29 @@ function currentCells() {
 		return v ? v.cells : {};
 	}
 	if (S.preview) return S.preview.cells;
+	if (S.moveQueue && S.state) return withoutQueued(S.state.cells);
 	return S.state ? S.state.cells : {};
+}
+
+/** The board with the units of the queue lifted off it: they are in the impulse card now. */
+function withoutQueued(cells) {
+	const from = S.moveQueue.from;
+	const color = colorOf(S.game.impulse_seat);
+	const stack = [...(cells[from] || [])];
+	for (const piece of queuedUnits()) {
+		const i = stack.findLastIndex((pc) => pc.piece === plainPiece(piece) && pc.color === color);
+		if (i >= 0) stack.splice(i, 1);
+	}
+	return { ...cells, [from]: stack };
+}
+
+/** Who stands on each Gate, without a unit that is in the queue. */
+function shownHolders() {
+	const holders = (rulesetView() || {}).holders || null;
+	const q = S.moveQueue;
+	if (!holders || !q || !q.units.has(ONGATE + holders[q.from])) return holders;
+	const { [q.from]: _, ...rest } = holders;
+	return rest;
 }
 
 function currentState() {
@@ -2670,7 +2692,7 @@ function drawBoard(host) {
 			tints: (rulesetView() || {}).tints || null,
 			badges: (rulesetView() || {}).badges || null,
 			walls: (rulesetView() || {}).walls || null,
-			holders: (rulesetView() || {}).holders || null,
+			holders: shownHolders(),
 			layers: { names: S.settings.names, glyphs: glyphLayerOn(), sigils: S.settings.sigils, units: S.settings.units, ice: S.settings.ice },
 			legend: isRuleset() ? S.info.display || null : null,
 			tokenOk: interactive ? tokenOk : null,

@@ -110,6 +110,56 @@ func TestWebCthulhuWars_AMoveQueuesItsUnitsThenSendsThemTogether(t *testing.T) {
 	}
 }
 
+// A unit in the queue is off the map, and a unit taken out of the queue is back on it.
+func TestWebCthulhuWars_AQueuedUnitLeavesTheMap(t *testing.T) {
+	baseURL := newRESTTestServer(t)
+	doc := cwPosition(t,
+		[]cwUnit{{1, "cultist", "south-pacific", 3}, {1, "deep-one", "south-pacific", 1}, {2, "cultist", "asia", 1}},
+		map[string]int{"south-pacific": 1, "asia": 2},
+		[5]int{0, 10, 3, 3, 3}, [5]uint8{}, nil)
+	room := cwGameFrom(t, baseURL, doc)
+	ctx, cancel := newChromedpContext(t, 90*time.Second)
+	defer cancel()
+	openGameAs(t, ctx, baseURL, room, "cthulhu-wars", "Alice")
+	waitJS(t, ctx, "the buttons", `document.getElementById("action-recruit") !== null`, 15*time.Second)
+	token := func(piece string) string {
+		return `document.querySelector('#board .token[data-position="south-pacific"][data-piece="` + piece + `"]')`
+	}
+	cultists := func(what, want string) {
+		t.Helper()
+		waitJS(t, ctx, what, token("cultist")+` && `+token("cultist")+`.dataset.count === "`+want+`"`, 5*time.Second)
+	}
+	holder := `document.querySelector('#board .gate-chip[data-position="south-pacific"]').dataset.holder`
+
+	// Three Cultists, one of them on the Gate: a stack of two beside it.
+	cultists("a stack of two", "2")
+	clickUnit(t, ctx, "south-pacific", "cultist")
+	cultists("one lifted off", "1")
+	// The last of a type leaves no token behind.
+	clickUnit(t, ctx, "south-pacific", "deep-one")
+	waitJS(t, ctx, "the Deep One lifted off", token("deep-one")+` === null`, 5*time.Second)
+	// A click on its icon puts it back.
+	clickSel(t, ctx, `.queue-unit[data-piece="deep-one"]`)
+	waitJS(t, ctx, "the Deep One back", token("deep-one")+` !== null`, 5*time.Second)
+
+	// The unit on the Gate leaves the Gate empty, and the Gate stays.
+	clickSVG(t, ctx, `#board .gate-chip[data-position="south-pacific"]`)
+	waitJS(t, ctx, "the Gate without its figure", holder+` === ""`, 5*time.Second)
+	cultists("the stack beside the Gate as it was", "1")
+	clickSel(t, ctx, `.queue-unit[data-piece="gate:cultist"]`)
+	waitJS(t, ctx, "the figure back", holder+` === "cultist"`, 5*time.Second)
+
+	// Back puts everything back.
+	clickSel(t, ctx, "#undo-step")
+	waitJS(t, ctx, "the queue gone", `document.getElementById("move-queue") === null`, 5*time.Second)
+	cultists("the stack of two again", "2")
+
+	// Nothing was sent, so nothing was paid.
+	if got := evalString(t, ctx, `String(document.querySelector('#seat-1 [data-counter="power"]').textContent)`); got != "10" {
+		t.Errorf("Power %s after a queue that went nowhere", got)
+	}
+}
+
 // The queue stops growing at the Power there is to pay for it.
 func TestWebCthulhuWars_AMoveQueueStopsAtThePowerThereIs(t *testing.T) {
 	ctx, cancel := moveQueueGame(t, 2)

@@ -11,7 +11,8 @@ with a line of notation, so it was hard to see what the move would come to, or w
 ## Decision
 
 **The page gathers units in the impulse card, from one area, and clicking a destination sends them.** Clicking a unit adds it
-to a queue, shown as icons with a count and the running Power. Clicking an icon takes one out, and *Back* empties the queue.
+to a queue, shown as icons with a count and the running Power, and takes it off the map as that player sees it (a unit on a
+Gate leaves the Gate empty). The position on the server doesn't change until the units are sent. Clicking an icon takes one out, and *Back* empties the queue.
 Units that can't be paid for, or that share no destination with the rest, can't be added.
 
 **The queue belongs to the page.** The rules still have one step per unit (`go`, `leave`), so bots, the API, the notation and

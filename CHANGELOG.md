@@ -11,8 +11,8 @@ what the help window shows under *Recent changes*, so it is written for the peop
 
 ### Cthulhu Wars 0.9.0
 - **Move several units with one destination.** Click units on the map to gather them in the impulse card, then click where
-  they go. Each type shows its icon with a count, next to the Power the move will cost. Click an icon to take a unit out, or
-  *Back* to put them all back.
+  they go. Each type shows its icon with a count, next to the Power the move will cost, and gathered units leave the map. Click
+  an icon to put a unit back, or *Back* to put them all back.
 - **You can only gather what you can pay for**, and only units in the same area. Move another area's units afterwards.
 - **A move now waits for *Done*,** even when you have spent your last Power, with a summary of what moved. *Back* there
   takes back everything sent to that destination.
