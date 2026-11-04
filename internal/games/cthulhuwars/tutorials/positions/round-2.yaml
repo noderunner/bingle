@@ -19,7 +19,7 @@ cells:
   north-pacific:
     - {piece: flying-polyp, color: blue}
     - {piece: cultist, color: blue}
-  south-america-west:
+  africa:
     - {piece: cultist, color: red}
     - {piece: cultist, color: red}
     - {piece: dark-young, color: red}
@@ -73,11 +73,11 @@ ext:
     - {gates: 1}
     - {}
   ritual: 2
-  gates: {south-pacific: 1, antarctica: 0, asia: 2, south-america-west: 3, europe: 4}
+  gates: {south-pacific: 1, antarctica: 0, asia: 2, africa: 3, europe: 4}
   holders:
     south-pacific: cultist
     asia: cultist
-    south-america-west: cultist
+    africa: cultist
     europe: cultist
   books: [0, 0, 0, 0, 0, 0]
   neutral: [0, 0, 0, 0, 0, 0]

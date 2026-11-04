@@ -2385,7 +2385,7 @@ patch:
       - {from: south-atlantic, to: south-pacific}
       - {from: south-atlantic, to: west-africa}
   params:
-    starts: {cc: north-asia, bg: south-america}
+    starts: {cc: south-asia, bg: west-africa}
     sigils:
       sl: [north-america]
     art: guide/maps/earth-3-5.webp

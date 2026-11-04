@@ -67,17 +67,17 @@ func TestOpenerSetsUpLastInAnEmptyArea(t *testing.T) {
 	}
 	got := tb.can(st, "ow")
 	// The others already stand in their start areas: they are not on offer.
-	for _, busy := range []string{"south-pacific", "asia", "south-america-west"} {
+	for _, busy := range []string{"south-pacific", "asia", "africa"} {
 		if has(got, "start@"+busy) {
 			t.Errorf("start@%s offered although it holds a cult", busy)
 		}
 	}
-	if !has(got, "start@africa") || !has(got, "start@antarctica") {
+	if !has(got, "start@south-america-west") || !has(got, "start@antarctica") {
 		t.Fatalf("empty areas not offered: %v", got)
 	}
-	st = tb.as(st, "ow", "start@africa")
+	st = tb.as(st, "ow", "start@south-america-west")
 	d = tb.data(st)
-	if d.Stage != "direction" || d.Gates["africa"] != ow || tb.n(st, "ow", "cultist", "africa") != 6 || d.Power[ow] != 8 {
+	if d.Stage != "direction" || d.Gates["south-america-west"] != ow || tb.n(st, "ow", "cultist", "south-america-west") != 6 || d.Power[ow] != 8 {
 		t.Errorf("after the start: stage %q gates %v cultists %d power %d", d.Stage, d.Gates, tb.n(st, "ow", "cultist", "africa"), d.Power[ow])
 	}
 	tb.valid(st)

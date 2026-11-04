@@ -114,7 +114,7 @@ positions:
         - [145.4, 30.8]
   - id: asia
     name: Asia
-    tags: [land, c-as, glyph-dragon]
+    tags: [land, c-as, glyph-thorns]
     anchor: [873.3, 176.3]
     polygons:
       - - [930.4, 268.8]
@@ -159,7 +159,7 @@ positions:
         - [860.8, 274.8]
   - id: australia
     name: Australia
-    tags: [land, c-au, glyph-dragon]
+    tags: [land, c-au, glyph-chevron]
     anchor: [56.7, 358.6]
     polygons:
       - - [68.9, 408.9]
@@ -175,7 +175,7 @@ positions:
         - [9.6, 418.9]
   - id: central-america
     name: Central America
-    tags: [land, c-na, glyph-thorns]
+    tags: [land, c-na, glyph-dragon]
     anchor: [170.0, 225.8]
     polygons:
       - - [100.3, 173.6]
@@ -196,7 +196,7 @@ positions:
         - [152.9, 166.9]
   - id: europe
     name: Europe
-    tags: [land, c-eu, glyph-chevron]
+    tags: [land, c-eu, glyph-thorns]
     anchor: [698.2, 114.0]
     polygons:
       - - [746.1, 200.4]
@@ -276,7 +276,7 @@ positions:
         - [87.4, 418.9]
   - id: new-zealand
     name: New Zealand
-    tags: [land, c-au, glyph-dragon]
+    tags: [land, c-au, glyph-chevron]
     anchor: [138.8, 389.3]
     polygons:
       - - [58.7, 306.3]
@@ -301,7 +301,7 @@ positions:
         - [63.5, 301.0]
   - id: north-america-east
     name: North America East
-    tags: [land, c-na, glyph-thorns]
+    tags: [land, c-na, glyph-dragon]
     anchor: [309.7, 131.0]
     polygons:
       - - [298.3, 179.0]
@@ -327,7 +327,7 @@ positions:
         - [271.0, 123.3]
   - id: north-america-west
     name: North America West
-    tags: [land, c-na, glyph-thorns]
+    tags: [land, c-na, glyph-dragon]
     anchor: [195.5, 123.8]
     polygons:
       - - [38.9, 69.7]
@@ -461,7 +461,7 @@ positions:
         - [1000.0, 28.8]
   - id: south-america-east
     name: South America East
-    tags: [land, c-sa, glyph-thorns]
+    tags: [land, c-sa, glyph-dragon]
     anchor: [377.2, 341.0]
     polygons:
       - - [422.5, 338.5]
@@ -480,7 +480,7 @@ positions:
         - [420.5, 363.3]
   - id: south-america-west
     name: South America West
-    tags: [land, c-sa, glyph-thorns]
+    tags: [land, c-sa, glyph-dragon]
     anchor: [292.0, 348.9]
     polygons:
       - - [351.5, 400.2]

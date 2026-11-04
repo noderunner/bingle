@@ -35,7 +35,7 @@ patch:
             - [856.6, 473.2]
       - id: arabia
         name: Arabia
-        tags: [land, c-me, glyph-chevron]
+        tags: [land, c-me, glyph-thorns]
         anchor: [804.0, 231.7]
         polygons:
           - - [902.8, 272.9]
@@ -102,7 +102,7 @@ patch:
             - [0.0, 55.1]
       - id: australia
         name: Australia
-        tags: [land, c-au, glyph-dragon]
+        tags: [land, c-au, glyph-chevron]
         anchor: [52.0, 369.6]
         polygons:
           - - [75.5, 409.7]
@@ -119,7 +119,7 @@ patch:
             - [17.0, 419.5]
       - id: central-america
         name: Central America
-        tags: [land, c-na, glyph-thorns]
+        tags: [land, c-na, glyph-dragon]
         anchor: [174.2, 227.3]
         polygons:
           - - [106.1, 180.1]
@@ -160,7 +160,7 @@ patch:
             - [735.6, 435.6]
       - id: europe
         name: Europe
-        tags: [land, c-eu, glyph-chevron]
+        tags: [land, c-eu, glyph-thorns]
         anchor: [717.6, 152.3]
         polygons:
           - - [760.7, 111.0]
@@ -230,7 +230,7 @@ patch:
             - [91.1, 424.4]
       - id: new-zealand
         name: New Zealand
-        tags: [land, c-au, glyph-dragon]
+        tags: [land, c-au, glyph-chevron]
         anchor: [145.2, 395.4]
         polygons:
           - - [80.2, 313.4]
@@ -251,7 +251,7 @@ patch:
             - [105.4, 303.6]
       - id: north-america-east
         name: North America East
-        tags: [land, c-na, glyph-thorns]
+        tags: [land, c-na, glyph-dragon]
         anchor: [311.6, 130.3]
         polygons:
           - - [182.2, 40.5]
@@ -275,7 +275,7 @@ patch:
             - [315.4, 32.1]
       - id: north-america-west
         name: North America West
-        tags: [land, c-na, glyph-thorns]
+        tags: [land, c-na, glyph-dragon]
         anchor: [186.9, 117.1]
         polygons:
           - - [303.9, 182.2]
@@ -302,7 +302,7 @@ patch:
             - [288.2, 203.1]
       - id: north-asia
         name: North Asia
-        tags: [land, c-as, glyph-dragon]
+        tags: [land, c-as, glyph-thorns]
         anchor: [827.8, 89.6]
         polygons:
           - - [852.5, 131.9]
@@ -429,7 +429,7 @@ patch:
             - [943.6, 291.8]
       - id: scandinavia
         name: Scandinavia
-        tags: [land, c-eu, glyph-chevron]
+        tags: [land, c-eu, glyph-thorns]
         anchor: [706.9, 71.1]
         polygons:
           - - [579.2, 106.8]
@@ -453,7 +453,7 @@ patch:
             - [560.2, 82.4]
       - id: south-america-east
         name: South America East
-        tags: [land, c-sa, glyph-thorns]
+        tags: [land, c-sa, glyph-dragon]
         anchor: [377.4, 343.2]
         polygons:
           - - [422.8, 342.0]
@@ -472,7 +472,7 @@ patch:
             - [418.1, 367.2]
       - id: south-america-west
         name: South America West
-        tags: [land, c-sa, glyph-thorns]
+        tags: [land, c-sa, glyph-dragon]
         anchor: [294.8, 350.3]
         polygons:
           - - [247.5, 312.0]
@@ -492,7 +492,7 @@ patch:
             - [260.4, 309.2]
       - id: south-asia
         name: South Asia
-        tags: [land, c-as, glyph-dragon]
+        tags: [land, c-as, glyph-thorns]
         anchor: [927.7, 194.9]
         polygons:
           - - [959.2, 125.6]
@@ -660,7 +660,7 @@ patch:
       - {from: south-atlantic, to: south-pacific}
       - {from: south-atlantic, to: west-africa}
   params:
-    starts: {cc: north-asia, bg: south-america-west}
+    starts: {cc: south-asia, bg: west-africa}
     sigils:
       sl: [north-america-west]
   seats:

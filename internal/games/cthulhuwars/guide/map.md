@@ -46,9 +46,9 @@ Glyphs sit beside an area's name, or on the 3-5 map where the board prints them.
 
 | Glyph | Where |
 |---|---|
-| Dragon | Asia and Australia (North / South Asia and New Zealand where the board splits them); on the 3-5 map, the Americas |
-| Chevron | Europe, Africa, Arabia (Scandinavia, West / East Africa); on the 3-5 map, West and East Africa and Australia |
-| Thorns | the Americas; on the 3-5 map, Europe, Scandinavia, North and South Asia and Arabia |
+| Dragon | the Americas (North America West / East, Central America, South America West / East where the board splits them) |
+| Chevron | Africa and Australia (West / East Africa and New Zealand where the board splits them) |
+| Thorns | Europe and Asia (Scandinavia, Arabia and North / South Asia where the board splits them) |
 
 ## Areas and borders
 
@@ -58,21 +58,21 @@ Glyphs sit beside an area's name, or on the 3-5 map where the board prints them.
 
 | Area | Type | Glyph | Start | Sigil | Borders |
 |---|---|---|---|---|---|
-| Africa | Land | Chevron |  |  | Asia, Indian Ocean, North Atlantic, South Atlantic |
+| Africa | Land | Chevron | Black Goat |  | Asia, Indian Ocean, North Atlantic, South Atlantic |
 | Antarctica | Land | — |  | Windwalker | Indian Ocean, South Atlantic, South Pacific |
 | Arctic Ocean | Ocean | — |  | Windwalker | Asia, Europe, North America East, North America West, North Atlantic, North Pacific |
-| Asia | Land | Dragon | Crawling Chaos |  | Africa, Arctic Ocean, Europe, Indian Ocean, North Atlantic, North Pacific |
-| Australia | Land | Dragon |  |  | Indian Ocean, New Zealand |
-| Central America | Land | Thorns |  |  | North America West, North Atlantic, North Pacific, South America West |
-| Europe | Land | Chevron | Yellow Sign |  | Arctic Ocean, Asia, North Atlantic |
+| Asia | Land | Thorns | Crawling Chaos |  | Africa, Arctic Ocean, Europe, Indian Ocean, North Atlantic, North Pacific |
+| Australia | Land | Chevron |  |  | Indian Ocean, New Zealand |
+| Central America | Land | Dragon |  |  | North America West, North Atlantic, North Pacific, South America West |
+| Europe | Land | Thorns | Yellow Sign |  | Arctic Ocean, Asia, North Atlantic |
 | Indian Ocean | Ocean | — |  |  | Africa, Antarctica, Asia, Australia, New Zealand, North Pacific, South Atlantic, South Pacific |
-| New Zealand | Land | Dragon |  |  | Australia, Indian Ocean, South Pacific |
-| North America East | Land | Thorns |  |  | Arctic Ocean, North America West, North Atlantic |
-| North America West | Land | Thorns |  | Sleeper | Arctic Ocean, Central America, North America East, North Atlantic, North Pacific |
+| New Zealand | Land | Chevron |  |  | Australia, Indian Ocean, South Pacific |
+| North America East | Land | Dragon |  |  | Arctic Ocean, North America West, North Atlantic |
+| North America West | Land | Dragon |  | Sleeper | Arctic Ocean, Central America, North America East, North Atlantic, North Pacific |
 | North Atlantic | Ocean | — |  |  | Africa, Arctic Ocean, Asia, Central America, Europe, North America East, North America West, South America East, South Atlantic |
 | North Pacific | Ocean | — |  |  | Arctic Ocean, Asia, Central America, Indian Ocean, North America West, South America West, South Pacific |
-| South America East | Land | Thorns |  |  | North Atlantic, South America West, South Atlantic |
-| South America West | Land | Thorns | Black Goat |  | Central America, North Pacific, South America East, South Atlantic, South Pacific |
+| South America East | Land | Dragon |  |  | North Atlantic, South America West, South Atlantic |
+| South America West | Land | Dragon |  |  | Central America, North Pacific, South America East, South Atlantic, South Pacific |
 | South Atlantic | Ocean | — |  |  | Africa, Antarctica, Indian Ocean, North Atlantic, South America East, South America West, South Pacific |
 | South Pacific | Ocean | — | Great Cthulhu |  | Antarctica, Indian Ocean, New Zealand, North Pacific, South America West, South Atlantic |
 
@@ -90,15 +90,15 @@ Glyphs sit beside an area's name, or on the 3-5 map where the board prints them.
 | Europe | Land | Thorns | Yellow Sign |  | Arabia, North Asia, North Atlantic, Scandinavia |
 | Indian Ocean | Ocean | — |  |  | Antarctica, Arabia, Australia, East Africa, North Pacific, South Asia, South Atlantic, South Pacific |
 | North America | Land | Dragon |  | Sleeper | Arctic Ocean, North Atlantic, North Pacific, South America |
-| North Asia | Land | Thorns | Crawling Chaos |  | Arabia, Arctic Ocean, Europe, North Pacific, Scandinavia, South Asia |
+| North Asia | Land | Thorns |  |  | Arabia, Arctic Ocean, Europe, North Pacific, Scandinavia, South Asia |
 | North Atlantic | Ocean | — |  |  | Arabia, Arctic Ocean, Europe, North America, Scandinavia, South America, South Atlantic, West Africa |
 | North Pacific | Ocean | — |  |  | Arctic Ocean, Indian Ocean, North America, North Asia, South America, South Asia, South Pacific |
 | Scandinavia | Land | Thorns |  |  | Arctic Ocean, Europe, North Asia, North Atlantic |
-| South America | Land | Dragon | Black Goat |  | North America, North Atlantic, North Pacific, South Atlantic, South Pacific |
-| South Asia | Land | Thorns |  |  | Arabia, Indian Ocean, North Asia, North Pacific |
+| South America | Land | Dragon |  |  | North America, North Atlantic, North Pacific, South Atlantic, South Pacific |
+| South Asia | Land | Thorns | Crawling Chaos |  | Arabia, Indian Ocean, North Asia, North Pacific |
 | South Atlantic | Ocean | — |  |  | Antarctica, East Africa, Indian Ocean, North Atlantic, South America, South Pacific, West Africa |
 | South Pacific | Ocean | — | Great Cthulhu |  | Antarctica, Australia, Indian Ocean, North Pacific, South America, South Atlantic |
-| West Africa | Land | Chevron |  |  | Arabia, East Africa, North Atlantic, South Atlantic |
+| West Africa | Land | Chevron | Black Goat |  | Arabia, East Africa, North Atlantic, South Atlantic |
 
 ### 3 players
 
@@ -106,17 +106,17 @@ Glyphs sit beside an area's name, or on the 3-5 map where the board prints them.
 
 | Area | Type | Glyph | Start | Sigil | Borders |
 |---|---|---|---|---|---|
-| Africa | Land | Chevron |  |  | Asia, Indian Ocean, North Atlantic, South Atlantic |
+| Africa | Land | Chevron | Black Goat |  | Asia, Indian Ocean, North Atlantic, South Atlantic |
 | Antarctica | Land | — |  | Windwalker | Indian Ocean, South Atlantic, South Pacific |
 | Arctic Ocean | Ocean | — |  | Windwalker | Asia, Europe, North America, North Atlantic, North Pacific |
-| Asia | Land | Dragon | Crawling Chaos |  | Africa, Arctic Ocean, Europe, Indian Ocean, North Atlantic, North Pacific |
-| Australia | Land | Dragon |  |  | Indian Ocean, South Pacific |
-| Europe | Land | Chevron |  |  | Arctic Ocean, Asia, North Atlantic |
+| Asia | Land | Thorns | Crawling Chaos |  | Africa, Arctic Ocean, Europe, Indian Ocean, North Atlantic, North Pacific |
+| Australia | Land | Chevron |  |  | Indian Ocean, South Pacific |
+| Europe | Land | Thorns |  |  | Arctic Ocean, Asia, North Atlantic |
 | Indian Ocean | Ocean | — |  |  | Africa, Antarctica, Asia, Australia, North Pacific, South Atlantic, South Pacific |
-| North America | Land | Thorns |  | Sleeper | Arctic Ocean, North Atlantic, North Pacific, South America |
+| North America | Land | Dragon |  | Sleeper | Arctic Ocean, North Atlantic, North Pacific, South America |
 | North Atlantic | Ocean | — |  |  | Africa, Arctic Ocean, Asia, Europe, North America, South America, South Atlantic |
 | North Pacific | Ocean | — |  |  | Arctic Ocean, Asia, Indian Ocean, North America, South America, South Pacific |
-| South America | Land | Thorns | Black Goat |  | North America, North Atlantic, North Pacific, South Atlantic, South Pacific |
+| South America | Land | Dragon |  |  | North America, North Atlantic, North Pacific, South Atlantic, South Pacific |
 | South Atlantic | Ocean | — |  |  | Africa, Antarctica, Indian Ocean, North Atlantic, South America, South Pacific |
 | South Pacific | Ocean | — | Great Cthulhu |  | Antarctica, Australia, Indian Ocean, North Pacific, South America, South Atlantic |
 
@@ -127,26 +127,26 @@ Glyphs sit beside an area's name, or on the 3-5 map where the board prints them.
 | Area | Type | Glyph | Start | Sigil | Borders |
 |---|---|---|---|---|---|
 | Antarctica | Land | — |  | Windwalker | Indian Ocean, South Atlantic, South Pacific |
-| Arabia | Land | Chevron |  |  | East Africa, Europe, Indian Ocean, North Asia, North Atlantic, South Asia, West Africa |
+| Arabia | Land | Thorns |  |  | East Africa, Europe, Indian Ocean, North Asia, North Atlantic, South Asia, West Africa |
 | Arctic Ocean | Ocean | — |  | Windwalker | North America East, North America West, North Asia, North Atlantic, North Pacific, Scandinavia |
-| Australia | Land | Dragon |  |  | Indian Ocean, New Zealand |
-| Central America | Land | Thorns |  |  | North America West, North Atlantic, North Pacific, South America West |
+| Australia | Land | Chevron |  |  | Indian Ocean, New Zealand |
+| Central America | Land | Dragon |  |  | North America West, North Atlantic, North Pacific, South America West |
 | East Africa | Land | Chevron |  |  | Arabia, Indian Ocean, South Atlantic, West Africa |
-| Europe | Land | Chevron | Yellow Sign |  | Arabia, North Asia, North Atlantic, Scandinavia |
+| Europe | Land | Thorns | Yellow Sign |  | Arabia, North Asia, North Atlantic, Scandinavia |
 | Indian Ocean | Ocean | — |  |  | Antarctica, Arabia, Australia, East Africa, New Zealand, North Pacific, South Asia, South Atlantic, South Pacific |
-| New Zealand | Land | Dragon |  |  | Australia, Indian Ocean, South Pacific |
-| North America East | Land | Thorns |  |  | Arctic Ocean, North America West, North Atlantic |
-| North America West | Land | Thorns |  | Sleeper | Arctic Ocean, Central America, North America East, North Atlantic, North Pacific |
-| North Asia | Land | Dragon | Crawling Chaos |  | Arabia, Arctic Ocean, Europe, North Pacific, Scandinavia, South Asia |
+| New Zealand | Land | Chevron |  |  | Australia, Indian Ocean, South Pacific |
+| North America East | Land | Dragon |  |  | Arctic Ocean, North America West, North Atlantic |
+| North America West | Land | Dragon |  | Sleeper | Arctic Ocean, Central America, North America East, North Atlantic, North Pacific |
+| North Asia | Land | Thorns |  |  | Arabia, Arctic Ocean, Europe, North Pacific, Scandinavia, South Asia |
 | North Atlantic | Ocean | — |  |  | Arabia, Arctic Ocean, Central America, Europe, North America East, North America West, Scandinavia, South America East, South America West, South Atlantic, West Africa |
 | North Pacific | Ocean | — |  |  | Arctic Ocean, Central America, Indian Ocean, North America West, North Asia, South America West, South Asia, South Pacific |
-| Scandinavia | Land | Chevron |  |  | Arctic Ocean, Europe, North Asia, North Atlantic |
-| South America East | Land | Thorns |  |  | North Atlantic, South America West, South Atlantic |
-| South America West | Land | Thorns | Black Goat |  | Central America, North Atlantic, North Pacific, South America East, South Pacific |
-| South Asia | Land | Dragon |  |  | Arabia, Indian Ocean, North Asia, North Pacific |
+| Scandinavia | Land | Thorns |  |  | Arctic Ocean, Europe, North Asia, North Atlantic |
+| South America East | Land | Dragon |  |  | North Atlantic, South America West, South Atlantic |
+| South America West | Land | Dragon |  |  | Central America, North Atlantic, North Pacific, South America East, South Pacific |
+| South Asia | Land | Thorns | Crawling Chaos |  | Arabia, Indian Ocean, North Asia, North Pacific |
 | South Atlantic | Ocean | — |  |  | Antarctica, East Africa, Indian Ocean, North Atlantic, South America East, South Pacific, West Africa |
 | South Pacific | Ocean | — | Great Cthulhu |  | Antarctica, Indian Ocean, New Zealand, North Pacific, South America West, South Atlantic |
-| West Africa | Land | Chevron |  |  | Arabia, East Africa, North Atlantic, South Atlantic |
+| West Africa | Land | Chevron | Black Goat |  | Arabia, East Africa, North Atlantic, South Atlantic |
 
 ## The Primeval Map and its Glaciers
 

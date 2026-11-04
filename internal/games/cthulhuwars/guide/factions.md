@@ -36,7 +36,7 @@ The first four are the core set; the **Windwalker** and the **Sleeper** come fro
 
 ![Crawling Chaos glyph|96](guide/glyphs/cc.svg "Crawling Chaos's glyph — its sigil: shown where the cult begins on the map.")
 
-**Start:** Asia · **Ability:** Flight: all your units fly — a Move takes them up to 2 areas, over enemy units.
+**Start:** Asia (South Asia on the maps that split it) · **Ability:** Flight: all your units fly — a Move takes them up to 2 areas, over enemy units.
 
 | | Unit | Class | Pieces | Cost | Combat | Notes |
 |---|---|---|---|---|---|---|
@@ -66,7 +66,7 @@ Pained or Killed you may choose 2 Elder Signs instead of the Power.
 
 ![Black Goat glyph|96](guide/glyphs/bg.svg "Black Goat's glyph — its sigil: shown where the cult begins on the map.")
 
-**Start:** South America · **Ability:** Fertility Cult: summoning monsters is an Unlimited action for you.
+**Start:** Africa (West Africa on the maps that split it) · **Ability:** Fertility Cult: summoning monsters is an Unlimited action for you.
 
 > [!TIP]
 > Fertility Cult lets you summon as many Monsters in one turn as you can pay for — but a summon is also an action

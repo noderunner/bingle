@@ -10,7 +10,7 @@ func TestStartPutsAGateAndSixCultistsInEachStartArea(t *testing.T) {
 	g := game(t)
 	st := state.InitialState(g)
 	d := data(t, st)
-	starts := map[int]string{1: "south-pacific", 2: "asia", 3: "south-america-west", 4: "europe"}
+	starts := map[int]string{1: "south-pacific", 2: "asia", 3: "africa", 4: "europe"}
 	for seat, area := range starts {
 		if d.Gates[area] != seat {
 			t.Errorf("seat %d should control the Gate in %s: %v", seat, area, d.Gates)

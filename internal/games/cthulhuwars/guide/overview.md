@@ -18,7 +18,7 @@ cult with the most Doom when the game ends in *Instant Death*.
 |---|---|---|---|
 | **Great Cthulhu** | South Pacific | **Immortal** — Cthulhu costs only 4 Power to awaken again | ![](piece:cthulhu:green) Cthulhu |
 | **Crawling Chaos** | Asia | **Flight** — every unit moves up to 2 areas | ![](piece:nyarlathotep:blue) Nyarlathotep |
-| **Black Goat** | South America | **Fertility Cult** — summon monsters as an unlimited action | ![](piece:shub-niggurath:red) Shub-Niggurath |
+| **Black Goat** | Africa | **Fertility Cult** — summon monsters as an unlimited action | ![](piece:shub-niggurath:red) Shub-Niggurath |
 | **Yellow Sign** | Europe | **Feast** — Power for each Desecrated area you share | ![](piece:king-in-yellow:yellow) King in Yellow & ![](piece:hastur:yellow) Hastur |
 | **Windwalker** | one of its two polar sigil areas, of its choice | **Hibernate** — sleep through the Action phase, gain Power and keep all you bank for Gather Power | ![](piece:rhan-tegoth:white) Rhan-Tegoth & ![](piece:ithaqua:white) Ithaqua |
 | **Sleeper** | its sigil area in North America | **Death from Below** — a free Monster every Doom phase | ![](piece:tsathoggua:orange) Tsathoggua |

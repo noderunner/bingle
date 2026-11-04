@@ -66,9 +66,49 @@ func TestTheEarthMapHasTheBoardsGlyphs(t *testing.T) {
 	if info.Size() > 250*1024 {
 		t.Errorf("the picture is %d KB", info.Size()/1024)
 	}
-	// A layout not yet traced keeps what it had.
+	// A layout not yet traced has no picture.
 	old, _ := cat.Get("cthulhu-wars-5p")
 	if old.Definition.Params["art"] != nil || old.Definition.Params["glyph_marks"] != nil {
 		t.Error("the five-player layout has a picture")
+	}
+}
+
+// Every Earth layout has the glyphs and the start areas its printed board shows.
+func TestEveryEarthMapFollowsItsBoard(t *testing.T) {
+	cat := catalog.NewCatalog()
+	if err := cat.RegisterModule(cthulhuwars.Module()); err != nil {
+		t.Fatal(err)
+	}
+	glyphs := map[string]string{
+		"north-america": "dragon", "north-america-west": "dragon", "north-america-east": "dragon", "central-america": "dragon",
+		"south-america": "dragon", "south-america-west": "dragon", "south-america-east": "dragon",
+		"africa": "chevron", "west-africa": "chevron", "east-africa": "chevron", "australia": "chevron", "new-zealand": "chevron",
+		"europe": "thorns", "scandinavia": "thorns", "arabia": "thorns", "asia": "thorns", "north-asia": "thorns", "south-asia": "thorns",
+	}
+	for id, wantStart := range map[string][2]string{
+		"cthulhu-wars":     {"asia", "africa"},
+		"cthulhu-wars-3p":  {"asia", "africa"},
+		"cthulhu-wars-3-5": {"south-asia", "west-africa"},
+		"cthulhu-wars-5p":  {"south-asia", "west-africa"},
+	} {
+		g, ok := cat.Get(id)
+		if !ok {
+			t.Fatalf("no layout %s", id)
+		}
+		for _, p := range g.Definition.Board.Positions {
+			got := ""
+			for _, tag := range p.Tags {
+				if strings.HasPrefix(tag, "glyph-") {
+					got = strings.TrimPrefix(tag, "glyph-")
+				}
+			}
+			if got != glyphs[string(p.ID)] {
+				t.Errorf("%s: %s has the glyph %q, want %q", id, p.ID, got, glyphs[string(p.ID)])
+			}
+		}
+		starts, _ := g.Definition.Params["starts"].(map[string]any)
+		if starts["cc"] != wantStart[0] || starts["bg"] != wantStart[1] {
+			t.Errorf("%s starts: %v", id, starts)
+		}
 	}
 }

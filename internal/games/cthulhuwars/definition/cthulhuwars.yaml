@@ -3,7 +3,7 @@ id: cthulhu-wars
 name: Cthulhu Wars (4 players, 5-3 map)
 family: cthulhu-wars
 description: 'Three to five rival cults fight to wake their Great Old Ones and open the most gates: spend Power on recruiting, moving, summoning and battling over a simplified world map, earn spellbooks, and be first past 30 Doom with all six books. Choose your map and cults, then add as many neutral units and Independent Great Old Ones as you like.'
-version: 0.5.0
+version: 0.6.0
 designers: [Sandy Petersen]
 publisher: Petersen Games
 engine: ruleset
@@ -16,7 +16,7 @@ params:
   start_power: 8
   gate_cost: 3
   elder_signs: [18, 12, 6]
-  starts: {gc: south-pacific, cc: asia, bg: south-america-west, ys: europe}
+  starts: {gc: south-pacific, cc: asia, bg: africa, ys: europe}
   sigils:
     ww: [arctic-ocean, antarctica]
     sl: [north-america-west]
