@@ -12,5 +12,6 @@ Helper programs. None is needed to build, run or test bingle.
 | `cardsheet/` | `go run scripts/cardsheet/main.go <url> nyet internal/games/nyet/guide/cards.svg` draws every card of a card game as one picture for its rules, with the page's own card drawing in headless Chrome. Run it again when the cards or the suits change. |
 | `shot/` | Takes screenshots of a running server with headless Chrome, for reviewing UI changes (the images in `docs/screenshots`). |
 | `bingle_env.py` | A Gym-style Python client for the training environments (docs/mcp.md); standard library only. |
+| `cwprimevalart.py` | `python3 scripts/cwprimevalart.py --board SCAN` traces the five-player Primeval Map from a scan kept outside the repository, and writes its layout, its generated picture and the Glacier glyph (ADR 0095). |
 | `guide_diagrams.py`, `guide_lib.py` | Draw the SVG diagrams of the rules guides (`python3 scripts/guide_diagrams.py [game...]`). |
 | `cwglyphs.py`, `cwmaps.py` | Built the Cthulhu Wars sigils and map layouts from reference pictures. The pictures are inputs only and are not in the repository; the results are checked in (`internal/games/cthulhuwars`, `internal/web/static/js/cw-glyphs.js`), so you never need to run these. |

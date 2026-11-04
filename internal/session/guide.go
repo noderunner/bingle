@@ -302,15 +302,22 @@ func areaMapSVG(def *dsl.GameDefinition) string {
 		}
 		return strings.Join(pts, " ")
 	}
+	// A map with a picture of its own says each area's colour, as the small drawing's.
+	fills, _ := def.Params["area_fill"].(map[string]any)
 	draw := func(a AreaDTO, ocean bool) {
 		k, _ := kind(a)
 		class := "land"
 		if ocean {
 			class = "sea"
 		}
+		fill := "url(#g-" + k + ")"
+		own, painted := fills[a.ID].(string)
+		if painted {
+			fill = escapeXML(own)
+		}
 		for _, poly := range a.Polygons {
-			fmt.Fprintf(&b, `<polygon class="%s" fill="url(#g-%s)" points="%s"/>`, class, k, points(poly))
-			if ocean {
+			fmt.Fprintf(&b, `<polygon class="%s" fill="%s" points="%s"/>`, class, fill, points(poly))
+			if ocean && !painted {
 				fmt.Fprintf(&b, `<polygon class="waves" points="%s"/>`, points(poly))
 			}
 		}

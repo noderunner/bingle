@@ -79,6 +79,7 @@ const S = {
 		glyphs: store.get("bingle.layer.glyphs", null),
 		sigils: store.get("bingle.layer.sigils", true),
 		units: store.get("bingle.layer.units", true),
+		ice: store.get("bingle.layer.ice", true),
 	},
 	lastPiece: null, // piece type most recently placed (quick placement)
 	inspect: null, // square under the pointer, for the stack inspector
@@ -2387,7 +2388,7 @@ function drawBoard(host) {
 			badges: (rulesetView() || {}).badges || null,
 			walls: (rulesetView() || {}).walls || null,
 			holders: (rulesetView() || {}).holders || null,
-			layers: { names: S.settings.names, glyphs: glyphLayerOn(), sigils: S.settings.sigils, units: S.settings.units },
+			layers: { names: S.settings.names, glyphs: glyphLayerOn(), sigils: S.settings.sigils, units: S.settings.units, ice: S.settings.ice },
 			legend: isRuleset() ? S.info.display || null : null,
 			tokenOk: interactive ? tokenOk : null,
 			enhanced: enhancedUnits(),
@@ -4863,12 +4864,14 @@ function refreshOptions() {
 	// The layers of an area map.
 	w.hide("layers", !areas);
 	if (areas) {
-		w.update("layers", ["v3", glyphLayerOn()], (el) => {
+		const ice = !!(S.info.params && S.info.params.ice_glyphs);
+		w.update("layers", ["v4", glyphLayerOn(), ice], (el) => {
 			el.append(
 				settingToggle("names", "opt-layer-names", "Area names", "bingle.layer.names"),
 				settingToggle("glyphs", "opt-layer-glyphs", "Glyphs", "bingle.layer.glyphs"),
 				settingToggle("sigils", "opt-layer-sigils", "Sigils", "bingle.layer.sigils"),
-				settingToggle("units", "opt-layer-units", "Units", "bingle.layer.units")
+				settingToggle("units", "opt-layer-units", "Units", "bingle.layer.units"),
+				ice ? settingToggle("ice", "opt-layer-ice", "Glacier glyphs", "bingle.layer.ice") : null
 			);
 		});
 	}
