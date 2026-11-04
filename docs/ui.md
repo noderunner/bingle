@@ -832,6 +832,21 @@ last move, move animations (pieces slide, drop in or flip; honours the OS
 "reduce motion" setting), board theme (wood, slate, green felt, paper),
 preview-and-confirm, turn notifications. Hovering a square shows what is on it (useful for stacks).
 
+### The battle show
+
+Cthulhu Wars plays each battle on the map (`static/js/cw-battle.js`, *Battle animation* in the options;
+off under the OS "reduce motion" setting). It is a layer over a copy of the map, fed only with snapshots
+of positions, so the game never waits for it and the page underneath stays current. The copy zooms to the
+area, which stays centred even at the map's edge, and the dark has the area's shape cut out of it. Each side
+stands to one side, with the dice between them. Units that die take a red X as they go, and casualties
+that are the player's to choose can be clicked on the stage. A choice elsewhere on the map hides the stage
+until it is made. The stage leaves at the `post` or `retreat` step, since those are played on the map.
+
+Selecting a move of a battle in the history plays that battle from its positions. Moving on to another move
+of the same battle does not start it over; moving to a position outside the battle ends it. A battle can
+finish inside the move that declares it, so the units that stood there beforehand come from the position
+before that move. The browser tests turn the show off by default (`openGameAs`), as it covers the map.
+
 ### Illustrated board themes
 
 Games played with stones on a board of cells (Blooms, Hex, Havannah, Yavalath, Yinsh,

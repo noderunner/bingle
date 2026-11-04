@@ -4,6 +4,16 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.64.0 - 2026-11-04
+
+### Bingle Core 0.64.0
+- **The history can replay a moment on the map.** Going to a move of the history can now play what happened there, and leaving it takes the show away. Cthulhu Wars' battles are the first to use it.
+
+### Cthulhu Wars 0.10.0
+- **Battles are a show.** When a battle starts the map zooms in on the area and everything around it goes dark. The two sides stand across from each other, the dice are thrown between them, and a red X lands on each unit as it dies. You can choose your casualties right there on the stage. Then the map zooms back out for the retreats.
+- **Watch it again.** Choosing a battle's move in the history plays it again, and so does *Replay* on the battle's card.
+- **Yours to turn off.** *Skip* or Esc ends a show, and *Battle animation* in the options turns them off. They stay off if your device asks for reduced motion.
+
 ## 0.63.0 - 2026-11-04
 
 ### Bingle Core 0.63.0
