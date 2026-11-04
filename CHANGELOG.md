@@ -9,7 +9,7 @@ what the help window shows under *Recent changes*, so it is written for the peop
 ### Bingle Core 0.53.0
 - **New-message badge.** A chat tab now shows how many messages came in while you were on another tab or view. It never
   counted them before.
-- **Easier chat to read.** Each message shows the name above the text, without the @username, on alternating backgrounds.
+- **Easier chat to read.** Each message shows the name and @username or guest above the text, on alternating backgrounds.
 - **The rules on a phone.** The rules no longer pop up the keyboard when opened, the close button is bigger and stays in reach,
   Back closes the rules instead of leaving the game, and pages fit the screen.
 - **History opens on what's newest.** Switching to History or Moves, or turning your phone back upright, scrolls to the latest entry.

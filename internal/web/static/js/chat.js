@@ -218,6 +218,8 @@ function lineNode(line, mine) {
 		"li",
 		{ class: "chat-line" + (mine ? " mine" : "") + (line.seat ? "" : " spectator"), "data-id": line.id, "data-seat": line.seat || null },
 		h("span", { class: `chat-who ${line.color ? "color-" + cssColor(line.color) : ""}`, title: line.seat ? "" : "spectator" }, line.name + (line.seat ? "" : " (watching)")),
+		// Who said it: an account, by its handle, or a guest.
+		line.handle ? h("span", { class: "chat-handle small muted" }, "@" + line.handle) : line.guest ? h("span", { class: "chat-guest small muted" }, "guest") : null,
 		h("span", { class: "chat-text" }, line.text),
 		h("time", { class: "chat-time muted small" }, clock(line.at))
 	);

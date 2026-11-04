@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/chromedp/chromedp"
+
+	"github.com/noderunner/bingle/internal/auth"
 )
 
 // cwTable starts a table with Alice in the first seat and bots in the others, and opens it.
@@ -187,8 +189,13 @@ func TestWebCthulhuWars_ChatLinesAndTheirBadge(t *testing.T) {
 	if !evalBool(t, ctx, `document.getElementById("rail-chat-unread").hidden`) {
 		t.Error("a badge for a message on screen")
 	}
-	if n := evalInt(t, ctx, `document.querySelectorAll("#chat-log .chat-handle, #chat-log .chat-guest").length`); n != 0 {
-		t.Errorf("%d lines still say who holds the name", n)
+	// A guest is marked as one, on the name's line, above the message.
+	if err := chromedp.Run(ctx, chromedp.SendKeys("#chat-input", "from a guest\r", chromedp.ByID)); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "the guest's line", `document.querySelector("#chat-log .chat-line .chat-guest") !== null`, 10*time.Second)
+	if !evalBool(t, ctx, `(function(){ var g = document.querySelector("#chat-log .chat-guest"), l = g.closest(".chat-line"); return g.textContent === "guest" && g.getBoundingClientRect().bottom <= l.querySelector(".chat-text").getBoundingClientRect().top + 1; })()`) {
+		t.Error("a guest's line does not say so above the message")
 	}
 	// The text stands under the name, and neighbours differ in background.
 	if !evalBool(t, ctx, `(function(){ var l = document.querySelector("#chat-log .chat-line"); return l.querySelector(".chat-text").getBoundingClientRect().top >= l.querySelector(".chat-who").getBoundingClientRect().bottom - 1; })()`) {
@@ -212,5 +219,33 @@ func TestWebCthulhuWars_ChatLinesAndTheirBadge(t *testing.T) {
 	defer mu.Unlock()
 	if len(jsErrors) > 0 {
 		t.Errorf("uncaught JS exceptions: %v", jsErrors)
+	}
+}
+
+// An account's chat line shows its handle beside the name, above the message.
+func TestWebCthulhuWars_ChatLineShowsTheHandle(t *testing.T) {
+	a, base := membersServer(t)
+	ana := member(t, a, base, "ana")
+	var created struct {
+		RoomCode string `json:"room_code"`
+	}
+	if code := ana.do("POST", "/api/games", map[string]any{"game_def_id": "cthulhu-wars", "player_name": "Ana the Bold", "seat_bots": threeBots}, &created); code != 200 && code != 201 {
+		t.Fatalf("create: %d", code)
+	}
+	if code := ana.do("POST", "/api/games/"+created.RoomCode+"/chat", map[string]any{"player_name": "Ana the Bold", "text": "hello"}, nil); code != 200 && code != 201 {
+		t.Fatalf("chat: %d", code)
+	}
+	ctx, cancel := newChromedpContext(t, 60*time.Second)
+	defer cancel()
+	signInChrome(t, ctx, base, ana.cookie(auth.SessionCookie))
+	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/game/"+created.RoomCode)); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "the line", `document.querySelector("#chat-log .chat-line .chat-text") !== null`, 30*time.Second)
+	if got := evalString(t, ctx, `document.querySelector("#chat-log .chat-line .chat-handle").textContent`); got != "@ana" {
+		t.Errorf("the handle reads %q", got)
+	}
+	if got := evalString(t, ctx, `document.querySelector("#chat-log .chat-line .chat-who").textContent`); got != "Ana the Bold" {
+		t.Errorf("the name reads %q", got)
 	}
 }
