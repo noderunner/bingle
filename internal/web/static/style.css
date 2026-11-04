@@ -2104,3 +2104,10 @@ code.wrap { overflow-wrap: anywhere; word-break: break-all; }
 .cw-tip-units li { display: grid; grid-template-columns: 22px 1fr auto; align-items: center; gap: 0.35rem; }
 .slot-cult { display: inline-flex; align-items: center; gap: 0.4rem; min-width: 0; }
 #book-swaps { margin-top: 0.6rem; display: grid; gap: 0.25rem; }
+
+/* A map with a picture behind it: the areas are only what can be clicked and lit up. */
+.map-art { pointer-events: none; }
+.ice-glyphs { pointer-events: none; }
+.area-map.has-art .cell.area .area-bg { fill: transparent; stroke: none; filter: none; }
+.area-map.has-art .cell.area .area-bg.tint-desecrated { fill: url(#g-desecrated); opacity: 0.6; }
+.area-map.has-art .area-label { font: 600 12.5px Georgia, "Times New Roman", serif; font-variant: small-caps; letter-spacing: 0.02em; fill: #f4efe3; stroke: rgba(14, 10, 6, 0.8); stroke-width: 2.6px; }

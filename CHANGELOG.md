@@ -4,6 +4,19 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.51.0 - 2026-11-03
+
+### Bingle Core 0.51.0
+- **Maps can have a painted background.** An area map may now show a picture behind its areas, which stay just as clickable.
+
+### Cthulhu Wars 0.4.0
+- **The five-player Primeval Map, redrawn.** Traced from the printed board, its coasts follow the real ones, and its colours,
+  shallows and cracks now look like the board's.
+- **Glacier glyphs on the map.** The Primeval Map shows its ice glyphs where the board prints them. Turn them off in the game
+  options under *Glacier glyphs*.
+- **Two borders were missing from that map.** Upper Mu now borders the Rheic Ocean, and the Paratethys Ocean borders
+  Poseidonis, as printed. This changes where units can move.
+
 ## 0.50.0 - 2026-11-03
 
 ### Bingle Core 0.50.0

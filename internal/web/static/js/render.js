@@ -6,6 +6,7 @@
 import { h, s, clear } from "./util.js";
 import { UNIT_ICONS, CLASS_SCALE, classOfPiece, hasUnitIcon } from "./icons.js";
 import { CW_GLYPHS } from "./cw-glyphs.js";
+import { ICE_GLYPH } from "./cw-ice.js";
 import { frameDecor, stoneMarks, installThemes, currentTheme } from "./themes.js";
 import { onNavigate } from "./nav.js";
 
@@ -1413,6 +1414,27 @@ function ensureMapDefs() {
 	document.body.append(holder);
 }
 
+// The picture behind a map that has one. The same element is used again on every
+// redraw: a new one could show nothing for a frame while it decodes.
+const mapArt = new Map();
+
+function mapArtImage(info, canvas) {
+	const params = info.params || {};
+	if (!params.art) return null;
+	const href = `/api/game-defs/${encodeURIComponent(String(info.id).split("~")[0])}/assets/${params.art}`;
+	if (!mapArt.has(href)) mapArt.set(href, s("image", { class: "map-art", href, x: 0, y: 0, width: canvas.width, height: canvas.height, preserveAspectRatio: "none", decoding: "sync", "aria-hidden": "true" }));
+	return mapArt.get(href);
+}
+
+/** The map's own Glacier glyphs, printed where the board prints them. */
+function iceGlyphs(marks) {
+	const g = s("g", { class: "ice-glyphs", "aria-hidden": "true" });
+	for (const [x, y] of marks) {
+		g.append(s("g", { class: "ice-glyph", transform: `translate(${x} ${y})` }, ...ICE_GLYPH.map((part) => s("path", { d: part.d, fill: part.fill, "fill-rule": "evenodd" }))));
+	}
+	return g;
+}
+
 function renderAreaMap(host, info, view, handlers) {
 	ensureMapDefs();
 	const b = info.board;
@@ -1433,6 +1455,11 @@ function renderAreaMap(host, info, view, handlers) {
 		s("clipPath", { id: clipId }, s("rect", { x: 0, y: 0, width: canvas.width, height: canvas.height })),
 		s("rect", { class: "board-frame", x: -M, y: -M, width, height, rx: 12 })
 	);
+	const art = mapArtImage(info, canvas);
+	if (art) {
+		svg.classList.add("has-art");
+		svg.append(art);
+	}
 
 	const pieceDefs = new Map(info.pieces.map((p) => [p.type, p]));
 	const seatOrder = new Map((info.seats || []).map((st, i) => [st.color, i]));
@@ -1451,7 +1478,8 @@ function renderAreaMap(host, info, view, handlers) {
 	const inspect = view.inspect || null;
 	const holders = view.holders || null;
 	// Which layers of the map are drawn: the names, the glyph badges, the sigils, the units.
-	const layers = { names: true, glyphs: true, sigils: true, units: true, ...(view.layers || {}) };
+	const layers = { names: true, glyphs: true, sigils: true, units: true, ice: true, ...(view.layers || {}) };
+	if (art && layers.ice && info.params.ice_glyphs) svg.append(iceGlyphs(info.params.ice_glyphs));
 	const glyphMarks = glyphAreas(info);
 	const landShapes = b.areas.filter((a) => !a.tags.includes("ocean")).flatMap((a) => a.polygons);
 	// Hidden units stay in play: one the player can pick up now is still drawn, or there would be no way to move it.
@@ -1804,7 +1832,8 @@ function renderAreaMap(host, info, view, handlers) {
 	const lands = ordered.filter((a) => !a.tags.includes("ocean"));
 	for (const area of seas) svg.append(drawArea(area));
 	const shore = s("g", { class: "shore", "aria-hidden": "true", "clip-path": `url(#${clipId})` });
-	for (const area of lands) for (const poly of area.polygons) shore.append(s("polygon", { points: pts(poly) }));
+	// A map with a picture has its shores in it.
+	if (!art) for (const area of lands) for (const poly of area.polygons) shore.append(s("polygon", { points: pts(poly) }));
 	svg.append(shore);
 	for (const area of lands) svg.append(drawArea(area));
 	svg.append(s("g", { class: "map-labels", "aria-hidden": "true" }, ...labelNodes));

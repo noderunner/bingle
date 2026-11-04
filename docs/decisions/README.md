@@ -96,5 +96,6 @@ Short records of choices made for the `bingle` project during the requirements i
 | [0091](0091-taking-over-a-seat.md) | A bot can take a seat for good: by a vote in a real-time game, or when time runs out at a table of three or more, and the clock now works at any number of seats |
 | [0090](0090-real-time-tournaments.md) | A real-time tournament starts by itself at its start time: check-in, one game of a pairing at a time, a break between rounds, and a first-move deadline where a no-show forfeits |
 | [0092](0092-a-game-page-that-fits-the-screen.md) | A game page is as tall as the window and never scrolls: the board fills one side, the cards scroll beside it, and on your turn the actions are pinned in view; Blooms first |
+| [0095](0095-a-map-traced-from-a-scan.md) | A map may be traced from a scan and have a generated picture behind it, with no pixel of the scan in the repository |
 | [0094](0094-the-cthulhu-wars-setup-picker.md) | Cthulhu Wars' setup is a picker of single items, each still an option of the create call; saved setups are an account's, shared by choice |
 | [0093](0093-cthulhu-wars-later-cards-and-the-primeval-map.md) | Cthulhu Wars: the later Loyalty Cards share one action, and the Primeval Map is drawn by hand |

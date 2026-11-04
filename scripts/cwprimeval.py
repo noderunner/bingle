@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Writes the Primeval map layouts of Cthulhu Wars into the game's definition.
+"""Writes the three-player Primeval map layout of Cthulhu Wars into the game's definition.
+The five-player layout is traced from a scan by scripts/cwprimevalart.py.
 
     python3 scripts/cwprimeval.py [--preview FILE]
 
@@ -78,24 +79,6 @@ LANDS3 = {
 TRENCH3 = [(975, 150), (1000, 230), (1030, 340), (1040, 400), (980, 470), (965, 520), (920, 440), (870, 370), (945, 255)]
 
 LAYOUTS = {
-    "cthulhu-wars-primeval-5p": {
-        "name": "Cthulhu Wars (5 players, Primeval map)",
-        "lands": LANDS5,
-        "seas": SEAS,
-        "tags": {
-            "hyperborea": ["c-eu", "glyph-chevron", "glacier"], "thule": ["c-as", "glyph-chevron"],
-            "lomar": ["c-sa", "glacier"], "poseidonis": ["c-af", "glyph-thorns", "glacier"],
-            "west-atlantis": ["c-na", "glyph-thorns"], "atlantis": ["c-me", "glyph-thorns"],
-            "shasta": ["c-af", "glyph-chevron"], "east-lemuria": ["c-sa", "glyph-chevron"], "south-lemuria": ["c-as", "glyph-chevron", "glacier"],
-            "antarctica": ["c-ice", "glacier"], "rutas": ["c-eu", "glyph-thorns"], "terra-australis": ["c-au", "glyph-thorns", "glacier"],
-            "upper-mu": ["c-na", "glyph-dragon", "glacier"], "central-mu": ["c-me", "glyph-dragon"], "lower-mu": ["c-af", "glyph-dragon", "glacier"],
-            "paratethys-ocean": ["glacier"], "mirovia-ocean": ["glacier"], "rheic-ocean": ["glacier"], "iapetus-ocean": ["glacier"],
-        },
-        "starts": {"gc": "iapetus-ocean", "cc": "upper-mu", "bg": "hyperborea", "ys": "terra-australis"},
-        "sigils": {"ww": ["antarctica", "poseidonis"], "sl": ["lower-mu"]},
-        "seats": [(1, "green", "Great Cthulhu"), (2, "blue", "Crawling Chaos"), (3, "red", "Black Goat"), (4, "yellow", "Yellow Sign"), (5, "white", "Windwalker")],
-        "order": [5, 1, 2, 3, 4],
-    },
     "cthulhu-wars-primeval-3p": {
         "name": "Cthulhu Wars (3 players, Primeval map)",
         "lands": LANDS3,

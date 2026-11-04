@@ -150,7 +150,7 @@ Glyph badges sit right after an area's name. Yellow Sign needs to Desecrate one 
 
 ## The Primeval Map and its Glaciers
 
-The Primeval Map's main mechanic is the slow arrival of Glaciers, which abandon Gates for good and so make the map rich in Power. Its outlines were drawn by eye from pictures of the printed board.
+The Primeval Map's main mechanic is the slow arrival of Glaciers, which abandon Gates for good and so make the map rich in Power. The three-player layout's outlines were drawn by eye from pictures of the printed board; the five-player layout is traced from a scan, and shows the board's Glacier glyphs, which you can hide in the game options.
 
 - At the end of the **first Doom phase**, after everyone has had the chance to perform a Ritual, a Glacier appears in each cult's start area, whether or not it has a Glacier glyph. Any unit holding a Gate there stays in the area, and the Gate is abandoned.
 - At the end of **each later Doom phase**, the first player chooses **two areas with a Glacier glyph** that have no Glacier yet. Once every such area has one, no more are placed. Glaciers never move or leave.

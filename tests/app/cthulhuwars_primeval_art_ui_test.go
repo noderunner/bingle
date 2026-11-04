@@ -1,0 +1,71 @@
+package app_test
+
+import (
+	"net/http"
+	"sync"
+	"testing"
+	"time"
+)
+
+// The five-player Primeval Map has a picture behind it and its Glacier glyphs in a
+// layer of their own; the areas above can still be clicked, and other maps draw as before.
+func TestWebCthulhuWars_ThePrimevalMapHasAPictureAndAGlacierLayer(t *testing.T) {
+	baseURL := newRESTTestServer(t)
+	const id = "cthulhu-wars-primeval-5p"
+	resp, err := http.Get(baseURL + "/api/game-defs/" + id + "/assets/guide/maps/primeval-5p.webp")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = resp.Body.Close()
+	if resp.StatusCode != 200 || resp.Header.Get("Content-Type") != "image/webp" {
+		t.Fatalf("the picture: %d %s", resp.StatusCode, resp.Header.Get("Content-Type"))
+	}
+	var created struct {
+		RoomCode string `json:"room_code"`
+	}
+	body := map[string]any{"game_def_id": id, "player_name": "Alice", "seat_bots": map[string]string{"2": "tactical", "3": "tactical", "4": "tactical", "5": "tactical"}}
+	if code := doJSON(t, "POST", baseURL+"/api/games", body, &created); code != 200 && code != 201 {
+		t.Fatalf("create: %d", code)
+	}
+	ctx, cancel := newChromedpContext(t, 90*time.Second)
+	defer cancel()
+	var mu sync.Mutex
+	var jsErrors []string
+	collectJSErrors(ctx, &mu, &jsErrors)
+	openGameAs(t, ctx, baseURL, created.RoomCode, id, "Alice")
+	waitJS(t, ctx, "the picture", `document.querySelector("#board-svg.has-art image.map-art") !== null`, 30*time.Second)
+	if n := evalInt(t, ctx, `document.querySelectorAll("#board-svg .ice-glyph").length`); n != 12 {
+		t.Errorf("%d Glacier glyphs", n)
+	}
+	// The areas are transparent over it, and the glyphs under what can be clicked.
+	if got := evalString(t, ctx, `getComputedStyle(document.querySelector('.cell.area .area-bg')).fill`); got != "rgba(0, 0, 0, 0)" && got != "transparent" {
+		t.Errorf("an area is filled with %q", got)
+	}
+	if got := evalString(t, ctx, `getComputedStyle(document.querySelector('.ice-glyphs')).pointerEvents`); got != "none" {
+		t.Errorf("the glyphs take the pointer: %q", got)
+	}
+	// The layer goes and comes back, and the picture is the same element after a redraw.
+	waitJS(t, ctx, "the toggle", `document.getElementById("opt-layer-ice") !== null`, 15*time.Second)
+	evalString(t, ctx, `window.__art = document.querySelector("image.map-art"); document.getElementById("opt-layer-ice").click(); "ok"`)
+	waitJS(t, ctx, "the glyphs hidden", `document.querySelectorAll(".ice-glyph").length === 0`, 10*time.Second)
+	if !evalBool(t, ctx, `window.__art === document.querySelector("image.map-art")`) {
+		t.Error("a redraw made a new picture")
+	}
+	evalString(t, ctx, `document.getElementById("opt-layer-ice").click(); "ok"`)
+	waitJS(t, ctx, "the glyphs back", `document.querySelectorAll(".ice-glyph").length === 12`, 10*time.Second)
+
+	// A map without a picture offers no such layer and keeps its drawing.
+	if code := doJSON(t, "POST", baseURL+"/api/games", map[string]any{"game_def_id": "cthulhu-wars-primeval-3p", "player_name": "Alice", "seat_bots": map[string]string{"2": "tactical", "3": "tactical"}}, &created); code != 200 && code != 201 {
+		t.Fatalf("create: %d", code)
+	}
+	openGameAs(t, ctx, baseURL, created.RoomCode, "cthulhu-wars-primeval-3p", "Alice")
+	waitJS(t, ctx, "the other map", `document.querySelector("#board-svg") !== null && document.querySelector("#board-svg").getAttribute("aria-label").includes("3 players")`, 30*time.Second)
+	if evalBool(t, ctx, `document.querySelector("#board-svg.has-art") !== null || document.querySelector("image.map-art") !== null || document.getElementById("opt-layer-ice") !== null`) {
+		t.Error("the three-player map has a picture or its layer")
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	if len(jsErrors) > 0 {
+		t.Errorf("uncaught JS exceptions: %v", jsErrors)
+	}
+}

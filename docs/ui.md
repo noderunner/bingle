@@ -232,6 +232,8 @@ selects one).
   (`localStorage` `bingle.chat.seen`), so coming back to the page says how much
   was missed. Reading the tab clears it.
 
+**A picture behind a map.** A game whose `params.art` names a file draws it behind its areas (`image.map-art`, `svg.has-art`): the areas are then transparent, there only to be clicked and lit up. The same element is used on every redraw, so a move does not make it flash. `params.ice_glyphs` draws `.ice-glyphs` over it, with the layer `#opt-layer-ice` in the game options (`bingle.layer.ice`).
+
 **Setup options.** A game's `bool` options are check boxes: under the seats for a
 table of three or more (`#slots-field`) and in a field
 of the game's own for a game of two (`#setup-options`, hidden when the game has
