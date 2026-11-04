@@ -572,49 +572,72 @@ func (e *eng) orderNames(first, dir int) string {
 	return strings.Join(names, " → ")
 }
 
-// prompt says what the position is waiting for, in a sentence.
+// prompt says what the position is waiting for, in a sentence, naming who.
 func (e *eng) prompt() string {
 	d := e.d
-	seat := impulseSeat(d)
-	who := ""
-	if seat > 0 {
-		who = e.seatName(seat)
-	}
-	switch d.Phase {
-	case phaseOver:
+	if d.Phase == phaseOver {
 		if d.Winner == 0 {
 			return "The game is over: humanity wins — or nobody does."
 		}
 		return fmt.Sprintf("%s wins.", e.seatName(d.Winner))
 	}
+	seat := impulseSeat(d)
+	if seat <= 0 {
+		return e.impulse()
+	}
+	who := e.seatName(seat)
+	// A client that reads only this sentence still needs what the card's buttons
+	// and counters show: the two orders of play, and the Power there is to spend.
+	switch d.Stage {
+	case stageDirection:
+		lead := "is the first player"
+		if d.Opening {
+			lead = "is the first player of the game"
+		}
+		return fmt.Sprintf("%s %s: choose the direction of play — clockwise (%s) or counter-clockwise (%s).",
+			who, lead, e.orderNames(d.First, 1), e.orderNames(d.First, -1))
+	case stageTurn:
+		return fmt.Sprintf("%s: %s (Power %d).", who, strings.TrimSuffix(e.impulse(), "."), d.Power[seat])
+	}
+	return who + ": " + e.impulse()
+}
+
+// impulse says what the seat on impulse is being asked to choose. Everyone at the
+// table is shown the same words, under that seat's name.
+func (e *eng) impulse() string {
+	d := e.d
+	seat := impulseSeat(d)
+	if d.Phase == phaseOver {
+		return ""
+	}
 	switch d.Stage {
 	case stageSetup:
 		switch e.fac(seat) {
 		case facTT:
-			return fmt.Sprintf("%s: choose an empty area marked with a faction glyph where your cult begins.", who)
+			return "Choose an empty area marked with a faction glyph where your cult begins."
 		case facOW:
-			return fmt.Sprintf("%s: choose an empty area where your cult begins — after all the others have set up.", who)
+			return "Choose an empty area where your cult begins — after all the others have set up."
 		case facAN:
-			return fmt.Sprintf("%s: choose an empty area with no start glyph where your cult begins.", who)
+			return "Choose an empty area with no start glyph where your cult begins."
 		}
-		return fmt.Sprintf("%s: choose the area marked with your sigil where your cult begins.", who)
+		return "Choose the area marked with your sigil where your cult begins."
 	case stageTurn:
 		if d.Turn != nil && d.Turn.Nexus {
-			return fmt.Sprintf("%s: Energy Nexus — take an Action that starts in %s before the battle, or press Done.", who, e.areaName(e.areaIdx(d.Bat.Area)))
+			return fmt.Sprintf("Energy Nexus — take an Action that starts in %s before the battle, or press Done.", e.areaName(e.areaIdx(d.Bat.Area)))
 		}
 		if d.Turn != nil && d.Turn.Main {
-			return fmt.Sprintf("%s: you may take unlimited actions, or end your turn (Power %d).", who, d.Power[seat])
+			return "Choose an action, or end your turn."
 		}
 		if d.Turn != nil && e.summonedThisTurn(seat) {
-			return fmt.Sprintf("%s: summon more Monsters or take another action, or press Done to end your turn (Power %d).", who, d.Power[seat])
+			return "Summon more Monsters, choose another action, or end your turn."
 		}
-		return fmt.Sprintf("%s: take an action (Power %d).", who, d.Power[seat])
+		return "Choose an action."
 	case stageMoving:
-		return fmt.Sprintf("%s: pick a unit to move (1 Power each) and its destination; press Done when finished.", who)
+		return "Choose a unit to move (1 Power each) and its destination, or press Done."
 	case stagePre:
-		return fmt.Sprintf("%s: use pre-battle abilities in %s, or continue.", who, e.areaName(e.areaIdx(d.Bat.Area)))
+		return "Choose a pre-battle ability or pass."
 	case stagePost:
-		return fmt.Sprintf("%s: use post-battle abilities, or continue.", who)
+		return "Choose a post-battle ability or pass."
 	case stageAssign:
 		k := "Kill"
 		if len(d.Bat.Queue) > 0 && d.Bat.Queue[0].Pain {
@@ -624,111 +647,106 @@ func (e *eng) prompt() string {
 		if len(d.Bat.Queue) > 0 {
 			target = e.seatName(d.Bat.Queue[0].Seat)
 		}
-		return fmt.Sprintf("%s: assign a %s result to one of %s's units.", who, k, target)
+		return fmt.Sprintf("Assign a %s result to one of %s's units.", k, target)
 	case stageRetreat:
-		return fmt.Sprintf("%s: choose where a pained unit retreats.", who)
+		return "Choose where a pained unit retreats."
 	case stagePrompt:
 		if len(d.Prompts) > 0 {
 			p := d.Prompts[0]
 			if p.Kind == "card" {
-				return e.cardPromptText(who, p)
+				return e.cardImpulse(p)
 			}
 			if p.Kind == "book" {
 				if p.By != 0 {
-					return fmt.Sprintf("%s: Abandoned to Lusts — choose the spellbook %s must take.", who, e.seatName(p.By))
+					return fmt.Sprintf("Abandoned to Lusts — choose the spellbook %s must take.", e.seatName(p.By))
 				}
 				if p.Skip != 0 {
-					return fmt.Sprintf("%s: Recriminations — choose the spellbook that takes the place of the one you set aside.", who)
+					return "Recriminations — choose the spellbook that takes the place of the one you set aside."
 				}
-				return fmt.Sprintf("%s: you earned a spellbook — choose which one.", who)
+				return "You earned a spellbook — choose which one."
 			}
 			switch p.Kind {
 			case "submerge":
-				return fmt.Sprintf("%s: choose the units that sink with Cthulhu — click each one, then press Done.", who)
+				return "Choose the units that sink with Cthulhu — click each one, then press Done."
 			case "scream":
-				return fmt.Sprintf("%s: choose the Undead that walk with the King in Yellow — click each one, then press Done.", who)
+				return "Choose the Undead that walk with the King in Yellow — click each one, then press Done."
 			case "shriek":
-				return fmt.Sprintf("%s: choose the Byakhee that fly to %s — click each one, then press Done.", who, e.areaName(e.areaIdx(p.Area)))
+				return fmt.Sprintf("Choose the Byakhee that fly to %s — click each one, then press Done.", e.areaName(e.areaIdx(p.Area)))
 			case "avatar":
-				return fmt.Sprintf("%s: Shub-Niggurath swaps places with one of your units in %s — choose which.", who, e.areaName(e.areaIdx(p.Area)))
+				return fmt.Sprintf("Shub-Niggurath swaps places with one of your units in %s — choose which.", e.areaName(e.areaIdx(p.Area)))
 			case "place":
-				return fmt.Sprintf("%s: Ghroth places an Acolyte anywhere on the map — choose whose, then the area.", who)
+				return "Ghroth places an Acolyte anywhere on the map — choose whose, then the area."
 			case "react":
 				if p.Why == "oath" {
 					if p.By == 0 {
-						return fmt.Sprintf("%s: Unspeakable Oath — sacrifice your High Priest for 2 Power before the first player is chosen, or press Pass.", who)
+						return "Unspeakable Oath — sacrifice your High Priest for 2 Power before the first player is chosen, or press Pass."
 					}
-					return fmt.Sprintf("%s: Unspeakable Oath is available after %s's action — sacrifice your High Priest for 2 Power, or press Pass.", who, e.seatName(p.By))
+					return fmt.Sprintf("Unspeakable Oath is available after %s's action — sacrifice your High Priest for 2 Power, or press Pass.", e.seatName(p.By))
 				}
 				if p.Why == "walk" {
-					return fmt.Sprintf("%s: Walk Between Worlds — place a Dimensional Shambler from your faction card in any area, or press Pass.", who)
+					return "Walk Between Worlds — place a Dimensional Shambler from your faction card in any area, or press Pass."
 				}
-				return fmt.Sprintf("%s: %s is available after %s's action — click a Cultist to replace it with a Deep One, or press Pass.", who, reactionName(p.Why), e.seatName(p.By))
+				return fmt.Sprintf("%s is available after %s's action — click a Cultist to replace it with a Deep One, or press Pass.", reactionName(p.Why), e.seatName(p.By))
 			case "channel":
-				return fmt.Sprintf("%s: Channel Power — pay 1 Power to reroll every die that was not a Kill or a Pain, as often as you like, or press Done.", who)
+				return "Channel Power — pay 1 Power to reroll every die that was not a Kill or a Pain, as often as you like, or press Done."
 			case "curse-target":
-				return fmt.Sprintf("%s: Dread Curse — choose the enemy that takes this %s.", who, map[bool]string{true: "Pain", false: "Kill"}[e.d.Curse != nil && e.d.Curse.Pain])
+				return fmt.Sprintf("Dread Curse — choose the enemy that takes this %s.", map[bool]string{true: "Pain", false: "Kill"}[e.d.Curse != nil && e.d.Curse.Pain])
 			case "curse-hit":
-				return fmt.Sprintf("%s: Dread Curse — a %s falls on you in %s: choose which of your units takes it.", who, map[bool]string{true: "Pain", false: "Kill"}[e.d.Curse != nil && e.d.Curse.Pain], e.areaName(e.areaIdx(p.Area)))
+				return fmt.Sprintf("Dread Curse — a %s falls on you in %s: choose which of your units takes it.", map[bool]string{true: "Pain", false: "Kill"}[e.d.Curse != nil && e.d.Curse.Pain], e.areaName(e.areaIdx(p.Area)))
 			case "curse-move":
-				return fmt.Sprintf("%s: Dread Curse — choose the area the Pained unit is driven to.", who)
+				return "Dread Curse — choose the area the Pained unit is driven to."
 			case "hiero":
-				return fmt.Sprintf("%s: Hierophants — place a High Priest at one of your Gates.", who)
+				return "Hierophants — place a High Priest at one of your Gates."
 			case "idol":
-				return fmt.Sprintf("%s: Idolatry — click a unit in an area beside %s to bring it (and the ones with it) there, or all of them; press Done when you have finished.", who, e.areaName(e.areaIdx(p.Area)))
+				return fmt.Sprintf("Idolatry — click a unit in an area beside %s to bring it (and the ones with it) there, or all of them; press Done when you have finished.", e.areaName(e.areaIdx(p.Area)))
 			case "syco":
-				return fmt.Sprintf("%s: Sycophancy — your Ritual: give the Tcho-Tcho 1 Doom, or earn 1 Doom fewer.", who)
+				return "Sycophancy — your Ritual: give the Tcho-Tcho 1 Doom, or earn 1 Doom fewer."
 			case "mao":
-				return fmt.Sprintf("%s: The Mao Ceremony — click a Cultist to sacrifice it for 1 Power, as many as you like, then press Done.", who)
+				return "The Mao Ceremony — click a Cultist to sacrifice it for 1 Power, as many as you like, then press Done."
 			case "undim":
-				return fmt.Sprintf("%s: Undimensioned — click a unit and the area it goes to (only areas where you had units); press Done when the units are where you want them.", who)
+				return "Undimensioned — click a unit and the area it goes to (only areas where you had units); press Done when the units are where you want them."
 			case "howl":
-				return fmt.Sprintf("%s: Howl — choose a unit in %s to retreat, and where it goes.", who, e.areaName(e.areaIdx(p.Area)))
+				return fmt.Sprintf("Howl — choose a unit in %s to retreat, and where it goes.", e.areaName(e.areaIdx(p.Area)))
 			case "eternal":
-				return fmt.Sprintf("%s: Rhan-Tegoth received a result — pay 1 Power to cancel it, or press Done.", who)
+				return "Rhan-Tegoth received a result — pay 1 Power to cancel it, or press Done."
 			case "demand":
-				return fmt.Sprintf("%s: Demand Sacrifice — let the Sleeper gain an Elder Sign, or have all your Kills against its units count as Pains.", who)
+				return "Demand Sacrifice — let the Sleeper gain an Elder Sign, or have all your Kills against its units count as Pains."
 			case "restore":
-				return fmt.Sprintf("%s: the Serpent Man returns — choose the area to place him in.", who)
+				return "The Serpent Man returns — choose the area to place him in."
 			case "desecrate":
-				return fmt.Sprintf("%s: Desecrate — choose the Cultist or Monster (cost 2 or less) that is placed in %s, whatever the die showed.", who, e.areaName(e.areaIdx(p.Area)))
+				return fmt.Sprintf("Desecrate — choose the Cultist or Monster (cost 2 or less) that is placed in %s, whatever the die showed.", e.areaName(e.areaIdx(p.Area)))
 			case "nexus":
-				return fmt.Sprintf("%s: Energy Nexus — take an Action that starts in %s before the battle, or press Done.", who, e.areaName(e.areaIdx(p.Area)))
+				return fmt.Sprintf("Energy Nexus — take an Action that starts in %s before the battle, or press Done.", e.areaName(e.areaIdx(p.Area)))
 			case "moon":
-				return fmt.Sprintf("%s: Blasphemous Obeisance — choose the enemy spellbook the Moonbeast lies on; that enemy cannot use it until the Moonbeast leaves.", who)
+				return "Blasphemous Obeisance — choose the enemy spellbook the Moonbeast lies on; that enemy cannot use it until the Moonbeast leaves."
 			case "moonland":
-				return fmt.Sprintf("%s: the Moonbeast is free — choose the Gate of yours where it appears.", who)
+				return "The Moonbeast is free — choose the Gate of yours where it appears."
 			case "crypt-pick":
-				return fmt.Sprintf("%s: Crypt Dweller — choose the enemy that places your Wamps in areas without a Gate.", who)
+				return "Crypt Dweller — choose the enemy that places your Wamps in areas without a Gate."
 			case "crypt":
-				return fmt.Sprintf("%s: Crypt Dweller — place a Wamp of %s in an area without a Gate (%d left).", who, e.seatName(p.By), p.Left)
+				return fmt.Sprintf("Crypt Dweller — place a Wamp of %s in an area without a Gate (%d left).", e.seatName(p.By), p.Left)
 			case "sting":
 				if p.Why == "tsunami" {
-					return fmt.Sprintf("%s: Tsunami — move a Cultist out of %s into an adjacent ocean.", who, e.areaName(e.areaIdx(p.Area)))
+					return fmt.Sprintf("Tsunami — move a Cultist out of %s into an adjacent ocean.", e.areaName(e.areaIdx(p.Area)))
 				}
-				return fmt.Sprintf("%s: The Agony Sting — move a Cultist out of %s into an adjacent land area.", who, e.areaName(e.areaIdx(p.Area)))
+				return fmt.Sprintf("The Agony Sting — move a Cultist out of %s into an adjacent land area.", e.areaName(e.areaIdx(p.Area)))
 			case "spare":
-				return fmt.Sprintf("%s: Fire Vampires — click a unit that took a Kill to spare it (it is Pained instead, and you gain 1 Power), or press Done to let the rest die.", who)
+				return "Fire Vampires — click a unit that took a Kill to spare it (it is Pained instead, and you gain 1 Power), or press Done to let the rest die."
 			case "pick":
-				return fmt.Sprintf("%s: Curse of Chaugnar Faugn — choose the value of the Elder Sign %s receives.", who, e.seatName(p.By))
+				return fmt.Sprintf("Curse of Chaugnar Faugn — choose the value of the Elder Sign %s receives.", e.seatName(p.By))
 			case "donate":
-				return fmt.Sprintf("%s: Messenger of Yig — give 1 Power to %s, or refuse and let %s gain 1 Doom.", who, e.seatName(p.By), e.seatName(p.By))
+				return fmt.Sprintf("Messenger of Yig — give 1 Power to %s, or refuse and let %s gain 1 Doom.", e.seatName(p.By), e.seatName(p.By))
 			case "zygote":
-				return fmt.Sprintf("%s: The Zygote — click an area where you have a unit to place an Acolyte there (%d left).", who, p.Left)
+				return fmt.Sprintf("The Zygote — click an area where you have a unit to place an Acolyte there (%d left).", p.Left)
 			}
-			return fmt.Sprintf("%s: eliminate a unit (%s).", who, p.Why)
+			return fmt.Sprintf("Eliminate a unit (%s).", p.Why)
 		}
 	case stageFirst:
-		return fmt.Sprintf("%s: players are tied for the most Power — choose the first player.", who)
+		return "Choose the first player: the most Power is tied."
 	case stageDirection:
-		lead := "is the first player"
-		if d.Opening {
-			lead = "is the first player of the game"
-		}
-		return fmt.Sprintf("%s %s: choose the direction of play — clockwise (down the player list: %s) or counter-clockwise (up the list: %s).",
-			who, lead, e.orderNames(d.First, 1), e.orderNames(d.First, -1))
+		return "Choose a turn order."
 	case stageDoom:
-		return fmt.Sprintf("%s: Doom phase — perform a Ritual of Annihilation (%d Power), reveal Elder Signs, buy a Loyalty Card (2 Doom; a Terror also 2 Power) when a pack with cards is in play, or finish.", who, e.ritualCost())
+		return fmt.Sprintf("Choose a Doom phase action: a Ritual of Annihilation (%d Power), reveal Elder Signs, buy a Loyalty Card (2 Doom; a Terror also 2 Power) when a pack with cards is in play, or finish.", e.ritualCost())
 	}
 	return ""
 }

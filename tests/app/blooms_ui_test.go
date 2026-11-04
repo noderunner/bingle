@@ -13,7 +13,7 @@ import (
 
 // bloomsStepJS picks a stone colour, then a cell, or ends a turn.
 const bloomsStepJS = `(function () {
-	if (!document.querySelector("#action-card.acting")) return "wait";
+	if (!document.querySelector("#impulse-card.acting")) return "wait";
 	function click(el, what) {
 		el.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
 		return what;
@@ -140,7 +140,7 @@ func TestWebBlooms_PieRuleSwapThroughTheUI(t *testing.T) {
 	waitJS(t, ctx, "61 cells", `document.querySelectorAll('#board .cell').length === 61`, 15*time.Second)
 	// The opening stone (pick the colour, then a cell), then the swap is a
 	// button of the second player's.
-	waitJS(t, ctx, "the opening turn", `document.querySelector('#action-card.acting') !== null`, 15*time.Second)
+	waitJS(t, ctx, "the opening turn", `document.querySelector('#impulse-card.acting') !== null`, 15*time.Second)
 	clickSel(t, ctx, "#piece-buttons button")
 	waitJS(t, ctx, "a cell to open on", `document.querySelector('#board .cell.clickable') !== null`, 10*time.Second)
 	// A board cell is SVG: it takes a dispatched click, not el.click().

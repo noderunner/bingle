@@ -676,27 +676,36 @@ func (e *eng) doShift(mv state.Move) {
 
 // --- prompt -----------------------------------------------------------------
 
-// prompt says what the position is waiting for, in a sentence.
+// prompt says what the position is waiting for, in a sentence, naming who.
 func (e *eng) prompt() string {
 	d := e.d
-	seat := impulseSeat(d)
-	who := e.seatLabel(seat)
-	switch d.Phase {
-	case phaseTerrain:
-		return fmt.Sprintf("%s lays a tile (Overgrowth %d, Mire %d, Hazard %d left).", who, d.Left[0], d.Left[1], d.Left[2])
-	case phaseCourt:
-		return fmt.Sprintf("%s chooses a Court.", who)
-	case phaseDeploy:
-		return fmt.Sprintf("%s deploys a unit in their back two rows.", who)
-	case phaseOver:
+	if d.Phase == phaseOver {
 		if d.Winner == 0 {
 			return "The game is drawn."
 		}
 		return fmt.Sprintf("%s wins.", e.seatLabel(d.Winner))
 	}
+	return e.seatLabel(impulseSeat(d)) + ": " + e.impulse()
+}
+
+// impulse says what the seat on impulse is being asked to choose. Everyone at the
+// table is shown the same words, under that seat's name.
+func (e *eng) impulse() string {
+	d := e.d
+	seat := impulseSeat(d)
+	switch d.Phase {
+	case phaseTerrain:
+		return fmt.Sprintf("Choose where to lay a tile (Overgrowth %d, Mire %d, Hazard %d left).", d.Left[0], d.Left[1], d.Left[2])
+	case phaseCourt:
+		return "Choose a Court."
+	case phaseDeploy:
+		return "Choose where to deploy a unit, in your back two rows."
+	case phaseOver:
+		return ""
+	}
 	switch d.Stage {
 	case stageRecover:
-		return fmt.Sprintf("%s: choose which unit takes the free recovery.", who)
+		return "Choose which unit takes the free recovery."
 	case stageMain:
 		extras := ""
 		var opts []string
@@ -712,18 +721,18 @@ func (e *eng) prompt() string {
 		if len(opts) > 0 {
 			extras = " (first, if you like: " + strings.Join(opts, ", ") + ")"
 		}
-		return fmt.Sprintf("%s: activate a Fresh unit, exert a Fatigued one or take a Clear Turn%s.", who, extras)
+		return fmt.Sprintf("Activate a Fresh unit, exert a Fatigued one or take a Clear Turn%s.", extras)
 	case stageAct:
 		name := ""
 		left := 0
 		if d.Act != nil {
 			name, left = unitName[d.Act.Unit], d.Act.Left
 		}
-		return fmt.Sprintf("%s's %s has %d action%s left: move, strike, shoot, shove — or end the activation.", who, name, left, plural(left))
+		return fmt.Sprintf("Choose an action for the %s (%d left): move, strike, shoot, shove, or end the activation.", name, left)
 	case stageRespond:
-		return fmt.Sprintf("%s: your unit is being struck — put some of its dice on attack (the rest defend). The attacker has already committed in secret.", who)
+		return "Choose how many dice of the struck unit attack (the rest defend). The attacker has already committed in secret."
 	case stageReroll:
-		return fmt.Sprintf("%s: spend 1 Momentum to reroll a failed die, or keep the roll.", who)
+		return "Spend 1 Momentum to reroll a failed die, or keep the roll."
 	case stagePush:
 		name := ""
 		if len(d.Pushes) > 0 {
@@ -731,20 +740,13 @@ func (e *eng) prompt() string {
 				name = e.label(u)
 			}
 		}
-		return fmt.Sprintf("%s: choose the direction to push %s.", who, name)
+		return fmt.Sprintf("Choose the direction to push %s.", name)
 	case stageShift:
-		return fmt.Sprintf("%s: Hit and Run — shift the Outrider one hex for free, or stay.", who)
+		return "Hit and Run — shift the Outrider one hex for free, or stay."
 	case stageSeize:
-		return fmt.Sprintf("%s: Seize the Tempo (2 Momentum) for another turn, or end the turn.", who)
+		return "Seize the Tempo (2 Momentum) for another turn, or end the turn."
 	}
 	return ""
-}
-
-func plural(n int) string {
-	if n == 1 {
-		return ""
-	}
-	return "s"
 }
 
 // describe lists a unit as text for tooltips.

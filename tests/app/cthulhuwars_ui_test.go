@@ -496,7 +496,7 @@ func TestWebCthulhuWars_BattleByClickingThroughEveryStep(t *testing.T) {
 // autoStepCW takes one decision of Alice's pending battle choices: a glowing
 // token, then a highlighted area, then a button; "done" once nothing is left.
 const autoStepCW = `(function () {
-	if (!document.querySelector("#action-card.acting")) {
+	if (!document.querySelector("#impulse-card.acting")) {
 		return document.getElementById("battle-panel") && document.querySelectorAll("#battle-panel .die").length ? "done" : "wait";
 	}
 	var tok = document.querySelector("#board .token.token-target");

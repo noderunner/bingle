@@ -18,12 +18,14 @@ var (
 // View is what clients draw beyond the pieces: tints, badges, scoreboards and
 // the prompt. It travels in the "view" key of a position's ext payload.
 type View struct {
-	Phase       string               `json:"phase"`
-	ImpulseSeat int                  `json:"impulse_seat,omitempty"`
-	Prompt      string               `json:"prompt"`
-	Tints       map[string]string    `json:"tints,omitempty"`
-	Badges      map[string][]string  `json:"badges,omitempty"`
-	Seats       map[string]*SeatView `json:"seats"`
+	Phase       string `json:"phase"`
+	ImpulseSeat int    `json:"impulse_seat,omitempty"`
+	Prompt      string `json:"prompt"`
+	// Impulse is what the seat on impulse is asked to choose, without its name.
+	Impulse string               `json:"impulse,omitempty"`
+	Tints   map[string]string    `json:"tints,omitempty"`
+	Badges  map[string][]string  `json:"badges,omitempty"`
+	Seats   map[string]*SeatView `json:"seats"`
 }
 
 // SeatView is one player's scoreboard.
@@ -95,8 +97,10 @@ func (e *eng) buildView() *View {
 		v.Prompt = reasonText(d.Reason)
 	case pawn < 0:
 		v.Prompt = seatName(d.Turn) + " to move"
+		v.Impulse = "Choose a piece to move."
 	default:
 		v.Prompt = seatName(d.Turn) + " to move — " + pawnNote
+		v.Impulse = "Choose a piece to move: " + pawnNote + "."
 		if e.controls(uint8(d.Turn)) {
 			v.Badges[cellName(pawn)] = append(v.Badges[cellName(pawn)], "ctrl")
 		}

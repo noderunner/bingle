@@ -20,6 +20,8 @@ type View struct {
 	Phase       string `json:"phase"`
 	ImpulseSeat int    `json:"impulse_seat,omitempty"`
 	Prompt      string `json:"prompt"`
+	// Impulse is what the seat on impulse is asked to choose, without its name.
+	Impulse string `json:"impulse,omitempty"`
 	// Tints marks points by legend key, Badges the stones of a dead group.
 	Tints  map[string]string   `json:"tints,omitempty"`
 	Badges map[string][]string `json:"badges,omitempty"`
@@ -95,10 +97,13 @@ func (e *eng) buildView() *View {
 		v.Prompt = "The game is a draw"
 	case d.Turns[d.Turn-1] == 0:
 		v.Prompt = seatLabel(d.Turn) + ": lay your first stone anywhere"
+		v.Impulse = "Choose where to lay your first stone."
 	case d.Turns[d.Turn-1] == 1:
 		v.Prompt = seatLabel(d.Turn) + ": lay a stone your first can see, not touching it"
+		v.Impulse = "Choose where to lay a stone your first can see, not touching it."
 	default:
 		v.Prompt = seatLabel(d.Turn) + ": lay a stone one of yours can see"
+		v.Impulse = "Choose where to lay a stone one of yours can see."
 	}
 	return v
 }

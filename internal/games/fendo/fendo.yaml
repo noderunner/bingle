@@ -2,7 +2,7 @@
 id: fendo
 name: Fendo
 description: "Dieter Stein's territory game of pieces and fences: move a piece and build a fence beside it, or add a piece. An area fenced off round exactly one piece belongs to that piece's owner."
-version: 0.1.0
+version: 0.1.1
 designers: [Dieter Stein]
 engine: ruleset
 rules:

@@ -13,6 +13,8 @@ type View struct {
 	Solitaire   string `json:"solitaire"`
 	ImpulseSeat int    `json:"impulse_seat,omitempty"`
 	Prompt      string `json:"prompt"`
+	// Impulse is what the player is asked to choose.
+	Impulse string `json:"impulse,omitempty"`
 	// Hint says how to play on this table, under the prompt.
 	Hint string `json:"hint"`
 	// Table is every zone of cards, as far as the viewer may see it.
@@ -61,6 +63,7 @@ func (e *eng) buildView(viewer int) *View {
 		v.Bowling = e.bowlingView()
 		v.Prompt = fmt.Sprintf("Frame %d, ball %d", e.d.Frame, e.d.Ball)
 		v.Hint = e.bowlingHint()
+		v.Impulse = v.Hint
 		return v
 	}
 	v.Columns = e.columns()
@@ -72,6 +75,7 @@ func (e *eng) buildView(viewer int) *View {
 	}
 	v.Prompt = fmt.Sprintf("%d of %d cards home", v.Home, v.Total)
 	v.Hint = "Click a card, then where it should go, or drag it."
+	v.Impulse = v.Hint
 	return v
 }
 

@@ -6,6 +6,7 @@ package allgames_test
 import (
 	"encoding/json"
 	"math/rand"
+	"strings"
 	"testing"
 
 	"github.com/noderunner/bingle/internal/app"
@@ -201,4 +202,56 @@ func FuzzApplyAnyMoveToAnyGame(f *testing.F) {
 		}
 		t.Fatalf("%s: Apply accepted %q (%+v) but LegalMoves does not list it", g.Definition.ID, want, mv)
 	})
+}
+
+// Every game with its rules in Go says, along random play, what the seat on impulse
+// is asked to choose, without naming it: the impulse card has the name (ADR 0099).
+func TestEveryRulesetSaysWhatTheImpulseIs(t *testing.T) {
+	for _, g := range allGames(t) {
+		if _, ok := state.RulesetOf(g); !ok {
+			continue
+		}
+		t.Run(g.Definition.ID, func(t *testing.T) {
+			rng := rand.New(rand.NewSource(7))
+			st := state.InitialState(g)
+			seat := state.FirstSeat(g)
+			for ply := 0; ply < 40 && seat != 0; ply++ {
+				doc, err := state.Public(g, st, seat).MarshalJSON()
+				if err != nil {
+					t.Fatal(err)
+				}
+				var pos struct {
+					Ext struct {
+						View struct {
+							Impulse string `json:"impulse"`
+						} `json:"view"`
+					} `json:"ext"`
+				}
+				if err := json.Unmarshal(doc, &pos); err != nil {
+					t.Fatal(err)
+				}
+				text := pos.Ext.View.Impulse
+				if text == "" {
+					t.Fatalf("ply %d: no impulse in %s", ply, doc)
+				}
+				for _, sd := range g.Definition.Seats {
+					if sd.Label != "" && strings.HasPrefix(text, sd.Label+":") {
+						t.Fatalf("ply %d: the impulse names the seat: %q", ply, text)
+					}
+				}
+				moves := state.LegalMoves(g, st, seat)
+				if len(moves) == 0 {
+					return
+				}
+				res, err := state.Apply(g, st, seat, moves[rng.Intn(len(moves))])
+				if err != nil {
+					t.Fatal(err)
+				}
+				if res.GameEnded {
+					return
+				}
+				st, seat = res.NewState, res.NextImpulseSeat
+			}
+		})
+	}
 }

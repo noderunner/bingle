@@ -33,8 +33,10 @@ type View struct {
 	Round       int    `json:"round"`
 	ImpulseSeat int    `json:"impulse_seat,omitempty"`
 	Prompt      string `json:"prompt"`
-	First       int    `json:"first"`
-	Dir         int    `json:"dir"`
+	// Impulse is what the seat on impulse is asked to choose, without its name.
+	Impulse string `json:"impulse,omitempty"`
+	First   int    `json:"first"`
+	Dir     int    `json:"dir"`
 	// Ritual is the Ritual of Annihilation marker.
 	Ritual RitualView `json:"ritual"`
 	// Reaction is set while the decision waiting is a reaction window.
@@ -335,7 +337,7 @@ func (e *eng) buildView(viewer int) *View {
 	d := e.d
 	v := &View{
 		Phase: d.Phase, Stage: d.Stage, Round: d.Round, ImpulseSeat: impulseSeat(d),
-		Prompt: e.prompt(), First: d.First, Dir: d.Dir,
+		Prompt: e.prompt(), Impulse: e.impulse(), First: d.First, Dir: d.Dir,
 		Ritual: RitualView{Track: e.ritualTrack(), Cost: e.ritualCost(), Marker: d.Ritual, Instant: d.Instant},
 		Tints:  map[string]string{}, Badges: map[string][]string{}, Notes: map[string]string{},
 		Holders: map[string]string{},

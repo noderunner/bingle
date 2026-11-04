@@ -24,9 +24,11 @@ type View struct {
 	Phase       string `json:"phase"`
 	ImpulseSeat int    `json:"impulse_seat,omitempty"`
 	Prompt      string `json:"prompt"`
-	Round       int    `json:"round"`
-	Rounds      int    `json:"rounds"`
-	Dealer      int    `json:"dealer"`
+	// Impulse is what the seat on impulse is asked to choose, without its name.
+	Impulse string `json:"impulse,omitempty"`
+	Round   int    `json:"round"`
+	Rounds  int    `json:"rounds"`
+	Dealer  int    `json:"dealer"`
 	// Table is every zone of cards the viewer may see.
 	Table []cards.ZoneView `json:"table"`
 	// Grid is the board the players cross boxes off.
@@ -186,16 +188,22 @@ func (e *eng) buildView(viewer int) *View {
 		v.Prompt = "The game is a tie"
 	case d.Phase == phaseNyet:
 		v.Prompt = fmt.Sprintf("%s: cross off a box you do NOT want (round %d of %d)", e.label(d.Turn), d.Round, e.rounds())
+		v.Impulse = "Choose a box to cross off."
 	case d.Phase == phaseTeam:
 		v.Prompt = fmt.Sprintf("%s leads: choose the team", e.label(d.Turn))
+		v.Impulse = "Choose the team."
 	case d.Phase == phaseBonus:
 		v.Prompt = fmt.Sprintf("%s: give the x2 bonus card to a player of the smaller team", e.label(d.Turn))
+		v.Impulse = "Choose who in the smaller team gets the x2 bonus card."
 	case d.Phase == phaseDiscard && d.Disc == "passleft":
 		v.Prompt = fmt.Sprintf("%s: choose a card to pass to the left", e.label(d.Turn))
+		v.Impulse = "Choose a card to pass to the left."
 	case d.Phase == phaseDiscard:
 		v.Prompt = fmt.Sprintf("%s: choose a card to discard", e.label(d.Turn))
+		v.Impulse = "Choose a card to discard."
 	default:
 		v.Prompt = fmt.Sprintf("%s: play a card", e.label(d.Turn))
+		v.Impulse = "Choose a card to play."
 	}
 	for _, mv := range e.legalForView() {
 		switch mv.Action {

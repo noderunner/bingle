@@ -2,7 +2,7 @@
 id: onitama
 name: Onitama
 description: 'A two-player martial-arts game on a 5×5 board: five Move cards decide how your pieces may move, and the card you use is passed on to your opponent.'
-version: 0.1.0
+version: 0.1.1
 designers: [Shimpei Sato]
 publisher: Arcane Wonders
 engine: ruleset

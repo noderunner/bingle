@@ -32,6 +32,8 @@ type View struct {
 	ImpulseSeat int    `json:"impulse_seat,omitempty"`
 	// Prompt says what the position is waiting for.
 	Prompt string `json:"prompt"`
+	// Impulse is what the seat on impulse is asked to choose, without its name.
+	Impulse string `json:"impulse,omitempty"`
 	// Tints colours hexes by legend key; Badges marks hexes; Notes are
 	// hover texts.
 	Tints  map[string]string   `json:"tints,omitempty"`
@@ -192,6 +194,7 @@ func (e *eng) buildView(viewer int) *View {
 		Stage:       d.Stage,
 		ImpulseSeat: impulseSeat(d),
 		Prompt:      e.prompt(),
+		Impulse:     e.impulse(),
 		Seats:       map[string]*SeatView{},
 	}
 	if d.Phase == phaseTerrain || d.Phase == phaseDeploy {

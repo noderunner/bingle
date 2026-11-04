@@ -31,12 +31,14 @@ type CardsView struct {
 
 // View is what clients draw beyond the pieces.
 type View struct {
-	Phase       string               `json:"phase"`
-	ImpulseSeat int                  `json:"impulse_seat,omitempty"`
-	Prompt      string               `json:"prompt"`
-	Tints       map[string]string    `json:"tints,omitempty"`
-	Seats       map[string]*SeatView `json:"seats"`
-	Cards       *CardsView           `json:"cards,omitempty"`
+	Phase       string `json:"phase"`
+	ImpulseSeat int    `json:"impulse_seat,omitempty"`
+	Prompt      string `json:"prompt"`
+	// Impulse is what the seat on impulse is asked to choose, without its name.
+	Impulse string               `json:"impulse,omitempty"`
+	Tints   map[string]string    `json:"tints,omitempty"`
+	Seats   map[string]*SeatView `json:"seats"`
+	Cards   *CardsView           `json:"cards,omitempty"`
 }
 
 // SeatView is one player's scoreboard.
@@ -105,6 +107,7 @@ func (e *eng) buildView() *View {
 		v.Prompt = reasonText(d.Reason)
 	} else {
 		v.Prompt = seatName(d.Turn) + " to move: choose a card, then a piece and where it goes"
+		v.Impulse = "Choose a card, then a piece and where it goes."
 	}
 	for s := seatRed; s <= seatBlue; s++ {
 		v.Seats[string(rune('0'+s))] = &SeatView{Counters: []CounterView{{ID: "pieces", Label: "Pieces", Value: e.count(s)}}}

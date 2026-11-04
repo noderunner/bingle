@@ -377,6 +377,10 @@ type RulesetAction struct {
 	// its button: "book" for an ability a spellbook gives (earned), and
 	// "requirement" for an action that meets a spellbook requirement.
 	Source string `json:"source,omitempty"`
+	// Impulse is what the player is asked next, once they have chosen this
+	// action ("Choose an area to place a gate."). Without one, the page says the
+	// action's label and the kind of choice left.
+	Impulse string `json:"impulse,omitempty"`
 }
 
 // Describer is implemented by rulesets that describe themselves to clients.

@@ -18,12 +18,14 @@ var (
 
 // View is what clients draw beyond the nodes.
 type View struct {
-	Phase       string               `json:"phase"`
-	Stage       string               `json:"stage,omitempty"`
-	ImpulseSeat int                  `json:"impulse_seat,omitempty"`
-	Prompt      string               `json:"prompt"`
-	Tints       map[string]string    `json:"tints,omitempty"`
-	Seats       map[string]*SeatView `json:"seats"`
+	Phase       string `json:"phase"`
+	Stage       string `json:"stage,omitempty"`
+	ImpulseSeat int    `json:"impulse_seat,omitempty"`
+	Prompt      string `json:"prompt"`
+	// Impulse is what the seat on impulse is asked to choose, without its name.
+	Impulse string               `json:"impulse,omitempty"`
+	Tints   map[string]string    `json:"tints,omitempty"`
+	Seats   map[string]*SeatView `json:"seats"`
 }
 
 // SeatView is one player's scoreboard.
@@ -74,6 +76,7 @@ func (e *eng) buildView() *View {
 		v.Prompt = "The game is drawn"
 	case cf == nil:
 		v.Prompt = fmt.Sprintf("%s: place a node", seatLabel(d.Turn))
+		v.Impulse = "Choose where to place a node."
 	default:
 		v.Stage = cf.Phase
 		for _, c := range cf.Spent {
@@ -83,10 +86,13 @@ func (e *eng) buildView() *View {
 		switch {
 		case cf.Head != "":
 			v.Prompt = fmt.Sprintf("%s: convert an enemy node touching %s (%d more at most), or stop", seatLabel(d.Turn), cf.Head, cf.Left)
+			v.Impulse = fmt.Sprintf("Choose an enemy node touching %s to convert (%d more at most), or stop.", cf.Head, cf.Left)
 		case cf.Phase == phaseSpore:
 			v.Prompt = fmt.Sprintf("Confluence, spores of size %d: %s converts an enemy node in a line of sight", cf.Initiative, seatLabel(d.Turn))
+			v.Impulse = "Choose a spore cluster to spread: convert an enemy node in a line of sight."
 		default:
 			v.Prompt = fmt.Sprintf("Confluence, hyphae of size %d: %s spreads from the end of a strand", cf.Initiative, seatLabel(d.Turn))
+			v.Impulse = "Choose a hyphae cluster to spread, from the end of a strand."
 		}
 	}
 	for s := 1; s <= 2; s++ {

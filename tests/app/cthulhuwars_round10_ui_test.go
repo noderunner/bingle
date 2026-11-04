@@ -80,8 +80,11 @@ func TestWebCthulhuWars_GreatCthulhuInSeatThreeChoosesTheDirectionFirst(t *testi
 	if got := evalString(t, ctx, `[...document.querySelectorAll("#phase-steps .phase-step")].map(p => p.classList[1] + ":" + p.textContent.replace("✓", "").trim()).join("|")`); got != "todo:Action|done:Gather Power|current:First Player|todo:Doom" {
 		t.Errorf("phase bar %q", got)
 	}
-	if got := evalString(t, ctx, `document.getElementById("status-message").textContent`); !strings.Contains(got, "first player") {
-		t.Errorf("status %q", got)
+	if got := evalString(t, ctx, `document.getElementById("impulse-text").textContent`); got != "Choose a turn order." {
+		t.Errorf("the impulse says %q", got)
+	}
+	if got := evalString(t, ctx, `document.getElementById("impulse-card").textContent`); strings.Contains(got, "the list") {
+		t.Errorf("the turn order choices still mention the list: %q", got)
 	}
 	// Clockwise plays down the list from Great Cthulhu: Yellow Sign, Windwalker, Black Goat, Crawling Chaos.
 	if got := evalString(t, ctx, `document.getElementById("action-cw").textContent`); !strings.Contains(got, "Great Cthulhu") || !strings.Contains(got, "Yellow Sign") {

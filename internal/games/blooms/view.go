@@ -21,8 +21,8 @@ type View struct {
 	Stage       string `json:"stage,omitempty"`
 	ImpulseSeat int    `json:"impulse_seat,omitempty"`
 	Prompt      string `json:"prompt"`
-	// MoveHint says what the player to move can do, over the controls.
-	MoveHint string `json:"move_hint,omitempty"`
+	// Impulse is what the seat on impulse is asked to choose, without its name.
+	Impulse string `json:"impulse,omitempty"`
 	// PieceAction is the word on the button of each stone: its colour is in its picture.
 	PieceAction string               `json:"piece_action,omitempty"`
 	Tints       map[string]string    `json:"tints,omitempty"`
@@ -91,16 +91,16 @@ func (e *eng) buildView() *View {
 		v.Prompt = "The game is drawn"
 	case d.Stage == stageSecond:
 		v.Prompt = fmt.Sprintf("%s: place a second stone (not %s), or end the turn", seatLabel(d.Turn), d.First)
-		v.MoveHint = "Place or end."
+		v.Impulse = "Choose a second stone to place, or end your turn."
 	case d.Turns == 0:
 		v.Prompt = fmt.Sprintf("%s: place one stone", seatLabel(d.Turn))
-		v.MoveHint = "Choose a stone to place."
+		v.Impulse = "Choose a stone to place."
 	case d.Turn == 2 && d.Turns == 1 && d.Stage == stageFirst && e.pieOn():
 		v.Prompt = fmt.Sprintf("%s: answer the opening stone, or swap sides and take it (the pie rule)", seatLabel(d.Turn))
-		v.MoveHint = "Choose a stone to place, or swap sides."
+		v.Impulse = "Choose a stone to place, or swap sides."
 	default:
 		v.Prompt = fmt.Sprintf("%s: place a stone", seatLabel(d.Turn))
-		v.MoveHint = "Choose a stone to place."
+		v.Impulse = "Choose a stone to place."
 	}
 	for s := 1; s <= 2; s++ {
 		v.Seats[string(rune('0'+s))] = &SeatView{

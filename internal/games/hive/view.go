@@ -17,10 +17,12 @@ var (
 
 // View is what clients draw beyond the tiles.
 type View struct {
-	Phase       string            `json:"phase"`
-	ImpulseSeat int               `json:"impulse_seat,omitempty"`
-	Prompt      string            `json:"prompt"`
-	Tints       map[string]string `json:"tints,omitempty"`
+	Phase       string `json:"phase"`
+	ImpulseSeat int    `json:"impulse_seat,omitempty"`
+	Prompt      string `json:"prompt"`
+	// Impulse is what the seat on impulse is asked to choose, without its name.
+	Impulse string            `json:"impulse,omitempty"`
+	Tints   map[string]string `json:"tints,omitempty"`
 }
 
 // Redact attaches the derived view: Hive has nothing to hide.
@@ -74,10 +76,13 @@ func (e *eng) buildView() *View {
 		v.Prompt = "The game is drawn"
 	case e.res[d.Turn][kQueen] > 0 && d.Turns[d.Turn-1] >= 3:
 		v.Prompt = fmt.Sprintf("%s: this is your fourth turn, so you must place your Queen Bee", seatLabel(d.Turn))
+		v.Impulse = "Place your Queen Bee: this is your fourth turn."
 	case e.pieces() == 0:
 		v.Prompt = "White: place your first tile in the middle"
+		v.Impulse = "Place your first tile in the middle."
 	default:
 		v.Prompt = fmt.Sprintf("%s: place a tile or move one", seatLabel(d.Turn))
+		v.Impulse = "Place a tile or move one."
 	}
 	return v
 }

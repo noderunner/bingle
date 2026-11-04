@@ -1860,30 +1860,126 @@ function rememberRailScroll() {
 	if (rail) S.railScroll = rail.scrollTop;
 }
 
+/** Whether the game waits for a seat just now, in the position being looked at. */
+function onImpulse() {
+	return isLive() && !inAnalysis() && isActive() && !tutorialLookingBack() && !tutorialShown();
+}
+
+/** The name of the seat on impulse. Somebody playing several seats needs to be told which. */
+function impulseTitle() {
+	const seat = S.game.impulse_seat;
+	const name = seatName(seat);
+	if (!name) return seatLabel(seat);
+	return S.mine.length > 1 ? `${name} (${seatLabel(seat)})` : name;
+}
+
+/** What a highlighted place is called on this board. */
+function cellWord() {
+	const { style, kind } = S.info.board;
+	return style === "areas" ? "area" : style === "points" ? "point" : kind === "hex" ? "hex" : "square";
+}
+
+/** "Place a stone or move a stack.": a game with no words of its own says what its actions are. */
+function genericImpulse() {
+	const acts = (S.info.actions || []).map((a) => a.label).filter(Boolean);
+	if (!acts.length) return "Choose a move.";
+	const text = acts.map((label, i) => (i ? label.toLowerCase() : label)).join(" or ");
+	return `${text}.`;
+}
+
+/** What the player is asked once they have made a choice of their own in a game with its rules in Go. */
+function rulesetStepImpulse(b, rv) {
+	const opts = b.options();
+	if (!opts.length) return needsConfirm() ? "Check the preview, then submit." : "Submitting…";
+	if (rv && rv.stage === "moving") {
+		const from = b.steps.find((st) => st.kind === "pos");
+		const piece = b.steps.find((st) => st.kind === "piece");
+		const label = piece ? (S.info.pieces.find((p) => p.type === piece.value) || {}).label || piece.value : "";
+		if (from && piece) return `Choose an area to send your ${label} from ${areaName(from.value)} to.`;
+		if (from) return `Choose a unit to move out of ${areaName(from.value)}.`;
+	}
+	const manual = b.manualSteps();
+	const last = manual[manual.length - 1];
+	const lastAction = [...manual].reverse().find((st) => st.kind === "action");
+	const def = lastAction ? actionDef(lastAction.value) : null;
+	if (def && def.impulse && last === lastAction) return def.impulse;
+	const kinds = new Set(opts.map((o) => o.kind));
+	const choice = kinds.has("count")
+		? countLabel(b)
+		: kinds.has("piece") && !kinds.has("pos")
+		? "Choose a unit."
+		: kinds.has("pos") && !kinds.has("piece")
+		? `Choose ${cellWord() === "area" ? "an area" : `a ${cellWord()}`}.`
+		: "Choose an option.";
+	return def && def.label ? `${def.label}: ${choice.charAt(0).toLowerCase()}${choice.slice(1)}` : choice;
+}
+
+/** What the player on impulse in a game on the generic engine is asked just now. */
+function genericActingImpulse(b) {
+	const opts = b.options();
+	const hasPiece = opts.some((o) => o.kind === "piece");
+	const hasPos = opts.some((o) => o.kind === "pos");
+	if (b.manualSteps().length) {
+		if (opts.some((o) => o.kind === "count")) return "Choose how many pieces to pick up.";
+		if (b.complete()) return opts.length ? "Submit the move, or keep dropping pieces." : needsConfirm() ? "Check the preview, then submit." : "Submitting…";
+		const picked = b.pickedCount();
+		if (picked) {
+			const left = picked - [...b.dropCounts().values()].reduce((a, c) => a + c, 0);
+			return `Choose a square to drop the remaining ${left} piece${left === 1 ? "" : "s"} on (click again to leave more there).`;
+		}
+		return hasPos ? "Choose a highlighted square." : "Continue your move.";
+	}
+	if (openingActive() && S.info.opening.owner === "opponent") return "Opening: place a flat stone of your opponent’s color on any square.";
+	// A forced piece choice was taken automatically: the squares on offer are places to put it.
+	const placing = hasPos && !hasPiece && b.steps.length > 0 && b.steps[0].kind === "piece";
+	const points = S.info.board.style === "points";
+	if (hasPiece && hasPos) return "Click an empty square to place a stone (Shift: wall, Ctrl: capstone), or click a highlighted stack to move it.";
+	if (hasPiece && b.quickPlacements().size > 0) return `${points ? "Choose an intersection to place a stone" : "Choose an empty square to place a piece"}${opts.some((o) => o.kind === "action") ? ", or choose an action" : ""}.`;
+	if (hasPiece) return "Choose a piece from your hand.";
+	if (placing) return points ? "Choose an intersection to place a stone." : "Choose an empty square to place a piece.";
+	if (hasPos) return "Choose a highlighted piece to move.";
+	return opts.some((o) => o.kind === "action") ? "Choose an action." : "No moves available.";
+}
+
 /**
- * The card of what the player can do now. `note` is what the bar says on other pages when it
- * has something to tell or a button to press: a result, history, analysis, a wait.
+ * What the seat on impulse is asked to choose. Everyone is shown the same words, from the
+ * position. A choice the player has made and not sent is a step of their own, which is
+ * their next impulse: only their browser knows of it, so only they see it (ADR 0099).
  */
-function actionCard(note, choices = []) {
+function impulseText() {
+	const rv = rulesetView();
+	const said = rv && (rv.impulse || rv.prompt);
+	if (!isMyImpulse()) return said || genericImpulse();
+	const b = activeBuilder();
+	if (!isRuleset()) return genericActingImpulse(b);
+	return b.manualSteps().length ? rulesetStepImpulse(b, rv) : said || genericActingImpulse(b);
+}
+
+/**
+ * The impulse card: whose impulse it is as the title and what they are asked to choose
+ * under it, for everyone, then what the player can do about it. `note` is what the bar says
+ * on other pages when it has something to tell or a button to press: a result, history,
+ * analysis, a wait.
+ */
+function impulseCard(note, choices = []) {
 	// Not actingSeat(): that lapses while a step is being sent, and the card would jump.
 	const acting = inAnalysis() ? !!actingSeat() : isLive() && isMyImpulse() && !tutorialLookingBack();
 	const bar = moveBar();
 	const g = S.game;
 	// The note says it already: "Browsing history" under "Viewing the position after move 3".
 	if (note && !inAnalysis()) bar.querySelector(":scope > .hint")?.remove();
-	const waiting = !acting && isLive() && !inAnalysis() && isActive() && !!S.me.seat && !S.tut;
+	const impulse = onImpulse();
 	const text = bar.textContent.trim();
-	// Kept while the opponent plays, so that the cards below do not jump at each turn.
-	if (!acting && !waiting && !text && !note && !choices.length) return null;
-	const title = inAnalysis() ? "Analysis" : !isLive() ? "History" : acting ? "Your move" : g.status === "finished" ? "Game over" : g.status === "waiting" ? "Waiting" : "Actions";
-	const card = h("section", { class: "card action-card" + (acting ? " acting" : ""), id: "action-card", "aria-label": "Your actions" });
-	card.append(h("h3", {}, title));
+	if (!acting && !impulse && !text && !note && !choices.length) return null;
+	const title = inAnalysis() ? "Analysis" : !isLive() ? "History" : impulse ? impulseTitle() : g.status === "finished" ? "Game over" : g.status === "waiting" ? "Waiting" : "Actions";
+	const card = h("section", { class: "card impulse-card" + (acting ? " acting" : ""), id: "impulse-card", "aria-label": "Impulse" });
+	card.append(h("h3", { id: "impulse-title" }, title));
+	if (impulse) card.append(h("p", { class: "impulse-text", id: "impulse-text" }, impulseText()));
 	if (note) {
 		card.classList.toggle("over", note.over);
 		card.classList.toggle("history", note.history);
 		card.append(note.words);
 	}
-	if (waiting && !text && !choices.length) card.append(h("p", { class: "small muted", id: "action-idle" }, "Your choices appear here on your turn."));
 	if (bar.childNodes.length) card.append(bar);
 	card.append(...choices);
 	if (note && note.buttons.length) card.append(h("div", { class: "note-buttons" }, ...note.buttons));
@@ -1945,7 +2041,7 @@ function renderFitted(seats, bottomSeat, cults) {
 	if (S.tut) first.push(tutorialCard());
 	first.push(kickVoteBanner(), slowTurnBanner(), nextGameBanner(), firstMoveBanner(), drawOfferBanner(), hintBanner());
 	if (!S.me.seat && !S.spectating) first.push(identityGate());
-	first.push(actionCard(note, choices.filter(Boolean)));
+	first.push(impulseCard(note, choices.filter(Boolean)));
 	const talk = !S.tut ? [voiceCard({ code, me: S.me, seats: S.game.seats }), chatCard({ code, me: S.me })].filter(Boolean) : [];
 
 	const rail = h("aside", { class: "side-panel play-rail", id: "play-rail" }, ...first.filter(Boolean));
@@ -2072,6 +2168,7 @@ function renderMobile(seats, bottomSeat) {
 		const gate = identityGate();
 		if (gate) actions.append(gate);
 	}
+	if (onImpulse()) actions.append(h("h3", { id: "impulse-title" }, impulseTitle()), h("p", { class: "impulse-text", id: "impulse-text" }, impulseText()));
 	actions.append(moveBar());
 	for (const part of [unitInfoCard(), battlePanel(), exchangePanel()]) if (part) actions.append(part);
 
@@ -2174,6 +2271,7 @@ function renderMobileCards(seats, bottomSeat) {
 		const gate = identityGate();
 		if (gate) play.append(gate);
 	}
+	if (onImpulse()) play.append(h("h3", { id: "impulse-title" }, impulseTitle()), h("p", { class: "impulse-text", id: "impulse-text" }, impulseText()));
 	play.append(moveBar());
 	const table = drawCardTable(ctx);
 	S.ctPrev = table.state;
@@ -2447,15 +2545,13 @@ function statusBar() {
 		msg = resultMessage();
 	} else if (isMyImpulse()) {
 		cls.push("your-impulse");
-		msg = turnPrompt();
+		msg = `Your turn — ${impulseText()}`;
 	} else if (S.me.seat) {
-		const n = seatName(g.impulse_seat);
 		const si = seatInfo(g.impulse_seat);
-		msg = si && si.bot ? `${n} is thinking…` : `Waiting for ${n || seatLabel(g.impulse_seat)} to move…`;
-		const rv = rulesetView();
-		if (rv && rv.prompt) msg = si && si.bot ? `${rv.prompt} (${n} is thinking…)` : rv.prompt;
+		const who = seatName(g.impulse_seat) || seatLabel(g.impulse_seat);
+		msg = si && si.bot ? `${who} is thinking: ${impulseText()}` : `Waiting for ${who}: ${impulseText()}`;
 	} else {
-		msg = `${seatLabel(g.impulse_seat)} (${displayName(g.impulse_seat)}) to move.`;
+		msg = `${seatLabel(g.impulse_seat)} (${displayName(g.impulse_seat)}): ${impulseText()}`;
 	}
 
 	const bar = h("div", { class: cls.join(" ") });
@@ -2605,47 +2701,6 @@ function resultMessage() {
 	const who = `${seatLabel(g.winner_seat)} (${displayName(g.winner_seat)})`;
 	if (S.me.seat) return g.winner_seat === S.me.seat ? `You won${how}${detail}! 🎉` : `${who} won${how}${detail}.`;
 	return `${who} won${how}${detail}.`;
-}
-
-function turnPrompt() {
-	const b = activeBuilder();
-	const opts = b.options();
-	const rv = rulesetView();
-	if (rv && rv.stage === "moving") {
-		// Moving units one by one: say which click comes next.
-		const from = b.steps.find((st) => st.kind === "pos");
-		const piece = b.steps.find((st) => st.kind === "piece");
-		const label = piece ? (S.info.pieces.find((p) => p.type === piece.value) || {}).label || piece.value : "";
-		if (from && piece) return `Move: click a highlighted area to send your ${label} from ${areaName(from.value)} to.`;
-		if (from) return `Move: pick which unit leaves ${areaName(from.value)} (a glowing token or a button).`;
-		return "Move: click a glowing unit to pick it up (1 Power each), then its destination. Press Done when finished.";
-	}
-	if (rv && rv.stage === "direction") {
-		// The two choices below spell out who plays after whom.
-		return "You are the first player — choose the direction of play.";
-	}
-	if (rv && rv.prompt) {
-		if (opts.some((o) => o.kind === "count")) return `${rv.prompt} — ${countLabel(b)}`;
-		return `Your turn — ${rv.prompt}`;
-	}
-	if (b.manualSteps().length === 0) {
-		if (openingActive() && S.info.opening.owner === "opponent") {
-			return "Opening: place a flat stone of your opponent’s color on any square.";
-		}
-		const acts = (S.info.actions || []).map((a) => a.label.toLowerCase());
-		return acts.length ? `Your turn — ${acts.join(" or ")}.` : "Your turn.";
-	}
-	if (opts.some((o) => o.kind === "count")) return "How many pieces do you want to pick up?";
-	if (b.complete()) {
-		return opts.length ? "Submit the move, or keep dropping pieces." : needsConfirm() ? "Check the preview, then submit." : "Submitting…";
-	}
-	const picked = b.pickedCount();
-	if (picked) {
-		const dropped = [...b.dropCounts().values()].reduce((a, c) => a + c, 0);
-		return `Drop the remaining ${picked - dropped} piece${picked - dropped === 1 ? "" : "s"}: click the next square (click again to leave more there).`;
-	}
-	if (opts.some((o) => o.kind === "pos")) return "Choose a highlighted square.";
-	return "Continue your move.";
 }
 
 // ---- connected / disconnected ---------------------------------------------------------------
@@ -4099,79 +4154,6 @@ function moveBar() {
 
 	if (acting && b.manualSteps().length) {
 		bar.append(pendingMove(b));
-	} else if (acting && !inAnalysis() && isRuleset()) {
-		const opts = b.options();
-		const hasPos = opts.some((o) => o.kind === "pos");
-		const hasAct = opts.some((o) => o.kind === "action");
-		const hasPiece = opts.some((o) => o.kind === "piece");
-		const cell = S.info.board.style === "areas" ? "area" : "hex";
-		const rvh = rulesetView();
-		// A normal turn: units to move on the map, or an action to choose.
-		const turnStage = !!rvh && rvh.stage === "turn" && b.steps.length === 0;
-		// Choosing the spellbook that a requirement earned.
-		const choosingBook = hasAct && opts.filter((o) => o.kind === "action").every((o) => String(o.value).startsWith("book-"));
-		bar.append(
-			h(
-				"span",
-				{ class: "hint", id: "move-hint" },
-				rvh && rvh.move_hint
-					? rvh.move_hint
-					: rvh && rvh.stage === "setup"
-					? "Choose Starting Area: select a starting area on the map."
-					: choosingBook
-					? "Choose a spellbook to unlock:"
-					: hasPiece && !hasPos && rvh && rvh.stage === "prompt"
-					? "Choose the unit to place:"
-					: hasPiece
-					? `Choose a unit, then a highlighted ${cell}.`
-					: turnStage && hasAct && (hasPos || hasPiece)
-					? "Click a unit on the map to move, or choose an action:"
-					: hasPos && hasAct
-					? `Click a highlighted ${cell}, or choose an action.`
-					: hasPos
-					? `Click a highlighted ${cell}.`
-					: hasAct
-					? (rulesetView() || {}).panel_actions
-						? (rulesetView() || {}).hint || "Click a card or a box on the table, or choose from the buttons."
-						: "Choose an action."
-					: opts.some((o) => o.kind === "count")
-					? "Choose a number."
-					: ""
-			)
-		);
-	} else if (acting && !inAnalysis()) {
-		const opts = b.options();
-		const hasPiece = opts.some((o) => o.kind === "piece");
-		const hasPos = opts.some((o) => o.kind === "pos");
-		// A forced piece choice was taken automatically: the squares on offer
-		// are placement targets, not pieces to pick up.
-		const placing = hasPos && !hasPiece && b.steps.length > 0 && b.steps[0].kind === "piece";
-		const points = S.info.board.style === "points";
-		bar.append(
-			h(
-				"span",
-				{ class: "hint" },
-				hasPiece && hasPos
-					? "Click an empty square to place a stone (Shift: wall, Ctrl: capstone), or click a highlighted stack to move it."
-					: hasPiece && !hasPos && b.quickPlacements().size > 0
-					? `${points ? "Click an intersection to place a stone" : "Click an empty square to place a piece"}${
-							opts.some((o) => o.kind === "action") ? ", or choose an action" : ""
-					  }.`
-					: hasPiece
-					? "Choose a piece from your hand."
-					: placing
-					? points
-						? "Click an intersection to place a stone."
-						: "Click an empty square to place a piece."
-					: hasPos
-					? "Click a highlighted piece to move it."
-					: opts.some((o) => o.kind === "action")
-					? (rulesetView() || {}).panel_actions
-						? (rulesetView() || {}).hint || "Click a card or a box on the table, or choose from the buttons."
-						: "Choose an action."
-					: "No moves available."
-			)
-		);
 	}
 
 	const actionIds = acting && (isRuleset() || b.manualSteps().length === 0) ? b.nextActions() : [];
@@ -4525,10 +4507,9 @@ function directionButton(id, rv) {
 			id: `action-${id}`,
 			class: "direction-button",
 			"data-action": id,
-			title: cw ? "Play passes down the list of cults, wrapping from the last to the first." : "Play passes up the list of cults, wrapping from the first to the last.",
 			onclick: () => chooseAction(id),
 		},
-		h("span", { class: "dir-head" }, h("span", { class: "dir-glyph", "aria-hidden": "true" }, cw ? "↻" : "↺"), h("strong", {}, cw ? "Clockwise" : "Counter-clockwise"), h("span", { class: "muted small" }, cw ? " — down the list" : " — up the list")),
+		h("span", { class: "dir-head" }, h("span", { class: "dir-glyph", "aria-hidden": "true" }, cw ? "↻" : "↺"), h("strong", {}, cw ? "Clockwise" : "Counter-clockwise")),
 		orderLine(cw ? rv.order.cw : rv.order.ccw)
 	);
 }

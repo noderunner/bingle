@@ -14,7 +14,7 @@ import (
 // nyetStepJS plays a card if one can be played, else crosses the first open
 // box of the board, else picks the first team or bonus button.
 const nyetStepJS = `(function () {
-	if (!document.querySelector("#action-card.acting")) return "wait";
+	if (!document.querySelector("#impulse-card.acting")) return "wait";
 	function click(el, what) {
 		el.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
 		return what;

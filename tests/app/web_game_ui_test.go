@@ -613,7 +613,7 @@ func TestWebLobby_CreateAgainstBotOpensPlayableGame(t *testing.T) {
 	}
 	pollLocation(t, ctx, gamePageURLPattern)
 	waitJS(t, ctx, "board", `document.querySelector("#board svg")`, 10*time.Second)
-	waitJS(t, ctx, "my turn against the bot", `document.getElementById("status-message").textContent.indexOf("Opening") === 0`, 10*time.Second)
+	waitJS(t, ctx, "my turn against the bot", `document.getElementById("impulse-text") && document.getElementById("impulse-text").textContent.indexOf("Opening") === 0`, 10*time.Second)
 	// The bot is seated.
 	if got := evalString(t, ctx, `[...document.querySelectorAll(".seat-strip .name")].map(e => e.textContent).join(",")`); !strings.Contains(got, "Bot (Random)") {
 		t.Errorf("players = %q, want the bot listed", got)
@@ -683,7 +683,7 @@ func TestWebGame_RematchAgainstBotSwapsSides(t *testing.T) {
 	pollLocation(t, ctx, gamePageURLPattern)
 	waitJS(t, ctx, "new game loaded", `document.getElementById("status-message") && document.getElementById("board-svg")`, 10*time.Second)
 	// Zoe now plays second: the bot (white) has already made the first move.
-	waitJS(t, ctx, "my turn after the bot's opening", `document.getElementById("status-message").textContent.indexOf("Opening") === 0`, 10*time.Second)
+	waitJS(t, ctx, "my turn after the bot's opening", `document.getElementById("impulse-text") && document.getElementById("impulse-text").textContent.indexOf("Opening") === 0`, 10*time.Second)
 	if n := evalInt(t, ctx, `document.querySelectorAll("#board svg .piece").length`); n != 1 {
 		t.Errorf("pieces on the board = %d, want the bot's single opening stone", n)
 	}
@@ -968,7 +968,7 @@ func TestWebGame_HexagonBoardPlacementAndLosingByThree(t *testing.T) {
 	if n := evalInt(t, ctx, `document.querySelectorAll('#board .target-dot, #board .quick-dot').length`); n != 0 {
 		t.Errorf("target markers = %d, want none on an open board", n)
 	}
-	if got := evalString(t, ctx, `document.querySelector('#move-bar .hint').textContent`); !strings.Contains(got, "empty square") {
+	if got := evalString(t, ctx, `document.getElementById("impulse-text").textContent`); !strings.Contains(got, "empty square") {
 		t.Errorf("hint = %q, want a placement hint", got)
 	}
 

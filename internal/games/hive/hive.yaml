@@ -2,7 +2,7 @@
 id: hive
 name: Hive
 description: "John Yianni's insect tile game with the Mosquito, Ladybug and Pillbug expansions: no board, just a hive that grows as you place and move your tiles. Surround the enemy Queen Bee to win."
-version: 0.1.0
+version: 0.1.1
 designers: [John Yianni]
 publisher: Gen42 Games
 engine: ruleset

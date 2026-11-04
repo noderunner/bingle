@@ -73,6 +73,12 @@ and should never look for.
 - Push back, in the PR or the issue, on anything that hurts performance, simplicity, security or
   normal UI practice — before building it.
 
+## Words
+
+An **impulse** is the current seat or player being asked to act, whatever the game calls it: a turn, an
+action, or a reaction it is waiting on. Each step of a move is its own impulse. The **impulse card** is the
+card that shows it (ADR 0099). A game's own rules and its players' words keep their terms.
+
 ## The shape of the code
 
 - `internal/engine` — `dsl` (the YAML game definition, loaded as JSON), `catalog` (compiles

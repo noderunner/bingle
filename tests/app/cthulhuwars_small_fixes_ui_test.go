@@ -80,7 +80,7 @@ func TestWebCthulhuWars_ChoosingAStartPinkAndGrowth(t *testing.T) {
 	var jsErrors []string
 	collectJSErrors(ctx, &mu, &jsErrors)
 	cwTable(t, ctx, baseURL, "cthulhu-wars", map[string]any{"factions": []any{"tt", "gc", "cc", "bg"}}, threeBots)
-	waitJS(t, ctx, "the prompt", `document.getElementById("action-card") && document.getElementById("action-card").textContent.includes("Choose Starting Area: select a starting area on the map.")`, 30*time.Second)
+	waitJS(t, ctx, "the prompt", `document.getElementById("impulse-card") && document.getElementById("impulse-card").textContent.includes("Choose an empty area marked with a faction glyph where your cult begins.")`, 30*time.Second)
 	if got := evalString(t, ctx, `getComputedStyle(document.querySelector("#seat-1 .swatch")).backgroundColor`); got != "rgb(234, 139, 171)" {
 		t.Errorf("the Tcho-Tcho's colour is %s", got)
 	}

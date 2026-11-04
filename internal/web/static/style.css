@@ -1490,14 +1490,15 @@ body.fit-screen .sol-top, body.fit-screen .sol-columns { --cw: min(112px, 14cqh,
 /* The little padding keeps the outline of a card clear of the column's edge. */
 .play-rail { position: relative; min-height: 0; overflow-y: auto; overscroll-behavior: contain; gap: 0.6rem; padding: 3px; scrollbar-gutter: stable; }
 .play-rail > * { flex: none; }
-.action-card h3 { margin-bottom: 0.3rem; }
-.action-card p { margin: 0; }
-.action-card.over { border-color: var(--text); }
-.action-card.history { border-color: var(--warn); }
-.action-card .message { font-weight: 700; }
-.action-card .note-buttons { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.6rem; }
-.action-card .move-bar:not(:first-child) { margin-top: 0.4rem; }
-.action-card > .hand, .action-card > .cards-panel { margin-top: 0.5rem; }
+.impulse-card h3 { margin-bottom: 0.3rem; }
+.impulse-card p { margin: 0; }
+.impulse-text { margin: 0 0 0.3rem; }
+.impulse-card.over { border-color: var(--text); }
+.impulse-card.history { border-color: var(--warn); }
+.impulse-card .message { font-weight: 700; }
+.impulse-card .note-buttons { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.6rem; }
+.impulse-card .move-bar:not(:first-child) { margin-top: 0.4rem; }
+.impulse-card > .hand, .impulse-card > .cards-panel { margin-top: 0.5rem; }
 .rail-tabs { margin: 0.2rem 0 0; flex: none; }
 /* Smaller to start with in a column, and the player's own tile size still applies. */
 .play-rail .hand-piece.tile svg { width: calc(4.4rem * var(--tile-scale, 1)); height: calc(4.4rem * var(--tile-scale, 1)); }
@@ -1511,14 +1512,14 @@ body.fit-screen .sol-top, body.fit-screen .sol-columns { --cw: min(112px, 14cqh,
 #rail-pane-history > .side-moves { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
 .play-screen .side-moves > :last-child { flex: 1 1 0; min-height: 0; overflow-y: auto; }
 .play-screen.areas .events, .play-screen.areas .move-list { max-height: none; }
-.action-card .move-bar { max-width: none; min-height: 0; }
-.action-card .hint:empty { display: none; }
+.impulse-card .move-bar { max-width: none; min-height: 0; }
+.impulse-card .hint:empty { display: none; }
 /* The question, then what answers it in the order it is played: the stones, then End and Back. */
-.action-card #move-hint { flex-basis: 100%; order: -2; }
-.action-card .piece-buttons { display: inline-flex; flex-wrap: wrap; gap: 0.4rem; order: -1; }
+.impulse-card #move-hint { flex-basis: 100%; order: -2; }
+.impulse-card .piece-buttons { display: inline-flex; flex-wrap: wrap; gap: 0.4rem; order: -1; }
 /* Pinned at both edges: in view whether the player has scrolled past it or not yet down to it. */
-.action-card.acting { position: sticky; top: 0; bottom: 0; z-index: 2; max-height: calc(100cqh - 8px); overflow-y: auto; border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent), var(--shadow); }
-.action-card.acting h3 { color: var(--accent); }
+.impulse-card.acting { position: sticky; top: 0; bottom: 0; z-index: 2; max-height: calc(100cqh - 8px); overflow-y: auto; border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent), var(--shadow); }
+.impulse-card.acting h3 { color: var(--accent); }
 .players-card { display: flex; flex-direction: column; gap: 0.4rem; padding: 0.5rem; }
 .players-card .seat-strip { max-width: none; box-sizing: border-box; }
 .table-badges { display: flex; flex-wrap: wrap; gap: 0.3rem; }
