@@ -1,4 +1,4 @@
-# Part of cthulhuwars.yaml, included by name. Written by scripts/cwprimeval.py.
+# Part of cthulhuwars.yaml, included by name.
 id: cthulhu-wars-primeval-5p
 name: Cthulhu Wars (5 players, Primeval map)
 patch:
@@ -1903,6 +1903,7 @@ patch:
       sl: [lower-mu]
     art: guide/maps/primeval-5p.webp
     ice_glyphs: [[439.3, 415.7], [94.0, 104.3], [270.0, 427.7], [484.7, 50.3], [896.7, 334.3], [723.3, 140.3], [432.3, 127.7], [574.0, 130.3], [711.3, 345.0], [69.7, 402.3], [676.7, 413.3], [763.3, 199.3]]
+    glyph_marks: null
     area_fill: {antarctica: '#8e562b', atlantis: '#6b6438', central-mu: '#a5735b', east-lemuria: '#ab4b2e', hyperborea: '#844d25', iapetus-ocean: '#2f3c37', lomar: '#4d3e31', lower-mu: '#43362a', mezcalera-ocean: '#6f7a6f', mirovia-ocean: '#3d4343', ocean-trench: '#5b5e7d', paratethys-ocean: '#374463', poseidonis: '#ac5635', rheic-ocean: '#475256', rutas: '#793d34', shasta: '#c09a2f', south-lemuria: '#494d2f', terra-australis: '#6c6b2f', tethys-ocean: '#4c6f89', thule: '#694324', upper-mu: '#7e2e29', west-atlantis: '#4e3c40'}
   seats:
     - {seat: 1, color: green, label: Great Cthulhu}

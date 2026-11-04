@@ -57,8 +57,8 @@ func TestWebCthulhuWarsSetup_PickingUnitsOneByOne(t *testing.T) {
 	if got := evalString(t, ctx, `[...document.querySelectorAll(".cw-tab")].map(b => b.dataset.tab).join(",")`); got != "maps,factions,neutrals,independents,other" {
 		t.Errorf("tabs = %q", got)
 	}
-	if n := evalInt(t, ctx, `document.querySelectorAll('#cw-panel .cw-tile[data-kind="map"] img').length`); n != 6 {
-		t.Errorf("%d map pictures, want 6", n)
+	if n := evalInt(t, ctx, `document.querySelectorAll('#cw-panel .cw-tile[data-kind="map"] img').length`); n != 8 {
+		t.Errorf("%d map pictures, want 8", n)
 	}
 
 	// Every tile has an icon that drew, its name beneath it.

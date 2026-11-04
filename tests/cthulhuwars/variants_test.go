@@ -22,7 +22,7 @@ func variant(t testing.TB, id string) *catalog.CompiledGame {
 }
 
 func TestMapVariantsAreRegisteredWithTheirAreaCounts(t *testing.T) {
-	for id, want := range map[string]int{"cthulhu-wars": 17, "cthulhu-wars-3-5": 17, "cthulhu-wars-3p": 13, "cthulhu-wars-5p": 21} {
+	for id, want := range map[string]int{"cthulhu-wars": 17, "cthulhu-wars-3-5": 17, "cthulhu-wars-3p": 13, "cthulhu-wars-5p": 21, "cthulhu-wars-primeval-3-5": 18, "cthulhu-wars-primeval-5-3": 18} {
 		g := variant(t, id)
 		if n := g.Board.Len(); n != want {
 			t.Errorf("%s has %d areas, want %d", id, n, want)

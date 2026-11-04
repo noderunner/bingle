@@ -50,7 +50,7 @@ func TestCthulhuWarsDescribesItsAreaMapAndGuide(t *testing.T) {
 	if len(info.Seats) != 4 {
 		t.Fatalf("seats %+v", info.Seats)
 	}
-	if info.Board.Canvas == nil || info.Board.Canvas.Width <= 0 || len(info.Board.Areas) != 17 || len(info.Board.Edges) != 42 {
+	if info.Board.Canvas == nil || info.Board.Canvas.Width <= 0 || len(info.Board.Areas) != 17 || len(info.Board.Edges) != 43 {
 		t.Fatalf("canvas %+v, %d areas, %d edges", info.Board.Canvas, len(info.Board.Areas), len(info.Board.Edges))
 	}
 	for _, a := range info.Board.Areas {

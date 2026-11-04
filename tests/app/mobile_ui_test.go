@@ -100,7 +100,7 @@ func TestWebCthulhuWarsPhoneLayoutSwipesBetweenViews(t *testing.T) {
 	if !evalBool(t, ctx, `(function () { var r = document.querySelector("#board svg").getBoundingClientRect(); return r.height >= innerHeight - 2 && r.width >= innerWidth - 2; })()`) {
 		t.Error("the map does not fill the screen")
 	}
-	if got := evalString(t, ctx, `document.querySelector("#board svg").getAttribute("viewBox")`); got != "-8 -8 1016 506" {
+	if got := evalString(t, ctx, `document.querySelector("#board svg").getAttribute("viewBox")`); got != "-8 -8 1016 515" {
 		t.Errorf("the map's view is %q, not the whole map", got)
 	}
 	// Whose turn it is can be told from here, without covering the taps.

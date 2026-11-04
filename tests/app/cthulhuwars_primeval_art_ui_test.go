@@ -7,8 +7,8 @@ import (
 	"time"
 )
 
-// The five-player Primeval Map has a picture behind it and its Glacier glyphs in a
-// layer of their own; the areas above can still be clicked, and other maps draw as before.
+// A Primeval Map has a picture behind it and its Glacier glyphs in a layer of their
+// own, and the areas above can still be clicked.
 func TestWebCthulhuWars_ThePrimevalMapHasAPictureAndAGlacierLayer(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	const id = "cthulhu-wars-primeval-5p"
@@ -54,15 +54,12 @@ func TestWebCthulhuWars_ThePrimevalMapHasAPictureAndAGlacierLayer(t *testing.T) 
 	evalString(t, ctx, `document.getElementById("opt-layer-ice").click(); "ok"`)
 	waitJS(t, ctx, "the glyphs back", `document.querySelectorAll(".ice-glyph").length === 12`, 10*time.Second)
 
-	// A map without a picture offers no such layer and keeps its drawing.
-	if code := doJSON(t, "POST", baseURL+"/api/games", map[string]any{"game_def_id": "cthulhu-wars-primeval-3p", "player_name": "Alice", "seat_bots": map[string]string{"2": "tactical", "3": "tactical"}}, &created); code != 200 && code != 201 {
+	// Another map has its own picture and its own number of glyphs, from a different redraw.
+	if code := doJSON(t, "POST", baseURL+"/api/games", map[string]any{"game_def_id": "cthulhu-wars-primeval-3-5", "player_name": "Alice", "seat_bots": map[string]string{"2": "tactical", "3": "tactical", "4": "tactical"}}, &created); code != 200 && code != 201 {
 		t.Fatalf("create: %d", code)
 	}
-	openGameAs(t, ctx, baseURL, created.RoomCode, "cthulhu-wars-primeval-3p", "Alice")
-	waitJS(t, ctx, "the other map", `document.querySelector("#board-svg") !== null && document.querySelector("#board-svg").getAttribute("aria-label").includes("3 players")`, 30*time.Second)
-	if evalBool(t, ctx, `document.querySelector("#board-svg.has-art") !== null || document.querySelector("image.map-art") !== null || document.getElementById("opt-layer-ice") !== null`) {
-		t.Error("the three-player map has a picture or its layer")
-	}
+	openGameAs(t, ctx, baseURL, created.RoomCode, "cthulhu-wars-primeval-3-5", "Alice")
+	waitJS(t, ctx, "the other map", `document.querySelector("#board-svg.has-art image.map-art") !== null && document.querySelector("image.map-art").getAttribute("href").endsWith("primeval-3-5.webp") && document.querySelectorAll(".ice-glyph").length === 11`, 30*time.Second)
 	mu.Lock()
 	defer mu.Unlock()
 	if len(jsErrors) > 0 {
@@ -103,12 +100,18 @@ func TestWebCthulhuWars_TheGlyphsAreTheBoards(t *testing.T) {
 	clickSel(t, ctx, "#opt-layer-glyphs")
 	waitJS(t, ctx, "the glyphs back", `document.querySelectorAll("#board .area-glyph-badge.printed").length === 10`, 10*time.Second)
 
-	// Another layout has the same glyphs in badges.
+	// A Primeval map has the same glyphs in badges, not at Earth's places.
+	if code := doJSON(t, "POST", baseURL+"/api/games", map[string]any{"game_def_id": "cthulhu-wars-primeval-5-3", "player_name": "Alice", "seat_bots": bots}, &created); code != 200 && code != 201 {
+		t.Fatalf("create: %d", code)
+	}
+	openGameAs(t, ctx, baseURL, created.RoomCode, "cthulhu-wars-primeval-5-3", "Alice")
+	waitJS(t, ctx, "the badges", `document.querySelectorAll("#board .area-glyph-badge circle").length > 0 && document.querySelectorAll("#board .area-glyph-badge.printed").length === 0 && document.querySelector("#board .area-glyph-badge .area-glyph path") !== null`, 30*time.Second)
+	// The base Earth layout, whose params the others merge over, prints its own.
 	if code := doJSON(t, "POST", baseURL+"/api/games", map[string]any{"game_def_id": "cthulhu-wars", "player_name": "Alice", "seat_bots": bots}, &created); code != 200 && code != 201 {
 		t.Fatalf("create: %d", code)
 	}
 	openGameAs(t, ctx, baseURL, created.RoomCode, "cthulhu-wars", "Alice")
-	waitJS(t, ctx, "the badges", `document.querySelectorAll("#board .area-glyph-badge circle").length > 0 && document.querySelectorAll("#board .area-glyph-badge.printed").length === 0 && document.querySelector("#board .area-glyph-badge .area-glyph path") !== null`, 30*time.Second)
+	waitJS(t, ctx, "the base map's glyphs", `document.querySelector("image.map-art") !== null && document.querySelector("image.map-art").getAttribute("href").endsWith("earth-5-3.webp") && document.querySelectorAll("#board .area-glyph-badge.printed").length === 10`, 30*time.Second)
 	mu.Lock()
 	defer mu.Unlock()
 	if len(jsErrors) > 0 {
