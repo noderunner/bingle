@@ -5,6 +5,7 @@
 
 import { h, clear, toast, lastName, setLastName, rememberGame, rememberedGames, setTurnBadge, store } from "./util.js";
 import { api, whoAmI } from "./api.js";
+import { guestKeySection } from "./guest-key.js";
 import { gameDefs, loadRows, loadUnread, isFinished, yourImpulse, sortRows, gameRow, openGameRow } from "./mygames.js";
 import { navigate, onLeave } from "./nav.js";
 import { voiceStatus, onVoiceChange, toggleMute, toggleDeafen, leaveVoice } from "./voice.js";
@@ -349,10 +350,12 @@ function profileWindow() {
 	// Who this browser is: signed in, or a guest who could sign in (the
 	// accounts plan, §6).
 	const account = h("section", { class: "account-section", id: "profile-account" });
+	const guestKey = guestKeySection();
 	const dlg = dialog(
 		"profile-dialog",
 		"Your profile",
 		account,
+		guestKey.section,
 		h(
 			"div",
 			{ class: "field" },
@@ -455,6 +458,8 @@ function profileWindow() {
 		paint(whoIsHere());
 		open(dlg);
 		watchHere(true);
+		// Asked afresh: this browser may have become a guest since the page loaded.
+		api.me().then((me) => guestKey.paint(me.kind)).catch(() => {});
 	});
 	dlg.addEventListener("close", () => watchHere(false));
 	const stop = onHereChange(paint);

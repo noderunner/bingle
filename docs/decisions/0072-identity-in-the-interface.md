@@ -24,7 +24,7 @@ their accounts, a guest told apart from an account wherever a player is named, t
 - **"My games" is the server's** (`GET /api/me/games`), for every principal: the games it has a seat
   in. The page merges it into the browser's own list, so a game started on another device appears,
   and a game page whose browser has no name for the game takes the seat the server says is `yours`.
-- **The guest key travels** (§3a). The profile page of a guest copies the key, as text and as a link
+- **The guest key travels** (§3a). (Since Bingle 0.59.0 this is in the profile window, as the accounts plan had it, not on the profile page.) The profile page of a guest copies the key, as text and as a link
   `…/#guest=bgg_…` (`GET /api/guest/key`, the page only; the key is the cookie's, read back on
   request). Opening the link on another device — or pasting the key there — adopts it
   (`POST /api/guest/adopt`): that browser becomes the guest, its own guest merged in so it loses

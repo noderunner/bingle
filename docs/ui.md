@@ -632,7 +632,7 @@ show the `?error=` a provider's callback came back with. The account page lists 
 capability (`#cap-user-<cap>`, `#cap-guest-<cap>`, saved on change, `#caps-result`), the limits (`#caps-limits`, a row a kind and a column a class), and
 invitations (`#invite-go`, `#invite-link`); its tables are `table.admin-table`. Anybody else is told (`#admin-refused`); an
 administrator who only lacks the second factor off the server's own machine is told so, with a link to it (`#admin-second-factor`). A seat's strip and a chat line show who holds it beside the name (ADR 0072): `.badge.account` (`@handle`) or
-`.badge.guest`, and `.chat-handle`, `.chat-guest`. The profile page of a guest has `#guest-box`: `#guest-copy` (the key
+`.badge.guest`, and `.chat-handle`, `.chat-guest`. The profile window (`#open-profile`) of a guest has `#guest-box`, *Move to another device*: `#guest-copy` (the key
 and its `#guest=` link, `#guest-link`, `#guest-key`, copied to the clipboard), `#guest-rotate`, `#guest-discard`, and
 `#guest-use-key` with `#guest-use` to adopt a key; any page opened with `#guest=bgg_…` adopts it, takes it out of the
 address and reloads. "My games" merges `GET /api/me/games` into `bingle.games`. The account page adds the address
