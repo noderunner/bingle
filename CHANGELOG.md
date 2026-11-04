@@ -4,6 +4,26 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.53.0 - 2026-11-03
+
+### Bingle Core 0.53.0
+- **New-message badge.** A chat tab now shows how many messages came in while you were on another tab or view. It never
+  counted them before.
+- **Easier chat to read.** Each message shows the name and @username or guest above the text, on alternating backgrounds.
+- **The rules on a phone.** The rules no longer pop up the keyboard when opened, the close button is bigger and stays in reach,
+  Back closes the rules instead of leaving the game, and pages fit the screen.
+- **History stays put.** On a map it is always a tab in the right-hand column, instead of sometimes moving below the map.
+- **History opens on what's newest.** Switching to History or Moves, or turning your phone back upright, scrolls to the latest entry.
+
+### Cthulhu Wars 0.7.0
+- **Cult cards follow the order of play.** The first player's card is on top and the rest follow, and they re-order whenever
+  the order changes. The note about play running down the list is gone.
+- **Glyphs on the cult cards.** Each card shows its faction's glyph beside the colour square, in place of the faction's name on
+  human seats.
+- **Tcho-Tcho are pink.**
+- **Ubbo-Sathla's Growth** is now an icon. Hover over it for what it means.
+- **Choosing where to begin** now says so plainly in the *Your move* card.
+
 ## 0.52.1 - 2026-11-03
 
 ### Bingle Core 0.52.1

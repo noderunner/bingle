@@ -184,7 +184,7 @@ export function chatLoaded() {
 }
 
 /** A message pushed by the server: kept, and drawn in place when on screen. */
-export function receiveChat(line, { mine }) {
+export function receiveChat(line, { mine, seen = true }) {
 	if (!line || chat.lines.some((l) => l.id === line.id)) return;
 	chat.lines.push(line);
 	if (chat.lines.length > 300) chat.lines.splice(0, chat.lines.length - 300);
@@ -192,8 +192,8 @@ export function receiveChat(line, { mine }) {
 		const atEnd = listEl.scrollHeight - listEl.scrollTop - listEl.clientHeight < 40;
 		listEl.append(lineNode(line, mine));
 		if (atEnd || mine) listEl.scrollTop = listEl.scrollHeight;
-		else if (document.hidden) bump();
-	} else {
+		if (!mine && !seen) bump();
+	} else if (!mine) {
 		bump();
 	}
 }
@@ -334,16 +334,6 @@ export function chatCard({ code, me }) {
 			}
 		}, 0);
 	}
-	document.addEventListener(
-		"visibilitychange",
-		() => {
-			if (!document.hidden) {
-				chat.unread = 0;
-				if (badgeEl) badgeEl.hidden = true;
-			}
-		},
-		{ once: true }
-	);
 	return card;
 }
 

@@ -172,7 +172,7 @@ const SYNTH = {
 		purple: stone("#b86bff", { glow: "#b86bff", glowSize: 4 }),
 		sand: stone("#b0a56a", { glow: "#e2d27a", glowSize: 4 }),
 		teal: stone("#2aa6ae", { glow: "#39d4dd", glowSize: 4 }),
-		brown: stone("#c4642a", { glow: "#ff8a3a", glowSize: 3 }),
+		brown: stone("#ff6fa8", { glow: "#ff8fc0", glowSize: 3 }),
 	},
 };
 
@@ -192,7 +192,7 @@ const CELTIC = {
 		purple: stone("#7a56b8"),
 		sand: stone("#b0a56a"),
 		teal: stone("#2aa6ae"),
-		brown: stone("#8a5a32"),
+		brown: stone("#d9769a"),
 	},
 };
 
@@ -212,7 +212,7 @@ const SOLSTICE = {
 		purple: stone("#7a5aa0"),
 		sand: stone("#b0a56a"),
 		teal: stone("#2aa6ae"),
-		brown: stone("#8a5a32"),
+		brown: stone("#d9769a"),
 	},
 };
 
@@ -232,7 +232,7 @@ const BAZAAR = {
 		purple: stone("#6a3a9a"),
 		sand: stone("#b0a56a"),
 		teal: stone("#2aa6ae"),
-		brown: stone("#8a5a32"),
+		brown: stone("#d9769a"),
 	},
 };
 
@@ -252,7 +252,7 @@ const ABYSS = {
 		purple: stone("#a07aff", { glow: "#a07aff", glowSize: 3 }),
 		sand: stone("#b0a56a", { glow: "#cfc27a", glowSize: 3 }),
 		teal: stone("#2aa6ae", { glow: "#55c8d0", glowSize: 3 }),
-		brown: stone("#c08a5a"),
+		brown: stone("#e89ab5"),
 	},
 };
 
@@ -272,7 +272,7 @@ const GEMS = {
 		purple: stone("#9a58e0", { hi: "#e0c0ff", lo: "#3e1672", rim: "#e8d0ff", glow: "#b47aff", glowSize: 2.5 }),
 		sand: stone("#b0a56a", { hi: "#efe6b4", lo: "#4c4620", rim: "#f1ebc2", glow: "#b47aff", glowSize: 2.5 }),
 		teal: stone("#2aa6ae", { hi: "#b8f0f4", lo: "#0f474c", rim: "#c8f4f7", glow: "#b47aff", glowSize: 2.5 }),
-		brown: stone("#8a6a4a", { hi: "#d8b896", lo: "#3a2814", rim: "#e8d0b0" }),
+		brown: stone("#c47a96", { hi: "#f0c0d2", lo: "#4a1f30", rim: "#f5d5e2" }),
 	},
 };
 

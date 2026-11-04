@@ -697,6 +697,10 @@ export const STAT_ICONS = {
 		fill: ["M12 2C7 2 3.5 5.6 3.5 10.2c0 2.7 1.3 4.8 3.2 6.2V20c0 .6.4 1 1 1h1.8v-2.2h1.2V21h2.6v-2.2h1.2V21h1.8c.6 0 1-.4 1-1v-3.6c1.9-1.4 3.2-3.5 3.2-6.2C20.5 5.6 17 2 12 2z"],
 		cut: ["M9.2 8.6a1.9 1.9 0 1 0 0 3.8 1.9 1.9 0 0 0 0-3.8z", "M14.8 8.6a1.9 1.9 0 1 0 0 3.8 1.9 1.9 0 0 0 0-3.8z", "M12 12.8 10.9 15h2.2z"],
 	},
+	// Ubbo-Sathla's Growth: a shoot with two leaves.
+	growth: {
+		fill: ["M11 22v-8.2C7.2 14 3.8 12 3 7c4.6-.5 7.5 1.2 8.7 4.3C12.4 7 15.6 3.6 21 3c.2 5.8-2.7 9.4-8 10.2V22z"],
+	},
 	// An Elder Sign: a five-pointed star.
 	signs: { fill: ["M12 1.8l2.7 6.3 6.8.6-5.2 4.5 1.6 6.7L12 16.3 6.1 19.9l1.6-6.7L2.5 8.7l6.8-.6z"] },
 	// A Gate: a ring with a four-pointed star in it.

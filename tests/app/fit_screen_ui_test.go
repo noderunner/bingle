@@ -267,7 +267,7 @@ func TestWebFitScreen_ColumnsStayPutAsHiveGrows(t *testing.T) {
 }
 
 // A map has more to show than a column can: the cults, the talk and the history take turns,
-// and the history goes under the map when there is the height for it.
+// and the history stays a tab however much height there is to spare.
 func TestWebFitScreen_TheCardsOfAMapTakeTurns(t *testing.T) {
 	base := newRESTTestServer(t)
 	ctx, cancel := newChromedpContext(t, 90*time.Second)
@@ -283,8 +283,9 @@ func TestWebFitScreen_TheCardsOfAMapTakeTurns(t *testing.T) {
 	}
 	openGameAs(t, ctx, base, created.RoomCode, "cthulhu-wars", "Alice")
 	waitJS(t, ctx, "the tabs", `document.getElementById("rail-tab-cults") !== null`, 20*time.Second)
-	if !evalBool(t, ctx, `document.querySelector(".board-wrap > #history-card") !== null && document.getElementById("rail-tab-history") === null`) {
-		t.Error("the history should be under the map")
+	historyIsATab := `document.querySelector(".board-wrap > #history-card") === null && document.querySelector("#rail-pane-history > #history-card") !== null && document.getElementById("rail-tab-history") !== null`
+	if !evalBool(t, ctx, historyIsATab) {
+		t.Error("the history should be a tab of the column")
 	}
 	// The map starts right under the round: no gap to lose its top to.
 	if gap := evalInt(t, ctx, `Math.round(document.querySelector("#board svg").getBoundingClientRect().top - document.querySelector(".round-bar").getBoundingClientRect().bottom)`); gap > 16 {
@@ -309,12 +310,12 @@ func TestWebFitScreen_TheCardsOfAMapTakeTurns(t *testing.T) {
 	clickSel(t, ctx, "#rail-tab-cults")
 	waitJS(t, ctx, "the cults", `document.getElementById("cult-stack").offsetParent !== null`, 10*time.Second)
 
-	// With no height to spare the history is a tab like the others.
+	// With no height to spare it is the same.
 	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1200, 640)); err != nil {
 		t.Fatal(err)
 	}
 	openGameAs(t, ctx, base, created.RoomCode, "cthulhu-wars", "Alice")
-	waitJS(t, ctx, "the history tab", `document.getElementById("rail-tab-history") !== null`, 20*time.Second)
+	waitJS(t, ctx, "the history tab", historyIsATab, 20*time.Second)
 	if !evalBool(t, ctx, fitsTheWindowJS) {
 		t.Error("the map does not fit the smaller window")
 	}

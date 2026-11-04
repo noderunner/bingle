@@ -983,7 +983,7 @@ func gateColor(color string) string {
 	case "purple":
 		return "#8a5bd0"
 	case "brown":
-		return "#8f6035"
+		return "#d9668c"
 	case "teal":
 		return "#1f8f98"
 	case "sand":

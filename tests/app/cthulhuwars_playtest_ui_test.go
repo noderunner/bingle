@@ -177,7 +177,7 @@ func TestWebCthulhuWars_TheDirectionIsChosenBetweenSpelledOutOrders(t *testing.T
 	if got := evalString(t, ctx, `document.getElementById("action-cw").textContent`); !strings.Contains(got, "Clockwise") {
 		t.Errorf("button text %q", got)
 	}
-	// The cults are listed clockwise: down the list from the viewer.
+	// The cults are listed in the order of play, the first player on top.
 	if got := evalString(t, ctx, `[...document.querySelectorAll('#cult-stack .seat-strip')].map(s => s.getAttribute("data-seat")).join(",")`); got != "1,2,3,4" {
 		t.Errorf("cult list order %s", got)
 	}
