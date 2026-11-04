@@ -45,6 +45,9 @@ type gameCfg struct {
 	// own besides these.
 	units uint64
 	books int
+	// pool holds the factions a lobby may choose from, when more were chosen at
+	// setup than there are seats: bit i is factions[i]. 0: any faction.
+	pool int
 	// swap is, per faction, the neutral spellbook that replaces its timer
 	// book (Black Goat's Ghroth, Crawling Chaos' The Thousand Forms), -1 when
 	// it keeps its own. It needs no Azathoth faction in the game.
@@ -130,6 +133,15 @@ func buildCfg(def *dsl.GameDefinition) *gameCfg {
 			if name, ok := v.(string); ok {
 				if n := neutralBookByKey(name); n >= 0 {
 					c.books |= 1 << uint(n)
+				}
+			}
+		}
+	}
+	if l, ok := def.Params["faction_pool"].([]any); ok {
+		for _, v := range l {
+			if name, ok := v.(string); ok {
+				if f := factionIndex(name); f >= 0 {
+					c.pool |= 1 << uint(f)
 				}
 			}
 		}
@@ -226,6 +238,7 @@ const (
 	optBookSwaps   = "book-swaps"
 	optUnits       = "neutral-units"
 	optBooks       = "neutral-books"
+	optPool        = "faction-pool"
 )
 
 // packParams are the definition parameters of the packs of Loyalty Cards, the
@@ -390,6 +403,18 @@ func (rs *Ruleset) Derive(base *dsl.GameDefinition, options map[string]any) (str
 				}
 				tbl.books |= 1 << uint(n)
 			}
+		case optPool:
+			names, err := nameList(k, v)
+			if err != nil {
+				return "", nil, err
+			}
+			for _, name := range names {
+				f := factionIndex(strings.ToLower(strings.TrimSpace(name)))
+				if f < 0 {
+					return "", nil, fmt.Errorf("cthulhuwars: option %q: unknown faction %q", k, name)
+				}
+				tbl.pool |= 1 << uint(f)
+			}
 		case optDreamlands, optBeyond, "underworld", "cosmic-terrors", "cats", "satyr":
 			b, ok := v.(bool)
 			if !ok {
@@ -483,6 +508,9 @@ func (rs *Ruleset) SeatCultOptions(game *catalog.CompiledGame, seat int, cult st
 	if taken[seat] {
 		return nil, fmt.Errorf("cthulhuwars: seat %d is taken: its cult cannot change", seat)
 	}
+	if c.pool != 0 && c.pool&(1<<uint(want)) == 0 {
+		return nil, fmt.Errorf("cthulhuwars: %s is not one of the factions of this table", factions[want].Name)
+	}
 	keys := make([]any, c.n)
 	for s := 1; s <= c.n; s++ {
 		keys[s-1] = factions[c.fac[s]].Key
@@ -510,6 +538,9 @@ func (rs *Ruleset) SeatCultOptions(game *catalog.CompiledGame, seat int, cult st
 	if c.books != 0 {
 		out[optBooks] = stringsToAny(bookNames(c.books))
 	}
+	if c.pool != 0 {
+		out[optPool] = stringsToAny(factionNames(c.pool))
+	}
 	// A swapped book stays with its cult (a cult that moves seats takes it
 	// along; one that was swapped out of the table loses it).
 	swaps := map[string]any{}
@@ -527,6 +558,14 @@ func (rs *Ruleset) SeatCultOptions(game *catalog.CompiledGame, seat int, cult st
 		out[optBookSwaps] = swaps
 	}
 	return out, nil
+}
+
+var _ state.OwnSeatCults = (*Ruleset)(nil)
+
+// PlayersChooseCults implements state.OwnSeatCults: a table set up with more
+// factions than seats leaves the choice to those who sit at it.
+func (rs *Ruleset) PlayersChooseCults(game *catalog.CompiledGame) bool {
+	return cfgOf(game).pool != 0
 }
 
 // defaultFaction is the faction a base definition seats in seat.
@@ -558,6 +597,8 @@ func (rs *Ruleset) FromSuffix(base *dsl.GameDefinition, suffix string) (map[stri
 			tbl.units |= maskPart(p, "nu")
 		case maskPart(p, "nb") != 0:
 			tbl.books |= int(maskPart(p, "nb"))
+		case maskPart(p, "fp") != 0:
+			tbl.pool |= int(maskPart(p, "fp"))
 		case strings.Contains(p, "."):
 			// "bg.shrivel": the cult and the neutral spellbook that replaces its timer book.
 			k, n, _ := strings.Cut(p, ".")
@@ -587,6 +628,17 @@ func deriveFrom(base *dsl.GameDefinition, keys []string, tbl extras, swaps map[s
 			return "", nil, fmt.Errorf("cthulhuwars: faction %q is chosen twice", k)
 		}
 		seen[k] = true
+	}
+	// A pool holds the cults at the table and more; one with no more is no pool.
+	seated := 0
+	for _, k := range keys {
+		seated |= 1 << uint(factionIndex(k))
+	}
+	if tbl.pool != 0 && seated&^tbl.pool != 0 {
+		return "", nil, fmt.Errorf("cthulhuwars: option %q must hold every faction at the table", optPool)
+	}
+	if tbl.pool == seated {
+		tbl.pool = 0
 	}
 	// Windwalker and Sleeper need their sigil areas on the map.
 	for _, k := range keys {
@@ -644,6 +696,9 @@ func deriveFrom(base *dsl.GameDefinition, keys []string, tbl extras, swaps map[s
 	}
 	if tbl.books != 0 {
 		suffix += fmt.Sprintf("-nb%x", tbl.books)
+	}
+	if tbl.pool != 0 {
+		suffix += fmt.Sprintf("-fp%x", tbl.pool)
 	}
 	for _, s := range swapKeys {
 		suffix += "-" + s
@@ -746,6 +801,7 @@ func deriveFrom(base *dsl.GameDefinition, keys []string, tbl extras, swaps map[s
 	params["independents"] = indepUnits
 	params["neutral_units"] = stringsToAny(soloCardNames(tbl.units))
 	params["neutral_books"] = stringsToAny(bookNames(tbl.books))
+	params["faction_pool"] = stringsToAny(factionNames(tbl.pool))
 	withMoon := false
 	for _, k := range keys {
 		withMoon = withMoon || k == "bu"
@@ -771,6 +827,7 @@ type extras struct {
 	packs, indep int
 	units        uint64
 	books        int
+	pool         int
 }
 
 // canonical says the same table in one way only, so that it has one id: a
@@ -844,6 +901,17 @@ func bookNames(mask int) []string {
 	for n, k := range neutralKeys {
 		if mask&(1<<uint(n)) != 0 {
 			out = append(out, k)
+		}
+	}
+	return out
+}
+
+// factionNames lists the keys of the factions in a mask.
+func factionNames(mask int) []string {
+	var out []string
+	for f := range factions {
+		if mask&(1<<uint(f)) != 0 {
+			out = append(out, factions[f].Key)
 		}
 	}
 	return out

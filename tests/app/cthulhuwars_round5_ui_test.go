@@ -42,12 +42,14 @@ func TestWebHome_ChooseTheCultsOfAFivePlayerTableAndTheHighPriests(t *testing.T)
 	waitJS(t, ctx, "the notice", `document.getElementById("cw-seat-notice").textContent.includes("needs a faction")`, 5*time.Second)
 	clickSel(t, ctx, `#cw-panel [data-item="sl"]`)
 	waitJS(t, ctx, "the Sleeper in that seat", seatCultsIs("gc,sl,bg,ys,ww"), 5*time.Second)
-	// A sixth does not fit.
+	// A sixth takes no seat: it is for the lobby. Taken out again, it leaves no trace.
 	clickSel(t, ctx, `#cw-panel [data-item="cc"]`)
-	waitJS(t, ctx, "the refusal", `document.getElementById("cw-seat-notice").textContent.includes("remove one first")`, 5*time.Second)
+	waitJS(t, ctx, "the pool", `document.getElementById("cw-seat-notice").textContent.includes("6 factions for 5 seats")`, 5*time.Second)
 	if got := evalString(t, ctx, seatCultsJS); got != "gc,sl,bg,ys,ww" {
 		t.Errorf("cults after a sixth = %q", got)
 	}
+	clickSel(t, ctx, `#cw-panel [data-item="cc"]`)
+	waitJS(t, ctx, "no pool", `document.getElementById("cw-seat-notice").hidden`, 5*time.Second)
 	openPickerTab(t, ctx, "other")
 	clickSel(t, ctx, `#cw-panel [data-item="high-priests"]`)
 

@@ -47,6 +47,7 @@ export function createCwSetup({ family, catalog, layouts, loadInfo, onLayout, on
 
 	let info = null;
 	let seats = []; // the faction of each seat, null for one still to choose
+	let spare = []; // factions chosen beyond the seats: the lobby's choice, with those seated
 	const chosen = new Set(); // ids of the other items
 	const swaps = new Map(); // cult -> neutral spellbook replacing its timer book
 	const dealt = new Set(); // what the last shuffle added, which the next one replaces
@@ -138,18 +139,18 @@ export function createCwSetup({ family, catalog, layouts, loadInfo, onLayout, on
 
 	// ---- choosing --------------------------------------------------------------------
 
-	const isChosen = (item) => (item.kind === "map" ? info && info.id === item.id : item.kind === "faction" ? seats.includes(item.id) : chosen.has(item.id));
+	const isChosen = (item) => (item.kind === "map" ? info && info.id === item.id : item.kind === "faction" ? seats.includes(item.id) || spare.includes(item.id) : chosen.has(item.id));
 
 	function setFaction(id, on) {
 		if (on) {
 			const open = seats.indexOf(null);
-			if (open < 0) {
-				say(`All ${seats.length} seats have a faction: remove one first.`);
-				return;
-			}
-			seats[open] = id;
+			if (open < 0) spare.push(id);
+			else seats[open] = id;
+		} else if (spare.includes(id)) {
+			spare = spare.filter((x) => x !== id);
 		} else {
-			seats[seats.indexOf(id)] = null;
+			// A spare faction takes the empty seat, so a seat stays open only when there is none.
+			seats[seats.indexOf(id)] = spare.length ? spare.shift() : null;
 		}
 		say("");
 		changed(true);
@@ -165,7 +166,7 @@ export function createCwSetup({ family, catalog, layouts, loadInfo, onLayout, on
 			return;
 		}
 		if (item.kind === "faction") {
-			setFaction(item.id, !seats.includes(item.id));
+			setFaction(item.id, !isChosen(item));
 			return;
 		}
 		if (chosen.has(item.id)) chosen.delete(item.id);
@@ -184,8 +185,9 @@ export function createCwSetup({ family, catalog, layouts, loadInfo, onLayout, on
 		const n = own.length;
 		if (seats.length === n) return;
 		const kept = seats.filter(Boolean).slice(0, n);
-		const spare = [...own, ...catalog.tabs[0].items.map((x) => x.id)].filter((id, i, all) => id && all.indexOf(id) === i);
-		for (const id of spare) {
+		while (kept.length < n && spare.length) kept.push(spare.shift());
+		const others = [...own, ...catalog.tabs[0].items.map((x) => x.id)].filter((id, i, all) => id && all.indexOf(id) === i && !spare.includes(id));
+		for (const id of others) {
 			if (kept.length === n) break;
 			if (!kept.includes(id)) kept.push(id);
 		}
@@ -212,8 +214,9 @@ export function createCwSetup({ family, catalog, layouts, loadInfo, onLayout, on
 		for (const [cult, book] of swaps) if (seats.includes(cult)) replaced[cult] = book;
 		if (Object.keys(replaced).length) out[swapOpt.id] = replaced;
 		const asItComes = info && seats.join(",") === layoutFactions(info).join(",");
-		if (!always && asItComes && !Object.keys(out).length) return null;
+		if (!always && asItComes && !spare.length && !Object.keys(out).length) return null;
 		out.factions = [...seats];
+		if (spare.length) out["faction-pool"] = [...seats, ...spare];
 		return out;
 	}
 
@@ -221,6 +224,7 @@ export function createCwSetup({ family, catalog, layouts, loadInfo, onLayout, on
 		const o = setup.options || {};
 		info = layout;
 		seats = Array.isArray(o.factions) && o.factions.length === layout.seats.length ? [...o.factions] : layoutFactions(layout);
+		spare = Array.isArray(o["faction-pool"]) ? o["faction-pool"].filter((id) => !seats.includes(id) && items.has(id)) : [];
 		chosen.clear();
 		dealt.clear();
 		swaps.clear();
@@ -293,7 +297,10 @@ export function createCwSetup({ family, catalog, layouts, loadInfo, onLayout, on
 		notice.textContent =
 			count > rec ? `${count} neutral units and Independents chosen: more than the ${rec} recommended for ${n} players.` : "";
 		const open = seats.filter((x) => x === null).length;
-		const text = message || (open ? `${open === 1 ? "A seat still needs" : `${open} seats still need`} a faction.` : "");
+		const text =
+			message ||
+			(open ? `${open === 1 ? "A seat still needs" : `${open} seats still need`} a faction.` : "") ||
+			(spare.length ? `${n + spare.length} factions for ${n} seats: players choose theirs in the lobby.` : "");
 		seatNotice.hidden = !text;
 		seatNotice.textContent = text;
 	}
@@ -325,7 +332,7 @@ export function createCwSetup({ family, catalog, layouts, loadInfo, onLayout, on
 			btn.setAttribute("aria-selected", on ? "true" : "false");
 			btn.tabIndex = on ? 0 : -1;
 			let n = "";
-			if (tab.id === "factions") n = `${seats.filter(Boolean).length}/${seats.length}`;
+			if (tab.id === "factions") n = `${seats.filter(Boolean).length + spare.length}/${seats.length}`;
 			else if (tab !== MAP_TAB) n = tab.items.filter((x) => chosen.has(x.id)).length || "";
 			count.textContent = String(n);
 		}
@@ -381,15 +388,12 @@ export function createCwSetup({ family, catalog, layouts, loadInfo, onLayout, on
 	}
 
 	function paintTiles() {
-		const full = !seats.includes(null);
 		for (const btn of panel.querySelectorAll(".cw-tile")) {
 			const id = btn.dataset.item;
 			const item = items.get(id) || mapById.get(id);
 			const on = !!item && isChosen(item);
 			btn.classList.toggle("on", on);
 			btn.setAttribute("aria-pressed", on ? "true" : "false");
-			const blocked = item && item.kind === "faction" && full && !on;
-			btn.classList.toggle("blocked", !!blocked);
 		}
 	}
 
@@ -403,7 +407,7 @@ export function createCwSetup({ family, catalog, layouts, loadInfo, onLayout, on
 		const add = (node) => selection.append(node);
 		const map = info && mapById.get(info.id);
 		if (map) add(tile(map, () => showTab(MAP_TAB.id), { title: "Choose another map in the Maps tab" }));
-		for (const id of seats) if (id) add(tile(items.get(id), remove(items.get(id))));
+		for (const id of [...seats, ...spare]) if (id) add(tile(items.get(id), remove(items.get(id))));
 		for (const item of items.values()) if (item.kind !== "faction" && chosen.has(item.id)) add(tile(item, remove(item)));
 		for (const [cult, book] of swaps) {
 			if (!seats.includes(cult) || !swapOpt) continue;
@@ -584,6 +588,7 @@ export function createCwSetup({ family, catalog, layouts, loadInfo, onLayout, on
 		factionName: (id) => (items.get(id) ? items.get(id).name : ""),
 		glyph,
 		complete: () => !seats.includes(null),
+		hasPool: () => spare.length > 0,
 		options: () => options(),
 	};
 }

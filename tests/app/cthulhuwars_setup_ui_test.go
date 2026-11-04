@@ -208,6 +208,12 @@ func TestWebCthulhuWarsSetup_SavedSetups(t *testing.T) {
 	}
 	mu.Unlock()
 
+	// A setup with more factions than seats keeps them.
+	if code := ana.do("POST", "/api/setup-profiles", map[string]any{"name": "Choose in the lobby", "game_def_id": "cthulhu-wars", "shared": true,
+		"options": map[string]any{"factions": []any{"gc", "cc", "bg", "ys"}, "faction-pool": []any{"gc", "cc", "bg", "ys", "tt"}}}, nil); code != 200 {
+		t.Fatalf("save a pool: %d", code)
+	}
+
 	guest, cancel2 := newChromedpContext(t, 120*time.Second)
 	defer cancel2()
 	if err := chromedp.Run(guest, chromedp.Navigate(base+"/?game=cthulhu-wars-5p")); err != nil {
@@ -224,10 +230,59 @@ func TestWebCthulhuWarsSetup_SavedSetups(t *testing.T) {
 	if evalBool(t, guest, `!document.getElementById("cw-profile-delete").hidden`) {
 		t.Error("a guest is offered deleting another's setup")
 	}
+	evalString(t, guest, `(function(){const s=document.getElementById("cw-profile");s.value=[...s.options].find(o=>o.textContent.startsWith("Choose in the lobby")).value;s.dispatchEvent(new Event("change",{bubbles:true}));return "ok"})()`)
+	waitJS(t, guest, "the pool applied", `document.getElementById("cw-seat-notice").textContent.includes("5 factions for 4 seats") && document.querySelector('#cw-chosen [data-item="tt"]') !== null && document.getElementById("lobby").disabled`, 20*time.Second)
 	// A ready-made one replaces it.
 	evalString(t, guest, `(function(){const s=document.getElementById("cw-profile");s.value="preset:primeval";s.dispatchEvent(new Event("change",{bubbles:true}));return "ok"})()`)
-	waitJS(t, guest, "the ready-made setup", `document.getElementById("game_def_id").value === "cthulhu-wars-primeval-3p" && `+seatCultsIs("sl,ow,tt")+` && !document.querySelector('#cw-chosen [data-item="gug"]')`, 20*time.Second)
+	waitJS(t, guest, "the ready-made setup", `document.getElementById("game_def_id").value === "cthulhu-wars-primeval-3p" && `+seatCultsIs("sl,ow,tt")+` && !document.querySelector('#cw-chosen [data-item="gug"]') && !document.getElementById("lobby").disabled`, 20*time.Second)
 	// Changing anything leaves the setup behind: the list no longer claims it.
 	clickSel(t, guest, `#cw-chosen [data-item="moonbeast"]`)
 	waitJS(t, guest, "the list reset", `document.getElementById("cw-profile").value === ""`, 5*time.Second)
+}
+
+// More factions than seats: the lobby must be on, and there the table chooses from
+// those factions alone, a player's own seat included.
+func TestWebCthulhuWarsSetup_MoreFactionsThanSeats(t *testing.T) {
+	baseURL := newRESTTestServer(t)
+	ctx, cancel := newChromedpContext(t, 90*time.Second)
+	defer cancel()
+	var mu sync.Mutex
+	var jsErrors []string
+	collectJSErrors(ctx, &mu, &jsErrors)
+	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/?game=cthulhu-wars")); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "four seats", seatsReady(4), 20*time.Second)
+	// The lobby is a choice until there is a pool.
+	evalString(t, ctx, `document.getElementById("lobby").click(); "ok"`)
+	openPickerTab(t, ctx, "factions")
+	clickSel(t, ctx, `#cw-panel [data-item="sl"]`)
+	waitJS(t, ctx, "the lobby forced on", `document.getElementById("lobby").checked && document.getElementById("lobby").disabled`, 5*time.Second)
+	if got := evalString(t, ctx, seatCultsJS); got != "gc,cc,bg,ys" {
+		t.Errorf("seats = %q", got)
+	}
+	if n := evalInt(t, ctx, `document.querySelectorAll('#cw-chosen [data-kind="faction"]').length`); n != 5 {
+		t.Errorf("%d factions in the selections", n)
+	}
+	// Taking a seated faction out seats the spare one, and the lobby is free again.
+	clickSel(t, ctx, `#cw-chosen [data-item="bg"]`)
+	waitJS(t, ctx, "the spare seated", seatCultsIs("gc,cc,sl,ys")+` && !document.getElementById("lobby").disabled && !document.getElementById("lobby").checked`, 5*time.Second)
+	clickSel(t, ctx, `#cw-panel [data-item="bg"]`)
+	waitJS(t, ctx, "a pool again", `document.getElementById("lobby").disabled`, 5*time.Second)
+	// Open seats keep a friend's place: the lobby is where the choice is made.
+	evalString(t, ctx, `document.querySelectorAll("#slots-field .slot-select").forEach((s, i) => { if (i) { s.value = "open"; s.dispatchEvent(new Event("change", {bubbles: true})); } }); "ok"`)
+	evalString(t, ctx, `document.getElementById("create_player_name").value = "Alice"; "ok"`)
+	clickSel(t, ctx, `#create-game-form button[type="submit"]`)
+	pollLocation(t, ctx, regexp.MustCompile(`/game/[A-Z0-9]+$`))
+	waitJS(t, ctx, "the lobby", `document.getElementById("lobby-pool") !== null && document.getElementById("cult-1") !== null`, 20*time.Second)
+	if got := evalString(t, ctx, `[...document.querySelectorAll('#cult-1 option')].map(o => o.value).join(",")`); got != "gc,cc,bg,ys,sl" {
+		t.Errorf("Alice's choices = %q", got)
+	}
+	evalString(t, ctx, `(function () { var s = document.getElementById("cult-1"); s.value = "bg"; s.dispatchEvent(new Event("change", { bubbles: true })); return "ok"; })()`)
+	waitJS(t, ctx, "her choice", `document.getElementById("cult-1") && document.getElementById("cult-1").value === "bg" && document.querySelector('#lobby-seats [data-seat="1"] .swatch.color-red') !== null`, 15*time.Second)
+	mu.Lock()
+	defer mu.Unlock()
+	if len(jsErrors) > 0 {
+		t.Errorf("uncaught JS exceptions: %v", jsErrors)
+	}
 }

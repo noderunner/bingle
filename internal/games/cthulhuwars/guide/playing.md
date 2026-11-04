@@ -89,6 +89,9 @@ Pick *Cthulhu Wars* on the home page and choose
 - **the neutral cards** one by one in the *Monsters & Terrors*, *IGOOs* and *Other* tabs, with **the High Priests** under
   *Other*. Hover over a tile for its rules.
 
+Add more factions than there are seats and the choice goes to the lobby, which switches on by itself: each player picks
+from those factions in their own row, and anyone who doesn't plays the one their seat already has.
+
 *Current selections* shows the table so far: click a tile there to take it out. A notice appears when you have more neutral
 units and Independents than one fewer than the players, which is only advice. *Shuffle* fills open seats and deals random
 neutral units and Independents up to that number; press it again for another deal. *Start from a setup* offers ready-made

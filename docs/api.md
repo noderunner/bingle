@@ -169,6 +169,9 @@ layout (wrong number of cults, a cult twice, an unknown key) are a `400`.
 Cthulhu Wars takes whole packs as `bool`s (`dreamlands`, `azathoth`, …) and single
 items as lists: `"neutral-units": ["gnorri", "hound-of-tindalos"]` and
 `"neutral-books": ["shrivel"]`. One table has one id: every card of a pack named singly is that pack.
+`"faction-pool"` lists more factions than seats, those in `factions` among them; `POST /games/{code}/seat-cult` then takes only
+those, and a player may change their own seat too (the game's id says it, `-fp2f`, and `params.faction_pool` lists it). It needs `"lobby": true` to
+mean anything: without a lobby the pool is ignored and the game starts with `factions`.
 
 `status` is `waiting`, `active` or `finished`. `opponent` seats a built-in bot
 in every other seat (the game starts immediately); `seat` chooses the

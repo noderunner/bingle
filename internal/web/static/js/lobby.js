@@ -62,6 +62,8 @@ export function lobbyCard(ctx) {
 	card.append(invite);
 
 	// The table.
+	const pooled = ((info.params && info.params.faction_pool) || []).length;
+	if (pooled) card.append(h("p", { class: "small muted", id: "lobby-pool" }, `This table has ${pooled} factions for ${seats.length} seats: choose yours from the list in your row. If you don't, you play the one your seat has.`));
 	const table = h("ul", { class: "lobby-seats", id: "lobby-seats" });
 	for (const sd of seats) {
 		const si = bySeat.get(sd.seat) || {};
@@ -69,14 +71,16 @@ export function lobbyCard(ctx) {
 		const mine = me.seat === sd.seat;
 		const li = h("li", { class: "lobby-seat" + (taken ? " taken" : " open") + (mine ? " mine" : ""), "data-seat": sd.seat });
 		li.append(h("span", { class: `swatch color-${cssColor(sd.color)}` }));
-		// The cult of an open seat can be changed by anyone at the table.
+		// The cult of an open seat can be changed by anyone at the table, and at a table
+		// set up with a pool of factions a player can change their own.
 		const cults = ctx.cults || [];
-		if (!taken && me.seat && cults.length && cults.some((c) => c.label === sd.label)) {
+		const pool = (info.params && info.params.faction_pool) || [];
+		if ((!taken || (mine && pool.length)) && me.seat && cults.length && cults.some((c) => c.label === sd.label)) {
 			const select = h("select", { class: "lobby-cult-select", id: `cult-${sd.seat}`, "data-seat": sd.seat, "aria-label": `Faction of seat ${sd.seat}`, disabled: ctx.busy });
 			const current = cults.find((c) => c.label === sd.label);
 			for (const c of cults) {
 				// A cult a player or bot already plays cannot be taken from them.
-				const holder = seats.find((o) => o.label === c.label && (bySeat.get(o.seat) || {}).name);
+				const holder = seats.find((o) => o.seat !== sd.seat && o.label === c.label && (bySeat.get(o.seat) || {}).name);
 				const opt = h("option", { value: c.id, title: c.text || null, disabled: !!holder }, holder ? `${c.label} (taken)` : c.label);
 				select.append(opt);
 			}

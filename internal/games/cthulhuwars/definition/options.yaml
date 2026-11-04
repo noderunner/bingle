@@ -45,6 +45,21 @@
       color: sand
       text: 'Expansion: Earth Cats and Cats from Mars, Saturn and Uranus, with Bastet. No Cultists: the Moon is its Gate, and every cat gives Power.'
   default: [gc, cc, bg, ys, ww]
+- id: faction-pool
+  label: Factions the table chooses from
+  kind: multi-choice
+  text: More factions than seats, with those in factions among them. In the lobby the players choose from these alone, their own seats included. It needs a lobby to mean anything.
+  choices:
+    - {id: gc, label: Great Cthulhu}
+    - {id: cc, label: Crawling Chaos}
+    - {id: bg, label: Black Goat}
+    - {id: ys, label: Yellow Sign}
+    - {id: ww, label: Windwalker}
+    - {id: sl, label: Sleeper}
+    - {id: ow, label: Opener of the Way}
+    - {id: tt, label: Tcho-Tcho}
+    - {id: an, label: The Ancients}
+    - {id: bu, label: Bubastis}
 - id: high-priests
   label: High Priests
   kind: bool

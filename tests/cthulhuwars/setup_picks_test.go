@@ -163,6 +163,60 @@ func TestAnElderThingChosenAloneStillStopsDevour(t *testing.T) {
 	}
 }
 
+// A pool is part of the table's id, stays through the lobby and limits it.
+func TestAFactionPoolLimitsTheLobby(t *testing.T) {
+	cat := picksCatalog(t)
+	pool := []any{"gc", "cc", "bg", "ys", "sl", "tt"}
+	id, err := cat.Derive("cthulhu-wars", fourWith(map[string]any{"faction-pool": pool}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Bits 0 to 3, 5 (Sleeper) and 7 (Tcho-Tcho).
+	if want := "cthulhu-wars~gc-cc-bg-ys-fpaf"; id != want {
+		t.Fatalf("id = %q, want %q", id, want)
+	}
+	g, ok := picksCatalog(t).Get(id)
+	if !ok {
+		t.Fatal("the id does not load in a new catalog")
+	}
+	if !state.PlayersChooseCults(g) {
+		t.Error("the players of a pool do not choose")
+	}
+	// A faction from the pool sits; the pool stays and the seat that gave way is still in it.
+	opts, _, err := state.SeatCultOptions(g, 4, "sl", map[int]bool{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	moved, err := cat.Derive("cthulhu-wars", opts)
+	if err != nil || moved != "cthulhu-wars~gc-cc-bg-sl-fpaf" {
+		t.Fatalf("after the change: %q, %v", moved, err)
+	}
+	g2, _ := cat.Get(moved)
+	if _, _, err := state.SeatCultOptions(g2, 3, "ys", map[int]bool{}); err != nil {
+		t.Errorf("Yellow Sign is still in the pool: %v", err)
+	}
+	// One from outside does not.
+	if _, _, err := state.SeatCultOptions(g, 4, "ww", map[int]bool{}); err == nil {
+		t.Error("a faction outside the pool sat down")
+	}
+	// A pool must hold the table; one with nothing more is no pool.
+	if _, err := cat.Derive("cthulhu-wars", fourWith(map[string]any{"faction-pool": []any{"gc", "cc", "bg", "sl"}})); err == nil {
+		t.Error("a pool without Yellow Sign was accepted")
+	}
+	if _, err := cat.Derive("cthulhu-wars", fourWith(map[string]any{"faction-pool": []any{"xx"}})); err == nil {
+		t.Error("an unknown faction in the pool was accepted")
+	}
+	same, err := cat.Derive("cthulhu-wars", fourWith(map[string]any{"faction-pool": []any{"gc", "cc", "bg", "ys"}}))
+	if err != nil || strings.Contains(same, "fp") {
+		t.Errorf("no more than the table: %q, %v", same, err)
+	}
+	// Without a pool nothing changes.
+	plain, _ := cat.Get("cthulhu-wars")
+	if state.PlayersChooseCults(plain) {
+		t.Error("a table without a pool lets players change their own seats")
+	}
+}
+
 // A random game with single picks plays through without an error.
 func TestATableOfSinglePicksPlays(t *testing.T) {
 	tb := cardTable(t, fourPlus, map[string]any{

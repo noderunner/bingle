@@ -2262,6 +2262,12 @@ async function loadCults() {
 	render();
 }
 
+/** The cults this table may choose from: those chosen at setup, when more were chosen than there are seats. */
+function tableCults() {
+	const pool = (S.info.params && S.info.params.faction_pool) || [];
+	return pool.length ? (S.cults || []).filter((c) => pool.includes(c.id)) : S.cults || [];
+}
+
 /** What the lobby card draws from, and what its buttons do. */
 function lobbyContext() {
 	const done = async (fn) => {
@@ -2299,7 +2305,7 @@ function lobbyContext() {
 		game: S.game,
 		me: S.me,
 		bots: S.bots || [],
-		cults: S.cults || [],
+		cults: tableCults(),
 		inviteURL: S.game.invite_url || location.origin + "/game/" + code,
 		lastName: lastName(),
 		busy: S.lobbyBusy,

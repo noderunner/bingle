@@ -402,6 +402,18 @@ function paintSeatCults() {
 		if (id) cell.append(picker.glyph(id, 22), h("strong", {}, picker.factionName(id)));
 		else cell.append(h("span", { class: "muted" }, "Choose a faction"));
 	}
+	syncPoolLobby();
+}
+
+/** More factions than seats are chosen from in the lobby, so a lobby there must be. */
+function syncPoolLobby() {
+	const box = document.getElementById("lobby");
+	if (!box) return;
+	const pool = !!picker && picker.hasPool();
+	if (pool && !box.disabled) box.dataset.before = box.checked ? "1" : "0";
+	if (!pool && box.disabled) box.checked = box.dataset.before === "1";
+	box.disabled = pool;
+	if (pool) box.checked = true;
 }
 
 /**
@@ -696,6 +708,7 @@ function renderSlots(info) {
 	const oppField = opp ? opp.closest(".field") : null;
 	const seatField = document.getElementById("seat-choices")?.closest(".field");
 	const many = info.seats.length > 2;
+	syncPoolLobby();
 	if (!many) {
 		const box = document.querySelector(".setup-layout");
 		if (box) box.classList.remove("with-picker");

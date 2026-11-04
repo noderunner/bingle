@@ -1335,7 +1335,7 @@ dialog.help-dialog li { margin: 0.35rem 0; }
 .lobby-seat.mine { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
 .lobby-seat .swatch { width: 1.1rem; height: 1.1rem; border-radius: 4px; border: 2px solid var(--border); flex: none; }
 .lobby-faction { font-weight: 700; min-width: 8rem; }
-.lobby-cult-select { font-weight: 700; min-width: 8rem; max-width: 11rem; }
+.lobby-cult-select { font-weight: 700; min-width: 8rem; max-width: 14rem; }
 .lobby-who { flex: 1 1 10rem; display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; min-width: 0; }
 .lobby-actions { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; }
 .lobby-bot-select { max-width: 9rem; }
@@ -2092,7 +2092,6 @@ code.wrap { overflow-wrap: anywhere; word-break: break-all; }
 }
 .cw-tile:hover, .cw-tile:focus-visible { background: var(--accent-soft); }
 .cw-tile.on { border-color: var(--accent); background: var(--accent-soft); }
-.cw-tile.blocked { opacity: 0.45; }
 .cw-tile-icon { display: flex; align-items: center; justify-content: center; width: 100%; height: 3.3rem; }
 .cw-tile-icon svg { display: block; }
 .cw-tile-name { font-size: 0.74rem; line-height: 1.15; text-align: center; overflow-wrap: break-word; }

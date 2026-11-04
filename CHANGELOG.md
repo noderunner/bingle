@@ -17,6 +17,8 @@ what the help window shows under *Recent changes*, so it is written for the peop
   spellbook.
 - **Current selections.** A card shows the table so far, and a click there takes something out again. A small notice appears
   when you have more neutral units and Independents than one fewer than the players, which is only advice.
+- **Let the table choose.** Add more factions than there are seats and players pick theirs from those in the lobby, which
+  switches on by itself. Anyone who doesn't choose plays the faction their seat already has.
 - **Shuffle.** One button fills any open seats and deals random neutral units and Independents up to the recommended number.
   Press it again for another deal; what you chose yourself stays.
 - **Start from a setup.** Four ready-made tables to begin with, and your own or other players' saved ones.

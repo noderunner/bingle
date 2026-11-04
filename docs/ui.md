@@ -552,10 +552,9 @@ you like: a game against oneself, `also_seats`), and the arrangement survives
 choosing another layout of the game. A game whose description says `setup_catalog` (Cthulhu Wars) draws
 **a picker** above the seats (`cw-setup.js`, `#cw-setup`, [ADR 0094](decisions/0094-the-cthulhu-wars-setup-picker.md)) instead of
 check boxes and the list of layouts, which stays in the page hidden:
-`.cw-tab[data-tab]` over `#cw-panel` of `.cw-tile[data-item][data-kind]` (`.on` when chosen, `.blocked` for a faction with no seat
-left), and `#cw-chosen` in `#cw-current`, the same tiles, where a click takes one out (the map's opens the Maps tab: a table always has a map).
+`.cw-tab[data-tab]` over `#cw-panel` of `.cw-tile[data-item][data-kind]` (`.on` when chosen), and `#cw-chosen` in `#cw-current`, the same tiles, where a click takes one out (the map's opens the Maps tab: a table always has a map).
 A faction takes the first open seat, and taking one out leaves its seat open, so the other seats keep theirs; a row of the seats shows it in
-`.slot-cult[data-cult-seat]`, `data-value` empty for an open seat, which the Create button refuses. `#cw-seat-notice` says so;
+`.slot-cult[data-cult-seat]`, `data-value` empty for an open seat, which the Create button refuses. `#cw-seat-notice` says so. A faction past the last seat is spare: the table then sends `faction-pool`, `#lobby` is ticked and disabled, and taking out a seated faction seats a spare one;
 `#cw-notice` says when the neutral units and Independents pass one fewer than the seats. `#cw-shuffle` fills open
 seats and deals up to that number, keeping what was chosen by hand and replacing what it dealt before. `#cw-profile` lists ready-made and saved setups;
 `#cw-profile-save` (accounts only) opens `#cw-save`, and `#cw-profile-delete` shows for one's own. The Other tab also holds the *book-swap* option,
@@ -703,7 +702,8 @@ the **cult of an open seat** from the list in its row (`select.lobby-cult-select
 from another open seat changes places with it (the Sleeper chosen for seat 4
 while seat 3 plays it moves seat 3 to seat 4's cult). The game takes the id of
 the new table, the page loads its names and colours again, and a visitor's
-*Take this seat* list shows the new cults.
+*Take this seat* list shows the new cults. A table set up with a pool of factions
+says so in `#lobby-pool`, lists only those, and gives a player the list on their own row too.
 
 `js/chat.js` is the **chat card** (`#chat-card`: `#chat-log` lines
 `.chat-line[data-id,data-seat]`, `#chat-input`, `#chat-send`, and `#chat-name`

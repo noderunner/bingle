@@ -277,6 +277,22 @@ type SeatCults interface {
 	SeatCultOptions(game *catalog.CompiledGame, seat int, cult string, taken map[int]bool) (map[string]any, error)
 }
 
+// OwnSeatCults is implemented by a SeatCults ruleset where a table may be set up
+// for its players to choose their cults: they may then change their own seats' too.
+type OwnSeatCults interface {
+	PlayersChooseCults(game *catalog.CompiledGame) bool
+}
+
+// PlayersChooseCults says a seated player may change the cult of their own seat.
+func PlayersChooseCults(game *catalog.CompiledGame) bool {
+	rs, found := RulesetOf(game)
+	if !found {
+		return false
+	}
+	own, found := rs.(OwnSeatCults)
+	return found && own.PlayersChooseCults(game)
+}
+
 // SeatCultOptions asks the game's ruleset (when it is a SeatCults) for the
 // options of the table with seat's cult changed; ok is false for a game whose
 // seats are not cults.

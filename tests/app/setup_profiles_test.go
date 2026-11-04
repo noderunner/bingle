@@ -149,3 +149,50 @@ func TestSetupCatalog_Endpoint(t *testing.T) {
 		t.Errorf("the description says %v (%d)", info.SetupCatalog, code)
 	}
 }
+
+// At a table with a pool a player chooses their own seat's faction from it.
+func TestFactionPool_PlayersChooseInTheLobby(t *testing.T) {
+	base := newRESTTestServer(t)
+	var created struct {
+		RoomCode string `json:"room_code"`
+	}
+	body := map[string]any{"game_def_id": "cthulhu-wars", "player_name": "Alice", "lobby": true,
+		"options": map[string]any{"factions": []any{"gc", "cc", "bg", "ys"}, "faction-pool": []any{"gc", "cc", "bg", "ys", "sl"}}}
+	if code := doJSON(t, "POST", base+"/api/games", body, &created); code != 200 && code != 201 {
+		t.Fatalf("create: %d", code)
+	}
+	room := created.RoomCode
+	change := func(who string, seat int, cult string) int {
+		return doJSON(t, "POST", base+"/api/games/"+room+"/seat-cult", map[string]any{"player_name": who, "seat": seat, "cult": cult}, nil)
+	}
+	id := func() string {
+		var g struct {
+			GameDefID string `json:"game_def_id"`
+		}
+		doJSON(t, "GET", base+"/api/games/"+room, nil, &g)
+		return g.GameDefID
+	}
+	if code := change("Alice", 1, "ww"); code == 200 {
+		t.Error("a faction outside the pool")
+	}
+	if code := change("Alice", 1, "sl"); code != 200 {
+		t.Fatalf("her own seat: %d", code)
+	}
+	if got := id(); got != "cthulhu-wars~sl-cc-bg-ys-fp2f" {
+		t.Errorf("after her choice: %q", got)
+	}
+	joinRoom(t, base, room, "Bob")
+	// Bob sits in the first open seat, Crawling Chaos. Alice's is not his to take, nor his hers.
+	if code := change("Bob", 2, "sl"); code != 409 {
+		t.Errorf("a faction a player holds: %d", code)
+	}
+	if code := change("Alice", 2, "gc"); code != 409 {
+		t.Errorf("another player's seat: %d", code)
+	}
+	if code := change("Bob", 2, "gc"); code != 200 {
+		t.Errorf("Bob takes the free one: %d", code)
+	}
+	if got := id(); got != "cthulhu-wars~sl-gc-bg-ys-fp2f" {
+		t.Errorf("after his choice: %q", got)
+	}
+}
