@@ -160,9 +160,11 @@ export async function tournamentForm(host, t, done) {
 		typed = true;
 	});
 	const followGame = async () => {
-		if (typed) return;
 		try {
 			const info = await api.gameDef(game.value);
+			// A prototype is never rated.
+			rated.disabled = !!info.prototype;
+			if (info.prototype) rated.checked = false;
 			if (!typed) minutes.value = info.default_clock_minutes || MINUTES_DEFAULT;
 		} catch (_) {
 			/* the time already shown stands */

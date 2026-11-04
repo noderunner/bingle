@@ -633,7 +633,7 @@ function renderCardSetField(info) {
 /**
  * "Rated game" is offered to a signed-in player at a table of two. The server
  * says what a rated game takes; the page only saves asking for one it would
- * refuse: choosing it means a friend for an opponent and one clock for both, and
+ * refuse: a prototype is never rated, and choosing it means a friend for an opponent and one clock for both, and
  * giving up either of those gives up the choice.
  */
 function renderRatedField(info) {
@@ -666,7 +666,7 @@ function renderRatedField(info) {
 	};
 	field.hidden = true;
 	whoAmI().then((me) => {
-		field.hidden = info.seats.length !== 2 || me.kind !== "account";
+		field.hidden = info.seats.length !== 2 || me.kind !== "account" || !!info.prototype;
 		if (field.hidden) rated.checked = false;
 		sync();
 	});

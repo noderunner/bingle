@@ -10,8 +10,10 @@ what the help window shows under *Recent changes*, so it is written for the peop
 - **Prototype games.** A game whose rules are still changing now carries a *Prototype* mark in the list of games.
 - **Choose which rules to play.** The setup of a prototype has a *Rules version* list, with the newest chosen first, so
   playtesters can try one version of the rules against another.
-- **A prototype game keeps its rules.** A game stays on the version it started with, even when a newer one arrives, and
+- **A prototype game keeps its version.** A game stays on the version it started with, even when a newer one arrives, and
   its name says which it is (*Courtfall 1.0.0*) in the lists of games and in the rules window.
+- **Prototypes are not rated.** A rated game or a rated tournament can no longer be set up for one, and they leave the
+  leaderboards and profiles. A rated game of one that is under way can finish, but does not change anybody's rating.
 
 ### Courtfall 1.0.0
 - **Now a prototype,** and its rules become version 1.0.0. The rules themselves do not change, and games under way carry on.

@@ -668,7 +668,7 @@ internal/games/mycelium/
     mycelium.yaml    id: mycelium-1.0.0, family: mycelium, version: 1.0.0, prototype: true
 ```
 
-To try a change to the rules:
+To make a new version:
 
 1. Copy the folder of the version it starts from to `vX.Y.Z`, and leave the old one as it is.
 2. In the new definition set `id: family-X.Y.Z` and `version: X.Y.Z`, and do the same in the `ID` of its
@@ -676,6 +676,7 @@ To try a change to the rules:
 3. Add the new package to `Modules()` in `versions.go`.
 4. Point a copy of the game's tests at it (`tests/mycelium` imports the folder it tests).
 
-The newest version is what the family's name (`mycelium`) means and what the setup chooses first. Any change
-to the rules takes a new version, whichever number moves; a fix that changes no rule may stay in its folder.
+The newest version is what the family's name (`mycelium`) means and what the setup chooses first. A new version
+is made only when the maintainer asks for one. Any other change, to the rules or not, is made in the folder of the
+version it belongs to, with no change to the version. A prototype's games are not rated.
 The web client is shared by all versions, so a new version's view must not break what an old one draws.

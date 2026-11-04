@@ -15,6 +15,7 @@ import (
 	"github.com/chromedp/chromedp"
 
 	"github.com/noderunner/bingle/internal/app"
+	"github.com/noderunner/bingle/internal/auth"
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	courtfallv1 "github.com/noderunner/bingle/internal/games/courtfall/v1.0.0"
 	"github.com/noderunner/bingle/internal/session"
@@ -222,4 +223,27 @@ func TestWebPrototypes_ChoosingARulesVersion(t *testing.T) {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the link opens the newest", `!!document.getElementById("game_def_id") && document.getElementById("game_def_id").value === "courtfall-1.1.0" && !document.getElementById("game-setup").hidden`, 10*time.Second)
+}
+
+// A signed-in player is offered a rated game of Yavalath and not of a prototype.
+// .
+func TestWebPrototypes_AreNotOfferedRated(t *testing.T) {
+	a, base := membersServer(t)
+	ana := member(t, a, base, "ana")
+	ctx, cancel := newChromedpContext(t, 90*time.Second)
+	defer cancel()
+	signInChrome(t, ctx, base, ana.cookie(auth.SessionCookie))
+
+	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/?game=yavalath")); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "the choice for a game that can be rated", `document.getElementById("rated-field").hidden === false`, 20*time.Second)
+	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/?game=courtfall")); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "Courtfall's setup", `document.getElementById("game_def_id").value === "courtfall-1.0.0" && document.getElementById("clock-field").hidden === false`, 20*time.Second)
+	time.Sleep(500 * time.Millisecond)
+	if !evalBool(t, ctx, `document.getElementById("rated-field").hidden`) {
+		t.Error("a prototype is offered as a rated game")
+	}
 }

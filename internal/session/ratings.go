@@ -35,6 +35,9 @@ const resultsRetry = time.Minute
 // checkRatable refuses a rated game that breaks the rules for one.
 func checkRatable(ctx context.Context, compiled *catalog.CompiledGame, opts CreateOptions) error {
 	refuse := func(why string) error { return fmt.Errorf("%w: %s", ErrCannotBeRated, why) }
+	if compiled.Definition.Prototype {
+		return refuse("a prototype's rules are still changing, so its games are not rated")
+	}
 	if p, ok := auth.From(ctx); !ok || p.Account == nil {
 		return refuse("a rated game needs an account: sign in")
 	}
@@ -135,7 +138,8 @@ func (m *Manager) recordResult(ctx context.Context, game store.Game) error {
 		return m.store.SetRatingStatus(ctx, game.ID, status)
 	}
 	compiled, ok := m.catalog.Get(game.GameDefID)
-	if !ok {
+	// A prototype has no ratings; this is a game rated before it became one.
+	if !ok || compiled.Definition.Prototype {
 		return void(store.RatingVoid, metrics.RatedVoid)
 	}
 	players, err := m.store.ListPlayers(ctx, game.ID)
@@ -282,6 +286,13 @@ func (m *Manager) fillRatings(ctx context.Context, compiled *catalog.CompiledGam
 
 func rounded(v float64) int { return int(v + 0.5) }
 
+// isPrototype reports whether a family is a prototype's. Ratings earned before a
+// game became one stay in the database, and are shown nowhere.
+func (m *Manager) isPrototype(family string) bool {
+	cg, ok := m.catalog.Get(family)
+	return ok && cg.Definition.Prototype
+}
+
 // RatedFamily is a game with a leaderboard.
 type RatedFamily struct {
 	Family  string `json:"family"`
@@ -297,6 +308,9 @@ func (m *Manager) RatedFamilies(ctx context.Context) ([]RatedFamily, error) {
 	}
 	out := make([]RatedFamily, 0, len(list))
 	for _, f := range list {
+		if m.isPrototype(f.Family) {
+			continue
+		}
 		out = append(out, RatedFamily{Family: f.Family, Name: f.Name, Players: f.Players})
 	}
 	return out, nil
@@ -319,6 +333,9 @@ const maxLeaderboard = 100
 func (m *Manager) Leaderboard(ctx context.Context, family string, limit int) ([]LeaderboardEntry, error) {
 	if limit <= 0 || limit > maxLeaderboard {
 		limit = maxLeaderboard
+	}
+	if m.isPrototype(family) {
+		return []LeaderboardEntry{}, nil
 	}
 	rows, err := m.store.Leaderboard(ctx, family, rating.MinGames, rating.MinOpponents, limit)
 	if err != nil {
@@ -367,7 +384,7 @@ func (m *Manager) PlayerRatings(ctx context.Context, handle string) ([]PlayerRat
 	out := make([]PlayerRating, 0, len(rows))
 	for _, r := range rows {
 		listed := rating.Listed(r.Games, r.Opponents)
-		if !listed && !mine {
+		if (!listed && !mine) || m.isPrototype(r.Family) {
 			continue
 		}
 		out = append(out, PlayerRating{

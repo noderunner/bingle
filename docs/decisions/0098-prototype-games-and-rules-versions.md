@@ -40,18 +40,24 @@ two. Every place that names one game says the version too (*Mycelium 1.0.0*), th
 folder and names the version as its `game`, and `tutorial.Verify` refuses the family's name there, which would
 start to mean another game when the next version ships.
 
+**A prototype is not rated.** A rating says how well somebody plays a game, and rules that are still changing are
+not one game. A rated game of a prototype is refused, the setup does not offer one, and a tournament of one is unrated.
+A game rated before this may finish, and counts for nothing (`void`). Ratings already earned stay in the database and
+are not shown on a leaderboard or a profile, so they are still there if the game comes out of prototype.
+
 **Games stored before this keep their rules.** `store.Open` moves what was stored under `courtfall` and `mycelium`
 to their `-1.0.0` ids: games, derived games, tournaments and tutorial rooms. It finds nothing to do afterwards.
 
 ## Interpretations
 
-- **A patch is a version too.** Any change to the rules is a new folder, however small, because that is what keeps
-  a game in progress on its rules. A bug fix that changes no rule may be made in place.
+- **A new version is made only when the maintainer asks for one.** Otherwise a change, to the rules or not, is made
+  in the folder of the version it belongs to, and the version stays as it is, since it is part of the id. Such a
+  change reaches a game under way on its next move, as it does for any other game. What a game is pinned to is the
+  version, and a version only stands still once a newer one has replaced it as the one being worked on.
 - **The web client is shared by all versions.** It has no folder per version, and draws what a ruleset's view
   says, so an old version keeps working as long as the view keeps the shape the page reads. A new version that needs
   a new drawing adds to the page and leaves the old shape working.
-- **Ratings pool the versions of a family**, as they pool its variants, and the metrics and the setup profiles use
-  the family as before. Whether a rated game of a prototype means much is a question for later; nothing changed here.
+- The metrics and the setup profiles use the family as before.
 
 ## Consequences
 
