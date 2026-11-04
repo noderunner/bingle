@@ -29,8 +29,8 @@ func TestWebMeridians_PlayThroughTheUI(t *testing.T) {
 	// The board: 114 points, every one of them a legal first move.
 	waitJS(t, ctx, "the board", `document.querySelectorAll("#board .cell[data-position]").length === 114`, 20*time.Second)
 	waitJS(t, ctx, "every point clickable", `document.querySelectorAll("#board .cell.clickable").length === 114`, 15*time.Second)
-	if got := evalString(t, ctx, `document.getElementById("status-message").textContent`); !strings.Contains(got, "first stone") {
-		t.Errorf("the status says %q, want it to ask for the first stone", got)
+	if got := evalString(t, ctx, `document.getElementById("status-message").textContent`); !strings.Contains(got, "Place a stone.") {
+		t.Errorf("the status says %q, want it to ask for a stone", got)
 	}
 
 	// Four stones, one click each: Light, Dark, Light, Dark. (A cell of the

@@ -27,6 +27,9 @@ func TestWebCthulhuWars_TheNeutralWindowShowsWhatIsLeftToTake(t *testing.T) {
 	collectJSErrors(ctx, &mu, &jsErrors)
 	openGameAs(t, ctx, baseURL, room, id, "Alice")
 	waitJS(t, ctx, "the window", `document.getElementById("neutral-window") !== null`, 20*time.Second)
+	if got := evalString(t, ctx, `document.querySelector("#neutral-window h3").textContent`); got != "Neutral items" {
+		t.Errorf("the card's heading is %q, with no count", got)
+	}
 	// A summary until it is opened, and it shares the one open card with the cults.
 	if evalBool(t, ctx, `document.getElementById("neutral-items").offsetParent !== null`) {
 		t.Error("the neutral items should start closed")

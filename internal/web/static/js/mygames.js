@@ -2,7 +2,7 @@
 // drawing them as rows. The "Active games" window of the top bar lists the
 // unfinished ones, the profile page the finished ones.
 
-import { h, rememberedGames, rememberGame, forgetGame, ago } from "./util.js";
+import { h, rememberedGames, rememberGame, forgetGame, forgottenGames, ago, toast } from "./util.js";
 import { api, gameTitle } from "./api.js";
 
 let defsPromise = null;
@@ -24,7 +24,7 @@ export async function loadRows() {
 	// on another device whose guest key this one adopted, or under the
 	// account it signed in to (stage 7 of the accounts plan).
 	try {
-		const known = new Set(rememberedGames().map((g) => g.code));
+		const known = new Set([...rememberedGames().map((g) => g.code), ...forgottenGames()]);
 		const { games } = await api.ownGames();
 		for (const g of [...(games || [])].reverse()) {
 			if (!known.has(g.room_code) && g.seats && g.seats.length) rememberGame(g.room_code, g.game_def_id, g.seats[0]);
@@ -69,12 +69,11 @@ export function sortRows(rows) {
 }
 
 /**
- * One game of *All games*: somebody else's game (or your own) as the server
- * lists it — the name and code, who is at the table, how far it has gone, and a
- * badge for the seats nobody holds. Opening it watches it; the game page offers
- * an open seat to anybody who wants one.
+ * A game as the server lists it: the name and code, who is at the table, how far it
+ * has gone, and a badge for the seats nobody holds, with `action` to go at the end.
+ * Without one it is a link to watch it.
  */
-export function openGameRow(g, defs, isMine) {
+export function openGameRow(g, defs, isMine, action = null) {
 	const def = defs.find((d) => d.id === String(g.game_def_id).split("~")[0]);
 	const title = g.name || (def ? gameTitle(def) : g.game_def_id);
 	const names = (g.players || []).map((p) => p.name + (p.bot ? " (bot)" : ""));
@@ -92,8 +91,30 @@ export function openGameRow(g, defs, isMine) {
 		{ "data-code": g.room_code },
 		h("div", { class: "grow" }, h("div", { class: "title" }, `${title} · ${g.room_code}`), h("div", { class: "meta" }, meta.join(" · "))),
 		...badges,
-		h("a", { class: "button primary", href: "/game/" + g.room_code }, g.open_seats > 0 ? "Open" : "Watch")
+		action || h("a", { class: "button primary", href: "/game/" + g.room_code }, "Watch")
 	);
+}
+
+/**
+ * Whether a game can go from the list, having asked first where that costs anything:
+ * a game in play is resigned. A game that has not started has nothing to resign, and
+ * one that is over has nothing to ask about.
+ */
+async function leaveGame(r, title) {
+	const status = r.info && r.info.status;
+	if (status === "waiting") return window.confirm(`Remove ${title} from your list? You keep your seat, and its link still brings you back.`);
+	if (status !== "active") return true;
+	// Resigning ends the game for the whole table, however many sit at it.
+	const others = r.info.seats.filter((s) => s.name && s.name.toLowerCase() !== r.g.name.toLowerCase()).length;
+	const cost = others > 1 ? " This ends the game for everyone at the table." : r.info.rated ? " This is a rated game, and counts as a loss." : "";
+	if (!window.confirm(`Resign from ${title} and remove it from your list?${cost}`)) return false;
+	try {
+		await api.resign(r.g.code, r.g.name);
+		return true;
+	} catch (err) {
+		toast(err.message || "Could not resign from that game.", "error");
+		return false;
+	}
 }
 
 /** One game of the list: title, who is playing, a status badge, Open/Review and a remove button. */
@@ -136,9 +157,10 @@ export function gameRow(r, defs, onForget) {
 			"button",
 			{
 				class: "ghost icon",
-				title: "Remove from this list",
-				"aria-label": "Remove from this list",
-				onclick: () => {
+				title: r.info && r.info.status === "active" ? "Resign and remove from this list" : "Remove from this list",
+				"aria-label": r.info && r.info.status === "active" ? "Resign and remove from this list" : "Remove from this list",
+				onclick: async () => {
+					if (!(await leaveGame(r, title))) return;
 					forgetGame(r.g.code);
 					onForget();
 				},

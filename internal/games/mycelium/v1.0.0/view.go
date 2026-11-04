@@ -76,7 +76,7 @@ func (e *eng) buildView() *View {
 		v.Prompt = "The game is drawn"
 	case cf == nil:
 		v.Prompt = fmt.Sprintf("%s: place a node", seatLabel(d.Turn))
-		v.Impulse = "Choose where to place a node."
+		v.Impulse = "Place a node."
 	default:
 		v.Stage = cf.Phase
 		for _, c := range cf.Spent {

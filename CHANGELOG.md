@@ -4,6 +4,27 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.57.0 - 2026-11-04
+
+### Bingle Core 0.57.0
+- **Simpler words in the stone games.** Games where all you do is place a piece now just say *Place a stone.*, or whatever the
+  game calls it.
+- **The ✕ on an active game resigns.** After you confirm, it resigns from the game and takes it off your list. A game that has
+  not started is only taken off your list, and you keep your seat.
+- **Each game's own Active Games.** The setup of a game has a new *Active Games* tab listing the games of it going on, to watch.
+  The *All games* tab of the active games list is gone.
+- **Tables looking for players.** The Join Game window lists the games that have not started and still have a seat free, each
+  with a *Join* button. Its button in the top bar is now a +.
+- **Step back through the history.** A small back arrow under *Since your last move* goes back one move, and again with each
+  click, to go through what happened move by move.
+- **Cthulhu Wars:** the neutral items card no longer counts its items.
+
+### Havannah 0.3.1
+- Its pieces are called stones.
+
+### Meridians 0.1.2
+- The card says *Place a stone.*
+
 ## 0.56.0 - 2026-11-04
 
 ### Bingle Core 0.56.0

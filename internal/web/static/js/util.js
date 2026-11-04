@@ -70,6 +70,7 @@ export const store = {
 };
 
 const GAMES_KEY = "bingle.games";
+const FORGOTTEN_KEY = "bingle.forgottenGames";
 
 /** Games this browser has joined: [{code, def, name, ts}], newest first. */
 export function rememberedGames() {
@@ -78,6 +79,7 @@ export function rememberedGames() {
 }
 
 export function rememberGame(code, def, name) {
+	store.set(FORGOTTEN_KEY, forgottenGames().filter((c) => c !== code));
 	const list = rememberedGames().filter((g) => g.code !== code);
 	list.unshift({ code, def, name, ts: Date.now() });
 	store.set(GAMES_KEY, list.slice(0, 30));
@@ -86,6 +88,12 @@ export function rememberGame(code, def, name) {
 
 export function forgetGame(code) {
 	store.set(GAMES_KEY, rememberedGames().filter((g) => g.code !== code));
+	store.set(FORGOTTEN_KEY, [code, ...forgottenGames()].slice(0, 100));
+}
+
+/** The games taken off this browser's list: the server still knows the seat, and is not to bring them back. */
+export function forgottenGames() {
+	return store.get(FORGOTTEN_KEY, []);
 }
 
 export function nameFor(code) {

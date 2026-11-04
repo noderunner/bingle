@@ -2,7 +2,6 @@ package app_test
 
 import (
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
@@ -152,70 +151,6 @@ func TestWhoIsHere_AccountsSayTheyAreAbout(t *testing.T) {
 	}
 	if code := doJSON(t, "GET", baseURL+"/api/here", nil, nil); code != 403 {
 		t.Errorf("an anonymous read of who is here: %d, want 403", code)
-	}
-}
-
-// The Active games window has two tabs: the games of this browser, and every
-// game on the server — where a game waiting in a lobby says so and how many
-// seats are still open, and a game of somebody else's can be opened to watch.
-func TestWebOpenGames_TheActiveGamesWindowHasTwoTabs(t *testing.T) {
-	baseURL := newRESTTestServer(t)
-	// Ana's own game against a bot, and a table of four of Bo's waiting in a lobby.
-	mine := botRoom(t, baseURL, "Ana")
-	var theirs struct {
-		RoomCode string `json:"room_code"`
-	}
-	if code := doJSON(t, "POST", baseURL+"/api/games", map[string]any{"game_def_id": "nyet", "player_name": "Bo", "lobby": true}, &theirs); code != 200 {
-		t.Fatalf("Bo's table: %d", code)
-	}
-	ctx, cancel := newChromedpContext(t, 90*time.Second)
-	defer cancel()
-	var mu sync.Mutex
-	var jsErrors []string
-	collectJSErrors(ctx, &mu, &jsErrors)
-	rememberGames(t, ctx, baseURL, "Ana", map[string]string{mine: "tic-tac-toe"})
-	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/")); err != nil {
-		t.Fatal(err)
-	}
-	waitJS(t, ctx, "the top bar", `document.getElementById("open-active-games") !== null`, 20*time.Second)
-	clickSel(t, ctx, "#open-active-games")
-	waitJS(t, ctx, "my games", `document.querySelector('#my-games li[data-code="`+mine+`"]') !== null`, 10*time.Second)
-	// My games holds only this browser's game; the tabs are named.
-	if n := evalInt(t, ctx, `document.querySelectorAll("#my-games li").length`); n != 1 {
-		t.Errorf("%d games in My games, want 1", n)
-	}
-	if got := evalString(t, ctx, `[...document.querySelectorAll("#active-games-dialog .tab")].map(b => b.textContent.trim()).join(",")`); got != "My games,All games" {
-		t.Errorf("the tabs are %q", got)
-	}
-	// All games holds both, with Bo's table marked as waiting in its lobby and
-	// its three open seats counted.
-	clickSel(t, ctx, "#tab-all-games")
-	waitJS(t, ctx, "all games", `document.querySelectorAll("#all-games li").length === 2`, 10*time.Second)
-	row := `document.querySelector('#all-games li[data-code="` + theirs.RoomCode + `"]')`
-	if !evalBool(t, ctx, row+` !== null`) {
-		t.Fatal("Bo's table is not in All games")
-	}
-	if got := evalString(t, ctx, row+`.querySelector(".badge.waiting").textContent`); got != "In the lobby" {
-		t.Errorf("Bo's table is marked %q", got)
-	}
-	if got := evalString(t, ctx, row+`.querySelector("[data-open-seats]").textContent`); got != "3 seats open" {
-		t.Errorf("the open seats read %q, want three", got)
-	}
-	if got := evalString(t, ctx, row+`.querySelector("a.button").getAttribute("href")`); got != "/game/"+theirs.RoomCode {
-		t.Errorf("the way into Bo's table is %q", got)
-	}
-	// This browser's own game is in the list too, marked as its own.
-	if !evalBool(t, ctx, `document.querySelector('#all-games li[data-code="`+mine+`"]').textContent.includes("yours")`) {
-		t.Error("the browser's own game is not marked in All games")
-	}
-	// The tab that was open is the one that opens next time.
-	clickSel(t, ctx, "#active-games-dialog .dialog-close")
-	clickSel(t, ctx, "#open-active-games")
-	waitJS(t, ctx, "All games again", `document.getElementById("panel-all-games").hidden === false`, 5*time.Second)
-	mu.Lock()
-	defer mu.Unlock()
-	if len(jsErrors) > 0 {
-		t.Errorf("uncaught JS exceptions: %v", jsErrors)
 	}
 }
 

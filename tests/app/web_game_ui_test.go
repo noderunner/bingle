@@ -968,8 +968,8 @@ func TestWebGame_HexagonBoardPlacementAndLosingByThree(t *testing.T) {
 	if n := evalInt(t, ctx, `document.querySelectorAll('#board .target-dot, #board .quick-dot').length`); n != 0 {
 		t.Errorf("target markers = %d, want none on an open board", n)
 	}
-	if got := evalString(t, ctx, `document.getElementById("impulse-text").textContent`); !strings.Contains(got, "empty square") {
-		t.Errorf("hint = %q, want a placement hint", got)
+	if got := evalString(t, ctx, `document.getElementById("impulse-text").textContent`); got != "Place a piece." {
+		t.Errorf("impulse = %q, want a placement hint", got)
 	}
 
 	clickCell(t, ctx, "c5")

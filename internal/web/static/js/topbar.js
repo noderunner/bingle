@@ -3,7 +3,7 @@
 // player's profile, help (the version, what changed lately, the project's page,
 // where to report problems) and — while a voice call is up — a button for the call.
 
-import { h, clear, toast, lastName, setLastName, rememberGame, setTurnBadge, store } from "./util.js";
+import { h, clear, toast, lastName, setLastName, rememberGame, rememberedGames, setTurnBadge, store } from "./util.js";
 import { api, whoAmI } from "./api.js";
 import { gameDefs, loadRows, isFinished, yourImpulse, sortRows, gameRow, openGameRow } from "./mygames.js";
 import { navigate, onLeave } from "./nav.js";
@@ -18,7 +18,6 @@ const REPO_URL = "https://github.com/noderunner/bingle";
 const CHANGES_SEEN_KEY = "bingle.changelog.seen";
 
 // Which tab of the active-games window was last open ("mine" or "all").
-const TAB_KEY = "bingle.gamesTab";
 
 // The direct-message window of this page, so that the profile window can hand
 // it somebody to write to.
@@ -74,58 +73,9 @@ export function installTopbar({ onRows = () => {}, manageTitle = true } = {}) {
 	);
 	const list = h("ul", { class: "my-games", id: "my-games" });
 	const empty = h("p", { class: "muted", id: "my-games-empty", hidden: true }, "No games going. Pick one in the Games tab to start.");
-	const allList = h("ul", { class: "my-games", id: "all-games" });
-	const allEmpty = h("p", { class: "muted", id: "all-games-empty", hidden: true }, "No games are going anywhere on this server just now.");
-	const allNote = h("p", { class: "small muted" }, "Every game on this server that has not finished. Open one to watch it, or take a seat where one is open.");
-	// Two tabs: the games of this browser, and every game on the server.
-	const mineTab = h("button", { type: "button", class: "tab on", id: "tab-my-games", role: "tab", "aria-selected": "true", "aria-controls": "panel-my-games" }, "My games");
-	const allTab = h("button", { type: "button", class: "tab", id: "tab-all-games", role: "tab", "aria-selected": "false", "aria-controls": "panel-all-games" }, "All games");
-	const minePanel = h("div", { id: "panel-my-games", role: "tabpanel", "aria-labelledby": "tab-my-games" }, list, empty);
-	const allPanel = h("div", { id: "panel-all-games", role: "tabpanel", "aria-labelledby": "tab-all-games", hidden: true }, allNote, allList, allEmpty);
-	const tabs = h("div", { class: "tabs", role: "tablist", "aria-label": "Which games to list" }, mineTab, allTab);
-	const showTab = (which) => {
-		const mine = which === "mine";
-		mineTab.classList.toggle("on", mine);
-		allTab.classList.toggle("on", !mine);
-		mineTab.setAttribute("aria-selected", mine ? "true" : "false");
-		allTab.setAttribute("aria-selected", mine ? "false" : "true");
-		minePanel.hidden = !mine;
-		allPanel.hidden = mine;
-		store.set(TAB_KEY, which);
-		if (!mine) refreshAll();
-	};
-	mineTab.addEventListener("click", () => showTab("mine"));
-	allTab.addEventListener("click", () => showTab("all"));
-	for (const [tab, which] of [[mineTab, "mine"], [allTab, "all"]]) {
-		tab.addEventListener("keydown", (ev) => {
-			if (ev.key !== "ArrowLeft" && ev.key !== "ArrowRight") return;
-			ev.preventDefault();
-			const other = which === "mine" ? allTab : mineTab;
-			showTab(which === "mine" ? "all" : "mine");
-			other.focus();
-		});
-	}
-	const activeDlg = dialog("active-games-dialog", "Active games", tabs, minePanel, allPanel);
+	const activeDlg = dialog("active-games-dialog", "Active games", list, empty);
 	let rows = [];
 	let defs = [];
-	let allRows = [];
-
-	const paintAll = () => {
-		clear(allList);
-		const mine = new Set(rows.map((r) => r.g.code));
-		for (const g of allRows) allList.append(openGameRow(g, defs, mine.has(g.room_code)));
-		allEmpty.hidden = allRows.length > 0;
-	};
-	async function refreshAll() {
-		try {
-			const res = await api.openGames();
-			allRows = (res && res.games) || [];
-			if (!defs.length) defs = await gameDefs();
-			paintAll();
-		} catch (_) {
-			allEmpty.hidden = allRows.length > 0;
-		}
-	}
 
 	const paint = () => {
 		const active = sortRows(rows.filter((r) => !isFinished(r)));
@@ -140,7 +90,15 @@ export function installTopbar({ onRows = () => {}, manageTitle = true } = {}) {
 			document.title = (waiting > 0 ? `(${waiting}) ` : "") + baseTitle;
 		}
 		clear(list);
-		for (const r of active) list.append(gameRow(r, defs, () => refresh(false)));
+		for (const r of active) {
+			list.append(
+				gameRow(r, defs, () => {
+					rows = rows.filter((x) => x !== r);
+					paint();
+					onRows(rows, defs);
+				})
+			);
+		}
 		empty.hidden = active.length > 0;
 	};
 	async function refresh(fetchAgain = true) {
@@ -153,7 +111,6 @@ export function installTopbar({ onRows = () => {}, manageTitle = true } = {}) {
 	activeBtn.addEventListener("click", () => {
 		paint();
 		open(activeDlg);
-		showTab(store.get(TAB_KEY, "mine") === "all" ? "all" : "mine");
 		refresh();
 	});
 
@@ -171,12 +128,38 @@ export function installTopbar({ onRows = () => {}, manageTitle = true } = {}) {
 		joinErr,
 		h("div", { class: "row" }, h("button", { type: "submit", class: "primary" }, "Join game"), h("button", { type: "button", id: "watch-game" }, "Watch"))
 	);
-	const joinDlg = dialog("join-dialog", "Join a game", joinForm);
+	// The tables with a seat for anybody, for those without a link to one.
+	const openList = h("ul", { class: "my-games", id: "join-open-games" });
+	const openEmpty = h("p", { class: "muted small", id: "join-open-empty", hidden: true }, "No table is waiting for players just now.");
+	const openSection = h("section", { id: "join-open" }, h("h3", {}, "Waiting for players"), openList, openEmpty);
+	const joinDlg = dialog("join-dialog", "Join a game", joinForm, openSection);
+	async function refreshOpen() {
+		let games = [];
+		try {
+			const res = await api.openGames({ openSeats: true });
+			if (!defs.length) defs = await gameDefs();
+			const mine = new Set(rememberedGames().map((g) => g.code));
+			games = ((res && res.games) || []).filter((g) => !mine.has(g.room_code));
+		} catch (_) {
+			/* the code above still works */
+		}
+		clear(openList);
+		for (const g of games) {
+			openList.append(
+				openGameRow(g, defs, false, h("button", { type: "button", class: "primary", "data-join": g.room_code, onclick: () => {
+					codeInput.value = g.room_code;
+					join("player");
+				} }, "Join"))
+			);
+		}
+		openEmpty.hidden = games.length > 0;
+	}
 	joinBtn.addEventListener("click", () => {
 		if (!nameInput.value) nameInput.value = lastName();
 		joinErr.textContent = "";
 		open(joinDlg);
 		(codeInput.value ? nameInput : codeInput).focus();
+		refreshOpen();
 	});
 	async function join(role) {
 		joinErr.textContent = "";

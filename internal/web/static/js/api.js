@@ -193,7 +193,7 @@ export const api = {
 		return call(`/api/games/${enc(code)}/state${q.length ? "?" + q.join("&") : ""}`);
 	},
 	moves: (code) => call(`/api/games/${enc(code)}/moves`),
-	openGames: (limit) => call("/api/games" + (limit ? `?limit=${limit}` : "")),
+	openGames: ({ family, openSeats } = {}) => call("/api/games?" + new URLSearchParams({ ...(family ? { family } : {}), ...(openSeats ? { open_seats: "1" } : {}) })),
 	sendDirect: (to, text) => call("/api/dm", { method: "POST", body: { to, text } }),
 	directHistory: (with_, after) => call("/api/dm/history", { method: "POST", body: { with: with_, after: after || 0 } }),
 	directThreads: () => call("/api/dm/threads", { method: "POST", body: {} }),

@@ -72,11 +72,11 @@ func TestWebGame_TheTopBarHasTheActiveGamesJoinAndProfile(t *testing.T) {
 	if n := evalInt(t, ctx, `document.querySelectorAll('#my-games li .badge.turn').length`); n != 2 {
 		t.Errorf("%d games say it is your turn, want 2", n)
 	}
-	// Joining by code, from inside a game. Its icon is two plugs coming
+	// Joining by code, from inside a game. Its icon is a plus; was two plugs coming
 	// together, not a door with an arrow through it (which reads as leaving).
 	clickSel(t, ctx, "#active-games-dialog .dialog-close")
-	if n := evalInt(t, ctx, `document.querySelectorAll('#open-join svg[data-icon="plugs"]').length`); n != 1 {
-		t.Errorf("the join button does not carry the plugs icon (%d)", n)
+	if n := evalInt(t, ctx, `document.querySelectorAll('#open-join svg[data-icon="plus"]').length`); n != 1 {
+		t.Errorf("the join button does not carry the plus icon (%d)", n)
 	}
 	clickSel(t, ctx, "#open-join")
 	waitJS(t, ctx, "the join form", `document.getElementById("room_code") !== null && document.getElementById("join-dialog").open`, 5*time.Second)
