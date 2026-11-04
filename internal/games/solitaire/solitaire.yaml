@@ -2,7 +2,7 @@
 id: solitaire
 name: Solitaire
 description: "The patience game most people mean by Solitaire, for one player: build four piles from ace to king, and turn up the seven columns' hidden cards on the way. Spider, FreeCell and Bowling Solitaire are here too."
-version: 0.1.1
+version: 0.1.2
 engine: ruleset
 rules:
   - 'Klondike, one card at a time. 52 cards are dealt into seven columns of 1 to 7 cards, the top card of each face up; the rest are the stock. You win by moving every card to the four foundations, one per suit, each built up from ace to king.'

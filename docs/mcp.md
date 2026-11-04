@@ -132,7 +132,7 @@ there is more than one piece; stacks are spelled out bottom-to-top under
 *Stacks*. `TPS` is Tak's standard one-line position string.
 
 Structured fields: `state` (`cells` → stacks bottom-to-top, `reserves`,
-`ply`), `legal_moves` (notation strings), `your_turn`, `done`,
+`ply`), `legal_moves` (notation strings), `your_impulse`, `done`,
 `winner_seat`, `end_reason`, `result` (`win`/`loss`/`draw` for your seat) and
 `reward` (+1 / −1 / 0).
 
@@ -144,7 +144,7 @@ few ways that matter to an agent:
 * **A turn is many decisions.** `legal_moves` lists the next *decision* (a unit
   to activate, a destination, a dice split…); after your move the same seat may
   be asked again, and the opponent may be asked mid-turn (the target of a
-  strike answers with `respond/N`). `to_move` / `turn_seat` always says who.
+  strike answers with `respond/N`). `impulse_seat` / `impulse_seat` always says who.
 * **`state.ext.view`** is the derived picture of the position — `prompt` (what
   is being waited for), `tints`, `badges`, `seats[].counters` (Momentum, VP),
   `contest` (both sides' dice once rolled) — and `state.ext.events` narrates
@@ -185,7 +185,7 @@ seedable, and follow the Gym `reset`/`step` shape.
 | `env_close`, `env_list` | housekeeping (idle environments expire after 30 minutes) |
 | `match_bots` | play N games between two built-in bots (`bot_a`, `bot_b`, `games`, `seed`, `include_moves`) and get the tally — baselines and move records without an agent in the loop. `record` (≤ 50 games) returns every position as a training example: `state`, `move`, fixed `action_id`, and the game's `result` for the mover (+1/0/−1); `record_planes` adds mover-relative planes |
 
-Observation fields: `env_id`, `agent_seat`, `to_move`, `your_turn`, `ply`,
+Observation fields: `env_id`, `agent_seat`, `impulse_seat`, `your_impulse`, `ply`,
 `board_text`, `tps`, `state`, `legal_moves`, `history`, `last_moves` (your
 move followed by the replies), `done`, `truncated`, `winner_seat`,
 `end_reason`, `reward`, `result`.
@@ -194,7 +194,7 @@ move followed by the replies), `done`, `truncated`, `winner_seat`,
   `reward` is +1/−1/0 at the end and 0 before; a truncated episode
   (`max_plies`) has `truncated: true` and reward 0.
 * **Self-play**: `opponent: "self"` — you move for whoever is to move
-  (`to_move`); `winner_seat` tells you who won so you can credit either side.
+  (`impulse_seat`); `winner_seat` tells you who won so you can credit either side.
 * **Curricula and puzzles**: `start_tps` starts from any Tak position, e.g. a
   position one move from a road; `start_state` (+ `start_seat`) does the same
   for any game. `puzzle_id` (see `list_puzzles`) starts a curated position —

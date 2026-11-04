@@ -342,7 +342,7 @@ func TestRandomGamesEnd(t *testing.T) {
 			if err != nil {
 				t.Fatalf("seed %d, ply %d: %v", seed, ply, err)
 			}
-			st, seat, ended = res.NewState, res.NextTurnSeat, res.GameEnded
+			st, seat, ended = res.NewState, res.NextImpulseSeat, res.GameEnded
 			if ended {
 				switch res.EndReason {
 				case "wiped-out":

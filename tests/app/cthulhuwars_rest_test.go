@@ -177,9 +177,9 @@ func TestCthulhuWarsPlaysOverRESTWithFourPlayers(t *testing.T) {
 		} `json:"moves"`
 	}
 	var st struct {
-		Status   string `json:"status"`
-		TurnSeat *int   `json:"turn_seat"`
-		State    struct {
+		Status      string `json:"status"`
+		ImpulseSeat *int   `json:"impulse_seat"`
+		State       struct {
 			Ext struct {
 				RNG   uint64  `json:"rng"`
 				Signs [][]int `json:"signs"`
@@ -385,10 +385,10 @@ func TestSlowBotsPlayOnInTheBackgroundAndRequestsDoNotWaitForThem(t *testing.T) 
 		doJSON(t, "GET", base+"/api/games/"+room+"/moves", nil, &ms)
 		n = len(ms)
 		var st struct {
-			TurnSeat *int `json:"turn_seat"`
+			ImpulseSeat *int `json:"impulse_seat"`
 		}
 		doJSON(t, "GET", base+"/api/games/"+room+"/state", nil, &st)
-		if n >= 14 || (n >= 8 && st.TurnSeat != nil && *st.TurnSeat == 1) {
+		if n >= 14 || (n >= 8 && st.ImpulseSeat != nil && *st.ImpulseSeat == 1) {
 			return
 		}
 		time.Sleep(250 * time.Millisecond)

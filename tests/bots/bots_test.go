@@ -82,9 +82,9 @@ func TestTacticalAndMCTSBlockAnImmediateLoss(t *testing.T) {
 				t.Fatalf("%s chose illegal %q: %v", b.ID(), mv, err)
 			}
 			// After the bot's move black must have no road-completing reply.
-			for _, reply := range state.LegalMoves(g, res.NewState, res.NextTurnSeat) {
-				r2, err := state.Apply(g, res.NewState, res.NextTurnSeat, reply)
-				if err == nil && r2.GameEnded && r2.WinnerSeat != nil && *r2.WinnerSeat == res.NextTurnSeat {
+			for _, reply := range state.LegalMoves(g, res.NewState, res.NextImpulseSeat) {
+				r2, err := state.Apply(g, res.NewState, res.NextImpulseSeat, reply)
+				if err == nil && r2.GameEnded && r2.WinnerSeat != nil && *r2.WinnerSeat == res.NextImpulseSeat {
 					t.Fatalf("%s played %q and allowed black to win with %s", b.ID(), mv, state.FormatMove(g, reply))
 				}
 			}
@@ -158,7 +158,7 @@ func TestTacticalBeatsRandom(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			st, seat = res.NewState, res.NextTurnSeat
+			st, seat = res.NewState, res.NextImpulseSeat
 			if res.GameEnded {
 				if res.WinnerSeat != nil && *res.WinnerSeat == tacticalSeat {
 					wins++
@@ -220,7 +220,7 @@ func TestMinimaxBeatsRandomAndTacticalOnSmallTak(t *testing.T) {
 					}
 					break
 				}
-				st, seat = res.NewState, res.NextTurnSeat
+				st, seat = res.NewState, res.NextImpulseSeat
 			}
 		}
 		return wins
@@ -275,7 +275,7 @@ func TestMinimaxConnectivityTermHelpsOnTak(t *testing.T) {
 				}
 				break
 			}
-			st, seat = res.NewState, res.NextTurnSeat
+			st, seat = res.NewState, res.NextImpulseSeat
 		}
 	}
 	if wins < losses+3 {

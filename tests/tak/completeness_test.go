@@ -111,7 +111,7 @@ func TestLegalMovesAreExactlyTheAcceptedMoves(t *testing.T) {
 				if res.GameEnded {
 					break
 				}
-				st, seat = res.NewState, res.NextTurnSeat
+				st, seat = res.NewState, res.NextImpulseSeat
 			}
 		}
 		t.Logf("%s: cross-checked %d candidate moves", tc.id, checked)

@@ -17,9 +17,11 @@ var (
 // (and so die when their owner's turn ends), where the last stone went, and how
 // many stones each player has.
 type View struct {
-	Phase  string `json:"phase"`
-	ToMove int    `json:"to_move,omitempty"`
-	Prompt string `json:"prompt"`
+	Phase       string `json:"phase"`
+	ImpulseSeat int    `json:"impulse_seat,omitempty"`
+	Prompt      string `json:"prompt"`
+	// Impulse is what the seat on impulse is asked to choose, without its name.
+	Impulse string `json:"impulse,omitempty"`
 	// Tints marks points by legend key, Badges the stones of a dead group.
 	Tints  map[string]string   `json:"tints,omitempty"`
 	Badges map[string][]string `json:"badges,omitempty"`
@@ -62,7 +64,7 @@ func (rs *Ruleset) Determinize(game *catalog.CompiledGame, st *state.BoardState,
 
 func (e *eng) buildView() *View {
 	d := e.d
-	v := &View{Phase: "play", ToMove: d.Turn, Tints: map[string]string{}, Badges: map[string][]string{}, Seats: map[string]*SeatView{}}
+	v := &View{Phase: "play", ImpulseSeat: d.Turn, Tints: map[string]string{}, Badges: map[string][]string{}, Seats: map[string]*SeatView{}}
 	if d.Last != "" {
 		v.Tints[d.Last] = "last"
 	}
@@ -95,10 +97,13 @@ func (e *eng) buildView() *View {
 		v.Prompt = "The game is a draw"
 	case d.Turns[d.Turn-1] == 0:
 		v.Prompt = seatLabel(d.Turn) + ": lay your first stone anywhere"
+		v.Impulse = "Choose where to lay your first stone."
 	case d.Turns[d.Turn-1] == 1:
 		v.Prompt = seatLabel(d.Turn) + ": lay a stone your first can see, not touching it"
+		v.Impulse = "Choose where to lay a stone your first can see, not touching it."
 	default:
 		v.Prompt = seatLabel(d.Turn) + ": lay a stone one of yours can see"
+		v.Impulse = "Choose where to lay a stone one of yours can see."
 	}
 	return v
 }

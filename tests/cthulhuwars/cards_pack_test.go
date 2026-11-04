@@ -136,7 +136,7 @@ func TestEveryKindOfBotPlaysWithEveryPack(t *testing.T) {
 			if res.GameEnded {
 				break
 			}
-			st, seat = res.NewState, res.NextTurnSeat
+			st, seat = res.NewState, res.NextImpulseSeat
 		}
 	}
 }

@@ -101,8 +101,8 @@ func TestWSDisconnect_ClosingOneConnection_OtherStillReceivesMoveEvent(t *testin
 	if data.From != "2,0" || data.To != "1,0" {
 		t.Errorf("connB data.from/to = %q/%q, want 2,0/1,0", data.From, data.To)
 	}
-	if data.TurnSeat == nil || *data.TurnSeat != 2 {
-		t.Errorf("connB data.turn_seat = %v, want 2 (Bob/white's turn next)", data.TurnSeat)
+	if data.ImpulseSeat == nil || *data.ImpulseSeat != 2 {
+		t.Errorf("connB data.impulse_seat = %v, want 2 (Bob/white's turn next)", data.ImpulseSeat)
 	}
 	if data.Status != "active" {
 		t.Errorf("connB data.status = %q, want %q", data.Status, "active")
@@ -138,8 +138,8 @@ func TestWSDisconnect_ClosingOneConnection_StateUnaffected(t *testing.T) {
 	if state.MoveSeq != 1 {
 		t.Errorf("state.move_seq = %d, want 1", state.MoveSeq)
 	}
-	if state.TurnSeat == nil || *state.TurnSeat != 2 {
-		t.Errorf("state.turn_seat = %v, want 2", state.TurnSeat)
+	if state.ImpulseSeat == nil || *state.ImpulseSeat != 2 {
+		t.Errorf("state.impulse_seat = %v, want 2", state.ImpulseSeat)
 	}
 	if state.Status != "active" {
 		t.Errorf("state.status = %q, want %q", state.Status, "active")

@@ -17,12 +17,14 @@ var (
 
 // View is what clients draw beyond the pieces.
 type View struct {
-	Phase  string               `json:"phase"`
-	Stage  string               `json:"stage,omitempty"`
-	ToMove int                  `json:"to_move,omitempty"`
-	Prompt string               `json:"prompt"`
-	Tints  map[string]string    `json:"tints,omitempty"`
-	Seats  map[string]*SeatView `json:"seats"`
+	Phase       string `json:"phase"`
+	Stage       string `json:"stage,omitempty"`
+	ImpulseSeat int    `json:"impulse_seat,omitempty"`
+	Prompt      string `json:"prompt"`
+	// Impulse is what the seat on impulse is asked to choose, without its name.
+	Impulse string               `json:"impulse,omitempty"`
+	Tints   map[string]string    `json:"tints,omitempty"`
+	Seats   map[string]*SeatView `json:"seats"`
 }
 
 // SeatView is one player's scoreboard.
@@ -61,7 +63,7 @@ func (rs *Ruleset) Determinize(game *catalog.CompiledGame, st *state.BoardState,
 
 func (e *eng) buildView() *View {
 	d := e.d
-	v := &View{Phase: "play", Stage: d.Stage, ToMove: d.Turn, Tints: map[string]string{}, Seats: map[string]*SeatView{}}
+	v := &View{Phase: "play", Stage: d.Stage, ImpulseSeat: d.Turn, Tints: map[string]string{}, Seats: map[string]*SeatView{}}
 	for _, c := range d.Last {
 		v.Tints[c] = "last"
 	}
@@ -87,12 +89,16 @@ func (e *eng) buildView() *View {
 		v.Prompt = "The game is drawn"
 	case d.Stage == stageSetup:
 		v.Prompt = fmt.Sprintf("%s: place a ring on any empty point", seatLabel(d.Turn))
+		v.Impulse = "Choose an empty point for a ring."
 	case d.Stage == stageRow:
 		v.Prompt = fmt.Sprintf("%s: choose a row of five to remove (its two end markers)", seatLabel(d.Turn))
+		v.Impulse = "Choose a row of five to remove."
 	case d.Stage == stageRing:
 		v.Prompt = fmt.Sprintf("%s: choose one of your rings to remove", seatLabel(d.Turn))
+		v.Impulse = "Choose one of your rings to remove."
 	default:
 		v.Prompt = fmt.Sprintf("%s: choose a ring, then the point it moves to (a marker stays behind)", seatLabel(d.Turn))
+		v.Impulse = "Choose a ring, then the point it moves to."
 	}
 	pool := e.supply() - e.markersOnBoard()
 	for s := 1; s <= 2; s++ {

@@ -2,7 +2,7 @@
 id: fist
 name: Fist
 description: 'A two-player abstract strategy game from The Verdigris Pawn: a challenger with a mage, an ace and a few guards against a king with an army, and one neutral pawn either side may seize.'
-version: 0.1.1
+version: 0.1.2
 designers: [James Ernest]
 publisher: Crab Fragment Games
 engine: ruleset

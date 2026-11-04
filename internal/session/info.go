@@ -190,6 +190,8 @@ type ActionDTO struct {
 	// "requirement".
 	Hint   string `json:"hint,omitempty"`
 	Source string `json:"source,omitempty"`
+	// Impulse is what the player is asked next, once they have chosen this action.
+	Impulse string `json:"impulse,omitempty"`
 }
 
 // OpeningDTO describes the opening phase.
@@ -421,7 +423,7 @@ func buildGameInfo(cg *catalog.CompiledGame) GameInfo {
 		info.Params = def.Params
 		info.NotationDoc = ri.NotationHelp
 		for _, a := range ri.Actions {
-			info.Actions = append(info.Actions, ActionDTO{ID: a.ID, Type: "ruleset", Label: a.Label, Hint: a.Hint, Source: a.Source})
+			info.Actions = append(info.Actions, ActionDTO{ID: a.ID, Type: "ruleset", Label: a.Label, Hint: a.Hint, Source: a.Source, Impulse: a.Impulse})
 		}
 	}
 

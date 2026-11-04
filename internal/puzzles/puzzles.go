@@ -13,8 +13,8 @@ type Puzzle struct {
 	ID        string `json:"id"`
 	GameDefID string `json:"game_def_id"`
 	Title     string `json:"title"`
-	// ToMove is the seat that has the forced win.
-	ToMove int `json:"to_move"`
+	// ImpulseSeat is the seat that has the forced win.
+	ImpulseSeat int `json:"impulse_seat"`
 	// WinIn is the number of the solver's own moves it takes (1 = mate in
 	// one), Plies the total plies including the defender's replies.
 	WinIn int `json:"win_in"`

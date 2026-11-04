@@ -154,8 +154,8 @@ func TestApplyMove_LegalMove_EmptyDestination(t *testing.T) {
 	if result.Captured != nil {
 		t.Errorf("result.Captured = %v, want nil", *result.Captured)
 	}
-	if result.NextTurnSeat != 2 {
-		t.Errorf("result.NextTurnSeat = %d, want 2", result.NextTurnSeat)
+	if result.NextImpulseSeat != 2 {
+		t.Errorf("result.NextImpulseSeat = %d, want 2", result.NextImpulseSeat)
 	}
 	if result.GameEnded {
 		t.Errorf("result.GameEnded = true, want false")
@@ -209,8 +209,8 @@ func TestApplyMove_LegalMove_Capture(t *testing.T) {
 	if *result.Captured != board.PositionID("1,0") {
 		t.Errorf("*result.Captured = %q, want %q", *result.Captured, "1,0")
 	}
-	if result.NextTurnSeat != 2 {
-		t.Errorf("result.NextTurnSeat = %d, want 2", result.NextTurnSeat)
+	if result.NextImpulseSeat != 2 {
+		t.Errorf("result.NextImpulseSeat = %d, want 2", result.NextImpulseSeat)
 	}
 }
 
@@ -229,8 +229,8 @@ func TestApplyMove_TurnOrder_WrapsAround(t *testing.T) {
 	if result == nil {
 		t.Fatalf("ApplyMove() result = nil, want non-nil")
 	}
-	if result.NextTurnSeat != 1 {
-		t.Errorf("result.NextTurnSeat = %d, want 1 (wrap-around from seat 2 back to seat 1)", result.NextTurnSeat)
+	if result.NextImpulseSeat != 1 {
+		t.Errorf("result.NextImpulseSeat = %d, want 1 (wrap-around from seat 2 back to seat 1)", result.NextImpulseSeat)
 	}
 }
 

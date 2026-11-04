@@ -17,12 +17,14 @@ var (
 
 // View is what clients draw beyond the pieces.
 type View struct {
-	Phase  string               `json:"phase"`
-	ToMove int                  `json:"to_move,omitempty"`
-	Prompt string               `json:"prompt"`
-	Tints  map[string]string    `json:"tints,omitempty"`
-	Walls  [][2]string          `json:"walls,omitempty"`
-	Seats  map[string]*SeatView `json:"seats"`
+	Phase       string `json:"phase"`
+	ImpulseSeat int    `json:"impulse_seat,omitempty"`
+	Prompt      string `json:"prompt"`
+	// Impulse is what the seat on impulse is asked to choose, without its name.
+	Impulse string               `json:"impulse,omitempty"`
+	Tints   map[string]string    `json:"tints,omitempty"`
+	Walls   [][2]string          `json:"walls,omitempty"`
+	Seats   map[string]*SeatView `json:"seats"`
 }
 
 // SeatView is one player's scoreboard.
@@ -61,7 +63,7 @@ func (rs *Ruleset) Determinize(game *catalog.CompiledGame, st *state.BoardState,
 
 func (e *eng) buildView() *View {
 	d := e.d
-	v := &View{Phase: "play", ToMove: d.Turn, Tints: map[string]string{}, Walls: d.Walls, Seats: map[string]*SeatView{}}
+	v := &View{Phase: "play", ImpulseSeat: d.Turn, Tints: map[string]string{}, Walls: d.Walls, Seats: map[string]*SeatView{}}
 	for _, a := range e.areas() {
 		if a.count() != 1 {
 			continue
@@ -81,6 +83,7 @@ func (e *eng) buildView() *View {
 		v.Prompt = "The game is drawn"
 	default:
 		v.Prompt = fmt.Sprintf("%s: move a piece and build a fence, or add a piece", seatLabel(d.Turn))
+		v.Impulse = "Move a piece and build a fence, or add a piece."
 	}
 	t := e.territory()
 	for s := 1; s <= 2; s++ {

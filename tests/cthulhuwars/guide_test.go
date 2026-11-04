@@ -300,7 +300,7 @@ func playGuided(t testing.TB, g *catalog.CompiledGame, seed int64, maxPlies int)
 			s.rounds = data(t, res.NewState).Round
 			return s
 		}
-		st, seat = res.NewState, res.NextTurnSeat
+		st, seat = res.NewState, res.NextImpulseSeat
 		s.rounds = data(t, st).Round
 	}
 	return s

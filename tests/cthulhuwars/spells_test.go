@@ -110,7 +110,7 @@ func TestMadnessLetsCrawlingChaosChooseWhereTheEnemyRetreats(t *testing.T) {
 	if d.Stage != "retreat" {
 		t.Fatalf("stage %q:\n%s", d.Stage, state.RenderText(g, st))
 	}
-	seat, err := state.TurnAfter(g, st, 0)
+	seat, err := state.ImpulseAfter(g, st, 0)
 	if err != nil {
 		t.Fatal(err)
 	}

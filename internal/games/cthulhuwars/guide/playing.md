@@ -2,8 +2,8 @@
 
 ## Taking your turn
 
-When it is your turn the status bar says what is being asked ("Your turn — take an action", "Choose where Deep One
-retreats"…). Everything you can do is **highlighted**:
+The impulse card names the player whose impulse it is and says what they are asked to choose ("Choose an action.",
+"Choose an area to place a gate."…), whoever is looking. Everything you can do is **highlighted**:
 
 - **Buttons** in the move bar are actions (*Recruit*, *Build Gate*, *Summon*, *Awaken*, *Battle*…) or choices
   (*Done*, a spellbook, a faction). A button says what the action costs just now — *Build Gate (3)*, a unit's own

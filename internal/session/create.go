@@ -185,8 +185,8 @@ func resolveStart(compiled *catalog.CompiledGame, opts CreateOptions) (*state.Bo
 // firstSeatOf is the seat that moves first in game: the one a custom start
 // position names, else the definition's first seat.
 func firstSeatOf(compiled *catalog.CompiledGame, game store.Game) int {
-	if game.InitialTurnSeat > 0 {
-		return game.InitialTurnSeat
+	if game.InitialImpulseSeat > 0 {
+		return game.InitialImpulseSeat
 	}
 	return state.FirstSeat(compiled)
 }

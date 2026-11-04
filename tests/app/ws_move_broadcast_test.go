@@ -13,22 +13,22 @@ import (
 // Manager.MakeMove to publish as a "move" event's Data payload — NOT the raw
 // (untagged) session.MoveOutcome, and NOT its BoardState field verbatim (a
 // JSON-text string, which would arrive double-encoded): "seq", "seat",
-// "color", "from", "to", "captured", "turn_seat" (nullable — nil when the
+// "color", "from", "to", "captured", "impulse_seat" (nullable — nil when the
 // move ended the game), "game_ended", "winner_seat", "status", and
 // "board_state" decoded as json.RawMessage so the test can assert it's a
 // nested JSON object, not an escaped string.
 type wsMoveData struct {
-	Seq        int             `json:"seq"`
-	Seat       int             `json:"seat"`
-	Color      string          `json:"color"`
-	From       string          `json:"from"`
-	To         string          `json:"to"`
-	Captured   *string         `json:"captured"`
-	TurnSeat   *int            `json:"turn_seat"`
-	GameEnded  bool            `json:"game_ended"`
-	WinnerSeat *int            `json:"winner_seat"`
-	Status     string          `json:"status"`
-	BoardState json.RawMessage `json:"board_state"`
+	Seq         int             `json:"seq"`
+	Seat        int             `json:"seat"`
+	Color       string          `json:"color"`
+	From        string          `json:"from"`
+	To          string          `json:"to"`
+	Captured    *string         `json:"captured"`
+	ImpulseSeat *int            `json:"impulse_seat"`
+	GameEnded   bool            `json:"game_ended"`
+	WinnerSeat  *int            `json:"winner_seat"`
+	Status      string          `json:"status"`
+	BoardState  json.RawMessage `json:"board_state"`
 }
 
 // dialSpectator dials /ws/{code} as a spectator named name, fails the test
@@ -60,7 +60,7 @@ func dialSpectator(t *testing.T, baseURL, roomCode, name string) *websocket.Conn
 // non-capturing move — must be observed as a "move" event on that SAME,
 // STILL-OPEN connection, without the test ever re-polling REST. The event's
 // data must carry seq==1, the submitted seat/color/from/to, captured==null
-// (this move captures nothing), turn_seat reflecting the new turn (seat 2,
+// (this move captures nothing), impulse_seat reflecting the new turn (seat 2,
 // Bob/white, since Alice/black just moved), status=="active",
 // game_ended==false, and board_state decoded as a nested JSON object (not
 // an escaped string) reflecting the move (occupant moved from "2,0" to
@@ -112,8 +112,8 @@ func TestWSMoveBroadcast_RESTMoveObservedOnOpenWebSocket(t *testing.T) {
 	if data.Captured != nil {
 		t.Errorf("data.captured = %v, want nil (JSON null; nothing was at 1,0)", *data.Captured)
 	}
-	if data.TurnSeat == nil || *data.TurnSeat != 2 {
-		t.Errorf("data.turn_seat = %v, want 2 (Bob/white's turn next)", data.TurnSeat)
+	if data.ImpulseSeat == nil || *data.ImpulseSeat != 2 {
+		t.Errorf("data.impulse_seat = %v, want 2 (Bob/white's turn next)", data.ImpulseSeat)
 	}
 	if data.GameEnded {
 		t.Errorf("data.game_ended = %v, want false", data.GameEnded)

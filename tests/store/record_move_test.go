@@ -44,7 +44,7 @@ func intPtr(i int) *int       { return &i }
 // -----------------------------------------------------------------------
 // 1: the AC itself -- RecordMove on a freshly created game (move_seq=0)
 // produces seq=1, a Move whose fields match the input, and a GetGame that
-// reflects the new board_state/move_seq/turn_seat.
+// reflects the new board_state/move_seq/impulse_seat.
 // -----------------------------------------------------------------------
 
 func TestRecordMove_FirstMoveGetsSeqOneAndUpdatesGame(t *testing.T) {
@@ -66,7 +66,7 @@ func TestRecordMove_FirstMoveGetsSeqOneAndUpdatesGame(t *testing.T) {
 		To:                  "0,1",
 		Captured:            nil,
 		ResultingBoardState: `{"positions":["0,1"]}`,
-		NextTurnSeat:        2,
+		NextImpulseSeat:     2,
 		GameEnded:           false,
 		WinnerSeat:          nil,
 	}
@@ -117,8 +117,8 @@ func TestRecordMove_FirstMoveGetsSeqOneAndUpdatesGame(t *testing.T) {
 	if got.MoveSeq != 1 {
 		t.Errorf("after RecordMove, GetGame.MoveSeq = %d, want 1", got.MoveSeq)
 	}
-	if got.TurnSeat == nil || *got.TurnSeat != in.NextTurnSeat {
-		t.Errorf("after RecordMove, GetGame.TurnSeat = %v, want pointer to %d", got.TurnSeat, in.NextTurnSeat)
+	if got.ImpulseSeat == nil || *got.ImpulseSeat != in.NextImpulseSeat {
+		t.Errorf("after RecordMove, GetGame.ImpulseSeat = %v, want pointer to %d", got.ImpulseSeat, in.NextImpulseSeat)
 	}
 }
 
@@ -142,7 +142,7 @@ func TestRecordMove_SecondMoveGetsSeqTwoAndUpdatesGameAgain(t *testing.T) {
 		From:                "0,0",
 		To:                  "0,1",
 		ResultingBoardState: `{"positions":["0,1"]}`,
-		NextTurnSeat:        2,
+		NextImpulseSeat:     2,
 	}
 	if _, err := s.RecordMove(ctx, game.ID, first); err != nil {
 		t.Fatalf("first RecordMove returned error: %v, want nil", err)
@@ -154,7 +154,7 @@ func TestRecordMove_SecondMoveGetsSeqTwoAndUpdatesGameAgain(t *testing.T) {
 		From:                "7,7",
 		To:                  "7,6",
 		ResultingBoardState: `{"positions":["0,1","7,6"]}`,
-		NextTurnSeat:        1,
+		NextImpulseSeat:     1,
 	}
 	move2, err := s.RecordMove(ctx, game.ID, second)
 	if err != nil {
@@ -175,8 +175,8 @@ func TestRecordMove_SecondMoveGetsSeqTwoAndUpdatesGameAgain(t *testing.T) {
 	if got.BoardState != second.ResultingBoardState {
 		t.Errorf("after second RecordMove, GetGame.BoardState = %q, want %q (the newest state)", got.BoardState, second.ResultingBoardState)
 	}
-	if got.TurnSeat == nil || *got.TurnSeat != second.NextTurnSeat {
-		t.Errorf("after second RecordMove, GetGame.TurnSeat = %v, want pointer to %d", got.TurnSeat, second.NextTurnSeat)
+	if got.ImpulseSeat == nil || *got.ImpulseSeat != second.NextImpulseSeat {
+		t.Errorf("after second RecordMove, GetGame.ImpulseSeat = %v, want pointer to %d", got.ImpulseSeat, second.NextImpulseSeat)
 	}
 }
 
@@ -196,13 +196,13 @@ func TestRecordMove_TwoCallsInsertExactlyTwoMovesRowsInOrder(t *testing.T) {
 
 	if _, err := s.RecordMove(ctx, game.ID, store.MoveInput{
 		Seat: 1, Color: "black", From: "0,0", To: "0,1",
-		ResultingBoardState: `{"positions":["0,1"]}`, NextTurnSeat: 2,
+		ResultingBoardState: `{"positions":["0,1"]}`, NextImpulseSeat: 2,
 	}); err != nil {
 		t.Fatalf("first RecordMove returned error: %v, want nil", err)
 	}
 	if _, err := s.RecordMove(ctx, game.ID, store.MoveInput{
 		Seat: 2, Color: "white", From: "7,7", To: "7,6",
-		ResultingBoardState: `{"positions":["0,1","7,6"]}`, NextTurnSeat: 1,
+		ResultingBoardState: `{"positions":["0,1","7,6"]}`, NextImpulseSeat: 1,
 	}); err != nil {
 		t.Fatalf("second RecordMove returned error: %v, want nil", err)
 	}
@@ -256,7 +256,7 @@ func TestRecordMove_CapturedPositionStoredWhenNonNil(t *testing.T) {
 		To:                  "0,2",
 		Captured:            strPtr("0,1"),
 		ResultingBoardState: `{"positions":["0,2"]}`,
-		NextTurnSeat:        2,
+		NextImpulseSeat:     2,
 	}
 
 	move, err := s.RecordMove(ctx, game.ID, in)
@@ -293,7 +293,7 @@ func TestRecordMove_CapturedPositionLeftNullWhenNil(t *testing.T) {
 		To:                  "0,1",
 		Captured:            nil,
 		ResultingBoardState: `{"positions":["0,1"]}`,
-		NextTurnSeat:        2,
+		NextImpulseSeat:     2,
 	}
 
 	move, err := s.RecordMove(ctx, game.ID, in)
@@ -315,11 +315,11 @@ func TestRecordMove_CapturedPositionLeftNullWhenNil(t *testing.T) {
 }
 
 // -----------------------------------------------------------------------
-// 5: game-ended path -- GameEnded:true sets turn_seat NULL, status
+// 5: game-ended path -- GameEnded:true sets impulse_seat NULL, status
 // "finished", and winner_seat to WinnerSeat.
 // -----------------------------------------------------------------------
 
-func TestRecordMove_GameEndedSetsTurnSeatNilStatusFinishedAndWinner(t *testing.T) {
+func TestRecordMove_GameEndedSetsImpulseSeatNilStatusFinishedAndWinner(t *testing.T) {
 	s := newRecordMoveTestStore(t)
 	ctx := t.Context()
 
@@ -334,7 +334,7 @@ func TestRecordMove_GameEndedSetsTurnSeatNilStatusFinishedAndWinner(t *testing.T
 		From:                "0,0",
 		To:                  "0,1",
 		ResultingBoardState: `{"positions":["0,1"],"finished":true}`,
-		NextTurnSeat:        2, // must be ignored since GameEnded is true
+		NextImpulseSeat:     2, // must be ignored since GameEnded is true
 		GameEnded:           true,
 		WinnerSeat:          intPtr(1),
 	}
@@ -347,8 +347,8 @@ func TestRecordMove_GameEndedSetsTurnSeatNilStatusFinishedAndWinner(t *testing.T
 	if err != nil {
 		t.Fatalf("GetGame(ROOM06) returned error: %v, want nil", err)
 	}
-	if got.TurnSeat != nil {
-		t.Errorf("after game-ending RecordMove, GetGame.TurnSeat = %v, want nil", got.TurnSeat)
+	if got.ImpulseSeat != nil {
+		t.Errorf("after game-ending RecordMove, GetGame.ImpulseSeat = %v, want nil", got.ImpulseSeat)
 	}
 	if got.Status != "finished" {
 		t.Errorf("after game-ending RecordMove, GetGame.Status = %q, want %q", got.Status, "finished")
@@ -383,7 +383,7 @@ func TestRecordMove_UnknownGameIDReturnsErrNotFoundAndInsertsNothing(t *testing.
 	}
 	if _, err := s.RecordMove(ctx, game.ID, store.MoveInput{
 		Seat: 1, Color: "black", From: "0,0", To: "0,1",
-		ResultingBoardState: `{"positions":["0,1"]}`, NextTurnSeat: 2,
+		ResultingBoardState: `{"positions":["0,1"]}`, NextImpulseSeat: 2,
 	}); err != nil {
 		t.Fatalf("seeding RecordMove returned error: %v, want nil", err)
 	}
@@ -393,7 +393,7 @@ func TestRecordMove_UnknownGameIDReturnsErrNotFoundAndInsertsNothing(t *testing.
 	const nonExistentGameID = int64(999999999)
 	_, err = s.RecordMove(ctx, nonExistentGameID, store.MoveInput{
 		Seat: 1, Color: "black", From: "0,0", To: "0,1",
-		ResultingBoardState: `{"positions":["0,1"]}`, NextTurnSeat: 2,
+		ResultingBoardState: `{"positions":["0,1"]}`, NextImpulseSeat: 2,
 	})
 	if err == nil {
 		t.Fatal("RecordMove against a non-existent game_id returned nil error, want ErrNotFound")
@@ -436,14 +436,14 @@ func TestRecordMove_SeqNumberingIsPerGameNotGlobal(t *testing.T) {
 	// gameB's first move would come back as seq 2, not 1.
 	if _, err := s.RecordMove(ctx, gameA.ID, store.MoveInput{
 		Seat: 1, Color: "black", From: "0,0", To: "0,1",
-		ResultingBoardState: `{"positions":["0,1"]}`, NextTurnSeat: 2,
+		ResultingBoardState: `{"positions":["0,1"]}`, NextImpulseSeat: 2,
 	}); err != nil {
 		t.Fatalf("RecordMove(gameA) returned error: %v, want nil", err)
 	}
 
 	moveB, err := s.RecordMove(ctx, gameB.ID, store.MoveInput{
 		Seat: 1, Color: "black", From: "7,7", To: "7,6",
-		ResultingBoardState: `{"positions":["7,6"]}`, NextTurnSeat: 2,
+		ResultingBoardState: `{"positions":["7,6"]}`, NextImpulseSeat: 2,
 	})
 	if err != nil {
 		t.Fatalf("RecordMove(gameB) returned error: %v, want nil", err)
@@ -473,7 +473,7 @@ func TestRecordMove_SwapSeatsExchangesThePlayers(t *testing.T) {
 	}
 
 	if _, err := s.RecordMove(ctx, game.ID, store.MoveInput{
-		Seat: 1, Color: "white", To: "c3", ResultingBoardState: `{"one":1}`, NextTurnSeat: 2, SwapSeats: true,
+		Seat: 1, Color: "white", To: "c3", ResultingBoardState: `{"one":1}`, NextImpulseSeat: 2, SwapSeats: true,
 	}); err != nil {
 		t.Fatalf("RecordMove with SwapSeats: %v", err)
 	}

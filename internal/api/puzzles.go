@@ -13,21 +13,21 @@ import (
 // puzzleDTO is a puzzle as the API lists it. The solution is withheld unless
 // asked for, so a client can show a puzzle without spoiling it.
 type puzzleDTO struct {
-	ID         string          `json:"id"`
-	GameDefID  string          `json:"game_def_id"`
-	Title      string          `json:"title"`
-	ToMove     int             `json:"to_move"`
-	WinIn      int             `json:"win_in"`
-	Plies      int             `json:"plies"`
-	TPS        string          `json:"tps,omitempty"`
-	State      json.RawMessage `json:"state"`
-	FirstMoves []string        `json:"first_moves,omitempty"`
-	Solution   []string        `json:"solution,omitempty"`
+	ID          string          `json:"id"`
+	GameDefID   string          `json:"game_def_id"`
+	Title       string          `json:"title"`
+	ImpulseSeat int             `json:"impulse_seat"`
+	WinIn       int             `json:"win_in"`
+	Plies       int             `json:"plies"`
+	TPS         string          `json:"tps,omitempty"`
+	State       json.RawMessage `json:"state"`
+	FirstMoves  []string        `json:"first_moves,omitempty"`
+	Solution    []string        `json:"solution,omitempty"`
 }
 
 func puzzleToDTO(p puzzles.Puzzle, reveal bool) puzzleDTO {
 	d := puzzleDTO{
-		ID: p.ID, GameDefID: p.GameDefID, Title: p.Title, ToMove: p.ToMove,
+		ID: p.ID, GameDefID: p.GameDefID, Title: p.Title, ImpulseSeat: p.ImpulseSeat,
 		WinIn: p.WinIn, Plies: p.Plies, TPS: p.TPS, State: p.State,
 	}
 	if reveal {

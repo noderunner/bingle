@@ -23,7 +23,7 @@ type mcpMoveResult struct {
 }
 
 // mcpMakeMoveResult mirrors make_move's full result shape from docs/history/plan.md
-// section 6.10: {"move": {...}, "state": {"board_state","turn_seat","status",
+// section 6.10: {"move": {...}, "state": {"board_state","impulse_seat","status",
 // "move_seq"}} — the MCP equivalent of REST's makeMoveResponse
 // (rest_make_move_test.go).
 type mcpMakeMoveResult struct {
@@ -37,7 +37,7 @@ type mcpMakeMoveResult struct {
 // room (initial "joined" event already consumed), Alice (holding seat 1, on
 // seat 1's turn) calls the make_move MCP tool with a legal, non-capturing
 // move. The tool result must show move.seq==1, the submitted seat/color/
-// from/to, captured==nil, state.turn_seat==2, and state.status=="active".
+// from/to, captured==nil, state.impulse_seat==2, and state.status=="active".
 // THEN — without the test re-polling REST — the NEXT message read off the
 // SAME, STILL-OPEN WebSocket connection (bounded by wsReadTimeout via
 // readFirstEvent, so a genuine failure here reports cleanly rather than
@@ -83,8 +83,8 @@ func TestMCPMakeMove_LegalMove_BroadcastsToOpenSpectatorWebSocket(t *testing.T) 
 	if result.Move.Captured != nil {
 		t.Errorf("move.captured = %v, want nil (JSON null; nothing was at 1,0)", *result.Move.Captured)
 	}
-	if result.State.TurnSeat == nil || *result.State.TurnSeat != 2 {
-		t.Errorf("state.turn_seat = %v, want 2 (Bob/white's turn next)", result.State.TurnSeat)
+	if result.State.ImpulseSeat == nil || *result.State.ImpulseSeat != 2 {
+		t.Errorf("state.impulse_seat = %v, want 2 (Bob/white's turn next)", result.State.ImpulseSeat)
 	}
 	if result.State.Status != "active" {
 		t.Errorf("state.status = %q, want %q", result.State.Status, "active")
@@ -124,8 +124,8 @@ func TestMCPMakeMove_LegalMove_BroadcastsToOpenSpectatorWebSocket(t *testing.T) 
 	if data.Captured != nil {
 		t.Errorf("ws data.captured = %v, want nil", *data.Captured)
 	}
-	if data.TurnSeat == nil || *data.TurnSeat != 2 {
-		t.Errorf("ws data.turn_seat = %v, want 2", data.TurnSeat)
+	if data.ImpulseSeat == nil || *data.ImpulseSeat != 2 {
+		t.Errorf("ws data.impulse_seat = %v, want 2", data.ImpulseSeat)
 	}
 	if data.Status != "active" {
 		t.Errorf("ws data.status = %q, want %q", data.Status, "active")
@@ -148,7 +148,7 @@ func TestMCPMakeMove_LegalMove_BroadcastsToOpenSpectatorWebSocket(t *testing.T) 
 // edge case, mirroring TestPostMove_WrongTurn_Returns403AndStateUnchanged:
 // after the game is active (Alice seat 1/black holds the first turn), Bob
 // (seat 2/white) attempting a move must be a tool-level error (session's
-// ErrNotYourTurn), not a transport failure and not a successful move.
+// ErrNotYourImpulse), not a transport failure and not a successful move.
 func TestMCPMakeMove_WrongTurn_IsToolLevelError(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	roomCode := setupActiveGame(t, baseURL) // Alice seat 1/black holds the first turn
@@ -173,8 +173,8 @@ func TestMCPMakeMove_WrongTurn_IsToolLevelError(t *testing.T) {
 	if after.MoveSeq != 0 {
 		t.Errorf("move_seq after rejected out-of-turn move = %d, want 0 (unchanged)", after.MoveSeq)
 	}
-	if after.TurnSeat == nil || *after.TurnSeat != 1 {
-		t.Errorf("turn_seat after rejected out-of-turn move = %v, want 1 (unchanged)", after.TurnSeat)
+	if after.ImpulseSeat == nil || *after.ImpulseSeat != 1 {
+		t.Errorf("impulse_seat after rejected out-of-turn move = %v, want 1 (unchanged)", after.ImpulseSeat)
 	}
 }
 

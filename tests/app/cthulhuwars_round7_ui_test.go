@@ -40,8 +40,8 @@ func TestWebCthulhuWars_ActionButtonsShowTheirCostAndTheirRuleOnHover(t *testing
 	waitJS(t, ctx, "the buttons", `document.getElementById("action-gate") !== null`, 15*time.Second)
 
 	// The words above the buttons on a normal turn.
-	if got := evalString(t, ctx, `document.getElementById("move-hint").textContent`); got != "Click a unit on the map to move, or choose an action:" {
-		t.Errorf("hint = %q", got)
+	if got := evalString(t, ctx, `document.getElementById("impulse-text").textContent`); got != "Choose an action." {
+		t.Errorf("impulse = %q", got)
 	}
 	// The Gate's button says what it costs, and no longer says "Create".
 	if got := evalString(t, ctx, `document.getElementById("action-gate").textContent`); got != "Build Gate (3)" {
@@ -160,8 +160,8 @@ func TestWebCthulhuWars_AwakeningByItsButtonLeadsToAHeadedSpellbookChoice(t *tes
 	clickCell(t, ctx, "south-pacific")
 	// Cthulhu's awakening meets a requirement: the spellbook to unlock.
 	waitJS(t, ctx, "the choice of a spellbook", `document.getElementById("action-book-absorb") !== null`, 15*time.Second)
-	if got := evalString(t, ctx, `document.getElementById("move-hint").textContent`); got != "Choose a spellbook to unlock:" {
-		t.Errorf("hint = %q", got)
+	if got := evalString(t, ctx, `document.getElementById("impulse-text").textContent`); !strings.Contains(got, "spellbook") {
+		t.Errorf("impulse = %q", got)
 	}
 	if n := evalInt(t, ctx, `document.querySelectorAll('#move-bar [data-action^="book-"]').length`); n != 6 {
 		t.Errorf("%d spellbook buttons, want 6", n)

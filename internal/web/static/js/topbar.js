@@ -5,7 +5,7 @@
 
 import { h, clear, toast, lastName, setLastName, rememberGame, setTurnBadge, store } from "./util.js";
 import { api, whoAmI } from "./api.js";
-import { gameDefs, loadRows, isFinished, yourTurn, sortRows, gameRow, openGameRow } from "./mygames.js";
+import { gameDefs, loadRows, isFinished, yourImpulse, sortRows, gameRow, openGameRow } from "./mygames.js";
 import { navigate, onLeave } from "./nav.js";
 import { voiceStatus, onVoiceChange, toggleMute, toggleDeafen, leaveVoice } from "./voice.js";
 import { gamesIcon, joinIcon, micIcon, helpIcon, profileIcon, messageIcon } from "./ui-icons.js";
@@ -129,7 +129,7 @@ export function installTopbar({ onRows = () => {}, manageTitle = true } = {}) {
 
 	const paint = () => {
 		const active = sortRows(rows.filter((r) => !isFinished(r)));
-		const waiting = active.filter(yourTurn).length;
+		const waiting = active.filter(yourImpulse).length;
 		badge.textContent = String(waiting);
 		badge.hidden = waiting === 0;
 		const label = waiting ? `Active games, ${waiting} waiting for you` : "Active games";

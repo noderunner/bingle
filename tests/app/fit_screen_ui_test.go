@@ -40,7 +40,7 @@ func fittedGame(t *testing.T, ctx context.Context, base, def string, w, h int64)
 		t.Fatal(err)
 	}
 	openGameAs(t, ctx, base, created.RoomCode, def, "Alice")
-	waitJS(t, ctx, "the stones", `document.querySelectorAll("#action-card #piece-buttons button").length === 2`, 15*time.Second)
+	waitJS(t, ctx, "the stones", `document.querySelectorAll("#impulse-card #piece-buttons button").length === 2`, 15*time.Second)
 }
 
 // At every size of window the page stays still: the board is all in view with the
@@ -111,8 +111,11 @@ func TestWebFitScreen_TheTurnBringsTheActionsIntoView(t *testing.T) {
 	openGameAs(t, ctx, base, room, "blooms", "Bob")
 
 	// Alice's turn: the card is there, quietly, and scrolls away with the others.
-	waitJS(t, ctx, "the idle card", `document.getElementById("action-idle") !== null`, 15*time.Second)
-	if evalBool(t, ctx, `document.getElementById("action-card").classList.contains("acting")`) {
+	waitJS(t, ctx, "the idle card", `document.getElementById("impulse-title") !== null && document.getElementById("impulse-title").textContent === "Alice"`, 15*time.Second)
+	if got := evalString(t, ctx, `document.getElementById("impulse-text").textContent`); got != "Choose a stone to place." {
+		t.Errorf("the other player's impulse says %q", got)
+	}
+	if evalBool(t, ctx, `document.getElementById("impulse-card").classList.contains("acting")`) {
 		t.Error("the actions are drawn out on the other player's turn")
 	}
 	evalBool(t, ctx, `(function () { var r = document.getElementById("play-rail"); r.scrollTop = r.scrollHeight - r.clientHeight - 60; document.getElementById("chat-input").focus(); return true; })()`)
@@ -120,7 +123,7 @@ func TestWebFitScreen_TheTurnBringsTheActionsIntoView(t *testing.T) {
 		t.Fatal("the cards should need scrolling in a window this small")
 	}
 	scrolled := evalString(t, ctx, `String(document.getElementById("play-rail").scrollTop)`)
-	if evalBool(t, ctx, `document.getElementById("action-card").getBoundingClientRect().bottom > document.getElementById("play-rail").getBoundingClientRect().top`) {
+	if evalBool(t, ctx, `document.getElementById("impulse-card").getBoundingClientRect().bottom > document.getElementById("play-rail").getBoundingClientRect().top`) {
 		t.Error("the idle card should have scrolled away")
 	}
 
@@ -136,12 +139,12 @@ func TestWebFitScreen_TheTurnBringsTheActionsIntoView(t *testing.T) {
 		t.Fatalf("move: %d", code)
 	}
 
-	waitJS(t, ctx, "the actions", `document.querySelector("#action-card.acting #piece-buttons button") !== null`, 15*time.Second)
+	waitJS(t, ctx, "the actions", `document.querySelector("#impulse-card.acting #piece-buttons button") !== null`, 15*time.Second)
 	// The history calls the player by the seat's name, in its colours.
 	waitJS(t, ctx, "the log", `/Warm places a/.test(document.getElementById("events").textContent) && document.querySelector("#events .seat-word") !== null`, 5*time.Second)
 	if !evalBool(t, ctx, `(function () {
 		var rail = document.getElementById("play-rail").getBoundingClientRect();
-		var card = document.getElementById("action-card").getBoundingClientRect();
+		var card = document.getElementById("impulse-card").getBoundingClientRect();
 		return card.top >= rail.top && card.bottom <= rail.bottom;
 	})()`) {
 		t.Error("the actions are not in view on the player's turn")
@@ -178,7 +181,7 @@ func TestWebFitScreen_TheTutorialIsBesideTheBoard(t *testing.T) {
 	}
 	waitJS(t, ctx, "the actions in view", `(function () {
 		var rail = document.getElementById("play-rail").getBoundingClientRect();
-		var card = document.getElementById("action-card").getBoundingClientRect();
+		var card = document.getElementById("impulse-card").getBoundingClientRect();
 		return document.getElementById("play-rail").scrollHeight > rail.height && card.top >= rail.top && card.bottom <= rail.bottom;
 	})()`, 5*time.Second)
 }
@@ -195,13 +198,13 @@ func TestWebFitScreen_EveryKindOfGameFits(t *testing.T) {
 		play   string // the play area
 		pinned string // what the player chooses from goes in the actions card
 	}{
-		{"tak-5x5", false, "#board svg", "#action-card .hand button"},
-		{"hive-base", false, "#board svg", "#action-card .hand button"},
-		{"onitama", false, "#board svg", "#action-card #cards-panel"},
-		{"go-9x9", false, "#board svg", "#action-card"},
-		{"nyet", false, ".card-table", "#action-card"},
-		{"spider", true, ".sol-table", "#action-card"},
-		{"cthulhu-wars", false, "#board svg", "#action-card .action-buttons"},
+		{"tak-5x5", false, "#board svg", "#impulse-card .hand button"},
+		{"hive-base", false, "#board svg", "#impulse-card .hand button"},
+		{"onitama", false, "#board svg", "#impulse-card #cards-panel"},
+		{"go-9x9", false, "#board svg", "#impulse-card"},
+		{"nyet", false, ".card-table", "#impulse-card"},
+		{"spider", true, ".sol-table", "#impulse-card"},
+		{"cthulhu-wars", false, "#board svg", "#impulse-card .action-buttons"},
 	} {
 		body := map[string]any{"game_def_id": g.def, "player_name": "Alice"}
 		if !g.solo {
@@ -260,7 +263,7 @@ func TestWebFitScreen_ColumnsStayPutAsHiveGrows(t *testing.T) {
 	for deadline := time.Now().Add(20 * time.Second); cfGet(t, base, created.RoomCode).MoveSeq < 2 && time.Now().Before(deadline); {
 		time.Sleep(200 * time.Millisecond)
 	}
-	waitJS(t, ctx, "the turn back", `document.querySelector("#action-card.acting") !== null`, 10*time.Second)
+	waitJS(t, ctx, "the turn back", `document.querySelector("#impulse-card.acting") !== null`, 10*time.Second)
 	if after := evalInt(t, ctx, left); after != before {
 		t.Errorf("the cards moved from %d to %d", before, after)
 	}
@@ -304,7 +307,7 @@ func TestWebFitScreen_TheCardsOfAMapTakeTurns(t *testing.T) {
 		t.Error("the cults should be behind their tab")
 	}
 	// The actions stay in view whichever tab is open.
-	if !visible("action-card") {
+	if !visible("impulse-card") {
 		t.Error("the actions went with the tab")
 	}
 	clickSel(t, ctx, "#rail-tab-cults")
@@ -341,7 +344,7 @@ func TestWebFitScreen_TheCardsSayWhatTheBarSaid(t *testing.T) {
 	if evalBool(t, ctx, `document.querySelector(".status-bar") !== null`) {
 		t.Error("the status bar is drawn during the game")
 	}
-	if got := evalString(t, ctx, `document.getElementById("move-hint").textContent`); got != "Choose a stone to place." {
+	if got := evalString(t, ctx, `document.getElementById("impulse-text").textContent`); got != "Choose a stone to place." {
 		t.Errorf("the first hint is %q", got)
 	}
 	if got := evalString(t, ctx, `[...document.querySelectorAll("#piece-buttons button")].map((b) => b.innerText.trim()).join()`); got != "Place,Place" {
@@ -362,11 +365,11 @@ func TestWebFitScreen_TheCardsSayWhatTheBarSaid(t *testing.T) {
 	waitJS(t, ctx, "the cells", `document.querySelector("#board .cell.clickable") !== null`, 10*time.Second)
 	evalBool(t, ctx, `(document.querySelector("#board .cell.clickable").dispatchEvent(new MouseEvent("click", {bubbles: true})), true)`)
 	// The turn comes back from the bot, and after a first stone the hint says what is left.
-	waitJS(t, ctx, "the stones", `document.querySelector("#action-card.acting #piece-buttons button") !== null`, 20*time.Second)
+	waitJS(t, ctx, "the stones", `document.querySelector("#impulse-card.acting #piece-buttons button") !== null`, 20*time.Second)
 	evalBool(t, ctx, `(document.querySelector('#piece-buttons button').click(), true)`)
 	waitJS(t, ctx, "the cells", `document.querySelector("#board .cell.clickable") !== null`, 10*time.Second)
 	evalBool(t, ctx, `(document.querySelector("#board .cell.clickable").dispatchEvent(new MouseEvent("click", {bubbles: true})), true)`)
-	waitJS(t, ctx, "the second stone", `document.getElementById("move-hint") && document.getElementById("move-hint").textContent === "Place or end."`, 10*time.Second)
+	waitJS(t, ctx, "the second stone", `document.getElementById("impulse-text") && document.getElementById("impulse-text").textContent === "Choose a second stone to place, or end your turn."`, 10*time.Second)
 	if got := evalString(t, ctx, `document.querySelector('#move-bar button[data-action="done"]').innerText.trim()`); got != "End" {
 		t.Errorf("the end of the turn says %q", got)
 	}
@@ -401,7 +404,7 @@ func TestWebFitScreen_TheBoardAndTheCardsShareTheWidth(t *testing.T) {
 		if w := evalInt(t, ctx, `Math.round(`+rect("#play-rail")+`.width)`); w > 640 {
 			t.Errorf("%s: the cards are %dpx wide", name, w)
 		}
-		if !evalBool(t, ctx, rect("#chat-card")+`.top >= `+rect("#action-card")+`.bottom`) {
+		if !evalBool(t, ctx, rect("#chat-card")+`.top >= `+rect("#impulse-card")+`.bottom`) {
 			t.Errorf("%s: the cards should stand in one column", name)
 		}
 		// What is left over is shared by the two sides of the page.
@@ -424,10 +427,10 @@ func TestWebFitScreen_TheActionCardSaysWhatTheBarSaid(t *testing.T) {
 	ctx, cancel := newChromedpContext(t, 90*time.Second)
 	defer cancel()
 	fittedGame(t, ctx, base, "blooms", 1280, 720)
-	inCard := func(id string) string { return `document.querySelector("#action-card #` + id + `") !== null` }
+	inCard := func(id string) string { return `document.querySelector("#impulse-card #` + id + `") !== null` }
 	title := func(want string) {
 		t.Helper()
-		if got := evalString(t, ctx, `document.querySelector("#action-card h3").textContent`); got != want {
+		if got := evalString(t, ctx, `document.querySelector("#impulse-card h3").textContent`); got != want {
 			t.Errorf("the card is called %q, not %q", got, want)
 		}
 		if evalBool(t, ctx, `document.querySelector(".status-bar") !== null`) {
@@ -436,17 +439,17 @@ func TestWebFitScreen_TheActionCardSaysWhatTheBarSaid(t *testing.T) {
 	}
 
 	// A move for the history to show, then the end of the game.
-	title("Your move")
+	title("Alice")
 	clickSel(t, ctx, `#piece-buttons button[data-piece="red"]`)
 	waitJS(t, ctx, "the cells", `document.querySelector("#board .cell.clickable") !== null`, 10*time.Second)
 	evalBool(t, ctx, `(document.querySelector("#board .cell.clickable").dispatchEvent(new MouseEvent("click", {bubbles: true})), true)`)
-	waitJS(t, ctx, "the turn back", `document.querySelector("#action-card.acting #piece-buttons button") !== null`, 20*time.Second)
+	waitJS(t, ctx, "the turn back", `document.querySelector("#impulse-card.acting #piece-buttons button") !== null`, 20*time.Second)
 	waitJS(t, ctx, "resign", `document.getElementById("resign") && !document.getElementById("resign").disabled`, 10*time.Second)
 	clickSel(t, ctx, "#resign")
 	clickSel(t, ctx, "#resign")
 	waitJS(t, ctx, "the rematch in the card", inCard("rematch"), 10*time.Second)
 	title("Game over")
-	if got := evalString(t, ctx, `document.querySelector("#action-card #status-message").textContent`); !strings.Contains(got, "won by resignation") {
+	if got := evalString(t, ctx, `document.querySelector("#impulse-card #status-message").textContent`); !strings.Contains(got, "won by resignation") {
 		t.Errorf("the result says %q", got)
 	}
 
@@ -456,7 +459,7 @@ func TestWebFitScreen_TheActionCardSaysWhatTheBarSaid(t *testing.T) {
 	clickSel(t, ctx, "#hist-first")
 	waitJS(t, ctx, "return to live in the card", inCard("return-live"), 10*time.Second)
 	title("History")
-	if got := evalString(t, ctx, `document.getElementById("action-card").innerText`); strings.Contains(got, "Browsing history") {
+	if got := evalString(t, ctx, `document.getElementById("impulse-card").innerText`); strings.Contains(got, "Browsing history") {
 		t.Errorf("the card says it twice: %q", got)
 	}
 

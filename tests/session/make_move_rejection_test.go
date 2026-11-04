@@ -164,12 +164,12 @@ func expectStateUnchanged(t *testing.T, before, after session.StateSnapshot) {
 		t.Errorf("GetState() BoardState after rejected MakeMove changed:\nbefore = %s\nafter  = %s", before.BoardState, after.BoardState)
 	}
 	switch {
-	case before.TurnSeat == nil && after.TurnSeat != nil:
-		t.Errorf("GetState() TurnSeat after rejected MakeMove = %v, want nil (unchanged)", *after.TurnSeat)
-	case before.TurnSeat != nil && after.TurnSeat == nil:
-		t.Errorf("GetState() TurnSeat after rejected MakeMove = nil, want unchanged %d", *before.TurnSeat)
-	case before.TurnSeat != nil && after.TurnSeat != nil && *before.TurnSeat != *after.TurnSeat:
-		t.Errorf("GetState() TurnSeat after rejected MakeMove = %d, want unchanged %d", *after.TurnSeat, *before.TurnSeat)
+	case before.ImpulseSeat == nil && after.ImpulseSeat != nil:
+		t.Errorf("GetState() ImpulseSeat after rejected MakeMove = %v, want nil (unchanged)", *after.ImpulseSeat)
+	case before.ImpulseSeat != nil && after.ImpulseSeat == nil:
+		t.Errorf("GetState() ImpulseSeat after rejected MakeMove = nil, want unchanged %d", *before.ImpulseSeat)
+	case before.ImpulseSeat != nil && after.ImpulseSeat != nil && *before.ImpulseSeat != *after.ImpulseSeat:
+		t.Errorf("GetState() ImpulseSeat after rejected MakeMove = %d, want unchanged %d", *after.ImpulseSeat, *before.ImpulseSeat)
 	}
 }
 
@@ -281,12 +281,12 @@ func TestMakeMove_RejectsWhenGameStatusFinished(t *testing.T) {
 	expectStateUnchanged(t, before, after)
 }
 
-// --- 3. ErrNotYourTurn, wrong seat's turn -----------------------------------
+// --- 3. ErrNotYourImpulse, wrong seat's turn -----------------------------------
 //
 // An active game where it's seat 1's turn (the default immediately after
 // activation, per section 6.4c). MakeMove called with seat 2's player name,
 // attempting an otherwise-legal move shape, must return
-// errors.Is(err, session.ErrNotYourTurn) and leave MoveSeq/TurnSeat/
+// errors.Is(err, session.ErrNotYourImpulse) and leave MoveSeq/ImpulseSeat/
 // BoardState unchanged.
 
 func TestMakeMove_RejectsWrongSeatsTurn(t *testing.T) {
@@ -309,8 +309,8 @@ func TestMakeMove_RejectsWrongSeatsTurn(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetState(%q, nil) error = %v, want nil", created.RoomCode, err)
 	}
-	if before.TurnSeat == nil || *before.TurnSeat != 1 {
-		t.Fatalf("GetState() TurnSeat = %v, want pointer to 1 (precondition for this test)", before.TurnSeat)
+	if before.ImpulseSeat == nil || *before.ImpulseSeat != 1 {
+		t.Fatalf("GetState() ImpulseSeat = %v, want pointer to 1 (precondition for this test)", before.ImpulseSeat)
 	}
 
 	// Bob (seat 2) attempts his own, otherwise-legal move while it's still
@@ -320,8 +320,8 @@ func TestMakeMove_RejectsWrongSeatsTurn(t *testing.T) {
 	if err == nil {
 		t.Fatalf("MakeMove() by the wrong seat's name error = nil, want non-nil")
 	}
-	if !errors.Is(err, session.ErrNotYourTurn) {
-		t.Errorf("MakeMove() by the wrong seat's name error = %v, want errors.Is(err, session.ErrNotYourTurn)", err)
+	if !errors.Is(err, session.ErrNotYourImpulse) {
+		t.Errorf("MakeMove() by the wrong seat's name error = %v, want errors.Is(err, session.ErrNotYourImpulse)", err)
 	}
 
 	after, err := mgr.GetState(ctx, created.RoomCode, nil)
@@ -329,8 +329,8 @@ func TestMakeMove_RejectsWrongSeatsTurn(t *testing.T) {
 		t.Fatalf("GetState(%q, nil) error = %v, want nil", created.RoomCode, err)
 	}
 	expectStateUnchanged(t, before, after)
-	if after.TurnSeat == nil || *after.TurnSeat != 1 {
-		t.Errorf("GetState() TurnSeat after rejected MakeMove = %v, want still pointer to 1", after.TurnSeat)
+	if after.ImpulseSeat == nil || *after.ImpulseSeat != 1 {
+		t.Errorf("GetState() ImpulseSeat after rejected MakeMove = %v, want still pointer to 1", after.ImpulseSeat)
 	}
 }
 

@@ -10,9 +10,11 @@ import (
 // View is what clients draw.
 type View struct {
 	// Solitaire names the game, and tells the page to draw this table.
-	Solitaire string `json:"solitaire"`
-	ToMove    int    `json:"to_move,omitempty"`
-	Prompt    string `json:"prompt"`
+	Solitaire   string `json:"solitaire"`
+	ImpulseSeat int    `json:"impulse_seat,omitempty"`
+	Prompt      string `json:"prompt"`
+	// Impulse is what the player is asked to choose.
+	Impulse string `json:"impulse,omitempty"`
 	// Hint says how to play on this table, under the prompt.
 	Hint string `json:"hint"`
 	// Table is every zone of cards, as far as the viewer may see it.
@@ -49,10 +51,10 @@ type FrameScore struct {
 
 func (e *eng) buildView(viewer int) *View {
 	v := &View{
-		Solitaire: e.d.Mode,
-		ToMove:    e.d.Turn,
-		Table:     e.d.Table.View(e.game.Cards, viewer),
-		Total:     len(e.game.Cards.Deck("main")),
+		Solitaire:   e.d.Mode,
+		ImpulseSeat: e.d.Turn,
+		Table:       e.d.Table.View(e.game.Cards, viewer),
+		Total:       len(e.game.Cards.Deck("main")),
 		PanelActions: []string{
 			"from-", "to-", "pin-", "ball-", moveDraw, moveRecycle, moveDeal,
 		},
@@ -61,6 +63,7 @@ func (e *eng) buildView(viewer int) *View {
 		v.Bowling = e.bowlingView()
 		v.Prompt = fmt.Sprintf("Frame %d, ball %d", e.d.Frame, e.d.Ball)
 		v.Hint = e.bowlingHint()
+		v.Impulse = v.Hint
 		return v
 	}
 	v.Columns = e.columns()
@@ -72,6 +75,7 @@ func (e *eng) buildView(viewer int) *View {
 	}
 	v.Prompt = fmt.Sprintf("%d of %d cards home", v.Home, v.Total)
 	v.Hint = "Click a card, then where it should go, or drag it."
+	v.Impulse = v.Hint
 	return v
 }
 

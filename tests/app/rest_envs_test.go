@@ -15,7 +15,7 @@ func TestRESTEnvironmentsRoundTrip(t *testing.T) {
 	}, &obs); code != 200 {
 		t.Fatalf("reset: %d", code)
 	}
-	if obs.EnvID == "" || !obs.YourTurn || obs.Planes == nil || len(obs.LegalActionIDs) != len(obs.LegalMoves) {
+	if obs.EnvID == "" || !obs.YourImpulse || obs.Planes == nil || len(obs.LegalActionIDs) != len(obs.LegalMoves) {
 		t.Fatalf("reset observation = %+v", obs)
 	}
 	id := obs.EnvID
@@ -118,7 +118,7 @@ func TestRESTMatchAndPuzzleEnvironments(t *testing.T) {
 	if code := doJSON(t, "POST", baseURL+"/api/envs", map[string]any{"puzzle_id": list[0].ID, "opponent": "tactical"}, &obs); code != 200 {
 		t.Fatalf("puzzle env: %d", code)
 	}
-	if obs.AgentSeat != list[0].ToMove || obs.Done || !obs.YourTurn {
+	if obs.AgentSeat != list[0].ImpulseSeat || obs.Done || !obs.YourImpulse {
 		t.Errorf("puzzle observation = %+v", obs)
 	}
 	var full puzzleResp

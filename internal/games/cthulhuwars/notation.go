@@ -1287,7 +1287,7 @@ func (rs *Ruleset) Describe(game *catalog.CompiledGame) state.RulesetInfo {
 	}
 	if st, err := rs.Start(game, 1); err == nil {
 		// The first decision may be another seat's (the Windwalker begins).
-		if moves := rs.Legal(game, st, rs.ToMove(game, st)); len(moves) > 0 {
+		if moves := rs.Legal(game, st, rs.ImpulseSeat(game, st)); len(moves) > 0 {
 			info.NotationHelp = append(info.NotationHelp, "Example of a legal first move: '"+rs.Format(game, moves[0])+"'.")
 		}
 	}
@@ -1523,6 +1523,29 @@ func (rs *Ruleset) Describe(game *catalog.CompiledGame) state.RulesetInfo {
 			add("book-"+b.ID, b.Name, b.Timing+"\n"+b.Text)
 		}
 	}
+	// What the player is asked once they have chosen the common actions.
+	for i := range info.Actions {
+		a := &info.Actions[i]
+		switch {
+		case a.ID == actRecruit:
+			a.Impulse = "Choose an area to recruit a Cultist."
+		case a.ID == "recruit-"+uHighPriest:
+			a.Impulse = "Choose an area to recruit a High Priest."
+		case a.ID == actGate:
+			a.Impulse = "Choose an area to place a gate."
+		case a.ID == actBattle:
+			a.Impulse = "Choose an area to battle in."
+		case a.ID == actCapture:
+			a.Impulse = "Choose an area to capture a Cultist in."
+		case a.ID == actControl:
+			a.Impulse = "Choose a unit to put on the Gate."
+		case strings.HasPrefix(a.ID, "summon-"):
+			a.Impulse = "Choose a Gate for the " + strings.TrimPrefix(a.Label, "Summon ") + "."
+		case strings.HasPrefix(a.ID, "awaken-"):
+			a.Impulse = "Choose an area to awaken " + strings.TrimPrefix(a.Label, "Awaken ") + "."
+		}
+	}
+
 	return info
 }
 

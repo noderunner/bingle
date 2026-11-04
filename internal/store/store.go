@@ -78,6 +78,11 @@ func Open(dbPath string) (*Store, error) {
 		return nil, fmt.Errorf("migrate sqlite schema: %w", err)
 	}
 
+	if err := renameColumns(db); err != nil {
+		_ = db.Close()
+		return nil, fmt.Errorf("migrate sqlite schema: %w", err)
+	}
+
 	if err := addMissingColumns(db); err != nil {
 		_ = db.Close()
 		return nil, fmt.Errorf("migrate sqlite schema: %w", err)
@@ -102,6 +107,31 @@ func Open(dbPath string) (*Store, error) {
 	}
 
 	return &Store{db: db, path: dbPath}, nil
+}
+
+// renamedColumns are the columns an older database has under another name: the
+// seat to act is the impulse seat (ADR 0099).
+var renamedColumns = []struct{ table, from, to string }{
+	{"games", "turn_seat", "impulse_seat"},
+	{"games", "initial_turn_seat", "initial_impulse_seat"},
+}
+
+// renameColumns brings the names of an older database up to date. It runs before
+// addMissingColumns, which would otherwise add a new column beside the old one.
+func renameColumns(db *sql.DB) error {
+	for _, c := range renamedColumns {
+		var old int
+		if err := db.QueryRow(`SELECT COUNT(*) FROM pragma_table_info(?) WHERE name = ?`, c.table, c.from).Scan(&old); err != nil {
+			return err
+		}
+		if old == 0 {
+			continue
+		}
+		if _, err := db.Exec(fmt.Sprintf("ALTER TABLE %s RENAME COLUMN %s TO %s", c.table, c.from, c.to)); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // pinPrototypes moves what was stored under the bare id of a game that became a
@@ -142,7 +172,7 @@ var columnMigrations = []struct{ table, column, ddl string }{
 	{"games", "draw_offer_seat", "INTEGER"},
 	{"games", "end_detail", "TEXT NOT NULL DEFAULT ''"},
 	{"games", "initial_state", "TEXT NOT NULL DEFAULT ''"},
-	{"games", "initial_turn_seat", "INTEGER NOT NULL DEFAULT 0"},
+	{"games", "initial_impulse_seat", "INTEGER NOT NULL DEFAULT 0"},
 	// takeback_seat, takeback_seq: unused since take-backs went (ADR 0083). They
 	// stay so that an older database opens as it did.
 	{"games", "takeback_seat", "INTEGER"},

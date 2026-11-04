@@ -8,10 +8,10 @@ import (
 
 // cfState is the slice of a Courtfall position the REST tests look at.
 type cfState struct {
-	TurnSeat *int   `json:"turn_seat"`
-	Status   string `json:"status"`
-	MoveSeq  int    `json:"move_seq"`
-	State    struct {
+	ImpulseSeat *int   `json:"impulse_seat"`
+	Status      string `json:"status"`
+	MoveSeq     int    `json:"move_seq"`
+	State       struct {
 		Cells map[string][]struct{ Piece, Color string } `json:"cells"`
 		Ext   struct {
 			Phase  string `json:"phase"`
@@ -239,8 +239,8 @@ func TestCourtfallAgainstABotPlaysThroughSetupAndTurns(t *testing.T) {
 		if st.Status == "finished" {
 			break
 		}
-		if st.TurnSeat == nil || *st.TurnSeat != 1 {
-			t.Fatalf("ply %d: the bot should have played until it is Alice's decision again, turn %v", i, st.TurnSeat)
+		if st.ImpulseSeat == nil || *st.ImpulseSeat != 1 {
+			t.Fatalf("ply %d: the bot should have played until it is Alice's decision again, turn %v", i, st.ImpulseSeat)
 		}
 		n := cfPlay(t, base, room, rng)
 		_ = n

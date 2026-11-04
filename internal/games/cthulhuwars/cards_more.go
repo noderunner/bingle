@@ -449,38 +449,38 @@ func (e *eng) cardPromptMoves(p Prompt) []state.Move {
 }
 
 // cardPromptText is what a "card" prompt asks.
-func (e *eng) cardPromptText(who string, p Prompt) string {
+func (e *eng) cardImpulse(p Prompt) string {
 	switch p.Why {
 	case "festival":
-		return fmt.Sprintf("%s: Festival — choose the enemy that gains 1 Power.", who)
+		return "Festival — choose the enemy that gains 1 Power."
 	case "demat-to":
-		return fmt.Sprintf("%s: Dematerialization — click the area your units go to.", who)
+		return "Dematerialization — click the area your units go to."
 	case "glacier":
-		return fmt.Sprintf("%s: click an area with a Glacier glyph for the next Glacier (%d left).", who, p.Left)
+		return fmt.Sprintf("Click an area with a Glacier glyph for the next Glacier (%d left).", p.Left)
 	case "horde":
-		return fmt.Sprintf("%s: Hordeling — place a Ghast at a Gate you control (%d left).", who, e.pool(p.Seat, uGhast))
+		return fmt.Sprintf("Hordeling — place a Ghast at a Gate you control (%d left).", e.pool(p.Seat, uGhast))
 	case "blood":
-		return fmt.Sprintf("%s: Bloodthirst — turn two Pains into a Kill on either side, or keep the results (%d left).", who, p.Left)
+		return fmt.Sprintf("Bloodthirst — turn two Pains into a Kill on either side, or keep the results (%d left).", p.Left)
 	case "ghost":
-		return fmt.Sprintf("%s: Ghosts of Ib — click an area without enemies for Bokrug to return to.", who)
+		return "Ghosts of Ib — click an area without enemies for Bokrug to return to."
 	case "sarnath":
-		return fmt.Sprintf("%s: Doom that Came to Sarnath — choose an enemy, and what it takes from you.", who)
+		return "Doom that Came to Sarnath — choose an enemy, and what it takes from you."
 	case "sarnath-pick":
-		return fmt.Sprintf("%s: Doom that Came to Sarnath — choose a Monster or Cultist of %s to eliminate.", who, e.seatName(p.By))
+		return fmt.Sprintf("Doom that Came to Sarnath — choose a Monster or Cultist of %s to eliminate.", e.seatName(p.By))
 	case "innsmouth":
-		return fmt.Sprintf("%s: The Innsmouth Look — click an area to remove an Acolyte from the game for 6 Power.", who)
+		return "The Innsmouth Look — click an area to remove an Acolyte from the game for 6 Power."
 	case "subvert":
-		return fmt.Sprintf("%s: Subversion — choose the player whose Ritual you will rob of an Elder Sign.", who)
+		return "Subversion — choose the player whose Ritual you will rob of an Elder Sign."
 	case "orifice":
-		return fmt.Sprintf("%s: Orifices — choose the surviving unit of %s that Y'Golonac replaces.", who, e.seatName(p.By))
+		return fmt.Sprintf("Orifices — choose the surviving unit of %s that Y'Golonac replaces.", e.seatName(p.By))
 	case "dust":
-		return fmt.Sprintf("%s: Dust to Dust — remove one of your lost units from the game, or give %s an Elder Sign.", who, e.seatName(p.By))
+		return fmt.Sprintf("Dust to Dust — remove one of your lost units from the game, or give %s an Elder Sign.", e.seatName(p.By))
 	case "planet":
-		return fmt.Sprintf("%s: Planetary Destruction — does %s earn 2 Power or 2 Doom?", who, e.seatName(p.By))
+		return fmt.Sprintf("Planetary Destruction — does %s earn 2 Power or 2 Doom?", e.seatName(p.By))
 	case "final":
-		return fmt.Sprintf("%s: The Final Ritual — perform a Ritual of Annihilation now?", who)
+		return "The Final Ritual — perform a Ritual of Annihilation now?"
 	}
-	return who + ": choose."
+	return "Choose."
 }
 
 // cardPromptAnswer applies an answer to the first prompt, a "card" one.

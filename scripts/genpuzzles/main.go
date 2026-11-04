@@ -196,7 +196,7 @@ func candidatesFromGame(game *catalog.CompiledGame, pl plan, seed int64) []candi
 			winner = res.WinnerSeat
 			break
 		}
-		st, seat = res.NewState, res.NextTurnSeat
+		st, seat = res.NewState, res.NextImpulseSeat
 		history = append(history, snap{st, seat})
 	}
 	if winner == nil {
@@ -232,12 +232,12 @@ func candidatesFromGame(game *catalog.CompiledGame, pl plan, seed int64) []candi
 		}
 		sum := sha1.Sum(append([]byte(game.Definition.ID+fmt.Sprint(pos.seat, depth)), doc...))
 		p := puzzles.Puzzle{
-			ID:        fmt.Sprintf("%s-w%d-%s", game.Definition.ID, (depth+1)/2, hex.EncodeToString(sum[:])[:6]),
-			GameDefID: game.Definition.ID,
-			ToMove:    pos.seat,
-			WinIn:     (depth + 1) / 2,
-			Plies:     depth,
-			State:     doc,
+			ID:          fmt.Sprintf("%s-w%d-%s", game.Definition.ID, (depth+1)/2, hex.EncodeToString(sum[:])[:6]),
+			GameDefID:   game.Definition.ID,
+			ImpulseSeat: pos.seat,
+			WinIn:       (depth + 1) / 2,
+			Plies:       depth,
+			State:       doc,
 		}
 		if sd, ok := game.Seat(pos.seat); ok {
 			who := sd.Label

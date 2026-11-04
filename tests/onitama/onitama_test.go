@@ -111,7 +111,7 @@ func TestRedStarts(t *testing.T) {
 	rs := onitama.New()
 	for seed := uint64(0); seed < 40; seed++ {
 		st, _ := rs.Start(g, seed)
-		if rs.ToMove(g, st) != 1 || len(rs.Legal(g, st, 1)) == 0 {
+		if rs.ImpulseSeat(g, st) != 1 || len(rs.Legal(g, st, 1)) == 0 {
 			t.Fatalf("seed %d: Red should start with moves", seed)
 		}
 	}
@@ -171,7 +171,7 @@ func TestCardsAreExchangedWithTheSide(t *testing.T) {
 	if nd.Side != "ox" || nd.Hands[0] != [2]string{"crab", "tiger"} {
 		t.Fatalf("after the move: hands %v side %s", nd.Hands, nd.Side)
 	}
-	if res.NextTurnSeat != 2 {
+	if res.NextImpulseSeat != 2 {
 		t.Error("then Blue moves")
 	}
 	if _, err := onitama.New().Apply(g, st, 2, state.Move{Action: "move", Piece: "ox", From: "c5", To: "c4"}); err == nil {
@@ -218,7 +218,7 @@ func TestPassWhenNothingCanMove(t *testing.T) {
 	}
 	st, res := play(t, g, st, 1, "tiger:pass")
 	nd := dataOfState(st)
-	if nd.Side != "tiger" || nd.Hands[0][0] != "crab" || res.NextTurnSeat != 2 {
+	if nd.Side != "tiger" || nd.Hands[0][0] != "crab" || res.NextImpulseSeat != 2 {
 		t.Errorf("a pass still exchanges the card: %+v", nd)
 	}
 }
@@ -230,7 +230,7 @@ func TestRandomGamesAreValidAndEnd(t *testing.T) {
 	ended := 0
 	for n := 0; n < 100; n++ {
 		st, _ := rs.Start(g, uint64(n+1))
-		seat := rs.ToMove(g, st)
+		seat := rs.ImpulseSeat(g, st)
 		for ply := 0; ply < 400; ply++ {
 			legal := rs.Legal(g, st, seat)
 			if len(legal) == 0 {
@@ -252,7 +252,7 @@ func TestRandomGamesAreValidAndEnd(t *testing.T) {
 			if err := state.Validate(g, res.NewState); err != nil {
 				t.Fatal(err)
 			}
-			st, seat = res.NewState, res.NextTurnSeat
+			st, seat = res.NewState, res.NextImpulseSeat
 			if res.GameEnded {
 				ended++
 				break

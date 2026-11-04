@@ -241,7 +241,7 @@ func startPlayer(game *catalog.CompiledGame, t Tutorial) (*player, error) {
 		p.seat = state.FirstSeat(game)
 	}
 	if rs, ok := state.RulesetOf(game); ok {
-		p.seat = rs.ToMove(game, st)
+		p.seat = rs.ImpulseSeat(game, st)
 	}
 	if p.seat == 0 {
 		return nil, fmt.Errorf("start: the position is already over")
@@ -268,7 +268,7 @@ func newPlayer(game *catalog.CompiledGame, seed uint64) (*player, error) {
 	}
 	p := &player{game: game, st: st, seat: state.FirstSeat(game)}
 	if rs, ok := state.RulesetOf(game); ok {
-		p.seat = rs.ToMove(game, st)
+		p.seat = rs.ImpulseSeat(game, st)
 	}
 	return p, nil
 }
@@ -303,9 +303,9 @@ func (p *player) play(text string, who int) error {
 	case res.GameEnded:
 		p.seat = 0
 	default:
-		p.seat = res.NextTurnSeat
+		p.seat = res.NextImpulseSeat
 		if rs, ok := state.RulesetOf(p.game); ok {
-			p.seat = rs.ToMove(p.game, p.st)
+			p.seat = rs.ImpulseSeat(p.game, p.st)
 		}
 	}
 	return nil

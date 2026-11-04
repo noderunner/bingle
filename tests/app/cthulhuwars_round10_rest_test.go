@@ -57,16 +57,16 @@ func TestNewTablesStartWithTheRightFirstPlayerChoosingTheDirection(t *testing.T)
 				joinRoom(t, baseURL, created.RoomCode, names[seat])
 			}
 			var st struct {
-				Status   string `json:"status"`
-				TurnSeat int    `json:"turn_seat"`
+				Status      string `json:"status"`
+				ImpulseSeat int    `json:"impulse_seat"`
 			}
 			doJSON(t, "GET", baseURL+"/api/games/"+created.RoomCode, nil, &st)
 			wantFirst := c.first
 			if c.setup != 0 {
 				wantFirst = c.setup
 			}
-			if st.Status != "active" || st.TurnSeat != wantFirst {
-				t.Fatalf("status %q, seat %d to move, want %d", st.Status, st.TurnSeat, wantFirst)
+			if st.Status != "active" || st.ImpulseSeat != wantFirst {
+				t.Fatalf("status %q, seat %d to move, want %d", st.Status, st.ImpulseSeat, wantFirst)
 			}
 			if c.setup != 0 {
 				var legal struct {
@@ -84,8 +84,8 @@ func TestNewTablesStartWithTheRightFirstPlayerChoosingTheDirection(t *testing.T)
 			}
 			// The first player of the game chooses the direction of play.
 			var state struct {
-				TurnSeat int `json:"turn_seat"`
-				State    struct {
+				ImpulseSeat int `json:"impulse_seat"`
+				State       struct {
 					Ext struct {
 						Stage string `json:"stage"`
 						First int    `json:"first"`
@@ -96,8 +96,8 @@ func TestNewTablesStartWithTheRightFirstPlayerChoosingTheDirection(t *testing.T)
 				} `json:"state"`
 			}
 			doJSON(t, "GET", baseURL+"/api/games/"+created.RoomCode+"/state", nil, &state)
-			if state.TurnSeat != c.first || state.State.Ext.First != c.first || state.State.Ext.Stage != "direction" {
-				t.Fatalf("after the setup: seat %d to move, first %d, stage %q", state.TurnSeat, state.State.Ext.First, state.State.Ext.Stage)
+			if state.ImpulseSeat != c.first || state.State.Ext.First != c.first || state.State.Ext.Stage != "direction" {
+				t.Fatalf("after the setup: seat %d to move, first %d, stage %q", state.ImpulseSeat, state.State.Ext.First, state.State.Ext.Stage)
 			}
 			if p := state.State.Ext.View.Prompt; p == "" {
 				t.Error("the first player is told what to choose")
@@ -111,8 +111,8 @@ func TestNewTablesStartWithTheRightFirstPlayerChoosingTheDirection(t *testing.T)
 				t.Fatalf("direction: %d %v", code, out)
 			}
 			doJSON(t, "GET", baseURL+"/api/games/"+created.RoomCode+"/state", nil, &state)
-			if state.TurnSeat != c.first || state.State.Ext.Stage != "turn" {
-				t.Errorf("then the first player acts: seat %d, stage %q", state.TurnSeat, state.State.Ext.Stage)
+			if state.ImpulseSeat != c.first || state.State.Ext.Stage != "turn" {
+				t.Errorf("then the first player acts: seat %d, stage %q", state.ImpulseSeat, state.State.Ext.Stage)
 			}
 		})
 	}
@@ -221,12 +221,12 @@ func TestTheCultOfAnOpenSeatCanBeChangedInTheLobby(t *testing.T) {
 		t.Fatalf("start: %d", code)
 	}
 	var st struct {
-		GameDefID string `json:"game_def_id"`
-		Status    string `json:"status"`
-		TurnSeat  int    `json:"turn_seat"`
+		GameDefID   string `json:"game_def_id"`
+		Status      string `json:"status"`
+		ImpulseSeat int    `json:"impulse_seat"`
 	}
 	doJSON(t, "GET", baseURL+"/api/games/"+room, nil, &st)
-	if st.Status != "active" || st.GameDefID != "cthulhu-wars~gc-cc-ys-sl" || st.TurnSeat != 1 {
+	if st.Status != "active" || st.GameDefID != "cthulhu-wars~gc-cc-ys-sl" || st.ImpulseSeat != 1 {
 		t.Fatalf("started: %+v", st)
 	}
 	// Once the game has started the cults are fixed.
@@ -394,11 +394,11 @@ func TestAutoPlayTimeoutPlaysTheTurnOfAPersonWhoTookTooLong(t *testing.T) {
 
 	// A move by the person starts it afresh too.
 	var st struct {
-		TurnSeat int `json:"turn_seat"`
+		ImpulseSeat int `json:"impulse_seat"`
 	}
 	doJSON(t, "GET", base+"/api/games/"+room, nil, &st)
-	if st.TurnSeat != 1 {
-		t.Skipf("the game moved on to seat %d", st.TurnSeat)
+	if st.ImpulseSeat != 1 {
+		t.Skipf("the game moved on to seat %d", st.ImpulseSeat)
 	}
 	age(room, 3*time.Minute)
 	if code, out := moveNotation(t, base, room, "Alice", "pass"); code != 200 {
@@ -442,11 +442,11 @@ func TestABotThatIsTheFirstPlayerChoosesTheDirection(t *testing.T) {
 		deadline := time.Now().Add(30 * time.Second)
 		for time.Now().Before(deadline) {
 			var st struct {
-				TurnSeat int `json:"turn_seat"`
+				ImpulseSeat int `json:"impulse_seat"`
 			}
 			doJSON(t, "GET", baseURL+"/api/games/"+created.RoomCode, nil, &st)
 			doJSON(t, "GET", baseURL+"/api/games/"+created.RoomCode+"/moves", nil, &moves)
-			if st.TurnSeat == 2 && len(moves) > 0 {
+			if st.ImpulseSeat == 2 && len(moves) > 0 {
 				break
 			}
 			time.Sleep(100 * time.Millisecond)

@@ -27,7 +27,7 @@ the page exactly as tall as the window, with no page scroll and no footer. The `
 can be drawn at that height (`--board-aspect`, from the board's `viewBox`; the map's canvas; a fixed shape for a board
 that grows, such as Hive's), leaving `#play-rail` at least `--rail-least`.
 The rail has what is left, up to 40rem, and any width beyond that is shared by the outer margins. It holds the cards in
-one column and scrolls by itself, keeping its place across redraws: the tutorial and any notices, `#action-card`,
+one column and scrolls by itself, keeping its place across redraws: the tutorial and any notices, `#impulse-card`,
 `#players-card` (`#cult-stack` at a table of three or more), voice, chat and history. On an upright screen under 980px
 wide, the rail goes under the board, whose row is no taller than the board.
 
@@ -45,10 +45,10 @@ wide, the rail goes under the board, whose row is no taller than the board.
 
 No `.status-bar` is drawn on this page. While a game is being played, `#status-message` stays as `.sr-only` for screen
 readers. For a result, history, analysis or a game waiting for an opponent, the message and the bar's buttons (`#rematch`,
-`#return-live`, `#analyze-here`, `#exit-analysis`, `#play-from-here`) are in `#action-card`, whose heading says which it
+`#return-live`, `#analyze-here`, `#exit-analysis`, `#play-from-here`) are in `#impulse-card`, whose heading says which it
 is. The game's badges are in `.table-badges`, with `#conn-badge` shown only when the connection is not live.
 
-`#action-card` holds the move bar and what the player chooses from: their hand and the move cards (`#cards-panel`).
+`#impulse-card` holds the move bar and what the player chooses from: their hand and the move cards (`#cards-panel`).
 Its height is limited to the rail's, and it scrolls inside if it needs more. On the player's turn it has `.acting`, which pins it to the edges of the rail, so it
 is in view however far the rail is scrolled. It neither moves the rail nor takes the keyboard.
 
@@ -519,9 +519,9 @@ timing and text). A button that exists because of an unlocked spellbook wears th
 coloured spellbook pictogram, one that meets a spellbook requirement the greyed
 one (`button[data-source="book"|"requirement"]`, from the action's `source`).
 Move events and the move list carry `locked` for a move that rolled a die: the
-page offers no *Back* across it. The line above the buttons says what is being asked
-(`#move-hint`): *Click a unit on the map to move, or choose an action:* on a
-normal turn, *Choose a spellbook to unlock:* when a requirement earned one.
+page offers no *Back* across it. The impulse card says what is being asked, whoever is looking: its title (`#impulse-title`) is the name of the seat on
+impulse and `#impulse-text` the question, from the view's `impulse` (ADR 0099). A choice the player has made and not sent
+is a step of their own, with the action's `impulse` as its question: *Choose an area to place a gate.*
 *Back* is one of the actions too (`#undo-step`, offered only while there is a step
 of this turn to take back).
 

@@ -20,11 +20,11 @@ type StateSnapshot struct {
 	// BoardState is the v1 flat view: JSON object position -> top piece.
 	BoardState string
 	// State is the complete position document (stacks, reserves, ply).
-	State      string
-	TurnSeat   *int
-	MoveSeq    int
-	WinnerSeat *int
-	EndReason  string
+	State       string
+	ImpulseSeat *int
+	MoveSeq     int
+	WinnerSeat  *int
+	EndReason   string
 	// EndDetail adds specifics to EndReason (e.g. the final score).
 	EndDetail string
 	Seats     []SeatInfo // one entry per seat the game definition declares, filled or not
@@ -47,13 +47,13 @@ type StateSnapshot struct {
 	// MoveTimeLimit is the per-move allowance in seconds (0 = untimed).
 	MoveTimeLimit int
 	// Clock is the game clock, nil for a game played without one: what each
-	// seat has left (the seat to move counts down from TurnDeadline).
+	// seat has left (the seat to move counts down from ImpulseDeadline).
 	Clock *ClockSnapshot
 	// RealTime is set in a game played in real time.
 	RealTime *RealTimeSnapshot
-	// TurnDeadline is when the player to move runs out of time; nil when
+	// ImpulseDeadline is when the player to move runs out of time; nil when
 	// the game is untimed or not in progress.
-	TurnDeadline *time.Time
+	ImpulseDeadline *time.Time
 	// ServerTime lets clients correct for clock skew when showing a
 	// countdown.
 	ServerTime time.Time
@@ -63,9 +63,9 @@ type StateSnapshot struct {
 
 	// StartState is the starting position document when the game began
 	// from a custom position (empty for the standard start), and
-	// StartTurnSeat who moved first from it.
-	StartState    string
-	StartTurnSeat int
+	// StartImpulseSeat who moved first from it.
+	StartState       string
+	StartImpulseSeat int
 	// Tutorial is "family/id" of the tutorial the room plays, or empty.
 	Tutorial string
 }
@@ -116,32 +116,32 @@ func (m *Manager) snapshot(ctx context.Context, compiled *catalog.CompiledGame, 
 	}
 
 	return StateSnapshot{
-		RoomCode:      game.RoomCode,
-		GameDefID:     game.GameDefID,
-		Status:        game.Status,
-		BoardState:    string(legacy),
-		State:         string(full),
-		TurnSeat:      game.TurnSeat,
-		MoveSeq:       game.MoveSeq,
-		WinnerSeat:    game.WinnerSeat,
-		EndReason:     game.EndReason,
-		EndDetail:     game.EndDetail,
-		Tutorial:      game.Tutorial,
-		Rated:         game.Rated,
-		CardSet:       game.CardSet,
-		RatingStatus:  game.RatingStatus,
-		Seats:         seats,
-		Lobby:         game.Lobby,
-		HostSeat:      hostOf(players),
-		MoveTimeLimit: game.MoveTimeLimit,
-		Clock:         clockSnapshot(game),
-		RealTime:      m.realTimeSnapshot(game, players),
-		TurnDeadline:  m.deadline(game),
-		ServerTime:    m.now().UTC(),
-		DrawOfferSeat: game.DrawOfferSeat,
+		RoomCode:        game.RoomCode,
+		GameDefID:       game.GameDefID,
+		Status:          game.Status,
+		BoardState:      string(legacy),
+		State:           string(full),
+		ImpulseSeat:     game.ImpulseSeat,
+		MoveSeq:         game.MoveSeq,
+		WinnerSeat:      game.WinnerSeat,
+		EndReason:       game.EndReason,
+		EndDetail:       game.EndDetail,
+		Tutorial:        game.Tutorial,
+		Rated:           game.Rated,
+		CardSet:         game.CardSet,
+		RatingStatus:    game.RatingStatus,
+		Seats:           seats,
+		Lobby:           game.Lobby,
+		HostSeat:        hostOf(players),
+		MoveTimeLimit:   game.MoveTimeLimit,
+		Clock:           clockSnapshot(game),
+		RealTime:        m.realTimeSnapshot(game, players),
+		ImpulseDeadline: m.deadline(game),
+		ServerTime:      m.now().UTC(),
+		DrawOfferSeat:   game.DrawOfferSeat,
 
-		StartState:    publicDoc(compiled, game.InitialState),
-		StartTurnSeat: game.InitialTurnSeat,
+		StartState:       publicDoc(compiled, game.InitialState),
+		StartImpulseSeat: game.InitialImpulseSeat,
 	}, nil
 }
 
@@ -185,7 +185,7 @@ type ClockSnapshot struct {
 
 // SeatClock is one seat's clock: what it started with and what is left of it
 // (not counting a turn in progress — the seat that is running counts down from
-// the snapshot's TurnDeadline).
+// the snapshot's ImpulseDeadline).
 type SeatClock struct {
 	Seat    int     `json:"seat"`
 	Initial int     `json:"initial_seconds"`
@@ -199,8 +199,8 @@ func clockSnapshot(game store.Game) *ClockSnapshot {
 		return nil
 	}
 	running := 0
-	if game.Status == "active" && game.TurnSeat != nil {
-		running = *game.TurnSeat
+	if game.Status == "active" && game.ImpulseSeat != nil {
+		running = *game.ImpulseSeat
 	}
 	return c.snapshot(running)
 }
@@ -209,7 +209,7 @@ func clockSnapshot(game store.Game) *ClockSnapshot {
 // earlier of the per-move allowance and what is left on their game clock (a
 // game is created with one or the other, never both).
 func (m *Manager) deadline(game store.Game) *time.Time {
-	if game.Status != "active" || game.TurnSeat == nil {
+	if game.Status != "active" || game.ImpulseSeat == nil {
 		return nil
 	}
 	started, ok := parseTimestamp(game.UpdatedAt)
@@ -222,8 +222,8 @@ func (m *Manager) deadline(game store.Game) *time.Time {
 		d := started.Add(time.Duration(game.MoveTimeLimit) * time.Second)
 		out = &d
 	}
-	if c := parseGameClock(game.Clock); c.holds(*game.TurnSeat) {
-		d := c.startedAt(started).Add(time.Duration(c.LeftFor(*game.TurnSeat) * float64(time.Second)))
+	if c := parseGameClock(game.Clock); c.holds(*game.ImpulseSeat) {
+		d := c.startedAt(started).Add(time.Duration(c.LeftFor(*game.ImpulseSeat) * float64(time.Second)))
 		if out == nil || d.Before(*out) {
 			out = &d
 		}
@@ -265,14 +265,14 @@ func (m *Manager) loadGame(ctx context.Context, roomCode string, locked bool) (s
 	}
 
 	compiled, ok := m.catalog.Get(game.GameDefID)
-	if !ok || game.TurnSeat == nil {
+	if !ok || game.ImpulseSeat == nil {
 		return game, nil
 	}
 	if len(compiled.Definition.Seats) >= takeoverSeats {
 		return m.flagAtLargeTable(ctx, game, compiled)
 	}
 	var winner *int
-	if opp, ok := compiled.Opponent(*game.TurnSeat); ok {
+	if opp, ok := compiled.Opponent(*game.ImpulseSeat); ok {
 		winner = &opp
 	}
 	if err := m.store.FinishGame(ctx, game.ID, winner, "timeout"); err != nil {
@@ -375,7 +375,7 @@ func (m *Manager) readState(ctx context.Context, roomCode string, atSeq *int) (S
 			hist.WinnerSeat = nil
 			hist.EndReason = ""
 			hist.MoveSeq = *atSeq
-			hist.TurnSeat = m.turnSeatAt(ctx, compiled, game, *atSeq)
+			hist.ImpulseSeat = m.impulseSeatAt(ctx, compiled, game, *atSeq)
 		}
 		game = hist
 	}
@@ -401,10 +401,10 @@ func (m *Manager) stateAtSeq(ctx context.Context, compiled *catalog.CompiledGame
 	return m.store.GetStateAtSeq(ctx, game.ID, seq)
 }
 
-// turnSeatAt returns whose turn it was after move seq. It replays the
+// impulseSeatAt returns whose turn it was after move seq. It replays the
 // turn rule on the position at that point, so skipped (passing) seats are
 // accounted for.
-func (m *Manager) turnSeatAt(ctx context.Context, compiled *catalog.CompiledGame, game store.Game, seq int) *int {
+func (m *Manager) impulseSeatAt(ctx context.Context, compiled *catalog.CompiledGame, game store.Game, seq int) *int {
 	if seq == 0 {
 		first := firstSeatOf(compiled, game)
 		return &first
@@ -417,7 +417,7 @@ func (m *Manager) turnSeatAt(ctx context.Context, compiled *catalog.CompiledGame
 	if err := bs.UnmarshalJSON([]byte(moves[0].ResultingState)); err != nil {
 		return nil
 	}
-	next, err := state.TurnAfter(compiled, bs, moves[0].Seat)
+	next, err := state.ImpulseAfter(compiled, bs, moves[0].Seat)
 	if err != nil {
 		return nil
 	}

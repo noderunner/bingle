@@ -97,7 +97,7 @@ Legend: ✅ done · 🟡 partial · ⬜ not started · ➖ deliberately out of s
 | ✅ | Turn tracking | status bar, to-move highlighting, move counter, title marker, browser notifications |
 | ✅ | Move list + history navigation | click any move; ⏮ ◀ ▶ ⏭ and arrow keys; read-only past positions |
 | ✅ | Back / resign / flip / rules / export | resign asks twice; rules dialog with pieces legend and notation help |
-| ✅ | Lobby | game picker grouped by family, bot opponents, play first/second, "Your games" with your-turn flags |
+| ✅ | Lobby | game picker grouped by family, bot opponents, play first/second, "Your games" with your-impulse flags |
 | ✅ | Live updates & reconnect | WebSocket with backoff; opponents joining/undoing show immediately |
 | ✅ | Light/dark theme, responsive layout | follows OS preference |
 | ✅ | Analysis mode | scratch variations from the live or any past position, backed by `simulate` |

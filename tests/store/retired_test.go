@@ -42,7 +42,7 @@ func TestEndRetiredGames(t *testing.T) {
 	}
 	for _, g := range []store.Game{waiting, derived} {
 		got, _ := s.GetGame(ctx, g.RoomCode)
-		if got.Status != "finished" || got.WinnerSeat != nil || got.EndReason != store.EndReasonRetired || got.TurnSeat != nil {
+		if got.Status != "finished" || got.WinnerSeat != nil || got.EndReason != store.EndReasonRetired || got.ImpulseSeat != nil {
 			t.Errorf("%s: %+v, want finished with no winner", g.RoomCode, got)
 		}
 	}

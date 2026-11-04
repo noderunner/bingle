@@ -2,7 +2,7 @@
 id: yinsh
 name: Yinsh
 description: "Kris Burm's game of rings and markers on an 85-point board: drop a marker in a ring and move the ring, turning over the markers it jumps. Make rows of five to remove your rings; remove three to win."
-version: 0.1.0
+version: 0.1.1
 designers: [Kris Burm]
 engine: ruleset
 rules:

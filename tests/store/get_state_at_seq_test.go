@@ -41,13 +41,13 @@ func TestGetStateAtSeq_ReturnsResultingStateForEachRecordedSeq(t *testing.T) {
 
 	if _, err := s.RecordMove(ctx, game.ID, store.MoveInput{
 		Seat: 1, Color: "black", From: "0,0", To: "0,1",
-		ResultingBoardState: "board-state-1", NextTurnSeat: 2,
+		ResultingBoardState: "board-state-1", NextImpulseSeat: 2,
 	}); err != nil {
 		t.Fatalf("first RecordMove returned error: %v, want nil", err)
 	}
 	if _, err := s.RecordMove(ctx, game.ID, store.MoveInput{
 		Seat: 2, Color: "white", From: "7,7", To: "7,6",
-		ResultingBoardState: "board-state-2", NextTurnSeat: 1,
+		ResultingBoardState: "board-state-2", NextImpulseSeat: 1,
 	}); err != nil {
 		t.Fatalf("second RecordMove returned error: %v, want nil", err)
 	}
@@ -84,7 +84,7 @@ func TestGetStateAtSeq_SeqNeverRecordedReturnsErrNotFoundAndEmptyString(t *testi
 	}
 	if _, err := s.RecordMove(ctx, game.ID, store.MoveInput{
 		Seat: 1, Color: "black", From: "0,0", To: "0,1",
-		ResultingBoardState: "board-state-1", NextTurnSeat: 2,
+		ResultingBoardState: "board-state-1", NextImpulseSeat: 2,
 	}); err != nil {
 		t.Fatalf("RecordMove returned error: %v, want nil", err)
 	}
@@ -144,7 +144,7 @@ func TestGetStateAtSeq_SeqZeroReturnsErrNotFoundEvenAfterMovesRecorded(t *testin
 	}
 	if _, err := s.RecordMove(ctx, game.ID, store.MoveInput{
 		Seat: 1, Color: "black", From: "0,0", To: "0,1",
-		ResultingBoardState: "board-state-1", NextTurnSeat: 2,
+		ResultingBoardState: "board-state-1", NextImpulseSeat: 2,
 	}); err != nil {
 		t.Fatalf("RecordMove returned error: %v, want nil", err)
 	}
@@ -175,7 +175,7 @@ func TestGetStateAtSeq_UnknownGameIDReturnsErrNotFound(t *testing.T) {
 	}
 	if _, err := s.RecordMove(ctx, game.ID, store.MoveInput{
 		Seat: 1, Color: "black", From: "0,0", To: "0,1",
-		ResultingBoardState: "board-state-1", NextTurnSeat: 2,
+		ResultingBoardState: "board-state-1", NextImpulseSeat: 2,
 	}); err != nil {
 		t.Fatalf("RecordMove returned error: %v, want nil", err)
 	}
@@ -213,13 +213,13 @@ func TestGetStateAtSeq_CrossGameIsolationForSameSeqNumber(t *testing.T) {
 
 	if _, err := s.RecordMove(ctx, gameA.ID, store.MoveInput{
 		Seat: 1, Color: "black", From: "0,0", To: "0,1",
-		ResultingBoardState: "game-a-state", NextTurnSeat: 2,
+		ResultingBoardState: "game-a-state", NextImpulseSeat: 2,
 	}); err != nil {
 		t.Fatalf("RecordMove(gameA) returned error: %v, want nil", err)
 	}
 	if _, err := s.RecordMove(ctx, gameB.ID, store.MoveInput{
 		Seat: 1, Color: "black", From: "7,7", To: "7,6",
-		ResultingBoardState: "game-b-state", NextTurnSeat: 2,
+		ResultingBoardState: "game-b-state", NextImpulseSeat: 2,
 	}); err != nil {
 		t.Fatalf("RecordMove(gameB) returned error: %v, want nil", err)
 	}

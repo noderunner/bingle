@@ -1297,9 +1297,9 @@ async function startPuzzle(p) {
 			game_def_id: p.game_def_id,
 			player_name: name,
 			opponent: "tactical",
-			seat: p.to_move,
+			seat: p.impulse_seat,
 			start_state: p.state,
-			start_seat: p.to_move,
+			start_seat: p.impulse_seat,
 		});
 		rememberGame(res.room_code, p.game_def_id, name);
 		navigate("/game/" + res.room_code);

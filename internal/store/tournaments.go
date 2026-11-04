@@ -466,7 +466,7 @@ func (s *Store) CreateTournamentRound(ctx context.Context, tournamentID int64, r
 // write, so that nothing can ever pick its result up.
 func (s *Store) VoidGame(ctx context.Context, gameID int64, reason string) error {
 	if _, err := s.exec(ctx, "VoidGame",
-		`UPDATE games SET status = 'finished', turn_seat = NULL, winner_seat = NULL, end_reason = ?, draw_offer_seat = NULL,
+		`UPDATE games SET status = 'finished', impulse_seat = NULL, winner_seat = NULL, end_reason = ?, draw_offer_seat = NULL,
 			rating_status = CASE rated WHEN 1 THEN ? ELSE rating_status END, updated_at = CURRENT_TIMESTAMP
 		 WHERE id = ? AND status != 'finished'`, reason, RatingVoid, gameID); err != nil {
 		return fmt.Errorf("voiding game_id=%d: %w", gameID, err)
@@ -590,7 +590,7 @@ func (s *Store) SeatsWithMoves(ctx context.Context, gameID int64) ([]int, error)
 // insertTournamentGame makes the game of a line and seats its players.
 func insertTournamentGame(ctx context.Context, tx *Tx, tournamentID int64, g NewTournamentGame) (int64, error) {
 	res, err := tx.exec(ctx, "insertTournamentGame.game",
-		`INSERT INTO games (room_code, game_def_id, board_state, status, turn_seat, clock, rated, tournament_id, real_time) VALUES (?, ?, ?, 'active', ?, ?, ?, ?, ?)`,
+		`INSERT INTO games (room_code, game_def_id, board_state, status, impulse_seat, clock, rated, tournament_id, real_time) VALUES (?, ?, ?, 'active', ?, ?, ?, ?, ?)`,
 		g.RoomCode, g.GameDefID, g.BoardState, g.FirstSeat, g.Clock, boolToInt(g.Rated), tournamentID, g.RealTime)
 	if err != nil {
 		return 0, fmt.Errorf("making a game of tournament %d: %w", tournamentID, err)

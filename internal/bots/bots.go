@@ -230,7 +230,7 @@ func classify(ctx context.Context, game *catalog.CompiledGame, st *state.BoardSt
 			out.safe = append(out.safe, mv)
 			continue
 		}
-		oppSeat := res.NextTurnSeat
+		oppSeat := res.NextImpulseSeat
 		losing := false
 		for _, reply := range state.LegalMoves(game, res.NewState, oppSeat) {
 			budget -= cost
@@ -479,7 +479,7 @@ func (b *mctsBot) iterate(game *catalog.CompiledGame, root *mctsNode, rng *rand.
 		}
 		child := &mctsNode{
 			st:       res.NewState,
-			seat:     res.NextTurnSeat,
+			seat:     res.NextImpulseSeat,
 			move:     mv,
 			parent:   node,
 			mover:    node.seat,
@@ -566,7 +566,7 @@ func (b *mctsBot) playout(game *catalog.CompiledGame, node *mctsNode, rng *rand.
 			}
 			return -1, true, 0, 0, false
 		}
-		st, seat = res.NewState, res.NextTurnSeat
+		st, seat = res.NewState, res.NextImpulseSeat
 	}
 	if v, ok := state.HeuristicValue(game, st, seat); ok {
 		return -1, false, v, seat, true

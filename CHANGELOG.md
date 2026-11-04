@@ -4,6 +4,25 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.55.0 - 2026-11-04
+
+### Bingle Core 0.55.0
+- **The card of actions names who is up.** Its title is now the name of the player being waited for, instead of *Your move*,
+  and under it is what they are being asked to choose. Everyone at the table sees the same two lines, on your impulse and on
+  anybody else's, and so does anyone watching.
+- **Each step asks its own question.** Choose *Build Gate* and the card changes from *Choose an action.* to *Choose an area to
+  place a gate.* These steps show only for the player taking them, until the move is sent.
+- **For anyone with a bot or a program playing through the API:** the seat to act is now called the impulse seat. `turn_seat`,
+  `to_move`, `your_turn` and `turn_deadline` are now `impulse_seat`, `impulse_seat`, `your_impulse` and `impulse_deadline`, and
+  the old names are gone. The `to-move` plane of a training environment is now `on-impulse`.
+
+### Cthulhu Wars 0.8.1
+- The card says *Choose a turn order.*, *Choose an action.* and *Choose a pre-battle ability or pass.*, and the turn order
+  choices no longer say "down the list".
+
+### Blooms 0.3.1, Fendo 0.1.1, Fist 0.1.2, Hive 0.1.1, Meridians 0.1.1, Nyet! 0.2.1, Onitama 0.1.1, Solitaire 0.1.2, Yinsh 0.1.1
+- Each says in its own words what the player on impulse is asked to choose.
+
 ## 0.54.0 - 2026-11-04
 
 ### Bingle Core 0.54.0

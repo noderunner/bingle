@@ -62,12 +62,12 @@ func (m *Manager) Undo(ctx context.Context, roomCode, name string) (UndoOutcome,
 	if err := m.mayActFor(ctx, player); err != nil {
 		return UndoOutcome{}, err
 	}
-	if game.Status != "active" || game.TurnSeat == nil {
+	if game.Status != "active" || game.ImpulseSeat == nil {
 		return UndoOutcome{}, ErrCannotUndo
 	}
 	// The seat to move has to be this person's, whichever of their seats of a game
 	// against themselves they asked from.
-	turn := *game.TurnSeat
+	turn := *game.ImpulseSeat
 	mine := player.Seat == turn
 	for _, p := range players {
 		if p.Seat == turn && p.Bot == "" && sameOwner(p.Name, player.Name) {
@@ -172,7 +172,7 @@ func (m *Manager) MoveIsFinal(ctx context.Context, roomCode, name, notation stri
 	if err != nil {
 		return false, err
 	}
-	if game.Status != "active" || game.TurnSeat == nil {
+	if game.Status != "active" || game.ImpulseSeat == nil {
 		return false, ErrGameNotActive
 	}
 	players, err := m.store.ListPlayers(ctx, game.ID)
@@ -185,8 +185,8 @@ func (m *Manager) MoveIsFinal(ctx context.Context, roomCode, name, notation stri
 			player = &players[i]
 		}
 	}
-	if player == nil || player.Bot != "" || player.Seat != *game.TurnSeat {
-		return false, ErrNotYourTurn
+	if player == nil || player.Bot != "" || player.Seat != *game.ImpulseSeat {
+		return false, ErrNotYourImpulse
 	}
 	if err := m.mayActFor(ctx, player); err != nil {
 		return false, err
@@ -207,7 +207,7 @@ func (m *Manager) MoveIsFinal(ctx context.Context, roomCode, name, notation stri
 	if err != nil {
 		return false, err
 	}
-	if result.GameEnded || result.NextTurnSeat != player.Seat || isPieSwap(compiled, result.Move) {
+	if result.GameEnded || result.NextImpulseSeat != player.Seat || isPieSwap(compiled, result.Move) {
 		return true, nil
 	}
 	return state.IsRuleset(compiled) && !state.CanTakeBack(compiled, bs, result.NewState), nil

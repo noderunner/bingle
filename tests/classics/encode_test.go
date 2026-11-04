@@ -65,7 +65,7 @@ func TestActionSpaceCoversLegalMovesAndPlanesAreWellFormed(t *testing.T) {
 				if res.GameEnded {
 					break
 				}
-				st, seat = res.NewState, res.NextTurnSeat
+				st, seat = res.NewState, res.NextImpulseSeat
 			}
 		}
 	}
@@ -77,7 +77,7 @@ func TestPlanesAreRelativeToTheViewer(t *testing.T) {
 	g := load(t, "tic-tac-toe")
 	res := playAll(t, g, "a3", "b2", "c1") // x at a3,c1; o at b2
 	for seat, want := range map[int][2]int{1: {2, 1}, 2: {1, 2}} {
-		p, err := state.EncodePlanes(g, res.NewState, seat, res.NextTurnSeat, state.PlaneOptions{})
+		p, err := state.EncodePlanes(g, res.NewState, seat, res.NextImpulseSeat, state.PlaneOptions{})
 		if err != nil {
 			t.Fatal(err)
 		}

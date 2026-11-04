@@ -71,8 +71,8 @@ func TestTimeLimit_ClockRunsOnlyWhileActive(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if snap.Status != "waiting" || snap.TurnDeadline != nil || snap.MoveTimeLimit != 60 {
-		t.Fatalf("waiting snapshot = status %q deadline %v limit %d", snap.Status, snap.TurnDeadline, snap.MoveTimeLimit)
+	if snap.Status != "waiting" || snap.ImpulseDeadline != nil || snap.MoveTimeLimit != 60 {
+		t.Fatalf("waiting snapshot = status %q deadline %v limit %d", snap.Status, snap.ImpulseDeadline, snap.MoveTimeLimit)
 	}
 
 	// Bob joins (the database stamps the turn start with the real time, so
@@ -82,10 +82,10 @@ func TestTimeLimit_ClockRunsOnlyWhileActive(t *testing.T) {
 		t.Fatal(err)
 	}
 	snap, _ = m.GetState(ctx, created.RoomCode, nil)
-	if snap.Status != "active" || snap.TurnDeadline == nil {
-		t.Fatalf("active snapshot = status %q deadline %v", snap.Status, snap.TurnDeadline)
+	if snap.Status != "active" || snap.ImpulseDeadline == nil {
+		t.Fatalf("active snapshot = status %q deadline %v", snap.Status, snap.ImpulseDeadline)
 	}
-	if left := snap.TurnDeadline.Sub(snap.ServerTime); left < 50*time.Second || left > 61*time.Second {
+	if left := snap.ImpulseDeadline.Sub(snap.ServerTime); left < 50*time.Second || left > 61*time.Second {
 		t.Errorf("deadline is %v after server time, want about 60s", left)
 	}
 }
@@ -117,7 +117,7 @@ func TestTimeLimit_PlayerWhoRunsOutLosesOnTime(t *testing.T) {
 	if snap.Status != "finished" || snap.EndReason != "timeout" || snap.WinnerSeat == nil || *snap.WinnerSeat != 1 {
 		t.Errorf("after timeout: status %q reason %q winner %v, want finished/timeout/seat 1", snap.Status, snap.EndReason, snap.WinnerSeat)
 	}
-	if snap.TurnDeadline != nil {
+	if snap.ImpulseDeadline != nil {
 		t.Error("a finished game has no deadline")
 	}
 
@@ -161,8 +161,8 @@ func TestTimeLimit_UntimedGamesNeverExpireAndLimitsAreValidated(t *testing.T) {
 	}
 	clock.Advance(1000 * time.Hour)
 	snap, _ := m.GetState(ctx, created.RoomCode, nil)
-	if snap.Status != "active" || snap.TurnDeadline != nil {
-		t.Errorf("untimed game = status %q deadline %v", snap.Status, snap.TurnDeadline)
+	if snap.Status != "active" || snap.ImpulseDeadline != nil {
+		t.Errorf("untimed game = status %q deadline %v", snap.Status, snap.ImpulseDeadline)
 	}
 
 	for _, bad := range []int{-1, session.MaxMoveTimeSeconds + 1} {

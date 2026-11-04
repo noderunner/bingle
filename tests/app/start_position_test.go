@@ -33,8 +33,8 @@ func TestGameStartsFromTPSAndKeepsItThroughUndoAndExport(t *testing.T) {
 
 	var st restState
 	doJSON(t, "GET", baseURL+"/api/games/"+room+"/state", nil, &st)
-	if len(st.State.Cells) != 4 || st.State.Ply != 10 || st.TurnSeat == nil || *st.TurnSeat != 1 {
-		t.Fatalf("start state: cells=%d ply=%d turn=%v", len(st.State.Cells), st.State.Ply, st.TurnSeat)
+	if len(st.State.Cells) != 4 || st.State.Ply != 10 || st.ImpulseSeat == nil || *st.ImpulseSeat != 1 {
+		t.Fatalf("start state: cells=%d ply=%d turn=%v", len(st.State.Cells), st.State.Ply, st.ImpulseSeat)
 	}
 
 	// The game info endpoint reports the custom start for clients.

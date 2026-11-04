@@ -117,7 +117,7 @@ func TestYavalathRandomGamesTerminate(t *testing.T) {
 				t.Fatal(err)
 			}
 			ended = res.GameEnded
-			st, seat = res.NewState, res.NextTurnSeat
+			st, seat = res.NewState, res.NextImpulseSeat
 		}
 		if !ended {
 			t.Fatalf("game %d did not end within 80 plies (61 cells)", n)
@@ -192,7 +192,7 @@ func TestHavannahRandomGamesTerminateConsistently(t *testing.T) {
 			if res.GameEnded {
 				break
 			}
-			st, seat = res.NewState, res.NextTurnSeat
+			st, seat = res.NewState, res.NextImpulseSeat
 		}
 	}
 }

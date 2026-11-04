@@ -74,17 +74,17 @@ type ResetOptions struct {
 // Env is one live environment. Its methods are not safe for concurrent
 // use; Manager serialises access.
 type Env struct {
-	mu       sync.Mutex // serialises Step/Observe/Fork on this environment
-	ID       string
-	game     *catalog.CompiledGame
-	st       *state.BoardState
-	toMove   int
-	agent    int
-	opp      bots.Bot // nil for self-play
-	oppID    string
-	oppIters int
-	seed     int64
-	maxPlies int
+	mu          sync.Mutex // serialises Step/Observe/Fork on this environment
+	ID          string
+	game        *catalog.CompiledGame
+	st          *state.BoardState
+	impulseSeat int
+	agent       int
+	opp         bots.Bot // nil for self-play
+	oppID       string
+	oppIters    int
+	seed        int64
+	maxPlies    int
 
 	planes     bool
 	actionIDs  bool
@@ -101,18 +101,18 @@ type Env struct {
 
 // Observation is what an agent sees after a reset or step.
 type Observation struct {
-	EnvID      string   `json:"env_id"`
-	GameDefID  string   `json:"game_def_id"`
-	AgentSeat  int      `json:"agent_seat"`
-	AgentColor string   `json:"agent_color"`
-	ToMove     int      `json:"to_move"`
-	YourTurn   bool     `json:"your_turn"`
-	Ply        int      `json:"ply"`
-	BoardText  string   `json:"board_text"`
-	TPS        string   `json:"tps,omitempty"`
-	State      any      `json:"state"`
-	LegalMoves []string `json:"legal_moves"`
-	History    []string `json:"history"`
+	EnvID       string   `json:"env_id"`
+	GameDefID   string   `json:"game_def_id"`
+	AgentSeat   int      `json:"agent_seat"`
+	AgentColor  string   `json:"agent_color"`
+	ImpulseSeat int      `json:"impulse_seat"`
+	YourImpulse bool     `json:"your_impulse"`
+	Ply         int      `json:"ply"`
+	BoardText   string   `json:"board_text"`
+	TPS         string   `json:"tps,omitempty"`
+	State       any      `json:"state"`
+	LegalMoves  []string `json:"legal_moves"`
+	History     []string `json:"history"`
 	// LastMoves are the moves played since the agent's previous
 	// observation: its own move followed by any bot replies.
 	LastMoves []string `json:"last_moves,omitempty"`
@@ -212,11 +212,11 @@ func (m *Manager) Reset(ctx context.Context, opts ResetOptions) (Observation, er
 
 	switch {
 	case opts.StartTPS != "":
-		st, toMove, err := state.ParseTPS(game, opts.StartTPS)
+		st, impulseSeat, err := state.ParseTPS(game, opts.StartTPS)
 		if err != nil {
 			return Observation{}, err
 		}
-		e.st, e.toMove = st, toMove
+		e.st, e.impulseSeat = st, impulseSeat
 	case opts.StartState != "":
 		st := state.NewBoardState()
 		if err := st.UnmarshalJSON([]byte(opts.StartState)); err != nil {
@@ -225,14 +225,14 @@ func (m *Manager) Reset(ctx context.Context, opts ResetOptions) (Observation, er
 		if err := state.Validate(game, st); err != nil {
 			return Observation{}, err
 		}
-		toMove := opts.StartSeat
-		if toMove == 0 {
-			toMove = state.FirstSeat(game)
+		impulseSeat := opts.StartSeat
+		if impulseSeat == 0 {
+			impulseSeat = state.FirstSeat(game)
 		}
-		if _, ok := game.Seat(toMove); !ok {
-			return Observation{}, fmt.Errorf("envs: game %q has no seat %d", opts.GameDefID, toMove)
+		if _, ok := game.Seat(impulseSeat); !ok {
+			return Observation{}, fmt.Errorf("envs: game %q has no seat %d", opts.GameDefID, impulseSeat)
 		}
-		e.st, e.toMove = st, toMove
+		e.st, e.impulseSeat = st, impulseSeat
 	default:
 		if state.IsRuleset(game) && opts.Seed != 0 {
 			// Games with chance start from the env's seed so that a seeded
@@ -241,9 +241,9 @@ func (m *Manager) Reset(ctx context.Context, opts ResetOptions) (Observation, er
 			if err != nil {
 				return Observation{}, err
 			}
-			e.st, e.toMove = st, state.FirstSeat(game)
+			e.st, e.impulseSeat = st, state.FirstSeat(game)
 		} else {
-			e.st, e.toMove = state.InitialState(game), state.FirstSeat(game)
+			e.st, e.impulseSeat = state.InitialState(game), state.FirstSeat(game)
 		}
 	}
 
@@ -301,7 +301,7 @@ func (m *Manager) Step(ctx context.Context, id, notation string) (Observation, e
 	if e.done {
 		return Observation{}, ErrGameOver
 	}
-	if e.opp != nil && e.toMove != e.agent {
+	if e.opp != nil && e.impulseSeat != e.agent {
 		return Observation{}, fmt.Errorf("envs: it is not the agent's turn")
 	}
 
@@ -328,14 +328,14 @@ func (m *Manager) Fork(id string) (Observation, error) {
 	}
 	src.mu.Lock()
 	clone := &Env{
-		game:     src.game,
-		st:       src.st.Clone(),
-		toMove:   src.toMove,
-		agent:    src.agent,
-		oppID:    src.oppID,
-		oppIters: src.oppIters,
-		seed:     src.seed,
-		maxPlies: src.maxPlies,
+		game:        src.game,
+		st:          src.st.Clone(),
+		impulseSeat: src.impulseSeat,
+		agent:       src.agent,
+		oppID:       src.oppID,
+		oppIters:    src.oppIters,
+		seed:        src.seed,
+		maxPlies:    src.maxPlies,
 
 		planes: src.planes, actionIDs: src.actionIDs, planeDepth: src.planeDepth,
 
@@ -399,12 +399,12 @@ func (m *Manager) List() []string {
 
 // apply plays mv for the seat to move.
 func (e *Env) apply(mv state.Move, played *[]string) error {
-	res, err := state.Apply(e.game, e.st, e.toMove, mv)
+	res, err := state.Apply(e.game, e.st, e.impulseSeat, mv)
 	if err != nil {
 		return err
 	}
 	e.st = res.NewState
-	e.toMove = res.NextTurnSeat
+	e.impulseSeat = res.NextImpulseSeat
 	e.history = append(e.history, res.Notation)
 	e.last = res.Notation
 	*played = append(*played, res.Notation)
@@ -425,15 +425,15 @@ func (e *Env) advanceBots(ctx context.Context, played *[]string) error {
 	if e.opp == nil {
 		return nil
 	}
-	for !e.done && e.toMove != e.agent {
-		legal := state.LegalMoves(e.game, e.st, e.toMove)
+	for !e.done && e.impulseSeat != e.agent {
+		legal := state.LegalMoves(e.game, e.st, e.impulseSeat)
 		if len(legal) == 0 {
 			e.done, e.reason = true, "no-legal-moves"
 			return nil
 		}
 		// The opponent plays within the game's strategy guide, as it does at
 		// a table.
-		mv, err := e.opp.Choose(ctx, e.game, e.st, e.toMove, state.GuidedMoves(e.game, e.st, e.toMove, legal))
+		mv, err := e.opp.Choose(ctx, e.game, e.st, e.impulseSeat, state.GuidedMoves(e.game, e.st, e.impulseSeat, legal))
 		if err != nil {
 			mv = legal[0]
 		}
@@ -450,39 +450,39 @@ func (e *Env) observe(played []string) Observation {
 		color = sd.Color
 	}
 	obs := Observation{
-		EnvID:      e.ID,
-		GameDefID:  e.game.Definition.ID,
-		AgentSeat:  e.agent,
-		AgentColor: color,
-		ToMove:     e.toMove,
-		Ply:        e.st.Ply(),
-		BoardText:  state.RenderText(e.game, e.st),
-		History:    append([]string{}, e.history...),
-		LastMoves:  played,
-		Done:       e.done,
-		Truncated:  e.trunc,
-		WinnerSeat: e.winner,
-		EndReason:  e.reason,
-		LegalMoves: []string{},
+		EnvID:       e.ID,
+		GameDefID:   e.game.Definition.ID,
+		AgentSeat:   e.agent,
+		AgentColor:  color,
+		ImpulseSeat: e.impulseSeat,
+		Ply:         e.st.Ply(),
+		BoardText:   state.RenderText(e.game, e.st),
+		History:     append([]string{}, e.history...),
+		LastMoves:   played,
+		Done:        e.done,
+		Truncated:   e.trunc,
+		WinnerSeat:  e.winner,
+		EndReason:   e.reason,
+		LegalMoves:  []string{},
 	}
 	// The observer sees their own secrets and nobody else's; the position
 	// an agent playing both sides sees is the side to move's.
 	viewer := e.agent
 	if e.opp == nil {
-		viewer = e.toMove
+		viewer = e.impulseSeat
 	}
 	if doc, err := state.Public(e.game, e.st, viewer).MarshalJSON(); err == nil {
 		obs.State = rawJSON(doc)
 	}
 	if e.game.Definition.Notation == "ptn" {
-		if tps, err := state.FormatTPS(e.game, e.st, e.toMove); err == nil {
+		if tps, err := state.FormatTPS(e.game, e.st, e.impulseSeat); err == nil {
 			obs.TPS = tps
 		}
 	}
 	if e.opp == nil {
-		obs.YourTurn = !e.done
+		obs.YourImpulse = !e.done
 	} else {
-		obs.YourTurn = !e.done && e.toMove == e.agent
+		obs.YourImpulse = !e.done && e.impulseSeat == e.agent
 	}
 	var space *state.ActionSpace
 	if e.actionIDs {
@@ -491,8 +491,8 @@ func (e *Env) observe(played []string) Observation {
 			obs.NumActions = len(space.Moves)
 		}
 	}
-	if obs.YourTurn {
-		for _, mv := range state.LegalMoves(e.game, e.st, e.toMove) {
+	if obs.YourImpulse {
+		for _, mv := range state.LegalMoves(e.game, e.st, e.impulseSeat) {
 			text := state.FormatMove(e.game, mv)
 			obs.LegalMoves = append(obs.LegalMoves, text)
 			if space != nil && space.Fixed {
@@ -503,7 +503,7 @@ func (e *Env) observe(played []string) Observation {
 		}
 	}
 	if e.planes {
-		if p, err := state.EncodePlanes(e.game, e.st, e.agent, e.toMove, state.PlaneOptions{Depth: e.planeDepth}); err == nil {
+		if p, err := state.EncodePlanes(e.game, e.st, e.agent, e.impulseSeat, state.PlaneOptions{Depth: e.planeDepth}); err == nil {
 			obs.Planes = p
 		}
 	}

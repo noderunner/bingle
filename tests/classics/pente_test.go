@@ -118,7 +118,7 @@ func TestPenteFiveInARowAndRandomGames(t *testing.T) {
 			if r.GameEnded {
 				break
 			}
-			st, seat = r.NewState, r.NextTurnSeat
+			st, seat = r.NewState, r.NextImpulseSeat
 		}
 	}
 }

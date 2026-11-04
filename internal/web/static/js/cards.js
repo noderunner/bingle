@@ -394,7 +394,7 @@ function drawZone(info, zv, ctx, next) {
  * The card table: what the players share (the trick, the piles) and the
  * viewer's own zones (their hand).
  *   ctx.info, ctx.view ({table: [...]}), ctx.seats [{seat,label,color}], ctx.me,
- *   ctx.toMove, ctx.playable, ctx.onCard, ctx.prev (Map),
+ *   ctx.impulseSeat, ctx.playable, ctx.onCard, ctx.prev (Map),
  *   ctx.seatIconByLabel(label, px) (the picture of the player a caption names),
  *   ctx.top (a node drawn beside the shared zones: the board of terms)
  * → {node, state}
@@ -425,7 +425,7 @@ export function cardTable(ctx) {
 
 	const me = ctx.seats.find((s) => s.seat === ctx.me);
 	if (me) {
-		const box = h("div", { class: "ct-seat me" + (ctx.toMove === me.seat ? " to-move" : ""), "data-seat": me.seat });
+		const box = h("div", { class: "ct-seat me" + (ctx.impulseSeat === me.seat ? " on-impulse" : ""), "data-seat": me.seat });
 		const parts = h("div", { class: "ct-zones" });
 		for (const z of order(mine)) {
 			const def = zoneDef(info, z.id);

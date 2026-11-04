@@ -110,7 +110,7 @@ func (m *Manager) autoPlaySettings(ctx context.Context, game store.Game, name st
 		DefaultTimeoutSeconds: store.DefaultAutoPlayTimeout,
 		ServerTime:            m.now().UTC().Format(time.RFC3339),
 	}
-	if prefs.Enabled && game.Status == "active" && game.TurnSeat != nil && *game.TurnSeat == me.Seat {
+	if prefs.Enabled && game.Status == "active" && game.ImpulseSeat != nil && *game.ImpulseSeat == me.Seat {
 		if since, ok := m.autoPlaySince(game.UpdatedAt); ok {
 			out.Deadline = since.Add(time.Duration(prefs.TimeoutSeconds) * time.Second).UTC().Format(time.RFC3339)
 		}
@@ -209,7 +209,7 @@ func (m *Manager) autoPlayRoom(ctx context.Context, roomCode string, seat int) b
 	defer unlock()
 
 	game, err := m.loadGame(ctx, roomCode, true)
-	if err != nil || game.Status != "active" || game.TurnSeat == nil || *game.TurnSeat != seat {
+	if err != nil || game.Status != "active" || game.ImpulseSeat == nil || *game.ImpulseSeat != seat {
 		return false
 	}
 	prefs, err := m.store.AutoPlay(ctx, game.ID, seat)
@@ -257,7 +257,7 @@ func (m *Manager) playTurnFor(ctx context.Context, roomCode string, game store.G
 	played := 0
 	for i := 0; i < maxAutoPlayMoves; i++ {
 		game, err = m.store.GetGame(ctx, roomCode)
-		if err != nil || game.Status != "active" || game.TurnSeat == nil || *game.TurnSeat != seat {
+		if err != nil || game.Status != "active" || game.ImpulseSeat == nil || *game.ImpulseSeat != seat {
 			break
 		}
 		bs := state.NewBoardState()

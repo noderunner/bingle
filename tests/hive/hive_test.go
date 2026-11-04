@@ -501,7 +501,7 @@ func TestRandomGamesAreValidAndTerminate(t *testing.T) {
 				if res.GameEnded {
 					break
 				}
-				seat = res.NextTurnSeat
+				seat = res.NextImpulseSeat
 			}
 			o := rs.Outcome(g, st)
 			switch {

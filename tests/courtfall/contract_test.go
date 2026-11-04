@@ -124,9 +124,9 @@ func TestRandomGamesKeepTheEngineContract(t *testing.T) {
 					t.Fatalf("notation %s does not reproduce the move", res.Notation)
 				}
 				if !res.GameEnded {
-					next, err := state.TurnAfter(g, res.NewState, seat)
-					if err != nil || next != res.NextTurnSeat {
-						t.Fatalf("TurnAfter = %d (%v), result says %d", next, err, res.NextTurnSeat)
+					next, err := state.ImpulseAfter(g, res.NewState, seat)
+					if err != nil || next != res.NextImpulseSeat {
+						t.Fatalf("ImpulseAfter = %d (%v), result says %d", next, err, res.NextImpulseSeat)
 					}
 				}
 				if i == 0 {
@@ -191,7 +191,7 @@ func TestRandomGamesKeepTheEngineContract(t *testing.T) {
 			if chosen.GameEnded {
 				break
 			}
-			st, seat = chosen.NewState, chosen.NextTurnSeat
+			st, seat = chosen.NewState, chosen.NextImpulseSeat
 		}
 	}
 }
@@ -213,7 +213,7 @@ func TestSameSeedSameMovesSamePositions(t *testing.T) {
 			if res.GameEnded {
 				break
 			}
-			st, seat = res.NewState, res.NextTurnSeat
+			st, seat = res.NewState, res.NextImpulseSeat
 		}
 		return docs
 	}

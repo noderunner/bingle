@@ -103,7 +103,7 @@ func newMakeMoveTestManager(t *testing.T) *session.Manager {
 
 // createAndActivateMakeMoveGame runs the standard flow: CreateGame(Alice)
 // then JoinGame(Bob, RolePlayer), which (per docs/history/plan.md section 6.4c/6.4d)
-// activates the game and sets turn_seat to seat 1 (the first entry in the
+// activates the game and sets impulse_seat to seat 1 (the first entry in the
 // fixture's round-robin turn order). Returns the resulting room code.
 func createAndActivateMakeMoveGame(t *testing.T, mgr *session.Manager, ctx context.Context) string {
 	t.Helper()
@@ -177,8 +177,8 @@ func TestMakeMove_LegalCaptureByCorrectSeat_ReturnsExpectedOutcome(t *testing.T)
 	} else if *outcome.Captured != makeMoveFixtureWhiteCapturePos {
 		t.Errorf("MakeMove() Captured = %q, want %q", *outcome.Captured, makeMoveFixtureWhiteCapturePos)
 	}
-	if outcome.NextTurnSeat != 2 {
-		t.Errorf("MakeMove() NextTurnSeat = %d, want 2 (flipped from seat 1)", outcome.NextTurnSeat)
+	if outcome.NextImpulseSeat != 2 {
+		t.Errorf("MakeMove() NextImpulseSeat = %d, want 2 (flipped from seat 1)", outcome.NextImpulseSeat)
 	}
 	if outcome.GameEnded {
 		t.Errorf("MakeMove() GameEnded = true, want false (win_condition: none)")
@@ -195,7 +195,7 @@ func TestMakeMove_LegalCaptureByCorrectSeat_ReturnsExpectedOutcome(t *testing.T)
 }
 
 // --- 2. Immediately after that move, GetState confirms exactly one move was
-//        persisted: turn_seat flipped to 2, move_seq == 1, and the board
+//        persisted: impulse_seat flipped to 2, move_seq == 1, and the board
 //        state itself shows black at the destination and nothing at the
 //        origin (via direct occupant inspection, not string matching) ------
 
@@ -218,11 +218,11 @@ func TestMakeMove_LegalCapture_PersistsAndUpdatesGameRow(t *testing.T) {
 	if snap.MoveSeq != 1 {
 		t.Errorf("GetState() MoveSeq = %d, want 1 (exactly one move persisted)", snap.MoveSeq)
 	}
-	if snap.TurnSeat == nil {
-		t.Fatalf("GetState() TurnSeat = nil, want pointer to 2")
+	if snap.ImpulseSeat == nil {
+		t.Fatalf("GetState() ImpulseSeat = nil, want pointer to 2")
 	}
-	if *snap.TurnSeat != 2 {
-		t.Errorf("GetState() TurnSeat = %d, want 2 (flipped from seat 1 by the move)", *snap.TurnSeat)
+	if *snap.ImpulseSeat != 2 {
+		t.Errorf("GetState() ImpulseSeat = %d, want 2 (flipped from seat 1 by the move)", *snap.ImpulseSeat)
 	}
 	if snap.Status != "active" {
 		t.Errorf("GetState() Status = %q, want %q", snap.Status, "active")
@@ -265,7 +265,7 @@ func TestMakeMove_LegalCapture_PersistsAndUpdatesGameRow(t *testing.T) {
 }
 
 // --- 3. A second legal move, now by the other seat whose turn it has
-//        become, succeeds with Seq == 2 and flips NextTurnSeat back to 1 --
+//        become, succeeds with Seq == 2 and flips NextImpulseSeat back to 1 --
 
 func TestMakeMove_SecondLegalMoveByOtherSeat_AdvancesSeqAndFlipsTurnBack(t *testing.T) {
 	mgr := newMakeMoveTestManager(t)
@@ -296,8 +296,8 @@ func TestMakeMove_SecondLegalMoveByOtherSeat_AdvancesSeqAndFlipsTurnBack(t *test
 	if outcome.Captured != nil {
 		t.Errorf("MakeMove() [move 2] Captured = %q, want nil (destination was empty)", *outcome.Captured)
 	}
-	if outcome.NextTurnSeat != 1 {
-		t.Errorf("MakeMove() [move 2] NextTurnSeat = %d, want 1 (flipped back from seat 2)", outcome.NextTurnSeat)
+	if outcome.NextImpulseSeat != 1 {
+		t.Errorf("MakeMove() [move 2] NextImpulseSeat = %d, want 1 (flipped back from seat 2)", outcome.NextImpulseSeat)
 	}
 	if outcome.Status != "active" {
 		t.Errorf("MakeMove() [move 2] Status = %q, want %q", outcome.Status, "active")
@@ -310,20 +310,20 @@ func TestMakeMove_SecondLegalMoveByOtherSeat_AdvancesSeqAndFlipsTurnBack(t *test
 	if snap.MoveSeq != 2 {
 		t.Errorf("GetState() MoveSeq = %d, want 2 (two moves persisted)", snap.MoveSeq)
 	}
-	if snap.TurnSeat == nil {
-		t.Errorf("GetState() TurnSeat = nil, want pointer to 1")
-	} else if *snap.TurnSeat != 1 {
-		t.Errorf("GetState() TurnSeat = %d, want 1 (flipped back from seat 2 by move 2)", *snap.TurnSeat)
+	if snap.ImpulseSeat == nil {
+		t.Errorf("GetState() ImpulseSeat = nil, want pointer to 1")
+	} else if *snap.ImpulseSeat != 1 {
+		t.Errorf("GetState() ImpulseSeat = %d, want 1 (flipped back from seat 2 by move 2)", *snap.ImpulseSeat)
 	}
 }
 
 // --- 4. A quick smoke check: MakeMove by a name that holds no seat at all
-//        in this game returns ErrNotYourTurn (not a panic, not some other
+//        in this game returns ErrNotYourImpulse (not a panic, not some other
 //        error) -- item 21 covers rejection paths thoroughly; this is just a
 //        sanity check on the "not found among players" branch that the
 //        happy-path lookup above also exercises. -----------------------------
 
-func TestMakeMove_UnknownPlayerName_ReturnsErrNotYourTurn(t *testing.T) {
+func TestMakeMove_UnknownPlayerName_ReturnsErrNotYourImpulse(t *testing.T) {
 	mgr := newMakeMoveTestManager(t)
 	ctx := context.Background()
 
@@ -334,7 +334,7 @@ func TestMakeMove_UnknownPlayerName_ReturnsErrNotYourTurn(t *testing.T) {
 	if err == nil {
 		t.Fatalf("MakeMove(%q, ...) error = nil, want non-nil ( %q holds no seat in this game)", "Zed", "Zed")
 	}
-	if !errors.Is(err, session.ErrNotYourTurn) {
-		t.Errorf("MakeMove(%q, ...) error = %v, want errors.Is(err, session.ErrNotYourTurn)", "Zed", err)
+	if !errors.Is(err, session.ErrNotYourImpulse) {
+		t.Errorf("MakeMove(%q, ...) error = %v, want errors.Is(err, session.ErrNotYourImpulse)", "Zed", err)
 	}
 }

@@ -99,7 +99,7 @@ func TestEveryRandomDraftPlacesAllTenTiles(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			st, seat = res.NewState, res.NextTurnSeat
+			st, seat = res.NewState, res.NextImpulseSeat
 			placed++
 		}
 		if placed != 10 {
@@ -132,7 +132,7 @@ func TestDraftAlternatesThenCourtsThenDeployment(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		st, seat = res.NewState, res.NextTurnSeat
+		st, seat = res.NewState, res.NextImpulseSeat
 	}
 	for i, s := range order {
 		if want := 1 + i%2; s != want {
@@ -182,7 +182,7 @@ func TestDraftAlternatesThenCourtsThenDeployment(t *testing.T) {
 	for i, m := range deploys {
 		var res *state.MoveResult
 		st, res = play(t, g, st, m.seat, m.n)
-		if i < len(deploys)-1 && res.NextTurnSeat == m.seat {
+		if i < len(deploys)-1 && res.NextImpulseSeat == m.seat {
 			t.Fatalf("deployment did not alternate at %s", m.n)
 		}
 	}

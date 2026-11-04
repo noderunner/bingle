@@ -13,7 +13,7 @@ import (
 // autoStepJS performs one UI action for the player: finish a pending
 // selection (count, verb, hex) or start one (hex, unit from hand, verb).
 const autoStepJS = `(function () {
-	if (!document.querySelector("#action-card.acting")) return "wait";
+	if (!document.querySelector("#impulse-card.acting")) return "wait";
 	var pending = !!document.getElementById("pending-move");
 	function click(el, what) {
 		el.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));

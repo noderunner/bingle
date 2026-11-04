@@ -137,14 +137,14 @@ func (m *Manager) JoinGameAt(ctx context.Context, roomCode, name string, role Ro
 	}
 
 	newStatus := game.Status
-	var newTurnSeat *int
+	var newImpulseSeat *int
 	if len(players)+1 >= len(compiled.Definition.Seats) && !game.Lobby {
 		newStatus = "active"
-		firstTurnSeat := firstSeatOf(compiled, game)
-		newTurnSeat = &firstTurnSeat
+		firstImpulseSeat := firstSeatOf(compiled, game)
+		newImpulseSeat = &firstImpulseSeat
 	}
 
-	player, err := m.store.AddPlayer(ctx, game.ID, openSeat, name, openSeatColor, newStatus, newTurnSeat)
+	player, err := m.store.AddPlayer(ctx, game.ID, openSeat, name, openSeatColor, newStatus, newImpulseSeat)
 	if err != nil {
 		return JoinResult{}, err
 	}

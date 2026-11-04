@@ -62,8 +62,8 @@ func TestWebCthulhuWars_DesecrateRollsAtOnceThenPlacesAUnitAndCannotBeTakenBack(
 	// One click rolls the die; no unit is asked about before it.
 	clickSel(t, ctx, "#action-desecrate")
 	waitJS(t, ctx, "the unit to place", `document.querySelector('#move-bar .piece-choice[data-piece="byakhee"]') !== null`, 15*time.Second)
-	if got := evalString(t, ctx, `document.getElementById("move-hint").textContent`); got != "Choose the unit to place:" {
-		t.Errorf("hint = %q", got)
+	if got := evalString(t, ctx, `document.getElementById("impulse-text").textContent`); !strings.Contains(got, "Desecrate — choose the Cultist or Monster") {
+		t.Errorf("impulse = %q", got)
 	}
 	for _, typ := range []string{"cultist", "undead", "byakhee"} {
 		if n := evalInt(t, ctx, `document.querySelectorAll('#move-bar .piece-choice[data-piece="`+typ+`"]').length`); n != 1 {

@@ -27,11 +27,13 @@ var (
 // carried in the "view" key of a public position's ext payload, so every
 // way of reading a position (state, events, history, simulation) has it.
 type View struct {
-	Phase  string `json:"phase"`
-	Stage  string `json:"stage,omitempty"`
-	ToMove int    `json:"to_move,omitempty"`
+	Phase       string `json:"phase"`
+	Stage       string `json:"stage,omitempty"`
+	ImpulseSeat int    `json:"impulse_seat,omitempty"`
 	// Prompt says what the position is waiting for.
 	Prompt string `json:"prompt"`
+	// Impulse is what the seat on impulse is asked to choose, without its name.
+	Impulse string `json:"impulse,omitempty"`
 	// Tints colours hexes by legend key; Badges marks hexes; Notes are
 	// hover texts.
 	Tints  map[string]string   `json:"tints,omitempty"`
@@ -188,11 +190,12 @@ func (e *eng) counters(seat int) []CounterView {
 func (e *eng) buildView(viewer int) *View {
 	d := e.d
 	v := &View{
-		Phase:  d.Phase,
-		Stage:  d.Stage,
-		ToMove: toMove(d),
-		Prompt: e.prompt(),
-		Seats:  map[string]*SeatView{},
+		Phase:       d.Phase,
+		Stage:       d.Stage,
+		ImpulseSeat: impulseSeat(d),
+		Prompt:      e.prompt(),
+		Impulse:     e.impulse(),
+		Seats:       map[string]*SeatView{},
 	}
 	if d.Phase == phaseTerrain || d.Phase == phaseDeploy {
 		v.TilesLeft = map[string]int{}
@@ -454,7 +457,7 @@ func (rs *Ruleset) PlaneLayout(game *catalog.CompiledGame) ([]string, int, int) 
 	for _, s := range planeStages {
 		names = append(names, "stage/"+s)
 	}
-	names = append(names, "to-move", "actions-left", "contest/attack-dice", "stone-ready/me", "streak", "ply",
+	names = append(names, "on-impulse", "actions-left", "contest/attack-dice", "stone-ready/me", "streak", "ply",
 		"tiles-left/green", "tiles-left/blue", "tiles-left/red")
 	for _, r := range planeRel {
 		for _, c := range courts {
@@ -544,8 +547,8 @@ func (rs *Ruleset) EncodePlanes(game *catalog.CompiledGame, st *state.BoardState
 	fill("phase/"+d.Phase, 1)
 	if d.Phase == phasePlay {
 		fill("stage/"+d.Stage, 1)
-		if toMove(d) == viewer {
-			fill("to-move", 1)
+		if impulseSeat(d) == viewer {
+			fill("on-impulse", 1)
 		}
 		if d.Act != nil {
 			fill("actions-left", float32(d.Act.Left)/2)
@@ -554,8 +557,8 @@ func (rs *Ruleset) EncodePlanes(game *catalog.CompiledGame, st *state.BoardState
 			}
 		}
 		fill("streak", float32(d.Streak)/2)
-	} else if toMove(d) == viewer {
-		fill("to-move", 1)
+	} else if impulseSeat(d) == viewer {
+		fill("on-impulse", 1)
 	}
 	if c := d.Con; c != nil && (viewer == c.ASeat || c.Rolled) && c.AAtk >= 0 {
 		fill("contest/attack-dice", float32(c.AAtk)/4)

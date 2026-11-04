@@ -98,7 +98,7 @@ func (m *Manager) runBotsFor(ctx context.Context, roomCode string, soft time.Dur
 			return played, true
 		}
 		game, err := m.store.GetGame(ctx, roomCode)
-		if err != nil || game.Status != "active" || game.TurnSeat == nil {
+		if err != nil || game.Status != "active" || game.ImpulseSeat == nil {
 			if err == nil && game.Status == "finished" {
 				m.shuffles.forget(roomCode)
 			}
@@ -110,7 +110,7 @@ func (m *Manager) runBotsFor(ctx context.Context, roomCode string, soft time.Dur
 		}
 		var seatPlayer *store.Player
 		for idx := range players {
-			if players[idx].Seat == *game.TurnSeat {
+			if players[idx].Seat == *game.ImpulseSeat {
 				seatPlayer = &players[idx]
 			}
 		}

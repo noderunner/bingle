@@ -222,8 +222,8 @@ func TestRealTime_TheBotIsOnOfferToAnotherConnectedPlayer(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if snap.MoveSeq != 1 || snap.TurnSeat == nil || *snap.TurnSeat != 2 {
-		t.Fatalf("after the offer: seq %d, turn %v, want one move and Bob to play", snap.MoveSeq, snap.TurnSeat)
+	if snap.MoveSeq != 1 || snap.ImpulseSeat == nil || *snap.ImpulseSeat != 2 {
+		t.Fatalf("after the offer: seq %d, turn %v, want one move and Bob to play", snap.MoveSeq, snap.ImpulseSeat)
 	}
 	moves, err := m.ListMoves(ctx, room, 0)
 	if err != nil {

@@ -356,7 +356,7 @@ func PlayGame(ctx context.Context, cat *catalog.Catalog, spec Spec, i int) (Reco
 			st = r.NewState
 			break
 		}
-		st, seat = r.NewState, r.NextTurnSeat
+		st, seat = r.NewState, r.NextImpulseSeat
 	}
 	rec.Winner, rec.EndReason = winner, reason
 	if obs != nil {

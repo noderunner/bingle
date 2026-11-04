@@ -54,20 +54,20 @@ func TestWebCthulhuWars_GreatCthulhuInSeatThreeChoosesTheDirectionFirst(t *testi
 		t.Fatalf("create: %d", code)
 	}
 	var g struct {
-		GameDefID string `json:"game_def_id"`
-		TurnSeat  int    `json:"turn_seat"`
+		GameDefID   string `json:"game_def_id"`
+		ImpulseSeat int    `json:"impulse_seat"`
 	}
 	// The Windwalker's bot sets up by itself; then it is Great Cthulhu's turn to choose.
 	deadline := time.Now().Add(20 * time.Second)
 	for time.Now().Before(deadline) {
 		doJSON(t, "GET", baseURL+"/api/games/"+created.RoomCode, nil, &g)
-		if g.TurnSeat == 3 {
+		if g.ImpulseSeat == 3 {
 			break
 		}
 		time.Sleep(100 * time.Millisecond)
 	}
-	if g.TurnSeat != 3 {
-		t.Fatalf("seat %d is to move, want Great Cthulhu's seat 3", g.TurnSeat)
+	if g.ImpulseSeat != 3 {
+		t.Fatalf("seat %d is to move, want Great Cthulhu's seat 3", g.ImpulseSeat)
 	}
 	ctx, cancel := newChromedpContext(t, 90*time.Second)
 	defer cancel()
@@ -80,8 +80,11 @@ func TestWebCthulhuWars_GreatCthulhuInSeatThreeChoosesTheDirectionFirst(t *testi
 	if got := evalString(t, ctx, `[...document.querySelectorAll("#phase-steps .phase-step")].map(p => p.classList[1] + ":" + p.textContent.replace("✓", "").trim()).join("|")`); got != "todo:Action|done:Gather Power|current:First Player|todo:Doom" {
 		t.Errorf("phase bar %q", got)
 	}
-	if got := evalString(t, ctx, `document.getElementById("status-message").textContent`); !strings.Contains(got, "first player") {
-		t.Errorf("status %q", got)
+	if got := evalString(t, ctx, `document.getElementById("impulse-text").textContent`); got != "Choose a turn order." {
+		t.Errorf("the impulse says %q", got)
+	}
+	if got := evalString(t, ctx, `document.getElementById("impulse-card").textContent`); strings.Contains(got, "the list") {
+		t.Errorf("the turn order choices still mention the list: %q", got)
 	}
 	// Clockwise plays down the list from Great Cthulhu: Yellow Sign, Windwalker, Black Goat, Crawling Chaos.
 	if got := evalString(t, ctx, `document.getElementById("action-cw").textContent`); !strings.Contains(got, "Great Cthulhu") || !strings.Contains(got, "Yellow Sign") {

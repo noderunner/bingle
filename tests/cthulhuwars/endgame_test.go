@@ -81,7 +81,7 @@ func TestThirtyDoomEndsTheGameAtTheEndOfTheDoomPhase(t *testing.T) {
 	st := play(t, g, p.build(), 1, "pass")
 	// The first player is a tie-break away; walk the decisions to the end.
 	for i := 0; i < 20 && data(t, st).Phase != "over"; i++ {
-		seat, err := state.TurnAfter(g, st, 0)
+		seat, err := state.ImpulseAfter(g, st, 0)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -120,7 +120,7 @@ func TestWithoutSixSpellbooksHumanityWins(t *testing.T) {
 	p.doom = [5]int{0, 0, 29, 0, 0}
 	st := play(t, g, p.build(), 1, "pass")
 	for i := 0; i < 20 && data(t, st).Phase != "over"; i++ {
-		seat, _ := state.TurnAfter(g, st, 0)
+		seat, _ := state.ImpulseAfter(g, st, 0)
 		legal := state.LegalMoves(g, st, seat)
 		pick := legal[0]
 		for _, mv := range legal {
@@ -152,7 +152,7 @@ func TestOnlyPlayersWithAllSixSpellbooksCanWin(t *testing.T) {
 	p.doom = [5]int{0, 0, 12, 31, 0}
 	st := play(t, g, p.build(), 1, "pass")
 	for i := 0; i < 20 && data(t, st).Phase != "over"; i++ {
-		seat, _ := state.TurnAfter(g, st, 0)
+		seat, _ := state.ImpulseAfter(g, st, 0)
 		legal := state.LegalMoves(g, st, seat)
 		pick := legal[0]
 		for _, mv := range legal {

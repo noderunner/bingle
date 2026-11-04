@@ -393,7 +393,7 @@ func (m *Manager) takeOver(ctx context.Context, game store.Game, compiled *catal
 		}
 		taken[strings.ToLower(name)] = true
 		clock.drop(p.Seat)
-		restart = restart || (game.TurnSeat != nil && *game.TurnSeat == p.Seat)
+		restart = restart || (game.ImpulseSeat != nil && *game.ImpulseSeat == p.Seat)
 		takeovers = append(takeovers, store.SeatTakeover{
 			Replaced: store.SeatReplacement{Seat: p.Seat, Name: p.Name, PrincipalID: p.PrincipalID, Reason: reason, MoveSeq: game.MoveSeq},
 			BotName:  name, Bot: bot.ID(),
@@ -431,7 +431,7 @@ func (m *Manager) flagAtLargeTable(ctx context.Context, game store.Game, compile
 	var flagged *store.Player
 	people := 0
 	for i := range players {
-		if players[i].Seat == *game.TurnSeat {
+		if players[i].Seat == *game.ImpulseSeat {
 			flagged = &players[i]
 		}
 		if players[i].Bot == "" {

@@ -78,8 +78,8 @@ func TestCreateGame_InsertsExactlyOneGameRowAndOnePlayerRow(t *testing.T) {
 	if game.MoveSeq != 0 {
 		t.Errorf("game.MoveSeq = %d, want 0", game.MoveSeq)
 	}
-	if game.TurnSeat != nil {
-		t.Errorf("game.TurnSeat = %v, want nil", game.TurnSeat)
+	if game.ImpulseSeat != nil {
+		t.Errorf("game.ImpulseSeat = %v, want nil", game.ImpulseSeat)
 	}
 	if game.WinnerSeat != nil {
 		t.Errorf("game.WinnerSeat = %v, want nil", game.WinnerSeat)

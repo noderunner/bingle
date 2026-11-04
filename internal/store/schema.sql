@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS games (
     game_def_id   TEXT NOT NULL,
     status        TEXT NOT NULL DEFAULT 'waiting', -- waiting | active | finished
     board_state   TEXT NOT NULL,                   -- JSON snapshot, current
-    turn_seat     INTEGER,                          -- NULL while waiting/finished
+    impulse_seat     INTEGER,                          -- NULL while waiting/finished
     move_seq      INTEGER NOT NULL DEFAULT 0,
     winner_seat   INTEGER,
     created_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

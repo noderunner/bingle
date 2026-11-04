@@ -22,14 +22,14 @@ type pieSeat struct {
 func pieGame(t *testing.T, b *browser, room string) (turn int, seats []pieSeat) {
 	t.Helper()
 	var g struct {
-		TurnSeat *int      `json:"turn_seat"`
-		Seats    []pieSeat `json:"seats"`
+		ImpulseSeat *int      `json:"impulse_seat"`
+		Seats       []pieSeat `json:"seats"`
 	}
 	if code := b.do("GET", "/api/games/"+room, nil, &g); code != 200 {
 		t.Fatalf("game: %d", code)
 	}
-	if g.TurnSeat != nil {
-		turn = *g.TurnSeat
+	if g.ImpulseSeat != nil {
+		turn = *g.ImpulseSeat
 	}
 	return turn, g.Seats
 }

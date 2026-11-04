@@ -199,7 +199,7 @@ function resolveIdentity() {
 /** Several seats are mine: `me` is the one to move (else the one I last was). */
 function syncMe() {
 	if (S.mine.length < 2 || !S.game) return;
-	const onMove = isActive() ? S.mine.find((m) => m.seat === S.game.turn_seat) : null;
+	const onMove = isActive() ? S.mine.find((m) => m.seat === S.game.impulse_seat) : null;
 	const cur = onMove || S.mine.find((m) => m.seat === S.me.seat) || S.mine[0];
 	S.me = { name: cur.name, seat: cur.seat };
 }
@@ -234,7 +234,7 @@ async function loadPosition() {
 	S.state = st.state;
 	S.moves = mv;
 	S.game.status = st.status;
-	S.game.turn_seat = st.turn_seat;
+	S.game.impulse_seat = st.impulse_seat;
 	S.game.move_seq = st.move_seq;
 	S.game.winner_seat = st.winner_seat;
 	S.game.end_reason = st.end_reason;
@@ -296,7 +296,7 @@ async function loadLegal() {
 	S.builder = new MoveBuilder([]);
 	S.preview = null;
 	S.legal = [];
-	if (isMyTurn()) {
+	if (isMyImpulse()) {
 		try {
 			const res = await api.legal(code);
 			S.legal = res.moves || [];
@@ -321,8 +321,8 @@ function noteServerTime(iso) {
 /** Milliseconds left on the current turn's clock, or null when untimed. */
 function msLeft() {
 	const g = S.game;
-	if (!g || g.status !== "active" || !g.turn_deadline) return null;
-	const deadline = Date.parse(g.turn_deadline);
+	if (!g || g.status !== "active" || !g.impulse_deadline) return null;
+	const deadline = Date.parse(g.impulse_deadline);
 	if (Number.isNaN(deadline)) return null;
 	return deadline - (Date.now() + S.skewMs);
 }
@@ -405,8 +405,8 @@ function isActive() {
 	return S.game && S.game.status === "active";
 }
 
-function isMyTurn() {
-	return isActive() && S.me.seat !== 0 && S.game.turn_seat === S.me.seat;
+function isMyImpulse() {
+	return isActive() && S.me.seat !== 0 && S.game.impulse_seat === S.me.seat;
 }
 
 function isLive() {
@@ -422,9 +422,9 @@ function actingSeat() {
 	if (tutorialLookingBack()) return 0;
 	if (inAnalysis()) {
 		const sim = S.analysis.sim;
-		return sim && !sim.game_ended && sim.turn_seat ? sim.turn_seat : 0;
+		return sim && !sim.game_ended && sim.impulse_seat ? sim.impulse_seat : 0;
 	}
-	return isLive() && isMyTurn() && !S.busy ? S.me.seat : 0;
+	return isLive() && isMyImpulse() && !S.busy ? S.me.seat : 0;
 }
 
 function activeBuilder() {
@@ -1027,7 +1027,7 @@ async function playFromHere() {
 	}
 	const dlg = h("dialog", { id: "from-here-dialog" });
 	dlg.append(h("h2", {}, "Play from this position"));
-	dlg.append(h("p", { class: "muted" }, `${seatLabel(a.sim.turn_seat)} moves first from here.`));
+	dlg.append(h("p", { class: "muted" }, `${seatLabel(a.sim.impulse_seat)} moves first from here.`));
 
 	const opp = h("select", { id: "fh-opponent" }, h("option", { value: "" }, "A friend (share the link)"));
 	for (const b of bots) opp.append(h("option", { value: b.id }, b.label || b.id));
@@ -1035,7 +1035,7 @@ async function playFromHere() {
 
 	const seatSel = h("select", { id: "fh-seat" });
 	for (const sd of S.info.seats) seatSel.append(h("option", { value: String(sd.seat) }, sd.label));
-	seatSel.value = String(a.sim.turn_seat);
+	seatSel.value = String(a.sim.impulse_seat);
 
 	const nameInput = h("input", { id: "fh-name", type: "text", maxlength: "40", value: S.me.name || lastName() || "" });
 	const err = h("p", { class: "error small", id: "fh-error" });
@@ -1058,7 +1058,7 @@ async function playFromHere() {
 						opponent: opp.value || undefined,
 						seat: Number(seatSel.value),
 						start_state: a.sim.state,
-						start_seat: a.sim.turn_seat,
+						start_seat: a.sim.impulse_seat,
 						card_set: S.game.card_set || undefined,
 					});
 					rememberGame(res.room_code, S.game.game_def_id, name);
@@ -1113,7 +1113,7 @@ async function submitMove() {
 // same change are harmless because they are applied idempotently.
 async function settle() {
 	await refreshGame();
-	notifyIfMyTurn(false);
+	notifyIfMyImpulse(false);
 }
 
 /** Takes back the last step of the turn being played, which the server has. */
@@ -1355,7 +1355,7 @@ async function askHint() {
 			bot: h.bot,
 			winRate: typeof h.win_rate === "number" ? h.win_rate : null,
 			alternatives: h.alternatives || [],
-			seat: h.turn_seat,
+			seat: h.impulse_seat,
 			key: positionKey(),
 		};
 	} catch (err) {
@@ -1421,7 +1421,7 @@ function hintSquares() {
  */
 function openSteps() {
 	if (!isActive()) return 0;
-	const seat = S.game.turn_seat;
+	const seat = S.game.impulse_seat;
 	let n = 0;
 	for (let i = S.moves.length - 1; i >= 0; i--) {
 		const m = S.moves[i];
@@ -1442,7 +1442,7 @@ function openSteps() {
 
 /** A step of this turn that can still be taken back. */
 function canUndo() {
-	return !tutorialLookingBack() && !!S.me.seat && S.game.turn_seat === S.me.seat && openSteps() > 0;
+	return !tutorialLookingBack() && !!S.me.seat && S.game.impulse_seat === S.me.seat && openSteps() > 0;
 }
 
 // ---------------------------------------------------------------------------
@@ -1600,7 +1600,7 @@ async function onEvent(env) {
 			});
 			S.state = d.state;
 			// In a game against oneself the seat that acts changes with the turn.
-			S.game.turn_seat = d.turn_seat;
+			S.game.impulse_seat = d.impulse_seat;
 			S.game.status = d.status;
 			syncMe();
 			// The broadcast position is the public one: a player's own
@@ -1614,12 +1614,12 @@ async function onEvent(env) {
 				}
 			}
 			S.game.status = d.status;
-			S.game.turn_seat = d.turn_seat;
+			S.game.impulse_seat = d.impulse_seat;
 			S.game.move_seq = d.seq;
 			S.game.winner_seat = d.winner_seat;
 			S.game.end_reason = d.end_reason;
 			S.game.end_detail = d.end_detail;
-			S.game.turn_deadline = d.turn_deadline || "";
+			S.game.impulse_deadline = d.impulse_deadline || "";
 			S.game.clock = d.clock || null;
 			S.game.draw_offer_seat = null; // any move withdraws an offer
 			if (S.game.real_time) S.game.real_time.wait = null; // and a move restarts the wait
@@ -1627,7 +1627,7 @@ async function onEvent(env) {
 			noteServerTime(d.server_time);
 			S.viewCache.clear();
 			await Promise.all([loadLegal(), loadReactions(), loadAutoPlay()]);
-			if (!d.game_ended && d.turn_seat === d.seat && S.info.seats.length > 1 && !isRuleset()) {
+			if (!d.game_ended && d.impulse_seat === d.seat && S.info.seats.length > 1 && !isRuleset()) {
 				// The next seat had no legal move and was skipped. (A ruleset's
 				// turn is a run of decisions by the same seat: nothing to say.)
 				const other = S.info.seats.find((x) => x.seat !== d.seat);
@@ -1638,7 +1638,7 @@ async function onEvent(env) {
 		} else {
 			return; // already applied (our own move's echo)
 		}
-		notifyIfMyTurn(true);
+		notifyIfMyImpulse(true);
 			render();
 		} else if (env.type === "joined") {
 			S.connected = new Set((env.data && env.data.connected) || []);
@@ -1671,7 +1671,7 @@ async function onEvent(env) {
 			if (isMine(d.seat)) {
 				toast(d.stage >= 2 ? "The table can now have a bot play your turn." : "The table is waiting for your move.");
 				lastNotifiedSeq = -1;
-				notifyIfMyTurn(true);
+				notifyIfMyImpulse(true);
 			}
 		} else if (env.type === "chat") {
 			const line = env.data || {};
@@ -1681,7 +1681,7 @@ async function onEvent(env) {
 			if (env.data && env.data.reason === "draw-offer") toast("A draw was offered.");
 		await refreshGame();
 		if (env.data && env.data.reason === "undo") S.viewSeq = null;
-		notifyIfMyTurn(true);
+		notifyIfMyImpulse(true);
 		render();
 	}
 }
@@ -1692,8 +1692,8 @@ async function onEvent(env) {
 
 let lastNotifiedSeq = -1;
 
-function notifyIfMyTurn(fromEvent) {
-	if (!isMyTurn()) return;
+function notifyIfMyImpulse(fromEvent) {
+	if (!isMyImpulse()) return;
 	updateTitle();
 	if (!fromEvent || lastNotifiedSeq === S.moves.length) return;
 	lastNotifiedSeq = S.moves.length;
@@ -1707,8 +1707,8 @@ function notifyIfMyTurn(fromEvent) {
 }
 
 function updateTitle() {
-	document.title = (isMyTurn() ? "● Your turn — " : "") + titleBase + " · " + code;
-	setTurnBadge(isMyTurn());
+	document.title = (isMyImpulse() ? "● Your turn — " : "") + titleBase + " · " + code;
+	setTurnBadge(isMyImpulse());
 }
 
 document.addEventListener("visibilitychange", updateTitle);
@@ -1860,30 +1860,126 @@ function rememberRailScroll() {
 	if (rail) S.railScroll = rail.scrollTop;
 }
 
+/** Whether the game waits for a seat just now, in the position being looked at. */
+function onImpulse() {
+	return isLive() && !inAnalysis() && isActive() && !tutorialLookingBack() && !tutorialShown();
+}
+
+/** The name of the seat on impulse. Somebody playing several seats needs to be told which. */
+function impulseTitle() {
+	const seat = S.game.impulse_seat;
+	const name = seatName(seat);
+	if (!name) return seatLabel(seat);
+	return S.mine.length > 1 ? `${name} (${seatLabel(seat)})` : name;
+}
+
+/** What a highlighted place is called on this board. */
+function cellWord() {
+	const { style, kind } = S.info.board;
+	return style === "areas" ? "area" : style === "points" ? "point" : kind === "hex" ? "hex" : "square";
+}
+
+/** "Place a stone or move a stack.": a game with no words of its own says what its actions are. */
+function genericImpulse() {
+	const acts = (S.info.actions || []).map((a) => a.label).filter(Boolean);
+	if (!acts.length) return "Choose a move.";
+	const text = acts.map((label, i) => (i ? label.toLowerCase() : label)).join(" or ");
+	return `${text}.`;
+}
+
+/** What the player is asked once they have made a choice of their own in a game with its rules in Go. */
+function rulesetStepImpulse(b, rv) {
+	const opts = b.options();
+	if (!opts.length) return needsConfirm() ? "Check the preview, then submit." : "Submitting…";
+	if (rv && rv.stage === "moving") {
+		const from = b.steps.find((st) => st.kind === "pos");
+		const piece = b.steps.find((st) => st.kind === "piece");
+		const label = piece ? (S.info.pieces.find((p) => p.type === piece.value) || {}).label || piece.value : "";
+		if (from && piece) return `Choose an area to send your ${label} from ${areaName(from.value)} to.`;
+		if (from) return `Choose a unit to move out of ${areaName(from.value)}.`;
+	}
+	const manual = b.manualSteps();
+	const last = manual[manual.length - 1];
+	const lastAction = [...manual].reverse().find((st) => st.kind === "action");
+	const def = lastAction ? actionDef(lastAction.value) : null;
+	if (def && def.impulse && last === lastAction) return def.impulse;
+	const kinds = new Set(opts.map((o) => o.kind));
+	const choice = kinds.has("count")
+		? countLabel(b)
+		: kinds.has("piece") && !kinds.has("pos")
+		? "Choose a unit."
+		: kinds.has("pos") && !kinds.has("piece")
+		? `Choose ${cellWord() === "area" ? "an area" : `a ${cellWord()}`}.`
+		: "Choose an option.";
+	return def && def.label ? `${def.label}: ${choice.charAt(0).toLowerCase()}${choice.slice(1)}` : choice;
+}
+
+/** What the player on impulse in a game on the generic engine is asked just now. */
+function genericActingImpulse(b) {
+	const opts = b.options();
+	const hasPiece = opts.some((o) => o.kind === "piece");
+	const hasPos = opts.some((o) => o.kind === "pos");
+	if (b.manualSteps().length) {
+		if (opts.some((o) => o.kind === "count")) return "Choose how many pieces to pick up.";
+		if (b.complete()) return opts.length ? "Submit the move, or keep dropping pieces." : needsConfirm() ? "Check the preview, then submit." : "Submitting…";
+		const picked = b.pickedCount();
+		if (picked) {
+			const left = picked - [...b.dropCounts().values()].reduce((a, c) => a + c, 0);
+			return `Choose a square to drop the remaining ${left} piece${left === 1 ? "" : "s"} on (click again to leave more there).`;
+		}
+		return hasPos ? "Choose a highlighted square." : "Continue your move.";
+	}
+	if (openingActive() && S.info.opening.owner === "opponent") return "Opening: place a flat stone of your opponent’s color on any square.";
+	// A forced piece choice was taken automatically: the squares on offer are places to put it.
+	const placing = hasPos && !hasPiece && b.steps.length > 0 && b.steps[0].kind === "piece";
+	const points = S.info.board.style === "points";
+	if (hasPiece && hasPos) return "Click an empty square to place a stone (Shift: wall, Ctrl: capstone), or click a highlighted stack to move it.";
+	if (hasPiece && b.quickPlacements().size > 0) return `${points ? "Choose an intersection to place a stone" : "Choose an empty square to place a piece"}${opts.some((o) => o.kind === "action") ? ", or choose an action" : ""}.`;
+	if (hasPiece) return "Choose a piece from your hand.";
+	if (placing) return points ? "Choose an intersection to place a stone." : "Choose an empty square to place a piece.";
+	if (hasPos) return "Choose a highlighted piece to move.";
+	return opts.some((o) => o.kind === "action") ? "Choose an action." : "No moves available.";
+}
+
 /**
- * The card of what the player can do now. `note` is what the bar says on other pages when it
- * has something to tell or a button to press: a result, history, analysis, a wait.
+ * What the seat on impulse is asked to choose. Everyone is shown the same words, from the
+ * position. A choice the player has made and not sent is a step of their own, which is
+ * their next impulse: only their browser knows of it, so only they see it (ADR 0099).
  */
-function actionCard(note, choices = []) {
+function impulseText() {
+	const rv = rulesetView();
+	const said = rv && (rv.impulse || rv.prompt);
+	if (!isMyImpulse()) return said || genericImpulse();
+	const b = activeBuilder();
+	if (!isRuleset()) return genericActingImpulse(b);
+	return b.manualSteps().length ? rulesetStepImpulse(b, rv) : said || genericActingImpulse(b);
+}
+
+/**
+ * The impulse card: whose impulse it is as the title and what they are asked to choose
+ * under it, for everyone, then what the player can do about it. `note` is what the bar says
+ * on other pages when it has something to tell or a button to press: a result, history,
+ * analysis, a wait.
+ */
+function impulseCard(note, choices = []) {
 	// Not actingSeat(): that lapses while a step is being sent, and the card would jump.
-	const acting = inAnalysis() ? !!actingSeat() : isLive() && isMyTurn() && !tutorialLookingBack();
+	const acting = inAnalysis() ? !!actingSeat() : isLive() && isMyImpulse() && !tutorialLookingBack();
 	const bar = moveBar();
 	const g = S.game;
 	// The note says it already: "Browsing history" under "Viewing the position after move 3".
 	if (note && !inAnalysis()) bar.querySelector(":scope > .hint")?.remove();
-	const waiting = !acting && isLive() && !inAnalysis() && isActive() && !!S.me.seat && !S.tut;
+	const impulse = onImpulse();
 	const text = bar.textContent.trim();
-	// Kept while the opponent plays, so that the cards below do not jump at each turn.
-	if (!acting && !waiting && !text && !note && !choices.length) return null;
-	const title = inAnalysis() ? "Analysis" : !isLive() ? "History" : acting ? "Your move" : g.status === "finished" ? "Game over" : g.status === "waiting" ? "Waiting" : "Actions";
-	const card = h("section", { class: "card action-card" + (acting ? " acting" : ""), id: "action-card", "aria-label": "Your actions" });
-	card.append(h("h3", {}, title));
+	if (!acting && !impulse && !text && !note && !choices.length) return null;
+	const title = inAnalysis() ? "Analysis" : !isLive() ? "History" : impulse ? impulseTitle() : g.status === "finished" ? "Game over" : g.status === "waiting" ? "Waiting" : "Actions";
+	const card = h("section", { class: "card impulse-card" + (acting ? " acting" : ""), id: "impulse-card", "aria-label": "Impulse" });
+	card.append(h("h3", { id: "impulse-title" }, title));
+	if (impulse) card.append(h("p", { class: "impulse-text", id: "impulse-text" }, impulseText()));
 	if (note) {
 		card.classList.toggle("over", note.over);
 		card.classList.toggle("history", note.history);
 		card.append(note.words);
 	}
-	if (waiting && !text && !choices.length) card.append(h("p", { class: "small muted", id: "action-idle" }, "Your choices appear here on your turn."));
 	if (bar.childNodes.length) card.append(bar);
 	card.append(...choices);
 	if (note && note.buttons.length) card.append(h("div", { class: "note-buttons" }, ...note.buttons));
@@ -1945,7 +2041,7 @@ function renderFitted(seats, bottomSeat, cults) {
 	if (S.tut) first.push(tutorialCard());
 	first.push(kickVoteBanner(), slowTurnBanner(), nextGameBanner(), firstMoveBanner(), drawOfferBanner(), hintBanner());
 	if (!S.me.seat && !S.spectating) first.push(identityGate());
-	first.push(actionCard(note, choices.filter(Boolean)));
+	first.push(impulseCard(note, choices.filter(Boolean)));
 	const talk = !S.tut ? [voiceCard({ code, me: S.me, seats: S.game.seats }), chatCard({ code, me: S.me })].filter(Boolean) : [];
 
 	const rail = h("aside", { class: "side-panel play-rail", id: "play-rail" }, ...first.filter(Boolean));
@@ -2057,9 +2153,9 @@ function paintMobileBadges() {
 
 function renderMobile(seats, bottomSeat) {
 	document.body.classList.add("m-mode");
-	const myTurn = isLive() && S.game.status === "active" && isMyTurn();
+	const myImpulse = isLive() && S.game.status === "active" && isMyImpulse();
 	if (isLandscape()) {
-		renderMobileMap(myTurn);
+		renderMobileMap(myImpulse);
 		return;
 	}
 
@@ -2072,6 +2168,7 @@ function renderMobile(seats, bottomSeat) {
 		const gate = identityGate();
 		if (gate) actions.append(gate);
 	}
+	if (onImpulse()) actions.append(h("h3", { id: "impulse-title" }, impulseTitle()), h("p", { class: "impulse-text", id: "impulse-text" }, impulseText()));
 	actions.append(moveBar());
 	for (const part of [unitInfoCard(), battlePanel(), exchangePanel()]) if (part) actions.append(part);
 
@@ -2100,7 +2197,7 @@ function renderMobile(seats, bottomSeat) {
 		pages,
 		chips,
 		groups: [
-			{ id: "actions", label: "Actions", icon: "⚡", pulse: myTurn && S.mPage !== "actions" },
+			{ id: "actions", label: "Actions", icon: "⚡", pulse: myImpulse && S.mPage !== "actions" },
 			{ id: "round", label: "Round", icon: "⏳" },
 			{ id: "cults", label: "Cults", icon: "👥" },
 			{ id: "log", label: "History", icon: "📜" },
@@ -2124,23 +2221,23 @@ function renderMobile(seats, bottomSeat) {
 	if (S.mPage === "chat") chatSeen();
 	paintMobileBadges();
 	mobileHintOnce();
-	buzzOnMyTurn(myTurn);
+	buzzOnMyImpulse(myImpulse);
 }
 
 /** On its side, the phone is all map: to tap areas, move units, pinch and drag. */
-function renderMobileMap(myTurn) {
+function renderMobileMap(myImpulse) {
 	document.body.classList.add("m-landscape");
 	const boardHost = h("div", { id: "board" });
 	const page = h("div", { class: "m-map-page m-landscape-map" }, h("div", { class: "m-board-box" }, boardHost));
 	// The map cannot say whose turn it is, or that the next choice is a button.
-	if (myTurn) {
+	if (myImpulse) {
 		const onMap = activeBuilder().options().some((o) => o.kind === "pos");
 		page.append(h("div", { class: "m-turn-note", id: "m-turn-note", role: "status" }, onMap ? "Your turn" : "Your turn: hold the phone upright to choose"));
 	}
 	root.append(page);
 	drawBoard(boardHost);
 	mobileHintOnce();
-	buzzOnMyTurn(myTurn);
+	buzzOnMyImpulse(myImpulse);
 }
 
 function mobileHintOnce() {
@@ -2150,8 +2247,8 @@ function mobileHintOnce() {
 }
 
 /** A turn that has just come to the player buzzes the phone, once. */
-function buzzOnMyTurn(myTurn) {
-	if (!myTurn || S.mBuzzed === S.moves.length) return;
+function buzzOnMyImpulse(myImpulse) {
+	if (!myImpulse || S.mBuzzed === S.moves.length) return;
 	S.mBuzzed = S.moves.length;
 	if (navigator.vibrate && document.visibilityState === "visible") navigator.vibrate(60);
 }
@@ -2162,7 +2259,7 @@ function buzzOnMyTurn(myTurn) {
  */
 function renderMobileCards(seats, bottomSeat) {
 	document.body.classList.add("m-mode");
-	const myTurn = isLive() && S.game.status === "active" && isMyTurn();
+	const myImpulse = isLive() && S.game.status === "active" && isMyImpulse();
 	const v = rulesetView();
 	const ctx = cardContext(v);
 
@@ -2174,6 +2271,7 @@ function renderMobileCards(seats, bottomSeat) {
 		const gate = identityGate();
 		if (gate) play.append(gate);
 	}
+	if (onImpulse()) play.append(h("h3", { id: "impulse-title" }, impulseTitle()), h("p", { class: "impulse-text", id: "impulse-text" }, impulseText()));
 	play.append(moveBar());
 	const table = drawCardTable(ctx);
 	S.ctPrev = table.state;
@@ -2199,7 +2297,7 @@ function renderMobileCards(seats, bottomSeat) {
 	const shell = mobileShell({
 		pages,
 		groups: [
-			{ id: "play", label: "Play", icon: "🃏", pulse: myTurn && S.mPage !== "play" },
+			{ id: "play", label: "Play", icon: "🃏", pulse: myImpulse && S.mPage !== "play" },
 			...(v.grid ? [{ id: "terms", label: "Terms", icon: "📋" }] : []),
 			{ id: "players", label: "Players", icon: "👥" },
 			{ id: "log", label: "History", icon: "📜" },
@@ -2223,7 +2321,7 @@ function renderMobileCards(seats, bottomSeat) {
 	if (S.mPage === "chat") chatSeen();
 	paintMobileBadges();
 	// A turn that has just come to the player buzzes the phone, once.
-	if (myTurn && S.mBuzzed !== S.moves.length) {
+	if (myImpulse && S.mBuzzed !== S.moves.length) {
 		S.mBuzzed = S.moves.length;
 		if (navigator.vibrate && document.visibilityState === "visible") navigator.vibrate(60);
 	}
@@ -2428,7 +2526,7 @@ function statusBar() {
 		const where = a.base === null ? "the current position" : `the position after move ${a.base}`;
 		if (!sim) msg = "Analysis — loading…";
 		else if (sim.game_ended) msg = `Analysis: the variation ends the game${sim.winner_seat ? ` — ${seatLabel(sim.winner_seat)} wins` : " in a draw"}.`;
-		else msg = `Analysis from ${where}: ${seatLabel(sim.turn_seat)} to move. Nothing here is played.`;
+		else msg = `Analysis from ${where}: ${seatLabel(sim.impulse_seat)} to move. Nothing here is played.`;
 	} else if (!isLive()) {
 		cls.push("history");
 		const seq = S.viewSeq;
@@ -2445,23 +2543,21 @@ function statusBar() {
 	} else if (g.status === "finished") {
 		cls.push("over");
 		msg = resultMessage();
-	} else if (isMyTurn()) {
-		cls.push("your-turn");
-		msg = turnPrompt();
+	} else if (isMyImpulse()) {
+		cls.push("your-impulse");
+		msg = `Your turn — ${impulseText()}`;
 	} else if (S.me.seat) {
-		const n = seatName(g.turn_seat);
-		const si = seatInfo(g.turn_seat);
-		msg = si && si.bot ? `${n} is thinking…` : `Waiting for ${n || seatLabel(g.turn_seat)} to move…`;
-		const rv = rulesetView();
-		if (rv && rv.prompt) msg = si && si.bot ? `${rv.prompt} (${n} is thinking…)` : rv.prompt;
+		const si = seatInfo(g.impulse_seat);
+		const who = seatName(g.impulse_seat) || seatLabel(g.impulse_seat);
+		msg = si && si.bot ? `${who} is thinking: ${impulseText()}` : `Waiting for ${who}: ${impulseText()}`;
 	} else {
-		msg = `${seatLabel(g.turn_seat)} (${displayName(g.turn_seat)}) to move.`;
+		msg = `${seatLabel(g.impulse_seat)} (${displayName(g.impulse_seat)}): ${impulseText()}`;
 	}
 
 	const bar = h("div", { class: cls.join(" ") });
 	bar.append(h("div", { class: "message", id: "status-message", "aria-live": "polite" }, ...withSeatWords(msg)));
 	if (isLive() && !inAnalysis() && g.status === "active" && !tutorialShown() && !tutorialLookingBack()) {
-		if (isMyTurn()) badges.push(h("span", { class: "badge turn" }, "Your turn"));
+		if (isMyImpulse()) badges.push(h("span", { class: "badge turn" }, "Your turn"));
 		{
 			const rv = rulesetView();
 			badges.push(
@@ -2522,7 +2618,7 @@ function rematchControl() {
 						};
 						if (custom) {
 							body.start_state = S.game.start_state;
-							body.start_seat = S.game.start_turn_seat || undefined;
+							body.start_seat = S.game.start_impulse_seat || undefined;
 						}
 						const res = await api.createGame(body);
 						rememberGame(res.room_code, S.game.game_def_id, S.me.name);
@@ -2607,47 +2703,6 @@ function resultMessage() {
 	return `${who} won${how}${detail}.`;
 }
 
-function turnPrompt() {
-	const b = activeBuilder();
-	const opts = b.options();
-	const rv = rulesetView();
-	if (rv && rv.stage === "moving") {
-		// Moving units one by one: say which click comes next.
-		const from = b.steps.find((st) => st.kind === "pos");
-		const piece = b.steps.find((st) => st.kind === "piece");
-		const label = piece ? (S.info.pieces.find((p) => p.type === piece.value) || {}).label || piece.value : "";
-		if (from && piece) return `Move: click a highlighted area to send your ${label} from ${areaName(from.value)} to.`;
-		if (from) return `Move: pick which unit leaves ${areaName(from.value)} (a glowing token or a button).`;
-		return "Move: click a glowing unit to pick it up (1 Power each), then its destination. Press Done when finished.";
-	}
-	if (rv && rv.stage === "direction") {
-		// The two choices below spell out who plays after whom.
-		return "You are the first player — choose the direction of play.";
-	}
-	if (rv && rv.prompt) {
-		if (opts.some((o) => o.kind === "count")) return `${rv.prompt} — ${countLabel(b)}`;
-		return `Your turn — ${rv.prompt}`;
-	}
-	if (b.manualSteps().length === 0) {
-		if (openingActive() && S.info.opening.owner === "opponent") {
-			return "Opening: place a flat stone of your opponent’s color on any square.";
-		}
-		const acts = (S.info.actions || []).map((a) => a.label.toLowerCase());
-		return acts.length ? `Your turn — ${acts.join(" or ")}.` : "Your turn.";
-	}
-	if (opts.some((o) => o.kind === "count")) return "How many pieces do you want to pick up?";
-	if (b.complete()) {
-		return opts.length ? "Submit the move, or keep dropping pieces." : needsConfirm() ? "Check the preview, then submit." : "Submitting…";
-	}
-	const picked = b.pickedCount();
-	if (picked) {
-		const dropped = [...b.dropCounts().values()].reduce((a, c) => a + c, 0);
-		return `Drop the remaining ${picked - dropped} piece${picked - dropped === 1 ? "" : "s"}: click the next square (click again to leave more there).`;
-	}
-	if (opts.some((o) => o.kind === "pos")) return "Choose a highlighted square.";
-	return "Continue your move.";
-}
-
 // ---- connected / disconnected ---------------------------------------------------------------
 
 /**
@@ -2711,11 +2766,11 @@ function seatGlyph(seat) {
 function seatStrip(seat) {
 	const color = colorOf(seat);
 	const si = seatInfo(seat);
-	const toMove = inAnalysis()
-		? !!S.analysis.sim && !S.analysis.sim.game_ended && S.analysis.sim.turn_seat === seat
-		: isActive() && S.game.turn_seat === seat && isLive();
+	const impulseSeat = inAnalysis()
+		? !!S.analysis.sim && !S.analysis.sim.game_ended && S.analysis.sim.impulse_seat === seat
+		: isActive() && S.game.impulse_seat === seat && isLive();
 	const off = seatDisconnected(seat);
-	const strip = h("div", { class: "seat-strip" + (toMove ? " to-move" : "") + (off ? " disconnected" : ""), id: `seat-${seat}`, "data-seat": seat });
+	const strip = h("div", { class: "seat-strip" + (impulseSeat ? " on-impulse" : "") + (off ? " disconnected" : ""), id: `seat-${seat}`, "data-seat": seat });
 	const head = h("div", { class: "seat-head" });
 	head.append(seatSwatch(seat, color));
 	const glyph = seatGlyph(seat);
@@ -2772,7 +2827,7 @@ function seatStrip(seat) {
 				"⏱ " + formatClock(onClock)
 			)
 		);
-	} else if (toMove && msLeft() !== null) {
+	} else if (impulseSeat && msLeft() !== null) {
 		head.append(h("span", { class: "clock", "data-clock": "turn", title: "Time left to move" }, "⏱ " + formatClock(msLeft())));
 	}
 	for (const sc of scores()) {
@@ -3324,7 +3379,7 @@ async function loadAutoPlay() {
 function autoplayState(a) {
 	if (!a.enabled) return "Off. Switch it on and a tactical bot plays for you when it is your turn and you have not acted within the time above.";
 	const wait = timeoutText(a.timeout_seconds);
-	if (a.deadline && isActive() && S.game.turn_seat === S.me.seat) {
+	if (a.deadline && isActive() && S.game.impulse_seat === S.me.seat) {
 		const at = new Date(a.deadline);
 		const left = at.getTime() - (Date.now() + S.skewMs);
 		return `On. It is your turn: a tactical bot plays for you at ${at.toLocaleString()} (${left > 0 ? "in " + formatClock(left) : "now"}) unless you act first.`;
@@ -3685,7 +3740,7 @@ function cardContext(v) {
 		// The room is the key the order of a hand is remembered under.
 		room: code,
 		me: S.me.seat || 0,
-		toMove: v.to_move,
+		impulseSeat: v.impulse_seat,
 		dealer: v.dealer,
 		bonus: v.bonus,
 		team: v.team,
@@ -3718,7 +3773,7 @@ function cardsPanel() {
 	const v = rulesetView();
 	if (!v || !v.cards) return null;
 	const seats = S.game.seats || [];
-	const mover = v.to_move || 0;
+	const mover = v.impulse_seat || 0;
 	const b = actingSeat() ? activeBuilder() : null;
 	const picked = b && b.steps[0] && b.steps[0].kind === "action" ? b.steps[0].value : null;
 	const playable = b ? new Set(b.nextActions()) : new Set();
@@ -3751,7 +3806,7 @@ function cardsPanel() {
 	};
 	const panel = h("div", { class: "cards-panel", id: "cards-panel", "aria-label": "Move cards" });
 	const group = (title, cards, seat, turn, own) => {
-		const g = h("div", { class: "card-group" + (turn ? " to-move" : "") }, h("div", { class: "card-group-title small muted" }, title));
+		const g = h("div", { class: "card-group" + (turn ? " on-impulse" : "") }, h("div", { class: "card-group-title small muted" }, title));
 		const row = h("div", { class: "card-row" });
 		for (const c of cards) row.append(one(c, seat, own));
 		return g.append(row), g;
@@ -4099,79 +4154,6 @@ function moveBar() {
 
 	if (acting && b.manualSteps().length) {
 		bar.append(pendingMove(b));
-	} else if (acting && !inAnalysis() && isRuleset()) {
-		const opts = b.options();
-		const hasPos = opts.some((o) => o.kind === "pos");
-		const hasAct = opts.some((o) => o.kind === "action");
-		const hasPiece = opts.some((o) => o.kind === "piece");
-		const cell = S.info.board.style === "areas" ? "area" : "hex";
-		const rvh = rulesetView();
-		// A normal turn: units to move on the map, or an action to choose.
-		const turnStage = !!rvh && rvh.stage === "turn" && b.steps.length === 0;
-		// Choosing the spellbook that a requirement earned.
-		const choosingBook = hasAct && opts.filter((o) => o.kind === "action").every((o) => String(o.value).startsWith("book-"));
-		bar.append(
-			h(
-				"span",
-				{ class: "hint", id: "move-hint" },
-				rvh && rvh.move_hint
-					? rvh.move_hint
-					: rvh && rvh.stage === "setup"
-					? "Choose Starting Area: select a starting area on the map."
-					: choosingBook
-					? "Choose a spellbook to unlock:"
-					: hasPiece && !hasPos && rvh && rvh.stage === "prompt"
-					? "Choose the unit to place:"
-					: hasPiece
-					? `Choose a unit, then a highlighted ${cell}.`
-					: turnStage && hasAct && (hasPos || hasPiece)
-					? "Click a unit on the map to move, or choose an action:"
-					: hasPos && hasAct
-					? `Click a highlighted ${cell}, or choose an action.`
-					: hasPos
-					? `Click a highlighted ${cell}.`
-					: hasAct
-					? (rulesetView() || {}).panel_actions
-						? (rulesetView() || {}).hint || "Click a card or a box on the table, or choose from the buttons."
-						: "Choose an action."
-					: opts.some((o) => o.kind === "count")
-					? "Choose a number."
-					: ""
-			)
-		);
-	} else if (acting && !inAnalysis()) {
-		const opts = b.options();
-		const hasPiece = opts.some((o) => o.kind === "piece");
-		const hasPos = opts.some((o) => o.kind === "pos");
-		// A forced piece choice was taken automatically: the squares on offer
-		// are placement targets, not pieces to pick up.
-		const placing = hasPos && !hasPiece && b.steps.length > 0 && b.steps[0].kind === "piece";
-		const points = S.info.board.style === "points";
-		bar.append(
-			h(
-				"span",
-				{ class: "hint" },
-				hasPiece && hasPos
-					? "Click an empty square to place a stone (Shift: wall, Ctrl: capstone), or click a highlighted stack to move it."
-					: hasPiece && !hasPos && b.quickPlacements().size > 0
-					? `${points ? "Click an intersection to place a stone" : "Click an empty square to place a piece"}${
-							opts.some((o) => o.kind === "action") ? ", or choose an action" : ""
-					  }.`
-					: hasPiece
-					? "Choose a piece from your hand."
-					: placing
-					? points
-						? "Click an intersection to place a stone."
-						: "Click an empty square to place a piece."
-					: hasPos
-					? "Click a highlighted piece to move it."
-					: opts.some((o) => o.kind === "action")
-					? (rulesetView() || {}).panel_actions
-						? (rulesetView() || {}).hint || "Click a card or a box on the table, or choose from the buttons."
-						: "Choose an action."
-					: "No moves available."
-			)
-		);
 	}
 
 	const actionIds = acting && (isRuleset() || b.manualSteps().length === 0) ? b.nextActions() : [];
@@ -4525,10 +4507,9 @@ function directionButton(id, rv) {
 			id: `action-${id}`,
 			class: "direction-button",
 			"data-action": id,
-			title: cw ? "Play passes down the list of cults, wrapping from the last to the first." : "Play passes up the list of cults, wrapping from the first to the last.",
 			onclick: () => chooseAction(id),
 		},
-		h("span", { class: "dir-head" }, h("span", { class: "dir-glyph", "aria-hidden": "true" }, cw ? "↻" : "↺"), h("strong", {}, cw ? "Clockwise" : "Counter-clockwise"), h("span", { class: "muted small" }, cw ? " — down the list" : " — up the list")),
+		h("span", { class: "dir-head" }, h("span", { class: "dir-glyph", "aria-hidden": "true" }, cw ? "↻" : "↺"), h("strong", {}, cw ? "Clockwise" : "Counter-clockwise")),
 		orderLine(cw ? rv.order.cw : rv.order.ccw)
 	);
 }
@@ -5176,7 +5157,7 @@ function exchangePanel() {
 	if (!v || !v.contest) return null;
 	const c = v.contest;
 	const mine = actingSeat();
-	const rerolling = !c.resolved && v.stage === "reroll" && mine && v.to_move === mine;
+	const rerolling = !c.resolved && v.stage === "reroll" && mine && v.impulse_seat === mine;
 	const kind = { strike: "Strike", shoot: "Shot", shove: "Shove" }[c.kind] || c.kind;
 	const [a, t] = c.sides;
 	const card = h("div", { class: "exchange", id: "exchange", "data-kind": c.kind, "data-resolved": c.resolved ? "1" : "0" });
@@ -5627,7 +5608,7 @@ function debugPanel() {
 				{
 					board_state: legacyView(),
 					state: currentState(),
-					turn_seat: S.game.turn_seat,
+					impulse_seat: S.game.impulse_seat,
 					status: S.game.status,
 					move_seq: S.game.move_seq,
 				},
@@ -5657,7 +5638,7 @@ document.addEventListener("keydown", (ev) => {
 	if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
 	switch (ev.key) {
 		case "Enter":
-			if (!inAnalysis() && isMyTurn() && S.builder.complete() && !S.busy) submitMove();
+			if (!inAnalysis() && isMyImpulse() && S.builder.complete() && !S.busy) submitMove();
 			break;
 		case "Escape":
 			if (activeBuilder().manualSteps().length) resetMove();
@@ -5751,7 +5732,7 @@ function tutorialTick() {
 		return;
 	}
 	if (!p.next || p.next.who !== "reply") return;
-	const seat = S.game.turn_seat;
+	const seat = S.game.impulse_seat;
 	// A reply may be the learner's too: the page declines a reaction put to
 	// them (the Unspeakable Oath after another player's action).
 	if (!seat) return;
@@ -5797,7 +5778,7 @@ async function tutorialFinishAgainstBot() {
 			seat: learner,
 			opponent: "tactical",
 			start_state: S.state,
-			start_seat: S.game.turn_seat,
+			start_seat: S.game.impulse_seat,
 		});
 		location.assign(`/game/${res.room_code}`);
 	} catch (err) {
@@ -5902,7 +5883,7 @@ function tutorialAllowsPath(path) {
  */
 function tutorialMarkControls() {
 	if (!S.tut) return;
-	const asking = !!tutorialExpected() && isMyTurn();
+	const asking = !!tutorialExpected() && isMyImpulse();
 	for (const el of document.querySelectorAll("button[data-action], button[data-piece], button[data-count]")) {
 		if (el.closest("#tutorial, #rules-dialog, .options-window")) continue;
 		const [kind, value] = el.dataset.action ? ["action", el.dataset.action] : el.dataset.piece ? ["piece", el.dataset.piece] : ["count", el.dataset.count];

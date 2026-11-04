@@ -123,19 +123,19 @@ func TestShippedPuzzlesAreSound(t *testing.T) {
 				t.Errorf("%s: first move %q: %v", p.ID, text, err)
 				continue
 			}
-			if !solver.Proves(ctx, st, p.ToMove, mv, p.Plies) {
+			if !solver.Proves(ctx, st, p.ImpulseSeat, mv, p.Plies) {
 				t.Errorf("%s: %q does not win by force within %d plies", p.ID, text, p.Plies)
 			}
 		}
 		if p.Plies > 1 {
-			if got := solver.WinningMoves(ctx, st, p.ToMove, p.Plies-2); len(got) > 0 {
+			if got := solver.WinningMoves(ctx, st, p.ImpulseSeat, p.Plies-2); len(got) > 0 {
 				t.Errorf("%s: a faster win exists (%d plies): %v", p.ID, p.Plies-2, got)
 			}
 		}
 		cancel()
 
 		// The line replays legally and the attacker wins at its end.
-		cur, seat := st, p.ToMove
+		cur, seat := st, p.ImpulseSeat
 		var last *state.MoveResult
 		for i, text := range p.Solution {
 			mv, err := state.ParseMove(g, text)
@@ -149,10 +149,10 @@ func TestShippedPuzzlesAreSound(t *testing.T) {
 				break
 			}
 			last = res
-			cur, seat = res.NewState, res.NextTurnSeat
+			cur, seat = res.NewState, res.NextImpulseSeat
 		}
-		if last == nil || !last.GameEnded || last.WinnerSeat == nil || *last.WinnerSeat != p.ToMove {
-			t.Errorf("%s: the solution line does not end in a win for seat %d", p.ID, p.ToMove)
+		if last == nil || !last.GameEnded || last.WinnerSeat == nil || *last.WinnerSeat != p.ImpulseSeat {
+			t.Errorf("%s: the solution line does not end in a win for seat %d", p.ID, p.ImpulseSeat)
 		}
 		if p.TPS != "" {
 			if _, _, err := state.ParseTPS(g, p.TPS); err != nil {
@@ -184,7 +184,7 @@ func TestLineProducesAWinningVariation(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		line := puzzles.NewSolver(g).Line(context.Background(), st, p.ToMove, mv, p.Plies)
+		line := puzzles.NewSolver(g).Line(context.Background(), st, p.ImpulseSeat, mv, p.Plies)
 		if len(line) != 3 || line[0] != p.FirstMoves[0] {
 			t.Errorf("%s: line = %v, want 3 plies starting with %q", p.ID, line, p.FirstMoves[0])
 		}

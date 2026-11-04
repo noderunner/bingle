@@ -153,9 +153,9 @@ func checkEngineContract(t *testing.T, g *catalog.CompiledGame, games, plies int
 					t.Fatalf("notation %s does not reproduce the move", res.Notation)
 				}
 				if !res.GameEnded {
-					next, err := state.TurnAfter(g, res.NewState, seat)
-					if err != nil || next != res.NextTurnSeat {
-						t.Fatalf("TurnAfter = %d (%v), result says %d", next, err, res.NextTurnSeat)
+					next, err := state.ImpulseAfter(g, res.NewState, seat)
+					if err != nil || next != res.NextImpulseSeat {
+						t.Fatalf("ImpulseAfter = %d (%v), result says %d", next, err, res.NextImpulseSeat)
 					}
 				}
 				// A decision always changes the position: nothing may idle in
@@ -252,7 +252,7 @@ func checkEngineContract(t *testing.T, g *catalog.CompiledGame, games, plies int
 			if chosen.GameEnded {
 				break
 			}
-			st, seat = chosen.NewState, chosen.NextTurnSeat
+			st, seat = chosen.NewState, chosen.NextImpulseSeat
 		}
 	}
 }
@@ -277,7 +277,7 @@ func TestSameSeedSameMovesSamePositions(t *testing.T) {
 			if res.GameEnded {
 				break
 			}
-			st, seat = res.NewState, res.NextTurnSeat
+			st, seat = res.NewState, res.NextImpulseSeat
 		}
 		return docs
 	}

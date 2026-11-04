@@ -108,8 +108,8 @@ func TestSetupPlacesFiveRingsEachThenWhiteMoves(t *testing.T) {
 	cells := []string{"e5", "f6", "d4", "g7", "e6", "f7", "d5", "g8", "e7", "f8"}
 	seat := 1
 	for i, c := range cells {
-		if rs.ToMove(g, st) != seat {
-			t.Fatalf("placement %d: %d to move, want %d", i, rs.ToMove(g, st), seat)
+		if rs.ImpulseSeat(g, st) != seat {
+			t.Fatalf("placement %d: %d to move, want %d", i, rs.ImpulseSeat(g, st), seat)
 		}
 		st, _ = play(t, g, st, seat, c)
 		seat = 3 - seat
@@ -335,7 +335,7 @@ func TestRandomGamesAreValidAndTerminate(t *testing.T) {
 	for n := 0; n < 20; n++ {
 		st, _ := rs.Start(g, 1)
 		for ply := 0; ply < 1100; ply++ {
-			seat := rs.ToMove(g, st)
+			seat := rs.ImpulseSeat(g, st)
 			if seat == 0 {
 				break
 			}

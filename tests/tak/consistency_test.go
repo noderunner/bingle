@@ -25,7 +25,7 @@ func perft(g *catalog.CompiledGame, st *state.BoardState, seat, depth int) int {
 			total++ // a terminal node counts as a leaf
 			continue
 		}
-		total += perft(g, res.NewState, res.NextTurnSeat, depth-1)
+		total += perft(g, res.NewState, res.NextImpulseSeat, depth-1)
 	}
 	return total
 }
@@ -150,7 +150,7 @@ func TestRandomGamesStayConsistent(t *testing.T) {
 				}
 
 				// TPS round trip.
-				text, err := state.FormatTPS(g, res.NewState, res.NextTurnSeat)
+				text, err := state.FormatTPS(g, res.NewState, res.NextImpulseSeat)
 				if err != nil {
 					t.Fatalf("FormatTPS: %v", err)
 				}
@@ -158,8 +158,8 @@ func TestRandomGamesStayConsistent(t *testing.T) {
 				if err != nil {
 					t.Fatalf("ParseTPS(%q): %v", text, err)
 				}
-				if backSeat != res.NextTurnSeat || back.Ply() != res.NewState.Ply() {
-					t.Fatalf("TPS %q: seat/ply = %d/%d, want %d/%d", text, backSeat, back.Ply(), res.NextTurnSeat, res.NewState.Ply())
+				if backSeat != res.NextImpulseSeat || back.Ply() != res.NewState.Ply() {
+					t.Fatalf("TPS %q: seat/ply = %d/%d, want %d/%d", text, backSeat, back.Ply(), res.NextImpulseSeat, res.NewState.Ply())
 				}
 				again, _ := state.FormatTPS(g, back, backSeat)
 				if again != text {
@@ -173,7 +173,7 @@ func TestRandomGamesStayConsistent(t *testing.T) {
 					}
 				}
 
-				st, seat = res.NewState, res.NextTurnSeat
+				st, seat = res.NewState, res.NextImpulseSeat
 				if res.GameEnded {
 					finished++
 					if res.WinnerSeat == nil {

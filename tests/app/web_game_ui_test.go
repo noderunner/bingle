@@ -382,8 +382,8 @@ func TestWebGame_LiveUpdateAcrossTabsWithoutReload(t *testing.T) {
 	}
 	// The move appears in the move list and the turn passed to Bob.
 	waitJS(t, ctx2, "move list entry", `document.querySelector('#move-list button.mv[data-seq="1"]')`, 5*time.Second)
-	if got := evalString(t, ctx2, `document.querySelector('#seat-2').className`); !strings.Contains(got, "to-move") {
-		t.Errorf("seat 2 strip classes = %q, want it marked to-move", got)
+	if got := evalString(t, ctx2, `document.querySelector('#seat-2').className`); !strings.Contains(got, "on-impulse") {
+		t.Errorf("seat 2 strip classes = %q, want it marked on-impulse", got)
 	}
 }
 
@@ -549,7 +549,7 @@ func TestWebGame_HistoryNavigation(t *testing.T) {
 	}
 }
 
-func TestWebGame_TitleAnnouncesYourTurn(t *testing.T) {
+func TestWebGame_TitleAnnouncesYourImpulse(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	room := newTakRoom(t, baseURL, "tak-3x3", "Alice")
 	joinRoom(t, baseURL, room, "Bob")
@@ -613,7 +613,7 @@ func TestWebLobby_CreateAgainstBotOpensPlayableGame(t *testing.T) {
 	}
 	pollLocation(t, ctx, gamePageURLPattern)
 	waitJS(t, ctx, "board", `document.querySelector("#board svg")`, 10*time.Second)
-	waitJS(t, ctx, "my turn against the bot", `document.getElementById("status-message").textContent.indexOf("Opening") === 0`, 10*time.Second)
+	waitJS(t, ctx, "my turn against the bot", `document.getElementById("impulse-text") && document.getElementById("impulse-text").textContent.indexOf("Opening") === 0`, 10*time.Second)
 	// The bot is seated.
 	if got := evalString(t, ctx, `[...document.querySelectorAll(".seat-strip .name")].map(e => e.textContent).join(",")`); !strings.Contains(got, "Bot (Random)") {
 		t.Errorf("players = %q, want the bot listed", got)
@@ -683,7 +683,7 @@ func TestWebGame_RematchAgainstBotSwapsSides(t *testing.T) {
 	pollLocation(t, ctx, gamePageURLPattern)
 	waitJS(t, ctx, "new game loaded", `document.getElementById("status-message") && document.getElementById("board-svg")`, 10*time.Second)
 	// Zoe now plays second: the bot (white) has already made the first move.
-	waitJS(t, ctx, "my turn after the bot's opening", `document.getElementById("status-message").textContent.indexOf("Opening") === 0`, 10*time.Second)
+	waitJS(t, ctx, "my turn after the bot's opening", `document.getElementById("impulse-text") && document.getElementById("impulse-text").textContent.indexOf("Opening") === 0`, 10*time.Second)
 	if n := evalInt(t, ctx, `document.querySelectorAll("#board svg .piece").length`); n != 1 {
 		t.Errorf("pieces on the board = %d, want the bot's single opening stone", n)
 	}
@@ -754,7 +754,7 @@ func TestWebGame_SpectatorSeesBoardButCannotMove(t *testing.T) {
 	waitJS(t, ctx, "live move for the spectator", `document.querySelector('#board .piece[data-position="c3"]')`, 10*time.Second)
 }
 
-func TestWebLobby_ListsYourGamesWithYourTurnFlag(t *testing.T) {
+func TestWebLobby_ListsYourGamesWithYourImpulseFlag(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	room := newTakRoom(t, baseURL, "tak-3x3", "Alice")
 	joinRoom(t, baseURL, room, "Bob")
@@ -775,7 +775,7 @@ func TestWebLobby_ListsYourGamesWithYourTurnFlag(t *testing.T) {
 	clickSel(t, ctx, "#open-active-games")
 	waitJS(t, ctx, "my games list", `document.querySelector("#active-games-dialog[open] #my-games li .badge.turn")`, 10*time.Second)
 	if got := evalString(t, ctx, `document.querySelector("#my-games li").textContent`); !strings.Contains(got, "vs Bob") || !strings.Contains(got, "Your turn") {
-		t.Errorf("my-games row = %q, want opponent and a your-turn flag", got)
+		t.Errorf("my-games row = %q, want opponent and a your-impulse flag", got)
 	}
 }
 
@@ -968,7 +968,7 @@ func TestWebGame_HexagonBoardPlacementAndLosingByThree(t *testing.T) {
 	if n := evalInt(t, ctx, `document.querySelectorAll('#board .target-dot, #board .quick-dot').length`); n != 0 {
 		t.Errorf("target markers = %d, want none on an open board", n)
 	}
-	if got := evalString(t, ctx, `document.querySelector('#move-bar .hint').textContent`); !strings.Contains(got, "empty square") {
+	if got := evalString(t, ctx, `document.getElementById("impulse-text").textContent`); !strings.Contains(got, "empty square") {
 		t.Errorf("hint = %q, want a placement hint", got)
 	}
 
@@ -1346,8 +1346,8 @@ func TestWebGame_PieRuleSwapButton(t *testing.T) {
 	if len(cell) != 1 || cell[0].Color != "red" {
 		t.Errorf("f6 after the swap = %+v, want the stone unchanged (red)", cell)
 	}
-	if st.TurnSeat == nil || *st.TurnSeat != 2 {
-		t.Errorf("turn after the swap = %v, want seat 2", st.TurnSeat)
+	if st.ImpulseSeat == nil || *st.ImpulseSeat != 2 {
+		t.Errorf("turn after the swap = %v, want seat 2", st.ImpulseSeat)
 	}
 }
 

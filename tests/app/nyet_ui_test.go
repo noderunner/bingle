@@ -14,7 +14,7 @@ import (
 // nyetStepJS plays a card if one can be played, else crosses the first open
 // box of the board, else picks the first team or bonus button.
 const nyetStepJS = `(function () {
-	if (!document.querySelector("#action-card.acting")) return "wait";
+	if (!document.querySelector("#impulse-card.acting")) return "wait";
 	function click(el, what) {
 		el.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
 		return what;
@@ -102,7 +102,7 @@ func nyetPlay(t *testing.T, baseURL, room string, stop func(moves []string) bool
 	t.Helper()
 	for i := 0; i < 200; i++ {
 		var st struct {
-			TurnSeat int `json:"turn_seat"`
+			ImpulseSeat int `json:"impulse_seat"`
 		}
 		doJSON(t, "GET", baseURL+"/api/games/"+room+"/state", nil, &st)
 		var legal struct {
@@ -110,9 +110,9 @@ func nyetPlay(t *testing.T, baseURL, room string, stop func(moves []string) bool
 				Notation string `json:"notation"`
 			} `json:"moves"`
 		}
-		doJSON(t, "GET", fmt.Sprintf("%s/api/games/%s/moves/legal?seat=%d", baseURL, room, st.TurnSeat), nil, &legal)
+		doJSON(t, "GET", fmt.Sprintf("%s/api/games/%s/moves/legal?seat=%d", baseURL, room, st.ImpulseSeat), nil, &legal)
 		if len(legal.Moves) == 0 {
-			t.Fatalf("no legal move for seat %d after %d moves", st.TurnSeat, i)
+			t.Fatalf("no legal move for seat %d after %d moves", st.ImpulseSeat, i)
 		}
 		var notations []string
 		for _, m := range legal.Moves {
@@ -130,7 +130,7 @@ func nyetPlay(t *testing.T, baseURL, room string, stop func(moves []string) bool
 		doJSON(t, "GET", baseURL+"/api/games/"+room, nil, &info)
 		name := ""
 		for _, s := range info.Seats {
-			if s.Seat == st.TurnSeat {
+			if s.Seat == st.ImpulseSeat {
 				name = s.Name
 			}
 		}

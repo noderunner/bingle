@@ -11,7 +11,7 @@ import (
 
 // yinshStepJS clicks the first highlighted point (a ring, then where it goes).
 const yinshStepJS = `(function () {
-	if (!document.querySelector("#action-card.acting")) return "wait";
+	if (!document.querySelector("#impulse-card.acting")) return "wait";
 	var cell = document.querySelector("#board .cell.clickable");
 	if (!cell) return "stuck";
 	cell.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));

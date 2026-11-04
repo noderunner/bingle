@@ -22,10 +22,10 @@ func ApplyPuzzle(opts *ResetOptions, puzzleID string) error {
 	}
 	opts.GameDefID = p.GameDefID
 	opts.StartState = string(p.State)
-	opts.StartSeat = p.ToMove
+	opts.StartSeat = p.ImpulseSeat
 	opts.StartTPS = ""
 	if opts.Seat == 0 {
-		opts.Seat = p.ToMove
+		opts.Seat = p.ImpulseSeat
 	}
 	if opts.MaxPlies == 0 {
 		var doc struct {
