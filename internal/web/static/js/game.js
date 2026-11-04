@@ -23,7 +23,7 @@ import { hoverCard, hideHoverCard } from "./tooltip.js";
 import { createOptionsWindow } from "./options.js";
 import { cardTable, choiceGrid, hideCardZoom } from "./cards.js";
 import { solitaireTable } from "./solitaire.js";
-import { backIcon, rulesIcon } from "./ui-icons.js";
+import { rulesIcon } from "./ui-icons.js";
 import { choiceIcon } from "./choice-icons.js";
 import { animalIcon, animalOf } from "./animals.js";
 import { themesFor, themeById } from "./themes.js";
@@ -1712,6 +1712,18 @@ async function viewMove(seq) {
 	render();
 }
 
+/** Goes to a move in the list of moves, with Next under the player's hand. */
+async function jumpToMove(seq) {
+	stopAutoplay();
+	S.historyTab = "moves";
+	S.railTab = "history";
+	await viewMove(seq);
+	requestAnimationFrame(() => {
+		document.querySelector("#move-list .mv.current")?.scrollIntoView({ block: "nearest" });
+		document.getElementById("hist-next")?.focus();
+	});
+}
+
 function stepHistory(delta) {
 	stopAutoplay();
 	const total = S.moves.length;
@@ -2744,7 +2756,9 @@ function statusBar() {
 		cls.push("history");
 		const seq = S.viewSeq;
 		const rec = seq > 0 ? S.moves[seq - 1] : null;
-		msg = seq === 0 ? "Viewing the starting position." : `Viewing the position after move ${seq}${rec ? ` (${rec.notation})` : ""}.`;
+		// The words the History tab has for this move, where it has any.
+		const told = rulesetLog().filter((e) => e.ply === seq).flatMap((e) => e.lines || []).filter((line) => !/^—.*—$/.test(line));
+		msg = seq === 0 ? "Viewing the starting position." : told.length ? `Move ${seq}: ${told.join(" ")}` : `Viewing the position after move ${seq}${rec ? ` (${rec.notation})` : ""}.`;
 	} else if (tutorialShown()) {
 		// A picture, not the room's game: nobody's turn, and no result.
 		cls.push("history");
@@ -4473,8 +4487,8 @@ function moveBar() {
 	}
 	if (acting && b.manualSteps().length) {
 		actions.append(h("button", { id: "undo-step", class: "ghost", onclick: undoStep, title: "Undo last selection (Backspace)" }, "↶ Back"));
-		// A move that is a word and a cell (Blooms), or anything on a map: Back is enough.
-		if (!(rulesetView() || {}).piece_action && S.info.board.style !== "areas") actions.append(h("button", { id: "reset-move", class: "ghost", onclick: resetMove, title: "Clear the move (Esc)" }, "Reset"));
+		// A move that is a word and a cell (Blooms), a piece and a place (Havannah), or anything on a map: Back is enough.
+		if (!(rulesetView() || {}).piece_action && S.info.board.style !== "areas" && !placeOnlyImpulse()) actions.append(h("button", { id: "reset-move", class: "ghost", onclick: resetMove, title: "Clear the move (Esc)" }, "Reset"));
 	}
 	// Taking back a step already sent: in the list of actions when there is one,
 	// else here. With a selection on the go, Back clears that first.
@@ -4489,7 +4503,7 @@ function moveBar() {
 			h(
 				"button",
 				{ id: "submit-move", class: "primary", onclick: submitMove, disabled: S.busy, title: "Play this move (Enter)" },
-				`Submit ${b.complete().notation}`
+				"Submit"
 			)
 		);
 	}
@@ -4689,7 +4703,7 @@ function actionButton(id, def, label, rv) {
 	const cost = actionCost(id);
 	// "Pay 4 Power" and "Give 3 Power to …" say what they cost already.
 	const named = /^(pay|bestow)-/.test(id);
-	const text = cost !== null && !named ? `${label} (${cost})` : label;
+	const priced = cost !== null && !named;
 	// An ability a spellbook gives wears a spellbook; an action that meets a
 	// spellbook requirement wears one greyed out (the book is still to come).
 	const source = def && def.source ? def.source : "";
@@ -4707,13 +4721,23 @@ function actionButton(id, def, label, rv) {
 			"data-action": id,
 			"data-cost": cost === null ? null : cost,
 			"data-source": source || null,
+			"aria-label": priced ? `${label}, ${cost} Power` : label,
 			onclick: () => chooseAction(id),
 		},
 		mark,
-		text
+		// One span, as a button spaces out its children: the icon sits among the words.
+		h("span", {}, ...powerWords(label)),
+		priced ? h("span", { class: "summon-cost", title: "Power" }, `${cost}`, statIcon("power", "Power", 13)) : null
 	);
 	if (def && def.hint) hoverCard(button, () => actionTip(def, id, label));
 	return button;
+}
+
+/** A label with the word Power drawn as its icon. */
+function powerWords(label) {
+	return String(label)
+		.split(/\bPower\b/)
+		.flatMap((part, i) => (i ? [statIcon("power", "Power", 13), part] : [part]));
 }
 
 /** One of the two directions of play, spelled out as who plays after whom. */
@@ -5611,12 +5635,13 @@ function eventsPane() {
 	// Only the viewer's own turn is told after the mark: nobody else has said
 	// anything since.
 	const quiet = markSeen && recent.every((e) => e.seat === S.me.seat);
-	const sinceRule = () => h("div", { class: "log-since", id: "history-since", role: "separator" }, h("span", {}, "Since your last move"));
-	// A way back through what happened since: each click goes one move further back.
-	const rewind = () => {
-		const earliest = !isLive() && S.viewSeq === 0;
-		return h("button", { type: "button", class: "ghost icon history-rewind", id: "history-rewind", title: "Go back to the previous move", "aria-label": "Go back to the previous move", disabled: earliest || !S.moves.length, onclick: () => stepHistory(-1) }, backIcon(16));
-	};
+	// The rule is a way back: to the player's last move, in the list of moves, to go on from.
+	const sinceRule = () =>
+		h(
+			"div",
+			{ class: "log-since", id: "history-since" },
+			h("button", { type: "button", class: "log-since-button", id: "history-rewind", title: "Go to your last move, and step on from there", onclick: () => jumpToMove(mark.ply) }, "Since your last move")
+		);
 	// Consecutive decisions of one seat read as one turn, except that the mark
 	// always starts a new one. Decisions a tactical bot took for a person whose
 	// Auto-Play Timeout ran out are marked.
@@ -5634,7 +5659,7 @@ function eventsPane() {
 		h("span", { class: "badge auto-play", title: "A tactical bot played this for the player: their Auto-Play Timeout ran out" }, all ? "auto-play" : "partly auto-play");
 	for (const g of groups) {
 		if (g.mark) {
-			box.append(sinceRule(), rewind());
+			box.append(sinceRule());
 			if (quiet) box.append(h("p", { class: "muted small empty-history", id: "history-quiet" }, "Nothing new from the others since your last move."));
 		}
 		const all = g.entries.every(botPlayed);

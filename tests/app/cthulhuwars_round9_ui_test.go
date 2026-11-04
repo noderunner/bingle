@@ -47,7 +47,7 @@ func TestWebCthulhuWars_DesecrateRollsAtOnceThenPlacesAUnitAndCannotBeTakenBack(
 	collectJSErrors(ctx, &mu, &jsErrors)
 	openGameAs(t, ctx, baseURL, room, "cthulhu-wars", "Alice")
 	waitJS(t, ctx, "the Desecrate button", `document.getElementById("action-desecrate") !== null`, 15*time.Second)
-	if got := evalString(t, ctx, `document.getElementById("action-desecrate").textContent`); got != "Desecrate (2)" {
+	if got := evalString(t, ctx, `document.getElementById("action-desecrate").textContent`); got != "Desecrate2" {
 		t.Errorf("button = %q", got)
 	}
 	// Its card: the roll, the token and the unit that is placed whatever the roll.

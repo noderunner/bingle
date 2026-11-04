@@ -458,7 +458,7 @@ func TestWebGame_TakPlacementAndStackMoveByClicking(t *testing.T) {
 	clickSel(t, ctx, `#hand-white button.hand-piece[data-piece="wall"]`)
 	waitJS(t, ctx, "empty squares become targets", `document.querySelectorAll('#board .cell.clickable').length === 21`, 5*time.Second)
 	clickCell(t, ctx, "c3")
-	waitJS(t, ctx, "submit for the placement", `document.getElementById("submit-move") && document.getElementById("submit-move").textContent.indexOf("Sc3") >= 0`, 5*time.Second)
+	waitJS(t, ctx, "submit for the placement", `document.getElementById("submit-move") && document.getElementById("submit-move").textContent === "Submit"`, 5*time.Second)
 	// Preview shows the wall before it is committed.
 	waitJS(t, ctx, "ghost preview of the wall", `document.querySelector('#board .piece[data-position="c3"][data-piece="wall"]')`, 5*time.Second)
 	clickSel(t, ctx, "#reset-move")
@@ -468,7 +468,7 @@ func TestWebGame_TakPlacementAndStackMoveByClicking(t *testing.T) {
 	clickCell(t, ctx, "b1")
 	waitJS(t, ctx, "a1 offered as destination", `document.querySelector('#board .cell.clickable[data-position="a1"]')`, 5*time.Second)
 	clickCell(t, ctx, "a1")
-	waitJS(t, ctx, "submit b1<", `document.getElementById("submit-move") && document.getElementById("submit-move").textContent.indexOf("b1<") >= 0`, 5*time.Second)
+	waitJS(t, ctx, "submit b1<", `document.getElementById("submit-move") && document.getElementById("submit-move").textContent === "Submit"`, 5*time.Second)
 	clickSel(t, ctx, "#submit-move")
 
 	waitJS(t, ctx, "the move in the move list", `document.querySelector('#move-list button.mv[data-seq="5"]')`, 10*time.Second)
@@ -492,7 +492,7 @@ func TestWebGame_TakPlacementAndStackMoveByClicking(t *testing.T) {
 	waitJS(t, ctx, "adjacent squares offered", `document.querySelector('#board .cell.clickable[data-position="b1"]') && document.querySelector('#board .cell.clickable[data-position="a2"]')`, 5*time.Second)
 	clickCell(t, ctx, "a2") // drop 1 on a2
 	clickCell(t, ctx, "a3") // drop 1 on a3
-	waitJS(t, ctx, "submit 2a1+11", `document.getElementById("submit-move") && document.getElementById("submit-move").textContent.indexOf("2a1+11") >= 0`, 5*time.Second)
+	waitJS(t, ctx, "submit 2a1+11", `document.getElementById("submit-move") && document.getElementById("submit-move").textContent === "Submit"`, 5*time.Second)
 
 	// Back one step removes the last drop; replaying it works.
 	clickSel(t, ctx, "#undo-step")
@@ -852,7 +852,7 @@ func TestWebGame_DraughtsMandatoryCaptureByClicking(t *testing.T) {
 	clickCell(t, ctx, "d4")
 	waitJS(t, ctx, "landing offered", `document.querySelector('#board .cell.clickable[data-position="f6"]')`, 5*time.Second)
 	clickCell(t, ctx, "f6")
-	waitJS(t, ctx, "submit capture", `document.getElementById("submit-move") && document.getElementById("submit-move").textContent.indexOf("d4xf6") >= 0`, 5*time.Second)
+	waitJS(t, ctx, "submit capture", `document.getElementById("submit-move") && document.getElementById("submit-move").textContent === "Submit"`, 5*time.Second)
 	clickSel(t, ctx, "#submit-move")
 
 	waitJS(t, ctx, "capture recorded", `document.querySelector('#move-list button.mv[data-seq="3"]')`, 10*time.Second)
@@ -886,7 +886,7 @@ func TestWebGame_QuickPlacementByClickingAnEmptySquare(t *testing.T) {
 
 	// A plain click places the default piece (a flat stone).
 	clickCell(t, ctx, "c3")
-	waitJS(t, ctx, "submit flat on c3", `document.getElementById("submit-move") && document.getElementById("submit-move").textContent.trim() === "Submit c3"`, 5*time.Second)
+	waitJS(t, ctx, "submit flat on c3", `document.getElementById("submit-move") && document.getElementById("submit-move").textContent.trim() === "Submit"`, 5*time.Second)
 	clickSel(t, ctx, "#reset-move")
 
 	// Shift-click places a standing stone.
@@ -899,7 +899,7 @@ func TestWebGame_QuickPlacementByClickingAnEmptySquare(t *testing.T) {
 	if err := chromedp.Run(ctx, chromedp.Evaluate(shiftClick, &ok)); err != nil || !ok {
 		t.Fatalf("shift-click: %v", err)
 	}
-	waitJS(t, ctx, "submit wall on d4", `document.getElementById("submit-move") && document.getElementById("submit-move").textContent.trim() === "Submit Sd4"`, 5*time.Second)
+	waitJS(t, ctx, "submit wall on d4", `document.getElementById("submit-move") && document.getElementById("submit-move").textContent.trim() === "Submit"`, 5*time.Second)
 	clickSel(t, ctx, "#submit-move")
 	waitJS(t, ctx, "wall placed", `document.querySelector('#move-list button.mv[data-seq="3"]')`, 10*time.Second)
 	var st restState
@@ -928,7 +928,7 @@ func TestWebGame_GoPassButtonAndScoring(t *testing.T) {
 	}
 	waitJS(t, ctx, "pass button", `document.getElementById("action-pass")`, 5*time.Second)
 	clickSel(t, ctx, "#action-pass")
-	waitJS(t, ctx, "submit pass", `document.getElementById("submit-move") && document.getElementById("submit-move").textContent.trim() === "Submit pass"`, 5*time.Second)
+	waitJS(t, ctx, "submit pass", `document.getElementById("submit-move") && document.getElementById("submit-move").textContent.trim() === "Submit"`, 5*time.Second)
 	clickSel(t, ctx, "#submit-move")
 	waitJS(t, ctx, "the pass in the move list", `document.querySelector('#move-list button.mv[data-seq="2"]')`, 10*time.Second)
 
@@ -973,7 +973,7 @@ func TestWebGame_HexagonBoardPlacementAndLosingByThree(t *testing.T) {
 	}
 
 	clickCell(t, ctx, "c5")
-	waitJS(t, ctx, "submit c5", `document.getElementById("submit-move") && document.getElementById("submit-move").textContent.trim() === "Submit c5"`, 5*time.Second)
+	waitJS(t, ctx, "submit c5", `document.getElementById("submit-move") && document.getElementById("submit-move").textContent.trim() === "Submit"`, 5*time.Second)
 	clickSel(t, ctx, "#submit-move")
 	waitJS(t, ctx, "result shown", `/three-in-a-row|Bob wins|Bob won/i.test(document.getElementById("status-message").textContent)`, 10*time.Second)
 
@@ -1175,7 +1175,7 @@ func TestWebGame_AmazonsCompoundMoveByClicking(t *testing.T) {
 	// From d5 the arrow may go anywhere on its lines, including back to d1.
 	waitJS(t, ctx, "aim squares", `document.querySelector('#board .cell[data-position="d1"].clickable')`, 5*time.Second)
 	clickCell(t, ctx, "f5")
-	waitJS(t, ctx, "submit", `document.getElementById("submit-move") && document.getElementById("submit-move").textContent.trim() === "Submit d1-d5/f5"`, 5*time.Second)
+	waitJS(t, ctx, "submit", `document.getElementById("submit-move") && document.getElementById("submit-move").textContent.trim() === "Submit"`, 5*time.Second)
 	clickSel(t, ctx, "#submit-move")
 	waitJS(t, ctx, "move listed", `document.querySelector('#move-list button.mv[data-seq="1"]')`, 10*time.Second)
 
@@ -1334,7 +1334,7 @@ func TestWebGame_PieRuleSwapButton(t *testing.T) {
 	openGameAs(t, ctx, baseURL, room, "hex-11", "Bob")
 	waitJS(t, ctx, "swap button", `document.getElementById("action-swap")`, 10*time.Second)
 	clickSel(t, ctx, "#action-swap")
-	waitJS(t, ctx, "submit swap", `document.getElementById("submit-move") && document.getElementById("submit-move").textContent.trim() === "Submit swap"`, 5*time.Second)
+	waitJS(t, ctx, "submit swap", `document.getElementById("submit-move") && document.getElementById("submit-move").textContent.trim() === "Submit"`, 5*time.Second)
 	clickSel(t, ctx, "#submit-move")
 	waitJS(t, ctx, "swap recorded", `document.querySelector('#move-list button.mv[data-seq="2"]')`, 10*time.Second)
 

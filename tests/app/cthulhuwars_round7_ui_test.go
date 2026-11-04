@@ -44,10 +44,20 @@ func TestWebCthulhuWars_ActionButtonsShowTheirCostAndTheirRuleOnHover(t *testing
 		t.Errorf("impulse = %q", got)
 	}
 	// The Gate's button says what it costs, and no longer says "Create".
-	if got := evalString(t, ctx, `document.getElementById("action-gate").textContent`); got != "Build Gate (3)" {
+	if got := evalString(t, ctx, `document.getElementById("action-gate").textContent`); got != "Build Gate3" {
 		t.Errorf("gate button = %q", got)
 	}
-	if got := evalString(t, ctx, `document.getElementById("action-recruit").textContent`); got != "Recruit Cultist (1)" {
+	// The word Power is its icon, on the cost and in a label that names it.
+	if got := evalString(t, ctx, `document.getElementById("action-pass").textContent`); strings.Contains(got, "Power") {
+		t.Errorf("the Pass button still says %q", got)
+	}
+	if n := evalInt(t, ctx, `document.querySelectorAll('#action-gate .summon-cost svg, #action-pass svg').length`); n != 2 {
+		t.Errorf("%d Power icons on Build Gate and Pass, want 2", n)
+	}
+	if got := evalString(t, ctx, `document.getElementById("action-gate").getAttribute("aria-label")`); got != "Build Gate, 3 Power" {
+		t.Errorf("the Gate's name for a screen reader is %q", got)
+	}
+	if got := evalString(t, ctx, `document.getElementById("action-recruit").textContent`); got != "Recruit Cultist1" {
 		t.Errorf("recruit button = %q", got)
 	}
 	// Great Old Ones, like monsters, have a button each with the cost on it; the

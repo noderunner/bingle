@@ -3,7 +3,7 @@
 // game's WebSocket as "chat" events; the page redraws on every move, so the
 // draft, the scroll position and the focus are kept here between redraws.
 
-import { h, store, lastName } from "./util.js";
+import { h, store, lastName, markChatRead } from "./util.js";
 import { api } from "./api.js";
 import { cssColor } from "./render.js";
 import { onNavigate } from "./nav.js";
@@ -193,6 +193,7 @@ export function receiveChat(line, { mine, seen = true }) {
 		listEl.append(lineNode(line, mine));
 		if (atEnd || mine) listEl.scrollTop = listEl.scrollHeight;
 		if (!mine && !seen) bump();
+		if (seen && chat.code) markChatRead(chat.code, line.id);
 	} else if (!mine) {
 		bump();
 	}
@@ -340,6 +341,8 @@ export function chatCard({ code, me }) {
 /** Marks everything as read (the card is on screen and its tab is visible). */
 export function chatSeen() {
 	chat.unread = 0;
+	const last = chat.lines[chat.lines.length - 1];
+	if (chat.code && last) markChatRead(chat.code, last.id);
 	if (badgeEl) badgeEl.hidden = true;
 }
 

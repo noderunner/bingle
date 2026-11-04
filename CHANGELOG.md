@@ -4,6 +4,19 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.58.0 - 2026-11-04
+
+### Bingle Core 0.58.0
+- **Submit just says Submit.** The move you are about to play is no longer spelled out on the button.
+- **No Reset in the stone games.** *Back* is all they need.
+- **Going back to your last move.** *Since your last move* in the History tab is now a button. It takes you to your last move in
+  the Moves tab, with *Next* ready to click.
+- **History in words.** Stepping through a game's moves, the impulse card says what happened in the same words as the History tab.
+- **Unread chat.** In the active games list, a red number on *Open* says how many chat messages have come in for that game.
+- **Join Game is simpler.** Paste a room code or a link and press *Join Game*. You take an open seat under your usual name, or
+  watch if the table is full. The tables looking for players are now under *Public Lobbies*.
+- **Cthulhu Wars:** the action buttons show their cost with the Power icon, as the summoning buttons do.
+
 ## 0.57.0 - 2026-11-04
 
 ### Bingle Core 0.57.0

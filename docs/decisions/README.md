@@ -96,6 +96,7 @@ Short records of choices made for the `bingle` project during the requirements i
 | [0091](0091-taking-over-a-seat.md) | A bot can take a seat for good: by a vote in a real-time game, or when time runs out at a table of three or more, and the clock now works at any number of seats |
 | [0090](0090-real-time-tournaments.md) | A real-time tournament starts by itself at its start time: check-in, one game of a pairing at a time, a break between rounds, and a first-move deadline where a no-show forfeits |
 | [0092](0092-a-game-page-that-fits-the-screen.md) | A game page is as tall as the window and never scrolls: the board fills one side, the cards scroll beside it, and on your turn the actions are pinned in view; Blooms first |
+| [0102](0102-joining-and-reading-back.md) | Join Game joins or watches by itself, under the profile's name; unread chat is counted by the browser; the rule of the History tab goes to your last move in the Moves tab |
 | [0101](0101-the-x-resigns-and-games-are-found-where-they-are-wanted.md) | The ✕ of an active game resigns from it, after asking; a game's games are in its setup, and tables looking for players in Join Game |
 | [0100](0100-a-move-gathers-its-units.md) | Cthulhu Wars: the page gathers the units of a Move from one area and sends them to one destination, and a Move always waits for Done |
 | [0099](0099-impulses.md) | The seat to act is the impulse seat, everywhere, and the impulse card names it over what it is asked to choose, for everyone |

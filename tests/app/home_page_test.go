@@ -160,12 +160,18 @@ func TestHomePage_ActiveGamesAndProfile(t *testing.T) {
 	if got := evalString(t, ctx, `[document.getElementById("profile_name").value, document.getElementById("profile_email").value, document.getElementById("profile_notify").checked].join("|")`); got != "Alicia|alicia@example.com|true" {
 		t.Errorf("settings after reload = %q", got)
 	}
-	// The name is the one offered when joining a game.
+	// Joining a game asks no name: it uses this one.
 	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/"), chromedp.WaitVisible("#open-join", chromedp.ByID)); err != nil {
 		t.Fatal(err)
 	}
 	clickSel(t, ctx, "#open-join")
-	waitJS(t, ctx, "join name", `document.getElementById("join_player_name").value === "Alicia"`, 5*time.Second)
+	waitJS(t, ctx, "the Join Game window", `document.getElementById("room_code") !== null`, 5*time.Second)
+	if evalBool(t, ctx, `document.getElementById("join_player_name") !== null`) {
+		t.Error("the Join Game window asks for a name")
+	}
+	if got := evalString(t, ctx, `localStorage.getItem("bingle.name")`); !strings.Contains(got, "Alicia") {
+		t.Errorf("the name to join under is %q", got)
+	}
 	// A bad address is not saved.
 	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/profile"), chromedp.WaitVisible("#profile-form", chromedp.ByID)); err != nil {
 		t.Fatal(err)
@@ -188,10 +194,10 @@ func TestHomePage_JoinDialogJoinsAGame(t *testing.T) {
 	if err := chromedp.Run(ctx,
 		chromedp.WaitVisible("#room_code", chromedp.ByID),
 		chromedp.SendKeys("#room_code", strings.ToLower(room), chromedp.ByID),
-		chromedp.SendKeys("#join_player_name", "Bob", chromedp.ByID),
 	); err != nil {
 		t.Fatal(err)
 	}
+	evalBool(t, ctx, `(localStorage.setItem("bingle.name", JSON.stringify("Bob")), true)`)
 	clickSel(t, ctx, `#join-game-form button[type="submit"]`)
 	waitJS(t, ctx, "game page", `location.pathname === "/game/`+room+`"`, 15*time.Second)
 	var game struct {

@@ -345,8 +345,7 @@ func TestWebIndex_ServedHTML_HasCreateGameFormFields(t *testing.T) {
 }
 
 // TestWebIndex_JoinIconOpensTheJoinForm checks that the join-existing-game
-// form (room code + player name) is not on the page itself but behind the
-// "Join a game" icon of the top bar.
+// form is not on the page itself but behind the Join Game icon of the top bar.
 func TestWebIndex_JoinIconOpensTheJoinForm(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	ctx, cancel := newChromedpContext(t, 30*time.Second)
@@ -368,8 +367,7 @@ func TestWebIndex_JoinIconOpensTheJoinForm(t *testing.T) {
 	if err := chromedp.Run(ctx,
 		chromedp.Click(`#open-join`, chromedp.ByQuery),
 		chromedp.WaitVisible(`#join-dialog #room_code`, chromedp.ByQuery),
-		chromedp.WaitVisible(`#join-dialog #join_player_name`, chromedp.ByQuery),
-		chromedp.WaitVisible(`#join-dialog #watch-game`, chromedp.ByQuery),
+		chromedp.WaitVisible(`#join-dialog #join-submit`, chromedp.ByQuery),
 	); err != nil {
 		t.Fatalf("open the join dialog: %v", err)
 	}

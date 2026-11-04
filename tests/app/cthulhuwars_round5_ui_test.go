@@ -206,7 +206,7 @@ func TestWebCthulhuWars_RecruitTheHighPriestByItsOwnButton(t *testing.T) {
 	// only Cultist that can be recruited.
 	waitJS(t, ctx, "the button", `document.getElementById("action-recruit-high-priest") !== null`, 20*time.Second)
 	// The button says what he costs, and its card what the High Priest is.
-	if got := evalString(t, ctx, `document.getElementById("action-recruit-high-priest").textContent`); got != "Recruit High Priest (3)" {
+	if got := evalString(t, ctx, `document.getElementById("action-recruit-high-priest").textContent`); got != "Recruit High Priest3" {
 		t.Errorf("button label %q", got)
 	}
 	hoverOver(t, ctx, "#action-recruit-high-priest")

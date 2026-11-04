@@ -6,7 +6,7 @@ Plain ES modules served from `internal/web/static` — no build step
 * **Home** (`/`, `js/home.js`): an italic *fun fact* (`js/facts.js`, a new one
   at random on every load) over one card with three tabs — *Games*, *Puzzles*
   and *Global Chat* (see *The home page* below). The bar at the top has three
-  icons: *Active games*, *Join a game* and the *profile*.
+  icons: *Active games*, *Join Game* and the *profile*.
 * **Profile** (`/profile`, `js/profile.js`): name, email and the email
   notification switch, and the finished games.
 * **Game** (`/game/{code}`, `js/game.js`): board, players, hands, move list,
@@ -254,12 +254,13 @@ table; a game that has not started only leaves the list, after asking
 ([ADR 0101](decisions/0101-the-x-resigns-and-games-are-found-where-they-are-wanted.md)).
 
 The games of a game are in its setup (`#setup-tab-active`: `#setup-active-list li`, each with
-*Watch*), and *Join a game* (`#open-join`) lists the tables waiting for players
+*Watch*), and *Join Game* (`#open-join`) lists the tables waiting for players
 (`#join-open-games li`, each with `button[data-join]`).
 
 Its badge (`#active-badge`) counts the games where it is your turn, which also
-shows in the tab title and on the tab icon. *Join a game* (`#open-join`, a plus, `data-icon="plus"`) opens `#join-dialog` (`#join-game-form`: `#room_code`,
-`#join_player_name`, *Join*, `#watch-game`, and the tables waiting for players).
+shows in the tab title and on the tab icon. *Join Game* (`#open-join`, a plus, `data-icon="plus"`) opens `#join-dialog` (`#join-game-form`: `#room_code`, which takes
+a code or a link, and `#join-submit`; then *Public Lobbies*). It takes an open seat, or a place to watch at a full table, under the
+name in the profile ([ADR 0102](decisions/0102-joining-and-reading-back.md)). An unread count is `.unread-count` on *Open*.
 
 The person icon (`#open-profile`) opens **`#profile-dialog`**, a floating window
 rather than a page: the name this browser plays under
