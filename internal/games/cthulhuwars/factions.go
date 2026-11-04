@@ -340,7 +340,7 @@ var factions = [nFactions]faction{
 		},
 	},
 	{
-		Key: "bg", Name: "Black Goat", Color: "red", Seat: 3, Start: "south-america",
+		Key: "bg", Name: "Black Goat", Color: "red", Seat: 3, Start: "africa",
 		Ability: "Fertility Cult: summoning monsters is an Unlimited action for you.",
 		Units: []unitSpec{
 			{ID: uCultist, Name: "Acolyte Cultist", Class: classCultist, Count: 6, Cost: 1, Combat: 0},

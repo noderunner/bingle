@@ -135,7 +135,7 @@ patch:
             - [744.4, 55.1]
       - id: asia
         name: Asia
-        tags: [land, c-as, glyph-dragon]
+        tags: [land, c-as, glyph-thorns]
         anchor: [866.2, 178.0]
         polygons:
           - - [926.4, 276.3]
@@ -180,7 +180,7 @@ patch:
             - [891.6, 273.6]
       - id: australia
         name: Australia
-        tags: [land, c-au, glyph-dragon]
+        tags: [land, c-au, glyph-chevron]
         anchor: [85.3, 358.7]
         polygons:
           - - [80.8, 413.4]
@@ -203,7 +203,7 @@ patch:
             - [38.8, 422.8]
       - id: europe
         name: Europe
-        tags: [land, c-eu, glyph-chevron]
+        tags: [land, c-eu, glyph-thorns]
         anchor: [692.2, 115.0]
         polygons:
           - - [788.4, 58.5]
@@ -293,7 +293,7 @@ patch:
             - [53.2, 264.8]
       - id: north-america
         name: North America
-        tags: [land, c-na, glyph-thorns]
+        tags: [land, c-na, glyph-dragon]
         anchor: [214.7, 121.8]
         polygons:
           - - [243.8, 319.9]
@@ -458,7 +458,7 @@ patch:
             - [1000.0, 28.9]
       - id: south-america
         name: South America
-        tags: [land, c-sa, glyph-thorns]
+        tags: [land, c-sa, glyph-dragon]
         anchor: [322.1, 345.0]
         polygons:
           - - [285.8, 289.7]
@@ -608,7 +608,7 @@ patch:
       - {from: south-america, to: south-pacific}
       - {from: south-atlantic, to: south-pacific}
   params:
-    starts: {cc: asia, bg: south-america}
+    starts: {cc: asia, bg: africa}
     sigils:
       sl: [north-america]
   seats:

@@ -20,6 +20,5 @@ ADR 0093 drew the Primeval Map by eye over photographs 367 pixels wide. A scan a
 
 - The trace found two borders the eye-drawn map lacked: Upper Mu with the Rheic Ocean, and the Paratethys Ocean with Poseidonis. All 54 others held, and so did the twelve Glacier areas. These two change the rules at this table, by the board's own print; a game already in progress on this map gets them on its next move.
 - The layout's definition grows from 14 KB to 60 KB of text, as it has far more points. Those polygons are hit areas and overlays now, not drawing.
-- The other Earth layouts keep the table's glyphs, which their boards seem to contradict in the same way, until each is traced.
-- Where the Black Goat and the Crawling Chaos begin is left alone, though the board prints their sigils elsewhere (West Africa and South Asia): the engine, the guides and every layout agree with each other, and this is a decision of its own.
+- The other Earth layouts' glyphs and two cults' starts were then settled by [ADR 0096](0096-earth-glyphs-and-starts-follow-the-board.md).
 - The picture does not follow the light and dark themes: it looks as the board does in both.

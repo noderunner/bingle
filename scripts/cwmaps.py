@@ -62,15 +62,15 @@ OCEANS = {
     "arctic-ocean": "arctic", "north-pacific": "pacific", "south-pacific": "pacific",
     "north-atlantic": "atlantic", "south-atlantic": "atlantic", "indian-ocean": "indian",
 }
-LAND = {  # area -> (continent tag, glyph)
-    "north-america": ("c-na", "thorns"), "north-america-west": ("c-na", "thorns"), "north-america-east": ("c-na", "thorns"),
-    "central-america": ("c-na", "thorns"),
-    "south-america": ("c-sa", "thorns"), "south-america-west": ("c-sa", "thorns"), "south-america-east": ("c-sa", "thorns"),
-    "europe": ("c-eu", "chevron"), "scandinavia": ("c-eu", "chevron"),
+LAND = {  # area -> (continent tag, glyph), the glyph as the boards print it
+    "north-america": ("c-na", "dragon"), "north-america-west": ("c-na", "dragon"), "north-america-east": ("c-na", "dragon"),
+    "central-america": ("c-na", "dragon"),
+    "south-america": ("c-sa", "dragon"), "south-america-west": ("c-sa", "dragon"), "south-america-east": ("c-sa", "dragon"),
+    "europe": ("c-eu", "thorns"), "scandinavia": ("c-eu", "thorns"),
     "africa": ("c-af", "chevron"), "west-africa": ("c-af", "chevron"), "east-africa": ("c-af", "chevron"),
-    "arabia": ("c-me", "chevron"),
-    "asia": ("c-as", "dragon"), "north-asia": ("c-as", "dragon"), "south-asia": ("c-as", "dragon"),
-    "australia": ("c-au", "dragon"), "new-zealand": ("c-au", "dragon"),
+    "arabia": ("c-me", "thorns"),
+    "asia": ("c-as", "thorns"), "north-asia": ("c-as", "thorns"), "south-asia": ("c-as", "thorns"),
+    "australia": ("c-au", "chevron"), "new-zealand": ("c-au", "chevron"),
     "antarctica": ("c-ice", None),
 }
 NAMES = {
@@ -85,7 +85,7 @@ LAYOUTS = {
     "cthulhu-wars": dict(  # 4 players, "5-3": the base game
         file="CthulhuWars-Map-5-3-Closeness-Centrality.webp", band=(105, 855),
         name="Cthulhu Wars (4 players, 5-3 map)",
-        starts={"gc": "south-pacific", "cc": "asia", "bg": "south-america-west", "ys": "europe"},
+        starts={"gc": "south-pacific", "cc": "asia", "bg": "africa", "ys": "europe"},
         sigils={"ww": ["arctic-ocean", "antarctica"], "sl": ["north-america-west"]},
         seeds={"africa": [[1135, 644]], "antarctica": [[937, 803], [1238, 824]], "arctic-ocean": [[117, 161], [1027, 180]],
                "asia": [[1274, 439]], "australia": [[124, 692]], "central-america": [[266, 394], [347, 484], [435, 559]],
@@ -96,7 +96,7 @@ LAYOUTS = {
     "cthulhu-wars-3-5": dict(  # 4 players, "3-5"
         file="CthulhuWars-Map-3-5-Closeness-Centrality.webp", band=(95, 820),
         name="Cthulhu Wars (4 players, 3-5 map)",
-        starts={"cc": "north-asia", "bg": "south-america"},
+        starts={"cc": "south-asia", "bg": "west-africa"},
         sigils={"sl": ["north-america"]},
         bridges=[("north-america", (426, 497), (446, 521), 8)],
         seeds={"antarctica": [[757, 762]], "arabia": [[1267, 371]], "arctic-ocean": [[124, 143], [555, 165], [1020, 167]],
@@ -109,7 +109,7 @@ LAYOUTS = {
     "cthulhu-wars-3p": dict(  # 3 players
         file="CthulhuWars-Map-3-3-Closeness-Centrality.jpg", band=(95, 845),
         name="Cthulhu Wars (3 players)",
-        starts={"cc": "asia", "bg": "south-america"},
+        starts={"cc": "asia", "bg": "africa"},
         sigils={"sl": ["north-america"]},
         bridges=[("north-america", (392, 508), (418, 534), 8)],
         seats=3,
@@ -121,7 +121,7 @@ LAYOUTS = {
     "cthulhu-wars-5p": dict(  # the 5-player board (21 areas): the four core cults and the Windwalker
         file="Closeness-Centrality-5-players-map-Result.jpg", band=(120, 845),
         name="Cthulhu Wars (5 players, 21-area map)",
-        starts={"cc": "north-asia", "bg": "south-america-west"},
+        starts={"cc": "south-asia", "bg": "west-africa"},
         sigils={"sl": ["north-america-west"]},
         seats=5,
         bridges=[("central-america", (388, 511), (408, 540), 8)],

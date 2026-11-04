@@ -418,7 +418,7 @@ func TestTheAncientsBeginAfterTheOthersInAnAreaWithNoStartGlyph(t *testing.T) {
 	}
 	for _, mv := range legal {
 		switch string(mv.To) {
-		case "south-pacific", "asia", "south-america-west", "europe":
+		case "south-pacific", "asia", "africa", "europe":
 			t.Errorf("%s holds a start glyph", mv.To)
 		}
 	}
