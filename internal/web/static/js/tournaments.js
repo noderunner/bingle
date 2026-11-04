@@ -3,7 +3,7 @@
 // the server says what stands and what is allowed, and this only shows it.
 
 import { h, clear } from "./util.js";
-import { api, whoAmI } from "./api.js";
+import { api, gameTitle, whoAmI } from "./api.js";
 import { FAIR_PLAY } from "./ratings.js";
 
 const FORMAT_NAMES = { round_robin: "Round robin", swiss: "Swiss" };
@@ -115,7 +115,7 @@ export async function tournamentForm(host, t, done) {
 	clear(host);
 	const defs = (await api.gameDefs()).filter((d) => d.seats_required === 2).sort((a, b) => a.name.localeCompare(b.name));
 	const name = h("input", { id: "t-name", type: "text", maxlength: 80, required: true, value: t ? t.name : "" });
-	const game = h("select", { id: "t-game" }, options(defs.map((d) => [d.id, d.name]), t ? t.game_def_id : ""));
+	const game = h("select", { id: "t-game" }, options(defs.map((d) => [d.id, gameTitle(d)]), t ? t.game_def_id : ""));
 	const format = h("select", { id: "t-format" }, options([["round_robin", "Round robin: everybody plays everybody"], ["swiss", "Swiss: rounds against players on a similar score"]], t ? t.format : "swiss"));
 	const rounds = h("input", { id: "t-rounds", type: "number", min: 0, max: 64, step: 1, value: t && t.rounds ? t.rounds : "", placeholder: "From the number of players" });
 	const longTimes = [[3600, "1 hour each"], [7200, "2 hours each"], [86400, "1 day each"], [259200, "3 days each"], [604800, "7 days each"], [1209600, "14 days each"]];
@@ -160,9 +160,11 @@ export async function tournamentForm(host, t, done) {
 		typed = true;
 	});
 	const followGame = async () => {
-		if (typed) return;
 		try {
 			const info = await api.gameDef(game.value);
+			// A prototype is never rated.
+			rated.disabled = !!info.prototype;
+			if (info.prototype) rated.checked = false;
 			if (!typed) minutes.value = info.default_clock_minutes || MINUTES_DEFAULT;
 		} catch (_) {
 			/* the time already shown stands */

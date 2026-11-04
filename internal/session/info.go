@@ -16,9 +16,13 @@ import (
 // right actions without parsing position IDs or knowing game-specific
 // rules, and everything an AI client needs to read the rules.
 type GameInfo struct {
-	ID          string       `json:"id"`
-	Name        string       `json:"name"`
-	Description string       `json:"description,omitempty"`
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
+	// Version is the game's semantic version; Prototype says its rules are not
+	// final, and that this game is the version of them that Version names.
+	Version     string       `json:"version,omitempty"`
+	Prototype   bool         `json:"prototype,omitempty"`
 	Rules       []string     `json:"rules,omitempty"`
 	Notation    string       `json:"notation"`
 	NotationDoc []string     `json:"notation_help,omitempty"`
@@ -231,6 +235,8 @@ func buildGameInfo(cg *catalog.CompiledGame) GameInfo {
 		ID:          def.ID,
 		Name:        def.Name,
 		Description: def.Description,
+		Version:     def.Version,
+		Prototype:   def.Prototype,
 		Rules:       def.Rules,
 		Notation:    notation,
 		NotationDoc: notationHelp(cg),

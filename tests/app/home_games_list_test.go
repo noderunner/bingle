@@ -28,12 +28,12 @@ func TestHomeGames_ListShowsBetaPlayersAndADetailsCard(t *testing.T) {
 	if n := evalInt(t, ctx, `document.querySelectorAll(".game-card-desc, .game-card .chip").length`); n != 0 {
 		t.Errorf("%d summaries or size chips are still on the cards", n)
 	}
-	// Every game is a beta for now, and says how many can play it.
+	// Every game is a beta or a prototype for now, and says how many can play it.
 	if n := evalInt(t, ctx, `document.querySelectorAll(".game-card").length`); n < 20 {
 		t.Fatalf("%d game cards", n)
 	}
-	if n := evalInt(t, ctx, `document.querySelectorAll(".game-card").length - document.querySelectorAll(".game-card .badge.beta").length`); n != 0 {
-		t.Errorf("%d games have no Beta mark", n)
+	if n := evalInt(t, ctx, `document.querySelectorAll(".game-card").length - document.querySelectorAll(".game-card .badge.beta, .game-card .badge.prototype").length`); n != 0 {
+		t.Errorf("%d games have neither a Beta nor a Prototype mark", n)
 	}
 	for family, want := range map[string]string{"tak-5x5": "2 players", "cthulhu-wars": "3–5 players", "nyet": "2–5 players", "hive": "2 players"} {
 		got := evalString(t, ctx, fmt.Sprintf(`(function(){ var e = document.querySelector('.game-card[data-family=%q] .game-card-players'); return e ? e.textContent : "" })()`, family))

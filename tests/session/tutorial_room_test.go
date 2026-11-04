@@ -7,7 +7,7 @@ import (
 	"testing/fstest"
 
 	"github.com/noderunner/bingle/internal/engine/catalog"
-	"github.com/noderunner/bingle/internal/games/courtfall"
+	courtfall "github.com/noderunner/bingle/internal/games/courtfall/v1.0.0"
 	"github.com/noderunner/bingle/internal/session"
 	"github.com/noderunner/bingle/internal/store"
 )
@@ -18,7 +18,7 @@ import (
 func TestStartTutorial_SeedsTheStart(t *testing.T) {
 	mod := courtfall.Module()
 	doc := func(id string, seed string) string {
-		return "id: " + id + "\nkind: rules\ntitle: T\ngame: courtfall\nseed: " + seed + "\nsteps:\n  - text: Look.\n"
+		return "id: " + id + "\nkind: rules\ntitle: T\ngame: courtfall-1.0.0\nseed: " + seed + "\nsteps:\n  - text: Look.\n"
 	}
 	mod.Tutorials = fstest.MapFS{
 		"seven.yaml": {Data: []byte(doc("seven", "7"))},
@@ -45,7 +45,7 @@ func TestStartTutorial_SeedsTheStart(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if g.Tutorial != "courtfall/"+id || g.Status != "active" {
+		if g.Tutorial != "courtfall-1.0.0/"+id || g.Status != "active" {
 			t.Fatalf("the room: tutorial %q, status %q", g.Tutorial, g.Status)
 		}
 		return g

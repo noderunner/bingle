@@ -25,7 +25,7 @@ click-to-move for free.
 | Game | Definition |
 |---|---|
 | **Tak** 3×3 – 8×8 (stacks, walls, capstone, roads, PTN) | `internal/games/tak/tak.yaml` |
-| **Courtfall** (hex arena skirmish: terrain draft, five Courts, secret dice splits, Momentum, Clear Turns — rules in Go, legend in YAML) | `internal/games/courtfall/` ([rules notes](docs/courtfall.md)) |
+| **Courtfall** (hex arena skirmish: terrain draft, five Courts, secret dice splits, Momentum, Clear Turns — rules in Go, legend in YAML; a prototype, with a folder per version of its rules) | `internal/games/courtfall/` ([rules notes](docs/courtfall.md)) |
 | **Fist** (the game from *The Verdigris Pawn*: pinning with allies, jump chains, the mage's Empower, a neutral pawn both sides can seize — rules in Go) | `internal/games/fist/` ([ADR 0036](docs/decisions/0036-fist-one-move-is-one-turn.md)) |
 | **Onitama** (5×5 martial-arts duel: the sixteen Move cards, the card exchange, the Ways of the Stone and the Stream — rules in Go) | `internal/games/onitama/` ([ADR 0037](docs/decisions/0037-onitama-cards-in-the-view.md)) |
 | **Blooms** (Nick Bentley's Go-like game on a hex board: two colours each, one or two stones a turn, capture fenced blooms; bases 4, 5, 6 — rules in Go) | `internal/games/blooms/` ([ADR 0038](docs/decisions/0038-blooms-two-stage-turns.md)) |
@@ -35,7 +35,7 @@ click-to-move for free.
 | **Nyet!** (Stefan Dorra's trick-taking game: cross choices off a board to set the round's terms, pick teams, take tricks and loot; 2–5 players, the four classic suits, a player for each animal — the first game on the card framework) | `internal/games/nyet/`, `internal/engine/cards/` ([ADR 0043](docs/decisions/0043-card-games.md)) |
 | **Cthulhu Wars** (core set with the Windwalker, Sleeper, Opener of the Way and Tcho-Tcho cults, the High Priests, the Azathoth neutral spellbooks and Monsters, the Dreamlands and Beyond Time and Space Loyalty Cards, the Hound of Tindalos and five Independent Great Old Ones, three to five players, simplified world map: Power, Gates, Doom, spellbooks, dice battles, hidden Elder Signs — rules in Go, map and rules guide as data) | `internal/games/cthulhuwars/` ([rules notes](docs/cthulhu-wars.md)) |
 | **Solitaire** (Klondike with one or three cards, Spider with one, two or four suits, FreeCell and Sid Sackson's Bowling Solitaire: games for one player, in any themed set of cards — rules in Go, one ruleset for them all) | `internal/games/solitaire/` ([ADR 0086](docs/decisions/0086-games-for-one-player.md)) |
-| **Mycelium** (Miles Stevenson's game of two fungal colonies on a hex board: place nodes, take the centre to start a confluence, and spread clusters by spores and hyphae to convert the other colony — rules in Go; still being playtested) | `internal/games/mycelium/` ([ADR 0066](docs/decisions/0066-mycelium.md)) |
+| **Mycelium** (Miles Stevenson's game of two fungal colonies on a hex board: place nodes, take the centre to start a confluence, and spread clusters by spores and hyphae to convert the other colony — rules in Go; a prototype, with a folder per version of its rules) | `internal/games/mycelium/` ([ADR 0066](docs/decisions/0066-mycelium.md)) |
 | Go (9×9–19×19), Reversi, Hex, Havannah, Yavalath, Amazons, Ataxx, Pente, Brandubh, English Draughts, Breakthrough, Gomoku | `internal/games/classics/*.yaml` |
 
 ![The lobby: game gallery, puzzles, bots, time limits](docs/screenshots/lobby.png)

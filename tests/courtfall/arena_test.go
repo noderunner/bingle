@@ -6,7 +6,7 @@ import (
 	"github.com/noderunner/bingle/internal/engine/board"
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/engine/state"
-	"github.com/noderunner/bingle/internal/games/courtfall"
+	courtfall "github.com/noderunner/bingle/internal/games/courtfall/v1.0.0"
 )
 
 // arenaGame returns the game a table gets when it asks for the standard arena.
@@ -31,7 +31,7 @@ func arenaGame(t *testing.T) (*catalog.Catalog, *catalog.CompiledGame, string) {
 // choice of Courts instead of the ten-tile draft.
 func TestStandardArena_IsLaidAndSkipsTheDraft(t *testing.T) {
 	cat, g, id := arenaGame(t)
-	if id != "courtfall~arena" {
+	if id != "courtfall-1.0.0~arena" {
 		t.Errorf("the derived game is %q", id)
 	}
 	st, err := state.InitialStateSeeded(g, 7)
@@ -67,7 +67,7 @@ func TestStandardArena_IsLaidAndSkipsTheDraft(t *testing.T) {
 		t.Errorf("the plain game starts as %q with %d tiles", pd.Phase, len(pd.Tiles))
 	}
 	// Choosing to draft is what the game does anyway: no derived game for it.
-	if again, err := cat.Derive("courtfall", map[string]any{"standard-arena": false}); err != nil || again != "courtfall" {
+	if again, err := cat.Derive("courtfall", map[string]any{"standard-arena": false}); err != nil || again != "courtfall-1.0.0" {
 		t.Errorf("drafting the arena derived %q (%v)", again, err)
 	}
 	if _, err := cat.Derive("courtfall", map[string]any{"terrain": true}); err == nil {

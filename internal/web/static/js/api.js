@@ -5,6 +5,9 @@
 // a page's first such request is the one that makes its guest (ADR 0067).
 export const PAGE_HEADER = "X-Bingle-Session";
 
+/** The name to show for one game: a prototype's says which rules it plays. */
+export const gameTitle = (d) => (d.prototype ? `${d.name} ${d.version}` : d.name);
+
 export class ApiError extends Error {
 	constructor(message, status) {
 		super(message);

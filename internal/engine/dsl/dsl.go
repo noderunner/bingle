@@ -16,6 +16,7 @@ package dsl
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 )
 
 // GameDefinition is the top-level shape of a game-definition JSON document
@@ -33,8 +34,14 @@ type GameDefinition struct {
 	// Version is the semantic version (major.minor.patch) of this game's
 	// implementation: the definition and the Go code behind it. It is raised
 	// whenever either changes, and the picker marks every game below 1.0.0 as
-	// a beta. Variants share their base document's version.
+	// a beta. Variants share their base document's version. A prototype's
+	// version names its rules instead, and is part of its id (see Prototype).
 	Version string `json:"version,omitempty"`
+	// Prototype marks a game whose rules are not final. Each version of its
+	// rules is a game of its own, with the id family-version ("mycelium-1.0.0"),
+	// so a game in progress keeps the rules it started with. The family's name
+	// alone means its newest version (ADR 0098).
+	Prototype bool `json:"prototype,omitempty"`
 	// Designers are the people who designed the game; Publisher is the most
 	// recent publisher, when there is one. Both are shown in the picker.
 	Designers []string `json:"designers,omitempty"`
@@ -678,4 +685,25 @@ type DecideDef struct {
 // demo) that use the no-op default; fields will be added here as games that
 // need named hooks are built.
 type CallbackRefs struct {
+}
+
+// Home is the id of the game whose module this definition came from, which
+// holds its tutorials: one version of a prototype, otherwise the family.
+func (d *GameDefinition) Home() string {
+	switch {
+	case d.Prototype:
+		return d.Family + "-" + d.Version
+	case d.Family != "":
+		return d.Family
+	}
+	home, _, _ := strings.Cut(d.ID, "~")
+	return home
+}
+
+// Title is the name to show for one game: a prototype's says which rules it plays.
+func (d *GameDefinition) Title() string {
+	if d.Prototype {
+		return d.Name + " " + d.Version
+	}
+	return d.Name
 }

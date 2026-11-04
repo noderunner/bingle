@@ -4,7 +4,7 @@ kind: rules
 title: How to play Mycelium
 summary: The goal, the board, clusters, and one whole confluence, from taking the centre to its end.
 order: 1
-game: mycelium
+game: mycelium-1.0.0
 seat: 1   # you play Black; the page plays Green
 
 steps:

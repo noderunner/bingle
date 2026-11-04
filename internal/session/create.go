@@ -227,6 +227,9 @@ func (m *Manager) CreateGameWithOptions(ctx context.Context, opts CreateOptions)
 	if err := m.mayUseName(ctx, opts.CreatorName); err != nil {
 		return CreateGameResult{}, err
 	}
+	// The id is the only record of the rules: a prototype's name alone means
+	// its newest version today, so the game is stored under that version.
+	opts.GameDefID = m.catalog.Pin(opts.GameDefID)
 	if len(opts.Options) > 0 {
 		id, err := m.catalog.Derive(opts.GameDefID, opts.Options)
 		if err != nil {

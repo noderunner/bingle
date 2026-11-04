@@ -77,6 +77,9 @@ type GameDef struct {
 	Version   string   `json:"version,omitempty"`
 	Designers []string `json:"designers,omitempty"`
 	Publisher string   `json:"publisher,omitempty"`
+	// Prototype marks a game whose rules are not final: each version of them is
+	// listed as a game of the family, and Version says which.
+	Prototype bool `json:"prototype,omitempty"`
 	// Tutorials is how many tutorials a player of this game is offered (see
 	// GET /game-defs/{id}/tutorials).
 	Tutorials int `json:"tutorials,omitempty"`
@@ -89,7 +92,7 @@ func GameDefs(defs []session.GameDefSummary) []GameDef {
 		out[i] = GameDef{
 			ID: d.ID, Name: d.Name, SeatsRequired: d.SeatsRequired, Description: d.Description,
 			BoardWidth: d.BoardWidth, BoardHeight: d.BoardHeight, Family: d.Family,
-			Version: d.Version, Designers: d.Designers, Publisher: d.Publisher, Tutorials: d.Tutorials,
+			Version: d.Version, Designers: d.Designers, Publisher: d.Publisher, Prototype: d.Prototype, Tutorials: d.Tutorials,
 		}
 	}
 	return out

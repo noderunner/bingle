@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"slices"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -304,7 +305,7 @@ var RetiredGames = []struct{ ID, Name string }{
 
 // BuiltinModules returns every game module bingle ships with.
 func BuiltinModules() []catalog.Module {
-	return append([]catalog.Module{tak.Module(), courtfall.Module(), fendo.Module(), fist.Module(), meridians.Module(), onitama.Module(), blooms.Module(), hive.Module(), nyet.Module(), solitaire.Module(), yinsh.Module(), cthulhuwars.Module(), mycelium.Module()}, classics.Modules()...)
+	return append([]catalog.Module{tak.Module(), fendo.Module(), fist.Module(), meridians.Module(), onitama.Module(), blooms.Module(), hive.Module(), nyet.Module(), solitaire.Module(), yinsh.Module(), cthulhuwars.Module()}, slices.Concat(courtfall.Modules(), mycelium.Modules(), classics.Modules())...)
 }
 
 // Router returns the application's HTTP handler.

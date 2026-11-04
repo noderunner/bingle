@@ -13,6 +13,7 @@ import (
 )
 
 type gameDefInfo struct {
+	Prototype     bool     `json:"prototype"`
 	ID            string   `json:"id"`
 	Name          string   `json:"name"`
 	SeatsRequired int      `json:"seats_required"`
@@ -42,11 +43,15 @@ func TestGameDefs_CarryVersionDesignersAndPublisher(t *testing.T) {
 		if d.Description == "" {
 			t.Errorf("%s: no description for the list", d.ID)
 		}
+		// A prototype's versions are games of one family, each with its own.
+		if d.Prototype {
+			continue
+		}
 		if v, ok := family[d.Family]; ok && v != d.Version {
 			t.Errorf("%s: version %s, but the rest of its family is on %s", d.ID, d.Version, v)
 		}
 		family[d.Family] = d.Version
-		// The game list marks everything below 1.0.0 as a beta: all games are for now.
+		// The game list marks everything below 1.0.0 as a beta: all games but the prototypes are for now.
 		if !strings.HasPrefix(d.Version, "0.") {
 			t.Errorf("%s: version %s, but no game is out of beta yet", d.ID, d.Version)
 		}

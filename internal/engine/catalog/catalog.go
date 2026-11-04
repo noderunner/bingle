@@ -97,13 +97,16 @@ type Catalog struct {
 	dmu sync.Mutex
 	// retired names the games this server no longer offers, by id.
 	retired map[string]string
+	// newest is the id of the newest version of each prototype, by family.
+	newest map[string]string
 }
 
 // NewCatalog returns an empty Catalog ready for Register/Get calls.
 func NewCatalog() *Catalog {
 	return &Catalog{
-		games: make(map[string]*CompiledGame),
-		src:   make(map[string]source),
+		games:  make(map[string]*CompiledGame),
+		src:    make(map[string]source),
+		newest: make(map[string]string),
 	}
 }
 
@@ -132,6 +135,11 @@ func (c *Catalog) RegisterModule(mod Module) error {
 		cg.Assets = mod.Assets
 		c.src[id] = source{doc: doc, mod: mod}
 		c.mu.Unlock()
+		if i == 0 {
+			if err := c.noteVersion(id, cg.Definition); err != nil {
+				return err
+			}
+		}
 		if g := cg.Definition.Guide; g != nil {
 			if mod.Assets == nil {
 				return fmt.Errorf("catalog: game %q has a guide but its module brings no assets", id)
@@ -174,6 +182,10 @@ func (c *Catalog) RegisterWith(id string, defJSON []byte, cb callback.GameCallba
 
 	if def.Version != "" && !semver.MatchString(def.Version) {
 		return fmt.Errorf("catalog: game %q has version %q, which is not major.minor.patch", id, def.Version)
+	}
+
+	if err := checkPrototype(id, def); err != nil {
+		return err
 	}
 
 	if m := def.DefaultClockMinutes; m != 0 && (m < 1 || m > 60) {
@@ -250,6 +262,9 @@ func (c *Catalog) Get(id string) (*CompiledGame, bool) {
 	if ok {
 		return cg, true
 	}
+	if pinned := c.Pin(id); pinned != id {
+		return c.Get(pinned)
+	}
 	if base, suffix, found := strings.Cut(id, DerivedSep); found && base != "" && suffix != "" {
 		if cg, err := c.derive(base, suffix, nil); err == nil {
 			return cg, true
@@ -259,18 +274,15 @@ func (c *Catalog) Get(id string) (*CompiledGame, bool) {
 }
 
 // Tutorials returns the family a game belongs to (its base game: the
-// family of a variant, the base of a derived game) and the tutorials that
-// family's module carries (nil when it has none). ok is false for an unknown
+// family of a variant, the base of a derived game, one version of a prototype)
+// and the tutorials that family's module carries (nil when it has none). ok is false for an unknown
 // game.
 func (c *Catalog) Tutorials(id string) (family string, fsys fs.FS, ok bool) {
 	cg, ok := c.Get(id)
 	if !ok {
 		return "", nil, false
 	}
-	family = cg.Definition.Family
-	if family == "" {
-		family, _, _ = strings.Cut(cg.Definition.ID, DerivedSep)
-	}
+	family = cg.Definition.Home()
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	return family, c.src[family].mod.Tutorials, true
@@ -319,6 +331,7 @@ func (c *Catalog) RetiredIDs() []string {
 // describe, building (and keeping) its definition. Without options it returns
 // baseID itself. It fails when the game takes no options or rejects them.
 func (c *Catalog) Derive(baseID string, options map[string]any) (string, error) {
+	baseID = c.Pin(baseID)
 	if len(options) == 0 {
 		return baseID, nil
 	}

@@ -5,7 +5,7 @@
 // definition by the server, so every game gets the same window.
 
 import { h, clear, store } from "./util.js";
-import { api } from "./api.js";
+import { api, gameTitle } from "./api.js";
 import { renderMarkdown } from "./markdown.js";
 import { pieceIcon, cssColor, legendMarker } from "./render.js";
 import { tutorialList } from "./tutorials-ui.js";
@@ -116,7 +116,7 @@ export async function showRules(info, { tab } = {}) {
 	const old = document.getElementById("rules-dialog");
 	if (old) old.remove();
 
-	const title = h("h2", { id: "rules-title" }, `${info.name} — rules`);
+	const title = h("h2", { id: "rules-title" }, `${gameTitle(info)} — rules`);
 	const closeBtn = h("button", { class: "rules-close", "aria-label": "Close the rules", title: "Close (Esc)" }, "×");
 	const search = h("input", {
 		type: "search",

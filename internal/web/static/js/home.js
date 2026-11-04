@@ -5,7 +5,7 @@
 
 import { CARD_SETS, cardSetById, setPreview, useCardSet } from "./card-sets.js";
 import { h, clear, store, rememberGame, lastName, toast } from "./util.js";
-import { api, whoAmI } from "./api.js";
+import { api, gameTitle, whoAmI } from "./api.js";
 import { rulesIcon } from "./ui-icons.js";
 import { mountAnalysis } from "./analysis.js";
 import { mountRatings } from "./ratings.js";
@@ -51,9 +51,27 @@ function groupedDefs() {
 	return new Map(ordered);
 }
 
+/** Whether d is the base document of its family; each version of a prototype has one. */
+const isBaseGame = (d) => d.id === (d.prototype ? `${d.family}-${d.version}` : d.family || d.id);
+
+/** Two major.minor.patch versions in order, by number: 1.10.0 follows 1.9.0. */
+function compareVersions(a, b) {
+	const [x, y] = [a, b].map((v) => String(v).split(".").map(Number));
+	return x[0] - y[0] || x[1] - y[1] || x[2] - y[2];
+}
+
+/** The versions of a prototype's rules in a list of its games, newest first. */
+const rulesVersions = (list) => [...new Set(list.map((d) => d.version))].sort((a, b) => compareVersions(b, a));
+
+/** The family's headline game: the base document (a prototype's newest), or the first variant. */
+function leadOf(list) {
+	const games = list[0].prototype ? list.filter((d) => d.version === rulesVersions(list)[0]) : list;
+	return games.find(isBaseGame) || games[0];
+}
+
 function familyName(list) {
 	// "Tak (5×5)" -> "Tak"; a lone game keeps its name without the size of its board ("Gomoku (15×15)" -> "Gomoku").
-	const first = (list.find((d) => d.id === (d.family || d.id)) || list[0]).name;
+	const first = leadOf(list).name;
 	return list.length > 1 ? first.replace(/\s*\([^)]*\)\s*$/, "") : first.replace(/\s*\(\d+\s*[×x]\s*\d+\)\s*$/, "");
 }
 
@@ -65,15 +83,18 @@ function populateSelect() {
 	clear(select);
 	for (const [fam, list] of groupedDefs()) {
 		if (list.length === 1) {
-			select.append(h("option", { value: list[0].id }, list[0].name));
+			select.append(h("option", { value: list[0].id }, gameTitle(list[0])));
 		} else {
 			const g = h("optgroup", { label: familyName(list) });
-			for (const d of list) g.append(h("option", { value: d.id }, d.name));
+			for (const d of list) g.append(h("option", { value: d.id }, gameTitle(d)));
 			select.append(g);
 		}
 	}
 	// Prefer Tak 5x5 as the default if nothing was chosen before.
-	const requested = new URLSearchParams(window.location.search).get("game");
+	// A link may name a family, which is a prototype's only lasting name.
+	const asked = new URLSearchParams(window.location.search).get("game");
+	const askedFamily = asked && groupedDefs().get(asked);
+	const requested = askedFamily ? leadOf(askedFamily).id : asked;
 	const want =
 		requested && defs.some((d) => d.id === requested)
 			? requested
@@ -146,14 +167,36 @@ function closeSetup() {
 	}
 }
 
-/** The title and the variants of the family of the chosen game. */
+/** The game of another version of d's rules: the same variant if it has one, else its base game. */
+function inVersion(d, version, family) {
+	const games = family.filter((x) => x.version === version);
+	const same = d.id.replace(`${d.family}-${d.version}`, `${d.family}-${version}`);
+	return (games.find((x) => x.id === same) || games.find(isBaseGame) || games[0]).id;
+}
+
+/** The choice of a prototype's rules: which version, and a word on what that means. */
+function rulesVersionPicker(d, family) {
+	const picker = h("select", { id: "setup-rules-version", onchange: (ev) => chooseGame(inVersion(d, ev.target.value, family)) });
+	rulesVersions(family).forEach((v, i) => picker.append(h("option", { value: v, selected: v === d.version }, i === 0 ? `${v} (newest)` : v)));
+	picker.value = d.version;
+	return [
+		h("label", { class: "setup-variant-label", for: "setup-rules-version" }, "Rules version"),
+		picker,
+		h("p", { class: "muted small setup-prototype-note" }, "This game is a prototype: its rules are still changing. A game keeps the version it starts with."),
+	];
+}
+
+/** The title, the rules version and the variants of the family of the chosen game. */
 function renderSetupHead(d) {
 	const title = document.getElementById("setup-title");
 	const host = document.getElementById("setup-variants");
 	if (!title || !host || !d) return;
-	const list = defs.filter((x) => (x.family || x.id) === (d.family || d.id));
-	title.textContent = list.length > 1 ? familyName(sortedFamily(list)) : d.name;
+	const family = defs.filter((x) => (x.family || x.id) === (d.family || d.id));
+	// The variants offered are those of the version chosen.
+	const list = d.prototype ? family.filter((x) => x.version === d.version) : family;
+	title.textContent = family.length > 1 ? familyName(sortedFamily(family)) : d.name;
 	clear(host);
+	if (d.prototype) host.append(...rulesVersionPicker(d, family));
 	if (list.length < 2) return;
 	const picker = h("select", { id: "setup-variant", onchange: (ev) => chooseGame(ev.target.value) });
 	for (const v of sortedFamily(list)) picker.append(h("option", { value: v.id, selected: v.id === d.id }, v.name));
@@ -173,9 +216,8 @@ async function renderSetupTutorials(d) {
 		clear(host);
 		return;
 	}
-	const family = d.family || d.id;
 	try {
-		if (!tutorialsOf.has(d.id)) tutorialsOf.set(d.id, (await api.tutorials(d.id)).tutorials || []);
+		if (!tutorialsOf.has(d.id)) tutorialsOf.set(d.id, await api.tutorials(d.id));
 	} catch (_) {
 		host.hidden = true;
 		return;
@@ -184,15 +226,15 @@ async function renderSetupTutorials(d) {
 	if (document.getElementById("game_def_id").value !== d.id) return;
 	clear(host).append(
 		h("h3", { class: "setup-tutorials-title" }, "Learn to play"),
-		tutorialList(family, tutorialsOf.get(d.id), { nameField: document.getElementById("create_player_name"), compact: true })
+		tutorialList(tutorialsOf.get(d.id).family, tutorialsOf.get(d.id).tutorials || [], { nameField: document.getElementById("create_player_name"), compact: true })
 	);
 	host.hidden = false;
 }
 
 /** A family in the order its picker lists it: smallest board first, and among equals the base game, then by name. */
 const sortedFamily = (list) => {
-	const isBase = (d) => (d.id === (d.family || d.id) ? 0 : 1);
-	return [...list].sort((a, b) => (a.board_width || 0) - (b.board_width || 0) || isBase(a) - isBase(b) || a.name.localeCompare(b.name));
+	const baseFirst = (d) => (isBaseGame(d) ? 0 : 1);
+	return [...list].sort((a, b) => (a.board_width || 0) - (b.board_width || 0) || baseFirst(a) - baseFirst(b) || a.name.localeCompare(b.name));
 };
 
 let previewFor = "";
@@ -591,7 +633,7 @@ function renderCardSetField(info) {
 /**
  * "Rated game" is offered to a signed-in player at a table of two. The server
  * says what a rated game takes; the page only saves asking for one it would
- * refuse: choosing it means a friend for an opponent and one clock for both, and
+ * refuse: a prototype is never rated, and choosing it means a friend for an opponent and one clock for both, and
  * giving up either of those gives up the choice.
  */
 function renderRatedField(info) {
@@ -624,7 +666,7 @@ function renderRatedField(info) {
 	};
 	field.hidden = true;
 	whoAmI().then((me) => {
-		field.hidden = info.seats.length !== 2 || me.kind !== "account";
+		field.hidden = info.seats.length !== 2 || me.kind !== "account" || !!info.prototype;
 		if (field.hidden) rated.checked = false;
 		sync();
 	});
@@ -850,10 +892,12 @@ function playerRange(list) {
 	return lo === hi ? `${lo} players` : `${lo}\u2013${hi} players`;
 }
 
-/** The line under a game's name: the Beta mark (while its version is below 1.0) and the players it takes. */
+/** The line under a game's name: the Prototype mark, or the Beta mark while its version is below 1.0, and the players it takes. */
 function cardMeta(list, lead) {
 	const out = [];
-	if (isBeta(lead.version)) {
+	if (lead.prototype) {
+		out.push(h("span", { class: "badge prototype", title: `Rules version ${lead.version}: the rules are still changing` }, "Prototype"));
+	} else if (isBeta(lead.version)) {
 		out.push(h("span", { class: "badge beta", title: `Version ${lead.version || "0.0.0"}: still being tested` }, "Beta"));
 	}
 	const players = playerRange(list);
@@ -889,7 +933,7 @@ function showGameTip(card, list, lead) {
 			designers.length ? h("div", { class: "game-tip-line" }, h("span", { class: "muted" }, designers.length > 1 ? "Designers: " : "Designer: "), designers.join(", ")) : null,
 			lead.publisher ? h("div", { class: "game-tip-line" }, h("span", { class: "muted" }, "Publisher: "), lead.publisher) : null,
 			lead.description ? h("p", { class: "game-tip-text" }, lead.description) : null,
-			h("div", { class: "game-tip-version muted small" }, `Version ${lead.version || "0.0.0"}${isBeta(lead.version) ? " (beta)" : ""}`)
+			h("div", { class: "game-tip-version muted small" }, lead.prototype ? `Prototype, rules version ${lead.version}` : `Version ${lead.version || "0.0.0"}${isBeta(lead.version) ? " (beta)" : ""}`)
 		)
 	);
 	card.setAttribute("aria-describedby", "game-tip");
@@ -922,8 +966,7 @@ async function renderGallery() {
 
 	const cards = [];
 	for (const [family, list] of groupedDefs()) {
-		// The family's headline game: the base document, or the first variant.
-		const lead = list.find((d) => d.id === family) || list[0];
+		const lead = leadOf(list);
 		const card = h(
 			"div",
 			{ class: "game-card", "data-family": family, role: "button", tabindex: 0, "aria-pressed": "false" },

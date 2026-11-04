@@ -65,7 +65,7 @@ type TournamentSettings struct {
 	ClockSeconds          int    `json:"clock_seconds"`
 	ClockIncrementSeconds int    `json:"clock_increment_seconds,omitempty"`
 	GamesPerPairing       int    `json:"games_per_pairing,omitempty"` // 1 or 2; 0: 2
-	Rated                 *bool  `json:"rated,omitempty"`             // default on
+	Rated                 *bool  `json:"rated,omitempty"`             // default on, and never for a prototype
 	PieRule               *bool  `json:"pie_rule,omitempty"`          // default on, where the game offers it
 	MinPlayers            int    `json:"min_players,omitempty"`
 	MaxPlayers            int    `json:"max_players,omitempty"`
@@ -95,12 +95,18 @@ func (m *Manager) settled(s TournamentSettings) (store.Tournament, error) {
 	if s.Format != tournament.RoundRobin && s.Format != tournament.Swiss {
 		return bad("the format is %q or %q", tournament.RoundRobin, tournament.Swiss)
 	}
+	// Every game of a tournament is played under the same rules.
+	s.GameDefID = m.catalog.Pin(s.GameDefID)
 	compiled, ok := m.catalog.Get(s.GameDefID)
 	if !ok {
 		return store.Tournament{}, fmt.Errorf("%w: %q", ErrGameDefNotFound, s.GameDefID)
 	}
 	if len(compiled.Definition.Seats) != 2 {
 		return bad("a tournament is for a game of two seats")
+	}
+	prototype := compiled.Definition.Prototype
+	if prototype && s.Rated != nil && *s.Rated {
+		return bad("a prototype's rules are still changing, so its games are not rated")
 	}
 	if s.ClockSeconds <= 0 || s.ClockSeconds > MaxClockSeconds {
 		return bad("a game clock of 1 to %d seconds: every tournament game has one", MaxClockSeconds)
@@ -132,9 +138,9 @@ func (m *Manager) settled(s TournamentSettings) (store.Tournament, error) {
 		return bad("a round robin takes as many rounds as it takes")
 	}
 	out := store.Tournament{
-		Name: name, Description: strings.TrimSpace(s.Description), GameDefID: s.GameDefID, GameName: compiled.Definition.Name, Format: s.Format,
+		Name: name, Description: strings.TrimSpace(s.Description), GameDefID: s.GameDefID, GameName: compiled.Definition.Title(), Format: s.Format,
 		ClockSeconds: s.ClockSeconds, ClockIncrement: s.ClockIncrementSeconds, GamesPerPairing: games,
-		Rated: s.Rated == nil || *s.Rated, PieRule: s.PieRule == nil || *s.PieRule,
+		Rated: !prototype && (s.Rated == nil || *s.Rated), PieRule: s.PieRule == nil || *s.PieRule,
 		MinPlayers: lo, MaxPlayers: hi, Rounds: s.Rounds,
 	}
 	if !s.RealTime {

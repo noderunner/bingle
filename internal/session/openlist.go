@@ -69,7 +69,7 @@ func (m *Manager) ListOpenGames(ctx context.Context, limit int) ([]OpenGame, err
 		entry := OpenGame{
 			RoomCode:  g.RoomCode,
 			GameDefID: g.GameDefID,
-			Name:      compiled.Definition.Name,
+			Name:      compiled.Definition.Title(),
 			Family:    familyOf(compiled.Definition.Family, g.GameDefID),
 			Status:    g.Status,
 			Lobby:     g.Lobby,

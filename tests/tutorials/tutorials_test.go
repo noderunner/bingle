@@ -117,14 +117,14 @@ func TestVerify_CatchesMistakes(t *testing.T) {
 // A game with chance must fix its seed; with one, the dice repeat.
 func TestVerify_ChanceNeedsASeed(t *testing.T) {
 	cat := shippedCatalog(t)
-	doc := "id: t\nkind: rules\ntitle: T\ngame: courtfall\nsteps:\n  - text: Look.\n"
+	doc := "id: t\nkind: rules\ntitle: T\ngame: courtfall-1.0.0\nsteps:\n  - text: Look.\n"
 	tuts, err := load(t, map[string]string{"t.yaml": doc})
 	if err != nil {
 		t.Fatal(err)
 	}
-	wantErr(t, tutorial.Verify(cat, "courtfall", tuts[0]), "name a seed")
-	tuts, _ = load(t, map[string]string{"t.yaml": strings.Replace(doc, "game: courtfall", "game: courtfall\nseed: 7", 1)})
-	if err := tutorial.Verify(cat, "courtfall", tuts[0]); err != nil {
+	wantErr(t, tutorial.Verify(cat, "courtfall-1.0.0", tuts[0]), "name a seed")
+	tuts, _ = load(t, map[string]string{"t.yaml": strings.Replace(doc, "game: courtfall-1.0.0", "game: courtfall-1.0.0\nseed: 7", 1)})
+	if err := tutorial.Verify(cat, "courtfall-1.0.0", tuts[0]); err != nil {
 		t.Fatal(err)
 	}
 }

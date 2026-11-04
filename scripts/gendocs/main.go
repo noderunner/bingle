@@ -107,7 +107,7 @@ func main() {
 	fmt.Println()
 	fmt.Println("**Version** is the game implementation's semantic version (`version` in its definition). Raise it with")
 	fmt.Println("every change to the game's definition or Go code; a version below 1.0.0 is shown as a Beta in the")
-	fmt.Println("list of games. The server records each version it has run in the `game_versions` table.")
+	fmt.Println("list of games. The server records each version it has run in the `game_versions` table. A prototype's `version` names its rules: each version is a game of its own (`courtfall-1.0.0`), and its family (`courtfall`) means the newest. See [dsl.md](dsl.md).")
 }
 
 func boardText(g *catalog.CompiledGame) string {

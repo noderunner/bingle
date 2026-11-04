@@ -19,6 +19,9 @@ type GameDefSummary struct {
 	Version   string
 	Designers []string
 	Publisher string
+	// Prototype marks a game whose rules are not final: each version of them is
+	// a game of the family, and Version says which.
+	Prototype bool
 	// Tutorials is how many tutorials a player of this game is offered.
 	Tutorials int
 }
@@ -41,6 +44,7 @@ func (m *Manager) ListGameDefs(ctx context.Context) []GameDefSummary {
 			Version:       cg.Definition.Version,
 			Designers:     cg.Definition.Designers,
 			Publisher:     cg.Definition.Publisher,
+			Prototype:     cg.Definition.Prototype,
 		}
 		if _, list, err := m.TutorialsFor(cg.Definition.ID); err == nil {
 			summaries[i].Tutorials = len(list)

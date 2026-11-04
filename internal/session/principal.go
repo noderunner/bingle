@@ -133,7 +133,7 @@ func (m *Manager) OwnGames(ctx context.Context, limit int) ([]OwnGame, error) {
 	for _, g := range rows {
 		name := g.GameDefID
 		if c, ok := m.catalog.Get(g.GameDefID); ok {
-			name = c.Definition.Name
+			name = c.Definition.Title()
 		} else if retired, ok := m.catalog.Retired(g.GameDefID); ok {
 			name = retired
 		}

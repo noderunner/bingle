@@ -13,6 +13,8 @@ id, name                      required
 description, rules[]          shown in the lobby, rules dialog and MCP get_game_info
 version, designers[], publisher   the implementation's semver (raise it with every change to the
                               definition or Go code; below 1.0.0 shows a Beta mark), and who made the game
+prototype                     the rules are not final: version names the rules and is part of the id
+                              (family-version), see *Prototypes* below
 family, variants[]            group sibling games / derive them from this document
 options[]                     setup choices a creator makes (bool, seat-choice, multi-choice, book-swap)
 pie_rule                      standard | optional: the game can be played with the pie rule, and
@@ -652,3 +654,29 @@ for every game; ADR 0022 shows how `slide` and `leap` were added), or a Go
 ruleset as described above (ADR 0025; Courtfall and Cthulhu Wars are). The small
 `callback.GameCallbacks` hook (veto a move, name a winner) remains for
 declarative games that need only that.
+
+## Prototypes
+
+A game whose rules are not final sets `prototype: true`, and each version of its rules is a game of its
+own, so that a game in progress keeps the rules it started with and a table can choose which to play
+([ADR 0098](decisions/0098-prototype-games-and-rules-versions.md)):
+
+```
+internal/games/mycelium/
+  versions.go        Modules() lists the versions
+  v1.0.0/            the whole game: definition, Go ruleset, guide, tutorials
+    mycelium.yaml    id: mycelium-1.0.0, family: mycelium, version: 1.0.0, prototype: true
+```
+
+To make a new version:
+
+1. Copy the folder of the version it starts from to `vX.Y.Z`, and leave the old one as it is.
+2. In the new definition set `id: family-X.Y.Z` and `version: X.Y.Z`, and do the same in the `ID` of its
+   `module.go` and the `game` of its tutorials.
+3. Add the new package to `Modules()` in `versions.go`.
+4. Point a copy of the game's tests at it (`tests/mycelium` imports the folder it tests).
+
+The newest version is what the family's name (`mycelium`) means and what the setup chooses first. A new version
+is made only when the maintainer asks for one. Any other change, to the rules or not, is made in the folder of the
+version it belongs to, with no change to the version. A prototype's games are not rated.
+The web client is shared by all versions, so a new version's view must not break what an old one draws.

@@ -24,7 +24,7 @@ before, only seats nobody owns ([ADR 0067](decisions/0067-principals-and-guest-k
 
 | Tool | Purpose |
 |---|---|
-| `list_game_defs` | games available (`id`, `name`, `description`, board size, `family`, `version`) |
+| `list_game_defs` | games available (`id`, `name`, `description`, board size, `family`, `version`, `prototype`: a prototype lists each version of its rules, and its `family` alone means the newest) |
 | `get_game_info` | rules text, pieces, actions, win rules and **move notation help** |
 | `get_leaderboard` | the ratings: the games with a leaderboard, one game's leaderboard (`family`), or an account's ratings (`handle`) |
 | `list_tournaments`, `get_tournament` | the tournaments, and one's settings, standings and schedule with the room code of each game (`id`) |

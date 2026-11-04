@@ -300,8 +300,8 @@ func TestCourtfall_TheStandardArenaIsASetupOption(t *testing.T) {
 
 	// With the option: its own game, the terrain down, and Courts to choose.
 	room, id := open(map[string]any{"standard-arena": true})
-	if id != "courtfall~arena" {
-		t.Fatalf("the game is %q, want courtfall~arena", id)
+	if id != "courtfall-1.0.0~arena" {
+		t.Fatalf("the game is %q, want courtfall-1.0.0~arena", id)
 	}
 	var st struct {
 		State struct {
@@ -317,9 +317,9 @@ func TestCourtfall_TheStandardArenaIsASetupOption(t *testing.T) {
 	if st.State.Ext.Phase != "court" || len(st.State.Ext.Tiles) != 10 {
 		t.Errorf("the game starts as %q with %d tiles", st.State.Ext.Phase, len(st.State.Ext.Tiles))
 	}
-	// Without it, the draft is where the game starts, under the plain id.
+	// Without it, the draft is where the game starts, under the plain id of its version.
 	room, id = open(nil)
-	if id != "courtfall" {
+	if id != "courtfall-1.0.0" {
 		t.Errorf("a game without the option is %q", id)
 	}
 	// (A fresh value: decoding into the old one would keep its tiles, as JSON

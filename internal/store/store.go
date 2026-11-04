@@ -96,7 +96,40 @@ func Open(dbPath string) (*Store, error) {
 		return nil, fmt.Errorf("migrate sqlite schema: %w", err)
 	}
 
+	if err := pinPrototypes(db); err != nil {
+		_ = db.Close()
+		return nil, fmt.Errorf("migrate sqlite schema: %w", err)
+	}
+
 	return &Store{db: db, path: dbPath}, nil
+}
+
+// pinPrototypes moves what was stored under the bare id of a game that became a
+// prototype to the version it was played under, since the bare id now means the
+// newest version (ADR 0098): the games, those derived from it (id~suffix), its
+// tournaments and its tutorial rooms ("id/tutorial"). It finds nothing to do once
+// it has run.
+func pinPrototypes(db *sql.DB) error {
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+	for _, id := range []string{"courtfall", "mycelium"} {
+		pinned := id + "-1.0.0"
+		for _, stmt := range []string{
+			`UPDATE games SET game_def_id = ? || substr(game_def_id, ?) WHERE game_def_id = ? OR game_def_id GLOB ?`,
+			`UPDATE tournaments SET game_def_id = ? || substr(game_def_id, ?) WHERE game_def_id = ? OR game_def_id GLOB ?`,
+		} {
+			if _, err := tx.Exec(stmt, pinned, len(id)+1, id, id+"~*"); err != nil {
+				return err
+			}
+		}
+		if _, err := tx.Exec(`UPDATE games SET tutorial = ? || substr(tutorial, ?) WHERE tutorial GLOB ?`, pinned, len(id)+1, id+"/*"); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
 }
 
 // columnMigrations lists columns added after the original schema. Each is

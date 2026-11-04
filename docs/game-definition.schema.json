@@ -605,6 +605,10 @@
           },
           "type": "array"
         },
+        "prototype": {
+          "description": "Prototype marks a game whose rules are not final. Each version of its rules is a game of its own, with the id family-version (\"mycelium-1.0.0\"), so a game in progress keeps the rules it started with. The family's name alone means its newest version (ADR 0098).",
+          "type": "boolean"
+        },
         "publisher": {
           "type": "string"
         },
@@ -645,7 +649,7 @@
           "type": "array"
         },
         "version": {
-          "description": "Version is the semantic version (major.minor.patch) of this game's implementation: the definition and the Go code behind it. It is raised whenever either changes, and the picker marks every game below 1.0.0 as a beta. Variants share their base document's version.",
+          "description": "Version is the semantic version (major.minor.patch) of this game's implementation: the definition and the Go code behind it. It is raised whenever either changes, and the picker marks every game below 1.0.0 as a beta. Variants share their base document's version. A prototype's version names its rules instead, and is part of its id (see Prototype).",
           "type": "string"
         },
         "win_condition": {

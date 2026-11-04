@@ -547,6 +547,7 @@ details.debug pre {
 .game-card-preview svg { width: 100%; height: auto; max-height: 100%; }
 .game-card-title { font-weight: 800; }
 .game-card-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.1rem 0.35rem; margin-top: auto; }
+.badge.prototype { color: var(--focus); border-color: var(--focus); text-transform: uppercase; letter-spacing: 0.04em; font-size: 0.7rem; }
 .badge.beta { color: var(--warn); border-color: var(--warn); text-transform: uppercase; letter-spacing: 0.04em; font-size: 0.7rem; }
 .game-card-players { white-space: nowrap; font-size: 0.78rem; }
 .game-icon-sigil { stroke-linejoin: round; }
@@ -1902,7 +1903,8 @@ dialog.bar-dialog .field input { width: 100%; }
 .setup-preview svg { width: 100%; height: auto; display: block; }
 .setup-side .variants { margin-top: 0.6rem; display: grid; gap: 0.2rem; }
 .setup-variant-label { font-weight: 600; }
-#setup-variant { width: 100%; }
+#setup-variant, #setup-rules-version { width: 100%; }
+.setup-prototype-note { margin: 0.25rem 0 0.5rem; }
 .setup-side .game-blurb { min-height: 0; margin: 0.6rem 0 0; }
 .import-only { display: none; }
 form[data-mode="import"] .import-only { display: flex; }

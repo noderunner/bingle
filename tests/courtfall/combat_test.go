@@ -388,7 +388,7 @@ func TestLegalMovesAreAcceptedAndOthersRejected(t *testing.T) {
 // checked against the arithmetic: every cell is the chance of at least k
 // successes out of n dice at that success number, to the nearest percent.
 func TestCombatGuide_TheOddsTableMatchesTheDice(t *testing.T) {
-	md, err := os.ReadFile(filepath.Join("..", "..", "internal", "games", "courtfall", "guide", "combat.md"))
+	md, err := os.ReadFile(filepath.Join("..", "..", "internal", "games", "courtfall", "v1.0.0", "guide", "combat.md"))
 	if err != nil {
 		t.Fatal(err)
 	}
