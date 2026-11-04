@@ -2196,14 +2196,18 @@ function impulseCard(note, choices = []) {
 	const impulse = onImpulse();
 	const text = bar.textContent.trim();
 	if (!acting && !impulse && !text && !note && !choices.length) return null;
-	const title = inAnalysis() ? "Analysis" : !isLive() ? "History" : impulse ? impulseTitle() : g.status === "finished" ? "Game over" : g.status === "waiting" ? "Waiting" : "Actions";
+	const title = inAnalysis() ? "Analysis" : !isLive() ? (S.viewSeq === null ? "History" : `History: ${S.viewSeq}`) : impulse ? impulseTitle() : g.status === "finished" ? "Game over" : g.status === "waiting" ? "Waiting" : "Actions";
 	const card = h("section", { class: "card impulse-card" + (acting ? " acting" : ""), id: "impulse-card", "aria-label": "Impulse" });
 	card.append(h("h3", { id: "impulse-title" }, title));
 	if (impulse) card.append(h("p", { class: "impulse-text", id: "impulse-text" }, impulseText()));
 	if (note) {
 		card.classList.toggle("over", note.over);
 		card.classList.toggle("history", note.history);
+		// A move of the history is told as the History tab tells it; the plain words stay for a screen reader.
+		const story = !isLive() && !inAnalysis() && S.viewSeq !== null ? moveStory(S.viewSeq) : null;
+		if (story) note.words.classList.add("sr-only");
 		card.append(note.words);
+		if (story) card.append(story);
 	}
 	if (bar.childNodes.length) card.append(bar);
 	card.append(...choices);
@@ -5579,6 +5583,32 @@ function logLine(text) {
 	return li;
 }
 
+/** The heading of a seat's lines in the log: its colour, its label and who held it. */
+function logActor(seat, ply, mark = null) {
+	const sd = seatDef(seat);
+	const who = seatNameAt(seat, ply);
+	return h(
+		"div",
+		{ class: `log-actor color-${cssColor(colorOf(seat))}`, "data-seat": seat, "data-auto-play": mark ? "1" : null },
+		h("span", { class: `swatch color-${cssColor(colorOf(seat))}`, style: seatGradient(seat) ? `background: ${seatGradient(seat)}` : null }),
+		h("strong", {}, ...withSeatWords(sd ? sd.label : `Seat ${seat}`)),
+		who ? h("span", { class: "muted small" }, seat === S.me.seat && who === seatName(seat) ? ` · ${who} (you)` : ` · ${who}`) : null,
+		mark
+	);
+}
+
+/** What the History tab says of one move, drawn as it is there; null if it says nothing. */
+function moveStory(seq) {
+	const entries = rulesetLog().filter((e) => e.ply === seq && e.lines && e.lines.length);
+	if (!entries.length) return null;
+	const box = h("div", { class: "events history-told", id: "history-told" });
+	for (const e of entries) {
+		if (e.seat) box.append(logActor(e.seat, e.ply));
+		box.append(h("ul", { class: "log-turn" }, ...e.lines.map(logLine)));
+	}
+	return box;
+}
+
 // eventsPane narrates the whole game so far, with a rule marking where the
 // viewer's last decision was (what the other cults did meanwhile comes after
 // it). A spectator sees the whole log without the mark. It returns
@@ -5666,20 +5696,7 @@ function eventsPane() {
 		const some = g.entries.some(botPlayed);
 		const turnClass = "log-turn" + (some ? " has-auto-play" : "");
 		let group = h("ul", { class: turnClass });
-		if (g.seat) {
-			const sd = seatDef(g.seat);
-			const who = seatNameAt(g.seat, g.entries[0].ply);
-			box.append(
-				h(
-					"div",
-					{ class: `log-actor color-${cssColor(colorOf(g.seat))}`, "data-seat": g.seat, "data-auto-play": some ? "1" : null },
-					h("span", { class: `swatch color-${cssColor(colorOf(g.seat))}`, style: seatGradient(g.seat) ? `background: ${seatGradient(g.seat)}` : null }),
-					h("strong", {}, ...withSeatWords(sd ? sd.label : `Seat ${g.seat}`)),
-					who ? h("span", { class: "muted small" }, g.seat === S.me.seat && who === seatName(g.seat) ? ` · ${who} (you)` : ` · ${who}`) : null,
-					some ? badge(all) : null
-				)
-			);
-		}
+		if (g.seat) box.append(logActor(g.seat, g.entries[0].ply, some ? badge(all) : null));
 		box.append(group);
 		for (const e of g.entries) {
 			const auto = botPlayed(e);

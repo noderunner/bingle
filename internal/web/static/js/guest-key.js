@@ -52,7 +52,7 @@ export function guestKeySection() {
 	);
 
 	const useKey = h("input", { id: "guest-use-key", type: "text", maxlength: "60", autocapitalize: "none", spellcheck: "false", placeholder: "bgg_…" });
-	const use = h("button", { type: "button", class: "ghost", id: "guest-use" }, "Use this key");
+	const use = h("button", { type: "button", class: "ghost", id: "guest-use" }, "Submit Key");
 	use.addEventListener("click", () =>
 		run(use, async () => {
 			await api.adoptGuest(useKey.value.trim());
@@ -102,6 +102,6 @@ export function guestKeySection() {
 		}
 		body.append(result);
 	}
-	section.append(h("h3", {}, "Move to another device"), body);
+	section.append(h("h3", {}, "Move to Another Device"), body);
 	return { section, paint };
 }

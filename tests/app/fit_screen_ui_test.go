@@ -458,7 +458,7 @@ func TestWebFitScreen_TheActionCardSaysWhatTheBarSaid(t *testing.T) {
 	waitJS(t, ctx, "the first move", `document.getElementById("hist-first") && !document.getElementById("hist-first").disabled`, 10*time.Second)
 	clickSel(t, ctx, "#hist-first")
 	waitJS(t, ctx, "return to live in the card", inCard("return-live"), 10*time.Second)
-	title("History")
+	title("History: 0")
 	if got := evalString(t, ctx, `document.getElementById("impulse-card").innerText`); strings.Contains(got, "Browsing history") {
 		t.Errorf("the card says it twice: %q", got)
 	}

@@ -91,14 +91,16 @@ func TestWebGame_TheTopBarHasTheActiveGamesJoinAndProfile(t *testing.T) {
 	if got := evalString(t, ctx, `document.getElementById("profile-page-link").getAttribute("href")`); got != "/profile" {
 		t.Errorf("the link to the profile page = %q", got)
 	}
-	// Who is here is accounts' (ADR 0073): Alice, a guest, is not listed, and
-	// the window says why.
-	time.Sleep(300 * time.Millisecond)
-	if n := evalInt(t, ctx, `document.querySelectorAll("#here-list li.me").length`); n != 0 {
-		t.Errorf("a guest is listed among who is here (%d)", n)
+	// Who is here is accounts' (ADR 0073): a guest does not see the section at all.
+	waitJS(t, ctx, "no Here Now for a guest", `document.getElementById("profile-here").hidden`, 5*time.Second)
+	if got := evalString(t, ctx, `document.getElementById("profile-page-link").textContent`); got != "All Settings" {
+		t.Errorf("the link to the settings says %q", got)
 	}
-	if got := evalString(t, ctx, `document.getElementById("profile-dialog").textContent`); !strings.Contains(got, "Guests are not listed") {
-		t.Errorf("the window does not say guests are not listed: %q", got)
+	if got := evalString(t, ctx, `document.querySelector('label[for="profile-window-name"]').textContent`); got != "My Name" {
+		t.Errorf("the name's heading is %q", got)
+	}
+	if !evalBool(t, ctx, `document.getElementById("profile-account").compareDocumentPosition(document.getElementById("profile-window-name")) & Node.DOCUMENT_POSITION_FOLLOWING && document.getElementById("profile-window-name").compareDocumentPosition(document.getElementById("guest-box")) & Node.DOCUMENT_POSITION_FOLLOWING`) {
+		t.Error("the name is not between the sign-in and the guest key")
 	}
 	// The rules of the game are a rule book, not the word.
 	if n := evalInt(t, ctx, `document.querySelectorAll('#show-rules svg[data-icon="rules"]').length`); n != 1 {

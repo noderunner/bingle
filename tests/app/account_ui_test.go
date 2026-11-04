@@ -254,7 +254,7 @@ func TestAccountUI_TheProfileWindowMovesAGuest(t *testing.T) {
 	}
 	waitJS(t, ctx, "the top bar", `document.getElementById("open-profile") !== null`, 10*time.Second)
 	clickSel(t, ctx, "#open-profile")
-	waitJS(t, ctx, "the key to copy, under its heading", `document.getElementById("guest-copy") !== null && document.querySelector("#guest-box h3").textContent === "Move to another device"`, 10*time.Second)
+	waitJS(t, ctx, "the key to copy, under its heading", `document.getElementById("guest-copy") !== null && document.querySelector("#guest-box h3").textContent === "Move to Another Device"`, 10*time.Second)
 	evalBool(t, ctx, `(document.getElementById("guest-use-key").value = "`+key+`", document.getElementById("guest-use").click(), true)`)
 	waitJS(t, ctx, "the key taken", `document.getElementById("guest-result").textContent.indexOf("that guest now") >= 0`, 10*time.Second)
 	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/game/"+room.RoomCode)); err != nil {
