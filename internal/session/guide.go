@@ -213,13 +213,6 @@ var mapPalette = []struct{ kind, a, b, da, db string }{
 	{"c-ice", "#ffffff", "#d1dfec", "#cfdbe6", "#98aabd"},
 }
 
-// glyphPaths are the glyph symbols in a 24x24 box (the client draws the same).
-var glyphPaths = map[string]string{
-	"dragon":  "M -9 4 Q -6 -9 -1 -1 T 8 -3 M 8 -3 l 3 -2 M 6 -6 l 0 3",
-	"chevron": "M -9 5 L 0 -6 L 9 5 M -9 -1 L 0 -12 L 9 -1",
-	"thorns":  "M -10 8 L -7 -6 L -4 8 M -4 8 L -1 -9 L 2 8 M 2 8 L 5 -5 L 8 8",
-}
-
 // areaMapSVG draws an areas board as a standalone SVG picture (for guides):
 // graded seas with waves, a pale shore round every coast, lands in their own
 // colours, names on top and a badge for each glyph.
@@ -239,7 +232,7 @@ func areaMapSVG(def *dsl.GameDefinition) string {
 	b.WriteString(".shore{fill:none;stroke:#ffffff99;stroke-width:10;stroke-linejoin:round}.frame{fill:#8a6a43}")
 	b.WriteString(".waves{fill:url(#waves);opacity:.3}.name{font:700 12.5px system-ui,sans-serif;fill:#1f2a1a;stroke:#ffffffd9;stroke-width:3.2px;paint-order:stroke;text-anchor:middle}")
 	b.WriteString(".name.o{font:italic 600 13px Georgia,serif;letter-spacing:.1em;fill:#123a5e;stroke:#ffffff8c}")
-	b.WriteString(".gb circle{fill:#2b2a26;stroke:#fff;stroke-width:1.5}.gb path{fill:none;stroke:#ffe9a8;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}")
+	b.WriteString(".gb circle{fill:#2b2a26;stroke:#fff;stroke-width:1.5}")
 	b.WriteString("@media (prefers-color-scheme:dark){")
 	for _, p := range mapPalette {
 		fmt.Fprintf(&b, ".s-%[1]s-0{stop-color:%[2]s}.s-%[1]s-1{stop-color:%[3]s}", p.kind, p.da, p.db)
@@ -349,9 +342,13 @@ func areaMapSVG(def *dsl.GameDefinition) string {
 		}
 		fmt.Fprintf(&b, `<text class="%s" x="%g" y="%g">%s</text>`, cls, a.Anchor[0], a.Anchor[1]+4, escapeXML(a.Name))
 		for _, t := range a.Tags {
-			if g, ok := strings.CutPrefix(t, "glyph-"); ok && glyphPaths[g] != "" {
+			if g, ok := strings.CutPrefix(t, "glyph-"); ok && glyphShapes[g] != nil {
 				x := a.Anchor[0] + float64(len(a.Name))*3.7 + 15
-				fmt.Fprintf(&b, `<g class="gb" transform="translate(%g %g)"><circle r="11"/><path d="%s" transform="scale(.8)"/></g>`, x, a.Anchor[1], glyphPaths[g])
+				fmt.Fprintf(&b, `<g class="gb" transform="translate(%g %g)"><circle r="11"/><g transform="scale(.72)">`, x, a.Anchor[1])
+				for _, part := range glyphShapes[g] {
+					fmt.Fprintf(&b, `<path fill="%s" fill-rule="evenodd" d="%s"/>`, part[0], part[1])
+				}
+				b.WriteString(`</g></g>`)
 			}
 		}
 	}

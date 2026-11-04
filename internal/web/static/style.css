@@ -755,7 +755,6 @@ kbd { font: 600 0.8em ui-monospace, Menlo, Consolas, monospace; border: 1px soli
 	stroke-width: 3px; stroke-linejoin: round; pointer-events: none;
 }
 @media (prefers-color-scheme: dark) { .area-label { fill: #eef3f6; stroke: rgba(0, 0, 0, 0.65); } }
-.area-glyph { fill: none; stroke: var(--board-line); stroke-width: 2.4; opacity: 0.5; stroke-linecap: round; stroke-linejoin: round; }
 .mark-gate { fill: rgba(255, 255, 255, 0.85); stroke: #555; stroke-width: 3.5; }
 .legend-swatch.gate { border-radius: 50%; background: #fff; border: 3px solid #555; }
 .mark-gate.abandoned { stroke: #8d8776; stroke-dasharray: 3 3; }
@@ -821,7 +820,6 @@ kbd { font: 600 0.8em ui-monospace, Menlo, Consolas, monospace; border: 1px soli
 }
 
 .area-glyph-badge circle { fill: #2b2a26; stroke: #fff; stroke-width: 1.5; }
-.area-glyph-badge .area-glyph { stroke: #ffe9a8; opacity: 1; stroke-width: 2.4; }
 .area-glyph-badge:hover circle { fill: #7a1f1f; }
 .token { filter: drop-shadow(0 1.5px 1px rgba(0, 0, 0, 0.45)); }
 .token .piece-body { stroke-width: 1.8; }
@@ -904,7 +902,7 @@ kbd { font: 600 0.8em ui-monospace, Menlo, Consolas, monospace; border: 1px soli
 /* The names and the glyphs are a faint layer under the pieces: they may be covered, and do not compete. */
 .map-labels .area-label { opacity: 0.5; }
 .map-labels .area-glyph-badge, .map-labels .area-sigil-badge { opacity: 0.5; transition: opacity 0.1s; }
-.map-labels .area-glyph-badge:hover, .map-labels .area-sigil-badge:hover { opacity: 1; }
+.map-labels .area-glyph-badge:hover, .map-labels .area-sigil-badge:hover, .map-labels .area-glyph-badge.printed { opacity: 1; }
 .area-label { font: 700 12.5px system-ui, sans-serif; fill: #1f2a1a; stroke: rgba(255, 255, 255, 0.85); stroke-width: 3.2px; }
 .area-label.ocean-label { font: italic 600 13px Georgia, "Times New Roman", serif; letter-spacing: 0.1em; fill: #123a5e; stroke: rgba(255, 255, 255, 0.55); }
 @media (prefers-color-scheme: dark) {
