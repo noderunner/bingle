@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Writes the three-player Primeval map layout of Cthulhu Wars into the game's definition.
-The five-player layout is traced from a scan by scripts/cwprimevalart.py.
+The five-player layout is traced from a scan by scripts/cwmapart.py.
 
     python3 scripts/cwprimeval.py [--preview FILE]
 

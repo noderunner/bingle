@@ -69,3 +69,49 @@ func TestWebCthulhuWars_ThePrimevalMapHasAPictureAndAGlacierLayer(t *testing.T) 
 		t.Errorf("uncaught JS exceptions: %v", jsErrors)
 	}
 }
+
+// The board's glyphs stand where it prints them on a map that says so, and in a round
+// badge on any other; the layer hides both.
+func TestWebCthulhuWars_TheGlyphsAreTheBoards(t *testing.T) {
+	baseURL := newRESTTestServer(t)
+	ctx, cancel := newChromedpContext(t, 90*time.Second)
+	defer cancel()
+	var mu sync.Mutex
+	var jsErrors []string
+	collectJSErrors(ctx, &mu, &jsErrors)
+	var created struct {
+		RoomCode string `json:"room_code"`
+	}
+	bots := map[string]string{"2": "tactical", "3": "tactical", "4": "tactical"}
+	if code := doJSON(t, "POST", baseURL+"/api/games", map[string]any{"game_def_id": "cthulhu-wars-3-5", "player_name": "Alice", "seat_bots": bots}, &created); code != 200 && code != 201 {
+		t.Fatalf("create: %d", code)
+	}
+	openGameAs(t, ctx, baseURL, created.RoomCode, "cthulhu-wars-3-5", "Alice")
+	// Yellow Sign is at this table, so the glyphs show.
+	waitJS(t, ctx, "the printed glyphs", `document.querySelectorAll("#board .area-glyph-badge.printed").length === 10`, 30*time.Second)
+	if n := evalInt(t, ctx, `document.querySelectorAll("#board .area-glyph-badge.printed circle").length`); n != 0 {
+		t.Errorf("%d printed glyphs in a badge", n)
+	}
+	if got := evalString(t, ctx, `document.querySelector('#board .area-glyph-badge[data-area="north-america"] title').textContent`); got != "Dragon glyph (Yellow Sign's Desecrate requirement)" {
+		t.Errorf("North America's glyph says %q", got)
+	}
+	if n := evalInt(t, ctx, `[...document.querySelectorAll("#board .area-glyph path")].filter(p => !p.getAttribute("fill")).length`); n != 0 {
+		t.Errorf("%d glyph shapes without a colour", n)
+	}
+	clickSel(t, ctx, "#opt-layer-glyphs")
+	waitJS(t, ctx, "the glyphs hidden", `document.querySelectorAll("#board .area-glyph-badge").length === 0`, 10*time.Second)
+	clickSel(t, ctx, "#opt-layer-glyphs")
+	waitJS(t, ctx, "the glyphs back", `document.querySelectorAll("#board .area-glyph-badge.printed").length === 10`, 10*time.Second)
+
+	// Another layout has the same glyphs in badges.
+	if code := doJSON(t, "POST", baseURL+"/api/games", map[string]any{"game_def_id": "cthulhu-wars", "player_name": "Alice", "seat_bots": bots}, &created); code != 200 && code != 201 {
+		t.Fatalf("create: %d", code)
+	}
+	openGameAs(t, ctx, baseURL, created.RoomCode, "cthulhu-wars", "Alice")
+	waitJS(t, ctx, "the badges", `document.querySelectorAll("#board .area-glyph-badge circle").length > 0 && document.querySelectorAll("#board .area-glyph-badge.printed").length === 0 && document.querySelector("#board .area-glyph-badge .area-glyph path") !== null`, 30*time.Second)
+	mu.Lock()
+	defer mu.Unlock()
+	if len(jsErrors) > 0 {
+		t.Errorf("uncaught JS exceptions: %v", jsErrors)
+	}
+}

@@ -7,6 +7,7 @@ import { h, s, clear } from "./util.js";
 import { UNIT_ICONS, CLASS_SCALE, classOfPiece, hasUnitIcon } from "./icons.js";
 import { CW_GLYPHS } from "./cw-glyphs.js";
 import { ICE_GLYPH } from "./cw-ice.js";
+import { MAP_GLYPHS } from "./cw-map-glyphs.js";
 import { frameDecor, stoneMarks, installThemes, currentTheme } from "./themes.js";
 import { onNavigate } from "./nav.js";
 
@@ -1078,12 +1079,10 @@ const CHIP_R = 18;
 const CHIP_GAP = 3;
 const CLASS_ORDER = { goo: 0, terror: 1, monster: 2, cultist: 3 };
 
-const GLYPHS = {
-	// Small symbols of the three glyph requirements, in a 24x24 box.
-	dragon: "M -9 4 Q -6 -9 -1 -1 T 8 -3 M 8 -3 l 3 -2 M 6 -6 l 0 3",
-	chevron: "M -9 5 L 0 -6 L 9 5 M -9 -1 L 0 -12 L 9 -1",
-	thorns: "M -10 8 L -7 -6 L -4 8 M -4 8 L -1 -9 L 2 8 M 2 8 L 5 -5 L 8 8",
-};
+/** A Desecrate glyph as the board prints it, centred on the origin. */
+function mapGlyph(kind, scale = 1) {
+	return s("g", { class: "area-glyph", transform: `scale(${scale})` }, ...(MAP_GLYPHS[kind] || []).map((part) => s("path", { d: part.d, fill: part.fill, "fill-rule": "evenodd" })));
+}
 
 // The glyphs (sigils) of the factions, as the printed map shows them: where a
 // cult begins, and — for the Windwalker and the Sleeper — the areas marked with
@@ -1150,7 +1149,7 @@ export function legendMarker(kind, arg, info, shape = "") {
 		}
 		case "glyph":
 			svg.append(
-				s("g", { class: "area-glyph-badge" }, s("circle", { r: 12 }), s("path", { class: "area-glyph", d: GLYPHS[arg] || "", transform: "scale(0.85)" }))
+				s("g", { class: "area-glyph-badge" }, s("circle", { r: 12 }), mapGlyph(arg, 0.72))
 			);
 			break;
 		case "sigil": {
@@ -1602,8 +1601,10 @@ function renderAreaMap(host, info, view, handlers) {
 		// ring that is no Gate), and Yellow Sign's glyph. They stay inside the area's border.
 		const sigils = layers.sigils ? glyphMarks.filter((sg) => sg.area === area.id && CW_GLYPHS[sg.key] && glyphShape(sg.key, 23)) : [];
 		const glyph = (area.tags.find((t) => t.startsWith("glyph-")) || "").slice(6);
-		const showGlyph = !!(layers.glyphs && glyph && GLYPHS[glyph]);
-		const marks = sigils.length + (showGlyph ? 1 : 0);
+		const showGlyph = !!(layers.glyphs && glyph && MAP_GLYPHS[glyph]);
+		// A map with a picture may say where the board prints the glyph: it then stands there, as printed.
+		const printedAt = showGlyph && info.params && info.params.glyph_marks ? info.params.glyph_marks[area.id] : null;
+		const marks = sigils.length + (showGlyph && !printedAt ? 1 : 0);
 		const markAt = marks ? marksPlace(home, centre, marks, nameLines.length, layers.names, ocean ? landShapes : []) : null;
 		let mark = 0;
 		const nextMark = () => `translate(${(markAt[0] + (mark++ - (marks - 1) / 2) * MARK_PITCH).toFixed(1)} ${markAt[1].toFixed(1)})`;
@@ -1626,14 +1627,11 @@ function renderAreaMap(host, info, view, handlers) {
 			);
 		}
 		if (showGlyph) {
+			const title = s("title", {}, `${glyph[0].toUpperCase() + glyph.slice(1)} glyph (Yellow Sign's Desecrate requirement)`);
 			labelNodes.push(
-				s(
-					"g",
-					{ class: "area-glyph-badge", "data-area": area.id, transform: nextMark() },
-					s("title", {}, `${glyph[0].toUpperCase() + glyph.slice(1)} glyph (Yellow Sign's Desecrate requirement)`),
-					s("circle", { r: 11 }),
-					s("path", { class: "area-glyph", d: GLYPHS[glyph], transform: "scale(0.8)" })
-				)
+				printedAt
+					? s("g", { class: "area-glyph-badge printed", "data-area": area.id, transform: `translate(${printedAt[0]} ${printedAt[1]})` }, title, mapGlyph(glyph))
+					: s("g", { class: "area-glyph-badge", "data-area": area.id, transform: nextMark() }, title, s("circle", { r: 11 }), mapGlyph(glyph, 0.72))
 			);
 		}
 

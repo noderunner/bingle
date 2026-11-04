@@ -71,7 +71,7 @@ function keyPage(info) {
 			`| ![Desecrated](marker:swatch:${tint("desecrated", "#d8c76a")}) | **Desecrated area** (Yellow Sign): marked with ✠. |`,
 			`| ![Gate](marker:gate:${color}) | **A Gate.** The ring is the colour of the cult that controls it; the figure drawn on it is the unit that occupies it — an Acolyte, a High Priest or a Dark Young. To give a Gate up, move that unit (also to the area it stands in). |`,
 			"| ![Abandoned Gate](marker:gate:abandoned) | **An abandoned Gate:** a dashed grey ring. It gives 1 Power to every player in Gather Power and scores nothing; a Cultist that arrives takes it. |",
-			"| ![Glyph](marker:glyph:chevron) | **A glyph** (chevron, dragon or thorns) after an area's name: what Yellow Sign must Desecrate for its requirements. |",
+			"| ![Glyph](marker:glyph:chevron) | **A glyph** (chevron, dragon or thorns) beside an area's name, or where the board prints it: what Yellow Sign must Desecrate for its requirements. |",
 			"| ![Great Cthulhu glyph](marker:sigil:gc) | **A faction glyph** (here Great Cthulhu's), left of an area's name: the area where that cult begins. Every cult at the table has its own; they are shown with each faction in the Factions page. |",
 			"| ![Windwalker glyph](marker:sigil:ww) | **The Windwalker's glyph** marks the two polar areas where it may begin, and where Rhan-Tegoth and Ithaqua awaken. |",
 			"| ![Sleeper glyph](marker:sigil:sl) | **The Sleeper's glyph:** where it begins. |",

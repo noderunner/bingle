@@ -4,6 +4,19 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.52.0 - 2026-11-03
+
+### Bingle Core 0.52.0
+- **Glyphs where they are printed.** A map with a painted background can place its glyphs exactly where the board does.
+
+### Cthulhu Wars 0.5.0
+- **The 3-5 Earth map, redrawn.** The four-player 3-5 map now looks like the printed board, with its coasts, colours and islands.
+- **New glyphs on every map.** The chevron, thorns and dragon are traced from the board. They replace the old line drawings
+  everywhere, and on the 3-5 map they stand where the board prints them.
+- **The 3-5 map's glyphs now match the board.** Eight areas change glyph: North and South America are Dragon; Europe,
+  Scandinavia, North and South Asia and Arabia are Thorns; Australia is Chevron. This changes which areas meet the Yellow
+  Sign's and The Ancients' glyph requirements on this map.
+
 ## 0.51.0 - 2026-11-03
 
 ### Bingle Core 0.51.0
