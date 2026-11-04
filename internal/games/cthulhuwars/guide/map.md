@@ -2,7 +2,7 @@
 
 ![The map of this game|900](board.svg "The map of this game. Seas have blue gradients and waves, lands their own colours; the dark badge after a name is a glyph.")
 
-The world comes in **six layouts**, four of Earth and two of the Primeval Map. You choose one when you create the game; the layout also decides how many cults sit
+The world comes in **eight layouts**, four of Earth and four of the Primeval Map. You choose one when you create the game; the layout also decides how many cults sit
 at the table (which cults, and whether the High Priests are in, is chosen separately).
 
 | Layout | Seats | Areas | Variant id |
@@ -12,6 +12,8 @@ at the table (which cults, and whether the High Priests are in, is chosen separa
 | 4 players, **3-5** map | four cults — one North America and one South America, but Europe has Scandinavia, and Asia and Africa are cut into North / South Asia, Arabia, West / East Africa | 17 | `cthulhu-wars-3-5` |
 | 5 players, 21-area map | five cults — both splits at once (the board made for five players) | 21 | `cthulhu-wars-5p` |
 | 3 players, **Primeval** map | three cults, on the expansion's prehistoric Earth, with Glaciers (below) | 14 | `cthulhu-wars-primeval-3p` |
+| 4 players, **Primeval 3-5** map | four cults — Hyperborea and Lemuria whole, but Lomar, Rutas, Central Mu and the Ocean Trench cut out of the eastern half | 18 | `cthulhu-wars-primeval-3-5` |
+| 4 players, **Primeval 5-3** map | four cults — Thule, Shasta, South and East Lemuria and West Atlantis cut out of the western half, and the eastern half whole | 18 | `cthulhu-wars-primeval-5-3` |
 | 5 players, **Primeval** map | five cults, with Glaciers (below) | 22 | `cthulhu-wars-primeval-5p` |
 
 A table of any layout can seat any of the six cults. A game made with other cults than the layout's own, or with the High
@@ -19,8 +21,8 @@ Priests, has an id of its own made of the layout and the choice: `cthulhu-wars-5
 Windwalker, Sleeper, Great Cthulhu, Crawling Chaos and Yellow Sign in seats 1 to 5, with the High Priests.
 
 > [!NOTE]
-> The layouts are traced from the printed boards' areas and borders, with the coastlines drawn as straight lines.
-> The areas, their names and which areas touch each other follow the boards; the exact outlines are simplified.
+> Every layout is traced from a scan of its printed board: its areas, its borders, and where its glyphs stand.
+> The picture behind the areas is generated in the board's colours.
 
 Units move along shared borders (Crawling Chaos flies two areas). The Pacific and the Indian Ocean continue
 round both edges of the board: each is one area drawn in two pieces.
@@ -42,7 +44,7 @@ A sigil is only shown while its cult is at the table.
 
 ## Glyphs
 
-Glyphs sit beside an area's name, or on the 3-5 map where the board prints them. Yellow Sign needs to Desecrate one area of each kind:
+On Earth, glyphs stand where the board prints them; on the Primeval Map, beside an area's name. Yellow Sign needs to Desecrate one area of each kind:
 
 | Glyph | Where |
 |---|---|
@@ -54,7 +56,7 @@ Glyphs sit beside an area's name, or on the 3-5 map where the board prints them.
 
 ### 4 players, 5-3 map
 
-17 areas, 42 borders. Variant id `cthulhu-wars`.
+17 areas, 43 borders. Variant id `cthulhu-wars`.
 
 | Area | Type | Glyph | Start | Sigil | Borders |
 |---|---|---|---|---|---|
@@ -63,7 +65,7 @@ Glyphs sit beside an area's name, or on the 3-5 map where the board prints them.
 | Arctic Ocean | Ocean | — |  | Windwalker | Asia, Europe, North America East, North America West, North Atlantic, North Pacific |
 | Asia | Land | Thorns | Crawling Chaos |  | Africa, Arctic Ocean, Europe, Indian Ocean, North Atlantic, North Pacific |
 | Australia | Land | Chevron |  |  | Indian Ocean, New Zealand |
-| Central America | Land | Dragon |  |  | North America West, North Atlantic, North Pacific, South America West |
+| Central America | Land | Dragon |  |  | North America West, North Atlantic, North Pacific, South America East, South America West |
 | Europe | Land | Thorns | Yellow Sign |  | Arctic Ocean, Asia, North Atlantic |
 | Indian Ocean | Ocean | — |  |  | Africa, Antarctica, Asia, Australia, New Zealand, North Pacific, South Atlantic, South Pacific |
 | New Zealand | Land | Chevron |  |  | Australia, Indian Ocean, South Pacific |
@@ -71,7 +73,7 @@ Glyphs sit beside an area's name, or on the 3-5 map where the board prints them.
 | North America West | Land | Dragon |  | Sleeper | Arctic Ocean, Central America, North America East, North Atlantic, North Pacific |
 | North Atlantic | Ocean | — |  |  | Africa, Arctic Ocean, Asia, Central America, Europe, North America East, North America West, South America East, South Atlantic |
 | North Pacific | Ocean | — |  |  | Arctic Ocean, Asia, Central America, Indian Ocean, North America West, South America West, South Pacific |
-| South America East | Land | Dragon |  |  | North Atlantic, South America West, South Atlantic |
+| South America East | Land | Dragon |  |  | Central America, North Atlantic, South America West, South Atlantic |
 | South America West | Land | Dragon |  |  | Central America, North Pacific, South America East, South Atlantic, South Pacific |
 | South Atlantic | Ocean | — |  |  | Africa, Antarctica, Indian Ocean, North Atlantic, South America East, South America West, South Pacific |
 | South Pacific | Ocean | — | Great Cthulhu |  | Antarctica, Indian Ocean, New Zealand, North Pacific, South America West, South Atlantic |
@@ -122,7 +124,7 @@ Glyphs sit beside an area's name, or on the 3-5 map where the board prints them.
 
 ### 5 players, 21-area map
 
-21 areas, 54 borders. Variant id `cthulhu-wars-5p`.
+21 areas, 55 borders. Variant id `cthulhu-wars-5p`.
 
 | Area | Type | Glyph | Start | Sigil | Borders |
 |---|---|---|---|---|---|
@@ -130,7 +132,7 @@ Glyphs sit beside an area's name, or on the 3-5 map where the board prints them.
 | Arabia | Land | Thorns |  |  | East Africa, Europe, Indian Ocean, North Asia, North Atlantic, South Asia, West Africa |
 | Arctic Ocean | Ocean | — |  | Windwalker | North America East, North America West, North Asia, North Atlantic, North Pacific, Scandinavia |
 | Australia | Land | Chevron |  |  | Indian Ocean, New Zealand |
-| Central America | Land | Dragon |  |  | North America West, North Atlantic, North Pacific, South America West |
+| Central America | Land | Dragon |  |  | North America West, North Atlantic, North Pacific, South America East, South America West |
 | East Africa | Land | Chevron |  |  | Arabia, Indian Ocean, South Atlantic, West Africa |
 | Europe | Land | Thorns | Yellow Sign |  | Arabia, North Asia, North Atlantic, Scandinavia |
 | Indian Ocean | Ocean | — |  |  | Antarctica, Arabia, Australia, East Africa, New Zealand, North Pacific, South Asia, South Atlantic, South Pacific |
@@ -138,19 +140,19 @@ Glyphs sit beside an area's name, or on the 3-5 map where the board prints them.
 | North America East | Land | Dragon |  |  | Arctic Ocean, North America West, North Atlantic |
 | North America West | Land | Dragon |  | Sleeper | Arctic Ocean, Central America, North America East, North Atlantic, North Pacific |
 | North Asia | Land | Thorns |  |  | Arabia, Arctic Ocean, Europe, North Pacific, Scandinavia, South Asia |
-| North Atlantic | Ocean | — |  |  | Arabia, Arctic Ocean, Central America, Europe, North America East, North America West, Scandinavia, South America East, South America West, South Atlantic, West Africa |
+| North Atlantic | Ocean | — |  |  | Arabia, Arctic Ocean, Central America, Europe, North America East, North America West, Scandinavia, South America East, South Atlantic, West Africa |
 | North Pacific | Ocean | — |  |  | Arctic Ocean, Central America, Indian Ocean, North America West, North Asia, South America West, South Asia, South Pacific |
 | Scandinavia | Land | Thorns |  |  | Arctic Ocean, Europe, North Asia, North Atlantic |
-| South America East | Land | Dragon |  |  | North Atlantic, South America West, South Atlantic |
-| South America West | Land | Dragon |  |  | Central America, North Atlantic, North Pacific, South America East, South Pacific |
+| South America East | Land | Dragon |  |  | Central America, North Atlantic, South America West, South Atlantic |
+| South America West | Land | Dragon |  |  | Central America, North Pacific, South America East, South Atlantic, South Pacific |
 | South Asia | Land | Thorns | Crawling Chaos |  | Arabia, Indian Ocean, North Asia, North Pacific |
-| South Atlantic | Ocean | — |  |  | Antarctica, East Africa, Indian Ocean, North Atlantic, South America East, South Pacific, West Africa |
+| South Atlantic | Ocean | — |  |  | Antarctica, East Africa, Indian Ocean, North Atlantic, South America East, South America West, South Pacific, West Africa |
 | South Pacific | Ocean | — | Great Cthulhu |  | Antarctica, Indian Ocean, New Zealand, North Pacific, South America West, South Atlantic |
 | West Africa | Land | Chevron | Black Goat |  | Arabia, East Africa, North Atlantic, South Atlantic |
 
 ## The Primeval Map and its Glaciers
 
-The Primeval Map's main mechanic is the slow arrival of Glaciers, which abandon Gates for good and so make the map rich in Power. The three-player layout's outlines were drawn by eye from pictures of the printed board; the five-player layout is traced from a scan, and shows the board's Glacier glyphs, which you can hide in the game options.
+The Primeval Map's main mechanic is the slow arrival of Glaciers, which abandon Gates for good and so make the map rich in Power. Each layout shows its board's Glacier glyphs, which you can hide in the game options. There are nine on the three-player board, eleven on the 3-5, ten on the 5-3 and twelve on the five-player board.
 
 - At the end of the **first Doom phase**, after everyone has had the chance to perform a Ritual, a Glacier appears in each cult's start area, whether or not it has a Glacier glyph. Any unit holding a Gate there stays in the area, and the Gate is abandoned.
 - At the end of **each later Doom phase**, the first player chooses **two areas with a Glacier glyph** that have no Glacier yet. Once every such area has one, no more are placed. Glaciers never move or leave.

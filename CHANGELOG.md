@@ -4,6 +4,22 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.53.1 - 2026-11-03
+
+### Bingle Core 0.53.1
+- No changes of its own: this release is the Cthulhu Wars maps below.
+
+### Cthulhu Wars 0.8.0
+- **Every map now looks like its board.** The 3-player, 5-3 and 5-player Earth maps and the 3-player Primeval map get the colour
+  and texture of the printed boards, with the borders traced from them.
+- **Two new maps for four players:** Primeval 3-5 and Primeval 5-3, the two four-player boards of the Primeval Map, each with
+  18 areas.
+- **Glyphs stand where they are printed** on every Earth map, and all the Primeval maps show their Glacier glyphs.
+- **A few borders change, because the board says so.** These change legal moves, and a game under way gets them on its next move:
+  - On the 5-3 and 5-player Earth maps, Central America also borders South America East.
+  - On the 5-player Earth map, South America West borders the South Atlantic rather than the North Atlantic.
+  - On the 3-player Primeval map, Upper Mu borders the Rheic Ocean, and Poseidonis can take a Glacier.
+
 ## 0.53.0 - 2026-11-03
 
 ### Bingle Core 0.53.0

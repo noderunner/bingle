@@ -26,6 +26,9 @@ Windwalker fifth; the script writes both, so re-running it keeps them.
 
     python3 scripts/cwmaps.py --guide        # only rewrite the Map page's tables
 
+Only --guide is still useful: scripts/cwmapart.py now traces all four layouts from
+better scans, and running this without it would overwrite them.
+
 The definition is YAML split across files (definition/cthulhuwars.yaml and the
 files it includes); the script reads it, and writes the base board, the map
 variants and the main file back, through `go run . dsl convert`.
@@ -421,8 +424,11 @@ def write_guide(doc):
     text = open(page).read()
     marker = "## Areas and borders"
     head = text.split(marker)[0] if marker in text else text.rstrip() + "\n\n"
+    # The tables end where the next section, written by hand, begins.
+    after = "## The Primeval Map"
+    tail = text[text.index(after):] if after in text else ""
     with open(page, "w") as f:
-        f.write(head + marker + "\n\n" + guide_tables(doc, LAYOUTS))
+        f.write(head + marker + "\n\n" + guide_tables(doc, LAYOUTS) + "\n" + tail)
 
 
 def convert(arg, stdin=None):
