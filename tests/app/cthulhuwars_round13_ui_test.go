@@ -274,7 +274,7 @@ func TestWebCthulhuWars_CthughaIsAwakenedByChoosingTheGreatOldOneHeReplaces(t *t
 	collectJSErrors(ctx, &mu, &jsErrors)
 	openGameAs(t, ctx, baseURL, room, id, "Alice")
 	waitJS(t, ctx, "the button", `document.getElementById("action-awaken-cthugha") !== null`, 20*time.Second)
-	if got := evalString(t, ctx, `document.getElementById("action-awaken-cthugha").textContent`); !strings.Contains(got, "(2)") {
+	if got := evalString(t, ctx, `document.getElementById("action-awaken-cthugha").querySelector(".summon-cost").textContent`); got != "2" {
 		t.Errorf("Cthugha costs 6 minus Cthulhu's 4: %q", got)
 	}
 	clickSel(t, ctx, "#action-awaken-cthugha")

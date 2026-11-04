@@ -48,9 +48,6 @@ export const gamesIcon = (size) =>
 /** A plus: joining a game. */
 export const joinIcon = (size) => icon("plus", size, s("path", { d: "M12 5v14M5 12h14" }));
 
-/** An arrow pointing left: going back. */
-export const backIcon = (size) => icon("back", size, s("path", { d: "M19 12H5M11 6l-6 6 6 6" }));
-
 /** A microphone: a voice call. */
 export const micIcon = (size) => icon("mic", size, s("rect", { x: 9, y: 3, width: 6, height: 11, rx: 3 }), s("path", { d: "M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21" }));
 

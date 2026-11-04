@@ -71,6 +71,7 @@ export const store = {
 
 const GAMES_KEY = "bingle.games";
 const FORGOTTEN_KEY = "bingle.forgottenGames";
+const CHAT_READ_KEY = "bingle.chatRead";
 
 /** Games this browser has joined: [{code, def, name, ts}], newest first. */
 export function rememberedGames() {
@@ -89,6 +90,18 @@ export function rememberGame(code, def, name) {
 export function forgetGame(code) {
 	store.set(GAMES_KEY, rememberedGames().filter((g) => g.code !== code));
 	store.set(FORGOTTEN_KEY, [code, ...forgottenGames()].slice(0, 100));
+}
+
+/** The last chat message of a game this browser has had on screen, by room. */
+export function chatReadUpTo(code) {
+	return store.get(CHAT_READ_KEY, {})[code] || 0;
+}
+
+export function markChatRead(code, id) {
+	const read = store.get(CHAT_READ_KEY, {});
+	if ((read[code] || 0) >= id) return;
+	read[code] = id;
+	store.set(CHAT_READ_KEY, read);
 }
 
 /** The games taken off this browser's list: the server still knows the seat, and is not to bring them back. */

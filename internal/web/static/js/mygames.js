@@ -2,7 +2,7 @@
 // drawing them as rows. The "Active games" window of the top bar lists the
 // unfinished ones, the profile page the finished ones.
 
-import { h, rememberedGames, rememberGame, forgetGame, forgottenGames, ago, toast } from "./util.js";
+import { h, rememberedGames, rememberGame, forgetGame, forgottenGames, chatReadUpTo, ago, toast } from "./util.js";
 import { api, gameTitle } from "./api.js";
 
 let defsPromise = null;
@@ -38,6 +38,21 @@ export async function loadRows() {
 				return { g, info: await api.game(g.code), missing: false };
 			} catch (e) {
 				return { g, info: null, missing: e.status === 404 };
+			}
+		})
+	);
+}
+
+/** Adds to each game how many chat messages from others have come since it was last on screen. */
+export async function loadUnread(rows) {
+	await Promise.all(
+		rows.map(async (r) => {
+			try {
+				const name = r.g.name.toLowerCase();
+				const lines = (await api.chat(r.g.code, chatReadUpTo(r.g.code))) || [];
+				r.unread = lines.filter((l) => String(l.name).toLowerCase() !== name).length;
+			} catch (_) {
+				r.unread = 0;
 			}
 		})
 	);
@@ -152,7 +167,14 @@ export function gameRow(r, defs, onForget) {
 		{ "data-code": r.g.code },
 		h("div", { class: "grow" }, h("div", { class: "title" }, `${title} · ${r.g.code}`), h("div", { class: "meta" }, meta.join(" · ") + (r.g.ts ? ` · ${ago(r.g.ts)}` : ""))),
 		...badges,
-		r.missing || !r.info ? null : h("a", { class: "button primary", href: "/game/" + r.g.code }, r.info.status === "finished" ? "Review" : "Open"),
+		r.missing || !r.info
+			? null
+			: h(
+					"a",
+					{ class: "button primary", href: "/game/" + r.g.code },
+					r.info.status === "finished" ? "Review" : "Open",
+					r.unread ? h("span", { class: "unread-count", title: `${r.unread} unread chat message${r.unread === 1 ? "" : "s"}` }, String(r.unread)) : null
+			  ),
 		h(
 			"button",
 			{

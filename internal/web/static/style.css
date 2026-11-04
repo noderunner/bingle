@@ -1442,6 +1442,8 @@ tr.weak td { color: var(--danger, #c0392b); font-weight: 600; }
 
 /* Where "since your last move" starts in the full history. */
 .log-since { display: flex; align-items: center; gap: 0.6rem; margin: 0.9rem 0 0.5rem; color: var(--accent); font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
+.log-since-button { padding: 0.1rem 0.55rem; border: 1px solid var(--accent); border-radius: 999px; background: transparent; color: var(--accent); font: inherit; font-size: 0.8rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.log-since-button:hover { background: var(--accent-soft); }
 .log-since::before, .log-since::after { content: ""; flex: 1; border-top: 2px solid var(--accent); }
 
 /* A player with no connection: the box fades and a word says why. Colour alone would not. */
@@ -1494,6 +1496,9 @@ body.fit-screen .sol-top, body.fit-screen .sol-columns { --cw: min(112px, 14cqh,
 .impulse-card p { margin: 0; }
 .impulse-text { margin: 0 0 0.3rem; }
 .move-queue { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; }
+a.button .unread-count { display: inline-block; margin-left: 0.4rem; min-width: 1.15rem; padding: 0 0.3rem; border-radius: 999px; background: #d92d20; color: #fff; font-size: 0.72rem; font-weight: 800; line-height: 1.15rem; text-align: center; }
+#join-error:empty { display: none; }
+.join-divider { margin: 1.1rem 0 0.8rem; border: 0; border-top: 1px solid var(--border); }
 .queue-unit { position: relative; padding: 0.15rem; line-height: 0; }
 .queue-unit.on-gate { outline: 2px dashed var(--focus); }
 .queue-count { position: absolute; right: -0.35rem; bottom: -0.35rem; min-width: 1.1rem; padding: 0 0.2rem; border: 1px solid var(--text); border-radius: 999px; background: var(--surface); color: var(--text); font-size: 0.72rem; font-weight: 800; line-height: 1.05rem; text-align: center; }

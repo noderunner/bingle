@@ -5,6 +5,8 @@ package app_test
 
 import (
 	"context"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -170,7 +172,7 @@ func TestWebJoin_ListsTheTablesWaitingForPlayers(t *testing.T) {
 	if evalBool(t, ctx, `document.querySelector('#join-open-games li[data-code="`+playing+`"]') !== null`) {
 		t.Error("a game in play is offered")
 	}
-	evalBool(t, ctx, `(document.getElementById("join_player_name").value = "Di", `+button+`.click(), true)`)
+	evalBool(t, ctx, `(localStorage.setItem("bingle.name", JSON.stringify("Di")), `+button+`.click(), true)`)
 	waitJS(t, ctx, "the table's page", `location.pathname === "/game/`+lobby.RoomCode+`"`, 15*time.Second)
 }
 
@@ -211,20 +213,127 @@ func TestWebCthulhuWars_TheHistoryStepsBackFromTheMark(t *testing.T) {
 	waitJS(t, ctx, "an area", `document.querySelector('#board .cell.area.clickable[data-position="south-pacific"]') !== null`, 10*time.Second)
 	clickCell(t, ctx, "south-pacific")
 	// The bots play round to Alice again, and the mark is there.
-	waitJS(t, ctx, "the arrow", `document.getElementById("history-rewind") !== null`, 60*time.Second)
-	if got := evalString(t, ctx, `document.getElementById("history-rewind").innerText.trim()`); got != "" {
-		t.Errorf("the arrow has words: %q", got)
-	}
-	seq := func() int { return evalInt(t, ctx, `Number(location.hash.replace("#move=", ""))`) }
-	evalBool(t, ctx, `(document.getElementById("history-rewind").click(), true)`)
-	waitJS(t, ctx, "one move back", `location.hash.indexOf("#move=") === 0`, 10*time.Second)
-	first := seq()
-	if first <= 0 {
-		t.Fatalf("the first click went to move %d", first)
-	}
-	if !evalBool(t, ctx, `document.getElementById("history-rewind") !== null`) {
-		t.Fatal("the arrow is gone after one click")
+	waitJS(t, ctx, "the rule", `document.getElementById("history-rewind") !== null`, 60*time.Second)
+	if got := evalString(t, ctx, `document.getElementById("history-rewind").textContent`); got != "Since your last move" {
+		t.Errorf("the rule says %q", got)
 	}
 	evalBool(t, ctx, `(document.getElementById("history-rewind").click(), true)`)
-	waitJS(t, ctx, "two moves back", `location.hash === "#move=`+itoa(first-1)+`"`, 10*time.Second)
+	// It lands in the Moves tab, on the player's move, with Next under the hand.
+	waitJS(t, ctx, "Alice's move, in the Moves tab", `location.hash === "#move=1" && document.getElementById("moves-pane") !== null && document.querySelector("#move-list .mv.current") !== null`, 10*time.Second)
+	waitJS(t, ctx, "the focus on Next", `document.activeElement && document.activeElement.id === "hist-next"`, 5*time.Second)
+	// The card says what happened in words, not notation.
+	if got := evalString(t, ctx, `document.getElementById("status-message").textContent`); !strings.Contains(got, "Move 1:") || strings.Contains(got, "recruit@") {
+		t.Errorf("the card says %q", got)
+	}
+	first := evalString(t, ctx, `document.getElementById("status-message").textContent`)
+	clickSel(t, ctx, "#hist-next")
+	waitJS(t, ctx, "the next move", `location.hash === "#move=2"`, 10*time.Second)
+	if got := evalString(t, ctx, `document.getElementById("status-message").textContent`); got == first {
+		t.Errorf("the card did not change with the move: %q", got)
+	}
+}
+
+// Submit says Submit; a placing game offers Back and not Reset.
+func TestWebImpulse_SubmitAndBackInAPlacingGame(t *testing.T) {
+	baseURL := newRESTTestServer(t)
+	room := newTakRoom(t, baseURL, "havannah-8", "Alice")
+	joinRoom(t, baseURL, room, "Bob")
+	ctx, cancel := newChromedpContext(t, 60*time.Second)
+	defer cancel()
+	openGameAs(t, ctx, baseURL, room, "havannah-8", "Alice")
+	waitJS(t, ctx, "the board", `document.querySelector("#board .cell.clickable") !== null`, 15*time.Second)
+	evalBool(t, ctx, `(document.querySelector("#board .cell.clickable").dispatchEvent(new MouseEvent("click", {bubbles: true})), true)`)
+	waitJS(t, ctx, "Submit", `document.getElementById("submit-move") !== null`, 5*time.Second)
+	if got := evalString(t, ctx, `document.getElementById("submit-move").textContent`); got != "Submit" {
+		t.Errorf("the button says %q", got)
+	}
+	if evalBool(t, ctx, `document.getElementById("reset-move") !== null`) {
+		t.Error("a placing game offers Reset")
+	}
+	if !evalBool(t, ctx, `document.getElementById("undo-step") !== null`) {
+		t.Error("a placing game offers no Back")
+	}
+}
+
+// Join Game takes a code or a link, and a full table is watched.
+func TestWebJoin_TakesACodeOrALinkAndWatchesAFullTable(t *testing.T) {
+	baseURL := newRESTTestServer(t)
+	open := newTakRoom(t, baseURL, "gomoku", "Bo")
+	full := botRoom(t, baseURL, "Cy")
+	ctx, cancel := newChromedpContext(t, 60*time.Second)
+	defer cancel()
+	joinWith := func(typed string) {
+		t.Helper()
+		if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/")); err != nil {
+			t.Fatal(err)
+		}
+		waitJS(t, ctx, "the top bar", `document.getElementById("open-join") !== null`, 20*time.Second)
+		clickSel(t, ctx, "#open-join")
+		waitJS(t, ctx, "the window", `document.getElementById("room_code") !== null`, 5*time.Second)
+		if got := evalString(t, ctx, `document.getElementById("room_code").placeholder`); got != "Room Code or Link" {
+			t.Errorf("the field says %q", got)
+		}
+		if got := evalString(t, ctx, `document.querySelector("#join-dialog").innerText`); !strings.Contains(got, "Join Game") || !strings.Contains(got, "Public Lobbies") || strings.Contains(got, "Watch") {
+			t.Errorf("the window says %q", got)
+		}
+		evalBool(t, ctx, `(document.getElementById("room_code").value = `+strconv.Quote(typed)+`, document.getElementById("join-submit").click(), true)`)
+	}
+	seatsOf := func(room string) int {
+		var g struct {
+			Seats []struct {
+				Name string `json:"name"`
+			} `json:"seats"`
+		}
+		if code := doJSON(t, "GET", baseURL+"/api/games/"+room, nil, &g); code != 200 {
+			t.Fatalf("read: %d", code)
+		}
+		n := 0
+		for _, s := range g.Seats {
+			if s.Name != "" {
+				n++
+			}
+		}
+		return n
+	}
+	// A link to a table with a seat free takes the seat, under a guest's name.
+	joinWith(baseURL + "/game/" + open + "#move=1")
+	waitJS(t, ctx, "the table", `location.pathname === "/game/`+open+`"`, 15*time.Second)
+	if n := seatsOf(open); n != 2 {
+		t.Errorf("%d seats taken, want the joiner in the second", n)
+	}
+	// A full table, by its code: watched, and nobody's seat changes.
+	joinWith(strings.ToLower(full))
+	waitJS(t, ctx, "the full table", `location.pathname === "/game/`+full+`"`, 15*time.Second)
+	if n := seatsOf(full); n != 2 {
+		t.Errorf("%d seats at the full table", n)
+	}
+}
+
+// The active games list counts another player's chat that has not been on screen.
+func TestWebActiveGames_OpenCountsUnreadChat(t *testing.T) {
+	baseURL := newRESTTestServer(t)
+	ctx, cancel := newChromedpContext(t, 60*time.Second)
+	defer cancel()
+	room := gameOfThisBrowser(t, ctx, baseURL, `{game_def_id: "gomoku", player_name: "Ana"}`)
+	joinRoom(t, baseURL, room, "Bob")
+	var said struct{}
+	for _, text := range []string{"hello", "are you there"} {
+		if code := doJSON(t, "POST", baseURL+"/api/games/"+room+"/chat", map[string]any{"player_name": "Bob", "text": text}, &said); code/100 != 2 {
+			t.Fatalf("chat: %d", code)
+		}
+	}
+	openActiveGames(t, ctx, baseURL, "Ana", map[string]string{room: "gomoku"})
+	count := `document.querySelector('#my-games li[data-code="` + room + `"] a.button .unread-count')`
+	waitJS(t, ctx, "the count", count+` !== null && `+count+`.textContent === "2"`, 10*time.Second)
+	// Having the chat on screen reads it.
+	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/game/"+room)); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "the chat read", `(JSON.parse(localStorage.getItem("bingle.chatRead")) || {})["`+room+`"] > 0`, 15*time.Second)
+	clickSel(t, ctx, "#open-active-games")
+	waitJS(t, ctx, "the row", `document.querySelector('#my-games li[data-code="`+room+`"]') !== null`, 10*time.Second)
+	time.Sleep(700 * time.Millisecond)
+	if evalBool(t, ctx, count+` !== null`) {
+		t.Error("read messages are still counted")
+	}
 }

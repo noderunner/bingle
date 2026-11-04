@@ -103,10 +103,9 @@ func TestWebGame_HintButtonSuggestsAndPlaysAMove(t *testing.T) {
 	}
 
 	clickSel(t, ctx, "#hint-use")
-	waitJS(t, ctx, "submit button", `document.getElementById("submit-move") && document.getElementById("submit-move").textContent.indexOf("Submit") === 0`, 5*time.Second)
-	got := evalString(t, ctx, `document.getElementById("submit-move").textContent.trim()`)
-	if !strings.HasSuffix(got, suggested) {
-		t.Errorf("submit button %q does not match the hint %q", got, suggested)
+	waitJS(t, ctx, "submit button", `document.getElementById("submit-move") && document.getElementById("submit-move").textContent === "Submit"`, 5*time.Second)
+	if got := evalString(t, ctx, `document.getElementById("pending-move").textContent.trim()`); !strings.Contains(got, suggested) {
+		t.Errorf("the pending move %q does not match the hint %q", got, suggested)
 	}
 	clickSel(t, ctx, "#submit-move")
 	waitJS(t, ctx, "move played", `document.querySelector('#move-list button.mv[data-seq="1"]')`, 10*time.Second)

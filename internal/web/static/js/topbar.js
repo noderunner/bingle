@@ -5,7 +5,7 @@
 
 import { h, clear, toast, lastName, setLastName, rememberGame, rememberedGames, setTurnBadge, store } from "./util.js";
 import { api, whoAmI } from "./api.js";
-import { gameDefs, loadRows, isFinished, yourImpulse, sortRows, gameRow, openGameRow } from "./mygames.js";
+import { gameDefs, loadRows, loadUnread, isFinished, yourImpulse, sortRows, gameRow, openGameRow } from "./mygames.js";
 import { navigate, onLeave } from "./nav.js";
 import { voiceStatus, onVoiceChange, toggleMute, toggleDeafen, leaveVoice } from "./voice.js";
 import { gamesIcon, joinIcon, micIcon, helpIcon, profileIcon, messageIcon } from "./ui-icons.js";
@@ -58,6 +58,13 @@ function open(dlg) {
  * reading of the player's games (the page shows what it needs of them).
  * Returns {refresh} to read the games again.
  */
+/** The room code in what was typed: the code itself, or a link to the game. */
+export function roomCodeOf(typed) {
+	const text = String(typed || "").trim();
+	const link = /\/game\/([^/?#\s]+)/.exec(text);
+	return (link ? link[1] : text).toUpperCase();
+}
+
 export function installTopbar({ onRows = () => {}, manageTitle = true } = {}) {
 	const host = document.getElementById("topbar-actions");
 	if (!host) return { refresh() {} };
@@ -111,28 +118,28 @@ export function installTopbar({ onRows = () => {}, manageTitle = true } = {}) {
 	activeBtn.addEventListener("click", () => {
 		paint();
 		open(activeDlg);
-		refresh();
+		refresh()
+			.then(() => loadUnread(rows.filter((r) => r.info && r.info.status !== "finished")))
+			.then(paint)
+			.catch(() => {});
 	});
 
 	// ---- join ----------------------------------------------------------------
-	const joinBtn = h("button", { type: "button", class: "topbar-icon", id: "open-join", "aria-haspopup": "dialog", title: "Join a game", "aria-label": "Join a game" }, joinIcon());
-	const codeInput = h("input", { id: "room_code", name: "room_code", type: "text", required: true, maxlength: "12", autocomplete: "off", autocapitalize: "characters", spellcheck: "false" });
-	const nameInput = h("input", { id: "join_player_name", name: "player_name", type: "text", required: true, maxlength: "32", autocomplete: "nickname" });
+	const joinBtn = h("button", { type: "button", class: "topbar-icon", id: "open-join", "aria-haspopup": "dialog", title: "Join Game", "aria-label": "Join Game" }, joinIcon());
+	const codeInput = h("input", { id: "room_code", name: "room_code", type: "text", required: true, placeholder: "Room Code or Link", "aria-label": "Room code or link", autocomplete: "off", autocapitalize: "characters", spellcheck: "false" });
 	const joinErr = h("div", { class: "error-text", id: "join-error", role: "alert" });
 	const joinForm = h(
 		"form",
 		{ id: "join-game-form" },
-		h("p", { class: "muted small" }, "Enter the room code from the link a friend sent you."),
-		h("div", { class: "field" }, h("label", { for: "room_code" }, "Room code"), codeInput),
-		h("div", { class: "field" }, h("label", { for: "join_player_name" }, "Your name"), nameInput),
+		h("div", { class: "field" }, codeInput),
 		joinErr,
-		h("div", { class: "row" }, h("button", { type: "submit", class: "primary" }, "Join game"), h("button", { type: "button", id: "watch-game" }, "Watch"))
+		h("div", { class: "row" }, h("button", { type: "submit", class: "primary", id: "join-submit" }, "Join Game"))
 	);
 	// The tables with a seat for anybody, for those without a link to one.
 	const openList = h("ul", { class: "my-games", id: "join-open-games" });
-	const openEmpty = h("p", { class: "muted small", id: "join-open-empty", hidden: true }, "No table is waiting for players just now.");
-	const openSection = h("section", { id: "join-open" }, h("h3", {}, "Waiting for players"), openList, openEmpty);
-	const joinDlg = dialog("join-dialog", "Join a game", joinForm, openSection);
+	const openEmpty = h("p", { class: "muted small", id: "join-open-empty", hidden: true }, "No public lobbies just now.");
+	const openSection = h("section", { id: "join-open" }, h("hr", { class: "join-divider" }), h("h3", {}, "Public Lobbies"), openList, openEmpty);
+	const joinDlg = dialog("join-dialog", "Join Game", joinForm, openSection);
 	async function refreshOpen() {
 		let games = [];
 		try {
@@ -148,36 +155,47 @@ export function installTopbar({ onRows = () => {}, manageTitle = true } = {}) {
 			openList.append(
 				openGameRow(g, defs, false, h("button", { type: "button", class: "primary", "data-join": g.room_code, onclick: () => {
 					codeInput.value = g.room_code;
-					join("player");
+					join();
 				} }, "Join"))
 			);
 		}
 		openEmpty.hidden = games.length > 0;
 	}
 	joinBtn.addEventListener("click", () => {
-		if (!nameInput.value) nameInput.value = lastName();
 		joinErr.textContent = "";
 		open(joinDlg);
-		(codeInput.value ? nameInput : codeInput).focus();
+		codeInput.focus();
 		refreshOpen();
 	});
-	async function join(role) {
+	/** The name a player joins under: the one they last used, else their account's, else a guest's. */
+	async function joinName() {
+		const me = await whoAmI().catch(() => ({}));
+		return lastName() || me.display_name || me.handle || `Guest ${1000 + Math.floor(Math.random() * 9000)}`;
+	}
+	/** A seat where one is open or the name already holds one, else a place to watch from. */
+	async function join() {
 		joinErr.textContent = "";
-		const code = codeInput.value.trim().toUpperCase();
-		const name = nameInput.value.trim();
+		const code = roomCodeOf(codeInput.value);
 		if (!code) {
 			codeInput.focus();
 			return;
 		}
-		if (!name && role === "player") {
-			nameInput.focus();
-			return;
-		}
 		try {
-			await api.join(code, name || "spectator", role);
-			if (role === "player") {
-				const game = await api.game(code);
-				rememberGame(code, game.game_def_id, name);
+			const name = await joinName();
+			const game = await api.game(code);
+			const seats = game.seats || [];
+			const mine = seats.some((s) => s.name && s.name.toLowerCase() === name.toLowerCase());
+			if (!mine && !seats.some((s) => !s.name)) {
+				await api.join(code, name, "spectator");
+			} else {
+				try {
+					await api.join(code, name, "player");
+					rememberGame(code, game.game_def_id, name);
+				} catch (e) {
+					// The last seat went while we looked.
+					if (!/seats? full/i.test(e.message)) throw e;
+					await api.join(code, name, "spectator");
+				}
 			}
 			navigate("/game/" + code);
 		} catch (e) {
@@ -187,9 +205,8 @@ export function installTopbar({ onRows = () => {}, manageTitle = true } = {}) {
 	}
 	joinForm.addEventListener("submit", (ev) => {
 		ev.preventDefault();
-		join("player");
+		join();
 	});
-	joinForm.querySelector("#watch-game").addEventListener("click", () => join("spectator"));
 
 	// ---- direct messages -------------------------------------------------------
 	const messagesBtn = messagesWindow();
