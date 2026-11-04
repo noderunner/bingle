@@ -754,7 +754,7 @@
       "description": "OptionDef is one setup choice of a game, described for clients.",
       "properties": {
         "choices": {
-          "description": "Choices are the values of a seat-choice option.",
+          "description": "Choices are the values of a seat-choice or multi-choice option.",
           "items": {
             "$ref": "#/$defs/OptionChoice"
           },
@@ -767,7 +767,7 @@
           "type": "string"
         },
         "kind": {
-          "description": "Kind is \"bool\" (a check box), \"seat-choice\" (each seat picks one of Choices, no two the same) or \"book-swap\" (a cult picks one of Choices to replace its Slot).",
+          "description": "Kind is \"bool\" (a check box), \"seat-choice\" (each seat picks one of Choices, no two the same), \"multi-choice\" (any number of Choices) or \"book-swap\" (a cult picks one of Choices to replace its Slot).",
           "type": "string"
         },
         "label": {

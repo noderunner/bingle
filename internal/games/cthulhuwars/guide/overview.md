@@ -29,15 +29,13 @@ Everyone starts with **8 Power**, **6 Cultists** and one **Gate** in their start
 
 When you create the game you choose
 
-- **the layout** — three, four or five players, each with its own map (see [the map](tab:map));
-- **the cults** — every seat of the table has a list of the six cults, and no cult can be chosen twice. A table left as
-  it came keeps the layout's own cults: the four core cults, plus the Windwalker as the fifth at a five-player table.
-  Choosing a cult that sits in another seat trades the two;
-- **the High Priests** — a check box: with it, every cult has one [High Priest](tab:factions), a Cultist that can be
+- **the map** — three, four or five players, each with its own map (see [the map](tab:map));
+- **the cults** — a tile for each, and no cult can be chosen twice. A table left as it came keeps the layout's own cults:
+  the four core cults, plus the Windwalker as the fifth at a five-player table;
+- **the High Priests** — a tile under *Other*: with it, every cult has one [High Priest](tab:factions), a Cultist that can be
   recruited for 3 Power and sacrificed for 2;
-- **the neutral cards** — check boxes for the Azathoth faction (neutral spellbooks and Monsters), the Dreamlands
-  Surface Monsters, Beyond Time and Space (two Monsters and a Terror) and each of the five Independent Great Old Ones
-  of Great Old One Pack 1 (see [Neutral](tab:neutral) and [Independents](tab:independents)).
+- **the neutral cards** — a tile for each neutral Monster, Terror, neutral spellbook and Independent Great Old One, so
+  you can pick single units rather than whole packs (see [Neutral](tab:neutral) and [Independents](tab:independents)).
 
 The Windwalker begins first of all: it chooses which of its two sigil areas gets its Gate and Cultists. The first
 player of the game — **Great Cthulhu wherever it sits, or at a table without it the cult first by name** (Black Goat,

@@ -55,6 +55,9 @@ type GameInfo struct {
 	// sit at the table, an expansion); send the chosen ones as "options" when
 	// creating the game.
 	Options []dsl.OptionDef `json:"options,omitempty"`
+	// SetupCatalog says the setup page draws a picker from
+	// GET /game-defs/{id}/setup-catalog.
+	SetupCatalog bool `json:"setup_catalog,omitempty"`
 	// DefaultClockMinutes is the time the setup suggests for a game clock, when
 	// the game names one (ADR 0081).
 	DefaultClockMinutes int `json:"default_clock_minutes,omitempty"`
@@ -202,6 +205,22 @@ func (m *Manager) GameInfo(id string) (GameInfo, error) {
 	return buildGameInfo(cg), nil
 }
 
+// SetupCatalog is what the setup page of a game with a picker draws it from.
+func (m *Manager) SetupCatalog(id string) (any, error) {
+	cg, ok := m.catalog.Get(id)
+	if !ok {
+		return nil, fmt.Errorf("%w: %q", ErrGameDefNotFound, id)
+	}
+	out, ok, err := state.SetupCatalogOf(cg)
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
+		return nil, fmt.Errorf("%w: %q has no setup catalog", ErrGameDefNotFound, id)
+	}
+	return out, nil
+}
+
 func buildGameInfo(cg *catalog.CompiledGame) GameInfo {
 	def := cg.Definition
 	notation := def.Notation
@@ -216,6 +235,9 @@ func buildGameInfo(cg *catalog.CompiledGame) GameInfo {
 		Notation:    notation,
 		NotationDoc: notationHelp(cg),
 		Reserves:    def.Reserves,
+	}
+	if rs, found := state.RulesetOf(cg); found {
+		_, info.SetupCatalog = rs.(state.SetupCatalogs)
 	}
 
 	for _, s := range def.Seats {

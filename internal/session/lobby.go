@@ -147,7 +147,7 @@ func (m *Manager) SetSeatCult(ctx context.Context, roomCode, by string, seat int
 	roomCode = canonRoom(roomCode)
 	unlock := m.lockRoom(ctx, roomCode)
 	defer unlock()
-	game, players, _, err := m.lobbyContext(ctx, roomCode, by)
+	game, players, me, err := m.lobbyContext(ctx, roomCode, by)
 	if err != nil {
 		return StateSnapshot{}, err
 	}
@@ -161,6 +161,10 @@ func (m *Manager) SetSeatCult(ctx context.Context, roomCode, by string, seat int
 	taken := map[int]bool{}
 	for _, p := range players {
 		taken[p.Seat] = true
+	}
+	// At a table set up for its players to choose, a player's own seat is theirs to change.
+	if seat == me.Seat && state.PlayersChooseCults(compiled) {
+		delete(taken, seat)
 	}
 	if taken[seat] {
 		return StateSnapshot{}, ErrSeatTaken

@@ -33,9 +33,10 @@ function place(el, node) {
 
 /**
  * Shows the card build() returns while the pointer is over `el` or `el` has the
- * focus. build is called each time, so the card is always up to date.
+ * focus. build is called each time, so the card is always up to date. A click
+ * closes it, unless keepOnClick: a click on a tile that stays where it is.
  */
-export function hoverCard(el, build) {
+export function hoverCard(el, build, { keepOnClick = false } = {}) {
 	const show = () => {
 		hide();
 		const content = build();
@@ -54,6 +55,7 @@ export function hoverCard(el, build) {
 		if (owner === el) hide();
 	});
 	// A redraw may remove the element under the pointer: the card goes too.
+	if (keepOnClick) return;
 	el.addEventListener("click", () => {
 		if (owner === el) hide();
 	});

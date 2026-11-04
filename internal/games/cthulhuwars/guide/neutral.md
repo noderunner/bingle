@@ -6,9 +6,9 @@ Some things in Cthulhu Wars belong to no cult. Any cult can take them, once, and
 - **Loyalty Cards**: a card buys a whole set of figures — **neutral Monsters** and **Terrors** — and from then on only its buyer may summon and control them;
 - the **Independent Great Old Ones**, which have a page of their own ([Independents](tab:independents)).
 
-Everything on this page is optional. On the setup page switch on the packs you want in the box:
+Everything on this page is optional. On the setup page choose the ones you want, tile by tile; they come in these boxes:
 
-| Option | What it adds |
+| Box | What is in it |
 |---|---|
 | **Azathoth (neutral spellbooks and Monsters)** | the six neutral spellbooks and four Monsters: Dimensional Shambler, Star Vampire, Elder Thing, Servitor |
 | **Dreamlands Surface Monsters** | three Monsters: Moonbeast, Gnorri, Shantak |
@@ -17,7 +17,7 @@ Everything on this page is optional. On the setup page switch on the packs you w
 | **Cosmic Terrors** | three Terrors: the Great Race of Yith, the Dhole, Quachil Uttaus |
 | **Something About Cats** | the Cats from Mercury and Venus, the Asteroid Cat, and the Terror Cat from Neptune |
 | **Satyr** | the Monster of Ramsey Campbell Horrors 2 |
-| **Independent: …** | Independent Great Old Ones, one check box each (see [Independents](tab:independents)) |
+| **Independents** | Independent Great Old Ones, one tile each (see [Independents](tab:independents)) |
 
 Besides, a cult that has Ghroth or The Thousand Forms may swap that book for a neutral one at the setup page even without the Azathoth option (see below).
 

@@ -31,17 +31,19 @@ func TestWebHome_LoyaltyCardPacksAreChosenOnTheSetupPage(t *testing.T) {
 	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/?game=cthulhu-wars")); err != nil {
 		t.Fatal(err)
 	}
-	waitJS(t, ctx, "four seats", `document.querySelectorAll("#slots-field select.faction-select").length === 4`, 20*time.Second)
-	for _, id := range []string{"azathoth", "dreamlands", "beyond", "igoo-abhoth", "igoo-chaugnar", "igoo-cthugha", "igoo-hydra", "igoo-yig"} {
-		if n := evalInt(t, ctx, `document.querySelectorAll("#option-`+id+`").length`); n != 1 {
-			t.Errorf("%d check boxes #option-%s", n, id)
-		}
-		if got := evalString(t, ctx, `String(document.getElementById("option-`+id+`").checked)`); got != "false" {
-			t.Errorf("#option-%s is checked from the start", id)
-		}
+	waitJS(t, ctx, "four seats", seatsReady(4), 20*time.Second)
+	// Nothing is chosen from the start; each pack is a tile per unit, each
+	// Independent a tile of its own.
+	if n := evalInt(t, ctx, `document.querySelectorAll('#cw-chosen .cw-tile:not([data-kind="map"]):not([data-kind="faction"])').length`); n != 0 {
+		t.Errorf("%d items chosen from the start", n)
 	}
-	for _, id := range []string{"dreamlands", "beyond", "igoo-yig", "igoo-abhoth"} {
-		evalString(t, ctx, `document.getElementById("option-`+id+`").click(); "ok"`)
+	openPickerTab(t, ctx, "neutrals")
+	for _, id := range []string{"moonbeast", "gnorri", "shantak", "wamp", "voonith", "hound-of-tindalos"} {
+		clickSel(t, ctx, `#cw-panel [data-item="`+id+`"]`)
+	}
+	openPickerTab(t, ctx, "independents")
+	for _, id := range []string{"yig", "abhoth"} {
+		clickSel(t, ctx, `#cw-panel [data-item="`+id+`"]`)
 	}
 	evalString(t, ctx, `document.getElementById("create_player_name").value = "Alice"; "ok"`)
 	clickSel(t, ctx, `#create-game-form button[type="submit"]`)

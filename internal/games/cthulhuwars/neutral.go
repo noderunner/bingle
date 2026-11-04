@@ -245,11 +245,19 @@ func (e *eng) bookChoices(seat, skip int) []int {
 		switch {
 		case n == mine:
 			out2(bookSlots + n)
-		case e.m.cfg.az && !e.neutralHeld(n) && !e.reservedElsewhere(seat, n):
+		case e.m.cfg.bookInGame(n) && !e.neutralHeld(n) && !e.reservedElsewhere(seat, n):
 			out2(bookSlots + n)
 		}
 	}
 	return out
+}
+
+// bookInGame says the neutral spellbook n can be taken at this table.
+func (c *gameCfg) bookInGame(n int) bool { return c.az || c.books&(1<<uint(n)) != 0 }
+
+// elderThings says the Elder Thing's card is in the box.
+func (c *gameCfg) elderThings() bool {
+	return c.az || c.units&(1<<uint(soloCardIndex(uElderThing))) != 0
 }
 
 // --- the neutral monsters ----------------------------------------------------------------
@@ -303,7 +311,7 @@ func (e *eng) walk(seat, a int) {
 // mindControlled says the Great Old One of owner in area a cannot use its
 // special ability: an enemy Elder Thing stands there.
 func (e *eng) mindControlled(a, owner int) bool {
-	if !e.m.cfg.az {
+	if !e.m.cfg.elderThings() {
 		return false
 	}
 	for _, s := range e.others(owner) {

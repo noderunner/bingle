@@ -20,6 +20,7 @@ import { installNav, navigate } from "./nav.js";
 import { gameIcon } from "./game-icons.js";
 import { tutorialList } from "./tutorials-ui.js";
 import { solitairePreview } from "./solitaire.js";
+import { createCwSetup } from "./cw-setup.js";
 
 installNav();
 
@@ -110,6 +111,7 @@ async function updateBlurb() {
 	updateBotMatch(d);
 	try {
 		const info = await gameInfo(id);
+		await preparePicker(info);
 		renderSeatChoices(info);
 		renderSetupPreview(id, info);
 	} catch (_) {
@@ -340,22 +342,79 @@ let botList = [];
 // The seat numbers of the game being set up.
 let currentSeats = [];
 
-/** The id of the cult the layout itself seats in a seat (matched by name). */
-function byLabelDefault(choice, seat) {
-	const c = choice.choices.find((x) => x.label === seat.label);
-	return c ? c.id : "";
-}
-
 // What was chosen for each seat, kept across redraws: choosing another layout
 // of the game (or another game and back) rebuilds the control, and must not
 // turn every bot back into the default kind.
 const slotMemory = new Map();
-// Which faction sits in each seat (games with a faction choice).
-const factionMemory = new Map();
 // Whether an expansion option was ticked, by option id.
 const flagMemory = new Map();
-// The neutral spellbook chosen to replace a cult's book, by cult id.
-const swapMemory = new Map();
+// The pickers of games that have one, by family: another layout of the game keeps
+// what was chosen. picker is the one of the game being set up.
+const pickers = new Map();
+let picker = null;
+
+/** The picker of a family. */
+async function buildPicker(family, info) {
+	const [catalog, me] = await Promise.all([api.setupCatalog(info.id), whoAmI().catch(() => null)]);
+	return createCwSetup({
+		family,
+		catalog,
+		layouts: sortedFamily(defs.filter((d) => (d.family || d.id) === family)),
+		loadInfo: gameInfo,
+		onLayout: (id) => {
+			if (document.getElementById("game_def_id").value !== id) chooseGame(id);
+		},
+		onChange: paintSeatCults,
+		account: !!me && me.kind === "account",
+		accounts: !!me && !!me.accounts,
+	});
+}
+
+/**
+ * Makes the picker of a game whose setup has one ready; the seats are drawn after
+ * it. The page may ask twice while the first answer is on its way, so what is kept
+ * is the promise: a second picker would replace the first, and what was chosen in it.
+ */
+async function preparePicker(info) {
+	if (!info.setup_catalog) {
+		picker = null;
+		return;
+	}
+	const family = info.family || info.id;
+	if (!pickers.has(family)) pickers.set(family, buildPicker(family, info));
+	try {
+		picker = await pickers.get(family);
+	} catch (_) {
+		// The check boxes are still there to fall back on; the next look tries again.
+		pickers.delete(family);
+		picker = null;
+	}
+}
+
+/** Puts each seat's faction on its row. */
+function paintSeatCults() {
+	if (!picker) return;
+	const cults = picker.factions();
+	for (const cell of document.querySelectorAll("#slots-field .slot-cult")) {
+		const id = cults[Number(cell.dataset.cultSeat) - 1];
+		clear(cell);
+		cell.dataset.value = id || "";
+		if (id) cell.append(picker.glyph(id, 22), h("strong", {}, picker.factionName(id)));
+		else cell.append(h("span", { class: "muted" }, "Choose a faction"));
+	}
+	syncPoolLobby();
+}
+
+/** More factions than seats are chosen from in the lobby, so a lobby there must be. */
+function syncPoolLobby() {
+	const box = document.getElementById("lobby");
+	if (!box) return;
+	const pool = !!picker && picker.hasPool();
+	if (pool && !box.disabled) box.dataset.before = box.checked ? "1" : "0";
+	if (!pool && box.disabled) box.checked = box.dataset.before === "1";
+	box.disabled = pool;
+	if (pool) box.checked = true;
+}
 
 /**
  * The game's `bool` setup options (an expansion, the pie rule) as check boxes.
@@ -649,31 +708,30 @@ function renderSlots(info) {
 	const oppField = opp ? opp.closest(".field") : null;
 	const seatField = document.getElementById("seat-choices")?.closest(".field");
 	const many = info.seats.length > 2;
+	syncPoolLobby();
+	if (!many) {
+		const box = document.querySelector(".setup-layout");
+		if (box) box.classList.remove("with-picker");
+		const variants = document.getElementById("setup-variants");
+		if (variants) variants.hidden = false;
+	}
 	// A game for one player has no opponent to choose and only the one seat.
 	const alone = info.seats.length === 1;
 	if (oppField) oppField.hidden = many || alone;
 	if (seatField) seatField.hidden = many || alone;
 	if (!many || !oppField) return;
-	const field = h("div", { class: "field", id: "slots-field" }, h("label", {}, "Seats"));
+	const field = h("div", { class: "field", id: "slots-field" });
+	const layoutBox = document.querySelector(".setup-layout");
+	if (layoutBox) layoutBox.classList.toggle("with-picker", !!picker);
+	const variants = document.getElementById("setup-variants");
+	if (variants) variants.hidden = !!picker;
+	if (picker) field.append(picker.el);
+	field.append(h("label", {}, "Seats"));
 	const rows = h("div", { class: "stack" });
 	const remember = () => {
 		for (const sel of rows.querySelectorAll(".slot-select")) slotMemory.set(Number(sel.dataset.seat), sel.value);
 	};
 	const fallback = botList.some((b) => b.id === "tactical") ? "bot:tactical" : "open";
-	// A game that lets the creator choose which cult sits where.
-	const choice = (info.options || []).find((o) => o.kind === "seat-choice");
-	const chosen = [];
-	if (choice) {
-		const byLabel = new Map(choice.choices.map((c) => [c.label, c.id]));
-		const used = new Set();
-		info.seats.forEach((seat) => {
-			let id = factionMemory.get(seat.seat);
-			if (!id || used.has(id) || !choice.choices.some((c) => c.id === id)) id = byLabel.get(seat.label);
-			if (!id || used.has(id)) id = (choice.choices.find((c) => !used.has(c.id)) || choice.choices[0]).id;
-			used.add(id);
-			chosen.push(id);
-		});
-	}
 	info.seats.forEach((seat, i) => {
 		const select = h("select", { class: "slot-select", "data-seat": seat.seat, "aria-label": `${seat.label}` });
 		select.append(h("option", { value: "me" }, "You"));
@@ -691,36 +749,11 @@ function renderSlots(info) {
 		});
 		let who = h("strong", {}, seat.label);
 		let swatch = h("span", { class: `swatch color-${seat.color}` });
-		if (choice) {
-			// The cult of this seat: a list of the cults, none twice.
-			const fsel = h("select", { class: "faction-select", "data-cult-seat": seat.seat, "aria-label": `Faction of seat ${seat.seat}` });
-			for (const c of choice.choices) fsel.append(h("option", { value: c.id, title: c.text || null }, c.label));
-			fsel.value = chosen[i];
-			// What the layout seats here when nothing is chosen.
-			fsel.dataset.default = byLabelDefault(choice, seat);
-			const paint = () => {
-				const c = choice.choices.find((x) => x.id === fsel.value);
-				swatch.className = `swatch color-${c ? c.color : seat.color}`;
-			};
-			paint();
-			fsel.dataset.was = fsel.value;
-			fsel.addEventListener("change", () => {
-				// Choosing a cult that sits elsewhere swaps the two.
-				for (const other of rows.querySelectorAll(".faction-select")) {
-					if (other !== fsel && other.value === fsel.value) {
-						other.value = fsel.dataset.was;
-						other.dataset.was = other.value;
-						other.dispatchEvent(new Event("painted"));
-					}
-				}
-				fsel.dataset.was = fsel.value;
-				paint();
-				for (const other of rows.querySelectorAll(".faction-select")) factionMemory.set(Number(other.dataset.cultSeat), other.value);
-			});
-			fsel.addEventListener("painted", paint);
-			who = fsel;
+		if (picker) {
+			who = h("span", { class: "slot-cult", "data-cult-seat": seat.seat });
+			swatch = null;
 		}
-		rows.append(h("div", { class: "slot-row" + (choice ? " with-faction" : "") }, swatch, who, select));
+		rows.append(h("div", { class: "slot-row" + (picker ? " with-faction" : "") }, swatch, who, select));
 	});
 	// At least one seat is yours, whatever the layout had before. (Only what
 	// the person chooses is remembered, never these defaults: the list of bots
@@ -742,48 +775,13 @@ function renderSlots(info) {
 		field.append(all);
 	}
 	field.append(rows, h("span", { class: "small muted" }, "Bots are named after their faction and kind (Black Goat (MCTS)). Open seats are for friends joining with the link — or bots you add in the lobby."));
-	// Expansions: a check box each.
-	for (const node of boolOptions(info)) field.append(node);
-	// A cult's spellbook that needs a clock may be swapped for a neutral one.
-	const swapOpt = (info.options || []).find((o) => o.kind === "book-swap");
-	if (swapOpt && choice) field.append(bookSwapBlock(swapOpt, rows));
+	// Expansions: a check box each, where no picker offers them.
+	if (!picker) for (const node of boolOptions(info)) field.append(node);
 	oppField.before(field);
-}
-
-/**
- * The "neutral spellbook instead of a timer book" choice: one row per cult that
- * has such a book (Black Goat's Ghroth, Crawling Chaos' Thousand Forms), shown
- * while that cult sits at the table. A neutral spellbook can replace one book
- * only, so what one row chose is taken from the lists of the others.
- */
-function bookSwapBlock(opt, rows) {
-	const block = h("div", { class: "option-flag book-swap", id: "book-swaps" }, h("span", { class: "small" }, opt.label), opt.text ? h("span", { class: "small muted" }, opt.text) : null);
-	const selects = [];
-	const present = () => new Set([...rows.querySelectorAll(".faction-select")].map((s) => s.value));
-	const sync = () => {
-		const here = present();
-		const taken = new Set(selects.filter((x) => !x.row.hidden && x.select.value).map((x) => x.select.value));
-		for (const x of selects) {
-			x.row.hidden = !here.has(x.slot.id);
-			for (const o of x.select.options) o.disabled = !!o.value && o.value !== x.select.value && taken.has(o.value);
-		}
-	};
-	for (const slot of opt.slots || []) {
-		const select = h("select", { class: "swap-select", "data-swap": slot.id, "aria-label": `Spellbook to replace ${slot.label}` });
-		select.append(h("option", { value: "" }, `Keep ${slot.label}`));
-		for (const c of opt.choices || []) select.append(h("option", { value: c.id, title: c.text || null }, `Replace with ${c.label}`));
-		if (swapMemory.has(slot.id)) select.value = swapMemory.get(slot.id);
-		const row = h("label", { class: "swap-row", title: slot.text || null }, h("span", { class: "small" }, `${slot.label}: `), select);
-		select.addEventListener("change", () => {
-			swapMemory.set(slot.id, select.value);
-			sync();
-		});
-		selects.push({ slot, select, row });
-		block.append(row);
+	if (picker) {
+		picker.setLayout(info);
+		paintSeatCults();
 	}
-	rows.addEventListener("change", sync);
-	sync();
-	return block;
 }
 
 /**
@@ -802,26 +800,11 @@ function slotChoice() {
 		} else if (sel.value.startsWith("bot:")) out.seatBots[seat] = sel.value.slice(4);
 	}
 	const options = {};
-	const fsels = [...document.querySelectorAll("#slots-field .faction-select")];
-	if (fsels.length) {
-		const chosen = fsels.map((s) => s.value);
-		const defaults = fsels.map((s) => s.dataset.default);
-		if (chosen.join(",") !== defaults.join(",")) options.factions = chosen;
-	}
 	for (const box of document.querySelectorAll("#create-game-form input[data-option]")) {
 		if (box.checked !== (box.dataset.default === "1")) options[box.dataset.option] = box.checked;
 	}
-	// Neutral spellbooks in place of the timer books of cults at the table.
-	const swaps = {};
-	for (const sel of document.querySelectorAll("#slots-field select.swap-select")) {
-		if (sel.value && !sel.closest(".swap-row").hidden) swaps[sel.dataset.swap] = sel.value;
-	}
-	if (Object.keys(swaps).length) options["book-swaps"] = swaps;
-	if (Object.keys(options).length) {
-		// Expansions alone keep the layout's own cults.
-		if (!options.factions && fsels.length) options.factions = fsels.map((s) => s.value);
-		out.options = options;
-	}
+	if (Object.keys(options).length) out.options = options;
+	if (picker) out.options = picker.options();
 	return out;
 }
 
@@ -1077,6 +1060,11 @@ if (createForm) {
 			return;
 		}
 		const body = { game_def_id: gameDefID, player_name: playerName };
+		if (picker && !picker.complete()) {
+			showError(err, "Choose a faction for every seat.");
+			document.getElementById("cw-seat-notice").scrollIntoView({ block: "nearest" });
+			return;
+		}
 		if (document.getElementById("slots-field")) {
 			const slots = slotChoice();
 			if (slots.seat && slots.seat !== 1) body.seat = slots.seat;

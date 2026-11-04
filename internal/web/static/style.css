@@ -842,14 +842,12 @@ kbd { font: 600 0.8em ui-monospace, Menlo, Consolas, monospace; border: 1px soli
 .slot-row .swatch.color-brown { background: var(--piece-brown-fill); }
 .slot-row .swatch.color-white { background: var(--piece-white-fill); }
 /* A seat whose cult is chosen: the name column is a list of the cults. */
-.slot-row.with-faction { grid-template-columns: 1.1rem minmax(11rem, 13rem) 1fr; }
-.slot-row .faction-select { font-weight: 600; min-width: 0; }
+.slot-row.with-faction { grid-template-columns: minmax(11rem, 13rem) 1fr; }
 .option-flag { margin-top: 0.4rem; display: flex; flex-direction: column; gap: 0.1rem; }
 .book-swap .swap-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin-top: 0.2rem; }
 .book-swap .swap-row[hidden] { display: none; }
 @media (max-width: 520px) {
-	.slot-row.with-faction { grid-template-columns: 1.1rem 1fr; }
-	.slot-row.with-faction .slot-select { grid-column: 2; }
+	.slot-row.with-faction { grid-template-columns: 1fr; }
 }
 
 /* ---- the map's look: gradients, coasts, waves ------------------------- */
@@ -1337,7 +1335,7 @@ dialog.help-dialog li { margin: 0.35rem 0; }
 .lobby-seat.mine { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
 .lobby-seat .swatch { width: 1.1rem; height: 1.1rem; border-radius: 4px; border: 2px solid var(--border); flex: none; }
 .lobby-faction { font-weight: 700; min-width: 8rem; }
-.lobby-cult-select { font-weight: 700; min-width: 8rem; max-width: 11rem; }
+.lobby-cult-select { font-weight: 700; min-width: 8rem; max-width: 14rem; }
 .lobby-who { flex: 1 1 10rem; display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; min-width: 0; }
 .lobby-actions { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; }
 .lobby-bot-select { max-width: 9rem; }
@@ -2058,3 +2056,51 @@ code.wrap { overflow-wrap: anywhere; word-break: break-all; }
 .seat-replaced { white-space: nowrap; }
 .seat-kick[hidden] { display: none; }
 #kick-vote[hidden] { display: none; }
+
+/* ---- the picker of a setup with many parts (Cthulhu Wars) -------------------------------- */
+.setup-layout.with-picker { grid-template-columns: 1fr; }
+/* The tutorials stand beside the preview: the tabs and tiles get the height. */
+.setup-layout.with-picker .setup-side { display: grid; grid-template-columns: 15rem minmax(0, 1fr); align-items: start; gap: 0.5rem 1.2rem; }
+.setup-layout.with-picker .setup-preview { grid-row: 1 / span 3; }
+.setup-layout.with-picker .game-blurb { margin: 0; }
+.setup-layout.with-picker .setup-tutorials .setup-tutorials-title { margin-top: 0; }
+@media (max-width: 560px) { .setup-layout.with-picker .setup-side { grid-template-columns: minmax(0, 1fr); } .setup-layout.with-picker .setup-preview { grid-row: auto; } }
+.cw-setup { display: grid; gap: 0.6rem; margin-bottom: 0.9rem; }
+.cw-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.5rem; }
+#cw-profile { flex: 0 1 18rem; min-width: 0; width: auto; }
+.cw-save { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.6rem; }
+.cw-save input[type="text"] { flex: 1 1 12rem; min-width: 0; width: auto; }
+.cw-cards { display: grid; gap: 0.7rem; grid-template-columns: minmax(0, 1fr); align-items: start; }
+@media (min-width: 860px) { .cw-cards { grid-template-columns: minmax(0, 5fr) minmax(0, 2fr); } }
+.cw-card { min-width: 0; background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 0.6rem 0.7rem; }
+.cw-current { position: sticky; top: 0.5rem; }
+.cw-current h3 { margin: 0 0 0.4rem; font-size: 0.95rem; }
+.cw-tabs { display: flex; flex-wrap: wrap; gap: 0.15rem; border-bottom: 1px solid var(--border); margin-bottom: 0.55rem; }
+.cw-tab { background: none; border: 0; border-bottom: 2px solid transparent; border-radius: 6px 6px 0 0; padding: 0.3rem 0.55rem; font-weight: 600; color: var(--muted); }
+.cw-tab:hover { color: var(--text); background: var(--accent-soft); }
+.cw-tab.on { color: var(--text); border-bottom-color: var(--accent); }
+.cw-tab-count:empty { display: none; }
+.cw-tab-count { margin-left: 0.3rem; font-size: 0.75rem; font-variant-numeric: tabular-nums; opacity: 0.8; }
+.cw-panel { max-height: 24rem; overflow-y: auto; }
+.cw-group { margin: 0.55rem 0 0.2rem; }
+.cw-panel > .cw-group:first-child { margin-top: 0; }
+.cw-grid, .cw-chosen { display: grid; gap: 0.3rem; grid-template-columns: repeat(auto-fill, minmax(6.4rem, 1fr)); }
+.cw-chosen { grid-template-columns: repeat(auto-fill, minmax(5.8rem, 1fr)); outline: none; }
+.cw-tile {
+	display: flex; flex-direction: column; align-items: center; gap: 0.2rem; min-width: 0; height: 100%; padding: 0.35rem 0.2rem;
+	background: none; border: 2px solid transparent; border-radius: 8px; color: var(--text); font-weight: 500;
+}
+.cw-tile:hover, .cw-tile:focus-visible { background: var(--accent-soft); }
+.cw-tile.on { border-color: var(--accent); background: var(--accent-soft); }
+.cw-tile-icon { display: flex; align-items: center; justify-content: center; width: 100%; height: 3.3rem; }
+.cw-tile-icon svg { display: block; }
+.cw-tile-name { font-size: 0.74rem; line-height: 1.15; text-align: center; overflow-wrap: break-word; }
+.cw-chosen .cw-tile-icon { height: 2.7rem; }
+.cw-chosen .cw-tile-icon > svg, .cw-chosen .cw-tile-icon > .cw-glyph { width: 2.5rem; height: 2.5rem; }
+.cw-map-thumb { display: block; width: 100%; max-width: 6rem; height: auto; border-radius: 4px; }
+.cw-map-large { display: block; width: 19rem; max-width: 100%; height: auto; margin-top: 0.35rem; border-radius: 6px; }
+.cw-notice { margin: 0 0 0.45rem; padding: 0.25rem 0.45rem; border-radius: 6px; background: var(--accent-soft); }
+.cw-tip-units { list-style: none; margin: 0.35rem 0; padding: 0; display: grid; gap: 0.1rem; }
+.cw-tip-units li { display: grid; grid-template-columns: 22px 1fr auto; align-items: center; gap: 0.35rem; }
+.slot-cult { display: inline-flex; align-items: center; gap: 0.4rem; min-width: 0; }
+#book-swaps { margin-top: 0.6rem; display: grid; gap: 0.25rem; }

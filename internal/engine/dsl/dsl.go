@@ -131,12 +131,12 @@ type OptionDef struct {
 	ID    string `json:"id"`
 	Label string `json:"label"`
 	// Kind is "bool" (a check box), "seat-choice" (each seat picks one of
-	// Choices, no two the same) or "book-swap" (a cult picks one of Choices
-	// to replace its Slot).
+	// Choices, no two the same), "multi-choice" (any number of Choices) or
+	// "book-swap" (a cult picks one of Choices to replace its Slot).
 	Kind string `json:"kind"`
 	// Text explains the option.
 	Text string `json:"text,omitempty"`
-	// Choices are the values of a seat-choice option.
+	// Choices are the values of a seat-choice or multi-choice option.
 	Choices []OptionChoice `json:"choices,omitempty"`
 	// Slots (kind "book-swap") are the things a choice may replace, each in
 	// the cult named by its ID: the page offers a Choice for every Slot whose

@@ -14,8 +14,9 @@ import (
 // The fifth round: the Windwalker and Sleeper cults, five seats and the High
 // Priests, chosen on the home page.
 
-// The create form of a five-player table lists the cults of every seat, lets
-// two seats trade cults, offers the High Priests and sends the choice.
+// The factions of a five-player table are tiles: they fill the seats in turn, one
+// can be taken out and another put in its place, the High Priests are a tile too,
+// and the choice survives another layout and reaches the server.
 func TestWebHome_ChooseTheCultsOfAFivePlayerTableAndTheHighPriests(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	ctx, cancel := newChromedpContext(t, 90*time.Second)
@@ -27,83 +28,50 @@ func TestWebHome_ChooseTheCultsOfAFivePlayerTableAndTheHighPriests(t *testing.T)
 	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/?game=cthulhu-wars-5p")); err != nil {
 		t.Fatal(err)
 	}
-	const cultsJS = `[...document.querySelectorAll("#slots-field select.faction-select")].map(s => s.value).join(",")`
-	waitJS(t, ctx, "five seats", `document.querySelectorAll("#slots-field select.faction-select").length === 5`, 20*time.Second)
-	if got := evalString(t, ctx, cultsJS); got != "gc,cc,bg,ys,ww" {
+	waitJS(t, ctx, "five seats", seatsReady(5), 20*time.Second)
+	if got := evalString(t, ctx, seatCultsJS); got != "gc,cc,bg,ys,ww" {
 		t.Fatalf("default cults = %q", got)
 	}
-	// The cults are on offer in every seat.
-	if n := evalInt(t, ctx, `document.querySelectorAll('#slots-field select.faction-select[data-cult-seat="1"] option').length`); n != 10 {
+	openPickerTab(t, ctx, "factions")
+	if n := evalInt(t, ctx, `document.querySelectorAll("#cw-panel .cw-tile").length`); n != 10 {
 		t.Errorf("%d cults on offer, want 10", n)
 	}
-	// The expansion is a check box, off by default.
-	if got := evalString(t, ctx, `String(document.getElementById("option-high-priests") && document.getElementById("option-high-priests").checked)`); got != "false" {
-		t.Errorf("High Priests box checked = %q", got)
+	// Taken out, a faction leaves its seat open; the next one sits there.
+	clickSel(t, ctx, `#cw-panel [data-item="cc"]`)
+	waitJS(t, ctx, "an open seat", seatCultsIs("gc,,bg,ys,ww"), 5*time.Second)
+	waitJS(t, ctx, "the notice", `document.getElementById("cw-seat-notice").textContent.includes("needs a faction")`, 5*time.Second)
+	clickSel(t, ctx, `#cw-panel [data-item="sl"]`)
+	waitJS(t, ctx, "the Sleeper in that seat", seatCultsIs("gc,sl,bg,ys,ww"), 5*time.Second)
+	// A sixth takes no seat: it is for the lobby. Taken out again, it leaves no trace.
+	clickSel(t, ctx, `#cw-panel [data-item="cc"]`)
+	waitJS(t, ctx, "the pool", `document.getElementById("cw-seat-notice").textContent.includes("6 factions for 5 seats")`, 5*time.Second)
+	if got := evalString(t, ctx, seatCultsJS); got != "gc,sl,bg,ys,ww" {
+		t.Errorf("cults after a sixth = %q", got)
 	}
-	// The swatch of a seat follows its cult.
-	if got := evalString(t, ctx, `document.querySelector('#slots-field .slot-row:nth-child(5) .swatch').className`); !strings.Contains(got, "color-white") {
-		t.Errorf("seat 5 swatch = %q, want white (Windwalker)", got)
-	}
-	// Choosing the Sleeper for the fifth seat leaves Windwalker out.
-	evalString(t, ctx, `(function () {
-		var s = document.querySelector('#slots-field select.faction-select[data-cult-seat="5"]');
-		s.value = "sl";
-		s.dispatchEvent(new Event("change", { bubbles: true }));
-		return "ok";
-	})()`)
-	if got := evalString(t, ctx, cultsJS); got != "gc,cc,bg,ys,sl" {
-		t.Errorf("cults after the Sleeper = %q", got)
-	}
-	if got := evalString(t, ctx, `document.querySelector('#slots-field .slot-row:nth-child(5) .swatch').className`); !strings.Contains(got, "color-orange") {
-		t.Errorf("seat 5 swatch = %q, want orange (Sleeper)", got)
-	}
-	// Choosing the Sleeper for seat 1 trades: seat 5 takes Great Cthulhu.
-	evalString(t, ctx, `(function () {
-		var s = document.querySelector('#slots-field select.faction-select[data-cult-seat="1"]');
-		s.value = "sl";
-		s.dispatchEvent(new Event("change", { bubbles: true }));
-		return "ok";
-	})()`)
-	if got := evalString(t, ctx, cultsJS); got != "sl,cc,bg,ys,gc" {
-		t.Errorf("cults after the trade = %q", got)
-	}
-	// And seat 2 asks for Windwalker (not at the table): nothing to trade.
-	evalString(t, ctx, `(function () {
-		var s = document.querySelector('#slots-field select.faction-select[data-cult-seat="2"]');
-		s.value = "ww";
-		s.dispatchEvent(new Event("change", { bubbles: true }));
-		return "ok";
-	})()`)
-	if got := evalString(t, ctx, cultsJS); got != "sl,ww,bg,ys,gc" {
-		t.Errorf("cults after Windwalker = %q", got)
-	}
-	evalString(t, ctx, `document.getElementById("option-high-priests").click(); "ok"`)
+	clickSel(t, ctx, `#cw-panel [data-item="cc"]`)
+	waitJS(t, ctx, "no pool", `document.getElementById("cw-seat-notice").hidden`, 5*time.Second)
+	openPickerTab(t, ctx, "other")
+	clickSel(t, ctx, `#cw-panel [data-item="high-priests"]`)
 
-	// The choice survives choosing another layout and coming back.
-	evalString(t, ctx, `window.__oldSlots = document.getElementById("slots-field"); "ok"`)
-	chooseVariant(t, ctx, "cthulhu-wars")
-	waitJS(t, ctx, "the four-player layout", `document.getElementById("game_def_id").value === "cthulhu-wars" && document.getElementById("slots-field") && document.getElementById("slots-field") !== window.__oldSlots`, 15*time.Second)
-	if n := evalInt(t, ctx, `document.querySelectorAll("#slots-field select.faction-select").length`); n != 4 {
-		t.Fatalf("%d cult lists on the four-player layout", n)
+	// Four seats keep the first four; five again gets a cult for the fifth.
+	openPickerTab(t, ctx, "maps")
+	clickSel(t, ctx, `#cw-panel [data-item="cthulhu-wars"]`)
+	waitJS(t, ctx, "the four-player layout", `document.getElementById("game_def_id").value === "cthulhu-wars" && `+seatsReady(4), 20*time.Second)
+	if got := evalString(t, ctx, seatCultsJS); got != "gc,sl,bg,ys" {
+		t.Errorf("cults on four seats = %q", got)
 	}
-	// Four seats, no two the same, and the expansion box still ticked.
-	got := strings.Split(evalString(t, ctx, cultsJS), ",")
-	seen := map[string]bool{}
-	for _, c := range got {
-		if seen[c] {
-			t.Errorf("cults %v list %q twice", got, c)
-		}
-		seen[c] = true
+	if n := evalInt(t, ctx, `document.querySelectorAll('#cw-chosen [data-item="high-priests"]').length`); n != 1 {
+		t.Errorf("High Priests in the selections after another layout: %d", n)
 	}
-	if got := evalString(t, ctx, `String(document.getElementById("option-high-priests").checked)`); got != "true" {
-		t.Errorf("High Priests box = %q after another layout", got)
+	// A map is one choice: exactly one is in the selections.
+	if n := evalInt(t, ctx, `document.querySelectorAll('#cw-chosen [data-kind="map"]').length`); n != 1 {
+		t.Errorf("%d maps in the selections", n)
 	}
-	evalString(t, ctx, `window.__oldSlots = document.getElementById("slots-field"); "ok"`)
-	chooseVariant(t, ctx, "cthulhu-wars-5p")
-	waitJS(t, ctx, "the five-player layout", `document.getElementById("game_def_id").value === "cthulhu-wars-5p" && document.getElementById("slots-field") && document.getElementById("slots-field") !== window.__oldSlots`, 15*time.Second)
-	if got := evalString(t, ctx, cultsJS); got != "sl,ww,bg,ys,gc" {
-		t.Errorf("cults on coming back = %q", got)
+	if n := evalInt(t, ctx, `document.querySelectorAll('#cw-panel .cw-tile.on').length`); n != 1 {
+		t.Errorf("%d maps marked in the Maps tab", n)
 	}
+	clickSel(t, ctx, `#cw-panel [data-item="cthulhu-wars-5p"]`)
+	waitJS(t, ctx, "the five-player layout", `document.getElementById("game_def_id").value === "cthulhu-wars-5p" && `+seatsReady(5), 20*time.Second)
 
 	// Create the game: the choice reaches the server.
 	evalString(t, ctx, `document.getElementById("create_player_name").value = "Alice"; "ok"`)
@@ -114,23 +82,20 @@ func TestWebHome_ChooseTheCultsOfAFivePlayerTableAndTheHighPriests(t *testing.T)
 		GameDefID string `json:"game_def_id"`
 		Seats     []struct {
 			Seat  int    `json:"seat"`
-			Name  string `json:"name"`
-			Label string `json:"label"`
 			Color string `json:"color"`
-			Bot   string `json:"bot"`
 		} `json:"seats"`
 	}
 	if code := doJSON(t, "GET", baseURL+"/api/games/"+room, nil, &info); code != 200 {
 		t.Fatalf("get game: %d", code)
 	}
-	if want := "cthulhu-wars-5p~sl-ww-bg-ys-gc-hp"; info.GameDefID != want {
+	if want := "cthulhu-wars-5p~gc-sl-bg-ys-cc-hp"; info.GameDefID != want {
 		t.Errorf("game = %q, want %q", info.GameDefID, want)
 	}
 	colors := map[int]string{}
 	for _, s := range info.Seats {
 		colors[s.Seat] = s.Color
 	}
-	if fmt.Sprint(colors) != "map[1:orange 2:white 3:red 4:yellow 5:green]" {
+	if fmt.Sprint(colors) != "map[1:green 2:orange 3:red 4:yellow 5:blue]" {
 		t.Errorf("seat colors = %v", colors)
 	}
 	mu.Lock()
@@ -149,7 +114,7 @@ func TestWebHome_AnUnchangedTableKeepsThePlainLayout(t *testing.T) {
 	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/?game=cthulhu-wars-5p")); err != nil {
 		t.Fatal(err)
 	}
-	waitJS(t, ctx, "five seats", `document.querySelectorAll("#slots-field select.faction-select").length === 5`, 20*time.Second)
+	waitJS(t, ctx, "five seats", seatsReady(5), 20*time.Second)
 	evalString(t, ctx, `document.getElementById("create_player_name").value = "Alice"; "ok"`)
 	clickSel(t, ctx, `#create-game-form button[type="submit"]`)
 	loc := pollLocation(t, ctx, regexp.MustCompile(`/game/[A-Z0-9]+$`))

@@ -2,8 +2,8 @@
 id: cthulhu-wars
 name: Cthulhu Wars (4 players, 5-3 map)
 family: cthulhu-wars
-description: 'Three to five rival cults fight to wake their Great Old Ones and open the most gates: spend Power on recruiting, moving, summoning and battling over a simplified world map, earn spellbooks, and be first past 30 Doom with all six books. Six cults to choose from — Great Cthulhu, Crawling Chaos, Black Goat, Yellow Sign, Windwalker and Sleeper — and the High Priests as an optional expansion.'
-version: 0.2.0
+description: 'Three to five rival cults fight to wake their Great Old Ones and open the most gates: spend Power on recruiting, moving, summoning and battling over a simplified world map, earn spellbooks, and be first past 30 Doom with all six books. Choose your map and cults, then add as many neutral units and Independent Great Old Ones as you like.'
+version: 0.3.0
 designers: [Sandy Petersen]
 publisher: Petersen Games
 engine: ruleset
