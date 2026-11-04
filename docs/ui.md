@@ -447,8 +447,8 @@ piece buttons offer "Acolyte" and "Acolyte on the Gate".
 
 With three or more seats the page lays out a **round bar**, the map, the move
 bar and a **battle panel** (Combat, dice and results); the **cult panels** sit
-in the side column, beside the map, listed in table order from the viewer so
-that clockwise is down the list. A panel's header is the name and the cult's
+in the side column, beside the map, listed in the order of play, the first player on top, and they re-order when it
+changes. A panel's header is the swatch, the faction's glyph (`img.seat-glyph`, which stands for its name), the player's name and the cult's
 numbers as pictograms — ⚡ Power, ☠ Doom, ★ Elder Signs, ◎ Gates
 (`.seat-stats .score.stat[data-counter]`, each an `svg.stat-icon` and a value;
 `js/icons.js` `STAT_ICONS`) — and under it collapsible sections, remembered

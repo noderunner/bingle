@@ -17,6 +17,7 @@ import { mountGameNotify, applyProfileDefault } from "./notify-ui.js";
 import { LAYOUTS, isMobileLayout, isLandscape, layoutChoice, setLayoutChoice, mobileShell, onScreenChange } from "./mobile.js";
 import { lobbyCard } from "./lobby.js";
 import { statIcon } from "./icons.js";
+import { FACTION_KEYS, factionName } from "./cw-names.js";
 import { spellMark, enterBlock, bookRequirements, abilitiesBlock, unitText, neutralTip } from "./cw-tips.js";
 import { hoverCard, hideHoverCard } from "./tooltip.js";
 import { createOptionsWindow } from "./options.js";
@@ -132,7 +133,16 @@ async function boot() {
 	resolveIdentity();
 	await Promise.all([loadPosition(), loadChat(code)]);
 	if (S.me.seat && !S.flippedByUser) S.flipped = defaultFlipped();
-	onScreenChange(() => render());
+	// Back in the browser's tab, a message is read only if the chat is what is showing.
+	document.addEventListener("visibilitychange", () => {
+		if (!document.hidden && chatOnScreen()) chatSeen();
+		paintMobileBadges();
+	});
+	onScreenChange(() => {
+		render();
+		// Back upright, the log is where the player left it: show what is new.
+		if (S.mPage === "log" && !isLandscape()) showLogEnd();
+	});
 	connect();
 	render();
 	try {
@@ -1665,8 +1675,7 @@ async function onEvent(env) {
 			}
 		} else if (env.type === "chat") {
 			const line = env.data || {};
-			receiveChat(line, { mine: !!S.me.name && String(line.name || "").toLowerCase() === S.me.name.toLowerCase() });
-			if (S.mPage === "chat") chatSeen();
+			receiveChat(line, { mine: !!S.me.name && String(line.name || "").toLowerCase() === S.me.name.toLowerCase(), seen: chatOnScreen() });
 			paintMobileBadges();
 		} else if (env.type === "state") {
 			if (env.data && env.data.reason === "draw-offer") toast("A draw was offered.");
@@ -1817,16 +1826,7 @@ function render() {
 	let cults = null;
 	if (many) {
 		cults = h("div", { class: "cult-stack", id: "cult-stack" });
-		// Listed in table order from the viewer: clockwise runs down the list
-		// (and from the last cult back to the first).
-		for (const seat of seatsFrom(bottomSeat)) cults.append(seatStrip(seat));
-		cults.append(
-			h(
-				"p",
-				{ class: "small muted seat-order-note", id: "seat-order-note" },
-				S.info.cards ? "Play runs clockwise down this list, from the last player back to the first." : "Play runs clockwise down this list, from the last cult back to the first; counter-clockwise runs up it."
-			)
-		);
+		for (const seat of cardOrder(bottomSeat)) cults.append(seatStrip(seat));
 	}
 
 	// A game that has not started shows its lobby instead of an empty board.
@@ -1990,6 +1990,7 @@ function railTabs(panes) {
 						S.railTab = pane.id;
 						store.set("bingle.railTab", pane.id);
 						render();
+						if (pane.id === "history") showLogEnd();
 					},
 				},
 				...label
@@ -2021,6 +2022,15 @@ function rememberMobileScroll() {
 	if (!pages.length) return;
 	S.mScroll = S.mScroll || {};
 	for (const p of pages) S.mScroll[p.dataset.page] = p.scrollTop;
+}
+
+/** Whether the player can see the chat now: its card stays on the page while another tab or view is up. */
+function chatOnScreen() {
+	if (document.hidden) return false;
+	// A phone on its side shows the map alone.
+	if (isMobileLayout()) return S.mPage === "chat" && !isLandscape();
+	const pane = document.getElementById("rail-pane-talk");
+	return !pane || !pane.hidden;
 }
 
 /** The chat badge and the "your turn" mark of the bottom bar, kept current without a redraw. */
@@ -2070,7 +2080,6 @@ function renderMobile(seats, bottomSeat) {
 	const round = h("div", { class: "m-stack" }, h("h2", {}, "Round"));
 	const rb = roundBar();
 	if (rb) round.append(rb);
-	round.append(h("p", { class: "small muted seat-order-note", id: "seat-order-note" }, "Play runs clockwise down the list of cults, from the last cult back to the first; counter-clockwise runs up it."));
 
 	const neutral = neutralCard();
 	if (neutral) round.append(neutral);
@@ -2080,7 +2089,7 @@ function renderMobile(seats, bottomSeat) {
 		{ id: "round", label: "Round", group: "round", node: round },
 	];
 	const chips = { cults: [] };
-	for (const seat of seatsFrom(bottomSeat)) {
+	for (const seat of cardOrder(bottomSeat)) {
 		const id = `cult-${seat}`;
 		pages.push({ id, label: seatLabel(seat) || `Seat ${seat}`, group: "cults", node: h("div", { class: "m-stack" }, seatStrip(seat)) });
 		chips.cults.push({ page: id, label: seatLabel(seat) || `Seat ${seat}`, color: cssColor(colorOf(seat)) });
@@ -2103,6 +2112,7 @@ function renderMobile(seats, bottomSeat) {
 		onChange: (id) => {
 			S.mPage = id;
 			if (id === "chat") chatSeen();
+			if (id === "log") showLogEnd();
 			paintMobileBadges();
 		},
 	});
@@ -2201,6 +2211,7 @@ function renderMobileCards(seats, bottomSeat) {
 		onChange: (id) => {
 			S.mPage = id;
 			if (id === "chat") chatSeen();
+			if (id === "log") showLogEnd();
 			paintMobileBadges();
 		},
 	});
@@ -2613,7 +2624,7 @@ function turnPrompt() {
 	}
 	if (rv && rv.stage === "direction") {
 		// The two choices below spell out who plays after whom.
-		return "You are the first player — choose the direction of play: clockwise runs down the list of cults, counter-clockwise runs up it.";
+		return "You are the first player — choose the direction of play.";
 	}
 	if (rv && rv.prompt) {
 		if (opts.some((o) => o.kind === "count")) return `${rv.prompt} — ${countLabel(b)}`;
@@ -2692,6 +2703,13 @@ function seatSwatch(seat, color) {
 	return h("span", { class: `swatch color-${cssColor(color)}`, style: gradient ? `background: ${gradient}` : null });
 }
 
+/** The glyph of a seat's faction, in a game whose factions have them: it says what the name would. */
+function seatGlyph(seat) {
+	const key = FACTION_KEYS.find((k) => factionName(k) === seatLabel(seat));
+	if (!key || (S.info.family || S.info.id) !== "cthulhu-wars") return null;
+	return h("img", { class: "seat-glyph", src: `/api/game-defs/cthulhu-wars/assets/guide/glyphs/${key}.svg`, alt: seatLabel(seat), title: seatLabel(seat), width: 22, height: 22, decoding: "sync" });
+}
+
 function seatStrip(seat) {
 	const color = colorOf(seat);
 	const si = seatInfo(seat);
@@ -2702,13 +2720,15 @@ function seatStrip(seat) {
 	const strip = h("div", { class: "seat-strip" + (toMove ? " to-move" : "") + (off ? " disconnected" : ""), id: `seat-${seat}`, "data-seat": seat });
 	const head = h("div", { class: "seat-head" });
 	head.append(seatSwatch(seat, color));
+	const glyph = seatGlyph(seat);
+	if (glyph) head.append(glyph);
 	head.append(h("span", { class: "name" }, seatName(seat) || "(open seat)"));
 	head.append(h("span", { class: "badge waiting seat-conn", title: "No connection to this player right now. It may be back in a moment." }, off ? "disconnected" : ""));
 	// A seat of two colours says which it is: the players know each other by these.
 	if (seatGradient(seat) && !(seatName(seat) || "").includes(seatLabel(seat))) head.append(seatWord(seat));
 	// At a table of many cults the faction is named beside its player (a bot's
 	// name already is the faction's).
-	if (S.info.seats.length > 2 && seatLabel(seat) && !(seatName(seat) || "").startsWith(seatLabel(seat))) {
+	if (!glyph && S.info.seats.length > 2 && seatLabel(seat) && !(seatName(seat) || "").startsWith(seatLabel(seat))) {
 		head.append(h("span", { class: "seat-faction small muted" }, seatLabel(seat)));
 	}
 	if (si && si.bot) head.append(h("span", { class: "badge bot" }, "bot"));
@@ -3597,6 +3617,13 @@ function seatsFrom(first) {
 	return [...all.slice(i), ...all.slice(0, i)];
 }
 
+/** The order of the cards of the seats: the order of play where the game has one, the first player on top. */
+function cardOrder(first) {
+	const rv = rulesetView();
+	const order = rv && rv.order ? (rv.dir < 0 ? rv.order.ccw : rv.order.cw) : null;
+	return order && order.length === S.info.seats.length ? order : seatsFrom(first);
+}
+
 /** A cult's colour swatch and name, for turn orders. */
 function seatChip(seat, first) {
 	return h(
@@ -3773,7 +3800,7 @@ function roundBar() {
 	if (order && order.length && v.phase !== "over") {
 		const item = h(
 			"span",
-			{ class: "round-item turn-order", id: "turn-order", title: "Turn order from the first player, in the direction of play. Clockwise runs down the list of cults; counter-clockwise runs up it." },
+			{ class: "round-item turn-order", id: "turn-order", title: "Turn order from the first player, in the direction of play. The cards of the cults follow it." },
 			h("span", { class: "order-dir" }, v.dir < 0 ? "↺ Counter-clockwise" : "↻ Clockwise"),
 			orderLine(order)
 		);
@@ -4091,6 +4118,8 @@ function moveBar() {
 				{ class: "hint", id: "move-hint" },
 				rvh && rvh.move_hint
 					? rvh.move_hint
+					: rvh && rvh.stage === "setup"
+					? "Choose Starting Area: select a starting area on the map."
 					: choosingBook
 					? "Choose a spellbook to unlock:"
 					: hasPiece && !hasPos && rvh && rvh.stage === "prompt"
@@ -4742,6 +4771,18 @@ function movesPane() {
  * One card for the moves and for what happened: two tabs, "Moves" and
  * "History" (the second only for games that narrate their turns).
  */
+/** Brings the newest entry of the history and the moves into view, once the page has been laid out. */
+function showLogEnd() {
+	const go = () => {
+		for (const el of [document.getElementById("events"), document.getElementById("move-list"), document.getElementById("m-page-log")]) {
+			if (el) el.scrollTop = el.scrollHeight;
+		}
+	};
+	requestAnimationFrame(go);
+	// A phone that was turned may still be settling on its new shape.
+	setTimeout(go, 250);
+}
+
 function historyCard() {
 	const log = eventsPane();
 	const card = h("div", { class: "card side-moves", id: "history-card" });
@@ -4766,6 +4807,7 @@ function historyCard() {
 						S.historyTab = id;
 						store.set("bingle.historyTab", id);
 						render();
+						showLogEnd();
 					},
 				},
 				label

@@ -184,7 +184,7 @@ export function chatLoaded() {
 }
 
 /** A message pushed by the server: kept, and drawn in place when on screen. */
-export function receiveChat(line, { mine }) {
+export function receiveChat(line, { mine, seen = true }) {
 	if (!line || chat.lines.some((l) => l.id === line.id)) return;
 	chat.lines.push(line);
 	if (chat.lines.length > 300) chat.lines.splice(0, chat.lines.length - 300);
@@ -192,8 +192,8 @@ export function receiveChat(line, { mine }) {
 		const atEnd = listEl.scrollHeight - listEl.scrollTop - listEl.clientHeight < 40;
 		listEl.append(lineNode(line, mine));
 		if (atEnd || mine) listEl.scrollTop = listEl.scrollHeight;
-		else if (document.hidden) bump();
-	} else {
+		if (!mine && !seen) bump();
+	} else if (!mine) {
 		bump();
 	}
 }
@@ -218,8 +218,6 @@ function lineNode(line, mine) {
 		"li",
 		{ class: "chat-line" + (mine ? " mine" : "") + (line.seat ? "" : " spectator"), "data-id": line.id, "data-seat": line.seat || null },
 		h("span", { class: `chat-who ${line.color ? "color-" + cssColor(line.color) : ""}`, title: line.seat ? "" : "spectator" }, line.name + (line.seat ? "" : " (watching)")),
-		// Who said it: an account, by its handle, or a guest.
-		line.handle ? h("span", { class: "chat-handle small muted" }, "@" + line.handle) : line.guest ? h("span", { class: "chat-guest small muted" }, "guest") : null,
 		h("span", { class: "chat-text" }, line.text),
 		h("time", { class: "chat-time muted small" }, clock(line.at))
 	);
@@ -334,16 +332,6 @@ export function chatCard({ code, me }) {
 			}
 		}, 0);
 	}
-	document.addEventListener(
-		"visibilitychange",
-		() => {
-			if (!document.hidden) {
-				chat.unread = 0;
-				if (badgeEl) badgeEl.hidden = true;
-			}
-		},
-		{ once: true }
-	);
 	return card;
 }
 

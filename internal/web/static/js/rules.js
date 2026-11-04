@@ -127,7 +127,9 @@ export async function showRules(info, { tab } = {}) {
 		autocomplete: "off",
 	});
 	const tablist = h("div", { class: "rules-tabs", role: "tablist", "aria-label": "Rules sections" });
-	const body = h("div", { class: "rules-body" }, h("p", { class: "muted" }, "Loading the rules…"));
+	// The window opens on the rules, not the search box: on a phone a focused box brings up the
+	// keyboard, and may zoom the page so that the close button is out of reach.
+	const body = h("div", { class: "rules-body", tabindex: -1, autofocus: true }, h("p", { class: "muted" }, "Loading the rules…"));
 	const dlg = h(
 		"dialog",
 		{ id: "rules-dialog", class: "rules-window", "aria-labelledby": "rules-title" },
@@ -136,7 +138,22 @@ export async function showRules(info, { tab } = {}) {
 		body
 	);
 	closeBtn.addEventListener("click", () => dlg.close());
-	dlg.addEventListener("close", () => dlg.remove());
+	// The Back button or gesture closes the window, not the page behind it.
+	let leftByBack = false;
+	const onBack = () => {
+		leftByBack = true;
+		window.removeEventListener("popstate", onBack);
+		if (dlg.open) dlg.close();
+	};
+	const openedOn = location.pathname;
+	history.pushState(history.state, "", location.href);
+	window.addEventListener("popstate", onBack);
+	dlg.addEventListener("close", () => {
+		dlg.remove();
+		window.removeEventListener("popstate", onBack);
+		// Unless a link in the rules has already left for another page.
+		if (!leftByBack && location.pathname === openedOn) history.back();
+	});
 	// A click on the backdrop (the dialog element itself) closes it.
 	dlg.addEventListener("click", (ev) => {
 		if (ev.target === dlg) dlg.close();
