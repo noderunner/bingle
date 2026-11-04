@@ -23,8 +23,13 @@ func Verify(cat *catalog.Catalog, family string, t Tutorial) error {
 	if !ok {
 		return fmt.Errorf("%s: no game %q", t.ID, t.Game)
 	}
-	if got := familyOf(game); got != family {
+	if got := game.Definition.Home(); got != family {
 		return fmt.Errorf("%s: %q is a game of %q, not of %q", t.ID, t.Game, got, family)
+	}
+	// A prototype's name alone means its newest version, which is not the
+	// version this tutorial was written for once there is a newer one.
+	if home := game.Definition.Home(); game.Definition.Prototype && t.Game != home && !strings.HasPrefix(t.Game, home+"-") && !strings.HasPrefix(t.Game, home+catalog.DerivedSep) {
+		return fmt.Errorf("%s: %q does not name a version: write %q", t.ID, t.Game, home)
 	}
 	learner := t.learnerSeat()
 	if _, ok := game.Seat(learner); !ok {
@@ -213,13 +218,6 @@ func (p *player) stepsOf(text string) ([]state.Step, error) {
 
 // LearnerSeat is the seat the learner holds (Seat, default 1).
 func (t Tutorial) LearnerSeat() int { return t.learnerSeat() }
-
-func familyOf(game *catalog.CompiledGame) string {
-	if f := game.Definition.Family; f != "" {
-		return f
-	}
-	return game.Definition.ID
-}
 
 // player plays a game from its start, keeping track of whose move it is.
 type player struct {

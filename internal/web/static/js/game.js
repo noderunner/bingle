@@ -5,7 +5,7 @@
 
 import { FAIR_PLAY, ratingText } from "./ratings.js";
 import { h, s, clear, store, rememberGame, nameFor, lastName, ago, titleCase, toast, setTurnBadge, reconnectDelay } from "./util.js";
-import { api, ApiError } from "./api.js";
+import { api, ApiError, gameTitle } from "./api.js";
 import { MoveBuilder } from "./builder.js";
 import { renderBoard, pieceIcon, cssColor, ONGATE, hasHexStyles, defaultHexStyle } from "./render.js";
 import { showRules as openRules } from "./rules.js";
@@ -128,7 +128,7 @@ async function boot() {
 		render();
 		return;
 	}
-	titleBase = S.info.name;
+	titleBase = gameTitle(S.info);
 	noteServerTime(S.game.server_time);
 	resolveIdentity();
 	await Promise.all([loadPosition(), loadChat(code)]);
@@ -285,7 +285,7 @@ async function refreshGame() {
 	// definition now, with other names and colors.
 	if (S.info && S.game.game_def_id !== S.info.id) {
 		S.info = await api.gameDef(S.game.game_def_id);
-		titleBase = S.info.name;
+		titleBase = gameTitle(S.info);
 	}
 	noteServerTime(S.game.server_time);
 	resolveIdentity();

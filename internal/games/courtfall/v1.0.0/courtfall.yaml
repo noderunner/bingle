@@ -1,9 +1,10 @@
-# yaml-language-server: $schema=../../../docs/game-definition.schema.json
-id: courtfall
+# yaml-language-server: $schema=../../../../docs/game-definition.schema.json
+id: courtfall-1.0.0
 name: Courtfall
 family: courtfall
+prototype: true
 description: "A two-player arena skirmish: five exiles each, fatigue as both action economy and health, secret dice allocation in every exchange, and a personal Clear Turn that cashes the crowd's favor into victory points."
-version: 0.2.0
+version: 1.0.0
 designers: [Miles Stevenson]
 engine: ruleset
 guide:

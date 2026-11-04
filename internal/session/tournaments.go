@@ -95,6 +95,8 @@ func (m *Manager) settled(s TournamentSettings) (store.Tournament, error) {
 	if s.Format != tournament.RoundRobin && s.Format != tournament.Swiss {
 		return bad("the format is %q or %q", tournament.RoundRobin, tournament.Swiss)
 	}
+	// Every game of a tournament is played under the same rules.
+	s.GameDefID = m.catalog.Pin(s.GameDefID)
 	compiled, ok := m.catalog.Get(s.GameDefID)
 	if !ok {
 		return store.Tournament{}, fmt.Errorf("%w: %q", ErrGameDefNotFound, s.GameDefID)
@@ -132,7 +134,7 @@ func (m *Manager) settled(s TournamentSettings) (store.Tournament, error) {
 		return bad("a round robin takes as many rounds as it takes")
 	}
 	out := store.Tournament{
-		Name: name, Description: strings.TrimSpace(s.Description), GameDefID: s.GameDefID, GameName: compiled.Definition.Name, Format: s.Format,
+		Name: name, Description: strings.TrimSpace(s.Description), GameDefID: s.GameDefID, GameName: compiled.Definition.Title(), Format: s.Format,
 		ClockSeconds: s.ClockSeconds, ClockIncrement: s.ClockIncrementSeconds, GamesPerPairing: games,
 		Rated: s.Rated == nil || *s.Rated, PieRule: s.PieRule == nil || *s.PieRule,
 		MinPlayers: lo, MaxPlayers: hi, Rounds: s.Rounds,

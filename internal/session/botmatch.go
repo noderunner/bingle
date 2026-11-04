@@ -40,6 +40,7 @@ type BotMatchOptions struct {
 // a watchable pace. Spectators follow it like any game; the match stops when
 // it ends, after a long idle spell with nobody watching, or at the move cap.
 func (m *Manager) StartBotMatch(ctx context.Context, opts BotMatchOptions) (CreateGameResult, error) {
+	opts.GameDefID = m.catalog.Pin(opts.GameDefID)
 	compiled, ok := m.catalog.Get(opts.GameDefID)
 	if !ok {
 		return CreateGameResult{}, fmt.Errorf("%w: %q", ErrGameDefNotFound, opts.GameDefID)

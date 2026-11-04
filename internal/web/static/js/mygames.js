@@ -3,7 +3,7 @@
 // unfinished ones, the profile page the finished ones.
 
 import { h, rememberedGames, rememberGame, forgetGame, ago } from "./util.js";
-import { api } from "./api.js";
+import { api, gameTitle } from "./api.js";
 
 let defsPromise = null;
 
@@ -76,7 +76,7 @@ export function sortRows(rows) {
  */
 export function openGameRow(g, defs, isMine) {
 	const def = defs.find((d) => d.id === String(g.game_def_id).split("~")[0]);
-	const title = g.name || (def ? def.name : g.game_def_id);
+	const title = g.name || (def ? gameTitle(def) : g.game_def_id);
 	const names = (g.players || []).map((p) => p.name + (p.bot ? " (bot)" : ""));
 	const meta = [names.length ? names.join(" vs ") : "nobody seated yet"];
 	meta.push(g.status === "active" ? `move ${g.move_seq}` : g.lobby ? "waiting for its host" : "waiting for players");
@@ -102,7 +102,7 @@ export function gameRow(r, defs, onForget) {
 	// layout's name, then who sits at it.
 	const defId = String((r.info && r.info.game_def_id) || r.g.def);
 	const def = defs.find((d) => d.id === defId.split("~")[0]);
-	let title = def ? def.name : defId;
+	let title = def ? gameTitle(def) : defId;
 	if (defId.includes("~") && r.info && r.info.seats) {
 		title += ": " + r.info.seats.map((s) => s.label).filter(Boolean).join(", ");
 		if (/-hp$/.test(defId)) title += " + High Priests";

@@ -118,3 +118,54 @@ func TestOpen_UpgradesAV1DatabaseInPlace(t *testing.T) {
 	}
 	_ = st2.Close()
 }
+
+// What was stored under the bare id of a game that became a prototype moves to
+// the version it was played under, and nothing else moves. Opening again is
+// harmless.
+func TestOpen_PinsTheGamesOfPrototypes(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "old.db")
+	st, err := store.Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := st.Close(); err != nil {
+		t.Fatal(err)
+	}
+	raw, err := sql.Open("sqlite", path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = raw.Close() }()
+	games := map[string]struct{ def, tutorial, wantDef, wantTutorial string }{
+		"AAAAAA": {"courtfall", "", "courtfall-1.0.0", ""},
+		"BBBBBB": {"courtfall~arena", "", "courtfall-1.0.0~arena", ""},
+		"CCCCCC": {"mycelium", "mycelium/mycelium-basics", "mycelium-1.0.0", "mycelium-1.0.0/mycelium-basics"},
+		"DDDDDD": {"mycelium-1.0.0", "", "mycelium-1.0.0", ""},
+		"EEEEEE": {"courtfall-2.0.0~arena", "", "courtfall-2.0.0~arena", ""},
+		"FFFFFF": {"courtfallish", "courtfallish/x", "courtfallish", "courtfallish/x"},
+		"GGGGGG": {"tak-5x5", "tak-5x5/basics", "tak-5x5", "tak-5x5/basics"},
+	}
+	for room, g := range games {
+		if _, err := raw.Exec(`INSERT INTO games (room_code, game_def_id, board_state, tutorial) VALUES (?, ?, '{}', ?)`, room, g.def, g.tutorial); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for i := 0; i < 2; i++ {
+		st, err := store.Open(path)
+		if err != nil {
+			t.Fatalf("open %d: %v", i, err)
+		}
+		for room, g := range games {
+			got, err := st.GetGame(context.Background(), room)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got.GameDefID != g.wantDef || got.Tutorial != g.wantTutorial {
+				t.Errorf("open %d: %s is %q %q, want %q %q", i, room, got.GameDefID, got.Tutorial, g.wantDef, g.wantTutorial)
+			}
+		}
+		if err := st.Close(); err != nil {
+			t.Fatal(err)
+		}
+	}
+}

@@ -11,7 +11,7 @@ import (
 	"github.com/noderunner/bingle/internal/engine/board"
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/engine/state"
-	"github.com/noderunner/bingle/internal/games/courtfall"
+	courtfall "github.com/noderunner/bingle/internal/games/courtfall/v1.0.0"
 )
 
 const (

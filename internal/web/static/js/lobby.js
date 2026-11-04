@@ -2,6 +2,7 @@
 // bots for the seats nobody takes, and — for the host — the Start button.
 
 import { h } from "./util.js";
+import { gameTitle } from "./api.js";
 import { cssColor } from "./render.js";
 
 /** Kinds of bots that can be added, with their labels (from GET /api/bots). */
@@ -33,7 +34,7 @@ export function lobbyCard(ctx) {
 		h(
 			"div",
 			{ class: "lobby-head" },
-			h("h2", {}, info.name),
+			h("h2", {}, gameTitle(info)),
 			h("span", { class: "badge" }, `Room ${ctx.code}`),
 			h("span", { class: "badge waiting" }, full ? (startsByItself ? "Starting…" : "Ready to start") : `Waiting for ${open.length} more`)
 		)

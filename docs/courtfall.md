@@ -11,7 +11,7 @@ Courtfall is the first game whose rules are **written in Go** (a
 `state.Ruleset`, see [ADR 0025](decisions/0025-go-rulesets-and-hidden-information.md))
 because it needs things the declarative DSL does not have: per-unit
 conditions, dice, hidden choices and turns made of many small decisions. Its
-definition (`internal/games/courtfall/courtfall.yaml`) still declares the
+definition (`internal/games/courtfall/v1.0.0/courtfall.yaml`; Courtfall is a prototype, with a folder per version of its rules, see [ADR 0098](decisions/0098-prototype-games-and-rules-versions.md)) still declares the
 board, seats, pieces and the display legend, so the lobby, the web UI, the
 REST/WebSocket API, the MCP server, the bots and the training environments
 treat it like any other game.
@@ -70,9 +70,9 @@ definition, so a variant can change them with a JSON merge patch.
 
 Courtfall offers one (`dsl.GameDefinition.Options`, ADR 0028 and ADR 0061): **Standard arena**
 (`standard-arena`), which lays a fixed, half-turn-symmetric terrain instead of drafting one and
-starts the game at the choice of Courts. The table that takes it plays `courtfall~arena`, derived
+starts the game at the choice of Courts. The table that takes it plays `courtfall-1.0.0~arena`, derived
 by the ruleset's own `Derive`/`FromSuffix` from a patch of `params.arena`; the plain game keeps its
-plain id and its draft. The layout is in `internal/games/courtfall/arena.go`, and a test checks it
+plain id and its draft. The layout is in `internal/games/courtfall/v1.0.0/arena.go`, and a test checks it
 against the draft's own constraints and its symmetry.
 
 It is also what a batch of bot games wants: the draft is ten decisions of noise before every game,

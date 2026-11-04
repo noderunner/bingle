@@ -1,8 +1,10 @@
-# yaml-language-server: $schema=../../../docs/game-definition.schema.json
-id: mycelium
+# yaml-language-server: $schema=../../../../docs/game-definition.schema.json
+id: mycelium-1.0.0
+family: mycelium
+prototype: true
 name: Mycelium
 description: "Two fungal colonies on a hexagonal board: place nodes, take the centre to start a confluence, and spread your clusters to convert your rival's nodes until one colony is gone."
-version: 0.1.0
+version: 1.0.0
 designers: [Miles Stevenson]
 engine: ruleset
 rules:

@@ -15,7 +15,7 @@ import (
 	"github.com/noderunner/bingle/internal/engine/board"
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/engine/state"
-	"github.com/noderunner/bingle/internal/games/mycelium"
+	mycelium "github.com/noderunner/bingle/internal/games/mycelium/v1.0.0"
 )
 
 func game(t testing.TB) *catalog.CompiledGame {

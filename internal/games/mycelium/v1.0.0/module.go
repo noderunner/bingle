@@ -1,4 +1,4 @@
-// Package mycelium ships Mycelium (Miles Stevenson, 2024): a game of dueling
+// Package mycelium ships version 1.0.0 of Mycelium (Miles Stevenson, 2024): a game of dueling
 // fungal colonies on a hexagonal board. Players place nodes; a node placed in
 // the centre triggers a confluence turn in which clusters spread and convert
 // enemy nodes. Mycelium has no secrets and no chance.
@@ -38,5 +38,5 @@ func Module() catalog.Module {
 	if err != nil {
 		panic(err)
 	}
-	return catalog.Module{ID: "mycelium", Definition: definition(), Rules: New(), Assets: sub, Tutorials: tutorials}
+	return catalog.Module{ID: "mycelium-1.0.0", Definition: definition(), Rules: New(), Assets: sub, Tutorials: tutorials}
 }

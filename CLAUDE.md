@@ -66,7 +66,7 @@ and should never look for.
 - `CHANGELOG.md` gets an entry, written for the people who play rather than for developers. The
   newest entry's version is `internal/version`. Bump `internal/version` for engine or platform
   changes and each game's definition `version` separately; minor or patch by judgement, major
-  only when told.
+  only when told. A prototype's rules change in a new version folder instead (`docs/dsl.md`).
 - `docs/` updated, and an ADR in `docs/decisions/` when the change settles a question rather than
   just adding a mechanism.
 - Push back, in the PR or the issue, on anything that hurts performance, simplicity, security or

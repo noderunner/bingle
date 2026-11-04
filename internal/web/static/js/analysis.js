@@ -8,7 +8,7 @@
 // closely) a report of its own at /batches/{id}.
 
 import { h, clear, store, ago } from "./util.js";
-import { api, whoAmI } from "./api.js";
+import { api, gameTitle, whoAmI } from "./api.js";
 import { rateBars } from "./charts.js";
 import { renderMarkdown } from "./markdown.js";
 
@@ -65,7 +65,7 @@ function seatRows(info, chosen) {
 function form(host) {
 	const s = setup();
 	const gameSel = h("select", { id: "analysis-game", "aria-label": "Game to study" });
-	for (const d of defs) gameSel.append(h("option", { value: d.id }, `${d.name}${d.seats_required ? ` · ${d.seats_required} players` : ""}`));
+	for (const d of defs) gameSel.append(h("option", { value: d.id }, `${gameTitle(d)}${d.seats_required ? ` · ${d.seats_required} players` : ""}`));
 	if (defs.some((d) => d.id === s.game)) gameSel.value = s.game;
 	const count = h("input", { id: "analysis-games", type: "number", min: "1", max: "5000", value: String(s.games), "aria-label": "How many games" });
 	const rotate = h("input", { id: "analysis-rotate", type: "checkbox" });

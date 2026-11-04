@@ -725,7 +725,7 @@ func (n *notifier) suppressed(kind, ah string) {
 func (n *notifier) gameName(defID string) string {
 	base, _, _ := strings.Cut(defID, "~")
 	if g, ok := n.m.catalog.Get(base); ok {
-		return g.Definition.Name
+		return g.Definition.Title()
 	}
 	return "your game"
 }

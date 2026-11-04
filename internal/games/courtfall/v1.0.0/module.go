@@ -1,4 +1,4 @@
-// Package courtfall ships Courtfall (Third Edition), a two-player arena
+// Package courtfall ships version 1.0.0 of Courtfall (Third Edition), a two-player arena
 // skirmish of five exiles per side: fatigue as action economy and health,
 // secret simultaneous dice allocation in every exchange, momentum as a
 // spendable resource and a personal Clear Turn that cashes it in.
@@ -38,7 +38,7 @@ func Module() catalog.Module {
 	if err != nil {
 		panic(err)
 	}
-	return catalog.Module{ID: "courtfall", Definition: definition(), Rules: New(), Assets: sub}
+	return catalog.Module{ID: "courtfall-1.0.0", Definition: definition(), Rules: New(), Assets: sub}
 }
 
 // freshSeed draws a dice generator state from the system's entropy.
