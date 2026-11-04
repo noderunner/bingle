@@ -4,6 +4,20 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.62.0 - 2026-11-04
+
+### Bingle Core 0.62.0
+- **Game Options** is shorter and tidier, with fewer words all round.
+- **All Settings** no longer mentions email to guests.
+
+### Cthulhu Wars 0.9.1
+- **Cult cards say more with less.** The cult's glyph replaces the coloured square, the player's name and the card's details are
+  in the cult's colour, the summary counts spellbooks, and a line replaces each section's title.
+- **The impulse card** shows the player's name in their cult's colour, with its glyph.
+- **The turn order** left the bar above the map, as the cult cards are already in that order. The first player's card shows the
+  direction of play.
+- **Pass just says Pass.** If you still have Power, the card asks you to confirm that you will lose it.
+
 ## 0.61.0 - 2026-11-04
 
 ### Bingle Core 0.61.0

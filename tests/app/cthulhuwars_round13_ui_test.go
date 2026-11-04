@@ -314,12 +314,12 @@ func TestWebCthulhuWars_AHeldNeutralSpellbookCoversARequirement(t *testing.T) {
 		t.Errorf("%d tiles with one neutral book: one held, five requirements, six books to come", n)
 	}
 	count := func(seat string) string {
-		return evalString(t, ctx, `document.querySelector('#seat-`+seat+` [data-card="books"] .faction-heading span').textContent.trim()`)
+		return evalString(t, ctx, `document.querySelector('#seat-`+seat+` [data-counter="books"]').textContent.trim()`)
 	}
-	if got := count("1"); got != "1/6" {
+	if got := count("1"); got != "1" {
 		t.Errorf("seat 1 holds %q", got)
 	}
-	if got := count("2"); got != "6/6" {
+	if got := count("2"); got != "6" {
 		t.Errorf("seat 2 holds %q", got)
 	}
 	if n := evalInt(t, ctx, `document.querySelectorAll('#seat-2 .spell-tile').length`); n != 6 {

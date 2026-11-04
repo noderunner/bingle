@@ -286,7 +286,7 @@ func TestWebCthulhuWars_ReactionSettingsOfAPlayerWhoHoldsOne(t *testing.T) {
 		t.Error("the defaults: asked when targeted only")
 	}
 	got := evalString(t, ctx, `document.getElementById("options-reactions").textContent`)
-	if !strings.Contains(got, "Devolve") || !strings.Contains(got, "passed for you") || !strings.Contains(got, "When I'm targeted") || !strings.Contains(got, "You are asked about Devolve when an action is aimed at you") || strings.Contains(got, "not earned") {
+	if !strings.Contains(got, "Devolve") || !strings.Contains(got, "Passed for you") || !strings.Contains(got, "When I'm targeted") || !strings.Contains(got, "Asked when an action is aimed at you") || strings.Contains(got, "not earned") {
 		t.Errorf("reaction settings = %q", got)
 	}
 	// Open the list, choose the Crawling Chaos player, then everyone.
@@ -303,7 +303,7 @@ func TestWebCthulhuWars_ReactionSettingsOfAPlayerWhoHoldsOne(t *testing.T) {
 	if err := chromedp.Run(ctx, chromedp.Click("#ask-devolve-all", chromedp.ByID)); err != nil {
 		t.Fatal(err)
 	}
-	waitJS(t, ctx, "everyone", `document.getElementById("ask-devolve-state").textContent.indexOf("after every other player's action") >= 0`, 10*time.Second)
+	waitJS(t, ctx, "everyone", `document.getElementById("ask-devolve-state").textContent.indexOf("Asked after every action") >= 0`, 10*time.Second)
 	waitReactionSettings(t, ctx, baseURL, room, "everyone", func(c reactionChoice) bool { return c.AskAll })
 	// And back: switching it off returns to the chosen player.
 	if err := chromedp.Run(ctx, chromedp.Click("#ask-devolve-all", chromedp.ByID)); err != nil {
@@ -314,7 +314,7 @@ func TestWebCthulhuWars_ReactionSettingsOfAPlayerWhoHoldsOne(t *testing.T) {
 	if err := chromedp.Run(ctx, chromedp.Click("#ask-devolve-seat-2", chromedp.ByID), chromedp.Click("#ask-devolve-targeted", chromedp.ByID)); err != nil {
 		t.Fatal(err)
 	}
-	waitJS(t, ctx, "never asked", `document.getElementById("ask-devolve-state").textContent.indexOf("always passed for you") >= 0 && !document.querySelector("#options-reactions .auto-pass-option input:checked")`, 10*time.Second)
+	waitJS(t, ctx, "never asked", `document.getElementById("ask-devolve-state").textContent.indexOf("Never asked") >= 0 && !document.querySelector("#options-reactions .auto-pass-option input:checked")`, 10*time.Second)
 	waitReactionSettings(t, ctx, baseURL, room, "never asked", func(c reactionChoice) bool { return !c.Targeted && !c.AskAll && len(c.AskSeats) == 0 })
 	if err := chromedp.Run(ctx, chromedp.Click("#ask-devolve-targeted", chromedp.ByID)); err != nil {
 		t.Fatal(err)
@@ -377,13 +377,13 @@ func TestWebCthulhuWars_ReactionSettingsExistBeforeTheSpellbookIsEarned(t *testi
 	openGameAs(t, ctx, baseURL, room, "cthulhu-wars", "Alice")
 	openOptions(t, ctx)
 	waitJS(t, ctx, "reaction settings", `document.getElementById("options-reactions") && document.getElementById("ask-devolve-all")`, 10*time.Second)
-	if got := evalString(t, ctx, `document.getElementById("options-reactions").textContent`); !strings.Contains(got, "Devolve (not earned yet)") || !strings.Contains(got, "Not earned yet") {
+	if got := evalString(t, ctx, `document.getElementById("options-reactions").textContent`); !strings.Contains(got, "Devolve (not earned yet)") {
 		t.Errorf("reaction settings = %q", got)
 	}
 	if err := chromedp.Run(ctx, chromedp.Click("#ask-devolve-all", chromedp.ByID)); err != nil {
 		t.Fatal(err)
 	}
-	waitJS(t, ctx, "saved", `document.getElementById("ask-devolve-state").textContent.indexOf("after every other player's action") >= 0`, 10*time.Second)
+	waitJS(t, ctx, "saved", `document.getElementById("ask-devolve-state").textContent.indexOf("Asked after every action") >= 0`, 10*time.Second)
 	waitReactionSettings(t, ctx, baseURL, room, "everyone", func(c reactionChoice) bool { return c.AskAll })
 	// One bar for the viewer's own cult, not one per player.
 	if n := evalInt(t, ctx, `document.querySelectorAll("#reactions-devolve").length`); n != 1 {
@@ -520,7 +520,7 @@ func TestWebCthulhuWars_TheReactionChoiceCanBeChangedWhileOthersPlay(t *testing.
 	if err := chromedp.Run(ctx, chromedp.Click("#ask-devolve-all", chromedp.ByID)); err != nil {
 		t.Fatal(err)
 	}
-	waitJS(t, ctx, "on", `document.getElementById("ask-devolve-state").textContent.indexOf("after every other player's action") >= 0`, 10*time.Second)
+	waitJS(t, ctx, "on", `document.getElementById("ask-devolve-state").textContent.indexOf("Asked after every action") >= 0`, 10*time.Second)
 
 	// Alice passes and the three bots play on: a stream of moves, and of
 	// redraws of the page, while she changes her mind again and again.

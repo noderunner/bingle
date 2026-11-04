@@ -820,7 +820,14 @@ kbd { font: 600 0.8em ui-monospace, Menlo, Consolas, monospace; border: 1px soli
 .round-item.alarm { color: var(--danger); font-weight: 700; }
 .faction-cards { display: flex; flex-direction: column; gap: 0.5rem; }
 .faction-heading { margin: 0 0 0.3rem; padding-bottom: 0.15rem; font-size: 0.86rem; font-weight: 700; border-bottom: 1px solid var(--border); }
-.seat-more { margin-top: 0.5rem; }
+.seat-more { margin-top: 0.5rem; color: var(--seat-ink, inherit); }
+.seat-more .muted { color: inherit; opacity: 0.8; }
+.name.in-seat-ink { color: var(--seat-ink); font-weight: 700; }
+.faction-card.plain { padding-top: 0.5rem; border-top: 1px solid var(--border); }
+.faction-card.plain:first-child { padding-top: 0; border-top: 0; }
+.first-mark { flex: none; font-weight: 700; line-height: 1; }
+.impulse-seat { display: flex; align-items: center; gap: 0.35rem; }
+
 .seat-more[hidden] { display: none; }
 .expand-toggle { display: block; width: 100%; min-height: 0; margin-top: 0.2rem; padding: 0.1rem 0; border: 0; background: transparent; color: var(--muted); font-size: 0.7rem; line-height: 1; box-shadow: none; }
 .expand-toggle:hover { color: var(--text); background: var(--surface-2); }

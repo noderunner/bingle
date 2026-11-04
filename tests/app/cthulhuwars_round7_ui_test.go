@@ -51,8 +51,8 @@ func TestWebCthulhuWars_ActionButtonsShowTheirCostAndTheirRuleOnHover(t *testing
 	if got := evalString(t, ctx, `document.getElementById("action-pass").textContent`); strings.Contains(got, "Power") {
 		t.Errorf("the Pass button still says %q", got)
 	}
-	if n := evalInt(t, ctx, `document.querySelectorAll('#action-gate .summon-cost svg, #action-pass svg').length`); n != 2 {
-		t.Errorf("%d Power icons on Build Gate and Pass, want 2", n)
+	if n := evalInt(t, ctx, `document.querySelectorAll('#action-gate .summon-cost svg').length`); n != 1 {
+		t.Errorf("%d Power icons on Build Gate, want 1", n)
 	}
 	if got := evalString(t, ctx, `document.getElementById("action-gate").getAttribute("aria-label")`); got != "Build Gate, 3 Power" {
 		t.Errorf("the Gate's name for a screen reader is %q", got)
@@ -133,9 +133,6 @@ func TestWebCthulhuWars_TheUnitsOfTheCultAreAllListedAndThoseAwayAreGreyedOut(t 
 	}
 	if n := evalInt(t, ctx, `document.querySelectorAll('#pool-1 .pool-unit.away[data-piece="cultist"]').length`); n != 4 {
 		t.Errorf("%d Acolytes away, want 4", n)
-	}
-	if got := evalString(t, ctx, `document.querySelector('#seat-1 [data-card="units"] .faction-heading').textContent`); !strings.Contains(got, "10 in the pool") {
-		t.Errorf("summary = %q", got)
 	}
 	// An icon away says where that unit is.
 	hoverOver(t, ctx, `#pool-1 .pool-unit.away[data-piece="cultist"]`)

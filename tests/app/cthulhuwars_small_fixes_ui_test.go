@@ -56,8 +56,8 @@ func TestWebCthulhuWars_TheCultCardsFollowTheOrderOfPlay(t *testing.T) {
 		t.Errorf("%d glyphs on four cards", n)
 	}
 	waitJS(t, ctx, "the glyphs to load", `[...document.querySelectorAll(".seat-glyph")].every(i => i.complete && i.naturalWidth > 0)`, 10*time.Second)
-	if got := evalString(t, ctx, `document.querySelector("#seat-1 .seat-head .swatch").nextElementSibling.className`); got != "seat-glyph" {
-		t.Errorf("after the swatch: %q", got)
+	if got := evalString(t, ctx, `document.querySelector("#seat-1 .seat-head").firstElementChild.className`); got != "seat-glyph" {
+		t.Errorf("first on the card: %q", got)
 	}
 	// A human's card no longer spells out the faction; the glyph says it on hover.
 	if n := evalInt(t, ctx, `document.querySelectorAll("#seat-1 .seat-faction").length`); n != 0 {
@@ -81,7 +81,7 @@ func TestWebCthulhuWars_ChoosingAStartPinkAndGrowth(t *testing.T) {
 	collectJSErrors(ctx, &mu, &jsErrors)
 	cwTable(t, ctx, baseURL, "cthulhu-wars", map[string]any{"factions": []any{"tt", "gc", "cc", "bg"}}, threeBots)
 	waitJS(t, ctx, "the prompt", `document.getElementById("impulse-card") && document.getElementById("impulse-card").textContent.includes("Choose an empty area marked with a faction glyph where your cult begins.")`, 30*time.Second)
-	if got := evalString(t, ctx, `getComputedStyle(document.querySelector("#seat-1 .swatch")).backgroundColor`); got != "rgb(234, 139, 171)" {
+	if got := evalString(t, ctx, `document.getElementById("seat-1").style.getPropertyValue("--seat-ink")`); !strings.Contains(got, "--piece-brown-fill") {
 		t.Errorf("the Tcho-Tcho's colour is %s", got)
 	}
 	el := `document.querySelector('#seat-1 [data-counter="growth"]')`

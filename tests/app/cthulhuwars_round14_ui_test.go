@@ -212,12 +212,12 @@ func TestWebCthulhuWars_EveryReactionHasItsOwnBoxesAndMadnessStartsTicked(t *tes
 	}
 	// A box of one reaction leaves the other alone.
 	clickSel(t, ctx, "#ask-unspeakable-oath-all")
-	waitJS(t, ctx, "the Oath asks about everything", `document.getElementById("ask-unspeakable-oath-state").textContent.indexOf("after every other player's action") >= 0`, 10*time.Second)
+	waitJS(t, ctx, "the Oath asks about everything", `document.getElementById("ask-unspeakable-oath-state").textContent.indexOf("Asked after every action") >= 0`, 10*time.Second)
 	if !checked("ask-madness-all") {
 		t.Error("ticking the Oath's box unticked Madness")
 	}
 	clickSel(t, ctx, "#ask-madness-all")
-	waitJS(t, ctx, "Madness is asked less", `document.getElementById("ask-madness-state").textContent.indexOf("after every other player's action") < 0`, 10*time.Second)
+	waitJS(t, ctx, "Madness is asked less", `document.getElementById("ask-madness-state").textContent.indexOf("Asked after every action") < 0`, 10*time.Second)
 	if !checked("ask-unspeakable-oath-all") {
 		t.Error("unticking Madness' box unticked the Oath's")
 	}

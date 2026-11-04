@@ -48,6 +48,8 @@ const S = {
 	legal: [],
 	builder: new MoveBuilder([]),
 	moveQueue: null, // {from, units: Map(piece -> count)}: the units of a Move on their way to a destination
+	passAsked: false, // Pass was pressed, and the card asks whether to give up the Power left
+	passConfirmed: false,
 	moveGroup: null, // {count, seq}: how many steps the last destination sent, and where that left the move list
 	preview: null, // {notation, cells} for a complete, not-yet-submitted move
 	previewToken: 0,
@@ -301,6 +303,7 @@ function manualActions() {
 }
 
 async function loadLegal() {
+	S.passAsked = false;
 	S.builder = new MoveBuilder([]);
 	S.preview = null;
 	S.legal = [];
@@ -757,11 +760,23 @@ function choosePiece(piece) {
 	afterBuilderChange();
 }
 
+/** Whether a Pass would give up Power: Cthulhu Wars asks first, as an impulse of its own. */
+function passCostsPower(id) {
+	return id === "pass" && !inAnalysis() && !S.tut && !!seatGlyph(actingSeat()) && powerOf(actingSeat()) > 0;
+}
+
 function chooseAction(id) {
 	if (!actingSeat()) return;
 	if (S.tut && !tutorialAllows("action", id)) return;
 	const b = activeBuilder();
 	if (!b.nextActions().includes(id)) return;
+	if (passCostsPower(id) && !S.passConfirmed) {
+		S.passAsked = true;
+		render();
+		return;
+	}
+	S.passConfirmed = false;
+	S.passAsked = false;
 	b.push("action", id);
 	afterBuilderChange();
 }
@@ -1032,6 +1047,7 @@ function closeUnitInfo() {
 }
 
 function resetMove() {
+	S.passAsked = false;
 	S.moveQueue = null;
 	const b = activeBuilder();
 	b.reset();
@@ -1042,6 +1058,11 @@ function resetMove() {
 }
 
 function undoStep() {
+	if (S.passAsked) {
+		S.passAsked = false;
+		render();
+		return;
+	}
 	if (S.moveQueue) {
 		S.moveQueue = null;
 		render();
@@ -2085,6 +2106,14 @@ function impulseTitle() {
 	return S.mine.length > 1 ? `${name} (${seatLabel(seat)})` : name;
 }
 
+/** The heading of an impulse: the seat's name, in a faction's colour and with its glyph where it has them. */
+function impulseHeading() {
+	const seat = S.game.impulse_seat;
+	const glyph = seatGlyph(seat);
+	if (!glyph) return h("h3", { id: "impulse-title" }, impulseTitle());
+	return h("h3", { id: "impulse-title", class: "impulse-seat", style: `color: ${seatInk(seat)}` }, glyph, impulseTitle());
+}
+
 /** What a highlighted place is called on this board. */
 function cellWord() {
 	const { style, kind } = S.info.board;
@@ -2170,6 +2199,7 @@ function impulseText() {
 	const rv = rulesetView();
 	const said = rv && (rv.impulse || rv.prompt);
 	if (!isMyImpulse()) return said || genericImpulse();
+	if (S.passAsked) return `You will lose your ${powerOf(S.game.impulse_seat)} unspent Power.`;
 	if (S.moveQueue) return `Select remaining units in ${areaName(S.moveQueue.from)} to move, followed by a destination.`;
 	const b = activeBuilder();
 	if (!isRuleset()) return genericActingImpulse(b);
@@ -2192,9 +2222,9 @@ function impulseCard(note, choices = []) {
 	const impulse = onImpulse();
 	const text = bar.textContent.trim();
 	if (!acting && !impulse && !text && !note && !choices.length) return null;
-	const title = inAnalysis() ? "Analysis" : !isLive() ? (S.viewSeq === null ? "History" : `History: ${S.viewSeq}`) : impulse ? impulseTitle() : g.status === "finished" ? "Game over" : g.status === "waiting" ? "Waiting" : "Actions";
+	const title = inAnalysis() ? "Analysis" : !isLive() ? (S.viewSeq === null ? "History" : `History: ${S.viewSeq}`) : g.status === "finished" ? "Game over" : g.status === "waiting" ? "Waiting" : "Actions";
 	const card = h("section", { class: "card impulse-card" + (acting ? " acting" : ""), id: "impulse-card", "aria-label": "Impulse" });
-	card.append(h("h3", { id: "impulse-title" }, title));
+	card.append(impulse ? impulseHeading() : h("h3", { id: "impulse-title" }, title));
 	if (impulse) card.append(h("p", { class: "impulse-text", id: "impulse-text" }, impulseText()));
 	if (note) {
 		card.classList.toggle("over", note.over);
@@ -2393,7 +2423,7 @@ function renderMobile(seats, bottomSeat) {
 		const gate = identityGate();
 		if (gate) actions.append(gate);
 	}
-	if (onImpulse()) actions.append(h("h3", { id: "impulse-title" }, impulseTitle()), h("p", { class: "impulse-text", id: "impulse-text" }, impulseText()));
+	if (onImpulse()) actions.append(impulseHeading(), h("p", { class: "impulse-text", id: "impulse-text" }, impulseText()));
 	actions.append(moveBar());
 	for (const part of [unitInfoCard(), battlePanel(), exchangePanel()]) if (part) actions.append(part);
 
@@ -2496,7 +2526,7 @@ function renderMobileCards(seats, bottomSeat) {
 		const gate = identityGate();
 		if (gate) play.append(gate);
 	}
-	if (onImpulse()) play.append(h("h3", { id: "impulse-title" }, impulseTitle()), h("p", { class: "impulse-text", id: "impulse-text" }, impulseText()));
+	if (onImpulse()) play.append(impulseHeading(), h("p", { class: "impulse-text", id: "impulse-text" }, impulseText()));
 	play.append(moveBar());
 	const table = drawCardTable(ctx);
 	S.ctPrev = table.state;
@@ -2990,6 +3020,19 @@ function seatGlyph(seat) {
 	return h("img", { class: "seat-glyph", src: `/api/game-defs/cthulhu-wars/assets/guide/glyphs/${key}.svg`, alt: seatLabel(seat), title: seatLabel(seat), width: 22, height: 22, decoding: "sync" });
 }
 
+/** The direction of play, beside the first player's name. */
+function firstPlayerMark(seat) {
+	const rv = rulesetView();
+	if (!rv || rv.first !== seat || !rv.dir) return null;
+	const word = rv.dir < 0 ? "counter-clockwise" : "clockwise";
+	return h("span", { class: "first-mark", id: "first-mark", title: `First player, playing ${word}`, "aria-label": `First player, playing ${word}` }, rv.dir < 0 ? "↺" : "↻");
+}
+
+/** A seat's colour for words: mixed with the text colour, so that it can be read on any theme. */
+function seatInk(seat) {
+	return `color-mix(in srgb, var(--piece-${cssColor(colorOf(seat))}-fill) 72%, var(--text))`;
+}
+
 function seatStrip(seat) {
 	const color = colorOf(seat);
 	const si = seatInfo(seat);
@@ -2999,10 +3042,13 @@ function seatStrip(seat) {
 	const off = seatDisconnected(seat);
 	const strip = h("div", { class: "seat-strip" + (impulseSeat ? " on-impulse" : "") + (off ? " disconnected" : ""), id: `seat-${seat}`, "data-seat": seat });
 	const head = h("div", { class: "seat-head" });
-	head.append(seatSwatch(seat, color));
 	const glyph = seatGlyph(seat);
-	if (glyph) head.append(glyph);
-	head.append(h("span", { class: "name" }, seatName(seat) || "(open seat)"));
+	// A faction's glyph says what the colour box would, and its colour is in the words.
+	head.append(glyph || seatSwatch(seat, color));
+	if (glyph) strip.style.setProperty("--seat-ink", seatInk(seat));
+	const direction = glyph ? firstPlayerMark(seat) : null;
+	if (direction) head.append(direction);
+	head.append(h("span", { class: "name" + (glyph ? " in-seat-ink" : "") }, seatName(seat) || "(open seat)"));
 	head.append(h("span", { class: "badge waiting seat-conn", title: "No connection to this player right now. It may be back in a moment." }, off ? "disconnected" : ""));
 	// A seat of two colours says which it is: the players know each other by these.
 	if (seatGradient(seat) && !(seatName(seat) || "").includes(seatLabel(seat))) head.append(seatWord(seat));
@@ -3075,8 +3121,6 @@ function seatStrip(seat) {
 		const stats = h("span", { class: "seat-stats" });
 		head.append(stats);
 		for (const c of sv.counters || []) {
-			// The spellbooks are listed in their own section below.
-			if (c.id === "books") continue;
 			// A counter may say what its value is made of (the Doom: Gates, Rituals, gifts, Elder Signs).
 			const title = `${c.label}: ${c.value}${c.max ? " of " + c.max : ""}${c.note ? " (" + c.note + ")" : ""}`;
 			const icon = statIcon(c.id, c.label, 15);
@@ -3279,10 +3323,10 @@ function askSentence(r, ability) {
 	if (c.targeted) when.push("an action is aimed at you");
 	if (who.length) when.push(`${joinList(who)} acts`);
 	let s;
-	if (c.ask_all) s = `You are asked about ${ability.name} after every other player's action.`;
-	else if (when.length) s = `You are asked about ${ability.name} when ${joinList(when)}; every other time it is passed for you.`;
-	else s = `${ability.name} is always passed for you: you are never asked.`;
-	return ability.held ? s : "Not earned yet — nothing is asked until you have it. Then: " + s.charAt(0).toLowerCase() + s.slice(1);
+	if (c.ask_all) s = "Asked after every action.";
+	else if (when.length) s = `Asked when ${joinList(when)}.`;
+	else s = "Never asked.";
+	return s;
 }
 
 /** A round "?" button that opens a modal (open: the function that shows it). */
@@ -3366,7 +3410,7 @@ function buildReactionDock(host, r) {
 		h(
 			"p",
 			{ class: "small muted dock-intro" },
-			"Reactions are passed for you, so the game never waits on you. For each one, choose when you would like to be asked instead:"
+			"Passed for you, unless you choose when to be asked:"
 		)
 	);
 	for (const a of r.abilities) host.append(buildAbilityChoice(a, r));
@@ -3604,14 +3648,14 @@ async function loadAutoPlay() {
 }
 
 function autoplayState(a) {
-	if (!a.enabled) return "Off. Switch it on and a tactical bot plays for you when it is your turn and you have not acted within the time above.";
+	if (!a.enabled) return "Off.";
 	const wait = timeoutText(a.timeout_seconds);
 	if (a.deadline && isActive() && S.game.impulse_seat === S.me.seat) {
 		const at = new Date(a.deadline);
 		const left = at.getTime() - (Date.now() + S.skewMs);
-		return `On. It is your turn: a tactical bot plays for you at ${at.toLocaleString()} (${left > 0 ? "in " + formatClock(left) : "now"}) unless you act first.`;
+		return `On. A bot plays for you ${left > 0 ? "in " + formatClock(left) : "now"} unless you act.`;
 	}
-	return `On. If it is your turn and you do not act within ${wait}, a tactical bot plays for you.`;
+	return `On. A bot plays if you wait ${wait}.`;
 }
 
 function showAutoPlayHelp() {
@@ -3697,7 +3741,7 @@ function buildAutoPlay(host) {
 	const head = h(
 		"div",
 		{ class: "ask-row" },
-		h("label", { class: "check", title: "A tactical bot plays your turn if you take too long" }, on, h("span", {}, "Let a tactical bot play my turn if I take too long")),
+		h("label", { class: "check", title: "A tactical bot plays your turn if you take too long" }, on, h("span", {}, "Let a bot play if I take too long")),
 		helpButton("autoplay-help", "How does the Auto-Play Timeout work?", showAutoPlayHelp)
 	);
 	const read = () => {
@@ -3767,7 +3811,13 @@ function saveAutoPlay(patch) {
 
 function factionCards(seat, sv) {
 	const wrap = h("div", { class: "faction-cards", "data-seat": seat });
+	// A faction's sections are told apart by a rule between them: the numbers are in the summary.
+	const plain = !!seatGlyph(seat);
 	const section = (id, title, count, body) => {
+		if (plain) {
+			if (body) wrap.append(h("section", { class: "faction-card plain", "data-card": id, "aria-label": title }, body));
+			return;
+		}
 		wrap.append(h("section", { class: "faction-card", "data-card": id }, h("h4", { class: "faction-heading" }, title, count ? h("span", { class: "muted small" }, ` ${count}`) : null), body));
 	};
 	const rowsBody = (card) => {
@@ -4075,17 +4125,6 @@ function roundBar() {
 	bar.append(steps);
 	if (v.phase === "over") bar.append(h("span", { class: "round-item alarm" }, "Game over"));
 
-	// Who plays when, in the direction chosen.
-	const order = v.order ? (v.dir < 0 ? v.order.ccw : v.order.cw) : null;
-	if (order && order.length && v.phase !== "over") {
-		const item = h(
-			"span",
-			{ class: "round-item turn-order", id: "turn-order", title: "Turn order from the first player, in the direction of play. The cards of the cults follow it." },
-			h("span", { class: "order-dir" }, v.dir < 0 ? "↺ Counter-clockwise" : "↻ Clockwise"),
-			orderLine(order)
-		);
-		bar.append(item);
-	}
 	if (v.ritual && v.ritual.track && v.ritual.track.length) bar.append(ritualTrack(v.ritual));
 	if (v.bag) {
 		bar.append(
@@ -4378,6 +4417,22 @@ function moveBar() {
 		return bar;
 	}
 	const b = activeBuilder();
+
+	if (acting && S.passAsked) {
+		const confirm = () => {
+			S.passConfirmed = true;
+			chooseAction("pass");
+		};
+		bar.append(
+			h(
+				"span",
+				{ class: "move-actions" },
+				h("button", { class: "primary", id: "pass-confirm", onclick: confirm }, "Pass"),
+				h("button", { id: "undo-step", class: "ghost", onclick: undoStep, title: "Keep the Power, and choose again (Backspace)" }, "↶ Back")
+			)
+		);
+		return bar;
+	}
 
 	if (acting && S.moveQueue) {
 		bar.append(moveQueueDisplay(), h("span", { class: "move-actions" }, h("button", { id: "undo-step", class: "ghost", onclick: undoStep, title: "Put these units back (Backspace)" }, "↶ Back")));
@@ -5074,18 +5129,18 @@ function initOptions() {
 	);
 	host.append(rules, opts);
 	optionsWin = createOptionsWindow({
-		title: "Game options",
+		title: "Game Options",
 		onToggle: (open) => opts.setAttribute("aria-expanded", open ? "true" : "false"),
 	});
 	opts.addEventListener("click", () => optionsWin.toggle());
 	for (const [id, heading] of [
 		["reactions", "Reactions"],
 		["autoplay", "Auto-Play Timeout"],
-		["notify", "Email notifications"],
-		["layers", "Map layers"],
+		["notify", "Email Notifications"],
+		["layers", "Map Layers"],
 		["display", "Display"],
 		["tools", "Tools"],
-		["share", "Share this game"],
+		["share", "Share This Game"],
 		["table", "Table"],
 		["game", "Game"],
 	]) {
@@ -5139,11 +5194,11 @@ function refreshOptions() {
 		const ice = !!(S.info.params && S.info.params.ice_glyphs);
 		w.update("layers", ["v4", glyphLayerOn(), ice], (el) => {
 			el.append(
-				settingToggle("names", "opt-layer-names", "Area names", "bingle.layer.names"),
+				settingToggle("names", "opt-layer-names", "Area Names", "bingle.layer.names"),
 				settingToggle("glyphs", "opt-layer-glyphs", "Glyphs", "bingle.layer.glyphs"),
 				settingToggle("sigils", "opt-layer-sigils", "Sigils", "bingle.layer.sigils"),
 				settingToggle("units", "opt-layer-units", "Units", "bingle.layer.units"),
-				ice ? settingToggle("ice", "opt-layer-ice", "Glacier glyphs", "bingle.layer.ice") : null
+				...(ice ? [settingToggle("ice", "opt-layer-ice", "Glacier Glyphs", "bingle.layer.ice")] : [])
 			);
 		});
 	}
@@ -5158,15 +5213,15 @@ function refreshOptions() {
 				setLayoutChoice(layoutSel.value);
 				render();
 			});
-			el.append(h("label", { class: "field" }, h("span", { class: "small" }, "Page layout"), layoutSel));
+			el.append(h("label", { class: "field" }, h("span", { class: "small" }, "Page Layout"), layoutSel));
 		}
-		el.append(settingToggle("confirm", "opt-confirm", "Confirm a move with Submit before it counts, as it cannot be taken back", "bingle.confirm"));
+		el.append(settingToggle("confirm", "opt-confirm", "Confirm moves with Submit", "bingle.confirm"));
 		if (!areas) {
-			el.append(settingToggle("coords", "opt-coords", "Show coordinates", "bingle.coords"));
+			el.append(settingToggle("coords", "opt-coords", "Coordinates", "bingle.coords"));
 		}
 		el.append(
-			settingToggle("hints", "opt-hints", "Highlight legal squares", "bingle.hints"),
-			settingToggle("lastMove", "opt-lastmove", "Highlight the last move", "bingle.lastMove"),
+			settingToggle("hints", "opt-hints", "Highlight legal moves", "bingle.hints"),
+			settingToggle("lastMove", "opt-lastmove", "Highlight last move", "bingle.lastMove"),
 			settingToggle("animate", "opt-animate", "Animate moves", "bingle.animate")
 		);
 		if (hasHexStyles(S.info)) {
@@ -5178,7 +5233,7 @@ function refreshOptions() {
 				store.set(hexStyleKey(), styleSel.value);
 				render();
 			});
-			el.append(h("label", { class: "field" }, h("span", { class: "small" }, "Board style"), styleSel));
+			el.append(h("label", { class: "field" }, h("span", { class: "small" }, "Board Style"), styleSel));
 		}
 		const themeSel = h("select", { id: "opt-board", "aria-label": "Board theme" });
 		const chosen = boardTheme();
@@ -5199,7 +5254,7 @@ function refreshOptions() {
 			// The illustrated themes draw into the board: redraw it.
 			render();
 		});
-		el.append(h("label", { class: "field" }, h("span", { class: "small" }, "Board theme"), themeSel));
+		el.append(h("label", { class: "field" }, h("span", { class: "small" }, "Board Theme"), themeSel));
 		if ((S.info.pieces || []).some((p) => p.rules)) {
 			const sizeSel = h("select", { id: "opt-tile-scale", "aria-label": "Piece button size" });
 			for (const [value, label] of [[0.5, "Small"], [0.75, "Medium"], [1, "Large"], [1.25, "Larger"], [1.5, "Largest"]]) {
@@ -5210,7 +5265,7 @@ function refreshOptions() {
 				store.set("bingle.tileScale", S.settings.tileScale);
 				applyTheme();
 			});
-			el.append(h("label", { class: "field" }, h("span", { class: "small" }, "Piece button size"), sizeSel));
+			el.append(h("label", { class: "field" }, h("span", { class: "small" }, "Piece Button Size"), sizeSel));
 		}
 		if ("Notification" in window) {
 			const notify = h("input", { type: "checkbox", id: "opt-notify", checked: S.settings.notify && Notification.permission === "granted" });
@@ -5227,7 +5282,7 @@ function refreshOptions() {
 				}
 				store.set("bingle.notify", S.settings.notify);
 			});
-			el.append(h("label", { class: "check" }, notify, h("span", {}, "Notify me when it’s my turn")));
+			el.append(h("label", { class: "check" }, notify, h("span", {}, "Notify me on my turn")));
 		}
 	});
 

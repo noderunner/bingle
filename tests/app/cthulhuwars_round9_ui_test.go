@@ -110,7 +110,7 @@ func TestWebCthulhuWars_TheYellowSignCardCountsTheDesecrationTokensFirst(t *test
 	waitJS(t, ctx, "the Yellow Sign card", `document.querySelector('#seat-4 [data-counter="desecrations"]') !== null`, 15*time.Second)
 	// The icon and the number come before Power, Doom, Elder Signs and Gates.
 	order := evalString(t, ctx, `[...document.querySelectorAll('#seat-4 .seat-stats .counter')].map(c => c.dataset.counter).join(",")`)
-	if order != "desecrations,power,doom,signs,gates" {
+	if order != "desecrations,power,doom,signs,books,gates" {
 		t.Errorf("the numbers come in the order %q", order)
 	}
 	if got := evalString(t, ctx, `document.querySelector('#seat-4 [data-counter="desecrations"]').textContent.trim()`); got != "3" {

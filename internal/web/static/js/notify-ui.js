@@ -93,7 +93,7 @@ export function statusText(info) {
 		case "stopped":
 			return `${info.masked} used the unsubscribe link: Bingle will not email it.`;
 		default:
-			return `Waiting for you to confirm ${info.masked}: open the link in the email we sent (look in the spam folder too).`;
+			return `Confirm ${info.masked}: open the link we emailed you.`;
 	}
 }
 
@@ -105,9 +105,9 @@ export function whitelistNote(from) {
 	return h(
 		"p",
 		{ class: "small notify-note", id: "notify-whitelist" },
-		"Email notifications are sent from ",
+		"Sent from ",
 		h("strong", { class: "notify-from" }, from),
-		". Add that address to your contacts or safe-sender list (and mark it “not spam” if it lands there) so that the messages reach your inbox."
+		". Add it to your contacts so it reaches your inbox."
 	);
 }
 
@@ -143,7 +143,7 @@ export async function mountGameNotify(host, { code, name, onReady = () => {} }) 
 	} catch (err) {
 		if (err && err.status === 403) {
 			host.append(
-				h("p", { class: "small muted", id: "notify-no-token" }, "This browser did not take this seat, so it cannot change the email setting of the game. Open the game from the browser where you joined it."),
+				h("p", { class: "small muted", id: "notify-no-token" }, "Only the browser that joined this seat can change this."),
 				whitelistNote(cfg.from)
 			);
 			return;
@@ -158,10 +158,10 @@ export async function mountGameNotify(host, { code, name, onReady = () => {} }) 
 	const controls = h(
 		"div",
 		{ class: "notify-modes" },
-		h("label", { class: "check" }, everyTime, h("span", {}, "Every time it is my turn (not while this game is open in a window)")),
-		h("label", { class: "check" }, whenAway, h("span", {}, "Only if I have not moved for "), minutes, h("span", {}, " minutes"))
+		h("label", { class: "check" }, everyTime, h("span", {}, "Every turn, unless this game is open")),
+		h("label", { class: "check" }, whenAway, h("span", {}, "Only after "), minutes, h("span", {}, " minutes"))
 	);
-	host.append(h("label", { class: "check" }, on, h("span", {}, "Email me when it is my turn in this game")), controls, hint, whitelistNote(cfg.from));
+	host.append(h("label", { class: "check" }, on, h("span", {}, "Email me on my turn")), controls, hint, whitelistNote(cfg.from));
 	const warn = insecureNote();
 	if (warn) host.append(warn);
 

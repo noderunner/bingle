@@ -37,8 +37,8 @@ wide, the rail goes under the board, whose row is no taller than the board.
   under it shares the height left: the battle, the card of a unit, an exchange. The rail's cards take turns behind
   `.rail-tabs`: `#rail-tab-cults`, `#rail-tab-talk` and `#rail-tab-history`. Every pane stays on the page, so a message being typed survives a change of tab.
   The talk and the history fill the height the rail has left.
-- **A cult's card** is a summary: its numbers and an `.expand-toggle`. Open (`.seat-more`), it has a `.faction-heading` for
-  each of its sections. `.spellbook-grid` holds `.spell-tile`s in two columns: the six requirements, then the spellbooks
+- **A cult's card** is a summary: its numbers and an `.expand-toggle`. Open (`.seat-more`), Cthulhu Wars has a line between its sections and its words in the cult's colour (`--seat-ink`); another game's
+  have a `.faction-heading`. `.spellbook-grid` holds `.spell-tile`s in two columns: the six requirements, then the spellbooks
   to come. A spellbook earned takes the place of a met requirement, in listed order, since the server keeps which are
   met and which are held but not which paid for which. `S.expanded` is the one card open, a cult's or `#neutral-window`.
   A phone shows each cult whole, on a page of its own.
@@ -471,7 +471,7 @@ spellbook pictogram (`.spell-mark.on` — unlocked, met — and `.spell-mark.off
 greyed out) instead of ticks.
 The round bar shows the round, the phases of the round left to right (`#phase-steps
 li.phase-step[data-phase,data-state]`, the current one lit, those played
-ticked), the order of play and its direction (`#turn-order`), the **Ritual of Annihilation
+ticked), the **Ritual of Annihilation
 track** (`#ritual-track`: one space per Ritual that may still be performed — its
 Power cost in the space, `li.ritual-step[data-step,data-cost,data-state]` with
 the state `past`, `next` or `ahead` — closed by a ☠ for Instant Death; its length
@@ -887,7 +887,7 @@ picked), `#round-bar`, `#battle-panel`, `.seat-grid`, `.faction-card`,
 `.summon-button[data-piece,data-cost]`, `#unit-info`, `.token-enhanced`, `.sign-chip`,
 `.pool-unit`, `.gate-chip .gate-holder[data-holder]`, `#history-card` with
 `#history-friendly` / `#history-notation`, `.log-step[data-seq]`,
-`#phase-steps`, `#turn-order`, `#elder-bag`, `#ritual-track .ritual-step`,
+`#phase-steps`, `#first-mark`, `#pass-confirm`, `#elder-bag`, `#ritual-track .ritual-step`,
 `#events .log-fac`, `#options-reactions` with, per reaction (`<id>`:
 `devolve`, `madness`, `unspeakable-oath`…), `#ask-<id>-targeted` (and its ?,
 `#ask-<id>-help`), `#ask-<id>-all`, `#reactions-<id>` (the list),

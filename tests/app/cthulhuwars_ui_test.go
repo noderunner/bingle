@@ -71,11 +71,11 @@ func TestWebCthulhuWars_AreaMapTokensAndFactionPanels(t *testing.T) {
 		t.Errorf("power counter %q", got)
 	}
 	// The numbers are pictograms: an icon and a value, no words.
-	if n := evalInt(t, ctx, `document.querySelectorAll('#seat-1 .seat-stats .score.stat svg.stat-icon').length`); n != 4 {
-		t.Errorf("%d pictograms in the header, want power, doom, signs and gates", n)
+	if n := evalInt(t, ctx, `document.querySelectorAll('#seat-1 .seat-stats .score.stat svg.stat-icon').length`); n != 5 {
+		t.Errorf("%d pictograms in the header, want power, doom, signs, spellbooks and gates", n)
 	}
 	// The sections: the faction ability, spellbooks, requirements, Elder Signs and units.
-	if got := evalString(t, ctx, `[...document.querySelectorAll('#seat-1 .faction-card')].map(c => c.getAttribute("data-card")).join(",")`); got != "ability,books,signs,units" {
+	if got := evalString(t, ctx, `[...document.querySelectorAll('#seat-1 .faction-card')].map(c => c.getAttribute("data-card")).join(",")`); got != "ability,books,units" {
 		t.Errorf("faction cards %q", got)
 	}
 	// The units are icons, one each: 6 Acolytes, 4 Deep Ones, 2 Shoggoths, 2 Star
@@ -90,9 +90,12 @@ func TestWebCthulhuWars_AreaMapTokensAndFactionPanels(t *testing.T) {
 	if n := evalInt(t, ctx, `document.querySelectorAll('#seat-1 .pool-icons .pool-unit.away').length`); n != 6 {
 		t.Errorf("%d unit icons away, want 6", n)
 	}
-	// The Spellbooks counter is gone from the header: the section has it.
-	if n := evalInt(t, ctx, `document.querySelectorAll('#seat-1 [data-counter="books"]').length`); n != 0 {
-		t.Errorf("the spellbook summary is still in the header")
+	// The summary counts the spellbooks, with no "of 6".
+	if got := evalString(t, ctx, `document.querySelector('#seat-1 [data-counter="books"]').textContent`); strings.Contains(got, "/") {
+		t.Errorf("the spellbook count says %q", got)
+	}
+	if n := evalInt(t, ctx, `document.querySelectorAll('#seat-1 [data-counter="books"] svg').length`); n != 1 {
+		t.Errorf("%d icons on the spellbook count", n)
 	}
 	waitJS(t, ctx, "round bar", `document.getElementById("round-bar") && document.getElementById("round-bar").textContent.indexOf("Round 1") >= 0 && document.getElementById("ritual-track") && document.querySelectorAll("#ritual-track .ritual-step").length === 8 && document.querySelector("#ritual-track .ritual-step.next").textContent === "5"`, 5*time.Second)
 	// No hand panels in this game.
@@ -546,8 +549,12 @@ func TestWebCthulhuWars_TheCultCardsOpenOneAtATime(t *testing.T) {
 
 	clickSel(t, ctx, `[data-expand="seat-1"]`)
 	waitJS(t, ctx, "the first open", `document.querySelector('#seat-1 .spellbook-grid').offsetParent !== null`, 5*time.Second)
-	if got := evalString(t, ctx, `[...document.querySelectorAll('#seat-1 .faction-heading')].map(h => h.firstChild.textContent.trim()).join()`); got != "Faction Ability,Spellbooks,Elder Signs,Units" {
-		t.Errorf("headings %q", got)
+	// Sections are told apart by a rule, with no titles.
+	if n := evalInt(t, ctx, `document.querySelectorAll('#seat-1 .faction-heading').length`); n != 0 {
+		t.Errorf("%d section titles", n)
+	}
+	if got := evalString(t, ctx, `[...document.querySelectorAll('#seat-1 .faction-card')].map(h => h.getAttribute("aria-label")).join()`); !strings.HasPrefix(got, "Faction Ability,Spellbooks") || !strings.HasSuffix(got, "Units") {
+		t.Errorf("sections %q", got)
 	}
 	if n := evalInt(t, ctx, `document.querySelectorAll('#seat-1 details').length`); n != 0 {
 		t.Errorf("%d lists to open inside an open card", n)

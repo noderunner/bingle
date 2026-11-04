@@ -182,3 +182,70 @@ func TestWebCthulhuWars_AMoveQueueStopsAtThePowerThereIs(t *testing.T) {
 	waitJS(t, ctx, "the summary", `document.getElementById("impulse-text").textContent.indexOf("Moved 2 Acolyte Cultists") === 0`, 15*time.Second)
 	waitJS(t, ctx, "Done and Back", `document.getElementById("action-done") !== null && document.getElementById("undo-step") !== null`, 10*time.Second)
 }
+
+// Pass says Pass, and with Power left the next impulse asks whether to give it up.
+func TestWebCthulhuWars_PassAsksBeforeGivingUpPower(t *testing.T) {
+	ctx, cancel := moveQueueGame(t, 4)
+	defer cancel()
+	if got := evalString(t, ctx, `document.getElementById("action-pass").textContent`); got != "Pass" {
+		t.Errorf("the button says %q", got)
+	}
+	clickSel(t, ctx, "#action-pass")
+	waitJS(t, ctx, "the question", `document.getElementById("pass-confirm") !== null`, 5*time.Second)
+	if got := evalString(t, ctx, `document.getElementById("impulse-text").textContent`); got != "You will lose your 4 unspent Power." {
+		t.Errorf("the impulse says %q", got)
+	}
+	if !evalBool(t, ctx, `document.querySelector('#seat-1 [data-counter="power"]').textContent.indexOf("4") >= 0`) {
+		t.Error("asking cost the Power")
+	}
+	// Back keeps it.
+	clickSel(t, ctx, "#undo-step")
+	waitJS(t, ctx, "the actions again", `document.getElementById("action-pass") !== null && document.getElementById("impulse-text").textContent === "Choose an action."`, 5*time.Second)
+	// Confirming spends it.
+	clickSel(t, ctx, "#action-pass")
+	waitJS(t, ctx, "the question", `document.getElementById("pass-confirm") !== null`, 5*time.Second)
+	clickSel(t, ctx, "#pass-confirm")
+	waitJS(t, ctx, "the pass", `document.body.textContent.indexOf("passes, dropping to 0 Power") >= 0`, 15*time.Second)
+}
+
+// A cult's card and the impulse card use its glyph and its colour, and no colour box.
+func TestWebCthulhuWars_TheCultsWordsAreInItsColour(t *testing.T) {
+	ctx, cancel := moveQueueGame(t, 4)
+	defer cancel()
+	if n := evalInt(t, ctx, `document.querySelectorAll("#seat-1 .seat-head .swatch").length`); n != 0 {
+		t.Errorf("%d colour boxes on the card", n)
+	}
+	if !evalBool(t, ctx, `document.querySelector("#seat-1 .seat-head .seat-glyph") !== null`) {
+		t.Error("no glyph on the card")
+	}
+	if !evalBool(t, ctx, `getComputedStyle(document.querySelector("#seat-1 .name")).color !== getComputedStyle(document.querySelector("#impulse-text")).color`) {
+		t.Error("the name is not in the cult's colour")
+	}
+	if !evalBool(t, ctx, `document.querySelector("#impulse-title img.seat-glyph") !== null`) {
+		t.Error("no glyph in the impulse card")
+	}
+	if got := evalString(t, ctx, `document.getElementById("impulse-title").textContent`); got != "Alice" {
+		t.Errorf("the impulse title says %q", got)
+	}
+	if !evalBool(t, ctx, `document.querySelector("#impulse-title").style.color !== ""`) {
+		t.Error("the impulse title is not in the cult's colour")
+	}
+	// The first player's card shows the direction, with no words.
+	if got := evalString(t, ctx, `document.getElementById("first-mark").textContent`); got != "↻" {
+		t.Errorf("the first player's mark is %q", got)
+	}
+}
+
+// The window of game options has a capitalised title, and never writes the word null.
+func TestWebCthulhuWars_GameOptionsReadWell(t *testing.T) {
+	ctx, cancel := moveQueueGame(t, 4)
+	defer cancel()
+	clickSel(t, ctx, "#open-options")
+	waitJS(t, ctx, "the window", `!document.getElementById("game-options").hidden`, 5*time.Second)
+	if got := evalString(t, ctx, `document.querySelector("#game-options h2").textContent`); got != "Game Options" {
+		t.Errorf("the title is %q", got)
+	}
+	if got := evalString(t, ctx, `document.getElementById("game-options").innerText`); strings.Contains(got, "null") || strings.Contains(got, "undefined") {
+		t.Errorf("the window says %q", got)
+	}
+}

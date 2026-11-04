@@ -226,7 +226,7 @@ func TestWebCthulhuWars_TheCultCardsUsePictogramsAndShowTheUnitsInThePool(t *tes
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
 	openGameAs(t, ctx, baseURL, created.RoomCode, "cthulhu-wars", "Alice")
-	waitJS(t, ctx, "the cards", `document.querySelectorAll('#seat-1 .faction-card').length === 4`, 15*time.Second)
+	waitJS(t, ctx, "the cards", `document.querySelectorAll('#seat-1 .faction-card').length === 3`, 15*time.Second)
 	// The faction ability comes first.
 	if got := evalString(t, ctx, `document.querySelector('#seat-1 .faction-card').getAttribute("data-card")`); got != "ability" {
 		t.Errorf("first section %q", got)
@@ -246,8 +246,9 @@ func TestWebCthulhuWars_TheCultCardsUsePictogramsAndShowTheUnitsInThePool(t *tes
 	if n := evalInt(t, ctx, `document.querySelectorAll('#seat-1 .faction-card[data-card="signs"] summary').length`); n != 0 {
 		t.Errorf("an empty Elder Signs section opens (%d summaries)", n)
 	}
-	if got := evalString(t, ctx, `document.querySelector('#seat-1 .faction-card[data-card="signs"]').textContent`); strings.Contains(got, "None yet") || !strings.Contains(got, "Elder Signs") {
-		t.Errorf("the empty Elder Signs section reads %q", got)
+	// With no Elder Signs there is no section for them: the count is in the summary.
+	if n := evalInt(t, ctx, `document.querySelectorAll('#seat-1 .faction-card[data-card="signs"]').length`); n != 0 {
+		t.Errorf("%d sections for no Elder Signs", n)
 	}
 	if n := evalInt(t, ctx, `document.querySelectorAll('.sign-row').length`); n != 0 {
 		t.Errorf("the old sign row is still there")

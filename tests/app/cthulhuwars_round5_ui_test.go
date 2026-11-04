@@ -160,7 +160,7 @@ func TestWebCthulhuWars_DerivedFivePlayerTableWithTheExpansionCults(t *testing.T
 	openGameAs(t, ctx, baseURL, created.RoomCode, info.GameDefID, "Alice")
 	waitJS(t, ctx, "five cult panels", `document.querySelectorAll('.seat-strip').length === 5`, 20*time.Second)
 	// The cults in seat order, and the colours of their panels.
-	if got := evalString(t, ctx, `[...document.querySelectorAll('.seat-strip')].map(s => s.getAttribute("data-seat") + ":" + (s.querySelector(".seat-head .swatch") ? [...s.querySelector(".seat-head .swatch").classList].filter(c => c.startsWith("color-")).join("") : "")).join(",")`); !strings.Contains(got, "color-white") || !strings.Contains(got, "color-orange") {
+	if got := evalString(t, ctx, `[...document.querySelectorAll('.seat-strip')].map(s => s.getAttribute("data-seat") + ":" + s.style.getPropertyValue("--seat-ink")).join(",")`); !strings.Contains(got, "--piece-white-fill") || !strings.Contains(got, "--piece-orange-fill") {
 		t.Errorf("panels %q lack the white and orange cults", got)
 	}
 	// The Windwalker (seat 1) begins: the areas marked with its sigil glow.
