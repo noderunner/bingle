@@ -4,7 +4,7 @@
 	<meta charset="utf-8">
 	<meta name="bingle-version" content="{{engineVersion}}">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>Bingle — Profile</title>
+	<title>Bingle — All Settings</title>
 	<link rel="icon" type="image/svg+xml" href="/static/favicon.svg" id="favicon">
 	<link rel="stylesheet" href="/static/style.css">
 </head>
@@ -16,7 +16,7 @@
 	</header>
 
 	<main class="page narrow">
-		<h1>Your profile</h1>
+		<h1>All Settings</h1>
 
 		<section class="card" id="account-box" hidden>
 			<h2>Account</h2>
@@ -24,13 +24,13 @@
 		</section>
 
 		<section class="card" id="ratings-box" hidden>
-			<h2>Your ratings</h2>
+			<h2>Ratings</h2>
 			<p class="muted small" id="ratings-note"></p>
 			<div class="table-scroll"><table class="data"><thead><tr><th>Game</th><th>Rating</th><th>Won</th><th>Drawn</th><th>Lost</th><th></th></tr></thead><tbody id="ratings-rows"></tbody></table></div>
 		</section>
 
 		<section class="card" id="upgrade-box" hidden>
-			<h2>Make your address an account</h2>
+			<h2>Make an Account</h2>
 			<p class="small">Email notifications, direct messages and the global chat are for signed-in players now. This browser confirmed an email address already, so it can become your account at once: choose a username and a password, and your games, and your turn mail, carry on.</p>
 			<form id="upgrade-form" novalidate>
 				<div class="field">
@@ -47,14 +47,15 @@
 		</section>
 
 		<section class="card" id="profile-card">
-			<h2>Settings</h2>
-			<p class="muted small">Saved in this browser: your name is simply offered whenever you create or join a game.</p>
+			<h2>My Name</h2>
 			<form id="profile-form" novalidate>
 				<div class="field">
-					<label for="profile_name">Name</label>
+					<label for="profile_name" class="sr-only">Name</label>
 					<input id="profile_name" type="text" maxlength="32" autocomplete="nickname">
-					<span class="small muted">Games you already joined keep the name you used in them.</span>
+					<span class="small muted">Saved in this browser. Games you already joined keep the name you used in them.</span>
 				</div>
+				<hr class="section-divider">
+				<h2>Email Notifications</h2>
 				<p class="small muted" id="notify-accounts-only" hidden>Email notifications are for signed-in players: <a href="/login?return=%2Fprofile">sign in</a> to have Bingle mail you when it is your turn.</p>
 				<div class="field" id="profile-email-field">
 					<label for="profile_email">Email</label>
@@ -82,7 +83,7 @@
 		</section>
 
 		<section class="card" id="finished-card">
-			<h2>Finished games</h2>
+			<h2>Finished Games</h2>
 			<ul class="my-games" id="finished-games"></ul>
 			<p class="muted" id="finished-empty" hidden>No finished games yet.</p>
 		</section>

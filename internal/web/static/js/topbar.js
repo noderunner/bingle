@@ -3,7 +3,7 @@
 // player's profile, help (the version, what changed lately, the project's page,
 // where to report problems) and — while a voice call is up — a button for the call.
 
-import { h, clear, toast, lastName, setLastName, rememberGame, rememberedGames, setTurnBadge, store } from "./util.js";
+import { h, clear, toast, lastName, setLastName, ensureName, nameIsMadeUp, forgottenGames, rememberGame, rememberedGames, setTurnBadge, store } from "./util.js";
 import { api, whoAmI } from "./api.js";
 import { guestKeySection } from "./guest-key.js";
 import { gameDefs, loadRows, loadUnread, isFinished, yourImpulse, sortRows, gameRow, openGameRow } from "./mygames.js";
@@ -67,6 +67,7 @@ export function roomCodeOf(typed) {
 }
 
 export function installTopbar({ onRows = () => {}, manageTitle = true } = {}) {
+	ensureName();
 	const host = document.getElementById("topbar-actions");
 	if (!host) return { refresh() {} };
 	const baseTitle = document.title.replace(/^\(\d+\)\s*/, "");
@@ -86,7 +87,9 @@ export function installTopbar({ onRows = () => {}, manageTitle = true } = {}) {
 	let defs = [];
 
 	const paint = () => {
-		const active = sortRows(rows.filter((r) => !isFinished(r)));
+		// A refresh under way when a game was taken off the list still has it.
+		const gone = new Set(forgottenGames());
+		const active = sortRows(rows.filter((r) => !isFinished(r) && !gone.has(r.g.code)));
 		const waiting = active.filter(yourImpulse).length;
 		badge.textContent = String(waiting);
 		badge.hidden = waiting === 0;
@@ -168,11 +171,6 @@ export function installTopbar({ onRows = () => {}, manageTitle = true } = {}) {
 		codeInput.focus();
 		refreshOpen();
 	});
-	/** The name a player joins under: the one they last used, else their account's, else a guest's. */
-	async function joinName() {
-		const me = await whoAmI().catch(() => ({}));
-		return lastName() || me.display_name || me.handle || `Guest ${1000 + Math.floor(Math.random() * 9000)}`;
-	}
 	/** A seat where one is open or the name already holds one, else a place to watch from. */
 	async function join() {
 		joinErr.textContent = "";
@@ -182,7 +180,7 @@ export function installTopbar({ onRows = () => {}, manageTitle = true } = {}) {
 			return;
 		}
 		try {
-			const name = await joinName();
+			const name = lastName();
 			const game = await api.game(code);
 			const seats = game.seats || [];
 			const mine = seats.some((s) => s.name && s.name.toLowerCase() === name.toLowerCase());
@@ -351,21 +349,25 @@ function profileWindow() {
 	// accounts plan, §6).
 	const account = h("section", { class: "account-section", id: "profile-account" });
 	const guestKey = guestKeySection();
+	const here = h(
+		"section",
+		{ class: "here-section", id: "profile-here", hidden: true },
+		h("h3", {}, "Here Now ", count),
+		list,
+		h("p", { class: "small muted" }, "The signed-in players who have been here in the last few minutes, by their usernames.")
+	);
 	const dlg = dialog(
 		"profile-dialog",
-		"Your profile",
+		"Your Profile",
 		account,
-		guestKey.section,
 		h(
-			"div",
-			{ class: "field" },
-			h("label", { for: "profile-window-name" }, "The name you play under"),
-			nameInput,
-			saved,
-			h("span", { class: "small muted" }, "It is offered when you make or join a game, and it is what the others see while you are here.")
+			"section",
+			{ class: "name-section" },
+			h("div", { class: "field" }, h("label", { for: "profile-window-name" }, "My Name"), nameInput, saved)
 		),
-		h("section", { class: "here-section" }, h("h3", {}, "Here now ", count), list, h("p", { class: "small muted" }, "The signed-in players who have been here in the last few minutes, by their usernames. Guests are not listed: sign in to be listed and to write to anybody here.")),
-		h("div", { class: "row" }, h("a", { class: "button", id: "profile-page-link", href: "/profile" }, "Email notifications and finished games"))
+		guestKey.section,
+		here,
+		h("div", { class: "row window-foot" }, h("a", { class: "button", id: "profile-page-link", href: "/profile" }, "All Settings"))
 	);
 	const paintAccount = (me) => {
 		clear(account);
@@ -409,6 +411,9 @@ function profileWindow() {
 		btn.title = label;
 		btn.setAttribute("aria-label", label);
 		btn.classList.toggle("signed-in", me.kind === "account");
+		// Who is here is accounts' (ADR 0073), and an account has a name of its own.
+		here.hidden = me.kind !== "account";
+		if (me.kind === "account" && nameIsMadeUp()) setLastName(me.display_name || me.handle);
 		paintAccount(me);
 	});
 	const paint = (people) => {

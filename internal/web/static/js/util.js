@@ -1,5 +1,7 @@
 // Small DOM and storage helpers shared by the lobby and the game page.
 
+import { funName } from "./names.js";
+
 /** h("div", {class: "x", onclick: fn}, child, "text") builds a DOM element. */
 export function h(tag, attrs, ...children) {
 	const el = document.createElement(tag);
@@ -71,6 +73,7 @@ export const store = {
 
 const GAMES_KEY = "bingle.games";
 const FORGOTTEN_KEY = "bingle.forgottenGames";
+const AUTO_NAME_KEY = "bingle.nameMadeUp";
 const CHAT_READ_KEY = "bingle.chatRead";
 
 /** Games this browser has joined: [{code, def, name, ts}], newest first. */
@@ -137,7 +140,18 @@ export function saveProfile(patch) {
 /** Sets the name offered when creating or joining a game. */
 export function setLastName(name) {
 	store.set("bingle.name", name);
+	store.set(AUTO_NAME_KEY, false);
 }
+
+/** Gives a browser with no name yet one to play under, until its player chooses one. */
+export function ensureName() {
+	if (lastName()) return;
+	store.set("bingle.name", funName());
+	store.set(AUTO_NAME_KEY, true);
+}
+
+/** Whether the name was made up here, and not chosen. */
+export const nameIsMadeUp = () => store.get(AUTO_NAME_KEY, false) === true;
 
 // ---- formatting -----------------------------------------------------------
 

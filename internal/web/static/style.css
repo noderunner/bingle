@@ -239,6 +239,13 @@ button.icon-only { display: inline-flex; align-items: center; justify-content: c
 .guest-section .wrap { overflow-wrap: anywhere; }
 .guest-use { margin-top: 0.7rem; }
 .guest-more { margin-top: 0.6rem; }
+/* The sections of the profile window: a line between each. */
+#profile-dialog section:not([hidden]) ~ section:not([hidden]), #profile-dialog .window-foot { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+#profile-dialog section h3 { margin: 0 0 0.5rem; }
+#profile-dialog .field { margin-bottom: 0; }
+.section-divider { margin: 1.1rem 0; border: 0; border-top: 1px solid var(--border); }
+.history-told { margin-top: 0.2rem; }
+.history-told .log-turn { margin: 0.2rem 0 0; }
 .here-section { margin-top: 1rem; }
 .here-section h3 { margin: 0 0 0.4rem; font-size: 1rem; }
 .here-list { list-style: none; margin: 0 0 0.4rem; padding: 0; max-height: 14rem; overflow-y: auto; }

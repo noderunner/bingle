@@ -708,6 +708,7 @@ func TestWebGame_IdentityGateLetsANewcomerJoin(t *testing.T) {
 	waitJS(t, ctx, "waiting message", `document.getElementById("status-message").textContent.indexOf("Waiting for an opponent") === 0`, 5*time.Second)
 
 	if err := chromedp.Run(ctx,
+		chromedp.Evaluate(`document.getElementById("gate-name").value = ""`, nil),
 		chromedp.SendKeys("#gate-name", "Carol", chromedp.ByID),
 		chromedp.Click("#gate-join", chromedp.ByID),
 	); err != nil {

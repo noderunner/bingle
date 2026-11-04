@@ -263,12 +263,12 @@ a code or a link, and `#join-submit`; then *Public Lobbies*). It takes an open s
 name in the profile ([ADR 0102](decisions/0102-joining-and-reading-back.md)). An unread count is `.unread-count` on *Open*.
 
 The person icon (`#open-profile`) opens **`#profile-dialog`**, a floating window
-rather than a page: the name this browser plays under
-(`#profile-window-name`, saved as you leave the field), **Here now**
-(`#here-list li[data-address]`, `#here-count`) — everybody whose browser has
+rather than a page: *My Name* (`#profile-window-name`, saved as you leave the field; a guest who has not chosen one
+has a two-word name from `js/names.js`), for a guest *Move to Another Device* (`#guest-box`), for a signed-in account **Here Now**
+(`#profile-here`, `#here-list li[data-address]`, `#here-count`) — everybody whose browser has
 said it is here in the last few minutes, your own entry marked `.me`, with a
 *Message* button beside each of the others that opens the direct messages on
-that person — and a link on to the profile page (`#profile-page-link`) for the
+that person — and *All Settings* (`#profile-page-link`), the page of the
 email notifications and the finished games. `js/here.js` tells the server every
 minute that somebody is here (every eight seconds while a window that shows the
 list is open). Only a signed-in account is listed, under its handle; a guest is told that guests are not
@@ -515,7 +515,8 @@ timing and text). A button that exists because of an unlocked spellbook wears th
 coloured spellbook pictogram, one that meets a spellbook requirement the greyed
 one (`button[data-source="book"|"requirement"]`, from the action's `source`).
 Move events and the move list carry `locked` for a move that rolled a die: the
-page offers no *Back* across it. The impulse card says what is being asked, whoever is looking: its title (`#impulse-title`) is the name of the seat on
+page offers no *Back* across it. Stepping through the moves, the card is titled `History: n` and tells the move as the History tab does (`#history-told`).
+The impulse card says what is being asked, whoever is looking: its title (`#impulse-title`) is the name of the seat on
 impulse and `#impulse-text` the question, from the view's `impulse` (ADR 0099). A choice the player has made and not sent
 is a step of their own, with the action's `impulse` as its question: *Choose an area to place a gate.*
 A Move gathers its units in the card first (`#move-queue`): clicking a token lifts it off the map into the card, from one area, as far as the Power

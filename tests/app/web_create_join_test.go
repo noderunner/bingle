@@ -201,6 +201,8 @@ func TestWebIndex_CreateGameForm_SubmitsAndCreatesRealGame(t *testing.T) {
 	}
 
 	if err := chromedp.Run(ctx,
+		// A guest's made-up name is already there: this is typing their own.
+		chromedp.Evaluate(`document.getElementById("create_player_name").value = ""`, nil),
 		chromedp.SendKeys(`#create_player_name`, "Alice", chromedp.ByQuery),
 		submitClosestForm(ctx, `select[name="game_def_id"]`),
 	); err != nil {
@@ -267,6 +269,8 @@ func TestWebIndex_CreateGameForm_MissingPlayerName_DoesNotNavigate(t *testing.T)
 	if err := chromedp.Run(ctx,
 		chromedp.Navigate(baseURL+"/?game=test-freeplay"),
 		chromedp.WaitVisible(`#create_player_name`, chromedp.ByQuery),
+		// A guest's made-up name is already there: the player has emptied the box.
+		chromedp.Evaluate(`document.getElementById("create_player_name").value = ""`, nil),
 	); err != nil {
 		t.Fatalf("navigate to / and locate create-game form: %v", err)
 	}

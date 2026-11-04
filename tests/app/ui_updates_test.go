@@ -221,15 +221,21 @@ func TestWebCthulhuWars_TheHistoryStepsBackFromTheMark(t *testing.T) {
 	// It lands in the Moves tab, on the player's move, with Next under the hand.
 	waitJS(t, ctx, "Alice's move, in the Moves tab", `location.hash === "#move=1" && document.getElementById("moves-pane") !== null && document.querySelector("#move-list .mv.current") !== null`, 10*time.Second)
 	waitJS(t, ctx, "the focus on Next", `document.activeElement && document.activeElement.id === "hist-next"`, 5*time.Second)
-	// The card says what happened in words, not notation.
-	if got := evalString(t, ctx, `document.getElementById("status-message").textContent`); !strings.Contains(got, "Move 1:") || strings.Contains(got, "recruit@") {
-		t.Errorf("the card says %q", got)
+	// The card is titled with the move, and tells it as the History tab does: the
+	// seat's colour and label over the words, not the notation.
+	if got := evalString(t, ctx, `document.getElementById("impulse-title").textContent`); got != "History: 1" {
+		t.Errorf("the card is titled %q", got)
 	}
-	first := evalString(t, ctx, `document.getElementById("status-message").textContent`)
+	told := `document.getElementById("history-told")`
+	waitJS(t, ctx, "the move told", told+` !== null && `+told+`.querySelector(".log-actor .swatch") !== null && `+told+`.querySelector("ul.log-turn li") !== null`, 10*time.Second)
+	if got := evalString(t, ctx, told+`.textContent`); strings.Contains(got, "recruit@") {
+		t.Errorf("the card tells %q", got)
+	}
+	first := evalString(t, ctx, told+`.textContent`)
 	clickSel(t, ctx, "#hist-next")
-	waitJS(t, ctx, "the next move", `location.hash === "#move=2"`, 10*time.Second)
-	if got := evalString(t, ctx, `document.getElementById("status-message").textContent`); got == first {
-		t.Errorf("the card did not change with the move: %q", got)
+	waitJS(t, ctx, "the next move", `location.hash === "#move=2" && document.getElementById("impulse-title").textContent === "History: 2"`, 10*time.Second)
+	if evalBool(t, ctx, told+` !== null && `+told+`.textContent === `+strconv.Quote(first)) {
+		t.Error("the card did not change with the move")
 	}
 }
 
@@ -335,5 +341,29 @@ func TestWebActiveGames_OpenCountsUnreadChat(t *testing.T) {
 	time.Sleep(700 * time.Millisecond)
 	if evalBool(t, ctx, count+` !== null`) {
 		t.Error("read messages are still counted")
+	}
+}
+
+// A guest with no name of their own has a two-word one, in the profile window.
+func TestWebProfile_AGuestIsGivenAName(t *testing.T) {
+	baseURL := newRESTTestServer(t)
+	ctx, cancel := newChromedpContext(t, 60*time.Second)
+	defer cancel()
+	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/")); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "the top bar", `document.getElementById("open-profile") !== null`, 20*time.Second)
+	clickSel(t, ctx, "#open-profile")
+	name := evalString(t, ctx, `document.getElementById("profile-window-name").value`)
+	if len(strings.Fields(name)) != 2 {
+		t.Errorf("the name given is %q", name)
+	}
+	// It stays the same across pages.
+	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/profile")); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "the settings", `document.getElementById("profile_name") !== null && document.getElementById("profile_name").value !== ""`, 10*time.Second)
+	if got := evalString(t, ctx, `document.getElementById("profile_name").value`); got != name {
+		t.Errorf("the settings say %q, not %q", got, name)
 	}
 }

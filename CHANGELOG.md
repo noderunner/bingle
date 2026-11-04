@@ -4,6 +4,16 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.60.0 - 2026-11-04
+
+### Bingle Core 0.60.0
+- **History in full colour.** Stepping through a game's moves, the card is titled *History: 12* and tells the move just as the
+  History tab does, with the players' colours and icons.
+- **Better guest names.** A guest who has not chosen a name gets one like *Mossy Otter*.
+- **A tidier profile window.** Your name comes right under the sign-in buttons as *My Name*, sections have clear titles and lines
+  between them, and guests no longer see *Here Now*. *Use this key* is now *Submit Key*.
+- **All Settings.** The profile page has a new name and clearer sections.
+
 ## 0.59.0 - 2026-11-04
 
 ### Bingle Core 0.59.0
