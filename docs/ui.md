@@ -522,6 +522,9 @@ Move events and the move list carry `locked` for a move that rolled a die: the
 page offers no *Back* across it. The impulse card says what is being asked, whoever is looking: its title (`#impulse-title`) is the name of the seat on
 impulse and `#impulse-text` the question, from the view's `impulse` (ADR 0099). A choice the player has made and not sent
 is a step of their own, with the action's `impulse` as its question: *Choose an area to place a gate.*
+A Move gathers its units in the card first (`#move-queue`): clicking a token lifts it off the map into the card, from one area, as far as the Power
+goes, with `.queue-unit[data-piece]` to take one out and `#move-queue-cost` for the running cost. A click on a highlighted
+area sends one step per unit ([ADR 0100](decisions/0100-a-move-gathers-its-units.md)).
 *Back* is one of the actions too (`#undo-step`, offered only while there is a step
 of this turn to take back).
 

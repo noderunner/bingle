@@ -1493,6 +1493,11 @@ body.fit-screen .sol-top, body.fit-screen .sol-columns { --cw: min(112px, 14cqh,
 .impulse-card h3 { margin-bottom: 0.3rem; }
 .impulse-card p { margin: 0; }
 .impulse-text { margin: 0 0 0.3rem; }
+.move-queue { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; }
+.queue-unit { position: relative; padding: 0.15rem; line-height: 0; }
+.queue-unit.on-gate { outline: 2px dashed var(--focus); }
+.queue-count { position: absolute; right: -0.35rem; bottom: -0.35rem; min-width: 1.1rem; padding: 0 0.2rem; border: 1px solid var(--text); border-radius: 999px; background: var(--surface); color: var(--text); font-size: 0.72rem; font-weight: 800; line-height: 1.05rem; text-align: center; }
+.queue-cost { display: inline-flex; align-items: center; gap: 0.15rem; margin-left: 0.25rem; font-weight: 700; }
 .impulse-card.over { border-color: var(--text); }
 .impulse-card.history { border-color: var(--warn); }
 .impulse-card .message { font-weight: 700; }

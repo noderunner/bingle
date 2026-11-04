@@ -18,8 +18,8 @@ unlocked; a greyed-out one means the action meets a spellbook *requirement* (pay
 sacrificing Cultists, taking the Windwalker's free book). In the cult panels the same pictogram stands for each
 spellbook and requirement — in colour when it is unlocked or met, greyed out when it is not.
 
-A move is built one choice at a time. The pending choice is shown in the move bar; **Back** steps back, **Reset**
-clears it ([[Esc]]).
+A move is built one choice at a time. The pending choice is shown in the move bar; **Back** steps back, and
+[[Esc]] clears it.
 
 ### Examples
 
@@ -29,7 +29,7 @@ clears it ([[Esc]]).
 | Summon a monster | *Summon <monster>* (its button shows the cost) → your Gate |
 | Awaken a Great Old One | *Awaken <name>* (its button shows the cost) → the area |
 | Build a Gate | *Build Gate (3)* → the area |
-| Move units | *Click a unit on the map to move* — a glowing unit token → its destination, repeat for more units, then *Done* |
+| Move units | Click units on the map to gather them in the impulse card, all from one area and as many as your Power pays for; click an icon there to take one out. Then click their destination, and *Done* (or more units first) |
 | Give a Gate up | the figure on the Gate → the Gate again (free, where it stands) or another area (a Move step): the Gate is abandoned |
 | Put a unit on a Gate | one of the units standing beside it → the Gate (free; also in the middle of a Move) |
 | Take back a step of this turn | *Back*, among the actions, until the turn has passed or a die has been rolled |

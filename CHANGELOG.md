@@ -4,6 +4,20 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.56.0 - 2026-11-04
+
+### Bingle Core 0.56.0
+- No changes of its own: this release is the Cthulhu Wars moves below.
+
+### Cthulhu Wars 0.9.0
+- **Move several units with one destination.** Click units on the map to gather them in the impulse card, then click where
+  they go. Each type shows its icon with a count, next to the Power the move will cost, and gathered units leave the map. Click
+  an icon to put a unit back, or *Back* to put them all back.
+- **You can only gather what you can pay for**, and only units in the same area. Move another area's units afterwards.
+- **A move now waits for *Done*,** even when you have spent your last Power, with a summary of what moved. *Back* there
+  takes back everything sent to that destination.
+- **No more *Reset* button** on the map: *Back* does the job.
+
 ## 0.55.0 - 2026-11-04
 
 ### Bingle Core 0.55.0
