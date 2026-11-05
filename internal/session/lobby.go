@@ -81,7 +81,8 @@ func (m *Manager) StartGame(ctx context.Context, roomCode, name string) (StateSn
 	if err != nil {
 		return StateSnapshot{}, err
 	}
-	if hostOf(players) != me.Seat {
+	// A scheduled game can be started by any player at the table from its time on.
+	if hostOf(players) != me.Seat && !m.mayStartScheduled(ctx, game.ID) {
 		return StateSnapshot{}, ErrNotHost
 	}
 	compiled, err := m.compiledFor(game)
@@ -94,6 +95,7 @@ func (m *Manager) StartGame(ctx context.Context, roomCode, name string) (StateSn
 	if err := m.store.StartGame(ctx, game.ID, firstSeatOf(compiled, game)); err != nil {
 		return StateSnapshot{}, err
 	}
+	m.markScheduleStarted(ctx, game.ID)
 	m.publishState(ctx, roomCode, "start")
 	m.runBots(ctx, roomCode)
 	return m.readState(ctx, roomCode, nil)

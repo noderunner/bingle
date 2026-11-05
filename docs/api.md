@@ -267,6 +267,11 @@ games, and friends-only games (`friends_only`, all seats held or kept) only to t
 (`reserved_for_you`). `open_seats` counts the seats this viewer could take. `GET /games/{code}` has `reservations` and `invite_only`. Taking a
 seat kept for somebody else is a `403`. `POST /games/{code}/release` with a `seat` is the host giving one up.
 
+**Scheduled games** ([ADR 0109](decisions/0109-scheduled-games.md)), for accounts and real-time games. `POST /games` takes `schedule`: `at` (RFC 3339) or `slots`
+(up to 20), within 30 days, and `invite`, a list of exact handles. `GET /games/{code}` then has `schedule` (`status`: `scheduled`, `polling`, `no_agreement`, `started`,
+`closed`; `start_at`, `decide_by`, `people`, `slots`). `POST /games/{code}/schedule/vote` takes `slot` and `on`; `/decide`, `/slots` and `/cancel` are its creator's.
+`GET /games/{code}/schedule.ics` is its calendar file. The game never starts by itself: from its time on, any seated player can `POST /games/{code}/start`.
+
 **Direct messages.** Two friends who are here can write to each other and put a voice call up
 between them. A message is addressed to an **address** and sent by the signed-in account, under
 its handle. Nothing is stored: the last 200 messages of a pair live in memory and are forgotten

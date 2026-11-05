@@ -197,6 +197,27 @@
 								<div id="card-set-preview"></div>
 							</div>
 
+							<div class="field new-only human-only" id="schedule-field" hidden>
+								<label class="field-title">When to Play</label>
+								<div class="stack" id="schedule-modes">
+									<label class="check"><input type="radio" name="schedule-mode" value="now" checked> <span>Play now</span></label>
+									<label class="check"><input type="radio" name="schedule-mode" value="time"> <span>Schedule a time</span></label>
+									<label class="check"><input type="radio" name="schedule-mode" value="windows"> <span>Offer several times, and let the players choose</span></label>
+								</div>
+								<div id="schedule-details" hidden>
+									<label id="schedule-time-row" for="schedule-at">Start time <input type="datetime-local" id="schedule-at"></label>
+									<div id="schedule-slots-row" hidden>
+										<div class="stack" id="schedule-slots"></div>
+										<button type="button" id="schedule-add-slot" class="ghost small">Add a time</button>
+										<span class="small muted">Up to 20 times, in the next 30 days. The earliest time everyone can make becomes the game's time.</span>
+									</div>
+									<span class="small muted" id="schedule-tz"></span>
+									<div class="stack" id="schedule-friends"></div>
+									<label for="schedule-handles">Invite by handle <input type="text" id="schedule-handles" placeholder="ana, bob" autocapitalize="none" autocomplete="off" spellcheck="false"></label>
+									<span class="small muted">Handles must be exact. The game waits in its lobby, and starts when a player presses Start.</span>
+								</div>
+							</div>
+
 							<div class="field new-only human-only" id="invite-only-field">
 								<label class="check"><input type="checkbox" id="invite-only" name="invite_only"> <span>Invite only</span></label>
 								<span class="small muted">The game is not on any list, even your friends'. Players come by its link, or an invitation from your friends list.</span>

@@ -416,6 +416,7 @@ function renderSeatChoices(info) {
 	renderSetupOptions(info);
 	renderClockField(info);
 	renderRealTimeField(info);
+	renderScheduleField();
 	renderRatedField(info);
 	renderCardSetField(info);
 	applyStartMode();
@@ -737,6 +738,91 @@ function renderRealTimeField(info) {
 		}
 	}
 	sync();
+}
+
+// ---- when to play --------------------------------------------------------------------------
+
+const scheduleMode = () => document.querySelector('input[name="schedule-mode"]:checked')?.value || "now";
+
+/** The setup's time in the shape of a datetime-local field. */
+function localFieldValue(date) {
+	const pad = (n) => String(n).padStart(2, "0");
+	return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+/** Limits a time field to the coming 30 days. */
+function boundTimeField(input) {
+	input.min = localFieldValue(new Date());
+	input.max = localFieldValue(new Date(Date.now() + 30 * 86400000));
+}
+
+function addScheduleSlot() {
+	const host = document.getElementById("schedule-slots");
+	if (host.children.length >= 20) return;
+	const input = h("input", { type: "datetime-local", class: "schedule-slot", "aria-label": "A time to offer" });
+	boundTimeField(input);
+	const row = h("div", { class: "row" }, input, h("button", { type: "button", class: "ghost small", title: "Remove this time", onclick: () => row.remove() }, "✕"));
+	host.append(row);
+}
+
+/** Scheduling is for signed-in players, and for real-time games. */
+async function renderScheduleField() {
+	const field = document.getElementById("schedule-field");
+	const box = document.getElementById("real-time");
+	if (!field || !box) return;
+	const me = await whoAmI().catch(() => null);
+	const account = !!me && me.kind === "account";
+	const sync = () => {
+		const on = account && box.checked && !document.getElementById("real-time-field").hidden;
+		field.hidden = !on;
+		const mode = on ? scheduleMode() : "now";
+		document.getElementById("schedule-details").hidden = mode === "now";
+		document.getElementById("schedule-time-row").hidden = mode !== "time";
+		document.getElementById("schedule-slots-row").hidden = mode !== "windows";
+		document.getElementById("create-submit").textContent = mode === "now" ? "Create Game" : "Schedule Game";
+		// A scheduled game always gathers in a lobby.
+		document.getElementById("lobby-field").hidden = mode !== "now";
+		if (mode === "windows" && !document.getElementById("schedule-slots").children.length) addScheduleSlot();
+		// A game weeks away stays off the public lists, unless its creator wants otherwise.
+		const inviteOnly = document.getElementById("invite-only");
+		if (inviteOnly && inviteOnly.dataset.touched !== "1") inviteOnly.checked = mode !== "now";
+	};
+	if (!field.dataset.wired) {
+		field.dataset.wired = "1";
+		box.addEventListener("change", sync);
+		for (const radio of field.querySelectorAll('input[name="schedule-mode"]')) radio.addEventListener("change", sync);
+		document.getElementById("schedule-add-slot").addEventListener("click", addScheduleSlot);
+		document.getElementById("invite-only")?.addEventListener("change", (ev) => (ev.target.dataset.touched = "1"));
+		boundTimeField(document.getElementById("schedule-at"));
+		const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+		document.getElementById("schedule-tz").textContent = zone ? `Times are in your time zone, ${zone}.` : "Times are in your time zone.";
+	}
+	const friends = document.getElementById("schedule-friends");
+	clear(friends);
+	for (const f of setupFriends) {
+		friends.append(h("label", { class: "check" }, h("input", { type: "checkbox", class: "schedule-friend", value: f.handle }), h("span", {}, `Invite ${f.name}`)));
+	}
+	sync();
+}
+
+/** What the setup asks for by way of a schedule, or null to play now. Throws what is missing. */
+function scheduleChoice() {
+	const field = document.getElementById("schedule-field");
+	if (!field || field.hidden || scheduleMode() === "now") return null;
+	const invite = [...field.querySelectorAll(".schedule-friend:checked")].map((b) => b.value);
+	for (const handle of document.getElementById("schedule-handles").value.split(",")) {
+		const clean = handle.trim().replace(/^@/, "");
+		if (clean && !invite.includes(clean)) invite.push(clean);
+	}
+	if (scheduleMode() === "time") {
+		const value = document.getElementById("schedule-at").value;
+		if (!value) throw new Error("Choose a time for the game.");
+		return { at: new Date(value).toISOString(), invite };
+	}
+	const slots = [...field.querySelectorAll(".schedule-slot")].map((i) => i.value).filter(Boolean).map((v) => new Date(v).toISOString());
+	if (!slots.length) throw new Error("Choose at least one time to offer.");
+	if (!invite.length) throw new Error("Invite somebody to answer the times.");
+	return { slots, invite };
 }
 
 /** Whether the game being set up has no timer, so that the warnings apply. */
@@ -1192,6 +1278,16 @@ if (createForm) {
 		const lobbyBox = document.getElementById("lobby");
 		if (lobbyBox && lobbyBox.checked) body.lobby = true;
 		if (document.getElementById("invite-only")?.checked) body.invite_only = true;
+		try {
+			const schedule = scheduleChoice();
+			if (schedule) {
+				body.schedule = schedule;
+				body.lobby = true;
+			}
+		} catch (e) {
+			showError(err, e.message);
+			return;
+		}
 		const ratedBox = document.getElementById("rated");
 		if (ratedBox && ratedBox.checked && !document.getElementById("rated-field").hidden) body.rated = true;
 		const cardSet = document.getElementById("card-set");

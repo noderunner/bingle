@@ -2710,6 +2710,10 @@ function lobbyContext() {
 			addBot: (kind, seat) => done(() => api.addBot(code, S.me.name, kind, seat)),
 			remove: (seat) => done(() => api.removeSeat(code, S.me.name, seat)),
 			release: (seat) => done(() => api.releaseSeat(code, S.me.name, seat)),
+			vote: (slot, on) => done(() => api.voteSlot(code, slot, on)),
+			decide: () => done(() => api.decideSchedule(code)),
+			offerTimes: (slots) => done(() => api.offerSlots(code, slots)),
+			cancelSchedule: () => done(() => api.cancelSchedule(code)),
 			leave: () =>
 				done(async () => {
 					await api.leave(code, S.me.name);
@@ -2936,6 +2940,7 @@ function retiredRecord() {
 
 function resultMessage() {
 	const g = S.game;
+	if (g.end_reason === "unscheduled") return "This game was closed before it was played.";
 	const reasons = {
 		road: "by road",
 		"flat-win": "on flats",

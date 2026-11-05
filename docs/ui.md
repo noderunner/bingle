@@ -278,6 +278,10 @@ can give it up (`[data-act="release"]`), and a visitor with no seat to take sees
 In every chat a player's handle is a badge (`.handle-badge[data-handle]`). To a signed-in player it offers a friend request (`#friend-pop`,
 `#friend-pop-send`, or `#friend-pop-accept` if they have asked); it does nothing for a friend, for yourself, or for a guest.
 
+With *Real-Time Game* ticked, a signed-in player's setup has *When to Play* (`#schedule-field`, `input[name="schedule-mode"]`: `now`, `time`, `windows`), with a time
+(`#schedule-at`) or times (`.schedule-slot`, `#schedule-add-slot`), and who to invite (`.schedule-friend`, `#schedule-handles`). The lobby then has `#lobby-schedule`: when it is
+(`#schedule-when`, `#schedule-ics`), or the times to answer (`#schedule-slot-list input[data-slot]`, `#schedule-decide`, `#schedule-new`), and `#schedule-cancel`. ([ADR 0109](decisions/0109-scheduled-games.md))
+
 The person icon (`#open-profile`) opens **`#profile-dialog`**, a floating window
 rather than a page: *My Name* (`#profile-window-name`, saved as you leave the field; a guest who has not chosen one
 has a two-word name from `js/names.js`), for a guest *Move to Another Device* (`#guest-box`), for a signed-in account **Here Now**

@@ -2342,3 +2342,14 @@ button.handle-badge:hover { border-color: var(--accent); color: var(--accent); }
 .lobby-pool-item { display: inline-grid; place-items: center; }
 .lobby-pool-item svg, .lobby-pool-item img.cw-glyph { width: 2.1rem; height: 2.1rem; }
 .lobby-pool-item img.cw-map-thumb { width: 4.4rem; height: auto; border-radius: 4px; }
+
+/* A game set up for later. */
+#schedule-details { display: flex; flex-direction: column; gap: 0.35rem; margin-top: 0.4rem; }
+.lobby-schedule { margin: 0.7rem 0 0; padding: 0.6rem 0.75rem; border: 1px solid var(--accent); border-radius: 8px; background: var(--accent-soft); }
+.lobby-schedule h3 { margin: 0 0 0.3rem; }
+.schedule-when { margin: 0 0 0.3rem; }
+.schedule-slots { list-style: none; margin: 0.3rem 0; padding: 0; }
+.schedule-slots li { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; padding: 0.15rem 0; }
+.schedule-slots li.past { opacity: 0.5; }
+.schedule-new { margin: 0.4rem 0; }
+.lobby-schedule button, .lobby-schedule .button { margin-top: 0.3rem; }
