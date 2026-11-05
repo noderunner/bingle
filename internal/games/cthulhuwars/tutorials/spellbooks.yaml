@@ -1,0 +1,67 @@
+# yaml-language-server: $schema=../../../../docs/tutorial.schema.json
+id: spellbooks
+kind: rules
+title: Spellbooks
+summary: Requirements, what spellbooks do, and why you need all six.
+order: 5
+game: cthulhu-wars
+seat: 1          # you play Great Cthulhu; the page plays the others
+start: !include positions/spellbooks-to-earn.yaml
+
+steps:
+  - text: |
+      Every cult has **six spellbooks** and **six requirements**, all in your cult's panel. You
+      have met one requirement and earned **Regenerate**. Hover any tile to read it.
+    spotlight: [spellbooks]
+
+  - text: |
+      Meet a requirement, and you choose **any spellbook you do not have yet**. Requirements can be
+      met in any order, and none of them is tied to a particular book.
+
+      So you choose which book to take first.
+    spotlight: [spellbooks]
+
+  - text: |
+      One of your requirements is *Awaken Cthulhu*. Meet it now.
+    play: [awaken:cthulhu@south-pacific]
+    hint: Press Awaken Cthulhu, then click the South Pacific.
+    highlight: [south-pacific]
+    spotlight: [spellbooks, actions]
+
+  - text: |
+      That earned you a spellbook. Choose **Dreams**.
+    play: [book:dreams]
+    hint: Press the Dreams button.
+    spotlight: [spellbooks]
+
+  - text: |
+      Some spellbooks give you a new **action**. Dreams costs 2 Power and replaces an enemy Cultist
+      with one of yours.
+
+      Use it on Crawling Chaos in Asia.
+    play: [dreams@asia/cc]
+    hint: Press Dreams, then click Asia.
+    highlight: [asia]
+    spotlight: [actions]
+
+  - text: |
+      Others are **passive**: they work on their own, in battle or all the time, without using an
+      action.
+
+      Many are **tied to a unit**. Regenerate lets a Star Spawn take two battle results. Hover your
+      Star Spawn in the South Pacific: its card lists the spellbooks that help it.
+    highlight: [south-pacific]
+    spotlight: [spellbooks]
+
+  - text: |
+      **You cannot win without all six.** Here is the same cult later in the game, with every
+      spellbook earned. However much Doom you have, five books will not do.
+    position: !include positions/six-spellbooks.yaml
+    spotlight: [books, spellbooks, doom]
+
+  - text: |
+      Six spellbooks also make **Battle an unlimited action**. It still costs 1 Power, but does not
+      use your action for the turn, so you can fight, once per area each Action phase, and still act.
+    position: !include positions/six-spellbooks.yaml
+    highlight: [new-zealand]
+    spotlight: [books]

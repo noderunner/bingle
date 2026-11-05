@@ -90,6 +90,10 @@ type Step struct {
 	Highlight []string `json:"highlight,omitempty"`
 	// Arrow draws an arrow from its first square to its second.
 	Arrow []string `json:"arrow,omitempty"`
+	// Spotlight are the parts of the game's page to pick out, by name: the
+	// player's Power, the round's phases, the History. See PageParts. A part of a
+	// player's panel means the learner's, or another seat's as doom:2.
+	Spotlight []string `json:"spotlight,omitempty"`
 	// Illegal marks the step's arrow and highlighted squares as what must not
 	// be done: drawn red, with a cross. It needs one of them, and such a step
 	// asks for no moves.
@@ -112,6 +116,34 @@ type Step struct {
 // pictured says the step depicts a position other than the room's.
 func (s Step) pictured() bool {
 	return len(s.Show) > 0 || len(s.Position) > 0 || len(s.Pieces) > 0
+}
+
+// PageParts are the names a step's Spotlight may use, and whether each belongs
+// to a seat. They name what a part is rather than how a page draws it, so that
+// a tutorial says nothing about the web page's markup and another client can
+// show them its own way (ADR 0111). internal/web/static/js/tutorial.js says
+// where the web page has each one; a test keeps the two lists the same.
+var PageParts = map[string]bool{
+	"actions":       false, // the buttons of the moves on offer
+	"battle":        false, // the dice and results of the battle
+	"elder-bag":     false, // the Elder Signs left in the bag
+	"first-player":  false, // who plays first, and which way round
+	"history":       false, // the record of the game's moves
+	"history-since": false, // the player's last move in that record
+	"impulse":       false, // who is to act, and what they are asked
+	"options":       false, // the button that opens the game's options
+	"phases":        false, // the steps of a round
+	"ritual-track":  false, // the Ritual of Annihilation track
+	"round-bar":     false, // the round, its phases and tracks
+	"rules":         false, // the button that opens the rules
+	"books":         true,  // how many spellbooks a seat holds
+	"doom":          true,  // a seat's Doom
+	"elder-signs":   true,  // a seat's Elder Signs, one by one
+	"gates":         true,  // how many Gates a seat controls
+	"power":         true,  // a seat's Power
+	"signs":         true,  // how many Elder Signs a seat holds
+	"spellbooks":    true,  // a seat's spellbooks and requirements
+	"units":         true,  // a seat's units: those in its pool, and those not
 }
 
 // SchemaID is the $id of docs/tutorial.schema.json; Required are the fields
@@ -222,12 +254,32 @@ func (t Tutorial) check() error {
 		if pictures > 1 {
 			return fmt.Errorf("%s: step %d: show, position or pieces, only one of them", t.ID, i+1)
 		}
+		for _, part := range s.Spotlight {
+			if err := checkPart(part); err != nil {
+				return fmt.Errorf("%s: step %d: %w", t.ID, i+1, err)
+			}
+		}
 		if s.Illegal && len(s.Arrow) == 0 && len(s.Highlight) == 0 {
 			return fmt.Errorf("%s: step %d is marked illegal, but has no arrow or highlight to mark", t.ID, i+1)
 		}
 		if s.Illegal && (len(s.Play) > 0 || len(s.Reply) > 0) {
 			return fmt.Errorf("%s: step %d is marked illegal, so it cannot ask for moves too", t.ID, i+1)
 		}
+	}
+	return nil
+}
+
+// checkPart says whether a step's Spotlight may name part: name, or name:seat.
+func checkPart(part string) error {
+	name, seat, seated := strings.Cut(part, ":")
+	ofSeat, known := PageParts[name]
+	switch {
+	case !known:
+		return fmt.Errorf("%q is not a part of the page", name)
+	case seated && !ofSeat:
+		return fmt.Errorf("%q does not belong to a seat, as %q says", name, part)
+	case seated && (seat == "" || strings.Trim(seat, "0123456789") != "" || seat[0] == '0'):
+		return fmt.Errorf("%q: %q is not a seat", part, seat)
 	}
 	return nil
 }

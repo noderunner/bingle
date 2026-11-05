@@ -1,0 +1,104 @@
+# How to win starts here: the last round of a game, with one action left before the Doom phase.
+# Written out, not played to: tutorials/how-to-win.yaml includes it.
+v: 2
+cells:
+  south-pacific:
+    - {piece: cultist, color: green}
+    - {piece: cultist, color: green}
+    - {piece: cthulhu, color: green}
+    - {piece: deep-one, color: green}
+  north-pacific:
+    - {piece: cultist, color: green}
+  new-zealand:
+    - {piece: cultist, color: green}
+  asia:
+    - {piece: cultist, color: blue}
+    - {piece: nightgaunt, color: blue}
+  north-america-west:
+    - {piece: cultist, color: blue}
+  central-america:
+    - {piece: cultist, color: blue}
+  africa:
+    - {piece: cultist, color: red}
+    - {piece: cultist, color: red}
+    - {piece: dark-young, color: red}
+  europe:
+    - {piece: cultist, color: yellow}
+    - {piece: cultist, color: yellow}
+    - {piece: cultist, color: yellow}
+reserves:
+  green:
+    cultist: 2
+    deep-one: 3
+    shoggoth: 2
+    starspawn: 2
+    cthulhu: 0
+  blue:
+    cultist: 3
+    nightgaunt: 2
+    flying-polyp: 3
+    hunting-horror: 2
+    nyarlathotep: 1
+  red:
+    cultist: 4
+    ghoul: 2
+    fungi: 4
+    dark-young: 2
+    shub-niggurath: 1
+  yellow:
+    cultist: 3
+    undead: 6
+    byakhee: 4
+    king-in-yellow: 1
+    hastur: 1
+ply: 0
+ext:
+  phase: action
+  round: 6
+  players: 4
+  first: 1
+  dir: 1
+  power: [0, 1, 0, 0, 0, 0]
+  doom: [0, 22, 29, 14, 12, 0]
+  doom_by:
+    - {}
+    - {gates: 12, rituals: 6, signs: 4}
+    - {gates: 15, rituals: 10, signs: 4}
+    - {gates: 14}
+    - {gates: 12}
+    - {}
+  ritual: 3
+  gates: {south-pacific: 1, north-pacific: 1, new-zealand: 1, asia: 2, north-america-west: 2, central-america: 2, africa: 3, europe: 4}
+  holders:
+    south-pacific: cultist
+    north-pacific: cultist
+    new-zealand: cultist
+    asia: cultist
+    north-america-west: cultist
+    central-america: cultist
+    africa: cultist
+    europe: cultist
+  books: [0, 63, 31, 7, 3, 0]
+  neutral: [0, 0, 0, 0, 0, 0]
+  reqs: [0, 63, 31, 7, 3, 0]
+  signs: [null, [2, 3], [1, 1], [1], [], null]
+  shown: [null, [], [], [], [], null]
+  bag: [12, 10, 5]
+  loyal: [0, 0, 0, 0, 0, 0]
+  card: [0, 0, 0, 0, 0, 0]
+  captured:
+    - [0, 0, 0, 0, 0, 0]
+    - [0, 0, 0, 0, 0, 0]
+    - [0, 0, 0, 0, 0, 0]
+    - [0, 0, 0, 0, 0, 0]
+    - [0, 0, 0, 0, 0, 0]
+    - [0, 0, 0, 0, 0, 0]
+  hib: [false, false, false, false, false, false]
+  used: [0, 0, 0, 0, 0, 0]
+  battled: [null, null, null, null, null, null]
+  stage: turn
+  turn: {seat: 1}
+  resume: turn
+  rng: 11400714819323198490
+  events: []
+  log: []

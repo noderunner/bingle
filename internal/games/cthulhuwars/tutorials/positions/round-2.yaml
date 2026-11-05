@@ -56,7 +56,7 @@ reserves:
     king-in-yellow: 1
     hastur: 1
     high-priest: 0
-ply: 60
+ply: 0
 ext:
   phase: action
   round: 2

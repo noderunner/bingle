@@ -2,6 +2,7 @@ package tutorial
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/noderunner/bingle/internal/engine/board"
@@ -57,6 +58,14 @@ func Verify(cat *catalog.Catalog, family string, t Tutorial) error {
 		for _, sq := range append(append([]string{}, s.Highlight...), s.Arrow...) {
 			if !game.Board.HasPosition(board.PositionID(sq)) {
 				return fmt.Errorf("%s: %q is not a square of %q", at, sq, t.Game)
+			}
+		}
+		for _, part := range s.Spotlight {
+			if _, seat, seated := strings.Cut(part, ":"); seated {
+				n, _ := strconv.Atoi(seat)
+				if _, ok := game.Seat(n); !ok {
+					return fmt.Errorf("%s: %q: %q has no seat %s", at, part, t.Game, seat)
+				}
 			}
 		}
 		for _, mv := range s.Play {

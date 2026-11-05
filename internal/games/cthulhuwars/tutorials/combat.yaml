@@ -1,0 +1,92 @@
+# yaml-language-server: $schema=../../../../docs/tutorial.schema.json
+id: combat
+kind: rules
+title: Combat
+summary: The order of a battle, counting dice, Kills and Pains, and having nowhere to run.
+order: 6
+game: cthulhu-wars
+seat: 1          # you play Great Cthulhu; the page plays the others
+# Written out, with its state of chance chosen so that the dice below come up.
+start: !include positions/a-battle-to-fight.yaml
+
+steps:
+  - text: |
+      **Battle** is an action costing 1 Power: fight one enemy in an area where you both have units.
+
+      You and Black Goat share New Zealand.
+    highlight: [new-zealand]
+    spotlight: [power]
+
+  - text: |
+      Each side rolls one die for each point of **Combat** among its units there.
+
+      - You: Cthulhu 6 + two Deep Ones at 1 each = **8 dice**
+      - Black Goat: Dark Young 2 + two Fungi at 1 each = **4 dice**
+
+      Cultists usually have 0. Hover a unit to see its Combat.
+    highlight: [new-zealand]
+
+  - text: |
+      A battle runs in order:
+
+      1. **Pre-battle** abilities
+      2. **Roll** the dice
+      3. **Assign** the results
+      4. **Post-battle** abilities
+      5. **Retreat**
+
+      Start it: press **Battle**, click New Zealand, then choose Black Goat.
+    play: [battle@new-zealand/bg]
+    hint: Press Battle, click New Zealand, then choose Black Goat.
+    highlight: [new-zealand]
+    spotlight: [actions]
+    reply: [lose:cultist@new-zealand]
+
+  - text: |
+      Before the dice, Cthulhu's pre-battle ability, **Devour**, made Black Goat eliminate a unit. It
+      gave up its Cultist, which rolls no dice anyway.
+
+      Then the dice: a **6 is a Kill**, a **4 or 5 is a Pain**, the rest miss. Each side took one of
+      each.
+    spotlight: [battle]
+
+  - text: |
+      Each player **assigns the results against their own units**, Kills first. A Kill eliminates the
+      unit, sending it back to the pool.
+
+      Give your Kill to a **Deep One**.
+    play: [assign:deep-one]
+    hint: Press the Deep One's button.
+    spotlight: [battle]
+    reply: [assign:fungi]
+
+  - text: |
+      Now your Pain. A pained unit must **retreat** to an adjacent area that holds no enemy unit from
+      this battle.
+
+      Give it to your other **Deep One**, keeping Cthulhu in New Zealand.
+    play: [assign:deep-one]
+    hint: Press the Deep One's button.
+    spotlight: [battle]
+    reply: [assign:fungi]
+
+  - text: |
+      **Nowhere to run makes a Pain a Kill.** Black Goat's pained Fungi had to leave, but you hold
+      every neighbouring area, so it was eliminated instead.
+
+      (If several units are trapped, only one of them dies. See the rules.)
+    highlight: [australia, indian-ocean, south-pacific]
+
+  - text: |
+      Your Deep One can still run. Retreat it to the **South Pacific**.
+    play: [retreat:deep-one>south-pacific]
+    hint: Click the South Pacific.
+    arrow: [new-zealand, south-pacific]
+
+  - text: |
+      That's a battle. Post-battle spellbooks had their moment before the retreats; neither side has
+      one to use here.
+
+      One reminder: with **all six spellbooks**, Battle becomes an unlimited action, so it no longer
+      uses up your turn.
+    spotlight: [books]

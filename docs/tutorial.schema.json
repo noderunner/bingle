@@ -57,6 +57,13 @@
           },
           "type": "array"
         },
+        "spotlight": {
+          "description": "Spotlight are the parts of the game's page to pick out, by name: the player's Power, the round's phases, the History. See PageParts. A part of a player's panel means the learner's, or another seat's as doom:2.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
         "text": {
           "description": "Text is the step's prose, in Markdown (the game's guide images may be used, as in its rules pages).",
           "type": "string"

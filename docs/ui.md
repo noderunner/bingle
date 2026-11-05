@@ -27,7 +27,7 @@ the page exactly as tall as the window, with no page scroll and no footer. The `
 can be drawn at that height (`--board-aspect`, from the board's `viewBox`; the map's canvas; a fixed shape for a board
 that grows, such as Hive's), leaving `#play-rail` at least `--rail-least`.
 The rail has what is left, up to 40rem, and any width beyond that is shared by the outer margins. It holds the cards in
-one column and scrolls by itself, keeping its place across redraws: the tutorial and any notices, `#impulse-card`,
+one column and scrolls by itself, keeping its place across redraws: the tutorial (which stays in view at the top of the rail as it scrolls) and any notices, `#impulse-card`,
 `#players-card` (`#cult-stack` at a table of three or more), voice, chat and history. On an upright screen under 980px
 wide, the rail goes under the board, whose row is no taller than the board.
 

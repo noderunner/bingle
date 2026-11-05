@@ -2083,6 +2083,8 @@ code.wrap { overflow-wrap: anywhere; word-break: break-all; }
 
 /* A tutorial (ADR 0077): the step above the board, and its arrows on it. */
 .tutorial-card { border-left: 4px solid var(--focus); }
+/* It stays in view as the column scrolls to what the step picks out. */
+.play-rail > .tutorial-card { position: sticky; top: -3px; z-index: 3; max-height: 55vh; overflow-y: auto; }
 .tutorial-card .tutorial-head { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; margin-bottom: 0.4rem; }
 .tutorial-card .tutorial-text .md p:last-child { margin-bottom: 0.4rem; }
 .tutorial-card .tutorial-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
@@ -2107,6 +2109,10 @@ code.wrap { overflow-wrap: anywhere; word-break: break-all; }
 /* In a tutorial: the control the step points at, and the others, inert. */
 .tutorial-target { outline: 3px solid var(--focus); outline-offset: 2px; box-shadow: 0 0 0 6px color-mix(in srgb, var(--focus) 25%, transparent); }
 .tutorial-inert { opacity: 0.45; cursor: not-allowed; }
+/* In a tutorial: a part of the page the step is talking about. */
+.tutorial-spot { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 4px; animation: tutorial-spot 1.6s ease-in-out 2; }
+@keyframes tutorial-spot { 50% { outline-offset: 5px; box-shadow: 0 0 0 7px color-mix(in srgb, var(--focus) 30%, transparent); } }
+@media (prefers-reduced-motion: reduce) { .tutorial-spot { animation: none; } }
 
 /* Tournaments. */
 .tournament-rows, .tournament-games { list-style: none; padding: 0; margin: 0; }

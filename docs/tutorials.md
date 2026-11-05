@@ -74,6 +74,7 @@ steps:
 | `reply` | Moves played for the other seats after the learner's. | |
 | `highlight` | Squares or areas to ring. | Must be on the board. |
 | `arrow` | An arrow, as `[from, to]`. | Exactly two squares, both on the board. |
+| `spotlight` | Parts of the page to pick out, by name: `[power, phases]`. | See [Pointing at the page](#pointing-at-the-page). |
 | `illegal` | `true` draws the step's `arrow` and `highlight` red with a cross: what must not be done. | Needs one of them. No `play` or `reply`. |
 | `pieces` | A picture: the board with just these pieces on it. | Only one of `pieces`, `show` and `position`. No `play` or `reply`. |
 | `show` | A picture: the position these moves reach from the game's start. | As above. Every move must be legal, in turn. |
@@ -132,8 +133,19 @@ start: !include positions/round-2.yaml   # beside the tutorial, under tutorials/
 
 The easiest way to write one is to let bots play to roughly the right moment, take the position
 (`bingle dsl convert -` turns its JSON into YAML) and edit it: who has which units, where, and how much
-of what they spend. `internal/games/cthulhuwars/tutorials/` is the example: the High Priests tutorial
-starts from a written-out round 2.
+of what they spend. `internal/games/cthulhuwars/tutorials/` is the example: every tutorial there
+starts from a written-out position, and the Combat tutorial's `rng` is chosen so its dice teach what they should.
+
+In a game that narrates its moves, write `ply: 0` in a start: the room's moves count from there, and the page
+finds the story of a move by its ply, so any other leaves the History empty. A test holds Cthulhu Wars to this.
+
+**Moving several units.** Moves in a row that send units from one area to the same place are one thing to
+do: the learner gathers them on the map, in any order, and then clicks their destination, as in a game. Each is
+still its own move in `play`, and a move that needs it ends with `done`:
+
+```yaml
+play: [go:deep-one@south-pacific>new-zealand, go:shoggoth@south-pacific>new-zealand, done]
+```
 
 **Reactions.** In a game where a player can react on another's turn (Cthulhu Wars' Unspeakable Oath),
 every reaction in a tutorial room is asked — none is answered by the server — so the script decides
@@ -142,6 +154,32 @@ which the page plays for them. A reaction worth making is the learner's own `pla
 when to be asked is fixed for the whole room: `GET /reactions` reports `fixed`, `PUT` is refused, and
 the page offers neither the reaction settings nor the "stop being asked" shortcuts under a question,
 since a reaction passed for the learner would leave the script behind.
+
+## Pointing at the page
+
+`highlight` and `arrow` point at the board. `spotlight` points at everything else, by what a part is rather than
+how the page draws it, so a tutorial holds no markup and another client can show the same names its own way
+([ADR 0111](decisions/0111-a-tutorial-points-at-the-page-by-name.md)).
+
+| Name | The part |
+|---|---|
+| `actions` | The buttons of the moves on offer. |
+| `impulse` | Who is to act, and what they are asked. |
+| `round-bar`, `phases` | The round with its tracks, and just its phases. |
+| `ritual-track`, `elder-bag` | The Ritual of Annihilation track, and the Elder Signs left in the bag. |
+| `first-player` | The mark of the first player and the direction of play. |
+| `battle` | The dice and results of the battle. |
+| `history`, `history-since` | The History, and the rule at the player's last move in it. |
+| `options`, `rules` | The buttons that open them. |
+| `power`, `doom`, `signs`, `gates`, `books` | A number in a cult's panel. |
+| `spellbooks`, `units`, `elder-signs` | A section of a cult's panel. |
+
+The last two rows belong to a seat: the learner's, or another's with its number (`doom:2`). An unknown name, or
+a seat the game does not have, fails the tests. On coming to a step the page opens what its parts lie in, the
+rail's tab or the cult's details, and brings them into view; the learner may then look elsewhere. A part that is
+not on the page just then, such as `battle` with no battle yet, is passed over, and the phone picks a part out
+only on the view that has it. To add a name, add it to `tutorial.PageParts` and to `PAGE_PARTS` in
+`internal/web/static/js/tutorial.js`; a test keeps the two the same.
 
 ## Writing a rules tutorial
 
@@ -182,15 +220,16 @@ so the rules are the engine's. The room is marked as a tutorial (`tutorial: "fam
 ## The page
 
 A tutorial room's game page shows the step above the board, its highlighted squares ringed and its
-arrow drawn (`.illegal-marks`, with `.illegal-cross` over them, for an `illegal` step), and a picture in
-place of the game's, with `#status-message` saying it is an example. The chat and the voice call are left out:
+arrow drawn (`.illegal-marks`, with `.illegal-cross` over them, for an `illegal` step), its `spotlight` parts
+picked out (`.tutorial-spot`), and a picture in place of the game's, with `#status-message` saying it is an example. The chat and the voice call are left out:
 there is nobody to talk to.
 
 **What to select is a signal, not a page of its own.** The tutorial the API serves carries a `guide`
 for each step: the selections each of the learner's moves is made of (`piece red`, then `pos d4`) and
 the position a step shows ([api.md](api.md#games)). A client shows them its own way. The web page
 keeps every control where it always is — the colour buttons, *End* — picks out the one to press,
-makes the others inert, and lets only the square to click be clicked. *Need a hint?* shows the step's
+makes the others inert, and lets only the square to click be clicked. *Back* still undoes a choice not yet sent,
+but cannot take back a step of the turn, which would leave the script. *Need a hint?* shows the step's
 `hint`. When the learner's moves are made, the page
 plays the step's `reply` for the other seats, a moment apart so they can be followed, and moves on.
 A step without `play` waits for **Next** (**Finish** on the last).
@@ -201,7 +240,7 @@ played on, no reply is played, and **Next** comes forward again to where the lea
 
 Where the learner is comes from the
 moves the room has played, so a reload, another tab or a phone find the same step; moves that are not
-the script's (a step taken back) leave the tutorial *off script*, with a way to start again.
+the script's (one made through the API) leave the tutorial *off script*, with a way to start again.
 
 At the end the tutorial is marked done in the browser, and **Finish this game against a bot** starts
 an ordinary game from the position on the board.

@@ -30,7 +30,7 @@ import { choiceIcon } from "./choice-icons.js";
 import { animalIcon, animalOf } from "./animals.js";
 import { themesFor, themeById } from "./themes.js";
 import { useCardSet } from "./card-sets.js";
-import { stepMoves, progress as tutorialProgress, isExpected, markFinished, allowed as tutorialAllowed } from "./tutorial.js";
+import { stepMoves, progress as tutorialProgress, isExpected, markFinished, allowed as tutorialAllowed, pagePart, scriptedMoveGroup } from "./tutorial.js";
 import { renderMarkdown } from "./markdown.js";
 
 installNav();
@@ -916,9 +916,9 @@ function queueTakes(pos, piece) {
 	const cost = unitCost(moves, piece, pos);
 	if (cost === null) return false;
 	const q = S.moveQueue;
-	if (!q) return cost <= powerOf(S.game.impulse_seat) && (!S.tut || tutorialAllowsPath(tokenSteps(activeBuilder(), pos, piece) || []));
-	// A tutorial's step is a single move.
-	if (S.tut || q.from !== pos) return false;
+	if (S.tut && !tutorialWantsUnit(pos, piece)) return false;
+	if (!q) return cost <= powerOf(S.game.impulse_seat);
+	if (q.from !== pos) return false;
 	const have = q.units.get(piece) || 0;
 	const stack = ((rulesetView() || {}).move_stacks || {})[`${piece}|${pos}`] || 0;
 	if (have >= stack || queueCost(moves) + cost > powerOf(S.game.impulse_seat)) return false;
@@ -946,7 +946,9 @@ async function sendMoveQueue(to) {
 	const q = S.moveQueue;
 	const moves = queueMoves();
 	const units = queuedUnits().sort((a, b) => Number(a.startsWith(ONGATE)) - Number(b.startsWith(ONGATE)));
-	const notations = units.map((piece) => moves.find((m) => m.piece === piece && m.from === q.from && m.to === to)?.notation).filter(Boolean);
+	let notations = units.map((piece) => moves.find((m) => m.piece === piece && m.from === q.from && m.to === to)?.notation).filter(Boolean);
+	// The script has its own order for the units the learner gathered in theirs.
+	if (S.tut) notations = tutorialMoveGroup().map((m) => m.notation);
 	if (S.tut && !isExpected(tutorialState().next, notations[0])) {
 		S.tut.hint = tutorialState().step;
 		S.moveQueue = null;
@@ -1065,6 +1067,7 @@ function resetMove() {
 }
 
 function undoStep() {
+	if (S.tut && !tutorialCanUndo()) return;
 	if (S.passAsked) {
 		S.passAsked = false;
 		render();
@@ -2033,6 +2036,7 @@ function render() {
 	if (S.tut)
 		queueMicrotask(() => {
 			tutorialMarkControls();
+			tutorialSpotlight();
 			tutorialTick();
 		});
 	// Taking the field off the page blurs it, which would lose the player's place in it.
@@ -2745,7 +2749,7 @@ function drawBoard(host) {
 	const tokensFirst = S.info.board.style === "areas" && b.steps.length === 0;
 	let targets = S.moveQueue && interactive ? queueDestinations() : interactive && !tokensFirst ? b.nextPositions() : new Set();
 	// In a tutorial only the square the step points at can be clicked.
-	if (S.tut) targets = new Set([...targets].filter((pos) => tutorialAllows("pos", pos)));
+	if (S.tut) targets = new Set([...targets].filter((pos) => (S.moveQueue ? tutorialQueueGoesTo(pos) : tutorialAllows("pos", pos))));
 	renderBoard(
 		host,
 		S.info,
@@ -6576,6 +6580,72 @@ function tutorialAllowsPath(path) {
 	});
 }
 
+/** Whether Back only undoes what the learner has chosen and not sent. */
+function tutorialCanUndo() {
+	return !!S.passAsked || !!S.moveQueue || activeBuilder().manualSteps().length > 0;
+}
+
+/** The units the step asks the learner to move together next (see scriptedMoveGroup). */
+function tutorialMoveGroup() {
+	const p = tutorialState();
+	if (tutorialLookingBack() || !p.next || p.next.who !== "learner") return [];
+	return scriptedMoveGroup((S.tut.doc.steps || [])[p.step] || {}, p.next.index);
+}
+
+/** Whether the step wants one more of this unit from this area, among those gathered already. */
+function tutorialWantsUnit(pos, piece) {
+	const wanted = tutorialMoveGroup().filter((m) => m.from === pos && (m.leaving ? ONGATE + m.piece : m.piece) === piece);
+	return wanted.length > ((S.moveQueue && S.moveQueue.units.get(piece)) || 0);
+}
+
+/** The queue can go here: it holds every unit the step moves together, and this is where they go. */
+function tutorialQueueGoesTo(pos) {
+	const group = tutorialMoveGroup();
+	return !!group.length && group[0].to === pos && queuedUnits().length === group.length;
+}
+
+/**
+ * Picks out the parts of the page the step names (ADR 0111). On coming to a step
+ * it also opens what they lie in, once: the learner may then look elsewhere.
+ */
+function tutorialSpotlight() {
+	for (const el of document.querySelectorAll(".tutorial-spot")) el.classList.remove("tutorial-spot");
+	const viewed = tutorialViewed();
+	const parts = (tutorialStep().spotlight || []).map((part) => pagePart(part, S.tut.doc.seat || 1)).filter(Boolean);
+	if (S.tut.spotlit !== viewed) {
+		S.tut.spotlit = viewed;
+		S.tut.spotScroll = true;
+		const pane = parts.find((part) => part.pane);
+		const opened = parts.find((part) => part.openSeat);
+		const tab = pane ? pane.pane : S.railTab;
+		const details = opened ? `seat-${opened.openSeat}` : S.expanded;
+		if (tab !== S.railTab || details !== S.expanded) {
+			S.railTab = tab;
+			S.expanded = details;
+			render();
+			return; // the redraw comes back here, to a page with those parts on it
+		}
+	}
+	const spots = parts.flatMap((part) => [...document.querySelectorAll(part.selector)]);
+	for (const el of spots) el.classList.add("tutorial-spot");
+	if (S.tut.spotScroll && spots.length) tutorialShowPart(spots[spots.length - 1]);
+	S.tut.spotScroll = false;
+}
+
+/** Brings a picked-out part into view, in the column below the step's card, which stays where it is. */
+function tutorialShowPart(el) {
+	const rail = el.closest(".play-rail");
+	if (!rail) {
+		el.scrollIntoView({ block: "nearest" });
+		return;
+	}
+	const card = rail.querySelector("#tutorial");
+	const top = rail.getBoundingClientRect().top + (card ? card.offsetHeight + 8 : 0);
+	const box = el.getBoundingClientRect();
+	const bottom = rail.getBoundingClientRect().bottom;
+	if (box.top < top || box.bottom > bottom) rail.scrollTop += box.top - top;
+}
+
 /**
  * The page's own controls stay where they always are; in a tutorial the one
  * the step points at is picked out and the others are made inert.
@@ -6583,6 +6653,12 @@ function tutorialAllowsPath(path) {
 function tutorialMarkControls() {
 	if (!S.tut) return;
 	const asking = !!tutorialExpected() && isMyImpulse();
+	// Taking back a step of the turn would leave the script: a choice not yet made can still be undone.
+	const back = document.getElementById("undo-step");
+	if (back && !tutorialCanUndo()) {
+		back.disabled = true;
+		back.classList.add("tutorial-inert");
+	}
 	for (const el of document.querySelectorAll("button[data-action], button[data-piece], button[data-count]")) {
 		if (el.closest("#tutorial, #rules-dialog, .options-window")) continue;
 		const [kind, value] = el.dataset.action ? ["action", el.dataset.action] : el.dataset.piece ? ["piece", el.dataset.piece] : ["count", el.dataset.count];
