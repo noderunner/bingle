@@ -12,6 +12,7 @@ what the help window shows under *Recent changes*, so it is written for the peop
 ### Cthulhu Wars 0.14.0
 - **Every core Great Old One has its moment.** The first time each awakens: **Nyarlathotep** condenses out of the shadows as pale eyes open around him, the **King in Yellow** rises through the trap of a rotting theatre with the Yellow Sign burning behind him, **Hastur** comes from a point in the abyss as the stars are dragged into a spiral, and **Shub-Niggurath** heaves up out of a swamp, with mouths opening all over her.
 - **Watch them again** from their badges in the history.
+- **Easier to read battle dice.** Dice are now in the colour of the faction rolling them, and Kills and Pains stand out clearly on every colour.
 
 ## 0.73.0 - 2026-11-05
 

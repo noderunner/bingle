@@ -858,7 +858,8 @@ Cthulhu Wars plays each battle on the map (`static/js/cw-battle.js`, *Battle ani
 off under the OS "reduce motion" setting). It is a layer over a copy of the map, fed only with snapshots
 of positions, so the game never waits for it and the page underneath stays current. The copy zooms to the
 area, which stays centred even at the map's edge, and the dark has the area's shape cut out of it. Each side
-stands to one side, large (a big army shrinks to fit), with its dice between them.
+stands to one side, large (a big army shrinks to fit), with its dice between them. Dice are in the colour of
+the cult rolling them; a Kill or a Pain is a mark on a dark disc, so it stands out on a die of any colour.
 
 The order is: the pools of dice, one die at a time on both sides; the Pre-Battle Phase; the throw; the
 casualties, each with a red X; the Post-Battle Phase; and the zoom out at the `retreat` step, which is played

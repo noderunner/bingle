@@ -1108,6 +1108,17 @@ func TestWebCthulhuWars_TheAnimationTester(t *testing.T) {
 	waitJS(t, ctx, "Pre-Battle", `document.querySelector("#battle-phase .bt-phase-title") && document.querySelector("#battle-phase .bt-phase-title").textContent === "Pre-Battle Phase"`, 15*time.Second)
 	waitJS(t, ctx, "the abilities", `document.querySelectorAll('#battle-phase .bt-ability').length >= 4`, 15*time.Second)
 	waitJS(t, ctx, "the throw", `document.querySelectorAll("#battle-stage .bt-cube").length > 0`, 25*time.Second)
+	// Each side's dice are in its own colour, and the marks are on them.
+	if !evalBool(t, ctx, `(function () {
+		var root = getComputedStyle(document.documentElement);
+		var die = function (seat) { return getComputedStyle(document.querySelector('#battle-stage .bt-dice[data-seat="' + seat + '"] .bt-face')).getPropertyValue("--bt-die").trim(); };
+		return die(1) === root.getPropertyValue("--piece-green-fill").trim() && die(2) === root.getPropertyValue("--piece-blue-fill").trim();
+	})()`) {
+		t.Error("the dice are not in their cults' colours")
+	}
+	if !evalBool(t, ctx, `document.querySelector('#battle-stage .bt-die .bt-face.kill .bt-mark.kill .bt-skull') !== null && document.querySelector('#battle-stage .bt-die .bt-face.pain .bt-mark.pain .bt-burst') !== null && document.querySelector('#battle-stage .bt-die .bt-face.miss .bt-mark') === null`) {
+		t.Error("the faces of the dice do not carry their marks")
+	}
 	waitJS(t, ctx, "a casualty", `document.querySelectorAll("#battle-stage .bt-unit.dead .bt-x").length > 0`, 15*time.Second)
 	waitJS(t, ctx, "Post-Battle", `document.querySelector("#battle-phase .bt-phase-title") && document.querySelector("#battle-phase .bt-phase-title").textContent === "Post-Battle Phase"`, 25*time.Second)
 	waitJS(t, ctx, "its end", `document.getElementById("battle-stage") === null`, 25*time.Second)
