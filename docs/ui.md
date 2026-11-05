@@ -869,6 +869,10 @@ be copied, and the stage is turned 90° with CSS, because a page can only lock t
 screen after a tap (never on iOS), and a battle often comes from another player's move. On a phone the stage
 also steps aside when the show has caught up with a choice that needs a button.
 
+A Great Old One's first awakening has a show of its own (`#emerge-stage`, `js/cw-emerge.js`), Cthulhu's for now
+(`js/cw-cthulhu-art.js`, about seven seconds, [ADR 0108](decisions/0108-a-great-old-one-emerges.md)). In the history it is a badge in the cult's colour
+(`.log-emerges`; `.playable[data-emerges]` plays it again).
+
 Selecting a move of a battle in the history plays that battle from its positions. Moving on to another move
 of the same battle does not start it over; moving to a position outside the battle ends it. A battle can
 finish inside the move that declares it, so the units that stood there beforehand come from the position

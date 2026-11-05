@@ -8,6 +8,7 @@
 // again from the same snapshots. Everything the game needs of it goes through `ctx`.
 
 import { h, s, clear } from "./util.js";
+import { aimAtArea, copyMap, createZoom, darkenAround, placeStage } from "./cw-map-stage.js";
 
 const KILL = 6;
 const PAIN = 4;
@@ -19,7 +20,6 @@ const UNIT_REM = 5.6;
 const MIN_UNIT_REM = 1.6;
 const POOL_MS = 1200; // the longest the dice of a pool take to arrive
 const wait = (ms) => new Promise((done) => setTimeout(done, ms));
-const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);
 
 // The rotation of a cube that brings each of its six faces to the front.
 const TO_FRONT = { 1: [0, 0], 2: [0, -90], 3: [0, 180], 4: [0, 90], 5: [-90, 0], 6: [90, 0] };
@@ -82,8 +82,7 @@ export function createBattleTheatre(ctx) {
 	let replay = false;
 	let seen = true; // the player saw the move that brought this battle, so its dice are thrown for them
 	let before = null; // the units of the two sides just before the battle was declared
-	let frame = 0;
-	let endZoom = null; // ends the zoom under way, so that a show taken down does not wait for it for ever
+	const zoomer = createZoom();
 	let baseBox = null;
 	let cloneSvg = null;
 	let last = null;
@@ -91,109 +90,19 @@ export function createBattleTheatre(ctx) {
 	let token = 0; // a new show ends the old one's pauses
 
 	function place() {
-		if (!stage) return;
-		const box = stage.style;
-		stage.classList.toggle("phone", ctx.phone());
-		if (ctx.phone()) {
-			// A phone gives the whole screen to the show. Held upright, the show lies on its side,
-			// and turning the phone straightens it: a page can only ask for a real turn of the screen
-			// in full screen and after a tap, and a battle often comes from another player's move.
-			const [w, h2] = [window.innerWidth, window.innerHeight];
-			const up = ctx.upright();
-			Object.assign(box, { left: `${up ? w : 0}px`, top: "0", width: `${up ? h2 : w}px`, height: `${up ? w : h2}px`, transform: up ? "rotate(90deg)" : "" });
-			return;
-		}
-		const board = ctx.onPage();
-		if (!board) return;
-		const r = board.getBoundingClientRect();
-		Object.assign(box, { left: `${r.left}px`, top: `${r.top}px`, width: `${r.width}px`, height: `${r.height}px`, transform: "" });
+		if (stage) placeStage(stage, ctx);
 	}
 
-	/** Moves the map's viewBox to box over ms; resolves when it is there. */
-	function zoom(to, ms) {
-		const svg = cloneSvg;
-		if (!svg) return Promise.resolve();
-		const from = svg.getAttribute("viewBox").split(" ").map(Number);
-		const t0 = performance.now();
-		cancelAnimationFrame(frame);
-		endZoom?.();
-		// A page out of sight gets no frames: the show would stop until the player came back.
-		if (document.hidden) {
-			svg.setAttribute("viewBox", to.join(" "));
-			return Promise.resolve();
-		}
-		return new Promise((done) => {
-			endZoom = done;
-			const step = (now) => {
-				const t = Math.min(1, (now - t0) / ms);
-				const k = ease(t);
-				svg.setAttribute("viewBox", from.map((v, i) => v + (to[i] - v) * k).join(" "));
-				if (t < 1) {
-					frame = requestAnimationFrame(step);
-				} else {
-					endZoom = null;
-					done();
-				}
-			};
-			frame = requestAnimationFrame(step);
-		});
-	}
+	const zoom = (to, ms) => zoomer.to(cloneSvg, to, ms);
 
-	/** The copy of the map: the area's own units gone (they stand in the arena), the rest dark. */
+	/** The copy of the map: the area's own units gone (they stand in the arena). */
 	function cloneMap(board, sides) {
-		const svg = board.cloneNode(true);
-		svg.removeAttribute("id");
-		svg.classList.add("bt-map");
+		const { svg, base } = copyMap(board);
 		const fighters = new Set(sides.map((x) => ctx.colorOf(x.seat)));
 		for (const el of svg.querySelectorAll(`.token[data-position="${area}"]`)) if (fighters.has(el.getAttribute("data-color"))) el.remove();
 		for (const el of svg.querySelectorAll(`.gate-chip[data-position="${area}"] .gate-holder`)) el.remove();
-		baseBox = (svg.getAttribute("viewBox") || "0 0 1000 490").split(" ").map(Number);
+		baseBox = base;
 		return svg;
-	}
-
-	/** The dark around the area, as a mask with the shape of the area cut out of it, and its glow. */
-	function darken(svg, seatColor) {
-		const cell = svg.querySelector(`.cell.area[data-position="${area}"]`);
-		const shapes = cell ? [...cell.querySelectorAll("path, polygon")] : [];
-		if (!shapes.length) return null;
-		const id = "bt-hole";
-		const mask = s("mask", { id });
-		mask.append(s("rect", { x: baseBox[0], y: baseBox[1], width: baseBox[2], height: baseBox[3], fill: "#fff" }));
-		const glow = s("g", { class: "bt-glow", style: `--bt-glow: ${seatColor}` });
-		for (const shape of shapes) {
-			const hole = shape.cloneNode(true);
-			hole.removeAttribute("class");
-			hole.setAttribute("fill", "#000");
-			hole.setAttribute("stroke", "#000");
-			mask.append(hole);
-			const edge = shape.cloneNode(true);
-			edge.removeAttribute("class");
-			glow.append(edge);
-		}
-		svg.append(
-			s("defs", {}, mask),
-			s("rect", { class: "bt-dark", x: baseBox[0], y: baseBox[1], width: baseBox[2], height: baseBox[3], mask: `url(#${id})` }),
-			glow
-		);
-		return cell;
-	}
-
-	/** Where to look: the area, with room around it for the two sides to stand. */
-	function aimAt(svg, cell) {
-		// An ocean that wraps the map has a piece at each edge: look at the bigger one.
-		const pieces = [...cell.querySelectorAll("polygon.area-bg")].map((p) => p.getBBox());
-		const box = pieces.sort((a, b) => b.width * b.height - a.width * a.height)[0] || cell.getBBox();
-		const aspect = baseBox[2] / baseBox[3];
-		// The area stands in the middle, between the two sides, even at the edge of the map.
-		let w = Math.max(box.width * 2.6, baseBox[2] * 0.34);
-		let h2 = w / aspect;
-		if (h2 < box.height * 1.7) {
-			h2 = box.height * 1.7;
-			w = h2 * aspect;
-		}
-		const x = box.x + box.width / 2 - w / 2;
-		const y = box.y + box.height / 2 - h2 / 2;
-		return [x, y, w, h2];
 	}
 
 	function sideNode(side, i) {
@@ -247,7 +156,7 @@ export function createBattleTheatre(ctx) {
 		place();
 		cloneSvg = cloneMap(board, snap.bt.sides);
 		stage.querySelector(".bt-map-host").append(cloneSvg);
-		const cell = darken(cloneSvg, ctx.ink(snap.bt.sides[0].seat));
+		const cell = darkenAround(cloneSvg, baseBox, area, ctx.ink(snap.bt.sides[0].seat));
 		return cell;
 	}
 
@@ -469,7 +378,7 @@ export function createBattleTheatre(ctx) {
 			if (cell) {
 				await wait(30);
 				stage?.classList.add("in");
-				await zoom(aimAt(cloneSvg, cell), 800);
+				await zoom(aimAtArea(cell, baseBox), 800);
 			} else {
 				stage.classList.add("in");
 			}
@@ -510,9 +419,7 @@ export function createBattleTheatre(ctx) {
 	}
 
 	function remove() {
-		cancelAnimationFrame(frame);
-		endZoom?.();
-		endZoom = null;
+		zoomer.stop();
 		stage?.remove();
 		stage = null;
 		cloneSvg = null;

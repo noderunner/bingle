@@ -1284,6 +1284,10 @@ func (e *eng) awaken(seat int, typ string, a int) {
 		return
 	}
 	e.say("%s awakens %s in %s (%d Power).", e.seatName(seat), unitNameOf(typ), e.areaName(a), cost)
+	// The first time only: the page plays a show of it (ADR 0108).
+	if !d.awokeBefore(seat, typ) {
+		e.say("%s Emerges", unitNameOf(typ))
+	}
 	d.markAwoke(seat, typ)
 	switch typ {
 	case uShub:
@@ -1461,11 +1465,18 @@ func nextRandomFrom(e *eng) uint32 {
 	return uint32(nextRandom(&e.d.RNG) >> 32)
 }
 
-func (d *Data) markAwoke(seat int, typ string) {
-	idx := 0
+// awokeIndex is which of its cult's Great Old Ones a type is.
+func awokeIndex(typ string) int {
 	if typ == uHastur || typ == uIthaqua {
-		idx = 1
+		return 1
 	}
+	return 0
+}
+
+func (d *Data) awokeBefore(seat int, typ string) bool { return d.Awoke(seat, awokeIndex(typ)) }
+
+func (d *Data) markAwoke(seat int, typ string) {
+	idx := awokeIndex(typ)
 	if d.Awoken == nil {
 		d.Awoken = map[string]bool{}
 	}

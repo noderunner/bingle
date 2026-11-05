@@ -25,6 +25,7 @@ import { cardTable, choiceGrid, hideCardZoom } from "./cards.js";
 import { solitaireTable } from "./solitaire.js";
 import { rulesIcon } from "./ui-icons.js";
 import { createBattleTheatre } from "./cw-battle.js";
+import { createEmergence, hasEmergence } from "./cw-emerge.js";
 import { choiceIcon } from "./choice-icons.js";
 import { animalIcon, animalOf } from "./animals.js";
 import { themesFor, themeById } from "./themes.js";
@@ -4446,9 +4447,12 @@ function syncBattleTheatre() {
 	if (was && seq < was.seq) {
 		S.battleKey = null;
 		if (theatre && theatre.isOpen()) theatre.close();
+		emergence?.close();
 	}
 	const seen = !!was && seq > was.seq; // otherwise the page has just opened on this position
 	const gap = seen ? seq - was.seq : 0;
+	// After this redraw, and apart from the battle: nothing here may keep a battle from playing.
+	if (seen) queueMicrotask(() => emergedSince(was.seq, seq));
 	// Moves can come faster than the page draws them. A short run is played in order, or a step
 	// of the battle would be lost; a long one (back from the history) only shows where it ended.
 	if (gap < 2 || gap > BATTLE_CATCH_UP) {
@@ -4477,6 +4481,8 @@ function battleStep(prevState, st, seq, seen) {
 	const bt = snap.bt;
 	if (!bt.resolved || S.battleKey || (seen && battleFoughtInOneMove(snap, before))) {
 		const opening = !S.battleKey;
+		// The map is the battle's now.
+		emergence?.close();
 		if (opening) S.battleKey = `${bt.area}|${bt.att}|${bt.def}|${seq}`;
 		battleTheatre().feed(S.battleKey, snap, opening && prevState ? battleUnitsIn(prevState, bt) : null, seen);
 	}
@@ -4495,6 +4501,81 @@ function showChoicesOnTheatre() {
 	// A phone's buttons are on a page of their own, under the stage: once the show has caught up
 	// with a choice that cannot be made by touching a unit, the stage steps aside for it.
 	theatre.hide(elsewhere || (mine && isMobileLayout() && theatre.isIdle() && !theatre.hasChoices()));
+}
+
+// ---- a Great Old One's first awakening ------------------------------------------------------
+
+let emergence = null;
+
+function theEmergence() {
+	if (emergence) return emergence;
+	emergence = createEmergence({
+		board: battleMap,
+		onPage: () => document.getElementById("board-svg"),
+		phone: isMobileLayout,
+		upright: () => isMobileLayout() && !isLandscape(),
+		ink: seatInk,
+		glyph: seatGlyph,
+	});
+	window.addEventListener("resize", () => emergence.refresh());
+	window.addEventListener("keydown", (ev) => {
+		if (ev.key === "Escape" && emergence.isOpen()) emergence.close();
+	});
+	return emergence;
+}
+
+const EMERGES_RE = /^(.+) Emerges$/;
+
+/** The unit a line of the history says has emerged, and whether it has a show. */
+function emergedUnit(line) {
+	const m = EMERGES_RE.exec(line);
+	if (!m || !S.info) return null;
+	const def = S.info.pieces.find((p) => p.label === m[1]);
+	return def ? { name: m[1], type: def.type, show: hasEmergence(def.type) } : { name: m[1], type: "", show: false };
+}
+
+/** Plays the show of a line of the history, from the move that told it. */
+function playEmergence(unit, e) {
+	const move = S.moves.find((m) => m.seq === e.ply);
+	const area = move && move.to;
+	if (!area) return;
+	const def = (S.info.board.areas || []).find((a) => a.id === area);
+	const still = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+	theEmergence().play({ type: unit.type, name: unit.name, seat: e.seat, area, areaName: def ? def.name : "", still });
+}
+
+/** A first awakening among the moves that have just come, which the player sees as it happens. */
+function emergedSince(from, to) {
+	if (document.hidden) return;
+	const st = S.state;
+	for (const e of (st && st.ext && st.ext.log) || []) {
+		if (e.ply <= from || e.ply > to) continue;
+		for (const line of e.lines || []) {
+			const unit = emergedUnit(line);
+			if (unit && unit.show) playEmergence(unit, e);
+		}
+	}
+}
+
+/** The badge of a first awakening in the history, which plays it again if it has a show. */
+function emergesBadge(unit, e) {
+	const style = `--goo-ink: ${seatInk(e.seat)}`;
+	if (!unit.show) return h("span", { class: "log-emerges", style }, `${unit.name} Emerges`);
+	return h(
+		"button",
+		{
+			type: "button",
+			class: "log-emerges playable",
+			style,
+			"data-emerges": unit.type,
+			title: "Watch it again",
+			onclick: (ev) => {
+				ev.stopPropagation();
+				playEmergence(unit, e);
+			},
+		},
+		`▶ ${unit.name} Emerges`
+	);
 }
 
 /** The position after a move, from the cache of the history. */
@@ -5460,7 +5541,7 @@ function refreshOptions() {
 			settingToggle("hints", "opt-hints", "Highlight legal moves", "bingle.hints"),
 			settingToggle("lastMove", "opt-lastmove", "Highlight last move", "bingle.lastMove"),
 			settingToggle("animate", "opt-animate", "Animate moves", "bingle.animate"),
-			...((S.info.family || S.info.id) === "cthulhu-wars" ? [settingToggle("battleAnim", "opt-battle-anim", "Battle animation", "bingle.battleAnim")] : [])
+			...((S.info.family || S.info.id) === "cthulhu-wars" ? [settingToggle("battleAnim", "opt-battle-anim", "Battle and Great Old One animations", "bingle.battleAnim")] : [])
 		);
 		if (hasHexStyles(S.info)) {
 			const styleSel = h("select", { id: "opt-hex-style", "aria-label": "Board style" });
@@ -5955,6 +6036,8 @@ function sinceRule(seq) {
 
 /** One entry's line of the log, which goes to its move when clicked. */
 function logStep(line, e) {
+	const emerged = emergedUnit(line);
+	if (emerged) return h("li", { class: "log-emerges-line" }, emergesBadge(emerged, e));
 	const li = e.silent ? h("li", { class: "log-silent muted" }, line) : logLine(line);
 	if (!e.ply) return li;
 	li.classList.add("log-step");

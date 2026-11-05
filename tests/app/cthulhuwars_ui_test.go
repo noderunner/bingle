@@ -1001,3 +1001,61 @@ func TestWebCthulhuWars_APhoneStillHasTheUnitCard(t *testing.T) {
 		t.Errorf("%d closed cards on a phone", n)
 	}
 }
+
+// Cthulhu's first awakening is played on the map, by itself, and the history's badge plays it again.
+func TestWebCthulhuWars_CthulhuEmerges(t *testing.T) {
+	baseURL := newRESTTestServer(t)
+	doc := cwScenario(t,
+		[]cwUnit{
+			{1, "cultist", "south-pacific", 2},
+			{2, "cultist", "asia", 2}, {3, "cultist", "south-america-west", 2}, {4, "cultist", "europe", 2},
+		},
+		map[string]int{"south-pacific": 1, "asia": 2, "south-america-west": 3, "europe": 4},
+		[5]int{0, 12, 8, 8, 8}, [5]uint8{0, 0, 0, 0, 0}, 7)
+	room := cwGameFrom(t, baseURL, doc)
+	ctx, cancel := newChromedpContext(t, 120*time.Second)
+	defer cancel()
+	var mu sync.Mutex
+	var jsErrors []string
+	collectJSErrors(ctx, &mu, &jsErrors)
+	if err := chromedp.Run(ctx,
+		chromedp.EmulateViewport(1400, 900),
+		chromedp.Navigate(baseURL+"/healthz"),
+		chromedp.Evaluate(`localStorage.setItem("bingle.battleAnim", "true"); true`, nil),
+	); err != nil {
+		t.Fatal(err)
+	}
+	openGameAs(t, ctx, baseURL, room, "cthulhu-wars", "Alice")
+	waitJS(t, ctx, "the awaken button", `document.querySelector('[data-action="awaken-cthulhu"]') !== null`, 15*time.Second)
+	clickSel(t, ctx, `[data-action="awaken-cthulhu"]`)
+	waitJS(t, ctx, "the area", `document.querySelector('#board .cell.area.clickable[data-position="south-pacific"], #emerge-stage') !== null`, 10*time.Second)
+	if !evalBool(t, ctx, `document.getElementById("emerge-stage") !== null`) {
+		clickCell(t, ctx, "south-pacific")
+	}
+	waitJS(t, ctx, "the show", `document.querySelector('#emerge-stage[data-goo="cthulhu"] .em-scene') !== null`, 15*time.Second)
+	waitJS(t, ctx, "the title", `document.querySelector("#emerge-title.on") !== null`, 10*time.Second)
+	if got := evalString(t, ctx, `document.querySelector("#emerge-title .em-name").textContent`); got != "Cthulhu Emerges" {
+		t.Errorf("the title says %q", got)
+	}
+	// His eyes have opened by then, and it takes four to eight seconds in all.
+	if !evalBool(t, ctx, `Number(document.querySelector("#emerge-stage .em-figure ellipse").getAttribute("ry")) > 2`) {
+		t.Error("his eyes are shut")
+	}
+	waitJS(t, ctx, "the end of the show", `document.getElementById("emerge-stage") === null`, 10*time.Second)
+
+	// The badge, in the cult's colour, and it plays again and can be skipped.
+	evalString(t, ctx, `(document.getElementById("rail-tab-history").click(), "ok")`)
+	waitJS(t, ctx, "the badge", `document.querySelector('.log-emerges.playable[data-emerges="cthulhu"]') !== null`, 10*time.Second)
+	if got := evalString(t, ctx, `document.querySelector(".log-emerges.playable").textContent`); !strings.Contains(got, "Cthulhu Emerges") {
+		t.Errorf("the badge says %q", got)
+	}
+	clickSel(t, ctx, ".log-emerges.playable")
+	waitJS(t, ctx, "the show again", `document.getElementById("emerge-stage") !== null`, 5*time.Second)
+	clickSel(t, ctx, "#emerge-skip")
+	waitJS(t, ctx, "the skip", `document.getElementById("emerge-stage") === null`, 5*time.Second)
+	mu.Lock()
+	defer mu.Unlock()
+	if len(jsErrors) > 0 {
+		t.Errorf("uncaught JS exceptions: %v", jsErrors)
+	}
+}

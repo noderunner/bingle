@@ -4,6 +4,15 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.69.0 - 2026-11-05
+
+### Bingle Core 0.69.0
+- The option for battle animations now covers Great Old Ones too.
+
+### Cthulhu Wars 0.12.0
+- **Cthulhu Emerges.** The first time Cthulhu is awakened, the map zooms in, the sea rises, the drowned city breaks the surface, and he comes up out of the water, wings unfolding, until his eyes open.
+- **Watch it again.** The history marks each Great Old One's first awakening with a badge in its cult's colour. Press *Cthulhu Emerges* to play it again. The other Great Old Ones get their shows later.
+
 ## 0.68.0 - 2026-11-04
 
 ### Bingle Core 0.68.0
