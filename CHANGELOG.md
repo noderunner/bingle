@@ -4,6 +4,14 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.72.0 - 2026-11-05
+
+### Bingle Core 0.72.0
+- **Schedule a game.** When you set up a real-time game while signed in, you can choose *Schedule a time*, in your own time zone, and invite your friends or anyone by their exact handle. The room opens straight away, so everyone can chat and choose seats. When the time comes, any player at the table can press *Start game*.
+- **Calendar invitations.** You get one when you schedule a game, and each player gets one when they accept. The lobby also has *Add to calendar*.
+- **Find a time together.** Instead of one time, offer several in the next 30 days. Each player ticks the ones they can make, and can change their answer whenever they like. Once everyone has answered, the earliest time they can all make becomes the game's time.
+- **When no time suits everyone,** the player who scheduled the game has 48 hours to offer new times or cancel it. After that it closes, and everyone invited is told.
+
 ## 0.71.0 - 2026-11-05
 
 ### Bingle Core 0.71.0

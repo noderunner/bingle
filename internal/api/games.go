@@ -59,6 +59,8 @@ type createGameRequest struct {
 	// list (ADR 0107).
 	ReservedSeats map[string]string `json:"reserved_seats,omitempty"`
 	InviteOnly    bool              `json:"invite_only,omitempty"`
+	// Schedule sets the game up for later, for accounts (ADR 0109).
+	Schedule *session.ScheduleRequest `json:"schedule,omitempty"`
 	// AlsoSeats lists seats, besides Seat, that the creator plays as well (a
 	// game against oneself): each is a player of its own, named after the
 	// creator and the seat ("Alice · Black Goat").
@@ -151,6 +153,7 @@ func (h *handlers) handleCreateGame(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.mgr.CreateGameWithOptions(r.Context(), session.CreateOptions{
 		Reserved:    reserved,
+		Schedule:    req.Schedule,
 		InviteOnly:  req.InviteOnly,
 		GameDefID:   req.GameDefID,
 		CreatorName: req.PlayerName,
@@ -248,6 +251,7 @@ type getGameResponse struct {
 	// Reservations are the seats kept for friends, and InviteOnly says lists do not show the game.
 	Reservations []session.GameReservation `json:"reservations,omitempty"`
 	InviteOnly   bool                      `json:"invite_only,omitempty"`
+	Schedule     *session.GameScheduleView `json:"schedule,omitempty"`
 	InviteURL    string                    `json:"invite_url,omitempty"`
 
 	// Retired: this server no longer offers the game, GameName is what it
@@ -310,7 +314,13 @@ func (h *handlers) handleGetGame(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err)
 		return
 	}
+	schedule, err := h.mgr.GameSchedule(r.Context(), code)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
 	resp := getGameResponse{
+		Schedule:     schedule,
 		Reservations: reservations,
 		InviteOnly:   inviteOnly,
 		ListTitle:    listTitle,

@@ -56,17 +56,18 @@ var (
 
 // Limits: how much one address, one game or one client can cause.
 const (
-	confirmEvery     = 10 * time.Minute // per address
-	confirmPerDay    = 5                // per address
-	confirmPerIPHour = 5
-	turnEveryPerGame = 15 * time.Minute // per address and game
-	turnPerDayAddr   = 20
-	turnPerDayGame   = 100
-	noticeEvery      = time.Hour
-	friendMailPerDay = 5
-	confirmLifetime  = 24 * time.Hour
-	breakerCooldown  = time.Hour
-	maxAwayMinutes   = 24 * 60
+	confirmEvery       = 10 * time.Minute // per address
+	confirmPerDay      = 5                // per address
+	confirmPerIPHour   = 5
+	turnEveryPerGame   = 15 * time.Minute // per address and game
+	turnPerDayAddr     = 20
+	turnPerDayGame     = 100
+	noticeEvery        = time.Hour
+	friendMailPerDay   = 5
+	scheduleMailPerDay = 30
+	confirmLifetime    = 24 * time.Hour
+	breakerCooldown    = time.Hour
+	maxAwayMinutes     = 24 * 60
 )
 
 type turnKey struct{ seat, seq int }
@@ -284,6 +285,10 @@ func (n *notifier) reserveLocked(ctx context.Context, kind, addr string, gameID 
 		}
 	case "notice":
 		if count(store.SentFilter{Kinds: []string{"notice"}, AddrHash: addr, Since: now.Add(-noticeEvery)}) > 0 {
+			return ErrNotifyLimited
+		}
+	case "schedule":
+		if count(store.SentFilter{Kinds: []string{"schedule"}, AddrHash: addr, Since: now.Add(-24 * time.Hour)}) >= scheduleMailPerDay {
 			return ErrNotifyLimited
 		}
 	case "friend":

@@ -113,6 +113,8 @@ type CreateOptions struct {
 	// Reserved keeps open seats for friends of the creator (seat → handle). Such a game always
 	// gathers in a lobby, so that its host can give up a seat if a friend does not come.
 	Reserved map[int]string
+	// Schedule sets the game up for later: it gathers in a lobby until a player starts it.
+	Schedule *ScheduleRequest
 	// InviteOnly keeps the game off every list: it is found by its link, or an invitation.
 	InviteOnly bool
 	// Lobby makes the game wait, with every seat filled, until its host
@@ -304,6 +306,14 @@ func (m *Manager) CreateGameWithOptions(ctx context.Context, opts CreateOptions)
 	if len(reserved) > 0 {
 		opts.Lobby = true
 	}
+	var scheduled []store.Account
+	if opts.Schedule != nil {
+		scheduled, err = m.checkSchedule(ctx, &opts, len(compiled.Definition.Seats)-len(takenSeats)-len(reserved))
+		if err != nil {
+			return CreateGameResult{}, err
+		}
+		opts.Lobby = true
+	}
 	seatDef, found := compiled.Seat(creatorSeat)
 	if !found {
 		if opts.Seat == 0 {
@@ -381,6 +391,11 @@ func (m *Manager) CreateGameWithOptions(ctx context.Context, opts CreateOptions)
 	}
 	if err := m.saveGameAccess(ctx, game.ID, opts, reserved); err != nil {
 		return CreateGameResult{}, err
+	}
+	if opts.Schedule != nil {
+		if err := m.saveSchedule(ctx, game, opts.Schedule, scheduled); err != nil {
+			return CreateGameResult{}, err
+		}
 	}
 	// A tutorial room is marked before anyone else is seated, so it never
 	// shows in a list of games.

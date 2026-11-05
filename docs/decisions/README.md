@@ -96,6 +96,7 @@ Short records of choices made for the `bingle` project during the requirements i
 | [0091](0091-taking-over-a-seat.md) | A bot can take a seat for good: by a vote in a real-time game, or when time runs out at a table of three or more, and the clock now works at any number of seats |
 | [0090](0090-real-time-tournaments.md) | A real-time tournament starts by itself at its start time: check-in, one game of a pairing at a time, a break between rounds, and a first-move deadline where a no-show forfeits |
 | [0092](0092-a-game-page-that-fits-the-screen.md) | A game page is as tall as the window and never scrolls: the board fills one side, the cards scroll beside it, and on your turn the actions are pinned in view; Blooms first |
+| [0109](0109-scheduled-games.md) | Scheduled games: a lobby that stays open, invitations with calendar files, and agreeing the earliest common time |
 | [0108](0108-a-great-old-one-emerges.md) | A Great Old One's first awakening is a show on the map, its art procedural SVG, with a badge in the history to replay it |
 | [0107](0107-who-can-find-a-game.md) | Seats kept for friends, friends-only and invite-only games: lists and seats are restricted, not the game |
 | [0106](0106-presence-can-be-hidden.md) | An account can choose not to be seen online: hidden from friends and from *Here now* alike |

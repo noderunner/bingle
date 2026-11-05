@@ -317,7 +317,14 @@ func (m *Manager) AnswerInvite(ctx context.Context, me store.Account, room strin
 		return ErrNoInvite
 	}
 	m.tellFriends(me.PrincipalID)
-	return nil
+	// Accepted, they get the game's time; either way, it may be what a schedule was waiting for.
+	if accept {
+		err = m.tellAcceptedTime(ctx, game, me)
+	} else if sched, serr := m.store.ScheduleOf(ctx, game.ID); serr == nil {
+		err = m.resolveSchedule(ctx, game, sched)
+	}
+	m.publishState(ctx, game.RoomCode, "join")
+	return err
 }
 
 // DismissInvite takes an invitation off the list of the account me: one unanswered is declined.

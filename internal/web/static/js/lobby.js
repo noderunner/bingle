@@ -20,6 +20,98 @@ function botOptions(bots, id) {
  *       actions: {take, moveTo, setCult, addBot, remove, leave, start, fillBots, copy}}
  * cults lists the cults an open seat can be given ({id, label, color, text}), when the game lets the table change them.
  */
+/** A time, in the viewer's own zone. */
+const localTime = (iso) => new Date(iso).toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZoneName: "short" });
+
+/** A row of times to offer, for its creator to fill in. */
+function newTimesForm(ctx) {
+	const list = h("div", { class: "stack" });
+	const add = () => list.append(h("input", { type: "datetime-local", class: "schedule-new-slot", "aria-label": "A new time to offer" }));
+	add();
+	return h(
+		"div",
+		{ class: "schedule-new", id: "schedule-new" },
+		list,
+		h(
+			"div",
+			{ class: "row" },
+			h("button", { type: "button", class: "ghost small", id: "schedule-new-add", onclick: add }, "Add a time"),
+			h(
+				"button",
+				{
+					type: "button",
+					class: "primary small",
+					id: "schedule-new-send",
+					onclick: () => {
+						const slots = [...list.querySelectorAll("input")].map((i) => i.value).filter(Boolean).map((v) => new Date(v).toISOString());
+						if (slots.length) ctx.actions.offerTimes(slots);
+					},
+				},
+				"Offer these times"
+			)
+		)
+	);
+}
+
+/** The game's time, or the times being answered, in the lobby. */
+function scheduleBox(ctx) {
+	const { game } = ctx;
+	const sc = game.schedule;
+	const box = h("div", { class: "lobby-schedule", id: "lobby-schedule", "data-status": sc.status });
+	if (sc.status === "scheduled" || sc.status === "started") {
+		box.append(h("p", { class: "schedule-when", id: "schedule-when" }, h("strong", {}, "Scheduled for "), localTime(sc.start_at)));
+		if (sc.status === "scheduled") {
+			box.append(h("p", { class: "small muted" }, "The game does not start by itself: when the time comes, any player at the table can press Start game."));
+			const calendar = h("a", { class: "button small", id: "schedule-ics", href: `/api/games/${encodeURIComponent(ctx.code)}/schedule.ics`, download: "bingle-game.ics" }, "Add to calendar");
+			box.append(calendar);
+		}
+	}
+	if (sc.status === "polling" || sc.status === "no_agreement") {
+		box.append(h("h3", {}, sc.status === "no_agreement" ? "No time suits everyone" : "Which times can you make?"));
+		if (sc.status === "no_agreement" && sc.decide_by) {
+			box.append(h("p", { class: "small", id: "schedule-no-agreement" }, sc.mine ? `Offer new times or cancel. Otherwise the game closes on ${localTime(sc.decide_by)}.` : `The game closes on ${localTime(sc.decide_by)} unless new times are offered.`));
+		}
+		const total = sc.people.filter((p) => p.status === "pending" || p.status === "accepted").length + 1;
+		const rows = h("ul", { class: "schedule-slots", id: "schedule-slot-list" });
+		for (const slot of sc.slots || []) {
+			const tick = h("input", { type: "checkbox", "data-slot": slot.id, checked: slot.mine, disabled: !sc.can_vote || slot.past || ctx.busy, "aria-label": localTime(slot.at), onchange: (ev) => ctx.actions.vote(slot.id, ev.target.checked) });
+			rows.append(h("li", { class: slot.past ? "past" : null }, h("label", { class: "check" }, tick, h("span", {}, localTime(slot.at))), h("span", { class: "small muted" }, `${slot.count} of ${total}`)));
+		}
+		box.append(rows);
+		if (sc.mine && sc.status === "no_agreement") box.append(newTimesForm(ctx));
+		if (sc.mine && sc.people.some((p) => p.status === "pending" || (p.status === "accepted" && !p.answered))) {
+			box.append(h("button", { type: "button", class: "small", id: "schedule-decide", title: "Leave out anybody who has not answered", onclick: () => ctx.actions.decide() }, "Schedule with those who've answered"));
+		}
+	}
+	if (sc.people.length) {
+		const said = { pending: "invited", accepted: "accepted", declined: "declined", dropped: "left out" };
+		box.append(
+			h(
+				"p",
+				{ class: "small muted", id: "schedule-people" },
+				sc.people.map((p) => `@${p.handle}: ${(sc.status === "polling" || sc.status === "no_agreement") && p.answered ? "answered" : said[p.status] || p.status}`).join(" · ")
+			)
+		);
+	}
+	if (sc.mine && sc.status !== "closed" && sc.status !== "started") {
+		box.append(
+			h(
+				"button",
+				{
+					type: "button",
+					class: "ghost small",
+					id: "schedule-cancel",
+					onclick: () => {
+						if (window.confirm("Cancel this game? Everybody invited is told.")) ctx.actions.cancelSchedule();
+					},
+				},
+				"Cancel the game"
+			)
+		);
+	}
+	return box;
+}
+
 const catalogs = new Map(); // by family: the setup catalog, once read
 
 /** What this table was set up with, as pictures: its map, then the factions and all that was added. */
@@ -90,6 +182,7 @@ export function lobbyCard(ctx) {
 	);
 
 	if (info.setup_catalog) card.append(tablePool(info));
+	if (game.schedule) card.append(scheduleBox(ctx));
 
 	// The invitation.
 	const link = ctx.inviteURL;
@@ -207,7 +300,11 @@ export function lobbyCard(ctx) {
 
 	// What the host can do.
 	const foot = h("div", { class: "lobby-foot" });
-	if (iAmHost && !startsByItself) {
+	// From its time on, any player at the table can start a scheduled game.
+	const timeHasCome = !!game.schedule && game.schedule.status === "scheduled" && Date.parse(game.schedule.start_at) <= Date.now();
+	if (me.seat && !iAmHost && timeHasCome) {
+		foot.append(h("span", { class: "grow" }), h("button", { id: "start-game", class: "primary", disabled: !full || ctx.busy, title: full ? "Begin the game" : "Every seat needs a player", onclick: () => ctx.actions.start() }, "Start game"));
+	} else if (iAmHost && !startsByItself) {
 		if (!full && bots.length) {
 			const sel = botOptions(bots, "fill-kind");
 			foot.append(

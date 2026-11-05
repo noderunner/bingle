@@ -26,9 +26,10 @@ type friendsResp struct {
 		Handle string `json:"handle"`
 	} `json:"outgoing"`
 	Invites []struct {
-		Room string `json:"room"`
-		Game string `json:"game"`
-		From string `json:"from"`
+		Room   string `json:"room"`
+		Game   string `json:"game"`
+		From   string `json:"from"`
+		Notice string `json:"notice"`
 	} `json:"invites"`
 }
 

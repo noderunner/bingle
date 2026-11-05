@@ -3,6 +3,7 @@ package mail
 import (
 	"bytes"
 	"crypto/rand"
+	"encoding/base64"
 	"encoding/hex"
 	"fmt"
 	"mime"
@@ -21,6 +22,14 @@ type Message struct {
 	// UnsubscribeURL, when set (an https URL), becomes the List-Unsubscribe
 	// header with one-click support.
 	UnsubscribeURL string
+	// Calendar, when set, goes with the message: an invitation for a calendar.
+	Calendar *Calendar
+}
+
+// Calendar is an iCalendar file sent with a message.
+type Calendar struct {
+	Method string // REQUEST or CANCEL
+	Body   string
 }
 
 // Build renders the message as the bytes of an RFC 5322 message with a fixed
@@ -63,11 +72,17 @@ func (m Message) Build(from, fromName string, now time.Time) ([]byte, error) {
 	h("MIME-Version", "1.0")
 	body := strings.ReplaceAll(strings.ReplaceAll(m.Body, "\r\n", "\n"), "\n", "\r\n")
 	plain := isPlain(body)
-	h("Content-Type", "text/plain; charset=utf-8")
-	if plain {
-		h("Content-Transfer-Encoding", "7bit")
+	boundary := ""
+	if m.Calendar != nil {
+		boundary = "bingle-" + hex.EncodeToString(id)
+		h("Content-Type", `multipart/mixed; boundary="`+boundary+`"`)
 	} else {
-		h("Content-Transfer-Encoding", "quoted-printable")
+		h("Content-Type", "text/plain; charset=utf-8")
+		if plain {
+			h("Content-Transfer-Encoding", "7bit")
+		} else {
+			h("Content-Transfer-Encoding", "quoted-printable")
+		}
 	}
 	h("Auto-Submitted", "auto-generated")
 	if m.UnsubscribeURL != "" {
@@ -75,17 +90,44 @@ func (m Message) Build(from, fromName string, now time.Time) ([]byte, error) {
 		h("List-Unsubscribe-Post", "List-Unsubscribe=One-Click")
 	}
 	b.WriteString("\r\n")
+	if boundary != "" {
+		b.WriteString("--" + boundary + "\r\n")
+		h("Content-Type", "text/plain; charset=utf-8")
+		if plain {
+			h("Content-Transfer-Encoding", "7bit")
+		} else {
+			h("Content-Transfer-Encoding", "quoted-printable")
+		}
+		b.WriteString("\r\n")
+	}
 	if plain {
 		b.WriteString(body)
+	} else {
+		w := quotedprintable.NewWriter(&b)
+		if _, err := w.Write([]byte(body)); err != nil {
+			return nil, err
+		}
+		if err := w.Close(); err != nil {
+			return nil, err
+		}
+	}
+	if boundary == "" {
 		return b.Bytes(), nil
 	}
-	w := quotedprintable.NewWriter(&b)
-	if _, err := w.Write([]byte(body)); err != nil {
-		return nil, err
+	if strings.ContainsAny(m.Calendar.Method, "\r\n\"") {
+		return nil, fmt.Errorf("bad calendar method")
 	}
-	if err := w.Close(); err != nil {
-		return nil, err
+	b.WriteString("\r\n--" + boundary + "\r\n")
+	h("Content-Type", fmt.Sprintf(`text/calendar; charset=utf-8; method=%s; name="bingle.ics"`, m.Calendar.Method))
+	h("Content-Disposition", `attachment; filename="bingle.ics"`)
+	h("Content-Transfer-Encoding", "base64")
+	b.WriteString("\r\n")
+	enc := base64.StdEncoding.EncodeToString([]byte(m.Calendar.Body))
+	for len(enc) > 76 {
+		b.WriteString(enc[:76] + "\r\n")
+		enc = enc[76:]
 	}
+	b.WriteString(enc + "\r\n--" + boundary + "--\r\n")
 	return b.Bytes(), nil
 }
 

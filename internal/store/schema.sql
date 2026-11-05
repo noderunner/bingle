@@ -522,3 +522,28 @@ CREATE TABLE IF NOT EXISTS seat_reservations (
     account_id INTEGER NOT NULL REFERENCES accounts(id),
     PRIMARY KEY (game_id, seat)
 );
+
+-- A game set up for later (ADR 0109). status is 'scheduled' (start_at holds when), 'polling' (its
+-- slots are being answered), 'no_agreement' (decide_by is when it closes), 'started' or 'closed'.
+CREATE TABLE IF NOT EXISTS game_schedules (
+    game_id         INTEGER PRIMARY KEY REFERENCES games(id),
+    creator_account INTEGER NOT NULL REFERENCES accounts(id),
+    status          TEXT NOT NULL,
+    start_at        TEXT NOT NULL DEFAULT '',
+    decide_by       TEXT NOT NULL DEFAULT '',
+    ics_seq         INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_game_schedules_status ON game_schedules(status);
+
+-- The times offered for a game, and who can make each.
+CREATE TABLE IF NOT EXISTS game_slots (
+    id      INTEGER PRIMARY KEY AUTOINCREMENT,
+    game_id INTEGER NOT NULL REFERENCES games(id),
+    at      TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_game_slots_game ON game_slots(game_id);
+CREATE TABLE IF NOT EXISTS slot_votes (
+    slot_id    INTEGER NOT NULL REFERENCES game_slots(id),
+    account_id INTEGER NOT NULL REFERENCES accounts(id),
+    PRIMARY KEY (slot_id, account_id)
+);
