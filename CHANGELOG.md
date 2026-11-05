@@ -4,6 +4,17 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.75.0 - 2026-11-05
+
+### Bingle Core 0.75.0
+- **Tutorials can point at the page.** A step can now light up the part of the screen it is talking about, like your Power, the round's phases or the History, and opens that tab or card for you.
+- **Move several units in a tutorial,** just as you do in a game.
+- **Back stays out of the way in a tutorial,** so you can't knock yourself off the script by taking back a step of your turn.
+
+### Cthulhu Wars 0.15.0
+- **Eight new tutorials for the core game.** Find them under *Learn the rules*, each short enough to come back to as a refresher: **How to win**, **Power**, **Units**, **Movement**, **Spellbooks**, **Combat**, **Sequence of play** and **UI features**.
+- **The High Priests tutorial now fills in the History** as you play. It was staying empty.
+
 ## 0.74.0 - 2026-11-05
 
 ### Bingle Core 0.74.0

@@ -5,8 +5,11 @@ package tutorials_test
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 	"testing/fstest"
@@ -383,4 +386,112 @@ func TestTutorialsAreOfferedWithTheirVariant(t *testing.T) {
 			t.Errorf("%s counts %d tutorials", d.ID, d.Tutorials)
 		}
 	}
+}
+
+const spotlit = `id: t
+kind: rules
+title: T
+game: blooms-4
+steps:
+  - text: First.
+    spotlight: [%s]
+`
+
+// A step's spotlight names parts of the page, and seats the game has.
+func TestSpotlightNamesAPartOfThePage(t *testing.T) {
+	cat := shippedCatalog(t)
+	verify := func(parts string) error {
+		t.Helper()
+		tuts, err := load(t, map[string]string{"t.yaml": fmt.Sprintf(spotlit, parts)})
+		if err != nil {
+			return err
+		}
+		return tutorial.Verify(cat, "blooms", tuts[0])
+	}
+	if err := verify("history, options, power, doom:2"); err != nil {
+		t.Fatalf("good parts refused: %v", err)
+	}
+	wantErr(t, verify("no-such-part"), "not a part of the page")
+	wantErr(t, verify("history:2"), "does not belong to a seat")
+	wantErr(t, verify("doom:two"), "is not a seat")
+	wantErr(t, verify("doom:9"), "has no seat 9")
+}
+
+// The list the tests check names against and the page's own are the same, so
+// a name that passes here can be found by the page.
+func TestPagePartsMatchThePage(t *testing.T) {
+	src, err := os.ReadFile(filepath.Join("..", "..", "internal", "web", "static", "js", "tutorial.js"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, rest, ok := strings.Cut(string(src), "const PAGE_PARTS = {")
+	if !ok {
+		t.Fatal("no PAGE_PARTS in tutorial.js")
+	}
+	body, _, _ := strings.Cut(rest, "\n};")
+	onPage := map[string]bool{}
+	for _, m := range regexp.MustCompile(`(?m)^\s*"?([a-z-]+)"?:`).FindAllStringSubmatch(body, -1) {
+		onPage[m[1]] = true
+	}
+	for name := range tutorial.PageParts {
+		if !onPage[name] {
+			t.Errorf("%q is in tutorial.PageParts but not in tutorial.js", name)
+		}
+	}
+	for name := range onPage {
+		if _, ok := tutorial.PageParts[name]; !ok {
+			t.Errorf("%q is in tutorial.js but not in tutorial.PageParts", name)
+		}
+	}
+}
+
+// A Cthulhu Wars start counts its moves from the room's: the page finds the
+// story of a move by its ply, and the History would stay empty otherwise.
+func TestCthulhuWarsStartsCountTheirMovesFromZero(t *testing.T) {
+	for _, m := range app.BuiltinModules() {
+		if m.ID != "cthulhu-wars" {
+			continue
+		}
+		tuts, err := tutorial.Load(m.Tutorials)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, tu := range tuts {
+			var doc struct {
+				Ply int `json:"ply"`
+			}
+			if err := json.Unmarshal(tu.Start, &doc); err != nil {
+				t.Fatalf("%s: %v", tu.ID, err)
+			}
+			if doc.Ply != 0 {
+				t.Errorf("%s: its start has ply %d, want 0", tu.ID, doc.Ply)
+			}
+		}
+	}
+}
+
+// The core rules of Cthulhu Wars are taught topic by topic, in this order.
+func TestCthulhuWarsTeachesItsCoreRulesByTopic(t *testing.T) {
+	want := []string{"how-to-win", "power", "units", "movement", "spellbooks", "combat", "sequence-of-play", "ui-features", "high-priests"}
+	for _, m := range app.BuiltinModules() {
+		if m.ID != "cthulhu-wars" {
+			continue
+		}
+		tuts, err := tutorial.Load(m.Tutorials)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var got []string
+		for _, tu := range tuts {
+			got = append(got, tu.ID)
+			if tu.ID != "high-priests" && tu.Kind != tutorial.KindRules {
+				t.Errorf("%s is a %s tutorial", tu.ID, tu.Kind)
+			}
+		}
+		if strings.Join(got, " ") != strings.Join(want, " ") {
+			t.Fatalf("the tutorials: %v, want %v", got, want)
+		}
+		return
+	}
+	t.Fatal("no Cthulhu Wars")
 }

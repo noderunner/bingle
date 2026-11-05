@@ -1,0 +1,104 @@
+# The Combat tutorial starts here: Great Cthulhu can fight Black Goat in New Zealand, whose neighbours it holds all around.
+# Written out, not played to: tutorials/combat.yaml includes it. Its rng fixes the dice.
+v: 2
+cells:
+  south-pacific:
+    - {piece: cultist, color: green}
+    - {piece: cultist, color: green}
+    - {piece: cultist, color: green}
+  australia:
+    - {piece: cultist, color: green}
+  indian-ocean:
+    - {piece: deep-one, color: green}
+  new-zealand:
+    - {piece: cthulhu, color: green}
+    - {piece: deep-one, color: green}
+    - {piece: deep-one, color: green}
+    - {piece: cultist, color: red}
+    - {piece: fungi, color: red}
+    - {piece: fungi, color: red}
+    - {piece: dark-young, color: red}
+  asia:
+    - {piece: cultist, color: blue}
+    - {piece: cultist, color: blue}
+    - {piece: cultist, color: blue}
+  africa:
+    - {piece: cultist, color: red}
+    - {piece: cultist, color: red}
+    - {piece: cultist, color: red}
+  europe:
+    - {piece: cultist, color: yellow}
+    - {piece: cultist, color: yellow}
+    - {piece: cultist, color: yellow}
+reserves:
+  green:
+    cultist: 2
+    deep-one: 1
+    shoggoth: 2
+    starspawn: 2
+    cthulhu: 0
+  blue:
+    cultist: 3
+    nightgaunt: 3
+    flying-polyp: 3
+    hunting-horror: 2
+    nyarlathotep: 1
+  red:
+    cultist: 2
+    ghoul: 2
+    fungi: 2
+    dark-young: 2
+    shub-niggurath: 1
+  yellow:
+    cultist: 3
+    undead: 6
+    byakhee: 4
+    king-in-yellow: 1
+    hastur: 1
+ply: 0
+ext:
+  phase: action
+  round: 3
+  players: 4
+  first: 1
+  dir: 1
+  power: [0, 4, 0, 0, 0, 0]
+  doom: [0, 6, 4, 4, 3, 0]
+  doom_by:
+    - {}
+    - {gates: 6}
+    - {gates: 4}
+    - {gates: 4}
+    - {gates: 3}
+    - {}
+  ritual: 1
+  gates: {south-pacific: 1, asia: 2, africa: 3, europe: 4}
+  holders:
+    south-pacific: cultist
+    asia: cultist
+    africa: cultist
+    europe: cultist
+  books: [0, 8, 0, 0, 0, 0]
+  neutral: [0, 0, 0, 0, 0, 0]
+  reqs: [0, 1, 0, 0, 0, 0]
+  signs: [null, [1], [], [], [], null]
+  shown: [null, [], [], [], [], null]
+  bag: [17, 12, 6]
+  loyal: [0, 0, 0, 0, 0, 0]
+  card: [0, 0, 0, 0, 0, 0]
+  captured:
+    - [0, 0, 0, 0, 0, 0]
+    - [0, 0, 0, 0, 0, 0]
+    - [0, 0, 0, 0, 0, 0]
+    - [0, 0, 0, 0, 0, 0]
+    - [0, 0, 0, 0, 0, 0]
+    - [0, 0, 0, 0, 0, 0]
+  hib: [false, false, false, false, false, false]
+  used: [0, 0, 0, 0, 0, 0]
+  battled: [null, null, null, null, null, null]
+  stage: turn
+  turn: {seat: 1}
+  resume: turn
+  rng: 1818288496286
+  events: []
+  log: []

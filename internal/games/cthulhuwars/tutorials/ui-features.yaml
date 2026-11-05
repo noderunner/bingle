@@ -1,0 +1,62 @@
+# yaml-language-server: $schema=../../../../docs/tutorial.schema.json
+id: ui-features
+kind: rules
+title: UI features
+summary: The History and your last move, the reaction settings, and the map's layers.
+order: 8
+game: cthulhu-wars
+seat: 1          # you play Great Cthulhu; the page plays the others
+start: !include positions/a-table-to-read.yaml
+
+steps:
+  - text: |
+      A few parts of the page make a long game easier to follow. Take a turn first: recruit a Cultist
+      in the South Pacific, then press **Done**.
+    play: [recruit@south-pacific, done]
+    hint: Press Recruit Cultist, click the South Pacific, then press Done.
+    highlight: [south-pacific]
+    reply: [recruit@asia]
+
+  - text: |
+      Great Cthulhu holds **Devolve**, a spellbook that can act on another cult's turn. So the game
+      has stopped to ask you, after Crawling Chaos's action. This is a **reaction**.
+
+      Press **Pass** to let play go on.
+    play: [done]
+    hint: Press Pass.
+    spotlight: [impulse]
+    reply: [recruit@africa, done, done, recruit@europe, done]
+
+  - text: |
+      You choose when you are asked. In **Options**, under **Reactions**, each spellbook can ask you:
+
+      - only when an action targets you
+      - after any other player's action
+      - after the actions of players you choose
+
+      The section is not there in a tutorial, since the script answers for you.
+    spotlight: [options]
+
+  - text: |
+      The **History** says what has happened. The rule marks **your last move**, and what comes after
+      it is what the others did since. Reading from there catches you up when you come back to a game.
+    spotlight: [history, history-since]
+
+  - text: |
+      Click that rule to take the board back to your last move, or click any line to see that moment.
+      Step forward through the moves from there, and press **Return to live** when you are done.
+
+      Looking back changes nothing in the game. Try it, then come back and press **Next**.
+    spotlight: [history-since]
+
+  - text: |
+      **Map layers** clear the map when it gets crowded. In **Options**, under **Map Layers**, you can
+      turn off the area names, the glyphs, the sigils, or even the units.
+
+      Try it now. Your choice stays on for your other games, so turn them back on when you are done.
+    spotlight: [options]
+
+  - text: |
+      That's the page: the History to catch up, **Options** for reactions and map layers, and **Rules**
+      at the top whenever you need the full text.
+    spotlight: [history, options, rules]

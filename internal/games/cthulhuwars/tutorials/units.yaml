@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=../../../../docs/tutorial.schema.json
+id: units
+kind: rules
+title: Units
+summary: Great Old Ones, Monsters and Cultists, your pool, summoning, awakening and capturing.
+order: 3
+game: cthulhu-wars
+seat: 1          # you play Great Cthulhu; the page plays the others
+start: !include positions/units-on-the-map.yaml
+
+steps:
+  - text: |
+      Units come in three classes, strongest first:
+
+      1. **Great Old Ones**, your gods
+      2. **Monsters**, your fighters
+      3. **Cultists**, who bring Power and hold Gates
+
+      Here is one of each. The bigger the figure, the higher its class.
+    position: !include positions/one-of-each.yaml
+    highlight: [south-america-west, south-pacific, indian-ocean]
+
+  - text: |
+      Units not yet on the map wait in your **pool**: in full colour there, greyed out once they are
+      on the map. If a unit is not in your pool you cannot place it, and a unit that is killed goes
+      back there.
+
+      Hover one to read its card.
+    spotlight: [units]
+
+  - text: |
+      **Monsters are summoned** at a Gate you control, for the cost on their button. Summon a Deep
+      One in the South Pacific, for 1 Power.
+    play: [summon:deep-one@south-pacific]
+    hint: Press the Deep One's button, then click the South Pacific.
+    highlight: [south-pacific]
+    spotlight: [actions]
+
+  - text: |
+      **Great Old Ones are awakened.** Each has its own price and conditions, which its button's
+      card explains. Cthulhu needs a Gate in the South Pacific and 10 Power.
+
+      Awaken him.
+    play: [awaken:cthulhu@south-pacific]
+    hint: Press Awaken Cthulhu, then click the South Pacific.
+    highlight: [south-pacific]
+    spotlight: [actions, power]
+
+  - text: |
+      Awakening him earned you a spellbook, which the *Spellbooks* tutorial covers. Choose
+      **Regenerate** for now.
+    play: [book:regenerate]
+    hint: Press the Regenerate button.
+
+  - text: |
+      **Capture** costs 1 Power and needs no dice. A Monster or Great Old One can take an enemy
+      Cultist in its area, if nothing protects the Cultist.
+
+      Your Deep One is alone with a Crawling Chaos Cultist in the Indian Ocean. Capture it. It goes
+      home at Gather Power, paying you 1 Power.
+    play: [capture@indian-ocean/cc]
+    hint: Press Capture, then click the Indian Ocean.
+    highlight: [indian-ocean]
+
+  - text: |
+      **Monsters defend Cultists.** Your Deep One in the North Pacific cannot capture there, because
+      a Nightgaunt protects that Cultist. Keeping a Monster beside your Cultists stops enemy Monsters
+      from taking them.
+    highlight: [north-pacific]
+    illegal: true
+
+  - text: |
+      Class matters: **only a Great Old One stops a Great Old One**. Black Goat's Fungi cannot protect
+      its Cultist from Cthulhu.
+
+      Capture it, in the South Pacific.
+    play: [capture@south-pacific/bg]
+    hint: Press Capture, then click the South Pacific.
+    highlight: [south-pacific]
+
+  - text: |
+      That's the order of things: Great Old One, then Monster, then Cultist. Summon at your Gates,
+      awaken when you can pay, and keep your Cultists protected.

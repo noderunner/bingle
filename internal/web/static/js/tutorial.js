@@ -78,3 +78,67 @@ export function allowed(expected, chosen, kind, value) {
 	const next = expected[chosen.length];
 	return !!next && next.kind === kind && String(next.value) === String(value);
 }
+
+/**
+ * Where the page has each part a step can pick out (Step.spotlight, ADR 0111).
+ * `seat` makes a selector for a seat's part. `pane` is the tab of the column it
+ * lies in; `open` says it is in the seat's details, which are folded away.
+ * internal/tutorial lists the same names, and a test keeps the two the same.
+ */
+const seatPart = (inner, open = false) => ({ seat: (n) => `.seat-strip[data-seat="${n}"] ${inner}`, pane: "cults", open });
+const PAGE_PARTS = {
+	actions: { selector: ".move-bar" },
+	battle: { selector: ".exchange.battle" },
+	"elder-bag": { selector: ".round-item.bag" },
+	"first-player": { selector: ".first-mark", pane: "cults" },
+	history: { selector: ".side-moves", pane: "history" },
+	"history-since": { selector: ".log-since", pane: "history" },
+	impulse: { selector: ".impulse-card" },
+	options: { selector: "#open-options" },
+	phases: { selector: ".phase-steps" },
+	"ritual-track": { selector: ".ritual-track" },
+	"round-bar": { selector: ".round-bar" },
+	rules: { selector: "#show-rules" },
+	books: seatPart('[data-counter="books"]'),
+	doom: seatPart('[data-counter="doom"]'),
+	"elder-signs": seatPart('.faction-card[data-card="signs"]', true),
+	gates: seatPart('[data-counter="gates"]'),
+	power: seatPart('[data-counter="power"]'),
+	signs: seatPart('[data-counter="signs"]'),
+	spellbooks: seatPart('.faction-card[data-card="books"]', true),
+	units: seatPart('.faction-card[data-card="units"]', true),
+};
+
+/**
+ * pagePart(part, learner) is where a step's part is: {selector, pane, openSeat}.
+ * A part of a seat's panel is the learner's unless it names a seat ("doom:2").
+ */
+export function pagePart(part, learner) {
+	const [name, seat] = String(part).split(":");
+	const where = PAGE_PARTS[name];
+	if (!where) return null;
+	const n = Number(seat) || learner;
+	return { selector: where.seat ? where.seat(n) : where.selector, pane: where.pane || null, openSeat: where.open ? n : null };
+}
+
+/** The unit a move of the map sends where: {piece, from, to, leaving}, or null for any other move. */
+function unitMove(notation) {
+	const found = /^(go|leave):([^@]+)@([^>]+)>(.+)$/.exec(notation || "");
+	return found ? { piece: found[2], from: found[3], to: found[4], leaving: found[1] === "leave" } : null;
+}
+
+/**
+ * The units the script moves together from here: the moves of the step from
+ * `index` on that send a unit from one area to another, up to the first that
+ * does something else or goes elsewhere. The learner gathers them on the map
+ * and clicks their destination, as in any game, so they count as one thing to do.
+ */
+export function scriptedMoveGroup(step, index) {
+	const group = [];
+	for (const notation of (step.play || []).slice(index)) {
+		const mv = unitMove(notation);
+		if (!mv || (group.length && (mv.from !== group[0].from || mv.to !== group[0].to))) break;
+		group.push({ ...mv, notation });
+	}
+	return group;
+}
