@@ -4,6 +4,15 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.74.0 - 2026-11-05
+
+### Bingle Core 0.74.0
+- **Animation Tester.** Cthulhu Wars' setup has a new tab for watching its animations without starting a game.
+
+### Cthulhu Wars 0.14.0
+- **Every core Great Old One has its moment.** The first time each awakens: **Nyarlathotep** condenses out of the shadows as pale eyes open around him, the **King in Yellow** rises through the trap of a rotting theatre with the Yellow Sign burning behind him, **Hastur** comes from a point in the abyss as the stars are dragged into a spiral, and **Shub-Niggurath** heaves up out of a swamp, with mouths opening all over her.
+- **Watch them again** from their badges in the history.
+
 ## 0.73.0 - 2026-11-05
 
 ### Bingle Core 0.73.0

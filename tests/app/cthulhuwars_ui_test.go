@@ -1059,3 +1059,61 @@ func TestWebCthulhuWars_CthulhuEmerges(t *testing.T) {
 		t.Errorf("uncaught JS exceptions: %v", jsErrors)
 	}
 }
+
+// The Animation Tester plays every show with no game going, and is only offered for this game.
+func TestWebCthulhuWars_TheAnimationTester(t *testing.T) {
+	baseURL := newRESTTestServer(t)
+	ctx, cancel := newChromedpContext(t, 120*time.Second)
+	defer cancel()
+	var mu sync.Mutex
+	var jsErrors []string
+	collectJSErrors(ctx, &mu, &jsErrors)
+	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1400, 1000), chromedp.Navigate(baseURL+"/?game=tic-tac-toe")); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "another game's setup", `document.getElementById("setup-tab-tester") !== null && document.getElementById("create-submit") !== null`, 20*time.Second)
+	if !evalBool(t, ctx, `document.getElementById("setup-tab-tester").hidden`) {
+		t.Error("another game offers the tester")
+	}
+	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/?game=cthulhu-wars")); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "the tab", `!document.getElementById("setup-tab-tester").hidden`, 20*time.Second)
+	clickSel(t, ctx, "#setup-tab-tester")
+	waitJS(t, ctx, "the board", `document.querySelector('#tester-board .cell.area[data-position="asia"]') !== null`, 15*time.Second)
+	if n := evalInt(t, ctx, `document.querySelectorAll('#tester-board .token[data-position="asia"]').length`); n == 0 {
+		t.Error("no units on the board")
+	}
+
+	// Every Great Old One of the core set, and each is only a click away. No game is started.
+	for _, goo := range []string{"cthulhu", "nyarlathotep", "shub-niggurath", "king-in-yellow", "hastur"} {
+		clickSel(t, ctx, `[data-tester-emerge="`+goo+`"]`)
+		waitJS(t, ctx, goo+"'s show", `document.querySelector('#emerge-stage[data-goo="`+goo+`"] .em-scene') !== null`, 5*time.Second)
+		waitJS(t, ctx, goo+"'s zoom", `(function () {
+			var map = document.querySelector("#emerge-stage .bt-map");
+			var base = document.querySelector("#tester-board svg").getAttribute("viewBox");
+			return map.querySelector(".bt-glow") !== null && map.getAttribute("viewBox") !== base;
+		})()`, 5*time.Second)
+		clickSel(t, ctx, "#emerge-skip")
+		waitJS(t, ctx, goo+"'s skip", `document.getElementById("emerge-stage") === null`, 5*time.Second)
+	}
+	// One played right through, with its title.
+	clickSel(t, ctx, `[data-tester-emerge="king-in-yellow"]`)
+	waitJS(t, ctx, "the title", `document.querySelector("#emerge-title.on .em-name") !== null && document.querySelector("#emerge-title.on .em-name").textContent === "King in Yellow Emerges"`, 10*time.Second)
+	waitJS(t, ctx, "its end", `document.getElementById("emerge-stage") === null`, 10*time.Second)
+
+	// The battle, through both of its phases, to the zoom out.
+	clickSel(t, ctx, "#tester-battle")
+	waitJS(t, ctx, "the stage", `document.getElementById("battle-stage") !== null`, 5*time.Second)
+	waitJS(t, ctx, "Pre-Battle", `document.querySelector("#battle-phase .bt-phase-title") && document.querySelector("#battle-phase .bt-phase-title").textContent === "Pre-Battle Phase"`, 15*time.Second)
+	waitJS(t, ctx, "the abilities", `document.querySelectorAll('#battle-phase .bt-ability').length >= 4`, 15*time.Second)
+	waitJS(t, ctx, "the throw", `document.querySelectorAll("#battle-stage .bt-cube").length > 0`, 25*time.Second)
+	waitJS(t, ctx, "a casualty", `document.querySelectorAll("#battle-stage .bt-unit.dead .bt-x").length > 0`, 15*time.Second)
+	waitJS(t, ctx, "Post-Battle", `document.querySelector("#battle-phase .bt-phase-title") && document.querySelector("#battle-phase .bt-phase-title").textContent === "Post-Battle Phase"`, 25*time.Second)
+	waitJS(t, ctx, "its end", `document.getElementById("battle-stage") === null`, 25*time.Second)
+	mu.Lock()
+	defer mu.Unlock()
+	if len(jsErrors) > 0 {
+		t.Errorf("uncaught JS exceptions: %v", jsErrors)
+	}
+}
