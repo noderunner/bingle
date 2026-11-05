@@ -256,7 +256,7 @@ last said anything, and nothing is stored. Guests are not listed and see no list
 (with `online`), `incoming` and `outgoing` requests and game `invites`. `POST /friends/request` takes a `handle`
 (`404` for nobody, `409` when already friends or asked, `429` too soon after a refusal);
 `POST /friends/answer` a `handle` and `accept`; `POST /friends/remove` a `handle`, for a friend or your own request;
-`POST /friends/invite` a `handle` and a `room` you have a seat in (`403` otherwise); `POST /friends/dismiss` a `room`.
+`POST /friends/invite` a `handle` and a `room` you have a seat in (`403` otherwise); `POST /friends/invite-answer` a `room` and `accept`; `POST /friends/dismiss` a `room`, which also declines one unanswered.
 `GET` and `PUT /friends/settings` hold `mail_requests`, off by default, and `show_presence`, on by default
 ([ADR 0106](decisions/0106-presence-can-be-hidden.md)): off, the account is on no list and looks to anybody else as if it had gone,
 though it can write first, and `can_write` on a friend says that a friend who looks offline can be answered. Changes arrive as a `friends` event on `/ws-dm`.

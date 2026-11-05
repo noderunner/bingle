@@ -10,7 +10,7 @@
 // Messages are sent over REST and arrive over the /ws-dm socket, which also
 // carries the ringing of a call and its WebRTC messages.
 
-import { h, clear, store, lastName, toast } from "./util.js";
+import { h, clear, store, lastName, rememberGame, toast } from "./util.js";
 import { api, whoAmI } from "./api.js";
 import { gameDefs, loadRows, isFinished } from "./mygames.js";
 import { onLeave, setKeepAlive, untracked } from "./nav.js";
@@ -343,9 +343,23 @@ export function mountDirectMessages(host, { onCount = () => {} } = {}) {
 				h(
 					"li",
 					{ "data-room": g.room },
-					h("span", { class: "grow" }, `${g.game} · ${g.from}`),
-					h("a", { class: "button primary small", href: "/game/" + encodeURIComponent(g.room), "data-join-invite": g.room, onclick: () => api.friendDismiss(g.room).catch(() => {}) }, "Join"),
-					h("button", { type: "button", class: "ghost small", "data-dismiss": g.room, onclick: () => friendAction(() => api.friendDismiss(g.room)) }, "Dismiss")
+					h("span", { class: "grow" }, g.notice ? `${g.game}: ${g.notice}` : `${g.game} · ${g.from}`),
+					g.notice
+						? null
+						: h(
+								"a",
+								{
+									class: "button primary small",
+									href: "/game/" + encodeURIComponent(g.room),
+									"data-join-invite": g.room,
+									onclick: () => {
+										rememberGame(g.room, g.def, lastName());
+										api.answerInvite(g.room, true).catch(() => {});
+									},
+								},
+								"Accept"
+						  ),
+					h("button", { type: "button", class: "ghost small", "data-dismiss": g.room, onclick: () => friendAction(() => (g.notice ? api.friendDismiss(g.room) : api.answerInvite(g.room, false))) }, g.notice ? "Dismiss" : "Decline")
 				)
 			)
 		);

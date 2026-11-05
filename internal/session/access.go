@@ -85,6 +85,14 @@ func (m *Manager) saveGameAccess(ctx context.Context, gameID int64, opts CreateO
 		if err := m.store.ReserveSeat(ctx, gameID, seat, other.ID); err != nil {
 			return err
 		}
+		// The seat is kept all the same for somebody who takes no invitations: it is only not said.
+		settings, err := m.store.FriendSettings(ctx, other.ID)
+		if err != nil {
+			return err
+		}
+		if !settings.AcceptInvites {
+			continue
+		}
 		if err := m.store.AddGameInvite(ctx, gameID, other.ID, me, now); err != nil {
 			return err
 		}

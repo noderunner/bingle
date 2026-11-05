@@ -15,11 +15,13 @@ installNav();
 function paintFriendSettings() {
 	const mail = document.getElementById("friend-mail");
 	const presence = document.getElementById("friend-presence");
+	const invites = document.getElementById("friend-invites");
 	const status = document.getElementById("friend-settings-status");
 	api.friendSettings()
 		.then((settings) => {
 			mail.checked = settings.mail_requests;
 			presence.checked = settings.show_presence;
+			invites.checked = settings.accept_invites;
 			document.getElementById("friends-card").hidden = false;
 			const wire = (box, key) =>
 				box.addEventListener("change", () => {
@@ -33,6 +35,7 @@ function paintFriendSettings() {
 				});
 			wire(mail, "mail_requests");
 			wire(presence, "show_presence");
+			wire(invites, "accept_invites");
 		})
 		.catch(() => {});
 }

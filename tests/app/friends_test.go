@@ -286,6 +286,9 @@ func TestWebFriends_TheWindow(t *testing.T) {
 	waitJS(t, ana, "the game to invite to", `document.getElementById("friend-invite-game").value === "`+created.RoomCode+`"`, 10*time.Second)
 	clickSel(t, ana, "#friend-invite-send")
 	waitJS(t, bob, "the invitation", `document.querySelector("[data-join-invite='`+created.RoomCode+`']") !== null`, 15*time.Second)
+	if got := evalString(t, bob, `document.querySelector("[data-dismiss='`+created.RoomCode+`']").textContent`); got != "Decline" {
+		t.Errorf("the button says %q", got)
+	}
 	clickSel(t, bob, "[data-dismiss='"+created.RoomCode+"']")
 	waitJS(t, bob, "the invitation gone", `document.querySelector("[data-join-invite]") === null`, 10*time.Second)
 
@@ -738,5 +741,58 @@ func TestWebCthulhuWars_TheLobbyShowsItsPool(t *testing.T) {
 	}
 	if n := evalInt(t, ctx, `document.querySelectorAll('#lobby-pool .lobby-pool-item[data-kind="faction"]').length`); n != 4 {
 		t.Errorf("%d factions in the pool", n)
+	}
+}
+
+// Somebody can choose to take no invitations, and an answer is kept: a decline is not asked again.
+func TestFriends_AnsweringInvitationsAndOptingOut(t *testing.T) {
+	a, base := membersServer(t)
+	ana, bob := member(t, a, base, "ana"), member(t, a, base, "bob")
+	befriend(t, ana, bob, "bob", "ana")
+	var one, two struct {
+		RoomCode string `json:"room_code"`
+	}
+	ana.do("POST", "/api/games", map[string]any{"game_def_id": "tic-tac-toe", "player_name": "Ana"}, &one)
+	ana.do("POST", "/api/games", map[string]any{"game_def_id": "tic-tac-toe", "player_name": "Ana"}, &two)
+
+	friendPost(ana, "invite", map[string]any{"handle": "bob", "room": one.RoomCode})
+	if code := friendPost(ana, "invite-answer", map[string]any{"room": one.RoomCode, "accept": true}); code != 404 {
+		t.Errorf("answering somebody else's invitation: %d, want 404", code)
+	}
+	if code := friendPost(bob, "invite-answer", map[string]any{"room": one.RoomCode, "accept": false}); code != 200 {
+		t.Fatalf("Bob declines: %d", code)
+	}
+	if f := friendsOf(t, bob); len(f.Invites) != 0 {
+		t.Errorf("after declining: %+v", f.Invites)
+	}
+	friendPost(ana, "invite", map[string]any{"handle": "bob", "room": one.RoomCode})
+	if f := friendsOf(t, bob); len(f.Invites) != 0 {
+		t.Errorf("asked again after declining: %+v", f.Invites)
+	}
+	// Accepted, it leaves the list too.
+	friendPost(ana, "invite", map[string]any{"handle": "bob", "room": two.RoomCode})
+	if code := friendPost(bob, "invite-answer", map[string]any{"room": two.RoomCode, "accept": true}); code != 200 {
+		t.Fatalf("Bob accepts: %d", code)
+	}
+	if f := friendsOf(t, bob); len(f.Invites) != 0 {
+		t.Errorf("after accepting: %+v", f.Invites)
+	}
+
+	// The opt-out: on by default, and it refuses.
+	var settings struct {
+		AcceptInvites bool `json:"accept_invites"`
+	}
+	if code := bob.do("GET", "/api/friends/settings", nil, &settings); code != 200 || !settings.AcceptInvites {
+		t.Fatalf("the default: %d %+v", code, settings)
+	}
+	if code := bob.do("PUT", "/api/friends/settings", map[string]any{"accept_invites": false}, nil); code != 200 {
+		t.Fatalf("Bob opts out: %d", code)
+	}
+	var three struct {
+		RoomCode string `json:"room_code"`
+	}
+	ana.do("POST", "/api/games", map[string]any{"game_def_id": "tic-tac-toe", "player_name": "Ana"}, &three)
+	if code := friendPost(ana, "invite", map[string]any{"handle": "bob", "room": three.RoomCode}); code != 403 {
+		t.Errorf("inviting somebody who opted out: %d, want 403", code)
 	}
 }

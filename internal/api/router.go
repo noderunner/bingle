@@ -91,6 +91,7 @@ func NewRouter(mgr *session.Manager, opts ...Option) chi.Router {
 	r.Post("/friends/answer", h.handleFriendAnswer)
 	r.Post("/friends/remove", h.handleFriendRemove)
 	r.Post("/friends/invite", h.handleFriendInvite)
+	r.Post("/friends/invite-answer", h.handleInviteAnswer)
 	r.Post("/friends/dismiss", h.handleFriendDismiss)
 	r.Get("/friends/settings", h.handleGetFriendSettings)
 	r.Put("/friends/settings", h.handlePutFriendSettings)

@@ -228,6 +228,9 @@ var columnMigrations = []struct{ table, column, ddl string }{
 	{"tournaments", "first_move_seconds", "INTEGER NOT NULL DEFAULT 0"},
 	{"tournaments", "next_round_at", "TEXT NOT NULL DEFAULT ''"},
 	{"tournament_entries", "checked_in", "INTEGER NOT NULL DEFAULT 0"},
+	{"friend_settings", "accept_invites", "INTEGER NOT NULL DEFAULT 1"},
+	{"game_invites", "status", "TEXT NOT NULL DEFAULT 'pending'"},
+	{"game_invites", "notice", "TEXT NOT NULL DEFAULT ''"},
 }
 
 func addMissingColumns(db *sql.DB) error {

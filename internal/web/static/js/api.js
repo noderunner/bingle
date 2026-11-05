@@ -201,6 +201,7 @@ export const api = {
 	friendAnswer: (handle, accept) => call("/api/friends/answer", { method: "POST", body: { handle, accept } }),
 	friendRemove: (handle) => call("/api/friends/remove", { method: "POST", body: { handle } }),
 	friendInvite: (handle, room) => call("/api/friends/invite", { method: "POST", body: { handle, room } }),
+	answerInvite: (room, accept) => call("/api/friends/invite-answer", { method: "POST", body: { room, accept } }),
 	friendDismiss: (room) => call("/api/friends/dismiss", { method: "POST", body: { room } }),
 	friendSettings: () => call("/api/friends/settings"),
 	setFriendSettings: (settings) => call("/api/friends/settings", { method: "PUT", body: settings }),
