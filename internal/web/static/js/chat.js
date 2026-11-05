@@ -3,6 +3,7 @@
 // game's WebSocket as "chat" events; the page redraws on every move, so the
 // draft, the scroll position and the focus are kept here between redraws.
 
+import { handleBadge } from "./friend-badge.js";
 import { h, store, lastName, markChatRead } from "./util.js";
 import { api } from "./api.js";
 import { cssColor } from "./render.js";
@@ -220,7 +221,7 @@ function lineNode(line, mine) {
 		{ class: "chat-line" + (mine ? " mine" : "") + (line.seat ? "" : " spectator"), "data-id": line.id, "data-seat": line.seat || null },
 		h("span", { class: `chat-who ${line.color ? "color-" + cssColor(line.color) : ""}`, title: line.seat ? "" : "spectator" }, line.name + (line.seat ? "" : " (watching)")),
 		// Who said it: an account, by its handle, or a guest.
-		line.handle ? h("span", { class: "chat-handle small muted" }, "@" + line.handle) : line.guest ? h("span", { class: "chat-guest small muted" }, "guest") : null,
+		line.handle ? handleBadge(line.handle) : line.guest ? h("span", { class: "chat-guest small muted" }, "guest") : null,
 		h("span", { class: "chat-text" }, line.text),
 		h("time", { class: "chat-time muted small" }, clock(line.at))
 	);

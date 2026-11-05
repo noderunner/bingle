@@ -1,5 +1,5 @@
 // The games this browser has going: reading their state from the server and
-// drawing them as rows. The "Active games" window of the top bar lists the
+// drawing them as rows. The "Active Games" window of the top bar lists the
 // unfinished ones, the profile page the finished ones.
 
 import { h, rememberedGames, rememberGame, forgetGame, forgottenGames, chatReadUpTo, ago, toast } from "./util.js";
@@ -83,6 +83,9 @@ export function sortRows(rows) {
 	return [...rows].sort((a, b) => Number(yourImpulse(b)) - Number(yourImpulse(a)) || b.g.ts - a.g.ts);
 }
 
+/** A game's badges, in two columns, as many rows as they need. */
+const badgeColumns = (badges) => (badges.length ? h("div", { class: "game-badges" }, ...badges) : null);
+
 /** The badges a game's own rules give it in a list ("Core only", "High Priests"). */
 const tagBadges = (tags) => (tags || []).map((tag) => h("span", { class: "badge game-tag" }, tag));
 
@@ -95,8 +98,8 @@ export function openGameRow(g, defs, isMine, action = null) {
 	const def = defs.find((d) => d.id === String(g.game_def_id).split("~")[0]);
 	const title = g.name || (def ? gameTitle(def) : g.game_def_id);
 	const names = (g.players || []).map((p) => p.Name + (p.Bot ? " (bot)" : ""));
-	const meta = [names.length ? names.join(" vs ") : "nobody seated yet"];
-	meta.push(g.status === "active" ? `move ${g.move_seq}` : g.lobby ? "waiting for its host" : "waiting for players");
+	const meta = [!names.length ? "nobody seated yet" : names.length > 2 ? `${names.length} players` : names.join(" vs ")];
+	if (g.status !== "active") meta.push(g.lobby ? "waiting for its host" : "waiting for players");
 	if (g.updated_at) meta.push(ago(g.updated_at));
 	const badges = [];
 	badges.push(...tagBadges(g.tags));
@@ -109,7 +112,7 @@ export function openGameRow(g, defs, isMine, action = null) {
 		"li",
 		{ "data-code": g.room_code },
 		h("div", { class: "grow" }, h("div", { class: "title" }, `${title} · ${g.room_code}`), h("div", { class: "meta" }, meta.join(" · "))),
-		...badges,
+		badgeColumns(badges),
 		action || h("a", { class: "button primary", href: "/game/" + g.room_code }, "Watch")
 	);
 }
@@ -157,8 +160,7 @@ export function gameRow(r, defs, onForget) {
 		meta.push("Could not load.");
 	} else {
 		const others = r.info.seats.filter((s) => s.name && s.name.toLowerCase() !== r.g.name.toLowerCase()).map((s) => s.name);
-		meta.push(others.length ? `vs ${others.join(", ")}` : "waiting for an opponent");
-		meta.push(`move ${r.info.move_seq}`);
+		meta.push(!others.length ? "waiting for an opponent" : others.length === 1 ? `vs ${others[0]}` : `${others.length + 1} players`);
 		badges.push(...tagBadges(r.info.tags));
 		if (r.info.rated) badges.push(h("span", { class: "badge rated" }, "Rated"));
 		if (yourImpulse(r)) badges.push(h("span", { class: "badge turn" }, "Your turn"));
@@ -173,7 +175,7 @@ export function gameRow(r, defs, onForget) {
 		"li",
 		{ "data-code": r.g.code },
 		h("div", { class: "grow" }, h("div", { class: "title" }, `${title} · ${r.g.code}`), h("div", { class: "meta" }, meta.join(" · ") + (r.g.ts ? ` · ${ago(r.g.ts)}` : ""))),
-		...badges,
+		badgeColumns(badges),
 		r.missing || !r.info
 			? null
 			: h(

@@ -275,6 +275,9 @@ In the setup, a signed-in player can keep a seat for a friend: in the seat's lis
 for a table of two under *A friend* (`#reserve-friend`). *Invite only* (`#invite-only`) keeps a game off every list. In the lobby a kept seat has `[data-reserved]`, the host
 can give it up (`[data-act="release"]`), and a visitor with no seat to take sees `#lobby-all-reserved`. ([ADR 0107](decisions/0107-who-can-find-a-game.md))
 
+In every chat a player's handle is a badge (`.handle-badge[data-handle]`). To a signed-in player it offers a friend request (`#friend-pop`,
+`#friend-pop-send`, or `#friend-pop-accept` if they have asked); it does nothing for a friend, for yourself, or for a guest.
+
 The person icon (`#open-profile`) opens **`#profile-dialog`**, a floating window
 rather than a page: *My Name* (`#profile-window-name`, saved as you leave the field; a guest who has not chosen one
 has a two-word name from `js/names.js`), for a guest *Move to Another Device* (`#guest-box`), for a signed-in account **Here Now**
@@ -645,7 +648,7 @@ show the `?error=` a provider's callback came back with. The account page lists 
 capability (`#cap-user-<cap>`, `#cap-guest-<cap>`, saved on change, `#caps-result`), the limits (`#caps-limits`, a row a kind and a column a class), and
 invitations (`#invite-go`, `#invite-link`); its tables are `table.admin-table`. Anybody else is told (`#admin-refused`); an
 administrator who only lacks the second factor off the server's own machine is told so, with a link to it (`#admin-second-factor`). A seat's strip and a chat line show who holds it beside the name (ADR 0072): `.badge.account` (`@handle`) or
-`.badge.guest`, and `.chat-handle`, `.chat-guest`. The profile window (`#open-profile`) of a guest has `#guest-box`, *Move to another device*: `#guest-copy` (the key
+`.badge.guest`, and `.handle-badge`, `.chat-guest`. The profile window (`#open-profile`) of a guest has `#guest-box`, *Move to another device*: `#guest-copy` (the key
 and its `#guest=` link, `#guest-link`, `#guest-key`, copied to the clipboard), `#guest-rotate`, `#guest-discard`, and
 `#guest-use-key` with `#guest-use` to adopt a key; any page opened with `#guest=bgg_…` adopts it, takes it out of the
 address and reloads. "My games" merges `GET /api/me/games` into `bingle.games`. The account page adds the address

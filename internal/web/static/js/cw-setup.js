@@ -24,6 +24,35 @@ function shuffled(list) {
 	return out;
 }
 
+function factionGlyph(key, px, family) {
+	return h("img", { class: "cw-glyph", src: `/api/game-defs/${encodeURIComponent(family)}/assets/guide/glyphs/${key}.svg`, width: px, height: px, alt: "", decoding: "async" });
+}
+
+/** A map as the server draws it: a small file, where the full description of a layout is a large one. */
+function mapThumb(item, cls) {
+	return h("img", { class: cls, src: `/api/game-defs/${encodeURIComponent(item.id)}/assets/${item.art || "board.svg"}`, alt: "", loading: "lazy" });
+}
+
+/** The picture of a thing that can be chosen for a table: a map, a faction, a spellbook or a unit. */
+export function setupIcon(item, px, family, pieces) {
+	const shape = (id) => {
+		const def = (pieces || []).find((p) => p.type === id);
+		return def ? def.shape : id;
+	};
+	switch (item.kind) {
+		case "map":
+			return mapThumb(item, "cw-map-thumb");
+		case "faction":
+			return factionGlyph(item.id, px, family);
+		case "book":
+			return statIcon("books", item.name, px - 6);
+		case "rule":
+			return pieceIcon(shape(item.shape), "black", px);
+		default:
+			return pieceIcon(shape(item.id), "black", px);
+	}
+}
+
 /** "Cthulhu Wars (4 players, 5-3 map)" -> "4 players, 5-3 map". */
 function mapName(def) {
 	const m = /\(([^)]*)\)\s*$/.exec(def.name);
@@ -62,29 +91,9 @@ export function createCwSetup({ family, catalog, layouts, loadInfo, onLayout, on
 
 	// ---- what the tiles look like ----------------------------------------------------
 
-	function glyph(key, px) {
-		return h("img", { class: "cw-glyph", src: `/api/game-defs/${encodeURIComponent(family)}/assets/guide/glyphs/${key}.svg`, width: px, height: px, alt: "", loading: "lazy" });
-	}
-
-	/** A map as the server draws it: a small file, where the full description of a layout is a large one. */
-	function mapPicture(item, cls) {
-		return h("img", { class: cls, src: `/api/game-defs/${encodeURIComponent(item.id)}/assets/${item.art || "board.svg"}`, alt: "", loading: "lazy" });
-	}
-
-	function icon(item, px = 52) {
-		switch (item.kind) {
-			case "map":
-				return mapPicture(item, "cw-map-thumb");
-			case "faction":
-				return glyph(item.id, px);
-			case "book":
-				return statIcon("books", item.name, px - 6);
-			case "rule":
-				return pieceIcon(pieceShape(item.shape), "black", px);
-			default:
-				return pieceIcon(pieceShape(item.id), "black", px);
-		}
-	}
+	const icon = (item, px = 52) => setupIcon(item, px, family, info ? info.pieces : []);
+	const glyph = (key, px) => factionGlyph(key, px, family);
+	const mapPicture = (item, cls) => mapThumb(item, cls);
 
 	function factionTip(item) {
 		const box = h(
