@@ -1,6 +1,7 @@
 package cthulhuwars_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/noderunner/bingle/internal/engine/state"
@@ -746,5 +747,47 @@ func TestATerrorIsNeitherAMonsterNorACultistForDevourAndShriveling(t *testing.T)
 	// Only the Cultist is a Monster or Cultist, so there is nothing to choose.
 	if tb.n(st, "cc", "cultist", "asia") != 0 || tb.n(st, "cc", "hound-of-tindalos", "asia") != 1 {
 		t.Error("Devour takes the Cultist, never the Terror")
+	}
+}
+
+// An Independent emerges the first time its cult wakes it, without touching what the
+// cult's own Great Old One has done: that is what sets Cthulhu's price.
+func TestAnIndependentEmergesOnceWithoutCountingAsTheCultsOwn(t *testing.T) {
+	tb := indep(t)
+	x := xp{
+		units: []xu{{who: "gc", typ: "cthulhu", area: "south-pacific"}, {who: "gc", typ: "cultist", area: "south-pacific"}, {who: "cc", typ: "cultist", area: "asia"}},
+		gates: map[string]string{"south-pacific": "gc", "asia": "cc"},
+		power: map[string]int{"gc": 10, "cc": 10},
+		pool:  map[string]int{"gc|abhoth": 0},
+	}
+	st := tb.as(tb.build(x), "gc", "awaken:abhoth@south-pacific")
+	d := tb.data(st)
+	if n := emergesIn(d, "Abhoth"); n != 1 {
+		t.Errorf("told %d times: %+v", n, d.Log)
+	}
+	if d.Awoke(tb.seat("gc"), 0) {
+		t.Error("waking Abhoth counts as Cthulhu having awakened, which would make him cheaper")
+	}
+	// A cult that has woken him before does not see it again.
+	x.edit = func(d *cthulhuwars.Data) { d.Awoken = map[string]bool{fmt.Sprintf("%d|abhoth", tb.seat("gc")): true} }
+	st = tb.as(tb.build(x), "gc", "awaken:abhoth@south-pacific")
+	if n := emergesIn(tb.data(st), "Abhoth"); n != 0 {
+		t.Errorf("told %d times the second time: %+v", n, tb.data(st).Log)
+	}
+}
+
+// Cthugha, who replaces a Great Old One, emerges too.
+func TestCthughaEmerges(t *testing.T) {
+	tb := indep(t)
+	st := tb.build(xp{
+		units: []xu{{who: "gc", typ: "cthulhu", area: "south-pacific"}, {who: "gc", typ: "cultist", area: "south-pacific"}, {who: "cc", typ: "cultist", area: "asia"}},
+		gates: map[string]string{"south-pacific": "gc", "asia": "cc"},
+		power: map[string]int{"gc": 10, "cc": 10},
+		pool:  map[string]int{"gc|cthugha": 0, "gc|cthulhu": 0},
+		edit:  func(d *cthulhuwars.Data) { d.Awoken = map[string]bool{fmt.Sprintf("%d|0", tb.seat("gc")): true} },
+	})
+	st = tb.as(st, "gc", "awaken:cthugha@south-pacific/cthulhu")
+	if n := emergesIn(tb.data(st), "Cthugha"); n != 1 {
+		t.Errorf("told %d times: %+v", n, tb.data(st).Log)
 	}
 }

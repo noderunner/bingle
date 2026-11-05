@@ -1,6 +1,7 @@
 package cthulhuwars_test
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -774,4 +775,45 @@ func toDoom(t testing.TB, tb *table, st *state.BoardState) *state.BoardState {
 	}
 	t.Fatalf("the Doom phase did not begin")
 	return st
+}
+
+// emergesIn counts the lines of the history that say a Great Old One has emerged.
+func emergesIn(d *cthulhuwars.Data, name string) int {
+	n := 0
+	for _, e := range d.Log {
+		for _, line := range e.Lines {
+			if line == name+" Emerges" {
+				n++
+			}
+		}
+	}
+	return n
+}
+
+// Ubbo-Sathla's free awakening in the Doom phase is a first awakening like the other, and is told once.
+func TestUbboSathlaEmergesWhenAwakenedInTheDoomPhase(t *testing.T) {
+	tb := ttTable(t, false)
+	tt := tb.seat("tt")
+	x := xp{
+		units: []xu{{"tt", "cultist", "africa", 1}, {"tt", "high-priest", "asia", 1}}, gates: map[string]string{"africa": "tt"},
+		power: map[string]int{"tt": 7, "gc": 5}, turn: "tt", phase: "doom", stage: "doom",
+		edit: func(d *cthulhuwars.Data) { d.Doomx = &cthulhuwars.DoomState{Order: []int{tt}} },
+	}
+	st := tb.build(x)
+	st.SetReserve(tb.colour["tt"], "ubbo-sathla", 1)
+	st = tb.as(st, "tt", "awaken:ubbo-sathla@africa")
+	if n := emergesIn(tb.data(st), "Ubbo-Sathla"); n != 1 {
+		t.Errorf("told %d times: %+v", n, tb.data(st).Log)
+	}
+	// Back from the dead, he does not emerge again.
+	x.edit = func(d *cthulhuwars.Data) {
+		d.Doomx = &cthulhuwars.DoomState{Order: []int{tt}}
+		d.Awoken = map[string]bool{fmt.Sprintf("%d|0", tt): true}
+	}
+	st = tb.build(x)
+	st.SetReserve(tb.colour["tt"], "ubbo-sathla", 1)
+	st = tb.as(st, "tt", "awaken:ubbo-sathla@africa")
+	if n := emergesIn(tb.data(st), "Ubbo-Sathla"); n != 0 {
+		t.Errorf("told %d times on his return: %+v", n, tb.data(st).Log)
+	}
 }

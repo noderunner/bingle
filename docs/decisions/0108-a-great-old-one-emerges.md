@@ -27,6 +27,11 @@ plays it again. The best way to make the art was left open.
 - **The five Great Old Ones of the core set each have a scene of their own**, with its own place and palette, not one
   scene recoloured: Cthulhu rises from the sea, the King in Yellow from the trap of a rotting stage, Nyarlathotep condenses out
   of the shadows, Hastur comes from a point in the abyss between the stars, and Shub-Niggurath heaves up out of a swamp.
+- **Eight more have one too**: Tsathoggua stirs from his slumber in a cavern, Ithaqua walks out of a blizzard, Rhan-Tegoth breaks out
+  of a glacier, Yog-Sothoth presses through a rift among the dials of time, Ubbo-Sathla throws the lid off Hell's Banquet, Bastet rises from
+  a golden pyramid on the moon, Cthugha gathers in a rising fire, and Abhoth heaves up out of a sump and sheds his brood.
+- **An Independent emerges like any other**, once for each cult that wakes it. Awoke's numbers set Cthulhu's price, so an
+  Independent is kept in `Awoken` under its own name and cannot change it. Independents without a scene get the badge alone.
 - **The Animation Tester** (a tab of Cthulhu Wars' setup) plays each show and a fixed battle with no game going, from data
   made up in `js/cw-animation-tester.js`. It is a tool for looking at them and is expected to go.
 

@@ -13,6 +13,11 @@ const SEATS = [
 	{ seat: 2, key: "cc", name: "Crawling Chaos", color: "blue" },
 	{ seat: 3, key: "bg", name: "Black Goat", color: "red" },
 	{ seat: 4, key: "ys", name: "Yellow Sign", color: "yellow" },
+	{ seat: 5, key: "ww", name: "Windwalker", color: "white" },
+	{ seat: 6, key: "sl", name: "Sleeper", color: "orange" },
+	{ seat: 7, key: "ow", name: "Opener of the Way", color: "purple" },
+	{ seat: 8, key: "tt", name: "Tcho-Tcho", color: "brown" },
+	{ seat: 9, key: "bu", name: "Bubastis", color: "sand" },
 ];
 
 // Where each Great Old One comes up, and whose it is.
@@ -22,6 +27,16 @@ const EMERGE_AT = {
 	"shub-niggurath": { seat: 3, area: "africa", areaName: "Africa" },
 	"king-in-yellow": { seat: 4, area: "europe", areaName: "Europe" },
 	hastur: { seat: 4, area: "north-atlantic", areaName: "North Atlantic" },
+	tsathoggua: { seat: 6, area: "north-america-west", areaName: "North America West" },
+	"rhan-tegoth": { seat: 5, area: "antarctica", areaName: "Antarctica" },
+	ithaqua: { seat: 5, area: "arctic-ocean", areaName: "Arctic Ocean" },
+	"yog-sothoth": { seat: 7, area: "north-america-east", areaName: "North America East" },
+	"ubbo-sathla": { seat: 8, area: "south-america-east", areaName: "South America East" },
+	// She belongs on the moon, which this map does not have.
+	bastet: { seat: 9, area: "australia", areaName: "Australia" },
+	// An Independent is whoever's woke it.
+	cthugha: { seat: 1, area: "indian-ocean", areaName: "Indian Ocean" },
+	abhoth: { seat: 3, area: "south-america-west", areaName: "South America West" },
 };
 
 const many = (seat, type, n) => Array.from({ length: n }, () => ({ seat, type }));

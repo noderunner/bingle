@@ -118,3 +118,40 @@ export function lightning(bolts, t) {
 	}
 	return { lit, path };
 }
+
+/** A smooth closed outline around a middle: at(a) is how far out it reaches at angle a, as a share of its radii. */
+export function blob(cx, cy, rx, ry, at, n = 28) {
+	const points = [];
+	for (let i = 0; i < n; i++) {
+		const a = (i / n) * Math.PI * 2;
+		const k = at(a);
+		points.push([cx + Math.cos(a) * rx * k, cy + Math.sin(a) * ry * k]);
+	}
+	const mid = (p, q) => [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2];
+	const start = mid(points[n - 1], points[0]);
+	let d = `M${num(start[0])} ${num(start[1])}`;
+	for (let i = 0; i < n; i++) {
+		const m = mid(points[i], points[(i + 1) % n]);
+		d += `Q${num(points[i][0])} ${num(points[i][1])} ${num(m[0])} ${num(m[1])}`;
+	}
+	return `${d}Z`;
+}
+
+/**
+ * The moment a Great Old One is awake: two rings going out from it and a flash. Added last, so it lies over
+ * the scene, and returns the seek for it. at is when it comes, colours the two rings and the flash.
+ */
+export function awakeningBurst(svg, cx, cy, at, [first, second, light], strength = 0.48) {
+	const wave = add(svg, "circle", { cx, cy, r: 10, fill: "none", stroke: first, "stroke-width": 7, opacity: 0 });
+	const wave2 = add(svg, "circle", { cx, cy, r: 10, fill: "none", stroke: second, "stroke-width": 3, opacity: 0 });
+	const flash = add(svg, "rect", { x: 0, y: 0, width: W, height: H, fill: light, opacity: 0 });
+	return (t) => {
+		const a = between(t, at, at + 1.1);
+		wave.setAttribute("r", num(10 + outCubic(a) * 720));
+		wave.setAttribute("opacity", String(a > 0 && a < 1 ? (1 - a) * 0.8 : 0));
+		const b = between(t, at + 0.15, at + 1.4);
+		wave2.setAttribute("r", num(10 + outCubic(b) * 640));
+		wave2.setAttribute("opacity", String(b > 0 && b < 1 ? (1 - b) * 0.7 : 0));
+		flash.setAttribute("opacity", String(between(t, at - 0.02, at + 0.05) * (1 - between(t, at + 0.05, at + 0.55)) * strength));
+	};
+}

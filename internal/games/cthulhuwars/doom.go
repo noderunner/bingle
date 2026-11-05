@@ -560,8 +560,12 @@ func (e *eng) doDoom(seat int, mv state.Move) {
 		e.ransom(seat, mv)
 	case actAwaken:
 		// Ubbo-Sathla, for nothing, in the Doom phase.
+		first := !d.awokeBefore(seat, uUbbo)
 		e.awakenUbbo(seat, e.areaIdx(string(mv.To)))
 		e.say("%s awakens Ubbo-Sathla in %s: his Growth counter is %d.", e.seatName(seat), e.areaName(e.areaIdx(string(mv.To))), d.Growth)
+		if first {
+			e.say("%s Emerges", unitNameOf(uUbbo)) // the page plays a show of it (ADR 0108)
+		}
 	case actAscend:
 		e.ascend(seat, mv.Count)
 	}
