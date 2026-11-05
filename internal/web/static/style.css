@@ -2326,3 +2326,19 @@ code.wrap { overflow-wrap: anywhere; word-break: break-all; }
 .log-emerges.playable { cursor: pointer; }
 .log-emerges.playable:hover { background: color-mix(in srgb, var(--goo-ink) 32%, transparent); }
 @media (max-width: 900px), (max-height: 480px) { .em-name { font-size: 1.05rem; } .em-where { display: none; } }
+
+/* A player's @handle in a chat, and the menu it opens. */
+.handle-badge { display: inline-block; padding: 0 0.45rem; border: 1px solid var(--border); border-radius: 999px; background: var(--surface-2); color: var(--text); font: 600 0.74rem system-ui, sans-serif; line-height: 1.5; }
+button.handle-badge { cursor: pointer; }
+button.handle-badge:hover { border-color: var(--accent); color: var(--accent); }
+.friend-pop { position: fixed; z-index: 80; padding: 0.4rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25); }
+
+/* A game's badges in a list: two columns, then more rows. */
+.game-badges { flex: none; display: grid; grid-template-columns: repeat(2, max-content); gap: 0.25rem 0.3rem; justify-content: end; align-items: center; }
+
+/* What a table of Cthulhu Wars plays with. */
+.lobby-pool { display: flex; flex-wrap: wrap; align-items: center; gap: 0.45rem; margin: 0.7rem 0 0; padding: 0.5rem 0.6rem; min-height: 3.2rem; }
+.lobby-pool:empty { display: none; }
+.lobby-pool-item { display: inline-grid; place-items: center; }
+.lobby-pool-item svg, .lobby-pool-item img.cw-glyph { width: 2.1rem; height: 2.1rem; }
+.lobby-pool-item img.cw-map-thumb { width: 4.4rem; height: auto; border-radius: 4px; }

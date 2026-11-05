@@ -57,7 +57,7 @@ export function guestKeySection() {
 		run(use, async () => {
 			await api.adoptGuest(useKey.value.trim());
 			useKey.value = "";
-			say("This browser is that guest now: its games are under Active games, and this browser's own came along.");
+			say("This browser is that guest now: its games are under Active Games, and this browser's own came along.");
 			paint("guest");
 		})
 	);

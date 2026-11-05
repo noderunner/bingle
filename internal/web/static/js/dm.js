@@ -62,6 +62,9 @@ export function friendStateOf(handle) {
 	return has(D.friends.friends) ? "friend" : has(D.friends.outgoing) ? "outgoing" : has(D.friends.incoming) ? "incoming" : "";
 }
 
+/** A friend's name in the conversation, a badge like those in every other chat. Clicking it does nothing, for a friend. */
+const friendChatBadge = (name) => h("span", { class: "handle-badge", "data-handle": String(name).replace(/^@/, "") }, name);
+
 /** Reads the list again. Anything that shows it is told. */
 export async function loadFriends() {
 	try {
@@ -422,7 +425,7 @@ export function mountDirectMessages(host, { onCount = () => {} } = {}) {
 				h(
 					"li",
 					{ class: "chat-line" + (mine ? " mine" : ""), "data-id": m.id },
-					h("span", { class: "chat-who" }, mine ? "you" : m.name),
+					mine ? h("span", { class: "chat-who" }, "you") : friendChatBadge(m.name),
 					h("span", { class: "chat-text" }, m.text)
 				)
 			);

@@ -242,7 +242,7 @@ func TestWebCthulhuWars_ChatLineShowsTheHandle(t *testing.T) {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the line", `document.querySelector("#chat-log .chat-line .chat-text") !== null`, 30*time.Second)
-	if got := evalString(t, ctx, `document.querySelector("#chat-log .chat-line .chat-handle").textContent`); got != "@ana" {
+	if got := evalString(t, ctx, `document.querySelector("#chat-log .chat-line .handle-badge").textContent`); got != "@ana" {
 		t.Errorf("the handle reads %q", got)
 	}
 	if got := evalString(t, ctx, `document.querySelector("#chat-log .chat-line .chat-who").textContent`); got != "Ana the Bold" {

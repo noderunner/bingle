@@ -4,6 +4,16 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.70.0 - 2026-11-05
+
+### Bingle Core 0.70.0
+- **Add a friend from any chat.** A player's @handle in a chat is now a badge. Click it to send them a friend request, or to accept one. For a friend, it does nothing for now.
+- **A tidier Active Games list.** The window is now titled *Active Games*, and its badges sit in two columns. Under each game: *vs* the other player at a table of two, or the number of players at a bigger table, and how long ago the last move was. The move number is gone.
+
+### Cthulhu Wars 0.13.0
+- **A shorter lobby title.** The lobby now just says *Cthulhu Wars*, with a card of icons below it for the map, factions, neutral units and everything else at the table.
+- **Clearer headings in the picker:** *High Priests* and *Azathoth - Neutral Spellbooks*.
+
 ## 0.69.0 - 2026-11-05
 
 ### Bingle Core 0.69.0

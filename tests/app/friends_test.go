@@ -635,3 +635,108 @@ func TestWebFriends_ReservingASeatInTheSetup(t *testing.T) {
 	clickSel(t, bob, "#join-open-games button[data-join]")
 	waitJS(t, bob, "Bob in the lobby", `document.querySelector('#lobby-seats .lobby-seat.mine') !== null`, 20*time.Second)
 }
+
+// A handle in a chat offers a friend request, and does nothing for a friend.
+func TestWebFriends_AHandleInAChat(t *testing.T) {
+	a, base := membersServer(t)
+	anaB, bobB, cydB := member(t, a, base, "ana"), member(t, a, base, "bob"), member(t, a, base, "cyd")
+	befriend(t, anaB, cydB, "cyd", "ana")
+	for _, b := range []*browser{bobB, cydB} {
+		if code := b.do("POST", "/api/chat", map[string]any{"player_name": "them", "text": "anyone for a game?"}, nil); code != 200 {
+			t.Fatalf("the global chat: %d", code)
+		}
+	}
+	ana, cancel := newChromedpContext(t, 90*time.Second)
+	defer cancel()
+	signInChrome(t, ana, base, anaB.cookie(auth.SessionCookie))
+	if err := chromedp.Run(ana, chromedp.EmulateViewport(1400, 900), chromedp.Navigate(base+"/")); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ana, "the tab", `document.getElementById("tab-chat") !== null`, 20*time.Second)
+	clickSel(t, ana, "#tab-chat")
+	waitJS(t, ana, "the badges", `document.querySelector('.handle-badge[data-handle="bob"]') !== null && document.querySelector('.handle-badge[data-handle="cyd"]') !== null`, 15*time.Second)
+
+	// A friend: nothing happens.
+	clickSel(t, ana, `.handle-badge[data-handle="cyd"]`)
+	time.Sleep(500 * time.Millisecond)
+	if evalBool(t, ana, `document.getElementById("friend-pop") !== null`) {
+		t.Error("a friend's badge opened a menu")
+	}
+	// Somebody else: an offer, which sends the request and then says so.
+	clickSel(t, ana, `.handle-badge[data-handle="bob"]`)
+	waitJS(t, ana, "the offer", `document.getElementById("friend-pop-send") !== null`, 10*time.Second)
+	clickSel(t, ana, "#friend-pop-send")
+	waitJS(t, ana, "the menu goes", `document.getElementById("friend-pop") === null`, 5*time.Second)
+	waitForFunc := func() bool { return len(friendsOf(t, bobB).Incoming) == 1 }
+	for i := 0; i < 50 && !waitForFunc(); i++ {
+		time.Sleep(100 * time.Millisecond)
+	}
+	if f := friendsOf(t, bobB); len(f.Incoming) != 1 || f.Incoming[0].Handle != "ana" {
+		t.Errorf("Bob's requests: %+v", f.Incoming)
+	}
+	clickSel(t, ana, `.handle-badge[data-handle="bob"]`)
+	waitJS(t, ana, "already sent", `document.getElementById("friend-pop") !== null && document.getElementById("friend-pop").textContent.includes("sent")`, 10*time.Second)
+}
+
+// In the Active Games window: its title, two columns of badges, and a short line under each game.
+func TestWebFriends_TheActiveGamesWindow(t *testing.T) {
+	baseURL := newRESTTestServer(t)
+	var duel, table struct {
+		RoomCode string `json:"room_code"`
+	}
+	doJSON(t, "POST", baseURL+"/api/games", map[string]any{"game_def_id": "tic-tac-toe", "player_name": "Ana", "opponent": "random"}, &duel)
+	doJSON(t, "POST", baseURL+"/api/games", map[string]any{"game_def_id": "cthulhu-wars", "player_name": "Ana", "opponent": "random"}, &table)
+	ctx, cancel := newChromedpContext(t, 60*time.Second)
+	defer cancel()
+	games := `[{"code":"` + duel.RoomCode + `","def":"tic-tac-toe","name":"Ana","ts":` + "Date.now()" + `},{"code":"` + table.RoomCode + `","def":"cthulhu-wars","name":"Ana","ts":Date.now()}]`
+	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1400, 900), chromedp.Navigate(baseURL+"/healthz"), chromedp.Evaluate(`localStorage.setItem("bingle.games", JSON.stringify(`+games+`)); true`, nil), chromedp.Navigate(baseURL+"/")); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "the icon", `document.getElementById("open-active-games") !== null`, 20*time.Second)
+	if got := evalString(t, ctx, `document.querySelector("#active-games-dialog").getAttribute("aria-label")`); got != "Active Games" {
+		t.Errorf("the window is called %q", got)
+	}
+	clickSel(t, ctx, "#open-active-games")
+	row := func(code string) string {
+		return `document.querySelector('#active-games-dialog li[data-code="` + code + `"]')`
+	}
+	waitJS(t, ctx, "the games", row(duel.RoomCode)+` !== null && `+row(table.RoomCode)+` !== null`, 15*time.Second)
+	if got := evalString(t, ctx, row(duel.RoomCode)+`.querySelector(".meta").textContent`); !strings.HasPrefix(got, "vs ") || strings.Contains(got, "move") {
+		t.Errorf("at a table of two: %q", got)
+	}
+	if got := evalString(t, ctx, row(table.RoomCode)+`.querySelector(".meta").textContent`); !strings.HasPrefix(got, "4 players") || strings.Contains(got, "move") || strings.Contains(got, "vs") {
+		t.Errorf("at a table of four: %q", got)
+	}
+	if got := evalString(t, ctx, `getComputedStyle(`+row(table.RoomCode)+`.querySelector(".game-badges")).gridTemplateColumns.trim().split(/\s+/).length + ""`); got != "2" {
+		t.Errorf("%s columns of badges, want 2", got)
+	}
+}
+
+// The lobby of Cthulhu Wars has the short title, and pictures of what the table plays with.
+func TestWebCthulhuWars_TheLobbyShowsItsPool(t *testing.T) {
+	baseURL := newRESTTestServer(t)
+	var c struct {
+		RoomCode string `json:"room_code"`
+	}
+	if code := doJSON(t, "POST", baseURL+"/api/games", map[string]any{"game_def_id": "cthulhu-wars", "player_name": "Ana", "lobby": true, "options": map[string]any{"high-priests": true, "neutral-units": []string{"dimensional-shambler"}}}, &c); code != 200 {
+		t.Fatalf("create: %d", code)
+	}
+	ctx, cancel := newChromedpContext(t, 60*time.Second)
+	defer cancel()
+	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1400, 900), chromedp.Navigate(baseURL+"/game/"+c.RoomCode)); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "the pool", `document.querySelectorAll("#lobby-pool .lobby-pool-item").length > 0`, 15*time.Second)
+	if got := evalString(t, ctx, `document.querySelector(".lobby-head h2").textContent`); got != "Cthulhu Wars" {
+		t.Errorf("the title is %q", got)
+	}
+	got := evalString(t, ctx, `[...document.querySelectorAll("#lobby-pool .lobby-pool-item")].map(e => e.dataset.item).join(",")`)
+	for _, want := range []string{"cthulhu-wars", "gc", "cc", "bg", "ys", "high-priests", "dimensional-shambler"} {
+		if !strings.Contains(","+got+",", ","+want+",") {
+			t.Errorf("%q not in the pool: %s", want, got)
+		}
+	}
+	if n := evalInt(t, ctx, `document.querySelectorAll('#lobby-pool .lobby-pool-item[data-kind="faction"]').length`); n != 4 {
+		t.Errorf("%d factions in the pool", n)
+	}
+}

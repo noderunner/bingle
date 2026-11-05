@@ -193,10 +193,10 @@ func (rs *Ruleset) buildSetupCatalog(game *catalog.CompiledGame) (*SetupCatalog,
 
 	other := []SetupItem{{
 		NeutralItem: NeutralItem{Kind: "rule", ID: optHighPriests, Name: "High Priests", Text: optionText[optHighPriests]},
-		Option:      optHighPriests, Group: "Rules", Shape: uHighPriest,
+		Option:      optHighPriests, Group: "High Priests", Shape: uHighPriest,
 	}}
 	for n, b := range neutralBooks {
-		item := SetupItem{NeutralItem: neutralBookItem(b), Option: optBooks, Value: neutralKeys[n], Group: "Neutral spellbooks"}
+		item := SetupItem{NeutralItem: neutralBookItem(b), Option: optBooks, Value: neutralKeys[n], Group: "Azathoth - Neutral Spellbooks"}
 		other = append(other, item)
 	}
 

@@ -77,13 +77,13 @@ export function installTopbar({ onRows = () => {}, manageTitle = true } = {}) {
 	const badge = h("span", { class: "icon-badge", id: "active-badge", hidden: true, "aria-hidden": "true" }, "0");
 	const activeBtn = h(
 		"button",
-		{ type: "button", class: "topbar-icon", id: "open-active-games", "aria-haspopup": "dialog", title: "Active games", "aria-label": "Active games" },
+		{ type: "button", class: "topbar-icon", id: "open-active-games", "aria-haspopup": "dialog", title: "Active Games", "aria-label": "Active Games" },
 		gamesIcon(),
 		badge
 	);
 	const list = h("ul", { class: "my-games", id: "my-games" });
 	const empty = h("p", { class: "muted", id: "my-games-empty", hidden: true }, "No games going. Pick one in the Games tab to start.");
-	const activeDlg = dialog("active-games-dialog", "Active games", list, empty);
+	const activeDlg = dialog("active-games-dialog", "Active Games", list, empty);
 	let rows = [];
 	let defs = [];
 
@@ -94,7 +94,7 @@ export function installTopbar({ onRows = () => {}, manageTitle = true } = {}) {
 		const waiting = active.filter(yourImpulse).length;
 		badge.textContent = String(waiting);
 		badge.hidden = waiting === 0;
-		const label = waiting ? `Active games, ${waiting} waiting for you` : "Active games";
+		const label = waiting ? `Active Games, ${waiting} waiting for you` : "Active Games";
 		activeBtn.setAttribute("aria-label", label);
 		activeBtn.title = label;
 		if (manageTitle) {

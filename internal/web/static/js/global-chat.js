@@ -5,6 +5,7 @@
 // another tab was showing, and those said while this browser was away, as the
 // last message it has shown is remembered (localStorage bingle.chat.seen).
 
+import { handleBadge } from "./friend-badge.js";
 import { h, store, lastName } from "./util.js";
 import { api, whoAmI } from "./api.js";
 import { emojiPicker } from "./chat.js";
@@ -89,7 +90,7 @@ export function mountGlobalChat(host, { visible = () => true, onUnread = () => {
 		return h(
 			"li",
 			{ class: "chat-line" + (mine ? " mine" : ""), "data-id": line.id },
-			h("span", { class: "chat-who" }, line.name),
+			String(line.name).startsWith("@") ? handleBadge(line.name) : h("span", { class: "chat-who" }, line.name),
 			h("span", { class: "chat-text" }, line.text),
 			h("time", { class: "chat-time muted small" }, clock(line.at))
 		);
