@@ -384,7 +384,7 @@ export function mountDirectMessages(host, { onCount = () => {} } = {}) {
 		const friend = friendAt(D.open);
 		title.textContent = D.open ? `With ${D.openName}` : "Your friends";
 		thread.classList.toggle("empty", !D.open);
-		const online = !!friend && friend.online;
+		const online = !!friend && friend.can_write;
 		input.disabled = !online;
 		sendBtn.disabled = !online;
 		offline.hidden = !D.open || online;

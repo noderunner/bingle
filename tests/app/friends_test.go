@@ -13,10 +13,11 @@ import (
 
 type friendsResp struct {
 	Friends []struct {
-		Name    string `json:"name"`
-		Handle  string `json:"handle"`
-		Address string `json:"address"`
-		Online  bool   `json:"online"`
+		Name     string `json:"name"`
+		Handle   string `json:"handle"`
+		Address  string `json:"address"`
+		Online   bool   `json:"online"`
+		CanWrite bool   `json:"can_write"`
 	} `json:"friends"`
 	Incoming []struct {
 		Handle string `json:"handle"`
@@ -295,4 +296,104 @@ func TestWebFriends_TheWindow(t *testing.T) {
 	clickSel(t, ana, "#friend-remove")
 	waitJS(t, ana, "Bob gone from the list", `document.querySelector("#friends-list .dm-person") === null`, 10*time.Second)
 	waitJS(t, bob, "Ana gone from Bob's list", `document.querySelector("#friends-list .dm-person") === null`, 15*time.Second)
+}
+
+// Someone who hides looks exactly like someone who has gone, until they speak first.
+func TestFriends_HidingLooksLikeBeingGone(t *testing.T) {
+	a, base := membersServer(t)
+	ana, bob := member(t, a, base, "ana"), member(t, a, base, "bob")
+	befriend(t, ana, bob, "bob", "ana")
+	anaAt, bobAt := ana.here(), bob.here()
+	seen := func(want bool) {
+		t.Helper()
+		f := friendsOf(t, ana)
+		if len(f.Friends) != 1 || f.Friends[0].Online != want || f.Friends[0].CanWrite != want {
+			t.Fatalf("Ana sees %+v, want online %v", f.Friends, want)
+		}
+		var people struct {
+			People []struct {
+				Address string `json:"address"`
+			} `json:"people"`
+		}
+		if code := ana.do("GET", "/api/here", nil, &people); code != 200 {
+			t.Fatalf("who is here: %d", code)
+		}
+		listed := false
+		for _, p := range people.People {
+			listed = listed || p.Address == bobAt
+		}
+		if listed != want {
+			t.Fatalf("Bob in Here now: %v, want %v (%+v)", listed, want, people)
+		}
+	}
+	var settings struct {
+		ShowPresence bool `json:"show_presence"`
+		MailRequests bool `json:"mail_requests"`
+	}
+	if code := bob.do("GET", "/api/friends/settings", nil, &settings); code != 200 || !settings.ShowPresence {
+		t.Fatalf("the default: %d %+v", code, settings)
+	}
+	seen(true)
+	if code := ana.do("POST", "/api/dm", map[string]any{"to": bobAt, "text": "before"}, nil); code != 200 {
+		t.Fatalf("a message while seen: %d", code)
+	}
+
+	// Bob hides. It holds at once, and over the next minute's mark.
+	if code := bob.do("PUT", "/api/friends/settings", map[string]any{"show_presence": false}, nil); code != 200 {
+		t.Fatalf("Bob hides: %d", code)
+	}
+	if code := bob.do("GET", "/api/friends/settings", nil, &settings); code != 200 || settings.ShowPresence {
+		t.Fatalf("after hiding: %d %+v", code, settings)
+	}
+	seen(false)
+	if bob.here() == "" {
+		t.Fatal("Bob's beat")
+	}
+	seen(false)
+	var hiddenBody, goneBody map[string]any
+	hiddenCode := ana.do("POST", "/api/dm", map[string]any{"to": bobAt, "text": "there?"}, &hiddenBody)
+	if hiddenCode != 404 {
+		t.Errorf("a message to somebody hidden: %d, want 404", hiddenCode)
+	}
+	if code := ana.do("POST", "/api/dm/call", map[string]any{"to": bobAt, "join": true}, nil); code != 404 {
+		t.Errorf("a call to somebody hidden: %d, want 404", code)
+	}
+	// The same words as for somebody who has gone.
+	cyd := member(t, a, base, "cyd")
+	befriend(t, ana, cyd, "cyd", "ana")
+	var cydAddr string
+	for _, f := range friendsOf(t, ana).Friends {
+		if f.Handle == "cyd" {
+			cydAddr = f.Address
+		}
+	}
+	if code := ana.do("POST", "/api/dm", map[string]any{"to": cydAddr, "text": "there?"}, &goneBody); code != 404 {
+		t.Fatalf("a message to somebody gone: %d", code)
+	}
+	if hiddenBody["error"] != goneBody["error"] {
+		t.Errorf("the answers differ: %v and %v", hiddenBody, goneBody)
+	}
+
+	// Bob wrote nothing yet. Once he speaks, Ana can answer, though he still looks offline.
+	if code := bob.do("POST", "/api/dm", map[string]any{"to": anaAt, "text": "only me"}, nil); code != 200 {
+		t.Fatalf("Bob writes while hidden: %d", code)
+	}
+	for _, f := range friendsOf(t, ana).Friends {
+		if f.Handle == "bob" && (f.Online || !f.CanWrite) {
+			t.Errorf("after Bob wrote: %+v", f)
+		}
+	}
+	if code := ana.do("POST", "/api/dm", map[string]any{"to": bobAt, "text": "hello"}, nil); code != 200 {
+		t.Errorf("Ana's answer: %d", code)
+	}
+
+	// He comes back into view.
+	if code := bob.do("PUT", "/api/friends/settings", map[string]any{"show_presence": true}, nil); code != 200 {
+		t.Fatalf("Bob shows himself: %d", code)
+	}
+	for _, f := range friendsOf(t, ana).Friends {
+		if f.Handle == "bob" && !f.Online {
+			t.Errorf("after showing: %+v", f)
+		}
+	}
 }

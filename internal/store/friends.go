@@ -80,21 +80,28 @@ func (s *Store) DeleteFriendship(ctx context.Context, a, b int64) error {
 	return err
 }
 
-// FriendRequestMail says whether an account wants mail about friend requests.
-func (s *Store) FriendRequestMail(ctx context.Context, accountID int64) (bool, error) {
-	var on bool
-	err := s.queryRow(ctx, "FriendRequestMail", `SELECT mail_requests FROM friend_settings WHERE account_id = ?`, accountID).Scan(&on)
-	if errors.Is(err, sql.ErrNoRows) {
-		return false, nil
-	}
-	return on, err
+// FriendSettings is what an account chose about its friends.
+type FriendSettings struct {
+	MailRequests bool `json:"mail_requests"`
+	ShowPresence bool `json:"show_presence"`
 }
 
-// SetFriendRequestMail stores whether an account wants mail about friend requests.
-func (s *Store) SetFriendRequestMail(ctx context.Context, accountID int64, on bool) error {
-	_, err := s.exec(ctx, "SetFriendRequestMail",
-		`INSERT INTO friend_settings (account_id, mail_requests) VALUES (?, ?)
-		 ON CONFLICT (account_id) DO UPDATE SET mail_requests = excluded.mail_requests`, accountID, on)
+// FriendSettings reads an account's choices; with no row, the defaults: no mail, and to be seen.
+func (s *Store) FriendSettings(ctx context.Context, accountID int64) (FriendSettings, error) {
+	out := FriendSettings{ShowPresence: true}
+	err := s.queryRow(ctx, "FriendSettings", `SELECT mail_requests, show_presence FROM friend_settings WHERE account_id = ?`, accountID).Scan(&out.MailRequests, &out.ShowPresence)
+	if errors.Is(err, sql.ErrNoRows) {
+		return out, nil
+	}
+	return out, err
+}
+
+// SetFriendSettings stores an account's choices.
+func (s *Store) SetFriendSettings(ctx context.Context, accountID int64, v FriendSettings) error {
+	_, err := s.exec(ctx, "SetFriendSettings",
+		`INSERT INTO friend_settings (account_id, mail_requests, show_presence) VALUES (?, ?, ?)
+		 ON CONFLICT (account_id) DO UPDATE SET mail_requests = excluded.mail_requests, show_presence = excluded.show_presence`,
+		accountID, v.MailRequests, v.ShowPresence)
 	return err
 }
 

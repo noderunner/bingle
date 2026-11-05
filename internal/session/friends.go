@@ -43,7 +43,10 @@ type Friend struct {
 	Name    string `json:"name"` // "@ana"
 	Handle  string `json:"handle"`
 	Address string `json:"address"`
-	Online  bool   `json:"online"`
+	// Online says they can be seen to be here. CanWrite says a message would reach them: they are
+	// online, or are hidden but have themselves written or rung.
+	Online   bool `json:"online"`
+	CanWrite bool `json:"can_write"`
 }
 
 // FriendInvite is an invitation to a game, as the friends list shows it.
@@ -62,7 +65,7 @@ type FriendsList struct {
 }
 
 // FriendsOf reads an account's list. Whether a friend is online says nothing of those not yet friends.
-func (m *Manager) FriendsOf(ctx context.Context, accountID int64) (FriendsList, error) {
+func (m *Manager) FriendsOf(ctx context.Context, accountID int64, address string) (FriendsList, error) {
 	out := FriendsList{Friends: []Friend{}, Incoming: []Friend{}, Outgoing: []Friend{}, Invites: []FriendInvite{}}
 	rows, err := m.store.Friendships(ctx, accountID)
 	if err != nil {
@@ -72,7 +75,8 @@ func (m *Manager) FriendsOf(ctx context.Context, accountID int64) (FriendsList, 
 		line := Friend{Name: "@" + f.Handle, Handle: f.Handle, Address: AddressOf(f.PrincipalID)}
 		switch {
 		case f.Status == store.FriendAccepted:
-			line.Online = m.NameHere(line.Address) != ""
+			line.Online = m.seenHere(line.Address) != ""
+			line.CanWrite = m.canReach(address, line.Address)
 			out.Friends = append(out.Friends, line)
 		case f.Requester == accountID:
 			out.Outgoing = append(out.Outgoing, line)
@@ -166,8 +170,8 @@ func (m *Manager) mailFriendRequest(ctx context.Context, from, to store.Account,
 	if !m.MailEnabled() || !to.EmailVerified {
 		return
 	}
-	on, err := m.store.FriendRequestMail(ctx, to.ID)
-	if err != nil || !on {
+	settings, err := m.store.FriendSettings(ctx, to.ID)
+	if err != nil || !settings.MailRequests {
 		return
 	}
 	_ = m.SendAccountMail(ctx, "friend", to.Email, ip, func(base string) mail.Message {
@@ -291,12 +295,22 @@ func (m *Manager) DismissInvite(ctx context.Context, me store.Account, room stri
 	return nil
 }
 
-// FriendRequestMail says whether an account wants mail about friend requests.
-func (m *Manager) FriendRequestMail(ctx context.Context, accountID int64) (bool, error) {
-	return m.store.FriendRequestMail(ctx, accountID)
+// FriendSettings reads what an account chose about its friends.
+func (m *Manager) FriendSettings(ctx context.Context, accountID int64) (store.FriendSettings, error) {
+	return m.store.FriendSettings(ctx, accountID)
 }
 
-// SetFriendRequestMail stores whether an account wants mail about friend requests.
-func (m *Manager) SetFriendRequestMail(ctx context.Context, accountID int64, on bool) error {
-	return m.store.SetFriendRequestMail(ctx, accountID, on)
+// SetFriendSettings stores what an account chose about its friends, and applies it at once.
+func (m *Manager) SetFriendSettings(ctx context.Context, accountID int64, address string, s store.FriendSettings) error {
+	if err := m.store.SetFriendSettings(ctx, accountID, s); err != nil {
+		return err
+	}
+	m.SetHereHidden(address, !s.ShowPresence)
+	return nil
+}
+
+// HidesPresence says whether an account has chosen not to be seen. If that cannot be read, it has.
+func (m *Manager) HidesPresence(ctx context.Context, accountID int64) bool {
+	s, err := m.store.FriendSettings(ctx, accountID)
+	return err != nil || !s.ShowPresence
 }

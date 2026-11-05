@@ -156,6 +156,22 @@ func (b *dmBox) sweep(now time.Time) {
 	}
 }
 
+// wrote says whether from has written to other in what is still kept.
+func (b *dmBox) wrote(from, other string) bool {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	t := b.threads[dmKey(from, other)]
+	if t == nil {
+		return false
+	}
+	for _, m := range t.msgs {
+		if m.From == from {
+			return true
+		}
+	}
+	return false
+}
+
 // thread returns the messages between two addresses after afterID.
 func (b *dmBox) thread(a, other string, afterID int64) []DirectMessage {
 	b.mu.Lock()
@@ -209,7 +225,7 @@ func (m *Manager) SendDirect(from, to, text string) (DirectMessage, error) {
 	if to == "" || to == from {
 		return DirectMessage{}, fmt.Errorf("%w: write to somebody else", ErrNoSuchPerson)
 	}
-	if m.NameHere(to) == "" {
+	if !m.canReach(from, to) {
 		return DirectMessage{}, ErrNoSuchPerson
 	}
 	text = cleanChat(text)
@@ -244,7 +260,7 @@ func (m *Manager) DirectMessages(addr, with string, afterID int64) []DirectMessa
 func (m *Manager) DirectThreads(addr string) []DirectThread {
 	out := m.dms.threadsOf(addr)
 	for i := range out {
-		out[i].Name = m.NameHere(out[i].With)
+		out[i].Name = m.seenHere(out[i].With)
 	}
 	if out == nil {
 		out = []DirectThread{}
@@ -272,7 +288,7 @@ func (m *Manager) JoinDirectCall(from, to string) error {
 	if to == "" || to == from {
 		return fmt.Errorf("%w: call somebody else", ErrNoSuchPerson)
 	}
-	if m.NameHere(to) == "" {
+	if !m.canReach(from, to) {
 		return ErrNoSuchPerson
 	}
 	m.claimVoice(from, CallWhere{Peer: to})

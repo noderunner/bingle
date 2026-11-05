@@ -269,7 +269,7 @@ The speech-bubble icon (`#open-friends`, its badge `#dm-badge` counting what wai
 `.friend-dot.online`) and *Waiting for an answer* (`#friend-outgoing`, `[data-cancel]`). On the right, for the friend
 chosen (`#dm-title`): *Call*, *Invite to game* (`#friend-invite`, then `#friend-invite-game` and `#friend-invite-send`),
 *Remove friend* (`#friend-remove`) and the conversation. A friend who is offline cannot be written to or called
-(`#dm-offline`). The profile page has the switch for mail about requests (`#friend-mail`).
+(`#dm-offline`). The profile page has the switches for mail about requests (`#friend-mail`) and for being seen online (`#friend-presence`).
 
 The person icon (`#open-profile`) opens **`#profile-dialog`**, a floating window
 rather than a page: *My Name* (`#profile-window-name`, saved as you leave the field; a guest who has not chosen one

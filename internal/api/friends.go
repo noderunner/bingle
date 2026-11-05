@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/noderunner/bingle/internal/auth"
+	"github.com/noderunner/bingle/internal/session"
 	"github.com/noderunner/bingle/internal/store"
 )
 
@@ -14,11 +15,6 @@ type friendRequest struct {
 	Handle string `json:"handle"`
 	Accept bool   `json:"accept,omitempty"`
 	Room   string `json:"room,omitempty"`
-}
-
-// friendSettings is the body of GET and PUT /friends/settings.
-type friendSettings struct {
-	MailRequests bool `json:"mail_requests"`
 }
 
 // memberAccount is the signed-in account of the request, answering the request if there is none.
@@ -54,7 +50,7 @@ func (h *handlers) handleGetFriends(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	list, err := h.mgr.FriendsOf(r.Context(), me.ID)
+	list, err := h.mgr.FriendsOf(r.Context(), me.ID, session.AddressOf(me.PrincipalID))
 	if err != nil {
 		writeError(w, err)
 		return
@@ -103,12 +99,12 @@ func (h *handlers) handleGetFriendSettings(w http.ResponseWriter, r *http.Reques
 	if !ok {
 		return
 	}
-	on, err := h.mgr.FriendRequestMail(r.Context(), me.ID)
+	settings, err := h.mgr.FriendSettings(r.Context(), me.ID)
 	if err != nil {
 		writeError(w, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, friendSettings{MailRequests: on})
+	writeJSON(w, http.StatusOK, settings)
 }
 
 // handlePutFriendSettings implements PUT /friends/settings.
@@ -117,11 +113,16 @@ func (h *handlers) handlePutFriendSettings(w http.ResponseWriter, r *http.Reques
 	if !ok {
 		return
 	}
-	var req friendSettings
+	// What the request leaves out stays as it is.
+	req, err := h.mgr.FriendSettings(r.Context(), me.ID)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
 	if !decodeBody(w, r, &req) {
 		return
 	}
-	if err := h.mgr.SetFriendRequestMail(r.Context(), me.ID, req.MailRequests); err != nil {
+	if err := h.mgr.SetFriendSettings(r.Context(), me.ID, session.AddressOf(me.PrincipalID), req); err != nil {
 		writeError(w, err)
 		return
 	}

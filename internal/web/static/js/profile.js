@@ -13,21 +13,26 @@ installNav();
 
 /** What an account chose about its friends. */
 function paintFriendSettings() {
-	const box = document.getElementById("friend-mail");
+	const mail = document.getElementById("friend-mail");
+	const presence = document.getElementById("friend-presence");
 	const status = document.getElementById("friend-settings-status");
 	api.friendSettings()
 		.then((settings) => {
-			box.checked = settings.mail_requests;
+			mail.checked = settings.mail_requests;
+			presence.checked = settings.show_presence;
 			document.getElementById("friends-card").hidden = false;
-			box.addEventListener("change", () => {
-				status.textContent = "";
-				api.setFriendSettings({ mail_requests: box.checked })
-					.then(() => (status.textContent = "Saved."))
-					.catch((err) => {
-						box.checked = !box.checked;
-						status.textContent = err.message || "That did not save.";
-					});
-			});
+			const wire = (box, key) =>
+				box.addEventListener("change", () => {
+					status.textContent = "";
+					api.setFriendSettings({ [key]: box.checked })
+						.then(() => (status.textContent = "Saved."))
+						.catch((err) => {
+							box.checked = !box.checked;
+							status.textContent = err.message || "That did not save.";
+						});
+				});
+			wire(mail, "mail_requests");
+			wire(presence, "show_presence");
 		})
 		.catch(() => {});
 }

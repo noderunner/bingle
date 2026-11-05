@@ -257,7 +257,9 @@ last said anything, and nothing is stored. Guests are not listed and see no list
 (`404` for nobody, `409` when already friends or asked, `429` too soon after a refusal);
 `POST /friends/answer` a `handle` and `accept`; `POST /friends/remove` a `handle`, for a friend or your own request;
 `POST /friends/invite` a `handle` and a `room` you have a seat in (`403` otherwise); `POST /friends/dismiss` a `room`.
-`GET` and `PUT /friends/settings` hold `mail_requests`, off by default. Changes arrive as a `friends` event on `/ws-dm`.
+`GET` and `PUT /friends/settings` hold `mail_requests`, off by default, and `show_presence`, on by default
+([ADR 0106](decisions/0106-presence-can-be-hidden.md)): off, the account is on no list and looks to anybody else as if it had gone,
+though it can write first, and `can_write` on a friend says that a friend who looks offline can be answered. Changes arrive as a `friends` event on `/ws-dm`.
 
 **Direct messages.** Two friends who are here can write to each other and put a voice call up
 between them. A message is addressed to an **address** and sent by the signed-in account, under
