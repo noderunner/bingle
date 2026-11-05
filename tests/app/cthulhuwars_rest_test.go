@@ -107,8 +107,9 @@ func TestGuideAssetsAreServedInertAndSafely(t *testing.T) {
 		t.Errorf("assets must be served inert: %v", resp.Header)
 	}
 	svg := string(raw)
-	if n := strings.Count(svg, "<polygon"); n < 17 {
-		t.Errorf("the generated map has %d polygons", n)
+	// The painted board is inside the file: a browser loads nothing else for an SVG shown as an image.
+	if !strings.Contains(svg, `<image href="data:image/webp;base64,`) {
+		t.Error("the generated map does not hold the painted board")
 	}
 	for _, name := range []string{"North America", "Antarctica", "Arctic Ocean"} {
 		if !strings.Contains(svg, name) {

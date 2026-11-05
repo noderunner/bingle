@@ -424,6 +424,10 @@ function isMyImpulse() {
 	return isActive() && S.me.seat !== 0 && S.game.impulse_seat === S.me.seat;
 }
 
+function isCthulhuWars() {
+	return !!S.info && (S.info.family || S.info.id) === "cthulhu-wars";
+}
+
 function isLive() {
 	return S.viewSeq === null;
 }
@@ -2677,6 +2681,7 @@ function lobbyContext() {
 		me: S.me,
 		bots: S.bots || [],
 		cults: tableCults(),
+		seatGlyph,
 		inviteURL: S.game.invite_url || location.origin + "/game/" + code,
 		lastName: lastName(),
 		busy: S.lobbyBusy,
@@ -4131,11 +4136,13 @@ function roundBar() {
 		);
 	}
 	bar.append(steps);
-	if (v.phase === "over") bar.append(h("span", { class: "round-item alarm" }, "Game over"));
+	// All that follows the phases stands at the right of the card.
+	const tail = h("div", { class: "round-tail", id: "round-tail" });
+	if (v.phase === "over") tail.append(h("span", { class: "round-item alarm" }, "Game over"));
 
-	if (v.ritual && v.ritual.track && v.ritual.track.length) bar.append(ritualTrack(v.ritual));
+	if (v.ritual && v.ritual.track && v.ritual.track.length) tail.append(ritualTrack(v.ritual));
 	if (v.bag) {
-		bar.append(
+		tail.append(
 			h(
 				"span",
 				{
@@ -4151,6 +4158,7 @@ function roundBar() {
 			)
 		);
 	}
+	if (tail.children.length) bar.append(tail);
 	return bar;
 }
 
@@ -5464,26 +5472,29 @@ function refreshOptions() {
 			});
 			el.append(h("label", { class: "field" }, h("span", { class: "small" }, "Board Style"), styleSel));
 		}
-		const themeSel = h("select", { id: "opt-board", "aria-label": "Board theme" });
-		const chosen = boardTheme();
-		for (const [value, label] of [["wood", "Wood"], ["slate", "Slate"], ["green", "Green felt"], ["paper", "Paper"]]) {
-			themeSel.append(h("option", { value, selected: chosen === value }, label));
+		// Cthulhu Wars has a map, which no board theme changes.
+		if (!isCthulhuWars()) {
+			const themeSel = h("select", { id: "opt-board", "aria-label": "Board theme" });
+			const chosen = boardTheme();
+			for (const [value, label] of [["wood", "Wood"], ["slate", "Slate"], ["green", "Green felt"], ["paper", "Paper"]]) {
+				themeSel.append(h("option", { value, selected: chosen === value }, label));
+			}
+			// Games played with stones also offer the illustrated themes.
+			const fancy = themesFor(S.info);
+			if (fancy.length) {
+				const group = h("optgroup", { label: "Illustrated themes" });
+				for (const t of fancy) group.append(h("option", { value: t.id, selected: chosen === t.id }, t.label));
+				themeSel.append(group);
+			}
+			themeSel.addEventListener("change", () => {
+				S.settings.board = themeSel.value;
+				store.set("bingle.board", themeSel.value);
+				applyTheme();
+				// The illustrated themes draw into the board: redraw it.
+				render();
+			});
+			el.append(h("label", { class: "field" }, h("span", { class: "small" }, "Board Theme"), themeSel));
 		}
-		// Games played with stones also offer the illustrated themes.
-		const fancy = themesFor(S.info);
-		if (fancy.length) {
-			const group = h("optgroup", { label: "Illustrated themes" });
-			for (const t of fancy) group.append(h("option", { value: t.id, selected: chosen === t.id }, t.label));
-			themeSel.append(group);
-		}
-		themeSel.addEventListener("change", () => {
-			S.settings.board = themeSel.value;
-			store.set("bingle.board", themeSel.value);
-			applyTheme();
-			// The illustrated themes draw into the board: redraw it.
-			render();
-		});
-		el.append(h("label", { class: "field" }, h("span", { class: "small" }, "Board Theme"), themeSel));
 		if ((S.info.pieces || []).some((p) => p.rules)) {
 			const sizeSel = h("select", { id: "opt-tile-scale", "aria-label": "Piece button size" });
 			for (const [value, label] of [[0.5, "Small"], [0.75, "Medium"], [1, "Large"], [1.25, "Larger"], [1.5, "Largest"]]) {
@@ -5519,19 +5530,24 @@ function refreshOptions() {
 	w.hide("tools", lobby);
 	w.update("tools", [inAnalysis(), isLive(), S.game.status, canHint(), S.hintBusy, S.info.notation, areas], (el) => {
 		const row = h("div", { class: "row" });
-		row.append(
-			h(
-				"button",
-				{
-					id: "flip-board",
-					onclick: () => {
-						S.flipped = !S.flipped;
-						S.flippedByUser = true;
-						render();
+		// A map has one way up.
+		if (!isCthulhuWars()) {
+			row.append(
+				h(
+					"button",
+					{
+						id: "flip-board",
+						onclick: () => {
+							S.flipped = !S.flipped;
+							S.flippedByUser = true;
+							render();
+						},
 					},
-				},
-				"⇅ Flip board"
-			),
+					"⇅ Flip board"
+				)
+			);
+		}
+		row.append(
 			h(
 				"button",
 				{

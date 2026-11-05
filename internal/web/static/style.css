@@ -817,6 +817,7 @@ kbd { font: 600 0.8em ui-monospace, Menlo, Consolas, monospace; border: 1px soli
 	display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; padding: 0.45rem 0.8rem; border-radius: 8px;
 	background: var(--surface); border: 1px solid var(--border); font-size: 0.9rem; width: 100%;
 }
+.round-tail { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 0.25rem 1rem; margin-left: auto; }
 .round-item.alarm { color: var(--danger); font-weight: 700; }
 .faction-cards { display: flex; flex-direction: column; gap: 0.5rem; }
 .faction-heading { margin: 0 0 0.3rem; padding-bottom: 0.15rem; font-size: 0.86rem; font-weight: 700; border-bottom: 1px solid var(--border); }

@@ -4,6 +4,18 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.65.0 - 2026-11-04
+
+### Bingle Core 0.65.0
+- **No room code in the top bar of a game.** It is in the address, and at the bottom of the game options.
+
+### Cthulhu Wars 0.11.0
+- **Shorter names in the lists.** Public Lobbies and Active Games say *Cthulhu Wars* and the room code. Badges say the rest, where they apply: *Core only*, the map if it is not the usual one, *Neutral units* and *High Priests*.
+- **The real map in the rules.** The rules show the painted map, with the name of each area on it.
+- **Faction glyphs in the lobby**, in place of the coloured squares.
+- **A tidier Round card.** The Ritual track and the Elder Signs stand at its right.
+- **Fewer options.** *Board Theme* and *Flip board* are gone: neither did anything for a map.
+
 ## 0.64.0 - 2026-11-04
 
 ### Bingle Core 0.64.0
@@ -16,6 +28,7 @@ what the help window shows under *Recent changes*, so it is written for the peop
 - **Phones too.** On a phone the show fills the screen, on its side if you hold the phone upright, and turning the phone straightens it. If a choice needs a button, the show steps aside until you have made it.
 - **Watch it again.** Choosing a battle's move in the history plays it again, and so does *Replay* on the battle's card.
 - **Yours to turn off.** *Skip* or Esc ends a show, and *Battle animation* in the options turns them off. They stay off if your device asks for reduced motion.
+
 
 ## 0.63.0 - 2026-11-04
 

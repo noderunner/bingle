@@ -4,6 +4,9 @@ import (
 	"context"
 	"fmt"
 	"sort"
+
+	"github.com/noderunner/bingle/internal/engine/catalog"
+	"github.com/noderunner/bingle/internal/engine/state"
 )
 
 // The list of games anybody can look in on: every game that has not ended,
@@ -28,6 +31,8 @@ type OpenGame struct {
 	// the id of the game it is a layout or a derived table of.
 	Name   string `json:"name"`
 	Family string `json:"family,omitempty"`
+	// Tags are the short badges the game's rules give it in a list.
+	Tags []string `json:"tags,omitempty"`
 	// Status is "waiting" or "active"; Lobby says it waits for its host.
 	Status string `json:"status"`
 	Lobby  bool   `json:"lobby,omitempty"`
@@ -52,6 +57,26 @@ type OpenGameFilter struct {
 
 // openGamesScanned is how many unfinished games a filtered list looks through.
 const openGamesScanned = 1000
+
+// listLabel is what a list of games calls a game: its name, unless its rules say otherwise.
+func listLabel(compiled *catalog.CompiledGame) (string, []string) {
+	if l, ok := compiled.Rules.(state.ListLabeler); ok {
+		return l.ListLabel(compiled)
+	}
+	return compiled.Definition.Title(), nil
+}
+
+// GameListLabel is the title and badges a game's rules give it in a list, if they give it any.
+func (m *Manager) GameListLabel(id string) (string, []string) {
+	compiled, ok := m.catalog.Get(id)
+	if !ok {
+		return "", nil
+	}
+	if l, ok := compiled.Rules.(state.ListLabeler); ok {
+		return l.ListLabel(compiled)
+	}
+	return "", nil
+}
 
 // ListOpenGames returns the games that are still going, newest change first:
 // the games of this server that anybody may watch, and those with an open seat
@@ -89,10 +114,12 @@ func (m *Manager) ListOpenGames(ctx context.Context, limit int, filter OpenGameF
 			return nil, fmt.Errorf("session: %w", err)
 		}
 		seats := len(compiled.Definition.Seats)
+		title, tags := listLabel(compiled)
 		entry := OpenGame{
 			RoomCode:    g.RoomCode,
 			GameDefID:   g.GameDefID,
-			Name:        compiled.Definition.Title(),
+			Name:        title,
+			Tags:        tags,
 			Family:      familyOf(compiled.Definition.Family, g.GameDefID),
 			Status:      g.Status,
 			Lobby:       g.Lobby,

@@ -106,8 +106,14 @@ func TestWebCthulhuWars_GameOptionsWindowHoldsTheSettings(t *testing.T) {
 		t.Error("the options window starts open")
 	}
 	openOptions(t, ctx)
-	for _, sel := range []string{"#options-layers", "#options-display", "#options-tools", "#share-link", "#copy-link", "#resign", "#opt-board", "#flip-board", "#analyze"} {
+	for _, sel := range []string{"#options-layers", "#options-display", "#options-tools", "#share-link", "#copy-link", "#resign", "#analyze"} {
 		if n := evalInt(t, ctx, `document.querySelectorAll('#game-options `+sel+`').length`); n != 1 {
+			t.Errorf("%d %s in the options window", n, sel)
+		}
+	}
+	// A map has no board theme and one way up.
+	for _, sel := range []string{"#opt-board", "#flip-board"} {
+		if n := evalInt(t, ctx, `document.querySelectorAll('#game-options `+sel+`').length`); n != 0 {
 			t.Errorf("%d %s in the options window", n, sel)
 		}
 	}

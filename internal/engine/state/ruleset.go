@@ -483,3 +483,10 @@ func DescribeRuleset(game *catalog.CompiledGame) (RulesetInfo, bool) {
 func errNoTPS(game *catalog.CompiledGame) error {
 	return fmt.Errorf("state: game %q has no TPS notation", game.Definition.ID)
 }
+
+// ListLabeler is implemented by a game whose tables differ too much for their names to fit in a list
+// of games. It gives the title for the list, and the few things worth knowing before joining,
+// each a short badge.
+type ListLabeler interface {
+	ListLabel(game *catalog.CompiledGame) (title string, tags []string)
+}

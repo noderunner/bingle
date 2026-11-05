@@ -71,7 +71,7 @@ export function lobbyCard(ctx) {
 		const taken = !!si.name;
 		const mine = me.seat === sd.seat;
 		const li = h("li", { class: "lobby-seat" + (taken ? " taken" : " open") + (mine ? " mine" : ""), "data-seat": sd.seat });
-		li.append(h("span", { class: `swatch color-${cssColor(sd.color)}` }));
+		li.append(ctx.seatGlyph(sd.seat) || h("span", { class: `swatch color-${cssColor(sd.color)}` }));
 		// The cult of an open seat can be changed by anyone at the table, and at a table
 		// set up with a pool of factions a player can change their own.
 		const cults = ctx.cults || [];

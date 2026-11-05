@@ -363,7 +363,7 @@ func TestWebLobby_TheCultOfAnOpenSeatIsChosenInTheLobby(t *testing.T) {
 	}
 	// Seat 3 becomes the Sleeper.
 	evalString(t, ctx, `(function () { var s = document.getElementById("cult-3"); s.value = "sl"; s.dispatchEvent(new Event("change", { bubbles: true })); return "ok"; })()`)
-	waitJS(t, ctx, "the Sleeper", `document.querySelector('#lobby-seats [data-seat="3"] .swatch.color-orange') !== null && document.getElementById("cult-3").value === "sl"`, 15*time.Second)
+	waitJS(t, ctx, "the Sleeper", `document.querySelector('#lobby-seats [data-seat="3"] img.seat-glyph[src$="/sl.svg"]') !== null && document.getElementById("cult-3").value === "sl"`, 15*time.Second)
 	var g struct {
 		GameDefID string `json:"game_def_id"`
 	}

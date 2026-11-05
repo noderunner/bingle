@@ -83,6 +83,9 @@ export function sortRows(rows) {
 	return [...rows].sort((a, b) => Number(yourImpulse(b)) - Number(yourImpulse(a)) || b.g.ts - a.g.ts);
 }
 
+/** The badges a game's own rules give it in a list ("Core only", "High Priests"). */
+const tagBadges = (tags) => (tags || []).map((tag) => h("span", { class: "badge game-tag" }, tag));
+
 /**
  * A game as the server lists it: the name and code, who is at the table, how far it
  * has gone, and a badge for the seats nobody holds, with `action` to go at the end.
@@ -91,11 +94,12 @@ export function sortRows(rows) {
 export function openGameRow(g, defs, isMine, action = null) {
 	const def = defs.find((d) => d.id === String(g.game_def_id).split("~")[0]);
 	const title = g.name || (def ? gameTitle(def) : g.game_def_id);
-	const names = (g.players || []).map((p) => p.name + (p.bot ? " (bot)" : ""));
+	const names = (g.players || []).map((p) => p.Name + (p.Bot ? " (bot)" : ""));
 	const meta = [names.length ? names.join(" vs ") : "nobody seated yet"];
 	meta.push(g.status === "active" ? `move ${g.move_seq}` : g.lobby ? "waiting for its host" : "waiting for players");
 	if (g.updated_at) meta.push(ago(g.updated_at));
 	const badges = [];
+	badges.push(...tagBadges(g.tags));
 	if (g.rated) badges.push(h("span", { class: "badge rated" }, "Rated"));
 	if (g.lobby) badges.push(h("span", { class: "badge waiting" }, "In the lobby"));
 	else if (g.status === "waiting") badges.push(h("span", { class: "badge waiting" }, "Waiting"));
@@ -139,7 +143,9 @@ export function gameRow(r, defs, onForget) {
 	const defId = String((r.info && r.info.game_def_id) || r.g.def);
 	const def = defs.find((d) => d.id === defId.split("~")[0]);
 	let title = def ? gameTitle(def) : defId;
-	if (defId.includes("~") && r.info && r.info.seats) {
+	if (r.info && r.info.list_title) {
+		title = r.info.list_title;
+	} else if (defId.includes("~") && r.info && r.info.seats) {
 		title += ": " + r.info.seats.map((s) => s.label).filter(Boolean).join(", ");
 		if (/-hp$/.test(defId)) title += " + High Priests";
 	}
@@ -153,6 +159,7 @@ export function gameRow(r, defs, onForget) {
 		const others = r.info.seats.filter((s) => s.name && s.name.toLowerCase() !== r.g.name.toLowerCase()).map((s) => s.name);
 		meta.push(others.length ? `vs ${others.join(", ")}` : "waiting for an opponent");
 		meta.push(`move ${r.info.move_seq}`);
+		badges.push(...tagBadges(r.info.tags));
 		if (r.info.rated) badges.push(h("span", { class: "badge rated" }, "Rated"));
 		if (yourImpulse(r)) badges.push(h("span", { class: "badge turn" }, "Your turn"));
 		else if (r.info.status === "finished") badges.push(h("span", { class: "badge done" }, "Finished"));

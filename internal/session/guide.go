@@ -1,6 +1,7 @@
 package session
 
 import (
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -80,7 +81,13 @@ func (m *Manager) Asset(id, name string) (data []byte, contentType string, err e
 		}
 	}
 	if clean == "board.svg" && cg.Definition.Board.Style == "areas" {
-		return []byte(areaMapSVG(cg.Definition)), "image/svg+xml", nil
+		// A map with a painted board shows it, behind the names of its areas.
+		var art []byte
+		artName, _ := cg.Definition.Params["art"].(string)
+		if artName != "" && cg.Assets != nil {
+			art, _ = fs.ReadFile(cg.Assets, artName)
+		}
+		return []byte(areaMapSVG(cg.Definition, art, assetType(artName))), "image/svg+xml", nil
 	}
 	return nil, "", fmt.Errorf("%w: %q", ErrAssetNotFound, name)
 }
@@ -196,6 +203,28 @@ func polygonArea(poly [][2]float64) float64 {
 	return a2 / 2
 }
 
+// areaMiddle is the centroid of the largest piece of an area: an ocean that wraps has one at each
+// edge of the map, and its name belongs in the bigger.
+func areaMiddle(polygons [][][2]float64) [2]float64 {
+	var best [2]float64
+	bestArea := -1.0
+	for _, poly := range polygons {
+		var a2, cx, cy float64
+		for i := range poly {
+			p, q := poly[i], poly[(i+1)%len(poly)]
+			cross := p[0]*q[1] - q[0]*p[1]
+			a2 += cross
+			cx += (p[0] + q[0]) * cross
+			cy += (p[1] + q[1]) * cross
+		}
+		if size := math.Abs(a2); size > bestArea && a2 != 0 {
+			bestArea = size
+			best = [2]float64{cx / (3 * a2), cy / (3 * a2)}
+		}
+	}
+	return best
+}
+
 // mapPalette is the gradient of each kind of area on the map picture:
 // light/dark stops for light mode, then for dark mode.
 var mapPalette = []struct{ kind, a, b, da, db string }{
@@ -215,8 +244,10 @@ var mapPalette = []struct{ kind, a, b, da, db string }{
 
 // areaMapSVG draws an areas board as a standalone SVG picture (for guides):
 // graded seas with waves, a pale shore round every coast, lands in their own
-// colours, names on top and a badge for each glyph.
-func areaMapSVG(def *dsl.GameDefinition) string {
+// colours, names on top and a badge for each glyph. With art (the picture of a printed board) the
+// picture takes the place of the seas and lands. It has to be inside the file: a browser loads
+// nothing else for an SVG shown as an image.
+func areaMapSVG(def *dsl.GameDefinition, art []byte, artType string) string {
 	canvas, areas := areasOf(def)
 	w, h := 1000.0, 490.0
 	if canvas != nil {
@@ -238,6 +269,9 @@ func areaMapSVG(def *dsl.GameDefinition) string {
 		fmt.Fprintf(&b, ".s-%[1]s-0{stop-color:%[2]s}.s-%[1]s-1{stop-color:%[3]s}", p.kind, p.da, p.db)
 	}
 	b.WriteString(".land{stroke:#14110a}.sea{stroke:#bedcff59}.shore{stroke:#96c8ff47}.name{fill:#f2f5ee;stroke:#000000bf}.name.o{fill:#cfe6fb;stroke:#00000099}}")
+	if art != nil {
+		b.WriteString(".name,.name.o{fill:#f6f0e2;stroke:#000000cc}")
+	}
 	b.WriteString("</style><defs>")
 	for _, p := range mapPalette {
 		if strings.HasPrefix(p.kind, "c-") {
@@ -315,23 +349,27 @@ func areaMapSVG(def *dsl.GameDefinition) string {
 			}
 		}
 	}
-	for _, a := range ordered {
-		if _, ocean := kind(a); ocean {
-			draw(a, true)
-		}
-	}
-	b.WriteString(`<g class="shore" clip-path="url(#clip)">`)
-	for _, a := range ordered {
-		if _, ocean := kind(a); !ocean {
-			for _, poly := range a.Polygons {
-				fmt.Fprintf(&b, `<polygon points="%s"/>`, points(poly))
+	if art != nil {
+		fmt.Fprintf(&b, `<image href="data:%s;base64,%s" width="%g" height="%g" preserveAspectRatio="none"/>`, artType, base64.StdEncoding.EncodeToString(art), w, h)
+	} else {
+		for _, a := range ordered {
+			if _, ocean := kind(a); ocean {
+				draw(a, true)
 			}
 		}
-	}
-	b.WriteString(`</g>`)
-	for _, a := range ordered {
-		if _, ocean := kind(a); !ocean {
-			draw(a, false)
+		b.WriteString(`<g class="shore" clip-path="url(#clip)">`)
+		for _, a := range ordered {
+			if _, ocean := kind(a); !ocean {
+				for _, poly := range a.Polygons {
+					fmt.Fprintf(&b, `<polygon points="%s"/>`, points(poly))
+				}
+			}
+		}
+		b.WriteString(`</g>`)
+		for _, a := range ordered {
+			if _, ocean := kind(a); !ocean {
+				draw(a, false)
+			}
 		}
 	}
 	for _, a := range ordered {
@@ -340,11 +378,24 @@ func areaMapSVG(def *dsl.GameDefinition) string {
 		if ocean {
 			cls = "name o"
 		}
-		fmt.Fprintf(&b, `<text class="%s" x="%g" y="%g">%s</text>`, cls, a.Anchor[0], a.Anchor[1]+4, escapeXML(a.Name))
+		// The anchors suit the small drawing. On a printed board a land's may lie too close to a
+		// neighbour's, and the middle of the land has room; a sea wraps around lands, so its middle
+		// may be on one, and its anchor only has to come in from the edge of the map.
+		at := a.Anchor
+		if art != nil {
+			if ocean {
+				half := float64(len(a.Name)) * 4.2
+				at[0] = math.Max(half, math.Min(w-half, at[0]))
+				at[1] = math.Max(12, math.Min(h-8, at[1]))
+			} else {
+				at = areaMiddle(a.Polygons)
+			}
+		}
+		fmt.Fprintf(&b, `<text class="%s" x="%g" y="%g">%s</text>`, cls, at[0], at[1]+4, escapeXML(a.Name))
 		for _, t := range a.Tags {
 			if g, ok := strings.CutPrefix(t, "glyph-"); ok && glyphShapes[g] != nil {
-				x := a.Anchor[0] + float64(len(a.Name))*3.7 + 15
-				fmt.Fprintf(&b, `<g class="gb" transform="translate(%g %g)"><circle r="11"/><g transform="scale(.72)">`, x, a.Anchor[1])
+				x := at[0] + float64(len(a.Name))*3.7 + 15
+				fmt.Fprintf(&b, `<g class="gb" transform="translate(%g %g)"><circle r="11"/><g transform="scale(.72)">`, x, at[1])
 				for _, part := range glyphShapes[g] {
 					fmt.Fprintf(&b, `<path fill="%s" fill-rule="evenodd" d="%s"/>`, part[0], part[1])
 				}
