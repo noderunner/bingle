@@ -10,7 +10,10 @@ what the help window shows under *Recent changes*, so it is written for the peop
 - **The history can replay a moment on the map.** Going to a move of the history can now play what happened there, and leaving it takes the show away. Cthulhu Wars' battles are the first to use it.
 
 ### Cthulhu Wars 0.10.0
-- **Battles are a show.** When a battle starts the map zooms in on the area and everything around it goes dark. The two sides stand across from each other, the dice are thrown between them, and a red X lands on each unit as it dies. You can choose your casualties right there on the stage. Then the map zooms back out for the retreats.
+- **Battles are a show.** When a battle starts the map zooms in on the area and everything around it goes dark. The two sides stand across from each other, large, and each side's dice pop in one by one.
+- **Pre-Battle and Post-Battle Phases.** If either side has an ability that needs a choice, the phase is named at the top and its abilities pop in one by one, with the glyph of the cult each belongs to. The one the game is waiting on lights up, and the show waits for it.
+- **The dice and the dead.** The dice are thrown between the sides, die by die, and a red X lands on each unit as it dies. You can choose your casualties right there on the stage. Then the map zooms back out for the retreats.
+- **Phones too.** On a phone the show fills the screen, on its side if you hold the phone upright, and turning the phone straightens it. If a choice needs a button, the show steps aside until you have made it.
 - **Watch it again.** Choosing a battle's move in the history plays it again, and so does *Replay* on the battle's card.
 - **Yours to turn off.** *Skip* or Esc ends a show, and *Battle animation* in the options turns them off. They stay off if your device asks for reduced motion.
 

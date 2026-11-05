@@ -639,6 +639,134 @@ func TestWebCthulhuWars_ABattleIsPlayedOnTheMapAndAgainFromTheHistory(t *testing
 	}
 }
 
+// The units stand large. Each side's dice pop in before anything else, the Pre-Battle Phase lists its
+// abilities and waits on the one the game waits on, the dice fly when it is done, and the Post-Battle
+// Phase does the same.
+func TestWebCthulhuWars_TheBattleShowListsItsPhasesAndWaitsOnChoices(t *testing.T) {
+	baseURL := newRESTTestServer(t)
+	doc := cwScenario(t,
+		[]cwUnit{
+			{1, "shoggoth", "asia", 2}, {1, "deep-one", "asia", 2}, {1, "cultist", "south-pacific", 2},
+			{2, "flying-polyp", "asia", 2}, {2, "cultist", "asia", 1}, {2, "cultist", "europe", 1},
+			{3, "cultist", "south-america-west", 2}, {3, "ghoul", "africa", 1}, {4, "cultist", "europe", 2},
+		},
+		map[string]int{"south-pacific": 1, "europe": 4, "south-america-west": 3},
+		[5]int{0, 8, 8, 8, 8},
+		[5]uint8{0, 1 << 0, 0, 1 << 4, 0}, // Great Cthulhu has Absorb, the Black Goat Necrophagy
+		7,
+	)
+	room := cwGameFrom(t, baseURL, doc)
+	ctx, cancel := newChromedpContext(t, 120*time.Second)
+	defer cancel()
+	var mu sync.Mutex
+	var jsErrors []string
+	collectJSErrors(ctx, &mu, &jsErrors)
+	openWithBattleShow(t, ctx, baseURL, room)
+
+	waitJS(t, ctx, "the stage", `document.getElementById("battle-stage") !== null`, 10*time.Second)
+	// Each pool holds its Combat: 2 Shoggoths and 2 Deep Ones roll 6.
+	waitJS(t, ctx, "the pools", `document.querySelectorAll('#battle-stage .bt-dice[data-seat="1"] .bt-die.pooled').length === 6 && document.querySelectorAll('#battle-stage .bt-dice[data-seat="2"] .bt-die.pooled').length > 0`, 15*time.Second)
+	if evalInt(t, ctx, `document.querySelectorAll("#battle-stage .bt-cube").length`) != 0 {
+		t.Error("a die was thrown before the Pre-Battle Phase")
+	}
+	if px := evalInt(t, ctx, `Math.round(document.querySelector("#battle-stage .bt-unit").getBoundingClientRect().width)`); px < 80 {
+		t.Errorf("the units are %dpx wide, want them large", px)
+	}
+	waitJS(t, ctx, "the Pre-Battle Phase", `document.querySelector("#battle-phase .bt-phase-title") && document.querySelector("#battle-phase .bt-phase-title").textContent === "Pre-Battle Phase"`, 10*time.Second)
+	waitJS(t, ctx, "Absorb, lit", `document.querySelector('#battle-phase .bt-ability.current[data-ability="Absorb"][data-seat="1"] .bt-phase-icon + img') !== null`, 10*time.Second)
+	// The show waits on the choice.
+	time.Sleep(1500 * time.Millisecond)
+	if evalInt(t, ctx, `document.querySelectorAll("#battle-stage .bt-cube").length`) != 0 {
+		t.Error("the dice were thrown while a Pre-Battle choice was waiting")
+	}
+	waitJS(t, ctx, "the done button", `document.getElementById("action-done") !== null`, 10*time.Second)
+	clickSel(t, ctx, "#action-done")
+	waitJS(t, ctx, "the throw", `document.querySelectorAll("#battle-stage .bt-cube").length > 0`, 15*time.Second)
+	if evalBool(t, ctx, `document.querySelector("#battle-phase .bt-phase-title") !== null`) {
+		t.Error("the Pre-Battle list should go when the dice are thrown")
+	}
+
+	// The casualties, on the stage, until the Post-Battle Phase lists Necrophagy for the Black Goat.
+	post := false
+	deadline := time.Now().Add(40 * time.Second)
+	for time.Now().Before(deadline) && !post {
+		post = evalBool(t, ctx, `(function () {
+			var unit = document.querySelector("#battle-stage .bt-unit.can-choose");
+			if (unit) unit.click();
+			return document.querySelector('#battle-phase .bt-ability[data-ability="Necrophagy"][data-seat="3"]') !== null
+				&& document.querySelector("#battle-phase .bt-phase-title").textContent === "Post-Battle Phase";
+		})()`)
+		time.Sleep(100 * time.Millisecond)
+	}
+	if !post {
+		t.Error("no Post-Battle Phase listing Necrophagy")
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	if len(jsErrors) > 0 {
+		t.Errorf("uncaught JS exceptions: %v", jsErrors)
+	}
+}
+
+// An upright phone has no map on its page. The replay fills the screen on its side all the same, and
+// turning the phone straightens it.
+func TestWebCthulhuWars_APhoneTurnsTheBattleShowOnItsSide(t *testing.T) {
+	baseURL := newRESTTestServer(t)
+	doc := cwScenario(t,
+		[]cwUnit{
+			{1, "deep-one", "asia", 1}, {1, "cultist", "south-pacific", 2},
+			{2, "cultist", "asia", 1}, {2, "cultist", "europe", 1},
+			{3, "cultist", "south-america-west", 2}, {4, "cultist", "europe", 2},
+		},
+		map[string]int{"south-pacific": 1, "europe": 4, "south-america-west": 3},
+		[5]int{0, 8, 8, 8, 8}, [5]uint8{0, 0, 0, 0, 0}, 7)
+	room := cwGameFrom(t, baseURL, doc)
+	ctx, cancel := newChromedpContext(t, 120*time.Second)
+	defer cancel()
+	var mu sync.Mutex
+	var jsErrors []string
+	collectJSErrors(ctx, &mu, &jsErrors)
+	openWithBattleShow(t, ctx, baseURL, room)
+	waitJS(t, ctx, "the stage", `document.getElementById("battle-stage") !== null`, 10*time.Second)
+	waitJS(t, ctx, "the stage goes", `document.getElementById("battle-stage") === null`, 20*time.Second)
+
+	if err := chromedp.Run(ctx,
+		chromedp.Evaluate(`localStorage.setItem("bingle.layout", JSON.stringify("phone")); true`, nil),
+		chromedp.EmulateViewport(390, 844),
+		chromedp.Navigate("about:blank"),
+		chromedp.Navigate(baseURL+"/game/"+room),
+	); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "the Replay button", `document.getElementById("battle-replay") !== null`, 15*time.Second)
+	if evalBool(t, ctx, `document.getElementById("board-svg") !== null`) {
+		t.Fatal("this is meant to be the upright page, with no map on it")
+	}
+	clickSel(t, ctx, "#battle-replay")
+	waitJS(t, ctx, "the stage", `document.getElementById("battle-stage") !== null`, 10*time.Second)
+	covers := `(function () {
+		var r = document.getElementById("battle-stage").getBoundingClientRect();
+		return Math.round(r.left) === 0 && Math.round(r.top) === 0 && Math.round(r.width) === innerWidth && Math.round(r.height) === innerHeight;
+	})()`
+	waitJS(t, ctx, "the whole screen", covers, 5*time.Second)
+	if !evalBool(t, ctx, `getComputedStyle(document.getElementById("battle-stage")).transform.startsWith("matrix(0, 1, -1, 0")`) {
+		t.Errorf("upright, the stage should lie on its side: %s", evalString(t, ctx, `getComputedStyle(document.getElementById("battle-stage")).transform`))
+	}
+	if evalBool(t, ctx, `document.querySelector("#battle-stage .bt-map") === null`) {
+		t.Error("the stage has no map")
+	}
+	if err := chromedp.Run(ctx, chromedp.EmulateViewport(844, 390)); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "the stage straightened", `getComputedStyle(document.getElementById("battle-stage")).transform === "none"`, 5*time.Second)
+	waitJS(t, ctx, "the whole screen again", covers, 5*time.Second)
+	mu.Lock()
+	defer mu.Unlock()
+	if len(jsErrors) > 0 {
+		t.Errorf("uncaught JS exceptions: %v", jsErrors)
+	}
+}
+
 // A battle with no choices in it is over within the move that declares it. It has its show all the
 // same, with the units that stood there before.
 func TestWebCthulhuWars_ABattleOverInOneMoveStillPlays(t *testing.T) {

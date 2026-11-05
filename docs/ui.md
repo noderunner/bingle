@@ -838,9 +838,23 @@ Cthulhu Wars plays each battle on the map (`static/js/cw-battle.js`, *Battle ani
 off under the OS "reduce motion" setting). It is a layer over a copy of the map, fed only with snapshots
 of positions, so the game never waits for it and the page underneath stays current. The copy zooms to the
 area, which stays centred even at the map's edge, and the dark has the area's shape cut out of it. Each side
-stands to one side, with the dice between them. Units that die take a red X as they go, and casualties
-that are the player's to choose can be clicked on the stage. A choice elsewhere on the map hides the stage
-until it is made. The stage leaves at the `post` or `retreat` step, since those are played on the map.
+stands to one side, large (a big army shrinks to fit), with its dice between them.
+
+The order is: the pools of dice, one die at a time on both sides; the Pre-Battle Phase; the throw; the
+casualties, each with a red X; the Post-Battle Phase; and the zoom out at the `retreat` step, which is played
+on the map. A phase is shown only if it has abilities, which come from `abilities` in the position's battle
+view: the abilities its prompts are about and those a cult's moves can still use, each with the cult it
+belongs to and whether the game is waiting on it. An ability that applies by itself offers no choice and is
+not listed. Live, the show has nothing more to play until a choice is made, so it pauses by itself; a replay
+holds on each for a moment.
+
+Casualties that are the player's to choose can be clicked on the stage. A choice elsewhere on the map hides
+the stage until it is made. Moves that arrive faster than the page draws them are fetched and played in order.
+
+A phone gives the whole screen to the show. Held upright its page has no map, so one is drawn off the page to
+be copied, and the stage is turned 90° with CSS, because a page can only lock the real orientation in full
+screen after a tap (never on iOS), and a battle often comes from another player's move. On a phone the stage
+also steps aside when the show has caught up with a choice that needs a button.
 
 Selecting a move of a battle in the history plays that battle from its positions. Moving on to another move
 of the same battle does not start it over; moving to a position outside the battle ends it. A battle can

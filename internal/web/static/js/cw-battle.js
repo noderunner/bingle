@@ -1,6 +1,7 @@
 // The theatre of a battle in Cthulhu Wars: the map zooms in on the area and darkens around
 // it, the two sides face each other, the dice are thrown, and a red X falls on each unit that
-// dies. Then it zooms out again, for the Pains to retreat on the map.
+// dies. Abilities that come before and after the dice are listed, and the show waits on each
+// one that needs a choice. Then it zooms out again, for the Pains to retreat on the map.
 //
 // It is drawn on a layer of its own over a copy of the map, from nothing but snapshots of the
 // position, so the page and the game never wait for it, and a battle in the history is played
@@ -13,6 +14,10 @@ const PAIN = 4;
 const face = (v) => (v === KILL ? "kill" : v >= PAIN ? "pain" : "miss");
 const FACE_MARK = { kill: "☠", pain: "✹", miss: "" };
 const STRIKE_MS = 330;
+const ABILITY_MS = 380;
+const UNIT_REM = 5.6;
+const MIN_UNIT_REM = 1.6;
+const POOL_MS = 1200; // the longest the dice of a pool take to arrive
 const wait = (ms) => new Promise((done) => setTimeout(done, ms));
 const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);
 
@@ -20,7 +25,7 @@ const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);
 const TO_FRONT = { 1: [0, 0], 2: [0, -90], 3: [0, 180], 4: [0, 90], 5: [-90, 0], 6: [90, 0] };
 
 /** A die: a cube with the faces of the game's dice, which tumbles and lands on `value`. */
-function cube(value, delay) {
+function cube(value) {
 	const f = face(value);
 	const box = h("div", { class: `bt-die ${f}`, "data-value": value, title: f === "kill" ? "Kill" : f === "pain" ? "Pain" : "Nothing" });
 	const inner = h("div", { class: "bt-cube" });
@@ -28,10 +33,35 @@ function cube(value, delay) {
 	const [rx, ry] = TO_FRONT[value] || [0, 0];
 	inner.style.setProperty("--rx", `${rx}deg`);
 	inner.style.setProperty("--ry", `${ry}deg`);
-	inner.style.animationDelay = `${delay}ms`;
 	box.append(inner);
 	return box;
 }
+
+/** A node's entrance, played once: its other animations must not start it over when they end. */
+function enter(node, delay) {
+	node.classList.add("enter");
+	node.style.animationDelay = `${delay}ms`;
+	node.addEventListener(
+		"animationend",
+		() => {
+			node.classList.remove("enter");
+			node.style.animationDelay = "";
+		},
+		{ once: true }
+	);
+}
+
+/** A die of a side's pool, not yet thrown. */
+const poolDie = () => h("div", { class: "bt-die pooled" }, h("span", { class: "bt-face" }));
+
+/** The mark of a battle's Pre- or Post-Battle abilities: a sword, pointing up before and down after. */
+function phaseIcon(step) {
+	const svg = s("svg", { class: `bt-phase-icon ${step}`, viewBox: "0 0 24 24", "aria-hidden": "true" });
+	svg.append(s("circle", { cx: 12, cy: 12, r: 11 }), s("path", { d: "M12 4 L14 7 V15 H10 V7 Z M7.5 15 H16.5 M12 15 V20" }));
+	return svg;
+}
+
+const PHASE_TITLE = { pre: "Pre-Battle Phase", post: "Post-Battle Phase" };
 
 /** The stylized X of a unit that dies: two strokes drawn on, one after the other. */
 function redX() {
@@ -48,6 +78,7 @@ export function createBattleTheatre(ctx) {
 	let closed = new Set(); // battles the player sent away, which stay away
 	let roster = new Map(); // "seat|type" -> how many stood here when last counted, the most seen
 	let played = false; // the dice have been thrown
+	let phase = null; // the step whose abilities are listed: "pre", "post" or none
 	let replay = false;
 	let seen = true; // the player saw the move that brought this battle, so its dice are thrown for them
 	let before = null; // the units of the two sides just before the battle was declared
@@ -60,10 +91,22 @@ export function createBattleTheatre(ctx) {
 	let token = 0; // a new show ends the old one's pauses
 
 	function place() {
-		const board = ctx.board();
-		if (!stage || !board) return;
+		if (!stage) return;
+		const box = stage.style;
+		stage.classList.toggle("phone", ctx.phone());
+		if (ctx.phone()) {
+			// A phone gives the whole screen to the show. Held upright, the show lies on its side,
+			// and turning the phone straightens it: a page can only ask for a real turn of the screen
+			// in full screen and after a tap, and a battle often comes from another player's move.
+			const [w, h2] = [window.innerWidth, window.innerHeight];
+			const up = ctx.upright();
+			Object.assign(box, { left: `${up ? w : 0}px`, top: "0", width: `${up ? h2 : w}px`, height: `${up ? w : h2}px`, transform: up ? "rotate(90deg)" : "" });
+			return;
+		}
+		const board = ctx.onPage();
+		if (!board) return;
 		const r = board.getBoundingClientRect();
-		Object.assign(stage.style, { left: `${r.left}px`, top: `${r.top}px`, width: `${r.width}px`, height: `${r.height}px` });
+		Object.assign(box, { left: `${r.left}px`, top: `${r.top}px`, width: `${r.width}px`, height: `${r.height}px`, transform: "" });
 	}
 
 	/** Moves the map's viewBox to box over ms; resolves when it is there. */
@@ -170,6 +213,7 @@ export function createBattleTheatre(ctx) {
 		area = snap.bt.area;
 		roster = new Map();
 		played = false;
+		phase = null;
 		last = null;
 		stage = h(
 			"div",
@@ -185,6 +229,7 @@ export function createBattleTheatre(ctx) {
 					"div",
 					{ class: "bt-field" },
 					h("div", { class: "bt-vs", "aria-hidden": "true" }, "VS"),
+					h("div", { class: "bt-phase", id: "battle-phase", "aria-live": "polite" }),
 					h("div", { class: "bt-tray" }, ...snap.bt.sides.map((side, i) => h("div", { class: `bt-dice ${i ? "right" : "left"}`, "data-seat": side.seat, style: `--bt-ink: ${ctx.ink(side.seat)}` })))
 				),
 				sideNode(snap.bt.sides[1], 1)
@@ -222,9 +267,21 @@ export function createBattleTheatre(ctx) {
 						{ type: "button", class: "bt-unit", "data-unit": `${type}#${i}`, "data-piece": type, title: ctx.label(type), "aria-label": ctx.label(type), onclick: (ev) => { if (!ev.currentTarget.classList.contains("dead")) ctx.onUnit(area, type, ctx.colorOf(side.seat)); } },
 						ctx.icon(type, ctx.colorOf(side.seat), 40)
 					);
-					if (animate) node.style.animationDelay = `${n++ * 70}ms`;
+					if (animate) enter(node, n++ * 70);
 					host.append(node);
 				}
+			}
+		}
+	}
+
+	/** A big army shrinks until each side fits on the stage. */
+	function fitUnits() {
+		for (const side of stage.querySelectorAll(".bt-side")) {
+			let size = UNIT_REM;
+			side.style.setProperty("--bt-unit", `${size}rem`);
+			while (side.scrollHeight > side.clientHeight && size > MIN_UNIT_REM) {
+				size = Math.max(MIN_UNIT_REM, size * 0.88);
+				side.style.setProperty("--bt-unit", `${size}rem`);
 			}
 		}
 	}
@@ -296,14 +353,25 @@ export function createBattleTheatre(ctx) {
 		let longest = 0;
 		for (const side of snap.bt.sides) {
 			const host = stage.querySelector(`.bt-dice[data-seat="${side.seat}"]`);
-			clear(host);
+			if (instant) clear(host);
+			for (const extra of [...host.children].slice((side.dice || []).length)) extra.remove();
 			(side.dice || []).forEach((v, i) => {
-				const delay = instant ? 0 : i * 90 + (side === snap.bt.sides[1] ? 250 : 0);
+				const die = cube(v);
+				if (instant) {
+					die.classList.add("landed");
+					host.append(die);
+					return;
+				}
+				// Die by die, on both sides at once: each leaves its place in the pool as it is thrown.
+				const delay = i * 90;
 				longest = Math.max(longest, delay);
-				const die = cube(v, delay);
-				if (instant) die.classList.add("landed");
-				else setTimeout(() => die.classList.add("landed"), delay + 900);
-				host.append(die);
+				setTimeout(() => {
+					if (mine !== token) return;
+					const waiting = host.children[i];
+					if (waiting) waiting.replaceWith(die);
+					else host.append(die);
+				}, delay);
+				setTimeout(() => die.classList.add("landed"), delay + 900);
 			});
 		}
 		if (instant) {
@@ -325,14 +393,70 @@ export function createBattleTheatre(ctx) {
 		if (stage) stage.classList.remove("bt-flash");
 	}
 
+	/** The dice each side brings pop in one by one, on both sides at once; the pool follows its Combat. */
+	async function fillPools(snap, mine) {
+		const wanted = snap.bt.sides.map((side) => ({
+			host: stage.querySelector(`.bt-dice[data-seat="${side.seat}"]`),
+			n: side.dice && side.dice.length ? side.dice.length : side.combat || 0,
+		}));
+		for (const { host, n } of wanted) for (const extra of [...host.children].slice(n)) extra.remove();
+		const most = Math.max(...wanted.map((w) => w.n - w.host.children.length));
+		if (most <= 0 || !seen) return;
+		const gap = Math.min(130, POOL_MS / most);
+		for (let i = 0; i < most; i++) {
+			for (const { host, n } of wanted) if (host.children.length < n) host.append(poolDie());
+			await wait(gap);
+			if (mine !== token || !stage) return;
+		}
+		await wait(200);
+	}
+
+	/** The list of the abilities goes away. */
+	function endPhase() {
+		if (!phase || !stage) return;
+		phase = null;
+		clear(stage.querySelector("#battle-phase"));
+		stage.querySelector(".bt-field").classList.remove("in-phase");
+	}
+
+	/** The abilities of the step pop in one by one; the one the game waits on is lit, and those past are dimmed. */
+	async function listAbilities(snap, mine) {
+		const { step, abilities } = snap.bt;
+		const list = abilities || [];
+		if (phase !== step) {
+			endPhase();
+			if (!list.length) return;
+			phase = step;
+			const box = stage.querySelector("#battle-phase");
+			box.append(h("div", { class: "bt-phase-title" }, PHASE_TITLE[step]), h("div", { class: "bt-abilities" }));
+			stage.querySelector(".bt-field").classList.add("in-phase");
+		}
+		const host = stage.querySelector(".bt-abilities");
+		const nodeOf = (a) => [...host.children].find((n) => n.dataset.ability === a.name && n.dataset.seat === String(a.seat));
+		for (const a of list) {
+			if (nodeOf(a)) continue;
+			const node = h("div", { class: "bt-ability", "data-ability": a.name, "data-seat": a.seat, title: a.name, style: `--bt-ink: ${ctx.ink(a.seat)}` }, phaseIcon(step), ctx.glyph(a.seat), h("span", {}, a.name));
+			enter(node, 0);
+			host.append(node);
+			if (seen) await wait(ABILITY_MS);
+			if (mine !== token || !stage) return;
+		}
+		for (const node of host.children) {
+			const a = list.find((x) => node.dataset.ability === x.name && node.dataset.seat === String(x.seat));
+			node.classList.toggle("current", !!a && !!a.current);
+			node.classList.toggle("done", !a);
+		}
+		// Live, the game itself pauses here until the choice is made. A replay holds a moment.
+		if (replay && list.some((a) => a.current)) await wait(1000);
+	}
+
 	function stepWords(snap) {
 		const bt = snap.bt;
 		if (bt.step === "assign") return "Choosing the casualties";
-		if (bt.step === "pre") return bt.sides.some((x) => x.dice && x.dice.length) ? "" : "Pre-battle";
 		return "";
 	}
 
-	const isOver = (snap) => snap.bt.resolved || snap.bt.step === "retreat" || snap.bt.step === "post";
+	const isOver = (snap) => snap.bt.resolved || snap.bt.step === "retreat";
 
 	async function show(snap, mine) {
 		const first = !stage;
@@ -356,11 +480,21 @@ export function createBattleTheatre(ctx) {
 		}
 		count(snap);
 		placeUnits(snap, false);
+		fitUnits();
 		stage.querySelector("#battle-step").textContent = stepWords(snap);
 		const rolled = snap.bt.sides.some((x) => x.dice && x.dice.length);
+		if (!played) await fillPools(snap, mine);
+		if (mine !== token || !stage) return;
+		// Before the dice, the abilities are listed first: they may take units away.
+		if (snap.bt.step === "pre") await listAbilities(snap, mine);
+		else if (snap.bt.step !== "post") endPhase();
+		if (mine !== token || !stage) return;
 		if (rolled && !played) await throwDice(snap, mine, !seen);
 		if (mine !== token || !stage) return;
 		await strike(reckon(snap), mine);
+		if (mine !== token || !stage) return;
+		// After the dice, the casualties fall first: the abilities answer them.
+		if (snap.bt.step === "post") await listAbilities(snap, mine);
 		last = snap;
 		if (replay && !isOver(snap)) await wait(650);
 	}
@@ -405,6 +539,7 @@ export function createBattleTheatre(ctx) {
 			working = false;
 		}
 		if (mine !== token) pump(token);
+		else ctx.onIdle?.();
 	}
 
 	/** The player has had enough of this battle's show. */
@@ -450,15 +585,20 @@ export function createBattleTheatre(ctx) {
 		},
 		/** Keeps the layer over the map, or lets the player get at the map underneath. */
 		hide(on) {
-			if (stage) stage.hidden = on || !ctx.board();
+			if (stage) stage.hidden = on;
 		},
 		/** What can be chosen has changed. */
 		refresh() {
 			if (stage && last && !replay) reckon(last);
 			place();
+			if (stage) fitUnits();
 		},
 		close,
 		dismiss,
+		/** The show has played all it has been given, and waits for the game. */
+		isIdle: () => !!stage && !working && !queue.length,
+		/** A unit on the stage can be chosen. */
+		hasChoices: () => !!stage && !!stage.querySelector(".bt-unit.can-choose"),
 		isOpen: () => !!stage,
 		isReplay: () => replay,
 	};

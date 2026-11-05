@@ -2180,6 +2180,7 @@ code.wrap { overflow-wrap: anywhere; word-break: break-all; }
 .battle-stage { position: fixed; z-index: 40; overflow: hidden; border-radius: 12px; background: #0b0a10; color: #f2ece0; opacity: 0; transition: opacity 0.25s; }
 .battle-stage.in { opacity: 1; }
 .battle-stage.out { opacity: 0; transition: opacity 0.55s 0.15s; }
+.battle-stage.phone { z-index: 70; border-radius: 0; transform-origin: top left; }
 .battle-stage[hidden] { display: block; visibility: hidden; } /* display: none would start its animations over */
 .bt-map-host, .bt-map-host .bt-map { position: absolute; inset: 0; width: 100%; height: 100%; }
 .bt-map-host { pointer-events: none; }
@@ -2209,9 +2210,10 @@ code.wrap { overflow-wrap: anywhere; word-break: break-all; }
 .bt-side.right .bt-who, .bt-side.right .bt-tally { justify-content: flex-end; text-align: right; }
 .bt-units { display: flex; flex-wrap: wrap; gap: 0.3rem; align-content: flex-start; }
 .bt-side.right .bt-units, .bt-dice.left { justify-content: flex-end; }
-.bt-unit { position: relative; flex: none; width: 2.8rem; height: 2.8rem; display: grid; place-items: center; padding: 0; border: 1px solid transparent; border-radius: 8px; background: rgba(255, 255, 255, 0.06); cursor: default; animation: bt-unit-in 0.4s backwards; transition: opacity 0.4s, filter 0.4s; }
+.bt-unit { position: relative; flex: none; width: var(--bt-unit, 5.6rem); height: var(--bt-unit, 5.6rem); display: grid; place-items: center; padding: 0; border: 1px solid transparent; border-radius: 8px; background: rgba(255, 255, 255, 0.06); cursor: default; transition: opacity 0.4s, filter 0.4s; }
+.bt-unit.enter { animation: bt-unit-in 0.4s backwards; } /* once: a unit's other animations would start it over */
 @keyframes bt-unit-in { from { opacity: 0; transform: scale(0.3); } }
-.bt-unit svg:first-child { width: 2.3rem; height: 2.3rem; }
+.bt-unit svg:first-child { width: 82%; height: 82%; }
 .bt-unit.can-choose { cursor: pointer; border-color: #f0dca8; box-shadow: 0 0 9px #f0dca8; animation: bt-choose 1.1s ease-in-out infinite; }
 @keyframes bt-choose { 50% { box-shadow: 0 0 2px #f0dca8; } }
 .bt-unit.pained { border-color: #e8912f; box-shadow: inset 0 0 12px #e8912f; }
@@ -2226,8 +2228,25 @@ code.wrap { overflow-wrap: anywhere; word-break: break-all; }
 .bt-met .bt-vs { animation: bt-vs 0.45s 0.2s cubic-bezier(0.3, 1.5, 0.5, 1) forwards; }
 @keyframes bt-vs { to { opacity: 1; transform: scale(1); } }
 
-.bt-dice { display: flex; flex-wrap: wrap; gap: 0.45rem; align-content: center; perspective: 500px; --bt-from: -14rem; }
-.bt-dice.right { --bt-from: 14rem; }
+.bt-field.in-phase .bt-vs { display: none; }
+.bt-phase:empty { display: none; }
+.bt-phase { display: flex; flex-direction: column; align-items: center; gap: 0.35rem; max-width: 100%; padding: 0.4rem 0.7rem; border-radius: 10px; background: rgba(9, 7, 14, 0.78); }
+.bt-phase-title { font: 700 1rem Georgia, "Times New Roman", serif; letter-spacing: 0.04em; color: #f0dca8; text-shadow: 0 1px 2px #000; animation: bt-pop 0.35s cubic-bezier(0.2, 1.6, 0.4, 1) backwards; }
+.bt-abilities { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.3rem; }
+.bt-ability { display: flex; align-items: center; gap: 0.3rem; padding: 0.15rem 0.5rem 0.15rem 0.2rem; border: 1px solid color-mix(in srgb, var(--bt-ink) 55%, transparent); border-radius: 999px; background: rgba(255, 255, 255, 0.06); font-size: 0.82rem; color: #efe7d6; white-space: nowrap; transition: opacity 0.3s; }
+.bt-ability.enter { animation: bt-pop 0.35s cubic-bezier(0.2, 1.6, 0.4, 1) backwards; }
+.bt-ability.current { border-color: #f0dca8; background: rgba(240, 220, 168, 0.18); animation: bt-ability-now 1.1s ease-in-out infinite; }
+@keyframes bt-ability-now { 50% { box-shadow: 0 0 10px #f0dca8; } }
+.bt-ability.done { opacity: 0.45; }
+.bt-phase-icon { flex: none; width: 1.25rem; height: 1.25rem; }
+.bt-phase-icon circle { fill: #2a2030; stroke: #cdb27a; stroke-width: 1.5; }
+.bt-phase-icon path { fill: none; stroke: #f0dca8; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.bt-phase-icon.post { transform: rotate(180deg); }
+@keyframes bt-pop { from { opacity: 0; transform: scale(0.3); } }
+.bt-die.pooled { animation: bt-pop 0.3s cubic-bezier(0.2, 1.8, 0.4, 1) backwards; }
+.bt-die.pooled .bt-face { position: relative; width: 100%; height: 100%; }
+.bt-dice { display: flex; flex-wrap: wrap; gap: 0.45rem; align-content: center; perspective: 500px; --bt-from: -2.5rem; }
+.bt-dice.right { --bt-from: 2.5rem; }
 .bt-die { width: 1.9rem; height: 1.9rem; transition: opacity 0.4s, filter 0.4s; }
 .bt-die.spent { opacity: 0.35; filter: saturate(0.4); }
 .bt-cube { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transform: rotateX(var(--rx)) rotateY(var(--ry)); animation: bt-tumble 0.9s cubic-bezier(0.2, 0.7, 0.3, 1) backwards; }
@@ -2259,7 +2278,7 @@ code.wrap { overflow-wrap: anywhere; word-break: break-all; }
 @keyframes bt-ember { to { transform: translate(1.5rem, -32rem); opacity: 0; } }
 .bt-flash::after { content: ""; position: absolute; inset: 0; background: radial-gradient(circle, rgba(255, 240, 200, 0.45), transparent 60%); pointer-events: none; animation: bt-flash 0.5s ease-out forwards; }
 @keyframes bt-flash { to { opacity: 0; } }
-.bt-shake { animation: bt-shake 0.36s; }
+.bt-shake > .bt-arena, .bt-shake > .bt-map-host { animation: bt-shake 0.36s; } /* the stage's own transform may be turning it */
 @keyframes bt-shake { 20% { transform: translate(-5px, 2px); } 40% { transform: translate(4px, -3px); } 60% { transform: translate(-3px, 3px); } 80% { transform: translate(2px, -1px); } }
 @media (max-width: 900px), (max-height: 480px) {
 	.bt-arena { inset-block-start: 2.5rem; grid-template-columns: minmax(0, 33%) minmax(0, 1fr) minmax(0, 33%); }
@@ -2268,8 +2287,8 @@ code.wrap { overflow-wrap: anywhere; word-break: break-all; }
 	.bt-title { font-size: 0.85rem; }
 	.bt-step { display: none; }
 	.bt-who { font-size: 0.8rem; }
-	.bt-unit { width: 1.9rem; height: 1.9rem; }
-	.bt-unit svg:first-child { width: 1.55rem; height: 1.55rem; }
+	.bt-ability span { display: none; }
+	.bt-phase-title { font-size: 0.72rem; }
 	.bt-die { width: 1.25rem; height: 1.25rem; }
 	.bt-dice { gap: 0.25rem; }
 	.bt-face { font-size: 0.8rem; }

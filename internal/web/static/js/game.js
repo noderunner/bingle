@@ -4346,10 +4346,30 @@ function battlePanel() {
 
 let theatre = null;
 
+const BATTLE_CATCH_UP = 12; // the most moves missed that are still played in order
+
+/**
+ * The map to copy for the stage. An upright phone draws none of its own, so one is drawn here,
+ * off the page, for the copy to be taken from.
+ */
+function battleMap() {
+	const shown = document.getElementById("board-svg");
+	if (shown) return shown;
+	const host = h("div", {});
+	drawBoard(host);
+	return host.querySelector("svg");
+}
+
 function battleTheatre() {
 	if (theatre) return theatre;
 	theatre = createBattleTheatre({
-		board: () => document.getElementById("board-svg"),
+		board: battleMap,
+		onPage: () => document.getElementById("board-svg"),
+		phone: isMobileLayout,
+		upright: () => isMobileLayout() && !isLandscape(),
+		onIdle: () => {
+			if (theatre.isOpen()) showChoicesOnTheatre();
+		},
 		ink: seatInk,
 		glyph: seatGlyph,
 		colorOf,
@@ -4419,8 +4439,28 @@ function syncBattleTheatre() {
 		if (theatre && theatre.isOpen()) theatre.close();
 	}
 	const seen = !!was && seq > was.seq; // otherwise the page has just opened on this position
-	const snap = battleSnapshot(S.state);
-	const before = seen ? battleSnapshot(was.st) : null;
+	const gap = seen ? seq - was.seq : 0;
+	// Moves can come faster than the page draws them. A short run is played in order, or a step
+	// of the battle would be lost; a long one (back from the history) only shows where it ended.
+	if (gap < 2 || gap > BATTLE_CATCH_UP) {
+		battleStep(gap === 1 ? was.st : null, S.state, seq, seen);
+		return;
+	}
+	const final = S.state;
+	S.battleCatchUp = (S.battleCatchUp || Promise.resolve()).then(async () => {
+		let prev = was.st;
+		for (let n = was.seq + 1; n <= seq && isLive(); n++) {
+			const st = n === seq ? final : await stateAt(n);
+			battleStep(prev, st, n, true);
+			prev = st;
+		}
+	}).catch(() => {});
+}
+
+/** A position's part in the battle under way, given the position before it if there was one. */
+function battleStep(prevState, st, seq, seen) {
+	const snap = battleSnapshot(st);
+	const before = prevState ? battleSnapshot(prevState) : null;
 	if (!snap) {
 		S.battleKey = null;
 		return;
@@ -4429,7 +4469,7 @@ function syncBattleTheatre() {
 	if (!bt.resolved || S.battleKey || (seen && battleFoughtInOneMove(snap, before))) {
 		const opening = !S.battleKey;
 		if (opening) S.battleKey = `${bt.area}|${bt.att}|${bt.def}|${seq}`;
-		battleTheatre().feed(S.battleKey, snap, opening && seen ? battleUnitsIn(was.st, bt) : null, seen);
+		battleTheatre().feed(S.battleKey, snap, opening && prevState ? battleUnitsIn(prevState, bt) : null, seen);
 	}
 	if (bt.resolved) S.battleKey = null;
 	if (theatre && theatre.isOpen()) showChoicesOnTheatre();
@@ -4439,10 +4479,13 @@ function syncBattleTheatre() {
 function showChoicesOnTheatre() {
 	const bt = (battleSnapshot(S.state) || {}).bt;
 	// The retreat comes after the zoom out, which frees the map by itself.
-	const onStage = !!bt && !bt.resolved && bt.step !== "retreat" && bt.step !== "post";
-	const elsewhere = onStage && !theatre.isReplay() && isMyImpulse() && [...activeBuilder().nextPositions()].some((pos) => pos !== bt.area);
-	theatre.hide(elsewhere);
+	const onStage = !!bt && !bt.resolved && bt.step !== "retreat";
+	const mine = onStage && !theatre.isReplay() && isMyImpulse();
+	const elsewhere = mine && [...activeBuilder().nextPositions()].some((pos) => pos !== bt.area);
 	theatre.refresh();
+	// A phone's buttons are on a page of their own, under the stage: once the show has caught up
+	// with a choice that cannot be made by touching a unit, the stage steps aside for it.
+	theatre.hide(elsewhere || (mine && isMobileLayout() && theatre.isIdle() && !theatre.hasChoices()));
 }
 
 /** The position after a move, from the cache of the history. */

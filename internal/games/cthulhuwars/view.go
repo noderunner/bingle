@@ -230,6 +230,18 @@ type BattleView struct {
 	Step     string            `json:"step,omitempty"`
 	Resolved bool              `json:"resolved"`
 	Sides    [2]BattleSideView `json:"sides"`
+	// Abilities are the Pre- or Post-Battle abilities of the step under way that ask for a choice.
+	Abilities []BattleAbilityView `json:"abilities,omitempty"`
+}
+
+// BattleAbilityView is an ability that may be used in a battle's Pre- or Post-Battle step.
+type BattleAbilityView struct {
+	Name string `json:"name"`
+	// Seat is the cult the ability belongs to, which is not always the one that answers it: the
+	// enemy chooses what Devour takes.
+	Seat int `json:"seat"`
+	// Current says that the game is waiting on this ability now.
+	Current bool `json:"current,omitempty"`
 }
 
 // BattleSideView is one side of a battle.
@@ -424,6 +436,7 @@ func (e *eng) buildView(viewer int) *View {
 				}
 			}
 		}
+		v.Battle.Abilities = e.battleAbilities(b)
 	} else if l := d.Last; l != nil {
 		v.Battle = e.battleView(l.Area, l.Att, l.Def, "", true, l)
 	}
@@ -499,6 +512,111 @@ func (e *eng) battleView(area string, att, def int, step string, resolved bool, 
 		}
 	}
 	return bv
+}
+
+// battleAbilities lists the abilities of the Pre- or Post-Battle step under way: those the prompts
+// waiting are about, then those each cult yet to finish may still use. Abilities that apply by
+// themselves, with no choice in them, have no move or prompt and are not listed.
+func (e *eng) battleAbilities(b *Battle) []BattleAbilityView {
+	d := e.d
+	var stage string
+	var seats []int
+	var moves func(int) []state.Move
+	switch b.Step {
+	case "pre":
+		stage, seats, moves = stagePre, []int{b.Att, b.Def}, e.preMoves
+	case "post":
+		stage, seats, moves = stagePost, e.postSeats(), e.postMoves
+	default:
+		return nil
+	}
+	var out []BattleAbilityView
+	add := func(name string, seat int, current bool) {
+		if name == "" {
+			return
+		}
+		for i := range out {
+			if out[i].Name == name && out[i].Seat == seat {
+				out[i].Current = out[i].Current || current
+				return
+			}
+		}
+		out = append(out, BattleAbilityView{Name: name, Seat: seat, Current: current})
+	}
+	for i, p := range d.Prompts {
+		name, seat := battlePromptAbility(p)
+		add(name, seat, i == 0 && d.Stage == stagePrompt)
+	}
+	for _, s := range seats {
+		if b.Done[s] {
+			continue
+		}
+		for _, mv := range moves(s) {
+			add(battleMoveAbility(mv), s, d.Stage == stage && b.Who == s)
+		}
+	}
+	return out
+}
+
+// battlePromptAbility names the battle ability a prompt answers, and the cult it belongs to.
+func battlePromptAbility(p Prompt) (string, int) {
+	switch p.Why {
+	case "devour":
+		return "Devour", p.By
+	case "abduct":
+		return "Abduct", p.By
+	case "devolve":
+		return "Devolve", p.Seat
+	case "berserkergang":
+		return "Berserkergang", p.By
+	case "dust":
+		return "Dust to Dust", p.By
+	case "orifice":
+		return "Orifices", p.Seat
+	}
+	switch p.Kind {
+	case "demand":
+		return "Demand Sacrifice", p.By
+	case "howl":
+		return "Howl", p.By
+	case "nexus":
+		return "Energy Nexus", p.Seat
+	case "cannibal":
+		return "Cannibalism", p.Seat
+	}
+	return "", 0
+}
+
+// battleMoveAbility names the battle ability a move of the Pre- or Post-Battle step uses.
+func battleMoveAbility(mv state.Move) string {
+	switch mv.Action {
+	case actAbsorb:
+		return "Absorb"
+	case actHowl:
+		return "Howl"
+	case actAbduct:
+		return "Abduct"
+	case actInvisible:
+		return "Invisibility"
+	case actSeek:
+		return "Seek and Destroy"
+	case actTerror:
+		return "Terror"
+	case actShrivel:
+		return "Shriveling"
+	case actHarbinger:
+		return "The Harbinger"
+	case actNecro:
+		return "Necrophagy"
+	case actUpgrade:
+		return "The Million Favored Ones"
+	case actCannibal:
+		return "Cannibalism"
+	case actCard:
+		card, _, _ := strings.Cut(string(mv.Piece), ".")
+		return map[string]string{"savagery": "Savagery", "affection": "Needs Affection", "unholy": "Unholy Ground", "predator": "Predator"}[card]
+	}
+	return ""
 }
 
 // areaNote describes what stands in an area.
