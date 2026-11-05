@@ -5,7 +5,7 @@
 // The server never sends an address back, so the one typed in the profile is
 // kept here, in this browser, to show in the form.
 
-import { h, store, getProfile } from "./util.js";
+import { h, store, getProfile, brandName } from "./util.js";
 import { api, ApiError, whoAmI } from "./api.js";
 
 const CONTACT_KEY = "bingle.contact";
@@ -91,7 +91,7 @@ export function statusText(info) {
 		case "verified":
 			return `Confirmed: ${info.masked}.`;
 		case "stopped":
-			return `${info.masked} used the unsubscribe link: Bingle will not email it.`;
+			return `${info.masked} used the unsubscribe link: ${brandName()} will not email it.`;
 		default:
 			return `Confirm ${info.masked}: open the link we emailed you.`;
 	}

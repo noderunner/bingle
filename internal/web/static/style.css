@@ -125,6 +125,8 @@ kbd {
 .topbar .brand .logo::after {
 	content: ""; position: absolute; inset: 0.3rem; border-radius: 50%; background: var(--accent-ink); opacity: 0.9;
 }
+.topbar .brand .logo.custom { border-radius: 0; background: url("/brand/icon") center / contain no-repeat; }
+.topbar .brand .logo.custom::after { display: none; }
 .topbar .spacer { flex: 1; }
 .topbar .tagline { color: var(--muted); font-size: 0.9rem; }
 

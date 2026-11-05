@@ -44,6 +44,7 @@ const confirmFor = 48 * time.Hour
 
 // Accounts signs people up and in (ADR 0068).
 type Accounts struct {
+	brand  string
 	st     *store.Store
 	mail   Mailer
 	log    *slog.Logger
@@ -63,6 +64,8 @@ type Accounts struct {
 
 // AccountOptions configures Accounts.
 type AccountOptions struct {
+	// Brand is what this instance calls itself, for authenticator apps; "" is the default.
+	Brand  string
 	Mailer Mailer
 	Log    *slog.Logger
 	// Signup is SignupOpen or SignupClosed; "" means open.
@@ -76,6 +79,14 @@ type AccountOptions struct {
 	// LoginsPerMinute caps the sign-ins one address may try in a minute (the
 	// capabilities file's guest login limit); zero means 10.
 	LoginsPerMinute int
+}
+
+// brandName is the name authenticator apps show for this instance.
+func (a *Accounts) brandName() string {
+	if a.brand == "" {
+		return "Bingle"
+	}
+	return a.brand
 }
 
 // NewAccounts returns the account service over st.
@@ -95,7 +106,7 @@ func NewAccounts(st *store.Store, o AccountOptions) *Accounts {
 	if o.Argon2 == (Argon2Params{}) {
 		o.Argon2 = DefaultArgon2
 	}
-	return &Accounts{
+	return &Accounts{brand: o.Brand,
 		st: st, mail: o.Mailer, log: o.Log, signup: o.Signup, idle: o.SessionIdle, max: o.SessionMax, params: o.Argon2, now: time.Now,
 		loginsByAddr:   windowLimiter{per: cmp.Or(o.LoginsPerMinute, 10), window: time.Minute},
 		loginsByHandle: windowLimiter{per: 10, window: 15 * time.Minute},
@@ -113,7 +124,7 @@ var (
 	ErrSignupNoMail  = errors.New("auth: signing up needs email, which this server is not set up to send: ask its administrator for an account")
 	ErrHandleTaken   = errors.New("auth: that username is taken")
 	ErrBadLogin      = errors.New("auth: the username or the password is wrong")
-	ErrNotConfirmed  = errors.New("auth: confirm your email address first: the link is in the mail Bingle sent you")
+	ErrNotConfirmed  = errors.New("auth: confirm your email address first: the link is in the mail we sent you")
 	ErrTooManyTries  = errors.New("auth: too many tries; wait a few minutes")
 	ErrMailLater     = errors.New("auth: the confirmation mail could not be sent just now; try again later")
 	ErrBadLink       = errors.New("auth: that link is not valid any more: it was used already, or it is too old")

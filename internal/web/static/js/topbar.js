@@ -3,7 +3,7 @@
 // player's profile, help (the version, what changed lately, the project's page,
 // where to report problems) and — while a voice call is up — a button for the call.
 
-import { h, clear, toast, lastName, setLastName, ensureName, nameIsMadeUp, forgottenGames, rememberGame, rememberedGames, setTurnBadge, store } from "./util.js";
+import { h, clear, toast, lastName, setLastName, ensureName, nameIsMadeUp, forgottenGames, rememberGame, rememberedGames, setTurnBadge, store, brandName } from "./util.js";
 import { api, whoAmI } from "./api.js";
 import { guestKeySection } from "./guest-key.js";
 import { gameDefs, loadRows, loadUnread, isFinished, yourImpulse, sortRows, gameRow, openGameRow } from "./mygames.js";
@@ -226,14 +226,15 @@ export function installTopbar({ onRows = () => {}, manageTitle = true } = {}) {
 	const helpDlg = dialog(
 		"help-dialog",
 		"Help",
-		h("p", { class: "help-version", id: "help-version" }, h("strong", {}, "Bingle"), ` v${engineVersion()}`),
+		h("p", { class: "help-version", id: "help-version" }, h("strong", {}, brandName()), ` v${engineVersion()}`),
 		h("p", { class: "muted small" }, "Abstract strategy games to play with friends, against bots, or for training models. Open source under the MIT License."),
 		changes,
 		h(
 			"div",
 			{ class: "row help-links" },
-			h("a", { class: "button", id: "help-github", href: REPO_URL, target: "_blank", rel: "noopener noreferrer" }, "Bingle on GitHub"),
-			h("a", { class: "button primary", id: "help-issues", href: `${REPO_URL}/issues`, target: "_blank", rel: "noopener noreferrer" }, "Report Issues")
+			h("a", { class: "button", id: "help-github", href: REPO_URL, target: "_blank", rel: "noopener noreferrer" }, brandName() === "Bingle" ? "Bingle on GitHub" : "Source on GitHub"),
+			// The issues of another instance are not this project's to answer.
+			brandName() === "Bingle" ? h("a", { class: "button primary", id: "help-issues", href: `${REPO_URL}/issues`, target: "_blank", rel: "noopener noreferrer" }, "Report Issues") : null
 		)
 	);
 
@@ -249,7 +250,7 @@ export function installTopbar({ onRows = () => {}, manageTitle = true } = {}) {
 	};
 	const showChanges = async () => {
 		if (!latest) return;
-		changesHead.textContent = `Bingle ${latest.version}${latest.date ? ` · ${latest.date}` : ""}`;
+		changesHead.textContent = `${brandName()} ${latest.version}${latest.date ? ` · ${latest.date}` : ""}`;
 		changes.hidden = false;
 		if (!latestShown) {
 			latestShown = true;

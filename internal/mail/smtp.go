@@ -29,17 +29,18 @@ type Sender struct {
 	password config.Secret
 	from     string
 	fromName string
-	implicit bool // implicit TLS instead of STARTTLS
+	brand    string // what this instance calls itself: the templates say Bingle
+	implicit bool   // implicit TLS instead of STARTTLS
 	roots    *x509.CertPool
 	timeout  time.Duration
 	now      func() time.Time
 }
 
 // NewSender builds the Sender of the mail settings.
-func NewSender(m config.Mail) (*Sender, error) {
+func NewSender(m config.Mail, brand string) (*Sender, error) {
 	s := &Sender{
 		host: m.Host, port: m.Port, user: m.User, password: m.Password, from: m.From,
-		fromName: "Bingle", implicit: m.Mode == "tls", timeout: 45 * time.Second, now: time.Now,
+		fromName: brand, brand: brand, implicit: m.Mode == "tls", timeout: 45 * time.Second, now: time.Now,
 	}
 	if m.CAFile != "" {
 		pem, err := os.ReadFile(m.CAFile)
@@ -59,7 +60,7 @@ func (s *Sender) From() string { return s.from }
 
 // Send delivers one message. The error never contains the password.
 func (s *Sender) Send(ctx context.Context, msg Message) error {
-	data, err := msg.Build(s.from, s.fromName, s.now())
+	data, err := msg.branded(s.brand).Build(s.from, s.fromName, s.now())
 	if err != nil {
 		return err
 	}

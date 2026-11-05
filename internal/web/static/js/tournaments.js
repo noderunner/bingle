@@ -2,7 +2,7 @@
 // fills in, and the page of one tournament. No rule of a tournament lives here:
 // the server says what stands and what is allowed, and this only shows it.
 
-import { h, clear } from "./util.js";
+import { h, clear, brandName } from "./util.js";
 import { api, gameTitle, whoAmI } from "./api.js";
 import { FAIR_PLAY } from "./ratings.js";
 
@@ -349,7 +349,7 @@ export async function mountTournamentPage(host, id) {
 	}
 
 	function paint(t) {
-		document.title = `Bingle — ${t.name}`;
+		document.title = `${brandName()} — ${t.name}`;
 		clear(host);
 		const parts = [
 			h("h1", { id: "tournament-name" }, t.name),

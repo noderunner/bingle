@@ -26,6 +26,21 @@ type Message struct {
 	Calendar *Calendar
 }
 
+// branded is the message with the name of this instance in place of the name in the templates.
+func (m Message) branded(brand string) Message {
+	if brand == "" || brand == "Bingle" {
+		return m
+	}
+	swap := func(s string) string { return strings.ReplaceAll(s, "Bingle", brand) }
+	m.Subject, m.Body = swap(m.Subject), swap(m.Body)
+	if m.Calendar != nil {
+		cal := *m.Calendar
+		cal.Body = swap(cal.Body)
+		m.Calendar = &cal
+	}
+	return m
+}
+
 // Calendar is an iCalendar file sent with a message.
 type Calendar struct {
 	Method string // REQUEST or CANCEL

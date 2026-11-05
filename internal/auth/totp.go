@@ -76,9 +76,12 @@ func CheckTOTP(secret, code string, now time.Time, last int64) (int64, bool) {
 
 // TOTPURI is the otpauth:// link an authenticator app reads (typed in, or
 // from a QR code made of it).
-func TOTPURI(handle, secret string) string {
-	label := url.PathEscape("Bingle:@" + handle)
-	q := url.Values{"secret": {secret}, "issuer": {"Bingle"}, "algorithm": {"SHA1"}, "digits": {"6"}, "period": {"30"}}
+func TOTPURI(handle, secret string) string { return TOTPURIFor("Bingle", handle, secret) }
+
+// TOTPURIFor is TOTPURI for an instance with a name of its own, which the app shows.
+func TOTPURIFor(issuer, handle, secret string) string {
+	label := url.PathEscape(issuer + ":@" + handle)
+	q := url.Values{"secret": {secret}, "issuer": {issuer}, "algorithm": {"SHA1"}, "digits": {"6"}, "period": {"30"}}
 	return "otpauth://totp/" + label + "?" + q.Encode()
 }
 

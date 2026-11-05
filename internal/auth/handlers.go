@@ -167,7 +167,7 @@ func (rs *Resolver) handleSignup(w http.ResponseWriter, r *http.Request) {
 		rs.fail(w, err)
 		return
 	}
-	writeJSON(w, http.StatusAccepted, map[string]string{"status": "Check your mail: Bingle sent a link to confirm the address."})
+	writeJSON(w, http.StatusAccepted, map[string]string{"status": "Check your mail: we sent a link to confirm the address."})
 }
 
 func (rs *Resolver) handleConfirm(w http.ResponseWriter, r *http.Request) {

@@ -4,7 +4,7 @@
 // turn notifications. See docs/ui.md for the interaction model.
 
 import { FAIR_PLAY, ratingText } from "./ratings.js";
-import { h, s, clear, store, rememberGame, nameFor, lastName, ago, titleCase, toast, setTurnBadge, reconnectDelay } from "./util.js";
+import { h, s, clear, store, rememberGame, nameFor, lastName, ago, titleCase, toast, setTurnBadge, reconnectDelay, brandName } from "./util.js";
 import { api, ApiError, gameTitle } from "./api.js";
 import { MoveBuilder } from "./builder.js";
 import { renderBoard, pieceIcon, cssColor, ONGATE, hasHexStyles, defaultHexStyle } from "./render.js";
@@ -108,7 +108,7 @@ const S = {
 let ws = null;
 let wsRetry = 0;
 let wsStopped = false;
-let titleBase = "Bingle";
+let titleBase = brandName();
 let confirmTimer = null;
 
 // ---------------------------------------------------------------------------

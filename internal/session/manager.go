@@ -45,6 +45,7 @@ type Manager struct {
 	mx        *metrics.Metrics // the registry; nil records nothing
 	debug     DebugOptions     // which games and rooms get the firehose
 	repro     *repro.Writer    // where repro bundles go; nil writes none
+	brand     string           // what this instance calls itself; empty for the default
 	now       func() time.Time // clock; tests may replace it via SetClock
 	resultsMu sync.Mutex       // one writer of rated results at a time
 	// tournamentsMu: one thing at a time moves tournaments on. It is taken before any room lock.
@@ -85,6 +86,17 @@ func NewManager(st *store.Store, cat *catalog.Catalog) *Manager {
 		upSince:   time.Now(),
 		roomLocks: make(map[string]*sync.Mutex),
 	}
+}
+
+// SetBrand sets what this instance calls itself.
+func (m *Manager) SetBrand(name string) { m.brand = name }
+
+// branded puts the name of this instance in text written with the platform's name in it.
+func (m *Manager) branded(text string) string {
+	if m.brand == "" || m.brand == "Bingle" {
+		return text
+	}
+	return strings.ReplaceAll(text, "Bingle", m.brand)
 }
 
 // SetClock replaces the manager's time source (used by tests to exercise
