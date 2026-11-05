@@ -144,6 +144,29 @@ func (h *handlers) handleLeave(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, statusFromSnapshot(snap))
 }
 
+// handleReleaseSeat implements POST /games/{code}/release: the host gives up a seat kept for a
+// friend, so that anybody can sit there.
+func (h *handlers) handleReleaseSeat(w http.ResponseWriter, r *http.Request) {
+	var req nameBody
+	if !decodeBody(w, r, &req) {
+		return
+	}
+	if err := checkName(req.PlayerName); err != nil {
+		writeError(w, err)
+		return
+	}
+	if req.Seat < 1 {
+		writeError(w, errors.New("api: seat is required"))
+		return
+	}
+	snap, err := h.mgr.ReleaseSeat(r.Context(), chi.URLParam(r, "code"), req.PlayerName, req.Seat)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, statusFromSnapshot(snap))
+}
+
 // handleRemoveSeat implements POST /games/{code}/remove: the host clears
 // another seat before the game starts.
 func (h *handlers) handleRemoveSeat(w http.ResponseWriter, r *http.Request) {

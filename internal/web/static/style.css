@@ -215,7 +215,12 @@ button.icon { padding: 0.35rem 0.6rem; min-width: 2.2rem; justify-content: cente
 button.icon-only { display: inline-flex; align-items: center; justify-content: center; padding: 0.3rem 0.5rem; }
 /* The direct messages window: the people on the left, the correspondence on the
    right (js/dm.js); one column on a narrow screen. */
-.dm-window { min-width: min(50rem, 84vw); }
+dialog#friends-dialog { width: min(56rem, 94vw); max-width: 94vw; }
+.dm-window { min-width: 0; }
+#dm-log { list-style: none; padding-left: 0; }
+.dm-call-row { flex-wrap: wrap; }
+form#friend-add { flex-wrap: nowrap; }
+form#friend-add input { width: auto; }
 .friend-dot { flex: none; width: 0.6rem; height: 0.6rem; border-radius: 50%; background: var(--border); }
 .friend-dot.online { background: #2e9d5b; box-shadow: 0 0 4px #2e9d5b; }
 #friend-add { margin-bottom: 0.5rem; }
@@ -235,7 +240,7 @@ button.icon-only { display: inline-flex; align-items: center; justify-content: c
 @media (max-width: 700px) {
 	.dm-window { min-width: 0; }
 	.dm-panes { flex-direction: column; }
-	.dm-people-pane { flex: none; border-right: 0; border-bottom: 1px solid var(--border); padding: 0 0 0.6rem; max-height: 9rem; overflow-y: auto; }
+	.dm-people-pane { flex: none; border-right: 0; border-bottom: 1px solid var(--border); padding: 0 0 0.6rem; max-height: 40vh; overflow-y: auto; }
 }
 
 /* Who is here, in the profile window (js/topbar.js, js/here.js). */
@@ -2306,3 +2311,5 @@ code.wrap { overflow-wrap: anywhere; word-break: break-all; }
 	.bt-face.n6 { transform: rotateX(-90deg) translateZ(0.625rem); }
 	.bt-tally { font-size: 0.72rem; }
 }
+.badge.reserved { background: var(--accent-soft); }
+#reserve-friend { margin-top: 0.3rem; max-width: 100%; }

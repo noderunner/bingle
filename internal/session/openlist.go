@@ -7,6 +7,7 @@ import (
 
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/engine/state"
+	"github.com/noderunner/bingle/internal/store"
 )
 
 // The list of games anybody can look in on: every game that has not ended,
@@ -33,6 +34,10 @@ type OpenGame struct {
 	Family string `json:"family,omitempty"`
 	// Tags are the short badges the game's rules give it in a list.
 	Tags []string `json:"tags,omitempty"`
+	// FriendsOnly says its seats are all held or kept for friends; ReservedForYou that one is the
+	// viewer's. OpenSeats counts only the seats the viewer could sit at.
+	FriendsOnly    bool `json:"friends_only,omitempty"`
+	ReservedForYou bool `json:"reserved_for_you,omitempty"`
 	// Status is "waiting" or "active"; Lobby says it waits for its host.
 	Status string `json:"status"`
 	Lobby  bool   `json:"lobby,omitempty"`
@@ -53,6 +58,8 @@ type OpenGame struct {
 type OpenGameFilter struct {
 	Family    string
 	OpenSeats bool
+	// Viewer is the account asking, 0 for anybody else. It decides which games are found (ADR 0107).
+	Viewer int64
 }
 
 // openGamesScanned is how many unfinished games a filtered list looks through.
@@ -86,9 +93,27 @@ func (m *Manager) ListOpenGames(ctx context.Context, limit int, filter OpenGameF
 	if limit <= 0 || limit > maxOpenGames {
 		limit = maxOpenGames
 	}
-	scan := limit
-	if filter != (OpenGameFilter{}) {
-		scan = openGamesScanned
+	// Some games are not for everybody, so the list cannot stop at the first few.
+	scan := openGamesScanned
+	friends := func() map[int64]bool {
+		out := map[int64]bool{}
+		rows, err := m.store.Friendships(ctx, filter.Viewer)
+		if err != nil {
+			return out
+		}
+		for _, f := range rows {
+			if f.Status == store.FriendAccepted {
+				out[f.OtherID] = true
+			}
+		}
+		return out
+	}
+	var known map[int64]bool
+	viewerFriends := func() map[int64]bool {
+		if known == nil {
+			known = friends()
+		}
+		return known
 	}
 	games, err := m.store.ListUnfinishedGames(ctx, scan)
 	if err != nil {
@@ -114,7 +139,24 @@ func (m *Manager) ListOpenGames(ctx context.Context, limit int, filter OpenGameF
 			return nil, fmt.Errorf("session: %w", err)
 		}
 		seats := len(compiled.Definition.Seats)
+		seatNumbers := make([]int, 0, seats)
+		for _, sd := range compiled.Definition.Seats {
+			seatNumbers = append(seatNumbers, sd.Seat)
+		}
+		access, err := m.listedAccess(ctx, g.GameID, players, seatNumbers, filter.Viewer, viewerFriends)
+		if err != nil {
+			return nil, fmt.Errorf("session: %w", err)
+		}
+		if !access.Show {
+			continue
+		}
 		title, tags := listLabel(compiled)
+		if access.FriendsOnly {
+			tags = append([]string{"Friends only"}, tags...)
+		}
+		if access.Yours {
+			tags = append([]string{"Seat reserved for you"}, tags...)
+		}
 		entry := OpenGame{
 			RoomCode:    g.RoomCode,
 			GameDefID:   g.GameDefID,
@@ -125,19 +167,19 @@ func (m *Manager) ListOpenGames(ctx context.Context, limit int, filter OpenGameF
 			Lobby:       g.Lobby,
 			Rated:       g.Rated,
 			Seats:       seats,
-			OpenSeats:   seats - len(players),
+			OpenSeats:   access.Open,
+			FriendsOnly: access.FriendsOnly,
 			ImpulseSeat: g.ImpulseSeat,
 			MoveSeq:     g.MoveSeq,
 			UpdatedAt:   g.UpdatedAt,
 		}
-		if entry.OpenSeats < 0 {
-			entry.OpenSeats = 0
-		}
+		entry.ReservedForYou = access.Yours
 		for _, p := range players {
 			entry.Players = append(entry.Players, SeatInfo{Seat: p.Seat, Color: p.Color, Name: p.Name, Bot: p.Bot})
 		}
 		sort.Slice(entry.Players, func(i, j int) bool { return entry.Players[i].Seat < entry.Players[j].Seat })
-		if filter.OpenSeats && entry.OpenSeats == 0 {
+		// A friend's friends-only game is offered even with no seat for them: they can watch.
+		if filter.OpenSeats && entry.OpenSeats == 0 && !entry.FriendsOnly {
 			continue
 		}
 		out = append(out, entry)

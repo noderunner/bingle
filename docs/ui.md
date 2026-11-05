@@ -271,6 +271,10 @@ chosen (`#dm-title`): *Call*, *Invite to game* (`#friend-invite`, then `#friend-
 *Remove friend* (`#friend-remove`) and the conversation. A friend who is offline cannot be written to or called
 (`#dm-offline`). The profile page has the switches for mail about requests (`#friend-mail`) and for being seen online (`#friend-presence`).
 
+In the setup, a signed-in player can keep a seat for a friend: in the seat's list under *Reserve for a friend* (`.slot-select`, value `friend:<handle>`), or
+for a table of two under *A friend* (`#reserve-friend`). *Invite only* (`#invite-only`) keeps a game off every list. In the lobby a kept seat has `[data-reserved]`, the host
+can give it up (`[data-act="release"]`), and a visitor with no seat to take sees `#lobby-all-reserved`. ([ADR 0107](decisions/0107-who-can-find-a-game.md))
+
 The person icon (`#open-profile`) opens **`#profile-dialog`**, a floating window
 rather than a page: *My Name* (`#profile-window-name`, saved as you leave the field; a guest who has not chosen one
 has a two-word name from `js/names.js`), for a guest *Move to Another Device* (`#guest-box`), for a signed-in account **Here Now**

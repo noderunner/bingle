@@ -70,6 +70,7 @@ export function lobbyCard(ctx) {
 		const si = bySeat.get(sd.seat) || {};
 		const taken = !!si.name;
 		const mine = me.seat === sd.seat;
+		const kept = (game.reservations || []).find((r) => r.seat === sd.seat);
 		const li = h("li", { class: "lobby-seat" + (taken ? " taken" : " open") + (mine ? " mine" : ""), "data-seat": sd.seat });
 		li.append(ctx.seatGlyph(sd.seat) || h("span", { class: `swatch color-${cssColor(sd.color)}` }));
 		// The cult of an open seat can be changed by anyone at the table, and at a table
@@ -99,13 +100,18 @@ export function lobbyCard(ctx) {
 			if (si.bot) who.append(h("span", { class: "badge bot" }, "bot"));
 			if (mine) who.append(h("span", { class: "badge" }, "you"));
 			if (sd.seat === hostSeat && !si.bot) who.append(h("span", { class: "badge host", title: "Created the game: starts it" }, "host"));
+		} else if (kept) {
+			who.append(h("span", { class: "badge reserved", "data-reserved": kept.handle }, kept.yours ? "Reserved for you" : `Reserved for @${kept.handle}`));
 		} else {
 			who.append(h("span", { class: "muted" }, "open — waiting for a player"));
 		}
 		li.append(who);
 		const acts = h("span", { class: "lobby-actions" });
 		if (!taken) {
-			if (me.seat && !ctx.busy) {
+			if (kept && iAmHost) {
+				acts.append(h("button", { class: "small ghost", "data-act": "release", disabled: ctx.busy, onclick: () => ctx.actions.release(sd.seat), title: "Let anybody sit here" }, "Release"));
+			}
+			if (me.seat && !ctx.busy && (!kept || kept.yours)) {
 				acts.append(h("button", { class: "small", "data-act": "move", onclick: () => ctx.actions.moveTo(sd.seat), title: "Play this faction instead" }, "Sit here"));
 			}
 			if (me.seat && (iAmHost || startsByItself) && bots.length) {
@@ -124,11 +130,15 @@ export function lobbyCard(ctx) {
 	card.append(table);
 
 	// A visitor who has no seat yet.
-	if (!me.seat && open.length) {
+	const free = open.filter((sd) => !(game.reservations || []).some((r) => r.seat === sd.seat && !r.yours));
+	if (!me.seat && open.length && !free.length) card.append(h("p", { class: "small muted", id: "lobby-all-reserved" }, "The seats here are reserved for friends of the host. You can watch this game."));
+	if (!me.seat && free.length) {
 		const row = h("div", { class: "lobby-join", id: "lobby-join" });
 		const name = h("input", { type: "text", id: "lobby-name", placeholder: "Your name", value: ctx.lastName || "", maxlength: "32", autocomplete: "nickname", "aria-label": "Your name" });
 		const seatSel = h("select", { id: "lobby-seat", "aria-label": "Faction to play" });
-		for (const sd of open) seatSel.append(h("option", { value: String(sd.seat) }, sd.label));
+		// A seat kept for this person comes first.
+		const yours = (sd) => (game.reservations || []).some((r) => r.seat === sd.seat && r.yours);
+		for (const sd of [...free].sort((a, b) => Number(yours(b)) - Number(yours(a)))) seatSel.append(h("option", { value: String(sd.seat) }, yours(sd) ? `${sd.label} (reserved for you)` : sd.label));
 		const join = () => {
 			const n = name.value.trim();
 			if (!n) {
@@ -176,6 +186,7 @@ export function lobbyCard(ctx) {
 	const settings = [];
 	if (game.move_time_seconds) settings.push(`${Math.round(game.move_time_seconds / 60) || 1} min per move`);
 	settings.push(`${seats.length} players`);
+	if (game.invite_only) settings.push("Invite only: not on any list");
 	card.append(h("p", { class: "small muted lobby-settings" }, settings.join(" · ")));
 	return card;
 }

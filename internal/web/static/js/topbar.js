@@ -158,10 +158,11 @@ export function installTopbar({ onRows = () => {}, manageTitle = true } = {}) {
 		clear(openList);
 		for (const g of games) {
 			openList.append(
-				openGameRow(g, defs, false, h("button", { type: "button", class: "primary", "data-join": g.room_code, onclick: () => {
+				// A friend's game with no seat for this person can still be watched.
+				openGameRow(g, defs, false, g.open_seats > 0 ? h("button", { type: "button", class: "primary", "data-join": g.room_code, onclick: () => {
 					codeInput.value = g.room_code;
 					join();
-				} }, "Join"))
+				} }, "Join") : null)
 			);
 		}
 		openEmpty.hidden = games.length > 0;
@@ -185,7 +186,8 @@ export function installTopbar({ onRows = () => {}, manageTitle = true } = {}) {
 			const game = await api.game(code);
 			const seats = game.seats || [];
 			const mine = seats.some((s) => s.name && s.name.toLowerCase() === name.toLowerCase());
-			if (!mine && !seats.some((s) => !s.name)) {
+			const free = seats.some((s) => !s.name && !(game.reservations || []).some((r) => r.seat === s.seat && !r.yours));
+			if (!mine && !free) {
 				await api.join(code, name, "spectator");
 			} else {
 				try {

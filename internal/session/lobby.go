@@ -122,6 +122,13 @@ func (m *Manager) ChooseSeat(ctx context.Context, roomCode, name string, wanted 
 			return StateSnapshot{}, fmt.Errorf("%w: seat %d is taken", ErrSeatsFull, wanted)
 		}
 	}
+	reserved, err := m.reservedFor(ctx, game.ID)
+	if err != nil {
+		return StateSnapshot{}, err
+	}
+	if err := mayHaveSeat(ctx, reserved, wanted); err != nil {
+		return StateSnapshot{}, err
+	}
 	if wanted != me.Seat {
 		if err := m.store.MovePlayerSeat(ctx, game.ID, me.Seat, wanted, sd.Color); err != nil {
 			return StateSnapshot{}, err

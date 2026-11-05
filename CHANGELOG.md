@@ -4,6 +4,13 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.68.0 - 2026-11-04
+
+### Bingle Core 0.68.0
+- **Reserve seats for friends.** When you set up a game, you can keep a seat for a friend. They get an invitation, nobody else can sit there, and you can release the seat if they do not come.
+- **Friends-only games.** When every seat is held or kept for friends, the game leaves the public lists. Your friends still see it, and can join or watch.
+- **Invite-only games.** A new option in the setup keeps a game off every list, even your friends'. Players come by its link, or an invitation from your friends list. Anyone with the link can still watch.
+
 ## 0.67.0 - 2026-11-04
 
 ### Bingle Core 0.67.0

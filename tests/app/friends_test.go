@@ -397,3 +397,241 @@ func TestFriends_HidingLooksLikeBeingGone(t *testing.T) {
 		}
 	}
 }
+
+type listedGame struct {
+	RoomCode       string   `json:"room_code"`
+	OpenSeats      int      `json:"open_seats"`
+	FriendsOnly    bool     `json:"friends_only"`
+	ReservedForYou bool     `json:"reserved_for_you"`
+	Tags           []string `json:"tags"`
+}
+
+func listedFor(t *testing.T, b *browser, query string) map[string]listedGame {
+	t.Helper()
+	var res struct {
+		Games []listedGame `json:"games"`
+	}
+	if code := b.do("GET", "/api/games"+query, nil, &res); code != 200 {
+		t.Fatalf("the list: %d", code)
+	}
+	out := map[string]listedGame{}
+	for _, g := range res.Games {
+		out[g.RoomCode] = g
+	}
+	return out
+}
+
+// A seat is kept for its friend: nobody else sits there, it comes with an invitation and a lobby, and
+// the game is friends-only while no seat is left for anybody.
+func TestFriends_ASeatKeptForAFriend(t *testing.T) {
+	a, base := membersServer(t)
+	ana, bob, cyd, dan := member(t, a, base, "ana"), member(t, a, base, "bob"), member(t, a, base, "cyd"), member(t, a, base, "dan")
+	befriend(t, ana, bob, "bob", "ana")
+	befriend(t, ana, cyd, "cyd", "ana")
+	guest := newBrowser(t, base)
+
+	create := func(body map[string]any) (int, string) {
+		var created struct {
+			RoomCode string `json:"room_code"`
+		}
+		body["game_def_id"], body["player_name"] = "tic-tac-toe", "Ana"
+		return ana.do("POST", "/api/games", body, &created), created.RoomCode
+	}
+	// Only friends, only open seats.
+	if code, _ := create(map[string]any{"reserved_seats": map[string]string{"2": "dan"}}); code != 403 {
+		t.Errorf("keeping a seat for a stranger: %d, want 403", code)
+	}
+	if code, _ := create(map[string]any{"reserved_seats": map[string]string{"1": "bob"}}); code != 403 {
+		t.Errorf("keeping her own seat: %d, want 403", code)
+	}
+	if code, _ := create(map[string]any{"reserved_seats": map[string]string{"7": "bob"}}); code == 200 {
+		t.Errorf("keeping no seat at all: %d", code)
+	}
+	if code := guest.do("POST", "/api/games", map[string]any{"game_def_id": "tic-tac-toe", "player_name": "G", "reserved_seats": map[string]string{"2": "bob"}}, nil); code != 403 {
+		t.Errorf("a guest keeps a seat: %d, want 403", code)
+	}
+	code, room := create(map[string]any{"reserved_seats": map[string]string{"2": "bob"}})
+	if code != 200 {
+		t.Fatalf("Ana keeps a seat for Bob: %d", code)
+	}
+	var game struct {
+		Lobby        bool `json:"lobby"`
+		Reservations []struct {
+			Seat   int    `json:"seat"`
+			Handle string `json:"handle"`
+			Yours  bool   `json:"yours"`
+		} `json:"reservations"`
+	}
+	bob.do("GET", "/api/games/"+room, nil, &game)
+	if !game.Lobby || len(game.Reservations) != 1 || game.Reservations[0].Handle != "bob" || !game.Reservations[0].Yours {
+		t.Errorf("as Bob sees it: %+v", game)
+	}
+	if f := friendsOf(t, bob); len(f.Invites) != 1 || f.Invites[0].Room != room {
+		t.Errorf("Bob's invitations: %+v", f.Invites)
+	}
+
+	// Who finds it.
+	for _, c := range []struct {
+		name string
+		b    *browser
+		sees bool
+	}{{"the creator", ana, true}, {"its friend", bob, true}, {"another friend", cyd, true}, {"a stranger", dan, false}, {"a guest", guest, false}} {
+		g, ok := listedFor(t, c.b, "?open_seats=1")[room]
+		if ok != c.sees {
+			t.Errorf("%s finds it: %v, want %v", c.name, ok, c.sees)
+		}
+		if ok && !g.FriendsOnly {
+			t.Errorf("%s: %+v should say friends only", c.name, g)
+		}
+	}
+	if g := listedFor(t, bob, "")[room]; !g.ReservedForYou || g.OpenSeats != 1 {
+		t.Errorf("for Bob: %+v", g)
+	}
+	if g := listedFor(t, cyd, "?open_seats=1")[room]; g.ReservedForYou || g.OpenSeats != 0 {
+		t.Errorf("for Cyd, who can only watch: %+v", g)
+	}
+
+	// Who sits. Anybody can watch by the link.
+	if code := dan.do("POST", "/api/games/"+room+"/join", map[string]any{"player_name": "Dan"}, nil); code != 403 {
+		t.Errorf("a stranger sits: %d, want 403", code)
+	}
+	if code := dan.do("POST", "/api/games/"+room+"/join", map[string]any{"player_name": "Dan", "role": "spectator"}, nil); code != 200 {
+		t.Errorf("a stranger watches: %d", code)
+	}
+	if code := bob.do("POST", "/api/games/"+room+"/join", map[string]any{"player_name": "Bob"}, nil); code != 200 {
+		t.Errorf("Bob sits: %d", code)
+	}
+}
+
+// The host gives up a seat: it is then for anybody, and the game is public.
+func TestFriends_TheHostReleasesASeat(t *testing.T) {
+	a, base := membersServer(t)
+	ana, bob, dan := member(t, a, base, "ana"), member(t, a, base, "bob"), member(t, a, base, "dan")
+	befriend(t, ana, bob, "bob", "ana")
+	var created struct {
+		RoomCode string `json:"room_code"`
+	}
+	ana.do("POST", "/api/games", map[string]any{"game_def_id": "tic-tac-toe", "player_name": "Ana", "reserved_seats": map[string]string{"2": "bob"}}, &created)
+	room := created.RoomCode
+	if _, ok := listedFor(t, dan, "")[room]; ok {
+		t.Fatal("a stranger finds it")
+	}
+	if code := dan.do("POST", "/api/games/"+room+"/release", map[string]any{"player_name": "Dan", "seat": 2}, nil); code == 200 {
+		t.Error("a stranger gives up the seat")
+	}
+	if code := ana.do("POST", "/api/games/"+room+"/release", map[string]any{"player_name": "Ana", "seat": 2}, nil); code != 200 {
+		t.Fatalf("Ana gives up the seat: %d", code)
+	}
+	g, ok := listedFor(t, dan, "?open_seats=1")[room]
+	if !ok || g.FriendsOnly || g.OpenSeats != 1 {
+		t.Errorf("after the release: %v %+v", ok, g)
+	}
+	if code := dan.do("POST", "/api/games/"+room+"/join", map[string]any{"player_name": "Dan"}, nil); code != 200 {
+		t.Errorf("Dan sits: %d", code)
+	}
+}
+
+// A table with one seat kept and one open is still public: only the kept seat is closed.
+func TestFriends_ASeatKeptAtAnOpenTable(t *testing.T) {
+	a, base := membersServer(t)
+	ana, bob, dan := member(t, a, base, "ana"), member(t, a, base, "bob"), member(t, a, base, "dan")
+	befriend(t, ana, bob, "bob", "ana")
+	var created struct {
+		RoomCode string `json:"room_code"`
+	}
+	if code := ana.do("POST", "/api/games", map[string]any{"game_def_id": "cthulhu-wars", "player_name": "Ana", "reserved_seats": map[string]string{"2": "bob"}}, &created); code != 200 {
+		t.Fatalf("create: %d", code)
+	}
+	room := created.RoomCode
+	g, ok := listedFor(t, dan, "?open_seats=1")[room]
+	if !ok || g.FriendsOnly || g.OpenSeats != 2 {
+		t.Errorf("for a stranger: %v %+v", ok, g)
+	}
+	if g := listedFor(t, bob, "")[room]; g.OpenSeats != 3 || !g.ReservedForYou {
+		t.Errorf("for Bob: %+v", g)
+	}
+	// The stranger takes a seat left open, and never the one kept.
+	if code := dan.do("POST", "/api/games/"+room+"/join", map[string]any{"player_name": "Dan", "seat": 2}, nil); code != 403 {
+		t.Errorf("Dan takes the kept seat: %d, want 403", code)
+	}
+	var joined struct {
+		Seat int `json:"seat"`
+	}
+	if code := dan.do("POST", "/api/games/"+room+"/join", map[string]any{"player_name": "Dan"}, &joined); code != 200 || joined.Seat != 3 {
+		t.Errorf("Dan sits: %d at seat %d, want seat 3", code, joined.Seat)
+	}
+	// Bob comes to his own, whichever seats are left.
+	if code := bob.do("POST", "/api/games/"+room+"/join", map[string]any{"player_name": "Bob"}, &joined); code != 200 || joined.Seat != 2 {
+		t.Errorf("Bob sits: %d at seat %d, want seat 2", code, joined.Seat)
+	}
+}
+
+// An invite-only game is on nobody's list, but its link works.
+func TestFriends_InviteOnlyIsOnNoList(t *testing.T) {
+	a, base := membersServer(t)
+	ana, bob, dan := member(t, a, base, "ana"), member(t, a, base, "bob"), member(t, a, base, "dan")
+	befriend(t, ana, bob, "bob", "ana")
+	var created struct {
+		RoomCode string `json:"room_code"`
+	}
+	if code := ana.do("POST", "/api/games", map[string]any{"game_def_id": "tic-tac-toe", "player_name": "Ana", "invite_only": true}, &created); code != 200 {
+		t.Fatalf("create: %d", code)
+	}
+	room := created.RoomCode
+	for name, b := range map[string]*browser{"the creator": ana, "a friend": bob, "a stranger": dan, "a guest": newBrowser(t, base)} {
+		for _, q := range []string{"", "?open_seats=1", "?family=tic-tac-toe"} {
+			if _, ok := listedFor(t, b, q)[room]; ok {
+				t.Errorf("%s finds it with %q", name, q)
+			}
+		}
+	}
+	// An invitation brings a friend, and a link anybody.
+	if code := friendPost(ana, "invite", map[string]any{"handle": "bob", "room": room}); code != 200 {
+		t.Errorf("Ana invites Bob: %d", code)
+	}
+	if f := friendsOf(t, bob); len(f.Invites) != 1 {
+		t.Errorf("Bob's invitations: %+v", f.Invites)
+	}
+	var seen struct {
+		InviteOnly bool `json:"invite_only"`
+	}
+	if code := dan.do("GET", "/api/games/"+room, nil, &seen); code != 200 || !seen.InviteOnly {
+		t.Errorf("the link: %d %+v", code, seen)
+	}
+	if code := dan.do("POST", "/api/games/"+room+"/join", map[string]any{"player_name": "Dan"}, nil); code != 200 {
+		t.Errorf("Dan comes by the link: %d", code)
+	}
+}
+
+// Through the page: the setup keeps a seat, the lobby says so, and a friend finds the game to join.
+func TestWebFriends_ReservingASeatInTheSetup(t *testing.T) {
+	a, base := membersServer(t)
+	anaB, bobB := member(t, a, base, "ana"), member(t, a, base, "bob")
+	befriend(t, anaB, bobB, "bob", "ana")
+	ana, cancelA := newChromedpContext(t, 90*time.Second)
+	defer cancelA()
+	bob, cancelB := newChromedpContext(t, 90*time.Second)
+	defer cancelB()
+	signInChrome(t, ana, base, anaB.cookie(auth.SessionCookie))
+	signInChrome(t, bob, base, bobB.cookie(auth.SessionCookie))
+	if err := chromedp.Run(ana, chromedp.EmulateViewport(1400, 1000), chromedp.Navigate(base+"/?game=tic-tac-toe")); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ana, "the friend to keep a seat for", `document.querySelector('#reserve-friend option[value="bob"]') !== null`, 20*time.Second)
+	if !evalBool(t, ana, `document.getElementById("invite-only") !== null`) {
+		t.Error("no invite-only option in the setup")
+	}
+	evalString(t, ana, `(function () { var s = document.getElementById("reserve-friend"); s.value = "bob"; s.dispatchEvent(new Event("change", {bubbles: true})); document.querySelector('#create-game-form button[type="submit"]').click(); return "ok"; })()`)
+	waitJS(t, ana, "the lobby", `document.querySelector('#lobby-seats [data-reserved="bob"]') !== null`, 20*time.Second)
+	waitJS(t, ana, "the Release button", `document.querySelector('#lobby-seats [data-act="release"]') !== null`, 10*time.Second)
+
+	// Bob sees it in Join Game, marked as his.
+	if err := chromedp.Run(bob, chromedp.Navigate(base+"/")); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, bob, "the join button", `document.getElementById("open-join") !== null`, 20*time.Second)
+	clickSel(t, bob, "#open-join")
+	waitJS(t, bob, "the row", `[...document.querySelectorAll("#join-open-games li .game-tag")].some(b => b.textContent === "Seat reserved for you")`, 15*time.Second)
+	clickSel(t, bob, "#join-open-games button[data-join]")
+	waitJS(t, bob, "Bob in the lobby", `document.querySelector('#lobby-seats .lobby-seat.mine') !== null`, 20*time.Second)
+}

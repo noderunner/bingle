@@ -40,6 +40,8 @@ func statusForError(err error) int {
 		return http.StatusForbidden
 	case errors.Is(err, session.ErrVoicePeerGone), errors.Is(err, session.ErrSuppressed), errors.Is(err, session.ErrNotVerified), errors.Is(err, session.ErrNotInCall), errors.Is(err, session.ErrTooManyHere):
 		return http.StatusConflict
+	case errors.Is(err, session.ErrSeatReserved), errors.Is(err, session.ErrBadReservation):
+		return http.StatusForbidden
 	case errors.Is(err, session.ErrFriendExists), errors.Is(err, session.ErrFriendLimit):
 		return http.StatusConflict
 	case errors.Is(err, session.ErrFriendLater):

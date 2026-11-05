@@ -156,6 +156,7 @@ export const api = {
 	// Before the game starts: the cult (gc, cc, bg, ys, ww, sl) an open seat plays.
 	setSeatCult: (code, name, seat, cult) => call(`/api/games/${enc(code)}/seat-cult`, { method: "POST", body: { player_name: name, seat, cult } }),
 	leave: (code, name) => call(`/api/games/${enc(code)}/leave`, { method: "POST", body: { player_name: name } }),
+	releaseSeat: (code, name, seat) => call(`/api/games/${enc(code)}/release`, { method: "POST", body: { player_name: name, seat } }),
 	removeSeat: (code, name, seat) => call(`/api/games/${enc(code)}/remove`, { method: "POST", body: { player_name: name, seat } }),
 	tournaments: () => call("/api/tournaments"),
 	tournament: (id) => call(`/api/tournaments/${enc(id)}`),

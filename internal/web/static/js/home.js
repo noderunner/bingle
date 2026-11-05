@@ -422,6 +422,8 @@ function renderSeatChoices(info) {
 }
 
 let botList = [];
+// The friends of a signed-in player, whom a seat can be kept for.
+let setupFriends = [];
 // The seat numbers of the game being set up.
 let currentSeats = [];
 
@@ -820,6 +822,11 @@ function renderSlots(info) {
 		const select = h("select", { class: "slot-select", "data-seat": seat.seat, "aria-label": `${seat.label}` });
 		select.append(h("option", { value: "me" }, "You"));
 		select.append(h("option", { value: "open" }, "A friend (open seat)"));
+		if (setupFriends.length) {
+			const group = h("optgroup", { label: "Reserve for a friend" });
+			for (const f of setupFriends) group.append(h("option", { value: "friend:" + f.handle }, f.name));
+			select.append(group);
+		}
 		for (const b of botList) select.append(h("option", { value: "bot:" + b.id }, `${b.label} bot`));
 		// The earlier choice for this seat, when it still means something here.
 		select.value = i === 0 ? "me" : fallback;
@@ -863,7 +870,7 @@ function renderSlots(info) {
  * in seat order and the expansions ticked.
  */
 function slotChoice() {
-	const out = { seat: 0, also: [], seatBots: {}, options: null };
+	const out = { seat: 0, also: [], seatBots: {}, reserved: {}, options: null };
 	for (const sel of document.querySelectorAll("#slots-field .slot-select")) {
 		const seat = Number(sel.dataset.seat);
 		if (sel.value === "me") {
@@ -871,6 +878,7 @@ function slotChoice() {
 			if (out.seat === 0) out.seat = seat;
 			else out.also.push(seat);
 		} else if (sel.value.startsWith("bot:")) out.seatBots[seat] = sel.value.slice(4);
+		else if (sel.value.startsWith("friend:")) out.reserved[seat] = sel.value.slice(7);
 	}
 	const options = {};
 	for (const box of document.querySelectorAll("#create-game-form input[data-option]")) {
@@ -1079,6 +1087,12 @@ async function setupBots() {
 	} catch (_) {
 		bots = [];
 	}
+	try {
+		const me = await whoAmI();
+		setupFriends = me.kind === "account" && (me.caps || []).includes("dm") ? (await api.friends()).friends : [];
+	} catch (_) {
+		setupFriends = [];
+	}
 	const add = (value, label, desc, checked) => {
 		host.append(
 			h(
@@ -1092,6 +1106,11 @@ async function setupBots() {
 	botList = bots;
 	clear(host);
 	add("", "A friend", "You get a link to share; the game starts when they join.", true);
+	if (setupFriends.length) {
+		const pick = h("select", { id: "reserve-friend", "aria-label": "A friend to keep the seat for" }, h("option", { value: "" }, "Anybody with the link"));
+		for (const f of setupFriends) pick.append(h("option", { value: f.handle }, `Reserve for ${f.name}`));
+		host.lastElementChild.querySelector("span").append(h("br"), pick);
+	}
 	add(SELF, "Myself", "You play both sides — to try ideas out or play a mock game alone.", false);
 	for (const b of bots) add(b.id, b.label + " bot", b.description, false);
 	add(BOTS_ONLY, "Two bots", "Nobody plays: you watch two bots play each other.", false);
@@ -1138,6 +1157,7 @@ if (createForm) {
 			if (slots.seat && slots.seat !== 1) body.seat = slots.seat;
 			if (slots.also.length) body.also_seats = slots.also;
 			if (Object.keys(slots.seatBots).length) body.seat_bots = slots.seatBots;
+			if (Object.keys(slots.reserved).length) body.reserved_seats = slots.reserved;
 		} else {
 			const opp = selectedOpponent();
 			const seat = selectedSeat();
@@ -1148,6 +1168,12 @@ if (createForm) {
 				body.opponent = opp;
 			}
 			if (seat !== 1) body.seat = seat;
+			// A seat for one friend in particular.
+			const reserveFor = document.getElementById("reserve-friend");
+			if (!opp && reserveFor && reserveFor.value) {
+				const other = (currentSeats || []).find((n) => n !== seat);
+				if (other) body.reserved_seats = { [other]: reserveFor.value };
+			}
 		}
 		// The game's own options (the pie rule) are chosen whether or not the
 		// seats are arranged one by one.
@@ -1165,6 +1191,7 @@ if (createForm) {
 		if (realTime) body.real_time = realTime;
 		const lobbyBox = document.getElementById("lobby");
 		if (lobbyBox && lobbyBox.checked) body.lobby = true;
+		if (document.getElementById("invite-only")?.checked) body.invite_only = true;
 		const ratedBox = document.getElementById("rated");
 		if (ratedBox && ratedBox.checked && !document.getElementById("rated-field").hidden) body.rated = true;
 		const cardSet = document.getElementById("card-set");

@@ -149,3 +149,69 @@ func (s *Store) GameInvites(ctx context.Context, to int64) ([]GameInvite, error)
 	}
 	return out, rows.Err()
 }
+
+// GameAccess says who may find a game: what its creator chose.
+type GameAccess struct {
+	InviteOnly     bool
+	CreatorAccount int64
+}
+
+// SetGameAccess stores who may find a game.
+func (s *Store) SetGameAccess(ctx context.Context, gameID int64, a GameAccess) error {
+	_, err := s.exec(ctx, "SetGameAccess",
+		`INSERT INTO game_access (game_id, invite_only, creator_account) VALUES (?, ?, ?)
+		 ON CONFLICT (game_id) DO UPDATE SET invite_only = excluded.invite_only, creator_account = excluded.creator_account`,
+		gameID, a.InviteOnly, a.CreatorAccount)
+	return err
+}
+
+// GameAccessOf reads who may find a game; with no row, anybody.
+func (s *Store) GameAccessOf(ctx context.Context, gameID int64) (GameAccess, error) {
+	var a GameAccess
+	err := s.queryRow(ctx, "GameAccessOf", `SELECT invite_only, creator_account FROM game_access WHERE game_id = ?`, gameID).Scan(&a.InviteOnly, &a.CreatorAccount)
+	if errors.Is(err, sql.ErrNoRows) {
+		return GameAccess{}, nil
+	}
+	return a, err
+}
+
+// SeatReservation is a seat kept for one account.
+type SeatReservation struct {
+	Seat      int
+	AccountID int64
+	Handle    string
+}
+
+// ReserveSeat keeps a seat for an account.
+func (s *Store) ReserveSeat(ctx context.Context, gameID int64, seat int, accountID int64) error {
+	_, err := s.exec(ctx, "ReserveSeat",
+		`INSERT INTO seat_reservations (game_id, seat, account_id) VALUES (?, ?, ?)
+		 ON CONFLICT (game_id, seat) DO UPDATE SET account_id = excluded.account_id`, gameID, seat, accountID)
+	return err
+}
+
+// ReleaseSeat lets anybody sit at a seat again.
+func (s *Store) ReleaseSeat(ctx context.Context, gameID int64, seat int) error {
+	_, err := s.exec(ctx, "ReleaseSeat", `DELETE FROM seat_reservations WHERE game_id = ? AND seat = ?`, gameID, seat)
+	return err
+}
+
+// SeatReservations lists a game's kept seats, in seat order.
+func (s *Store) SeatReservations(ctx context.Context, gameID int64) ([]SeatReservation, error) {
+	rows, err := s.query(ctx, "SeatReservations",
+		`SELECT r.seat, r.account_id, a.handle FROM seat_reservations r JOIN accounts a ON a.id = r.account_id
+		 WHERE r.game_id = ? ORDER BY r.seat`, gameID)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+	var out []SeatReservation
+	for rows.Next() {
+		var r SeatReservation
+		if err := rows.Scan(&r.Seat, &r.AccountID, &r.Handle); err != nil {
+			return nil, err
+		}
+		out = append(out, r)
+	}
+	return out, rows.Err()
+}

@@ -261,6 +261,12 @@ last said anything, and nothing is stored. Guests are not listed and see no list
 ([ADR 0106](decisions/0106-presence-can-be-hidden.md)): off, the account is on no list and looks to anybody else as if it had gone,
 though it can write first, and `can_write` on a friend says that a friend who looks offline can be answered. Changes arrive as a `friends` event on `/ws-dm`.
 
+**Who can find a game** ([ADR 0107](decisions/0107-who-can-find-a-game.md)). `POST /games` takes `reserved_seats` (`{"2": "ana"}`, friends of a
+signed-in creator, always with a lobby; otherwise `403`) and `invite_only`. `GET /games` then shows what this viewer may find: no invite-only
+games, and friends-only games (`friends_only`, all seats held or kept) only to the creator's friends and those a seat is kept for
+(`reserved_for_you`). `open_seats` counts the seats this viewer could take. `GET /games/{code}` has `reservations` and `invite_only`. Taking a
+seat kept for somebody else is a `403`. `POST /games/{code}/release` with a `seat` is the host giving one up.
+
 **Direct messages.** Two friends who are here can write to each other and put a voice call up
 between them. A message is addressed to an **address** and sent by the signed-in account, under
 its handle. Nothing is stored: the last 200 messages of a pair live in memory and are forgotten

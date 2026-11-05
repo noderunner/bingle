@@ -507,3 +507,18 @@ CREATE TABLE IF NOT EXISTS game_invites (
     PRIMARY KEY (game_id, to_account)
 );
 CREATE INDEX IF NOT EXISTS idx_game_invites_to ON game_invites(to_account);
+
+-- Who may find a game (ADR 0107). No row means anybody can. creator_account is 0 for a guest.
+CREATE TABLE IF NOT EXISTS game_access (
+    game_id         INTEGER PRIMARY KEY REFERENCES games(id),
+    invite_only     INTEGER NOT NULL DEFAULT 0,
+    creator_account INTEGER NOT NULL DEFAULT 0
+);
+
+-- A seat kept for a friend. A game whose seats are all held or kept is "friends only".
+CREATE TABLE IF NOT EXISTS seat_reservations (
+    game_id    INTEGER NOT NULL REFERENCES games(id),
+    seat       INTEGER NOT NULL,
+    account_id INTEGER NOT NULL REFERENCES accounts(id),
+    PRIMARY KEY (game_id, seat)
+);
