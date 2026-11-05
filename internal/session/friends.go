@@ -34,6 +34,10 @@ var (
 	ErrFriendLimit = errors.New("session: that is as many friends and requests as an account can have")
 	// ErrNoRequest is returned when answering a request that is not there.
 	ErrNoRequest = errors.New("session: that player has not asked to be your friend")
+	// ErrInvitesOff is returned when inviting somebody who has chosen not to be invited.
+	ErrInvitesOff = errors.New("session: that player is not taking invitations to games")
+	// ErrNoInvite is returned when answering an invitation that is not there.
+	ErrNoInvite = errors.New("session: you have no invitation to that game")
 	// ErrInviteNotSeated is returned when inviting to a game without a seat in it.
 	ErrInviteNotSeated = errors.New("session: invite friends to a game you are playing in")
 )
@@ -51,9 +55,13 @@ type Friend struct {
 
 // FriendInvite is an invitation to a game, as the friends list shows it.
 type FriendInvite struct {
-	Room string `json:"room"`
-	Game string `json:"game"`
-	From string `json:"from"` // "@ana"
+	Room   string `json:"room"`
+	Game   string `json:"game"`
+	Def    string `json:"def"`
+	From   string `json:"from"` // "@ana"
+	Status string `json:"status"`
+	// Notice is news of the game, shown until dismissed.
+	Notice string `json:"notice,omitempty"`
 }
 
 // FriendsList is everything the friends list shows.
@@ -97,7 +105,7 @@ func (m *Manager) FriendsOf(ctx context.Context, accountID int64, address string
 				continue
 			}
 		}
-		out.Invites = append(out.Invites, FriendInvite{Room: g.RoomCode, Game: name, From: "@" + g.FromHandle})
+		out.Invites = append(out.Invites, FriendInvite{Room: g.RoomCode, Game: name, Def: g.GameDefID, From: "@" + g.FromHandle, Status: g.Status, Notice: g.Notice})
 	}
 	return out, nil
 }
@@ -261,6 +269,11 @@ func (m *Manager) InviteFriend(ctx context.Context, me store.Account, handle, ro
 	if !m.chat.allow("friend|"+AddressOf(me.PrincipalID), now) {
 		return ErrChatTooFast
 	}
+	if settings, err := m.store.FriendSettings(ctx, other.ID); err != nil {
+		return err
+	} else if !settings.AcceptInvites {
+		return ErrInvitesOff
+	}
 	game, err := m.store.GetGame(ctx, room)
 	if err != nil {
 		return err
@@ -286,9 +299,30 @@ func (m *Manager) InviteFriend(ctx context.Context, me store.Account, handle, ro
 	return nil
 }
 
-// DismissInvite forgets an invitation of the account me.
+// AnswerInvite accepts or declines an invitation of the account me.
+func (m *Manager) AnswerInvite(ctx context.Context, me store.Account, room string, accept bool) error {
+	game, err := m.store.GetGame(ctx, canonRoom(room))
+	if err != nil {
+		return err
+	}
+	status := store.InviteDeclined
+	if accept {
+		status = store.InviteAccepted
+	}
+	found, err := m.store.AnswerGameInvite(ctx, game.ID, me.ID, status)
+	if err != nil {
+		return err
+	}
+	if !found {
+		return ErrNoInvite
+	}
+	m.tellFriends(me.PrincipalID)
+	return nil
+}
+
+// DismissInvite takes an invitation off the list of the account me: one unanswered is declined.
 func (m *Manager) DismissInvite(ctx context.Context, me store.Account, room string) error {
-	if err := m.store.DeleteGameInvite(ctx, me.ID, room); err != nil {
+	if err := m.store.DismissGameInvite(ctx, me.ID, canonRoom(room)); err != nil {
 		return err
 	}
 	m.tellFriends(me.PrincipalID)

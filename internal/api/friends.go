@@ -86,6 +86,13 @@ func (h *handlers) handleFriendInvite(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// handleInviteAnswer implements POST /friends/invite-answer: yes or no to an invitation.
+func (h *handlers) handleInviteAnswer(w http.ResponseWriter, r *http.Request) {
+	friendRoute(w, r, func(me store.Account, req friendRequest) error {
+		return h.mgr.AnswerInvite(r.Context(), me, req.Room, req.Accept)
+	})
+}
+
 // handleFriendDismiss implements POST /friends/dismiss: an invitation goes away.
 func (h *handlers) handleFriendDismiss(w http.ResponseWriter, r *http.Request) {
 	friendRoute(w, r, func(me store.Account, req friendRequest) error {

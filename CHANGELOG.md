@@ -4,6 +4,12 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.71.0 - 2026-11-05
+
+### Bingle Core 0.71.0
+- **Accept or decline game invitations** in your friends list. Once you decline, you are not asked again for that game.
+- **Choose whether to be invited.** In *All Settings*, turn off *Let other players invite me to games* and nobody can send you invitations.
+
 ## 0.70.0 - 2026-11-05
 
 ### Bingle Core 0.70.0

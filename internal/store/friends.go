@@ -84,12 +84,14 @@ func (s *Store) DeleteFriendship(ctx context.Context, a, b int64) error {
 type FriendSettings struct {
 	MailRequests bool `json:"mail_requests"`
 	ShowPresence bool `json:"show_presence"`
+	// AcceptInvites says other players may invite the account to games.
+	AcceptInvites bool `json:"accept_invites"`
 }
 
-// FriendSettings reads an account's choices; with no row, the defaults: no mail, and to be seen.
+// FriendSettings reads an account's choices; with no row, the defaults: no mail, to be seen, and invitations.
 func (s *Store) FriendSettings(ctx context.Context, accountID int64) (FriendSettings, error) {
-	out := FriendSettings{ShowPresence: true}
-	err := s.queryRow(ctx, "FriendSettings", `SELECT mail_requests, show_presence FROM friend_settings WHERE account_id = ?`, accountID).Scan(&out.MailRequests, &out.ShowPresence)
+	out := FriendSettings{ShowPresence: true, AcceptInvites: true}
+	err := s.queryRow(ctx, "FriendSettings", `SELECT mail_requests, show_presence, accept_invites FROM friend_settings WHERE account_id = ?`, accountID).Scan(&out.MailRequests, &out.ShowPresence, &out.AcceptInvites)
 	if errors.Is(err, sql.ErrNoRows) {
 		return out, nil
 	}
@@ -99,41 +101,65 @@ func (s *Store) FriendSettings(ctx context.Context, accountID int64) (FriendSett
 // SetFriendSettings stores an account's choices.
 func (s *Store) SetFriendSettings(ctx context.Context, accountID int64, v FriendSettings) error {
 	_, err := s.exec(ctx, "SetFriendSettings",
-		`INSERT INTO friend_settings (account_id, mail_requests, show_presence) VALUES (?, ?, ?)
-		 ON CONFLICT (account_id) DO UPDATE SET mail_requests = excluded.mail_requests, show_presence = excluded.show_presence`,
-		accountID, v.MailRequests, v.ShowPresence)
+		`INSERT INTO friend_settings (account_id, mail_requests, show_presence, accept_invites) VALUES (?, ?, ?, ?)
+		 ON CONFLICT (account_id) DO UPDATE SET mail_requests = excluded.mail_requests, show_presence = excluded.show_presence, accept_invites = excluded.accept_invites`,
+		accountID, v.MailRequests, v.ShowPresence, v.AcceptInvites)
 	return err
 }
 
-// GameInvite is an invitation to a game that has not finished.
+// Invitation statuses.
+const (
+	InvitePending  = "pending"
+	InviteAccepted = "accepted"
+	InviteDeclined = "declined"
+)
+
+// GameInvite is an invitation to a game, waiting for an answer or with something to say.
 type GameInvite struct {
 	RoomCode   string
 	GameDefID  string
 	FromHandle string
+	Status     string
+	// Notice is news of the game for the one invited, shown until dismissed.
+	Notice string
 }
 
 // AddGameInvite records an invitation, once per game and friend.
 func (s *Store) AddGameInvite(ctx context.Context, gameID, to, from int64, now time.Time) error {
+	// Somebody who declined is not asked again.
 	_, err := s.exec(ctx, "AddGameInvite",
 		`INSERT INTO game_invites (game_id, to_account, from_account, created_at) VALUES (?, ?, ?, ?)
-		 ON CONFLICT (game_id, to_account) DO UPDATE SET from_account = excluded.from_account, created_at = excluded.created_at`,
+		 ON CONFLICT (game_id, to_account) DO UPDATE SET from_account = excluded.from_account, created_at = excluded.created_at
+		 WHERE game_invites.status != 'declined'`,
 		gameID, to, from, stamp(now))
 	return err
 }
 
-// DeleteGameInvite forgets an invitation, by the room of its game.
-func (s *Store) DeleteGameInvite(ctx context.Context, to int64, roomCode string) error {
-	_, err := s.exec(ctx, "DeleteGameInvite",
-		`DELETE FROM game_invites WHERE to_account = ? AND game_id IN (SELECT id FROM games WHERE room_code = ?)`, to, roomCode)
+// AnswerGameInvite stores the answer to an invitation; it reports whether there was one.
+func (s *Store) AnswerGameInvite(ctx context.Context, gameID, to int64, status string) (bool, error) {
+	res, err := s.exec(ctx, "AnswerGameInvite", `UPDATE game_invites SET status = ? WHERE game_id = ? AND to_account = ?`, status, gameID, to)
+	if err != nil {
+		return false, err
+	}
+	n, err := res.RowsAffected()
+	return n > 0, err
+}
+
+// DismissGameInvite takes an invitation off the list: an unanswered one is declined, and news goes.
+func (s *Store) DismissGameInvite(ctx context.Context, to int64, roomCode string) error {
+	_, err := s.exec(ctx, "DismissGameInvite",
+		`UPDATE game_invites SET notice = '', status = CASE WHEN status = 'pending' THEN 'declined' ELSE status END
+		 WHERE to_account = ? AND game_id IN (SELECT id FROM games WHERE room_code = ?)`, to, roomCode)
 	return err
 }
 
-// GameInvites lists an account's invitations to games still to be played, the newest first.
+// GameInvites lists what an account has to see: invitations to games still to be played that it has
+// not answered, and news of any game. The newest first.
 func (s *Store) GameInvites(ctx context.Context, to int64) ([]GameInvite, error) {
 	rows, err := s.query(ctx, "GameInvites",
-		`SELECT g.room_code, g.game_def_id, a.handle
+		`SELECT g.room_code, g.game_def_id, a.handle, i.status, i.notice
 		 FROM game_invites i JOIN games g ON g.id = i.game_id JOIN accounts a ON a.id = i.from_account
-		 WHERE i.to_account = ? AND g.status != 'finished' AND a.deleted_at IS NULL
+		 WHERE i.to_account = ? AND a.deleted_at IS NULL AND (i.notice != '' OR (i.status = 'pending' AND g.status != 'finished'))
 		 ORDER BY i.created_at DESC, i.game_id DESC LIMIT 50`, to)
 	if err != nil {
 		return nil, err
@@ -142,7 +168,7 @@ func (s *Store) GameInvites(ctx context.Context, to int64) ([]GameInvite, error)
 	var out []GameInvite
 	for rows.Next() {
 		var g GameInvite
-		if err := rows.Scan(&g.RoomCode, &g.GameDefID, &g.FromHandle); err != nil {
+		if err := rows.Scan(&g.RoomCode, &g.GameDefID, &g.FromHandle, &g.Status, &g.Notice); err != nil {
 			return nil, err
 		}
 		out = append(out, g)
