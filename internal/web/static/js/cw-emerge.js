@@ -6,9 +6,22 @@
 import { h } from "./util.js";
 import { aimAtArea, copyMap, createZoom, darkenAround, placeStage } from "./cw-map-stage.js";
 import { cthulhuScene, CTHULHU_PEAK, CTHULHU_SECONDS } from "./cw-cthulhu-art.js";
+import { kingScene, KING_PEAK, KING_SECONDS } from "./cw-king-art.js";
+import { nyarlathotepScene, NYARLATHOTEP_PEAK, NYARLATHOTEP_SECONDS } from "./cw-nyarlathotep-art.js";
+import { hasturScene, HASTUR_PEAK, HASTUR_SECONDS } from "./cw-hastur-art.js";
+import { shubScene, SHUB_PEAK, SHUB_SECONDS } from "./cw-shub-art.js";
 
 // The Great Old Ones with art of their own, by unit type.
-const SCENES = { cthulhu: { make: cthulhuScene, seconds: CTHULHU_SECONDS, peak: CTHULHU_PEAK } };
+const SCENES = {
+	cthulhu: { make: cthulhuScene, seconds: CTHULHU_SECONDS, peak: CTHULHU_PEAK },
+	nyarlathotep: { make: nyarlathotepScene, seconds: NYARLATHOTEP_SECONDS, peak: NYARLATHOTEP_PEAK },
+	"shub-niggurath": { make: shubScene, seconds: SHUB_SECONDS, peak: SHUB_PEAK },
+	"king-in-yellow": { make: kingScene, seconds: KING_SECONDS, peak: KING_PEAK },
+	hastur: { make: hasturScene, seconds: HASTUR_SECONDS, peak: HASTUR_PEAK },
+};
+
+/** The Great Old Ones with a show, for the Animation Tester. */
+export const emergenceTypes = () => Object.keys(SCENES);
 
 /** Whether a Great Old One has a show of its own. */
 export const hasEmergence = (type) => !!SCENES[type];

@@ -8,12 +8,12 @@
 // again from the same snapshots. Everything the game needs of it goes through `ctx`.
 
 import { h, s, clear } from "./util.js";
+import { cssColor } from "./render.js";
 import { aimAtArea, copyMap, createZoom, darkenAround, placeStage } from "./cw-map-stage.js";
 
 const KILL = 6;
 const PAIN = 4;
 const face = (v) => (v === KILL ? "kill" : v >= PAIN ? "pain" : "miss");
-const FACE_MARK = { kill: "☠", pain: "✹", miss: "" };
 const STRIKE_MS = 330;
 const ABILITY_MS = 380;
 const UNIT_REM = 5.6;
@@ -24,12 +24,37 @@ const wait = (ms) => new Promise((done) => setTimeout(done, ms));
 // The rotation of a cube that brings each of its six faces to the front.
 const TO_FRONT = { 1: [0, 0], 2: [0, -90], 3: [0, 180], 4: [0, 90], 5: [-90, 0], 6: [90, 0] };
 
+/** The points of a burst of eight rays, around the middle of a mark. */
+const BURST = Array.from({ length: 16 }, (_, i) => {
+	const r = i % 2 ? 3.7 : 8.6;
+	const a = (i * Math.PI) / 8;
+	return `${(12 + r * Math.sin(a)).toFixed(2)},${(12 - r * Math.cos(a)).toFixed(2)}`;
+}).join(" ");
+
+/**
+ * What a face did. Each sits on a dark disc with a pale ring, whatever colour the die is: a yellow,
+ * a white and a red cult's dice all have to show it at a glance, even at the size of a phone's.
+ */
+function faceMark(f) {
+	if (f === "miss") return null;
+	const parts =
+		f === "kill"
+			? [
+					s("path", { class: "bt-skull", d: "M12 4.6c-3.9 0-6.5 2.7-6.5 6 0 2.2 1 3.9 2.6 4.9v2.3c0 .6.4 1 1 1h5.8c.6 0 1-.4 1-1v-2.3c1.6-1 2.6-2.7 2.6-4.9 0-3.3-2.6-6-6.5-6z" }),
+					s("circle", { class: "bt-socket", cx: 9.3, cy: 11, r: 1.9 }),
+					s("circle", { class: "bt-socket", cx: 14.7, cy: 11, r: 1.9 }),
+					s("path", { class: "bt-socket", d: "M12 13.2l1.1 2h-2.2z" }),
+				]
+			: [s("polygon", { class: "bt-burst", points: BURST })];
+	return s("svg", { class: `bt-mark ${f}`, viewBox: "0 0 24 24", "aria-hidden": "true" }, s("circle", { class: "bt-disc", cx: 12, cy: 12, r: 11 }), ...parts);
+}
+
 /** A die: a cube with the faces of the game's dice, which tumbles and lands on `value`. */
 function cube(value) {
 	const f = face(value);
 	const box = h("div", { class: `bt-die ${f}`, "data-value": value, title: f === "kill" ? "Kill" : f === "pain" ? "Pain" : "Nothing" });
 	const inner = h("div", { class: "bt-cube" });
-	for (let n = 1; n <= 6; n++) inner.append(h("span", { class: `bt-face n${n} ${face(n)}` }, FACE_MARK[face(n)]));
+	for (let n = 1; n <= 6; n++) inner.append(h("span", { class: `bt-face n${n} ${face(n)}` }, faceMark(face(n))));
 	const [rx, ry] = TO_FRONT[value] || [0, 0];
 	inner.style.setProperty("--rx", `${rx}deg`);
 	inner.style.setProperty("--ry", `${ry}deg`);
@@ -139,7 +164,7 @@ export function createBattleTheatre(ctx) {
 					{ class: "bt-field" },
 					h("div", { class: "bt-vs", "aria-hidden": "true" }, "VS"),
 					h("div", { class: "bt-phase", id: "battle-phase", "aria-live": "polite" }),
-					h("div", { class: "bt-tray" }, ...snap.bt.sides.map((side, i) => h("div", { class: `bt-dice ${i ? "right" : "left"}`, "data-seat": side.seat, style: `--bt-ink: ${ctx.ink(side.seat)}` })))
+					h("div", { class: "bt-tray" }, ...snap.bt.sides.map((side, i) => h("div", { class: `bt-dice ${i ? "right" : "left"}`, "data-seat": side.seat, style: `--bt-die: var(--piece-${cssColor(ctx.colorOf(side.seat))}-fill)` })))
 				),
 				sideNode(snap.bt.sides[1], 1)
 			),

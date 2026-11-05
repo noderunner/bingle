@@ -6,6 +6,7 @@
 import { CARD_SETS, cardSetById, setPreview, useCardSet } from "./card-sets.js";
 import { h, clear, store, rememberGame, rememberedGames, lastName, toast } from "./util.js";
 import { api, gameTitle, whoAmI } from "./api.js";
+import { mountAnimationTester } from "./cw-animation-tester.js";
 import { rulesIcon } from "./ui-icons.js";
 import { mountAnalysis } from "./analysis.js";
 import { mountRatings } from "./ratings.js";
@@ -157,7 +158,7 @@ function openSetup() {
 
 // ---- the games of the chosen game ---------------------------------------------
 
-const SETUP_TABS = { new: "setup-layout", tutorials: "setup-tutorials-panel", practice: "setup-practice", active: "setup-active" };
+const SETUP_TABS = { new: "setup-layout", tutorials: "setup-tutorials-panel", practice: "setup-practice", active: "setup-active", tester: "setup-tester" };
 
 /** Which tab of the setup shows. */
 function showSetupTab(which) {
@@ -166,6 +167,21 @@ function showSetupTab(which) {
 		document.getElementById(panel).hidden = id !== which;
 	}
 	if (which === "active") renderSetupActive();
+	if (which === "tester") renderTester();
+}
+
+let testerShown = false;
+
+/** The Animation Tester, drawn the first time it is opened. */
+async function renderTester() {
+	if (testerShown) return;
+	testerShown = true;
+	try {
+		mountAnimationTester(document.getElementById("setup-tester"), await gameInfo("cthulhu-wars"));
+	} catch (err) {
+		testerShown = false;
+		console.error("the animation tester failed:", err);
+	}
 }
 
 /** Offers a tab of the setup or not: one that goes while it is open gives way to the form. */
@@ -254,6 +270,7 @@ async function renderSetupTutorials(d) {
 	const host = document.getElementById("setup-tutorials");
 	if (!host) return;
 	offerSetupTab("tutorials", !!(d && d.tutorials));
+	offerSetupTab("tester", !!d && (d.family || d.id) === "cthulhu-wars");
 	if (!d || !d.tutorials) {
 		host.hidden = true;
 		clear(host);

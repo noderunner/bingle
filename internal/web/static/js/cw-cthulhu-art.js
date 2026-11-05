@@ -7,63 +7,11 @@
 // frame, which is what lets them writhe.
 
 import { s } from "./util.js";
-
-const W = 1000;
-const H = 500;
+import { H, W, between, curve, limb, lerp, num, outCubic, randoms, scales, smooth, stop } from "./cw-art-kit.js";
 
 /** How long the scene lasts, and the moment it looks its best. */
 export const CTHULHU_SECONDS = 7.2;
 export const CTHULHU_PEAK = 5.4;
-
-const clamp = (x) => Math.max(0, Math.min(1, x));
-const between = (t, from, to) => clamp((t - from) / (to - from));
-const outCubic = (x) => 1 - (1 - x) ** 3;
-const smooth = (x) => x * x * (3 - 2 * x);
-const lerp = (a, b, k) => a + (b - a) * k;
-const num = (x) => x.toFixed(1);
-
-/** The same numbers at every showing. */
-function randoms(seed) {
-	let v = seed;
-	return () => {
-		v = (v * 1664525 + 1013904223) % 4294967296;
-		return v / 4294967296;
-	};
-}
-
-/** A smooth closed outline around a spine of points; width(k) is its width k of the way along. */
-function limb(points, width) {
-	const left = [];
-	const right = [];
-	const last = points.length - 1;
-	points.forEach((p, i) => {
-		const a = points[Math.max(0, i - 1)];
-		const b = points[Math.min(last, i + 1)];
-		const dx = b[0] - a[0];
-		const dy = b[1] - a[1];
-		const len = Math.hypot(dx, dy) || 1;
-		const w = width(i / last) / 2;
-		left.push([p[0] - (dy / len) * w, p[1] + (dx / len) * w]);
-		right.unshift([p[0] + (dy / len) * w, p[1] - (dx / len) * w]);
-	});
-	const all = left.concat(right);
-	let d = `M${num(all[0][0])} ${num(all[0][1])}`;
-	for (let i = 1; i < all.length - 1; i++) {
-		d += `Q${num(all[i][0])} ${num(all[i][1])} ${num((all[i][0] + all[i + 1][0]) / 2)} ${num((all[i][1] + all[i + 1][1]) / 2)}`;
-	}
-	return `${d}Z`;
-}
-
-/** Points along a curve through a, b and c. */
-function curve(a, b, c, n = 12) {
-	const out = [];
-	for (let i = 0; i <= n; i++) {
-		const k = i / n;
-		const m = 2 * (1 - k) * k;
-		out.push([(1 - k) ** 2 * a[0] + m * b[0] + k * k * c[0], (1 - k) ** 2 * a[1] + m * b[1] + k * k * c[1]]);
-	}
-	return out;
-}
 
 /** A band of storm sea: sharp crests, with chop on them, closed along the foot of the picture. */
 function seaBand(level, amp, length, speed, t, phase) {
@@ -77,20 +25,6 @@ function seaBand(level, amp, length, speed, t, phase) {
 	for (let x = -8; x <= W + 24; x += 12) d += `L${x} ${num(y(x))}`;
 	return { line: d, shape: `${d}L${W + 24} ${H + 20}L-20 ${H + 20}Z` };
 }
-
-/** Scales: many small arcs, one path. */
-function scales(rand, x0, x1, y0, y1, count) {
-	let d = "";
-	for (let i = 0; i < count; i++) {
-		const x = x0 + rand() * (x1 - x0);
-		const y = y0 + rand() * (y1 - y0);
-		const r = 2.5 + rand() * 4;
-		d += `M${num(x - r)} ${num(y)}q${num(r)} ${num(r * 0.9)} ${num(r * 2)} 0`;
-	}
-	return d;
-}
-
-const stop = (offset, color, opacity = 1) => s("stop", { offset, "stop-color": color, "stop-opacity": opacity });
 
 const SKULL = "M450 176C426 146 412 104 428 74C436 52 456 46 466 42C478 20 492 26 500 36C508 26 522 20 534 42C544 46 564 52 572 74C588 104 574 146 550 176C546 196 534 212 522 218L478 218C466 212 454 196 450 176Z";
 const TORSO = "M176 540C170 440 196 346 250 306C282 282 330 278 374 266C398 256 416 238 438 222C470 208 530 208 562 222C584 238 602 256 626 266C670 278 718 282 750 306C804 346 830 440 824 540Z";

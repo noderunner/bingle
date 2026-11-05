@@ -481,3 +481,33 @@ func TestAGreatOldOneEmergesOnlyTheFirstTime(t *testing.T) {
 		t.Errorf("coming back: log %+v", data(t, st).Log)
 	}
 }
+
+// Each core cult's Great Old Ones emerge by the name the page knows them by, and the second of a cult
+// has its own first time.
+func TestEveryCoreGreatOldOneEmerges(t *testing.T) {
+	g := game(t)
+	for _, c := range []struct {
+		seat int
+		move string
+		name string
+		p    pos
+	}{
+		{gc, "awaken:cthulhu@south-pacific", "Cthulhu", pos{units: []u{{gc, "cultist", "south-pacific", 2}}, gates: map[string]int{"south-pacific": gc}}},
+		{cc, "awaken:nyarlathotep@asia", "Nyarlathotep", pos{units: []u{{cc, "cultist", "asia", 2}}, gates: map[string]int{"asia": cc}}},
+		{bg, "awaken:shub-niggurath@africa", "Shub-Niggurath", pos{units: []u{{bg, "cultist", "africa", 3}}, gates: map[string]int{"africa": bg}}},
+		{ys, "awaken:king-in-yellow@africa", "King in Yellow", pos{units: []u{{ys, "cultist", "africa", 1}}}},
+		{ys, "awaken:hastur@europe", "Hastur", pos{units: []u{{ys, "king-in-yellow", "europe", 1}, {ys, "cultist", "europe", 1}}, gates: map[string]int{"europe": ys}, awoken: map[string]bool{"4|0": true}}},
+	} {
+		c.p.power, c.p.turn = powers(12, 12, 12, 12), c.seat
+		st := play(t, g, c.p.build(), c.seat, c.move)
+		said := false
+		for _, e := range data(t, st).Log {
+			for _, line := range e.Lines {
+				said = said || line == c.name+" Emerges"
+			}
+		}
+		if !said {
+			t.Errorf("%s: log %+v", c.name, data(t, st).Log)
+		}
+	}
+}

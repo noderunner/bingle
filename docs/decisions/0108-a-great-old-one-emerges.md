@@ -24,6 +24,12 @@ plays it again. The best way to make the art was left open.
   showing off, and the badge still plays it. With reduced motion, the badge shows one still picture.
 - **The stage is shared with the battle show** (`js/cw-map-stage.js`). A battle takes the map from it.
 
+- **The five Great Old Ones of the core set each have a scene of their own**, with its own place and palette, not one
+  scene recoloured: Cthulhu rises from the sea, the King in Yellow from the trap of a rotting stage, Nyarlathotep condenses out
+  of the shadows, Hastur comes from a point in the abyss between the stars, and Shub-Niggurath heaves up out of a swamp.
+- **The Animation Tester** (a tab of Cthulhu Wars' setup) plays each show and a fixed battle with no game going, from data
+  made up in `js/cw-animation-tester.js`. It is a tool for looking at them and is expected to go.
+
 ## Consequences
 
 - Games from before this have no such line in their stored history, so no badge.

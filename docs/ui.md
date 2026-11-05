@@ -858,7 +858,8 @@ Cthulhu Wars plays each battle on the map (`static/js/cw-battle.js`, *Battle ani
 off under the OS "reduce motion" setting). It is a layer over a copy of the map, fed only with snapshots
 of positions, so the game never waits for it and the page underneath stays current. The copy zooms to the
 area, which stays centred even at the map's edge, and the dark has the area's shape cut out of it. Each side
-stands to one side, large (a big army shrinks to fit), with its dice between them.
+stands to one side, large (a big army shrinks to fit), with its dice between them. Dice are in the colour of
+the cult rolling them; a Kill or a Pain is a mark on a dark disc, so it stands out on a die of any colour.
 
 The order is: the pools of dice, one die at a time on both sides; the Pre-Battle Phase; the throw; the
 casualties, each with a red X; the Post-Battle Phase; and the zoom out at the `retreat` step, which is played
@@ -876,8 +877,8 @@ be copied, and the stage is turned 90° with CSS, because a page can only lock t
 screen after a tap (never on iOS), and a battle often comes from another player's move. On a phone the stage
 also steps aside when the show has caught up with a choice that needs a button.
 
-A Great Old One's first awakening has a show of its own (`#emerge-stage`, `js/cw-emerge.js`), Cthulhu's for now
-(`js/cw-cthulhu-art.js`, about seven seconds, [ADR 0108](decisions/0108-a-great-old-one-emerges.md)). In the history it is a badge in the cult's colour
+A Great Old One's first awakening has a show of its own (`#emerge-stage`, `js/cw-emerge.js`), for the five of the core set
+(`js/cw-*-art.js`, about seven seconds, [ADR 0108](decisions/0108-a-great-old-one-emerges.md)). The setup's *Animation Tester* tab (`#setup-tab-tester`, `#tester-battle`, `[data-tester-emerge]`) plays each with no game going. In the history it is a badge in the cult's colour
 (`.log-emerges`; `.playable[data-emerges]` plays it again).
 
 Selecting a move of a battle in the history plays that battle from its positions. Moving on to another move

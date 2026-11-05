@@ -2261,15 +2261,21 @@ code.wrap { overflow-wrap: anywhere; word-break: break-all; }
 .bt-dice { display: flex; flex-wrap: wrap; gap: 0.45rem; align-content: center; perspective: 500px; --bt-from: -2.5rem; }
 .bt-dice.right { --bt-from: 2.5rem; }
 .bt-die { width: 1.9rem; height: 1.9rem; transition: opacity 0.4s, filter 0.4s; }
-.bt-die.spent { opacity: 0.35; filter: saturate(0.4); }
+.bt-die.spent { opacity: 0.45; } /* still in its cult's colour */
 .bt-cube { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transform: rotateX(var(--rx)) rotateY(var(--ry)); animation: bt-tumble 0.9s cubic-bezier(0.2, 0.7, 0.3, 1) backwards; }
 @keyframes bt-tumble {
 	from { transform: translate(var(--bt-from), -3rem) rotateX(calc(var(--rx) + 900deg)) rotateY(calc(var(--ry) + 720deg)) scale(1.5); opacity: 0; }
 	25% { opacity: 1; }
 }
-.bt-face { position: absolute; inset: 0; display: grid; place-items: center; border-radius: 5px; border: 1px solid #1c1820; background: linear-gradient(145deg, #efe6d0, #b7aa8e); color: #1c1820; font-size: 1.15rem; line-height: 1; backface-visibility: hidden; }
-.bt-face.kill { background: linear-gradient(145deg, #d6332b, #7c0f0a); color: #fff; }
-.bt-face.pain { background: linear-gradient(145deg, #f2a23a, #a35a10); color: #fff; }
+/* The die is its cult's colour, on every face; the mark that says what it did stands out on any of them. */
+.bt-face { position: absolute; inset: 0; display: grid; place-items: center; border-radius: 5px; border: 1px solid color-mix(in srgb, var(--bt-die) 55%, #fff); background: linear-gradient(145deg, color-mix(in srgb, var(--bt-die) 86%, #fff), color-mix(in srgb, var(--bt-die) 72%, #000)); backface-visibility: hidden; }
+.bt-mark { width: 88%; height: 88%; display: block; }
+.bt-disc { fill: #120e14; stroke-width: 1.2; }
+.bt-mark.kill .bt-disc { stroke: #fff; }
+.bt-mark.pain .bt-disc { stroke: #ffc14d; }
+.bt-skull { fill: #fff; }
+.bt-socket { fill: #120e14; }
+.bt-burst { fill: #ffc14d; }
 .bt-face.n1 { transform: translateZ(0.95rem); }
 .bt-face.n2 { transform: rotateY(90deg) translateZ(0.95rem); }
 .bt-face.n3 { transform: rotateY(180deg) translateZ(0.95rem); }
@@ -2278,7 +2284,7 @@ code.wrap { overflow-wrap: anywhere; word-break: break-all; }
 .bt-face.n6 { transform: rotateX(-90deg) translateZ(0.95rem); }
 .bt-die.landed.kill { animation: bt-hit 0.45s ease-out; }
 .bt-die.landed.pain { animation: bt-hit 0.35s ease-out; }
-.bt-die.landed.miss { opacity: 0.55; transition: opacity 0.4s; }
+.bt-die.landed.miss { opacity: 0.75; transition: opacity 0.4s; }
 @keyframes bt-hit { 30% { transform: scale(1.35); filter: drop-shadow(0 0 8px #ff6a4d); } }
 .bt-tally { min-height: 1.3em; margin-top: 0.2rem; font: 700 0.92rem Georgia, serif; color: #cfc6b4; }
 .bt-tally.in { animation: bt-tally 0.4s cubic-bezier(0.2, 1.6, 0.4, 1); }
@@ -2304,7 +2310,6 @@ code.wrap { overflow-wrap: anywhere; word-break: break-all; }
 	.bt-phase-title { font-size: 0.72rem; }
 	.bt-die { width: 1.25rem; height: 1.25rem; }
 	.bt-dice { gap: 0.25rem; }
-	.bt-face { font-size: 0.8rem; }
 	.bt-face.n1 { transform: translateZ(0.625rem); }
 	.bt-face.n2 { transform: rotateY(90deg) translateZ(0.625rem); }
 	.bt-face.n3 { transform: rotateY(180deg) translateZ(0.625rem); }
@@ -2355,3 +2360,7 @@ button.handle-badge:hover { border-color: var(--accent); color: var(--accent); }
 .schedule-slots li.past { opacity: 0.5; }
 .schedule-new { margin: 0.4rem 0; }
 .lobby-schedule button, .lobby-schedule .button { margin-top: 0.3rem; }
+
+/* The Animation Tester. */
+#tester-board svg { width: 100%; height: auto; display: block; }
+.tester-buttons { flex-wrap: wrap; gap: 0.4rem; margin-top: 0.6rem; }
