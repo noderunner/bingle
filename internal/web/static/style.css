@@ -2313,3 +2313,16 @@ code.wrap { overflow-wrap: anywhere; word-break: break-all; }
 }
 .badge.reserved { background: var(--accent-soft); }
 #reserve-friend { margin-top: 0.3rem; max-width: 100%; }
+
+/* ---- a Great Old One emerges ---------------------------------------------------------- */
+.emerge-stage .em-scene { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.em-title { position: absolute; left: 50%; bottom: 5%; display: flex; align-items: center; gap: 0.5rem; max-width: 92%; padding: 0.35rem 1.1rem; border: 1px solid color-mix(in srgb, var(--bt-ink) 70%, #000); border-radius: 999px; background: rgba(5, 16, 12, 0.82); white-space: nowrap; opacity: 0; transform: translate(-50%, 0.6rem) scale(0.92); transition: opacity 0.45s, transform 0.55s cubic-bezier(0.2, 1.3, 0.4, 1); pointer-events: none; }
+.em-title.on { opacity: 1; transform: translate(-50%, 0) scale(1); }
+.em-name { font: 700 1.5rem Georgia, "Times New Roman", serif; letter-spacing: 0.04em; color: color-mix(in srgb, var(--bt-ink) 72%, #fff); text-shadow: 0 0 14px color-mix(in srgb, var(--bt-ink) 80%, transparent); }
+.em-where { font: italic 0.95rem Georgia, serif; color: #c9d8cd; }
+.em-title .seat-glyph { width: 1.8rem; height: 1.8rem; }
+.log-emerges-line { list-style: none; margin: 0.25rem 0; }
+.log-emerges { display: inline-block; padding: 0.12rem 0.65rem; border: 1px solid var(--goo-ink); border-radius: 999px; background: color-mix(in srgb, var(--goo-ink) 18%, transparent); color: var(--goo-ink); font: 700 0.82rem system-ui, sans-serif; }
+.log-emerges.playable { cursor: pointer; }
+.log-emerges.playable:hover { background: color-mix(in srgb, var(--goo-ink) 32%, transparent); }
+@media (max-width: 900px), (max-height: 480px) { .em-name { font-size: 1.05rem; } .em-where { display: none; } }

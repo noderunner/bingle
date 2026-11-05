@@ -454,3 +454,30 @@ func TestIllegalActionsAreRefused(t *testing.T) {
 		_ = c.why
 	}
 }
+
+// The history says a Great Old One emerges the first time it is awakened, and not when it comes back.
+func TestAGreatOldOneEmergesOnlyTheFirstTime(t *testing.T) {
+	g := game(t)
+	says := func(st *state.BoardState) bool {
+		for _, e := range data(t, st).Log {
+			for _, line := range e.Lines {
+				if line == "Cthulhu Emerges" {
+					return true
+				}
+			}
+		}
+		return false
+	}
+	first := pos{
+		units: []u{{gc, "cultist", "south-pacific", 2}},
+		gates: map[string]int{"south-pacific": gc}, power: powers(10, 0, 0, 0),
+	}
+	if st := play(t, g, first.build(), gc, "awaken:cthulhu@south-pacific"); !says(st) {
+		t.Errorf("the first awakening: log %+v", data(t, st).Log)
+	}
+	again := first
+	again.awoken = map[string]bool{"1|0": true}
+	if st := play(t, g, again.build(), gc, "awaken:cthulhu@south-pacific"); says(st) {
+		t.Errorf("coming back: log %+v", data(t, st).Log)
+	}
+}
