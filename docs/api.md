@@ -252,11 +252,26 @@ The list carries its handle and an **address**, a hash of its principal that say
 it and does not change with a rename. An account is forgotten two and a half minutes after it
 last said anything, and nothing is stored. Guests are not listed and see no list.
 
-**Direct messages.** Two accounts that are here can write to each other and put a voice call up
+**Friends** ([ADR 0105](decisions/0105-friends.md)) are for signed-in accounts. `GET /friends` lists `friends`
+(with `online`), `incoming` and `outgoing` requests and game `invites`. `POST /friends/request` takes a `handle`
+(`404` for nobody, `409` when already friends or asked, `429` too soon after a refusal);
+`POST /friends/answer` a `handle` and `accept`; `POST /friends/remove` a `handle`, for a friend or your own request;
+`POST /friends/invite` a `handle` and a `room` you have a seat in (`403` otherwise); `POST /friends/dismiss` a `room`.
+`GET` and `PUT /friends/settings` hold `mail_requests`, off by default, and `show_presence`, on by default
+([ADR 0106](decisions/0106-presence-can-be-hidden.md)): off, the account is on no list and looks to anybody else as if it had gone,
+though it can write first, and `can_write` on a friend says that a friend who looks offline can be answered. Changes arrive as a `friends` event on `/ws-dm`.
+
+**Who can find a game** ([ADR 0107](decisions/0107-who-can-find-a-game.md)). `POST /games` takes `reserved_seats` (`{"2": "ana"}`, friends of a
+signed-in creator, always with a lobby; otherwise `403`) and `invite_only`. `GET /games` then shows what this viewer may find: no invite-only
+games, and friends-only games (`friends_only`, all seats held or kept) only to the creator's friends and those a seat is kept for
+(`reserved_for_you`). `open_seats` counts the seats this viewer could take. `GET /games/{code}` has `reservations` and `invite_only`. Taking a
+seat kept for somebody else is a `403`. `POST /games/{code}/release` with a `seat` is the host giving one up.
+
+**Direct messages.** Two friends who are here can write to each other and put a voice call up
 between them. A message is addressed to an **address** and sent by the signed-in account, under
 its handle. Nothing is stored: the last 200 messages of a pair live in memory and are forgotten
 two hours after the last one (and at a restart). They are pushed over `GET /ws-dm`, which the
-session authenticates. A message to somebody who is not here is a `404`, writing without having
+session authenticates. A message or call to anybody but a friend is a `403`, to a friend who is not here a `404`, writing without having
 said you are here a `403`, a guest's request a `403` (the `dm` capability), and a flood a `429`.
 
 The **call** is WebRTC between the two browsers, with `/dm/signal` relaying the

@@ -55,10 +55,13 @@ type Person struct {
 }
 
 type hereEntry struct {
-	name  string
-	since time.Time
-	seen  time.Time
-	timer *time.Timer
+	name string
+	// hidden is an account that chose not to be seen (ADR 0106): it can still write, but is on no
+	// list, and looks to anybody else as if it had gone.
+	hidden bool
+	since  time.Time
+	seen   time.Time
+	timer  *time.Timer
 }
 
 // hereTracker remembers the browsers that are about, by address.
@@ -68,9 +71,9 @@ type hereTracker struct {
 }
 
 // Here marks the account at addr as present, under name (its handle), and
-// returns everybody who is here now (including it). Calling it again renews
-// the mark; an empty name clears it.
-func (m *Manager) Here(addr, name string) ([]Person, error) {
+// returns everybody who can be seen to be here now. Calling it again renews
+// the mark; an empty name clears it. hidden keeps the account off every list.
+func (m *Manager) Here(addr, name string, hidden bool) ([]Person, error) {
 	name = strings.TrimSpace(name)
 	t := &m.here
 	t.mu.Lock()
@@ -97,7 +100,7 @@ func (m *Manager) Here(addr, name string) ([]Person, error) {
 	} else {
 		e.timer.Stop()
 	}
-	e.name, e.seen = name, now
+	e.name, e.seen, e.hidden = name, now, hidden
 	e.timer = time.AfterFunc(hereTTL, func() { m.forgetHere(addr) })
 	t.mu.Unlock()
 	return m.WhoIsHere(), nil
@@ -123,6 +126,9 @@ func (m *Manager) WhoIsHere() []Person {
 	t.mu.Lock()
 	list := make([]entry, 0, len(t.who))
 	for addr, e := range t.who {
+		if e.hidden {
+			continue
+		}
 		list = append(list, entry{
 			person: Person{
 				Address: addr,
@@ -159,4 +165,41 @@ func (m *Manager) NameHere(address string) string {
 		return e.name
 	}
 	return ""
+}
+
+// SetHereHidden applies a change of mind at once, rather than at the next minute's mark.
+func (m *Manager) SetHereHidden(addr string, hidden bool) {
+	t := &m.here
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	if e, ok := t.who[addr]; ok {
+		e.hidden = hidden
+	}
+}
+
+// seenHere is the name of an account that can be seen to be here, "" for one that has gone or has
+// chosen not to be seen: to anybody else the two must look the same.
+func (m *Manager) seenHere(addr string) string {
+	t := &m.here
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	if e, ok := t.who[addr]; ok && !e.hidden {
+		return e.name
+	}
+	return ""
+}
+
+// canReach says whether from may write to or ring to: to can be seen, or to is hidden but has itself
+// spoken to from, by writing or by ringing. An answer must reach whoever began it.
+func (m *Manager) canReach(from, to string) bool {
+	if m.seenHere(to) != "" {
+		return true
+	}
+	if m.NameHere(to) == "" {
+		return false
+	}
+	if where, ok := m.calls.in(to); ok && where.Peer == from {
+		return true
+	}
+	return m.dms.wrote(to, from)
 }

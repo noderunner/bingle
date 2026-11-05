@@ -322,7 +322,7 @@ func TestAccountUI_AGuestIsNotOfferedWhatIsAnAccounts(t *testing.T) {
 	if err := chromedp.Run(guest, chromedp.Navigate(base+"/")); err != nil {
 		t.Fatal(err)
 	}
-	waitJS(t, guest, "the top bar, without direct messages", `document.getElementById("open-profile") && document.getElementById("open-profile").title.indexOf("guest") > 0 && getComputedStyle(document.getElementById("open-messages")).display === "none"`, 10*time.Second)
+	waitJS(t, guest, "the top bar, without direct messages", `document.getElementById("open-profile") && document.getElementById("open-profile").title.indexOf("guest") > 0 && getComputedStyle(document.getElementById("open-friends")).display === "none"`, 10*time.Second)
 	clickSel(t, guest, "#tab-analysis")
 	waitJS(t, guest, "the Analysis tab, without the form", `document.getElementById("analysis-signin") !== null && document.getElementById("analysis-start") === null`, 15*time.Second)
 
@@ -333,7 +333,7 @@ func TestAccountUI_AGuestIsNotOfferedWhatIsAnAccounts(t *testing.T) {
 	if err := chromedp.Run(acc, chromedp.Navigate(base+"/")); err != nil {
 		t.Fatal(err)
 	}
-	waitJS(t, acc, "the direct messages", `getComputedStyle(document.getElementById("open-messages")).display !== "none"`, 10*time.Second)
+	waitJS(t, acc, "the direct messages", `getComputedStyle(document.getElementById("open-friends")).display !== "none"`, 10*time.Second)
 	clickSel(t, acc, "#tab-analysis")
 	waitJS(t, acc, "the Analysis form", `document.getElementById("analysis-start") !== null && document.getElementById("analysis-signin") === null`, 15*time.Second)
 }

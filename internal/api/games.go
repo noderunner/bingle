@@ -55,6 +55,10 @@ type createGameRequest struct {
 	// SeatBots puts a built-in bot in chosen seats ("2": "random"); seats not
 	// listed stay open for people unless Opponent fills them.
 	SeatBots map[string]string `json:"seat_bots,omitempty"`
+	// ReservedSeats keeps open seats for friends ("2": "ana"); InviteOnly keeps the game off every
+	// list (ADR 0107).
+	ReservedSeats map[string]string `json:"reserved_seats,omitempty"`
+	InviteOnly    bool              `json:"invite_only,omitempty"`
 	// AlsoSeats lists seats, besides Seat, that the creator plays as well (a
 	// game against oneself): each is a player of its own, named after the
 	// creator and the seat ("Alice · Black Goat").
@@ -135,7 +139,19 @@ func (h *handlers) handleCreateGame(w http.ResponseWriter, r *http.Request) {
 		seatBots[n] = strings.TrimSpace(v)
 	}
 
+	reserved := map[int]string{}
+	for k, v := range req.ReservedSeats {
+		n, convErr := strconv.Atoi(k)
+		if convErr != nil || n < 1 {
+			writeError(w, fmt.Errorf("api: reserved_seats key %q is not a seat number", k))
+			return
+		}
+		reserved[n] = strings.TrimSpace(v)
+	}
+
 	result, err := h.mgr.CreateGameWithOptions(r.Context(), session.CreateOptions{
+		Reserved:    reserved,
+		InviteOnly:  req.InviteOnly,
 		GameDefID:   req.GameDefID,
 		CreatorName: req.PlayerName,
 		Seat:        req.Seat,
@@ -229,7 +245,10 @@ type getGameResponse struct {
 	// ListTitle and Tags are what a list of games shows for it, if its rules say.
 	ListTitle string   `json:"list_title,omitempty"`
 	Tags      []string `json:"tags,omitempty"`
-	InviteURL string   `json:"invite_url,omitempty"`
+	// Reservations are the seats kept for friends, and InviteOnly says lists do not show the game.
+	Reservations []session.GameReservation `json:"reservations,omitempty"`
+	InviteOnly   bool                      `json:"invite_only,omitempty"`
+	InviteURL    string                    `json:"invite_url,omitempty"`
 
 	// Retired: this server no longer offers the game, GameName is what it
 	// was called. The answer is then a record: the seats, the result and
@@ -286,17 +305,24 @@ func (h *handlers) handleGetGame(w http.ResponseWriter, r *http.Request) {
 	}
 
 	listTitle, tags := h.mgr.GameListLabel(snapshot.GameDefID)
+	reservations, inviteOnly, err := h.mgr.GameReservations(r.Context(), code)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
 	resp := getGameResponse{
-		ListTitle:   listTitle,
-		Tags:        tags,
-		GameDefID:   snapshot.GameDefID,
-		Status:      snapshot.Status,
-		Seats:       seats,
-		ImpulseSeat: snapshot.ImpulseSeat,
-		MoveSeq:     snapshot.MoveSeq,
-		WinnerSeat:  snapshot.WinnerSeat,
-		EndReason:   snapshot.EndReason,
-		EndDetail:   snapshot.EndDetail,
+		Reservations: reservations,
+		InviteOnly:   inviteOnly,
+		ListTitle:    listTitle,
+		Tags:         tags,
+		GameDefID:    snapshot.GameDefID,
+		Status:       snapshot.Status,
+		Seats:        seats,
+		ImpulseSeat:  snapshot.ImpulseSeat,
+		MoveSeq:      snapshot.MoveSeq,
+		WinnerSeat:   snapshot.WinnerSeat,
+		EndReason:    snapshot.EndReason,
+		EndDetail:    snapshot.EndDetail,
 
 		Rated:         snapshot.Rated,
 		CardSet:       snapshot.CardSet,

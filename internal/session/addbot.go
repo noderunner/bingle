@@ -67,10 +67,18 @@ func (m *Manager) AddBotAt(ctx context.Context, roomCode, by, botID string, want
 	if game.Status != "waiting" {
 		return AddBotResult{}, ErrSeatsFull
 	}
+	reserved, err := m.reservedFor(ctx, game.ID)
+	if err != nil {
+		return AddBotResult{}, err
+	}
 	open, color := 0, ""
 	var openDef = compiled.Definition.Seats[0]
 	for _, sd := range compiled.Definition.Seats {
 		if taken[sd.Seat] || wantSeat != 0 && sd.Seat != wantSeat {
+			continue
+		}
+		// A seat kept for a friend gets a bot only if the host asks for that seat, which gives it up.
+		if _, kept := reserved[sd.Seat]; kept && (wantSeat == 0 || !m.isHostNamed(players, by)) {
 			continue
 		}
 		open, color, openDef = sd.Seat, sd.Color, sd
@@ -78,6 +86,11 @@ func (m *Manager) AddBotAt(ctx context.Context, roomCode, by, botID string, want
 	}
 	if open == 0 {
 		return AddBotResult{}, ErrSeatsFull
+	}
+	if _, kept := reserved[open]; kept {
+		if err := m.store.ReleaseSeat(ctx, game.ID, open); err != nil {
+			return AddBotResult{}, err
+		}
 	}
 	status := game.Status
 	var turn *int

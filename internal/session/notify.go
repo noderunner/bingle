@@ -63,6 +63,7 @@ const (
 	turnPerDayAddr   = 20
 	turnPerDayGame   = 100
 	noticeEvery      = time.Hour
+	friendMailPerDay = 5
 	confirmLifetime  = 24 * time.Hour
 	breakerCooldown  = time.Hour
 	maxAwayMinutes   = 24 * 60
@@ -283,6 +284,10 @@ func (n *notifier) reserveLocked(ctx context.Context, kind, addr string, gameID 
 		}
 	case "notice":
 		if count(store.SentFilter{Kinds: []string{"notice"}, AddrHash: addr, Since: now.Add(-noticeEvery)}) > 0 {
+			return ErrNotifyLimited
+		}
+	case "friend":
+		if count(store.SentFilter{Kinds: []string{"friend"}, AddrHash: addr, Since: now.Add(-24 * time.Hour)}) >= friendMailPerDay {
 			return ErrNotifyLimited
 		}
 	}
@@ -738,8 +743,9 @@ func (m *Manager) MailEnabled() bool { return m.notify != nil }
 // SendAccountMail queues a mail about an account to addr: kind "confirm"
 // (a new account's address, under the limits a contact's confirmation has:
 // per address, per sending address) or "reset" (a password reset link,
-// limited by the account service) or "notice" (to an account's address when
-// someone signs up with it again: once an hour per address). All count towards the whole server's
+// limited by the account service), "notice" (to an account's address when
+// someone signs up with it again: once an hour per address) or "friend" (a
+// friend request, for those who asked: a few a day per address). All count towards the whole server's
 // limits. build is given the server's public URL. An address that asked
 // never to be mailed is not, and the caller is not told, so the answer does
 // not say whose it is.

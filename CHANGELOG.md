@@ -4,6 +4,27 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.68.0 - 2026-11-04
+
+### Bingle Core 0.68.0
+- **Reserve seats for friends.** When you set up a game, you can keep a seat for a friend. They get an invitation, nobody else can sit there, and you can release the seat if they do not come.
+- **Friends-only games.** When every seat is held or kept for friends, the game leaves the public lists. Your friends still see it, and can join or watch.
+- **Invite-only games.** A new option in the setup keeps a game off every list, even your friends'. Players come by its link, or an invitation from your friends list. Anyone with the link can still watch.
+
+## 0.67.0 - 2026-11-04
+
+### Bingle Core 0.67.0
+- **Stay private if you like.** In *All Settings*, turn off *Show when I am online* to look offline to your friends and leave *Here now*. You can still write to friends, and they can reply.
+
+## 0.66.0 - 2026-11-04
+
+### Bingle Core 0.66.0
+- **Friends.** The speech-bubble icon now opens your friends list, for signed-in players. Add somebody by their handle, or from *Here now* in your profile window. They can accept or decline.
+- **Talk with friends.** Direct messages and voice calls are now between friends, and a dot shows who is online. Messages only reach friends who are online.
+- **Invite a friend to a game.** Choose *Invite to game* beside a friend's name. The invitation waits in their friends list even if they are away.
+- **Remove a friend** from the same place.
+- **Mail about friend requests,** if you want it. It is off unless you turn it on in *All Settings*.
+
 ## 0.65.0 - 2026-11-04
 
 ### Bingle Core 0.65.0

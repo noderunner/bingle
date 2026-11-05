@@ -262,13 +262,26 @@ shows in the tab title and on the tab icon. *Join Game* (`#open-join`, a plus, `
 a code or a link, and `#join-submit`; then *Public Lobbies*). It takes an open seat, or a place to watch at a full table, under the
 name in the profile ([ADR 0102](decisions/0102-joining-and-reading-back.md)). An unread count is `.unread-count` on *Open*.
 
+The speech-bubble icon (`#open-friends`, its badge `#dm-badge` counting what waits to be read or answered) opens
+**`#friends-dialog`**, for signed-in accounts ([ADR 0105](decisions/0105-friends.md)). On the left: adding by handle
+(`#friend-add`), *Friend requests* (`#friend-requests`, `[data-accept]`, `[data-decline]`), *Game invitations*
+(`#friend-invites`, `[data-join-invite]`, `[data-dismiss]`), the friends with a dot for who is online (`#friends-list`,
+`.friend-dot.online`) and *Waiting for an answer* (`#friend-outgoing`, `[data-cancel]`). On the right, for the friend
+chosen (`#dm-title`): *Call*, *Invite to game* (`#friend-invite`, then `#friend-invite-game` and `#friend-invite-send`),
+*Remove friend* (`#friend-remove`) and the conversation. A friend who is offline cannot be written to or called
+(`#dm-offline`). The profile page has the switches for mail about requests (`#friend-mail`) and for being seen online (`#friend-presence`).
+
+In the setup, a signed-in player can keep a seat for a friend: in the seat's list under *Reserve for a friend* (`.slot-select`, value `friend:<handle>`), or
+for a table of two under *A friend* (`#reserve-friend`). *Invite only* (`#invite-only`) keeps a game off every list. In the lobby a kept seat has `[data-reserved]`, the host
+can give it up (`[data-act="release"]`), and a visitor with no seat to take sees `#lobby-all-reserved`. ([ADR 0107](decisions/0107-who-can-find-a-game.md))
+
 The person icon (`#open-profile`) opens **`#profile-dialog`**, a floating window
 rather than a page: *My Name* (`#profile-window-name`, saved as you leave the field; a guest who has not chosen one
 has a two-word name from `js/names.js`), for a guest *Move to Another Device* (`#guest-box`), for a signed-in account **Here Now**
 (`#profile-here`, `#here-list li[data-address]`, `#here-count`) — everybody whose browser has
 said it is here in the last few minutes, your own entry marked `.me`, with a
-*Message* button beside each of the others that opens the direct messages on
-that person — and *All Settings* (`#profile-page-link`), the page of the
+button beside each of the others (`[data-friend-action]`): *Add friend*, *Requested*, *Answer*, or for a friend
+*Message*, which opens the friends list on them — and *All Settings* (`#profile-page-link`), the page of the
 email notifications and the finished games. `js/here.js` tells the server every
 minute that somebody is here (every eight seconds while a window that shows the
 list is open). Only a signed-in account is listed, under its handle; a guest is told that guests are not
@@ -641,8 +654,8 @@ admin page the audit log (`#events-rows`: local time, account, the kind as a tag
 (`#profile-signin`, back to the page afterwards) and, where the server allows it, *Sign up* (`#profile-signup`); an
 account gets `#profile-account-who` ("Signed in as @ana"), *Your account* (`#profile-account-link`), *Administration*
 for an administrator (`#profile-admin-link`) and *Sign out* (`#profile-signout`). The icon's title says the same.
-A page offers only what the browser may do (its `caps` from `GET /auth/me`): without `dm` the direct-messages icon
-(`#open-messages`) stays hidden; without `run_batch` the home page's practice card is hidden and the Analysis tab shows
+A page offers only what the browser may do (its `caps` from `GET /auth/me`): without `dm`, or to a guest, the friends icon
+(`#open-friends`) stays hidden; without `run_batch` the home page's practice card is hidden and the Analysis tab shows
 `#analysis-signin` instead of its form; without `notify` the game options have no email section and the profile page
 shows `#notify-accounts-only` instead of the address and the switch. The profile page's `#account-box` says whether the browser is a guest (`#login-link`, `#signup-link`)
 or signed in (`#account-link`). None of them keeps anything in the browser's storage: the cookies are `HttpOnly`.

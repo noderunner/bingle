@@ -11,7 +11,7 @@ import { navigate, onLeave } from "./nav.js";
 import { voiceStatus, onVoiceChange, toggleMute, toggleDeafen, leaveVoice } from "./voice.js";
 import { gamesIcon, joinIcon, micIcon, helpIcon, profileIcon, messageIcon } from "./ui-icons.js";
 import { whoIsHere, onHereChange, startHere, watchHere, beat as beatHere, myName } from "./here.js";
-import { mountDirectMessages, startDirectMessages, unreadCount } from "./dm.js";
+import { mountDirectMessages, startDirectMessages, unreadCount, friendStateOf, askFriend, loadFriends, onFriendsChange } from "./dm.js";
 
 const REPO_URL = "https://github.com/noderunner/bingle";
 
@@ -23,11 +23,12 @@ const CHANGES_SEEN_KEY = "bingle.changelog.seen";
 // The direct-message window of this page, so that the profile window can hand
 // it somebody to write to.
 let messages = null;
+let friendsTimer = 0;
 
-/** Opens the direct messages on a correspondence with one person. */
+/** Opens the friends list on a correspondence with one friend. */
 function writeTo(address, name) {
 	if (!messages) return;
-	document.getElementById("open-messages")?.click();
+	document.getElementById("open-friends")?.click();
 	messages.open(address, name);
 }
 
@@ -157,10 +158,11 @@ export function installTopbar({ onRows = () => {}, manageTitle = true } = {}) {
 		clear(openList);
 		for (const g of games) {
 			openList.append(
-				openGameRow(g, defs, false, h("button", { type: "button", class: "primary", "data-join": g.room_code, onclick: () => {
+				// A friend's game with no seat for this person can still be watched.
+				openGameRow(g, defs, false, g.open_seats > 0 ? h("button", { type: "button", class: "primary", "data-join": g.room_code, onclick: () => {
 					codeInput.value = g.room_code;
 					join();
-				} }, "Join"))
+				} }, "Join") : null)
 			);
 		}
 		openEmpty.hidden = games.length > 0;
@@ -184,7 +186,8 @@ export function installTopbar({ onRows = () => {}, manageTitle = true } = {}) {
 			const game = await api.game(code);
 			const seats = game.seats || [];
 			const mine = seats.some((s) => s.name && s.name.toLowerCase() === name.toLowerCase());
-			if (!mine && !seats.some((s) => !s.name)) {
+			const free = seats.some((s) => !s.name && !(game.reservations || []).some((r) => r.seat === s.seat && !r.yours));
+			if (!mine && !free) {
 				await api.join(code, name, "spectator");
 			} else {
 				try {
@@ -293,41 +296,47 @@ export function installTopbar({ onRows = () => {}, manageTitle = true } = {}) {
 }
 
 /**
- * *Direct messages*: the people who are here, what has been said with one of
- * them, and the voice call that can be put up inside it (js/dm.js). The badge
- * on the icon counts what has not been read.
+ * *Friends*: requests and invitations, what has been said with a friend, and the
+ * voice call that can be put up inside it (js/dm.js). The badge on the icon counts
+ * what waits to be read or answered.
  */
 function messagesWindow() {
 	const badge = h("span", { class: "icon-badge", id: "dm-badge", hidden: true, "aria-hidden": "true" }, "0");
 	const btn = h(
 		"button",
-		{ type: "button", class: "topbar-icon", id: "open-messages", "aria-haspopup": "dialog", title: "Direct messages", "aria-label": "Direct messages" },
+		{ type: "button", class: "topbar-icon", id: "open-friends", "aria-haspopup": "dialog", title: "Friends", "aria-label": "Friends" },
 		messageIcon(),
 		badge
 	);
 	const body = h("div", { class: "dm-window" });
-	const dlg = dialog("messages-dialog", "Direct messages", body);
+	const dlg = dialog("friends-dialog", "Friends", body);
 	const paintBadge = (n) => {
 		badge.textContent = String(n);
 		badge.hidden = n === 0;
-		const label = n ? `Direct messages, ${n} unread` : "Direct messages";
+		const label = n ? `Friends, ${n} waiting` : "Friends";
 		btn.setAttribute("aria-label", label);
 		btn.title = label;
 	};
 	messages = mountDirectMessages(body, { onCount: paintBadge });
 	paintBadge(unreadCount());
-	// Direct messages are accounts' (the dm capability): the icon stays away
-	// until the server says this browser may use them.
+	// Friends are accounts' (ADR 0105): the icon stays away until the server says this is one.
 	btn.hidden = true;
 	whoAmI().then((me) => {
-		btn.hidden = !(me.caps || []).includes("dm");
+		btn.hidden = me.kind !== "account" || !(me.caps || []).includes("dm");
 	});
 	btn.addEventListener("click", () => {
 		open(dlg);
 		watchHere(true);
 		messages.refresh();
+		// Who is online shows while the window is open.
+		clearInterval(friendsTimer);
+		friendsTimer = setInterval(loadFriends, 8000);
 	});
-	dlg.addEventListener("close", () => watchHere(false));
+	dlg.addEventListener("close", () => {
+		watchHere(false);
+		clearInterval(friendsTimer);
+	});
+	onLeave(() => clearInterval(friendsTimer));
 	onLeave(() => (messages = null));
 	return btn;
 }
@@ -423,6 +432,7 @@ function profileWindow() {
 		count.textContent = people.length ? `(${people.length})` : "";
 		for (const p of people) {
 			const isMe = p.name && p.name.toLowerCase() === mine;
+			const state = friendStateOf(p.name);
 			list.append(
 				h(
 					"li",
@@ -436,14 +446,23 @@ function profileWindow() {
 								{
 									type: "button",
 									class: "ghost small",
-									"data-write-to": p.address,
-									title: `Write to ${p.name}`,
+									disabled: state === "outgoing",
+									"data-friend-action": state || "add",
+									"data-address": p.address,
+									title: state === "friend" ? `Write to ${p.name}` : state === "outgoing" ? `Waiting for ${p.name} to answer` : state === "incoming" ? `${p.name} has asked to be your friend` : `Ask ${p.name} to be your friend`,
 									onclick: () => {
-										dlg.close();
-										writeTo(p.address, p.name);
+										if (state === "friend") {
+											dlg.close();
+											writeTo(p.address, p.name);
+										} else if (state === "incoming") {
+											dlg.close();
+											document.getElementById("open-friends")?.click();
+										} else {
+											askFriend(p.name);
+										}
 									},
 								},
-								"Message"
+								state === "friend" ? "Message" : state === "outgoing" ? "Requested" : state === "incoming" ? "Answer" : "Add friend"
 							)
 				)
 			);
@@ -461,6 +480,7 @@ function profileWindow() {
 		nameInput.value = lastName();
 		saved.textContent = "";
 		paint(whoIsHere());
+		loadFriends();
 		open(dlg);
 		watchHere(true);
 		// Asked afresh: this browser may have become a guest since the page loaded.
@@ -468,7 +488,11 @@ function profileWindow() {
 	});
 	dlg.addEventListener("close", () => watchHere(false));
 	const stop = onHereChange(paint);
-	onLeave(stop);
+	const stopFriends = onFriendsChange(() => paint(whoIsHere()));
+	onLeave(() => {
+		stop();
+		stopFriends();
+	});
 	return btn;
 }
 

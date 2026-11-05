@@ -192,6 +192,19 @@ func AccountExists(to, handle, base string) Message {
 	}
 }
 
+// FriendRequest tells an account that somebody has asked to be its friend. Only the handle varies.
+func FriendRequest(to, handle, base string) Message {
+	handle = Sanitize(handle, 24)
+	return Message{
+		To:      to,
+		Subject: fmt.Sprintf("@%s wants to be your friend on Bingle", handle),
+		Body: fmt.Sprintf("@%s has sent you a friend request. Accept or decline it in the friends list, at the top of any page:\n\n", handle) +
+			base + "/\n\n" +
+			"You get this mail because you asked for it in your profile. To stop it, turn it off there:\n\n" +
+			base + "/profile\n",
+	}
+}
+
 // PasswordResetURL is the link that resets an account's password.
 func PasswordResetURL(base, token string) string {
 	return base + "/account/reset?t=" + url.QueryEscape(token)

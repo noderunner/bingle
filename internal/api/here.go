@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/noderunner/bingle/internal/auth"
 	"github.com/noderunner/bingle/internal/session"
 )
 
@@ -15,9 +16,14 @@ import (
 // server, newest change first, with who is seated and how many seats are open.
 func (h *handlers) handleListOpenGames(w http.ResponseWriter, r *http.Request) {
 	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	var viewer int64
+	if p, ok := auth.From(r.Context()); ok && p.Account != nil {
+		viewer = p.Account.ID
+	}
 	games, err := h.mgr.ListOpenGames(r.Context(), limit, session.OpenGameFilter{
 		Family:    r.URL.Query().Get("family"),
 		OpenSeats: r.URL.Query().Get("open_seats") != "",
+		Viewer:    viewer,
 	})
 	if err != nil {
 		writeError(w, err)
@@ -49,7 +55,8 @@ func (h *handlers) handlePostHere(w http.ResponseWriter, r *http.Request) {
 	if req.Here != nil && !*req.Here {
 		name = ""
 	}
-	people, err := h.mgr.Here(addr, name)
+	p, _ := auth.From(r.Context())
+	people, err := h.mgr.Here(addr, name, h.mgr.HidesPresence(r.Context(), p.Account.ID))
 	if err != nil {
 		writeError(w, err)
 		return

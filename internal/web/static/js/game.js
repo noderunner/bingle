@@ -2708,6 +2708,7 @@ function lobbyContext() {
 			setCult: (seat, cult) => done(() => api.setSeatCult(code, S.me.name, seat, cult)),
 			addBot: (kind, seat) => done(() => api.addBot(code, S.me.name, kind, seat)),
 			remove: (seat) => done(() => api.removeSeat(code, S.me.name, seat)),
+			release: (seat) => done(() => api.releaseSeat(code, S.me.name, seat)),
 			leave: () =>
 				done(async () => {
 					await api.leave(code, S.me.name);

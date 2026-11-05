@@ -1,6 +1,6 @@
 # 0058. All games, who is here, and the icons of the bar
 
-Status: accepted (2026-10-27); who is here is accounts' only since [ADR 0073](0073-account-only-features.md), and the browser's secret is gone
+Status: accepted (2026-10-27); who is here is accounts' only since [ADR 0073](0073-account-only-features.md), and the browser's secret is gone; [ADR 0107](0107-who-can-find-a-game.md) lets a game be unlisted yet open to its link
 
 ## Context
 

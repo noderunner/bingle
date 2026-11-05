@@ -114,9 +114,15 @@ func (m *Manager) JoinGameAt(ctx context.Context, roomCode, name string, role Ro
 		}
 	}
 
+	reserved, err := m.reservedFor(ctx, game.ID)
+	if err != nil {
+		return JoinResult{}, err
+	}
+	// A seat kept for this person comes first, and a seat kept for anybody else not at all.
 	var openSeat int
 	var openSeatColor string
-	var foundOpenSeat bool
+	var foundOpenSeat, keptOut bool
+	me := viewerAccount(ctx)
 	for _, seatDef := range compiled.Definition.Seats {
 		if _, taken := playersBySeat[seatDef.Seat]; taken {
 			continue
@@ -124,10 +130,20 @@ func (m *Manager) JoinGameAt(ctx context.Context, roomCode, name string, role Ro
 		if wantSeat != 0 && seatDef.Seat != wantSeat {
 			continue
 		}
-		openSeat = seatDef.Seat
-		openSeatColor = seatDef.Color
-		foundOpenSeat = true
-		break
+		if mayHaveSeat(ctx, reserved, seatDef.Seat) != nil {
+			keptOut = true
+			continue
+		}
+		if _, kept := reserved[seatDef.Seat]; kept && me != 0 {
+			openSeat, openSeatColor, foundOpenSeat = seatDef.Seat, seatDef.Color, true
+			break
+		}
+		if !foundOpenSeat {
+			openSeat, openSeatColor, foundOpenSeat = seatDef.Seat, seatDef.Color, true
+		}
+	}
+	if !foundOpenSeat && keptOut {
+		return JoinResult{}, ErrSeatReserved
 	}
 	if !foundOpenSeat {
 		if wantSeat != 0 {

@@ -41,6 +41,33 @@ func membersServer(t *testing.T) (*app.App, string) {
 	return a, srv.URL
 }
 
+// befriend makes two signed-in browsers friends, by way of the routes.
+func befriend(t *testing.T, one, two *browser, twoHandle, oneHandle string) {
+	t.Helper()
+	if code := one.do("POST", "/api/friends/request", map[string]any{"handle": twoHandle}, nil); code != 200 {
+		t.Fatalf("@%s asks @%s: %d", oneHandle, twoHandle, code)
+	}
+	if code := two.do("POST", "/api/friends/answer", map[string]any{"handle": oneHandle, "accept": true}, nil); code != 200 {
+		t.Fatalf("@%s accepts @%s: %d", twoHandle, oneHandle, code)
+	}
+}
+
+// befriendInChrome makes two pages friends, through the friends list.
+func befriendInChrome(t *testing.T, one, two context.Context, twoHandle string) {
+	t.Helper()
+	clickSel(t, one, "#open-friends")
+	if err := chromedp.Run(one, chromedp.Evaluate(`document.getElementById("friend-handle").value = "`+twoHandle+`"; document.getElementById("friend-add-go").click(); true`, nil)); err != nil {
+		t.Fatal(err)
+	}
+	clickSel(t, two, "#open-friends")
+	waitJS(t, two, "the request", `document.querySelector("[data-accept]") !== null`, 15*time.Second)
+	clickSel(t, two, "[data-accept]")
+	waitJS(t, two, "the friend in the list", `document.querySelector("#friends-list .dm-person") !== null`, 15*time.Second)
+	waitJS(t, one, "the friend in the list", `document.querySelector("#friends-list .dm-person") !== null`, 15*time.Second)
+	clickSel(t, one, "#friends-dialog .dialog-close")
+	clickSel(t, two, "#friends-dialog .dialog-close")
+}
+
 // member makes the account @handle and returns a browser signed in to it.
 func member(t *testing.T, a *app.App, base, handle string) *browser {
 	t.Helper()
@@ -77,6 +104,7 @@ func TestDirectMessages_TwoPeopleWriteToEachOther(t *testing.T) {
 	a, baseURL := membersServer(t)
 	anaB, boB := member(t, a, baseURL, "ana"), member(t, a, baseURL, "bob")
 	ana, bo := anaB.here(), boB.here()
+	befriend(t, anaB, boB, "bob", "ana")
 
 	var msg dmResp
 	if code := anaB.do("POST", "/api/dm", map[string]any{"to": bo, "text": "Fancy a game of Hex?"}, &msg); code != 200 {
@@ -149,6 +177,7 @@ func TestDirectMessages_AreRefusedWhereTheyShouldBe(t *testing.T) {
 	a, baseURL := membersServer(t)
 	anaB, boB := member(t, a, baseURL, "ana"), member(t, a, baseURL, "bob")
 	ana, bo := anaB.here(), boB.here()
+	befriend(t, anaB, boB, "bob", "ana")
 	away := member(t, a, baseURL, "cyd")
 	guest := newBrowser(t, baseURL)
 	for name, want := range map[string]struct {
@@ -156,12 +185,12 @@ func TestDirectMessages_AreRefusedWhereTheyShouldBe(t *testing.T) {
 		body map[string]any
 		code int
 	}{
-		"a guest":              {guest, map[string]any{"to": bo, "text": "hi"}, http.StatusForbidden},
-		"an account not here":  {away, map[string]any{"to": bo, "text": "hi"}, 403},
-		"somebody not here":    {anaB, map[string]any{"to": strings.Repeat("0", 16), "text": "hi"}, 404},
-		"writing to yourself":  {anaB, map[string]any{"to": ana, "text": "hi"}, 404},
-		"an empty message":     {anaB, map[string]any{"to": bo, "text": "   "}, 400},
-		"a message of a novel": {anaB, map[string]any{"to": bo, "text": strings.Repeat("x", 501)}, 400},
+		"a guest":               {guest, map[string]any{"to": bo, "text": "hi"}, http.StatusForbidden},
+		"an account not here":   {away, map[string]any{"to": bo, "text": "hi"}, 403},
+		"somebody not a friend": {anaB, map[string]any{"to": strings.Repeat("0", 16), "text": "hi"}, 403},
+		"writing to yourself":   {anaB, map[string]any{"to": ana, "text": "hi"}, 403},
+		"an empty message":      {anaB, map[string]any{"to": bo, "text": "   "}, 400},
+		"a message of a novel":  {anaB, map[string]any{"to": bo, "text": strings.Repeat("x", 501)}, 400},
 	} {
 		if code := want.b.do("POST", "/api/dm", want.body, nil); code != want.code {
 			t.Errorf("%s: %d, want %d", name, code, want.code)
@@ -198,6 +227,7 @@ func TestDirectCall_OneVoiceAtATime(t *testing.T) {
 	room := created.RoomCode
 	boB.do("POST", "/api/games/"+room+"/join", map[string]any{"player_name": "Bo"}, nil)
 	ana, bo := anaB.here(), boB.here()
+	befriend(t, anaB, boB, "bob", "ana")
 
 	// Both are in the game's call.
 	for _, who := range []struct {
@@ -251,8 +281,8 @@ func TestDirectCall_OneVoiceAtATime(t *testing.T) {
 		t.Errorf("a signal after hanging up: %d, want 409", code)
 	}
 	// A call to somebody who is not here is refused.
-	if code := anaB.do("POST", "/api/dm/call", map[string]any{"to": strings.Repeat("f", 16), "join": true}, nil); code != 404 {
-		t.Errorf("calling nobody: %d, want 404", code)
+	if code := anaB.do("POST", "/api/dm/call", map[string]any{"to": strings.Repeat("f", 16), "join": true}, nil); code != 403 {
+		t.Errorf("calling nobody: %d, want 403", code)
 	}
 }
 
@@ -263,7 +293,7 @@ func openAs(t *testing.T, ctx context.Context, a *app.App, baseURL, handle strin
 	signInChrome(t, ctx, baseURL, b.cookie(auth.SessionCookie))
 	if err := chromedp.Run(ctx,
 		chromedp.Navigate(baseURL+"/"),
-		chromedp.WaitVisible("#open-messages", chromedp.ByID),
+		chromedp.WaitVisible("#open-friends", chromedp.ByID),
 	); err != nil {
 		t.Fatalf("open the page as @%s: %v", handle, err)
 	}
@@ -283,14 +313,16 @@ func TestWebDirectMessages_TwoBrowsersWriteToEachOther(t *testing.T) {
 	openAs(t, ana, a, baseURL, "ana")
 	openAs(t, bo, a, baseURL, "bob")
 
-	// Each sees the other among the people who are here.
-	clickSel(t, ana, "#open-messages")
-	waitJS(t, ana, "Bo in the list", `[...document.querySelectorAll("#dm-people .dm-person")].some(b => b.textContent.includes("@bob"))`, 20*time.Second)
-	if evalBool(t, ana, `[...document.querySelectorAll("#dm-people .dm-person")].some(b => b.textContent.includes("@ana"))`) {
+	befriendInChrome(t, ana, bo, "bob")
+
+	// Each sees the other among their friends.
+	clickSel(t, ana, "#open-friends")
+	waitJS(t, ana, "Bo in the list", `[...document.querySelectorAll("#friends-list .dm-person")].some(b => b.textContent.includes("@bob"))`, 20*time.Second)
+	if evalBool(t, ana, `[...document.querySelectorAll("#friends-list .dm-person")].some(b => b.textContent.includes("@ana"))`) {
 		t.Error("Ana is offered as somebody to write to herself")
 	}
 	// Ana writes to Bo.
-	clickSel(t, ana, `#dm-people .dm-person`)
+	clickSel(t, ana, `#friends-list .dm-person`)
 	waitJS(t, ana, "the correspondence", `document.getElementById("dm-title").textContent === "With @bob" && !document.getElementById("dm-input").disabled`, 10*time.Second)
 	if err := chromedp.Run(ana, chromedp.Evaluate(`(function () {
 		var i = document.getElementById("dm-input");
@@ -304,9 +336,9 @@ func TestWebDirectMessages_TwoBrowsersWriteToEachOther(t *testing.T) {
 
 	// Bo's badge counts it, and his window shows it when he opens it.
 	waitJS(t, bo, "Bo's badge", `!document.getElementById("dm-badge").hidden && document.getElementById("dm-badge").textContent === "1"`, 15*time.Second)
-	clickSel(t, bo, "#open-messages")
-	waitJS(t, bo, "Ana in Bo's list", `[...document.querySelectorAll("#dm-people .dm-person")].some(b => b.textContent.includes("@ana"))`, 10*time.Second)
-	clickSel(t, bo, `#dm-people .dm-person[data-address]`)
+	clickSel(t, bo, "#open-friends")
+	waitJS(t, bo, "Ana in Bo's list", `[...document.querySelectorAll("#friends-list .dm-person")].some(b => b.textContent.includes("@ana"))`, 10*time.Second)
+	clickSel(t, bo, `#friends-list .dm-person[data-address]`)
 	waitJS(t, bo, "the message on Bo's side", `[...document.querySelectorAll("#dm-log .chat-line")].some(li => li.textContent.includes("Fancy a game of Hex?"))`, 10*time.Second)
 	waitJS(t, bo, "Bo's badge cleared", `document.getElementById("dm-badge").hidden === true`, 10*time.Second)
 	// Bo answers, and Ana sees it without doing anything.
@@ -336,16 +368,17 @@ func TestWebDirectCall_TwoBrowsersTalk(t *testing.T) {
 	defer cancelB()
 	openAs(t, ana, a, baseURL, "ana")
 	openAs(t, bo, a, baseURL, "bob")
+	befriendInChrome(t, ana, bo, "bob")
 
-	clickSel(t, ana, "#open-messages")
-	waitJS(t, ana, "Bo in the list", `[...document.querySelectorAll("#dm-people .dm-person")].some(b => b.textContent.includes("@bob"))`, 20*time.Second)
-	clickSel(t, ana, `#dm-people .dm-person`)
+	clickSel(t, ana, "#open-friends")
+	waitJS(t, ana, "Bo in the list", `[...document.querySelectorAll("#friends-list .dm-person")].some(b => b.textContent.includes("@bob"))`, 20*time.Second)
+	clickSel(t, ana, `#friends-list .dm-person`)
 	waitJS(t, ana, "the call button", `document.getElementById("dm-call") !== null && !document.getElementById("dm-call").hidden`, 10*time.Second)
 	clickSel(t, ana, "#dm-call")
 	waitJS(t, ana, "Ana ringing", `document.getElementById("dm-call-state").textContent.includes("Ringing")`, 10*time.Second)
 
 	// Bo is told, and answers.
-	clickSel(t, bo, "#open-messages")
+	clickSel(t, bo, "#open-friends")
 	waitJS(t, bo, "Bo's Answer button", `(function () { var b = document.getElementById("dm-call"); return b && !b.hidden && b.textContent === "Answer"; })()`, 20*time.Second)
 	clickSel(t, bo, "#dm-call")
 	// Both ends come up: the audio is flowing when the connection says so.
@@ -364,6 +397,7 @@ func TestWebDirectCall_TwoBrowsersTalk(t *testing.T) {
 func TestWebDirectCall_LeavesTheGamesVoiceChat(t *testing.T) {
 	a, baseURL := membersServer(t)
 	anaB, boB := member(t, a, baseURL, "ana"), member(t, a, baseURL, "bob")
+	befriend(t, anaB, boB, "bob", "ana")
 	var created struct {
 		RoomCode string `json:"room_code"`
 	}
@@ -382,15 +416,15 @@ func TestWebDirectCall_LeavesTheGamesVoiceChat(t *testing.T) {
 	waitJS(t, ctx, "Ana in the game's call", `document.getElementById("voice-badge").textContent === "in call"`, 15*time.Second)
 
 	// She rings Bo from the direct messages instead.
-	clickSel(t, ctx, "#open-messages")
-	waitJS(t, ctx, "Bo in the list", `document.querySelector('#dm-people .dm-person[data-address="`+bo+`"]') !== null`, 20*time.Second)
-	clickSel(t, ctx, `#dm-people .dm-person[data-address="`+bo+`"]`)
+	clickSel(t, ctx, "#open-friends")
+	waitJS(t, ctx, "Bo in the list", `document.querySelector('#friends-list .dm-person[data-address="`+bo+`"]') !== null`, 20*time.Second)
+	clickSel(t, ctx, `#friends-list .dm-person[data-address="`+bo+`"]`)
 	waitJS(t, ctx, "the call button", `!document.getElementById("dm-call").hidden`, 10*time.Second)
 	clickSel(t, ctx, "#dm-call")
 	waitJS(t, ctx, "Ana ringing Bo", `document.getElementById("dm-call-state").textContent.includes("Ringing")`, 10*time.Second)
 
 	// The game's call has let her go, and the page says why.
-	clickSel(t, ctx, "#messages-dialog .dialog-close")
+	clickSel(t, ctx, "#friends-dialog .dialog-close")
 	waitJS(t, ctx, "out of the game's call", `document.getElementById("voice-join") !== null && document.getElementById("voice-badge").textContent !== "in call"`, 20*time.Second)
 	var call struct {
 		Peers []struct {

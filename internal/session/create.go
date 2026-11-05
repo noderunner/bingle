@@ -110,6 +110,11 @@ type CreateOptions struct {
 	// catalog.CardSetIDs); empty for the game's own cards. It is settled here and
 	// never changes, so that a suit means the same to everyone at the table.
 	CardSet string
+	// Reserved keeps open seats for friends of the creator (seat → handle). Such a game always
+	// gathers in a lobby, so that its host can give up a seat if a friend does not come.
+	Reserved map[int]string
+	// InviteOnly keeps the game off every list: it is found by its link, or an invitation.
+	InviteOnly bool
 	// Lobby makes the game wait, with every seat filled, until its host
 	// starts it: players gather through the invite link, choose their seats
 	// and add bots first.
@@ -280,6 +285,25 @@ func (m *Manager) CreateGameWithOptions(ctx context.Context, opts CreateOptions)
 	if creatorSeat == 0 {
 		creatorSeat = 1
 	}
+	takenSeats := map[int]bool{creatorSeat: true}
+	for n := range also {
+		takenSeats[n] = true
+	}
+	for n := range fill {
+		takenSeats[n] = true
+	}
+	for n := range opts.Reserved {
+		if _, ok := compiled.Seat(n); !ok {
+			return CreateGameResult{}, fmt.Errorf("%w: game %q has no seat %d", ErrInvalidSeat, opts.GameDefID, n)
+		}
+	}
+	reserved, err := m.checkReservations(ctx, opts, takenSeats)
+	if err != nil {
+		return CreateGameResult{}, err
+	}
+	if len(reserved) > 0 {
+		opts.Lobby = true
+	}
 	seatDef, found := compiled.Seat(creatorSeat)
 	if !found {
 		if opts.Seat == 0 {
@@ -354,6 +378,9 @@ func (m *Manager) CreateGameWithOptions(ctx context.Context, opts CreateOptions)
 	}
 	if createErr != nil {
 		return CreateGameResult{}, fmt.Errorf("session: create game after %d attempts: %w", maxCreateGameAttempts, createErr)
+	}
+	if err := m.saveGameAccess(ctx, game.ID, opts, reserved); err != nil {
+		return CreateGameResult{}, err
 	}
 	// A tutorial room is marked before anyone else is seated, so it never
 	// shows in a list of games.
