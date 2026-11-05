@@ -4,6 +4,15 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.76.0 - 2026-11-05
+
+### Bingle Core 0.76.0
+- **More to watch in the Animation Tester.** Every new Great Old One below has its own button.
+
+### Cthulhu Wars 0.16.0
+- **Eight more Great Old Ones have their moment,** the first time each awakens. **Tsathoggua** stirs from his slumber in a black cavern, **Ithaqua** strides out of a blizzard, **Rhan-Tegoth** breaks free of a glacier, and **Yog-Sothoth** presses through a rift among the dials of time. **Ubbo-Sathla** throws the lid off his hellish banquet, **Bastet** rises from a golden pyramid on the moon, **Cthugha** gathers in a fire that swallows the map, and **Abhoth** heaves up out of the muck, shedding his brood.
+- **Independent Great Old Ones now get a badge in the history** when they first emerge, and so does Ubbo-Sathla when he is awakened in the Doom phase. These awakenings were missing the badge before.
+
 ## 0.75.0 - 2026-11-05
 
 ### Bingle Core 0.75.0

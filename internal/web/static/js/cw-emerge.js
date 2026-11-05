@@ -10,6 +10,14 @@ import { kingScene, KING_PEAK, KING_SECONDS } from "./cw-king-art.js";
 import { nyarlathotepScene, NYARLATHOTEP_PEAK, NYARLATHOTEP_SECONDS } from "./cw-nyarlathotep-art.js";
 import { hasturScene, HASTUR_PEAK, HASTUR_SECONDS } from "./cw-hastur-art.js";
 import { shubScene, SHUB_PEAK, SHUB_SECONDS } from "./cw-shub-art.js";
+import { tsathogguaScene, TSATHOGGUA_PEAK, TSATHOGGUA_SECONDS } from "./cw-tsathoggua-art.js";
+import { ithaquaScene, ITHAQUA_PEAK, ITHAQUA_SECONDS } from "./cw-ithaqua-art.js";
+import { rhanScene, RHAN_PEAK, RHAN_SECONDS } from "./cw-rhan-art.js";
+import { yogScene, YOG_PEAK, YOG_SECONDS } from "./cw-yog-art.js";
+import { ubboScene, UBBO_PEAK, UBBO_SECONDS } from "./cw-ubbo-art.js";
+import { bastetScene, BASTET_PEAK, BASTET_SECONDS } from "./cw-bastet-art.js";
+import { cthughaScene, CTHUGHA_PEAK, CTHUGHA_SECONDS } from "./cw-cthugha-art.js";
+import { abhothScene, ABHOTH_PEAK, ABHOTH_SECONDS } from "./cw-abhoth-art.js";
 
 // The Great Old Ones with art of their own, by unit type.
 const SCENES = {
@@ -18,6 +26,14 @@ const SCENES = {
 	"shub-niggurath": { make: shubScene, seconds: SHUB_SECONDS, peak: SHUB_PEAK },
 	"king-in-yellow": { make: kingScene, seconds: KING_SECONDS, peak: KING_PEAK },
 	hastur: { make: hasturScene, seconds: HASTUR_SECONDS, peak: HASTUR_PEAK },
+	tsathoggua: { make: tsathogguaScene, seconds: TSATHOGGUA_SECONDS, peak: TSATHOGGUA_PEAK },
+	ithaqua: { make: ithaquaScene, seconds: ITHAQUA_SECONDS, peak: ITHAQUA_PEAK },
+	"rhan-tegoth": { make: rhanScene, seconds: RHAN_SECONDS, peak: RHAN_PEAK },
+	"yog-sothoth": { make: yogScene, seconds: YOG_SECONDS, peak: YOG_PEAK },
+	"ubbo-sathla": { make: ubboScene, seconds: UBBO_SECONDS, peak: UBBO_PEAK },
+	bastet: { make: bastetScene, seconds: BASTET_SECONDS, peak: BASTET_PEAK },
+	cthugha: { make: cthughaScene, seconds: CTHUGHA_SECONDS, peak: CTHUGHA_PEAK },
+	abhoth: { make: abhothScene, seconds: ABHOTH_SECONDS, peak: ABHOTH_PEAK },
 };
 
 /** The Great Old Ones with a show, for the Animation Tester. */

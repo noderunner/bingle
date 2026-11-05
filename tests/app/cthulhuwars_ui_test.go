@@ -1085,8 +1085,8 @@ func TestWebCthulhuWars_TheAnimationTester(t *testing.T) {
 		t.Error("no units on the board")
 	}
 
-	// Every Great Old One of the core set, and each is only a click away. No game is started.
-	for _, goo := range []string{"cthulhu", "nyarlathotep", "shub-niggurath", "king-in-yellow", "hastur"} {
+	// Every Great Old One with a show, and each is only a click away. No game is started.
+	for _, goo := range []string{"cthulhu", "nyarlathotep", "shub-niggurath", "king-in-yellow", "hastur", "tsathoggua", "ithaqua", "rhan-tegoth", "yog-sothoth", "ubbo-sathla", "bastet", "cthugha", "abhoth"} {
 		clickSel(t, ctx, `[data-tester-emerge="`+goo+`"]`)
 		waitJS(t, ctx, goo+"'s show", `document.querySelector('#emerge-stage[data-goo="`+goo+`"] .em-scene') !== null`, 5*time.Second)
 		waitJS(t, ctx, goo+"'s zoom", `(function () {

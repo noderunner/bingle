@@ -1,6 +1,7 @@
 package cthulhuwars
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/noderunner/bingle/internal/engine/state"
@@ -188,6 +189,16 @@ func (e *eng) awakenIndependent(seat int, mv state.Move) {
 		e.say("%s awakens the Independent %s in %s (%d Power).", e.seatName(seat), unitNameOf(typ), e.areaName(a), cost)
 	} else {
 		e.say("%s awakens the Independent %s in %s and gains %s.", e.seatName(seat), unitNameOf(typ), e.areaName(a), plural(-cost, "Power", "Power"))
+	}
+	// The first time only: the page plays a show of it (ADR 0108). Awoke's numbers are for a cult's own Great
+	// Old Ones, and set Cthulhu's price, so an Independent is kept by its name.
+	first := fmt.Sprintf("%d|%s", seat, typ)
+	if !d.Awoken[first] {
+		e.say("%s Emerges", unitNameOf(typ))
+		if d.Awoken == nil {
+			d.Awoken = map[string]bool{}
+		}
+		d.Awoken[first] = true
 	}
 }
 
