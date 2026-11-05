@@ -55,7 +55,7 @@ func (m *Manager) Guide(id string) (Guide, error) {
 			if err != nil {
 				return Guide{}, fmt.Errorf("session: guide page %q: %w", t.File, err)
 			}
-			g.Tabs = append(g.Tabs, GuideTab{ID: t.ID, Title: t.Title, Markdown: string(b)})
+			g.Tabs = append(g.Tabs, GuideTab{ID: t.ID, Title: t.Title, Markdown: m.branded(string(b))})
 		}
 		return g, nil
 	}

@@ -257,7 +257,7 @@ func (a *Accounts) SetupTOTP(ctx context.Context, acc store.Account, password, i
 	if err := a.st.SetPendingTOTP(ctx, acc.ID, secret); err != nil {
 		return "", "", err
 	}
-	return secret, TOTPURI(acc.Handle, secret), nil
+	return secret, TOTPURIFor(a.brandName(), acc.Handle, secret), nil
 }
 
 // EnableTOTP turns the second factor on with a code from the app, and

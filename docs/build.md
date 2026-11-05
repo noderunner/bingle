@@ -63,6 +63,8 @@ All configuration is via environment variables — there's no config file.
 |---|---|---|
 | `BINGLE_ADDR` | `127.0.0.1:8080` | Address/port to listen on. **The default is loopback**: a bind a network can reach needs a secure connection as well (see below) |
 | `BINGLE_DB_PATH` | `./bingle.db` | Path to the SQLite database file |
+| `BINGLE_BRAND_NAME` | `Bingle` | The name players see for this instance, everywhere in the UI and in mail: up to 40 letters, digits, spaces and `. ' _ -` ([ADR 0110](decisions/0110-branding.md)) |
+| `BINGLE_BRAND_ICON` | the Bingle icon | Path to this instance's icon: an `.svg`, `.png`, `.webp`, `.ico` or `.jpg` of at most 512 KB, read at start |
 | `BINGLE_RETENTION_DAYS` | `0` (keep everything) | Delete games nobody has touched for this many days (never the games of a running tournament) (checked hourly) |
 | `BINGLE_LOG_LEVEL` | `info` | How much the server says: `debug`, `info`, `warn` or `error`. `debug` is the verbose mode and adds a line per request. See [observability.md](observability.md) |
 | `BINGLE_LOG_FORMAT` | `text` | `text` is `key=value` lines for a person, `json` one object per line for a log collector |

@@ -1,3 +1,4 @@
+import { brandName } from "./util.js";
 // Fun facts for the top of the home page: one is drawn at random each time the
 // page loads. They are about game theory in game design, the algorithms that
 // play games (and the bots of this site), and the games themselves.
@@ -60,5 +61,5 @@ export const FACTS = [
 
 /** One fact, chosen at random. */
 export function randomFact(rand = Math.random) {
-	return FACTS[Math.floor(rand() * FACTS.length)];
+	return FACTS[Math.floor(rand() * FACTS.length)].replaceAll("Bingle", brandName());
 }

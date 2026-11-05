@@ -3,14 +3,15 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="bingle-version" content="{{engineVersion}}">
+	<meta name="bingle-brand" content="{{brandName}}"{{if brandHasIcon}} data-icon="{{brandIconURL}}"{{end}}>
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>Bingle — All Settings</title>
-	<link rel="icon" type="image/svg+xml" href="/static/favicon.svg" id="favicon">
+	<title>{{brandName}} — All Settings</title>
+	<link rel="icon" type="{{brandIconType}}" href="{{brandIconURL}}" id="favicon">
 	<link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
 	<header class="topbar">
-		<a class="brand" href="/"><span class="logo"></span>Bingle</a>
+		<a class="brand" href="/"><span class="logo{{if brandHasIcon}} custom{{end}}"></span>{{brandName}}</a>
 		<span class="spacer"></span>
 		<span class="topbar-actions" id="topbar-actions"></span>
 	</header>
@@ -57,11 +58,11 @@
 				<div id="profile-email-section">
 				<hr class="section-divider">
 				<h2>Email Notifications</h2>
-				<p class="small muted" id="notify-accounts-only" hidden>Email notifications are for signed-in players: <a href="/login?return=%2Fprofile">sign in</a> to have Bingle mail you when it is your turn.</p>
+				<p class="small muted" id="notify-accounts-only" hidden>Email notifications are for signed-in players: <a href="/login?return=%2Fprofile">sign in</a> to have {{brandName}} mail you when it is your turn.</p>
 				<div class="field" id="profile-email-field">
 					<label for="profile_email">Email</label>
 					<input id="profile_email" type="email" maxlength="254" autocomplete="email" placeholder="you@example.com">
-					<span class="small muted">Only used for the turn notices you ask for. Bingle mails a link to confirm the address first, and never shows it to other players.</span>
+					<span class="small muted">Only used for the turn notices you ask for. {{brandName}} mails a link to confirm the address first, and never shows it to other players.</span>
 				</div>
 				<div class="field" id="profile-notify-field">
 					<label class="check"><input type="checkbox" id="profile_notify"> <span>Send me an email when it is my turn</span></label>
@@ -100,7 +101,7 @@
 		</section>
 	</main>
 
-	<footer class="site-footer"><sub title="The version of the bingle engine">bingle v{{engineVersion}} · MIT License · <a href="https://github.com/noderunner/bingle" target="_blank" rel="noopener noreferrer">GitHub</a></sub></footer>
+	<footer class="site-footer"><sub title="The version of the {{brandFooter}} engine">{{brandFooter}} v{{engineVersion}} · MIT License · <a href="https://github.com/noderunner/bingle" target="_blank" rel="noopener noreferrer">GitHub</a></sub></footer>
 
 	<!-- First, so a fault in any module below is reported (docs/observability.md). -->
 	<script type="module" src="/static/js/errors.js"></script>

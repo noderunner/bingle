@@ -4,6 +4,11 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.73.0 - 2026-11-05
+
+### Bingle Core 0.73.0
+- **Run the platform under your own name.** A server can now set its own name and icon, and players see them everywhere: pages, mail, calendar invitations and the rules.
+
 ## 0.72.0 - 2026-11-05
 
 ### Bingle Core 0.72.0

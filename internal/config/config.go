@@ -68,6 +68,8 @@ type Config struct {
 	DBPath  string
 	TLSCert string
 	TLSKey  string
+	// Brand is what this instance calls itself, and its icon.
+	Brand Brand
 	// RetentionDays deletes games nobody has touched for that many days
 	// (0 = keep everything, the default).
 	RetentionDays int
@@ -483,6 +485,12 @@ func Load() (Config, error) {
 	if err := loadDebug(&cfg); err != nil {
 		return Config{}, err
 	}
+
+	brand, err := LoadBrand(os.Getenv("BINGLE_BRAND_NAME"), os.Getenv("BINGLE_BRAND_ICON"))
+	if err != nil {
+		return Config{}, err
+	}
+	cfg.Brand = brand
 
 	if v := os.Getenv("BINGLE_RETENTION_DAYS"); v != "" {
 		n, err := strconv.Atoi(v)

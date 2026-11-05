@@ -137,7 +137,7 @@ func mailConfig(srv *fakesmtp.Server, mode string) config.Mail {
 
 func send(t *testing.T, cfg config.Mail, to string) error {
 	t.Helper()
-	s, err := mail.NewSender(cfg)
+	s, err := mail.NewSender(cfg, "Bingle")
 	if err != nil {
 		t.Fatal(err)
 	}

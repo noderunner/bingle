@@ -1,7 +1,7 @@
 // The lobby of a game that has not started: the invite link, who sits where,
 // bots for the seats nobody takes, and — for the host — the Start button.
 
-import { h } from "./util.js";
+import { h, brandName } from "./util.js";
 import { api, gameTitle } from "./api.js";
 import { setupIcon } from "./cw-setup.js";
 import { cssColor } from "./render.js";
@@ -198,7 +198,7 @@ export function lobbyCard(ctx) {
 			typeof navigator !== "undefined" && navigator.share
 				? h(
 						"button",
-						{ id: "share-invite", onclick: () => navigator.share({ title: `${info.name} on Bingle`, text: `Join my game of ${info.name}`, url: link }).catch(() => {}) },
+						{ id: "share-invite", onclick: () => navigator.share({ title: `${info.name} on ${brandName()}`, text: `Join my game of ${info.name}`, url: link }).catch(() => {}) },
 						"Share…"
 				  )
 				: null

@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"net/http"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -68,6 +69,7 @@ type App struct {
 	publicURL string
 	rtc       api.RTCConfig
 	changelog string
+	brand     config.Brand
 	log       *slog.Logger
 	metrics   *metrics.Metrics
 	journal   *journal.DB
@@ -178,6 +180,7 @@ func New(cfg config.Config, opts ...Option) (*App, error) {
 	}
 
 	manager := session.NewManager(st, cat)
+	manager.SetBrand(cfg.Brand.DisplayName())
 	manager.SetLogger(a.log)
 	manager.SetMetrics(a.metrics)
 	manager.SetConnectionTimes(session.ConnectionTimes(cfg.Connection))
@@ -205,7 +208,11 @@ func New(cfg config.Config, opts ...Option) (*App, error) {
 	a.envs = envs.NewManager(cat)
 	a.batches = batch.NewManager(st, cat)
 	a.publicURL = cfg.PublicURL
+	a.brand = cfg.Brand
 	a.changelog = cfg.Changelog
+	if name := cfg.Brand.DisplayName(); name != config.DefaultBrandName {
+		a.changelog = strings.ReplaceAll(a.changelog, config.DefaultBrandName, name)
+	}
 	a.rtc = api.RTCConfig{Stun: cfg.RTCStun, TurnURLs: cfg.RTCTurnURLs, TurnSecret: cfg.RTCTurnSecret}
 	caps, err := auth.NewCaps(context.Background(), st, cfg.AuthMode, cfg.CapsFile)
 	if err != nil {
@@ -214,7 +221,7 @@ func New(cfg config.Config, opts ...Option) (*App, error) {
 	}
 	a.caps = caps
 	manager.SetMayEnterTournament(caps.MayEnterTournament)
-	a.accounts = auth.NewAccounts(st, auth.AccountOptions{Mailer: manager, Log: a.log, Signup: cfg.Signup, SessionIdle: cfg.SessionIdle, SessionMax: cfg.SessionMax, Argon2: a.argon2,
+	a.accounts = auth.NewAccounts(st, auth.AccountOptions{Brand: cfg.Brand.DisplayName(), Mailer: manager, Log: a.log, Signup: cfg.Signup, SessionIdle: cfg.SessionIdle, SessionMax: cfg.SessionMax, Argon2: a.argon2,
 		LoginsPerMinute: caps.Limit(auth.ClassGuest, auth.LimitLogin)})
 	a.guests = auth.NewResolver(st, auth.Options{Transport: a.transport, Idle: cfg.GuestIdle, Log: a.log, Accounts: a.accounts,
 		OIDC: auth.NewOIDC(cfg.PublicURL, cfg.OIDC), Caps: caps})
@@ -281,7 +288,7 @@ func enableNotify(m *session.Manager, cfg config.Config, lg *slog.Logger) error 
 		lg.Warn("notify: email notifications are NOT enabled: set BINGLE_PUBLIC_URL (or BINGLE_TLS_DOMAIN) so the links in the mail have an address")
 		return nil
 	}
-	sender, err := mail.NewSender(cfg.Mail)
+	sender, err := mail.NewSender(cfg.Mail, cfg.Brand.DisplayName())
 	if err != nil {
 		return fmt.Errorf("app: email notifications: %w", err)
 	}
@@ -439,7 +446,7 @@ func (a *App) newRouter() chi.Router {
 	// specific path above must be registered first to take precedence.
 	// A closed server shows its pages to its members, and the sign-in to
 	// everybody else.
-	r.With(a.guests.ClosedPages).Mount("/", web.NewRouter(a.manager))
+	r.With(a.guests.ClosedPages).Mount("/", web.NewRouter(a.manager, a.brand))
 	return r
 }
 

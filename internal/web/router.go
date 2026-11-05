@@ -16,6 +16,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/noderunner/bingle/internal/config"
 	"github.com/noderunner/bingle/internal/session"
 	"github.com/noderunner/bingle/internal/trace"
 	"github.com/noderunner/bingle/internal/version"
@@ -31,17 +32,59 @@ var staticFS embed.FS
 // templates/*.html.tmpl file.
 var templates = template.Must(template.New("").Funcs(template.FuncMap{
 	"engineVersion": func() string { return version.Engine },
+	// Filled in for each router, by brandedTemplates.
+	"brandName":     func() string { return config.DefaultBrandName },
+	"brandFooter":   func() string { return "bingle" },
+	"brandHasIcon":  func() bool { return false },
+	"brandIconURL":  func() string { return "/static/favicon.svg" },
+	"brandIconType": func() string { return "image/svg+xml" },
 }).ParseFS(templateFS, "templates/*.html.tmpl"))
+
+// brandIconPath is where an instance's own icon is served.
+const brandIconPath = "/brand/icon"
+
+// brandedTemplates fills the name and icon of this instance into the templates.
+func brandedTemplates(brand config.Brand) *template.Template {
+	t := template.Must(templates.Clone())
+	iconURL, iconType := "/static/favicon.svg", "image/svg+xml"
+	if brand.Icon != nil {
+		iconURL, iconType = brandIconPath, brand.IconType
+	}
+	// The footer has always written the platform's own name small; another name is as it was given.
+	footer := func() string {
+		if brand.Name == "" || brand.Name == config.DefaultBrandName {
+			return "bingle"
+		}
+		return brand.Name
+	}
+	return t.Funcs(template.FuncMap{
+		"brandName":     brand.DisplayName,
+		"brandFooter":   footer,
+		"brandHasIcon":  func() bool { return brand.Icon != nil },
+		"brandIconURL":  func() string { return iconURL },
+		"brandIconType": func() string { return iconType },
+	})
+}
 
 // NewRouter returns a chi.Router serving bingle's browser UI: "GET /" renders
 // index.html.tmpl with mgr.ListGameDefs' result as template data (so the
 // create form's game_def_id select offers every real registered game
 // definition), and "/static/..." serves the embedded static assets
 // (app.js, style.css) index.html.tmpl references.
-func NewRouter(mgr *session.Manager) http.Handler {
+func NewRouter(mgr *session.Manager, brand config.Brand) http.Handler {
 	r := chi.NewRouter()
 
-	h := &handlers{mgr: mgr}
+	h := &handlers{mgr: mgr, templates: brandedTemplates(brand)}
+	if brand.Icon != nil {
+		r.Get(brandIconPath, func(w http.ResponseWriter, _ *http.Request) {
+			w.Header().Set("Content-Type", brand.IconType)
+			w.Header().Set("Cache-Control", "public, max-age=3600")
+			// An SVG opened by itself could run a script; it is a picture and nothing else.
+			w.Header().Set("Content-Security-Policy", "sandbox; default-src 'none'; style-src 'unsafe-inline'; img-src data:")
+			w.Header().Set("X-Content-Type-Options", "nosniff")
+			_, _ = w.Write(brand.Icon)
+		})
+	}
 	r.Get("/", h.handleIndex)
 	r.Get("/game/{code}", h.handleGame)
 	r.Get("/profile", h.handleProfile)
@@ -96,7 +139,8 @@ func StaticHandler() http.Handler {
 
 // handlers holds the dependencies shared by every handler in this package.
 type handlers struct {
-	mgr *session.Manager
+	mgr       *session.Manager
+	templates *template.Template
 }
 
 // indexPageData is index.html.tmpl's template data.
@@ -114,18 +158,18 @@ type gamePageData struct {
 // always populated from real, registered game defs.
 // render writes one template, timed as a span so that a page which is slow to
 // build says which template it was in the slow-request journal.
-func render(r *http.Request, w http.ResponseWriter, name string, data any) error {
+func (h *handlers) render(r *http.Request, w http.ResponseWriter, name string, data any) error {
 	_, span := trace.Start(r.Context(), "web.render")
 	span.Set("template", name)
 	defer span.End()
-	return templates.ExecuteTemplate(w, name, data)
+	return h.templates.ExecuteTemplate(w, name, data)
 }
 
 func (h *handlers) handleIndex(w http.ResponseWriter, r *http.Request) {
 	data := indexPageData{GameDefs: h.mgr.ListGameDefs(r.Context())}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := render(r, w, "index.html.tmpl", data); err != nil {
+	if err := h.render(r, w, "index.html.tmpl", data); err != nil {
 		http.Error(w, "web: rendering index page failed", http.StatusInternalServerError)
 		return
 	}
@@ -143,7 +187,7 @@ func (h *handlers) handleGame(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	// Only this page may use the microphone (voice chat), and nothing may use the camera.
 	w.Header().Set("Permissions-Policy", "microphone=(self), camera=()")
-	if err := render(r, w, "game.html.tmpl", data); err != nil {
+	if err := h.render(r, w, "game.html.tmpl", data); err != nil {
 		http.Error(w, "web: rendering game page failed", http.StatusInternalServerError)
 		return
 	}
@@ -161,7 +205,7 @@ type batchesPageData struct {
 func (h *handlers) handleBatches(w http.ResponseWriter, r *http.Request) {
 	data := batchesPageData{ID: chi.URLParam(r, "id")}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := render(r, w, "batches.html.tmpl", data); err != nil {
+	if err := h.render(r, w, "batches.html.tmpl", data); err != nil {
 		http.Error(w, "web: rendering batches page failed", http.StatusInternalServerError)
 		return
 	}
@@ -170,7 +214,7 @@ func (h *handlers) handleBatches(w http.ResponseWriter, r *http.Request) {
 // handleTournament serves a tournament's page, which reads the tournament itself.
 func (h *handlers) handleTournament(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := render(r, w, "tournament.html.tmpl", nil); err != nil {
+	if err := h.render(r, w, "tournament.html.tmpl", nil); err != nil {
 		http.Error(w, "web: rendering tournament page failed", http.StatusInternalServerError)
 		return
 	}
@@ -180,7 +224,7 @@ func (h *handlers) handleTournament(w http.ResponseWriter, r *http.Request) {
 // games, both kept in the browser, so the page is only a shell.
 func (h *handlers) handleProfile(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := render(r, w, "profile.html.tmpl", nil); err != nil {
+	if err := h.render(r, w, "profile.html.tmpl", nil); err != nil {
 		http.Error(w, "web: rendering profile page failed", http.StatusInternalServerError)
 		return
 	}
@@ -197,7 +241,7 @@ func (h *handlers) handleAccountPage(page, title string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.Header().Set("Cache-Control", "no-store")
-		if err := render(r, w, "account.html.tmpl", accountPageData{Page: page, Title: title}); err != nil {
+		if err := h.render(r, w, "account.html.tmpl", accountPageData{Page: page, Title: title}); err != nil {
 			http.Error(w, "web: rendering the account page failed", http.StatusInternalServerError)
 		}
 	}
@@ -208,7 +252,7 @@ func (h *handlers) handleAccountPage(page, title string) http.HandlerFunc {
 func (h *handlers) handleAdmin(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-store")
-	if err := render(r, w, "admin.html.tmpl", nil); err != nil {
+	if err := h.render(r, w, "admin.html.tmpl", nil); err != nil {
 		http.Error(w, "web: rendering the admin page failed", http.StatusInternalServerError)
 	}
 }
@@ -227,7 +271,7 @@ func (h *handlers) handleNotifyPage(action string) http.HandlerFunc {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.Header().Set("Cache-Control", "no-store")
 		w.Header().Set("Referrer-Policy", "no-referrer")
-		if err := render(r, w, "notify.html.tmpl", notifyPageData{Action: action}); err != nil {
+		if err := h.render(r, w, "notify.html.tmpl", notifyPageData{Action: action}); err != nil {
 			http.Error(w, "web: rendering notify page failed", http.StatusInternalServerError)
 		}
 	}

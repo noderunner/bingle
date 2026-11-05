@@ -3,15 +3,16 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="bingle-version" content="{{engineVersion}}">
+	<meta name="bingle-brand" content="{{brandName}}"{{if brandHasIcon}} data-icon="{{brandIconURL}}"{{end}}>
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<meta name="referrer" content="no-referrer">
-	<title>Bingle — {{.Title}}</title>
-	<link rel="icon" type="image/svg+xml" href="/static/favicon.svg" id="favicon">
+	<title>{{brandName}} — {{.Title}}</title>
+	<link rel="icon" type="{{brandIconType}}" href="{{brandIconURL}}" id="favicon">
 	<link rel="stylesheet" href="/static/style.css">
 </head>
 <body data-page="{{.Page}}">
 	<header class="topbar">
-		<a class="brand" href="/"><span class="logo"></span>Bingle</a>
+		<a class="brand" href="/"><span class="logo{{if brandHasIcon}} custom{{end}}"></span>{{brandName}}</a>
 		<span class="spacer"></span>
 	</header>
 
@@ -73,7 +74,7 @@
 				<div class="field">
 					<label for="signup-email">Email</label>
 					<input id="signup-email" type="email" maxlength="254" autocomplete="email" required>
-					<span class="small muted">Bingle mails a link to confirm it, and never shows it to anybody.</span>
+					<span class="small muted">{{brandName}} mails a link to confirm it, and never shows it to anybody.</span>
 				</div>
 				<div class="field">
 					<label for="signup-password">Password</label>
@@ -120,7 +121,7 @@
 		{{else if eq .Page "confirm"}}
 		<section class="card" id="confirm-card">
 			<h1>Confirm your account</h1>
-			<p>Press the button to finish making your Bingle account. Nothing happens until you do.</p>
+			<p>Press the button to finish making your {{brandName}} account. Nothing happens until you do.</p>
 			<div class="row"><button type="button" class="primary" id="confirm-go">Confirm</button></div>
 			<p class="small" id="account-result" role="status" aria-live="polite"></p>
 		</section>
@@ -222,7 +223,7 @@
 		{{end}}
 	</main>
 
-	<footer class="site-footer"><sub title="The version of the bingle engine">bingle v{{engineVersion}} · MIT License · <a href="https://github.com/noderunner/bingle" target="_blank" rel="noopener noreferrer">GitHub</a></sub></footer>
+	<footer class="site-footer"><sub title="The version of the {{brandFooter}} engine">{{brandFooter}} v{{engineVersion}} · MIT License · <a href="https://github.com/noderunner/bingle" target="_blank" rel="noopener noreferrer">GitHub</a></sub></footer>
 
 	<!-- First, so a fault in any module below is reported (docs/observability.md). -->
 	<script type="module" src="/static/js/errors.js"></script>

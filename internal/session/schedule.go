@@ -164,7 +164,7 @@ func (m *Manager) calendarEvent(game store.Game, sched store.Schedule, method, a
 		Seq:       sched.IcsSeq,
 		Start:     start,
 		End:       start.Add(eventLength),
-		Summary:   m.gameNameOf(game.GameDefID) + " on Bingle",
+		Summary:   m.branded(m.gameNameOf(game.GameDefID) + " on Bingle"),
 		URL:       base + "/game/" + game.RoomCode,
 		Method:    method,
 		Organizer: from,

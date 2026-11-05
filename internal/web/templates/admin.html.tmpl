@@ -3,15 +3,16 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="bingle-version" content="{{engineVersion}}">
+	<meta name="bingle-brand" content="{{brandName}}"{{if brandHasIcon}} data-icon="{{brandIconURL}}"{{end}}>
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<meta name="referrer" content="no-referrer">
-	<title>Bingle — Administration</title>
-	<link rel="icon" type="image/svg+xml" href="/static/favicon.svg" id="favicon">
+	<title>{{brandName}} — Administration</title>
+	<link rel="icon" type="{{brandIconType}}" href="{{brandIconURL}}" id="favicon">
 	<link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
 	<header class="topbar">
-		<a class="brand" href="/"><span class="logo"></span>Bingle</a>
+		<a class="brand" href="/"><span class="logo{{if brandHasIcon}} custom{{end}}"></span>{{brandName}}</a>
 		<span class="spacer"></span>
 	</header>
 	<main class="page narrow">
@@ -55,7 +56,7 @@
 			<p class="small" id="invite-link"></p>
 		</section>
 	</main>
-	<footer class="site-footer"><sub title="The version of the bingle engine">bingle v{{engineVersion}} · MIT License · <a href="https://github.com/noderunner/bingle" target="_blank" rel="noopener noreferrer">GitHub</a></sub></footer>
+	<footer class="site-footer"><sub title="The version of the {{brandFooter}} engine">{{brandFooter}} v{{engineVersion}} · MIT License · <a href="https://github.com/noderunner/bingle" target="_blank" rel="noopener noreferrer">GitHub</a></sub></footer>
 	<script type="module" src="/static/js/errors.js"></script>
 	<script type="module" src="/static/js/admin.js"></script>
 </body>
