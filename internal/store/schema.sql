@@ -478,3 +478,32 @@ CREATE TABLE IF NOT EXISTS setup_profiles (
 );
 
 CREATE INDEX IF NOT EXISTS idx_setup_profiles_shared ON setup_profiles(family, updated_at DESC) WHERE shared = 1;
+
+-- Friends (ADR 0105), between accounts. One row per pair, low < high. requester asked; status is
+-- 'pending', 'accepted' or 'declined' (kept, so a declined request cannot be sent again at once).
+CREATE TABLE IF NOT EXISTS friendships (
+    low        INTEGER NOT NULL REFERENCES accounts(id),
+    high       INTEGER NOT NULL REFERENCES accounts(id),
+    requester  INTEGER NOT NULL,
+    status     TEXT NOT NULL,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (low, high)
+);
+CREATE INDEX IF NOT EXISTS idx_friendships_high ON friendships(high);
+
+-- An account's choices about friends. No row means the defaults.
+CREATE TABLE IF NOT EXISTS friend_settings (
+    account_id    INTEGER PRIMARY KEY REFERENCES accounts(id),
+    mail_requests INTEGER NOT NULL DEFAULT 0,
+    show_presence INTEGER NOT NULL DEFAULT 1
+);
+
+-- Invitations to a game, sent from the friends list: kept, as the friend may be away.
+CREATE TABLE IF NOT EXISTS game_invites (
+    game_id      INTEGER NOT NULL REFERENCES games(id),
+    to_account   INTEGER NOT NULL REFERENCES accounts(id),
+    from_account INTEGER NOT NULL REFERENCES accounts(id),
+    created_at   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (game_id, to_account)
+);
+CREATE INDEX IF NOT EXISTS idx_game_invites_to ON game_invites(to_account);

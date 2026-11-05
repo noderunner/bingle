@@ -12,7 +12,7 @@ import (
 	"github.com/noderunner/bingle/internal/session"
 )
 
-// Direct messages between two accounts that are here, and the voice call they
+// Direct messages between two friends who are here, and the voice call they
 // may put up: REST in, WebSocket out (/ws-dm), as a game's voice chat does.
 // The sender is the signed-in account (ADR 0073); see internal/session/dm.go.
 
@@ -29,6 +29,21 @@ func member(w http.ResponseWriter, r *http.Request) (string, string, bool) {
 		return "", "", false
 	}
 	return session.AddressOf(p.ID), "@" + p.Account.Handle, true
+}
+
+// friendsOnly refuses a message or a call to anybody but a friend (ADR 0105). It answers the request
+// itself when it says no.
+func (h *handlers) friendsOnly(w http.ResponseWriter, r *http.Request, to string) bool {
+	p, ok := auth.From(r.Context())
+	if !ok || p.Account == nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": errNeedsAccount.Error()})
+		return false
+	}
+	if err := h.mgr.MustBeFriends(r.Context(), p.Account.ID, to); err != nil {
+		writeError(w, err)
+		return false
+	}
+	return true
 }
 
 // dmRequest is the body of POST /dm: a message for the address To.
@@ -67,6 +82,9 @@ func (h *handlers) handlePostDirect(w http.ResponseWriter, r *http.Request) {
 	}
 	var req dmRequest
 	if !decodeBody(w, r, &req) {
+		return
+	}
+	if !h.friendsOnly(w, r, req.To) {
 		return
 	}
 	msg, err := h.mgr.SendDirect(from, req.To, req.Text)
@@ -115,6 +133,9 @@ func (h *handlers) handleDirectCall(w http.ResponseWriter, r *http.Request) {
 	if !req.Join {
 		h.mgr.LeaveDirectCall(from)
 		writeJSON(w, http.StatusOK, map[string]any{"ok": true})
+		return
+	}
+	if !h.friendsOnly(w, r, req.To) {
 		return
 	}
 	if err := h.mgr.JoinDirectCall(from, req.To); err != nil {

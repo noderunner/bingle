@@ -1,18 +1,18 @@
-// Direct messages: a window of its own in the bar at the top of every page.
-// It lists the people who are here (js/here.js), opens a correspondence with
-// one of them, and can put a voice call up inside it (js/dm-call.js).
+// The friends list: a window of its own in the bar at the top of every page, for
+// signed-in accounts (ADR 0105). It holds friend requests and invitations to
+// games, opens a correspondence with a friend, can put a voice call up inside it
+// (js/dm-call.js), invites them to a game and removes them.
 //
 // What is said is kept by the server in memory only, for a couple of hours, and
 // nothing is stored anywhere: it is a way to say "fancy a game?", not a mailbox.
-// Direct messages are between signed-in accounts (ADR 0073), so a message is
-// from the handle it says.
+// So a friend who is offline cannot be written to, though they can be invited.
 //
 // Messages are sent over REST and arrive over the /ws-dm socket, which also
 // carries the ringing of a call and its WebRTC messages.
 
 import { h, clear, store, lastName, toast } from "./util.js";
 import { api, whoAmI } from "./api.js";
-import { whoIsHere, onHereChange } from "./here.js";
+import { gameDefs, loadRows, isFinished } from "./mygames.js";
 import { onLeave, setKeepAlive, untracked } from "./nav.js";
 import { callPerson, hangUp, toggleMute, callState, onCallChange, ringing, ended, directSignal, inDirectCall, setMyAddress } from "./dm-call.js";
 
@@ -26,6 +26,8 @@ const D = {
 	openName: "",
 	messages: [], // the correspondence on screen
 	unread: {}, // address -> how many messages have not been read
+	friends: { friends: [], incoming: [], outgoing: [], invites: [] },
+	inviting: false, // the choice of a game is on screen
 };
 
 let sock = null;
@@ -46,9 +48,62 @@ const markSeen = (addr, id) => {
 	store.set(SEEN_KEY, all);
 };
 
-/** How many messages in all have not been read. */
+/** What waits for this account in the window: unread messages, requests and invitations. */
 export function unreadCount() {
-	return Object.values(D.unread).reduce((a, b) => a + b, 0);
+	return Object.values(D.unread).reduce((a, b) => a + b, 0) + D.friends.incoming.length + D.friends.invites.length;
+}
+
+const friendAt = (address) => D.friends.friends.find((f) => f.address === address) || null;
+
+/** How this account stands with a handle: "friend", "outgoing", "incoming" or "". */
+export function friendStateOf(handle) {
+	const key = String(handle).replace(/^@/, "").toLowerCase();
+	const has = (list) => list.some((f) => f.handle.toLowerCase() === key);
+	return has(D.friends.friends) ? "friend" : has(D.friends.outgoing) ? "outgoing" : has(D.friends.incoming) ? "incoming" : "";
+}
+
+/** Reads the list again. Anything that shows it is told. */
+export async function loadFriends() {
+	try {
+		if ((await whoAmI()).kind !== "account") return;
+		D.friends = await api.friends();
+	} catch (_) {
+		return; // a guest has none, and the window keeps what it has
+	}
+	onUnread(unreadCount());
+	paintWindow();
+	for (const fn of friendListeners) fn();
+}
+
+const friendListeners = new Set();
+/** Calls fn whenever the list changes; returns what stops it. */
+export function onFriendsChange(fn) {
+	friendListeners.add(fn);
+	return () => friendListeners.delete(fn);
+}
+
+/** Asks somebody to be a friend, and says how that went. */
+export async function askFriend(handle) {
+	try {
+		await api.friendRequest(handle);
+		toast(`Friend request sent to @${String(handle).replace(/^@/, "")}.`);
+		return true;
+	} catch (err) {
+		toast(err.message || "The request was not sent.", "error");
+		return false;
+	} finally {
+		await loadFriends();
+	}
+}
+
+/** One of the window's actions: what it says on failure, and the list read again after it. */
+async function friendAction(act) {
+	try {
+		await act();
+	} catch (err) {
+		toast(err.message || "That did not work.", "error");
+	}
+	await loadFriends();
 }
 
 function countUnread() {
@@ -76,6 +131,7 @@ async function loadThreads() {
 
 async function openThread(address, name) {
 	D.open = address;
+	D.inviting = false;
 	D.openName = name || nameOf(address);
 	D.messages = [];
 	paintWindow();
@@ -92,9 +148,9 @@ async function openThread(address, name) {
 }
 
 function nameOf(address) {
-	const here = whoIsHere().find((p) => p.address === address);
-	if (here) return here.name;
-	const thread = D.threads.find((t) => t.with === address);
+	const friend = friendAt(address);
+	if (friend) return friend.name;
+	const thread = D.threads.find((x) => x.with === address);
 	return (thread && thread.name) || "somebody who has gone";
 }
 
@@ -173,6 +229,9 @@ async function openSocket() {
 			case "dm":
 				receive(d);
 				break;
+			case "friends":
+				loadFriends();
+				break;
 			case "dm-call":
 				if (d.kind === "ring") {
 					ringing(d.from, d.name);
@@ -219,65 +278,124 @@ setKeepAlive(inDirectCall);
  */
 export function mountDirectMessages(host, { onCount = () => {} } = {}) {
 	onUnread = onCount;
-	const people = h("ul", { class: "here-list", id: "dm-people" });
-	const list = h("div", { class: "dm-people-pane" }, h("h3", {}, "Here now"), people);
+	const addInput = h("input", { type: "text", id: "friend-handle", maxlength: "26", placeholder: "Add by handle", "aria-label": "The handle of a player to add", autocapitalize: "none", autocomplete: "off", spellcheck: "false" });
+	const addForm = h("form", { class: "row dm-send-row", id: "friend-add" }, addInput, h("button", { type: "submit", id: "friend-add-go", class: "primary" }, "Add"));
+	const requests = h("div", { id: "friend-requests" });
+	const invites = h("div", { id: "friend-invites" });
+	const people = h("ul", { class: "here-list", id: "friends-list" });
+	const waiting = h("div", { id: "friend-outgoing" });
+	const list = h("div", { class: "dm-people-pane" }, addForm, requests, invites, h("h3", {}, "Friends"), people, waiting);
 	const log = h("ol", { class: "chat-log", id: "dm-log", "aria-live": "polite", "aria-label": "This conversation" });
-	const title = h("h3", { class: "dm-title", id: "dm-title" }, "Direct messages");
+	const title = h("h3", { class: "dm-title", id: "dm-title" }, "Your friends");
 	const input = h("input", { type: "text", id: "dm-input", maxlength: "500", placeholder: "Write a message…", "aria-label": "Your message", autocomplete: "off" });
 	const sendBtn = h("button", { type: "button", id: "dm-send", class: "primary" }, "Send");
 	const callBtn = h("button", { type: "button", id: "dm-call" }, "Call");
 	const muteBtn = h("button", { type: "button", id: "dm-mute", hidden: true }, "Mute");
 	const hangBtn = h("button", { type: "button", id: "dm-hangup", class: "danger", hidden: true }, "Hang up");
 	const callState_ = h("span", { class: "small muted", id: "dm-call-state" });
+	const inviteBtn = h("button", { type: "button", id: "friend-invite" }, "Invite to game");
+	const removeBtn = h("button", { type: "button", id: "friend-remove", class: "ghost" }, "Remove friend");
+	const inviteGame = h("select", { id: "friend-invite-game", "aria-label": "The game to invite them to" });
+	const inviteSend = h("button", { type: "button", id: "friend-invite-send", class: "primary" }, "Send invitation");
+	const inviteRow = h("div", { class: "row dm-send-row", id: "friend-invite-row", hidden: true }, inviteGame, inviteSend);
+	const offline = h("p", { class: "small muted", id: "dm-offline", hidden: true });
 	const thread = h(
 		"div",
 		{ class: "dm-thread-pane", id: "dm-thread" },
 		title,
-		h("div", { class: "row dm-call-row" }, callBtn, muteBtn, hangBtn, callState_),
+		h("div", { class: "row dm-call-row" }, callBtn, muteBtn, hangBtn, inviteBtn, removeBtn, callState_),
+		inviteRow,
 		log,
+		offline,
 		h("div", { class: "row dm-send-row" }, input, sendBtn),
-		h("p", { class: "small muted" }, "Kept for a couple of hours on the server and nowhere else. A message is from the signed-in account whose handle it shows.")
+		h("p", { class: "small muted" }, "Messages reach friends who are online, and are kept for a couple of hours on the server and nowhere else.")
 	);
 	host.append(h("div", { class: "dm-panes" }, list, thread));
 
+	const section = (host_, heading, rows) => {
+		clear(host_);
+		if (!rows.length) return;
+		host_.append(h("h3", {}, heading), h("ul", { class: "here-list" }, ...rows));
+	};
+
 	const drawPeople = () => {
+		const F = D.friends;
+		section(
+			requests,
+			"Friend requests",
+			F.incoming.map((f) =>
+				h(
+					"li",
+					{ "data-handle": f.handle },
+					h("span", { class: "grow" }, f.name),
+					h("button", { type: "button", class: "primary small", "data-accept": f.handle, onclick: () => friendAction(() => api.friendAnswer(f.handle, true)) }, "Accept"),
+					h("button", { type: "button", class: "ghost small", "data-decline": f.handle, onclick: () => friendAction(() => api.friendAnswer(f.handle, false)) }, "Decline")
+				)
+			)
+		);
+		section(
+			invites,
+			"Game invitations",
+			F.invites.map((g) =>
+				h(
+					"li",
+					{ "data-room": g.room },
+					h("span", { class: "grow" }, `${g.game} · ${g.from}`),
+					h("a", { class: "button primary small", href: "/game/" + encodeURIComponent(g.room), "data-join-invite": g.room, onclick: () => api.friendDismiss(g.room).catch(() => {}) }, "Join"),
+					h("button", { type: "button", class: "ghost small", "data-dismiss": g.room, onclick: () => friendAction(() => api.friendDismiss(g.room)) }, "Dismiss")
+				)
+			)
+		);
+		section(
+			waiting,
+			"Waiting for an answer",
+			F.outgoing.map((f) =>
+				h(
+					"li",
+					{ "data-handle": f.handle },
+					h("span", { class: "grow" }, f.name),
+					h("button", { type: "button", class: "ghost small", "data-cancel": f.handle, onclick: () => friendAction(() => api.friendRemove(f.handle)) }, "Cancel")
+				)
+			)
+		);
 		clear(people);
-		const mine = D.address;
-		const here = whoIsHere().filter((p) => p.address !== mine);
-		// Everybody who is here, and anybody written to who has since gone.
-		const rows = [...here.map((p) => ({ address: p.address, name: p.name, here: true }))];
-		for (const t of D.threads) {
-			if (!rows.some((r) => r.address === t.with)) rows.push({ address: t.with, name: t.name || "somebody who has gone", here: false });
-		}
-		for (const r of rows) {
-			const n = D.unread[r.address] || 0;
+		// Those online first, then by name, which is how the list arrives.
+		for (const f of [...F.friends].sort((a, b) => Number(b.online) - Number(a.online))) {
+			const n = D.unread[f.address] || 0;
 			people.append(
 				h(
 					"li",
-					{ "data-address": r.address, class: r.address === D.open ? "on" : null },
+					{ "data-address": f.address, class: f.address === D.open ? "on" : null },
 					h(
 						"button",
-						{ type: "button", class: "dm-person grow", "data-address": r.address, onclick: () => openThread(r.address, r.name) },
-						h("span", { class: "grow" }, r.name),
-						n ? h("span", { class: "badge turn", "data-unread": n }, String(n)) : null,
-						r.here ? null : h("span", { class: "badge" }, "gone")
+						{ type: "button", class: "dm-person grow", "data-address": f.address, onclick: () => openThread(f.address, f.name) },
+						h("span", { class: "friend-dot" + (f.online ? " online" : ""), title: f.online ? "Online" : "Offline" }),
+						h("span", { class: "grow" }, f.name),
+						n ? h("span", { class: "badge turn", "data-unread": n }, String(n)) : null
 					)
 				)
 			);
 		}
-		if (!rows.length) people.append(h("li", { class: "muted" }, "Nobody else is here just now."));
+		if (!F.friends.length) people.append(h("li", { class: "muted small" }, "Add somebody by their handle to play and talk with them."));
 	};
 
 	const drawThread = () => {
 		const call = callState();
-		title.textContent = D.open ? `With ${D.openName}` : "Direct messages";
+		const friend = friendAt(D.open);
+		title.textContent = D.open ? `With ${D.openName}` : "Your friends";
 		thread.classList.toggle("empty", !D.open);
-		input.disabled = !D.open;
-		sendBtn.disabled = !D.open;
+		const online = !!friend && friend.online;
+		input.disabled = !online;
+		sendBtn.disabled = !online;
+		offline.hidden = !D.open || online;
+		offline.textContent = friend ? `${friend.name} is offline. You can still invite them to a game.` : "You are no longer friends.";
+		inviteBtn.hidden = !friend;
+		removeBtn.hidden = !friend;
+		inviteRow.hidden = !friend || !D.inviting;
 		const busy = call.state !== "" && call.peer === D.open;
 		// The button rings somebody, or answers them while they are ringing;
 		// a call that is up or being set up leaves nothing to press.
-		callBtn.hidden = !D.open || (busy && call.state !== "ringing");
+		callBtn.hidden = !online || (busy && call.state !== "ringing");
 		callBtn.textContent = busy && call.state === "ringing" ? "Answer" : "Call";
 		muteBtn.hidden = !busy || call.state !== "live";
 		muteBtn.textContent = call.muted ? "Unmute" : "Mute";
@@ -294,7 +412,7 @@ export function mountDirectMessages(host, { onCount = () => {} } = {}) {
 						: "In the call";
 		clear(log);
 		if (!D.open) {
-			log.append(h("li", { class: "chat-empty muted small" }, "Pick somebody on the left to write to them."));
+			log.append(h("li", { class: "chat-empty muted small" }, "Pick a friend on the left to write to them."));
 			return;
 		}
 		if (!D.messages.length) log.append(h("li", { class: "chat-empty muted small" }, "Nothing said yet."));
@@ -327,20 +445,61 @@ export function mountDirectMessages(host, { onCount = () => {} } = {}) {
 			sendBtn.click();
 		}
 	});
+	addForm.addEventListener("submit", async (ev) => {
+		ev.preventDefault();
+		const handle = addInput.value.trim();
+		if (handle && (await askFriend(handle))) addInput.value = "";
+	});
+	// The games to invite to are this player's own that are not over, the one on screen first.
+	inviteBtn.addEventListener("click", async () => {
+		D.inviting = !D.inviting;
+		if (D.inviting) {
+			clear(inviteGame);
+			const here = document.body.dataset.roomCode || "";
+			const [rows, defs] = await Promise.all([loadRows().catch(() => []), gameDefs().catch(() => [])]);
+			const open = rows.filter((r) => r.info && !isFinished(r));
+			open.sort((a, b) => Number(b.g.code === here) - Number(a.g.code === here));
+			for (const r of open) {
+				const def = defs.find((x) => x.id === String(r.info.game_def_id).split("~")[0]);
+				inviteGame.append(h("option", { value: r.g.code }, `${r.info.list_title || (def ? def.name : r.info.game_def_id)} · ${r.g.code}`));
+			}
+			if (!open.length) inviteGame.append(h("option", { value: "" }, "You have no game to invite them to"));
+			inviteSend.disabled = !open.length;
+		}
+		paintWindow();
+	});
+	inviteSend.addEventListener("click", async () => {
+		const friend = friendAt(D.open);
+		if (!friend || !inviteGame.value) return;
+		try {
+			await api.friendInvite(friend.handle, inviteGame.value);
+			toast(`${friend.name} is invited.`);
+			D.inviting = false;
+			paintWindow();
+		} catch (err) {
+			toast(err.message || "The invitation was not sent.", "error");
+		}
+	});
+	removeBtn.addEventListener("click", () => {
+		const friend = friendAt(D.open);
+		if (!friend || !window.confirm(`Remove ${friend.name} from your friends?`)) return;
+		D.open = "";
+		D.messages = [];
+		D.inviting = false;
+		friendAction(() => api.friendRemove(friend.handle));
+	});
 	callBtn.addEventListener("click", () => callPerson(D.open, D.openName));
 	muteBtn.addEventListener("click", toggleMute);
 	hangBtn.addEventListener("click", () => hangUp());
-	const stopHere = onHereChange(paintWindow);
 	const stopCall = onCallChange(paintWindow);
 	onLeave(() => {
-		stopHere();
 		stopCall();
 		paintWindow = () => {};
 	});
 	paintWindow();
 	return {
 		/** The window was opened: read the list again. */
-		refresh: loadThreads,
+		refresh: () => Promise.all([loadThreads(), loadFriends()]),
 		/** Opens the correspondence with one person. */
 		open: openThread,
 	};
@@ -350,4 +509,5 @@ export function mountDirectMessages(host, { onCount = () => {} } = {}) {
 export function startDirectMessages() {
 	openSocket();
 	loadThreads();
+	loadFriends();
 }

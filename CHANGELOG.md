@@ -4,6 +4,15 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.66.0 - 2026-11-04
+
+### Bingle Core 0.66.0
+- **Friends.** The speech-bubble icon now opens your friends list, for signed-in players. Add somebody by their handle, or from *Here now* in your profile window. They can accept or decline.
+- **Talk with friends.** Direct messages and voice calls are now between friends, and a dot shows who is online. Messages only reach friends who are online.
+- **Invite a friend to a game.** Choose *Invite to game* beside a friend's name. The invitation waits in their friends list even if they are away.
+- **Remove a friend** from the same place.
+- **Mail about friend requests,** if you want it. It is off unless you turn it on in *All Settings*.
+
 ## 0.65.0 - 2026-11-04
 
 ### Bingle Core 0.65.0

@@ -252,11 +252,18 @@ The list carries its handle and an **address**, a hash of its principal that say
 it and does not change with a rename. An account is forgotten two and a half minutes after it
 last said anything, and nothing is stored. Guests are not listed and see no list.
 
-**Direct messages.** Two accounts that are here can write to each other and put a voice call up
+**Friends** ([ADR 0105](decisions/0105-friends.md)) are for signed-in accounts. `GET /friends` lists `friends`
+(with `online`), `incoming` and `outgoing` requests and game `invites`. `POST /friends/request` takes a `handle`
+(`404` for nobody, `409` when already friends or asked, `429` too soon after a refusal);
+`POST /friends/answer` a `handle` and `accept`; `POST /friends/remove` a `handle`, for a friend or your own request;
+`POST /friends/invite` a `handle` and a `room` you have a seat in (`403` otherwise); `POST /friends/dismiss` a `room`.
+`GET` and `PUT /friends/settings` hold `mail_requests`, off by default. Changes arrive as a `friends` event on `/ws-dm`.
+
+**Direct messages.** Two friends who are here can write to each other and put a voice call up
 between them. A message is addressed to an **address** and sent by the signed-in account, under
 its handle. Nothing is stored: the last 200 messages of a pair live in memory and are forgotten
 two hours after the last one (and at a restart). They are pushed over `GET /ws-dm`, which the
-session authenticates. A message to somebody who is not here is a `404`, writing without having
+session authenticates. A message or call to anybody but a friend is a `403`, to a friend who is not here a `404`, writing without having
 said you are here a `403`, a guest's request a `403` (the `dm` capability), and a flood a `429`.
 
 The **call** is WebRTC between the two browsers, with `/dm/signal` relaying the

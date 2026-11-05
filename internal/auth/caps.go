@@ -375,6 +375,7 @@ var routes = func() []route {
 		r("POST", `/api/dm/(history|threads)`, CapDM, ""),
 		r("GET", `/ws-dm`, CapDM, ""),
 		r("", `/api/here`, CapDM, ""),
+		r("", `/api/friends(/.*)?`, CapDM, ""),
 		r("POST", `/api/notify/.*`, CapNotify, ""),
 		r("PUT", `/api/games/[^/]+/notify`, CapNotify, ""),
 		r("POST", `/api/tournaments`, CapCreateTournament, LimitCreateGame),

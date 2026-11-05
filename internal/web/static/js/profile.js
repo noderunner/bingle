@@ -11,6 +11,27 @@ import { notifyConfig, localContact, submitAddress, contactStatus, resendConfirm
 
 installNav();
 
+/** What an account chose about its friends. */
+function paintFriendSettings() {
+	const box = document.getElementById("friend-mail");
+	const status = document.getElementById("friend-settings-status");
+	api.friendSettings()
+		.then((settings) => {
+			box.checked = settings.mail_requests;
+			document.getElementById("friends-card").hidden = false;
+			box.addEventListener("change", () => {
+				status.textContent = "";
+				api.setFriendSettings({ mail_requests: box.checked })
+					.then(() => (status.textContent = "Saved."))
+					.catch((err) => {
+						box.checked = !box.checked;
+						status.textContent = err.message || "That did not save.";
+					});
+			});
+		})
+		.catch(() => {});
+}
+
 /** An account's own ratings, including those not on a leaderboard yet. */
 function paintRatings(handle) {
 	api.playerRatings(handle)
@@ -49,6 +70,7 @@ api.me()
 		if (me.kind === "account") {
 			line.append(`Signed in as @${me.handle}. `, link("/account", "Your account", "account-link"));
 			paintRatings(me.handle);
+			paintFriendSettings();
 		} else {
 			// A guest whose browser confirmed an address: that is the
 			// quickest way to an account (ADR 0073).

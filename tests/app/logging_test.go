@@ -82,6 +82,7 @@ func TestLog_NeverCarriesASecretEvenAtDebug(t *testing.T) {
 	// Two accounts, about, and a direct message between them (ADR 0073).
 	anaB, boB := member(t, a, baseURL, "anabel"), member(t, a, baseURL, "bobo")
 	ana, bo := anaB.here(), boB.here()
+	befriend(t, anaB, boB, "bobo", "anabel")
 	if code := anaB.do("POST", "/api/dm", map[string]any{"to": bo, "text": dmText}, nil); code != 200 {
 		t.Fatalf("Ana writes to Bo: %d", code)
 	}

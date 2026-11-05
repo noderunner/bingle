@@ -21,7 +21,8 @@ import (
 func statusForError(err error) int {
 	switch {
 	case errors.Is(err, store.ErrNotFound), errors.Is(err, store.ErrBatchNotFound), errors.Is(err, session.ErrGameDefNotFound), errors.Is(err, session.ErrAssetNotFound), errors.Is(err, session.ErrNotifyOff),
-		errors.Is(err, session.ErrNoSuchPerson), errors.Is(err, session.ErrTutorialNotFound):
+		errors.Is(err, session.ErrNoSuchPerson), errors.Is(err, session.ErrTutorialNotFound),
+		errors.Is(err, session.ErrNoAccount), errors.Is(err, session.ErrNoRequest):
 		return http.StatusNotFound
 	case errors.Is(err, store.ErrWrongTournamentState), errors.Is(err, store.ErrTournamentFull), errors.Is(err, session.ErrTooFewEntries), errors.Is(err, session.ErrNotEntered):
 		return http.StatusConflict
@@ -35,10 +36,14 @@ func statusForError(err error) int {
 		errors.Is(err, session.ErrKickNotAllowed), errors.Is(err, session.ErrWasReplaced), errors.Is(err, session.ErrTooManySetups):
 		return http.StatusConflict
 	case errors.Is(err, session.ErrNotYourImpulse), errors.Is(err, session.ErrNotAPlayer), errors.Is(err, session.ErrNotHost), errors.Is(err, session.ErrNotSeated), errors.Is(err, session.ErrVoiceNotJoined), errors.Is(err, session.ErrBadToken), errors.Is(err, session.ErrNotYourSeat), errors.Is(err, session.ErrNoPrincipal),
-		errors.Is(err, session.ErrNotHere):
+		errors.Is(err, session.ErrNotHere), errors.Is(err, session.ErrNotFriend), errors.Is(err, session.ErrInviteNotSeated):
 		return http.StatusForbidden
 	case errors.Is(err, session.ErrVoicePeerGone), errors.Is(err, session.ErrSuppressed), errors.Is(err, session.ErrNotVerified), errors.Is(err, session.ErrNotInCall), errors.Is(err, session.ErrTooManyHere):
 		return http.StatusConflict
+	case errors.Is(err, session.ErrFriendExists), errors.Is(err, session.ErrFriendLimit):
+		return http.StatusConflict
+	case errors.Is(err, session.ErrFriendLater):
+		return http.StatusTooManyRequests
 	case errors.Is(err, session.ErrChatTooFast), errors.Is(err, session.ErrSignalTooFast), errors.Is(err, session.ErrNotifyLimited):
 		return http.StatusTooManyRequests
 	case errors.Is(err, session.ErrGameRetired):
