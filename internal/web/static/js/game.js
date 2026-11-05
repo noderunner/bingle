@@ -24,6 +24,7 @@ import { createOptionsWindow } from "./options.js";
 import { cardTable, choiceGrid, hideCardZoom } from "./cards.js";
 import { solitaireTable } from "./solitaire.js";
 import { rulesIcon } from "./ui-icons.js";
+import { createBattleTheatre } from "./cw-battle.js";
 import { choiceIcon } from "./choice-icons.js";
 import { animalIcon, animalOf } from "./animals.js";
 import { themesFor, themeById } from "./themes.js";
@@ -75,6 +76,7 @@ const S = {
 		hints: store.get("bingle.hints", true),
 		lastMove: store.get("bingle.lastMove", true),
 		animate: store.get("bingle.animate", true),
+		battleAnim: store.get("bingle.battleAnim", true),
 		board: store.get("bingle.board", "wood"),
 		// Size of the big piece buttons in the player panes (a multiplier).
 		tileScale: Number(store.get("bingle.tileScale", 1)) || 1,
@@ -1713,6 +1715,10 @@ async function viewMove(seq) {
 	const total = S.moves.length;
 	if (seq === null || seq >= total) {
 		S.viewSeq = null;
+		S.replayed = null;
+		S.battleWatch = null;
+		S.battleKey = null;
+		if (theatre && theatre.isOpen()) theatre.close();
 		setHash(null);
 		render();
 		return;
@@ -1731,6 +1737,7 @@ async function viewMove(seq) {
 	S.preview = null;
 	setHash(seq);
 	render();
+	replayBattleAt(seq).catch(() => {});
 }
 
 /** Goes to a move of the history, with Next under the player's hand. */
@@ -2064,6 +2071,7 @@ function render() {
 
 	// A game that has not started shows its lobby instead of an empty board.
 	const lobby = inLobby();
+	if (areas && !lobby) queueMicrotask(syncBattleTheatre);
 	if (areas && !lobby && isMobileLayout()) {
 		renderMobile(seats, bottomSeat);
 		return;
@@ -4297,6 +4305,24 @@ function battlePanel() {
 			bt.step && !bt.resolved ? h("span", { class: "muted small" }, ` (${bt.step})`) : null
 		)
 	);
+	if (battlesAnimated() && (bt.resolved || !isLive())) {
+		card.append(
+			h(
+				"button",
+				{
+					type: "button",
+					class: "ghost small battle-replay",
+					id: "battle-replay",
+					title: "Watch this battle again",
+					onclick: async () => {
+						const found = await lastBattleBefore(isLive() ? S.moves.length : S.viewSeq);
+						if (found && found.snaps.length) battleTheatre().play(found.key, found.snaps, found.before);
+					},
+				},
+				"▶ Replay"
+			)
+		);
+	}
 	for (const side of bt.sides) {
 		const row = h("div", { class: "side", "data-seat": side.seat });
 		row.append(h("div", { class: "who" }, side.name));
@@ -4314,6 +4340,208 @@ function battlePanel() {
 		card.append(row);
 	}
 	return card;
+}
+
+// ---- the theatre of a battle --------------------------------------------------------------
+
+let theatre = null;
+
+const BATTLE_CATCH_UP = 12; // the most moves missed that are still played in order
+
+/**
+ * The map to copy for the stage. An upright phone draws none of its own, so one is drawn here,
+ * off the page, for the copy to be taken from.
+ */
+function battleMap() {
+	const shown = document.getElementById("board-svg");
+	if (shown) return shown;
+	const host = h("div", {});
+	drawBoard(host);
+	return host.querySelector("svg");
+}
+
+function battleTheatre() {
+	if (theatre) return theatre;
+	theatre = createBattleTheatre({
+		board: battleMap,
+		onPage: () => document.getElementById("board-svg"),
+		phone: isMobileLayout,
+		upright: () => isMobileLayout() && !isLandscape(),
+		onIdle: () => {
+			if (theatre.isOpen()) showChoicesOnTheatre();
+		},
+		ink: seatInk,
+		glyph: seatGlyph,
+		colorOf,
+		label: (type) => pieceLook(type).label,
+		icon: (type, color, px) => pieceIcon(pieceLook(type).shape, color, px),
+		unitOk: (area, type, color) => !!actingSeat() && (tokenOk(area, type, color) || tokenOk(area, ONGATE + type, color)),
+		onUnit: (area, type, color) => onToken(area, tokenOk(area, type, color) ? type : ONGATE + type, color),
+	});
+	window.addEventListener("resize", () => theatre.refresh());
+	window.addEventListener("keydown", (ev) => {
+		if (ev.key === "Escape" && theatre.isOpen()) theatre.dismiss();
+	});
+	return theatre;
+}
+
+/** Whether this page plays the battles: Cthulhu Wars does, unless the player asks it not to. */
+function battlesAnimated() {
+	if (!S.info || (S.info.family || S.info.id) !== "cthulhu-wars") return false;
+	return S.settings.battleAnim && !(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+}
+
+/** The units of the two sides of a battle standing in its area, in a position. */
+function battleUnitsIn(st, bt) {
+	const sides = new Map(bt.sides.map((x) => [colorOf(x.seat), x.seat]));
+	const units = [];
+	for (const pc of (st.cells || {})[bt.area] || []) if (sides.has(pc.color)) units.push({ seat: sides.get(pc.color), type: pc.piece });
+	return units;
+}
+
+/** What the theatre needs of a position with a battle in it. */
+function battleSnapshot(st) {
+	const bt = st && st.ext && st.ext.view && st.ext.view.battle;
+	if (!bt) return null;
+	return { bt, units: battleUnitsIn(st, bt), pained: (st.ext.battle && st.ext.battle.pained) || [] };
+}
+
+/** Tells one finished battle from another: a position goes on showing the last one fought. */
+function battleResult(snap) {
+	return snap && snap.bt.resolved ? JSON.stringify([snap.bt.area, snap.bt.att, snap.bt.def, snap.bt.sides]) : "";
+}
+
+/** A battle that was declared and finished within this position's move. */
+function battleFoughtInOneMove(snap, before) {
+	return !!snap && snap.bt.resolved && !(before && !before.bt.resolved) && battleResult(snap) !== battleResult(before);
+}
+
+/** Shows a live battle as it goes: called after every redraw. */
+function syncBattleTheatre() {
+	if (!S.state || !S.info) return;
+	if (!battlesAnimated() || inAnalysis() || S.tut) {
+		if (theatre && theatre.isOpen()) theatre.close();
+		S.battleWatch = { seq: S.moves.length, st: S.state };
+		S.battleKey = null;
+		return;
+	}
+	if (!isLive()) return;
+	const was = S.battleWatch;
+	const seq = S.moves.length;
+	if (was && was.seq === seq) {
+		if (theatre && theatre.isOpen()) showChoicesOnTheatre();
+		return;
+	}
+	S.battleWatch = { seq, st: S.state };
+	// A move taken back: whatever was playing did not happen.
+	if (was && seq < was.seq) {
+		S.battleKey = null;
+		if (theatre && theatre.isOpen()) theatre.close();
+	}
+	const seen = !!was && seq > was.seq; // otherwise the page has just opened on this position
+	const gap = seen ? seq - was.seq : 0;
+	// Moves can come faster than the page draws them. A short run is played in order, or a step
+	// of the battle would be lost; a long one (back from the history) only shows where it ended.
+	if (gap < 2 || gap > BATTLE_CATCH_UP) {
+		battleStep(gap === 1 ? was.st : null, S.state, seq, seen);
+		return;
+	}
+	const final = S.state;
+	S.battleCatchUp = (S.battleCatchUp || Promise.resolve()).then(async () => {
+		let prev = was.st;
+		for (let n = was.seq + 1; n <= seq && isLive(); n++) {
+			const st = n === seq ? final : await stateAt(n);
+			battleStep(prev, st, n, true);
+			prev = st;
+		}
+	}).catch(() => {});
+}
+
+/** A position's part in the battle under way, given the position before it if there was one. */
+function battleStep(prevState, st, seq, seen) {
+	const snap = battleSnapshot(st);
+	const before = prevState ? battleSnapshot(prevState) : null;
+	if (!snap) {
+		S.battleKey = null;
+		return;
+	}
+	const bt = snap.bt;
+	if (!bt.resolved || S.battleKey || (seen && battleFoughtInOneMove(snap, before))) {
+		const opening = !S.battleKey;
+		if (opening) S.battleKey = `${bt.area}|${bt.att}|${bt.def}|${seq}`;
+		battleTheatre().feed(S.battleKey, snap, opening && prevState ? battleUnitsIn(prevState, bt) : null, seen);
+	}
+	if (bt.resolved) S.battleKey = null;
+	if (theatre && theatre.isOpen()) showChoicesOnTheatre();
+}
+
+/** A choice elsewhere on the map needs the map; one in the battle is made on the stage. */
+function showChoicesOnTheatre() {
+	const bt = (battleSnapshot(S.state) || {}).bt;
+	// The retreat comes after the zoom out, which frees the map by itself.
+	const onStage = !!bt && !bt.resolved && bt.step !== "retreat";
+	const mine = onStage && !theatre.isReplay() && isMyImpulse();
+	const elsewhere = mine && [...activeBuilder().nextPositions()].some((pos) => pos !== bt.area);
+	theatre.refresh();
+	// A phone's buttons are on a page of their own, under the stage: once the show has caught up
+	// with a choice that cannot be made by touching a unit, the stage steps aside for it.
+	theatre.hide(elsewhere || (mine && isMobileLayout() && theatre.isIdle() && !theatre.hasChoices()));
+}
+
+/** The position after a move, from the cache of the history. */
+async function stateAt(seq) {
+	if (seq >= S.moves.length) return S.state;
+	if (!S.viewCache.has(seq)) S.viewCache.set(seq, (await api.state(code, seq, S.me.name)).state);
+	return S.viewCache.get(seq);
+}
+
+/** The positions of the battle a move belongs to, from the declaration to the zoom out; null if it belongs to none. */
+async function battleAround(seq) {
+	const snapAt = async (n) => (n > 0 ? battleSnapshot(await stateAt(n)) : null);
+	const here = await snapAt(seq);
+	if (!here) return null;
+	if (here.bt.resolved) {
+		const before = await snapAt(seq - 1);
+		// A position long after a battle still shows it: only the battle's own moves start the show.
+		if (!(before && !before.bt.resolved) && !battleFoughtInOneMove(here, before)) return null;
+	}
+	const fighting = (snap) => !!snap && !snap.bt.resolved && snap.bt.area === here.bt.area;
+	let start = seq;
+	while (start > 1 && fighting(await snapAt(start - 1))) start--;
+	const snaps = [];
+	for (let n = start; n <= S.moves.length && snaps.length < 120; n++) {
+		const snap = await snapAt(n);
+		if (!snap || snap.bt.area !== here.bt.area) break;
+		snaps.push(snap);
+		if (snap.bt.resolved) break;
+	}
+	const earlier = start > 1 ? await stateAt(start - 1) : null;
+	return { key: `replay|${here.bt.area}|${start}`, snaps, before: earlier ? battleUnitsIn(earlier, here.bt) : null };
+}
+
+/** The battle whose result a position shows: the latest fought up to it, however long ago. */
+async function lastBattleBefore(seq) {
+	for (let n = seq; n > 0; n--) {
+		if (S.moves[n - 1].action !== "battle") continue;
+		const found = await battleAround(n);
+		if (found) return found;
+	}
+	return null;
+}
+
+/** Plays again the battle a move of the history belongs to, unless it is already showing. */
+async function replayBattleAt(seq) {
+	if (!battlesAnimated() || S.autoplay) return;
+	const found = seq ? await battleAround(seq) : null;
+	if (S.viewSeq !== seq) return; // the player has moved on
+	if (!found || !found.snaps.length) {
+		S.replayed = null;
+		if (theatre && theatre.isOpen()) theatre.close();
+		return;
+	}
+	if (S.replayed === found.key) return;
+	S.replayed = found.key;
+	battleTheatre().play(found.key, found.snaps, found.before);
 }
 
 function handPanel(seat) {
@@ -5222,7 +5450,8 @@ function refreshOptions() {
 		el.append(
 			settingToggle("hints", "opt-hints", "Highlight legal moves", "bingle.hints"),
 			settingToggle("lastMove", "opt-lastmove", "Highlight last move", "bingle.lastMove"),
-			settingToggle("animate", "opt-animate", "Animate moves", "bingle.animate")
+			settingToggle("animate", "opt-animate", "Animate moves", "bingle.animate"),
+			...((S.info.family || S.info.id) === "cthulhu-wars" ? [settingToggle("battleAnim", "opt-battle-anim", "Battle animation", "bingle.battleAnim")] : [])
 		);
 		if (hasHexStyles(S.info)) {
 			const styleSel = h("select", { id: "opt-hex-style", "aria-label": "Board style" });

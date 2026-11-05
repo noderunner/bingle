@@ -40,6 +40,7 @@ func openGameAs(t *testing.T, ctx context.Context, baseURL, room, def, name stri
 		chromedp.Navigate(baseURL+"/healthz"),
 		chromedp.Evaluate(fmt.Sprintf(`localStorage.setItem("bingle.games", %q); localStorage.setItem("bingle.name", %q); true`, games, nameJSON), nil),
 		chromedp.Evaluate(fmt.Sprintf(`localStorage.setItem("bingle.confirm", %q); true`, confirmSetting(def)), nil),
+		chromedp.Evaluate(`if (localStorage.getItem("bingle.battleAnim") === null) localStorage.setItem("bingle.battleAnim", "false"); true`, nil),
 		chromedp.Navigate(baseURL+"/game/"+room),
 		chromedp.WaitReady("#board-svg, #card-table", chromedp.ByQuery),
 	); err != nil {
