@@ -224,9 +224,12 @@ type getGameResponse struct {
 	// Lobby: the game waits for its host to start it; HostSeat is the seat of
 	// the person who created it. InviteURL is the link that brings a person
 	// to the game (the configured public URL, else this server's address).
-	Lobby     bool   `json:"lobby,omitempty"`
-	HostSeat  int    `json:"host_seat,omitempty"`
-	InviteURL string `json:"invite_url,omitempty"`
+	Lobby    bool `json:"lobby,omitempty"`
+	HostSeat int  `json:"host_seat,omitempty"`
+	// ListTitle and Tags are what a list of games shows for it, if its rules say.
+	ListTitle string   `json:"list_title,omitempty"`
+	Tags      []string `json:"tags,omitempty"`
+	InviteURL string   `json:"invite_url,omitempty"`
 
 	// Retired: this server no longer offers the game, GameName is what it
 	// was called. The answer is then a record: the seats, the result and
@@ -282,7 +285,10 @@ func (h *handlers) handleGetGame(w http.ResponseWriter, r *http.Request) {
 			Yours: s.PrincipalID != "" && s.PrincipalID == auth.IDFrom(r.Context())}
 	}
 
+	listTitle, tags := h.mgr.GameListLabel(snapshot.GameDefID)
 	resp := getGameResponse{
+		ListTitle:   listTitle,
+		Tags:        tags,
 		GameDefID:   snapshot.GameDefID,
 		Status:      snapshot.Status,
 		Seats:       seats,

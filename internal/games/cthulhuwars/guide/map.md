@@ -1,6 +1,6 @@
 # The map
 
-![The map of this game|900](board.svg "The map of this game. Seas have blue gradients and waves, lands their own colours; the dark badge after a name is a glyph.")
+![The map of this game|900](board.svg "The map of this game, with the name of each area; the dark badge after a name is a glyph.")
 
 The world comes in **eight layouts**, four of Earth and four of the Primeval Map. You choose one when you create the game; the layout also decides how many cults sit
 at the table (which cults, and whether the High Priests are in, is chosen separately).
@@ -22,7 +22,7 @@ Windwalker, Sleeper, Great Cthulhu, Crawling Chaos and Yellow Sign in seats 1 to
 
 > [!NOTE]
 > Every layout is traced from a scan of its printed board: its areas, its borders, and where its glyphs stand.
-> The picture behind the areas is generated in the board's colours.
+> The picture behind the areas is painted in the board's colours.
 
 Units move along shared borders (Crawling Chaos flies two areas). The Pacific and the Indian Ocean continue
 round both edges of the board: each is one area drawn in two pieces.

@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/chromedp/cdproto/runtime"
 	"github.com/chromedp/chromedp"
 
 	"github.com/noderunner/bingle/internal/auth"
@@ -279,10 +280,141 @@ func TestWebCthulhuWarsSetup_MoreFactionsThanSeats(t *testing.T) {
 		t.Errorf("Alice's choices = %q", got)
 	}
 	evalString(t, ctx, `(function () { var s = document.getElementById("cult-1"); s.value = "bg"; s.dispatchEvent(new Event("change", { bubbles: true })); return "ok"; })()`)
-	waitJS(t, ctx, "her choice", `document.getElementById("cult-1") && document.getElementById("cult-1").value === "bg" && document.querySelector('#lobby-seats [data-seat="1"] .swatch.color-red') !== null`, 15*time.Second)
+	waitJS(t, ctx, "her choice", `document.getElementById("cult-1") && document.getElementById("cult-1").value === "bg" && document.querySelector('#lobby-seats [data-seat="1"] img.seat-glyph[src$="/bg.svg"]') !== null`, 15*time.Second)
 	mu.Lock()
 	defer mu.Unlock()
 	if len(jsErrors) > 0 {
 		t.Errorf("uncaught JS exceptions: %v", jsErrors)
+	}
+}
+
+// The lists of games call every table of Cthulhu Wars by that name, and badges say what is unusual.
+func TestWebCthulhuWars_TheListsShowTheNameAndBadges(t *testing.T) {
+	baseURL := newRESTTestServer(t)
+	create := func(def string, options map[string]any) string {
+		t.Helper()
+		var created struct {
+			RoomCode string `json:"room_code"`
+		}
+		body := map[string]any{"game_def_id": def, "player_name": "Alice", "lobby": true, "options": options}
+		if code := doJSON(t, "POST", baseURL+"/api/games", body, &created); code != 200 {
+			t.Fatalf("create %s %v: %d", def, options, code)
+		}
+		return created.RoomCode
+	}
+	plain := create("cthulhu-wars", nil)
+	primeval := create("cthulhu-wars-primeval-5p", nil)
+	priests := create("cthulhu-wars", map[string]any{"high-priests": true})
+	neutral := create("cthulhu-wars", map[string]any{"neutral-units": []string{"dimensional-shambler"}})
+	expansion := create("cthulhu-wars", map[string]any{"factions": []string{"ww", "cc", "bg", "ys"}})
+
+	var list struct {
+		Games []struct {
+			RoomCode string   `json:"room_code"`
+			Name     string   `json:"name"`
+			Tags     []string `json:"tags"`
+		} `json:"games"`
+	}
+	if code := doJSON(t, "GET", baseURL+"/api/games", nil, &list); code != 200 {
+		t.Fatalf("list: %d", code)
+	}
+	want := map[string]string{
+		plain:     "Core only",
+		primeval:  "Primeval Map",
+		priests:   "High Priests",
+		neutral:   "Neutral units",
+		expansion: "",
+	}
+	for _, g := range list.Games {
+		w, ok := want[g.RoomCode]
+		if !ok {
+			continue
+		}
+		delete(want, g.RoomCode)
+		if g.Name != "Cthulhu Wars" {
+			t.Errorf("%s is called %q", g.RoomCode, g.Name)
+		}
+		if got := strings.Join(g.Tags, ","); got != w {
+			t.Errorf("%s has badges %q, want %q", g.RoomCode, got, w)
+		}
+	}
+	if len(want) != 0 {
+		t.Errorf("not listed: %v", want)
+	}
+
+	// One game by itself says the same, for the player's own list.
+	var one struct {
+		ListTitle string   `json:"list_title"`
+		Tags      []string `json:"tags"`
+	}
+	doJSON(t, "GET", baseURL+"/api/games/"+priests, nil, &one)
+	if one.ListTitle != "Cthulhu Wars" || strings.Join(one.Tags, ",") != "High Priests" {
+		t.Errorf("the game says %q %v", one.ListTitle, one.Tags)
+	}
+
+	// The page: the Join window shows the badges, and the name with the code.
+	ctx, cancel := newChromedpContext(t, 60*time.Second)
+	defer cancel()
+	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/")); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "the join button", `document.getElementById("open-join") !== null`, 20*time.Second)
+	clickSel(t, ctx, "#open-join")
+	row := `document.querySelector('#join-open-games li[data-code="` + primeval + `"]')`
+	waitJS(t, ctx, "the row", row+` !== null`, 15*time.Second)
+	if got := evalString(t, ctx, row+`.querySelector(".title").textContent`); got != "Cthulhu Wars · "+primeval {
+		t.Errorf("the title is %q", got)
+	}
+	if got := evalString(t, ctx, row+`.querySelector(".game-tag").textContent`); got != "Primeval Map" {
+		t.Errorf("the badge is %q", got)
+	}
+	if got := evalString(t, ctx, row+`.querySelector(".meta").textContent`); !strings.HasPrefix(got, "Alice ") {
+		t.Errorf("who is at the table: %q", got)
+	}
+
+	// The rules show the painted board, with its names.
+	var svg string
+	if err := chromedp.Run(ctx, chromedp.Evaluate(`fetch("/api/game-defs/cthulhu-wars/assets/board.svg").then(r => r.text()).then(t => t.includes("data:image/webp;base64,") && t.includes(">Asia<") ? "ok" : "no art")`, &svg, func(p *runtime.EvaluateParams) *runtime.EvaluateParams { return p.WithAwaitPromise(true) })); err != nil {
+		t.Fatal(err)
+	}
+	if svg != "ok" {
+		t.Errorf("the rules' map: %s", svg)
+	}
+}
+
+// The room code leaves the top bar, the Round card keeps what follows its phases at the right, and
+// the lobby shows each seat's faction by its glyph.
+func TestWebCthulhuWars_TheRoundCardAndTheLobby(t *testing.T) {
+	baseURL := newRESTTestServer(t)
+	var lobby, live struct {
+		RoomCode string `json:"room_code"`
+	}
+	doJSON(t, "POST", baseURL+"/api/games", map[string]any{"game_def_id": "cthulhu-wars", "player_name": "Alice", "lobby": true}, &lobby)
+	doJSON(t, "POST", baseURL+"/api/games", map[string]any{"game_def_id": "cthulhu-wars", "player_name": "Alice", "opponent": "random"}, &live)
+	ctx, cancel := newChromedpContext(t, 60*time.Second)
+	defer cancel()
+	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1400, 900)); err != nil {
+		t.Fatal(err)
+	}
+	openGameAs(t, ctx, baseURL, live.RoomCode, "cthulhu-wars", "Alice")
+	waitJS(t, ctx, "the Round card", `document.getElementById("round-tail") !== null`, 15*time.Second)
+	if !evalBool(t, ctx, `(function () {
+		var bar = document.getElementById("round-bar"), tail = document.getElementById("round-tail");
+		var pad = parseFloat(getComputedStyle(bar).paddingRight) + parseFloat(getComputedStyle(bar).borderRightWidth);
+		var last = tail.lastElementChild.getBoundingClientRect();
+		return Math.abs(bar.getBoundingClientRect().right - pad - last.right) < 2 && tail.querySelector("#ritual") !== null;
+	})()`) {
+		t.Error("what follows the phases should stand at the right of the card")
+	}
+	if strings.Contains(evalString(t, ctx, `document.querySelector(".topbar").textContent`), live.RoomCode) {
+		t.Error("the room code is still in the top bar")
+	}
+
+	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/game/"+lobby.RoomCode)); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "the seats", `document.querySelectorAll("#lobby-seats .lobby-seat img.seat-glyph").length === 4`, 15*time.Second)
+	if n := evalInt(t, ctx, `document.querySelectorAll("#lobby-seats .swatch").length`); n != 0 {
+		t.Errorf("%d coloured squares left in the lobby", n)
 	}
 }

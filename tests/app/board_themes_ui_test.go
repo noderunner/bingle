@@ -110,6 +110,15 @@ func TestWebBoardThemes_OnlyStoneGamesOfferThem(t *testing.T) {
 			t.Errorf("%s: theme %q, want %q", c.def, got, want)
 		}
 		clickSel(t, ctx, "#open-options")
+		// A map has no board to theme at all.
+		if c.def == "cthulhu-wars" {
+			waitJS(t, ctx, "the options", `document.querySelector("#game-options #options-display #opt-hints") !== null`, 10*time.Second)
+			if evalBool(t, ctx, `document.getElementById("opt-board") !== null`) {
+				t.Error("Cthulhu Wars offers a board theme")
+			}
+			cancel()
+			continue
+		}
 		waitJS(t, ctx, c.def+": the theme list", `document.getElementById("opt-board") !== null`, 10*time.Second)
 		if n := evalInt(t, ctx, `document.querySelectorAll('#opt-board optgroup option').length`); (n == 6) != c.offer {
 			t.Errorf("%s: %d illustrated themes offered", c.def, n)
