@@ -86,7 +86,7 @@ Short records of choices made for the `bingle` project during the requirements i
 | [0080](0080-rated-games-and-results.md) | Rated games: Glicko-2 per family, chosen at setup, written after the game ends from a mark made in the transaction that ends it, and kept apart from the games retention deletes |
 | [0081](0081-clock-minutes-and-game-defaults.md) | The setup takes 1 to 60 minutes and keeps two long times, and a game's definition can suggest a time, which never turns a clock on |
 | [0082](0082-correspondence-tournaments.md) | Correspondence tournaments: round robin and Swiss, a sweep instead of a scheduler, results copied to the tournament's own tables, and turn mail by default |
-| [0083](0083-a-move-stands.md) | A move stands once the turn has passed: take-backs are gone, Back takes back steps of the turn still being played, and a move that cannot come back waits for Submit in every game |
+| [0083](0083-a-move-stands.md) | A move stands once the turn has passed: take-backs are gone, Back takes back steps of the turn still being played, and a move that cannot come back waits for Submit in every game (partly replaced by 0114) |
 | [0084](0084-tutorial-pictures-need-not-be-reachable.md) | A tutorial's `pieces` draws any board the game can draw, reachable or not, and `illegal` marks what must not be done |
 | [0085](0085-card-sets-belong-to-the-table.md) | A themed set of cards is chosen when a game is set up and is the same for everyone at the table; its art and its lettering are drawn in code |
 | [0087](0087-the-setup-shows-the-variant-chosen.md) | Variants are chosen from a list; a table of cards shows a game in progress from its own rules; a tutorial can belong to one variant |
@@ -96,6 +96,7 @@ Short records of choices made for the `bingle` project during the requirements i
 | [0091](0091-taking-over-a-seat.md) | A bot can take a seat for good: by a vote in a real-time game, or when time runs out at a table of three or more, and the clock now works at any number of seats |
 | [0090](0090-real-time-tournaments.md) | A real-time tournament starts by itself at its start time: check-in, one game of a pairing at a time, a break between rounds, and a first-move deadline where a no-show forfeits |
 | [0092](0092-a-game-page-that-fits-the-screen.md) | A game page is as tall as the window and never scrolls: the board fills one side, the cards scroll beside it, and on your turn the actions are pinned in view; Blooms first |
+| [0114](0114-impulses-selections-moves-and-gestures.md) | An impulse is what one seat chooses before the game needs another seat or chance, submitted at once; selections are its parts, a move its data and gestures the interface's, and a selections query lets bots and clients walk it |
 | [0113](0113-the-api-describes-itself.md) | The API says where to start at `GET /api`, and serves its own docs |
 | [0112](0112-legal-moves-go-to-whoever-holds-the-seat.md) | In a game with secrets, legal moves go to whoever holds the seat |
 | [0111](0111-a-tutorial-points-at-the-page-by-name.md) | A tutorial points at the page by name, not by selector |
@@ -109,8 +110,8 @@ Short records of choices made for the `bingle` project during the requirements i
 | [0103](0103-one-history-card.md) | The history is one card with one set of step buttons, written out in words or as notation, and not two tabs |
 | [0102](0102-joining-and-reading-back.md) | Join Game joins or watches by itself, under the profile's name; unread chat is counted by the browser; the rule of the History tab goes to your last move in the Moves tab |
 | [0101](0101-the-x-resigns-and-games-are-found-where-they-are-wanted.md) | The ✕ of an active game resigns from it, after asking; a game's games are in its setup, and tables looking for players in Join Game |
-| [0100](0100-a-move-gathers-its-units.md) | Cthulhu Wars: the page gathers the units of a Move from one area and sends them to one destination, and a Move always waits for Done |
-| [0099](0099-impulses.md) | The seat to act is the impulse seat, everywhere, and the impulse card names it over what it is asked to choose, for everyone |
+| [0100](0100-a-move-gathers-its-units.md) | Cthulhu Wars: the page gathers the units of a Move from one area and sends them to one destination, and a Move always waits for Done (partly replaced by 0114) |
+| [0099](0099-impulses.md) | The seat to act is the impulse seat, everywhere, and the impulse card names it over what it is asked to choose, for everyone (partly replaced by 0114) |
 | [0098](0098-prototype-games-and-rules-versions.md) | Prototype games: each version of the rules is a folder holding the whole game and a game of its own, `family-version`; the family's name means the newest, and a game keeps the version it started with |
 | [0097](0097-every-map-is-traced.md) | Cthulhu Wars: every Earth and Primeval board up to five players is traced, the two four-player Primeval boards become layouts, and each board's own print decides its borders and Glaciers |
 | [0096](0096-earth-glyphs-and-starts-follow-the-board.md) | Cthulhu Wars: Earth's glyphs and the Black Goat's and Crawling Chaos' starts follow the printed boards |

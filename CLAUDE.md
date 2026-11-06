@@ -99,9 +99,24 @@ git -c credential.helper='!f() { echo username=x-access-token; echo "password=$(
 
 ## Words
 
-An **impulse** is the current seat or player being asked to act, whatever the game calls it: a turn, an
-action, or a reaction it is waiting on. Each step of a move is its own impulse. The **impulse card** is the
-card that shows it (ADR 0099). A game's own rules and its players' words keep their terms.
+[ADR 0114](docs/decisions/0114-impulses-selections-moves-and-gestures.md) defines these; use them the same way in
+code, docs, API paths and names.
+
+- An **impulse** is the choices one seat makes before the game needs something from elsewhere: another seat's
+  choice (a reaction included), something the seat can't know yet (a roll, a draw, a card turned up), or the end of
+  the game. It is submitted in one call and applied as one, whatever the game calls it. The **impulse seat** is the
+  seat whose impulse the game is waiting for, and the **impulse card** shows it (ADR 0099).
+- A reaction window always ends the acting seat's impulse; a seat's settings only decide whether its player or the
+  session answers for it.
+- A **selection** is one self-contained choice within an impulse, with its own notation: a stone, one unit's move. A
+  **move** is the selections of one impulse, a **pending move** one not yet submitted, and a **ply** one impulse.
+- A **gesture** is one thing a player does in an interface: a click, a tap, a drag, a key, Submit or Back. The rules
+  never depend on gestures.
+- *Step* is none of these: it keeps the DSL's `step` action, a tutorial's steps and a training environment's step.
+- The code predates ADR 0114 in places: until its first phase, `state.Move` is one selection, `state.Step` is gesture
+  data, and the Go games send each selection as a move of its own.
+
+A game's own rules and its players' words keep their terms.
 
 ## The shape of the code
 

@@ -1,6 +1,7 @@
 # 0100. Cthulhu Wars: a Move gathers its units, and always waits for Done
 
-Status: accepted (2026-11-04)
+Status: accepted (2026-11-04). Sending one move per unit goes with the first phase of
+[ADR 0114](0114-impulses-selections-moves-and-gestures.md): the units of a queue will be sent as one move.
 
 ## Context
 

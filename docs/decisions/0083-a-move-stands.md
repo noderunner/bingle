@@ -1,7 +1,8 @@
 # 0083. A move stands once the turn has passed
 
 Status: accepted (2026-11-02). Replaces the undo of ADR 0018 and the take-backs of ADR 0021, and the parts
-of ADRs 0079, 0080 and 0082 that dealt with taking moves back.
+of ADRs 0079, 0080 and 0082 that dealt with taking moves back. The steps of a turn it stores and takes back, and
+`move-final`, go with the first phase of [ADR 0114](0114-impulses-selections-moves-and-gestures.md).
 
 ## Context
 

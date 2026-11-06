@@ -43,7 +43,7 @@ before, only seats nobody owns ([ADR 0067](decisions/0067-principals-and-guest-k
 | `get_legal_moves` | every legal move for the player to move (notation + structured fields); in a game with secrets, empty unless the request holds that seat (ADR 0112) |
 | `make_move` | play `notation` (preferred), or structured action/piece/from/to/count/path/drops/aim |
 | `suggest_move` | a built-in bot's choice for the position (or a variation); only in games against bots or after the game |
-| `undo_move` / `resign` | take back the last step of the turn you are still playing (a move stands once the turn has passed) / concede |
+| `undo_move` / `resign` | take back the last selection of the turn you are still playing (a move stands once the turn has passed) / concede |
 | `draw` | offer / cancel / accept / decline a draw (human opponents only) |
 | `simulate` | what-if: apply a line of moves to the current or a past position |
 | `import_game` | load a PTN document or move list into a new room (validated, full history) for replay and `simulate` / `suggest_move` analysis |
