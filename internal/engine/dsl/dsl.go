@@ -742,6 +742,9 @@ type DecideDef struct {
 	Type  string `json:"type"`
 	Tag   string `json:"tag,omitempty"`
 	Piece string `json:"piece,omitempty"`
+	// Pool makes "most" compare each seat's reserve pool instead of its
+	// pieces on the board (Blooms' captures at the move limit).
+	Pool string `json:"pool,omitempty"`
 	// Komi maps a seat number (as a string) to bonus points for "score".
 	Komi map[string]float64 `json:"komi,omitempty"`
 }

@@ -483,9 +483,13 @@ func decide(game *catalog.CompiledGame, ns *BoardState, d *dsl.DecideDef, mover 
 		best, bestSeats := -1, []int(nil)
 		for _, seat := range game.Definition.Seats {
 			n := 0
-			for _, id := range ns.Occupied() {
-				if topMatches(game, ns, id, seat.Color, d.Tag, d.Piece) {
-					n++
+			if d.Pool != "" {
+				n = ns.Reserve(seat.Color, d.Pool)
+			} else {
+				for _, id := range ns.Occupied() {
+					if topMatches(game, ns, id, seat.Color, d.Tag, d.Piece) {
+						n++
+					}
 				}
 			}
 			switch {
