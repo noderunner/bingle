@@ -146,8 +146,8 @@ docs/                     the manual; docs/decisions has an ADR for each big dec
   positions, custom start positions. ([docs/dsl.md](docs/dsl.md))
 * **Bots** — random, tactical, minimax (alpha-beta) and Monte-Carlo tree
   search, for any game.
-* **API** — REST + WebSocket for custom clients (`/api`, `/ws/{code}`).
-  ([docs/api.md](docs/api.md))
+* **API** — REST + WebSocket for custom clients (`/api`, `/ws/{code}`). `GET /api` says where to
+  start and `GET /api/docs` serves the docs ([docs/api.md](docs/api.md), with a curl walkthrough).
 * **MCP** — rooms for agents, plus gym-style in-memory environments
   (`env_reset` / `env_step` / `env_fork` / `env_batch_step`) for training, with
   numeric board planes, fixed action IDs, proven puzzles, bot matches and

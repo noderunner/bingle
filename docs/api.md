@@ -5,6 +5,10 @@ code: `400` bad input or an illegal move, `403` not your turn / not a player,
 `404` unknown room or game, `409` wrong game state (not active, seats full,
 nothing to undo). Room codes are case-insensitive.
 
+`GET /api` lists where to start, and `GET /api/docs` serves this page from the server. A path the
+API does not have is `404 {"error"}` and a wrong method `405 {"error"}`, both pointing back at
+`GET /api`.
+
 **Who is asking** ([ADR 0067](decisions/0067-principals-and-guest-keys.md)). A request comes from a
 *guest* when it carries a guest key — the `bingle_guest` cookie of a browser, or
 `Authorization: Bearer bgg_…` from a script — and is anonymous otherwise. A seat belongs to the
@@ -20,6 +24,83 @@ cannot), or it is `403`. A key unused for `BINGLE_GUEST_IDLE` (90 days) stops wo
 
 Position documents appear as `state` (full: `cells` = stacks bottom-to-top,
 `reserves`, `ply`) next to the legacy `board_state` (position → top piece).
+
+## Getting started with curl
+
+A game of Hex on the 7×7 board against the built-in random bot, from nothing. Every game is played
+the same way: ask for the legal moves, send one back by its notation.
+
+**1. Find a game, and how its moves are written.** `GET /api/game-defs` lists every game; one game's
+description has its `rules` and its `notation_help`.
+
+```sh
+B=http://localhost:8080
+curl -s $B/api/game-defs                 # [{"id": "hex-7", "name": "Hex (7×7)", "seats_required": 2, …}, …]
+curl -s $B/api/game-defs/hex-7           # {"rules": […], "notation_help": ["Place a piece: just name the square.", …], "options": […], …}
+```
+
+**2. Become somebody.** A guest key says which seats are yours. Send it with every request.
+
+```sh
+KEY=$(curl -s -X POST $B/api/guest | jq -r .key)    # {"key": "bgg_…"}
+A="Authorization: Bearer $KEY"
+```
+
+**3. Create the game.** With `opponent` a bot fills the other seat and the game starts at once.
+Without it the game waits for a second player, who joins with
+`POST /api/games/{code}/join {"player_name": "Ben"}` and their own key.
+
+```sh
+curl -s -X POST -H "$A" $B/api/games -d '{"game_def_id": "hex-7", "player_name": "Ana", "opponent": "random"}'
+# {"room_code": "5SU9GG", "seat": 1, "color": "red", "status": "active"}
+CODE=5SU9GG
+```
+
+**4. See whose impulse it is, and what they may do.** `impulse_seat` is the seat to act; the legal
+moves are that seat's.
+
+```sh
+curl -s -H "$A" $B/api/games/$CODE/state
+# {"state": {"v": 2, "cells": {}, "ply": 0}, "impulse_seat": 1, "status": "active", "move_seq": 0, "winner_seat": null, …}
+curl -s -H "$A" $B/api/games/$CODE/moves/legal
+# {"seat": 1, "moves": [{"notation": "a1", "action": "place", "piece": "stone", "to": "a1"}, …]}
+```
+
+**5. Play a move.** `player_name` says which of your seats is moving. The bot's reply comes back in
+the same answer, under `bot_moves`, and `state` is the position after it.
+
+```sh
+curl -s -X POST -H "$A" $B/api/games/$CODE/moves -d '{"player_name": "Ana", "notation": "d4"}'
+# {"move": {"seq": 1, "seat": 1, "notation": "d4", …},
+#  "state": {"state": {"cells": {"c1": [{"piece": "stone", "color": "blue"}], "d4": [{"piece": "stone", "color": "red"}]}, "ply": 2},
+#            "impulse_seat": 1, "status": "active", "move_seq": 2, …},
+#  "bot_moves": [{"seq": 2, "seat": 2, "notation": "c1", …}]}
+```
+
+**6. Look at the board.** `observe` draws it as text and lists your moves when it is your impulse.
+
+```sh
+curl -s -H "$A" "$B/api/games/$CODE/observe?player_name=Ana" | jq -r .board_text
+#    a   b   c   d   e   f   g
+#  1 .   .   bS  .   .   .   .
+#  2   .   .   .   .   .   .   .
+#  3     .   .   .   .   .   .   .
+#  4       .   .   .   rS  .   .   .
+#  …
+```
+
+**7. Play on until `status` is `finished`**, then read `winner_seat` and `end_reason`, or give up with
+`POST /api/games/{code}/resign {"player_name": "Ana"}`. `GET /api/games/{code}/moves` is the record.
+Against a person, wait for their move by polling `state` or by listening on `GET /ws/{code}`.
+
+When something is wrong the answer says so:
+
+```sh
+curl -s -X POST -H "$A" $B/api/games/$CODE/moves -d '{"player_name": "Ana", "notation": "z9"}'
+# 400 {"error": "state: cannot parse move \"z9\" in this game's notation"}
+curl -s -X POST $B/api/games/$CODE/moves -d '{"player_name": "Ana", "notation": "a1"}'      # no key
+# 403 {"error": "session: that seat is somebody else's (it was taken in another browser)"}
+```
 
 ## Accounts (`/auth`, ADR 0068)
 

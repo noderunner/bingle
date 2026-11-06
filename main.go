@@ -25,6 +25,11 @@ import (
 //go:embed CHANGELOG.md
 var changelog string
 
+// apiDocs is docs/api.md, built into the binary so that a client can read it from the server.
+//
+//go:embed docs/api.md
+var apiDocs string
+
 func main() {
 	// A logger at the defaults, so a complaint about the configuration has
 	// somewhere to go before the configuration has been read.
@@ -42,6 +47,7 @@ func main() {
 		os.Exit(1)
 	}
 	cfg.Changelog = changelog
+	cfg.APIDocs = apiDocs
 
 	// "bingle account …" manages accounts and exits; anything else runs the
 	// server.
