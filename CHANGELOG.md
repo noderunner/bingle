@@ -4,6 +4,11 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.83.0 - 2026-11-06
+
+### Bingle Core 0.83.0
+- **For game authors: turns of several choices.** A game definition can now say that a turn is made of several parts, such as two stones, or a move and then a wall, with how many choices each part takes and a *Done* button to stop early. An opening can have a turn of its own, as in Connect6's single first stone. Played on the page, the choices of a turn are built up and sent together, like a Blooms turn. Games already in the catalog play as before. See *A turn of several selections* in the definition guide.
+
 ## 0.82.1 - 2026-11-06
 
 ### Bingle Core 0.82.1

@@ -43,12 +43,38 @@ type BoardState struct {
 	prev   string
 	passes int
 
+	// turn is the turn of several selections in progress (ADR 0115), nil
+	// between turns.
+	turn *TurnProgress
+
 	// ext is the game-specific payload of a ruleset game (terrain, unit
 	// conditions, momentum, ...): a json.RawMessage straight from a document
 	// until the ruleset decodes it, then the ruleset's own value (which
 	// must implement ExtClone).
 	ext any
 }
+
+// TurnProgress is how far a turn of several selections has gone: the part it
+// is in, how many selections that part has, and the pieces "distinct" has used
+// in it. Start is the position the turn began from, kept for a ko rule.
+type TurnProgress struct {
+	Part   int      `json:"part"`
+	Made   int      `json:"made"`
+	Pieces []string `json:"pieces,omitempty"`
+	Start  string   `json:"start,omitempty"`
+}
+
+func (t *TurnProgress) clone() *TurnProgress {
+	if t == nil {
+		return nil
+	}
+	c := *t
+	c.Pieces = append([]string(nil), t.Pieces...)
+	return &c
+}
+
+// Turn is the turn of several selections in progress, or nil between turns.
+func (s *BoardState) Turn() *TurnProgress { return s.turn.clone() }
 
 // ExtClone is implemented by the payload a ruleset keeps in a position so
 // that BoardState.Clone can copy it.
@@ -194,6 +220,7 @@ func (s *BoardState) Clone() *BoardState {
 	clone.ply = s.ply
 	clone.prev = s.prev
 	clone.passes = s.passes
+	clone.turn = s.turn.clone()
 	switch v := s.ext.(type) {
 	case nil:
 	case ExtClone:
@@ -262,6 +289,7 @@ type stateJSON struct {
 	Ply      int                       `json:"ply"`
 	Prev     string                    `json:"prev,omitempty"`
 	Passes   int                       `json:"passes,omitempty"`
+	Turn     *TurnProgress             `json:"turn,omitempty"`
 	Ext      json.RawMessage           `json:"ext,omitempty"`
 }
 
@@ -278,6 +306,7 @@ func (s *BoardState) MarshalJSON() ([]byte, error) {
 		Ply:    s.ply,
 		Prev:   s.prev,
 		Passes: s.passes,
+		Turn:   s.turn,
 	}
 	switch v := s.ext.(type) {
 	case nil:
@@ -365,6 +394,7 @@ func (s *BoardState) UnmarshalJSON(data []byte) error {
 	s.cells = cells
 	s.reserves = make(map[string]map[string]int)
 	s.ply = 0
+	s.turn = nil
 	s.ext = nil
 	return nil
 }
@@ -401,6 +431,7 @@ func (s *BoardState) unmarshalV2(data []byte, version int) error {
 	s.ply = doc.Ply
 	s.prev = doc.Prev
 	s.passes = doc.Passes
+	s.turn = doc.Turn
 	s.ext = nil
 	if len(doc.Ext) > 0 && string(doc.Ext) != "null" {
 		s.ext = doc.Ext

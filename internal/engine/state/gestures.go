@@ -40,7 +40,7 @@ func Gestures(game *catalog.CompiledGame, mv Selection) []Gesture {
 		return nil
 	}
 	switch act.Type {
-	case catalog.ActionPass, catalog.ActionSwap:
+	case catalog.ActionPass, catalog.ActionSwap, catalog.ActionDone:
 		return []Gesture{{GestureAction, act.ID}}
 	case catalog.ActionPlace:
 		return []Gesture{{GesturePiece, mv.Piece}, {GesturePos, string(mv.To)}}

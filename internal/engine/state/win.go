@@ -403,6 +403,11 @@ func hasLine(v *boardView, color string, r dsl.WinRuleDef) bool {
 
 func endTriggered(game *catalog.CompiledGame, ns *BoardState, rule dsl.WinRuleDef, nextSeat int) bool {
 	for _, w := range rule.When {
+		// Plies, passes and the seat to move are a whole turn's (ADR 0115):
+		// halfway through one, they wait for its end.
+		if ns.turn != nil && (w == "ply-limit" || w == "passes" || w == "no-legal-moves") {
+			continue
+		}
 		switch w {
 		case "ply-limit":
 			if ns.Ply() >= rule.Plies {

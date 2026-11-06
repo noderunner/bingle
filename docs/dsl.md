@@ -273,6 +273,54 @@ During the first `plies` plies only the listed actions/pieces are allowed;
 `owner: "opponent"` makes placed pieces take the opponent's color and come out
 of the opponent's reserve (Tak's swap rule).
 
+### A turn of several selections
+
+By default a turn is one selection of any action. `turn_order.turn` makes it
+several (ADR 0115): a list of parts, each with the actions it may use and how
+many selections it takes.
+
+```yaml
+turn_order:
+  type: round-robin
+  seats: [1, 2]
+  turn:
+    - {actions: [place], min: 2}        # Connect6: two stones a turn...
+  opening:
+    plies: 1
+    turn:
+      - {actions: [place]}              # ...after a first turn of one
+```
+
+| field | meaning |
+|---|---|
+| `actions` | the action ids the part may use (required) |
+| `min` | selections the part must have, from 0 (default 1) |
+| `max` | selections it may have (default `min`, or 1 when `min` is 0) |
+| `distinct` | `piece`: no two selections of the part place or move the same piece type |
+
+- The legal selections are the current part's. Once it has its `min`, the next
+  part's actions are legal too, and choosing one moves on; a part with `min: 0`
+  is passed over the same way. An action in two parts counts in the current one.
+- **`done`** ends the turn once every part left has its `min`. The catalog adds
+  it to a game that declares a turn: notation `done`, a *Done* button, and an
+  action of that id may not be declared.
+- The turn ends after `done`, when the last part has its `max`, or when nothing
+  but `done` is legal. `pass` and `swap` are whole turns: a swap comes only at
+  the start of one.
+- Until the turn ends the seat stays, so the selections are one impulse: the page
+  builds them as a pending move and sends them together, written joined by `; `
+  (`c3; d4`).
+- The ply counts turns, and so do `opening.plies`, the `ply-limit` trigger,
+  `swap`'s `plies`, ko and `passes`. Win rules are checked after every selection,
+  so a turn can end the game halfway; `ply-limit`, `passes` and `no-legal-moves`
+  wait for the end of the turn.
+- The position keeps the turn in progress in its `turn` field: the part, its
+  selections, and the pieces `distinct` has used.
+- An `opening` may have a `turn` of its own for its plies.
+
+There are no conditions between parts ("move the ring you just marked"):
+those are a game's own rules, for a Go ruleset.
+
 **`swap`** (two seats): the pie rule — `{"id": "swap", "type": "swap", "plies": [1]}`
 (default: only the second player's first move). Taking it changes nothing on
 the board: the players change seats, so the opening move belongs to the player
@@ -647,8 +695,8 @@ cards:
 
 ## What a definition can't express
 
-Anything outside the above — hidden information, randomness, rules that depend
-on long position history — needs either a new action type in
+Anything outside the above — hidden information, randomness, effects at the end
+of a turn, rules that depend on long position history — needs either a new action type in
 `internal/engine/state` (preferred when the idea is reusable: it then works
 for every game; ADR 0022 shows how `slide` and `leap` were added), or a Go
 ruleset as described above (ADR 0025; Courtfall and Cthulhu Wars are). The small

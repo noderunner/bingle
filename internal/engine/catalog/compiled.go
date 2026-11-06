@@ -52,6 +52,9 @@ const (
 	ActionLeap      = "leap"
 	ActionSwap      = "swap"
 	ActionPass      = "pass"
+	// ActionDone ends a turn of several selections early (ADR 0115). The
+	// catalog adds it, with this id, to every game that declares a turn.
+	ActionDone = "done"
 )
 
 // Source values for place actions.
@@ -168,6 +171,9 @@ type CompiledGame struct {
 	Directions []board.Direction
 	// Opening is non-nil when the turn order has an opening phase.
 	Opening *ResolvedOpening
+	// Turn is the parts of a turn of several selections, or nil when a turn
+	// is one selection (ADR 0115).
+	Turn []TurnPart
 	// Forward is each seat's forward vector on a grid (when declared).
 	Forward map[int][2]int
 	// KeepsHistory is true when some rule (ko) compares positions with the
@@ -181,6 +187,16 @@ type ResolvedOpening struct {
 	Actions  map[string]bool // nil = any
 	Pieces   map[string]bool // nil = any
 	Opponent bool            // placed pieces take the opponent's color/reserve
+	// Turn is the turn during the opening, in place of the game's; nil keeps
+	// the game's.
+	Turn []TurnPart
+}
+
+// TurnPart is a compiled dsl.TurnPartDef.
+type TurnPart struct {
+	Actions       map[string]bool
+	Min, Max      int
+	DistinctPiece bool
 }
 
 // Pool returns the reserve pool piece draws from (the piece type's own name

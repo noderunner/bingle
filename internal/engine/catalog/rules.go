@@ -47,6 +47,9 @@ func compileRules(cg *CompiledGame) error {
 	if err := compileOpening(cg, actionIDs); err != nil {
 		return err
 	}
+	if err := compileTurns(cg, actionIDs); err != nil {
+		return err
+	}
 	if err := compileWinRules(cg); err != nil {
 		return err
 	}
@@ -476,6 +479,67 @@ func compileStep(cg *CompiledGame, ad dsl.ActionDef, ra *ResolvedAction) error {
 		}
 	}
 	return nil
+}
+
+// compileTurns resolves turns of several selections (ADR 0115): the game's
+// own and the opening's. A game that declares one gets the done action.
+func compileTurns(cg *CompiledGame, actionIDs map[string]bool) error {
+	def := cg.Definition
+	var err error
+	if cg.Turn, err = compileTurn(def.TurnOrder.Turn, actionIDs, "turn_order.turn"); err != nil {
+		return err
+	}
+	if op := def.TurnOrder.Opening; op != nil && cg.Opening != nil {
+		if cg.Opening.Turn, err = compileTurn(op.Turn, actionIDs, "turn_order.opening.turn"); err != nil {
+			return err
+		}
+	}
+	if cg.Turn == nil && (cg.Opening == nil || cg.Opening.Turn == nil) {
+		return nil
+	}
+	if actionIDs[ActionDone] {
+		return fmt.Errorf("catalog: %q is the action that ends a turn early: a game with a turn may not declare an action of that id", ActionDone)
+	}
+	cg.Actions = append(cg.Actions, ResolvedAction{ID: ActionDone, Type: ActionDone, Label: "Done"})
+	return nil
+}
+
+func compileTurn(parts []dsl.TurnPartDef, actionIDs map[string]bool, where string) ([]TurnPart, error) {
+	if len(parts) == 0 {
+		return nil, nil
+	}
+	out := make([]TurnPart, len(parts))
+	for i, p := range parts {
+		if len(p.Actions) == 0 {
+			return nil, fmt.Errorf("catalog: %s part %d names no actions", where, i+1)
+		}
+		tp := TurnPart{Actions: map[string]bool{}, Min: 1}
+		for _, a := range p.Actions {
+			if !actionIDs[a] {
+				return nil, fmt.Errorf("catalog: %s part %d references unknown action %q", where, i+1, a)
+			}
+			tp.Actions[a] = true
+		}
+		if p.Min != nil {
+			tp.Min = *p.Min
+		}
+		tp.Max = p.Max
+		if tp.Max == 0 {
+			tp.Max = max(tp.Min, 1)
+		}
+		if tp.Min < 0 || tp.Max < tp.Min {
+			return nil, fmt.Errorf("catalog: %s part %d takes from %d to %d selections", where, i+1, tp.Min, tp.Max)
+		}
+		switch p.Distinct {
+		case "":
+		case "piece":
+			tp.DistinctPiece = true
+		default:
+			return nil, fmt.Errorf("catalog: %s part %d: distinct %q is not known (only \"piece\")", where, i+1, p.Distinct)
+		}
+		out[i] = tp
+	}
+	return out, nil
 }
 
 // compileOpening resolves the opening phase, in which only some actions and
