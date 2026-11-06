@@ -155,6 +155,9 @@ type fakeGitHub struct {
 	headOID []string // expectedHeadOid of each commit
 	heads   []string // the headline of each commit
 	reset   string   // where a forced PATCH moved the branch
+	tmp     []string // the branches made and deleted besides it
+	deleted []string
+	onto    []string // the branch each commit was made on
 }
 
 func (f *fakeGitHub) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -171,8 +174,15 @@ func (f *fakeGitHub) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case r.Method == "POST" && r.URL.Path == "/repos/o/r/git/refs":
 		var in struct{ Ref, SHA string }
 		_ = json.Unmarshal(body, &in)
-		f.branch = in.SHA
+		if in.Ref == "refs/heads/topic" {
+			f.branch = in.SHA
+		} else {
+			f.tmp = append(f.tmp, in.Ref)
+		}
 		w.WriteHeader(201)
+	case r.Method == "DELETE" && strings.HasPrefix(r.URL.Path, "/repos/o/r/git/refs/heads/ghapp-tmp/"):
+		f.deleted = append(f.deleted, strings.TrimPrefix(r.URL.Path, "/repos/o/r/git/refs/"))
+		w.WriteHeader(204)
 	case r.Method == "PATCH" && r.URL.Path == "/repos/o/r/git/refs/heads/topic":
 		var in struct {
 			SHA   string
@@ -189,12 +199,14 @@ func (f *fakeGitHub) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				Input struct {
 					ExpectedHeadOid string
 					Message         struct{ Headline string }
+					Branch          struct{ BranchName string }
 				}
 			}
 		}
 		_ = json.Unmarshal(body, &in)
 		f.headOID = append(f.headOID, in.Variables.Input.ExpectedHeadOid)
 		f.heads = append(f.heads, in.Variables.Input.Message.Headline)
+		f.onto = append(f.onto, in.Variables.Input.Branch.BranchName)
 		oid := strings.Repeat("ab", 19) + string(rune('0'+f.made))
 		f.made++
 		_ = json.NewEncoder(w).Encode(map[string]any{"data": map[string]any{"createCommitOnBranch": map[string]any{"commit": map[string]string{"oid": oid}}}})
@@ -252,8 +264,21 @@ func TestPushRecreatesEachCommitInOrderOnTopOfMain(t *testing.T) {
 	if err := push("tok", "o", "r", "topic", false, io.Discard); err == nil || !strings.Contains(err.Error(), "-force") {
 		t.Fatalf("a diverged branch without -force: %v", err)
 	}
-	if err := push("tok", "o", "r", "topic", true, io.Discard); err != nil || f2.reset != main || f2.made != 2 {
-		t.Fatalf("with -force: %v, reset to %q, made %d", err, f2.reset, f2.made)
+	if err := push("tok", "o", "r", "topic", true, io.Discard); err != nil || f2.made != 2 {
+		t.Fatalf("with -force: %v, made %d", err, f2.made)
+	}
+	// The pull request's branch never points at main, which would close it: the commits are made on a
+	// branch of their own, the branch moves once to the last of them, and the other is deleted.
+	if f2.reset != strings.Repeat("ab", 19)+"1" {
+		t.Errorf("with -force the branch was moved to %q, want the last commit made", f2.reset)
+	}
+	if len(f2.tmp) != 1 || len(f2.deleted) != 1 || "refs/"+f2.deleted[0] != f2.tmp[0] {
+		t.Errorf("the branch of its own: made %q, deleted %q", f2.tmp, f2.deleted)
+	}
+	for _, b := range f2.onto {
+		if b == "topic" {
+			t.Errorf("a commit was made on the pull request's branch itself: %q", f2.onto)
+		}
 	}
 
 	// A commit GitHub made with other files stops the push.

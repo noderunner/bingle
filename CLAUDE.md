@@ -54,7 +54,7 @@ git -c credential.helper='!f() { echo username=x-access-token; echo "password=$(
   commits. Run them, so the next push continues from there.
 - **Do not sign commits with anybody's key**, and do not author them as the maintainer: the commits
   on GitHub are the app's, and the local ones are only their source.
-- After a rebase or an amend, `push -force` starts the branch on GitHub again from `main`. A branch
+- After a rebase or an amend, `push -force` rebuilds the branch on GitHub from `main`, on a branch of its own that it then moves the pull request's branch to: a pull request whose branch points at `main`, even for a moment, has no commits and is closed. A branch
   must be a straight line of commits on `main` (no merge commits), and `push` refuses a commit that
   adds an executable or a link or changes a file's mode, since the API sends contents only: say so
   and leave that one to the maintainer.

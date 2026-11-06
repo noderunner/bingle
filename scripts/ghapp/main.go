@@ -332,7 +332,10 @@ func push(tok, owner, repo, branch string, force bool, stdout io.Writer) error {
 	}
 
 	// Where the remote branch is: absent, an ancestor of ours, or somewhere else (only with -force).
-	head := ""
+	// A forced push builds the new commits on a branch of its own and then moves this one there in
+	// one step: a pull request whose branch points at main, even for a moment, has no commits, and
+	// GitHub closes it.
+	head, target := "", branch
 	raw, status, err := call(tok, http.MethodGet, "/repos/"+owner+"/"+repo+"/git/ref/heads/"+branch, nil)
 	if err != nil {
 		return err
@@ -352,9 +355,11 @@ func push(tok, owner, repo, branch string, force bool, stdout io.Writer) error {
 			if !force {
 				return fmt.Errorf("%s on GitHub (%s) is not part of the local branch; after a rebase or an amend, push with -force", branch, head)
 			}
-			if err := callJSON(tok, http.MethodPatch, refs+"/heads/"+branch, map[string]any{"sha": base, "force": true}, nil); err != nil {
+			target = "ghapp-tmp/" + branch + "-" + strconv.FormatInt(time.Now().Unix(), 10)
+			if err := callJSON(tok, http.MethodPost, refs, map[string]any{"ref": "refs/heads/" + target, "sha": base}, nil); err != nil {
 				return err
 			}
+			defer func() { _, _, _ = call(tok, http.MethodDelete, refs+"/heads/"+target, nil) }()
 			head = base
 		}
 	case http.StatusNotFound:
@@ -391,7 +396,7 @@ func push(tok, owner, repo, branch string, force bool, stdout io.Writer) error {
 		}
 		headline, body, _ := strings.Cut(msg, "\n")
 		input := map[string]any{
-			"branch":          map[string]any{"repositoryNameWithOwner": owner + "/" + repo, "branchName": branch},
+			"branch":          map[string]any{"repositoryNameWithOwner": owner + "/" + repo, "branchName": target},
 			"message":         map[string]any{"headline": headline, "body": strings.TrimSpace(body)},
 			"expectedHeadOid": head,
 			"fileChanges":     changes,
@@ -438,6 +443,11 @@ func push(tok, owner, repo, branch string, force bool, stdout io.Writer) error {
 			return err
 		}
 		head = made
+	}
+	if target != branch {
+		if err := callJSON(tok, http.MethodPatch, refs+"/heads/"+branch, map[string]any{"sha": head, "force": true}, nil); err != nil {
+			return err
+		}
 	}
 	_, err = fmt.Fprintf(stdout, "%s is at %s on GitHub. Fetch it and point the local branch there:\n"+
 		"  git fetch <remote> %s && git update-ref refs/heads/%s FETCH_HEAD %s\n", branch, head, branch, branch, commits[len(commits)-1])
