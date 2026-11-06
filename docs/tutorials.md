@@ -225,11 +225,11 @@ picked out (`.tutorial-spot`), and a picture in place of the game's, with `#stat
 there is nobody to talk to.
 
 **What to select is a signal, not a page of its own.** The tutorial the API serves carries a `guide`
-for each step: the selections each of the learner's moves is made of (`piece red`, then `pos d4`) and
+for each step: the gestures each of the learner's moves is entered with (`piece red`, then `pos d4`) and
 the position a step shows ([api.md](api.md#games)). A client shows them its own way. The web page
 keeps every control where it always is — the colour buttons, *End* — picks out the one to press,
 makes the others inert, and lets only the square to click be clicked. *Back* still undoes a choice not yet sent,
-but cannot take back a step of the turn, which would leave the script. *Need a hint?* shows the step's
+but cannot take back a selection of the turn, which would leave the script. *Need a hint?* shows the step's
 `hint`. When the learner's moves are made, the page
 plays the step's `reply` for the other seats, a moment apart so they can be followed, and moves on.
 A step without `play` waits for **Next** (**Finish** on the last).

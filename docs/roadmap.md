@@ -52,7 +52,7 @@ Legend: ✅ done · 🟡 partial · ⬜ not started · ➖ deliberately out of s
 |---|---|---|
 | ✅ | Full position document | `state` (v2: cells/stacks, reserves, ply); legacy flat `board_state` kept |
 | ✅ | Move notation + payload stored | `moves.notation`, `moves.move_json`; additive column migrations |
-| ✅ | Back | takes back a step of the turn still being played; a move stands once the turn has passed (ADR 0083) |
+| ✅ | Back | takes back a selection of the turn still being played; a move stands once the turn has passed (ADR 0083) |
 | ✅ | Custom start positions | `start_tps` / `start_state` on create; remembered for replay and export |
 | ✅ | Resign | ends the game with `end_reason = resignation` |
 | ✅ | Draw offers | offer / cancel / accept / decline; any move withdraws the offer |

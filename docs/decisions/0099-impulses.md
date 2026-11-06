@@ -1,6 +1,7 @@
 # 0099. Impulses: the seat to act, and the card that shows it
 
-Status: accepted (2026-11-04)
+Status: accepted (2026-11-04). Its line "Each step is an impulse of its own" is replaced by
+[ADR 0114](0114-impulses-selections-moves-and-gestures.md), which says where an impulse ends.
 
 ## Context
 

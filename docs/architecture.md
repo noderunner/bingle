@@ -132,7 +132,7 @@ Served by the same binary as static assets plus lightweight JS (no SPA build pip
   per table, [cthulhu-wars.md](cthulhu-wars.md)).
   Adding a game is adding a JSON file
   (`docs/dsl.md`), or a ruleset when the rules need Go.
-* **Session** (`internal/session`): room lifecycle plus taking back a step of a turn,
+* **Session** (`internal/session`): room lifecycle plus taking back a selection of a turn,
   draws, resign, simulation, hints, game import, bot-versus-bot rooms,
   observation, export and bot turns; broadcasts `move` and `state` events on
   the hub.

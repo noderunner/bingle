@@ -53,16 +53,16 @@ Its height is limited to the rail's, and it scrolls inside if it needs more. On 
 is in view however far the rail is scrolled. It neither moves the rail nor takes the keyboard.
 
 Once a piece is chosen, `#pending-move` shows the game's `piece_action` word and the piece's picture. *Back* (`#undo-step`)
-is the only button that undoes a selection here: `#reset-move` is not drawn, and Esc still clears the move. A move in Blooms
-is a stone and a cell, so the two did the same thing; a game with longer moves will need to look at this when it joins.
+is the only button that undoes a gesture here: `#reset-move` is not drawn, and Esc still clears the move. A selection in Blooms
+is a colour and a cell, so the two did the same thing; a game whose selections take more gestures will need to look at this when it joins.
 
 ## The phone page of a map
 
 Turning the phone changes what it shows (`renderMobile`). Upright, it has the cards, swiped between: the actions (with the
 status, any tutorial and notices), the round, each cult, the history and the chat. On its side, `body.m-landscape`
 gives the whole screen to the map, with no bars, for tapping areas, moving units, pinching and dragging. On the player's
-turn `#m-turn-note` says so, and asks them to hold the phone upright when the next choice is not on the map. A selection
-under way carries across the turn of the phone.
+turn `#m-turn-note` says so, and asks them to hold the phone upright when the next choice is not on the map. A pending
+move carries across the turn of the phone.
 
 `isLandscape` asks the device (`screen.orientation`), not the window: an on-screen keyboard makes an upright window
 wider than it is tall. With a mouse, on the phone layout asked for in the options, the window's shape decides. A touch
@@ -73,7 +73,7 @@ marks one. A player with the phone's rotation locked sees only the cards.
 
 The server lists every legal move of the position
 (`GET /api/games/{code}/moves/legal?steps=1`). Each move carries `steps`, the
-ordered selections that build it:
+ordered gestures that enter it:
 
 | action | steps |
 |---|---|
@@ -84,17 +84,21 @@ ordered selections that build it:
 | slide, leap | `pos(from)`, `pos(to)` — and `pos(aim)` when the slide shoots |
 | pass, swap | `action(id)` — a single button |
 
-`js/builder.js` (`MoveBuilder`) filters that list by the selections made so far
-and reports which selections may come next. The page highlights next squares,
+`js/builder.js` (`MoveBuilder`) filters that list by the gestures made so far
+and reports which may come next. The page highlights next squares,
 enables next piece buttons in the hand, and shows a pick-up count picker. Forced
 choices (one piece type, one count) are taken automatically. When the
-selections equal a legal move it is complete: with *preview and confirm* on
+gestures spell out a legal move it is complete: with *preview and confirm* on
 (default) the resulting position is previewed via `simulate` and a **Submit**
 button appears; otherwise the move is sent immediately.
 
 Because the UI only follows the server's list, any new game works without UI
 changes. (Keyboard play is described at the end.) Hovering an empty target
 square previews the piece a click would place, in the colour it will have.
+
+In the words of [ADR 0114](decisions/0114-impulses-selections-moves-and-gestures.md), each move listed here is one
+selection and its `steps` are gesture data. Until that ADR's first phase the Go games send each selection as a move of
+its own, and `steps`, `moves/legal` and `#undo-step` keep their names.
 
 ## Turn tracking
 
@@ -158,9 +162,9 @@ square previews the piece a click would place, in the colour it will have.
 * **A move stands once the turn has passed**, in every game ([ADR 0083](decisions/0083-a-move-stands.md)).
   A move that cannot come back waits for *Submit* (`#submit-move`, Enter), unless
   the player turns off `#opt-confirm`. **Back** (`#undo-step`, Backspace) clears a
-  selection, then takes back a step of this turn already sent, one at a time, and is
+  gesture, then takes back a selection of this turn already sent, one at a time, and is
   not offered once the turn has passed or a die has been rolled. A button such as
-  *End turn* plays at once: pressing it is the Submit. A move with nothing left to choose, such as a forced pass, always gets `#submit-move`, as nothing else could play it. The steps of a turn stay out
+  *End turn* plays at once: pressing it is the Submit. A move with nothing left to choose, such as a forced pass, always gets `#submit-move`, as nothing else could play it. The selections of a turn stay out
   of the move list and the History tab until the turn is over.
 * **Resign** concedes, and needs a second click to confirm.
 * **Hint** (only in games against bots, or in analysis / review of a finished
@@ -349,7 +353,7 @@ table. **Klondike, Spider and FreeCell** have `.sol-top` (`#sol-stock`, `.sol-wa
 foundations) over `.sol-columns` of `.sol-column`; a pile has `data-pile` (`t3`, `w`, `f1`, `c2`) and a pile that
 takes the cards in hand now has the class `sol-target`.
 
-A move is the server's two steps, `from-<pile>-<count>` and `to-<pile>`: a card a move can start with is a
+A move is two gestures in the server's `steps`, `from-<pile>-<count>` and `to-<pile>`: a card a move can start with is a
 `button[data-from]`. Clicking one picks it up (`sol-picked`), or plays it at once if it has one place to go. Clicking
 it again sends it to its foundation if it can go, and otherwise lets go. It can also be dragged: `.sol-ghost` follows
 the pointer, the cards on top of it come along, and a drop on a pile that does not take them plays nothing. The width
@@ -361,7 +365,7 @@ Where colours are the rule (`view.alternate`), a card at a table with a themed s
 **Bowling Solitaire** has `#sol-sheet` (ten `.sol-frame[data-frame]`, each with `.sol-mark`s and `.sol-frame-total`),
 `#sol-rack` (`.sol-pin[data-pin]`, a button when it can be part of a play, `.down` when it is down), `#sol-balls` and
 `#sol-gone`. Pins are chosen in any order and held in the page, and a ball (`button[data-throw]`) is offered only when
-it can take exactly those. Throwing it sends the steps in the server's order: the pins by letter, then
+it can take exactly those. Throwing it enters those gestures in the server's order: the pins by letter, then
 `ball-<pile>`. In a tutorial only the step's pins can be chosen (`sol-wanted`).
 
 A face-up card anywhere on the table shows twice as large under the pointer or with the focus (`.pc-zoom`, as in a
@@ -406,7 +410,7 @@ area and clear of each other, and are drawn above every outline. The map
 **zooms** (wheel, pinch) and **pans** (drag); the view survives redraws.
 
 Tokens are clickable when the move being built can use them: a token click is
-translated to the `piece`/`pos` steps of the move by searching the builder's
+translated to the `piece` and `pos` entries of the move's gesture data by searching the builder's
 options (a Move's origin, the unit that takes a result, retreats, is
 sacrificed or sinks with Cthulhu — see ADR 0026). Unit kinds on offer also appear as buttons in the
 move bar for games without hands.
@@ -537,12 +541,12 @@ one (`button[data-source="book"|"requirement"]`, from the action's `source`).
 Move events and the move list carry `locked` for a move that rolled a die: the
 page offers no *Back* across it. Stepping through the moves, the card is titled `History: n` and tells the move as the History tab does (`#history-told`).
 The impulse card says what is being asked, whoever is looking: its title (`#impulse-title`) is the name of the seat on
-impulse and `#impulse-text` the question, from the view's `impulse` (ADR 0099). A choice the player has made and not sent
-is a step of their own, with the action's `impulse` as its question: *Choose an area to place a gate.*
+impulse and `#impulse-text` the question, from the view's `impulse` (ADR 0099). A pending move
+shows only to its player, with the action's `impulse` as the question it waits on: *Choose an area to place a gate.*
 A Move gathers its units in the card first (`#move-queue`): clicking a token lifts it off the map into the card, from one area, as far as the Power
 goes, with `.queue-unit[data-piece]` to take one out and `#move-queue-cost` for the running cost. A click on a highlighted
-area sends one step per unit ([ADR 0100](decisions/0100-a-move-gathers-its-units.md)).
-*Back* is one of the actions too (`#undo-step`, offered only while there is a step
+area sends each unit's selection as a move of its own ([ADR 0100](decisions/0100-a-move-gathers-its-units.md); ADR 0114 will send them as one).
+*Back* is one of the actions too (`#undo-step`, offered only while there is a selection
 of this turn to take back).
 
 **Gates and their occupants.** A Gate is a chip among the tokens; the figure
@@ -913,7 +917,7 @@ game's choice, remembered in `bingle.board`) falls back to wood. Choosing one re
 `js/render.js` draws the SVG board from the game description
 (`GET /api/game-defs/{id}`): grid boards as checkered `squares` or Go-style
 `points`, explicit boards as node/edge graphs; coordinates for algebraic
-boards; stacks as piles with a height badge; last-move, selection and
+boards; stacks as piles with a height badge; last-move, pending-move and
 legal-target overlays. Piece appearance comes from `shape` and the seat color.
 
 ## DOM contract used by tests
@@ -966,7 +970,7 @@ picked), `#round-bar`, `#battle-panel`, `.seat-grid`, `.faction-card`,
 ## Keyboard
 
 The board is one tab stop; the arrow keys move between squares (as drawn, so a
-flipped board works), Enter/Space selects the square, Backspace steps back
-inside a move, Esc clears it and Enter submits a previewed move. With focus
+flipped board works), Enter/Space picks the square, Backspace takes back the last gesture
+of a pending move, Esc clears it and Enter submits a previewed move. With focus
 outside the board, ←/→ browse the history and Home/End jump to the start / the
 live position. Alt+←/→ moves the card of your own hand that has the focus. Every square has an accessible name ("c3: stack of 2 …").
