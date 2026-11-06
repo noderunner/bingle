@@ -52,7 +52,7 @@ func (rs *Ruleset) Redact(game *catalog.CompiledGame, st *state.BoardState, view
 }
 
 // RedactMove: moves reveal nothing.
-func (rs *Ruleset) RedactMove(game *catalog.CompiledGame, st *state.BoardState, mv state.Move, notation string) (state.Move, string) {
+func (rs *Ruleset) RedactMove(game *catalog.CompiledGame, st *state.BoardState, mv state.Selection, notation string) (state.Selection, string) {
 	return mv, notation
 }
 
@@ -127,7 +127,7 @@ func lead(n [2]int, seat int) float64 { return float64(n[seat-1] - n[other(seat)
 // In a confluence it converts as far as a spread allows, starts a hyphae spread
 // from the end of its longest strand, and treats spreads that convert the same
 // node as one.
-func (rs *Ruleset) GuideMoves(game *catalog.CompiledGame, st *state.BoardState, seat int, legal []state.Move) []state.Move {
+func (rs *Ruleset) GuideMoves(game *catalog.CompiledGame, st *state.BoardState, seat int, legal []state.Selection) []state.Selection {
 	d, err := dataOf(st)
 	if err != nil {
 		return legal
@@ -137,7 +137,7 @@ func (rs *Ruleset) GuideMoves(game *catalog.CompiledGame, st *state.BoardState, 
 		return e.guideSpreads(legal)
 	}
 	centre := e.g.ids[e.g.centre]
-	var rest []state.Move
+	var rest []state.Selection
 	take := -1
 	for i, mv := range legal {
 		if mv.To == centre {
@@ -160,7 +160,7 @@ func (rs *Ruleset) GuideMoves(game *catalog.CompiledGame, st *state.BoardState, 
 }
 
 // guideSpreads narrows a confluence decision as GuideMoves describes.
-func (e *eng) guideSpreads(legal []state.Move) []state.Move {
+func (e *eng) guideSpreads(legal []state.Selection) []state.Selection {
 	// The length each hyphae start allows, and the longest for each target.
 	reach := make([]int, len(legal))
 	best := map[board.PositionID]int{}
@@ -172,7 +172,7 @@ func (e *eng) guideSpreads(legal []state.Move) []state.Move {
 		}
 	}
 	seen := map[board.PositionID]bool{}
-	var out []state.Move
+	var out []state.Selection
 	for k, mv := range legal {
 		switch {
 		case mv.Action == actDone && len(legal) > 1:
@@ -191,7 +191,7 @@ func (e *eng) guideSpreads(legal []state.Move) []state.Move {
 // playOut plays mv and the confluence it starts, each side taking its first
 // guided spread, and returns seat's lead in nodes at the end (±100 for a won
 // or lost game).
-func (rs *Ruleset) playOut(game *catalog.CompiledGame, st *state.BoardState, seat int, mv state.Move) float64 {
+func (rs *Ruleset) playOut(game *catalog.CompiledGame, st *state.BoardState, seat int, mv state.Selection) float64 {
 	for guard := 0; guard < 4*len(geoOf(game).ids); guard++ {
 		res, err := rs.Apply(game, st, rs.ImpulseSeat(game, st), mv)
 		if err != nil {

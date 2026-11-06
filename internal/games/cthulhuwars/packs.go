@@ -33,14 +33,14 @@ func (d *Data) mooned(seat, book int) bool {
 
 // moonOptions lists where owner may put a Moonbeast: a spellbook an enemy holds
 // that has none on it yet.
-func (e *eng) moonOptions(owner int) []state.Move {
-	var out []state.Move
+func (e *eng) moonOptions(owner int) []state.Selection {
+	var out []state.Selection
 	for _, s := range e.others(owner) {
 		for b := 0; b < bookSlots+nNeutralBooks; b++ {
 			if !e.d.holds(s, b) || e.d.mooned(s, b) {
 				continue
 			}
-			out = append(out, state.Move{Action: actMoon, Piece: e.bookSpecOf(s, b).ID, Count: s})
+			out = append(out, state.Selection{Action: actMoon, Piece: e.bookSpecOf(s, b).ID, Count: s})
 		}
 	}
 	return out
@@ -62,7 +62,7 @@ func (e *eng) moonBegin(owner int) {
 }
 
 // moonPlace lays a Moonbeast of owner on the spellbook mv names.
-func (e *eng) moonPlace(owner int, mv state.Move) {
+func (e *eng) moonPlace(owner int, mv state.Selection) {
 	b, ok := bookByID(mv.Piece)
 	if !ok || e.pool(owner, uMoonbeast) <= 0 {
 		return
@@ -87,10 +87,10 @@ func (e *eng) moonFree(seat, b int) {
 
 // moonLandMoves lists the Gates a Moonbeast may be put on: those its owner
 // controls.
-func (e *eng) moonLandMoves(owner int) []state.Move {
-	var out []state.Move
+func (e *eng) moonLandMoves(owner int) []state.Selection {
+	var out []state.Selection
 	for _, a := range e.gatesOf(owner) {
-		out = append(out, state.Move{Action: actMoon, To: e.m.ids[a]})
+		out = append(out, state.Selection{Action: actMoon, To: e.m.ids[a]})
 	}
 	return out
 }
@@ -117,21 +117,21 @@ func (e *eng) moonReturn() {
 
 // ransomMoves lists the Moonbeasts seat may buy off for 1 Doom: any time, no
 // Action.
-func (e *eng) ransomMoves(seat int) []state.Move {
+func (e *eng) ransomMoves(seat int) []state.Selection {
 	if e.d.Doom[seat] < 1 {
 		return nil
 	}
-	var out []state.Move
+	var out []state.Selection
 	for _, m := range e.d.Moon {
 		if m.Victim == seat {
-			out = append(out, state.Move{Action: actRansom, Piece: e.bookSpecOf(seat, m.Book).ID})
+			out = append(out, state.Selection{Action: actRansom, Piece: e.bookSpecOf(seat, m.Book).ID})
 		}
 	}
 	return out
 }
 
 // ransom pays 1 Doom to free the spellbook: its Moonbeast goes back to the map.
-func (e *eng) ransom(seat int, mv state.Move) {
+func (e *eng) ransom(seat int, mv state.Selection) {
 	b, ok := bookByID(mv.Piece)
 	if !ok {
 		return
@@ -185,7 +185,7 @@ func (e *eng) reachFor(seat, a int, typ string) []int {
 
 // carried says a Cultist may ride a Shantak's step from → to for nothing, and
 // where in the Move's list of free seats that is.
-func (e *eng) carried(mv state.Move) int {
+func (e *eng) carried(mv state.Selection) int {
 	m := e.d.Move
 	if m == nil || !isCultist(mv.Piece) {
 		return -1
@@ -213,13 +213,13 @@ func (e *eng) gatelessAreas() []int {
 }
 
 // cryptMoves are the enemies owner may choose to place its Wamps (Doom phase).
-func (e *eng) cryptMoves(owner int) []state.Move {
+func (e *eng) cryptMoves(owner int) []state.Selection {
 	if e.pool(owner, uWamp) <= 0 || len(e.gatelessAreas()) == 0 {
 		return nil
 	}
-	var out []state.Move
+	var out []state.Selection
 	for _, s := range e.others(owner) {
-		out = append(out, state.Move{Action: actCrypt, Count: s})
+		out = append(out, state.Selection{Action: actCrypt, Count: s})
 	}
 	return out
 }
@@ -249,13 +249,13 @@ func (e *eng) cryptChoose(owner, enemy int) {
 }
 
 // cryptPlaceMoves are the areas the enemy may put the next Wamp in.
-func (e *eng) cryptPlaceMoves(p Prompt) []state.Move {
-	var out []state.Move
+func (e *eng) cryptPlaceMoves(p Prompt) []state.Selection {
+	var out []state.Selection
 	if e.pool(p.By, uWamp) <= 0 {
 		return nil
 	}
 	for _, a := range e.gatelessAreas() {
-		out = append(out, state.Move{Action: actCrypt, To: e.m.ids[a]})
+		out = append(out, state.Selection{Action: actCrypt, To: e.m.ids[a]})
 	}
 	return out
 }
@@ -275,7 +275,7 @@ func (e *eng) cryptPlace(p Prompt, a int) {
 
 // houndHops lists the free moves of seat's Hound in the Move under way: it
 // jumps from a Gate to any other Gate once another unit has moved.
-func (e *eng) houndHops(seat int) []state.Move {
+func (e *eng) houndHops(seat int) []state.Selection {
 	d := e.d
 	if d.Move == nil || !e.holdsCard(seat, uHound) || e.onMap(seat, uHound) == 0 {
 		return nil
@@ -293,7 +293,7 @@ func (e *eng) houndHops(seat int) []state.Move {
 	if !others {
 		return nil
 	}
-	var out []state.Move
+	var out []state.Selection
 	for a := range e.m.ids {
 		if e.count(a, seat, uHound) == 0 || !e.hasGate(a) || arrived[e.areaID(a)] {
 			continue
@@ -303,7 +303,7 @@ func (e *eng) houndHops(seat int) []state.Move {
 		}
 		for b := range e.m.ids {
 			if b != a && e.hasGate(b) {
-				out = append(out, state.Move{Action: actGo, Piece: uHound, From: e.m.ids[a], To: e.m.ids[b]})
+				out = append(out, state.Selection{Action: actGo, Piece: uHound, From: e.m.ids[a], To: e.m.ids[b]})
 			}
 		}
 	}

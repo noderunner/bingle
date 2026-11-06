@@ -316,11 +316,11 @@ func (e *eng) endNexus() {
 
 // legalNexus lists what the Sleeper may do in its Energy Nexus turn: one Action
 // that starts in the battle area, or nothing.
-func (e *eng) legalNexus() []state.Move {
+func (e *eng) legalNexus() []state.Selection {
 	d := e.d
 	t := d.Turn
 	seat := t.Seat
-	var out []state.Move
+	var out []state.Selection
 	if !t.Main && d.Power[seat] >= 1 && d.Bat != nil {
 		area := d.Bat.Area
 		for _, mv := range e.mainActions(seat) {
@@ -329,12 +329,12 @@ func (e *eng) legalNexus() []state.Move {
 			}
 		}
 	}
-	return append(out, state.Move{Action: actDone})
+	return append(out, state.Selection{Action: actDone})
 }
 
 // startsIn says an Action starts in the area: a unit leaves it, or the Action
 // is done there.
-func (e *eng) startsIn(mv state.Move, area string) bool {
+func (e *eng) startsIn(mv state.Selection, area string) bool {
 	switch mv.Action {
 	case actGo, actLeave, actBeyond:
 		return string(mv.From) == area
@@ -346,18 +346,18 @@ func (e *eng) startsIn(mv state.Move, area string) bool {
 }
 
 // preMoves lists the pre-battle abilities seat may use now.
-func (e *eng) preMoves(seat int) []state.Move {
+func (e *eng) preMoves(seat int) []state.Selection {
 	d := e.d
 	b := d.Bat
 	a := e.areaIdx(b.Area)
-	var out []state.Move
+	var out []state.Selection
 	if e.bubastisIn(seat) && d.hasBook(seat, bkSavagery) && !b.Savage && d.Power[seat] >= 1 && e.battleUnits(b, seat, uSaturn) > 0 {
-		out = append(out, state.Move{Action: actCard, Piece: "savagery"})
+		out = append(out, state.Selection{Action: actCard, Piece: "savagery"})
 	}
 	if e.battleUnits(b, seat, uMercury) > 0 && e.pool(seat, uCultist) > 0 {
 		for _, typ := range e.battleTypes(b, seat) {
 			if unitClassOf(typ) == classMonster {
-				out = append(out, state.Move{Action: actCard, Piece: "affection." + typ})
+				out = append(out, state.Selection{Action: actCard, Piece: "affection." + typ})
 			}
 		}
 	}
@@ -371,19 +371,19 @@ func (e *eng) preMoves(seat int) []state.Move {
 				if typ == uShoggoth && e.battleUnits(b, seat, uShoggoth) < 2 {
 					continue
 				}
-				out = append(out, state.Move{Action: actAbsorb, Piece: typ})
+				out = append(out, state.Selection{Action: actAbsorb, Piece: typ})
 			}
 		}
 	case facWW:
 		// Howl: before the battle the enemy retreats a unit of its choice.
 		if d.hasBook(seat, bkHowl) && !b.Howled && e.battleUnits(b, seat, uWendigo) > 0 && e.battleTotal(b, b.foeOf(seat)) > 0 {
-			out = append(out, state.Move{Action: actHowl})
+			out = append(out, state.Selection{Action: actHowl})
 		}
 	case facCC:
 		if d.hasBook(seat, bkAbduct) && e.battleUnits(b, seat, uNightgaunt) > 0 {
 			enemy := b.foeOf(seat)
 			if e.battleTotal(b, enemy)-e.classBattle(b, enemy, classGOO)-e.classBattle(b, enemy, classTerror) > 0 {
-				out = append(out, state.Move{Action: actAbduct})
+				out = append(out, state.Selection{Action: actAbduct})
 			}
 		}
 		if d.hasBook(seat, bkInvisibility) && b.Invis < e.count(a, seat, uPolyp) {
@@ -394,7 +394,7 @@ func (e *eng) preMoves(seat int) []state.Move {
 					if !isMonsterOrCultist(typ) {
 						continue
 					}
-					mv := state.Move{Action: actInvisible, Piece: typ}
+					mv := state.Selection{Action: actInvisible, Piece: typ}
 					if s != seat {
 						mv.Count = s
 					}
@@ -407,7 +407,7 @@ func (e *eng) preMoves(seat int) []state.Move {
 			// together.
 			for x := range e.m.ids {
 				if x != a && e.count(x, seat, uHorror) > 0 {
-					out = append(out, state.Move{Action: actSeek, To: e.m.ids[x]})
+					out = append(out, state.Selection{Action: actSeek, To: e.m.ids[x]})
 				}
 			}
 		}
@@ -464,22 +464,22 @@ func (e *eng) answerDemand(p Prompt, choice string) {
 
 // howlMoves lists what the enemy may do when Howl forces it to retreat a unit:
 // any unit in the area, into any adjacent area.
-func (e *eng) howlMoves(p Prompt) []state.Move {
+func (e *eng) howlMoves(p Prompt) []state.Selection {
 	if p.Area == "" {
 		return nil
 	}
 	a := e.areaIdx(p.Area)
-	var out []state.Move
+	var out []state.Selection
 	for _, typ := range e.typesIn(a, p.Seat) {
 		for _, to := range e.m.adj[a] {
-			out = append(out, state.Move{Action: actRetreat, Piece: typ, To: e.m.ids[to]})
+			out = append(out, state.Selection{Action: actRetreat, Piece: typ, To: e.m.ids[to]})
 		}
 	}
 	return out
 }
 
 // howlRetreat moves the unit the enemy chose out of the battle area.
-func (e *eng) howlRetreat(p Prompt, mv state.Move) {
+func (e *eng) howlRetreat(p Prompt, mv state.Selection) {
 	a := e.areaIdx(p.Area)
 	to := e.areaIdx(string(mv.To))
 	if e.take(a, p.Seat, mv.Piece) {
@@ -518,13 +518,13 @@ func (e *eng) advancePre(from int) {
 	e.rollBattle()
 }
 
-func (e *eng) legalPre() []state.Move {
+func (e *eng) legalPre() []state.Selection {
 	b := e.d.Bat
 	out := e.preMoves(b.Who)
-	return append(out, state.Move{Action: actDone})
+	return append(out, state.Selection{Action: actDone})
 }
 
-func (e *eng) doPre(seat int, mv state.Move) {
+func (e *eng) doPre(seat int, mv state.Selection) {
 	d := e.d
 	b := d.Bat
 	a := e.areaIdx(b.Area)
@@ -936,12 +936,12 @@ func (e *eng) resolveEternal(pay bool) {
 	e.applyResult(as, uRhan)
 }
 
-func (e *eng) legalAssign() []state.Move {
+func (e *eng) legalAssign() []state.Selection {
 	b := e.d.Bat
 	as := b.Queue[0]
-	var out []state.Move
+	var out []state.Selection
 	for _, typ := range e.assignOptions(as) {
-		mv := state.Move{Action: actAssign, Piece: typ}
+		mv := state.Selection{Action: actAssign, Piece: typ}
 		// A result for another faction's units (Hastur's Vengeance) names
 		// the owner, so a click on the right unit is unambiguous.
 		if as.Seat != as.Who {
@@ -952,7 +952,7 @@ func (e *eng) legalAssign() []state.Move {
 	return out
 }
 
-func (e *eng) doAssign(seat int, mv state.Move) {
+func (e *eng) doAssign(seat int, mv state.Selection) {
 	b := e.d.Bat
 	as := b.Queue[0]
 	if e.giveResult(as, mv.Piece) {
@@ -1106,18 +1106,18 @@ func (e *eng) harbingerPending(seat int) (PU, bool) {
 	return b.Hit[b.Paid], true
 }
 
-func (e *eng) postMoves(seat int) []state.Move {
+func (e *eng) postMoves(seat int) []state.Selection {
 	d := e.d
 	b := d.Bat
 	a := e.areaIdx(b.Area)
-	var out []state.Move
+	var out []state.Selection
 	if _, ok := e.harbingerPending(seat); ok {
-		return []state.Move{{Action: actHarbinger, Piece: "power"}, {Action: actHarbinger, Piece: "signs"}}
+		return []state.Selection{{Action: actHarbinger, Piece: "power"}, {Action: actHarbinger, Piece: "signs"}}
 	}
 	if e.is(seat, facBG) && d.hasBook(seat, bkNecro) {
 		for x := range e.m.ids {
 			if x != a && e.count(x, seat, uGhoul) > 0 {
-				out = append(out, state.Move{Action: actNecro})
+				out = append(out, state.Selection{Action: actNecro})
 				break
 			}
 		}
@@ -1130,10 +1130,10 @@ func (e *eng) postMoves(seat int) []state.Move {
 	// or an Acolyte in the battle area — in any battle.
 	if e.is(seat, facWW) && d.hasBook(seat, bkCannibal) && b.Killed > 0 {
 		if e.pool(seat, uWendigo) > 0 {
-			out = append(out, state.Move{Action: actCannibal, Piece: uWendigo})
+			out = append(out, state.Selection{Action: actCannibal, Piece: uWendigo})
 		}
 		if e.pool(seat, uCultist) > 0 {
-			out = append(out, state.Move{Action: actCannibal, Piece: uCultist})
+			out = append(out, state.Selection{Action: actCannibal, Piece: uCultist})
 		}
 	}
 	return out
@@ -1196,16 +1196,16 @@ func (e *eng) advancePost(from int, fresh bool) {
 	e.startRetreat()
 }
 
-func (e *eng) legalPost() []state.Move {
+func (e *eng) legalPost() []state.Selection {
 	b := e.d.Bat
 	out := e.postMoves(b.Who)
 	if _, forced := e.harbingerPending(b.Who); forced {
 		return out
 	}
-	return append(out, state.Move{Action: actDone})
+	return append(out, state.Selection{Action: actDone})
 }
 
-func (e *eng) doPost(seat int, mv state.Move) {
+func (e *eng) doPost(seat int, mv state.Selection) {
 	d := e.d
 	b := d.Bat
 	a := e.areaIdx(b.Area)
@@ -1412,13 +1412,13 @@ func (e *eng) retreat(p PU, to int) {
 	}
 }
 
-func (e *eng) legalRetreat() []state.Move {
+func (e *eng) legalRetreat() []state.Selection {
 	b := e.d.Bat
-	var out []state.Move
+	var out []state.Selection
 	if b.Retreater == 0 {
 		p := b.Pained[0]
 		for _, to := range e.retreatAreas(p.Seat) {
-			out = append(out, state.Move{Action: actRetreat, Piece: p.Type, To: e.m.ids[to]})
+			out = append(out, state.Selection{Action: actRetreat, Piece: p.Type, To: e.m.ids[to]})
 		}
 		return out
 	}
@@ -1431,7 +1431,7 @@ func (e *eng) legalRetreat() []state.Move {
 		}
 		seen[p] = true
 		for _, to := range e.retreatAreas(p.Seat) {
-			mv := state.Move{Action: actRetreat, Piece: p.Type, To: e.m.ids[to]}
+			mv := state.Selection{Action: actRetreat, Piece: p.Type, To: e.m.ids[to]}
 			if p.Seat != b.Retreater {
 				mv.Count = p.Seat
 			}
@@ -1439,10 +1439,10 @@ func (e *eng) legalRetreat() []state.Move {
 		}
 	}
 	// Madness may be declined: the owners then choose.
-	return append(out, state.Move{Action: actDone})
+	return append(out, state.Selection{Action: actDone})
 }
 
-func (e *eng) doRetreat(seat int, mv state.Move) {
+func (e *eng) doRetreat(seat int, mv state.Selection) {
 	b := e.d.Bat
 	if mv.Action == actDone {
 		b.Retreater = 0

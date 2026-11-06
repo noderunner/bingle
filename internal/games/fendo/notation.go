@@ -17,7 +17,7 @@ import (
 func boardID(s string) board.PositionID { return board.PositionID(s) }
 
 // Format renders mv.
-func (rs *Ruleset) Format(game *catalog.CompiledGame, mv state.Move) string {
+func (rs *Ruleset) Format(game *catalog.CompiledGame, mv state.Selection) string {
 	switch mv.Action {
 	case actMove:
 		if mv.From == mv.To {
@@ -31,10 +31,10 @@ func (rs *Ruleset) Format(game *catalog.CompiledGame, mv state.Move) string {
 }
 
 // Parse reads notation produced by Format (case-insensitively).
-func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Move, error) {
+func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Selection, error) {
 	t := strings.ToLower(strings.TrimSpace(text))
-	bad := func(why string) (state.Move, error) {
-		return state.Move{}, fmt.Errorf("fendo: cannot read %q as a move (%s; expected d1-d4+n, d4+e, add@c3 or pass)", text, why)
+	bad := func(why string) (state.Selection, error) {
+		return state.Selection{}, fmt.Errorf("fendo: cannot read %q as a move (%s; expected d1-d4+n, d4+e, add@c3 or pass)", text, why)
 	}
 	cell := func(s string) (board.PositionID, bool) {
 		id := board.PositionID(s)
@@ -42,13 +42,13 @@ func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Move, e
 	}
 	switch {
 	case t == actPass:
-		return state.Move{Action: actPass}, nil
+		return state.Selection{Action: actPass}, nil
 	case strings.HasPrefix(t, "add@"):
 		to, ok := cell(t[4:])
 		if !ok {
 			return bad("unknown cell " + t[4:])
 		}
-		return state.Move{Action: actAdd, To: to}, nil
+		return state.Selection{Action: actAdd, To: to}, nil
 	case strings.Contains(t, "+"):
 		path, side, _ := strings.Cut(t, "+")
 		if _, ok := sideOf(side); !ok {
@@ -65,25 +65,25 @@ func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Move, e
 				return bad("unknown cell " + b)
 			}
 		}
-		return state.Move{Action: actMove, From: from, To: to, Piece: side}, nil
+		return state.Selection{Action: actMove, From: from, To: to, Piece: side}, nil
 	}
 	return bad("not a move")
 }
 
-// Steps: the piece, where it goes (if it moves) and the side of the fence; an
+// Gestures: the piece, where it goes (if it moves) and the side of the fence; an
 // added piece is the Add action and the cell.
-func (rs *Ruleset) Steps(game *catalog.CompiledGame, mv state.Move) []state.Step {
+func (rs *Ruleset) Gestures(game *catalog.CompiledGame, mv state.Selection) []state.Gesture {
 	switch mv.Action {
 	case actAdd:
-		return []state.Step{{Kind: state.StepAction, Value: actAdd}, {Kind: state.StepPos, Value: string(mv.To)}}
+		return []state.Gesture{{Kind: state.GestureAction, Value: actAdd}, {Kind: state.GesturePos, Value: string(mv.To)}}
 	case actMove:
-		steps := []state.Step{{Kind: state.StepPos, Value: string(mv.From)}}
+		steps := []state.Gesture{{Kind: state.GesturePos, Value: string(mv.From)}}
 		if mv.To != mv.From {
-			steps = append(steps, state.Step{Kind: state.StepPos, Value: string(mv.To)})
+			steps = append(steps, state.Gesture{Kind: state.GesturePos, Value: string(mv.To)})
 		}
-		return append(steps, state.Step{Kind: state.StepAction, Value: "fence-" + mv.Piece})
+		return append(steps, state.Gesture{Kind: state.GestureAction, Value: "fence-" + mv.Piece})
 	}
-	return []state.Step{{Kind: state.StepAction, Value: actPass}}
+	return []state.Gesture{{Kind: state.GestureAction, Value: actPass}}
 }
 
 // Describe labels the decisions for clients.

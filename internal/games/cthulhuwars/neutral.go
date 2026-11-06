@@ -286,15 +286,15 @@ func (e *eng) adulation(seat int) bool {
 func (e *eng) walkAvailable(seat int) bool { return e.d.Card[seat] > 0 }
 
 // walkMoves are the areas a Shambler on seat's card may be placed in (any).
-func (e *eng) walkMoves(seat int) []state.Move {
+func (e *eng) walkMoves(seat int) []state.Selection {
 	if e.d.Card[seat] <= 0 {
 		return nil
 	}
-	out := make([]state.Move, 0, len(e.m.ids)+1)
+	out := make([]state.Selection, 0, len(e.m.ids)+1)
 	for a := range e.m.ids {
-		out = append(out, state.Move{Action: actWalk, To: e.m.ids[a]})
+		out = append(out, state.Selection{Action: actWalk, To: e.m.ids[a]})
 	}
-	return append(out, state.Move{Action: actDone})
+	return append(out, state.Selection{Action: actDone})
 }
 
 // walk places a Shambler from the faction card.
@@ -344,18 +344,18 @@ func (e *eng) unitCost(owner int, typ string) int {
 
 // shrivelMoves lists the units Shriveling may remove in the battle: any enemy
 // Monster or Cultist (not a Great Old One).
-func (e *eng) shrivelMoves(seat int) []state.Move {
+func (e *eng) shrivelMoves(seat int) []state.Selection {
 	b := e.d.Bat
 	if !e.d.hasNeutral(seat, nbShrivel) || b.Shrivelled[seat] {
 		return nil
 	}
-	var out []state.Move
+	var out []state.Selection
 	foe := b.foeOf(seat)
 	for _, typ := range e.battleTypes(b, foe) {
 		if !isMonsterOrCultist(typ) {
 			continue
 		}
-		out = append(out, state.Move{Action: actShrivel, Piece: typ})
+		out = append(out, state.Selection{Action: actShrivel, Piece: typ})
 	}
 	return out
 }
@@ -374,23 +374,23 @@ func (e *eng) shrivel(seat int, typ string) {
 
 // recriminateMoves lists the books seat may swap out: every spellbook it holds
 // for which another one is available.
-func (e *eng) recriminateMoves(seat int) []state.Move {
+func (e *eng) recriminateMoves(seat int) []state.Selection {
 	d := e.d
 	if !d.hasNeutral(seat, nbRecrim) || d.Power[seat] < 1 {
 		return nil
 	}
-	var out []state.Move
+	var out []state.Selection
 	for b := 0; b < bookSlots+nNeutralBooks; b++ {
 		if !d.holds(seat, b) || len(e.bookChoices(seat, b)) == 0 {
 			continue
 		}
-		out = append(out, state.Move{Action: actRecrim, Piece: e.bookSpecOf(seat, b).ID, Count: b + 1})
+		out = append(out, state.Selection{Action: actRecrim, Piece: e.bookSpecOf(seat, b).ID, Count: b + 1})
 	}
 	return out
 }
 
 // recriminate removes a spellbook and queues the choice of its replacement.
-func (e *eng) recriminate(seat int, mv state.Move) {
+func (e *eng) recriminate(seat int, mv state.Selection) {
 	d := e.d
 	b := mv.Count - 1
 	d.Power[seat]--
@@ -427,8 +427,8 @@ func (e *eng) beginUndim(seat int) {
 
 // undimMoves lists what the rearranging seat may do: move one unit that does
 // not hold a Gate from an area into another area of the original set.
-func (e *eng) undimMoves(p Prompt) []state.Move {
-	var out []state.Move
+func (e *eng) undimMoves(p Prompt) []state.Selection {
+	var out []state.Selection
 	for _, from := range p.Only {
 		fa := e.areaIdx(from)
 		for _, typ := range e.typesIn(fa, p.Seat) {
@@ -444,7 +444,7 @@ func (e *eng) undimMoves(p Prompt) []state.Move {
 			}
 			for _, to := range p.Only {
 				if to != from {
-					out = append(out, state.Move{Action: actRearrange, Piece: typ, From: e.m.ids[fa], To: boardID(to)})
+					out = append(out, state.Selection{Action: actRearrange, Piece: typ, From: e.m.ids[fa], To: boardID(to)})
 				}
 			}
 		}
@@ -452,11 +452,11 @@ func (e *eng) undimMoves(p Prompt) []state.Move {
 	if len(out) == 0 {
 		return nil
 	}
-	return append(out, state.Move{Action: actDone})
+	return append(out, state.Selection{Action: actDone})
 }
 
 // rearrange moves one unit for Undimensioned.
-func (e *eng) rearrange(seat int, mv state.Move) {
+func (e *eng) rearrange(seat int, mv state.Selection) {
 	from, to := e.areaIdx(string(mv.From)), e.areaIdx(string(mv.To))
 	if e.take(from, seat, mv.Piece) {
 		e.add(to, seat, mv.Piece)
@@ -467,23 +467,23 @@ func (e *eng) rearrange(seat int, mv state.Move) {
 }
 
 // maoMoves lists the Cultists seat may sacrifice to The Mao Ceremony.
-func (e *eng) maoMoves(p Prompt) []state.Move {
-	var out []state.Move
+func (e *eng) maoMoves(p Prompt) []state.Selection {
+	var out []state.Selection
 	for a := range e.m.ids {
 		for _, typ := range []string{uCultist, uHighPriest} {
 			if e.count(a, p.Seat, typ) > 0 {
-				out = append(out, state.Move{Action: actMao, Piece: typ, To: e.m.ids[a]})
+				out = append(out, state.Selection{Action: actMao, Piece: typ, To: e.m.ids[a]})
 			}
 		}
 	}
 	if len(out) == 0 {
 		return nil
 	}
-	return append(out, state.Move{Action: actDone})
+	return append(out, state.Selection{Action: actDone})
 }
 
 // mao sacrifices one Cultist for 1 Power.
-func (e *eng) mao(seat int, mv state.Move) {
+func (e *eng) mao(seat int, mv state.Selection) {
 	a := e.areaIdx(string(mv.To))
 	e.eliminate(a, seat, mv.Piece, 0)
 	e.d.Power[seat]++

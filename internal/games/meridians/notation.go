@@ -13,7 +13,7 @@ import (
 // turn that can lay no stone is "pass".
 
 // Format renders mv.
-func (rs *Ruleset) Format(game *catalog.CompiledGame, mv state.Move) string {
+func (rs *Ruleset) Format(game *catalog.CompiledGame, mv state.Selection) string {
 	if mv.Action == actPass {
 		return actPass
 	}
@@ -21,24 +21,24 @@ func (rs *Ruleset) Format(game *catalog.CompiledGame, mv state.Move) string {
 }
 
 // Parse reads notation produced by Format (case-insensitively).
-func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Move, error) {
+func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Selection, error) {
 	t := strings.ToLower(strings.TrimSpace(text))
 	if t == actPass {
-		return state.Move{Action: actPass}, nil
+		return state.Selection{Action: actPass}, nil
 	}
 	point := board.PositionID(t)
 	if !game.Board.HasPosition(point) {
-		return state.Move{}, fmt.Errorf("meridians: %q is not a point of this board", text)
+		return state.Selection{}, fmt.Errorf("meridians: %q is not a point of this board", text)
 	}
-	return state.Move{Action: actPlace, Piece: "stone", To: point}, nil
+	return state.Selection{Action: actPlace, Piece: "stone", To: point}, nil
 }
 
-// Steps: a stone is one click on a point; a pass is a button.
-func (rs *Ruleset) Steps(game *catalog.CompiledGame, mv state.Move) []state.Step {
+// Gestures: a stone is one click on a point; a pass is a button.
+func (rs *Ruleset) Gestures(game *catalog.CompiledGame, mv state.Selection) []state.Gesture {
 	if mv.Action == actPass {
-		return []state.Step{{Kind: state.StepAction, Value: actPass}}
+		return []state.Gesture{{Kind: state.GestureAction, Value: actPass}}
 	}
-	return []state.Step{{Kind: state.StepPos, Value: string(mv.To)}}
+	return []state.Gesture{{Kind: state.GesturePos, Value: string(mv.To)}}
 }
 
 // Describe labels the decisions for clients.

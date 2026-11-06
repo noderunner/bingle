@@ -75,7 +75,7 @@ func storedRowEndsImpulse(compiled *catalog.CompiledGame, game store.Game, moves
 	}
 	if compiled != nil && before != "" {
 		bs := state.NewBoardState()
-		var mv state.Move
+		var mv state.Selection
 		var err error
 		if err = bs.UnmarshalJSON([]byte(before)); err == nil {
 			if row.MoveJSON != "" {

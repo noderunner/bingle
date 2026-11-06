@@ -53,17 +53,17 @@ type guide struct {
 }
 
 type scoredMove struct {
-	mv    state.Move
+	mv    state.Selection
 	score float64
 }
 
 // GuideMoves implements state.BotGuide.
-func (rs *Ruleset) GuideMoves(game *catalog.CompiledGame, st *state.BoardState, seat int, legal []state.Move) []state.Move {
+func (rs *Ruleset) GuideMoves(game *catalog.CompiledGame, st *state.BoardState, seat int, legal []state.Selection) []state.Selection {
 	return rs.guideMoves(game, st, seat, legal, nil)
 }
 
 // guideMoves is GuideMoves with a tuning (nil: the shipped one of the seat's cult).
-func (rs *Ruleset) guideMoves(game *catalog.CompiledGame, st *state.BoardState, seat int, legal []state.Move, t *GuideTuning) []state.Move {
+func (rs *Ruleset) guideMoves(game *catalog.CompiledGame, st *state.BoardState, seat int, legal []state.Selection, t *GuideTuning) []state.Selection {
 	d, err := dataOf(st)
 	if err != nil || d.Phase == phaseOver || seat < 1 || seat > nSeats {
 		return legal
@@ -77,7 +77,7 @@ func (rs *Ruleset) guideMoves(game *catalog.CompiledGame, st *state.BoardState, 
 	}
 	// A unit stepping off its Gate abandons it: never worth considering.
 	legal = withoutStepOffs(legal, d, seat)
-	var out []state.Move
+	var out []state.Selection
 	switch d.Stage {
 	case stageSetup:
 		out = g.setup(legal)
@@ -111,8 +111,8 @@ func (rs *Ruleset) guideMoves(game *catalog.CompiledGame, st *state.BoardState, 
 // withoutStepOffs drops the moves that give a Gate up without a reason — the
 // unit on it "moving" to the area it stands in, or a unit swapped onto a Gate
 // that is already its own — unless nothing else is left.
-func withoutStepOffs(legal []state.Move, d *Data, seat int) []state.Move {
-	out := make([]state.Move, 0, len(legal))
+func withoutStepOffs(legal []state.Selection, d *Data, seat int) []state.Selection {
+	out := make([]state.Selection, 0, len(legal))
 	for _, mv := range legal {
 		if (mv.Action == actGo || mv.Action == actLeave) && mv.From == mv.To {
 			continue
@@ -129,7 +129,7 @@ func withoutStepOffs(legal []state.Move, d *Data, seat int) []state.Move {
 }
 
 // top keeps the moves within slack of the best score, in their given order.
-func top(list []scoredMove, slack float64) []state.Move {
+func top(list []scoredMove, slack float64) []state.Selection {
 	if len(list) == 0 {
 		return nil
 	}
@@ -139,7 +139,7 @@ func top(list []scoredMove, slack float64) []state.Move {
 			best = s.score
 		}
 	}
-	var out []state.Move
+	var out []state.Selection
 	for _, s := range list {
 		if s.score >= best-slack {
 			out = append(out, s.mv)
@@ -310,7 +310,7 @@ func (e *eng) exposedAreas(seat int) int {
 }
 
 // cost is the Power a decision costs the seat taking it.
-func (g *guide) cost(mv state.Move) int {
+func (g *guide) cost(mv state.Selection) int {
 	e, seat := g.e, g.seat
 	switch mv.Action {
 	case actRecruit, actBattle, actCapture, actGo, actLeave, actSubmerge, actScream, actShriek, actZingaya, actHWINN, actAvatar:
@@ -333,7 +333,7 @@ func (g *guide) cost(mv state.Move) int {
 
 // --- the turn ----------------------------------------------------------------
 
-func (g *guide) turn(legal []state.Move) []state.Move {
+func (g *guide) turn(legal []state.Selection) []state.Selection {
 	d, seat := g.e.d, g.seat
 	t := d.Turn
 	extra := t != nil && t.Main && (!t.Second || t.SecondTaken)
@@ -395,7 +395,7 @@ func (g *guide) turn(legal []state.Move) []state.Move {
 }
 
 // defends reports whether a summon puts a protector where one is needed.
-func (g *guide) defends(mv state.Move) bool {
+func (g *guide) defends(mv state.Selection) bool {
 	if mv.Action != actSummon {
 		return false
 	}
@@ -405,13 +405,13 @@ func (g *guide) defends(mv state.Move) bool {
 
 // score values one decision of the turn: its own worth, plus what it does for
 // a spellbook requirement.
-func (g *guide) score(mv state.Move) float64 {
+func (g *guide) score(mv state.Selection) float64 {
 	s := g.scoreBase(mv)
 	return s + g.reqBonus(mv, s)
 }
 
 // scoreBase values one decision of the turn.
-func (g *guide) scoreBase(mv state.Move) float64 {
+func (g *guide) scoreBase(mv state.Selection) float64 {
 	e, d, seat := g.e, g.e.d, g.seat
 	p := d.Power[seat]
 	area := -1
@@ -580,7 +580,7 @@ func (g *guide) scoreBase(mv state.Move) float64 {
 }
 
 // scoreSummon values putting a monster at a Gate (tips 4 and 5).
-func (g *guide) scoreSummon(mv state.Move, a, p int) float64 {
+func (g *guide) scoreSummon(mv state.Selection, a, p int) float64 {
 	e, seat := g.e, g.seat
 	c := e.summonCost(seat, mv.Piece)
 	s := 40.0 + g.t.SummonIdle
@@ -608,7 +608,7 @@ func (g *guide) scoreSummon(mv state.Move, a, p int) float64 {
 }
 
 // scoreGo values moving one unit (tips 3 and 4).
-func (g *guide) scoreGo(mv state.Move) float64 {
+func (g *guide) scoreGo(mv state.Selection) float64 {
 	e, d, seat := g.e, g.e.d, g.seat
 	from, to := e.areaIdx(string(mv.From)), e.areaIdx(string(mv.To))
 	typ := mv.Piece
@@ -715,7 +715,7 @@ func (g *guide) revealWins() bool {
 // moving guides the units that follow the first in a Move action (tip 2: one
 // unit at a time): only a move that a plan needs — taking an abandoned Gate,
 // guarding what the move exposed — is worth the extra Power.
-func (g *guide) moving(legal []state.Move) []state.Move {
+func (g *guide) moving(legal []state.Selection) []state.Selection {
 	var list []scoredMove
 	for _, mv := range legal {
 		if mv.Action == actDone {
@@ -729,7 +729,7 @@ func (g *guide) moving(legal []state.Move) []state.Move {
 
 // followUp values a further move of the same Move action: only the moves a
 // plan cannot do without count for anything.
-func (g *guide) followUp(mv state.Move) float64 {
+func (g *guide) followUp(mv state.Selection) float64 {
 	e, d, seat := g.e, g.e.d, g.seat
 	if mv.Action == actControl {
 		return 95 // a unit on an abandoned Gate: always
@@ -789,7 +789,7 @@ func (g *guide) unitValue(owner int, typ string, a int) float64 {
 // assign picks the unit that takes a Kill or Pain: the one least missed — or,
 // when the seat decides for an enemy (Hastur's Vengeance), the one most
 // missed.
-func (g *guide) assign(legal []state.Move) []state.Move {
+func (g *guide) assign(legal []state.Selection) []state.Selection {
 	b := g.e.d.Bat
 	if b == nil || len(b.Queue) == 0 {
 		return legal
@@ -811,7 +811,7 @@ func (g *guide) assign(legal []state.Move) []state.Move {
 }
 
 // retreat sends a pained unit towards its friends, away from enemies.
-func (g *guide) retreat(legal []state.Move) []state.Move {
+func (g *guide) retreat(legal []state.Selection) []state.Selection {
 	e, seat := g.e, g.seat
 	var list []scoredMove
 	for _, mv := range legal {
@@ -855,7 +855,7 @@ var bookOrder = [nFactions][]int{
 	facBU: {bkAilurophobia, bkCatabolism, bkZagazig, bkSavagery, bkPredator, bkCatnapping},
 }
 
-func (g *guide) prompt(legal []state.Move) []state.Move {
+func (g *guide) prompt(legal []state.Selection) []state.Selection {
 	d := g.e.d
 	if len(d.Prompts) == 0 {
 		return legal
@@ -906,7 +906,7 @@ func (g *guide) prompt(legal []state.Move) []state.Move {
 	case "submerge":
 		// Monsters sink with Cthulhu (safe, and ready to rise with him);
 		// Cultists stay to hold what they hold.
-		var monsters, done []state.Move
+		var monsters, done []state.Selection
 		for _, mv := range legal {
 			switch {
 			case mv.Action == actDone:
@@ -923,10 +923,10 @@ func (g *guide) prompt(legal []state.Move) []state.Move {
 		// Everything that can come along comes.
 		for _, mv := range legal {
 			if mv.Action == actBring && mv.Piece == bringAll {
-				return []state.Move{mv}
+				return []state.Selection{mv}
 			}
 		}
-		var bring []state.Move
+		var bring []state.Selection
 		for _, mv := range legal {
 			if mv.Action == actBring {
 				bring = append(bring, mv)
@@ -954,7 +954,7 @@ func (g *guide) prompt(legal []state.Move) []state.Move {
 		// Not a bot's kind of decision: it declines.
 		for _, mv := range legal {
 			if mv.Action == actDone {
-				return []state.Move{mv}
+				return []state.Selection{mv}
 			}
 		}
 	}
@@ -972,7 +972,7 @@ func (g *guide) prompt(legal []state.Move) []state.Move {
 
 // --- the Doom phase --------------------------------------------------------------
 
-func (g *guide) doom(legal []state.Move) []state.Move {
+func (g *guide) doom(legal []state.Selection) []state.Selection {
 	e, d, seat := g.e, g.e.d, g.seat
 	var list []scoredMove
 	for _, mv := range legal {
@@ -1083,7 +1083,7 @@ func (g *guide) doom(legal []state.Move) []state.Move {
 // react decides a Devolve window: a Cultist becomes a Deep One when the area
 // is threatened and another Cultist stays to hold the Gate (or no Gate is
 // there), and in a battle where the extra die is worth more than the Cultist.
-func (g *guide) react(p Prompt, legal []state.Move) []state.Move {
+func (g *guide) react(p Prompt, legal []state.Selection) []state.Selection {
 	e, seat := g.e, g.seat
 	var list []scoredMove
 	for _, mv := range legal {
@@ -1138,7 +1138,7 @@ func (g *guide) react(p Prompt, legal []state.Move) []state.Move {
 // place picks where Ghroth's Acolyte goes: one of ours onto an abandoned Gate
 // or into a free area, an enemy's under our monsters where it cannot be
 // protected — and nothing that helps an enemy otherwise.
-func (g *guide) place(legal []state.Move) []state.Move {
+func (g *guide) place(legal []state.Selection) []state.Selection {
 	e, d, seat := g.e, g.e.d, g.seat
 	var list []scoredMove
 	for _, mv := range legal {
@@ -1176,7 +1176,7 @@ func (g *guide) place(legal []state.Move) []state.Move {
 // pre chooses among the Pre-Battle abilities: Abduct and Seek and Destroy
 // when they are there, Invisibility on the strongest enemy Monster, Absorb on
 // units that fight for nothing.
-func (g *guide) pre(legal []state.Move) []state.Move {
+func (g *guide) pre(legal []state.Selection) []state.Selection {
 	e, seat := g.e, g.seat
 	var list []scoredMove
 	for _, mv := range legal {
@@ -1229,7 +1229,7 @@ func (g *guide) pre(legal []state.Move) []state.Move {
 
 // post chooses the Post-Battle abilities: the Harbinger takes the Elder Signs;
 // Necrophagy is used when it costs the foe at least as much as it costs us.
-func (g *guide) post(legal []state.Move) []state.Move {
+func (g *guide) post(legal []state.Selection) []state.Selection {
 	d, seat := g.e.d, g.seat
 	var list []scoredMove
 	for _, mv := range legal {

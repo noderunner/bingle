@@ -572,7 +572,7 @@ func TestSoullessCapturesGiveNoPower(t *testing.T) {
 				break
 			}
 			seat := seatOnImpulse(tb.g, st)
-			legal := state.LegalMoves(tb.g, st, seat)
+			legal := state.LegalSelections(tb.g, st, seat)
 			res, err := state.Apply(tb.g, st, seat, legal[0])
 			if err != nil {
 				t.Fatal(err)
@@ -633,7 +633,7 @@ func TestMartyrdomTurnsKillsIntoPainsWhenTheHighPriestFalls(t *testing.T) {
 	// The second Kill became a Pain: the Proto-Shoggoth lives and retreats.
 	for i := 0; i < 6 && tb.data(st).Stage != "turn" && tb.data(st).Phase == "action"; i++ {
 		seat := seatOnImpulse(tb.g, st)
-		legal := state.LegalMoves(tb.g, st, seat)
+		legal := state.LegalSelections(tb.g, st, seat)
 		if len(legal) == 0 {
 			break
 		}
@@ -757,7 +757,7 @@ func toDoom(t testing.TB, tb *table, st *state.BoardState) *state.BoardState {
 			return st
 		}
 		seat := seatOnImpulse(tb.g, st)
-		legal := state.LegalMoves(tb.g, st, seat)
+		legal := state.LegalSelections(tb.g, st, seat)
 		if len(legal) == 0 {
 			t.Fatalf("no legal move at %q\n%s", d.Stage, state.RenderText(tb.g, st))
 		}

@@ -85,7 +85,7 @@ func (e *eng) relation(dest int) string {
 }
 
 // annotate writes the protocol's text of mv into mv.Aim.
-func (e *eng) annotate(mv *state.Move, seat int) {
+func (e *eng) annotate(mv *state.Selection, seat int) {
 	switch mv.Action {
 	case actPlace:
 		k, _ := kindOf(mv.Piece)
@@ -105,7 +105,7 @@ func (e *eng) annotate(mv *state.Move, seat int) {
 
 // sameMove reports whether a is the move cand: the same protocol text, or (for
 // a move given by its cells) the same tile and cells.
-func sameMove(a, cand state.Move) bool {
+func sameMove(a, cand state.Selection) bool {
 	if a.Aim != "" && cand.Aim != "" {
 		return a.Aim == cand.Aim
 	}
@@ -116,7 +116,7 @@ func sameMove(a, cand state.Move) bool {
 }
 
 // Format renders mv.
-func (rs *Ruleset) Format(game *catalog.CompiledGame, mv state.Move) string {
+func (rs *Ruleset) Format(game *catalog.CompiledGame, mv state.Selection) string {
 	if mv.Aim != "" {
 		return string(mv.Aim)
 	}
@@ -157,13 +157,13 @@ func canonTile(t string) (string, bool) {
 }
 
 // Parse reads the protocol's text (and, for older games, ant@j10 and j10-k10).
-func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Move, error) {
+func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Selection, error) {
 	raw := strings.TrimSpace(text)
-	bad := func(why string) (state.Move, error) {
-		return state.Move{}, fmt.Errorf("hive: cannot read %q as a move (%s; expected e.g. wQ, bA1 wQ-, wB1 /bA1 or pass)", text, why)
+	bad := func(why string) (state.Selection, error) {
+		return state.Selection{}, fmt.Errorf("hive: cannot read %q as a move (%s; expected e.g. wQ, bA1 wQ-, wB1 /bA1 or pass)", text, why)
 	}
 	if strings.EqualFold(raw, actPass) {
-		return state.Move{Action: actPass}, nil
+		return state.Selection{Action: actPass}, nil
 	}
 	cell := func(s string) (board.PositionID, bool) {
 		id := board.PositionID(strings.ToLower(s))
@@ -177,13 +177,13 @@ func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Move, e
 		if !ok {
 			return bad("unknown cell " + at)
 		}
-		return state.Move{Action: actPlace, Piece: kind, To: to}, nil
+		return state.Selection{Action: actPlace, Piece: kind, To: to}, nil
 	}
 	if a, b, ok := strings.Cut(raw, "-"); ok && !strings.Contains(raw, " ") && a != "" && b != "" {
 		from, ok1 := cell(a)
 		to, ok2 := cell(b)
 		if ok1 && ok2 {
-			return state.Move{Action: actMove, From: from, To: to}, nil
+			return state.Selection{Action: actMove, From: from, To: to}, nil
 		}
 	}
 	parts := strings.Fields(raw)
@@ -195,7 +195,7 @@ func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Move, e
 		return bad("unknown tile " + parts[0])
 	}
 	if len(parts) == 1 {
-		return state.Move{Action: "uhp", Aim: board.PositionID(name)}, nil
+		return state.Selection{Action: "uhp", Aim: board.PositionID(name)}, nil
 	}
 	rel := parts[1]
 	prefix, suffix := "", ""
@@ -209,18 +209,18 @@ func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Move, e
 	if !ok {
 		return bad("unknown tile " + rel)
 	}
-	return state.Move{Action: "uhp", Aim: board.PositionID(name + " " + prefix + ref + suffix)}, nil
+	return state.Selection{Action: "uhp", Aim: board.PositionID(name + " " + prefix + ref + suffix)}, nil
 }
 
-// Steps: a placement is the tile, then the cell; a move is the two cells.
-func (rs *Ruleset) Steps(game *catalog.CompiledGame, mv state.Move) []state.Step {
+// Gestures: a placement is the tile, then the cell; a move is the two cells.
+func (rs *Ruleset) Gestures(game *catalog.CompiledGame, mv state.Selection) []state.Gesture {
 	switch mv.Action {
 	case actPlace:
-		return []state.Step{{Kind: state.StepPiece, Value: mv.Piece}, {Kind: state.StepPos, Value: string(mv.To)}}
+		return []state.Gesture{{Kind: state.GesturePiece, Value: mv.Piece}, {Kind: state.GesturePos, Value: string(mv.To)}}
 	case actMove:
-		return []state.Step{{Kind: state.StepPos, Value: string(mv.From)}, {Kind: state.StepPos, Value: string(mv.To)}}
+		return []state.Gesture{{Kind: state.GesturePos, Value: string(mv.From)}, {Kind: state.GesturePos, Value: string(mv.To)}}
 	}
-	return []state.Step{{Kind: state.StepAction, Value: actPass}}
+	return []state.Gesture{{Kind: state.GestureAction, Value: actPass}}
 }
 
 // Describe labels the decisions for clients.

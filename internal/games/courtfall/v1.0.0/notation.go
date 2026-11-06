@@ -33,7 +33,7 @@ import (
 //	seize  done        take another turn / end the turn
 
 // Format renders mv.
-func (rs *Ruleset) Format(game *catalog.CompiledGame, mv state.Move) string {
+func (rs *Ruleset) Format(game *catalog.CompiledGame, mv state.Selection) string {
 	code := unitCode[mv.Piece]
 	switch mv.Action {
 	case actTile:
@@ -86,14 +86,14 @@ func (rs *Ruleset) Format(game *catalog.CompiledGame, mv state.Move) string {
 }
 
 // Parse reads notation produced by Format (case-insensitively).
-func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Move, error) {
+func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Selection, error) {
 	t := strings.TrimSpace(text)
 	if t == "" {
-		return state.Move{}, fmt.Errorf("courtfall: empty move")
+		return state.Selection{}, fmt.Errorf("courtfall: empty move")
 	}
 	low := strings.ToLower(t)
-	bad := func(why string) (state.Move, error) {
-		return state.Move{}, fmt.Errorf("courtfall: cannot read %q as a move (%s)", text, why)
+	bad := func(why string) (state.Selection, error) {
+		return state.Selection{}, fmt.Errorf("courtfall: cannot read %q as a move (%s)", text, why)
 	}
 	cell := func(s string) (board.PositionID, bool) {
 		id := board.PositionID(strings.ToLower(s))
@@ -107,9 +107,9 @@ func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Move, e
 	switch low {
 	case "end", "keep", "stay", "seize", "done", "clear":
 		if low == "clear" {
-			return state.Move{Action: actClear}, nil
+			return state.Selection{Action: actClear}, nil
 		}
-		return state.Move{Action: low}, nil
+		return state.Selection{Action: low}, nil
 	}
 	switch {
 	case strings.HasPrefix(low, "clear+"):
@@ -117,7 +117,7 @@ func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Move, e
 		if err != nil || n < 0 {
 			return bad("clear+N needs a number of VP")
 		}
-		return state.Move{Action: actClear, Count: n}, nil
+		return state.Selection{Action: actClear, Count: n}, nil
 	case strings.HasPrefix(low, "tile:"):
 		parts := strings.SplitN(low[len("tile:"):], "@", 2)
 		if len(parts) != 2 || tileIndex(parts[0]) < 0 {
@@ -127,13 +127,13 @@ func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Move, e
 		if !ok {
 			return bad("unknown hex " + parts[1])
 		}
-		return state.Move{Action: actTile, Piece: parts[0], To: id}, nil
+		return state.Selection{Action: actTile, Piece: parts[0], To: id}, nil
 	case strings.HasPrefix(low, "court:"):
 		c := low[len("court:"):]
 		if !validCourt(c) {
 			return bad("unknown court " + c)
 		}
-		return state.Move{Action: actCourt, Piece: c}, nil
+		return state.Selection{Action: actCourt, Piece: c}, nil
 	case strings.HasPrefix(low, "deploy:"):
 		parts := strings.SplitN(low[len("deploy:"):], "@", 2)
 		if len(parts) != 2 {
@@ -147,14 +147,14 @@ func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Move, e
 		if !ok {
 			return bad("unknown hex " + parts[1])
 		}
-		return state.Move{Action: actDeploy, Piece: p, To: id}, nil
+		return state.Selection{Action: actDeploy, Piece: p, To: id}, nil
 	case strings.HasPrefix(low, "recover:"), strings.HasPrefix(low, "activate:"), strings.HasPrefix(low, "exert:"), strings.HasPrefix(low, "rouse:"):
 		i := strings.IndexByte(low, ':')
 		p, ok := unit(low[i+1:])
 		if !ok {
 			return bad("unknown unit " + low[i+1:])
 		}
-		return state.Move{Action: low[:i], Piece: p}, nil
+		return state.Selection{Action: low[:i], Piece: p}, nil
 	case strings.HasPrefix(low, "surge:"):
 		parts := strings.SplitN(low[len("surge:"):], ">", 2)
 		if len(parts) != 2 {
@@ -168,7 +168,7 @@ func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Move, e
 		if !ok {
 			return bad("unknown hex " + parts[1])
 		}
-		return state.Move{Action: actSurge, Piece: p, To: id}, nil
+		return state.Selection{Action: actSurge, Piece: p, To: id}, nil
 	case strings.HasPrefix(low, "tiles:"):
 		parts := strings.SplitN(low[len("tiles:"):], "<>", 2)
 		if len(parts) != 2 {
@@ -179,26 +179,26 @@ func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Move, e
 		if !ok1 || !ok2 {
 			return bad("unknown hex")
 		}
-		return state.Move{Action: actTiles, From: a, To: b}, nil
+		return state.Selection{Action: actTiles, From: a, To: b}, nil
 	case strings.HasPrefix(low, "respond/"), strings.HasPrefix(low, "reroll/"):
 		i := strings.IndexByte(low, '/')
 		n, err := strconv.Atoi(low[i+1:])
 		if err != nil || n < 0 {
 			return bad("expected a number")
 		}
-		return state.Move{Action: low[:i], Count: n}, nil
+		return state.Selection{Action: low[:i], Count: n}, nil
 	case strings.HasPrefix(low, "push>"):
 		d := dirIndex(strings.ToUpper(low[len("push>"):]))
 		if d < 0 {
 			return bad("direction must be one of E NE NW W SW SE")
 		}
-		return state.Move{Action: actPush, Count: d + 1}, nil
+		return state.Selection{Action: actPush, Count: d + 1}, nil
 	case strings.HasPrefix(low, "shift>"):
 		id, ok := cell(low[len("shift>"):])
 		if !ok {
 			return bad("unknown hex")
 		}
-		return state.Move{Action: actShift, To: id}, nil
+		return state.Selection{Action: actShift, To: id}, nil
 	}
 
 	// A unit letter then a destination: Qd4, Qxd4/2, B*e5, R^d4.
@@ -218,69 +218,71 @@ func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Move, e
 			if err != nil || n < 0 {
 				return bad("dice must be a number")
 			}
-			return state.Move{Action: actStrike, Piece: p, To: id, Count: n}, nil
+			return state.Selection{Action: actStrike, Piece: p, To: id, Count: n}, nil
 		case '*':
 			id, ok := cell(rest[1:])
 			if !ok {
 				return bad("unknown hex " + rest[1:])
 			}
-			return state.Move{Action: actShoot, Piece: p, To: id}, nil
+			return state.Selection{Action: actShoot, Piece: p, To: id}, nil
 		case '^':
 			id, ok := cell(rest[1:])
 			if !ok {
 				return bad("unknown hex " + rest[1:])
 			}
-			return state.Move{Action: actShove, Piece: p, To: id}, nil
+			return state.Selection{Action: actShove, Piece: p, To: id}, nil
 		default:
 			id, ok := cell(rest)
 			if !ok {
 				return bad("unknown hex " + rest)
 			}
-			return state.Move{Action: actMove, Piece: p, To: id}, nil
+			return state.Selection{Action: actMove, Piece: p, To: id}, nil
 		}
 	}
 	return bad("not a Courtfall move")
 }
 
-// Steps decomposes a move into clicks. Positions come first where a click
+// Gestures decomposes a move into clicks. Positions come first where a click
 // on the board can name the decision; verbs are actions; numbers are counts.
-func (rs *Ruleset) Steps(game *catalog.CompiledGame, mv state.Move) []state.Step {
-	pos := func(id board.PositionID) state.Step { return state.Step{Kind: state.StepPos, Value: string(id)} }
-	act := func(id string) state.Step { return state.Step{Kind: state.StepAction, Value: id} }
-	cnt := func(n int) state.Step { return state.Step{Kind: state.StepCount, Value: strconv.Itoa(n)} }
+func (rs *Ruleset) Gestures(game *catalog.CompiledGame, mv state.Selection) []state.Gesture {
+	pos := func(id board.PositionID) state.Gesture {
+		return state.Gesture{Kind: state.GesturePos, Value: string(id)}
+	}
+	act := func(id string) state.Gesture { return state.Gesture{Kind: state.GestureAction, Value: id} }
+	cnt := func(n int) state.Gesture { return state.Gesture{Kind: state.GestureCount, Value: strconv.Itoa(n)} }
 	switch mv.Action {
 	case actTile:
-		return []state.Step{pos(mv.To), act("tile-" + mv.Piece)}
+		return []state.Gesture{pos(mv.To), act("tile-" + mv.Piece)}
 	case actCourt:
-		return []state.Step{act("court-" + mv.Piece)}
+		return []state.Gesture{act("court-" + mv.Piece)}
 	case actDeploy:
-		return []state.Step{{Kind: state.StepPiece, Value: mv.Piece}, pos(mv.To)}
+		return []state.Gesture{{Kind: state.GesturePiece, Value: mv.Piece}, pos(mv.To)}
 	case actRecover, actActivate, actExert, actRouse:
-		return []state.Step{pos(mv.From), act(mv.Action)}
+		return []state.Gesture{pos(mv.From), act(mv.Action)}
 	case actSurge:
-		return []state.Step{pos(mv.From), act(actSurge), pos(mv.To)}
+		return []state.Gesture{pos(mv.From), act(actSurge), pos(mv.To)}
 	case actTiles:
-		return []state.Step{pos(mv.From), act(actTiles), pos(mv.To)}
+		return []state.Gesture{pos(mv.From), act(actTiles), pos(mv.To)}
 	case actClear:
-		return []state.Step{act(actClear), cnt(mv.Count)}
+		return []state.Gesture{act(actClear), cnt(mv.Count)}
 	case actMove, actShoot, actShove:
-		return []state.Step{pos(mv.To), act(mv.Action)}
+		return []state.Gesture{pos(mv.To), act(mv.Action)}
 	case actStrike:
-		return []state.Step{pos(mv.To), act(actStrike), cnt(mv.Count)}
+		return []state.Gesture{pos(mv.To), act(actStrike), cnt(mv.Count)}
 	case actRespond, actReroll:
-		return []state.Step{act(mv.Action), cnt(mv.Count)}
+		return []state.Gesture{act(mv.Action), cnt(mv.Count)}
 	case actPush:
 		if mv.To != "" {
-			return []state.Step{pos(mv.To), act(actPush)}
+			return []state.Gesture{pos(mv.To), act(actPush)}
 		}
 		if mv.Count >= 1 && mv.Count <= 6 {
-			return []state.Step{act("edge-" + dirNames[mv.Count-1])}
+			return []state.Gesture{act("edge-" + dirNames[mv.Count-1])}
 		}
-		return []state.Step{act(actPush)}
+		return []state.Gesture{act(actPush)}
 	case actShift:
-		return []state.Step{pos(mv.To), act(actShift)}
+		return []state.Gesture{pos(mv.To), act(actShift)}
 	default:
-		return []state.Step{act(mv.Action)}
+		return []state.Gesture{act(mv.Action)}
 	}
 }
 
@@ -289,7 +291,7 @@ func (rs *Ruleset) Steps(game *catalog.CompiledGame, mv state.Move) []state.Step
 func (rs *Ruleset) ActionNotations(game *catalog.CompiledGame) []string {
 	g := geoOf(game)
 	var out []string
-	add := func(mv state.Move) { out = append(out, rs.Format(game, mv)) }
+	add := func(mv state.Selection) { out = append(out, rs.Format(game, mv)) }
 	var drafting, zoned []board.PositionID
 	for c, id := range g.ids {
 		if g.zone[c] == 0 && c != g.eye {
@@ -301,71 +303,71 @@ func (rs *Ruleset) ActionNotations(game *catalog.CompiledGame) []string {
 	}
 	for _, color := range tileColors {
 		for _, id := range drafting {
-			add(state.Move{Action: actTile, Piece: color, To: id})
+			add(state.Selection{Action: actTile, Piece: color, To: id})
 		}
 	}
 	for _, c := range courts {
-		add(state.Move{Action: actCourt, Piece: c})
+		add(state.Selection{Action: actCourt, Piece: c})
 	}
 	for _, p := range unitTypes {
 		for _, id := range zoned {
-			add(state.Move{Action: actDeploy, Piece: p, To: id})
+			add(state.Selection{Action: actDeploy, Piece: p, To: id})
 		}
 	}
 	for _, a := range []string{actRecover, actActivate, actExert, actRouse} {
 		for _, p := range unitTypes {
-			add(state.Move{Action: a, Piece: p})
+			add(state.Selection{Action: a, Piece: p})
 		}
 	}
 	for n := 0; priceOf(n) <= game.ParamInt("momentum_cap", 5); n++ {
-		add(state.Move{Action: actClear, Count: n})
+		add(state.Selection{Action: actClear, Count: n})
 	}
 	for _, p := range unitTypes {
 		for _, id := range g.ids {
-			add(state.Move{Action: actSurge, Piece: p, To: id})
+			add(state.Selection{Action: actSurge, Piece: p, To: id})
 		}
 	}
 	for ai, a := range drafting {
 		for _, b := range drafting[ai+1:] {
 			if g.dist[g.index[a]][g.index[b]] <= 2 {
-				add(state.Move{Action: actTiles, From: a, To: b})
+				add(state.Selection{Action: actTiles, From: a, To: b})
 			}
 		}
 	}
 	for _, p := range unitTypes {
 		for _, id := range g.ids {
-			add(state.Move{Action: actMove, Piece: p, To: id})
+			add(state.Selection{Action: actMove, Piece: p, To: id})
 		}
 	}
 	for _, p := range unitTypes {
 		for _, id := range g.ids {
 			for n := 0; n <= 4; n++ {
-				add(state.Move{Action: actStrike, Piece: p, To: id, Count: n})
+				add(state.Selection{Action: actStrike, Piece: p, To: id, Count: n})
 			}
 		}
 	}
 	for _, id := range g.ids {
-		add(state.Move{Action: actShoot, Piece: "bishop", To: id})
+		add(state.Selection{Action: actShoot, Piece: "bishop", To: id})
 	}
 	for _, p := range unitTypes {
 		for _, id := range g.ids {
-			add(state.Move{Action: actShove, Piece: p, To: id})
+			add(state.Selection{Action: actShove, Piece: p, To: id})
 		}
 	}
 	for _, a := range []string{actEnd, actKeep, actStay, actSeize, actDone} {
-		add(state.Move{Action: a})
+		add(state.Selection{Action: a})
 	}
 	for n := 0; n <= 4; n++ {
-		add(state.Move{Action: actRespond, Count: n})
+		add(state.Selection{Action: actRespond, Count: n})
 	}
 	for n := 1; n <= 4; n++ {
-		add(state.Move{Action: actReroll, Count: n})
+		add(state.Selection{Action: actReroll, Count: n})
 	}
 	for d := 1; d <= 6; d++ {
-		add(state.Move{Action: actPush, Count: d})
+		add(state.Selection{Action: actPush, Count: d})
 	}
 	for _, id := range g.ids {
-		add(state.Move{Action: actShift, Piece: "knight", To: id})
+		add(state.Selection{Action: actShift, Piece: "knight", To: id})
 	}
 	return out
 }

@@ -67,7 +67,7 @@ func (e *eng) count() [2]int {
 }
 
 // legal lists the moves of the seat to move.
-func (e *eng) legal() []state.Move {
+func (e *eng) legal() []state.Selection {
 	d := e.d
 	if d.Turn == 0 {
 		return nil
@@ -76,10 +76,10 @@ func (e *eng) legal() []state.Move {
 		return e.spreads(d.Turn)
 	}
 	color := seatColors[d.Turn]
-	var out []state.Move
+	var out []state.Selection
 	for i, c := range e.cells {
 		if c == "" {
-			out = append(out, state.Move{Action: actPlace, Piece: color, To: e.g.ids[i]})
+			out = append(out, state.Selection{Action: actPlace, Piece: color, To: e.g.ids[i]})
 		}
 	}
 	return out
@@ -170,7 +170,7 @@ func (rs *Ruleset) Validate(game *catalog.CompiledGame, st *state.BoardState) er
 }
 
 // Legal lists the moves of seat.
-func (rs *Ruleset) Legal(game *catalog.CompiledGame, st *state.BoardState, seat int) []state.Move {
+func (rs *Ruleset) Legal(game *catalog.CompiledGame, st *state.BoardState, seat int) []state.Selection {
 	d, err := dataOf(st)
 	if err != nil || d.Turn == 0 || seat != d.Turn {
 		return nil
@@ -179,7 +179,7 @@ func (rs *Ruleset) Legal(game *catalog.CompiledGame, st *state.BoardState, seat 
 }
 
 // Apply plays one decision: a placement, or one step of a confluence.
-func (rs *Ruleset) Apply(game *catalog.CompiledGame, st *state.BoardState, seat int, mv state.Move) (*state.MoveResult, error) {
+func (rs *Ruleset) Apply(game *catalog.CompiledGame, st *state.BoardState, seat int, mv state.Selection) (*state.MoveResult, error) {
 	d, err := dataOf(st)
 	if err != nil {
 		return nil, err
@@ -192,7 +192,7 @@ func (rs *Ruleset) Apply(game *catalog.CompiledGame, st *state.BoardState, seat 
 	}
 	e := newEng(game, st, d)
 	want := rs.Format(game, mv)
-	var legal state.Move
+	var legal state.Selection
 	found := false
 	for _, cand := range e.legal() {
 		if rs.Format(game, cand) == want {
@@ -237,7 +237,7 @@ func (e *eng) finish(winner int, reason string) {
 }
 
 // execute plays a legal move on e.
-func (e *eng) execute(mv state.Move, seat int) {
+func (e *eng) execute(mv state.Selection, seat int) {
 	d := e.d
 	if mv.Action != actPlace {
 		e.spread(mv, seat)

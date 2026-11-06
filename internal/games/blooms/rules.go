@@ -86,30 +86,30 @@ func (e *eng) fenced(owner int) [][]int {
 }
 
 // legal lists the moves of the seat to move.
-func (e *eng) legal() []state.Move {
+func (e *eng) legal() []state.Selection {
 	d := e.d
 	if d.Turn == 0 {
 		return nil
 	}
-	var out []state.Move
+	var out []state.Selection
 	for _, color := range seatColors[d.Turn] {
 		if d.Stage == stageSecond && color == d.First {
 			continue
 		}
 		for i, c := range e.cells {
 			if c == "" {
-				out = append(out, state.Move{Action: actPlace, Piece: color, To: e.g.ids[i]})
+				out = append(out, state.Selection{Action: actPlace, Piece: color, To: e.g.ids[i]})
 			}
 		}
 	}
 	if d.Stage == stageSecond {
-		out = append(out, state.Move{Action: actDone})
+		out = append(out, state.Selection{Action: actDone})
 	}
 	// The pie rule: the second player's first reply may be to take the
 	// opening side. The catalog brings the setup choice (pie_rule); the swap
 	// itself is the ruleset's own move.
 	if e.pieOn() && !d.Swapped && d.Turn == 2 && d.Turns == 1 && d.Stage == stageFirst {
-		out = append(out, state.Move{Action: actSwap})
+		out = append(out, state.Selection{Action: actSwap})
 	}
 	return out
 }
@@ -174,7 +174,7 @@ func (rs *Ruleset) Validate(game *catalog.CompiledGame, st *state.BoardState) er
 }
 
 // Legal lists the moves of seat.
-func (rs *Ruleset) Legal(game *catalog.CompiledGame, st *state.BoardState, seat int) []state.Move {
+func (rs *Ruleset) Legal(game *catalog.CompiledGame, st *state.BoardState, seat int) []state.Selection {
 	d, err := dataOf(st)
 	if err != nil || d.Turn == 0 || seat != d.Turn {
 		return nil
@@ -183,7 +183,7 @@ func (rs *Ruleset) Legal(game *catalog.CompiledGame, st *state.BoardState, seat 
 }
 
 // Apply plays one decision of a turn.
-func (rs *Ruleset) Apply(game *catalog.CompiledGame, st *state.BoardState, seat int, mv state.Move) (*state.MoveResult, error) {
+func (rs *Ruleset) Apply(game *catalog.CompiledGame, st *state.BoardState, seat int, mv state.Selection) (*state.MoveResult, error) {
 	d, err := dataOf(st)
 	if err != nil {
 		return nil, err
@@ -196,7 +196,7 @@ func (rs *Ruleset) Apply(game *catalog.CompiledGame, st *state.BoardState, seat 
 	}
 	e := newEng(game, st, d)
 	want := rs.Format(game, mv)
-	var legal state.Move
+	var legal state.Selection
 	found := false
 	for _, cand := range e.legal() {
 		if rs.Format(game, cand) == want {
@@ -249,7 +249,7 @@ func (e *eng) finish(winner int, reason string) {
 	}
 }
 
-func (e *eng) execute(mv state.Move, seat int) {
+func (e *eng) execute(mv state.Selection, seat int) {
 	d := e.d
 	switch mv.Action {
 	case actSwap:

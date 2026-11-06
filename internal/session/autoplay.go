@@ -264,7 +264,7 @@ func (m *Manager) playTurnFor(ctx context.Context, roomCode string, game store.G
 		if err := bs.UnmarshalJSON([]byte(game.BoardState)); err != nil {
 			break
 		}
-		legal := state.LegalMoves(compiled, bs, seat)
+		legal := state.LegalSelections(compiled, bs, seat)
 		if len(legal) == 0 {
 			break
 		}

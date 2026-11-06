@@ -37,7 +37,7 @@ func (c *rctx) leapReach(from board.PositionID, max int) map[board.PositionID]in
 // empty square within max_distance; within clone_distance it stays behind (a
 // clone), further it leaves its origin (a jump); then adjacent opposing
 // pieces may be infected.
-func (c *rctx) validateLeap(act catalog.ResolvedAction, mv Move) (executor, error) {
+func (c *rctx) validateLeap(act catalog.ResolvedAction, mv Selection) (executor, error) {
 	if mv.Piece != "" || mv.Count != 0 || len(mv.Path) > 0 || len(mv.Drops) > 0 || mv.Aim != "" {
 		return nil, fmt.Errorf("state: a leap takes only from and to")
 	}
@@ -97,7 +97,7 @@ func (c *rctx) validateLeap(act catalog.ResolvedAction, mv Move) (executor, erro
 	}, nil
 }
 
-func (c *rctx) enumerateLeaps(act catalog.ResolvedAction, keep func(catalog.ResolvedAction, Move, bool)) {
+func (c *rctx) enumerateLeaps(act catalog.ResolvedAction, keep func(catalog.ResolvedAction, Selection, bool)) {
 	isPiece := map[string]bool{}
 	for _, p := range act.Pieces {
 		isPiece[p] = true
@@ -116,7 +116,7 @@ func (c *rctx) enumerateLeaps(act catalog.ResolvedAction, keep func(catalog.Reso
 			if _, in := reach[to]; !in || len(c.st.cells[to]) > 0 {
 				continue
 			}
-			keep(act, Move{Action: act.ID, From: from, To: to}, true)
+			keep(act, Selection{Action: act.ID, From: from, To: to}, true)
 		}
 	}
 }

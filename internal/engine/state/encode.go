@@ -308,7 +308,7 @@ func buildActionSpace(game *catalog.CompiledGame) *ActionSpace {
 	g := game.Board
 	var moves []string
 	seen := map[string]bool{}
-	add := func(mv Move) {
+	add := func(mv Selection) {
 		s := FormatMove(game, mv)
 		if !seen[s] {
 			seen[s] = true
@@ -324,13 +324,13 @@ func buildActionSpace(game *catalog.CompiledGame) *ActionSpace {
 					if act.Region != nil && !act.Region[to] {
 						continue
 					}
-					add(Move{Action: act.ID, Piece: piece, To: to})
+					add(Selection{Action: act.ID, Piece: piece, To: to})
 				}
 			}
 		case catalog.ActionStep:
 			for _, from := range g.Positions() {
 				for _, to := range g.Neighbors(from) {
-					add(Move{Action: act.ID, From: from, To: to})
+					add(Selection{Action: act.ID, From: from, To: to})
 				}
 			}
 		case catalog.ActionLeap:
@@ -339,12 +339,12 @@ func buildActionSpace(game *catalog.CompiledGame) *ActionSpace {
 				reach := c.leapReach(from, act.MaxDistance)
 				for _, to := range g.Positions() {
 					if _, ok := reach[to]; ok {
-						add(Move{Action: act.ID, From: from, To: to})
+						add(Selection{Action: act.ID, From: from, To: to})
 					}
 				}
 			}
 		case catalog.ActionPass, catalog.ActionSwap:
-			add(Move{Action: act.ID})
+			add(Selection{Action: act.ID})
 		case catalog.ActionJump:
 			if act.Chain {
 				return as // dynamic
@@ -356,7 +356,7 @@ func buildActionSpace(game *catalog.CompiledGame) *ActionSpace {
 				}
 				for _, d := range game.Directions {
 					if to, ok := g.At(board.Coord{X: fc.X + 2*d.DX, Y: fc.Y + 2*d.DY}); ok {
-						add(Move{Action: act.ID, From: from, Path: []board.PositionID{to}, To: to})
+						add(Selection{Action: act.ID, From: from, Path: []board.PositionID{to}, To: to})
 					}
 				}
 			}
@@ -387,13 +387,13 @@ func buildActionSpace(game *catalog.CompiledGame) *ActionSpace {
 				for _, d := range dirs {
 					for _, to := range ray(from, d, act.MaxDistance) {
 						if act.Then == nil {
-							add(Move{Action: act.ID, From: from, To: to})
+							add(Selection{Action: act.ID, From: from, To: to})
 							continue
 						}
 						max := act.Then.MaxDistance
 						for _, sd := range thenDirs {
 							for _, aim := range ray(to, sd, max) {
-								add(Move{Action: act.ID, From: from, To: to, Aim: aim})
+								add(Selection{Action: act.ID, From: from, To: to, Aim: aim})
 							}
 						}
 					}
@@ -420,7 +420,7 @@ func buildActionSpace(game *catalog.CompiledGame) *ActionSpace {
 					for count := 1; count <= act.CarryLimit; count++ {
 						for squares := 1; squares <= count && squares <= len(line); squares++ {
 							forEachComposition(count, squares, func(drops []int) {
-								add(Move{
+								add(Selection{
 									Action: act.ID, From: from, Count: count,
 									To: line[squares-1], Path: line[:squares:squares], Drops: cloneInts(drops),
 								})

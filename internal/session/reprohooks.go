@@ -20,7 +20,7 @@ import (
 // 500 and a stack, which says where it broke but not what it broke on. The
 // position is what is needed, so it is caught here, where the position is
 // still in hand.
-func (m *Manager) applyWatched(compiled *catalog.CompiledGame, bs *state.BoardState, seat int, mv state.Move) (result *state.MoveResult, err error) {
+func (m *Manager) applyWatched(compiled *catalog.CompiledGame, bs *state.BoardState, seat int, mv state.Selection) (result *state.MoveResult, err error) {
 	defer func() {
 		v := recover()
 		if v == nil {
@@ -44,13 +44,13 @@ func (m *Manager) applyWatched(compiled *catalog.CompiledGame, bs *state.BoardSt
 // nothing anybody can see explains why. Paranoid mode catches the same
 // disagreement from the other side; this catches it in production, on a path
 // that is already an error, and only when there is somewhere to write.
-func (m *Manager) reproRefusal(ctx context.Context, compiled *catalog.CompiledGame, game store.Game, bs *state.BoardState, seat int, mv state.Move, cause error) {
+func (m *Manager) reproRefusal(ctx context.Context, compiled *catalog.CompiledGame, game store.Game, bs *state.BoardState, seat int, mv state.Selection, cause error) {
 	if !m.repro.On() {
 		return
 	}
 	want := mv.Key()
 	listed := false
-	for _, candidate := range state.LegalMoves(compiled, bs, seat) {
+	for _, candidate := range state.LegalSelections(compiled, bs, seat) {
 		if candidate.Key() == want {
 			listed = true
 			break

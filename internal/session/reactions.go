@@ -394,15 +394,15 @@ func (m *Manager) AskEveryReaction(ctx context.Context, roomCode, name string) e
 // pending and who did not ask to be asked about it: asking is by occasion —
 // the action was aimed at them, it was any other player's, or it was a chosen
 // player's.
-func (m *Manager) autoPass(ctx context.Context, compiled *catalog.CompiledGame, game store.Game, bs *state.BoardState, player store.Player) (state.Move, bool) {
+func (m *Manager) autoPass(ctx context.Context, compiled *catalog.CompiledGame, game store.Game, bs *state.BoardState, player store.Player) (state.Selection, bool) {
 	r := state.PendingReaction(compiled, bs)
 	if r == nil || r.Seat != player.Seat {
-		return state.Move{}, false
+		return state.Selection{}, false
 	}
 	abilities := state.ReactionAbilities(compiled, bs, player.Seat)
 	prefs, err := m.reactionPrefs(ctx, game, compiled, player.Seat, abilities)
 	if err != nil {
-		return state.Move{}, false
+		return state.Selection{}, false
 	}
 	choice := choiceOf(prefs, abilityID(abilities, r.Ability))
 	ask := choice.AskAll || (choice.Targeted && r.Targeted)
@@ -412,12 +412,12 @@ func (m *Manager) autoPass(ctx context.Context, compiled *catalog.CompiledGame, 
 		}
 	}
 	if ask {
-		return state.Move{}, false
+		return state.Selection{}, false
 	}
-	for _, mv := range state.LegalMoves(compiled, bs, player.Seat) {
+	for _, mv := range state.LegalSelections(compiled, bs, player.Seat) {
 		if mv.Action == r.Pass.Action && mv.Piece == r.Pass.Piece && mv.To == r.Pass.To && mv.Count == r.Pass.Count {
 			return mv, true
 		}
 	}
-	return state.Move{}, false
+	return state.Selection{}, false
 }

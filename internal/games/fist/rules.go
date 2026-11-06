@@ -200,12 +200,12 @@ func canJump(kind uint8) bool { return kind == kBlue || kind == kAce || kind == 
 // --- move generation ------------------------------------------------------
 
 // legal lists every move of side, a turn each, in a stable order.
-func (e *eng) legal(side uint8) []state.Move {
+func (e *eng) legal(side uint8) []state.Selection {
 	if e.d.Turn == 0 {
 		return nil
 	}
 	pawnOK := e.controls(side)
-	var out []state.Move
+	var out []state.Selection
 	for c, p := range e.b {
 		if p.kind == kNone || (p.side != side && (p.kind != kPawn || !pawnOK)) {
 			continue
@@ -215,10 +215,10 @@ func (e *eng) legal(side uint8) []state.Move {
 	return out
 }
 
-func (e *eng) pieceMoves(from int, side uint8) []state.Move {
+func (e *eng) pieceMoves(from int, side uint8) []state.Selection {
 	p := e.b[from]
 	rng := rangeOf(p.kind, e.val[from])
-	var out []state.Move
+	var out []state.Selection
 	fromID := board.PositionID(cellName(from))
 	pawnBack := -1
 	if p.kind == kPawn && e.d.PawnFrom != "" {
@@ -237,10 +237,10 @@ func (e *eng) pieceMoves(from int, side uint8) []state.Move {
 				continue
 			}
 			toID := board.PositionID(cellName(to))
-			out = append(out, state.Move{Action: actMove, Piece: kindName[p.kind], From: fromID, To: toID})
+			out = append(out, state.Selection{Action: actMove, Piece: kindName[p.kind], From: fromID, To: toID})
 			if canPin(p.kind) {
 				for _, t := range e.pins(from, to, side) {
-					out = append(out, state.Move{Action: actMove, Piece: kindName[p.kind], From: fromID, To: toID, Aim: board.PositionID(cellName(t))})
+					out = append(out, state.Selection{Action: actMove, Piece: kindName[p.kind], From: fromID, To: toID, Aim: board.PositionID(cellName(t))})
 				}
 			}
 		}
@@ -311,7 +311,7 @@ type jumper struct {
 	visited  [64]bool
 	path     []board.PositionID
 	drops    []int
-	out      []state.Move
+	out      []state.Selection
 	over     bool
 }
 
@@ -363,7 +363,7 @@ func (j *jumper) walk(cur int) {
 			j.drops = append(j.drops, opt)
 			won := opt != jumpSpare && over.kind == kKing
 			if land != j.pawnBack || j.kind != kPawn {
-				j.out = append(j.out, state.Move{
+				j.out = append(j.out, state.Selection{
 					Action: actJump, Piece: kindName[j.kind], From: j.fromID, To: j.path[len(j.path)-1],
 					Path: append([]board.PositionID(nil), j.path...), Drops: append([]int(nil), j.drops...),
 				})
@@ -471,7 +471,7 @@ func (rs *Ruleset) Validate(game *catalog.CompiledGame, st *state.BoardState) er
 }
 
 // Legal lists the moves of seat.
-func (rs *Ruleset) Legal(game *catalog.CompiledGame, st *state.BoardState, seat int) []state.Move {
+func (rs *Ruleset) Legal(game *catalog.CompiledGame, st *state.BoardState, seat int) []state.Selection {
 	d, err := dataOf(st)
 	if err != nil || d.Turn == 0 || seat != d.Turn {
 		return nil
@@ -480,7 +480,7 @@ func (rs *Ruleset) Legal(game *catalog.CompiledGame, st *state.BoardState, seat 
 }
 
 // Apply plays one turn.
-func (rs *Ruleset) Apply(game *catalog.CompiledGame, st *state.BoardState, seat int, mv state.Move) (*state.MoveResult, error) {
+func (rs *Ruleset) Apply(game *catalog.CompiledGame, st *state.BoardState, seat int, mv state.Selection) (*state.MoveResult, error) {
 	d, err := dataOf(st)
 	if err != nil {
 		return nil, err
@@ -493,7 +493,7 @@ func (rs *Ruleset) Apply(game *catalog.CompiledGame, st *state.BoardState, seat 
 	}
 	e := newEng(st, d)
 	want := rs.Format(game, mv)
-	var legal state.Move
+	var legal state.Selection
 	found := false
 	for _, cand := range e.legal(uint8(seat)) {
 		if rs.Format(game, cand) == want {
@@ -563,7 +563,7 @@ func (e *eng) finish(d *Data, winner int, reason string) {
 }
 
 // execute plays mv for side on the decoded board and checks the two goals.
-func (e *eng) execute(mv state.Move, side uint8) {
+func (e *eng) execute(mv state.Selection, side uint8) {
 	d := e.d
 	from, _ := cellOf(mv.From)
 	p := e.b[from]

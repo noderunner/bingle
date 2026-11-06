@@ -544,7 +544,7 @@ func (h *handlers) handleMakeMove(w http.ResponseWriter, r *http.Request) {
 	case strings.TrimSpace(req.Notation) != "":
 		outcome, err = h.mgr.PlayNotationAt(r.Context(), code, req.PlayerName, req.Notation, req.Ply)
 	case strings.TrimSpace(req.Action) != "" || strings.TrimSpace(req.Piece) != "" || req.Count != 0 || len(req.Path) > 0 || strings.TrimSpace(req.Aim) != "":
-		mv := state.Move{
+		mv := state.Selection{
 			Action: strings.TrimSpace(req.Action),
 			Piece:  strings.TrimSpace(req.Piece),
 			From:   board.PositionID(strings.TrimSpace(req.From)),

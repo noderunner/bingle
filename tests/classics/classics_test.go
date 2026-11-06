@@ -87,7 +87,7 @@ func TestTicTacToeNotationIsBareSquare(t *testing.T) {
 func TestConnectFourGravity(t *testing.T) {
 	g := load(t, "connect-four")
 	st := state.InitialState(g)
-	if n := len(state.LegalMoves(g, st, 1)); n != 7 {
+	if n := len(state.LegalSelections(g, st, 1)); n != 7 {
 		t.Errorf("legal moves at the start = %d, want 7 (one per column)", n)
 	}
 	// Only the bottom square of an empty column may be played.
@@ -97,7 +97,7 @@ func TestConnectFourGravity(t *testing.T) {
 	}
 	// After a1 the next square up is available.
 	res := playAll(t, g, "a1")
-	if n := len(state.LegalMoves(g, res.NewState, 2)); n != 7 {
+	if n := len(state.LegalSelections(g, res.NewState, 2)); n != 7 {
 		t.Errorf("legal moves after a1 = %d, want 7", n)
 	}
 	mv, _ = state.ParseMove(g, "a2")
@@ -152,7 +152,7 @@ func TestRandomPlayoutsAreConsistent(t *testing.T) {
 		for n := 0; n < games; n++ {
 			st, seat := state.InitialState(g), 1
 			for ply := 0; ply < 400; ply++ {
-				moves := state.LegalMoves(g, st, seat)
+				moves := state.LegalSelections(g, st, seat)
 				if len(moves) == 0 {
 					t.Fatalf("%s: no legal moves in an unfinished game", id)
 				}
@@ -227,7 +227,7 @@ func TestHexRandomGamesAlwaysHaveAWinner(t *testing.T) {
 	for n := 0; n < 30; n++ {
 		st, seat := state.InitialState(g), 1
 		for {
-			moves := state.LegalMoves(g, st, seat)
+			moves := state.LegalSelections(g, st, seat)
 			if len(moves) == 0 {
 				t.Fatal("no moves in an unfinished game")
 			}
@@ -269,7 +269,7 @@ func TestDraughtsStartingPositionAndOpeningMoves(t *testing.T) {
 		t.Fatalf("pieces at the start = %d, want 24", n)
 	}
 	// Black (bottom) has 7 opening moves in English draughts.
-	moves := state.LegalMoves(g, st, 1)
+	moves := state.LegalSelections(g, st, 1)
 	if len(moves) != 7 {
 		t.Errorf("opening moves = %d, want 7: %v", len(moves), notations(g, moves))
 	}
@@ -284,12 +284,12 @@ func TestDraughtsStartingPositionAndOpeningMoves(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if n := len(state.LegalMoves(g, res.NewState, 2)); n != 7 {
+	if n := len(state.LegalSelections(g, res.NewState, 2)); n != 7 {
 		t.Errorf("red's replies = %d, want 7", n)
 	}
 }
 
-func notations(g *catalog.CompiledGame, moves []state.Move) []string {
+func notations(g *catalog.CompiledGame, moves []state.Selection) []string {
 	out := make([]string, len(moves))
 	for i, m := range moves {
 		out[i] = state.FormatMove(g, m)
@@ -304,12 +304,12 @@ func TestDraughtsCaptureIsMandatory(t *testing.T) {
 	st := draughtsPosition(t, g, map[string][]string{
 		"c3": {"bm"}, "d4": {"rm"}, "a1": {"bm"}, "h8": {"rm"},
 	})
-	moves := state.LegalMoves(g, st, 1)
+	moves := state.LegalSelections(g, st, 1)
 	got := notations(g, moves)
 	if len(got) != 1 || got[0] != "c3xe5" {
 		t.Fatalf("legal moves = %v, want only the forced capture c3xe5", got)
 	}
-	if _, err := state.Apply(g, st, 1, state.Move{From: "a1", To: "b2"}); err == nil {
+	if _, err := state.Apply(g, st, 1, state.Selection{From: "a1", To: "b2"}); err == nil {
 		t.Error("a plain step was accepted although a capture is available")
 	}
 	res, err := state.Apply(g, st, 1, moves[0])
@@ -333,7 +333,7 @@ func TestDraughtsMultiJumpMustBePlayedToTheEnd(t *testing.T) {
 	st := draughtsPosition(t, g, map[string][]string{
 		"c1": {"bm"}, "d2": {"rm"}, "f4": {"rm"}, "h8": {"rm"},
 	})
-	got := notations(g, state.LegalMoves(g, st, 1))
+	got := notations(g, state.LegalSelections(g, st, 1))
 	if len(got) != 1 || got[0] != "c1xe3xg5" {
 		t.Fatalf("legal moves = %v, want only the full chain c1xe3xg5", got)
 	}
@@ -354,7 +354,7 @@ func TestDraughtsMultiJumpMustBePlayedToTheEnd(t *testing.T) {
 		t.Errorf("captures = %v, want two", res.Captures)
 	}
 	// Steps for the UI: from then each landing.
-	steps := state.Steps(g, res.Move)
+	steps := state.Gestures(g, res.Move)
 	if len(steps) != 3 || steps[0].Value != "c1" || steps[2].Value != "g5" {
 		t.Errorf("steps = %+v", steps)
 	}
@@ -387,7 +387,7 @@ func TestDraughtsManPromotesAndKingMovesBackwards(t *testing.T) {
 	}
 }
 
-func mustParse(t testing.TB, g *catalog.CompiledGame, text string) state.Move {
+func mustParse(t testing.TB, g *catalog.CompiledGame, text string) state.Selection {
 	t.Helper()
 	mv, err := state.ParseMove(g, text)
 	if err != nil {
@@ -420,7 +420,7 @@ func TestDraughtsRandomGamesTerminateConsistently(t *testing.T) {
 	for n := 0; n < 20; n++ {
 		st, seat := state.InitialState(g), 1
 		for ply := 0; ply < 250; ply++ {
-			moves := state.LegalMoves(g, st, seat)
+			moves := state.LegalSelections(g, st, seat)
 			if len(moves) == 0 {
 				t.Fatal("no moves in an unfinished game")
 			}
@@ -466,7 +466,7 @@ func TestBreakthroughMovesAndCaptures(t *testing.T) {
 	}
 	// White's opening moves: each of 8 pawns on rank 2 can step straight (8)
 	// or diagonally (14 on-board diagonals) onto the empty rank 3: 8 + 14.
-	if n := len(state.LegalMoves(g, st, 1)); n != 22 {
+	if n := len(state.LegalSelections(g, st, 1)); n != 22 {
 		t.Errorf("white opening moves = %d, want 22", n)
 	}
 
@@ -514,7 +514,7 @@ func TestBreakthroughRandomGamesHaveAWinner(t *testing.T) {
 	for n := 0; n < 20; n++ {
 		st, seat := state.InitialState(g), 1
 		for ply := 0; ply < 400; ply++ {
-			moves := state.LegalMoves(g, st, seat)
+			moves := state.LegalSelections(g, st, seat)
 			if len(moves) == 0 {
 				t.Fatal("no legal moves in an unfinished game")
 			}
@@ -541,7 +541,7 @@ func TestBreakthroughRandomGamesHaveAWinner(t *testing.T) {
 func TestReversiOpeningMovesAndFlips(t *testing.T) {
 	g := load(t, "reversi")
 	st := state.InitialState(g)
-	moves := state.LegalMoves(g, st, 1)
+	moves := state.LegalSelections(g, st, 1)
 	got := map[string]bool{}
 	for _, m := range moves {
 		got[state.FormatMove(g, m)] = true
@@ -598,7 +598,7 @@ func TestReversiRandomGamesFinish(t *testing.T) {
 	for n := 0; n < 20; n++ {
 		st, seat := state.InitialState(g), 1
 		for ply := 0; ply < 200; ply++ {
-			moves := state.LegalMoves(g, st, seat)
+			moves := state.LegalSelections(g, st, seat)
 			if len(moves) == 0 {
 				t.Fatal("the seat to move has no legal move in an unfinished game")
 			}
@@ -800,7 +800,7 @@ func TestGoRandomGamesTerminateAndNotationRoundTrips(t *testing.T) {
 	for n := 0; n < 8; n++ {
 		st, seat := state.InitialState(g), 1
 		for ply := 0; ply < 600; ply++ {
-			moves := state.LegalMoves(g, st, seat)
+			moves := state.LegalSelections(g, st, seat)
 			if len(moves) == 0 {
 				t.Fatal("no legal moves (pass should always exist)")
 			}
@@ -837,13 +837,13 @@ func TestGoRandomGamesTerminateAndNotationRoundTrips(t *testing.T) {
 }
 
 // Move0 is the bare swap move.
-func Move0(g *catalog.CompiledGame) state.Move {
+func Move0(g *catalog.CompiledGame) state.Selection {
 	for _, a := range g.Actions {
 		if a.Type == catalog.ActionSwap {
-			return state.Move{Action: a.ID}
+			return state.Selection{Action: a.ID}
 		}
 	}
-	return state.Move{}
+	return state.Selection{}
 }
 
 func TestPieRuleSwapOnTheSecondMoveOnly(t *testing.T) {
@@ -852,20 +852,20 @@ func TestPieRuleSwapOnTheSecondMoveOnly(t *testing.T) {
 		st := state.InitialState(g)
 
 		// Not available before anything was played.
-		for _, mv := range state.LegalMoves(g, st, 1) {
+		for _, mv := range state.LegalSelections(g, st, 1) {
 			if mv.Action == "swap" {
 				t.Fatalf("%s: swap offered on the first move", id)
 			}
 		}
-		first := state.LegalMoves(g, st, 1)[0]
+		first := state.LegalSelections(g, st, 1)[0]
 		res, err := state.Apply(g, st, 1, first)
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		// Offered to the second player exactly now.
-		var swap *state.Move
-		for _, mv := range state.LegalMoves(g, res.NewState, 2) {
+		var swap *state.Selection
+		for _, mv := range state.LegalSelections(g, res.NewState, 2) {
 			if mv.Action == "swap" {
 				m := mv
 				swap = &m
@@ -896,11 +896,11 @@ func TestPieRuleSwapOnTheSecondMoveOnly(t *testing.T) {
 		}
 
 		// And never again.
-		second, err := state.Apply(g, res.NewState, 2, state.LegalMoves(g, res.NewState, 2)[0])
+		second, err := state.Apply(g, res.NewState, 2, state.LegalSelections(g, res.NewState, 2)[0])
 		if err != nil {
 			t.Fatal(err)
 		}
-		for _, mv := range state.LegalMoves(g, second.NewState, 1) {
+		for _, mv := range state.LegalSelections(g, second.NewState, 1) {
 			if mv.Action == "swap" {
 				t.Fatalf("%s: swap offered on the third move", id)
 			}

@@ -60,7 +60,7 @@ func (m *Manager) Selections(ctx context.Context, roomCode, made string, ply *in
 	} else if !ok {
 		return view, nil
 	}
-	var sels []state.Move
+	var sels []state.Selection
 	if made != "" {
 		if sels, err = state.ParseImpulse(compiled, made); err != nil {
 			return SelectionsView{}, err
@@ -83,7 +83,7 @@ func (m *Manager) Selections(ctx context.Context, roomCode, made string, ply *in
 	}
 	view.Complete, view.MayEnd = next.Complete, next.MayEnd
 	for _, mv := range next.Options {
-		view.Options = append(view.Options, LegalMove{Move: mv, Notation: state.FormatMove(compiled, mv), Steps: state.Steps(compiled, mv)})
+		view.Options = append(view.Options, LegalMove{Move: mv, Notation: state.FormatMove(compiled, mv), Steps: state.Gestures(compiled, mv)})
 	}
 	if next.Position != nil {
 		doc, err := state.Public(compiled, next.Position, seat).MarshalJSON()

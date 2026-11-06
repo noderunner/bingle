@@ -170,7 +170,7 @@ func (o *Observer) seat(s int) *SeatMetrics {
 
 // Observe records one decision: seat played mv, taking the position from
 // before to after. It reads both and keeps neither.
-func (o *Observer) Observe(before, after *state.BoardState, seat int, mv state.Move) {
+func (o *Observer) Observe(before, after *state.BoardState, seat int, mv state.Selection) {
 	bd, err1 := dataOf(before)
 	ad, err2 := dataOf(after)
 	if err1 != nil || err2 != nil {

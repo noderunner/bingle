@@ -306,7 +306,7 @@ func TestPieRuleIsASetupChoice(t *testing.T) {
 			t.Error("the plain game offers the swap")
 		}
 	}
-	if _, err := rs.Apply(g, st, 2, state.Move{Action: "swap"}); err == nil {
+	if _, err := rs.Apply(g, st, 2, state.Selection{Action: "swap"}); err == nil {
 		t.Error("the plain game accepted a swap")
 	}
 }
@@ -401,7 +401,7 @@ func TestPieRuleOnlyBeforeTheFirstReply(t *testing.T) {
 			t.Error("the swap is on offer after the reply has begun")
 		}
 	}
-	if _, err := rs.Apply(g, st, 2, state.Move{Action: "swap"}); err == nil {
+	if _, err := rs.Apply(g, st, 2, state.Selection{Action: "swap"}); err == nil {
 		t.Error("a swap was accepted after the reply had begun")
 	}
 }

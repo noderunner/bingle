@@ -88,16 +88,16 @@ func (e *eng) eligible(seat int) []cluster {
 }
 
 // spreads lists seat's decisions in the confluence.
-func (e *eng) spreads(seat int) []state.Move {
+func (e *eng) spreads(seat int) []state.Selection {
 	cf := e.d.Confluence
-	var out []state.Move
+	var out []state.Selection
 	if cf.Head != "" {
 		// A hyphae spread under way: convert another enemy node touching the
 		// last one, or stop.
 		for _, n := range e.enemyNbrs(e.g.index[board.PositionID(cf.Head)]) {
-			out = append(out, state.Move{Action: actHyphae, To: e.g.ids[n]})
+			out = append(out, state.Selection{Action: actHyphae, To: e.g.ids[n]})
 		}
-		return append(out, state.Move{Action: actDone})
+		return append(out, state.Selection{Action: actDone})
 	}
 	for _, g := range e.eligible(seat) {
 		for _, src := range g {
@@ -108,7 +108,7 @@ func (e *eng) spreads(seat int) []state.Move {
 					for _, j := range e.g.ray[src][d] {
 						if e.cells[j] != "" {
 							if e.cells[j] != e.cells[src] {
-								out = append(out, state.Move{Action: actSpore, From: e.g.ids[src], To: e.g.ids[j]})
+								out = append(out, state.Selection{Action: actSpore, From: e.g.ids[src], To: e.g.ids[j]})
 							}
 							break
 						}
@@ -119,7 +119,7 @@ func (e *eng) spreads(seat int) []state.Move {
 			// A hyphae spread starts from the end of a strand, so from any node
 			// of the cluster, into an enemy node it touches.
 			for _, n := range e.enemyNbrs(src) {
-				out = append(out, state.Move{Action: actHyphae, From: e.g.ids[src], To: e.g.ids[n]})
+				out = append(out, state.Selection{Action: actHyphae, From: e.g.ids[src], To: e.g.ids[n]})
 			}
 		}
 	}
@@ -138,7 +138,7 @@ func (e *eng) enemyNbrs(i int) []int {
 }
 
 // spread plays one confluence decision for seat.
-func (e *eng) spread(mv state.Move, seat int) {
+func (e *eng) spread(mv state.Selection, seat int) {
 	cf := e.d.Confluence
 	color := seatColors[seat]
 	switch {

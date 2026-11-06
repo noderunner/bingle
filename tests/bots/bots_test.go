@@ -34,7 +34,7 @@ func position(t testing.TB, g *catalog.CompiledGame, tps string) (*state.BoardSt
 
 func choose(t testing.TB, b bots.Bot, g *catalog.CompiledGame, st *state.BoardState, seat int) string {
 	t.Helper()
-	legal := state.LegalMoves(g, st, seat)
+	legal := state.LegalSelections(g, st, seat)
 	mv, err := b.Choose(context.Background(), g, st, seat, legal)
 	if err != nil {
 		t.Fatalf("%s.Choose: %v", b.ID(), err)
@@ -82,7 +82,7 @@ func TestTacticalAndMCTSBlockAnImmediateLoss(t *testing.T) {
 				t.Fatalf("%s chose illegal %q: %v", b.ID(), mv, err)
 			}
 			// After the bot's move black must have no road-completing reply.
-			for _, reply := range state.LegalMoves(g, res.NewState, res.NextImpulseSeat) {
+			for _, reply := range state.LegalSelections(g, res.NewState, res.NextImpulseSeat) {
 				r2, err := state.Apply(g, res.NewState, res.NextImpulseSeat, reply)
 				if err == nil && r2.GameEnded && r2.WinnerSeat != nil && *r2.WinnerSeat == res.NextImpulseSeat {
 					t.Fatalf("%s played %q and allowed black to win with %s", b.ID(), mv, state.FormatMove(g, reply))
@@ -145,7 +145,7 @@ func TestTacticalBeatsRandom(t *testing.T) {
 
 		st, seat := state.InitialState(g), state.FirstSeat(g)
 		for ply := 0; ply < 200; ply++ {
-			legal := state.LegalMoves(g, st, seat)
+			legal := state.LegalSelections(g, st, seat)
 			b := bots.Bot(random)
 			if seat == tacticalSeat {
 				b = tactical
@@ -201,7 +201,7 @@ func TestMinimaxBeatsRandomAndTacticalOnSmallTak(t *testing.T) {
 			aSeat := 1 + i%2
 			st, seat := state.InitialState(g), state.FirstSeat(g)
 			for ply := 0; ply < 100; ply++ {
-				legal := state.LegalMoves(g, st, seat)
+				legal := state.LegalSelections(g, st, seat)
 				bot := second
 				if seat == aSeat {
 					bot = first
@@ -252,7 +252,7 @@ func TestMinimaxConnectivityTermHelpsOnTak(t *testing.T) {
 		connSeat := 1 + i%2
 		st, seat := state.InitialState(g), state.FirstSeat(g)
 		for ply := 0; ply < 100; ply++ {
-			legal := state.LegalMoves(g, st, seat)
+			legal := state.LegalSelections(g, st, seat)
 			b := bots.Bot(without)
 			if seat == connSeat {
 				b = withConn

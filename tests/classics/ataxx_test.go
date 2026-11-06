@@ -9,7 +9,7 @@ import (
 
 func TestAtaxxOpeningMoves(t *testing.T) {
 	g := load(t, "ataxx")
-	moves := state.LegalMoves(g, state.InitialState(g), 1)
+	moves := state.LegalSelections(g, state.InitialState(g), 1)
 	// Two red blobs in opposite corners: each has 3 clones and 5 jumps.
 	if len(moves) != 2*(3+5) {
 		t.Errorf("Red's opening moves = %d, want 16", len(moves))
@@ -87,7 +87,7 @@ func TestAtaxxPassesAndCounts(t *testing.T) {
 	for n := 0; n < 12; n++ {
 		st, seat := state.InitialState(g), 1
 		for ply := 0; ply < 300; ply++ {
-			legal := state.LegalMoves(g, st, seat)
+			legal := state.LegalSelections(g, st, seat)
 			if len(legal) == 0 {
 				t.Fatalf("game %d: seat %d has no move yet the game continues", n, seat)
 			}
@@ -134,7 +134,7 @@ func TestAtaxxEnumerationMatchesValidation(t *testing.T) {
 	st, seat := state.InitialState(g), 1
 	ids := g.Board.Positions()
 	for ply := 0; ply < 20; ply++ {
-		legal := state.LegalMoves(g, st, seat)
+		legal := state.LegalSelections(g, st, seat)
 		if len(legal) == 0 {
 			break
 		}
@@ -145,7 +145,7 @@ func TestAtaxxEnumerationMatchesValidation(t *testing.T) {
 		accepted := 0
 		for _, from := range ids {
 			for _, to := range ids {
-				mv := state.Move{Action: "move", From: from, To: to}
+				mv := state.Selection{Action: "move", From: from, To: to}
 				if _, err := state.Apply(g, st, seat, mv); err == nil {
 					accepted++
 					if !listed[state.FormatMove(g, mv)] {

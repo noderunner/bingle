@@ -85,7 +85,7 @@ func TestThirtyDoomEndsTheGameAtTheEndOfTheDoomPhase(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		legal := state.LegalMoves(g, st, seat)
+		legal := state.LegalSelections(g, st, seat)
 		// Prefer the quiet choices.
 		pick := legal[0]
 		for _, mv := range legal {
@@ -121,7 +121,7 @@ func TestWithoutSixSpellbooksHumanityWins(t *testing.T) {
 	st := play(t, g, p.build(), 1, "pass")
 	for i := 0; i < 20 && data(t, st).Phase != "over"; i++ {
 		seat, _ := state.ImpulseAfter(g, st, 0)
-		legal := state.LegalMoves(g, st, seat)
+		legal := state.LegalSelections(g, st, seat)
 		pick := legal[0]
 		for _, mv := range legal {
 			switch mv.Action {
@@ -153,7 +153,7 @@ func TestOnlyPlayersWithAllSixSpellbooksCanWin(t *testing.T) {
 	st := play(t, g, p.build(), 1, "pass")
 	for i := 0; i < 20 && data(t, st).Phase != "over"; i++ {
 		seat, _ := state.ImpulseAfter(g, st, 0)
-		legal := state.LegalMoves(g, st, seat)
+		legal := state.LegalSelections(g, st, seat)
 		pick := legal[0]
 		for _, mv := range legal {
 			switch mv.Action {

@@ -99,16 +99,16 @@ func (e *eng) sycophants(performer int) []int {
 // sycophancyMoves are the two answers of the player whose Ritual gave Doom
 // cause: give the Tcho-Tcho 1 Doom or earn 1 fewer (impossible when the Ritual
 // earned none).
-func (e *eng) sycophancyMoves(p Prompt) []state.Move {
-	out := []state.Move{{Action: actSyco, Piece: "give", Count: p.By}}
+func (e *eng) sycophancyMoves(p Prompt) []state.Selection {
+	out := []state.Selection{{Action: actSyco, Piece: "give", Count: p.By}}
 	if p.Left > 0 {
-		out = append(out, state.Move{Action: actSyco, Piece: "less", Count: p.By})
+		out = append(out, state.Selection{Action: actSyco, Piece: "less", Count: p.By})
 	}
 	return out
 }
 
 // sycophancy settles the answer.
-func (e *eng) sycophancy(seat int, mv state.Move) {
+func (e *eng) sycophancy(seat int, mv state.Selection) {
 	d := e.d
 	goal := e.game.ParamInt("doom_to_win", 30)
 	if mv.Piece == "less" {
@@ -161,13 +161,13 @@ func (e *eng) placePriest(seat int) {
 }
 
 // hieroMoves lists the Gates seat may put its High Priest at.
-func (e *eng) hieroMoves(p Prompt) []state.Move {
+func (e *eng) hieroMoves(p Prompt) []state.Selection {
 	if e.pool(p.Seat, uHighPriest) <= 0 {
 		return nil
 	}
-	var out []state.Move
+	var out []state.Selection
 	for _, a := range e.gatesOf(p.Seat) {
-		out = append(out, state.Move{Action: actHiero, To: e.m.ids[a]})
+		out = append(out, state.Selection{Action: actHiero, To: e.m.ids[a]})
 	}
 	return out
 }
@@ -239,26 +239,26 @@ func (e *eng) hellsBanquet() {
 
 // terrorMoves: once in a battle, with Proto-Shoggoths in it, lower the enemy's
 // Combat or raise one's own.
-func (e *eng) terrorMoves(seat int) []state.Move {
+func (e *eng) terrorMoves(seat int) []state.Selection {
 	d := e.d
 	b := d.Bat
 	if b == nil || !e.is(seat, facTT) || !d.hasBook(seat, bkTerror) || b.Terror[seat] != 0 || e.battleUnits(b, seat, uProto) == 0 {
 		return nil
 	}
-	return []state.Move{{Action: actTerror, Piece: "foe"}, {Action: actTerror, Piece: "self"}}
+	return []state.Selection{{Action: actTerror, Piece: "foe"}, {Action: actTerror, Piece: "self"}}
 }
 
 // idolatryMoves lists the areas Idolatry may call units to.
-func (e *eng) idolatryMoves(seat int) []state.Move {
+func (e *eng) idolatryMoves(seat int) []state.Selection {
 	d := e.d
 	if !e.is(seat, facTT) || !d.hasBook(seat, bkIdolatry) {
 		return nil
 	}
-	var out []state.Move
+	var out []state.Selection
 	for _, a := range e.startGlyphAreas(seat) {
 		for _, n := range e.m.adj[a] {
 			if e.total(n, seat) > 0 {
-				out = append(out, state.Move{Action: actIdolatry, To: e.m.ids[a]})
+				out = append(out, state.Selection{Action: actIdolatry, To: e.m.ids[a]})
 				break
 			}
 		}
@@ -282,23 +282,23 @@ func (e *eng) idolOptions(p Prompt) []PUArea {
 }
 
 // idolMoves lists the moves of the Idolatry prompt: a stack, or everything.
-func (e *eng) idolMoves(p Prompt) []state.Move {
+func (e *eng) idolMoves(p Prompt) []state.Selection {
 	opts := e.idolOptions(p)
 	if len(opts) == 0 {
 		return nil
 	}
-	var out []state.Move
+	var out []state.Selection
 	for _, o := range opts {
-		out = append(out, state.Move{Action: actBring, Piece: o.Type, From: e.m.ids[o.Area]})
+		out = append(out, state.Selection{Action: actBring, Piece: o.Type, From: e.m.ids[o.Area]})
 	}
 	if len(opts) > 1 {
-		out = append(out, state.Move{Action: actBring, Piece: bringAll})
+		out = append(out, state.Selection{Action: actBring, Piece: bringAll})
 	}
-	return append(out, state.Move{Action: actDone})
+	return append(out, state.Selection{Action: actDone})
 }
 
 // idolMove calls a stack of units (or all of them) into the area.
-func (e *eng) idolMove(p Prompt, mv state.Move) {
+func (e *eng) idolMove(p Prompt, mv state.Selection) {
 	dest := e.areaIdx(p.Area)
 	var stacks []PUArea
 	if mv.Piece == bringAll {
@@ -385,12 +385,12 @@ func (e *eng) tablets(seat int) {
 
 // dismantleMoves: as an Action remove the Gate in the start area that seat
 // controls.
-func (e *eng) dismantleMoves(seat int) []state.Move {
+func (e *eng) dismantleMoves(seat int) []state.Selection {
 	d := e.d
 	if !e.is(seat, facTT) || d.reqDone(seat, rqTTGate) || d.TTStart == "" || d.Gates[d.TTStart] != seat {
 		return nil
 	}
-	return []state.Move{{Action: actDismantle, To: boardID(d.TTStart)}}
+	return []state.Selection{{Action: actDismantle, To: boardID(d.TTStart)}}
 }
 
 // dismantle removes the Gate.

@@ -105,8 +105,8 @@ func TestEveryGreatOldOneHasAnAwakenButtonWithItsOwnSteps(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	steps := state.Steps(tb.g, mv)
-	if len(steps) != 2 || steps[0].Kind != state.StepAction || steps[0].Value != "awaken-cthulhu" || steps[1].Kind != state.StepPos || steps[1].Value != "south-pacific" {
+	steps := state.Gestures(tb.g, mv)
+	if len(steps) != 2 || steps[0].Kind != state.GestureAction || steps[0].Value != "awaken-cthulhu" || steps[1].Kind != state.GesturePos || steps[1].Value != "south-pacific" {
 		t.Fatalf("steps = %+v", steps)
 	}
 	// The button has a name and a rule (the card shown on hover).

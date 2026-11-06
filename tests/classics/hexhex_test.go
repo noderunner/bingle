@@ -108,7 +108,7 @@ func TestYavalathRandomGamesTerminate(t *testing.T) {
 		st, seat := state.InitialState(g), 1
 		ended := false
 		for ply := 0; ply < 80 && !ended; ply++ {
-			legal := state.LegalMoves(g, st, seat)
+			legal := state.LegalSelections(g, st, seat)
 			if len(legal) == 0 {
 				break
 			}
@@ -181,7 +181,7 @@ func TestHavannahRandomGamesTerminateConsistently(t *testing.T) {
 	for n := 0; n < 30; n++ {
 		st, seat := state.InitialState(g), 1
 		for ply := 0; ply < 60; ply++ {
-			legal := state.LegalMoves(g, st, seat)
+			legal := state.LegalSelections(g, st, seat)
 			if len(legal) == 0 {
 				break
 			}

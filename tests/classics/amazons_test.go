@@ -10,7 +10,7 @@ import (
 
 func TestAmazonsOpeningMoveCount(t *testing.T) {
 	g := load(t, "amazons")
-	moves := state.LegalMoves(g, state.InitialState(g), 1)
+	moves := state.LegalSelections(g, state.InitialState(g), 1)
 	// The well-known branching factor of the first Amazons move.
 	if len(moves) != 2176 {
 		t.Errorf("White's first move has %d options, want 2176", len(moves))
@@ -85,7 +85,7 @@ func TestAmazonsEnumerationMatchesValidation(t *testing.T) {
 	rng := rand.New(rand.NewSource(9))
 	st, seat := state.InitialState(g), 1
 	for ply := 0; ply < 14; ply++ {
-		legal := state.LegalMoves(g, st, seat)
+		legal := state.LegalSelections(g, st, seat)
 		if len(legal) == 0 {
 			break
 		}
@@ -102,7 +102,7 @@ func TestAmazonsEnumerationMatchesValidation(t *testing.T) {
 		for _, from := range ids {
 			for _, to := range ids {
 				for _, aim := range ids {
-					mv := state.Move{Action: "move", From: from, To: to, Aim: aim}
+					mv := state.Selection{Action: "move", From: from, To: to, Aim: aim}
 					if _, err := state.Apply(g, st, seat, mv); err == nil {
 						accepted++
 						if !listed[state.FormatMove(g, mv)] {
@@ -130,7 +130,7 @@ func TestAmazonsLastPlayerToMoveWins(t *testing.T) {
 	for n := 0; n < 20; n++ {
 		st, seat := state.InitialState(g), 1
 		for ply := 0; ply < 60; ply++ {
-			legal := state.LegalMoves(g, st, seat)
+			legal := state.LegalSelections(g, st, seat)
 			if len(legal) == 0 {
 				t.Fatalf("game %d: seat %d stuck but the game did not end", n, seat)
 			}
@@ -144,7 +144,7 @@ func TestAmazonsLastPlayerToMoveWins(t *testing.T) {
 				}
 				// The loser really has no move.
 				loser := 3 - *res.WinnerSeat
-				if len(state.LegalMoves(g, res.NewState, loser)) != 0 {
+				if len(state.LegalSelections(g, res.NewState, loser)) != 0 {
 					t.Fatalf("game %d: loser still has moves", n)
 				}
 				finished++
@@ -161,7 +161,7 @@ func TestAmazonsLastPlayerToMoveWins(t *testing.T) {
 func TestAmazonsStepsBuildTheCompoundMove(t *testing.T) {
 	g := load(t, "amazons")
 	mv, _ := state.ParseMove(g, "d1-d5/f5")
-	steps := state.Steps(g, mv)
+	steps := state.Gestures(g, mv)
 	var got []string
 	for _, s := range steps {
 		got = append(got, s.Kind+":"+s.Value)

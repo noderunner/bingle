@@ -14,7 +14,7 @@ import (
 // stone; swap is the pie rule, the second player's possible first reply.
 
 // Format renders mv.
-func (rs *Ruleset) Format(game *catalog.CompiledGame, mv state.Move) string {
+func (rs *Ruleset) Format(game *catalog.CompiledGame, mv state.Selection) string {
 	if mv.Action == actDone || mv.Action == actSwap {
 		return mv.Action
 	}
@@ -22,31 +22,31 @@ func (rs *Ruleset) Format(game *catalog.CompiledGame, mv state.Move) string {
 }
 
 // Parse reads notation produced by Format (case-insensitively).
-func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Move, error) {
+func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Selection, error) {
 	t := strings.ToLower(strings.TrimSpace(text))
 	if t == actDone || t == actSwap {
-		return state.Move{Action: t}, nil
+		return state.Selection{Action: t}, nil
 	}
 	i := strings.IndexByte(t, '@')
 	if i < 0 {
-		return state.Move{}, fmt.Errorf("blooms: cannot read %q as a move (expected red@d4, done or swap)", text)
+		return state.Selection{}, fmt.Errorf("blooms: cannot read %q as a move (expected red@d4, done or swap)", text)
 	}
 	color, cell := t[:i], board.PositionID(t[i+1:])
 	if ownerOf(color) == 0 {
-		return state.Move{}, fmt.Errorf("blooms: unknown colour %q (red, yellow, blue, black)", color)
+		return state.Selection{}, fmt.Errorf("blooms: unknown colour %q (red, yellow, blue, black)", color)
 	}
 	if !game.Board.HasPosition(cell) {
-		return state.Move{}, fmt.Errorf("blooms: unknown cell %q", cell)
+		return state.Selection{}, fmt.Errorf("blooms: unknown cell %q", cell)
 	}
-	return state.Move{Action: actPlace, Piece: color, To: cell}, nil
+	return state.Selection{Action: actPlace, Piece: color, To: cell}, nil
 }
 
-// Steps: the stone's colour, then the cell; done and swap are an action.
-func (rs *Ruleset) Steps(game *catalog.CompiledGame, mv state.Move) []state.Step {
+// Gestures: the stone's colour, then the cell; done and swap are an action.
+func (rs *Ruleset) Gestures(game *catalog.CompiledGame, mv state.Selection) []state.Gesture {
 	if mv.Action == actDone || mv.Action == actSwap {
-		return []state.Step{{Kind: state.StepAction, Value: mv.Action}}
+		return []state.Gesture{{Kind: state.GestureAction, Value: mv.Action}}
 	}
-	return []state.Step{{Kind: state.StepPiece, Value: mv.Piece}, {Kind: state.StepPos, Value: string(mv.To)}}
+	return []state.Gesture{{Kind: state.GesturePiece, Value: mv.Piece}, {Kind: state.GesturePos, Value: string(mv.To)}}
 }
 
 // Describe labels the decisions for clients.

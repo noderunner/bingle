@@ -37,7 +37,7 @@ func (e *eng) acted() {
 // the action (see Aim): a decision that begins an action starts the aim afresh
 // and the steps of a Move in progress add their destinations. Only actions
 // have an aim — the free actions and the effects of a battle do not.
-func (e *eng) noteAim(seat int, mv state.Move) {
+func (e *eng) noteAim(seat int, mv state.Selection) {
 	d := e.d
 	if d.Phase != phaseAction || (d.Turn != nil && d.Turn.Nexus) {
 		return
@@ -193,29 +193,29 @@ func (e *eng) openReactions(then string) {
 // reactMoves lists what the seat of a "react" prompt may do: use the ability
 // (as often as it has something to use it on) or decline. It is empty when
 // there is nothing left to react with, which closes the window.
-func (e *eng) reactMoves(p Prompt) []state.Move {
+func (e *eng) reactMoves(p Prompt) []state.Selection {
 	switch p.Why {
 	case "devolve":
-		var out []state.Move
+		var out []state.Selection
 		if e.d.hasBook(p.Seat, bkDevolve) && e.pool(p.Seat, uDeepOne) > 0 {
 			for a := range e.m.ids {
 				if p.Area != "" && e.areaID(a) != p.Area {
 					continue
 				}
 				if e.count(a, p.Seat, uCultist) > 0 {
-					out = append(out, state.Move{Action: actDevolve, To: e.m.ids[a]})
+					out = append(out, state.Selection{Action: actDevolve, To: e.m.ids[a]})
 				}
 			}
 		}
 		if len(out) == 0 {
 			return nil
 		}
-		return append(out, state.Move{Action: actDone})
+		return append(out, state.Selection{Action: actDone})
 	case "oath":
 		if !e.oathAvailable(p.Seat) {
 			return nil
 		}
-		return []state.Move{{Action: actOath}, {Action: actDone}}
+		return []state.Selection{{Action: actOath}, {Action: actDone}}
 	case "walk":
 		return e.walkMoves(p.Seat)
 	}
@@ -253,7 +253,7 @@ func (e *eng) pendingReaction() *state.Reaction {
 	if d.Phase == phaseOver {
 		return nil
 	}
-	decline := state.Move{Action: actDone}
+	decline := state.Selection{Action: actDone}
 	switch d.Stage {
 	case stagePrompt:
 		if len(d.Prompts) > 0 {

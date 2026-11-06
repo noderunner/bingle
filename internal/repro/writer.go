@@ -115,7 +115,7 @@ func (w *Writer) Write(b Bundle) string {
 // in both its forms.
 //
 // compiled may be nil, in which case the board and the notation are left out.
-func Of(kind Kind, compiled *catalog.CompiledGame, defID string, st *state.BoardState, seat int, mv *state.Move, cause error) Bundle {
+func Of(kind Kind, compiled *catalog.CompiledGame, defID string, st *state.BoardState, seat int, mv *state.Selection, cause error) Bundle {
 	b := Bundle{Kind: kind, GameDefID: defID, Seat: seat}
 	if cause != nil {
 		b.Error = cause.Error()

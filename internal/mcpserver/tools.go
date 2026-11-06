@@ -464,7 +464,7 @@ func handleMakeMove(mgr *session.Manager) server.ToolHandlerFunc {
 		case notation != "":
 			outcome, err = mgr.PlayNotationAt(ctx, roomCode, playerName, notation, plyArg(request))
 		case action != "" || piece != "" || count != 0 || len(path) > 0 || aim != "":
-			mv := state.Move{
+			mv := state.Selection{
 				Action: action,
 				Piece:  piece,
 				From:   board.PositionID(strings.TrimSpace(request.GetString("from", ""))),

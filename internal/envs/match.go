@@ -219,7 +219,7 @@ func playOne(ctx context.Context, game *catalog.CompiledGame, start *state.Board
 			finish(nil)
 			return out
 		}
-		legal := state.LegalMoves(game, st, seat)
+		legal := state.LegalSelections(game, st, seat)
 		if len(legal) == 0 {
 			out.Winner, out.EndReason = "draw", "no-legal-moves"
 			finish(nil)

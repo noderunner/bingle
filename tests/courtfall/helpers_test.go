@@ -140,7 +140,7 @@ func refuse(t testing.TB, g *catalog.CompiledGame, st *state.BoardState, seat in
 // notations lists seat's legal moves as notation, sorted.
 func notations(g *catalog.CompiledGame, st *state.BoardState, seat int) []string {
 	var out []string
-	for _, mv := range state.LegalMoves(g, st, seat) {
+	for _, mv := range state.LegalSelections(g, st, seat) {
 		out = append(out, state.FormatMove(g, mv))
 	}
 	sort.Strings(out)

@@ -37,7 +37,7 @@ func (rs *Ruleset) Redact(game *catalog.CompiledGame, st *state.BoardState, view
 }
 
 // RedactMove: moves reveal nothing.
-func (rs *Ruleset) RedactMove(game *catalog.CompiledGame, st *state.BoardState, mv state.Move, notation string) (state.Move, string) {
+func (rs *Ruleset) RedactMove(game *catalog.CompiledGame, st *state.BoardState, mv state.Selection, notation string) (state.Selection, string) {
 	return mv, notation
 }
 
@@ -137,19 +137,19 @@ func (rs *Ruleset) Heuristic(game *catalog.CompiledGame, st *state.BoardState, s
 
 // GuideMoves keeps a bot from losing at once: it takes a move that wins on the
 // spot if there is one, and drops the moves that surround its own Queen.
-func (rs *Ruleset) GuideMoves(game *catalog.CompiledGame, st *state.BoardState, seat int, legal []state.Move) []state.Move {
+func (rs *Ruleset) GuideMoves(game *catalog.CompiledGame, st *state.BoardState, seat int, legal []state.Selection) []state.Selection {
 	d, err := dataOf(st)
 	if err != nil {
 		return legal
 	}
-	var safe []state.Move
+	var safe []state.Selection
 	for _, mv := range legal {
 		e := newEng(game, st, d)
 		e.d = d.clone()
 		e.execute(mv, seat)
 		switch e.d.Winner {
 		case seat:
-			return []state.Move{mv}
+			return []state.Selection{mv}
 		case 0:
 			safe = append(safe, mv)
 		}

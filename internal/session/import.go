@@ -128,7 +128,7 @@ func (m *Manager) ImportGame(ctx context.Context, opts ImportOptions) (ImportRes
 	} else {
 		st, seat = state.InitialState(compiled), state.FirstSeat(compiled)
 	}
-	parsed := make([]state.Move, 0, len(moves))
+	parsed := make([]state.Selection, 0, len(moves))
 	for i, text := range moves {
 		mv, err := state.ParseMove(compiled, text)
 		if err != nil {

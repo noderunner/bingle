@@ -64,7 +64,7 @@ func TestRandomGamesWithEveryPack(t *testing.T) {
 		g := packTable(t, c.base, c.keys, allCards)
 		for seed := int64(1); seed <= int64(seeds); seed++ {
 			name := fmt.Sprintf("%s seed %d", g.Definition.ID, seed)
-			st, ply, done := randomGame(t, g, seed, 12000, func(ply int, st *state.BoardState, seat int, mv state.Move) {
+			st, ply, done := randomGame(t, g, seed, 12000, func(ply int, st *state.BoardState, seat int, mv state.Selection) {
 				if err := state.Validate(g, st); err != nil {
 					t.Fatalf("%s ply %d after %s: %v\n%s", name, ply, state.FormatMove(g, mv), err, state.RenderText(g, st))
 				}
@@ -121,7 +121,7 @@ func TestEveryKindOfBotPlaysWithEveryPack(t *testing.T) {
 		}
 		seat := state.FirstSeat(g)
 		for ply := 0; ply < plies; ply++ {
-			legal := state.LegalMoves(g, st, seat)
+			legal := state.LegalSelections(g, st, seat)
 			mv, err := bs[seat-1].Choose(context.Background(), g, st, seat, legal)
 			if err != nil {
 				t.Fatalf("round %d ply %d: %s: %v", round, ply, bs[seat-1].ID(), err)

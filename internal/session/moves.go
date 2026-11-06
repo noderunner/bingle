@@ -81,7 +81,7 @@ type MoveOutcome struct {
 // MakeMove applies a single legacy step move by name (who must hold the seat
 // whose turn it currently is) from `from` to `to`; see Play.
 func (m *Manager) MakeMove(ctx context.Context, roomCode, name string, from, to board.PositionID) (MoveOutcome, error) {
-	return m.Play(ctx, roomCode, name, state.Move{From: from, To: to})
+	return m.Play(ctx, roomCode, name, state.Selection{From: from, To: to})
 }
 
 // PlayNotation parses text in the game's move notation and plays it; see
@@ -123,20 +123,20 @@ func (m *Manager) PlayNotationAt(ctx context.Context, roomCode, name, text strin
 //     seat here" and "it's the other seat's turn").
 //   - The move itself must be legal per state.Apply; an illegal move's
 //     error is returned as-is, with nothing persisted.
-func (m *Manager) Play(ctx context.Context, roomCode, name string, mv state.Move) (MoveOutcome, error) {
+func (m *Manager) Play(ctx context.Context, roomCode, name string, mv state.Selection) (MoveOutcome, error) {
 	return m.PlayAt(ctx, roomCode, name, mv, nil)
 }
 
 // PlayAt is Play, refused with ErrStalePly unless the game is still at ply.
-func (m *Manager) PlayAt(ctx context.Context, roomCode, name string, mv state.Move, ply *int) (MoveOutcome, error) {
-	return m.playSelections(ctx, roomCode, name, []state.Move{mv}, ply, false)
+func (m *Manager) PlayAt(ctx context.Context, roomCode, name string, mv state.Selection, ply *int) (MoveOutcome, error) {
+	return m.playSelections(ctx, roomCode, name, []state.Selection{mv}, ply, false)
 }
 
 // playSelections plays sels for name under the room lock. whole says sels are an
 // impulse, checked as one with state.ApplyImpulse before anything is recorded;
 // each selection is then recorded as a move of its own, as stored games still
 // are until ADR 0114's first phase regroups them.
-func (m *Manager) playSelections(ctx context.Context, roomCode, name string, sels []state.Move, ply *int, whole bool) (MoveOutcome, error) {
+func (m *Manager) playSelections(ctx context.Context, roomCode, name string, sels []state.Selection, ply *int, whole bool) (MoveOutcome, error) {
 	roomCode = canonRoom(roomCode)
 	unlock := m.lockRoom(ctx, roomCode)
 	defer unlock()
@@ -212,7 +212,7 @@ func (m *Manager) playSelections(ctx context.Context, roomCode, name string, sel
 // applyAndRecord validates and applies mv for player against game's current
 // state, persists the result and publishes the "move" event. The caller
 // holds the room lock and has already checked turn ownership.
-func (m *Manager) applyAndRecord(ctx context.Context, compiled *catalog.CompiledGame, game store.Game, player store.Player, mv state.Move) (MoveOutcome, error) {
+func (m *Manager) applyAndRecord(ctx context.Context, compiled *catalog.CompiledGame, game store.Game, player store.Player, mv state.Selection) (MoveOutcome, error) {
 	return m.applyAndRecordAs(ctx, compiled, game, player, mv, madeByPlayer)
 }
 
@@ -229,7 +229,7 @@ const (
 // applyAndRecordAs is applyAndRecord; how marks a move the server played on
 // the player's behalf: a reaction passed for them, or a turn a bot took after
 // their Auto-Play Timeout.
-func (m *Manager) applyAndRecordAs(ctx context.Context, compiled *catalog.CompiledGame, game store.Game, player store.Player, mv state.Move, how moveHow) (MoveOutcome, error) {
+func (m *Manager) applyAndRecordAs(ctx context.Context, compiled *catalog.CompiledGame, game store.Game, player store.Player, mv state.Selection, how moveHow) (MoveOutcome, error) {
 	ctx, funnel := trace.Start(ctx, "session.ApplyMove")
 	funnel.Set("game", gameFamily(compiled))
 	defer funnel.End()
@@ -497,7 +497,7 @@ func (m *Manager) applyAndRecordAs(ctx context.Context, compiled *catalog.Compil
 // rule. Then the move is also a change of who sits in which seat: the board
 // is untouched, the turn stays with the mover's seat (the engine gives it
 // back), and the seats' occupants exchange.
-func isPieSwap(compiled *catalog.CompiledGame, mv state.Move) bool {
+func isPieSwap(compiled *catalog.CompiledGame, mv state.Selection) bool {
 	return state.IsPieSwap(compiled, mv)
 }
 

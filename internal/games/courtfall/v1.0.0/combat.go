@@ -170,7 +170,7 @@ func successes(dice []int, n int) int {
 
 // --- declaring contests -----------------------------------------------------
 
-func (e *eng) doStrike(mv state.Move) {
+func (e *eng) doStrike(mv state.Selection) {
 	d := e.d
 	a := e.activeUnit()
 	t := e.unitAt(e.g.index[mv.To])
@@ -187,7 +187,7 @@ func (e *eng) doStrike(mv state.Move) {
 	e.say("%s strikes %s and commits their dice in secret.", e.label(a), e.label(t))
 }
 
-func (e *eng) doShoot(mv state.Move) {
+func (e *eng) doShoot(mv state.Selection) {
 	d := e.d
 	a := e.activeUnit()
 	t := e.unitAt(e.g.index[mv.To])
@@ -227,7 +227,7 @@ func (e *eng) doShoot(mv state.Move) {
 	e.nextReroll()
 }
 
-func (e *eng) doShove(mv state.Move) {
+func (e *eng) doShove(mv state.Selection) {
 	d := e.d
 	a := e.activeUnit()
 	t := e.unitAt(e.g.index[mv.To])
@@ -254,7 +254,7 @@ func (e *eng) doShove(mv state.Move) {
 	e.nextReroll()
 }
 
-func (e *eng) legalRespond() []state.Move {
+func (e *eng) legalRespond() []state.Selection {
 	c := e.d.Con
 	t := e.unitByKey(c.T)
 	if t == nil {
@@ -264,14 +264,14 @@ func (e *eng) legalRespond() []state.Move {
 	if e.cond(t) == condExhausted {
 		max = 0 // an Exhausted unit has one defense die
 	}
-	var out []state.Move
+	var out []state.Selection
 	for n := 0; n <= max; n++ {
-		out = append(out, state.Move{Action: actRespond, Count: n})
+		out = append(out, state.Selection{Action: actRespond, Count: n})
 	}
 	return out
 }
 
-func (e *eng) doRespond(mv state.Move) {
+func (e *eng) doRespond(mv state.Selection) {
 	d := e.d
 	c := d.Con
 	a, t := e.unitByKey(c.A), e.unitByKey(c.T)
@@ -363,14 +363,14 @@ func (e *eng) nextReroll() {
 	e.resolve()
 }
 
-func (e *eng) legalReroll() []state.Move {
+func (e *eng) legalReroll() []state.Selection {
 	c := e.d.Con
-	out := []state.Move{{Action: actKeep}}
+	out := []state.Selection{{Action: actKeep}}
 	if c.Step >= 2 || !e.canReroll(c.Step) {
 		return out
 	}
 	for _, k := range e.failedDice(c.Step) {
-		out = append(out, state.Move{Action: actReroll, Count: k})
+		out = append(out, state.Selection{Action: actReroll, Count: k})
 	}
 	return out
 }
@@ -599,7 +599,7 @@ func (e *eng) runPushes() {
 	e.afterContest()
 }
 
-func (e *eng) legalPush() []state.Move {
+func (e *eng) legalPush() []state.Selection {
 	d := e.d
 	if len(d.Pushes) == 0 {
 		return nil
@@ -609,9 +609,9 @@ func (e *eng) legalPush() []state.Move {
 	if u == nil {
 		return nil
 	}
-	var out []state.Move
+	var out []state.Selection
 	for _, dir := range e.pushDirs(u, job.Chain) {
-		mv := state.Move{Action: actPush, From: e.g.ids[u.cell], Count: dir + 1}
+		mv := state.Selection{Action: actPush, From: e.g.ids[u.cell], Count: dir + 1}
 		if nb := e.g.nbr[u.cell][dir]; nb >= 0 {
 			mv.To = e.g.ids[nb]
 		}
@@ -620,7 +620,7 @@ func (e *eng) legalPush() []state.Move {
 	return out
 }
 
-func (e *eng) doPush(mv state.Move) {
+func (e *eng) doPush(mv state.Selection) {
 	d := e.d
 	job := d.Pushes[0]
 	d.Pushes = d.Pushes[1:]
@@ -651,19 +651,19 @@ func (e *eng) shiftTargets(u *unit) []int {
 	return out
 }
 
-func (e *eng) legalShift() []state.Move {
+func (e *eng) legalShift() []state.Selection {
 	u := e.activeUnit()
 	if u == nil {
-		return []state.Move{{Action: actStay}}
+		return []state.Selection{{Action: actStay}}
 	}
-	var out []state.Move
+	var out []state.Selection
 	for _, c := range e.shiftTargets(u) {
-		out = append(out, state.Move{Action: actShift, Piece: u.piece, From: e.g.ids[u.cell], To: e.g.ids[c]})
+		out = append(out, state.Selection{Action: actShift, Piece: u.piece, From: e.g.ids[u.cell], To: e.g.ids[c]})
 	}
-	return append(out, state.Move{Action: actStay})
+	return append(out, state.Selection{Action: actStay})
 }
 
-func (e *eng) doShift(mv state.Move) {
+func (e *eng) doShift(mv state.Selection) {
 	u := e.activeUnit()
 	to := e.g.index[mv.To]
 	e.say("Hit and Run: %s shifts to %s.", e.label(u), mv.To)

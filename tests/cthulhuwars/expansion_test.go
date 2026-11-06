@@ -114,7 +114,7 @@ func TestRandomGamesWithTheExpansionCults(t *testing.T) {
 		g := derived(t, tb.base, tb.factions, tb.hp)
 		for seed := int64(1); seed <= int64(seeds); seed++ {
 			name := fmt.Sprintf("%s seed %d", g.Definition.ID, seed)
-			st, ply, done := randomGame(t, g, seed, 6000, func(ply int, st *state.BoardState, seat int, mv state.Move) {
+			st, ply, done := randomGame(t, g, seed, 6000, func(ply int, st *state.BoardState, seat int, mv state.Selection) {
 				if err := state.Validate(g, st); err != nil {
 					t.Fatalf("%s ply %d after %s: %v\n%s", name, ply, state.FormatMove(g, mv), err, state.RenderText(g, st))
 				}

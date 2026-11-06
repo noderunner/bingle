@@ -200,15 +200,15 @@ func (e *eng) placements(seat int) []int {
 	return out
 }
 
-func (e *eng) legal(seat int) []state.Move {
+func (e *eng) legal(seat int) []state.Selection {
 	points := e.placements(seat)
 	if len(points) == 0 {
 		// No stone can be laid: the turn passes, which is the only time it may.
-		return []state.Move{{Action: actPass}}
+		return []state.Selection{{Action: actPass}}
 	}
-	out := make([]state.Move, 0, len(points))
+	out := make([]state.Selection, 0, len(points))
 	for _, i := range points {
-		out = append(out, state.Move{Action: actPlace, Piece: "stone", To: e.g.ids[i]})
+		out = append(out, state.Selection{Action: actPlace, Piece: "stone", To: e.g.ids[i]})
 	}
 	return out
 }
@@ -277,7 +277,7 @@ func (rs *Ruleset) Validate(game *catalog.CompiledGame, st *state.BoardState) er
 }
 
 // Legal lists the moves of seat.
-func (rs *Ruleset) Legal(game *catalog.CompiledGame, st *state.BoardState, seat int) []state.Move {
+func (rs *Ruleset) Legal(game *catalog.CompiledGame, st *state.BoardState, seat int) []state.Selection {
 	d, err := dataOf(st)
 	if err != nil || d.Turn == 0 || seat != d.Turn {
 		return nil
@@ -287,7 +287,7 @@ func (rs *Ruleset) Legal(game *catalog.CompiledGame, st *state.BoardState, seat 
 
 // Apply lays a stone (or passes), takes off the mover's dead groups and hands
 // the turn over.
-func (rs *Ruleset) Apply(game *catalog.CompiledGame, st *state.BoardState, seat int, mv state.Move) (*state.MoveResult, error) {
+func (rs *Ruleset) Apply(game *catalog.CompiledGame, st *state.BoardState, seat int, mv state.Selection) (*state.MoveResult, error) {
 	d, err := dataOf(st)
 	if err != nil {
 		return nil, err
@@ -300,7 +300,7 @@ func (rs *Ruleset) Apply(game *catalog.CompiledGame, st *state.BoardState, seat 
 	}
 	e := newEng(game, st, d)
 	want := rs.Format(game, mv)
-	var legal state.Move
+	var legal state.Selection
 	found := false
 	for _, cand := range e.legal(seat) {
 		if rs.Format(game, cand) == want {
@@ -356,7 +356,7 @@ func (e *eng) finish(winner int, reason string) {
 
 // play carries out one turn: the stone, then the mover's dead groups, then the
 // turn passes.
-func (e *eng) play(mv state.Move, seat int) {
+func (e *eng) play(mv state.Selection, seat int) {
 	d := e.d
 	d.Turns[seat-1]++
 	switch mv.Action {

@@ -13,7 +13,7 @@ import (
 // validateStep implements the implicit "step" action: the top piece at
 // From moves to To under its piece type's movement primitive. This is the
 // original v1 move, kept behaviourally identical for single-piece squares.
-func (c *rctx) validateStep(act catalog.ResolvedAction, mv Move) (executor, error) {
+func (c *rctx) validateStep(act catalog.ResolvedAction, mv Selection) (executor, error) {
 	if mv.Piece != "" || mv.Count != 0 || len(mv.Path) > 0 || len(mv.Drops) > 0 {
 		return nil, fmt.Errorf("state: a step move takes only from and to")
 	}
@@ -158,7 +158,7 @@ func (c *rctx) promotesAt(rp catalog.ResolvedPiece, pos board.PositionID) bool {
 	return false
 }
 
-func (c *rctx) enumerateSteps(act catalog.ResolvedAction, keep func(catalog.ResolvedAction, Move, bool)) {
+func (c *rctx) enumerateSteps(act catalog.ResolvedAction, keep func(catalog.ResolvedAction, Selection, bool)) {
 	for _, from := range c.game.Board.Positions() {
 		if c.enough() {
 			return
@@ -193,7 +193,7 @@ func (c *rctx) enumerateSteps(act catalog.ResolvedAction, keep func(catalog.Reso
 			} else if !c.dirAllowed(rp, from, to) {
 				continue
 			}
-			keep(act, Move{Action: act.ID, From: from, To: to}, false)
+			keep(act, Selection{Action: act.ID, From: from, To: to}, false)
 		}
 	}
 }
@@ -203,7 +203,7 @@ func (c *rctx) enumerateSteps(act catalog.ResolvedAction, keep func(catalog.Reso
 // validatePlace implements the "place" action: put a piece on an empty
 // square, taking it from the placing color's reserve (or the unlimited
 // supply).
-func (c *rctx) validatePlace(act catalog.ResolvedAction, mv Move) (executor, error) {
+func (c *rctx) validatePlace(act catalog.ResolvedAction, mv Selection) (executor, error) {
 	if mv.Piece == "" {
 		return nil, fmt.Errorf("state: placement needs a piece type")
 	}
@@ -468,7 +468,7 @@ func (c *rctx) flipsFor(to board.PositionID, color string) []board.PositionID {
 	return out
 }
 
-func (c *rctx) enumeratePlacements(act catalog.ResolvedAction, keep func(catalog.ResolvedAction, Move, bool)) {
+func (c *rctx) enumeratePlacements(act catalog.ResolvedAction, keep func(catalog.ResolvedAction, Selection, bool)) {
 	positions := c.game.Board.Positions()
 	// Without captures, flips, ko or custodian rules a placement is legal
 	// exactly when the square-level preconditions hold, so the full
@@ -491,10 +491,10 @@ func (c *rctx) enumeratePlacements(act catalog.ResolvedAction, keep func(catalog
 				if c.placementSquareOK(act, to) != nil {
 					continue
 				}
-				keep(act, Move{Action: act.ID, Piece: piece, To: to}, true)
+				keep(act, Selection{Action: act.ID, Piece: piece, To: to}, true)
 				continue
 			}
-			keep(act, Move{Action: act.ID, Piece: piece, To: to}, false)
+			keep(act, Selection{Action: act.ID, Piece: piece, To: to}, false)
 		}
 	}
 }
@@ -507,7 +507,7 @@ func (c *rctx) enumeratePlacements(act catalog.ResolvedAction, keep func(catalog
 // carried group first) on Path[i]. Squares topped by uncoverable pieces
 // block the move, except that a flattener may flatten a flattenable piece
 // under the configured conditions.
-func (c *rctx) validateStack(act catalog.ResolvedAction, mv Move) (executor, error) {
+func (c *rctx) validateStack(act catalog.ResolvedAction, mv Selection) (executor, error) {
 	g := c.game.Board
 
 	if mv.Piece != "" {
@@ -659,7 +659,7 @@ func pieceLabel(game *catalog.CompiledGame, piece string) string {
 // holds an uncoverable piece does legality depend on the drops (the
 // flattener must land on it, alone if required), and those candidates go
 // through the shared validateStack.
-func (c *rctx) enumerateStackMoves(act catalog.ResolvedAction, keep func(catalog.ResolvedAction, Move, bool)) {
+func (c *rctx) enumerateStackMoves(act catalog.ResolvedAction, keep func(catalog.ResolvedAction, Selection, bool)) {
 	g := c.game.Board
 	var arena intArena
 	// Which piece types can be flattened by anything (computed once: the
@@ -743,7 +743,7 @@ func (c *rctx) enumerateStackMoves(act catalog.ResolvedAction, keep func(catalog
 								return
 							}
 						}
-						keep(act, Move{
+						keep(act, Selection{
 							Action: act.ID,
 							From:   from,
 							To:     line[squares-1],

@@ -117,7 +117,7 @@ Served by the same binary as static assets plus lightweight JS (no SPA build pip
 * **Engine** (`internal/engine`): `dsl` (JSON types, variants), `board`
   (grid/explicit graphs, regions, coordinates), `catalog` (validates and
   compiles a definition: pieces, pools, actions, opening, win rules),
-  `state` (position document, `LegalMoves`, `Apply`, win evaluation, notation,
+  `state` (position document, `LegalSelections`, `Apply`, win evaluation, notation,
   TPS, text rendering, interactive move steps). See ADR 0015. A game may
   instead bring a Go `state.Ruleset` (`engine: "ruleset"`) that implements
   the same functions itself — with chance, hidden information and

@@ -256,7 +256,7 @@ func TestEveryLegalBattleDecisionApplies(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			legal := state.LegalMoves(g, st, seat)
+			legal := state.LegalSelections(g, st, seat)
 			if len(legal) == 0 {
 				t.Fatalf("seed %d: no legal decision in stage %q\n%s", seed, d.Stage, state.RenderText(g, st))
 			}

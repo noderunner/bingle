@@ -58,7 +58,7 @@ func (rs *Ruleset) Redact(game *catalog.CompiledGame, st *state.BoardState, view
 }
 
 // RedactMove: moves reveal nothing.
-func (rs *Ruleset) RedactMove(game *catalog.CompiledGame, st *state.BoardState, mv state.Move, notation string) (state.Move, string) {
+func (rs *Ruleset) RedactMove(game *catalog.CompiledGame, st *state.BoardState, mv state.Selection, notation string) (state.Selection, string) {
 	return mv, notation
 }
 
@@ -154,7 +154,7 @@ func (rs *Ruleset) Heuristic(game *catalog.CompiledGame, st *state.BoardState, s
 // GuideMoves keeps a bot from throwing stones away: it takes the placements
 // that leave it best off by the captures the turn would bring, less the
 // stones it leaves fenced.
-func (rs *Ruleset) GuideMoves(game *catalog.CompiledGame, st *state.BoardState, seat int, legal []state.Move) []state.Move {
+func (rs *Ruleset) GuideMoves(game *catalog.CompiledGame, st *state.BoardState, seat int, legal []state.Selection) []state.Selection {
 	d, err := dataOf(st)
 	if err != nil {
 		return legal
@@ -170,7 +170,7 @@ func (rs *Ruleset) GuideMoves(game *catalog.CompiledGame, st *state.BoardState, 
 			best = scores[i]
 		}
 	}
-	var out []state.Move
+	var out []state.Selection
 	for i, mv := range legal {
 		if scores[i] >= best-0.5 {
 			out = append(out, mv)
@@ -182,7 +182,7 @@ func (rs *Ruleset) GuideMoves(game *catalog.CompiledGame, st *state.BoardState, 
 // apply plays mv on e without ending the turn's bookkeeping when it only
 // places a stone: for a first stone the captures are scored as if the turn
 // ended there.
-func (e *eng) apply(mv state.Move) {
+func (e *eng) apply(mv state.Selection) {
 	seat := e.d.Turn
 	if mv.Action == actPlace {
 		e.cells[e.g.index[mv.To]] = mv.Piece

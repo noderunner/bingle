@@ -286,8 +286,8 @@ func TestRandomGames(t *testing.T) {
 			for _, mv := range legal {
 				text := rs.Format(g, mv)
 				key := ""
-				for _, s := range rs.Steps(g, mv) {
-					if s.Kind == state.StepPos && !g.Board.HasPosition(board.PositionID(s.Value)) {
+				for _, s := range rs.Gestures(g, mv) {
+					if s.Kind == state.GesturePos && !g.Board.HasPosition(board.PositionID(s.Value)) {
 						t.Fatalf("%s: step %q is not a cell", text, s.Value)
 					}
 					key += s.Kind + ":" + s.Value + " "

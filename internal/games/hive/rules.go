@@ -413,11 +413,11 @@ func (e *eng) throws(p int) [][2]int {
 }
 
 // movements lists the moves of the tiles already on the table.
-func (e *eng) movements(seat int) []state.Move {
+func (e *eng) movements(seat int) []state.Selection {
 	if e.res[seat][kQueen] > 0 {
 		return nil // nothing may move before the Queen is down
 	}
-	var out []state.Move
+	var out []state.Selection
 	seen := map[[2]int]bool{}
 	add := func(from, to int) {
 		k := [2]int{from, to}
@@ -425,7 +425,7 @@ func (e *eng) movements(seat int) []state.Move {
 			return
 		}
 		seen[k] = true
-		out = append(out, state.Move{Action: actMove, From: e.g.ids[from], To: e.g.ids[to]})
+		out = append(out, state.Selection{Action: actMove, From: e.g.ids[from], To: e.g.ids[to]})
 	}
 	var thrown [][2]int
 	for i := range e.cells {
@@ -446,7 +446,7 @@ func (e *eng) movements(seat int) []state.Move {
 }
 
 // placements lists the tiles seat may add from its supply.
-func (e *eng) placements(seat int) []state.Move {
+func (e *eng) placements(seat int) []state.Selection {
 	forced := e.res[seat][kQueen] > 0 && e.d.Turns[seat-1] >= 3
 	n := e.pieces()
 	var cells []int
@@ -475,27 +475,27 @@ func (e *eng) placements(seat int) []state.Move {
 			}
 		}
 	}
-	var out []state.Move
+	var out []state.Selection
 	for k := 0; k < numKinds; k++ {
 		if e.res[seat][k] == 0 || (forced && k != kQueen) {
 			continue
 		}
 		for _, c := range cells {
-			out = append(out, state.Move{Action: actPlace, Piece: kindName[k], To: e.g.ids[c]})
+			out = append(out, state.Selection{Action: actPlace, Piece: kindName[k], To: e.g.ids[c]})
 		}
 	}
 	return out
 }
 
 // legal lists the moves of the seat to move.
-func (e *eng) legal() []state.Move {
+func (e *eng) legal() []state.Selection {
 	d := e.d
 	if d.Turn == 0 {
 		return nil
 	}
 	out := append(e.placements(d.Turn), e.movements(d.Turn)...)
 	if len(out) == 0 {
-		out = append(out, state.Move{Action: actPass})
+		out = append(out, state.Selection{Action: actPass})
 	}
 	for i := range out {
 		e.annotate(&out[i], d.Turn)
@@ -589,7 +589,7 @@ func (rs *Ruleset) Validate(game *catalog.CompiledGame, st *state.BoardState) er
 }
 
 // Legal lists the moves of seat.
-func (rs *Ruleset) Legal(game *catalog.CompiledGame, st *state.BoardState, seat int) []state.Move {
+func (rs *Ruleset) Legal(game *catalog.CompiledGame, st *state.BoardState, seat int) []state.Selection {
 	d, err := dataOf(st)
 	if err != nil || d.Turn == 0 || seat != d.Turn {
 		return nil
@@ -598,7 +598,7 @@ func (rs *Ruleset) Legal(game *catalog.CompiledGame, st *state.BoardState, seat 
 }
 
 // Apply plays one decision.
-func (rs *Ruleset) Apply(game *catalog.CompiledGame, st *state.BoardState, seat int, mv state.Move) (*state.MoveResult, error) {
+func (rs *Ruleset) Apply(game *catalog.CompiledGame, st *state.BoardState, seat int, mv state.Selection) (*state.MoveResult, error) {
 	d, err := dataOf(st)
 	if err != nil {
 		return nil, err
@@ -610,7 +610,7 @@ func (rs *Ruleset) Apply(game *catalog.CompiledGame, st *state.BoardState, seat 
 		return nil, fmt.Errorf("hive: it is %s's turn", seatLabel(d.Turn))
 	}
 	e := newEng(game, st, d)
-	var legal state.Move
+	var legal state.Selection
 	found := false
 	for _, cand := range e.legal() {
 		if sameMove(mv, cand) {
@@ -651,7 +651,7 @@ func (rs *Ruleset) Apply(game *catalog.CompiledGame, st *state.BoardState, seat 
 func (e *eng) say(format string, args ...any) { e.ev = append(e.ev, fmt.Sprintf(format, args...)) }
 
 // execute plays a legal move and settles whether the game is over.
-func (e *eng) execute(mv state.Move, seat int) {
+func (e *eng) execute(mv state.Selection, seat int) {
 	d := e.d
 	d.Last = nil
 	switch mv.Action {

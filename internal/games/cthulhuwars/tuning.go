@@ -99,6 +99,6 @@ func ShippedTuning(cult string) GuideTuning {
 
 // GuideMovesTuned is GuideMoves with an explicit tuning for the seat (nil: the
 // shipped tuning of its cult).
-func (rs *Ruleset) GuideMovesTuned(game *catalog.CompiledGame, st *state.BoardState, seat int, legal []state.Move, t *GuideTuning) []state.Move {
+func (rs *Ruleset) GuideMovesTuned(game *catalog.CompiledGame, st *state.BoardState, seat int, legal []state.Selection, t *GuideTuning) []state.Selection {
 	return rs.guideMoves(game, st, seat, legal, t)
 }

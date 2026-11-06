@@ -12,7 +12,7 @@ import "github.com/noderunner/bingle/internal/engine/state"
 
 // cardBuyScore values buying the Loyalty Card of mv in the Doom phase; 0 or
 // less means not to.
-func (g *guide) cardBuyScore(mv state.Move) float64 {
+func (g *guide) cardBuyScore(mv state.Selection) float64 {
 	e, d, seat := g.e, g.e.d, g.seat
 	goal := e.game.ParamInt("doom_to_win", 30)
 	// Doom is the victory points: pay only with a margin, and early enough for
@@ -62,7 +62,7 @@ func (g *guide) cardBuyScore(mv state.Move) float64 {
 }
 
 // scoreCards values the turn actions that come with the Loyalty Cards.
-func (g *guide) scoreCards(mv state.Move, area int) (float64, bool) {
+func (g *guide) scoreCards(mv state.Selection, area int) (float64, bool) {
 	e, d, seat := g.e, g.e.d, g.seat
 	switch mv.Action {
 	case actCard:
@@ -131,7 +131,7 @@ func (g *guide) scoreCards(mv state.Move, area int) (float64, bool) {
 }
 
 // scoreIndependent values awakening an Independent.
-func (g *guide) scoreIndependent(mv state.Move, area int) float64 {
+func (g *guide) scoreIndependent(mv state.Selection, area int) float64 {
 	e, seat := g.e, g.seat
 	switch mv.Piece {
 	case uCthugha:
@@ -169,7 +169,7 @@ func (g *guide) scoreIndependent(mv state.Move, area int) float64 {
 
 // guideCardsPrompt answers the prompts of the Loyalty Cards, reporting
 // whether it handled the kind.
-func (g *guide) guideCardsPrompt(p Prompt, legal []state.Move) ([]state.Move, bool) {
+func (g *guide) guideCardsPrompt(p Prompt, legal []state.Selection) ([]state.Selection, bool) {
 	if p.Kind == "card" {
 		return g.answerCardPrompt(p, legal), true
 	}
@@ -314,7 +314,7 @@ func (e *eng) anGlyphDone(seat, a int) bool {
 	return e.d.reqDone(seat, rqANPlain)
 }
 
-func (g *guide) scoreCardAct(mv state.Move) float64 {
+func (g *guide) scoreCardAct(mv state.Selection) float64 {
 	e, d, seat := g.e, g.e.d, g.seat
 	act, _ := cardActOf(mv.Piece)
 	switch act.ID {
@@ -384,7 +384,7 @@ func (g *guide) scoreCardAct(mv state.Move) float64 {
 }
 
 // answerCardPrompt chooses an answer to a "card" prompt.
-func (g *guide) answerCardPrompt(p Prompt, legal []state.Move) []state.Move {
+func (g *guide) answerCardPrompt(p Prompt, legal []state.Selection) []state.Selection {
 	e, d, seat := g.e, g.e.d, g.seat
 	var list []scoredMove
 	for _, mv := range legal {

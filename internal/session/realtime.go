@@ -258,7 +258,7 @@ func (m *Manager) playAbsentTurn(ctx context.Context, roomCode string, game stor
 	if !ok {
 		return MoveOutcome{}, false
 	}
-	legal := state.LegalMoves(compiled, bs, player.Seat)
+	legal := state.LegalSelections(compiled, bs, player.Seat)
 	if len(legal) == 0 {
 		return MoveOutcome{}, false
 	}

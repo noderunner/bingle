@@ -390,7 +390,7 @@ func (rs *Ruleset) Validate(game *catalog.CompiledGame, st *state.BoardState) er
 // --- Apply -------------------------------------------------------------------
 
 // Apply validates and applies one decision.
-func (rs *Ruleset) Apply(game *catalog.CompiledGame, st *state.BoardState, seat int, mv state.Move) (*state.MoveResult, error) {
+func (rs *Ruleset) Apply(game *catalog.CompiledGame, st *state.BoardState, seat int, mv state.Selection) (*state.MoveResult, error) {
 	d, err := dataOf(st)
 	if err != nil {
 		return nil, err
@@ -407,7 +407,7 @@ func (rs *Ruleset) Apply(game *catalog.CompiledGame, st *state.BoardState, seat 
 	ns.SetExt(nd)
 	e := rs.newEng(game, ns, nd)
 
-	var legal state.Move
+	var legal state.Selection
 	found := false
 	for _, cand := range e.legal() {
 		if sameMove(cand, mv) {
@@ -440,7 +440,7 @@ func (rs *Ruleset) Apply(game *catalog.CompiledGame, st *state.BoardState, seat 
 }
 
 // Legal lists seat's decisions.
-func (rs *Ruleset) Legal(game *catalog.CompiledGame, st *state.BoardState, seat int) []state.Move {
+func (rs *Ruleset) Legal(game *catalog.CompiledGame, st *state.BoardState, seat int) []state.Selection {
 	d, err := dataOf(st)
 	if err != nil || d.Phase == phaseOver || impulseSeat(d) != seat {
 		return nil
@@ -450,11 +450,11 @@ func (rs *Ruleset) Legal(game *catalog.CompiledGame, st *state.BoardState, seat 
 
 // sameMove reports whether two moves are the same decision: a decision is
 // identified by its action, piece, squares and count.
-func sameMove(a, b state.Move) bool {
+func sameMove(a, b state.Selection) bool {
 	return a.Action == b.Action && a.Piece == b.Piece && a.From == b.From && a.To == b.To && a.Count == b.Count
 }
 
-func (e *eng) legal() []state.Move {
+func (e *eng) legal() []state.Selection {
 	d := e.d
 	switch d.Stage {
 	case stageSetup:
@@ -474,7 +474,7 @@ func (e *eng) legal() []state.Move {
 	case stagePrompt:
 		return e.legalPrompt()
 	case stageDirection:
-		return []state.Move{{Action: actCW}, {Action: actCCW}}
+		return []state.Selection{{Action: actCW}, {Action: actCCW}}
 	case stageFirst:
 		return e.legalFirst()
 	case stageDoom:
@@ -484,7 +484,7 @@ func (e *eng) legal() []state.Move {
 }
 
 // execute applies a legal move.
-func (e *eng) execute(seat int, mv state.Move) {
+func (e *eng) execute(seat int, mv state.Selection) {
 	d := e.d
 	e.ev = nil
 	e.noteAim(seat, mv)

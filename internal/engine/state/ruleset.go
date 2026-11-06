@@ -17,11 +17,11 @@ import (
 // ruleset takes over everything the `actions` and `win_condition` of a
 // declarative game would do. It keeps its own data (terrain, conditions,
 // resources, the pending decision) in the position's ext payload, and it
-// speaks the engine's ordinary vocabulary — Move, MoveResult, Step — so the
+// speaks the engine's ordinary vocabulary — Selection, MoveResult, Gesture — so the
 // session, API, MCP, bots, environments and the web UI work unchanged.
 //
-// A decision is one move: a ruleset turn is a sequence of moves, often by
-// the same seat, and ImpulseSeat says whose decision the position is waiting for.
+// A decision is one selection: a ruleset turn is a sequence of selections,
+// often by the same seat, grouped into impulses by ImpulseEnds, and ImpulseSeat says whose decision the position is waiting for.
 type Ruleset interface {
 	// Start returns the opening position. seed seeds the game's chance (0
 	// is valid but predictable).
@@ -29,15 +29,15 @@ type Ruleset interface {
 	// ImpulseSeat is the seat the position waits for, or 0 once it is over.
 	ImpulseSeat(game *catalog.CompiledGame, st *BoardState) int
 	// Legal lists every decision seat may make, in a deterministic order.
-	Legal(game *catalog.CompiledGame, st *BoardState, seat int) []Move
+	Legal(game *catalog.CompiledGame, st *BoardState, seat int) []Selection
 	// Apply validates and applies one decision. It must reject exactly the
 	// moves Legal does not list.
-	Apply(game *catalog.CompiledGame, st *BoardState, seat int, mv Move) (*MoveResult, error)
+	Apply(game *catalog.CompiledGame, st *BoardState, seat int, mv Selection) (*MoveResult, error)
 	// Format and Parse convert a move to and from its notation.
-	Format(game *catalog.CompiledGame, mv Move) string
-	Parse(game *catalog.CompiledGame, text string) (Move, error)
-	// Steps decomposes a legal move into the clicks that build it.
-	Steps(game *catalog.CompiledGame, mv Move) []Step
+	Format(game *catalog.CompiledGame, mv Selection) string
+	Parse(game *catalog.CompiledGame, text string) (Selection, error)
+	// Gestures decomposes a legal selection into the gestures that build it.
+	Gestures(game *catalog.CompiledGame, mv Selection) []Gesture
 	// Validate checks a position document (a custom start).
 	Validate(game *catalog.CompiledGame, st *BoardState) error
 	// Outcome reports whether the position is over, and who won.
@@ -61,7 +61,7 @@ type HiddenInfo interface {
 	Redact(game *catalog.CompiledGame, st *BoardState, viewer int) *BoardState
 	// RedactMove hides what a move record reveals while it is unresolved;
 	// st is the game's current position.
-	RedactMove(game *catalog.CompiledGame, st *BoardState, mv Move, notation string) (Move, string)
+	RedactMove(game *catalog.CompiledGame, st *BoardState, mv Selection, notation string) (Selection, string)
 	// Determinize returns a copy of st in which everything viewer cannot
 	// know is replaced by a random sample, for searching and simulating.
 	Determinize(game *catalog.CompiledGame, st *BoardState, viewer int, rng *rand.Rand) *BoardState
@@ -119,7 +119,7 @@ type RepetitionGuard interface {
 	// RepeatKey describes where seat's pieces stand (and nothing else).
 	RepeatKey(game *catalog.CompiledGame, st *BoardState, seat int) string
 	// Repositions reports whether mv merely rearranges pieces.
-	Repositions(mv Move) bool
+	Repositions(mv Selection) bool
 }
 
 // RepetitionGuardOf returns game's ruleset as a RepetitionGuard, if it is one.
@@ -142,12 +142,12 @@ type BotGuide interface {
 	// GuideMoves returns the moves of legal a bot should consider at st, best
 	// first or in the original order. It must return at least one move when
 	// legal is not empty and must only return moves taken from legal.
-	GuideMoves(game *catalog.CompiledGame, st *BoardState, seat int, legal []Move) []Move
+	GuideMoves(game *catalog.CompiledGame, st *BoardState, seat int, legal []Selection) []Selection
 }
 
 // GuidedMoves narrows legal to the moves the game's ruleset recommends to a
 // bot (all of them unless the ruleset is a BotGuide).
-func GuidedMoves(game *catalog.CompiledGame, st *BoardState, seat int, legal []Move) []Move {
+func GuidedMoves(game *catalog.CompiledGame, st *BoardState, seat int, legal []Selection) []Selection {
 	rs, ok := RulesetOf(game)
 	if !ok || len(legal) < 2 {
 		return legal
@@ -214,7 +214,7 @@ type Reaction struct {
 	// actions and never open a window.
 	Targeted bool `json:"targeted,omitempty"`
 	// Pass is the move that declines the reaction.
-	Pass Move `json:"-"`
+	Pass Selection `json:"-"`
 }
 
 // ReactionAbility is one reaction of a seat's faction.
@@ -447,7 +447,7 @@ func Public(game *catalog.CompiledGame, st *BoardState, viewer int) *BoardState 
 }
 
 // PublicMove hides what an unresolved move record would give away.
-func PublicMove(game *catalog.CompiledGame, st *BoardState, mv Move, notation string) (Move, string) {
+func PublicMove(game *catalog.CompiledGame, st *BoardState, mv Selection, notation string) (Selection, string) {
 	if rs, ok := RulesetOf(game); ok {
 		if h, ok := rs.(HiddenInfo); ok {
 			return h.RedactMove(game, st, mv, notation)

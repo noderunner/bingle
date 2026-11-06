@@ -224,7 +224,7 @@ func (e *eng) gateCostFor(seat int) int {
 
 // moveCost is the Power seat pays for mv: its price plus the Ice Age
 // surcharge when it ends in the area of Windwalker's token.
-func (e *eng) moveCost(seat int, mv state.Move) int {
+func (e *eng) moveCost(seat int, mv state.Selection) int {
 	to := -1
 	if mv.To != "" {
 		to = e.areaIdx(string(mv.To))
@@ -288,12 +288,12 @@ func (e *eng) moveCost(seat int, mv state.Move) int {
 
 // --- legal moves: the turn ----------------------------------------------------
 
-func (e *eng) legalTurn() []state.Move {
+func (e *eng) legalTurn() []state.Selection {
 	d := e.d
 	t := d.Turn
 	seat := t.Seat
 	p := d.Power[seat]
-	var out []state.Move
+	var out []state.Selection
 	if t.Nexus {
 		return e.legalNexus()
 	}
@@ -310,9 +310,9 @@ func (e *eng) legalTurn() []state.Move {
 		out = append(out, e.mainActions(seat)...)
 	}
 	if t.Main || e.summonedThisTurn(seat) {
-		out = append(out, state.Move{Action: actDone})
+		out = append(out, state.Selection{Action: actDone})
 	} else {
-		out = append(out, state.Move{Action: actPass})
+		out = append(out, state.Selection{Action: actPass})
 	}
 	return out
 }
@@ -351,20 +351,20 @@ func (e *eng) summonedThisTurn(seat int) bool {
 	return false
 }
 
-func (e *eng) unlimitedActions(seat int) []state.Move {
+func (e *eng) unlimitedActions(seat int) []state.Selection {
 	d := e.d
-	var out []state.Move
+	var out []state.Selection
 	out = append(out, e.controlMoves(seat)...)
 	out = append(out, e.stepOffMoves(seat)...)
 	if e.is(seat, facGC) && d.hasBook(seat, bkDevolve) && e.pool(seat, uDeepOne) > 0 {
 		for a := range e.m.ids {
 			if e.count(a, seat, uCultist) > 0 {
-				out = append(out, state.Move{Action: actDevolve, To: e.m.ids[a]})
+				out = append(out, state.Selection{Action: actDevolve, To: e.m.ids[a]})
 			}
 		}
 	}
 	if len(d.Signs[seat]) > 0 {
-		out = append(out, state.Move{Action: actReveal})
+		out = append(out, state.Selection{Action: actReveal})
 	}
 	out = append(out, e.ascendMoves(seat)...)
 	if e.ability(seat, abFertility) {
@@ -375,11 +375,11 @@ func (e *eng) unlimitedActions(seat int) []state.Move {
 	}
 	// Windwalker's fifth spellbook is taken whenever its owner likes.
 	if e.is(seat, facWW) && !d.reqDone(seat, rqWWTake) && d.bookCount(seat) < 6 {
-		out = append(out, state.Move{Action: actClaim})
+		out = append(out, state.Selection{Action: actClaim})
 	}
 	// Unspeakable Oath: at the end of any Action, so also after one's own.
 	if e.oathAvailable(seat) {
-		out = append(out, state.Move{Action: actOath})
+		out = append(out, state.Selection{Action: actOath})
 	}
 	return out
 }
@@ -406,8 +406,8 @@ func (e *eng) worthwhileFreeAction(seat int) bool {
 	return false
 }
 
-func (e *eng) summonMoves(seat int) []state.Move {
-	var out []state.Move
+func (e *eng) summonMoves(seat int) []state.Selection {
+	var out []state.Selection
 	gates := e.summonAreas(seat)
 	adulation := e.adulation(seat)
 	for _, u := range e.units(seat) {
@@ -423,7 +423,7 @@ func (e *eng) summonMoves(seat int) []state.Move {
 			continue
 		}
 		for _, a := range gates {
-			mv := state.Move{Action: actSummon, Piece: u.ID, To: e.m.ids[a]}
+			mv := state.Selection{Action: actSummon, Piece: u.ID, To: e.m.ids[a]}
 			if e.d.Power[seat] < e.moveCost(seat, mv) {
 				continue
 			}
@@ -433,15 +433,15 @@ func (e *eng) summonMoves(seat int) []state.Move {
 	return out
 }
 
-func (e *eng) battleMoves(seat int) []state.Move {
-	var out []state.Move
+func (e *eng) battleMoves(seat int) []state.Selection {
+	var out []state.Selection
 	for a := range e.m.ids {
 		if e.hasBattled(seat, a) {
 			continue
 		}
 		for _, enemy := range e.others(seat) {
 			if e.canBattle(seat, enemy, a) && !e.brainless(a, seat) {
-				mv := state.Move{Action: actBattle, To: e.m.ids[a], Count: enemy}
+				mv := state.Selection{Action: actBattle, To: e.m.ids[a], Count: enemy}
 				if e.d.Power[seat] < e.moveCost(seat, mv) {
 					continue
 				}
@@ -455,8 +455,8 @@ func (e *eng) battleMoves(seat int) []state.Move {
 // captureMoves lists what seat may capture: a Cultist (or a High Priest) of
 // an enemy that no unit of equal or higher rank guards, and — for the Sleeper
 // with Capture Monster and Tsathoggua — a Monster.
-func (e *eng) captureMoves(seat int) []state.Move {
-	var out []state.Move
+func (e *eng) captureMoves(seat int) []state.Selection {
+	var out []state.Selection
 	for a := range e.m.ids {
 		mine := e.captureRank(a, seat)
 		// Possession: the Great Race of Yith captures whatever guards the Cultist.
@@ -468,7 +468,7 @@ func (e *eng) captureMoves(seat int) []state.Move {
 			if e.protectionRank(a, enemy) >= mine && !yith {
 				continue
 			}
-			base := state.Move{Action: actCapture, To: e.m.ids[a], Count: enemy}
+			base := state.Selection{Action: actCapture, To: e.m.ids[a], Count: enemy}
 			if e.d.Power[seat] < e.moveCost(seat, base) {
 				continue
 			}
@@ -508,13 +508,13 @@ func (e *eng) captureMoves(seat int) []state.Move {
 	return out
 }
 
-func (e *eng) mainActions(seat int) []state.Move {
+func (e *eng) mainActions(seat int) []state.Selection {
 	d := e.d
 	p := d.Power[seat]
-	var out []state.Move
+	var out []state.Selection
 	second := d.Turn.Main // a second action after He Who is Not to be Named
 	f := e.f(seat)
-	add := func(mv state.Move) {
+	add := func(mv state.Selection) {
 		if p >= e.moveCost(seat, mv) {
 			out = append(out, mv)
 		}
@@ -525,7 +525,7 @@ func (e *eng) mainActions(seat int) []state.Move {
 		if e.pool(seat, piece) <= 0 {
 			return
 		}
-		mv := state.Move{Action: actRecruit}
+		mv := state.Selection{Action: actRecruit}
 		if piece != uCultist {
 			mv.Piece = piece
 		}
@@ -557,7 +557,7 @@ func (e *eng) mainActions(seat int) []state.Move {
 			continue
 		}
 		for _, a := range e.awakenAreas(seat, u.ID) {
-			add(state.Move{Action: actAwaken, Piece: u.ID, To: e.m.ids[a]})
+			add(state.Selection{Action: actAwaken, Piece: u.ID, To: e.m.ids[a]})
 		}
 	}
 	// Awaken an Independent Great Old One.
@@ -570,7 +570,7 @@ func (e *eng) mainActions(seat int) []state.Move {
 			continue
 		}
 		if e.cultists(a, seat) > 0 || (e.is(seat, facBG) && d.hasBook(seat, bkRedSign) && e.count(a, seat, uYoung) > 0) {
-			add(state.Move{Action: actGate, To: e.m.ids[a]})
+			add(state.Selection{Action: actGate, To: e.m.ids[a]})
 		}
 	}
 	// Move: the first unit moved begins the Move action (and every other
@@ -588,7 +588,7 @@ func (e *eng) mainActions(seat int) []state.Move {
 	out = append(out, e.recriminateMoves(seat)...)
 	out = append(out, e.independentActions(seat)...)
 	if e.undimAvailable(seat) {
-		out = append(out, state.Move{Action: actUndim})
+		out = append(out, state.Selection{Action: actUndim})
 	}
 	return out
 }
@@ -597,8 +597,8 @@ func (e *eng) mainActions(seat int) []state.Move {
 // of the seat is one of its own, apart from the rest of its kind there: it
 // moves with leave (to any area in reach, or to the area it stands in), which
 // abandons the Gate; the others move with go and leave the Gate alone.
-func (e *eng) unitMoves(seat int, moved []string) []state.Move {
-	var out []state.Move
+func (e *eng) unitMoves(seat int, moved []string) []state.Selection {
+	var out []state.Selection
 	for a := range e.m.ids {
 		occupant := ""
 		if e.d.Gates[e.areaID(a)] == seat {
@@ -616,13 +616,13 @@ func (e *eng) unitMoves(seat int, moved []string) []state.Move {
 			}
 			if stack > 0 {
 				for _, to := range e.reachFor(seat, a, typ) {
-					out = append(out, state.Move{Action: actGo, Piece: typ, From: e.m.ids[a], To: e.m.ids[to]})
+					out = append(out, state.Selection{Action: actGo, Piece: typ, From: e.m.ids[a], To: e.m.ids[to]})
 				}
 			}
 			if typ == occupant {
 				// (Stepping off the Gate in place is not a move: stepOffMoves.)
 				for _, to := range e.reachFor(seat, a, typ) {
-					out = append(out, state.Move{Action: actLeave, Piece: typ, From: e.m.ids[a], To: e.m.ids[to]})
+					out = append(out, state.Selection{Action: actLeave, Piece: typ, From: e.m.ids[a], To: e.m.ids[to]})
 				}
 			}
 		}
@@ -713,8 +713,8 @@ func (e *eng) moveChoices() (stacks, costs map[string]int) {
 // unit that stands on a Gate of the seat steps off it, where it is. A Gate
 // changes hands once in a turn (Turn.Toggled), so the free actions cannot go
 // round for ever; moving the unit away is a Move step and costs Power.
-func (e *eng) stepOffMoves(seat int) []state.Move {
-	var out []state.Move
+func (e *eng) stepOffMoves(seat int) []state.Selection {
+	var out []state.Selection
 	for a, aid := range e.m.ids {
 		id := string(aid)
 		if e.d.Gates[id] != seat {
@@ -724,7 +724,7 @@ func (e *eng) stepOffMoves(seat int) []state.Move {
 			continue
 		}
 		if occupant := e.holderAt(a); occupant != "" {
-			out = append(out, state.Move{Action: actLeave, Piece: occupant, From: aid, To: aid})
+			out = append(out, state.Selection{Action: actLeave, Piece: occupant, From: aid, To: aid})
 		}
 	}
 	return out
@@ -732,7 +732,7 @@ func (e *eng) stepOffMoves(seat int) []state.Move {
 
 // stepOff gives the Gate of the area up: its occupant stays where it is. It
 // is free, it is no action and it ends nothing.
-func (e *eng) stepOff(seat int, mv state.Move) {
+func (e *eng) stepOff(seat int, mv state.Selection) {
 	a := e.areaIdx(string(mv.From))
 	e.vacate(a)
 	if e.d.Turn != nil {
@@ -744,8 +744,8 @@ func (e *eng) stepOff(seat int, mv state.Move) {
 // controlMoves lists the free actions that put a unit on a Gate: a unit of
 // seat that stands in the area of an abandoned Gate takes control of it, and
 // a unit of another kind may take the place of the one on a Gate of its own.
-func (e *eng) controlMoves(seat int) []state.Move {
-	var out []state.Move
+func (e *eng) controlMoves(seat int) []state.Selection {
+	var out []state.Selection
 	// Areas in map order: the list of moves is deterministic.
 	for a, aid := range e.m.ids {
 		id := string(aid)
@@ -764,7 +764,7 @@ func (e *eng) controlMoves(seat int) []state.Move {
 		}
 		for _, typ := range e.holderTypes(seat) {
 			if typ != occupant && e.count(a, seat, typ) > 0 {
-				out = append(out, state.Move{Action: actControl, Piece: typ, To: aid})
+				out = append(out, state.Selection{Action: actControl, Piece: typ, To: aid})
 			}
 		}
 	}
@@ -774,7 +774,7 @@ func (e *eng) controlMoves(seat int) []state.Move {
 // stepCost is the Power one more unit of a Move action costs: 1 (plus the Ice
 // Age surcharge once per Move), nothing for a unit that follows Ithaqua with
 // Arctic Wind.
-func (e *eng) stepCost(seat int, mv state.Move) int {
+func (e *eng) stepCost(seat int, mv state.Selection) int {
 	d := e.d
 	// Chronophage: the Hound hops for nothing; a Shantak carries a Cultist along.
 	if mv.Piece == uHound || e.carried(mv) >= 0 {
@@ -791,11 +791,11 @@ func (e *eng) stepCost(seat int, mv state.Move) int {
 	return 1 + e.iceTax(seat, e.areaIdx(string(mv.To)))
 }
 
-func (e *eng) legalMoving() []state.Move {
+func (e *eng) legalMoving() []state.Selection {
 	d := e.d
 	seat := d.Turn.Seat
-	var out []state.Move
-	keyOf := func(mv state.Move) string {
+	var out []state.Selection
+	keyOf := func(mv state.Selection) string {
 		return mv.Action + "|" + mv.Piece + "|" + string(mv.From) + ">" + string(mv.To)
 	}
 	var seen map[string]bool
@@ -833,7 +833,7 @@ func (e *eng) legalMoving() []state.Move {
 		}
 		out = append(out, e.stepOffMoves(seat)...)
 	}
-	return append(out, state.Move{Action: actDone})
+	return append(out, state.Selection{Action: actDone})
 }
 
 // --- executing ------------------------------------------------------------------
@@ -850,7 +850,7 @@ func (e *eng) mainTaken() {
 }
 
 // pay takes the Power an action costs from seat.
-func (e *eng) pay(seat int, mv state.Move) int {
+func (e *eng) pay(seat int, mv state.Selection) int {
 	c := e.moveCost(seat, mv)
 	e.d.Power[seat] -= c
 	if e.d.Power[seat] < 0 {
@@ -859,7 +859,7 @@ func (e *eng) pay(seat int, mv state.Move) int {
 	return c
 }
 
-func (e *eng) doTurn(seat int, mv state.Move) {
+func (e *eng) doTurn(seat int, mv state.Selection) {
 	d := e.d
 	to := -1
 	if mv.To != "" {
@@ -1023,7 +1023,7 @@ func (e *eng) doTurn(seat int, mv state.Move) {
 }
 
 // doSetup places Windwalker's Gate and Acolytes in the sigil area it chose.
-func (e *eng) doSetup(seat int, mv state.Move) {
+func (e *eng) doSetup(seat int, mv state.Selection) {
 	d := e.d
 	a := e.areaIdx(string(mv.To))
 	id := e.areaID(a)
@@ -1065,7 +1065,7 @@ func (e *eng) beginFirstAction() {
 }
 
 // beginMove starts a Move action with its first step.
-func (e *eng) beginMove(seat int, mv state.Move) {
+func (e *eng) beginMove(seat int, mv state.Selection) {
 	d := e.d
 	d.Stage = stageMoving
 	d.Move = &MoveState{}
@@ -1079,7 +1079,7 @@ func (e *eng) beginMove(seat int, mv state.Move) {
 // putOnGate is the free action that puts a unit of seat that stands in an area
 // onto its Gate: the Gate was abandoned, or the unit takes the place of the
 // one on it. It does not end the turn, nor a Move action in progress.
-func (e *eng) putOnGate(seat int, mv state.Move) {
+func (e *eng) putOnGate(seat int, mv state.Selection) {
 	d := e.d
 	to := e.areaIdx(string(mv.To))
 	id := e.areaID(to)
@@ -1099,7 +1099,7 @@ func (e *eng) putOnGate(seat int, mv state.Move) {
 }
 
 // doMoving applies one step of a Move action.
-func (e *eng) doMoving(seat int, mv state.Move) {
+func (e *eng) doMoving(seat int, mv state.Selection) {
 	d := e.d
 	if mv.Action == actDone {
 		e.finishMove()
@@ -1268,7 +1268,7 @@ func (e *eng) endTurn() {
 
 func (e *eng) awaken(seat int, typ string, a int) {
 	d := e.d
-	cost := e.pay(seat, state.Move{Action: actAwaken, Piece: typ, To: e.m.ids[a]})
+	cost := e.pay(seat, state.Selection{Action: actAwaken, Piece: typ, To: e.m.ids[a]})
 	if typ == uIthaqua {
 		// He takes the place of the Gate.
 		delete(d.Gates, e.areaID(a))

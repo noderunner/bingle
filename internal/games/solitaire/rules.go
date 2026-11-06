@@ -164,21 +164,21 @@ func (rs *Ruleset) Validate(game *catalog.CompiledGame, st *state.BoardState) er
 }
 
 // Legal lists the decisions of seat.
-func (rs *Ruleset) Legal(game *catalog.CompiledGame, st *state.BoardState, seat int) []state.Move {
+func (rs *Ruleset) Legal(game *catalog.CompiledGame, st *state.BoardState, seat int) []state.Selection {
 	d, err := dataOf(st)
 	if err != nil || d.Turn == 0 || seat != d.Turn {
 		return nil
 	}
 	list := newEng(game, d).legal()
-	moves := make([]state.Move, len(list))
+	moves := make([]state.Selection, len(list))
 	for i, m := range list {
-		moves[i] = state.Move{Action: actMove, Piece: m}
+		moves[i] = state.Selection{Action: actMove, Piece: m}
 	}
 	return moves
 }
 
 // Apply plays one decision.
-func (rs *Ruleset) Apply(game *catalog.CompiledGame, st *state.BoardState, seat int, mv state.Move) (*state.MoveResult, error) {
+func (rs *Ruleset) Apply(game *catalog.CompiledGame, st *state.BoardState, seat int, mv state.Selection) (*state.MoveResult, error) {
 	d, err := dataOf(st)
 	if err != nil {
 		return nil, err
@@ -206,7 +206,7 @@ func (rs *Ruleset) Apply(game *catalog.CompiledGame, st *state.BoardState, seat 
 	ns := st.Clone()
 	ns.SetExt(nd)
 	ns.SetPly(st.Ply() + 1)
-	res := &state.MoveResult{NewState: ns, Move: state.Move{Action: actMove, Piece: mv.Piece}, Notation: mv.Piece, NextImpulseSeat: seat}
+	res := &state.MoveResult{NewState: ns, Move: state.Selection{Action: actMove, Piece: mv.Piece}, Notation: mv.Piece, NextImpulseSeat: seat}
 	if nd.Turn == 0 {
 		res.GameEnded = true
 		res.EndReason = nd.Reason
@@ -251,7 +251,7 @@ func (rs *Ruleset) Determinize(game *catalog.CompiledGame, st *state.BoardState,
 }
 
 // RedactMove: a move names piles, never a hidden card.
-func (rs *Ruleset) RedactMove(game *catalog.CompiledGame, st *state.BoardState, mv state.Move, notation string) (state.Move, string) {
+func (rs *Ruleset) RedactMove(game *catalog.CompiledGame, st *state.BoardState, mv state.Selection, notation string) (state.Selection, string) {
 	return mv, notation
 }
 
@@ -292,14 +292,14 @@ func (rs *Ruleset) Heuristic(game *catalog.CompiledGame, st *state.BoardState, s
 
 // GuideMoves keeps the moves worth suggesting: a computer player and the Hint button
 // choose among them.
-func (rs *Ruleset) GuideMoves(game *catalog.CompiledGame, st *state.BoardState, seat int, legal []state.Move) []state.Move {
+func (rs *Ruleset) GuideMoves(game *catalog.CompiledGame, st *state.BoardState, seat int, legal []state.Selection) []state.Selection {
 	d, err := dataOf(st)
 	if err != nil {
 		return legal
 	}
 	e := newEng(game, d)
 	best := -1 << 30
-	var out []state.Move
+	var out []state.Selection
 	for _, m := range legal {
 		v := e.worth(m.Piece)
 		if v > best {

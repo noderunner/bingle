@@ -53,7 +53,7 @@ func (rs *Ruleset) Redact(game *catalog.CompiledGame, st *state.BoardState, view
 }
 
 // RedactMove: moves reveal nothing.
-func (rs *Ruleset) RedactMove(game *catalog.CompiledGame, st *state.BoardState, mv state.Move, notation string) (state.Move, string) {
+func (rs *Ruleset) RedactMove(game *catalog.CompiledGame, st *state.BoardState, mv state.Selection, notation string) (state.Selection, string) {
 	return mv, notation
 }
 
@@ -194,13 +194,13 @@ func maxInt(a, b int) int {
 
 // GuideMoves keeps a bot from throwing pieces away: no capturing its own
 // pieces, and no leaving an enemy it could take when it jumps.
-func (rs *Ruleset) GuideMoves(game *catalog.CompiledGame, st *state.BoardState, seat int, legal []state.Move) []state.Move {
+func (rs *Ruleset) GuideMoves(game *catalog.CompiledGame, st *state.BoardState, seat int, legal []state.Selection) []state.Selection {
 	d, err := dataOf(st)
 	if err != nil {
 		return legal
 	}
 	e := newEng(st, d)
-	var out []state.Move
+	var out []state.Selection
 	for _, mv := range legal {
 		if mv.Action == actJump && !e.sensibleJump(mv, uint8(seat)) {
 			continue
@@ -217,7 +217,7 @@ func (rs *Ruleset) GuideMoves(game *catalog.CompiledGame, st *state.BoardState, 
 
 // sensibleJump is false for a chain that takes one of its own pieces or
 // spares an enemy piece it jumped (the jump over a pawn is left alone).
-func (e *eng) sensibleJump(mv state.Move, side uint8) bool {
+func (e *eng) sensibleJump(mv state.Selection, side uint8) bool {
 	cur, _ := cellOf(mv.From)
 	board := e.b
 	board[cur] = pc{}

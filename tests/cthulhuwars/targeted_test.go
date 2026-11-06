@@ -124,7 +124,7 @@ func settle(t *testing.T, st *state.BoardState) *state.BoardState {
 			return st
 		}
 		seat, _ := state.ImpulseAfter(g, st, 1)
-		legal := state.LegalMoves(g, st, seat)
+		legal := state.LegalSelections(g, st, seat)
 		if len(legal) == 0 {
 			t.Fatalf("seat %d has nothing to decide\n%s", seat, state.RenderText(g, st))
 		}

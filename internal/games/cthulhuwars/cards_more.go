@@ -248,7 +248,7 @@ func cardActOf(piece string) (cardAct, string) {
 }
 
 // cardActCost is the Power a "card" move costs.
-func (e *eng) cardActCost(mv state.Move) int {
+func (e *eng) cardActCost(mv state.Selection) int {
 	a, _ := cardActOf(mv.Piece)
 	if a.ID == "cathedral" && mv.To != "" {
 		return e.cathedralCost(e.areaIdx(string(mv.To)))
@@ -258,7 +258,7 @@ func (e *eng) cardActCost(mv state.Move) int {
 
 // Format, Parse and Steps of the action. card:id[.unit][@area][/key]
 
-func formatCard(mv state.Move, key func(int) string) string {
+func formatCard(mv state.Selection, key func(int) string) string {
 	out := actCard + ":" + mv.Piece
 	if mv.To != "" {
 		out += "@" + string(mv.To)
@@ -269,33 +269,33 @@ func formatCard(mv state.Move, key func(int) string) string {
 	return out
 }
 
-func parseCard(text string, seatOf func(string) int, area func(string) bool) (state.Move, bool) {
+func parseCard(text string, seatOf func(string) int, area func(string) bool) (state.Selection, bool) {
 	rest, ok := strings.CutPrefix(text, actCard+":")
 	if !ok {
-		return state.Move{}, false
+		return state.Selection{}, false
 	}
-	mv := state.Move{Action: actCard}
+	mv := state.Selection{Action: actCard}
 	if head, key, found := strings.Cut(rest, "/"); found {
 		mv.Count = seatOf(key)
 		if mv.Count == 0 {
-			return state.Move{}, false
+			return state.Selection{}, false
 		}
 		rest = head
 	}
 	if head, to, found := strings.Cut(rest, "@"); found {
 		if !area(to) {
-			return state.Move{}, false
+			return state.Selection{}, false
 		}
 		mv.To = board.PositionID(to)
 		rest = head
 	}
 	a, unit := cardActOf(rest)
 	if a.ID == "" {
-		return state.Move{}, false
+		return state.Selection{}, false
 	}
 	if unit != "" {
 		if _, known := unitTypeIndex[unit]; !known {
-			return state.Move{}, false
+			return state.Selection{}, false
 		}
 	}
 	mv.Piece = rest
@@ -303,7 +303,7 @@ func parseCard(text string, seatOf func(string) int, area func(string) bool) (st
 }
 
 // cardStepID is the id of the button of a "card" move.
-func cardStepID(mv state.Move, key func(int) string) string {
+func cardStepID(mv state.Selection, key func(int) string) string {
 	id := actCard + "-" + mv.Piece
 	if mv.Count != 0 {
 		id += "-" + key(mv.Count)
@@ -345,19 +345,19 @@ func cardPrompt(why string, seat, by, left int) Prompt {
 }
 
 // cardPromptMoves lists the answers to a "card" prompt.
-func (e *eng) cardPromptMoves(p Prompt) []state.Move {
+func (e *eng) cardPromptMoves(p Prompt) []state.Selection {
 	d := e.d
-	one := func(piece string) state.Move { return state.Move{Action: actCard, Piece: piece} }
-	var out []state.Move
+	one := func(piece string) state.Selection { return state.Selection{Action: actCard, Piece: piece} }
+	var out []state.Selection
 	switch p.Why {
 	case "festival":
 		for _, o := range e.others(p.Seat) {
-			out = append(out, state.Move{Action: actCard, Piece: "festival", Count: o})
+			out = append(out, state.Selection{Action: actCard, Piece: "festival", Count: o})
 		}
 	case "demat-to":
 		for a := range e.m.ids {
 			if e.m.ids[a] != board.PositionID(p.Area) {
-				out = append(out, state.Move{Action: actCard, Piece: "demat-to", To: e.m.ids[a]})
+				out = append(out, state.Selection{Action: actCard, Piece: "demat-to", To: e.m.ids[a]})
 			}
 		}
 	case "glacier":
@@ -365,14 +365,14 @@ func (e *eng) cardPromptMoves(p Prompt) []state.Move {
 			return nil
 		}
 		for _, a := range e.glacierChoices() {
-			out = append(out, state.Move{Action: actCard, Piece: "glacier", To: e.m.ids[a]})
+			out = append(out, state.Selection{Action: actCard, Piece: "glacier", To: e.m.ids[a]})
 		}
 	case "horde":
 		if e.pool(p.Seat, uGhast) <= 0 {
 			return nil
 		}
 		for _, a := range e.gatesOf(p.Seat) {
-			out = append(out, state.Move{Action: actCard, Piece: "horde", To: e.m.ids[a]})
+			out = append(out, state.Selection{Action: actCard, Piece: "horde", To: e.m.ids[a]})
 		}
 	case "blood":
 		b := d.Bat
@@ -381,7 +381,7 @@ func (e *eng) cardPromptMoves(p Prompt) []state.Move {
 		}
 		for _, s := range []int{b.Att, b.Def} {
 			if b.Pains[s] >= 2 {
-				out = append(out, state.Move{Action: actCard, Piece: "blood", Count: s})
+				out = append(out, state.Selection{Action: actCard, Piece: "blood", Count: s})
 			}
 		}
 		if len(out) > 0 {
@@ -393,16 +393,16 @@ func (e *eng) cardPromptMoves(p Prompt) []state.Move {
 		}
 		for a := range e.m.ids {
 			if e.enemiesIn(a, p.Seat) == 0 {
-				out = append(out, state.Move{Action: actCard, Piece: "ghost", To: e.m.ids[a]})
+				out = append(out, state.Selection{Action: actCard, Piece: "ghost", To: e.m.ids[a]})
 			}
 		}
 	case "sarnath":
 		for _, o := range e.others(p.Seat) {
 			if e.sarnathUnits(p.Seat) != nil {
-				out = append(out, state.Move{Action: actCard, Piece: "sarnath-unit", Count: o})
+				out = append(out, state.Selection{Action: actCard, Piece: "sarnath-unit", Count: o})
 			}
 			if len(d.Signs[p.Seat]) > 0 {
-				out = append(out, state.Move{Action: actCard, Piece: "sarnath-sign", Count: o})
+				out = append(out, state.Selection{Action: actCard, Piece: "sarnath-sign", Count: o})
 			}
 		}
 	case "sarnath-pick":
@@ -412,12 +412,12 @@ func (e *eng) cardPromptMoves(p Prompt) []state.Move {
 	case "innsmouth":
 		for a := range e.m.ids {
 			if e.count(a, p.Seat, uCultist) > 0 {
-				out = append(out, state.Move{Action: actCard, Piece: "innsmouth", To: e.m.ids[a]})
+				out = append(out, state.Selection{Action: actCard, Piece: "innsmouth", To: e.m.ids[a]})
 			}
 		}
 	case "subvert":
 		for _, o := range e.others(p.Seat) {
-			out = append(out, state.Move{Action: actCard, Piece: "subvert", Count: o})
+			out = append(out, state.Selection{Action: actCard, Piece: "subvert", Count: o})
 		}
 	case "orifice":
 		b := d.Bat
@@ -484,7 +484,7 @@ func (e *eng) cardImpulse(p Prompt) string {
 }
 
 // cardPromptAnswer applies an answer to the first prompt, a "card" one.
-func (e *eng) cardPromptAnswer(p Prompt, mv state.Move) {
+func (e *eng) cardPromptAnswer(p Prompt, mv state.Selection) {
 	d := e.d
 	act, unit := cardActOf(mv.Piece)
 	seat := p.Seat
@@ -596,15 +596,15 @@ func cardPromptAuto(p Prompt) bool { return p.Why != "blood" }
 // --- the choices of a turn ----------------------------------------------------------------------
 
 // cardTurnMoves lists the "card" Actions seat may take in its turn.
-func (e *eng) cardTurnMoves(seat int) []state.Move {
+func (e *eng) cardTurnMoves(seat int) []state.Selection {
 	d := e.d
 	out := append(e.ancientsTurnMoves(seat), e.bubastisTurnMoves(seat)...)
-	add := func(mv state.Move) {
+	add := func(mv state.Selection) {
 		if d.Power[seat] >= e.cardActCost(mv) {
 			out = append(out, mv)
 		}
 	}
-	one := func(piece string) state.Move { return state.Move{Action: actCard, Piece: piece} }
+	one := func(piece string) state.Selection { return state.Selection{Action: actCard, Piece: piece} }
 	if a, ok := e.abilityWorks(seat, uAtlach); ok && !e.hasWeb(a) && len(d.Webs) < maxWebs {
 		add(one("spin"))
 	}
@@ -613,7 +613,7 @@ func (e *eng) cardTurnMoves(seat int) []state.Move {
 	}
 	if e.holdsCard(seat, uBokrug) && !e.igooBook(seat, uBokrug) {
 		for _, o := range e.others(seat) {
-			add(state.Move{Action: actCard, Piece: "give-bokrug", Count: o})
+			add(state.Selection{Action: actCard, Piece: "give-bokrug", Count: o})
 		}
 	}
 	if _, ok := e.abilityWorks(seat, uDagon); ok {
@@ -621,7 +621,7 @@ func (e *eng) cardTurnMoves(seat int) []state.Move {
 			if e.m.ocean[a] || !e.nextToOcean(a) || !e.anyCultistIn(a) {
 				continue
 			}
-			add(state.Move{Action: actCard, Piece: "tsunami", To: e.m.ids[a]})
+			add(state.Selection{Action: actCard, Piece: "tsunami", To: e.m.ids[a]})
 		}
 	}
 	if a, ok := e.abilityWorks(seat, uGhatan); ok && !e.igooBook(seat, uGhatan) {
@@ -640,7 +640,7 @@ func (e *eng) cardTurnMoves(seat int) []state.Move {
 			for _, n := range e.m.adj[a] {
 				for _, o := range e.others(seat) {
 					if e.cultists(n, o) > 0 {
-						add(state.Move{Action: actCard, Piece: "forget", To: e.m.ids[n]})
+						add(state.Selection{Action: actCard, Piece: "forget", To: e.m.ids[n]})
 						break
 					}
 				}
@@ -650,7 +650,7 @@ func (e *eng) cardTurnMoves(seat int) []state.Move {
 	if e.igooBook(seat, uNyogtha) && e.pool(seat, uNyogtha) > 0 {
 		for a := range e.m.ids {
 			if e.total(a, seat) > 0 {
-				add(state.Move{Action: actCard, Piece: "nightmare", To: e.m.ids[a]})
+				add(state.Selection{Action: actCard, Piece: "nightmare", To: e.m.ids[a]})
 			}
 		}
 	}
@@ -673,7 +673,7 @@ func (e *eng) cardTurnMoves(seat int) []state.Move {
 			}
 			for _, o := range e.others(seat) {
 				if e.total(a, o) > 0 && d.bookCount(o) <= 5 && !e.lustOn(o) {
-					add(state.Move{Action: actCard, Piece: "lust", To: e.m.ids[a], Count: o})
+					add(state.Selection{Action: actCard, Piece: "lust", To: e.m.ids[a], Count: o})
 				}
 			}
 		}
@@ -683,7 +683,7 @@ func (e *eng) cardTurnMoves(seat int) []state.Move {
 
 // cardTurnAction settles a "card" Action taken in a turn. It says whether the
 // action has routed the game onward itself.
-func (e *eng) cardTurnAction(seat int, mv state.Move) bool {
+func (e *eng) cardTurnAction(seat int, mv state.Selection) bool {
 	d := e.d
 	d.Power[seat] -= e.cardActCost(mv)
 	act, _ := cardActOf(mv.Piece)

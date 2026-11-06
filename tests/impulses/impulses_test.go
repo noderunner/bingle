@@ -54,7 +54,7 @@ func TestEveryGamePlaysByImpulses(t *testing.T) {
 			}
 			seat := state.FirstSeat(g)
 			for n := 0; n < budget; n++ {
-				var made []state.Move
+				var made []state.Selection
 				var sels state.Selections
 				for {
 					sels, err = state.NextSelections(g, st, seat, made)
@@ -123,8 +123,8 @@ func TestEveryGamePlaysByImpulses(t *testing.T) {
 				// One selection too many is refused, where the impulse really ended.
 				if !sels.Complete {
 					// a game for one seat stopped early: it could go on
-				} else if next := state.LegalMoves(g, last.NewState, last.NextImpulseSeat); len(next) > 0 {
-					if _, err := state.NextSelections(g, st, seat, append(append([]state.Move{}, made...), next[0])); !errors.Is(err, state.ErrImpulseOver) {
+				} else if next := state.LegalSelections(g, last.NewState, last.NextImpulseSeat); len(next) > 0 {
+					if _, err := state.NextSelections(g, st, seat, append(append([]state.Selection{}, made...), next[0])); !errors.Is(err, state.ErrImpulseOver) {
 						t.Fatalf("impulse %d: a selection after its end: %v, want ErrImpulseOver", n, err)
 					}
 				}
@@ -147,7 +147,7 @@ func TestBloomsTurnIsOneImpulse(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	parse := func(text string) []state.Move {
+	parse := func(text string) []state.Selection {
 		t.Helper()
 		sels, err := state.ParseImpulse(g, text)
 		if err != nil {

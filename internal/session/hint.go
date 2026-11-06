@@ -25,7 +25,7 @@ var ErrHintNotAllowed = errors.New("session: hints are only available against bo
 // Hint is a bot's suggestion for a position.
 type Hint struct {
 	Notation    string
-	Steps       []state.Step
+	Steps       []state.Gesture
 	ImpulseSeat int
 	Bot         string
 	// WinRate is the bot's estimate of the side to move winning with the
@@ -130,7 +130,7 @@ func (m *Manager) Hint(ctx context.Context, roomCode, name string, atSeq *int, n
 	if err := bs.UnmarshalJSON([]byte(sim.State)); err != nil {
 		return Hint{}, err
 	}
-	legal := make([]state.Move, len(sim.Legal))
+	legal := make([]state.Selection, len(sim.Legal))
 	for i, lm := range sim.Legal {
 		legal[i] = lm.Move
 	}
@@ -151,7 +151,7 @@ func (m *Manager) Hint(ctx context.Context, roomCode, name string, atSeq *int, n
 		return Hint{}, ctx.Err()
 	}
 
-	var mv state.Move
+	var mv state.Selection
 	h := Hint{ImpulseSeat: *sim.ImpulseSeat, Bot: botID}
 	if ev, ok := bot.(bots.Evaluator); ok {
 		e, err := ev.Evaluate(ctx, compiled, bs, *sim.ImpulseSeat, legal)

@@ -624,7 +624,7 @@ func notationHelp(cg *catalog.CompiledGame) []string {
 	}
 	// A concrete example from the opening position.
 	if first := state.FirstSeat(cg); true {
-		if moves := state.LegalMoves(cg, state.InitialState(cg), first); len(moves) > 0 {
+		if moves := state.LegalSelections(cg, state.InitialState(cg), first); len(moves) > 0 {
 			out = append(out, "Example of a legal first move: '"+state.FormatMove(cg, moves[0])+"'.")
 		}
 	}
