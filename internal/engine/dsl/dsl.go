@@ -79,6 +79,10 @@ type GameDefinition struct {
 	// "step" action.
 	Actions []ActionDef `json:"actions,omitempty"`
 
+	// Deal lists what happens to the cards before the first move, in order:
+	// a seeded shuffle, then deals into zones (ADR 0119).
+	Deal []DealDef `json:"deal,omitempty"`
+
 	// EndOfTurn lists effects that happen, in order, whenever a turn ends,
 	// before it is judged (ADR 0116).
 	EndOfTurn []EndOfTurnDef `json:"end_of_turn,omitempty"`
@@ -402,6 +406,26 @@ type SeatDef struct {
 	// "W"; N is towards the top of the screen). Movement directions such as
 	// "forward-left" are relative to it.
 	Forward string `json:"forward,omitempty"`
+}
+
+// DealDef is one step of the deal at the start (ADR 0119): either a shuffle
+// or a deal from one zone to another.
+type DealDef struct {
+	// Shuffle names a table zone to fill with every card of a deck and
+	// shuffle with the game's seed.
+	Shuffle string `json:"shuffle,omitempty"`
+	// Deck names the deck the shuffle fills the zone with; it may be left
+	// out when the game has one deck.
+	Deck string `json:"deck,omitempty"`
+	// From and To are the zones a deal takes cards from and puts them in.
+	From string `json:"from,omitempty"`
+	To   string `json:"to,omitempty"`
+	// Each is how many cards each seat gets, for a seat zone, one at a time
+	// in seat order; Count is how many a table zone gets.
+	Each  int `json:"each,omitempty"`
+	Count int `json:"count,omitempty"`
+	// Face is "up" or "down" (default).
+	Face string `json:"face,omitempty"`
 }
 
 // EndOfTurnDef is one effect at the end of a turn (ADR 0116).

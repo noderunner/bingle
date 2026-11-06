@@ -27,6 +27,9 @@ func compileRules(cg *CompiledGame) error {
 	if err := compileCards(cg); err != nil {
 		return err
 	}
+	if err := compileDeal(cg); err != nil {
+		return err
+	}
 
 	if def.Engine == "ruleset" {
 		// A ruleset owns moves, opening and scoring; the document only
@@ -654,6 +657,103 @@ func compileEndOfTurn(cg *CompiledGame) error {
 			}
 		}
 		cg.EndOfTurn = append(cg.EndOfTurn, TurnEffect{Effect: e.Effect, Condition: e.Condition, Whose: whose, CountIn: e.CountIn, Tint: e.Tint})
+	}
+	return nil
+}
+
+// compileDeal resolves the deal at the start (ADR 0119): every zone named is
+// one of the game's, a shuffle fills a table zone from a deck, a seat zone
+// gets `each` and a table zone `count`, and no deal takes more cards than its
+// zone holds by then.
+func compileDeal(cg *CompiledGame) error {
+	def := cg.Definition
+	if len(def.Deal) == 0 {
+		return nil
+	}
+	if def.Engine == "ruleset" {
+		return fmt.Errorf("catalog: a ruleset deals its own cards; deal is for declared games")
+	}
+	cc := cg.Cards
+	if cc == nil {
+		return fmt.Errorf("catalog: deal needs cards")
+	}
+	seats := len(def.Seats)
+	held := map[string]int{} // cards in each table zone, and in one seat's zone
+	zone := func(i int, id string) (dsl.ZoneDef, error) {
+		z, ok := cc.Zones[id]
+		if !ok {
+			return z, fmt.Errorf("catalog: deal %d names unknown zone %q", i, id)
+		}
+		return z, nil
+	}
+	for i, d := range def.Deal {
+		if d.Shuffle != "" {
+			if d.From != "" || d.To != "" || d.Each != 0 || d.Count != 0 || d.Face != "" {
+				return fmt.Errorf("catalog: deal %d shuffles and deals at once", i)
+			}
+			z, err := zone(i, d.Shuffle)
+			if err != nil {
+				return err
+			}
+			if z.Scope != "table" {
+				return fmt.Errorf("catalog: deal %d shuffles %q, a seat's zone", i, d.Shuffle)
+			}
+			deck := d.Deck
+			if deck == "" {
+				if len(cc.Instances) != 1 {
+					return fmt.Errorf("catalog: deal %d must name its deck (the game has %d)", i, len(cc.Instances))
+				}
+				for name := range cc.Instances {
+					deck = name
+				}
+			}
+			ids, ok := cc.Instances[deck]
+			if !ok {
+				return fmt.Errorf("catalog: deal %d names unknown deck %q", i, deck)
+			}
+			held[d.Shuffle] = len(ids)
+			cg.Deal = append(cg.Deal, DealStep{Shuffle: d.Shuffle, Deck: deck})
+			continue
+		}
+		if d.Deck != "" {
+			return fmt.Errorf("catalog: deal %d names a deck without shuffling", i)
+		}
+		from, err := zone(i, d.From)
+		if err != nil {
+			return err
+		}
+		if from.Scope != "table" {
+			return fmt.Errorf("catalog: deal %d deals from %q, a seat's zone", i, d.From)
+		}
+		to, err := zone(i, d.To)
+		if err != nil {
+			return err
+		}
+		n := d.Count
+		if to.Scope == "seat" {
+			if d.Count != 0 || d.Each <= 0 {
+				return fmt.Errorf("catalog: deal %d to the seat zone %q needs each, not count", i, d.To)
+			}
+			n = d.Each * seats
+		} else if d.Each != 0 || d.Count <= 0 {
+			return fmt.Errorf("catalog: deal %d to the table zone %q needs count, not each", i, d.To)
+		}
+		if n > held[d.From] {
+			return fmt.Errorf("catalog: deal %d takes %d cards from %q, which holds %d", i, n, d.From, held[d.From])
+		}
+		up := false
+		switch d.Face {
+		case "", "down":
+		case "up":
+			up = true
+		default:
+			return fmt.Errorf("catalog: deal %d has face %q, not up or down", i, d.Face)
+		}
+		held[d.From] -= n
+		if to.Scope == "table" {
+			held[d.To] += n
+		}
+		cg.Deal = append(cg.Deal, DealStep{From: d.From, To: d.To, Each: d.Each, Count: d.Count, Up: up, ToSeats: to.Scope == "seat"})
 	}
 	return nil
 }

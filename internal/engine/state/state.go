@@ -13,6 +13,7 @@ import (
 	"sort"
 
 	"github.com/noderunner/bingle/internal/engine/board"
+	"github.com/noderunner/bingle/internal/engine/cards"
 )
 
 // Occupant is what's on one board position: which piece type (a key into
@@ -46,6 +47,9 @@ type BoardState struct {
 	// turn is the turn of several selections in progress (ADR 0115), nil
 	// between turns.
 	turn *TurnProgress
+
+	// table is a declared game's cards (ADR 0119), nil when it has none.
+	table *cards.Table
 
 	// ext is the game-specific payload of a ruleset game (terrain, unit
 	// conditions, momentum, ...): a json.RawMessage straight from a document
@@ -221,6 +225,9 @@ func (s *BoardState) Clone() *BoardState {
 	clone.prev = s.prev
 	clone.passes = s.passes
 	clone.turn = s.turn.clone()
+	if s.table != nil {
+		clone.table = s.table.Clone()
+	}
 	switch v := s.ext.(type) {
 	case nil:
 	case ExtClone:
@@ -231,6 +238,10 @@ func (s *BoardState) Clone() *BoardState {
 	}
 	return clone
 }
+
+// Cards is a declared game's table of cards (ADR 0119), nil when it has
+// none. It is the position's own: change it only on a clone.
+func (s *BoardState) Cards() *cards.Table { return s.table }
 
 // Ext returns the ruleset payload: nil, a json.RawMessage (undecoded, from a
 // document) or the value a ruleset stored with SetExt.
@@ -290,6 +301,7 @@ type stateJSON struct {
 	Prev     string                    `json:"prev,omitempty"`
 	Passes   int                       `json:"passes,omitempty"`
 	Turn     *TurnProgress             `json:"turn,omitempty"`
+	Cards    *cards.Table              `json:"cards,omitempty"`
 	Ext      json.RawMessage           `json:"ext,omitempty"`
 }
 
@@ -307,6 +319,7 @@ func (s *BoardState) MarshalJSON() ([]byte, error) {
 		Prev:   s.prev,
 		Passes: s.passes,
 		Turn:   s.turn,
+		Cards:  s.table,
 	}
 	switch v := s.ext.(type) {
 	case nil:
@@ -395,6 +408,7 @@ func (s *BoardState) UnmarshalJSON(data []byte) error {
 	s.reserves = make(map[string]map[string]int)
 	s.ply = 0
 	s.turn = nil
+	s.table = nil
 	s.ext = nil
 	return nil
 }
@@ -432,6 +446,7 @@ func (s *BoardState) unmarshalV2(data []byte, version int) error {
 	s.prev = doc.Prev
 	s.passes = doc.Passes
 	s.turn = doc.Turn
+	s.table = doc.Cards
 	s.ext = nil
 	if len(doc.Ext) > 0 && string(doc.Ext) != "null" {
 		s.ext = doc.Ext

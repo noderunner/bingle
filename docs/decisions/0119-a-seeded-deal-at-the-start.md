@@ -1,6 +1,6 @@
 # 0119. A seeded deal at the start
 
-Status: proposed (2026-11-06). It is addition D of the DSL coverage audit (`docs/history/dsl-coverage-audit-plan.md`
+Status: accepted (2026-11-06). It is addition D of the DSL coverage audit (`docs/history/dsl-coverage-audit-plan.md`
 on `more-plans`), after additions A to C ([ADR 0115](0115-a-declared-turn-of-several-selections.md),
 [0116](0116-effects-at-the-end-of-a-turn.md), [0117](0117-groups-by-colour-enemies-by-seat.md)).
 
@@ -54,7 +54,7 @@ deal:
 - **The shuffle is seeded** by the game's seed, through `cards.RNG` and `Zone.Shuffle`, so the same seed deals the same
   cards on every server, and a replay or a differential test sees the same deal.
 - A deal that asks for more cards than `from` holds is refused when the game is compiled, since the deck is known then.
-- A game whose deck has several decks names one: `shuffle: {zone: deck, deck: main}`.
+- A game with several decks names the one a shuffle uses: `{shuffle: deck, deck: main}`.
 
 ### Who sees what
 

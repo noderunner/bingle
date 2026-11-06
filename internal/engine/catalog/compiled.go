@@ -175,6 +175,8 @@ type CompiledGame struct {
 	// Turn is the parts of a turn of several selections, or nil when a turn
 	// is one selection (ADR 0115).
 	Turn []TurnPart
+	// Deal is the deal at the start (ADR 0119).
+	Deal []DealStep
 	// EndOfTurn is the effects at the end of a turn (ADR 0116).
 	EndOfTurn []TurnEffect
 	// Forward is each seat's forward vector on a grid (when declared).
@@ -309,4 +311,13 @@ const (
 // TurnEffect is one compiled end_of_turn effect.
 type TurnEffect struct {
 	Effect, Condition, Whose, CountIn, Tint string
+}
+
+// DealStep is one compiled step of the deal: a shuffle of a deck into a table
+// zone, or a deal from one zone to another (ToSeats: to each seat's zone).
+type DealStep struct {
+	Shuffle, Deck string
+	From, To      string
+	Each, Count   int
+	Up, ToSeats   bool
 }

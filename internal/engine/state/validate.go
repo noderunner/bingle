@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/noderunner/bingle/internal/engine/cards"
 	"github.com/noderunner/bingle/internal/engine/catalog"
 )
 
@@ -69,6 +70,9 @@ func Validate(game *catalog.CompiledGame, st *BoardState) error {
 	if st.Ply() < 0 {
 		return fmt.Errorf("state: negative ply")
 	}
+	if err := validateCards(game, st); err != nil {
+		return err
+	}
 	if rs, ok := RulesetOf(game); ok {
 		return rs.Validate(game, st)
 	}
@@ -76,6 +80,43 @@ func Validate(game *catalog.CompiledGame, st *BoardState) error {
 		parts := turnParts(game, st)
 		if parts == nil || t.Part < 0 || t.Part >= len(parts) || t.Made < 1 || t.Made > parts[t.Part].Max {
 			return fmt.Errorf("state: a turn in progress at part %d with %d selections does not fit the game's turn", t.Part+1, t.Made)
+		}
+	}
+	return nil
+}
+
+// validateCards checks a declared game's table: every zone is one of the
+// game's, and every card is one of its cards, once.
+func validateCards(game *catalog.CompiledGame, st *BoardState) error {
+	if st.table == nil {
+		return nil
+	}
+	if game.Cards == nil {
+		return fmt.Errorf("state: cards in a game without cards")
+	}
+	known := map[string]bool{}
+	for _, ids := range game.Cards.Instances {
+		for _, id := range ids {
+			known[id] = true
+		}
+	}
+	seen := map[string]bool{}
+	for key, z := range st.table.Zones {
+		zone, _ := cards.SplitKey(key)
+		if _, ok := game.Cards.Zones[zone]; !ok {
+			return fmt.Errorf("state: unknown card zone %q", zone)
+		}
+		for _, c := range z.Cards {
+			if c.Hidden() {
+				continue // a redacted card
+			}
+			if !known[c.ID] {
+				return fmt.Errorf("state: unknown card %q in %s", c.ID, key)
+			}
+			if seen[c.ID] {
+				return fmt.Errorf("state: card %q lies in two places", c.ID)
+			}
+			seen[c.ID] = true
 		}
 	}
 	return nil

@@ -724,6 +724,21 @@ cards:
   `stack` (top card and count), `splay` or `grid`; `counts: true` sends a hidden
   pile as a count only.
 * A variant strips cards with a merge patch of `cards.decks.<deck>.remove`.
+* **A declared game deals its cards** before the first move with a top-level
+  `deal` ([ADR 0119](decisions/0119-a-seeded-deal-at-the-start.md)):
+
+  ```yaml
+  deal:
+    - {shuffle: deck}                            # a table zone, filled with the deck (name it with deck: when there are several)
+    - {from: deck, to: hand, each: 2, face: up}  # a seat zone: each seat, one card at a time
+    - {from: deck, to: side, count: 1, face: up} # a table zone: count cards
+  ```
+
+  The shuffle is seeded by the game's seed, so a seed always deals the same
+  cards. The position stores the table as `cards`. What a player is sent, and
+  what a bot plans on, follows the zones' `visibility`: a zone that hides a
+  face (anything but `all`, a face-down deck included) makes the game one with
+  secrets. Drawing during play, dice and using a card are not declared yet.
 * Board `style: "none"` draws no board (the cards are the table).
 * In Go, `internal/engine/cards` holds a game's cards in a `Table` of zones: it
   shuffles with a seedable `RNG`, deals, moves and flips cards, and `Redact` /

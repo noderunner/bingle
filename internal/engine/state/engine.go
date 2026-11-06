@@ -24,6 +24,16 @@ func InitialState(game *catalog.CompiledGame) *BoardState {
 		}
 		return st
 	}
+	seed := uint64(0)
+	if len(game.Deal) > 0 {
+		seed = randomSeed()
+	}
+	return declaredStart(game, seed)
+}
+
+// declaredStart is a declared game's starting position, its cards dealt
+// with seed (ADR 0119).
+func declaredStart(game *catalog.CompiledGame, seed uint64) *BoardState {
 	st := NewBoardState()
 	for _, entry := range game.Definition.Setup {
 		st.Push(board.PositionID(entry.Position), Occupant{Piece: entry.Piece, Color: entry.Color})
@@ -32,6 +42,9 @@ func InitialState(game *catalog.CompiledGame) *BoardState {
 		for piece, n := range game.Definition.Reserves {
 			st.SetReserve(seat.Color, piece, n)
 		}
+	}
+	if len(game.Deal) > 0 {
+		st.table = deal(game, seed)
 	}
 	return st
 }
