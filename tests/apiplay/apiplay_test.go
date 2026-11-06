@@ -14,6 +14,7 @@ import (
 	"net/http/httptest"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/noderunner/bingle/internal/app"
@@ -119,12 +120,12 @@ func seatName(seat int) string { return "Seat " + strconv.Itoa(seat) }
 
 // playOut seats a player in every seat and plays random legal moves, each way a client can name one
 // in turn, until the game ends or limit moves have been played. It returns the room and the position.
-func playOut(c *client, def gameDef, rng *rand.Rand, limit int) (string, position) {
+func playOut(c *client, def gameDef, options map[string]any, rng *rand.Rand, limit int) (string, position) {
 	c.t.Helper()
 	var created struct {
 		Code string `json:"room_code"`
 	}
-	c.must(http.MethodPost, "/games", map[string]any{"game_def_id": def.ID, "player_name": seatName(1), "seat": 1}, &created)
+	c.must(http.MethodPost, "/games", map[string]any{"game_def_id": def.ID, "player_name": seatName(1), "seat": 1, "options": options}, &created)
 	for seat := 2; seat <= def.Seats; seat++ {
 		c.must(http.MethodPost, "/games/"+created.Code+"/join", map[string]any{"player_name": seatName(seat), "seat": seat}, nil)
 	}
@@ -176,7 +177,45 @@ func seedOf(id string) int64 {
 	return int64(h.Sum64()) //nolint:gosec // a seed, so wrapping is harmless
 }
 
-func TestEveryGamePlaysToAFinishThroughTheAPI(t *testing.T) {
+// finish plays a game out, gives it up if it is a patience game still going, and checks how it ended.
+func finish(t *testing.T, base, key string, def gameDef, options map[string]any, seed string) {
+	t.Helper()
+	c := &client{t: t, base: base, key: key}
+	rng := rand.New(rand.NewSource(seedOf(seed))) //nolint:gosec // a repeatable choice of moves
+	limit := maxMoves
+	if patience[def.ID] {
+		limit = patienceMoves
+	}
+	room, pos := playOut(c, def, options, rng, limit)
+	if pos.Status == "active" && patience[def.ID] {
+		c.must(http.MethodPost, "/games/"+room+"/resign", map[string]any{"player_name": seatName(*pos.Impulse)}, nil)
+		c.must(http.MethodGet, "/games/"+room+"/state", nil, &pos)
+	}
+	if len(options) > 0 {
+		var info struct {
+			Game string `json:"game_def_id"`
+		}
+		c.must(http.MethodGet, "/games/"+room, nil, &info)
+		if !strings.HasPrefix(info.Game, def.ID+"~") {
+			t.Errorf("played as %q, not a game of %s with the options chosen", info.Game, def.ID)
+		}
+	}
+	if pos.Status != "finished" {
+		t.Fatalf("status %q after %d moves, want finished", pos.Status, pos.Seq)
+	}
+	if pos.EndReason == "" {
+		t.Fatalf("finished after %d moves with no reason given", pos.Seq)
+	}
+	var history []json.RawMessage
+	c.must(http.MethodGet, "/games/"+room+"/moves", nil, &history)
+	if len(history) != pos.Seq {
+		t.Fatalf("GET /moves lists %d moves, the state says %d", len(history), pos.Seq)
+	}
+}
+
+// setUp returns a server, a guest to play as, and the games it offers.
+func setUp(t *testing.T) (string, string, []gameDef) {
+	t.Helper()
 	base := newServer(t)
 	root := &client{t: t, base: base}
 	var guest struct {
@@ -188,7 +227,11 @@ func TestEveryGamePlaysToAFinishThroughTheAPI(t *testing.T) {
 	if len(defs) == 0 {
 		t.Fatal("GET /game-defs lists no games")
 	}
+	return base, guest.Key, defs
+}
 
+func TestEveryGamePlaysToAFinishThroughTheAPI(t *testing.T) {
+	base, key, defs := setUp(t)
 	seen := map[string]bool{}
 	for _, def := range defs {
 		// Short mode plays one game of each family, and leaves out the slow patience games.
@@ -196,29 +239,54 @@ func TestEveryGamePlaysToAFinishThroughTheAPI(t *testing.T) {
 			continue
 		}
 		seen[def.Family] = true
-		t.Run(def.ID, func(t *testing.T) {
-			c := &client{t: t, base: base, key: guest.Key}
-			rng := rand.New(rand.NewSource(seedOf(def.ID))) //nolint:gosec // a repeatable choice of moves
-			limit := maxMoves
-			if patience[def.ID] {
-				limit = patienceMoves
+		t.Run(def.ID, func(t *testing.T) { finish(t, base, key, def, nil, def.ID) })
+	}
+}
+
+// Every ready-made table a game's setup picker offers plays out too: their cults, neutral units and
+// independent Great Old Ones are chosen with the options a client sends when it creates a game.
+func TestEverySetupPresetPlaysToAFinishThroughTheAPI(t *testing.T) {
+	if testing.Short() {
+		t.Skip("whole games of every preset")
+	}
+	base, key, defs := setUp(t)
+	root := &client{t: t, base: base}
+	byID := map[string]gameDef{}
+	for _, def := range defs {
+		byID[def.ID] = def
+	}
+	played := map[string]bool{}
+	for _, def := range defs {
+		var full struct {
+			SetupCatalog bool `json:"setup_catalog"`
+		}
+		root.must(http.MethodGet, "/game-defs/"+def.ID, nil, &full)
+		if !full.SetupCatalog {
+			continue
+		}
+		var catalog struct {
+			Presets []struct {
+				ID      string         `json:"id"`
+				Game    string         `json:"game_def_id"`
+				Options map[string]any `json:"options"`
+			} `json:"presets"`
+		}
+		root.must(http.MethodGet, "/game-defs/"+def.ID+"/setup-catalog", nil, &catalog)
+		for _, preset := range catalog.Presets {
+			name := preset.Game + "/" + preset.ID
+			if played[name] {
+				continue
 			}
-			room, pos := playOut(c, def, rng, limit)
-			if pos.Status == "active" && patience[def.ID] {
-				c.must(http.MethodPost, "/games/"+room+"/resign", map[string]any{"player_name": seatName(*pos.Impulse)}, nil)
-				c.must(http.MethodGet, "/games/"+room+"/state", nil, &pos)
+			played[name] = true
+			game, ok := byID[preset.Game]
+			if !ok {
+				t.Errorf("preset %s names a game GET /game-defs does not list", name)
+				continue
 			}
-			if pos.Status != "finished" {
-				t.Fatalf("status %q after %d moves, want finished", pos.Status, pos.Seq)
-			}
-			if pos.EndReason == "" {
-				t.Fatalf("finished after %d moves with no reason given", pos.Seq)
-			}
-			var history []json.RawMessage
-			c.must(http.MethodGet, "/games/"+room+"/moves", nil, &history)
-			if len(history) != pos.Seq {
-				t.Fatalf("GET /moves lists %d moves, the state says %d", len(history), pos.Seq)
-			}
-		})
+			t.Run(name, func(t *testing.T) { finish(t, base, key, game, preset.Options, name) })
+		}
+	}
+	if len(played) == 0 {
+		t.Fatal("no game offers a preset, so this tested nothing")
 	}
 }
