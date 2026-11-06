@@ -4,6 +4,11 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.86.0 - 2026-11-06
+
+### Bingle Core 0.86.0
+- **For game authors: a move limit decided on captures.** A game definition's end at a move limit can now be won by whoever has more in a pool, such as stones captured, rather than more pieces on the board. With it, Blooms can be written as a definition. The new definition is checked against today's Blooms over many random games, and Blooms itself plays exactly as before.
+
 ## 0.85.0 - 2026-11-06
 
 ### Bingle Core 0.85.0

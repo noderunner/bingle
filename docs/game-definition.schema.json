@@ -372,6 +372,10 @@
         "piece": {
           "type": "string"
         },
+        "pool": {
+          "description": "Pool makes \"most\" compare each seat's reserve pool instead of its pieces on the board (Blooms' captures at the move limit).",
+          "type": "string"
+        },
         "tag": {
           "type": "string"
         },

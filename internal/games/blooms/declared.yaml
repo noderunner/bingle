@@ -1,0 +1,111 @@
+# yaml-language-server: $schema=../../../docs/game-definition.schema.json
+# Blooms declared (ADRs 0115-0117), step 1 of converting the Go ruleset
+# (docs/dsl.md, "Converting a Go ruleset"): only declared_test.go compiles
+# this, and plays it against the ruleset with tests/difftest. The server
+# still plays rules.go.
+id: blooms
+name: Blooms
+description: "Nick Bentley's colourful Go-like game on a hexagonal board: place one or two stones of different colours, and capture every enemy bloom you fence in."
+version: 0.5.0
+designers: [Nick Bentley]
+pie_rule: optional
+default_clock_minutes: 10
+rules:
+  - Blooms is played on a hexagonal board (5 cells per side here; 4, 6, 8 and 10 are variants). Warm (player 1) owns red and yellow stones, Cool (player 2) blue and black.
+  - A bloom is a connected group of stones of one colour (a lone stone counts). A bloom is fenced when no empty cell touches any of its stones.
+  - Player 1 starts by placing one stone of either of their colours. After that, on your turn you place one or two stones on empty cells; two stones must be of different colours. You may place just one.
+  - When your turn ends, you capture every fenced enemy bloom (removing it and counting its stones). Your own fenced blooms are not captured on your turn; they stay until the end of your opponent's turn, so a fenced bloom of yours can still be freed — or captured.
+  - 'The first player to capture the target number of enemy stones wins: 20 on this board (15 on base 4, 25 on base 6, 40 on base 8, 50 on base 10). Sacrificing stones to set up a bigger capture is the heart of the game.'
+  - 'Optional (chosen when the game is made): with the pie rule, the second player may swap sides instead of answering the opening stone — the players change seats and the first player answers their own opening from the second seat.'
+  - 'Interpretation: the game is drawn or decided on captures after 500 plies (1000 on base 8, 1500 on base 10).'
+guide:
+  tabs:
+    - {id: rules, title: Rules, file: rules.md}
+preview:
+  - {position: e5, piece: red, color: red}
+  - {position: f5, piece: red, color: red}
+  - {position: d6, piece: yellow, color: yellow}
+  - {position: g4, piece: yellow, color: yellow}
+  - {position: e4, piece: blue, color: blue}
+  - {position: f4, piece: blue, color: blue}
+  - {position: e6, piece: blue, color: blue}
+  - {position: d5, piece: black, color: black}
+  - {position: g5, piece: black, color: black}
+board:
+  generator: {type: hexhex, size: 5}
+seats:
+  - {seat: 1, color: red, colors: [red, yellow], label: Warm, blend: [red, yellow]}
+  - {seat: 2, color: blue, colors: [blue, black], label: Cool, blend: [black, blue]}
+pieces:
+  red: {label: Red stone, code: R, shape: disc, color: red}
+  yellow: {label: Yellow stone, code: Y, shape: disc, color: yellow}
+  blue: {label: Blue stone, code: B, shape: disc, color: blue}
+  black: {label: Black stone, code: K, shape: disc, color: black}
+reserves: {captured: 0}
+turn_order:
+  type: round-robin
+  seats: [1, 2]
+  # One or two stones a turn, of different colours; Warm's first turn is one.
+  turn:
+    - {actions: [place], min: 1, max: 2, distinct: piece}
+  opening:
+    plies: 1
+    turn:
+      - {actions: [place]}
+actions:
+  - {id: place, type: place, label: Place, pieces: [red, yellow, blue, black], source: supply}
+# Fenced enemy blooms are captured when the mover's turn ends.
+end_of_turn:
+  - {effect: remove-groups, condition: no-liberties, whose: opponents, count_in: captured, tint: fenced}
+win_condition:
+  type: rules
+  rules:
+    - {id: captures, type: pool, pool: captured, at_least: 20, reason: captures}
+    - {id: limit, type: end, when: [ply-limit], plies: 250, decide: {type: most, pool: captured}, reason: ply-limit}
+display:
+  tints:
+    fenced:
+      label: Fenced bloom
+      color: '#e8a898'
+      text: "A bloom with no empty cell beside it: its owner's opponent captures it when their turn ends."
+variants:
+  - id: blooms-4
+    name: Blooms (base 4)
+    patch:
+      default_clock_minutes: 5
+      board:
+        generator: {size: 4}
+      win_condition:
+        rules:
+          - {id: captures, type: pool, pool: captured, at_least: 15, reason: captures}
+          - {id: limit, type: end, when: [ply-limit], plies: 250, decide: {type: most, pool: captured}, reason: ply-limit}
+  - id: blooms-6
+    name: Blooms (base 6)
+    patch:
+      default_clock_minutes: 15
+      board:
+        generator: {size: 6}
+      win_condition:
+        rules:
+          - {id: captures, type: pool, pool: captured, at_least: 25, reason: captures}
+          - {id: limit, type: end, when: [ply-limit], plies: 250, decide: {type: most, pool: captured}, reason: ply-limit}
+  - id: blooms-8
+    name: Blooms (base 8)
+    patch:
+      default_clock_minutes: 25
+      board:
+        generator: {size: 8}
+      win_condition:
+        rules:
+          - {id: captures, type: pool, pool: captured, at_least: 40, reason: captures}
+          - {id: limit, type: end, when: [ply-limit], plies: 500, decide: {type: most, pool: captured}, reason: ply-limit}
+  - id: blooms-10
+    name: Blooms (base 10)
+    patch:
+      default_clock_minutes: 35
+      board:
+        generator: {size: 10}
+      win_condition:
+        rules:
+          - {id: captures, type: pool, pool: captured, at_least: 50, reason: captures}
+          - {id: limit, type: end, when: [ply-limit], plies: 750, decide: {type: most, pool: captured}, reason: ply-limit}

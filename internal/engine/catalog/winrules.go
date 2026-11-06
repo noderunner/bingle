@@ -188,6 +188,14 @@ func compileWinRules(cg *CompiledGame) error {
 				if err := checkFilter(i, r.Decide.Tag, r.Decide.Piece); err != nil {
 					return err
 				}
+				if p := r.Decide.Pool; p != "" {
+					if _, ok := def.Reserves[p]; !ok {
+						return fmt.Errorf("catalog: win rule %d decides by unknown pool %q", i, p)
+					}
+					if r.Decide.Tag != "" || r.Decide.Piece != "" {
+						return fmt.Errorf("catalog: win rule %d decides by a pool and by pieces at once", i)
+					}
+				}
 			default:
 				return fmt.Errorf("catalog: win rule %d has unknown decide type %q", i, r.Decide.Type)
 			}
