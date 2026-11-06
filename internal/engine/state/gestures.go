@@ -13,6 +13,8 @@ const (
 	GestureCount = "count" // choose how many pieces to pick up
 	// GestureAction is a single-click action with no parameters (pass).
 	GestureAction = "action"
+	// GestureCard chooses a card to play (ADR 0120).
+	GestureCard = "card"
 )
 
 // Gesture is one thing a player does in an interface to build a selection: a
@@ -29,6 +31,7 @@ type Gesture struct {
 //
 //	step        pos(from), pos(to)
 //	place       piece(type), pos(to)
+//	card-move   card(id), pos(from), pos(to); card(id) alone to spend it
 //	move-stack  pos(from), count(n), then pos(p) once per piece dropped on p
 //	            (so drops of 1,2 over squares d3,e3 are d3, e3, e3)
 func Gestures(game *catalog.CompiledGame, mv Selection) []Gesture {
@@ -58,6 +61,11 @@ func Gestures(game *catalog.CompiledGame, mv Selection) []Gesture {
 			steps = append(steps, Gesture{GesturePos, string(p)})
 		}
 		return steps
+	case catalog.ActionCardMove:
+		if mv.From == "" {
+			return []Gesture{{GestureCard, mv.Card}}
+		}
+		return []Gesture{{GestureCard, mv.Card}, {GesturePos, string(mv.From)}, {GesturePos, string(mv.To)}}
 	case catalog.ActionSlide:
 		steps := []Gesture{{GesturePos, string(mv.From)}, {GesturePos, string(mv.To)}}
 		if mv.Aim != "" {

@@ -258,6 +258,8 @@ func (c *rctx) validate(act catalog.ResolvedAction, mv Selection) (executor, err
 		// on by the player who opened. The session layer exchanges the seats'
 		// occupants when it records the move.
 		return func(ns *BoardState) []board.PositionID { return nil }, nil
+	case catalog.ActionCardMove:
+		return c.validateCardMove(act, mv)
 	case catalog.ActionPass:
 		if mv.Piece != "" || mv.From != "" || mv.To != "" || mv.Count != 0 || len(mv.Path) > 0 || len(mv.Drops) > 0 {
 			return nil, fmt.Errorf("state: a pass takes no parameters")
@@ -556,6 +558,8 @@ func legalSelections(game *catalog.CompiledGame, st *BoardState, seat int, limit
 			c.enumerateSlides(act, keep)
 		case catalog.ActionLeap:
 			c.enumerateLeaps(act, keep)
+		case catalog.ActionCardMove:
+			c.enumerateCardMoves(act, keep)
 		case catalog.ActionPass:
 			keep(act, Selection{Action: act.ID}, true)
 		case catalog.ActionSwap:

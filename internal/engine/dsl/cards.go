@@ -89,6 +89,9 @@ type CardDef struct {
 	Text    string   `json:"text,omitempty"`
 	Symbols []string `json:"symbols,omitempty"`
 	Tags    []string `json:"tags,omitempty"`
+	// Moves are the squares a piece may reach with the card, as [right,
+	// forward] offsets read through the moving seat's forward (ADR 0120).
+	Moves [][2]int `json:"moves,omitempty"`
 }
 
 // CardBackDef is the back of a card.

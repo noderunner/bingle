@@ -119,9 +119,13 @@ func evaluateRules(game *catalog.CompiledGame, ns *BoardState, rules []dsl.WinRu
 		case "absent":
 			// The named piece type has left the board: seat wins.
 			present := false
+			ofColor := ""
+			if def, ok := game.Seat(r.OfSeat); ok && r.OfSeat != 0 {
+				ofColor = def.Color
+			}
 			for _, stack := range ns.cells {
 				for _, o := range stack {
-					if o.Piece == r.Piece {
+					if o.Piece == r.Piece && (ofColor == "" || game.SideColor(o.Color) == ofColor) {
 						present = true
 					}
 				}

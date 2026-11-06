@@ -124,6 +124,9 @@ func compileWinRules(cg *CompiledGame) error {
 			if r.Seat == 0 {
 				return fmt.Errorf("catalog: win rule %d (absent) needs the seat that wins", i)
 			}
+			if _, ok := cg.Seat(r.OfSeat); r.OfSeat != 0 && !ok {
+				return fmt.Errorf("catalog: win rule %d (absent) counts the pieces of unknown seat %d", i, r.OfSeat)
+			}
 		case "pool":
 			if _, ok := def.Reserves[r.Pool]; !ok {
 				return fmt.Errorf("catalog: win rule %d references unknown pool %q", i, r.Pool)

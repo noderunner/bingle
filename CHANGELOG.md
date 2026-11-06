@@ -4,6 +4,11 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.88.0 - 2026-11-06
+
+### Bingle Core 0.88.0
+- **For game authors: move cards.** A card in a game definition can now show the squares a piece may reach, read from the point of view of the player holding it, and playing it moves a piece and passes the card on, as Onitama's Move cards do. A win can also count one side's pieces of a type both sides have, such as a Master. Games already in the catalog play as before. See *card-move* in the definition guide.
+
 ## 0.87.0 - 2026-11-06
 
 ### Bingle Core 0.87.0

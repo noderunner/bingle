@@ -345,6 +345,26 @@ func buildActionSpace(game *catalog.CompiledGame) *ActionSpace {
 			}
 		case catalog.ActionPass, catalog.ActionSwap, catalog.ActionDone:
 			add(Selection{Action: act.ID})
+		case catalog.ActionCardMove:
+			// Every card, from every square, by each of its moves for each
+			// seat, and spent without a move.
+			for _, id := range cardInstances(game) {
+				t := game.Cards.Type(id)
+				add(Selection{Action: act.ID, Card: id})
+				for _, from := range g.Positions() {
+					fc, _ := g.Coord(from)
+					for _, sd := range game.Definition.Seats {
+						f := game.Forward[sd.Seat]
+						right := [2]int{-f[1], f[0]}
+						for _, m := range t.Moves {
+							dx, dy := m[0]*right[0]+m[1]*f[0], m[0]*right[1]+m[1]*f[1]
+							if to, ok := g.At(board.Coord{X: fc.X + dx, Y: fc.Y + dy}); ok {
+								add(Selection{Action: act.ID, Card: id, From: from, To: to})
+							}
+						}
+					}
+				}
+			}
 		case catalog.ActionJump:
 			if act.Chain {
 				return as // dynamic
@@ -460,6 +480,20 @@ func slideDirUnion(game *catalog.CompiledGame, per map[int][]board.Direction) []
 				out = append(out, d)
 			}
 		}
+	}
+	return out
+}
+
+// cardInstances is every card of game, deck by deck in name order.
+func cardInstances(game *catalog.CompiledGame) []string {
+	var names []string
+	for name := range game.Cards.Instances {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	var out []string
+	for _, name := range names {
+		out = append(out, game.Cards.Instances[name]...)
 	}
 	return out
 }

@@ -21,6 +21,8 @@ type CardType struct {
 	Text    string
 	Symbols []string
 	Tags    []string
+	// Moves are a move card's [right, forward] offsets (ADR 0120).
+	Moves [][2]int
 }
 
 // HasTag reports whether the card type carries tag.
@@ -188,7 +190,7 @@ func compileCards(cg *CompiledGame) error {
 			if label == "" {
 				label = c.ID
 			}
-			t := &CardType{ID: c.ID, Deck: name, Suit: c.Suit, Rank: c.ID, Label: label, Value: c.Value, Text: c.Text, Symbols: c.Symbols, Tags: c.Tags}
+			t := &CardType{ID: c.ID, Deck: name, Suit: c.Suit, Rank: c.ID, Label: label, Value: c.Value, Text: c.Text, Symbols: c.Symbols, Tags: c.Tags, Moves: c.Moves}
 			if err := add(t, c.Count); err != nil {
 				return err
 			}

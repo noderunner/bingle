@@ -1,6 +1,6 @@
 # 0120. Move cards
 
-Status: proposed (2026-11-06). It is addition E of the DSL coverage audit (`docs/history/dsl-coverage-audit-plan.md`
+Status: accepted (2026-11-06). It is addition E of the DSL coverage audit (`docs/history/dsl-coverage-audit-plan.md`
 on `more-plans`), after [ADR 0119](0119-a-seeded-deal-at-the-start.md)'s deal at the start.
 
 ## Context
@@ -59,16 +59,17 @@ actions:
   on as if it had been used. Without `stuck` the seat simply has no selection then, and the turn order's rules for a
   stuck seat apply.
 - A gesture for a card is new, `card`: the page shows the mover's hand, a card chosen first, then the piece and the
-  square, as Onitama's page does today.
+  square, as Onitama's page does today. The page learns it when a declared game with move cards is first played, at
+  Onitama's conversion, since until then no shipped game declares one.
 
 ### A piece of one seat's gone
 
 Onitama is won by capturing the other Master, and both Masters are the same piece type. The `absent` win rule fires
-when a piece type has left the board altogether; it gains **`of`**, a seat: the rule fires when no piece of that type
+when a piece type has left the board altogether; it gains **`of_seat`** (`of` was taken: connect rules list regions under it), a seat: the rule fires when no piece of that type
 **in that seat's colours** is left.
 
 ```yaml
-- {id: stone-red, type: absent, piece: master, of: 2, seat: 1, reason: master-captured}
+- {id: stone-red, type: absent, piece: master, of_seat: 2, seat: 1, reason: master-captured}
 ```
 
 ### What stays as it is
@@ -82,6 +83,6 @@ when a piece type has left the board altogether; it gains **`of`**, a seat: the 
   two `absent` and two `reach` rules and a ply-limit. Its declaration goes beside the ruleset under the harness, as
   Blooms' did, after its ruleset first deals through `cards.RNG` (ADR 0119).
 - The schema, `docs/dsl.md`, the compiler (moves on a card without a `forward` on every seat, a `hand` that is not a
-  seat zone or a `pass_on` that is not a table zone, `of` naming an unknown seat), the selection (`card`), notation and
+  seat zone or a `pass_on` that is not a table zone, `of_seat` naming an unknown seat), the selection (`card`), notation and
   gestures, the engine and the page's card table for declared games change together.
 - Declared games without `card-move` play as now; the harness holds every shipped game to it.
