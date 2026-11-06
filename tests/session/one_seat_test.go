@@ -45,16 +45,13 @@ func TestOneSeat_StartsAtOnceAndPlays(t *testing.T) {
 	if snap.ImpulseSeat == nil || *snap.ImpulseSeat != 1 {
 		t.Fatalf("turn %v", snap.ImpulseSeat)
 	}
-	// Moves that show a new card each: they can be taken back all the same.
-	playMove(t, m, res.RoomCode, "Ana", "draw")
-	playMove(t, m, res.RoomCode, "Ana", "draw")
-	for i := 0; i < 2; i++ {
-		if _, err := m.Undo(ctx, res.RoomCode, "Ana"); err != nil {
-			t.Fatalf("undo %d: %v", i, err)
-		}
-	}
 	if _, err := m.Undo(ctx, res.RoomCode, "Ana"); !errors.Is(err, session.ErrNothingToUndo) {
 		t.Errorf("undo with nothing to take back: %v", err)
+	}
+	// A draw shows a card nobody had seen, so it stands (ADR 0114, narrowing ADR 0086).
+	playMove(t, m, res.RoomCode, "Ana", "draw")
+	if _, err := m.Undo(ctx, res.RoomCode, "Ana"); !errors.Is(err, session.ErrCannotUndo) {
+		t.Errorf("undo of a draw: %v, want it to stand", err)
 	}
 	// Giving up ends the game with nobody winning.
 	snap, err = m.Resign(ctx, res.RoomCode, "Ana")
