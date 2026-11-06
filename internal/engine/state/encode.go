@@ -343,7 +343,7 @@ func buildActionSpace(game *catalog.CompiledGame) *ActionSpace {
 					}
 				}
 			}
-		case catalog.ActionPass, catalog.ActionSwap:
+		case catalog.ActionPass, catalog.ActionSwap, catalog.ActionDone:
 			add(Selection{Action: act.ID})
 		case catalog.ActionJump:
 			if act.Chain {

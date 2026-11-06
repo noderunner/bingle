@@ -729,6 +729,13 @@
         },
         "plies": {
           "type": "integer"
+        },
+        "turn": {
+          "description": "Turn, if set, is the turn during the opening's plies, in place of turn_order.turn.",
+          "items": {
+            "$ref": "#/$defs/TurnPartDef"
+          },
+          "type": "array"
         }
       },
       "type": "object"
@@ -1112,8 +1119,40 @@
           },
           "type": "array"
         },
+        "turn": {
+          "description": "Turn, if set, lists the parts of a turn of several selections (ADR 0115); without it a turn is one selection of any action.",
+          "items": {
+            "$ref": "#/$defs/TurnPartDef"
+          },
+          "type": "array"
+        },
         "type": {
           "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "TurnPartDef": {
+      "additionalProperties": false,
+      "description": "TurnPartDef is one part of a turn: up to Max selections of its Actions, at least Min of them. A player moves on to the next part by choosing one of its actions once this part has its Min, and stops with \"done\" once every part left has its Min.",
+      "properties": {
+        "actions": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "distinct": {
+          "description": "Distinct is \"piece\": no two selections of the part place or move the same piece type.",
+          "type": "string"
+        },
+        "max": {
+          "description": "Max is how many it may have (default Min, or 1 when Min is 0).",
+          "type": "integer"
+        },
+        "min": {
+          "description": "Min is how many selections the part must have (default 1; 0 makes it optional).",
+          "type": "integer"
         }
       },
       "type": "object"

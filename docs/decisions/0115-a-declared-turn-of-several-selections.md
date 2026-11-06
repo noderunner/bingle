@@ -1,6 +1,6 @@
 # 0115. A declared turn of several selections
 
-Status: proposed (2026-11-06). It is addition A of the DSL coverage audit (`docs/history/dsl-coverage-audit-plan.md`
+Status: accepted (2026-11-06); implemented in Core 0.83.0. It is addition A of the DSL coverage audit (`docs/history/dsl-coverage-audit-plan.md`
 on `more-plans`) and the DSL step of [ADR 0114](0114-impulses-selections-moves-and-gestures.md)'s second phase.
 
 ## Context

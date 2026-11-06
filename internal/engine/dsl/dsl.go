@@ -408,6 +408,25 @@ type TurnOrderDef struct {
 	// move, the turn stays where it would have gone and an end rule with the
 	// "no-legal-moves" trigger finishes the game.
 	PassWhenStuck bool `json:"pass_when_stuck,omitempty"`
+	// Turn, if set, lists the parts of a turn of several selections (ADR
+	// 0115); without it a turn is one selection of any action.
+	Turn []TurnPartDef `json:"turn,omitempty"`
+}
+
+// TurnPartDef is one part of a turn: up to Max selections of its Actions, at
+// least Min of them. A player moves on to the next part by choosing one of its
+// actions once this part has its Min, and stops with "done" once every part
+// left has its Min.
+type TurnPartDef struct {
+	Actions []string `json:"actions"`
+	// Min is how many selections the part must have (default 1; 0 makes it
+	// optional).
+	Min *int `json:"min,omitempty"`
+	// Max is how many it may have (default Min, or 1 when Min is 0).
+	Max int `json:"max,omitempty"`
+	// Distinct is "piece": no two selections of the part place or move the
+	// same piece type.
+	Distinct string `json:"distinct,omitempty"`
 }
 
 // OpeningDef restricts the game's first Plies plies: only the listed
@@ -420,6 +439,9 @@ type OpeningDef struct {
 	// Owner is "mover" (default) or "opponent": whose color — and whose
 	// reserve — a piece placed during the opening comes from.
 	Owner string `json:"owner,omitempty"`
+	// Turn, if set, is the turn during the opening's plies, in place of
+	// turn_order.turn.
+	Turn []TurnPartDef `json:"turn,omitempty"`
 }
 
 // ActionDef declares one kind of action a player may take on their turn.

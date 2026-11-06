@@ -67,5 +67,11 @@ func Validate(game *catalog.CompiledGame, st *BoardState) error {
 	if rs, ok := RulesetOf(game); ok {
 		return rs.Validate(game, st)
 	}
+	if t := st.turn; t != nil {
+		parts := turnParts(game, st)
+		if parts == nil || t.Part < 0 || t.Part >= len(parts) || t.Made < 1 || t.Made > parts[t.Part].Max {
+			return fmt.Errorf("state: a turn in progress at part %d with %d selections does not fit the game's turn", t.Part+1, t.Made)
+		}
+	}
 	return nil
 }

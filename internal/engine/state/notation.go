@@ -41,6 +41,8 @@ func FormatMove(game *catalog.CompiledGame, mv Selection) string {
 	switch act.Type {
 	case catalog.ActionPass:
 		return "pass"
+	case catalog.ActionDone:
+		return "done"
 	case catalog.ActionSwap:
 		return "swap"
 	case catalog.ActionPlace:
@@ -183,6 +185,13 @@ func ParseMove(game *catalog.CompiledGame, text string) (Selection, error) {
 			}
 		}
 		return Selection{}, fmt.Errorf("state: this game has no swap action")
+	}
+
+	if strings.EqualFold(s, catalog.ActionDone) {
+		if _, ok := game.Action(catalog.ActionDone); ok {
+			return Selection{Action: catalog.ActionDone}, nil
+		}
+		return Selection{}, fmt.Errorf("state: this game's turn is one selection: there is nothing to end with done")
 	}
 
 	if strings.EqualFold(s, "pass") {

@@ -4,6 +4,7 @@ import (
 	crand "crypto/rand"
 	"encoding/binary"
 	"fmt"
+	"slices"
 
 	"github.com/noderunner/bingle/internal/engine/board"
 	"github.com/noderunner/bingle/internal/engine/callback"
@@ -188,6 +189,14 @@ func (c *rctx) validate(act catalog.ResolvedAction, mv Selection) (executor, err
 			return nil, fmt.Errorf("state: a pass takes no parameters")
 		}
 		return func(*BoardState) []board.PositionID { return nil }, nil
+	case catalog.ActionDone:
+		if mv.Piece != "" || mv.From != "" || mv.To != "" || mv.Count != 0 || len(mv.Path) > 0 || len(mv.Drops) > 0 {
+			return nil, fmt.Errorf("state: done takes no parameters")
+		}
+		if parts := turnParts(c.game, c.st); parts == nil || !canStop(parts, c.st) {
+			return nil, fmt.Errorf("state: the turn cannot stop here: it needs more selections")
+		}
+		return func(*BoardState) []board.PositionID { return nil }, nil
 	default:
 		return nil, fmt.Errorf("state: unsupported action type %q", act.Type)
 	}
@@ -265,6 +274,15 @@ func Apply(game *catalog.CompiledGame, st *BoardState, seat int, mv Selection) (
 	if err := c.openingAllows(act, mv.Piece); err != nil {
 		return nil, err
 	}
+	parts := turnParts(game, st)
+	part, piece := 0, ""
+	if parts != nil && act.Type != catalog.ActionDone {
+		piece = pieceOf(st, mv)
+		var ok bool
+		if part, ok = partFor(parts, st, act, piece); !ok {
+			return nil, fmt.Errorf("state: %q has no place in the turn at this point", act.ID)
+		}
+	}
 
 	exec, err := c.validate(act, mv)
 	if err != nil {
@@ -283,14 +301,41 @@ func Apply(game *catalog.CompiledGame, st *BoardState, seat int, mv Selection) (
 		first := captures[0]
 		captured = &first
 	}
-	newState.ply++
+	// A turn of several selections goes on until it ends (ADR 0115); the ply,
+	// ko's position and passes count whole turns.
+	endsTurn, start := true, ""
 	if game.KeepsHistory {
-		newState.prev = positionHash(game, st)
+		// ko looks at the position before the opponent's last turn.
+		if st.turn != nil {
+			start = st.turn.Start
+		} else {
+			start = positionHash(game, st)
+		}
 	}
-	if act.Type == catalog.ActionPass {
-		newState.passes = st.passes + 1
-	} else {
-		newState.passes = 0
+	if parts != nil && act.Type != catalog.ActionDone && act.Type != catalog.ActionPass && act.Type != catalog.ActionSwap {
+		prog := progress(st)
+		prog.Start = start
+		if part > prog.Part {
+			prog.Part, prog.Made, prog.Pieces = part, 0, nil
+		}
+		prog.Made++
+		if parts[part].DistinctPiece && piece != "" {
+			prog.Pieces = append(slices.Clone(prog.Pieces), piece)
+		}
+		newState.turn = &prog
+		endsTurn = (part == len(parts)-1 && prog.Made >= parts[part].Max) || !goesOn(game, newState, seat)
+	}
+	if endsTurn {
+		newState.turn = nil
+		newState.ply++
+		if game.KeepsHistory {
+			newState.prev = start
+		}
+		if act.Type == catalog.ActionPass {
+			newState.passes = st.passes + 1
+		} else {
+			newState.passes = 0
+		}
 	}
 
 	postCtx := ctx
@@ -303,12 +348,14 @@ func Apply(game *catalog.CompiledGame, st *BoardState, seat int, mv Selection) (
 	if err != nil {
 		return nil, err
 	}
-	if act.Type == catalog.ActionSwap {
+	if !endsTurn {
+		nextSeat = seat // the turn goes on, and the impulse with it
+	} else if act.Type == catalog.ActionSwap {
 		// The pie rule: the players change seats, so the turn stays with the
 		// mover's seat — the player who opened holds it now and replies.
 		nextSeat = seat
 	}
-	if game.Definition.TurnOrder.PassWhenStuck {
+	if endsTurn && game.Definition.TurnOrder.PassWhenStuck {
 		nextSeat = skipStuckSeats(game, newState, nextSeat)
 	}
 
@@ -385,9 +432,15 @@ func legalSelections(game *catalog.CompiledGame, st *BoardState, seat int, limit
 	// keep appends mv if it is legal. wellFormed reports that the caller
 	// built mv so that validation cannot fail (see enumerateStackMoves);
 	// everything else is validated by the same code Apply uses.
+	parts := turnParts(game, st)
 	keep := func(act catalog.ResolvedAction, mv Selection, wellFormed bool) {
 		if c.openingAllows(act, mv.Piece) != nil {
 			return
+		}
+		if parts != nil && act.Type != catalog.ActionDone {
+			if _, ok := partFor(parts, st, act, pieceOf(st, mv)); !ok {
+				return
+			}
 		}
 		if !wellFormed {
 			if _, err := c.validate(act, mv); err != nil {
@@ -423,6 +476,10 @@ func legalSelections(game *catalog.CompiledGame, st *BoardState, seat int, limit
 		case catalog.ActionSwap:
 			if act.SwapPlies[c.st.ply] {
 				keep(act, Selection{Action: act.ID}, false)
+			}
+		case catalog.ActionDone:
+			if parts != nil && canStop(parts, st) {
+				keep(act, Selection{Action: act.ID}, true)
 			}
 		}
 	}
@@ -467,6 +524,9 @@ func ImpulseAfter(game *catalog.CompiledGame, st *BoardState, seat int) (int, er
 			return next, nil
 		}
 		return seat, nil
+	}
+	if st.turn != nil {
+		return seat, nil // a turn of several selections is still going
 	}
 	next, err := nextImpulseSeat(game, seat)
 	if err != nil {
