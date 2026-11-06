@@ -12,7 +12,7 @@ type Card struct {
 }
 
 // cards are the sixteen Move cards of the base game.
-var cards = []Card{
+var moveCards = []Card{
 	{"tiger", "Tiger", [][2]int{{0, 2}, {0, -1}}, "blue"},
 	{"dragon", "Dragon", [][2]int{{-2, 1}, {2, 1}, {-1, -1}, {1, -1}}, "red"},
 	{"frog", "Frog", [][2]int{{-2, 0}, {-1, 1}, {1, -1}}, "red"},
@@ -32,7 +32,7 @@ var cards = []Card{
 }
 
 func cardByID(id string) (Card, bool) {
-	for _, c := range cards {
+	for _, c := range moveCards {
 		if c.ID == id {
 			return c, true
 		}

@@ -4,6 +4,14 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.88.1 - 2026-11-06
+
+### Bingle Core 0.88.1
+- Nothing changes in play. Behind the scenes, Onitama now has a game definition of its own, which is checked against today's Onitama over many random games before it takes over.
+
+### Onitama 0.1.2
+- **The deal is shuffled the way every card game's is.** Which five cards come up is still random, and games in progress keep the cards they were dealt.
+
 ## 0.88.0 - 2026-11-06
 
 ### Bingle Core 0.88.0
