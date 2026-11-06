@@ -78,7 +78,7 @@ func TestHintOnlyAgainstBotsOrAfterTheGame(t *testing.T) {
 	// After the game (resignation) hints work for earlier positions.
 	moveNotation(t, baseURL, room, "Alice", "a5")
 	doJSON(t, "POST", baseURL+"/api/games/"+room+"/resign", map[string]any{"player_name": "Bob"}, nil)
-	if code := doJSON(t, "POST", baseURL+"/api/games/"+room+"/hint", map[string]any{"player_name": "Alice", "at_seq": 0, "bot": "random"}, &hint); code != 200 {
+	if code := doJSON(t, "POST", baseURL+"/api/games/"+room+"/hint", map[string]any{"player_name": "Alice", "at_ply": 0, "bot": "random"}, &hint); code != 200 {
 		t.Errorf("hint for an earlier position of a finished game: %d", code)
 	}
 }

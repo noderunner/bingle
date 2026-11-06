@@ -194,7 +194,7 @@ export const api = {
 	voiceSignal: (code, name, to, kind, data) => call(`/api/games/${enc(code)}/voice/signal`, { method: "POST", body: { player_name: name, to, kind, data } }),
 	state: (code, atSeq, name) => {
 		const q = [];
-		if (atSeq !== undefined && atSeq !== null) q.push(`at_seq=${atSeq}`);
+		if (atSeq !== undefined && atSeq !== null) q.push(`at_ply=${atSeq}`);
 		if (name) q.push(`player_name=${enc(name)}`);
 		return call(`/api/games/${enc(code)}/state${q.length ? "?" + q.join("&") : ""}`);
 	},
@@ -228,14 +228,14 @@ export const api = {
 	hint: (code, name, atSeq, moves) =>
 		call(`/api/games/${enc(code)}/hint`, {
 			method: "POST",
-			body: { player_name: name, at_seq: atSeq === undefined || atSeq === null ? undefined : atSeq, moves: moves || [] },
+			body: { player_name: name, at_ply: atSeq === undefined || atSeq === null ? undefined : atSeq, moves: moves || [] },
 		}),
 	draw: (code, name, action) =>
 		call(`/api/games/${enc(code)}/draw`, { method: "POST", body: { player_name: name, action } }),
 	simulate: (code, moves, atSeq) =>
 		call(`/api/games/${enc(code)}/simulate`, {
 			method: "POST",
-			body: atSeq === undefined || atSeq === null ? { moves } : { moves, at_seq: atSeq },
+			body: atSeq === undefined || atSeq === null ? { moves } : { moves, at_ply: atSeq },
 		}),
 };
 

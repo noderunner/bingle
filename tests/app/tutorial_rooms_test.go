@@ -125,7 +125,8 @@ func TestTutorials_TheRoomPlaysTheScript(t *testing.T) {
 	}
 	var moves []struct{ Notation string }
 	doJSON(t, "GET", base+"/api/games/"+room+"/moves", nil, &moves)
-	if len(moves) != 9 || moves[8].Notation != "done" {
+	// A move is an impulse, its selections joined (ADR 0114): Blooms' turns.
+	if len(moves) != 5 || moves[4].Notation != "red@a5; done" {
 		t.Fatalf("the moves played: %+v", moves)
 	}
 }

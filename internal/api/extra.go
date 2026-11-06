@@ -316,8 +316,9 @@ func (h *handlers) handleDraw(w http.ResponseWriter, r *http.Request) {
 
 // simulateRequest is POST /games/{code}/simulate's body.
 type simulateRequest struct {
-	// AtSeq starts from the position after that move; omitted = current.
-	AtSeq *int `json:"at_seq"`
+	// AtPly starts from the position after that many moves (impulses);
+	// omitted = current.
+	AtPly *int `json:"at_ply"`
 	// Moves are applied in order, in the game's notation.
 	Moves []string `json:"moves"`
 }
@@ -351,7 +352,7 @@ func (h *handlers) handleSimulate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sim, err := h.mgr.Simulate(r.Context(), code, req.AtSeq, req.Moves)
+	sim, err := h.mgr.Simulate(r.Context(), code, req.AtPly, req.Moves)
 	if err != nil {
 		writeError(w, err)
 		return
@@ -447,9 +448,9 @@ func (h *handlers) handleObserve(w http.ResponseWriter, r *http.Request) {
 // hintRequest is POST /games/{code}/hint's body.
 type hintRequest struct {
 	PlayerName string `json:"player_name"`
-	// AtSeq and Moves pick the position: after that move (default: now),
+	// AtPly and Moves pick the position: after that many moves (default: now),
 	// then the given variation in notation.
-	AtSeq *int     `json:"at_seq"`
+	AtPly *int     `json:"at_ply"`
 	Moves []string `json:"moves"`
 	// Bot names the bot to ask (default mcts).
 	Bot string `json:"bot"`
@@ -491,7 +492,7 @@ func (h *handlers) handleHint(w http.ResponseWriter, r *http.Request) {
 		writeError(w, fmt.Errorf("api: at most %d moves may be simulated at once", maxSimulatedMoves))
 		return
 	}
-	hint, err := h.mgr.Hint(r.Context(), code, req.PlayerName, req.AtSeq, req.Moves, req.Bot)
+	hint, err := h.mgr.Hint(r.Context(), code, req.PlayerName, req.AtPly, req.Moves, req.Bot)
 	if err != nil {
 		writeError(w, err)
 		return

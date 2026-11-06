@@ -509,7 +509,8 @@ type UnfinishedGame struct {
 	Status      string
 	Lobby       bool
 	ImpulseSeat *int
-	MoveSeq     int
+	// MoveSeq is the moves played: the game's ply (ADR 0114).
+	MoveSeq int
 	// Seated is how many of the game's seats hold a player or a bot.
 	Seated    int
 	UpdatedAt string
@@ -524,7 +525,7 @@ func (s *Store) ListUnfinishedGames(ctx context.Context, limit int) ([]Unfinishe
 		limit = 50
 	}
 	rows, err := s.query(ctx, "ListUnfinishedGames",
-		`SELECT g.id, g.room_code, g.game_def_id, g.status, g.lobby, g.rated, g.impulse_seat, g.move_seq, g.updated_at,
+		`SELECT g.id, g.room_code, g.game_def_id, g.status, g.lobby, g.rated, g.impulse_seat, g.ply, g.updated_at,
 		        (SELECT COUNT(*) FROM players p WHERE p.game_id = g.id)
 		 FROM games g WHERE g.status != 'finished' AND g.tutorial = ''
 		 ORDER BY g.updated_at DESC LIMIT ?`, limit)

@@ -541,12 +541,8 @@ func TestWebCthulhuWars_ABattleIsPlayedOnTheMapAndAgainFromTheHistory(t *testing
 	if got := evalString(t, ctx, `document.querySelector("#battle-stage .bt-title").textContent`); got != "Battle in Asia" {
 		t.Errorf("the banner says %q", got)
 	}
-	if n := evalInt(t, ctx, `document.querySelectorAll('#battle-stage .bt-side[data-seat="1"] .bt-unit').length`); n != 5 {
-		t.Errorf("%d units on the attacker's side, want 5", n)
-	}
-	if n := evalInt(t, ctx, `document.querySelectorAll('#battle-stage .bt-side[data-seat="2"] .bt-unit').length`); n != 5 {
-		t.Errorf("%d units on the defender's side, want 5", n)
-	}
+	// The sides fill in as the stage opens.
+	waitJS(t, ctx, "five units a side", `document.querySelectorAll('#battle-stage .bt-side[data-seat="1"] .bt-unit').length === 5 && document.querySelectorAll('#battle-stage .bt-side[data-seat="2"] .bt-unit').length === 5`, 5*time.Second)
 	// The map is looked at closely, around the area: its copy, not the map itself.
 	waitJS(t, ctx, "the zoom", `(function () {
 		var a = document.querySelector("#battle-stage .bt-map").getAttribute("viewBox").split(" ").map(Number);
@@ -602,7 +598,12 @@ func TestWebCthulhuWars_ABattleIsPlayedOnTheMapAndAgainFromTheHistory(t *testing
 	waitJS(t, ctx, "the history", `document.getElementById("history-notation") !== null`, 5*time.Second)
 	clickSel(t, ctx, "#history-notation")
 	waitJS(t, ctx, "the moves", `document.querySelector("#move-list .mv") !== null`, 5*time.Second)
-	clickSel(t, ctx, `#move-list .mv[data-seq="2"]`)
+	// The move that declared the battle (a move is one impulse, ADR 0114).
+	battle := evalString(t, ctx, `(function () { var b = [...document.querySelectorAll("#move-list .mv")].find(function (x) { return x.textContent.indexOf("battle") >= 0; }); if (b) b.click(); return b ? b.dataset.seq : "none"; })()`)
+	var battleSeq int
+	if _, err := fmt.Sscan(battle, &battleSeq); err != nil {
+		t.Fatalf("no battle in the move list: %q", battle)
+	}
 	waitJS(t, ctx, "the battle again", `document.getElementById("battle-stage") !== null`, 15*time.Second)
 	waitJS(t, ctx, "the dice again", `document.querySelectorAll('#battle-stage .bt-die.landed').length > 0`, 15*time.Second)
 	waitJS(t, ctx, "the Xs again", `document.querySelectorAll("#battle-stage .bt-unit.dead .bt-x").length > 0`, 20*time.Second)
@@ -615,7 +616,7 @@ func TestWebCthulhuWars_ABattleIsPlayedOnTheMapAndAgainFromTheHistory(t *testing
 	waitJS(t, ctx, "the skip", `document.getElementById("battle-stage") === null`, 5*time.Second)
 	// Another move of the same battle stays quiet after a Skip. A move outside the battle and back
 	// starts it over, and going elsewhere stops it.
-	clickSel(t, ctx, `#move-list .mv[data-seq="3"]`)
+	clickSel(t, ctx, fmt.Sprintf(`#move-list .mv[data-seq="%d"]`, battleSeq+1))
 	time.Sleep(400 * time.Millisecond)
 	if evalBool(t, ctx, `document.getElementById("battle-stage") !== null`) {
 		t.Error("another move of the same battle started it over")
@@ -623,13 +624,13 @@ func TestWebCthulhuWars_ABattleIsPlayedOnTheMapAndAgainFromTheHistory(t *testing
 	clickSel(t, ctx, "#hist-first")
 	waitJS(t, ctx, "the first position", `document.getElementById("hist-first").disabled`, 10*time.Second)
 	time.Sleep(200 * time.Millisecond)
-	clickSel(t, ctx, `#move-list .mv[data-seq="2"]`)
+	clickSel(t, ctx, fmt.Sprintf(`#move-list .mv[data-seq="%d"]`, battleSeq))
 	waitJS(t, ctx, "the battle a third time", `document.getElementById("battle-stage") !== null`, 15*time.Second)
 	// Taken down in the middle of its zoom, the show leaves nothing behind to hold up the next one.
 	clickSel(t, ctx, "#hist-first")
 	waitJS(t, ctx, "the show stopped", `document.getElementById("battle-stage") === null`, 10*time.Second)
 	time.Sleep(200 * time.Millisecond)
-	clickSel(t, ctx, `#move-list .mv[data-seq="2"]`)
+	clickSel(t, ctx, fmt.Sprintf(`#move-list .mv[data-seq="%d"]`, battleSeq))
 	waitJS(t, ctx, "the battle a fourth time", `document.getElementById("battle-stage") !== null`, 15*time.Second)
 	waitJS(t, ctx, "its dice", `document.querySelectorAll('#battle-stage .bt-die.landed').length > 0`, 15*time.Second)
 	mu.Lock()

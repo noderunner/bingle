@@ -395,7 +395,7 @@ func (m *Manager) takeOver(ctx context.Context, game store.Game, compiled *catal
 		clock.drop(p.Seat)
 		restart = restart || (game.ImpulseSeat != nil && *game.ImpulseSeat == p.Seat)
 		takeovers = append(takeovers, store.SeatTakeover{
-			Replaced: store.SeatReplacement{Seat: p.Seat, Name: p.Name, PrincipalID: p.PrincipalID, Reason: reason, MoveSeq: game.MoveSeq},
+			Replaced: store.SeatReplacement{Seat: p.Seat, Name: p.Name, PrincipalID: p.PrincipalID, Reason: reason, MoveSeq: game.Ply},
 			BotName:  name, Bot: bot.ID(),
 		})
 	}

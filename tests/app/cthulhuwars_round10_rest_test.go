@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -363,7 +364,13 @@ func TestAutoPlayTimeoutPlaysTheTurnOfAPersonWhoTookTooLong(t *testing.T) {
 	}
 	var moves []move
 	doJSON(t, "GET", base+"/api/games/"+room+"/moves", nil, &moves)
-	played := moves[len(before):]
+	// A move is an impulse (ADR 0114): the bot may finish one Alice began, which
+	// is then the last of those before, now tagged.
+	start := len(before)
+	if start > 0 && moves[start-1].Seat == 1 && moves[start-1].AutoPlay {
+		start--
+	}
+	played := moves[start:]
 	if len(played) == 0 || played[0].Seat != 1 || !played[0].AutoPlay {
 		t.Fatalf("the bot's moves: %+v", played)
 	}
@@ -451,7 +458,9 @@ func TestABotThatIsTheFirstPlayerChoosesTheDirection(t *testing.T) {
 			}
 			time.Sleep(100 * time.Millisecond)
 		}
-		if len(moves) == 0 || moves[0].Seat != 1 || (moves[0].Notation != "cw" && moves[0].Notation != "ccw") {
+		// The direction is the first selection of Great Cthulhu's first move (ADR 0114).
+		direction := len(moves) > 0 && (moves[0].Notation == "cw" || moves[0].Notation == "ccw" || strings.HasPrefix(moves[0].Notation, "cw; ") || strings.HasPrefix(moves[0].Notation, "ccw; "))
+		if !direction || moves[0].Seat != 1 {
 			t.Fatalf("%s: the first move is %+v, want Great Cthulhu's choice of direction", kind, moves)
 		}
 	}

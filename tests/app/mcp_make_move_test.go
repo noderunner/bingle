@@ -283,7 +283,7 @@ func TestMCPMakeMove_UnknownRoomCode_IsToolLevelError(t *testing.T) {
 // get_moves' happy path, mirroring
 // TestGetMoves_AfterThreeMoves_ReturnsExactlyThreeInAscendingSeq: after 3
 // moves submitted via REST (both surfaces share the same persisted history,
-// per docs/history/plan.md section 6.10), get_moves with no since_seq returns an
+// per docs/history/plan.md section 6.10), get_moves with no since_ply returns an
 // array of exactly those 3 entries, seq 1/2/3 in ascending order, each
 // matching what was actually submitted.
 func TestMCPGetMoves_AfterThreeMoves_ReturnsExactlyThreeInAscendingSeq(t *testing.T) {
@@ -381,7 +381,7 @@ func TestMCPGetMoves_MixedRESTAndMCPMoves_SharedHistory(t *testing.T) {
 }
 
 // TestMCPGetMoves_SinceLastSeq_ReturnsEmptyArrayNotError covers get_moves
-// with since_seq set to the last move's seq: not an error, just an empty
+// with since_ply set to the last move's seq: not an error, just an empty
 // array — mirroring TestGetMoves_SinceSeqBeyondLast_ReturnsEmptyArray's
 // "empty is not an error" assertion (here using the exact last seq rather
 // than a seq beyond it, to also confirm the boundary itself excludes that
@@ -395,17 +395,17 @@ func TestMCPGetMoves_SinceLastSeq_ReturnsEmptyArrayNotError(t *testing.T) {
 	c := newMCPClient(t, baseURL)
 	res := callTool(t, c, "get_moves", map[string]any{
 		"room_code": roomCode,
-		"since_seq": lastSeq,
+		"since_ply": lastSeq,
 	})
 	if res.IsError {
-		t.Fatalf("get_moves(since_seq=%d) IsError = true, want false (error: %s)", lastSeq, toolErrorText(res))
+		t.Fatalf("get_moves(since_ply=%d) IsError = true, want false (error: %s)", lastSeq, toolErrorText(res))
 	}
 
 	var history []mcpMoveResult
 	decodeToolResult(t, res, &history)
 
 	if len(history) != 0 {
-		t.Errorf("get_moves(since_seq=%d) = %+v, want an empty array (nothing after the last move)", lastSeq, history)
+		t.Errorf("get_moves(since_ply=%d) = %+v, want an empty array (nothing after the last move)", lastSeq, history)
 	}
 }
 

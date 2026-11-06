@@ -4,6 +4,13 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.81.0 - 2026-11-06
+
+### Bingle Core 0.81.0
+- **The history goes a move at a time.** A turn of several parts, such as two Blooms stones or a Cthulhu Wars Move with its units, is one entry in the move list and one step back or forward through the game, and the story of a move in the History tab tells all of it together. A link to a position (`#move=N`) counts moves the same way.
+- **Cthulhu Wars fixes since the last two updates.** A battle shows on the map again while the attacker is still choosing, the History tab again says when nothing new happened since your last move, and a reaction passed for you no longer hides the rest of the history until your next move.
+- **For programs:** move numbers in the API and MCP count moves, not their parts: `move_seq`, `seq` in the history (where a move of several parts lists them in `selections`), and the new names `at_ply` (state, simulate, hint) and `since_ply` (the history), which replace `at_seq` and `since_seq`.
+
 ## 0.80.0 - 2026-11-06
 
 ### Bingle Core 0.80.0

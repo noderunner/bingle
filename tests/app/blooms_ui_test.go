@@ -231,17 +231,17 @@ func TestWebSubmit_ATurnOfSeveralSteps(t *testing.T) {
 	if code, out := moveNotation(t, baseURL, room, "Bob", "blue@d4; black@f6"); code != 200 {
 		t.Fatalf("Bob's turn: %d %v", code, out)
 	}
-	waitJS(t, ctx, "Bob's stones", `document.querySelectorAll('#move-list button.mv').length === 3`, 10*time.Second)
+	waitJS(t, ctx, "Bob's stones", `document.querySelectorAll('#move-list button.mv').length === 2`, 10*time.Second)
 	waitJS(t, ctx, "her stones", `document.querySelectorAll('#piece-buttons button').length === 2`, 10*time.Second)
 	stoneOn := func(pos string) string {
 		return fmt.Sprintf(`document.querySelector('#board .piece[data-position=%q]') !== null`, pos)
 	}
 	clickCell("e4")
 	waitJS(t, ctx, "the stone shown, and Back for it", stoneOn("e4")+` && document.getElementById("undo-step") !== null`, 10*time.Second)
-	if st := cfGet(t, baseURL, room); st.MoveSeq != 3 {
-		t.Fatalf("part of a move was sent: %d moves, want 3", st.MoveSeq)
+	if st := cfGet(t, baseURL, room); st.MoveSeq != 2 {
+		t.Fatalf("part of a move was sent: %d moves, want 2", st.MoveSeq)
 	}
-	if n := evalInt(t, ctx, `document.querySelectorAll('#move-list button.mv').length`); n != 3 {
+	if n := evalInt(t, ctx, `document.querySelectorAll('#move-list button.mv').length`); n != 2 {
 		t.Errorf("part of a move is in the move list: %d entries", n)
 	}
 	if evalBool(t, ctx, `document.getElementById("submit-move") !== null`) {
@@ -263,12 +263,12 @@ func TestWebSubmit_ATurnOfSeveralSteps(t *testing.T) {
 	waitJS(t, ctx, "the first stone again", stoneOn("e4")+` && document.getElementById("undo-step") !== null`, 10*time.Second)
 	clickCell("e6")
 	waitJS(t, ctx, "Submit for the last stone", `document.getElementById("submit-move") !== null`, 5*time.Second)
-	if st := cfGet(t, baseURL, room); st.MoveSeq != 3 {
+	if st := cfGet(t, baseURL, room); st.MoveSeq != 2 {
 		t.Fatalf("the move was sent before Submit: %d moves", st.MoveSeq)
 	}
 	clickSel(t, ctx, "#submit-move")
-	waitMoves(5, "the whole turn")
-	waitJS(t, ctx, "the whole turn in the list", `document.querySelectorAll('#move-list button.mv').length === 5`, 10*time.Second)
+	waitMoves(3, "the whole turn")
+	waitJS(t, ctx, "the whole turn in the list", `document.querySelectorAll('#move-list button.mv').length === 3`, 10*time.Second)
 	clickSel(t, ctx, "#history-friendly")
 	waitJS(t, ctx, "the turn told", `document.getElementById("history-pane") !== null && document.getElementById("history-pane").textContent.indexOf("e6") >= 0`, 10*time.Second)
 }

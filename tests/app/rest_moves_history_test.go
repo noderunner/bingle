@@ -1,4 +1,4 @@
-// Tests of the move history endpoint: ordering, and the since_seq filter.
+// Tests of the move history endpoint: ordering, and the since_ply filter.
 
 package app_test
 
@@ -10,7 +10,7 @@ import (
 )
 
 // getMoves GETs baseURL+"/api/games/"+code+"/moves", optionally with a raw
-// query string (e.g. "since_seq=1", no leading "?"; pass "" for none), and
+// query string (e.g. "since_ply=1", no leading "?"; pass "" for none), and
 // returns the raw HTTP response along with its body bytes.
 func getMoves(t *testing.T, baseURL, code, rawQuery string) (*http.Response, []byte) {
 	t.Helper()
@@ -135,7 +135,7 @@ func TestGetMoves_AfterThreeMoves_ReturnsExactlyThreeInAscendingSeq(t *testing.T
 	}
 }
 
-// TestGetMoves_SinceSeq1_ReturnsOnlyLaterMoves covers ?since_seq=1 after the
+// TestGetMoves_SinceSeq1_ReturnsOnlyLaterMoves covers ?since_ply=1 after the
 // same 3 moves: only entries with seq > 1 (seq 2 and seq 3) come back, in
 // that order.
 func TestGetMoves_SinceSeq1_ReturnsOnlyLaterMoves(t *testing.T) {
@@ -143,7 +143,7 @@ func TestGetMoves_SinceSeq1_ReturnsOnlyLaterMoves(t *testing.T) {
 	roomCode := setupActiveGame(t, baseURL)
 	submitted := submitThreeMoves(t, baseURL, roomCode)
 
-	resp, raw := getMoves(t, baseURL, roomCode, "since_seq=1")
+	resp, raw := getMoves(t, baseURL, roomCode, "since_ply=1")
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("status = %d, want %d (body: %s)", resp.StatusCode, http.StatusOK, raw)
 	}
@@ -170,14 +170,14 @@ func TestGetMoves_SinceSeq1_ReturnsOnlyLaterMoves(t *testing.T) {
 	}
 }
 
-// TestGetMoves_SinceSeq0_ReturnsAll covers ?since_seq=0 explicitly returning
+// TestGetMoves_SinceSeq0_ReturnsAll covers ?since_ply=0 explicitly returning
 // all 3 moves (seq 0 is never a real move, so nothing is excluded).
 func TestGetMoves_SinceSeq0_ReturnsAll(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	roomCode := setupActiveGame(t, baseURL)
 	submitThreeMoves(t, baseURL, roomCode)
 
-	resp, raw := getMoves(t, baseURL, roomCode, "since_seq=0")
+	resp, raw := getMoves(t, baseURL, roomCode, "since_ply=0")
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("status = %d, want %d (body: %s)", resp.StatusCode, http.StatusOK, raw)
 	}
@@ -196,8 +196,8 @@ func TestGetMoves_SinceSeq0_ReturnsAll(t *testing.T) {
 	}
 }
 
-// TestGetMoves_SinceSeqOmitted_ReturnsAll covers omitting since_seq entirely
-// (no query string at all) behaving the same as ?since_seq=0: all 3 moves
+// TestGetMoves_SinceSeqOmitted_ReturnsAll covers omitting since_ply entirely
+// (no query string at all) behaving the same as ?since_ply=0: all 3 moves
 // come back.
 func TestGetMoves_SinceSeqOmitted_ReturnsAll(t *testing.T) {
 	baseURL := newRESTTestServer(t)
@@ -218,7 +218,7 @@ func TestGetMoves_SinceSeqOmitted_ReturnsAll(t *testing.T) {
 	}
 }
 
-// TestGetMoves_SinceSeqBeyondLast_ReturnsEmptyArray covers ?since_seq=99
+// TestGetMoves_SinceSeqBeyondLast_ReturnsEmptyArray covers ?since_ply=99
 // (beyond the last move) returning an EMPTY array ("[]", not "null", not an
 // error) — no moves exist past that point, but that is not a "not found"
 // condition, so this must still be 200.
@@ -227,7 +227,7 @@ func TestGetMoves_SinceSeqBeyondLast_ReturnsEmptyArray(t *testing.T) {
 	roomCode := setupActiveGame(t, baseURL)
 	submitThreeMoves(t, baseURL, roomCode)
 
-	resp, raw := getMoves(t, baseURL, roomCode, "since_seq=99")
+	resp, raw := getMoves(t, baseURL, roomCode, "since_ply=99")
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("status = %d, want %d (body: %s)", resp.StatusCode, http.StatusOK, raw)
 	}

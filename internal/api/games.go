@@ -286,7 +286,7 @@ type getGameSeat struct {
 }
 
 // handleGetGame implements GET /games/{code}: look up the room's current
-// state (no at_seq support here — that's .../state's job) and respond with
+// state (no at_ply support here — that's .../state's job) and respond with
 // its game_def_id/status/seats/impulse_seat.
 func (h *handlers) handleGetGame(w http.ResponseWriter, r *http.Request) {
 	code := chi.URLParam(r, "code")
@@ -450,16 +450,16 @@ type getGameStateResponse struct {
 }
 
 // handleGetGameState implements GET /games/{code}/state: look up the room's
-// current state, or its historical state at ?at_seq=N if given, and respond
+// current state, or its historical state after ?at_ply=N moves if given, and respond
 // with its board_state/impulse_seat/status/move_seq.
 func (h *handlers) handleGetGameState(w http.ResponseWriter, r *http.Request) {
 	code := chi.URLParam(r, "code")
 
 	var atSeq *int
-	if raw := r.URL.Query().Get("at_seq"); raw != "" {
+	if raw := r.URL.Query().Get("at_ply"); raw != "" {
 		n, err := strconv.Atoi(raw)
 		if err != nil {
-			writeError(w, errors.New("api: at_seq must be an integer"))
+			writeError(w, errors.New("api: at_ply must be an integer"))
 			return
 		}
 		atSeq = &n
@@ -590,7 +590,8 @@ func (h *handlers) handleMakeMove(w http.ResponseWriter, r *http.Request) {
 			State:       json.RawMessage(final.State),
 			ImpulseSeat: impulseSeat,
 			Status:      final.Status,
-			MoveSeq:     final.Seq,
+			MoveSeq:     final.Plies,
+			Ply:         final.Plies,
 			WinnerSeat:  final.WinnerSeat,
 			EndReason:   final.EndReason,
 			EndDetail:   final.EndDetail,
@@ -600,34 +601,29 @@ func (h *handlers) handleMakeMove(w http.ResponseWriter, r *http.Request) {
 }
 
 // handleListMoves implements GET /games/{code}/moves: look up the room's
-// move history, optionally starting after ?since_seq=N (default 0, i.e. all
-// moves), and respond with a JSON array of moves in ascending seq order.
+// move history, one entry per move (impulse, ADR 0114), optionally starting
+// after ?since_ply=N (default 0, i.e. all moves), in ascending order.
 // Always writes "[]" rather than "null" when there are no moves.
 func (h *handlers) handleListMoves(w http.ResponseWriter, r *http.Request) {
 	code := chi.URLParam(r, "code")
 
-	sinceSeq := 0
-	if raw := r.URL.Query().Get("since_seq"); raw != "" {
+	sincePly := 0
+	if raw := r.URL.Query().Get("since_ply"); raw != "" {
 		n, err := strconv.Atoi(raw)
 		if err != nil {
-			writeError(w, errors.New("api: since_seq must be an integer"))
+			writeError(w, errors.New("api: since_ply must be an integer"))
 			return
 		}
-		sinceSeq = n
+		sincePly = n
 	}
 
-	records, err := h.mgr.ListMoves(r.Context(), code, sinceSeq)
+	records, err := h.mgr.ListMoves(r.Context(), code, 0)
 	if err != nil {
 		writeError(w, err)
 		return
 	}
 
-	history := make([]wire.Move, 0, len(records))
-	for _, rec := range records {
-		history = append(history, wire.MoveFromRecord(rec))
-	}
-
-	writeJSON(w, http.StatusOK, history)
+	writeJSON(w, http.StatusOK, wire.MovesByImpulse(records, sincePly))
 }
 
 // handleHistory implements GET /games/{code}/history: what every move of the

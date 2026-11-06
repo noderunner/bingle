@@ -40,8 +40,10 @@ var ErrNotAPlayer = errors.New("session: not a player in this game")
 // second GetState round-trip.
 type MoveOutcome struct {
 	Seq int
-	// Ply is the impulse the move (the last selection recorded) is part of.
+	// Ply is the impulse the move (the last selection recorded) is part of,
+	// and Plies the impulses the game has played after it.
 	Ply      int
+	Plies    int
 	Seat     int
 	Color    string
 	From     string
@@ -188,6 +190,7 @@ func (m *Manager) playSelections(ctx context.Context, roomCode, name string, sel
 	}
 
 	var outcome MoveOutcome
+	var notations []string
 	for i, mv := range sels {
 		if i > 0 {
 			if game, err = m.loadGame(ctx, roomCode, true); err != nil {
@@ -197,7 +200,10 @@ func (m *Manager) playSelections(ctx context.Context, roomCode, name string, sel
 		if outcome, err = m.applyAndRecord(ctx, compiled, game, player, mv); err != nil {
 			return MoveOutcome{}, err
 		}
+		notations = append(notations, outcome.Notation)
 	}
+	// The move is the whole impulse: its notation is all of its selections'.
+	outcome.Notation = strings.Join(notations, state.SelectionSeparator)
 
 	outcome.BotMoves = m.runBots(ctx, roomCode)
 	return outcome, nil
@@ -273,8 +279,14 @@ func (m *Manager) applyAndRecordAs(ctx context.Context, compiled *catalog.Compil
 		}
 	}
 	// Whether the selection ends its impulse, and so the ply (ADR 0114). In a
-	// game for one seat each selection is sent as a move of its own.
-	endsImpulse := state.AnySelectionMayEnd(compiled) || state.ImpulseEnds(compiled, bs, player.Seat, result.Move, result)
+	// game for one seat each selection is sent as a move of its own, and a
+	// reaction the session declined for the seat is that seat's whole impulse
+	// (the dummy submits it), even where the seat's own turn comes next.
+	endsImpulse := auto || state.AnySelectionMayEnd(compiled) || state.ImpulseEnds(compiled, bs, player.Seat, result.Move, result)
+	plies := game.Ply
+	if endsImpulse {
+		plies++
+	}
 	// Only a game for one seat takes moves back, so only there is a lock news.
 	shownLocked := locked && state.AnySelectionMayEnd(compiled)
 	// What leaves the server is the public view of the position.
@@ -477,6 +489,7 @@ func (m *Manager) applyAndRecordAs(ctx context.Context, compiled *catalog.Compil
 		AutoPlay:        autoPlay,
 		Locked:          shownLocked,
 		Ply:             move.Ply,
+		Plies:           plies,
 	}, nil
 }
 

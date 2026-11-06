@@ -249,7 +249,8 @@ func TestCourtfallAgainstABotPlaysThroughSetupAndTurns(t *testing.T) {
 	if st.State.Ext.Phase != "play" {
 		t.Errorf("after 150 decisions the game should be in play, phase %q", st.State.Ext.Phase)
 	}
-	if st.MoveSeq < 150 {
+	// A move is an impulse (ADR 0114): a decision and the bot's answers are a few.
+	if st.MoveSeq < 100 {
 		t.Errorf("only %d moves recorded", st.MoveSeq)
 	}
 	if len(st.State.Cells) != 10 {

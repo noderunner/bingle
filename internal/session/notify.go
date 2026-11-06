@@ -624,7 +624,11 @@ func (n *notifier) tap(room string, ev Event) {
 		if d.ImpulseSeat == nil || d.Status != "active" {
 			return
 		}
-		seat, seq = *d.ImpulseSeat, d.Seq
+		// The turn is counted in moves played (impulses, ADR 0114), as a state event counts it.
+		seat, seq = *d.ImpulseSeat, d.Ply
+		if !d.EndsImpulse {
+			seq--
+		}
 	case stateEventData:
 		if d.ImpulseSeat == nil || d.Status != "active" || d.Lobby {
 			return
@@ -698,7 +702,7 @@ func (n *notifier) seatPlayer(ctx context.Context, room string, seat int) (store
 func (n *notifier) send(room string, seat, seq int, ignoreConnected bool) {
 	ctx := context.Background()
 	game, player, ok := n.seatPlayer(ctx, room, seat)
-	if !ok || game.Status != "active" || game.ImpulseSeat == nil || *game.ImpulseSeat != seat || game.MoveSeq != seq {
+	if !ok || game.Status != "active" || game.ImpulseSeat == nil || *game.ImpulseSeat != seat || game.Ply != seq {
 		return // the turn moved on
 	}
 	if !ignoreConnected && n.m.seatHasSocket(room, seat) {

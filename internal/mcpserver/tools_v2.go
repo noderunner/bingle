@@ -224,10 +224,10 @@ func registerPlayTools(s *server.MCPServer, mgr *session.Manager) {
 
 	s.AddTool(
 		mcp.NewTool("suggest_move",
-			mcp.WithDescription("Ask a built-in bot (default: the stronger of minimax and MCTS for the game, about a second of thought) which move it would play — in the current position, or after `at_seq` plus an optional variation. Only available in games against bots, or after the game has ended, so it can never be used against another person."),
+			mcp.WithDescription("Ask a built-in bot (default: the stronger of minimax and MCTS for the game, about a second of thought) which move it would play — in the current position, or after `at_ply` moves plus an optional variation. Only available in games against bots, or after the game has ended, so it can never be used against another person."),
 			mcp.WithString("room_code", mcp.Required(), mcp.Description("The room code of the game.")),
 			mcp.WithString("player_name", mcp.Required(), mcp.Description("Your player name.")),
-			mcp.WithNumber("at_seq", mcp.Description("Position after this move number (default: current).")),
+			mcp.WithNumber("at_ply", mcp.Description("Position after this many moves (default: current).")),
 			mcp.WithArray("moves", mcp.Description("A variation to play out first, in notation."), mcp.WithStringItems()),
 			mcp.WithString("bot", mcp.Description("Which bot to ask: random, tactical, minimax or mcts (default: minimax in games where piece counts matter, such as Tak, otherwise mcts).")),
 		),
@@ -237,8 +237,8 @@ func registerPlayTools(s *server.MCPServer, mgr *session.Manager) {
 				return errRes, nil
 			}
 			var at *int
-			if _, given := request.GetArguments()["at_seq"]; given {
-				n := request.GetInt("at_seq", 0)
+			if _, given := request.GetArguments()["at_ply"]; given {
+				n := request.GetInt("at_ply", 0)
 				at = &n
 			}
 			hint, err := mgr.Hint(ctx, room, player, at, request.GetStringSlice("moves", nil), strings.TrimSpace(request.GetString("bot", "")))
@@ -291,10 +291,10 @@ func registerPlayTools(s *server.MCPServer, mgr *session.Manager) {
 
 	s.AddTool(
 		mcp.NewTool("simulate",
-			mcp.WithDescription("What-if analysis: apply a sequence of moves (in notation, alternating seats) to the current position — or to the position after move `at_seq` — without changing the game. Returns the resulting position, whether it is terminal, and the legal moves there."),
+			mcp.WithDescription("What-if analysis: apply a sequence of moves (in notation, alternating seats) to the current position — or to the position after `at_ply` moves — without changing the game. Returns the resulting position, whether it is terminal, and the legal moves there."),
 			mcp.WithString("room_code", mcp.Required(), mcp.Description("The room code of the game.")),
 			mcp.WithArray("moves", mcp.Required(), mcp.Description("Moves to apply in order, in the game's notation."), mcp.WithStringItems()),
-			mcp.WithNumber("at_seq", mcp.Description("Start from the position after this move number (0 = initial position); defaults to the current position.")),
+			mcp.WithNumber("at_ply", mcp.Description("Start from the position after this many moves (0 = initial position); defaults to the current position.")),
 		),
 		handleSimulate(mgr),
 	)
@@ -585,8 +585,8 @@ func handleSimulate(mgr *session.Manager) server.ToolHandlerFunc {
 			return mcp.NewToolResultError("moves is required: " + err.Error()), nil
 		}
 		var atSeq *int
-		if _, present := request.GetArguments()["at_seq"]; present {
-			n := request.GetInt("at_seq", 0)
+		if _, present := request.GetArguments()["at_ply"]; present {
+			n := request.GetInt("at_ply", 0)
 			atSeq = &n
 		}
 		sim, err := mgr.Simulate(ctx, room, atSeq, moves)

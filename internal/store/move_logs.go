@@ -9,6 +9,8 @@ import (
 // array at ext.log of its resulting state; empty for a game without one).
 type MoveLog struct {
 	Seq int
+	// Ply is the impulse the move was a selection of (ADR 0114).
+	Ply int
 	Log string
 }
 
@@ -17,7 +19,7 @@ type MoveLog struct {
 // read, so a long game does not pull every full snapshot into memory.
 func (s *Store) ListMoveLogs(ctx context.Context, gameID int64) ([]MoveLog, error) {
 	rows, err := s.query(ctx, "ListMoveLogs",
-		`SELECT seq, COALESCE(json_extract(resulting_state, '$.ext.log'), '') FROM moves WHERE game_id = ? ORDER BY seq`,
+		`SELECT seq, ply, COALESCE(json_extract(resulting_state, '$.ext.log'), '') FROM moves WHERE game_id = ? ORDER BY seq`,
 		gameID)
 	if err != nil {
 		return nil, fmt.Errorf("listing move logs (game_id=%d): %w", gameID, err)
@@ -26,7 +28,7 @@ func (s *Store) ListMoveLogs(ctx context.Context, gameID int64) ([]MoveLog, erro
 	var out []MoveLog
 	for rows.Next() {
 		var l MoveLog
-		if err := rows.Scan(&l.Seq, &l.Log); err != nil {
+		if err := rows.Scan(&l.Seq, &l.Ply, &l.Log); err != nil {
 			return nil, fmt.Errorf("scanning move log (game_id=%d): %w", gameID, err)
 		}
 		out = append(out, l)

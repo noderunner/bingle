@@ -210,8 +210,8 @@ func TestWebGame_FailedPuzzleOffersTryAgainFromTheSamePosition(t *testing.T) {
 		t.Fatal(err)
 	}
 	var a, b restState
-	doJSON(t, "GET", baseURL+"/api/games/"+created.RoomCode+"/state?at_seq=0", nil, &a)
-	doJSON(t, "GET", baseURL+"/api/games/"+newRoom+"/state?at_seq=0", nil, &b)
+	doJSON(t, "GET", baseURL+"/api/games/"+created.RoomCode+"/state?at_ply=0", nil, &a)
+	doJSON(t, "GET", baseURL+"/api/games/"+newRoom+"/state?at_ply=0", nil, &b)
 	if len(a.State.Cells) != len(b.State.Cells) || a.State.Ply != b.State.Ply || len(b.State.Cells) == 0 {
 		t.Errorf("retry start differs: %d/%d cells, ply %d/%d", len(a.State.Cells), len(b.State.Cells), a.State.Ply, b.State.Ply)
 	}

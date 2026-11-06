@@ -212,7 +212,13 @@ func TestWebCthulhuWars_BlackGoatCanPressDoneAfterASingleSummon(t *testing.T) {
 			} `json:"ext"`
 		} `json:"state"`
 	}
-	doJSON(t, "GET", baseURL+"/api/games/"+created.RoomCode+"/state", nil, &after)
+	// The Ghoul and the Done go to the server as one move once Done is pressed.
+	for deadline := time.Now().Add(10 * time.Second); time.Now().Before(deadline); time.Sleep(100 * time.Millisecond) {
+		doJSON(t, "GET", baseURL+"/api/games/"+created.RoomCode+"/state", nil, &after)
+		if p := after.State.Ext.Power; len(p) >= 4 && p[3] == 7 {
+			break
+		}
+	}
 	if p := after.State.Ext.Power; len(p) < 4 || p[3] != 7 {
 		t.Errorf("Black Goat's Power after one Ghoul and Done: %v", p)
 	}
