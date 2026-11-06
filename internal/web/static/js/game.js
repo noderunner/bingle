@@ -66,7 +66,7 @@ const S = {
 	busy: false,
 	skewMs: 0, // server clock minus local clock, for countdowns
 	analysis: null, // {base, moves: [notation], sim, builder} while exploring variations
-	hint: null, // {notation, steps, bot, key}: a bot's suggestion for the position shown
+	hint: null, // {notation, gestures, bot, key}: a bot's suggestion for the position shown
 	hintBusy: false,
 	conn: "connecting",
 	finalMove: null, // the selection that would complete the move: it waits for Submit
@@ -318,8 +318,8 @@ async function loadLegal() {
 		// the pending move's position and options are in place
 	} else if (isMyImpulse()) {
 		try {
-			const res = await api.legal(code);
-			S.legal = res.moves || [];
+			const res = await api.selections(code, "");
+			S.legal = res.options || [];
 		} catch (_) {
 			S.legal = [];
 		}
@@ -798,7 +798,7 @@ function actionDef(id) {
 /** What a count selection means, from the action chosen just before it. */
 function countLabel(b) {
 	const labels = S.info.count_labels || {};
-	const last = [...b.steps].reverse().find((st) => st.kind === "action");
+	const last = [...b.gestures].reverse().find((st) => st.kind === "action");
 	if (last && labels[last.value]) return labels[last.value];
 	return isRuleset() ? labels[""] || "Choose:" : "Pick up:";
 }
@@ -841,7 +841,7 @@ function afterBuilderChange() {
 
 /** A button says what it does, so pressing it is the decision: End turn is a Submit. */
 function clickedAButton(b) {
-	const manual = b.manualSteps();
+	const manual = b.manualGestures();
 	return manual.length > 0 && manual[manual.length - 1].kind === "action";
 }
 
@@ -963,7 +963,7 @@ const TOKEN_AREA_ACTIONS = { devolve: "cultist" };
 
 function trialBuilder(b, extra) {
 	const t = new MoveBuilder(b.moves);
-	t.steps = [...b.steps, ...extra];
+	t.gestures = [...b.gestures, ...extra];
 	return t;
 }
 
@@ -1067,7 +1067,7 @@ function queueDestinations(extra = null) {
 
 /** Whether a click on this token adds its unit to the queue. */
 function queueTakes(pos, piece) {
-	if (S.busy || activeBuilder().manualSteps().length) return false;
+	if (S.busy || activeBuilder().manualGestures().length) return false;
 	const moves = queueMoves();
 	const cost = unitCost(moves, piece, pos);
 	if (cost === null) return false;
@@ -1206,7 +1206,7 @@ function resetMove() {
 	render();
 }
 
-function undoStep() {
+function goBack() {
 	if (S.tut && !tutorialCanUndo()) return;
 	if (S.passAsked) {
 		S.passAsked = false;
@@ -1219,14 +1219,14 @@ function undoStep() {
 		return;
 	}
 	const b = activeBuilder();
-	if (!b.manualSteps().length) {
+	if (!b.manualGestures().length) {
 		if (S.pending && !S.busy) backSelection();
 		else if (canUndo() && !S.busy) backStep();
 		return;
 	}
 	b.pop();
 	// Step back past any forced choices as well.
-	while (b.steps.length > 0 && b.options().length === 1 && b.options()[0].kind !== "pos") {
+	while (b.gestures.length > 0 && b.options().length === 1 && b.options()[0].kind !== "pos") {
 		b.pop();
 	}
 	b.autoAdvance();
@@ -1651,7 +1651,7 @@ function paintSlowTurn() {
 
 async function askBotToPlay() {
 	try {
-		await api.autoPlayTurn(code, S.me.name);
+		await api.autoPlayImpulse(code, S.me.name);
 	} catch (err) {
 		toast(err instanceof ApiError ? err.message : "Could not ask for a bot.", "error");
 	}
@@ -1714,7 +1714,7 @@ async function askHint() {
 		const h = await api.hint(code, S.me.name, atSeq, moves);
 		S.hint = {
 			notation: h.notation,
-			steps: h.steps || [],
+			gestures: h.gestures || [],
 			bot: h.bot,
 			winRate: typeof h.win_rate === "number" ? h.win_rate : null,
 			alternatives: h.alternatives || [],
@@ -1740,7 +1740,7 @@ function hintBanner() {
 			return;
 		}
 		b.reset();
-		for (const st of hint.steps) b.push(st.kind, st.value);
+		for (const st of hint.gestures) b.push(st.kind, st.value);
 		S.hint = null;
 		afterBuilderChange();
 	};
@@ -1774,7 +1774,7 @@ function hintBanner() {
 function hintSquares() {
 	const h = S.hint;
 	if (!h || h.key !== positionKey()) return [];
-	return h.steps.filter((st) => st.kind === "pos").map((st) => st.value);
+	return h.gestures.filter((st) => st.kind === "pos").map((st) => st.value);
 }
 
 /**
@@ -2313,7 +2313,7 @@ function genericImpulse() {
 function rulesetStepImpulse(b, rv) {
 	const opts = b.options();
 	if (!opts.length) return needsConfirm() ? "Check the preview, then submit." : "Submitting…";
-	const manual = b.manualSteps();
+	const manual = b.manualGestures();
 	const last = manual[manual.length - 1];
 	const lastAction = [...manual].reverse().find((st) => st.kind === "action");
 	const def = lastAction ? actionDef(lastAction.value) : null;
@@ -2334,7 +2334,7 @@ function genericActingImpulse(b) {
 	const opts = b.options();
 	const hasPiece = opts.some((o) => o.kind === "piece");
 	const hasPos = opts.some((o) => o.kind === "pos");
-	if (b.manualSteps().length) {
+	if (b.manualGestures().length) {
 		if (opts.some((o) => o.kind === "count")) return "Choose how many pieces to pick up.";
 		if (b.complete()) return opts.length ? "Submit the move, or keep dropping pieces." : needsConfirm() ? "Check the preview, then submit." : "Submitting…";
 		const picked = b.pickedCount();
@@ -2348,7 +2348,7 @@ function genericActingImpulse(b) {
 	const placeOnly = placeOnlyImpulse();
 	if (placeOnly) return placeOnly;
 	// A forced piece choice was taken automatically: the squares on offer are places to put it.
-	const placing = hasPos && !hasPiece && b.steps.length > 0 && b.steps[0].kind === "piece";
+	const placing = hasPos && !hasPiece && b.gestures.length > 0 && b.gestures[0].kind === "piece";
 	const points = S.info.board.style === "points";
 	if (hasPiece && hasPos) return "Click an empty square to place a stone (Shift: wall, Ctrl: capstone), or click a highlighted stack to move it.";
 	if (hasPiece && b.quickPlacements().size > 0) return `${points ? "Choose an intersection to place a stone" : "Choose an empty square to place a piece"}${opts.some((o) => o.kind === "action") ? ", or choose an action" : ""}.`;
@@ -2371,7 +2371,7 @@ function impulseText() {
 	if (S.moveQueue) return `Select remaining units in ${areaName(S.moveQueue.from)} to move, followed by a destination.`;
 	const b = activeBuilder();
 	if (!isRuleset()) return genericActingImpulse(b);
-	return b.manualSteps().length ? rulesetStepImpulse(b, rv) : said || genericActingImpulse(b);
+	return b.manualGestures().length ? rulesetStepImpulse(b, rv) : said || genericActingImpulse(b);
 }
 
 /**
@@ -2756,8 +2756,8 @@ function ghostPiece() {
 	if (!actingSeat()) return null;
 	const b = activeBuilder();
 	let piece = null;
-	if (b.steps.length > 0 && b.steps[0].kind === "piece") {
-		piece = b.steps[0].value;
+	if (b.gestures.length > 0 && b.gestures[0].kind === "piece") {
+		piece = b.gestures[0].value;
 	} else {
 		const quick = b.quickPlacements();
 		if (quick.size) {
@@ -2897,7 +2897,7 @@ function drawBoard(host) {
 	const b = activeBuilder();
 	// On an area map, units are picked by clicking their tokens: the areas
 	// they stand in are not themselves targets until a choice is under way.
-	const tokensFirst = S.info.board.style === "areas" && b.steps.length === 0;
+	const tokensFirst = S.info.board.style === "areas" && b.gestures.length === 0;
 	let targets = S.moveQueue && interactive ? queueDestinations() : interactive && !tokensFirst ? b.nextPositions() : new Set();
 	// In a tutorial only the square the step points at can be clicked.
 	if (S.tut) targets = new Set([...targets].filter((pos) => (S.moveQueue ? tutorialQueueGoesTo(pos) : tutorialAllows("pos", pos))));
@@ -2913,7 +2913,7 @@ function drawBoard(host) {
 			illegal: !!S.tut && !!tutorialStep().illegal,
 			ghost: ghostPiece(),
 			// Every square chosen so far: the origin, then each landing/drop.
-			selected: !interactive ? null : S.moveQueue ? [S.moveQueue.from] : b.steps.filter((st) => st.kind === "pos").map((st) => st.value),
+			selected: !interactive ? null : S.moveQueue ? [S.moveQueue.from] : b.gestures.filter((st) => st.kind === "pos").map((st) => st.value),
 			targets,
 			quick: interactive && !isRuleset() && !S.tut ? new Set(b.quickPlacements().keys()) : null,
 			pathCounts: interactive ? b.dropCounts() : new Map(),
@@ -4207,8 +4207,8 @@ function cardContext(v) {
 			activeBuilder().reset();
 			render();
 		},
-		picked: () => (actingSeat() ? activeBuilder().steps.map((st) => st.value) : []),
-		tutorialSteps: () => (S.tut && isLive() ? tutorialExpected() : null),
+		picked: () => (actingSeat() ? activeBuilder().gestures.map((st) => st.value) : []),
+		tutorialGestures: () => (S.tut && isLive() ? tutorialExpected() : null),
 		redraw: () => render(),
 		playsList: () => (actingSeat() ? activeBuilder().moves.map((m) => m.notation) : []),
 		prev: S.ctPrev,
@@ -4227,7 +4227,7 @@ function cardsPanel() {
 	const seats = S.game.seats || [];
 	const mover = v.impulse_seat || 0;
 	const b = actingSeat() ? activeBuilder() : null;
-	const picked = b && b.steps[0] && b.steps[0].kind === "action" ? b.steps[0].value : null;
+	const picked = b && b.gestures[0] && b.gestures[0].kind === "action" ? b.gestures[0].value : null;
 	const playable = b ? new Set(b.nextActions()) : new Set();
 	const grid = (card, seat) => {
 		const g = h("span", { class: "card-grid", "aria-hidden": "true" });
@@ -4812,7 +4812,7 @@ function handPanel(seat) {
 	const mine = actingSeat() === seat;
 	const b = activeBuilder();
 	const nextPieces = mine ? b.nextPieces() : new Set();
-	const chosen = b.steps.find((s) => s.kind === "piece");
+	const chosen = b.gestures.find((s) => s.kind === "piece");
 	const wrap = h("div", { class: "hand", id: `hand-${cssColor(color)}` });
 	const opening = mine && openingActive() && S.info.opening.owner === "opponent";
 
@@ -4912,22 +4912,22 @@ function moveBar() {
 				"span",
 				{ class: "move-actions" },
 				h("button", { class: "primary", id: "pass-confirm", onclick: confirm }, "Pass"),
-				h("button", { id: "undo-step", class: "ghost", onclick: undoStep, title: "Keep the Power, and choose again (Backspace)" }, "↶ Back")
+				h("button", { id: "back", class: "ghost", onclick: goBack, title: "Keep the Power, and choose again (Backspace)" }, "↶ Back")
 			)
 		);
 		return bar;
 	}
 
 	if (acting && S.moveQueue) {
-		bar.append(moveQueueDisplay(), h("span", { class: "move-actions" }, h("button", { id: "undo-step", class: "ghost", onclick: undoStep, title: "Put these units back (Backspace)" }, "↶ Back")));
+		bar.append(moveQueueDisplay(), h("span", { class: "move-actions" }, h("button", { id: "back", class: "ghost", onclick: goBack, title: "Put these units back (Backspace)" }, "↶ Back")));
 		return bar;
 	}
 
-	if (acting && b.manualSteps().length) {
+	if (acting && b.manualGestures().length) {
 		bar.append(pendingMove(b));
 	}
 
-	const actionIds = acting && (isRuleset() || b.manualSteps().length === 0) ? b.nextActions() : [];
+	const actionIds = acting && (isRuleset() || b.manualGestures().length === 0) ? b.nextActions() : [];
 	if (actionIds.length) {
 		const group = h("span", { class: "action-buttons" });
 		const rv = rulesetView();
@@ -4989,7 +4989,7 @@ function moveBar() {
 							"data-piece": type,
 							"aria-label": (rulesetView() || {}).piece_action ? `${rulesetView().piece_action}: ${look.label}` : null,
 							title: look.onGate
-								? b.steps.some((st) => st.kind === "action" && st.value === "capture")
+								? b.gestures.some((st) => st.kind === "action" && st.value === "capture")
 									? `${look.label}: capturing it leaves the Gate abandoned, and your own Cultist takes it`
 									: `${look.label}: moving it abandons the Gate`
 								: look.label,
@@ -5024,20 +5024,20 @@ function moveBar() {
 			h("button", { id: "analysis-import", class: "ghost", onclick: showImport, title: "Paste a move list to play out here" }, "Import moves…")
 		);
 	}
-	if (acting && b.manualSteps().length) {
-		actions.append(h("button", { id: "undo-step", class: "ghost", onclick: undoStep, title: "Undo last selection (Backspace)" }, "↶ Back"));
+	if (acting && b.manualGestures().length) {
+		actions.append(h("button", { id: "back", class: "ghost", onclick: goBack, title: "Undo last selection (Backspace)" }, "↶ Back"));
 		// A move that is a word and a cell (Blooms), a piece and a place (Havannah), or anything on a map: Back is enough.
 		if (!(rulesetView() || {}).piece_action && S.info.board.style !== "areas" && !placeOnlyImpulse()) actions.append(h("button", { id: "reset-move", class: "ghost", onclick: resetMove, title: "Clear the move (Esc)" }, "Reset"));
 	}
 	// Taking back a step already sent: in the list of actions when there is one,
 	// else here. With a selection on the go, Back clears that first.
-	if (!actionIds.length && !inAnalysis() && !(acting && b.manualSteps().length)) {
+	if (!actionIds.length && !inAnalysis() && !(acting && b.manualGestures().length)) {
 		const back = backButton();
 		if (back) actions.append(back);
 	}
 	// With only one thing to do (a forced pass) the move is complete before any
 	// click, and this button is the only way to play it.
-	if (acting && !inAnalysis() && b.complete() && (needsConfirm() || b.options().length || !b.manualSteps().length)) {
+	if (acting && !inAnalysis() && b.complete() && (needsConfirm() || b.options().length || !b.manualGestures().length)) {
 		actions.append(
 			h(
 				"button",
@@ -5063,8 +5063,8 @@ function backButton() {
 	const last = S.pending ? { notation: pendingSelections().at(-1), seat: S.me.seat } : S.moves[S.moves.length - 1];
 	const off = last && /^leave:[^@]+@([^>]+)>(.+)$/.exec(last.notation || "");
 	if (off && off[1] === off[2] && last.seat === S.me.seat) return null;
-	if (S.pending) return h("button", { id: "undo-step", class: "ghost", onclick: undoStep, title: "Take back the last part of this move (Backspace)" }, "↶ Back");
-	return h("button", { id: "undo-step", class: "ghost", onclick: undoStep, title: "Take back the last step of this turn (Backspace)" }, "↶ Back");
+	if (S.pending) return h("button", { id: "back", class: "ghost", onclick: goBack, title: "Take back the last part of this move (Backspace)" }, "↶ Back");
+	return h("button", { id: "back", class: "ghost", onclick: goBack, title: "Take back the last step of this turn (Backspace)" }, "↶ Back");
 }
 
 /** The unit card the page knows for a seat's unit type, or null. */
@@ -5300,7 +5300,7 @@ function directionButton(id, rv) {
 // carryDisplay draws the picked-up pieces in drop order (bottom of the
 // carried group first), dimming those already dropped.
 function carryDisplay(b, carried, dropped) {
-	const origin = b.steps[0] && b.steps[0].kind === "pos" ? b.steps[0].value : null;
+	const origin = b.gestures[0] && b.gestures[0].kind === "pos" ? b.gestures[0].value : null;
 	const wrap = h("span", { class: "carry", id: "carry", title: `carrying ${carried}, ${carried - dropped} left to drop` });
 	const stack = (origin && currentCells()[origin]) || [];
 	const group = stack.slice(Math.max(0, stack.length - carried));
@@ -5320,8 +5320,8 @@ function carryDisplay(b, carried, dropped) {
  */
 function pendingMove(b) {
 	const word = (rulesetView() || {}).piece_action;
-	const [first, ...rest] = b.steps;
-	if (!word || !first || first.kind !== "piece") return h("span", { class: "pending", id: "pending-move" }, describeSteps(b.steps));
+	const [first, ...rest] = b.gestures;
+	if (!word || !first || first.kind !== "piece") return h("span", { class: "pending", id: "pending-move" }, describeSteps(b.gestures));
 	const look = pieceLook(first.value);
 	const so_far = describeSteps(rest);
 	return h(
@@ -6529,14 +6529,14 @@ document.addEventListener("keydown", (ev) => {
 			if (!inAnalysis() && isMyImpulse() && S.builder.complete() && !S.busy) submitMove();
 			break;
 		case "Escape":
-			if (activeBuilder().manualSteps().length) resetMove();
+			if (activeBuilder().manualGestures().length) resetMove();
 			else if (S.unitInfo) closeUnitInfo();
 			else if (inAnalysis()) exitAnalysis();
 			break;
 		case "Backspace":
-			if (activeBuilder().manualSteps().length) {
+			if (activeBuilder().manualGestures().length) {
 				ev.preventDefault();
-				undoStep();
+				goBack();
 			}
 			break;
 		case "ArrowLeft":
@@ -6746,18 +6746,18 @@ function tutorialExpected() {
 	const p = tutorialState();
 	if (!p.next || p.next.who !== "learner") return null;
 	const g = (S.tut.doc.guide || [])[p.step];
-	return g && g.play_steps ? g.play_steps[p.next.index] || null : null;
+	return g && g.play_gestures ? g.play_gestures[p.next.index] || null : null;
 }
 
 /** Whether the learner may make this selection now: only the one the step points at. */
 function tutorialAllows(kind, value) {
-	return tutorialAllowed(tutorialExpected(), activeBuilder().steps, kind, value);
+	return tutorialAllowed(tutorialExpected(), activeBuilder().gestures, kind, value);
 }
 
 /** Whether a run of selections (a token click stands for several) is the one the step points at. */
 function tutorialAllowsPath(path) {
 	const expected = tutorialExpected();
-	const done = activeBuilder().steps.length;
+	const done = activeBuilder().gestures.length;
 	if (!expected) return false;
 	return path.every((st, i) => {
 		const want = expected[done + i];
@@ -6767,7 +6767,7 @@ function tutorialAllowsPath(path) {
 
 /** Whether Back only undoes what the learner has chosen and not sent. */
 function tutorialCanUndo() {
-	return !!S.passAsked || !!S.moveQueue || activeBuilder().manualSteps().length > 0;
+	return !!S.passAsked || !!S.moveQueue || activeBuilder().manualGestures().length > 0;
 }
 
 /** The units the step asks the learner to move together next (see scriptedMoveGroup). */
@@ -6839,7 +6839,7 @@ function tutorialMarkControls() {
 	if (!S.tut) return;
 	const asking = !!tutorialExpected() && isMyImpulse();
 	// Taking back a step of the turn would leave the script: a choice not yet made can still be undone.
-	const back = document.getElementById("undo-step");
+	const back = document.getElementById("back");
 	if (back && !tutorialCanUndo()) {
 		back.disabled = true;
 		back.classList.add("tutorial-inert");

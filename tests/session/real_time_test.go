@@ -30,7 +30,7 @@ func rtGame(t *testing.T, m *session.Manager) string {
 func rtPlay(t *testing.T, m *session.Manager, room, name string, seat int) int {
 	t.Helper()
 	ctx := context.Background()
-	_, legal, err := m.LegalMoves(ctx, room, seat)
+	_, legal, err := legalSelections(ctx, m, room)
 	if err != nil || len(legal) == 0 {
 		t.Fatalf("legal moves of seat %d: %d, %v", seat, len(legal), err)
 	}
@@ -200,25 +200,25 @@ func TestRealTime_TheBotIsOnOfferToAnotherConnectedPlayer(t *testing.T) {
 	room := rtGame(t, m)
 	defer m.TrackConnection(room, 1)()
 
-	if _, err := m.AutoPlayTurn(ctx, room, "Bob"); !errors.Is(err, session.ErrNoAutoPlayOffer) {
+	if _, err := m.AutoPlayImpulse(ctx, room, "Bob"); !errors.Is(err, session.ErrNoAutoPlayOffer) {
 		t.Errorf("before any warning: %v, want ErrNoAutoPlayOffer", err)
 	}
 	clock.Advance(3 * time.Minute)
-	if _, err := m.AutoPlayTurn(ctx, room, "Bob"); !errors.Is(err, session.ErrNoAutoPlayOffer) {
+	if _, err := m.AutoPlayImpulse(ctx, room, "Bob"); !errors.Is(err, session.ErrNoAutoPlayOffer) {
 		t.Errorf("past the first warning only: %v, want ErrNoAutoPlayOffer", err)
 	}
 	clock.Advance(5 * time.Minute)
-	if _, err := m.AutoPlayTurn(ctx, room, "Alice"); !errors.Is(err, session.ErrOwnTurnOffer) {
+	if _, err := m.AutoPlayImpulse(ctx, room, "Alice"); !errors.Is(err, session.ErrOwnTurnOffer) {
 		t.Errorf("the slow player asking: %v, want ErrOwnTurnOffer", err)
 	}
-	if _, err := m.AutoPlayTurn(ctx, room, "Bob"); !errors.Is(err, session.ErrNotConnected) {
+	if _, err := m.AutoPlayImpulse(ctx, room, "Bob"); !errors.Is(err, session.ErrNotConnected) {
 		t.Errorf("Bob with no socket: %v, want ErrNotConnected", err)
 	}
 	defer m.TrackConnection(room, 2)()
-	if _, err := m.AutoPlayTurn(ctx, room, "Nobody"); !errors.Is(err, session.ErrNotAPlayer) {
+	if _, err := m.AutoPlayImpulse(ctx, room, "Nobody"); !errors.Is(err, session.ErrNotAPlayer) {
 		t.Errorf("a stranger: %v, want ErrNotAPlayer", err)
 	}
-	snap, err := m.AutoPlayTurn(ctx, room, "Bob")
+	snap, err := m.AutoPlayImpulse(ctx, room, "Bob")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -242,7 +242,7 @@ func TestRealTime_AConnectedPlayerGetsOneTurnPlayed(t *testing.T) {
 	defer m.TrackConnection(room, 1)()
 	defer m.TrackConnection(room, 2)()
 	clock.Advance(8 * time.Minute)
-	if _, err := m.AutoPlayTurn(ctx, room, "Bob"); err != nil {
+	if _, err := m.AutoPlayImpulse(ctx, room, "Bob"); err != nil {
 		t.Fatal(err)
 	}
 	clock.Set(time.Now())
@@ -258,7 +258,7 @@ func TestRealTime_ABotGoesOnPlayingForAnAbsentPlayerUntilTheyReconnect(t *testin
 	room := rtGame(t, m)
 	defer m.TrackConnection(room, 2)()
 	clock.Advance(8 * time.Minute)
-	if _, err := m.AutoPlayTurn(ctx, room, "Bob"); err != nil {
+	if _, err := m.AutoPlayImpulse(ctx, room, "Bob"); err != nil {
 		t.Fatal(err)
 	}
 	clock.Set(time.Now())

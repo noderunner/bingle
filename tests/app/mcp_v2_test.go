@@ -57,12 +57,12 @@ func TestMCP_ToolListIncludesNewTools(t *testing.T) {
 		have[tool.Name] = true
 	}
 	for _, want := range []string{
-		"list_game_defs", "create_game", "join_game", "get_state", "list_legal_moves", "make_move", "get_moves",
-		"get_game_info", "list_bots", "get_observation", "get_legal_moves", "undo_move", "resign", "simulate", "export_game",
+		"list_game_defs", "create_game", "join_game", "get_state", "make_move", "get_moves",
+		"get_game_info", "list_bots", "get_observation", "undo_move", "resign", "simulate", "export_game",
 		"env_reset", "env_step", "env_observe", "env_fork", "env_close", "env_list", "match_bots", "draw",
 		"env_spec", "env_batch_step", "get_game_guide", "add_bot", "get_leaderboard",
 		"list_tournaments", "get_tournament", "enter_tournament", "leave_tournament",
-		"start_game", "set_seat_cult", "send_chat", "get_chat", "get_reactions", "set_reactions", "auto_play_turn", "check_in_tournament", "list_selections",
+		"start_game", "set_seat_cult", "send_chat", "get_chat", "get_reactions", "set_reactions", "auto_play_impulse", "check_in_tournament", "list_selections",
 	} {
 		if !have[want] {
 			t.Errorf("tool %q not registered", want)
@@ -118,15 +118,15 @@ func TestMCP_PlayTakVsBotWithObservations(t *testing.T) {
 		}
 	}
 
-	// get_legal_moves matches the observation.
+	// list_selections matches the observation.
 	var lm struct {
 		Seat  int                         `json:"seat"`
-		Moves []struct{ Notation string } `json:"moves"`
+		Moves []struct{ Notation string } `json:"options"`
 	}
-	res = callTool(t, c, "get_legal_moves", map[string]any{"room_code": created.RoomCode})
+	res = callTool(t, c, "list_selections", map[string]any{"room_code": created.RoomCode})
 	decodeToolResult(t, res, &lm)
 	if lm.Seat != 1 || len(lm.Moves) != len(obs.LegalMoves) {
-		t.Errorf("get_legal_moves = seat %d, %d moves; observation had %d", lm.Seat, len(lm.Moves), len(obs.LegalMoves))
+		t.Errorf("list_selections = seat %d, %d moves; observation had %d", lm.Seat, len(lm.Moves), len(obs.LegalMoves))
 	}
 
 	// A move stands once the bot has replied; then export.

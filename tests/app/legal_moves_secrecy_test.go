@@ -12,7 +12,7 @@ type secrecyLegal struct {
 	Seat  int `json:"seat"`
 	Moves []struct {
 		Notation string `json:"notation"`
-	} `json:"moves"`
+	} `json:"options"`
 }
 
 // nyetAtTheCards seats key in all four seats of a game of Nyet! and plays until a seat to move has
@@ -31,7 +31,7 @@ func nyetAtTheCards(t *testing.T, base, key string) (string, secrecyLegal) {
 	}
 	for i := 0; i < 100; i++ {
 		var legal secrecyLegal
-		if code := doJSONAs(t, key, "GET", base+"/api/games/"+room+"/moves/legal", nil, &legal); code != 200 {
+		if code := doJSONAs(t, key, "GET", base+"/api/games/"+room+"/selections", nil, &legal); code != 200 {
 			t.Fatalf("legal: %d", code)
 		}
 		if len(legal.Moves) == 0 {
@@ -54,7 +54,7 @@ func TestLegalMoves_AHandIsShownOnlyToWhoeverHoldsTheSeat(t *testing.T) {
 	base := newRESTTestServer(t)
 	owner, stranger := newGuestKey(t, base), newGuestKey(t, base)
 	room, held := nyetAtTheCards(t, base, owner)
-	url := base + "/api/games/" + room + "/moves/legal"
+	url := base + "/api/games/" + room + "/selections"
 
 	for who, key := range map[string]string{"nobody signed in": "", "another guest": stranger} {
 		for _, query := range []string{"", fmt.Sprintf("?seat=%d", held.Seat)} {
@@ -77,11 +77,11 @@ func TestLegalMoves_AHandIsShownOnlyToWhoeverHoldsTheSeat(t *testing.T) {
 	}
 
 	// MCP is the other way in, and is anonymous here.
-	res := callTool(t, newMCPClient(t, base), "get_legal_moves", map[string]any{"room_code": room})
+	res := callTool(t, newMCPClient(t, base), "list_selections", map[string]any{"room_code": room})
 	var seen secrecyLegal
 	decodeToolResult(t, res, &seen)
 	if len(seen.Moves) != 0 {
-		t.Errorf("MCP's get_legal_moves shows seat %d's moves: %+v", held.Seat, seen.Moves)
+		t.Errorf("MCP's list_selections shows seat %d's moves: %+v", held.Seat, seen.Moves)
 	}
 }
 
@@ -99,7 +99,7 @@ func TestLegalMoves_AskingDoesNotTakeASeatNobodyOwns(t *testing.T) {
 		}
 	}
 	var legal secrecyLegal
-	if code := doJSONAs(t, newGuestKey(t, base), "GET", base+"/api/games/"+room+"/moves/legal", nil, &legal); code != 200 || len(legal.Moves) == 0 {
+	if code := doJSONAs(t, newGuestKey(t, base), "GET", base+"/api/games/"+room+"/selections", nil, &legal); code != 200 || len(legal.Moves) == 0 {
 		t.Fatalf("a seat nobody owns hides nothing: %d, %d moves", code, len(legal.Moves))
 	}
 	body := map[string]any{"player_name": fmt.Sprintf("Seat %d", legal.Seat), "notation": legal.Moves[0].Notation}
@@ -120,7 +120,7 @@ func TestLegalMoves_AnOpenGameShowsThemToAnybody(t *testing.T) {
 		t.Fatalf("join: %d", code)
 	}
 	var legal secrecyLegal
-	if code := doJSON(t, "GET", base+"/api/games/"+created.RoomCode+"/moves/legal", nil, &legal); code != 200 || len(legal.Moves) == 0 {
+	if code := doJSON(t, "GET", base+"/api/games/"+created.RoomCode+"/selections", nil, &legal); code != 200 || len(legal.Moves) == 0 {
 		t.Errorf("an open game: %d, %d moves", code, len(legal.Moves))
 	}
 }

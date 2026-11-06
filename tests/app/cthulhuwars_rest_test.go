@@ -175,7 +175,7 @@ func TestCthulhuWarsPlaysOverRESTWithFourPlayers(t *testing.T) {
 		Moves []struct {
 			Notation string `json:"notation"`
 			Action   string `json:"action"`
-		} `json:"moves"`
+		} `json:"options"`
 	}
 	var st struct {
 		Status      string `json:"status"`
@@ -199,7 +199,7 @@ func TestCthulhuWarsPlaysOverRESTWithFourPlayers(t *testing.T) {
 	}
 	for i := 0; i < 240; i++ {
 		var l legal
-		code := doJSON(t, "GET", base+"/api/games/"+room+"/moves/legal", nil, &l)
+		code := doJSON(t, "GET", base+"/api/games/"+room+"/selections", nil, &l)
 		if code == 409 {
 			// The random game ended: the state says so.
 			doJSON(t, "GET", base+"/api/games/"+room+"/state", nil, &st)
@@ -304,7 +304,7 @@ func TestBotsCanFillTheOpenSeatsOfAWaitingGame(t *testing.T) {
 	var l struct {
 		Seat int `json:"seat"`
 	}
-	doJSON(t, "GET", base+"/api/games/"+room+"/moves/legal", nil, &l)
+	doJSON(t, "GET", base+"/api/games/"+room+"/selections", nil, &l)
 	if l.Seat != 1 {
 		t.Fatalf("seat %d to move", l.Seat)
 	}
@@ -481,9 +481,9 @@ func TestCthulhuWarsViewCarriesPhasesOrderBagLogAndPrivateSigns(t *testing.T) {
 	var l struct {
 		Moves []struct {
 			Notation string `json:"notation"`
-		} `json:"moves"`
+		} `json:"options"`
 	}
-	doJSON(t, "GET", base+"/api/games/"+room+"/moves/legal", nil, &l)
+	doJSON(t, "GET", base+"/api/games/"+room+"/selections", nil, &l)
 	if len(l.Moves) == 0 {
 		t.Fatal("no legal moves")
 	}

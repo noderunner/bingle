@@ -254,10 +254,10 @@ func TestTutorials_ServedWithTheirGuide(t *testing.T) {
 			Show []string `json:"show"`
 		} `json:"steps"`
 		Guide []struct {
-			PlaySteps [][]struct {
+			PlayGestures [][]struct {
 				Kind  string `json:"kind"`
 				Value string `json:"value"`
-			} `json:"play_steps"`
+			} `json:"play_gestures"`
 			ShowState *struct {
 				Cells map[string]any `json:"cells"`
 			} `json:"show_state"`
@@ -278,12 +278,12 @@ func TestTutorials_ServedWithTheirGuide(t *testing.T) {
 				t.Fatalf("step %d shows no position: %+v", i+1, g.ShowState)
 			}
 		}
-		if len(s.Play) != len(g.PlaySteps) {
-			t.Fatalf("step %d: %d moves, %d guided", i+1, len(s.Play), len(g.PlaySteps))
+		if len(s.Play) != len(g.PlayGestures) {
+			t.Fatalf("step %d: %d moves, %d guided", i+1, len(s.Play), len(g.PlayGestures))
 		}
 		if len(s.Play) > 0 && !sawPlay {
 			sawPlay = true
-			sel := g.PlaySteps[0]
+			sel := g.PlayGestures[0]
 			if len(sel) != 2 || sel[0].Kind != "piece" || sel[0].Value != "red" || sel[1].Kind != "pos" || sel[1].Value != "d4" {
 				t.Fatalf("the first move's selections: %+v", sel)
 			}

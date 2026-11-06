@@ -260,7 +260,7 @@ function positionKey(ctx) {
 
 /** The pins the tutorial's step wants, or null outside a tutorial. */
 function tutorialPins(ctx) {
-	const steps = ctx.tutorialSteps();
+	const steps = ctx.tutorialGestures();
 	return steps ? steps.filter((st) => String(st.value).startsWith("pin-")).map((st) => String(st.value).slice(4)) : null;
 }
 
@@ -281,7 +281,7 @@ function ballsFor(ctx) {
 	const want = [...chosen.pins].sort().join("+");
 	const balls = new Set(moves.filter((m) => m.split("@")[0] === want).map((m) => m.split("@")[1]));
 	// In a tutorial only the step's own ball.
-	const steps = ctx.tutorialSteps();
+	const steps = ctx.tutorialGestures();
 	if (!steps) return balls;
 	const last = steps.length ? String(steps[steps.length - 1].value) : "";
 	return new Set([...balls].filter((b) => last === `ball-${b}`));
@@ -399,7 +399,7 @@ export function solitaireTable(ctx) {
 /** A game in progress, to look at: the sample view of a game (state.Sampler), and nothing to click. */
 export function solitairePreview(info, view) {
 	const none = () => [];
-	const node = table({ info, view, room: "", options: none, picked: none, playsList: none, tutorialSteps: () => null });
+	const node = table({ info, view, room: "", options: none, picked: none, playsList: none, tutorialGestures: () => null });
 	node.removeAttribute("id");
 	node.classList.add("sol-preview");
 	node.setAttribute("role", "img");

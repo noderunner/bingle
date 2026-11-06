@@ -4,6 +4,11 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.82.0 - 2026-11-06
+
+### Bingle Core 0.82.0
+- **For programs:** the API and MCP take the names of ADR 0114, without aliases. `GET /games/{code}/selections` replaces `GET /games/{code}/moves/legal` and `GET /games/{code}/legal-moves?from=` (a piece's destinations are the options from its square), and MCP's `list_selections`, whose options now carry their structured fields, replaces `get_legal_moves` and `list_legal_moves`. The clicks that enter a selection are `gestures` rather than `steps`, in the selections, a hint and a tutorial's guide (`play_gestures`). `auto_play_turn` is `auto_play_impulse`, and `POST …/auto-play-turn` is `POST …/auto-play-impulse`. The page's Back button is `#back`.
+
 ## 0.81.0 - 2026-11-06
 
 ### Bingle Core 0.81.0

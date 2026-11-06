@@ -254,7 +254,7 @@ func TestWebLobby_SetupCanStartTwoBotsToWatch(t *testing.T) {
 	waitJS(t, ctx, "game page", `location.pathname.indexOf("/game/") === 0`, 15*time.Second)
 	// Moves arrive live over the WebSocket while we watch.
 	waitJS(t, ctx, "moves appear", `document.querySelectorAll('#move-list button.mv').length >= 3`, 20*time.Second)
-	if n := evalInt(t, ctx, `document.querySelectorAll('#undo-step, #hint').length`); n != 0 {
+	if n := evalInt(t, ctx, `document.querySelectorAll('#back, #hint').length`); n != 0 {
 		t.Errorf("a spectator should have no player controls, found %d", n)
 	}
 }

@@ -430,7 +430,7 @@ func TestLargeTableClock_ChargesTheSeatToMove(t *testing.T) {
 			t.Fatalf("running %d, seat to move %d", snap.Clock.Running, seat)
 		}
 		clock.Advance(5 * time.Second)
-		_, legal, err := m.LegalMoves(ctx, room, seat)
+		_, legal, err := legalSelections(ctx, m, room)
 		if err != nil || len(legal) == 0 {
 			t.Fatalf("legal moves: %d, %v", len(legal), err)
 		}

@@ -419,9 +419,9 @@ func (h *handlers) handlePostGlobalChat(w http.ResponseWriter, r *http.Request) 
 	writeJSON(w, http.StatusOK, line)
 }
 
-// handleAutoPlayTurn implements POST /games/{code}/auto-play-turn: another connected
+// handleAutoPlayImpulse implements POST /games/{code}/auto-play-impulse: another connected
 // player has a bot play the turn the game has waited on past the second warning.
-func (h *handlers) handleAutoPlayTurn(w http.ResponseWriter, r *http.Request) {
+func (h *handlers) handleAutoPlayImpulse(w http.ResponseWriter, r *http.Request) {
 	var req nameBody
 	if !decodeBody(w, r, &req) {
 		return
@@ -430,7 +430,7 @@ func (h *handlers) handleAutoPlayTurn(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err)
 		return
 	}
-	snap, err := h.mgr.AutoPlayTurn(r.Context(), chi.URLParam(r, "code"), req.PlayerName)
+	snap, err := h.mgr.AutoPlayImpulse(r.Context(), chi.URLParam(r, "code"), req.PlayerName)
 	if err != nil {
 		writeError(w, err)
 		return

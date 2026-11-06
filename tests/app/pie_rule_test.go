@@ -47,9 +47,9 @@ func swapIsLegal(t *testing.T, baseURL, room string) bool {
 		Moves []struct {
 			Notation string `json:"notation"`
 			Action   string `json:"action"`
-		} `json:"moves"`
+		} `json:"options"`
 	}
-	if code := doJSON(t, "GET", baseURL+"/api/games/"+room+"/moves/legal", nil, &legal); code != 200 {
+	if code := doJSON(t, "GET", baseURL+"/api/games/"+room+"/selections", nil, &legal); code != 200 {
 		t.Fatalf("legal moves: %d", code)
 	}
 	for _, m := range legal.Moves {
@@ -184,9 +184,9 @@ func TestPieRule_YavalathTakesItWhenTheTableAsks(t *testing.T) {
 	var legal struct {
 		Moves []struct {
 			Notation string `json:"notation"`
-		} `json:"moves"`
+		} `json:"options"`
 	}
-	doJSON(t, "GET", baseURL+"/api/games/"+room+"/moves/legal", nil, &legal)
+	doJSON(t, "GET", baseURL+"/api/games/"+room+"/selections", nil, &legal)
 	if code, out := moveNotation(t, baseURL, room, first.Name, legal.Moves[0].Notation); code != 200 {
 		t.Fatalf("first move: %d %v", code, out)
 	}
@@ -228,7 +228,7 @@ func TestPieRule_YavalathTakesItWhenTheTableAsks(t *testing.T) {
 	if swapIsLegal(t, baseURL, room) {
 		t.Error("the swap is still on offer after it was taken")
 	}
-	doJSON(t, "GET", baseURL+"/api/games/"+room+"/moves/legal", nil, &legal)
+	doJSON(t, "GET", baseURL+"/api/games/"+room+"/selections", nil, &legal)
 	if code, out := moveNotation(t, baseURL, room, first.Name, legal.Moves[0].Notation); code != 200 {
 		t.Errorf("the first player's reply from the second seat: %d %v", code, out)
 	}
@@ -244,7 +244,7 @@ func TestPieRule_YavalathTakesItWhenTheTableAsks(t *testing.T) {
 	if plainGame.GameDefID != "yavalath" {
 		t.Errorf("Yavalath without the option is %q", plainGame.GameDefID)
 	}
-	doJSON(t, "GET", baseURL+"/api/games/"+plain.RoomCode+"/moves/legal", nil, &legal)
+	doJSON(t, "GET", baseURL+"/api/games/"+plain.RoomCode+"/selections", nil, &legal)
 	for _, m := range legal.Moves {
 		if strings.Contains(m.Notation, "swap") {
 			t.Errorf("the plain game offers %q", m.Notation)
@@ -267,9 +267,9 @@ func TestPieRule_ASwapStands(t *testing.T) {
 	var legal struct {
 		Moves []struct {
 			Notation string `json:"notation"`
-		} `json:"moves"`
+		} `json:"options"`
 	}
-	doJSON(t, "GET", baseURL+"/api/games/"+room+"/moves/legal", nil, &legal)
+	doJSON(t, "GET", baseURL+"/api/games/"+room+"/selections", nil, &legal)
 	if code, out := moveNotation(t, baseURL, room, "Ana", legal.Moves[0].Notation); code != 200 {
 		t.Fatalf("first move: %d %v", code, out)
 	}

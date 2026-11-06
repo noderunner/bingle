@@ -72,7 +72,7 @@ func TestWebCthulhuWars_DesecrateRollsAtOnceThenPlacesAUnitAndCannotBeTakenBack(
 		}
 	}
 	// The die has been rolled: nothing offers to take it back.
-	if n := evalInt(t, ctx, `document.querySelectorAll('#undo-step').length`); n != 0 {
+	if n := evalInt(t, ctx, `document.querySelectorAll('#back').length`); n != 0 {
 		t.Errorf("an Undo button after the roll")
 	}
 	// The log has the die and what it was set against.
@@ -81,7 +81,7 @@ func TestWebCthulhuWars_DesecrateRollsAtOnceThenPlacesAUnitAndCannotBeTakenBack(
 	clickSel(t, ctx, `#move-bar .piece-choice[data-piece="byakhee"]`)
 	waitJS(t, ctx, "the Byakhee", `document.querySelector('#board .token[data-position="europe"][data-piece="byakhee"]') !== null`, 15*time.Second)
 	// And the roll is still final.
-	if n := evalInt(t, ctx, `document.querySelectorAll('#undo-step').length`); n != 0 {
+	if n := evalInt(t, ctx, `document.querySelectorAll('#back').length`); n != 0 {
 		t.Errorf("an Undo button after the unit was placed")
 	}
 	mu.Lock()
@@ -245,9 +245,9 @@ func TestCthulhuWarsAMoveIsOneImpulse(t *testing.T) {
 	var legal struct {
 		Moves []struct {
 			Notation string `json:"notation"`
-		} `json:"moves"`
+		} `json:"options"`
 	}
-	doJSON(t, "GET", baseURL+"/api/games/"+room+"/moves/legal", nil, &legal)
+	doJSON(t, "GET", baseURL+"/api/games/"+room+"/selections", nil, &legal)
 	step := ""
 	for _, m := range legal.Moves {
 		if strings.HasPrefix(m.Notation, "go:") {

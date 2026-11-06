@@ -24,7 +24,7 @@ func TestHintOnlyAgainstBotsOrAfterTheGame(t *testing.T) {
 	doJSON(t, "POST", baseURL+"/api/games", map[string]any{"game_def_id": "tak-5x5", "player_name": "Alice", "opponent": "tactical"}, &created)
 	var hint struct {
 		Notation string `json:"notation"`
-		Steps    []struct{ Kind, Value string }
+		Gestures []struct{ Kind, Value string }
 		Bot      string   `json:"bot"`
 		WinRate  *float64 `json:"win_rate"`
 		Alts     []struct {
@@ -35,7 +35,7 @@ func TestHintOnlyAgainstBotsOrAfterTheGame(t *testing.T) {
 	if code := doJSON(t, "POST", baseURL+"/api/games/"+created.RoomCode+"/hint", map[string]any{"player_name": "Alice", "bot": "tactical"}, &hint); code != 200 {
 		t.Fatalf("hint vs bot: %d", code)
 	}
-	if hint.Notation == "" || len(hint.Steps) == 0 || hint.Bot != "tactical" {
+	if hint.Notation == "" || len(hint.Gestures) == 0 || hint.Bot != "tactical" {
 		t.Fatalf("hint = %+v", hint)
 	}
 	if hint.WinRate != nil {

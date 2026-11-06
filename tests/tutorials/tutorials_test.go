@@ -237,18 +237,18 @@ func TestGuide(t *testing.T) {
 	if len(g) != 3 {
 		t.Fatalf("%d steps guided", len(g))
 	}
-	first := g[0].PlaySteps
+	first := g[0].PlayGestures
 	if len(first) != 1 || len(first[0]) != 2 || first[0][0].Kind != "piece" || first[0][0].Value != "red" || first[0][1].Kind != "pos" || first[0][1].Value != "d4" {
 		t.Fatalf("the first move's selections: %+v", first)
 	}
-	if g[1].Shown == nil || len(g[1].PlaySteps) != 0 {
+	if g[1].Shown == nil || len(g[1].PlayGestures) != 0 {
 		t.Fatalf("the picture: %+v", g[1])
 	}
 	if top, ok := g[1].Shown.Get("e5"); !ok || top.Piece != "red" {
 		t.Fatalf("the picture lacks its stone: %v %v", top, ok)
 	}
-	if len(g[2].PlaySteps) != 2 || g[2].PlaySteps[1][0].Value != "yellow" {
-		t.Fatalf("the second step's selections: %+v", g[2].PlaySteps)
+	if len(g[2].PlayGestures) != 2 || g[2].PlayGestures[1][0].Value != "yellow" {
+		t.Fatalf("the second step's selections: %+v", g[2].PlayGestures)
 	}
 }
 

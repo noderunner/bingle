@@ -73,9 +73,9 @@ func TestNewTablesStartWithTheRightFirstPlayerChoosingTheDirection(t *testing.T)
 				var legal struct {
 					Moves []struct {
 						Notation string `json:"notation"`
-					} `json:"moves"`
+					} `json:"options"`
 				}
-				doJSON(t, "GET", baseURL+"/api/games/"+created.RoomCode+"/moves/legal", nil, &legal)
+				doJSON(t, "GET", baseURL+"/api/games/"+created.RoomCode+"/selections", nil, &legal)
 				if len(legal.Moves) == 0 {
 					t.Fatal("the Windwalker has nowhere to begin")
 				}

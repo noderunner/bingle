@@ -1,32 +1,32 @@
 // MoveBuilder turns the server's full list of legal moves into an
-// interactive decision tree. Each legal move comes with `steps` — the
+// interactive decision tree. Each legal selection comes with `gestures` — the
 // ordered selections that build it (pick a piece type, pick a square, pick a
 // pick-up count, ...). The builder tracks the selections made so far and
 // reports which selections may come next, so any game's moves can be
 // entered click by click with no game-specific UI code.
 
 export class MoveBuilder {
-	/** @param moves [{notation, steps: [{kind, value}]}] */
+	/** @param moves [{notation, gestures: [{kind, value}]}] */
 	constructor(moves) {
 		this.moves = moves || [];
-		this.steps = [];
+		this.gestures = [];
 		// How many leading steps were taken automatically because the
 		// choice was forced (a single piece type, a single pick-up count).
 		this.forced = 0;
 	}
 
 	/** Steps the player actually chose. */
-	manualSteps() {
-		return this.steps.slice(this.forced);
+	manualGestures() {
+		return this.gestures.slice(this.forced);
 	}
 
 	/** Legal moves consistent with the selections so far. */
 	candidates() {
-		const n = this.steps.length;
+		const n = this.gestures.length;
 		return this.moves.filter((m) => {
-			if (!m.steps || m.steps.length < n) return false;
+			if (!m.gestures || m.gestures.length < n) return false;
 			for (let i = 0; i < n; i++) {
-				if (m.steps[i].kind !== this.steps[i].kind || m.steps[i].value !== this.steps[i].value) return false;
+				if (m.gestures[i].kind !== this.gestures[i].kind || m.gestures[i].value !== this.gestures[i].value) return false;
 			}
 			return true;
 		});
@@ -34,11 +34,11 @@ export class MoveBuilder {
 
 	/** Distinct selections that may come next: [{kind, value, moves}]. */
 	options() {
-		const n = this.steps.length;
+		const n = this.gestures.length;
 		const seen = new Map();
 		for (const m of this.candidates()) {
-			if (m.steps.length <= n) continue;
-			const st = m.steps[n];
+			if (m.gestures.length <= n) continue;
+			const st = m.gestures[n];
 			const key = st.kind + "\u0000" + st.value;
 			const cur = seen.get(key);
 			if (cur) cur.moves++;
@@ -49,9 +49,9 @@ export class MoveBuilder {
 
 	/** The legal move exactly matching the selections so far, if any. */
 	complete() {
-		const n = this.steps.length;
+		const n = this.gestures.length;
 		if (n === 0) return null;
-		return this.candidates().find((m) => m.steps.length === n) || null;
+		return this.candidates().find((m) => m.gestures.length === n) || null;
 	}
 
 	/** True when the selections form a complete move that nothing extends. */
@@ -60,17 +60,17 @@ export class MoveBuilder {
 	}
 
 	push(kind, value) {
-		this.steps.push({ kind, value: String(value) });
+		this.gestures.push({ kind, value: String(value) });
 	}
 
 	pop() {
-		const st = this.steps.pop();
-		if (this.forced > this.steps.length) this.forced = this.steps.length;
+		const st = this.gestures.pop();
+		if (this.forced > this.gestures.length) this.forced = this.gestures.length;
 		return st;
 	}
 
 	reset() {
-		this.steps = [];
+		this.gestures = [];
 		this.forced = 0;
 	}
 
@@ -82,9 +82,9 @@ export class MoveBuilder {
 	 */
 	quickPlacements() {
 		const out = new Map();
-		if (this.steps.length > 0) return out;
+		if (this.gestures.length > 0) return out;
 		for (const m of this.moves) {
-			const st = m.steps || [];
+			const st = m.gestures || [];
 			if (st.length === 2 && st[0].kind === "piece" && st[1].kind === "pos") {
 				const list = out.get(st[1].value) || [];
 				if (!list.includes(st[0].value)) list.push(st[0].value);
@@ -126,9 +126,9 @@ export class MoveBuilder {
 			// stays a click even when it is the only one left.
 			const manual = opts.length === 1 && opts[0].kind === "action" && MoveBuilder.manual.some((p) => String(opts[0].value).startsWith(p));
 			if (opts.length === 1 && opts[0].kind !== "pos" && !manual) {
-				const onlyForced = this.forced === this.steps.length;
+				const onlyForced = this.forced === this.gestures.length;
 				this.push(opts[0].kind, opts[0].value);
-				if (onlyForced) this.forced = this.steps.length;
+				if (onlyForced) this.forced = this.gestures.length;
 			} else {
 				break;
 			}
@@ -139,9 +139,9 @@ export class MoveBuilder {
 	dropCounts() {
 		// After [pos(from), count(n)] every further pos is one drop.
 		const out = new Map();
-		const ci = this.steps.findIndex((s) => s.kind === "count");
+		const ci = this.gestures.findIndex((s) => s.kind === "count");
 		if (ci < 0) return out;
-		for (const st of this.steps.slice(ci + 1)) {
+		for (const st of this.gestures.slice(ci + 1)) {
 			if (st.kind === "pos") out.set(st.value, (out.get(st.value) || 0) + 1);
 		}
 		return out;
@@ -149,14 +149,14 @@ export class MoveBuilder {
 
 	/** The origin square of a stack move in progress. */
 	origin() {
-		const first = this.steps[0];
-		const hasCount = this.steps.some((s) => s.kind === "count");
+		const first = this.gestures[0];
+		const hasCount = this.gestures.some((s) => s.kind === "count");
 		return first && first.kind === "pos" && hasCount ? first.value : null;
 	}
 
 	/** The pick-up count chosen so far, or 0. */
 	pickedCount() {
-		const st = this.steps.find((s) => s.kind === "count");
+		const st = this.gestures.find((s) => s.kind === "count");
 		return st ? Number(st.value) : 0;
 	}
 }

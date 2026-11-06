@@ -344,7 +344,7 @@ func TestWebImpulse_SubmitAndBackInAPlacingGame(t *testing.T) {
 	if evalBool(t, ctx, `document.getElementById("reset-move") !== null`) {
 		t.Error("a placing game offers Reset")
 	}
-	if !evalBool(t, ctx, `document.getElementById("undo-step") !== null`) {
+	if !evalBool(t, ctx, `document.getElementById("back") !== null`) {
 		t.Error("a placing game offers no Back")
 	}
 }

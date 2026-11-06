@@ -145,7 +145,7 @@ func TestRepro_AForcedInconsistencyWritesABundleThatReplays(t *testing.T) {
 		t.Fatalf("Bob joins: %v", err)
 	}
 	// Asking for the legal moves makes the liar record the move it hides.
-	if _, _, err := m.LegalMoves(ctx, created.RoomCode, 0); err != nil {
+	if _, _, err := legalSelections(ctx, m, created.RoomCode); err != nil {
 		t.Fatalf("legal moves: %v", err)
 	}
 	hidden := liar.droppedMove()
@@ -254,7 +254,7 @@ func TestRepro_ABundleCarriesThePathToThePosition(t *testing.T) {
 	// These are moves the liar does list, so nothing impossible happens yet.
 	names := []string{"Alice", "Bob"}
 	for i := 0; i < 3; i++ {
-		seat, legal, err := m.LegalMoves(ctx, created.RoomCode, 0)
+		seat, legal, err := legalSelections(ctx, m, created.RoomCode)
 		if err != nil || len(legal) == 0 {
 			t.Fatalf("move %d: %v", i, err)
 		}
@@ -267,7 +267,7 @@ func TestRepro_ABundleCarriesThePathToThePosition(t *testing.T) {
 	}
 
 	// Now the move the liar hides, which is the inconsistency.
-	seat, _, err := m.LegalMoves(ctx, created.RoomCode, 0)
+	seat, _, err := legalSelections(ctx, m, created.RoomCode)
 	if err != nil {
 		t.Fatalf("legal moves: %v", err)
 	}
@@ -438,7 +438,7 @@ func TestRepro_NothingElseWritesABundle(t *testing.T) {
 		}
 		names := []string{"Alice", "Bob"}
 		for ply := 0; ply < 12; ply++ {
-			seat, legal, err := m.LegalMoves(ctx, created.RoomCode, 0)
+			seat, legal, err := legalSelections(ctx, m, created.RoomCode)
 			if err != nil || len(legal) == 0 {
 				break
 			}

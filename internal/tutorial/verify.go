@@ -170,8 +170,8 @@ func drawn(game *catalog.CompiledGame, t Tutorial, pieces []string) (*state.Boar
 // made of ("piece red", then "pos d4") to point them at in its own way, and
 // the position a step that shows one depicts.
 type StepGuide struct {
-	PlaySteps [][]state.Gesture `json:"play_steps,omitempty"`
-	Shown     *state.BoardState `json:"show_state,omitempty"`
+	PlayGestures [][]state.Gesture `json:"play_gestures,omitempty"`
+	Shown        *state.BoardState `json:"show_state,omitempty"`
 }
 
 // Guide walks t as the page plays it and returns each step's guide. viewer
@@ -200,7 +200,7 @@ func Guide(game *catalog.CompiledGame, t Tutorial) ([]StepGuide, error) {
 			if err != nil {
 				return nil, fmt.Errorf("%s: step %d: %w", t.ID, i+1, err)
 			}
-			out[i].PlaySteps = append(out[i].PlaySteps, steps)
+			out[i].PlayGestures = append(out[i].PlayGestures, steps)
 			if err := p.play(text, 0); err != nil {
 				return nil, err
 			}

@@ -75,7 +75,7 @@ Legend: ✅ done · 🟡 partial · ⬜ not started · ➖ deliberately out of s
 |---|---|---|
 | ✅ | Rules & notation for LLMs | `get_game_info` |
 | ✅ | Decision-ready observation | `get_observation`: text board, TPS, legal moves, reward, done |
-| ✅ | Whole-position legal moves | `get_legal_moves` (no starting square needed) |
+| ✅ | Whole-position legal moves | `list_selections` (no starting square needed) |
 | ✅ | Notation / structured moves | `make_move` accepts `notation` or action/piece/from/to/count/path/drops |
 | ✅ | Back / resign / simulate / export | `undo_move`, `resign`, `simulate`, `export_game` |
 | ✅ | Gym-style environments | `env_reset`, `env_step`, `env_observe`, `env_fork`, `env_close`, `env_list`; in-memory, seedable, self-play, TPS start |
@@ -91,7 +91,7 @@ Legend: ✅ done · 🟡 partial · ⬜ not started · ➖ deliberately out of s
 | | Item | Notes |
 |---|---|---|
 | ✅ | Real board rendering | SVG, squares/points/graph styles, coordinates, stacks drawn as piles with height badges |
-| ✅ | Click-to-move for any game | driven by the server's legal-move list (`steps`), so no per-game UI code |
+| ✅ | Click-to-move for any game | driven by the server's selections and their gestures, so no per-game UI code |
 | ✅ | Move preview + confirm | `simulate`-backed ghost position; optional auto-submit |
 | ✅ | Hand/reserve panels, counters | per-seat pools; piece buttons for placement; capture counters |
 | ✅ | Turn tracking | status bar, to-move highlighting, move counter, title marker, browser notifications |

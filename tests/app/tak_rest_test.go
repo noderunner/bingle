@@ -291,17 +291,17 @@ func TestLegalMovesAllWithSteps(t *testing.T) {
 		Moves []struct {
 			Notation string `json:"notation"`
 			Action   string `json:"action"`
-			Steps    []struct{ Kind, Value string }
-		} `json:"moves"`
+			Gestures []struct{ Kind, Value string }
+		} `json:"options"`
 	}
-	if code := doJSON(t, "GET", baseURL+"/api/games/"+room+"/moves/legal?steps=1", nil, &lm); code != 200 {
+	if code := doJSON(t, "GET", baseURL+"/api/games/"+room+"/selections", nil, &lm); code != 200 {
 		t.Fatalf("status %d", code)
 	}
 	if lm.Seat != 1 || len(lm.Moves) != 25 {
 		t.Fatalf("seat=%d moves=%d, want 1/25", lm.Seat, len(lm.Moves))
 	}
 	first := lm.Moves[0]
-	if first.Action != "place" || len(first.Steps) != 2 || first.Steps[0].Kind != "piece" || first.Steps[1].Kind != "pos" {
+	if first.Action != "place" || len(first.Gestures) != 2 || first.Gestures[0].Kind != "piece" || first.Gestures[1].Kind != "pos" {
 		t.Errorf("first move = %+v", first)
 	}
 }
@@ -646,9 +646,9 @@ func TestHistoricalImpulseSeatAccountsForPasses(t *testing.T) {
 		for len(seats) < 70 && passedAt == 0 {
 			var legal struct {
 				Seat  int                         `json:"seat"`
-				Moves []struct{ Notation string } `json:"moves"`
+				Moves []struct{ Notation string } `json:"options"`
 			}
-			if code := doJSON(t, "GET", baseURL+"/api/games/"+room+"/moves/legal", nil, &legal); code != 200 {
+			if code := doJSON(t, "GET", baseURL+"/api/games/"+room+"/selections", nil, &legal); code != 200 {
 				break // game over
 			}
 			mv := legal.Moves[rng.Intn(len(legal.Moves))].Notation

@@ -8,11 +8,9 @@ import (
 	"time"
 
 	"github.com/noderunner/bingle/internal/auth"
-	"github.com/noderunner/bingle/internal/engine/board"
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/engine/state"
 	"github.com/noderunner/bingle/internal/store"
-	"github.com/noderunner/bingle/internal/trace"
 )
 
 // MoveRecord is one entry of ListMoves' return value, matching the REST
@@ -111,108 +109,12 @@ func (m *Manager) ListMoves(ctx context.Context, roomCode string, sinceSeq int) 
 	return records, nil
 }
 
-// ListLegalMoves returns every position `from` can legally move to right
-// now, per docs/history/plan.md section 6.8: if `from` has no occupant (including
-// when `from` isn't even a valid position on the board — that naturally has
-// no occupant either), it's not an error — this is an AI convenience query,
-// not a move attempt — so an empty slice is returned. Otherwise it returns
-// the destinations of every legal move of the stack at `from` (for the
-// seat that owns its top piece). Errors from the underlying store (e.g.
-// store.ErrNotFound for an unknown room code) are propagated unwrapped, as
-// GetState does. Always returns a non-nil (possibly empty) slice, matching
-// ListMoves' convention.
-func (m *Manager) ListLegalMoves(ctx context.Context, roomCode string, from board.PositionID) ([]board.PositionID, error) {
-	roomCode = canonRoom(roomCode)
-	game, err := m.loadGame(ctx, roomCode, false)
-	if err != nil {
-		return nil, err
-	}
-
-	compiled, err := m.compiledFor(game)
-	if err != nil {
-		return nil, err
-	}
-
-	bs := state.NewBoardState()
-	if err := bs.UnmarshalJSON([]byte(game.BoardState)); err != nil {
-		return nil, fmt.Errorf("session: unmarshal board state for room %q: %w", roomCode, err)
-	}
-
-	occupant, ok := bs.Get(from)
-	if !ok {
-		return []board.PositionID{}, nil
-	}
-	if _, known := compiled.Pieces[occupant.Piece]; !known {
-		return nil, fmt.Errorf("session: piece %q not found in game definition %q", occupant.Piece, game.GameDefID)
-	}
-	seat, ok := compiled.SeatOfColor(occupant.Color)
-	if !ok {
-		return []board.PositionID{}, nil
-	}
-	if ok, err := m.mayListMoves(ctx, compiled, game, seat); err != nil {
-		return nil, err
-	} else if !ok {
-		return []board.PositionID{}, nil
-	}
-
-	legal := []board.PositionID{}
-	seen := map[board.PositionID]bool{}
-	for _, mv := range state.LegalSelections(compiled, bs, seat) {
-		if mv.From != from || seen[mv.To] {
-			continue
-		}
-		seen[mv.To] = true
-		legal = append(legal, mv.To)
-	}
-
-	return legal, nil
-}
-
-// LegalMove is one legal move in the full listing: the structured move, its
-// canonical notation, and the interactive selection steps that build it.
-type LegalMove struct {
-	Move     state.Selection
-	Notation string
-	Steps    []state.Gesture
-}
-
-// LegalMoves lists every legal move for seat in roomCode's current position
-// (seat 0 means whoever is to move). The game must be active. Moves are in
-// the engine's deterministic order.
-func (m *Manager) LegalMoves(ctx context.Context, roomCode string, seat int) (int, []LegalMove, error) {
-	roomCode = canonRoom(roomCode)
-	game, err := m.loadGame(ctx, roomCode, false)
-	if err != nil {
-		return 0, nil, err
-	}
-	if game.Status != "active" || game.ImpulseSeat == nil {
-		return 0, nil, ErrGameNotActive
-	}
-	compiled, err := m.compiledFor(game)
-	if err != nil {
-		return 0, nil, err
-	}
-	if seat == 0 {
-		seat = *game.ImpulseSeat
-	}
-	if ok, err := m.mayListMoves(ctx, compiled, game, seat); err != nil {
-		return 0, nil, err
-	} else if !ok {
-		return seat, nil, nil
-	}
-	bs := state.NewBoardState()
-	if err := bs.UnmarshalJSON([]byte(game.BoardState)); err != nil {
-		return 0, nil, fmt.Errorf("session: unmarshal board state for room %q: %w", roomCode, err)
-	}
-	// LegalMoves and the notation it formats take no context and do no I/O
-	// (ADR 0025): the span goes around the call, never inside a ruleset.
-	_, legalSpan := trace.Start(ctx, "engine.Legal")
-	legalStart := time.Now()
-	out := legalMoveList(compiled, bs, seat)
-	m.mx.Legal(gameFamily(compiled), time.Since(legalStart), len(out))
-	legalSpan.Set("legal", len(out))
-	legalSpan.End()
-	return seat, out, nil
+// SelectionOption is one legal selection: the structured selection, its
+// canonical notation, and the gestures that build it.
+type SelectionOption struct {
+	Selection state.Selection
+	Notation  string
+	Gestures  []state.Gesture
 }
 
 // mayListMoves reports whether the request may see what seat can do. In a game with secrets the
@@ -235,11 +137,11 @@ func (m *Manager) mayListMoves(ctx context.Context, compiled *catalog.CompiledGa
 	return false, nil
 }
 
-func legalMoveList(compiled *catalog.CompiledGame, bs *state.BoardState, seat int) []LegalMove {
+func legalMoveList(compiled *catalog.CompiledGame, bs *state.BoardState, seat int) []SelectionOption {
 	moves := state.LegalSelections(compiled, bs, seat)
-	out := make([]LegalMove, len(moves))
+	out := make([]SelectionOption, len(moves))
 	for i, mv := range moves {
-		out[i] = LegalMove{Move: mv, Notation: state.FormatMove(compiled, mv), Steps: state.Gestures(compiled, mv)}
+		out[i] = SelectionOption{Selection: mv, Notation: state.FormatMove(compiled, mv), Gestures: state.Gestures(compiled, mv)}
 	}
 	return out
 }
@@ -257,7 +159,7 @@ type Simulation struct {
 	// Applied lists the canonical notation of each applied move.
 	Applied []string
 	// Legal lists the legal moves for the seat to move (empty when ended).
-	Legal []LegalMove
+	Legal []SelectionOption
 	// TPS is the position in TPS for PTN games (empty otherwise or when
 	// the simulated game ended).
 	TPS string

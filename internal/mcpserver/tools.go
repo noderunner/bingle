@@ -17,8 +17,8 @@ import (
 
 // registerTools adds every MCP tool this package implements to mcpServer,
 // each backed by mgr. Per docs/history/plan.md section 6.10, these are the room tools
-// (list_game_defs, create_game, join_game, get_state, list_legal_moves,
-// make_move, get_moves); registerPlayTools, registerEnvTools, registerLobbyTools
+// (list_game_defs, create_game, join_game, get_state, make_move,
+// list_selections, get_moves); registerPlayTools, registerEnvTools, registerLobbyTools
 // and registerBatchTools add the rest.
 func registerTools(mcpServer *server.MCPServer, mgr *session.Manager) {
 	mcpServer.AddTool(
@@ -69,15 +69,6 @@ func registerTools(mcpServer *server.MCPServer, mgr *session.Manager) {
 			mcp.WithString("room_code", mcp.Required(), mcp.Description("The room code of the game to fetch state for.")),
 		),
 		handleGetState(mgr),
-	)
-
-	mcpServer.AddTool(
-		mcp.NewTool("list_legal_moves",
-			mcp.WithDescription("List every position a piece can legally move to right now, given its current position. Returns an empty array if there's no piece at that position (this is not a move attempt)."),
-			mcp.WithString("room_code", mcp.Required(), mcp.Description("The room code of the game to query.")),
-			mcp.WithString("from", mcp.Required(), mcp.Description("The position of the piece to query legal destinations for.")),
-		),
-		handleListLegalMoves(mgr),
 	)
 
 	mcpServer.AddTool(
@@ -370,47 +361,6 @@ func handleGetState(mgr *session.Manager) server.ToolHandlerFunc {
 			WinnerSeat:  snapshot.WinnerSeat,
 			EndReason:   snapshot.EndReason,
 		}), nil
-	}
-}
-
-// handleListLegalMoves implements the list_legal_moves tool: read
-// {"room_code", "from"}, reject blank/whitespace-only values with a
-// tool-level error before calling Manager, then respond with a JSON array
-// of every position that piece can legally move to right now. Always
-// returns "[]" rather than "null" when there are none (an unoccupied `from`
-// is not an error — this is an AI convenience query, not a move attempt).
-// Business-logic failures (e.g. an unknown room_code, store.ErrNotFound)
-// are reported as a tool-level error via mcp.NewToolResultError, not a
-// transport-level error, per docs/history/plan.md section 6.10.
-func handleListLegalMoves(mgr *session.Manager) server.ToolHandlerFunc {
-	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		roomCode, err := request.RequireString("room_code")
-		if err != nil {
-			return mcp.NewToolResultError("room_code is required: " + err.Error()), nil
-		}
-		from, err := request.RequireString("from")
-		if err != nil {
-			return mcp.NewToolResultError("from is required: " + err.Error()), nil
-		}
-
-		if strings.TrimSpace(roomCode) == "" {
-			return mcp.NewToolResultError("room_code is required"), nil
-		}
-		if strings.TrimSpace(from) == "" {
-			return mcp.NewToolResultError("from is required"), nil
-		}
-
-		positions, err := mgr.ListLegalMoves(ctx, roomCode, board.PositionID(from))
-		if err != nil {
-			return mcp.NewToolResultError(err.Error()), nil
-		}
-
-		out := make([]string, 0, len(positions))
-		for _, pos := range positions {
-			out = append(out, string(pos))
-		}
-
-		return mcp.NewToolResultStructuredOnly(out), nil
 	}
 }
 

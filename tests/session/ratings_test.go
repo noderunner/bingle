@@ -304,7 +304,7 @@ func TestRated_EveryWayOfEnding(t *testing.T) {
 		room := w.start(ana, bea)
 		who := map[int]player{1: ana, 2: bea}
 		for range 400 {
-			seat, legal, err := w.m.LegalMoves(ana.ctx, room, 0)
+			seat, legal, err := legalSelections(ana.ctx, w.m, room)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -473,14 +473,14 @@ func TestRated_OneRatingAcrossAFamily(t *testing.T) {
 		if _, err := w.m.JoinGame(bea.ctx, created.RoomCode, bea.handle, session.RolePlayer); err != nil {
 			t.Fatal(err)
 		}
-		_, legal, err := w.m.LegalMoves(ana.ctx, created.RoomCode, 1)
+		_, legal, err := legalSelections(ana.ctx, w.m, created.RoomCode)
 		if err != nil {
 			t.Fatal(err)
 		}
 		if _, err := w.m.PlayNotation(ana.ctx, created.RoomCode, ana.handle, legal[0].Notation); err != nil {
 			t.Fatal(err)
 		}
-		_, legal, err = w.m.LegalMoves(ana.ctx, created.RoomCode, 2)
+		_, legal, err = legalSelections(ana.ctx, w.m, created.RoomCode)
 		if err != nil {
 			t.Fatal(err)
 		}

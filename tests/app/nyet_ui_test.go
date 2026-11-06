@@ -81,9 +81,9 @@ func TestWebNyet_PlayARoundThroughTheUI(t *testing.T) {
 		var legal struct {
 			Moves []struct {
 				Notation string `json:"notation"`
-			} `json:"moves"`
+			} `json:"options"`
 		}
-		doJSON(t, "GET", baseURL+"/api/games/"+created.RoomCode+"/moves/legal", nil, &legal)
+		doJSON(t, "GET", baseURL+"/api/games/"+created.RoomCode+"/selections", nil, &legal)
 		var builder string
 		_ = chromedp.Run(ctx, chromedp.Evaluate(`document.querySelector("#move-bar") ? document.querySelector("#move-bar").innerText.replace(/\n/g, " ") : "no move bar"`, &builder))
 		t.Fatalf("the UI should have crossed boxes and played cards: %d moves (%s); %d legal moves %v; move bar: %s", st.MoveSeq, where, len(legal.Moves), legal.Moves, builder)
@@ -110,9 +110,9 @@ func nyetPlay(t *testing.T, baseURL, room string, stop func(moves []string) bool
 		var legal struct {
 			Moves []struct {
 				Notation string `json:"notation"`
-			} `json:"moves"`
+			} `json:"options"`
 		}
-		doJSON(t, "GET", fmt.Sprintf("%s/api/games/%s/moves/legal?seat=%d", baseURL, room, st.ImpulseSeat), nil, &legal)
+		doJSON(t, "GET", fmt.Sprintf("%s/api/games/%s/selections", baseURL, room), nil, &legal)
 		if len(legal.Moves) == 0 {
 			t.Fatalf("no legal move for seat %d after %d moves", st.ImpulseSeat, i)
 		}

@@ -58,17 +58,17 @@ type cfLegal struct {
 	Moves []struct {
 		Notation string `json:"notation"`
 		Action   string `json:"action"`
-		Steps    []struct {
+		Gestures []struct {
 			Kind  string `json:"kind"`
 			Value string `json:"value"`
-		} `json:"steps"`
-	} `json:"moves"`
+		} `json:"gestures"`
+	} `json:"options"`
 }
 
 func cfLegalMoves(t *testing.T, base, room string) cfLegal {
 	t.Helper()
 	var l cfLegal
-	if code := doJSON(t, "GET", base+"/api/games/"+room+"/moves/legal?steps=1", nil, &l); code != 200 {
+	if code := doJSON(t, "GET", base+"/api/games/"+room+"/selections", nil, &l); code != 200 {
 		t.Fatalf("legal: %d", code)
 	}
 	return l

@@ -133,15 +133,6 @@ func registerPlayTools(s *server.MCPServer, mgr *session.Manager) {
 	)
 
 	s.AddTool(
-		mcp.NewTool("get_legal_moves",
-			mcp.WithDescription("List every legal move for the player to move (or for `seat`), as notation strings plus structured fields. Unlike list_legal_moves this needs no starting square."),
-			mcp.WithString("room_code", mcp.Required(), mcp.Description("The room code of the game.")),
-			mcp.WithNumber("seat", mcp.Description("Seat to list moves for; defaults to the seat whose turn it is.")),
-		),
-		handleGetLegalMoves(mgr),
-	)
-
-	s.AddTool(
 		mcp.NewTool("undo_move",
 			mcp.WithDescription("In a game for one seat (patience), take back your last move, unless it drew or turned a card up. In any other game a move stands: it is a whole impulse, sent at once."),
 			mcp.WithString("room_code", mcp.Required(), mcp.Description("The room code of the game.")),
@@ -160,7 +151,7 @@ func registerPlayTools(s *server.MCPServer, mgr *session.Manager) {
 	)
 
 	s.AddTool(
-		mcp.NewTool("auto_play_turn",
+		mcp.NewTool("auto_play_impulse",
 			mcp.WithDescription("In a real-time game with no timer, have a tactical bot play the turn of a player who is past the second warning. It takes another player at the table whose seat shows as connected, which takes an open WebSocket: an agent with none is refused."),
 			mcp.WithString("room_code", mcp.Required(), mcp.Description("The room code of the game.")),
 			mcp.WithString("player_name", mcp.Required(), mcp.Description("Your player name.")),
@@ -170,7 +161,7 @@ func registerPlayTools(s *server.MCPServer, mgr *session.Manager) {
 			if errRes != nil {
 				return errRes, nil
 			}
-			snap, err := mgr.AutoPlayTurn(ctx, room, player)
+			snap, err := mgr.AutoPlayImpulse(ctx, room, player)
 			if err != nil {
 				return mcp.NewToolResultError(err.Error()), nil
 			}
@@ -246,7 +237,7 @@ func registerPlayTools(s *server.MCPServer, mgr *session.Manager) {
 				return mcp.NewToolResultError(err.Error()), nil
 			}
 			out := map[string]any{
-				"notation": hint.Notation, "steps": hint.Steps, "impulse_seat": hint.ImpulseSeat, "bot": hint.Bot,
+				"notation": hint.Notation, "steps": hint.Gestures, "impulse_seat": hint.ImpulseSeat, "bot": hint.Bot,
 			}
 			text := fmt.Sprintf("Suggested move: %s", hint.Notation)
 			if hint.Estimated {
@@ -482,7 +473,7 @@ func orDash(s string) string {
 	return s
 }
 
-// legalMoveResult is one entry of get_legal_moves' result.
+// legalMoveResult is one selection of list_selections' and simulate's results.
 type legalMoveResult struct {
 	Notation string   `json:"notation"`
 	Action   string   `json:"action"`
@@ -495,37 +486,20 @@ type legalMoveResult struct {
 	Aim      string   `json:"aim,omitempty"`
 }
 
-func legalMoveResults(moves []session.LegalMove) []legalMoveResult {
+func legalMoveResults(moves []session.SelectionOption) []legalMoveResult {
 	out := make([]legalMoveResult, len(moves))
 	for i, lm := range moves {
 		r := legalMoveResult{
-			Notation: lm.Notation, Action: lm.Move.Action, Piece: lm.Move.Piece,
-			From: string(lm.Move.From), To: string(lm.Move.To), Count: lm.Move.Count, Drops: lm.Move.Drops,
-			Aim: string(lm.Move.Aim),
+			Notation: lm.Notation, Action: lm.Selection.Action, Piece: lm.Selection.Piece,
+			From: string(lm.Selection.From), To: string(lm.Selection.To), Count: lm.Selection.Count, Drops: lm.Selection.Drops,
+			Aim: string(lm.Selection.Aim),
 		}
-		for _, p := range lm.Move.Path {
+		for _, p := range lm.Selection.Path {
 			r.Path = append(r.Path, string(p))
 		}
 		out[i] = r
 	}
 	return out
-}
-
-func handleGetLegalMoves(mgr *session.Manager) server.ToolHandlerFunc {
-	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		room, err := request.RequireString("room_code")
-		if err != nil || strings.TrimSpace(room) == "" {
-			return mcp.NewToolResultError("room_code is required"), nil
-		}
-		seat, moves, err := mgr.LegalMoves(ctx, room, request.GetInt("seat", 0))
-		if err != nil {
-			return mcp.NewToolResultError(err.Error()), nil
-		}
-		return mcp.NewToolResultStructuredOnly(struct {
-			Seat  int               `json:"seat"`
-			Moves []legalMoveResult `json:"moves"`
-		}{Seat: seat, Moves: legalMoveResults(moves)}), nil
-	}
 }
 
 func handleUndoMove(mgr *session.Manager) server.ToolHandlerFunc {

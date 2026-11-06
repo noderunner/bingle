@@ -197,11 +197,11 @@ func (m *Manager) realTimeWait(game store.Game, players []store.Player) *RealTim
 	}
 }
 
-// AutoPlayTurn has a tactical bot play the turn the game has been waiting on since
+// AutoPlayImpulse has a tactical bot play the impulse the game has been waiting on since
 // past the second warning, at the asking of another connected person at the table.
 // If the player is disconnected at that moment, the bot goes on playing their turns
 // until they reconnect.
-func (m *Manager) AutoPlayTurn(ctx context.Context, roomCode, name string) (StateSnapshot, error) {
+func (m *Manager) AutoPlayImpulse(ctx context.Context, roomCode, name string) (StateSnapshot, error) {
 	roomCode = canonRoom(roomCode)
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), botBackgroundLimit)
 	defer cancel()

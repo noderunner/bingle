@@ -61,7 +61,7 @@ func benchMoves(b *testing.B, mx *metrics.Metrics, opts ...app.Option) {
 	type legalMoves struct {
 		Moves []struct {
 			Notation string `json:"notation"`
-		} `json:"moves"`
+		} `json:"options"`
 	}
 
 	newGame := func() (string, []string) {
@@ -80,7 +80,7 @@ func benchMoves(b *testing.B, mx *metrics.Metrics, opts ...app.Option) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		resp, err := http.Get(srv.URL + "/api/games/" + room + "/moves/legal")
+		resp, err := http.Get(srv.URL + "/api/games/" + room + "/selections")
 		if err != nil {
 			b.Fatalf("legal moves: %v", err)
 		}

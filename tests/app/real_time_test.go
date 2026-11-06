@@ -41,7 +41,7 @@ func TestRESTRealTime_TheSettingAndTheOffer(t *testing.T) {
 	if game.RealTime == nil || game.RealTime.First != 60 || game.RealTime.Second != 300 || game.RealTime.Wait == nil || game.RealTime.Wait.Seat != 1 || game.RealTime.Wait.Stage != 0 {
 		t.Fatalf("real_time = %+v", game.RealTime)
 	}
-	if code := doJSON(t, "POST", base+"/api/games/"+room+"/auto-play-turn", map[string]any{"player_name": "Bob"}, nil); code != 409 {
+	if code := doJSON(t, "POST", base+"/api/games/"+room+"/auto-play-impulse", map[string]any{"player_name": "Bob"}, nil); code != 409 {
 		t.Errorf("no turn on offer: %d, want 409", code)
 	}
 	bad := map[string]any{"game_def_id": "gomoku", "player_name": "Alice", "real_time": map[string]any{"first_warning_seconds": 5}}

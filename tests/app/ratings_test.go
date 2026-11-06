@@ -227,7 +227,7 @@ func TestRatedGames_UI(t *testing.T) {
 		t.Fatalf("a move: %d", code)
 	}
 	waitJS(t, ctx, "the move", `document.querySelector('#move-list button.mv') !== null`, 15*time.Second)
-	if evalBool(t, ctx, `document.getElementById("undo-step") !== null`) {
+	if evalBool(t, ctx, `document.getElementById("back") !== null`) {
 		t.Error("a rated game offers an undo")
 	}
 	if code := bea.do("POST", path+"/moves", map[string]any{"player_name": "bea", "notation": "d4"}, nil); code != 200 {

@@ -134,7 +134,7 @@ func playOneMove(t *testing.T, m *session.Manager, gameID string, liar *lyingRul
 	}
 	// Asking for the legal moves also runs Legal, which is what makes the
 	// liar record the move it is hiding.
-	_, legal, err := m.LegalMoves(ctx, created.RoomCode, 0)
+	_, legal, err := legalSelections(ctx, m, created.RoomCode)
 	if err != nil {
 		t.Fatalf("legal moves: %v", err)
 	}

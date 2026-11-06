@@ -215,7 +215,7 @@ func TestMetrics_RecordTheGameAndWhyItEnded(t *testing.T) {
 	doJSON(t, "POST", baseURL+"/api/games/"+room+"/join", map[string]any{"player_name": "Bo", "role": "player"}, nil)
 
 	// Ana resigns, which is the shortest way to a finished game.
-	doJSON(t, "GET", baseURL+"/api/games/"+room+"/moves/legal", nil, nil)
+	doJSON(t, "GET", baseURL+"/api/games/"+room+"/selections", nil, nil)
 	if code := doJSON(t, "POST", baseURL+"/api/games/"+room+"/resign", map[string]any{"player_name": "Ana"}, nil); code != 200 {
 		t.Fatalf("Ana resigns: %d", code)
 	}

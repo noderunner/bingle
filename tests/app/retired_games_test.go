@@ -154,8 +154,8 @@ func TestRetiredGames_NothingMoreCanBeDone(t *testing.T) {
 		t.Errorf("GET /state of a retired game: %d, want 410", code)
 	}
 	// Legal moves are refused already because the game is over (409).
-	if code := doJSON(t, "GET", base+"/api/games/"+won+"/moves/legal", nil, nil); code < 400 {
-		t.Errorf("GET /moves/legal of a retired game: %d", code)
+	if code := doJSON(t, "GET", base+"/api/games/"+won+"/selections", nil, nil); code < 400 {
+		t.Errorf("GET /selections of a retired game: %d", code)
 	}
 	// Nobody can start one either: the game is not offered.
 	if code := doJSONAs(t, key, "POST", base+"/api/games", map[string]any{"game_def_id": "tic-tac-toe", "player_name": "Cy"}, nil); code != 404 {
