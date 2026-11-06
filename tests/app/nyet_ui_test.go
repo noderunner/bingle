@@ -69,7 +69,9 @@ func TestWebNyet_PlayARoundThroughTheUI(t *testing.T) {
 			stuck = 0
 			time.Sleep(40 * time.Millisecond)
 		}
-		if st := cfGet(t, baseURL, created.RoomCode); st.MoveSeq >= 70 || st.Status == "finished" {
+		// Until the terms are set: a round is fewer moves than it was rows, so a
+		// count of moves alone could run on into the next round (ADR 0114).
+		if st := cfGet(t, baseURL, created.RoomCode); (st.MoveSeq >= 40 && evalBool(t, ctx, `document.querySelectorAll('#choice-grid .cg-box.chosen').length === 5`)) || st.MoveSeq >= 70 || st.Status == "finished" {
 			break
 		}
 	}

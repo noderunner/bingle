@@ -459,7 +459,8 @@ func TestABotThatIsTheFirstPlayerChoosesTheDirection(t *testing.T) {
 			time.Sleep(100 * time.Millisecond)
 		}
 		// The direction is the first selection of Great Cthulhu's first move (ADR 0114).
-		if len(moves) == 0 || moves[0].Seat != 1 || !(moves[0].Notation == "cw" || moves[0].Notation == "ccw" || strings.HasPrefix(moves[0].Notation, "cw; ") || strings.HasPrefix(moves[0].Notation, "ccw; ")) {
+		direction := len(moves) > 0 && (moves[0].Notation == "cw" || moves[0].Notation == "ccw" || strings.HasPrefix(moves[0].Notation, "cw; ") || strings.HasPrefix(moves[0].Notation, "ccw; "))
+		if !direction || moves[0].Seat != 1 {
 			t.Fatalf("%s: the first move is %+v, want Great Cthulhu's choice of direction", kind, moves)
 		}
 	}
