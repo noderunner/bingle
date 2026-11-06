@@ -40,8 +40,7 @@ before, only seats nobody owns ([ADR 0067](decisions/0067-principals-and-guest-k
 | `create_game` | new room; `opponent` seats a bot, `seat` picks your side, `options` the setup choices of games that have them (Cthulhu Wars: `{"factions": ["ww","sl","gc","cc","ys"], "high-priests": true, "azathoth": true, "dreamlands": true, "beyond": true, "igoo-yig": true, "book-swaps": {"bg": "shrivel"}}`; the packs and each Independent, `igoo-abhoth` … `igoo-yig`, are bools) |
 | `join_game` | join an existing room by code (player or spectator) |
 | `get_observation` | **the decision context**: text board, TPS, whose turn, legal moves, reward, done |
-| `get_legal_moves` | every legal move for the player to move (notation + structured fields); in a game with secrets, empty unless the request holds that seat (ADR 0112) |
-| `list_selections` | what the seat on impulse may select next after the selections `made` (joined by `; `), the position after them, and `complete` once they are a whole move ([ADR 0114](decisions/0114-impulses-selections-moves-and-gestures.md)); answered on the same terms as `get_legal_moves` |
+| `list_selections` | what the seat on impulse may select next after the selections `made` (joined by `; `), the position after them, and `complete` once they are a whole move ([ADR 0114](decisions/0114-impulses-selections-moves-and-gestures.md)); each option has its notation and structured fields (`action`, `piece`, `from`, `to`, …). In a game with secrets, empty unless the request holds that seat (ADR 0112) |
 | `make_move` | play `notation` (preferred): one selection, or a whole impulse of several joined by `; `, applied all or nothing; or structured action/piece/from/to/count/path/drops/aim. `ply` (from `list_selections`) refuses it if the game has moved on |
 | `suggest_move` | a built-in bot's choice for the position (or a variation); only in games against bots or after the game |
 | `undo_move` / `resign` | in a game for one seat, take back the last move, unless it drew or turned a card up (elsewhere a move stands: it is a whole impulse) / concede |
@@ -49,7 +48,7 @@ before, only seats nobody owns ([ADR 0067](decisions/0067-principals-and-guest-k
 | `simulate` | what-if: apply a line of moves to the current or a past position |
 | `import_game` | load a PTN document or move list into a new room (validated, full history) for replay and `simulate` / `suggest_move` analysis |
 | `export_game` | full record: moves in notation, initial/final position, PTN (Tak) |
-| `get_state`, `get_moves`, `list_legal_moves` | the v1 tools, unchanged |
+| `get_state`, `get_moves` | the v1 tools, unchanged |
 
 A game with setup options lists them in `get_game_info` (`options`); the game
 that `create_game` makes for a choice has an id of its own
@@ -277,6 +276,6 @@ obs, reward, terminated, truncated, info = env.step(info["legal_action_ids"][0])
 
 The room tools are also available over REST, e.g.
 `GET /api/games/{code}/observe?player_name=…`,
-`GET /api/games/{code}/moves/legal`, `POST /api/games/{code}/simulate`,
+`GET /api/games/{code}/selections`, `POST /api/games/{code}/simulate`,
 `POST /api/games/{code}/undo`, `GET /api/games/{code}/export?format=ptn`,
 `GET /api/game-defs/{id}`, `GET /api/bots`.

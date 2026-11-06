@@ -52,7 +52,7 @@ is. The game's badges are in `.table-badges`, with `#conn-badge` shown only when
 Its height is limited to the rail's, and it scrolls inside if it needs more. On the player's turn it has `.acting`, which pins it to the edges of the rail, so it
 is in view however far the rail is scrolled. It neither moves the rail nor takes the keyboard.
 
-Once a piece is chosen, `#pending-move` shows the game's `piece_action` word and the piece's picture. *Back* (`#undo-step`)
+Once a piece is chosen, `#pending-move` shows the game's `piece_action` word and the piece's picture. *Back* (`#back`)
 is the only button that undoes a gesture here: `#reset-move` is not drawn, and Esc still clears the move. A selection in Blooms
 is a colour and a cell, so the two did the same thing; a game whose selections take more gestures will need to look at this when it joins.
 
@@ -72,7 +72,7 @@ marks one. A player with the phone's rotation locked sees only the cards.
 ## How moves are entered
 
 The server lists every legal move of the position
-(`GET /api/games/{code}/moves/legal?steps=1`). Each move carries `steps`, the
+(`GET /api/games/{code}/selections`). Each selection carries `gestures`, the
 ordered gestures that enter it:
 
 | action | steps |
@@ -96,9 +96,8 @@ Because the UI only follows the server's list, any new game works without UI
 changes. (Keyboard play is described at the end.) Hovering an empty target
 square previews the piece a click would place, in the colour it will have.
 
-In the words of [ADR 0114](decisions/0114-impulses-selections-moves-and-gestures.md), each move listed here is one
-selection and its `steps` are gesture data. Until that ADR's first phase the Go games send each selection as a move of
-its own, and `steps`, `moves/legal` and `#undo-step` keep their names.
+In the words of [ADR 0114](decisions/0114-impulses-selections-moves-and-gestures.md), each option listed here is one
+selection, and its `gestures` are the clicks that enter it.
 
 ## Turn tracking
 
@@ -168,7 +167,7 @@ its own, and `steps`, `moves/legal` and `#undo-step` keep their names.
   back; one made at a ply the game has left is dropped. The selection that ends the
   impulse waits for *Submit* (`#submit-move`, Enter), unless the player turns off
   `#opt-confirm`, and then the whole move goes in one call, with its `ply`. **Back**
-  (`#undo-step`, Backspace) clears a gesture, then takes the last selection off the
+  (`#back`, Backspace) clears a gesture, then takes the last selection off the
   pending move, without the server. A button such as *End turn* plays at once:
   pressing it is the Submit. A move with nothing left to choose, such as a forced pass,
   always gets `#submit-move`, as nothing else could play it.
@@ -364,7 +363,7 @@ table. **Klondike, Spider and FreeCell** have `.sol-top` (`#sol-stock`, `.sol-wa
 foundations) over `.sol-columns` of `.sol-column`; a pile has `data-pile` (`t3`, `w`, `f1`, `c2`) and a pile that
 takes the cards in hand now has the class `sol-target`.
 
-A move is two gestures in the server's `steps`, `from-<pile>-<count>` and `to-<pile>`: a card a move can start with is a
+A move is two gestures in the server's `gestures`, `from-<pile>-<count>` and `to-<pile>`: a card a move can start with is a
 `button[data-from]`. Clicking one picks it up (`sol-picked`), or plays it at once if it has one place to go. Clicking
 it again sends it to its foundation if it can go, and otherwise lets go. It can also be dragged: `.sol-ghost` follows
 the pointer, the cards on top of it come along, and a drop on a pile that does not take them plays nothing. The width
@@ -556,7 +555,7 @@ shows only to its player, with the action's `impulse` as the question it waits o
 A Move gathers its units in the card first (`#move-queue`): clicking a token lifts it off the map into the card, from one area, as far as the Power
 goes, with `.queue-unit[data-piece]` to take one out and `#move-queue-cost` for the running cost. A click on a highlighted
 area adds each unit's selection to the pending move ([ADR 0100](decisions/0100-a-move-gathers-its-units.md), ADR 0114), and Back takes the group off together.
-*Back* is one of the actions too (`#undo-step`, offered only while the pending move has a selection to take off).
+*Back* is one of the actions too (`#back`, offered only while the pending move has a selection to take off).
 
 **Gates and their occupants.** A Gate is a chip among the tokens; the figure
 drawn on it is the unit that occupies it (`.gate-holder[data-holder]`, from
@@ -934,7 +933,7 @@ legal-target overlays. Piece appearance comes from `shape` and the seat color.
 `#board svg`, `.cell[data-position]` (`.clickable` when a legal next click),
 `.piece[data-position,data-piece,data-color,data-level,data-top]`,
 `button.hand-piece[data-piece]`, `#count-picker button[data-count]`,
-`#submit-move`, `#reset-move`, `#undo-step`, `#resign`,
+`#submit-move`, `#reset-move`, `#back`, `#resign`,
 `.seat-strip .clock[data-clock]` (a seat number with a game clock, `turn` for a
 per-move allowance), `#clock-field` with `#clock_seconds`, `#clock-handicap`,
 `#clock_seconds_1|2`, `#clock-increment-row` with `#clock_increment`,

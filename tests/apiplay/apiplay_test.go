@@ -1,5 +1,5 @@
 // Package apiplay_test plays every game to a finish over HTTP, as a client with no browser and no
-// knowledge of any game would: it learns the games from GET /game-defs, asks GET /moves/legal what
+// knowledge of any game would: it learns the games from GET /game-defs, asks GET /selections what
 // the seat to move may do, and plays one with POST /moves. A game that cannot be finished this way
 // is a bug, because a native client and a private game both depend on it (the plugins plan, step 1).
 package apiplay_test
@@ -142,9 +142,9 @@ func playOut(c *client, def gameDef, options map[string]any, rng *rand.Rand, lim
 		}
 		var legal struct {
 			Seat  int              `json:"seat"`
-			Moves []map[string]any `json:"moves"`
+			Moves []map[string]any `json:"options"`
 		}
-		c.must(http.MethodGet, game+"/moves/legal", nil, &legal)
+		c.must(http.MethodGet, game+"/selections", nil, &legal)
 		if legal.Seat != *pos.Impulse {
 			c.t.Fatalf("move %d: state says seat %d is to move, the legal moves are for seat %d", played, *pos.Impulse, legal.Seat)
 		}

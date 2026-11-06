@@ -119,9 +119,9 @@ func TestWebNyet_PlayersAreAnimalsWithTheirCardsCounted(t *testing.T) {
 	var legal struct {
 		Moves []struct {
 			Notation string `json:"notation"`
-		} `json:"moves"`
+		} `json:"options"`
 	}
-	doJSON(t, "GET", fmt.Sprintf("%s/api/games/%s/moves/legal?seat=%d", baseURL, room, st.ImpulseSeat), nil, &legal)
+	doJSON(t, "GET", fmt.Sprintf("%s/api/games/%s/selections", baseURL, room), nil, &legal)
 	var info struct {
 		Seats []struct {
 			Seat int    `json:"seat"`

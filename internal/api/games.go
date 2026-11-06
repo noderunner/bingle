@@ -638,33 +638,6 @@ func (h *handlers) handleHistory(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, entries)
 }
 
-// handleListLegalMoves implements GET /games/{code}/legal-moves: decode the
-// REQUIRED ?from= query param (400 if missing/blank), then respond with a
-// JSON array of every position that piece can legally move to right now.
-// Always writes "[]" rather than "null" when there are none.
-func (h *handlers) handleListLegalMoves(w http.ResponseWriter, r *http.Request) {
-	code := chi.URLParam(r, "code")
-
-	from := r.URL.Query().Get("from")
-	if strings.TrimSpace(from) == "" {
-		writeError(w, errors.New("api: from is required"))
-		return
-	}
-
-	positions, err := h.mgr.ListLegalMoves(r.Context(), code, board.PositionID(from))
-	if err != nil {
-		writeError(w, err)
-		return
-	}
-
-	out := make([]string, 0, len(positions))
-	for _, pos := range positions {
-		out = append(out, string(pos))
-	}
-
-	writeJSON(w, http.StatusOK, out)
-}
-
 // writeJSON writes v as a JSON response body with the given status code.
 func writeJSON(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json")

@@ -125,9 +125,9 @@ func TestAPIDocs_TheHexWalkthroughWorks(t *testing.T) {
 		Seat  int `json:"seat"`
 		Moves []struct {
 			Notation string `json:"notation"`
-		} `json:"moves"`
+		} `json:"options"`
 	}
-	if code := doJSONAs(t, key, "GET", game+"/moves/legal", nil, &legal); code != 200 || legal.Seat != 1 || len(legal.Moves) != 49 {
+	if code := doJSONAs(t, key, "GET", game+"/selections", nil, &legal); code != 200 || legal.Seat != 1 || len(legal.Moves) != 49 {
 		t.Fatalf("legal: %d seat %d, %d moves", code, legal.Seat, len(legal.Moves))
 	}
 	var played struct {

@@ -114,8 +114,7 @@ code, docs, API paths and names.
   never depend on gestures.
 - *Step* is none of these: it keeps the DSL's `step` action, a tutorial's steps and a training environment's step.
 - In Go, `state.Selection` is one selection, `state.Move` the selections of one impulse and `state.Gesture` one
-  gesture. Until the rest of ADR 0114's first phase, the API and MCP keep older names in places: `moves/legal`,
-  `legal-moves`, the `steps` field, `get_legal_moves`, `auto_play_turn`.
+  gesture; the API's `selections` query lists selections with their `gestures`.
 
 A game's own rules and its players' words keep their terms.
 

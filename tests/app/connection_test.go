@@ -273,9 +273,9 @@ func TestConnection_FollowsThePlayerThroughAPieSwap(t *testing.T) {
 	var legal struct {
 		Moves []struct {
 			Notation string `json:"notation"`
-		} `json:"moves"`
+		} `json:"options"`
 	}
-	doJSON(t, "GET", base+"/api/games/"+room+"/moves/legal", nil, &legal)
+	doJSON(t, "GET", base+"/api/games/"+room+"/selections", nil, &legal)
 	if code, out := moveNotation(t, base, room, "Ana", legal.Moves[0].Notation); code != 200 {
 		t.Fatalf("first move: %d %v", code, out)
 	}

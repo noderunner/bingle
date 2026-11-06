@@ -481,7 +481,7 @@ func TestGameClock_ATurnOfSeveralDecisionsEarnsOnce(t *testing.T) {
 	}
 	playFirst := func(who string, seat int) session.MoveOutcome {
 		t.Helper()
-		_, legal, err := m.LegalMoves(ctx, created.RoomCode, seat)
+		_, legal, err := legalSelections(ctx, m, created.RoomCode)
 		if err != nil || len(legal) == 0 {
 			t.Fatalf("legal moves of seat %d: %d, %v", seat, len(legal), err)
 		}

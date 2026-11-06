@@ -142,7 +142,7 @@ func (h *handlers) handleListBots(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, h.mgr.Bots().List())
 }
 
-// legalMoveDTO is one entry of GET /games/{code}/moves/legal.
+// legalMoveDTO is one selection of GET /games/{code}/selections and simulate.
 type legalMoveDTO struct {
 	Notation string          `json:"notation"`
 	Action   string          `json:"action"`
@@ -153,62 +153,29 @@ type legalMoveDTO struct {
 	Path     []string        `json:"path,omitempty"`
 	Drops    []int           `json:"drops,omitempty"`
 	Aim      string          `json:"aim,omitempty"`
-	Steps    []state.Gesture `json:"steps,omitempty"`
+	Gestures []state.Gesture `json:"gestures,omitempty"`
 }
 
-func legalMoveDTOs(moves []session.LegalMove, withSteps bool) []legalMoveDTO {
+func legalMoveDTOs(moves []session.SelectionOption) []legalMoveDTO {
 	out := make([]legalMoveDTO, len(moves))
 	for i, lm := range moves {
 		d := legalMoveDTO{
 			Notation: lm.Notation,
-			Action:   lm.Move.Action,
-			Piece:    lm.Move.Piece,
-			From:     string(lm.Move.From),
-			To:       string(lm.Move.To),
-			Count:    lm.Move.Count,
-			Drops:    lm.Move.Drops,
-			Aim:      string(lm.Move.Aim),
+			Action:   lm.Selection.Action,
+			Piece:    lm.Selection.Piece,
+			From:     string(lm.Selection.From),
+			To:       string(lm.Selection.To),
+			Count:    lm.Selection.Count,
+			Drops:    lm.Selection.Drops,
+			Aim:      string(lm.Selection.Aim),
 		}
-		for _, p := range lm.Move.Path {
+		for _, p := range lm.Selection.Path {
 			d.Path = append(d.Path, string(p))
 		}
-		if withSteps {
-			d.Steps = lm.Steps
-		}
+		d.Gestures = lm.Gestures
 		out[i] = d
 	}
 	return out
-}
-
-// legalMovesResponse is GET /games/{code}/moves/legal's body.
-type legalMovesResponse struct {
-	Seat  int            `json:"seat"`
-	Moves []legalMoveDTO `json:"moves"`
-}
-
-// handleLegalMovesAll implements GET /games/{code}/moves/legal: every legal
-// move for the seat to move (or ?seat=N), with its notation and — when
-// ?steps=1 — the click-by-click selection steps that build it.
-func (h *handlers) handleLegalMovesAll(w http.ResponseWriter, r *http.Request) {
-	code := chi.URLParam(r, "code")
-
-	seat := 0
-	if raw := r.URL.Query().Get("seat"); raw != "" {
-		n, err := strconv.Atoi(raw)
-		if err != nil {
-			writeError(w, errors.New("api: seat must be an integer"))
-			return
-		}
-		seat = n
-	}
-	withSteps := r.URL.Query().Get("steps") != "" && r.URL.Query().Get("steps") != "0"
-
-	seat, moves, err := h.mgr.LegalMoves(r.Context(), code, seat)
-	if err != nil {
-		writeError(w, err)
-		return
-	}
-	writeJSON(w, http.StatusOK, legalMovesResponse{Seat: seat, Moves: legalMoveDTOs(moves, withSteps)})
 }
 
 // playerRequest is the body of the undo/resign endpoints.
@@ -365,7 +332,7 @@ func (h *handlers) handleSimulate(w http.ResponseWriter, r *http.Request) {
 		WinnerSeat:  sim.WinnerSeat,
 		EndReason:   sim.EndReason,
 		Applied:     sim.Applied,
-		Legal:       legalMoveDTOs(sim.Legal, true),
+		Legal:       legalMoveDTOs(sim.Legal),
 		TPS:         sim.TPS,
 	})
 }
@@ -459,7 +426,7 @@ type hintRequest struct {
 // hintResponse is POST /games/{code}/hint's body.
 type hintResponse struct {
 	Notation    string          `json:"notation"`
-	Steps       []state.Gesture `json:"steps,omitempty"`
+	Gestures    []state.Gesture `json:"gestures,omitempty"`
 	ImpulseSeat int             `json:"impulse_seat"`
 	Bot         string          `json:"bot"`
 	// WinRate is the bot's estimate (0..1) of the side to move winning
@@ -497,7 +464,7 @@ func (h *handlers) handleHint(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err)
 		return
 	}
-	resp := hintResponse{Notation: hint.Notation, Steps: hint.Steps, ImpulseSeat: hint.ImpulseSeat, Bot: hint.Bot}
+	resp := hintResponse{Notation: hint.Notation, Gestures: hint.Gestures, ImpulseSeat: hint.ImpulseSeat, Bot: hint.Bot}
 	if hint.Estimated {
 		wr := hint.WinRate
 		resp.WinRate = &wr

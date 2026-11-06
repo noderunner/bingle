@@ -55,7 +55,7 @@ func play(t *testing.T, m *session.Manager, gameID string, n int) string {
 	}
 	names := []string{"Alice", "Bob"}
 	for i := 0; i < n; i++ {
-		seat, legal, err := m.LegalMoves(ctx, created.RoomCode, 0)
+		seat, legal, err := legalSelections(ctx, m, created.RoomCode)
 		if err != nil || len(legal) == 0 {
 			t.Fatalf("move %d: legal moves for seat %d: %v (%d moves)", i, seat, err, len(legal))
 		}
@@ -135,7 +135,7 @@ func TestMoveLog_AWatchedRoomIsLoggedAtInfo(t *testing.T) {
 	}
 	m.SetDebug(session.DebugOptions{Room: created.RoomCode})
 
-	seat, legal, err := m.LegalMoves(ctx, created.RoomCode, 0)
+	seat, legal, err := legalSelections(ctx, m, created.RoomCode)
 	if err != nil || len(legal) == 0 {
 		t.Fatalf("legal moves for seat %d: %v", seat, err)
 	}
@@ -168,7 +168,7 @@ func TestMoveLog_ThePositionIsThePublicView(t *testing.T) {
 	}
 	m.SetDebug(session.DebugOptions{Room: created.RoomCode})
 
-	seat, legal, err := m.LegalMoves(ctx, created.RoomCode, 0)
+	seat, legal, err := legalSelections(ctx, m, created.RoomCode)
 	if err != nil || len(legal) == 0 {
 		t.Fatalf("legal moves for seat %d: %v", seat, err)
 	}

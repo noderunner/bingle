@@ -41,7 +41,7 @@ var indexEndpoints = []indexEndpoint{
 	{"GET", "/api/games/{code}", "the game: its seats and settings"},
 	{"GET", "/api/games/{code}/state", "the position, whose impulse it is, and the result"},
 	{"GET", "/api/games/{code}/observe", "the position as text, with your legal moves (?player_name=)"},
-	{"GET", "/api/games/{code}/moves/legal", "every legal move of the seat to move"},
+	{"GET", "/api/games/{code}/selections", "what the seat on impulse may select next (?made=)"},
 	{"POST", "/api/games/{code}/moves", "play a move: {player_name, notation}"},
 	{"GET", "/api/games/{code}/moves", "the moves played so far"},
 	{"POST", "/api/games/{code}/resign", "resign: {player_name}"},
@@ -57,7 +57,7 @@ func (h *handlers) handleIndex(w http.ResponseWriter, r *http.Request) {
 			"POST /api/guest, and send its key with every request",
 			"GET /api/game-defs, then GET /api/game-defs/{id} for a game's rules and notation",
 			`POST /api/games {"game_def_id": "hex-7", "player_name": "Ana", "opponent": "random"}`,
-			"GET /api/games/{code}/moves/legal, then POST /api/games/{code}/moves {player_name, notation}",
+			"GET /api/games/{code}/selections, then POST /api/games/{code}/moves {player_name, notation}",
 		},
 		Endpoints: indexEndpoints,
 	}

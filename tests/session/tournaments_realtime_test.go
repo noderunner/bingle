@@ -327,7 +327,7 @@ func TestRealTimeTournament_TheSecondPlayersDeadline(t *testing.T) {
 	_, _, first, second, room := w.oneGame(t)
 	move := func(p player, seat int) {
 		t.Helper()
-		_, legal, err := w.m.LegalMoves(context.Background(), room, seat)
+		_, legal, err := legalSelections(context.Background(), w.m, room)
 		if err != nil || len(legal) == 0 {
 			t.Fatalf("legal moves of seat %d: %d, %v", seat, len(legal), err)
 		}
@@ -361,7 +361,7 @@ func TestRealTimeTournament_TheSecondPlayersDeadline(t *testing.T) {
 func TestRealTimeTournament_TheSecondPlayerDoesNotCome(t *testing.T) {
 	w := newRatedWorld(t)
 	id, org, first, _, room := w.oneGame(t)
-	_, legal, err := w.m.LegalMoves(context.Background(), room, 1)
+	_, legal, err := legalSelections(context.Background(), w.m, room)
 	if err != nil {
 		t.Fatal(err)
 	}

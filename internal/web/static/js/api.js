@@ -173,7 +173,7 @@ export const api = {
 	autoplay: (code, name) => call(`/api/games/${enc(code)}/autoplay?player_name=${enc(name)}`),
 	// patch: {enabled?, timeout_seconds?}
 	voteKick: (code, name, seat) => call(`/api/games/${enc(code)}/kick-vote`, { method: "POST", body: { player_name: name, seat } }),
-	autoPlayTurn: (code, name) => call(`/api/games/${enc(code)}/auto-play-turn`, { method: "POST", body: { player_name: name } }),
+	autoPlayImpulse: (code, name) => call(`/api/games/${enc(code)}/auto-play-impulse`, { method: "POST", body: { player_name: name } }),
 	setAutoplay: (code, name, patch) => call(`/api/games/${enc(code)}/autoplay`, { method: "PUT", body: { player_name: name, ...patch } }),
 	chat: (code, after) => call(`/api/games/${enc(code)}/chat?limit=100${after ? `&after=${after}` : ""}`),
 	say: (code, name, text) => call(`/api/games/${enc(code)}/chat`, { method: "POST", body: { player_name: name, text } }),
@@ -217,12 +217,11 @@ export const api = {
 	here: (present = true) => call("/api/here", { method: "POST", body: { here: present } }),
 	whoIsHere: () => call("/api/here"),
 	history: (code) => call(`/api/games/${enc(code)}/history`),
-	legal: (code) => call(`/api/games/${enc(code)}/moves/legal?steps=1`),
 	// A move is the selections of one impulse joined by "; " (ADR 0114); ply, when given,
 	// is the position it was made at, and the server refuses it if the game has moved on.
 	move: (code, name, notation, ply) =>
 		call(`/api/games/${enc(code)}/moves`, { method: "POST", body: ply === undefined ? { player_name: name, notation } : { player_name: name, notation, ply } }),
-	selections: (code, made, ply) => call(`/api/games/${enc(code)}/selections?made=${encodeURIComponent(made)}&ply=${ply}`),
+	selections: (code, made, ply) => call(`/api/games/${enc(code)}/selections?made=${encodeURIComponent(made)}${ply == null ? "" : `&ply=${ply}`}`),
 	undo: (code, name) => call(`/api/games/${enc(code)}/undo`, { method: "POST", body: { player_name: name } }),
 	resign: (code, name) => call(`/api/games/${enc(code)}/resign`, { method: "POST", body: { player_name: name } }),
 	hint: (code, name, atSeq, moves) =>

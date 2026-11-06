@@ -39,7 +39,7 @@ func (h *handlers) handleSelections(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err)
 		return
 	}
-	out := selectionsResponse{Seat: view.Seat, Ply: view.Ply, Made: view.Made, Options: legalMoveDTOs(view.Options, true),
+	out := selectionsResponse{Seat: view.Seat, Ply: view.Ply, Made: view.Made, Options: legalMoveDTOs(view.Options),
 		Complete: view.Complete, MayEnd: view.MayEnd}
 	if view.State != "" {
 		out.State = json.RawMessage(view.State)

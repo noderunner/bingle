@@ -25,9 +25,9 @@ func TestWebBlooms_IllustratedBoardThemesAreSelectableAndDrawn(t *testing.T) {
 	var legal struct {
 		Moves []struct {
 			Notation string `json:"notation"`
-		} `json:"moves"`
+		} `json:"options"`
 	}
-	if code := doJSON(t, "GET", baseURL+"/api/games/"+created.RoomCode+"/moves/legal?seat=1", nil, &legal); code != 200 || len(legal.Moves) == 0 {
+	if code := doJSON(t, "GET", baseURL+"/api/games/"+created.RoomCode+"/selections", nil, &legal); code != 200 || len(legal.Moves) == 0 {
 		t.Fatalf("legal moves: %d", code)
 	}
 	if code := doJSON(t, "POST", baseURL+"/api/games/"+created.RoomCode+"/moves", map[string]any{"player_name": "Alice", "notation": legal.Moves[0].Notation}, nil); code != 200 {

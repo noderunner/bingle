@@ -109,9 +109,9 @@ func TestCthulhuWarsOptions_DerivedTableOverREST(t *testing.T) {
 		Seat  int `json:"seat"`
 		Moves []struct {
 			Notation string `json:"notation"`
-		} `json:"moves"`
+		} `json:"options"`
 	}
-	if code := doJSON(t, "GET", baseURL+"/api/games/"+created.RoomCode+"/moves/legal", nil, &legal); code != 200 {
+	if code := doJSON(t, "GET", baseURL+"/api/games/"+created.RoomCode+"/selections", nil, &legal); code != 200 {
 		t.Fatalf("legal: %d", code)
 	}
 	var got []string

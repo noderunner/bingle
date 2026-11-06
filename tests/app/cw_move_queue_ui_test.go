@@ -85,7 +85,7 @@ func TestWebCthulhuWars_AMoveQueuesItsUnitsThenSendsThemTogether(t *testing.T) {
 	}
 
 	// Back empties the queue and returns to the impulse before it.
-	clickSel(t, ctx, "#undo-step")
+	clickSel(t, ctx, "#back")
 	waitJS(t, ctx, "the actions again", `document.getElementById("move-queue") === null && document.getElementById("action-gate") !== null`, 5*time.Second)
 	if got := text(); got != "Choose an action." {
 		t.Errorf("after Back the impulse says %q", got)
@@ -97,13 +97,13 @@ func TestWebCthulhuWars_AMoveQueuesItsUnitsThenSendsThemTogether(t *testing.T) {
 	waitJS(t, ctx, "a badge of two", badge+` && `+badge+`.textContent === "2"`, 5*time.Second)
 	clickCell(t, ctx, "new-zealand")
 	waitJS(t, ctx, "the summary", `document.getElementById("impulse-text").textContent.indexOf("Moved 2 Acolyte Cultists to New Zealand for 2 Power") === 0`, 15*time.Second)
-	waitJS(t, ctx, "Done and Back", `document.getElementById("action-done") !== null && document.getElementById("undo-step") !== null`, 10*time.Second)
+	waitJS(t, ctx, "Done and Back", `document.getElementById("action-done") !== null && document.getElementById("back") !== null`, 10*time.Second)
 	if evalBool(t, ctx, `document.getElementById("reset-move") !== null`) {
 		t.Error("Reset is on the card")
 	}
 
 	// Back takes the whole group back.
-	clickSel(t, ctx, "#undo-step")
+	clickSel(t, ctx, "#back")
 	waitJS(t, ctx, "the turn again", `document.getElementById("action-gate") !== null && document.getElementById("impulse-text").textContent === "Choose an action."`, 15*time.Second)
 	if n := evalInt(t, ctx, `document.querySelectorAll('#move-list .mv').length`); n != 0 {
 		t.Errorf("%d moves left after Back", n)
@@ -150,7 +150,7 @@ func TestWebCthulhuWars_AQueuedUnitLeavesTheMap(t *testing.T) {
 	waitJS(t, ctx, "the figure back", holder+` === "cultist"`, 5*time.Second)
 
 	// Back puts everything back.
-	clickSel(t, ctx, "#undo-step")
+	clickSel(t, ctx, "#back")
 	waitJS(t, ctx, "the queue gone", `document.getElementById("move-queue") === null`, 5*time.Second)
 	cultists("the stack of two again", "2")
 
@@ -180,7 +180,7 @@ func TestWebCthulhuWars_AMoveQueueStopsAtThePowerThereIs(t *testing.T) {
 	// Spending the last of the Power still stops at the card that confirms it.
 	clickCell(t, ctx, "new-zealand")
 	waitJS(t, ctx, "the summary", `document.getElementById("impulse-text").textContent.indexOf("Moved 2 Acolyte Cultists") === 0`, 15*time.Second)
-	waitJS(t, ctx, "Done and Back", `document.getElementById("action-done") !== null && document.getElementById("undo-step") !== null`, 10*time.Second)
+	waitJS(t, ctx, "Done and Back", `document.getElementById("action-done") !== null && document.getElementById("back") !== null`, 10*time.Second)
 }
 
 // Pass says Pass, and with Power left the next impulse asks whether to give it up.
@@ -199,7 +199,7 @@ func TestWebCthulhuWars_PassAsksBeforeGivingUpPower(t *testing.T) {
 		t.Error("asking cost the Power")
 	}
 	// Back keeps it.
-	clickSel(t, ctx, "#undo-step")
+	clickSel(t, ctx, "#back")
 	waitJS(t, ctx, "the actions again", `document.getElementById("action-pass") !== null && document.getElementById("impulse-text").textContent === "Choose an action."`, 5*time.Second)
 	// Confirming spends it.
 	clickSel(t, ctx, "#action-pass")

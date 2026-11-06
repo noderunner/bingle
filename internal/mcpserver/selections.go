@@ -20,15 +20,11 @@ func plyArg(request mcp.CallToolRequest) *int {
 	return &n
 }
 
-type selectionOption struct {
-	Notation string `json:"notation"`
-}
-
 type selectionsResult struct {
 	Seat     int               `json:"seat"`
 	Ply      int               `json:"ply"`
 	Made     []string          `json:"made"`
-	Options  []selectionOption `json:"options"`
+	Options  []legalMoveResult `json:"options"`
 	Complete bool              `json:"complete"`
 	MayEnd   bool              `json:"may_end,omitempty"`
 	State    json.RawMessage   `json:"state,omitempty"`
@@ -45,11 +41,8 @@ func handleListSelections(mgr *session.Manager) server.ToolHandlerFunc {
 		if err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
 		}
-		out := selectionsResult{Seat: view.Seat, Ply: view.Ply, Made: view.Made, Options: []selectionOption{},
+		out := selectionsResult{Seat: view.Seat, Ply: view.Ply, Made: view.Made, Options: legalMoveResults(view.Options),
 			Complete: view.Complete, MayEnd: view.MayEnd}
-		for _, o := range view.Options {
-			out.Options = append(out.Options, selectionOption{Notation: o.Notation})
-		}
 		if view.State != "" {
 			out.State = json.RawMessage(view.State)
 		}

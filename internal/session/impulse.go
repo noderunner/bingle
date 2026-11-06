@@ -23,7 +23,7 @@ type SelectionsView struct {
 	// Made are the selections made so far, in the game's notation.
 	Made []string
 	// Options are the next selections; empty when Complete.
-	Options []LegalMove
+	Options []SelectionOption
 	// Complete: the selections made are a move, ready to submit. MayEnd: they
 	// may be submitted as they are although more could follow (a game for one).
 	Complete bool
@@ -54,7 +54,7 @@ func (m *Manager) Selections(ctx context.Context, roomCode, made string, ply *in
 		return SelectionsView{}, err
 	}
 	seat := *game.ImpulseSeat
-	view := SelectionsView{Seat: seat, Ply: game.Ply, Made: []string{}, Options: []LegalMove{}}
+	view := SelectionsView{Seat: seat, Ply: game.Ply, Made: []string{}, Options: []SelectionOption{}}
 	if ok, err := m.mayListMoves(ctx, compiled, game, seat); err != nil {
 		return SelectionsView{}, err
 	} else if !ok {
@@ -83,7 +83,7 @@ func (m *Manager) Selections(ctx context.Context, roomCode, made string, ply *in
 	}
 	view.Complete, view.MayEnd = next.Complete, next.MayEnd
 	for _, mv := range next.Options {
-		view.Options = append(view.Options, LegalMove{Move: mv, Notation: state.FormatMove(compiled, mv), Steps: state.Gestures(compiled, mv)})
+		view.Options = append(view.Options, SelectionOption{Selection: mv, Notation: state.FormatMove(compiled, mv), Gestures: state.Gestures(compiled, mv)})
 	}
 	if next.Position != nil {
 		doc, err := state.Public(compiled, next.Position, seat).MarshalJSON()

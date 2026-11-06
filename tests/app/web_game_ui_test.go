@@ -11,7 +11,7 @@
 //	.cell[data-position]          a square; .clickable when it is a legal next click
 //	button.hand-piece[data-piece] a placeable piece in the player's hand
 //	#count-picker button[data-count]
-//	#submit-move, #reset-move, #undo-step, #undo-move, #resign
+//	#submit-move, #reset-move, #back, #undo-move, #resign
 //	#move-list button.mv[data-seq], #hist-prev/#hist-next/#hist-first/#hist-last
 //	#status-message, #pending-move
 package app_test
@@ -496,7 +496,7 @@ func TestWebGame_TakPlacementAndStackMoveByClicking(t *testing.T) {
 	waitJS(t, ctx, "submit 2a1+11", `document.getElementById("submit-move") && document.getElementById("submit-move").textContent === "Submit"`, 5*time.Second)
 
 	// Back one step removes the last drop; replaying it works.
-	clickSel(t, ctx, "#undo-step")
+	clickSel(t, ctx, "#back")
 	waitJS(t, ctx, "submit button gone", `!document.getElementById("submit-move")`, 5*time.Second)
 	clickCell(t, ctx, "a3")
 	waitJS(t, ctx, "submit again", `document.getElementById("submit-move")`, 5*time.Second)
@@ -545,7 +545,7 @@ func TestWebGame_HistoryNavigation(t *testing.T) {
 	defer cancelA()
 	openGameAs(t, ctxA, baseURL, room, "test-freeplay", "Alice")
 	waitJS(t, ctxA, "the moves", `document.querySelectorAll('#move-list button.mv').length >= 3`, 10*time.Second)
-	if n := evalInt(t, ctxA, `document.querySelectorAll('#undo-step').length`); n != 0 {
+	if n := evalInt(t, ctxA, `document.querySelectorAll('#back').length`); n != 0 {
 		t.Error("Back is offered for a move that stands")
 	}
 }
@@ -1407,9 +1407,9 @@ func TestWebGame_EveryGameOpensDrawsAndTakesAFirstClick(t *testing.T) {
 		var legal struct {
 			Moves []struct {
 				Notation string `json:"notation"`
-			} `json:"moves"`
+			} `json:"options"`
 		}
-		doJSON(t, "GET", baseURL+"/api/games/"+created.RoomCode+"/moves/legal", nil, &legal)
+		doJSON(t, "GET", baseURL+"/api/games/"+created.RoomCode+"/selections", nil, &legal)
 		cells := evalInt(t, ctx, `document.querySelectorAll('#board .cell').length`)
 		var info struct {
 			Board struct {

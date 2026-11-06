@@ -43,9 +43,9 @@ func legalNotationsAs(t *testing.T, key, baseURL, room string) []string {
 	var res struct {
 		Moves []struct {
 			Notation string `json:"notation"`
-		} `json:"moves"`
+		} `json:"options"`
 	}
-	if code := doJSONAs(t, key, "GET", baseURL+"/api/games/"+room+"/moves/legal", nil, &res); code != 200 {
+	if code := doJSONAs(t, key, "GET", baseURL+"/api/games/"+room+"/selections", nil, &res); code != 200 {
 		t.Fatalf("legal: %d", code)
 	}
 	out := make([]string, len(res.Moves))
@@ -228,7 +228,7 @@ func TestWebSolitaire_ADrawFromTheStockStands(t *testing.T) {
 	waitJS(t, ctx, "the table", `document.querySelector('#sol-stock')`, 15*time.Second)
 	clickSel(t, ctx, `#sol-stock`)
 	waitJS(t, ctx, "the waste", `document.querySelectorAll('.sol-waste .pcard.face').length === 1`, 10*time.Second)
-	waitJS(t, ctx, "no Back", `(function () { var b = document.querySelector('#undo-step'); return !b || b.hidden || b.disabled || b.offsetParent === null; })()`, 10*time.Second)
+	waitJS(t, ctx, "no Back", `(function () { var b = document.querySelector('#back'); return !b || b.hidden || b.disabled || b.offsetParent === null; })()`, 10*time.Second)
 	if got := moveCount(t, baseURL, room); got != 1 {
 		t.Errorf("%d moves after the draw, want 1", got)
 	}

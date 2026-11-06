@@ -39,9 +39,9 @@ func firstLegal(t *testing.T, b *browser, room string) string {
 	var legal struct {
 		Moves []struct {
 			Notation string `json:"notation"`
-		} `json:"moves"`
+		} `json:"options"`
 	}
-	b.do("GET", "/api/games/"+room+"/moves/legal", nil, &legal)
+	b.do("GET", "/api/games/"+room+"/selections", nil, &legal)
 	for _, m := range legal.Moves {
 		if m.Notation != "swap" {
 			return m.Notation
