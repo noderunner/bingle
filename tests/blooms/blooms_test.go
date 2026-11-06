@@ -84,8 +84,8 @@ func data(st *state.BoardState) *blooms.Data { d, _ := st.Ext().(*blooms.Data); 
 // before the board fills.
 func TestBoardSizesAndTargets(t *testing.T) {
 	for id, want := range map[string][3]int{
-		"blooms-4": {37, 15, 500}, "blooms": {61, 20, 500}, "blooms-6": {91, 25, 500},
-		"blooms-8": {169, 40, 1000}, "blooms-10": {271, 50, 1500},
+		"blooms-4": {37, 15, 250}, "blooms": {61, 20, 250}, "blooms-6": {91, 25, 250},
+		"blooms-8": {169, 40, 500}, "blooms-10": {271, 50, 750},
 	} {
 		g := gameFor(t, id)
 		if n := len(g.Board.Positions()); n != want[0] {
@@ -444,5 +444,46 @@ func TestRandomGamesAreValidAndEnd(t *testing.T) {
 		if ended < 25 {
 			t.Errorf("%s: only %d of 30 games ended", id, ended)
 		}
+	}
+}
+
+// A ply is a turn (ADR 0114): the first stone of a turn keeps the impulse open,
+// and the limit counts turns, so a game begun when every stone was a ply of its
+// own is not cut short.
+func TestAPlyIsATurn(t *testing.T) {
+	g := gameFor(t, "blooms-4")
+	st, _ := blooms.New().Start(g, 0)
+	cells := g.Board.Positions()
+	at := func(color string, i int) string { return color + "@" + string(cells[i]) }
+	st, _ = play(t, g, st, 1, at("red", 0))
+	if st.Ply() != 1 {
+		t.Fatalf("after Player 1's opening stone: ply %d, want 1", st.Ply())
+	}
+	st, _ = play(t, g, st, 2, at("blue", 18))
+	if st.Ply() != 1 {
+		t.Errorf("after the first stone of a turn: ply %d, want 1", st.Ply())
+	}
+	st, _ = play(t, g, st, 2, "done")
+	if st.Ply() != 2 {
+		t.Errorf("after done: ply %d, want 2", st.Ply())
+	}
+
+	// A position stored with a ply per stone counts again from its turns.
+	st.SetPly(400)
+	d := *data(st)
+	d.Turns = 248
+	st.SetExt(&d)
+	st, res := play(t, g, st, 1, at("red", 36))
+	if res.GameEnded || st.Ply() != 248 {
+		t.Fatalf("turn 249 begun: ended %v, ply %d", res.GameEnded, st.Ply())
+	}
+	st, res = play(t, g, st, 1, "done")
+	if res.GameEnded || st.Ply() != 249 {
+		t.Fatalf("249 turns: ended %v, ply %d", res.GameEnded, st.Ply())
+	}
+	st, _ = play(t, g, st, 2, at("blue", 9))
+	_, res = play(t, g, st, 2, "done")
+	if !res.GameEnded || res.EndReason != "ply-limit" {
+		t.Errorf("250 turns: ended %v (%s), want the ply limit", res.GameEnded, res.EndReason)
 	}
 }

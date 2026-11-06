@@ -2,7 +2,7 @@
 id: blooms
 name: Blooms
 description: "Nick Bentley's colourful Go-like game on a hexagonal board: place one or two stones of different colours, and capture every enemy bloom you fence in."
-version: 0.4.0
+version: 0.5.0
 designers: [Nick Bentley]
 engine: ruleset
 pie_rule: optional
@@ -15,7 +15,7 @@ rules:
   - 'The first player to capture the target number of enemy stones wins: 20 on this board (15 on base 4, 25 on base 6, 40 on base 8, 50 on base 10). Sacrificing stones to set up a bigger capture is the heart of the game.'
   - 'Optional (chosen when the game is made): with the pie rule, the second player may swap sides instead of answering the opening stone — the players change seats and the first player answers their own opening from the second seat.'
   - 'Interpretation: the game is drawn or decided on captures after 500 plies (1000 on base 8, 1500 on base 10).'
-params: {capture_target: 20, max_plies: 500}
+params: {capture_target: 20, max_plies: 250}
 guide:
   tabs:
     - {id: rules, title: Rules, file: rules.md}
@@ -76,11 +76,11 @@ variants:
       default_clock_minutes: 25
       board:
         generator: {size: 8}
-      params: {capture_target: 40, max_plies: 1000}
+      params: {capture_target: 40, max_plies: 500}
   - id: blooms-10
     name: Blooms (base 10)
     patch:
       default_clock_minutes: 35
       board:
         generator: {size: 10}
-      params: {capture_target: 50, max_plies: 1500}
+      params: {capture_target: 50, max_plies: 750}

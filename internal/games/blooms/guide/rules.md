@@ -43,7 +43,7 @@ Sacrificing a few stones to fence in a bigger bloom is the heart of the game.
 
 ## The end of the game
 
-The first player to reach the target number of captured stones **wins**. If the game reaches 500 plies (turns of one player; 1000 on base 8 and 1500 on base 10), the player with more captured stones wins, and equal counts are a draw.
+The first player to reach the target number of captured stones **wins**. If the game reaches 250 plies (turns of one player; 500 on base 8 and 750 on base 10), the player with more captured stones wins, and equal counts are a draw.
 
 ## Move notation
 

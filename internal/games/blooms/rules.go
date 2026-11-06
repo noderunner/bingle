@@ -215,8 +215,8 @@ func (rs *Ruleset) Apply(game *catalog.CompiledGame, st *state.BoardState, seat 
 	nd.Events = e.ev
 	ns.SetExt(nd)
 	e.save(ns)
-	ns.SetPly(st.Ply() + 1)
-	if nd.Turn != 0 && ns.Ply() >= game.ParamInt("max_plies", 500) {
+	ns.SetPly(plies(nd))
+	if nd.Turn != 0 && ns.Ply() >= game.ParamInt("max_plies", 250) {
 		e.finish(0, "ply-limit")
 		switch {
 		case nd.Captured[0] > nd.Captured[1]:
@@ -238,6 +238,18 @@ func (rs *Ruleset) Apply(game *catalog.CompiledGame, st *state.BoardState, seat 
 		}
 	}
 	return res, nil
+}
+
+// plies counts the impulses played (ADR 0114): every turn ended, and the
+// pie-rule swap, which ends the second player's impulse without a stone. A
+// turn's first stone keeps the impulse open, so it adds none. It is worked out
+// from the data rather than counted, so a game begun when every stone was a
+// ply of its own counts the same way.
+func plies(d *Data) int {
+	if d.Swapped {
+		return d.Turns + 1
+	}
+	return d.Turns
 }
 
 func (e *eng) say(format string, args ...any) { e.ev = append(e.ev, fmt.Sprintf(format, args...)) }
