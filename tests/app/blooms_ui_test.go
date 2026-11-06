@@ -180,16 +180,24 @@ func TestWebSubmit_ATurnOfSeveralSteps(t *testing.T) {
 	defer cancel()
 	openGameAs(t, ctx, baseURL, room, "blooms", "Alice")
 	// This test is about Submit, which the helper turned off for playing.
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`localStorage.setItem("bingle.confirm", "true"); location.reload(); true`, nil)); err != nil {
+	// The old page is marked, so the wait below is for the reloaded one.
+	if err := chromedp.Run(ctx, chromedp.Evaluate(`window.beforeReload = true; localStorage.setItem("bingle.confirm", "true"); location.reload(); true`, nil)); err != nil {
 		t.Fatal(err)
 	}
-	waitJS(t, ctx, "the stones", `document.querySelectorAll('#piece-buttons button').length === 2`, 15*time.Second)
+	waitJS(t, ctx, "the stones", `!window.beforeReload && document.querySelectorAll('#piece-buttons button').length === 2`, 15*time.Second)
 	evalString(t, ctx, `(function () { var tab = document.getElementById("history-notation"); if (tab) tab.click(); return "ok"; })()`)
 
+	// clickCell chooses the first stone and clicks pos. A redraw (a move arriving,
+	// Back) can drop the stone chosen, so the stone is chosen again for as long
+	// as its buttons are offered and the cell is not yet clickable.
 	clickCell := func(pos string) {
 		t.Helper()
-		evalString(t, ctx, `(function () { var b = document.querySelector('#piece-buttons button'); if (b) b.click(); return "ok"; })()`)
-		waitJS(t, ctx, pos+" clickable", fmt.Sprintf(`document.querySelector('#board .cell[data-position=%q].clickable') !== null`, pos), 5*time.Second)
+		waitJS(t, ctx, pos+" clickable", fmt.Sprintf(`(function () {
+			if (document.querySelector('#board .cell[data-position=%q].clickable')) return true;
+			var b = document.querySelector('#piece-buttons button');
+			if (b) b.click();
+			return false;
+		})()`, pos), 10*time.Second)
 		evalString(t, ctx, fmt.Sprintf(`(function () { document.querySelector('#board .cell[data-position=%q]').dispatchEvent(new MouseEvent("click", { bubbles: true })); return "ok"; })()`, pos))
 	}
 
