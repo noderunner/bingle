@@ -363,4 +363,42 @@ var (
 	_ state.Describer  = (*Ruleset)(nil)
 	_ state.BotGuide   = (*Ruleset)(nil)
 	_ state.Searchable = (*Ruleset)(nil)
+	_ state.UndoGuard  = (*Ruleset)(nil)
 )
+
+// CanTakeBack: a play stands once it has shown the player a card they could not
+// see before (a draw from the stock, a card uncovered in a column), or Back would
+// let them peek and change their mind (ADR 0083, ADR 0114).
+func (rs *Ruleset) CanTakeBack(game *catalog.CompiledGame, before, after *state.BoardState) bool {
+	b, err := dataOf(before)
+	if err != nil {
+		return false
+	}
+	a, err := dataOf(after)
+	if err != nil {
+		return false
+	}
+	seen := visibleCards(game, b)
+	for id := range visibleCards(game, a) {
+		if !seen[id] {
+			return false
+		}
+	}
+	return true
+}
+
+// visibleCards is every card the player can see in d.
+func visibleCards(game *catalog.CompiledGame, d *Data) map[string]bool {
+	out := map[string]bool{}
+	if d.Table == nil {
+		return out
+	}
+	for _, z := range d.Table.Redact(game.Cards, player).Zones {
+		for _, c := range z.Cards {
+			if !c.Hidden() {
+				out[c.ID] = true
+			}
+		}
+	}
+	return out
+}

@@ -216,8 +216,10 @@ func TestWebSolitaire_GivingUp(t *testing.T) {
 	}
 }
 
-// Back takes back a move, even one that turned a card over: there is nobody to wrong.
-func TestWebSolitaire_MovesCanBeTakenBack(t *testing.T) {
+// A card drawn from the stock has been seen, so the draw stands: the page offers
+// no Back across it (ADR 0083, ADR 0114), where it used to take the card back and
+// let a player peek at the stock.
+func TestWebSolitaire_ADrawFromTheStockStands(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	room := solitaireRoom(t, baseURL, "solitaire", "")
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
@@ -226,10 +228,9 @@ func TestWebSolitaire_MovesCanBeTakenBack(t *testing.T) {
 	waitJS(t, ctx, "the table", `document.querySelector('#sol-stock')`, 15*time.Second)
 	clickSel(t, ctx, `#sol-stock`)
 	waitJS(t, ctx, "the waste", `document.querySelectorAll('.sol-waste .pcard.face').length === 1`, 10*time.Second)
-	clickSel(t, ctx, `#undo-step`)
-	waitJS(t, ctx, "the card back", `document.querySelectorAll('.sol-waste .pcard.face').length === 0`, 10*time.Second)
-	if got := moveCount(t, baseURL, room); got != 0 {
-		t.Errorf("%d moves after Back", got)
+	waitJS(t, ctx, "no Back", `(function () { var b = document.querySelector('#undo-step'); return !b || b.hidden || b.disabled || b.offsetParent === null; })()`, 10*time.Second)
+	if got := moveCount(t, baseURL, room); got != 1 {
+		t.Errorf("%d moves after the draw, want 1", got)
 	}
 }
 

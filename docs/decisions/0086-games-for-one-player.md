@@ -1,6 +1,7 @@
 # 0086. Games for one player
 
-Status: accepted (2026-11-02)
+Status: accepted (2026-11-02). Its "every move can be taken back" is narrowed by [ADR 0114](0114-impulses-selections-moves-and-gestures.md): a move that
+shows the player a card they had not seen stands, as in every other game.
 
 ## Context
 
@@ -18,7 +19,7 @@ choose. Nobody else can sit down; anyone with the link can watch.
 opponent, and neither applies here: the turn never passes, so a player can go back to the deal. That includes a
 move that turned over a card, which a stricter game would forbid. Nothing is rated, so there is nothing to protect,
 and it is what every computer solitaire does. So the ruleset is not a `state.UndoGuard`, even though the cards
-are hidden.
+are hidden. (Since ADR 0114 it is one: a move that turns a card up or draws from the stock stands.)
 
 **A move never waits for Submit.** There is nothing to look at twice before handing it over, and a game of
 Klondike would otherwise ask at every card turned up.
