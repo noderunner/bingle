@@ -358,6 +358,39 @@
       },
       "type": "object"
     },
+    "DealDef": {
+      "additionalProperties": false,
+      "description": "DealDef is one step of the deal at the start (ADR 0119): either a shuffle or a deal from one zone to another.",
+      "properties": {
+        "count": {
+          "type": "integer"
+        },
+        "deck": {
+          "description": "Deck names the deck the shuffle fills the zone with; it may be left out when the game has one deck.",
+          "type": "string"
+        },
+        "each": {
+          "description": "Each is how many cards each seat gets, for a seat zone, one at a time in seat order; Count is how many a table zone gets.",
+          "type": "integer"
+        },
+        "face": {
+          "description": "Face is \"up\" or \"down\" (default).",
+          "type": "string"
+        },
+        "from": {
+          "description": "From and To are the zones a deal takes cards from and puts them in.",
+          "type": "string"
+        },
+        "shuffle": {
+          "description": "Shuffle names a table zone to fill with every card of a deck and shuffle with the game's seed.",
+          "type": "string"
+        },
+        "to": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "DecideDef": {
       "additionalProperties": false,
       "description": "DecideDef resolves an end rule's winner.",
@@ -550,6 +583,13 @@
             }
           ],
           "description": "Cards defines the suits, decks and zones of a card game (see CardsDef)."
+        },
+        "deal": {
+          "description": "Deal lists what happens to the cards before the first move, in order: a seeded shuffle, then deals into zones (ADR 0119).",
+          "items": {
+            "$ref": "#/$defs/DealDef"
+          },
+          "type": "array"
         },
         "default_clock_minutes": {
           "description": "DefaultClockMinutes is the time each player starts with that the setup suggests when a game clock is chosen, in whole minutes from 1 to 60 (absent: 10). It does not turn a clock on. A variant with longer games, such as a bigger board, can set its own. See ADR 0081.",

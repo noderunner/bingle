@@ -420,7 +420,7 @@ func NeedsStartRecord(game *catalog.CompiledGame) bool {
 func InitialStateSeeded(game *catalog.CompiledGame, seed uint64) (*BoardState, error) {
 	rs, ok := RulesetOf(game)
 	if !ok {
-		return InitialState(game), nil
+		return declaredStart(game, seed), nil
 	}
 	return rs.Start(game, seed)
 }
@@ -430,7 +430,7 @@ func InitialStateSeeded(game *catalog.CompiledGame, seed uint64) (*BoardState, e
 func HasSecrets(game *catalog.CompiledGame) bool {
 	rs, ok := RulesetOf(game)
 	if !ok {
-		return false
+		return cardsSecret(game)
 	}
 	_, ok = rs.(HiddenInfo)
 	return ok
@@ -445,7 +445,7 @@ func Public(game *catalog.CompiledGame, st *BoardState, viewer int) *BoardState 
 		}
 		return st
 	}
-	return withTints(game, st)
+	return withTints(game, redactCards(game, st, viewer))
 }
 
 // withTints gives a declared game's position the cells its end_of_turn
@@ -486,8 +486,9 @@ func Determinize(game *catalog.CompiledGame, st *BoardState, viewer int, rng *ra
 		if h, ok := rs.(HiddenInfo); ok {
 			return h.Determinize(game, st, viewer, rng)
 		}
+		return st
 	}
-	return st
+	return determinizeCards(game, st, viewer, rng)
 }
 
 // HeuristicValue values st for seat if the game's ruleset can (ok is false

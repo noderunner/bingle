@@ -4,6 +4,11 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.87.0 - 2026-11-06
+
+### Bingle Core 0.87.0
+- **For game authors: cards dealt at the start.** A game definition can now shuffle its cards and deal them into hands and onto the table before the first move, as Onitama deals its Move cards. The same game seed always deals the same cards, and each player sees only the cards their hands and the table show them. Games already in the catalog play as before. See *cards* in the definition guide.
+
 ## 0.86.0 - 2026-11-06
 
 ### Bingle Core 0.86.0
