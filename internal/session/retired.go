@@ -43,7 +43,7 @@ func (m *Manager) RetiredGame(ctx context.Context, roomCode string) (RetiredReco
 		seats = append(seats, SeatInfo{Seat: p.Seat, Color: p.Color, Name: p.Name, Bot: p.Bot, PrincipalID: p.PrincipalID})
 	}
 	return RetiredRecord{
-		RoomCode: game.RoomCode, GameDefID: game.GameDefID, Name: name, Status: game.Status, MoveSeq: game.MoveSeq,
+		RoomCode: game.RoomCode, GameDefID: game.GameDefID, Name: name, Status: game.Status, MoveSeq: game.Ply,
 		WinnerSeat: game.WinnerSeat, EndReason: game.EndReason, EndDetail: game.EndDetail, Seats: seats,
 	}, nil
 }

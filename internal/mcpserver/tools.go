@@ -113,7 +113,7 @@ func registerTools(mcpServer *server.MCPServer, mgr *session.Manager) {
 		mcp.NewTool("get_moves",
 			mcp.WithDescription("Get a game room's move history, optionally starting after a given sequence number."),
 			mcp.WithString("room_code", mcp.Required(), mcp.Description("The room code of the game to fetch move history for.")),
-			mcp.WithNumber("since_seq", mcp.Description("Only return moves with seq greater than this value; defaults to 0 (all moves).")),
+			mcp.WithNumber("since_ply", mcp.Description("Only return moves after this many (a move is one impulse: the selections of a turn of several are one move); defaults to 0 (all moves).")),
 		),
 		handleGetMoves(mgr),
 	)
@@ -320,7 +320,7 @@ func handleJoinGame(mgr *session.Manager) server.ToolHandlerFunc {
 // getStateResult is the get_state tool's result shape, from
 // session.StateSnapshot — the same wire shape as GET
 // /games/{code}/state's getGameStateResponse (internal/api/games.go),
-// minus at_seq support (a REST-only replay convenience, not part of the
+// minus at_ply support (a REST-only replay convenience, not part of the
 // tool table). board_state is embedded as a raw JSON object (it's already a
 // JSON string from state.BoardState.MarshalJSON), not a plain string field,
 // so it appears nested rather than doubly-encoded.
@@ -341,7 +341,7 @@ type getStateResult struct {
 // handleGetState implements the get_state tool: read {"room_code"}, reject
 // a blank/whitespace-only value with a tool-level error before calling
 // Manager, then respond with the room's current board_state/impulse_seat/
-// status/move_seq (no at_seq support, unlike REST's .../state endpoint).
+// status/move_seq (no at_ply support, unlike REST's .../state endpoint).
 // Business-logic failures (e.g. an unknown room_code, store.ErrNotFound)
 // are reported as a tool-level error via mcp.NewToolResultError, not a
 // transport-level error, per docs/history/plan.md section 6.10.
@@ -514,7 +514,7 @@ func handleMakeMove(mgr *session.Manager) server.ToolHandlerFunc {
 				State:       json.RawMessage(final.State),
 				ImpulseSeat: impulseSeat,
 				Status:      final.Status,
-				MoveSeq:     final.Seq,
+				MoveSeq:     final.Plies,
 				WinnerSeat:  final.WinnerSeat,
 				EndReason:   final.EndReason,
 			},
@@ -524,7 +524,7 @@ func handleMakeMove(mgr *session.Manager) server.ToolHandlerFunc {
 }
 
 // handleGetMoves implements the get_moves tool: read {"room_code",
-// "since_seq"} (since_seq optional, defaulting to 0, i.e. all moves), reject
+// "since_ply"} (since_ply optional, defaulting to 0, i.e. all moves), reject
 // a blank/whitespace-only room_code with a tool-level error before calling
 // Manager, then respond with a JSON array of moves in ascending seq order.
 // Always returns "[]" rather than "null" when there are no moves.
@@ -541,19 +541,14 @@ func handleGetMoves(mgr *session.Manager) server.ToolHandlerFunc {
 			return mcp.NewToolResultError("room_code is required"), nil
 		}
 
-		sinceSeq := request.GetInt("since_seq", 0)
+		sincePly := request.GetInt("since_ply", 0)
 
-		records, err := mgr.ListMoves(ctx, roomCode, sinceSeq)
+		records, err := mgr.ListMoves(ctx, roomCode, 0)
 		if err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
 		}
 
-		history := make([]wire.Move, 0, len(records))
-		for _, rec := range records {
-			history = append(history, wire.MoveFromRecord(rec))
-		}
-
-		return mcp.NewToolResultStructuredOnly(history), nil
+		return mcp.NewToolResultStructuredOnly(wire.MovesByImpulse(records, sincePly)), nil
 	}
 }
 

@@ -1023,7 +1023,7 @@ func TestWebGame_PlayFromAnalysisPositionStartsANewGame(t *testing.T) {
 		t.Fatal(err)
 	}
 	var st restState
-	doJSON(t, "GET", baseURL+"/api/games/"+newRoom+"/state?at_seq=0", nil, &st)
+	doJSON(t, "GET", baseURL+"/api/games/"+newRoom+"/state?at_ply=0", nil, &st)
 	// Three stones of the analysed position (a5, e1, c3), not an empty board.
 	if len(st.State.Cells) != 3 {
 		t.Errorf("new game's start has %d occupied squares, want 3 (the analysed position)", len(st.State.Cells))

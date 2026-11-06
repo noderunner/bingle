@@ -55,11 +55,11 @@ func TestGameStartsFromTPSAndKeepsItThroughUndoAndExport(t *testing.T) {
 		t.Fatalf("after e3: %+v", st)
 	}
 
-	// at_seq=0 is the custom start, not the empty board.
+	// at_ply=0 is the custom start, not the empty board.
 	var first restState // fresh: decoding into a used struct would merge maps
-	doJSON(t, "GET", baseURL+"/api/games/"+room+"/state?at_seq=0", nil, &first)
+	doJSON(t, "GET", baseURL+"/api/games/"+room+"/state?at_ply=0", nil, &first)
 	if len(first.State.Cells) != 4 || first.State.Ply != 10 {
-		t.Errorf("at_seq=0 = %d cells ply %d, want the custom start", len(first.State.Cells), first.State.Ply)
+		t.Errorf("at_ply=0 = %d cells ply %d, want the custom start", len(first.State.Cells), first.State.Ply)
 	}
 
 	// The PTN export replays from the custom start: a TPS header and the

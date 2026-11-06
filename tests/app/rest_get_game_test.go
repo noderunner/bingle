@@ -287,17 +287,17 @@ func TestGetGameState_UnknownRoomCode_Returns404(t *testing.T) {
 	}
 }
 
-// TestGetGameState_AtSeq1BeforeAnyMoves_Returns404 exercises the ?at_seq=N
+// TestGetGameState_AtSeq1BeforeAnyMoves_Returns404 exercises the ?at_ply=N
 // query-param path (even though this backlog item is mainly about the
-// no-at_seq case): immediately after creation, no move with seq=1 has ever
-// been recorded, so GET .../state?at_seq=1 must be a definite 404 (per
+// no-at_ply case): immediately after creation, no move with seq=1 has ever
+// been recorded, so GET .../state?at_ply=1 must be a definite 404 (per
 // store.GetStateAtSeq's contract), not silently ignored (which would wrongly
 // return the current/initial state with a 200) and not a panic/500.
 func TestGetGameState_AtSeq1BeforeAnyMoves_Returns404(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	roomCode := createRoom(t, baseURL, "Alice")
 
-	resp, raw := getJSON(t, baseURL, "/api/games/"+roomCode+"/state?at_seq=1")
+	resp, raw := getJSON(t, baseURL, "/api/games/"+roomCode+"/state?at_ply=1")
 	if resp.StatusCode != http.StatusNotFound {
 		t.Fatalf("status = %d, want %d (body: %s)", resp.StatusCode, http.StatusNotFound, raw)
 	}

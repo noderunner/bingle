@@ -63,14 +63,15 @@ func numberPlies(compiled *catalog.CompiledGame, game store.Game, moves []store.
 }
 
 // storedRowEndsImpulse replays row i from the position before it and asks
-// state.ImpulseEnds. Where the rules can no longer replay it (a retired game,
+// state.ImpulseEnds; a reaction the session declined for the seat always ends
+// its impulse, as when it is recorded. Where the rules can no longer replay it (a retired game,
 // a definition that has changed), the row ends its impulse when the next row
 // is another seat's, the game ended there, it was the pie-rule swap or it
 // rolled or drew (locked).
 func storedRowEndsImpulse(compiled *catalog.CompiledGame, game store.Game, moves []store.Move, i int, before string) bool {
 	row := moves[i]
-	if compiled != nil && state.AnySelectionMayEnd(compiled) {
-		return true
+	if row.Auto || (compiled != nil && state.AnySelectionMayEnd(compiled)) {
+		return true // a declined reaction is the seat's whole impulse
 	}
 	if compiled != nil && before != "" {
 		bs := state.NewBoardState()

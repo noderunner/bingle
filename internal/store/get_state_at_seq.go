@@ -29,3 +29,27 @@ func (s *Store) GetStateAtSeq(ctx context.Context, gameID int64, seq int) (strin
 
 	return resultingState, nil
 }
+
+// SeqAtPly is the seq of the last row of ply (ADR 0114): the position after
+// that many impulses is the one stored on it. 0 for ply 0, and ErrNotFound
+// for a ply the game has not played.
+func (s *Store) SeqAtPly(ctx context.Context, gameID int64, ply int) (int, error) {
+	if ply < 0 {
+		return 0, ErrNotFound
+	}
+	var played int
+	var seq sql.NullInt64
+	err := s.queryRow(ctx, "SeqAtPly",
+		`SELECT g.ply, (SELECT MAX(seq) FROM moves WHERE game_id = g.id AND ply <= ?) FROM games g WHERE g.id = ?`,
+		ply, gameID).Scan(&played, &seq)
+	if errors.Is(err, sql.ErrNoRows) {
+		return 0, ErrNotFound
+	}
+	if err != nil {
+		return 0, fmt.Errorf("seq at ply %d (game_id=%d): %w", ply, gameID, err)
+	}
+	if ply > played {
+		return 0, ErrNotFound
+	}
+	return int(seq.Int64), nil
+}

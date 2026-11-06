@@ -285,10 +285,15 @@ func boolToInt(b bool) int {
 }
 
 // GamesToRegroup lists the rooms of the games with rows written before
-// impulses were counted (ply 0), for session.Manager.RegroupMoves.
+// impulses were counted (ply 0), or with a declined reaction (auto) that does
+// not end its impulse, as 0.80.0 numbered one followed by the seat's own turn,
+// for session.Manager.RegroupMoves.
 func (s *Store) GamesToRegroup(ctx context.Context) ([]string, error) {
 	rows, err := s.query(ctx, "GamesToRegroup",
-		`SELECT DISTINCT g.room_code FROM moves m JOIN games g ON g.id = m.game_id WHERE m.ply = 0`)
+		`SELECT DISTINCT g.room_code FROM moves m JOIN games g ON g.id = m.game_id
+		 WHERE m.ply = 0
+		    OR (m.auto = 1 AND (g.ply < m.ply
+		        OR EXISTS (SELECT 1 FROM moves n WHERE n.game_id = m.game_id AND n.ply = m.ply AND n.seq > m.seq)))`)
 	if err != nil {
 		return nil, err
 	}

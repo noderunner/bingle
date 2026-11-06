@@ -60,7 +60,7 @@ Legend: ✅ done · 🟡 partial · ⬜ not started · ➖ deliberately out of s
 | ✅ | Ratings | Glicko-2 per game family; `rated` games between accounts; leaderboards and profiles (ADR 0080) |
 | ✅ | Correspondence tournaments | Round robin and Swiss between accounts, with standings, withdrawals and turn mail (ADR 0082), and real-time ones with a start time, check-in and no-shows (ADR 0090) |
 | ✅ | Game clock (chess clock) | `clock_seconds` (one time per seat, handicaps allowed); the mover's own store runs down; forfeit on the flag; `clock_increment_seconds`; a restart costs no time |
-| ✅ | Replay at any point | `GET …/state?at_seq=N` (0 = starting position) |
+| ✅ | Replay at any point | `GET …/state?at_ply=N` (0 = starting position) |
 | ✅ | Simulate / analysis | `POST …/simulate` applies notation to any point without changing the game |
 | ✅ | Export | JSON game record + PTN document |
 | ✅ | Analysis tab | batches of bot games for any game, win rate per seat and per bot with intervals, and a guide to the bots |

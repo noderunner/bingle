@@ -125,7 +125,7 @@ func (m *Manager) snapshot(ctx context.Context, compiled *catalog.CompiledGame, 
 		BoardState:      string(legacy),
 		State:           string(full),
 		ImpulseSeat:     game.ImpulseSeat,
-		MoveSeq:         game.MoveSeq,
+		MoveSeq:         game.Ply, // a move is an impulse (ADR 0114)
 		Ply:             game.Ply,
 		WinnerSeat:      game.WinnerSeat,
 		EndReason:       game.EndReason,
@@ -290,10 +290,11 @@ func (m *Manager) loadGame(ctx context.Context, roomCode string, locked bool) (s
 	return game, nil
 }
 
-// GetState returns roomCode's current state, or the historical state at
-// atSeq (if non-nil), along with every seat the game definition declares.
-// atSeq 0 is the game's starting position. Errors from the underlying store
-// (e.g. store.ErrNotFound for an unknown room code or an out-of-range atSeq)
+// GetState returns roomCode's current state, or the historical state after
+// atPly moves (if non-nil; a move is one impulse, ADR 0114), along with every
+// seat the game definition declares. atPly 0 is the game's starting position.
+// Errors from the underlying store (e.g. store.ErrNotFound for an unknown room
+// code or an out-of-range atPly)
 // are propagated unwrapped so callers can errors.Is against them directly.
 func (m *Manager) GetState(ctx context.Context, roomCode string, atSeq *int) (StateSnapshot, error) {
 	roomCode = canonRoom(roomCode)
@@ -333,8 +334,8 @@ func (m *Manager) GetStateFor(ctx context.Context, roomCode string, atSeq *int, 
 		return snap, nil
 	}
 	doc := game.BoardState
-	if atSeq != nil && *atSeq != game.MoveSeq {
-		if doc, err = m.stateAtSeq(ctx, compiled, game, *atSeq); err != nil {
+	if atSeq != nil && *atSeq != game.Ply {
+		if doc, _, err = m.stateAtPly(ctx, compiled, game, *atSeq); err != nil {
 			return snap, nil
 		}
 	}
@@ -368,18 +369,20 @@ func (m *Manager) readState(ctx context.Context, roomCode string, atSeq *int) (S
 
 	doc := game.BoardState
 	if atSeq != nil {
-		doc, err = m.stateAtSeq(ctx, compiled, game, *atSeq)
+		var seq int
+		doc, seq, err = m.stateAtPly(ctx, compiled, game, *atSeq)
 		if err != nil {
 			return StateSnapshot{}, err
 		}
 		// A historical snapshot reports the turn and result as they were.
 		hist := game
-		if *atSeq != game.MoveSeq {
+		if *atSeq != game.Ply {
 			hist.Status = "active"
 			hist.WinnerSeat = nil
 			hist.EndReason = ""
-			hist.MoveSeq = *atSeq
-			hist.ImpulseSeat = m.impulseSeatAt(ctx, compiled, game, *atSeq)
+			hist.MoveSeq = seq
+			hist.Ply = *atSeq
+			hist.ImpulseSeat = m.impulseSeatAt(ctx, compiled, game, seq)
 		}
 		game = hist
 	}
@@ -396,7 +399,18 @@ func (m *Manager) readState(ctx context.Context, roomCode string, atSeq *int) (S
 	return snap, err
 }
 
-// stateAtSeq returns the persisted state document after move seq (0 = the
+// stateAtPly returns the persisted state document after ply moves (0 = the
+// initial position), and the seq of the row it is stored on.
+func (m *Manager) stateAtPly(ctx context.Context, compiled *catalog.CompiledGame, game store.Game, ply int) (string, int, error) {
+	seq, err := m.store.SeqAtPly(ctx, game.ID, ply)
+	if err != nil {
+		return "", 0, err
+	}
+	doc, err := m.stateAtSeq(ctx, compiled, game, seq)
+	return doc, seq, err
+}
+
+// stateAtSeq returns the persisted state document after row seq (0 = the
 // initial position).
 func (m *Manager) stateAtSeq(ctx context.Context, compiled *catalog.CompiledGame, game store.Game, seq int) (string, error) {
 	if seq == 0 {

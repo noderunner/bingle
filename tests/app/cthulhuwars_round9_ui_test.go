@@ -280,7 +280,28 @@ func TestCthulhuWarsAMoveIsOneImpulse(t *testing.T) {
 	}
 	var moves []map[string]any
 	doJSON(t, "GET", baseURL+"/api/games/"+room+"/moves", nil, &moves)
-	if len(moves) < 3 || moves[0]["ply"] != float64(1) || moves[1]["ply"] != float64(1) || moves[2]["ply"] != float64(2) {
-		t.Errorf("the Move's selections: %v", moves)
+	// One entry for the Move, its selections inside, then the next seat's.
+	sels, _ := moves[0]["selections"].([]any)
+	if len(moves) < 2 || moves[0]["seq"] != float64(1) || len(sels) != 2 || moves[0]["notation"] != step+"; done" || moves[1]["seq"] != float64(2) {
+		t.Errorf("the Move: %v", moves)
+	}
+}
+
+// A reaction the session declines for a seat is that seat's whole impulse, even
+// where its own turn comes next: the decline is a move of its own (ADR 0114).
+func TestCthulhuWarsADeclinedReactionIsAMoveOfItsOwn(t *testing.T) {
+	baseURL := newRESTTestServer(t)
+	room := reactionTable(t, baseURL)
+	if code, out := moveNotation(t, baseURL, room, "Bob", "go:cultist@south-pacific>antarctica; done"); code != 200 {
+		t.Fatalf("Bob's Move: %d %v", code, out)
+	}
+	var st struct {
+		Ply int `json:"ply"`
+	}
+	doJSON(t, "GET", baseURL+"/api/games/"+room+"/state", nil, &st)
+	var moves []map[string]any
+	doJSON(t, "GET", baseURL+"/api/games/"+room+"/moves", nil, &moves)
+	if len(moves) < 2 || moves[1]["auto"] != true || st.Ply != len(moves) {
+		t.Fatalf("ply %d, moves %v: want the declined reaction as a move of its own, and every move ended", st.Ply, moves)
 	}
 }

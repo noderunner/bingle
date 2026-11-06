@@ -33,12 +33,45 @@ type Move struct {
 	Locked   bool `json:"locked,omitempty"`
 	// Ply is the impulse the move is a selection of (ADR 0114).
 	Ply int `json:"ply,omitempty"`
+	// Selections are the parts of a move of several (ADR 0114), in order, each
+	// with its own seq (its row); the move itself then has the last one's
+	// fields, the notation of all of them joined by "; " and its ply as seq.
+	Selections []Move `json:"selections,omitempty"`
+}
+
+// MovesByImpulse groups the history's selections into moves, one per impulse
+// (ADR 0114), keeping those after sincePly.
+func MovesByImpulse(recs []session.MoveRecord, sincePly int) []Move {
+	out := make([]Move, 0, len(recs))
+	for _, rec := range recs {
+		if rec.Ply <= sincePly {
+			continue
+		}
+		sel := MoveFromRecord(rec)
+		mv := sel
+		mv.Seq = rec.Ply
+		if n := len(out); n > 0 && out[n-1].Ply == rec.Ply {
+			prev := out[n-1]
+			mv.Notation = prev.Notation + "; " + sel.Notation
+			mv.Selections = append(prev.Selections, sel)
+			out[n-1] = mv
+			continue
+		}
+		mv.Selections = []Move{sel}
+		out = append(out, mv)
+	}
+	for i := range out {
+		if len(out[i].Selections) == 1 {
+			out[i].Selections = nil
+		}
+	}
+	return out
 }
 
 // MoveFromOutcome is the Move of a move that was just played.
 func MoveFromOutcome(o session.MoveOutcome) Move {
 	return Move{
-		Seq: o.Seq, Seat: o.Seat, Color: o.Color, From: o.From, To: o.To, Captured: o.Captured,
+		Seq: o.Ply, Seat: o.Seat, Color: o.Color, From: o.From, To: o.To, Captured: o.Captured,
 		Action: o.Action, Piece: o.Piece, Count: o.Count, Path: o.Path, Drops: o.Drops, Aim: o.Aim, Notation: o.Notation,
 		Auto: o.Auto, AutoPlay: o.AutoPlay, Locked: o.Locked, Ply: o.Ply,
 	}

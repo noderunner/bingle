@@ -91,7 +91,7 @@ func (m *Manager) Observe(ctx context.Context, roomCode, name string) (Observati
 		Status:      game.Status,
 		Seats:       snap.Seats,
 		ImpulseSeat: game.ImpulseSeat,
-		MoveSeq:     game.MoveSeq,
+		MoveSeq:     game.Ply, // moves played: a move is one impulse (ADR 0114)
 		Ply:         bs.Ply(),
 		BoardText:   state.RenderText(compiled, bs),
 		State:       snap.State,

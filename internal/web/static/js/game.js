@@ -45,7 +45,8 @@ const S = {
 	game: null,
 	state: null, // full position document of the live position
 	moves: [],
-	viewSeq: null, // null = live; otherwise the move number being viewed
+	viewSeq: null, // null = live; otherwise the move number being viewed (a move is one impulse)
+	rows: 0, // the selections in S.moves, which move events count
 	viewCache: new Map(),
 	legal: [],
 	builder: new MoveBuilder([]),
@@ -241,6 +242,7 @@ async function loadPosition() {
 	const [st, mv] = await Promise.all([api.state(code, null, S.me.name), api.moves(code)]);
 	S.state = st.state;
 	S.moves = mv;
+	S.rows = mv.reduce((n, m) => n + (m.selections ? m.selections.length : 1), 0);
 	S.game.status = st.status;
 	S.game.impulse_seat = st.impulse_seat;
 	S.game.move_seq = st.move_seq;
@@ -1953,15 +1955,29 @@ function updateConn() {
 	}
 }
 
+/**
+ * Adds a selection that was played (a move event) to the move list: to the move
+ * of its ply, which then tells all of them, or as a new move (ADR 0114).
+ */
+function addSelection(sel) {
+	S.rows++;
+	const last = S.moves[S.moves.length - 1];
+	if (last && last.ply === sel.ply) {
+		const sels = [...(last.selections || [last]), sel];
+		S.moves[S.moves.length - 1] = { ...sel, seq: last.seq, notation: sels.map((x) => x.notation).join("; "), selections: sels, created_at: last.created_at };
+		return;
+	}
+	S.moves.push({ ...sel, seq: sel.ply });
+}
+
 async function onEvent(env) {
 	if (!env || !S.info) return;
 	// The voice chat's own events (who is in the call, and the messages for our seat).
 	if (voiceEvent(env, code)) return;
 	if (env.type === "move") {
 		const d = env.data || {};
-		if (d.seq === S.moves.length + 1 && S.state) {
-			S.moves.push({
-				seq: d.seq,
+		if (d.seq === S.rows + 1 && S.state) {
+			addSelection({
 				seat: d.seat,
 				color: d.color,
 				from: d.from,
@@ -1990,15 +2006,15 @@ async function onEvent(env) {
 			if (isRuleset() && S.me.seat && S.me.name) {
 				try {
 					const own = await api.state(code, null, S.me.name);
-					if (own && own.state && own.move_seq === d.seq) S.state = own.state;
+					if (own && own.state && own.ply === (d.ends_impulse ? d.ply : d.ply - 1)) S.state = own.state;
 				} catch (_) {
 					/* the public position is still right; only private details are missing */
 				}
 			}
 			S.game.status = d.status;
 			S.game.impulse_seat = d.impulse_seat;
-			S.game.move_seq = d.seq;
 			S.game.ply = d.ends_impulse ? d.ply : d.ply - 1;
+			S.game.move_seq = S.game.ply;
 			S.game.winner_seat = d.winner_seat;
 			S.game.end_reason = d.end_reason;
 			S.game.end_detail = d.end_detail;
@@ -4575,18 +4591,25 @@ function syncBattleTheatre() {
 	if (!S.state || !S.info) return;
 	if (!battlesAnimated() || inAnalysis() || S.tut) {
 		if (theatre && theatre.isOpen()) theatre.close();
-		S.battleWatch = { seq: S.moves.length, st: S.state };
+		S.battleWatch = { seq: S.moves.length, pending: pendingSelections().length, st: S.state };
 		S.battleKey = null;
 		return;
 	}
 	if (!isLive()) return;
 	const was = S.battleWatch;
 	const seq = S.moves.length;
-	if (was && was.seq === seq) {
+	// A selection added to the pending move, or taken off it, is a step of the
+	// battle too: the board shows the position after it (ADR 0114).
+	const pending = pendingSelections().length;
+	if (was && was.seq === seq && (was.pending || 0) === pending) {
 		if (theatre && theatre.isOpen()) showChoicesOnTheatre();
 		return;
 	}
-	S.battleWatch = { seq, st: S.state };
+	S.battleWatch = { seq, pending, st: S.state };
+	if (was && was.seq === seq) {
+		battleStep(was.st, S.state, seq, true);
+		return;
+	}
 	// A move taken back: whatever was playing did not happen.
 	if (was && seq < was.seq) {
 		S.battleKey = null;
@@ -4691,8 +4714,7 @@ function playEmergence(unit, e) {
 /** A first awakening among the moves that have just come, which the player sees as it happens. */
 function emergedSince(from, to) {
 	if (document.hidden) return;
-	const st = S.state;
-	for (const e of (st && st.ext && st.ext.log) || []) {
+	for (const e of latestLog(S.state)) {
 		if (e.ply <= from || e.ply > to) continue;
 		for (const line of e.lines || []) {
 			const unit = emergedUnit(line);
@@ -6003,10 +6025,36 @@ function rerollDie(k) {
 
 /** What the latest decisions did, newest last: [{ply, seat, lines}]. */
 /** The story of the game up to the position in view, or with `whole` as far as it has gone. */
+/**
+ * The move a position log's entry tells of. The log counts the engine's plies,
+ * one per selection; the page counts moves (impulses, ADR 0114). An entry past
+ * the moves known (the pending move's) is the next one.
+ */
+function logPly(enginePly) {
+	let rows = 0;
+	for (const m of S.moves) {
+		rows += m.selections ? m.selections.length : 1;
+		if (enginePly <= rows) return m.seq;
+	}
+	return S.moves.length + 1;
+}
+
+/** A position's own latest events, by move, the parts of one move together. */
+function latestLog(st) {
+	const out = [];
+	for (const e of (st && st.ext && st.ext.log) || []) {
+		const ply = logPly(e.ply);
+		const last = out[out.length - 1];
+		if (last && last.ply === ply && last.seat === e.seat) last.lines = [...(last.lines || []), ...(e.lines || [])];
+		else out.push({ ...e, ply });
+	}
+	return out;
+}
+
 function rulesetLog(whole = false) {
 	if (!isRuleset()) return [];
 	const st = currentState();
-	const latest = (st && st.ext && st.ext.log) || [];
+	const latest = latestLog(st);
 	// A position keeps only its latest events: the whole story is fetched from
 	// the server (what every move narrated), once per move made. Until the
 	// fetch for the newest move arrives, the story so far gets the position's
@@ -6555,7 +6603,7 @@ function tutorialReadKey() {
 
 /** Where the learner is, from the moves this room has played. */
 function tutorialState() {
-	return tutorialProgress(S.tut.doc, (S.moves || []).map((m) => m.notation), S.tut.read);
+	return tutorialProgress(S.tut.doc, (S.moves || []).flatMap((m) => (m.selections || [m]).map((x) => x.notation)), S.tut.read);
 }
 
 function tutorialStep() {

@@ -154,7 +154,8 @@ its own, and `steps`, `moves/legal` and `#undo-step` keep their names.
 ## History, Back, analysis
 
 * The move list and ⏮ ◀ ▶ ⏭ browse any past position read-only (the position
-  comes from `GET …/state?at_seq=N`).
+  comes from `GET …/state?at_ply=N`), a move at a time: the selections of one
+  impulse are one entry and one step (ADR 0114).
 * **Replay game** steps through the moves automatically; the address bar
   carries `#move=N` while you browse so a position can be shared.
 * **Offer draw** / **Resign**: a draw offer shows as a banner on the

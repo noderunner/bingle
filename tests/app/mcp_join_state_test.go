@@ -22,7 +22,7 @@ type mcpJoinResult struct {
 
 // mcpGetStateResult mirrors get_state's result shape from docs/history/plan.md
 // section 6.10: {"board_state","impulse_seat","status","move_seq"} — no
-// "at_seq" field (that's REST-only). board_state is decoded as
+// "at_ply" field (that's REST-only). board_state is decoded as
 // json.RawMessage, mirroring REST's getGameStateResponse, so it can be
 // compared structurally against the REST response rather than byte-for-byte.
 type mcpGetStateResult struct {

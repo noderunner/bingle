@@ -253,7 +253,8 @@ func TestCthulhuWarsPlaysOverRESTWithFourPlayers(t *testing.T) {
 	if code := doJSON(t, "GET", base+"/api/games/"+room+"/history", nil, &hist); code != 200 {
 		t.Fatalf("history: %d", code)
 	}
-	if len(hist) < 40 {
+	// One entry per move (impulse, ADR 0114): a Move's units are told together.
+	if len(hist) < 20 {
 		t.Fatalf("history has %d entries after a long game", len(hist))
 	}
 	for i, e := range hist {

@@ -229,13 +229,13 @@ func TestTakFullGameOverREST(t *testing.T) {
 		t.Errorf("history = %+v", hist)
 	}
 
-	// at_seq=0 is the starting position now.
+	// at_ply=0 is the starting position now.
 	var start restState
-	if code := doJSON(t, "GET", baseURL+"/api/games/"+room+"/state?at_seq=0", nil, &start); code != 200 {
-		t.Fatalf("at_seq=0 status %d", code)
+	if code := doJSON(t, "GET", baseURL+"/api/games/"+room+"/state?at_ply=0", nil, &start); code != 200 {
+		t.Fatalf("at_ply=0 status %d", code)
 	}
 	if len(start.State.Cells) != 0 || start.Status != "active" {
-		t.Errorf("at_seq=0 state = %+v", start)
+		t.Errorf("at_ply=0 state = %+v", start)
 	}
 
 	// Export.
@@ -664,7 +664,7 @@ func TestHistoricalImpulseSeatAccountsForPasses(t *testing.T) {
 			continue
 		}
 		var st restState
-		doJSON(t, "GET", baseURL+"/api/games/"+room+"/state?at_seq="+strconv.Itoa(passedAt), nil, &st)
+		doJSON(t, "GET", baseURL+"/api/games/"+room+"/state?at_ply="+strconv.Itoa(passedAt), nil, &st)
 		if st.ImpulseSeat == nil || *st.ImpulseSeat != seats[passedAt-1] {
 			t.Errorf("turn seat after move %d = %v, want %d (the opponent had to pass)", passedAt, st.ImpulseSeat, seats[passedAt-1])
 		}

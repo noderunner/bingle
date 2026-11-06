@@ -171,3 +171,27 @@ func TestRegroupMoves_NumbersStoredGames(t *testing.T) {
 		t.Fatalf("after: plies %v, played %d", rows, played)
 	}
 }
+
+// A past position is addressed by the moves played: the selections of one
+// impulse are one step of the history (ADR 0114).
+func TestPlies_TheHistoryIsAddressedByMove(t *testing.T) {
+	m := undoManager(t)
+	ctx := context.Background()
+	room := twoPlayers(t, m, session.CreateOptions{GameDefID: "blooms"})
+	playMove(t, m, room, "Alice", "red@e5")
+	playMove(t, m, room, "Bob", "blue@d4; black@f6")
+	at := func(n int) *int { return &n }
+	snap, err := m.GetState(ctx, room, at(1))
+	if err != nil || snap.MoveSeq != 1 || snap.ImpulseSeat == nil || *snap.ImpulseSeat != 2 {
+		t.Fatalf("after one move: %+v %v", snap, err)
+	}
+	if snap, err := m.GetState(ctx, room, nil); err != nil || snap.MoveSeq != 2 || snap.Ply != 2 {
+		t.Fatalf("now: move_seq %d, ply %d, %v; want 2, 2", snap.MoveSeq, snap.Ply, err)
+	}
+	if _, err := m.GetState(ctx, room, at(3)); !errors.Is(err, store.ErrNotFound) {
+		t.Fatalf("a move not played: %v", err)
+	}
+	if _, err := m.Simulate(ctx, room, at(1), []string{"blue@d4"}); err != nil {
+		t.Fatalf("simulating from after the first move: %v", err)
+	}
+}

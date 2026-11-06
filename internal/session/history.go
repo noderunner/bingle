@@ -279,14 +279,14 @@ func (m *Manager) Simulate(ctx context.Context, roomCode string, atSeq *int, not
 		return Simulation{}, err
 	}
 
-	seq := game.MoveSeq
-	if atSeq != nil {
-		seq = *atSeq
+	// After atSeq moves (impulses), or the position as it is.
+	seq, live := game.MoveSeq, atSeq == nil || *atSeq == game.Ply
+	var doc string
+	if atSeq == nil {
+		doc, err = m.stateAtSeq(ctx, compiled, game, seq)
+	} else {
+		doc, seq, err = m.stateAtPly(ctx, compiled, game, *atSeq)
 	}
-	if seq < 0 || seq > game.MoveSeq {
-		return Simulation{}, store.ErrNotFound
-	}
-	doc, err := m.stateAtSeq(ctx, compiled, game, seq)
 	if err != nil {
 		return Simulation{}, err
 	}
@@ -299,7 +299,7 @@ func (m *Manager) Simulate(ctx context.Context, roomCode string, atSeq *int, not
 	bs = state.Determinize(compiled, bs, 0, rand.New(rand.NewSource(time.Now().UnixNano())))
 
 	var seat int
-	if seq == game.MoveSeq && game.Status == "finished" {
+	if live && game.Status == "finished" {
 		return Simulation{}, ErrGameNotActive
 	}
 	if ts := m.impulseSeatAt(ctx, compiled, game, seq); ts != nil {
@@ -384,9 +384,18 @@ func (m *Manager) History(ctx context.Context, roomCode string) ([]HistoryEntry,
 			continue
 		}
 		for _, e := range entries {
-			if e.Ply == l.Seq && len(e.Lines) > 0 {
-				out = append(out, e)
+			// A position's log counts the engine's plies, one per row; the
+			// story is told by move (impulse, ADR 0114), the parts of one
+			// move together.
+			if e.Ply != l.Seq || len(e.Lines) == 0 {
+				continue
 			}
+			e.Ply = l.Ply
+			if n := len(out); n > 0 && out[n-1].Ply == e.Ply && out[n-1].Seat == e.Seat {
+				out[n-1].Lines = append(out[n-1].Lines, e.Lines...)
+				continue
+			}
+			out = append(out, e)
 		}
 	}
 	return out, nil
