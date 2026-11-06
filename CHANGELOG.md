@@ -4,6 +4,11 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.79.0 - 2026-11-06
+
+### Bingle Core 0.79.0
+- **A turn goes in one piece.** In a game of several parts to a turn, such as a Blooms turn of two stones or a Move of several units in Cthulhu Wars, the board now shows each part as you choose it, and nothing reaches your opponents until the turn is over. Back takes the last part off at once, a reload keeps what you have chosen so far, and when you submit, the whole turn is played together or not at all. Games of patience and the tutorials still send each move as it is made.
+
 ## 0.78.0 - 2026-11-06
 
 ### Bingle Core 0.78.0

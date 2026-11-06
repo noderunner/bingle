@@ -159,13 +159,21 @@ its own, and `steps`, `moves/legal` and `#undo-step` keep their names.
   carries `#move=N` while you browse so a position can be shared.
 * **Offer draw** / **Resign**: a draw offer shows as a banner on the
   opponent's page with *Accept* / *Decline*; any move withdraws it.
-* **A move stands once the turn has passed**, in every game ([ADR 0083](decisions/0083-a-move-stands.md)).
-  A move that cannot come back waits for *Submit* (`#submit-move`, Enter), unless
-  the player turns off `#opt-confirm`. **Back** (`#undo-step`, Backspace) clears a
-  gesture, then takes back a selection of this turn already sent, one at a time, and is
-  not offered once the turn has passed or a die has been rolled. A button such as
-  *End turn* plays at once: pressing it is the Submit. A move with nothing left to choose, such as a forced pass, always gets `#submit-move`, as nothing else could play it. The selections of a turn stay out
-  of the move list and the History tab until the turn is over.
+* **A move is built in the page and sent whole** ([ADR 0114](decisions/0114-impulses-selections-moves-and-gestures.md)).
+  Each selection asks the server what may follow (`GET …/selections?made=…&ply=N`)
+  and, while the impulse goes on, the page holds it as the pending move: the board
+  shows the position after it, and nothing is sent. The page keeps the pending
+  move in local storage (`bingle.pending.<room>.<seat>`), so a reload brings it
+  back; one made at a ply the game has left is dropped. The selection that ends the
+  impulse waits for *Submit* (`#submit-move`, Enter), unless the player turns off
+  `#opt-confirm`, and then the whole move goes in one call, with its `ply`. **Back**
+  (`#undo-step`, Backspace) clears a gesture, then takes the last selection off the
+  pending move, without the server. A button such as *End turn* plays at once:
+  pressing it is the Submit. A move with nothing left to choose, such as a forced pass,
+  always gets `#submit-move`, as nothing else could play it.
+* A game for one seat, and a tutorial (whose script counts selections), send each
+  selection as it is made; there Back takes one back with `POST …/undo`, but not one
+  that rolled, drew or turned a card up ([ADR 0086](decisions/0086-games-for-one-player.md), as narrowed).
 * **Resign** concedes, and needs a second click to confirm.
 * **Hint** (only in games against bots, or in analysis / review of a finished
   game) asks a bot what it would play (minimax where piece counts matter, MCTS
@@ -545,9 +553,8 @@ impulse and `#impulse-text` the question, from the view's `impulse` (ADR 0099). 
 shows only to its player, with the action's `impulse` as the question it waits on: *Choose an area to place a gate.*
 A Move gathers its units in the card first (`#move-queue`): clicking a token lifts it off the map into the card, from one area, as far as the Power
 goes, with `.queue-unit[data-piece]` to take one out and `#move-queue-cost` for the running cost. A click on a highlighted
-area sends each unit's selection as a move of its own ([ADR 0100](decisions/0100-a-move-gathers-its-units.md); ADR 0114 will send them as one).
-*Back* is one of the actions too (`#undo-step`, offered only while there is a selection
-of this turn to take back).
+area adds each unit's selection to the pending move ([ADR 0100](decisions/0100-a-move-gathers-its-units.md), ADR 0114), and Back takes the group off together.
+*Back* is one of the actions too (`#undo-step`, offered only while the pending move has a selection to take off).
 
 **Gates and their occupants.** A Gate is a chip among the tokens; the figure
 drawn on it is the unit that occupies it (`.gate-holder[data-holder]`, from

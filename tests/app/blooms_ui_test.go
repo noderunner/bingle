@@ -2,7 +2,6 @@ package app_test
 
 import (
 	"fmt"
-	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -163,9 +162,9 @@ func TestWebBlooms_PieRuleSwapThroughTheUI(t *testing.T) {
 	}
 }
 
-// A turn of several steps: a step goes at once and stays out of the move list, Back
-// takes it back with no second click, and the move that ends the turn waits for
-// Submit (ADR 0083).
+// A turn of several selections (ADR 0114): the first stone stays in the page as a
+// pending move, which survives a reload and which Back takes apart without the
+// server; the stone that ends the turn waits for Submit, and the turn goes whole.
 func TestWebSubmit_ATurnOfSeveralSteps(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	var created struct {
@@ -228,44 +227,47 @@ func TestWebSubmit_ATurnOfSeveralSteps(t *testing.T) {
 		t.Error("Back is offered for a move that stands")
 	}
 
-	// Bob's turn, then Alice's: her first stone of two goes at once.
-	for _, n := range []string{"blue@d4", "black@f6"} {
-		if code, out := moveNotation(t, baseURL, room, "Bob", n); code != 200 {
-			t.Fatalf("Bob %s: %d %v", n, code, out)
-		}
+	// Bob's turn in one call, then Alice's: her first stone of two stays in the page.
+	if code, out := moveNotation(t, baseURL, room, "Bob", "blue@d4; black@f6"); code != 200 {
+		t.Fatalf("Bob's turn: %d %v", code, out)
 	}
 	waitJS(t, ctx, "Bob's stones", `document.querySelectorAll('#move-list button.mv').length === 3`, 10*time.Second)
 	waitJS(t, ctx, "her stones", `document.querySelectorAll('#piece-buttons button').length === 2`, 10*time.Second)
+	stoneOn := func(pos string) string {
+		return fmt.Sprintf(`document.querySelector('#board .piece[data-position=%q]') !== null`, pos)
+	}
 	clickCell("e4")
-	waitMoves(4, "the first stone should have gone at once")
-	waitJS(t, ctx, "Back for the step", `document.getElementById("undo-step") !== null`, 10*time.Second)
+	waitJS(t, ctx, "the stone shown, and Back for it", stoneOn("e4")+` && document.getElementById("undo-step") !== null`, 10*time.Second)
+	if st := cfGet(t, baseURL, room); st.MoveSeq != 3 {
+		t.Fatalf("part of a move was sent: %d moves, want 3", st.MoveSeq)
+	}
 	if n := evalInt(t, ctx, `document.querySelectorAll('#move-list button.mv').length`); n != 3 {
-		t.Errorf("a step of an unfinished turn is in the move list: %d entries", n)
+		t.Errorf("part of a move is in the move list: %d entries", n)
 	}
 	if evalBool(t, ctx, `document.getElementById("submit-move") !== null`) {
-		t.Error("a step that can come back asks for Submit")
+		t.Error("a move that is not over asks for Submit")
 	}
-	clickSel(t, ctx, "#history-friendly")
-	waitJS(t, ctx, "the history", `document.getElementById("history-pane") !== null`, 5*time.Second)
-	if got := evalString(t, ctx, `document.getElementById("history-pane").textContent`); strings.Contains(got, "e4") {
-		t.Errorf("the history tells a step of an unfinished turn: %q", got)
-	}
-	clickSel(t, ctx, "#history-notation")
-	// Back takes it back straight away, and the turn is still hers.
-	clickSel(t, ctx, "#undo-step")
-	waitMoves(3, "Back did not take the step back")
-	waitJS(t, ctx, "no more to take back", `document.getElementById("undo-step") === null`, 5*time.Second)
 
-	// The second stone of two ends the turn, so it waits for Submit.
+	// The pending move survives a reload.
+	if err := chromedp.Run(ctx, chromedp.Evaluate(`window.beforeReload = true; location.reload(); true`, nil)); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "the stone kept", `!window.beforeReload && `+stoneOn("e4")+` && document.getElementById("undo-step") !== null`, 15*time.Second)
+
+	// Back takes it off without asking the server, and the turn is still hers.
+	clickSel(t, ctx, "#undo-step")
+	waitJS(t, ctx, "the stone gone", `!(`+stoneOn("e4")+`) && document.getElementById("undo-step") === null`, 10*time.Second)
+
+	// The second stone ends the turn, so it waits for Submit, and the turn goes whole.
 	clickCell("e4")
-	waitMoves(4, "the first stone should have gone at once again")
-	waitJS(t, ctx, "the page has it", `document.getElementById("undo-step") !== null && document.querySelector('#board .cell[data-position="e6"].clickable, #piece-buttons button') !== null`, 10*time.Second)
+	waitJS(t, ctx, "the first stone again", stoneOn("e4")+` && document.getElementById("undo-step") !== null`, 10*time.Second)
 	clickCell("e6")
 	waitJS(t, ctx, "Submit for the last stone", `document.getElementById("submit-move") !== null`, 5*time.Second)
-	if st := cfGet(t, baseURL, room); st.MoveSeq != 4 {
-		t.Fatalf("the last stone was played before Submit: %d moves", st.MoveSeq)
+	if st := cfGet(t, baseURL, room); st.MoveSeq != 3 {
+		t.Fatalf("the move was sent before Submit: %d moves", st.MoveSeq)
 	}
 	clickSel(t, ctx, "#submit-move")
+	waitMoves(5, "the whole turn")
 	waitJS(t, ctx, "the whole turn in the list", `document.querySelectorAll('#move-list button.mv').length === 5`, 10*time.Second)
 	clickSel(t, ctx, "#history-friendly")
 	waitJS(t, ctx, "the turn told", `document.getElementById("history-pane") !== null && document.getElementById("history-pane").textContent.indexOf("e6") >= 0`, 10*time.Second)
