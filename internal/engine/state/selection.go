@@ -29,6 +29,8 @@ type Selection struct {
 	// Aim is the target of a compound move's second half (the square an
 	// Amazon's arrow lands on).
 	Aim board.PositionID `json:"aim,omitempty"`
+	// Card is the card a card-move plays (ADR 0120): its instance id.
+	Card string `json:"card,omitempty"`
 }
 
 // Move is the selections of one impulse, in order (ADR 0114): what a seat
@@ -68,6 +70,10 @@ func (m Selection) Key() string {
 		b.WriteString("|aim:")
 		b.WriteString(string(m.Aim))
 	}
+	if m.Card != "" {
+		b.WriteString("|card:")
+		b.WriteString(m.Card)
+	}
 	return b.String()
 }
 
@@ -77,6 +83,16 @@ func (m Selection) Key() string {
 func (m Selection) Normalize(game *catalog.CompiledGame) (Selection, error) {
 	if m.Action == "" {
 		switch {
+		case m.Card != "":
+			for _, a := range game.Actions {
+				if a.Type == catalog.ActionCardMove {
+					m.Action = a.ID
+					break
+				}
+			}
+			if m.Action == "" {
+				return m, fmt.Errorf("state: game has no card-move action")
+			}
 		case len(m.Path) > 0 || m.Count > 0:
 			want := catalog.ActionMoveStack
 			if m.Count == 0 {

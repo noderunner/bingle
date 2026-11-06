@@ -71,6 +71,12 @@ func FormatMove(game *catalog.CompiledGame, mv Selection) string {
 			b.WriteString(strconv.Itoa(mv.Drops[i]))
 		}
 		return b.String()
+	case catalog.ActionCardMove:
+		// tiger:c1-c3, or tiger:pass for a card spent without a move.
+		if mv.From == "" {
+			return mv.Card + ":pass"
+		}
+		return mv.Card + ":" + string(mv.From) + "-" + string(mv.To)
 	case catalog.ActionSlide:
 		out := string(mv.From) + "-" + string(mv.To)
 		if mv.Aim != "" {
@@ -206,6 +212,24 @@ func ParseMove(game *catalog.CompiledGame, text string) (Selection, error) {
 	if game.Definition.Notation == "ptn" {
 		if mv, ok, err := parsePTN(game, s); ok || err != nil {
 			return mv, err
+		}
+	}
+
+	// A card move: card:from-to, or card:pass (ADR 0120).
+	if i := strings.IndexByte(s, ':'); i > 0 && game.Cards != nil && game.Cards.Type(s[:i]) != nil {
+		for _, a := range game.Actions {
+			if a.Type != catalog.ActionCardMove {
+				continue
+			}
+			card, rest := s[:i], s[i+1:]
+			if strings.EqualFold(rest, "pass") {
+				return Selection{Action: a.ID, Card: card}, nil
+			}
+			from, to, ok := strings.Cut(rest, "-")
+			if !ok || !g.HasPosition(board.PositionID(from)) || !g.HasPosition(board.PositionID(to)) {
+				return Selection{}, fmt.Errorf("state: cannot read %q as a card move (card:from-to)", text)
+			}
+			return Selection{Action: a.ID, Card: card, From: board.PositionID(from), To: board.PositionID(to)}, nil
 		}
 	}
 

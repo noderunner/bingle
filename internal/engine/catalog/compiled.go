@@ -53,6 +53,8 @@ const (
 	ActionLeap      = "leap"
 	ActionSwap      = "swap"
 	ActionPass      = "pass"
+	// ActionCardMove plays a move card (ADR 0120).
+	ActionCardMove = "card-move"
 	// ActionDone ends a turn of several selections early (ADR 0115). The
 	// catalog adds it, with this id, to every game that declares a turn.
 	ActionDone = "done"
@@ -70,6 +72,11 @@ type ResolvedAction struct {
 	ID    string
 	Type  string
 	Label string
+
+	// card-move: the seat zone played from, the table zone the card is
+	// passed on through, and whether a stuck seat spends a card.
+	Hand, PassOn string
+	StuckSpend   bool
 
 	// place
 	Pieces     []string

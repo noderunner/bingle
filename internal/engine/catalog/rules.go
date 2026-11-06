@@ -228,6 +228,8 @@ func compileAction(cg *CompiledGame, ad dsl.ActionDef, ra *ResolvedAction) error
 		return nil // a pass takes no parameters
 	case ActionStep:
 		return compileStep(cg, ad, ra)
+	case ActionCardMove:
+		return compileCardMove(cg, ad, ra)
 	}
 	return fmt.Errorf("catalog: action %q has unknown type %q", ad.ID, ad.Type)
 }
@@ -428,6 +430,52 @@ func compileShot(cg *CompiledGame, ad dsl.ActionDef, ra *ResolvedAction) (*Resol
 		th.Dirs = dirs
 	}
 	return th, nil
+}
+
+// compileCardMove resolves a card-move action (ADR 0120): a hand that is a
+// seat zone, a pass_on that is a table zone, cards with moves, and a forward
+// on every seat to read them by.
+func compileCardMove(cg *CompiledGame, ad dsl.ActionDef, ra *ResolvedAction) error {
+	if err := listedPieces(cg, ad, "card-move"); err != nil {
+		return err
+	}
+	cc := cg.Cards
+	if cc == nil {
+		return fmt.Errorf("catalog: card-move action %q needs cards", ad.ID)
+	}
+	if !cg.Board.IsGrid() {
+		return fmt.Errorf("catalog: card-move action %q requires a grid board", ad.ID)
+	}
+	if z, ok := cc.Zones[ad.Hand]; !ok || z.Scope != "seat" {
+		return fmt.Errorf("catalog: card-move action %q needs hand, a seat zone (got %q)", ad.ID, ad.Hand)
+	}
+	if ad.PassOn != "" {
+		if z, ok := cc.Zones[ad.PassOn]; !ok || z.Scope != "table" {
+			return fmt.Errorf("catalog: card-move action %q passes cards on to %q, which is not a table zone", ad.ID, ad.PassOn)
+		}
+	}
+	switch ad.Stuck {
+	case "":
+	case "spend":
+		ra.StuckSpend = true
+	default:
+		return fmt.Errorf("catalog: card-move action %q has stuck %q, not spend", ad.ID, ad.Stuck)
+	}
+	moves := false
+	for _, t := range cc.Types {
+		moves = moves || len(t.Moves) > 0
+	}
+	if !moves {
+		return fmt.Errorf("catalog: card-move action %q, but no card lists moves", ad.ID)
+	}
+	for _, sd := range cg.Definition.Seats {
+		if sd.Forward == "" {
+			return fmt.Errorf("catalog: card-move action %q reads cards by each seat's forward, and seat %d has none", ad.ID, sd.Seat)
+		}
+	}
+	ra.Pieces = ad.Pieces
+	ra.Hand, ra.PassOn = ad.Hand, ad.PassOn
+	return nil
 }
 
 func compileLeap(cg *CompiledGame, ad dsl.ActionDef, ra *ResolvedAction) error {

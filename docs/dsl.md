@@ -453,6 +453,31 @@ distance). Within `clone_distance` the piece stays where it was — a clone —
 and further out it jumps, vacating its origin. `infect` converts every
 opposing piece adjacent to the landing square (Ataxx).
 
+### card-move
+
+```yaml
+cards:
+  decks:
+    move:
+      extra:
+        - {id: tiger, label: Tiger, moves: [[0, 2], [0, -1]]}   # [right, forward]
+seats:
+  - {seat: 1, color: red, forward: N}
+  - {seat: 2, color: blue, forward: S}
+actions:
+  - {id: move, type: card-move, hand: hand, pieces: [master, student], pass_on: side, stuck: spend}
+```
+
+A move card ([ADR 0120](decisions/0120-move-cards.md)) lists the squares a piece
+may reach as `[right, forward]` offsets, read through the moving seat's
+`forward`, so the second player's cards read upside down. A `card-move` plays a
+card from the seat zone `hand`: one of the mover's `pieces` leaps by one of its
+offsets, never onto a piece of its own side, and captures what it lands on.
+Then the mover takes every card in the table zone `pass_on` and the used card
+goes there, face up. With `stuck: spend`, a seat that no card lets move spends a
+card anyway. Notation is `tiger:c1-c3` and `tiger:pass`; the gestures are the
+card, then the piece's square and its destination.
+
 ## win_condition
 
 ```yaml
@@ -486,7 +511,9 @@ Rules are evaluated in order after every move; the first that fires decides.
 * `line`: `length` of the seat's matching pieces in a row (grid: orthogonal
   and diagonal; hex: along the three hex axes).
 * `absent`: `piece` and `seat` — `seat` wins as soon as no piece of that type
-  is left on the board (Hnefatafl: the king is captured).
+  is left on the board (Hnefatafl: the king is captured). With `of_seat`, only
+  that seat's pieces of the type count, for a piece both sides have (Onitama's
+  Masters, [ADR 0120](decisions/0120-move-cards.md)).
 * `pool`: `pool` and `at_least` — a seat wins when its reserve pool holds at
   least that many (the capture counter of Pente; see *custodian captures*).
 * `ring`: a seat's matching pieces enclose at least one square (hex boards;

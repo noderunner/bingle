@@ -66,6 +66,10 @@
           "description": "Gravity, if set to a direction name (\"S\"), only allows placement on squares that are supported in that direction by another piece or the board edge (Connect Four).",
           "type": "string"
         },
+        "hand": {
+          "description": "Hand is the seat zone holding the cards the mover may play.",
+          "type": "string"
+        },
         "id": {
           "description": "ID names the action; moves carry it as their \"action\" field.",
           "type": "string"
@@ -93,6 +97,10 @@
           "description": "Occupancy is the explicit step's destination rule: \"empty-only\", \"capture-only\" or \"capture-or-empty\".",
           "type": "string"
         },
+        "pass_on": {
+          "description": "PassOn is a table zone: after the move the mover takes the cards in it, then the used card goes there.",
+          "type": "string"
+        },
         "pieces": {
           "description": "Pieces lists the piece types that may be placed (first = default).",
           "items": {
@@ -113,6 +121,10 @@
         },
         "source": {
           "description": "Source is where placed pieces come from: \"reserve\" (default; the seat's hand is decremented) or \"supply\" (unlimited).",
+          "type": "string"
+        },
+        "stuck": {
+          "description": "Stuck is \"spend\": when no card moves a piece, a card is played without a move. Empty leaves the seat with no selection then.",
           "type": "string"
         },
         "then": {
@@ -265,6 +277,16 @@
         },
         "label": {
           "type": "string"
+        },
+        "moves": {
+          "description": "Moves are the squares a piece may reach with the card, as [right, forward] offsets read through the moving seat's forward (ADR 0120).",
+          "items": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "type": "array"
         },
         "suit": {
           "type": "string"
@@ -1313,6 +1335,10 @@
             "type": "string"
           },
           "type": "array"
+        },
+        "of_seat": {
+          "description": "Piece (above) with type \"absent\": the rule fires when no piece of that type is left on the board, and then Seat wins (Hnefatafl's captured king). OfSeat, when set, counts only that seat's pieces (ADR 0120: Onitama's two Masters are one piece type).",
+          "type": "integer"
         },
         "piece": {
           "type": "string"

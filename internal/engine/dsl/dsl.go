@@ -557,6 +557,17 @@ type ActionDef struct {
 	// mover's colour (Pente's captured pairs; Hnefatafl's sandwiches).
 	Custodian *CustodianDef `json:"custodian,omitempty"`
 
+	// --- card-move (ADR 0120) ---
+
+	// Hand is the seat zone holding the cards the mover may play.
+	Hand string `json:"hand,omitempty"`
+	// PassOn is a table zone: after the move the mover takes the cards in it,
+	// then the used card goes there.
+	PassOn string `json:"pass_on,omitempty"`
+	// Stuck is "spend": when no card moves a piece, a card is played without
+	// a move. Empty leaves the seat with no selection then.
+	Stuck string `json:"stuck,omitempty"`
+
 	// --- move-stack ---
 
 	// CarryLimit is the maximum number of pieces that may be picked up
@@ -737,7 +748,9 @@ type WinRuleDef struct {
 
 	// Piece (above) with type "absent": the rule fires when no piece of
 	// that type is left on the board, and then Seat wins (Hnefatafl's
-	// captured king).
+	// captured king). OfSeat, when set, counts only that seat's pieces (ADR
+	// 0120: Onitama's two Masters are one piece type).
+	OfSeat int `json:"of_seat,omitempty"`
 
 	// Pool and AtLeast configure "pool" rules: a seat wins (or loses, with
 	// result "lose") when its reserve pool holds at least AtLeast — e.g.
