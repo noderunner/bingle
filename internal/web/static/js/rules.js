@@ -53,7 +53,7 @@ function controlsPage(info) {
  */
 function keyPage(info) {
 	const d = info.display;
-	if (!d || info.engine !== "ruleset") return "";
+	if (!d || (info.engine !== "ruleset" && !Object.keys(d.tints || {}).length)) return "";
 	const parts = [];
 	if (info.board && info.board.style === "areas") {
 		const tint = (k, fallback) => ((d.tints || {})[k] || {}).color || fallback;

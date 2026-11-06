@@ -1,6 +1,6 @@
 # 0116. Effects at the end of a turn
 
-Status: proposed (2026-11-06). It is addition B of the DSL coverage audit (`docs/history/dsl-coverage-audit-plan.md`
+Status: accepted (2026-11-06). It is addition B of the DSL coverage audit (`docs/history/dsl-coverage-audit-plan.md`
 on `more-plans`), after [ADR 0115](0115-a-declared-turn-of-several-selections.md)'s turns of several selections.
 
 ## Context
@@ -39,7 +39,7 @@ end_of_turn:
 | `effect` | `remove-groups`, the only effect for now |
 | `condition` | `no-liberties`: no position adjacent to the group is empty |
 | `whose` | `opponents` (default): every seat but the mover's; `mover`; or `all` |
-| `count_in` | a reserve pool to credit the mover with the pieces removed, as for `custodian` |
+| `count_in` | a pool of `reserves` to credit the mover with the pieces removed, as for `custodian` |
 | `tint` | a key of `display.tints`: the board marks every group that meets the condition |
 
 - A **group** is the pieces of one colour connected through the board's adjacency (hex boards included), as `captures`

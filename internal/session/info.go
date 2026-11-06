@@ -419,6 +419,10 @@ func buildGameInfo(cg *catalog.CompiledGame) GameInfo {
 		})
 	}
 	info.SampleView = state.SampleOf(cg)
+	if len(cg.EndOfTurn) > 0 {
+		// A declared game's end_of_turn tints are drawn from its legend.
+		info.Display = def.Display
+	}
 	if ri, ok := state.DescribeRuleset(cg); ok {
 		info.Engine = "ruleset"
 		info.Display = def.Display

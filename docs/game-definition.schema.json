@@ -469,6 +469,33 @@
       },
       "type": "object"
     },
+    "EndOfTurnDef": {
+      "additionalProperties": false,
+      "description": "EndOfTurnDef is one effect at the end of a turn (ADR 0116).",
+      "properties": {
+        "condition": {
+          "description": "Condition is which groups: \"no-liberties\", no empty position beside the group.",
+          "type": "string"
+        },
+        "count_in": {
+          "description": "CountIn is a pool credited to the mover with the pieces removed.",
+          "type": "string"
+        },
+        "effect": {
+          "description": "Effect is \"remove-groups\", the only effect for now.",
+          "type": "string"
+        },
+        "tint": {
+          "description": "Tint is a key of display.tints: the board marks every group meeting the condition, whoever's it is.",
+          "type": "string"
+        },
+        "whose": {
+          "description": "Whose is \"opponents\" (default; every seat but the mover's), \"mover\" or \"all\".",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "FlattenDef": {
       "additionalProperties": false,
       "description": "FlattenDef constrains when a flattener may flatten a flattenable piece.",
@@ -542,6 +569,13 @@
             }
           ],
           "description": "Display is data for clients to draw what the position document carries beyond pieces: terrain tints and per-unit badges of a ruleset game."
+        },
+        "end_of_turn": {
+          "description": "EndOfTurn lists effects that happen, in order, whenever a turn ends, before it is judged (ADR 0116).",
+          "items": {
+            "$ref": "#/$defs/EndOfTurnDef"
+          },
+          "type": "array"
         },
         "engine": {
           "description": "Engine says who implements the rules: \"\" (the declarative actions and win rules of this document) or \"ruleset\" (a Go ruleset registered with the module takes over move generation, validation and scoring; the document still describes the board, seats, pieces and display).",

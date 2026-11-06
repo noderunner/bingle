@@ -792,6 +792,13 @@ function rulesetView() {
 	return (st && st.ext && st.ext.view) || null;
 }
 
+/** The cells a declared game's end-of-turn effects tint, which the server works out (ADR 0116). */
+function declaredTints() {
+	if (isRuleset()) return null;
+	const st = currentState();
+	return (st && st.ext && st.ext.tints) || null;
+}
+
 function rulesetEvents() {
 	if (!isRuleset()) return [];
 	const st = currentState();
@@ -2941,12 +2948,12 @@ function drawBoard(host) {
 			interactive,
 			showCoords: S.settings.coords,
 			hexStyle: hexStyle(),
-			tints: (rulesetView() || {}).tints || null,
+			tints: (rulesetView() || {}).tints || declaredTints(),
 			badges: (rulesetView() || {}).badges || null,
 			walls: (rulesetView() || {}).walls || null,
 			holders: shownHolders(),
 			layers: { names: S.settings.names, glyphs: glyphLayerOn(), sigils: S.settings.sigils, units: S.settings.units, ice: S.settings.ice },
-			legend: isRuleset() ? S.info.display || null : null,
+			legend: isRuleset() || declaredTints() ? S.info.display || null : null,
 			tokenOk: interactive ? tokenOk : null,
 			enhanced: enhancedUnits(),
 			inspect: S.unitInfo,
