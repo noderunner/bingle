@@ -432,7 +432,7 @@ func (m *Manager) applyAndRecordAs(ctx context.Context, compiled *catalog.Compil
 // is untouched, the turn stays with the mover's seat (the engine gives it
 // back), and the seats' occupants exchange.
 func isPieSwap(compiled *catalog.CompiledGame, mv state.Move) bool {
-	return catalog.PieRuleOn(compiled.Definition) && mv.Action == catalog.ActionSwap
+	return state.IsPieSwap(compiled, mv)
 }
 
 // swapSeqOf is the seq of the game's pie-rule swap, 0 when the game has none.

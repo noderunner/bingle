@@ -207,8 +207,5 @@ func (m *Manager) MoveIsFinal(ctx context.Context, roomCode, name, notation stri
 	if err != nil {
 		return false, err
 	}
-	if result.GameEnded || result.NextImpulseSeat != player.Seat || isPieSwap(compiled, result.Move) {
-		return true, nil
-	}
-	return state.IsRuleset(compiled) && !state.CanTakeBack(compiled, bs, result.NewState), nil
+	return state.ImpulseEnds(compiled, bs, player.Seat, mv, result), nil
 }

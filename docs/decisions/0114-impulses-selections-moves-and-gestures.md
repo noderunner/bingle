@@ -56,6 +56,10 @@ the game ends. It ends nowhere else.**
 - The boundary follows from the game state and the rules alone, never from a seat's settings or from who is playing it.
 - A game may not end an impulse anywhere else, and a seat may not submit part of one: there are no pauses. A pending
   move lives in its client, which may keep it across a reload.
+- **A game for one seat is the exception** (amended 2026-11-06): its seat may end an impulse after any selection. Nobody
+  waits on it and there is no clock or rating to game by pausing, while without it a game of FreeCell, which turns no
+  card up, would be one impulse from the deal to the end. A game of patience is sent move by move, and it keeps
+  `POST …/undo` for a move that showed no card (ADR 0086, as narrowed here).
 - Stopping is a choice, so it is a selection: Blooms' `done` after one stone, a Move's `done`. Every impulse ends at a
   leaf where nothing is left to choose, and a client submits when it gets there.
 - Chance that nothing later in the impulse depends on is resolved when the impulse ends, instead of splitting it.
@@ -103,7 +107,8 @@ inside one selection and boards labelled `xy` have commas.
 | none | `state.Move`: the selections of one impulse |
 | `state.Step`, `Ruleset.Steps`, the `steps` field, `?steps=1`, a tutorial guide's `play_steps` | `state.Gesture`, `Ruleset.Gestures`, `gestures`, `play_gestures` |
 | `state.LegalMoves`, `GET …/moves/legal`, `GET …/legal-moves?from=` | `state.NextSelections`, `GET …/selections` |
-| `POST …/move-final`, `POST …/undo`, MCP `undo_move`, `moves.locked` | removed: nothing is sent that could be taken back |
+| `POST …/move-final` | removed |
+| `POST …/undo`, MCP `undo_move`, `moves.locked` | kept for games for one seat only; removed elsewhere, where nothing is sent that could be taken back |
 | MCP `get_legal_moves`, `list_legal_moves` | `list_selections` |
 | MCP `auto_play_turn` | `auto_play_impulse` |
 | `#undo-step` | `#back` |
@@ -128,12 +133,13 @@ games. Then the DSL gains impulses of several selections, the first addition of 
 ## Consequences
 
 - Nothing is stored before an impulse ends, so the History never hides part of a turn, a queued Move cannot be half
-  played, and Back is the client's alone: ADR 0083's last take-back goes, and `/undo`, `move-final` and `locked` with it.
+  played, and Back is the client's alone: ADR 0083's last take-back goes, and `move-final` with it, and `/undo` and `locked` but in games
+  for one seat.
 - A pending move is lost if its player changes device in the middle of it.
 - Regrouping changes the move numbers of stored games in the split games: history cards, the journal, `simulate`'s `at`
   and tutorials that count plies.
-- In Solitaire everything since the last card turned up is one impulse, so Back can undo any of it but never a card
-  turned up.
+- In Solitaire each move is sent as it is made, and Back takes back any of them but one that turned a card up. Only
+  games for one seat keep `/undo`.
 - The engine still has a single impulse seat, so simultaneous choices (Nyet!'s passing to the left, Courtfall's secret
   split) are taken in turn, with what is hidden kept hidden. The definition allows several impulses outstanding at once,
   for later.
