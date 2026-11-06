@@ -309,30 +309,48 @@ function manualActions() {
 	return [...(rv.panel_actions || []), ...(rv.stage === "moving" ? ["done"] : [])];
 }
 
+/** Where the builder's gestures were made: the same position loaded again keeps them. */
+function builderSpot() {
+	return `${S.rows}:${S.game.impulse_seat}:${pendingSelections().length}`;
+}
+
+/**
+ * Loads the options of the position. The ones shown stay until the new ones
+ * come, since nothing is drawn in between: a gesture made meanwhile on the same
+ * position stands, and one made on a position since left goes.
+ */
 async function loadLegal() {
 	S.passAsked = false;
-	S.builder = new MoveBuilder([]);
 	S.preview = null;
-	S.legal = [];
+	let legal = [];
 	if (isMyImpulse() && (await resumePending())) {
-		// the pending move's position and options are in place
+		legal = S.legal; // the pending move's position and options are in place
 	} else if (isMyImpulse()) {
 		try {
 			const res = await api.selections(code, "");
-			S.legal = res.options || [];
+			legal = res.options || [];
 		} catch (_) {
-			S.legal = [];
+			legal = [];
 		}
 	}
-	resetBuilder();
+	const kept = S.builder && S.builderSpot === builderSpot() ? S.builder.manualGestures() : [];
+	S.legal = legal;
+	resetBuilder(kept);
 }
 
-function resetBuilder() {
+/** A new builder over S.legal, with the gestures `kept` made again while they are still offered. */
+function resetBuilder(kept = []) {
 	MoveBuilder.manual = manualActions();
 	S.builder = new MoveBuilder(S.legal);
+	S.builderSpot = builderSpot();
 	// The position moved on under a queue: keep it only if it can still be played.
 	if (S.moveQueue && !queuedUnits().every((piece) => unitCost(queueMoves(), piece, S.moveQueue.from) !== null)) S.moveQueue = null;
 	S.builder.autoAdvance();
+	for (const g of kept) {
+		if (!S.builder.options().some((o) => o.kind === g.kind && String(o.value) === String(g.value))) break;
+		S.builder.push(g.kind, g.value);
+		S.builder.autoAdvance();
+	}
 }
 
 // ---------------------------------------------------------------------------
@@ -6837,7 +6855,8 @@ function tutorialShowPart(el) {
  */
 function tutorialMarkControls() {
 	if (!S.tut) return;
-	const asking = !!tutorialExpected() && isMyImpulse();
+	// While the page is busy a click is not taken (actingSeat): nothing is picked out until it is.
+	const asking = !!tutorialExpected() && !!actingSeat();
 	// Taking back a step of the turn would leave the script: a choice not yet made can still be undone.
 	const back = document.getElementById("back");
 	if (back && !tutorialCanUndo()) {
