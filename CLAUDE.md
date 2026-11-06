@@ -15,36 +15,56 @@ stop; do not guess, and do not read it out of a dotfile into anything you commit
 
 | Variable | What it holds |
 |---|---|
-| `BINGLE_GH_USER` | the account agent work acts as: its pushes, pull requests and comments |
-| `BINGLE_GH_TOKEN` | that account's token |
-| `BINGLE_GH_REMOTE` | the repository's HTTPS URL, for pushing |
+| `BINGLE_GH_APP_ID` | the client ID of the repository's GitHub App, which agent work acts as |
+| `BINGLE_GH_APP_KEY` | the path to that app's private key |
+| `BINGLE_GH_REMOTE` | the repository's HTTPS URL |
 | `BINGLE_BROWSER` | path to Chrome or Chromium for the browser tests, if it is not on `PATH` |
 
 Repository administration uses a separate maintainer-held credential that agent work never needs
 and should never look for.
 
+## Acting on GitHub
+
+**Agent work acts on GitHub only as the repository's GitHub App**, through `scripts/ghapp`. Never
+through a personal account: not the maintainer's, and not a second account made for an agent.
+GitHub's terms allow one person a single free machine account, and a second account whose pull
+requests its owner approves looks like inauthentic activity; the account first used for this was
+suspended. The app is GitHub's supported way to run a bot, and its pushes are its own.
+
+`scripts/ghapp` mints an installation token for an hour at a time and never prints it except for
+`token`, which only a credential helper should call:
+
+```sh
+go run ./scripts/ghapp api GET /repos/{owner}/{repo}/pulls        # any REST call, as the app
+go run ./scripts/ghapp api POST /repos/{owner}/{repo}/pulls < pr.json
+go run ./scripts/ghapp push <branch>                              # see below
+git -c credential.helper='!f() { echo username=x-access-token; echo "password=$(go run ./scripts/ghapp token)"; }; f' \
+    fetch "$BINGLE_GH_REMOTE" <branch>
+```
+
 ## Branches, pushes and merges
 
 - Work on a branch and open a pull request. **Never merge.** The maintainer merges.
-- **Push over HTTPS as the account in `$BINGLE_GH_USER`**, never with a key that authenticates as
-  the maintainer:
-
-  ```sh
-  git -c credential.helper='!f() { echo "username=$BINGLE_GH_USER"; echo "password=$BINGLE_GH_TOKEN"; }; f' \
-      push "$BINGLE_GH_REMOTE" <branch>
-  ```
-
-  The `main` ruleset requires the most recent push to be approved by someone who did not make it,
-  so a push attributed to the maintainer leaves them unable to approve their own push and the PR
-  needs a force merge. The credential helper also keeps the token out of the process list.
-- **Sign every commit** — the ruleset requires it, and git is configured for it locally.
-- `main` additionally requires a squash merge, linear history, one approval, and **every review
-  thread resolved**: an unresolved line comment blocks the merge even with an approval.
+- **Commit locally as usual, then push with `go run ./scripts/ghapp push <branch>`, never with
+  `git push`.** `main` takes only signed commits, and unsigned commits on a pull request's branch
+  block its squash merge. An app cannot sign what it pushes with git: GitHub signs only the commits
+  an app makes through the API. So `push` recreates each local commit since `main` with GraphQL's
+  `createCommitOnBranch`, which GitHub signs as the app, checks that each has the local commit's
+  tree, and prints the two commands that fetch the branch and move the local one onto GitHub's
+  commits. Run them, so the next push continues from there.
+- **Do not sign commits with anybody's key**, and do not author them as the maintainer: the commits
+  on GitHub are the app's, and the local ones are only their source.
+- After a rebase or an amend, `push -force` starts the branch on GitHub again from `main`. A branch
+  must be a straight line of commits on `main` (no merge commits), and `push` refuses a commit that
+  adds an executable or a link or changes a file's mode, since the API sends contents only: say so
+  and leave that one to the maintainer.
+- `main` requires a squash merge, linear history, one approval of the most recent push by someone
+  who did not make it, and **every review thread resolved**: an unresolved line comment blocks the
+  merge even with an approval. The app makes the pushes, so the maintainer's approval counts.
 
 ## Issues
 
-- **An issue assigned to the account in `$BINGLE_GH_USER` is yours to act on. An unassigned one is
-  not**, however clear it looks.
+- **An issue labelled `agent` is yours to act on. Any other is not**, however clear it looks.
 - One issue, one branch, one pull request. Put `Fixes #N` in the PR body so the merge closes it.
 - Comment a short plan first on anything that is not a plain bug fix, and wait.
 - **Say so rather than build something wrong.** If the request conflicts with

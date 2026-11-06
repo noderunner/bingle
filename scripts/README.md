@@ -4,6 +4,7 @@ Helper programs. None is needed to build, run or test bingle.
 
 | Script | What it does |
 |---|---|
+| `ghapp/` | `go run ./scripts/ghapp token\|api\|push`: acts on GitHub as the repository's GitHub App, for agent work; `push` recreates a branch's commits through the API so that GitHub signs them (CLAUDE.md). |
 | `smoke-test.sh` | Builds the binary, runs it on a real port and checks `/healthz` (CI runs it). |
 | `run.example.sh` | An example of starting bingle with HTTPS, email and a TURN relay. Copy it to `run_bingle.sh` (git ignores that name) and edit. |
 | `gendocs/` | `go run scripts/gendocs/main.go > docs/games.md` regenerates the game catalog. |
