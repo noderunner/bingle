@@ -32,11 +32,15 @@ requests its owner approves looks like inauthentic activity; the account first u
 suspended. The app is GitHub's supported way to run a bot, and its pushes are its own.
 
 `scripts/ghapp` mints an installation token for an hour at a time and never prints it except for
-`token`, which only a credential helper should call:
+`token`, which only a credential helper should call. `api` sends the path exactly as given: it
+does **not** fill in `{owner}/{repo}` (that would 404), so take the repository from
+`$BINGLE_GH_REMOTE` and write it out:
 
 ```sh
-go run ./scripts/ghapp api GET /repos/{owner}/{repo}/pulls        # any REST call, as the app
-go run ./scripts/ghapp api POST /repos/{owner}/{repo}/pulls < pr.json
+R=${BINGLE_GH_REMOTE#https://github.com/}; R=${R%.git}           # owner/repo
+go run ./scripts/ghapp api GET "/repos/$R/pulls?state=open"      # any REST call, as the app
+go run ./scripts/ghapp api POST "/repos/$R/pulls" < pr.json
+go run ./scripts/ghapp api GET "/repos/$R/commits/<sha>/check-runs"   # a pull request's CI
 go run ./scripts/ghapp push <branch>                              # see below
 git -c credential.helper='!f() { echo username=x-access-token; echo "password=$(go run ./scripts/ghapp token)"; }; f' \
     fetch "$BINGLE_GH_REMOTE" <branch>
