@@ -54,7 +54,7 @@ func (rs *Ruleset) Describe(game *catalog.CompiledGame) state.RulesetInfo {
 	info := state.RulesetInfo{
 		WinRules: []string{
 			fmt.Sprintf("Be the first to capture %d enemy stones (blooms captured when the turn ends).", game.ParamInt("capture_target", 20)),
-			fmt.Sprintf("After %d plies the player with more captures wins (equal is a draw).", game.ParamInt("max_plies", 500)),
+			fmt.Sprintf("After %d plies the player with more captures wins (equal is a draw).", game.ParamInt("max_plies", 250)),
 		}, NotationHelp: []string{
 			"A stone is its colour, @ and a cell: red@d4. Warm (player 1) has red and yellow, Cool (player 2) blue and black.",
 			"A turn is one stone, or two stones of different colours (the second is another move); done ends the turn after one.",

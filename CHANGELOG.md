@@ -4,6 +4,14 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.82.1 - 2026-11-06
+
+### Bingle Core 0.82.1
+- **A choice is not lost while the board catches up.** A piece or a cell chosen just after another move arrived, as in a tutorial right after its scripted replies, sometimes did nothing until it was clicked again. It now counts the first time.
+
+### Blooms 0.5.0
+- **The move limit counts turns.** A ply is now one player's whole turn, as the rules always said, rather than each stone and *Done* on its own. The limit is halved to match: 250 turns (500 on base 8, 750 on base 10), so a game lasts as long as before, games in progress included.
+
 ## 0.82.0 - 2026-11-06
 
 ### Bingle Core 0.82.0
