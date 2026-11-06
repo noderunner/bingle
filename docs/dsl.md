@@ -680,3 +680,19 @@ The newest version is what the family's name (`mycelium`) means and what the set
 is made only when the maintainer asks for one. Any other change, to the rules or not, is made in the folder of the
 version it belongs to, with no change to the version. A prototype's games are not rated.
 The web client is shared by all versions, so a new version's view must not break what an old one draws.
+
+## Converting a Go ruleset
+
+When the DSL grows enough to declare a game that a Go ruleset plays today, the declaration replaces
+the ruleset in two steps, so nothing changes for the players by accident:
+
+1. The declaration arrives in the game's folder next to the ruleset, but only its test compiles
+   it, under an id of the test's own, and plays the two side by side with `tests/difftest`. They
+   must agree on every legal move by its notation, every position and every result, over a random
+   battery of seeded games. Anything the two keep in different places, such as each seat's
+   captures, is compared through each side's `Extra`. The ruleset stays the one the server plays.
+2. One release later, the declaration takes over under the game's id and the ruleset is deleted.
+
+The id stays the same, so ratings and the record of the game's versions carry over. The
+reasoning, and which games are candidates, are in the DSL coverage audit plan.
+
