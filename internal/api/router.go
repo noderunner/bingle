@@ -143,6 +143,7 @@ func NewRouter(mgr *session.Manager, opts ...Option) chi.Router {
 	r.Get("/games/{code}/history", h.handleHistory)
 	r.Get("/games/{code}/legal-moves", h.handleListLegalMoves)
 	r.Get("/games/{code}/moves/legal", h.handleLegalMovesAll)
+	r.Get("/games/{code}/selections", h.handleSelections)
 	r.Post("/games/{code}/undo", h.handleUndo)
 	r.Post("/games/{code}/resign", h.handleResign)
 	r.Post("/games/{code}/draw", h.handleDraw)

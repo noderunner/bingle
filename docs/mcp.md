@@ -41,7 +41,8 @@ before, only seats nobody owns ([ADR 0067](decisions/0067-principals-and-guest-k
 | `join_game` | join an existing room by code (player or spectator) |
 | `get_observation` | **the decision context**: text board, TPS, whose turn, legal moves, reward, done |
 | `get_legal_moves` | every legal move for the player to move (notation + structured fields); in a game with secrets, empty unless the request holds that seat (ADR 0112) |
-| `make_move` | play `notation` (preferred), or structured action/piece/from/to/count/path/drops/aim |
+| `list_selections` | what the seat on impulse may select next after the selections `made` (joined by `; `), the position after them, and `complete` once they are a whole move ([ADR 0114](decisions/0114-impulses-selections-moves-and-gestures.md)); answered on the same terms as `get_legal_moves` |
+| `make_move` | play `notation` (preferred): one selection, or a whole impulse of several joined by `; `, applied all or nothing; or structured action/piece/from/to/count/path/drops/aim. `ply` (from `list_selections`) refuses it if the game has moved on |
 | `suggest_move` | a built-in bot's choice for the position (or a variation); only in games against bots or after the game |
 | `undo_move` / `resign` | take back the last selection of the turn you are still playing (a move stands once the turn has passed) / concede |
 | `draw` | offer / cancel / accept / decline a draw (human opponents only) |
