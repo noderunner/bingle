@@ -500,7 +500,7 @@ Rules are evaluated in order after every move; the first that fires decides.
 * `end`: `when` any of `board-full`, `reserve-empty` (some seat has an empty
   hand), `no-legal-moves` (the seat to move), `ply-limit` (with `"plies": N`)
   or `passes` (with `"count": N` consecutive passes); `decide` is `draw`,
-  `most` (count of matching top pieces, or with `pool` each seat's reserve pool, as Blooms decides its move limit on captures; tie = draw), `score` (area scoring —
+  `most` (count of matching top pieces, or with `pool` each seat's reserve pool, as Blooms decides its move limit on captures ([ADR 0118](decisions/0118-a-move-limit-decided-by-a-pool.md)); tie = draw), `score` (area scoring —
   stones plus empty regions bordering only that color, plus `komi` per seat
   number, e.g. `{"2": 6.5}`; the final tally is reported as the game's
   `end_detail`), `mover-wins` or `mover-loses`. "The seat to move has no legal move" is

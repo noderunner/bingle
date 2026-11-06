@@ -98,6 +98,7 @@ Short records of choices made for the `bingle` project during the requirements i
 | [0092](0092-a-game-page-that-fits-the-screen.md) | A game page is as tall as the window and never scrolls: the board fills one side, the cards scroll beside it, and on your turn the actions are pinned in view; Blooms first |
 | [0116](0116-effects-at-the-end-of-a-turn.md) | Effects at the end of a turn: `end_of_turn` removes the groups with no liberties of the mover's opponents, credits a pool, and can tint them |
 | [0117](0117-groups-by-colour-enemies-by-seat.md) | Groups by colour, enemies by seat: a seat may play several `colors`; groups stay one colour, ownership goes by seat |
+| [0118](0118-a-move-limit-decided-by-a-pool.md) | A move limit decided by a pool: `decide: {type: most, pool: …}` compares each seat's reserve pool, as Blooms' captures |
 | [0119](0119-a-seeded-deal-at-the-start.md) | A seeded deal at the start: a declared game may hold `cards` and `deal` them into zones before the first move; draws during play and dice wait (proposed) |
 | [0115](0115-a-declared-turn-of-several-selections.md) | A declared turn may have several selections: parts with a `min`, a `max` and `distinct`, moved through by choosing, and `done` to stop |
 | [0114](0114-impulses-selections-moves-and-gestures.md) | An impulse is what one seat chooses before the game needs another seat or chance, submitted at once; selections are its parts, a move its data and gestures the interface's, and a selections query lets bots and clients walk it |
