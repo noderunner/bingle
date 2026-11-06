@@ -120,6 +120,87 @@ func TestItFindsEachKindOfDisagreement(t *testing.T) {
 	}
 }
 
+// twoStones is a ruleset over the Tic-Tac-Toe fixture in which each seat places
+// two marks a turn, so a seat's first mark keeps the seat. With rolls set, its
+// guard says the first mark rolled a die: that ends the impulse although the
+// same seat plays on, which is the one difference the harness must see there.
+type twoStones struct {
+	base  *catalog.CompiledGame
+	rolls bool
+}
+
+func (r twoStones) seat(st *state.BoardState) int { return 1 + st.Ply()/2%2 }
+
+func (r twoStones) Start(*catalog.CompiledGame, uint64) (*state.BoardState, error) {
+	return state.InitialState(r.base), nil
+}
+func (r twoStones) ImpulseSeat(_ *catalog.CompiledGame, st *state.BoardState) int { return r.seat(st) }
+func (r twoStones) Legal(_ *catalog.CompiledGame, st *state.BoardState, seat int) []state.Selection {
+	if seat != r.seat(st) {
+		return nil
+	}
+	return state.LegalSelections(r.base, st, seat)
+}
+func (r twoStones) Apply(_ *catalog.CompiledGame, st *state.BoardState, seat int, mv state.Selection) (*state.MoveResult, error) {
+	res, err := state.Apply(r.base, st, seat, mv)
+	if err == nil && !res.GameEnded {
+		res.NextImpulseSeat = r.seat(res.NewState)
+	}
+	return res, err
+}
+func (r twoStones) Format(_ *catalog.CompiledGame, mv state.Selection) string {
+	return state.FormatMove(r.base, mv)
+}
+func (r twoStones) Parse(_ *catalog.CompiledGame, text string) (state.Selection, error) {
+	return state.ParseMove(r.base, text)
+}
+func (r twoStones) Gestures(_ *catalog.CompiledGame, mv state.Selection) []state.Gesture {
+	return state.Gestures(r.base, mv)
+}
+func (r twoStones) Validate(_ *catalog.CompiledGame, st *state.BoardState) error {
+	return state.Validate(r.base, st)
+}
+func (r twoStones) Outcome(*catalog.CompiledGame, *state.BoardState) state.Outcome {
+	return state.Outcome{}
+}
+func (r twoStones) CanTakeBack(_ *catalog.CompiledGame, before, after *state.BoardState) bool {
+	return !r.rolls || after.Ply()%2 == 0
+}
+
+func twoStonesGame(t *testing.T, id string, rolls bool) *catalog.CompiledGame {
+	t.Helper()
+	var def map[string]any
+	if err := json.Unmarshal(testdata.TicTacToe().Definition, &def); err != nil {
+		t.Fatal(err)
+	}
+	def["id"], def["engine"] = id, "ruleset"
+	raw, err := json.Marshal(def)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cat := catalog.NewCatalog()
+	if err := cat.RegisterWith(id, raw, nil, twoStones{base: ticTacToe(t, id+"-base", nil), rolls: rolls}); err != nil {
+		t.Fatalf("register %s: %v", id, err)
+	}
+	g, _ := cat.Get(id)
+	return g
+}
+
+// The harness sees an impulse that ends in one and goes on in the other, though
+// the same seat plays on in both (ADR 0114).
+func TestItFindsAnImpulseThatEndsElsewhere(t *testing.T) {
+	ref := difftest.Side{Game: twoStonesGame(t, "two", false)}
+	opt := difftest.Options{Games: 3, Seed: 1}
+	if err := difftest.Compare(ref, difftest.Side{Game: twoStonesGame(t, "two-again", false)}, opt); err != nil {
+		t.Fatalf("two copies of one game disagree: %v", err)
+	}
+	err := difftest.Compare(ref, difftest.Side{Game: twoStonesGame(t, "rolls", true)}, opt)
+	if err == nil || !strings.Contains(err.Error(), "seed 1, at the start: seat 1 plays") ||
+		!strings.Contains(err.Error(), "does not end seat 1's impulse in the reference and ends it in the candidate") {
+		t.Fatalf("got %v", err)
+	}
+}
+
 // A different board is refused before anything is played.
 func TestItRefusesADifferentBoard(t *testing.T) {
 	ref := difftest.Side{Game: ticTacToe(t, "three", nil)}

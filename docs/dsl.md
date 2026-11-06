@@ -688,7 +688,8 @@ the ruleset in two steps, so nothing changes for the players by accident:
 
 1. The declaration arrives in the game's folder next to the ruleset, but only its test compiles
    it, under an id of the test's own, and plays the two side by side with `tests/difftest`. They
-   must agree on every legal move by its notation, every position and every result, over a random
+   must agree on every legal selection by its notation, every position, every result and where
+   every impulse ends, over a random
    battery of seeded games. Anything the two keep in different places, such as each seat's
    captures, is compared through each side's `Extra`. The ruleset stays the one the server plays.
 2. One release later, the declaration takes over under the game's id and the ruleset is deleted.

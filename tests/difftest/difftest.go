@@ -2,14 +2,17 @@
 // reports the first place they disagree. It is how a game moves from a Go
 // ruleset to a declaration (the DSL coverage audit, decision 4): the Go ruleset
 // stays for one release as the reference, and the declaration must match it
-// over a random battery — the same legal moves, the same positions and the
-// same results, move for move.
+// over a random battery — the same legal selections, the same impulses, the
+// same positions and the same results, selection for selection.
 //
 // Both implementations are driven only through the engine's public calls
-// (InitialStateSeeded, LegalMoves, Apply, FormatMove), so it makes no
-// difference which of them is the ruleset and which the declaration. Moves are
-// compared by their notation, which a conversion keeps, and positions by what
-// is on the board plus whatever else each side is asked to report in Extra.
+// (InitialStateSeeded, LegalSelections, Apply, ImpulseEnds, FormatMove), so it
+// makes no difference which of them is the ruleset and which the declaration.
+// Selections are compared by their notation, which a conversion keeps, and
+// positions by what is on the board plus whatever else each side is asked to
+// report in Extra. Where an impulse ends is compared too (ADR 0114): a
+// selection that keeps the seat may still end its impulse, when it rolled or
+// drew, and a declaration must end it in the same places.
 package difftest
 
 import (
@@ -160,10 +163,20 @@ func applyBoth(ref, cand Side, st [2]*state.BoardState, seat int, m0, m1 state.S
 	if !a.GameEnded && a.NextImpulseSeat != b.NextImpulseSeat {
 		return res, fmt.Sprintf("the next impulse is seat %d in the reference, %d in the candidate", a.NextImpulseSeat, b.NextImpulseSeat)
 	}
+	if ea, eb := state.ImpulseEnds(ref.Game, st[0], seat, m0, a), state.ImpulseEnds(cand.Game, st[1], seat, m1, b); ea != eb {
+		return res, fmt.Sprintf("it %s seat %d's impulse in the reference and %s it in the candidate", ends(ea), seat, ends(eb))
+	}
 	if d := diffPosition(ref, cand, a.NewState, b.NewState); d != "" {
 		return res, "the positions after it differ: " + d
 	}
 	return res, ""
+}
+
+func ends(yes bool) string {
+	if yes {
+		return "ends"
+	}
+	return "does not end"
 }
 
 // moves lists a seat's legal moves by their notation.
