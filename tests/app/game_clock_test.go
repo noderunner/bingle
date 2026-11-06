@@ -254,7 +254,7 @@ func TestWebClockMinutesAndTheGamesDefault(t *testing.T) {
 		t.Helper()
 		return evalString(t, ctx, `document.getElementById("clock_minutes").value`)
 	}
-	for game, want := range map[string]string{"blooms": "10", "blooms-4": "5", "blooms-6": "15", "tak-5x5": "10"} {
+	for game, want := range map[string]string{"blooms": "10", "blooms-4": "5", "blooms-6": "15", "blooms-8": "25", "blooms-10": "35", "tak-5x5": "10"} {
 		open(game)
 		waitJS(t, ctx, game+"'s time", fmt.Sprintf(`document.getElementById("clock_minutes").value === %q`, want), 5*time.Second)
 		if got := evalString(t, ctx, `document.getElementById("clock_seconds").value`); got != "0" {
