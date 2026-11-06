@@ -87,7 +87,7 @@ func (rs *Ruleset) Describe(game *catalog.CompiledGame) state.RulesetInfo {
 			}
 		}
 	}
-	for _, c := range cards {
+	for _, c := range moveCards {
 		info.Actions = append(info.Actions, state.RulesetAction{ID: "card-" + c.ID, Label: c.Name, Hint: "Move a piece as the " + c.Name + " card shows, then swap it for the card at the side."})
 	}
 	info.Actions = append(info.Actions, state.RulesetAction{ID: actPass, Label: "Pass", Hint: "Nothing can move: pass, but still swap the card."})

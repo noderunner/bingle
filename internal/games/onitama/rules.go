@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/noderunner/bingle/internal/engine/board"
+	"github.com/noderunner/bingle/internal/engine/cards"
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/engine/state"
 )
@@ -143,30 +144,25 @@ func (e *eng) legal(seat int) []state.Selection {
 // Seeded says the start position carries a random deal that replays reuse.
 func (*Ruleset) Seeded() bool { return true }
 
-func splitmix(s *uint64) uint64 {
-	*s += 0x9e3779b97f4a7c15
-	z := *s
-	z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9
-	z = (z ^ (z >> 27)) * 0x94d049bb133111eb
-	return z ^ (z >> 31)
-}
-
 // Start deals five cards and sets up the pieces. Red (seat 1) always starts: the
 // rules let the stamp on the side card choose, but the lobby and the clients
 // take seat 1 as the first player.
+//
+// The deal is the one a declared game makes (ADR 0119): the sixteen cards in
+// their order, shuffled with cards.RNG, then two to each seat, one at a time
+// from the top, and one to the side.
 func (rs *Ruleset) Start(game *catalog.CompiledGame, seed uint64) (*state.BoardState, error) {
-	if seed == 0 {
-		seed = 0x2545f4914f6cdd1d
+	deck := &cards.Zone{}
+	ids := make([]string, len(moveCards))
+	for i, c := range moveCards {
+		ids[i] = c.ID
 	}
-	deck := make([]string, len(cards))
-	for i, c := range cards {
-		deck[i] = c.ID
-	}
-	for i := len(deck) - 1; i > 0; i-- {
-		j := int(splitmix(&seed) % uint64(i+1))
-		deck[i], deck[j] = deck[j], deck[i]
-	}
-	d := &Data{Hands: [2][2]string{{deck[0], deck[1]}, {deck[2], deck[3]}}, Side: deck[4]}
+	deck.Fill(ids, true)
+	deck.Shuffle(&cards.RNG{State: seed})
+	red, blue := &cards.Zone{}, &cards.Zone{}
+	cards.Deal(deck, []*cards.Zone{red, blue}, 2)
+	side := deck.Draw(1)
+	d := &Data{Hands: [2][2]string{{red.Cards[0].ID, red.Cards[1].ID}, {blue.Cards[0].ID, blue.Cards[1].ID}}, Side: side[0].ID}
 	d.Turn = seatRed
 	st := state.NewBoardState()
 	for f := 0; f < 5; f++ {

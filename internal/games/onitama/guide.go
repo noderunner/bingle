@@ -70,7 +70,7 @@ func cardsMarkdown() string {
 	b.WriteString("The sixteen cards of the game. On a card the **black square** is your piece and the **coloured squares** are the squares it may move to, drawn the way the holder sees the board: **up is forwards**, towards the opponent. Blue's cards are used from the other side, so for Blue the same picture points down the board.\n\n")
 	b.WriteString("![All sixteen Move cards](cards.svg)\n\n")
 	b.WriteString("## In words\n\n| Card | Moves |\n|---|---|\n")
-	for _, c := range cards {
+	for _, c := range moveCards {
 		var parts []string
 		for _, m := range c.Moves {
 			parts = append(parts, describeMove(m))
@@ -109,13 +109,13 @@ func cardsSheet() string {
 		pad      = 12
 		gridSize = 5 * cell
 	)
-	rows := (len(cards) + columns - 1) / columns
+	rows := (len(moveCards) + columns - 1) / columns
 	w := pad*2 + columns*cw + (columns-1)*gap
 	h := pad*2 + rows*ch + (rows-1)*gap
 	var b strings.Builder
 	fmt.Fprintf(&b, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 %d %d" width="%d" height="%d" role="img" aria-label="The sixteen Onitama Move cards" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif">`, w, h, w, h)
 	fmt.Fprintf(&b, `<rect width="%d" height="%d" rx="10" fill="#f7f0df"/>`, w, h)
-	for i, c := range cards {
+	for i, c := range moveCards {
 		x := float64(pad + (i%columns)*(cw+gap))
 		y := float64(pad + (i/columns)*(ch+gap))
 		stamp := "#c8372d"
