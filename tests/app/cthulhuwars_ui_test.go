@@ -1129,3 +1129,66 @@ func TestWebCthulhuWars_TheAnimationTester(t *testing.T) {
 		t.Errorf("uncaught JS exceptions: %v", jsErrors)
 	}
 }
+
+// The King in Yellow's awakening earns a spellbook in the same move, so the move
+// ends with the book: the show still finds where he awoke, live and again from
+// the history's badge.
+func TestWebCthulhuWars_TheKingEmergesWithABookInTheSameMove(t *testing.T) {
+	baseURL := newRESTTestServer(t)
+	raw := cwScenario(t,
+		[]cwUnit{
+			{1, "cultist", "south-pacific", 2}, {2, "cultist", "asia", 2},
+			{3, "cultist", "south-america-west", 2}, {4, "cultist", "africa", 2},
+		},
+		map[string]int{"south-pacific": 1, "asia": 2, "south-america-west": 3, "europe": 4},
+		[5]int{0, 8, 8, 8, 12}, [5]uint8{0, 0, 0, 0, 0}, 7)
+	var doc map[string]any
+	if err := json.Unmarshal([]byte(raw), &doc); err != nil {
+		t.Fatal(err)
+	}
+	ext := doc["ext"].(map[string]any)
+	ext["first"], ext["turn"] = 4, map[string]any{"seat": 4}
+	edited, _ := json.Marshal(doc)
+	body := map[string]any{"game_def_id": "cthulhu-wars", "player_name": "Alice", "seat": 4, "opponent": "random", "start_state": json.RawMessage(edited), "start_seat": 4}
+	var created map[string]any
+	if code := doJSON(t, "POST", baseURL+"/api/games", body, &created); code != 200 {
+		t.Fatalf("create: %d %v", code, created)
+	}
+	room, _ := created["room_code"].(string)
+	ctx, cancel := newChromedpContext(t, 120*time.Second)
+	defer cancel()
+	if err := chromedp.Run(ctx,
+		chromedp.EmulateViewport(1400, 900),
+		chromedp.Navigate(baseURL+"/healthz"),
+		chromedp.Evaluate(`localStorage.setItem("bingle.battleAnim", "true"); true`, nil),
+	); err != nil {
+		t.Fatal(err)
+	}
+	openGameAs(t, ctx, baseURL, room, "cthulhu-wars", "Alice")
+	waitJS(t, ctx, "the awaken button", `document.querySelector('[data-action^="awaken-king"]') !== null`, 15*time.Second)
+	clickSel(t, ctx, `[data-action^="awaken-king"]`)
+	waitJS(t, ctx, "the area", `document.querySelector('#board .cell.area.clickable[data-position="africa"], #emerge-stage') !== null`, 10*time.Second)
+	if !evalBool(t, ctx, `document.getElementById("emerge-stage") !== null`) {
+		clickCell(t, ctx, "africa")
+	}
+	waitJS(t, ctx, "the book", `document.querySelector('[data-action^="book"]') !== null || document.getElementById("emerge-stage") !== null`, 15*time.Second)
+	if evalBool(t, ctx, `document.getElementById("emerge-stage") !== null`) {
+		clickSel(t, ctx, "#emerge-skip")
+		waitJS(t, ctx, "the skip", `document.getElementById("emerge-stage") === null`, 5*time.Second)
+	}
+	waitJS(t, ctx, "the book", `document.querySelector('[data-action^="book"]') !== null`, 15*time.Second)
+	clickSel(t, ctx, `[data-action^="book"]`)
+	if evalBool(t, ctx, `!!document.querySelector("#submit-move:not([disabled])")`) {
+		clickSel(t, ctx, "#submit-move")
+	}
+	waitJS(t, ctx, "the move sent", `!document.querySelector('[data-action^="book"]')`, 15*time.Second)
+	if evalBool(t, ctx, `document.getElementById("emerge-stage") !== null`) {
+		clickSel(t, ctx, "#emerge-skip")
+	}
+	waitJS(t, ctx, "no show", `document.getElementById("emerge-stage") === null`, 10*time.Second)
+
+	evalString(t, ctx, `(document.getElementById("rail-tab-history").click(), "ok")`)
+	waitJS(t, ctx, "the badge", `document.querySelector('.log-emerges.playable[data-emerges="king-in-yellow"]') !== null`, 15*time.Second)
+	clickSel(t, ctx, `.log-emerges.playable[data-emerges="king-in-yellow"]`)
+	waitJS(t, ctx, "the show again", `document.querySelector('#emerge-stage[data-goo="king-in-yellow"]') !== null`, 5*time.Second)
+}

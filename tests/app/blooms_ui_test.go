@@ -2,6 +2,7 @@ package app_test
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -271,4 +272,47 @@ func TestWebSubmit_ATurnOfSeveralSteps(t *testing.T) {
 	waitJS(t, ctx, "the whole turn in the list", `document.querySelectorAll('#move-list button.mv').length === 3`, 10*time.Second)
 	clickSel(t, ctx, "#history-friendly")
 	waitJS(t, ctx, "the turn told", `document.getElementById("history-pane") !== null && document.getElementById("history-pane").textContent.indexOf("e6") >= 0`, 10*time.Second)
+}
+
+// The last move is marked whole: a turn of two stones marks both, and a stone
+// and done marks the stone.
+func TestWebBlooms_TheLastTurnIsMarkedWhole(t *testing.T) {
+	baseURL := newRESTTestServer(t)
+	var created struct {
+		RoomCode string `json:"room_code"`
+	}
+	if code := doJSON(t, "POST", baseURL+"/api/games", map[string]any{"game_def_id": "blooms", "player_name": "Alice", "opponent": "random"}, &created); code != 200 {
+		t.Fatalf("create: %d", code)
+	}
+	if code := doJSON(t, "POST", baseURL+"/api/games/"+created.RoomCode+"/moves", map[string]any{"player_name": "Alice", "notation": "red@e5"}, nil); code != 200 {
+		t.Fatalf("Alice's stone: %d", code)
+	}
+	var moves []struct {
+		Selections []struct {
+			To string `json:"to"`
+		} `json:"selections"`
+		To string `json:"to"`
+	}
+	deadline := time.Now().Add(10 * time.Second)
+	for len(moves) < 2 && time.Now().Before(deadline) {
+		doJSON(t, "GET", baseURL+"/api/games/"+created.RoomCode+"/moves", nil, &moves)
+		time.Sleep(50 * time.Millisecond)
+	}
+	if len(moves) < 2 {
+		t.Fatal("the bot did not reply")
+	}
+	var want []string
+	for _, s := range moves[1].Selections {
+		if s.To != "" {
+			want = append(want, s.To)
+		}
+	}
+	if len(moves[1].Selections) == 0 && moves[1].To != "" {
+		want = []string{moves[1].To}
+	}
+	ctx, cancel := newChromedpContext(t, 60*time.Second)
+	defer cancel()
+	openGameAs(t, ctx, baseURL, created.RoomCode, "blooms", "Alice")
+	expr := fmt.Sprintf(`[...document.querySelectorAll("#board .cell")].filter(c => c.querySelector(".last-move")).map(c => c.dataset.position).sort().join(",") === %q`, strings.Join(sortedStrings(want), ","))
+	waitJS(t, ctx, "the bot's turn marked: "+strings.Join(want, " "), expr, 10*time.Second)
 }

@@ -736,12 +736,15 @@ function lastMoveSquares() {
 	if (inAnalysis()) return [];
 	const m = lastMoveRecord();
 	if (!m) return [];
+	// A move of several selections marks the squares of each of them.
 	const out = [];
-	if (m.from) out.push(m.from);
-	if (m.path && m.path.length) out.push(...m.path);
-	else if (m.to) out.push(m.to);
-	if (m.aim) out.push(m.aim);
-	return out;
+	for (const x of m.selections || [m]) {
+		if (x.from) out.push(x.from);
+		if (x.path && x.path.length) out.push(...x.path);
+		else if (x.to) out.push(x.to);
+		if (x.aim) out.push(x.aim);
+	}
+	return [...new Set(out)];
 }
 
 function lastMoveAgeText() {
@@ -4722,7 +4725,11 @@ function emergedUnit(line) {
 /** Plays the show of a line of the history, from the move that told it. */
 function playEmergence(unit, e) {
 	const move = S.moves.find((m) => m.seq === e.ply);
-	const area = move && move.to;
+	// A move of several selections says the last one's area: the unit's own is
+	// where it awoke (an awakening may be followed by a spellbook it earned).
+	const sels = move ? move.selections || [move] : [];
+	const sel = sels.find((x) => x.piece === unit.type && x.to) || [...sels].reverse().find((x) => x.to);
+	const area = sel && sel.to;
 	if (!area) return;
 	const def = (S.info.board.areas || []).find((a) => a.id === area);
 	const still = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
@@ -4796,7 +4803,8 @@ async function battleAround(seq) {
 /** The battle whose result a position shows: the latest fought up to it, however long ago. */
 async function lastBattleBefore(seq) {
 	for (let n = seq; n > 0; n--) {
-		if (S.moves[n - 1].action !== "battle") continue;
+		const m = S.moves[n - 1];
+		if (!(m.selections || [m]).some((x) => x.action === "battle")) continue;
 		const found = await battleAround(n);
 		if (found) return found;
 	}
