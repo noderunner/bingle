@@ -357,6 +357,37 @@ the swap move is the ruleset's own — offered and applied in its `Legal` and
 `Apply` when `PieRuleOn` holds (Blooms does: `swap` as the second player's
 first reply).
 
+### Effects at the end of a turn
+
+`end_of_turn` lists effects that happen, in order, whenever a turn ends: after
+its last selection, after `done` or after a `pass`, but not after a `swap`
+([ADR 0116](decisions/0116-effects-at-the-end-of-a-turn.md)). They come before
+the turn is judged, so the win rules, `pass_when_stuck` and `no-legal-moves`
+see the position after them.
+
+```yaml
+reserves: {captured: 0}
+end_of_turn:
+  - effect: remove-groups
+    condition: no-liberties   # no empty position beside the group
+    whose: opponents          # default; or mover, or all
+    count_in: captured        # a reserves pool credited to the mover
+    tint: fenced              # a key of display.tints
+display:
+  tints:
+    fenced: {label: Fenced bloom, color: '#e8a898', text: Taken when the turn ends.}
+```
+
+* A group is the connected top pieces of one colour. `whose` goes by seat, so
+  with several colours a seat (`colors`) `opponents` takes every colour the
+  mover does not play.
+* Every group that qualifies is decided on the same position, then all are
+  removed together.
+* With `tint`, the state the server sends carries `ext.tints`: every group
+  that meets the condition, whoever's it is, so a player sees what the end of
+  a turn will take. It is worked out each time and never stored.
+* `captures` and `custodian` still act as a piece lands; a game may use both.
+
 ### slide (and compound moves)
 
 ```yaml

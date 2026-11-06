@@ -1,6 +1,7 @@
 package state
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -442,8 +443,28 @@ func Public(game *catalog.CompiledGame, st *BoardState, viewer int) *BoardState 
 		if h, ok := rs.(HiddenInfo); ok {
 			return h.Redact(game, st, viewer)
 		}
+		return st
 	}
-	return st
+	return withTints(game, st)
+}
+
+// withTints gives a declared game's position the cells its end_of_turn
+// effects tint, under ext.tints, worked out and never stored (ADR 0116).
+func withTints(game *catalog.CompiledGame, st *BoardState) *BoardState {
+	if st == nil || st.ext != nil {
+		return st
+	}
+	tints := EndOfTurnTints(game, st)
+	if tints == nil {
+		return st
+	}
+	raw, err := json.Marshal(map[string]any{"tints": tints})
+	if err != nil {
+		return st
+	}
+	out := st.Clone()
+	out.ext = json.RawMessage(raw)
+	return out
 }
 
 // PublicMove hides what an unresolved move record would give away.

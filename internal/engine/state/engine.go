@@ -397,6 +397,17 @@ func Apply(game *catalog.CompiledGame, st *BoardState, seat int, mv Selection) (
 		} else {
 			newState.passes = 0
 		}
+		// The effects at the end of a turn come before it is judged; a swap
+		// changes nothing on the board (ADR 0116).
+		if len(game.EndOfTurn) > 0 && act.Type != catalog.ActionSwap {
+			if taken := endOfTurn(game, newState, seat); len(taken) > 0 {
+				captures = append(captures, taken...)
+				if captured == nil {
+					first := taken[0]
+					captured = &first
+				}
+			}
+		}
 	}
 
 	postCtx := ctx

@@ -175,6 +175,8 @@ type CompiledGame struct {
 	// Turn is the parts of a turn of several selections, or nil when a turn
 	// is one selection (ADR 0115).
 	Turn []TurnPart
+	// EndOfTurn is the effects at the end of a turn (ADR 0116).
+	EndOfTurn []TurnEffect
 	// Forward is each seat's forward vector on a grid (when declared).
 	Forward map[int][2]int
 	// KeepsHistory is true when some rule (ko) compares positions with the
@@ -293,4 +295,18 @@ func (g *CompiledGame) Opponent(seat int) (int, bool) {
 		}
 	}
 	return 0, false
+}
+
+// The effects at the end of a turn and whose groups they take (ADR 0116).
+const (
+	EffectRemoveGroups   = "remove-groups"
+	ConditionNoLiberties = "no-liberties"
+	WhoseOpponents       = "opponents"
+	WhoseMover           = "mover"
+	WhoseAll             = "all"
+)
+
+// TurnEffect is one compiled end_of_turn effect.
+type TurnEffect struct {
+	Effect, Condition, Whose, CountIn, Tint string
 }

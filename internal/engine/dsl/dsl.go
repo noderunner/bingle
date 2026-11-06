@@ -79,6 +79,10 @@ type GameDefinition struct {
 	// "step" action.
 	Actions []ActionDef `json:"actions,omitempty"`
 
+	// EndOfTurn lists effects that happen, in order, whenever a turn ends,
+	// before it is judged (ADR 0116).
+	EndOfTurn []EndOfTurnDef `json:"end_of_turn,omitempty"`
+
 	WinCondition WinConditionDef `json:"win_condition"`
 
 	// Notation selects the move-notation style: "" / "generic", or "ptn"
@@ -191,6 +195,15 @@ type DisplayDef struct {
 	// NoHands hides the generic reserve ("hand") panels: the ruleset's own
 	// view shows what a seat holds.
 	NoHands bool `json:"no_hands,omitempty"`
+}
+
+// TintOf is the tint d declares under key; d may be nil.
+func (d *DisplayDef) TintOf(key string) (OverlayDef, bool) {
+	if d == nil {
+		return OverlayDef{}, false
+	}
+	t, ok := d.Tints[key]
+	return t, ok
 }
 
 // OverlayDef is one entry of a DisplayDef legend.
@@ -389,6 +402,23 @@ type SeatDef struct {
 	// "W"; N is towards the top of the screen). Movement directions such as
 	// "forward-left" are relative to it.
 	Forward string `json:"forward,omitempty"`
+}
+
+// EndOfTurnDef is one effect at the end of a turn (ADR 0116).
+type EndOfTurnDef struct {
+	// Effect is "remove-groups", the only effect for now.
+	Effect string `json:"effect"`
+	// Condition is which groups: "no-liberties", no empty position beside
+	// the group.
+	Condition string `json:"condition"`
+	// Whose is "opponents" (default; every seat but the mover's), "mover"
+	// or "all".
+	Whose string `json:"whose,omitempty"`
+	// CountIn is a pool credited to the mover with the pieces removed.
+	CountIn string `json:"count_in,omitempty"`
+	// Tint is a key of display.tints: the board marks every group meeting
+	// the condition, whoever's it is.
+	Tint string `json:"tint,omitempty"`
 }
 
 // Palette is every colour the seat plays: Colors, or just Color.

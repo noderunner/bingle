@@ -50,6 +50,9 @@ func compileRules(cg *CompiledGame) error {
 	if err := compileTurns(cg, actionIDs); err != nil {
 		return err
 	}
+	if err := compileEndOfTurn(cg); err != nil {
+		return err
+	}
 	if err := compileWinRules(cg); err != nil {
 		return err
 	}
@@ -100,6 +103,11 @@ func checkReserves(cg *CompiledGame) error {
 	for _, ad := range def.Actions {
 		if ad.Custodian != nil && ad.Custodian.CountIn != "" {
 			pools[ad.Custodian.CountIn] = true
+		}
+	}
+	for _, e := range def.EndOfTurn {
+		if e.CountIn != "" {
+			pools[e.CountIn] = true
 		}
 	}
 	for pool, n := range def.Reserves {
@@ -615,6 +623,37 @@ func checkNotation(cg *CompiledGame) error {
 		}
 	default:
 		return fmt.Errorf("catalog: unknown notation %q", def.Notation)
+	}
+	return nil
+}
+
+// compileEndOfTurn resolves the effects at the end of a turn (ADR 0116).
+func compileEndOfTurn(cg *CompiledGame) error {
+	def := cg.Definition
+	for i, e := range def.EndOfTurn {
+		if e.Effect != EffectRemoveGroups {
+			return fmt.Errorf("catalog: end_of_turn %d: unknown effect %q", i, e.Effect)
+		}
+		if e.Condition != ConditionNoLiberties {
+			return fmt.Errorf("catalog: end_of_turn %d: unknown condition %q", i, e.Condition)
+		}
+		whose := e.Whose
+		switch whose {
+		case "":
+			whose = WhoseOpponents
+		case WhoseOpponents, WhoseMover, WhoseAll:
+		default:
+			return fmt.Errorf("catalog: end_of_turn %d: whose is %q, not opponents, mover or all", i, e.Whose)
+		}
+		if _, ok := def.Reserves[e.CountIn]; e.CountIn != "" && !ok {
+			return fmt.Errorf("catalog: end_of_turn %d counts in %q, which reserves does not declare", i, e.CountIn)
+		}
+		if e.Tint != "" {
+			if _, ok := def.Display.TintOf(e.Tint); !ok {
+				return fmt.Errorf("catalog: end_of_turn %d: display.tints declares no %q", i, e.Tint)
+			}
+		}
+		cg.EndOfTurn = append(cg.EndOfTurn, TurnEffect{Effect: e.Effect, Condition: e.Condition, Whose: whose, CountIn: e.CountIn, Tint: e.Tint})
 	}
 	return nil
 }

@@ -4,6 +4,11 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.85.0 - 2026-11-06
+
+### Bingle Core 0.85.0
+- **For game authors: captures at the end of a turn.** A game definition can now remove groups with no empty cell beside them when a turn ends rather than as each stone lands, take only the opponent's, count the stones taken towards a win, and tint such groups on the board so players see what the end of the turn will take, as Blooms does. Games already in the catalog play as before. See *Effects at the end of a turn* in the definition guide.
+
 ## 0.84.0 - 2026-11-06
 
 ### Bingle Core 0.84.0
