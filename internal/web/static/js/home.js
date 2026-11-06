@@ -136,6 +136,9 @@ async function updateBlurb() {
 	try {
 		const info = await gameInfo(id);
 		await preparePicker(info);
+		// Another game may have been chosen while its details were on their way:
+		// drawing this one now would leave the picture of a game no longer chosen.
+		if (select.value !== id) return;
 		renderSeatChoices(info);
 		renderSetupPreview(id, info);
 	} catch (_) {
