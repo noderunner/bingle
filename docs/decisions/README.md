@@ -102,6 +102,7 @@ Short records of choices made for the `bingle` project during the requirements i
 | [0119](0119-a-seeded-deal-at-the-start.md) | A seeded deal at the start: a declared game may hold `cards` and `deal` them into zones before the first move; draws during play and dice wait (proposed) |
 | [0115](0115-a-declared-turn-of-several-selections.md) | A declared turn may have several selections: parts with a `min`, a `max` and `distinct`, moved through by choosing, and `done` to stop |
 | [0114](0114-impulses-selections-moves-and-gestures.md) | An impulse is what one seat chooses before the game needs another seat or chance, submitted at once; selections are its parts, a move its data and gestures the interface's, and a selections query lets bots and clients walk it |
+| [0120](0120-move-cards.md) | Move cards: a card lists `moves` read by the seat's `forward`; a `card-move` action plays it and passes it on; `absent` gains `of` (proposed) |
 | [0113](0113-the-api-describes-itself.md) | The API says where to start at `GET /api`, and serves its own docs |
 | [0112](0112-legal-moves-go-to-whoever-holds-the-seat.md) | In a game with secrets, legal moves go to whoever holds the seat |
 | [0111](0111-a-tutorial-points-at-the-page-by-name.md) | A tutorial points at the page by name, not by selector |
