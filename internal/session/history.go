@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/noderunner/bingle/internal/auth"
 	"github.com/noderunner/bingle/internal/engine/board"
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/engine/state"
@@ -140,6 +141,11 @@ func (m *Manager) ListLegalMoves(ctx context.Context, roomCode string, from boar
 	if !ok {
 		return []board.PositionID{}, nil
 	}
+	if ok, err := m.mayListMoves(ctx, compiled, game, seat); err != nil {
+		return nil, err
+	} else if !ok {
+		return []board.PositionID{}, nil
+	}
 
 	legal := []board.PositionID{}
 	seen := map[board.PositionID]bool{}
@@ -181,6 +187,11 @@ func (m *Manager) LegalMoves(ctx context.Context, roomCode string, seat int) (in
 	if seat == 0 {
 		seat = *game.ImpulseSeat
 	}
+	if ok, err := m.mayListMoves(ctx, compiled, game, seat); err != nil {
+		return 0, nil, err
+	} else if !ok {
+		return seat, nil, nil
+	}
 	bs := state.NewBoardState()
 	if err := bs.UnmarshalJSON([]byte(game.BoardState)); err != nil {
 		return 0, nil, fmt.Errorf("session: unmarshal board state for room %q: %w", roomCode, err)
@@ -194,6 +205,26 @@ func (m *Manager) LegalMoves(ctx context.Context, roomCode string, seat int) (in
 	legalSpan.Set("legal", len(out))
 	legalSpan.End()
 	return seat, out, nil
+}
+
+// mayListMoves reports whether the request may see what seat can do. In a game with secrets the
+// list can name the seat's hand, so it goes to whoever holds the seat (ADR 0112); a seat nobody owns
+// is acted for by name, by anybody, so it hides nothing. Unlike mayView this only reads: it must not
+// make a seat nobody owns the property of whoever happened to ask.
+func (m *Manager) mayListMoves(ctx context.Context, compiled *catalog.CompiledGame, game store.Game, seat int) (bool, error) {
+	if !state.HasSecrets(compiled) {
+		return true, nil
+	}
+	players, err := m.store.ListPlayers(ctx, game.ID)
+	if err != nil {
+		return false, err
+	}
+	for i := range players {
+		if players[i].Seat == seat && players[i].Bot == "" {
+			return players[i].PrincipalID == "" || players[i].PrincipalID == auth.IDFrom(ctx), nil
+		}
+	}
+	return false, nil
 }
 
 func legalMoveList(compiled *catalog.CompiledGame, bs *state.BoardState, seat int) []LegalMove {

@@ -424,6 +424,17 @@ func InitialStateSeeded(game *catalog.CompiledGame, seed uint64) (*BoardState, e
 	return rs.Start(game, seed)
 }
 
+// HasSecrets reports whether game keeps anything from some of its players, so that what a seat
+// may do cannot be shown to anybody but that seat: a list of legal moves can name a hand of cards.
+func HasSecrets(game *catalog.CompiledGame) bool {
+	rs, ok := RulesetOf(game)
+	if !ok {
+		return false
+	}
+	_, ok = rs.(HiddenInfo)
+	return ok
+}
+
 // Public returns st as viewer may see it while the game is live. Games
 // without secrets return st itself; viewer 0 is the public.
 func Public(game *catalog.CompiledGame, st *BoardState, viewer int) *BoardState {
