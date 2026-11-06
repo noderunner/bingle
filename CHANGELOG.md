@@ -4,6 +4,11 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.83.1 - 2026-11-06
+
+### Bingle Core 0.83.1
+- **Fixes for moves of several parts.** Since moves of several parts were grouped into one, the History tab's *Emerges* button sometimes played nothing: in Cthulhu Wars, a Great Old One whose awakening earned a spellbook in the same move, as the King in Yellow does, now emerges again, both when he wakes and from the badge. The last move is marked whole as well, so a Blooms turn of two stones marks both stones, and a stone followed by *Done* marks the stone.
+
 ## 0.83.0 - 2026-11-06
 
 ### Bingle Core 0.83.0
