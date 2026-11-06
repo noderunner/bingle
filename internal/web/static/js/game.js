@@ -68,7 +68,8 @@ const S = {
 	hint: null, // {notation, steps, bot, key}: a bot's suggestion for the position shown
 	hintBusy: false,
 	conn: "connecting",
-	finalMove: null, // the notation the server said cannot be taken back: it waits for Submit
+	finalMove: null, // the selection that would complete the move: it waits for Submit
+	pending: null, // the pending move (ADR 0114): { ply, groups: [[notation, …], …], state, legal }; nothing of it is sent yet
 	confirmResign: false,
 	settings: {
 		confirm: store.get("bingle.confirm", true),
@@ -310,7 +311,9 @@ async function loadLegal() {
 	S.builder = new MoveBuilder([]);
 	S.preview = null;
 	S.legal = [];
-	if (isMyImpulse()) {
+	if (isMyImpulse() && (await resumePending())) {
+		// the pending move's position and options are in place
+	} else if (isMyImpulse()) {
 		try {
 			const res = await api.legal(code);
 			S.legal = res.moves || [];
@@ -318,11 +321,158 @@ async function loadLegal() {
 			S.legal = [];
 		}
 	}
+	resetBuilder();
+}
+
+function resetBuilder() {
 	MoveBuilder.manual = manualActions();
 	S.builder = new MoveBuilder(S.legal);
 	// The position moved on under a queue: keep it only if it can still be played.
 	if (S.moveQueue && !queuedUnits().every((piece) => unitCost(queueMoves(), piece, S.moveQueue.from) !== null)) S.moveQueue = null;
 	S.builder.autoAdvance();
+}
+
+// ---------------------------------------------------------------------------
+// The pending move (ADR 0114): the selections of this impulse made so far. They
+// stay in the page, which shows the position after them, until they end the
+// impulse; then the move goes to the server whole, in one call. Back takes
+// selections off it without asking anyone. A game for one seat may stop after
+// any selection, and a tutorial's script counts them, so those send each
+// selection as it is made.
+// ---------------------------------------------------------------------------
+
+const SELECTION_SEPARATOR = "; ";
+
+function wholeImpulses() {
+	return !playingAlone() && !S.tut;
+}
+
+function pendingKey() {
+	return `bingle.pending.${code}.${S.me.seat}`;
+}
+
+function pendingNotation(groups) {
+	return groups.flat().join(SELECTION_SEPARATOR);
+}
+
+/** The selections of the pending move, one notation each. */
+function pendingSelections() {
+	return S.pending ? S.pending.groups.flat() : [];
+}
+
+/** Holds groups as the pending move, at the position the selections query answered with. */
+function holdPending(groups, ply, view) {
+	S.pending = { ply, groups, state: view.state, legal: view.options || [] };
+	S.state = S.pending.state;
+	S.legal = S.pending.legal;
+	S.viewCache.clear();
+	store.set(pendingKey(), { ply, groups });
+	resetBuilder();
+}
+
+function dropPending() {
+	if (!S.pending && store.get(pendingKey()) === null) return;
+	S.pending = null;
+	try {
+		window.localStorage.removeItem(pendingKey());
+	} catch (_) {
+		/* storage unavailable: there is nothing kept to forget */
+	}
+}
+
+/**
+ * Puts the pending move back over the position just loaded, if it was made at
+ * this ply; one kept from before a reload is asked about again. False when
+ * there is none.
+ */
+async function resumePending() {
+	if (!wholeImpulses()) return false;
+	if (S.pending && S.pending.ply === S.game.move_seq) {
+		S.state = S.pending.state;
+		S.legal = S.pending.legal;
+		S.viewCache.clear();
+		return true;
+	}
+	const kept = S.pending || store.get(pendingKey());
+	if (!kept || kept.ply !== S.game.move_seq || !Array.isArray(kept.groups) || !kept.groups.length) {
+		dropPending();
+		return false;
+	}
+	try {
+		const view = await api.selections(code, pendingNotation(kept.groups), kept.ply);
+		if (!view.complete && view.state) {
+			holdPending(kept.groups, kept.ply, view);
+			return true;
+		}
+	} catch (_) {
+		/* the game moved on, or the move no longer reads: start it again */
+	}
+	dropPending();
+	return false;
+}
+
+/**
+ * Plays selections: onto the pending move, which is sent once they end the
+ * impulse, or one call each where the game takes them one at a time.
+ */
+async function playSelections(notations) {
+	const oneByOne = !wholeImpulses();
+	let sent = 0;
+	S.busy = true;
+	render();
+	try {
+		if (oneByOne) {
+			for (const notation of notations) {
+				await api.move(code, S.me.name, notation);
+				sent++;
+			}
+		} else {
+			const groups = [...(S.pending ? S.pending.groups : []), notations];
+			const ply = S.game.move_seq;
+			const view = await api.selections(code, pendingNotation(groups), ply);
+			if (!view.complete) {
+				holdPending(groups, ply, view);
+				return;
+			}
+			await api.move(code, S.me.name, pendingNotation(groups), ply);
+			dropPending();
+		}
+		await settle();
+	} catch (err) {
+		toast(err.message || "That move was rejected.", "error");
+		// The game moved on under the pending move (a timeout, a resignation): it is gone.
+		if (err instanceof ApiError && err.status === 409) dropPending();
+		await settle().catch(() => {});
+	} finally {
+		// The units of one destination went together, and come back together.
+		if (oneByOne) S.moveGroup = sent ? { count: sent, seq: S.moves.length } : null;
+		S.busy = false;
+		S.preview = null;
+		render();
+	}
+}
+
+/** Back past the last selection of the pending move, which the server never had. */
+async function backSelection() {
+	const { ply, groups } = S.pending;
+	const rest = groups.slice(0, -1);
+	S.busy = true;
+	render();
+	try {
+		if (rest.length) {
+			holdPending(rest, ply, await api.selections(code, pendingNotation(rest), ply));
+		} else {
+			dropPending();
+			await loadPosition();
+		}
+	} catch (err) {
+		toast(err.message, "error");
+		dropPending();
+		await settle().catch(() => {});
+	} finally {
+		S.busy = false;
+		render();
+	}
 }
 
 // ---------------------------------------------------------------------------
@@ -692,20 +842,23 @@ function clickedAButton(b) {
 	return manual.length > 0 && manual[manual.length - 1].kind === "action";
 }
 
-/** Sends a step that can be taken back; one that cannot waits for Submit. */
+/** A selection that leaves the impulse open joins the pending move; one that would end it waits for Submit. */
 async function askIfFinal(notation) {
 	const token = ++S.previewToken;
-	let final = false;
+	const groups = [...(S.pending ? S.pending.groups : []), [notation]];
+	const ply = S.game.move_seq;
+	let view = null;
 	try {
-		final = (await api.moveFinal(code, S.me.name, notation)).final;
+		view = await api.selections(code, pendingNotation(groups), ply);
 	} catch (_) {
 		/* the move itself will get the answer that matters */
 	}
 	if (token !== S.previewToken) return;
 	const done = activeBuilder().complete();
 	if (!done || done.notation !== notation) return;
-	if (!final) {
-		submitMove();
+	if (view && !view.complete) {
+		holdPending(groups, ply, view);
+		render();
 		return;
 	}
 	S.finalMove = notation;
@@ -716,7 +869,7 @@ async function askIfFinal(notation) {
 async function requestPreview(notation) {
 	const token = ++S.previewToken;
 	try {
-		const sim = await api.simulate(code, [notation]);
+		const sim = await api.simulate(code, [...pendingSelections(), notation]);
 		if (token !== S.previewToken) return;
 		const complete = S.builder.complete();
 		if (!complete || complete.notation !== notation) return;
@@ -956,24 +1109,8 @@ async function sendMoveQueue(to) {
 		return;
 	}
 	S.moveQueue = null;
-	S.busy = true;
-	render();
-	let sent = 0;
-	try {
-		for (const notation of notations) {
-			await api.move(code, S.me.name, notation);
-			sent++;
-		}
-	} catch (err) {
-		toast(err.message || "That move was rejected.", "error");
-	}
-	try {
-		await settle();
-		S.moveGroup = sent ? { count: sent, seq: S.moves.length } : null;
-	} finally {
-		S.busy = false;
-		render();
-	}
+	// Every unit of the queue is one selection, and they come back together.
+	await playSelections(notations);
 }
 
 /** The units on their way and what they cost: a click on a unit takes it out again. */
@@ -1080,7 +1217,8 @@ function undoStep() {
 	}
 	const b = activeBuilder();
 	if (!b.manualSteps().length) {
-		if (canUndo() && !S.busy) backStep();
+		if (S.pending && !S.busy) backSelection();
+		else if (canUndo() && !S.busy) backStep();
 		return;
 	}
 	b.pop();
@@ -1325,20 +1463,7 @@ async function submitMove() {
 		render();
 		return;
 	}
-	S.busy = true;
-	render();
-	try {
-		await api.move(code, S.me.name, mv.notation);
-		await settle();
-	} catch (err) {
-		toast(err.message || "That move was rejected.", "error");
-		S.builder.reset();
-		S.builder.autoAdvance();
-	} finally {
-		S.busy = false;
-		S.preview = null;
-		render();
-	}
+	await playSelections([mv.notation]);
 }
 
 // settle re-reads everything after our own action; WebSocket events for the
@@ -4899,12 +5024,14 @@ function moveBar() {
  * it takes back has not counted yet.
  */
 function backButton() {
-	if (inAnalysis() || !isLive() || !S.me.seat || !S.me.name || !canUndo() || S.busy) return null;
+	if (inAnalysis() || !isLive() || !S.me.seat || !S.me.name || S.busy) return null;
+	if (!S.pending && !canUndo()) return null;
 	// Stepping off a Gate in place is free and needs no confirming: putting the
 	// unit back is the way back, and nothing offers to take it back.
-	const last = S.moves[S.moves.length - 1];
+	const last = S.pending ? { notation: pendingSelections().at(-1), seat: S.me.seat } : S.moves[S.moves.length - 1];
 	const off = last && /^leave:[^@]+@([^>]+)>(.+)$/.exec(last.notation || "");
 	if (off && off[1] === off[2] && last.seat === S.me.seat) return null;
+	if (S.pending) return h("button", { id: "undo-step", class: "ghost", onclick: undoStep, title: "Take back the last part of this move (Backspace)" }, "↶ Back");
 	return h("button", { id: "undo-step", class: "ghost", onclick: undoStep, title: "Take back the last step of this turn (Backspace)" }, "↶ Back");
 }
 

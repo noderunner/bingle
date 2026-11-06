@@ -218,8 +218,11 @@ export const api = {
 	whoIsHere: () => call("/api/here"),
 	history: (code) => call(`/api/games/${enc(code)}/history`),
 	legal: (code) => call(`/api/games/${enc(code)}/moves/legal?steps=1`),
-	move: (code, name, notation) =>
-		call(`/api/games/${enc(code)}/moves`, { method: "POST", body: { player_name: name, notation } }),
+	// A move is the selections of one impulse joined by "; " (ADR 0114); ply, when given,
+	// is the position it was made at, and the server refuses it if the game has moved on.
+	move: (code, name, notation, ply) =>
+		call(`/api/games/${enc(code)}/moves`, { method: "POST", body: ply === undefined ? { player_name: name, notation } : { player_name: name, notation, ply } }),
+	selections: (code, made, ply) => call(`/api/games/${enc(code)}/selections?made=${encodeURIComponent(made)}&ply=${ply}`),
 	moveFinal: (code, name, notation) => call(`/api/games/${enc(code)}/move-final`, { method: "POST", body: { player_name: name, notation } }),
 	undo: (code, name) => call(`/api/games/${enc(code)}/undo`, { method: "POST", body: { player_name: name } }),
 	resign: (code, name) => call(`/api/games/${enc(code)}/resign`, { method: "POST", body: { player_name: name } }),
