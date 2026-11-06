@@ -502,6 +502,9 @@ type makeMoveRequest struct {
 	Drops      []int    `json:"drops"`
 	Aim        string   `json:"aim"`
 	Notation   string   `json:"notation"`
+	// Ply, when given, is the ply the move was made against: it is refused
+	// with 409 if the game has moved on (ADR 0114).
+	Ply *int `json:"ply"`
 }
 
 // makeMoveResponse is POST /games/{code}/moves' 200 response body, from
@@ -536,7 +539,7 @@ func (h *handlers) handleMakeMove(w http.ResponseWriter, r *http.Request) {
 	var err error
 	switch {
 	case strings.TrimSpace(req.Notation) != "":
-		outcome, err = h.mgr.PlayNotation(r.Context(), code, req.PlayerName, req.Notation)
+		outcome, err = h.mgr.PlayNotationAt(r.Context(), code, req.PlayerName, req.Notation, req.Ply)
 	case strings.TrimSpace(req.Action) != "" || strings.TrimSpace(req.Piece) != "" || req.Count != 0 || len(req.Path) > 0 || strings.TrimSpace(req.Aim) != "":
 		mv := state.Move{
 			Action: strings.TrimSpace(req.Action),
@@ -550,7 +553,7 @@ func (h *handlers) handleMakeMove(w http.ResponseWriter, r *http.Request) {
 		for _, p := range req.Path {
 			mv.Path = append(mv.Path, board.PositionID(strings.TrimSpace(p)))
 		}
-		outcome, err = h.mgr.Play(r.Context(), code, req.PlayerName, mv)
+		outcome, err = h.mgr.PlayAt(r.Context(), code, req.PlayerName, mv, req.Ply)
 	default:
 		if strings.TrimSpace(req.From) == "" {
 			writeError(w, errors.New("api: from is required"))

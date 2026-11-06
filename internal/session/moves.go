@@ -81,8 +81,17 @@ func (m *Manager) MakeMove(ctx context.Context, roomCode, name string, from, to 
 }
 
 // PlayNotation parses text in the game's move notation and plays it; see
-// Play.
+// PlayNotationAt.
 func (m *Manager) PlayNotation(ctx context.Context, roomCode, name, text string) (MoveOutcome, error) {
+	return m.PlayNotationAt(ctx, roomCode, name, text, nil)
+}
+
+// PlayNotationAt plays text: one selection, or a whole impulse of several joined
+// by "; " (ADR 0114), which is applied all or nothing and must end the impulse.
+// With ply, it is refused with ErrStalePly unless the game is still at that ply.
+// A single selection may still leave the impulse open, as the page sends them
+// one at a time until ADR 0114's first phase is complete.
+func (m *Manager) PlayNotationAt(ctx context.Context, roomCode, name, text string, ply *int) (MoveOutcome, error) {
 	roomCode = canonRoom(roomCode)
 	game, err := m.loadGame(ctx, roomCode, false)
 	if err != nil {
@@ -92,11 +101,11 @@ func (m *Manager) PlayNotation(ctx context.Context, roomCode, name, text string)
 	if err != nil {
 		return MoveOutcome{}, err
 	}
-	mv, err := state.ParseMove(compiled, text)
+	sels, err := state.ParseImpulse(compiled, text)
 	if err != nil {
 		return MoveOutcome{}, err
 	}
-	return m.Play(ctx, roomCode, name, mv)
+	return m.playSelections(ctx, roomCode, name, sels, ply, len(sels) > 1)
 }
 
 // Play applies a move by name (who must hold the seat whose turn it
@@ -111,6 +120,19 @@ func (m *Manager) PlayNotation(ctx context.Context, roomCode, name, text string)
 //   - The move itself must be legal per state.Apply; an illegal move's
 //     error is returned as-is, with nothing persisted.
 func (m *Manager) Play(ctx context.Context, roomCode, name string, mv state.Move) (MoveOutcome, error) {
+	return m.PlayAt(ctx, roomCode, name, mv, nil)
+}
+
+// PlayAt is Play, refused with ErrStalePly unless the game is still at ply.
+func (m *Manager) PlayAt(ctx context.Context, roomCode, name string, mv state.Move, ply *int) (MoveOutcome, error) {
+	return m.playSelections(ctx, roomCode, name, []state.Move{mv}, ply, false)
+}
+
+// playSelections plays sels for name under the room lock. whole says sels are an
+// impulse, checked as one with state.ApplyImpulse before anything is recorded;
+// each selection is then recorded as a move of its own, as stored games still
+// are until ADR 0114's first phase regroups them.
+func (m *Manager) playSelections(ctx context.Context, roomCode, name string, sels []state.Move, ply *int, whole bool) (MoveOutcome, error) {
 	roomCode = canonRoom(roomCode)
 	unlock := m.lockRoom(ctx, roomCode)
 	defer unlock()
@@ -150,9 +172,29 @@ func (m *Manager) Play(ctx context.Context, roomCode, name string, mv state.Move
 		return MoveOutcome{}, err
 	}
 
-	outcome, err := m.applyAndRecord(ctx, compiled, game, player, mv)
-	if err != nil {
-		return MoveOutcome{}, err
+	if ply != nil && *ply != game.MoveSeq {
+		return MoveOutcome{}, fmt.Errorf("%w: it is at ply %d, not %d", ErrStalePly, game.MoveSeq, *ply)
+	}
+	if whole {
+		bs := state.NewBoardState()
+		if err := bs.UnmarshalJSON([]byte(game.BoardState)); err != nil {
+			return MoveOutcome{}, fmt.Errorf("session: unmarshal board state for room %q: %w", game.RoomCode, err)
+		}
+		if _, err := state.ApplyImpulse(compiled, bs, player.Seat, sels); err != nil {
+			return MoveOutcome{}, err
+		}
+	}
+
+	var outcome MoveOutcome
+	for i, mv := range sels {
+		if i > 0 {
+			if game, err = m.loadGame(ctx, roomCode, true); err != nil {
+				return MoveOutcome{}, err
+			}
+		}
+		if outcome, err = m.applyAndRecord(ctx, compiled, game, player, mv); err != nil {
+			return MoveOutcome{}, err
+		}
 	}
 
 	outcome.BotMoves = m.runBots(ctx, roomCode)

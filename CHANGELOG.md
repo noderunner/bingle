@@ -4,6 +4,12 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.78.0 - 2026-11-06
+
+### Bingle Core 0.78.0
+- **Ask what comes next, then send it all at once.** A program playing through the API or MCP can ask what it may choose next, step by step, without sending anything: a Blooms turn is a stone and then another stone or *done*, and the server lists each part in turn (`GET /api/games/{code}/selections`, or the `list_selections` tool). When the choices add up to a whole move, it sends them together as one, joined by `;`, and either all of it is played or none of it.
+- **No more moves at a stale position.** A move can say which position it was made for, and is turned down if the game has moved on in the meantime, for example because the other player resigned.
+
 ## 0.77.0 - 2026-11-05
 
 ### Bingle Core 0.77.0
