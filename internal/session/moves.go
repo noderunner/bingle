@@ -39,7 +39,9 @@ var ErrNotAPlayer = errors.New("session: not a player in this game")
 // the game's resulting turn/status/board state — sparing callers (REST/WS) a
 // second GetState round-trip.
 type MoveOutcome struct {
-	Seq      int
+	Seq int
+	// Ply is the impulse the move (the last selection recorded) is part of.
+	Ply      int
 	Seat     int
 	Color    string
 	From     string
@@ -172,8 +174,8 @@ func (m *Manager) playSelections(ctx context.Context, roomCode, name string, sel
 		return MoveOutcome{}, err
 	}
 
-	if ply != nil && *ply != game.MoveSeq {
-		return MoveOutcome{}, fmt.Errorf("%w: it is at ply %d, not %d", ErrStalePly, game.MoveSeq, *ply)
+	if ply != nil && *ply != game.Ply {
+		return MoveOutcome{}, fmt.Errorf("%w: it is at ply %d, not %d", ErrStalePly, game.Ply, *ply)
 	}
 	if whole {
 		bs := state.NewBoardState()
@@ -270,6 +272,11 @@ func (m *Manager) applyAndRecordAs(ctx context.Context, compiled *catalog.Compil
 			locked = true
 		}
 	}
+	// Whether the selection ends its impulse, and so the ply (ADR 0114). In a
+	// game for one seat each selection is sent as a move of its own.
+	endsImpulse := state.AnySelectionMayEnd(compiled) || state.ImpulseEnds(compiled, bs, player.Seat, result.Move, result)
+	// Only a game for one seat takes moves back, so only there is a lock news.
+	shownLocked := locked && state.AnySelectionMayEnd(compiled)
 	// What leaves the server is the public view of the position.
 	pub := state.Public(compiled, result.NewState, 0)
 	publicJSON := newStateJSON
@@ -342,6 +349,7 @@ func (m *Manager) applyAndRecordAs(ctx context.Context, compiled *catalog.Compil
 		Locked:              locked,
 		Clock:               clockJSON,
 		SwapSeats:           pieSwap,
+		EndsImpulse:         endsImpulse,
 	})
 	if err != nil {
 		m.mx.Move(family, metrics.MoveFailed, applyTook)
@@ -419,7 +427,9 @@ func (m *Manager) applyAndRecordAs(ctx context.Context, compiled *catalog.Compil
 		ServerTime:      m.now().UTC().Format(time.RFC3339),
 		Auto:            auto,
 		AutoPlay:        autoPlay,
-		Locked:          locked,
+		Locked:          shownLocked,
+		Ply:             move.Ply,
+		EndsImpulse:     endsImpulse,
 	}})
 	publishSpan.End()
 
@@ -465,7 +475,8 @@ func (m *Manager) applyAndRecordAs(ctx context.Context, compiled *catalog.Compil
 		State:           string(publicJSON),
 		Auto:            auto,
 		AutoPlay:        autoPlay,
-		Locked:          locked,
+		Locked:          shownLocked,
+		Ply:             move.Ply,
 	}, nil
 }
 

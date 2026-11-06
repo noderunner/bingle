@@ -18,7 +18,7 @@ var ErrStalePly = errors.New("session: the game has moved on")
 // SelectionsView is what the impulse seat may select next (ADR 0114).
 type SelectionsView struct {
 	Seat int
-	// Ply is the ply the answer was made at: the game's move count.
+	// Ply is the ply the answer was made at: the impulses played.
 	Ply int
 	// Made are the selections made so far, in the game's notation.
 	Made []string
@@ -46,15 +46,15 @@ func (m *Manager) Selections(ctx context.Context, roomCode, made string, ply *in
 	if game.Status != "active" || game.ImpulseSeat == nil {
 		return SelectionsView{}, ErrGameNotActive
 	}
-	if ply != nil && *ply != game.MoveSeq {
-		return SelectionsView{}, fmt.Errorf("%w: it is at ply %d, not %d", ErrStalePly, game.MoveSeq, *ply)
+	if ply != nil && *ply != game.Ply {
+		return SelectionsView{}, fmt.Errorf("%w: it is at ply %d, not %d", ErrStalePly, game.Ply, *ply)
 	}
 	compiled, err := m.compiledFor(game)
 	if err != nil {
 		return SelectionsView{}, err
 	}
 	seat := *game.ImpulseSeat
-	view := SelectionsView{Seat: seat, Ply: game.MoveSeq, Made: []string{}, Options: []LegalMove{}}
+	view := SelectionsView{Seat: seat, Ply: game.Ply, Made: []string{}, Options: []LegalMove{}}
 	if ok, err := m.mayListMoves(ctx, compiled, game, seat); err != nil {
 		return SelectionsView{}, err
 	} else if !ok {

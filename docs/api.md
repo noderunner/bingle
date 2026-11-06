@@ -228,7 +228,7 @@ that account.
 | `POST /games/{code}/voice` | `{player_name, active}`: a seated player joins the call (`active: true`, repeated every ~15 s as a heartbeat; a place lapses after 45 s) or leaves it | `{peers}`; `403` not a player |
 | `POST /games/{code}/voice/signal` | `{player_name, to, kind, data}`: relay an `offer`, `answer`, `ice` or `retry` message (≤ 16 KB of JSON, ≤ 300 per 10 s) to seat `to`, delivered only to that seat's WebSocket | `{ok}`; `403` sender not in the call, `409` target not in it, `429` too fast |
 | `GET /rtc/config` | the `iceServers` a voice call uses: STUN, and a TURN relay with credentials that expire after 6 hours when configured | `{ice_servers: [{urls, username?, credential?}]}` |
-| `GET /games/{code}/state` | `?at_seq=N` (0 = start) | `{board_state, state, impulse_seat, status, move_seq, winner_seat, end_reason}` |
+| `GET /games/{code}/state` | `?at_seq=N` (0 = start) | `{board_state, state, impulse_seat, status, move_seq, ply, winner_seat, end_reason}`; `ply` is the number of impulses played, which a move's and the selections query's `ply` name (ADR 0114) |
 
 **A game against oneself.** `also_seats: [2, 3]` seats the creator in those seats
 too (besides `seat`): each is a player of its own named after the creator and the
@@ -396,12 +396,11 @@ that appear as buttons.
 | Method & path | Notes |
 |---|---|
 | `POST /games/{code}/moves` | body `{player_name, notation}` **or** `{player_name, action?, piece?, from?, to?, count?, path?, drops?, aim?}` **or** legacy `{player_name, from, to}`, each with an optional `ply` (`409` if the game has moved on). `notation` may be a whole impulse, its selections joined by `; ` (`blue@d4; black@f6`): it is applied all or nothing and must end the impulse (ADR 0114). Response `{move, state, bot_moves?}`; `bot_moves` are replies a bot opponent played immediately (already reflected in `state`). |
-| `GET /games/{code}/moves` | history `[{seq, seat, color, from, to, captured, action, piece, count, path, drops, aim, notation, created_at}]`; `?since_seq=N` |
+| `GET /games/{code}/moves` | history `[{seq, ply, seat, color, from, to, captured, action, piece, count, path, drops, aim, notation, created_at}]`, one entry per selection; `ply` is the impulse it belongs to, so the entries of one move share it; `?since_seq=N` |
 | `GET /games/{code}/moves/legal` | every legal move for the seat to move (`?seat=N`): `{seat, moves:[{notation, action, piece, from, to, count, path, drops, aim, steps?}]}`; `?steps=1` adds each move's gesture data, the clicks that enter it (ADR 0114). In a game with secrets (`engine: "ruleset"`) the moves of a seat with an owner go to that owner alone, and anybody else gets an empty list (ADR 0112) |
 | `GET /games/{code}/selections` | `?made=…&ply=N`: what the seat on impulse may select after the selections `made` (in notation, joined by `; `; empty for the first), ADR 0114: `{seat, ply, made, options:[same as moves/legal, with steps], complete, may_end?, state?}`. `complete` says the selections made are a whole move to send as one; `state` is the position after them as that seat sees it, absent once `complete` (a selection that ends an impulse may roll or draw, so it is never tried here). `may_end`: a game for one seat may send them as they are. `409` if the game is no longer at `ply`. On the same terms as `moves/legal` (ADR 0112) |
 | `GET /games/{code}/legal-moves?from=SQ` | v1: destinations reachable from one square; empty on the same terms as `moves/legal` |
-| `POST /games/{code}/undo` | `{player_name}`: take back the last selection of the turn you are still playing (until ADR 0114's first phase, each is sent as a move of its own). `409` once the turn has passed to anyone, the game has ended or a die has been rolled: a move then stands, in every game (ADR 0083) |
-| `POST /games/{code}/move-final` | `{player_name, notation}`: `{final}`, whether that move could not be taken back once played, as it hands the turn on, ends the game or brings in chance. Nothing is played. The page asks this before sending a move, to ask for a Submit only when it matters |
+| `POST /games/{code}/undo` | `{player_name}`: in a game for one seat only, take back the last move, unless it drew or turned a card up (ADR 0114, narrowing ADR 0086). `409` in any other game, where a move is a whole impulse and nothing sent can come back |
 | `POST /games/{code}/resign` | `{player_name}` |
 | `POST /games/{code}/hint` | `{player_name, at_seq?, moves?, bot?}`: a bot's choice (default: `minimax` where piece counts matter — Tak, Reversi, draughts — otherwise `mcts`) for the current position, or after `at_seq` + a variation → `{notation, steps, impulse_seat, bot, win_rate?, alternatives?}` (MCTS reports its estimated chance of winning, 0–1, and the best few moves; minimax only the move). Only for players, and only against bots or after the game (`409` otherwise) |
 | `POST /games/{code}/draw` | `{player_name, action: offer\|cancel\|accept\|decline}`: offer a draw to a human opponent; accepting ends the game (`end_reason: agreement`); any move withdraws an offer. `409` for nonsensical requests (no offer to answer, bot opponent). The offer is `draw_offer_seat` in game/state responses. |
@@ -422,8 +421,8 @@ not count as the player looking at the game (no effect on "your turn" mail). The
 subscribed before it sends `joined`, so a client that waits for `joined` misses no call message. The first message is
 `{"type":"joined","data":{role,seat,color,status,connected[]}}`; afterwards:
 
-* `{"type":"move","data":{seq, seat, color, notation, from, to, action, piece, count, path, drops, aim, impulse_seat, game_ended, winner_seat, end_reason, status, board_state, state, auto?, auto_play?, locked?, impulse_deadline?, server_time?}}`
-* `{"type":"state","data":{reason, removed?, status, impulse_seat, move_seq, winner_seat, end_reason, seats[], board_state, state, …}}`
+* `{"type":"move","data":{seq, seat, color, notation, from, to, action, piece, count, path, drops, aim, ply, ends_impulse?, impulse_seat, game_ended, winner_seat, end_reason, status, board_state, state, auto?, auto_play?, locked?, impulse_deadline?, server_time?}}`: one event per selection; `ply` is its impulse, and `ends_impulse` marks the last selection of a move. `locked` (a draw or a card turned up, which Undo cannot take back) comes in a game for one seat only
+* `{"type":"state","data":{reason, removed?, status, impulse_seat, move_seq, ply, winner_seat, end_reason, seats[], board_state, state, …}}`
   — sent when something other than a move changed the game (`reason` is
   `join`, `leave`, `seat`, `cult`, `start`, `undo`, `resign`, `timeout`, `draw-offer`, `draw-declined`,
   or `draw-cancelled`, `draw-agreed`; an `undo` carries `removed`). State events

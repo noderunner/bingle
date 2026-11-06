@@ -42,13 +42,18 @@ type MoveInput struct {
 	// seats change places (the board itself the swap leaves untouched), in
 	// the same transaction as the move.
 	SwapSeats bool
+	// EndsImpulse says this selection ends its impulse (state.ImpulseEnds):
+	// the game's ply moves on with it. The row's own ply is the game's + 1.
+	EndsImpulse bool
 }
 
 // Move mirrors one row of the moves table (see schema.sql).
 type Move struct {
-	ID             int64
-	GameID         int64
-	Seq            int
+	ID     int64
+	GameID int64
+	Seq    int
+	// Ply is the impulse the row is a selection of (ADR 0114), from 1.
+	Ply            int
 	Seat           int
 	Color          string
 	From           string
@@ -83,10 +88,10 @@ func (s *Store) RecordMove(ctx context.Context, gameID int64, in MoveInput) (Mov
 	}
 	defer func() { _ = tx.Rollback() }()
 
-	var currentMoveSeq int
+	var currentMoveSeq, currentPly int
 	var currentStatus string
-	err = tx.queryRow(ctx, "RecordMove.readSeq", `SELECT move_seq, status FROM games WHERE id = ?`, gameID).
-		Scan(&currentMoveSeq, &currentStatus)
+	err = tx.queryRow(ctx, "RecordMove.readSeq", `SELECT move_seq, status, ply FROM games WHERE id = ?`, gameID).
+		Scan(&currentMoveSeq, &currentStatus, &currentPly)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Move{}, ErrNotFound
 	}
@@ -95,6 +100,10 @@ func (s *Store) RecordMove(ctx context.Context, gameID int64, in MoveInput) (Mov
 	}
 
 	newSeq := currentMoveSeq + 1
+	rowPly, gamePly := currentPly+1, currentPly
+	if in.EndsImpulse {
+		gamePly = rowPly
+	}
 
 	var captured sql.NullString
 	if in.Captured != nil {
@@ -102,9 +111,9 @@ func (s *Store) RecordMove(ctx context.Context, gameID int64, in MoveInput) (Mov
 	}
 
 	res, err := tx.exec(ctx, "RecordMove.insertMove",
-		`INSERT INTO moves (game_id, seq, seat, color, from_position, to_position, captured_position, resulting_state, notation, move_json, auto, locked, autoplay)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		gameID, newSeq, in.Seat, in.Color, in.From, in.To, captured, in.ResultingBoardState, in.Notation, in.MoveJSON, boolToInt(in.Auto), boolToInt(in.Locked), boolToInt(in.AutoPlay),
+		`INSERT INTO moves (game_id, seq, seat, color, from_position, to_position, captured_position, resulting_state, notation, move_json, auto, locked, autoplay, ply)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		gameID, newSeq, in.Seat, in.Color, in.From, in.To, captured, in.ResultingBoardState, in.Notation, in.MoveJSON, boolToInt(in.Auto), boolToInt(in.Locked), boolToInt(in.AutoPlay), rowPly,
 	)
 	if err != nil {
 		return Move{}, fmt.Errorf("insert moves row: %w", err)
@@ -128,8 +137,8 @@ func (s *Store) RecordMove(ctx context.Context, gameID int64, in MoveInput) (Mov
 	}
 
 	if _, err := tx.exec(ctx, "RecordMove.updateGame",
-		`UPDATE games SET board_state = ?, move_seq = ?, updated_at = CURRENT_TIMESTAMP, impulse_seat = ?, status = ?, winner_seat = ?, end_reason = ?, end_detail = ?, rating_status = CASE WHEN rated = 1 AND ? = 'finished' THEN 'pending' ELSE '' END, draw_offer_seat = NULL WHERE id = ?`,
-		in.ResultingBoardState, newSeq, impulseSeat, status, winnerSeat, in.EndReason, in.EndDetail, status, gameID,
+		`UPDATE games SET board_state = ?, move_seq = ?, ply = ?, updated_at = CURRENT_TIMESTAMP, impulse_seat = ?, status = ?, winner_seat = ?, end_reason = ?, end_detail = ?, rating_status = CASE WHEN rated = 1 AND ? = 'finished' THEN 'pending' ELSE '' END, draw_offer_seat = NULL WHERE id = ?`,
+		in.ResultingBoardState, newSeq, gamePly, impulseSeat, status, winnerSeat, in.EndReason, in.EndDetail, status, gameID,
 	); err != nil {
 		return Move{}, fmt.Errorf("updating games row for game_id=%d: %w", gameID, err)
 	}
@@ -165,7 +174,7 @@ func (s *Store) RecordMove(ctx context.Context, gameID int64, in MoveInput) (Mov
 // encoding produces "[]", never "null".
 func (s *Store) ListMoves(ctx context.Context, gameID int64, sinceSeq int) ([]Move, error) {
 	rows, err := s.query(ctx, "ListMoves",
-		`SELECT id, game_id, seq, seat, color, from_position, to_position, captured_position, resulting_state, notation, move_json, auto, locked, autoplay, created_at
+		`SELECT id, game_id, seq, seat, color, from_position, to_position, captured_position, resulting_state, notation, move_json, auto, locked, autoplay, created_at, ply
 		 FROM moves WHERE game_id = ? AND seq > ? ORDER BY seq`,
 		gameID, sinceSeq,
 	)
@@ -179,7 +188,7 @@ func (s *Store) ListMoves(ctx context.Context, gameID int64, sinceSeq int) ([]Mo
 		var m Move
 		var captured sql.NullString
 		var auto, locked, autoplay int
-		if err := rows.Scan(&m.ID, &m.GameID, &m.Seq, &m.Seat, &m.Color, &m.From, &m.To, &captured, &m.ResultingState, &m.Notation, &m.MoveJSON, &auto, &locked, &autoplay, &m.CreatedAt); err != nil {
+		if err := rows.Scan(&m.ID, &m.GameID, &m.Seq, &m.Seat, &m.Color, &m.From, &m.To, &captured, &m.ResultingState, &m.Notation, &m.MoveJSON, &auto, &locked, &autoplay, &m.CreatedAt, &m.Ply); err != nil {
 			return nil, fmt.Errorf("scanning moves row for game_id=%d: %w", gameID, err)
 		}
 		m.Auto = auto != 0
@@ -204,11 +213,11 @@ func scanMoveByID(ctx context.Context, q rowQuerier, name string, id int64) (Mov
 	var auto, locked, autoplay int
 
 	row := q.queryRow(ctx, name,
-		`SELECT id, game_id, seq, seat, color, from_position, to_position, captured_position, resulting_state, notation, move_json, auto, locked, autoplay, created_at
+		`SELECT id, game_id, seq, seat, color, from_position, to_position, captured_position, resulting_state, notation, move_json, auto, locked, autoplay, created_at, ply
 		 FROM moves WHERE id = ?`,
 		id,
 	)
-	if err := row.Scan(&m.ID, &m.GameID, &m.Seq, &m.Seat, &m.Color, &m.From, &m.To, &captured, &m.ResultingState, &m.Notation, &m.MoveJSON, &auto, &locked, &autoplay, &m.CreatedAt); err != nil {
+	if err := row.Scan(&m.ID, &m.GameID, &m.Seq, &m.Seat, &m.Color, &m.From, &m.To, &captured, &m.ResultingState, &m.Notation, &m.MoveJSON, &auto, &locked, &autoplay, &m.CreatedAt, &m.Ply); err != nil {
 		return Move{}, err
 	}
 	m.Auto = auto != 0
@@ -238,8 +247,8 @@ func (s *Store) UndoToSeq(ctx context.Context, gameID int64, keepSeq int, boardS
 		return fmt.Errorf("deleting moves for game_id=%d: %w", gameID, err)
 	}
 	res, err := tx.exec(ctx, "UndoToSeq.updateGame",
-		`UPDATE games SET board_state = ?, move_seq = ?, impulse_seat = ? WHERE id = ?`,
-		boardState, keepSeq, impulseSeat, gameID,
+		`UPDATE games SET board_state = ?, move_seq = ?, impulse_seat = ?, ply = COALESCE((SELECT MAX(ply) FROM moves WHERE game_id = ?), 0) WHERE id = ?`,
+		boardState, keepSeq, impulseSeat, gameID, gameID,
 	)
 	if err != nil {
 		return fmt.Errorf("updating games row for game_id=%d: %w", gameID, err)
@@ -273,4 +282,43 @@ func boolToInt(b bool) int {
 		return 1
 	}
 	return 0
+}
+
+// GamesToRegroup lists the rooms of the games with rows written before
+// impulses were counted (ply 0), for session.Manager.RegroupMoves.
+func (s *Store) GamesToRegroup(ctx context.Context) ([]string, error) {
+	rows, err := s.query(ctx, "GamesToRegroup",
+		`SELECT DISTINCT g.room_code FROM moves m JOIN games g ON g.id = m.game_id WHERE m.ply = 0`)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+	var rooms []string
+	for rows.Next() {
+		var room string
+		if err := rows.Scan(&room); err != nil {
+			return nil, err
+		}
+		rooms = append(rooms, room)
+	}
+	return rooms, rows.Err()
+}
+
+// NumberPlies sets the ply of each of a game's rows (plies, by seq) and the
+// game's own, in one transaction.
+func (s *Store) NumberPlies(ctx context.Context, gameID int64, plies map[int]int, gamePly int) error {
+	tx, err := s.begin(ctx, "NumberPlies")
+	if err != nil {
+		return fmt.Errorf("begin transaction: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	for seq, ply := range plies {
+		if _, err := tx.exec(ctx, "NumberPlies.move", `UPDATE moves SET ply = ? WHERE game_id = ? AND seq = ?`, ply, gameID, seq); err != nil {
+			return err
+		}
+	}
+	if _, err := tx.exec(ctx, "NumberPlies.game", `UPDATE games SET ply = ? WHERE id = ?`, gamePly, gameID); err != nil {
+		return err
+	}
+	return tx.Commit()
 }

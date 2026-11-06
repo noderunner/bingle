@@ -44,7 +44,7 @@ before, only seats nobody owns ([ADR 0067](decisions/0067-principals-and-guest-k
 | `list_selections` | what the seat on impulse may select next after the selections `made` (joined by `; `), the position after them, and `complete` once they are a whole move ([ADR 0114](decisions/0114-impulses-selections-moves-and-gestures.md)); answered on the same terms as `get_legal_moves` |
 | `make_move` | play `notation` (preferred): one selection, or a whole impulse of several joined by `; `, applied all or nothing; or structured action/piece/from/to/count/path/drops/aim. `ply` (from `list_selections`) refuses it if the game has moved on |
 | `suggest_move` | a built-in bot's choice for the position (or a variation); only in games against bots or after the game |
-| `undo_move` / `resign` | take back the last selection of the turn you are still playing (a move stands once the turn has passed) / concede |
+| `undo_move` / `resign` | in a game for one seat, take back the last move, unless it drew or turned a card up (elsewhere a move stands: it is a whole impulse) / concede |
 | `draw` | offer / cancel / accept / decline a draw (human opponents only) |
 | `simulate` | what-if: apply a line of moves to the current or a past position |
 | `import_game` | load a PTN document or move list into a new room (validated, full history) for replay and `simulate` / `suggest_move` analysis |
@@ -161,7 +161,7 @@ few ways that matter to an agent:
   player's own `get_observation`. `simulate`, `suggest_move` and forked
   environments run on a *determinization*: dice and unknowable choices are
   re-drawn, so they estimate rather than reveal.
-* **No undo across dice.** `undo_move` is refused once a die has been rolled.
+* **Undo only alone.** `undo_move` works in a game for one seat, and not across a card drawn or turned up.
 * **Seeding.** `env_reset seed=N` fixes the game's dice as well as the bot's
   play; `match_bots seed=N` does the same per game, so seeded runs replay
   exactly. Planes (`env_spec`) are viewer-relative: units by type, conditions,

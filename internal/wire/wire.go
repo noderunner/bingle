@@ -31,6 +31,8 @@ type Move struct {
 	Auto     bool `json:"auto,omitempty"`
 	AutoPlay bool `json:"auto_play,omitempty"`
 	Locked   bool `json:"locked,omitempty"`
+	// Ply is the impulse the move is a selection of (ADR 0114).
+	Ply int `json:"ply,omitempty"`
 }
 
 // MoveFromOutcome is the Move of a move that was just played.
@@ -38,7 +40,7 @@ func MoveFromOutcome(o session.MoveOutcome) Move {
 	return Move{
 		Seq: o.Seq, Seat: o.Seat, Color: o.Color, From: o.From, To: o.To, Captured: o.Captured,
 		Action: o.Action, Piece: o.Piece, Count: o.Count, Path: o.Path, Drops: o.Drops, Aim: o.Aim, Notation: o.Notation,
-		Auto: o.Auto, AutoPlay: o.AutoPlay, Locked: o.Locked,
+		Auto: o.Auto, AutoPlay: o.AutoPlay, Locked: o.Locked, Ply: o.Ply,
 	}
 }
 
@@ -59,7 +61,7 @@ func MoveFromRecord(rec session.MoveRecord) Move {
 	return Move{
 		Seq: rec.Seq, Seat: rec.Seat, Color: rec.Color, From: rec.From, To: rec.To, Captured: rec.Captured,
 		Action: rec.Action, Piece: rec.Piece, Count: rec.Count, Path: rec.Path, Drops: rec.Drops, Aim: rec.Aim, Notation: rec.Notation,
-		CreatedAt: rec.CreatedAt, Auto: rec.Auto, AutoPlay: rec.AutoPlay, Locked: rec.Locked,
+		CreatedAt: rec.CreatedAt, Auto: rec.Auto, AutoPlay: rec.AutoPlay, Locked: rec.Locked, Ply: rec.Ply,
 	}
 }
 
