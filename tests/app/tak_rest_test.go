@@ -663,10 +663,34 @@ func TestHistoricalImpulseSeatAccountsForPasses(t *testing.T) {
 		if passedAt == 0 {
 			continue
 		}
+		// The seat that moves again after the other had to pass makes one move
+		// of both (ADR 0114: the impulse runs on into its next turn): before it,
+		// the turn is that seat's; after it, the other's.
+		var moves []struct {
+			Seq        int   `json:"seq"`
+			Seat       int   `json:"seat"`
+			Selections []any `json:"selections"`
+		}
+		doJSON(t, "GET", baseURL+"/api/games/"+room+"/moves", nil, &moves)
+		double := 0
+		for _, m := range moves {
+			if len(m.Selections) == 2 && m.Seat == seats[passedAt-1] {
+				double = m.Seq
+				break
+			}
+		}
+		if double == 0 {
+			t.Fatalf("no move of two placements after a pass: %+v", moves)
+		}
 		var st restState
-		doJSON(t, "GET", baseURL+"/api/games/"+room+"/state?at_ply="+strconv.Itoa(passedAt), nil, &st)
+		doJSON(t, "GET", baseURL+"/api/games/"+room+"/state?at_ply="+strconv.Itoa(double-1), nil, &st)
 		if st.ImpulseSeat == nil || *st.ImpulseSeat != seats[passedAt-1] {
-			t.Errorf("turn seat after move %d = %v, want %d (the opponent had to pass)", passedAt, st.ImpulseSeat, seats[passedAt-1])
+			t.Errorf("turn seat before move %d = %v, want %d", double, st.ImpulseSeat, seats[passedAt-1])
+		}
+		st = restState{}
+		doJSON(t, "GET", baseURL+"/api/games/"+room+"/state?at_ply="+strconv.Itoa(double), nil, &st)
+		if st.ImpulseSeat != nil && *st.ImpulseSeat == seats[passedAt-1] && double < len(moves) {
+			t.Errorf("turn seat after move %d is still %d: the other had to pass only once", double, seats[passedAt-1])
 		}
 		return
 	}

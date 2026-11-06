@@ -382,10 +382,15 @@ func TestSlowBotsPlayOnInTheBackgroundAndRequestsDoNotWaitForThem(t *testing.T) 
 	n := 0
 	for time.Now().Before(deadline) {
 		var ms []struct {
-			Seat int `json:"seat"`
+			Seat       int   `json:"seat"`
+			Selections []any `json:"selections"`
 		}
 		doJSON(t, "GET", base+"/api/games/"+room+"/moves", nil, &ms)
-		n = len(ms)
+		// Counted in selections, as a bot plays them.
+		n = 0
+		for _, m := range ms {
+			n += max(1, len(m.Selections))
+		}
 		var st struct {
 			ImpulseSeat *int `json:"impulse_seat"`
 		}
