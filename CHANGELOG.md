@@ -4,6 +4,11 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.77.0 - 2026-11-05
+
+### Bingle Core 0.77.0
+- **Play from the command line.** The help window has a new **API** button that opens the guide to bingle's API, which now starts with a game of Hex played step by step with curl. A program that asks the server where to begin is pointed at the guide and the handful of calls it needs, and a wrong turn gets a clear answer rather than a bare "page not found".
+
 ## 0.76.1 - 2026-11-05
 
 ### Bingle Core 0.76.1

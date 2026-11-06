@@ -54,7 +54,7 @@ func TestEngineVersion_IsSemverAndShownInTheFooterOfEveryPage(t *testing.T) {
 }
 
 // Every page with the top bar has a help button: the engine's version at the top,
-// a link to the project and a button that goes to its issues.
+// a link to the API's docs, a link to the project and a button that goes to its issues.
 func TestHelp_TopBarHasTheVersionAndTheProjectLinks(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	room := newTakRoom(t, baseURL, "tic-tac-toe", "Alice")
@@ -71,6 +71,9 @@ func TestHelp_TopBarHasTheVersionAndTheProjectLinks(t *testing.T) {
 		}
 		if !evalBool(t, ctx, `document.querySelector("#help-dialog .help-version").getBoundingClientRect().top < document.getElementById("help-github").getBoundingClientRect().top`) {
 			t.Errorf("%s: the version is not at the top of the help", path)
+		}
+		if got := evalString(t, ctx, `document.getElementById("help-api").href`); got != baseURL+"/api/docs" {
+			t.Errorf("%s: API link %q", path, got)
 		}
 		if got := evalString(t, ctx, `document.getElementById("help-github").href`); got != "https://github.com/noderunner/bingle" {
 			t.Errorf("%s: GitHub link %q", path, got)

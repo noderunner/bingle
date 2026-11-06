@@ -232,6 +232,8 @@ export function installTopbar({ onRows = () => {}, manageTitle = true } = {}) {
 		h(
 			"div",
 			{ class: "row help-links" },
+			// For anybody writing a client of their own: the API's documentation, from this server.
+			h("a", { class: "button", id: "help-api", href: "/api/docs", target: "_blank", rel: "noopener" }, "API"),
 			h("a", { class: "button", id: "help-github", href: REPO_URL, target: "_blank", rel: "noopener noreferrer" }, brandName() === "Bingle" ? "Bingle on GitHub" : "Source on GitHub"),
 			// The issues of another instance are not this project's to answer.
 			brandName() === "Bingle" ? h("a", { class: "button primary", id: "help-issues", href: `${REPO_URL}/issues`, target: "_blank", rel: "noopener noreferrer" }, "Report Issues") : null

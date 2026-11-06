@@ -32,6 +32,12 @@ func NewRouter(mgr *session.Manager, opts ...Option) chi.Router {
 		opt(h)
 	}
 
+	// What a client finds without reading the source: an index, the docs, and JSON for a wrong turn.
+	r.Get("/", h.handleIndex)
+	r.Get("/docs", h.handleDocs)
+	r.NotFound(handleNoSuchEndpoint)
+	r.MethodNotAllowed(handleWrongMethod)
+
 	if h.clientErrorsOn {
 		r.Post("/client-error", h.handlePostClientError)
 	}
@@ -196,6 +202,8 @@ type handlers struct {
 	publicURL string
 	// rtc is what voice chat clients are told about STUN and TURN servers.
 	rtc RTCConfig
+	// docs is docs/api.md, served at GET /docs (empty when the server has none).
+	docs string
 	// changelog is the newest release of CHANGELOG.md (nil when there is none).
 	changelog *changelogEntry
 	// log is the server's logger; nil means slog's default.
