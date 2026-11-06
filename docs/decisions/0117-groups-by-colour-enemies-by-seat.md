@@ -1,6 +1,6 @@
 # 0117. Groups by colour, enemies by seat
 
-Status: proposed (2026-11-06). It is addition C of the DSL coverage audit (`docs/history/dsl-coverage-audit-plan.md`
+Status: accepted (2026-11-06). It is addition C of the DSL coverage audit (`docs/history/dsl-coverage-audit-plan.md`
 on `more-plans`), after [ADR 0115](0115-a-declared-turn-of-several-selections.md)'s turns of several selections and
 [ADR 0116](0116-effects-at-the-end-of-a-turn.md)'s effects at the end of a turn.
 
@@ -43,7 +43,8 @@ pieces:
 ### Which colour a piece is placed in
 
 A piece type with a fixed `color` that is one of the placing seat's colours is placed in that colour. Any other piece
-is placed in the seat's `color`, as now. With an opening that places for the opponent (`owner: opponent`), the
+is placed in the seat's `color`, as now. A piece type whose fixed `color` is another seat's is that seat's alone to
+place, so Warm is never offered a blue stone. With an opening that places for the opponent (`owner: opponent`), the
 opponent's colours are the ones that count. A piece keeps its colour when it moves. A `flips` placement turns the
 flipped pieces to the colour of the piece placed.
 

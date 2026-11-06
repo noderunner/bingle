@@ -59,7 +59,7 @@ func (c *rctx) validateSlide(act catalog.ResolvedAction, mv Selection) (executor
 	if !ok {
 		return nil, fmt.Errorf("state: no piece at %s", mv.From)
 	}
-	if occupant.Color != c.color {
+	if !c.mine(occupant.Color) {
 		return nil, fmt.Errorf("state: piece at %s belongs to color %q, not seat %d's color %q", mv.From, occupant.Color, c.seat, c.color)
 	}
 	listed := false
@@ -139,7 +139,7 @@ func (c *rctx) validateSlide(act catalog.ResolvedAction, mv Selection) (executor
 			}
 		case primitives.OccupancyCaptureOnly, primitives.OccupancyCaptureOrEmpty:
 			if occupied {
-				if top.Color == c.color {
+				if c.mine(top.Color) {
 					return nil, fmt.Errorf("state: %s holds your own piece", p)
 				}
 				cp := p
@@ -190,7 +190,7 @@ func (c *rctx) validateSlide(act catalog.ResolvedAction, mv Selection) (executor
 		if len(sandwiched) > 0 {
 			captured = append(captured, sandwiched...)
 			if act.CountPool != "" {
-				ns.SetReserve(piece.Color, act.CountPool, ns.Reserve(piece.Color, act.CountPool)+len(sandwiched))
+				ns.SetReserve(c.color, act.CountPool, ns.Reserve(c.color, act.CountPool)+len(sandwiched))
 			}
 		}
 		if act.Then != nil {
@@ -277,7 +277,7 @@ func (c *rctx) enumerateSlides(act catalog.ResolvedAction, keep func(catalog.Res
 			return
 		}
 		top, ok := c.st.Get(from)
-		if !ok || top.Color != c.color || !isPiece[top.Piece] {
+		if !ok || !c.mine(top.Color) || !isPiece[top.Piece] {
 			continue
 		}
 		for _, d := range dirs {
@@ -292,7 +292,7 @@ func (c *rctx) enumerateSlides(act catalog.ResolvedAction, keep func(catalog.Res
 				if isEmpty {
 					canLand = act.SlideOccupancy != primitives.OccupancyCaptureOnly
 				} else if act.SlideOccupancy != primitives.OccupancyEmptyOnly {
-					if t, _ := c.st.Get(to); t.Color != c.color {
+					if t, _ := c.st.Get(to); !c.mine(t.Color) {
 						canLand = true
 					}
 				}

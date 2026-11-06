@@ -65,6 +65,9 @@ type rctx struct {
 	st    *BoardState
 	seat  int
 	color string
+	// palette is the seat's declared colors, when it plays several (ADR
+	// 0117); a piece in color or in one of them is the seat's.
+	palette []string
 
 	// mustJumpKnown/mustJumpVal cache whether a mandatory jump is pending.
 	mustJumpKnown bool
@@ -89,7 +92,65 @@ func newCtx(game *catalog.CompiledGame, st *BoardState, seat int) (*rctx, error)
 	if !ok {
 		return nil, fmt.Errorf("state: unknown seat %d", seat)
 	}
-	return &rctx{game: game, st: st, seat: seat, color: seatDef.Color}, nil
+	return &rctx{game: game, st: st, seat: seat, color: seatDef.Color, palette: seatDef.Colors}, nil
+}
+
+// mine reports whether a piece of color is the mover's: one of its seat's
+// colours.
+func (c *rctx) mine(color string) bool {
+	return color == c.color || slices.Contains(c.palette, color)
+}
+
+// sameSide reports whether colours a and b are one seat's (or the same
+// colour, for those no seat plays).
+func (c *rctx) sameSide(a, b string) bool {
+	if a == b {
+		return true
+	}
+	sa, ok := c.game.SeatOfColor(a)
+	sb, ok2 := c.game.SeatOfColor(b)
+	return ok && ok2 && sa == sb
+}
+
+// seatView shows a movement primitive each piece in its seat's colour, so a
+// seat's second colour is its own, not an opponent's (ADR 0117).
+type seatView struct{ c *rctx }
+
+func (v seatView) Occupant(id board.PositionID) (string, bool) {
+	col, ok := v.c.st.Occupant(id)
+	if !ok {
+		return "", false
+	}
+	return v.c.game.SideColor(col), true
+}
+
+// mayPlace reports whether a placement from owner's reserve may be of piece:
+// not when the piece type's own colour is another seat's (ADR 0117).
+func (c *rctx) mayPlace(owner, piece string) bool {
+	pc := c.game.Definition.Pieces[piece].Color
+	if pc == "" || pc == owner {
+		return true
+	}
+	if _, played := c.game.SeatOfColor(pc); !played {
+		return true
+	}
+	return c.sameSide(pc, owner)
+}
+
+// placedIn is the colour a placement of piece takes when its reserve is
+// owner's: the piece type's own colour when owner's seat plays it, and
+// otherwise owner itself.
+func (c *rctx) placedIn(owner, piece string) string {
+	pc := c.game.Definition.Pieces[piece].Color
+	if pc == "" || pc == owner {
+		return owner
+	}
+	if seat, ok := c.game.SeatOfColor(owner); ok {
+		if seat2, ok := c.game.SeatOfColor(pc); ok && seat2 == seat {
+			return pc
+		}
+	}
+	return owner
 }
 
 // inOpening reports whether the position is still within the opening phase.

@@ -68,10 +68,23 @@ func checkSeats(def *dsl.GameDefinition) (map[string]bool, error) {
 		if strings.TrimSpace(s.Color) == "" {
 			return nil, fmt.Errorf("catalog: seat %d has no color", s.Seat)
 		}
-		if seatColors[s.Color] {
-			return nil, fmt.Errorf("catalog: duplicate seat color %q", s.Color)
+		if len(s.Colors) > 0 && s.Colors[0] != s.Color {
+			return nil, fmt.Errorf("catalog: seat %d's colors must begin with its color %q", s.Seat, s.Color)
 		}
-		seatColors[s.Color] = true
+		for _, c := range s.Palette() {
+			if strings.TrimSpace(c) == "" {
+				return nil, fmt.Errorf("catalog: seat %d lists an empty colour", s.Seat)
+			}
+			if seatColors[c] {
+				return nil, fmt.Errorf("catalog: duplicate seat color %q", c)
+			}
+			seatColors[c] = true
+		}
+	}
+	for _, c := range def.ExtraColors {
+		if seatColors[c] {
+			return nil, fmt.Errorf("catalog: extra colour %q is a seat's colour", c)
+		}
 	}
 	return seatColors, nil
 }
@@ -125,7 +138,9 @@ func checkPreview(cg *CompiledGame) error {
 	def := cg.Definition
 	colors := map[string]bool{}
 	for _, s := range def.Seats {
-		colors[s.Color] = true
+		for _, c := range s.Palette() {
+			colors[c] = true
+		}
 	}
 	for _, c := range def.ExtraColors {
 		colors[c] = true

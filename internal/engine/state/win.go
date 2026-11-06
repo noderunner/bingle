@@ -175,11 +175,11 @@ func ruleOutcome(game *catalog.CompiledGame, r dsl.WinRuleDef, seat int, reason 
 	return Outcome{Ended: true, Reason: reason}
 }
 
-// topMatches reports whether the top piece at id has color and satisfies the
+// topMatches reports whether the top piece at id is color's side's and satisfies the
 // tag/piece filter.
 func topMatches(game *catalog.CompiledGame, ns *BoardState, id board.PositionID, color, tag, piece string) bool {
 	top, ok := ns.Get(id)
-	if !ok || top.Color != color {
+	if !ok || game.SideColor(top.Color) != color {
 		return false
 	}
 	if piece != "" && top.Piece != piece {
@@ -196,7 +196,7 @@ func topMatches(game *catalog.CompiledGame, ns *BoardState, id board.PositionID,
 // no string-keyed map lookups.
 type boardView struct {
 	game  *catalog.CompiledGame
-	color []string // top piece's colour per square; "" = empty
+	color []string // top piece's seat colour per square (ADR 0117); "" = empty
 	piece []string // top piece's type per square
 }
 
@@ -209,7 +209,7 @@ func newBoardView(game *catalog.CompiledGame, ns *BoardState) *boardView {
 		}
 		if i, ok := g.Index(id); ok {
 			top := stack[len(stack)-1]
-			v.color[i], v.piece[i] = top.Color, top.Piece
+			v.color[i], v.piece[i] = game.SideColor(top.Color), top.Piece
 		}
 	}
 	return v
@@ -520,7 +520,9 @@ func areaScores(game *catalog.CompiledGame, st *BoardState, komi map[string]floa
 	g := game.Board
 	byColor := map[string]int{}
 	for _, seat := range game.Definition.Seats {
-		byColor[seat.Color] = seat.Seat
+		for _, col := range seat.Palette() {
+			byColor[col] = seat.Seat
+		}
 	}
 	out := map[int]float64{}
 	for _, seat := range game.Definition.Seats {
@@ -550,7 +552,7 @@ func areaScores(game *catalog.CompiledGame, st *BoardState, komi map[string]floa
 			region++
 			for _, n := range g.Neighbors(cur) {
 				if t, occ := st.Get(n); occ {
-					borders[t.Color] = true
+					borders[game.SideColor(t.Color)] = true
 				} else if !seen[n] {
 					seen[n] = true
 					queue = append(queue, n)

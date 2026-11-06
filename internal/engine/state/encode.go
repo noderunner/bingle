@@ -214,7 +214,7 @@ func EncodePlanes(game *catalog.CompiledGame, st *BoardState, viewerSeat, impuls
 		cell := c.Y*w + c.X
 		for d := 0; d < lay.depth && d < len(stack); d++ {
 			occ := stack[len(stack)-1-d]
-			r, okc := rel[occ.Color]
+			r, okc := rel[game.SideColor(occ.Color)]
 			pi, okp := pieceIdx[occ.Piece]
 			if !okc || !okp {
 				continue

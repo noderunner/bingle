@@ -376,6 +376,10 @@ type MovementDef struct {
 type SeatDef struct {
 	Seat  int    `json:"seat"`
 	Color string `json:"color"`
+	// Colors lists every colour the seat plays, Color first (ADR 0117):
+	// pieces in any of them are the seat's, while a group is still one
+	// colour. Empty means just Color.
+	Colors []string `json:"colors,omitempty"`
 	// Label is an optional display name for the seat ("White").
 	Label string `json:"label,omitempty"`
 	// Blend names the two colours of a seat that plays with both ("black",
@@ -385,6 +389,14 @@ type SeatDef struct {
 	// "W"; N is towards the top of the screen). Movement directions such as
 	// "forward-left" are relative to it.
 	Forward string `json:"forward,omitempty"`
+}
+
+// Palette is every colour the seat plays: Colors, or just Color.
+func (s SeatDef) Palette() []string {
+	if len(s.Colors) > 0 {
+		return s.Colors
+	}
+	return []string{s.Color}
 }
 
 // SetupEntry places one piece of a given color on a given board position at
