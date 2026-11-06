@@ -2,6 +2,7 @@ package app_test
 
 import (
 	"encoding/json"
+	"net/url"
 	"strings"
 	"sync"
 	"testing"
@@ -182,9 +183,10 @@ func TestWebCthulhuWars_EveryGreatOldOnesCardListsItsAbilities(t *testing.T) {
 	}
 }
 
-// A move that rolled a die is marked in the move list (the page stops offering
-// Undo) and the server refuses to take it back.
-func TestCthulhuWarsARolledMoveIsLockedAndCannotBeUndone(t *testing.T) {
+// A roll ends the impulse (ADR 0114): Desecrate is a move of its own, the unit
+// placed on seeing the die is the next, and nothing comes back in a game for
+// more than one seat, so nothing is marked locked either.
+func TestCthulhuWarsARollEndsTheImpulse(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	doc := cwPosition(t,
 		[]cwUnit{{4, "king-in-yellow", "europe", 1}, {4, "undead", "europe", 2}, {1, "cultist", "south-pacific", 1}},
@@ -192,59 +194,47 @@ func TestCthulhuWarsARolledMoveIsLockedAndCannotBeUndone(t *testing.T) {
 		[5]int{0, 3, 3, 3, 6}, [5]uint8{},
 		func(d *cthulhuwars.Data) { d.Turn.Seat = 4; d.RNG = 4242 })
 	room := ysGame(t, baseURL, doc)
+	ply := func() int {
+		t.Helper()
+		var st struct {
+			Ply int `json:"ply"`
+		}
+		if code := doJSON(t, "GET", baseURL+"/api/games/"+room+"/state", nil, &st); code != 200 {
+			t.Fatalf("state: %d", code)
+		}
+		return st.Ply
+	}
+	var sel struct {
+		Complete bool `json:"complete"`
+	}
+	if code := doJSON(t, "GET", baseURL+"/api/games/"+room+"/selections?made=desecrate&ply=0", nil, &sel); code != 200 || !sel.Complete {
+		t.Fatalf("desecrate is not a whole move: %d %+v", code, sel)
+	}
 	var mv map[string]any
-	if code := doJSON(t, "POST", baseURL+"/api/games/"+room+"/moves", map[string]any{"player_name": "Alice", "notation": "desecrate"}, &mv); code != 200 {
+	if code := doJSON(t, "POST", baseURL+"/api/games/"+room+"/moves", map[string]any{"player_name": "Alice", "notation": "desecrate", "ply": 0}, &mv); code != 200 {
 		t.Fatalf("desecrate: %d %v", code, mv)
 	}
-	if mv["move"].(map[string]any)["locked"] != true {
-		t.Errorf("the move that rolled the die is not marked: %v", mv["move"])
+	if got := ply(); got != 1 {
+		t.Errorf("after the roll the game is at ply %d, want 1", got)
 	}
-	var list []map[string]any
-	if code := doJSON(t, "GET", baseURL+"/api/games/"+room+"/moves", nil, &list); code != 200 || len(list) == 0 {
-		t.Fatalf("moves: %d", code)
+	if _, ok := mv["move"].(map[string]any)["locked"]; ok {
+		t.Errorf("a move is marked locked in a game for four: %v", mv["move"])
 	}
-	if list[0]["locked"] != true {
-		t.Errorf("the move list does not say it is locked: %v", list[0])
+	if code := doJSON(t, "POST", baseURL+"/api/games/"+room+"/undo", map[string]any{"player_name": "Alice"}, nil); code != 409 {
+		t.Errorf("undo in a game for four: %d, want 409", code)
 	}
-	var refused map[string]any
-	if code := doJSON(t, "POST", baseURL+"/api/games/"+room+"/undo", map[string]any{"player_name": "Alice"}, &refused); code != 409 {
-		t.Errorf("undo across the roll: %d %v, want 409", code, refused)
-	}
-	// The unit is chosen on seeing the die: that is locked in as well.
 	var placed map[string]any
-	if code := doJSON(t, "POST", baseURL+"/api/games/"+room+"/moves", map[string]any{"player_name": "Alice", "notation": "desecrate:undead"}, &placed); code != 200 {
+	if code := doJSON(t, "POST", baseURL+"/api/games/"+room+"/moves", map[string]any{"player_name": "Alice", "notation": "desecrate:undead", "ply": 1}, &placed); code != 200 {
 		t.Fatalf("place the unit: %d %v", code, placed)
 	}
-	if placed["move"].(map[string]any)["locked"] != true {
-		t.Errorf("the choice after the roll is not locked: %v", placed["move"])
-	}
-	refused = nil
-	if code := doJSON(t, "POST", baseURL+"/api/games/"+room+"/undo", map[string]any{"player_name": "Alice"}, &refused); code != 409 {
-		t.Errorf("undo of the choice after the roll: %d %v, want 409", code, refused)
-	}
-	// A move that rolled nothing is not locked.
-	doc2 := cwPosition(t,
-		[]cwUnit{{4, "cultist", "europe", 1}, {1, "cultist", "south-pacific", 1}},
-		map[string]int{"south-pacific": 1},
-		[5]int{0, 3, 3, 3, 6}, [5]uint8{},
-		func(d *cthulhuwars.Data) { d.Turn.Seat = 4 })
-	room2 := ysGame(t, baseURL, doc2)
-	var mv2 map[string]any
-	if code := doJSON(t, "POST", baseURL+"/api/games/"+room2+"/moves", map[string]any{"player_name": "Alice", "notation": "recruit@europe"}, &mv2); code != 200 {
-		t.Fatalf("recruit: %d %v", code, mv2)
-	}
-	if mv2["move"].(map[string]any)["locked"] == true {
-		t.Errorf("a recruit rolled nothing: %v", mv2["move"])
-	}
-	// It handed the turn on, though, so it stands.
-	if code := doJSON(t, "POST", baseURL+"/api/games/"+room2+"/undo", map[string]any{"player_name": "Alice"}, nil); code != 409 {
-		t.Errorf("undo of a recruit with the turn passed: %d, want 409", code)
+	if got := placed["move"].(map[string]any)["ply"]; got != float64(2) {
+		t.Errorf("the unit placed on seeing the die is in ply %v, want 2", got)
 	}
 }
 
-// A unit moved in a Move action is a step of the turn: it comes back, from the
-// start position if it was the first step, until the turn is done.
-func TestCthulhuWarsAStepOfAMoveComesBack(t *testing.T) {
+// The units of a Move and its done are one impulse: the selections query
+// says so, and the whole Move goes in one call (ADR 0114).
+func TestCthulhuWarsAMoveIsOneImpulse(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	doc := cwPosition(t,
 		[]cwUnit{{4, "cultist", "europe", 2}, {1, "cultist", "south-pacific", 1}},
@@ -268,29 +258,29 @@ func TestCthulhuWarsAStepOfAMoveComesBack(t *testing.T) {
 	if step == "" {
 		t.Fatalf("no unit to move: %+v", legal.Moves)
 	}
-	var final struct {
-		Final bool `json:"final"`
+	var sel struct {
+		Complete bool `json:"complete"`
+		Options  []struct {
+			Notation string `json:"notation"`
+		} `json:"options"`
 	}
-	if code := doJSON(t, "POST", baseURL+"/api/games/"+room+"/move-final", map[string]any{"player_name": "Alice", "notation": step}, &final); code != 200 || final.Final {
-		t.Errorf("a unit of a Move: %d, final %v", code, final.Final)
+	if code := doJSON(t, "GET", baseURL+"/api/games/"+room+"/selections?ply=0&made="+url.QueryEscape(step), nil, &sel); code != 200 || sel.Complete {
+		t.Fatalf("a unit of a Move ends the impulse: %d %+v", code, sel)
 	}
-	if code, out := moveNotation(t, baseURL, room, "Alice", step); code != 200 {
-		t.Fatalf("the move: %d %v", code, out)
+	hasDone := false
+	for _, o := range sel.Options {
+		hasDone = hasDone || o.Notation == "done"
 	}
-	var undone struct {
-		State restState `json:"state"`
+	if !hasDone {
+		t.Fatalf("no done after a unit: %+v", sel.Options)
 	}
-	if code := doJSON(t, "POST", baseURL+"/api/games/"+room+"/undo", map[string]any{"player_name": "Alice"}, &undone); code != 200 {
-		t.Fatalf("taking it back: %d", code)
+	var out map[string]any
+	if code := doJSON(t, "POST", baseURL+"/api/games/"+room+"/moves", map[string]any{"player_name": "Alice", "notation": step + "; done", "ply": 0}, &out); code != 200 {
+		t.Fatalf("the whole Move: %d %v", code, out)
 	}
-	if undone.State.MoveSeq != 0 {
-		t.Errorf("after taking it back: move %d", undone.State.MoveSeq)
-	}
-	// Now the rest of the turn: a Move that ends hands the turn on.
-	if code, out := moveNotation(t, baseURL, room, "Alice", step); code != 200 {
-		t.Fatalf("the move again: %d %v", code, out)
-	}
-	if code := doJSON(t, "POST", baseURL+"/api/games/"+room+"/move-final", map[string]any{"player_name": "Alice", "notation": "done"}, &final); code != 200 || !final.Final {
-		t.Errorf("ending the Move: %d, final %v", code, final.Final)
+	var moves []map[string]any
+	doJSON(t, "GET", baseURL+"/api/games/"+room+"/moves", nil, &moves)
+	if len(moves) < 3 || moves[0]["ply"] != float64(1) || moves[1]["ply"] != float64(1) || moves[2]["ply"] != float64(2) {
+		t.Errorf("the Move's selections: %v", moves)
 	}
 }

@@ -200,6 +200,11 @@ func New(cfg config.Config, opts ...Option) (*App, error) {
 		Secrets:  cfg.Debug.Secrets,
 		Paranoid: cfg.Debug.Paranoid,
 	})
+	// Moves stored before impulses were counted get their plies (ADR 0114).
+	if err := manager.RegroupMoves(context.Background()); err != nil {
+		_ = st.Close()
+		return nil, err
+	}
 	a.metrics.SetBotNodeSource(bots.NodeCounts)
 	batch.SetMetrics(a.metrics)
 

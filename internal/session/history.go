@@ -39,8 +39,11 @@ type MoveRecord struct {
 	Auto     bool
 	AutoPlay bool
 	// Locked: the move rolled dice (or drew a hidden token) — it, and
-	// everything before it, can no longer be taken back.
+	// everything before it, can no longer be taken back. Set in a game for
+	// one seat only, the one that takes moves back.
 	Locked bool
+	// Ply is the impulse the move is a selection of (ADR 0114).
+	Ply int
 }
 
 // ListMoves returns every move recorded for roomCode with seq > sinceSeq, in
@@ -68,6 +71,10 @@ func (m *Manager) ListMoves(ctx context.Context, roomCode string, sinceSeq int) 
 			current = bs
 		}
 	}
+	alone := false
+	if compiled, ok := m.catalog.Get(game.GameDefID); ok {
+		alone = state.AnySelectionMayEnd(compiled)
+	}
 	records := make([]MoveRecord, 0, len(moves))
 	for _, mv := range moves {
 		rec := MoveRecord{
@@ -81,7 +88,8 @@ func (m *Manager) ListMoves(ctx context.Context, roomCode string, sinceSeq int) 
 			CreatedAt: mv.CreatedAt,
 			Auto:      mv.Auto,
 			AutoPlay:  mv.AutoPlay,
-			Locked:    mv.Locked,
+			Locked:    mv.Locked && alone,
+			Ply:       mv.Ply,
 		}
 		if mv.MoveJSON != "" {
 			var sm state.Move

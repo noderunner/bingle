@@ -440,9 +440,11 @@ type getGameStateResponse struct {
 	ImpulseSeat *int            `json:"impulse_seat"`
 	Status      string          `json:"status"`
 	MoveSeq     int             `json:"move_seq"`
-	WinnerSeat  *int            `json:"winner_seat"`
-	EndReason   string          `json:"end_reason,omitempty"`
-	EndDetail   string          `json:"end_detail,omitempty"`
+	// Ply is the number of impulses played, which a move's ply guard names.
+	Ply        int    `json:"ply"`
+	WinnerSeat *int   `json:"winner_seat"`
+	EndReason  string `json:"end_reason,omitempty"`
+	EndDetail  string `json:"end_detail,omitempty"`
 	// DrawOfferSeat is the seat currently offering a draw, or null.
 	DrawOfferSeat *int `json:"draw_offer_seat"`
 }
@@ -476,6 +478,7 @@ func (h *handlers) handleGetGameState(w http.ResponseWriter, r *http.Request) {
 		ImpulseSeat: snapshot.ImpulseSeat,
 		Status:      snapshot.Status,
 		MoveSeq:     snapshot.MoveSeq,
+		Ply:         snapshot.Ply,
 		WinnerSeat:  snapshot.WinnerSeat,
 		EndReason:   snapshot.EndReason,
 		EndDetail:   snapshot.EndDetail,

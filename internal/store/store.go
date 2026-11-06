@@ -231,6 +231,11 @@ var columnMigrations = []struct{ table, column, ddl string }{
 	{"friend_settings", "accept_invites", "INTEGER NOT NULL DEFAULT 1"},
 	{"game_invites", "status", "TEXT NOT NULL DEFAULT 'pending'"},
 	{"game_invites", "notice", "TEXT NOT NULL DEFAULT ''"},
+	// ply: the impulse a move's row is a selection of (ADR 0114), counted
+	// from 1, and on a game the number of impulses ended. 0 on a row written
+	// before impulses were counted, which session.Manager.RegroupMoves numbers.
+	{"moves", "ply", "INTEGER NOT NULL DEFAULT 0"},
+	{"games", "ply", "INTEGER NOT NULL DEFAULT 0"},
 }
 
 func addMissingColumns(db *sql.DB) error {

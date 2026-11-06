@@ -143,7 +143,7 @@ func registerPlayTools(s *server.MCPServer, mgr *session.Manager) {
 
 	s.AddTool(
 		mcp.NewTool("undo_move",
-			mcp.WithDescription("Take back the last step of the turn you are still playing, in a game whose turn has several steps. A move stands once the turn has passed to anyone, a die has been rolled or a card drawn."),
+			mcp.WithDescription("In a game for one seat (patience), take back your last move, unless it drew or turned a card up. In any other game a move stands: it is a whole impulse, sent at once."),
 			mcp.WithString("room_code", mcp.Required(), mcp.Description("The room code of the game.")),
 			mcp.WithString("player_name", mcp.Required(), mcp.Description("Your player name.")),
 		),

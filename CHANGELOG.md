@@ -4,6 +4,12 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.80.0 - 2026-11-06
+
+### Bingle Core 0.80.0
+- **Moves are counted by turn.** A move made of several parts, such as a Blooms turn of two stones, is now stored and counted as one, and games already played are counted again the same way when the server starts.
+- **Undo is for games of patience.** Elsewhere a move is sent whole once it is finished, so there is nothing to take back once it is played; the Back button takes back what you have chosen before you submit. In Solitaire and FreeCell, Back still takes back a move that showed no card.
+
 ## 0.79.0 - 2026-11-06
 
 ### Bingle Core 0.79.0

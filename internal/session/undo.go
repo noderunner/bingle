@@ -11,16 +11,20 @@ import (
 	"github.com/noderunner/bingle/internal/store"
 )
 
-// A move stands once the turn has passed (ADR 0083). The only thing that can be
-// taken back is a step of the turn still being played: a stone of two, a unit of
-// a Move, while it is still the same player's turn and nothing random has
-// happened. That goes for every game: casual, rated or in a tournament.
+// Only a game for one seat takes a move back (ADR 0114, narrowing ADR 0086):
+// nobody waits on it, and it is sent move by move. Elsewhere a move is the
+// whole of an impulse, built in the client and submitted at once, so nothing
+// the server holds could be taken back. A move that showed something (a card
+// turned up, a draw) stands even in a game for one.
 
 // ErrNothingToUndo is returned by Undo when no step of this turn has been played.
 var ErrNothingToUndo = errors.New("session: nothing to undo")
 
 // ErrCannotUndo is returned by Undo once the moves stand.
 var ErrCannotUndo = errors.New("session: cannot undo: the turn has passed, and moves stand")
+
+// ErrUndoOnlyAlone is returned by Undo in a game for more than one seat.
+var ErrUndoOnlyAlone = fmt.Errorf("%w: only a game for one seat takes a move back", ErrCannotUndo)
 
 // ErrDiceRolled is returned when the step rolled a die or drew a hidden token,
 // or was decided on seeing one (see state.UndoGuard).
@@ -80,6 +84,9 @@ func (m *Manager) Undo(ctx context.Context, roomCode, name string) (UndoOutcome,
 	compiled, err := m.compiledFor(game)
 	if err != nil {
 		return UndoOutcome{}, err
+	}
+	if !state.AnySelectionMayEnd(compiled) {
+		return UndoOutcome{}, ErrUndoOnlyAlone
 	}
 	moves, err := m.store.ListMoves(ctx, game.ID, 0)
 	if err != nil {
@@ -160,52 +167,4 @@ func (m *Manager) checkTakeBack(compiled *catalog.CompiledGame, before, after st
 		return ErrDiceRolled
 	}
 	return nil
-}
-
-// MoveIsFinal says whether a legal move could not be taken back once played: it
-// hands the turn on, ends the game or brings in chance. A page asks this before
-// sending a move, so that it asks for a Submit only when that matters. It says
-// nothing about the position that the rules do not already show.
-func (m *Manager) MoveIsFinal(ctx context.Context, roomCode, name, notation string) (bool, error) {
-	roomCode = canonRoom(roomCode)
-	game, err := m.loadGame(ctx, roomCode, false)
-	if err != nil {
-		return false, err
-	}
-	if game.Status != "active" || game.ImpulseSeat == nil {
-		return false, ErrGameNotActive
-	}
-	players, err := m.store.ListPlayers(ctx, game.ID)
-	if err != nil {
-		return false, err
-	}
-	var player *store.Player
-	for i := range players {
-		if strings.EqualFold(players[i].Name, name) {
-			player = &players[i]
-		}
-	}
-	if player == nil || player.Bot != "" || player.Seat != *game.ImpulseSeat {
-		return false, ErrNotYourImpulse
-	}
-	if err := m.mayActFor(ctx, player); err != nil {
-		return false, err
-	}
-	compiled, err := m.compiledFor(game)
-	if err != nil {
-		return false, err
-	}
-	mv, err := state.ParseMove(compiled, notation)
-	if err != nil {
-		return false, err
-	}
-	bs := state.NewBoardState()
-	if err := bs.UnmarshalJSON([]byte(game.BoardState)); err != nil {
-		return false, fmt.Errorf("session: unmarshal board state for room %q: %w", game.RoomCode, err)
-	}
-	result, err := m.applyWatched(compiled, bs, player.Seat, mv)
-	if err != nil {
-		return false, err
-	}
-	return state.ImpulseEnds(compiled, bs, player.Seat, mv, result), nil
 }

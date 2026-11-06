@@ -244,6 +244,7 @@ async function loadPosition() {
 	S.game.status = st.status;
 	S.game.impulse_seat = st.impulse_seat;
 	S.game.move_seq = st.move_seq;
+	S.game.ply = st.ply || 0;
 	S.game.winner_seat = st.winner_seat;
 	S.game.end_reason = st.end_reason;
 	S.game.end_detail = st.end_detail;
@@ -387,14 +388,14 @@ function dropPending() {
  */
 async function resumePending() {
 	if (!wholeImpulses()) return false;
-	if (S.pending && S.pending.ply === S.game.move_seq) {
+	if (S.pending && S.pending.ply === S.game.ply) {
 		S.state = S.pending.state;
 		S.legal = S.pending.legal;
 		S.viewCache.clear();
 		return true;
 	}
 	const kept = S.pending || store.get(pendingKey());
-	if (!kept || kept.ply !== S.game.move_seq || !Array.isArray(kept.groups) || !kept.groups.length) {
+	if (!kept || kept.ply !== S.game.ply || !Array.isArray(kept.groups) || !kept.groups.length) {
 		dropPending();
 		return false;
 	}
@@ -428,7 +429,7 @@ async function playSelections(notations) {
 			}
 		} else {
 			const groups = [...(S.pending ? S.pending.groups : []), notations];
-			const ply = S.game.move_seq;
+			const ply = S.game.ply;
 			const view = await api.selections(code, pendingNotation(groups), ply);
 			if (!view.complete) {
 				holdPending(groups, ply, view);
@@ -846,7 +847,7 @@ function clickedAButton(b) {
 async function askIfFinal(notation) {
 	const token = ++S.previewToken;
 	const groups = [...(S.pending ? S.pending.groups : []), [notation]];
-	const ply = S.game.move_seq;
+	const ply = S.game.ply;
 	let view = null;
 	try {
 		view = await api.selections(code, pendingNotation(groups), ply);
@@ -1775,12 +1776,20 @@ function hintSquares() {
 }
 
 /**
- * How many moves at the end of the list are steps of the turn still being played.
- * They count only once the turn is over, so the move list leaves them out, and the
- * server takes them back one at a time.
+ * How many moves at the end of the list are selections of an impulse not yet
+ * over: they count only once it is (ADR 0114), so the move list leaves them
+ * out. Only a tutorial, which sends each selection as it is made, or a game
+ * stored before moves were sent whole, has any. In a game for one seat they are
+ * the moves since the last one that showed a card, which Back takes back one at
+ * a time.
  */
 function openSteps() {
 	if (!isActive()) return 0;
+	if (!playingAlone()) {
+		let n = 0;
+		while (n < S.moves.length && (S.moves[S.moves.length - 1 - n].ply || 0) > (S.game.ply || 0)) n++;
+		return n;
+	}
 	const seat = S.game.impulse_seat;
 	let n = 0;
 	for (let i = S.moves.length - 1; i >= 0; i--) {
@@ -1789,8 +1798,7 @@ function openSteps() {
 			n++;
 			continue;
 		}
-		// A roll has counted, whoever is to move next: it cannot come back, and the
-		// player has to see it to go on.
+		// A card turned up has counted: it cannot come back, and the player has to see it to go on.
 		if (m.seat !== seat || m.notation === "swap" || m.locked) break;
 		n++;
 	}
@@ -1800,9 +1808,9 @@ function openSteps() {
 	return n === auto ? 0 : n;
 }
 
-/** A step of this turn that can still be taken back. */
+/** A move of a game for one seat that can still be taken back (POST …/undo). */
 function canUndo() {
-	return !tutorialLookingBack() && !!S.me.seat && S.game.impulse_seat === S.me.seat && openSteps() > 0;
+	return playingAlone() && !tutorialLookingBack() && !!S.me.seat && S.game.impulse_seat === S.me.seat && openSteps() > 0;
 }
 
 // ---------------------------------------------------------------------------
@@ -1969,6 +1977,7 @@ async function onEvent(env) {
 				auto: !!d.auto,
 				auto_play: !!d.auto_play,
 				locked: !!d.locked,
+				ply: d.ply,
 				created_at: new Date().toISOString(),
 			});
 			S.state = d.state;
@@ -1989,6 +1998,7 @@ async function onEvent(env) {
 			S.game.status = d.status;
 			S.game.impulse_seat = d.impulse_seat;
 			S.game.move_seq = d.seq;
+			S.game.ply = d.ends_impulse ? d.ply : d.ply - 1;
 			S.game.winner_seat = d.winner_seat;
 			S.game.end_reason = d.end_reason;
 			S.game.end_detail = d.end_detail;

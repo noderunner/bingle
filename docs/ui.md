@@ -172,8 +172,10 @@ its own, and `steps`, `moves/legal` and `#undo-step` keep their names.
   pressing it is the Submit. A move with nothing left to choose, such as a forced pass,
   always gets `#submit-move`, as nothing else could play it.
 * A game for one seat, and a tutorial (whose script counts selections), send each
-  selection as it is made; there Back takes one back with `POST …/undo`, but not one
-  that rolled, drew or turned a card up ([ADR 0086](decisions/0086-games-for-one-player.md), as narrowed).
+  selection as it is made. In a game for one seat Back takes a move back with
+  `POST …/undo`, but not one that drew or turned a card up; a tutorial takes back
+  nothing it has sent. Rows of an impulse not yet over (a tutorial's, or a game
+  stored before moves were sent whole) stay out of the move list until it is over ([ADR 0086](decisions/0086-games-for-one-player.md), as narrowed).
 * **Resign** concedes, and needs a second click to confirm.
 * **Hint** (only in games against bots, or in analysis / review of a finished
   game) asks a bot what it would play (minimax where piece counts matter, MCTS
@@ -546,8 +548,7 @@ the rule in a few lines (`.action-tip`, the action's `hint`; for a spellbook the
 timing and text). A button that exists because of an unlocked spellbook wears the
 coloured spellbook pictogram, one that meets a spellbook requirement the greyed
 one (`button[data-source="book"|"requirement"]`, from the action's `source`).
-Move events and the move list carry `locked` for a move that rolled a die: the
-page offers no *Back* across it. Stepping through the moves, the card is titled `History: n` and tells the move as the History tab does (`#history-told`).
+A die rolled ends the impulse, so the move that rolled stands at once. Stepping through the moves, the card is titled `History: n` and tells the move as the History tab does (`#history-told`).
 The impulse card says what is being asked, whoever is looking: its title (`#impulse-title`) is the name of the seat on
 impulse and `#impulse-text` the question, from the view's `impulse` (ADR 0099). A pending move
 shows only to its player, with the action's `impulse` as the question it waits on: *Choose an area to place a gate.*

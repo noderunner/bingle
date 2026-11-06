@@ -60,8 +60,12 @@ type moveEventData struct {
 	Auto     bool `json:"auto,omitempty"`
 	AutoPlay bool `json:"auto_play,omitempty"`
 	// Locked: the move rolled dice (or drew a hidden token): it cannot be
-	// taken back.
+	// taken back. Sent in a game for one seat only, the one that has Undo.
 	Locked bool `json:"locked,omitempty"`
+	// Ply is the impulse this selection is part of (ADR 0114), and
+	// EndsImpulse says it ended it: the game's ply is then Ply, else Ply-1.
+	Ply         int  `json:"ply"`
+	EndsImpulse bool `json:"ends_impulse,omitempty"`
 }
 
 // stateEventData is the wire DTO of a "state" Event: a full snapshot sent
@@ -73,6 +77,7 @@ type stateEventData struct {
 	Status      string          `json:"status"`
 	ImpulseSeat *int            `json:"impulse_seat"`
 	MoveSeq     int             `json:"move_seq"`
+	Ply         int             `json:"ply"`
 	WinnerSeat  *int            `json:"winner_seat"`
 	EndReason   string          `json:"end_reason,omitempty"`
 	EndDetail   string          `json:"end_detail,omitempty"`
@@ -117,6 +122,7 @@ func stateEventFrom(snap StateSnapshot, reason string, removed []int) stateEvent
 		Status:        snap.Status,
 		ImpulseSeat:   snap.ImpulseSeat,
 		MoveSeq:       snap.MoveSeq,
+		Ply:           snap.Ply,
 		WinnerSeat:    snap.WinnerSeat,
 		EndReason:     snap.EndReason,
 		EndDetail:     snap.EndDetail,

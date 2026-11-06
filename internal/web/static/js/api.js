@@ -223,7 +223,6 @@ export const api = {
 	move: (code, name, notation, ply) =>
 		call(`/api/games/${enc(code)}/moves`, { method: "POST", body: ply === undefined ? { player_name: name, notation } : { player_name: name, notation, ply } }),
 	selections: (code, made, ply) => call(`/api/games/${enc(code)}/selections?made=${encodeURIComponent(made)}&ply=${ply}`),
-	moveFinal: (code, name, notation) => call(`/api/games/${enc(code)}/move-final`, { method: "POST", body: { player_name: name, notation } }),
 	undo: (code, name) => call(`/api/games/${enc(code)}/undo`, { method: "POST", body: { player_name: name } }),
 	resign: (code, name) => call(`/api/games/${enc(code)}/resign`, { method: "POST", body: { player_name: name } }),
 	hint: (code, name, atSeq, moves) =>

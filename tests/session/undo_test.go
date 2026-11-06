@@ -1,10 +1,12 @@
-// Tests of what can be taken back: a step of the turn still being played, and
-// nothing else, in any kind of game (ADR 0083).
+// Tests of plies and of what can be taken back (ADR 0114): a move is the
+// selections of one impulse, numbered by its ply, and only a game for one seat
+// takes a move back (tests/session/one_seat_test.go).
 
 package session_test
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"path/filepath"
 	"testing"
@@ -16,9 +18,9 @@ import (
 	"github.com/noderunner/bingle/internal/store"
 )
 
-func undoManager(t *testing.T) *session.Manager {
+func undoManagerAt(t *testing.T, path string) *session.Manager {
 	t.Helper()
-	st, err := store.Open(filepath.Join(t.TempDir(), "undo.db"))
+	st, err := store.Open(path)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -31,6 +33,11 @@ func undoManager(t *testing.T) *session.Manager {
 		}
 	}
 	return session.NewManager(st, cat)
+}
+
+func undoManager(t *testing.T) *session.Manager {
+	t.Helper()
+	return undoManagerAt(t, filepath.Join(t.TempDir(), "undo.db"))
 }
 
 func twoPlayers(t *testing.T, m *session.Manager, opts session.CreateOptions) string {
@@ -54,174 +61,113 @@ func playMove(t *testing.T, m *session.Manager, room, name, notation string) {
 	}
 }
 
-// A move that hands the turn on stands, whoever has it next.
-func TestUndo_AMoveStandsOnceTheTurnHasPassed(t *testing.T) {
-	m := undoManager(t)
+func plies(t *testing.T, m *session.Manager, room string) (rows []int, played int) {
+	t.Helper()
 	ctx := context.Background()
-	room := twoPlayers(t, m, session.CreateOptions{GameDefID: "yavalath"})
-	if _, err := m.Undo(ctx, room, "Alice"); !errors.Is(err, session.ErrNothingToUndo) {
-		t.Errorf("before any move: %v", err)
-	}
-	playMove(t, m, room, "Alice", "e5")
-	if _, err := m.Undo(ctx, room, "Alice"); !errors.Is(err, session.ErrCannotUndo) {
-		t.Errorf("Alice, with the turn passed: %v", err)
-	}
-	if _, err := m.Undo(ctx, room, "Bob"); !errors.Is(err, session.ErrNothingToUndo) {
-		t.Errorf("Bob, who has not moved: %v", err)
-	}
-	playMove(t, m, room, "Bob", "d4")
-	if _, err := m.Undo(ctx, room, "Bob"); !errors.Is(err, session.ErrCannotUndo) {
-		t.Errorf("Bob, with the turn passed: %v", err)
-	}
-	if _, err := m.Undo(ctx, room, "Alice"); !errors.Is(err, session.ErrCannotUndo) {
-		t.Errorf("Alice, with her move answered: %v", err)
-	}
-	if _, err := m.Resign(ctx, room, "Alice"); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := m.Undo(ctx, room, "Bob"); !errors.Is(err, session.ErrCannotUndo) {
-		t.Errorf("after the game: %v", err)
-	}
-}
-
-// A bot's reply passes the turn as well as a person's does.
-func TestUndo_ABotsReplyDoesNotComeBack(t *testing.T) {
-	m := undoManager(t)
-	ctx := context.Background()
-	made, err := m.CreateGameWithOptions(ctx, session.CreateOptions{GameDefID: "yavalath", CreatorName: "Alice", Opponent: "random"})
+	moves, err := m.ListMoves(ctx, room, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
-	playMove(t, m, made.RoomCode, "Alice", "e5")
-	if _, err := m.Undo(ctx, made.RoomCode, "Alice"); !errors.Is(err, session.ErrCannotUndo) {
-		t.Errorf("after the bot's reply: %v", err)
-	}
-}
-
-// A swap hands the turn on though the seat's number may not change.
-func TestUndo_ASwapStands(t *testing.T) {
-	m := undoManager(t)
-	ctx := context.Background()
-	room := twoPlayers(t, m, session.CreateOptions{GameDefID: "yavalath", Options: map[string]any{"pie-rule": true}})
-	playMove(t, m, room, "Alice", "e5")
-	playMove(t, m, room, "Bob", "swap")
-	for _, name := range []string{"Alice", "Bob"} {
-		if _, err := m.Undo(ctx, room, name); !errors.Is(err, session.ErrCannotUndo) && !errors.Is(err, session.ErrNothingToUndo) {
-			t.Errorf("%s, after the swap: %v", name, err)
-		}
+	for _, mv := range moves {
+		rows = append(rows, mv.Ply)
 	}
 	snap, err := m.GetState(ctx, room, nil)
-	if err != nil || snap.MoveSeq != 2 {
-		t.Errorf("after trying: move %d, %v", snap.MoveSeq, err)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return rows, snap.Ply
+}
+
+func samePlies(a, b []int) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
+// The selections of one impulse share its ply, and the game counts impulses.
+func TestPlies_AMoveIsTheSelectionsOfAnImpulse(t *testing.T) {
+	m := undoManager(t)
+	room := twoPlayers(t, m, session.CreateOptions{GameDefID: "blooms"})
+	playMove(t, m, room, "Alice", "red@e5")
+	playMove(t, m, room, "Bob", "blue@d4; black@f6")
+	if rows, played := plies(t, m, room); !samePlies(rows, []int{1, 2, 2}) || played != 2 {
+		t.Fatalf("plies %v, played %d; want [1 2 2], 2", rows, played)
+	}
+	// A selection sent on its own (a tutorial does) leaves the impulse open.
+	playMove(t, m, room, "Alice", "red@c3")
+	if rows, played := plies(t, m, room); !samePlies(rows, []int{1, 2, 2, 3}) || played != 2 {
+		t.Fatalf("plies %v, played %d; want [1 2 2 3], 2", rows, played)
+	}
+	playMove(t, m, room, "Alice", "done")
+	if rows, played := plies(t, m, room); !samePlies(rows, []int{1, 2, 2, 3, 3}) || played != 3 {
+		t.Fatalf("plies %v, played %d; want [1 2 2 3 3], 3", rows, played)
+	}
+	// The ply guard names the impulses played.
+	ply := 2
+	if _, err := m.PlayNotationAt(context.Background(), room, "Bob", "blue@d6; done", &ply); !errors.Is(err, session.ErrStalePly) {
+		t.Fatalf("a stale ply: %v", err)
+	}
+	ply = 3
+	if _, err := m.PlayNotationAt(context.Background(), room, "Bob", "blue@d6; done", &ply); err != nil {
+		t.Fatalf("the ply played: %v", err)
 	}
 }
 
-// The steps of a turn of several: each comes back, one at a time, until the turn
-// is over.
-func TestUndo_AStepOfTheTurnComesBack(t *testing.T) {
+// Nothing is taken back in a game for two, part of an impulse included.
+func TestUndo_OnlyAGameForOneSeatTakesAMoveBack(t *testing.T) {
 	m := undoManager(t)
 	ctx := context.Background()
 	room := twoPlayers(t, m, session.CreateOptions{GameDefID: "blooms"})
-	// Blooms: the first player opens with one stone, then a turn is one or two.
 	playMove(t, m, room, "Alice", "red@e5")
 	playMove(t, m, room, "Bob", "blue@d4")
-	snap, err := m.GetState(ctx, room, nil)
-	if err != nil || snap.ImpulseSeat == nil || *snap.ImpulseSeat != 2 {
-		t.Fatalf("after one stone of two: %+v, %v", snap.ImpulseSeat, err)
-	}
-	out, err := m.Undo(ctx, room, "Bob")
-	if err != nil {
-		t.Fatalf("the first stone: %v", err)
-	}
-	if len(out.Removed) != 1 || out.Snapshot.MoveSeq != 1 || *out.Snapshot.ImpulseSeat != 2 {
-		t.Errorf("after taking it back: %+v at move %d", out.Removed, out.Snapshot.MoveSeq)
-	}
-	// Nothing of Alice's comes back with a second press.
-	if _, err := m.Undo(ctx, room, "Bob"); !errors.Is(err, session.ErrNothingToUndo) {
-		t.Errorf("past the start of the turn: %v", err)
-	}
-
-	playMove(t, m, room, "Bob", "blue@d4")
-	playMove(t, m, room, "Bob", "black@f6")
 	if _, err := m.Undo(ctx, room, "Bob"); !errors.Is(err, session.ErrCannotUndo) {
-		t.Errorf("with the turn over: %v", err)
+		t.Fatalf("Undo in a game for two: %v, want ErrCannotUndo", err)
 	}
-	if snap, err = m.GetState(ctx, room, nil); err != nil || snap.MoveSeq != 3 {
-		t.Errorf("after trying: move %d, %v", snap.MoveSeq, err)
-	}
-}
-
-// Rated or in a tournament, the rule is the same.
-func TestUndo_ARatedGameHasTheSameRule(t *testing.T) {
-	w := newRatedWorld(t)
-	if err := w.cat.RegisterModule(blooms.Module()); err != nil {
-		t.Fatal(err)
-	}
-	ana, bea := w.account("ana"), w.account("bea")
-	created, err := w.m.CreateGameWithOptions(ana.ctx, session.CreateOptions{GameDefID: "blooms", CreatorName: ana.handle, ClockSeconds: []int{600, 600}, Rated: true})
-	if err != nil {
-		t.Fatal(err)
-	}
-	room := created.RoomCode
-	if _, err := w.m.JoinGame(bea.ctx, room, bea.handle, session.RolePlayer); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := w.m.PlayNotation(ana.ctx, room, ana.handle, "red@e5"); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := w.m.PlayNotation(bea.ctx, room, bea.handle, "blue@d4"); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := w.m.Undo(bea.ctx, room, bea.handle); err != nil {
-		t.Errorf("a step of the turn: %v", err)
-	}
-	if _, err := w.m.Undo(ana.ctx, room, ana.handle); !errors.Is(err, session.ErrCannotUndo) {
-		t.Errorf("a move with the turn passed: %v", err)
+	if moves, _ := m.ListMoves(ctx, room, 0); len(moves) != 2 {
+		t.Fatalf("%d moves after a refused Undo, want 2", len(moves))
 	}
 }
 
-func TestMoveIsFinal(t *testing.T) {
-	m := undoManager(t)
+// A database from before plies were counted is numbered on start-up by the
+// same test a move is recorded with, an impulse left open included.
+func TestRegroupMoves_NumbersStoredGames(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "regroup.db")
+	m := undoManagerAt(t, path)
 	ctx := context.Background()
 	room := twoPlayers(t, m, session.CreateOptions{GameDefID: "blooms"})
-	final := func(name, notation string) bool {
-		t.Helper()
-		got, err := m.MoveIsFinal(ctx, room, name, notation)
-		if err != nil {
-			t.Fatalf("%s %s: %v", name, notation, err)
-		}
-		return got
+	for _, mv := range []struct{ who, what string }{
+		{"Alice", "red@e5"}, {"Bob", "blue@d4"}, {"Bob", "black@f6"}, {"Alice", "red@c3"}, {"Alice", "done"}, {"Bob", "blue@d6"},
+	} {
+		playMove(t, m, room, mv.who, mv.what)
 	}
-	// The opening stone ends the turn; the next turn's first stone does not, and
-	// its second does.
-	if !final("Alice", "red@e5") {
-		t.Error("the opening stone hands the turn on")
-	}
-	playMove(t, m, room, "Alice", "red@e5")
-	if final("Bob", "blue@d4") {
-		t.Error("the first stone of two can come back")
-	}
-	playMove(t, m, room, "Bob", "blue@d4")
-	if !final("Bob", "black@f6") {
-		t.Error("the second stone hands the turn on")
-	}
-	if !final("Bob", "done") {
-		t.Error("ending the turn hands it on")
-	}
-	// Asking changes nothing.
-	snap, err := m.GetState(ctx, room, nil)
-	if err != nil || snap.MoveSeq != 2 {
-		t.Errorf("after asking: move %d, %v", snap.MoveSeq, err)
-	}
-	if _, err := m.MoveIsFinal(ctx, room, "Alice", "red@a1"); !errors.Is(err, session.ErrNotYourImpulse) {
-		t.Errorf("out of turn: %v", err)
-	}
-	if _, err := m.MoveIsFinal(ctx, room, "Bob", "black@e5"); err == nil {
-		t.Error("an illegal move has no answer")
+	want, wantPlayed := []int{1, 2, 2, 3, 3, 4}, 3
+	if rows, played := plies(t, m, room); !samePlies(rows, want) || played != wantPlayed {
+		t.Fatalf("as recorded: plies %v, played %d; want %v, %d", rows, played, want, wantPlayed)
 	}
 
-	generic := twoPlayers(t, m, session.CreateOptions{GameDefID: "yavalath"})
-	if got, err := m.MoveIsFinal(ctx, generic, "Alice", "e5"); err != nil || !got {
-		t.Errorf("a game of one move a turn: %v, %v", got, err)
+	db, err := sql.Open("sqlite", path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = db.Close() }()
+	if _, err := db.Exec(`UPDATE moves SET ply = 0; UPDATE games SET ply = 0`); err != nil {
+		t.Fatal(err)
+	}
+	if err := m.RegroupMoves(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if rows, played := plies(t, m, room); !samePlies(rows, want) || played != wantPlayed {
+		t.Fatalf("regrouped: plies %v, played %d; want %v, %d", rows, played, want, wantPlayed)
+	}
+	// Bob finishes the impulse he left open, and it keeps its ply.
+	playMove(t, m, room, "Bob", "done")
+	if rows, played := plies(t, m, room); !samePlies(rows, append(want, 4)) || played != 4 {
+		t.Fatalf("after: plies %v, played %d", rows, played)
 	}
 }

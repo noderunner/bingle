@@ -18,7 +18,10 @@ type Game struct {
 	BoardState  string
 	ImpulseSeat *int // nil ⇒ SQL NULL (game is waiting/finished)
 	MoveSeq     int
-	WinnerSeat  *int // nil ⇒ SQL NULL
+	// Ply is the number of impulses the game has ended (ADR 0114). Each
+	// impulse is one or more of the MoveSeq rows.
+	Ply        int
+	WinnerSeat *int // nil ⇒ SQL NULL
 	// EndReason says why a finished game ended ("road", "resignation", ...);
 	// empty while the game is unfinished.
 	EndReason string
@@ -65,7 +68,7 @@ type Game struct {
 
 // gameColumns is the column list every games SELECT uses, matching
 // scanGameRow.
-const gameColumns = `id, room_code, game_def_id, status, board_state, impulse_seat, move_seq, winner_seat, end_reason, end_detail, move_time_limit, draw_offer_seat, initial_state, initial_impulse_seat, created_at, updated_at, lobby, clock, tutorial, rated, rating_status, tournament_id, card_set, real_time`
+const gameColumns = `id, room_code, game_def_id, status, board_state, impulse_seat, move_seq, winner_seat, end_reason, end_detail, move_time_limit, draw_offer_seat, initial_state, initial_impulse_seat, created_at, updated_at, lobby, clock, tutorial, rated, rating_status, tournament_id, card_set, real_time, ply`
 
 type rowScanner interface{ Scan(dest ...any) error }
 
@@ -75,7 +78,7 @@ func scanGameRow(row rowScanner) (Game, error) {
 	var lobby, rated int
 	err := row.Scan(&g.ID, &g.RoomCode, &g.GameDefID, &g.Status, &g.BoardState, &impulseSeat, &g.MoveSeq, &winnerSeat,
 		&g.EndReason, &g.EndDetail, &g.MoveTimeLimit, &drawOffer, &g.InitialState, &g.InitialImpulseSeat,
-		&g.CreatedAt, &g.UpdatedAt, &lobby, &g.Clock, &g.Tutorial, &rated, &g.RatingStatus, &g.TournamentID, &g.CardSet, &g.RealTime)
+		&g.CreatedAt, &g.UpdatedAt, &lobby, &g.Clock, &g.Tutorial, &rated, &g.RatingStatus, &g.TournamentID, &g.CardSet, &g.RealTime, &g.Ply)
 	if err != nil {
 		return Game{}, err
 	}

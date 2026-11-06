@@ -23,8 +23,11 @@ type StateSnapshot struct {
 	State       string
 	ImpulseSeat *int
 	MoveSeq     int
-	WinnerSeat  *int
-	EndReason   string
+	// Ply is the number of impulses played (ADR 0114): what a move or the
+	// selections query is made against.
+	Ply        int
+	WinnerSeat *int
+	EndReason  string
 	// EndDetail adds specifics to EndReason (e.g. the final score).
 	EndDetail string
 	Seats     []SeatInfo // one entry per seat the game definition declares, filled or not
@@ -123,6 +126,7 @@ func (m *Manager) snapshot(ctx context.Context, compiled *catalog.CompiledGame, 
 		State:           string(full),
 		ImpulseSeat:     game.ImpulseSeat,
 		MoveSeq:         game.MoveSeq,
+		Ply:             game.Ply,
 		WinnerSeat:      game.WinnerSeat,
 		EndReason:       game.EndReason,
 		EndDetail:       game.EndDetail,
