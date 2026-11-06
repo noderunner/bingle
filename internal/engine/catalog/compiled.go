@@ -2,6 +2,7 @@ package catalog
 
 import (
 	"io/fs"
+	"slices"
 
 	"github.com/noderunner/bingle/internal/engine/board"
 	"github.com/noderunner/bingle/internal/engine/callback"
@@ -228,10 +229,22 @@ func (g *CompiledGame) Seat(seat int) (dsl.SeatDef, bool) {
 	return dsl.SeatDef{}, false
 }
 
-// SeatOfColor returns the seat that plays color.
+// SideColor is the colour of the seat that plays col, among all its colours
+// (ADR 0117), or col itself when no seat does.
+func (g *CompiledGame) SideColor(col string) string {
+	for _, s := range g.Definition.Seats {
+		if s.Color == col || slices.Contains(s.Colors, col) {
+			return s.Color
+		}
+	}
+	return col
+}
+
+// SeatOfColor returns the seat that plays color, among all its colours
+// (ADR 0117).
 func (g *CompiledGame) SeatOfColor(color string) (int, bool) {
 	for _, s := range g.Definition.Seats {
-		if s.Color == color {
+		if s.Color == color || slices.Contains(s.Colors, color) {
 			return s.Seat, true
 		}
 	}

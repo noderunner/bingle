@@ -24,7 +24,7 @@ func (c *rctx) validateStep(act catalog.ResolvedAction, mv Selection) (executor,
 	}
 
 	// Occupant's color must match the seat's color.
-	if occupant.Color != c.color {
+	if !c.mine(occupant.Color) {
 		return nil, fmt.Errorf("state: piece at %s belongs to color %q, not seat %d's color %q", mv.From, occupant.Color, c.seat, c.color)
 	}
 
@@ -61,7 +61,7 @@ func (c *rctx) validateStep(act catalog.ResolvedAction, mv Selection) (executor,
 		prim, occupancy = resolved.Primitive, resolved.Occupancy
 	}
 
-	result := prim(c.game.Board, c.st, occupancy, mv.From, mv.To, occupant.Color)
+	result := prim(c.game.Board, seatView{c}, occupancy, mv.From, mv.To, c.game.SideColor(occupant.Color))
 	if !result.Allowed {
 		return nil, fmt.Errorf("state: move rejected: %s", result.Reason)
 	}
@@ -164,7 +164,7 @@ func (c *rctx) enumerateSteps(act catalog.ResolvedAction, keep func(catalog.Reso
 			return
 		}
 		occ, ok := c.st.Get(from)
-		if !ok || occ.Color != c.color {
+		if !ok || !c.mine(occ.Color) {
 			continue
 		}
 		rp, known := c.game.Pieces[occ.Piece]
@@ -225,15 +225,22 @@ func (c *rctx) validatePlace(act catalog.ResolvedAction, mv Selection) (executor
 	}
 
 	owner := c.placedColor()
+	if !c.mayPlace(owner, mv.Piece) {
+		return nil, fmt.Errorf("state: a %s is another seat's to place", pieceLabel(c.game, mv.Piece))
+	}
 	pool := c.game.Pool(mv.Piece)
 	if act.Source == catalog.SourceReserve && c.st.Reserve(owner, pool) <= 0 {
 		return nil, fmt.Errorf("state: no %s left in the %s reserve", pieceLabel(c.game, mv.Piece), owner)
 	}
 
+	// The stone takes the piece type's own colour when the seat plays it
+	// (ADR 0117); the reserve and any pool stay the seat's.
+	color := c.placedIn(owner, mv.Piece)
+
 	var captured []board.PositionID
 	if act.Captures {
 		var err error
-		captured, err = c.libertyOutcome(act, mv.To, owner, mv.Piece)
+		captured, err = c.libertyOutcome(act, mv.To, color, mv.Piece)
 		if err != nil {
 			return nil, err
 		}
@@ -257,9 +264,9 @@ func (c *rctx) validatePlace(act catalog.ResolvedAction, mv Selection) (executor
 		if source == catalog.SourceReserve {
 			ns.SetReserve(owner, pool, ns.Reserve(owner, pool)-1)
 		}
-		ns.Set(to, Occupant{Piece: piece, Color: owner})
+		ns.Set(to, Occupant{Piece: piece, Color: color})
 		for _, f := range flips {
-			ns.SetOccupant(f, owner)
+			ns.SetOccupant(f, color)
 		}
 		for _, p := range captured {
 			ns.Remove(p)
@@ -307,7 +314,7 @@ func (c *rctx) custodianCaptures(act catalog.ResolvedAction, to board.PositionID
 				closed = len(run) > 0 && act.Anvils[p]
 				break
 			}
-			if top.Color == color {
+			if c.sameSide(top.Color, color) {
 				closed = len(run) > 0
 				break
 			}
@@ -390,7 +397,9 @@ func (c *rctx) libertyOutcome(act catalog.ResolvedAction, to board.PositionID, c
 	var captured []board.PositionID
 	for _, n := range g.Neighbors(to) {
 		cn := colorAt(n)
-		if cn == "" || cn == color || removed[n] {
+		// A group of the placer's own side is never captured by its
+		// placement, in whichever of its colours (ADR 0117).
+		if cn == "" || c.sameSide(cn, color) || removed[n] {
 			continue
 		}
 		members, liberty := group(n, cn)
@@ -458,7 +467,7 @@ func (c *rctx) flipsFor(to board.PositionID, color string) []board.PositionID {
 				run = nil
 				break
 			}
-			if top.Color == color {
+			if c.sameSide(top.Color, color) {
 				break
 			}
 			run = append(run, p)
@@ -478,6 +487,9 @@ func (c *rctx) enumeratePlacements(act catalog.ResolvedAction, keep func(catalog
 		// Cheap necessary conditions first; validatePlace remains the
 		// authority for everything else.
 		if act.Source == catalog.SourceReserve && c.st.Reserve(c.placedColor(), c.game.Pool(piece)) <= 0 {
+			continue
+		}
+		if !c.mayPlace(c.placedColor(), piece) {
 			continue
 		}
 		for _, to := range positions {
@@ -521,7 +533,7 @@ func (c *rctx) validateStack(act catalog.ResolvedAction, mv Selection) (executor
 		return nil, fmt.Errorf("state: no piece at %s", mv.From)
 	}
 	top := stack[len(stack)-1]
-	if top.Color != c.color {
+	if !c.mine(top.Color) {
 		return nil, fmt.Errorf("state: the stack at %s is controlled by %q, not seat %d (%q)", mv.From, top.Color, c.seat, c.color)
 	}
 
@@ -673,7 +685,7 @@ func (c *rctx) enumerateStackMoves(act catalog.ResolvedAction, keep func(catalog
 			return
 		}
 		stack := c.st.cells[from]
-		if len(stack) == 0 || stack[len(stack)-1].Color != c.color {
+		if len(stack) == 0 || !c.mine(stack[len(stack)-1].Color) {
 			continue
 		}
 		if _, ok := g.Coord(from); !ok {

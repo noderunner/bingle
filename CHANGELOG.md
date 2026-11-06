@@ -4,6 +4,11 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.84.0 - 2026-11-06
+
+### Bingle Core 0.84.0
+- **For game authors: a seat with several colours.** A game definition can now give a seat more than one colour, as Blooms gives Warm red and yellow. A stone is placed in its own colour, counts as its seat's for moving, capturing and winning, and a group is still one colour, so a player never captures their own stones of the other colour. Games already in the catalog play as before. See *seats, pieces, setup* in the definition guide.
+
 ## 0.83.1 - 2026-11-06
 
 ### Bingle Core 0.83.1

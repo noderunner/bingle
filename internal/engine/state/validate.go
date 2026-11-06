@@ -21,6 +21,11 @@ func Validate(game *catalog.CompiledGame, st *BoardState) error {
 	for c := range colors {
 		onBoard[c] = true
 	}
+	for _, s := range game.Definition.Seats {
+		for _, c := range s.Colors {
+			onBoard[c] = true
+		}
+	}
 	for _, c := range game.Definition.ExtraColors {
 		onBoard[c] = true
 	}

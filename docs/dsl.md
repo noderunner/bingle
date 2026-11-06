@@ -163,6 +163,17 @@ pieces:
 * `shape`: `disc` (default), `square`/`flat`, `wall`, `cap`, `ring`,
   `diamond`, `triangle`, `cross`.
 * `code` is the short letter used by notation, TPS and the text board.
+* **A seat that plays several colours** ([ADR 0117](decisions/0117-groups-by-colour-enemies-by-seat.md))
+  lists them in `colors`, its `color` first: `{seat: 1, color: red, colors: [red, yellow]}`.
+  A piece type with a fixed `color` the seat plays is placed in that colour;
+  anything else in the seat's `color`, and a piece type in another seat's colour
+  is that seat's alone to place. A piece in any of the seat's colours is
+  the seat's: it may move it, its pieces block rather than capture it, it
+  flanks for `custodian` and `flips`, and the win rules count it. A group for
+  `captures` is still one colour, and a placement never captures a group of the
+  mover's other colour. Reserves and pools stay under the seat's `color`. A
+  colour belongs to one seat at most and is not also in `extra_colors`;
+  `blend` only draws.
 * `tags` classify pieces for win rules and scores.
 * `pool` names the reserve pool a *placed* piece is drawn from (default: the
   piece type itself). Pieces sharing a pool share a supply — Tak's flat and

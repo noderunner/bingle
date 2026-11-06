@@ -49,7 +49,7 @@ func (c *rctx) validateLeap(act catalog.ResolvedAction, mv Selection) (executor,
 	if !ok {
 		return nil, fmt.Errorf("state: no piece at %s", mv.From)
 	}
-	if occupant.Color != c.color {
+	if !c.mine(occupant.Color) {
 		return nil, fmt.Errorf("state: piece at %s belongs to color %q, not seat %d's color %q", mv.From, occupant.Color, c.seat, c.color)
 	}
 	listed := false
@@ -85,7 +85,7 @@ func (c *rctx) validateLeap(act catalog.ResolvedAction, mv Selection) (executor,
 		if act.Infect {
 			for _, n := range g.Neighbors(to) {
 				top, ok := ns.Get(n)
-				if !ok || top.Color == occupant.Color {
+				if !ok || c.sameSide(top.Color, occupant.Color) {
 					continue
 				}
 				stack := ns.Stack(n)
@@ -107,7 +107,7 @@ func (c *rctx) enumerateLeaps(act catalog.ResolvedAction, keep func(catalog.Reso
 			return
 		}
 		top, ok := c.st.Get(from)
-		if !ok || top.Color != c.color || !isPiece[top.Piece] {
+		if !ok || !c.mine(top.Color) || !isPiece[top.Piece] {
 			continue
 		}
 		reach := c.leapReach(from, act.MaxDistance)

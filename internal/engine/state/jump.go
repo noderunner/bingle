@@ -50,7 +50,7 @@ func (c *rctx) hopsFrom(rp catalog.ResolvedPiece, cur, origin board.PositionID, 
 			continue // a piece may not be jumped twice
 		}
 		top, occupied := c.st.Get(overID)
-		if !occupied || top.Color == c.color {
+		if !occupied || c.mine(top.Color) {
 			continue
 		}
 		if _, occ := c.st.Get(landID); occ && landID != origin {
@@ -76,7 +76,7 @@ func (c *rctx) validateJump(act catalog.ResolvedAction, mv Selection) (executor,
 	if !ok {
 		return nil, fmt.Errorf("state: no piece at %s", mv.From)
 	}
-	if top.Color != c.color {
+	if !c.mine(top.Color) {
 		return nil, fmt.Errorf("state: piece at %s belongs to color %q, not seat %d's color %q", mv.From, top.Color, c.seat, c.color)
 	}
 	rp, ok := c.game.Pieces[top.Piece]
@@ -148,7 +148,7 @@ func (c *rctx) enumerateJumps(act catalog.ResolvedAction, keep func(catalog.Reso
 			return
 		}
 		top, ok := c.st.Get(from)
-		if !ok || top.Color != c.color {
+		if !ok || !c.mine(top.Color) {
 			continue
 		}
 		rp, ok := c.game.Pieces[top.Piece]
