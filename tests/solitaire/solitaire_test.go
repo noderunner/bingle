@@ -717,3 +717,35 @@ func TestTheSampleIsAGameInProgress(t *testing.T) {
 		}
 	}
 }
+
+// A play that shows the player a card they had not seen cannot be taken back,
+// or Back would be a way to peek: drawing from the stock, or uncovering a card
+// in a column. A play that shows nothing new can (ADR 0083, ADR 0114).
+func TestKlondike_ACardSeenCannotBeTakenBack(t *testing.T) {
+	g := game(t, "solitaire")
+	st := position(t, g, map[string]string{
+		"t1":    "?clubs-2 hearts-7",
+		"t2":    "spades-8",
+		"t3":    "clubs-8",
+		"stock": "?diamonds-4",
+		"waste": "hearts-A",
+	}, nil)
+	for _, c := range []struct {
+		move     string
+		takeBack bool
+	}{
+		{"draw", false},  // the four of diamonds comes up
+		{"t1-t2", false}, // the two of clubs turns up
+		{"w-f", true},    // the ace was already in view
+	} {
+		after := play(t, g, st, c.move)
+		if got := state.CanTakeBack(g, st, after); got != c.takeBack {
+			t.Errorf("%s: can be taken back = %v, want %v", c.move, got, c.takeBack)
+		}
+	}
+	// Turning the waste back over hides cards; it shows none.
+	empty := position(t, g, map[string]string{"t1": "spades-K", "waste": "hearts-5 clubs-9"}, nil)
+	if after := play(t, g, empty, "recycle"); !state.CanTakeBack(g, empty, after) {
+		t.Error("recycle: can no longer be taken back")
+	}
+}

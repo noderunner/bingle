@@ -9,6 +9,9 @@ what the help window shows under *Recent changes*, so it is written for the peop
 ### Bingle Core 0.77.0
 - **Play from the command line.** The help window has a new **API** button that opens the guide to bingle's API, which now starts with a game of Hex played step by step with curl. A program that asks the server where to begin is pointed at the guide and the handful of calls it needs, and a wrong turn gets a clear answer rather than a bare "page not found".
 
+### Solitaire 0.2.0
+- **A card you have seen stays seen.** Back still takes back any move, but no longer one that drew from the stock or turned a card face up: those stand once played, so Back can't be used to peek at what is coming.
+
 ### Blooms 0.4.0
 - **Two big boards for a long game.** Choose **base 8** (169 cells, first to 40 captures) or **base 10** (271 cells, first to 50) when you make a game. They suggest 25 and 35 minutes on the clock, and a game on them runs to 1000 and 1500 plies before it is settled on captures.
 
