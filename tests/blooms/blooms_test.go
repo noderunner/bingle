@@ -79,14 +79,23 @@ func play(t *testing.T, g *catalog.CompiledGame, st *state.BoardState, seat int,
 
 func data(st *state.BoardState) *blooms.Data { d, _ := st.Ext().(*blooms.Data); return d }
 
+// Every board, its target and its cap on plies: the bigger boards (8 and 10 to
+// a side) need a later cap, or a game on them would stop on the count long
+// before the board fills.
 func TestBoardSizesAndTargets(t *testing.T) {
-	for id, want := range map[string][2]int{"blooms-4": {37, 15}, "blooms": {61, 20}, "blooms-6": {91, 25}} {
+	for id, want := range map[string][3]int{
+		"blooms-4": {37, 15, 500}, "blooms": {61, 20, 500}, "blooms-6": {91, 25, 500},
+		"blooms-8": {169, 40, 1000}, "blooms-10": {271, 50, 1500},
+	} {
 		g := gameFor(t, id)
 		if n := len(g.Board.Positions()); n != want[0] {
 			t.Errorf("%s: %d cells, want %d", id, n, want[0])
 		}
 		if n := g.ParamInt("capture_target", 0); n != want[1] {
 			t.Errorf("%s: target %d, want %d", id, n, want[1])
+		}
+		if n := g.ParamInt("max_plies", 0); n != want[2] {
+			t.Errorf("%s: %d plies at most, want %d", id, n, want[2])
 		}
 	}
 }

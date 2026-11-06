@@ -4,7 +4,7 @@ Blooms is a Go-like game by Nick Bentley played on a hexagonal board with **four
 
 ## The goal
 
-Be the first player to **capture enough enemy stones**. The target depends on the board: **15** stones on the small board (4 cells to a side), **20** on the standard board (5 to a side) and **25** on the large board (6 to a side).
+Be the first player to **capture enough enemy stones**. The target depends on the board: **15** stones on the small board (4 cells to a side), **20** on the standard board (5 to a side), **25** on the large board (6 to a side), **40** on base 8 and **50** on base 10.
 
 ## The stones
 
@@ -43,7 +43,7 @@ Sacrificing a few stones to fence in a bigger bloom is the heart of the game.
 
 ## The end of the game
 
-The first player to reach the target number of captured stones **wins**. If the game reaches 500 plies (turns of one player), the player with more captured stones wins, and equal counts are a draw.
+The first player to reach the target number of captured stones **wins**. If the game reaches 500 plies (turns of one player; 1000 on base 8 and 1500 on base 10), the player with more captured stones wins, and equal counts are a draw.
 
 ## Move notation
 

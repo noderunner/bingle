@@ -60,6 +60,8 @@ func TestWebFitScreen_TheBoardStaysInViewAtEverySize(t *testing.T) {
 		{"blooms", 844, 390, false},
 		{"blooms", 390, 844, true},
 		{"blooms", 360, 640, true},
+		{"blooms-10", 1024, 600, false},
+		{"blooms-10", 390, 844, true},
 	} {
 		name := fmt.Sprintf("%s at %dx%d", size.def, size.w, size.h)
 		fittedGame(t, ctx, base, size.def, size.w, size.h)
