@@ -98,7 +98,7 @@ func play(ref, cand Side, opt Options, seed uint64) error {
 		if d := diffPosition(ref, cand, st[0], st[1]); d != "" {
 			return fmt.Errorf("%s: the positions differ: %s", where(), d)
 		}
-		legal := [2]map[string]state.Move{moves(ref.Game, st[0], seat), moves(cand.Game, st[1], seat)}
+		legal := [2]map[string]state.Selection{moves(ref.Game, st[0], seat), moves(cand.Game, st[1], seat)}
 		if d := diffMoves(legal[0], legal[1]); d != "" {
 			return fmt.Errorf("%s: seat %d's legal moves differ: %s", where(), seat, d)
 		}
@@ -137,7 +137,7 @@ func play(ref, cand Side, opt Options, seed uint64) error {
 }
 
 // applyBoth plays the same move on both sides and compares what comes of it.
-func applyBoth(ref, cand Side, st [2]*state.BoardState, seat int, m0, m1 state.Move) ([2]*state.MoveResult, string) {
+func applyBoth(ref, cand Side, st [2]*state.BoardState, seat int, m0, m1 state.Selection) ([2]*state.MoveResult, string) {
 	var res [2]*state.MoveResult
 	var err [2]error
 	res[0], err[0] = state.Apply(ref.Game, st[0], seat, m0)
@@ -167,15 +167,15 @@ func applyBoth(ref, cand Side, st [2]*state.BoardState, seat int, m0, m1 state.M
 }
 
 // moves lists a seat's legal moves by their notation.
-func moves(game *catalog.CompiledGame, st *state.BoardState, seat int) map[string]state.Move {
-	out := map[string]state.Move{}
-	for _, mv := range state.LegalMoves(game, st, seat) {
+func moves(game *catalog.CompiledGame, st *state.BoardState, seat int) map[string]state.Selection {
+	out := map[string]state.Selection{}
+	for _, mv := range state.LegalSelections(game, st, seat) {
 		out[state.FormatMove(game, mv)] = mv
 	}
 	return out
 }
 
-func diffMoves(a, b map[string]state.Move) string {
+func diffMoves(a, b map[string]state.Selection) string {
 	var onlyA, onlyB []string
 	for n := range a {
 		if _, ok := b[n]; !ok {

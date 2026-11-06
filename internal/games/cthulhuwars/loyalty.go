@@ -279,12 +279,12 @@ func buyCost(c cardSpec) (doom, power int) {
 // buyMoves lists the Loyalty Cards seat may buy in its Doom turn: it can pay,
 // has not bought one this phase, and the card is in the game and still in the
 // general pool.
-func (e *eng) buyMoves(seat int) []state.Move {
+func (e *eng) buyMoves(seat int) []state.Selection {
 	d := e.d
 	if d.Doomx == nil || d.Doomx.Bought {
 		return nil
 	}
-	var out []state.Move
+	var out []state.Selection
 	for i, c := range cards {
 		if c.Kind == cardIndependent || !e.cardInGame(i) || e.cardOwner(i) != 0 {
 			continue
@@ -298,25 +298,25 @@ func (e *eng) buyMoves(seat int) []state.Move {
 		case uShambler, uMoonbeast, uWamp:
 			// The figures go to the faction card, an enemy's spellbook or an
 			// enemy's choice of places.
-			out = append(out, state.Move{Action: actBuy, Piece: u.ID})
+			out = append(out, state.Selection{Action: actBuy, Piece: u.ID})
 		case uServitor:
 			for _, o := range e.others(seat) {
-				out = append(out, state.Move{Action: actBuy, Piece: u.ID, Count: o})
+				out = append(out, state.Selection{Action: actBuy, Piece: u.ID, Count: o})
 			}
 		case uHound:
 			// At any Gate, even one the buyer does not control.
 			for a := range e.m.ids {
 				if e.hasGate(a) {
-					out = append(out, state.Move{Action: actBuy, Piece: u.ID, To: e.m.ids[a]})
+					out = append(out, state.Selection{Action: actBuy, Piece: u.ID, To: e.m.ids[a]})
 				}
 			}
 		default:
 			gates := e.gatesOf(seat)
 			for _, a := range gates {
-				out = append(out, state.Move{Action: actBuy, Piece: u.ID, To: e.m.ids[a]})
+				out = append(out, state.Selection{Action: actBuy, Piece: u.ID, To: e.m.ids[a]})
 			}
 			if len(gates) == 0 {
-				out = append(out, state.Move{Action: actBuy, Piece: u.ID})
+				out = append(out, state.Selection{Action: actBuy, Piece: u.ID})
 			}
 		}
 	}
@@ -324,7 +324,7 @@ func (e *eng) buyMoves(seat int) []state.Move {
 }
 
 // buy settles the purchase of a Loyalty Card.
-func (e *eng) buy(seat int, mv state.Move) {
+func (e *eng) buy(seat int, mv state.Selection) {
 	d := e.d
 	i := cardIndex(mv.Piece)
 	c := cards[i]

@@ -50,13 +50,13 @@ func (t *shuffleTracker) forget(room string) {
 
 // avoidShuffles removes the moves that only rearrange seat's pieces into an
 // arrangement it recently had, as long as other moves remain.
-func (m *Manager) avoidShuffles(room string, game *catalog.CompiledGame, st *state.BoardState, seat int, legal []state.Move) []state.Move {
+func (m *Manager) avoidShuffles(room string, game *catalog.CompiledGame, st *state.BoardState, seat int, legal []state.Selection) []state.Selection {
 	guard, ok := state.RepetitionGuardOf(game)
 	if !ok {
 		return legal
 	}
 	recent := m.shuffles.note(room, seat, guard.RepeatKey(game, st, seat))
-	kept := make([]state.Move, 0, len(legal))
+	kept := make([]state.Selection, 0, len(legal))
 	for _, mv := range legal {
 		if guard.Repositions(mv) {
 			res, err := state.Apply(game, st, seat, mv)
@@ -76,7 +76,7 @@ func (m *Manager) avoidShuffles(room string, game *catalog.CompiledGame, st *sta
 // moves that only shuffle its pieces back into a recent arrangement go first,
 // then the game's own strategy guide (see state.BotGuide) picks the sensible
 // ones.
-func (m *Manager) botChoices(room string, game *catalog.CompiledGame, st *state.BoardState, seat int, legal []state.Move) []state.Move {
+func (m *Manager) botChoices(room string, game *catalog.CompiledGame, st *state.BoardState, seat int, legal []state.Selection) []state.Selection {
 	legal = m.avoidShuffles(room, game, st, seat, legal)
 	return state.GuidedMoves(game, st, seat, legal)
 }

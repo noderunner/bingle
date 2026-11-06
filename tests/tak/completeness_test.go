@@ -13,13 +13,13 @@ import (
 // mover — all placements of every piece type on every square, and every
 // stack move (any count, any of the four directions, any number of squares,
 // any composition) — without using the engine's own enumeration.
-func bruteForceCandidates(g *catalog.CompiledGame, st *state.BoardState) []state.Move {
-	var out []state.Move
+func bruteForceCandidates(g *catalog.CompiledGame, st *state.BoardState) []state.Selection {
+	var out []state.Selection
 	positions := g.Board.Positions()
 
 	for _, piece := range []string{"flat", "wall", "cap"} {
 		for _, to := range positions {
-			out = append(out, state.Move{Action: "place", Piece: piece, To: to})
+			out = append(out, state.Selection{Action: "place", Piece: piece, To: to})
 		}
 	}
 
@@ -52,7 +52,7 @@ func bruteForceCandidates(g *catalog.CompiledGame, st *state.BoardState) []state
 					rec = func(i, left int, drops []int) {
 						if i == squares-1 {
 							dd := append(append([]int(nil), drops...), left)
-							out = append(out, state.Move{Action: "move", From: from, To: path[squares-1], Count: count, Path: path, Drops: dd})
+							out = append(out, state.Selection{Action: "move", From: from, To: path[squares-1], Count: count, Path: path, Drops: dd})
 							return
 						}
 						for v := 1; v <= left-(squares-1-i); v++ {
@@ -87,7 +87,7 @@ func TestLegalMovesAreExactlyTheAcceptedMoves(t *testing.T) {
 			st, seat := state.InitialState(g), 1
 			for ply := 0; ply < 80; ply++ {
 				legal := map[string]bool{}
-				for _, mv := range state.LegalMoves(g, st, seat) {
+				for _, mv := range state.LegalSelections(g, st, seat) {
 					legal[mv.Key()] = true
 				}
 				for _, cand := range bruteForceCandidates(g, st) {
@@ -103,7 +103,7 @@ func TestLegalMovesAreExactlyTheAcceptedMoves(t *testing.T) {
 					}
 					checked++
 				}
-				moves := state.LegalMoves(g, st, seat)
+				moves := state.LegalSelections(g, st, seat)
 				res, err := state.Apply(g, st, seat, moves[rng.Intn(len(moves))])
 				if err != nil {
 					t.Fatal(err)

@@ -8,7 +8,7 @@ import "github.com/noderunner/bingle/internal/engine/state"
 
 // setup chooses where Windwalker begins: the sigil area with the fewest
 // enemy units next to it.
-func (g *guide) setup(legal []state.Move) []state.Move {
+func (g *guide) setup(legal []state.Selection) []state.Selection {
 	e := g.e
 	var list []scoredMove
 	for _, mv := range legal {
@@ -36,7 +36,7 @@ func (g *guide) claimNow() bool {
 }
 
 // scoreExpansion values the turn actions of the expansion cults.
-func (g *guide) scoreExpansion(mv state.Move, area int) (float64, bool) {
+func (g *guide) scoreExpansion(mv state.Selection, area int) (float64, bool) {
 	e, d, seat := g.e, g.e.d, g.seat
 	p := d.Power[seat]
 	switch mv.Action {
@@ -108,7 +108,7 @@ func (g *guide) scoreExpansion(mv state.Move, area int) (float64, bool) {
 
 // guideExpansionPrompt answers the prompts of the expansion cults, reporting
 // whether it handled the prompt kind.
-func (g *guide) guideExpansionPrompt(p Prompt, legal []state.Move) ([]state.Move, bool) {
+func (g *guide) guideExpansionPrompt(p Prompt, legal []state.Selection) ([]state.Selection, bool) {
 	e, seat := g.e, g.seat
 	var list []scoredMove
 	switch p.Kind {

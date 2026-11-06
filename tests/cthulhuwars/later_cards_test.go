@@ -269,14 +269,14 @@ func TestTheLaterCardsPlayFromAnArrangedTable(t *testing.T) {
 		}
 		seat := state.FirstSeat(g)
 		for ply := 0; ply < plies; ply++ {
-			legal := state.LegalMoves(g, st, seat)
+			legal := state.LegalSelections(g, st, seat)
 			if len(legal) == 0 {
 				t.Fatalf("seed %d ply %d: no legal moves for seat %d\n%s", seed, ply, seat, state.RenderText(g, st))
 			}
 			// Half the time prefer the ability on offer, so that they all come up.
 			mv := legal[rng.Intn(len(legal))]
 			if rng.Intn(2) == 0 {
-				var cards []state.Move
+				var cards []state.Selection
 				for _, m := range legal {
 					if m.Action == "card" {
 						cards = append(cards, m)
@@ -338,7 +338,7 @@ func TestRandomGamesOnThePrimevalMap(t *testing.T) {
 		g := primevalGame(t, c.base, c.keys)
 		glaciers := 0
 		for seed := int64(1); seed <= 6; seed++ {
-			st, _, _ := randomGame(t, g, seed, 9000, func(ply int, st *state.BoardState, seat int, mv state.Move) {
+			st, _, _ := randomGame(t, g, seed, 9000, func(ply int, st *state.BoardState, seat int, mv state.Selection) {
 				if err := state.Validate(g, st); err != nil {
 					t.Fatalf("%s seed %d ply %d: %v", g.Definition.ID, seed, ply, err)
 				}
@@ -377,7 +377,7 @@ func TestAGlacierAbandonsAGateForGood(t *testing.T) {
 	rng := rand.New(rand.NewSource(1))
 	seat := state.FirstSeat(g)
 	for ply := 0; ply < 4000; ply++ {
-		legal := state.LegalMoves(g, st, seat)
+		legal := state.LegalSelections(g, st, seat)
 		res, err := state.Apply(g, st, seat, legal[rng.Intn(len(legal))])
 		if err != nil {
 			t.Fatal(err)
@@ -412,7 +412,7 @@ func TestTheAncientsBeginAfterTheOthersInAnAreaWithNoStartGlyph(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	legal := state.LegalMoves(g, st, state.FirstSeat(g))
+	legal := state.LegalSelections(g, st, state.FirstSeat(g))
 	if len(legal) == 0 || legal[0].Action != "start" {
 		t.Fatalf("the first decision: %v", legal)
 	}
@@ -501,7 +501,7 @@ func TestRandomGamesWithTheAncients(t *testing.T) {
 		g := packTable(t, c.base, c.keys, allCards)
 		seen := 0
 		for seed := int64(1); seed <= 8; seed++ {
-			st, _, _ := randomGame(t, g, seed, 8000, func(ply int, st *state.BoardState, seat int, mv state.Move) {
+			st, _, _ := randomGame(t, g, seed, 8000, func(ply int, st *state.BoardState, seat int, mv state.Selection) {
 				if err := state.Validate(g, st); err != nil {
 					t.Fatalf("%s seed %d ply %d after %s: %v", g.Definition.ID, seed, ply, state.FormatMove(g, mv), err)
 				}
@@ -557,7 +557,7 @@ func TestRandomGamesWithBubastis(t *testing.T) {
 	} {
 		g := packTable(t, c.base, c.keys, c.opts)
 		for seed := int64(1); seed <= 8; seed++ {
-			randomGame(t, g, seed, 8000, func(ply int, st *state.BoardState, seat int, mv state.Move) {
+			randomGame(t, g, seed, 8000, func(ply int, st *state.BoardState, seat int, mv state.Selection) {
 				if err := state.Validate(g, st); err != nil {
 					t.Fatalf("%s seed %d ply %d after %s: %v", g.Definition.ID, seed, ply, state.FormatMove(g, mv), err)
 				}
@@ -589,7 +589,7 @@ func TestOnlyBubastisCanReachTheMoon(t *testing.T) {
 	seat := state.FirstSeat(g)
 	rng := rand.New(rand.NewSource(1))
 	for ply := 0; ply < 1500; ply++ {
-		legal := state.LegalMoves(g, st, seat)
+		legal := state.LegalSelections(g, st, seat)
 		if len(legal) == 0 {
 			t.Fatalf("no legal moves at %d", ply)
 		}

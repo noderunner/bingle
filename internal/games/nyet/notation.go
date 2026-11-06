@@ -42,7 +42,7 @@ func seatByName(game *catalog.CompiledGame, name string) (int, bool) {
 }
 
 // Format renders mv.
-func (rs *Ruleset) Format(game *catalog.CompiledGame, mv state.Move) string {
+func (rs *Ruleset) Format(game *catalog.CompiledGame, mv state.Selection) string {
 	switch mv.Action {
 	case actCross:
 		line, option, _ := strings.Cut(mv.Piece, ":")
@@ -73,10 +73,10 @@ func (rs *Ruleset) Format(game *catalog.CompiledGame, mv state.Move) string {
 }
 
 // Parse reads notation produced by Format (case-insensitively).
-func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Move, error) {
+func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Selection, error) {
 	t := strings.ToLower(strings.TrimSpace(text))
-	bad := func(why string) (state.Move, error) {
-		return state.Move{}, fmt.Errorf("nyet: cannot read %q as a move (%s)", text, why)
+	bad := func(why string) (state.Selection, error) {
+		return state.Selection{}, fmt.Errorf("nyet: cannot read %q as a move (%s)", text, why)
 	}
 	known := func(id string) bool { return game.Cards.Types[id] != nil }
 	switch {
@@ -92,11 +92,11 @@ func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Move, e
 			}
 			option = strconv.Itoa(s)
 		}
-		return state.Move{Action: actCross, Piece: line + ":" + option}, nil
+		return state.Selection{Action: actCross, Piece: line + ":" + option}, nil
 	case strings.HasPrefix(t, "team:"):
 		who := t[5:]
 		if who == "alone" {
-			return state.Move{Action: actTeam, Piece: "alone"}, nil
+			return state.Selection{Action: actTeam, Piece: "alone"}, nil
 		}
 		var seats []string
 		for _, name := range strings.Split(who, "+") {
@@ -106,40 +106,40 @@ func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Move, e
 			}
 			seats = append(seats, strconv.Itoa(s))
 		}
-		return state.Move{Action: actTeam, Piece: strings.Join(seats, ",")}, nil
+		return state.Selection{Action: actTeam, Piece: strings.Join(seats, ",")}, nil
 	case strings.HasPrefix(t, "bonus:"):
 		s, ok := seatByName(game, t[6:])
 		if !ok {
 			return bad("unknown character " + t[6:])
 		}
-		return state.Move{Action: actBonus, Piece: strconv.Itoa(s)}, nil
+		return state.Selection{Action: actBonus, Piece: strconv.Itoa(s)}, nil
 	case strings.HasPrefix(t, "discard:"):
 		if !known(t[8:]) {
 			return bad("unknown card " + t[8:])
 		}
-		return state.Move{Action: actDiscard, Piece: t[8:]}, nil
+		return state.Selection{Action: actDiscard, Piece: t[8:]}, nil
 	case strings.HasPrefix(t, "pass:"):
 		if !known(t[5:]) {
 			return bad("unknown card " + t[5:])
 		}
-		return state.Move{Action: actGive, Piece: t[5:]}, nil
+		return state.Selection{Action: actGive, Piece: t[5:]}, nil
 	case known(t):
-		return state.Move{Action: actPlay, Piece: t}, nil
+		return state.Selection{Action: actPlay, Piece: t}, nil
 	}
 	return bad("not a card, a team or a box of the board")
 }
 
-// Steps: one action per decision (a card is card-<type>).
-func (rs *Ruleset) Steps(game *catalog.CompiledGame, mv state.Move) []state.Step {
+// Gestures: one action per decision (a card is card-<type>).
+func (rs *Ruleset) Gestures(game *catalog.CompiledGame, mv state.Selection) []state.Gesture {
 	switch mv.Action {
 	case actCross:
-		return []state.Step{{Kind: state.StepAction, Value: "cross-" + strings.Replace(mv.Piece, ":", "-", 1)}}
+		return []state.Gesture{{Kind: state.GestureAction, Value: "cross-" + strings.Replace(mv.Piece, ":", "-", 1)}}
 	case actTeam:
-		return []state.Step{{Kind: state.StepAction, Value: "team-" + strings.ReplaceAll(mv.Piece, ",", "-")}}
+		return []state.Gesture{{Kind: state.GestureAction, Value: "team-" + strings.ReplaceAll(mv.Piece, ",", "-")}}
 	case actBonus:
-		return []state.Step{{Kind: state.StepAction, Value: "bonus-" + mv.Piece}}
+		return []state.Gesture{{Kind: state.GestureAction, Value: "bonus-" + mv.Piece}}
 	}
-	return []state.Step{{Kind: state.StepAction, Value: "card-" + mv.Piece}}
+	return []state.Gesture{{Kind: state.GestureAction, Value: "card-" + mv.Piece}}
 }
 
 // Describe labels the decisions for clients.

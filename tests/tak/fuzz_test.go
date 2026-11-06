@@ -44,7 +44,7 @@ func FuzzParseTPS(f *testing.F) {
 			return
 		}
 		_, _ = state.FormatTPS(g, st, seat)
-		_ = state.LegalMoves(g, st, seat)
+		_ = state.LegalSelections(g, st, seat)
 	})
 }
 
@@ -61,7 +61,7 @@ func FuzzApplyStructuredMove(f *testing.F) {
 		f.Fatalf("seed position: %v", err)
 	}
 	f.Fuzz(func(t *testing.T, action, piece, from, to string, count int, p1 string, d1 int, p2 string, d2 int) {
-		mv := state.Move{
+		mv := state.Selection{
 			Action: action, Piece: piece,
 			From: board.PositionID(from), To: board.PositionID(to), Count: count,
 		}

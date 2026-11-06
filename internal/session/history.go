@@ -92,7 +92,7 @@ func (m *Manager) ListMoves(ctx context.Context, roomCode string, sinceSeq int) 
 			Ply:       mv.Ply,
 		}
 		if mv.MoveJSON != "" {
-			var sm state.Move
+			var sm state.Selection
 			if err := json.Unmarshal([]byte(mv.MoveJSON), &sm); err == nil {
 				rec.Action, rec.Piece, rec.Count, rec.Drops, rec.Aim = sm.Action, sm.Piece, sm.Count, sm.Drops, string(sm.Aim)
 				for _, p := range sm.Path {
@@ -157,7 +157,7 @@ func (m *Manager) ListLegalMoves(ctx context.Context, roomCode string, from boar
 
 	legal := []board.PositionID{}
 	seen := map[board.PositionID]bool{}
-	for _, mv := range state.LegalMoves(compiled, bs, seat) {
+	for _, mv := range state.LegalSelections(compiled, bs, seat) {
 		if mv.From != from || seen[mv.To] {
 			continue
 		}
@@ -171,9 +171,9 @@ func (m *Manager) ListLegalMoves(ctx context.Context, roomCode string, from boar
 // LegalMove is one legal move in the full listing: the structured move, its
 // canonical notation, and the interactive selection steps that build it.
 type LegalMove struct {
-	Move     state.Move
+	Move     state.Selection
 	Notation string
-	Steps    []state.Step
+	Steps    []state.Gesture
 }
 
 // LegalMoves lists every legal move for seat in roomCode's current position
@@ -236,10 +236,10 @@ func (m *Manager) mayListMoves(ctx context.Context, compiled *catalog.CompiledGa
 }
 
 func legalMoveList(compiled *catalog.CompiledGame, bs *state.BoardState, seat int) []LegalMove {
-	moves := state.LegalMoves(compiled, bs, seat)
+	moves := state.LegalSelections(compiled, bs, seat)
 	out := make([]LegalMove, len(moves))
 	for i, mv := range moves {
-		out[i] = LegalMove{Move: mv, Notation: state.FormatMove(compiled, mv), Steps: state.Steps(compiled, mv)}
+		out[i] = LegalMove{Move: mv, Notation: state.FormatMove(compiled, mv), Steps: state.Gestures(compiled, mv)}
 	}
 	return out
 }

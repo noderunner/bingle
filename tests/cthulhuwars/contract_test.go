@@ -76,7 +76,7 @@ func checkEngineContract(t *testing.T, g *catalog.CompiledGame, games, plies int
 		}
 		seat := state.FirstSeat(g)
 		for ply := 0; ply < plies; ply++ {
-			legal := state.LegalMoves(g, st, seat)
+			legal := state.LegalSelections(g, st, seat)
 			if len(legal) == 0 {
 				t.Fatalf("game %d ply %d: seat %d has no moves\n%s", n, ply, seat, state.RenderText(g, st))
 			}
@@ -100,7 +100,7 @@ func checkEngineContract(t *testing.T, g *catalog.CompiledGame, games, plies int
 			if marshal(t, re) != doc {
 				t.Fatalf("game %d ply %d: document does not round-trip", n, ply)
 			}
-			if got := state.LegalMoves(g, re, seat); len(got) != len(legal) {
+			if got := state.LegalSelections(g, re, seat); len(got) != len(legal) {
 				t.Fatalf("game %d ply %d: decoded position has %d moves, original %d", n, ply, len(got), len(legal))
 			}
 
@@ -114,12 +114,12 @@ func checkEngineContract(t *testing.T, g *catalog.CompiledGame, games, plies int
 				if _, ok := space.ID(s); !ok {
 					t.Fatalf("game %d ply %d: %s is not in the action space", n, ply, s)
 				}
-				steps := state.Steps(g, mv)
+				steps := state.Gestures(g, mv)
 				if len(steps) == 0 {
 					t.Fatalf("%s has no steps", s)
 				}
 				for _, sp := range steps {
-					if sp.Kind == state.StepAction && !labelled[sp.Value] {
+					if sp.Kind == state.GestureAction && !labelled[sp.Value] {
 						t.Fatalf("%s uses action %q that has no label", s, sp.Value)
 					}
 				}
@@ -268,7 +268,7 @@ func TestSameSeedSameMovesSamePositions(t *testing.T) {
 		seat := state.FirstSeat(g)
 		var docs []string
 		for ply := 0; ply < 160; ply++ {
-			legal := state.LegalMoves(g, st, seat)
+			legal := state.LegalSelections(g, st, seat)
 			res, err := state.Apply(g, st, seat, legal[rng.Intn(len(legal))])
 			if err != nil {
 				t.Fatal(err)

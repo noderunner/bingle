@@ -99,12 +99,12 @@ func offset(seat int, m [2]int) (int, int) {
 	return -m[0], -m[1]
 }
 
-func (e *eng) legal(seat int) []state.Move {
+func (e *eng) legal(seat int) []state.Selection {
 	if e.d.Turn == 0 {
 		return nil
 	}
 	hand := e.d.Hands[seat-1]
-	var out []state.Move
+	var out []state.Selection
 	for _, id := range hand {
 		card, ok := cardByID(id)
 		if !ok {
@@ -124,7 +124,7 @@ func (e *eng) legal(seat int) []state.Move {
 				if q := e.b[to]; q != nil && q.seat == seat {
 					continue
 				}
-				out = append(out, state.Move{Action: actMove, Piece: id, From: board.PositionID(cellName(c)), To: board.PositionID(cellName(to))})
+				out = append(out, state.Selection{Action: actMove, Piece: id, From: board.PositionID(cellName(c)), To: board.PositionID(cellName(to))})
 			}
 		}
 	}
@@ -133,7 +133,7 @@ func (e *eng) legal(seat int) []state.Move {
 	}
 	// Nothing can move: the turn passes, but a card is still exchanged.
 	for _, id := range hand {
-		out = append(out, state.Move{Action: actPass, Piece: id})
+		out = append(out, state.Selection{Action: actPass, Piece: id})
 	}
 	return out
 }
@@ -257,7 +257,7 @@ func (rs *Ruleset) Validate(game *catalog.CompiledGame, st *state.BoardState) er
 }
 
 // Legal lists the moves of seat.
-func (rs *Ruleset) Legal(game *catalog.CompiledGame, st *state.BoardState, seat int) []state.Move {
+func (rs *Ruleset) Legal(game *catalog.CompiledGame, st *state.BoardState, seat int) []state.Selection {
 	d, err := dataOf(st)
 	if err != nil || d.Turn == 0 || seat != d.Turn {
 		return nil
@@ -266,7 +266,7 @@ func (rs *Ruleset) Legal(game *catalog.CompiledGame, st *state.BoardState, seat 
 }
 
 // Apply plays one turn.
-func (rs *Ruleset) Apply(game *catalog.CompiledGame, st *state.BoardState, seat int, mv state.Move) (*state.MoveResult, error) {
+func (rs *Ruleset) Apply(game *catalog.CompiledGame, st *state.BoardState, seat int, mv state.Selection) (*state.MoveResult, error) {
 	d, err := dataOf(st)
 	if err != nil {
 		return nil, err
@@ -279,7 +279,7 @@ func (rs *Ruleset) Apply(game *catalog.CompiledGame, st *state.BoardState, seat 
 	}
 	e := newEng(st, d)
 	want := rs.Format(game, mv)
-	var legal state.Move
+	var legal state.Selection
 	found := false
 	for _, cand := range e.legal(seat) {
 		if rs.Format(game, cand) == want {
@@ -322,7 +322,7 @@ func (e *eng) say(format string, args ...any) {
 
 func (e *eng) ev() []string { return e.d.Events }
 
-func (e *eng) execute(mv state.Move, seat int) {
+func (e *eng) execute(mv state.Selection, seat int) {
 	d := e.d
 	d.Events = nil
 	card, _ := cardByID(mv.Piece)

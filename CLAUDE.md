@@ -113,8 +113,9 @@ code, docs, API paths and names.
 - A **gesture** is one thing a player does in an interface: a click, a tap, a drag, a key, Submit or Back. The rules
   never depend on gestures.
 - *Step* is none of these: it keeps the DSL's `step` action, a tutorial's steps and a training environment's step.
-- The code predates ADR 0114 in places: until its first phase, `state.Move` is one selection, `state.Step` is gesture
-  data, and the Go games send each selection as a move of its own.
+- In Go, `state.Selection` is one selection, `state.Move` the selections of one impulse and `state.Gesture` one
+  gesture. Until the rest of ADR 0114's first phase, the API and MCP keep older names in places: `moves/legal`,
+  `legal-moves`, the `steps` field, `get_legal_moves`, `auto_play_turn`.
 
 A game's own rules and its players' words keep their terms.
 

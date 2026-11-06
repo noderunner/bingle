@@ -19,7 +19,7 @@ import (
 //	a1^c1x^e3c   a chain of jumps, each with its own choice
 
 // Format renders mv.
-func (rs *Ruleset) Format(game *catalog.CompiledGame, mv state.Move) string {
+func (rs *Ruleset) Format(game *catalog.CompiledGame, mv state.Selection) string {
 	switch mv.Action {
 	case actMove:
 		s := fmt.Sprintf("%s-%s", mv.From, mv.To)
@@ -48,10 +48,10 @@ func (rs *Ruleset) Format(game *catalog.CompiledGame, mv state.Move) string {
 }
 
 // Parse reads notation produced by Format (case-insensitively).
-func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Move, error) {
+func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Selection, error) {
 	t := strings.ToLower(strings.TrimSpace(text))
-	bad := func(why string) (state.Move, error) {
-		return state.Move{}, fmt.Errorf("fist: cannot read %q as a move (%s)", text, why)
+	bad := func(why string) (state.Selection, error) {
+		return state.Selection{}, fmt.Errorf("fist: cannot read %q as a move (%s)", text, why)
 	}
 	square := func(s string) (board.PositionID, bool) {
 		id := board.PositionID(s)
@@ -67,7 +67,7 @@ func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Move, e
 		if !ok {
 			return bad("unknown square " + parts[0])
 		}
-		mv := state.Move{Action: actJump, From: from}
+		mv := state.Selection{Action: actJump, From: from}
 		for _, leg := range parts[1:] {
 			drop := jumpSpare
 			switch {
@@ -106,7 +106,7 @@ func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Move, e
 	if !ok {
 		return bad("unknown square " + rest)
 	}
-	mv := state.Move{Action: actMove, From: from, To: to}
+	mv := state.Selection{Action: actMove, From: from, To: to}
 	if aim != "" {
 		a, ok := square(aim)
 		if !ok {
@@ -126,20 +126,22 @@ const (
 	stepEnd     = "end"
 )
 
-// Steps decomposes a move into clicks: the piece, then where it goes; a step
+// Gestures decomposes a move into clicks: the piece, then where it goes; a step
 // ends with the square pinned or the choice "move"; a chain gives each
 // landing square and what happens to the piece jumped, then "end".
-func (rs *Ruleset) Steps(game *catalog.CompiledGame, mv state.Move) []state.Step {
-	pos := func(id board.PositionID) state.Step { return state.Step{Kind: state.StepPos, Value: string(id)} }
-	act := func(id string) state.Step { return state.Step{Kind: state.StepAction, Value: id} }
+func (rs *Ruleset) Gestures(game *catalog.CompiledGame, mv state.Selection) []state.Gesture {
+	pos := func(id board.PositionID) state.Gesture {
+		return state.Gesture{Kind: state.GesturePos, Value: string(id)}
+	}
+	act := func(id string) state.Gesture { return state.Gesture{Kind: state.GestureAction, Value: id} }
 	switch mv.Action {
 	case actMove:
 		if mv.Aim != "" {
-			return []state.Step{pos(mv.From), pos(mv.To), pos(mv.Aim)}
+			return []state.Gesture{pos(mv.From), pos(mv.To), pos(mv.Aim)}
 		}
-		return []state.Step{pos(mv.From), pos(mv.To), act(stepPlain)}
+		return []state.Gesture{pos(mv.From), pos(mv.To), act(stepPlain)}
 	case actJump:
-		out := []state.Step{pos(mv.From)}
+		out := []state.Gesture{pos(mv.From)}
 		for i, p := range mv.Path {
 			out = append(out, pos(p))
 			switch mv.Drops[i] {

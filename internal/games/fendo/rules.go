@@ -191,7 +191,7 @@ func (e *eng) fenceLegal(i, d int) bool {
 }
 
 // legal lists the moves of the seat to move.
-func (e *eng) legal() []state.Move {
+func (e *eng) legal() []state.Selection {
 	d := e.d
 	if d.Turn == 0 {
 		return nil
@@ -201,7 +201,7 @@ func (e *eng) legal() []state.Move {
 	for _, c := range e.openArea() {
 		inOpen[c] = true
 	}
-	var out []state.Move
+	var out []state.Selection
 	for i := range e.occ {
 		if e.occ[i] != seat || !inOpen[i] {
 			continue
@@ -210,7 +210,7 @@ func (e *eng) legal() []state.Move {
 			e.occ[i], e.occ[to] = 0, seat
 			for side := 0; side < 4; side++ {
 				if e.fenceLegal(to, side) {
-					out = append(out, state.Move{Action: actMove, From: e.g.ids[i], To: e.g.ids[to], Piece: sideLetter[side]})
+					out = append(out, state.Selection{Action: actMove, From: e.g.ids[i], To: e.g.ids[to], Piece: sideLetter[side]})
 				}
 			}
 			e.occ[to], e.occ[i] = 0, seat
@@ -225,13 +225,13 @@ func (e *eng) legal() []state.Move {
 			for _, to := range e.reach(i) {
 				if !seen[to] {
 					seen[to] = true
-					out = append(out, state.Move{Action: actAdd, To: e.g.ids[to]})
+					out = append(out, state.Selection{Action: actAdd, To: e.g.ids[to]})
 				}
 			}
 		}
 	}
 	if len(out) == 0 {
-		out = append(out, state.Move{Action: actPass})
+		out = append(out, state.Selection{Action: actPass})
 	}
 	return out
 }
@@ -265,7 +265,7 @@ func (e *eng) say(format string, args ...any) { e.ev = append(e.ev, fmt.Sprintf(
 func (e *eng) majority() int { return e.game.ParamInt("majority", 0) }
 
 // execute plays a legal move and settles whether the game is over.
-func (e *eng) execute(mv state.Move, seat int) {
+func (e *eng) execute(mv state.Selection, seat int) {
 	d := e.d
 	switch mv.Action {
 	case actMove:
@@ -391,7 +391,7 @@ func (rs *Ruleset) Validate(game *catalog.CompiledGame, st *state.BoardState) er
 }
 
 // Legal lists the moves of seat.
-func (rs *Ruleset) Legal(game *catalog.CompiledGame, st *state.BoardState, seat int) []state.Move {
+func (rs *Ruleset) Legal(game *catalog.CompiledGame, st *state.BoardState, seat int) []state.Selection {
 	d, err := dataOf(st)
 	if err != nil || d.Turn == 0 || seat != d.Turn {
 		return nil
@@ -400,7 +400,7 @@ func (rs *Ruleset) Legal(game *catalog.CompiledGame, st *state.BoardState, seat 
 }
 
 // Apply plays one decision.
-func (rs *Ruleset) Apply(game *catalog.CompiledGame, st *state.BoardState, seat int, mv state.Move) (*state.MoveResult, error) {
+func (rs *Ruleset) Apply(game *catalog.CompiledGame, st *state.BoardState, seat int, mv state.Selection) (*state.MoveResult, error) {
 	d, err := dataOf(st)
 	if err != nil {
 		return nil, err
@@ -413,7 +413,7 @@ func (rs *Ruleset) Apply(game *catalog.CompiledGame, st *state.BoardState, seat 
 	}
 	e := newEng(game, st, d)
 	want := rs.Format(game, mv)
-	var legal state.Move
+	var legal state.Selection
 	found := false
 	for _, cand := range e.legal() {
 		if rs.Format(game, cand) == want {

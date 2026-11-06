@@ -21,7 +21,7 @@ const SelectionSeparator = "; "
 // IsPieSwap reports whether mv is the pie-rule swap of a game played with the
 // rule: the seats' occupants exchange, so whoever chooses next is somebody else
 // even though the seat on impulse may be the same.
-func IsPieSwap(game *catalog.CompiledGame, mv Move) bool {
+func IsPieSwap(game *catalog.CompiledGame, mv Selection) bool {
 	return catalog.PieRuleOn(game.Definition) && mv.Action == catalog.ActionSwap
 }
 
@@ -31,7 +31,7 @@ func IsPieSwap(game *catalog.CompiledGame, mv Move) bool {
 // the selection showed the seat something it could not know before (a roll, a
 // draw, a card turned up: the ruleset's UndoGuard). It depends on the position
 // and the rules alone, never on a seat's settings.
-func ImpulseEnds(game *catalog.CompiledGame, before *BoardState, seat int, mv Move, res *MoveResult) bool {
+func ImpulseEnds(game *catalog.CompiledGame, before *BoardState, seat int, mv Selection, res *MoveResult) bool {
 	return res.GameEnded || res.NextImpulseSeat != seat || IsPieSwap(game, mv) ||
 		!CanTakeBack(game, before, res.NewState)
 }
@@ -53,7 +53,7 @@ var ErrImpulseOver = errors.New("state: the impulse is already over")
 // Selections is what may come next in an impulse after the selections made.
 type Selections struct {
 	// Options are the legal next selections; empty when Complete.
-	Options []Move
+	Options []Selection
 	// MayEnd says the selections made may be submitted as they are although
 	// Options go on: only in a game for one seat (AnySelectionMayEnd), and
 	// never before a first selection.
@@ -69,7 +69,7 @@ type Selections struct {
 
 // NextSelections lists what seat may select after the selections made, from
 // st. It is pure and deterministic, like Legal; nothing is stored.
-func NextSelections(game *catalog.CompiledGame, st *BoardState, seat int, made []Move) (Selections, error) {
+func NextSelections(game *catalog.CompiledGame, st *BoardState, seat int, made Move) (Selections, error) {
 	cur := st
 	for i, mv := range made {
 		res, err := Apply(game, cur, seat, mv)
@@ -84,7 +84,7 @@ func NextSelections(game *catalog.CompiledGame, st *BoardState, seat int, made [
 		}
 		cur = res.NewState
 	}
-	return Selections{Options: LegalMoves(game, cur, seat), Position: cur,
+	return Selections{Options: LegalSelections(game, cur, seat), Position: cur,
 		MayEnd: len(made) > 0 && AnySelectionMayEnd(game)}, nil
 }
 
@@ -101,7 +101,7 @@ func (r *ImpulseResult) Last() *MoveResult { return r.Selections[len(r.Selection
 // ApplyImpulse applies a whole impulse: every selection but the last must keep
 // it open, and the last must end it (in a game for one seat it may stop
 // anywhere). Nothing is applied unless all are.
-func ApplyImpulse(game *catalog.CompiledGame, st *BoardState, seat int, sels []Move) (*ImpulseResult, error) {
+func ApplyImpulse(game *catalog.CompiledGame, st *BoardState, seat int, sels Move) (*ImpulseResult, error) {
 	if len(sels) == 0 {
 		return nil, ErrImpulseOpen
 	}
@@ -126,7 +126,7 @@ func ApplyImpulse(game *catalog.CompiledGame, st *BoardState, seat int, sels []M
 }
 
 // FormatImpulse writes an impulse's selections as one move's notation.
-func FormatImpulse(game *catalog.CompiledGame, sels []Move) string {
+func FormatImpulse(game *catalog.CompiledGame, sels Move) string {
 	parts := make([]string, len(sels))
 	for i, mv := range sels {
 		parts[i] = FormatMove(game, mv)
@@ -135,8 +135,8 @@ func FormatImpulse(game *catalog.CompiledGame, sels []Move) string {
 }
 
 // ParseImpulse reads a move's notation into its selections.
-func ParseImpulse(game *catalog.CompiledGame, text string) ([]Move, error) {
-	var out []Move
+func ParseImpulse(game *catalog.CompiledGame, text string) (Move, error) {
+	var out Move
 	for i, part := range strings.Split(text, strings.TrimSpace(SelectionSeparator)) {
 		part = strings.TrimSpace(part)
 		if part == "" {

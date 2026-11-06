@@ -174,7 +174,7 @@ func TestCardsAreExchangedWithTheSide(t *testing.T) {
 	if res.NextImpulseSeat != 2 {
 		t.Error("then Blue moves")
 	}
-	if _, err := onitama.New().Apply(g, st, 2, state.Move{Action: "move", Piece: "ox", From: "c5", To: "c4"}); err == nil {
+	if _, err := onitama.New().Apply(g, st, 2, state.Selection{Action: "move", Piece: "ox", From: "c5", To: "c4"}); err == nil {
 		t.Error("Blue does not hold the Ox card")
 	}
 }

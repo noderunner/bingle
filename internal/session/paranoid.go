@@ -35,7 +35,7 @@ func (m *Manager) checkParanoid(ctx context.Context, compiled *catalog.CompiledG
 	// kind says which impossible thing it was, and after is the position to
 	// hand the replay — the one before the move for a check about the move,
 	// the one after it for a check about the result.
-	fail := func(what string, kind repro.Kind, pos *state.BoardState, mv *state.Move, extra ...slog.Attr) {
+	fail := func(what string, kind repro.Kind, pos *state.BoardState, mv *state.Selection, extra ...slog.Attr) {
 		attrs := append([]slog.Attr{
 			slog.String("check", what),
 			slog.String("game", gameFamily(compiled)),
@@ -58,7 +58,7 @@ func (m *Manager) checkParanoid(ctx context.Context, compiled *catalog.CompiledG
 	//    a game unplayable in a way nobody can reproduce.
 	listed := false
 	want := result.Move.Key()
-	for _, mv := range state.LegalMoves(compiled, before, seat) {
+	for _, mv := range state.LegalSelections(compiled, before, seat) {
 		if mv.Key() == want {
 			listed = true
 			break

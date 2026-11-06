@@ -54,14 +54,14 @@ func TestEveryGameStaysConsistentInRandomPlay(t *testing.T) {
 			for game := 0; game < 2; game++ {
 				st, seat := state.InitialState(g), state.FirstSeat(g)
 				for ply := 0; ply < budget; ply++ {
-					legal := state.LegalMoves(g, st, seat)
+					legal := state.LegalSelections(g, st, seat)
 					if len(legal) == 0 {
 						break
 					}
 					// Check a bounded sample of the legal moves each ply.
 					sample := legal
 					if len(sample) > 12 {
-						sample = make([]state.Move, 12)
+						sample = make([]state.Selection, 12)
 						for i := range sample {
 							sample[i] = legal[rng.Intn(len(legal))]
 						}
@@ -135,7 +135,7 @@ func TestEveryGameStaysConsistentInRandomPlay(t *testing.T) {
 func TestEveryGameHasAPlayableStart(t *testing.T) {
 	for _, g := range allGames(t) {
 		st, seat := state.InitialState(g), state.FirstSeat(g)
-		if len(state.LegalMoves(g, st, seat)) == 0 {
+		if len(state.LegalSelections(g, st, seat)) == 0 {
 			t.Errorf("%s: no legal first move for seat %d", g.Definition.ID, seat)
 		}
 		if out, err := state.Evaluate(g, st, seat); err == nil && out.Ended && g.Definition.WinCondition.Type == "rules" {
@@ -169,7 +169,7 @@ func FuzzApplyAnyMoveToAnyGame(f *testing.F) {
 		rng := rand.New(rand.NewSource(int64(i) + 1))
 		st, seat := state.InitialState(g), state.FirstSeat(g)
 		for ply := 0; ply < 12; ply++ {
-			legal := state.LegalMoves(g, st, seat)
+			legal := state.LegalSelections(g, st, seat)
 			if len(legal) == 0 {
 				break
 			}
@@ -185,7 +185,7 @@ func FuzzApplyAnyMoveToAnyGame(f *testing.F) {
 	f.Fuzz(func(t *testing.T, idx uint8, action, piece, from, to, aim string, count int) {
 		i := int(idx) % len(games)
 		g, p := games[i], positions[i]
-		mv := state.Move{
+		mv := state.Selection{
 			Action: action, Piece: piece, From: board.PositionID(from), To: board.PositionID(to),
 			Aim: board.PositionID(aim), Count: count,
 		}
@@ -195,7 +195,7 @@ func FuzzApplyAnyMoveToAnyGame(f *testing.F) {
 		}
 		// Accepted: it must appear in the enumeration under its notation.
 		want := state.FormatMove(g, res.Move)
-		for _, lm := range state.LegalMoves(g, p.st, p.seat) {
+		for _, lm := range state.LegalSelections(g, p.st, p.seat) {
 			if state.FormatMove(g, lm) == want {
 				return
 			}
@@ -239,7 +239,7 @@ func TestEveryRulesetSaysWhatTheImpulseIs(t *testing.T) {
 						t.Fatalf("ply %d: the impulse names the seat: %q", ply, text)
 					}
 				}
-				moves := state.LegalMoves(g, st, seat)
+				moves := state.LegalSelections(g, st, seat)
 				if len(moves) == 0 {
 					return
 				}

@@ -32,7 +32,7 @@ func TestTakActionSpaceCoversRandomGames(t *testing.T) {
 		for n := 0; n < games; n++ {
 			st, seat := state.InitialState(g), 1
 			for ply := 0; ply < 200; ply++ {
-				legal := state.LegalMoves(g, st, seat)
+				legal := state.LegalSelections(g, st, seat)
 				if len(legal) == 0 {
 					break
 				}

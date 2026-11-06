@@ -281,7 +281,7 @@ func (rs *Ruleset) Redact(game *catalog.CompiledGame, st *state.BoardState, view
 }
 
 // RedactMove: nothing in a move record is secret in this game.
-func (rs *Ruleset) RedactMove(game *catalog.CompiledGame, st *state.BoardState, mv state.Move, notation string) (state.Move, string) {
+func (rs *Ruleset) RedactMove(game *catalog.CompiledGame, st *state.BoardState, mv state.Selection, notation string) (state.Selection, string) {
 	return mv, notation
 }
 
@@ -521,7 +521,7 @@ func (e *eng) battleAbilities(b *Battle) []BattleAbilityView {
 	d := e.d
 	var stage string
 	var seats []int
-	var moves func(int) []state.Move
+	var moves func(int) []state.Selection
 	switch b.Step {
 	case "pre":
 		stage, seats, moves = stagePre, []int{b.Att, b.Def}, e.preMoves
@@ -588,7 +588,7 @@ func battlePromptAbility(p Prompt) (string, int) {
 }
 
 // battleMoveAbility names the battle ability a move of the Pre- or Post-Battle step uses.
-func battleMoveAbility(mv state.Move) string {
+func battleMoveAbility(mv state.Selection) string {
 	switch mv.Action {
 	case actAbsorb:
 		return "Absorb"
@@ -1119,8 +1119,8 @@ func (e *eng) actionCosts() map[string]int {
 	out := map[string]int{}
 	rs := New()
 	for _, mv := range e.legal() {
-		steps := rs.Steps(e.game, mv)
-		if len(steps) == 0 || steps[0].Kind != state.StepAction || mv.Action == actBuy || mv.Action == actWalk {
+		steps := rs.Gestures(e.game, mv)
+		if len(steps) == 0 || steps[0].Kind != state.GestureAction || mv.Action == actBuy || mv.Action == actWalk {
 			continue
 		}
 		c := e.moveCost(seat, mv)
@@ -1538,7 +1538,7 @@ func (rs *Ruleset) RepeatKey(game *catalog.CompiledGame, st *state.BoardState, s
 }
 
 // Repositions: moving a unit and taking or giving up a Gate only rearrange.
-func (rs *Ruleset) Repositions(mv state.Move) bool {
+func (rs *Ruleset) Repositions(mv state.Selection) bool {
 	switch mv.Action {
 	case actGo, actLeave, actControl, actAbandon:
 		return true

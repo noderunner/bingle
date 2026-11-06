@@ -78,7 +78,7 @@ func TestOpeningPlacesOpponentFlat(t *testing.T) {
 	reject(t, g, state.InitialState(g), 1, "Cc3")
 
 	// Exactly 25 moves in the opening: one flat per square.
-	if n := len(state.LegalMoves(g, state.InitialState(g), 1)); n != 25 {
+	if n := len(state.LegalSelections(g, state.InitialState(g), 1)); n != 25 {
 		t.Errorf("opening legal moves = %d, want 25", n)
 	}
 }

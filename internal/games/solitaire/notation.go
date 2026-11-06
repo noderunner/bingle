@@ -12,10 +12,10 @@ import (
 const actMove = "move"
 
 // Format writes a move: it is its own notation.
-func (rs *Ruleset) Format(game *catalog.CompiledGame, mv state.Move) string { return mv.Piece }
+func (rs *Ruleset) Format(game *catalog.CompiledGame, mv state.Selection) string { return mv.Piece }
 
 // Parse reads the notation Format writes.
-func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Move, error) {
+func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Selection, error) {
 	t := strings.ToLower(strings.TrimSpace(text))
 	var err error
 	if game.ParamString("mode", modeKlondike) == modeBowling {
@@ -26,22 +26,22 @@ func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Move, e
 		err = validPatience(t)
 	}
 	if err != nil {
-		return state.Move{}, fmt.Errorf("solitaire: cannot read %q as a move (%w)", text, err)
+		return state.Selection{}, fmt.Errorf("solitaire: cannot read %q as a move (%w)", text, err)
 	}
-	return state.Move{Action: actMove, Piece: t}, nil
+	return state.Selection{Action: actMove, Piece: t}, nil
 }
 
-// Steps are the clicks of a move. A card game's page turns them into clicks on the
+// Gestures are the clicks of a move. A card game's page turns them into clicks on the
 // table: the cards to lift and where they go, or the pins and then the ball.
-func (rs *Ruleset) Steps(game *catalog.CompiledGame, mv state.Move) []state.Step {
-	act := func(v string) state.Step { return state.Step{Kind: state.StepAction, Value: v} }
+func (rs *Ruleset) Gestures(game *catalog.CompiledGame, mv state.Selection) []state.Gesture {
+	act := func(v string) state.Gesture { return state.Gesture{Kind: state.GestureAction, Value: v} }
 	m := mv.Piece
 	switch m {
 	case moveDraw, moveRecycle, moveDeal, moveFinish, moveEnd:
-		return []state.Step{act(m)}
+		return []state.Gesture{act(m)}
 	}
 	if group, ball, ok := parsePlay(m); ok {
-		steps := make([]state.Step, 0, len(group)+1)
+		steps := make([]state.Gesture, 0, len(group)+1)
 		for i := 0; i < len(group); i++ {
 			steps = append(steps, act("pin-"+group[i:i+1]))
 		}
@@ -49,7 +49,7 @@ func (rs *Ruleset) Steps(game *catalog.CompiledGame, mv state.Move) []state.Step
 	}
 	from, to, _ := strings.Cut(m, "-")
 	pile, n := parseFrom(from)
-	return []state.Step{act(fmt.Sprintf("from-%s-%d", pile, n)), act("to-" + to)}
+	return []state.Gesture{act(fmt.Sprintf("from-%s-%d", pile, n)), act("to-" + to)}
 }
 
 // Describe labels the decisions for clients.

@@ -86,13 +86,13 @@ func (e *eng) cathedralCost(a int) int {
 }
 
 // ancientsTurnMoves lists the Actions only the Ancients have.
-func (e *eng) ancientsTurnMoves(seat int) []state.Move {
+func (e *eng) ancientsTurnMoves(seat int) []state.Selection {
 	d := e.d
 	if !e.is(seat, facAN) {
 		return nil
 	}
-	var out []state.Move
-	add := func(mv state.Move) {
+	var out []state.Selection
+	add := func(mv state.Selection) {
 		if d.Power[seat] >= e.cardActCost(mv) {
 			out = append(out, mv)
 		}
@@ -100,15 +100,15 @@ func (e *eng) ancientsTurnMoves(seat int) []state.Move {
 	if len(d.Cathedrals) < maxCathedrals {
 		for a := range e.m.ids {
 			if e.cultists(a, seat) > 0 && !e.hasCathedral(a) {
-				add(state.Move{Action: actCard, Piece: "cathedral", To: e.m.ids[a]})
+				add(state.Selection{Action: actCard, Piece: "cathedral", To: e.m.ids[a]})
 			}
 		}
 	}
 	if !d.reqDone(seat, rqANLowest) {
-		add(state.Move{Action: actCard, Piece: "an-lowest"})
+		add(state.Selection{Action: actCard, Piece: "an-lowest"})
 	}
 	if !d.reqDone(seat, rqANHighest) {
-		add(state.Move{Action: actCard, Piece: "an-highest"})
+		add(state.Selection{Action: actCard, Piece: "an-highest"})
 	}
 	return out
 }
@@ -198,7 +198,7 @@ func (e *eng) worshipServices() {
 
 // unholyMoves lists the Cathedrals the Ancients may give up after a battle in an
 // area with one, to have an enemy Great Old One in it Eliminated.
-func (e *eng) unholyMoves(seat int) []state.Move {
+func (e *eng) unholyMoves(seat int) []state.Selection {
 	d := e.d
 	b := d.Bat
 	if !e.is(seat, facAN) || !d.hasBook(seat, bkUnholy) || b == nil {
@@ -208,15 +208,15 @@ func (e *eng) unholyMoves(seat int) []state.Move {
 	if !e.hasCathedral(a) || e.classCount(a, b.foeOf(seat), classGOO) == 0 {
 		return nil
 	}
-	var out []state.Move
+	var out []state.Selection
 	for _, id := range d.Cathedrals {
-		out = append(out, state.Move{Action: actCard, Piece: "unholy", To: board.PositionID(id)})
+		out = append(out, state.Selection{Action: actCard, Piece: "unholy", To: board.PositionID(id)})
 	}
 	return out
 }
 
 // unholy gives up a Cathedral and Eliminates the enemy's Great Old One.
-func (e *eng) unholy(seat int, mv state.Move) {
+func (e *eng) unholy(seat int, mv state.Selection) {
 	d := e.d
 	b := d.Bat
 	a := e.areaIdx(b.Area)
@@ -243,14 +243,14 @@ func (e *eng) unholy(seat int, mv state.Move) {
 }
 
 // dematMoves lists the areas the Ancients may relocate units from in their Doom turn.
-func (e *eng) dematMoves(seat int) []state.Move {
+func (e *eng) dematMoves(seat int) []state.Selection {
 	if !e.is(seat, facAN) || e.d.Doomx == nil || e.d.Doomx.Demat {
 		return nil
 	}
-	var out []state.Move
+	var out []state.Selection
 	for a := range e.m.ids {
 		if e.dematUnits(a, seat) > 0 {
-			out = append(out, state.Move{Action: actCard, Piece: "demat", To: e.m.ids[a]})
+			out = append(out, state.Selection{Action: actCard, Piece: "demat", To: e.m.ids[a]})
 		}
 	}
 	return out

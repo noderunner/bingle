@@ -74,9 +74,9 @@ func (e *eng) emptyAreas() []int {
 // with a cost of 3 or more, in an area with a Gate and no enemy Great Old One,
 // goes with that Gate (and whoever controls it) to an area without a Gate.
 // Yog-Sothoth is a Gate for everything but this.
-func (e *eng) beyondMoves(seat int) []state.Move {
+func (e *eng) beyondMoves(seat int) []state.Selection {
 	d := e.d
-	var out []state.Move
+	var out []state.Selection
 	var free []int
 	for a := range e.m.ids {
 		if _, ok := d.Gates[e.areaID(a)]; !ok {
@@ -102,7 +102,7 @@ func (e *eng) beyondMoves(seat int) []state.Move {
 				continue
 			}
 			for _, to := range free {
-				out = append(out, state.Move{Action: actBeyond, Piece: typ, From: e.m.ids[a], To: e.m.ids[to]})
+				out = append(out, state.Selection{Action: actBeyond, Piece: typ, From: e.m.ids[a], To: e.m.ids[to]})
 			}
 		}
 	}
@@ -110,7 +110,7 @@ func (e *eng) beyondMoves(seat int) []state.Move {
 }
 
 // beyond moves the unit, the Gate and the unit that controls it.
-func (e *eng) beyond(seat int, mv state.Move) {
+func (e *eng) beyond(seat int, mv state.Selection) {
 	d := e.d
 	from, to := e.areaIdx(string(mv.From)), e.areaIdx(string(mv.To))
 	fid, tid := e.areaID(from), e.areaID(to)
@@ -142,15 +142,15 @@ func (e *eng) beyond(seat int, mv state.Move) {
 func (d *Data) spent(seat, bit int) bool { return has(d.Used[seat], bit) }
 
 // ascendMoves: once only, set Power to an enemy's (only when it is more).
-func (e *eng) ascendMoves(seat int) []state.Move {
+func (e *eng) ascendMoves(seat int) []state.Selection {
 	d := e.d
 	if !d.hasBook(seat, bkAscend) || !e.is(seat, facOW) || d.spent(seat, 0) {
 		return nil
 	}
-	var out []state.Move
+	var out []state.Selection
 	for _, o := range e.others(seat) {
 		if d.Power[o] > d.Power[seat] {
-			out = append(out, state.Move{Action: actAscend, Count: o})
+			out = append(out, state.Selection{Action: actAscend, Count: o})
 		}
 	}
 	return out
@@ -172,7 +172,7 @@ func (e *eng) descendAvailable(seat int) bool {
 // --- Channel Power ---------------------------------------------------------------------------------
 
 // channelMoves: pay 1 Power to reroll every die that was not a Kill or a Pain.
-func (e *eng) channelMoves(seat int) []state.Move {
+func (e *eng) channelMoves(seat int) []state.Selection {
 	d := e.d
 	b := d.Bat
 	if b == nil || !e.is(seat, facOW) || !d.hasBook(seat, bkChannel) || d.Power[seat] < 1 {
@@ -180,7 +180,7 @@ func (e *eng) channelMoves(seat int) []state.Move {
 	}
 	for _, v := range b.Dice[seat] {
 		if v < 4 {
-			return []state.Move{{Action: actChannel}, {Action: actDone}}
+			return []state.Selection{{Action: actChannel}, {Action: actDone}}
 		}
 	}
 	return nil
@@ -212,21 +212,21 @@ var upgradeOf = map[string]string{uCultist: uMutant, uMutant: uAbom, uAbom: uSpa
 // upgradeMoves lists the replacements the Opener may make in the battle: an
 // Acolyte, Mutant or Abomination for the next kind up (when one is in the
 // pool), a Spawn for as many Mutants as it likes from the pool.
-func (e *eng) upgradeMoves(seat int) []state.Move {
+func (e *eng) upgradeMoves(seat int) []state.Selection {
 	d := e.d
 	b := d.Bat
 	if b == nil || !e.is(seat, facOW) || !d.hasBook(seat, bkMillion) {
 		return nil
 	}
-	var out []state.Move
+	var out []state.Selection
 	for from, to := range upgradeOf {
 		if e.battleUnits(b, seat, from) > 0 && e.pool(seat, to) > 0 {
-			out = append(out, state.Move{Action: actUpgrade, Piece: from})
+			out = append(out, state.Selection{Action: actUpgrade, Piece: from})
 		}
 	}
 	if e.battleUnits(b, seat, uSpawn) > 0 {
 		for n := 1; n <= e.pool(seat, uMutant); n++ {
-			out = append(out, state.Move{Action: actUpgrade, Piece: uSpawn, Count: n})
+			out = append(out, state.Selection{Action: actUpgrade, Piece: uSpawn, Count: n})
 		}
 	}
 	sort.Slice(out, func(i, j int) bool {
@@ -239,7 +239,7 @@ func (e *eng) upgradeMoves(seat int) []state.Move {
 }
 
 // upgrade replaces one unit; a Spawn is replaced by mv.Count Mutants.
-func (e *eng) upgrade(seat int, mv state.Move) {
+func (e *eng) upgrade(seat int, mv state.Selection) {
 	b := e.d.Bat
 	a := e.areaIdx(b.Area)
 	from := mv.Piece
@@ -358,15 +358,15 @@ func (c *CurseState) clone() *CurseState {
 func (e *eng) curseCount(seat int) int { return e.onMap(seat, uAbom) + e.onMap(seat, uSpawn) }
 
 // curseMoves lists the areas the Opener may curse: any that holds an enemy unit.
-func (e *eng) curseMoves(seat int) []state.Move {
+func (e *eng) curseMoves(seat int) []state.Selection {
 	if !e.d.hasBook(seat, bkCurse) || !e.is(seat, facOW) || e.curseCount(seat) == 0 {
 		return nil
 	}
-	var out []state.Move
+	var out []state.Selection
 	for a := range e.m.ids {
 		for _, o := range e.others(seat) {
 			if e.total(a, o) > 0 {
-				out = append(out, state.Move{Action: actCurse, To: e.m.ids[a]})
+				out = append(out, state.Selection{Action: actCurse, To: e.m.ids[a]})
 				break
 			}
 		}
@@ -489,16 +489,16 @@ func (e *eng) curseHit(typ string) {
 
 // curseMoveMoves lists where the first Pained unit may go: any adjacent area
 // (the Opener chooses, whatever the usual rules of retreating say).
-func (e *eng) curseMoveMoves() []state.Move {
+func (e *eng) curseMoveMoves() []state.Selection {
 	c := e.d.Curse
 	if c == nil || len(c.Pained) == 0 {
 		return nil
 	}
 	p := c.Pained[0]
 	a := e.areaIdx(c.Area)
-	var out []state.Move
+	var out []state.Selection
 	for _, to := range e.m.adj[a] {
-		out = append(out, state.Move{Action: actRetreat, Piece: p.Type, To: e.m.ids[to], Count: p.Seat})
+		out = append(out, state.Selection{Action: actRetreat, Piece: p.Type, To: e.m.ids[to], Count: p.Seat})
 	}
 	return out
 }

@@ -169,7 +169,7 @@ func Replay(cat *catalog.Catalog, b Bundle) (Result, error) {
 		}
 
 	case BatchNoLegalMoves:
-		legal := state.LegalMoves(compiled, st, b.Seat)
+		legal := state.LegalSelections(compiled, st, b.Seat)
 		switch {
 		case len(legal) > 0:
 			res.note("seat %d has %d legal moves now", b.Seat, len(legal))
@@ -250,9 +250,9 @@ func checkPath(cat *catalog.Catalog, compiled *catalog.CompiledGame, b Bundle, w
 }
 
 // bundleMove is the bundle's move, from its structured form or its notation.
-func bundleMove(compiled *catalog.CompiledGame, b Bundle, res *Result) (state.Move, bool) {
+func bundleMove(compiled *catalog.CompiledGame, b Bundle, res *Result) (state.Selection, bool) {
 	if len(b.Move) > 0 {
-		var mv state.Move
+		var mv state.Selection
 		if err := json.Unmarshal(b.Move, &mv); err == nil {
 			return mv, true
 		}
@@ -262,18 +262,18 @@ func bundleMove(compiled *catalog.CompiledGame, b Bundle, res *Result) (state.Mo
 		mv, err := state.ParseMove(compiled, b.Notation)
 		if err != nil {
 			res.note("the bundle's notation %q will not parse: %v", b.Notation, err)
-			return state.Move{}, false
+			return state.Selection{}, false
 		}
 		return mv, true
 	}
-	return state.Move{}, false
+	return state.Selection{}, false
 }
 
 // legalLists reports whether Legal offers mv, by the same key the engine
 // compares moves with.
-func legalLists(compiled *catalog.CompiledGame, st *state.BoardState, seat int, mv state.Move) bool {
+func legalLists(compiled *catalog.CompiledGame, st *state.BoardState, seat int, mv state.Selection) bool {
 	want := mv.Key()
-	for _, candidate := range state.LegalMoves(compiled, st, seat) {
+	for _, candidate := range state.LegalSelections(compiled, st, seat) {
 		if candidate.Key() == want {
 			return true
 		}
@@ -284,7 +284,7 @@ func legalLists(compiled *catalog.CompiledGame, st *state.BoardState, seat int, 
 // applySafely applies a move and turns a panic into an error, so replaying a
 // bundle whose whole point is a panicking ruleset reports it rather than
 // taking the command down with it.
-func applySafely(compiled *catalog.CompiledGame, st *state.BoardState, seat int, mv state.Move) (res *state.MoveResult, err error) {
+func applySafely(compiled *catalog.CompiledGame, st *state.BoardState, seat int, mv state.Selection) (res *state.MoveResult, err error) {
 	defer func() {
 		if v := recover(); v != nil {
 			err = fmt.Errorf("the ruleset panicked: %v", v)

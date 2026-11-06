@@ -15,7 +15,7 @@ import (
 //	tiger:pass      nothing can move: pass, but still spend the Tiger card
 
 // Format renders mv.
-func (rs *Ruleset) Format(game *catalog.CompiledGame, mv state.Move) string {
+func (rs *Ruleset) Format(game *catalog.CompiledGame, mv state.Selection) string {
 	if mv.Action == actPass {
 		return mv.Piece + ":pass"
 	}
@@ -23,10 +23,10 @@ func (rs *Ruleset) Format(game *catalog.CompiledGame, mv state.Move) string {
 }
 
 // Parse reads notation produced by Format (case-insensitively).
-func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Move, error) {
+func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Selection, error) {
 	t := strings.ToLower(strings.TrimSpace(text))
-	bad := func(why string) (state.Move, error) {
-		return state.Move{}, fmt.Errorf("onitama: cannot read %q as a move (%s)", text, why)
+	bad := func(why string) (state.Selection, error) {
+		return state.Selection{}, fmt.Errorf("onitama: cannot read %q as a move (%s)", text, why)
 	}
 	i := strings.IndexByte(t, ':')
 	if i < 0 {
@@ -37,7 +37,7 @@ func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Move, e
 		return bad("unknown card " + card)
 	}
 	if rest == "pass" {
-		return state.Move{Action: actPass, Piece: card}, nil
+		return state.Selection{Action: actPass, Piece: card}, nil
 	}
 	parts := strings.Split(rest, "-")
 	if len(parts) != 2 {
@@ -53,17 +53,19 @@ func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Move, e
 	if !ok1 || !ok2 {
 		return bad("unknown square")
 	}
-	return state.Move{Action: actMove, Piece: card, From: from, To: to}, nil
+	return state.Selection{Action: actMove, Piece: card, From: from, To: to}, nil
 }
 
-// Steps: choose the card, then the piece and where it goes.
-func (rs *Ruleset) Steps(game *catalog.CompiledGame, mv state.Move) []state.Step {
-	act := func(id string) state.Step { return state.Step{Kind: state.StepAction, Value: id} }
-	pos := func(id board.PositionID) state.Step { return state.Step{Kind: state.StepPos, Value: string(id)} }
-	if mv.Action == actPass {
-		return []state.Step{act("card-" + mv.Piece), act(actPass)}
+// Gestures: choose the card, then the piece and where it goes.
+func (rs *Ruleset) Gestures(game *catalog.CompiledGame, mv state.Selection) []state.Gesture {
+	act := func(id string) state.Gesture { return state.Gesture{Kind: state.GestureAction, Value: id} }
+	pos := func(id board.PositionID) state.Gesture {
+		return state.Gesture{Kind: state.GesturePos, Value: string(id)}
 	}
-	return []state.Step{act("card-" + mv.Piece), pos(mv.From), pos(mv.To)}
+	if mv.Action == actPass {
+		return []state.Gesture{act("card-" + mv.Piece), act(actPass)}
+	}
+	return []state.Gesture{act("card-" + mv.Piece), pos(mv.From), pos(mv.To)}
 }
 
 // Describe labels the decisions for clients.

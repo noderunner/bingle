@@ -729,28 +729,28 @@ func (e *eng) popLoss() {
 	}
 }
 
-func (e *eng) legalPrompt() []state.Move {
+func (e *eng) legalPrompt() []state.Selection {
 	d := e.d
 	if len(d.Prompts) == 0 {
 		return nil
 	}
 	p := d.Prompts[0]
-	var out []state.Move
+	var out []state.Selection
 	switch p.Kind {
 	case "book":
 		taker := bookTaker(p)
 		for _, b := range e.bookChoices(taker, p.Skip-1) {
-			out = append(out, state.Move{Action: actBook, Piece: e.bookSpecOf(taker, b).ID, Count: b + 1})
+			out = append(out, state.Selection{Action: actBook, Piece: e.bookSpecOf(taker, b).ID, Count: b + 1})
 		}
 	case "mao":
 		out = e.maoMoves(p)
 	case "curse-target":
 		for _, s := range e.curseTargets() {
-			out = append(out, state.Move{Action: actCurse, Count: s})
+			out = append(out, state.Selection{Action: actCurse, Count: s})
 		}
 	case "curse-hit":
 		for _, typ := range e.curseVictims() {
-			out = append(out, state.Move{Action: actAssign, Piece: typ})
+			out = append(out, state.Selection{Action: actAssign, Piece: typ})
 		}
 	case "curse-move":
 		out = e.curseMoveMoves()
@@ -761,45 +761,45 @@ func (e *eng) legalPrompt() []state.Move {
 	case "syco":
 		out = e.sycophancyMoves(p)
 	case "channel":
-		out = []state.Move{{Action: actChannel}, {Action: actDone}}
+		out = []state.Selection{{Action: actChannel}, {Action: actDone}}
 	case "undim":
 		out = e.undimMoves(p)
 	case "lose":
 		for _, o := range e.lossOptions(p) {
-			out = append(out, state.Move{Action: actLose, Piece: o.Type, To: e.m.ids[o.Area]})
+			out = append(out, state.Selection{Action: actLose, Piece: o.Type, To: e.m.ids[o.Area]})
 		}
 	case "submerge", "scream":
 		total := 0
 		for _, typ := range e.bringOptions(p) {
-			out = append(out, state.Move{Action: actBring, Piece: typ})
+			out = append(out, state.Selection{Action: actBring, Piece: typ})
 			total += e.count(e.areaIdx(p.Area), p.Seat, typ)
 		}
 		if total > 1 {
-			out = append(out, state.Move{Action: actBring, Piece: bringAll})
+			out = append(out, state.Selection{Action: actBring, Piece: bringAll})
 		}
-		out = append(out, state.Move{Action: actDone})
+		out = append(out, state.Selection{Action: actDone})
 	case "shriek":
 		total := 0
 		for _, a := range e.shriekOptions(p) {
-			out = append(out, state.Move{Action: actBring, Piece: uByak, From: e.m.ids[a]})
+			out = append(out, state.Selection{Action: actBring, Piece: uByak, From: e.m.ids[a]})
 			total += e.count(a, p.Seat, uByak)
 		}
 		if total > 1 {
-			out = append(out, state.Move{Action: actBring, Piece: bringAll})
+			out = append(out, state.Selection{Action: actBring, Piece: bringAll})
 		}
-		out = append(out, state.Move{Action: actDone})
+		out = append(out, state.Selection{Action: actDone})
 	case "avatar":
 		for _, typ := range e.swapOptions(p) {
-			out = append(out, state.Move{Action: actSwap, Piece: typ})
+			out = append(out, state.Selection{Action: actSwap, Piece: typ})
 		}
 	case "desecrate":
 		for _, typ := range e.desecratePieces(p.Seat) {
-			out = append(out, state.Move{Action: actDesecrate, Piece: typ})
+			out = append(out, state.Selection{Action: actDesecrate, Piece: typ})
 		}
 	case "place":
 		for _, s := range e.placeOptions() {
 			for a := range e.m.ids {
-				out = append(out, state.Move{Action: actPlace, To: e.m.ids[a], Count: s})
+				out = append(out, state.Selection{Action: actPlace, To: e.m.ids[a], Count: s})
 			}
 		}
 	case "react":
@@ -807,15 +807,15 @@ func (e *eng) legalPrompt() []state.Move {
 	case "howl":
 		out = e.howlMoves(p)
 	case "eternal":
-		out = []state.Move{{Action: actEternal}, {Action: actDone}}
+		out = []state.Selection{{Action: actEternal}, {Action: actDone}}
 	case "demand":
-		out = []state.Move{{Action: actDemand, Piece: "signs"}, {Action: actDemand, Piece: "pains"}}
+		out = []state.Selection{{Action: actDemand, Piece: "signs"}, {Action: actDemand, Piece: "pains"}}
 	case "restore":
 		for a := range e.m.ids {
-			out = append(out, state.Move{Action: actRestore, To: e.m.ids[a]})
+			out = append(out, state.Selection{Action: actRestore, To: e.m.ids[a]})
 		}
 	case "nexus":
-		out = []state.Move{{Action: actNexus}, {Action: actDone}}
+		out = []state.Selection{{Action: actNexus}, {Action: actDone}}
 	case "card":
 		out = e.cardPromptMoves(p)
 	case "moon":
@@ -832,7 +832,7 @@ func (e *eng) legalPrompt() []state.Move {
 		out = e.spareMoves(p)
 	case "pick":
 		for _, v := range e.pickValues() {
-			out = append(out, state.Move{Action: actPick, Count: v})
+			out = append(out, state.Selection{Action: actPick, Count: v})
 		}
 	case "donate":
 		out = e.donateMoves(p)
@@ -845,7 +845,7 @@ func (e *eng) legalPrompt() []state.Move {
 // bringAll is the Piece of the move that takes every remaining unit along.
 const bringAll = "all"
 
-func (e *eng) doPrompt(seat int, mv state.Move) {
+func (e *eng) doPrompt(seat int, mv state.Selection) {
 	d := e.d
 	p := d.Prompts[0]
 	switch mv.Action {
@@ -981,7 +981,7 @@ func (e *eng) doPrompt(seat int, mv state.Move) {
 
 // bringAlong takes units with Cthulhu (to his faction card) or with the King
 // in Yellow (to the area he walked to).
-func (e *eng) bringAlong(p Prompt, mv state.Move) {
+func (e *eng) bringAlong(p Prompt, mv state.Selection) {
 	d := e.d
 	seat := p.Seat
 	a := e.areaIdx(p.Area)
@@ -1014,7 +1014,7 @@ func (e *eng) bringAlong(p Prompt, mv state.Move) {
 }
 
 // flyByakhee moves one Byakhee (or all of them) to where Shriek calls them.
-func (e *eng) flyByakhee(p Prompt, mv state.Move) {
+func (e *eng) flyByakhee(p Prompt, mv state.Selection) {
 	seat := p.Seat
 	dest := e.areaIdx(p.Area)
 	froms := []int{}
@@ -1100,18 +1100,18 @@ func (e *eng) runThen() {
 
 // --- faction actions ---------------------------------------------------------
 
-func (e *eng) factionActions(seat int, second bool) []state.Move {
+func (e *eng) factionActions(seat int, second bool) []state.Selection {
 	d := e.d
 	p := d.Power[seat]
-	var out []state.Move
-	add := func(m state.Move) {
+	var out []state.Selection
+	add := func(m state.Selection) {
 		if p >= e.moveCost(seat, m) {
 			out = append(out, m)
 		}
 	}
 	// Hibernate: Windwalker's unique ability (and the Sleeper's, borrowed).
 	if e.ability(seat, abHibernate) && !d.Hib[seat] {
-		out = append(out, state.Move{Action: actHibernate})
+		out = append(out, state.Selection{Action: actHibernate})
 	}
 	// The Beyond One (the Opener's, and the Sleeper's when borrowed).
 	if e.ability(seat, abBeyond) {
@@ -1132,12 +1132,12 @@ func (e *eng) factionActions(seat int, second bool) []state.Move {
 		if d.hasBook(seat, bkSubmerge) {
 			if p >= 1 {
 				if a, ok := e.gooArea(seat, uCthulhu); ok && e.m.ocean[a] {
-					out = append(out, state.Move{Action: actSubmerge})
+					out = append(out, state.Selection{Action: actSubmerge})
 				}
 			}
 			if len(d.Away) > 0 {
 				for a := range e.m.ids {
-					add(state.Move{Action: actEmerge, To: e.m.ids[a]})
+					add(state.Selection{Action: actEmerge, To: e.m.ids[a]})
 				}
 			}
 		}
@@ -1145,30 +1145,30 @@ func (e *eng) factionActions(seat int, second bool) []state.Move {
 			for a := range e.m.ids {
 				for _, enemy := range e.others(seat) {
 					if e.count(a, enemy, uCultist) > 0 {
-						add(state.Move{Action: actDreams, To: e.m.ids[a], Count: enemy})
+						add(state.Selection{Action: actDreams, To: e.m.ids[a], Count: enemy})
 					}
 				}
 			}
 		}
 	case facCC:
 		if d.hasBook(seat, bkForms) && !d.FormsUsed && e.onMap(seat, uNyar) > 0 {
-			out = append(out, state.Move{Action: actForms})
+			out = append(out, state.Selection{Action: actForms})
 		}
 		if !d.reqDone(seat, rqCCPay4) && p >= 4 {
-			out = append(out, state.Move{Action: actPay, Count: 4})
+			out = append(out, state.Selection{Action: actPay, Count: 4})
 		}
 		if !d.reqDone(seat, rqCCPay6) && p >= 6 {
-			out = append(out, state.Move{Action: actPay, Count: 6})
+			out = append(out, state.Selection{Action: actPay, Count: 6})
 		}
 		if !d.reqDone(seat, rqCCPay4) && !d.reqDone(seat, rqCCPay6) && p >= 10 {
-			out = append(out, state.Move{Action: actPay, Count: 10})
+			out = append(out, state.Selection{Action: actPay, Count: 10})
 		}
 	case facBG:
 		if d.hasBook(seat, bkGhroth) && p >= 2 {
-			out = append(out, state.Move{Action: actGhroth})
+			out = append(out, state.Selection{Action: actGhroth})
 		}
 		if !d.reqDone(seat, rqBGSac) && e.cultistsInPlay(seat) >= 2 {
-			out = append(out, state.Move{Action: actSacrifice})
+			out = append(out, state.Selection{Action: actSacrifice})
 		}
 		// Avatar: Shub-Niggurath swaps places with a Monster or Cultist of a
 		// faction in another area.
@@ -1179,7 +1179,7 @@ func (e *eng) factionActions(seat int, second bool) []state.Move {
 				}
 				for _, s := range e.playing() {
 					if e.classCount(a, s, classMonster)+e.cultists(a, s) > 0 {
-						add(state.Move{Action: actAvatar, To: e.m.ids[a], Count: s})
+						add(state.Selection{Action: actAvatar, To: e.m.ids[a], Count: s})
 					}
 				}
 			}
@@ -1189,18 +1189,18 @@ func (e *eng) factionActions(seat int, second bool) []state.Move {
 		if king {
 			if d.hasBook(seat, bkScreaming) && p >= 1 && !second {
 				for _, n := range e.m.adj[kingArea] {
-					add(state.Move{Action: actScream, To: e.m.ids[n]})
+					add(state.Selection{Action: actScream, To: e.m.ids[n]})
 				}
 			}
 			// One move: the die is rolled at once; the Monster or Cultist
 			// that is placed whatever the roll was is chosen after it.
 			if !d.Desec[e.areaID(kingArea)] && p >= e.desecrateCost(seat) && !e.mindControlled(kingArea, seat) {
-				out = append(out, state.Move{Action: actDesecrate})
+				out = append(out, state.Selection{Action: actDesecrate})
 			}
 		}
 		if d.hasBook(seat, bkShriek) && p >= 1 && e.onMap(seat, uByak) > 0 {
 			for a := range e.m.ids {
-				add(state.Move{Action: actShriek, To: e.m.ids[a]})
+				add(state.Selection{Action: actShriek, To: e.m.ids[a]})
 			}
 		}
 		if d.hasBook(seat, bkZingaya) && p >= 1 && e.pool(seat, uUndead) > 0 {
@@ -1210,7 +1210,7 @@ func (e *eng) factionActions(seat int, second bool) []state.Move {
 				}
 				for _, enemy := range e.others(seat) {
 					if e.cultists(a, enemy) > 0 {
-						add(state.Move{Action: actZingaya, To: e.m.ids[a], Count: enemy})
+						add(state.Selection{Action: actZingaya, To: e.m.ids[a], Count: enemy})
 					}
 				}
 			}
@@ -1225,7 +1225,7 @@ func (e *eng) factionActions(seat int, second bool) []state.Move {
 						}
 					}
 					if cultist {
-						add(state.Move{Action: actHWINN, To: e.m.ids[a]})
+						add(state.Selection{Action: actHWINN, To: e.m.ids[a]})
 					}
 				}
 			}
@@ -1233,7 +1233,7 @@ func (e *eng) factionActions(seat int, second bool) []state.Move {
 		// The fourth requirement is an action: another player gains 3 Doom.
 		if !d.reqDone(seat, rqYSGift) {
 			for _, other := range e.others(seat) {
-				out = append(out, state.Move{Action: actGrant, Count: other})
+				out = append(out, state.Selection{Action: actGrant, Count: other})
 			}
 		}
 	case facWW:
@@ -1241,27 +1241,27 @@ func (e *eng) factionActions(seat int, second bool) []state.Move {
 		if d.hasBook(seat, bkIceAge) && p >= 1 {
 			for a := range e.m.ids {
 				if e.areaID(a) != d.Ice {
-					add(state.Move{Action: actIceAge, To: e.m.ids[a]})
+					add(state.Selection{Action: actIceAge, To: e.m.ids[a]})
 				}
 			}
 		}
 	case facSL:
 		// Lethargy: do nothing while another player still has Power to spend.
 		if e.onMap(seat, uTsath) > 0 && e.anotherHasPower(seat) {
-			out = append(out, state.Move{Action: actLethargy})
+			out = append(out, state.Selection{Action: actLethargy})
 		}
 		// The first three requirements are Actions of their own.
 		if p >= 3 {
 			if !d.reqDone(seat, rqSLBoon) {
-				out = append(out, state.Move{Action: actBoon})
+				out = append(out, state.Selection{Action: actBoon})
 			}
 			if !d.reqDone(seat, rqSLGift) {
 				for _, other := range e.others(seat) {
-					out = append(out, state.Move{Action: actBestow, Count: other})
+					out = append(out, state.Selection{Action: actBestow, Count: other})
 				}
 			}
 			if !d.reqDone(seat, rqSLBane) {
-				out = append(out, state.Move{Action: actBane})
+				out = append(out, state.Selection{Action: actBane})
 			}
 		}
 		// Ancient Sorcery: a Serpent Man goes onto an enemy's faction card.
@@ -1274,7 +1274,7 @@ func (e *eng) factionActions(seat int, second bool) []state.Move {
 					if e.sorceryOn(enemy) {
 						continue
 					}
-					add(state.Move{Action: actSorcery, To: e.m.ids[a], Count: enemy})
+					add(state.Selection{Action: actSorcery, To: e.m.ids[a], Count: enemy})
 				}
 			}
 		}
@@ -1283,13 +1283,13 @@ func (e *eng) factionActions(seat int, second bool) []state.Move {
 			if d.Slumber == nil {
 				for _, a := range e.gatesOf(seat) {
 					if e.cultists(a, seat) > 0 {
-						add(state.Move{Action: actSlumber, To: e.m.ids[a]})
+						add(state.Selection{Action: actSlumber, To: e.m.ids[a]})
 					}
 				}
 			} else {
 				for a := range e.m.ids {
 					if !e.hasGate(a) {
-						add(state.Move{Action: actWake, To: e.m.ids[a]})
+						add(state.Selection{Action: actWake, To: e.m.ids[a]})
 					}
 				}
 			}
@@ -1316,7 +1316,7 @@ func (e *eng) sorceryOn(seat int) bool {
 // in a prompt that follows the roll, which is what locks the move in.
 func (e *eng) desecrate(seat int) {
 	d := e.d
-	e.pay(seat, state.Move{Action: actDesecrate})
+	e.pay(seat, state.Selection{Action: actDesecrate})
 	a, _ := e.gooArea(seat, uKing)
 	roll := e.die()
 	units := e.total(a, seat)
@@ -1414,7 +1414,7 @@ func (e *eng) eliminateCultist(a, enemy, by int) {
 }
 
 // factionAction executes a spellbook or faction action.
-func (e *eng) factionAction(seat int, mv state.Move, to int) {
+func (e *eng) factionAction(seat int, mv state.Selection, to int) {
 	d := e.d
 	switch mv.Action {
 	case actBeyond:

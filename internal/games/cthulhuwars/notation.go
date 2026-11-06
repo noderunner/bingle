@@ -116,7 +116,7 @@ const highPriestRules = "The High Priests option gives every cult one High Pries
 const onGate = "gate:"
 
 // Format renders mv.
-func (rs *Ruleset) Format(game *catalog.CompiledGame, mv state.Move) string {
+func (rs *Ruleset) Format(game *catalog.CompiledGame, mv state.Selection) string {
 	at := func() string { return "@" + string(mv.To) }
 	vs := func() string { return "/" + keyOfSeat(game, mv.Count) }
 	switch mv.Action {
@@ -279,13 +279,13 @@ var plainActions = map[string]bool{
 }
 
 // Parse reads notation produced by Format.
-func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Move, error) {
+func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Selection, error) {
 	t := strings.ToLower(strings.TrimSpace(text))
 	if t == "" {
-		return state.Move{}, fmt.Errorf("cthulhuwars: empty move")
+		return state.Selection{}, fmt.Errorf("cthulhuwars: empty move")
 	}
-	bad := func(why string) (state.Move, error) {
-		return state.Move{}, fmt.Errorf("cthulhuwars: cannot read %q as a move (%s)", text, why)
+	bad := func(why string) (state.Selection, error) {
+		return state.Selection{}, fmt.Errorf("cthulhuwars: cannot read %q as a move (%s)", text, why)
 	}
 	m := mapOf(game)
 	area := func(s string) (board.PositionID, bool) {
@@ -302,19 +302,19 @@ func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Move, e
 		return mv, nil
 	}
 	if plainActions[t] {
-		return state.Move{Action: t}, nil
+		return state.Selection{Action: t}, nil
 	}
 	// "action/N"
 	if i := strings.IndexByte(t, '/'); i > 0 && !strings.ContainsAny(t, "@:") {
 		act, arg := t[:i], t[i+1:]
 		n, err := strconv.Atoi(arg)
 		if act == actPay && err == nil && n >= 1 {
-			return state.Move{Action: act, Count: n}, nil
+			return state.Selection{Action: act, Count: n}, nil
 		}
 		if act == actReveal && err == nil && n >= 1 {
 			// The old "reveal/N" turned one sign over; revealing is now
 			// all-or-nothing, so any N means "reveal".
-			return state.Move{Action: actReveal}, nil
+			return state.Selection{Action: actReveal}, nil
 		}
 		return bad("expected reveal or pay/N")
 	}
@@ -331,7 +331,7 @@ func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Move, e
 			if !ok {
 				return bad("unknown area " + where)
 			}
-			mv := state.Move{Action: act, Piece: parts[0], To: id}
+			mv := state.Selection{Action: act, Piece: parts[0], To: id}
 			if hasReplaced {
 				// Cthugha: the Great Old One he replaces.
 				idx, known := unitTypeIndex[replaced]
@@ -348,35 +348,35 @@ func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Move, e
 			if !ok || s == 0 {
 				return bad("expected moon:spellbook/faction")
 			}
-			return state.Move{Action: actMoon, Piece: name, Count: s}, nil
+			return state.Selection{Action: actMoon, Piece: name, Count: s}, nil
 		case actRansom:
 			if _, ok := bookByID(rest); !ok {
 				return bad("unknown spellbook " + rest)
 			}
-			return state.Move{Action: actRansom, Piece: rest}, nil
+			return state.Selection{Action: actRansom, Piece: rest}, nil
 		case actCrypt:
 			s := seatOfKey(game, rest)
 			if s == 0 {
 				return bad("name the enemy faction")
 			}
-			return state.Move{Action: actCrypt, Count: s}, nil
+			return state.Selection{Action: actCrypt, Count: s}, nil
 		case actDiscard, actPick:
 			n, err := strconv.Atoi(rest)
 			if err != nil || n < 1 {
 				return bad("expected " + act + ":N")
 			}
-			return state.Move{Action: act, Count: n}, nil
+			return state.Selection{Action: act, Count: n}, nil
 		case actDonate:
 			if rest != "give" && rest != "refuse" {
 				return bad("expected donate:give or donate:refuse")
 			}
-			return state.Move{Action: actDonate, Piece: rest}, nil
+			return state.Selection{Action: actDonate, Piece: rest}, nil
 		case actSpare:
 			name, key, _ := strings.Cut(rest, "/")
 			if !unit(name) {
 				return bad("unknown unit " + name)
 			}
-			mv := state.Move{Action: actSpare, Piece: name}
+			mv := state.Selection{Action: actSpare, Piece: name}
 			if key != "" {
 				s := seatOfKey(game, key)
 				if s == 0 {
@@ -394,7 +394,7 @@ func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Move, e
 			if !ok {
 				return bad("unknown area " + parts[1])
 			}
-			return state.Move{Action: actSting, Piece: parts[0], To: id}, nil
+			return state.Selection{Action: actSting, Piece: parts[0], To: id}, nil
 		case actCapture:
 			parts := strings.SplitN(rest, "@", 2)
 			// capture:gate:cultist is the Cultist that holds the Gate, not one beside it.
@@ -410,19 +410,19 @@ func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Move, e
 			if seat == 0 {
 				return bad("name the enemy faction: gc, cc, bg, ys, ww, sl, ow or tt")
 			}
-			return state.Move{Action: actCapture, Piece: parts[0], To: id, Count: seat}, nil
+			return state.Selection{Action: actCapture, Piece: parts[0], To: id, Count: seat}, nil
 		case actAscend:
 			s := seatOfKey(game, rest)
 			if s == 0 {
 				return bad("name the enemy faction")
 			}
-			return state.Move{Action: actAscend, Count: s}, nil
+			return state.Selection{Action: actAscend, Count: s}, nil
 		case actUpgrade:
 			name, cnt, hasCnt := strings.Cut(rest, "/")
 			if !unit(name) {
 				return bad("unknown unit " + name)
 			}
-			mv := state.Move{Action: actUpgrade, Piece: name}
+			mv := state.Selection{Action: actUpgrade, Piece: name}
 			if hasCnt {
 				n, err := strconv.Atoi(cnt)
 				if err != nil || n < 1 {
@@ -436,35 +436,35 @@ func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Move, e
 			if s == 0 {
 				return bad("name the enemy faction")
 			}
-			return state.Move{Action: actCurse, Count: s}, nil
+			return state.Selection{Action: actCurse, Count: s}, nil
 		case actSyco:
 			name, key, _ := strings.Cut(rest, "/")
 			s := seatOfKey(game, key)
 			if (name != "give" && name != "less") || s == 0 {
 				return bad("expected syco:give/tt or syco:less/tt")
 			}
-			return state.Move{Action: actSyco, Piece: name, Count: s}, nil
+			return state.Selection{Action: actSyco, Piece: name, Count: s}, nil
 		case actTerror:
 			if rest != "foe" && rest != "self" {
 				return bad("expected terror:foe or terror:self")
 			}
-			return state.Move{Action: actTerror, Piece: rest}, nil
+			return state.Selection{Action: actTerror, Piece: rest}, nil
 		case actRitual:
 			if rest != "descend" {
 				return bad("expected ritual or ritual:descend")
 			}
-			return state.Move{Action: actRitual, Piece: rest}, nil
+			return state.Selection{Action: actRitual, Piece: rest}, nil
 		case actShrivel:
 			if !unit(rest) {
 				return bad("unknown unit " + rest)
 			}
-			return state.Move{Action: actShrivel, Piece: rest}, nil
+			return state.Selection{Action: actShrivel, Piece: rest}, nil
 		case actRecrim:
 			b, ok := bookByID(rest)
 			if !ok {
 				return bad("unknown spellbook " + rest)
 			}
-			return state.Move{Action: actRecrim, Piece: rest, Count: b + 1}, nil
+			return state.Selection{Action: actRecrim, Piece: rest, Count: b + 1}, nil
 		case actMao:
 			parts := strings.SplitN(rest, "@", 2)
 			if len(parts) != 2 || !unit(parts[0]) {
@@ -474,7 +474,7 @@ func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Move, e
 			if !ok {
 				return bad("unknown area " + parts[1])
 			}
-			return state.Move{Action: actMao, Piece: parts[0], To: id}, nil
+			return state.Selection{Action: actMao, Piece: parts[0], To: id}, nil
 		case actBuy:
 			name, where, hasWhere := strings.Cut(rest, "@")
 			key := ""
@@ -486,7 +486,7 @@ func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Move, e
 			if !isCardUnit(name) || isIndependent(name) {
 				return bad("expected buy:unit for a Loyalty Card")
 			}
-			mv := state.Move{Action: actBuy, Piece: name}
+			mv := state.Selection{Action: actBuy, Piece: name}
 			if hasWhere {
 				id, ok := area(where)
 				if !ok {
@@ -516,7 +516,7 @@ func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Move, e
 			if !ok1 || !ok2 {
 				return bad("unknown area")
 			}
-			return state.Move{Action: act, Piece: parts[0], From: from, To: to}, nil
+			return state.Selection{Action: act, Piece: parts[0], From: from, To: to}, nil
 		case actAbsorb, actInvisible, actAssign, actSwap, actCannibal:
 			name, key := rest, ""
 			if j := strings.IndexByte(rest, '/'); j >= 0 {
@@ -525,7 +525,7 @@ func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Move, e
 			if !unit(name) {
 				return bad("unknown unit " + name)
 			}
-			mv := state.Move{Action: act, Piece: name}
+			mv := state.Selection{Action: act, Piece: name}
 			if key != "" {
 				s := seatOfKey(game, key)
 				if s == 0 {
@@ -536,13 +536,13 @@ func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Move, e
 			return mv, nil
 		case actBring:
 			if rest == bringAll {
-				return state.Move{Action: actBring, Piece: bringAll}, nil
+				return state.Selection{Action: actBring, Piece: bringAll}, nil
 			}
 			name, from, hasFrom := strings.Cut(rest, "@")
 			if !unit(name) {
 				return bad("unknown unit " + name)
 			}
-			mv := state.Move{Action: actBring, Piece: name}
+			mv := state.Selection{Action: actBring, Piece: name}
 			if hasFrom {
 				id, ok := area(from)
 				if !ok {
@@ -556,17 +556,17 @@ func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Move, e
 			if s == 0 {
 				return bad("unknown faction " + rest)
 			}
-			return state.Move{Action: act, Count: s}, nil
+			return state.Selection{Action: act, Count: s}, nil
 		case actDemand:
 			if rest != "signs" && rest != "pains" {
 				return bad("expected demand:signs or demand:pains")
 			}
-			return state.Move{Action: actDemand, Piece: rest}, nil
+			return state.Selection{Action: actDemand, Piece: rest}, nil
 		case actHarbinger:
 			if rest != "power" && rest != "signs" {
 				return bad("expected harbinger:power or harbinger:signs")
 			}
-			return state.Move{Action: actHarbinger, Piece: rest}, nil
+			return state.Selection{Action: actHarbinger, Piece: rest}, nil
 		case actRetreat:
 			parts := strings.SplitN(rest, ">", 2)
 			if len(parts) != 2 || !unit(parts[0]) {
@@ -580,7 +580,7 @@ func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Move, e
 			if !ok {
 				return bad("unknown area " + where)
 			}
-			mv := state.Move{Action: actRetreat, Piece: parts[0], To: id}
+			mv := state.Selection{Action: actRetreat, Piece: parts[0], To: id}
 			if key != "" {
 				s := seatOfKey(game, key)
 				if s == 0 {
@@ -598,23 +598,23 @@ func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Move, e
 			if !ok {
 				return bad("unknown area " + parts[1])
 			}
-			return state.Move{Action: actLose, Piece: parts[0], To: id}, nil
+			return state.Selection{Action: actLose, Piece: parts[0], To: id}, nil
 		case actBook:
 			if b, ok := bookByID(rest); ok {
-				return state.Move{Action: actBook, Piece: rest, Count: b + 1}, nil
+				return state.Selection{Action: actBook, Piece: rest, Count: b + 1}, nil
 			}
 			return bad("unknown spellbook " + rest)
 		case actDesecrate:
 			if !unit(rest) {
 				return bad("unknown unit " + rest)
 			}
-			return state.Move{Action: actDesecrate, Piece: rest}, nil
+			return state.Selection{Action: actDesecrate, Piece: rest}, nil
 		case "first":
 			s := seatOfKey(game, rest)
 			if s == 0 {
 				return bad("unknown faction " + rest)
 			}
-			return state.Move{Action: "first", Count: s}, nil
+			return state.Selection{Action: "first", Count: s}, nil
 		}
 		return bad("unknown action " + act)
 	}
@@ -633,15 +633,15 @@ func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Move, e
 		case actRecruit, actGate, actControl, actAbandon, actEmerge, actScream, actShriek, actHWINN, actDevolve, actBlood, actSeek,
 			actStart, actIceAge, actRestore, actSlumber, actWake, actDeath, actWalk, actHiero, actIdolatry, actDismantle,
 			actMoon, actCrypt, actFilth, actGateOff, actSting, actZygote:
-			return state.Move{Action: act, To: id}, nil
+			return state.Selection{Action: act, To: id}, nil
 		case actCurse:
-			return state.Move{Action: actCurse, To: id}, nil
+			return state.Selection{Action: actCurse, To: id}, nil
 		case actBattle, actCapture, actDreams, actZingaya, actAvatar, actPlace, actSorcery:
 			s := seatOfKey(game, key)
 			if s == 0 {
 				return bad("name the enemy faction: gc, cc, bg, ys, ww, sl, ow or tt")
 			}
-			return state.Move{Action: act, To: id, Count: s}, nil
+			return state.Selection{Action: act, To: id, Count: s}, nil
 		}
 		return bad("unknown action " + act)
 	}
@@ -651,111 +651,113 @@ func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Move, e
 // ownedPiece is the piece value of a click on a unit that is not the deciding
 // player's own: the type, then "@" and the color of its owner (Count is the
 // owner's seat), so a click on the right token is unambiguous.
-func ownedPiece(game *catalog.CompiledGame, mv state.Move) string {
+func ownedPiece(game *catalog.CompiledGame, mv state.Selection) string {
 	if f := factionOfSeat(game, mv.Count); f >= 0 {
 		return mv.Piece + "@" + factions[f].Color
 	}
 	return mv.Piece
 }
 
-// Steps decomposes a move into clicks.
-func (rs *Ruleset) Steps(game *catalog.CompiledGame, mv state.Move) []state.Step {
-	pos := func(id board.PositionID) state.Step { return state.Step{Kind: state.StepPos, Value: string(id)} }
-	act := func(id string) state.Step { return state.Step{Kind: state.StepAction, Value: id} }
-	piece := func(p string) state.Step { return state.Step{Kind: state.StepPiece, Value: p} }
+// Gestures decomposes a move into clicks.
+func (rs *Ruleset) Gestures(game *catalog.CompiledGame, mv state.Selection) []state.Gesture {
+	pos := func(id board.PositionID) state.Gesture {
+		return state.Gesture{Kind: state.GesturePos, Value: string(id)}
+	}
+	act := func(id string) state.Gesture { return state.Gesture{Kind: state.GestureAction, Value: id} }
+	piece := func(p string) state.Gesture { return state.Gesture{Kind: state.GesturePiece, Value: p} }
 	switch mv.Action {
 	case actRecruit:
 		// The High Priest has a button of his own: "Recruit High Priest".
 		if mv.Piece == uHighPriest {
-			return []state.Step{act("recruit-" + uHighPriest), pos(mv.To)}
+			return []state.Gesture{act("recruit-" + uHighPriest), pos(mv.To)}
 		}
 		if mv.Piece != "" && mv.Piece != uCultist {
-			return []state.Step{act(mv.Action), piece(mv.Piece), pos(mv.To)}
+			return []state.Gesture{act(mv.Action), piece(mv.Piece), pos(mv.To)}
 		}
-		return []state.Step{act(mv.Action), pos(mv.To)}
+		return []state.Gesture{act(mv.Action), pos(mv.To)}
 	case actGate, actAbandon, actEmerge, actScream, actShriek, actHWINN, actDevolve, actBlood,
 		actStart, actIceAge, actRestore, actSlumber, actWake, actDeath:
-		return []state.Step{act(mv.Action), pos(mv.To)}
+		return []state.Gesture{act(mv.Action), pos(mv.To)}
 	case actControl:
 		// A unit that stands in the area is picked up and put on the Gate,
 		// which is clicked: the same clicks as a move that goes nowhere.
 		if mv.Piece != "" {
-			return []state.Step{pos(mv.To), piece(mv.Piece), pos(mv.To)}
+			return []state.Gesture{pos(mv.To), piece(mv.Piece), pos(mv.To)}
 		}
-		return []state.Step{act(mv.Action), pos(mv.To)}
+		return []state.Gesture{act(mv.Action), pos(mv.To)}
 	case actSeek:
 		if mv.To != "" {
-			return []state.Step{act(mv.Action), pos(mv.To)}
+			return []state.Gesture{act(mv.Action), pos(mv.To)}
 		}
-		return []state.Step{act(mv.Action)}
+		return []state.Gesture{act(mv.Action)}
 	case actSummon:
 		// Every monster has a button of its own: "Summon Deep One (1)".
-		return []state.Step{act("summon-" + mv.Piece), pos(mv.To)}
+		return []state.Gesture{act("summon-" + mv.Piece), pos(mv.To)}
 	case actAwaken:
 		// Every Great Old One has a button of its own: "Awaken Cthulhu (10)".
 		// Cthugha also says which Great Old One he replaces.
 		if g := replacedBy(mv); g != "" {
-			return []state.Step{act("awaken-" + mv.Piece), pos(mv.To), piece(g)}
+			return []state.Gesture{act("awaken-" + mv.Piece), pos(mv.To), piece(g)}
 		}
-		return []state.Step{act("awaken-" + mv.Piece), pos(mv.To)}
+		return []state.Gesture{act("awaken-" + mv.Piece), pos(mv.To)}
 	case actGo:
-		return []state.Step{pos(mv.From), piece(mv.Piece), pos(mv.To)}
+		return []state.Gesture{pos(mv.From), piece(mv.Piece), pos(mv.To)}
 	case actLeave:
 		// The unit that stands on a Gate is a piece of its own, apart from
 		// the rest of its kind: it is picked up from the Gate.
-		return []state.Step{pos(mv.From), piece(onGate + mv.Piece), pos(mv.To)}
+		return []state.Gesture{pos(mv.From), piece(onGate + mv.Piece), pos(mv.To)}
 	case actCapture:
 		if mv.Piece == uCultist || mv.Piece == onGate+uCultist {
 			// Which of the Cultists of an area: the stack or the Gate's.
-			return []state.Step{act(mv.Action), pos(mv.To), piece(mv.Piece), act("vs-" + keyOfSeat(game, mv.Count))}
+			return []state.Gesture{act(mv.Action), pos(mv.To), piece(mv.Piece), act("vs-" + keyOfSeat(game, mv.Count))}
 		}
 		if mv.Piece != "" {
-			return []state.Step{act(mv.Action), piece(mv.Piece), pos(mv.To), act("vs-" + keyOfSeat(game, mv.Count))}
+			return []state.Gesture{act(mv.Action), piece(mv.Piece), pos(mv.To), act("vs-" + keyOfSeat(game, mv.Count))}
 		}
-		return []state.Step{act(mv.Action), pos(mv.To), act("vs-" + keyOfSeat(game, mv.Count))}
+		return []state.Gesture{act(mv.Action), pos(mv.To), act("vs-" + keyOfSeat(game, mv.Count))}
 	case actBattle, actDreams, actZingaya, actAvatar, actSorcery:
-		return []state.Step{act(mv.Action), pos(mv.To), act("vs-" + keyOfSeat(game, mv.Count))}
+		return []state.Gesture{act(mv.Action), pos(mv.To), act("vs-" + keyOfSeat(game, mv.Count))}
 	case actPlace:
-		return []state.Step{act("place-" + keyOfSeat(game, mv.Count)), pos(mv.To)}
+		return []state.Gesture{act("place-" + keyOfSeat(game, mv.Count)), pos(mv.To)}
 	case actPay:
-		return []state.Step{act("pay-" + strconv.Itoa(mv.Count))}
+		return []state.Gesture{act("pay-" + strconv.Itoa(mv.Count))}
 	case actBeyond:
-		return []state.Step{act(mv.Action), pos(mv.From), piece(mv.Piece), pos(mv.To)}
+		return []state.Gesture{act(mv.Action), pos(mv.From), piece(mv.Piece), pos(mv.To)}
 	case actAscend:
-		return []state.Step{act("ascend-" + keyOfSeat(game, mv.Count))}
+		return []state.Gesture{act("ascend-" + keyOfSeat(game, mv.Count))}
 	case actUpgrade:
 		if mv.Count != 0 {
-			return []state.Step{act(mv.Action), piece(mv.Piece), act("mutants-" + strconv.Itoa(mv.Count))}
+			return []state.Gesture{act(mv.Action), piece(mv.Piece), act("mutants-" + strconv.Itoa(mv.Count))}
 		}
-		return []state.Step{act(mv.Action), piece(mv.Piece)}
+		return []state.Gesture{act(mv.Action), piece(mv.Piece)}
 	case actCurse:
 		if mv.To != "" {
-			return []state.Step{act(mv.Action), pos(mv.To)}
+			return []state.Gesture{act(mv.Action), pos(mv.To)}
 		}
-		return []state.Step{act("curse-" + keyOfSeat(game, mv.Count))}
+		return []state.Gesture{act("curse-" + keyOfSeat(game, mv.Count))}
 	case actSyco:
-		return []state.Step{act("syco-" + mv.Piece)}
+		return []state.Gesture{act("syco-" + mv.Piece)}
 	case actTerror:
-		return []state.Step{act("terror-" + mv.Piece)}
+		return []state.Gesture{act("terror-" + mv.Piece)}
 	case actRitual:
 		if mv.Piece != "" {
-			return []state.Step{act("ritual-" + mv.Piece)}
+			return []state.Gesture{act("ritual-" + mv.Piece)}
 		}
-		return []state.Step{act(mv.Action)}
+		return []state.Gesture{act(mv.Action)}
 	case actHiero, actIdolatry, actDismantle:
-		return []state.Step{act(mv.Action), pos(mv.To)}
+		return []state.Gesture{act(mv.Action), pos(mv.To)}
 	case actAbsorb, actCannibal, actShrivel:
-		return []state.Step{act(mv.Action), piece(mv.Piece)}
+		return []state.Gesture{act(mv.Action), piece(mv.Piece)}
 	case actWalk:
-		return []state.Step{act(mv.Action), pos(mv.To)}
+		return []state.Gesture{act(mv.Action), pos(mv.To)}
 	case actRecrim:
-		return []state.Step{act("recriminate-" + mv.Piece)}
+		return []state.Gesture{act("recriminate-" + mv.Piece)}
 	case actRearrange:
-		return []state.Step{pos(mv.From), piece(mv.Piece), pos(mv.To)}
+		return []state.Gesture{pos(mv.From), piece(mv.Piece), pos(mv.To)}
 	case actMao:
-		return []state.Step{act(actMao), piece(mv.Piece), pos(mv.To)}
+		return []state.Gesture{act(actMao), piece(mv.Piece), pos(mv.To)}
 	case actBuy:
-		steps := []state.Step{act("buy-" + mv.Piece)}
+		steps := []state.Gesture{act("buy-" + mv.Piece)}
 		if mv.To != "" {
 			steps = append(steps, pos(mv.To))
 		}
@@ -765,80 +767,80 @@ func (rs *Ruleset) Steps(game *catalog.CompiledGame, mv state.Move) []state.Step
 		return steps
 	case actMoon:
 		if mv.To != "" {
-			return []state.Step{pos(mv.To)}
+			return []state.Gesture{pos(mv.To)}
 		}
-		return []state.Step{act("moon-" + mv.Piece + "-" + keyOfSeat(game, mv.Count))}
+		return []state.Gesture{act("moon-" + mv.Piece + "-" + keyOfSeat(game, mv.Count))}
 	case actRansom:
-		return []state.Step{act("ransom-" + mv.Piece)}
+		return []state.Gesture{act("ransom-" + mv.Piece)}
 	case actCrypt:
 		if mv.To != "" {
-			return []state.Step{pos(mv.To)}
+			return []state.Gesture{pos(mv.To)}
 		}
-		return []state.Step{act("crypt-" + keyOfSeat(game, mv.Count))}
+		return []state.Gesture{act("crypt-" + keyOfSeat(game, mv.Count))}
 	case actCard:
 		id := cardStepID(mv, func(s int) string { return keyOfSeat(game, s) })
 		if mv.To != "" {
-			return []state.Step{act(id), pos(mv.To)}
+			return []state.Gesture{act(id), pos(mv.To)}
 		}
-		return []state.Step{act(id)}
+		return []state.Gesture{act(id)}
 	case actFilth, actGateOff:
-		return []state.Step{act(mv.Action), pos(mv.To)}
+		return []state.Gesture{act(mv.Action), pos(mv.To)}
 	case actSting:
 		if mv.Piece != "" {
-			return []state.Step{piece(mv.Piece), pos(mv.To)}
+			return []state.Gesture{piece(mv.Piece), pos(mv.To)}
 		}
-		return []state.Step{act(mv.Action), pos(mv.To)}
+		return []state.Gesture{act(mv.Action), pos(mv.To)}
 	case actZygote:
 		if mv.To != "" {
-			return []state.Step{pos(mv.To)}
+			return []state.Gesture{pos(mv.To)}
 		}
-		return []state.Step{act(mv.Action)}
+		return []state.Gesture{act(mv.Action)}
 	case actDiscard:
-		return []state.Step{act("discard-" + strconv.Itoa(mv.Count))}
+		return []state.Gesture{act("discard-" + strconv.Itoa(mv.Count))}
 	case actSpare:
-		return []state.Step{piece(ownedPiece(game, mv))}
+		return []state.Gesture{piece(ownedPiece(game, mv))}
 	case actPick:
-		return []state.Step{act("pick-" + strconv.Itoa(mv.Count))}
+		return []state.Gesture{act("pick-" + strconv.Itoa(mv.Count))}
 	case actDonate:
-		return []state.Step{act("donate-" + mv.Piece)}
+		return []state.Gesture{act("donate-" + mv.Piece)}
 	case actInvisible:
-		return []state.Step{act(mv.Action), piece(ownedPiece(game, mv))}
+		return []state.Gesture{act(mv.Action), piece(ownedPiece(game, mv))}
 	case actAssign:
-		return []state.Step{piece(ownedPiece(game, mv))}
+		return []state.Gesture{piece(ownedPiece(game, mv))}
 	case actSwap:
-		return []state.Step{piece(mv.Piece)}
+		return []state.Gesture{piece(mv.Piece)}
 	case actBring:
 		switch {
 		case mv.Piece == bringAll:
-			return []state.Step{act("bring-all")}
+			return []state.Gesture{act("bring-all")}
 		case mv.From != "":
-			return []state.Step{piece(mv.Piece), pos(mv.From)}
+			return []state.Gesture{piece(mv.Piece), pos(mv.From)}
 		}
-		return []state.Step{piece(mv.Piece)}
+		return []state.Gesture{piece(mv.Piece)}
 	case actGrant:
-		return []state.Step{act("grant-" + keyOfSeat(game, mv.Count))}
+		return []state.Gesture{act("grant-" + keyOfSeat(game, mv.Count))}
 	case actBestow:
-		return []state.Step{act("bestow-" + keyOfSeat(game, mv.Count))}
+		return []state.Gesture{act("bestow-" + keyOfSeat(game, mv.Count))}
 	case actHarbinger:
-		return []state.Step{act("harbinger-" + mv.Piece)}
+		return []state.Gesture{act("harbinger-" + mv.Piece)}
 	case actDemand:
-		return []state.Step{act("demand-" + mv.Piece)}
+		return []state.Gesture{act("demand-" + mv.Piece)}
 	case actRetreat:
-		return []state.Step{piece(ownedPiece(game, mv)), pos(mv.To)}
+		return []state.Gesture{piece(ownedPiece(game, mv)), pos(mv.To)}
 	case actLose:
-		return []state.Step{act(actLose), piece(mv.Piece), pos(mv.To)}
+		return []state.Gesture{act(actLose), piece(mv.Piece), pos(mv.To)}
 	case actBook:
-		return []state.Step{act("book-" + mv.Piece)}
+		return []state.Gesture{act("book-" + mv.Piece)}
 	case actDesecrate:
 		// The action rolls the die; the unit it places is chosen after it.
 		if mv.Piece != "" {
-			return []state.Step{piece(mv.Piece)}
+			return []state.Gesture{piece(mv.Piece)}
 		}
-		return []state.Step{act(actDesecrate)}
+		return []state.Gesture{act(actDesecrate)}
 	case "first":
-		return []state.Step{act("first-" + keyOfSeat(game, mv.Count))}
+		return []state.Gesture{act("first-" + keyOfSeat(game, mv.Count))}
 	}
-	return []state.Step{act(mv.Action)}
+	return []state.Gesture{act(mv.Action)}
 }
 
 // ActionNotations lists every move notation in a stable order: the fixed
@@ -847,7 +849,7 @@ func (rs *Ruleset) ActionNotations(game *catalog.CompiledGame) []string {
 	m := mapOf(game)
 	var out []string
 	seen := map[string]bool{}
-	add := func(mv state.Move) {
+	add := func(mv state.Selection) {
 		s := rs.Format(game, mv)
 		if !seen[s] {
 			seen[s] = true
@@ -857,15 +859,15 @@ func (rs *Ruleset) ActionNotations(game *catalog.CompiledGame) []string {
 	for _, id := range m.ids {
 		for _, a := range []string{actRecruit, actGate, actControl, actAbandon, actEmerge, actScream, actShriek, actHWINN, actDevolve, actBlood,
 			actStart, actIceAge, actRestore, actSlumber, actWake, actDeath} {
-			add(state.Move{Action: a, To: id})
+			add(state.Selection{Action: a, To: id})
 		}
 		for _, a := range []string{actBattle, actCapture, actDreams, actZingaya, actAvatar, actPlace, actSorcery} {
 			for s := 1; s <= nSeats; s++ {
-				add(state.Move{Action: a, To: id, Count: s})
+				add(state.Selection{Action: a, To: id, Count: s})
 			}
 		}
-		add(state.Move{Action: actRecruit, Piece: uHighPriest, To: id})
-		add(state.Move{Action: actSeek, To: id})
+		add(state.Selection{Action: actRecruit, Piece: uHighPriest, To: id})
+		add(state.Selection{Action: actSeek, To: id})
 	}
 	for _, typ := range unitTypes {
 		if lateUnit(typ) {
@@ -874,14 +876,14 @@ func (rs *Ruleset) ActionNotations(game *catalog.CompiledGame) []string {
 		for _, id := range m.ids {
 			switch unitClassOf(typ) {
 			case classGOO:
-				add(state.Move{Action: actAwaken, Piece: typ, To: id})
+				add(state.Selection{Action: actAwaken, Piece: typ, To: id})
 			case classMonster:
-				add(state.Move{Action: actSummon, Piece: typ, To: id})
+				add(state.Selection{Action: actSummon, Piece: typ, To: id})
 			}
-			add(state.Move{Action: actLose, Piece: typ, To: id})
-			add(state.Move{Action: actRetreat, Piece: typ, To: id})
+			add(state.Selection{Action: actLose, Piece: typ, To: id})
+			add(state.Selection{Action: actRetreat, Piece: typ, To: id})
 			for s := 1; s <= nSeats; s++ {
-				add(state.Move{Action: actRetreat, Piece: typ, To: id, Count: s})
+				add(state.Selection{Action: actRetreat, Piece: typ, To: id, Count: s})
 			}
 		}
 		// Moves reach two areas away (Flight), so every pair within two
@@ -896,54 +898,54 @@ func (rs *Ruleset) ActionNotations(game *catalog.CompiledGame) []string {
 			}
 			for c := range m.ids {
 				if c != a && near[c] {
-					add(state.Move{Action: actGo, Piece: typ, From: m.ids[a], To: m.ids[c]})
+					add(state.Selection{Action: actGo, Piece: typ, From: m.ids[a], To: m.ids[c]})
 				}
 			}
 		}
 		for _, a := range []string{actAbsorb, actInvisible, actAssign, actBring, actSwap} {
-			add(state.Move{Action: a, Piece: typ})
+			add(state.Selection{Action: a, Piece: typ})
 		}
 		for s := 1; s <= nSeats; s++ {
-			add(state.Move{Action: actInvisible, Piece: typ, Count: s})
-			add(state.Move{Action: actAssign, Piece: typ, Count: s})
+			add(state.Selection{Action: actInvisible, Piece: typ, Count: s})
+			add(state.Selection{Action: actAssign, Piece: typ, Count: s})
 			for _, id := range m.ids {
-				add(state.Move{Action: actCapture, Piece: typ, To: id, Count: s})
+				add(state.Selection{Action: actCapture, Piece: typ, To: id, Count: s})
 			}
 		}
 		for _, id := range m.ids {
-			add(state.Move{Action: actBring, Piece: typ, From: id})
+			add(state.Selection{Action: actBring, Piece: typ, From: id})
 		}
-		add(state.Move{Action: actDesecrate, Piece: typ})
-		add(state.Move{Action: actCannibal, Piece: typ})
+		add(state.Selection{Action: actDesecrate, Piece: typ})
+		add(state.Selection{Action: actCannibal, Piece: typ})
 	}
-	add(state.Move{Action: actDesecrate})
+	add(state.Selection{Action: actDesecrate})
 	for s := 1; s <= nSeats; s++ {
-		add(state.Move{Action: "first", Count: s})
-		add(state.Move{Action: actGrant, Count: s})
-		add(state.Move{Action: actBestow, Count: s})
+		add(state.Selection{Action: "first", Count: s})
+		add(state.Selection{Action: actGrant, Count: s})
+		add(state.Selection{Action: actBestow, Count: s})
 	}
 	for _, f := range factions {
 		for _, b := range f.Books {
-			add(state.Move{Action: actBook, Piece: b.ID})
+			add(state.Selection{Action: actBook, Piece: b.ID})
 		}
 	}
-	add(state.Move{Action: actDemand, Piece: "signs"})
-	add(state.Move{Action: actDemand, Piece: "pains"})
-	add(state.Move{Action: actBring, Piece: bringAll})
-	add(state.Move{Action: actHarbinger, Piece: "power"})
-	add(state.Move{Action: actHarbinger, Piece: "signs"})
+	add(state.Selection{Action: actDemand, Piece: "signs"})
+	add(state.Selection{Action: actDemand, Piece: "pains"})
+	add(state.Selection{Action: actBring, Piece: bringAll})
+	add(state.Selection{Action: actHarbinger, Piece: "power"})
+	add(state.Selection{Action: actHarbinger, Piece: "signs"})
 	for _, n := range []int{4, 6, 10} {
-		add(state.Move{Action: actPay, Count: n})
+		add(state.Selection{Action: actPay, Count: n})
 	}
 	for _, a := range []string{actPass, actDone, actSkip, actRitual, actReveal, actSubmerge, actForms, actGhroth, actSacrifice, actAbduct, actSeek, actNecro, actCW, actCCW,
 		actHibernate, actClaim, actHowl, actEternal, actLethargy, actBoon, actBane, actNexus, actOath} {
-		add(state.Move{Action: a})
+		add(state.Selection{Action: a})
 	}
 	// A unit that occupies a Gate steps off it by "moving" to its own area
 	// (added last, so the numbers of the earlier moves stay as they were).
 	for _, typ := range []string{uCultist, uHighPriest, uYoung} {
 		for _, id := range m.ids {
-			add(state.Move{Action: actGo, Piece: typ, From: id, To: id})
+			add(state.Selection{Action: actGo, Piece: typ, From: id, To: id})
 		}
 	}
 	// The unit on a Gate leaves it with leave (the same area included), and a
@@ -960,58 +962,58 @@ func (rs *Ruleset) ActionNotations(game *catalog.CompiledGame) []string {
 			}
 			for c := range m.ids {
 				if near[c] {
-					add(state.Move{Action: actLeave, Piece: typ, From: m.ids[a], To: m.ids[c]})
+					add(state.Selection{Action: actLeave, Piece: typ, From: m.ids[a], To: m.ids[c]})
 				}
 			}
 		}
 		for _, id := range m.ids {
-			add(state.Move{Action: actControl, Piece: typ, To: id})
+			add(state.Selection{Action: actControl, Piece: typ, To: id})
 		}
 	}
 	// The Azathoth faction's neutral spellbooks and Monsters (added last).
 	for i, b := range neutralBooks {
-		add(state.Move{Action: actBook, Piece: b.ID})
-		add(state.Move{Action: actRecrim, Piece: b.ID, Count: bookSlots + i + 1})
+		add(state.Selection{Action: actBook, Piece: b.ID})
+		add(state.Selection{Action: actRecrim, Piece: b.ID, Count: bookSlots + i + 1})
 	}
 	for _, f := range factions {
 		for i, b := range f.Books {
-			add(state.Move{Action: actRecrim, Piece: b.ID, Count: i + 1})
+			add(state.Selection{Action: actRecrim, Piece: b.ID, Count: i + 1})
 		}
 	}
-	add(state.Move{Action: actUndim})
+	add(state.Selection{Action: actUndim})
 	for _, u := range neutralUnits {
 		typ := u.ID
-		add(state.Move{Action: actShrivel, Piece: typ})
-		add(state.Move{Action: actBuy, Piece: typ})
+		add(state.Selection{Action: actShrivel, Piece: typ})
+		add(state.Selection{Action: actBuy, Piece: typ})
 		for s := 1; s <= nSeats; s++ {
-			add(state.Move{Action: actBuy, Piece: typ, Count: s})
+			add(state.Selection{Action: actBuy, Piece: typ, Count: s})
 		}
 		for _, id := range m.ids {
-			add(state.Move{Action: actSummon, Piece: typ, To: id})
-			add(state.Move{Action: actBuy, Piece: typ, To: id})
-			add(state.Move{Action: actLose, Piece: typ, To: id})
-			add(state.Move{Action: actRetreat, Piece: typ, To: id})
-			add(state.Move{Action: actMao, Piece: typ, To: id})
+			add(state.Selection{Action: actSummon, Piece: typ, To: id})
+			add(state.Selection{Action: actBuy, Piece: typ, To: id})
+			add(state.Selection{Action: actLose, Piece: typ, To: id})
+			add(state.Selection{Action: actRetreat, Piece: typ, To: id})
+			add(state.Selection{Action: actMao, Piece: typ, To: id})
 			for s := 1; s <= nSeats; s++ {
-				add(state.Move{Action: actRetreat, Piece: typ, To: id, Count: s})
+				add(state.Selection{Action: actRetreat, Piece: typ, To: id, Count: s})
 			}
 		}
 		for a := range m.ids {
 			for c := range m.ids {
 				if c != a {
-					add(state.Move{Action: actGo, Piece: typ, From: m.ids[a], To: m.ids[c]})
-					add(state.Move{Action: actRearrange, Piece: typ, From: m.ids[a], To: m.ids[c]})
+					add(state.Selection{Action: actGo, Piece: typ, From: m.ids[a], To: m.ids[c]})
+					add(state.Selection{Action: actRearrange, Piece: typ, From: m.ids[a], To: m.ids[c]})
 				}
 			}
 		}
 	}
 	for _, typ := range []string{uCultist, uHighPriest} {
 		for _, id := range m.ids {
-			add(state.Move{Action: actMao, Piece: typ, To: id})
+			add(state.Selection{Action: actMao, Piece: typ, To: id})
 		}
 	}
 	for _, id := range m.ids {
-		add(state.Move{Action: actWalk, To: id})
+		add(state.Selection{Action: actWalk, To: id})
 	}
 	// The Opener of the Way and the Tcho-Tcho (added after everything else).
 	for _, f := range factions[facOW:] {
@@ -1020,44 +1022,44 @@ func (rs *Ruleset) ActionNotations(game *catalog.CompiledGame) []string {
 				continue
 			}
 			typ := u.ID
-			add(state.Move{Action: actShrivel, Piece: typ})
-			add(state.Move{Action: actUpgrade, Piece: typ})
+			add(state.Selection{Action: actShrivel, Piece: typ})
+			add(state.Selection{Action: actUpgrade, Piece: typ})
 			for _, id := range m.ids {
 				switch u.Class {
 				case classGOO:
-					add(state.Move{Action: actAwaken, Piece: typ, To: id})
+					add(state.Selection{Action: actAwaken, Piece: typ, To: id})
 				default:
-					add(state.Move{Action: actSummon, Piece: typ, To: id})
+					add(state.Selection{Action: actSummon, Piece: typ, To: id})
 				}
-				add(state.Move{Action: actLose, Piece: typ, To: id})
-				add(state.Move{Action: actRetreat, Piece: typ, To: id})
-				add(state.Move{Action: actMao, Piece: typ, To: id})
+				add(state.Selection{Action: actLose, Piece: typ, To: id})
+				add(state.Selection{Action: actRetreat, Piece: typ, To: id})
+				add(state.Selection{Action: actMao, Piece: typ, To: id})
 				for s := 1; s <= nSeats; s++ {
-					add(state.Move{Action: actRetreat, Piece: typ, To: id, Count: s})
+					add(state.Selection{Action: actRetreat, Piece: typ, To: id, Count: s})
 				}
 			}
 			for a := range m.ids {
 				for c := range m.ids {
 					if c != a {
-						add(state.Move{Action: actGo, Piece: typ, From: m.ids[a], To: m.ids[c]})
-						add(state.Move{Action: actRearrange, Piece: typ, From: m.ids[a], To: m.ids[c]})
+						add(state.Selection{Action: actGo, Piece: typ, From: m.ids[a], To: m.ids[c]})
+						add(state.Selection{Action: actRearrange, Piece: typ, From: m.ids[a], To: m.ids[c]})
 					}
 				}
 			}
 			for _, k := range []string{"foe", "self"} {
-				add(state.Move{Action: actTerror, Piece: k})
+				add(state.Selection{Action: actTerror, Piece: k})
 			}
 			for _, id := range m.ids {
-				add(state.Move{Action: actBring, Piece: typ, From: id})
+				add(state.Selection{Action: actBring, Piece: typ, From: id})
 			}
-			add(state.Move{Action: actAssign, Piece: typ})
+			add(state.Selection{Action: actAssign, Piece: typ})
 			for s := 1; s <= nSeats; s++ {
-				add(state.Move{Action: actAssign, Piece: typ, Count: s})
+				add(state.Selection{Action: actAssign, Piece: typ, Count: s})
 			}
 		}
 	}
 	for n := 1; n <= 4; n++ {
-		add(state.Move{Action: actUpgrade, Piece: uSpawn, Count: n})
+		add(state.Selection{Action: actUpgrade, Piece: uSpawn, Count: n})
 	}
 	// The Beyond One: units that cost 3 or more, from any area to any other.
 	for _, typ := range unitTypes {
@@ -1065,33 +1067,33 @@ func (rs *Ruleset) ActionNotations(game *catalog.CompiledGame) []string {
 			for a := range m.ids {
 				for c := range m.ids {
 					if c != a {
-						add(state.Move{Action: actBeyond, Piece: typ, From: m.ids[a], To: m.ids[c]})
+						add(state.Selection{Action: actBeyond, Piece: typ, From: m.ids[a], To: m.ids[c]})
 					}
 				}
 			}
 		}
 	}
 	for s := 1; s <= nSeats; s++ {
-		add(state.Move{Action: actAscend, Count: s})
-		add(state.Move{Action: actCurse, Count: s})
+		add(state.Selection{Action: actAscend, Count: s})
+		add(state.Selection{Action: actCurse, Count: s})
 		for _, k := range []string{"give", "less"} {
-			add(state.Move{Action: actSyco, Piece: k, Count: s})
+			add(state.Selection{Action: actSyco, Piece: k, Count: s})
 		}
 	}
-	add(state.Move{Action: actRitual, Piece: "descend"})
-	add(state.Move{Action: actChannel})
+	add(state.Selection{Action: actRitual, Piece: "descend"})
+	add(state.Selection{Action: actChannel})
 	for _, id := range m.ids {
-		add(state.Move{Action: actCurse, To: id})
-		add(state.Move{Action: actHiero, To: id})
-		add(state.Move{Action: actIdolatry, To: id})
-		add(state.Move{Action: actDismantle, To: id})
+		add(state.Selection{Action: actCurse, To: id})
+		add(state.Selection{Action: actHiero, To: id})
+		add(state.Selection{Action: actIdolatry, To: id})
+		add(state.Selection{Action: actDismantle, To: id})
 	}
 	// The Loyalty Cards after the first neutral Monsters (added last).
 	cardNotations(m, add)
 	// Capturing the Cultist that holds a Gate (added after everything else).
 	for _, id := range m.ids {
 		for s := 1; s <= nSeats; s++ {
-			add(state.Move{Action: actCapture, Piece: onGate + uCultist, To: id, Count: s})
+			add(state.Selection{Action: actCapture, Piece: onGate + uCultist, To: id, Count: s})
 		}
 	}
 	return out
@@ -1099,56 +1101,56 @@ func (rs *Ruleset) ActionNotations(game *catalog.CompiledGame) []string {
 
 // cardNotations adds the moves of the Dreamlands and Beyond Time and Space
 // cards and of the Independent Great Old Ones to the action space.
-func cardNotations(m *mapData, add func(state.Move)) {
+func cardNotations(m *mapData, add func(state.Selection)) {
 	for _, c := range cards[len(neutralUnits):] {
 		typ := c.Unit.ID
-		add(state.Move{Action: actShrivel, Piece: typ})
+		add(state.Selection{Action: actShrivel, Piece: typ})
 		for _, id := range m.ids {
 			switch c.Kind {
 			case cardIndependent:
-				add(state.Move{Action: actAwaken, Piece: typ, To: id})
+				add(state.Selection{Action: actAwaken, Piece: typ, To: id})
 			default:
-				add(state.Move{Action: actSummon, Piece: typ, To: id})
-				add(state.Move{Action: actBuy, Piece: typ, To: id})
+				add(state.Selection{Action: actSummon, Piece: typ, To: id})
+				add(state.Selection{Action: actBuy, Piece: typ, To: id})
 			}
-			add(state.Move{Action: actLose, Piece: typ, To: id})
-			add(state.Move{Action: actRetreat, Piece: typ, To: id})
+			add(state.Selection{Action: actLose, Piece: typ, To: id})
+			add(state.Selection{Action: actRetreat, Piece: typ, To: id})
 			for s := 1; s <= nSeats; s++ {
-				add(state.Move{Action: actRetreat, Piece: typ, To: id, Count: s})
+				add(state.Selection{Action: actRetreat, Piece: typ, To: id, Count: s})
 			}
 		}
 		if c.Kind != cardIndependent {
-			add(state.Move{Action: actBuy, Piece: typ})
+			add(state.Selection{Action: actBuy, Piece: typ})
 		}
 		for a := range m.ids {
 			for b := range m.ids {
 				if a != b {
-					add(state.Move{Action: actGo, Piece: typ, From: m.ids[a], To: m.ids[b]})
+					add(state.Selection{Action: actGo, Piece: typ, From: m.ids[a], To: m.ids[b]})
 				}
 			}
 		}
 		for _, id := range m.ids {
-			add(state.Move{Action: actBring, Piece: typ, From: id})
+			add(state.Selection{Action: actBring, Piece: typ, From: id})
 		}
-		add(state.Move{Action: actAssign, Piece: typ})
+		add(state.Selection{Action: actAssign, Piece: typ})
 		for s := 1; s <= nSeats; s++ {
-			add(state.Move{Action: actAssign, Piece: typ, Count: s})
-			add(state.Move{Action: actSpare, Piece: typ, Count: s})
+			add(state.Selection{Action: actAssign, Piece: typ, Count: s})
+			add(state.Selection{Action: actSpare, Piece: typ, Count: s})
 		}
 	}
 	for _, typ := range []string{uFilth} {
 		for _, id := range m.ids {
-			add(state.Move{Action: actLose, Piece: typ, To: id})
-			add(state.Move{Action: actRetreat, Piece: typ, To: id})
+			add(state.Selection{Action: actLose, Piece: typ, To: id})
+			add(state.Selection{Action: actRetreat, Piece: typ, To: id})
 			for s := 1; s <= nSeats; s++ {
-				add(state.Move{Action: actRetreat, Piece: typ, To: id, Count: s})
+				add(state.Selection{Action: actRetreat, Piece: typ, To: id, Count: s})
 			}
 		}
-		add(state.Move{Action: actAssign, Piece: typ})
-		add(state.Move{Action: actShrivel, Piece: typ})
+		add(state.Selection{Action: actAssign, Piece: typ})
+		add(state.Selection{Action: actShrivel, Piece: typ})
 		for s := 1; s <= nSeats; s++ {
-			add(state.Move{Action: actAssign, Piece: typ, Count: s})
-			add(state.Move{Action: actSpare, Piece: typ, Count: s})
+			add(state.Selection{Action: actAssign, Piece: typ, Count: s})
+			add(state.Selection{Action: actSpare, Piece: typ, Count: s})
 		}
 	}
 	for i := range cards {
@@ -1156,55 +1158,55 @@ func cardNotations(m *mapData, add func(state.Move)) {
 			for _, id := range m.ids {
 				for _, g := range unitTypes {
 					if unitClassOf(g) == classGOO {
-						add(state.Move{Action: actAwaken, Piece: uCthugha, To: id, Count: unitTypeIndex[g] + 1})
+						add(state.Selection{Action: actAwaken, Piece: uCthugha, To: id, Count: unitTypeIndex[g] + 1})
 					}
 				}
 			}
 		}
 	}
 	for _, id := range m.ids {
-		add(state.Move{Action: actMoon, To: id})
-		add(state.Move{Action: actCrypt, To: id})
-		add(state.Move{Action: actFilth, To: id})
-		add(state.Move{Action: actSting, To: id})
-		add(state.Move{Action: actZygote, To: id})
-		add(state.Move{Action: actGateOff, To: id})
+		add(state.Selection{Action: actMoon, To: id})
+		add(state.Selection{Action: actCrypt, To: id})
+		add(state.Selection{Action: actFilth, To: id})
+		add(state.Selection{Action: actSting, To: id})
+		add(state.Selection{Action: actZygote, To: id})
+		add(state.Selection{Action: actGateOff, To: id})
 		for _, typ := range []string{uCultist, uHighPriest} {
-			add(state.Move{Action: actSting, Piece: typ, To: id})
+			add(state.Selection{Action: actSting, Piece: typ, To: id})
 		}
 	}
-	add(state.Move{Action: actZygote})
+	add(state.Selection{Action: actZygote})
 	// The abilities that can reach any unit, whichever cult or card it came with
 	// (moves the lists above already have are not added twice).
 	for _, typ := range unitTypes {
-		add(state.Move{Action: actShrivel, Piece: typ})
-		add(state.Move{Action: actSwap, Piece: typ})
-		add(state.Move{Action: actAbsorb, Piece: typ})
-		add(state.Move{Action: actCannibal, Piece: typ})
-		add(state.Move{Action: actDesecrate, Piece: typ})
-		add(state.Move{Action: actAssign, Piece: typ})
+		add(state.Selection{Action: actShrivel, Piece: typ})
+		add(state.Selection{Action: actSwap, Piece: typ})
+		add(state.Selection{Action: actAbsorb, Piece: typ})
+		add(state.Selection{Action: actCannibal, Piece: typ})
+		add(state.Selection{Action: actDesecrate, Piece: typ})
+		add(state.Selection{Action: actAssign, Piece: typ})
 		for s := 1; s <= nSeats; s++ {
-			add(state.Move{Action: actInvisible, Piece: typ, Count: s})
-			add(state.Move{Action: actAssign, Piece: typ, Count: s})
-			add(state.Move{Action: actSpare, Piece: typ, Count: s})
+			add(state.Selection{Action: actInvisible, Piece: typ, Count: s})
+			add(state.Selection{Action: actAssign, Piece: typ, Count: s})
+			add(state.Selection{Action: actSpare, Piece: typ, Count: s})
 		}
 		for _, id := range m.ids {
-			add(state.Move{Action: actLose, Piece: typ, To: id})
-			add(state.Move{Action: actRetreat, Piece: typ, To: id})
-			add(state.Move{Action: actMao, Piece: typ, To: id})
-			add(state.Move{Action: actBring, Piece: typ, From: id})
+			add(state.Selection{Action: actLose, Piece: typ, To: id})
+			add(state.Selection{Action: actRetreat, Piece: typ, To: id})
+			add(state.Selection{Action: actMao, Piece: typ, To: id})
+			add(state.Selection{Action: actBring, Piece: typ, From: id})
 			for s := 1; s <= nSeats; s++ {
-				add(state.Move{Action: actRetreat, Piece: typ, To: id, Count: s})
-				add(state.Move{Action: actCapture, Piece: typ, To: id, Count: s})
+				add(state.Selection{Action: actRetreat, Piece: typ, To: id, Count: s})
+				add(state.Selection{Action: actCapture, Piece: typ, To: id, Count: s})
 			}
 		}
 		for a := range m.ids {
 			for b := range m.ids {
 				if a != b {
-					add(state.Move{Action: actRearrange, Piece: typ, From: m.ids[a], To: m.ids[b]})
+					add(state.Selection{Action: actRearrange, Piece: typ, From: m.ids[a], To: m.ids[b]})
 					// A Shantak carries a Cultist anywhere.
-					add(state.Move{Action: actGo, Piece: typ, From: m.ids[a], To: m.ids[b]})
-					add(state.Move{Action: actLeave, Piece: typ, From: m.ids[a], To: m.ids[b]})
+					add(state.Selection{Action: actGo, Piece: typ, From: m.ids[a], To: m.ids[b]})
+					add(state.Selection{Action: actLeave, Piece: typ, From: m.ids[a], To: m.ids[b]})
 				}
 			}
 		}
@@ -1228,11 +1230,11 @@ func cardNotations(m *mapData, add func(state.Move)) {
 		for _, p := range pieces {
 			for _, s := range seats {
 				if !c.Area {
-					add(state.Move{Action: actCard, Piece: p, Count: s})
+					add(state.Selection{Action: actCard, Piece: p, Count: s})
 					continue
 				}
 				for _, id := range m.ids {
-					add(state.Move{Action: actCard, Piece: p, To: id, Count: s})
+					add(state.Selection{Action: actCard, Piece: p, To: id, Count: s})
 				}
 			}
 		}
@@ -1240,28 +1242,28 @@ func cardNotations(m *mapData, add func(state.Move)) {
 	for _, f := range factions {
 		for _, b := range f.Books {
 			for s := 1; s <= nSeats; s++ {
-				add(state.Move{Action: actMoon, Piece: b.ID, Count: s})
+				add(state.Selection{Action: actMoon, Piece: b.ID, Count: s})
 			}
-			add(state.Move{Action: actRansom, Piece: b.ID})
+			add(state.Selection{Action: actRansom, Piece: b.ID})
 		}
 	}
 	for _, b := range neutralBooks {
 		for s := 1; s <= nSeats; s++ {
-			add(state.Move{Action: actMoon, Piece: b.ID, Count: s})
+			add(state.Selection{Action: actMoon, Piece: b.ID, Count: s})
 		}
-		add(state.Move{Action: actRansom, Piece: b.ID})
+		add(state.Selection{Action: actRansom, Piece: b.ID})
 	}
 	for s := 1; s <= nSeats; s++ {
-		add(state.Move{Action: actCrypt, Count: s})
+		add(state.Selection{Action: actCrypt, Count: s})
 	}
 	for a := 1; a <= 3; a++ {
 		for b := a; b <= 3; b++ {
-			add(state.Move{Action: actDiscard, Count: 10*a + b})
+			add(state.Selection{Action: actDiscard, Count: 10*a + b})
 		}
-		add(state.Move{Action: actPick, Count: a})
+		add(state.Selection{Action: actPick, Count: a})
 	}
-	add(state.Move{Action: actDonate, Piece: "give"})
-	add(state.Move{Action: actDonate, Piece: "refuse"})
+	add(state.Selection{Action: actDonate, Piece: "give"})
+	add(state.Selection{Action: actDonate, Piece: "refuse"})
 }
 
 // Describe labels the decisions for clients.

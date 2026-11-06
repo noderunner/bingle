@@ -148,7 +148,7 @@ func (rs *Ruleset) CanTakeBack(game *catalog.CompiledGame, before, after *state.
 }
 
 // RedactMove hides an unanswered strike's committed dice in the move list.
-func (rs *Ruleset) RedactMove(game *catalog.CompiledGame, st *state.BoardState, mv state.Move, notation string) (state.Move, string) {
+func (rs *Ruleset) RedactMove(game *catalog.CompiledGame, st *state.BoardState, mv state.Selection, notation string) (state.Selection, string) {
 	if mv.Action != actStrike {
 		return mv, notation
 	}

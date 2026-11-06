@@ -134,10 +134,10 @@ func TestCounterAttackLandsInTheSameInstant(t *testing.T) {
 	if d.Stage != "push" {
 		t.Fatalf("stage %q", d.Stage)
 	}
-	if got := state.LegalMoves(g, st, dark); len(got) == 0 {
+	if got := state.LegalSelections(g, st, dark); len(got) == 0 {
 		t.Fatal("Dark chooses the direction of its own push")
 	}
-	if len(state.LegalMoves(g, st, light)) != 0 {
+	if len(state.LegalSelections(g, st, light)) != 0 {
 		t.Fatal("Light must wait for Dark's push")
 	}
 }
@@ -294,7 +294,7 @@ func TestExhaustedUnitsCannotStrikeAndActivationEndsWhenAUnitIsExhausted(t *test
 	}
 	// 3 successes vs 0: a margin push on the Champion first.
 	for d.Stage == "push" {
-		legal := state.LegalMoves(g, st, dark)
+		legal := state.LegalSelections(g, st, dark)
 		res, err := state.Apply(g, st, dark, legal[0])
 		if err != nil {
 			t.Fatal(err)
@@ -373,7 +373,7 @@ func TestLegalMovesAreAcceptedAndOthersRejected(t *testing.T) {
 	g := game(t)
 	b := brawl{}
 	st := b.start(t)
-	legal := state.LegalMoves(g, st, light)
+	legal := state.LegalSelections(g, st, light)
 	for _, mv := range legal {
 		if _, err := state.Apply(g, st, light, mv); err != nil {
 			t.Fatalf("legal move %s rejected: %v", state.FormatMove(g, mv), err)

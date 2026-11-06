@@ -81,16 +81,16 @@ type minimaxSearch struct {
 	out    bool // budget or context exhausted
 }
 
-func (b *minimaxBot) Choose(ctx context.Context, game *catalog.CompiledGame, st *state.BoardState, seat int, legal []state.Move) (state.Move, error) {
+func (b *minimaxBot) Choose(ctx context.Context, game *catalog.CompiledGame, st *state.BoardState, seat int, legal []state.Selection) (state.Selection, error) {
 	ev, err := b.Evaluate(ctx, game, st, seat, legal)
 	if err != nil {
-		return state.Move{}, err
+		return state.Selection{}, err
 	}
 	return ev.Move, nil
 }
 
 // Evaluate runs the search; WinRate is a squashed score in [0, 1].
-func (b *minimaxBot) Evaluate(ctx context.Context, game *catalog.CompiledGame, st *state.BoardState, seat int, legal []state.Move) (Evaluation, error) {
+func (b *minimaxBot) Evaluate(ctx context.Context, game *catalog.CompiledGame, st *state.BoardState, seat int, legal []state.Selection) (Evaluation, error) {
 	if len(legal) == 0 {
 		return Evaluation{}, ErrNoMoves
 	}
@@ -126,11 +126,11 @@ func (b *minimaxBot) Evaluate(ctx context.Context, game *catalog.CompiledGame, s
 
 	// Order the root moves randomly once so ties break variedly but
 	// reproducibly.
-	order := append([]state.Move(nil), legal...)
+	order := append([]state.Selection(nil), legal...)
 	rng.Shuffle(len(order), func(i, j int) { order[i], order[j] = order[j], order[i] })
 
 	type scored struct {
-		mv    state.Move
+		mv    state.Selection
 		score int
 	}
 	var best []scored
@@ -337,7 +337,7 @@ func (s *minimaxSearch) search(st *state.BoardState, seat, depth, alpha, beta, p
 	}
 	// Inner nodes follow the game's strategy guide where it has one, so the
 	// node budget goes into plausible lines.
-	moves := state.GuidedMoves(s.game, st, seat, state.LegalMoves(s.game, st, seat))
+	moves := state.GuidedMoves(s.game, st, seat, state.LegalSelections(s.game, st, seat))
 	if len(moves) == 0 {
 		return 0
 	}

@@ -10,7 +10,7 @@ import (
 // The Beyond One and Idolatry to people.
 
 // scoreOT values the turn actions of the two cults.
-func (g *guide) scoreOT(mv state.Move, area int) (float64, bool) {
+func (g *guide) scoreOT(mv state.Selection, area int) (float64, bool) {
 	e, d, seat := g.e, g.e.d, g.seat
 	switch mv.Action {
 	case actBeyond:
@@ -45,7 +45,7 @@ func (g *guide) scoreOT(mv state.Move, area int) (float64, bool) {
 }
 
 // promptOT answers the prompts of the two cults.
-func (g *guide) promptOT(p Prompt, legal []state.Move) ([]state.Move, bool) {
+func (g *guide) promptOT(p Prompt, legal []state.Selection) ([]state.Selection, bool) {
 	e, d, seat := g.e, g.e.d, g.seat
 	var list []scoredMove
 	switch p.Kind {
@@ -104,7 +104,7 @@ func (g *guide) promptOT(p Prompt, legal []state.Move) ([]state.Move, bool) {
 	case "idol":
 		for _, mv := range legal {
 			if mv.Action == actDone {
-				return []state.Move{mv}, true
+				return []state.Selection{mv}, true
 			}
 		}
 	}

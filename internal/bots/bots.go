@@ -35,13 +35,13 @@ type Bot interface {
 	Description() string
 	// Choose picks one of legal (which must be non-empty and is the full
 	// set of legal moves for seat in st).
-	Choose(ctx context.Context, game *catalog.CompiledGame, st *state.BoardState, seat int, legal []state.Move) (state.Move, error)
+	Choose(ctx context.Context, game *catalog.CompiledGame, st *state.BoardState, seat int, legal []state.Selection) (state.Selection, error)
 }
 
 // Evaluation is a bot's assessment of a position: the move it would play and
 // how good it thinks it is.
 type Evaluation struct {
-	Move state.Move
+	Move state.Selection
 	// Heuristic is true when WinRate is a squashed heuristic score rather
 	// than a probability estimate (the minimax bot).
 	Heuristic bool
@@ -58,7 +58,7 @@ type Evaluation struct {
 
 // Candidate is one move with its estimate.
 type Candidate struct {
-	Move    state.Move
+	Move    state.Selection
 	WinRate float64
 	Visits  int
 }
@@ -66,7 +66,7 @@ type Candidate struct {
 // Evaluator is implemented by bots that can say how good a position is, not
 // only what to play.
 type Evaluator interface {
-	Evaluate(ctx context.Context, game *catalog.CompiledGame, st *state.BoardState, seat int, legal []state.Move) (Evaluation, error)
+	Evaluate(ctx context.Context, game *catalog.CompiledGame, st *state.BoardState, seat int, legal []state.Selection) (Evaluation, error)
 }
 
 // ErrNoMoves is returned by Choose when legal is empty.
@@ -183,9 +183,9 @@ func hasLost(res *state.MoveResult, seat int) bool {
 // wins, safe moves (no immediate loss and no opponent winning reply) and the
 // rest. It also returns the resulting positions for reuse.
 type classified struct {
-	wins   []state.Move
-	safe   []state.Move
-	unsafe []state.Move
+	wins   []state.Selection
+	safe   []state.Selection
+	unsafe []state.Selection
 }
 
 // replyBudget bounds the opponent-reply checks of one classify call, in
@@ -197,7 +197,7 @@ type classified struct {
 // seeded bots stay reproducible.
 const replyBudget = 2_000_000
 
-func classify(ctx context.Context, game *catalog.CompiledGame, st *state.BoardState, seat int, legal []state.Move) (classified, error) {
+func classify(ctx context.Context, game *catalog.CompiledGame, st *state.BoardState, seat int, legal []state.Selection) (classified, error) {
 	var out classified
 	budget := replyBudget
 	cost := game.Board.Len()
@@ -232,7 +232,7 @@ func classify(ctx context.Context, game *catalog.CompiledGame, st *state.BoardSt
 		}
 		oppSeat := res.NextImpulseSeat
 		losing := false
-		for _, reply := range state.LegalMoves(game, res.NewState, oppSeat) {
+		for _, reply := range state.LegalSelections(game, res.NewState, oppSeat) {
 			budget -= cost
 			r2, err := state.Apply(game, res.NewState, oppSeat, reply)
 			if err == nil && hasLost(r2, seat) {
@@ -265,9 +265,9 @@ func (b *randomBot) Description() string {
 	return "Plays a uniformly random legal move. Useful as a floor when measuring a policy."
 }
 
-func (b *randomBot) Choose(_ context.Context, _ *catalog.CompiledGame, _ *state.BoardState, _ int, legal []state.Move) (state.Move, error) {
+func (b *randomBot) Choose(_ context.Context, _ *catalog.CompiledGame, _ *state.BoardState, _ int, legal []state.Selection) (state.Selection, error) {
 	if len(legal) == 0 {
-		return state.Move{}, ErrNoMoves
+		return state.Selection{}, ErrNoMoves
 	}
 	b.mu.Lock()
 	defer b.mu.Unlock()
@@ -290,16 +290,16 @@ func (b *tacticalBot) Description() string {
 	return "Takes an immediate win when it sees one, avoids moves that let the opponent win next turn, and otherwise plays randomly."
 }
 
-func (b *tacticalBot) Choose(ctx context.Context, game *catalog.CompiledGame, st *state.BoardState, seat int, legal []state.Move) (state.Move, error) {
+func (b *tacticalBot) Choose(ctx context.Context, game *catalog.CompiledGame, st *state.BoardState, seat int, legal []state.Selection) (state.Selection, error) {
 	if len(legal) == 0 {
-		return state.Move{}, ErrNoMoves
+		return state.Selection{}, ErrNoMoves
 	}
 	b.mu.Lock()
 	st = state.Determinize(game, st, seat, b.rng)
 	b.mu.Unlock()
 	c, err := classify(ctx, game, st, seat, legal)
 	if err != nil {
-		return state.Move{}, err
+		return state.Selection{}, err
 	}
 	b.mu.Lock()
 	defer b.mu.Unlock()
@@ -366,10 +366,10 @@ func (b *mctsBot) Description() string {
 type mctsNode struct {
 	st       *state.BoardState
 	seat     int // seat to move at this node
-	move     state.Move
+	move     state.Selection
 	parent   *mctsNode
 	children []*mctsNode
-	untried  []state.Move
+	untried  []state.Selection
 	visits   int
 	score    float64 // from the perspective of the seat that moved INTO this node
 	mover    int     // the seat that made `move`
@@ -377,17 +377,17 @@ type mctsNode struct {
 	winner   *int
 }
 
-func (b *mctsBot) Choose(ctx context.Context, game *catalog.CompiledGame, st *state.BoardState, seat int, legal []state.Move) (state.Move, error) {
+func (b *mctsBot) Choose(ctx context.Context, game *catalog.CompiledGame, st *state.BoardState, seat int, legal []state.Selection) (state.Selection, error) {
 	ev, err := b.Evaluate(ctx, game, st, seat, legal)
 	if err != nil {
-		return state.Move{}, err
+		return state.Selection{}, err
 	}
 	return ev.Move, nil
 }
 
 // Evaluate searches and reports the chosen move with its estimated win rate
 // and the best alternatives.
-func (b *mctsBot) Evaluate(ctx context.Context, game *catalog.CompiledGame, st *state.BoardState, seat int, legal []state.Move) (Evaluation, error) {
+func (b *mctsBot) Evaluate(ctx context.Context, game *catalog.CompiledGame, st *state.BoardState, seat int, legal []state.Selection) (Evaluation, error) {
 	if len(legal) == 0 {
 		return Evaluation{}, ErrNoMoves
 	}
@@ -422,7 +422,7 @@ func (b *mctsBot) Evaluate(ctx context.Context, game *catalog.CompiledGame, st *
 		return Evaluation{Move: candidates[0], WinRate: 0.5, Alternatives: []Candidate{{Move: candidates[0], WinRate: 0.5}}}, nil
 	}
 
-	root := &mctsNode{st: st, seat: seat, untried: append([]state.Move(nil), candidates...), mover: -1}
+	root := &mctsNode{st: st, seat: seat, untried: append([]state.Selection(nil), candidates...), mover: -1}
 	deadline := time.Now().Add(b.opts.Budget)
 
 	for it := 0; ; it++ {
@@ -461,7 +461,7 @@ func (b *mctsBot) Evaluate(ctx context.Context, game *catalog.CompiledGame, st *
 func (b *mctsBot) iterate(game *catalog.CompiledGame, root *mctsNode, rng *rand.Rand) {
 	node := root
 
-	// Selection.
+	// Descent.
 	for len(node.untried) == 0 && len(node.children) > 0 && !node.terminal {
 		node = b.selectChild(node)
 	}
@@ -487,7 +487,7 @@ func (b *mctsBot) iterate(game *catalog.CompiledGame, root *mctsNode, rng *rand.
 			winner:   res.WinnerSeat,
 		}
 		if !child.terminal {
-			child.untried = state.GuidedMoves(game, child.st, child.seat, state.LegalMoves(game, child.st, child.seat))
+			child.untried = state.GuidedMoves(game, child.st, child.seat, state.LegalSelections(game, child.st, child.seat))
 			if len(child.untried) == 0 {
 				child.terminal = true // stalemate: scored as a draw
 			}
@@ -552,7 +552,7 @@ func (b *mctsBot) playout(game *catalog.CompiledGame, node *mctsNode, rng *rand.
 		// Playouts follow the game's strategy guide where it has one: a
 		// playout of random moves tells nothing about a game where most
 		// moves are plain silly.
-		moves := state.GuidedMoves(game, st, seat, state.LegalMoves(game, st, seat))
+		moves := state.GuidedMoves(game, st, seat, state.LegalSelections(game, st, seat))
 		if len(moves) == 0 {
 			return -1, true, 0, 0, false
 		}

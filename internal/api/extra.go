@@ -144,16 +144,16 @@ func (h *handlers) handleListBots(w http.ResponseWriter, r *http.Request) {
 
 // legalMoveDTO is one entry of GET /games/{code}/moves/legal.
 type legalMoveDTO struct {
-	Notation string       `json:"notation"`
-	Action   string       `json:"action"`
-	Piece    string       `json:"piece,omitempty"`
-	From     string       `json:"from,omitempty"`
-	To       string       `json:"to,omitempty"`
-	Count    int          `json:"count,omitempty"`
-	Path     []string     `json:"path,omitempty"`
-	Drops    []int        `json:"drops,omitempty"`
-	Aim      string       `json:"aim,omitempty"`
-	Steps    []state.Step `json:"steps,omitempty"`
+	Notation string          `json:"notation"`
+	Action   string          `json:"action"`
+	Piece    string          `json:"piece,omitempty"`
+	From     string          `json:"from,omitempty"`
+	To       string          `json:"to,omitempty"`
+	Count    int             `json:"count,omitempty"`
+	Path     []string        `json:"path,omitempty"`
+	Drops    []int           `json:"drops,omitempty"`
+	Aim      string          `json:"aim,omitempty"`
+	Steps    []state.Gesture `json:"steps,omitempty"`
 }
 
 func legalMoveDTOs(moves []session.LegalMove, withSteps bool) []legalMoveDTO {
@@ -458,10 +458,10 @@ type hintRequest struct {
 
 // hintResponse is POST /games/{code}/hint's body.
 type hintResponse struct {
-	Notation    string       `json:"notation"`
-	Steps       []state.Step `json:"steps,omitempty"`
-	ImpulseSeat int          `json:"impulse_seat"`
-	Bot         string       `json:"bot"`
+	Notation    string          `json:"notation"`
+	Steps       []state.Gesture `json:"steps,omitempty"`
+	ImpulseSeat int             `json:"impulse_seat"`
+	Bot         string          `json:"bot"`
 	// WinRate is the bot's estimate (0..1) of the side to move winning
 	// with this move, present when the bot estimates; Alternatives lists
 	// the best few moves with their estimates.

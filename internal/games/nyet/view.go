@@ -108,7 +108,7 @@ func (rs *Ruleset) Redact(game *catalog.CompiledGame, st *state.BoardState, view
 
 // RedactMove: a card played is public; discards and passes name the card only
 // to the player who made them.
-func (rs *Ruleset) RedactMove(game *catalog.CompiledGame, st *state.BoardState, mv state.Move, notation string) (state.Move, string) {
+func (rs *Ruleset) RedactMove(game *catalog.CompiledGame, st *state.BoardState, mv state.Selection, notation string) (state.Selection, string) {
 	if mv.Action == actDiscard || mv.Action == actGive {
 		mv.Piece = ""
 		if mv.Action == actDiscard {
@@ -239,7 +239,7 @@ func (e *eng) buildView(viewer int) *View {
 	return v
 }
 
-func (e *eng) legalForView() []state.Move {
+func (e *eng) legalForView() []state.Selection {
 	if e.d.Phase == phaseTeam || e.d.Phase == phaseBonus {
 		return e.legal()
 	}
@@ -373,15 +373,15 @@ func (rs *Ruleset) Heuristic(game *catalog.CompiledGame, st *state.BoardState, s
 // GuideMoves makes a bot play the tricks sensibly: take a trick with the
 // cheapest card that wins it, or throw the lowest card (not a 1, which an
 // opponent could capture) when it cannot.
-func (rs *Ruleset) GuideMoves(game *catalog.CompiledGame, st *state.BoardState, seat int, legal []state.Move) []state.Move {
+func (rs *Ruleset) GuideMoves(game *catalog.CompiledGame, st *state.BoardState, seat int, legal []state.Selection) []state.Selection {
 	d, err := dataOf(st)
 	if err != nil || d.Phase != phaseTrick || len(legal) < 2 {
 		return legal
 	}
 	e := newEng(game, d)
-	value := func(mv state.Move) int { return e.typeOf(mv.Piece).Value }
+	value := func(mv state.Selection) int { return e.typeOf(mv.Piece).Value }
 	type opt struct {
-		mv   state.Move
+		mv   state.Selection
 		wins bool
 	}
 	var opts []opt
@@ -390,8 +390,8 @@ func (rs *Ruleset) GuideMoves(game *catalog.CompiledGame, st *state.BoardState, 
 		plays := append(append([]Play(nil), d.Plays...), Play{Seat: seat, Card: id})
 		opts = append(opts, opt{mv, e.trickWinner(plays) == seat})
 	}
-	pick := func(wins bool) []state.Move {
-		var best state.Move
+	pick := func(wins bool) []state.Selection {
+		var best state.Selection
 		found := false
 		for _, o := range opts {
 			if o.wins != wins {
@@ -403,7 +403,7 @@ func (rs *Ruleset) GuideMoves(game *catalog.CompiledGame, st *state.BoardState, 
 			}
 		}
 		if found {
-			return []state.Move{best}
+			return []state.Selection{best}
 		}
 		return nil
 	}

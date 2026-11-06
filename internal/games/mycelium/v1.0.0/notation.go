@@ -16,7 +16,7 @@ import (
 // early.
 
 // Format renders mv.
-func (rs *Ruleset) Format(game *catalog.CompiledGame, mv state.Move) string {
+func (rs *Ruleset) Format(game *catalog.CompiledGame, mv state.Selection) string {
 	switch mv.Action {
 	case actPlace:
 		return fmt.Sprintf("%s@%s", mv.Piece, mv.To)
@@ -32,56 +32,56 @@ func (rs *Ruleset) Format(game *catalog.CompiledGame, mv state.Move) string {
 }
 
 // Parse reads notation produced by Format (case-insensitively).
-func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Move, error) {
+func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Selection, error) {
 	t := strings.ToLower(strings.TrimSpace(text))
 	if t == actDone {
-		return state.Move{Action: actDone}, nil
+		return state.Selection{Action: actDone}, nil
 	}
 	if i := strings.IndexByte(t, '@'); i >= 0 {
 		color, cell := t[:i], board.PositionID(t[i+1:])
 		if ownerOf(color) == 0 {
-			return state.Move{}, fmt.Errorf("mycelium: unknown colour %q (black, green)", color)
+			return state.Selection{}, fmt.Errorf("mycelium: unknown colour %q (black, green)", color)
 		}
 		if !game.Board.HasPosition(cell) {
-			return state.Move{}, fmt.Errorf("mycelium: unknown cell %q", cell)
+			return state.Selection{}, fmt.Errorf("mycelium: unknown cell %q", cell)
 		}
-		return state.Move{Action: actPlace, Piece: color, To: cell}, nil
+		return state.Selection{Action: actPlace, Piece: color, To: cell}, nil
 	}
 	f := strings.Fields(t)
 	if len(f) < 2 || (f[0] != actSpore && f[0] != actHyphae) {
-		return state.Move{}, fmt.Errorf("mycelium: cannot read %q as a move (expected black@d4, spore d3 d7, hyphae d4 e4, hyphae f4 or done)", text)
+		return state.Selection{}, fmt.Errorf("mycelium: cannot read %q as a move (expected black@d4, spore d3 d7, hyphae d4 e4, hyphae f4 or done)", text)
 	}
 	cells := make([]board.PositionID, len(f)-1)
 	for i, c := range f[1:] {
 		cells[i] = board.PositionID(c)
 		if !game.Board.HasPosition(cells[i]) {
-			return state.Move{}, fmt.Errorf("mycelium: unknown cell %q", c)
+			return state.Selection{}, fmt.Errorf("mycelium: unknown cell %q", c)
 		}
 	}
 	switch {
 	case len(cells) == 2:
-		return state.Move{Action: f[0], From: cells[0], To: cells[1]}, nil
+		return state.Selection{Action: f[0], From: cells[0], To: cells[1]}, nil
 	case len(cells) == 1 && f[0] == actHyphae:
-		return state.Move{Action: actHyphae, To: cells[0]}, nil
+		return state.Selection{Action: actHyphae, To: cells[0]}, nil
 	}
-	return state.Move{}, fmt.Errorf("mycelium: %q needs a node and the cell it converts", text)
+	return state.Selection{}, fmt.Errorf("mycelium: %q needs a node and the cell it converts", text)
 }
 
-// Steps: a placement is the colour then the cell; a spread is the spreading
+// Gestures: a placement is the colour then the cell; a spread is the spreading
 // node then the cell it converts (only the cell, for the next conversion of a
 // hyphae spread); done is an action. Which kind of spread a click makes is
 // never in doubt, because each phase of a confluence has only one kind.
-func (rs *Ruleset) Steps(game *catalog.CompiledGame, mv state.Move) []state.Step {
+func (rs *Ruleset) Gestures(game *catalog.CompiledGame, mv state.Selection) []state.Gesture {
 	switch mv.Action {
 	case actPlace:
-		return []state.Step{{Kind: state.StepPiece, Value: mv.Piece}, {Kind: state.StepPos, Value: string(mv.To)}}
+		return []state.Gesture{{Kind: state.GesturePiece, Value: mv.Piece}, {Kind: state.GesturePos, Value: string(mv.To)}}
 	case actSpore, actHyphae:
 		if mv.From == "" {
-			return []state.Step{{Kind: state.StepPos, Value: string(mv.To)}}
+			return []state.Gesture{{Kind: state.GesturePos, Value: string(mv.To)}}
 		}
-		return []state.Step{{Kind: state.StepPos, Value: string(mv.From)}, {Kind: state.StepPos, Value: string(mv.To)}}
+		return []state.Gesture{{Kind: state.GesturePos, Value: string(mv.From)}, {Kind: state.GesturePos, Value: string(mv.To)}}
 	}
-	return []state.Step{{Kind: state.StepAction, Value: mv.Action}}
+	return []state.Gesture{{Kind: state.GestureAction, Value: mv.Action}}
 }
 
 // Describe labels the decisions for clients.

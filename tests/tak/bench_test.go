@@ -16,7 +16,7 @@ func midGame(tb testing.TB, id string, n int, seed int64) (*state.BoardState, in
 	rng := rand.New(rand.NewSource(seed))
 	st, seat := state.InitialState(g), 1
 	for i := 0; i < n; i++ {
-		moves := state.LegalMoves(g, st, seat)
+		moves := state.LegalSelections(g, st, seat)
 		res, err := state.Apply(g, st, seat, moves[rng.Intn(len(moves))])
 		if err != nil {
 			tb.Fatal(err)
@@ -34,7 +34,7 @@ func BenchmarkLegalMoves5x5Midgame(b *testing.B) {
 	st, seat := midGame(b, "tak-5x5", 30, 1)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_ = state.LegalMoves(g, st, seat)
+		_ = state.LegalSelections(g, st, seat)
 	}
 }
 
@@ -43,7 +43,7 @@ func BenchmarkLegalMoves8x8Midgame(b *testing.B) {
 	st, seat := midGame(b, "tak-8x8", 60, 1)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_ = state.LegalMoves(g, st, seat)
+		_ = state.LegalSelections(g, st, seat)
 	}
 }
 
@@ -55,7 +55,7 @@ func BenchmarkRandomPlayout5x5(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		st, seat := state.InitialState(g), 1
 		for {
-			moves := state.LegalMoves(g, st, seat)
+			moves := state.LegalSelections(g, st, seat)
 			res, err := state.Apply(g, st, seat, moves[rng.Intn(len(moves))])
 			if err != nil {
 				b.Fatal(err)
@@ -75,15 +75,15 @@ func BenchmarkRandomPlayout5x5(b *testing.B) {
 func TestLegalMoveListSizeIsReasonable(t *testing.T) {
 	g := loadGame(t, "tak-8x8")
 	st, seat := midGame(t, "tak-8x8", 80, 7)
-	moves := state.LegalMoves(g, st, seat)
+	moves := state.LegalSelections(g, st, seat)
 	type dto struct {
 		Notation string
-		Steps    []state.Step
-		Move     state.Move
+		Steps    []state.Gesture
+		Move     state.Selection
 	}
 	out := make([]dto, len(moves))
 	for i, m := range moves {
-		out[i] = dto{state.FormatMove(g, m), state.Steps(g, m), m}
+		out[i] = dto{state.FormatMove(g, m), state.Gestures(g, m), m}
 	}
 	data, _ := json.Marshal(out)
 	t.Logf("8x8 mid-game: %d legal moves, %d KiB of JSON", len(moves), len(data)/1024)

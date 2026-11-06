@@ -24,7 +24,7 @@ func TestBrandubhStartAndRookMoves(t *testing.T) {
 	}
 	// Attackers at the rim can slide along their edge but never onto the
 	// corners; d2 is boxed in by d1/d3.
-	moves := state.LegalMoves(g, st, 1)
+	moves := state.LegalSelections(g, st, 1)
 	if len(moves) == 0 {
 		t.Fatal("attackers have no moves")
 	}
@@ -153,7 +153,7 @@ func TestBrandubhRandomGamesTerminateSanely(t *testing.T) {
 	for n := 0; n < 15; n++ {
 		st, seat := state.InitialState(g), 1
 		for ply := 0; ply < 400; ply++ {
-			legal := state.LegalMoves(g, st, seat)
+			legal := state.LegalSelections(g, st, seat)
 			if len(legal) == 0 {
 				t.Fatalf("game %d: stuck seat %d without the game ending", n, seat)
 			}

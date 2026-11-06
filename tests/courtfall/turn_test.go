@@ -276,7 +276,7 @@ func TestFifthVPEndsTheGameOnTheClear(t *testing.T) {
 	if d := data(t, st); d.Phase != "over" || d.VP[0] != 5 {
 		t.Fatalf("data %+v", d)
 	}
-	if len(state.LegalMoves(g, st, dark)) != 0 || len(state.LegalMoves(g, st, light)) != 0 {
+	if len(state.LegalSelections(g, st, dark)) != 0 || len(state.LegalSelections(g, st, light)) != 0 {
 		t.Fatal("a finished game offers moves")
 	}
 	out, err := state.Evaluate(g, st, light)

@@ -215,8 +215,8 @@ func setupRank(f int) int {
 // legalSetup lists where the cult that is setting up may begin: the sigil
 // areas of the Windwalker, an empty area with a glyph for the Tcho-Tcho, any
 // empty area for the Opener of the Way.
-func (e *eng) legalSetup() []state.Move {
-	var out []state.Move
+func (e *eng) legalSetup() []state.Selection {
+	var out []state.Selection
 	var areas []int
 	switch e.fac(e.d.Setup) {
 	case facWW:
@@ -241,7 +241,7 @@ func (e *eng) legalSetup() []state.Move {
 		areas = e.emptyAreas()
 	}
 	for _, a := range areas {
-		out = append(out, state.Move{Action: actStart, To: e.m.ids[a]})
+		out = append(out, state.Selection{Action: actStart, To: e.m.ids[a]})
 	}
 	return out
 }

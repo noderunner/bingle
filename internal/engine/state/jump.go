@@ -64,7 +64,7 @@ func (c *rctx) hopsFrom(rp catalog.ResolvedPiece, cur, origin board.PositionID, 
 }
 
 // validateJump checks a jump move and returns its executor.
-func (c *rctx) validateJump(act catalog.ResolvedAction, mv Move) (executor, error) {
+func (c *rctx) validateJump(act catalog.ResolvedAction, mv Selection) (executor, error) {
 	g := c.game.Board
 	if mv.Piece != "" || mv.Count != 0 || len(mv.Drops) > 0 {
 		return nil, fmt.Errorf("state: a jump takes only from and a path of landing squares")
@@ -142,7 +142,7 @@ func (c *rctx) validateJump(act catalog.ResolvedAction, mv Move) (executor, erro
 }
 
 // enumerateJumps generates every legal jump (and chain) for the mover.
-func (c *rctx) enumerateJumps(act catalog.ResolvedAction, keep func(catalog.ResolvedAction, Move, bool)) {
+func (c *rctx) enumerateJumps(act catalog.ResolvedAction, keep func(catalog.ResolvedAction, Selection, bool)) {
 	for _, from := range c.game.Board.Positions() {
 		if c.enough() {
 			return
@@ -161,19 +161,19 @@ func (c *rctx) enumerateJumps(act catalog.ResolvedAction, keep func(catalog.Reso
 
 // jumpChains depth-first expands hops from cur, emitting maximal chains.
 func (c *rctx) jumpChains(act catalog.ResolvedAction, rp catalog.ResolvedPiece, origin, cur board.PositionID,
-	path []board.PositionID, captured map[board.PositionID]bool, keep func(catalog.ResolvedAction, Move, bool)) {
+	path []board.PositionID, captured map[board.PositionID]bool, keep func(catalog.ResolvedAction, Selection, bool)) {
 
 	hops := c.hopsFrom(rp, cur, origin, captured)
 	if len(hops) == 0 {
 		if len(path) > 0 {
-			keep(act, Move{Action: act.ID, From: origin, To: path[len(path)-1], Path: append([]board.PositionID(nil), path...)}, false)
+			keep(act, Selection{Action: act.ID, From: origin, To: path[len(path)-1], Path: append([]board.PositionID(nil), path...)}, false)
 		}
 		return
 	}
 	for _, h := range hops {
 		next := append(append([]board.PositionID(nil), path...), h.land)
 		if !act.Chain || c.promotesAt(rp, h.land) {
-			keep(act, Move{Action: act.ID, From: origin, To: h.land, Path: next}, false)
+			keep(act, Selection{Action: act.ID, From: origin, To: h.land, Path: next}, false)
 			continue
 		}
 		nextCaptured := make(map[board.PositionID]bool, len(captured)+1)
@@ -197,7 +197,7 @@ func (c *rctx) mustJump() bool {
 			continue
 		}
 		found := false
-		c.enumerateJumps(act, func(catalog.ResolvedAction, Move, bool) { found = true })
+		c.enumerateJumps(act, func(catalog.ResolvedAction, Selection, bool) { found = true })
 		if found {
 			c.mustJumpVal = true
 			return true

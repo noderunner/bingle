@@ -229,12 +229,12 @@ func (e *eng) instanceOf(seat int, typeID string) (string, bool) {
 }
 
 // legal lists the decisions of the seat to move.
-func (e *eng) legal() []state.Move {
+func (e *eng) legal() []state.Selection {
 	d := e.d
 	if d.Turn == 0 {
 		return nil
 	}
-	var out []state.Move
+	var out []state.Selection
 	switch d.Phase {
 	case phaseNyet:
 		for _, line := range lineOrder {
@@ -243,14 +243,14 @@ func (e *eng) legal() []state.Move {
 				continue
 			}
 			for _, b := range open {
-				out = append(out, state.Move{Action: actCross, Piece: b.key()})
+				out = append(out, state.Selection{Action: actCross, Piece: b.key()})
 			}
 		}
 	case phaseTeam:
 		out = e.teamMoves()
 	case phaseBonus:
 		for _, s := range e.smallTeam() {
-			out = append(out, state.Move{Action: actBonus, Piece: strconv.Itoa(s)})
+			out = append(out, state.Selection{Action: actBonus, Piece: strconv.Itoa(s)})
 		}
 	case phaseDiscard:
 		seat := d.Turn
@@ -263,11 +263,11 @@ func (e *eng) legal() []state.Move {
 			act = actGive
 		}
 		for _, tid := range e.handTypes(seat, keep) {
-			out = append(out, state.Move{Action: act, Piece: tid})
+			out = append(out, state.Selection{Action: act, Piece: tid})
 		}
 	case phaseTrick:
 		for _, tid := range e.playable(d.Turn) {
-			out = append(out, state.Move{Action: actPlay, Piece: tid})
+			out = append(out, state.Selection{Action: actPlay, Piece: tid})
 		}
 	}
 	return out
@@ -295,7 +295,7 @@ func (e *eng) playable(seat int) []string {
 }
 
 // teamMoves lists the ways the first player may form the teams.
-func (e *eng) teamMoves() []state.Move {
+func (e *eng) teamMoves() []state.Selection {
 	first := e.d.First
 	var others []int
 	for s := 1; s <= e.n; s++ {
@@ -310,13 +310,13 @@ func (e *eng) teamMoves() []state.Move {
 		}
 		return strings.Join(parts, ",")
 	}
-	var out []state.Move
+	var out []state.Selection
 	add := func(ss []int) {
 		p := join(ss)
 		if p == "" {
 			p = "alone"
 		}
-		out = append(out, state.Move{Action: actTeam, Piece: p})
+		out = append(out, state.Selection{Action: actTeam, Piece: p})
 	}
 	switch e.n {
 	case 3:
@@ -360,7 +360,7 @@ func (e *eng) smallTeam() []int {
 }
 
 // execute plays a legal decision.
-func (e *eng) execute(mv state.Move, seat int) {
+func (e *eng) execute(mv state.Selection, seat int) {
 	d := e.d
 	t := d.Table
 	switch mv.Action {
@@ -796,7 +796,7 @@ func (rs *Ruleset) Validate(game *catalog.CompiledGame, st *state.BoardState) er
 }
 
 // Legal lists the decisions of seat.
-func (rs *Ruleset) Legal(game *catalog.CompiledGame, st *state.BoardState, seat int) []state.Move {
+func (rs *Ruleset) Legal(game *catalog.CompiledGame, st *state.BoardState, seat int) []state.Selection {
 	d, err := dataOf(st)
 	if err != nil || d.Turn == 0 || seat != d.Turn {
 		return nil
@@ -805,7 +805,7 @@ func (rs *Ruleset) Legal(game *catalog.CompiledGame, st *state.BoardState, seat 
 }
 
 // Apply plays one decision.
-func (rs *Ruleset) Apply(game *catalog.CompiledGame, st *state.BoardState, seat int, mv state.Move) (*state.MoveResult, error) {
+func (rs *Ruleset) Apply(game *catalog.CompiledGame, st *state.BoardState, seat int, mv state.Selection) (*state.MoveResult, error) {
 	d, err := dataOf(st)
 	if err != nil {
 		return nil, err
@@ -818,7 +818,7 @@ func (rs *Ruleset) Apply(game *catalog.CompiledGame, st *state.BoardState, seat 
 		return nil, fmt.Errorf("nyet: it is %s's decision", e.label(d.Turn))
 	}
 	want := rs.Format(game, mv)
-	var legal state.Move
+	var legal state.Selection
 	found := false
 	for _, cand := range e.legal() {
 		if rs.Format(game, cand) == want {

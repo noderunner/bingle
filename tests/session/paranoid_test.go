@@ -40,7 +40,7 @@ type lyingRuleset struct {
 	dropped string
 }
 
-func (r *lyingRuleset) Legal(game *catalog.CompiledGame, st *state.BoardState, seat int) []state.Move {
+func (r *lyingRuleset) Legal(game *catalog.CompiledGame, st *state.BoardState, seat int) []state.Selection {
 	moves := r.Ruleset.Legal(game, st, seat)
 	if !r.dropFirst || len(moves) < 2 {
 		return moves

@@ -46,13 +46,13 @@ func TestStandardArena_IsLaidAndSkipsTheDraft(t *testing.T) {
 		t.Fatalf("%d special tiles are down, want ten", n)
 	}
 	// Dark chooses a Court first, as after a draft.
-	if len(state.LegalMoves(g, st, 1)) != 0 {
+	if len(state.LegalSelections(g, st, 1)) != 0 {
 		t.Error("Light may choose a Court first, want Dark to choose")
 	}
-	if len(state.LegalMoves(g, st, 2)) != 5 {
-		t.Errorf("Dark is offered %d Courts, want five", len(state.LegalMoves(g, st, 2)))
+	if len(state.LegalSelections(g, st, 2)) != 5 {
+		t.Errorf("Dark is offered %d Courts, want five", len(state.LegalSelections(g, st, 2)))
 	}
-	for _, mv := range state.LegalMoves(g, st, 2) {
+	for _, mv := range state.LegalSelections(g, st, 2) {
 		if mv.Action == "tile" {
 			t.Fatalf("a tile can still be laid: %+v", mv)
 		}

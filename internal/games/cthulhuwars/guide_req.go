@@ -10,7 +10,7 @@ const reqUnit = 12
 // reqBonus is what a move is worth on top of its own score for bringing seat
 // closer to a spellbook requirement it has not met. base is the move's score
 // without it, so the bonus only lifts moves that are already sensible.
-func (g *guide) reqBonus(mv state.Move, base float64) float64 {
+func (g *guide) reqBonus(mv state.Selection, base float64) float64 {
 	e, d, seat := g.e, g.e.d, g.seat
 	u := reqUnit + g.t.Req
 	if u <= 0 {

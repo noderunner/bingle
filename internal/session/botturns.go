@@ -150,7 +150,7 @@ func (m *Manager) runBotsFor(ctx context.Context, roomCode string, soft time.Dur
 		if !ok {
 			return played, false
 		}
-		legal := state.LegalMoves(compiled, bs, botPlayer.Seat)
+		legal := state.LegalSelections(compiled, bs, botPlayer.Seat)
 		if len(legal) == 0 {
 			return played, false
 		}
@@ -166,10 +166,10 @@ func (m *Manager) runBotsFor(ctx context.Context, roomCode string, soft time.Dur
 
 // botMove is the decision bot makes for seat among its legal moves. i varies
 // the fallback when the bot cannot answer in time.
-func (m *Manager) botMove(ctx context.Context, bot bots.Bot, roomCode string, compiled *catalog.CompiledGame, bs *state.BoardState, seat int, legal []state.Move, i int) state.Move {
+func (m *Manager) botMove(ctx context.Context, bot bots.Bot, roomCode string, compiled *catalog.CompiledGame, bs *state.BoardState, seat int, legal []state.Selection, i int) state.Selection {
 	legal = m.botChoices(roomCode, compiled, bs, seat, legal)
 	// Thinking is CPU; bound how many bots think at once.
-	var mv state.Move
+	var mv state.Selection
 	var err error
 	queued := time.Now()
 	select {

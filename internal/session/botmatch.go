@@ -182,12 +182,12 @@ func (m *Manager) autoplayOne(ctx context.Context, roomCode string) bool {
 	if err := bs.UnmarshalJSON([]byte(game.BoardState)); err != nil {
 		return true
 	}
-	legal := state.LegalMoves(compiled, bs, mover.Seat)
+	legal := state.LegalSelections(compiled, bs, mover.Seat)
 	if len(legal) == 0 {
 		return true
 	}
 	legal = m.botChoices(roomCode, compiled, bs, mover.Seat, legal)
-	var mv state.Move
+	var mv state.Selection
 	queued := time.Now()
 	select {
 	case botSlots <- struct{}{}:

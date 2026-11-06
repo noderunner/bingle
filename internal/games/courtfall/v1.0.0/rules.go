@@ -387,7 +387,7 @@ func (rs *Ruleset) Validate(game *catalog.CompiledGame, st *state.BoardState) er
 // --- legal moves ------------------------------------------------------------
 
 // Legal lists seat's decisions.
-func (rs *Ruleset) Legal(game *catalog.CompiledGame, st *state.BoardState, seat int) []state.Move {
+func (rs *Ruleset) Legal(game *catalog.CompiledGame, st *state.BoardState, seat int) []state.Selection {
 	d, err := dataOf(st)
 	if err != nil || impulseSeat(d) != seat || seat == 0 {
 		return nil
@@ -396,15 +396,15 @@ func (rs *Ruleset) Legal(game *catalog.CompiledGame, st *state.BoardState, seat 
 	return e.legal()
 }
 
-func (e *eng) legal() []state.Move {
+func (e *eng) legal() []state.Selection {
 	d := e.d
 	switch d.Phase {
 	case phaseTerrain:
 		return e.legalTiles()
 	case phaseCourt:
-		out := make([]state.Move, 0, len(courts))
+		out := make([]state.Selection, 0, len(courts))
 		for _, c := range courts {
-			out = append(out, state.Move{Action: actCourt, Piece: c})
+			out = append(out, state.Selection{Action: actCourt, Piece: c})
 		}
 		return out
 	case phaseDeploy:
@@ -426,11 +426,11 @@ func (e *eng) legal() []state.Move {
 		case stageShift:
 			return e.legalShift()
 		case stageSeize:
-			out := []state.Move{}
+			out := []state.Selection{}
 			if e.canSeize() {
-				out = append(out, state.Move{Action: actSeize})
+				out = append(out, state.Selection{Action: actSeize})
 			}
-			return append(out, state.Move{Action: actDone})
+			return append(out, state.Selection{Action: actDone})
 		}
 	}
 	return nil
@@ -625,31 +625,31 @@ func (e *eng) anyTileMove() bool {
 	return false
 }
 
-func (e *eng) legalTiles() []state.Move {
-	var out []state.Move
+func (e *eng) legalTiles() []state.Selection {
+	var out []state.Selection
 	for ci, color := range tileColors {
 		if e.d.Left[ci] == 0 {
 			continue
 		}
 		for c, id := range e.g.ids {
 			if e.canTile(c, color) {
-				out = append(out, state.Move{Action: actTile, Piece: color, To: id})
+				out = append(out, state.Selection{Action: actTile, Piece: color, To: id})
 			}
 		}
 	}
 	return out
 }
 
-func (e *eng) legalDeploys() []state.Move {
+func (e *eng) legalDeploys() []state.Selection {
 	seat := impulseSeat(e.d)
-	var out []state.Move
+	var out []state.Selection
 	for _, p := range unitTypes {
 		if e.st.Reserve(e.color[seat], p) == 0 {
 			continue
 		}
 		for c, id := range e.g.ids {
 			if int(e.g.zone[c]) == seat && e.at[c] < 0 {
-				out = append(out, state.Move{Action: actDeploy, Piece: p, To: id})
+				out = append(out, state.Selection{Action: actDeploy, Piece: p, To: id})
 			}
 		}
 	}
@@ -685,10 +685,10 @@ func (e *eng) recoverOptions(seat int) []*unit {
 	return out
 }
 
-func (e *eng) legalRecover() []state.Move {
-	var out []state.Move
+func (e *eng) legalRecover() []state.Selection {
+	var out []state.Selection
 	for _, u := range e.recoverOptions(e.d.Turn) {
-		out = append(out, state.Move{Action: actRecover, Piece: u.piece, From: e.g.ids[u.cell]})
+		out = append(out, state.Selection{Action: actRecover, Piece: u.piece, From: e.g.ids[u.cell]})
 	}
 	return out
 }
@@ -727,18 +727,18 @@ func (e *eng) maxBuy(seat int) int {
 	return n
 }
 
-func (e *eng) legalMain() []state.Move {
+func (e *eng) legalMain() []state.Selection {
 	seat := e.d.Turn
-	var out []state.Move
+	var out []state.Selection
 	own := e.ownUnits(seat)
 	for _, u := range own {
 		if e.cond(u) == condFresh {
-			out = append(out, state.Move{Action: actActivate, Piece: u.piece, From: e.g.ids[u.cell]})
+			out = append(out, state.Selection{Action: actActivate, Piece: u.piece, From: e.g.ids[u.cell]})
 		}
 	}
 	for _, u := range own {
 		if e.cond(u) == condFatigued {
-			out = append(out, state.Move{Action: actExert, Piece: u.piece, From: e.g.ids[u.cell]})
+			out = append(out, state.Selection{Action: actExert, Piece: u.piece, From: e.g.ids[u.cell]})
 		}
 	}
 	if e.mom(seat) >= 1 {
@@ -748,7 +748,7 @@ func (e *eng) legalMain() []state.Move {
 			}
 			for d := 0; d < 6; d++ {
 				if nb := e.g.nbr[u.cell][d]; nb >= 0 && e.at[nb] < 0 {
-					out = append(out, state.Move{Action: actSurge, Piece: u.piece, From: e.g.ids[u.cell], To: e.g.ids[nb]})
+					out = append(out, state.Selection{Action: actSurge, Piece: u.piece, From: e.g.ids[u.cell], To: e.g.ids[nb]})
 				}
 			}
 		}
@@ -756,7 +756,7 @@ func (e *eng) legalMain() []state.Move {
 	if e.mom(seat) >= 2 {
 		for _, u := range own {
 			if e.cond(u) == condExhausted {
-				out = append(out, state.Move{Action: actRouse, Piece: u.piece, From: e.g.ids[u.cell]})
+				out = append(out, state.Selection{Action: actRouse, Piece: u.piece, From: e.g.ids[u.cell]})
 			}
 		}
 	}
@@ -764,7 +764,7 @@ func (e *eng) legalMain() []state.Move {
 		out = append(out, e.legalSwaps()...)
 	}
 	for n, max := 0, e.maxBuy(seat); n <= max; n++ {
-		out = append(out, state.Move{Action: actClear, Count: n})
+		out = append(out, state.Selection{Action: actClear, Count: n})
 	}
 	return out
 }
@@ -786,12 +786,12 @@ func (e *eng) canSwap(a, b int) bool {
 	return ok
 }
 
-func (e *eng) legalSwaps() []state.Move {
-	var out []state.Move
+func (e *eng) legalSwaps() []state.Selection {
+	var out []state.Selection
 	for a := range e.g.ids {
 		for b := a + 1; b < len(e.g.ids); b++ {
 			if e.canSwap(a, b) {
-				out = append(out, state.Move{Action: actTiles, From: e.g.ids[a], To: e.g.ids[b]})
+				out = append(out, state.Selection{Action: actTiles, From: e.g.ids[a], To: e.g.ids[b]})
 			}
 		}
 	}
@@ -807,7 +807,7 @@ func (e *eng) canSeize() bool {
 
 // moveKey is a move's identity for matching: the fields that are decisions,
 // not the ones derived from the position.
-func moveKey(mv state.Move) string {
+func moveKey(mv state.Selection) string {
 	var b strings.Builder
 	b.WriteString(mv.Action)
 	switch mv.Action {
@@ -836,7 +836,7 @@ func moveKey(mv state.Move) string {
 }
 
 // Apply validates and applies one decision.
-func (rs *Ruleset) Apply(game *catalog.CompiledGame, st *state.BoardState, seat int, mv state.Move) (*state.MoveResult, error) {
+func (rs *Ruleset) Apply(game *catalog.CompiledGame, st *state.BoardState, seat int, mv state.Selection) (*state.MoveResult, error) {
 	d, err := dataOf(st)
 	if err != nil {
 		return nil, err
@@ -854,14 +854,14 @@ func (rs *Ruleset) Apply(game *catalog.CompiledGame, st *state.BoardState, seat 
 	e := rs.newEng(game, ns, nd)
 
 	want := moveKey(mv)
-	var legal state.Move
+	var legal state.Selection
 	found := false
 	if mv.Action == actTile && nd.Phase == phaseTerrain {
 		// The draft's legal list is the expensive one (every tile is
 		// checked for whether the draft can still be finished): validate
 		// just the one placement.
 		if cell, ok := e.g.index[mv.To]; ok && e.canTile(cell, mv.Piece) {
-			legal, found = state.Move{Action: actTile, Piece: mv.Piece, To: mv.To}, true
+			legal, found = state.Selection{Action: actTile, Piece: mv.Piece, To: mv.To}, true
 		}
 	} else {
 		for _, cand := range e.legal() {
@@ -929,7 +929,7 @@ func (rs *Ruleset) waiting(game *catalog.CompiledGame, st *state.BoardState, d *
 }
 
 // execute applies a (legal, normalised) move to the working position.
-func (e *eng) execute(mv state.Move) {
+func (e *eng) execute(mv state.Selection) {
 	d := e.d
 	switch mv.Action {
 	case actTile:
@@ -990,7 +990,7 @@ func (e *eng) execute(mv state.Move) {
 	}
 }
 
-func (e *eng) doTile(mv state.Move) {
+func (e *eng) doTile(mv state.Selection) {
 	d := e.d
 	seat := impulseSeat(d)
 	cell := e.g.index[mv.To]
@@ -1026,7 +1026,7 @@ func courtLabel(c string) string {
 	return strings.ToUpper(c[:1]) + c[1:] + " Court"
 }
 
-func (e *eng) doCourt(mv state.Move) {
+func (e *eng) doCourt(mv state.Selection) {
 	d := e.d
 	seat := impulseSeat(d)
 	d.Courts[seat-1] = mv.Piece
@@ -1038,7 +1038,7 @@ func (e *eng) doCourt(mv state.Move) {
 	}
 }
 
-func (e *eng) doDeploy(mv state.Move) {
+func (e *eng) doDeploy(mv state.Selection) {
 	d := e.d
 	seat := impulseSeat(d)
 	color := e.color[seat]
@@ -1168,7 +1168,7 @@ func (e *eng) passTurn() {
 	e.beginTurn(3-d.Turn, 1)
 }
 
-func (e *eng) doSurge(mv state.Move) {
+func (e *eng) doSurge(mv state.Selection) {
 	d := e.d
 	u := e.unitOf(d.Turn, mv.Piece)
 	to := e.g.index[mv.To]
@@ -1180,7 +1180,7 @@ func (e *eng) doSurge(mv state.Move) {
 	}
 }
 
-func (e *eng) doSwapTiles(mv state.Move) {
+func (e *eng) doSwapTiles(mv state.Selection) {
 	d := e.d
 	a, b := e.g.index[mv.From], e.g.index[mv.To]
 	ta, tb := e.tiles[a], e.tiles[b]
@@ -1286,35 +1286,35 @@ func (e *eng) enemiesAdjacent(u *unit) []*unit {
 	return out
 }
 
-func (e *eng) legalAct() []state.Move {
+func (e *eng) legalAct() []state.Selection {
 	u := e.activeUnit()
-	var out []state.Move
+	var out []state.Selection
 	if u == nil {
-		return []state.Move{{Action: actEnd}}
+		return []state.Selection{{Action: actEnd}}
 	}
 	from := e.g.ids[u.cell]
 	if e.d.Act.Left > 0 && e.cond(u) != condExhausted {
 		for _, c := range e.reach(u) {
-			out = append(out, state.Move{Action: actMove, Piece: u.piece, From: from, To: e.g.ids[c]})
+			out = append(out, state.Selection{Action: actMove, Piece: u.piece, From: from, To: e.g.ids[c]})
 		}
 		cv := e.cv(u)
 		for _, t := range e.enemiesAdjacent(u) {
 			for n := 0; n <= cv; n++ {
-				out = append(out, state.Move{Action: actStrike, Piece: u.piece, From: from, To: e.g.ids[t.cell], Count: n})
+				out = append(out, state.Selection{Action: actStrike, Piece: u.piece, From: from, To: e.g.ids[t.cell], Count: n})
 			}
 		}
 		if u.piece == "bishop" {
 			for _, t := range e.shootTargets(u) {
-				out = append(out, state.Move{Action: actShoot, Piece: u.piece, From: from, To: e.g.ids[t.cell]})
+				out = append(out, state.Selection{Action: actShoot, Piece: u.piece, From: from, To: e.g.ids[t.cell]})
 			}
 		}
 		for _, t := range e.enemiesAdjacent(u) {
 			if e.shoveUseful(u, t) {
-				out = append(out, state.Move{Action: actShove, Piece: u.piece, From: from, To: e.g.ids[t.cell]})
+				out = append(out, state.Selection{Action: actShove, Piece: u.piece, From: from, To: e.g.ids[t.cell]})
 			}
 		}
 	}
-	return append(out, state.Move{Action: actEnd})
+	return append(out, state.Selection{Action: actEnd})
 }
 
 // shoveUseful reports whether shoving t could move it at all: it can be
@@ -1331,7 +1331,7 @@ func (e *eng) shoveUseful(u, t *unit) bool {
 	return next < 0 || e.at[next] < 0
 }
 
-func (e *eng) doMove(mv state.Move) {
+func (e *eng) doMove(mv state.Selection) {
 	d := e.d
 	u := e.activeUnit()
 	to := e.g.index[mv.To]

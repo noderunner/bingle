@@ -53,7 +53,7 @@ func (rs *Ruleset) Redact(game *catalog.CompiledGame, st *state.BoardState, view
 }
 
 // RedactMove: a move reveals nothing.
-func (rs *Ruleset) RedactMove(game *catalog.CompiledGame, st *state.BoardState, mv state.Move, notation string) (state.Move, string) {
+func (rs *Ruleset) RedactMove(game *catalog.CompiledGame, st *state.BoardState, mv state.Selection, notation string) (state.Selection, string) {
 	return mv, notation
 }
 

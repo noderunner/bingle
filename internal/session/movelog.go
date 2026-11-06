@@ -48,7 +48,7 @@ type moveLine struct {
 // rules refused is at info, because that is worth seeing without turning the
 // firehose on. The one room BINGLE_DEBUG_ROOM names is logged at info
 // whatever else is set.
-func (m *Manager) logMove(ctx context.Context, compiled *catalog.CompiledGame, game store.Game, player store.Player, mv state.Move, line moveLine) {
+func (m *Manager) logMove(ctx context.Context, compiled *catalog.CompiledGame, game store.Game, player store.Player, mv state.Selection, line moveLine) {
 	family := gameFamily(compiled)
 	watched := m.watchedRoom(game.RoomCode)
 	if !watched && !m.debugGame(family) {

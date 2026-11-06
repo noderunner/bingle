@@ -18,7 +18,7 @@ import (
 //	pass       no ring can move
 
 // Format renders mv.
-func (rs *Ruleset) Format(game *catalog.CompiledGame, mv state.Move) string {
+func (rs *Ruleset) Format(game *catalog.CompiledGame, mv state.Selection) string {
 	switch mv.Action {
 	case actPlace:
 		return string(mv.To)
@@ -33,10 +33,10 @@ func (rs *Ruleset) Format(game *catalog.CompiledGame, mv state.Move) string {
 }
 
 // Parse reads notation produced by Format (case-insensitively).
-func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Move, error) {
+func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Selection, error) {
 	t := strings.ToLower(strings.TrimSpace(text))
-	bad := func(why string) (state.Move, error) {
-		return state.Move{}, fmt.Errorf("yinsh: cannot read %q as a move (%s; expected e5, e5-e9, row:b2-b6, ring:e9 or pass)", text, why)
+	bad := func(why string) (state.Selection, error) {
+		return state.Selection{}, fmt.Errorf("yinsh: cannot read %q as a move (%s; expected e5, e5-e9, row:b2-b6, ring:e9 or pass)", text, why)
 	}
 	cell := func(s string) (board.PositionID, bool) {
 		id := board.PositionID(s)
@@ -53,44 +53,44 @@ func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Move, e
 	}
 	switch {
 	case t == actPass:
-		return state.Move{Action: actPass}, nil
+		return state.Selection{Action: actPass}, nil
 	case strings.HasPrefix(t, "row:"):
 		from, to, ok := span(t[4:])
 		if !ok {
 			return bad("two points expected after row:")
 		}
-		return state.Move{Action: actRow, From: from, To: to}, nil
+		return state.Selection{Action: actRow, From: from, To: to}, nil
 	case strings.HasPrefix(t, "ring:"):
 		from, ok := cell(t[5:])
 		if !ok {
 			return bad("unknown point " + t[5:])
 		}
-		return state.Move{Action: actRemove, From: from}, nil
+		return state.Selection{Action: actRemove, From: from}, nil
 	case strings.Contains(t, "-"):
 		from, to, ok := span(t)
 		if !ok {
 			return bad("unknown point")
 		}
-		return state.Move{Action: actMove, From: from, To: to}, nil
+		return state.Selection{Action: actMove, From: from, To: to}, nil
 	}
 	to, ok := cell(t)
 	if !ok {
 		return bad("unknown point " + t)
 	}
-	return state.Move{Action: actPlace, To: to}, nil
+	return state.Selection{Action: actPlace, To: to}, nil
 }
 
-// Steps: a point, or two points; pass is an action.
-func (rs *Ruleset) Steps(game *catalog.CompiledGame, mv state.Move) []state.Step {
+// Gestures: a point, or two points; pass is an action.
+func (rs *Ruleset) Gestures(game *catalog.CompiledGame, mv state.Selection) []state.Gesture {
 	switch mv.Action {
 	case actPlace:
-		return []state.Step{{Kind: state.StepPos, Value: string(mv.To)}}
+		return []state.Gesture{{Kind: state.GesturePos, Value: string(mv.To)}}
 	case actMove, actRow:
-		return []state.Step{{Kind: state.StepPos, Value: string(mv.From)}, {Kind: state.StepPos, Value: string(mv.To)}}
+		return []state.Gesture{{Kind: state.GesturePos, Value: string(mv.From)}, {Kind: state.GesturePos, Value: string(mv.To)}}
 	case actRemove:
-		return []state.Step{{Kind: state.StepPos, Value: string(mv.From)}}
+		return []state.Gesture{{Kind: state.GesturePos, Value: string(mv.From)}}
 	}
-	return []state.Step{{Kind: state.StepAction, Value: actPass}}
+	return []state.Gesture{{Kind: state.GestureAction, Value: actPass}}
 }
 
 // Describe labels the decisions for clients.

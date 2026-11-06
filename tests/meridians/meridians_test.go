@@ -71,7 +71,7 @@ func build(t testing.TB, g *catalog.CompiledGame, p position) *state.BoardState 
 func moves(t testing.TB, g *catalog.CompiledGame, st *state.BoardState, seat int) []string {
 	t.Helper()
 	var out []string
-	for _, mv := range state.LegalMoves(g, st, seat) {
+	for _, mv := range state.LegalSelections(g, st, seat) {
 		out = append(out, state.FormatMove(g, mv))
 	}
 	sort.Strings(out)
@@ -156,10 +156,10 @@ func TestBoard_IsACentrelessHexagon(t *testing.T) {
 func TestOpening_FirstAnywhereThenNotTouching(t *testing.T) {
 	g := game(t)
 	st := state.InitialState(g)
-	if got := len(state.LegalMoves(g, st, light)); got != 114 {
+	if got := len(state.LegalSelections(g, st, light)); got != 114 {
 		t.Fatalf("Light may open on %d points, want every one of the 114", got)
 	}
-	if len(state.LegalMoves(g, st, dark)) != 0 {
+	if len(state.LegalSelections(g, st, dark)) != 0 {
 		t.Error("Dark may move before Light has")
 	}
 	res := play(t, g, st, light, "g7")
@@ -255,7 +255,7 @@ func TestDeath_AGroupWithNoPathComesOff(t *testing.T) {
 	// A stone that gives a8 a path keeps it: there is such a move, and after it
 	// every one of Light's four stones is still on the board.
 	saved := ""
-	for _, mv := range state.LegalMoves(g, st2, light) {
+	for _, mv := range state.LegalSelections(g, st2, light) {
 		if mv.Action != "place" {
 			continue
 		}
@@ -306,7 +306,7 @@ func TestWinning_TakingEveryStoneOff(t *testing.T) {
 	// Dark lays a stone that does not give the group a path: everything of
 	// Dark's comes off and Light wins.
 	var ended *state.MoveResult
-	for _, mv := range state.LegalMoves(g, st, dark) {
+	for _, mv := range state.LegalSelections(g, st, dark) {
 		res := play(t, g, st, dark, state.FormatMove(g, mv))
 		if res.GameEnded {
 			ended = res
@@ -334,7 +334,7 @@ func TestRandomGamesEnd(t *testing.T) {
 		seat := light
 		ended := false
 		for ply := 0; ply < 1200 && !ended; ply++ {
-			legal := state.LegalMoves(g, st, seat)
+			legal := state.LegalSelections(g, st, seat)
 			if len(legal) == 0 {
 				t.Fatalf("seed %d, ply %d: seat %d has no move at all", seed, ply, seat)
 			}

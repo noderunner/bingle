@@ -26,7 +26,7 @@ Legend: ✅ done · 🟡 partial · ⬜ not started · ➖ deliberately out of s
 | ✅ | Mover wins ties | If one move completes roads for both players the mover wins |
 | ✅ | Variants via JSON merge patch | `variants`: Tak 3×3 … 8×8 from one document |
 | ✅ | Move notation | generic + PTN (Tak); TPS positions; `FormatMove`/`ParseMove` round-trip tested |
-| ✅ | Legal-move enumeration | `state.LegalMoves`, validated by the same code as `Apply`; perft matches published Tak counts |
+| ✅ | Legal-move enumeration | `state.LegalSelections`, validated by the same code as `Apply`; perft matches published Tak counts |
 | ✅ | Board regions, coordinates, algebraic labels | grid generator `labels: "algebraic"`, auto `left/right/top/bottom` regions |
 | ✅ | Hex boards | `generator: hex` (axial rhombus), hexagon rendering, per-seat connect rules, edge tints; Hex 7/9/11/13 |
 | ✅ | Capture by jumping | `jump` action: mandatory captures, chained multi-jumps, promotion; English Draughts in JSON |
@@ -123,7 +123,7 @@ Legend: ✅ done · 🟡 partial · ⬜ not started · ➖ deliberately out of s
   game (≈40 µs/ply) so bots and training get useful throughput.
 - Engine: unit tests per rule, perft check against published Tak node counts
   (25 / 600 / 43 320 / 2 999 784), randomized consistency test that cross-checks
-  `LegalMoves` against `Apply` and mutated moves, notation/TPS round trips.
+  `LegalSelections` against `Apply` and mutated moves, notation/TPS round trips.
 - Engine hardening: native fuzz targets (parsers, structured moves against
   every game, the definition compiler), a cross-game invariant battery
   (`tests/allgames`) and a brute-force enumeration check for every compound

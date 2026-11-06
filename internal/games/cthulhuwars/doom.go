@@ -241,10 +241,10 @@ func (e *eng) setFirst(seat int) {
 	}
 }
 
-func (e *eng) legalFirst() []state.Move {
-	var out []state.Move
+func (e *eng) legalFirst() []state.Selection {
+	var out []state.Selection
 	for _, s := range e.d.TiedFirst {
-		out = append(out, state.Move{Action: "first", Count: s})
+		out = append(out, state.Selection{Action: "first", Count: s})
 	}
 	return out
 }
@@ -389,36 +389,36 @@ func (e *eng) ritualCostFor(seat int) int {
 	return e.ritualCost()
 }
 
-func (e *eng) doomMoves(seat int) []state.Move {
+func (e *eng) doomMoves(seat int) []state.Selection {
 	d := e.d
 	x := d.Doomx
-	var out []state.Move
+	var out []state.Selection
 	cost := e.ritualCostFor(seat)
 	if !x.Ritualled && d.Power[seat] >= cost {
-		out = append(out, state.Move{Action: actRitual})
+		out = append(out, state.Selection{Action: actRitual})
 		if e.descendAvailable(seat) {
-			out = append(out, state.Move{Action: actRitual, Piece: "descend"})
+			out = append(out, state.Selection{Action: actRitual, Piece: "descend"})
 		}
 	}
 	if !x.Ritualled && d.Power[seat] >= cost {
 		if _, ok := e.bastetRitualArea(seat); ok {
-			out = append(out, state.Move{Action: actCard, Piece: "bastet-ritual"})
+			out = append(out, state.Selection{Action: actCard, Piece: "bastet-ritual"})
 		}
 	}
 	if !x.Ritualled && e.igooBook(seat, uTulzscha) {
-		out = append(out, state.Move{Action: actCard, Piece: "ceremony"})
+		out = append(out, state.Selection{Action: actCard, Piece: "ceremony"})
 	}
 	// Ubbo-Sathla is awakened for nothing in the Doom phase.
 	if d.Phase == phaseDoom {
 		for _, a := range e.ubboAreas(seat) {
-			out = append(out, state.Move{Action: actAwaken, Piece: uUbbo, To: e.m.ids[a]})
+			out = append(out, state.Selection{Action: actAwaken, Piece: uUbbo, To: e.m.ids[a]})
 		}
 	}
 	out = append(out, e.ascendMoves(seat)...)
 	if e.is(seat, facBG) && !x.Sacrificed && d.hasBook(seat, bkBlood) && e.gooInPlay(seat) > 0 {
 		for a := range e.m.ids {
 			if e.cultists(a, seat) > 0 {
-				out = append(out, state.Move{Action: actBlood, To: e.m.ids[a]})
+				out = append(out, state.Selection{Action: actBlood, To: e.m.ids[a]})
 			}
 		}
 	}
@@ -427,20 +427,20 @@ func (e *eng) doomMoves(seat int) []state.Move {
 	if e.ability(seat, abDeath) && !x.Death && e.lowestCostMonster(seat) != "" {
 		for a := range e.m.ids {
 			if e.total(a, seat) > 0 {
-				out = append(out, state.Move{Action: actDeath, To: e.m.ids[a]})
+				out = append(out, state.Selection{Action: actDeath, To: e.m.ids[a]})
 			}
 		}
 	}
 	// Unspeakable Oath, when 2 Power more would pay for the Ritual.
 	if e.oathAvailable(seat) && !x.Ritualled && d.Power[seat] < cost && d.Power[seat]+2 >= cost {
-		out = append(out, state.Move{Action: actOath})
+		out = append(out, state.Selection{Action: actOath})
 	}
 	// Windwalker's "at any time" spellbook, once an enemy has all six.
 	if e.is(seat, facWW) && !d.reqDone(seat, rqWWTake) && d.bookCount(seat) < 6 && e.enemiesWithSixBooks(seat) > 0 {
-		out = append(out, state.Move{Action: actClaim})
+		out = append(out, state.Selection{Action: actClaim})
 	}
 	if len(d.Signs[seat]) > 0 {
-		out = append(out, state.Move{Action: actReveal})
+		out = append(out, state.Selection{Action: actReveal})
 	}
 	out = append(out, e.buyMoves(seat)...)
 	out = append(out, e.dematMoves(seat)...)
@@ -449,10 +449,10 @@ func (e *eng) doomMoves(seat int) []state.Move {
 		out = append(out, e.cryptMoves(seat)...)
 	}
 	out = append(out, e.ransomMoves(seat)...)
-	return append(out, state.Move{Action: actSkip})
+	return append(out, state.Selection{Action: actSkip})
 }
 
-func (e *eng) legalDoom() []state.Move {
+func (e *eng) legalDoom() []state.Selection {
 	d := e.d
 	if d.Doomx == nil || len(d.Doomx.Order) == 0 {
 		return nil
@@ -460,7 +460,7 @@ func (e *eng) legalDoom() []state.Move {
 	return e.doomMoves(d.Doomx.Order[0])
 }
 
-func (e *eng) doDoom(seat int, mv state.Move) {
+func (e *eng) doDoom(seat int, mv state.Selection) {
 	d := e.d
 	x := d.Doomx
 	switch mv.Action {

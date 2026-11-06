@@ -47,7 +47,7 @@ type MoveResult struct {
 	WinnerSeat      *int
 
 	// Move is the normalized move that was applied.
-	Move Move
+	Move Selection
 	// Notation is the move in the game's canonical notation.
 	Notation string
 	// EndReason says why the game ended (the winning rule's reason), or ""
@@ -152,7 +152,7 @@ func openingActionList(game *catalog.CompiledGame) string {
 
 // validate checks mv (already normalized) against the rules and returns the
 // executor that applies it.
-func (c *rctx) validate(act catalog.ResolvedAction, mv Move) (executor, error) {
+func (c *rctx) validate(act catalog.ResolvedAction, mv Selection) (executor, error) {
 	if act.Type != catalog.ActionJump && c.mustJump() {
 		return nil, fmt.Errorf("state: a capture is available and must be taken")
 	}
@@ -193,7 +193,7 @@ func (c *rctx) validate(act catalog.ResolvedAction, mv Move) (executor, error) {
 	}
 }
 
-func (c *rctx) moveContext(board callback.BoardView, mv Move) callback.MoveContext {
+func (c *rctx) moveContext(board callback.BoardView, mv Selection) callback.MoveContext {
 	return callback.MoveContext{
 		GameID: c.game.Definition.ID,
 		Board:  board,
@@ -218,7 +218,7 @@ func (c *rctx) moveContext(board callback.BoardView, mv Move) callback.MoveConte
 // run the game's ValidateMove callback against the pre-move position;
 // execute on a clone; run OnMoveApplied; compute the next seat; evaluate
 // the win condition.
-func Apply(game *catalog.CompiledGame, st *BoardState, seat int, mv Move) (*MoveResult, error) {
+func Apply(game *catalog.CompiledGame, st *BoardState, seat int, mv Selection) (*MoveResult, error) {
 	if rs, ok := RulesetOf(game); ok {
 		return rs.Apply(game, st, seat, mv)
 	}
@@ -351,19 +351,19 @@ func hashCells(game *catalog.CompiledGame, at func(board.PositionID) []Occupant)
 	return string(b)
 }
 
-// LegalMoves enumerates every move seat may legally make in st, in a
+// LegalSelections enumerates every move seat may legally make in st, in a
 // deterministic order (actions in declaration order; within an action,
 // board reading order). Moves rejected by the game's ValidateMove callback
 // are excluded. It returns nil for an unknown seat.
 //
 // Every returned move is accepted by Apply, and Apply accepts no move this
 // function omits: both go through the same per-action validation.
-func LegalMoves(game *catalog.CompiledGame, st *BoardState, seat int) []Move {
-	return legalMoves(game, st, seat, 0)
+func LegalSelections(game *catalog.CompiledGame, st *BoardState, seat int) []Selection {
+	return legalSelections(game, st, seat, 0)
 }
 
-// legalMoves is LegalMoves that stops after limit moves when limit > 0.
-func legalMoves(game *catalog.CompiledGame, st *BoardState, seat int, limit int) []Move {
+// legalSelections is LegalMoves that stops after limit moves when limit > 0.
+func legalSelections(game *catalog.CompiledGame, st *BoardState, seat int, limit int) []Selection {
 	if rs, ok := RulesetOf(game); ok {
 		moves := rs.Legal(game, st, seat)
 		if limit > 0 && len(moves) > limit {
@@ -381,11 +381,11 @@ func legalMoves(game *catalog.CompiledGame, st *BoardState, seat int, limit int)
 	// context entirely.
 	_, noCallbacks := game.Callbacks.(callback.NoopCallbacks)
 
-	var out []Move
+	var out []Selection
 	// keep appends mv if it is legal. wellFormed reports that the caller
 	// built mv so that validation cannot fail (see enumerateStackMoves);
 	// everything else is validated by the same code Apply uses.
-	keep := func(act catalog.ResolvedAction, mv Move, wellFormed bool) {
+	keep := func(act catalog.ResolvedAction, mv Selection, wellFormed bool) {
 		if c.openingAllows(act, mv.Piece) != nil {
 			return
 		}
@@ -419,10 +419,10 @@ func legalMoves(game *catalog.CompiledGame, st *BoardState, seat int, limit int)
 		case catalog.ActionLeap:
 			c.enumerateLeaps(act, keep)
 		case catalog.ActionPass:
-			keep(act, Move{Action: act.ID}, true)
+			keep(act, Selection{Action: act.ID}, true)
 		case catalog.ActionSwap:
 			if act.SwapPlies[c.st.ply] {
-				keep(act, Move{Action: act.ID}, false)
+				keep(act, Selection{Action: act.ID}, false)
 			}
 		}
 	}
@@ -431,14 +431,14 @@ func legalMoves(game *catalog.CompiledGame, st *BoardState, seat int, limit int)
 
 // HasLegalMove reports whether seat has at least one legal move in st.
 func HasLegalMove(game *catalog.CompiledGame, st *BoardState, seat int) bool {
-	return len(legalMoves(game, st, seat, 1)) > 0
+	return len(legalSelections(game, st, seat, 1)) > 0
 }
 
 // ApplyMove validates and applies a single legacy step move by seat, from
 // `from` to `to`; it is Apply with a Move{From, To}. See docs/history/plan.md
 // section 6.4a for the original 12-step algorithm.
 func ApplyMove(game *catalog.CompiledGame, st *BoardState, seat int, from, to board.PositionID) (*MoveResult, error) {
-	return Apply(game, st, seat, Move{Action: catalog.ActionStep, From: from, To: to})
+	return Apply(game, st, seat, Selection{Action: catalog.ActionStep, From: from, To: to})
 }
 
 // skipStuckSeats starting from `candidate` returns the first seat, in turn

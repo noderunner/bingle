@@ -113,11 +113,11 @@ func (e *eng) controlsGateAt(a, seat int) bool {
 // each stands in the general pool, and is awakened where seat controls a Gate
 // in an area with a Great Old One of its own. Cthugha replaces that Great Old
 // One, one move for each it may replace.
-func (e *eng) independentAwakenMoves(seat int) []state.Move {
+func (e *eng) independentAwakenMoves(seat int) []state.Selection {
 	if !e.independentsInGame() {
 		return nil
 	}
-	var out []state.Move
+	var out []state.Selection
 	for _, i := range independentCards {
 		typ := cards[i].Unit.ID
 		if e.cardOwner(i) != 0 || !e.cardInGame(i) {
@@ -135,11 +135,11 @@ func (e *eng) independentAwakenMoves(seat int) []state.Move {
 				continue
 			}
 			if typ != uCthugha || (free && len(goos) == 0) {
-				out = append(out, state.Move{Action: actAwaken, Piece: typ, To: e.m.ids[a]})
+				out = append(out, state.Selection{Action: actAwaken, Piece: typ, To: e.m.ids[a]})
 				continue
 			}
 			for _, g := range goos {
-				out = append(out, state.Move{Action: actAwaken, Piece: typ, To: e.m.ids[a], Count: unitTypeIndex[g] + 1})
+				out = append(out, state.Selection{Action: actAwaken, Piece: typ, To: e.m.ids[a], Count: unitTypeIndex[g] + 1})
 			}
 		}
 	}
@@ -148,7 +148,7 @@ func (e *eng) independentAwakenMoves(seat int) []state.Move {
 
 // replacedBy is the Great Old One an awakening of Cthugha replaces ("" for any
 // other awakening).
-func replacedBy(mv state.Move) string {
+func replacedBy(mv state.Selection) string {
 	if mv.Piece == uCthugha && mv.Count >= 1 && mv.Count <= len(unitTypes) {
 		return unitTypes[mv.Count-1]
 	}
@@ -158,7 +158,7 @@ func replacedBy(mv state.Move) string {
 // awakenIndependent settles the awakening of an Independent: the Power is paid,
 // Cthugha's victim leaves, the card, the spellbook and the tokens go to seat and
 // the figure appears at the Gate.
-func (e *eng) awakenIndependent(seat int, mv state.Move) {
+func (e *eng) awakenIndependent(seat int, mv state.Selection) {
 	d := e.d
 	typ := mv.Piece
 	a := e.areaIdx(string(mv.To))
@@ -286,20 +286,20 @@ func (e *eng) doomGateCount(seat int) int {
 
 // filthMoves lists the areas seat may put a Filth Token in: any, as an Action of
 // 1 Power, while Abhoth is on the map and Filth is left.
-func (e *eng) filthMoves(seat int) []state.Move {
+func (e *eng) filthMoves(seat int) []state.Selection {
 	if _, ok := e.abilityWorks(seat, uAbhoth); !ok || e.pool(seat, uFilth) <= 0 {
 		return nil
 	}
-	out := make([]state.Move, 0, len(e.m.ids))
+	out := make([]state.Selection, 0, len(e.m.ids))
 	for a := range e.m.ids {
-		out = append(out, state.Move{Action: actFilth, To: e.m.ids[a]})
+		out = append(out, state.Selection{Action: actFilth, To: e.m.ids[a]})
 	}
 	return out
 }
 
 // filth places the Token.
 func (e *eng) filth(seat, a int) {
-	e.pay(seat, state.Move{Action: actFilth, To: e.m.ids[a]})
+	e.pay(seat, state.Selection{Action: actFilth, To: e.m.ids[a]})
 	if e.place(a, seat, uFilth) {
 		e.say("Filth: %s puts a Filth Token in %s (%d in play).", e.seatName(seat), e.areaName(a), e.filthInPlay())
 	}
@@ -309,18 +309,18 @@ func (e *eng) filth(seat, a int) {
 // --- Mother Hydra: The Agony Sting, The Zygote ----------------------------------------------
 
 // stingMoves lists the oceans seat may sting: those that hold an enemy Cultist.
-func (e *eng) stingMoves(seat int) []state.Move {
+func (e *eng) stingMoves(seat int) []state.Selection {
 	if _, ok := e.abilityWorks(seat, uHydra); !ok {
 		return nil
 	}
-	var out []state.Move
+	var out []state.Selection
 	for a := range e.m.ids {
 		if !e.m.ocean[a] {
 			continue
 		}
 		for _, o := range e.others(seat) {
 			if e.cultists(a, o) > 0 {
-				out = append(out, state.Move{Action: actSting, To: e.m.ids[a]})
+				out = append(out, state.Selection{Action: actSting, To: e.m.ids[a]})
 				break
 			}
 		}
@@ -332,7 +332,7 @@ func (e *eng) stingMoves(seat int) []state.Move {
 // adjacent land (the enemy first from the left of the stinger, which decides a
 // dispute).
 func (e *eng) sting(seat, a int) {
-	e.pay(seat, state.Move{Action: actSting, To: e.m.ids[a]})
+	e.pay(seat, state.Selection{Action: actSting, To: e.m.ids[a]})
 	e.say("The Agony Sting: %s drives the enemy Cultists out of %s.", e.seatName(seat), e.areaName(a))
 	for _, o := range e.others(seat) {
 		if e.cultists(a, o) > 0 {
@@ -358,22 +358,22 @@ func (e *eng) stingTargets(p Prompt) []int {
 
 // stingMovesFor lists the moves of a "sting" prompt: a Cultist of the seat in
 // the ocean, to any adjacent land area.
-func (e *eng) stingMovesFor(p Prompt) []state.Move {
+func (e *eng) stingMovesFor(p Prompt) []state.Selection {
 	a := e.areaIdx(p.Area)
-	var out []state.Move
+	var out []state.Selection
 	for _, typ := range []string{uCultist, uHighPriest} {
 		if e.count(a, p.Seat, typ) == 0 {
 			continue
 		}
 		for _, to := range e.stingTargets(p) {
-			out = append(out, state.Move{Action: actSting, Piece: typ, To: e.m.ids[to]})
+			out = append(out, state.Selection{Action: actSting, Piece: typ, To: e.m.ids[to]})
 		}
 	}
 	return out
 }
 
 // stingMove moves one Cultist out of the ocean.
-func (e *eng) stingMove(p Prompt, mv state.Move) {
+func (e *eng) stingMove(p Prompt, mv state.Selection) {
 	a := e.areaIdx(p.Area)
 	to := e.areaIdx(string(mv.To))
 	if !e.take(a, p.Seat, mv.Piece) {
@@ -393,11 +393,11 @@ func (e *eng) zygoteAvailable(seat int) bool {
 
 // zygoteMoves lists the areas the next Acolyte may go to: any where seat has a
 // unit.
-func (e *eng) zygoteMoves(seat int) []state.Move {
-	var out []state.Move
+func (e *eng) zygoteMoves(seat int) []state.Selection {
+	var out []state.Selection
 	for a := range e.m.ids {
 		if e.total(a, seat) > 0 {
-			out = append(out, state.Move{Action: actZygote, To: e.m.ids[a]})
+			out = append(out, state.Selection{Action: actZygote, To: e.m.ids[a]})
 		}
 	}
 	return out
@@ -407,7 +407,7 @@ func (e *eng) zygoteMoves(seat int) []state.Move {
 
 // discardMoves lists the pairs of Elder Signs seat may discard for Chaugnar
 // Faugn's requirement; Count is the two values, as 10a+b.
-func (e *eng) discardMoves(seat int) []state.Move {
+func (e *eng) discardMoves(seat int) []state.Selection {
 	d := e.d
 	if !e.holdsCard(seat, uChaugnar) || e.igooBook(seat, uChaugnar) || len(d.Signs[seat]) < 2 {
 		return nil
@@ -416,11 +416,11 @@ func (e *eng) discardMoves(seat int) []state.Move {
 	for _, v := range d.Signs[seat] {
 		have[v]++
 	}
-	var out []state.Move
+	var out []state.Selection
 	for a := 1; a <= 3; a++ {
 		for b := a; b <= 3; b++ {
 			if (a == b && have[a] >= 2) || (a != b && have[a] >= 1 && have[b] >= 1) {
-				out = append(out, state.Move{Action: actDiscard, Count: 10*a + b})
+				out = append(out, state.Selection{Action: actDiscard, Count: 10*a + b})
 			}
 		}
 	}
@@ -428,7 +428,7 @@ func (e *eng) discardMoves(seat int) []state.Move {
 }
 
 // discard puts two Elder Signs back in the pool and earns the spellbook.
-func (e *eng) discard(seat int, mv state.Move) {
+func (e *eng) discard(seat int, mv state.Selection) {
 	d := e.d
 	for _, v := range []int{mv.Count / 10, mv.Count % 10} {
 		for i, x := range d.Signs[seat] {
@@ -538,14 +538,14 @@ func (e *eng) settlePick(seat, v int) {
 // --- Yig: Snakebite, Messenger of Yig ----------------------------------------------------------
 
 // gateOffMoves lists the Gates seat may remove for Yig's requirement.
-func (e *eng) gateOffMoves(seat int) []state.Move {
+func (e *eng) gateOffMoves(seat int) []state.Selection {
 	if !e.holdsCard(seat, uYig) || e.igooBook(seat, uYig) {
 		return nil
 	}
-	var out []state.Move
+	var out []state.Selection
 	for _, a := range e.gatesOf(seat) {
 		if e.d.Gates[e.areaID(a)] == seat {
-			out = append(out, state.Move{Action: actGateOff, To: e.m.ids[a]})
+			out = append(out, state.Selection{Action: actGateOff, To: e.m.ids[a]})
 		}
 	}
 	return out
@@ -588,10 +588,10 @@ func (e *eng) messengerOwner() int {
 }
 
 // donateMoves are the answers to Messenger of Yig: give 1 Power, or refuse.
-func (e *eng) donateMoves(p Prompt) []state.Move {
-	out := []state.Move{{Action: actDonate, Piece: "refuse"}}
+func (e *eng) donateMoves(p Prompt) []state.Selection {
+	out := []state.Selection{{Action: actDonate, Piece: "refuse"}}
 	if e.d.Power[p.Seat] >= 1 {
-		out = append([]state.Move{{Action: actDonate, Piece: "give"}}, out...)
+		out = append([]state.Selection{{Action: actDonate, Piece: "give"}}, out...)
 	}
 	return out
 }
@@ -630,29 +630,29 @@ func (e *eng) sparable(killer, seat int) bool {
 }
 
 // spareMoves lists the Killed units the holder of Cthugha may spare.
-func (e *eng) spareMoves(p Prompt) []state.Move {
+func (e *eng) spareMoves(p Prompt) []state.Selection {
 	b := e.d.Bat
 	if b == nil {
 		return nil
 	}
-	var out []state.Move
+	var out []state.Selection
 	seen := map[PU]bool{}
 	for _, u := range b.Doomed {
 		if seen[u] {
 			continue
 		}
 		seen[u] = true
-		out = append(out, state.Move{Action: actSpare, Piece: u.Type, Count: u.Seat})
+		out = append(out, state.Selection{Action: actSpare, Piece: u.Type, Count: u.Seat})
 	}
 	if len(out) == 0 {
 		return nil
 	}
-	return append(out, state.Move{Action: actDone})
+	return append(out, state.Selection{Action: actDone})
 }
 
 // spare turns one Kill into a Pain and pays what Fire Vampires and Firestorm
 // give.
-func (e *eng) spare(p Prompt, mv state.Move) {
+func (e *eng) spare(p Prompt, mv state.Selection) {
 	b := e.d.Bat
 	victim := mv.Count
 	if victim == 0 {
@@ -687,10 +687,10 @@ func (e *eng) settleDoomed() {
 // independentActions lists the main actions of seat's Independents: Abhoth's
 // Filth, Mother Hydra's Sting and Zygote, and the two requirements that are
 // Actions (Chaugnar Faugn's, Yig's).
-func (e *eng) independentActions(seat int) []state.Move {
+func (e *eng) independentActions(seat int) []state.Selection {
 	p := e.d.Power[seat]
-	var out []state.Move
-	add := func(mv state.Move) {
+	var out []state.Selection
+	add := func(mv state.Selection) {
 		if p >= e.moveCost(seat, mv) {
 			out = append(out, mv)
 		}
@@ -702,7 +702,7 @@ func (e *eng) independentActions(seat int) []state.Move {
 		add(mv)
 	}
 	if e.zygoteAvailable(seat) {
-		add(state.Move{Action: actZygote})
+		add(state.Selection{Action: actZygote})
 	}
 	out = append(out, e.discardMoves(seat)...)
 	out = append(out, e.gateOffMoves(seat)...)
@@ -712,12 +712,12 @@ func (e *eng) independentActions(seat int) []state.Move {
 
 // carryMoves lists the free moves of a Cultist a Shantak carries: from the
 // area the Shantak left to the one it went to, wherever that is.
-func (e *eng) carryMoves(seat int) []state.Move {
+func (e *eng) carryMoves(seat int) []state.Selection {
 	d := e.d
 	if d.Move == nil || len(d.Move.Carry) == 0 {
 		return nil
 	}
-	var out []state.Move
+	var out []state.Selection
 	seen := map[string]bool{}
 	for _, c := range d.Move.Carry {
 		if seen[c] {
@@ -739,15 +739,15 @@ func (e *eng) carryMoves(seat int) []state.Move {
 			}
 			if typ == occupant {
 				if n-1 > 0 {
-					out = append(out, state.Move{Action: actGo, Piece: typ, From: boardID(from), To: boardID(to)})
+					out = append(out, state.Selection{Action: actGo, Piece: typ, From: boardID(from), To: boardID(to)})
 				}
 				if n > 0 {
-					out = append(out, state.Move{Action: actLeave, Piece: typ, From: boardID(from), To: boardID(to)})
+					out = append(out, state.Selection{Action: actLeave, Piece: typ, From: boardID(from), To: boardID(to)})
 				}
 				continue
 			}
 			if n > 0 {
-				out = append(out, state.Move{Action: actGo, Piece: typ, From: boardID(from), To: boardID(to)})
+				out = append(out, state.Selection{Action: actGo, Piece: typ, From: boardID(from), To: boardID(to)})
 			}
 		}
 	}

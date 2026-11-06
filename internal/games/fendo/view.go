@@ -52,7 +52,7 @@ func (rs *Ruleset) Redact(game *catalog.CompiledGame, st *state.BoardState, view
 }
 
 // RedactMove: moves reveal nothing.
-func (rs *Ruleset) RedactMove(game *catalog.CompiledGame, st *state.BoardState, mv state.Move, notation string) (state.Move, string) {
+func (rs *Ruleset) RedactMove(game *catalog.CompiledGame, st *state.BoardState, mv state.Selection, notation string) (state.Selection, string) {
 	return mv, notation
 }
 
@@ -164,7 +164,7 @@ func (rs *Ruleset) Heuristic(game *catalog.CompiledGame, st *state.BoardState, s
 
 // GuideMoves keeps a bot sensible: it considers the moves that leave it best
 // off in squares owned or nearest.
-func (rs *Ruleset) GuideMoves(game *catalog.CompiledGame, st *state.BoardState, seat int, legal []state.Move) []state.Move {
+func (rs *Ruleset) GuideMoves(game *catalog.CompiledGame, st *state.BoardState, seat int, legal []state.Selection) []state.Selection {
 	d, err := dataOf(st)
 	if err != nil {
 		return legal
@@ -180,7 +180,7 @@ func (rs *Ruleset) GuideMoves(game *catalog.CompiledGame, st *state.BoardState, 
 			best = scores[i]
 		}
 	}
-	var out []state.Move
+	var out []state.Selection
 	for i, mv := range legal {
 		if scores[i] >= best-1.5 {
 			out = append(out, mv)

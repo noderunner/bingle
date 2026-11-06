@@ -13,7 +13,7 @@ func midGame(b testing.TB, id string, n int) (*state.BoardState, int) {
 	rng := rand.New(rand.NewSource(1))
 	st, seat := state.InitialState(g), state.FirstSeat(g)
 	for i := 0; i < n; i++ {
-		legal := state.LegalMoves(g, st, seat)
+		legal := state.LegalSelections(g, st, seat)
 		if len(legal) == 0 {
 			break
 		}
@@ -35,7 +35,7 @@ func midGame(b testing.TB, id string, n int) (*state.BoardState, int) {
 func BenchmarkApplyHavannah8(b *testing.B) {
 	g := load(b, "havannah-8")
 	st, seat := midGame(b, "havannah-8", 40)
-	legal := state.LegalMoves(g, st, seat)
+	legal := state.LegalSelections(g, st, seat)
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -51,6 +51,6 @@ func BenchmarkLegalMovesHavannah8(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_ = state.LegalMoves(g, st, seat)
+		_ = state.LegalSelections(g, st, seat)
 	}
 }

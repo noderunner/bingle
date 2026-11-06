@@ -25,7 +25,7 @@ import (
 // With notation "ptn" (Tak's Portable Tak Notation) placements are "a1"
 // (default piece), "Sa1" (piece code prefix) and stack moves are
 // "<count><square><direction><drops>", e.g. "3c3>111".
-func FormatMove(game *catalog.CompiledGame, mv Move) string {
+func FormatMove(game *catalog.CompiledGame, mv Selection) string {
 	if rs, ok := RulesetOf(game); ok {
 		return rs.Format(game, mv)
 	}
@@ -109,7 +109,7 @@ func ptnStep(dir byte) (dx, dy int, ok bool) {
 	return 0, 0, false
 }
 
-func formatPTN(game *catalog.CompiledGame, act catalog.ResolvedAction, mv Move) (string, bool) {
+func formatPTN(game *catalog.CompiledGame, act catalog.ResolvedAction, mv Selection) (string, bool) {
 	switch act.Type {
 	case catalog.ActionPlace:
 		prefix := ""
@@ -163,7 +163,7 @@ var (
 // only checks syntax and that named squares exist; legality is Apply's job.
 // A bare position-less token, or one the game's notation cannot express,
 // yields an error.
-func ParseMove(game *catalog.CompiledGame, text string) (Move, error) {
+func ParseMove(game *catalog.CompiledGame, text string) (Selection, error) {
 	if rs, ok := RulesetOf(game); ok {
 		return rs.Parse(game, text)
 	}
@@ -172,26 +172,26 @@ func ParseMove(game *catalog.CompiledGame, text string) (Move, error) {
 	// flatten marker.
 	s = strings.TrimRight(s, "!?'*")
 	if s == "" {
-		return Move{}, fmt.Errorf("state: empty move")
+		return Selection{}, fmt.Errorf("state: empty move")
 	}
 	g := game.Board
 
 	if strings.EqualFold(s, "swap") {
 		for _, a := range game.Actions {
 			if a.Type == catalog.ActionSwap {
-				return Move{Action: a.ID}, nil
+				return Selection{Action: a.ID}, nil
 			}
 		}
-		return Move{}, fmt.Errorf("state: this game has no swap action")
+		return Selection{}, fmt.Errorf("state: this game has no swap action")
 	}
 
 	if strings.EqualFold(s, "pass") {
 		for _, a := range game.Actions {
 			if a.Type == catalog.ActionPass {
-				return Move{Action: a.ID}, nil
+				return Selection{Action: a.ID}, nil
 			}
 		}
-		return Move{}, fmt.Errorf("state: this game has no pass action")
+		return Selection{}, fmt.Errorf("state: this game has no pass action")
 	}
 
 	if game.Definition.Notation == "ptn" {
@@ -212,7 +212,7 @@ func ParseMove(game *catalog.CompiledGame, text string) (Move, error) {
 			}
 		}
 		if count == 1 && len(only.Pieces) == 1 {
-			return Move{Action: only.ID, Piece: only.Pieces[0], To: board.PositionID(s)}, nil
+			return Selection{Action: only.ID, Piece: only.Pieces[0], To: board.PositionID(s)}, nil
 		}
 	}
 
@@ -220,9 +220,9 @@ func ParseMove(game *catalog.CompiledGame, text string) (Move, error) {
 	if i := strings.Index(s, "@"); i >= 0 {
 		piece, to := s[:i], board.PositionID(s[i+1:])
 		if !g.HasPosition(to) {
-			return Move{}, fmt.Errorf("state: unknown position %q", to)
+			return Selection{}, fmt.Errorf("state: unknown position %q", to)
 		}
-		mv := Move{Piece: piece, To: to}
+		mv := Selection{Piece: piece, To: to}
 		for _, a := range game.Actions {
 			if a.Type == catalog.ActionPlace {
 				mv.Action = a.ID
@@ -230,7 +230,7 @@ func ParseMove(game *catalog.CompiledGame, text string) (Move, error) {
 			}
 		}
 		if mv.Action == "" {
-			return Move{}, fmt.Errorf("state: game has no place action")
+			return Selection{}, fmt.Errorf("state: game has no place action")
 		}
 		if piece == "" {
 			mv.Piece = ""
@@ -256,10 +256,10 @@ func ParseMove(game *catalog.CompiledGame, text string) (Move, error) {
 				}
 				from, to := board.PositionID(left[:k]), board.PositionID(left[k+1:])
 				if g.HasPosition(from) && g.HasPosition(to) && g.HasPosition(aim) {
-					return Move{Action: slide.ID, From: from, To: to, Aim: aim}, nil
+					return Selection{Action: slide.ID, From: from, To: to, Aim: aim}, nil
 				}
 			}
-			return Move{}, fmt.Errorf("state: cannot parse slide %q (expected from-to/aim)", text)
+			return Selection{}, fmt.Errorf("state: cannot parse slide %q (expected from-to/aim)", text)
 		}
 	}
 
@@ -267,24 +267,24 @@ func ParseMove(game *catalog.CompiledGame, text string) (Move, error) {
 	if i := strings.Index(s, "/"); i >= 0 {
 		from := board.PositionID(s[:i])
 		if !g.HasPosition(from) {
-			return Move{}, fmt.Errorf("state: unknown position %q", from)
+			return Selection{}, fmt.Errorf("state: unknown position %q", from)
 		}
 		rest := strings.Split(s[i+1:], ">")
 		count, err := strconv.Atoi(rest[0])
 		if err != nil {
-			return Move{}, fmt.Errorf("state: bad stack move %q: count %q", s, rest[0])
+			return Selection{}, fmt.Errorf("state: bad stack move %q: count %q", s, rest[0])
 		}
-		mv := Move{From: from, Count: count}
+		mv := Selection{From: from, Count: count}
 		for _, part := range rest[1:] {
 			kv := strings.SplitN(part, ":", 2)
 			pos := board.PositionID(kv[0])
 			if !g.HasPosition(pos) {
-				return Move{}, fmt.Errorf("state: unknown position %q", pos)
+				return Selection{}, fmt.Errorf("state: unknown position %q", pos)
 			}
 			drop := 1
 			if len(kv) == 2 {
 				if drop, err = strconv.Atoi(kv[1]); err != nil {
-					return Move{}, fmt.Errorf("state: bad stack move %q: drop %q", s, kv[1])
+					return Selection{}, fmt.Errorf("state: bad stack move %q: drop %q", s, kv[1])
 				}
 			}
 			mv.Path = append(mv.Path, pos)
@@ -310,7 +310,7 @@ func ParseMove(game *catalog.CompiledGame, text string) (Move, error) {
 				}
 			}
 			if ok {
-				mv := Move{From: board.PositionID(parts[0])}
+				mv := Selection{From: board.PositionID(parts[0])}
 				for _, p := range parts[1:] {
 					mv.Path = append(mv.Path, board.PositionID(p))
 				}
@@ -327,17 +327,17 @@ func ParseMove(game *catalog.CompiledGame, text string) (Move, error) {
 		}
 		from, to := board.PositionID(s[:i]), board.PositionID(s[i+1:])
 		if g.HasPosition(from) && g.HasPosition(to) {
-			return Move{Action: catalog.ActionStep, From: from, To: to}, nil
+			return Selection{Action: catalog.ActionStep, From: from, To: to}, nil
 		}
 	}
 
-	return Move{}, fmt.Errorf("state: cannot parse move %q in this game's notation", text)
+	return Selection{}, fmt.Errorf("state: cannot parse move %q in this game's notation", text)
 }
 
 // parsePTN returns (move, true, nil) for a well-formed PTN token,
 // (_, false, nil) when s is simply not PTN-shaped, and (_, false, err) when
 // it is PTN-shaped but wrong.
-func parsePTN(game *catalog.CompiledGame, s string) (Move, bool, error) {
+func parsePTN(game *catalog.CompiledGame, s string) (Selection, bool, error) {
 	g := game.Board
 
 	placeAction := ""
@@ -359,40 +359,40 @@ func parsePTN(game *catalog.CompiledGame, s string) (Move, bool, error) {
 	if ptnSquareRE.MatchString(s) {
 		sq := board.PositionID(s)
 		if !g.HasPosition(sq) {
-			return Move{}, false, fmt.Errorf("state: unknown square %q", s)
+			return Selection{}, false, fmt.Errorf("state: unknown square %q", s)
 		}
 		if placeAction == "" || len(placePieces) == 0 {
-			return Move{}, false, fmt.Errorf("state: game has no place action")
+			return Selection{}, false, fmt.Errorf("state: game has no place action")
 		}
-		return Move{Action: placeAction, Piece: placePieces[0], To: sq}, true, nil
+		return Selection{Action: placeAction, Piece: placePieces[0], To: sq}, true, nil
 	}
 
 	if m := ptnPlaceRE.FindStringSubmatch(s); m != nil {
 		code, sq := m[1], board.PositionID(m[2])
 		if !g.HasPosition(sq) {
-			return Move{}, false, fmt.Errorf("state: unknown square %q", m[2])
+			return Selection{}, false, fmt.Errorf("state: unknown square %q", m[2])
 		}
 		for _, p := range placePieces {
 			if strings.EqualFold(game.Definition.Pieces[p].Code, code) {
-				return Move{Action: placeAction, Piece: p, To: sq}, true, nil
+				return Selection{Action: placeAction, Piece: p, To: sq}, true, nil
 			}
 		}
-		return Move{}, false, fmt.Errorf("state: unknown piece code %q in %q", code, s)
+		return Selection{}, false, fmt.Errorf("state: unknown piece code %q in %q", code, s)
 	}
 
 	if m := ptnMoveRE.FindStringSubmatch(s); m != nil {
 		if stackAction == "" {
-			return Move{}, false, fmt.Errorf("state: game has no stack-move action")
+			return Selection{}, false, fmt.Errorf("state: game has no stack-move action")
 		}
 		from := board.PositionID(m[2])
 		if !g.HasPosition(from) {
-			return Move{}, false, fmt.Errorf("state: unknown square %q", m[2])
+			return Selection{}, false, fmt.Errorf("state: unknown square %q", m[2])
 		}
 		count := 1
 		if m[1] != "" {
 			n, err := strconv.Atoi(m[1])
 			if err != nil || n < 1 {
-				return Move{}, false, fmt.Errorf("state: bad carry count in %q", s)
+				return Selection{}, false, fmt.Errorf("state: bad carry count in %q", s)
 			}
 			count = n
 		}
@@ -409,20 +409,20 @@ func parsePTN(game *catalog.CompiledGame, s string) (Move, bool, error) {
 
 		fc, ok := g.Coord(from)
 		if !ok {
-			return Move{}, false, fmt.Errorf("state: board has no coordinates for %s", from)
+			return Selection{}, false, fmt.Errorf("state: board has no coordinates for %s", from)
 		}
 		path := make([]board.PositionID, 0, len(drops))
 		for i := range drops {
 			p, ok := g.At(board.Coord{X: fc.X + (i+1)*dx, Y: fc.Y + (i+1)*dy})
 			if !ok {
-				return Move{}, false, fmt.Errorf("state: move %q runs off the board", s)
+				return Selection{}, false, fmt.Errorf("state: move %q runs off the board", s)
 			}
 			path = append(path, p)
 		}
-		mv := Move{Action: stackAction, From: from, Count: count, Path: path, Drops: drops}
+		mv := Selection{Action: stackAction, From: from, Count: count, Path: path, Drops: drops}
 		mv.To = path[len(path)-1]
 		return mv, true, nil
 	}
 
-	return Move{}, false, nil
+	return Selection{}, false, nil
 }

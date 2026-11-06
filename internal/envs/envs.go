@@ -398,7 +398,7 @@ func (m *Manager) List() []string {
 }
 
 // apply plays mv for the seat to move.
-func (e *Env) apply(mv state.Move, played *[]string) error {
+func (e *Env) apply(mv state.Selection, played *[]string) error {
 	res, err := state.Apply(e.game, e.st, e.impulseSeat, mv)
 	if err != nil {
 		return err
@@ -426,7 +426,7 @@ func (e *Env) advanceBots(ctx context.Context, played *[]string) error {
 		return nil
 	}
 	for !e.done && e.impulseSeat != e.agent {
-		legal := state.LegalMoves(e.game, e.st, e.impulseSeat)
+		legal := state.LegalSelections(e.game, e.st, e.impulseSeat)
 		if len(legal) == 0 {
 			e.done, e.reason = true, "no-legal-moves"
 			return nil
@@ -492,7 +492,7 @@ func (e *Env) observe(played []string) Observation {
 		}
 	}
 	if obs.YourImpulse {
-		for _, mv := range state.LegalMoves(e.game, e.st, e.impulseSeat) {
+		for _, mv := range state.LegalSelections(e.game, e.st, e.impulseSeat) {
 			text := state.FormatMove(e.game, mv)
 			obs.LegalMoves = append(obs.LegalMoves, text)
 			if space != nil && space.Fixed {

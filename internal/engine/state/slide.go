@@ -44,7 +44,7 @@ func (c *rctx) walkRay(from board.PositionID, dx, dy, max int, isEmpty func(boar
 	}
 }
 
-func (c *rctx) validateSlide(act catalog.ResolvedAction, mv Move) (executor, error) {
+func (c *rctx) validateSlide(act catalog.ResolvedAction, mv Selection) (executor, error) {
 	if mv.Piece != "" || mv.Count != 0 || len(mv.Path) > 0 || len(mv.Drops) > 0 {
 		return nil, fmt.Errorf("state: a slide takes only from, to and (when the action has a follow-up) aim")
 	}
@@ -203,7 +203,7 @@ func (c *rctx) validateSlide(act catalog.ResolvedAction, mv Move) (executor, err
 // checkShot verifies the follow-up of a slide: the aim must be reachable by
 // a straight, unobstructed line from the destination, in the position after
 // the slide.
-func (c *rctx) checkShot(act catalog.ResolvedAction, mv Move) error {
+func (c *rctx) checkShot(act catalog.ResolvedAction, mv Selection) error {
 	g := c.game.Board
 	tc, _ := g.Coord(mv.To)
 	ac, ok := g.Coord(mv.Aim)
@@ -263,7 +263,7 @@ func (c *rctx) checkShot(act catalog.ResolvedAction, mv Move) error {
 }
 
 // enumerateSlides lists every legal slide (with every legal follow-up).
-func (c *rctx) enumerateSlides(act catalog.ResolvedAction, keep func(catalog.ResolvedAction, Move, bool)) {
+func (c *rctx) enumerateSlides(act catalog.ResolvedAction, keep func(catalog.ResolvedAction, Selection, bool)) {
 	g := c.game.Board
 	isPiece := map[string]bool{}
 	for _, p := range act.Pieces {
@@ -300,7 +300,7 @@ func (c *rctx) enumerateSlides(act catalog.ResolvedAction, keep func(catalog.Res
 					return true
 				}
 				if act.Then == nil {
-					keep(act, Move{Action: act.ID, From: from, To: to}, true)
+					keep(act, Selection{Action: act.ID, From: from, To: to}, true)
 					return true
 				}
 				// Squares the piece could shoot at from `to`, in the
@@ -317,7 +317,7 @@ func (c *rctx) enumerateSlides(act catalog.ResolvedAction, keep func(catalog.Res
 				for _, sd := range c.slideDirs(act.Then.Dirs) {
 					c.walkRay(to, sd.DX, sd.DY, act.Then.MaxDistance, vacant, func(_ int, aim board.PositionID, free bool) bool {
 						if free {
-							keep(act, Move{Action: act.ID, From: from, To: to, Aim: aim}, true)
+							keep(act, Selection{Action: act.ID, From: from, To: to, Aim: aim}, true)
 						}
 						return !c.enough()
 					})

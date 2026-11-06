@@ -11,7 +11,7 @@ import (
 
 // perft counts the leaf nodes of the legal-move tree to the given depth.
 func perft(g *catalog.CompiledGame, st *state.BoardState, seat, depth int) int {
-	moves := state.LegalMoves(g, st, seat)
+	moves := state.LegalSelections(g, st, seat)
 	if depth == 1 {
 		return len(moves)
 	}
@@ -97,7 +97,7 @@ func TestRandomGamesStayConsistent(t *testing.T) {
 			st := state.InitialState(g)
 			seat := 1
 			for ply := 0; ply < 400; ply++ {
-				moves := state.LegalMoves(g, st, seat)
+				moves := state.LegalSelections(g, st, seat)
 				if len(moves) == 0 {
 					t.Fatalf("%s game %d ply %d: no legal moves but game not over\n%s", gc.id, n, ply, state.RenderText(g, st))
 				}
@@ -191,7 +191,7 @@ func TestRandomGamesStayConsistent(t *testing.T) {
 }
 
 // mutate perturbs a legal move into a (usually) illegal neighbour.
-func mutate(rng *rand.Rand, mv state.Move) state.Move {
+func mutate(rng *rand.Rand, mv state.Selection) state.Selection {
 	out := mv
 	out.Path = append(out.Path[:0:0], mv.Path...)
 	out.Drops = append(out.Drops[:0:0], mv.Drops...)

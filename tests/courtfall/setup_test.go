@@ -91,7 +91,7 @@ func TestEveryRandomDraftPlacesAllTenTiles(t *testing.T) {
 		seat := light
 		placed := 0
 		for data(t, st).Phase == "terrain" {
-			legal := state.LegalMoves(g, st, seat)
+			legal := state.LegalSelections(g, st, seat)
 			if len(legal) == 0 {
 				t.Fatalf("draft %d dead-ended after %d tiles", n, placed)
 			}
@@ -127,7 +127,7 @@ func TestDraftAlternatesThenCourtsThenDeployment(t *testing.T) {
 	var order []int
 	for data(t, st).Phase == "terrain" {
 		order = append(order, seat)
-		legal := state.LegalMoves(g, st, seat)
+		legal := state.LegalSelections(g, st, seat)
 		res, err := state.Apply(g, st, seat, legal[rng.Intn(len(legal))])
 		if err != nil {
 			t.Fatal(err)

@@ -151,17 +151,17 @@ func (e *eng) catsInPlay(seat int) int {
 }
 
 // bubastisTurnMoves lists the Actions only Bubastis has.
-func (e *eng) bubastisTurnMoves(seat int) []state.Move {
+func (e *eng) bubastisTurnMoves(seat int) []state.Selection {
 	d := e.d
 	if !e.bubastisIn(seat) {
 		return nil
 	}
-	var out []state.Move
+	var out []state.Selection
 	if !d.reqDone(seat, rqBUPay) && d.Power[seat] >= 2 {
-		out = append(out, state.Move{Action: actCard, Piece: "bu-pay"})
+		out = append(out, state.Selection{Action: actCard, Piece: "bu-pay"})
 	}
 	if a, ok := e.gooArea(seat, uBastet); ok && d.hasBook(seat, bkCatnapping) && !e.isMoon(a) && d.Power[seat] >= 1 && e.catnapTargets(a, seat) > 0 {
-		out = append(out, state.Move{Action: actCard, Piece: "catnap"})
+		out = append(out, state.Selection{Action: actCard, Piece: "catnap"})
 	}
 	return out
 }
@@ -311,7 +311,7 @@ func (e *eng) bastetRitual(seat int) {
 }
 
 // predatorMoves lists the unit types lost by the enemy that Predator can hit.
-func (e *eng) predatorMoves(seat int) []state.Move {
+func (e *eng) predatorMoves(seat int) []state.Selection {
 	d := e.d
 	b := d.Bat
 	if !e.bubastisIn(seat) || !d.hasBook(seat, bkPredator) || b == nil || !b.Uranus || b.Preyed {
@@ -319,11 +319,11 @@ func (e *eng) predatorMoves(seat int) []state.Move {
 	}
 	foe := b.foeOf(seat)
 	seen := map[string]bool{}
-	var out []state.Move
+	var out []state.Selection
 	for _, u := range b.Lost {
 		if u.Seat == foe && !seen[u.Type] && e.onMap(foe, u.Type) > 0 && !isIndependent(u.Type) {
 			seen[u.Type] = true
-			out = append(out, state.Move{Action: actCard, Piece: "predator." + u.Type})
+			out = append(out, state.Selection{Action: actCard, Piece: "predator." + u.Type})
 		}
 	}
 	return out

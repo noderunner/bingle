@@ -203,7 +203,7 @@ func SetRepro(w *repro.Writer) { batchRepro = w }
 // hundreds of games unattended, which makes it the likeliest place for a rules
 // hole to turn up and the least likely place for anybody to be watching — so
 // it files its own.
-func writeBatchRepro(kind repro.Kind, game *catalog.CompiledGame, spec Spec, rec Record, st *state.BoardState, seat int, mv *state.Move, cause error) {
+func writeBatchRepro(kind repro.Kind, game *catalog.CompiledGame, spec Spec, rec Record, st *state.BoardState, seat int, mv *state.Selection, cause error) {
 	if !batchRepro.On() {
 		return
 	}
@@ -312,7 +312,7 @@ func PlayGame(ctx context.Context, cat *catalog.Catalog, spec Spec, i int) (Reco
 		if ctx.Err() != nil {
 			return rec, ctx.Err()
 		}
-		legal := state.LegalMoves(game, st, seat)
+		legal := state.LegalSelections(game, st, seat)
 		if len(legal) == 0 {
 			reason = "no-legal-moves"
 			// A position with no moves and no win rule to end the game is a

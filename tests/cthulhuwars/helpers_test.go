@@ -27,7 +27,7 @@ func game(t testing.TB) *catalog.CompiledGame {
 }
 
 // randomGame plays random legal decisions and calls check after each.
-func randomGame(t testing.TB, g *catalog.CompiledGame, seed int64, maxPlies int, check func(ply int, st *state.BoardState, seat int, mv state.Move)) (*state.BoardState, int, bool) {
+func randomGame(t testing.TB, g *catalog.CompiledGame, seed int64, maxPlies int, check func(ply int, st *state.BoardState, seat int, mv state.Selection)) (*state.BoardState, int, bool) {
 	t.Helper()
 	rng := rand.New(rand.NewSource(seed))
 	st, err := state.InitialStateSeeded(g, uint64(seed*7919+1))
@@ -36,7 +36,7 @@ func randomGame(t testing.TB, g *catalog.CompiledGame, seed int64, maxPlies int,
 	}
 	seat := state.FirstSeat(g)
 	for ply := 0; ply < maxPlies; ply++ {
-		legal := state.LegalMoves(g, st, seat)
+		legal := state.LegalSelections(g, st, seat)
 		if len(legal) == 0 {
 			t.Fatalf("seed %d ply %d: seat %d has no legal moves\n%s", seed, ply, seat, state.RenderText(g, st))
 		}
@@ -239,7 +239,7 @@ func refuse(t testing.TB, g *catalog.CompiledGame, st *state.BoardState, seat in
 
 func notations(g *catalog.CompiledGame, st *state.BoardState, seat int) []string {
 	var out []string
-	for _, mv := range state.LegalMoves(g, st, seat) {
+	for _, mv := range state.LegalSelections(g, st, seat) {
 		out = append(out, state.FormatMove(g, mv))
 	}
 	return out

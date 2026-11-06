@@ -170,7 +170,7 @@ func drawn(game *catalog.CompiledGame, t Tutorial, pieces []string) (*state.Boar
 // made of ("piece red", then "pos d4") to point them at in its own way, and
 // the position a step that shows one depicts.
 type StepGuide struct {
-	PlaySteps [][]state.Step    `json:"play_steps,omitempty"`
+	PlaySteps [][]state.Gesture `json:"play_steps,omitempty"`
 	Shown     *state.BoardState `json:"show_state,omitempty"`
 }
 
@@ -216,10 +216,10 @@ func Guide(game *catalog.CompiledGame, t Tutorial) ([]StepGuide, error) {
 
 // stepsOf is the selections of the legal move written text, as the engine
 // lists it for the seat to move.
-func (p *player) stepsOf(text string) ([]state.Step, error) {
-	for _, mv := range state.LegalMoves(p.game, p.st, p.seat) {
+func (p *player) stepsOf(text string) ([]state.Gesture, error) {
+	for _, mv := range state.LegalSelections(p.game, p.st, p.seat) {
 		if strings.EqualFold(state.FormatMove(p.game, mv), strings.TrimSpace(text)) {
-			return state.Steps(p.game, mv), nil
+			return state.Gestures(p.game, mv), nil
 		}
 	}
 	return nil, fmt.Errorf("move %q is not among the legal moves", text)

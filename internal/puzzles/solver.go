@@ -28,9 +28,9 @@ func NewSolver(game *catalog.CompiledGame) *Solver { return &Solver{game: game} 
 // plies plies (counting seat's own move as the first ply; so 1 = a move that
 // wins at once, 3 = wins in two of its own moves whatever the opponent
 // does). It stops early when ctx is done and returns what it found.
-func (s *Solver) WinningMoves(ctx context.Context, st *state.BoardState, seat, plies int) []state.Move {
-	var out []state.Move
-	for _, mv := range state.LegalMoves(s.game, st, seat) {
+func (s *Solver) WinningMoves(ctx context.Context, st *state.BoardState, seat, plies int) []state.Selection {
+	var out []state.Selection
+	for _, mv := range state.LegalSelections(s.game, st, seat) {
 		if ctx.Err() != nil {
 			return out
 		}
@@ -60,7 +60,7 @@ func (s *Solver) winsAfter(ctx context.Context, res *state.MoveResult, target, p
 
 // solve: with impulseSeat to play in st, does target force a win within plies?
 func (s *Solver) solve(ctx context.Context, st *state.BoardState, impulseSeat, target, plies int) bool {
-	legal := state.LegalMoves(s.game, st, impulseSeat)
+	legal := state.LegalSelections(s.game, st, impulseSeat)
 	if len(legal) == 0 {
 		return false // stalemate: not a win for anyone we can prove
 	}
@@ -94,7 +94,7 @@ func (s *Solver) solve(ctx context.Context, st *state.BoardState, impulseSeat, t
 // Line returns a principal variation: starting with mv, the attacker's moves
 // and the defender's most resistant replies until the game ends, as
 // notation. It assumes mv is a winning first move within plies.
-func (s *Solver) Line(ctx context.Context, st *state.BoardState, seat int, mv state.Move, plies int) []string {
+func (s *Solver) Line(ctx context.Context, st *state.BoardState, seat int, mv state.Selection, plies int) []string {
 	var out []string
 	cur, impulseSeat, move := st, seat, mv
 	for plies > 0 {
@@ -108,7 +108,7 @@ func (s *Solver) Line(ctx context.Context, st *state.BoardState, seat int, mv st
 			return out
 		}
 		cur, impulseSeat = res.NewState, res.NextImpulseSeat
-		legal := state.LegalMoves(s.game, cur, impulseSeat)
+		legal := state.LegalSelections(s.game, cur, impulseSeat)
 		if len(legal) == 0 {
 			return out
 		}
@@ -150,7 +150,7 @@ func (s *Solver) Line(ctx context.Context, st *state.BoardState, seat int, mv st
 
 // Proves reports whether playing mv now wins by force for seat within plies
 // plies (counting mv as the first).
-func (s *Solver) Proves(ctx context.Context, st *state.BoardState, seat int, mv state.Move, plies int) bool {
+func (s *Solver) Proves(ctx context.Context, st *state.BoardState, seat int, mv state.Selection, plies int) bool {
 	res, err := state.Apply(s.game, st, seat, mv)
 	s.Nodes++
 	if err != nil {

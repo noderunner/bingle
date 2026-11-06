@@ -49,7 +49,7 @@ func TestThreePlayerGameLeavesYellowSignOut(t *testing.T) {
 		t.Fatalf("seats %d", len(g.Definition.Seats))
 	}
 	for seed := int64(1); seed <= 4; seed++ {
-		_, _, done := randomGame(t, g, seed, 1500, func(ply int, st *state.BoardState, seat int, mv state.Move) {
+		_, _, done := randomGame(t, g, seed, 1500, func(ply int, st *state.BoardState, seat int, mv state.Selection) {
 			if seat > 3 {
 				t.Fatalf("seat %d acted in a three-player game", seat)
 			}

@@ -13,7 +13,7 @@ import (
 // guided returns the moves a bot may consider for seat in st.
 func guided(t testing.TB, g *catalog.CompiledGame, st *state.BoardState, seat int) []string {
 	t.Helper()
-	legal := state.LegalMoves(g, st, seat)
+	legal := state.LegalSelections(g, st, seat)
 	var out []string
 	// An explicit zero tuning: these tests pin the base heuristics, not the
 	// shipped per-cult offsets.
@@ -256,7 +256,7 @@ func playGuided(t testing.TB, g *catalog.CompiledGame, seed int64, maxPlies int)
 	var s guidedStats
 	inMove := false
 	for ply := 0; ply < maxPlies; ply++ {
-		legal := state.LegalMoves(g, st, seat)
+		legal := state.LegalSelections(g, st, seat)
 		if len(legal) == 0 {
 			t.Fatalf("seed %d ply %d: seat %d has no legal moves\n%s", seed, ply, seat, state.RenderText(g, st))
 		}

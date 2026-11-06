@@ -39,7 +39,7 @@ func TestActionSpaceCoversLegalMovesAndPlanesAreWellFormed(t *testing.T) {
 		for game := 0; game < 4; game++ {
 			st, seat := state.InitialState(g), state.FirstSeat(g)
 			for ply := 0; ply < 400; ply++ {
-				legal := state.LegalMoves(g, st, seat)
+				legal := state.LegalSelections(g, st, seat)
 				if len(legal) == 0 {
 					break
 				}

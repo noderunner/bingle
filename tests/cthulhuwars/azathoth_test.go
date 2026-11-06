@@ -607,7 +607,7 @@ func TestRandomGamesWithAzathoth(t *testing.T) {
 		tb := azTable(t, c.base, c.keys, c.az, c.swaps)
 		for seed := int64(1); seed <= int64(seeds); seed++ {
 			name := fmt.Sprintf("%s seed %d", tb.g.Definition.ID, seed)
-			st, ply, done := randomGame(t, tb.g, seed, 8000, func(ply int, st *state.BoardState, seat int, mv state.Move) {
+			st, ply, done := randomGame(t, tb.g, seed, 8000, func(ply int, st *state.BoardState, seat int, mv state.Selection) {
 				if err := state.Validate(tb.g, st); err != nil {
 					t.Fatalf("%s ply %d after %s: %v\n%s", name, ply, state.FormatMove(tb.g, mv), err, state.RenderText(tb.g, st))
 				}

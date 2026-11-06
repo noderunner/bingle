@@ -9,8 +9,8 @@ import (
 	"github.com/noderunner/bingle/internal/engine/catalog"
 )
 
-// Move is one player action in structured form. Which fields matter depends
-// on the action:
+// Selection is one self-contained choice within an impulse, with its own
+// notation (ADR 0114): one Apply. Which fields matter depends on the action:
 //
 //   - "step", "slide": From, To (and Aim when the slide has a follow-up)
 //   - "place": Piece, To
@@ -18,7 +18,7 @@ import (
 //     path square once a move has been normalized)
 //
 // The zero Action means "infer from the other fields" (see Normalize).
-type Move struct {
+type Selection struct {
 	Action string             `json:"action,omitempty"`
 	Piece  string             `json:"piece,omitempty"`
 	From   board.PositionID   `json:"from,omitempty"`
@@ -31,9 +31,13 @@ type Move struct {
 	Aim board.PositionID `json:"aim,omitempty"`
 }
 
+// Move is the selections of one impulse, in order (ADR 0114): what a seat
+// submits at once, and what the History shows as one ply.
+type Move []Selection
+
 // Key returns a canonical, comparable string for the move, ignoring fields
 // that are derived (To of a stack move).
-func (m Move) Key() string {
+func (m Selection) Key() string {
 	var b strings.Builder
 	b.WriteString(m.Action)
 	b.WriteByte('|')
@@ -70,7 +74,7 @@ func (m Move) Key() string {
 // Normalize returns m with its Action filled in (inferred from the fields
 // when empty) and derived fields made canonical. It reports an error when
 // the action cannot be determined or is not defined by game.
-func (m Move) Normalize(game *catalog.CompiledGame) (Move, error) {
+func (m Selection) Normalize(game *catalog.CompiledGame) (Selection, error) {
 	if m.Action == "" {
 		switch {
 		case len(m.Path) > 0 || m.Count > 0:

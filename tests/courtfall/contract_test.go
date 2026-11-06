@@ -51,11 +51,11 @@ func TestRandomGamesKeepTheEngineContract(t *testing.T) {
 		}
 		seat := state.FirstSeat(g)
 		for ply := 0; ply < plies; ply++ {
-			legal := state.LegalMoves(g, st, seat)
+			legal := state.LegalSelections(g, st, seat)
 			if len(legal) == 0 {
 				t.Fatalf("game %d ply %d: seat %d has no moves\n%s", n, ply, seat, state.RenderText(g, st))
 			}
-			if other := state.LegalMoves(g, st, 3-seat); len(other) != 0 {
+			if other := state.LegalSelections(g, st, 3-seat); len(other) != 0 {
 				t.Fatalf("game %d ply %d: both seats have moves", n, ply)
 			}
 			if err := state.Validate(g, st); err != nil {
@@ -69,7 +69,7 @@ func TestRandomGamesKeepTheEngineContract(t *testing.T) {
 			if marshal(t, re) != doc {
 				t.Fatalf("game %d ply %d: document does not round-trip", n, ply)
 			}
-			if got := state.LegalMoves(g, re, seat); len(got) != len(legal) {
+			if got := state.LegalSelections(g, re, seat); len(got) != len(legal) {
 				t.Fatalf("game %d ply %d: decoded position has %d moves, original %d", n, ply, len(got), len(legal))
 			}
 
@@ -83,12 +83,12 @@ func TestRandomGamesKeepTheEngineContract(t *testing.T) {
 				if _, ok := space.ID(s); !ok {
 					t.Fatalf("game %d ply %d: %s is not in the action space", n, ply, s)
 				}
-				steps := state.Steps(g, mv)
+				steps := state.Gestures(g, mv)
 				if len(steps) == 0 {
 					t.Fatalf("%s has no steps", s)
 				}
 				for _, sp := range steps {
-					if sp.Kind == state.StepAction && !labelled[sp.Value] {
+					if sp.Kind == state.GestureAction && !labelled[sp.Value] {
 						t.Fatalf("%s uses action %q that has no label", s, sp.Value)
 					}
 				}
@@ -204,7 +204,7 @@ func TestSameSeedSameMovesSamePositions(t *testing.T) {
 		seat := state.FirstSeat(g)
 		var docs []string
 		for i := 0; i < 250; i++ {
-			legal := state.LegalMoves(g, st, seat)
+			legal := state.LegalSelections(g, st, seat)
 			res, err := state.Apply(g, st, seat, legal[rng.Intn(len(legal))])
 			if err != nil {
 				t.Fatal(err)
@@ -346,7 +346,7 @@ func TestDeterminizeHidesTheFutureAndTheOpponentsCommit(t *testing.T) {
 		if data(t, st).RNG == dd.RNG {
 			t.Fatal("determinization kept the real generator")
 		}
-		if len(state.LegalMoves(g, d, dark)) != len(state.LegalMoves(g, st, dark)) {
+		if len(state.LegalSelections(g, d, dark)) != len(state.LegalSelections(g, st, dark)) {
 			t.Fatal("determinization changed the legal answers")
 		}
 	}
