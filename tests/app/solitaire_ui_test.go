@@ -33,12 +33,18 @@ func solitaireRoom(t *testing.T, baseURL, def, set string) string {
 // The first move the server offers that has this shape, with the number of moves there are.
 func legalNotations(t *testing.T, baseURL, room string) []string {
 	t.Helper()
+	return legalNotationsAs(t, "", baseURL, room)
+}
+
+// legalNotationsAs asks as the guest whose key is key: a seat's moves go to whoever holds it (ADR 0112).
+func legalNotationsAs(t *testing.T, key, baseURL, room string) []string {
+	t.Helper()
 	var res struct {
 		Moves []struct {
 			Notation string `json:"notation"`
 		} `json:"moves"`
 	}
-	if code := doJSON(t, "GET", baseURL+"/api/games/"+room+"/moves/legal", nil, &res); code != 200 {
+	if code := doJSONAs(t, key, "GET", baseURL+"/api/games/"+room+"/moves/legal", nil, &res); code != 200 {
 		t.Fatalf("legal: %d", code)
 	}
 	out := make([]string, len(res.Moves))
@@ -304,7 +310,7 @@ func TestWebBowling_ChoosingPinsAndABall(t *testing.T) {
 		}
 	}
 	var pins, ball string
-	for _, m := range legalNotations(t, baseURL, room) {
+	for _, m := range legalNotationsAs(t, browserGuestKey(t, ctx), baseURL, room) {
 		if strings.Contains(m, "@") {
 			pins, ball, _ = strings.Cut(m, "@")
 			break

@@ -132,7 +132,7 @@ func TestWebFitScreen_TheTurnBringsTheActionsIntoView(t *testing.T) {
 			Notation string `json:"notation"`
 		} `json:"moves"`
 	}
-	if code := doJSON(t, "GET", base+"/api/games/"+room+"/moves/legal", nil, &legal); code != 200 || len(legal.Moves) == 0 {
+	if code := doJSONAs(t, alice, "GET", base+"/api/games/"+room+"/moves/legal", nil, &legal); code != 200 || len(legal.Moves) == 0 {
 		t.Fatalf("legal: %d", code)
 	}
 	if code := moveAs(t, alice, base, room, "Alice", legal.Moves[0].Notation); code != 200 {

@@ -4,6 +4,11 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.76.1 - 2026-11-05
+
+### Bingle Core 0.76.1
+- **Your hand is your own.** Anybody with a game's room code could ask the server for the moves of the player whose turn it was, and in a card game like Nyet! that listed their hand. Now only the player in that seat can see them.
+
 ## 0.76.0 - 2026-11-05
 
 ### Bingle Core 0.76.0

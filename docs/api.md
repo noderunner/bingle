@@ -316,8 +316,8 @@ that appear as buttons.
 |---|---|
 | `POST /games/{code}/moves` | body `{player_name, notation}` **or** `{player_name, action?, piece?, from?, to?, count?, path?, drops?, aim?}` **or** legacy `{player_name, from, to}`. Response `{move, state, bot_moves?}`; `bot_moves` are replies a bot opponent played immediately (already reflected in `state`). |
 | `GET /games/{code}/moves` | history `[{seq, seat, color, from, to, captured, action, piece, count, path, drops, aim, notation, created_at}]`; `?since_seq=N` |
-| `GET /games/{code}/moves/legal` | every legal move for the seat to move (`?seat=N`): `{seat, moves:[{notation, action, piece, from, to, count, path, drops, aim, steps?}]}`; `?steps=1` adds the click-by-click selection steps |
-| `GET /games/{code}/legal-moves?from=SQ` | v1: destinations reachable from one square |
+| `GET /games/{code}/moves/legal` | every legal move for the seat to move (`?seat=N`): `{seat, moves:[{notation, action, piece, from, to, count, path, drops, aim, steps?}]}`; `?steps=1` adds the click-by-click selection steps. In a game with secrets (`engine: "ruleset"`) the moves of a seat with an owner go to that owner alone, and anybody else gets an empty list (ADR 0112) |
+| `GET /games/{code}/legal-moves?from=SQ` | v1: destinations reachable from one square; empty on the same terms as `moves/legal` |
 | `POST /games/{code}/undo` | `{player_name}`: take back the last step of the turn you are still playing. `409` once the turn has passed to anyone, the game has ended or a die has been rolled: a move then stands, in every game (ADR 0083) |
 | `POST /games/{code}/move-final` | `{player_name, notation}`: `{final}`, whether that move could not be taken back once played, as it hands the turn on, ends the game or brings in chance. Nothing is played. The page asks this before sending a move, to ask for a Submit only when it matters |
 | `POST /games/{code}/resign` | `{player_name}` |

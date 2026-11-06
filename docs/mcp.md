@@ -40,7 +40,7 @@ before, only seats nobody owns ([ADR 0067](decisions/0067-principals-and-guest-k
 | `create_game` | new room; `opponent` seats a bot, `seat` picks your side, `options` the setup choices of games that have them (Cthulhu Wars: `{"factions": ["ww","sl","gc","cc","ys"], "high-priests": true, "azathoth": true, "dreamlands": true, "beyond": true, "igoo-yig": true, "book-swaps": {"bg": "shrivel"}}`; the packs and each Independent, `igoo-abhoth` … `igoo-yig`, are bools) |
 | `join_game` | join an existing room by code (player or spectator) |
 | `get_observation` | **the decision context**: text board, TPS, whose turn, legal moves, reward, done |
-| `get_legal_moves` | every legal move for the player to move (notation + structured fields) |
+| `get_legal_moves` | every legal move for the player to move (notation + structured fields); in a game with secrets, empty unless the request holds that seat (ADR 0112) |
 | `make_move` | play `notation` (preferred), or structured action/piece/from/to/count/path/drops/aim |
 | `suggest_move` | a built-in bot's choice for the position (or a variation); only in games against bots or after the game |
 | `undo_move` / `resign` | take back the last step of the turn you are still playing (a move stands once the turn has passed) / concede |
