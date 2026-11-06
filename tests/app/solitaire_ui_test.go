@@ -3,6 +3,7 @@ package app_test
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -309,29 +310,56 @@ func TestWebBowling_ChoosingPinsAndABall(t *testing.T) {
 			t.Errorf("pin %c can be chosen on the first play", p)
 		}
 	}
-	var pins, ball string
-	for _, m := range legalNotationsAs(t, browserGuestKey(t, ctx), baseURL, room) {
-		if strings.Contains(m, "@") {
-			pins, ball, _ = strings.Cut(m, "@")
-			break
-		}
-	}
-	if pins == "" {
-		t.Fatal("no play on this deal")
-	}
-	letters := strings.Split(pins, "+")
+	letters, ball, release := bowlingPlayToUndo(t, legalNotationsAs(t, browserGuestKey(t, ctx), baseURL, room))
 	for _, p := range letters {
 		clickSel(t, ctx, fmt.Sprintf(`#sol-rack button.sol-pin[data-pin="%s"]`, p))
 	}
 	sel := fmt.Sprintf(`#sol-balls button[data-throw="%s"]`, ball)
 	waitJS(t, ctx, "the ball lit", fmt.Sprintf(`document.querySelector('%s')`, sel), 10*time.Second)
-	// Letting go of a pin takes the ball's light away.
-	clickSel(t, ctx, fmt.Sprintf(`#sol-rack button.sol-pin[data-pin="%s"]`, letters[0]))
+	// Letting go of a pin takes the ball's light away, when what is left is no throw of that ball.
+	clickSel(t, ctx, fmt.Sprintf(`#sol-rack button.sol-pin[data-pin="%s"]`, release))
 	waitJS(t, ctx, "the ball dark", fmt.Sprintf(`!document.querySelector('%s')`, sel), 10*time.Second)
-	clickSel(t, ctx, fmt.Sprintf(`#sol-rack button.sol-pin[data-pin="%s"]`, letters[0]))
+	clickSel(t, ctx, fmt.Sprintf(`#sol-rack button.sol-pin[data-pin="%s"]`, release))
 	clickSel(t, ctx, sel)
 	waitJS(t, ctx, "the throw", fmt.Sprintf(`fetch('/api/games/%s').then(r=>r.json()).then(g=>g.move_seq===1)`, room), 10*time.Second)
 	waitJS(t, ctx, "the pins down", fmt.Sprintf(`document.querySelectorAll('#sol-rack .sol-pin.down').length === %d`, len(letters)), 10*time.Second)
+}
+
+// bowlingPlayToUndo chooses, from a deal's legal plays ("e+f@1"), a play and a pin of it to let go
+// of such that the pins left are no throw of the same ball: the page lights a ball for exactly the
+// pins chosen, so when they are, the ball rightly stays lit. A play of several pins is preferred,
+// so that letting go of one of several is what is tested; a play of one pin always qualifies.
+func bowlingPlayToUndo(t *testing.T, legal []string) (pins []string, ball, release string) {
+	t.Helper()
+	plays := map[string]bool{}
+	for _, m := range legal {
+		plays[m] = true
+	}
+	var single []string
+	for _, m := range legal {
+		set, b, ok := strings.Cut(m, "@")
+		if !ok {
+			continue
+		}
+		letters := strings.Split(set, "+")
+		if len(letters) == 1 {
+			if single == nil {
+				single = []string{letters[0], b}
+			}
+			continue
+		}
+		for i, p := range letters {
+			rest := append(append([]string{}, letters[:i]...), letters[i+1:]...)
+			sort.Strings(rest)
+			if !plays[strings.Join(rest, "+")+"@"+b] {
+				return letters, b, p
+			}
+		}
+	}
+	if single == nil {
+		t.Fatalf("no play on this deal: %q", legal)
+	}
+	return []string{single[0]}, single[1], single[0]
 }
 
 // chooseVariant picks a game of the family in the setup's list of variants.
