@@ -127,8 +127,8 @@ func TestGameClock_OverREST(t *testing.T) {
 	}
 }
 
-// The setup offers the clock for a game of two (and not for a bigger table),
-// the two sides can be given different times, and the game page shows every
+// The setup offers the clock for two seats or more (not for a game for one),
+// the two sides of a game of two can be given different times, and the game page shows every
 // player's clock with the running one counting down.
 func TestWebGameClock_SetupAndTheSeatStrips(t *testing.T) {
 	baseURL := newRESTTestServer(t)
@@ -148,9 +148,17 @@ func TestWebGameClock_SetupAndTheSeatStrips(t *testing.T) {
 		waitJS(t, ctx, "the setup of "+game, `document.getElementById("create-game-form") !== null && !document.getElementById("game-setup").hidden`, 20*time.Second)
 	}
 
-	// A table of four has no game clock.
+	// A game for one has no clock (ADR 0091). The seat count is set when the field is drawn, so
+	// this cannot pass on the page as it was before.
+	open("solitaire")
+	waitJS(t, ctx, "no clock field", `document.getElementById("clock-field").dataset.seats === "1" && document.getElementById("clock-field").hidden === true`, 10*time.Second)
+
+	// A table of four has one, the same for everybody: different times are for a game of two.
 	open("nyet")
-	waitJS(t, ctx, "no clock field", `document.getElementById("clock-field").hidden === true`, 10*time.Second)
+	waitJS(t, ctx, "the clock field at four", `document.getElementById("clock-field").hidden === false`, 10*time.Second)
+	if !evalBool(t, ctx, `document.getElementById("clock-handicap").parentElement.hidden`) {
+		t.Error("a table of four offers different times")
+	}
 
 	// A game of two does, off by default.
 	open("tak-5x5")

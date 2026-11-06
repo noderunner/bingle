@@ -229,6 +229,9 @@ func TestAccountUI_AGuestKeyLinkResumesTheGames(t *testing.T) {
 		t.Fatal(err)
 	}
 	waitJS(t, phone, "the key out of the address", `location.hash === ""`, 10*time.Second)
+	// The page takes the key out at once, adopts it, and then reloads: going on before that reload
+	// races it, and it aborts the next navigation.
+	waitJS(t, phone, "the reload", `performance.getEntriesByType("navigation")[0].type === "reload" && document.readyState === "complete"`, 10*time.Second)
 	// After the reload, the game is among the phone's, and its seat is the phone's.
 	if err := chromedp.Run(phone, chromedp.Navigate(base+"/game/"+room)); err != nil {
 		t.Fatal(err)
