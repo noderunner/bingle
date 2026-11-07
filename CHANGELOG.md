@@ -4,6 +4,14 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.94.0 - 2026-11-07
+
+### Bingle Core 0.94.0
+- Nothing changes in play. Behind the scenes, how the web page draws a game is starting to move out of the game's rules into a file of its own, so that other apps can draw the games their own way.
+
+### Blooms 0.6.2
+- Nothing changes in play or on the board: Blooms is the first game drawn from its own look file.
+
 ## 0.93.0 - 2026-11-06
 
 ### Bingle Core 0.93.0

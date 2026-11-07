@@ -64,6 +64,20 @@ func (m *Manager) Guide(id string) (Guide, error) {
 	return g, nil
 }
 
+// WebFile returns the web page's appearance file for the game's family
+// (web.yaml as JSON, ADR 0124), or an empty object when it has none. The
+// server does not read it: the web page resolves the game's variant in it.
+func (m *Manager) WebFile(id string) ([]byte, error) {
+	cg, ok := m.catalog.Get(id)
+	if !ok {
+		return nil, fmt.Errorf("%w: %q", ErrGameDefNotFound, id)
+	}
+	if cg.Web == nil {
+		return []byte("{}"), nil
+	}
+	return cg.Web, nil
+}
+
 // Asset returns a file of the game's module (guide images and so on). The
 // virtual file "board.svg" draws an area map from its polygons.
 func (m *Manager) Asset(id, name string) (data []byte, contentType string, err error) {

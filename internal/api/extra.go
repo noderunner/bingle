@@ -28,6 +28,21 @@ func (h *handlers) handleGameDef(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, info)
 }
 
+// handleGameWeb implements GET /game-defs/{id}/web: the web page's
+// appearance file for the game's family (ADR 0124), as JSON. Other clients
+// have no need of it.
+func (h *handlers) handleGameWeb(w http.ResponseWriter, r *http.Request) {
+	data, err := h.mgr.WebFile(chi.URLParam(r, "id"))
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "public, max-age=300")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(data)
+}
+
 // handleSetupCatalog implements GET /game-defs/{id}/setup-catalog: what the
 // picker of a game's setup page shows.
 func (h *handlers) handleSetupCatalog(w http.ResponseWriter, r *http.Request) {

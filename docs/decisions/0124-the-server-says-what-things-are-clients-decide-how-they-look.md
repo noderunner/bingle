@@ -1,6 +1,6 @@
 # 0124. The server says what things are; each client decides how they look
 
-Status: proposed (2026-11-07). It changes the game plugins plan's step 3 and decision 4
+Status: accepted (2026-11-07). It changes the game plugins plan's step 3 and decision 4
 (`docs/history/game-plugins-plan.md` on `more-plans`), and moves the appearance half of the DSL's display
 fields (`docs/dsl.md`) out of the game definition. [ADR 0085](0085-card-sets-belong-to-the-table.md) stands, as
 described below.
@@ -74,7 +74,7 @@ Today's appearance fields, and where each goes. "Web file" means the web page's 
 | Today | Used by | Goes to |
 |---|---|---|
 | `pieces.*.shape` | nearly every game | web file |
-| `pieces.*.color` (a type drawn in its own colour on a button) | Blooms | web file |
+| `pieces.*.color` (a type in its own colour) | Blooms | **stays**: the rules read it (see the addendum) |
 | `seats[].blend` | Blooms | web file |
 | `board.style` (`squares`, `points`, `none`, `free`, `areas`) | classics, Tak, Fendo, Fist, Hive, Meridians, Nyet!, Onitama, Solitaire, Cthulhu Wars | web file |
 | `board.borders` (edge tints by seat) | classics (Hex) | web file. The regions they mark stay, as rules |
@@ -113,3 +113,10 @@ Today's appearance fields, and where each goes. "Web file" means the web page's 
   of `docs/ui.md`), as each stage lands.
 - **A new client** reads the rules, the position and the facts from the API. It reads nothing else from the
   server about how anything looks, unless it chooses to read the web file.
+
+## Addendum (2026-11-07): a piece type's own colour is a rule
+
+The audit put `pieces.*.color` with the appearance. It is not: a piece type with a colour of its own
+(Blooms' four stones) is placed in that colour, and only the seat that plays it may place it
+([ADR 0117](0117-groups-by-colour-enemies-by-seat.md)). Like a seat's colour word, it stays in the
+definition as meaning. Stage 1 found it, when Blooms moved first.

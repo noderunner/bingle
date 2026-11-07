@@ -315,3 +315,39 @@ func TestWebBlooms_TheLastTurnIsMarkedWhole(t *testing.T) {
 	expr := fmt.Sprintf(`[...document.querySelectorAll("#board .cell")].filter(c => c.querySelector(".last-move")).map(c => c.dataset.position).sort().join(",") === %q`, strings.Join(sortedStrings(want), ","))
 	waitJS(t, ctx, "the bot's turn marked: "+strings.Join(want, " "), expr, 10*time.Second)
 }
+
+// The page draws Blooms from its web.yaml (ADR 0124), which the game info no
+// longer carries: each seat's swatch blends its two colours, and there are no
+// reserve panels.
+func TestWebBlooms_DrawnFromItsLook(t *testing.T) {
+	baseURL := newRESTTestServer(t)
+	var created struct {
+		RoomCode string `json:"room_code"`
+	}
+	if code := doJSON(t, "POST", baseURL+"/api/games", map[string]any{"game_def_id": "blooms", "player_name": "Alice", "opponent": "random"}, &created); code != 200 {
+		t.Fatalf("create: %d", code)
+	}
+	ctx, cancel := newChromedpContext(t, 60*time.Second)
+	defer cancel()
+	openGameAs(t, ctx, baseURL, created.RoomCode, "blooms", "Alice")
+	waitJS(t, ctx, "61 cells", `document.querySelectorAll('#board .cell').length === 61`, 15*time.Second)
+	waitJS(t, ctx, "blended swatches", `[...document.querySelectorAll('.swatch')].filter(s => s.style.background.includes('linear-gradient')).length >= 2`, 10*time.Second)
+	if n := evalString(t, ctx, `String(document.querySelectorAll('.hand').length)`); n != "0" {
+		t.Errorf("%s reserve panels, want none", n)
+	}
+	// What the page reads for base 4: the preview without the squares that
+	// board lacks, the fenced tint's colour beside its words, and the shapes.
+	var got string
+	script := `import("/static/js/api.js").then(m => m.api.gameDef("blooms-4")).then(i => [
+		Object.keys(i.preview || {}).length > 0 && Object.keys(i.preview).every(p => i.board.positions.some(q => q.id === p)),
+		i.display.tints.fenced.color + " " + i.display.tints.fenced.label,
+		i.display.no_hands,
+		i.pieces.every(p => p.shape === "disc"),
+	].join(","))`
+	if err := chromedp.Run(ctx, chromedp.Evaluate(script, &got, func(p *runtime.EvaluateParams) *runtime.EvaluateParams { return p.WithAwaitPromise(true) })); err != nil {
+		t.Fatal(err)
+	}
+	if want := "true,#e8a898 Fenced bloom,true,true"; got != want {
+		t.Errorf("Blooms base 4 as the page reads it: %s, want %s", got, want)
+	}
+}

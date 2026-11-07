@@ -1,0 +1,25 @@
+# How the web page draws Blooms (ADR 0124). The rules are in blooms.yaml; nothing
+# here changes them, and other clients draw the game their own way.
+seats:
+  1: {blend: [red, yellow]}
+  2: {blend: [black, blue]}
+pieces:
+  red: {shape: disc}
+  yellow: {shape: disc}
+  blue: {shape: disc}
+  black: {shape: disc}
+display:
+  no_hands: true
+  tints:
+    fenced: {color: '#e8a898'}
+# A game in play, for the list of games and the setup page.
+preview:
+  - {position: e5, piece: red, color: red}
+  - {position: f5, piece: red, color: red}
+  - {position: d6, piece: yellow, color: yellow}
+  - {position: g4, piece: yellow, color: yellow}
+  - {position: e4, piece: blue, color: blue}
+  - {position: f4, piece: blue, color: blue}
+  - {position: e6, piece: blue, color: blue}
+  - {position: d5, piece: black, color: black}
+  - {position: g5, piece: black, color: black}
