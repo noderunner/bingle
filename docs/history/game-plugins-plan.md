@@ -271,3 +271,28 @@ which is now built.
   binary of its own, with the boundary crossed once per impulse and the search inside the game.
   The overlay stays the plan. Step 2 should register a family through one value close to that
   interface, which keeps the door open.
+- 2026-11-07: ADR 0124's stages 1 and 2 are built or in review for every game but Cthulhu Wars
+  (#158 merged; #159, #160 and the stage-3 tests #161 in review). Cthulhu Wars' look is the rest,
+  and it is larger than a field move, so it is listed here for the maintainer before it is built:
+  - **The area map**: `board.style: areas` and each area's `polygons` and `anchor`, with the
+    `canvas`. The catalog checks them, and `render.js` and the server's `areaMapSVG` draw from
+    them. Adjacency is the explicit `edges`, so no rule reads an outline: all of it can move
+    to the web file, with the check moving to `look.Check`.
+  - **The server draws a picture**: `GET /game-defs/{id}/assets/board.svg` is drawn by
+    `session.areaMapSVG` from the outlines and the map art, and the setup picker and the guide
+    use it. Under ADR 0124 the page should draw it (it already draws the same map in play),
+    or the picture should become an asset built ahead of time.
+  - **Go writes colours**: the Deriver that seats the chosen cults (`config.go`) writes each
+    Gate badge with `gateColor`'s hex and a glyph into the derived definition. The badge's
+    label and text are meaning; its colour and glyph go to the web file, keyed by faction
+    rather than by seat, since a seat's faction is chosen at setup.
+  - **The map art**: `params.art` (a picture's path) and the game list's `map_art` are
+    appearance in a param; they move to the web file too.
+  - **The `cw-*.js` interface** stays web-side, as decided, and goes with the game into the
+    overlay through the generic script hook (step 3), which is not built yet.
+  Doing these together with the move into the overlay (step 5) avoids moving them twice.
+- 2026-11-07: a zone's `layout` was found to be part meaning: the engine reads `stack` to list a
+  pile's cards or only count them, and to leave a pile unsorted. A separate meaning field (say
+  `pile: true`) would let `fan`, `row`, `splay` and `grid` move to the web file. Left for the
+  maintainer.
+
