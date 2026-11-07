@@ -6,7 +6,7 @@
 import { h, clear } from "/static/js/util.js";
 import { api } from "/static/js/api.js";
 import { pieceIcon } from "/static/js/render.js";
-import { statIcon } from "/static/js/icons.js";
+import { statIcon } from "./cw-icons.js";
 import { hoverCard, hideHoverCard } from "/static/js/tooltip.js";
 import { neutralTip } from "./cw-tips.js";
 

@@ -3,7 +3,7 @@
 
 import { h } from "/static/js/util.js";
 import { pieceIcon } from "/static/js/render.js";
-import { statIcon } from "/static/js/icons.js";
+import { statIcon } from "./cw-icons.js";
 
 /**
  * The spellbook pictogram: in colour for a spellbook that is earned (or a

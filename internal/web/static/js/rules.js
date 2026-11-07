@@ -55,32 +55,8 @@ function keyPage(info) {
 	const d = info.display;
 	if (!d || (info.engine !== "ruleset" && !Object.keys(d.tints || {}).length)) return "";
 	const parts = [];
-	if (info.board && info.board.style === "areas") {
-		const tint = (k, fallback) => ((d.tints || {})[k] || {}).color || fallback;
-		const first = (info.seats || [])[0];
-		const color = first ? first.color : "green";
-		parts.push(
-			"# Key",
-			"",
-			"What the marks on the map mean.",
-			"",
-			"| Mark | Meaning |",
-			"|---|---|",
-			`| ![Ocean](marker:swatch:${tint("ocean", "#b9d3e6")}) | **Ocean** — areas of water. Only some units may enter them. |`,
-			`| ![Land](marker:swatch:${tint("land", "#e5dcc0")}) | **Land**. |`,
-			`| ![Desecrated](marker:swatch:${tint("desecrated", "#d8c76a")}) | **Desecrated area** (Yellow Sign): marked with ✠. |`,
-			`| ![Gate](marker:gate:${color}) | **A Gate.** The ring is the colour of the cult that controls it; the figure drawn on it is the unit that occupies it — an Acolyte, a High Priest or a Dark Young. To give a Gate up, move that unit (also to the area it stands in). |`,
-			"| ![Abandoned Gate](marker:gate:abandoned) | **An abandoned Gate:** a dashed grey ring. It gives 1 Power to every player in Gather Power and scores nothing; a Cultist that arrives takes it. |",
-			"| ![Glyph](marker:glyph:chevron) | **A glyph** (chevron, dragon or thorns) beside an area's name, or where the board prints it: what Yellow Sign must Desecrate for its requirements. |",
-			"| ![Great Cthulhu glyph](marker:sigil:gc) | **A faction glyph** (here Great Cthulhu's), left of an area's name: the area where that cult begins. Every cult at the table has its own; they are shown with each faction in the Factions page. |",
-			"| ![Windwalker glyph](marker:sigil:ww) | **The Windwalker's glyph** marks the two polar areas where it may begin, and where Rhan-Tegoth and Ithaqua awaken. |",
-			"| ![Sleeper glyph](marker:sigil:sl) | **The Sleeper's glyph:** where it begins. |",
-			"| ![Ice Age](marker:iceage) | **The Ice Age token** (Windwalker): enemy Actions that end here cost 1 Power more. |",
-			"",
-			"A red outline round an area is the battle being fought. In the game options the area names, glyphs and sigils (the faction glyphs) can be switched off."
-		);
-		return parts.join("\n");
-	}
+	// A game whose page script knows its marks writes its own key (Cthulhu Wars' map).
+	if (info.page && info.page.mapKey) return info.page.mapKey(info);
 	parts.push("# Key", "", "What the colours and marks of the board mean.", "", "| Mark | Meaning |", "|---|---|");
 	const row = (def) => {
 		const label = `${def.glyph ? def.glyph + " " : ""}${def.label}`;
@@ -220,14 +196,8 @@ function build(dlg, info, pages, { tablist, body, search, initial }) {
 				return def ? pieceIcon(def.shape, color || pieceColor, 28) : null;
 			},
 			seat: (n) => seatNode(info, n),
-			marker: (kind, arg) => {
-				if (kind === "gate") {
-					// A Gate with its occupant: the first unit that can hold one.
-					const holder = (info.pieces || []).find((p) => p.type === "cultist");
-					return legendMarker("gate", arg, info, holder ? holder.shape : "");
-				}
-				return legendMarker(kind, arg, info);
-			},
+			// The game's page script draws its own marks; a swatch is every game's.
+			marker: (kind, arg) => (info.page && info.page.legendMarker ? info.page.legendMarker(kind, arg, info) : legendMarker(kind, arg)),
 			onTab: (id, anchor) => activate(id, anchor, false),
 			onAnchor: (id) => {
 				const el = document.getElementById(`rules-${page.id}-md-${id}`);

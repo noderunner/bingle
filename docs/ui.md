@@ -408,7 +408,7 @@ alone:
 
 ## Area maps and multi-seat tables (Cthulhu Wars)
 
-`board.style: "areas"` games are drawn by `renderAreaMap`: straight-edged
+`board.style: "areas"` games are drawn by their page script (Cthulhu Wars' `renderAreaMap`, `cthulhuwars/web/cw-map.js`, which `render.js` asks through `info.page`): straight-edged
 polygons with a colour gradient per ocean and per continent (by tag; light and
 dark themes), waves on the seas, frost on the ice and a pale shore round every
 coast, the area's name (italic for seas, on two lines when the area is narrow),
@@ -440,7 +440,7 @@ beside it, wherever they stay inside the border (`marksPlace`). The options turn
 each layer off: names, glyphs, sigils and units. A unit the player can pick up now
 stays drawn with the units off, so a move can still be made.
 
-**Icons** (`js/icons.js`): every unit has its own silhouette, drawn as path data
+**Icons** (`cthulhuwars/web/cw-icons.js`, added as piece shapes with `render.js`'s `addPieceShapes`): every unit has its own silhouette, drawn as path data
 in the cult's colour — all Cultists share one hooded figure (the High Priest
 is the same figure with a mitre) — and its size
 follows its class, so units in one area always read at a glance:
@@ -480,7 +480,7 @@ in the side column, beside the map, listed in the order of play, the first playe
 changes. A panel's header is the swatch, the faction's glyph (`img.seat-glyph`, which stands for its name), the player's name and the cult's
 numbers as pictograms — ⚡ Power, ☠ Doom, ★ Elder Signs, ◎ Gates
 (`.seat-stats .score.stat[data-counter]`, each an `svg.stat-icon` and a value;
-`js/icons.js` `STAT_ICONS`) — and under it collapsible sections, remembered
+`cw-icons.js` `STAT_ICONS`) — and under it collapsible sections, remembered
 between moves (`bingle.cards2`): **Faction Ability** (`data-card="ability"`,
 first; for the Sleeper also the abilities it borrows), **Spellbooks**,
 **Requirements** (a neutral spellbook a cult holds, or one swapped in at setup, is one more

@@ -1154,12 +1154,18 @@ async function renderGallery() {
 		cards.map(async ({ card, lead }) => {
 			try {
 				const slot = card.querySelector(".game-card-preview");
-				const icon = gameIcon(lead.id);
+				let icon = gameIcon(lead.id);
 				if (icon) {
 					slot.append(icon);
 					return;
 				}
 				const info = await gameInfo(lead.id);
+				// A game with a page script may draw its own picture (ADR 0124).
+				icon = info.page && info.page.listIcon ? info.page.listIcon() : null;
+				if (icon) {
+					slot.append(icon);
+					return;
+				}
 				renderBoard(slot, info, { cells: info.preview || info.start.cells, flipped: false, interactive: false, showCoords: false, preview: true }, {});
 			} catch (_) {
 				/* a card without a preview is still usable */
