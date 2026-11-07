@@ -48,13 +48,19 @@ func openGameAs(t *testing.T, ctx context.Context, baseURL, room, def, name stri
 	}
 }
 
-// confirmSetting is the "Confirm moves" setting a test opens a game with. The tests
-// of the games whose rules are in Go click their way through a game and are about
-// something else, so they turn it off; TestWebSubmit_* is about it.
+// unconfirmed are the games (by the first word of their id) whose tests open them
+// with "Confirm moves" off. The tests of the games whose rules are in Go click
+// their way through a game and are about something else; TestWebSubmit_* is about
+// the setting. A test file of the private overlay adds its own games here.
+var unconfirmed = map[string]bool{
+	"blooms": true, "courtfall": true, "fendo": true, "fist": true, "hive": true, "nyet": true,
+	"onitama": true, "yinsh": true, "meridians": true, "mycelium": true,
+}
+
+// confirmSetting is the "Confirm moves" setting a test opens a game with.
 func confirmSetting(def string) string {
 	base, _, _ := strings.Cut(def, "-")
-	switch base {
-	case "blooms", "courtfall", "fendo", "fist", "hive", "nyet", "onitama", "yinsh", "meridians", "mycelium":
+	if unconfirmed[base] {
 		return "false"
 	}
 	return "true"
