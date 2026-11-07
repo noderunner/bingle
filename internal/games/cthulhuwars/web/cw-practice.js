@@ -1,10 +1,11 @@
 // The practice-batch wizard on the lobby page: set up a table of bots, run
 // hundreds of simulated Cthulhu Wars games in the background and study the
-// result in the batch reports (/batches).
+// result in the batch reports (/batches). The home page asks page.js's
+// syncPractice for it when Cthulhu Wars is chosen (ADR 0124).
 
-import { h, clear, store } from "./util.js";
-import { api, whoAmI } from "./api.js";
-import { FACTION_KEYS, factionName, factionColor, BOTS } from "/static/games/cthulhu-wars/cw-names.js";
+import { h, clear, store } from "/static/js/util.js";
+import { api, whoAmI } from "/static/js/api.js";
+import { FACTION_KEYS, factionName, factionColor, BOTS } from "./cw-names.js";
 
 const card = document.getElementById("practice-card");
 const STORE_KEY = "bingle.practice";

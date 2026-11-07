@@ -21,7 +21,7 @@ export const FACTS = [
 	"Elo's rating system, devised by Arpad Elo for chess and adopted by FIDE in 1970, predicts the chance of winning from the rating difference alone — which is why it also sorts players of nearly every game.",
 	"A game's branching factor — how many moves a player can choose from — is the design lever that decides whether computers can search it. Chess averages about 35; Go about 250.",
 	"Intransitive dice and rock–paper–scissors show that “better than” need not be transitive: A can beat B, B beat C, and C beat A. Many card and faction games rely on it.",
-	"Chess and Go have no hidden information and no dice. Add either — poker's hidden cards, the combat dice of a Cthulhu Wars battle — and a search must also weigh chances, not just replies.",
+	"Chess and Go have no hidden information and no dice. Add either — poker's hidden cards, the combat dice of a war game — and a search must also weigh chances, not just replies.",
 
 	// ---- algorithms ----
 	"The Monte Carlo method was invented by Stanisław Ulam in the 1940s while he was wondering how likely a game of solitaire was to come out; John von Neumann helped turn it into a program for the ENIAC computer, and Nicholas Metropolis named it after the casino.",
@@ -35,7 +35,7 @@ export const FACTS = [
 	"A transposition table remembers positions a search has already analysed, because the same position can be reached by different move orders. Without one, searches repeat enormous amounts of work.",
 	"Iterative deepening searches one move deep, then two, then three, and so on until the clock runs out. The repeated work is a small price, because each level costs several times more than the one before.",
 	"Checkers was solved in 2007 — a draw with perfect play — by combining a search of the opening with databases of every endgame position, built by working backwards from the finished games.",
-	"Monte Carlo playouts need no evaluation function, only the rules of the game. That is why the same search can play Hex, Yinsh or a Cthulhu Wars table with no game-specific knowledge.",
+	"Monte Carlo playouts need no evaluation function, only the rules of the game. That is why the same search can play Hex, Tak or Fendo with no game-specific knowledge.",
 
 	// ---- how big are games ----
 	"There are about 4.8 × 10^44 legal positions in chess (John Tromp's 2021 estimate) — and exactly 2.08 × 10^170 legal positions on a 19×19 Go board, more than the atoms in the universe squared.",
@@ -55,8 +55,6 @@ export const FACTS = [
 	"Hive, by John Yianni, has no board at all: the pieces are the board. Surround the opposing queen bee on all six sides to win.",
 	"Yinsh, by Kris Burm (2003), is played with rings and markers: moving a ring flips the markers it jumps, and a row of five of your markers lets you remove a ring — the first to remove three wins.",
 	"Onitama (Shimpei Sato, 2014) is chess boiled down to a 5×5 board and five move cards: the card you play is handed on to your opponent after their next move, so every move also gives something away.",
-	"Cthulhu Wars was designed by Sandy Petersen, who also wrote the Call of Cthulhu role-playing game for Chaosium in 1981. Each faction plays by different rules, which is why balancing it is a game-design problem of its own.",
-	"Bingle's Cthulhu Wars supports three to five cults at one table; every cult has its own spellbooks, units and way to win doom, so there are very many different tables to play.",
 ];
 
 /** One fact, chosen at random. */

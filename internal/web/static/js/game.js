@@ -16,17 +16,13 @@ import { installTopbar } from "./topbar.js";
 import { mountGameNotify, applyProfileDefault } from "./notify-ui.js";
 import { LAYOUTS, isMobileLayout, isLandscape, layoutChoice, setLayoutChoice, mobileShell, onScreenChange } from "./mobile.js";
 import { lobbyCard } from "./lobby.js";
-import { statIcon } from "/static/games/cthulhu-wars/cw-icons.js";
-import { FACTION_KEYS, factionName } from "/static/games/cthulhu-wars/cw-names.js";
-import { spellMark, enterBlock, bookRequirements, abilitiesBlock, unitText, neutralTip } from "/static/games/cthulhu-wars/cw-tips.js";
 import { hoverCard, hideHoverCard } from "./tooltip.js";
 import { createOptionsWindow } from "./options.js";
 import { cardTable, choiceGrid, hideCardZoom } from "./cards.js";
 import { solitaireTable } from "./solitaire.js";
 import { rulesIcon } from "./ui-icons.js";
-import { createBattleTheatre } from "/static/games/cthulhu-wars/cw-battle.js";
-import { createEmergence, hasEmergence } from "/static/games/cthulhu-wars/cw-emerge.js";
 import { choiceIcon } from "./choice-icons.js";
+import { statIcon as plainStatIcon } from "./stat-icons.js";
 import { animalIcon, animalOf } from "./animals.js";
 import { themesFor, themeById } from "./themes.js";
 import { useCardSet } from "./card-sets.js";
@@ -629,9 +625,27 @@ function isMyImpulse() {
 	return isActive() && S.me.seat !== 0 && S.game.impulse_seat === S.me.seat;
 }
 
-function isCthulhuWars() {
-	return !!S.info && (S.info.family || S.info.id) === "cthulhu-wars";
+/** Whether the board is a map of areas, which has one way up and no board theme. */
+function isAreaMap() {
+	return !!S.info && !!S.info.board && S.info.board.style === "areas";
 }
+
+// The game's own page script (ADR 0124): the parts of a ruleset's view only it
+// knows how to draw (Cthulhu Wars' counters, spellbooks, unit cards, battles and
+// awakenings). A game without them draws its view without these parts.
+const page = () => (S.info && S.info.page) || {};
+const ask = (name, fallback) => (...args) => (page()[name] ? page()[name](...args) : fallback);
+// A counter's pictogram is the game's when it draws one, else every game's.
+const statIcon = (kind, label, px) => (page().statIcon && page().statIcon(kind, label, px)) || plainStatIcon(kind, label, px);
+const spellMark = ask("spellMark", null);
+const enterBlock = ask("enterBlock", null);
+const bookRequirements = ask("bookRequirements", []);
+const abilitiesBlock = ask("abilitiesBlock", null);
+const unitText = ask("unitText", null);
+const neutralTip = ask("neutralTip", null);
+const hasEmergence = ask("hasEmergence", false);
+const createBattleTheatre = (opts) => page().createBattleTheatre(opts);
+const createEmergence = (opts) => page().createEmergence(opts);
 
 function isLive() {
 	return S.viewSeq === null;
@@ -4672,7 +4686,7 @@ function battleTheatre() {
 
 /** Whether this page plays the battles: Cthulhu Wars does, unless the player asks it not to. */
 function battlesAnimated() {
-	if (!S.info || (S.info.family || S.info.id) !== "cthulhu-wars") return false;
+	if (!page().createBattleTheatre) return false;
 	return S.settings.battleAnim && !(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
 }
 
@@ -5833,7 +5847,7 @@ function refreshOptions() {
 			settingToggle("hints", "opt-hints", "Highlight legal moves", "bingle.hints"),
 			settingToggle("lastMove", "opt-lastmove", "Highlight last move", "bingle.lastMove"),
 			settingToggle("animate", "opt-animate", "Animate moves", "bingle.animate"),
-			...((S.info.family || S.info.id) === "cthulhu-wars" ? [settingToggle("battleAnim", "opt-battle-anim", "Battle and Great Old One animations", "bingle.battleAnim")] : [])
+			...(page().createBattleTheatre || page().createEmergence ? [settingToggle("battleAnim", "opt-battle-anim", "Battle and Great Old One animations", "bingle.battleAnim")] : [])
 		);
 		if (hasHexStyles(S.info)) {
 			const styleSel = h("select", { id: "opt-hex-style", "aria-label": "Board style" });
@@ -5846,8 +5860,8 @@ function refreshOptions() {
 			});
 			el.append(h("label", { class: "field" }, h("span", { class: "small" }, "Board Style"), styleSel));
 		}
-		// Cthulhu Wars has a map, which no board theme changes.
-		if (!isCthulhuWars()) {
+		// A map of areas has its own look, which no board theme changes.
+		if (!isAreaMap()) {
 			const themeSel = h("select", { id: "opt-board", "aria-label": "Board theme" });
 			const chosen = boardTheme();
 			for (const [value, label] of [["wood", "Wood"], ["slate", "Slate"], ["green", "Green felt"], ["paper", "Paper"]]) {
@@ -5905,7 +5919,7 @@ function refreshOptions() {
 	w.update("tools", [inAnalysis(), isLive(), S.game.status, canHint(), S.hintBusy, S.info.notation, areas], (el) => {
 		const row = h("div", { class: "row" });
 		// A map has one way up.
-		if (!isCthulhuWars()) {
+		if (!isAreaMap()) {
 			row.append(
 				h(
 					"button",

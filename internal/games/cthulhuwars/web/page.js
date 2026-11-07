@@ -12,6 +12,23 @@ import { glyphShape, legendMarker as mapMarker } from "./cw-map.js";
 addPieceShapes(UNIT_ICONS);
 
 export { renderAreaMap } from "./cw-map.js";
+// What game.js draws of the ruleset's view: counters, spellbooks, unit cards and
+// neutral items, the battle theatre and a Great Old One's emergence.
+export { statIcon } from "./cw-icons.js";
+export { spellMark, enterBlock, bookRequirements, abilitiesBlock, unitText, neutralTip } from "./cw-tips.js";
+export { createBattleTheatre } from "./cw-battle.js";
+export { createEmergence, hasEmergence } from "./cw-emerge.js";
+export { lobbyPool } from "./cw-lobby.js";
+export { batchSections, endReason } from "./cw-batches.js";
+export { factionName as pickName, factionColor as pickColor } from "./cw-names.js";
+
+/** A practice batch's option, by name. */
+export function optionName(option) {
+	return option === "hp" ? "High Priests" : option;
+}
+export { syncPractice } from "./cw-practice.js";
+export { createCwSetup as createSetup } from "./cw-setup.js";
+export { mountAnimationTester as mountTester } from "./cw-animation-tester.js";
 
 /** A mark of the map for the rules window's key; a Gate shows the unit that holds one. */
 export function legendMarker(kind, arg, info) {
