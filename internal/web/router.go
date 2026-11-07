@@ -111,6 +111,16 @@ func NewRouter(mgr *session.Manager, brand config.Brand) http.Handler {
 		// not a runtime condition callers need to handle.
 		panic(err)
 	}
+	// A game's own page scripts (ADR 0124), served like the page's.
+	r.Get("/static/games/{family}/*", func(w http.ResponseWriter, req *http.Request) {
+		family := chi.URLParam(req, "family")
+		scripts, ok := mgr.GameScripts(family)
+		if !ok {
+			http.NotFound(w, req)
+			return
+		}
+		http.StripPrefix("/static/games/"+family+"/", http.FileServer(http.FS(scripts))).ServeHTTP(w, req)
+	})
 	r.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.FS(staticSub))))
 
 	return r

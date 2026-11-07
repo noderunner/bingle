@@ -1,9 +1,9 @@
 // What a hover card says about a unit or spellbook of Cthulhu Wars, shared by the
 // game page and the setup page's picker.
 
-import { h } from "./util.js";
-import { pieceIcon } from "./render.js";
-import { statIcon } from "./icons.js";
+import { h } from "/static/js/util.js";
+import { pieceIcon } from "/static/js/render.js";
+import { statIcon } from "/static/js/icons.js";
 
 /**
  * The spellbook pictogram: in colour for a spellbook that is earned (or a

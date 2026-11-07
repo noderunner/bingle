@@ -19,6 +19,7 @@ import (
 
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/engine/dsl"
+	"github.com/noderunner/bingle/internal/web/look"
 )
 
 //go:embed definition
@@ -33,6 +34,12 @@ var guideFS embed.FS
 //go:embed tutorials
 var tutorialsFS embed.FS
 
+// The web page's scripts for Cthulhu Wars (ADR 0124): its map, battles,
+// setup, art and tips, loaded through web/web.yaml's script.
+//
+//go:embed web
+var webFS embed.FS
+
 // Module returns Cthulhu Wars' catalog.Module.
 func Module() catalog.Module {
 	sub, err := fs.Sub(guideFS, ".")
@@ -43,7 +50,12 @@ func Module() catalog.Module {
 	if err != nil {
 		panic(err)
 	}
-	return catalog.Module{ID: "cthulhu-wars", Definition: definition(), Rules: New(), Assets: sub, Tutorials: tutorials}
+	scripts, err := fs.Sub(webFS, "web")
+	if err != nil {
+		panic(err)
+	}
+	return catalog.Module{ID: "cthulhu-wars", Definition: definition(), Rules: New(), Assets: sub, Tutorials: tutorials,
+		Scripts: scripts, Web: look.MustLoadFile(webFS, "web/web.yaml")}
 }
 
 // freshSeed draws a dice generator state from the system's entropy.

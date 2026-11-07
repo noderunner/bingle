@@ -163,6 +163,9 @@ type CompiledGame struct {
 	// Web is the family's web.yaml as JSON (Module.Web), served to the web
 	// page under /api/game-defs/{id}/web; nil when it has none.
 	Web []byte
+	// Scripts is the module's web page scripts (Module.Scripts); nil when it
+	// has none.
+	Scripts fs.FS
 
 	// Rules is the Go ruleset of a game whose definition says
 	// engine: "ruleset" (nil for declarative games). It is opaque here —

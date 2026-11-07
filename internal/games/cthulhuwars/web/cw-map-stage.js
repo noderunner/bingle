@@ -1,7 +1,7 @@
 // What the shows on the map of Cthulhu Wars have in common: a layer over a copy of the map (js/cw-battle.js,
 // js/cw-emerge.js), which zooms in on an area and darkens around it.
 
-import { s } from "./util.js";
+import { s } from "/static/js/util.js";
 
 export const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);
 

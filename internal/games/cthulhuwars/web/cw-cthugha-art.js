@@ -4,7 +4,7 @@
 // what shows through them looks back. Original art, drawn in code (see js/cw-art-kit.js).
 
 import { H, W, add, awakeningBurst, between, blob, limb, lerp, num, randoms, round, sceneSvg, smooth, vertical, writhe } from "./cw-art-kit.js";
-import { s } from "./util.js";
+import { s } from "/static/js/util.js";
 
 export const CTHUGHA_SECONDS = 7.2;
 export const CTHUGHA_PEAK = 5.5;

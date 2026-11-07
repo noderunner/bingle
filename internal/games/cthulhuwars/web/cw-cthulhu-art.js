@@ -6,7 +6,7 @@
 // shapes (tentacles, arms, fingers, wing bones) are spines with a varying width, recomputed each
 // frame, which is what lets them writhe.
 
-import { s } from "./util.js";
+import { s } from "/static/js/util.js";
 import { H, W, between, curve, limb, lerp, num, outCubic, randoms, scales, smooth, stop } from "./cw-art-kit.js";
 
 /** How long the scene lasts, and the moment it looks its best. */

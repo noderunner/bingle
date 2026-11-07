@@ -4,7 +4,7 @@
 // in code (see js/cw-art-kit.js).
 
 import { H, W, add, awakeningBurst, between, dot, lerp, num, outCubic, randoms, round, sceneSvg, smooth, vertical } from "./cw-art-kit.js";
-import { s } from "./util.js";
+import { s } from "/static/js/util.js";
 
 export const BASTET_SECONDS = 7.4;
 export const BASTET_PEAK = 5.7;

@@ -1,6 +1,6 @@
 // Thin fetch wrapper around bingle's REST API.
 
-import { applyLook } from "./look.js";
+import { applyLook, pageOf } from "./look.js";
 
 // Every request says it comes from bingle's own page: the server refuses a
 // state-changing request that is proved by the guest cookie but lacks it, and
@@ -175,7 +175,9 @@ export const api = {
 	// is only how the page draws the game: without it the game is still drawn.
 	gameDef: async (id) => {
 		const [info, look] = await Promise.all([call(`/api/game-defs/${enc(id)}`), call(`/api/game-defs/${enc(id)}/web`).catch(() => ({}))]);
-		return applyLook(info, look);
+		const out = applyLook(info, look);
+		out.page = await pageOf(out.family || out.id, look);
+		return out;
 	},
 	setupCatalog: (id) => call(`/api/game-defs/${enc(id)}/setup-catalog`),
 	setupProfiles: (family) => call(`/api/setup-profiles?family=${enc(family)}`),

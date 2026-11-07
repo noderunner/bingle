@@ -3,7 +3,7 @@
 // says "<name> Emerges" of, and that badge plays it again. Like the battle show it is a layer over a
 // copy of the map, and the game never waits for it.
 
-import { h } from "./util.js";
+import { h } from "/static/js/util.js";
 import { aimAtArea, copyMap, createZoom, darkenAround, placeStage } from "./cw-map-stage.js";
 import { cthulhuScene, CTHULHU_PEAK, CTHULHU_SECONDS } from "./cw-cthulhu-art.js";
 import { kingScene, KING_PEAK, KING_SECONDS } from "./cw-king-art.js";

@@ -3,7 +3,7 @@
 // heavy eyes open on the one who woke him. Original art, drawn in code (see js/cw-art-kit.js).
 
 import { H, W, add, awakeningBurst, between, blob, lerp, num, randoms, round, sceneSvg, smooth, vertical } from "./cw-art-kit.js";
-import { s } from "./util.js";
+import { s } from "/static/js/util.js";
 
 export const TSATHOGGUA_SECONDS = 7.4;
 export const TSATHOGGUA_PEAK = 5.6;

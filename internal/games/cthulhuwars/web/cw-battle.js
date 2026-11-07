@@ -7,8 +7,8 @@
 // position, so the page and the game never wait for it, and a battle in the history is played
 // again from the same snapshots. Everything the game needs of it goes through `ctx`.
 
-import { h, s, clear } from "./util.js";
-import { cssColor } from "./render.js";
+import { h, s, clear } from "/static/js/util.js";
+import { cssColor } from "/static/js/render.js";
 import { aimAtArea, copyMap, createZoom, darkenAround, placeStage } from "./cw-map-stage.js";
 
 const KILL = 6;

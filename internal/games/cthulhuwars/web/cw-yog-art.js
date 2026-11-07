@@ -3,7 +3,7 @@
 // a slow eye in it. Time runs backwards round him. Original art, drawn in code (see js/cw-art-kit.js).
 
 import { H, W, add, awakeningBurst, between, dot, lerp, num, outCubic, randoms, round, sceneSvg, smooth } from "./cw-art-kit.js";
-import { s } from "./util.js";
+import { s } from "/static/js/util.js";
 
 export const YOG_SECONDS = 7.4;
 export const YOG_PEAK = 5.6;

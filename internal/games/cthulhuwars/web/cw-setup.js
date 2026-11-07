@@ -3,11 +3,11 @@
 // saved setups, and a shuffle. What is chosen reaches the server as the ordinary
 // options of a create call, so this file knows nothing of the rules.
 
-import { h, clear } from "./util.js";
-import { api } from "./api.js";
-import { pieceIcon } from "./render.js";
-import { statIcon } from "./icons.js";
-import { hoverCard, hideHoverCard } from "./tooltip.js";
+import { h, clear } from "/static/js/util.js";
+import { api } from "/static/js/api.js";
+import { pieceIcon } from "/static/js/render.js";
+import { statIcon } from "/static/js/icons.js";
+import { hoverCard, hideHoverCard } from "/static/js/tooltip.js";
 import { neutralTip } from "./cw-tips.js";
 
 const MAP_TAB = { id: "maps", label: "Maps" };

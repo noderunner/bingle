@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"strings"
 	"testing"
 )
 
@@ -52,8 +53,23 @@ func TestGameLook_ServedApartFromTheInfo(t *testing.T) {
 	} else if fenced := display["tints"].(map[string]any)["fenced"].(map[string]any); fenced["color"] != nil || fenced["label"] != "Fenced bloom" {
 		t.Errorf("the fenced tint keeps its words and loses its colour: %v", fenced)
 	}
-	if code, look := get("/api/game-defs/cthulhu-wars/web"); code != 200 || len(look) != 0 {
-		t.Errorf("a game with no look: %d %v", code, look)
+	// Cthulhu Wars' look names its page script, which is served with the
+	// game; a family without scripts has none to serve.
+	if code, look := get("/api/game-defs/cthulhu-wars/web"); code != 200 || look["script"] != "page.js" {
+		t.Errorf("Cthulhu Wars' look: %d %v", code, look)
+	}
+	for path, want := range map[string]int{"/static/games/cthulhu-wars/page.js": 200, "/static/games/cthulhu-wars/cw-names.js": 200, "/static/games/cthulhu-wars/nothing.js": 404, "/static/games/hex-11/page.js": 404} {
+		resp, err := http.Get(baseURL + path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_ = resp.Body.Close()
+		if resp.StatusCode != want {
+			t.Errorf("%s: %d, want %d", path, resp.StatusCode, want)
+		}
+		if want == 200 && !strings.Contains(resp.Header.Get("Content-Type"), "javascript") {
+			t.Errorf("%s is served as %q", path, resp.Header.Get("Content-Type"))
+		}
 	}
 	if code, _ := get("/api/game-defs/no-such-game/web"); code != 404 {
 		t.Errorf("an unknown game's look: %d", code)

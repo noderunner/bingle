@@ -38,6 +38,10 @@ type File struct {
 	// setup page, in place of an empty start. Squares a smaller variant's
 	// board lacks are left out.
 	Preview []dsl.SetupEntry `json:"preview,omitempty"`
+	// Script is the game's own page script, a path among the module's
+	// Scripts (served under /static/games/{family}/): an ES module whose
+	// exports the page asks for the parts it draws for this game alone.
+	Script string `json:"script,omitempty"`
 	// Variants patches the file for one game of the family, by its id, as
 	// a JSON merge patch (the definition's variants work the same way).
 	Variants map[string]File `json:"variants,omitempty"`
@@ -158,6 +162,14 @@ func Check(data []byte, family string, games map[string]*catalog.CompiledGame) e
 	}
 	if err := f.check(base); err != nil {
 		return fmt.Errorf("look: %s: %w", family, err)
+	}
+	if f.Script != "" {
+		if base.Scripts == nil {
+			return fmt.Errorf("look: %s: script %q, but the module brings no scripts", family, f.Script)
+		}
+		if _, err := fs.Stat(base.Scripts, f.Script); err != nil {
+			return fmt.Errorf("look: %s: script %q: %w", family, f.Script, err)
+		}
 	}
 	for id, v := range f.Variants {
 		def, ok := games[id]

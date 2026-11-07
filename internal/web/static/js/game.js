@@ -17,15 +17,15 @@ import { mountGameNotify, applyProfileDefault } from "./notify-ui.js";
 import { LAYOUTS, isMobileLayout, isLandscape, layoutChoice, setLayoutChoice, mobileShell, onScreenChange } from "./mobile.js";
 import { lobbyCard } from "./lobby.js";
 import { statIcon } from "./icons.js";
-import { FACTION_KEYS, factionName } from "./cw-names.js";
-import { spellMark, enterBlock, bookRequirements, abilitiesBlock, unitText, neutralTip } from "./cw-tips.js";
+import { FACTION_KEYS, factionName } from "/static/games/cthulhu-wars/cw-names.js";
+import { spellMark, enterBlock, bookRequirements, abilitiesBlock, unitText, neutralTip } from "/static/games/cthulhu-wars/cw-tips.js";
 import { hoverCard, hideHoverCard } from "./tooltip.js";
 import { createOptionsWindow } from "./options.js";
 import { cardTable, choiceGrid, hideCardZoom } from "./cards.js";
 import { solitaireTable } from "./solitaire.js";
 import { rulesIcon } from "./ui-icons.js";
-import { createBattleTheatre } from "./cw-battle.js";
-import { createEmergence, hasEmergence } from "./cw-emerge.js";
+import { createBattleTheatre } from "/static/games/cthulhu-wars/cw-battle.js";
+import { createEmergence, hasEmergence } from "/static/games/cthulhu-wars/cw-emerge.js";
 import { choiceIcon } from "./choice-icons.js";
 import { animalIcon, animalOf } from "./animals.js";
 import { themesFor, themeById } from "./themes.js";
@@ -3306,9 +3306,8 @@ function seatSwatch(seat, color) {
 
 /** The glyph of a seat's faction, in a game whose factions have them: it says what the name would. */
 function seatGlyph(seat) {
-	const key = FACTION_KEYS.find((k) => factionName(k) === seatLabel(seat));
-	if (!key || (S.info.family || S.info.id) !== "cthulhu-wars") return null;
-	return h("img", { class: "seat-glyph", src: `/api/game-defs/cthulhu-wars/assets/guide/glyphs/${key}.svg`, alt: seatLabel(seat), title: seatLabel(seat), width: 22, height: 22, decoding: "sync" });
+	const glyph = S.info.page && S.info.page.seatGlyph;
+	return glyph ? glyph(seatLabel(seat)) : null;
 }
 
 /** The direction of play, beside the first player's name. */

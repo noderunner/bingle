@@ -4,7 +4,7 @@
 // drawn in code (see js/cw-art-kit.js).
 
 import { H, W, add, awakeningBurst, between, blob, dot, lerp, limb, num, outCubic, randoms, round, sceneSvg, smooth, vertical, writhe } from "./cw-art-kit.js";
-import { s } from "./util.js";
+import { s } from "/static/js/util.js";
 
 export const UBBO_SECONDS = 7.4;
 export const UBBO_PEAK = 5.7;
