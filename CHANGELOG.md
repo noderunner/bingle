@@ -4,6 +4,11 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.97.2 - 2026-11-07
+
+### Bingle Core 0.97.2
+- Nothing changes in play. The rest of Cthulhu Wars' own parts of the page (its setup picker, the Animation Tester, the practice wizard and batch reports, the lobby's picture of a table, battles, awakenings and its tips) now come from the game, and the shared page loads them only for Cthulhu Wars.
+
 ## 0.97.1 - 2026-11-07
 
 ### Bingle Core 0.97.1

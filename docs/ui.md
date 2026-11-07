@@ -582,7 +582,7 @@ the Move action. The home page's *Seats* control lists the game's seats — each
 friend's open seat or a bot of a kind (*You* may be chosen for as many seats as
 you like: a game against oneself, `also_seats`), and the arrangement survives
 choosing another layout of the game. A game whose description says `setup_catalog` (Cthulhu Wars) draws
-**a picker** above the seats (`cw-setup.js`, `#cw-setup`, [ADR 0094](decisions/0094-the-cthulhu-wars-setup-picker.md)) instead of
+**a picker** above the seats (`cthulhuwars/web/cw-setup.js`, through `info.page.createSetup`, `#cw-setup`, [ADR 0094](decisions/0094-the-cthulhu-wars-setup-picker.md)) instead of
 check boxes and the list of layouts, which stays in the page hidden:
 `.cw-tab[data-tab]` over `#cw-panel` of `.cw-tile[data-item][data-kind]` (`.on` when chosen), and `#cw-chosen` in `#cw-current`, the same tiles, where a click takes one out (the map's opens the Maps tab: a table always has a map).
 A faction takes the first open seat, and taking one out leaves its seat open, so the other seats keep theirs; a row of the seats shows it in
@@ -966,8 +966,23 @@ variants:                      # a merge patch per game of the family, by id
 family and hands its exports to the page as `info.page`; shared code asks it for what it draws for that
 game alone (`info.page.seatGlyph(label)`) and names no game. A game's scripts import the page's own
 modules by absolute path (`/static/js/util.js`), so each is loaded once. Cthulhu Wars' scripts are
-`internal/games/cthulhuwars/web/` (`page.js` and its `cw-*.js`); some shared files still import them
-directly while the rest of their parts move behind `info.page`.
+`internal/games/cthulhuwars/web/` (`page.js` and its `cw-*.js`). What `page.js` exports, and who asks:
+
+| Export | Asked by |
+|---|---|
+| `seatGlyph(label)` | `game.js`, beside a seat's name |
+| `renderAreaMap(host, info, view, handlers)` | `render.js`, for an `areas` board |
+| `mapKey(info)`, `legendMarker(kind, arg, info)` | `rules.js`, the key to the map |
+| `listIcon()` | `home.js`, the games list |
+| `createSetup(opts)`, `mountTester(host, info)`, `syncPractice(id)` | `home.js`: the setup picker, the Animation Tester tab, the practice wizard |
+| `lobbyPool(info)` | `lobby.js`, what a table was set up with |
+| `batchSections(rep, other, length, redraw)`, `pickName`, `pickColor`, `endReason`, `optionName` | `batches.js`, a practice batch's report |
+| `statIcon`, `spellMark`, `enterBlock`, `bookRequirements`, `abilitiesBlock`, `unitText`, `neutralTip` | `game.js`, parts of a ruleset's view (counters, spellbooks, unit cards) |
+| `createBattleTheatre(opts)`, `createEmergence(opts)`, `hasEmergence(type)` | `game.js`: battles and a Great Old One's awakening, and whether to offer their option |
+
+No shared file imports a game's script or tests a game's id: a game without a script is drawn without these
+parts. `game.js` still draws much of a ruleset's view (the Doom track, Gates, the cults pane, the reaction
+options) in Cthulhu Wars' words, for any game whose view carries those parts.
 
 The schema is `internal/web/look`: a game's module loads the file with `look.MustLoad`, which
 refuses an unknown key, and `tests/look` holds every shipped file to its games with `look.Check`.

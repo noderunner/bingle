@@ -6,14 +6,12 @@
 import { CARD_SETS, cardSetById, setPreview, useCardSet } from "./card-sets.js";
 import { h, clear, store, rememberGame, rememberedGames, lastName, toast } from "./util.js";
 import { api, gameTitle, whoAmI } from "./api.js";
-import { mountAnimationTester } from "/static/games/cthulhu-wars/cw-animation-tester.js";
 import { rulesIcon } from "./ui-icons.js";
 import { mountAnalysis } from "./analysis.js";
 import { mountRatings } from "./ratings.js";
 import { mountTournaments } from "./tournaments.js";
 import { renderBoard } from "./render.js";
 import { showRules as openRules } from "./rules.js";
-import { syncPractice } from "./practice.js";
 import { installTopbar } from "./topbar.js";
 import { openGameRow } from "./mygames.js";
 import { randomFact } from "./facts.js";
@@ -22,7 +20,6 @@ import { installNav, navigate } from "./nav.js";
 import { gameIcon } from "./game-icons.js";
 import { tutorialList } from "./tutorials-ui.js";
 import { solitairePreview } from "./solitaire.js";
-import { createCwSetup } from "/static/games/cthulhu-wars/cw-setup.js";
 
 installNav();
 
@@ -118,6 +115,31 @@ async function gameInfo(id) {
 	return infoCache.get(id);
 }
 
+// The practice wizard of the chosen game, when its page script has one
+// (Cthulhu Wars' syncPractice, ADR 0124); the last one shown, to hide it again.
+let practiceShown = null;
+
+/** Shows the chosen game's practice wizard, or hides the one shown. */
+async function syncPractice(id) {
+	let info = null;
+	try {
+		info = id ? await gameInfo(id) : null;
+	} catch (_) {
+		info = null;
+	}
+	const sync = info && info.page && info.page.syncPractice;
+	if (sync) {
+		practiceShown = sync;
+		return sync(id);
+	}
+	if (practiceShown) return practiceShown("");
+	const tab = document.getElementById("setup-tab-practice");
+	if (tab) {
+		tab.hidden = true;
+		if (tab.getAttribute("aria-selected") === "true") document.getElementById("setup-tab-new").click();
+	}
+}
+
 async function updateBlurb() {
 	const select = document.getElementById("game_def_id");
 	const blurb = document.getElementById("game-blurb");
@@ -180,7 +202,9 @@ async function renderTester() {
 	if (testerShown) return;
 	testerShown = true;
 	try {
-		mountAnimationTester(document.getElementById("setup-tester"), await gameInfo("cthulhu-wars"));
+		const info = await gameInfo(document.getElementById("game_def_id").value);
+		if (!info.page || !info.page.mountTester) throw new Error("the game has no animation tester");
+		info.page.mountTester(document.getElementById("setup-tester"), info);
 	} catch (err) {
 		testerShown = false;
 		console.error("the animation tester failed:", err);
@@ -278,7 +302,10 @@ async function renderSetupTutorials(d) {
 	const host = document.getElementById("setup-tutorials");
 	if (!host) return;
 	offerSetupTab("tutorials", !!(d && d.tutorials));
-	offerSetupTab("tester", !!d && (d.family || d.id) === "cthulhu-wars");
+	// A game's page script may bring an animation tester (Cthulhu Wars'):
+	// offered once its info, with the script, has come.
+	offerSetupTab("tester", false);
+	if (d) gameInfo(d.id).then((info) => offerSetupTab("tester", !!(info.page && info.page.mountTester) && document.getElementById("game_def_id").value === d.id), () => {});
 	if (!d || !d.tutorials) {
 		host.hidden = true;
 		clear(host);
@@ -470,8 +497,11 @@ let picker = null;
 
 /** The picker of a family. */
 async function buildPicker(family, info) {
+	// The picker is the game's own (its page script's createSetup, ADR 0124).
+	const create = info.page && info.page.createSetup;
+	if (!create) throw new Error(`${family} has no setup picker`);
 	const [catalog, me] = await Promise.all([api.setupCatalog(info.id), whoAmI().catch(() => null)]);
-	return createCwSetup({
+	return create({
 		family,
 		catalog,
 		layouts: sortedFamily(defs.filter((d) => (d.family || d.id) === family)),
