@@ -74,8 +74,10 @@ is kept for its reasoning but loses where it disagrees.
      declaration against the rulebook line by line.
    Consequences: seeded dice and shuffles are in scope (the engine is already seeded and
    deterministic), and with shuffled decks the common kinds of hidden information come in too, such
-   as a hand or a face-down pile. Simultaneous secret choice (Fist) is common in card and bluffing
-   games but changes the turn model, so the audit costs it rather than ruling on it now.
+   as a hand or a face-down pile. Simultaneous secret choice is common in card and bluffing games but
+   changes the turn model, so the audit costs it rather than ruling on it now. (The question
+   named Fist; the audit found Fist sequential, and Courtfall's secret split of dice the only
+   case in scope.)
 4. **A converted game keeps its Go ruleset for one release**, as the reference for the differential
    harness (the same legal moves, states and outcomes over a random battery), and a follow-up pull
    request deletes it.
