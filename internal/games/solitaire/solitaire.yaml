@@ -42,27 +42,27 @@ cards:
       label: Standard deck
       rank_list: A 2 3 4 5 6 7 8 9 10 J Q K
   zones:
-    - {id: stock, label: Stock, scope: table, visibility: none, layout: stack, counts: true}
-    - {id: waste, label: Waste, scope: table, visibility: all, layout: stack}
-    - {id: f1, label: Foundation, scope: table, visibility: all, layout: stack}
-    - {id: f2, label: Foundation, scope: table, visibility: all, layout: stack}
-    - {id: f3, label: Foundation, scope: table, visibility: all, layout: stack}
-    - {id: f4, label: Foundation, scope: table, visibility: all, layout: stack}
-    - {id: c1, label: Free cell, scope: table, visibility: all, layout: stack}
-    - {id: c2, label: Free cell, scope: table, visibility: all, layout: stack}
-    - {id: c3, label: Free cell, scope: table, visibility: all, layout: stack}
-    - {id: c4, label: Free cell, scope: table, visibility: all, layout: stack}
-    - {id: t1, label: Column, scope: table, visibility: flag, layout: splay}
-    - {id: t2, label: Column, scope: table, visibility: flag, layout: splay}
-    - {id: t3, label: Column, scope: table, visibility: flag, layout: splay}
-    - {id: t4, label: Column, scope: table, visibility: flag, layout: splay}
-    - {id: t5, label: Column, scope: table, visibility: flag, layout: splay}
-    - {id: t6, label: Column, scope: table, visibility: flag, layout: splay}
-    - {id: t7, label: Column, scope: table, visibility: flag, layout: splay}
-    - {id: t8, label: Column, scope: table, visibility: flag, layout: splay}
-    - {id: t9, label: Column, scope: table, visibility: flag, layout: splay}
-    - {id: t10, label: Column, scope: table, visibility: flag, layout: splay}
-    - {id: done, label: Finished suits, scope: table, visibility: all, layout: stack}
+    - {id: stock, label: Stock, scope: table, visibility: none, pile: true, counts: true}
+    - {id: waste, label: Waste, scope: table, visibility: all, pile: true}
+    - {id: f1, label: Foundation, scope: table, visibility: all, pile: true}
+    - {id: f2, label: Foundation, scope: table, visibility: all, pile: true}
+    - {id: f3, label: Foundation, scope: table, visibility: all, pile: true}
+    - {id: f4, label: Foundation, scope: table, visibility: all, pile: true}
+    - {id: c1, label: Free cell, scope: table, visibility: all, pile: true}
+    - {id: c2, label: Free cell, scope: table, visibility: all, pile: true}
+    - {id: c3, label: Free cell, scope: table, visibility: all, pile: true}
+    - {id: c4, label: Free cell, scope: table, visibility: all, pile: true}
+    - {id: t1, label: Column, scope: table, visibility: flag}
+    - {id: t2, label: Column, scope: table, visibility: flag}
+    - {id: t3, label: Column, scope: table, visibility: flag}
+    - {id: t4, label: Column, scope: table, visibility: flag}
+    - {id: t5, label: Column, scope: table, visibility: flag}
+    - {id: t6, label: Column, scope: table, visibility: flag}
+    - {id: t7, label: Column, scope: table, visibility: flag}
+    - {id: t8, label: Column, scope: table, visibility: flag}
+    - {id: t9, label: Column, scope: table, visibility: flag}
+    - {id: t10, label: Column, scope: table, visibility: flag}
+    - {id: done, label: Finished suits, scope: table, visibility: all, pile: true}
 guide:
   tabs:
     - {id: rules, title: Rules, file: klondike.md}

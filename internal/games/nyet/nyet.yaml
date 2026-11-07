@@ -56,23 +56,23 @@ cards:
       label: Deck
       scope: table
       visibility: none
-      layout: stack
+      pile: true
       counts: true
-    - {id: hand, label: Hand, scope: seat, visibility: owner, layout: fan}
-    - {id: trick, label: The trick, scope: table, visibility: flag, layout: row}
-    - {id: last, label: Last trick, scope: table, visibility: all, layout: row}
+    - {id: hand, label: Hand, scope: seat, visibility: owner}
+    - {id: trick, label: The trick, scope: table, visibility: flag}
+    - {id: last, label: Last trick, scope: table, visibility: all}
     - id: won
       label: Tricks won
       scope: seat
       visibility: none
-      layout: stack
+      pile: true
       counts: true
-    - {id: loot, label: Loot, scope: seat, visibility: flag, layout: splay}
+    - {id: loot, label: Loot, scope: seat, visibility: flag}
     - id: discard
       label: Discarded
       scope: seat
       visibility: none
-      layout: stack
+      pile: true
       counts: true
 variants:
   - id: nyet-2

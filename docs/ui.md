@@ -949,7 +949,7 @@ pieces:
 board: {style: points, borders: {top: white}}
 cards:
   back: {color: '#7a2030', text: NYET!}
-  zones: {hand: {layout: fan}}
+  zones: {hand: {layout: fan}}  # fan, row, stack, splay or grid
   suits: {hearts: {color: red}}  # only where the rules do not read the colour
 display:                       # the definition's display keeps each tint's and badge's label and text
   no_hands: true
@@ -966,8 +966,9 @@ refuses an unknown key, and `tests/look` holds every shipped file to its games w
 A piece type's own `color` is not here: the rules read it to say whose the piece is (ADR 0117).
 Games move their look into the file a few at a time (ADR 0124's stages). Every game but Cthulhu Wars
 has moved (the classics keep theirs in `classics/web/<game>.yaml`, and Solitaire and Bowling theirs in
-`solitaire/web/`, loaded with `look.MustLoadFile`); Cthulhu Wars still carries its in the definition. A zone's `layout` stays in the
-definition for now, because the engine reads `stack` (a pile whose cards are counted, not listed).
+`solitaire/web/`, loaded with `look.MustLoadFile`); Cthulhu Wars still carries its in the definition. A zone's `layout` is here
+too: the definition says only whether a zone is a `pile` (its cards counted, not listed), and the
+page draws a pile without a layout as a stack and any other zone as a row.
 
 ## DOM contract used by tests
 

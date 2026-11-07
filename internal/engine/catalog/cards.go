@@ -229,11 +229,6 @@ func compileCards(cg *CompiledGame) error {
 		default:
 			return fmt.Errorf("catalog: zone %q has unknown visibility %q", z.ID, z.Visibility)
 		}
-		switch z.Layout {
-		case "", "fan", "row", "stack", "splay", "grid":
-		default:
-			return fmt.Errorf("catalog: zone %q has unknown layout %q", z.ID, z.Layout)
-		}
 		cc.Zones[z.ID] = z
 	}
 	cg.Cards = cc

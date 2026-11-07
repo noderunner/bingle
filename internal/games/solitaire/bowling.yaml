@@ -37,20 +37,20 @@ cards:
       label: Twenty cards
       rank_list: A 2 3 4 5 6 7 8 9 10
   zones:
-    - {id: pina, label: Pin a, scope: table, visibility: all, layout: row}
-    - {id: pinb, label: Pin b, scope: table, visibility: all, layout: row}
-    - {id: pinc, label: Pin c, scope: table, visibility: all, layout: row}
-    - {id: pind, label: Pin d, scope: table, visibility: all, layout: row}
-    - {id: pine, label: Pin e, scope: table, visibility: all, layout: row}
-    - {id: pinf, label: Pin f, scope: table, visibility: all, layout: row}
-    - {id: ping, label: Pin g, scope: table, visibility: all, layout: row}
-    - {id: pinh, label: Pin h, scope: table, visibility: all, layout: row}
-    - {id: pini, label: Pin i, scope: table, visibility: all, layout: row}
-    - {id: pinj, label: Pin j, scope: table, visibility: all, layout: row}
-    - {id: ball1, label: Ball pile 1, scope: table, visibility: flag, layout: stack}
-    - {id: ball2, label: Ball pile 2, scope: table, visibility: flag, layout: stack}
-    - {id: ball3, label: Ball pile 3, scope: table, visibility: flag, layout: stack}
-    - {id: gone, label: Out of play, scope: table, visibility: all, layout: row}
+    - {id: pina, label: Pin a, scope: table, visibility: all}
+    - {id: pinb, label: Pin b, scope: table, visibility: all}
+    - {id: pinc, label: Pin c, scope: table, visibility: all}
+    - {id: pind, label: Pin d, scope: table, visibility: all}
+    - {id: pine, label: Pin e, scope: table, visibility: all}
+    - {id: pinf, label: Pin f, scope: table, visibility: all}
+    - {id: ping, label: Pin g, scope: table, visibility: all}
+    - {id: pinh, label: Pin h, scope: table, visibility: all}
+    - {id: pini, label: Pin i, scope: table, visibility: all}
+    - {id: pinj, label: Pin j, scope: table, visibility: all}
+    - {id: ball1, label: Ball pile 1, scope: table, visibility: flag, pile: true}
+    - {id: ball2, label: Ball pile 2, scope: table, visibility: flag, pile: true}
+    - {id: ball3, label: Ball pile 3, scope: table, visibility: flag, pile: true}
+    - {id: gone, label: Out of play, scope: table, visibility: all}
 guide:
   tabs:
     - {id: rules, title: Rules, file: bowling.md}

@@ -774,11 +774,10 @@ cards:
           tags: [joker]
           count: 2
       remove: [red-2]
-  back: {color: '#5b4a8a', text: NYET!}
   zones:
-    - {id: deck, scope: table, visibility: none, layout: stack, counts: true}
-    - {id: hand, scope: seat, visibility: owner, layout: fan}
-    - {id: trick, scope: table, visibility: flag, layout: row}
+    - {id: deck, scope: table, visibility: none, pile: true, counts: true}
+    - {id: hand, scope: seat, visibility: owner}
+    - {id: trick, scope: table, visibility: flag}
 ```
 
 * A card type is `<suit>-<rank>` (or an extra card's `id`); a `count` above one
@@ -796,9 +795,11 @@ cards:
   anything in its definition: it wears the first suits of the set, in `suit_order`.
 * A zone is a place cards can be: `scope` `seat` (one per seat: a hand, tricks
   won) or `table`. `visibility` says who sees faces: `owner`, `all`, `flag`
-  (face-up cards only) or `none`. `layout` is how clients draw it: `fan`, `row`,
-  `stack` (top card and count), `splay` or `grid`; `counts: true` sends a hidden
-  pile as a count only.
+  (face-up cards only) or `none`. `pile: true` makes it a pile: a seat is sent
+  only the count of the cards it cannot see, and a pile it holds is not sorted into
+  hand order. `counts: true` sends a hidden pile as a count only. How a zone is
+  drawn (fanned, in a row, stacked, splayed) and the backs of the cards are the
+  client's: the web page reads them from the game's `web.yaml` (ADR 0124).
 * A variant strips cards with a merge patch of `cards.decks.<deck>.remove`.
 * **A declared game deals its cards** before the first move with a top-level
   `deal` ([ADR 0119](decisions/0119-a-seeded-deal-at-the-start.md)):

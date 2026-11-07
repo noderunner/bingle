@@ -11,3 +11,8 @@ cards:
     blue: {color: '#1f2630'}
     yellow: {color: '#c62f2f'}
     green: {color: '#1f2630'}
+  zones:
+    hand: {layout: fan}
+    trick: {layout: row}
+    last: {layout: row}
+    loot: {layout: splay}

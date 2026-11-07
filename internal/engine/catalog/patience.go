@@ -199,28 +199,28 @@ func compilePatience(cg *CompiledGame) error {
 		return fail("finish needs foundations")
 	}
 	// The piles' zones, as the page and redaction read them.
-	zone := func(id, label, vis, layout string, counts bool) {
+	zone := func(id, label, vis string, pile, counts bool) {
 		if _, ok := cc.Zones[id]; !ok {
-			z := dsl.ZoneDef{ID: id, Label: label, Scope: "table", Visibility: vis, Layout: layout, Counts: counts}
+			z := dsl.ZoneDef{ID: id, Label: label, Scope: "table", Visibility: vis, Pile: pile, Counts: counts}
 			cc.Zones[id] = z
 			def.Cards.Zones = append(def.Cards.Zones, z)
 		}
 	}
 	for i := 1; i <= p.Columns; i++ {
-		zone(Column(i), "Column", "flag", "splay", false)
+		zone(Column(i), "Column", "flag", false, false)
 	}
 	for i := 1; i <= p.Foundations; i++ {
-		zone(Foundation(i), "Foundation", "all", "stack", false)
+		zone(Foundation(i), "Foundation", "all", true, false)
 	}
 	for i := 1; i <= p.Cells; i++ {
-		zone(Cell(i), "Free cell", "all", "stack", false)
+		zone(Cell(i), "Free cell", "all", true, false)
 	}
-	zone(PileStock, "Stock", "none", "stack", true)
+	zone(PileStock, "Stock", "none", true, true)
 	if p.Draw > 0 {
-		zone(PileWaste, "Waste", "all", "stack", false)
+		zone(PileWaste, "Waste", "all", true, false)
 	}
 	if p.Off {
-		zone(PileDone, "Finished suits", "all", "stack", false)
+		zone(PileDone, "Finished suits", "all", true, false)
 	}
 	cg.Patience = p
 	cg.Actions = append(cg.Actions, ResolvedAction{ID: ActionPatience, Type: ActionPatience, Label: "Move"})

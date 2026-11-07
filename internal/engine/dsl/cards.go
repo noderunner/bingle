@@ -112,10 +112,11 @@ type ZoneDef struct {
 	// "flag" (a card is seen by everyone when it is face up and by no one
 	// when face down), "none" (no one: a deck, discarded cards).
 	Visibility string `json:"visibility,omitempty"`
-	// Layout is how clients draw it: "fan" (a hand, overlapping, all faces),
-	// "row" (side by side), "stack" (a pile showing its top card and count),
-	// "splay" (a cascade, each card partly covering the last) or "grid".
-	Layout string `json:"layout,omitempty"`
+	// Pile makes the zone a pile: a seat's view lists none of its cards it
+	// cannot see, only their count, and a pile a seat holds is not sorted
+	// into hand order. How a client draws any zone is its own (ADR 0124:
+	// the web page's layouts are in the game's web.yaml).
+	Pile bool `json:"pile,omitempty"`
 	// Hidden zones are not shown at all (only their counts, in the seat's
 	// panel): useful for a deck.
 	Counts bool `json:"counts,omitempty"`

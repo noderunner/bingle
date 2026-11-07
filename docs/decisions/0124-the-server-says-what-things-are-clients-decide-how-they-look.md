@@ -120,3 +120,11 @@ The audit put `pieces.*.color` with the appearance. It is not: a piece type with
 (Blooms' four stones) is placed in that colour, and only the seat that plays it may place it
 ([ADR 0117](0117-groups-by-colour-enemies-by-seat.md)). Like a seat's colour word, it stays in the
 definition as meaning. Stage 1 found it, when Blooms moved first.
+
+## Addendum (2026-11-07): a zone says whether it is a pile, and its layout is the client's
+
+A zone's `layout` was half meaning: the engine read `stack` to send a pile's count rather than its cards,
+and to leave a pile a seat holds unsorted. That part is now its own field, `pile: true`, and `layout`
+(`fan`, `row`, `stack`, `splay`, `grid`) leaves the definition for the web file, where `look.Check` holds it
+to those values. The page draws a pile with no layout as a stack, and any other zone as a row. The patience
+vocabulary's generated piles (stock, waste, foundations, cells, finished suits) are piles; its columns are not.

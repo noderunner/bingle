@@ -26,9 +26,9 @@ func game(handSeen string, edit func(map[string]any)) map[string]any {
 			"suits": map[string]any{"move": map[string]any{"label": "Move"}},
 			"decks": map[string]any{"main": map[string]any{"rank_list": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16"}},
 			"zones": []any{
-				map[string]any{"id": "deck", "scope": "table", "visibility": "none", "layout": "stack"},
-				map[string]any{"id": "hand", "scope": "seat", "visibility": handSeen, "layout": "row"},
-				map[string]any{"id": "side", "scope": "table", "visibility": "all", "layout": "row"},
+				map[string]any{"id": "deck", "scope": "table", "visibility": "none", "pile": true},
+				map[string]any{"id": "hand", "scope": "seat", "visibility": handSeen},
+				map[string]any{"id": "side", "scope": "table", "visibility": "all"},
 			},
 		},
 		"deal": []any{

@@ -82,10 +82,17 @@ type CardBack struct {
 	Text  string `json:"text,omitempty"`
 }
 
-// Zone is how a zone of cards is laid out.
+// Zone is how a zone of cards is laid out: "fan" (a hand, overlapping, all
+// faces), "row" (side by side), "stack" (its top card and a count), "splay"
+// (a cascade, each card partly covering the last) or "grid". Without one the
+// page draws a pile (the definition's pile: true) as a stack and anything
+// else as a row.
 type Zone struct {
 	Layout string `json:"layout,omitempty"`
 }
+
+// layouts are the zone layouts the page draws.
+var layouts = map[string]bool{"fan": true, "row": true, "stack": true, "splay": true, "grid": true}
 
 // SuitColor is the colour a suit is drawn in, where the rules do not read it.
 type SuitColor struct {
@@ -224,9 +231,12 @@ func (f File) check(cg *catalog.CompiledGame) error {
 		if def.Cards == nil {
 			return fmt.Errorf("cards are drawn, but the game has none")
 		}
-		for id := range f.Cards.Zones {
+		for id, z := range f.Cards.Zones {
 			if !slices.ContainsFunc(def.Cards.Zones, func(z dsl.ZoneDef) bool { return z.ID == id }) {
 				return fmt.Errorf("zone %q is not one of the game's", id)
+			}
+			if z.Layout != "" && !layouts[z.Layout] {
+				return fmt.Errorf("zone %q has unknown layout %q", id, z.Layout)
 			}
 		}
 		for id := range f.Cards.Suits {

@@ -334,17 +334,18 @@ function captionNode(ctx, text) {
  */
 function drawZone(info, zv, ctx, next) {
 	const def = zoneDef(info, zv.id);
-	const layout = def.layout || "row";
+	// The layout is the look's (ADR 0124); a pile is a stack unless it says otherwise.
+	const layout = def.layout || (def.pile ? "stack" : "row");
 	const own = def.visibility === "owner" && zv.owner && zv.owner === ctx.me;
-	const order = own && layout !== "stack" ? orderKey(ctx, zv) : "";
-	const cards = own && layout !== "stack" ? inHandOrder(order, zv.cards || []) : zv.cards || [];
+	const order = own && !def.pile ? orderKey(ctx, zv) : "";
+	const cards = own && !def.pile ? inHandOrder(order, zv.cards || []) : zv.cards || [];
 	const key = zv.owner ? `${zv.id}:${zv.owner}` : zv.id;
 	const el = h("div", { class: `zone layout-${layout}`, "data-zone": zv.id, "data-owner": zv.owner || null, "data-count": zv.count });
 	if (own) {
 		el.classList.add("zoomable");
 		enableZoom(el);
 	}
-	if (own && layout !== "stack") {
+	if (own && !def.pile) {
 		el.classList.add("reorderable");
 		enableReorder(el, order);
 	}

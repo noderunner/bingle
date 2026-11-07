@@ -39,10 +39,10 @@ const goodCards = `{
  }},
  "back":{"color":"#336","text":"BACK"},
  "zones":[
-  {"id":"deck","scope":"table","visibility":"none","layout":"stack","counts":true},
-  {"id":"hand","scope":"seat","visibility":"owner","layout":"fan"},
-  {"id":"table","scope":"table","visibility":"flag","layout":"row"},
-  {"id":"open","scope":"table","visibility":"all","layout":"splay"}
+  {"id":"deck","scope":"table","visibility":"none","pile":true,"counts":true},
+  {"id":"hand","scope":"seat","visibility":"owner"},
+  {"id":"table","scope":"table","visibility":"flag"},
+  {"id":"open","scope":"table","visibility":"all"}
  ]}`
 
 func TestDecksExpandSuitsTimesRanksPlusExtraCards(t *testing.T) {
@@ -82,13 +82,13 @@ func TestDeckRemovalsAndErrors(t *testing.T) {
 		t.Errorf("after removals: %d cards", n)
 	}
 	for name, bad := range map[string]string{
-		"unknown suit":    strings.Replace(goodCards, `"suits":{"hearts"`, `"suits":{"hearts2"`, 1),
-		"repeated rank":   strings.Replace(goodCards, `{"id":"2","value":2}`, `{"id":"A","value":2}`, 1),
-		"bad zone scope":  strings.Replace(goodCards, `"scope":"seat"`, `"scope":"nowhere"`, 1),
-		"bad visibility":  strings.Replace(goodCards, `"visibility":"owner"`, `"visibility":"sometimes"`, 1),
-		"bad layout":      strings.Replace(goodCards, `"layout":"fan"`, `"layout":"pile-o-cards"`, 1),
-		"unknown removal": strings.Replace(goodCards, `"ranks":`, `"remove":["clubs-Q"],"ranks":`, 1),
-		"no decks":        `{"decks":{}}`,
+		"unknown suit":          strings.Replace(goodCards, `"suits":{"hearts"`, `"suits":{"hearts2"`, 1),
+		"repeated rank":         strings.Replace(goodCards, `{"id":"2","value":2}`, `{"id":"A","value":2}`, 1),
+		"bad zone scope":        strings.Replace(goodCards, `"scope":"seat"`, `"scope":"nowhere"`, 1),
+		"bad visibility":        strings.Replace(goodCards, `"visibility":"owner"`, `"visibility":"sometimes"`, 1),
+		"a layout (the look's)": strings.Replace(goodCards, `"pile":true`, `"layout":"stack"`, 1),
+		"unknown removal":       strings.Replace(goodCards, `"ranks":`, `"remove":["clubs-Q"],"ranks":`, 1),
+		"no decks":              `{"decks":{}}`,
 	} {
 		if _, err := register(t, bad); err == nil {
 			t.Errorf("%s: the definition was accepted", name)

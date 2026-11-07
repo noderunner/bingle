@@ -7,7 +7,7 @@ what the help window shows under *Recent changes*, so it is written for the peop
 ## 0.94.2 - 2026-11-07
 
 ### Bingle Core 0.94.2
-- Nothing changes in play. The card games now keep how the page draws them in their own look files, as the board games do since 0.94.1.
+- Nothing changes in play. The card games now keep how the page draws them in their own look files, as the board games do since 0.94.1, down to how each pile of cards is laid out: the rules say only which zones are piles.
 
 ### Nyet! 0.2.2, Solitaire 0.3.1 and Bowling Solitaire 0.2.2
 - Nothing changes in play or on the table: each is drawn from its own look file.
