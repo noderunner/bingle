@@ -3,7 +3,7 @@
 Status: **planning in progress** (opened 2026-11-06). This is addition F of the DSL coverage audit
 (`dsl-coverage-audit-plan.md`, *The additions*), which gave it a plan of its own as the largest
 addition proposed. The open questions were settled on 2026-11-06 (*What was decided*, below).
-Nothing is implemented.
+Stages 1 to 3 are built; stage 4 is in review; stage 5 is next.
 
 ## What was asked for
 
@@ -196,3 +196,10 @@ These were the questions put to the maintainer; the answers are above.
   neighbours (Yukon, Scorpion, Baker's Dozen, Forty Thieves) in the first ADR; Bowling as a game of
   its own; the take-back rule as a general ADR first; suit colour by place; a generic hint order; and
   the page's patience view unchanged. Next: stage 1, the take-back ADR.
+- 2026-11-06: stage 1, ADR 0121 (#145, built in #146): a card turned up cannot be taken back.
+  Stage 2, ADR 0122 (#147), and stage 3, its build (#148). The build's test turns each of
+  Solitaire's six patience games into a declaration and holds it to the ruleset with the harness,
+  hints included. Yukon, Scorpion, Baker's Dozen and Forty Thieves are tested as fixtures. Two
+  details were added to the ADR: `win_condition: {type: patience}`, and the position's `counters`
+  for limited redeals. Stage 4, Bowling as a game of its own under its old id, is #149. Next:
+  stage 5, Solitaire's declaration beside the ruleset.
