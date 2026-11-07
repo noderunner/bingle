@@ -4,6 +4,11 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.93.1 - 2026-11-07
+
+### Bingle Core 0.93.1
+- Nothing changes in play. Onitama keeps its own rules rather than moving to a game definition, so that its expansions can be added later; the definition that was being checked against it is gone.
+
 ## 0.93.0 - 2026-11-06
 
 ### Bingle Core 0.93.0
