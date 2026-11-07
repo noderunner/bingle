@@ -65,11 +65,52 @@ async function call(path, { method = "GET", body, headers, keepalive } = {}) {
 const enc = encodeURIComponent;
 
 let mePromise = null;
+let meDrawn = null; // the first answer, which the page was drawn for: "kind handle", or "?" when it failed
+let watching = false;
 
-/** Who this browser is (GET /auth/me), asked once per page. */
+/**
+ * Who this browser is (GET /auth/me), asked once per page. A failed answer is
+ * not kept: a page that asked while the server was away would otherwise show
+ * a signed-in player as a guest for as long as it stays open, while everything
+ * it sends goes as them.
+ */
 export function whoAmI() {
-	if (!mePromise) mePromise = call("/auth/me").catch(() => ({ kind: "anonymous", caps: [] }));
+	if (!mePromise) {
+		mePromise = call("/auth/me")
+			.then((me) => {
+				if (meDrawn === null) meDrawn = identityOf(me);
+				return me;
+			})
+			.catch(() => {
+				mePromise = null;
+				if (meDrawn === null) meDrawn = "?";
+				return { kind: "anonymous", caps: [] };
+			});
+		watchIdentity();
+	}
 	return mePromise;
+}
+
+function identityOf(me) {
+	return `${me.kind || ""} ${me.handle || ""}`;
+}
+
+/**
+ * When the tab comes back into view, asks again who this browser is: signed in
+ * or out in another tab, or asked while the server was away, the page is drawn
+ * again for whoever it is now.
+ */
+function watchIdentity() {
+	if (watching || typeof document === "undefined") return;
+	watching = true;
+	document.addEventListener("visibilitychange", () => {
+		if (document.visibilityState !== "visible") return;
+		call("/auth/me")
+			.then((me) => {
+				if (meDrawn !== null && identityOf(me) !== meDrawn) location.reload();
+			})
+			.catch(() => {});
+	});
 }
 
 // codeBody is a typed second factor as the server wants it: six digits are a

@@ -46,7 +46,7 @@ func TestWebCthulhuWars_AMoveQueuesItsUnitsThenSendsThemTogether(t *testing.T) {
 	// The first unit starts the impulse, with its icon and the Power it costs.
 	clickUnit(t, ctx, "south-pacific", "cultist")
 	waitJS(t, ctx, "the queue", `document.getElementById("move-queue") !== null`, 5*time.Second)
-	if got := text(); !strings.HasPrefix(got, "Select remaining units in ") || !strings.HasSuffix(got, " to move, followed by a destination.") {
+	if got := text(); !strings.HasPrefix(got, "Units from ") || !strings.HasSuffix(got, " are ready: select more from any area, then the area they all go to.") {
 		t.Errorf("the impulse says %q", got)
 	}
 	if !strings.Contains(text(), "South Pacific") {
@@ -72,10 +72,15 @@ func TestWebCthulhuWars_AMoveQueuesItsUnitsThenSendsThemTogether(t *testing.T) {
 	if got := cost(); got != "3" {
 		t.Errorf("three units cost %q", got)
 	}
-	// Units elsewhere wait for another queue.
-	if evalBool(t, ctx, `document.querySelector('#board .token[data-position="new-zealand"].clickable, #board .token[data-position="new-zealand"].selectable') !== null`) {
-		t.Error("a unit in another area can be added")
+	// A unit in another area joins the same queue: a Move gathers units from
+	// anywhere (the rules: "from several different Areas into a single Area").
+	clickUnit(t, ctx, "new-zealand", "cultist")
+	waitJS(t, ctx, "the unit from New Zealand", `document.querySelector('.queue-unit[data-from="new-zealand"]') !== null`, 5*time.Second)
+	if !strings.Contains(text(), "New Zealand") || !strings.Contains(text(), "South Pacific") {
+		t.Errorf("the impulse does not name both areas: %q", text())
 	}
+	clickSel(t, ctx, `.queue-unit[data-from="new-zealand"]`)
+	waitJS(t, ctx, "New Zealand's unit back", `document.querySelector('.queue-unit[data-from="new-zealand"]') === null`, 5*time.Second)
 
 	// A click on an icon takes that unit out.
 	clickSel(t, ctx, `.queue-unit[data-piece="deep-one"]`)
@@ -247,5 +252,30 @@ func TestWebCthulhuWars_GameOptionsReadWell(t *testing.T) {
 	}
 	if got := evalString(t, ctx, `document.getElementById("game-options").innerText`); strings.Contains(got, "null") || strings.Contains(got, "undefined") {
 		t.Errorf("the window says %q", got)
+	}
+}
+
+// Units from two areas go together into one area, in one Move: the queue
+// takes a unit from anywhere, offers only the areas next to them all, and
+// sends each from where it stood.
+func TestWebCthulhuWars_AMoveGathersUnitsFromSeveralAreas(t *testing.T) {
+	ctx, cancel := moveQueueGame(t, 10)
+	defer cancel()
+	clickUnit(t, ctx, "south-pacific", "cultist")
+	clickUnit(t, ctx, "new-zealand", "cultist")
+	waitJS(t, ctx, "both in the queue", `document.querySelectorAll('.queue-unit').length === 2`, 5*time.Second)
+	// New Zealand borders the South Pacific: either may go into the other
+	// alone, but together only somewhere next to both.
+	if evalBool(t, ctx, `document.querySelector('#board .cell[data-position="new-zealand"].clickable, #board .cell[data-position="south-pacific"].clickable') !== null`) {
+		t.Error("an area one of the units stands in is offered to both")
+	}
+	dest := evalString(t, ctx, `(function(){ var c = document.querySelector("#board .cell.clickable"); return c ? c.getAttribute("data-position") : ""; })()`)
+	if dest == "" {
+		t.Fatal("no area is offered to both units")
+	}
+	clickCell(t, ctx, dest)
+	waitJS(t, ctx, "the move sent", `document.getElementById("move-queue") === null && document.getElementById("action-done") !== null`, 15*time.Second)
+	if n := evalInt(t, ctx, `document.querySelectorAll('#board .token[data-position="`+dest+`"][data-piece="cultist"]').length`); n == 0 {
+		t.Errorf("no Cultist arrived in %s", dest)
 	}
 }
