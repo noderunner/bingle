@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=../../../docs/game-definition.schema.json
+# Bowling Solitaire was a variant of Solitaire until the patience vocabulary
+# (ADR 0122): Klondike, Spider and FreeCell are to be declared, and Bowling,
+# which no vocabulary covers, keeps its Go rules (rules.go, bowling.go) as a
+# game of its own, under the id it always had.
+id: bowling-solitaire
+name: Bowling Solitaire
+description: "Sid Sackson's little masterpiece: twenty cards are the pins and the balls of ten frames of bowling, and you aim to knock the pins down by adding them up."
+version: 0.2.0
+designers: [Sid Sackson]
+engine: ruleset
+rules:
+  - 'Bowling Solitaire, by Sid Sackson (A Gamut of Games, 1969). Twenty cards are used, ace to 10 of two suits; suits do not matter and an ace counts 1. For each frame all twenty are shuffled: ten go face up in a triangle as the pins (a b c d at the back, then e f g, then h i, and j at the front), and ten go face down as three ball piles of 5, 3 and 2 cards, the top card of each turned up.'
+  - 'A play uses one face-up ball card to knock down one pin, or two or three pins that touch one another. A single pin goes if its value ends in the same digit as the ball; two or three go if the last digit of their sum does. So a 6 can knock down a 6, or a 2 and a 4, or a 7 and a 9, or a 1, a 2 and a 3; a 10 counts as 0. The ball card and the pins leave the table, and the next card of that pile turns up.'
+  - 'The first play on a rack cannot touch the back row (a, b, c, d) or take the centre pin (f) by itself. Every later play must include a pin next to one already down.'
+  - 'The first ball lasts until no play is left, or until you choose to end it. If all ten pins went, that is a strike. Otherwise the top card of each ball pile is thrown away, the next is turned up, and you go on against the pins still standing with the second ball. Clearing them now is a spare.'
+  - 'Ten frames are scored as in ten-pin bowling: a frame scores the pins it knocked down, a spare adds the next ball and a strike the next two. A spare in the tenth frame earns one more ball and a strike two, on a new rack of the same twenty cards. A perfect game is 300.'
+  - 'Interpretations: pins in a group of three touch in a chain, not necessarily all at once. "First play" is the first made on the rack, whichever ball it comes on. After a strike in the tenth frame the next rack plays its own first and second ball.'
+params: {mode: bowling}
+board:
+  generator: {type: grid, width: 1, height: 1, adjacency: orthogonal4}
+  style: none
+seats:
+  - {seat: 1, color: red, label: Player}
+pieces:
+  token: {label: Token, code: T, shape: disc}
+turn_order:
+  type: round-robin
+  seats: [1]
+win_condition: {type: ruleset}
+cards:
+  suits:
+    hearts: {label: Hearts, color: '#c62f2f', symbol: ♥}
+    spades: {label: Spades, color: '#1f2630', symbol: ♠}
+  suit_order: [hearts, spades]
+  decks:
+    main:
+      label: Twenty cards
+      rank_list: A 2 3 4 5 6 7 8 9 10
+  back: {color: '#2f6f5e'}
+  zones:
+    - {id: pina, label: Pin a, scope: table, visibility: all, layout: row}
+    - {id: pinb, label: Pin b, scope: table, visibility: all, layout: row}
+    - {id: pinc, label: Pin c, scope: table, visibility: all, layout: row}
+    - {id: pind, label: Pin d, scope: table, visibility: all, layout: row}
+    - {id: pine, label: Pin e, scope: table, visibility: all, layout: row}
+    - {id: pinf, label: Pin f, scope: table, visibility: all, layout: row}
+    - {id: ping, label: Pin g, scope: table, visibility: all, layout: row}
+    - {id: pinh, label: Pin h, scope: table, visibility: all, layout: row}
+    - {id: pini, label: Pin i, scope: table, visibility: all, layout: row}
+    - {id: pinj, label: Pin j, scope: table, visibility: all, layout: row}
+    - {id: ball1, label: Ball pile 1, scope: table, visibility: flag, layout: stack}
+    - {id: ball2, label: Ball pile 2, scope: table, visibility: flag, layout: stack}
+    - {id: ball3, label: Ball pile 3, scope: table, visibility: flag, layout: stack}
+    - {id: gone, label: Out of play, scope: table, visibility: all, layout: row}
+guide:
+  tabs:
+    - {id: rules, title: Rules, file: bowling.md}

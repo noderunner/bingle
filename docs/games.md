@@ -8,7 +8,8 @@ vocabulary and [mcp.md](mcp.md) for the training side (planes, action IDs).
 |---|---|---|---|---|---|---|
 | **Amazons** (`amazons`) | 0.3.0 | 10×10 squares | 2 | slide | end/mover-wins | `amazons` `amazons-6` |
 | **Ataxx** (`ataxx`) | 0.3.0 | 7×7 squares | 2 | leap | end/most |  |
-| **Blooms** (`blooms`) | 0.4.0 | hexagon, 5 per side | 2 | ruleset (Go) | victory points | `blooms` `blooms-10` `blooms-4` `blooms-6` `blooms-8` |
+| **Blooms** (`blooms`) | 0.5.0 | hexagon, 5 per side | 2 | ruleset (Go) | victory points | `blooms` `blooms-10` `blooms-4` `blooms-6` `blooms-8` |
+| **Bowling Solitaire** (`bowling-solitaire`) | 0.2.0 | 1×1 squares | 1 | ruleset (Go) | victory points |  |
 | **Brandubh** (`brandubh`) | 0.1.0 | 7×7 squares | 2 | slide | absent, end/mover-wins, reach |  |
 | **Breakthrough** (`breakthrough`) | 0.1.0 | 8×8 squares | 2 | step | end/mover-wins, reach |  |
 | **Courtfall** (`courtfall-1.0.0`) | 1.0.0 | hexagon, 4 per side | 2 | ruleset (Go) | victory points |  |
@@ -24,10 +25,10 @@ vocabulary and [mcp.md](mcp.md) for the training side (planes, action IDs).
 | **Meridians** (`meridians`) | 0.1.2 | hexagon, 6 and 7 per side | 2 | ruleset (Go) | victory points | `meridians` `meridians-5` `meridians-7` |
 | **Mycelium** (`mycelium-1.0.0`) | 1.0.0 | hexagon, 5 per side | 2 | ruleset (Go) | victory points |  |
 | **Nyet!** (`nyet`) | 0.2.1 | 1×1 squares | 4 | ruleset (Go) | victory points | `nyet` `nyet-2` `nyet-3` `nyet-5` |
-| **Onitama** (`onitama`) | 0.1.1 | 5×5 squares | 2 | ruleset (Go) | victory points |  |
+| **Onitama** (`onitama`) | 0.1.2 | 5×5 squares | 2 | ruleset (Go) | victory points |  |
 | **Pente** (`pente`) | 0.3.0 | 13×13 points | 2 | place | end/draw, line, pool |  |
 | **Reversi** (`reversi`) | 0.3.1 | 8×8 squares | 2 | place | end/most |  |
-| **Solitaire** (`solitaire`) | 0.2.0 | 1×1 squares | 1 | ruleset (Go) | victory points | `bowling-solitaire` `freecell` `solitaire` `solitaire-draw-3` `spider` `spider-1` `spider-2` |
+| **Solitaire** (`solitaire`) | 0.2.1 | 1×1 squares | 1 | ruleset (Go) | victory points | `freecell` `solitaire` `solitaire-draw-3` `spider` `spider-1` `spider-2` |
 | **Tak** (`tak-5x5`) | 0.1.0 | 5×5 squares | 2 | move-stack, place | connect, end/most | `tak-3x3` `tak-4x4` `tak-5x5` `tak-6x6` `tak-7x7` `tak-8x8` |
 | **Yavalath** (`yavalath`) | 0.3.0 | hexagon, 5 per side | 2 | place | end/draw, line, line (lose) |  |
 | **Yinsh** (`yinsh`) | 0.1.1 | graph, 85 nodes | 2 | ruleset (Go) | victory points | `yinsh` `yinsh-blitz` |

@@ -20,8 +20,10 @@ var allVariants = []string{"solitaire", "solitaire-draw-3", "spider", "spider-2"
 func game(t testing.TB, id string) *catalog.CompiledGame {
 	t.Helper()
 	cat := catalog.NewCatalog()
-	if err := cat.RegisterModule(solitaire.Module()); err != nil {
-		t.Fatal(err)
+	for _, m := range []catalog.Module{solitaire.Module(), solitaire.BowlingModule()} {
+		if err := cat.RegisterModule(m); err != nil {
+			t.Fatal(err)
+		}
 	}
 	g, ok := cat.Get(id)
 	if !ok {
