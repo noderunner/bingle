@@ -765,7 +765,10 @@ cards:
   cards. The position stores the table as `cards`. What a player is sent, and
   what a bot plans on, follows the zones' `visibility`: a zone that hides a
   face (anything but `all`, a face-down deck included) makes the game one with
-  secrets. Drawing during play, dice and using a card are not declared yet.
+  secrets. A selection that shows a seat a card it could not see before cannot
+  be taken back, and so ends the impulse
+  ([ADR 0121](decisions/0121-a-card-turned-up-cannot-be-taken-back.md)). Drawing
+  during play and dice are not declared yet; using a card is `card-move`.
 * Board `style: "none"` draws no board (the cards are the table).
 * In Go, `internal/engine/cards` holds a game's cards in a `Table` of zones: it
   shuffles with a seedable `RNG`, deals, moves and flips cards, and `Redact` /

@@ -1,6 +1,6 @@
 # 0121. A card turned up cannot be taken back
 
-Status: proposed (2026-11-06). It is stage 1 of the patience vocabulary plan (`docs/history/patience-vocabulary-plan.md`
+Status: accepted (2026-11-06). It is stage 1 of the patience vocabulary plan (`docs/history/patience-vocabulary-plan.md`
 on `more-plans`), and settles what [ADR 0119](0119-a-seeded-deal-at-the-start.md) left open: drawing during play.
 
 ## Context

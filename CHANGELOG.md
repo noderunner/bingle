@@ -4,6 +4,11 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.89.0 - 2026-11-06
+
+### Bingle Core 0.89.0
+- **For game authors: a card turned up stays turned up.** In a game definition with cards, a move that shows a player a card they could not see before can no longer be taken back, so nobody can peek and choose again. It is the rule Solitaire already plays by. Games already in the catalog play as before.
+
 ## 0.88.1 - 2026-11-06
 
 ### Bingle Core 0.88.1
