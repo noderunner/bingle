@@ -130,3 +130,6 @@ lines. The case that motivated it is Cthulhu Wars, whose definition is mostly ma
   definition converted; anchors allowed; unknown fields rejected; a generated JSON Schema;
   hand-written documents in YAML. Added `!include` for splitting large definitions across
   files. yaml.v3 is already a dependency through the auth work.
+- 2026-10-31: implementation started on branch `dsl-yaml` (ADR 0075). Found while building:
+  a number written `248.0` comes back `248` through the JSON form; unquoted dates are kept as
+  the text written rather than turned into times.

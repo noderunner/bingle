@@ -189,7 +189,7 @@ Neither is a commercial question; they go, not to the private overlay.
 - **Games already in a database must survive.** A finished game of a retired type stays in
   the player's history, readable as a move list, with the same tombstone discipline that
   uninstalling a pack needs. A game still in progress is ended at the upgrade with no result,
-  and the changelog says so. This is the first real use of the tombstone, so it is built
+  and the changelog says so (confirmed 2026-10-31). This is the first real use of the tombstone, so it is built
   here and reused by data packs.
 - Docs, guides, icons, the home page's lists and the changelog drop them.
 
@@ -245,3 +245,4 @@ which is now built.
   other game stays public with its designers credited. Tic-Tac-Toe and Connect Four are
   retired outright (Tic-Tac-Toe survives as a test fixture), with tombstones for games
   already played. Reversi drops "(Othello)".
+- 2026-10-31: confirmed that games of a retired type still in progress end at the upgrade.
