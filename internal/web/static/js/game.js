@@ -631,8 +631,8 @@ function isAreaMap() {
 }
 
 // The game's own page script (ADR 0124): the parts of a ruleset's view only it
-// knows how to draw (Cthulhu Wars' counters, spellbooks, unit cards, battles and
-// awakenings). A game without them draws its view without these parts.
+// knows how to draw (a game's own counters, marks and unit cards). A game
+// without them draws its view without these parts.
 const page = () => (S.info && S.info.page) || {};
 const ask = (name, fallback) => (...args) => (page()[name] ? page()[name](...args) : fallback);
 // A counter's pictogram is the game's when it draws one, else every game's.
@@ -1028,7 +1028,7 @@ function choosePiece(piece) {
 	afterBuilderChange();
 }
 
-/** Whether a Pass would give up Power: Cthulhu Wars asks first, as an impulse of its own. */
+/** Whether a Pass would give up something the seat still has to spend: the game asks first, as an impulse of its own. */
 function passCostsPower(id) {
 	return id === "pass" && !inAnalysis() && !S.tut && !!seatGlyph(actingSeat()) && powerOf(actingSeat()) > 0;
 }
@@ -2129,7 +2129,7 @@ async function onEvent(env) {
 			S.game.status = d.status;
 			syncMe();
 			// The broadcast position is the public one: a player's own
-			// secrets (Elder Sign values) come from their own view.
+			// secrets (the values of hidden tokens) come from their own view.
 			if (isRuleset() && S.me.seat && S.me.name) {
 				try {
 					const own = await api.state(code, null, S.me.name);
@@ -2349,7 +2349,7 @@ function render() {
 	const areas = S.info.board.style === "areas";
 	document.body.classList.toggle("wide-game", areas);
 	// Three or more cults: their panels live beside the map, so the scores,
-	// spellbooks and Power are in view without scrolling.
+	// cards and counters are in view without scrolling.
 	let cults = null;
 	if (many) {
 		cults = h("div", { class: "cult-stack", id: "cult-stack" });
@@ -3242,11 +3242,11 @@ function resultMessage() {
 		discs: "on discs",
 		"no-moves": "because the opponent cannot move",
 		breakthrough: "by breaking through",
-		doom: "with the most Doom and all six spellbooks",
-		"instant-death": "after Instant Death",
 		draw: "",
 		retired: "",
 		cleared: "with every card home",
+		// A game's own endings, in its own words (its page script's endReasons).
+		...(page().endReasons || {}),
 	};
 	const how = g.end_reason ? ` ${reasons[g.end_reason] || "(" + g.end_reason + ")"}` : "";
 	const detail = g.end_detail ? ` [${g.end_detail}]` : "";
@@ -3257,7 +3257,8 @@ function resultMessage() {
 	}
 	if (g.winner_seat === null || g.winner_seat === undefined) {
 		if (g.end_reason === "abandoned") return "Game over — its tournament was abandoned, so it has no result.";
-		if (g.end_reason === "humanity") return `Game over — humanity survives: no cult had all six spellbooks${detail}.`;
+		const drawn = page().drawnMessage && page().drawnMessage(g.end_reason, detail);
+		if (drawn) return drawn;
 		return `Game over — a draw${how ? " " + how : ""}${detail}.`;
 	}
 	const who = `${seatLabel(g.winner_seat)} (${displayName(g.winner_seat)})`;
@@ -3425,11 +3426,11 @@ function seatStrip(seat) {
 		const stats = h("span", { class: "seat-stats" });
 		head.append(stats);
 		for (const c of sv.counters || []) {
-			// A counter may say what its value is made of (the Doom: Gates, Rituals, gifts, Elder Signs).
+			// A counter may say what its value is made of.
 			const title = `${c.label}: ${c.value}${c.max ? " of " + c.max : ""}${c.note ? " (" + c.note + ")" : ""}`;
 			const icon = statIcon(c.id, c.label, 15);
 			if (icon) {
-				// The words Power, Doom, Elder Signs and Gates are pictograms.
+				// A counter with a pictogram shows it in place of its name.
 				stats.append(h("span", { class: "score counter stat", title, "data-counter": c.id, "aria-label": title }, icon, h("strong", {}, String(c.value))));
 				continue;
 			}
@@ -3477,7 +3478,7 @@ const unitTip = (...args) => (cultCardsView().unitTip ? cultCardsView().unitTip(
 // Reactions: the dock
 // ---------------------------------------------------------------------------
 //
-// Reactions (Devolve, Necrophagy, Madness…) are abilities used on another
+// Reactions are abilities used on another
 // player's turn: each time one is available the game asks its owner, which
 // holds the table up. So the answer "no" is given for the player by default,
 // and the player chooses the occasions on which they want to be asked instead
@@ -3561,20 +3562,16 @@ function helpModal(id, title, blocks) {
 	close.focus();
 }
 
-/** The explanation behind the "?" of "When I'm targeted". */
+/** The explanation behind the "?" of "When I'm targeted": the game's own words, when its page script has them. */
 function showTargetedHelp() {
-	helpModal("ask-targeted-dialog", "When I'm targeted", [
-		"Reactions are abilities you can use on another player's turn — Devolve, Necrophagy, Cannibalism, Madness, Energy Nexus and the Unspeakable Oath. Each time another player acts, the game works out whether you could react, and would then wait for your answer. So that nobody holds the table up, your reactions are passed for you unless you ask to be asked.",
-		"With “When I'm targeted” on (it is by default) you are asked whenever an opponent's action is aimed at:",
-		[
-			"you, the player — an action that affects you directly, such as The Thousand Forms, Ghroth, a battle declared against you, a gift of Doom or Power, or a Cultist of yours being captured;",
-			"one of your units — a Cultist or Monster of yours that is captured, attacked, swapped or replaced;",
-			"an area where you have a presence — any unit of yours, or a Gate you control. An enemy that moves into it, recruits or summons in it, builds a Gate or awakens a Great Old One there, or brings Cthulhu up out of the sea there, is aiming at that area.",
-		],
-		"Only actions count. What happens as part of a battle — Madness sending a unit of yours to an area its player chooses, retreats, kills and pains, post-battle abilities — is not an action, so it never opens a question for you.",
-		"When you are not targeted, your reaction is passed for you and the move list shows it as an automatic pass. Switch the option off to be asked less, or add “After any other player's action” or chosen players below to be asked more.",
-		"Each reaction has boxes of its own, so you can be asked about one every time and about another only when it is aimed at you. Madness starts with every box ticked: you are asked about it in every battle, whoever fights, until you change it.",
-	]);
+	const words = page().reactionHelp
+		? page().reactionHelp()
+		: [
+				"Reactions are abilities you can use on another player's turn. Each time another player acts, the game works out whether you could react, and would then wait for you.",
+				"With “When I'm targeted” on (it is by default) you are asked whenever an opponent's action is aimed at you, at something of yours or at a place where you have something.",
+				"When you are not targeted, your reaction is passed for you and the move list shows it as an automatic pass. Switch the option off to be asked less, or add “After any other player's action” or chosen players below to be asked more.",
+		  ];
+	helpModal("ask-targeted-dialog", "When I'm targeted", words);
 }
 
 /**
@@ -4008,7 +4005,7 @@ function saveAutoPlay(patch) {
 	return autoplaySaves;
 }
 
-/** A cult's details under a heading each: faction ability, spellbooks and requirements, Elder Signs, units. */
+/** A seat's details under a heading each, as the game's view gives them. */
 
 
 
@@ -4176,7 +4173,7 @@ function cardsPanel() {
 
 
 // Battles and awakenings are the game's to draw (its page script's battles,
-// ADR 0124: Cthulhu Wars' battle panel, theatre and emergences); a game without
+// ADR 0124: a battle panel and theatre, and an awakening's show); a game without
 // them has none of these.
 let battleParts = null;
 function battleView() {
@@ -4191,13 +4188,13 @@ const emergesBadge = (unit, e) => battleView().emergesBadge(unit, e);
 
 /** The parts of this page a game's own view needs (see battleView). */
 function viewContext() {
-	return { S, abilitiesBlock, actingSeat, activeBuilder, areaName, bookRequirements, closeUnitInfo, code, colorOf, currentCells, displayName, drawBoard, enterBlock, expandToggle, inAnalysis, isLive, isMyImpulse, isRuleset, latestLog, neutralTip, onToken, pendingSelections, pieceLook, rulesetView, seatGlyph, seatInk, seatLabel, seatName, spellMark, statIcon, tokenOk, unitCardFor, unitText };
+	return { S, abilitiesBlock, actingSeat, actionCost, activeBuilder, areaName, bookRequirements, chooseAction, closeUnitInfo, code, colorOf, currentCells, displayName, drawBoard, enterBlock, expandToggle, inAnalysis, isLive, isMyImpulse, isRuleset, latestLog, neutralTip, onToken, pendingSelections, pieceLook, rulesetView, seatGlyph, seatInk, seatLabel, seatName, spellMark, statIcon, tokenOk, unitCardFor, unitText, unitTip };
 }
 
 function handPanel(seat) {
 	const pools = S.info.pools || [];
 	if (!pools.length) return null;
-	// Games with their own unit panels (Cthulhu Wars) have no hands.
+	// Games with their own unit panels have no hands.
 	if (S.info.display && S.info.display.no_hands) return null;
 	const color = colorOf(seat);
 	const reserves = (currentState().reserves || {})[color] || {};
@@ -4340,12 +4337,8 @@ function moveBar() {
 			if (id === "done" && rv && rv.reaction && rv.reaction.seat === acting) {
 				label = `Pass (do not use ${rv.reaction.ability})`;
 			}
-			if (id === "reveal") {
-				// Only your own view knows what the signs are worth.
-				const sum = ((rv && rv.seats && rv.seats[String(acting)]) || {}).signs || [];
-				const total = sum.reduce((a, c) => a + c, 0);
-				if (total) label += ` (+${total} Doom)`;
-			}
+			// The game's page script may say more on a button (what it is worth just now).
+			if (page().actionLabel) label = page().actionLabel(id, label, rv, acting);
 			// A unit to summon or awaken has a button of its own: its icon, and
 			// what it costs just now; the details are in the card that opens
 			// on hover.
@@ -4482,112 +4475,29 @@ function actionCost(id) {
 	return typeof c === "number" && c > 0 ? c : null;
 }
 
-/** The button that summons or awakens one kind of unit: icon, name and the cost it has now. */
-function unitButton(kind, type, seat, actionId) {
-	const unit = unitCardFor(seat, type);
-	if (!unit) return null;
-	const color = colorOf(seat);
-	const piece = S.info.pieces.find((p) => p.type === type);
-	const id = actionId || `${kind}-${type}`;
-	const verb = kind === "awaken" ? "Awaken" : kind === "recruit" ? "Recruit" : "Summon";
-	const cost = actionCost(id) ?? unit.cost;
-	const button = h(
-		"button",
-		{
-			id: `action-${id}`,
-			class: "summon-button unit-button",
-			"data-action": id,
-			"data-piece": type,
-			"data-cost": cost,
-			onclick: () => chooseAction(id),
-			"aria-label": `${verb} ${unit.name} for ${cost} Power`,
-		},
-		pieceIcon(piece ? piece.shape : "disc", color, 22),
-		// The hover card names the unit. A phone has no hover, and keeps the words.
-		kind !== "awaken" && !isMobileLayout() ? null : h("span", { class: "summon-name" }, `${verb} ${unit.name}`),
-		h("span", { class: "summon-cost", title: "Power" }, `${cost}`, statIcon("power", "Power", 13))
-	);
-	hoverCard(button, () => unitTip(unit, color, cost));
+// Drawn by the game's page script (actionList, ADR 0124); a game without one has none of these.
+let actionListParts = null;
+function actionListView() {
+	if (!actionListParts) actionListParts = (page().actionList && page().actionList(viewContext())) || {};
+	return actionListParts;
+}
+const actionButton = (...args) => (actionListView().actionButton ? actionListView().actionButton(...args) : plainActionButton(...args));
+
+/** An action's button for a game whose page draws none of its own: its name, and its rule on hover. */
+function plainActionButton(id, def, label) {
+	const button = h("button", { id: `action-${id}`, "data-action": id, onclick: () => chooseAction(id) }, h("span", {}, label));
+	if (def && def.hint) {
+		hoverCard(button, () =>
+			h("div", { class: "unit-tip action-tip" }, h("div", { class: "unit-tip-head" }, h("div", { class: "unit-tip-title" }, h("strong", {}, label || def.label))), h("p", { class: "unit-text small" }, def.hint))
+		);
+	}
 	return button;
 }
+const unitButton = (...args) => (actionListView().unitButton ? actionListView().unitButton(...args) : null);
 
-/** The hover card of an action: its name, what it costs just now, and the rule in a few lines. */
-function actionTip(def, id, label) {
-	const box = h("div", { class: "unit-tip action-tip" });
-	const cost = actionCost(id);
-	// A spellbook's rule reads "Timing: what it does".
-	let timing = "";
-	let text = def.hint || "";
-	if (id.startsWith("book-")) {
-		const i = text.indexOf("\n");
-		if (i > 0) {
-			timing = text.slice(0, i);
-			text = text.slice(i + 1);
-		}
-	}
-	box.append(
-		h(
-			"div",
-			{ class: "unit-tip-head" },
-			h(
-				"div",
-				{ class: "unit-tip-title" },
-				h("strong", {}, label || def.label),
-				timing ? h("span", { class: "muted small" }, timing) : cost !== null ? h("span", { class: "muted small" }, `${cost} Power`) : null
-			)
-		)
-	);
-	if (cost !== null && timing) box.append(h("p", { class: "action-cost small" }, h("strong", {}, "Cost: "), `${cost} Power`));
-	if (text) box.append(h("p", { class: "unit-text small" }, text));
-	if (def.source === "book") {
-		box.append(h("p", { class: "action-source small muted" }, spellMark(true, "Unlocked spellbook", 14), " An ability of a spellbook you have unlocked."));
-	} else if (def.source === "requirement") {
-		box.append(h("p", { class: "action-source small muted" }, spellMark(false, "Spellbook requirement", 14), " Meets a spellbook requirement: it earns a spellbook of your choice."));
-	}
-	return box;
-}
 
-/** A button of the action list: its name with the Power it costs just now, and a card with the rule on hover. */
-function actionButton(id, def, label, rv) {
-	const cost = actionCost(id);
-	// "Pay 4 Power" and "Give 3 Power to …" say what they cost already.
-	const named = /^(pay|bestow)-/.test(id);
-	const priced = cost !== null && !named;
-	// An ability a spellbook gives wears a spellbook; an action that meets a
-	// spellbook requirement wears one greyed out (the book is still to come).
-	const source = def && def.source ? def.source : "";
-	const mark =
-		source === "book"
-			? spellMark(true, "Unlocked spellbook")
-			: source === "requirement"
-			? spellMark(false, "Spellbook requirement")
-			: null;
-	const button = h(
-		"button",
-		{
-			id: `action-${id}`,
-			class: source ? `has-spell spell-${source}` : null,
-			"data-action": id,
-			"data-cost": cost === null ? null : cost,
-			"data-source": source || null,
-			"aria-label": priced ? `${label}, ${cost} Power` : label,
-			onclick: () => chooseAction(id),
-		},
-		mark,
-		// One span, as a button spaces out its children: the icon sits among the words.
-		h("span", {}, ...powerWords(label)),
-		priced ? h("span", { class: "summon-cost", title: "Power" }, `${cost}`, statIcon("power", "Power", 13)) : null
-	);
-	if (def && def.hint) hoverCard(button, () => actionTip(def, id, label));
-	return button;
-}
 
-/** A label with the word Power drawn as its icon. */
-function powerWords(label) {
-	return String(label)
-		.split(/\bPower\b/)
-		.flatMap((part, i) => (i ? [statIcon("power", "Power", 13), part] : [part]));
-}
+
 
 /** One of the two directions of play, spelled out as who plays after whom. */
 function directionButton(id, rv) {
@@ -5017,7 +4927,7 @@ function refreshOptions() {
 			settingToggle("hints", "opt-hints", "Highlight legal moves", "bingle.hints"),
 			settingToggle("lastMove", "opt-lastmove", "Highlight last move", "bingle.lastMove"),
 			settingToggle("animate", "opt-animate", "Animate moves", "bingle.animate"),
-			...(page().battles ? [settingToggle("battleAnim", "opt-battle-anim", "Battle and Great Old One animations", "bingle.battleAnim")] : [])
+			...(page().battles ? [settingToggle("battleAnim", "opt-battle-anim", page().battleOption || "Battle animations", "bingle.battleAnim")] : [])
 		);
 		if (hasHexStyles(S.info)) {
 			const styleSel = h("select", { id: "opt-hex-style", "aria-label": "Board style" });
@@ -5439,7 +5349,7 @@ function escapeRegExp(text) {
 
 /**
  * One line of the log: cult names in their colours and the verb in bold (or
- * the "Spellbook:" label that opens an effect).
+ * the label that opens an effect).
  */
 function logLine(text) {
 	const banner = /^—\s*(.+?)\s*—$/.exec(text);

@@ -19,6 +19,8 @@ export { spellMark, enterBlock, bookRequirements, abilitiesBlock, unitText, neut
 export { battles } from "./cw-view-battles.js";
 // The cults' cards, the round and its Ritual track, units and neutral items.
 export { cultCards } from "./cw-view-cards.js";
+// Its actions' buttons: costs in Power, spellbook marks, units to summon and awaken.
+export { actionList } from "./cw-view-actions.js";
 export { lobbyPool } from "./cw-lobby.js";
 export { batchSections, endReason } from "./cw-batches.js";
 export { factionName as pickName, factionColor as pickColor } from "./cw-names.js";
@@ -97,3 +99,39 @@ function cthulhuIcon() {
 	}
 	return svg;
 }
+
+/** The explanation of "When I'm targeted", in Cthulhu Wars' words: its reactions and what aims at a cult. */
+export function reactionHelp() {
+	return [
+		"Reactions are abilities you can use on another player's turn — Devolve, Necrophagy, Cannibalism, Madness, Energy Nexus and the Unspeakable Oath. Each time another player acts, the game works out whether you could react, and would then wait for your answer. So that nobody holds the table up, your reactions are passed for you unless you ask to be asked.",
+		"With “When I'm targeted” on (it is by default) you are asked whenever an opponent's action is aimed at:",
+		[
+			"you, the player — an action that affects you directly, such as The Thousand Forms, Ghroth, a battle declared against you, a gift of Doom or Power, or a Cultist of yours being captured;",
+			"one of your units — a Cultist or Monster of yours that is captured, attacked, swapped or replaced;",
+			"an area where you have a presence — any unit of yours, or a Gate you control. An enemy that moves into it, recruits or summons in it, builds a Gate or awakens a Great Old One there, or brings Cthulhu up out of the sea there, is aiming at that area.",
+		],
+		"Only actions count. What happens as part of a battle — Madness sending a unit of yours to an area its player chooses, retreats, kills and pains, post-battle abilities — is not an action, so it never opens a question for you.",
+		"When you are not targeted, your reaction is passed for you and the move list shows it as an automatic pass. Switch the option off to be asked less, or add “After any other player's action” or chosen players below to be asked more.",
+		"Each reaction has boxes of its own, so you can be asked about one every time and about another only when it is aimed at you. Madness starts with every box ticked: you are asked about it in every battle, whoever fights, until you change it.",
+	];
+}
+
+/** Its endings, for the game-over line ("Great Cthulhu won with …"). */
+export const endReasons = { doom: "with the most Doom and all six spellbooks", "instant-death": "after Instant Death" };
+
+/** The game-over line of a game nobody won, in its own words, or null. */
+export function drawnMessage(reason, detail) {
+	return reason === "humanity" ? `Game over — humanity survives: no cult had all six spellbooks${detail}.` : null;
+}
+
+/** An action's button label with what it is worth just now: revealing Elder Signs says their Doom. */
+export function actionLabel(id, label, rv, acting) {
+	if (id !== "reveal") return label;
+	// Only your own view knows what the signs are worth.
+	const sum = ((rv && rv.seats && rv.seats[String(acting)]) || {}).signs || [];
+	const total = sum.reduce((a, c) => a + c, 0);
+	return total ? `${label} (+${total} Doom)` : label;
+}
+
+/** The game options' name for its battles and awakenings. */
+export const battleOption = "Battle and Great Old One animations";

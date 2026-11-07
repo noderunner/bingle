@@ -977,12 +977,13 @@ modules by absolute path (`/static/js/util.js`), so each is loaded once. Cthulhu
 | `createSetup(opts)`, `mountTester(host, info)`, `syncPractice(id)` | `home.js`: the setup picker, the Animation Tester tab, the practice wizard |
 | `lobbyPool(info)` | `lobby.js`, what a table was set up with |
 | `batchSections(rep, other, length, redraw)`, `pickName`, `pickColor`, `endReason`, `optionName` | `batches.js`, a practice batch's report |
-| `statIcon`, `spellMark`, `enterBlock`, `bookRequirements`, `abilitiesBlock`, `unitText`, `neutralTip` | `game.js`, parts of a ruleset's view (counters, spellbooks, unit cards) |
-| `createBattleTheatre(opts)`, `createEmergence(opts)`, `hasEmergence(type)` | `game.js`: battles and a Great Old One's awakening, and whether to offer their option |
+| `statIcon`, `spellMark`, `enterBlock`, `bookRequirements`, `abilitiesBlock`, `unitText`, `neutralTip` | `game.js`, parts of a ruleset's view (counters, marks, unit cards); `stat-icons.js` draws every game's own pictograms |
+| `battles(ctx)`, `cultCards(ctx)`, `actionList(ctx)` | `game.js`: factories given the page's parts (`viewContext`) that draw the battles and awakenings, the seats' cards, and the action buttons with their costs |
+| `reactionHelp()`, `endReasons`, `drawnMessage(reason, detail)`, `actionLabel(id, label, rv, seat)`, `battleOption` | `game.js`: the reaction help, the game-over line, a button's label, an option's name, in the game's words |
 
-No shared file imports a game's script or tests a game's id: a game without a script is drawn without these
-parts. `game.js` still draws much of a ruleset's view (the Doom track, Gates, the cults pane, the reaction
-options) in Cthulhu Wars' words, for any game whose view carries those parts.
+No shared file imports a game's script, tests a game's id or uses its words: a game without a script is drawn
+without these parts, with a plain button for each action. Some generic mechanisms keep names they were given for
+Cthulhu Wars (a seat's "cult" choice, the `gate:` token prefix), which the API shares.
 
 The schema is `internal/web/look`: a game's module loads the file with `look.MustLoad`, which
 refuses an unknown key, and `tests/look` holds every shipped file to its games with `look.Check`.
