@@ -44,9 +44,8 @@ func families(t *testing.T) map[string]family {
 // zones, suits and variants, and previews only pieces in played colours.
 func TestEveryLookFitsItsGame(t *testing.T) {
 	fams := families(t)
-	// Every game but Cthulhu Wars, whose look moves with it (ADR 0124), and
-	// the card games, which move next.
-	for _, id := range []string{"blooms", "tak-5x5", "fendo", "fist", "meridians", "hive", "onitama", "yinsh", "courtfall-1.0.0", "mycelium-1.0.0",
+	// Every game but Cthulhu Wars, whose look moves with it (ADR 0124).
+	for _, id := range []string{"nyet", "solitaire", "bowling-solitaire", "blooms", "tak-5x5", "fendo", "fist", "meridians", "hive", "onitama", "yinsh", "courtfall-1.0.0", "mycelium-1.0.0",
 		"gomoku", "hex-11", "draughts", "breakthrough", "reversi", "go-9x9", "yavalath", "havannah-8", "amazons", "ataxx", "pente", "brandubh"} {
 		if _, ok := fams[id]; !ok {
 			t.Errorf("%s brings no look", id)
@@ -121,5 +120,19 @@ func TestLoadChecksEveryKey(t *testing.T) {
 		if _, err := look.Load(fstest.MapFS{look.FileName: {Data: []byte(bad)}}); err == nil {
 			t.Errorf("%q: loaded", bad)
 		}
+	}
+}
+
+// A zone's layout is the look's, and one the page does not draw is caught.
+func TestCheckCatchesAZoneLayout(t *testing.T) {
+	f := families(t)["nyet"]
+	if err := look.Check([]byte(`{"cards":{"zones":{"hand":{"layout":"fan"}}}}`), "nyet", f.games); err != nil {
+		t.Error(err)
+	}
+	if err := look.Check([]byte(`{"cards":{"zones":{"hand":{"layout":"heap"}}}}`), "nyet", f.games); err == nil || !strings.Contains(err.Error(), `unknown layout "heap"`) {
+		t.Errorf("a bad layout: %v", err)
+	}
+	if err := look.Check([]byte(`{"cards":{"zones":{"pocket":{}}}}`), "nyet", f.games); err == nil {
+		t.Error("a zone the game lacks was accepted")
 	}
 }

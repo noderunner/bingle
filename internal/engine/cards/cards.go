@@ -347,10 +347,10 @@ func (t *Table) View(cc *catalog.CompiledCards, viewer int) []ZoneView {
 			}
 		}
 		def := cc.Zones[zone]
-		if vis == "owner" && owner != 0 && owner == viewer && def.Layout != "stack" && seen == len(cards) {
+		if vis == "owner" && owner != 0 && owner == viewer && !def.Pile && seen == len(cards) {
 			sortHand(cc, cards)
 		}
-		if seen > 0 || (def.Layout != "stack" && !def.Counts) {
+		if seen > 0 || (!def.Pile && !def.Counts) {
 			zv.Cards = cards
 		}
 		out = append(out, zv)

@@ -1,0 +1,18 @@
+# How the web page draws Nyet! (ADR 0124). The rules are in the definition; nothing
+# here changes them, and other clients draw the game their own way.
+board:
+  style: none
+pieces:
+  token: {shape: disc}
+cards:
+  back: {color: '#5b4a8a', text: NYET!}
+  suits:
+    red: {color: '#c62f2f'}
+    blue: {color: '#1f2630'}
+    yellow: {color: '#c62f2f'}
+    green: {color: '#1f2630'}
+  zones:
+    hand: {layout: fan}
+    trick: {layout: row}
+    last: {layout: row}
+    loot: {layout: splay}

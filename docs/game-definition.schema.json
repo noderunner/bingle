@@ -1596,9 +1596,9 @@
         "label": {
           "type": "string"
         },
-        "layout": {
-          "description": "Layout is how clients draw it: \"fan\" (a hand, overlapping, all faces), \"row\" (side by side), \"stack\" (a pile showing its top card and count), \"splay\" (a cascade, each card partly covering the last) or \"grid\".",
-          "type": "string"
+        "pile": {
+          "description": "Pile makes the zone a pile: a seat's view lists none of its cards it cannot see, only their count, and a pile a seat holds is not sorted into hand order. How a client draws any zone is its own (ADR 0124: the web page's layouts are in the game's web.yaml).",
+          "type": "boolean"
         },
         "scope": {
           "description": "Scope is \"seat\" (every seat has its own copy: a hand, a trick pile) or \"table\" (one shared by everyone: the deck, the play area).",

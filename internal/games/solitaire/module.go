@@ -13,9 +13,10 @@ import (
 
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/engine/dsl"
+	"github.com/noderunner/bingle/internal/web/look"
 )
 
-//go:embed solitaire.yaml bowling.yaml
+//go:embed solitaire.yaml bowling.yaml web
 var definitionFS embed.FS
 
 // definition is the definition as JSON, converted once.
@@ -39,7 +40,7 @@ func Module() catalog.Module {
 	if err != nil {
 		panic(err)
 	}
-	return catalog.Module{ID: "solitaire", Definition: definition(), Assets: guide, Upgrade: Upgrade}
+	return catalog.Module{ID: "solitaire", Definition: definition(), Assets: guide, Upgrade: Upgrade, Web: look.MustLoadFile(definitionFS, "web/solitaire.yaml")}
 }
 
 // BowlingModule returns Bowling Solitaire's catalog.Module: the same ruleset,
@@ -53,5 +54,5 @@ func BowlingModule() catalog.Module {
 	if err != nil {
 		panic(err)
 	}
-	return catalog.Module{ID: "bowling-solitaire", Definition: bowlingDefinition(), Rules: New(), Assets: guide, Tutorials: tutorials}
+	return catalog.Module{ID: "bowling-solitaire", Definition: bowlingDefinition(), Rules: New(), Assets: guide, Tutorials: tutorials, Web: look.MustLoadFile(definitionFS, "web/bowling.yaml")}
 }

@@ -2,7 +2,7 @@
 id: nyet
 name: Nyet!
 description: "Stefan Dorra's trick-taking game for 2–5 players: before every round the players take turns crossing choices off a board — who leads, discards, trump, super trump, what a trick is worth — then the leader picks a team and the round is played."
-version: 0.2.1
+version: 0.2.2
 designers: [Stefan Dorra]
 engine: ruleset
 rules:
@@ -16,24 +16,23 @@ rules:
 params: {rounds: 8, hand: 15}
 board:
   generator: {type: grid, width: 1, height: 1, adjacency: orthogonal4}
-  style: none
 seats:
   - {seat: 1, color: red, label: Wolf}
   - {seat: 2, color: blue, label: Crane}
   - {seat: 3, color: green, label: Tiger}
   - {seat: 4, color: yellow, label: Bear}
 pieces:
-  token: {label: Token, code: T, shape: disc}
+  token: {label: Token, code: T}
 turn_order:
   type: round-robin
   seats: [1, 2, 3, 4]
 win_condition: {type: ruleset}
 cards:
   suits:
-    red: {label: Hearts, color: '#c62f2f', symbol: ♥}
-    blue: {label: Spades, color: '#1f2630', symbol: ♠}
-    yellow: {label: Diamonds, color: '#c62f2f', symbol: ♦}
-    green: {label: Clubs, color: '#1f2630', symbol: ♣}
+    red: {label: Hearts, symbol: ♥}
+    blue: {label: Spades, symbol: ♠}
+    yellow: {label: Diamonds, symbol: ♦}
+    green: {label: Clubs, symbol: ♣}
   suit_order: [red, blue, yellow, green]
   decks:
     main:
@@ -52,29 +51,28 @@ cards:
         - {id: "11", value: 11, count: 1}
         - {id: "12", value: 12, count: 1}
         - {id: "13", value: 13, count: 1}
-  back: {color: '#5b4a8a', text: NYET!}
   zones:
     - id: deck
       label: Deck
       scope: table
       visibility: none
-      layout: stack
+      pile: true
       counts: true
-    - {id: hand, label: Hand, scope: seat, visibility: owner, layout: fan}
-    - {id: trick, label: The trick, scope: table, visibility: flag, layout: row}
-    - {id: last, label: Last trick, scope: table, visibility: all, layout: row}
+    - {id: hand, label: Hand, scope: seat, visibility: owner}
+    - {id: trick, label: The trick, scope: table, visibility: flag}
+    - {id: last, label: Last trick, scope: table, visibility: all}
     - id: won
       label: Tricks won
       scope: seat
       visibility: none
-      layout: stack
+      pile: true
       counts: true
-    - {id: loot, label: Loot, scope: seat, visibility: flag, layout: splay}
+    - {id: loot, label: Loot, scope: seat, visibility: flag}
     - id: discard
       label: Discarded
       scope: seat
       visibility: none
-      layout: stack
+      pile: true
       counts: true
 variants:
   - id: nyet-2

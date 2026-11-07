@@ -1,0 +1,23 @@
+# How the web page draws Bowling Solitaire (ADR 0124). The rules are in the definition; nothing
+# here changes them, and other clients draw the game their own way.
+board:
+  style: none
+pieces:
+  token: {shape: disc}
+cards:
+  back: {color: '#2f6f5e'}
+  suits:
+    hearts: {color: '#c62f2f'}
+    spades: {color: '#1f2630'}
+  zones:
+    pina: {layout: row}
+    pinb: {layout: row}
+    pinc: {layout: row}
+    pind: {layout: row}
+    pine: {layout: row}
+    pinf: {layout: row}
+    ping: {layout: row}
+    pinh: {layout: row}
+    pini: {layout: row}
+    pinj: {layout: row}
+    gone: {layout: row}

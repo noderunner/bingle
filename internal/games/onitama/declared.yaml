@@ -65,9 +65,9 @@ cards:
         - {id: eel, label: Eel, moves: [[-1, 1], [-1, -1], [1, 0]], tags: [blue]}
         - {id: cobra, label: Cobra, moves: [[-1, 0], [1, 1], [1, -1]], tags: [red]}
   zones:
-    - {id: box, label: Unused cards, scope: table, visibility: all, layout: stack, counts: true}
-    - {id: hand, label: Cards, scope: seat, visibility: all, layout: row}
-    - {id: side, label: Side card, scope: table, visibility: all, layout: row}
+    - {id: box, label: Unused cards, scope: table, visibility: all, pile: true, counts: true}
+    - {id: hand, label: Cards, scope: seat, visibility: all}
+    - {id: side, label: Side card, scope: table, visibility: all}
 # Five of the sixteen cards: two to each player and one to the side.
 deal:
   - {shuffle: box}

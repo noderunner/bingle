@@ -1,0 +1,24 @@
+# How the web page draws Solitaire (ADR 0124). The rules are in the definition; nothing
+# here changes them, and other clients draw the game their own way.
+board:
+  style: none
+pieces:
+  token: {shape: disc}
+cards:
+  back: {color: '#2f6f5e'}
+  suits:
+    hearts: {color: '#c62f2f'}
+    spades: {color: '#1f2630'}
+    diamonds: {color: '#c62f2f'}
+    clubs: {color: '#1f2630'}
+  zones:
+    t1: {layout: splay}
+    t2: {layout: splay}
+    t3: {layout: splay}
+    t4: {layout: splay}
+    t5: {layout: splay}
+    t6: {layout: splay}
+    t7: {layout: splay}
+    t8: {layout: splay}
+    t9: {layout: splay}
+    t10: {layout: splay}

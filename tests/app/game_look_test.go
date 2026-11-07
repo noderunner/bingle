@@ -52,7 +52,7 @@ func TestGameLook_ServedApartFromTheInfo(t *testing.T) {
 	} else if fenced := display["tints"].(map[string]any)["fenced"].(map[string]any); fenced["color"] != nil || fenced["label"] != "Fenced bloom" {
 		t.Errorf("the fenced tint keeps its words and loses its colour: %v", fenced)
 	}
-	if code, look := get("/api/game-defs/solitaire/web"); code != 200 || len(look) != 0 {
+	if code, look := get("/api/game-defs/cthulhu-wars/web"); code != 200 || len(look) != 0 {
 		t.Errorf("a game with no look: %d %v", code, look)
 	}
 	if code, _ := get("/api/game-defs/no-such-game/web"); code != 404 {
