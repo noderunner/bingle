@@ -10,7 +10,9 @@ import (
 	"github.com/noderunner/bingle/internal/engine/state"
 )
 
-// Ruleset plays every game of the family; the definition's param "mode" says which.
+// Ruleset plays Bowling Solitaire. Klondike, Spider and FreeCell, which it
+// played too until Solitaire 0.3.0, are declared with the patience vocabulary
+// (ADR 0122); Bowling has no vocabulary and keeps its Go rules.
 type Ruleset struct {
 	// samples holds each game's sample view, worked out once: it never changes.
 	samples sync.Map
@@ -42,13 +44,6 @@ func (e *eng) value(c cards.Card) int {
 	return 0
 }
 
-func (e *eng) suit(c cards.Card) string {
-	if t := e.game.Cards.Type(c.ID); t != nil {
-		return t.Suit
-	}
-	return ""
-}
-
 // shuffled returns the whole deck in a new order, face down.
 func (e *eng) shuffled() []cards.Card {
 	z := &cards.Zone{}
@@ -64,19 +59,12 @@ func (e *eng) legal() []string {
 	if e.d.Turn == 0 {
 		return nil
 	}
-	if e.d.Mode == modeBowling {
-		return e.bowlingLegal()
-	}
-	return e.patienceLegal()
+	return e.bowlingLegal()
 }
 
 // execute plays a legal move.
 func (e *eng) execute(move string) {
-	if e.d.Mode == modeBowling {
-		e.bowlingPlay(move)
-		return
-	}
-	e.patiencePlay(move)
+	e.bowlingPlay(move)
 }
 
 // --- the ruleset interface --------------------------------------------------
@@ -89,16 +77,12 @@ func (rs *Ruleset) Start(game *catalog.CompiledGame, seed uint64) (*state.BoardS
 	if seed == 0 {
 		seed = 0x9e3779b97f4a7c15
 	}
-	d := &Data{Mode: game.ParamString("mode", modeKlondike), Turn: player, RNG: seed, Table: cards.NewTable()}
-	e := newEng(game, d)
-	switch d.Mode {
-	case modeKlondike, modeSpider, modeFreeCell:
-		e.patienceDeal()
-	case modeBowling:
-		e.bowlingStart()
-	default:
+	d := &Data{Mode: game.ParamString("mode", modeBowling), Turn: player, RNG: seed, Table: cards.NewTable()}
+	if d.Mode != modeBowling {
 		return nil, fmt.Errorf("solitaire: unknown mode %q", d.Mode)
 	}
+	e := newEng(game, d)
+	e.bowlingStart()
 	d.Events = e.ev
 	st := state.NewBoardState()
 	st.SetExt(d)
@@ -130,10 +114,7 @@ func (rs *Ruleset) Outcome(game *catalog.CompiledGame, st *state.BoardState) sta
 }
 
 func (e *eng) endDetail() string {
-	if e.d.Mode == modeBowling {
-		return fmt.Sprintf("%d points", bowlingTotal(e.d.Rolls))
-	}
-	return fmt.Sprintf("%d of %d cards home", e.home(), len(e.game.Cards.Deck("main")))
+	return fmt.Sprintf("%d points", bowlingTotal(e.d.Rolls))
 }
 
 // Validate checks a position document.
@@ -142,8 +123,8 @@ func (rs *Ruleset) Validate(game *catalog.CompiledGame, st *state.BoardState) er
 	if err != nil {
 		return err
 	}
-	if d.Mode != game.ParamString("mode", modeKlondike) {
-		return fmt.Errorf("solitaire: a position of %q in a game of %q", d.Mode, game.ParamString("mode", modeKlondike))
+	if d.Mode != game.ParamString("mode", modeBowling) {
+		return fmt.Errorf("solitaire: a position of %q in a game of %q", d.Mode, game.ParamString("mode", modeBowling))
 	}
 	if d.Turn != 0 && d.Turn != player {
 		return fmt.Errorf("solitaire: bad turn %d", d.Turn)
@@ -271,8 +252,8 @@ func (rs *Ruleset) Redact(game *catalog.CompiledGame, st *state.BoardState, view
 	return out
 }
 
-// WorthSearching: a hint comes from GuideMoves; playing a game of patience out at
-// random says nothing about the position.
+// WorthSearching: a hint comes from GuideMoves; playing a game out at random
+// says nothing about the position.
 func (rs *Ruleset) WorthSearching(game *catalog.CompiledGame, st *state.BoardState) bool {
 	return false
 }
@@ -283,11 +264,7 @@ func (rs *Ruleset) Heuristic(game *catalog.CompiledGame, st *state.BoardState, s
 	if err != nil {
 		return 0
 	}
-	e := newEng(game, d)
-	if d.Mode == modeBowling {
-		return float64(bowlingTotal(d.Rolls))/150 - 1
-	}
-	return 2*float64(e.home())/float64(len(game.Cards.Deck("main"))) - 1
+	return float64(bowlingTotal(d.Rolls))/150 - 1
 }
 
 // GuideMoves keeps the moves worth suggesting: a computer player and the Hint button
@@ -301,7 +278,7 @@ func (rs *Ruleset) GuideMoves(game *catalog.CompiledGame, st *state.BoardState, 
 	best := -1 << 30
 	var out []state.Selection
 	for _, m := range legal {
-		v := e.worth(m.Piece)
+		v := e.bowlingWorth(m.Piece)
 		if v > best {
 			best, out = v, nil
 		}
@@ -315,8 +292,7 @@ func (rs *Ruleset) GuideMoves(game *catalog.CompiledGame, st *state.BoardState, 
 // sampleSeed is the deal the sample of a game is played from.
 const sampleSeed = 21
 
-// samplePlies is how far a sample of patience is played: enough to have turned cards
-// over and sent some home, and far from the end.
+// samplePlies is how far a sample is played: a few frames in, far from the end.
 const samplePlies = 45
 
 // Sample plays the game's own hints from a fixed deal, and returns the view of where

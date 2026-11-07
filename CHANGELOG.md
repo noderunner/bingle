@@ -4,6 +4,15 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.92.0 - 2026-11-06
+
+### Bingle Core 0.92.0
+- **Games of patience from a game definition on the page.** A game of patience written with the patience vocabulary is drawn on the same table as Solitaire, with its hints, its preview of a game in progress, and nothing face down ever sent to the browser.
+- A game definition that deals cards records its deal when the game starts, so replays and hints see the same cards, and a draw or a card turned over stands.
+
+### Solitaire 0.3.0
+- **Klondike, Spider and FreeCell are now written as a game definition** rather than in code. They play as before, checked move for move against the old rules over many games, with the same hints. Games in progress are carried over. Bowling Solitaire keeps its own rules.
+
 ## 0.91.0 - 2026-11-06
 
 ### Bingle Core 0.91.0

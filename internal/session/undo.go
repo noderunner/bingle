@@ -122,7 +122,7 @@ func (m *Manager) Undo(ctx context.Context, roomCode, name string) (UndoOutcome,
 	} else {
 		doc = moves[idx-1].ResultingState
 	}
-	if state.IsRuleset(compiled) {
+	if state.Guarded(compiled) {
 		if err := m.checkTakeBack(compiled, doc, game.BoardState); err != nil {
 			return UndoOutcome{}, err
 		}

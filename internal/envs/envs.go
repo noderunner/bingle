@@ -234,7 +234,7 @@ func (m *Manager) Reset(ctx context.Context, opts ResetOptions) (Observation, er
 		}
 		e.st, e.impulseSeat = st, impulseSeat
 	default:
-		if state.IsRuleset(game) && opts.Seed != 0 {
+		if state.Guarded(game) && opts.Seed != 0 {
 			// Games with chance start from the env's seed so that a seeded
 			// environment replays exactly.
 			st, err := state.InitialStateSeeded(game, uint64(opts.Seed))
@@ -348,7 +348,7 @@ func (m *Manager) Fork(id string) (Observation, error) {
 		touched: time.Now(),
 	}
 	histLen := len(src.history)
-	if state.IsRuleset(src.game) {
+	if state.Guarded(src.game) {
 		// A fork is an independent sample of the game's chance: it must not
 		// replay the dice the original is about to roll.
 		clone.st = state.Determinize(src.game, clone.st, src.agent, rand.New(rand.NewSource(time.Now().UnixNano())))

@@ -156,7 +156,7 @@ func PlayMatch(ctx context.Context, cat *catalog.Catalog, opts MatchOptions) (Ma
 		// Games with chance start from a seed derived from the match seed,
 		// so a seeded match replays exactly.
 		var start *state.BoardState
-		if state.IsRuleset(game) && opts.Seed != 0 {
+		if state.Guarded(game) && opts.Seed != 0 {
 			start, _ = state.InitialStateSeeded(game, uint64(opts.Seed)*1000003+uint64(i)+1)
 		}
 		if start == nil {

@@ -65,10 +65,17 @@ func read(t *testing.T, st *state.BoardState) doc {
 		t.Fatal(err)
 	}
 	var o struct {
-		Ext doc `json:"ext"`
+		Ext   doc `json:"ext"`
+		Cards *struct {
+			Zones map[string]*zone `json:"zones"`
+		} `json:"cards"`
 	}
 	if err := json.Unmarshal(b, &o); err != nil {
 		t.Fatal(err)
+	}
+	// A declared game of patience keeps its table in the position (ADR 0122).
+	if o.Cards != nil {
+		o.Ext.Table.Zones = o.Cards.Zones
 	}
 	return o.Ext
 }
@@ -94,8 +101,7 @@ func pile(s string) *zone {
 // zone of the opening stays and is emptied.
 func position(t *testing.T, g *catalog.CompiledGame, piles map[string]string, change func(*map[string]any)) *state.BoardState {
 	t.Helper()
-	rs, _ := state.RulesetOf(g)
-	st, err := rs.Start(g, 7)
+	st, err := state.InitialStateSeeded(g, 7)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -107,17 +113,22 @@ func position(t *testing.T, g *catalog.CompiledGame, piles map[string]string, ch
 	if err := json.Unmarshal(b, &whole); err != nil {
 		t.Fatal(err)
 	}
-	ext := whole["ext"].(map[string]any)
+	// The ruleset's (Bowling) keeps its table in ext; a declared game in cards.
+	holder := whole
+	key := "cards"
+	if ext, ok := whole["ext"].(map[string]any); ok {
+		holder, key = ext, "table"
+	}
 	zones := map[string]any{}
-	for k := range ext["table"].(map[string]any)["zones"].(map[string]any) {
+	for k := range holder[key].(map[string]any)["zones"].(map[string]any) {
 		zones[k] = &zone{}
 	}
 	for k, v := range piles {
 		zones[k] = pile(v)
 	}
-	ext["table"] = map[string]any{"zones": zones}
+	holder[key] = map[string]any{"zones": zones}
 	if change != nil {
-		change(&ext)
+		change(&holder)
 	}
 	b, err = json.Marshal(whole)
 	if err != nil {
@@ -131,10 +142,9 @@ func position(t *testing.T, g *catalog.CompiledGame, piles map[string]string, ch
 }
 
 func legal(g *catalog.CompiledGame, st *state.BoardState) []string {
-	rs, _ := state.RulesetOf(g)
 	var out []string
-	for _, m := range rs.Legal(g, st, 1) {
-		out = append(out, m.Piece)
+	for _, m := range state.LegalSelections(g, st, 1) {
+		out = append(out, state.FormatMove(g, m))
 	}
 	return out
 }
@@ -165,13 +175,12 @@ func wantMoves(t *testing.T, g *catalog.CompiledGame, st *state.BoardState, yes,
 
 func play(t *testing.T, g *catalog.CompiledGame, st *state.BoardState, moves ...string) *state.BoardState {
 	t.Helper()
-	rs, _ := state.RulesetOf(g)
 	for _, text := range moves {
-		mv, err := rs.Parse(g, text)
+		mv, err := state.ParseMove(g, text)
 		if err != nil {
 			t.Fatal(err)
 		}
-		res, err := rs.Apply(g, st, 1, mv)
+		res, err := state.Apply(g, st, 1, mv)
 		if err != nil {
 			t.Fatalf("%s: %v (legal: %v)", text, err, legal(g, st))
 		}
@@ -252,8 +261,7 @@ func TestTheDeals(t *testing.T) {
 	}
 	for _, c := range cases {
 		g := game(t, c.id)
-		rs, _ := state.RulesetOf(g)
-		st, err := rs.Start(g, 11)
+		st, err := state.InitialStateSeeded(g, 11)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -279,10 +287,9 @@ func TestTheDeals(t *testing.T) {
 // A deal comes from the seed: the same seed deals the same cards, another does not.
 func TestTheDealFollowsTheSeed(t *testing.T) {
 	g := game(t, "solitaire")
-	rs, _ := state.RulesetOf(g)
-	a, _ := rs.Start(g, 5)
-	b, _ := rs.Start(g, 5)
-	c, _ := rs.Start(g, 6)
+	a, _ := state.InitialStateSeeded(g, 5)
+	b, _ := state.InitialStateSeeded(g, 5)
+	c, _ := state.InitialStateSeeded(g, 6)
 	ja, _ := a.MarshalJSON()
 	jb, _ := b.MarshalJSON()
 	jc, _ := c.MarshalJSON()
@@ -382,8 +389,7 @@ func TestKlondike_FinishWins(t *testing.T) {
 	st := position(t, g, map[string]string{"t1": all("hearts"), "t2": all("spades"), "t3": all("diamonds"), "t4": all("clubs")}, nil)
 	wantMoves(t, g, st, []string{"finish"}, nil)
 	st = play(t, g, st, "finish")
-	rs, _ := state.RulesetOf(g)
-	out := rs.Outcome(g, st)
+	out, _ := state.Evaluate(g, st, 1)
 	if !out.Ended || out.Winner == nil || *out.Winner != 1 || out.Reason != "cleared" {
 		t.Errorf("outcome %+v", out)
 	}
@@ -402,8 +408,7 @@ func TestKlondike_StuckEndsWithNoWinner(t *testing.T) {
 	if got := legal(g, st); len(got) != 0 {
 		t.Fatalf("legal: %v", got)
 	}
-	rs, _ := state.RulesetOf(g)
-	out := rs.Outcome(g, st)
+	out, _ := state.Evaluate(g, st, 1)
 	if !out.Ended || out.Winner != nil || out.Reason != "stuck" || out.Detail != "1 of 52 cards home" {
 		t.Errorf("outcome %+v", out)
 	}
@@ -473,8 +478,7 @@ func TestSpider_EightSuitsWin(t *testing.T) {
 		"t2":   "spades-A#7",
 	}, nil)
 	st = play(t, g, st, "t2-t1")
-	rs, _ := state.RulesetOf(g)
-	if out := rs.Outcome(g, st); !out.Ended || out.Winner == nil {
+	if out, _ := state.Evaluate(g, st, 1); !out.Ended || out.Winner == nil {
 		t.Errorf("outcome %+v", out)
 	}
 }
@@ -513,8 +517,7 @@ func TestFreeCell_ACardInACellPlaysOut(t *testing.T) {
 func TestNothingFaceDownLeavesTheServer(t *testing.T) {
 	for _, id := range []string{"solitaire", "spider", "bowling-solitaire"} {
 		g := game(t, id)
-		rs, _ := state.RulesetOf(g)
-		st, err := rs.Start(g, 3)
+		st, err := state.InitialStateSeeded(g, 3)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -566,11 +569,9 @@ func TestNothingFaceDownLeavesTheServer(t *testing.T) {
 
 func TestDeterminizeKeepsWhatCanBeSeen(t *testing.T) {
 	g := game(t, "solitaire")
-	rs, _ := state.RulesetOf(g)
-	hi := rs.(state.HiddenInfo)
-	st, _ := rs.Start(g, 2)
+	st, _ := state.InitialStateSeeded(g, 2)
 	before := read(t, st)
-	after := read(t, hi.Determinize(g, st, 1, rand.New(rand.NewSource(1))))
+	after := read(t, state.Determinize(g, st, 1, rand.New(rand.NewSource(1))))
 	changed := false
 	for k, z := range before.Table.Zones {
 		for i, c := range z.Cards {
@@ -593,16 +594,14 @@ func TestDeterminizeKeepsWhatCanBeSeen(t *testing.T) {
 
 func TestParseRefusesNonsense(t *testing.T) {
 	g := game(t, "solitaire")
-	rs, _ := state.RulesetOf(g)
 	for _, bad := range []string{"", "t1", "x1-t2", "t1-x9", "t.-t2", "e+h@2"} {
-		if _, err := rs.Parse(g, bad); err == nil {
+		if _, err := state.ParseMove(g, bad); err == nil {
 			t.Errorf("%q was read", bad)
 		}
 	}
 	b := game(t, "bowling-solitaire")
-	rb, _ := state.RulesetOf(b)
 	for _, bad := range []string{"", "t1-t2", "e@9", "z@1", "a+b+c+d@1", "@1"} {
-		if _, err := rb.Parse(b, bad); err == nil {
+		if _, err := state.ParseMove(b, bad); err == nil {
 			t.Errorf("%q was read", bad)
 		}
 	}
@@ -613,28 +612,28 @@ func TestParseRefusesNonsense(t *testing.T) {
 func TestRandomPlayKeepsEveryCard(t *testing.T) {
 	for _, id := range allVariants {
 		g := game(t, id)
-		rs, _ := state.RulesetOf(g)
 		rng := rand.New(rand.NewSource(int64(len(id))))
+		ended := func(st *state.BoardState) bool { out, _ := state.Evaluate(g, st, 1); return out.Ended }
 		for seed := uint64(1); seed <= 6; seed++ {
-			st, err := rs.Start(g, seed)
+			st, err := state.InitialStateSeeded(g, seed)
 			if err != nil {
 				t.Fatal(err)
 			}
 			total := len(g.Cards.Deck("main"))
 			for ply := 0; ply < 400; ply++ {
-				moves := rs.Legal(g, st, 1)
+				moves := state.LegalSelections(g, st, 1)
 				if len(moves) == 0 {
-					if !rs.Outcome(g, st).Ended {
+					if !ended(st) {
 						t.Fatalf("%s seed %d: no move, and the game goes on", id, seed)
 					}
 					break
 				}
-				res, err := rs.Apply(g, st, 1, moves[rng.Intn(len(moves))])
+				res, err := state.Apply(g, st, 1, moves[rng.Intn(len(moves))])
 				if err != nil {
 					t.Fatal(err)
 				}
 				st = res.NewState
-				if res.GameEnded != rs.Outcome(g, st).Ended {
+				if res.GameEnded != ended(st) {
 					t.Fatalf("%s: the move and the outcome disagree", id)
 				}
 				d := read(t, st)
@@ -651,7 +650,7 @@ func TestRandomPlayKeepsEveryCard(t *testing.T) {
 				if n != total {
 					t.Fatalf("%s seed %d ply %d: %d cards of %d", id, seed, ply, n, total)
 				}
-				if err := rs.Validate(g, st); err != nil {
+				if err := state.Validate(g, st); err != nil {
 					t.Fatalf("%s: %v", id, err)
 				}
 			}
@@ -687,7 +686,8 @@ func TestTheSampleIsAGameInProgress(t *testing.T) {
 		if err := json.Unmarshal(b, &v); err != nil {
 			t.Fatal(err)
 		}
-		if v.Solitaire != g.ParamString("mode", "") {
+		mode := map[string]string{"solitaire": "klondike", "solitaire-draw-3": "klondike", "spider": "spider", "spider-2": "spider", "spider-1": "spider", "freecell": "freecell", "bowling-solitaire": "bowling"}[id]
+		if v.Solitaire != mode {
 			t.Errorf("%s: a sample of %q", id, v.Solitaire)
 		}
 		switch v.Solitaire {
@@ -749,5 +749,40 @@ func TestKlondike_ACardSeenCannotBeTakenBack(t *testing.T) {
 	empty := position(t, g, map[string]string{"t1": "spades-K", "waste": "hearts-5 clubs-9"}, nil)
 	if after := play(t, g, empty, "recycle"); !state.CanTakeBack(g, empty, after) {
 		t.Error("recycle: can no longer be taken back")
+	}
+}
+
+// A position the Go ruleset stored for Klondike converts: its table becomes the
+// position's own, and the game plays on from it. Bowling's is left alone.
+func TestARulesetPositionConverts(t *testing.T) {
+	g := game(t, "solitaire")
+	st, _ := state.InitialStateSeeded(g, 4)
+	raw, _ := st.MarshalJSON()
+	var whole map[string]any
+	_ = json.Unmarshal(raw, &whole)
+	table := whole["cards"]
+	delete(whole, "cards")
+	whole["ext"] = map[string]any{"mode": "klondike", "turn": 1, "rng": 99, "table": table}
+	old, _ := json.Marshal(whole)
+	out, changed := solitaire.Upgrade(old)
+	if !changed {
+		t.Fatal("nothing converted")
+	}
+	back := state.NewBoardState()
+	if err := back.UnmarshalJSON(out); err != nil {
+		t.Fatal(err)
+	}
+	if err := state.Validate(g, back); err != nil {
+		t.Fatal(err)
+	}
+	if got, want := legal(g, back), legal(g, st); strings.Join(got, ",") != strings.Join(want, ",") {
+		t.Fatalf("legal %v, want %v", got, want)
+	}
+	if _, ch := solitaire.Upgrade(out); ch {
+		t.Fatal("a converted position converts again")
+	}
+	bowling := []byte(`{"v":2,"cells":{},"ply":0,"ext":{"mode":"bowling","turn":1,"table":{"zones":{}}}}`)
+	if _, ch := solitaire.Upgrade(bowling); ch {
+		t.Fatal("a Bowling position was converted")
 	}
 }

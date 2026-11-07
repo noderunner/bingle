@@ -2,6 +2,7 @@ package session_test
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"path/filepath"
 	"testing"
@@ -103,5 +104,47 @@ func TestOneSeat_HintsAreLegalMoves(t *testing.T) {
 			t.Fatalf("%s: an empty hint", id)
 		}
 		playMove(t, m, res.RoomCode, "Ana", h.Notation)
+	}
+}
+
+// What a game of patience sends shows no face-down card: the stock and the
+// buried cards of the columns stay on the server (ADR 0119, 0122).
+func TestOneSeat_TheHiddenCardsStayHidden(t *testing.T) {
+	m := oneSeatManager(t)
+	ctx := context.Background()
+	res, err := m.CreateGame(ctx, "solitaire", "Ana")
+	if err != nil {
+		t.Fatal(err)
+	}
+	snap, err := m.GetState(ctx, res.RoomCode, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var doc struct {
+		Cards struct {
+			Zones map[string]struct {
+				Cards []struct {
+					ID string `json:"id"`
+					Up bool   `json:"up"`
+				} `json:"cards"`
+			} `json:"zones"`
+		} `json:"cards"`
+	}
+	if err := json.Unmarshal([]byte(snap.State), &doc); err != nil {
+		t.Fatal(err)
+	}
+	down := 0
+	for key, z := range doc.Cards.Zones {
+		for _, c := range z.Cards {
+			if !c.Up {
+				down++
+				if c.ID != "" {
+					t.Fatalf("the face-down %s in %s is sent", c.ID, key)
+				}
+			}
+		}
+	}
+	if down < 24 {
+		t.Fatalf("only %d cards face down: the stock is missing", down)
 	}
 }

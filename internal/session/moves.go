@@ -269,11 +269,11 @@ func (m *Manager) applyAndRecordAs(ctx context.Context, compiled *catalog.Compil
 	}
 	// A move that rolled dice (or drew a hidden token) locks the game in: it
 	// can be taken back no more, and the page knows to stop offering it.
-	locked := state.IsRuleset(compiled) && !state.CanTakeBack(compiled, bs, result.NewState)
+	locked := state.Guarded(compiled) && !state.CanTakeBack(compiled, bs, result.NewState)
 	// What the same seat decides straight after a roll — the unit Desecrate
 	// places, the results it assigns — is part of it: nobody takes back a
 	// choice made on seeing the die.
-	if state.IsRuleset(compiled) && !locked && game.MoveSeq > 0 {
+	if state.Guarded(compiled) && !locked && game.MoveSeq > 0 {
 		if prev, err := m.store.ListMoves(ctx, game.ID, game.MoveSeq-1); err == nil && len(prev) == 1 && prev[0].Seat == player.Seat && prev[0].Locked {
 			locked = true
 		}
