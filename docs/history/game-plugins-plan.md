@@ -123,8 +123,8 @@ as the test case. These become an ADR when this plan lands on `main`.
 3. **Installing a data pack lives in the admin area**, behind the `install_plugins`
    capability, a fresh reauthentication and an audit entry. Admins only, in every mode.
 
-4. **No JavaScript in a pack, ever.** A pack uses the declarative display vocabulary
-   (`display`, themes, tints, badges, overlays), images and markdown. This is now a design
+4. **No JavaScript in a pack, ever.** A pack's look is data: its web file (`web.yaml`, ADR 0124,
+   which moved the appearance half of `display` out of the definition), images and markdown. This is now a design
    principle as well as a security rule: see *Every game is playable through the API alone*,
    below.
 
@@ -143,8 +143,8 @@ that remains, found 2026-10-31:
 - **Cthulhu Wars' presentation lives in the web client**: cult names and colours in
   `cw-names.js`, the sigils in `cw-glyphs.js` (drawn by `render.js`), icons in
   `game-icons.js` and `icons.js`, and a `gameID.startsWith("cthulhu-wars")` check in
-  `practice.js`. These move into the game's definition and assets, served by the server, so
-  the web client names no game.
+  `practice.js`. (2026-10-31 said these move into the game's definition. ADR 0124 reverses that:
+  they stay the web client's, registered per game, so the shared page names no game.)
 - **The server names Cthulhu Wars outside its package**: `internal/app/app.go` registers it
   directly, `internal/batch/run.go` and `internal/batch/report.go` build CW-only practice
   reports, and `internal/tune/tune.go` and `scripts/tune/main.go` import it. Games should
@@ -201,8 +201,11 @@ Retirement needs nothing else in this plan and can land on its own, ahead of the
    legal-moves and move endpoints, no browser. A game that cannot is a bug. It runs first
    because it shows the gaps before anything moves.
 2. **Games register themselves**, and the binary's set of games is chosen by build tags.
-3. **Presentation moves to the server** (the Cthulhu Wars names, colours, sigils, icons and
-   practice-report shape), and the web client stops naming games.
+3. **The web page stops naming games, and no look moves to the server** (ADR 0124, #157,
+   which replaces the 2026-10-31 wording "presentation moves to the server"). The page reads a
+   game's `web.yaml` and, for a compiled-in game, the scripts it registers through one generic
+   hook. Cthulhu Wars' colours, sigils, icons and `cw-*.js` interface stay web-side and go with
+   the game into the overlay. The practice report's shape is described by the game, as meaning.
 4. **Fixture games** for every engine feature a departing game was the only public test of,
    Tic-Tac-Toe among them.
 5. **The private overlay**, then **Cthulhu Wars, Yinsh, Onitama, Hive and Nyet! move into
@@ -257,3 +260,9 @@ which is now built.
   that the public client loads through a generic hook; step 3 should be rewritten to say so, and
   settled with the maintainer, before it is built. Step 4 should start by listing the engine
   features that only the departing games exercise.
+- 2026-11-07: the maintainer set a strict line between meaning and appearance: the server says
+  what things are, and each client decides how they look, so a Bevy or Java client never designs
+  around the web page. ADR 0124 (proposed, #157) records it with an audit of today's appearance
+  fields. Step 3 and decision 4 are rewritten to match: nothing about a game's look moves to the
+  server, the web page reads a per-game `web.yaml` and registered scripts, and Cthulhu Wars' look
+  goes with it into the overlay.
