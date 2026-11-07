@@ -1,0 +1,11 @@
+# How the web page draws Fendo (ADR 0124). The rules are in the definition; nothing
+# here changes them, and other clients draw the game their own way.
+board:
+  style: squares
+pieces:
+  piece: {shape: disc}
+display:
+  no_hands: true
+  tints:
+    area1: {color: '#c9d3e6'}
+    area2: {color: '#f2c28d'}

@@ -1,0 +1,22 @@
+# How the web page draws Meridians (ADR 0124). The rules are in the definition; nothing
+# here changes them, and other clients draw the game their own way.
+board:
+  style: points
+pieces:
+  stone: {shape: disc}
+display:
+  no_hands: true
+  tints:
+    last: {color: '#c8dfa8'}
+  badges:
+    dead: {glyph: ✕, color: '#c0392b'}
+# A game in play, for the list of games and the setup page.
+preview:
+  - {position: g7, piece: stone, color: white}
+  - {position: i7, piece: stone, color: white}
+  - {position: e5, piece: stone, color: white}
+  - {position: h10, piece: stone, color: white}
+  - {position: d7, piece: stone, color: black}
+  - {position: f4, piece: stone, color: black}
+  - {position: j4, piece: stone, color: black}
+  - {position: e9, piece: stone, color: black}

@@ -2,7 +2,7 @@
 id: yinsh
 name: Yinsh
 description: "Kris Burm's game of rings and markers on an 85-point board: drop a marker in a ring and move the ring, turning over the markers it jumps. Make rows of five to remove your rings; remove three to win."
-version: 0.1.1
+version: 0.1.2
 designers: [Kris Burm]
 engine: ruleset
 rules:
@@ -16,46 +16,27 @@ params: {rings: 5, rings_to_win: 3, markers: 51, max_plies: 1000}
 guide:
   tabs:
     - {id: rules, title: Rules, file: rules.md}
-preview:
-  - {position: c4, piece: ring, color: white}
-  - {position: e7, piece: ring, color: white}
-  - {position: g6, piece: ring, color: white}
-  - {position: f3, piece: ring, color: white}
-  - {position: d6, piece: ring, color: white}
-  - {position: e4, piece: ring, color: black}
-  - {position: g5, piece: ring, color: black}
-  - {position: i8, piece: ring, color: black}
-  - {position: d4, piece: ring, color: black}
-  - {position: f8, piece: ring, color: black}
-  - {position: e5, piece: marker, color: white}
-  - {position: f5, piece: marker, color: white}
-  - {position: d5, piece: marker, color: black}
-  - {position: f6, piece: marker, color: black}
 board: !include board.yaml
 seats:
   - {seat: 1, color: white, label: White}
   - {seat: 2, color: black, label: Black}
 pieces:
-  ring: {label: Ring, code: R, shape: donut}
-  marker: {label: Marker, code: M, shape: chip}
+  ring: {label: Ring, code: R}
+  marker: {label: Marker, code: M}
 turn_order:
   type: round-robin
   seats: [1, 2]
 win_condition: {type: ruleset}
 display:
-  no_hands: true
   tints:
     last:
       label: Last move
-      color: '#c8dfa8'
       text: Where the last ring started and ended.
     flipped:
       label: Turned over
-      color: '#f0d98a'
       text: Markers the last ring jumped and turned over.
     row:
       label: A row of five
-      color: '#e8a898'
       text: 'Five markers in a row that may be removed: choose the two end markers.'
 variants:
   - id: yinsh-blitz

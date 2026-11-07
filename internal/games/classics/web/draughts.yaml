@@ -1,0 +1,7 @@
+# How the web page draws English Draughts (Checkers) (ADR 0124). The rules are in the definition; nothing
+# here changes them, and other clients draw the game their own way.
+board:
+  style: squares
+pieces:
+  man: {shape: disc}
+  king: {shape: cap}

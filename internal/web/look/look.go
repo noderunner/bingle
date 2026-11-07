@@ -17,6 +17,7 @@ import (
 	"slices"
 	"strconv"
 
+	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/engine/dsl"
 )
 
@@ -53,8 +54,9 @@ type Seat struct {
 // stones) is not here: the rules read it to say whose the piece is (ADR 0117),
 // so it stays in the definition.
 type Piece struct {
-	// Shape is disc, square, flat, wall, cap, ring, diamond, triangle or
-	// cross.
+	// Shape names what the page draws: disc, square, flat, wall, cap, ring,
+	// diamond, triangle, cross, a chess piece (pawn, knight, bishop, rook,
+	// queen, king), Yinsh's donut and chip, or one of Hive's bug-* tiles.
 	Shape string `json:"shape,omitempty"`
 }
 
@@ -105,19 +107,26 @@ type Mark struct {
 	Glyph string `json:"glyph,omitempty"`
 }
 
-// Load reads the web.yaml in fsys and returns it as JSON, with every key
-// checked against File. A family without one gets nil.
-func Load(fsys fs.FS) ([]byte, error) {
-	if _, err := fs.Stat(fsys, FileName); err != nil {
+// Load reads the web.yaml at the root of fsys and returns it as JSON, with
+// every key checked against File. A family without one gets nil.
+func Load(fsys fs.FS) ([]byte, error) { return LoadFile(fsys, FileName) }
+
+// LoadFile is Load for a look file of another name, for a folder that holds
+// several games (the classics keep theirs in web/<game>.yaml).
+func LoadFile(fsys fs.FS, name string) ([]byte, error) {
+	if _, err := fs.Stat(fsys, name); err != nil {
 		return nil, nil
 	}
-	return dsl.LoadAs(fsys, FileName, reflect.TypeFor[File]())
+	return dsl.LoadAs(fsys, name, reflect.TypeFor[File]())
 }
 
 // MustLoad is Load for a file embedded in the binary: an error is a build
 // mistake, so it panics.
-func MustLoad(fsys fs.FS) []byte {
-	data, err := Load(fsys)
+func MustLoad(fsys fs.FS) []byte { return MustLoadFile(fsys, FileName) }
+
+// MustLoadFile is LoadFile for a file embedded in the binary.
+func MustLoadFile(fsys fs.FS, name string) []byte {
+	data, err := LoadFile(fsys, name)
 	if err != nil {
 		panic(err)
 	}
@@ -127,14 +136,14 @@ func MustLoad(fsys fs.FS) []byte {
 // Check holds the file (as Load returned it) to the definitions of the
 // family's games: every seat, piece, tint, badge, zone and suit it names must
 // be the game's, every variant it patches one of the family, and the preview
-// made of the game's pieces in colours that are played. defs maps each game's
-// id to its definition, the family's own first in order.
-func Check(data []byte, family string, defs map[string]*dsl.GameDefinition) error {
+// made of the game's pieces in colours that are played. games maps each of
+// the family's games, by id, to the game compiled.
+func Check(data []byte, family string, games map[string]*catalog.CompiledGame) error {
 	var f File
 	if err := json.Unmarshal(data, &f); err != nil {
 		return fmt.Errorf("look: %s: %w", family, err)
 	}
-	base, ok := defs[family]
+	base, ok := games[family]
 	if !ok {
 		return fmt.Errorf("look: %s: no definition for the family", family)
 	}
@@ -142,7 +151,7 @@ func Check(data []byte, family string, defs map[string]*dsl.GameDefinition) erro
 		return fmt.Errorf("look: %s: %w", family, err)
 	}
 	for id, v := range f.Variants {
-		def, ok := defs[id]
+		def, ok := games[id]
 		if !ok {
 			return fmt.Errorf("look: %s: variant %q is not a game of the family", family, id)
 		}
@@ -156,7 +165,8 @@ func Check(data []byte, family string, defs map[string]*dsl.GameDefinition) erro
 	return nil
 }
 
-func (f File) check(def *dsl.GameDefinition) error {
+func (f File) check(cg *catalog.CompiledGame) error {
+	def := cg.Definition
 	seats := map[string]bool{}
 	colors := map[string]bool{}
 	for _, s := range def.Seats {
@@ -184,9 +194,11 @@ func (f File) check(def *dsl.GameDefinition) error {
 		}
 	}
 	if f.Board != nil {
-		for region, c := range f.Board.Borders {
-			if !colors[c] {
-				return fmt.Errorf("border %q is %q, which nobody plays", region, c)
+		// A border may be any colour: a seat's (Hex's edges) or none's
+		// (Brandubh's corners).
+		for region := range f.Board.Borders {
+			if _, ok := cg.Board.Region(region); !ok && def.Board.Regions[region] == nil {
+				return fmt.Errorf("border %q is not a region of the board", region)
 			}
 		}
 	}

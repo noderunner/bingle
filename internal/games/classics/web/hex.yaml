@@ -1,0 +1,20 @@
+# How the web page draws Hex (11×11) (ADR 0124). The rules are in the definition; nothing
+# here changes them, and other clients draw the game their own way.
+board:
+  borders: {top: red, bottom: red, left: blue, right: blue}
+pieces:
+  stone: {shape: disc}
+# A game in play, for the list of games and the setup page.
+preview:
+  - {position: f6, piece: stone, color: red}
+  - {position: f5, piece: stone, color: red}
+  - {position: e7, piece: stone, color: red}
+  - {position: g4, piece: stone, color: red}
+  - {position: d8, piece: stone, color: red}
+  - {position: f3, piece: stone, color: red}
+  - {position: e6, piece: stone, color: blue}
+  - {position: g5, piece: stone, color: blue}
+  - {position: d7, piece: stone, color: blue}
+  - {position: h4, piece: stone, color: blue}
+  - {position: e8, piece: stone, color: blue}
+  - {position: g6, piece: stone, color: blue}

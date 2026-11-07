@@ -1,0 +1,17 @@
+# How the web page draws Hive (ADR 0124). The rules are in the definition; nothing
+# here changes them, and other clients draw the game their own way.
+board:
+  style: free
+pieces:
+  queen: {shape: bug-queen}
+  beetle: {shape: bug-beetle}
+  spider: {shape: bug-spider}
+  grasshopper: {shape: bug-grasshopper}
+  ant: {shape: bug-ant}
+  mosquito: {shape: bug-mosquito}
+  ladybug: {shape: bug-ladybug}
+  pillbug: {shape: bug-pillbug}
+display:
+  tints:
+    last: {color: '#c8dfa8'}
+    danger: {color: '#e8a898'}

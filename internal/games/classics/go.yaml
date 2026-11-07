@@ -2,7 +2,7 @@
 id: go-9x9
 name: Go (9×9)
 description: 'Surround territory and capture groups of stones in the classic board game of Go: liberties, ko, passing and area scoring, on a 9×9, 13×13 or 19×19 board.'
-version: 0.3.0
+version: 0.3.1
 rules:
   - Black and White alternate placing a stone on an empty intersection; Black moves first. Stones never move.
   - A group is a set of orthogonally connected stones of one color. Its liberties are the empty intersections next to it. A group left with no liberties is captured and removed.
@@ -12,31 +12,13 @@ rules:
 guide:
   tabs:
     - {id: rules, title: Rules, file: rules.md}
-preview:
-  - {position: c3, piece: stone, color: black}
-  - {position: c4, piece: stone, color: black}
-  - {position: d4, piece: stone, color: black}
-  - {position: e3, piece: stone, color: black}
-  - {position: g7, piece: stone, color: black}
-  - {position: f7, piece: stone, color: black}
-  - {position: e7, piece: stone, color: black}
-  - {position: c7, piece: stone, color: black}
-  - {position: d3, piece: stone, color: white}
-  - {position: b4, piece: stone, color: white}
-  - {position: c5, piece: stone, color: white}
-  - {position: d5, piece: stone, color: white}
-  - {position: e4, piece: stone, color: white}
-  - {position: f6, piece: stone, color: white}
-  - {position: g6, piece: stone, color: white}
-  - {position: f8, piece: stone, color: white}
 board:
   generator: {type: grid, width: 9, height: 9, adjacency: orthogonal4, labels: algebraic}
-  style: points
 seats:
   - {seat: 1, color: black, label: Black}
   - {seat: 2, color: white, label: White}
 pieces:
-  stone: {label: Stone, shape: disc}
+  stone: {label: Stone}
 pie_rule: optional
 turn_order:
   type: round-robin

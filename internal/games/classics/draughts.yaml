@@ -2,7 +2,7 @@
 id: draughts
 name: English Draughts (Checkers)
 description: Capture every opposing piece or leave your opponent without a move. Pieces move diagonally, jumps are mandatory, and a piece that reaches the far row is crowned a king.
-version: 0.1.0
+version: 0.1.1
 rules:
   - Pieces move one square diagonally onto an empty dark square. Ordinary pieces (men) move forward only; kings move forward or backward.
   - To capture, jump diagonally over an adjacent enemy piece onto the empty square beyond it, removing the jumped piece. Men capture forward only; kings capture in any diagonal direction.
@@ -13,7 +13,6 @@ guide:
     - {id: rules, title: Rules, file: rules.md}
 board:
   generator: {type: grid, width: 8, height: 8, adjacency: diagonal4, labels: algebraic}
-  style: squares
 seats:
   - {seat: 1, color: black, label: Black, forward: N}
   - {seat: 2, color: red, label: Red, forward: S}
@@ -21,7 +20,6 @@ pieces:
   man:
     label: Man
     code: m
-    shape: disc
     movement:
       primitive: step
       occupancy: empty-only
@@ -32,7 +30,6 @@ pieces:
   king:
     label: King
     code: K
-    shape: cap
     movement: {primitive: step, occupancy: empty-only}
 setup:
   - {position: a1, piece: man, color: black}

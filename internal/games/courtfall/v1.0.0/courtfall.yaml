@@ -33,17 +33,6 @@ options:
     text: 'Lay a fixed, symmetric arena instead of drafting one: ten decisions fewer before the first move, and the same ground every game, which is what a batch of bot games needs.'
     default: false
 params: {vp_to_win: 5, momentum_cap: 5, max_plies: 2000}
-preview:
-  - {position: d1, piece: rook, color: white}
-  - {position: g1, piece: bishop, color: white}
-  - {position: e2, piece: queen, color: white}
-  - {position: c2, piece: knight, color: white}
-  - {position: f2, piece: pawn, color: white}
-  - {position: a7, piece: rook, color: black}
-  - {position: d7, piece: bishop, color: black}
-  - {position: b6, piece: queen, color: black}
-  - {position: c7, piece: knight, color: black}
-  - {position: d6, piece: pawn, color: black}
 board:
   generator: {type: hexhex, size: 4}
   regions:
@@ -54,11 +43,11 @@ seats:
   - {seat: 1, color: white, label: Light}
   - {seat: 2, color: black, label: Dark}
 pieces:
-  pawn: {label: Warden, code: P, shape: pawn}
-  knight: {label: Outrider, code: N, shape: knight}
-  bishop: {label: Arbalest, code: B, shape: bishop}
-  rook: {label: Juggernaut, code: R, shape: rook}
-  queen: {label: Champion, code: Q, shape: queen}
+  pawn: {label: Warden, code: P}
+  knight: {label: Outrider, code: N}
+  bishop: {label: Arbalest, code: B}
+  rook: {label: Juggernaut, code: R}
+  queen: {label: Champion, code: Q}
 reserves: {pawn: 1, knight: 1, bishop: 1, rook: 1, queen: 1}
 turn_order:
   type: round-robin
@@ -68,52 +57,34 @@ display:
   tints:
     green:
       label: Overgrowth
-      color: '#5f9e5b'
-      glyph: ♣
       text: Blocks ranged line of sight through it; a unit in it holds a defensive Edge against shots.
     blue:
       label: Mire
-      color: '#5b86b8'
-      glyph: ≈
       text: Entering ends a Move action; a unit in it rolls one die fewer in every contest.
     red:
       label: Hazard
-      color: '#c4584a'
-      glyph: ▲
       text: A unit that enters or is pushed into it suffers a Hit and stays there.
     eye:
       label: The Eye
-      color: '#d9b44a'
-      glyph: ◉
       text: A non-Exhausted unit here at the start of your Clear Turn earns 1 Momentum.
     zone-1:
       label: Light's deployment zone
-      color: '#e9e5cf'
       text: Light deploys its units in these two rows; no special tile may lie here.
     zone-2:
       label: Dark's deployment zone
-      color: '#b9b3a2'
       text: Dark deploys its units in these two rows; no special tile may lie here.
   badges:
     fatigued:
       label: Fatigued
-      glyph: ●
-      color: '#f4f1e8'
       text: 'White stone: one die fewer, can only Exert.'
     exhausted:
       label: Exhausted
-      glyph: ●
-      color: '#1f1d1a'
       text: 'Black stone: one defense die, cannot act.'
     active:
       label: Active
-      glyph: ▲
-      color: '#e0a526'
       text: The unit taking its actions.
     target:
       label: Target
-      glyph: ◎
-      color: '#d1453b'
       text: Part of the exchange being resolved.
   terms:
     bastion: 'Bastion Court — Shieldwall is contagious: all your units hold its defensive Edge while beside a non-Exhausted friend.'

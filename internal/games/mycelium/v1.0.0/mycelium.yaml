@@ -22,38 +22,26 @@ params: {max_plies: 500}
 guide:
   tabs:
     - {id: rules, title: Rules, file: rules.md}
-preview:
-  - {position: e5, piece: black, color: black}
-  - {position: d5, piece: green, color: green}
-  - {position: f5, piece: green, color: green}
-  - {position: e4, piece: green, color: green}
-  - {position: e6, piece: green, color: green}
-  - {position: d4, piece: black, color: black}
-  - {position: f6, piece: black, color: black}
 board:
   generator: {type: hexhex, size: 5}
 seats:
   - {seat: 1, color: black, label: Black}
   - {seat: 2, color: green, label: Green}
 pieces:
-  black: {label: Black node, code: B, shape: disc, color: black}
-  green: {label: Green node, code: G, shape: disc, color: green}
+  black: {label: Black node, code: B, color: black}
+  green: {label: Green node, code: G, color: green}
 turn_order:
   type: round-robin
   seats: [1, 2]
 win_condition: {type: ruleset}
 display:
-  no_hands: true
   tints:
     last:
       label: Last placement
-      color: '#c8dfa8'
       text: The node placed on the last normal turn.
     spent:
       label: Has spread
-      color: '#e0d0a0'
       text: A node of a cluster that has spread in this phase of the confluence.
     confluence:
       label: Confluence
-      color: '#d8b8e8'
       text: 'The centre during a confluence: its node is removed when the confluence ends.'

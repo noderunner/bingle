@@ -2,7 +2,7 @@
 id: hex-11
 name: Hex (11×11)
 description: Join your two sides of the hexagonal board with an unbroken chain of stones. One player always wins — there are no draws.
-version: 0.3.0
+version: 0.3.1
 designers: [Piet Hein, John Nash]
 rules:
   - Red and Blue alternate placing one stone on any empty hexagon; Red moves first.
@@ -12,27 +12,13 @@ rules:
 guide:
   tabs:
     - {id: rules, title: Rules, file: rules.md}
-preview:
-  - {position: f6, piece: stone, color: red}
-  - {position: f5, piece: stone, color: red}
-  - {position: e7, piece: stone, color: red}
-  - {position: g4, piece: stone, color: red}
-  - {position: d8, piece: stone, color: red}
-  - {position: f3, piece: stone, color: red}
-  - {position: e6, piece: stone, color: blue}
-  - {position: g5, piece: stone, color: blue}
-  - {position: d7, piece: stone, color: blue}
-  - {position: h4, piece: stone, color: blue}
-  - {position: e8, piece: stone, color: blue}
-  - {position: g6, piece: stone, color: blue}
 board:
   generator: {type: hex, width: 11, height: 11}
-  borders: {top: red, bottom: red, left: blue, right: blue}
 seats:
   - {seat: 1, color: red, label: Red (top – bottom)}
   - {seat: 2, color: blue, label: Blue (left – right)}
 pieces:
-  stone: {label: Stone, shape: disc}
+  stone: {label: Stone}
 pie_rule: standard
 turn_order:
   type: round-robin

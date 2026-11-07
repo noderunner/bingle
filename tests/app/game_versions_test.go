@@ -110,7 +110,7 @@ func TestGameVersions_AreRecordedInTheDatabaseOnce(t *testing.T) {
 			t.Errorf("%s %s: no first-seen time", v.Family, v.Version)
 		}
 	}
-	for family, want := range map[string]string{"tak-5x5": "0.1.0", "hive": "0.1.1", "cthulhu-wars": "0.16.1", "amazons": "0.3.0", "go-9x9": "0.3.0", "nyet": "0.2.1", "fist": "0.1.2"} {
+	for family, want := range map[string]string{"tak-5x5": "0.1.1", "hive": "0.1.2", "cthulhu-wars": "0.16.1", "amazons": "0.3.1", "go-9x9": "0.3.1", "nyet": "0.2.1", "fist": "0.1.3"} {
 		if got := seen[family]; len(got) != 1 || got[0] != want {
 			t.Errorf("%s: recorded versions %v, want [%s] (once, though the server started twice)", family, got, want)
 		}
@@ -126,7 +126,7 @@ func TestGameVersions_AreRecordedInTheDatabaseOnce(t *testing.T) {
 			tak = append(tak, v.Version)
 		}
 	}
-	if strings.Join(tak, ",") != "0.1.0,0.2.0" {
+	if strings.Join(tak, ",") != "0.1.1,0.2.0" {
 		t.Errorf("tak versions %v", tak)
 	}
 }

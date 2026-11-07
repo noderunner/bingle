@@ -15,9 +15,10 @@ import (
 
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/engine/dsl"
+	"github.com/noderunner/bingle/internal/web/look"
 )
 
-//go:embed onitama.yaml
+//go:embed onitama.yaml web.yaml
 var definitionFS embed.FS
 
 // definition is the definition as JSON, converted once.
@@ -25,5 +26,5 @@ var definition = sync.OnceValue(func() []byte { return dsl.MustLoad(definitionFS
 
 // Module returns Onitama's catalog.Module.
 func Module() catalog.Module {
-	return catalog.Module{ID: "onitama", Definition: definition(), Rules: New(), Assets: newGuideAssets()}
+	return catalog.Module{ID: "onitama", Definition: definition(), Rules: New(), Assets: newGuideAssets(), Web: look.MustLoad(definitionFS)}
 }

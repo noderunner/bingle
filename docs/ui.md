@@ -964,8 +964,10 @@ variants:                      # a merge patch per game of the family, by id
 The schema is `internal/web/look`: a game's module loads the file with `look.MustLoad`, which
 refuses an unknown key, and `tests/look` holds every shipped file to its games with `look.Check`.
 A piece type's own `color` is not here: the rules read it to say whose the piece is (ADR 0117).
-Games move their look into the file a few at a time (ADR 0124's stages); Blooms is the first, and
-the others still carry theirs in the definition.
+Games move their look into the file a few at a time (ADR 0124's stages). Every board game has moved
+(the classics keep theirs in `classics/web/<game>.yaml`, loaded with `look.MustLoadFile`); the card
+games and Cthulhu Wars still carry theirs in the definition. A zone's `layout` stays in the
+definition for now, because the engine reads `stack` (a pile whose cards are counted, not listed).
 
 ## DOM contract used by tests
 

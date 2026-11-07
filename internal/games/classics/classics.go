@@ -21,9 +21,10 @@ import (
 
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/engine/dsl"
+	"github.com/noderunner/bingle/internal/web/look"
 )
 
-//go:embed *.yaml
+//go:embed *.yaml web
 var definitionFS embed.FS
 
 // definitions are the definitions as JSON by file name, converted once.
@@ -54,17 +55,17 @@ func guideOf(folder string) fs.FS {
 // Modules returns the classic games' catalog modules.
 func Modules() []catalog.Module {
 	return []catalog.Module{
-		{ID: "gomoku", Definition: definitions()["gomoku.yaml"], Assets: guideOf("gomoku")},
-		{ID: "hex-11", Definition: definitions()["hex.yaml"], Assets: guideOf("hex")},
-		{ID: "draughts", Definition: definitions()["draughts.yaml"], Assets: guideOf("draughts")},
-		{ID: "breakthrough", Definition: definitions()["breakthrough.yaml"], Assets: guideOf("breakthrough")},
-		{ID: "reversi", Definition: definitions()["reversi.yaml"], Assets: guideOf("reversi")},
-		{ID: "go-9x9", Definition: definitions()["go.yaml"], Assets: guideOf("go")},
-		{ID: "yavalath", Definition: definitions()["yavalath.yaml"], Assets: guideOf("yavalath")},
-		{ID: "havannah-8", Definition: definitions()["havannah.yaml"], Assets: guideOf("havannah")},
-		{ID: "amazons", Definition: definitions()["amazons.yaml"], Assets: guideOf("amazons")},
-		{ID: "ataxx", Definition: definitions()["ataxx.yaml"], Assets: guideOf("ataxx")},
-		{ID: "pente", Definition: definitions()["pente.yaml"], Assets: guideOf("pente")},
-		{ID: "brandubh", Definition: definitions()["brandubh.yaml"], Assets: guideOf("brandubh")},
+		{ID: "gomoku", Definition: definitions()["gomoku.yaml"], Assets: guideOf("gomoku"), Web: look.MustLoadFile(definitionFS, "web/gomoku.yaml")},
+		{ID: "hex-11", Definition: definitions()["hex.yaml"], Assets: guideOf("hex"), Web: look.MustLoadFile(definitionFS, "web/hex.yaml")},
+		{ID: "draughts", Definition: definitions()["draughts.yaml"], Assets: guideOf("draughts"), Web: look.MustLoadFile(definitionFS, "web/draughts.yaml")},
+		{ID: "breakthrough", Definition: definitions()["breakthrough.yaml"], Assets: guideOf("breakthrough"), Web: look.MustLoadFile(definitionFS, "web/breakthrough.yaml")},
+		{ID: "reversi", Definition: definitions()["reversi.yaml"], Assets: guideOf("reversi"), Web: look.MustLoadFile(definitionFS, "web/reversi.yaml")},
+		{ID: "go-9x9", Definition: definitions()["go.yaml"], Assets: guideOf("go"), Web: look.MustLoadFile(definitionFS, "web/go.yaml")},
+		{ID: "yavalath", Definition: definitions()["yavalath.yaml"], Assets: guideOf("yavalath"), Web: look.MustLoadFile(definitionFS, "web/yavalath.yaml")},
+		{ID: "havannah-8", Definition: definitions()["havannah.yaml"], Assets: guideOf("havannah"), Web: look.MustLoadFile(definitionFS, "web/havannah.yaml")},
+		{ID: "amazons", Definition: definitions()["amazons.yaml"], Assets: guideOf("amazons"), Web: look.MustLoadFile(definitionFS, "web/amazons.yaml")},
+		{ID: "ataxx", Definition: definitions()["ataxx.yaml"], Assets: guideOf("ataxx"), Web: look.MustLoadFile(definitionFS, "web/ataxx.yaml")},
+		{ID: "pente", Definition: definitions()["pente.yaml"], Assets: guideOf("pente"), Web: look.MustLoadFile(definitionFS, "web/pente.yaml")},
+		{ID: "brandubh", Definition: definitions()["brandubh.yaml"], Assets: guideOf("brandubh"), Web: look.MustLoadFile(definitionFS, "web/brandubh.yaml")},
 	}
 }

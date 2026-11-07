@@ -1,0 +1,20 @@
+# How the web page draws Havannah (base 8) (ADR 0124). The rules are in the definition; nothing
+# here changes them, and other clients draw the game their own way.
+pieces:
+  piece: {shape: disc}
+# A game in play, for the list of games and the setup page.
+preview:
+  - {position: h8, piece: piece, color: white}
+  - {position: i8, piece: piece, color: white}
+  - {position: j7, piece: piece, color: white}
+  - {position: j6, piece: piece, color: white}
+  - {position: g9, piece: piece, color: white}
+  - {position: g10, piece: piece, color: white}
+  - {position: h10, piece: piece, color: white}
+  - {position: h9, piece: piece, color: black}
+  - {position: i7, piece: piece, color: black}
+  - {position: g8, piece: piece, color: black}
+  - {position: h7, piece: piece, color: black}
+  - {position: f9, piece: piece, color: black}
+  - {position: i9, piece: piece, color: black}
+  - {position: k6, piece: piece, color: black}

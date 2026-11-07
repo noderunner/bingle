@@ -2,7 +2,7 @@
 id: onitama
 name: Onitama
 description: 'A two-player martial-arts game on a 5×5 board: five Move cards decide how your pieces may move, and the card you use is passed on to your opponent.'
-version: 0.1.2
+version: 0.1.3
 designers: [Shimpei Sato]
 publisher: Arcane Wonders
 engine: ruleset
@@ -19,7 +19,6 @@ guide:
     - {id: cards, title: Cards, file: cards.md}
 board:
   generator: {type: grid, width: 5, height: 5, adjacency: orthogonal8, labels: algebraic}
-  style: squares
   regions:
     arch-red: [c1]
     arch-blue: [c5]
@@ -27,24 +26,20 @@ seats:
   - {seat: 1, color: red, label: Red}
   - {seat: 2, color: blue, label: Blue}
 pieces:
-  master: {label: Master, code: M, shape: king}
-  student: {label: Student, code: S, shape: pawn}
+  master: {label: Master, code: M}
+  student: {label: Student, code: S}
 turn_order:
   type: round-robin
   seats: [1, 2]
 win_condition: {type: ruleset}
 display:
-  no_hands: true
   tints:
     arch-red:
       label: Red's Temple Arch
-      color: '#e3a39a'
       text: Blue's Master wins by reaching this square.
     arch-blue:
       label: Blue's Temple Arch
-      color: '#9fb6e0'
       text: Red's Master wins by reaching this square.
     last:
       label: Last move
-      color: '#b9d6a0'
       text: Where the last piece started and ended.

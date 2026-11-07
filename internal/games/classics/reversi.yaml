@@ -2,7 +2,7 @@
 id: reversi
 name: Reversi
 description: Outflank your opponent's discs to flip them; the player with the most discs when nobody can move wins.
-version: 0.3.1
+version: 0.3.2
 designers: [Lewis Waterman, John W. Mollett]
 rules:
   - Players alternate placing a disc of their color; Black moves first. A disc must be placed so that it brackets at least one straight line (horizontal, vertical or diagonal) of opposing discs between the new disc and another disc of your color.
@@ -14,12 +14,11 @@ guide:
     - {id: rules, title: Rules, file: rules.md}
 board:
   generator: {type: grid, width: 8, height: 8, adjacency: orthogonal8, labels: algebraic}
-  style: squares
 seats:
   - {seat: 1, color: black, label: Black}
   - {seat: 2, color: white, label: White}
 pieces:
-  disc: {label: Disc, shape: disc}
+  disc: {label: Disc}
 setup:
   - {position: d4, piece: disc, color: white}
   - {position: e5, piece: disc, color: white}
