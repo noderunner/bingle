@@ -1,7 +1,7 @@
 # Plan: a game as an installable plugin
 
 Status: **planning in progress** (opened 2026-10-28). The five open questions were settled on
-2026-10-31 (see *Decisions*); nothing is implemented yet. The sections before *Decisions* are
+2026-10-31 (see *Decisions*). Step 1 and the retirements are built; step 2 is next. The sections before *Decisions* are
 the initial thinking, kept as written.
 
 ## What was asked for
@@ -246,3 +246,14 @@ which is now built.
   retired outright (Tic-Tac-Toe survives as a test fixture), with tombstones for games
   already played. Reversi drops "(Othello)".
 - 2026-10-31: confirmed that games of a retired type still in progress end at the upgrade.
+- 2026-11-07: step 1, the API-only play test, is built (#110), and so are the retirements (#53).
+  The DSL coverage audit is done: Blooms, Klondike, Spider and FreeCell are data, and **Onitama
+  stays in Go** (the maintainer's choice, so its expansions can be added), so it moves to the
+  overlay as a ruleset, not as a private pack. Found while taking stock: **step 3 was sized for
+  Cthulhu Wars' page as it was on 2026-10-31.** It is now about 5,500 lines in 23 `cw-*.js` files
+  (map stage, battle, setup, art, tips), nine shared page files name it, and 83 test files do (not
+  about 60). That interface cannot become the declarative display vocabulary. Decision 4 forbids
+  JavaScript in *packs* only, so the overlay can carry the game's own scripts as module assets
+  that the public client loads through a generic hook; step 3 should be rewritten to say so, and
+  settled with the maintainer, before it is built. Step 4 should start by listing the engine
+  features that only the departing games exercise.

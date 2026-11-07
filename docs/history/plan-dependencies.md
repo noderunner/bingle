@@ -7,15 +7,15 @@ order of work can be chosen deliberately. Provisional: it changes as each plan i
 
 | Plan | Status | Needs accounts |
 |---|---|---|
-| [observability-plan.md](observability-plan.md) | **settled**, ready to implement | no |
-| [auth-and-accounts-plan.md](auth-and-accounts-plan.md) | **settled**, ready to implement | — |
-| [dsl-yaml-plan.md](dsl-yaml-plan.md) | **settled**, ready to implement | no |
-| [game-tutorials-plan.md](game-tutorials-plan.md) | **settled**, ready to implement | no (guests welcome) |
-| [dsl-coverage-audit-plan.md](dsl-coverage-audit-plan.md) | planning in progress | no |
-| [patience-vocabulary-plan.md](patience-vocabulary-plan.md) | questions settled, not started (addition F of the DSL audit) | no |
-| [game-plugins-plan.md](game-plugins-plan.md) | questions settled, not started | only for packs |
-| [real-time-play-plan.md](real-time-play-plan.md) | **settled**, ready to implement | no |
-| [tournaments-and-rankings-plan.md](tournaments-and-rankings-plan.md) | **settled**, ready to implement; the next major feature | yes |
+| [observability-plan.md](observability-plan.md) | **built** | no |
+| [auth-and-accounts-plan.md](auth-and-accounts-plan.md) | **built** | — |
+| [dsl-yaml-plan.md](dsl-yaml-plan.md) | **built** | no |
+| [game-tutorials-plan.md](game-tutorials-plan.md) | **built**, with series of named lessons since #155 | no (guests welcome) |
+| [dsl-coverage-audit-plan.md](dsl-coverage-audit-plan.md) | **done** but for Yinsh's reassessment; Onitama stays in Go | no |
+| [patience-vocabulary-plan.md](patience-vocabulary-plan.md) | **built** (addition F of the DSL audit) | no |
+| [game-plugins-plan.md](game-plugins-plan.md) | questions settled; step 1 and the retirements built, step 2 next | only for packs |
+| [real-time-play-plan.md](real-time-play-plan.md) | **built** | no |
+| [tournaments-and-rankings-plan.md](tournaments-and-rankings-plan.md) | **built** but for its *Later* list | yes |
 | [achievements-plan.md](achievements-plan.md) | planning in progress | yes |
 | [code-and-architecture-audit-plan.md](code-and-architecture-audit-plan.md) | planning in progress | no |
 
@@ -97,3 +97,7 @@ The couplings that would cost the most if missed:
 - 2026-11-01: tournaments settled and chosen as the next major feature, ahead of the provisional
   order; real-time play split out as a plan of its own, which they depend on. Tournaments now land
   before achievements and own the statistics table. The rest of the provisional order is unchanged.
+- 2026-11-07: brought up to date. Observability, accounts, YAML, tutorials, real-time play,
+  tournaments (but for *Later*) and the patience vocabulary are built, and the DSL coverage audit is
+  done but for Yinsh. Onitama stays in Go. Plugins are next: step 1 (#110) and the retirements (#53)
+  are built.

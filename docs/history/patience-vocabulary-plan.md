@@ -3,7 +3,8 @@
 Status: **planning in progress** (opened 2026-11-06). This is addition F of the DSL coverage audit
 (`dsl-coverage-audit-plan.md`, *The additions*), which gave it a plan of its own as the largest
 addition proposed. The open questions were settled on 2026-11-06 (*What was decided*, below).
-Stages 1 to 3 are built; stage 4 is in review; stage 5 is next.
+Status update (2026-11-07): **done**. All five stages are built, and Solitaire is played from its
+declaration (#153).
 
 ## What was asked for
 
@@ -203,3 +204,7 @@ These were the questions put to the maintainer; the answers are above.
   details were added to the ADR: `win_condition: {type: patience}`, and the position's `counters`
   for limited redeals. Stage 4, Bowling as a game of its own under its old id, is #149. Next:
   stage 5, Solitaire's declaration beside the ruleset.
+- 2026-11-06: stage 5, Solitaire declared beside the ruleset (#150), then step 2 (#153): Klondike,
+  Spider and FreeCell are played from the declaration, their ruleset is deleted and stored games are
+  converted at start-up. The page draws them with the patience view it already had, so the declared
+  card table this plan expected to reuse from Onitama was not needed. Done.

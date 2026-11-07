@@ -1,8 +1,11 @@
 # Plan: auditing how much of each game the DSL can express
 
-Status: **planning in progress** (opened 2026-10-28). The goal, the scope and the guideline for
-what belongs in the DSL were settled on 2026-11-06 (*What was decided*, below); the audit itself is
-recorded below in *The audit*, with a recommended order. Nothing is implemented.
+Status: **done** (2026-11-07), but for one reassessment. The goal, the scope and the guideline were
+settled on 2026-11-06 (*What was decided*), the audit is recorded in *The audit*, and every addition
+it proposed is built (ADRs 0115–0122). Blooms, Klondike, Spider and FreeCell are played from their
+declarations. Onitama was declared but stays in Go by the maintainer's choice (2026-11-07), so its
+expansions can be added. Left open: Yinsh, to be reassessed now that A exists (*The recommended
+order*, item 5).
 
 ## What was asked for
 
@@ -246,3 +249,13 @@ of something real, and it is the only way to convert a game with confidence.
   their rulesets (conversion step 1, #138 and #144). D was narrowed to a deal at the start: draws
   during play and dice wait for a game that needs them. Addition F has its own plan now,
   `patience-vocabulary-plan.md`.
+- 2026-11-06: Blooms' conversion step 2 (#151): the declaration plays Blooms, its ruleset is deleted,
+  and stored games are converted at start-up through `catalog.Module.Upgrade`. The maintainer said
+  stored games can simply be converted, and not to worry if some convert badly.
+- 2026-11-06: addition F built (patience plan); Solitaire's step 1 (#150) and step 2 (#153). Bowling
+  Solitaire stays in Go as a game of its own (#149).
+- 2026-11-07: **Onitama stays in Go.** The maintainer means to add its expansions, which may need
+  rules the DSL lacks, so its conversion stops after step 1: draft #152 (step 2) is closed and #156
+  deletes the declaration. Move cards (E) stay, tested by a fixture (ADR 0120, addendum). The page's
+  card table and `card` gesture for declared games, which #152 carried, wait for a game that needs
+  them. This finishes the audit except for item 5, Yinsh's reassessment, not yet done.
