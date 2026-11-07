@@ -178,8 +178,8 @@ pieces:
 * **How a game looks is moving out of the definition** into the game's `web.yaml`
   ([ADR 0124](decisions/0124-the-server-says-what-things-are-clients-decide-how-they-look.md), and
   *A game's look* in [ui.md](ui.md)): `shape`, `blend`, `board.style` and `borders`, `preview`, card
-  backs and layouts, `display.no_hands` and each tint's and badge's `color` and `glyph`. Blooms has
-  moved; the other games still declare them here, and the page reads either.
+  backs, `display.no_hands` and each tint's and badge's `color` and `glyph`. The board games have
+  moved; the card games and Cthulhu Wars still declare them here, and the page reads either.
 * `tags` classify pieces for win rules and scores.
 * `pool` names the reserve pool a *placed* piece is drawn from (default: the
   piece type itself). Pieces sharing a pool share a supply — Tak's flat and

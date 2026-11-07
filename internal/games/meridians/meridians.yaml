@@ -2,7 +2,7 @@
 id: meridians
 name: Meridians
 description: Stones that cannot see a friend die. Place where one of your stones looks, keep every group in sight of another, and take the board away from your opponent.
-version: 0.1.3
+version: 0.1.4
 designers: [Kanare Kato]
 engine: ruleset
 rules:
@@ -17,18 +17,8 @@ guide:
   tabs:
     - {id: rules, title: Rules, file: rules.md}
 params: {max_plies: 1200}
-preview:
-  - {position: g7, piece: stone, color: white}
-  - {position: i7, piece: stone, color: white}
-  - {position: e5, piece: stone, color: white}
-  - {position: h10, piece: stone, color: white}
-  - {position: d7, piece: stone, color: black}
-  - {position: f4, piece: stone, color: black}
-  - {position: j4, piece: stone, color: black}
-  - {position: e9, piece: stone, color: black}
 board:
   generator: {type: hexhex, size: 6, size2: 7}
-  style: points
 seats:
   - {seat: 1, color: white, label: Light}
   - {seat: 2, color: black, label: Dark}
@@ -36,21 +26,17 @@ pieces:
   stone:
     label: Stone
     code: S
-    shape: disc
     rules: Placed where one of your stones can see; never moves.
 turn_order:
   type: round-robin
   seats: [1, 2]
 win_condition: {type: ruleset}
 display:
-  no_hands: true
   tints:
-    last: {label: Last stone, color: '#c8dfa8', text: Where the last stone was placed.}
+    last: {label: Last stone, text: Where the last stone was placed.}
   badges:
     dead:
       label: No path
-      glyph: ✕
-      color: '#c0392b'
       text: "This group can see no other group of its colour: it comes off the board when its owner's turn ends."
 variants:
   - id: meridians-5

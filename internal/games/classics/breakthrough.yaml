@@ -2,7 +2,7 @@
 id: breakthrough
 name: Breakthrough
 description: Race a pawn across the board. Move straight or diagonally forward, capture only diagonally.
-version: 0.1.0
+version: 0.1.1
 designers: [Dan Troyka]
 rules:
   - Each player starts with sixteen pawns on their two home rows; White moves first.
@@ -13,12 +13,11 @@ guide:
     - {id: rules, title: Rules, file: rules.md}
 board:
   generator: {type: grid, width: 8, height: 8, adjacency: orthogonal8, labels: algebraic}
-  style: squares
 seats:
   - {seat: 1, color: white, label: White, forward: N}
   - {seat: 2, color: black, label: Black, forward: S}
 pieces:
-  pawn: {label: Pawn, code: P, shape: disc}
+  pawn: {label: Pawn, code: P}
 setup:
   - {position: a2, piece: pawn, color: white}
   - {position: b2, piece: pawn, color: white}

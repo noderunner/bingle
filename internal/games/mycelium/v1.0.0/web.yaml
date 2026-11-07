@@ -1,0 +1,20 @@
+# How the web page draws Mycelium (ADR 0124). The rules are in the definition; nothing
+# here changes them, and other clients draw the game their own way.
+pieces:
+  black: {shape: disc}
+  green: {shape: disc}
+display:
+  no_hands: true
+  tints:
+    last: {color: '#c8dfa8'}
+    spent: {color: '#e0d0a0'}
+    confluence: {color: '#d8b8e8'}
+# A game in play, for the list of games and the setup page.
+preview:
+  - {position: e5, piece: black, color: black}
+  - {position: d5, piece: green, color: green}
+  - {position: f5, piece: green, color: green}
+  - {position: e4, piece: green, color: green}
+  - {position: e6, piece: green, color: green}
+  - {position: d4, piece: black, color: black}
+  - {position: f6, piece: black, color: black}

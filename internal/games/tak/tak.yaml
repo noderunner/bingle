@@ -2,7 +2,7 @@
 id: tak-5x5
 name: Tak (5×5)
 description: Build an unbroken road of your stones from one side of the board to the opposite side. Stacks, walls and a capstone make it a game of tempo and tactics.
-version: 0.1.0
+version: 0.1.1
 designers: [James Ernest, Patrick Rothfuss]
 publisher: Cheapass Games
 rules:
@@ -11,27 +11,8 @@ rules:
   - "Placing: put one stone from your hand on an empty square. It can be a flat stone (lies flat, counts for roads and flat count), a standing stone or wall (blocks movement, counts for neither roads nor flat count) or your capstone (counts for roads, can't be covered, and can flatten walls)."
   - 'Moving: you control a stack if your piece is on top. Pick up any number of pieces from the top of a stack (at most the board size), then move in a straight line without turning back, dropping at least one piece on each square you enter. Pieces are dropped bottom-first. You may not move onto a wall or capstone, except that a capstone moving alone onto a wall as the last drop of its move flattens the wall into a flat stone.'
   - 'Roads: only flat stones and capstones on TOP of a square count. If one move gives both players a road, the player who moved wins.'
-preview:
-  - {position: a1, piece: flat, color: white}
-  - {position: c1, piece: flat, color: white}
-  - {position: e1, piece: flat, color: white}
-  - {position: b2, piece: flat, color: white}
-  - {position: c3, piece: flat, color: white}
-  - {position: d3, piece: flat, color: white}
-  - {position: b1, piece: flat, color: black}
-  - {position: d1, piece: flat, color: black}
-  - {position: a2, piece: flat, color: black}
-  - {position: d2, piece: flat, color: black}
-  - {position: e2, piece: flat, color: black}
-  - {position: c3, piece: flat, color: black}
-  - {position: b4, piece: flat, color: black}
-  - {position: e4, piece: wall, color: black}
-  - {position: b3, piece: wall, color: white}
-  - {position: c2, piece: cap, color: white}
-  - {position: d4, piece: cap, color: black}
 board:
   generator: {type: grid, width: 5, height: 5, adjacency: orthogonal4, labels: algebraic}
-  style: squares
 seats:
   - {seat: 1, color: white, label: White}
   - {seat: 2, color: black, label: Black}
@@ -39,13 +20,11 @@ pieces:
   flat:
     label: Flat stone
     code: F
-    shape: square
     pool: stone
     tags: [road, flat]
   wall:
     label: Standing stone
     code: S
-    shape: wall
     pool: stone
     tags: [blocker]
     stack:
@@ -55,7 +34,6 @@ pieces:
   cap:
     label: Capstone
     code: C
-    shape: cap
     tags: [road]
     stack: {coverable: false}
 reserves: {stone: 21, cap: 1}

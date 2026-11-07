@@ -1,0 +1,24 @@
+# How the web page draws Go (9×9) (ADR 0124). The rules are in the definition; nothing
+# here changes them, and other clients draw the game their own way.
+board:
+  style: points
+pieces:
+  stone: {shape: disc}
+# A game in play, for the list of games and the setup page.
+preview:
+  - {position: c3, piece: stone, color: black}
+  - {position: c4, piece: stone, color: black}
+  - {position: d4, piece: stone, color: black}
+  - {position: e3, piece: stone, color: black}
+  - {position: g7, piece: stone, color: black}
+  - {position: f7, piece: stone, color: black}
+  - {position: e7, piece: stone, color: black}
+  - {position: c7, piece: stone, color: black}
+  - {position: d3, piece: stone, color: white}
+  - {position: b4, piece: stone, color: white}
+  - {position: c5, piece: stone, color: white}
+  - {position: d5, piece: stone, color: white}
+  - {position: e4, piece: stone, color: white}
+  - {position: f6, piece: stone, color: white}
+  - {position: g6, piece: stone, color: white}
+  - {position: f8, piece: stone, color: white}

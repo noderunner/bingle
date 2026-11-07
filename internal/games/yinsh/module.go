@@ -19,6 +19,7 @@ import (
 
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/engine/dsl"
+	"github.com/noderunner/bingle/internal/web/look"
 )
 
 //go:embed definition
@@ -36,5 +37,5 @@ func Module() catalog.Module {
 	if err != nil {
 		panic(err)
 	}
-	return catalog.Module{ID: "yinsh", Definition: definition(), Rules: New(), Assets: sub}
+	return catalog.Module{ID: "yinsh", Definition: definition(), Rules: New(), Assets: sub, Web: look.MustLoadFile(definitionFS, "definition/web.yaml")}
 }

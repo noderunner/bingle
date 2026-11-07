@@ -1,0 +1,8 @@
+# How the web page draws Brandubh (ADR 0124). The rules are in the definition; nothing
+# here changes them, and other clients draw the game their own way.
+board:
+  borders: {corners: red, throne: yellow}
+pieces:
+  attacker: {shape: disc}
+  defender: {shape: square}
+  king: {shape: cap}

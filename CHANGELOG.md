@@ -4,6 +4,14 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.94.1 - 2026-11-07
+
+### Bingle Core 0.94.1
+- Nothing changes in play. Every board game now keeps how the page draws it in its own look file, as Blooms does since 0.94.0.
+
+### Amazons 0.3.1, Ataxx 0.3.1, Brandubh 0.1.1, Breakthrough 0.1.1, English Draughts 0.1.1, Fendo 0.1.2, Fist 0.1.3, Go 0.3.1, Gomoku 0.3.1, Havannah 0.3.2, Hex 0.3.1, Hive 0.1.2, Meridians 0.1.4, Onitama 0.1.3, Pente 0.3.1, Reversi 0.3.2, Tak 0.1.1, Yavalath 0.3.1, Yinsh 0.1.2, and the Courtfall and Mycelium prototypes
+- Nothing changes in play or on the board: each is drawn from its own look file.
+
 ## 0.94.0 - 2026-11-07
 
 ### Bingle Core 0.94.0

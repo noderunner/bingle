@@ -1,0 +1,27 @@
+# How the web page draws Tak (5×5) (ADR 0124). The rules are in the definition; nothing
+# here changes them, and other clients draw the game their own way.
+board:
+  style: squares
+pieces:
+  flat: {shape: square}
+  wall: {shape: wall}
+  cap: {shape: cap}
+# A game in play, for the list of games and the setup page.
+preview:
+  - {position: a1, piece: flat, color: white}
+  - {position: c1, piece: flat, color: white}
+  - {position: e1, piece: flat, color: white}
+  - {position: b2, piece: flat, color: white}
+  - {position: c3, piece: flat, color: white}
+  - {position: d3, piece: flat, color: white}
+  - {position: b1, piece: flat, color: black}
+  - {position: d1, piece: flat, color: black}
+  - {position: a2, piece: flat, color: black}
+  - {position: d2, piece: flat, color: black}
+  - {position: e2, piece: flat, color: black}
+  - {position: c3, piece: flat, color: black}
+  - {position: b4, piece: flat, color: black}
+  - {position: e4, piece: wall, color: black}
+  - {position: b3, piece: wall, color: white}
+  - {position: c2, piece: cap, color: white}
+  - {position: d4, piece: cap, color: black}

@@ -1,0 +1,33 @@
+# How the web page draws Courtfall (ADR 0124). The rules are in the definition; nothing
+# here changes them, and other clients draw the game their own way.
+pieces:
+  pawn: {shape: pawn}
+  knight: {shape: knight}
+  bishop: {shape: bishop}
+  rook: {shape: rook}
+  queen: {shape: queen}
+display:
+  tints:
+    green: {color: '#5f9e5b', glyph: ♣}
+    blue: {color: '#5b86b8', glyph: ≈}
+    red: {color: '#c4584a', glyph: ▲}
+    eye: {color: '#d9b44a', glyph: ◉}
+    zone-1: {color: '#e9e5cf'}
+    zone-2: {color: '#b9b3a2'}
+  badges:
+    fatigued: {glyph: ●, color: '#f4f1e8'}
+    exhausted: {glyph: ●, color: '#1f1d1a'}
+    active: {glyph: ▲, color: '#e0a526'}
+    target: {glyph: ◎, color: '#d1453b'}
+# A game in play, for the list of games and the setup page.
+preview:
+  - {position: d1, piece: rook, color: white}
+  - {position: g1, piece: bishop, color: white}
+  - {position: e2, piece: queen, color: white}
+  - {position: c2, piece: knight, color: white}
+  - {position: f2, piece: pawn, color: white}
+  - {position: a7, piece: rook, color: black}
+  - {position: d7, piece: bishop, color: black}
+  - {position: b6, piece: queen, color: black}
+  - {position: c7, piece: knight, color: black}
+  - {position: d6, piece: pawn, color: black}

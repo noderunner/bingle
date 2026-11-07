@@ -7,9 +7,10 @@ import (
 
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/engine/dsl"
+	"github.com/noderunner/bingle/internal/web/look"
 )
 
-//go:embed meridians.yaml
+//go:embed meridians.yaml web.yaml
 var definitionFS embed.FS
 
 // definition is the definition as JSON, converted once.
@@ -31,5 +32,5 @@ func Module() catalog.Module {
 	if err != nil {
 		panic(err)
 	}
-	return catalog.Module{ID: "meridians", Definition: definition(), Rules: New(), Assets: sub, Tutorials: tutorials}
+	return catalog.Module{ID: "meridians", Definition: definition(), Rules: New(), Assets: sub, Tutorials: tutorials, Web: look.MustLoad(definitionFS)}
 }

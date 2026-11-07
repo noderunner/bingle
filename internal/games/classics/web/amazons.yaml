@@ -1,0 +1,5 @@
+# How the web page draws Amazons (ADR 0124). The rules are in the definition; nothing
+# here changes them, and other clients draw the game their own way.
+pieces:
+  queen: {shape: cap}
+  arrow: {shape: cross}

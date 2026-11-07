@@ -14,9 +14,10 @@ import (
 
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/engine/dsl"
+	"github.com/noderunner/bingle/internal/web/look"
 )
 
-//go:embed mycelium.yaml
+//go:embed mycelium.yaml web.yaml
 var definitionFS embed.FS
 
 // definition is the definition as JSON, converted once.
@@ -38,5 +39,5 @@ func Module() catalog.Module {
 	if err != nil {
 		panic(err)
 	}
-	return catalog.Module{ID: "mycelium-1.0.0", Definition: definition(), Rules: New(), Assets: sub, Tutorials: tutorials}
+	return catalog.Module{ID: "mycelium-1.0.0", Definition: definition(), Rules: New(), Assets: sub, Tutorials: tutorials, Web: look.MustLoad(definitionFS)}
 }

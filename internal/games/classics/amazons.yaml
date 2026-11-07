@@ -2,7 +2,7 @@
 id: amazons
 name: Amazons
 description: Move a queen, then shoot an arrow that burns a square for good. The last player able to move wins.
-version: 0.3.0
+version: 0.3.1
 designers: [Walter Zamkauskas]
 rules:
   - 'Each side has four queens (Amazons). A turn has two parts: slide one of your queens like a chess queen — any distance in a straight line, orthogonally or diagonally, without jumping — and then shoot an arrow from where it landed, along any straight line, onto an empty square.'
@@ -19,8 +19,8 @@ seats:
   - {seat: 1, color: white, label: White}
   - {seat: 2, color: black, label: Black}
 pieces:
-  queen: {label: Amazon, shape: cap, code: Q}
-  arrow: {label: Arrow, shape: cross, code: x}
+  queen: {label: Amazon, code: Q}
+  arrow: {label: Arrow, code: x}
 setup:
   - {position: a4, piece: queen, color: white}
   - {position: d1, piece: queen, color: white}

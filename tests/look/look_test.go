@@ -9,37 +9,33 @@ import (
 
 	"github.com/noderunner/bingle/internal/app"
 	"github.com/noderunner/bingle/internal/engine/catalog"
-	"github.com/noderunner/bingle/internal/engine/dsl"
 	"github.com/noderunner/bingle/internal/web/look"
 )
 
 // families registers every shipped module and returns, for each family whose
 // module brings a look, the look and its games' definitions.
-func families(t *testing.T) map[string]struct {
-	web  []byte
-	defs map[string]*dsl.GameDefinition
-} {
+type family struct {
+	web   []byte
+	games map[string]*catalog.CompiledGame
+}
+
+func families(t *testing.T) map[string]family {
 	t.Helper()
-	cat := catalog.NewCatalog()
-	out := map[string]struct {
-		web  []byte
-		defs map[string]*dsl.GameDefinition
-	}{}
+	out := map[string]family{}
 	for _, m := range app.BuiltinModules() {
+		if m.Web == nil {
+			continue
+		}
+		// The module's games alone: its own and its variants.
+		cat := catalog.NewCatalog()
 		if err := cat.RegisterModule(m); err != nil {
 			t.Fatalf("RegisterModule(%s): %v", m.ID, err)
 		}
-		if m.Web != nil {
-			out[m.ID] = struct {
-				web  []byte
-				defs map[string]*dsl.GameDefinition
-			}{m.Web, map[string]*dsl.GameDefinition{}}
+		f := family{m.Web, map[string]*catalog.CompiledGame{}}
+		for _, cg := range cat.List() {
+			f.games[cg.Definition.ID] = cg
 		}
-	}
-	for _, cg := range cat.List() {
-		if f, ok := out[cg.Definition.Family]; ok {
-			f.defs[cg.Definition.ID] = cg.Definition
-		}
+		out[m.ID] = f
 	}
 	return out
 }
@@ -48,11 +44,19 @@ func families(t *testing.T) map[string]struct {
 // zones, suits and variants, and previews only pieces in played colours.
 func TestEveryLookFitsItsGame(t *testing.T) {
 	fams := families(t)
-	if _, ok := fams["blooms"]; !ok {
-		t.Fatal("Blooms brings no look")
+	// Every game but Cthulhu Wars, whose look moves with it (ADR 0124), and
+	// the card games, which move next.
+	for _, id := range []string{"blooms", "tak-5x5", "fendo", "fist", "meridians", "hive", "onitama", "yinsh", "courtfall-1.0.0", "mycelium-1.0.0",
+		"gomoku", "hex-11", "draughts", "breakthrough", "reversi", "go-9x9", "yavalath", "havannah-8", "amazons", "ataxx", "pente", "brandubh"} {
+		if _, ok := fams[id]; !ok {
+			t.Errorf("%s brings no look", id)
+		}
 	}
 	for id, f := range fams {
-		if err := look.Check(f.web, id, f.defs); err != nil {
+		if len(f.games) == 0 {
+			t.Errorf("%s: no game of the family", id)
+		}
+		if err := look.Check(f.web, id, f.games); err != nil {
 			t.Error(err)
 		}
 	}
@@ -60,15 +64,27 @@ func TestEveryLookFitsItsGame(t *testing.T) {
 
 // Check catches what a look gets wrong.
 func TestCheckCatchesAMistake(t *testing.T) {
-	def := &dsl.GameDefinition{
-		ID:      "g",
-		Seats:   []dsl.SeatDef{{Seat: 1, Color: "red"}, {Seat: 2, Color: "blue"}},
-		Pieces:  map[string]dsl.PieceDef{"stone": {}},
-		Display: &dsl.DisplayDef{Tints: map[string]dsl.OverlayDef{"hot": {Label: "Hot"}}},
+	cat := catalog.NewCatalog()
+	src := `{"id":"g","name":"G","board":{"generator":{"type":"grid","width":3,"height":3,"adjacency":"orthogonal4"}},
+		"seats":[{"seat":1,"color":"red"},{"seat":2,"color":"blue"}],"pieces":{"stone":{"movement":{}}},
+		"turn_order":{"type":"round-robin","seats":[1,2]},"actions":[{"id":"place","type":"place","pieces":["stone"]}],
+		"win_condition":{"type":"none"},"display":{"tints":{"hot":{"label":"Hot"}}},
+		"variants":[{"id":"g-big","patch":{"board":{"generator":{"width":5,"height":5}}}}]}`
+	if err := cat.RegisterModule(catalog.Module{ID: "g", Definition: []byte(src)}); err != nil {
+		t.Fatal(err)
 	}
-	defs := map[string]*dsl.GameDefinition{"g": def, "g-big": def}
+	games := map[string]*catalog.CompiledGame{}
+	for _, id := range []string{"g", "g-big"} {
+		cg, ok := cat.Get(id)
+		if !ok {
+			t.Fatalf("no %s", id)
+		}
+		games[id] = cg
+	}
 	for file, want := range map[string]string{
 		`{"seats":{"1":{"blend":["red","blue"]}},"pieces":{"stone":{"shape":"ring"}},"display":{"tints":{"hot":{"color":"#f00"}}},"variants":{"g-big":{"board":{"style":"points"}}}}`: "",
+		`{"board":{"borders":{"top":"red"}}}`:                            "",
+		`{"board":{"borders":{"moat":"red"}}}`:                           `border "moat"`,
 		`{"seats":{"3":{}}}`:                                             `seat "3"`,
 		`{"seats":{"1":{"blend":["green"]}}}`:                            `"green", which nobody plays`,
 		`{"pieces":{"pawn":{}}}`:                                         `piece "pawn"`,
@@ -81,7 +97,7 @@ func TestCheckCatchesAMistake(t *testing.T) {
 		`{"variants":{"g-big":{"variants":{}}}}`:                         "", // an empty map is no variants
 		`{"variants":{"g-big":{"pieces":{"pawn":{}}}}}`:                  `variant "g-big": piece "pawn"`,
 	} {
-		err := look.Check([]byte(file), "g", defs)
+		err := look.Check([]byte(file), "g", games)
 		switch {
 		case want == "" && err != nil:
 			t.Errorf("%s: %v", file, err)

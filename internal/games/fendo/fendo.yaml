@@ -2,7 +2,7 @@
 id: fendo
 name: Fendo
 description: "Dieter Stein's territory game of pieces and fences: move a piece and build a fence beside it, or add a piece. An area fenced off round exactly one piece belongs to that piece's owner."
-version: 0.1.1
+version: 0.1.2
 designers: [Dieter Stein]
 engine: ruleset
 rules:
@@ -20,26 +20,22 @@ guide:
     - {id: rules, title: Rules, file: rules.md}
 board:
   generator: {type: grid, width: 7, height: 7, adjacency: orthogonal4, labels: algebraic}
-  style: squares
 seats:
   - {seat: 1, color: white, label: White}
   - {seat: 2, color: orange, label: Orange}
 pieces:
-  piece: {label: Piece, code: P, shape: disc}
+  piece: {label: Piece, code: P}
 turn_order:
   type: round-robin
   seats: [1, 2]
 win_condition: {type: ruleset}
 display:
-  no_hands: true
   tints:
     area1:
       label: White's area
-      color: '#c9d3e6'
       text: 'An area fenced off round one white piece: its squares count for White.'
     area2:
       label: Orange's area
-      color: '#f2c28d'
       text: 'An area fenced off round one orange piece: its squares count for Orange.'
 variants:
   - id: fendo-9

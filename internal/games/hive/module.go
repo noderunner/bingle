@@ -19,9 +19,10 @@ import (
 
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/engine/dsl"
+	"github.com/noderunner/bingle/internal/web/look"
 )
 
-//go:embed hive.yaml
+//go:embed hive.yaml web.yaml
 var definitionFS embed.FS
 
 // definition is the definition as JSON, converted once.
@@ -36,5 +37,5 @@ func Module() catalog.Module {
 	if err != nil {
 		panic(err)
 	}
-	return catalog.Module{ID: "hive", Definition: definition(), Rules: New(), Assets: sub}
+	return catalog.Module{ID: "hive", Definition: definition(), Rules: New(), Assets: sub, Web: look.MustLoad(definitionFS)}
 }

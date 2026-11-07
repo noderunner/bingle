@@ -1,0 +1,28 @@
+# How the web page draws Gomoku (15×15) (ADR 0124). The rules are in the definition; nothing
+# here changes them, and other clients draw the game their own way.
+board:
+  style: points
+pieces:
+  stone: {shape: disc}
+# A game in play, for the list of games and the setup page.
+preview:
+  - {position: h8, piece: stone, color: black}
+  - {position: i9, piece: stone, color: black}
+  - {position: g9, piece: stone, color: black}
+  - {position: i7, piece: stone, color: black}
+  - {position: j8, piece: stone, color: black}
+  - {position: h6, piece: stone, color: black}
+  - {position: k10, piece: stone, color: black}
+  - {position: f10, piece: stone, color: black}
+  - {position: j6, piece: stone, color: black}
+  - {position: e8, piece: stone, color: black}
+  - {position: h9, piece: stone, color: white}
+  - {position: i8, piece: stone, color: white}
+  - {position: g8, piece: stone, color: white}
+  - {position: j9, piece: stone, color: white}
+  - {position: h7, piece: stone, color: white}
+  - {position: g7, piece: stone, color: white}
+  - {position: k8, piece: stone, color: white}
+  - {position: f9, piece: stone, color: white}
+  - {position: i6, piece: stone, color: white}
+  - {position: d9, piece: stone, color: white}

@@ -1418,6 +1418,16 @@ func TestWebGame_EveryGameOpensDrawsAndTakesAFirstClick(t *testing.T) {
 			} `json:"board"`
 		}
 		doJSON(t, "GET", baseURL+"/api/game-defs/"+id, nil, &info)
+		// The style is the look's, as the page reads it (ADR 0124).
+		var look struct {
+			Board struct {
+				Style string `json:"style"`
+			} `json:"board"`
+		}
+		doJSON(t, "GET", baseURL+"/api/game-defs/"+id+"/web", nil, &look)
+		if look.Board.Style != "" {
+			info.Board.Style = look.Board.Style
+		}
 		// A board-less ("free") game draws only the tiles and targets.
 		if cells != len(info.Board.Positions) && info.Board.Style != "free" && info.Board.Style != "none" {
 			t.Errorf("%s: drew %d cells for %d positions", id, cells, len(info.Board.Positions))

@@ -2,7 +2,7 @@
 id: havannah-8
 name: Havannah (base 8)
 description: Win with a ring, a bridge between two corners or a fork touching three sides — on a hexagonal board. A connection game with three ways to win.
-version: 0.3.1
+version: 0.3.2
 designers: [Christian Freeling]
 rules:
   - White and Black alternate placing one stone on any empty cell of the hexagonal board; White moves first.
@@ -14,28 +14,13 @@ rules:
 guide:
   tabs:
     - {id: rules, title: Rules, file: rules.md}
-preview:
-  - {position: h8, piece: piece, color: white}
-  - {position: i8, piece: piece, color: white}
-  - {position: j7, piece: piece, color: white}
-  - {position: j6, piece: piece, color: white}
-  - {position: g9, piece: piece, color: white}
-  - {position: g10, piece: piece, color: white}
-  - {position: h10, piece: piece, color: white}
-  - {position: h9, piece: piece, color: black}
-  - {position: i7, piece: piece, color: black}
-  - {position: g8, piece: piece, color: black}
-  - {position: h7, piece: piece, color: black}
-  - {position: f9, piece: piece, color: black}
-  - {position: i9, piece: piece, color: black}
-  - {position: k6, piece: piece, color: black}
 board:
   generator: {type: hexhex, size: 8}
 seats:
   - {seat: 1, color: white, label: White}
   - {seat: 2, color: black, label: Black}
 pieces:
-  piece: {label: Stone, shape: disc}
+  piece: {label: Stone}
 pie_rule: optional
 turn_order:
   type: round-robin

@@ -1,0 +1,20 @@
+# How the web page draws Fist (ADR 0124). The rules are in the definition; nothing
+# here changes them, and other clients draw the game their own way.
+board:
+  style: squares
+pieces:
+  yellow: {shape: ring}
+  blue: {shape: pawn}
+  king: {shape: king}
+  ace: {shape: knight}
+  mage: {shape: bishop}
+  pawn: {shape: queen}
+display:
+  no_hands: true
+  tints:
+    keep: {color: '#d9c58a'}
+    last: {color: '#b9d6a0'}
+    taken: {color: '#e0a090'}
+  badges:
+    empowered: {glyph: ✦, color: '#d1a21f'}
+    ctrl: {glyph: ◆, color: '#3f9a55'}

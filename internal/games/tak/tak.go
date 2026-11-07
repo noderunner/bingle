@@ -15,9 +15,10 @@ import (
 
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/engine/dsl"
+	"github.com/noderunner/bingle/internal/web/look"
 )
 
-//go:embed tak.yaml
+//go:embed tak.yaml web.yaml
 var definitionFS embed.FS
 
 // definition is the definition as JSON, converted once.
@@ -33,5 +34,5 @@ func Module() catalog.Module {
 	if err != nil {
 		panic(err)
 	}
-	return catalog.Module{ID: "tak-5x5", Definition: definition(), Callbacks: nil, Assets: sub}
+	return catalog.Module{ID: "tak-5x5", Definition: definition(), Callbacks: nil, Assets: sub, Web: look.MustLoad(definitionFS)}
 }

@@ -2,7 +2,7 @@
 id: brandubh
 name: Brandubh
 description: 'An asymmetric Celtic hunt game: eight attackers surround the king and his four defenders, who must break out to a corner.'
-version: 0.1.0
+version: 0.1.1
 rules:
   - 'The attackers (black) move first. Every piece moves like a rook: any distance in a straight line over empty squares, without jumping.'
   - Only the king may stop on the four corners or on the central throne (any piece may pass over the empty throne).
@@ -17,14 +17,13 @@ board:
     corners: [a1, g1, a7, g7]
     throne: [d4]
     restricted: [a1, g1, a7, g7, d4]
-  borders: {corners: red, throne: yellow}
 seats:
   - {seat: 1, color: black, label: Attackers}
   - {seat: 2, color: white, label: Defenders}
 pieces:
-  attacker: {label: Attacker, shape: disc}
-  defender: {label: Defender, shape: square}
-  king: {label: King, shape: cap, code: K}
+  attacker: {label: Attacker}
+  defender: {label: Defender}
+  king: {label: King, code: K}
 setup:
   - {position: d1, piece: attacker, color: black}
   - {position: d2, piece: attacker, color: black}

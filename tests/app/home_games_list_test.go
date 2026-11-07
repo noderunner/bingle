@@ -41,7 +41,7 @@ func TestHomeGames_ListShowsBetaPlayersAndADetailsCard(t *testing.T) {
 			t.Errorf("%s: players = %q, want %q", family, got, want)
 		}
 	}
-	if got := evalString(t, ctx, `document.querySelector('.game-card[data-family="tak-5x5"] .badge.beta').getAttribute("title")`); !strings.Contains(got, "0.1.0") {
+	if got := evalString(t, ctx, `document.querySelector('.game-card[data-family="tak-5x5"] .badge.beta').getAttribute("title")`); !strings.Contains(got, "0.1.1") {
 		t.Errorf("the Beta mark does not say the version: %q", got)
 	}
 	// Cthulhu Wars and Hive have pictures of their own: four sigils, and a cluster of tiles.
@@ -66,7 +66,7 @@ func TestHomeGames_ListShowsBetaPlayersAndADetailsCard(t *testing.T) {
 	hover(`.game-card[data-family="tak-5x5"]`)
 	waitJS(t, ctx, "the details card", `!!document.getElementById("game-tip") && !document.getElementById("game-tip").hidden`, 5*time.Second)
 	tip := evalString(t, ctx, `document.getElementById("game-tip").textContent`)
-	for _, want := range []string{"Tak", "James Ernest", "Patrick Rothfuss", "Cheapass Games", "unbroken road", "0.1.0"} {
+	for _, want := range []string{"Tak", "James Ernest", "Patrick Rothfuss", "Cheapass Games", "unbroken road", "0.1.1"} {
 		if !strings.Contains(tip, want) {
 			t.Errorf("the details card of Tak lacks %q: %q", want, tip)
 		}
