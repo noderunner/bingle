@@ -135,3 +135,26 @@ export function actionLabel(id, label, rv, acting) {
 
 /** The game options' name for its battles and awakenings. */
 export const battleOption = "Battle and Great Old One animations";
+
+/** A unit that holds a Gate, named for the buttons that choose it. */
+export function heldLabel(label) {
+	return `${label} on the Gate`;
+}
+
+/** What choosing a unit on a Gate does, for its button. */
+export function heldNote(label, capturing) {
+	return capturing ? `${label}: capturing it leaves the Gate abandoned, and your own Cultist takes it` : `${label}: moving it abandons the Gate`;
+}
+
+/** What a Pass gives up. */
+export function passWarning(power) {
+	return `You will lose your ${power} unspent Power.`;
+}
+
+/** The pane of the seats, at a table of more than two. */
+export const seatsName = "Cults";
+
+/** A Move's units queued from some areas, waiting for more or for where they go. */
+export function queueReady(from) {
+	return `Units from ${from} are ready: select more from any area, then the area they all go to.`;
+}
