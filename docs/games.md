@@ -8,7 +8,7 @@ vocabulary and [mcp.md](mcp.md) for the training side (planes, action IDs).
 |---|---|---|---|---|---|---|
 | **Amazons** (`amazons`) | 0.3.0 | 10×10 squares | 2 | slide | end/mover-wins | `amazons` `amazons-6` |
 | **Ataxx** (`ataxx`) | 0.3.0 | 7×7 squares | 2 | leap | end/most |  |
-| **Blooms** (`blooms`) | 0.5.0 | hexagon, 5 per side | 2 | ruleset (Go) | victory points | `blooms` `blooms-10` `blooms-4` `blooms-6` `blooms-8` |
+| **Blooms** (`blooms`) | 0.6.0 | hexagon, 5 per side | 2 | done, place | end/most, pool | `blooms` `blooms-10` `blooms-4` `blooms-6` `blooms-8` |
 | **Bowling Solitaire** (`bowling-solitaire`) | 0.2.0 | 1×1 squares | 1 | ruleset (Go) | victory points |  |
 | **Brandubh** (`brandubh`) | 0.1.0 | 7×7 squares | 2 | slide | absent, end/mover-wins, reach |  |
 | **Breakthrough** (`breakthrough`) | 0.1.0 | 8×8 squares | 2 | step | end/mover-wins, reach |  |

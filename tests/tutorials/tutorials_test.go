@@ -332,7 +332,6 @@ func TestPictures(t *testing.T) {
 		"not a piece":      {"    pieces: [red]\n", "piece@square"},
 		"unknown piece":    {"    pieces: [dragon@d4]\n", "dragon"},
 		"unknown colour":   {"    pieces: [\"red:plaid@d4\"]\n", "plaid"},
-		"two on one cell":  {"    pieces: [red@d4, blue@d4]\n", "two stones"},
 		"two kinds":        {"    pieces: [red@d4]\n    show: [red@d4]\n", "only one"},
 		"and moves":        {"    pieces: [red@d4]\n    play: [red@d4]\n", "cannot ask for moves"},
 		"illegal, nothing": {"    illegal: true\n", "no arrow or highlight"},

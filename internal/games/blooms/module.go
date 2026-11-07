@@ -4,10 +4,11 @@
 // capture a set number of enemy stones. A "bloom" is a connected group of one
 // colour; it is captured when it has no empty space beside it.
 //
-// The rules are a Go state.Ruleset (a turn is one or two placements and an end
-// of turn that resolves the captures); blooms.yaml describes the board, seats
-// and the four stone colours, and carries the base-4 and base-6 boards as
-// variants. The game has no secrets and no chance.
+// The rules are declared in blooms.yaml: two colours a seat (ADR 0117), a turn
+// of one or two stones (ADR 0115), captures when a turn ends (ADR 0116) and a
+// move limit decided on captures (ADR 0118). Until 0.6.0 they were a Go
+// ruleset; upgrade.go converts the positions it stored. The game has no
+// secrets and no chance.
 package blooms
 
 import (
@@ -41,5 +42,5 @@ func Module() catalog.Module {
 	if err != nil {
 		panic(err)
 	}
-	return catalog.Module{ID: "blooms", Definition: definition(), Rules: New(), Assets: sub, Tutorials: tutorials}
+	return catalog.Module{ID: "blooms", Definition: definition(), Assets: sub, Tutorials: tutorials, Upgrade: Upgrade}
 }

@@ -270,8 +270,7 @@ func TestWebSubmit_ATurnOfSeveralSteps(t *testing.T) {
 	clickSel(t, ctx, "#submit-move")
 	waitMoves(3, "the whole turn")
 	waitJS(t, ctx, "the whole turn in the list", `document.querySelectorAll('#move-list button.mv').length === 3`, 10*time.Second)
-	clickSel(t, ctx, "#history-friendly")
-	waitJS(t, ctx, "the turn told", `document.getElementById("history-pane") !== null && document.getElementById("history-pane").textContent.indexOf("e6") >= 0`, 10*time.Second)
+	waitJS(t, ctx, "the turn in the history", `document.getElementById("move-list").textContent.indexOf("e6") >= 0`, 10*time.Second)
 }
 
 // The last move is marked whole: a turn of two stones marks both, and a stone

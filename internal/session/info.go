@@ -156,6 +156,8 @@ type PositionDTO struct {
 type CounterDTO struct {
 	ID    string `json:"id"`
 	Label string `json:"label"`
+	// Max is the count a win rule wants (Blooms' captures), 0 for none.
+	Max int `json:"max,omitempty"`
 }
 
 // PieceDTO describes a piece type.
@@ -394,9 +396,16 @@ func buildGameInfo(cg *catalog.CompiledGame) GameInfo {
 		}
 	}
 	sort.Strings(counterIDs)
+	// A pool a win rule counts towards shows its target.
+	target := map[string]int{}
+	for _, r := range def.WinCondition.Rules {
+		if r.Type == "pool" && (target[r.Pool] == 0 || r.AtLeast < target[r.Pool]) {
+			target[r.Pool] = r.AtLeast
+		}
+	}
 	for _, id := range counterIDs {
 		label := strings.ToUpper(id[:1]) + id[1:]
-		info.Counters = append(info.Counters, CounterDTO{ID: id, Label: label})
+		info.Counters = append(info.Counters, CounterDTO{ID: id, Label: label, Max: target[id]})
 	}
 	for _, id := range poolIDs {
 		label := id
@@ -465,7 +474,8 @@ func buildGameInfo(cg *catalog.CompiledGame) GameInfo {
 		info.Preview[e.Position] = append(info.Preview[e.Position], PieceOnBoardDTO{Piece: e.Piece, Color: e.Color})
 	}
 	for _, r := range def.WinCondition.Rules {
-		if r.Type == "end" && r.Decide != nil && r.Decide.Type == "most" {
+		// A count of pieces on top; a pool is shown by its counter.
+		if r.Type == "end" && r.Decide != nil && r.Decide.Type == "most" && r.Decide.Pool == "" {
 			label := r.Decide.Tag
 			if label == "" {
 				label = r.Decide.Piece

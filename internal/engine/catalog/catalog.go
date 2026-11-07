@@ -46,6 +46,12 @@ type Module struct {
 	// Tutorials holds the game's tutorials, one YAML document each at its
 	// root (see package tutorial); nil for a game without any.
 	Tutorials fs.FS
+	// Upgrade, when set, converts a stored position document of the
+	// family's games to the form its rules read now, reporting whether it
+	// changed anything: a game whose Go ruleset gave way to a declaration
+	// converts its old positions once, at start-up. It must leave a document
+	// already in the new form as it is.
+	Upgrade func(doc []byte) ([]byte, bool)
 }
 
 // DerivedSep separates the id of a base game from the suffix naming the
@@ -286,6 +292,20 @@ func (c *Catalog) Tutorials(id string) (family string, fsys fs.FS, ok bool) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	return family, c.src[family].mod.Tutorials, true
+}
+
+// Upgrades returns, for each family whose module converts stored positions,
+// its conversion (see Module.Upgrade).
+func (c *Catalog) Upgrades() map[string]func([]byte) ([]byte, bool) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	out := map[string]func([]byte) ([]byte, bool){}
+	for id, src := range c.src {
+		if src.mod.Upgrade != nil {
+			out[id] = src.mod.Upgrade
+		}
+	}
+	return out
 }
 
 // Retire records that the game id is no longer offered, under the name it

@@ -812,9 +812,33 @@ function rulesetEvents() {
  * In a game whose turn has several steps the server says which those are; a
  * tutorial's script has already said what to play.
  */
+/**
+ * Whether an impulse may be several selections: a ruleset's, or a declared game
+ * with a turn of several (ADR 0115), which offers done. Its selections are
+ * built into a pending move until the server says the impulse is complete.
+ */
+function severalSelections() {
+	return isRuleset() || (S.info.actions || []).some((a) => a.id === "done");
+}
+
+/** What the pieces to place are called: the last word their names share ("Red stone", "Blue stone": stone). */
+function pieceNoun() {
+	const words = (S.info.pieces || []).map((p) => (p.label || "").trim().split(/\s+/).pop().toLowerCase());
+	return words.length && words.every((w) => w && w === words[0]) ? words[0] : "piece";
+}
+
+/** The word on the buttons of the pieces to place: a ruleset's, or the place action's label. */
+function pieceWord() {
+	const rv = rulesetView();
+	if (rv) return rv.piece_action || "";
+	if (!(S.info.display && S.info.display.no_hands)) return "";
+	const place = (S.info.actions || []).find((a) => a.type === "place" && a.label && (a.pieces || []).length > 1);
+	return place ? place.label : "";
+}
+
 function needsConfirm() {
 	if (!S.settings.confirm || S.tut || playingAlone()) return false;
-	if (!isRuleset()) return true;
+	if (!severalSelections()) return true;
 	const done = activeBuilder().complete();
 	return !!done && done.notation === S.finalMove;
 }
@@ -855,7 +879,7 @@ function afterBuilderChange() {
 		return;
 	}
 	S.finalMove = null;
-	if (done && b.finished() && isRuleset() && S.settings.confirm && !S.tut && !playingAlone() && !clickedAButton(b)) {
+	if (done && b.finished() && severalSelections() && S.settings.confirm && !S.tut && !playingAlone() && !clickedAButton(b)) {
 		askIfFinal(done.notation);
 		return;
 	}
@@ -924,7 +948,8 @@ function onCell(pos, ev) {
 		// Quick placement: an empty square clicked with nothing selected
 		// places a piece straight away. No modifier uses the piece used last
 		// (else the game's first), Shift the second kind, Ctrl/Alt the third.
-		const kinds = isRuleset() ? null : b.quickPlacements().get(pos);
+		// Where the pieces are buttons with a word (Blooms' stones), a piece is chosen first.
+		const kinds = isRuleset() || pieceWord() ? null : b.quickPlacements().get(pos);
 		if (!kinds || !kinds.length) return;
 		let pick;
 		if (ev && ev.shiftKey && kinds.length > 1) pick = kinds[1];
@@ -2054,7 +2079,7 @@ async function onEvent(env) {
 			noteServerTime(d.server_time);
 			S.viewCache.clear();
 			await Promise.all([loadLegal(), loadReactions(), loadAutoPlay()]);
-			if (!d.game_ended && d.impulse_seat === d.seat && S.info.seats.length > 1 && !isRuleset()) {
+			if (!d.game_ended && d.ends_impulse && d.impulse_seat === d.seat && S.info.seats.length > 1 && !isRuleset()) {
 				// The next seat had no legal move and was skipped. (A ruleset's
 				// turn is a run of decisions by the same seat: nothing to say.)
 				const other = S.info.seats.find((x) => x.seat !== d.seat);
@@ -2379,6 +2404,7 @@ function genericActingImpulse(b) {
 	const placing = hasPos && !hasPiece && b.gestures.length > 0 && b.gestures[0].kind === "piece";
 	const points = S.info.board.style === "points";
 	if (hasPiece && hasPos) return "Click an empty square to place a stone (Shift: wall, Ctrl: capstone), or click a highlighted stack to move it.";
+	if (hasPiece && pieceWord()) return `Choose a ${pieceNoun()} to place${opts.some((o) => o.kind === "action") ? ", or choose an action" : ""}.`;
 	if (hasPiece && b.quickPlacements().size > 0) return `${points ? "Choose an intersection to place a stone" : "Choose an empty square to place a piece"}${opts.some((o) => o.kind === "action") ? ", or choose an action" : ""}.`;
 	if (hasPiece) return "Choose a piece from your hand.";
 	if (placing) return points ? "Choose an intersection to place a stone." : "Choose an empty square to place a piece.";
@@ -2786,7 +2812,7 @@ function ghostPiece() {
 	let piece = null;
 	if (b.gestures.length > 0 && b.gestures[0].kind === "piece") {
 		piece = b.gestures[0].value;
-	} else {
+	} else if (!pieceWord()) {
 		const quick = b.quickPlacements();
 		if (quick.size) {
 			const kinds = quick.values().next().value || [];
@@ -2943,7 +2969,7 @@ function drawBoard(host) {
 			// Every square chosen so far: the origin, then each landing/drop.
 			selected: !interactive ? null : S.moveQueue ? [S.moveQueue.from] : b.gestures.filter((st) => st.kind === "pos").map((st) => st.value),
 			targets,
-			quick: interactive && !isRuleset() && !S.tut ? new Set(b.quickPlacements().keys()) : null,
+			quick: interactive && !isRuleset() && !S.tut && !pieceWord() ? new Set(b.quickPlacements().keys()) : null,
 			pathCounts: interactive ? b.dropCounts() : new Map(),
 			interactive,
 			showCoords: S.settings.coords,
@@ -3311,7 +3337,7 @@ function seatStrip(seat) {
 	}
 	for (const ct of S.info.counters || []) {
 		const n = ((currentState().reserves || {})[color] || {})[ct.id] || 0;
-		head.append(h("span", { class: "score counter", title: ct.label, "data-counter": ct.id }, `${ct.label}: `, h("strong", {}, String(n))));
+		head.append(h("span", { class: "score counter", title: ct.max ? `${ct.label}: ${n} of ${ct.max} to win` : ct.label, "data-counter": ct.id }, `${ct.label}: `, h("strong", {}, ct.max ? `${n}/${ct.max}` : String(n))));
 	}
 	const rv = rulesetView();
 	const sv = rv && rv.seats ? rv.seats[String(seat)] : null;
@@ -5007,7 +5033,7 @@ function moveBar() {
 	}
 
 	// Games without hands offer unit types as buttons.
-	if (acting && isRuleset() && S.info.display && S.info.display.no_hands) {
+	if (acting && S.info.display && S.info.display.no_hands) {
 		const kinds = [...b.nextPieces()];
 		if (kinds.length) {
 			const group = h("span", { class: "piece-buttons", id: "piece-buttons" });
@@ -5020,7 +5046,7 @@ function moveBar() {
 						{
 							class: "piece-choice" + (look.onGate ? " on-gate" : ""),
 							"data-piece": type,
-							"aria-label": (rulesetView() || {}).piece_action ? `${rulesetView().piece_action}: ${look.label}` : null,
+							"aria-label": pieceWord() ? `${pieceWord()}: ${look.label}` : null,
 							title: look.onGate
 								? b.gestures.some((st) => st.kind === "action" && st.value === "capture")
 									? `${look.label}: capturing it leaves the Gate abandoned, and your own Cultist takes it`
@@ -5029,7 +5055,7 @@ function moveBar() {
 							onclick: () => choosePiece(type),
 						},
 						pieceIcon(look.shape, look.color || color, 22),
-						h("span", {}, (rulesetView() || {}).piece_action || look.label)
+						h("span", {}, pieceWord() || look.label)
 					)
 				);
 			}
@@ -5060,7 +5086,7 @@ function moveBar() {
 	if (acting && b.manualGestures().length) {
 		actions.append(h("button", { id: "back", class: "ghost", onclick: goBack, title: "Undo last selection (Backspace)" }, "↶ Back"));
 		// A move that is a word and a cell (Blooms), a piece and a place (Havannah), or anything on a map: Back is enough.
-		if (!(rulesetView() || {}).piece_action && S.info.board.style !== "areas" && !placeOnlyImpulse()) actions.append(h("button", { id: "reset-move", class: "ghost", onclick: resetMove, title: "Clear the move (Esc)" }, "Reset"));
+		if (!pieceWord() && S.info.board.style !== "areas" && !placeOnlyImpulse()) actions.append(h("button", { id: "reset-move", class: "ghost", onclick: resetMove, title: "Clear the move (Esc)" }, "Reset"));
 	}
 	// Taking back a step already sent: in the list of actions when there is one,
 	// else here. With a selection on the go, Back clears that first.
@@ -5352,7 +5378,7 @@ function carryDisplay(b, carried, dropped) {
  * with the picture of the piece chosen: "Place" and a yellow stone.
  */
 function pendingMove(b) {
-	const word = (rulesetView() || {}).piece_action;
+	const word = pieceWord();
 	const [first, ...rest] = b.gestures;
 	if (!word || !first || first.kind !== "piece") return h("span", { class: "pending", id: "pending-move" }, describeSteps(b.gestures));
 	const look = pieceLook(first.value);
