@@ -174,3 +174,8 @@ Each step is its own pull request, with an ADR where it settles a question:
   both fixed. A move is only accepted from the seat the game waits on and a reaction window names the
   reacting seat, so decision 19's question is answered for the code as it stands. Decided: the server
   playing a move for someone earns no increment, and a take-back never runs a clock out.
+- 2026-11-02: step 2 built (ADR 0088, branch `connection`): pings, the grace period and presence replaced.
+  Found along the way: a game socket's handler only noticed a closed socket at the room's next event, now
+  fixed; a connection must follow its player through a pie-rule swap or a lobby seat change, which step 4's
+  takeover should remember. Turn mail now shares the record and takes no grace period. Decision 6's faster
+  reconnects read `real_time` from the game, which step 3 adds, and step 3 owes that its test.
