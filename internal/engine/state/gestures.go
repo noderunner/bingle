@@ -61,6 +61,8 @@ func Gestures(game *catalog.CompiledGame, mv Selection) []Gesture {
 			steps = append(steps, Gesture{GesturePos, string(p)})
 		}
 		return steps
+	case catalog.ActionPatience:
+		return patienceGestures(mv)
 	case catalog.ActionCardMove:
 		if mv.From == "" {
 			return []Gesture{{GestureCard, mv.Card}}

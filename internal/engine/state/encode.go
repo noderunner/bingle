@@ -345,6 +345,8 @@ func buildActionSpace(game *catalog.CompiledGame) *ActionSpace {
 			}
 		case catalog.ActionPass, catalog.ActionSwap, catalog.ActionDone:
 			add(Selection{Action: act.ID})
+		case catalog.ActionPatience:
+			return as // dynamic: the moves are between piles, not squares
 		case catalog.ActionCardMove:
 			// Every card, from every square, by each of its moves for each
 			// seat, and spent without a move.

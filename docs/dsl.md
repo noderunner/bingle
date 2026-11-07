@@ -599,6 +599,49 @@ have no `Deriver`: a create call that passes `options` for one is refused with
   stack moves `[count]<square><+|-|<|>>[drops]` such as `3c3>111`. Positions
   can be exchanged as TPS (`x3,12,2S/x5/x5/x5/x5 1 2`).
 
+## patience
+
+A game of patience for one player declares a `patience` block and
+`win_condition: {type: patience}` ([ADR 0122](decisions/0122-a-patience-vocabulary.md)).
+The block's answers are parameters; the catalog adds one action, `patience`,
+and the piles' card zones when the definition leaves them out.
+
+```yaml
+patience:
+  columns:
+    count: 7
+    deal: {sizes: [1, 2, 3, 4, 5, 6, 7]}   # face down but the top card; down: [...] or a number per column
+    build: {rank: down, suit: alternate}   # rank down|up; suit alternate|same|any
+    lift: ordered                          # top | ordered | same-suit | any-face-up
+    empty: king                            # any | king | none
+  foundations: {count: 4, back: true}      # built up by suit from the ace; back: a card may return
+  stock: {draw: 1, to: waste, redeals: unlimited}
+  finish: true
+win_condition: {type: patience}
+```
+
+* **Columns** `t1`…: `deal.sizes` and `deal.down` are one number for every
+  column or one per column; `deal.kings_under` puts kings at the bottom (Baker's
+  Dozen). `lift_limit: cells` is FreeCell's: a run of at most (free cells + 1) ×
+  2^(empty columns).
+* **Foundations** `f1`…: `count` a multiple of the suits (8 with two decks);
+  a card goes to the first of its suit that takes it.
+* **Free cells** `c1`…: `cells: 4`.
+* **The stock** is drawn to the waste `w` (`draw`, `redeals`: a number or
+  `unlimited`, default 0), or dealt a row at a time onto the columns:
+  `{deal: row, columns: all, unless_empty: true}` (Spider; `columns: 3` for
+  Scorpion).
+* **`off: {run: king-to-ace, suit: same}`** takes each run built from king to ace
+  of one suit off the table (Spider, Scorpion).
+* The game is won when every card is home or off, and ends when no move is left.
+  `finish: true` offers `finish` once everything can go home with nothing hidden.
+* Notation is Solitaire's: `t3-t5`, `t3.2-t5` (two cards), `w-f` and `t1-f` home,
+  `t1-c` to a free cell, `c2-t4`, `f1-t3`, `draw`, `recycle`, `deal`, `finish`.
+* Colour is a suit's place in `suit_order` (odd and even places), so a themed set
+  of cards keeps it. A hint is Solitaire's order of moves: home first, then a
+  card turned over, a column emptied, and the rest; a bot plays from it rather
+  than searching. Drawing and turning a card over end the impulse (ADR 0121).
+
 ## Go rulesets (`engine: "ruleset"`)
 
 Some games need more than declarative actions: hidden choices, dice,

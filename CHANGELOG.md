@@ -4,6 +4,11 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.90.0 - 2026-11-06
+
+### Bingle Core 0.90.0
+- **For game authors: games of patience.** A game definition can now describe a game of patience in a few lines: its columns and how cards build on them, the foundations, free cells, the stock, and runs that leave the table when complete. Klondike, Spider and FreeCell can be written this way, and so can Yukon, Scorpion, Baker's Dozen and Forty Thieves. Solitaire itself plays exactly as before. See *patience* in the definition guide.
+
 ## 0.89.0 - 2026-11-06
 
 ### Bingle Core 0.89.0

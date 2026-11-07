@@ -51,6 +51,10 @@ type BoardState struct {
 	// table is a declared game's cards (ADR 0119), nil when it has none.
 	table *cards.Table
 
+	// counters are a declared game's small counts kept with the position,
+	// such as the redeals a game of patience has used (ADR 0122).
+	counters map[string]int
+
 	// ext is the game-specific payload of a ruleset game (terrain, unit
 	// conditions, momentum, ...): a json.RawMessage straight from a document
 	// until the ruleset decodes it, then the ruleset's own value (which
@@ -228,6 +232,12 @@ func (s *BoardState) Clone() *BoardState {
 	if s.table != nil {
 		clone.table = s.table.Clone()
 	}
+	if len(s.counters) > 0 {
+		clone.counters = make(map[string]int, len(s.counters))
+		for k, v := range s.counters {
+			clone.counters[k] = v
+		}
+	}
 	switch v := s.ext.(type) {
 	case nil:
 	case ExtClone:
@@ -237,6 +247,21 @@ func (s *BoardState) Clone() *BoardState {
 		clone.ext = v
 	}
 	return clone
+}
+
+// Counter is the declared count name keeps (0 when unset).
+func (s *BoardState) Counter(name string) int { return s.counters[name] }
+
+// SetCounter sets a declared count; zero removes it.
+func (s *BoardState) SetCounter(name string, n int) {
+	if n == 0 {
+		delete(s.counters, name)
+		return
+	}
+	if s.counters == nil {
+		s.counters = map[string]int{}
+	}
+	s.counters[name] = n
 }
 
 // Cards is a declared game's table of cards (ADR 0119), nil when it has
@@ -302,6 +327,7 @@ type stateJSON struct {
 	Passes   int                       `json:"passes,omitempty"`
 	Turn     *TurnProgress             `json:"turn,omitempty"`
 	Cards    *cards.Table              `json:"cards,omitempty"`
+	Counters map[string]int            `json:"counters,omitempty"`
 	Ext      json.RawMessage           `json:"ext,omitempty"`
 }
 
@@ -320,6 +346,9 @@ func (s *BoardState) MarshalJSON() ([]byte, error) {
 		Passes: s.passes,
 		Turn:   s.turn,
 		Cards:  s.table,
+	}
+	if len(s.counters) > 0 {
+		doc.Counters = s.counters
 	}
 	switch v := s.ext.(type) {
 	case nil:
@@ -409,6 +438,7 @@ func (s *BoardState) UnmarshalJSON(data []byte) error {
 	s.ply = 0
 	s.turn = nil
 	s.table = nil
+	s.counters = nil
 	s.ext = nil
 	return nil
 }
@@ -447,6 +477,7 @@ func (s *BoardState) unmarshalV2(data []byte, version int) error {
 	s.passes = doc.Passes
 	s.turn = doc.Turn
 	s.table = doc.Cards
+	s.counters = doc.Counters
 	s.ext = nil
 	if len(doc.Ext) > 0 && string(doc.Ext) != "null" {
 		s.ext = doc.Ext

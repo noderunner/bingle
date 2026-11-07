@@ -83,6 +83,9 @@ type GameDefinition struct {
 	// a seeded shuffle, then deals into zones (ADR 0119).
 	Deal []DealDef `json:"deal,omitempty"`
 
+	// Patience makes the game a game of patience (ADR 0122).
+	Patience *PatienceDef `json:"patience,omitempty"`
+
 	// EndOfTurn lists effects that happen, in order, whenever a turn ends,
 	// before it is judged (ADR 0116).
 	EndOfTurn []EndOfTurnDef `json:"end_of_turn,omitempty"`

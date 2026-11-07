@@ -55,6 +55,8 @@ const (
 	ActionPass      = "pass"
 	// ActionCardMove plays a move card (ADR 0120).
 	ActionCardMove = "card-move"
+	// ActionPatience is every move of a game of patience (ADR 0122).
+	ActionPatience = "patience"
 	// ActionDone ends a turn of several selections early (ADR 0115). The
 	// catalog adds it, with this id, to every game that declares a turn.
 	ActionDone = "done"
@@ -184,6 +186,8 @@ type CompiledGame struct {
 	Turn []TurnPart
 	// Deal is the deal at the start (ADR 0119).
 	Deal []DealStep
+	// Patience is a game of patience's rules (ADR 0122), nil for others.
+	Patience *Patience
 	// EndOfTurn is the effects at the end of a turn (ADR 0116).
 	EndOfTurn []TurnEffect
 	// Forward is each seat's forward vector on a grid (when declared).

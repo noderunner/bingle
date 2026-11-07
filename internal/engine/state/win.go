@@ -32,6 +32,8 @@ func evaluateWin(game *catalog.CompiledGame, ns *BoardState, moverSeat, nextSeat
 		return Outcome{Ended: ended, Winner: winner, Reason: "callback"}, nil
 	case "rules":
 		return evaluateRules(game, ns, wc.Rules, moverSeat, nextSeat), nil
+	case "patience":
+		return patienceOutcome(game, ns), nil
 	default:
 		return Outcome{}, fmt.Errorf("state: unsupported win_condition.type %q", wc.Type)
 	}
