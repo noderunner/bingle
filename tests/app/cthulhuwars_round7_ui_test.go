@@ -57,8 +57,16 @@ func TestWebCthulhuWars_ActionButtonsShowTheirCostAndTheirRuleOnHover(t *testing
 	if got := evalString(t, ctx, `document.getElementById("action-gate").getAttribute("aria-label")`); got != "Build Gate, 3 Power" {
 		t.Errorf("the Gate's name for a screen reader is %q", got)
 	}
-	if got := evalString(t, ctx, `document.getElementById("action-recruit").textContent`); got != "Recruit Cultist1" {
+	// Recruiting a Cultist is its picture and its cost, like summoning a monster;
+	// its name is for a screen reader and the hover card.
+	if got := evalString(t, ctx, `document.getElementById("action-recruit").textContent`); got != "1" {
 		t.Errorf("recruit button = %q", got)
+	}
+	if got := evalString(t, ctx, `document.getElementById("action-recruit").getAttribute("aria-label")`); !strings.HasPrefix(got, "Recruit ") || !strings.HasSuffix(got, " for 1 Power") {
+		t.Errorf("the recruit button's name for a screen reader is %q", got)
+	}
+	if n := evalInt(t, ctx, `document.querySelectorAll('#action-recruit svg').length`); n < 1 {
+		t.Error("the recruit button has no picture")
 	}
 	// Great Old Ones, like monsters, have a button each with the cost on it; the
 	// generic ones are gone.

@@ -129,15 +129,16 @@ function unitMove(notation) {
 
 /**
  * The units the script moves together from here: the moves of the step from
- * `index` on that send a unit from one area to another, up to the first that
- * does something else or goes elsewhere. The learner gathers them on the map
- * and clicks their destination, as in any game, so they count as one thing to do.
+ * `index` on that send a unit into the same area, from wherever it stands, up to
+ * the first that does something else or goes elsewhere. The learner gathers them
+ * on the map and clicks their destination, as in any game, so they count as one
+ * thing to do.
  */
 export function scriptedMoveGroup(step, index) {
 	const group = [];
 	for (const notation of (step.play || []).slice(index)) {
 		const mv = unitMove(notation);
-		if (!mv || (group.length && (mv.from !== group[0].from || mv.to !== group[0].to))) break;
+		if (!mv || (group.length && mv.to !== group[0].to)) break;
 		group.push({ ...mv, notation });
 	}
 	return group;

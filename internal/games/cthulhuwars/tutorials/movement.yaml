@@ -43,5 +43,17 @@ steps:
     spotlight: [actions]
 
   - text: |
-      Moving costs 1 Power a unit, goes one area, and starts no fight. A move can also start from
-      more than one area: choose more units before you press **Done**.
+      **A move can gather units from several areas, and send them to several.** One Move action
+      moves as many of your units as you can pay for, each into an area next to its own.
+
+      Click the **Deep One in Antarctica** and the **Shoggoth in New Zealand**: both border the
+      **Indian Ocean**, so click it and they go there together. Then click the **Deep One in New
+      Zealand**, click **Australia**, and press **Done**. That is one action for 3 Power.
+    play: [go:deep-one@antarctica>indian-ocean, go:shoggoth@new-zealand>indian-ocean, go:deep-one@new-zealand>australia, done]
+    hint: Click the Deep One in Antarctica and the Shoggoth in New Zealand, click the Indian Ocean; then the Deep One in New Zealand, Australia, and Done.
+    arrow: [new-zealand, indian-ocean]
+    spotlight: [impulse, power]
+
+  - text: |
+      Moving costs 1 Power a unit, goes one area, and starts no fight. One Move can take units from
+      many areas into one, or from one area into many, and each unit moves once.

@@ -130,7 +130,8 @@ func TestNotifyUI_GameOptionsSection(t *testing.T) {
 	}
 }
 
-// Without the seat's secret (another browser) the setting cannot be changed from the page.
+// Without the seat's secret (another browser) the setting cannot be changed from the page:
+// the browser only watches, and turn mail is the seat's own business.
 func TestNotifyUI_NoSeatSecretNoControls(t *testing.T) {
 	e := newNotifyEnv(t, fakesmtp.Options{})
 	g := e.createGame(t, "tic-tac-toe", "Alice")
@@ -138,14 +139,12 @@ func TestNotifyUI_NoSeatSecretNoControls(t *testing.T) {
 	ctx, cancel := newChromedpContext(t, 40*time.Second)
 	defer cancel()
 	openGameAs(t, ctx, e.URL, g.Room, "tic-tac-toe", "Alice") // a browser that is not the guest who took the seat
+	// It watches: the seat is somebody else's, and the page says so.
+	waitJS(t, ctx, "the explanation", `document.body.innerText.indexOf("Alice plays from another browser or account") >= 0`, 15*time.Second)
 	clickSel(t, ctx, "#open-options")
-	waitJS(t, ctx, "the explanation", `document.getElementById("notify-no-token")`, 15*time.Second)
+	time.Sleep(time.Second)
 	if evalBool(t, ctx, `!!document.getElementById("notify-on")`) {
 		t.Error("a switch is offered without the seat's secret")
-	}
-	// The note about the sender is shown anyway.
-	if !evalBool(t, ctx, `!!document.getElementById("notify-whitelist")`) {
-		t.Error("no note about the sender")
 	}
 }
 

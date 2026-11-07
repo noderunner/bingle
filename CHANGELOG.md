@@ -4,6 +4,15 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.92.1 - 2026-11-06
+
+### Bingle Core 0.92.1
+- **Cthulhu Wars: a Move gathers units from anywhere.** As the rules say, one Move action can bring units from several areas into one: click units in different areas, then the area they all go to. The areas they can all reach are the ones offered, and each unit still moves once. Units can also go from one area to several, a group at a time, before you press *Done*. The Movement tutorial shows both.
+- **Cthulhu Wars: Recruit a Cultist by its picture.** The Recruit button shows a Cultist and its cost, like the buttons to summon a monster; the name is on the card that opens when you point at it.
+- **The page knows who you are.** A page that asked who you were while the server was restarting showed you as a guest for as long as it stayed open, though you were signed in and played as yourself. It now asks again, and a tab that comes back into view after you signed in or out elsewhere is drawn again for whoever you are now.
+- **A seat is yours only where you hold it.** A browser that remembered a player's name showed that player's seat as its own, though the server refused its moves. Now a seat held by an account or by a guest is shown as yours only in a browser signed in as them; anywhere else you watch, and the page says where the seat is played from.
+- **A page that missed a move catches up.** When bots play fast, a page could miss the move that made it your turn and keep showing another player's. A page waiting on someone else now checks with the server after a short silence.
+
 ## 0.92.0 - 2026-11-06
 
 ### Bingle Core 0.92.0

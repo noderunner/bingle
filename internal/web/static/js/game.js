@@ -50,7 +50,7 @@ const S = {
 	viewCache: new Map(),
 	legal: [],
 	builder: new MoveBuilder([]),
-	moveQueue: null, // {from, units: Map(piece -> count)}: the units of a Move on their way to a destination
+	moveQueue: null, // {units: Map("area|piece" -> count)}: the units of a Move, from any areas, on their way to one destination
 	passAsked: false, // Pass was pressed, and the card asks whether to give up the Power left
 	passConfirmed: false,
 	moveGroup: null, // {count, seq}: how many steps the last destination sent, and where that left the move list
@@ -167,6 +167,31 @@ async function boot() {
 		if (el) el.textContent = lastMoveAgeText();
 	}, 30000);
 	clockTimer = window.setInterval(tickClocks, 1000);
+	window.setInterval(checkInSync, SYNC_CHECK_MS);
+}
+
+/** How often, and after how long a silence, a page waiting on another seat checks it has missed nothing. */
+const SYNC_CHECK_MS = 20000;
+
+/**
+ * A page waiting on another seat asks the server, after a silence, whether the game
+ * moved on without it: a burst of bot moves can outrun the page, and then it waits
+ * on a seat that has long since played. One small request, only while waiting.
+ */
+async function checkInSync() {
+	if (!S.game || S.game.status !== "active" || !isLive() || inAnalysis() || S.busy || isMyImpulse()) return;
+	if (Date.now() - (S.lastHeard || 0) < SYNC_CHECK_MS) return;
+	try {
+		const g = await api.game(code);
+		S.lastHeard = Date.now();
+		// The seat to play is what a missed event leaves wrong, and what leaves a page waiting.
+		if (g.impulse_seat !== S.game.impulse_seat || g.status !== S.game.status) {
+			await refreshGame();
+			render();
+		}
+	} catch (_) {
+		/* the next check tries again */
+	}
 }
 
 function resolveIdentity() {
@@ -178,15 +203,23 @@ function resolveIdentity() {
 	S.me = { name: null, seat: 0 };
 	S.mine = [];
 	S.homeSeat = 0;
+	S.notYours = null;
 	if (!name) return;
 	const lower = name.toLowerCase();
 	const seats = S.game.seats || [];
-	const seat = seats.find((s) => s.name && s.name.toLowerCase() === lower);
+	let seat = seats.find((s) => s.name && s.name.toLowerCase() === lower);
+	// A name is not a seat: one that an account or a guest holds is this browser's
+	// only when the server says so. A browser that remembers the name of a seat
+	// held elsewhere watches, as anybody does (the server refuses its moves anyway).
+	if (seat && (seat.handle || seat.guest) && !seat.yours) {
+		S.notYours = seat.name;
+		seat = null;
+	}
 	if (seat) {
 		// The seats played besides one's own in a game against oneself are named
 		// after their player: "Alice · Black Goat".
 		S.mine = seats
-			.filter((s) => s.name && (s.seat === seat.seat || s.name.toLowerCase().startsWith(lower + " · ")))
+			.filter((s) => s.name && (s.seat === seat.seat || (s.name.toLowerCase().startsWith(lower + " · ") && (s.yours || !(s.handle || s.guest)))))
 			.map((s) => ({ seat: s.seat, name: s.name }));
 		S.homeSeat = seat.seat;
 		S.me = { name: seat.name, seat: seat.seat };
@@ -344,7 +377,7 @@ function resetBuilder(kept = []) {
 	S.builder = new MoveBuilder(S.legal);
 	S.builderSpot = builderSpot();
 	// The position moved on under a queue: keep it only if it can still be played.
-	if (S.moveQueue && !queuedUnits().every((piece) => unitCost(queueMoves(), piece, S.moveQueue.from) !== null)) S.moveQueue = null;
+	if (S.moveQueue && !queuedUnits().every((u) => unitCost(queueMoves(), u.piece, u.from) !== null)) S.moveQueue = null;
 	S.builder.autoAdvance();
 	for (const g of kept) {
 		if (!S.builder.options().some((o) => o.kind === g.kind && String(o.value) === String(g.value))) break;
@@ -700,22 +733,24 @@ function currentCells() {
 
 /** The board with the units of the queue lifted off it: they are in the impulse card now. */
 function withoutQueued(cells) {
-	const from = S.moveQueue.from;
 	const color = colorOf(S.game.impulse_seat);
-	const stack = [...(cells[from] || [])];
-	for (const piece of queuedUnits()) {
+	const out = { ...cells };
+	for (const { from, piece } of queuedUnits()) {
+		const stack = [...(out[from] || [])];
 		const i = stack.findLastIndex((pc) => pc.piece === plainPiece(piece) && pc.color === color);
 		if (i >= 0) stack.splice(i, 1);
+		out[from] = stack;
 	}
-	return { ...cells, [from]: stack };
+	return out;
 }
 
 /** Who stands on each Gate, without a unit that is in the queue. */
 function shownHolders() {
 	const holders = (rulesetView() || {}).holders || null;
 	const q = S.moveQueue;
-	if (!holders || !q || !q.units.has(ONGATE + holders[q.from])) return holders;
-	const { [q.from]: _, ...rest } = holders;
+	if (!holders || !q) return holders;
+	const rest = { ...holders };
+	for (const { from, piece } of queuedUnits()) if (piece === ONGATE + holders[from]) delete rest[from];
 	return rest;
 }
 
@@ -1081,9 +1116,22 @@ function stepCost(mv) {
 	return cost === undefined ? 1 : cost;
 }
 
-/** The units in the queue, one entry per unit. */
+/** The key of a queued unit: the area it leaves and its piece. */
+function queueKey(from, piece) {
+	return `${from}|${piece}`;
+}
+
+/** The units in the queue, one entry per unit: {from, piece}. */
 function queuedUnits() {
-	return [...S.moveQueue.units.entries()].flatMap(([piece, n]) => Array(n).fill(piece));
+	return [...S.moveQueue.units.entries()].flatMap(([key, n]) => {
+		const i = key.indexOf("|");
+		return Array(n).fill({ from: key.slice(0, i), piece: key.slice(i + 1) });
+	});
+}
+
+/** The areas the units of the queue leave. */
+function queueOrigins() {
+	return S.moveQueue ? [...new Set(queuedUnits().map((u) => u.from))] : [];
 }
 
 /** The least a unit can cost from where it stands: its destination may be dearer or free. */
@@ -1094,7 +1142,7 @@ function unitCost(moves, piece, from) {
 
 /** The running cost of the queue, before its destination is known. */
 function queueCost(moves = queueMoves()) {
-	return queuedUnits().reduce((sum, piece) => sum + (unitCost(moves, piece, S.moveQueue.from) || 0), 0);
+	return queuedUnits().reduce((sum, u) => sum + (unitCost(moves, u.piece, u.from) || 0), 0);
 }
 
 function powerOf(seat) {
@@ -1102,19 +1150,23 @@ function powerOf(seat) {
 	return (counters.find((c) => c.id === "power") || { value: 0 }).value;
 }
 
-/** The areas every unit of the queue can reach and the player can pay to send them to. */
+/**
+ * The areas every unit of the queue can reach and the player can pay to send them to.
+ * The units may stand in different areas (a Move gathers them from wherever they are);
+ * each moves once, into an area next to its own. `extra` is a {from, piece} to try with them.
+ */
 function queueDestinations(extra = null) {
 	const moves = queueMoves();
-	const units = queuedUnits();
+	const units = S.moveQueue ? queuedUnits() : [];
 	if (extra) units.push(extra);
 	const out = new Set();
-	const from = S.moveQueue.from;
-	const places = new Set(moves.filter((m) => m.from === from && m.piece === units[0]).map((m) => m.to));
+	if (!units.length) return out;
+	const places = new Set(moves.filter((m) => m.from === units[0].from && m.piece === units[0].piece).map((m) => m.to));
 	for (const to of places) {
 		// Stepping off a Gate or onto one where it stands is for one unit alone.
-		if (to === from && units.length > 1) continue;
+		if (units.length > 1 && units.some((u) => u.from === to)) continue;
 		// A surcharge (the Ice Age) is paid once in a Move.
-		const costs = units.map((piece) => moves.find((m) => m.piece === piece && m.from === from && m.to === to)).map((m) => (m ? stepCost(m) : null));
+		const costs = units.map((u) => moves.find((m) => m.piece === u.piece && m.from === u.from && m.to === to)).map((m) => (m ? stepCost(m) : null));
 		if (costs.includes(null)) continue;
 		const dear = costs.filter((c) => c > 1).length;
 		const total = costs.reduce((a, c) => a + c, 0) - Math.max(0, dear - 1);
@@ -1132,35 +1184,35 @@ function queueTakes(pos, piece) {
 	const q = S.moveQueue;
 	if (S.tut && !tutorialWantsUnit(pos, piece)) return false;
 	if (!q) return cost <= powerOf(S.game.impulse_seat);
-	if (q.from !== pos) return false;
-	const have = q.units.get(piece) || 0;
+	// A unit from any area joins, as long as some area is still in reach of them all.
+	const have = q.units.get(queueKey(pos, piece)) || 0;
 	const stack = ((rulesetView() || {}).move_stacks || {})[`${piece}|${pos}`] || 0;
 	if (have >= stack || queueCost(moves) + cost > powerOf(S.game.impulse_seat)) return false;
-	return queueDestinations(piece).size > 0;
+	return queueDestinations({ from: pos, piece }).size > 0;
 }
 
 function addToQueue(pos, piece) {
-	if (!S.moveQueue) S.moveQueue = { from: pos, units: new Map() };
-	S.moveQueue.units.set(piece, (S.moveQueue.units.get(piece) || 0) + 1);
+	if (!S.moveQueue) S.moveQueue = { units: new Map() };
+	const key = queueKey(pos, piece);
+	S.moveQueue.units.set(key, (S.moveQueue.units.get(key) || 0) + 1);
 	render();
 }
 
-function removeFromQueue(piece) {
+function removeFromQueue(key) {
 	const q = S.moveQueue;
 	if (!q || S.busy) return;
-	const left = (q.units.get(piece) || 0) - 1;
-	if (left > 0) q.units.set(piece, left);
-	else q.units.delete(piece);
+	const left = (q.units.get(key) || 0) - 1;
+	if (left > 0) q.units.set(key, left);
+	else q.units.delete(key);
 	if (!q.units.size) S.moveQueue = null;
 	render();
 }
 
 /** Sends the queue to its destination, the units beside a Gate before the one on it. */
 async function sendMoveQueue(to) {
-	const q = S.moveQueue;
 	const moves = queueMoves();
-	const units = queuedUnits().sort((a, b) => Number(a.startsWith(ONGATE)) - Number(b.startsWith(ONGATE)));
-	let notations = units.map((piece) => moves.find((m) => m.piece === piece && m.from === q.from && m.to === to)?.notation).filter(Boolean);
+	const units = queuedUnits().sort((a, b) => Number(a.piece.startsWith(ONGATE)) - Number(b.piece.startsWith(ONGATE)));
+	let notations = units.map((u) => moves.find((m) => m.piece === u.piece && m.from === u.from && m.to === to)?.notation).filter(Boolean);
 	// The script has its own order for the units the learner gathered in theirs.
 	if (S.tut) notations = tutorialMoveGroup().map((m) => m.notation);
 	if (S.tut && !isExpected(tutorialState().next, notations[0])) {
@@ -1179,11 +1231,15 @@ function moveQueueDisplay() {
 	const q = S.moveQueue;
 	const seat = S.game.impulse_seat;
 	const wrap = h("span", { class: "move-queue", id: "move-queue" });
-	for (const [piece, n] of q.units) {
+	for (const [key, n] of q.units) {
+		const i = key.indexOf("|");
+		const from = key.slice(0, i);
+		const piece = key.slice(i + 1);
 		const look = pieceLook(piece);
+		const what = `${look.label} from ${areaName(from)}`;
 		const icon = h(
 			"button",
-			{ class: "queue-unit" + (look.onGate ? " on-gate" : ""), "data-piece": piece, title: `Take ${look.label} out of this move`, "aria-label": `Take ${look.label} out of this move`, onclick: () => removeFromQueue(piece) },
+			{ class: "queue-unit" + (look.onGate ? " on-gate" : ""), "data-piece": piece, "data-from": from, title: `Take ${what} out of this move`, "aria-label": `Take ${what} out of this move`, onclick: () => removeFromQueue(key) },
 			pieceIcon(look.shape, look.color || colorOf(seat), 30)
 		);
 		if (n > 1) icon.append(h("span", { class: "queue-count" }, String(n)));
@@ -2030,6 +2086,7 @@ function addSelection(sel) {
 
 async function onEvent(env) {
 	if (!env || !S.info) return;
+	S.lastHeard = Date.now();
 	// The voice chat's own events (who is in the call, and the messages for our seat).
 	if (voiceEvent(env, code)) return;
 	if (env.type === "move") {
@@ -2427,7 +2484,7 @@ function impulseText() {
 	const said = rv && (rv.impulse || rv.prompt);
 	if (!isMyImpulse()) return said || genericImpulse();
 	if (S.passAsked) return `You will lose your ${powerOf(S.game.impulse_seat)} unspent Power.`;
-	if (S.moveQueue) return `Select remaining units in ${areaName(S.moveQueue.from)} to move, followed by a destination.`;
+	if (S.moveQueue) return `Units from ${queueOrigins().map(areaName).join(" and ")} are ready: select more from any area, then the area they all go to.`;
 	const b = activeBuilder();
 	if (!isRuleset()) return genericActingImpulse(b);
 	return b.manualGestures().length ? rulesetStepImpulse(b, rv) : said || genericActingImpulse(b);
@@ -2972,7 +3029,7 @@ function drawBoard(host) {
 			illegal: !!S.tut && !!tutorialStep().illegal,
 			ghost: ghostPiece(),
 			// Every square chosen so far: the origin, then each landing/drop.
-			selected: !interactive ? null : S.moveQueue ? [S.moveQueue.from] : b.gestures.filter((st) => st.kind === "pos").map((st) => st.value),
+			selected: !interactive ? null : S.moveQueue ? queueOrigins() : b.gestures.filter((st) => st.kind === "pos").map((st) => st.value),
 			targets,
 			quick: interactive && !isRuleset() && !S.tut && !pieceWord() ? new Set(b.quickPlacements().keys()) : null,
 			pathCounts: interactive ? b.dropCounts() : new Map(),
@@ -4956,6 +5013,8 @@ function moveBar() {
 						? ""
 						: S.game.status === "waiting"
 						? ""
+						: S.notYours
+						? `You are watching this game. ${S.notYours} plays from another browser or account: sign in as them there to play.`
 						: "You are watching this game."
 					: "Browsing history — the board is read-only."
 			)
@@ -5017,9 +5076,11 @@ function moveBar() {
 			// A unit to summon or awaken has a button of its own: its icon, and
 			// what it costs just now; the details are in the card that opens
 			// on hover.
-			const unitKind = id.startsWith("summon-") ? "summon" : id.startsWith("awaken-") ? "awaken" : "";
+			// Recruiting a Cultist is a unit's button too (the High Priest has a worded one of his own).
+			const unitKind = id.startsWith("summon-") ? "summon" : id.startsWith("awaken-") ? "awaken" : id === "recruit" ? "recruit" : "";
 			if (unitKind) {
-				const button = unitButton(unitKind, id.slice(unitKind.length + 1), acting);
+				const type = id === "recruit" ? "cultist" : id.slice(unitKind.length + 1);
+				const button = unitButton(unitKind, type, acting, id);
 				if (button) {
 					group.append(button);
 					continue;
@@ -5239,13 +5300,13 @@ function actionCost(id) {
 }
 
 /** The button that summons or awakens one kind of unit: icon, name and the cost it has now. */
-function unitButton(kind, type, seat) {
+function unitButton(kind, type, seat, actionId) {
 	const unit = unitCardFor(seat, type);
 	if (!unit) return null;
 	const color = colorOf(seat);
 	const piece = S.info.pieces.find((p) => p.type === type);
-	const id = `${kind}-${type}`;
-	const verb = kind === "awaken" ? "Awaken" : "Summon";
+	const id = actionId || `${kind}-${type}`;
+	const verb = kind === "awaken" ? "Awaken" : kind === "recruit" ? "Recruit" : "Summon";
 	const cost = actionCost(id) ?? unit.cost;
 	const button = h(
 		"button",
@@ -5260,7 +5321,7 @@ function unitButton(kind, type, seat) {
 		},
 		pieceIcon(piece ? piece.shape : "disc", color, 22),
 		// The hover card names the unit. A phone has no hover, and keeps the words.
-		kind === "summon" && !isMobileLayout() ? null : h("span", { class: "summon-name" }, `${verb} ${unit.name}`),
+		kind !== "awaken" && !isMobileLayout() ? null : h("span", { class: "summon-name" }, `${verb} ${unit.name}`),
 		h("span", { class: "summon-cost", title: "Power" }, `${cost}`, statIcon("power", "Power", 13))
 	);
 	hoverCard(button, () => unitTip(unit, color, cost));
@@ -6844,7 +6905,7 @@ function tutorialMoveGroup() {
 /** Whether the step wants one more of this unit from this area, among those gathered already. */
 function tutorialWantsUnit(pos, piece) {
 	const wanted = tutorialMoveGroup().filter((m) => m.from === pos && (m.leaving ? ONGATE + m.piece : m.piece) === piece);
-	return wanted.length > ((S.moveQueue && S.moveQueue.units.get(piece)) || 0);
+	return wanted.length > ((S.moveQueue && S.moveQueue.units.get(queueKey(pos, piece))) || 0);
 }
 
 /** The queue can go here: it holds every unit the step moves together, and this is where they go. */
