@@ -31,7 +31,8 @@ seats[]                       required
 pieces{}                      required
 reserves{}                    starting "hand", per seat, by reserve pool
 setup[]                       pieces on the board at the start
-preview[]                     a sample game in play for the list of games (for a game that starts empty)
+preview[]                     a sample game in play for the list of games (for a game that starts empty);
+                              moving to the game's web.yaml (ADR 0124, docs/ui.md)
 turn_order                    required: round-robin, optional opening phase
 actions[]                     place / move-stack / jump / slide / leap / step / pass
                               (pieces with a movement primitive also get "step")
@@ -174,6 +175,11 @@ pieces:
   mover's other colour. Reserves and pools stay under the seat's `color`. A
   colour belongs to one seat at most and is not also in `extra_colors`;
   `blend` only draws.
+* **How a game looks is moving out of the definition** into the game's `web.yaml`
+  ([ADR 0124](decisions/0124-the-server-says-what-things-are-clients-decide-how-they-look.md), and
+  *A game's look* in [ui.md](ui.md)): `shape`, `blend`, `board.style` and `borders`, `preview`, card
+  backs and layouts, `display.no_hands` and each tint's and badge's `color` and `glyph`. Blooms has
+  moved; the other games still declare them here, and the page reads either.
 * `tags` classify pieces for win rules and scores.
 * `pool` names the reserve pool a *placed* piece is drawn from (default: the
   piece type itself). Pieces sharing a pool share a supply — Tak's flat and

@@ -928,6 +928,45 @@ game's choice, remembered in `bingle.board`) falls back to wood. Choosing one re
 boards; stacks as piles with a height badge; last-move, pending-move and
 legal-target overlays. Piece appearance comes from `shape` and the seat color.
 
+### A game's look: `web.yaml`
+
+What a game *is* comes from its definition and the API; how this page draws it comes from the
+game's `web.yaml`, beside its definition ([ADR 0124](decisions/0124-the-server-says-what-things-are-clients-decide-how-they-look.md)).
+Only this page reads it: other clients draw a game their own way, and the server serves the file
+as it is, as JSON, at `GET /api/game-defs/{id}/web` (an empty object for a game without one).
+`api.gameDef` fetches it with the game's info and lays it over the info (`js/look.js`), so the
+page reads every field where it always has. A value in the file wins over one the info still
+carries; a game without a file is drawn from its info alone, and must be drawable that way.
+
+Each field mirrors the definition's field it replaces, keyed the same way, so moving one keeps its
+shape:
+
+```yaml
+seats:                         # by seat number
+  1: {blend: [red, yellow]}    # a seat of two colours, drawn as a gradient
+pieces:
+  red: {shape: disc}           # disc, square, flat, wall, cap, ring, diamond, triangle, cross
+board: {style: points, borders: {top: white}}
+cards:
+  back: {color: '#7a2030'}
+  zones: {hand: {layout: fan}}
+  suits: {hearts: {color: red}}  # only where the rules do not read the colour
+display:                       # the definition's display keeps each tint's and badge's label and text
+  no_hands: true
+  tints: {fenced: {color: '#e8a898'}}
+  badges: {fatigued: {color: '#f4f1e8', glyph: z}}
+preview:                       # a game in play for the list of games and the setup page
+  - {position: e5, piece: red, color: red}
+variants:                      # a merge patch per game of the family, by id
+  blooms-8: {board: {style: points}}
+```
+
+The schema is `internal/web/look`: a game's module loads the file with `look.MustLoad`, which
+refuses an unknown key, and `tests/look` holds every shipped file to its games with `look.Check`.
+A piece type's own `color` is not here: the rules read it to say whose the piece is (ADR 0117).
+Games move their look into the file a few at a time (ADR 0124's stages); Blooms is the first, and
+the others still carry theirs in the definition.
+
 ## DOM contract used by tests
 
 `#board svg`, `.cell[data-position]` (`.clickable` when a legal next click),

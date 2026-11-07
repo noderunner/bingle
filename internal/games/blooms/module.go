@@ -18,13 +18,17 @@ import (
 
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/engine/dsl"
+	"github.com/noderunner/bingle/internal/web/look"
 )
 
-//go:embed blooms.yaml
+//go:embed blooms.yaml web.yaml
 var definitionFS embed.FS
 
 // definition is the definition as JSON, converted once.
 var definition = sync.OnceValue(func() []byte { return dsl.MustLoad(definitionFS, "blooms.yaml") })
+
+// web is how the web page draws Blooms (web.yaml, ADR 0124), as JSON.
+var web = sync.OnceValue(func() []byte { return look.MustLoad(definitionFS) })
 
 //go:embed guide
 var guideFS embed.FS
@@ -42,5 +46,5 @@ func Module() catalog.Module {
 	if err != nil {
 		panic(err)
 	}
-	return catalog.Module{ID: "blooms", Definition: definition(), Assets: sub, Tutorials: tutorials, Upgrade: Upgrade}
+	return catalog.Module{ID: "blooms", Definition: definition(), Assets: sub, Tutorials: tutorials, Upgrade: Upgrade, Web: web()}
 }

@@ -1,5 +1,7 @@
 // Thin fetch wrapper around bingle's REST API.
 
+import { applyLook } from "./look.js";
+
 // Every request says it comes from bingle's own page: the server refuses a
 // state-changing request that is proved by the guest cookie but lacks it, and
 // a page's first such request is the one that makes its guest (ADR 0067).
@@ -169,7 +171,12 @@ export const api = {
 	deleteBatch: (id) => call(`/api/batches/${enc(id)}`, { method: "DELETE" }),
 	botGuide: () => fetch("/api/bot-guide").then((r) => (r.ok ? r.text() : Promise.reject(new Error("The guide could not be read.")))),
 	gameDefs: () => call("/api/game-defs"),
-	gameDef: (id) => call(`/api/game-defs/${enc(id)}`),
+	// A game's info with this page's look for it laid over (ADR 0124). The look
+	// is only how the page draws the game: without it the game is still drawn.
+	gameDef: async (id) => {
+		const [info, look] = await Promise.all([call(`/api/game-defs/${enc(id)}`), call(`/api/game-defs/${enc(id)}/web`).catch(() => ({}))]);
+		return applyLook(info, look);
+	},
 	setupCatalog: (id) => call(`/api/game-defs/${enc(id)}/setup-catalog`),
 	setupProfiles: (family) => call(`/api/setup-profiles?family=${enc(family)}`),
 	saveSetupProfile: (body) => call("/api/setup-profiles", { method: "POST", body }),

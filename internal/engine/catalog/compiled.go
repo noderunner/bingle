@@ -160,6 +160,9 @@ type CompiledGame struct {
 	// Assets holds the module's files (guide pages, images), served to
 	// clients under /api/game-defs/{id}/assets; nil when it has none.
 	Assets fs.FS
+	// Web is the family's web.yaml as JSON (Module.Web), served to the web
+	// page under /api/game-defs/{id}/web; nil when it has none.
+	Web []byte
 
 	// Rules is the Go ruleset of a game whose definition says
 	// engine: "ruleset" (nil for declarative games). It is opaque here —

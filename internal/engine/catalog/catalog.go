@@ -43,6 +43,10 @@ type Module struct {
 	// Assets is the module's embedded files: the Markdown pages and images
 	// of its rules guide.
 	Assets fs.FS
+	// Web is the web page's appearance file for the family's games
+	// (web.yaml, ADR 0124) as JSON, or nil. Only the web page reads it: the
+	// catalog and the server carry it as it is.
+	Web []byte
 	// Tutorials holds the game's tutorials, one YAML document each at its
 	// root (see package tutorial); nil for a game without any.
 	Tutorials fs.FS
@@ -139,6 +143,7 @@ func (c *Catalog) RegisterModule(mod Module) error {
 		c.mu.Lock()
 		cg := c.games[id]
 		cg.Assets = mod.Assets
+		cg.Web = mod.Web
 		c.src[id] = source{doc: doc, mod: mod}
 		c.mu.Unlock()
 		if i == 0 {
@@ -430,6 +435,7 @@ func (c *Catalog) derive(baseID, suffix string, options map[string]any) (*Compil
 	c.mu.Lock()
 	cg := c.games[id]
 	cg.Assets = src.mod.Assets
+	cg.Web = src.mod.Web
 	c.mu.Unlock()
 	return cg, nil
 }
