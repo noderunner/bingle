@@ -12,7 +12,7 @@ order of work can be chosen deliberately. Provisional: it changes as each plan i
 | [dsl-yaml-plan.md](dsl-yaml-plan.md) | **settled**, ready to implement | no |
 | [game-tutorials-plan.md](game-tutorials-plan.md) | **settled**, ready to implement | no (guests welcome) |
 | [dsl-coverage-audit-plan.md](dsl-coverage-audit-plan.md) | planning in progress | no |
-| [patience-vocabulary-plan.md](patience-vocabulary-plan.md) | planning in progress (addition F of the DSL audit) | no |
+| [patience-vocabulary-plan.md](patience-vocabulary-plan.md) | questions settled, not started (addition F of the DSL audit) | no |
 | [game-plugins-plan.md](game-plugins-plan.md) | questions settled, not started | only for packs |
 | [real-time-play-plan.md](real-time-play-plan.md) | **settled**, ready to implement | no |
 | [tournaments-and-rankings-plan.md](tournaments-and-rankings-plan.md) | **settled**, ready to implement; the next major feature | yes |

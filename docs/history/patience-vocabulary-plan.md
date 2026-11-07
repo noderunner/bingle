@@ -2,7 +2,8 @@
 
 Status: **planning in progress** (opened 2026-11-06). This is addition F of the DSL coverage audit
 (`dsl-coverage-audit-plan.md`, *The additions*), which gave it a plan of its own as the largest
-addition proposed. Nothing is implemented.
+addition proposed. The open questions were settled on 2026-11-06 (*What was decided*, below).
+Nothing is implemented.
 
 ## What was asked for
 
@@ -133,7 +134,25 @@ Solitaire converts.
 one down) or remove pairs that add up to 13. They are popular, but they would be a second, smaller
 vocabulary later, not part of this one.
 
+## What was decided (2026-11-06)
+
+1. **Parameters.** A `patience:` block of parameters, compiled to one action type.
+2. **The cheap neighbours come in the first ADR.** Yukon and Scorpion (`move: any-face-up`),
+   Baker's Dozen (`empty: none`) and the two-deck Forty Thieves are added alongside Klondike, Spider
+   and FreeCell.
+3. **Bowling Solitaire becomes a game of its own**, in Go, before Solitaire converts.
+4. **The take-back rule is settled first**, as a general ADR: a declared selection that shows the
+   mover a card they could not see cannot be taken back.
+5. **Suit colour stays by place** in `suit_order`, as now, so themed card sets keep working.
+6. **A generic hint order** comes from the vocabulary: going home first, then moves that turn a card
+   or empty a column, then the rest, with the stock last.
+7. **The page:** a declared patience game sends the view shape Solitaire sends today, and
+   `solitaire.js` stays as it is.
+
 ## Open questions for the discussion
+
+These were the questions put to the maintainer; the answers are above.
+
 
 1. **Parameters or primitives?** Is a `patience:` block of parameters, compiled to one action type,
    the right shape? I'd recommend it.
@@ -152,9 +171,10 @@ vocabulary later, not part of this one.
 ## Proposed stages, once the questions are settled
 
 1. An ADR for the take-back rule on revealed cards, built and tested on a small fixture.
-2. An ADR for the patience vocabulary, with the families agreed in question 2.
+2. An ADR for the patience vocabulary: Klondike, Spider and FreeCell, with Yukon, Scorpion, Baker's
+   Dozen and Forty Thieves, suit colour by place, and the generic hint order.
 3. Build the vocabulary, with a fixture per family in `tests/`.
-4. The Bowling question resolved as decided.
+4. Bowling Solitaire moved to a game of its own.
 5. Klondike, Spider and FreeCell declared beside the ruleset and checked by `tests/difftest`
    (conversion step 1), as Blooms and Onitama were. Step 2 follows one release later.
 
@@ -172,3 +192,7 @@ vocabulary later, not part of this one.
   vocabulary with today's notation kept, and listed what the engine needs besides it: the take-back
   rule on revealed cards, the colour of a suit, and hints. Also listed the families it would open,
   the Bowling question and seven open questions. Awaiting the maintainer's review.
+- 2026-11-06: the maintainer settled the seven questions: a parameter vocabulary; the cheap
+  neighbours (Yukon, Scorpion, Baker's Dozen, Forty Thieves) in the first ADR; Bowling as a game of
+  its own; the take-back rule as a general ADR first; suit colour by place; a generic hint order; and
+  the page's patience view unchanged. Next: stage 1, the take-back ADR.
