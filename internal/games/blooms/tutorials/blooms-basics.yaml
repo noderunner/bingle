@@ -8,14 +8,16 @@ game: blooms-4   # the small board: 37 cells, 15 captures to win
 seat: 1          # you play Warm, red and yellow; the page plays Cool, blue and black
 
 steps:
-  - text: |
+  - name: What Blooms is about
+    text: |
       In **Blooms** you place stones of your two colours to build groups
       and capture your opponent's groups by fencing them in.
 
       Each player controls two different colors of stones. The **warm** player has red and
       yellow stones, and the **cool** player has blue and black.
 
-  - text: |
+  - name: How the game ends
+    text: |
       The game ends when either player captures enough of their opponent's stones to win the game.
       The number of captured stones needed to win is determined by the size of the board:
 
@@ -36,10 +38,12 @@ steps:
       black@f5, yellow@a5, red@f3
     ]
 
-  - text: |
+  - name: Placing stones
+    text: |
       In Blooms, stones are only placed on empty cells and never move once placed, only captured.
 
-  - text: |
+  - name: Blooms
+    text: |
       A group of one or more connected stones of the same color is called a *bloom*. A single, isolated
       stone is also a bloom.
 
@@ -51,7 +55,8 @@ steps:
       red@d1, red@e6, red@e3, red@f2, yellow@g2, yellow@d7, yellow@c7
       ]
 
-  - text: |
+  - name: Liberties
+    text: |
       Here is another board position, this time showing only a single bloom for each color. Notice
       the yellow bloom of only a single stone has only a single adjacent space that is free. Much 
       like in the game of Go, this yellow bloom is said to have only a single *liberty*.
@@ -63,7 +68,8 @@ steps:
     hint: The black bloom has 4 liberties.
     pieces: [blue@g1, blue@f2, black@f3, black@f4, yellow@g4, red@g2, red@g3]
 
-  - text: |
+  - name: Fenced blooms
+    text: |
       The red bloom is completely surrounded (no liberties). Since pieces can never move once placed, this means
       that the red bloom has no more free space to grow.
       
@@ -77,7 +83,8 @@ steps:
       In fact, it is sometimes a good strategy!
     pieces: [blue@g1, blue@f2, black@f3, black@f4, yellow@g4, red@g2, red@g3]
 
-  - text: |
+  - name: A turn
+    text: |
       Player turns are split into two steps:
 
       **Placement:** The active player *must* play a stone of either color to an empty space
@@ -93,7 +100,8 @@ steps:
     pieces: [blue@g1, blue@f2, black@f3, black@f4, yellow@g4]
     highlight: [g2, g3]
 
-  - text: |
+  - name: The first turn
+    text: |
       The first turn of the game is slightly different from all the following turns since the 
       warm player gets to go first, which is a slight advantage.
       
@@ -109,7 +117,8 @@ steps:
     highlight: [d4]
     reply: [blue@a4, black@g1]
 
-  - text: |
+  - name: Two stones a turn
+    text: |
       Your opponent placed two stones, a blue one in the corner and a black
       one on the far side.
 
@@ -124,7 +133,8 @@ steps:
     highlight: [b3, b4]
     reply: [blue@f1, done]
 
-  - text: |
+  - name: Capturing a bloom
+    text: |
       Your opponent placed one stone and ended the turn. The blue bloom at
       a4 has one empty cell left beside it, a5.
 
@@ -135,7 +145,8 @@ steps:
     highlight: [a5]
     arrow: [a5, a4]
 
-  - text: |
+  - name: Your own fenced blooms
+    text: |
       The blue stone is gone, and you have captured one stone.
 
       Your **own** fenced blooms are not captured on your turn: they stay
@@ -148,3 +159,4 @@ steps:
 
       This wraps up the tutorial, you may continue playing this game against
       a bot if you wish, otherwise good luck in your future games of Blooms!
+    keep_playing: true

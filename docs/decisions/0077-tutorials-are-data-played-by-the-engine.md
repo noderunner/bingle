@@ -54,6 +54,9 @@ Added 2026-11-02:
   ([ADR 0083](0083-a-move-stands.md)). Rewinding the room would need an exception to that rule, and replaying into a new
   room would leave a room behind at every press. *Start again* still replays the tutorial from the top.
 
+Added 2026-11-06: steps are named lessons in series, the end's buttons changed, and an account keeps the tutorials it
+has finished ([ADR 0123](0123-tutorials-come-in-series-of-lessons.md)).
+
 ## Consequences
 
 - A rule change that breaks a tutorial fails the build instead of shipping a tutorial that lies.

@@ -4,12 +4,14 @@ kind: rules
 title: Sequence of play
 summary: The round and its four phases, and the actions that do not use your turn.
 order: 7
+series: Core Game
 game: cthulhu-wars
 seat: 1          # you play Great Cthulhu; the page plays the others
 start: !include positions/a-round-to-play.yaml
 
 steps:
-  - text: |
+  - name: Rounds and phases
+    text: |
       A game is a series of **rounds**, and every round has four phases, always in this order:
 
       1. **Action**
@@ -20,12 +22,14 @@ steps:
       The current phase is lit in the bar above the map.
     spotlight: [phases]
 
-  - text: |
+  - name: The Action phase
+    text: |
       In the **Action phase** players take turns, one action each, until nobody has any Power left.
       This arrow marks the first player and the direction of play, and the cults are listed in order.
     spotlight: [first-player]
 
-  - text: |
+  - name: Unlimited actions
+    text: |
       **Unlimited actions** are free, and do not use up your turn. Revealing your Elder Signs is one.
       Taking control of a Gate is another, and Black Goat can summon this way.
 
@@ -36,19 +40,22 @@ steps:
     spotlight: [actions, signs]
     reply: [recruit@asia, recruit@africa]
 
-  - text: |
+  - name: Ending the Action phase
+    text: |
       Your opponents have spent the last of their Power, leaving only you. **Pass** to end the Action
       phase.
     play: [pass]
     hint: Press Pass.
     spotlight: [phases, power]
 
-  - text: |
+  - name: Gather Power
+    text: |
       **Gather Power** happened by itself: every cult gained Power from its Cultists and Gates. The
       *Power* tutorial has the details.
     spotlight: [phases, power]
 
-  - text: |
+  - name: First Player
+    text: |
       In the **First Player** phase, the cult with the most Power becomes first player, and chooses
       the direction of play for the new round. That's you.
 
@@ -57,7 +64,8 @@ steps:
     hint: Press the Clockwise button.
     spotlight: [phases, first-player]
 
-  - text: |
+  - name: The Doom phase
+    text: |
       In the **Doom phase** your Gates score first. Then, starting with the first player, each cult
       may perform a Ritual of Annihilation and reveal Elder Signs.
 
@@ -67,9 +75,12 @@ steps:
     spotlight: [phases, ritual-track, doom]
     reply: [skip, skip, skip]
 
-  - text: |
+  - name: The next round
+    text: |
       Round 4 begins, back in the Action phase, with everyone holding the Power they gathered.
 
       The game goes on like this until a Doom phase ends with a cult on 30 Doom, or with the Ritual
       marker on Instant Death.
+
+      The next tutorial covers **UI features**.
     spotlight: [round-bar]

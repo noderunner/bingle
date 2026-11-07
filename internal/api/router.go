@@ -53,6 +53,7 @@ func NewRouter(mgr *session.Manager, opts ...Option) chi.Router {
 	r.Post("/games", h.handleCreateGame)
 	r.Post("/games/import", h.handleImportGame)
 	r.Post("/tutorials", h.handleStartTutorial)
+	r.Post("/tutorials/done", h.handleTutorialDone)
 	r.Post("/bot-matches", h.handleBotMatch)
 	r.Get("/tournaments", h.handleTournaments)
 	r.Post("/tournaments", h.handleCreateTournament)

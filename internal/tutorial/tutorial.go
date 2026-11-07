@@ -42,8 +42,13 @@ type Tutorial struct {
 	// Title is what the list of tutorials shows; Summary is one line under it.
 	Title   string `json:"title"`
 	Summary string `json:"summary,omitempty"`
-	// Order sorts the game's tutorials of one kind (lowest first).
+	// Order sorts the game's tutorials of one kind (lowest first), and so
+	// the tutorials of a series.
 	Order int `json:"order,omitempty"`
+	// Series names the ordered set of tutorials this one belongs to ("Core
+	// Game"), taken one after another in Order. Without it a tutorial is a
+	// series of its own. A series' tutorials are of one kind.
+	Series string `json:"series,omitempty"`
 	// Game is the game (or variant) the tutorial is played on, a member of
 	// the family whose files hold it.
 	Game string `json:"game"`
@@ -72,8 +77,10 @@ type Tutorial struct {
 	Steps []Step `json:"steps"`
 }
 
-// Step is one page of a tutorial: some prose, and what happens on the board.
+// Step is one lesson of a tutorial: some prose, and what happens on the board.
 type Step struct {
+	// Name is the lesson's name, shown after the tutorial's title above it.
+	Name string `json:"name"`
 	// Text is the step's prose, in Markdown (the game's guide images may be
 	// used, as in its rules pages).
 	Text string `json:"text"`
@@ -111,6 +118,10 @@ type Step struct {
 	// colour, bottom first where several share a square. It need not be a position
 	// play can reach, and like Show it asks for no moves.
 	Pieces []string `json:"pieces,omitempty"`
+	// KeepPlaying offers, from this lesson on, to play the game on from where
+	// it stands against a bot ("Keep Playing"): usually on the last lesson, of
+	// a tutorial whose game is worth finishing.
+	KeepPlaying bool `json:"keep_playing,omitempty"`
 }
 
 // pictured says the step depicts a position other than the room's.
@@ -206,7 +217,37 @@ func Load(fsys fs.FS) ([]Tutorial, error) {
 		}
 		return out[i].ID < out[j].ID
 	})
+	kinds := map[string]Tutorial{}
+	for _, t := range out {
+		if t.Series == "" {
+			continue
+		}
+		if first, seen := kinds[t.Series]; seen && first.Kind != t.Kind {
+			return nil, fmt.Errorf("tutorial: %s and %s are both in the series %q, but of kinds %s and %s", first.ID, t.ID, t.Series, first.Kind, t.Kind)
+		} else if !seen {
+			kinds[t.Series] = t
+		}
+	}
 	return out, nil
+}
+
+// NextInSeries returns the tutorial after t in its series among list (as Load
+// sorts them), and whether there is one. A tutorial that names no series is a
+// series of its own, and has none.
+func NextInSeries(list []Tutorial, t Tutorial) (Tutorial, bool) {
+	if t.Series == "" {
+		return Tutorial{}, false
+	}
+	found := false
+	for _, o := range list {
+		switch {
+		case o.ID == t.ID:
+			found = true
+		case found && o.Series == t.Series:
+			return o, true
+		}
+	}
+	return Tutorial{}, false
 }
 
 func kindRank(k string) int {
@@ -232,12 +273,17 @@ func (t Tutorial) check() error {
 		return fmt.Errorf("%s: a tutorial names the game it is played on", t.ID)
 	case len(t.Steps) == 0:
 		return fmt.Errorf("%s: a tutorial needs steps", t.ID)
+	case t.Series != strings.TrimSpace(t.Series):
+		return fmt.Errorf("%s: series %q has spaces at its ends", t.ID, t.Series)
 	case t.Seat < 0:
 		return fmt.Errorf("%s: seat %d", t.ID, t.Seat)
 	}
 	for i, s := range t.Steps {
 		if strings.TrimSpace(s.Text) == "" {
 			return fmt.Errorf("%s: step %d has no text", t.ID, i+1)
+		}
+		if strings.TrimSpace(s.Name) == "" {
+			return fmt.Errorf("%s: step %d has no name", t.ID, i+1)
 		}
 		if len(s.Arrow) != 0 && len(s.Arrow) != 2 {
 			return fmt.Errorf("%s: step %d: an arrow is two squares, from and to", t.ID, i+1)
@@ -289,4 +335,30 @@ func checkPart(part string) error {
 func Schema(dir string) ([]byte, error) {
 	return schemagen.GenerateFor(reflect.TypeFor[Tutorial](), dir, SchemaID, "Bingle tutorial",
 		"A tutorial of a bingle game, in YAML. Generated from internal/tutorial: do not edit.", Required)
+}
+
+// Script is every move of the tutorial's steps in the order they are played:
+// each step's play, then its reply. Setup is not part of it.
+func (t Tutorial) Script() []string {
+	var out []string
+	for _, s := range t.Steps {
+		out = append(out, s.Play...)
+		out = append(out, s.Reply...)
+	}
+	return out
+}
+
+// Played says whether notations, the moves a tutorial's room has played since
+// its start, are its whole script: the learner has come to its end.
+func (t Tutorial) Played(notations []string) bool {
+	script := t.Script()
+	if len(notations) != len(script) {
+		return false
+	}
+	for i, n := range script {
+		if !strings.EqualFold(strings.TrimSpace(n), strings.TrimSpace(notations[i])) {
+			return false
+		}
+	}
+	return true
 }

@@ -368,3 +368,134 @@ func TestTutorials_ReactionChoiceIsFixed(t *testing.T) {
 		t.Fatalf("after the refusals: %d %+v", code, got)
 	}
 }
+
+// A series is listed with its tutorials, and each is served with the one after it.
+func TestTutorials_ServedWithTheirSeries(t *testing.T) {
+	base := newRESTTestServer(t)
+	var l struct {
+		Tutorials []struct {
+			ID     string `json:"id"`
+			Series string `json:"series"`
+		} `json:"tutorials"`
+	}
+	if code := doJSON(t, "GET", base+"/api/game-defs/cthulhu-wars/tutorials", nil, &l); code != 200 {
+		t.Fatalf("GET the tutorials: %d", code)
+	}
+	for _, tu := range l.Tutorials {
+		if want := map[bool]string{true: "", false: "Core Game"}[tu.ID == "high-priests"]; tu.Series != want {
+			t.Errorf("%s is listed in the series %q, want %q", tu.ID, tu.Series, want)
+		}
+	}
+	next := func(id string) string {
+		var doc struct {
+			Next *struct{ ID, Title string } `json:"next"`
+		}
+		if code := doJSON(t, "GET", base+"/api/game-defs/cthulhu-wars/tutorials/"+id, nil, &doc); code != 200 {
+			t.Fatalf("GET %s: %d", id, code)
+		}
+		if doc.Next == nil {
+			return ""
+		}
+		return doc.Next.ID + "/" + doc.Next.Title
+	}
+	if got := next("how-to-win"); got != "power/Power" {
+		t.Errorf("after How to win: %q", got)
+	}
+	if got := next("ui-features"); got != "" {
+		t.Errorf("the last of the series leads on to %q", got)
+	}
+	if got := next("high-priests"); got != "" {
+		t.Errorf("a tutorial of no series leads on to %q", got)
+	}
+}
+
+// A signed-in account keeps the tutorials it has finished: recorded only at the
+// end of the script, and only for the room's own learner. A guest's is not kept.
+func TestTutorials_DoneIsKeptForAnAccount(t *testing.T) {
+	e := newNotifyEnv(t, fakesmtp.Options{})
+	ana := newBrowser(t, e.URL)
+	if code := ana.login("ana", signUp(t, e, ana, "ana", "ana@example.com")); code != 200 {
+		t.Fatalf("login: %d", code)
+	}
+	var created createGameResponse
+	if code := ana.do("POST", "/api/tutorials", map[string]any{"game_def_id": "blooms", "tutorial": "blooms-basics", "player_name": "ana"}, &created); code != 200 {
+		t.Fatalf("starting the tutorial: %d", code)
+	}
+	room := created.RoomCode
+	var g struct {
+		Seats []struct {
+			Seat int    `json:"seat"`
+			Name string `json:"name"`
+		} `json:"seats"`
+	}
+	ana.do("GET", "/api/games/"+room, nil, &g)
+	names := map[int]string{}
+	for _, s := range g.Seats {
+		names[s.Seat] = s.Name
+	}
+	var doc tutorialDoc
+	ana.do("GET", "/api/game-defs/blooms/tutorials/blooms-basics", nil, &doc)
+	var script [][2]any
+	for _, s := range doc.Steps {
+		for _, mv := range s.Play {
+			script = append(script, [2]any{1, mv})
+		}
+		for _, mv := range s.Reply {
+			script = append(script, [2]any{2, mv})
+		}
+	}
+	play := func(moves [][2]any) {
+		for _, m := range moves {
+			if code := ana.do("POST", "/api/games/"+room+"/moves", map[string]any{"player_name": names[m[0].(int)], "notation": m[1]}, nil); code != 200 {
+				t.Fatalf("playing %v: %d", m, code)
+			}
+		}
+	}
+	done := func(b *browser) (int, bool) {
+		var out struct {
+			Recorded bool `json:"recorded"`
+		}
+		code := b.do("POST", "/api/tutorials/done", map[string]any{"room_code": room}, &out)
+		return code, out.Recorded
+	}
+	listed := func() bool {
+		var l struct {
+			Tutorials []struct {
+				ID   string `json:"id"`
+				Done bool   `json:"done"`
+			} `json:"tutorials"`
+		}
+		ana.do("GET", "/api/game-defs/blooms/tutorials", nil, &l)
+		for _, tu := range l.Tutorials {
+			if tu.ID == "blooms-basics" {
+				return tu.Done
+			}
+		}
+		t.Fatal("blooms-basics is not listed")
+		return false
+	}
+
+	play(script[:len(script)-1])
+	if code, rec := done(ana); code != 200 || rec || listed() {
+		t.Fatalf("before the end: %d recorded=%v listed=%v", code, rec, listed())
+	}
+	play(script[len(script)-1:])
+	// A guest, or another account, is not the room's learner.
+	if code, rec := done(newBrowser(t, e.URL)); code != 200 || rec {
+		t.Errorf("a guest: %d recorded=%v", code, rec)
+	}
+	bea := newBrowser(t, e.URL)
+	if code := bea.login("bea", signUp(t, e, bea, "bea", "bea@example.com")); code != 200 {
+		t.Fatalf("login: %d", code)
+	}
+	if code, rec := done(bea); code != 403 || rec {
+		t.Errorf("another account: %d recorded=%v", code, rec)
+	}
+	if code, rec := done(ana); code != 200 || !rec || !listed() {
+		t.Fatalf("at the end: %d recorded=%v listed=%v", code, rec, listed())
+	}
+	// Finishing again changes nothing.
+	if code, rec := done(ana); code != 200 || !rec {
+		t.Fatalf("again: %d recorded=%v", code, rec)
+	}
+}

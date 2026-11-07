@@ -2,7 +2,7 @@
   "$defs": {
     "Step": {
       "additionalProperties": false,
-      "description": "Step is one page of a tutorial: some prose, and what happens on the board.",
+      "description": "Step is one lesson of a tutorial: some prose, and what happens on the board.",
       "properties": {
         "arrow": {
           "description": "Arrow draws an arrow from its first square to its second.",
@@ -25,6 +25,14 @@
         "illegal": {
           "description": "Illegal marks the step's arrow and highlighted squares as what must not be done: drawn red, with a cross. It needs one of them, and such a step asks for no moves.",
           "type": "boolean"
+        },
+        "keep_playing": {
+          "description": "KeepPlaying offers, from this lesson on, to play the game on from where it stands against a bot (\"Keep Playing\"): usually on the last lesson, of a tutorial whose game is worth finishing.",
+          "type": "boolean"
+        },
+        "name": {
+          "description": "Name is the lesson's name, shown after the tutorial's title above it.",
+          "type": "string"
         },
         "pieces": {
           "description": "Pieces depicts the board with just these pieces on it, for this step only: piece@square, or piece:color@square where the piece is not named after its colour, bottom first where several share a square. It need not be a position play can reach, and like Show it asks for no moves.",
@@ -88,7 +96,7 @@
           "type": "string"
         },
         "order": {
-          "description": "Order sorts the game's tutorials of one kind (lowest first).",
+          "description": "Order sorts the game's tutorials of one kind (lowest first), and so the tutorials of a series.",
           "type": "integer"
         },
         "seat": {
@@ -98,6 +106,10 @@
         "seed": {
           "description": "Seed fixes the chance of a game that has any (its dice), so every roll of the scripted line comes out the same. Required for such a game.",
           "type": "integer"
+        },
+        "series": {
+          "description": "Series names the ordered set of tutorials this one belongs to (\"Core Game\"), taken one after another in Order. Without it a tutorial is a series of its own. A series' tutorials are of one kind.",
+          "type": "string"
         },
         "setup": {
           "description": "Setup are moves played, by whichever seat is to move, before the first step: the way to reach a position worth teaching from.",

@@ -2,7 +2,7 @@
 id: blooms
 name: Blooms
 description: "Nick Bentley's colourful Go-like game on a hexagonal board: place one or two stones of different colours, and capture every enemy bloom you fence in."
-version: 0.6.0
+version: 0.6.1
 designers: [Nick Bentley]
 pie_rule: optional
 default_clock_minutes: 10

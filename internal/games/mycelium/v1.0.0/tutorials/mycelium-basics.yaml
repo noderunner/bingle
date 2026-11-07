@@ -8,13 +8,15 @@ game: mycelium-1.0.0
 seat: 1   # you play Black; the page plays Green
 
 steps:
-  - text: |
+  - name: What Mycelium is about
+    text: |
       In **Mycelium** two fungal colonies fight over a hexagonal board. You
       place nodes, and taking the centre sets off a **confluence**, in which
       clusters spread and convert enemy nodes to their own colour. You win by
       wiping out the other colony.
 
-  - text: |
+  - name: How the game ends
+    text: |
       This is how a game ends. **Black has no nodes left**, so Green has won.
 
       A game can only be won when a confluence ends: a player left with no
@@ -32,7 +34,8 @@ steps:
       spore c9 c5, spore d6 d9, hyphae c5 b5, hyphae d9 c9, hyphae b6 c5, hyphae b5
     ]
 
-  - text: |
+  - name: The board
+    text: |
       The board is a hexagon of **61 cells**, five along each side. Each cell
       is named by a letter and a number, touches up to six others, and lies on
       three straight lines.
@@ -40,14 +43,16 @@ steps:
       The cell that matters most is the **centre**, e5.
     highlight: [e5]
 
-  - text: |
+  - name: The nodes
+    text: |
       Black has **black nodes** and Green has **green nodes**, and neither
       ever runs out. A node never moves. It can only change colour, when it is
       converted, or leave the board from the centre, as you will see.
 
       You are Black; this tutorial plays Green.
 
-  - text: |
+  - name: A normal turn
+    text: |
       On a normal turn you place **one node of your colour on any empty
       cell**. The board starts empty and Black goes first.
 
@@ -57,7 +62,8 @@ steps:
     highlight: [i4]
     reply: [green@f2]
 
-  - text: |
+  - name: Spore clusters
+    text: |
       A **cluster** is a connected group of nodes of one colour, and a single
       node is a cluster of one. A **spore cluster** touches no enemy node, so
       your i4 and Green's f2 are both spore clusters.
@@ -69,7 +75,8 @@ steps:
     highlight: [f7]
     reply: [green@d8]
 
-  - text: |
+  - name: A new cluster
+    text: |
       Green has started a new cluster on d8. Place a node on b8, with one
       empty cell, c8, between it and d8.
     play: [black@b8]
@@ -77,7 +84,8 @@ steps:
     highlight: [b8]
     reply: [green@d7]
 
-  - text: |
+  - name: Strands
+    text: |
       Green's d7 touches d8, so they are one cluster of two. Make one of your
       own: place a node on b9, touching b8.
 
@@ -89,7 +97,8 @@ steps:
     highlight: [b9]
     reply: [green@c8]
 
-  - text: |
+  - name: Taking the centre
+    text: |
       Green's c8 joins its cluster, which now has three nodes, and it touches
       your b8 and b9. A cluster touching an enemy node is a **hyphae cluster**,
       so Green's three and your two are both hyphae clusters now.
@@ -101,7 +110,8 @@ steps:
     highlight: [e5]
     reply: [spore f2 f7]
 
-  - text: |
+  - name: The confluence
+    text: |
       A confluence has two phases: first the **spore** clusters spread, then
       the **hyphae** clusters.
 
@@ -112,7 +122,8 @@ steps:
     highlight: [f2, f7]
     arrow: [f2, f7]
 
-  - text: |
+  - name: A spore spread
+    text: |
       In a **spore spread** you choose a node of the cluster and a straight
       line from it across empty cells. **The first enemy node on that line
       becomes your colour**, and the node that spread stays where it is. That
@@ -125,7 +136,8 @@ steps:
     highlight: [i4, f7]
     arrow: [i4, f7]
 
-  - text: |
+  - name: A node just converted
+    text: |
       Each cluster spreads at most once in each phase, and the board tints the
       nodes that have. But a node just converted is new to its colony: **f7 has
       not spread for you yet**, and the initiative is still at clusters of one,
@@ -138,7 +150,8 @@ steps:
     highlight: [f7, f2]
     arrow: [f7, f2]
 
-  - text: |
+  - name: The hyphae phase
+    text: |
       Nothing else can spread, so **the hyphae phase** begins, with the
       initiative back at clusters of one. No hyphae cluster has one node, so it
       moves on to two: your b8 and b9. Green's three would come after.
@@ -155,7 +168,8 @@ steps:
     highlight: [b9, c8]
     arrow: [b9, c8]
 
-  - text: |
+  - name: Converting more than one
+    text: |
       The nodes you convert need not follow a straight line, and you can press
       **done** to stop early. Here c8 touches two more enemy nodes, d8 and d7.
 
@@ -165,7 +179,8 @@ steps:
     highlight: [d8]
     reply: [green@e7]
 
-  - text: |
+  - name: Initiative and size
+    text: |
       Green's cluster of three has been cut down to one node, d7, and the
       initiative has already passed clusters of one, so **it never got to
       spread**. A cluster's size and kind are looked at when its turn comes, so
@@ -177,10 +192,12 @@ steps:
       on e7.
     highlight: [e5, d7, e7]
 
-  - text: |
+  - name: Playing on
+    text: |
       Normal turns now go on until someone takes the centre again. Taking it
       starts the fight when you choose, but your opponent chooses first at every
       size and places first afterwards.
 
       Green is down to two nodes. A confluence that leaves it with none wins
       you the game.
+    keep_playing: true

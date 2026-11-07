@@ -18,7 +18,7 @@ import (
 func TestStartTutorial_SeedsTheStart(t *testing.T) {
 	mod := courtfall.Module()
 	doc := func(id string, seed string) string {
-		return "id: " + id + "\nkind: rules\ntitle: T\ngame: courtfall-1.0.0\nseed: " + seed + "\nsteps:\n  - text: Look.\n"
+		return "id: " + id + "\nkind: rules\ntitle: T\ngame: courtfall-1.0.0\nseed: " + seed + "\nsteps:\n  - name: L\n    text: Look.\n"
 	}
 	mod.Tutorials = fstest.MapFS{
 		"seven.yaml": {Data: []byte(doc("seven", "7"))},

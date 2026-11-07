@@ -99,6 +99,7 @@ Short records of choices made for the `bingle` project during the requirements i
 | [0116](0116-effects-at-the-end-of-a-turn.md) | Effects at the end of a turn: `end_of_turn` removes the groups with no liberties of the mover's opponents, credits a pool, and can tint them |
 | [0117](0117-groups-by-colour-enemies-by-seat.md) | Groups by colour, enemies by seat: a seat may play several `colors`; groups stay one colour, ownership goes by seat |
 | [0118](0118-a-move-limit-decided-by-a-pool.md) | A move limit decided by a pool: `decide: {type: most, pool: …}` compares each seat's reserve pool, as Blooms' captures |
+| [0123](0123-tutorials-come-in-series-of-lessons.md) | Tutorials come in series of named lessons: the card's head names both, dots track progress, *Start Next Tutorial* leads on, Keep Playing is the tutorial's to offer, and an account keeps what it has finished |
 | [0122](0122-a-patience-vocabulary.md) | A patience vocabulary: columns, foundations, cells, stock and `off` as parameters, compiled to one action; Solitaire's notation kept |
 | [0119](0119-a-seeded-deal-at-the-start.md) | A seeded deal at the start: a declared game may hold `cards` and `deal` them into zones before the first move; draws during play and dice wait |
 | [0115](0115-a-declared-turn-of-several-selections.md) | A declared turn may have several selections: parts with a `min`, a `max` and `distinct`, moved through by choosing, and `done` to stop |

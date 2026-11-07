@@ -9,8 +9,11 @@ kinds:
 - **strategy** — why a move is good.
 - **variant** — what a variant changes.
 
-Tutorials earn no achievements; which ones a browser has finished is only remembered by the browser.
-The design is [ADR 0077](decisions/0077-tutorials-are-data-played-by-the-engine.md).
+A tutorial is a run of **lessons**, one card each, and tutorials can be put in a **series** taken one
+after another (Cthulhu Wars' *Core Game*). Tutorials earn no achievements; which ones have been finished is
+kept for a signed-in account, and in the browser for anyone. The design is
+[ADR 0077](decisions/0077-tutorials-are-data-played-by-the-engine.md), with lessons and series in
+[ADR 0123](decisions/0123-tutorials-come-in-series-of-lessons.md).
 
 ## Where they live
 
@@ -31,19 +34,23 @@ order: 1
 game: blooms-4
 seat: 1
 steps:
-  - text: |
+  - name: Your first stone
+    text: |
       Place a red stone on the highlighted cell.
     play: [red@d4]
     hint: Click the highlighted cell.
     highlight: [d4]
     reply: [blue@a4, black@g1]
-  - text: A bloom with no empty cell beside it is fenced.
+  - name: Fenced blooms
+    text: A bloom with no empty cell beside it is fenced.
     pieces: [blue@g1, blue@f2, black@f3, black@f4, yellow@g4, red@g2, red@g3]
     highlight: [g2, g3]
-  - text: You can't place two stones of one colour in a turn.
+  - name: One stone of a colour
+    text: You can't place two stones of one colour in a turn.
     pieces: [red@d4]
     highlight: [e4]
     illegal: true
+    keep_playing: true
 ```
 
 ### Every key of a tutorial
@@ -54,7 +61,8 @@ steps:
 | `kind` | yes | `rules`, `strategy` or `variant`. |
 | `title` | yes | What the list of tutorials shows. |
 | `summary` | no | One line under the title. |
-| `order` | no | Sorts the game's tutorials of one kind, lowest first. |
+| `order` | no | Sorts the game's tutorials of one kind, lowest first, and so the tutorials of a series. |
+| `series` | no | The series the tutorial is part of (`Core Game`), taken in `order`. Without it the tutorial is a series of its own. A series' tutorials are of one kind. |
 | `game` | yes | The game or variant it is played on, of the family whose files hold it (`blooms-4`). |
 | `variant_only` | no | `true` when it teaches only that game, so that it is offered only with it (`bowling-basics`). Without it the tutorial is offered for the whole family, and `game` is merely the board it is played on, as Blooms is taught on its small board. |
 | `seat` | no | The learner's seat, 1 by default. The page plays every other seat. |
@@ -62,13 +70,14 @@ steps:
 | `setup` | no | Moves played by whichever seat is to move, before the first step. |
 | `start` | no | A position document to begin from instead of the game's start, for a game well into play. Usually `!include positions/name.yaml`. |
 | `start_seat` | no | Who moves first from `start`, in a game whose position does not say (one without a Go ruleset). |
-| `steps` | yes | The pages of the tutorial, in order. |
+| `steps` | yes | The lessons of the tutorial, in order. |
 
 ### Every key of a step
 
 | Key | What it is | Rules |
 |---|---|---|
-| `text` | The page's prose, in Markdown. The game's guide images may be used. | Required. |
+| `name` | The lesson's name, shown after the tutorial's title at the top of its card. | Required. |
+| `text` | The lesson's prose, in Markdown. The game's guide images may be used. | Required. |
 | `play` | The moves the learner must make, in order, written as the move list writes them. The page offers only these. | A step with none waits for **Next**. |
 | `hint` | Shown when the learner asks for a hint. On a step without `play`, it can hold the answer to a question the text asks. | |
 | `reply` | Moves played for the other seats after the learner's. | |
@@ -79,6 +88,7 @@ steps:
 | `pieces` | A picture: the board with just these pieces on it. | Only one of `pieces`, `show` and `position`. No `play` or `reply`. |
 | `show` | A picture: the position these moves reach from the game's start. | As above. Every move must be legal, in turn. |
 | `position` | A picture: a position written out as a document. | As above. |
+| `keep_playing` | `true` offers **Keep Playing** from this lesson on: an ordinary game against a bot from the position on the board. | Usually on the last lesson, of a tutorial whose game is worth finishing. |
 
 `play`, `reply`, `setup` and `show` all use the game's move notation, the same text as the move list.
 A square in `highlight`, `arrow` or `pieces` is a position id of the board (`d4`, or `south-pacific` on
@@ -194,7 +204,8 @@ A rules tutorial teaches the whole game in this order, one step each unless a pa
    learner making the moves that show them, the replies answering.
 
 A big game splits its rules across several rules tutorials by topic, each following the same order
-for its part.
+for its part, and puts them in a `series`. The last lesson of each but the last of a series says what
+comes next, in the words `The next tutorial covers **<title>**.`; a test holds every series to it.
 
 The usual YAML of a definition applies: includes, anchors, and every field name checked with its file
 and line ([dsl.md](dsl.md#the-file)). `docs/tutorial.schema.json` gives an editor completion; it is
@@ -214,12 +225,17 @@ so the rules are the engine's. The room is marked as a tutorial (`tutorial: "fam
 - **The game picker** marks the games that have a tutorial with a *Tutorial* badge, and the chosen
   game's setup lists its tutorials under **Learn to play**, started under the name in the form.
 - **The rules window**, from the game picker or a game, has a **Tutorials** tab for a game that has
-  any: by kind (*Learn the rules*, *Strategy*, *Variants*), each with its summary and a *✓ Done* mark
-  once this browser has finished it.
+  any: by kind (*Learn the rules*, *Strategy*, *Variants*), each with its summary and a *✓ Completed*
+  mark once it has been finished.
+- In both, the tutorials of a series are listed together under its name, numbered in its order, and
+  the series is marked *✓ Completed* once all of them are.
+- A link to `/?game=<id>&tab=tutorials` opens the game's setup on its tutorials.
 
 ## The page
 
-A tutorial room's game page shows the step above the board, its highlighted squares ringed and its
+A tutorial room's game page shows the lesson's card above the board — the tutorial's title and the
+lesson's name at its top, and at its foot a dot for each lesson, this one lit, between back (`‹`) and
+forward (`›`) — its highlighted squares ringed and its
 arrow drawn (`.illegal-marks`, with `.illegal-cross` over them, for an `illegal` step), its `spotlight` parts
 picked out (`.tutorial-spot`), and a picture in place of the game's, with `#status-message` saying it is an example. The chat and the voice call are left out:
 there is nobody to talk to.
@@ -232,18 +248,19 @@ makes the others inert, and lets only the square to click be clicked. *Back* sti
 but cannot take back a selection of the turn, which would leave the script. *Need a hint?* shows the step's
 `hint`. When the learner's moves are made, the page
 plays the step's `reply` for the other seats, a moment apart so they can be followed, and moves on.
-A step without `play` waits for **Next** (**Finish** on the last).
+A step without `play` waits for forward (`#tutorial-next`; *Finish* on the last).
 
-**Back** (`#tutorial-back`) returns to any earlier step, to read it again with its board as it stood. Looking
+Back (`#tutorial-back`) returns to any earlier step, to read it again with its board as it stood. Looking
 back changes nothing: the moves of the room stand ([ADR 0083](decisions/0083-a-move-stands.md)), the board cannot be
-played on, no reply is played, and **Next** comes forward again to where the learner was.
+played on, no reply is played, and forward comes again to where the learner was.
 
 Where the learner is comes from the
 moves the room has played, so a reload, another tab or a phone find the same step; moves that are not
 the script's (one made through the API) leave the tutorial *off script*, with a way to start again.
 
-At the end the tutorial is marked done in the browser, and **Finish this game against a bot** starts
-an ordinary game from the position on the board.
+At the end the tutorial is marked done in the browser and, for a signed-in account, on the server
+(`POST /api/tutorials/done`). The last card offers **Start Next Tutorial** when there is one after it
+in its series, **Return to Tutorials** (the game's list), and **Keep Playing** if a lesson asked for it.
 
 ## The guarantee
 

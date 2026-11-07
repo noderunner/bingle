@@ -487,7 +487,7 @@ func TestWebTutorial_BackLooksAtEarlierSteps(t *testing.T) {
 	room := openTutorial(t, ctx, base)
 	stones := `[...document.querySelectorAll("#board .cell")].filter(c => c.dataset.height !== "0").length`
 	waitStep(t, ctx, "1")
-	if evalBool(t, ctx, `document.getElementById("tutorial-back") !== null`) {
+	if evalBool(t, ctx, `!document.getElementById("tutorial-back").disabled`) {
 		t.Error("the first step has nothing to go back to")
 	}
 	for _, n := range []string{"2", "3", "4"} {

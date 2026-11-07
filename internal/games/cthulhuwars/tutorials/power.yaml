@@ -4,17 +4,20 @@ kind: rules
 title: Power
 summary: Spending Power, Gates and Cultists, gathering, and what passing does.
 order: 2
+series: Core Game
 game: cthulhu-wars
 seat: 1          # you play Great Cthulhu; the page plays the others
 start: !include positions/power-in-the-action-phase.yaml
 
 steps:
-  - text: |
+  - name: What Power pays for
+    text: |
       **Power** pays for almost everything you do. You have **7**, shown in your cult's panel, and
       each action's button shows what it costs.
     spotlight: [power, actions]
 
-  - text: |
+  - name: Recruiting
+    text: |
       Recruit a Cultist in the South Pacific, for **1 Power**. Press **Recruit**, then click the
       area.
     play: [recruit@south-pacific]
@@ -23,7 +26,8 @@ steps:
     spotlight: [power]
     reply: [recruit@asia]
 
-  - text: |
+  - name: Building a Gate
+    text: |
       Gates are the best source of Power. Have your Cultist in the Indian Ocean build one, for
       **3 Power**.
     play: [gate@indian-ocean]
@@ -32,7 +36,8 @@ steps:
     spotlight: [power, gates]
     reply: [recruit@asia]
 
-  - text: |
+  - name: Passing
+    text: |
       You have 3 Power left, and the others have none. **Passing drops all your remaining Power to
       0**, so only pass when you have nothing better to buy.
 
@@ -41,7 +46,8 @@ steps:
     hint: Press Pass.
     spotlight: [power]
 
-  - text: |
+  - name: Gathering Power
+    text: |
       With nobody able to act, everyone **gathers Power**:
 
       - **1** for each of your Cultists on the map
@@ -53,15 +59,19 @@ steps:
     highlight: [south-pacific, indian-ocean, antarctica]
     spotlight: [phases, power]
 
-  - text: |
+  - name: Catching up
+    text: |
       A cult below **half the leader's Power**, rounded up, is raised to that number, so nobody is
       left far behind. You lead with 10, so everyone will have at least 5.
     spotlight: [power, power:2, power:3, power:4]
 
-  - text: |
+  - name: Out of Power
+    text: |
       **At 0 Power you are out of the Action phase.** You are skipped until the next round, so you
       cannot even use an action that costs 0, such as Crawling Chaos's *The Thousand Forms*.
 
       So spend it wisely: Power pays for everything, Cultists and Gates bring it back, and a pass
       throws the rest away.
+
+      The next tutorial covers **Units**.
     spotlight: [power]

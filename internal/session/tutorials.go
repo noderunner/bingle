@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 
+	"github.com/noderunner/bingle/internal/store"
 	"github.com/noderunner/bingle/internal/tutorial"
 )
 
@@ -128,4 +130,62 @@ func (m *Manager) TutorialGuide(gameID, id string) (tutorial.Tutorial, []tutoria
 		return tutorial.Tutorial{}, nil, err
 	}
 	return t, guide, nil
+}
+
+// NextTutorial returns the tutorial after t in its series, among those offered
+// with the game t is played on, and whether there is one.
+func (m *Manager) NextTutorial(t tutorial.Tutorial) (tutorial.Tutorial, bool) {
+	_, list, err := m.TutorialsFor(t.Game)
+	if err != nil {
+		return tutorial.Tutorial{}, false
+	}
+	return tutorial.NextInSeries(list, t)
+}
+
+// TutorialsDone returns the ids of the tutorials of a family an account has finished.
+func (m *Manager) TutorialsDone(ctx context.Context, accountID int64, family string) (map[string]bool, error) {
+	return m.store.TutorialsDone(ctx, accountID, family)
+}
+
+// TutorialDone records that an account has finished the tutorial a room plays:
+// it holds the learner's seat, and every move of the script has been played.
+// It answers false, recording nothing, for a room not yet at the end.
+func (m *Manager) TutorialDone(ctx context.Context, account store.Account, roomCode string) (bool, error) {
+	g, err := m.store.GetGame(ctx, roomCode)
+	if err != nil {
+		return false, err
+	}
+	family, id, ok := strings.Cut(g.Tutorial, "/")
+	if !ok {
+		return false, fmt.Errorf("%w: room %q", ErrTutorialRoom, roomCode)
+	}
+	_, t, err := m.Tutorial(family, id)
+	if err != nil {
+		return false, err
+	}
+	players, err := m.store.ListPlayers(ctx, g.ID)
+	if err != nil {
+		return false, err
+	}
+	learner := false
+	for _, p := range players {
+		if p.Seat == t.LearnerSeat() && p.PrincipalID != "" && p.PrincipalID == account.PrincipalID {
+			learner = true
+		}
+	}
+	if !learner {
+		return false, fmt.Errorf("%w: the room's learner is someone else", ErrNotYourSeat)
+	}
+	moves, err := m.store.ListMoves(ctx, g.ID, 0)
+	if err != nil {
+		return false, err
+	}
+	played := make([]string, 0, len(moves))
+	for _, mv := range moves {
+		played = append(played, mv.Notation)
+	}
+	if !t.Played(played) {
+		return false, nil
+	}
+	return true, m.store.MarkTutorialDone(ctx, account.ID, g.Tutorial, m.now())
 }

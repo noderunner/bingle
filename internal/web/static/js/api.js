@@ -178,6 +178,7 @@ export const api = {
 	tutorials: (id) => call(`/api/game-defs/${enc(id)}/tutorials`),
 	tutorial: (id, tutorial) => call(`/api/game-defs/${enc(id)}/tutorials/${enc(tutorial)}`),
 	startTutorial: (body) => call("/api/tutorials", { method: "POST", body }),
+	tutorialDone: (code) => call("/api/tutorials/done", { method: "POST", body: { room_code: code } }),
 	bots: () => call("/api/bots"),
 	puzzles: (gameDefID) => call("/api/puzzles" + (gameDefID ? `?game_def_id=${enc(gameDefID)}` : "")),
 	puzzle: (id, reveal) => call(`/api/puzzles/${enc(id)}${reveal ? "?reveal=1" : ""}`),

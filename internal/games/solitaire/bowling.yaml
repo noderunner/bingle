@@ -6,7 +6,7 @@
 id: bowling-solitaire
 name: Bowling Solitaire
 description: "Sid Sackson's little masterpiece: twenty cards are the pins and the balls of ten frames of bowling, and you aim to knock the pins down by adding them up."
-version: 0.2.0
+version: 0.2.1
 designers: [Sid Sackson]
 engine: ruleset
 rules:

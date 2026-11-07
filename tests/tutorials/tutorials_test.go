@@ -62,10 +62,12 @@ kind: rules
 title: T
 game: blooms-4
 steps:
-  - text: First.
+  - name: L
+    text: First.
     play: [red@d4]
     reply: [blue@a4, black@g1]
-  - text: Then.
+  - name: L
+    text: Then.
     play: [red@b3, yellow@b4]
 `
 
@@ -95,7 +97,7 @@ func TestVerify_CatchesMistakes(t *testing.T) {
 		"a reply on your turn":   {"play: [red@d4]\n    reply: [blue@a4, black@g1]", "reply: [blue@a4]", "blooms", "not a reply"},
 		"your move on theirs":    {"    reply: [blue@a4, black@g1]\n", "", "blooms", "not the learner's"},
 		"an unknown notation":    {"play: [red@d4]", "play: [purple@d4]", "blooms", "purple"},
-		"a square off the board": {"  - text: Then.", "  - text: Then.\n    highlight: [z9]", "blooms", `"z9" is not a square`},
+		"a square off the board": {"  - name: L\n    text: Then.", "  - name: L\n    text: Then.\n    highlight: [z9]", "blooms", `"z9" is not a square`},
 		"another game's file":    {"game: blooms-4", "game: blooms-4", "meridians", "not of \"meridians\""},
 		"an unknown game":        {"game: blooms-4", "game: blooms-9", "blooms", `no game "blooms-9"`},
 	}
@@ -120,7 +122,7 @@ func TestVerify_CatchesMistakes(t *testing.T) {
 // A game with chance must fix its seed; with one, the dice repeat.
 func TestVerify_ChanceNeedsASeed(t *testing.T) {
 	cat := shippedCatalog(t)
-	doc := "id: t\nkind: rules\ntitle: T\ngame: courtfall-1.0.0\nsteps:\n  - text: Look.\n"
+	doc := "id: t\nkind: rules\ntitle: T\ngame: courtfall-1.0.0\nsteps:\n  - name: L\n    text: Look.\n"
 	tuts, err := load(t, map[string]string{"t.yaml": doc})
 	if err != nil {
 		t.Fatal(err)
@@ -137,13 +139,18 @@ func TestLoad_Mistakes(t *testing.T) {
 		files map[string]string
 		want  string
 	}{
-		"a misspelled field":  {map[string]string{"t.yaml": strings.Replace(good, "title: T", "titel: T", 1)}, `t.yaml:3:1: unknown field "titel"`},
-		"a field in a step":   {map[string]string{"t.yaml": strings.Replace(good, "    play: [red@d4]", "    plya: [red@d4]", 1)}, `unknown field "plya" in Step`},
-		"a wrong kind":        {map[string]string{"t.yaml": strings.Replace(good, "kind: rules", "kind: lore", 1)}, "not rules, strategy or variant"},
-		"no steps":            {map[string]string{"t.yaml": "id: t\nkind: rules\ntitle: T\ngame: g\nsteps: []\n"}, "needs steps"},
-		"a step without text": {map[string]string{"t.yaml": strings.Replace(good, "text: Then.", "text: ' '", 1)}, "step 2 has no text"},
-		"a one-square arrow":  {map[string]string{"t.yaml": good + "  - text: More.\n    arrow: [d4]\n"}, "two squares"},
-		"misnamed file":       {map[string]string{"other.yaml": good}, "name the file after the tutorial"},
+		"a misspelled field":      {map[string]string{"t.yaml": strings.Replace(good, "title: T", "titel: T", 1)}, `t.yaml:3:1: unknown field "titel"`},
+		"a field in a step":       {map[string]string{"t.yaml": strings.Replace(good, "    play: [red@d4]", "    plya: [red@d4]", 1)}, `unknown field "plya" in Step`},
+		"a wrong kind":            {map[string]string{"t.yaml": strings.Replace(good, "kind: rules", "kind: lore", 1)}, "not rules, strategy or variant"},
+		"no steps":                {map[string]string{"t.yaml": "id: t\nkind: rules\ntitle: T\ngame: g\nsteps: []\n"}, "needs steps"},
+		"a step without text":     {map[string]string{"t.yaml": strings.Replace(good, "text: Then.", "text: ' '", 1)}, "step 2 has no text"},
+		"a one-square arrow":      {map[string]string{"t.yaml": good + "  - name: L\n    text: More.\n    arrow: [d4]\n"}, "two squares"},
+		"misnamed file":           {map[string]string{"other.yaml": good}, "name the file after the tutorial"},
+		"a lesson without a name": {map[string]string{"t.yaml": strings.Replace(good, "  - name: L\n    text: Then.", "  - text: Then.", 1)}, "step 2 has no name"},
+		"a series of two kinds": {map[string]string{
+			"t.yaml": strings.Replace(good, "title: T", "title: T\nseries: S", 1),
+			"u.yaml": strings.NewReplacer("id: t", "id: u", "kind: rules", "kind: strategy", "title: T", "title: T\nseries: S").Replace(good),
+		}, `both in the series "S"`},
 	}
 	for name, c := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -193,7 +200,7 @@ func TestSchema_UpToDate(t *testing.T) {
 // the script must spell each move as the engine writes it.
 func TestVerify_CanonicalNotation(t *testing.T) {
 	cat := shippedCatalog(t)
-	doc := "id: t\nkind: rules\ntitle: T\ngame: gomoku\nsteps:\n  - text: Go.\n    play: [stone@h8]\n"
+	doc := "id: t\nkind: rules\ntitle: T\ngame: gomoku\nsteps:\n  - name: L\n    text: Go.\n    play: [stone@h8]\n"
 	tuts, err := load(t, map[string]string{"t.yaml": doc})
 	if err != nil {
 		t.Fatal(err)
@@ -209,7 +216,7 @@ func TestVerify_CanonicalNotation(t *testing.T) {
 // the start; it asks for no moves of its own.
 func TestShow(t *testing.T) {
 	cat := shippedCatalog(t)
-	withShow := strings.Replace(good, "  - text: Then.\n", "  - text: A picture.\n    show: [red@e5, blue@d4, black@d3]\n  - text: Then.\n", 1)
+	withShow := strings.Replace(good, "  - name: L\n    text: Then.\n", "  - name: L\n    text: A picture.\n    show: [red@e5, blue@d4, black@d3]\n  - name: L\n    text: Then.\n", 1)
 	tuts, err := load(t, map[string]string{"t.yaml": withShow})
 	if err != nil {
 		t.Fatal(err)
@@ -228,7 +235,7 @@ func TestShow(t *testing.T) {
 func TestGuide(t *testing.T) {
 	cat := shippedCatalog(t)
 	game, _ := cat.Get("blooms-4")
-	withShow := strings.Replace(good, "  - text: Then.\n", "  - text: A picture.\n    show: [red@e5]\n  - text: Then.\n", 1)
+	withShow := strings.Replace(good, "  - name: L\n    text: Then.\n", "  - name: L\n    text: A picture.\n    show: [red@e5]\n  - name: L\n    text: Then.\n", 1)
 	tuts, _ := load(t, map[string]string{"t.yaml": withShow})
 	g, err := tutorial.Guide(game, tuts[0])
 	if err != nil {
@@ -264,9 +271,11 @@ game: gomoku
 start: {v: 2, cells: {h8: [{piece: stone, color: black}], h9: [{piece: stone, color: white}]}, ply: 2}
 start_seat: 1
 steps:
-  - text: A picture.
+  - name: L
+    text: A picture.
     position: {v: 2, cells: {a1: [{piece: stone, color: black}]}, ply: 1}
-  - text: Play on from the written start.
+  - name: L
+    text: Play on from the written start.
     play: [h10]
 `
 	tuts, err := load(t, map[string]string{"t.yaml": doc})
@@ -303,7 +312,7 @@ steps:
 }
 
 func pictureStep(extra string) string {
-	return "id: pic\nkind: rules\ntitle: Pictures\ngame: blooms-4\nsteps:\n  - text: A picture.\n" + extra
+	return "id: pic\nkind: rules\ntitle: Pictures\ngame: blooms-4\nsteps:\n  - name: L\n    text: A picture.\n" + extra
 }
 
 func verifyPicture(t *testing.T, extra string) error {
@@ -391,7 +400,8 @@ kind: rules
 title: T
 game: blooms-4
 steps:
-  - text: First.
+  - name: L
+    text: First.
     spotlight: [%s]
 `
 
@@ -468,6 +478,57 @@ func TestCthulhuWarsStartsCountTheirMovesFromZero(t *testing.T) {
 	}
 }
 
+// A series is taken in order, and a tutorial that names none has nothing after
+// it, even beside another of the same title.
+func TestNextInSeries(t *testing.T) {
+	doc := func(id, series string, order int) string {
+		extra := fmt.Sprintf("title: T\norder: %d", order)
+		if series != "" {
+			extra += "\nseries: " + series
+		}
+		return strings.NewReplacer("id: t", "id: "+id, "title: T", extra).Replace(good)
+	}
+	tuts, err := load(t, map[string]string{
+		"a.yaml": doc("a", "Core", 1), "c.yaml": doc("c", "Core", 3), "b.yaml": doc("b", "", 2), "d.yaml": doc("d", "", 4),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	byID := map[string]tutorial.Tutorial{}
+	for _, tu := range tuts {
+		byID[tu.ID] = tu
+	}
+	if next, ok := tutorial.NextInSeries(tuts, byID["a"]); !ok || next.ID != "c" {
+		t.Errorf("after a: %q %v, want c", next.ID, ok)
+	}
+	for _, id := range []string{"b", "c", "d"} {
+		if next, ok := tutorial.NextInSeries(tuts, byID[id]); ok {
+			t.Errorf("after %s: %q", id, next.ID)
+		}
+	}
+}
+
+// The last lesson of a tutorial with one after it in its series says what that
+// one covers, so the learner knows what Start Next Tutorial begins.
+func TestSeriesSayWhatComesNext(t *testing.T) {
+	for _, m := range app.BuiltinModules() {
+		tuts, err := tutorial.Load(m.Tutorials)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, tu := range tuts {
+			next, ok := tutorial.NextInSeries(tuts, tu)
+			if !ok {
+				continue
+			}
+			last := tu.Steps[len(tu.Steps)-1].Text
+			if !strings.Contains(last, "The next tutorial covers **"+next.Title+"**") {
+				t.Errorf("%s/%s: the last lesson does not say the next tutorial covers %q", m.ID, tu.ID, next.Title)
+			}
+		}
+	}
+}
+
 // The core rules of Cthulhu Wars are taught topic by topic, in this order.
 func TestCthulhuWarsTeachesItsCoreRulesByTopic(t *testing.T) {
 	want := []string{"how-to-win", "power", "units", "movement", "spellbooks", "combat", "sequence-of-play", "ui-features", "high-priests"}
@@ -484,6 +545,10 @@ func TestCthulhuWarsTeachesItsCoreRulesByTopic(t *testing.T) {
 			got = append(got, tu.ID)
 			if tu.ID != "high-priests" && tu.Kind != tutorial.KindRules {
 				t.Errorf("%s is a %s tutorial", tu.ID, tu.Kind)
+			}
+			// The core rules are one series, taken in this order; the High Priests stand alone.
+			if want := map[bool]string{true: "", false: "Core Game"}[tu.ID == "high-priests"]; tu.Series != want {
+				t.Errorf("%s is in the series %q, want %q", tu.ID, tu.Series, want)
 			}
 		}
 		if strings.Join(got, " ") != strings.Join(want, " ") {
