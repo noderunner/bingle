@@ -3,7 +3,7 @@
 
 import { h, clear } from "./util.js";
 import { api } from "./api.js";
-import { factionName, factionColor, pretty } from "./cw-names.js";
+import { factionName, factionColor, pretty } from "/static/games/cthulhu-wars/cw-names.js";
 import { rateBars, lineChart, columnChart } from "./charts.js";
 
 const root = document.getElementById("batch-root");

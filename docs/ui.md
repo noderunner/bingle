@@ -458,7 +458,7 @@ him (`#action-recruit-high-priest`, *Recruit High Priest*, 3 Power) beside
 **Faction glyphs and the Ice Age.** The area where a cult begins (`params.starts`), and the
 areas marked with the Windwalker's and the Sleeper's sigils (`params.sigils`), carry that
 faction's **glyph** — the sigil of the printed game, traced to SVG by
-`scripts/cwglyphs.py` (`js/cw-glyphs.js`, `guide/glyphs/<key>.svg`) — on a dark disc next to
+`scripts/cwglyphs.py` (`cthulhuwars/web/cw-glyphs.js`, `guide/glyphs/<key>.svg`) — on a dark disc next to
 the area's name (`.area-sigil-badge[data-sigil]`), drawn only while the cult is at the table.
 The Factions page of the rules shows each glyph, with placeholders for the factions not in the game. The area that holds the Windwalker's Ice
 Age token gets a ❄ chip among the tokens (`.iceage-chip`).
@@ -866,7 +866,7 @@ preview-and-confirm, turn notifications. Hovering a square shows what is on it (
 
 ### The battle show
 
-Cthulhu Wars plays each battle on the map (`static/js/cw-battle.js`, *Battle animation* in the options;
+Cthulhu Wars plays each battle on the map (`cthulhuwars/web/cw-battle.js`, *Battle animation* in the options;
 off under the OS "reduce motion" setting). It is a layer over a copy of the map, fed only with snapshots
 of positions, so the game never waits for it and the page underneath stays current. The copy zooms to the
 area, which stays centred even at the map's edge, and the dark has the area's shape cut out of it. Each side
@@ -889,7 +889,7 @@ be copied, and the stage is turned 90° with CSS, because a page can only lock t
 screen after a tap (never on iOS), and a battle often comes from another player's move. On a phone the stage
 also steps aside when the show has caught up with a choice that needs a button.
 
-A Great Old One's first awakening has a show of its own (`#emerge-stage`, `js/cw-emerge.js`), for the five of the core set and eight more
+A Great Old One's first awakening has a show of its own (`#emerge-stage`, `cthulhuwars/web/cw-emerge.js`), for the five of the core set and eight more
 (`js/cw-*-art.js`, about seven seconds, [ADR 0108](decisions/0108-a-great-old-one-emerges.md)). The setup's *Animation Tester* tab (`#setup-tab-tester`, `#tester-battle`, `[data-tester-emerge]`) plays each with no game going. In the history it is a badge in the cult's colour
 (`.log-emerges`; `.playable[data-emerges]` plays it again).
 
@@ -960,6 +960,14 @@ preview:                       # a game in play for the list of games and the se
 variants:                      # a merge patch per game of the family, by id
   blooms-8: {board: {style: points}}
 ```
+
+**A game's own page script.** A look may name `script`, an ES module among the module's `Scripts`
+(`catalog.Module.Scripts`), served at `/static/games/<family>/<path>`. `api.gameDef` imports it once per
+family and hands its exports to the page as `info.page`; shared code asks it for what it draws for that
+game alone (`info.page.seatGlyph(label)`) and names no game. A game's scripts import the page's own
+modules by absolute path (`/static/js/util.js`), so each is loaded once. Cthulhu Wars' scripts are
+`internal/games/cthulhuwars/web/` (`page.js` and its `cw-*.js`); some shared files still import them
+directly while the rest of their parts move behind `info.page`.
 
 The schema is `internal/web/look`: a game's module loads the file with `look.MustLoad`, which
 refuses an unknown key, and `tests/look` holds every shipped file to its games with `look.Check`.

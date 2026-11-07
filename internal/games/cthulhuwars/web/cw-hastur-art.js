@@ -3,7 +3,7 @@
 // in it, a ragged mantle and a trailing of arms. Original art, drawn in code (see js/cw-art-kit.js).
 
 import { H, W, add, between, dot, limb, lerp, num, outCubic, randoms, round, sceneSvg, smooth, vertical, writhe } from "./cw-art-kit.js";
-import { s } from "./util.js";
+import { s } from "/static/js/util.js";
 
 export const HASTUR_SECONDS = 7.2;
 export const HASTUR_PEAK = 5.5;

@@ -4,7 +4,7 @@
 
 import { h, clear, store } from "./util.js";
 import { api, whoAmI } from "./api.js";
-import { FACTION_KEYS, factionName, factionColor, BOTS } from "./cw-names.js";
+import { FACTION_KEYS, factionName, factionColor, BOTS } from "/static/games/cthulhu-wars/cw-names.js";
 
 const card = document.getElementById("practice-card");
 const STORE_KEY = "bingle.practice";

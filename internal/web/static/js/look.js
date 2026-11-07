@@ -73,3 +73,28 @@ export function applyLook(info, file) {
 	}
 	return out;
 }
+
+const pages = new Map();
+
+/**
+ * The game's own page script (the look's `script`, ADR 0124), imported once
+ * per family: an ES module whose exports the page asks for what it draws for
+ * this game alone (`info.page.seatGlyph`, ...). A game without one, or one
+ * whose script fails to load, gets an empty object, and the page draws it by
+ * itself.
+ */
+export function pageOf(family, file) {
+	const script = file && typeof file === "object" ? file.script : "";
+	if (!script) return Promise.resolve({});
+	const url = `/static/games/${encodeURIComponent(family)}/${script}`;
+	if (!pages.has(url)) {
+		pages.set(
+			url,
+			import(url).catch((err) => {
+				console.error(`the page script of ${family} did not load`, err);
+				return {};
+			})
+		);
+	}
+	return pages.get(url);
+}

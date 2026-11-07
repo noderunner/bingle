@@ -6,7 +6,7 @@
 import { CARD_SETS, cardSetById, setPreview, useCardSet } from "./card-sets.js";
 import { h, clear, store, rememberGame, rememberedGames, lastName, toast } from "./util.js";
 import { api, gameTitle, whoAmI } from "./api.js";
-import { mountAnimationTester } from "./cw-animation-tester.js";
+import { mountAnimationTester } from "/static/games/cthulhu-wars/cw-animation-tester.js";
 import { rulesIcon } from "./ui-icons.js";
 import { mountAnalysis } from "./analysis.js";
 import { mountRatings } from "./ratings.js";
@@ -22,7 +22,7 @@ import { installNav, navigate } from "./nav.js";
 import { gameIcon } from "./game-icons.js";
 import { tutorialList } from "./tutorials-ui.js";
 import { solitairePreview } from "./solitaire.js";
-import { createCwSetup } from "./cw-setup.js";
+import { createCwSetup } from "/static/games/cthulhu-wars/cw-setup.js";
 
 installNav();
 

@@ -3,7 +3,7 @@
 
 import { h, brandName } from "./util.js";
 import { api, gameTitle } from "./api.js";
-import { setupIcon } from "./cw-setup.js";
+import { setupIcon } from "/static/games/cthulhu-wars/cw-setup.js";
 import { cssColor } from "./render.js";
 
 /** Kinds of bots that can be added, with their labels (from GET /api/bots). */

@@ -5,9 +5,9 @@
 
 import { h, s, clear } from "./util.js";
 import { UNIT_ICONS, CLASS_SCALE, classOfPiece, hasUnitIcon } from "./icons.js";
-import { CW_GLYPHS } from "./cw-glyphs.js";
-import { ICE_GLYPH } from "./cw-ice.js";
-import { MAP_GLYPHS } from "./cw-map-glyphs.js";
+import { CW_GLYPHS } from "/static/games/cthulhu-wars/cw-glyphs.js";
+import { ICE_GLYPH } from "/static/games/cthulhu-wars/cw-ice.js";
+import { MAP_GLYPHS } from "/static/games/cthulhu-wars/cw-map-glyphs.js";
 import { frameDecor, stoneMarks, installThemes, currentTheme } from "./themes.js";
 import { onNavigate } from "./nav.js";
 

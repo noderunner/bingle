@@ -47,6 +47,10 @@ type Module struct {
 	// (web.yaml, ADR 0124) as JSON, or nil. Only the web page reads it: the
 	// catalog and the server carry it as it is.
 	Web []byte
+	// Scripts is the web page's own scripts for the family's games (ADR
+	// 0124), served under /static/games/{family}/ and loaded through the
+	// look's script; nil for a game the page draws by itself.
+	Scripts fs.FS
 	// Tutorials holds the game's tutorials, one YAML document each at its
 	// root (see package tutorial); nil for a game without any.
 	Tutorials fs.FS
@@ -144,6 +148,7 @@ func (c *Catalog) RegisterModule(mod Module) error {
 		cg := c.games[id]
 		cg.Assets = mod.Assets
 		cg.Web = mod.Web
+		cg.Scripts = mod.Scripts
 		c.src[id] = source{doc: doc, mod: mod}
 		c.mu.Unlock()
 		if i == 0 {
@@ -436,6 +441,7 @@ func (c *Catalog) derive(baseID, suffix string, options map[string]any) (*Compil
 	cg := c.games[id]
 	cg.Assets = src.mod.Assets
 	cg.Web = src.mod.Web
+	cg.Scripts = src.mod.Scripts
 	c.mu.Unlock()
 	return cg, nil
 }

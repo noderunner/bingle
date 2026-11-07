@@ -29,7 +29,7 @@ Image.MAX_IMAGE_PIXELS = None
 W = 1500
 HERE = os.path.dirname(os.path.abspath(__file__))
 GAME = os.path.join(HERE, "..", "internal", "games", "cthulhuwars")
-JS = os.path.join(HERE, "..", "internal", "web", "static", "js")
+JS = os.path.join(HERE, "..", "internal", "games", "cthulhuwars", "web")
 CANVAS = 1000 / W
 
 # The boards are built from halves, a three-player or a five-player one on each side: the

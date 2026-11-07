@@ -3,7 +3,7 @@
 // art, drawn in code (see js/cw-art-kit.js).
 
 import { H, W, add, between, curve, limb, lerp, num, outCubic, randoms, round, sceneSvg, smooth, vertical, writhe } from "./cw-art-kit.js";
-import { s } from "./util.js";
+import { s } from "/static/js/util.js";
 
 export const SHUB_SECONDS = 7.2;
 export const SHUB_PEAK = 5.4;

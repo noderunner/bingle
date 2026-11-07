@@ -2,9 +2,9 @@
 // starting a game. Everything it plays is made up here, from a fixed table. It is a tool for looking at them,
 // and is likely to go once they settle.
 
-import { h, clear } from "./util.js";
-import { cssColor, pieceIcon, renderBoard } from "./render.js";
-import { isMobileLayout, isLandscape } from "./mobile.js";
+import { h, clear } from "/static/js/util.js";
+import { cssColor, pieceIcon, renderBoard } from "/static/js/render.js";
+import { isMobileLayout, isLandscape } from "/static/js/mobile.js";
 import { createBattleTheatre } from "./cw-battle.js";
 import { createEmergence, emergenceTypes } from "./cw-emerge.js";
 

@@ -78,6 +78,16 @@ func (m *Manager) WebFile(id string) ([]byte, error) {
 	return cg.Web, nil
 }
 
+// GameScripts returns the web page's scripts of a game family (ADR 0124), to
+// be served as they are; ok is false for a family with none.
+func (m *Manager) GameScripts(family string) (fs.FS, bool) {
+	cg, ok := m.catalog.Get(family)
+	if !ok || cg.Scripts == nil {
+		return nil, false
+	}
+	return cg.Scripts, true
+}
+
 // Asset returns a file of the game's module (guide images and so on). The
 // virtual file "board.svg" draws an area map from its polygons.
 func (m *Manager) Asset(id, name string) (data []byte, contentType string, err error) {

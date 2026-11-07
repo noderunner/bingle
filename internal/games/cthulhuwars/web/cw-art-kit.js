@@ -2,7 +2,7 @@
 // draws it as it stands t seconds in: one clock drives everything, nothing is random from one showing to
 // the next, and a still picture is only seek() at one moment.
 
-import { s } from "./util.js";
+import { s } from "/static/js/util.js";
 
 export const W = 1000;
 export const H = 500;

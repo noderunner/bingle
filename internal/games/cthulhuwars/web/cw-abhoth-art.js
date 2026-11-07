@@ -4,7 +4,7 @@
 // in code (see js/cw-art-kit.js).
 
 import { H, W, add, awakeningBurst, between, blob, dot, limb, lerp, num, outCubic, randoms, round, sceneSvg, smooth, vertical, writhe } from "./cw-art-kit.js";
-import { s } from "./util.js";
+import { s } from "/static/js/util.js";
 
 export const ABHOTH_SECONDS = 7.4;
 export const ABHOTH_PEAK = 5.7;
