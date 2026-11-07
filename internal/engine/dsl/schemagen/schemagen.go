@@ -131,6 +131,7 @@ type gen struct {
 var (
 	rawMessage  = reflect.TypeFor[json.RawMessage]()
 	quantity    = reflect.TypeFor[dsl.Quantity]()
+	counts      = reflect.TypeFor[dsl.Counts]()
 	variantType = reflect.TypeFor[dsl.VariantDef]()
 )
 
@@ -142,6 +143,8 @@ func (g *gen) schema(t reflect.Type) map[string]any {
 	switch t {
 	case quantity:
 		return map[string]any{"type": []string{"integer", "string"}}
+	case counts:
+		return map[string]any{"oneOf": []any{map[string]any{"type": "integer"}, map[string]any{"type": "array", "items": map[string]any{"type": "integer"}}}}
 	case rawMessage:
 		return map[string]any{}
 	}

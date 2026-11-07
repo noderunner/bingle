@@ -56,6 +56,9 @@ func compileRules(cg *CompiledGame) error {
 	if err := compileEndOfTurn(cg); err != nil {
 		return err
 	}
+	if err := compilePatience(cg); err != nil {
+		return err
+	}
 	if err := compileWinRules(cg); err != nil {
 		return err
 	}

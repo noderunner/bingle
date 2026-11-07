@@ -53,7 +53,7 @@ func deal(game *catalog.CompiledGame, seed uint64) *cards.Table {
 // cardsSecret reports whether some zone of a declared game hides a card's
 // face from somebody.
 func cardsSecret(game *catalog.CompiledGame) bool {
-	if game.Cards == nil || len(game.Deal) == 0 {
+	if game.Cards == nil || (len(game.Deal) == 0 && game.Patience == nil) {
 		return false
 	}
 	for _, z := range game.Cards.Zones {

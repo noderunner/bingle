@@ -71,6 +71,8 @@ func FormatMove(game *catalog.CompiledGame, mv Selection) string {
 			b.WriteString(strconv.Itoa(mv.Drops[i]))
 		}
 		return b.String()
+	case catalog.ActionPatience:
+		return formatPatience(mv)
 	case catalog.ActionCardMove:
 		// tiger:c1-c3, or tiger:pass for a card spent without a move.
 		if mv.From == "" {
@@ -183,6 +185,10 @@ func ParseMove(game *catalog.CompiledGame, text string) (Selection, error) {
 		return Selection{}, fmt.Errorf("state: empty move")
 	}
 	g := game.Board
+
+	if game.Patience != nil {
+		return parsePatience(s)
+	}
 
 	if strings.EqualFold(s, "swap") {
 		for _, a := range game.Actions {

@@ -355,6 +355,45 @@
       },
       "type": "object"
     },
+    "ColumnDealDef": {
+      "additionalProperties": false,
+      "description": "ColumnDealDef is how the columns are dealt.",
+      "properties": {
+        "down": {
+          "description": "Down is how many of them lie face down (default: all but the top).",
+          "oneOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "items": {
+                "type": "integer"
+              },
+              "type": "array"
+            }
+          ]
+        },
+        "kings_under": {
+          "description": "KingsUnder puts each column's kings at its bottom (Baker's Dozen).",
+          "type": "boolean"
+        },
+        "sizes": {
+          "description": "Sizes is the cards each column is dealt: one number for all, or one per column.",
+          "oneOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "items": {
+                "type": "integer"
+              },
+              "type": "array"
+            }
+          ]
+        }
+      },
+      "type": "object"
+    },
     "CustodianDef": {
       "additionalProperties": false,
       "description": "CustodianDef configures custodian captures for a place action: after the piece lands, along each direction a run of exactly Length opposing pieces closed off by one of the placer's own pieces is removed.",
@@ -581,6 +620,20 @@
       },
       "type": "object"
     },
+    "FoundationsDef": {
+      "additionalProperties": false,
+      "description": "FoundationsDef is the piles built up by suit from the ace.",
+      "properties": {
+        "back": {
+          "description": "Back lets a foundation's top card come back to a column.",
+          "type": "boolean"
+        },
+        "count": {
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
     "GameDefinition": {
       "additionalProperties": false,
       "description": "GameDefinition is the top-level shape of a game-definition JSON document (see docs/history/plan.md section 6.1 for the annotated example this mirrors).",
@@ -687,6 +740,14 @@
           "additionalProperties": {},
           "description": "Params are free-form numbers and strings a ruleset reads (victory points needed, caps, ...). Variants change them with a merge patch.",
           "type": "object"
+        },
+        "patience": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/PatienceDef"
+            }
+          ],
+          "description": "Patience makes the game a game of patience (ADR 0122)."
         },
         "pie_rule": {
           "description": "PieRule says whether the game is played with the pie rule — the second player may take the first player's side instead of replying to the opening move — and whether the table may choose: \"standard\" (played with it unless the table turns it off), \"optional\" (played without it unless the table asks for it), \"on\" or \"off\" (settled: a game derived from one of the two above), or absent (the game has no pie rule). The catalog brings the setup option with it, and the swap action for a game on the generic engine; a ruleset game offers the swap in its own moves. See catalog.applyPieRule and ADR 0056.",
@@ -807,6 +868,20 @@
       },
       "type": "object"
     },
+    "OffDef": {
+      "additionalProperties": false,
+      "description": "OffDef is a run that leaves the table once built.",
+      "properties": {
+        "run": {
+          "description": "Run is \"king-to-ace\"; Suit is \"same\".",
+          "type": "string"
+        },
+        "suit": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "OpeningDef": {
       "additionalProperties": false,
       "description": "OpeningDef restricts the game's first Plies plies: only the listed actions/pieces are allowed, and the piece placed may belong to the opponent (Tak's \"each player places an opposing flatstone first\").",
@@ -920,6 +995,81 @@
         "text": {
           "description": "Text explains the effect.",
           "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "PatienceBuildDef": {
+      "additionalProperties": false,
+      "description": "PatienceBuildDef is how cards build in a column.",
+      "properties": {
+        "rank": {
+          "description": "Rank is \"down\" (default) or \"up\".",
+          "type": "string"
+        },
+        "suit": {
+          "description": "Suit is \"alternate\" (colour, by place in suit_order), \"same\" or \"any\".",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "PatienceColumnsDef": {
+      "additionalProperties": false,
+      "description": "PatienceColumnsDef is the tableau.",
+      "properties": {
+        "build": {
+          "$ref": "#/$defs/PatienceBuildDef"
+        },
+        "count": {
+          "type": "integer"
+        },
+        "deal": {
+          "$ref": "#/$defs/ColumnDealDef"
+        },
+        "empty": {
+          "description": "Empty is what an empty column takes: \"any\" (default), \"king\" or \"none\".",
+          "type": "string"
+        },
+        "lift": {
+          "description": "Lift is what may be moved off a column together: \"top\", \"ordered\" (default), \"same-suit\" or \"any-face-up\".",
+          "type": "string"
+        },
+        "lift_limit": {
+          "description": "LiftLimit \"cells\" limits a run to (free cells + 1) × 2^(empty columns).",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "PatienceDef": {
+      "additionalProperties": false,
+      "description": "PatienceDef is a game of patience (ADR 0122): its columns, foundations, free cells, stock and finished runs, answered as parameters. The catalog compiles it to one action, \"patience\", and win_condition.type \"patience\".",
+      "properties": {
+        "cells": {
+          "description": "Cells is how many free cells, each holding one card.",
+          "type": "integer"
+        },
+        "columns": {
+          "$ref": "#/$defs/PatienceColumnsDef"
+        },
+        "finish": {
+          "description": "Finish offers \"finish\" once every card can go home with nothing hidden.",
+          "type": "boolean"
+        },
+        "foundations": {
+          "$ref": "#/$defs/FoundationsDef"
+        },
+        "off": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/OffDef"
+            }
+          ],
+          "description": "Off takes a complete run off its column into the finished pile."
+        },
+        "stock": {
+          "$ref": "#/$defs/StockDef"
         }
       },
       "type": "object"
@@ -1154,6 +1304,40 @@
             "type": "string"
           },
           "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "StockDef": {
+      "additionalProperties": false,
+      "description": "StockDef is the stock: either drawn to the waste (Draw \u003e 0), or dealt in a row onto the columns (Deal \"row\").",
+      "properties": {
+        "columns": {
+          "description": "Columns is how many columns a row is dealt to: \"all\" or a number.",
+          "type": [
+            "integer",
+            "string"
+          ]
+        },
+        "deal": {
+          "type": "string"
+        },
+        "draw": {
+          "type": "integer"
+        },
+        "redeals": {
+          "description": "Redeals is how often the waste may go back to the stock: a number or \"unlimited\" (default 0).",
+          "type": [
+            "integer",
+            "string"
+          ]
+        },
+        "to": {
+          "type": "string"
+        },
+        "unless_empty": {
+          "description": "UnlessEmpty refuses a row while a column is empty (Spider).",
+          "type": "boolean"
         }
       },
       "type": "object"

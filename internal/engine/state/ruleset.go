@@ -102,8 +102,10 @@ func WorthSearching(game *catalog.CompiledGame, st *BoardState) bool {
 		if s, ok := rs.(Searchable); ok {
 			return s.WorthSearching(game, st)
 		}
+		return true
 	}
-	return true
+	// A game of patience plays from its hint order (ADR 0122).
+	return game.Patience == nil
 }
 
 // Heuristic is implemented by rulesets that can value a position for a seat
@@ -151,6 +153,9 @@ type BotGuide interface {
 // bot (all of them unless the ruleset is a BotGuide).
 func GuidedMoves(game *catalog.CompiledGame, st *BoardState, seat int, legal []Selection) []Selection {
 	rs, ok := RulesetOf(game)
+	if !ok && game.Patience != nil && len(legal) > 1 {
+		return patienceGuide(game, st, legal)
+	}
 	if !ok || len(legal) < 2 {
 		return legal
 	}
@@ -499,6 +504,11 @@ func HeuristicValue(game *catalog.CompiledGame, st *BoardState, seat int) (float
 		if h, ok := rs.(Heuristic); ok {
 			return h.Heuristic(game, st, seat), true
 		}
+		return 0, false
+	}
+	if p := game.Patience; p != nil {
+		// The share of cards home or off, from -1 to 1.
+		return 2*float64(patienceOf(game, st).homeCount())/float64(p.Total) - 1, true
 	}
 	return 0, false
 }

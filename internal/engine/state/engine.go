@@ -25,7 +25,7 @@ func InitialState(game *catalog.CompiledGame) *BoardState {
 		return st
 	}
 	seed := uint64(0)
-	if len(game.Deal) > 0 {
+	if len(game.Deal) > 0 || game.Patience != nil {
 		seed = randomSeed()
 	}
 	return declaredStart(game, seed)
@@ -45,6 +45,9 @@ func declaredStart(game *catalog.CompiledGame, seed uint64) *BoardState {
 	}
 	if len(game.Deal) > 0 {
 		st.table = deal(game, seed)
+	}
+	if game.Patience != nil {
+		st.table = patienceDeal(game, seed)
 	}
 	return st
 }
@@ -260,6 +263,8 @@ func (c *rctx) validate(act catalog.ResolvedAction, mv Selection) (executor, err
 		return func(ns *BoardState) []board.PositionID { return nil }, nil
 	case catalog.ActionCardMove:
 		return c.validateCardMove(act, mv)
+	case catalog.ActionPatience:
+		return c.validatePatience(act, mv)
 	case catalog.ActionPass:
 		if mv.Piece != "" || mv.From != "" || mv.To != "" || mv.Count != 0 || len(mv.Path) > 0 || len(mv.Drops) > 0 {
 			return nil, fmt.Errorf("state: a pass takes no parameters")
@@ -560,6 +565,8 @@ func legalSelections(game *catalog.CompiledGame, st *BoardState, seat int, limit
 			c.enumerateLeaps(act, keep)
 		case catalog.ActionCardMove:
 			c.enumerateCardMoves(act, keep)
+		case catalog.ActionPatience:
+			c.enumeratePatience(act, keep)
 		case catalog.ActionPass:
 			keep(act, Selection{Action: act.ID}, true)
 		case catalog.ActionSwap:

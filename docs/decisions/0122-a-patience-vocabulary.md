@@ -1,6 +1,6 @@
 # 0122. A patience vocabulary
 
-Status: proposed (2026-11-06). It is addition F of the DSL coverage audit, and stage 2 of the patience vocabulary plan
+Status: accepted (2026-11-06). It is addition F of the DSL coverage audit, and stage 2 of the patience vocabulary plan
 (`docs/history/patience-vocabulary-plan.md` on `more-plans`), whose seven questions the maintainer settled on
 2026-11-06. It builds on [ADR 0119](0119-a-seeded-deal-at-the-start.md)'s cards and on
 [ADR 0121](0121-a-card-turned-up-cannot-be-taken-back.md)'s take-back rule.
@@ -24,8 +24,9 @@ Yukon, Scorpion, Baker's Dozen and Forty Thieves.
 
 ### The declaration
 
-A declared game with `cards` may give a **`patience`** block. The catalog then adds one action, `patience`, which
-lists and plays the moves the block allows.
+A declared game with `cards` may give a **`patience`** block, with `win_condition: {type: patience}`. The catalog
+then adds one action, `patience`, which lists and plays the moves the block allows, and the piles' card zones that
+the definition leaves out. A limited number of redeals is counted in the position's `counters`.
 
 ```yaml
 patience:
