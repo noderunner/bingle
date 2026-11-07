@@ -9,6 +9,7 @@ import (
 
 	"github.com/noderunner/bingle/internal/app"
 	"github.com/noderunner/bingle/internal/engine/catalog"
+	"github.com/noderunner/bingle/internal/engine/dsl"
 	"github.com/noderunner/bingle/internal/web/look"
 )
 
@@ -134,5 +135,62 @@ func TestCheckCatchesAZoneLayout(t *testing.T) {
 	}
 	if err := look.Check([]byte(`{"cards":{"zones":{"pocket":{}}}}`), "nyet", f.games); err == nil {
 		t.Error("a zone the game lacks was accepted")
+	}
+}
+
+// The line of ADR 0124, held: no definition of a shipped game says how it
+// looks, apart from Cthulhu Wars', which moves with the game. A piece type's
+// own colour stays, since the rules read it (ADR 0117); a zone's layout cannot
+// be written at all, since the definition only says whether it is a pile.
+func TestNoDefinitionCarriesItsLook(t *testing.T) {
+	for _, m := range app.BuiltinModules() {
+		if m.ID == "cthulhu-wars" {
+			continue
+		}
+		cat := catalog.NewCatalog()
+		if err := cat.RegisterModule(m); err != nil {
+			t.Fatalf("RegisterModule(%s): %v", m.ID, err)
+		}
+		for _, cg := range cat.List() {
+			def, id := cg.Definition, cg.Definition.ID
+			if def.Board.Style != "" || len(def.Board.Borders) > 0 {
+				t.Errorf("%s: the definition draws the board (style %q, borders %v)", id, def.Board.Style, def.Board.Borders)
+			}
+			if len(def.Preview) > 0 {
+				t.Errorf("%s: the definition has a preview", id)
+			}
+			for _, s := range def.Seats {
+				if len(s.Blend) > 0 {
+					t.Errorf("%s: seat %d blends %v", id, s.Seat, s.Blend)
+				}
+			}
+			for name, p := range def.Pieces {
+				if p.Shape != "" {
+					t.Errorf("%s: piece %s has shape %q", id, name, p.Shape)
+				}
+			}
+			if d := def.Display; d != nil {
+				if d.NoHands {
+					t.Errorf("%s: the definition hides the hands", id)
+				}
+				for kind, marks := range map[string]map[string]dsl.OverlayDef{"tint": d.Tints, "badge": d.Badges} {
+					for key, o := range marks {
+						if o.Color != "" || o.Glyph != "" {
+							t.Errorf("%s: %s %s is drawn in the definition (%q %q)", id, kind, key, o.Color, o.Glyph)
+						}
+					}
+				}
+			}
+			if c := def.Cards; c != nil {
+				if c.Back.Color != "" || c.Back.Text != "" {
+					t.Errorf("%s: the definition draws the backs of the cards", id)
+				}
+				for sid, s := range c.Suits {
+					if s.Color != "" {
+						t.Errorf("%s: suit %s has colour %q", id, sid, s.Color)
+					}
+				}
+			}
+		}
 	}
 }

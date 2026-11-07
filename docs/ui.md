@@ -964,6 +964,9 @@ variants:                      # a merge patch per game of the family, by id
 The schema is `internal/web/look`: a game's module loads the file with `look.MustLoad`, which
 refuses an unknown key, and `tests/look` holds every shipped file to its games with `look.Check`.
 A piece type's own `color` is not here: the rules read it to say whose the piece is (ADR 0117).
+Two tests hold the line: `TestNoDefinitionCarriesItsLook` (`tests/look`) fails when a definition
+says how its game looks, and `TestWebEveryGameDrawsWithoutItsLook` draws every board game from its
+info alone, as a client that never reads `web.yaml` would.
 Games move their look into the file a few at a time (ADR 0124's stages). Every game but Cthulhu Wars
 has moved (the classics keep theirs in `classics/web/<game>.yaml`, and Solitaire and Bowling theirs in
 `solitaire/web/`, loaded with `look.MustLoadFile`); Cthulhu Wars still carries its in the definition. A zone's `layout` is here
