@@ -72,11 +72,12 @@ func (s *Store) queryRow(ctx context.Context, name, query string, args ...any) *
 }
 
 // queryRowUnmeasured runs a statement that is deliberately not recorded. Its
-// only caller is the snapshot in stats.go: those statements exist *because*
+// callers are the snapshot in stats.go: those statements exist *because*
 // something is watching, so counting them would make
 // bingle_db_queries_total partly a measure of the monitoring rather than of
 // bingle, and would add a statement name per scrape to a label that is
-// supposed to be a closed set.
+// supposed to be a closed set; and the check at start-up for stored positions
+// to convert (upgrade.go), so that a server with none adds no series for it.
 func (s *Store) queryRowUnmeasured(ctx context.Context, query string, args ...any) *sql.Row {
 	return s.db.QueryRowContext(ctx, query, args...)
 }

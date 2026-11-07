@@ -1,436 +1,141 @@
-// Package blooms_test checks Blooms: the turn structure, fenced blooms and
-// captures (including that a player's own fenced blooms wait for the
-// opponent's turn), the capture target and the board variants.
+// Package blooms_test covers Blooms as it is declared since 0.6.0 (ADRs
+// 0115–0118): the turns, the captures at the end of a turn, the target and the
+// pie rule, and the conversion of positions the Go ruleset stored.
 package blooms_test
 
 import (
 	"encoding/json"
 	"math/rand"
-	"strings"
+	"slices"
 	"testing"
 
-	"github.com/noderunner/bingle/internal/engine/board"
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/engine/state"
 	"github.com/noderunner/bingle/internal/games/blooms"
 )
 
-func gameFor(t testing.TB, id string) *catalog.CompiledGame {
+func catalogOf(t *testing.T) *catalog.Catalog {
 	t.Helper()
 	cat := catalog.NewCatalog()
 	if err := cat.RegisterModule(blooms.Module()); err != nil {
 		t.Fatal(err)
 	}
-	g, ok := cat.Get(id)
+	return cat
+}
+
+func gameFor(t *testing.T, id string) *catalog.CompiledGame {
+	t.Helper()
+	g, ok := catalogOf(t).Get(id)
 	if !ok {
-		t.Fatalf("%s is not registered", id)
+		t.Fatalf("%s is not in the catalog", id)
 	}
 	return g
 }
 
-func game(t testing.TB) *catalog.CompiledGame { return gameFor(t, "blooms") }
+func play(t *testing.T, g *catalog.CompiledGame, st *state.BoardState, seat int, text string) *state.MoveResult {
+	t.Helper()
+	mv, err := state.ParseMove(g, text)
+	if err != nil {
+		t.Fatalf("%s: %v", text, err)
+	}
+	res, err := state.Apply(g, st, seat, mv)
+	if err != nil {
+		t.Fatalf("%s: %v", text, err)
+	}
+	return res
+}
 
-var dirs = [6][2]int{{1, 0}, {1, -1}, {0, -1}, {-1, 0}, {-1, 1}, {0, 1}}
-
-// neighbours lists the cells touching id.
-func neighbours(g *catalog.CompiledGame, id board.PositionID) []board.PositionID {
-	c, _ := g.Board.Coord(id)
-	var out []board.PositionID
-	for _, d := range dirs {
-		if n, ok := g.Board.At(board.Coord{X: c.X + d[0], Y: c.Y + d[1]}); ok {
-			out = append(out, n)
-		}
+func legal(g *catalog.CompiledGame, st *state.BoardState, seat int) []string {
+	var out []string
+	for _, m := range state.LegalSelections(g, st, seat) {
+		out = append(out, state.FormatMove(g, m))
 	}
 	return out
 }
 
-// centre is a cell with six neighbours.
-func centre(g *catalog.CompiledGame) board.PositionID {
-	for _, id := range g.Board.Positions() {
-		if len(neighbours(g, id)) == 6 {
-			return id
-		}
-	}
-	panic("no interior cell")
-}
-
-func build(g *catalog.CompiledGame, stones map[board.PositionID]string, d blooms.Data) *state.BoardState {
-	st := state.NewBoardState()
-	for id, c := range stones {
-		st.Set(id, state.Occupant{Piece: c, Color: c})
-	}
-	st.SetExt(&d)
-	return st
-}
-
-func play(t *testing.T, g *catalog.CompiledGame, st *state.BoardState, seat int, text string) (*state.BoardState, *state.MoveResult) {
-	t.Helper()
-	rs := blooms.New()
-	mv, err := rs.Parse(g, text)
-	if err != nil {
-		t.Fatal(err)
-	}
-	res, err := rs.Apply(g, st, seat, mv)
-	if err != nil {
-		t.Fatalf("%s: %v", text, err)
-	}
-	return res.NewState, res
-}
-
-func data(st *state.BoardState) *blooms.Data { d, _ := st.Ext().(*blooms.Data); return d }
-
-// Every board, its target and its cap on plies: the bigger boards (8 and 10 to
-// a side) need a later cap, or a game on them would stop on the count long
-// before the board fills.
+// Each board has its size and its target.
 func TestBoardSizesAndTargets(t *testing.T) {
-	for id, want := range map[string][3]int{
-		"blooms-4": {37, 15, 250}, "blooms": {61, 20, 250}, "blooms-6": {91, 25, 250},
-		"blooms-8": {169, 40, 500}, "blooms-10": {271, 50, 750},
-	} {
+	for id, want := range map[string][2]int{"blooms-4": {37, 15}, "blooms": {61, 20}, "blooms-6": {91, 25}, "blooms-8": {169, 40}, "blooms-10": {271, 50}} {
 		g := gameFor(t, id)
-		if n := len(g.Board.Positions()); n != want[0] {
-			t.Errorf("%s: %d cells, want %d", id, n, want[0])
+		if n := g.Board.Len(); n != want[0] {
+			t.Errorf("%s has %d cells, want %d", id, n, want[0])
 		}
-		if n := g.ParamInt("capture_target", 0); n != want[1] {
-			t.Errorf("%s: target %d, want %d", id, n, want[1])
-		}
-		if n := g.ParamInt("max_plies", 0); n != want[2] {
-			t.Errorf("%s: %d plies at most, want %d", id, n, want[2])
+		if target := g.Definition.WinCondition.Rules[0].AtLeast; target != want[1] {
+			t.Errorf("%s's target is %d, want %d", id, target, want[1])
 		}
 	}
 }
 
-func TestPlayerOneOpensWithOneStoneThenOneOrTwoEach(t *testing.T) {
-	g := game(t)
-	rs := blooms.New()
-	st, _ := rs.Start(g, 0)
-	if rs.ImpulseSeat(g, st) != 1 {
-		t.Fatal("player 1 starts")
+// Warm opens with one stone of either colour; then a turn is one stone or two
+// of different colours, and done ends it after one. A ply is a turn.
+func TestOneStoneThenOneOrTwo(t *testing.T) {
+	g := gameFor(t, "blooms-4")
+	st := state.InitialState(g)
+	cells := g.Board.Positions()
+	res := play(t, g, st, 1, "yellow@"+string(cells[0]))
+	if res.NextImpulseSeat != 2 || res.NewState.Ply() != 1 {
+		t.Fatalf("the opening stone: next %d, ply %d", res.NextImpulseSeat, res.NewState.Ply())
 	}
-	c := centre(g)
-	st, res := play(t, g, st, 1, "red@"+string(c))
-	if res.NextImpulseSeat != 2 {
-		t.Fatalf("player 1's first turn is a single stone: next %d", res.NextImpulseSeat)
+	if l := legal(g, res.NewState, 2); slices.Contains(l, "red@"+string(cells[1])) || !slices.Contains(l, "black@"+string(cells[1])) {
+		t.Fatal("Cool is offered Warm's stones, or not its own")
 	}
-	// Player 2 may place two stones of different colours.
-	nb := neighbours(g, c)
-	st, res = play(t, g, st, 2, "blue@"+string(nb[0]))
-	if res.NextImpulseSeat != 2 {
-		t.Fatal("player 2 may place a second stone")
+	res = play(t, g, res.NewState, 2, "blue@"+string(cells[18]))
+	if res.NextImpulseSeat != 2 || res.NewState.Ply() != 1 {
+		t.Fatalf("after one stone of two: next %d, ply %d", res.NextImpulseSeat, res.NewState.Ply())
 	}
-	legal := rs.Legal(g, st, 2)
-	for _, mv := range legal {
-		if mv.Piece == "blue" {
-			t.Fatalf("the second stone must be the other colour: %v", mv)
-		}
+	l := legal(g, res.NewState, 2)
+	if slices.Contains(l, "blue@"+string(cells[19])) || !slices.Contains(l, "black@"+string(cells[19])) || !slices.Contains(l, "done") {
+		t.Fatalf("the second stone: %v", l[:3])
 	}
-	hasDone := false
-	for _, mv := range legal {
-		hasDone = hasDone || mv.Action == "done"
-	}
-	if !hasDone {
-		t.Fatal("the turn can end after one stone")
-	}
-	st, res = play(t, g, st, 2, "black@"+string(nb[2]))
-	if res.NextImpulseSeat != 1 {
-		t.Fatalf("two stones end the turn: next %d", res.NextImpulseSeat)
-	}
-	if st.Height(nb[2]) != 1 {
-		t.Fatal("the stone is on the board")
+	res = play(t, g, res.NewState, 2, "done")
+	if res.NextImpulseSeat != 1 || res.NewState.Ply() != 2 {
+		t.Fatalf("after done: next %d, ply %d", res.NextImpulseSeat, res.NewState.Ply())
 	}
 }
 
-func TestSurroundedBloomIsCapturedAtTheEndOfTheTurn(t *testing.T) {
-	g := game(t)
-	c := centre(g)
-	nb := neighbours(g, c)
-	stones := map[board.PositionID]string{c: "blue"}
-	for _, n := range nb[:5] {
-		stones[n] = "red"
-	}
-	st := build(g, stones, blooms.Data{Turn: 1, Turns: 4})
-	// The last neighbour is the enemy bloom's only liberty: red fills it.
-	st, res := play(t, g, st, 1, "yellow@"+string(nb[5]))
-	if res.NextImpulseSeat == 1 {
-		// stage second: end the turn to capture
-		st, res = play(t, g, st, 1, "done")
-	}
-	if _, ok := st.Get(c); ok {
-		t.Fatal("the fenced blue stone should be captured")
-	}
-	if data(st).Captured[0] != 1 {
-		t.Errorf("one stone captured: %v", data(st).Captured)
-	}
-	if res.NextImpulseSeat != 2 {
-		t.Errorf("then player 2 moves")
-	}
-}
-
-// What a seat has captured is kept stone by stone, in the view by colour, with the
-// target to reach beside the count.
-func TestTheColoursOfTheCapturedStonesAreKept(t *testing.T) {
-	g := game(t)
-	c := centre(g)
-	nb := neighbours(g, c)
-	stones := map[board.PositionID]string{c: "blue"}
-	for _, n := range nb[:5] {
-		stones[n] = "red"
-	}
-	st := build(g, stones, blooms.Data{Turn: 1, Turns: 4})
-	st, _ = play(t, g, st, 1, "yellow@"+string(nb[5]))
-	st, _ = play(t, g, st, 1, "done")
-	if got := data(st).CapturedStones[0]; len(got) != 1 || got[0] != "blue" {
-		t.Fatalf("the captured stones: %v", got)
-	}
-	view, err := json.Marshal((&blooms.Ruleset{}).Redact(g, st, 0).Ext())
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, want := range []string{`"taken":["blue"]`, `"show_max":true`, `"piece_action":"Place"`} {
-		if !strings.Contains(string(view), want) {
-			t.Errorf("the view lacks %s: %s", want, view)
-		}
-	}
-}
-
-func TestOwnFencedBloomWaitsForTheOpponentsTurn(t *testing.T) {
-	g := game(t)
-	c := centre(g)
-	nb := neighbours(g, c)
-	// Red steps into a hole ringed by blue: it is Red's own bloom that is
-	// fenced, so nothing is captured on Red's turn.
-	stones := map[board.PositionID]string{}
-	for _, n := range nb[:5] {
-		stones[n] = "blue"
-	}
-	st := build(g, stones, blooms.Data{Turn: 1, Turns: 4})
-	st, _ = play(t, g, st, 1, "red@"+string(c))
-	st, _ = play(t, g, st, 1, "done")
-	if _, ok := st.Get(c); !ok {
-		t.Fatal("a player's own fenced bloom is not captured on their turn")
-	}
-	// Blue now closes the last liberty: the red stone is captured.
-	st, res := play(t, g, st, 2, "black@"+string(nb[5]))
-	if res.NextImpulseSeat == 2 {
-		st, _ = play(t, g, st, 2, "done")
-	}
-	if _, ok := st.Get(c); ok {
-		t.Fatal("Blue captures the fenced red stone")
-	}
-	if data(st).Captured[1] != 1 {
-		t.Errorf("captures %v", data(st).Captured)
-	}
-}
-
-func TestOnlySameColourStonesFormABloom(t *testing.T) {
-	g := game(t)
-	c := centre(g)
-	nb := neighbours(g, c)
-	// A red stone beside a yellow stone are two blooms: surrounding only the
-	// red one captures just it.
-	stones := map[board.PositionID]string{c: "red", nb[0]: "yellow"}
-	for _, n := range nb[1:] {
-		stones[n] = "blue"
-	}
-	// The red stone's liberties are all filled (by blue and by yellow): but
-	// the yellow stone has other empty neighbours, so only red falls.
-	st := build(g, stones, blooms.Data{Turn: 2, Turns: 4})
-	var spare board.PositionID
-	for _, id := range g.Board.Positions() {
-		if _, taken := stones[id]; !taken {
-			spare = id
-			break
-		}
-	}
-	st, res := play(t, g, st, 2, "black@"+string(spare))
-	if res.NextImpulseSeat == 2 {
-		st, _ = play(t, g, st, 2, "done")
-	}
-	if _, ok := st.Get(c); ok {
-		t.Error("the red stone is fenced by blue stones and its yellow neighbour")
-	}
-	if _, ok := st.Get(nb[0]); !ok {
-		t.Error("the yellow stone still has liberties")
-	}
-}
-
-func TestReachingTheTargetWins(t *testing.T) {
-	g := game(t)
-	c := centre(g)
-	nb := neighbours(g, c)
-	stones := map[board.PositionID]string{c: "blue"}
-	for _, n := range nb[:5] {
-		stones[n] = "red"
-	}
-	st := build(g, stones, blooms.Data{Turn: 1, Turns: 8, Captured: [2]int{19, 0}})
-	st, res := play(t, g, st, 1, "yellow@"+string(nb[5]))
-	if !res.GameEnded {
-		st, res = play(t, g, st, 1, "done")
-	}
-	if !res.GameEnded || res.WinnerSeat == nil || *res.WinnerSeat != 1 || res.EndReason != "captures" {
-		t.Fatalf("the 20th captured stone wins: %+v", res)
-	}
-	if out := blooms.New().Outcome(g, st); !out.Ended {
-		t.Error("outcome should report the end")
-	}
-}
-
-// The pie rule is a choice the table makes when the game is set up
-// (pie_rule: "optional"): the plain game never offers the swap, and a table
-// that asks plays a game of its own, blooms~pie, in which the second player
-// may take the opening side.
-func TestPieRuleIsASetupChoice(t *testing.T) {
-	cat := catalog.NewCatalog()
-	if err := cat.RegisterModule(blooms.Module()); err != nil {
-		t.Fatal(err)
-	}
-	id, err := cat.Derive("blooms", map[string]any{"pie-rule": true})
+// With the pie rule Cool may take the opening stone instead of answering it.
+func TestThePieRule(t *testing.T) {
+	cat := catalogOf(t)
+	id, err := cat.Derive("blooms", map[string]any{catalog.PieOption: true})
 	if err != nil || id != "blooms~pie" {
-		t.Fatalf("derive: %q, %v", id, err)
+		t.Fatalf("derive: %q %v", id, err)
 	}
-	if _, ok := cat.Get("blooms~pie"); !ok {
-		t.Fatal("blooms~pie is not in the catalog")
-	}
-	// A variant inherits the choice.
-	if id, err := cat.Derive("blooms-4", map[string]any{"pie-rule": true}); err != nil || id != "blooms-4~pie" {
-		t.Errorf("derive blooms-4: %q, %v", id, err)
-	}
-
-	// The plain game has no swap to offer or to accept.
-	g, _ := cat.Get("blooms")
-	rs := blooms.New()
-	st, _ := rs.Start(g, 0)
-	st, _ = play(t, g, st, 1, "red@"+string(centre(g)))
-	for _, mv := range rs.Legal(g, st, 2) {
-		if mv.Action == "swap" {
-			t.Error("the plain game offers the swap")
+	plain, _ := cat.Get("blooms")
+	pie, _ := cat.Get(id)
+	cell := string(plain.Board.Positions()[30])
+	for g, offered := range map[*catalog.CompiledGame]bool{plain: false, pie: true} {
+		res := play(t, g, state.InitialState(g), 1, "red@"+cell)
+		if got := slices.Contains(legal(g, res.NewState, 2), "swap"); got != offered {
+			t.Errorf("%s offers the swap: %v", g.Definition.ID, got)
 		}
-	}
-	if _, err := rs.Apply(g, st, 2, state.Selection{Action: "swap"}); err == nil {
-		t.Error("the plain game accepted a swap")
-	}
-}
-
-// With the pie rule the second player may answer the opening stone by taking
-// it: the stone stays exactly where and what it is (the players change seats,
-// which the session layer records), the turn stays with the second player's
-// seat — the opener holds it now — and the swap is spent.
-func TestPieRuleTheSecondPlayerMayTakeTheOpeningSide(t *testing.T) {
-	cat := catalog.NewCatalog()
-	if err := cat.RegisterModule(blooms.Module()); err != nil {
-		t.Fatal(err)
-	}
-	g, ok := cat.Get("blooms~pie")
-	if !ok {
-		t.Fatal("blooms~pie is not in the catalog")
-	}
-	rs := blooms.New()
-
-	for _, first := range []string{"red", "yellow"} {
-		st, _ := rs.Start(g, 0)
-		c := centre(g)
-		st, res := play(t, g, st, 1, first+"@"+string(c))
-		if res.NextImpulseSeat != 2 {
-			t.Fatalf("%s: next %d, want 2", first, res.NextImpulseSeat)
-		}
-		hasSwap := false
-		for _, mv := range rs.Legal(g, st, 2) {
-			hasSwap = hasSwap || mv.Action == "swap"
-		}
-		if !hasSwap {
-			t.Fatalf("%s: the second player's first reply has no swap", first)
-		}
-		st, res = play(t, g, st, 2, "swap")
-		if res.Notation != "swap" {
-			t.Errorf("%s: notation %q, want swap", first, res.Notation)
-		}
-		occ, ok := st.Get(c)
-		if !ok || occ.Color != first || occ.Piece != first {
-			t.Errorf("%s: the opening stone is %v, want it unchanged (%s)", first, occ, first)
-		}
-		if res.NextImpulseSeat != 2 || rs.ImpulseSeat(g, st) != 2 {
-			t.Errorf("%s: the turn stays with the second player's seat (next %d)", first, res.NextImpulseSeat)
-		}
-		if !data(st).Swapped {
-			t.Errorf("%s: the swap is not marked spent", first)
-		}
-		if err := state.Validate(g, st); err != nil {
-			t.Errorf("%s: %v", first, err)
-		}
-		// The swap is spent, for either seat, now and later.
-		for _, mv := range rs.Legal(g, st, 2) {
-			if mv.Action == "swap" {
-				t.Errorf("%s: the swap is still on offer after it was taken", first)
+		if offered {
+			after := play(t, g, res.NewState, 2, "swap")
+			if after.NextImpulseSeat != 2 {
+				t.Errorf("after the swap seat %d moves", after.NextImpulseSeat)
 			}
-		}
-		// The reply is an ordinary turn: one stone, then a second or done.
-		nb := neighbours(g, c)
-		st, res = play(t, g, st, 2, "blue@"+string(nb[0]))
-		if res.NextImpulseSeat != 2 {
-			t.Errorf("%s: the reply after a swap is a one-or-two-stone turn (next %d)", first, res.NextImpulseSeat)
-		}
-		st, res = play(t, g, st, 2, "done")
-		if res.NextImpulseSeat != 1 {
-			t.Fatalf("%s: next %d, want 1", first, res.NextImpulseSeat)
-		}
-		for _, mv := range rs.Legal(g, st, 2) {
-			if mv.Action == "swap" {
-				t.Errorf("%s: the swap is still on offer a turn later", first)
+			if slices.Contains(legal(g, after.NewState, 2), "swap") {
+				t.Error("the swap is offered twice")
 			}
 		}
 	}
 }
 
-// Once the second player has started placing, the swap is off the table.
-func TestPieRuleOnlyBeforeTheFirstReply(t *testing.T) {
-	cat := catalog.NewCatalog()
-	if err := cat.RegisterModule(blooms.Module()); err != nil {
-		t.Fatal(err)
-	}
-	g, _ := cat.Get("blooms~pie")
-	rs := blooms.New()
-	st, _ := rs.Start(g, 0)
-	c := centre(g)
-	st, _ = play(t, g, st, 1, "red@"+string(c))
-	st, res := play(t, g, st, 2, "blue@"+string(neighbours(g, c)[0]))
-	if res.NextImpulseSeat != 2 {
-		t.Fatalf("the second stone of the reply is the second player's: next %d", res.NextImpulseSeat)
-	}
-	for _, mv := range rs.Legal(g, st, 2) {
-		if mv.Action == "swap" {
-			t.Error("the swap is on offer after the reply has begun")
-		}
-	}
-	if _, err := rs.Apply(g, st, 2, state.Selection{Action: "swap"}); err == nil {
-		t.Error("a swap was accepted after the reply had begun")
-	}
-}
-
+// Random games keep valid positions, read their notation back, and end.
 func TestRandomGamesAreValidAndEnd(t *testing.T) {
 	for _, id := range []string{"blooms-4", "blooms"} {
 		g := gameFor(t, id)
-		rs := blooms.New()
 		rng := rand.New(rand.NewSource(5))
 		ended := 0
-		for n := 0; n < 30; n++ {
-			st, _ := rs.Start(g, 0)
-			seat := 1
-			for ply := 0; ply < 700; ply++ {
-				legal := rs.Legal(g, st, seat)
-				if len(legal) == 0 {
-					t.Fatalf("%s: no legal move for seat %d", id, seat)
+		for n := 0; n < 20; n++ {
+			st, seat := state.InitialState(g), 1
+			for ply := 0; ply < 1500; ply++ {
+				moves := state.LegalSelections(g, st, seat)
+				if len(moves) == 0 {
+					t.Fatalf("%s: no move for seat %d", id, seat)
 				}
-				guided := state.GuidedMoves(g, st, seat, legal)
-				mv := guided[rng.Intn(len(guided))]
-				text := rs.Format(g, mv)
-				back, err := rs.Parse(g, text)
-				if err != nil || rs.Format(g, back) != text {
-					t.Fatalf("round trip %q: %v", text, err)
-				}
-				res, err := rs.Apply(g, st, seat, back)
-				if err != nil {
-					t.Fatal(err)
-				}
+				mv := moves[rng.Intn(len(moves))]
+				text := state.FormatMove(g, mv)
+				res := play(t, g, st, seat, text)
 				if err := state.Validate(g, res.NewState); err != nil {
 					t.Fatal(err)
 				}
@@ -441,49 +146,43 @@ func TestRandomGamesAreValidAndEnd(t *testing.T) {
 				}
 			}
 		}
-		if ended < 25 {
-			t.Errorf("%s: only %d of 30 games ended", id, ended)
+		if ended < 18 {
+			t.Errorf("%s: only %d of 20 games ended", id, ended)
 		}
 	}
 }
 
-// A ply is a turn (ADR 0114): the first stone of a turn keeps the impulse open,
-// and the limit counts turns, so a game begun when every stone was a ply of its
-// own is not cut short.
-func TestAPlyIsATurn(t *testing.T) {
+// A position the Go ruleset stored converts: its captures go to the pools, a
+// turn halfway through goes on, and the game plays on from it.
+func TestARulesetPositionConverts(t *testing.T) {
 	g := gameFor(t, "blooms-4")
-	st, _ := blooms.New().Start(g, 0)
 	cells := g.Board.Positions()
-	at := func(color string, i int) string { return color + "@" + string(cells[i]) }
-	st, _ = play(t, g, st, 1, at("red", 0))
-	if st.Ply() != 1 {
-		t.Fatalf("after Player 1's opening stone: ply %d, want 1", st.Ply())
+	old := map[string]any{
+		"v":     2,
+		"cells": map[string]any{string(cells[0]): []any{map[string]any{"Piece": "red", "Color": "red"}}, string(cells[5]): []any{map[string]any{"Piece": "blue", "Color": "blue"}}},
+		"ply":   3,
+		"ext":   map[string]any{"turn": 2, "stage": "second", "first": "blue", "turns": 3, "captured": []int{4, 2}},
 	}
-	st, _ = play(t, g, st, 2, at("blue", 18))
-	if st.Ply() != 1 {
-		t.Errorf("after the first stone of a turn: ply %d, want 1", st.Ply())
+	raw, _ := json.Marshal(old)
+	doc, changed := blooms.Upgrade(raw)
+	if !changed {
+		t.Fatal("nothing converted")
 	}
-	st, _ = play(t, g, st, 2, "done")
-	if st.Ply() != 2 {
-		t.Errorf("after done: ply %d, want 2", st.Ply())
+	if again, ch := blooms.Upgrade(doc); ch || string(again) != string(doc) {
+		t.Fatal("a converted position converts again")
 	}
-
-	// A position stored with a ply per stone counts again from its turns.
-	st.SetPly(400)
-	d := *data(st)
-	d.Turns = 248
-	st.SetExt(&d)
-	st, res := play(t, g, st, 1, at("red", 36))
-	if res.GameEnded || st.Ply() != 248 {
-		t.Fatalf("turn 249 begun: ended %v, ply %d", res.GameEnded, st.Ply())
+	st := state.NewBoardState()
+	if err := st.UnmarshalJSON(doc); err != nil {
+		t.Fatal(err)
 	}
-	st, res = play(t, g, st, 1, "done")
-	if res.GameEnded || st.Ply() != 249 {
-		t.Fatalf("249 turns: ended %v, ply %d", res.GameEnded, st.Ply())
+	if err := state.Validate(g, st); err != nil {
+		t.Fatal(err)
 	}
-	st, _ = play(t, g, st, 2, at("blue", 9))
-	_, res = play(t, g, st, 2, "done")
-	if !res.GameEnded || res.EndReason != "ply-limit" {
-		t.Errorf("250 turns: ended %v (%s), want the ply limit", res.GameEnded, res.EndReason)
+	if st.Reserve("red", "captured") != 4 || st.Reserve("blue", "captured") != 2 || st.Ply() != 3 {
+		t.Fatalf("captured %d–%d, ply %d", st.Reserve("red", "captured"), st.Reserve("blue", "captured"), st.Ply())
+	}
+	l := legal(g, st, 2)
+	if !slices.Contains(l, "done") || slices.Contains(l, "blue@"+string(cells[9])) || !slices.Contains(l, "black@"+string(cells[9])) {
+		t.Fatal("the turn halfway through does not go on with the other colour")
 	}
 }

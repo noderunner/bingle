@@ -168,6 +168,29 @@ func New(cfg config.Config, opts ...Option) (*App, error) {
 		return nil, err
 	}
 
+	// A game whose rules changed form converts its stored positions once.
+	if ups := cat.Upgrades(); len(ups) > 0 {
+		ids := make([]string, 0, len(ups))
+		for id := range ups {
+			ids = append(ids, id)
+		}
+		slices.Sort(ids)
+		n, err := st.UpgradeStates(context.Background(), ids, func(def string, doc []byte) ([]byte, bool) {
+			base, _, _ := strings.Cut(def, catalog.DerivedSep)
+			if up, ok := ups[base]; ok {
+				return up(doc)
+			}
+			return doc, false
+		})
+		if err != nil {
+			_ = st.Close()
+			return nil, err
+		}
+		if n > 0 {
+			a.log.Info("converted stored positions to their games' current rules", "positions", n)
+		}
+	}
+
 	// Retired games stay readable; any still being played end now, with no
 	// result (docs/history/game-plugins-plan.md, ADR 0076).
 	for _, r := range RetiredGames {

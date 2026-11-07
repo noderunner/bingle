@@ -871,6 +871,9 @@ the ruleset in two steps, so nothing changes for the players by accident:
    battery of seeded games. Anything the two keep in different places, such as each seat's
    captures, is compared through each side's `Extra`. The ruleset stays the one the server plays.
 2. One release later, the declaration takes over under the game's id and the ruleset is deleted.
+   Positions the ruleset stored are converted once, at start-up: the module's `Upgrade` turns an
+   old position document into the declared game's (Blooms' captures move to its `captured` pool,
+   a turn halfway through becomes the turn in progress), and leaves a converted one alone.
 
 The id stays the same, so ratings and the record of the game's versions carry over. The
 reasoning, and which games are candidates, are in the DSL coverage audit plan.

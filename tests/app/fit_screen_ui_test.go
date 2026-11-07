@@ -114,7 +114,7 @@ func TestWebFitScreen_TheTurnBringsTheActionsIntoView(t *testing.T) {
 
 	// Alice's turn: the card is there, quietly, and scrolls away with the others.
 	waitJS(t, ctx, "the idle card", `document.getElementById("impulse-title") !== null && document.getElementById("impulse-title").textContent === "Alice"`, 15*time.Second)
-	if got := evalString(t, ctx, `document.getElementById("impulse-text").textContent`); got != "Choose a stone to place." {
+	if got := evalString(t, ctx, `document.getElementById("impulse-text").textContent`); got != "Place or done." {
 		t.Errorf("the other player's impulse says %q", got)
 	}
 	if evalBool(t, ctx, `document.getElementById("impulse-card").classList.contains("acting")`) {
@@ -142,8 +142,8 @@ func TestWebFitScreen_TheTurnBringsTheActionsIntoView(t *testing.T) {
 	}
 
 	waitJS(t, ctx, "the actions", `document.querySelector("#impulse-card.acting #piece-buttons button") !== null`, 15*time.Second)
-	// The history calls the player by the seat's name, in its colours.
-	waitJS(t, ctx, "the log", `/Warm places a/.test(document.getElementById("events").textContent) && document.querySelector("#events .seat-word") !== null`, 5*time.Second)
+	// The history has the move.
+	waitJS(t, ctx, "the log", `document.querySelectorAll("#move-list button.mv").length === 1`, 5*time.Second)
 	if !evalBool(t, ctx, `(function () {
 		var rail = document.getElementById("play-rail").getBoundingClientRect();
 		var card = document.getElementById("impulse-card").getBoundingClientRect();
@@ -371,8 +371,8 @@ func TestWebFitScreen_TheCardsSayWhatTheBarSaid(t *testing.T) {
 	evalBool(t, ctx, `(document.querySelector('#piece-buttons button').click(), true)`)
 	waitJS(t, ctx, "the cells", `document.querySelector("#board .cell.clickable") !== null`, 10*time.Second)
 	evalBool(t, ctx, `(document.querySelector("#board .cell.clickable").dispatchEvent(new MouseEvent("click", {bubbles: true})), true)`)
-	waitJS(t, ctx, "the second stone", `document.getElementById("impulse-text") && document.getElementById("impulse-text").textContent === "Choose a second stone to place, or end your turn."`, 10*time.Second)
-	if got := evalString(t, ctx, `document.querySelector('#move-bar button[data-action="done"]').innerText.trim()`); got != "End" {
+	waitJS(t, ctx, "the second stone", `document.getElementById("impulse-text") && document.getElementById("impulse-text").textContent === "Choose a stone to place, or choose an action."`, 10*time.Second)
+	if got := evalString(t, ctx, `document.querySelector('#move-bar button[data-action="done"]').innerText.trim()`); got != "Done" {
 		t.Errorf("the end of the turn says %q", got)
 	}
 }
@@ -456,7 +456,6 @@ func TestWebFitScreen_TheActionCardSaysWhatTheBarSaid(t *testing.T) {
 	}
 
 	// Looking back through the game.
-	clickSel(t, ctx, "#history-notation")
 	waitJS(t, ctx, "the first move", `document.getElementById("hist-first") && !document.getElementById("hist-first").disabled`, 10*time.Second)
 	clickSel(t, ctx, "#hist-first")
 	waitJS(t, ctx, "return to live in the card", inCard("return-live"), 10*time.Second)

@@ -4,10 +4,12 @@ package app_test
 
 import (
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/noderunner/bingle/internal/app"
 	"github.com/noderunner/bingle/internal/config"
+	"github.com/noderunner/bingle/internal/store"
 	"github.com/noderunner/bingle/tests/testdata"
 )
 
@@ -179,5 +181,41 @@ func TestPurgeInactiveKeepsFreshGames(t *testing.T) {
 	}
 	if n, err := a.PurgeInactive(ctx, 30); err != nil || n != 0 {
 		t.Errorf("PurgeInactive(30) = %d, %v; a fresh game must stay", n, err)
+	}
+}
+
+// A Blooms game stored by the Go ruleset Blooms had until 0.6.0 is converted
+// when the server starts, and plays on from where it stood.
+func TestStartUpConvertsStoredBlooms(t *testing.T) {
+	cfg := newTestConfig(t)
+	st, err := store.Open(cfg.DBPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	old := `{"v":2,"cells":{"e5":[{"Piece":"red","Color":"red"}]},"ply":1,"ext":{"turn":2,"turns":1,"captured":[0,0]}}`
+	if _, _, err := st.CreateGame(t.Context(), "BLOOMS", "blooms", old, "Alice", "red"); err != nil {
+		t.Fatal(err)
+	}
+	if err := st.Close(); err != nil {
+		t.Fatal(err)
+	}
+	a, err := app.New(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := a.Close(); err != nil {
+		t.Fatal(err)
+	}
+	st, err = store.Open(cfg.DBPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = st.Close() }()
+	got, err := st.GetGame(t.Context(), "BLOOMS")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(got.BoardState, `"ext"`) || !strings.Contains(got.BoardState, `"captured":0`) {
+		t.Fatalf("the position was not converted: %s", got.BoardState)
 	}
 }

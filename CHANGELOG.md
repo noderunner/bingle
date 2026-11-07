@@ -4,6 +4,15 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.91.0 - 2026-11-06
+
+### Bingle Core 0.91.0
+- **Game definitions play better on the page.** A game whose pieces are chosen with buttons, as Blooms' stones are, gets them however its rules are written, with the target beside a counter ("Captured: 3/20"). A turn of several stones is built up and sent whole, and waits for Submit only when the turn is over. A player whose opponent is halfway through a turn is no longer told that the opponent passed.
+- Games stored under the old form of a game's rules are converted when the server starts.
+
+### Blooms 0.6.0
+- **Blooms is now written as a game definition** rather than in code. It plays as before, checked move for move against the old rules over many games. Games in progress are carried over. The history lists the stones played, and the log of what each turn did is gone. The rules now state the move limit as it is played: after 250 turns (500 on base 8, 750 on base 10) the player with more captures wins.
+
 ## 0.90.2 - 2026-11-06
 
 ### Bingle Core 0.90.2
