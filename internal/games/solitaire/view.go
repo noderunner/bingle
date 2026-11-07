@@ -56,25 +56,12 @@ func (e *eng) buildView(viewer int) *View {
 		Table:       e.d.Table.View(e.game.Cards, viewer),
 		Total:       len(e.game.Cards.Deck("main")),
 		PanelActions: []string{
-			"from-", "to-", "pin-", "ball-", moveDraw, moveRecycle, moveDeal,
+			"pin-", "ball-",
 		},
 	}
-	if e.d.Mode == modeBowling {
-		v.Bowling = e.bowlingView()
-		v.Prompt = fmt.Sprintf("Frame %d, ball %d", e.d.Frame, e.d.Ball)
-		v.Hint = e.bowlingHint()
-		v.Impulse = v.Hint
-		return v
-	}
-	v.Columns = e.columns()
-	v.Cells = e.freeCells()
-	v.Home = e.home()
-	v.Alternate = e.d.Mode != modeSpider
-	if e.hasFoundations() {
-		v.Suits = e.game.Cards.Suits
-	}
-	v.Prompt = fmt.Sprintf("%d of %d cards home", v.Home, v.Total)
-	v.Hint = "Click a card, then where it should go, or drag it."
+	v.Bowling = e.bowlingView()
+	v.Prompt = fmt.Sprintf("Frame %d, ball %d", e.d.Frame, e.d.Ball)
+	v.Hint = e.bowlingHint()
 	v.Impulse = v.Hint
 	return v
 }

@@ -63,7 +63,7 @@ func (m *Manager) ListMoves(ctx context.Context, roomCode string, sinceSeq int) 
 
 	// Games with secrets hide what the latest, unresolved move committed.
 	var current *state.BoardState
-	if compiled, ok := m.catalog.Get(game.GameDefID); ok && state.IsRuleset(compiled) && game.Status == "active" {
+	if compiled, ok := m.catalog.Get(game.GameDefID); ok && state.Guarded(compiled) && game.Status == "active" {
 		bs := state.NewBoardState()
 		if err := bs.UnmarshalJSON([]byte(game.BoardState)); err == nil {
 			current = bs

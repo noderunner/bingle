@@ -561,12 +561,13 @@ func (c *rctx) enumeratePatience(act catalog.ResolvedAction, keep func(catalog.R
 // or off, lost when no move is left.
 func patienceOutcome(game *catalog.CompiledGame, st *BoardState) Outcome {
 	e := patienceOf(game, st)
+	detail := fmt.Sprintf("%d of %d cards home", e.homeCount(), game.Patience.Total)
 	if e.homeCount() == game.Patience.Total {
 		w := game.Definition.Seats[0].Seat
-		return Outcome{Ended: true, Winner: &w, Reason: patienceCleared}
+		return Outcome{Ended: true, Winner: &w, Reason: patienceCleared, Detail: detail}
 	}
 	if len(e.legal()) == 0 {
-		return Outcome{Ended: true, Reason: patienceStuck}
+		return Outcome{Ended: true, Reason: patienceStuck, Detail: detail}
 	}
 	return Outcome{}
 }

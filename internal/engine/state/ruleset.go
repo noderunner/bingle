@@ -183,6 +183,10 @@ func SampleOf(game *catalog.CompiledGame) any {
 		if s, ok := rs.(Sampler); ok {
 			return s.Sample(game)
 		}
+		return nil
+	}
+	if game.Patience != nil {
+		return patienceSample(game)
 	}
 	return nil
 }
@@ -417,8 +421,21 @@ func NeedsStartRecord(game *catalog.CompiledGame) bool {
 		if sr, ok := rs.(SeededRuleset); ok {
 			return sr.Seeded()
 		}
+		return false
 	}
-	return false
+	// A declared game that deals its cards from a seed (ADR 0119, 0122).
+	return deals(game)
+}
+
+// deals reports whether a declared game deals cards at the start.
+func deals(game *catalog.CompiledGame) bool { return len(game.Deal) > 0 || game.Patience != nil }
+
+// Guarded reports whether game's positions may hold what a viewer must not
+// see, or a draw that cannot be taken back: a ruleset's, or a declared game
+// that deals cards (ADR 0119, 0121). The session sends such a position through
+// Public, records its start, and asks CanTakeBack before a move is taken back.
+func Guarded(game *catalog.CompiledGame) bool {
+	return IsRuleset(game) || deals(game)
 }
 
 // InitialStateSeeded is InitialState for a ruleset game with its chance
@@ -450,6 +467,9 @@ func Public(game *catalog.CompiledGame, st *BoardState, viewer int) *BoardState 
 			return h.Redact(game, st, viewer)
 		}
 		return st
+	}
+	if game.Patience != nil {
+		return withPatienceView(game, redactCards(game, st, viewer), viewer)
 	}
 	return withTints(game, redactCards(game, st, viewer))
 }

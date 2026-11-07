@@ -94,7 +94,7 @@ func (m *Manager) checkParanoid(ctx context.Context, compiled *catalog.CompiledG
 	//    hands everyone the committed dice, the hidden hand or the RNG state,
 	//    and nothing else in the server would notice.
 	pub := state.Public(compiled, result.NewState, 0)
-	if pub == result.NewState && state.IsRuleset(compiled) && hasSecrets(compiled, result.NewState) {
+	if pub == result.NewState && state.Guarded(compiled) && hasSecrets(compiled, result.NewState) {
 		fail("the ruleset returned the full position as its public view", repro.PublicViewLeaked, result.NewState, nil)
 	}
 }

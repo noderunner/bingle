@@ -153,7 +153,7 @@ func (m *Manager) snapshot(ctx context.Context, compiled *catalog.CompiledGame, 
 // games with secrets (a seed, a committed choice) they are masked; other
 // games' documents are returned unchanged.
 func publicDoc(compiled *catalog.CompiledGame, doc string) string {
-	if doc == "" || !state.IsRuleset(compiled) {
+	if doc == "" || !state.Guarded(compiled) {
 		return doc
 	}
 	bs := state.NewBoardState()
@@ -330,7 +330,7 @@ func (m *Manager) GetStateFor(ctx context.Context, roomCode string, atSeq *int, 
 		return snap, nil
 	}
 	compiled, ok := m.catalog.Get(game.GameDefID)
-	if !ok || !state.IsRuleset(compiled) {
+	if !ok || !state.Guarded(compiled) {
 		return snap, nil
 	}
 	doc := game.BoardState

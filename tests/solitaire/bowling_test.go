@@ -36,8 +36,7 @@ func fullRack() map[string]string {
 
 func TestBowling_SetUp(t *testing.T) {
 	g := game(t, "bowling-solitaire")
-	rs, _ := state.RulesetOf(g)
-	st, err := rs.Start(g, 9)
+	st, err := state.InitialStateSeeded(g, 9)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -201,7 +200,7 @@ func TestBowling_Scoring(t *testing.T) {
 		{"a strike and a spare", [][]int{{10}, {7, 3}, {4, 2}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}}, "40 points"},
 		{"the last frame open", [][]int{{0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {3, 4}}, "7 points"},
 	}
-	rs, _ := state.RulesetOf(g)
+	outcome := func(st *state.BoardState) state.Outcome { out, _ := state.Evaluate(g, st, 1); return out }
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			st := position(t, g, nil, func(ext *map[string]any) {
@@ -211,7 +210,7 @@ func TestBowling_Scoring(t *testing.T) {
 				e["turn"] = 0
 				e["reason"] = "score"
 			})
-			if out := rs.Outcome(g, st); !out.Ended || out.Detail != c.want || out.Winner != nil {
+			if out := outcome(st); !out.Ended || out.Detail != c.want || out.Winner != nil {
 				t.Errorf("outcome %+v, want %s", out, c.want)
 			}
 		})
@@ -268,18 +267,18 @@ func TestBowling_TheTenthFrame(t *testing.T) {
 // score adds up, and every rack keeps all twenty cards.
 func TestBowling_AWholeGame(t *testing.T) {
 	g := game(t, "bowling-solitaire")
-	rs, _ := state.RulesetOf(g)
+	outcome := func(st *state.BoardState) state.Outcome { out, _ := state.Evaluate(g, st, 1); return out }
 	for seed := uint64(1); seed <= 25; seed++ {
-		st, err := rs.Start(g, seed)
+		st, err := state.InitialStateSeeded(g, seed)
 		if err != nil {
 			t.Fatal(err)
 		}
 		for i := 0; i < 400; i++ {
-			moves := rs.Legal(g, st, 1)
+			moves := state.LegalSelections(g, st, 1)
 			if len(moves) == 0 {
 				break
 			}
-			res, err := rs.Apply(g, st, 1, moves[0])
+			res, err := state.Apply(g, st, 1, moves[0])
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -296,7 +295,7 @@ func TestBowling_AWholeGame(t *testing.T) {
 				break
 			}
 		}
-		out := rs.Outcome(g, st)
+		out := outcome(st)
 		if !out.Ended || out.Reason != "score" {
 			t.Fatalf("seed %d: outcome %+v", seed, out)
 		}

@@ -46,6 +46,10 @@ type GameInfo struct {
 	// moves are a sequence of small decisions, and positions carry a
 	// derived view (tints, badges, counters) under state.ext.view.
 	Engine string `json:"engine,omitempty"`
+	// View says the positions carry a derived view under state.ext.view, as
+	// a ruleset's do, though the rules are declared: a game of patience
+	// (ADR 0122).
+	View bool `json:"view,omitempty"`
 	// Display is the legend for the tints and badges of a ruleset view.
 	Display *dsl.DisplayDef `json:"display,omitempty"`
 	// CountLabels says what a count selection means after an action.
@@ -432,6 +436,10 @@ func buildGameInfo(cg *catalog.CompiledGame) GameInfo {
 		// A declared game's end_of_turn tints are drawn from its legend.
 		info.Display = def.Display
 	}
+	if cg.Patience != nil {
+		info.View = true
+		info.Actions = append(info.Actions, ActionDTO{ID: "finish", Type: "patience", Label: "Finish", Hint: "Everything can go home from where it lies: send it"})
+	}
 	if ri, ok := state.DescribeRuleset(cg); ok {
 		info.Engine = "ruleset"
 		info.Display = def.Display
@@ -496,6 +504,8 @@ func describeWinRules(cg *catalog.CompiledGame) []string {
 		return []string{"This game has no win condition; play is free-form."}
 	case "callback":
 		return []string{"The game's custom rules decide the winner."}
+	case "patience":
+		return []string{"You win when every card is home. A game with no move left ends without a win, and Give up ends one at any time."}
 	case "ruleset":
 		if ri, ok := state.DescribeRuleset(cg); ok && len(ri.WinRules) > 0 {
 			return ri.WinRules

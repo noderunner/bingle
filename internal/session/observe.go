@@ -115,7 +115,7 @@ func (m *Manager) Observe(ctx context.Context, roomCode, name string) (Observati
 	if tps, err := state.FormatTPS(compiled, bs, turnOrFirst(game, compiled)); err == nil && compiled.Definition.Notation == "ptn" {
 		obs.TPS = tps
 	}
-	if state.IsRuleset(compiled) {
+	if state.Guarded(compiled) {
 		// The observer sees their own secrets and nobody else's.
 		if doc, err := state.Public(compiled, bs, obs.Seat).MarshalJSON(); err == nil {
 			obs.State = string(doc)

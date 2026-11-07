@@ -2,14 +2,12 @@
 id: solitaire
 name: Solitaire
 description: "The patience game most people mean by Solitaire, for one player: build four piles from ace to king, and turn up the seven columns' hidden cards on the way. Spider and FreeCell are here too."
-version: 0.2.1
-engine: ruleset
+version: 0.3.0
 rules:
   - 'Klondike, one card at a time. 52 cards are dealt into seven columns of 1 to 7 cards, the top card of each face up; the rest are the stock. You win by moving every card to the four foundations, one per suit, each built up from ace to king.'
   - 'In a column, cards build down in alternating colours: a black 6 goes on a red 7. A face-up card may be moved with the cards on top of it, as long as they are in that order. A column that is emptied can only be filled with a king. When a face-down card is uncovered it turns up.'
   - 'Click the stock to turn one card onto the waste. The top card of the waste can be played to a column or a foundation. When the stock runs out, the waste can be turned over to make a new stock, as often as you like.'
   - 'The top card of a foundation may be brought back to a column. The game ends when you win, when no move is left, or when you give up.'
-params: {mode: klondike, columns: 7, draw: 1}
 board:
   generator: {type: grid, width: 1, height: 1, adjacency: orthogonal4}
   style: none
@@ -20,7 +18,17 @@ pieces:
 turn_order:
   type: round-robin
   seats: [1]
-win_condition: {type: ruleset}
+win_condition: {type: patience}
+# Klondike; the variants below change what they need (ADR 0122).
+patience:
+  columns:
+    count: 7
+    deal: {sizes: [1, 2, 3, 4, 5, 6, 7]}
+    build: {suit: alternate}
+    empty: king
+  foundations: {count: 4, back: true}
+  stock: {draw: 1, to: waste, redeals: unlimited}
+  finish: true
 cards:
   suits:
     hearts: {label: Hearts, color: '#c62f2f', symbol: ♥}
@@ -65,7 +73,8 @@ variants:
     name: Solitaire (draw three)
     patch:
       description: "Klondike the harder way: the stock turns over three cards at a time, and only the top one can be played."
-      params: {draw: 3}
+      patience:
+        stock: {draw: 3}
       rules:
         - 'Klondike, three cards at a time. 52 cards are dealt into seven columns of 1 to 7 cards, the top card of each face up; the rest are the stock. You win by moving every card to the four foundations, one per suit, each built up from ace to king.'
         - 'In a column, cards build down in alternating colours: a black 6 goes on a red 7. A face-up card may be moved with the cards on top of it, as long as they are in that order. A column that is emptied can only be filled with a king. When a face-down card is uncovered it turns up.'
@@ -78,7 +87,17 @@ variants:
     name: Spider
     patch:
       description: "Two decks, ten columns: build runs from king to ace of one suit, and each finished run leaves the table. All four suits."
-      params: {mode: spider, columns: 10}
+      patience:
+        columns:
+          count: 10
+          deal: {sizes: [6, 6, 6, 6, 5, 5, 5, 5, 5, 5]}
+          build: {suit: any}
+          lift: same-suit
+          empty: any
+        foundations: null
+        stock: {draw: null, to: null, redeals: null, deal: row, columns: all, unless_empty: true}
+        off: {run: king-to-ace, suit: same}
+        finish: null
       rules:
         - 'Spider, with two decks. 104 cards are dealt into ten columns, 6 cards in the first four and 5 in the others, the top card of each face up; the rest are the stock, five deals of ten cards. You win by finishing all eight suits.'
         - 'Any card can go on a card one rank higher, whatever its suit: a 6 of hearts goes on a 7 of clubs. But only cards of one suit in order can be moved together. An empty column takes anything. When a face-down card is uncovered it turns up.'
@@ -109,7 +128,17 @@ variants:
     name: Spider (two suits)
     patch:
       description: "Spider with hearts and spades only, four decks' worth of each: 104 cards, and fewer runs broken by the wrong suit."
-      params: {mode: spider, columns: 10}
+      patience:
+        columns:
+          count: 10
+          deal: {sizes: [6, 6, 6, 6, 5, 5, 5, 5, 5, 5]}
+          build: {suit: any}
+          lift: same-suit
+          empty: any
+        foundations: null
+        stock: {draw: null, to: null, redeals: null, deal: row, columns: all, unless_empty: true}
+        off: {run: king-to-ace, suit: same}
+        finish: null
       rules:
         - 'Spider, with two suits. 104 cards, hearts and spades only, are dealt into ten columns, 6 cards in the first four and 5 in the others, the top card of each face up; the rest are the stock, five deals of ten cards. You win by finishing all eight runs.'
         - 'Any card can go on a card one rank higher, whatever its suit: a 6 of hearts goes on a 7 of spades. But only cards of one suit in order can be moved together. An empty column takes anything. When a face-down card is uncovered it turns up.'
@@ -142,7 +171,17 @@ variants:
     name: Spider (one suit)
     patch:
       description: "Spider where every card is a spade: the gentle way to learn it, and very often winnable."
-      params: {mode: spider, columns: 10}
+      patience:
+        columns:
+          count: 10
+          deal: {sizes: [6, 6, 6, 6, 5, 5, 5, 5, 5, 5]}
+          build: {suit: any}
+          lift: same-suit
+          empty: any
+        foundations: null
+        stock: {draw: null, to: null, redeals: null, deal: row, columns: all, unless_empty: true}
+        off: {run: king-to-ace, suit: same}
+        finish: null
       rules:
         - 'Spider, with one suit. 104 cards, all spades, are dealt into ten columns, 6 cards in the first four and 5 in the others, the top card of each face up; the rest are the stock, five deals of ten cards. You win by finishing all eight runs.'
         - 'Any card can go on a card one rank higher, and cards in order can be moved together. An empty column takes anything. When a face-down card is uncovered it turns up.'
@@ -175,7 +214,15 @@ variants:
     name: FreeCell
     patch:
       description: "Every card is face up from the start, and four free cells give you room to work: nearly every deal can be won, with thought rather than luck."
-      params: {mode: freecell, columns: 8, cells: 4}
+      patience:
+        columns:
+          count: 8
+          deal: {sizes: [7, 7, 7, 7, 6, 6, 6, 6], down: 0}
+          lift_limit: cells
+          empty: any
+        foundations: {back: null}
+        cells: 4
+        stock: null
       rules:
         - 'FreeCell. All 52 cards are dealt face up into eight columns, 7 cards in the first four and 6 in the others. You win by moving every card to the four foundations, one per suit, each built up from ace to king.'
         - 'In a column, cards build down in alternating colours: a black 6 goes on a red 7. An empty column takes any card. Each of the four free cells holds one card, any card, and it can be played from there to a column or a foundation.'

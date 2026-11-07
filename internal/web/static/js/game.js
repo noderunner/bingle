@@ -777,8 +777,13 @@ function scores() {
 // on the table — and sends it as state.ext.view.
 // ---------------------------------------------------------------------------
 
+/**
+ * Whether the server describes the game with a view (state.ext.view) and its
+ * moves as a run of small decisions: a Go ruleset, or a declared game of
+ * patience, which sends the view its ruleset did (ADR 0122).
+ */
 function isRuleset() {
-	return !!S.info && S.info.engine === "ruleset";
+	return !!S.info && (S.info.engine === "ruleset" || !!S.info.view);
 }
 
 /** A game with one seat: there is no turn to hand on, so a move never waits for Submit. */

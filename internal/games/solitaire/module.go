@@ -31,13 +31,15 @@ var guideFS embed.FS
 //go:embed tutorials
 var tutorialsFS embed.FS
 
-// Module returns Solitaire's catalog.Module.
+// Module returns Solitaire's catalog.Module: Klondike, Spider and FreeCell,
+// declared with the patience vocabulary since 0.3.0 (ADR 0122). upgrade.go
+// converts the positions their Go ruleset stored.
 func Module() catalog.Module {
 	guide, err := fs.Sub(guideFS, "guide")
 	if err != nil {
 		panic(err)
 	}
-	return catalog.Module{ID: "solitaire", Definition: definition(), Rules: New(), Assets: guide}
+	return catalog.Module{ID: "solitaire", Definition: definition(), Assets: guide, Upgrade: Upgrade}
 }
 
 // BowlingModule returns Bowling Solitaire's catalog.Module: the same ruleset,
