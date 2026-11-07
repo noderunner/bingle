@@ -1,8 +1,8 @@
 # Plan: a game as an installable plugin
 
-Status: **planning in progress** (opened 2026-10-28). These are initial thoughts written
-before the design discussion, not settled decisions. Nothing is implemented, and the open
-questions at the end are expected to change the shape of this.
+Status: **planning in progress** (opened 2026-10-28). The five open questions were settled on
+2026-10-31 (see *Decisions*); nothing is implemented yet. The sections before *Decisions* are
+the initial thinking, kept as written.
 
 ## What was asked for
 
@@ -85,23 +85,98 @@ moves games from Tier 2 into Tier 0 over time.
   install path is what lets a private game exist without being published. Worth writing down
   plainly, including that bingle ships no mechanism for distributing someone else's game.
 
-## Open questions for the discussion
+## Decisions (settled 2026-10-31)
 
-1. How far up the tiers do we actually want to go? My recommendation is Tier 0 plus private
-   builds; Tier 1 only when something needs it.
-2. Does **Cthulhu Wars leave the public repository**? It is 17,628 lines — half the games tree
-   — and it is the commercial game that motivated this. Moving it is the real test of the
-   private-build path, and it would also halve what the code audit has to read.
-3. Where does install live: the admin area from the auth plan, or a separate page? Who may do
-   it in hybrid mode — admins only, I would say.
-4. Do plugins ever ship JavaScript? I lean strongly no.
-5. Is there a story for *sharing* plugins between friends' servers (a signed file, a trust
-   list), or is it strictly "a file I install on my own server"?
+The five open questions were discussed on 2026-10-31, using Cthulhu Wars, the most complex game,
+as the test case. These become an ADR when this plan lands on `main`.
+
+1. **Go code is compiled in, never loaded at run time.** Installable packs are data only
+   (Tier 0). A game with a Go ruleset is part of a build: the public binary, or a private
+   build for a game that must not be published. Tier 1 (WebAssembly hooks) and a WebAssembly
+   or subprocess Tier 2 are **not planned**: every `Legal`/`Apply` call would cross a
+   serialization boundary, and bots and practice batches make millions of them. They would
+   only come back if sharing *code* between servers becomes a goal, and then with the bot
+   search inside the plugin so the boundary is crossed once per move decision, not once
+   per searched position.
+
+   `plugin.Open` (a `.so` per game) was considered in detail and rejected:
+   - it needs cgo, which ends the static `CGO_ENABLED=0` binary (ADR 0014) and does not
+     exist on Windows;
+   - Go refuses to load a plugin unless every package it shares with the host was built from
+     identical source with the same toolchain and flags. Cthulhu Wars imports
+     `engine/state`, `catalog`, `board` and `dsl`, so any engine change, Go point release or
+     dependency bump invalidates the `.so`. It is a piece of one particular binary shipped
+     separately, not a pack. A narrower plugin API (the `plugin_foundation` experiment)
+     reduces how often the game's *source* must change, not how often the `.so` must be
+     rebuilt, because the check covers the boundary package and the standard library too;
+   - a plugin can never be unloaded, so uninstall and upgrade need a restart and two versions
+     of one game cannot coexist;
+   - it runs inside the server with full access to the database and the network.
+
+2. **Cthulhu Wars leaves the public repository**, into a private build. It is the real test
+   of the private-build path. Because it imports `internal/...` packages, which another Go
+   module may not import, the private build is an **overlay**: a gitignored
+   `internal/games/private/` directory (or a private repository checked out there) compiled
+   in by a build tag, rather than a separate module. The engine does not have to move to a
+   public import path.
+
+3. **Installing a data pack lives in the admin area**, behind the `install_plugins`
+   capability, a fresh reauthentication and an audit entry. Admins only, in every mode.
+
+4. **No JavaScript in a pack, ever.** A pack uses the declarative display vocabulary
+   (`display`, themes, tints, badges, overlays), images and markdown. This is now a design
+   principle as well as a security rule: see *Every game is playable through the API alone*,
+   below.
+
+5. **Data packs can be shared** as files between servers; the server validates a pack on
+   install as if it were untrusted. Sharing code waits for the route in decision 1, if ever.
+
+## Every game is playable through the API alone
+
+A separate project, a native 3D client built on Bevy, is planned to play the same games
+through the API. Whatever it turns out to need, a game must not depend on the JavaScript
+interface to be played or understood. The same rule is what lets a private game leave the
+repository cleanly. Today the rules side already holds: the web client fetches the full legal
+move list (`api.legal`) and `MoveBuilder` only narrows it as the player clicks. The coupling
+that remains, found 2026-10-31:
+
+- **Cthulhu Wars' presentation lives in the web client**: cult names and colours in
+  `cw-names.js`, the sigils in `cw-glyphs.js` (drawn by `render.js`), icons in
+  `game-icons.js` and `icons.js`, and a `gameID.startsWith("cthulhu-wars")` check in
+  `practice.js`. These move into the game's definition and assets, served by the server, so
+  the web client names no game.
+- **The server names Cthulhu Wars outside its package**: `internal/app/app.go` registers it
+  directly, `internal/batch/run.go` and `internal/batch/report.go` build CW-only practice
+  reports, and `internal/tune/tune.go` and `scripts/tune/main.go` import it. Games should
+  register themselves (selected by build tag), and a game should describe the statistics its
+  practice report shows instead of `internal/batch` knowing them.
+
+**How assets reach a non-web client is deliberately not decided.** Whether the Bevy client
+downloads assets from the server, ships its own, or both, is for the discussion when that
+client is built. Nothing here should assume one answer.
+
+## The order of work
+
+1. **An API-only play test**: a scripted client plays every game to a finish using only the
+   legal-moves and move endpoints, no browser. A game that cannot is a bug. It runs first
+   because it shows the gaps before anything moves.
+2. **Games register themselves**, and the binary's set of games is chosen by build tags.
+3. **Presentation moves to the server** (the Cthulhu Wars names, colours, sigils, icons and
+   practice-report shape), and the web client stops naming games.
+4. **The private overlay**, then **Cthulhu Wars moves into it**. The acceptance test: the
+   public repository builds, passes `make test` and plays every remaining game through the
+   API with Cthulhu Wars absent.
+5. **Data packs** (Tier 0): manifest, validation through the compiler, the store table, the
+   admin install page, the namespace, uninstall tombstones and version provenance listed
+   above.
+
+Steps 1 to 4 need nothing from the other plans. Step 5 needs the auth plan's admin area,
+which is now built.
 
 ## Dependencies and cross-plan effects
 
-- **Needs the auth plan** (merged, not implemented): `install_plugins`, the admin group and the
-  admin UI. This is why auth was planned first.
+- **Needs the auth plan** (built on `main` by 2026-10-31): `install_plugins`, the admin group
+  and the admin UI. Only step 5 depends on it.
 - **Fed by the DSL coverage audit**: every game the audit moves into pure DSL becomes
   installable at Tier 0 with no further work. These two plans should be read together.
 - **Fed by the YAML plan**: if a definition can be YAML, a plugin manifest and definition can
@@ -115,3 +190,8 @@ moves games from Tier 2 into Tier 0 over time.
 
 - 2026-10-28: opened with initial thoughts. Three tiers sketched, Tier 0 plus private builds
   recommended, five open questions. Planning in progress.
+- 2026-10-31: the five questions settled with Cthulhu Wars as the test case. Go code stays
+  compiled in (`.so` plugins and WebAssembly rulesets rejected); Cthulhu Wars moves to a
+  private overlay build; packs are data only, with no JavaScript, installed by admins and
+  shareable. Added the API-only principle, the coupling found in the web client and server,
+  and an order of work. How a native client gets assets is left open.

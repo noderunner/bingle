@@ -12,7 +12,7 @@ order of work can be chosen deliberately. Provisional: it changes as each plan i
 | [dsl-yaml-plan.md](dsl-yaml-plan.md) | planning in progress | no |
 | [game-tutorials-plan.md](game-tutorials-plan.md) | planning in progress | no (guests welcome) |
 | [dsl-coverage-audit-plan.md](dsl-coverage-audit-plan.md) | planning in progress | no |
-| [game-plugins-plan.md](game-plugins-plan.md) | planning in progress | yes |
+| [game-plugins-plan.md](game-plugins-plan.md) | questions settled, not started | only for packs |
 | [tournaments-and-rankings-plan.md](tournaments-and-rankings-plan.md) | planning in progress | yes |
 | [achievements-plan.md](achievements-plan.md) | planning in progress | yes |
 | [code-and-architecture-audit-plan.md](code-and-architecture-audit-plan.md) | planning in progress | no |
@@ -49,7 +49,11 @@ The couplings that would cost the most if missed:
 4. **The code audit should not run against code the DSL audit is about to delete**, nor during
    the auth and observability sweeps, which touch every package.
 5. **Plugins need the DSL audit to be worth much**, because a fully-declared game installs as
-   data with no sandbox.
+   data with no sandbox. Since 2026-10-31 that is the *only* way to install a game: Go code is
+   always compiled in.
+6. **Cthulhu Wars leaves the public repository** (plugins, decided 2026-10-31). The code audit
+   should not tidy code that is about to move, and should shape the game registry and the
+   presentation seams the plugin plan needs.
 
 ## A provisional order, for discussion
 
@@ -58,8 +62,8 @@ The couplings that would cost the most if missed:
 1. **YAML** — one or two decisions, and it unblocks authoring for tutorials, badges and plugins.
 2. **Tutorials** — small, self-contained, needs no accounts, and the highest ratio of player
    value to new machinery.
-3. **Plugins** — the four open questions are already written down; the big one is whether
-   Cthulhu Wars leaves the public repository.
+3. **Plugins** — settled 2026-10-31: data-only packs, Go games compiled in, Cthulhu Wars
+   to a private build.
 4. **DSL coverage audit** — mostly a question of what the goal is, and the answer depends on
    whether plugins are the point.
 5. **Tournaments and achievements together** — they share a table, and the prize-pool question
@@ -81,3 +85,5 @@ The couplings that would cost the most if missed:
 ## Status log
 
 - 2026-10-28: written alongside the seven new plan drafts, to support choosing an order.
+- 2026-10-31: plugins settled; noted that Cthulhu Wars leaves the public repository, which
+  the code audit must account for.

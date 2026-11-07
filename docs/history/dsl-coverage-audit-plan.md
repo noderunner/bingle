@@ -89,6 +89,8 @@ of something real, and it is the only way to convert a game with confidence.
 
 1. Is reducing Go code actually a goal, or is the goal "more games can be plugins"? They point
    at different work. If it is the plugin goal, Onitama and Blooms are the whole project.
+   (Context from 2026-10-31: the plugin plan settled that installable packs are data only and
+   Go code is always compiled in, so this audit is now the only route to an installable game.)
 2. How much vocabulary growth is acceptable? The DSL struct is ~670 lines today; at what size
    does it stop being a DSL?
 3. Do converted games keep their Go ruleset for a release as a differential reference, then drop
@@ -117,3 +119,5 @@ of something real, and it is the only way to convert a game with confidence.
   and a per-game prior. Recommendation: rank candidate DSL features by games unlocked, accept
   that full coverage is the wrong goal, and build a differential replay harness before
   converting anything. Planning in progress.
+- 2026-10-31: noted the plugin decision under question 1: packs are data only, so this
+  audit is the only route to an installable game.

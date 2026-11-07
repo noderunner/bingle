@@ -95,7 +95,10 @@ independent, and its findings would usefully inform both. So: measure early, ref
 2. How much appetite is there for moving internal packages around (import-path churn across
    61,000 lines) versus only splitting files within packages?
 3. Does Cthulhu Wars leave the public repository under the plugin plan? That halves the games
-   tree and changes what the audit should even read.
+   tree and changes what the audit should even read. **Answered 2026-10-31: yes**, into a
+   private overlay build (see the plugin plan). The audit should not tidy Cthulhu Wars, and
+   should treat the game registry and the CW references in `internal/app`, `internal/batch`,
+   `internal/tune` and the web client as seams the plugin plan is about to cut.
 4. Do we want target metrics (no file over N lines, no function over M) or just a findings list?
    I lean findings-only; mechanical limits produce mechanical code.
 5. Should the audit cover the documentation set as well? There are now nine plan documents and
@@ -122,3 +125,5 @@ independent, and its findings would usefully inform both. So: measure early, ref
   findings. Recommendation: a cheap measurement pass now, the refactoring after the
   observability and auth implementations, in many small themed pull requests. Planning in
   progress.
+- 2026-10-31: question 3 answered by the plugin plan: Cthulhu Wars leaves the public
+  repository.
