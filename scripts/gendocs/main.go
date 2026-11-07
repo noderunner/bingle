@@ -7,6 +7,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"sort"
@@ -126,10 +127,34 @@ func boardText(g *catalog.CompiledGame) string {
 		return fmt.Sprintf("hex %d×%d", b.Width(), b.Height())
 	case "grid":
 		style := "squares"
-		if g.Definition.Board.Style == "points" {
+		if boardStyle(g) == "points" {
 			style = "points"
 		}
 		return fmt.Sprintf("%d×%d %s", b.Width(), b.Height(), style)
 	}
 	return fmt.Sprintf("graph, %d nodes", b.Len())
+}
+
+// boardStyle is how the web page draws g's board: its look's (web.yaml, ADR
+// 0124), with g's variant patched in, or the definition's while a game still
+// carries it there.
+func boardStyle(g *catalog.CompiledGame) string {
+	var look struct {
+		Board    struct{ Style string } `json:"board"`
+		Variants map[string]struct {
+			Board struct{ Style string } `json:"board"`
+		} `json:"variants"`
+	}
+	if g.Web != nil {
+		if err := json.Unmarshal(g.Web, &look); err != nil {
+			log.Fatalf("%s: its look: %v", g.Definition.ID, err)
+		}
+	}
+	if v, ok := look.Variants[g.Definition.ID]; ok && v.Board.Style != "" {
+		return v.Board.Style
+	}
+	if look.Board.Style != "" {
+		return look.Board.Style
+	}
+	return g.Definition.Board.Style
 }
