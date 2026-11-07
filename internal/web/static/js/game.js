@@ -1257,7 +1257,7 @@ function moveQueueDisplay() {
 		if (n > 1) icon.append(h("span", { class: "queue-count" }, String(n)));
 		wrap.append(icon);
 	}
-	wrap.append(h("span", { class: "queue-cost", id: "move-queue-cost", title: "The Power this move costs" }, statIcon("power", "Power", 16), String(queueCost())));
+	wrap.append(h("span", { class: "queue-cost", id: "move-queue-cost", title: "What this move costs" }, statIcon("power", "Power", 16), String(queueCost())));
 	return wrap;
 }
 
@@ -1284,12 +1284,13 @@ function plainPiece(piece) {
 	return String(piece).startsWith(ONGATE) ? String(piece).slice(ONGATE.length) : piece;
 }
 
-/** A piece value's name and icon shape ("Acolyte on the Gate" for the unit on a Gate). */
+/** A piece value's name and icon shape; a piece that holds a place (the ONGATE prefix) is named so, in the game's words when its page script has them. */
 function pieceLook(piece) {
 	const onGate = String(piece).startsWith(ONGATE);
 	const def = S.info.pieces.find((p) => p.type === plainPiece(piece));
 	const label = def ? def.label : plainPiece(piece);
-	return { label: onGate ? `${label} on the Gate` : label, shape: def ? def.shape : "disc", color: def ? def.color : "", onGate };
+	const held = onGate ? (page().heldLabel ? page().heldLabel(label) : `${label} (holding its place)`) : label;
+	return { label: held, shape: def ? def.shape : "disc", color: def ? def.color : "", onGate };
 }
 
 function onToken(pos, piece, color) {
@@ -2495,8 +2496,11 @@ function impulseText() {
 	const rv = rulesetView();
 	const said = rv && (rv.impulse || rv.prompt);
 	if (!isMyImpulse()) return said || genericImpulse();
-	if (S.passAsked) return `You will lose your ${powerOf(S.game.impulse_seat)} unspent Power.`;
-	if (S.moveQueue) return `Units from ${queueOrigins().map(areaName).join(" and ")} are ready: select more from any area, then the area they all go to.`;
+	if (S.passAsked) return page().passWarning ? page().passWarning(powerOf(S.game.impulse_seat)) : `Passing gives up the ${powerOf(S.game.impulse_seat)} you have left to spend.`;
+	if (S.moveQueue) {
+		const from = queueOrigins().map(areaName).join(" and ");
+		return page().queueReady ? page().queueReady(from) : `Pieces from ${from} are ready: select more from any area, then the area they all go to.`;
+	}
 	const b = activeBuilder();
 	if (!isRuleset()) return genericActingImpulse(b);
 	return b.manualGestures().length ? rulesetStepImpulse(b, rv) : said || genericActingImpulse(b);
@@ -2598,7 +2602,7 @@ function renderFitted(seats, bottomSeat, cults) {
 	const rail = h("aside", { class: "side-panel play-rail", id: "play-rail" }, ...first.filter(Boolean));
 	if (areas) {
 		// More than a column can show at once: the cults, the table talk and the history take turns.
-		const panes = [{ id: "cults", label: seats.length > 2 ? "Cults" : "Players", nodes: [players, neutralCard()] }];
+		const panes = [{ id: "cults", label: (seats.length > 2 && page().seatsName) || "Players", nodes: [players, neutralCard()] }];
 		if (talk.length) panes.push({ id: "talk", label: "Chat", nodes: talk });
 		panes.push({ id: "history", label: "History", nodes: [history] });
 		rail.append(...railTabs(panes));
@@ -2750,7 +2754,7 @@ function renderMobile(seats, bottomSeat) {
 		groups: [
 			{ id: "actions", label: "Actions", icon: "⚡", pulse: myImpulse && S.mPage !== "actions" },
 			{ id: "round", label: "Round", icon: "⏳" },
-			{ id: "cults", label: "Cults", icon: "👥" },
+			{ id: "cults", label: page().seatsName || "Players", icon: "👥" },
 			{ id: "log", label: "History", icon: "📜" },
 			{ id: "chat", label: "Chat", icon: "💬", badge: unread || 0 },
 		],
@@ -2794,7 +2798,7 @@ function renderMobileMap(myImpulse) {
 function mobileHintOnce() {
 	if (store.get("bingle.mobileHint2", false)) return;
 	store.set("bingle.mobileHint2", true);
-	toast("Turn your phone on its side for the map, and upright for your actions, the cults and the chat.");
+	toast("Turn your phone on its side for the map, and upright for your actions, the players and the chat.");
 }
 
 /** A turn that has just come to the player buzzes the phone, once. */
@@ -3634,7 +3638,7 @@ function buildAbilityChoice(a, r) {
 		h(
 			"div",
 			{ class: "ask-row" },
-			h("label", { class: "check", title: `Ask me about ${a.name} when an action is aimed at me, at one of my units or at an area where I have a unit or a Gate` }, targeted, h("span", {}, "When I'm targeted")),
+			h("label", { class: "check", title: `Ask me about ${a.name} when an action is aimed at me or at something of mine` }, targeted, h("span", {}, "When I'm targeted")),
 			helpButton(`ask-${id}-help`, "What does “When I'm targeted” mean?", showTargetedHelp)
 		)
 	);
@@ -3862,7 +3866,7 @@ function showAutoPlayHelp() {
 		[
 			"The wait is counted from the last move in the game: the one that made it your turn, or your own last decision. Every move you make, and every move the bot makes for you, starts the count again.",
 			"The bot plays the decisions of that turn, one after the other, until play passes to another player. Then the count starts over for your next turn.",
-			"It is the tactical bot — the same one you can add to an empty seat: sensible, not brilliant. It will spend your Power and use your units as it sees fit.",
+			"It is the tactical bot — the same one you can add to an empty seat: sensible, not brilliant. It will play your seat as it sees fit.",
 			"Every move it makes for you is marked “auto-play” in the Moves tab, and the turn is marked in the History tab, so everyone can see who really played it.",
 			"You can switch it off, or change the time, whenever you like, even while it is your turn. It is off by default; when you switch it on it starts at 24 hours.",
 		],
@@ -4305,7 +4309,7 @@ function moveBar() {
 				"span",
 				{ class: "move-actions" },
 				h("button", { class: "primary", id: "pass-confirm", onclick: confirm }, "Pass"),
-				h("button", { id: "back", class: "ghost", onclick: goBack, title: "Keep the Power, and choose again (Backspace)" }, "↶ Back")
+				h("button", { id: "back", class: "ghost", onclick: goBack, title: "Undo this choice, and choose again (Backspace)" }, "↶ Back")
 			)
 		);
 		return bar;
@@ -4380,9 +4384,9 @@ function moveBar() {
 							"data-piece": type,
 							"aria-label": pieceWord() ? `${pieceWord()}: ${look.label}` : null,
 							title: look.onGate
-								? b.gestures.some((st) => st.kind === "action" && st.value === "capture")
-									? `${look.label}: capturing it leaves the Gate abandoned, and your own Cultist takes it`
-									: `${look.label}: moving it abandons the Gate`
+								? page().heldNote
+									? page().heldNote(look.label, b.gestures.some((st) => st.kind === "action" && st.value === "capture"))
+									: `${look.label}: choosing it gives up the place it holds`
 								: look.label,
 							onclick: () => choosePiece(type),
 						},
