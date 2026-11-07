@@ -15,11 +15,15 @@ import (
 	"github.com/noderunner/bingle/internal/engine/dsl"
 )
 
-//go:embed solitaire.yaml
+//go:embed solitaire.yaml bowling.yaml
 var definitionFS embed.FS
 
 // definition is the definition as JSON, converted once.
 var definition = sync.OnceValue(func() []byte { return dsl.MustLoad(definitionFS, "solitaire.yaml") })
+
+// bowlingDefinition is Bowling Solitaire's, a game of its own since the
+// patience vocabulary (ADR 0122) is to take over the others.
+var bowlingDefinition = sync.OnceValue(func() []byte { return dsl.MustLoad(definitionFS, "bowling.yaml") })
 
 //go:embed guide
 var guideFS embed.FS
@@ -33,9 +37,19 @@ func Module() catalog.Module {
 	if err != nil {
 		panic(err)
 	}
+	return catalog.Module{ID: "solitaire", Definition: definition(), Rules: New(), Assets: guide}
+}
+
+// BowlingModule returns Bowling Solitaire's catalog.Module: the same ruleset,
+// in its bowling mode, with its own definition and tutorial.
+func BowlingModule() catalog.Module {
+	guide, err := fs.Sub(guideFS, "guide")
+	if err != nil {
+		panic(err)
+	}
 	tutorials, err := fs.Sub(tutorialsFS, "tutorials")
 	if err != nil {
 		panic(err)
 	}
-	return catalog.Module{ID: "solitaire", Definition: definition(), Rules: New(), Assets: guide, Tutorials: tutorials}
+	return catalog.Module{ID: "bowling-solitaire", Definition: bowlingDefinition(), Rules: New(), Assets: guide, Tutorials: tutorials}
 }

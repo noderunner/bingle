@@ -4,6 +4,14 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.90.1 - 2026-11-06
+
+### Bingle Core 0.90.1
+- **Bowling Solitaire has a place of its own.** It is listed as a game of its own beside Solitaire, with its tutorial, rather than as one of Solitaire's variants. Its rules and its games in progress are unchanged.
+
+### Solitaire 0.2.1
+- Solitaire's list of games is Klondike, Spider and FreeCell; Bowling Solitaire moved out to a game of its own.
+
 ## 0.90.0 - 2026-11-06
 
 ### Bingle Core 0.90.0

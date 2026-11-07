@@ -20,8 +20,10 @@ func oneSeatManager(t *testing.T) *session.Manager {
 	}
 	t.Cleanup(func() { _ = st.Close() })
 	cat := catalog.NewCatalog()
-	if err := cat.RegisterModule(solitaire.Module()); err != nil {
-		t.Fatal(err)
+	for _, m := range []catalog.Module{solitaire.Module(), solitaire.BowlingModule()} {
+		if err := cat.RegisterModule(m); err != nil {
+			t.Fatal(err)
+		}
 	}
 	return session.NewManager(st, cat)
 }

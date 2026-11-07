@@ -389,12 +389,12 @@ func TestWebSolitaire_SettingUp(t *testing.T) {
 	if got := evalString(t, ctx, `document.querySelector('`+card+` .game-card-players').textContent`); got != "1 player" {
 		t.Errorf("the card says %q", got)
 	}
-	// It has a tutorial, though not for the game it leads with.
-	if n := evalInt(t, ctx, `document.querySelectorAll('`+card+` .badge.tutorial').length`); n != 1 {
+	// Bowling Solitaire, which had the tutorial, is a game of its own.
+	if n := evalInt(t, ctx, `document.querySelectorAll('`+card+` .badge.tutorial').length`); n != 0 {
 		t.Errorf("%d tutorial marks on the card", n)
 	}
 	clickSel(t, ctx, card)
-	waitJS(t, ctx, "the list of variants", `document.querySelectorAll('#setup-variant option').length === 7`, 10*time.Second)
+	waitJS(t, ctx, "the list of variants", `document.querySelectorAll('#setup-variant option').length === 6`, 10*time.Second)
 	if got := evalString(t, ctx, `document.getElementById("setup-title").textContent`); got != "Solitaire" {
 		t.Errorf("the setup is called %q", got)
 	}
@@ -405,7 +405,7 @@ func TestWebSolitaire_SettingUp(t *testing.T) {
 		t.Errorf("the description is %q", blurb)
 	}
 	got := evalString(t, ctx, `[...document.querySelectorAll('#setup-variant option')].map(o => o.textContent).join("|")`)
-	if want := "Solitaire|Bowling Solitaire|FreeCell|Solitaire (draw three)|Spider|Spider (one suit)|Spider (two suits)"; got != want {
+	if want := "Solitaire|FreeCell|Solitaire (draw three)|Spider|Spider (one suit)|Spider (two suits)"; got != want {
 		t.Errorf("the list says %q, want %q", got, want)
 	}
 	if n := evalInt(t, ctx, `document.querySelectorAll('#setup-variants .chip').length`); n != 0 {
@@ -413,8 +413,35 @@ func TestWebSolitaire_SettingUp(t *testing.T) {
 	}
 	waitJS(t, ctx, "no opponent to choose", `document.getElementById('opponent-choices').closest('.field').hidden`, 10*time.Second)
 	waitJS(t, ctx, "the sets of cards", `!document.getElementById('card-set-field').hidden`, 10*time.Second)
-	chooseVariant(t, ctx, "bowling-solitaire")
-	waitJS(t, ctx, "the description of the variant", `document.getElementById("game-blurb").textContent.includes("Sackson")`, 10*time.Second)
+	chooseVariant(t, ctx, "freecell")
+	waitJS(t, ctx, "the description of the variant", `document.getElementById("game-blurb").textContent.includes("free cells")`, 10*time.Second)
+	if err := chromedp.Run(ctx, chromedp.Evaluate(`localStorage.setItem("bingle.name", JSON.stringify("Ana"))`, nil)); err != nil {
+		t.Fatal(err)
+	}
+	clickSel(t, ctx, `#create-game-form button[type="submit"]`)
+	waitJS(t, ctx, "the game, started", `document.querySelectorAll('.sol-column').length === 8`, 15*time.Second)
+}
+
+// Bowling Solitaire is a game of its own on the home page, with its tutorial, and
+// its setup starts a rack of pins.
+func TestWebBowlingSolitaire_IsAGameOfItsOwn(t *testing.T) {
+	baseURL := newRESTTestServer(t)
+	ctx, cancel := newChromedpContext(t, 60*time.Second)
+	defer cancel()
+	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/")); err != nil {
+		t.Fatal(err)
+	}
+	card := `.game-card[data-family="bowling-solitaire"]`
+	waitJS(t, ctx, "the card", `document.querySelector('`+card+`')`, 15*time.Second)
+	if got := evalString(t, ctx, `document.querySelector('`+card+` .game-card-title').textContent`); got != "Bowling Solitaire" {
+		t.Errorf("the card is called %q", got)
+	}
+	if n := evalInt(t, ctx, `document.querySelectorAll('`+card+` .badge.tutorial').length`); n != 1 {
+		t.Errorf("%d tutorial marks on the card", n)
+	}
+	clickSel(t, ctx, card)
+	waitJS(t, ctx, "the description", `document.getElementById("game-blurb").textContent.includes("Sackson")`, 10*time.Second)
+	waitJS(t, ctx, "the tutorial", `document.querySelector('#setup-tutorials button[data-tutorial="bowling-basics"]') && !document.getElementById("setup-tutorials").hidden`, 10*time.Second)
 	if err := chromedp.Run(ctx, chromedp.Evaluate(`localStorage.setItem("bingle.name", JSON.stringify("Ana"))`, nil)); err != nil {
 		t.Fatal(err)
 	}
@@ -433,12 +460,11 @@ func TestWebSolitaire_ThePreviewIsTheVariantInProgress(t *testing.T) {
 	preview := `#setup-preview .sol-preview`
 	waitJS(t, ctx, "Klondike", `document.querySelector('`+preview+`[data-mode="klondike"]')`, 15*time.Second)
 	progress := map[string]string{
-		"solitaire":         `document.querySelectorAll('` + preview + `[data-mode="klondike"] .sol-column').length === 7 && document.querySelectorAll('` + preview + ` [data-pile^="f"] .pcard.face').length > 0`,
-		"solitaire-draw-3":  `document.querySelectorAll('` + preview + `[data-mode="klondike"] .sol-waste .pcard.face').length > 0`,
-		"spider":            `document.querySelectorAll('` + preview + `[data-mode="spider"] .sol-column').length === 10 && document.querySelectorAll('` + preview + ` .sol-column .pcard.face').length > 10`,
-		"spider-1":          `document.querySelectorAll('` + preview + `[data-mode="spider"] .sol-column').length === 10`,
-		"freecell":          `document.querySelectorAll('` + preview + `[data-mode="freecell"] .sol-column').length === 8 && document.querySelectorAll('` + preview + ` [data-pile^="c"] .pcard.face, ` + preview + ` [data-pile^="f"] .pcard.face').length > 0`,
-		"bowling-solitaire": `document.querySelectorAll('` + preview + `[data-mode="bowling"] .sol-pin.down').length > 0 && document.querySelector('` + preview + ` .sol-frame[data-frame="1"] .sol-mark').textContent !== ""`,
+		"solitaire":        `document.querySelectorAll('` + preview + `[data-mode="klondike"] .sol-column').length === 7 && document.querySelectorAll('` + preview + ` [data-pile^="f"] .pcard.face').length > 0`,
+		"solitaire-draw-3": `document.querySelectorAll('` + preview + `[data-mode="klondike"] .sol-waste .pcard.face').length > 0`,
+		"spider":           `document.querySelectorAll('` + preview + `[data-mode="spider"] .sol-column').length === 10 && document.querySelectorAll('` + preview + ` .sol-column .pcard.face').length > 10`,
+		"spider-1":         `document.querySelectorAll('` + preview + `[data-mode="spider"] .sol-column').length === 10`,
+		"freecell":         `document.querySelectorAll('` + preview + `[data-mode="freecell"] .sol-column').length === 8 && document.querySelectorAll('` + preview + ` [data-pile^="c"] .pcard.face, ` + preview + ` [data-pile^="f"] .pcard.face').length > 0`,
 	}
 	for id, shown := range progress {
 		chooseVariant(t, ctx, id)
@@ -447,6 +473,15 @@ func TestWebSolitaire_ThePreviewIsTheVariantInProgress(t *testing.T) {
 			t.Errorf("%s: %d things to click in a picture", id, n)
 		}
 	}
+	// Bowling Solitaire, a game of its own, shows its own game in progress.
+	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/?game=bowling-solitaire")); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "bowling in progress", `document.querySelectorAll('`+preview+`[data-mode="bowling"] .sol-pin.down').length > 0 && document.querySelector('`+preview+` .sol-frame[data-frame="1"] .sol-mark').textContent !== ""`, 15*time.Second)
+	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/?game=solitaire")); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "the setup again", `document.querySelector('#setup-variant')`, 15*time.Second)
 	// Nothing hidden is drawn: a game in progress has backs, and the set wears through.
 	chooseVariant(t, ctx, "solitaire")
 	waitJS(t, ctx, "Klondike again", `document.querySelector('`+preview+`[data-mode="klondike"]')`, 10*time.Second)
@@ -463,8 +498,8 @@ func TestWebSolitaire_ThePreviewIsTheVariantInProgress(t *testing.T) {
 	}
 }
 
-// A tutorial of one variant is offered with that variant and not with the others, and
-// a tutorial for the whole family is offered with them all.
+// A tutorial for a whole family is offered with every variant of it, and a game with no
+// tutorial offers none on any of its variants.
 func TestWebSetup_TutorialsFollowTheVariant(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
@@ -472,11 +507,8 @@ func TestWebSetup_TutorialsFollowTheVariant(t *testing.T) {
 	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/?game=solitaire")); err != nil {
 		t.Fatal(err)
 	}
-	bowling := `document.querySelector('#setup-tutorials button[data-tutorial="bowling-basics"]')`
 	waitJS(t, ctx, "the setup", `document.querySelector('#setup-variant')`, 15*time.Second)
 	waitJS(t, ctx, "no tutorial", `document.getElementById("setup-tutorials").hidden`, 10*time.Second)
-	chooseVariant(t, ctx, "bowling-solitaire")
-	waitJS(t, ctx, "Bowling's tutorial", bowling+` && !document.getElementById("setup-tutorials").hidden`, 10*time.Second)
 	chooseVariant(t, ctx, "freecell")
 	waitJS(t, ctx, "FreeCell has none", `document.getElementById("setup-tutorials").hidden`, 10*time.Second)
 	// Blooms is taught on its small board, for every board.
