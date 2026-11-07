@@ -155,6 +155,32 @@ that remains, found 2026-10-31:
 downloads assets from the server, ships its own, or both, is for the discussion when that
 client is built. Nothing here should assume one answer.
 
+## Which games stay public
+
+Decided 2026-10-31: **the public repository keeps only public-domain games, openly licensed
+games and the maintainer's own designs.** Every other game moves to the private overlay, and
+can come back if its owner gives permission. Cthulhu Wars, Yinsh and Onitama were named.
+
+The rest of the list below is a **proposal for the maintainer to confirm**, sorted from the
+credits in each definition. It is not a legal judgement: game mechanics are generally not
+protected, but names, rule text and art are, and the bar here is stricter than the law
+anyway.
+
+| Group | Games | Proposal |
+|---|---|---|
+| Traditional, no owner | Tic-Tac-Toe, English Draughts, Go, Gomoku, Brandubh, Reversi | public; drop "Othello" (a trademark) from Reversi's name |
+| The maintainer's own | Courtfall, Mycelium | public |
+| Published commercial products | Cthulhu Wars, Yinsh, Onitama, Hive, Nyet!, Fist, Tak, Yavalath, Pente, Connect Four | private; Connect Four and Pente could stay as generic games under another name |
+| Designer-owned, licence unknown | Blooms, Amazons, Breakthrough, Ataxx, Havannah, Hex, Meridians, Fendo | check each one's licence; private until confirmed |
+
+**This cut reaches the public test suite.** Tak is named in about 110 test files and Cthulhu
+Wars in about 60; Hive, Yinsh, Onitama, Nyet!, Fist and Fendo have their own test
+directories. Those games are also what exercises the engine's hidden information, cards,
+stacks and reactions. So before a game moves, every engine feature it exercised must be
+covered by a game that stays public, or by a small **test-only fixture game** that lives in
+`tests/` and is never registered in the shipped binary. Its own rules tests move with it into
+the private overlay.
+
 ## The order of work
 
 1. **An API-only play test**: a scripted client plays every game to a finish using only the
@@ -163,20 +189,21 @@ client is built. Nothing here should assume one answer.
 2. **Games register themselves**, and the binary's set of games is chosen by build tags.
 3. **Presentation moves to the server** (the Cthulhu Wars names, colours, sigils, icons and
    practice-report shape), and the web client stops naming games.
-4. **The private overlay**, then **Cthulhu Wars moves into it**. The acceptance test: the
-   public repository builds, passes `make test` and plays every remaining game through the
-   API with Cthulhu Wars absent.
-5. **Data packs** (Tier 0): manifest, validation through the compiler, the store table, the
+4. **Fixture games** for every engine feature a departing game was the only public test of.
+5. **The private overlay**, then **every game the list above sends private moves into it**,
+   Cthulhu Wars first. The acceptance test: the public repository builds, passes `make test`
+   and plays every remaining game through the API with the private games absent.
+6. **Data packs** (Tier 0): manifest, validation through the compiler, the store table, the
    admin install page, the namespace, uninstall tombstones and version provenance listed
    above.
 
-Steps 1 to 4 need nothing from the other plans. Step 5 needs the auth plan's admin area,
+Steps 1 to 5 need nothing from the other plans. Step 6 needs the auth plan's admin area,
 which is now built.
 
 ## Dependencies and cross-plan effects
 
 - **Needs the auth plan** (built on `main` by 2026-10-31): `install_plugins`, the admin group
-  and the admin UI. Only step 5 depends on it.
+  and the admin UI. Only step 6 depends on it.
 - **Fed by the DSL coverage audit**: every game the audit moves into pure DSL becomes
   installable at Tier 0 with no further work. These two plans should be read together.
 - **Fed by the YAML plan**: if a definition can be YAML, a plugin manifest and definition can
@@ -195,3 +222,7 @@ which is now built.
   private overlay build; packs are data only, with no JavaScript, installed by admins and
   shareable. Added the API-only principle, the coupling found in the web client and server,
   and an order of work. How a native client gets assets is left open.
+- 2026-10-31: every commercial game goes private, not only Cthulhu Wars; the public
+  repository keeps public-domain, openly licensed and the maintainer's own games. Added a
+  proposed sorting of all 26 games for the maintainer to confirm, and fixture games to keep
+  the engine's features tested once the games that exercised them leave.

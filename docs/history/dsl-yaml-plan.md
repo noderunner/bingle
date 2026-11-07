@@ -1,7 +1,8 @@
 # Plan: YAML for game definitions
 
-Status: **planning in progress** (opened 2026-10-28). Initial thoughts written before the
-design discussion, not settled decisions. Nothing is implemented.
+Status: **settled**, ready to implement (opened 2026-10-28, settled 2026-10-31). The
+sections before *Decisions* are the initial thinking, kept as written. Nothing is
+implemented.
 
 ## What was asked for
 
@@ -56,16 +57,59 @@ from the Go structs, which is worth doing whatever we decide because it helps au
 What I would **not** do is change the wire format, board state, or position documents. Those
 are machine-to-machine and JSON is correct there.
 
-## Open questions for the discussion
+## Decisions (settled 2026-10-31)
 
-1. Do the 25 shipped definitions get converted to YAML (a large diff, and git history for the
-   definitions effectively restarts), or does YAML exist only for new and hand-authored games?
-2. Is "YAML in, JSON inside" acceptable, given the hope was to avoid a translation step? My
-   case is that the translation is one library call and it buys us untouched variants and tests.
-3. Which library, and does the auth plan's capability file use the same one? It should.
-4. Shall we generate a JSON Schema regardless, as a smaller independent improvement?
-5. Does anything else move to YAML — tutorial documents, badge definitions, plugin manifests?
-   They are all hand-authored, so probably yes, and that strengthens the dependency's case.
+Two facts changed since the initial thinking: the auth work already made `go.yaml.in/yaml/v3`
+a direct dependency (`internal/auth/caps.go`), so YAML costs no new module; and Cthulhu Wars'
+10,580-line definition is leaving the public repository (see the plugin plan), so the largest
+public definition is a few hundred lines. These become an ADR superseding
+[0002](../decisions/0002-json-over-yaml-for-dsl.md) when the work lands; 0002 itself foresaw
+"a thin YAML→JSON preprocessing step".
+
+1. **YAML is only for authoring.** A YAML definition is turned into JSON as it is loaded, and
+   that is the only place YAML exists. `parse.go`, variant merge patches, the catalog,
+   `/api/game-defs/{id}`, game state, moves and the MCP tools are unchanged and stay JSON.
+   A client never needs a YAML parser.
+2. **Every shipped definition is converted**, in one mechanical commit, with a test that each
+   YAML file produces exactly the JSON of the file it replaces. Definition history restarts at
+   that commit; the old history stays reachable under the deleted `.json` path. Conversion
+   does not wait for the private-build work.
+3. **Anchors and aliases are allowed** within a file. yaml.v3 refuses excessive aliasing;
+   data packs add a size cap on the expanded document.
+4. **Unknown fields are rejected**, in either format, naming the file and line. Today
+   `dsl.Parse` silently ignores a misspelled field. Stray fields this uncovers in shipped
+   definitions are fixed in the same change.
+5. **A JSON Schema is generated from the Go structs** and checked in, so editors complete and
+   check YAML through a `# yaml-language-server: $schema=...` comment. `google/jsonschema-go`
+   is already in the module graph.
+6. **Hand-written documents are YAML; machine-exchanged ones are JSON.** YAML: game
+   definitions, data-pack manifests, tutorial scripts, badge definitions and the capability
+   file (already). JSON: everything on the wire and in the database.
+7. **`bingle dsl convert`** converts a definition either way.
+
+## Includes: one game across several files
+
+Decided 2026-10-31: a large definition should be split across files in a logical way, and
+assembled with includes.
+
+- **An `!include path` tag on any YAML node** replaces that node with the contents of the
+  named file. A list may hold one include per item (`variants: [ !include variants/a.yaml,
+  ... ]`).
+- Paths are relative to the including file and resolved **inside the game's own file system**
+  (its embedded directory, or a data pack's zip). Absolute paths, `..` out of that root and
+  symlinks are refused; cycles are an error; nesting depth and the size of the assembled
+  document are capped. This matters for data packs, which are untrusted.
+- Includes are resolved **before** conversion to JSON, so everything after the loader still
+  sees one document, and `/api/game-defs/{id}` serves the assembled result.
+- Errors name the file and line where the problem is, including inside an included file.
+- JSON definitions do not include; only YAML does.
+- A suggested layout for a large game, a convention rather than a rule: `game.yaml` (identity,
+  players, options, display), `board.yaml`, `pieces.yaml` and `variants/<name>.yaml`.
+
+Which public definitions are worth splitting is decided during conversion; most are under 300
+lines. The case that motivated it is Cthulhu Wars, whose definition is mostly map variants
+(about 7,400 lines) and board (about 2,400): it is split in the private overlay, with the same
+`convert` command and the same include mechanism.
 
 ## Dependencies and cross-plan effects
 
@@ -82,3 +126,7 @@ are machine-to-machine and JSON is correct there.
 - 2026-10-28: opened with initial thoughts. Costs enumerated honestly; recommendation is YAML as
   the authoring surface with JSON as the internal form, chiefly to keep JSON merge patch
   variants and the entire test suite untouched. Planning in progress.
+- 2026-10-31: settled. YAML for authoring only, converted to JSON as it loads; every shipped
+  definition converted; anchors allowed; unknown fields rejected; a generated JSON Schema;
+  hand-written documents in YAML. Added `!include` for splitting large definitions across
+  files. yaml.v3 is already a dependency through the auth work.

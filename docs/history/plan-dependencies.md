@@ -9,7 +9,7 @@ order of work can be chosen deliberately. Provisional: it changes as each plan i
 |---|---|---|
 | [observability-plan.md](observability-plan.md) | **settled**, ready to implement | no |
 | [auth-and-accounts-plan.md](auth-and-accounts-plan.md) | **settled**, ready to implement | — |
-| [dsl-yaml-plan.md](dsl-yaml-plan.md) | planning in progress | no |
+| [dsl-yaml-plan.md](dsl-yaml-plan.md) | **settled**, ready to implement | no |
 | [game-tutorials-plan.md](game-tutorials-plan.md) | planning in progress | no (guests welcome) |
 | [dsl-coverage-audit-plan.md](dsl-coverage-audit-plan.md) | planning in progress | no |
 | [game-plugins-plan.md](game-plugins-plan.md) | questions settled, not started | only for packs |
@@ -87,3 +87,4 @@ The couplings that would cost the most if missed:
 - 2026-10-28: written alongside the seven new plan drafts, to support choosing an order.
 - 2026-10-31: plugins settled; noted that Cthulhu Wars leaves the public repository, which
   the code audit must account for.
+- 2026-10-31: YAML settled; plugins extended to move every commercial game private.
