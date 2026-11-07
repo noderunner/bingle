@@ -242,3 +242,7 @@ of something real, and it is the only way to convert a game with confidence.
   and FreeCell with a patience vocabulary; the other seven games stay in Go. Fist is not
   simultaneous, as the initial thinking assumed. Recommended order: the differential harness, then
   A to C and Blooms. Awaiting the maintainer's review.
+- 2026-11-06: additions A to E are built (ADRs 0115–0120), and Blooms and Onitama are declared beside
+  their rulesets (conversion step 1, #138 and #144). D was narrowed to a deal at the start: draws
+  during play and dice wait for a game that needs them. Addition F has its own plan now,
+  `patience-vocabulary-plan.md`.

@@ -21,5 +21,6 @@ truth, and [decisions/](../decisions/README.md) records what was decided and why
 | [achievements-plan.md](achievements-plan.md) | Initial thoughts on achievements and badges (**in progress**) |
 | [dsl-yaml-plan.md](dsl-yaml-plan.md) | Initial thoughts on YAML for game definitions (**in progress**) |
 | [dsl-coverage-audit-plan.md](dsl-coverage-audit-plan.md) | Initial thoughts on auditing what the DSL can express (**in progress**) |
+| [patience-vocabulary-plan.md](patience-vocabulary-plan.md) | Initial thoughts on a patience vocabulary, the DSL audit's addition F (**in progress**) |
 | [code-and-architecture-audit-plan.md](code-and-architecture-audit-plan.md) | Initial thoughts on a code and architecture audit (**in progress**) |
 | [plan-dependencies.md](plan-dependencies.md) | How the open plans depend on each other, and a provisional order |
