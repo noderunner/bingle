@@ -13,11 +13,12 @@ addPieceShapes(UNIT_ICONS);
 
 export { renderAreaMap } from "./cw-map.js";
 // What game.js draws of the ruleset's view: counters, spellbooks, unit cards and
-// neutral items, the battle theatre and a Great Old One's emergence.
+// neutral items, and its battles and awakenings.
 export { statIcon } from "./cw-icons.js";
 export { spellMark, enterBlock, bookRequirements, abilitiesBlock, unitText, neutralTip } from "./cw-tips.js";
-export { createBattleTheatre } from "./cw-battle.js";
-export { createEmergence, hasEmergence } from "./cw-emerge.js";
+export { battles } from "./cw-view-battles.js";
+// The cults' cards, the round and its Ritual track, units and neutral items.
+export { cultCards } from "./cw-view-cards.js";
 export { lobbyPool } from "./cw-lobby.js";
 export { batchSections, endReason } from "./cw-batches.js";
 export { factionName as pickName, factionColor as pickColor } from "./cw-names.js";
