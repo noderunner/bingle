@@ -168,3 +168,9 @@ Each step is its own pull request, with an ADR where it settles a question:
 - 2026-11-01: opened and settled in discussion with the maintainer, as the foundation for real-time
   tournaments. Vote-kick by more than half; tactical bot, never random; a bot takes the seat when time
   runs out at three or more seats; WebSocket pings; presence merged into connection.
+- 2026-11-01: step 1 built (ADR 0079, branch `clock-fixes`): restart credit on clocks and per-move
+  limits, and the increment. Found along the way: taking a move back must remove the increment it
+  earned, or undoing earns time without limit, and undoing a pie-rule swap left the clocks swapped;
+  both fixed. A move is only accepted from the seat the game waits on and a reaction window names the
+  reacting seat, so decision 19's question is answered for the code as it stands. Decided: the server
+  playing a move for someone earns no increment, and a take-back never runs a clock out.
