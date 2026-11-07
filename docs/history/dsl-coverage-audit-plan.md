@@ -1,8 +1,8 @@
 # Plan: auditing how much of each game the DSL can express
 
-Status: **planning in progress** (opened 2026-10-28). Initial thoughts written before the
-design discussion, not settled decisions. Nothing is implemented. This plan is for an audit, so
-what it mostly needs to settle is the **method and the goal**.
+Status: **planning in progress** (opened 2026-10-28). The goal, the scope and the guideline for
+what belongs in the DSL were settled on 2026-11-06 (*What was decided*, below); the audit itself is
+next. Nothing is implemented.
 
 ## What was asked for
 
@@ -42,6 +42,45 @@ The vocabulary today: action types `place`, `move-stack`, `jump`, `slide`, `leap
 carry limits, forbidden regions, clone distance, infection, gravity, promotion, stacks,
 reserves, cards, regions, square and hex generators, merge-patch variants, the pie rule and
 options.
+
+## What was decided (2026-11-06)
+
+The maintainer's answers to the open questions below. They come before the initial thinking, which
+is kept for its reasoning but loses where it disagrees.
+
+1. **The goal is plugins.** Grow the DSL so that more games can ship as data-only packs, and rank
+   each addition by the games it unlocks. Less Go code is a welcome side effect, not the aim. A game
+   that is mostly declared but keeps a Go hook (the `callback` win rule, say) is still compiled in,
+   so for this goal a game is either fully declared or stays in Go, and the audit says which and why.
+2. **The scope is every game with a Go ruleset except Cthulhu Wars**, the private ones included:
+   Yinsh, Onitama, Hive and Nyet! as well as Blooms, Meridians, Fendo, Mycelium, Fist, Courtfall and
+   Solitaire. A private game that is declared can be a private pack instead of compiled code, and
+   all of them show which additions pay off.
+3. **The line is how common a mechanic is, not a category such as dice or hidden information.**
+   In the maintainer's words: mechanics that are common and used in a lot of games should be
+   expressible in the DSL; those that are more unique, or need more complex logic, are out of
+   scope. Examples given: shuffling a deck and rolling a group of d6, counting 5+ as a hit, are
+   common, so they belong in the DSL. Magic: The Gathering's *scry* (draw X from the top, keep one,
+   put the rest back in any order) and dice-pool manipulation (turning a die to its opposite face,
+   and anything more elaborate) are uncommon, so they belong in Go. It is a guideline, not a
+   precise rule. The audit applies it as two tests:
+   - **Is it common?** A mechanic earns a primitive when it appears in several games, in the
+     catalog or well-known outside it, and can be stated as one rule with a few parameters. One
+     that needs a script of steps stays in Go.
+   - **Is the declaration simpler than the Go?** Being expressible is not enough. When a game's
+     declaration would be larger and harder to follow than its Go ruleset, because it builds a
+     complex game out of simple primitives, Go is the right home even if every mechanic is
+     supported. The audit compares the two for each game, and asks whether someone could check the
+     declaration against the rulebook line by line.
+   Consequences: seeded dice and shuffles are in scope (the engine is already seeded and
+   deterministic), and with shuffled decks the common kinds of hidden information come in too, such
+   as a hand or a face-down pile. Simultaneous secret choice (Fist) is common in card and bluffing
+   games but changes the turn model, so the audit costs it rather than ruling on it now.
+4. **A converted game keeps its Go ruleset for one release**, as the reference for the differential
+   harness (the same legal moves, states and outcomes over a random battery), and a follow-up pull
+   request deletes it.
+5. **Every accepted DSL addition gets an ADR**, since the vocabulary is a public contract for anyone
+   who authors a game; and there is no size cap on the DSL as such: test 1 above is the brake.
 
 ## Initial thinking on the method
 
@@ -121,3 +160,9 @@ of something real, and it is the only way to convert a game with confidence.
   converting anything. Planning in progress.
 - 2026-10-31: noted the plugin decision under question 1: packs are data only, so this
   audit is the only route to an installable game.
+- 2026-11-06: the maintainer settled the goal (plugins), the scope (every Go game but Cthulhu Wars,
+  the private ones too), the guideline for what belongs in the DSL (how common a mechanic is, and a
+  declaration no larger or harder to follow than the Go it replaces), one release of overlap for a
+  converted game, and an ADR per addition. Since the table above was measured, Solitaire (1,657
+  lines of Go) and Mycelium (1,242) have arrived, and Yinsh, Onitama, Hive and Nyet! are headed for
+  the private build. Next: the audit itself, rule by rule.
