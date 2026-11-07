@@ -1,27 +1,10 @@
-// Pictures for the games list for games whose board makes a poor icon: Cthulhu
-// Wars (a world map) and Hive (no board at all). Each is a small SVG built from
-// the pieces the game itself draws.
+// Pictures for the games list for games whose board makes a poor icon: Hive
+// (no board at all) and the card games. Each is a small SVG built from the
+// pieces the game itself draws. A game with a page script draws its own
+// (info.page.listIcon: Cthulhu Wars' world map makes a poor icon too).
 
 import { s } from "./util.js";
-import { glyphShape, pieceShape } from "./render.js";
-
-/** Cthulhu Wars: the sigils of the four core cults. */
-function cthulhuIcon() {
-	const svg = s("svg", { viewBox: "0 0 200 200", role: "img", "aria-label": "Cthulhu Wars: the sigils of Great Cthulhu, the Crawling Chaos, the Black Goat and the Yellow Sign" });
-	svg.append(s("rect", { x: 4, y: 4, width: 192, height: 192, rx: 18, fill: "#1d2a33", stroke: "#8a6a43", "stroke-width": 4 }));
-	const at = [
-		["gc", 54, 54],
-		["cc", 146, 54],
-		["bg", 54, 146],
-		["ys", 146, 146],
-	];
-	for (const [key, x, y] of at) {
-		const g = glyphShape(key, 78, "game-icon-sigil");
-		if (!g) continue;
-		svg.append(s("circle", { cx: x, cy: y, r: 42, fill: "#0e171d", stroke: "#8a6a43", "stroke-width": 2 }), s("g", { transform: `translate(${x} ${y})` }, g));
-	}
-	return svg;
-}
+import { pieceShape } from "./render.js";
 
 /** Hive: a small hive of tiles, the Queen in the middle and some of each insect round her. */
 function hiveIcon() {
@@ -89,7 +72,7 @@ function solitaireIcon() {
 	return svg;
 }
 
-const ICONS = { "cthulhu-wars": cthulhuIcon, hive: hiveIcon, nyet: nyetIcon, solitaire: solitaireIcon };
+const ICONS = { hive: hiveIcon, nyet: nyetIcon, solitaire: solitaireIcon };
 
 /** The icon of a game of the list, or null when its board is the picture. */
 export function gameIcon(id) {

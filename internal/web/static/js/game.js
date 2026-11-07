@@ -16,7 +16,7 @@ import { installTopbar } from "./topbar.js";
 import { mountGameNotify, applyProfileDefault } from "./notify-ui.js";
 import { LAYOUTS, isMobileLayout, isLandscape, layoutChoice, setLayoutChoice, mobileShell, onScreenChange } from "./mobile.js";
 import { lobbyCard } from "./lobby.js";
-import { statIcon } from "./icons.js";
+import { statIcon } from "/static/games/cthulhu-wars/cw-icons.js";
 import { FACTION_KEYS, factionName } from "/static/games/cthulhu-wars/cw-names.js";
 import { spellMark, enterBlock, bookRequirements, abilitiesBlock, unitText, neutralTip } from "/static/games/cthulhu-wars/cw-tips.js";
 import { hoverCard, hideHoverCard } from "./tooltip.js";
