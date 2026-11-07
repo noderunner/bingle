@@ -103,6 +103,11 @@ export class MoveBuilder {
 		return new Set(this.options().filter((o) => o.kind === "piece").map((o) => o.value));
 	}
 
+	/** Cards among the next options: a move card to play (ADR 0120). */
+	nextCards() {
+		return new Set(this.options().filter((o) => o.kind === "card").map((o) => o.value));
+	}
+
 	/** Single-click actions among the next options (e.g. "pass"). */
 	nextActions() {
 		return this.options().filter((o) => o.kind === "action").map((o) => o.value);

@@ -484,6 +484,7 @@ type legalMoveResult struct {
 	Path     []string `json:"path,omitempty"`
 	Drops    []int    `json:"drops,omitempty"`
 	Aim      string   `json:"aim,omitempty"`
+	Card     string   `json:"card,omitempty"`
 }
 
 func legalMoveResults(moves []session.SelectionOption) []legalMoveResult {
@@ -492,7 +493,7 @@ func legalMoveResults(moves []session.SelectionOption) []legalMoveResult {
 		r := legalMoveResult{
 			Notation: lm.Notation, Action: lm.Selection.Action, Piece: lm.Selection.Piece,
 			From: string(lm.Selection.From), To: string(lm.Selection.To), Count: lm.Selection.Count, Drops: lm.Selection.Drops,
-			Aim: string(lm.Selection.Aim),
+			Aim: string(lm.Selection.Aim), Card: lm.Selection.Card,
 		}
 		for _, p := range lm.Selection.Path {
 			r.Path = append(r.Path, string(p))

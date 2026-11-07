@@ -56,6 +56,7 @@ type MoveOutcome struct {
 	Path     []string
 	Drops    []int
 	Aim      string
+	Card     string
 	Notation string
 
 	NextImpulseSeat int
@@ -424,6 +425,7 @@ func (m *Manager) applyAndRecordAs(ctx context.Context, compiled *catalog.Compil
 		Path:        path,
 		Drops:       shownMove.Drops,
 		Aim:         string(shownMove.Aim),
+		Card:        shownMove.Card,
 		Notation:    shownNotation,
 		ImpulseSeat: eventImpulseSeat,
 		GameEnded:   result.GameEnded,
@@ -476,6 +478,7 @@ func (m *Manager) applyAndRecordAs(ctx context.Context, compiled *catalog.Compil
 		Path:            path,
 		Drops:           shownMove.Drops,
 		Aim:             string(shownMove.Aim),
+		Card:            shownMove.Card,
 		Notation:        shownNotation,
 		NextImpulseSeat: result.NextImpulseSeat,
 		GameEnded:       result.GameEnded,

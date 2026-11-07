@@ -504,7 +504,9 @@ type makeMoveRequest struct {
 	Path       []string `json:"path"`
 	Drops      []int    `json:"drops"`
 	Aim        string   `json:"aim"`
-	Notation   string   `json:"notation"`
+	// Card is the move card a card-move plays (ADR 0120).
+	Card     string `json:"card"`
+	Notation string `json:"notation"`
 	// Ply, when given, is the ply the move was made against: it is refused
 	// with 409 if the game has moved on (ADR 0114).
 	Ply *int `json:"ply"`
@@ -543,7 +545,7 @@ func (h *handlers) handleMakeMove(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case strings.TrimSpace(req.Notation) != "":
 		outcome, err = h.mgr.PlayNotationAt(r.Context(), code, req.PlayerName, req.Notation, req.Ply)
-	case strings.TrimSpace(req.Action) != "" || strings.TrimSpace(req.Piece) != "" || req.Count != 0 || len(req.Path) > 0 || strings.TrimSpace(req.Aim) != "":
+	case strings.TrimSpace(req.Action) != "" || strings.TrimSpace(req.Piece) != "" || req.Count != 0 || len(req.Path) > 0 || strings.TrimSpace(req.Aim) != "" || strings.TrimSpace(req.Card) != "":
 		mv := state.Selection{
 			Action: strings.TrimSpace(req.Action),
 			Piece:  strings.TrimSpace(req.Piece),
@@ -552,6 +554,7 @@ func (h *handlers) handleMakeMove(w http.ResponseWriter, r *http.Request) {
 			Count:  req.Count,
 			Drops:  req.Drops,
 			Aim:    board.PositionID(strings.TrimSpace(req.Aim)),
+			Card:   strings.TrimSpace(req.Card),
 		}
 		for _, p := range req.Path {
 			mv.Path = append(mv.Path, board.PositionID(strings.TrimSpace(p)))

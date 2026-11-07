@@ -11,6 +11,23 @@ import (
 
 // The UI can play Onitama: ten pieces, five drawn cards, the arches tinted,
 // and a move built from a card, a piece and a square.
+// onitamaStepJS plays a turn a click at a time: a playable card, then the
+// piece and the square it shows (or the card alone, when nothing can move).
+const onitamaStepJS = `(function () {
+	if (!document.querySelector("#impulse-card.acting")) return "wait";
+	function click(el, what) {
+		el.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+		return what;
+	}
+	var cell = document.querySelector("#board .cell.clickable");
+	if (cell) return click(cell, "cell " + cell.getAttribute("data-position"));
+	var card = document.querySelector("#cards-panel .move-card.playable");
+	if (card) return click(card, "card " + card.getAttribute("data-card"));
+	var submit = document.getElementById("submit-move");
+	if (submit) return click(submit, "submit");
+	return "stuck";
+})()`
+
 func TestWebOnitama_PlayTurnsThroughTheUI(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	var created struct {
@@ -40,7 +57,7 @@ func TestWebOnitama_PlayTurnsThroughTheUI(t *testing.T) {
 	stuck := 0
 	for i := 0; i < 200 && stuck < 40; i++ {
 		var what string
-		if err := chromedp.Run(ctx, chromedp.Evaluate(autoStepJS, &what)); err != nil {
+		if err := chromedp.Run(ctx, chromedp.Evaluate(onitamaStepJS, &what)); err != nil {
 			t.Fatalf("step %d: %v", i, err)
 		}
 		switch what {

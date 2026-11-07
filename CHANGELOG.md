@@ -4,6 +4,15 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.92.0 - 2026-11-06
+
+### Bingle Core 0.92.0
+- **Move cards from a game definition on the page.** A game definition's move cards are drawn as Onitama's always were, each card a grid of the squares it reaches, and the player's own are buttons to play. A definition's tinted regions, such as Onitama's Temple Arches, are marked on the board.
+- For developers: the API's selections, moves and move events carry a move card's `card`, and `make_move` and `POST /games/{code}/moves` take it.
+
+### Onitama 0.2.0
+- **Onitama is now written as a game definition** rather than in code. It plays as before, checked move for move against the old rules over many games. Games in progress are carried over. The history lists the moves played, and the log of what each move did is gone.
+
 ## 0.91.0 - 2026-11-06
 
 ### Bingle Core 0.91.0

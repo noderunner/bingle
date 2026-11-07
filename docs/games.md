@@ -25,7 +25,7 @@ vocabulary and [mcp.md](mcp.md) for the training side (planes, action IDs).
 | **Meridians** (`meridians`) | 0.1.2 | hexagon, 6 and 7 per side | 2 | ruleset (Go) | victory points | `meridians` `meridians-5` `meridians-7` |
 | **Mycelium** (`mycelium-1.0.0`) | 1.0.0 | hexagon, 5 per side | 2 | ruleset (Go) | victory points |  |
 | **Nyet!** (`nyet`) | 0.2.1 | 1×1 squares | 4 | ruleset (Go) | victory points | `nyet` `nyet-2` `nyet-3` `nyet-5` |
-| **Onitama** (`onitama`) | 0.1.2 | 5×5 squares | 2 | ruleset (Go) | victory points |  |
+| **Onitama** (`onitama`) | 0.2.0 | 5×5 squares | 2 | card-move | absent, end/draw, reach |  |
 | **Pente** (`pente`) | 0.3.0 | 13×13 points | 2 | place | end/draw, line, pool |  |
 | **Reversi** (`reversi`) | 0.3.1 | 8×8 squares | 2 | place | end/most |  |
 | **Solitaire** (`solitaire`) | 0.2.1 | 1×1 squares | 1 | ruleset (Go) | victory points | `freecell` `solitaire` `solitaire-draw-3` `spider` `spider-1` `spider-2` |

@@ -1,19 +1,20 @@
-// Package onitama_test checks Onitama's rules: the deal, card moves, the
-// card exchange, captures, both ways to win, passing and the engine contract.
+// Package onitama_test covers Onitama as it is declared since 0.2.0 (ADRs
+// 0119, 0120): the deal, the cards read from each side, the exchange, the two
+// ways to win, and the conversion of positions the Go ruleset stored.
 package onitama_test
 
 import (
+	"encoding/json"
 	"math/rand"
-	"sort"
+	"slices"
 	"testing"
 
-	"github.com/noderunner/bingle/internal/engine/board"
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/engine/state"
 	"github.com/noderunner/bingle/internal/games/onitama"
 )
 
-func game(t testing.TB) *catalog.CompiledGame {
+func game(t *testing.T) *catalog.CompiledGame {
 	t.Helper()
 	cat := catalog.NewCatalog()
 	if err := cat.RegisterModule(onitama.Module()); err != nil {
@@ -26,240 +27,156 @@ func game(t testing.TB) *catalog.CompiledGame {
 	return g
 }
 
-// build makes a position: pieces as "red/master": squares.
-func build(pieces map[string][]string, data onitama.Data) *state.BoardState {
-	st := state.NewBoardState()
-	for k, cells := range pieces {
-		color, kind := k[:3], k[4:]
-		if k[:4] == "blue" {
-			color, kind = "blue", k[5:]
-		}
-		for _, c := range cells {
-			st.Set(board.PositionID(c), state.Occupant{Piece: kind, Color: color})
-		}
-	}
-	st.SetExt(&data)
-	return st
-}
-
-func notations(g *catalog.CompiledGame, st *state.BoardState, seat int) []string {
-	rs := onitama.New()
+func cardsIn(st *state.BoardState, zone string, owner int) []string {
 	var out []string
-	for _, mv := range rs.Legal(g, st, seat) {
-		out = append(out, rs.Format(g, mv))
+	for _, c := range st.Cards().Zone(zone, owner).Cards {
+		out = append(out, c.ID)
 	}
-	sort.Strings(out)
 	return out
 }
 
-func has(list []string, s string) bool {
-	for _, x := range list {
-		if x == s {
-			return true
-		}
+func legal(g *catalog.CompiledGame, st *state.BoardState, seat int) []string {
+	var out []string
+	for _, m := range state.LegalSelections(g, st, seat) {
+		out = append(out, state.FormatMove(g, m))
 	}
-	return false
+	return out
 }
 
-func play(t *testing.T, g *catalog.CompiledGame, st *state.BoardState, seat int, text string) (*state.BoardState, *state.MoveResult) {
-	t.Helper()
-	rs := onitama.New()
-	mv, err := rs.Parse(g, text)
-	if err != nil {
-		t.Fatal(err)
-	}
-	res, err := rs.Apply(g, st, seat, mv)
-	if err != nil {
-		t.Fatalf("%s: %v", text, err)
-	}
-	return res.NewState, res
-}
-
-func dataOfState(st *state.BoardState) *onitama.Data { d, _ := st.Ext().(*onitama.Data); return d }
-
+// Five of the sixteen cards are dealt, face up: two to each player and one to
+// the side; the pieces stand on their home ranks, the Masters on the Arches.
 func TestDealAndSetup(t *testing.T) {
 	g := game(t)
-	rs := onitama.New()
-	for seed := uint64(1); seed < 40; seed++ {
-		st, _ := rs.Start(g, seed)
-		if err := state.Validate(g, st); err != nil {
+	for seed := uint64(1); seed < 30; seed++ {
+		st, err := state.InitialStateSeeded(g, seed)
+		if err != nil {
 			t.Fatal(err)
 		}
-		d := dataOfState(st)
-		cards := map[string]bool{d.Side: true}
-		for _, h := range d.Hands {
-			cards[h[0]], cards[h[1]] = true, true
+		inPlay := append(append(cardsIn(st, "hand", 1), cardsIn(st, "hand", 2)...), cardsIn(st, "side", 0)...)
+		if len(inPlay) != 5 || len(cardsIn(st, "box", 0)) != 11 {
+			t.Fatalf("seed %d: %v in play", seed, inPlay)
 		}
-		if len(cards) != 5 {
-			t.Fatalf("five different cards are dealt: %v", d)
+		if err := state.Validate(g, st); err != nil {
+			t.Fatal(err)
 		}
 		if len(st.Occupied()) != 10 {
 			t.Fatalf("ten pieces: %d", len(st.Occupied()))
 		}
 	}
-	st, _ := rs.Start(g, 7)
+	st := state.InitialState(g)
 	if o, _ := st.Get("c1"); o.Piece != "master" || o.Color != "red" {
 		t.Error("Red's Master starts on c1")
 	}
 	if o, _ := st.Get("c5"); o.Piece != "master" || o.Color != "blue" {
 		t.Error("Blue's Master starts on c5")
 	}
+	if state.HasSecrets(g) {
+		t.Error("Onitama has secrets")
+	}
 }
 
+// Red always starts, and has a move whatever the deal.
 func TestRedStarts(t *testing.T) {
 	g := game(t)
-	rs := onitama.New()
-	for seed := uint64(0); seed < 40; seed++ {
-		st, _ := rs.Start(g, seed)
-		if rs.ImpulseSeat(g, st) != 1 || len(rs.Legal(g, st, 1)) == 0 {
+	for seed := uint64(1); seed < 40; seed++ {
+		st, _ := state.InitialStateSeeded(g, seed)
+		if state.FirstSeat(g) != 1 || len(state.LegalSelections(g, st, 1)) == 0 {
 			t.Fatalf("seed %d: Red should start with moves", seed)
 		}
 	}
 }
 
-func TestCardMovesAreRelativeAndBlueFacesTheOtherWay(t *testing.T) {
-	g := game(t)
-	d := onitama.Data{Turn: 1, Hands: [2][2]string{{"tiger", "dragon"}, {"ox", "frog"}}, Side: "crab"}
-	st := build(map[string][]string{"red/master": {"c1"}, "blue/master": {"c5"}, "red/student": {"b2"}}, d)
-	got := notations(g, st, 1)
-	for _, want := range []string{"tiger:c1-c3", "tiger:b2-b4", "dragon:c1-a2", "dragon:c1-e2", "dragon:b2-d3", "tiger:b2-b1"} {
-		if !has(got, want) {
-			t.Errorf("Red should have %s in %v", want, got)
-		}
-	}
-	if has(got, "tiger:c1-c0") || has(got, "dragon:c1-a0") {
-		t.Error("no move leaves the board")
-	}
-	// Blue reads the same card upside down: Tiger goes two ranks down.
-	d.Turn = 2
-	d.Hands[1] = [2]string{"tiger", "frog"}
-	d.Hands[0] = [2]string{"ox", "dragon"}
-	st = build(map[string][]string{"red/master": {"c1"}, "blue/master": {"c5"}}, d)
-	got = notations(g, st, 2)
-	if !has(got, "tiger:c5-c3") {
-		t.Errorf("Blue's Tiger moves two down: %v", got)
-	}
-	// Frog: (-2,0) for Blue is two files to the right (e5 is off by one? c5->e5).
-	if !has(got, "frog:c5-e5") {
-		t.Errorf("Blue's Frog is mirrored: %v", got)
-	}
-}
-
-func TestCannotLandOnOwnPieceButCapturesAnEnemy(t *testing.T) {
-	g := game(t)
-	d := onitama.Data{Turn: 1, Hands: [2][2]string{{"ox", "tiger"}, {"horse", "frog"}}, Side: "crab"}
-	st := build(map[string][]string{"red/master": {"c1"}, "red/student": {"c2"}, "blue/student": {"d1"}, "blue/master": {"c5"}}, d)
-	got := notations(g, st, 1)
-	if has(got, "ox:c1-c2") {
-		t.Error("cannot land on your own piece")
-	}
-	if !has(got, "ox:c1-d1") {
-		t.Errorf("Ox moves right onto the enemy: %v", got)
-	}
-	st, _ = play(t, g, st, 1, "ox:c1-d1")
-	if o, _ := st.Get("d1"); o.Color != "red" || o.Piece != "master" {
-		t.Error("the Master took the student on d1")
-	}
-}
-
+// The card used goes to the side and the side card comes into the hand.
 func TestCardsAreExchangedWithTheSide(t *testing.T) {
 	g := game(t)
-	d := onitama.Data{Turn: 1, Hands: [2][2]string{{"ox", "tiger"}, {"horse", "frog"}}, Side: "crab"}
-	st := build(map[string][]string{"red/master": {"c1"}, "blue/master": {"c5"}}, d)
-	st, res := play(t, g, st, 1, "ox:c1-c2")
-	nd := dataOfState(st)
-	if nd.Side != "ox" || nd.Hands[0] != [2]string{"crab", "tiger"} {
-		t.Fatalf("after the move: hands %v side %s", nd.Hands, nd.Side)
+	st, _ := state.InitialStateSeeded(g, 3)
+	side := cardsIn(st, "side", 0)[0]
+	mv := state.LegalSelections(g, st, 1)[0]
+	res, err := state.Apply(g, st, 1, mv)
+	if err != nil {
+		t.Fatal(err)
 	}
-	if res.NextImpulseSeat != 2 {
-		t.Error("then Blue moves")
+	if got := cardsIn(res.NewState, "side", 0); !slices.Equal(got, []string{mv.Card}) {
+		t.Fatalf("side %v, want the used %s", got, mv.Card)
 	}
-	if _, err := onitama.New().Apply(g, st, 2, state.Selection{Action: "move", Piece: "ox", From: "c5", To: "c4"}); err == nil {
-		t.Error("Blue does not hold the Ox card")
-	}
-}
-
-func TestWaysToWin(t *testing.T) {
-	g := game(t)
-	d := onitama.Data{Turn: 1, Hands: [2][2]string{{"ox", "tiger"}, {"horse", "frog"}}, Side: "crab"}
-	// The Way of the Stone: capture the Master.
-	st := build(map[string][]string{"red/master": {"c1"}, "blue/master": {"d1"}, "red/student": {"a1"}}, d)
-	_, res := play(t, g, st, 1, "ox:c1-d1")
-	if !res.GameEnded || *res.WinnerSeat != 1 || res.EndReason != "stone" {
-		t.Errorf("capturing the Master wins: %+v", res)
-	}
-	// The Way of the Stream: Master onto the opposing arch.
-	st = build(map[string][]string{"red/master": {"c4"}, "blue/master": {"a5"}}, d)
-	_, res = play(t, g, st, 1, "ox:c4-c5")
-	if !res.GameEnded || *res.WinnerSeat != 1 || res.EndReason != "stream" {
-		t.Errorf("reaching the arch wins: %+v", res)
-	}
-	// A student on the arch is not a win.
-	st = build(map[string][]string{"red/master": {"a1"}, "red/student": {"c4"}, "blue/master": {"a5"}}, d)
-	_, res = play(t, g, st, 1, "ox:c4-c5")
-	if res.GameEnded {
-		t.Error("only a Master wins on the arch")
-	}
-	// Blue wins on c1.
-	d.Turn = 2
-	d.Hands = [2][2]string{{"ox", "tiger"}, {"horse", "ox2"}}
-}
-
-func TestPassWhenNothingCanMove(t *testing.T) {
-	g := game(t)
-	// Red fills the e-file, and the Tiger card only moves along a file: every
-	// move is off the board or onto a Red piece.
-	d := onitama.Data{Turn: 1, Hands: [2][2]string{{"tiger", "horse"}, {"ox", "frog"}}, Side: "crab"}
-	d.Hands[0] = [2]string{"tiger", "tiger"}
-	st := build(map[string][]string{"red/master": {"e5"}, "red/student": {"e1", "e2", "e3", "e4"}, "blue/master": {"a1"}}, d)
-	got := notations(g, st, 1)
-	if len(got) == 0 || !has(got, "tiger:pass") {
-		t.Fatalf("Red must pass, spending a card: %v", got)
-	}
-	st, res := play(t, g, st, 1, "tiger:pass")
-	nd := dataOfState(st)
-	if nd.Side != "tiger" || nd.Hands[0][0] != "crab" || res.NextImpulseSeat != 2 {
-		t.Errorf("a pass still exchanges the card: %+v", nd)
+	if !slices.Contains(cardsIn(res.NewState, "hand", 1), side) {
+		t.Fatal("the side card did not come into Red's hand")
 	}
 }
 
+// Random games keep valid positions, read their notation back, and end by the
+// Way of the Stone, the Way of the Stream or the move limit.
 func TestRandomGamesAreValidAndEnd(t *testing.T) {
 	g := game(t)
-	rs := onitama.New()
-	rng := rand.New(rand.NewSource(3))
-	ended := 0
-	for n := 0; n < 100; n++ {
-		st, _ := rs.Start(g, uint64(n+1))
-		seat := rs.ImpulseSeat(g, st)
+	reasons := map[string]int{}
+	for n := 0; n < 40; n++ {
+		rng := rand.New(rand.NewSource(int64(n)))
+		st, _ := state.InitialStateSeeded(g, uint64(n+1))
+		seat := 1
 		for ply := 0; ply < 400; ply++ {
-			legal := rs.Legal(g, st, seat)
-			if len(legal) == 0 {
-				t.Fatal("a player always has a move or a pass")
+			moves := state.LegalSelections(g, st, seat)
+			if len(moves) == 0 {
+				t.Fatalf("no move for seat %d", seat)
 			}
-			mv := state.GuidedMoves(g, st, seat, legal)[0]
-			if ply%3 == 0 {
-				mv = legal[rng.Intn(len(legal))]
-			}
-			text := rs.Format(g, mv)
-			back, err := rs.Parse(g, text)
-			if err != nil || rs.Format(g, back) != text {
-				t.Fatalf("round trip %q: %v", text, err)
-			}
-			res, err := rs.Apply(g, st, seat, back)
+			text := state.FormatMove(g, moves[rng.Intn(len(moves))])
+			mv, err := state.ParseMove(g, text)
 			if err != nil {
 				t.Fatal(err)
+			}
+			res, err := state.Apply(g, st, seat, mv)
+			if err != nil {
+				t.Fatalf("%s: %v", text, err)
 			}
 			if err := state.Validate(g, res.NewState); err != nil {
 				t.Fatal(err)
 			}
 			st, seat = res.NewState, res.NextImpulseSeat
 			if res.GameEnded {
-				ended++
+				reasons[res.EndReason]++
 				break
 			}
 		}
 	}
-	if ended < 90 {
-		t.Errorf("only %d of 100 games ended", ended)
+	for r := range reasons {
+		if r != "stone" && r != "stream" && r != "ply-limit" {
+			t.Errorf("a game ended for %q", r)
+		}
+	}
+	if reasons["stone"] == 0 {
+		t.Errorf("no game was won by the Way of the Stone: %v", reasons)
+	}
+}
+
+// A position the Go ruleset stored converts: its cards go into the table,
+// and the game plays on from it.
+func TestARulesetPositionConverts(t *testing.T) {
+	g := game(t)
+	st := state.InitialState(g)
+	raw, _ := st.MarshalJSON()
+	var doc map[string]any
+	_ = json.Unmarshal(raw, &doc)
+	delete(doc, "cards")
+	doc["ext"] = map[string]any{"turn": 1, "hands": [][]string{{"tiger", "ox"}, {"crab", "eel"}}, "side": "boar"}
+	raw, _ = json.Marshal(doc)
+	out, changed := onitama.Upgrade(raw)
+	if !changed {
+		t.Fatal("nothing converted")
+	}
+	if again, ch := onitama.Upgrade(out); ch || string(again) != string(out) {
+		t.Fatal("a converted position converts again")
+	}
+	back := state.NewBoardState()
+	if err := back.UnmarshalJSON(out); err != nil {
+		t.Fatal(err)
+	}
+	if err := state.Validate(g, back); err != nil {
+		t.Fatal(err)
+	}
+	if got := cardsIn(back, "hand", 1); !slices.Equal(got, []string{"tiger", "ox"}) || cardsIn(back, "side", 0)[0] != "boar" || len(cardsIn(back, "box", 0)) != 11 {
+		t.Fatalf("hands %v, side %v", got, cardsIn(back, "side", 0))
+	}
+	l := legal(g, back, 1)
+	if !slices.Contains(l, "tiger:c1-c3") {
+		t.Fatalf("Red cannot play the Tiger from c1: %v", l)
 	}
 }

@@ -197,6 +197,10 @@ type ActionDTO struct {
 	Source string `json:"source,omitempty"`
 	// Impulse is what the player is asked next, once they have chosen this action.
 	Impulse string `json:"impulse,omitempty"`
+	// Hand and PassOn are a card-move's zones: where the mover's cards are,
+	// and where a card played goes (ADR 0120).
+	Hand   string `json:"hand,omitempty"`
+	PassOn string `json:"pass_on,omitempty"`
 }
 
 // OpeningDTO describes the opening phase.
@@ -424,12 +428,12 @@ func buildGameInfo(cg *catalog.CompiledGame) GameInfo {
 	// Actions.
 	for _, a := range cg.Actions {
 		info.Actions = append(info.Actions, ActionDTO{
-			ID: a.ID, Type: a.Type, Label: a.Label, Pieces: a.Pieces, CarryLimit: a.CarryLimit,
+			ID: a.ID, Type: a.Type, Label: a.Label, Pieces: a.Pieces, CarryLimit: a.CarryLimit, Hand: a.Hand, PassOn: a.PassOn,
 		})
 	}
 	info.SampleView = state.SampleOf(cg)
-	if len(cg.EndOfTurn) > 0 {
-		// A declared game's end_of_turn tints are drawn from its legend.
+	if def.Display != nil {
+		// A declared game's tints (end_of_turn, regions) are drawn from its legend.
 		info.Display = def.Display
 	}
 	if ri, ok := state.DescribeRuleset(cg); ok {
@@ -680,6 +684,8 @@ type CardTypeDTO struct {
 	Text    string   `json:"text,omitempty"`
 	Symbols []string `json:"symbols,omitempty"`
 	Tags    []string `json:"tags,omitempty"`
+	// Moves are a move card's [right, forward] offsets (ADR 0120).
+	Moves [][2]int `json:"moves,omitempty"`
 }
 
 func cardsDTO(cg *catalog.CompiledGame) *CardsDTO {
@@ -698,7 +704,7 @@ func cardsDTO(cg *catalog.CompiledGame) *CardsDTO {
 	sort.Strings(ids)
 	for _, id := range ids {
 		t := cc.Types[id]
-		out.Types = append(out.Types, CardTypeDTO{ID: t.ID, Suit: t.Suit, Rank: t.Rank, Label: t.Label, Value: t.Value, Text: t.Text, Symbols: t.Symbols, Tags: t.Tags})
+		out.Types = append(out.Types, CardTypeDTO{ID: t.ID, Suit: t.Suit, Rank: t.Rank, Label: t.Label, Value: t.Value, Text: t.Text, Symbols: t.Symbols, Tags: t.Tags, Moves: t.Moves})
 	}
 	return out
 }

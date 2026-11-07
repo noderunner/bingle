@@ -85,6 +85,7 @@ func registerTools(mcpServer *server.MCPServer, mgr *session.Manager) {
 			mcp.WithArray("path", mcp.Description("Squares dropped onto in order, for structured stack moves."), mcp.WithStringItems()),
 			mcp.WithArray("drops", mcp.Description("Pieces dropped on each path square, for structured stack moves."), mcp.WithNumberItems()),
 			mcp.WithString("aim", mcp.Description("For compound moves (Amazons): the square the follow-up shot lands on, after from/to.")),
+			mcp.WithString("card", mcp.Description("For move cards (Onitama): the card played, with from/to.")),
 			mcp.WithNumber("ply", mcp.Description("The ply this move was made against (from list_selections): it is refused if the game has moved on since.")),
 		),
 		handleMakeMove(mgr),
@@ -408,12 +409,13 @@ func handleMakeMove(mgr *session.Manager) server.ToolHandlerFunc {
 		count := request.GetInt("count", 0)
 		path := request.GetStringSlice("path", nil)
 		aim := strings.TrimSpace(request.GetString("aim", ""))
+		card := strings.TrimSpace(request.GetString("card", ""))
 
 		var outcome session.MoveOutcome
 		switch {
 		case notation != "":
 			outcome, err = mgr.PlayNotationAt(ctx, roomCode, playerName, notation, plyArg(request))
-		case action != "" || piece != "" || count != 0 || len(path) > 0 || aim != "":
+		case action != "" || piece != "" || count != 0 || len(path) > 0 || aim != "" || card != "":
 			mv := state.Selection{
 				Action: action,
 				Piece:  piece,
@@ -422,6 +424,7 @@ func handleMakeMove(mgr *session.Manager) server.ToolHandlerFunc {
 				Count:  count,
 				Drops:  request.GetIntSlice("drops", nil),
 				Aim:    board.PositionID(aim),
+				Card:   card,
 			}
 			for _, p := range path {
 				mv.Path = append(mv.Path, board.PositionID(strings.TrimSpace(p)))

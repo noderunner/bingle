@@ -35,6 +35,7 @@ type moveEventData struct {
 	Path        []string `json:"path,omitempty"`
 	Drops       []int    `json:"drops,omitempty"`
 	Aim         string   `json:"aim,omitempty"`
+	Card        string   `json:"card,omitempty"`
 	Notation    string   `json:"notation,omitempty"`
 	ImpulseSeat *int     `json:"impulse_seat"`
 	GameEnded   bool     `json:"game_ended"`

@@ -981,6 +981,16 @@ function passCostsPower(id) {
 	return id === "pass" && !inAnalysis() && !S.tut && !!seatGlyph(actingSeat()) && powerOf(actingSeat()) > 0;
 }
 
+/** Plays a move card of a declared game (ADR 0120): the first gesture of its move. */
+function chooseCard(id) {
+	if (!actingSeat()) return;
+	if (S.tut && !tutorialAllows("card", id)) return;
+	const b = activeBuilder();
+	if (!b.nextCards().has(id)) return;
+	b.push("card", id);
+	afterBuilderChange();
+}
+
 function chooseAction(id) {
 	if (!actingSeat()) return;
 	if (S.tut && !tutorialAllows("action", id)) return;
@@ -2397,6 +2407,7 @@ function genericActingImpulse(b) {
 		}
 		return hasPos ? "Choose a highlighted square." : "Continue your move.";
 	}
+	if (opts.some((o) => o.kind === "card")) return "Choose a card to play.";
 	if (openingActive() && S.info.opening.owner === "opponent") return "Opening: place a flat stone of your opponent’s color on any square.";
 	const placeOnly = placeOnlyImpulse();
 	if (placeOnly) return placeOnly;
@@ -4275,14 +4286,38 @@ function termsBoard(v, ctx) {
 	return h("div", { class: "ct-grid-wrap", id: "terms-board" }, h("div", { class: "ct-round small muted" }, `Round ${v.round} of ${v.rounds}`), choiceGrid(v.grid, ctx));
 }
 
+/**
+ * The move cards of a declared game (ADR 0120), shaped as a ruleset's view
+ * gives them: each seat's hand and the card passed on, with their moves.
+ */
+function declaredMoveCards() {
+	if (isRuleset() || !S.info.cards) return null;
+	const act = (S.info.actions || []).find((a) => a.type === "card-move");
+	if (!act) return null;
+	const zones = ((currentState() || {}).cards || {}).zones || {};
+	const types = new Map((S.info.cards.types || []).map((t) => [t.id, t]));
+	const card = (c) => {
+		const t = types.get(String(c.id).split("#")[0]) || {};
+		return { id: c.id, name: t.label || c.id, moves: t.moves || [] };
+	};
+	const pile = (key) => ((zones[key] || {}).cards || []).filter((c) => c.id).map(card);
+	const hands = {};
+	for (const sd of S.info.seats) hands[String(sd.seat)] = pile(`${act.hand}:${sd.seat}`);
+	return { hands, side: pile(act.pass_on)[0] || null };
+}
+
 function cardsPanel() {
 	const v = rulesetView();
-	if (!v || !v.cards) return null;
+	const declared = v && v.cards ? null : declaredMoveCards();
+	if (!(v && v.cards) && !declared) return null;
+	const cards = declared || v.cards;
 	const seats = S.game.seats || [];
-	const mover = v.impulse_seat || 0;
+	const mover = declared ? S.game.impulse_seat || 0 : v.impulse_seat || 0;
 	const b = actingSeat() ? activeBuilder() : null;
-	const picked = b && b.gestures[0] && b.gestures[0].kind === "action" ? b.gestures[0].value : null;
-	const playable = b ? new Set(b.nextActions()) : new Set();
+	const first = b && b.gestures[0];
+	// A ruleset's card is the action card-<id>; a declared game's is a card gesture.
+	const picked = first && first.kind === "action" ? first.value : first && first.kind === "card" ? `card-${first.value}` : null;
+	const playable = b ? new Set(declared ? [...b.nextCards()].map((id) => `card-${id}`) : b.nextActions()) : new Set();
 	const grid = (card, seat) => {
 		const g = h("span", { class: "card-grid", "aria-hidden": "true" });
 		const marks = new Set();
@@ -4306,7 +4341,7 @@ function cardsPanel() {
 		const label = h("span", { class: "card-name" }, card.name);
 		const attrs = { class: "move-card" + (can ? " playable" : "") + (picked === id ? " chosen" : ""), "data-card": card.id, title: card.name };
 		if (can) {
-			return h("button", { type: "button", ...attrs, onclick: () => chooseAction(id) }, grid(card, seat), label);
+			return h("button", { type: "button", ...attrs, onclick: () => (declared ? chooseCard(card.id) : chooseAction(id)) }, grid(card, seat), label);
 		}
 		return h("span", attrs, grid(card, seat), label);
 	};
@@ -4319,8 +4354,8 @@ function cardsPanel() {
 	};
 	const name = (seat) => ((seats.find((x) => x.seat === seat) || {}).label || `Seat ${seat}`);
 	for (const seat of [2, 1]) {
-		panel.append(group(`${name(seat)}'s cards`, v.cards.hands[String(seat)] || [], seat, mover === seat, mover === seat && seat === actingSeat()));
-		if (seat === 2) panel.append(group("Next card", [v.cards.side], mover || 1, false, false));
+		panel.append(group(`${name(seat)}'s cards`, cards.hands[String(seat)] || [], seat, mover === seat, mover === seat && seat === actingSeat()));
+		if (seat === 2 && cards.side) panel.append(group("Next card", [cards.side], mover || 1, false, false));
 	}
 	return panel;
 }
@@ -5405,6 +5440,9 @@ function describeSteps(steps) {
 	for (const st of steps) {
 		if (st.kind === "piece") {
 			parts.push(pieceLook(st.value).label);
+		} else if (st.kind === "card") {
+			const t = ((S.info.cards || {}).types || []).find((x) => x.id === String(st.value).split("#")[0]);
+			parts.push(t ? t.label : st.value);
 		} else if (st.kind === "action") {
 			const def = actionDef(st.value);
 			parts.push(def ? def.label : st.value);

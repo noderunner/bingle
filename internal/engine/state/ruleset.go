@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math/rand"
 
+	"github.com/noderunner/bingle/internal/engine/board"
 	"github.com/noderunner/bingle/internal/engine/catalog"
 )
 
@@ -455,12 +456,31 @@ func Public(game *catalog.CompiledGame, st *BoardState, viewer int) *BoardState 
 }
 
 // withTints gives a declared game's position the cells its end_of_turn
-// effects tint, under ext.tints, worked out and never stored (ADR 0116).
+// effects tint, and the regions its display tints by name, under ext.tints,
+// worked out and never stored (ADR 0116).
 func withTints(game *catalog.CompiledGame, st *BoardState) *BoardState {
 	if st == nil || st.ext != nil {
 		return st
 	}
 	tints := EndOfTurnTints(game, st)
+	// A tint named after a board region marks it (Onitama's Temple Arches);
+	// an end_of_turn tint on the same cell is drawn over it.
+	if d := game.Definition.Display; d != nil {
+		for key := range d.Tints {
+			cells, ok := game.Board.Region(key)
+			if !ok {
+				continue
+			}
+			if tints == nil {
+				tints = map[board.PositionID]string{}
+			}
+			for _, c := range cells {
+				if _, set := tints[c]; !set {
+					tints[c] = key
+				}
+			}
+		}
+	}
 	if tints == nil {
 		return st
 	}

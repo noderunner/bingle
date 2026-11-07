@@ -30,12 +30,3 @@ var moveCards = []Card{
 	{"eel", "Eel", [][2]int{{-1, 1}, {-1, -1}, {1, 0}}, "blue"},
 	{"cobra", "Cobra", [][2]int{{-1, 0}, {1, 1}, {1, -1}}, "red"},
 }
-
-func cardByID(id string) (Card, bool) {
-	for _, c := range moveCards {
-		if c.ID == id {
-			return c, true
-		}
-	}
-	return Card{}, false
-}

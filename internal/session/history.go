@@ -29,6 +29,7 @@ type MoveRecord struct {
 	Path      []string
 	Drops     []int
 	Aim       string
+	Card      string
 	Notation  string
 	CreatedAt string
 	// Auto: the server played it for the seat (an auto-passed reaction).
@@ -92,7 +93,7 @@ func (m *Manager) ListMoves(ctx context.Context, roomCode string, sinceSeq int) 
 		if mv.MoveJSON != "" {
 			var sm state.Selection
 			if err := json.Unmarshal([]byte(mv.MoveJSON), &sm); err == nil {
-				rec.Action, rec.Piece, rec.Count, rec.Drops, rec.Aim = sm.Action, sm.Piece, sm.Count, sm.Drops, string(sm.Aim)
+				rec.Action, rec.Piece, rec.Count, rec.Drops, rec.Aim, rec.Card = sm.Action, sm.Piece, sm.Count, sm.Drops, string(sm.Aim), sm.Card
 				for _, p := range sm.Path {
 					rec.Path = append(rec.Path, string(p))
 				}

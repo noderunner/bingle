@@ -21,6 +21,7 @@ type Move struct {
 	Path     []string `json:"path,omitempty"`
 	Drops    []int    `json:"drops,omitempty"`
 	Aim      string   `json:"aim,omitempty"`
+	Card     string   `json:"card,omitempty"`
 	Notation string   `json:"notation,omitempty"`
 
 	CreatedAt string `json:"created_at,omitempty"`
@@ -72,7 +73,7 @@ func MovesByImpulse(recs []session.MoveRecord, sincePly int) []Move {
 func MoveFromOutcome(o session.MoveOutcome) Move {
 	return Move{
 		Seq: o.Ply, Seat: o.Seat, Color: o.Color, From: o.From, To: o.To, Captured: o.Captured,
-		Action: o.Action, Piece: o.Piece, Count: o.Count, Path: o.Path, Drops: o.Drops, Aim: o.Aim, Notation: o.Notation,
+		Action: o.Action, Piece: o.Piece, Count: o.Count, Path: o.Path, Drops: o.Drops, Aim: o.Aim, Card: o.Card, Notation: o.Notation,
 		Auto: o.Auto, AutoPlay: o.AutoPlay, Locked: o.Locked, Ply: o.Ply,
 	}
 }
@@ -93,7 +94,7 @@ func MovesFromOutcomes(os []session.MoveOutcome) []Move {
 func MoveFromRecord(rec session.MoveRecord) Move {
 	return Move{
 		Seq: rec.Seq, Seat: rec.Seat, Color: rec.Color, From: rec.From, To: rec.To, Captured: rec.Captured,
-		Action: rec.Action, Piece: rec.Piece, Count: rec.Count, Path: rec.Path, Drops: rec.Drops, Aim: rec.Aim, Notation: rec.Notation,
+		Action: rec.Action, Piece: rec.Piece, Count: rec.Count, Path: rec.Path, Drops: rec.Drops, Aim: rec.Aim, Card: rec.Card, Notation: rec.Notation,
 		CreatedAt: rec.CreatedAt, Auto: rec.Auto, AutoPlay: rec.AutoPlay, Locked: rec.Locked, Ply: rec.Ply,
 	}
 }
