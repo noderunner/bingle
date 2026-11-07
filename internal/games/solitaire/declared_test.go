@@ -1,8 +1,9 @@
 package solitaire
 
 import (
-	"encoding/json"
 	"fmt"
+	"io/fs"
+	"os"
 	"slices"
 	"strings"
 	"testing"
@@ -14,77 +15,32 @@ import (
 	"github.com/noderunner/bingle/tests/difftest"
 )
 
-// The patience vocabulary (ADR 0122) against the ruleset it is to replace:
-// each of Solitaire's patience games, declared, plays exactly as the ruleset
-// does over a random battery.
+// Step 1 of converting Solitaire's games of patience to a declaration
+// (docs/dsl.md, "Converting a Go ruleset"): declared.yaml, which only this
+// test compiles, plays each of them exactly as the ruleset does over a random
+// battery, hints included.
 
-// patienceOf is the patience block of each of the ruleset's games.
-var patienceOf = map[string]map[string]any{
-	"solitaire":        klondike(1),
-	"solitaire-draw-3": klondike(3),
-	"spider":           spider(),
-	"spider-2":         spider(),
-	"spider-1":         spider(),
-	"freecell": {
-		"columns": map[string]any{"count": 8, "deal": map[string]any{"sizes": []int{7, 7, 7, 7, 6, 6, 6, 6}, "down": 0},
-			"build": map[string]any{"suit": "alternate"}, "lift_limit": "cells"},
-		"foundations": map[string]any{"count": 4},
-		"cells":       4,
-		"finish":      true,
-	},
-}
-
-func klondike(draw int) map[string]any {
-	return map[string]any{
-		"columns": map[string]any{"count": 7, "deal": map[string]any{"sizes": []int{1, 2, 3, 4, 5, 6, 7}},
-			"build": map[string]any{"suit": "alternate"}, "empty": "king"},
-		"foundations": map[string]any{"count": 4, "back": true},
-		"stock":       map[string]any{"draw": draw, "to": "waste", "redeals": "unlimited"},
-		"finish":      true,
-	}
-}
-
-func spider() map[string]any {
-	return map[string]any{
-		"columns": map[string]any{"count": 10, "deal": map[string]any{"sizes": []int{6, 6, 6, 6, 5, 5, 5, 5, 5, 5}}, "lift": "same-suit"},
-		"stock":   map[string]any{"deal": "row", "columns": "all", "unless_empty": true},
-		"off":     map[string]any{"run": "king-to-ace", "suit": "same"},
-	}
-}
-
-// declared turns each of the ruleset's games into a declaration.
+// declared compiles declared.yaml with its variants, by id.
 func declared(t *testing.T) map[string]*catalog.CompiledGame {
 	t.Helper()
-	docs, err := dsl.ExpandVariants(definition())
+	def, err := dsl.Load(os.DirFS("."), "declared.yaml")
 	if err != nil {
 		t.Fatal(err)
 	}
+	guide, err := fs.Sub(guideFS, "guide")
+	if err != nil {
+		t.Fatal(err)
+	}
+	cat := catalog.NewCatalog()
+	if err := cat.RegisterModule(catalog.Module{ID: "solitaire", Definition: def, Assets: guide}); err != nil {
+		t.Fatal(err)
+	}
 	out := map[string]*catalog.CompiledGame{}
-	for _, doc := range docs {
-		var d map[string]any
-		if err := json.Unmarshal(doc, &d); err != nil {
-			t.Fatal(err)
-		}
-		id := d["id"].(string)
-		block, ok := patienceOf[id]
-		if !ok {
-			continue // Bowling
-		}
-		delete(d, "engine")
-		delete(d, "params")
-		delete(d, "variants")
-		d["patience"] = block
-		d["win_condition"] = map[string]any{"type": "patience"}
-		raw, err := json.Marshal(d)
-		if err != nil {
-			t.Fatal(err)
-		}
-		cat := catalog.NewCatalog()
-		if err := cat.Register(id, raw, nil); err != nil {
-			t.Fatalf("%s: %v", id, err)
-		}
-		g, _ := cat.Get(id)
-		out[id] = g
+	for _, g := range cat.List() {
+		out[g.Definition.ID] = g
+	}
+	if len(out) != 6 {
+		t.Fatalf("the declaration has %d games, want Solitaire's six", len(out))
 	}
 	return out
 }
@@ -126,7 +82,7 @@ func rulesetTable(st *state.BoardState) string {
 
 func declaredTable(st *state.BoardState) string { return table(st.Cards()) }
 
-func TestTheVocabularyPlaysAsTheRuleset(t *testing.T) {
+func TestTheDeclarationPlaysAsTheRuleset(t *testing.T) {
 	ref := catalog.NewCatalog()
 	if err := ref.RegisterModule(Module()); err != nil {
 		t.Fatal(err)
