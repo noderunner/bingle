@@ -22,6 +22,7 @@ import { cardTable, choiceGrid, hideCardZoom } from "./cards.js";
 import { solitaireTable } from "./solitaire.js";
 import { rulesIcon } from "./ui-icons.js";
 import { choiceIcon } from "./choice-icons.js";
+import { statIcon as plainStatIcon } from "./stat-icons.js";
 import { animalIcon, animalOf } from "./animals.js";
 import { themesFor, themeById } from "./themes.js";
 import { useCardSet } from "./card-sets.js";
@@ -634,7 +635,8 @@ function isAreaMap() {
 // awakenings). A game without them draws its view without these parts.
 const page = () => (S.info && S.info.page) || {};
 const ask = (name, fallback) => (...args) => (page()[name] ? page()[name](...args) : fallback);
-const statIcon = ask("statIcon", null);
+// A counter's pictogram is the game's when it draws one, else every game's.
+const statIcon = (kind, label, px) => (page().statIcon && page().statIcon(kind, label, px)) || plainStatIcon(kind, label, px);
 const spellMark = ask("spellMark", null);
 const enterBlock = ask("enterBlock", null);
 const bookRequirements = ask("bookRequirements", []);
