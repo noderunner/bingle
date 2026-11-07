@@ -1,7 +1,7 @@
 # Plan: guided game tutorials
 
-Status: **planning in progress** (opened 2026-10-28). Initial thoughts written before the
-design discussion, not settled decisions. Nothing is implemented.
+Status: **settled**, ready to implement (opened 2026-10-28, settled 2026-11-01). The sections
+before *Decisions* are the initial thinking, kept as written. Nothing is implemented.
 
 ## What was asked for
 
@@ -55,24 +55,96 @@ everything needed, and this is probably the difference between three tutorials a
 need no account; progress is per-browser unless signed in, which is a decent nudge towards
 signing up.
 
-## Open questions for the discussion
+## Decisions (settled 2026-11-01)
 
-1. How many games to begin with? I would do three with different shapes — something like
-   Blooms, Onitama and Hive — and only generalise once the format has survived them.
-2. Hand-authored JSON, or is the recording mode worth building first?
-3. Does a tutorial teach the *rules* or the *strategy*? The guide pages already explain rules;
-   the thing people actually want is "why was that move good", which is a different document.
-4. Is tutorial completion an achievement (and therefore account-gated for the badge, though not
-   for the tutorial itself)?
-5. Does a tutorial belong to a game family or to a variant? Hex on different board sizes should
-   share one, I think.
+1. **The first games are Blooms, Meridians and Courtfall** — three shapes: a two-stage turn on
+   a hex board, a placement game with its own geometry, and a ruleset game with dice and secret
+   choices. All three stay in the public repository. Tutorials for the games going to the
+   private build (Cthulhu Wars, Yinsh, Onitama, Hive, Nyet!) come later and travel with them,
+   because a tutorial is data in the game's own folder.
+2. **Tutorials are YAML**, hand-written, in the game's folder (`tutorials/*.yaml`), with a JSON
+   Schema generated like the definition's. **A step's position is given as moves**, from the
+   start or from the previous step, not as a hand-written position document; the engine builds
+   every position by playing them, which is also what verifies the tutorial. A "copy this game
+   as a tutorial draft" export from a played game may come later; moves keep their notation, so
+   it is small.
+3. **A game has any number of tutorials, of three kinds**: `rules` (how to play), `strategy`
+   (why a move is good) and `variant` (what a variant changes). Rules tutorials are split by
+   topic where a game is big enough to need it — Cthulhu Wars would have combat, spellbooks,
+   gates and so on — so a player can come back to one small tutorial as a refresher rather than
+   replay everything. Each tutorial has an id, a title, a kind, a one-line summary, an order
+   within the game and the game id (or variant id) it is played on; the list of a game's
+   tutorials is served with it, grouped by kind.
+4. **No achievements for tutorials**, and none planned. Which tutorials a browser has finished
+   is kept in the browser, only to mark them in the list.
+5. **A tutorial belongs to a game family and names the variant it is played on**, so one
+   tutorial serves Hex on every size unless a `variant` tutorial says otherwise.
+6. **Tutorials play in real rooms.** Starting one creates a room marked as a tutorial, kept out
+   of "My games", the open games, notifications and retention's interest. The learner holds
+   every seat (the solo seats of ADR 0029), plays their own side through the ordinary move
+   builder, and the page plays each scripted reply as the other seat — through the same move
+   endpoint, so the rules shown are the rules the engine applies. The page shows the position
+   from the learner's seat, so a scripted opponent's secret choices stay secret.
+   - **A move the step does not want is refused in the page**, before it is sent, with the
+     step's hint; the move builder knows a move's notation before posting it.
+   - **"Finish this game against a bot"** starts an ordinary game from the current position with
+     a bot in the other seat — the existing custom-start path — and leaves the tutorial room.
+   - **Games with chance fix their seed.** Courtfall keeps its dice generator in the position
+     (`rng`), so a tutorial names a seed, the server builds the start from it, and every roll of
+     the scripted line comes out the same each time. This is the one server addition the first
+     three games need besides serving the files.
+7. **What a step can point at** is a small vocabulary drawn by the board renderer for every
+   game, with no per-game code: squares (or areas) to highlight, a move to suggest with an
+   arrow, and the step's prose in Markdown (the guide's renderer, with the game's assets).
+   Anything else a step needs to point at gets a name in the definition first.
+8. **Every tutorial is verified by the tests**: a test replays every tutorial of every game
+   against the engine — each step's moves legal, each scripted reply legal, each "the learner
+   should play X" move legal — and fails when a rule change breaks one. A tutorial that lies is
+   worse than none.
+9. **Guests may take tutorials**; nothing needs an account.
+
+## A sketch of the format
+
+Illustrative, to be settled while building the first one:
+
+```yaml
+# yaml-language-server: $schema=../../../../docs/tutorial.schema.json
+id: blooms-basics
+kind: rules            # rules | strategy | variant
+title: Placing and capturing
+summary: How a turn works, and how a bloom is captured.
+game: blooms-4         # the variant it is played on
+order: 1
+steps:
+  - text: |
+      Each turn you place one or two stones, of **different colours**.
+    expect: [d4]               # the learner's move(s) this step accepts
+    hint: Place on the highlighted space.
+    highlight: [d4]
+  - text: The opponent replies.
+    reply: [e5, f5]            # played for the other seat
+  - text: Now surround the red bloom.
+    expect: [e3]
+    arrow: e3
+```
+
+## The order of work
+
+1. The tutorial format, its schema and the replay test, with one short Blooms tutorial.
+2. Tutorial rooms: the marker, the seed, keeping them out of the lists.
+3. The tutorial page: prose, highlights and arrows, refusing other moves, the scripted
+   replies, finishing against a bot.
+4. The tutorials of Blooms, Meridians and Courtfall, several per game where the rules divide.
+5. The list of a game's tutorials, by kind, where the player picks a game and in its rules
+   window.
 
 ## Dependencies and cross-plan effects
 
 - **Plugin plan**: tutorials must be data in the module's assets, or a plugin game can never
-  have one. That constraint comes from here and should be in the plugin manifest.
-- **Achievements**: "finished the tutorial" is the obvious first badge, and tutorials are how a
-  new player reaches the achievements that need skill.
+  have one. That constraint comes from here and should be in the plugin manifest. It is also
+  why the private games' tutorials can be written now and move with them.
+- **Achievements**: decided 2026-11-01 that tutorials earn none. Tutorials are still how a new
+  player reaches the achievements that need skill.
 - **Tournaments**: the on-ramp. A ladder with no tutorial is a ladder for people who already
   know the games.
 - **Auth plan**: guests may take tutorials; only accounts can keep progress across devices.
@@ -86,3 +158,8 @@ signing up.
 - 2026-10-28: opened with initial thoughts. Tutorials as data over the existing position,
   `Steps`/`MoveBuilder`, auto-move and guide machinery; a CI replay test as a hard requirement;
   a recording mode as the authoring idea worth discussing. Planning in progress.
+- 2026-11-01: settled. Blooms, Meridians and Courtfall first; YAML with positions given as
+  moves; any number of tutorials per game, of kind rules, strategy or variant, with big games'
+  rules split by topic for refreshers; no achievements; real rooms with the learner in every
+  seat and scripted replies through the move endpoint; fixed seeds for games with chance; a
+  replay test of every tutorial.
