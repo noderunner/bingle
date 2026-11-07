@@ -11,7 +11,7 @@ order of work can be chosen deliberately. Provisional: it changes as each plan i
 | [auth-and-accounts-plan.md](auth-and-accounts-plan.md) | **built** | — |
 | [dsl-yaml-plan.md](dsl-yaml-plan.md) | **built** | no |
 | [game-tutorials-plan.md](game-tutorials-plan.md) | **built**, with series of named lessons since #155 | no (guests welcome) |
-| [dsl-coverage-audit-plan.md](dsl-coverage-audit-plan.md) | **done** but for Yinsh's reassessment; Onitama stays in Go | no |
+| [dsl-coverage-audit-plan.md](dsl-coverage-audit-plan.md) | **done**; Onitama and Yinsh stay in Go | no |
 | [patience-vocabulary-plan.md](patience-vocabulary-plan.md) | **built** (addition F of the DSL audit) | no |
 | [game-plugins-plan.md](game-plugins-plan.md) | questions settled; step 1 and the retirements built, step 2 next | only for packs |
 | [real-time-play-plan.md](real-time-play-plan.md) | **built** | no |
@@ -99,5 +99,6 @@ The couplings that would cost the most if missed:
   before achievements and own the statistics table. The rest of the provisional order is unchanged.
 - 2026-11-07: brought up to date. Observability, accounts, YAML, tutorials, real-time play,
   tournaments (but for *Later*) and the patience vocabulary are built, and the DSL coverage audit is
-  done but for Yinsh. Onitama stays in Go. Plugins are next: step 1 (#110) and the retirements (#53)
+  done. Onitama stays in Go. Plugins are next: step 1 (#110) and the retirements (#53)
   are built.
+- 2026-11-07: Yinsh stays in Go, which closes the DSL coverage audit.

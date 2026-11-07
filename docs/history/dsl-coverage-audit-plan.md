@@ -1,11 +1,10 @@
 # Plan: auditing how much of each game the DSL can express
 
-Status: **done** (2026-11-07), but for one reassessment. The goal, the scope and the guideline were
+Status: **done** (2026-11-07). The goal, the scope and the guideline were
 settled on 2026-11-06 (*What was decided*), the audit is recorded in *The audit*, and every addition
 it proposed is built (ADRs 0115–0122). Blooms, Klondike, Spider and FreeCell are played from their
 declarations. Onitama was declared but stays in Go by the maintainer's choice (2026-11-07), so its
-expansions can be added. Left open: Yinsh, to be reassessed now that A exists (*The recommended
-order*, item 5).
+expansions can be added, and Yinsh stays in Go (*The recommended order*, item 5).
 
 ## What was asked for
 
@@ -259,3 +258,5 @@ of something real, and it is the only way to convert a game with confidence.
   deletes the declaration. Move cards (E) stay, tested by a fixture (ADR 0120, addendum). The page's
   card table and `card` gesture for declared games, which #152 carried, wait for a game that needs
   them. This finishes the audit except for item 5, Yinsh's reassessment, not yet done.
+- 2026-11-07: the maintainer settled item 5: **Yinsh stays in Go**, without a reassessment. The audit
+  is done for now.
