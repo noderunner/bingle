@@ -343,8 +343,8 @@ func TestPictures(t *testing.T) {
 	}
 }
 
-// A variant's own tutorial is offered with that variant only; a tutorial without the mark
-// is the whole family's, whichever board it is played on.
+// A tutorial is offered with every variant of its game, whichever board it is played
+// on, and a game without one offers none.
 func TestTutorialsAreOfferedWithTheirVariant(t *testing.T) {
 	st, err := store.Open(filepath.Join(t.TempDir(), "t.db"))
 	if err != nil {
@@ -372,17 +372,16 @@ func TestTutorialsAreOfferedWithTheirVariant(t *testing.T) {
 			t.Errorf("%s offers %q, want %q", game, got, want)
 		}
 	}
-	// It can still be asked for by its family's name, which is how it is started.
-	if _, tu, err := m.Tutorial("solitaire", "bowling-basics"); err != nil || tu.Game != "bowling-solitaire" {
-		t.Errorf("by the family: %v, %+v", err, tu.Game)
+	// Bowling Solitaire is a game of its own: its tutorial is asked for by its own name.
+	if _, tu, err := m.Tutorial("bowling-solitaire", "bowling-basics"); err != nil || tu.Game != "bowling-solitaire" {
+		t.Errorf("by its own name: %v, %+v", err, tu.Game)
 	}
 	summaries := m.ListGameDefs(context.Background())
 	for _, d := range summaries {
-		want := 0
-		if d.ID == "bowling-solitaire" {
-			want = 1
-		}
-		if d.Family == "solitaire" && d.Tutorials != want {
+		switch {
+		case d.ID == "bowling-solitaire" && d.Tutorials != 1:
+			t.Errorf("%s counts %d tutorials", d.ID, d.Tutorials)
+		case d.Family == "solitaire" && d.Tutorials != 0:
 			t.Errorf("%s counts %d tutorials", d.ID, d.Tutorials)
 		}
 	}
