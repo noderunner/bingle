@@ -13,7 +13,8 @@ order of work can be chosen deliberately. Provisional: it changes as each plan i
 | [game-tutorials-plan.md](game-tutorials-plan.md) | **settled**, ready to implement | no (guests welcome) |
 | [dsl-coverage-audit-plan.md](dsl-coverage-audit-plan.md) | planning in progress | no |
 | [game-plugins-plan.md](game-plugins-plan.md) | questions settled, not started | only for packs |
-| [tournaments-and-rankings-plan.md](tournaments-and-rankings-plan.md) | planning in progress | yes |
+| [real-time-play-plan.md](real-time-play-plan.md) | **settled**, ready to implement | no |
+| [tournaments-and-rankings-plan.md](tournaments-and-rankings-plan.md) | **settled**, ready to implement; the next major feature | yes |
 | [achievements-plan.md](achievements-plan.md) | planning in progress | yes |
 | [code-and-architecture-audit-plan.md](code-and-architecture-audit-plan.md) | planning in progress | no |
 
@@ -29,6 +30,8 @@ order of work can be chosen deliberately. Provisional: it changes as each plan i
     └──► achievements ─┴── one shared per-account statistics table, written at game end
                            (retention deletes games: never recompute from history)
 
+  real-time play ──► tournaments   (clock fixes for all; connection and the setting for real-time)
+
   YAML ──► plugins        (one authoring format for manifest + definition)
    │  └──► tutorials, achievements   (hand-authored documents want comments)
    └──► DSL coverage audit (add new vocabulary once, in the final format)
@@ -43,7 +46,7 @@ order of work can be chosen deliberately. Provisional: it changes as each plan i
 The couplings that would cost the most if missed:
 
 1. **Tournaments and achievements both want one durable statistics table** written when a game
-   ends. Build it once. Whichever lands first owns it.
+   ends. Build it once. Tournaments land first, so they own it.
 2. **Retention deletes inactive games.** Ratings, badges and counters must be written at event
    time, not derived later. This breaks both plans silently if forgotten.
 3. **The YAML format change is cheap now and expensive after the DSL audit adds vocabulary.**
@@ -90,3 +93,6 @@ The couplings that would cost the most if missed:
   the code audit must account for.
 - 2026-10-31: YAML settled; plugins extended to move every commercial game private.
 - 2026-11-01: tutorials settled; YAML, plugins (questions) and retirement done or settled.
+- 2026-11-01: tournaments settled and chosen as the next major feature, ahead of the provisional
+  order; real-time play split out as a plan of its own, which they depend on. Tournaments now land
+  before achievements and own the statistics table. The rest of the provisional order is unchanged.

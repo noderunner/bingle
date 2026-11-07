@@ -15,7 +15,8 @@ truth, and [decisions/](../decisions/README.md) records what was decided and why
 | [auth-and-accounts-plan.md](auth-and-accounts-plan.md) | The plan for accounts, capabilities and a secure transport |
 | [observability-plan.md](observability-plan.md) | The plan for logging, metrics and the slow-request journal |
 | [game-plugins-plan.md](game-plugins-plan.md) | Initial thoughts on installable game plugins (**in progress**) |
-| [tournaments-and-rankings-plan.md](tournaments-and-rankings-plan.md) | Initial thoughts on competitive play, formats and ratings (**in progress**) |
+| [real-time-play-plan.md](real-time-play-plan.md) | The plan for real-time games: connection, warnings, vote-kicks and clocks |
+| [tournaments-and-rankings-plan.md](tournaments-and-rankings-plan.md) | The plan for tournaments and ratings |
 | [game-tutorials-plan.md](game-tutorials-plan.md) | Initial thoughts on guided tutorials (**in progress**) |
 | [achievements-plan.md](achievements-plan.md) | Initial thoughts on achievements and badges (**in progress**) |
 | [dsl-yaml-plan.md](dsl-yaml-plan.md) | Initial thoughts on YAML for game definitions (**in progress**) |

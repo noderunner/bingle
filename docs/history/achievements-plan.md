@@ -79,3 +79,6 @@ more games. After that the opportunity is gone. Worth a deliberate yes or no.
 - 2026-10-28: opened with initial thoughts. Event-time awards, declarative badge definitions, a
   shared counters table, evaluation off the move path, and farming as the real design problem.
   Planning in progress.
+- 2026-11-01: tournaments are being built first and own `stats(account_id, key, value)`, starting with
+  played, won, drawn and lost per family; add keys there. Their game-end hook is the place to attach
+  evaluation. Rated games, per the tournaments plan, are one available anti-farming anchor.
