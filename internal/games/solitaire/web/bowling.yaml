@@ -1,0 +1,11 @@
+# How the web page draws Bowling Solitaire (ADR 0124). The rules are in the definition; nothing
+# here changes them, and other clients draw the game their own way.
+board:
+  style: none
+pieces:
+  token: {shape: disc}
+cards:
+  back: {color: '#2f6f5e'}
+  suits:
+    hearts: {color: '#c62f2f'}
+    spades: {color: '#1f2630'}

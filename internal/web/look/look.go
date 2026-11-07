@@ -75,9 +75,11 @@ type Cards struct {
 	Suits map[string]SuitColor `json:"suits,omitempty"`
 }
 
-// CardBack is the colour of the backs of the cards.
+// CardBack is how the backs of the cards look: a colour, and a word printed
+// on them (Nyet!'s).
 type CardBack struct {
 	Color string `json:"color,omitempty"`
+	Text  string `json:"text,omitempty"`
 }
 
 // Zone is how a zone of cards is laid out.

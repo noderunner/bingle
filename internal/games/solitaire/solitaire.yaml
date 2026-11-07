@@ -2,7 +2,7 @@
 id: solitaire
 name: Solitaire
 description: "The patience game most people mean by Solitaire, for one player: build four piles from ace to king, and turn up the seven columns' hidden cards on the way. Spider and FreeCell are here too."
-version: 0.3.0
+version: 0.3.1
 rules:
   - 'Klondike, one card at a time. 52 cards are dealt into seven columns of 1 to 7 cards, the top card of each face up; the rest are the stock. You win by moving every card to the four foundations, one per suit, each built up from ace to king.'
   - 'In a column, cards build down in alternating colours: a black 6 goes on a red 7. A face-up card may be moved with the cards on top of it, as long as they are in that order. A column that is emptied can only be filled with a king. When a face-down card is uncovered it turns up.'
@@ -10,11 +10,10 @@ rules:
   - 'The top card of a foundation may be brought back to a column. The game ends when you win, when no move is left, or when you give up.'
 board:
   generator: {type: grid, width: 1, height: 1, adjacency: orthogonal4}
-  style: none
 seats:
   - {seat: 1, color: red, label: Player}
 pieces:
-  token: {label: Token, code: T, shape: disc}
+  token: {label: Token, code: T}
 turn_order:
   type: round-robin
   seats: [1]
@@ -31,10 +30,10 @@ patience:
   finish: true
 cards:
   suits:
-    hearts: {label: Hearts, color: '#c62f2f', symbol: ♥}
-    spades: {label: Spades, color: '#1f2630', symbol: ♠}
-    diamonds: {label: Diamonds, color: '#c62f2f', symbol: ♦}
-    clubs: {label: Clubs, color: '#1f2630', symbol: ♣}
+    hearts: {label: Hearts, symbol: ♥}
+    spades: {label: Spades, symbol: ♠}
+    diamonds: {label: Diamonds, symbol: ♦}
+    clubs: {label: Clubs, symbol: ♣}
   # In this order the colours alternate: the rules read red and black from a suit's
   # place, and a themed set of cards wears the suits by place too.
   suit_order: [hearts, spades, diamonds, clubs]
@@ -42,7 +41,6 @@ cards:
     main:
       label: Standard deck
       rank_list: A 2 3 4 5 6 7 8 9 10 J Q K
-  back: {color: '#2f6f5e'}
   zones:
     - {id: stock, label: Stock, scope: table, visibility: none, layout: stack, counts: true}
     - {id: waste, label: Waste, scope: table, visibility: all, layout: stack}
