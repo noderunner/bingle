@@ -1,0 +1,56 @@
+# Council: a game only the tests play (tests/testdata/council). It is the
+# public suite's vehicle for what only a commercial game used to exercise: a
+# table of four, an optional reaction, a choice per seat with a pool and a
+# derived game for every table, a setup catalog, and a map of areas.
+id: test-council
+name: Council
+description: "A test fixture: four houses move their envoys round a small map of areas and claim them; another house may object."
+version: 0.1.0
+engine: ruleset
+rules:
+  - Four houses each have one envoy. On your turn, move your envoy to an area next to it, or claim the area it stands in if nobody has.
+  - After another house's turn, a house that may Object can object to it, and the house that acted gives back its last claim.
+  - The first house with three claims wins. After 200 turns the house with the most claims wins; equal claims are a draw.
+params: {claims_to_win: 3, max_plies: 200}
+board:
+  style: areas
+  canvas: {width: 300, height: 200}
+  positions:
+    - {id: north, name: North, x: 150, y: 30, anchor: [150, 30], tags: [land], polygons: [[[0, 0], [300, 0], [300, 60], [0, 60]]]}
+    - {id: west, name: West, x: 40, y: 100, anchor: [40, 100], tags: [land], polygons: [[[0, 60], [80, 60], [80, 140], [0, 140]]]}
+    - {id: hall, name: Hall, x: 150, y: 100, anchor: [150, 100], tags: [land], polygons: [[[80, 60], [220, 60], [220, 140], [80, 140]]]}
+    - {id: east, name: East, x: 260, y: 100, anchor: [260, 100], tags: [land], polygons: [[[220, 60], [300, 60], [300, 140], [220, 140]]]}
+    - {id: south, name: South, x: 150, y: 170, anchor: [150, 170], tags: [sea], polygons: [[[0, 140], [300, 140], [300, 200], [0, 200]]]}
+  edges:
+    - {from: north, to: west}
+    - {from: north, to: hall}
+    - {from: north, to: east}
+    - {from: west, to: hall}
+    - {from: east, to: hall}
+    - {from: south, to: west}
+    - {from: south, to: hall}
+    - {from: south, to: east}
+seats:
+  - {seat: 1, color: red, label: Crow}
+  - {seat: 2, color: blue, label: Stag}
+  - {seat: 3, color: green, label: Wolf}
+  - {seat: 4, color: yellow, label: Ram}
+pieces:
+  envoy: {label: Envoy, code: E, movement: {}}
+turn_order:
+  type: round-robin
+  seats: [1, 2, 3, 4]
+win_condition: {type: ruleset}
+options:
+  - id: houses
+    label: Houses
+    kind: seat-choice
+    text: Which house sits in each seat; no house twice.
+    choices:
+      - {id: crow, label: Crow, color: red, text: May object.}
+      - {id: stag, label: Stag, color: blue}
+      - {id: wolf, label: Wolf, color: green}
+      - {id: ram, label: Ram, color: yellow}
+      - {id: owl, label: Owl, color: white, text: May object.}
+    default: [crow, stag, wolf, ram]
+  - {id: court, label: The Court, kind: bool, text: "Every house may object, once it holds a claim."}
