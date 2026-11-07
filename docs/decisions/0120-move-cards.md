@@ -86,3 +86,11 @@ when a piece type has left the board altogether; it gains **`of_seat`** (`of` wa
   seat zone or a `pass_on` that is not a table zone, `of_seat` naming an unknown seat), the selection (`card`), notation and
   gestures, the engine and the page's card table for declared games change together.
 - Declared games without `card-move` play as now; the harness holds every shipped game to it.
+
+## Addendum (2026-11-07): Onitama stays in Go
+
+Onitama's conversion stops after step 1. The maintainer means to add Onitama's expansions, which may
+need rules the DSL does not have, so its Go ruleset stays the one the server plays and its declaration
+is deleted rather than kept in step with a ruleset that will move on. Move cards stay in the DSL as
+decided here, held to their rules by the small fixture in `tests/cardmove`; the page's card table for
+declared games waits for a game that uses them.
