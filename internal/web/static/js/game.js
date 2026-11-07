@@ -3025,9 +3025,11 @@ function drawBoard(host) {
 	const acting = actingSeat();
 	const interactive = acting !== 0;
 	const b = activeBuilder();
-	// On an area map, units are picked by clicking their tokens: the areas
-	// they stand in are not themselves targets until a choice is under way.
-	const tokensFirst = S.info.board.style === "areas" && b.gestures.length === 0;
+	// On an area map its game draws (Cthulhu Wars'), units are picked by
+	// clicking their tokens: the areas they stand in are not themselves
+	// targets until a choice is under way. A map drawn without the game's
+	// script has no tokens to click, and its areas are targets at once.
+	const tokensFirst = S.info.board.style === "areas" && !!(S.info.page && S.info.page.renderAreaMap) && b.gestures.length === 0;
 	let targets = S.moveQueue && interactive ? queueDestinations() : interactive && !tokensFirst ? b.nextPositions() : new Set();
 	// In a tutorial only the square the step points at can be clicked.
 	if (S.tut) targets = new Set([...targets].filter((pos) => (S.moveQueue ? tutorialQueueGoesTo(pos) : tutorialAllows("pos", pos))));

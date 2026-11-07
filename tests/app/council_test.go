@@ -60,5 +60,5 @@ func TestWebCouncil_TheMapIsDrawnWithoutAScript(t *testing.T) {
 	defer cancel()
 	openGameAs(t, ctx, base, created.RoomCode, "test-council", "Alice")
 	waitJS(t, ctx, "five areas", `document.querySelectorAll('#board .cell').length === 5`, 15*time.Second)
-	waitJS(t, ctx, "a move to make", `document.querySelectorAll('#board .cell.clickable, .action-buttons button').length > 0`, 10*time.Second)
+	waitJS(t, ctx, "a move to make", `document.querySelectorAll("#board .cell.clickable").length > 0`, 10*time.Second)
 }
