@@ -226,3 +226,8 @@ bot ladder.
   real-time and correspondence forms; every game clocked; two seats first; Glicko-2 per family; public
   leaderboards; rated by choice at setup or by tournament; humans only under a fair-play rule; no
   prizes. Tournaments now land before achievements and own the statistics table.
+- 2026-11-02: step 1 (clock fixes) merged; step 2 built (ADR 0080, branch `results-and-ratings`).
+  Departures: a rated game also needs equal clocks and the standard start; `stats` counts rated games
+  only, because an ordinary game can be undone after it ends and counted twice; the no-show rule
+  applies to every rated game. Left for step 3: a tournament column in `rating_history`, the pie rule
+  defaulting on. Not built: any tool to remove a rating, which the `moderate` capability still waits for.
