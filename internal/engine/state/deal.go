@@ -115,3 +115,34 @@ func determinizeCards(game *catalog.CompiledGame, st *BoardState, viewer int, rn
 	}
 	return out
 }
+
+// cardsTurnedUp reports whether after lets some seat see the face of a card
+// that before hid from it (ADR 0121): such a selection cannot be taken back.
+func cardsTurnedUp(game *catalog.CompiledGame, before, after *BoardState) bool {
+	if game.Cards == nil || before == nil || after == nil || after.table == nil || !cardsSecret(game) {
+		return false
+	}
+	seen := func(t *cards.Table, viewer int) map[string]bool {
+		out := map[string]bool{}
+		if t == nil {
+			return out
+		}
+		for _, z := range t.Redact(game.Cards, viewer).Zones {
+			for _, c := range z.Cards {
+				if !c.Hidden() {
+					out[c.ID] = true
+				}
+			}
+		}
+		return out
+	}
+	for _, s := range game.Definition.Seats {
+		was := seen(before.table, s.Seat)
+		for id := range seen(after.table, s.Seat) {
+			if !was[id] {
+				return true
+			}
+		}
+	}
+	return false
+}

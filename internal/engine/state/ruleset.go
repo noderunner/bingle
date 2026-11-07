@@ -83,8 +83,9 @@ func CanTakeBack(game *catalog.CompiledGame, before, after *BoardState) bool {
 		if g, ok := rs.(UndoGuard); ok {
 			return g.CanTakeBack(game, before, after)
 		}
+		return true
 	}
-	return true
+	return !cardsTurnedUp(game, before, after)
 }
 
 // Searchable is implemented by rulesets that know when a decision is not

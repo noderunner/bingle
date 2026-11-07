@@ -245,3 +245,37 @@ func TestTheCatalogRefusesABadCardMove(t *testing.T) {
 		}
 	}
 }
+
+// A selection that shows a seat a card it could not see cannot be taken back
+// (ADR 0121); with every card already in view, it can.
+func TestACardTurnedUpCannotBeTakenBack(t *testing.T) {
+	open := mustCompile(t, mini(nil, nil))
+	st := start(t, open)
+	mv := state.Selection{Card: cardsIn(st, "hand", 1)[0], From: "c1", To: "c2"}
+	res, err := state.Apply(open, st, 1, mv)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !state.CanTakeBack(open, st, res.NewState) {
+		t.Fatal("a move that shows nothing new cannot be taken back")
+	}
+	// Hands held face down and seen by their owner only: the card played
+	// lands face up at the side, where the other seat sees it for the first
+	// time.
+	hidden := mustCompile(t, mini(nil, func(d map[string]any) {
+		d["cards"].(map[string]any)["zones"].([]any)[1].(map[string]any)["visibility"] = "owner"
+		d["deal"].([]any)[1].(map[string]any)["face"] = "down"
+	}))
+	st = start(t, hidden)
+	mv = state.Selection{Card: cardsIn(st, "hand", 1)[0], From: "c1", To: "c2"}
+	res, err = state.Apply(hidden, st, 1, mv)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if state.CanTakeBack(hidden, st, res.NewState) {
+		t.Fatal("a move that turns up a card can be taken back")
+	}
+	if !state.ImpulseEnds(hidden, st, 1, mv, res) {
+		t.Fatal("turning up a card does not end the impulse")
+	}
+}
