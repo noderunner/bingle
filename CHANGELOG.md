@@ -4,6 +4,11 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.97.5 - 2026-11-07
+
+### Bingle Core 0.97.5
+- A few words on the game page no longer borrow Cthulhu Wars' terms in other games: the Back button now says it undoes your choice, the Auto-Play help says the bot plays your seat, and the reaction setting says it asks when something is aimed at you or at something of yours. Cthulhu Wars itself still uses its own words.
+
 ## 0.97.4 - 2026-11-07
 
 ### Bingle Core 0.97.4
