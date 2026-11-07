@@ -266,3 +266,8 @@ which is now built.
   fields. Step 3 and decision 4 are rewritten to match: nothing about a game's look moves to the
   server, the web page reads a per-game `web.yaml` and registered scripts, and Cthulhu Wars' look
   goes with it into the overlay.
+- 2026-11-07: an alternative to the private overlay is written up as a deferred proposal,
+  `game-services-proposal.md`: a game family behind one coarse interface, run in process or as a
+  binary of its own, with the boundary crossed once per impulse and the search inside the game.
+  The overlay stays the plan. Step 2 should register a family through one value close to that
+  interface, which keeps the door open.

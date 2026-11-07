@@ -16,6 +16,7 @@ order of work can be chosen deliberately. Provisional: it changes as each plan i
 | [game-plugins-plan.md](game-plugins-plan.md) | questions settled; step 1 and the retirements built, step 2 next | only for packs |
 | [real-time-play-plan.md](real-time-play-plan.md) | **built** | no |
 | [tournaments-and-rankings-plan.md](tournaments-and-rankings-plan.md) | **built** but for its *Later* list | yes |
+| [game-services-proposal.md](game-services-proposal.md) | **deferred** proposal: an alternative to the plugins plan's overlay | no |
 | [achievements-plan.md](achievements-plan.md) | planning in progress | yes |
 | [code-and-architecture-audit-plan.md](code-and-architecture-audit-plan.md) | planning in progress | no |
 
@@ -102,3 +103,4 @@ The couplings that would cost the most if missed:
   done. Onitama stays in Go. Plugins are next: step 1 (#110) and the retirements (#53)
   are built.
 - 2026-11-07: Yinsh stays in Go, which closes the DSL coverage audit.
+- 2026-11-07: added the deferred game-services proposal, an alternative to the private overlay.
