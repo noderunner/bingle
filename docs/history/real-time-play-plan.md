@@ -183,3 +183,8 @@ Each step is its own pull request, with an ADR where it settles a question:
   Auto-Play offers and the flag watcher of decision 24. Decided here: each warning 30 seconds to an hour; asking for
   the bot takes a seat that shows as connected, so an MCP agent with no socket is refused. Left for step 4: the
   takeover, the vote-kick and clocks at larger tables. Real-time tournaments can now start.
+- 2026-11-02: step 3 merged (#76), and step 4 built (ADR 0091, branch `real-time-takeover`): the takeover, the vote-kick and
+  clocks from two seats up, which finishes this plan. Decided here: a person is voted on, not a seat, so someone playing
+  several seats counts once and loses them all; a vote counts while its voter is connected, so somebody leaving can pass
+  one; there is no vote against; a takeover restarts the turn only if the game was waiting on that seat; a bot seated from
+  the start keeps its clock until it runs out. Multi-seat tournaments must still say how a seat a bot took is scored.
