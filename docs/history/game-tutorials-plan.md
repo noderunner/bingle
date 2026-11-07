@@ -163,3 +163,11 @@ steps:
   rules split by topic for refreshers; no achievements; real rooms with the learner in every
   seat and scripted replies through the move endpoint; fixed seeds for games with chance; a
   replay test of every tutorial.
+- 2026-11-01: steps 1, 2, 3 and 5 built (ADR 0077). In step 4, Blooms and Meridians have rules
+  tutorials; **Courtfall's waits until its rules are final**, and it gets no strategy tutorial
+  until then. Decided along the way: rules tutorials follow one order (what you are doing; a shown
+  finished game and how it ends; the board; the pieces; the turn; each phase), steps can `show`
+  another position, the served tutorial carries a `guide` signal of what to select that each
+  client presents its own way (the web page keeps its controls, picks out the expected one and
+  makes the others inert), and tutorial rooms have no chat or voice. A minimax bot game on
+  `courtfall~arena` with seed 1 ends 5–0 after 125 moves, an end state for Courtfall's step 2.
