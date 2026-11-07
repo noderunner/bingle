@@ -231,3 +231,7 @@ bot ladder.
   only, because an ordinary game can be undone after it ends and counted twice; the no-show rule
   applies to every rated game. Left for step 3: a tournament column in `rating_history`, the pie rule
   defaulting on. Not built: any tool to remove a rating, which the `moderate` capability still waits for.
+- 2026-11-02: step 2 merged (#64), and step 3 built (ADR 0082, branch `correspondence-tournaments`).
+  Departures: a no-show in correspondence is simply the clock, with the first-move deadline and both
+  players scoring zero left for step 4; the organiser may also remove a player; there is no separate mail
+  for a round starting. Left for step 4: the real-time setting, start times, check-in and no-shows.
