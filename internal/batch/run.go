@@ -4,53 +4,58 @@
 // is drawn. It touches neither the database nor the rooms: the caller decides
 // where records go.
 //
-// Every game can be batched. A table of Cthulhu Wars also names a cult per seat
-// and is watched by cthulhuwars.Observer, which measures far more than who won
-// (Doom, Gates, spellbooks, battles); any other game is played the same way
-// without that, and its report holds what any game has: the outcome per seat,
-// the bots that played, the length and how the games ended.
+// Every game can be batched. A game whose family registered a Study (see
+// study.go) may also pick something per seat and is watched by its observer,
+// which measures far more than who won (Cthulhu Wars' Doom, Gates, spellbooks
+// and battles); any other game is played the same way without that, and its
+// report holds what any game has: the outcome per seat, the bots that played,
+// the length and how the games ended.
 package batch
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"runtime"
-	"strings"
+	"slices"
 	"sync"
 
 	"github.com/noderunner/bingle/internal/bots"
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/engine/state"
-	"github.com/noderunner/bingle/internal/games/cthulhuwars"
 	"github.com/noderunner/bingle/internal/metrics"
 	"github.com/noderunner/bingle/internal/repro"
 )
 
 // Player is one seat of the table and the bot that plays it.
 type Player struct {
-	// Faction is the cult key of a Cthulhu Wars table: gc, cc, bg, ys, ww or
-	// sl. Any other game leaves it empty: its seats are the game's own.
-	Faction string `json:"faction,omitempty"`
+	// Pick is what the seat plays as, in a game whose study picks per seat
+	// (a Cthulhu Wars cult: gc, cc, bg, ys, ww or sl). Any other game leaves
+	// it empty: its seats are the game's own.
+	Pick string `json:"faction,omitempty"`
 	// Bot is a built-in bot id: random, tactical, minimax or mcts.
 	Bot string `json:"bot"`
 	// MCTSIterations bounds the mcts bot per move (it is reproducible and
 	// much faster than wall-clock time); MinimaxNodes bounds minimax.
 	MCTSIterations int `json:"mcts_iterations,omitempty"`
 	MinimaxNodes   int `json:"minimax_nodes,omitempty"`
-	// Tuning replaces the shipped guide tuning of this cult (see
-	// cthulhuwars.GuideTuning); nil plays with the shipped one.
-	Tuning *cthulhuwars.GuideTuning `json:"tuning,omitempty"`
+	// Tuning replaces the shipped tuning of this pick's guide (see
+	// Study.Knobs); nil plays with the shipped one.
+	Tuning Tuning `json:"tuning,omitempty"`
 }
 
 // Spec describes a batch.
 type Spec struct {
 	// Base is the game, e.g. "cthulhu-wars-5p" or "hex-11"; the number of
 	// Players must equal its number of seats.
-	Base        string   `json:"base"`
-	HighPriests bool     `json:"high_priests,omitempty"`
-	Players     []Player `json:"players"`
-	Games       int      `json:"games"`
-	Seed        int64    `json:"seed"`
+	Base string `json:"base"`
+	// Options are the study's options for the table (Cthulhu Wars' "hp", the
+	// High Priests). A spec saved before options were general says
+	// high_priests instead, which reads as "hp".
+	Options []string `json:"options,omitempty"`
+	Players []Player `json:"players"`
+	Games   int      `json:"games"`
+	Seed    int64    `json:"seed"`
 	// Rotate seats the players differently in every game (a cyclic shift), so
 	// that the order of play does not favour a cult.
 	Rotate bool `json:"rotate"`
@@ -86,10 +91,28 @@ type Record struct {
 	EndReason string `json:"end_reason"`
 	Plies     int    `json:"plies"`
 	Rounds    int    `json:"rounds"`
-	// Metrics is what the Cthulhu Wars observer measured; it is empty for
-	// every other game.
-	Metrics cthulhuwars.GameMetrics `json:"metrics"`
-	Events  []Event                 `json:"events,omitempty"`
+	// Metrics is what the game's study measured (see Observer); it is empty
+	// for a game without one.
+	Metrics json.RawMessage `json:"metrics,omitempty"`
+	Events  []Event         `json:"events,omitempty"`
+}
+
+// UnmarshalJSON reads a spec, including one saved when the High Priests were
+// a field of their own.
+func (s *Spec) UnmarshalJSON(data []byte) error {
+	type plain Spec
+	var v struct {
+		plain
+		HighPriests bool `json:"high_priests"`
+	}
+	if err := json.Unmarshal(data, &v); err != nil {
+		return err
+	}
+	*s = Spec(v.plain)
+	if v.HighPriests && !slices.Contains(s.Options, "hp") {
+		s.Options = append(s.Options, "hp")
+	}
+	return nil
 }
 
 // DefaultWorkers is how many games run at once when a spec does not say: three
@@ -113,27 +136,29 @@ func (s *Spec) Validate(cat *catalog.Catalog) error {
 	if n := len(base.Definition.Seats); len(s.Players) != n {
 		return fmt.Errorf("batch: %s seats %d players, the spec has %d", s.Base, n, len(s.Players))
 	}
-	seen := map[string]bool{}
-	cults := 0
+	picks := 0
 	for _, p := range s.Players {
-		if p.Faction != "" {
-			cults++
-			if seen[p.Faction] {
-				return fmt.Errorf("batch: cult %q sits twice", p.Faction)
-			}
-			seen[p.Faction] = true
+		if p.Pick != "" {
+			picks++
 		}
 		if _, ok := bots.Make(p.Bot, 1); !ok {
 			return fmt.Errorf("batch: unknown bot %q", p.Bot)
 		}
 	}
-	// A table either names a cult for every seat (Cthulhu Wars, whose seats are
-	// a choice) or for none (every other game, whose seats are its own).
-	if cults != 0 && cults != len(s.Players) {
-		return fmt.Errorf("batch: %d of %d seats name a cult: name one for all of them or for none", cults, len(s.Players))
+	// A table either picks for every seat (a game whose seats are a choice)
+	// or for none (a game whose seats are its own).
+	if picks != 0 && picks != len(s.Players) {
+		return fmt.Errorf("batch: %d of %d seats pick: pick for all of them or for none", picks, len(s.Players))
 	}
-	if cults == 0 && s.HighPriests {
-		return fmt.Errorf("batch: high_priests is a Cthulhu Wars option")
+	if study := StudyOf(base); study == nil {
+		if picks != 0 || len(s.Options) != 0 {
+			return fmt.Errorf("batch: %s has nothing to pick per seat and no options", s.Base)
+		}
+		for _, p := range s.Players {
+			if p.Tuning != nil {
+				return fmt.Errorf("batch: %s has no guide to tune", s.Base)
+			}
+		}
 	}
 	if s.Games < 1 {
 		return fmt.Errorf("batch: games must be at least 1")
@@ -145,8 +170,12 @@ func (s *Spec) Validate(cat *catalog.Catalog) error {
 		s.Workers = DefaultWorkers()
 	}
 	for i := range s.Players {
-		if _, err := s.table(cat, i); err != nil {
+		id, _, err := s.layout(cat, i)
+		if err != nil {
 			return err
+		}
+		if _, ok := cat.Get(id); !ok {
+			return fmt.Errorf("batch: cannot build the table %q", id)
 		}
 		if !s.Rotate {
 			break
@@ -155,41 +184,31 @@ func (s *Spec) Validate(cat *catalog.Catalog) error {
 	return nil
 }
 
-// table is the derived game id and the players in seat order for game i.
-func (s *Spec) table(cat *catalog.Catalog, i int) (string, error) {
-	id, _ := s.layout(i)
-	if _, ok := cat.Get(id); !ok {
-		return "", fmt.Errorf("batch: cannot build the table %q", id)
-	}
-	return id, nil
-}
-
-func (s *Spec) layout(i int) (string, []Player) {
+// layout is the game id and the players in seat order for game i: the
+// players moved round the seats when the spec rotates them, and the table the
+// game's study makes of their picks.
+func (s *Spec) layout(cat *catalog.Catalog, i int) (string, []Player, error) {
 	n := len(s.Players)
 	shift := 0
 	if s.Rotate {
 		shift = i % n
 	}
 	seated := make([]Player, n)
-	keys := make([]string, n)
-	cults := 0
+	picks := make([]string, n)
 	for j := range seated {
 		seated[j] = s.Players[(j+shift)%n]
-		keys[j] = seated[j].Faction
-		if keys[j] != "" {
-			cults++
-		}
+		picks[j] = seated[j].Pick
 	}
-	// Only a table whose seats are a choice derives a game of its own; every
-	// other game is played as it is, with the bots moved round the seats.
-	if cults != n {
-		return s.Base, seated
+	base, _ := cat.Get(s.Base)
+	study := StudyOf(base)
+	if study == nil {
+		return s.Base, seated, nil
 	}
-	suffix := strings.Join(keys, "-")
-	if s.HighPriests {
-		suffix += "-hp"
+	id, err := study.Table(s.Base, picks, s.Options)
+	if err != nil {
+		return "", nil, fmt.Errorf("batch: %w", err)
 	}
-	return s.Base + "~" + suffix, seated
+	return id, seated, nil
 }
 
 // batchRepro is where a batch writes repro bundles, set alongside the
@@ -273,7 +292,10 @@ func Run(ctx context.Context, cat *catalog.Catalog, spec Spec, sink func(Record)
 
 // PlayGame plays game number i of the batch.
 func PlayGame(ctx context.Context, cat *catalog.Catalog, spec Spec, i int) (Record, error) {
-	id, seated := spec.layout(i)
+	id, seated, err := spec.layout(cat, i)
+	if err != nil {
+		return Record{}, err
+	}
 	game, ok := cat.Get(id)
 	if !ok {
 		return Record{}, fmt.Errorf("batch: unknown game %q", id)
@@ -281,9 +303,8 @@ func PlayGame(ctx context.Context, cat *catalog.Catalog, spec Spec, i int) (Reco
 	seed := spec.Seed + int64(i)
 	rec := Record{Index: i, Seed: seed, GameID: id}
 	botFor := map[int]bots.Bot{}
-	tuning := map[int]*cthulhuwars.GuideTuning{}
-	rules, _ := state.RulesetOf(game)
-	cw, _ := rules.(*cthulhuwars.Ruleset)
+	tuning := map[int]Tuning{}
+	study := StudyOf(game)
 	for j, p := range seated {
 		seat := j + 1
 		b, ok := bots.MakeConfigured(p.Bot, seed*1000+int64(seat), bots.Config{MCTSIterations: p.MCTSIterations, MinimaxNodes: p.MinimaxNodes})
@@ -292,18 +313,19 @@ func PlayGame(ctx context.Context, cat *catalog.Catalog, spec Spec, i int) (Reco
 		}
 		botFor[seat] = b
 		tuning[seat] = p.Tuning
-		rec.Seating = append(rec.Seating, p.Faction)
+		rec.Seating = append(rec.Seating, p.Pick)
 		rec.Bots = append(rec.Bots, p.Bot)
 	}
 	st, err := state.InitialStateSeeded(game, uint64(seed)*1000003+1)
 	if err != nil {
 		return rec, err
 	}
-	// The observer measures a cult's play (Doom, Gates, battles): it belongs to
-	// Cthulhu Wars, and any other game is watched only by its outcome.
-	var obs *cthulhuwars.Observer
-	if cw != nil {
-		obs = cthulhuwars.NewObserver(game)
+	// The observer measures more than the outcome (Cthulhu Wars' Doom, Gates
+	// and battles): it is the study's, and a game without one is watched only
+	// by its outcome.
+	var obs Observer
+	if study != nil {
+		obs = study.Observer(game)
 	}
 	keep := i < spec.EventGames
 	seat := state.FirstSeat(game)
@@ -322,8 +344,8 @@ func PlayGame(ctx context.Context, cat *catalog.Catalog, spec Spec, i int) (Reco
 		}
 		guided := legal
 		switch {
-		case cw != nil && tuning[seat] != nil && len(legal) > 1:
-			if g := cw.GuideMovesTuned(game, st, seat, legal, tuning[seat]); len(g) > 0 {
+		case study != nil && tuning[seat] != nil && len(legal) > 1:
+			if g := study.Guide(game, st, seat, legal, tuning[seat]); len(g) > 0 {
 				guided = g
 			}
 		default:
@@ -360,8 +382,7 @@ func PlayGame(ctx context.Context, cat *catalog.Catalog, spec Spec, i int) (Reco
 	}
 	rec.Winner, rec.EndReason = winner, reason
 	if obs != nil {
-		rec.Metrics = obs.Finish(st, winner, reason)
-		rec.Plies, rec.Rounds = rec.Metrics.Plies, rec.Metrics.Rounds
+		rec.Metrics, rec.Plies, rec.Rounds = obs.Finish(st, winner, reason)
 	}
 	return rec, nil
 }

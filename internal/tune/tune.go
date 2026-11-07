@@ -1,14 +1,14 @@
-// Package tune searches for guide tunings (cthulhuwars.GuideTuning) that make
-// one cult's bot win more often. It is a (1+λ) evolution strategy over the
-// tuning's knobs: each generation plays the current tuning and a few mutated
-// ones on the same games, keeps the best mutation if it beats the parent on
-// fresh confirmation games, and finishes by playing the result against the
-// shipped tuning on games it has never seen.
+// Package tune searches for guide tunings that make one pick's bot win more
+// often, in a game whose study has knobs (batch.Study: Cthulhu Wars' cults).
+// It is a (1+λ) evolution strategy over the knobs: each generation plays the
+// current tuning and a few mutated ones on the same games, keeps the best
+// mutation if it beats the parent on fresh confirmation games, and finishes by
+// playing the result against the shipped tuning on games it has never seen.
 //
 // Every game is a bot-only game played in memory by internal/batch; the tuned
-// cult sits at a table of the other cults (played with their shipped tunings),
-// with the seats rotated, and its fitness is its win rate plus a little of the
-// Doom it reached, since a win is a noisy signal.
+// pick sits at a table of the others (played with their shipped tunings), with
+// the seats rotated, and its fitness is its win rate plus a little of the
+// study's measures (Cthulhu Wars' Doom), since a win is a noisy signal.
 package tune
 
 import (
@@ -17,21 +17,22 @@ import (
 	"math"
 	"math/rand"
 	"sort"
+	"sync"
 
 	"github.com/noderunner/bingle/internal/batch"
 	"github.com/noderunner/bingle/internal/engine/catalog"
-	"github.com/noderunner/bingle/internal/games/cthulhuwars"
 )
 
 // Config describes a tuning run.
 type Config struct {
-	// Base is the layout; Lineup the cults at the table (one per seat, Faction
-	// among them); HighPriests adds the expansion.
-	Base        string
-	Lineup      []string
-	HighPriests bool
-	// Faction is the cult being tuned.
-	Faction string
+	// Base is the game; Lineup the picks at the table (one per seat, Pick
+	// among them); Options the study's options for the table (Cthulhu Wars'
+	// "hp").
+	Base    string
+	Lineup  []string
+	Options []string
+	// Pick is the one being tuned.
+	Pick string
 	// Bot is the bot every cult plays (default tactical: the tuning only
 	// reaches the guide, which the tactical bot plays straight).
 	Bot string
@@ -47,38 +48,36 @@ type Config struct {
 	// names the knobs to search (default: all).
 	Sigma float64
 	Knobs []string
-	// DoomWeight is how much of the fitness the Doom reached carries (default
-	// 0.25; a win is worth 1).
-	DoomWeight float64
-	// BookWeight is how much of the fitness the spellbooks held carry (books
-	// out of six; default 0). A cult that cannot win yet needs it: nothing else
-	// tells a search which way to go.
-	BookWeight float64
-	Seed       int64
-	Workers    int
+	// Weights sets how much of the fitness each of the study's measures
+	// carries, by name, against a win's 1 (default: the study's own weights,
+	// such as 0.25 for Cthulhu Wars' Doom). A pick that cannot win yet needs
+	// one: nothing else tells a search which way to go.
+	Weights map[string]float64
+	Seed    int64
+	Workers int
 	// Init is where the search starts (default: the shipped tuning).
-	Init *cthulhuwars.GuideTuning
+	Init batch.Tuning
 	// MaxPlies caps a game (default batch.DefaultMaxPlies).
 	MaxPlies int
 }
 
 // Eval is how a tuning played over a set of games.
 type Eval struct {
-	Games   int     `json:"games"`
-	Wins    int     `json:"wins"`
-	Rate    float64 `json:"rate"`
-	Doom    float64 `json:"doom"`  // average final Doom
-	Books   float64 `json:"books"` // average spellbooks held at the end
-	Fitness float64 `json:"fitness"`
+	Games int     `json:"games"`
+	Wins  int     `json:"wins"`
+	Rate  float64 `json:"rate"`
+	// Means is each measure's average (Cthulhu Wars' final Doom and books).
+	Means   map[string]float64 `json:"means,omitempty"`
+	Fitness float64            `json:"fitness"`
 }
 
 // Step is one generation.
 type Step struct {
-	Generation int                     `json:"generation"`
-	Parent     cthulhuwars.GuideTuning `json:"parent"`
-	ParentEval Eval                    `json:"parent_eval"`
-	Best       cthulhuwars.GuideTuning `json:"best"`
-	BestEval   Eval                    `json:"best_eval"`
+	Generation int          `json:"generation"`
+	Parent     batch.Tuning `json:"parent"`
+	ParentEval Eval         `json:"parent_eval"`
+	Best       batch.Tuning `json:"best"`
+	BestEval   Eval         `json:"best_eval"`
 	// Confirmed evaluations of the best mutation and the parent on fresh games
 	// (zero when the mutation did not beat the parent to begin with).
 	ConfirmBest   Eval    `json:"confirm_best"`
@@ -98,11 +97,11 @@ type Validation struct {
 
 // Result is what a run found.
 type Result struct {
-	Faction    string                  `json:"faction"`
-	Lineup     []string                `json:"lineup"`
-	Best       cthulhuwars.GuideTuning `json:"best"`
-	Steps      []Step                  `json:"steps"`
-	Validation *Validation             `json:"validation,omitempty"`
+	Pick       string       `json:"faction"`
+	Lineup     []string     `json:"lineup"`
+	Best       batch.Tuning `json:"best"`
+	Steps      []Step       `json:"steps"`
+	Validation *Validation  `json:"validation,omitempty"`
 }
 
 func (c *Config) defaults() error {
@@ -127,44 +126,57 @@ func (c *Config) defaults() error {
 	if c.Sigma <= 0 {
 		c.Sigma = 0.15
 	}
-	if c.DoomWeight == 0 {
-		c.DoomWeight = 0.25
-	}
 	found := false
 	for _, f := range c.Lineup {
-		found = found || f == c.Faction
+		found = found || f == c.Pick
 	}
 	if !found {
-		return fmt.Errorf("tune: the line-up %v does not include %q", c.Lineup, c.Faction)
+		return fmt.Errorf("tune: the line-up %v does not include %q", c.Lineup, c.Pick)
 	}
 	return nil
+}
+
+// studyOf is the study of c's game, which must have knobs to tune.
+func (c *Config) studyOf(cat *catalog.Catalog) (batch.Study, error) {
+	game, ok := cat.Get(c.Base)
+	if !ok {
+		return nil, fmt.Errorf("tune: unknown game %q", c.Base)
+	}
+	study := batch.StudyOf(game)
+	if study == nil || len(study.Knobs()) == 0 {
+		return nil, fmt.Errorf("tune: %s has no guide to tune", c.Base)
+	}
+	return study, nil
 }
 
 // evaluate plays games games with the tuned cult using t (nil: the shipped
 // tuning) and scores it. The same seed replays the same games for another
 // tuning, which makes two tunings comparable with less noise.
-func evaluate(ctx context.Context, cat *catalog.Catalog, c Config, t *cthulhuwars.GuideTuning, games int, seed int64) (Eval, error) {
-	spec := batch.Spec{Base: c.Base, HighPriests: c.HighPriests, Games: games, Seed: seed, Rotate: true, MaxPlies: c.MaxPlies, Workers: c.Workers}
+func evaluate(ctx context.Context, cat *catalog.Catalog, study batch.Study, c Config, t batch.Tuning, games int, seed int64) (Eval, error) {
+	spec := batch.Spec{Base: c.Base, Options: c.Options, Games: games, Seed: seed, Rotate: true, MaxPlies: c.MaxPlies, Workers: c.Workers}
 	for _, f := range c.Lineup {
-		p := batch.Player{Faction: f, Bot: c.Bot}
-		if f == c.Faction {
+		p := batch.Player{Pick: f, Bot: c.Bot}
+		if f == c.Pick {
 			p.Tuning = t
 		}
 		spec.Players = append(spec.Players, p)
 	}
 	ev := Eval{}
-	doom, books := 0.0, 0.0
+	sums := map[string]float64{}
+	var mu sync.Mutex
 	err := batch.Run(ctx, cat, spec, func(r batch.Record) {
-		for _, s := range r.Metrics.Seats {
-			if s.Faction != c.Faction {
-				continue
-			}
-			ev.Games++
-			doom += float64(s.Doom)
-			books += float64(s.BooksTotal)
-			if s.Won {
-				ev.Wins++
-			}
+		won, values, ok := study.Score(r, c.Pick)
+		if !ok {
+			return
+		}
+		mu.Lock()
+		defer mu.Unlock()
+		ev.Games++
+		if won {
+			ev.Wins++
+		}
+		for k, v := range values {
+			sums[k] += v
 		}
 	}, nil)
 	if err != nil {
@@ -172,17 +184,31 @@ func evaluate(ctx context.Context, cat *catalog.Catalog, c Config, t *cthulhuwar
 	}
 	if ev.Games > 0 {
 		ev.Rate = float64(ev.Wins) / float64(ev.Games)
-		ev.Doom = doom / float64(ev.Games)
-		ev.Books = books / float64(ev.Games)
-		ev.Fitness = ev.Rate + c.DoomWeight*ev.Doom/30 + c.BookWeight*ev.Books/6
+		ev.Fitness = ev.Rate
+		ev.Means = map[string]float64{}
+		for k, v := range sums {
+			ev.Means[k] = v / float64(ev.Games)
+		}
+		for _, m := range study.Measures() {
+			w, set := c.Weights[m.Name]
+			if !set {
+				w = m.Weight
+			}
+			if m.Scale > 0 {
+				ev.Fitness += w * ev.Means[m.Name] / m.Scale
+			}
+		}
 	}
 	return ev, nil
 }
 
 // mutate returns a copy of t with a few knobs moved by a Gaussian step of
 // sigma times their range, clipped to it.
-func mutate(t cthulhuwars.GuideTuning, knobs []cthulhuwars.Knob, sigma float64, rng *rand.Rand) cthulhuwars.GuideTuning {
-	out := t
+func mutate(t batch.Tuning, knobs []batch.Knob, sigma float64, rng *rand.Rand) batch.Tuning {
+	out := batch.Tuning{}
+	for k, v := range t {
+		out[k] = v
+	}
 	changed := false
 	for !changed {
 		for _, k := range knobs {
@@ -191,23 +217,27 @@ func mutate(t cthulhuwars.GuideTuning, knobs []cthulhuwars.Knob, sigma float64, 
 			if rng.Float64() > 3/float64(len(knobs)) {
 				continue
 			}
-			p := k.Ptr(&out)
-			v := *p + rng.NormFloat64()*sigma*(k.Max-k.Min)
-			*p = math.Round(math.Max(k.Min, math.Min(k.Max, v))*2) / 2
-			changed = changed || *p != *k.Ptr(&t)
+			v := out[k.Name] + rng.NormFloat64()*sigma*(k.Max-k.Min)
+			out[k.Name] = math.Round(math.Max(k.Min, math.Min(k.Max, v))*2) / 2
+			changed = changed || out[k.Name] != t[k.Name]
+		}
+	}
+	for k, v := range out {
+		if v == 0 {
+			delete(out, k)
 		}
 	}
 	return out
 }
 
-func selectKnobs(names []string) ([]cthulhuwars.Knob, error) {
+func selectKnobs(all []batch.Knob, names []string) ([]batch.Knob, error) {
 	if len(names) == 0 {
-		return cthulhuwars.GuideKnobs, nil
+		return all, nil
 	}
-	var out []cthulhuwars.Knob
+	var out []batch.Knob
 	for _, n := range names {
 		found := false
-		for _, k := range cthulhuwars.GuideKnobs {
+		for _, k := range all {
 			if k.Name == n {
 				out = append(out, k)
 				found = true
@@ -227,15 +257,19 @@ func Run(ctx context.Context, cat *catalog.Catalog, c Config, onStep func(Step, 
 	if err := c.defaults(); err != nil {
 		return Result{}, err
 	}
-	knobs, err := selectKnobs(c.Knobs)
+	study, err := c.studyOf(cat)
 	if err != nil {
 		return Result{}, err
 	}
-	parent := cthulhuwars.ShippedTuning(c.Faction)
-	if c.Init != nil {
-		parent = *c.Init
+	knobs, err := selectKnobs(study.Knobs(), c.Knobs)
+	if err != nil {
+		return Result{}, err
 	}
-	res := Result{Faction: c.Faction, Lineup: c.Lineup, Best: parent}
+	parent := study.Shipped(c.Pick)
+	if c.Init != nil {
+		parent = c.Init
+	}
+	res := Result{Pick: c.Pick, Lineup: c.Lineup, Best: parent}
 	rng := rand.New(rand.NewSource(c.Seed + 7))
 	sigma := c.Sigma
 	seedFor := func(gen, slot int) int64 { return c.Seed + int64(gen)*1_000_003 + int64(slot)*97_001 + 1 }
@@ -245,20 +279,19 @@ func Run(ctx context.Context, cat *catalog.Catalog, c Config, onStep func(Step, 
 			return res, ctx.Err()
 		}
 		seed := seedFor(gen, 0)
-		pt := parent
-		pe, err := evaluate(ctx, cat, c, &pt, c.GamesPerEval, seed)
+		pe, err := evaluate(ctx, cat, study, c, parent, c.GamesPerEval, seed)
 		if err != nil {
 			return res, err
 		}
 		step := Step{Generation: gen, Parent: parent, ParentEval: pe, Sigma: sigma}
 		type cand struct {
-			t cthulhuwars.GuideTuning
+			t batch.Tuning
 			e Eval
 		}
 		var cands []cand
 		for i := 0; i < c.Population; i++ {
 			t := mutate(parent, knobs, sigma, rng)
-			e, err := evaluate(ctx, cat, c, &t, c.GamesPerEval, seed)
+			e, err := evaluate(ctx, cat, study, c, t, c.GamesPerEval, seed)
 			if err != nil {
 				return res, err
 			}
@@ -271,12 +304,11 @@ func Run(ctx context.Context, cat *catalog.Catalog, c Config, onStep func(Step, 
 			// The best of several noisy tries is flattered by luck: it must beat
 			// the parent again on games neither has played.
 			cseed := seedFor(gen, 1)
-			bt, ptc := best.t, parent
-			ce, err := evaluate(ctx, cat, c, &bt, c.ConfirmGames, cseed)
+			ce, err := evaluate(ctx, cat, study, c, best.t, c.ConfirmGames, cseed)
 			if err != nil {
 				return res, err
 			}
-			cp, err := evaluate(ctx, cat, c, &ptc, c.ConfirmGames, cseed)
+			cp, err := evaluate(ctx, cat, study, c, parent, c.ConfirmGames, cseed)
 			if err != nil {
 				return res, err
 			}
@@ -300,12 +332,11 @@ func Run(ctx context.Context, cat *catalog.Catalog, c Config, onStep func(Step, 
 
 	// A last comparison on games nothing was fitted to.
 	vseed := seedFor(c.Generations+1, 2)
-	bt := res.Best
-	te, err := evaluate(ctx, cat, c, &bt, c.ValidateGames, vseed)
+	te, err := evaluate(ctx, cat, study, c, res.Best, c.ValidateGames, vseed)
 	if err != nil {
 		return res, err
 	}
-	se, err := evaluate(ctx, cat, c, nil, c.ValidateGames, vseed)
+	se, err := evaluate(ctx, cat, study, c, nil, c.ValidateGames, vseed)
 	if err != nil {
 		return res, err
 	}

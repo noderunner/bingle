@@ -1,15 +1,17 @@
 //go:build ignore
 
-// Command tune searches for a guide tuning that makes one cult's bot win more
-// often (see internal/tune):
+// Command tune searches for a guide tuning that makes one pick's bot win more
+// often, in a game whose practice study has knobs (see internal/tune and
+// batch.Study): a Cthulhu Wars cult, for instance,
 //
-//	go run scripts/tune/main.go -faction gc -generations 10 -out /tmp/tune-gc.json
+//	go run scripts/tune/main.go -base cthulhu-wars -lineup gc,cc,bg,ys -pick gc -generations 10 -out /tmp/tune-gc.json
 //
 // It prints every generation, saves the result after each one (and resumes from
 // it with -resume), and ends by comparing the tuning with the shipped one on
-// fresh games. -ship merges the result into
-// internal/games/cthulhuwars/tuned.json, which every bot of that cult then
-// plays with — only do that when the validation is convincing.
+// fresh games. -ship FILE merges the result into the game's file of shipped
+// tunings (Cthulhu Wars' is internal/games/cthulhuwars/tuned.json), which every
+// bot of that pick then plays with — only do that when the validation is
+// convincing.
 package main
 
 import (
@@ -20,20 +22,21 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 
 	"github.com/noderunner/bingle/internal/app"
+	"github.com/noderunner/bingle/internal/batch"
 	"github.com/noderunner/bingle/internal/engine/catalog"
-	"github.com/noderunner/bingle/internal/games/cthulhuwars"
 	"github.com/noderunner/bingle/internal/tune"
 )
 
 func main() {
 	var (
-		base     = flag.String("base", "cthulhu-wars", "layout")
-		lineup   = flag.String("lineup", "gc,cc,bg,ys", "cults at the table, comma separated")
-		hp       = flag.Bool("hp", false, "High Priests expansion")
-		faction  = flag.String("faction", "gc", "the cult to tune")
+		base     = flag.String("base", "cthulhu-wars", "game")
+		lineup   = flag.String("lineup", "gc,cc,bg,ys", "picks at the table, one per seat, comma separated")
+		options  = flag.String("options", "", "the study's options for the table, comma separated (Cthulhu Wars: hp, the High Priests)")
+		pick     = flag.String("pick", "gc", "the pick to tune")
 		bot      = flag.String("bot", "tactical", "bot every cult plays")
 		gens     = flag.Int("generations", 10, "generations")
 		pop      = flag.Int("pop", 6, "mutations per generation")
@@ -42,13 +45,12 @@ func main() {
 		validate = flag.Int("validate", 400, "games of the final comparison")
 		sigma    = flag.Float64("sigma", 0.15, "mutation size as a fraction of a knob's range")
 		knobs    = flag.String("knobs", "", "knobs to search, comma separated (default all)")
-		bookW    = flag.Float64("book-weight", 0, "weight of the spellbooks held (out of 6) in the fitness; use for cults that rarely win")
-		doomW    = flag.Float64("doom-weight", 0.25, "weight of the Doom reached in the fitness")
+		weights  = flag.String("weights", "", "weights of the study's measures in the fitness, name=w comma separated (Cthulhu Wars: doom=0.25 by default, books=0; raise books for a cult that rarely wins)")
 		seed     = flag.Int64("seed", 1, "seed")
 		workers  = flag.Int("workers", 0, "games at once (default 3/4 of the CPUs)")
 		out      = flag.String("out", "", "file to save the result in")
 		resume   = flag.Bool("resume", false, "start from the best tuning saved in -out")
-		ship     = flag.Bool("ship", false, "merge the result into tuned.json")
+		ship     = flag.String("ship", "", "merge the result into this file of shipped tunings")
 	)
 	flag.Parse()
 
@@ -59,20 +61,33 @@ func main() {
 		}
 	}
 	cfg := tune.Config{
-		Base: *base, Lineup: strings.Split(*lineup, ","), HighPriests: *hp, Faction: *faction, Bot: *bot,
+		Base: *base, Lineup: strings.Split(*lineup, ","), Pick: *pick, Bot: *bot,
 		Generations: *gens, Population: *pop, GamesPerEval: *games, ConfirmGames: *confirm, ValidateGames: *validate,
-		Sigma: *sigma, DoomWeight: *doomW, BookWeight: *bookW, Seed: *seed, Workers: *workers,
+		Sigma: *sigma, Seed: *seed, Workers: *workers,
+	}
+	if *options != "" {
+		cfg.Options = strings.Split(*options, ",")
 	}
 	if *knobs != "" {
 		cfg.Knobs = strings.Split(*knobs, ",")
+	}
+	if *weights != "" {
+		cfg.Weights = map[string]float64{}
+		for _, kv := range strings.Split(*weights, ",") {
+			name, val, ok := strings.Cut(kv, "=")
+			w, err := strconv.ParseFloat(val, 64)
+			if !ok || err != nil {
+				log.Fatalf("-weights: %q is not name=number", kv)
+			}
+			cfg.Weights[name] = w
+		}
 	}
 	var prior tune.Result
 	if *resume && *out != "" {
 		if raw, err := os.ReadFile(*out); err == nil {
 			if json.Unmarshal(raw, &prior) == nil {
-				t := prior.Best
-				cfg.Init = &t
-				fmt.Printf("resuming from %s: %+v\n", *out, t)
+				cfg.Init = prior.Best
+				fmt.Printf("resuming from %s: %v\n", *out, prior.Best)
 			}
 		}
 	}
@@ -103,25 +118,24 @@ func main() {
 	}
 	save(res)
 	raw, _ := json.Marshal(res.Best)
-	fmt.Printf("\nbest tuning for %s: %s\n", res.Faction, raw)
+	fmt.Printf("\nbest tuning for %s: %s\n", res.Pick, raw)
 	if v := res.Validation; v != nil {
-		fmt.Printf("validation on %d fresh games: tuned wins %.1f%% (doom %.1f, books %.2f), shipped %.1f%% (doom %.1f, books %.2f), z = %+.2f\n",
-			v.Tuned.Games, v.Tuned.Rate*100, v.Tuned.Doom, v.Tuned.Books, v.Shipped.Rate*100, v.Shipped.Doom, v.Shipped.Books, v.Z)
+		fmt.Printf("validation on %d fresh games: tuned wins %.1f%% %v, shipped %.1f%% %v, z = %+.2f\n",
+			v.Tuned.Games, v.Tuned.Rate*100, v.Tuned.Means, v.Shipped.Rate*100, v.Shipped.Means, v.Z)
 		if v.Z < 1.64 {
 			fmt.Println("not convincing (z < 1.64): do not ship this one; run more games or generations.")
 		}
 	}
-	if *ship && res.Validation != nil {
-		const path = "internal/games/cthulhuwars/tuned.json"
-		all := map[string]cthulhuwars.GuideTuning{}
-		if b, err := os.ReadFile(path); err == nil {
+	if *ship != "" && res.Validation != nil {
+		all := map[string]batch.Tuning{}
+		if b, err := os.ReadFile(*ship); err == nil {
 			_ = json.Unmarshal(b, &all)
 		}
-		all[res.Faction] = res.Best
+		all[res.Pick] = res.Best
 		b, _ := json.MarshalIndent(all, "", "  ")
-		if err := os.WriteFile(path, append(b, '\n'), 0o644); err != nil {
+		if err := os.WriteFile(*ship, append(b, '\n'), 0o644); err != nil {
 			log.Fatal(err)
 		}
-		fmt.Println("shipped into", path)
+		fmt.Println("shipped into", *ship)
 	}
 }

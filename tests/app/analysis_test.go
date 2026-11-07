@@ -133,16 +133,17 @@ func TestBatches_AnyGameCanBeBatched(t *testing.T) {
 	}
 }
 
-// A spec that names a cult for some seats but not others is refused, and so is
-// a Cthulhu Wars option on a game that has none.
+// A spec that picks for some seats but not others is refused, and so is an
+// option (the High Priests, in a spec saved before options were general) on a
+// game whose study has none.
 func TestBatches_SpecIsCheckedForEveryGame(t *testing.T) {
 	baseURL, member := newMemberServer(t)
 	for name, tc := range map[string]struct {
 		body map[string]any
 		says string
 	}{
-		"half a table of cults": {map[string]any{"base": "tic-tac-toe", "games": 1, "players": []map[string]any{{"bot": "random", "faction": "gc"}, {"bot": "random"}}}, "name one for all of them or for none"},
-		"high priests nowhere":  {map[string]any{"base": "tic-tac-toe", "games": 1, "high_priests": true, "players": []map[string]any{{"bot": "random"}, {"bot": "random"}}}, "Cthulhu Wars option"},
+		"half a table of cults": {map[string]any{"base": "tic-tac-toe", "games": 1, "players": []map[string]any{{"bot": "random", "faction": "gc"}, {"bot": "random"}}}, "pick for all of them or for none"},
+		"high priests nowhere":  {map[string]any{"base": "tic-tac-toe", "games": 1, "high_priests": true, "players": []map[string]any{{"bot": "random"}, {"bot": "random"}}}, "nothing to pick per seat and no options"},
 		"too few seats":         {map[string]any{"base": "tic-tac-toe", "games": 1, "players": []map[string]any{{"bot": "random"}}}, "seats 2 players"},
 		"an unknown bot":        {map[string]any{"base": "tic-tac-toe", "games": 1, "players": []map[string]any{{"bot": "gandalf"}, {"bot": "random"}}}, "unknown bot"},
 	} {
