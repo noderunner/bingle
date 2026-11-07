@@ -21,20 +21,8 @@ import (
 	"github.com/noderunner/bingle/internal/config"
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/envs"
-	"github.com/noderunner/bingle/internal/games/blooms"
-	"github.com/noderunner/bingle/internal/games/classics"
-	"github.com/noderunner/bingle/internal/games/courtfall"
-	"github.com/noderunner/bingle/internal/games/cthulhuwars"
-	"github.com/noderunner/bingle/internal/games/fendo"
-	"github.com/noderunner/bingle/internal/games/fist"
-	"github.com/noderunner/bingle/internal/games/hive"
-	"github.com/noderunner/bingle/internal/games/meridians"
-	"github.com/noderunner/bingle/internal/games/mycelium"
-	"github.com/noderunner/bingle/internal/games/nyet"
-	"github.com/noderunner/bingle/internal/games/onitama"
-	"github.com/noderunner/bingle/internal/games/solitaire"
-	"github.com/noderunner/bingle/internal/games/tak"
-	"github.com/noderunner/bingle/internal/games/yinsh"
+	_ "github.com/noderunner/bingle/internal/games/all" // every game this repository ships; build tags leave one out
+	"github.com/noderunner/bingle/internal/games/registry"
 	"github.com/noderunner/bingle/internal/journal"
 	"github.com/noderunner/bingle/internal/logging"
 	"github.com/noderunner/bingle/internal/mail"
@@ -340,9 +328,10 @@ var RetiredGames = []struct{ ID, Name string }{
 	{"connect-four", "Connect Four"},
 }
 
-// BuiltinModules returns every game module bingle ships with.
+// BuiltinModules returns every game module this binary was built with: the
+// families registered by package all, less any a build tag left out.
 func BuiltinModules() []catalog.Module {
-	return append([]catalog.Module{tak.Module(), fendo.Module(), fist.Module(), meridians.Module(), onitama.Module(), blooms.Module(), hive.Module(), nyet.Module(), solitaire.Module(), solitaire.BowlingModule(), yinsh.Module(), cthulhuwars.Module()}, slices.Concat(courtfall.Modules(), mycelium.Modules(), classics.Modules())...)
+	return registry.Modules()
 }
 
 // Router returns the application's HTTP handler.

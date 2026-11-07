@@ -157,7 +157,8 @@ docs/                     the manual; docs/decisions has an ADR for each big dec
 
 Write a YAML definition (start from `tests/testdata/tictactoe.yaml`: Tic-Tac-Toe,
 about 30 lines, kept as a test fixture), embed it in a package with `catalog.Module`, and register it in
-`internal/app/app.go`. See [docs/dsl.md](docs/dsl.md). Rules a definition
+`internal/games/all` (one file per game, which a build tag such as `-tags no_cthulhuwars`
+leaves out of the binary). See [docs/dsl.md](docs/dsl.md). Rules a definition
 can't express go in a Go ruleset (`"engine": "ruleset"`, ADR 0025 — Courtfall and Cthulhu Wars)
 or a new engine action type (ADR 0022 describes how `slide` and `leap` were
 added).

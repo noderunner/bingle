@@ -49,7 +49,8 @@ good examples). Every game needs:
 - a definition with `version`, `designers`, `publisher` (when known) and a short `description`;
 - a rules guide: one `rules.md` that teaches a newcomer the whole game, with diagrams where a
   picture helps (`scripts/guide_diagrams.py` draws the SVGs in the existing guides);
-- registration in `internal/app/app.go`;
+- registration: a file of its own in `internal/games/all`, `<package>.go`, with the build tag
+  `//go:build !no_<package>` and an `init` that calls `registry.Register` (see `internal/games/registry`);
 - a place in the cross-game test battery (`tests/allgames` picks up every registered game by itself).
 
 ## Conduct
