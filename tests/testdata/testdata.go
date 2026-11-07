@@ -9,6 +9,7 @@ import (
 
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/engine/dsl"
+	"github.com/noderunner/bingle/tests/testdata/council"
 )
 
 //go:embed freeplay.json
@@ -48,5 +49,5 @@ func ConnectFour() catalog.Module {
 
 // Fixtures are every game only the tests use.
 func Fixtures() []catalog.Module {
-	return []catalog.Module{Freeplay(), TicTacToe(), ConnectFour()}
+	return []catalog.Module{Freeplay(), TicTacToe(), ConnectFour(), council.Module()}
 }
