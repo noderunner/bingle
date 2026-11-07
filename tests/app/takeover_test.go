@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/chromedp/chromedp"
-	"github.com/noderunner/bingle/internal/games/cthulhuwars"
 )
 
 type takeoverGame struct {
@@ -112,15 +111,10 @@ func TestMCPVoteKick_SaysWhyWithNoSocket(t *testing.T) {
 // is what lets the clock go beyond two seats (real-time plan, decision 19).
 func TestGameClock_RunsForTheSeatThatMustReact(t *testing.T) {
 	base := newRESTTestServer(t)
-	doc := cwPosition(t,
-		[]cwUnit{{1, "cultist", "south-pacific", 2}, {2, "cultist", "south-pacific", 1}},
-		map[string]int{"south-pacific": 1},
-		[5]int{0, 3, 3, 0, 0}, [5]uint8{0, 1 << 1, 0, 0, 0},
-		func(d *cthulhuwars.Data) { d.Turn.Seat = 2 })
 	var created createGameResponse
 	body := map[string]any{
-		"game_def_id": "cthulhu-wars", "player_name": "Alice", "seat_bots": map[string]string{"3": "random", "4": "random"},
-		"start_state": json.RawMessage(doc), "start_seat": 2, "clock_seconds": 3600,
+		"game_def_id": councilReactionTable, "player_name": "Alice", "seat_bots": map[string]string{"2": "random", "3": "random"},
+		"start_state": json.RawMessage(reactionStart(t)), "start_seat": 4, "clock_seconds": 3600,
 	}
 	if code := doJSON(t, "POST", base+"/api/games", body, &created); code != 200 {
 		t.Fatalf("create: %d", code)
@@ -129,11 +123,12 @@ func TestGameClock_RunsForTheSeatThatMustReact(t *testing.T) {
 	joinRoom(t, base, room, "Bob")
 	var g takeoverGame
 	doJSON(t, "GET", base+"/api/games/"+room, nil, &g)
-	if g.Clock == nil || g.Clock.Running != 2 {
+	if g.Clock == nil || g.Clock.Running != 4 {
 		t.Fatalf("before the action: %+v", g.Clock)
 	}
-	if code, out := moveNotation(t, base, room, "Bob", "recruit@south-pacific"); code != 200 {
-		t.Fatalf("recruit: %d %v", code, out)
+	// Bob walks into the North, where Alice's envoy stands: she is asked.
+	if code, out := moveNotation(t, base, room, "Bob", "go@north"); code != 200 {
+		t.Fatalf("move: %d %v", code, out)
 	}
 	doJSON(t, "GET", base+"/api/games/"+room, nil, &g)
 	if g.Clock == nil || g.Clock.Running != 1 {

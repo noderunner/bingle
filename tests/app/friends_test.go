@@ -543,7 +543,7 @@ func TestFriends_ASeatKeptAtAnOpenTable(t *testing.T) {
 	var created struct {
 		RoomCode string `json:"room_code"`
 	}
-	if code := ana.do("POST", "/api/games", map[string]any{"game_def_id": "cthulhu-wars", "player_name": "Ana", "reserved_seats": map[string]string{"2": "bob"}}, &created); code != 200 {
+	if code := ana.do("POST", "/api/games", map[string]any{"game_def_id": "test-council", "player_name": "Ana", "reserved_seats": map[string]string{"2": "bob"}}, &created); code != 200 {
 		t.Fatalf("create: %d", code)
 	}
 	room := created.RoomCode
@@ -689,10 +689,10 @@ func TestWebFriends_TheActiveGamesWindow(t *testing.T) {
 		RoomCode string `json:"room_code"`
 	}
 	doJSON(t, "POST", baseURL+"/api/games", map[string]any{"game_def_id": "tic-tac-toe", "player_name": "Ana", "opponent": "random"}, &duel)
-	doJSON(t, "POST", baseURL+"/api/games", map[string]any{"game_def_id": "cthulhu-wars", "player_name": "Ana", "opponent": "random"}, &table)
+	doJSON(t, "POST", baseURL+"/api/games", map[string]any{"game_def_id": "test-council", "player_name": "Ana", "opponent": "random"}, &table)
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	games := `[{"code":"` + duel.RoomCode + `","def":"tic-tac-toe","name":"Ana","ts":` + "Date.now()" + `},{"code":"` + table.RoomCode + `","def":"cthulhu-wars","name":"Ana","ts":Date.now()}]`
+	games := `[{"code":"` + duel.RoomCode + `","def":"tic-tac-toe","name":"Ana","ts":` + "Date.now()" + `},{"code":"` + table.RoomCode + `","def":"test-council","name":"Ana","ts":Date.now()}]`
 	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1400, 900), chromedp.Navigate(baseURL+"/healthz"), chromedp.Evaluate(`localStorage.setItem("bingle.games", JSON.stringify(`+games+`)); true`, nil), chromedp.Navigate(baseURL+"/")); err != nil {
 		t.Fatal(err)
 	}

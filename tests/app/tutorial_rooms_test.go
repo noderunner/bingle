@@ -300,7 +300,7 @@ func TestTutorials_RoomFromAWrittenStart(t *testing.T) {
 	base := newRESTTestServer(t)
 	key := newGuestKey(t, base)
 	var created createGameResponse
-	if code := doJSONAs(t, key, "POST", base+"/api/tutorials", map[string]any{"game_def_id": "cthulhu-wars", "tutorial": "high-priests", "player_name": "Lia"}, &created); code != 200 {
+	if code := doJSONAs(t, key, "POST", base+"/api/tutorials", map[string]any{"game_def_id": "test-council", "tutorial": "objections", "player_name": "Lia"}, &created); code != 200 {
 		t.Fatalf("starting it: %d", code)
 	}
 	var st struct {
@@ -311,7 +311,7 @@ func TestTutorials_RoomFromAWrittenStart(t *testing.T) {
 				Color string `json:"color"`
 			} `json:"cells"`
 			Ext struct {
-				Round int `json:"round"`
+				Claims map[string][]string `json:"claims"`
 			} `json:"ext"`
 		} `json:"state"`
 	}
@@ -322,17 +322,19 @@ func TestTutorials_RoomFromAWrittenStart(t *testing.T) {
 		GameDefID string `json:"game_def_id"`
 	}
 	doJSONAs(t, key, "GET", base+"/api/games/"+created.RoomCode, nil, &g)
-	if g.GameDefID != "cthulhu-wars~gc-cc-bg-ys-hp" || st.State.Ext.Round != 2 || st.ImpulseSeat == nil || *st.ImpulseSeat != 1 {
-		t.Fatalf("the room: %s, round %d, turn %v", g.GameDefID, st.State.Ext.Round, st.ImpulseSeat)
+	// The written start, at the derived table it names, after its setup: the
+	// Stag's claim is there, and Lia is asked about it.
+	if g.GameDefID != "test-council~crow-stag-wolf-ram-court" || len(st.State.Ext.Claims["2"]) != 1 || st.ImpulseSeat == nil || *st.ImpulseSeat != 1 {
+		t.Fatalf("the room: %s, claims %v, turn %v", g.GameDefID, st.State.Ext.Claims, st.ImpulseSeat)
 	}
 	found := false
-	for _, u := range st.State.Cells["indian-ocean"] {
-		if u.Piece == "high-priest" && u.Color == "yellow" {
+	for _, u := range st.State.Cells["north"] {
+		if u.Piece == "envoy" && u.Color == "blue" {
 			found = true
 		}
 	}
 	if !found {
-		t.Fatalf("the Yellow Sign's High Priest is not in the Indian Ocean: %+v", st.State.Cells["indian-ocean"])
+		t.Fatalf("the Stag's envoy is not in the North: %+v", st.State.Cells["north"])
 	}
 }
 
@@ -343,7 +345,7 @@ func TestTutorials_ReactionChoiceIsFixed(t *testing.T) {
 	base := newRESTTestServer(t)
 	key := newGuestKey(t, base)
 	var created createGameResponse
-	if code := doJSONAs(t, key, "POST", base+"/api/tutorials", map[string]any{"game_def_id": "cthulhu-wars", "tutorial": "high-priests", "player_name": "Lia"}, &created); code != 200 {
+	if code := doJSONAs(t, key, "POST", base+"/api/tutorials", map[string]any{"game_def_id": "test-council", "tutorial": "objections", "player_name": "Lia"}, &created); code != 200 {
 		t.Fatalf("starting it: %d", code)
 	}
 	url := base + "/api/games/" + created.RoomCode + "/reactions"
@@ -356,7 +358,7 @@ func TestTutorials_ReactionChoiceIsFixed(t *testing.T) {
 	}
 	for _, body := range []map[string]any{
 		{"player_name": "Lia", "ask_all": false},
-		{"player_name": "Lia", "targeted": false, "ability": "unspeakable-oath"},
+		{"player_name": "Lia", "targeted": false, "ability": "object"},
 		{"player_name": "Lia", "all": true},
 	} {
 		var out map[string]any
@@ -378,11 +380,14 @@ func TestTutorials_ServedWithTheirSeries(t *testing.T) {
 			Series string `json:"series"`
 		} `json:"tutorials"`
 	}
-	if code := doJSON(t, "GET", base+"/api/game-defs/cthulhu-wars/tutorials", nil, &l); code != 200 {
+	if code := doJSON(t, "GET", base+"/api/game-defs/test-council/tutorials", nil, &l); code != 200 {
 		t.Fatalf("GET the tutorials: %d", code)
 	}
+	if len(l.Tutorials) != 3 {
+		t.Fatalf("tutorials %+v", l.Tutorials)
+	}
 	for _, tu := range l.Tutorials {
-		if want := map[bool]string{true: "", false: "Core Game"}[tu.ID == "high-priests"]; tu.Series != want {
+		if want := map[bool]string{true: "", false: "Basics"}[tu.ID == "objections"]; tu.Series != want {
 			t.Errorf("%s is listed in the series %q, want %q", tu.ID, tu.Series, want)
 		}
 	}
@@ -390,7 +395,7 @@ func TestTutorials_ServedWithTheirSeries(t *testing.T) {
 		var doc struct {
 			Next *struct{ ID, Title string } `json:"next"`
 		}
-		if code := doJSON(t, "GET", base+"/api/game-defs/cthulhu-wars/tutorials/"+id, nil, &doc); code != 200 {
+		if code := doJSON(t, "GET", base+"/api/game-defs/test-council/tutorials/"+id, nil, &doc); code != 200 {
 			t.Fatalf("GET %s: %d", id, code)
 		}
 		if doc.Next == nil {
@@ -398,13 +403,13 @@ func TestTutorials_ServedWithTheirSeries(t *testing.T) {
 		}
 		return doc.Next.ID + "/" + doc.Next.Title
 	}
-	if got := next("how-to-win"); got != "power/Power" {
-		t.Errorf("after How to win: %q", got)
+	if got := next("moving"); got != "claiming/Claiming" {
+		t.Errorf("after Moving: %q", got)
 	}
-	if got := next("ui-features"); got != "" {
+	if got := next("claiming"); got != "" {
 		t.Errorf("the last of the series leads on to %q", got)
 	}
-	if got := next("high-priests"); got != "" {
+	if got := next("objections"); got != "" {
 		t.Errorf("a tutorial of no series leads on to %q", got)
 	}
 }

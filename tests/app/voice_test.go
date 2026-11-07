@@ -171,7 +171,7 @@ func TestVoice_OnlyPlayersJoin(t *testing.T) {
 // the call, and so must the receiver.
 func TestVoice_SignalReachesOnlyItsTarget(t *testing.T) {
 	base := newRESTTestServer(t)
-	room := newTakRoom(t, base, "cthulhu-wars-3p", "Alice")
+	room := newTakRoom(t, base, "test-council", "Alice")
 	joinRoom(t, base, room, "Bob")
 	joinRoom(t, base, room, "Cy")
 	other := newTakRoom(t, base, "tic-tac-toe", "Alice")

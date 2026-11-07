@@ -121,7 +121,7 @@ func TestBrand_PagesAndWhatTheServerSends(t *testing.T) {
 	if _, log := fetch(t, base+"/api/changelog"); strings.Contains(log, "Bingle") || !strings.Contains(log, "Night Club Core") {
 		t.Errorf("the changelog: %s", log)
 	}
-	if _, guide := fetch(t, base+"/api/game-defs/cthulhu-wars/guide"); strings.Contains(guide, "Bingle") || !strings.Contains(guide, "Night Club") {
+	if _, guide := fetch(t, base+"/api/game-defs/mycelium/guide"); strings.Contains(guide, "Bingle") || !strings.Contains(guide, "Night Club") {
 		t.Errorf("the rules still say Bingle, or have no name at all")
 	}
 }

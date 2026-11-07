@@ -128,12 +128,16 @@ func TestVoiceUI_ThreePlayerMesh(t *testing.T) {
 	var created struct {
 		RoomCode string `json:"room_code"`
 	}
-	if code := doJSON(t, "POST", baseURL+"/api/games", map[string]any{"game_def_id": "cthulhu-wars-3p", "player_name": "Alice", "lobby": true}, &created); code != 200 {
+	if code := doJSON(t, "POST", baseURL+"/api/games", map[string]any{"game_def_id": "test-council", "player_name": "Alice", "lobby": true}, &created); code != 200 {
 		t.Fatalf("create: %d", code)
 	}
 	room := created.RoomCode
 	joinRoom(t, baseURL, room, "Bob")
 	joinRoom(t, baseURL, room, "Cy")
+	// A bot in the fourth seat: three people talk.
+	if code := doJSON(t, "POST", baseURL+"/api/games/"+room+"/bots", map[string]any{"player_name": "Alice", "bot": "random", "seat": 4}, nil); code != 200 {
+		t.Fatalf("bot: %d", code)
+	}
 	if code := doJSON(t, "POST", baseURL+"/api/games/"+room+"/start", map[string]any{"player_name": "Alice"}, nil); code != 200 {
 		t.Fatalf("start: %d", code)
 	}
@@ -143,7 +147,7 @@ func TestVoiceUI_ThreePlayerMesh(t *testing.T) {
 	for _, n := range names {
 		ctx, cancel := newChromedpContextWith(t, 120*time.Second, fakeMic...)
 		defer cancel()
-		openGameAs(t, ctx, baseURL, room, "cthulhu-wars-3p", n)
+		openGameAs(t, ctx, baseURL, room, "test-council", n)
 		waitJS(t, ctx, "voice card", `document.getElementById("voice-join")`, 15*time.Second)
 		pages[n] = ctx
 	}

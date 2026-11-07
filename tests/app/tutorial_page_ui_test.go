@@ -461,7 +461,7 @@ func TestWebCthulhuWars_TheHighPriestsTutorial(t *testing.T) {
 	base := newRESTTestServer(t)
 	ctx, cancel := newChromedpContext(t, 180*time.Second)
 	defer cancel()
-	openTutorialOf(t, ctx, base, "cthulhu-wars", "high-priests")
+	openTutorialOf(t, ctx, base, "test-council", "moving")
 	next := func() { t.Helper(); clickSel(t, ctx, "#tutorial-next") }
 	count := `(document.getElementById("tutorial-count") || {}).textContent || ""`
 	// play makes the step's selections until the tutorial moves on to step n.
@@ -668,10 +668,10 @@ func TestWebTutorial_AnIllegalMoveIsMarkedOnAMap(t *testing.T) {
 		var real = window.fetch;
 		window.fetch = function (url, opts) {
 			return real.call(this, url, opts).then(function (res) {
-				if (String(url).indexOf("/tutorials/high-priests") < 0) return res;
+				if (String(url).indexOf("/tutorials/moving") < 0) return res;
 				return res.clone().json().then(function (doc) {
-					doc.steps[0].arrow = ["europe", "asia"];
-					doc.steps[0].highlight = ["africa"];
+					doc.steps[0].arrow = ["west", "hall"];
+					doc.steps[0].highlight = ["south"];
 					doc.steps[0].illegal = true;
 					return new Response(JSON.stringify(doc), { status: res.status, headers: { "Content-Type": "application/json" } });
 				});
@@ -684,6 +684,6 @@ func TestWebTutorial_AnIllegalMoveIsMarkedOnAMap(t *testing.T) {
 	})); err != nil {
 		t.Fatal(err)
 	}
-	openTutorialOf(t, ctx, base, "cthulhu-wars", "high-priests")
+	openTutorialOf(t, ctx, base, "test-council", "moving")
 	waitJS(t, ctx, "the arrow, the ring and their crosses", `!!document.querySelector(".illegal-marks .board-arrow") && document.querySelectorAll(".illegal-cross").length === 4`, 15*time.Second)
 }

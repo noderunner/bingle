@@ -162,14 +162,14 @@ func TestWebLobby_SetupOffersNoImportForMultiSeatGames(t *testing.T) {
 	ctx, cancel := newChromedpContext(t, 30*time.Second)
 	defer cancel()
 	if err := chromedp.Run(ctx,
-		chromedp.Navigate(baseURL+"/?game=cthulhu-wars"),
+		chromedp.Navigate(baseURL+"/?game=test-council"),
 		chromedp.WaitVisible("#create-game-form", chromedp.ByID),
 	); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the seats", `document.getElementById("slots-field")`, 15*time.Second)
 	if !evalBool(t, ctx, `document.getElementById("start-mode-field").hidden`) {
-		t.Error("Cthulhu Wars offers to import a move log")
+		t.Error("a game of four offers to import a move log")
 	}
 }
 

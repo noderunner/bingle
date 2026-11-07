@@ -18,8 +18,8 @@ type setupProfile struct {
 }
 
 func profileBody(name string, shared bool) map[string]any {
-	return map[string]any{"name": name, "game_def_id": "cthulhu-wars", "shared": shared,
-		"options": map[string]any{"factions": []any{"gc", "cc", "bg", "ys"}, "neutral-units": []any{"gug"}}}
+	return map[string]any{"name": name, "game_def_id": "test-council", "shared": shared,
+		"options": map[string]any{"houses": []any{"owl", "stag", "wolf", "ram"}, "court": true}}
 }
 
 func listProfiles(t *testing.T, b *browser) []setupProfile {
@@ -27,7 +27,7 @@ func listProfiles(t *testing.T, b *browser) []setupProfile {
 	var out struct {
 		Profiles []setupProfile `json:"profiles"`
 	}
-	if code := b.do("GET", "/api/setup-profiles?family=cthulhu-wars", nil, &out); code != 200 {
+	if code := b.do("GET", "/api/setup-profiles?family=test-council", nil, &out); code != 200 {
 		t.Fatalf("list: %d", code)
 	}
 	return out.Profiles
@@ -110,9 +110,9 @@ func TestSetupProfiles_Refused(t *testing.T) {
 		"no name":      profileBody("   ", false),
 		"a long name":  profileBody(strings.Repeat("x", 41), false),
 		"a tab":        profileBody("two\u0007words", false),
-		"bad options":  {"name": "x", "game_def_id": "cthulhu-wars", "options": map[string]any{"neutral-units": []any{"cthulhu"}}},
+		"bad options":  {"name": "x", "game_def_id": "test-council", "options": map[string]any{"houses": []any{"crow"}}},
 		"an unknown":   {"name": "x", "game_def_id": "nope", "options": map[string]any{}},
-		"a derived id": {"name": "x", "game_def_id": "cthulhu-wars~gc-cc-bg-ys-hp", "options": map[string]any{}},
+		"a derived id": {"name": "x", "game_def_id": "test-council~crow-stag-wolf-ram-court", "options": map[string]any{}},
 		"no picker":    {"name": "x", "game_def_id": "hex-11", "options": map[string]any{}},
 	} {
 		if code := ana.do("POST", "/api/setup-profiles", body, nil); code < 400 || code >= 500 {
@@ -136,7 +136,7 @@ func TestSetupProfiles_Refused(t *testing.T) {
 func TestSetupCatalog_Endpoint(t *testing.T) {
 	base := newRESTTestServer(t)
 	var c map[string]json.RawMessage
-	if code := doJSON(t, "GET", base+"/api/game-defs/cthulhu-wars-5p/setup-catalog", nil, &c); code != 200 || len(c["tabs"]) == 0 {
+	if code := doJSON(t, "GET", base+"/api/game-defs/test-council/setup-catalog", nil, &c); code != 200 || len(c["tabs"]) == 0 {
 		t.Errorf("catalog: %d", code)
 	}
 	if code := doJSON(t, "GET", base+"/api/game-defs/hex-11/setup-catalog", nil, nil); code != 404 {
@@ -145,25 +145,25 @@ func TestSetupCatalog_Endpoint(t *testing.T) {
 	var info struct {
 		SetupCatalog bool `json:"setup_catalog"`
 	}
-	if code := doJSON(t, "GET", base+"/api/game-defs/cthulhu-wars", nil, &info); code != 200 || !info.SetupCatalog {
+	if code := doJSON(t, "GET", base+"/api/game-defs/test-council", nil, &info); code != 200 || !info.SetupCatalog {
 		t.Errorf("the description says %v (%d)", info.SetupCatalog, code)
 	}
 }
 
-// At a table with a pool a player chooses their own seat's faction from it.
+// At a table with a pool a player chooses their own seat's pick from it.
 func TestFactionPool_PlayersChooseInTheLobby(t *testing.T) {
 	base := newRESTTestServer(t)
 	var created struct {
 		RoomCode string `json:"room_code"`
 	}
-	body := map[string]any{"game_def_id": "cthulhu-wars", "player_name": "Alice", "lobby": true,
-		"options": map[string]any{"factions": []any{"gc", "cc", "bg", "ys"}, "faction-pool": []any{"gc", "cc", "bg", "ys", "sl"}}}
+	body := map[string]any{"game_def_id": "test-council", "player_name": "Alice", "lobby": true,
+		"options": map[string]any{"houses": []any{"crow", "stag", "wolf", "ram"}, "house-pool": []any{"crow", "stag", "wolf", "ram", "owl"}}}
 	if code := doJSON(t, "POST", base+"/api/games", body, &created); code != 200 && code != 201 {
 		t.Fatalf("create: %d", code)
 	}
 	room := created.RoomCode
-	change := func(who string, seat int, cult string) int {
-		return doJSON(t, "POST", base+"/api/games/"+room+"/seat-cult", map[string]any{"player_name": who, "seat": seat, "cult": cult}, nil)
+	change := func(who string, seat int, house string) int {
+		return doJSON(t, "POST", base+"/api/games/"+room+"/seat-cult", map[string]any{"player_name": who, "seat": seat, "cult": house}, nil)
 	}
 	id := func() string {
 		var g struct {
@@ -172,27 +172,28 @@ func TestFactionPool_PlayersChooseInTheLobby(t *testing.T) {
 		doJSON(t, "GET", base+"/api/games/"+room, nil, &g)
 		return g.GameDefID
 	}
-	if code := change("Alice", 1, "ww"); code == 200 {
-		t.Error("a faction outside the pool")
+	const pool = "-pool-crow-stag-wolf-ram-owl"
+	if code := change("Alice", 1, "bear"); code == 200 {
+		t.Error("a house that is not in the pool")
 	}
-	if code := change("Alice", 1, "sl"); code != 200 {
+	if code := change("Alice", 1, "owl"); code != 200 {
 		t.Fatalf("her own seat: %d", code)
 	}
-	if got := id(); got != "cthulhu-wars~sl-cc-bg-ys-fp2f" {
+	if got := id(); got != "test-council~owl-stag-wolf-ram"+pool {
 		t.Errorf("after her choice: %q", got)
 	}
 	joinRoom(t, base, room, "Bob")
-	// Bob sits in the first open seat, Crawling Chaos. Alice's is not his to take, nor his hers.
-	if code := change("Bob", 2, "sl"); code != 409 {
-		t.Errorf("a faction a player holds: %d", code)
+	// Bob sits in the first open seat, the Stag's. Alice's is not his to take, nor his hers.
+	if code := change("Bob", 2, "owl"); code != 409 {
+		t.Errorf("a house a player holds: %d", code)
 	}
-	if code := change("Alice", 2, "gc"); code != 409 {
+	if code := change("Alice", 2, "crow"); code != 409 {
 		t.Errorf("another player's seat: %d", code)
 	}
-	if code := change("Bob", 2, "gc"); code != 200 {
+	if code := change("Bob", 2, "crow"); code != 200 {
 		t.Errorf("Bob takes the free one: %d", code)
 	}
-	if got := id(); got != "cthulhu-wars~sl-gc-bg-ys-fp2f" {
+	if got := id(); got != "test-council~owl-crow-wolf-ram"+pool {
 		t.Errorf("after his choice: %q", got)
 	}
 }

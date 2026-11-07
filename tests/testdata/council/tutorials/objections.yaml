@@ -1,0 +1,18 @@
+id: objections
+kind: rules
+title: Objections
+summary: Objecting to another house's turn, from a written position.
+order: 3
+game: test-council~crow-stag-wolf-ram-court   # the learner is the Crow, who may Object
+seat: 1
+start: !include positions/objection.yaml
+setup: [go@north]                               # the Stag walks into the North
+steps:
+  - name: Asked
+    text: The **Stag** has walked into the North, where your envoy stands. You may **Object**.
+  - name: An objection
+    text: Object.
+    play: [object]
+    hint: Press Object.
+  - name: Objected
+    text: The Stag gave back its last claim.
