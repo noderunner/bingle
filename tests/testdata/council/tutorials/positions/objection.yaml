@@ -1,0 +1,17 @@
+# The start of the Objections tutorial: the Stag (seat 2) to move, its envoy
+# next to the Crow's, with one claim to give back.
+v: 2
+cells:
+  north:
+    - {piece: envoy, color: red}
+  east:
+    - {piece: envoy, color: blue}
+  south:
+    - {piece: envoy, color: green}
+  west:
+    - {piece: envoy, color: yellow}
+ply: 5
+ext:
+  turn: 2
+  envoys: {1: north, 2: east, 3: south, 4: west}
+  claims: {2: [east]}

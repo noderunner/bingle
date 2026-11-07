@@ -263,7 +263,7 @@ func TestSchedule_FindingATime(t *testing.T) {
 		RoomCode string `json:"room_code"`
 	}
 	times := []string{inHours(5), inHours(10), inHours(20)}
-	if code := ana.do("POST", "/api/games", map[string]any{"game_def_id": "cthulhu-wars", "player_name": "Ana", "real_time": map[string]any{}, "schedule": map[string]any{"slots": times, "invite": []string{"bob", "cyd"}}}, &created); code != 200 {
+	if code := ana.do("POST", "/api/games", map[string]any{"game_def_id": "test-council", "player_name": "Ana", "real_time": map[string]any{}, "schedule": map[string]any{"slots": times, "invite": []string{"bob", "cyd"}}}, &created); code != 200 {
 		t.Fatalf("scheduling: %d", code)
 	}
 	room := created.RoomCode

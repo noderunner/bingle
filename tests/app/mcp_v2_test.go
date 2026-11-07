@@ -541,21 +541,22 @@ func TestMCP_GameGuideAndAddBot(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	c := newMCPClient(t, baseURL)
 
-	res := callTool(t, c, "get_game_guide", map[string]any{"game_def_id": "cthulhu-wars"})
+	// A guide of several pages (Courtfall's): all of it, or one page.
+	res := callTool(t, c, "get_game_guide", map[string]any{"game_def_id": "courtfall"})
 	if res.IsError {
 		t.Fatalf("get_game_guide: %s", toolText(res))
 	}
 	txt := toolText(res)
-	for _, want := range []string{"Instant Death", "Ritual of Annihilation", "Great Cthulhu", "| Spellbook |"} {
+	for _, want := range []string{"COURTFALL", "Five exiles", "## The odds", "Momentum"} {
 		if !strings.Contains(txt, want) {
 			t.Errorf("guide lacks %q", want)
 		}
 	}
-	one := callTool(t, c, "get_game_guide", map[string]any{"game_def_id": "cthulhu-wars", "tab": "battle"})
-	if one.IsError || !strings.Contains(toolText(one), "Kill") || strings.Contains(toolText(one), "Instant Death") {
+	one := callTool(t, c, "get_game_guide", map[string]any{"game_def_id": "courtfall", "tab": "combat"})
+	if one.IsError || !strings.Contains(toolText(one), "## The odds") || strings.Contains(toolText(one), "Five exiles") {
 		t.Errorf("a single page: %s", toolText(one))
 	}
-	if bad := callTool(t, c, "get_game_guide", map[string]any{"game_def_id": "cthulhu-wars", "tab": "nope"}); !bad.IsError {
+	if bad := callTool(t, c, "get_game_guide", map[string]any{"game_def_id": "courtfall", "tab": "nope"}); !bad.IsError {
 		t.Error("an unknown page should be an error")
 	}
 	gen := callTool(t, c, "get_game_guide", map[string]any{"game_def_id": "test-freeplay"})
@@ -571,7 +572,7 @@ func TestMCP_GameGuideAndAddBot(t *testing.T) {
 		RoomCode string `json:"room_code"`
 		Status   string `json:"status"`
 	}
-	decodeToolResult(t, callTool(t, c, "create_game", map[string]any{"game_def_id": "cthulhu-wars", "player_name": "Agent"}), &created)
+	decodeToolResult(t, callTool(t, c, "create_game", map[string]any{"game_def_id": "test-council", "player_name": "Agent"}), &created)
 	if created.Status != "waiting" {
 		t.Fatalf("created %+v", created)
 	}
@@ -594,17 +595,17 @@ func TestMCP_LobbyChatAndReactions(t *testing.T) {
 		RoomCode string `json:"room_code"`
 		Status   string `json:"status"`
 	}
-	decodeToolResult(t, callTool(t, c, "create_game", map[string]any{"game_def_id": "cthulhu-wars", "player_name": "Agent", "lobby": true}), &created)
+	decodeToolResult(t, callTool(t, c, "create_game", map[string]any{"game_def_id": "test-council", "player_name": "Agent", "lobby": true}), &created)
 	if created.Status != "waiting" {
 		t.Fatalf("created %+v", created)
 	}
-	// Bots are named after the faction of their seat and their kind.
+	// Bots are named after the label of their seat and their kind.
 	var bot struct {
 		Name string `json:"name"`
 		Seat int    `json:"seat"`
 	}
 	decodeToolResult(t, callTool(t, c, "add_bot", map[string]any{"room_code": created.RoomCode, "player_name": "Agent", "bot": "mcts", "seat": 4}), &bot)
-	if bot.Name != "Yellow Sign (MCTS)" || bot.Seat != 4 {
+	if bot.Name != "Ram (MCTS)" || bot.Seat != 4 {
 		t.Fatalf("bot %+v", bot)
 	}
 	if r := callTool(t, c, "start_game", map[string]any{"room_code": created.RoomCode, "player_name": "Agent"}); !r.IsError {

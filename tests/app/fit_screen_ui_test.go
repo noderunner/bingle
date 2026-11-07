@@ -206,7 +206,7 @@ func TestWebFitScreen_EveryKindOfGameFits(t *testing.T) {
 		{"go-9x9", false, "#board svg", "#impulse-card"},
 		{"nyet", false, ".card-table", "#impulse-card"},
 		{"spider", true, ".sol-table", "#impulse-card"},
-		{"cthulhu-wars", false, "#board svg", "#impulse-card .action-buttons"},
+		{"test-council", false, "#board svg", "#impulse-card .action-buttons"},
 	} {
 		body := map[string]any{"game_def_id": g.def, "player_name": "Alice"}
 		if !g.solo {

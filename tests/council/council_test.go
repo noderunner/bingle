@@ -11,6 +11,7 @@ import (
 
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/engine/state"
+	"github.com/noderunner/bingle/internal/tutorial"
 	"github.com/noderunner/bingle/tests/testdata/council"
 )
 
@@ -183,5 +184,23 @@ func TestTables(t *testing.T) {
 	}
 	if !slices.Equal(keys, []string{"crow", "stag", "wolf", "ram", "owl"}) {
 		t.Errorf("catalog houses %v", keys)
+	}
+}
+
+// Council's tutorials load and play out as written: a series of two, and one
+// of its own from a written start at a derived table.
+func TestTutorialsPlayOut(t *testing.T) {
+	cat := newCatalog(t)
+	list, err := tutorial.Load(council.Module().Tutorials)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(list) != 3 {
+		t.Fatalf("%d tutorials, want 3", len(list))
+	}
+	for _, tu := range list {
+		if err := tutorial.Verify(cat, council.ID, tu); err != nil {
+			t.Errorf("%s: %v", tu.ID, err)
+		}
 	}
 }

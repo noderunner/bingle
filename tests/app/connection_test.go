@@ -237,7 +237,7 @@ func TestConnection_ASocketThatStopsAnsweringIsClosed(t *testing.T) {
 // table ends it, with the socket still open in both cases.
 func TestConnection_FollowsThePlayerAroundTheLobby(t *testing.T) {
 	base := newConnectionServer(t, config.Connection{Grace: time.Hour})
-	room := newTakRoom(t, base, "cthulhu-wars", "Alice")
+	room := newTakRoom(t, base, "test-council", "Alice")
 	dialPlaying(t, base, room, "Alice", "player")
 	waitConnected(t, base, room, 1)
 

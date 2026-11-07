@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
-
-	"github.com/noderunner/bingle/internal/games/cthulhuwars"
 )
 
 // A person may play every seat of a table: each seat besides their own is a
@@ -62,14 +60,15 @@ func TestSoloTwoPlayerGame(t *testing.T) {
 	}
 }
 
-func TestSoloTableOfThreeCultsWithABot(t *testing.T) {
+// A person may play several seats of a table, with bots in others.
+func TestSoloTableOfSeveralSeatsWithABot(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	var created struct {
 		RoomCode string `json:"room_code"`
 		Status   string `json:"status"`
 	}
 	body := map[string]any{
-		"game_def_id": "cthulhu-wars-3p", "player_name": "Alice", "also_seats": []int{3}, "seat_bots": map[string]string{"2": "random"},
+		"game_def_id": "test-council", "player_name": "Alice", "also_seats": []int{3}, "seat_bots": map[string]string{"2": "random", "4": "random"},
 	}
 	if code := doJSON(t, "POST", baseURL+"/api/games", body, &created); code != 200 {
 		t.Fatalf("create: %d", code)
@@ -79,11 +78,11 @@ func TestSoloTableOfThreeCultsWithABot(t *testing.T) {
 	}
 	var info soloInfo
 	doJSON(t, "GET", baseURL+"/api/games/"+created.RoomCode, nil, &info)
-	if info.Seats[1].Bot != "random" || info.Seats[2].Name != "Alice · Black Goat" {
+	if info.Seats[1].Bot != "random" || info.Seats[2].Name != "Alice · Wolf" {
 		t.Fatalf("seats %+v", info.Seats)
 	}
 	// An unknown seat is refused.
-	bad := map[string]any{"game_def_id": "cthulhu-wars-3p", "player_name": "Bob", "also_seats": []int{9}}
+	bad := map[string]any{"game_def_id": "test-council", "player_name": "Bob", "also_seats": []int{9}}
 	if code := doJSON(t, "POST", baseURL+"/api/games", bad, nil); code != 400 {
 		t.Errorf("seat 9: %d, want 400", code)
 	}
@@ -114,25 +113,20 @@ func TestSoloTableWaitsInTheLobbyUntilStarted(t *testing.T) {
 // every reaction (the page offers them no settings, and nobody else waits).
 func TestAGameAgainstOneselfAsksEveryReaction(t *testing.T) {
 	base := newRESTTestServer(t)
-	// Alice plays Great Cthulhu (Devolve) and Crawling Chaos herself.
-	doc := cwPosition(t,
-		[]cwUnit{{1, "cultist", "south-pacific", 2}, {2, "cultist", "asia", 1}},
-		map[string]int{"south-pacific": 1, "asia": 2},
-		[5]int{0, 3, 3, 0, 0}, [5]uint8{0, 1 << 1, 0, 0, 0},
-		func(d *cthulhuwars.Data) { d.Turn.Seat = 2 })
+	// Alice plays the Crow (who may Object) and the Ram herself.
 	var created createGameResponse
 	body := map[string]any{
-		"game_def_id": "cthulhu-wars", "player_name": "Alice", "also_seats": []int{2},
-		"seat_bots":   map[string]string{"3": "random", "4": "random"},
-		"start_state": json.RawMessage(doc), "start_seat": 2,
+		"game_def_id": councilReactionTable, "player_name": "Alice", "also_seats": []int{4},
+		"seat_bots":   map[string]string{"2": "random", "3": "random"},
+		"start_state": json.RawMessage(reactionStart(t)), "start_seat": 4,
 	}
 	if code := doJSON(t, "POST", base+"/api/games", body, &created); code != 200 {
 		t.Fatalf("create: %d", code)
 	}
-	if code, out := moveNotation(t, base, created.RoomCode, "Alice · Crawling Chaos", "recruit@asia"); code != 200 {
-		t.Fatalf("recruit: %d %v", code, out)
+	if code, out := moveNotation(t, base, created.RoomCode, "Alice · Ram", "go@hall"); code != 200 {
+		t.Fatalf("move: %d %v", code, out)
 	}
-	// Nothing is aimed at Great Cthulhu, but Alice is asked all the same.
+	// Nothing is aimed at the Crow, but Alice is asked all the same.
 	var st struct {
 		ImpulseSeat int `json:"impulse_seat"`
 	}
@@ -140,7 +134,7 @@ func TestAGameAgainstOneselfAsksEveryReaction(t *testing.T) {
 	if st.ImpulseSeat != 1 {
 		t.Fatalf("seat %d is to move: the reaction was passed for her", st.ImpulseSeat)
 	}
-	if code, out := moveNotation(t, base, created.RoomCode, "Alice", "done"); code != 200 {
+	if code, out := moveNotation(t, base, created.RoomCode, "Alice", "decline"); code != 200 {
 		t.Fatalf("pass: %d %v", code, out)
 	}
 }

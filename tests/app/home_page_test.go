@@ -52,7 +52,7 @@ func TestHomePage_IsTabbedAndTidy(t *testing.T) {
 		}
 	}
 	// No floating zoom/reset buttons on the previews of the maps.
-	waitJS(t, ctx, "map preview", `document.querySelector('.game-card[data-family="cthulhu-wars"] .game-card-preview svg')`, 20*time.Second)
+	waitJS(t, ctx, "map preview", `document.querySelector('.game-card[data-family="test-council"] .game-card-preview svg')`, 20*time.Second)
 	if n := evalInt(t, ctx, `document.querySelectorAll(".map-zoom").length`); n != 0 {
 		t.Errorf("%d zoom button groups on the home page, want none", n)
 	}

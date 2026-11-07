@@ -53,12 +53,12 @@ func TestGameLook_ServedApartFromTheInfo(t *testing.T) {
 	} else if fenced := display["tints"].(map[string]any)["fenced"].(map[string]any); fenced["color"] != nil || fenced["label"] != "Fenced bloom" {
 		t.Errorf("the fenced tint keeps its words and loses its colour: %v", fenced)
 	}
-	// Cthulhu Wars' look names its page script, which is served with the
-	// game; a family without scripts has none to serve.
-	if code, look := get("/api/game-defs/cthulhu-wars/web"); code != 200 || look["script"] != "page.js" {
-		t.Errorf("Cthulhu Wars' look: %d %v", code, look)
+	// Council's look names its page script (tests/testdata/council), which is
+	// served with the game; a family without scripts has none to serve.
+	if code, look := get("/api/game-defs/test-council/web"); code != 200 || look["script"] != "page.js" {
+		t.Errorf("Council's look: %d %v", code, look)
 	}
-	for path, want := range map[string]int{"/static/games/cthulhu-wars/page.js": 200, "/static/games/cthulhu-wars/cw-names.js": 200, "/static/games/cthulhu-wars/nothing.js": 404, "/static/games/hex-11/page.js": 404} {
+	for path, want := range map[string]int{"/static/games/test-council/page.js": 200, "/static/games/test-council/nothing.js": 404, "/static/games/hex-11/page.js": 404} {
 		resp, err := http.Get(baseURL + path)
 		if err != nil {
 			t.Fatal(err)

@@ -1,6 +1,7 @@
 package app_test
 
 import (
+	"encoding/json"
 	"strings"
 	"sync"
 	"testing"
@@ -249,4 +250,44 @@ func TestWebCthulhuWars_EveryReactionHasItsOwnBoxesAndMadnessStartsTicked(t *tes
 	if len(jsErrors) > 0 {
 		t.Errorf("uncaught JS exceptions: %v", jsErrors)
 	}
+}
+
+// madnessGame creates a game in which Alice plays the Crawling Chaos with the
+// High Priests in the box and holds Madness. Yellow Sign has just fought the
+// Black Goat: its pained Cultist retreats where Alice says, though she is not
+// in the battle, so a question about Madness waits for her.
+func madnessGame(t *testing.T, base string) string {
+	t.Helper()
+	doc := cwPosition(t,
+		[]cwUnit{{4, "undead", "africa", 3}, {3, "cultist", "africa", 1}, {1, "cultist", "asia", 1}, {2, "cultist", "south-pacific", 1}},
+		map[string]int{"south-pacific": 2},
+		[5]int{0, 6, 6, 6, 6}, [5]uint8{0, 0, 1 << 4, 0, 0},
+		func(d *cthulhuwars.Data) {
+			d.Turn.Seat = 4
+			d.Stage = "retreat"
+			d.Bat = &cthulhuwars.Battle{Area: "africa", Att: 4, Def: 3, Step: "retreat", Retreater: 2, Pained: []cthulhuwars.PU{{Seat: 3, Type: "cultist"}}, Exempt: map[string]int{}, Called: map[string]int{}}
+		})
+	// The High Priests of the four cults wait in their pools.
+	bs := state.NewBoardState()
+	if err := bs.UnmarshalJSON([]byte(doc)); err != nil {
+		t.Fatal(err)
+	}
+	for _, color := range []string{"green", "blue", "red", "yellow"} {
+		bs.SetReserve(color, "high-priest", 1)
+	}
+	raw, err := bs.MarshalJSON()
+	if err != nil {
+		t.Fatal(err)
+	}
+	doc = string(raw)
+	var created createGameResponse
+	body := map[string]any{
+		"game_def_id": "cthulhu-wars~gc-cc-bg-ys-hp", "player_name": "Alice", "seat": 2,
+		"seat_bots":   map[string]string{"1": "random", "3": "random", "4": "random"},
+		"start_state": json.RawMessage(doc), "start_seat": 2,
+	}
+	if code := doJSON(t, "POST", base+"/api/games", body, &created); code != 200 {
+		t.Fatalf("create: %d", code)
+	}
+	return created.RoomCode
 }

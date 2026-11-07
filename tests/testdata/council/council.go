@@ -4,10 +4,11 @@
 // (game plugins plan, step 4). It has
 //
 //   - a table of four (lobbies, seats, voice, following a player);
-//   - an optional reaction, Object, opened after every other house's turn and
-//     aimed at a house when the turn ended in an area where its envoy stands
-//     (state.Reactor: the reaction settings, the session's automatic passes,
-//     the clock of a seat that must react);
+//   - optional reactions opened after every other house's turn, aimed at a
+//     house when the turn ended in an area where its envoy stands: Object,
+//     and the Owl's Heckle, which asks on every occasion (state.Reactor: the
+//     reaction settings, one choice per reaction, the session's automatic
+//     passes, the clock of a seat that must react);
 //   - a choice of house per seat from five, swapped in the lobby, with a pool
 //     its players choose from, and a game derived for every table
 //     (catalog.Deriver, state.SeatCults, state.OwnSeatCults, saved setups);
@@ -22,6 +23,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/fs"
+	"math/rand"
 	"slices"
 	"sort"
 	"strings"
@@ -31,6 +34,7 @@ import (
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/engine/dsl"
 	"github.com/noderunner/bingle/internal/engine/state"
+	"github.com/noderunner/bingle/internal/web/look"
 )
 
 // ID is the fixture's game id.
@@ -39,26 +43,50 @@ const ID = "test-council"
 //go:embed council.yaml
 var fsys embed.FS
 
+//go:embed tutorials
+var tutorialsFS embed.FS
+
 var definition = sync.OnceValue(func() []byte { return dsl.MustLoad(fsys, "council.yaml") })
+
+// baseDefinition is the definition parsed, for deriving tables outside the catalog.
+var baseDefinition = sync.OnceValue(func() *dsl.GameDefinition {
+	def, err := dsl.Parse(definition())
+	if err != nil {
+		panic(err)
+	}
+	return def
+})
+
+//go:embed web
+var webFS embed.FS
 
 // Module returns the fixture's catalog.Module.
 func Module() catalog.Module {
-	return catalog.Module{ID: ID, Definition: definition(), Rules: New()}
+	tutorials, err := fs.Sub(tutorialsFS, "tutorials")
+	if err != nil {
+		panic(err)
+	}
+	scripts, err := fs.Sub(webFS, "web")
+	if err != nil {
+		panic(err)
+	}
+	return catalog.Module{ID: ID, Definition: definition(), Rules: New(), Tutorials: tutorials, Scripts: scripts, Web: look.MustLoadFile(webFS, "web/web.yaml")}
 }
 
 // A house is what a seat plays.
 type house struct {
 	key, label, color string
 	object            bool // may Object from the start
+	heckle            bool // may Heckle
 }
 
 // Houses are the five houses, in the order the catalog lists them.
 var houses = []house{
-	{"crow", "Crow", "red", true},
-	{"stag", "Stag", "blue", false},
-	{"wolf", "Wolf", "green", false},
-	{"ram", "Ram", "yellow", false},
-	{"owl", "Owl", "white", true},
+	{"crow", "Crow", "red", true, false},
+	{"stag", "Stag", "blue", false, false},
+	{"wolf", "Wolf", "green", false, false},
+	{"ram", "Ram", "yellow", false, false},
+	{"owl", "Owl", "white", true, true},
 }
 
 func houseOf(key string) (house, bool) {
@@ -77,9 +105,16 @@ const (
 	actGo      = "go"
 	actClaim   = "claim"
 	actObject  = "object"
+	actHeckle  = "heckle"
 	actDecline = "decline"
 	piece      = "envoy"
 )
+
+// Abilities are the reactions, by id: their name and what they do.
+var abilities = map[string]state.ReactionAbility{
+	actObject: {ID: actObject, Name: "Object", Text: "After another house's turn, make it give back its last claim."},
+	actHeckle: {ID: actHeckle, Name: "Heckle", Text: "After another house's turn, heckle it: nothing comes of it, but you are asked every time.", AskAlways: true},
+}
 
 // Data is the position's own part.
 type Data struct {
@@ -95,12 +130,18 @@ type Data struct {
 	Reason string  `json:"reason,omitempty"`
 }
 
-// Window is an open Object: who may still decide, in order, after Trigger's
-// turn that ended in Area.
+// Window is an open reaction: who may still decide, and about which ability,
+// in order, after Trigger's turn that ended in Area.
 type Window struct {
 	Trigger int    `json:"trigger"`
 	Area    string `json:"area"`
-	Waiting []int  `json:"waiting"`
+	Waiting []Ask  `json:"waiting"`
+}
+
+// Ask is one question of a window: seat may use Ability.
+type Ask struct {
+	Seat    int    `json:"seat"`
+	Ability string `json:"ability"`
 }
 
 // CloneExt implements state.ExtClone.
@@ -118,16 +159,34 @@ func (d *Data) clone() *Data {
 	}
 	if d.Window != nil {
 		w := *d.Window
-		w.Waiting = append([]int(nil), d.Window.Waiting...)
+		w.Waiting = append([]Ask(nil), d.Window.Waiting...)
 		c.Window = &w
 	}
 	return &c
 }
 
+// publicExt is a position shown to a viewer: its data, and the view the
+// page draws from (a ruleset's ext.view).
+type publicExt struct {
+	*Data
+	View View `json:"view"`
+}
+
+// View is what the page is told besides the position: the question of the
+// impulse, the same for everyone.
+type View struct {
+	Prompt string `json:"prompt"`
+}
+
+// CloneExt implements state.ExtClone.
+func (p *publicExt) CloneExt() any { return &publicExt{Data: p.clone(), View: p.View} }
+
 func dataOf(st *state.BoardState) (*Data, error) {
 	switch v := st.Ext().(type) {
 	case *Data:
 		return v, nil
+	case *publicExt:
+		return v.Data, nil
 	case json.RawMessage:
 		d := &Data{}
 		if err := json.Unmarshal(v, d); err != nil {
@@ -162,11 +221,18 @@ func table(game *catalog.CompiledGame) (seats []string, court bool) {
 	return seats, court
 }
 
-// mayObject says whether seat may use Object now.
-func mayObject(game *catalog.CompiledGame, d *Data, seat int) bool {
+// held lists the reactions seat may use now, in the order it is asked them.
+func held(game *catalog.CompiledGame, d *Data, seat int) []string {
 	seats, court := table(game)
 	h, _ := houseOf(seats[seat-1])
-	return h.object || (court && len(d.Claims[seat]) > 0)
+	var out []string
+	if h.heckle {
+		out = append(out, actHeckle)
+	}
+	if h.object || (court && len(d.Claims[seat]) > 0) {
+		out = append(out, actObject)
+	}
+	return out
 }
 
 func next(seat, n int) int { return seat%n + 1 }
@@ -206,7 +272,7 @@ func (rs *Ruleset) ImpulseSeat(game *catalog.CompiledGame, st *state.BoardState)
 		return 0
 	}
 	if d.Window != nil && len(d.Window.Waiting) > 0 {
-		return d.Window.Waiting[0]
+		return d.Window.Waiting[0].Seat
 	}
 	return d.Turn
 }
@@ -218,7 +284,7 @@ func (rs *Ruleset) Legal(game *catalog.CompiledGame, st *state.BoardState, seat 
 		return nil
 	}
 	if d.Window != nil {
-		return []state.Selection{{Action: actObject}, {Action: actDecline}}
+		return []state.Selection{{Action: d.Window.Waiting[0].Ability}, {Action: actDecline}}
 	}
 	at := board.PositionID(d.Envoys[seat])
 	var out []state.Selection
@@ -263,7 +329,7 @@ func (rs *Ruleset) Apply(game *catalog.CompiledGame, st *state.BoardState, seat 
 	nd := d.clone()
 	n := len(game.Definition.Seats)
 	switch legal.Action {
-	case actObject, actDecline:
+	case actObject, actHeckle, actDecline:
 		w := nd.Window
 		if legal.Action == actObject {
 			if l := nd.Claims[w.Trigger]; len(l) > 0 {
@@ -281,11 +347,11 @@ func (rs *Ruleset) Apply(game *catalog.CompiledGame, st *state.BoardState, seat 
 			nd.Claims[seat] = append(nd.Claims[seat], string(legal.To))
 		}
 		nd.Turn = next(seat, n)
-		// Every other house that may Object is asked in turn, after this one.
-		var waiting []int
+		// Every other house is asked about each reaction it holds, in turn.
+		var waiting []Ask
 		for s := next(seat, n); s != seat; s = next(s, n) {
-			if mayObject(game, nd, s) {
-				waiting = append(waiting, s)
+			for _, a := range held(game, nd, s) {
+				waiting = append(waiting, Ask{Seat: s, Ability: a})
 			}
 		}
 		if len(waiting) > 0 {
@@ -364,7 +430,7 @@ func (rs *Ruleset) Validate(game *catalog.CompiledGame, st *state.BoardState) er
 	return nil
 }
 
-// Format writes a move: go@hall, claim@hall, object, decline.
+// Format writes a move: go@hall, claim@hall, object, heckle, decline.
 func (rs *Ruleset) Format(game *catalog.CompiledGame, mv state.Selection) string {
 	if mv.To != "" {
 		return mv.Action + "@" + string(mv.To)
@@ -382,7 +448,7 @@ func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Selecti
 			return state.Selection{}, fmt.Errorf("council: no area %q", at)
 		}
 		return state.Selection{Action: act, To: board.PositionID(at)}, nil
-	case actObject, actDecline:
+	case actObject, actHeckle, actDecline:
 		if at == "" {
 			return state.Selection{Action: act}, nil
 		}
@@ -390,12 +456,16 @@ func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Selecti
 	return state.Selection{}, fmt.Errorf("council: cannot read %q", text)
 }
 
-// Gestures: an area to move or claim, or the action's button.
+// Gestures: an area to move to; the Claim button, then the area (a move of
+// two steps, for the tests of the impulse card); or an answer's button.
 func (rs *Ruleset) Gestures(game *catalog.CompiledGame, mv state.Selection) []state.Gesture {
-	if mv.Action == actGo {
-		return []state.Gesture{{Kind: "pos", Value: string(mv.To)}}
+	switch mv.Action {
+	case actGo:
+		return []state.Gesture{{Kind: state.GesturePos, Value: string(mv.To)}}
+	case actClaim:
+		return []state.Gesture{{Kind: state.GestureAction, Value: actClaim}, {Kind: state.GesturePos, Value: string(mv.To)}}
 	}
-	return []state.Gesture{{Kind: "action", Value: mv.Action}}
+	return []state.Gesture{{Kind: state.GestureAction, Value: mv.Action}}
 }
 
 // Describe names the actions.
@@ -404,45 +474,57 @@ func (rs *Ruleset) Describe(game *catalog.CompiledGame) state.RulesetInfo {
 		Actions: []state.RulesetAction{
 			{ID: actClaim, Label: "Claim"},
 			{ID: actObject, Label: "Object"},
+			{ID: actHeckle, Label: "Heckle"},
 			{ID: actDecline, Label: "Let it pass"},
 		},
-		NotationHelp: []string{"go@area moves your envoy; claim@area claims the area it stands in; object and decline answer an Object.", "Example: go@hall, then claim@hall."},
+		NotationHelp: []string{"go@area moves your envoy; claim@area claims the area it stands in; object, heckle and decline answer a reaction.", "Example: go@hall, then claim@hall."},
 		WinRules:     []string{"The first house with three claims wins."},
 	}
 }
 
 // --- reactions (state.Reactor) ---------------------------------------------
 
-// PendingReaction is the Object awaited, if any.
+// PendingReaction is the reaction awaited, if any.
 func (rs *Ruleset) PendingReaction(game *catalog.CompiledGame, st *state.BoardState) *state.Reaction {
 	d, err := dataOf(st)
 	if err != nil || d.Window == nil || len(d.Window.Waiting) == 0 {
 		return nil
 	}
-	seat := d.Window.Waiting[0]
+	ask := d.Window.Waiting[0]
 	return &state.Reaction{
-		Seat: seat, Trigger: d.Window.Trigger, Ability: "Object",
-		Targeted: d.Envoys[seat] == d.Window.Area,
+		Seat: ask.Seat, Trigger: d.Window.Trigger, Ability: abilities[ask.Ability].Name,
+		Targeted: d.Envoys[ask.Seat] == d.Window.Area,
 		Pass:     state.Selection{Action: actDecline},
 	}
 }
 
-// ReactionAbilities lists Object for a house that may use it, or will at a
-// table with the Court once it holds a claim.
+// ReactionAbilities lists seat's reactions, held or not: the Owl's Heckle,
+// and Object for a house that may use it, or will at a table with the Court
+// once it holds a claim.
 func (rs *Ruleset) ReactionAbilities(game *catalog.CompiledGame, st *state.BoardState, seat int) []state.ReactionAbility {
 	seats, court := table(game)
 	if seat < 1 || seat > len(seats) {
 		return nil
 	}
 	h, _ := houseOf(seats[seat-1])
-	if !h.object && !court {
-		return nil
+	now := map[string]bool{}
+	if d, err := dataOf(st); err == nil {
+		for _, a := range held(game, d, seat) {
+			now[a] = true
+		}
 	}
-	held := h.object
-	if d, err := dataOf(st); err == nil && !held {
-		held = mayObject(game, d, seat)
+	var out []state.ReactionAbility
+	if h.heckle {
+		a := abilities[actHeckle]
+		a.Held = now[actHeckle]
+		out = append(out, a)
 	}
-	return []state.ReactionAbility{{ID: actObject, Name: "Object", Text: "After another house's turn, make it give back its last claim.", Held: held}}
+	if h.object || court {
+		a := abilities[actObject]
+		a.Held = now[actObject]
+		out = append(out, a)
+	}
+	return out
 }
 
 // --- the table (catalog.Deriver, state.SeatCults, state.OwnSeatCults) -------
@@ -665,4 +747,88 @@ func (rs *Ruleset) SetupCatalog(game *catalog.CompiledGame) (any, error) {
 			{"id": "options", "label": "Options", "items": []map[string]any{{"id": optCourt, "name": "The Court", "option": optCourt}}},
 		},
 	}, nil
+}
+
+// --- training environments (state.ActionLister, state.PlaneEncoder) --------
+
+// areas are the map's areas in a fixed order.
+var areas = []string{"north", "west", "hall", "east", "south"}
+
+// ActionNotations is the fixed action space: going to or claiming each area,
+// and the answers to a reaction.
+func (rs *Ruleset) ActionNotations(game *catalog.CompiledGame) []string {
+	var out []string
+	for _, a := range areas {
+		out = append(out, actGo+"@"+a, actClaim+"@"+a)
+	}
+	return append(out, actObject, actHeckle, actDecline)
+}
+
+// PlaneLayout is four planes of the areas in a row: the viewer's envoy, the
+// others' envoys, the viewer's claims and the others' claims.
+func (rs *Ruleset) PlaneLayout(game *catalog.CompiledGame) ([]string, int, int) {
+	return []string{"my-envoy", "their-envoys", "my-claims", "their-claims"}, 1, len(areas)
+}
+
+// PlaneCells is the area at every cell of a plane.
+func (rs *Ruleset) PlaneCells(game *catalog.CompiledGame) []string {
+	return append([]string(nil), areas...)
+}
+
+// EncodePlanes fills the planes for viewer.
+func (rs *Ruleset) EncodePlanes(game *catalog.CompiledGame, st *state.BoardState, viewer int) []float32 {
+	n := len(areas)
+	out := make([]float32, 4*n)
+	d, err := dataOf(st)
+	if err != nil {
+		return out
+	}
+	at := map[string]int{}
+	for i, a := range areas {
+		at[a] = i
+	}
+	for s, a := range d.Envoys {
+		if s == viewer {
+			out[at[a]] = 1
+		} else {
+			out[n+at[a]]++
+		}
+	}
+	for s, l := range d.Claims {
+		for _, a := range l {
+			if s == viewer {
+				out[2*n+at[a]] = 1
+			} else {
+				out[3*n+at[a]] = 1
+			}
+		}
+	}
+	return out
+}
+
+// --- the view (state.HiddenInfo, with nothing hidden) -----------------------
+
+// Redact shows everything, with the view's prompt.
+func (rs *Ruleset) Redact(game *catalog.CompiledGame, st *state.BoardState, viewer int) *state.BoardState {
+	d, err := dataOf(st)
+	if err != nil {
+		return st
+	}
+	prompt := "Move your envoy, or claim the area it stands in."
+	if d.Window != nil && len(d.Window.Waiting) > 0 {
+		prompt = abilities[d.Window.Waiting[0].Ability].Name + ", or let it pass."
+	}
+	out := st.Clone()
+	out.SetExt(&publicExt{Data: d.clone(), View: View{Prompt: prompt}})
+	return out
+}
+
+// RedactMove hides nothing.
+func (rs *Ruleset) RedactMove(game *catalog.CompiledGame, st *state.BoardState, mv state.Selection, notation string) (state.Selection, string) {
+	return mv, notation
+}
+
+// Determinize has nothing to sample.
+func (rs *Ruleset) Determinize(game *catalog.CompiledGame, st *state.BoardState, viewer int, rng *rand.Rand) *state.BoardState {
+	return st.Clone()
 }

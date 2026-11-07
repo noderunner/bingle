@@ -3,6 +3,8 @@ package app_test
 import (
 	"testing"
 	"time"
+
+	"github.com/chromedp/chromedp"
 )
 
 // The Council fixture (tests/testdata/council) plays through the API: a table
@@ -61,4 +63,16 @@ func TestWebCouncil_TheMapIsDrawnWithoutAScript(t *testing.T) {
 	openGameAs(t, ctx, base, created.RoomCode, "test-council", "Alice")
 	waitJS(t, ctx, "five areas", `document.querySelectorAll('#board .cell').length === 5`, 15*time.Second)
 	waitJS(t, ctx, "a move to make", `document.querySelectorAll("#board .cell.clickable").length > 0`, 10*time.Second)
+}
+
+// A game's page script is loaded and asked (ADR 0124): Council's draws its
+// picture in the list of games.
+func TestWebCouncil_ItsScriptDrawsItsPictureInTheList(t *testing.T) {
+	base := newRESTTestServer(t)
+	ctx, cancel := newChromedpContext(t, 60*time.Second)
+	defer cancel()
+	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/")); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "Council's picture", `document.querySelector('.game-card[data-family="test-council"] .game-card-preview svg.council-icon') !== null`, 20*time.Second)
 }

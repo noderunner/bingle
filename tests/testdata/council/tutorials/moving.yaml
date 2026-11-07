@@ -1,0 +1,20 @@
+# Council's tutorials are the tests' (tests/testdata/council): a series of two
+# and one of its own, from a written position.
+id: moving
+kind: rules
+title: Moving
+summary: How an envoy moves.
+order: 1
+series: Basics
+game: test-council~stag-wolf-ram-crow   # the learner is the Stag, who may not Object
+seat: 1
+steps:
+  - name: Your envoy
+    text: Your envoy stands in the **North**. Every turn it moves to an area next to it, or claims the one it stands in.
+  - name: A move
+    text: Move it into the **Hall**.
+    play: [go@hall]
+    hint: Click the Hall.
+    highlight: [hall]
+  - name: Moved
+    text: Your envoy is in the Hall. The next tutorial covers **Claiming**.

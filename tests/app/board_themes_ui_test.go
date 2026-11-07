@@ -83,7 +83,7 @@ func TestWebBoardThemes_OnlyStoneGamesOfferThem(t *testing.T) {
 		def   string
 		offer bool
 	}{
-		{"hex-11", true}, {"yavalath", true}, {"yinsh", true}, {"go-9x9", true}, {"tak-5x5", true}, {"cthulhu-wars", false}, {"hive", false},
+		{"hex-11", true}, {"yavalath", true}, {"yinsh", true}, {"go-9x9", true}, {"tak-5x5", true}, {"test-council", false}, {"hive", false},
 	} {
 		var created struct {
 			RoomCode string `json:"room_code"`
@@ -111,10 +111,10 @@ func TestWebBoardThemes_OnlyStoneGamesOfferThem(t *testing.T) {
 		}
 		clickSel(t, ctx, "#open-options")
 		// A map has no board to theme at all.
-		if c.def == "cthulhu-wars" {
+		if c.def == "test-council" {
 			waitJS(t, ctx, "the options", `document.querySelector("#game-options #options-display #opt-hints") !== null`, 10*time.Second)
 			if evalBool(t, ctx, `document.getElementById("opt-board") !== null`) {
-				t.Error("Cthulhu Wars offers a board theme")
+				t.Error("a map offers a board theme")
 			}
 			cancel()
 			continue

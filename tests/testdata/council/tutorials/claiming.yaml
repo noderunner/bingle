@@ -1,0 +1,15 @@
+id: claiming
+kind: rules
+title: Claiming
+summary: How an area is claimed.
+order: 2
+series: Basics
+game: test-council~stag-wolf-ram-crow
+seat: 1
+steps:
+  - name: A claim
+    text: Claim the **North**, where your envoy stands.
+    play: [claim@north]
+    hint: Press Claim.
+  - name: Claimed
+    text: The North is yours. Three claims win.
