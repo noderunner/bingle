@@ -16,7 +16,7 @@ plan's first decision), and the game imports `internal/...` packages, which a se
 
 ## Decision
 
-- **The private overlay is a repository of its own** (`noderunner/bingle-private`), checked out
+- **The private overlay is a repository of its own** (`bingle-private`), checked out
   inside a bingle clone at `internal/games/private`, which the public repository ignores. It is not
   a module: its packages are bingle's (`github.com/noderunner/bingle/internal/games/private/...`),
   so they import the engine like any game.
