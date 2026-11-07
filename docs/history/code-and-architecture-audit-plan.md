@@ -105,6 +105,48 @@ independent, and its findings would usefully inform both. So: measure early, ref
    62 ADRs, and the auth plan already requires a sweep of the ones that say "there are no
    accounts".
 
+## A UI module for a prototype's version
+
+Decided with the maintainer on 2026-11-04: not to be built yet. When a version of a prototype first
+needs a drawing of its own, it goes in with this audit's refactoring of the web client, because the
+split of `game.js` (item 2) is what would give it places to plug into. Prototypes are in ADR 0098, on
+the `prototype-games` branch until that merges.
+
+**The problem.** Each version of a prototype's rules is a folder holding the whole game, but the web
+client is shared by all of them. Old versions have to keep working, and that should not mean one
+`game.js` that stays compatible with every version of every prototype.
+
+**First, the view.** `game.js` names neither Courtfall nor Mycelium. A version's `view.go` says what to
+draw (`state.ext.view`), so most changes to the rules should need no client code.
+
+**The proposed design, for when the view is not enough:**
+
+- The version's folder holds an optional module, declared in its definition
+  (`ui: {module: ui/game.js}`), and a new version copies it with the rest of the folder. A version
+  without one uses the shared page.
+- The page loads it with `import()` before it first draws the game. It needs no build step.
+- It exports only what it overrides, through a small set of hooks: a side panel, board decorations,
+  piece icons. It gets a small helper object for drawing and for making moves. The set of hooks only
+  ever grows, because frozen versions depend on it.
+- It needs a route of its own. The game assets route sends `default-src 'none'` and `sandbox`, which
+  would block a script, and it should keep doing so.
+- One browser test per shipped version opens a game and checks that its hooks ran, so that a change to
+  the shared page cannot break an old version unnoticed.
+- A version too costly to keep working can be retired (ADR 0076), and its games stay readable as a record.
+
+**Rejected:** a copy of the client per version, since chat, voice, clocks and the mobile layout live in
+`game.js` too and their fixes would never reach old versions; and checks for the version inside
+`game.js`, which is the problem itself.
+
+**To settle at that point:**
+
+- Which hooks. The first real case should decide them, not a guess now.
+- How this fits the plugin plan. That plan's decision 4 is no JavaScript in a pack, ever, and it wants
+  the web client to name no game and a game not to depend on its JavaScript. A module compiled into the
+  binary is not a pack, so it does not break decision 4 as written, but it has to stay a prototype's
+  tool: it may only change how a game is drawn, and the game must stay playable through the API and by a
+  client with no module, such as the planned 3D one.
+
 ## Dependencies and cross-plan effects
 
 - **After the observability implementation** (logging conventions touch everything) and **after
@@ -127,3 +169,5 @@ independent, and its findings would usefully inform both. So: measure early, ref
   progress.
 - 2026-10-31: question 3 answered by the plugin plan: Cthulhu Wars leaves the public
   repository.
+- 2026-11-04: added *A UI module for a prototype's version*. It is deferred until a version needs it,
+  and then goes in with this plan's refactoring of the web client. Planning in progress.
