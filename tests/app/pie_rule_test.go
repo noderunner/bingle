@@ -84,7 +84,6 @@ func TestPieRule_GamesSayWhetherTheyOfferIt(t *testing.T) {
 		"breakthrough": "",
 		"brandubh":     "",
 		"tak-5x5":      "",
-		"cthulhu-wars": "",
 		"courtfall":    "",
 	} {
 		if got := pieOptionOf(t, baseURL, def); got != want {

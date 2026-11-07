@@ -60,12 +60,11 @@ func TestGameDefs_CarryVersionDesignersAndPublisher(t *testing.T) {
 		designers []string
 		publisher string
 	}{
-		"tak-5x5":      {[]string{"James Ernest", "Patrick Rothfuss"}, "Cheapass Games"},
-		"hive":         {[]string{"John Yianni"}, "Gen42 Games"},
-		"cthulhu-wars": {[]string{"Sandy Petersen"}, "Petersen Games"},
-		"onitama":      {[]string{"Shimpei Sato"}, "Arcane Wonders"},
-		"blooms":       {[]string{"Nick Bentley"}, ""},
-		"fist":         {[]string{"James Ernest"}, "Crab Fragment Games"},
+		"tak-5x5": {[]string{"James Ernest", "Patrick Rothfuss"}, "Cheapass Games"},
+		"hive":    {[]string{"John Yianni"}, "Gen42 Games"},
+		"onitama": {[]string{"Shimpei Sato"}, "Arcane Wonders"},
+		"blooms":  {[]string{"Nick Bentley"}, ""},
+		"fist":    {[]string{"James Ernest"}, "Crab Fragment Games"},
 	} {
 		got := byID[id]
 		if strings.Join(got.Designers, "|") != strings.Join(want.designers, "|") || got.Publisher != want.publisher {
@@ -75,9 +74,9 @@ func TestGameDefs_CarryVersionDesignersAndPublisher(t *testing.T) {
 	if got := byID["amazons"].Name; got != "Amazons" {
 		t.Errorf("the game of the Amazons is called %q", got)
 	}
-	// The seat counts the list turns into "3–5 players".
-	if byID["cthulhu-wars-3p"].SeatsRequired != 3 || byID["cthulhu-wars-5p"].SeatsRequired != 5 || byID["nyet-2"].SeatsRequired != 2 || byID["nyet-5"].SeatsRequired != 5 {
-		t.Errorf("seats: cw 3p %d, 5p %d, nyet 2 %d, 5 %d", byID["cthulhu-wars-3p"].SeatsRequired, byID["cthulhu-wars-5p"].SeatsRequired, byID["nyet-2"].SeatsRequired, byID["nyet-5"].SeatsRequired)
+	// The seat counts the list turns into "2–5 players".
+	if byID["nyet-2"].SeatsRequired != 2 || byID["nyet-5"].SeatsRequired != 5 {
+		t.Errorf("seats: nyet 2 %d, 5 %d", byID["nyet-2"].SeatsRequired, byID["nyet-5"].SeatsRequired)
 	}
 }
 
@@ -110,7 +109,7 @@ func TestGameVersions_AreRecordedInTheDatabaseOnce(t *testing.T) {
 			t.Errorf("%s %s: no first-seen time", v.Family, v.Version)
 		}
 	}
-	for family, want := range map[string]string{"tak-5x5": "0.1.1", "hive": "0.1.2", "cthulhu-wars": "0.16.1", "amazons": "0.3.1", "go-9x9": "0.3.1", "nyet": "0.2.2", "fist": "0.1.3"} {
+	for family, want := range map[string]string{"tak-5x5": "0.1.1", "hive": "0.1.2", "amazons": "0.3.1", "go-9x9": "0.3.1", "nyet": "0.2.2", "fist": "0.1.3"} {
 		if got := seen[family]; len(got) != 1 || got[0] != want {
 			t.Errorf("%s: recorded versions %v, want [%s] (once, though the server started twice)", family, got, want)
 		}

@@ -127,9 +127,9 @@ Served by the same binary as static assets plus lightweight JS (no SPA build pip
   Breakthrough, Reversi, Go, Yavalath, Havannah, Amazons, Ataxx, Pente,
   Brandubh), `courtfall` (a Go ruleset with a JSON legend,
   [courtfall.md](courtfall.md)), `fist` and `onitama` (Go rulesets, one move per turn), `blooms` (a Go ruleset, a turn of one or two placements), `hive` (a Go ruleset with stacks on a large hex field), `fendo` (a Go ruleset whose fences travel in the view), `yinsh` (a Go ruleset on an explicit 85-point graph), `meridians` (a Go ruleset on a hexagon with no middle point, where a group that can see no friend dies), `mycelium` (a Go ruleset whose confluence is a run of single-spread decisions), `nyet` (a Go ruleset on the card framework in `internal/engine/cards`), `solitaire` (one Go ruleset on the same framework for a family of games with one seat, each variant naming its rules with the param `mode`),
-  `cthulhuwars` (up to five of six cults on an area map
-  with an embedded Markdown rules guide and setup options that derive a game
-  per table, [cthulhu-wars.md](cthulhu-wars.md)).
+  and, in a private build only, the commercial games of the private overlay
+  (`internal/games/private`, compiled in with `-tags private`, ADR 0127): Cthulhu Wars,
+  up to five of its cults on an area map with setup options that derive a game per table.
   Adding a game is adding a JSON file
   (`docs/dsl.md`), or a ruleset when the rules need Go.
 * **Session** (`internal/session`): room lifecycle plus taking back a selection of a turn,

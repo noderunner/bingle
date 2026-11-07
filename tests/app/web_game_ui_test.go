@@ -54,7 +54,7 @@ func openGameAs(t *testing.T, ctx context.Context, baseURL, room, def, name stri
 func confirmSetting(def string) string {
 	base, _, _ := strings.Cut(def, "-")
 	switch base {
-	case "blooms", "courtfall", "cthulhu", "fendo", "fist", "hive", "nyet", "onitama", "yinsh", "meridians", "mycelium":
+	case "blooms", "courtfall", "fendo", "fist", "hive", "nyet", "onitama", "yinsh", "meridians", "mycelium":
 		return "false"
 	}
 	return "true"

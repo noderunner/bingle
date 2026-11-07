@@ -45,7 +45,7 @@ func families(t *testing.T) map[string]family {
 // zones, suits and variants, and previews only pieces in played colours.
 func TestEveryLookFitsItsGame(t *testing.T) {
 	fams := families(t)
-	for _, id := range []string{"cthulhu-wars", "nyet", "solitaire", "bowling-solitaire", "blooms", "tak-5x5", "fendo", "fist", "meridians", "hive", "onitama", "yinsh", "courtfall-1.0.0", "mycelium-1.0.0",
+	for _, id := range []string{"nyet", "solitaire", "bowling-solitaire", "blooms", "tak-5x5", "fendo", "fist", "meridians", "hive", "onitama", "yinsh", "courtfall-1.0.0", "mycelium-1.0.0",
 		"gomoku", "hex-11", "draughts", "breakthrough", "reversi", "go-9x9", "yavalath", "havannah-8", "amazons", "ataxx", "pente", "brandubh"} {
 		if _, ok := fams[id]; !ok {
 			t.Errorf("%s brings no look", id)
@@ -138,7 +138,8 @@ func TestCheckCatchesAZoneLayout(t *testing.T) {
 }
 
 // The line of ADR 0124, held: no definition of a shipped game says how it
-// looks, apart from Cthulhu Wars', which moves with the game. A piece type's
+// looks, apart from that of a private game whose look has not moved yet
+// (Cthulhu Wars', in a private build, ADR 0127). A piece type's
 // own colour stays, since the rules read it (ADR 0117); a zone's layout cannot
 // be written at all, since the definition only says whether it is a pile.
 func TestNoDefinitionCarriesItsLook(t *testing.T) {

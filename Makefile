@@ -1,4 +1,4 @@
-.PHONY: help build run test test-short test-unit test-browser test-cw-ui test-sims smoke lint fmt vet cover clean
+.PHONY: help build run test test-short test-unit test-browser test-private test-sims smoke lint fmt vet cover clean
 
 help: ## list the targets
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | sed 's/:.*##/\t/'
@@ -9,8 +9,8 @@ build: ## build bin/bingle
 run: build ## build and run on http://localhost:8080
 	./bin/bingle
 
-test: ## the whole suite, including the Cthulhu Wars browser tests and the smoke test
-	BINGLE_TEST_CW_UI=1 go test -timeout 25m ./...
+test: ## the whole suite and the smoke test
+	go test -timeout 25m ./...
 	@$(MAKE) --no-print-directory smoke
 
 test-short: ## skip the slowest tests
@@ -22,8 +22,14 @@ test-unit: ## everything but the browser suite and the bot simulations (about a 
 test-browser: ## the browser suite; SHARD=i/n runs one shard of it, as CI does
 	BINGLE_TEST_SHARD=$(SHARD) go test -timeout 15m ./tests/app/
 
-test-cw-ui: ## the Cthulhu Wars browser tests, which are off by default
-	BINGLE_TEST_CW_UI=1 go test -timeout 20m ./tests/app/ -run TestWebCthulhuWars
+# The private overlay (ADR 0127) is a checkout at internal/games/private. Its
+# browser tests share the public helpers of tests/app, so they are copied in
+# (as private_*_test.go, which git ignores) while the suite runs, and taken out
+# again after, whatever the result.
+test-private: ## the whole suite with the private overlay's games (-tags private)
+	@test -d internal/games/private || { echo "no private overlay checked out at internal/games/private"; exit 1; }
+	@for f in internal/games/private/tests/_app/*_test.go; do cp "$$f" "tests/app/private_$$(basename "$$f")"; done
+	@go test -tags private -timeout 40m ./...; status=$$?; for f in tests/app/private_*_test.go; do unlink "$$f"; done; exit $$status
 
 test-sims: ## the long bot simulations (about six minutes on two cores)
 	go test -timeout 20m ./tests/batch/

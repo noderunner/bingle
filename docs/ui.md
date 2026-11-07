@@ -406,195 +406,11 @@ alone:
   it: the click that ends the drag is swallowed. **Alt+←** and **Alt+→** move the card that has
   the focus, for playing without a pointer.
 
-## Area maps and multi-seat tables (Cthulhu Wars)
+## Options, seats, accounts and lobbies
 
-`board.style: "areas"` games are drawn by their page script (Cthulhu Wars' `renderAreaMap`, `cthulhuwars/web/cw-map.js`, which `render.js` asks through `info.page`): straight-edged
-polygons with a colour gradient per ocean and per continent (by tag; light and
-dark themes), waves on the seas, frost on the ice and a pale shore round every
-coast, the area's name (italic for seas, on two lines when the area is narrow),
-a glyph badge after it, a **Gate chip** (a dark portal ringed in the controlling
-cult's colour; dashed grey when abandoned) and a ✠ chip for a Desecration among
-the tokens, a red outline for the battle, and one token per (cult, unit kind)
-with a count badge. Names and tokens are laid out so they stay inside their
-area and clear of each other, and are drawn above every outline. The map
-**zooms** (wheel, pinch) and **pans** (drag); the view survives redraws.
-
-Tokens are clickable when the move being built can use them: a token click is
-translated to the `piece` and `pos` entries of the move's gesture data by searching the builder's
-options (a Move's origin, the unit that takes a result, retreats, is
-sacrificed or sinks with Cthulhu — see ADR 0026). Unit kinds on offer also appear as buttons in the
-move bar for games without hands.
-
-**Every** token can be clicked: a legal pick is taken and the unit's **card**
-(`#unit-info`, under the map) opens as well; any other unit just opens it. The
-card lists the unit's cost, Combat, how many stand here, on the map and in the
-pool, its ability text and the spellbooks that bear on it, ticked once earned
-(from `view.seats[n].units`). A second click, ×, or Esc closes it; the
-clicked token carries a dashed ring (`.token-inspected`). This card is for a phone,
-which has no hover: a click on a token elsewhere only picks it up.
-
-An area's name and its glyphs are a faint layer under the pieces. The name sits at
-the area's visual centre (`areaCentre`: the centre of the largest circle that fits,
-with the land counting as the edge of a sea), and the glyphs go above, below or
-beside it, wherever they stay inside the border (`marksPlace`). The options turn
-each layer off: names, glyphs, sigils and units. A unit the player can pick up now
-stays drawn with the units off, so a move can still be made.
-
-**Icons** (`cthulhuwars/web/cw-icons.js`, added as piece shapes with `render.js`'s `addPieceShapes`): every unit has its own silhouette, drawn as path data
-in the cult's colour — all Cultists share one hooded figure (the High Priest
-is the same figure with a mitre) — and its size
-follows its class, so units in one area always read at a glance:
-Cultist < Monster < Terror (a class no cult uses yet) < Great Old One
-(`CLASS_SCALE`). A shape without an icon falls back to its code letters.
-The two expansion cults bring two colours, white (Windwalker) and orange
-(Sleeper), with a fill and a stroke token each (`--piece-white-*`,
-`--piece-orange-*`; every place that coloured yellow has a rule for them).
-
-With the High Priests in the game the Action list has a button of its own for
-him (`#action-recruit-high-priest`, *Recruit High Priest*, 3 Power) beside
-*Recruit Cultist*; the Unspeakable Oath is an ordinary action button
-(`#action-oath`) and, as a reaction, a question with the usual *Pass*.
-
-**Faction glyphs and the Ice Age.** The area where a cult begins (`params.starts`), and the
-areas marked with the Windwalker's and the Sleeper's sigils (`params.sigils`), carry that
-faction's **glyph** — the sigil of the printed game, traced to SVG by
-`scripts/cwglyphs.py` (`cthulhuwars/web/cw-glyphs.js`, `guide/glyphs/<key>.svg`) — on a dark disc next to
-the area's name (`.area-sigil-badge[data-sigil]`), drawn only while the cult is at the table.
-The Factions page of the rules shows each glyph, with placeholders for the factions not in the game. The area that holds the Windwalker's Ice
-Age token gets a ❄ chip among the tokens (`.iceage-chip`).
-
-**Glyph badges and the neutral items.** The glyph requirements of Yellow Sign (chevron, dragon,
-thorns) are badges after the area names; the *Glyphs* layer of the options window is off until the
-player chooses, unless Yellow Sign is at the table (`glyphLayerOn`; the choice is
-`localStorage` `bingle.layer.glyphs`). When the table plays with the Azathoth faction's content or a
-pack of Loyalty Cards, a **Neutral items** card (`#neutral-window`) sits under the cult cards (on
-the Round page on a phone): spellbooks nobody holds as the book pictogram with their name
-(`.neutral-book`), Monsters, Terrors and Independent Great Old Ones as just their icon
-(`.neutral-unit`); hovering opens the rules, price and numbers. It is absent at other tables.
-Capturing a Cultist where the enemy has several beside a Gate it holds asks which one: the
-piece buttons offer "Acolyte" and "Acolyte on the Gate".
-
-With three or more seats the page lays out a **round bar**, the map, the move
-bar and a **battle panel** (Combat, dice and results); the **cult panels** sit
-in the side column, beside the map, listed in the order of play, the first player on top, and they re-order when it
-changes. A panel's header is the swatch, the faction's glyph (`img.seat-glyph`, which stands for its name), the player's name and the cult's
-numbers as pictograms — ⚡ Power, ☠ Doom, ★ Elder Signs, ◎ Gates
-(`.seat-stats .score.stat[data-counter]`, each an `svg.stat-icon` and a value;
-`cw-icons.js` `STAT_ICONS`) — and under it collapsible sections, remembered
-between moves (`bingle.cards2`): **Faction Ability** (`data-card="ability"`,
-first; for the Sleeper also the abilities it borrows), **Spellbooks**,
-**Requirements** (a neutral spellbook a cult holds, or one swapped in at setup, is one more
-of its spellbooks; what is left to take is under Neutral items), **Elder Signs** (`data-card="signs"`, tokens: your own with
-their values, the others' face down, revealed ones public — a cult with none
-shows a heading that does not open, `.faction-static`, and no "None yet") and **Units**
-(`data-card="units"`, open by default: one icon for every unit of the cult,
-`.pool-unit[data-piece][data-zone]` — in full colour while it is in the pool,
-`.away` and greyed out while it stands on the map, is held by an enemy, asleep or
-submerged — with a hover card: name, class, cost, where this one is
-(`units[].places`), where the unit may come into play (`units[].enter`; for a
-Great Old One its named abilities, `units[].abilities`, and the numbered steps of
-awakening it, `units[].awaken`),
-Combat, its text and the spellbooks that bear on it, earned or not). Under the
-icons, when the cult holds anybody, a **Captured** zone (`#captured-<seat>`,
-`.pool-unit.captured[data-owner]`): the units of other cults it has taken, in
-their owners' colours, until Gather Power sends them home
-(`seats[n].captured`). Yellow Sign's header numbers start with a **Desecration
-token count** (`[data-counter="desecrations"]`, the diamond-and-cross pictogram of the map
-chip), then Power, Doom, Elder Signs and Gates. Spellbooks and requirements are marked with the
-spellbook pictogram (`.spell-mark.on` — unlocked, met — and `.spell-mark.off`,
-greyed out) instead of ticks.
-The round bar shows the round, the phases of the round left to right (`#phase-steps
-li.phase-step[data-phase,data-state]`, the current one lit, those played
-ticked), the **Ritual of Annihilation
-track** (`#ritual-track`: one space per Ritual that may still be performed — its
-Power cost in the space, `li.ritual-step[data-step,data-cost,data-state]` with
-the state `past`, `next` or `ahead` — closed by a ☠ for Instant Death; its length
-follows the number of players) and the Elder Signs left in the bag (`#elder-bag`: the Elder Sign icon and
-*left/total*). The direction of play is
-chosen with two buttons (`#action-cw`, `#action-ccw`) that spell out who plays
-after whom. A cult's Elder Signs (`#signs-<seat>`) show their values to their
-owner only; revealed ones are public.
-
-**The history** is one card (`#history-card`) with one set of buttons to step through it (`#hist-prev`, `#hist-next`…), written
-out in one of two ways by the toggle in its head (`#history-friendly`, `#history-notation`; the choice is remembered, Friendly is the default
-of a game that narrates, and a game that does not has no toggle): what happened since your own last
-turn (`ext.log`; the whole of your last turn, not only its last decision),
-grouped by player, cults in their colours (`.log-fac`), verbs in bold
-(`.log-verb`). The History tab is always there in a game that narrates: where
-nothing has been told yet (the start of the game, `#history-empty`) or where the
-others have said nothing since your last move (`#history-quiet`; or, when nothing
-at all was narrated since, the latest events under *Nothing new since your last
-move*) the pane says so instead of the tab vanishing, as it used to when only
-silent decisions (Done, a reaction passed for a player) followed. Moves a
-tactical bot played for a person (see *Auto-Play Timeout*) are marked
-*(auto-play)* in the move list and with a badge on the player's turn in the
-History (`.badge.auto-play`).
-
-**Doom.** The Doom counter of a cult says what it is made of when hovered (*3
-from Gates, 3 from gifts*); the log lines of the Doom phase, a Ritual, a gift
-and a revelation of Elder Signs give the track before and after (*Great
-Cthulhu scores 3 Doom for 3 Gates: 3 → 6 on the Doom track (3 from Gates, 3 from
-gifts)*).
-
-**Action buttons.** Every monster that can be summoned and every Great Old One
-that can be awakened has a button of its own in the list of actions
-(`.unit-button#action-summon-<unit>` / `#action-awaken-<unit>`, with
-`data-cost`): its icon, *Summon <name>* / *Awaken <name>* and the Power it costs
-just now (`view.costs`, worked out by the server: Gnoph-Keh's price, Thousand
-Young, the Ice Age surcharge). Hovering it opens the unit's card. Every other
-button states what it costs in its text when it costs anything — *Build Gate
-(3)*, *Recruit High Priest (3)*, *Ice Age (1)* — and opens a card on hover with
-the rule in a few lines (`.action-tip`, the action's `hint`; for a spellbook the
-timing and text). A button that exists because of an unlocked spellbook wears the
-coloured spellbook pictogram, one that meets a spellbook requirement the greyed
-one (`button[data-source="book"|"requirement"]`, from the action's `source`).
-A die rolled ends the impulse, so the move that rolled stands at once. Stepping through the moves, the card is titled `History: n` and tells the move as the History tab does (`#history-told`).
-The impulse card says what is being asked, whoever is looking: its title (`#impulse-title`) is the name of the seat on
-impulse and `#impulse-text` the question, from the view's `impulse` (ADR 0099). A pending move
-shows only to its player, with the action's `impulse` as the question it waits on: *Choose an area to place a gate.*
-A Move gathers its units in the card first (`#move-queue`): clicking a token lifts it off the map into the card, from one area, as far as the Power
-goes, with `.queue-unit[data-piece]` to take one out and `#move-queue-cost` for the running cost. A click on a highlighted
-area adds each unit's selection to the pending move ([ADR 0100](decisions/0100-a-move-gathers-its-units.md), ADR 0114), and Back takes the group off together.
-*Back* is one of the actions too (`#back`, offered only while the pending move has a selection to take off).
-
-**Gates and their occupants.** A Gate is a chip among the tokens; the figure
-drawn on it is the unit that occupies it (`.gate-holder[data-holder]`, from
-`view.holders`) and is *not* counted in the stack of its kind beside the Gate
-(6 Acolytes: one on the Gate, a stack of 5). An abandoned Gate is a dashed grey
-ring with a plain star. The figure is a unit of its own: the chip is clickable
-(`.gate-chip.gate-pickable`, piece value `gate:<unit>`) and picking it lights up
-the areas it can reach and its own area; choosing one moves it and abandons the
-Gate (`leave:<unit>@<area>>…`). To put a unit on a Gate (free), pick one of the
-units standing beside it and click the Gate (`.gate-chip.gate-target`;
-`control:<unit>@<area>`), also in the middle of a Move. Clicking the Gate itself
-after picking its figure steps the figure off where it stands: free, no Move, no
-Done and no *Back* offered (`leave:<unit>@<area>><area>`). There is no
-Abandon button.
-The glyphs and sigils are badges of their own: a faction glyph is the cult's own
-ring-shaped drawing on a dark disc before the name, so it is not taken for a Gate. The water and the ice carry no
-texture.
-
-On big screens the page grows with the window: the game page may be 1900 px
-wide (2600 for an area map), the board's height limit follows the window
-height instead of a fixed 760 px, and the side column widens. There is no *Move* button on an area
-map: the glowing tokens are the units that can move, and clicking one starts
-the Move action. The home page's *Seats* control lists the game's seats — each is *You*, a
-friend's open seat or a bot of a kind (*You* may be chosen for as many seats as
-you like: a game against oneself, `also_seats`), and the arrangement survives
-choosing another layout of the game. A game whose description says `setup_catalog` (Cthulhu Wars) draws
-**a picker** above the seats (`cthulhuwars/web/cw-setup.js`, through `info.page.createSetup`, `#cw-setup`, [ADR 0094](decisions/0094-the-cthulhu-wars-setup-picker.md)) instead of
-check boxes and the list of layouts, which stays in the page hidden:
-`.cw-tab[data-tab]` over `#cw-panel` of `.cw-tile[data-item][data-kind]` (`.on` when chosen), and `#cw-chosen` in `#cw-current`, the same tiles, where a click takes one out (the map's opens the Maps tab: a table always has a map).
-A faction takes the first open seat, and taking one out leaves its seat open, so the other seats keep theirs; a row of the seats shows it in
-`.slot-cult[data-cult-seat]`, `data-value` empty for an open seat, which the Create button refuses. `#cw-seat-notice` says so. A faction past the last seat is spare: the table then sends `faction-pool`, `#lobby` is ticked and disabled, and taking out a seated faction seats a spare one;
-`#cw-notice` says when the neutral units and Independents pass one fewer than the seats. `#cw-shuffle` fills open
-seats and deals up to that number, keeping what was chosen by hand and replacing what it dealt before. `#cw-profile` lists ready-made and saved setups;
-`#cw-profile-save` (accounts only) opens `#cw-save`, and `#cw-profile-delete` shows for one's own. A table with a sand-timer spellbook has a card for each among *Other Options* (`#book-swaps select.swap-select[data-swap]`,
-`.swap-row[data-swap-card]`; a neutral spellbook chosen in one list is taken from the others, and a slot's `recommended` choice says so).
-The choice is sent as `options` only when the
-table differs from the layout's own. An open seat of
-a waiting table can be filled with a bot (in the options window); draw offers and
-two-party concepts are hidden and *Resign* becomes *End game*.
+How a map of areas, its battles and a table of cults are drawn is Cthulhu Wars' own, in the private
+overlay (ADR 0127): its `docs/ui.md` there. A map of areas drawn without a game's script is the graph
+of its anchors (`render.js`), its areas clickable at once.
 
 ### The game options window
 
@@ -864,40 +680,6 @@ last move, move animations (pieces slide, drop in or flip; honours the OS
 "reduce motion" setting), board theme (wood, slate, green felt, paper),
 preview-and-confirm, turn notifications. Hovering a square shows what is on it (useful for stacks).
 
-### The battle show
-
-Cthulhu Wars plays each battle on the map (`cthulhuwars/web/cw-battle.js`, *Battle animation* in the options;
-off under the OS "reduce motion" setting). It is a layer over a copy of the map, fed only with snapshots
-of positions, so the game never waits for it and the page underneath stays current. The copy zooms to the
-area, which stays centred even at the map's edge, and the dark has the area's shape cut out of it. Each side
-stands to one side, large (a big army shrinks to fit), with its dice between them. Dice are in the colour of
-the cult rolling them; a Kill or a Pain is a mark on a dark disc, so it stands out on a die of any colour.
-
-The order is: the pools of dice, one die at a time on both sides; the Pre-Battle Phase; the throw; the
-casualties, each with a red X; the Post-Battle Phase; and the zoom out at the `retreat` step, which is played
-on the map. A phase is shown only if it has abilities, which come from `abilities` in the position's battle
-view: the abilities its prompts are about and those a cult's moves can still use, each with the cult it
-belongs to and whether the game is waiting on it. An ability that applies by itself offers no choice and is
-not listed. Live, the show has nothing more to play until a choice is made, so it pauses by itself; a replay
-holds on each for a moment.
-
-Casualties that are the player's to choose can be clicked on the stage. A choice elsewhere on the map hides
-the stage until it is made. Moves that arrive faster than the page draws them are fetched and played in order.
-
-A phone gives the whole screen to the show. Held upright its page has no map, so one is drawn off the page to
-be copied, and the stage is turned 90° with CSS, because a page can only lock the real orientation in full
-screen after a tap (never on iOS), and a battle often comes from another player's move. On a phone the stage
-also steps aside when the show has caught up with a choice that needs a button.
-
-A Great Old One's first awakening has a show of its own (`#emerge-stage`, `cthulhuwars/web/cw-emerge.js`), for the five of the core set and eight more
-(`js/cw-*-art.js`, about seven seconds, [ADR 0108](decisions/0108-a-great-old-one-emerges.md)). The setup's *Animation Tester* tab (`#setup-tab-tester`, `#tester-battle`, `[data-tester-emerge]`) plays each with no game going. In the history it is a badge in the cult's colour
-(`.log-emerges`; `.playable[data-emerges]` plays it again).
-
-Selecting a move of a battle in the history plays that battle from its positions. Moving on to another move
-of the same battle does not start it over; moving to a position outside the battle ends it. A battle can
-finish inside the move that declares it, so the units that stood there beforehand come from the position
-before that move. The browser tests turn the show off by default (`openGameAs`), as it covers the map.
-
 ### Illustrated board themes
 
 Games played with stones on a board of cells (Blooms, Hex, Havannah, Yavalath, Yinsh,
@@ -966,7 +748,7 @@ variants:                      # a merge patch per game of the family, by id
 family and hands its exports to the page as `info.page`; shared code asks it for what it draws for that
 game alone (`info.page.seatGlyph(label)`) and names no game. A game's scripts import the page's own
 modules by absolute path (`/static/js/util.js`), so each is loaded once. Cthulhu Wars' scripts are
-`internal/games/cthulhuwars/web/` (`page.js` and its `cw-*.js`). What `page.js` exports, and who asks:
+`cthulhuwars/web/` in the private overlay (ADR 0127; `page.js` and its `cw-*.js`). What `page.js` exports, and who asks:
 
 | Export | Asked by |
 |---|---|
