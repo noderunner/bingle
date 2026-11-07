@@ -238,3 +238,7 @@ bot ladder.
 - 2026-11-02: ADR 0083 changes decision 16: a move stands once the turn has passed in every game, not only
   a rated one, so take-backs are gone everywhere. Back takes back a step of the turn still being played, in
   rated and tournament games too. ADR 0080's reason for `stats` counting rated games only has gone with it.
+- 2026-11-02: real-time play steps 2 and 3 merged (#75, #76), and step 4 built (ADR 0090, branch
+  `real-time-tournaments`). Decided: it starts by itself, with no Start button; entries close when check-in opens;
+  the first-move deadline is per player; "both miss it" means the first player missed it and the other seat shows as
+  disconnected. Left: the ladder, elimination, multi-seat tournaments and the bot ladder, each with its own design.
