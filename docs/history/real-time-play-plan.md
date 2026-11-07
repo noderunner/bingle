@@ -179,3 +179,7 @@ Each step is its own pull request, with an ADR where it settles a question:
   fixed; a connection must follow its player through a pie-rule swap or a lobby seat change, which step 4's
   takeover should remember. Turn mail now shares the record and takes no grace period. Decision 6's faster
   reconnects read `real_time` from the game, which step 3 adds, and step 3 owes that its test.
+- 2026-11-02: step 2 merged (#75), and step 3 built (ADR 0089, branch `real-time-setting`): the setting, warnings,
+  Auto-Play offers and the flag watcher of decision 24. Decided here: each warning 30 seconds to an hour; asking for
+  the bot takes a seat that shows as connected, so an MCP agent with no socket is refused. Left for step 4: the
+  takeover, the vote-kick and clocks at larger tables. Real-time tournaments can now start.
