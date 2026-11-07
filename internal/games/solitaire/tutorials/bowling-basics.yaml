@@ -8,7 +8,8 @@ game: bowling-solitaire
 seed: 4
 
 steps:
-  - text: |
+  - name: The pins and the piles
+    text: |
       **Bowling Solitaire** is ten frames of bowling played with twenty cards,
       ace to 10 of two suits. Suits do not matter, and an ace counts 1.
 
@@ -19,7 +20,8 @@ steps:
       The other ten are the **balls**, face down in three piles of 5, 3 and 2,
       with the top card of each turned up. Those three are all you can throw.
 
-  - text: |
+  - name: Making a play
+    text: |
       A **play** uses one face-up ball to knock down pins, and it is all about
       the last digit.
 
@@ -29,7 +31,8 @@ steps:
       So a 6 can take a 6, or a 2 and a 4, or a 7 and a 9 (16), or a 1, a 2 and
       a 3. A 10 counts as 0.
 
-  - text: |
+  - name: The first play
+    text: |
       The **first play** on a rack has two limits: it cannot touch the back row,
       a b c d, and it cannot take the centre pin, f, by itself.
 
@@ -39,7 +42,8 @@ steps:
     play: ['e@1']
     hint: Click pin e, on the left of the middle row, then the ace on the first ball pile.
 
-  - text: |
+  - name: Next to a gap
+    text: |
       The ace and the pin are gone, and the next card of pile 1 has turned up: a 7.
       Cards out of play stay in view, so you can always count what is left.
 
@@ -51,7 +55,8 @@ steps:
     play: ['h+i+j@1']
     hint: Click the three pins at the front, h, i and j, then the 7 on the first pile.
 
-  - text: |
+  - name: Pins that need not touch
+    text: |
       Six pins are left, and pile 3 is showing a 9. Pins a, b and f come to
       2 + 5 + 2 = 9. They do not all have to touch one another: a touches b, and
       b touches f, and that will do. And f is next to a gap.
@@ -60,7 +65,8 @@ steps:
     play: ['a+b+f@3']
     hint: Click pins a, b and f, then the 9 on the third pile.
 
-  - text: |
+  - name: The end of a ball
+    text: |
       Look at what happened. With 9, 4 and 3 standing, nothing showing could take
       them: a 5, a 10 and an 8. So the **first ball** ended by itself, at 7 pins,
       and the score sheet says so.
@@ -70,14 +76,16 @@ steps:
       three pins. (You can also end a ball yourself, while a play is left, with
       **End this ball**. A poor play can cost you more than the cards you give up.)
 
-  - text: |
+  - name: The second ball
+    text: |
       9 + 4 + 3 = 16, which ends in 6, and c, d and g touch in a chain.
 
       Click **c**, **d** and **g**, then the **6** on pile 1.
     play: ['c+d+g@1']
     hint: Click pins c, d and g, then the 6 on the first pile.
 
-  - text: |
+  - name: Scoring
+    text: |
       All the pins are down on the second ball: a **spare**, marked **/**. The
       twenty cards were shuffled again for frame 2.
 
@@ -88,3 +96,4 @@ steps:
 
       In the tenth frame, a spare earns one more ball and a strike two, on a new
       rack. That is the whole game: from here on, the frames are yours.
+    keep_playing: true

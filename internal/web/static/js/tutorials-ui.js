@@ -1,6 +1,7 @@
 // The list of a game's tutorials (ADR 0077), shown in the rules window and in
-// the game picker: by kind, each with its summary, a mark when this browser
-// has finished it, and a button that opens it in a room of its own.
+// the game picker: by kind, then by series (ADR 0123), each with its summary, a
+// mark when it has been finished (by the signed-in account, or in this
+// browser), and a button that opens it in a room of its own.
 
 import { h, store, lastName } from "./util.js";
 import { api } from "./api.js";
@@ -41,31 +42,58 @@ export function tutorialList(family, tutorials, { compact = false } = {}) {
 		}
 	};
 
+	const isDone = (t) => !!t.done || done.has(`${family}/${t.id}`);
+	const completed = (title) => h("span", { class: "badge done", title }, "✓ Completed");
+	const item = (t, n) => {
+		const finished = isDone(t);
+		const button = h("button", { type: "button", class: finished ? "secondary" : "", "data-tutorial": t.id }, finished ? "Again" : "Start");
+		button.addEventListener("click", () => start(t, button));
+		return h(
+			"li",
+			{ "data-tutorial": t.id },
+			h(
+				"div",
+				{ class: "tutorial-item-text" },
+				n ? h("span", { class: "tutorial-step" }, `${n}.`) : null,
+				h("strong", {}, t.title),
+				finished ? completed("You have finished this tutorial") : null,
+				!compact && t.summary ? h("div", { class: "muted small" }, t.summary) : null
+			),
+			button
+		);
+	};
+
 	for (const [kind, heading] of KINDS) {
 		const ofKind = tutorials.filter((t) => t.kind === kind);
 		if (!ofKind.length) continue;
 		if (!compact) root.append(h("h3", {}, heading));
-		const ul = h("ul", { class: "tutorial-items" });
+		// The tutorials of a series come together, in its order; a tutorial that names none is a series of its own.
+		const series = new Map();
 		for (const t of ofKind) {
-			const finished = done.has(`${family}/${t.id}`);
-			const button = h("button", { type: "button", class: finished ? "secondary" : "", "data-tutorial": t.id }, finished ? "Again" : "Start");
-			button.addEventListener("click", () => start(t, button));
-			ul.append(
+			const key = t.series ? "series:" + t.series : "own:" + t.id;
+			if (!series.has(key)) series.set(key, []);
+			series.get(key).push(t);
+		}
+		let loose = null;
+		for (const list of series.values()) {
+			const name = list[0].series;
+			if (!name) {
+				if (!loose) root.append((loose = h("ul", { class: "tutorial-items" })));
+				loose.append(item(list[0]));
+				continue;
+			}
+			loose = null;
+			const ul = h("ul", { class: "tutorial-items" });
+			list.forEach((t, i) => ul.append(item(t, i + 1)));
+			root.append(
 				h(
-					"li",
-					{ "data-tutorial": t.id },
-					h(
-						"div",
-						{ class: "tutorial-item-text" },
-						h("strong", {}, t.title),
-						finished ? h("span", { class: "badge done", title: "You finished this tutorial in this browser" }, "✓ Done") : null,
-						!compact && t.summary ? h("div", { class: "muted small" }, t.summary) : null
-					),
-					button
+					"section",
+					{ class: "tutorial-series", "data-series": name, "aria-label": `${name}, a series of tutorials` },
+					h("div", { class: "tutorial-series-name" }, h("span", {}, name), h("span", { class: "muted small" }, list.length === 1 ? "1 tutorial" : `${list.length} tutorials`), list.every(isDone) ? completed("You have finished every tutorial of this series") : null),
+					ul
 				)
 			);
 		}
-		root.append(ul);
 	}
 	root.append(error);
 	return root;

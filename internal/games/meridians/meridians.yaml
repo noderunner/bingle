@@ -2,7 +2,7 @@
 id: meridians
 name: Meridians
 description: Stones that cannot see a friend die. Place where one of your stones looks, keep every group in sight of another, and take the board away from your opponent.
-version: 0.1.2
+version: 0.1.3
 designers: [Kanare Kato]
 engine: ruleset
 rules:

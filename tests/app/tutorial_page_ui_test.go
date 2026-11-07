@@ -49,7 +49,7 @@ func openTutorialOf(t *testing.T, ctx context.Context, base, game, id string) st
 
 func waitStep(t *testing.T, ctx context.Context, n string) {
 	t.Helper()
-	waitJS(t, ctx, "step "+n, `/^Step `+n+` of \d+$/.test((document.getElementById("tutorial-count") || {}).textContent || "")`, 15*time.Second)
+	waitJS(t, ctx, "step "+n, `/^Lesson `+n+` of \d+$/.test((document.getElementById("tutorial-count") || {}).textContent || "")`, 15*time.Second)
 }
 
 // clickables are the board's squares that can be clicked.
@@ -168,6 +168,28 @@ func TestWebTutorial_PlaysThroughTheBloomsTutorial(t *testing.T) {
 	if !evalBool(t, ctx, `JSON.parse(localStorage.getItem("bingle.tutorials.done") || "[]").includes("blooms/blooms-basics")`) {
 		t.Fatal("the tutorial is not marked finished in the browser")
 	}
+	// The card names the tutorial and the lesson, and ends with Keep Playing (the
+	// tutorial offers it) and the way back to the game's tutorials; there is no
+	// Start again, and no next tutorial, as Blooms has one of its own.
+	if head := evalString(t, ctx, `[...document.querySelector("#tutorial .tutorial-head").children].map(e => e.textContent).join(" ")`); head != "How to play Blooms · Your own fenced blooms" {
+		t.Errorf("the card's head: %q", head)
+	}
+	if got := evalInt(t, ctx, `document.querySelectorAll("#tutorial-count i").length`); got != 11 {
+		t.Errorf("%d dots for 11 lessons", got)
+	}
+	if !evalBool(t, ctx, `document.querySelector("#tutorial-count i:last-of-type").classList.contains("on") && document.getElementById("tutorial-next").disabled`) {
+		t.Error("the last lesson is not lit, or forward is not disabled at the end")
+	}
+	if evalBool(t, ctx, `!!document.getElementById("tutorial-restart") || !!document.getElementById("tutorial-next-tutorial")`) {
+		t.Error("the end offers Start again or a next tutorial")
+	}
+	if got := evalString(t, ctx, `document.getElementById("tutorial-bot").textContent`); got != "Keep Playing" {
+		t.Errorf("the bot button says %q", got)
+	}
+	back := evalString(t, ctx, `document.getElementById("tutorial-return").getAttribute("href")`)
+	if back != "/?game=blooms-4&tab=tutorials" {
+		t.Errorf("Return to Tutorials goes to %q", back)
+	}
 
 	// Finishing against a bot opens an ordinary game from this position.
 	clickSel(t, ctx, "#tutorial-bot")
@@ -179,6 +201,12 @@ func TestWebTutorial_PlaysThroughTheBloomsTutorial(t *testing.T) {
 	if !evalBool(t, ctx, `document.querySelector('#board .cell[data-position="b3"]').dataset.height === "1"`) {
 		t.Fatal("the game against the bot did not start from the tutorial's position")
 	}
+
+	// Return to Tutorials opens the game's setup on its tutorials.
+	if err := chromedp.Run(ctx, chromedp.Navigate(base+back)); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "the tutorials tab", `document.getElementById("setup-tab-tutorials").getAttribute("aria-selected") === "true" && !document.getElementById("setup-tutorials-panel").hidden && !!document.querySelector('#setup-tutorials button[data-tutorial="blooms-basics"]')`, 15*time.Second)
 }
 
 // finishTurn ends a Blooms turn after one stone: the "End turn" button of
@@ -263,7 +291,7 @@ func TestWebTutorial_TabInTheRulesWindow(t *testing.T) {
 	clickSel(t, ctx, `#rules-dialog [data-tab="tutorials"]`)
 	waitJS(t, ctx, "the list", `!document.getElementById("rules-panel-tutorials").hidden`, 5*time.Second)
 	text := evalString(t, ctx, `document.getElementById("rules-panel-tutorials").innerText`)
-	for _, want := range []string{"Learn the rules", "How to play Blooms", "how a bloom is captured", "✓ Done"} {
+	for _, want := range []string{"Learn the rules", "How to play Blooms", "how a bloom is captured", "✓ Completed"} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("the Tutorials tab lacks %q: %q", want, text)
 		}
@@ -366,7 +394,7 @@ func TestWebTutorial_PlaysThroughTheMyceliumTutorial(t *testing.T) {
 		waitStep(t, ctx, n)
 		for i, c := range cells {
 			waitJS(t, ctx, c+" to be the only cell", clickable+` === "`+c+`"`, 10*time.Second)
-			took := `!/^Step ` + n + ` of /.test(document.getElementById("tutorial-count").textContent)`
+			took := `!/^Lesson ` + n + ` of /.test(document.getElementById("tutorial-count").textContent)`
 			if i+1 < len(cells) {
 				took = clickable + ` === "` + cells[i+1] + `"`
 			}
@@ -442,7 +470,7 @@ func TestWebCthulhuWars_TheHighPriestsTutorial(t *testing.T) {
 		deadline := time.Now().Add(40 * time.Second)
 		var did []string
 		for time.Now().Before(deadline) {
-			if evalString(t, ctx, count) == "Step "+n+" of 11" {
+			if evalString(t, ctx, count) == "Lesson "+n+" of 11" {
 				return
 			}
 			if got := tutorialDoNext(t, ctx); got != "" {
@@ -520,15 +548,18 @@ kind: rules
 title: Marked
 game: marked
 steps:
-  - text: Not like this.
+  - name: L
+    text: Not like this.
     pieces: ["stone:black@0,0", "stone:white@1,1"]
     arrow: ["0,0", "2,2"]
     illegal: true
-  - text: Nor here.
+  - name: L
+    text: Nor here.
     pieces: ["stone:black@0,0"]
     highlight: ["1,0", "2,0"]
     illegal: true
-  - text: A step to read, on the room's own board.
+  - name: L
+    text: A step to read, on the room's own board.
 `)}}}
 	if err := a.Catalog().RegisterModule(mod); err != nil {
 		t.Fatal(err)
@@ -549,6 +580,82 @@ steps:
 	clickSel(t, ctx, "#tutorial-next")
 	waitStep(t, ctx, "3")
 	waitJS(t, ctx, "the marks gone", `!document.querySelector("#board-svg.illegal-marks") && !document.querySelector("#board-svg .illegal-cross")`, 10*time.Second)
+	// A tutorial that does not offer Keep Playing ends without it.
+	clickSel(t, ctx, "#tutorial-next")
+	waitJS(t, ctx, "the end", `!!document.getElementById("tutorial-done")`, 10*time.Second)
+	if evalBool(t, ctx, `!!document.getElementById("tutorial-bot")`) {
+		t.Error("Keep Playing is offered by a tutorial that does not ask for it")
+	}
+}
+
+// The tutorials of a series are listed together under its name, and the end of
+// one but the last starts the next; a series all finished is marked Completed.
+func TestWebTutorial_ASeries(t *testing.T) {
+	cfg := newTestConfig(t)
+	a, err := app.New(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = a.Close() })
+	registerFixtures(t, a)
+	lesson := func(id, title string, order int, last string) *fstest.MapFile {
+		return &fstest.MapFile{Data: []byte("id: " + id + "\nkind: rules\ntitle: " + title + "\nseries: Basics\norder: " + strconv.Itoa(order) +
+			"\ngame: serial\nsteps:\n  - name: Opening\n    text: The first lesson.\n  - name: Closing\n    text: " + last + "\n")}
+	}
+	mod := catalog.Module{ID: "serial", Definition: []byte(`{
+		"id": "serial", "name": "Serial", "version": "0.1.0",
+		"board": {"generator": {"type": "grid", "width": 3, "height": 3, "adjacency": "orthogonal4"}},
+		"seats": [{"seat": 1, "color": "black"}, {"seat": 2, "color": "white"}],
+		"pieces": {"stone": {"shape": "disc"}},
+		"actions": [{"id": "place", "type": "place", "pieces": ["stone"], "source": "supply"}],
+		"turn_order": {"type": "round-robin", "seats": [1, 2]},
+		"win_condition": {"type": "none"}
+	}`), Tutorials: fstest.MapFS{
+		"one.yaml":  lesson("one", "Part one", 1, "The next tutorial covers **Part two**."),
+		"two.yaml":  lesson("two", "Part two", 2, "That is all."),
+		"solo.yaml": &fstest.MapFile{Data: []byte("id: solo\nkind: rules\ntitle: On its own\norder: 3\ngame: serial\nsteps:\n  - name: Only\n    text: Alone.\n")},
+	}}
+	if err := a.Catalog().RegisterModule(mod); err != nil {
+		t.Fatal(err)
+	}
+	srv := httptest.NewServer(a.Router())
+	t.Cleanup(srv.Close)
+	ctx, cancel := newChromedpContext(t, 60*time.Second)
+	defer cancel()
+
+	openTutorialOf(t, ctx, srv.URL, "serial", "one")
+	waitStep(t, ctx, "1")
+	if head := evalString(t, ctx, `[...document.querySelector("#tutorial .tutorial-head").children].map(e => e.textContent).join(" ")`); head != "Part one · Opening" {
+		t.Errorf("the card's head: %q", head)
+	}
+	clickSel(t, ctx, "#tutorial-next")
+	waitStep(t, ctx, "2")
+	clickSel(t, ctx, "#tutorial-next")
+	waitJS(t, ctx, "the end", `!!document.getElementById("tutorial-next-tutorial")`, 10*time.Second)
+	first := evalString(t, ctx, `location.pathname`)
+	clickSel(t, ctx, "#tutorial-next-tutorial")
+	waitJS(t, ctx, "the next tutorial", `location.pathname !== "`+first+`" && /^Part two/.test((document.querySelector("#tutorial .tutorial-head") || {}).textContent || "")`, 15*time.Second)
+	waitStep(t, ctx, "1")
+	clickSel(t, ctx, "#tutorial-next")
+	waitStep(t, ctx, "2")
+	clickSel(t, ctx, "#tutorial-next")
+	waitJS(t, ctx, "the end", `!!document.getElementById("tutorial-done")`, 10*time.Second)
+	if evalBool(t, ctx, `!!document.getElementById("tutorial-next-tutorial")`) {
+		t.Error("the last of the series offers a next tutorial")
+	}
+
+	clickSel(t, ctx, "#tutorial-return")
+	waitJS(t, ctx, "the series", `!!document.querySelector('#setup-tutorials .tutorial-series[data-series="Basics"]')`, 15*time.Second)
+	got := evalString(t, ctx, `[...document.querySelectorAll('#setup-tutorials .tutorial-series [data-tutorial]')].filter(e => e.tagName === "LI").map(e => e.dataset.tutorial).join(",")`)
+	if got != "one,two" {
+		t.Errorf("the series lists %q", got)
+	}
+	if evalBool(t, ctx, `!!document.querySelector('#setup-tutorials .tutorial-series li[data-tutorial="solo"]')`) {
+		t.Error("a tutorial of no series is listed in one")
+	}
+	if !evalBool(t, ctx, `!!document.querySelector('#setup-tutorials .tutorial-series-name .badge.done')`) {
+		t.Errorf("the series finished is not marked: %q", evalString(t, ctx, `document.getElementById("setup-tutorials").innerText`))
+	}
 }
 
 // The map of a game of areas draws a marked step like any other board. No shipped

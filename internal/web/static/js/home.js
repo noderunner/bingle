@@ -224,6 +224,7 @@ function closeSetup() {
 	const url = new URL(window.location.href);
 	if (url.searchParams.has("game")) {
 		url.searchParams.delete("game");
+		url.searchParams.delete("tab");
 		window.history.replaceState(null, "", url);
 	}
 }
@@ -268,6 +269,10 @@ function renderSetupHead(d) {
 // The tutorials offered with each game, fetched once.
 const tutorialsOf = new Map();
 
+// A link may open the setup on its tutorials (?game=ID&tab=tutorials): the
+// tutorial page's Return to Tutorials. It is taken once, when they are shown.
+let askedTutorialsTab = new URLSearchParams(window.location.search).get("tab") === "tutorials";
+
 /** "Learn to play": the chosen game's tutorials, played under the name in the form. */
 async function renderSetupTutorials(d) {
 	const host = document.getElementById("setup-tutorials");
@@ -291,6 +296,10 @@ async function renderSetupTutorials(d) {
 		tutorialList(tutorialsOf.get(d.id).family, tutorialsOf.get(d.id).tutorials || [], { compact: true })
 	);
 	host.hidden = false;
+	if (askedTutorialsTab && setupOpen) {
+		askedTutorialsTab = false;
+		showSetupTab("tutorials");
+	}
 }
 
 /** A family in the order its picker lists it: smallest board first, and among equals the base game, then by name. */

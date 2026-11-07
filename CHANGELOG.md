@@ -4,6 +4,20 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.93.0 - 2026-11-06
+
+### Bingle Core 0.93.0
+- **Tutorials are made of named lessons.** The top of each card names the tutorial and the lesson you are on ("Combat · Assigning Pains"), and a row of dots at the bottom shows how far through you are, with small **‹** and **›** buttons either side to go back and forward.
+- **Tutorials can come in a series.** A series is listed together under its name, in the order to take it, and the end of each tutorial but the last offers **Start Next Tutorial**.
+- **Your finished tutorials follow your account.** Signed in, a tutorial you finish is marked **✓ Completed** wherever you sign in, and so is a series once you have finished all of it. Without an account your browser still remembers them.
+- **The end of a tutorial is simpler.** **Return to Tutorials** takes you back to that game's tutorials rather than to the list of games, *Start again* is gone (start one again from its list), and playing on against a bot is now called **Keep Playing**, offered only where it makes sense.
+
+### Cthulhu Wars 0.16.1
+- **The eight rules tutorials are one series, *Core Game*,** each ending with what the next one covers. The High Priests tutorial stands on its own. Every lesson has a name.
+
+### Blooms 0.6.1, Meridians 0.1.3, Bowling Solitaire 0.2.1 and the Mycelium prototype
+- Every lesson of the tutorial has a name, and its end offers **Keep Playing** against a bot.
+
 ## 0.92.1 - 2026-11-06
 
 ### Bingle Core 0.92.1

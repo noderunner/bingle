@@ -547,3 +547,11 @@ CREATE TABLE IF NOT EXISTS slot_votes (
     account_id INTEGER NOT NULL REFERENCES accounts(id),
     PRIMARY KEY (slot_id, account_id)
 );
+
+-- The tutorials an account has finished (ADR 0123), as "family/id", for the marks on the lists.
+CREATE TABLE IF NOT EXISTS tutorials_done (
+    account_id INTEGER NOT NULL REFERENCES accounts(id),
+    tutorial   TEXT NOT NULL,
+    done_at    TEXT NOT NULL,
+    PRIMARY KEY (account_id, tutorial)
+);

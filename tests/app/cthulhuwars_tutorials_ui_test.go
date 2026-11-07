@@ -18,7 +18,7 @@ import (
 // The step in view: its number, and the parts of its spotlight the page does not have.
 const tutorialWalkState = `(async () => {
 	const count = (document.getElementById("tutorial-count") || {}).textContent || "";
-	const found = /^Step (\d+) of/.exec(count);
+	const found = /^Lesson (\d+) of/.exec(count);
 	const parts = found ? (window.__steps[found[1] - 1].spotlight || []) : [];
 	const { pagePart } = await import("/static/js/tutorial.js");
 	const missing = parts.filter((p) => !document.querySelector(pagePart(p, 1).selector + ".tutorial-spot"));
@@ -29,7 +29,7 @@ const tutorialWalkState = `(async () => {
 const tutorialWalkClick = `(() => {
 	const fire = (el) => el.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 	const next = document.getElementById("tutorial-next");
-	if (next) return next.click(), true;
+	if (next && !next.disabled) return next.click(), true;
 	const area = document.querySelector("#board .cell.area.clickable");
 	if (area) return fire(area), true;
 	const token = document.querySelector("#board .token.token-target");

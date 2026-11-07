@@ -6742,6 +6742,11 @@ function tutorialTick() {
 	const p = tutorialState();
 	if (p.finished) {
 		markFinished(store, S.tut.ref);
+		// A signed-in account keeps it too, for the marks on the lists (a guest's answer is no).
+		if (!S.tut.recorded) {
+			S.tut.recorded = true;
+			api.tutorialDone(code).catch(() => {});
+		}
 		return;
 	}
 	if (!p.next || p.next.who !== "reply") return;
@@ -6813,7 +6818,13 @@ function tutorialCard() {
 	const step = steps[viewed] || {};
 	const card = h("div", { class: "card tutorial-card", id: "tutorial" });
 	card.append(
-		h("div", { class: "tutorial-head" }, h("strong", {}, t.title), h("span", { class: "muted small", id: "tutorial-count" }, p.finished && !lookingBack ? "Done" : `Step ${viewed + 1} of ${steps.length}`))
+		h(
+			"div",
+			{ class: "tutorial-head" },
+			h("strong", { class: "tutorial-title" }, t.title),
+			step.name && !p.offScript ? h("span", { class: "tutorial-sep", "aria-hidden": "true" }, "·") : null,
+			step.name && !p.offScript ? h("span", { class: "tutorial-lesson", id: "tutorial-lesson" }, step.name) : null
+		)
 	);
 	if (p.offScript) {
 		card.append(
@@ -6822,7 +6833,7 @@ function tutorialCard() {
 				"div",
 				{ class: "tutorial-actions" },
 				h("button", { type: "button", id: "tutorial-restart", onclick: tutorialRestart }, "Start the tutorial again"),
-				S.game.status === "active" ? h("button", { type: "button", class: "secondary", id: "tutorial-bot", onclick: tutorialFinishAgainstBot }, "Play on against a bot") : null
+				S.game.status === "active" ? h("button", { type: "button", class: "secondary", id: "tutorial-bot", onclick: tutorialFinishAgainstBot }, "Keep Playing") : null
 			)
 		);
 		return card;
@@ -6830,17 +6841,17 @@ function tutorialCard() {
 	const base = `/api/game-defs/${encodeURIComponent(S.tut.family)}/assets/`;
 	card.append(h("div", { class: "tutorial-text", id: "tutorial-text" }, renderMarkdown(step.text || "", { assetBase: base }).node));
 	const actions = h("div", { class: "tutorial-actions" });
-	if (viewed > 0) actions.append(h("button", { type: "button", class: "secondary", id: "tutorial-back", onclick: () => tutorialGoTo(viewed - 1) }, "Back"));
+	// Forward is Next on a lesson to read, and on one gone back to; a lesson
+	// that asks for a move goes on when it is made.
+	let forward = null;
 	if (lookingBack) {
-		actions.append(h("button", { type: "button", id: "tutorial-next", onclick: () => tutorialGoTo(viewed + 1) }, "Next"));
+		forward = () => tutorialGoTo(viewed + 1);
 	} else if (p.finished) {
 		card.append(h("p", { class: "tutorial-done", id: "tutorial-done" }, "Tutorial complete."));
-		if (S.game.status === "active") actions.append(h("button", { type: "button", id: "tutorial-bot", onclick: tutorialFinishAgainstBot }, "Finish this game against a bot"));
-		actions.append(h("button", { type: "button", class: "secondary", id: "tutorial-restart", onclick: tutorialRestart }, "Start again"));
-		actions.append(h("a", { class: "button secondary", href: "/" }, "Back to the games"));
+		if (t.next) actions.append(h("button", { type: "button", id: "tutorial-next-tutorial", onclick: tutorialStartNext }, "Start Next Tutorial"));
+		actions.append(h("a", { class: "button secondary", id: "tutorial-return", href: tutorialsHref() }, "Return to Tutorials"));
 	} else if (p.needsNext) {
-		const last = p.step === steps.length - 1 && !(step.reply || []).length;
-		actions.append(h("button", { type: "button", id: "tutorial-next", onclick: tutorialNext }, last ? "Finish" : "Next"));
+		forward = tutorialNext;
 		// A step to read may ask a question, and keep its answer here.
 		if (step.hint) actions.append(tutorialHint(step, p.step));
 	} else if (p.next && p.next.who === "learner") {
@@ -6848,8 +6859,44 @@ function tutorialCard() {
 	} else if (p.next) {
 		actions.append(h("p", { class: "muted small", id: "tutorial-wait" }, "Your opponent is moving…"));
 	}
-	card.append(actions);
+	// Keep Playing is the tutorial's to offer (Step.keep_playing): from that lesson on.
+	const keep = !lookingBack && S.game.status === "active" && steps.slice(0, viewed + 1).some((s) => s.keep_playing);
+	if (keep) actions.prepend(h("button", { type: "button", id: "tutorial-bot", class: p.finished ? "" : "secondary", onclick: tutorialFinishAgainstBot }, "Keep Playing"));
+	if (actions.childNodes.length) card.append(actions);
+	card.append(tutorialFooter(steps.length, viewed, p.finished && !lookingBack, forward));
 	return card;
+}
+
+/** The lesson footer: back, a dot for each lesson with this one lit, and forward. */
+function tutorialFooter(count, viewed, finished, forward) {
+	const last = viewed === count - 1;
+	const dots = h("div", { class: "tutorial-dots", id: "tutorial-count", "data-lesson": String(viewed + 1), "data-finished": finished ? "true" : "false" });
+	dots.append(h("span", { class: "sr-only" }, `Lesson ${viewed + 1} of ${count}`));
+	for (let i = 0; i < count; i++) dots.append(h("i", { class: i === viewed ? "on" : i < viewed ? "past" : "", "aria-hidden": "true" }));
+	const arrow = (id, label, glyph, onclick) =>
+		h("button", { type: "button", class: "icon-button tutorial-arrow", id, "aria-label": label, title: label, disabled: !onclick, onclick: onclick || null }, glyph);
+	return h(
+		"div",
+		{ class: "tutorial-footer" },
+		arrow("tutorial-back", "Back", "‹", viewed > 0 ? () => tutorialGoTo(viewed - 1) : null),
+		dots,
+		arrow("tutorial-next", last && forward && !tutorialLookingBack() ? "Finish" : "Next", "›", forward)
+	);
+}
+
+/** The list of tutorials this one came from: the game's own, in its setup. */
+function tutorialsHref() {
+	return `/?game=${encodeURIComponent(S.game.game_def_id)}&tab=tutorials`;
+}
+
+/** Starts the tutorial after this one in its series. */
+async function tutorialStartNext() {
+	try {
+		const res = await api.startTutorial({ game_def_id: S.tut.family, tutorial: S.tut.doc.next.id, player_name: ownerName() });
+		location.assign(`/game/${res.room_code}`);
+	} catch (err) {
+		toast(err.message, "error");
+	}
 }
 
 /** A step's hint, or the button that shows it. */

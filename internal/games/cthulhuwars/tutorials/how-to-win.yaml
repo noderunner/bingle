@@ -4,25 +4,29 @@ kind: rules
 title: How to win
 summary: Doom and spellbooks, where Doom comes from, and when the game ends.
 order: 1
+series: Core Game
 game: cthulhu-wars
 seat: 1          # you play Great Cthulhu; the page plays the others
 # The last round of a game, written out rather than played to.
 start: !include positions/the-last-doom-phase.yaml
 
 steps:
-  - text: |
+  - name: Spellbooks and Doom
+    text: |
       You are **Great Cthulhu**, the green cult. To win Cthulhu Wars you need two things when the
       game ends: **all six spellbooks**, and the **most Doom** of the cults that have them.
 
       Your Doom and your spellbooks are counted in your cult's panel.
     spotlight: [doom, books]
 
-  - text: |
+  - name: Doom without spellbooks
+    text: |
       **Doom without spellbooks is worth nothing.** Crawling Chaos is ahead with 29 Doom to your 22,
       but holds only five spellbooks. You hold all six, so you are the one who can win.
     spotlight: [doom, books, doom:2, books:2]
 
-  - text: |
+  - name: Where Doom comes from
+    text: |
       Doom comes from three places:
 
       - **Gates**, each round
@@ -32,7 +36,8 @@ steps:
       You control the three Gates highlighted here.
     highlight: [south-pacific, north-pacific, new-zealand]
 
-  - text: |
+  - name: The Doom phase
+    text: |
       The game can only end at the close of a **Doom phase**, the last phase of a round. Press
       **Pass** to end your Action phase. You then have the most Power, so choose **clockwise**
       play, and the Doom phase begins.
@@ -40,7 +45,8 @@ steps:
     hint: Press Pass, then the Clockwise button.
     spotlight: [phases]
 
-  - text: |
+  - name: A Ritual of Annihilation
+    text: |
       Every Gate you control has just scored **1 Doom**: you are on 25.
 
       Now perform a **Ritual of Annihilation**. Pay the Power shown on the track to gain 1 Doom per
@@ -49,7 +55,8 @@ steps:
     hint: Press the Ritual of Annihilation button.
     spotlight: [ritual-track, doom]
 
-  - text: |
+  - name: Elder Signs
+    text: |
       **Elder Signs** are worth 1, 2 or 3 Doom. Their values are secret: only you can see yours,
       until you **reveal** them, adding them to your Doom. Every sign still hidden is revealed when
       the game ends.
@@ -60,7 +67,8 @@ steps:
     spotlight: [elder-signs, signs]
     reply: [ritual, skip, skip]
 
-  - text: |
+  - name: Winning
+    text: |
       You passed **30 Doom**, but the game did not stop there. Everyone still had their part of the
       Doom phase, and it ended only when the phase did.
 
@@ -68,10 +76,13 @@ steps:
       nobody has all six, humanity survives and every cult loses.
     spotlight: [doom, books, doom:2, books:2]
 
-  - text: |
+  - name: Instant Death
+    text: |
       The game can also end without anyone reaching 30. Each Ritual moves the marker along the
       track, and when it reaches the skull, **Instant Death**, the game ends once that Doom phase is
       over.
 
       Whichever way it ends, you still need all six spellbooks to win.
+
+      The next tutorial covers **Power**.
     spotlight: [ritual-track]
