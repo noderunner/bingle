@@ -157,29 +157,43 @@ client is built. Nothing here should assume one answer.
 
 ## Which games stay public
 
-Decided 2026-10-31: **the public repository keeps only public-domain games, openly licensed
-games and the maintainer's own designs.** Every other game moves to the private overlay, and
-can come back if its owner gives permission. Cthulhu Wars, Yinsh and Onitama were named.
+Decided 2026-10-31: **the public repository keeps public-domain games, openly licensed games,
+games whose designers give general permission to implement them with credit, and the
+maintainer's own designs.** A commercial game moves to the private overlay, and can come
+back if its owner gives permission.
 
-The rest of the list below is a **proposal for the maintainer to confirm**, sorted from the
-credits in each definition. It is not a legal judgement: game mechanics are generally not
-protected, but names, rule text and art are, and the bar here is stricter than the law
-anyway.
+- **Private, for now: Cthulhu Wars, Yinsh, Onitama, Hive and Nyet!** No other game moves.
+- **Everything else stays public**, including the designer-owned abstracts such as Blooms
+  and Meridians. Their designers allow implementations that credit them, as on
+  abstractplay.com, so **a public game must credit its designers**: the `designers` field
+  every definition already carries is kept accurate and shown to players.
+- **Reversi drops "(Othello)"** from its name; Othello is a trademark. The definition, its
+  guide and `docs/games.md` change together.
 
-| Group | Games | Proposal |
-|---|---|---|
-| Traditional, no owner | Tic-Tac-Toe, English Draughts, Go, Gomoku, Brandubh, Reversi | public; drop "Othello" (a trademark) from Reversi's name |
-| The maintainer's own | Courtfall, Mycelium | public |
-| Published commercial products | Cthulhu Wars, Yinsh, Onitama, Hive, Nyet!, Fist, Tak, Yavalath, Pente, Connect Four | private; Connect Four and Pente could stay as generic games under another name |
-| Designer-owned, licence unknown | Blooms, Amazons, Breakthrough, Ataxx, Havannah, Hex, Meridians, Fendo | check each one's licence; private until confirmed |
+**This reaches the public test suite.** Cthulhu Wars is named in about 60 test files, and
+Hive, Yinsh, Onitama and Nyet! have their own test directories. Between them they are what
+exercises the engine's hidden information, cards and reactions. So before a game moves, every
+engine feature it exercised must be covered by a game that stays public, or by a small
+**test-only fixture game** that lives in `tests/` and is never registered in the shipped
+binary. Its own rules tests move with it into the private overlay.
 
-**This cut reaches the public test suite.** Tak is named in about 110 test files and Cthulhu
-Wars in about 60; Hive, Yinsh, Onitama, Nyet!, Fist and Fendo have their own test
-directories. Those games are also what exercises the engine's hidden information, cards,
-stacks and reactions. So before a game moves, every engine feature it exercised must be
-covered by a game that stays public, or by a small **test-only fixture game** that lives in
-`tests/` and is never registered in the shipped binary. Its own rules tests move with it into
-the private overlay.
+## Retiring games
+
+Decided 2026-10-31: **Tic-Tac-Toe and Connect Four are removed entirely.** The bots and the
+other games now cover what they were there to show, and they are unlikely to be played.
+Neither is a commercial question; they go, not to the private overlay.
+
+- Tic-Tac-Toe is named in about 39 test files, as the smallest complete game. It becomes a
+  **test-only fixture** under `tests/` rather than a shipped game, so those tests keep it.
+  Connect Four's 6 test files are moved to another game or dropped.
+- **Games already in a database must survive.** A finished game of a retired type stays in
+  the player's history, readable as a move list, with the same tombstone discipline that
+  uninstalling a pack needs. A game still in progress is ended at the upgrade with no result,
+  and the changelog says so. This is the first real use of the tombstone, so it is built
+  here and reused by data packs.
+- Docs, guides, icons, the home page's lists and the changelog drop them.
+
+Retirement needs nothing else in this plan and can land on its own, ahead of the rest.
 
 ## The order of work
 
@@ -189,9 +203,10 @@ the private overlay.
 2. **Games register themselves**, and the binary's set of games is chosen by build tags.
 3. **Presentation moves to the server** (the Cthulhu Wars names, colours, sigils, icons and
    practice-report shape), and the web client stops naming games.
-4. **Fixture games** for every engine feature a departing game was the only public test of.
-5. **The private overlay**, then **every game the list above sends private moves into it**,
-   Cthulhu Wars first. The acceptance test: the public repository builds, passes `make test`
+4. **Fixture games** for every engine feature a departing game was the only public test of,
+   Tic-Tac-Toe among them.
+5. **The private overlay**, then **Cthulhu Wars, Yinsh, Onitama, Hive and Nyet! move into
+   it**, Cthulhu Wars first. The acceptance test: the public repository builds, passes `make test`
    and plays every remaining game through the API with the private games absent.
 6. **Data packs** (Tier 0): manifest, validation through the compiler, the store table, the
    admin install page, the namespace, uninstall tombstones and version provenance listed
@@ -226,3 +241,7 @@ which is now built.
   repository keeps public-domain, openly licensed and the maintainer's own games. Added a
   proposed sorting of all 26 games for the maintainer to confirm, and fixture games to keep
   the engine's features tested once the games that exercised them leave.
+- 2026-10-31: the private list settled at Cthulhu Wars, Yinsh, Onitama, Hive and Nyet!; every
+  other game stays public with its designers credited. Tic-Tac-Toe and Connect Four are
+  retired outright (Tic-Tac-Toe survives as a test fixture), with tombstones for games
+  already played. Reversi drops "(Othello)".
