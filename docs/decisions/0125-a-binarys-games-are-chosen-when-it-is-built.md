@@ -33,3 +33,8 @@ decided without editing the server.
   its practice report and bot tuning. A `no_cthulhuwars` build leaves the game out of the server's list,
   but still compiles its package. The plan's step 3 has a game describe its own practice report, which
   removes those imports.
+
+## Addendum (2026-11-07)
+
+Since [ADR 0126](0126-a-game-describes-its-own-practice.md) practice batches and tuning name no game, so a
+`no_cthulhuwars` build compiles none of Cthulhu Wars, and `tests/registry` checks it.

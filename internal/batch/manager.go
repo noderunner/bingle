@@ -276,23 +276,22 @@ func (m *Manager) Report(ctx context.Context, id int64) (Report, error) {
 		// Which bot sat where is the spec's own doing (a batch may move them
 		// round the seats), so it is worked out again rather than stored.
 		if len(spec.Players) > 0 {
-			_, seated := spec.layout(g.Index)
-			for _, p := range seated {
-				r.Bots = append(r.Bots, p.Bot)
+			if _, seated, err := spec.layout(m.cat, g.Index); err == nil {
+				for _, p := range seated {
+					r.Bots = append(r.Bots, p.Bot)
+				}
 			}
 		}
-		if g.Metrics != "" {
-			_ = json.Unmarshal([]byte(g.Metrics), &r.Metrics)
+		if g.Metrics != "" && g.Metrics != "null" {
+			r.Metrics = json.RawMessage(g.Metrics)
 		}
 		recs = append(recs, r)
 	}
-	names := map[string]string{}
-	if game, ok := m.cat.Get(b.GameDefID); ok {
-		for _, p := range game.Definition.Board.Positions {
-			names[p.ID] = p.Name
-		}
+	game, _ := m.cat.Get(b.GameDefID)
+	rep, err := BuildReport(game, recs)
+	if err != nil {
+		return Report{}, err
 	}
-	rep := BuildReport(recs, names)
 	rep.Seats = seatReports(m.cat, b.GameDefID, recs)
 	rep.Bots = botReports(recs)
 	if final {

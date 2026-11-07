@@ -36,7 +36,7 @@ func TestTunerRunsEndToEnd(t *testing.T) {
 	}
 	cat := newCatalog(t)
 	res, err := tune.Run(context.Background(), cat, tune.Config{
-		Base: "cthulhu-wars-3p", Lineup: []string{"gc", "cc", "bg"}, Faction: "cc",
+		Base: "cthulhu-wars-3p", Lineup: []string{"gc", "cc", "bg"}, Pick: "cc",
 		Generations: 1, Population: 2, GamesPerEval: 6, ConfirmGames: 6, ValidateGames: 6, Seed: 3, Workers: 6,
 		Knobs: []string{"gate", "battle", "end_turn"},
 	}, nil)
@@ -49,13 +49,19 @@ func TestTunerRunsEndToEnd(t *testing.T) {
 	if res.Steps[0].ParentEval.Games != 6 {
 		t.Errorf("parent played %d games", res.Steps[0].ParentEval.Games)
 	}
-	// Only the chosen knobs may move.
-	b := res.Best
-	b.Gate, b.Battle, b.EndTurn = 0, 0, 0
-	if b != (cthulhuwars.GuideTuning{}) {
-		t.Errorf("other knobs moved: %+v", res.Best)
+	// Only the chosen knobs may move from the shipped tuning.
+	shipped := cthulhuwars.Study{}.Shipped("cc")
+	for k, v := range res.Best {
+		if k != "gate" && k != "battle" && k != "end_turn" && v != shipped[k] {
+			t.Errorf("knob %s moved: %v", k, res.Best)
+		}
 	}
-	if _, err := tune.Run(context.Background(), cat, tune.Config{Base: "cthulhu-wars-3p", Lineup: []string{"gc", "cc", "bg"}, Faction: "ys"}, nil); err == nil {
-		t.Error("a faction outside the line-up should be refused")
+	for k, v := range shipped {
+		if k != "gate" && k != "battle" && k != "end_turn" && res.Best[k] != v {
+			t.Errorf("knob %s moved: %v", k, res.Best)
+		}
+	}
+	if _, err := tune.Run(context.Background(), cat, tune.Config{Base: "cthulhu-wars-3p", Lineup: []string{"gc", "cc", "bg"}, Pick: "ys"}, nil); err == nil {
+		t.Error("a pick outside the line-up should be refused")
 	}
 }

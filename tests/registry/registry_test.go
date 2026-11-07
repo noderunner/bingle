@@ -73,6 +73,15 @@ func TestATagLeavesAGameOut(t *testing.T) {
 	if some := deps("no_tak,no_classics"); slices.Contains(some, tak) || slices.Contains(some, classics) {
 		t.Error("no_tak,no_classics still builds them in")
 	}
+	// Nothing else pulls a game in either: practice batches and tuning name
+	// no game (ADR 0126), so the server without Cthulhu Wars has none of it.
+	out, err := exec.Command("go", "list", "-deps", "-tags", "no_cthulhuwars", "-f", "{{.ImportPath}}", "github.com/noderunner/bingle").CombinedOutput()
+	if err != nil {
+		t.Fatalf("go list: %v\n%s", err, out)
+	}
+	if strings.Contains(string(out), "internal/games/cthulhuwars") {
+		t.Error("the server built with no_cthulhuwars still compiles Cthulhu Wars")
+	}
 	// And the server itself builds without them.
 	if out, err := exec.Command("go", "build", "-tags", "no_tak,no_classics", "-o", "/dev/null", "github.com/noderunner/bingle").CombinedOutput(); err != nil {
 		t.Errorf("the server without Tak and the classics: %v\n%s", err, out)

@@ -465,14 +465,17 @@ bundled Python client.
 
 ## Practice batches (`/api/batches`)
 
-Bot-versus-bot Cthulhu Wars games run in the background and measured (see ADR 0034).
+Bot-versus-bot games run in the background and measured (see ADR 0034). Any game can be batched;
+a game whose family registers a practice study (`batch.Study`, [ADR 0126](decisions/0126-a-game-describes-its-own-practice.md))
+also picks per seat, measures more than the outcome and adds its own part to the report. Cthulhu Wars'
+picks a cult per seat, has the option `hp` (the High Priests) and reports per cult.
 
 | Route | |
 |---|---|
-| `POST /api/batches` | start (queue) a batch. Body: `name`, `base` (layout id), `high_priests`, `players` [`{faction: gc\|cc\|bg\|ys\|ww\|sl, bot: random\|tactical\|minimax\|mcts, mcts_iterations, minimax_nodes}`] one per seat, `games` (≤ 5000), `seed`, `rotate`, `max_plies`, `event_games` (default 0; the wizard sends 20), `workers`. 201 with the batch |
+| `POST /api/batches` | start (queue) a batch. Body: `name`, `base` (game id), `options` (the study's: `["hp"]`; a spec saved with `high_priests: true` reads as that), `players` [`{faction, bot: random\|tactical\|minimax\|mcts, mcts_iterations, minimax_nodes, tuning}`] one per seat (`faction` is the study's pick, a Cthulhu Wars cult `gc\|cc\|bg\|ys\|ww\|sl`, for every seat or none; `tuning` sets guide knobs by name), `games` (≤ 5000), `seed`, `rotate`, `max_plies`, `event_games` (default 0; the wizard sends 20), `workers`. 201 with the batch |
 | `GET /api/batches` | `{batches, default_workers}`, newest first |
 | `GET /api/batches/{id}` | the batch: status (`queued running done cancelled failed interrupted`), `done`/`games`, `games_per_minute`, spec |
-| `GET /api/batches/{id}/report` | `{batch, report}`: the aggregate of the games finished so far (per cult win rate + interval, by seat, by round, spellbooks, units, actions, areas, each with a win-rate lift) |
+| `GET /api/batches/{id}/report` | `{batch, report}`: the aggregate of the games finished so far: every game's (by seat, by bot, length, how games ended) and the study's beside it (Cthulhu Wars' `factions` and `area_names`: per cult win rate + interval, by seat, by round, spellbooks, units, actions, areas, each with a win-rate lift) |
 | `GET /api/batches/{id}/games` | one row per finished game (seating, winner, end, plies, rounds) |
 | `GET /api/batches/{id}/games/{n}/events` | the decisions of game *n* (only the first `event_games` keep them) |
 | `POST /api/batches/{id}/cancel`, `DELETE /api/batches/{id}` | stop; delete with its games |

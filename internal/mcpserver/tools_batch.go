@@ -16,7 +16,7 @@ import (
 func registerBatchTools(s *server.MCPServer, bm *batch.Manager) {
 	s.AddTool(
 		mcp.NewTool("start_batch",
-			mcp.WithDescription("Queue a batch of bot-versus-bot Cthulhu Wars games that run in the background and are measured (units built, actions, gates, spellbooks, areas held, doom by round). `spec` is {base: layout id like \"cthulhu-wars\" or \"cthulhu-wars-5p\", high_priests, players: [{faction: gc|cc|bg|ys|ww|sl, bot: random|tactical|minimax|mcts, mcts_iterations, minimax_nodes}] (one per seat), games, seed, rotate (shift seats each game, default advisable), max_plies, event_games}. Returns the batch; poll get_batch."),
+			mcp.WithDescription("Queue a batch of bot-versus-bot games that run in the background. Every game reports how each seat and bot fared, how long games ran and how they ended; a game with a practice study measures more (Cthulhu Wars: units built, actions, gates, spellbooks, areas held, doom by round). `spec` is {base: a game id like \"hex-11\" or \"cthulhu-wars-5p\", players: [{bot: random|tactical|minimax|mcts, mcts_iterations, minimax_nodes, faction}] (one per seat; faction is the study's pick for the seat, a Cthulhu Wars cult gc|cc|bg|ys|ww|sl, named for every seat or none), options (the study's, e.g. [\"hp\"] for the High Priests), games, seed, rotate (shift seats each game, default advisable), max_plies, event_games}. Returns the batch; poll get_batch."),
 			mcp.WithObject("spec", mcp.Required(), mcp.Description("The batch specification (see above).")),
 			mcp.WithString("name", mcp.Description("A name for the batch.")),
 		),
