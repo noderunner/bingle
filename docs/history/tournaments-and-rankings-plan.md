@@ -235,3 +235,6 @@ bot ladder.
   Departures: a no-show in correspondence is simply the clock, with the first-move deadline and both
   players scoring zero left for step 4; the organiser may also remove a player; there is no separate mail
   for a round starting. Left for step 4: the real-time setting, start times, check-in and no-shows.
+- 2026-11-02: ADR 0083 changes decision 16: a move stands once the turn has passed in every game, not only
+  a rated one, so take-backs are gone everywhere. Back takes back a step of the turn still being played, in
+  rated and tournament games too. ADR 0080's reason for `stats` counting rated games only has gone with it.
