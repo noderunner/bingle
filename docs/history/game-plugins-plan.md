@@ -1,7 +1,7 @@
 # Plan: a game as an installable plugin
 
 Status: **planning in progress** (opened 2026-10-28). The five open questions were settled on
-2026-10-31 (see *Decisions*). Step 1 and the retirements are built; step 2 is next. The sections before *Decisions* are
+2026-10-31 (see *Decisions*). Steps 1 to 5 and the retirements are built; step 6, data packs, is next. The sections before *Decisions* are
 the initial thinking, kept as written.
 
 ## What was asked for
@@ -295,4 +295,24 @@ which is now built.
   pile's cards or only count them, and to leave a pile unsorted. A separate meaning field (say
   `pile: true`) would let `fan`, `row`, `splay` and `grid` move to the web file. Left for the
   maintainer.
-
+- 2026-11-08: steps 2 to 5 are built, and all five private games have left the public repository.
+  - **Step 2:** games register themselves and a tag leaves one out (ADR 0125, #162). Batches are
+    generic: a game describes its own practice (ADR 0126, #163).
+  - **Step 3:** a game brings page scripts through `info.page` (#164), and the shared page names no
+    game (#165 to #167, #169, #171). #173 added a look's `style`, a stylesheet beside its script, and
+    moved Hive's, Onitama's and Nyet!'s own drawing. Zone layouts went to the web file, with
+    `pile: true` as the meaning the engine reads, which settles the question in the entry above.
+  - **Step 4:** three fixtures, not one: Council (#168, #170), Tricks and Table (#174). Once the games
+    left, no public game had private hands, a board of choices or a free board, and these did not fit
+    Council's map. Onitama's Move cards got no fixture: the panel read that game's own view, so it
+    went to its page script, and `tests/cardmove` keeps the engine's side.
+  - **Step 5:** ADR 0127 with its follow-up. The overlay is a repository of its own, checked out at
+    `internal/games/private` and built with `-tags private`; Cthulhu Wars moved in #172, the other
+    four in #175, and Cthulhu Wars' styles in #176.
+  - **Not done:** the list above of Cthulhu Wars' look still in its definition did not move with it,
+    despite the note that doing so together would avoid moving it twice: the area map, the server's
+    `board.svg`, the Gate badge colours and the map art. `tests/look` still skips the game by name.
+  - **Found on the way:** a browser with over 30 games lost the one it opened (fixed in #174). The
+    overlay's CI takes about 32 minutes on one runner and flaked once; sharding it as public CI does
+    would help. `TestWebCthulhuWarsSetup_TheLayout` fails when only that game's browser tests run,
+    which is an order dependency nobody has traced.
