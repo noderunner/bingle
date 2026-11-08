@@ -4,6 +4,11 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.98.2 - 2026-11-08
+
+### Bingle Core 0.98.2
+- With more than 30 games in the list of a browser, opening another one no longer asks who you are: the games the server knows to be yours no longer push the one you open off the list.
+
 ## 0.98.1 - 2026-11-08
 
 ### Bingle Core 0.98.1
