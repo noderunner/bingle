@@ -748,8 +748,9 @@ variants:                      # a merge patch per game of the family, by id
 family and hands its exports to the page as `info.page`; shared code asks it for what it draws for that
 game alone (`info.page.seatGlyph(label)`) and names no game. A game's scripts import the page's own
 modules by absolute path (`/static/js/util.js`), so each is loaded once. A look may name `style` too, a
-stylesheet among the same `Scripts`, which `look.pageOf` links once beside the script: the rules for what the
-script draws stay with it. Solitaire (its list picture), the Tricks fixture (its board of terms and its players), Council (the
+stylesheet among the same `Scripts`, which `look.pageOf` links once beside the script, and waits for, so a
+game's parts are never drawn before their rules: the rules for what the script draws stay with it, and the
+public `style.css` holds none of a single game's. Solitaire (its list picture), the Tricks fixture (its board of terms and its players), Council (the
 tests' fixture) and the private overlay's games (ADR 0127: Cthulhu Wars' `cthulhuwars/web/`, a `page.js`
 and its `cw-*.js`; Hive's tiles, Onitama's Move cards and Nyet!'s pictures) have scripts. What a `page.js` exports, and who asks:
 
