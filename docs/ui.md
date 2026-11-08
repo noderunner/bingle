@@ -25,7 +25,7 @@ Every game, once out of the lobby, is drawn by `renderFitted` (a phone has its o
 games, in `renderMobile` and `renderMobileCards`: see [the phone page of a map](#the-phone-page-of-a-map)) ([ADR 0092](decisions/0092-a-game-page-that-fits-the-screen.md)). `body.fit-screen` makes
 the page exactly as tall as the window, with no page scroll and no footer. The `.board-column` is as wide as the board
 can be drawn at that height (`--board-aspect`, from the board's `viewBox`; the map's canvas; a fixed shape for a board
-that grows, such as Hive's), leaving `#play-rail` at least `--rail-least`.
+that grows, such as a free board's), leaving `#play-rail` at least `--rail-least`.
 The rail has what is left, up to 40rem, and any width beyond that is shared by the outer margins. It holds the cards in
 one column and scrolls by itself, keeping its place across redraws: the tutorial (which stays in view at the top of the rail as it scrolls) and any notices, `#impulse-card`,
 `#players-card` (`#cult-stack` at a table of three or more), voice, chat and history. On an upright screen under 980px
@@ -354,7 +354,7 @@ stored with the game, sent to everyone as `card_set`, kept by a rematch and by *
 there is no way to change it at the table. `js/card-sets.js` holds the sets and draws them;
 `js/card-lettering.js` letters the ranks. A themed card has the class `themed` and `data-set`. Its
 tooltip gives the set's name for the suit and the one the rules use: *9 of Tree Frogs (hearts)*. The
-suit pictures on Nyet!'s board of terms follow the set.
+suit pictures on a board of terms follow the set (the Tricks fixture's page script draws them from it).
 
 ## Games of patience (Solitaire)
 
@@ -384,15 +384,14 @@ to click, from the game info's `sample_view`, and it wears the set chosen under 
 
 A game with one seat has no Submit, its Resign button says **Give up**, and the setup form asks for no opponent.
 
-## Card tables and hands (Nyet!)
+## Card tables and hands
 
 A game with a `cards` section draws a **card table** (`js/cards.js`, `#card-table`): what the
 players share in the middle (the trick, the piles, the last trick), the board of terms beside it
 where the game has one, and the viewer's own zones below. The other players' hands are not drawn;
 the list of players says how many cards each one holds.
 
-**Your own hand** — any zone whose visibility is `owner`, so this is every card game, not Nyet!
-alone:
+**Your own hand** — any zone whose visibility is `owner`, so this is every card game:
 
 * it arrives **in order**: the server sorts a private hand by suit, in the game's own order of
   suits, then by the value of the rank, with cards of no suit last (`cards.Table.View`), so a hand
@@ -445,7 +444,7 @@ triangular lattice and the stones sit on the points, as on a Go board. The choic
 per game family (`bingle.hexStyle.<family>`), and changes only the picture: the positions, their
 names and the moves are the same. Until a player chooses, the definition's `board.style` decides
 (`points` is the grid, so Meridians starts there). The board keeps its orientation in either style.
-Hive offers no choice, because it has no board to draw. See
+A free board offers no choice, because it has no board to draw. See
 [ADR 0078](decisions/0078-hex-board-styles.md).
 
 ### Playing several seats
@@ -657,7 +656,7 @@ then *Bingle on GitHub* (`#help-github`) and *Report Issues* (`#help-issues`, th
 The *Games* tab shows a card for each game family (`.game-card[data-family]`): the picture
 of the start position, or of a sample game in play when the game starts with an empty board
 (`preview` in the game's look; a game whose board makes a poor picture draws its own, its page script's
-`listIcon`, as Hive, Nyet! and Solitaire do),
+`listIcon`, as Solitaire does),
 the name, a **Beta** badge (`.badge.beta`, while the game's `version` is below 1.0.0; its title
 is the version) and the players it takes (`.game-card-players`: the range of the seat counts of
 the game and its variants). While the pointer is over a card, or it has the focus, `#game-tip`
@@ -683,7 +682,7 @@ preview-and-confirm, turn notifications. Hovering a square shows what is on it (
 
 ### Illustrated board themes
 
-Games played with stones on a board of cells (Blooms, Hex, Havannah, Yavalath, Yinsh,
+Games played with stones on a board of cells (Blooms, Hex, Havannah, Yavalath,
 Go, Gomoku, Pente, Reversi, Tak, Ataxx, Amazons, draughts and the like: every
 piece is a disc, ring, chip, cross, cap, wall or flat stone, and the board is no map or free
 table) offer six more themes in the *Board theme* list of the options window, under
@@ -731,7 +730,7 @@ pieces:
   red: {shape: disc}           # disc, square, flat, wall, cap, ring, diamond, triangle, cross
 board: {style: points, borders: {top: white}}
 cards:
-  back: {color: '#7a2030', text: NYET!}
+  back: {color: '#7a2030', text: BINGLE}
   zones: {hand: {layout: fan}}  # fan, row, stack, splay or grid
   suits: {hearts: {color: red}}  # only where the rules do not read the colour
 display:                       # the definition's display keeps each tint's and badge's label and text
@@ -750,11 +749,9 @@ family and hands its exports to the page as `info.page`; shared code asks it for
 game alone (`info.page.seatGlyph(label)`) and names no game. A game's scripts import the page's own
 modules by absolute path (`/static/js/util.js`), so each is loaded once. A look may name `style` too, a
 stylesheet among the same `Scripts`, which `look.pageOf` links once beside the script: the rules for what the
-script draws stay with it. Hive (`hive/web/`: its insect tiles, through `render.addPieceShapes`), Onitama (`onitama/web/`: its
-Move cards), Nyet!
-(`nyet/web/`: its animals and the pictures of its board of terms), Solitaire (its list picture), Council (the
-tests' fixture) and Cthulhu Wars (`cthulhuwars/web/` in the private overlay, ADR 0127; `page.js` and its
-`cw-*.js`) have scripts. What a `page.js` exports, and who asks:
+script draws stay with it. Solitaire (its list picture), the Tricks fixture (its board of terms and its players), Council (the
+tests' fixture) and the private overlay's games (ADR 0127: Cthulhu Wars' `cthulhuwars/web/`, a `page.js`
+and its `cw-*.js`; Hive's tiles, Onitama's Move cards and Nyet!'s pictures) have scripts. What a `page.js` exports, and who asks:
 
 | Export | Asked by |
 |---|---|

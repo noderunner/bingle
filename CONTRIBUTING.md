@@ -43,7 +43,7 @@ Most games are one YAML file: board, pieces, actions, win rules. Start from
 `tests/testdata/tictactoe.yaml` (Tic-Tac-Toe, kept as a test fixture) and read
 [docs/dsl.md](docs/dsl.md); a game can also carry tutorials
 ([docs/tutorials.md](docs/tutorials.md)). Games with chance, hidden information or rules a
-definition cannot say are a Go `state.Ruleset` behind the same API (ADR 0025; Courtfall and Hive are
+definition cannot say are a Go `state.Ruleset` behind the same API (ADR 0025; Courtfall and Fist are
 good examples). Every game needs:
 
 - a definition with `version`, `designers`, `publisher` (when known) and a short `description`;

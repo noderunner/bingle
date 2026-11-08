@@ -13,7 +13,7 @@ import (
 	"github.com/noderunner/bingle/internal/games/registry"
 )
 
-var shipped = []string{"blooms", "classics", "courtfall", "fendo", "fist", "hive", "meridians", "mycelium", "nyet", "onitama", "solitaire", "tak", "yinsh"}
+var shipped = []string{"blooms", "classics", "courtfall", "fendo", "fist", "meridians", "mycelium", "solitaire", "tak"}
 
 // The default build has every family the repository ships (a private build,
 // ADR 0127, adds its own), and the server's modules are theirs.
@@ -25,8 +25,8 @@ func TestEveryFamilyIsRegistered(t *testing.T) {
 		}
 	}
 	mods := app.BuiltinModules()
-	if len(got) == len(shipped) && len(mods) != 25 {
-		t.Errorf("%d modules, want 25 (12 classics, Solitaire and Bowling, and one for every other family)", len(mods))
+	if len(got) == len(shipped) && len(mods) != 21 {
+		t.Errorf("%d modules, want 21 (12 classics, Solitaire and Bowling, and one for every other family)", len(mods))
 	}
 	seen := map[string]bool{}
 	for _, m := range mods {

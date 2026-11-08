@@ -67,8 +67,8 @@ variants:
 
 An include stays inside the game's own files: no absolute paths, no `..` out
 of the folder, no symbolic links, no cycles, at most 16 deep. A game split
-this way lives in a `definition/` folder (`internal/games/yinsh/` is an
-example): the main file holds the identity, rules
+this way lives in a `definition/` folder (the private overlay's Yinsh is one,
+ADR 0127): the main file holds the identity, rules
 text, seats and display, and the long parts sit beside it. A JSON definition
 cannot include.
 

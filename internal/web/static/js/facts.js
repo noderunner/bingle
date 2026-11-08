@@ -52,9 +52,6 @@ export const FACTS = [
 	"The Royal Game of Ur was played in Mesopotamia more than 4,000 years ago — a race game with safe rosette squares, whose rules were pieced together from a cuneiform tablet.",
 	"Go is more than 2,500 years old. Its rules fit on a page; its strategy has filled libraries.",
 	"Havannah, from Christian Freeling (1979), was designed to be hard for computers: the board is a hexagon of hexagons and a win may be a bridge, a fork or a ring. Freeling once offered a prize to any program that beat strong human players.",
-	"Hive, by John Yianni, has no board at all: the pieces are the board. Surround the opposing queen bee on all six sides to win.",
-	"Yinsh, by Kris Burm (2003), is played with rings and markers: moving a ring flips the markers it jumps, and a row of five of your markers lets you remove a ring — the first to remove three wins.",
-	"Onitama (Shimpei Sato, 2014) is chess boiled down to a 5×5 board and five move cards: the card you play is handed on to your opponent after their next move, so every move also gives something away.",
 ];
 
 /** One fact, chosen at random. */

@@ -4,6 +4,11 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.99.0 - 2026-11-08
+
+### Bingle Core 0.99.0
+- **Yinsh, Onitama, Hive and Nyet! are no longer part of the public build.** They are commercial games, so like Cthulhu Wars they now live in the private overlay and are built only into private servers. A server built that way plays them exactly as before, with every game already started; the public build lists every other game as before.
+
 ## 0.98.2 - 2026-11-08
 
 ### Bingle Core 0.98.2
