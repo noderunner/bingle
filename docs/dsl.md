@@ -67,8 +67,8 @@ variants:
 
 An include stays inside the game's own files: no absolute paths, no `..` out
 of the folder, no symbolic links, no cycles, at most 16 deep. A game split
-this way lives in a `definition/` folder (`internal/games/cthulhuwars/` and
-`internal/games/yinsh/` are examples): the main file holds the identity, rules
+this way lives in a `definition/` folder (`internal/games/yinsh/` is an
+example): the main file holds the identity, rules
 text, seats and display, and the long parts sit beside it. A JSON definition
 cannot include.
 
@@ -682,7 +682,7 @@ definition: `catalog.Module{ID, Definition, Rules: courtfall.New()}`. `actions` 
   taking moves back across chance (`CanTakeBack`), publish a fixed action
   space and its own observation planes, and give search bots a heuristic.
 
-See [courtfall.md](courtfall.md), [cthulhu-wars.md](cthulhu-wars.md) and ADR 0025. `params` are plain numbers and
+See [courtfall.md](courtfall.md) and ADR 0025. `params` are plain numbers and
 strings the ruleset reads (`CompiledGame.ParamInt`); variants change them with
 a merge patch like anything else.
 

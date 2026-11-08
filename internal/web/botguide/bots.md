@@ -101,7 +101,7 @@ MCTS elsewhere.** Put differently:
 * Does a simple count (pieces, discs, material on top, length of a chain) usually say who is
   winning? Use **minimax**; it will look further than MCTS can.
 * Is the position's value shape, territory or timing — something no count catches? Use **MCTS**.
-* Is there chance or hidden information (Cthulhu Wars, Nyet!, Courtfall)? Use **MCTS**: it
+* Is there chance or hidden information (Nyet!, Courtfall)? Use **MCTS**: it
   samples, which is the right instinct where the future is not knowable.
 * Many seats? Minimax is written for two; with three or more, prefer MCTS.
 

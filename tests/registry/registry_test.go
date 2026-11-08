@@ -13,16 +13,20 @@ import (
 	"github.com/noderunner/bingle/internal/games/registry"
 )
 
-var shipped = []string{"blooms", "classics", "courtfall", "cthulhu-wars", "fendo", "fist", "hive", "meridians", "mycelium", "nyet", "onitama", "solitaire", "tak", "yinsh"}
+var shipped = []string{"blooms", "classics", "courtfall", "fendo", "fist", "hive", "meridians", "mycelium", "nyet", "onitama", "solitaire", "tak", "yinsh"}
 
-// The default build has every family, and the server's modules are theirs.
+// The default build has every family the repository ships (a private build,
+// ADR 0127, adds its own), and the server's modules are theirs.
 func TestEveryFamilyIsRegistered(t *testing.T) {
-	if got := registry.Names(); !slices.Equal(got, shipped) {
-		t.Errorf("families %v, want %v", got, shipped)
+	got := registry.Names()
+	for _, name := range shipped {
+		if !slices.Contains(got, name) {
+			t.Errorf("family %s is not registered (families %v)", name, got)
+		}
 	}
 	mods := app.BuiltinModules()
-	if len(mods) != 26 {
-		t.Errorf("%d modules, want 26 (12 classics, Solitaire and Bowling, and one for every other family)", len(mods))
+	if len(got) == len(shipped) && len(mods) != 25 {
+		t.Errorf("%d modules, want 25 (12 classics, Solitaire and Bowling, and one for every other family)", len(mods))
 	}
 	seen := map[string]bool{}
 	for _, m := range mods {
@@ -31,7 +35,7 @@ func TestEveryFamilyIsRegistered(t *testing.T) {
 		}
 		seen[m.ID] = true
 	}
-	for _, id := range []string{"tak-5x5", "cthulhu-wars", "bowling-solitaire", "go-9x9", "courtfall-1.0.0"} {
+	for _, id := range []string{"tak-5x5", "bowling-solitaire", "go-9x9", "courtfall-1.0.0"} {
 		if !seen[id] {
 			t.Errorf("no module %s", id)
 		}
@@ -73,14 +77,15 @@ func TestATagLeavesAGameOut(t *testing.T) {
 	if some := deps("no_tak,no_classics"); slices.Contains(some, tak) || slices.Contains(some, classics) {
 		t.Error("no_tak,no_classics still builds them in")
 	}
-	// Nothing else pulls a game in either: practice batches and tuning name
-	// no game (ADR 0126), so the server without Cthulhu Wars has none of it.
-	out, err := exec.Command("go", "list", "-deps", "-tags", "no_cthulhuwars", "-f", "{{.ImportPath}}", "github.com/noderunner/bingle").CombinedOutput()
+	// Nothing else pulls a game in: practice batches and tuning name no game
+	// (ADR 0126), and without the tag "private" the server compiles nothing
+	// of the private overlay, checked out or not (ADR 0127).
+	out, err := exec.Command("go", "list", "-deps", "-f", "{{.ImportPath}}", "github.com/noderunner/bingle").CombinedOutput()
 	if err != nil {
 		t.Fatalf("go list: %v\n%s", err, out)
 	}
-	if strings.Contains(string(out), "internal/games/cthulhuwars") {
-		t.Error("the server built with no_cthulhuwars still compiles Cthulhu Wars")
+	if strings.Contains(string(out), "internal/games/private") {
+		t.Error("the server built without the tag private compiles the private overlay")
 	}
 	// And the server itself builds without them.
 	if out, err := exec.Command("go", "build", "-tags", "no_tak,no_classics", "-o", "/dev/null", "github.com/noderunner/bingle").CombinedOutput(); err != nil {

@@ -143,8 +143,8 @@ start: !include positions/round-2.yaml   # beside the tutorial, under tutorials/
 
 The easiest way to write one is to let bots play to roughly the right moment, take the position
 (`bingle dsl convert -` turns its JSON into YAML) and edit it: who has which units, where, and how much
-of what they spend. `internal/games/cthulhuwars/tutorials/` is the example: every tutorial there
-starts from a written-out position, and the Combat tutorial's `rng` is chosen so its dice teach what they should.
+of what they spend. The Council fixture's `tests/testdata/council/tutorials/objections.yaml` is a small example: it
+starts from a written-out position, with a setup move before its first lesson.
 
 In a game that narrates its moves, write `ply: 0` in a start: the room's moves count from there, and the page
 finds the story of a move by its ply, so any other leaves the History empty. A test holds Cthulhu Wars to this.

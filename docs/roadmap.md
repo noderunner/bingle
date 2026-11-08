@@ -40,7 +40,7 @@ Legend: ✅ done · 🟡 partial · ⬜ not started · ➖ deliberately out of s
 | ✅ | Custodian captures and capture counters | `custodian` captures on placement and slides (with `anvils`), `pool` and `absent` win rules, `forbid_region`; Pente and Brandubh (an asymmetric hunt game) in JSON |
 | ✅ | Clone-or-jump leaps with infection | `leap` action; Ataxx in JSON |
 | ✅ | Courtfall: a full tactical skirmish | 37-hex arena, terrain draft, five Courts, secret dice splits, Momentum, Clear Turns; ~2,000 lines of Go + a JSON legend ([courtfall.md](courtfall.md)) |
-| ✅ | Cthulhu Wars: four cults, an area map, dice battles | core set with its four factions on a simplified 17-area world; ~4,000 lines of Go + JSON map + Markdown guide ([cthulhu-wars.md](cthulhu-wars.md)) |
+| ✅ | Cthulhu Wars: four cults, an area map, dice battles | core set with its four factions on a simplified 17-area world; ~4,000 lines of Go + JSON map + Markdown guide; in the private overlay since ADR 0127 |
 | ✅ | Cthulhu Wars: Windwalker, Sleeper, High Priests and five seats | six cults at a table of three to five, the High Priests as an option; tables are *derived games* named by their choices (ADR 0028) |
 | ✅ | Area maps, many seats and tabbed rules guides | `board.style: "areas"` (polygons, tokens, clickable units), three-or-more-seat tables with bots for open seats, Markdown guides with tabs/tables/icons/search, generated for every other game (ADR 0026) |
 | ✅ | Fast integer-indexed win evaluation | `board.Graph` index tables; `boardView`; 40 µs per move on the 169-cell Havannah board |

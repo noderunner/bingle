@@ -149,7 +149,7 @@ few ways that matter to an agent:
   is being waited for), `tints`, `badges`, `seats[].counters` (Momentum, VP),
   `contest` (both sides' dice once rolled) — and `state.ext.events` narrates
   the last decision. `board_text` shows the same as text. A multi-seat game
-  (Cthulhu Wars, see [cthulhu-wars.md](cthulhu-wars.md)) also carries
+  (Cthulhu Wars, in a private build) also carries
   `state.ext.log` (what the latest decisions did, per seat and ply — read it to
   see what the other players did since your last move), `view.phases`,
   `view.order`, `view.bag` and, per seat, `units` (cost, Combat, pool and the

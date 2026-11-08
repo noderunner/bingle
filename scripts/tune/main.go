@@ -2,14 +2,14 @@
 
 // Command tune searches for a guide tuning that makes one pick's bot win more
 // often, in a game whose practice study has knobs (see internal/tune and
-// batch.Study): a Cthulhu Wars cult, for instance,
+// batch.Study): a Cthulhu Wars cult in a private build (ADR 0127), for instance,
 //
-//	go run scripts/tune/main.go -base cthulhu-wars -lineup gc,cc,bg,ys -pick gc -generations 10 -out /tmp/tune-gc.json
+//	go run -tags private scripts/tune/main.go -base cthulhu-wars -lineup gc,cc,bg,ys -pick gc -generations 10 -out /tmp/tune-gc.json
 //
 // It prints every generation, saves the result after each one (and resumes from
 // it with -resume), and ends by comparing the tuning with the shipped one on
 // fresh games. -ship FILE merges the result into the game's file of shipped
-// tunings (Cthulhu Wars' is internal/games/cthulhuwars/tuned.json), which every
+// tunings (Cthulhu Wars' is internal/games/private/cthulhuwars/tuned.json), which every
 // bot of that pick then plays with — only do that when the validation is
 // convincing.
 package main
@@ -33,10 +33,10 @@ import (
 
 func main() {
 	var (
-		base     = flag.String("base", "cthulhu-wars", "game")
-		lineup   = flag.String("lineup", "gc,cc,bg,ys", "picks at the table, one per seat, comma separated")
+		base     = flag.String("base", "", "game (required)")
+		lineup   = flag.String("lineup", "", "picks at the table, one per seat, comma separated (required)")
 		options  = flag.String("options", "", "the study's options for the table, comma separated (Cthulhu Wars: hp, the High Priests)")
-		pick     = flag.String("pick", "gc", "the pick to tune")
+		pick     = flag.String("pick", "", "the pick to tune (required)")
 		bot      = flag.String("bot", "tactical", "bot every cult plays")
 		gens     = flag.Int("generations", 10, "generations")
 		pop      = flag.Int("pop", 6, "mutations per generation")
@@ -53,6 +53,9 @@ func main() {
 		ship     = flag.String("ship", "", "merge the result into this file of shipped tunings")
 	)
 	flag.Parse()
+	if *base == "" || *lineup == "" || *pick == "" {
+		log.Fatal("-base, -lineup and -pick are required")
+	}
 
 	cat := catalog.NewCatalog()
 	for _, m := range app.BuiltinModules() {

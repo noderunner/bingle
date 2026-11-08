@@ -1,5 +1,0 @@
-# How the web page draws Cthulhu Wars (ADR 0124). The rules are in the definition; nothing
-# here changes them, and other clients draw the game their own way. Most of the game's look
-# is still in its definition and the page's own code, and moves here and into page.js a
-# piece at a time.
-script: page.js

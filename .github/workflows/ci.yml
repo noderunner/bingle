@@ -64,9 +64,7 @@ jobs:
       - name: smoke test
         run: ./scripts/smoke-test.sh
 
-  # The browser-driven suite: 116 tests on a pull request (172 with the Cthulhu
-  # Wars interface, which only the full runs play), each driving its own
-  # headless Chrome,
+  # The browser-driven suite: every test drives its own headless Chrome,
   # and by far the longest part of the suite. $BINGLE_TEST_SHARD splits it by
   # test name over four runners (about 2.5 minutes each instead of 8 minutes in
   # one), and each runner gets a machine to itself, so Chrome is no longer
@@ -81,9 +79,6 @@ jobs:
         shard: [1, 2, 3, 4]
     env:
       BINGLE_TEST_SHARD: ${{ matrix.shard }}/4
-      # 56 of the 172 browser tests drive one game's interface. A pull request
-      # skips them; main, the nightly run and a manual run play them.
-      BINGLE_TEST_CW_UI: ${{ github.event_name != 'pull_request' && '1' || '' }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-go@v7
@@ -94,8 +89,8 @@ jobs:
       - name: test (browser shard ${{ matrix.shard }} of 4)
         run: go test -timeout 15m ./tests/app/
 
-  # The bot simulations in tests/batch: whole games of Cthulhu Wars played by
-  # each kind of bot, plus a tuner run. Six minutes on a shared runner, and what
+  # The bot simulations in tests/batch: whole games of the fixtures played by
+  # bots, plus a tuner run. Six minutes on a shared runner, and what
   # they prove is throughput rather than correctness, so a pull request runs the
   # short form (the batch machinery, determinism and metrics, which is the part
   # that can break) and the nightly run and main play them in full.

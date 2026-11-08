@@ -36,3 +36,8 @@ __pycache__/
 
 # Aider (an AI coding assistant) leaves its history and cache here.
 .aider*
+
+# The private overlay: games built apart, in a repository of their own (ADR 0127).
+internal/games/private/
+# Their browser tests, copied in to run with the public helpers (make test-private).
+tests/**/private_*_test.go

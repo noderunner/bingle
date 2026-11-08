@@ -82,10 +82,9 @@ git -c credential.helper='!f() { echo username=x-access-token; echo "password=$(
 
 ## Before pushing
 
-- `make test` and `make lint` pass. `make test` is everything, including the Cthulhu Wars browser
-  tests, which are off by default — see [docs/test.md](docs/test.md) for the groups, the shards and
-  `make test-cw-ui`. Run the Cthulhu Wars UI tests when touching that game or the interface it
-  shares with the rest.
+- `make test` and `make lint` pass — see [docs/test.md](docs/test.md) for the groups and the
+  shards. With the private overlay checked out at `internal/games/private` (ADR 0127), `make
+  test-private` runs the suite with its games too: do so when touching a shared interface they use.
 - A test covers the change. For a bug, one that fails before the fix.
 - `CHANGELOG.md` gets an entry, written for the people who play rather than for developers. The
   newest entry's version is `internal/version`. Bump `internal/version` for engine or platform

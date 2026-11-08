@@ -4,6 +4,11 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.98.0 - 2026-11-07
+
+### Bingle Core 0.98.0
+- **Cthulhu Wars is no longer part of the public build.** It is a commercial game, so it now lives in a private overlay and is built only into private servers. A server built that way plays it exactly as before, with every game already started; the public build lists every other game as before.
+
 ## 0.97.5 - 2026-11-07
 
 ### Bingle Core 0.97.5

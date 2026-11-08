@@ -1,6 +1,6 @@
 // Package registry is the set of game families a binary is built with. Each
 // family is registered once, by name, from a file of package all that a build
-// tag can leave out (no_<package>, such as no_cthulhuwars): which games a
+// tag can leave out (no_<package>, such as no_tak): which games a
 // binary has is chosen when it is built, and nothing outside package all names
 // a game to include it (game plugins plan, step 2).
 //

@@ -45,7 +45,7 @@ func registerTools(mcpServer *server.MCPServer, mgr *session.Manager) {
 			mcp.WithBoolean("rated", mcp.Description("Make the game move both players' ratings when it ends. It takes two accounts, a game of two seats and the same clock for both; Auto-Play is off. Using an outside engine in a rated game is against the rules.")),
 			mcp.WithString("card_set", mcp.Description("Optional themed set of cards for everybody at the table, in a game with a standard deck (get_game_info: cards.standard): ancient, amphibians, fantasy, lovecraftian or atomic. It changes how the cards look, never the notation. Omit for the game's own cards.")),
 			mcp.WithBoolean("lobby", mcp.Description("Wait in a lobby until the host starts the game (start_game), even with every seat filled: other players join (with a seat of their choice), add bots and chat first.")),
-			mcp.WithObject("options", mcp.Description("Setup choices of games that offer them (see get_game_info \"options\"; a multi-choice option takes a list of its choice ids, as Cthulhu Wars' neutral-units and neutral-books do). Cthulhu Wars: {\"factions\": [\"gc\",\"cc\",\"bg\",\"ys\",\"ww\"] (one per seat, in seat order), \"high-priests\": true}.")),
+			mcp.WithObject("options", mcp.Description("Setup choices of games that offer them (see get_game_info \"options\"; a multi-choice option takes a list of its choice ids, as a list of neutral units would). Cthulhu Wars: {\"factions\": [\"gc\",\"cc\",\"bg\",\"ys\",\"ww\"] (one per seat, in seat order), \"high-priests\": true}.")),
 			mcp.WithString("start_tps", mcp.Description("Optional starting position in TPS (Tak) instead of the standard start; the TPS says who moves first. For puzzles and endgame practice.")),
 			mcp.WithObject("start_state", mcp.Description("Optional starting position as a position document (the `state` object of an observation), for any game. Use start_seat to say who moves first.")),
 			mcp.WithNumber("start_seat", mcp.Description("With start_state: the seat that moves first (default: the game's first seat).")),
@@ -92,7 +92,7 @@ func registerTools(mcpServer *server.MCPServer, mgr *session.Manager) {
 
 	mcpServer.AddTool(
 		mcp.NewTool("list_selections",
-			mcp.WithDescription("What the seat on impulse may select next. An impulse is everything a seat chooses before the game needs another player or chance; it may take several selections (a Blooms stone and then another or done, the units of a Cthulhu Wars Move). Give the selections made so far in `made`, joined by \"; \"; the answer lists the next options, the position after the selections made, and `complete` once they are a whole move to send with make_move as one notation."),
+			mcp.WithDescription("What the seat on impulse may select next. An impulse is everything a seat chooses before the game needs another player or chance; it may take several selections (a Blooms stone and then another or done, the pieces of one move that gathers several). Give the selections made so far in `made`, joined by \"; \"; the answer lists the next options, the position after the selections made, and `complete` once they are a whole move to send with make_move as one notation."),
 			mcp.WithString("room_code", mcp.Required(), mcp.Description("The room code of the game.")),
 			mcp.WithString("made", mcp.Description("The selections made so far, joined by \"; \"; empty for the first.")),
 			mcp.WithNumber("ply", mcp.Description("The ply of the position you are building on: refused if the game has moved on.")),

@@ -35,7 +35,7 @@ func TestHomeGames_ListShowsBetaPlayersAndADetailsCard(t *testing.T) {
 	if n := evalInt(t, ctx, `document.querySelectorAll(".game-card").length - document.querySelectorAll(".game-card .badge.beta, .game-card .badge.prototype").length`); n != 0 {
 		t.Errorf("%d games have neither a Beta nor a Prototype mark", n)
 	}
-	for family, want := range map[string]string{"tak-5x5": "2 players", "cthulhu-wars": "3–5 players", "nyet": "2–5 players", "hive": "2 players"} {
+	for family, want := range map[string]string{"tak-5x5": "2 players", "nyet": "2–5 players", "hive": "2 players"} {
 		got := evalString(t, ctx, fmt.Sprintf(`(function(){ var e = document.querySelector('.game-card[data-family=%q] .game-card-players'); return e ? e.textContent : "" })()`, family))
 		if got != want {
 			t.Errorf("%s: players = %q, want %q", family, got, want)
@@ -44,8 +44,8 @@ func TestHomeGames_ListShowsBetaPlayersAndADetailsCard(t *testing.T) {
 	if got := evalString(t, ctx, `document.querySelector('.game-card[data-family="tak-5x5"] .badge.beta').getAttribute("title")`); !strings.Contains(got, "0.1.1") {
 		t.Errorf("the Beta mark does not say the version: %q", got)
 	}
-	// Cthulhu Wars and Hive have pictures of their own: four sigils, and a cluster of tiles.
-	waitJS(t, ctx, "the Cthulhu Wars sigils", `document.querySelectorAll('.game-card[data-family="cthulhu-wars"] .game-card-preview svg .game-icon-sigil').length === 4`, 15*time.Second)
+	// Council and Hive have pictures of their own: drawn by the game's page script, and a cluster of tiles.
+	waitJS(t, ctx, "Council's picture", `document.querySelector('.game-card[data-family="test-council"] .game-card-preview svg.council-icon') !== null`, 15*time.Second)
 	waitJS(t, ctx, "the Hive tiles", `document.querySelectorAll('.game-card[data-family="hive"] .game-card-preview svg .piece').length >= 5`, 15*time.Second)
 	// Hovering over a game shows its name, designers, publisher and description.
 	hover := func(sel string) {

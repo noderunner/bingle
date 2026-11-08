@@ -5,7 +5,6 @@ package tutorials_test
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -453,31 +452,6 @@ func TestPagePartsMatchThePage(t *testing.T) {
 	}
 }
 
-// A Cthulhu Wars start counts its moves from the room's: the page finds the
-// story of a move by its ply, and the History would stay empty otherwise.
-func TestCthulhuWarsStartsCountTheirMovesFromZero(t *testing.T) {
-	for _, m := range app.BuiltinModules() {
-		if m.ID != "cthulhu-wars" {
-			continue
-		}
-		tuts, err := tutorial.Load(m.Tutorials)
-		if err != nil {
-			t.Fatal(err)
-		}
-		for _, tu := range tuts {
-			var doc struct {
-				Ply int `json:"ply"`
-			}
-			if err := json.Unmarshal(tu.Start, &doc); err != nil {
-				t.Fatalf("%s: %v", tu.ID, err)
-			}
-			if doc.Ply != 0 {
-				t.Errorf("%s: its start has ply %d, want 0", tu.ID, doc.Ply)
-			}
-		}
-	}
-}
-
 // A series is taken in order, and a tutorial that names none has nothing after
 // it, even beside another of the same title.
 func TestNextInSeries(t *testing.T) {
@@ -527,34 +501,4 @@ func TestSeriesSayWhatComesNext(t *testing.T) {
 			}
 		}
 	}
-}
-
-// The core rules of Cthulhu Wars are taught topic by topic, in this order.
-func TestCthulhuWarsTeachesItsCoreRulesByTopic(t *testing.T) {
-	want := []string{"how-to-win", "power", "units", "movement", "spellbooks", "combat", "sequence-of-play", "ui-features", "high-priests"}
-	for _, m := range app.BuiltinModules() {
-		if m.ID != "cthulhu-wars" {
-			continue
-		}
-		tuts, err := tutorial.Load(m.Tutorials)
-		if err != nil {
-			t.Fatal(err)
-		}
-		var got []string
-		for _, tu := range tuts {
-			got = append(got, tu.ID)
-			if tu.ID != "high-priests" && tu.Kind != tutorial.KindRules {
-				t.Errorf("%s is a %s tutorial", tu.ID, tu.Kind)
-			}
-			// The core rules are one series, taken in this order; the High Priests stand alone.
-			if want := map[bool]string{true: "", false: "Core Game"}[tu.ID == "high-priests"]; tu.Series != want {
-				t.Errorf("%s is in the series %q, want %q", tu.ID, tu.Series, want)
-			}
-		}
-		if strings.Join(got, " ") != strings.Join(want, " ") {
-			t.Fatalf("the tutorials: %v, want %v", got, want)
-		}
-		return
-	}
-	t.Fatal("no Cthulhu Wars")
 }

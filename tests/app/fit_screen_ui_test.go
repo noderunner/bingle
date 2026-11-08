@@ -271,61 +271,6 @@ func TestWebFitScreen_ColumnsStayPutAsHiveGrows(t *testing.T) {
 	}
 }
 
-// A map has more to show than a column can: the cults, the talk and the history take turns,
-// and the history stays a tab however much height there is to spare.
-func TestWebFitScreen_TheCardsOfAMapTakeTurns(t *testing.T) {
-	base := newRESTTestServer(t)
-	ctx, cancel := newChromedpContext(t, 90*time.Second)
-	defer cancel()
-	var created struct {
-		RoomCode string `json:"room_code"`
-	}
-	if code := doJSON(t, "POST", base+"/api/games", map[string]any{"game_def_id": "cthulhu-wars", "player_name": "Alice", "opponent": "random"}, &created); code != 200 {
-		t.Fatalf("create: %d", code)
-	}
-	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1920, 1080)); err != nil {
-		t.Fatal(err)
-	}
-	openGameAs(t, ctx, base, created.RoomCode, "cthulhu-wars", "Alice")
-	waitJS(t, ctx, "the tabs", `document.getElementById("rail-tab-cults") !== null`, 20*time.Second)
-	historyIsATab := `document.querySelector(".board-wrap > #history-card") === null && document.querySelector("#rail-pane-history > #history-card") !== null && document.getElementById("rail-tab-history") !== null`
-	if !evalBool(t, ctx, historyIsATab) {
-		t.Error("the history should be a tab of the column")
-	}
-	// The map starts right under the round: no gap to lose its top to.
-	if gap := evalInt(t, ctx, `Math.round(document.querySelector("#board svg").getBoundingClientRect().top - document.querySelector(".round-bar").getBoundingClientRect().bottom)`); gap > 16 {
-		t.Errorf("%dpx between the round and the map", gap)
-	}
-	visible := func(id string) bool {
-		return evalBool(t, ctx, `document.getElementById("`+id+`").offsetParent !== null`)
-	}
-	if !visible("cult-stack") || visible("chat-input") {
-		t.Error("the cults should be showing, and the chat not")
-	}
-	evalBool(t, ctx, `(document.getElementById("chat-input").value = "half a thought", true)`)
-	clickSel(t, ctx, "#rail-tab-talk")
-	waitJS(t, ctx, "the chat", `document.getElementById("chat-input").offsetParent !== null`, 10*time.Second)
-	if visible("cult-stack") {
-		t.Error("the cults should be behind their tab")
-	}
-	// The actions stay in view whichever tab is open.
-	if !visible("impulse-card") {
-		t.Error("the actions went with the tab")
-	}
-	clickSel(t, ctx, "#rail-tab-cults")
-	waitJS(t, ctx, "the cults", `document.getElementById("cult-stack").offsetParent !== null`, 10*time.Second)
-
-	// With no height to spare it is the same.
-	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1200, 640)); err != nil {
-		t.Fatal(err)
-	}
-	openGameAs(t, ctx, base, created.RoomCode, "cthulhu-wars", "Alice")
-	waitJS(t, ctx, "the history tab", historyIsATab, 20*time.Second)
-	if !evalBool(t, ctx, fitsTheWindowJS) {
-		t.Error("the map does not fit the smaller window")
-	}
-}
-
 // The bar over the board is gone while a game goes on, and its words are for a screen
 // reader. The cards say what is going on, in Blooms' own words.
 func TestWebFitScreen_TheCardsSayWhatTheBarSaid(t *testing.T) {

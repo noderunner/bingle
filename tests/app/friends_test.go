@@ -716,35 +716,6 @@ func TestWebFriends_TheActiveGamesWindow(t *testing.T) {
 	}
 }
 
-// The lobby of Cthulhu Wars has the short title, and pictures of what the table plays with.
-func TestWebCthulhuWars_TheLobbyShowsItsPool(t *testing.T) {
-	baseURL := newRESTTestServer(t)
-	var c struct {
-		RoomCode string `json:"room_code"`
-	}
-	if code := doJSON(t, "POST", baseURL+"/api/games", map[string]any{"game_def_id": "cthulhu-wars", "player_name": "Ana", "lobby": true, "options": map[string]any{"high-priests": true, "neutral-units": []string{"dimensional-shambler"}}}, &c); code != 200 {
-		t.Fatalf("create: %d", code)
-	}
-	ctx, cancel := newChromedpContext(t, 60*time.Second)
-	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1400, 900), chromedp.Navigate(baseURL+"/game/"+c.RoomCode)); err != nil {
-		t.Fatal(err)
-	}
-	waitJS(t, ctx, "the pool", `document.querySelectorAll("#lobby-pool .lobby-pool-item").length > 0`, 15*time.Second)
-	if got := evalString(t, ctx, `document.querySelector(".lobby-head h2").textContent`); got != "Cthulhu Wars" {
-		t.Errorf("the title is %q", got)
-	}
-	got := evalString(t, ctx, `[...document.querySelectorAll("#lobby-pool .lobby-pool-item")].map(e => e.dataset.item).join(",")`)
-	for _, want := range []string{"cthulhu-wars", "gc", "cc", "bg", "ys", "high-priests", "dimensional-shambler"} {
-		if !strings.Contains(","+got+",", ","+want+",") {
-			t.Errorf("%q not in the pool: %s", want, got)
-		}
-	}
-	if n := evalInt(t, ctx, `document.querySelectorAll('#lobby-pool .lobby-pool-item[data-kind="faction"]').length`); n != 4 {
-		t.Errorf("%d factions in the pool", n)
-	}
-}
-
 // Somebody can choose to take no invitations, and an answer is kept: a decline is not asked again.
 func TestFriends_AnsweringInvitationsAndOptingOut(t *testing.T) {
 	a, base := membersServer(t)

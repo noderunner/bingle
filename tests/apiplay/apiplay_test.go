@@ -286,7 +286,9 @@ func TestEverySetupPresetPlaysToAFinishThroughTheAPI(t *testing.T) {
 			t.Run(name, func(t *testing.T) { finish(t, base, key, game, preset.Options, name) })
 		}
 	}
+	// Setup presets are a private game's (Cthulhu Wars', ADR 0127): a build
+	// without one has none to play.
 	if len(played) == 0 {
-		t.Fatal("no game offers a preset, so this tested nothing")
+		t.Skip("no game in this build offers a preset")
 	}
 }

@@ -33,7 +33,6 @@ click-to-move for free.
 | **Fendo** (Dieter Stein's territory game: move a piece and fence beside it, or add a piece; areas fenced round one piece score; 7×7, 9×9, 11×11 — rules in Go) | `internal/games/fendo/` ([ADR 0040](docs/decisions/0040-fendo-fences-in-the-view.md)) |
 | **Yinsh** (Kris Burm's ring-and-marker game on an 85-point board: move rings, turn markers over, remove rows of five; blitz variant — rules in Go) | `internal/games/yinsh/` ([ADR 0042](docs/decisions/0042-yinsh-rings-and-rows.md)) |
 | **Nyet!** (Stefan Dorra's trick-taking game: cross choices off a board to set the round's terms, pick teams, take tricks and loot; 2–5 players, the four classic suits, a player for each animal — the first game on the card framework) | `internal/games/nyet/`, `internal/engine/cards/` ([ADR 0043](docs/decisions/0043-card-games.md)) |
-| **Cthulhu Wars** (core set with the Windwalker, Sleeper, Opener of the Way and Tcho-Tcho cults, the High Priests, the Azathoth neutral spellbooks and Monsters, the Dreamlands and Beyond Time and Space Loyalty Cards, the Hound of Tindalos and five Independent Great Old Ones, three to five players, simplified world map: Power, Gates, Doom, spellbooks, dice battles, hidden Elder Signs — rules in Go, map and rules guide as data) | `internal/games/cthulhuwars/` ([rules notes](docs/cthulhu-wars.md)) |
 | **Solitaire** (Klondike with one or three cards, Spider with one, two or four suits, FreeCell and Sid Sackson's Bowling Solitaire: games for one player, in any themed set of cards — rules in Go, one ruleset for them all) | `internal/games/solitaire/` ([ADR 0086](docs/decisions/0086-games-for-one-player.md)) |
 | **Mycelium** (Miles Stevenson's game of two fungal colonies on a hex board: place nodes, take the centre to start a confluence, and spread clusters by spores and hyphae to convert the other colony — rules in Go; a prototype, with a folder per version of its rules) | `internal/games/mycelium/` ([ADR 0066](docs/decisions/0066-mycelium.md)) |
 | Go (9×9–19×19), Reversi, Hex, Havannah, Yavalath, Amazons, Ataxx, Pente, Brandubh, English Draughts, Breakthrough, Gomoku | `internal/games/classics/*.yaml` |
@@ -131,7 +130,7 @@ docs/                     the manual; docs/decisions has an ADR for each big dec
   Markdown pages, others get a generated guide. ([ADR 0026](docs/decisions/0026-area-maps-and-rules-guides.md))
 * **Area maps and many seats** — irregular maps drawn from straight-edged
   polygons, clickable unit tokens, a *Play as* choice and bots for empty seats
-  (Cthulhu Wars). ([docs/cthulhu-wars.md](docs/cthulhu-wars.md))
+  (Cthulhu Wars, in the private build). ([ADR 0127](docs/decisions/0127-commercial-games-in-a-private-overlay.md))
 * **Setup options** — a game can offer choices at creation (which cult sits
   where, an expansion); each table is a game of its own derived from the
   definition. ([ADR 0028](docs/decisions/0028-derived-games-and-setup-options.md))
