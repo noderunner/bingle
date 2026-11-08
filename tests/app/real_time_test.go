@@ -76,7 +76,9 @@ func TestWebRealTime_TheSetup(t *testing.T) {
 		t.Fatal(err)
 	}
 	warnings := `document.getElementById("real-time-warnings").hidden`
-	waitJS(t, ctx, "the field", `document.getElementById("real-time-field").hidden === false`, 10*time.Second)
+	// The field is in the page from the start: wait for the setup to have drawn the game's, or a click
+	// lands before its listener and the setup then draws the box as it found it.
+	waitJS(t, ctx, "the field", `document.getElementById("real-time-field").dataset.wired === "1" && document.getElementById("real-time-field").hidden === false`, 10*time.Second)
 	if !evalBool(t, ctx, warnings) {
 		t.Error("the warnings show before real-time is chosen")
 	}
