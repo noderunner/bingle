@@ -55,7 +55,7 @@ func TestGameLook_ServedApartFromTheInfo(t *testing.T) {
 	}
 	// Council's look names its page script (tests/testdata/council), which is
 	// served with the game; a family without scripts has none to serve.
-	if code, look := get("/api/game-defs/test-council/web"); code != 200 || look["script"] != "page.js" {
+	if code, look := get("/api/game-defs/test-council/web"); code != 200 || look["script"] != "page.js" || look["style"] != "page.css" {
 		t.Errorf("Council's look: %d %v", code, look)
 	}
 	for path, want := range map[string]int{"/static/games/test-council/page.js": 200, "/static/games/test-council/nothing.js": 404, "/static/games/hex-11/page.js": 404} {
@@ -70,6 +70,11 @@ func TestGameLook_ServedApartFromTheInfo(t *testing.T) {
 		if want == 200 && !strings.Contains(resp.Header.Get("Content-Type"), "javascript") {
 			t.Errorf("%s is served as %q", path, resp.Header.Get("Content-Type"))
 		}
+	}
+	if resp, err := http.Get(baseURL + "/static/games/test-council/page.css"); err != nil {
+		t.Fatal(err)
+	} else if _ = resp.Body.Close(); resp.StatusCode != 200 || !strings.Contains(resp.Header.Get("Content-Type"), "text/css") {
+		t.Errorf("Council's stylesheet: %d %q", resp.StatusCode, resp.Header.Get("Content-Type"))
 	}
 	if code, _ := get("/api/game-defs/no-such-game/web"); code != 404 {
 		t.Errorf("an unknown game's look: %d", code)

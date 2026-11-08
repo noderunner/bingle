@@ -22,3 +22,4 @@ cards:
     t8: {layout: splay}
     t9: {layout: splay}
     t10: {layout: splay}
+script: page.js

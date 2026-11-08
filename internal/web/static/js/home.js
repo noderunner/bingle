@@ -17,7 +17,6 @@ import { openGameRow } from "./mygames.js";
 import { randomFact } from "./facts.js";
 import { mountGlobalChat } from "./global-chat.js";
 import { installNav, navigate } from "./nav.js";
-import { gameIcon } from "./game-icons.js";
 import { tutorialList } from "./tutorials-ui.js";
 import { solitairePreview } from "./solitaire.js";
 
@@ -1184,14 +1183,9 @@ async function renderGallery() {
 		cards.map(async ({ card, lead }) => {
 			try {
 				const slot = card.querySelector(".game-card-preview");
-				let icon = gameIcon(lead.id);
-				if (icon) {
-					slot.append(icon);
-					return;
-				}
 				const info = await gameInfo(lead.id);
-				// A game with a page script may draw its own picture (ADR 0124).
-				icon = info.page && info.page.listIcon ? info.page.listIcon() : null;
+				// A game whose board makes a poor picture draws its own, in its page script (ADR 0124).
+				const icon = info.page && info.page.listIcon ? info.page.listIcon() : null;
 				if (icon) {
 					slot.append(icon);
 					return;

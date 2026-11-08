@@ -649,7 +649,6 @@ details.disclosure[open] > summary { margin-bottom: 0.6rem; }
 .cell-bg.tint { transition: fill 0.15s; }
 .tint-glyph { font-size: 17px; fill: var(--ink, #333); opacity: 0.7; pointer-events: none; }
 .fence { stroke: #4a3418; stroke-width: 7; stroke-linecap: round; }
-.bug-glyph { pointer-events: none; font-family: "Noto Color Emoji", "Apple Color Emoji", "Segoe UI Emoji", sans-serif; }
 .piece-glyph { pointer-events: none; font-family: "Noto Sans Symbols 2", "Segoe UI Symbol", "DejaVu Sans", sans-serif; }
 .piece.color-white .piece-glyph, .ghost-piece.color-white .piece-glyph { fill: #2b2926; }
 .piece.color-black .piece-glyph, .ghost-piece.color-black .piece-glyph { fill: #f3eee1; }
@@ -1699,21 +1698,13 @@ button.move-card { cursor: pointer; }
 .card-grid i.centre { background: var(--text); }
 .square-badge { pointer-events: none; font-weight: 700; }
 
-/* Hive: tiles on a table, no board. */
+/* A free board: tiles on a table, no board. */
 .free-board { background: transparent; }
 .free-board .cell-bg.free-slot { fill: color-mix(in srgb, var(--surface-2) 70%, transparent); stroke: var(--muted); stroke-width: 1.5; stroke-dasharray: 5 4; }
 .free-board .piece { filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.35)); }
 .free-board .target-ring { stroke-width: 3; }
 .height-badge { fill: #2b2926; stroke: #fff; stroke-width: 1.5; pointer-events: none; }
 .height-badge-text { fill: #fff; font: 700 12px system-ui, sans-serif; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
-.piece .piece-body.bug-queen { stroke: #e0a800; stroke-width: 3.5; }
-.piece .piece-body.bug-beetle { stroke: #7b4fb0; stroke-width: 3.5; }
-.piece .piece-body.bug-spider { stroke: #8a5a2b; stroke-width: 3.5; }
-.piece .piece-body.bug-grasshopper { stroke: #3e9a4a; stroke-width: 3.5; }
-.piece .piece-body.bug-ant { stroke: #2f6fd0; stroke-width: 3.5; }
-.piece .piece-body.bug-mosquito { stroke: #8d8d8d; stroke-width: 3.5; }
-.piece .piece-body.bug-ladybug { stroke: #d0372d; stroke-width: 3.5; }
-.piece .piece-body.bug-pillbug { stroke: #2aa198; stroke-width: 3.5; }
 .ring-hole { fill: var(--board-light); stroke: var(--board-line); stroke-width: 1.5; pointer-events: none; }
 
 /* ---- Card games: the card table, cards, and the board of choices ------------ */
@@ -1780,8 +1771,6 @@ button.move-card { cursor: pointer; }
 .ts-trim { fill: none; stroke: var(--edge); stroke-width: 1; opacity: 0.7; }
 .ts-ring { fill: none; stroke: currentColor; stroke-width: 1.4; opacity: 0.35; }
 .ts-rank-text { fill: currentColor; font-family: Georgia, "Times New Roman", serif; font-weight: 700; }
-.cicon.ci-themed { color: var(--suit); }
-.cicon.ci-themed .ci-face { fill: var(--paper); stroke: var(--edge); }
 /* The card under the pointer, twice as large (js/cards.js). */
 .pc-zoom { position: fixed; z-index: 80; pointer-events: none; margin: 0; box-shadow: 0 8px 28px rgba(0,0,0,.45); transition: none; animation: none; transform: none; }
 .pc-btn { background: none; border: 0; padding: 0; cursor: pointer; border-radius: 7px; }
@@ -1872,43 +1861,8 @@ button.sol-pin:hover > .pcard { transform: translateY(-3px); }
 .cg-box.crossed { background: repeating-linear-gradient(135deg, var(--surface-2), var(--surface-2) 5px, var(--border) 5px, var(--border) 6px); }
 .cg-box.chosen { background: #f3dc8a; border-color: #b7791f; box-shadow: 0 0 0 2px #f3dc8a; color: #2b2208; }
 .cg-box.covered { opacity: .35; filter: grayscale(1); }
-.cg-box.covered .cicon, .cg-box.covered .animal { opacity: .7; }
-.cicon { flex: none; overflow: visible; }
-.cicon .ci-card, .cicon .ci-face { fill: #fffdf6; stroke: currentColor; stroke-width: 1.6; }
-.cicon .ci-text { fill: currentColor; font-family: system-ui, sans-serif; }
-.cicon .ci-bold { font-weight: 800; }
-.cicon .ci-arrow, .cicon .ci-pole { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.cicon .ci-no { fill: none; stroke: var(--danger, #c0392b); stroke-width: 2.8; stroke-linecap: round; }
-.cicon .ci-coin { fill: #f4d36a; stroke: #8a6b0f; stroke-width: 1.6; }
-.cicon .ci-coin-ring { fill: none; stroke: #8a6b0f; stroke-width: 1; opacity: .7; }
-.cicon .ci-points .ci-text, .cicon.ci-points .ci-text { fill: #3a2c04; }
-.cicon.ci-negative .ci-coin { fill: #e9a79f; stroke: #8a2a20; }
-.cicon.ci-negative .ci-coin-ring { stroke: #8a2a20; }
-.cicon.ci-negative .ci-text { fill: #6b140c; }
-.cicon .ci-star { fill: #f2b61f; stroke: #8a6b0f; stroke-width: 1.2; stroke-linejoin: round; }
-.cicon .ci-ontop { fill: #3a2c04; }
-.cicon .ci-crown, .cicon .ci-flag { fill: color-mix(in srgb, currentColor 22%, transparent); stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; }
-.cicon.ci-line-points .ci-coin { stroke-width: 1.4; }
-.cicon.ci-line-super .ci-ontop { fill: #3a2c04; }
-.cicon .suit-icon path, .cicon .suit-icon circle { fill: currentColor; }
 .cg-label { padding: 0 4px; text-align: center; }
 @media (max-width: 700px) { .card-table { --cw: 54px; --ch: 76px; } .pc-rank { font-size: 12px; } .pc-mid { font-size: 22px; padding: 18px 6px; } .choice-grid { --cell: 44px; } }
-
-/* ---- the animals of Nyet!'s players (js/animals.js) ------------------------------------- */
-.animal { --a-fill: var(--piece-white-fill); --a-stroke: var(--piece-white-stroke); flex: none; vertical-align: middle; overflow: visible; }
-.animal.color-red { --a-fill: var(--piece-red-fill); --a-stroke: var(--piece-red-stroke); }
-.animal.color-blue { --a-fill: var(--piece-blue-fill); --a-stroke: var(--piece-blue-stroke); }
-.animal.color-green { --a-fill: var(--piece-green-fill); --a-stroke: var(--piece-green-stroke); }
-.animal.color-yellow { --a-fill: var(--piece-yellow-fill); --a-stroke: var(--piece-yellow-stroke); }
-.animal.color-orange { --a-fill: var(--piece-orange-fill); --a-stroke: var(--piece-orange-stroke); }
-.animal .a-body { fill: var(--a-fill); stroke: var(--a-stroke); stroke-width: 1.5; stroke-linejoin: round; }
-.animal .a-inner { fill: var(--a-stroke); opacity: .55; }
-.animal .a-muzzle { fill: #fffdf6; opacity: .92; }
-.animal .a-ink { fill: var(--a-stroke); }
-.animal .a-ink.a-line { fill: none; stroke: var(--a-stroke); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
-.animal .a-eye { fill: #17141a; }
-.animal .a-beak { fill: #f3c24d; stroke: var(--a-stroke); stroke-width: 1.1; stroke-linejoin: round; }
-.animal .a-crown { fill: #d8362d; }
 
 /* ---- the home page: top-bar icons, tabs, the setup of a game ---------------------------- */
 .topbar-icon {

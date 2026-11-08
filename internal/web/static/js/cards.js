@@ -13,14 +13,13 @@
 // the visibility "owner"). The server deals a hand by suit and value; the order
 // a player drags it into is this browser's own.
 //
-// It also draws a board of choices (a "grid" of lines of boxes) for games such
-// as Nyet! that settle the terms of a round by crossing boxes off. Each box is
-// a picture (see choice-icons.js); a box that has been crossed off shows the
-// player who crossed it.
+// It also draws a board of choices (a "grid" of lines of boxes) for games that
+// settle the terms of a round by crossing boxes off. A box is a picture when
+// the game's page script draws one (info.page.choiceIcon), else its words; a
+// box that has been crossed off shows the player who crossed it.
 
 import { h, store } from "./util.js";
 import { cardFaceSvg, isClassicSuit } from "./card-art.js";
-import { choiceIcon } from "./choice-icons.js";
 import { backSvg, currentCardSet, setFace, setSuitName } from "./card-sets.js";
 
 /** The type id of a card instance ("blue-1#2" → "blue-1"). */
@@ -440,6 +439,16 @@ export function cardTable(ctx) {
 		node.append(box);
 	}
 	return { node, state: next };
+}
+
+/**
+ * The picture of a box or a line of a board of choices, as the game's page
+ * script draws it (info.page.choiceIcon, ADR 0124); null without one, and the
+ * board shows the words instead.
+ */
+export function choiceIcon(desc, ctx, size) {
+	const draw = ctx.info && ctx.info.page && ctx.info.page.choiceIcon;
+	return draw && desc ? draw(desc, ctx, size) : null;
 }
 
 /**

@@ -19,11 +19,11 @@ const stripFor = (showCoords) => (showCoords && currentTheme() ? COORD_STRIP : 0
 const NODE_MARGIN = 46;
 
 // Hive's tiles: a hexagon bearing the insect.
-const BUG_GLYPHS = { queen: "🐝", beetle: "🪲", spider: "🕷", grasshopper: "🦗", ant: "🐜", mosquito: "🦟", ladybug: "🐞", pillbug: "🐛" };
 const UNIT_GLYPHS = { pawn: "♟", knight: "♞", bishop: "♝", rook: "♜", queen: "♛", king: "♚" };
 
 // Shapes a game's page script adds (ADR 0124): name -> {body, detail?, dots?},
-// paths in a 100 × 100 box centred on the origin (Cthulhu Wars' units).
+// paths in a 100 × 100 box centred on the origin, or name -> a function of the
+// size that returns the shape's elements centred on the origin.
 const extraShapes = new Map();
 
 /** Adds a game's own piece shapes, by name, for pieceShape to draw. */
@@ -34,6 +34,7 @@ export function addPieceShapes(shapes) {
 /** The parts of a shape a game added, `size` units across. */
 function unitIconParts(shape, size) {
 	const icon = extraShapes.get(shape);
+	if (typeof icon === "function") return icon(size);
 	const g = s("g", { class: "unit-icon", transform: `scale(${(size / 100).toFixed(4)})` });
 	// The outline keeps its width however small the icon is drawn.
 	for (const d of icon.body) g.append(s("path", { class: "piece-body", d, "vector-effect": "non-scaling-stroke", "stroke-linejoin": "round" }));
@@ -46,17 +47,6 @@ function unitIconParts(shape, size) {
 export function pieceShape(shape, size) {
 	const S = size;
 	if (extraShapes.has(shape)) return unitIconParts(shape, size);
-	if (shape.startsWith("bug-")) {
-		const pts = [];
-		for (let k = 0; k < 6; k++) {
-			const a = (Math.PI / 180) * (60 * k - 30);
-			pts.push(`${(0.5 * S * Math.cos(a)).toFixed(2)},${(0.5 * S * Math.sin(a)).toFixed(2)}`);
-		}
-		return [
-			s("polygon", { class: `piece-body bug-${shape.slice(4)}`, points: pts.join(" "), "stroke-linejoin": "round" }),
-			s("text", { class: "bug-glyph", x: 0, y: 0.03 * S, "text-anchor": "middle", "dominant-baseline": "central", "font-size": 0.56 * S }, BUG_GLYPHS[shape.slice(4)] || "?"),
-		];
-	}
 	switch (shape) {
 		case "wall":
 			return [

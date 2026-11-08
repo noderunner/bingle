@@ -16,3 +16,5 @@ cards:
     trick: {layout: row}
     last: {layout: row}
     loot: {layout: splay}
+script: page.js
+style: page.css

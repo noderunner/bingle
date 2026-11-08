@@ -95,6 +95,8 @@ func TestCheckCatchesAMistake(t *testing.T) {
 		`{"variants":{"h":{}}}`:                                          `variant "h"`,
 		`{"variants":{"g-big":{"variants":{}}}}`:                         "", // an empty map is no variants
 		`{"variants":{"g-big":{"pieces":{"pawn":{}}}}}`:                  `variant "g-big": piece "pawn"`,
+		`{"script":"page.js"}`:                                           `script "page.js", but the module brings no scripts`,
+		`{"style":"page.css"}`:                                           `style "page.css", but the module brings no scripts`,
 	} {
 		err := look.Check([]byte(file), "g", games)
 		switch {

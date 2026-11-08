@@ -18,12 +18,10 @@ import { LAYOUTS, isMobileLayout, isLandscape, layoutChoice, setLayoutChoice, mo
 import { lobbyCard } from "./lobby.js";
 import { hoverCard, hideHoverCard } from "./tooltip.js";
 import { createOptionsWindow } from "./options.js";
-import { cardTable, choiceGrid, hideCardZoom } from "./cards.js";
+import { cardTable, choiceGrid, choiceIcon, hideCardZoom } from "./cards.js";
 import { solitaireTable } from "./solitaire.js";
 import { rulesIcon } from "./ui-icons.js";
-import { choiceIcon } from "./choice-icons.js";
 import { statIcon as plainStatIcon } from "./stat-icons.js";
-import { animalIcon, animalOf } from "./animals.js";
 import { themesFor, themeById } from "./themes.js";
 import { useCardSet } from "./card-sets.js";
 import { stepMoves, progress as tutorialProgress, isExpected, markFinished, allowed as tutorialAllowed, pagePart, scriptedMoveGroup } from "./tutorial.js";
@@ -3273,20 +3271,20 @@ function resultMessage() {
 // ---- connected / disconnected ---------------------------------------------------------------
 
 /**
- * The picture of a player who is an animal (Nyet!: Wolf, Crane, Tiger, Bear,
- * Eagle), in the colour of the seat; null for the games whose players are not.
+ * The picture of a player, in the colour of the seat, when the game's page
+ * script draws one (info.page.seatIcon: Nyet!'s animals); null otherwise.
  */
-function seatAnimal(seat, px) {
-	if (!S.info || !S.info.cards) return null;
+function seatPicture(seat, px) {
+	const draw = S.info && S.info.page && S.info.page.seatIcon;
+	if (!draw) return null;
 	const label = seatLabel(seat);
-	if (!animalOf(label)) return null;
-	return animalIcon(label, { color: cssColor(colorOf(seat)), size: px, title: label });
+	return draw(label, { color: cssColor(colorOf(seat)), size: px, title: label });
 }
 
 /** The same for a player named by label, as the captions under the trick's cards do. */
-function seatAnimalByLabel(label, px) {
+function seatPictureByLabel(label, px) {
 	const si = (S.info.seats || []).find((x) => x.label === label);
-	return si ? seatAnimal(si.seat, px) : null;
+	return si ? seatPicture(si.seat, px) : null;
 }
 
 /**
@@ -3315,10 +3313,10 @@ function paintConnections() {
 	}
 }
 
-/** The coloured box beside a player's name (in a game of animals, the animal). */
+/** The coloured box beside a player's name, or the player's picture when the game draws one. */
 function seatSwatch(seat, color) {
-	const animal = seatAnimal(seat, 30);
-	if (animal) return h("span", { class: "seat-icon" }, animal);
+	const picture = seatPicture(seat, 30);
+	if (picture) return h("span", { class: "seat-icon" }, picture);
 	const gradient = seatGradient(seat);
 	return h("span", { class: `swatch color-${cssColor(color)}`, style: gradient ? `background: ${gradient}` : null });
 }
@@ -4112,7 +4110,7 @@ function cardContext(v) {
 		redraw: () => render(),
 		playsList: () => (actingSeat() ? activeBuilder().moves.map((m) => m.notation) : []),
 		prev: S.ctPrev,
-		seatIconByLabel: seatAnimalByLabel,
+		seatIconByLabel: seatPictureByLabel,
 	};
 }
 

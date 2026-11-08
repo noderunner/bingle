@@ -1,0 +1,10 @@
+/* Hive's stylesheet (ADR 0124): the edge of each insect's tile, and its glyph. */
+.bug-glyph { pointer-events: none; font-family: "Noto Color Emoji", "Apple Color Emoji", "Segoe UI Emoji", sans-serif; }
+.piece .piece-body.bug-queen { stroke: #e0a800; stroke-width: 3.5; }
+.piece .piece-body.bug-beetle { stroke: #7b4fb0; stroke-width: 3.5; }
+.piece .piece-body.bug-spider { stroke: #8a5a2b; stroke-width: 3.5; }
+.piece .piece-body.bug-grasshopper { stroke: #3e9a4a; stroke-width: 3.5; }
+.piece .piece-body.bug-ant { stroke: #2f6fd0; stroke-width: 3.5; }
+.piece .piece-body.bug-mosquito { stroke: #8d8d8d; stroke-width: 3.5; }
+.piece .piece-body.bug-ladybug { stroke: #d0372d; stroke-width: 3.5; }
+.piece .piece-body.bug-pillbug { stroke: #2aa198; stroke-width: 3.5; }

@@ -656,7 +656,8 @@ then *Bingle on GitHub* (`#help-github`) and *Report Issues* (`#help-issues`, th
 
 The *Games* tab shows a card for each game family (`.game-card[data-family]`): the picture
 of the start position, or of a sample game in play when the game starts with an empty board
-(`preview` in the game's JSON; Cthulhu Wars, Hive and Nyet! have pictures of their own, `js/game-icons.js`),
+(`preview` in the game's look; a game whose board makes a poor picture draws its own, its page script's
+`listIcon`, as Hive, Nyet! and Solitaire do),
 the name, a **Beta** badge (`.badge.beta`, while the game's `version` is below 1.0.0; its title
 is the version) and the players it takes (`.game-card-players`: the range of the seat counts of
 the game and its variants). While the pointer is over a card, or it has the focus, `#game-tip`
@@ -747,15 +748,21 @@ variants:                      # a merge patch per game of the family, by id
 (`catalog.Module.Scripts`), served at `/static/games/<family>/<path>`. `api.gameDef` imports it once per
 family and hands its exports to the page as `info.page`; shared code asks it for what it draws for that
 game alone (`info.page.seatGlyph(label)`) and names no game. A game's scripts import the page's own
-modules by absolute path (`/static/js/util.js`), so each is loaded once. Cthulhu Wars' scripts are
-`cthulhuwars/web/` in the private overlay (ADR 0127; `page.js` and its `cw-*.js`). What `page.js` exports, and who asks:
+modules by absolute path (`/static/js/util.js`), so each is loaded once. A look may name `style` too, a
+stylesheet among the same `Scripts`, which `look.pageOf` links once beside the script: the rules for what the
+script draws stay with it. Hive (`hive/web/`: its insect tiles, through `render.addPieceShapes`), Nyet!
+(`nyet/web/`: its animals and the pictures of its board of terms), Solitaire (its list picture), Council (the
+tests' fixture) and Cthulhu Wars (`cthulhuwars/web/` in the private overlay, ADR 0127; `page.js` and its
+`cw-*.js`) have scripts. What a `page.js` exports, and who asks:
 
 | Export | Asked by |
 |---|---|
 | `seatGlyph(label)` | `game.js`, beside a seat's name |
+| `seatIcon(label, {color, size, title})` | `game.js` and `cards.js`: the player's picture in place of the seat's swatch, and under a trick's cards |
+| `choiceIcon(desc, ctx, size)` | `cards.js`, the boxes and lines of a board of choices (their words without it) |
 | `renderAreaMap(host, info, view, handlers)` | `render.js`, for an `areas` board |
 | `mapKey(info)`, `legendMarker(kind, arg, info)` | `rules.js`, the key to the map |
-| `listIcon()` | `home.js`, the games list |
+| `listIcon()` | `home.js`, the games list, for a game whose board makes a poor picture |
 | `createSetup(opts)`, `mountTester(host, info)`, `syncPractice(id)` | `home.js`: the setup picker, the Animation Tester tab, the practice wizard |
 | `lobbyPool(info)` | `lobby.js`, what a table was set up with |
 | `batchSections(rep, other, length, redraw)`, `pickName`, `pickColor`, `endReason`, `optionName` | `batches.js`, a practice batch's report |
