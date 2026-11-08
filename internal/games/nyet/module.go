@@ -32,11 +32,21 @@ var definition = sync.OnceValue(func() []byte { return dsl.MustLoad(definitionFS
 //go:embed guide
 var guideFS embed.FS
 
+// webFS is the page's own script and stylesheet for Nyet!: its board of
+// terms' pictures and its players' animals (ADR 0124).
+//
+//go:embed web
+var webFS embed.FS
+
 // Module returns Nyet!'s catalog.Module.
 func Module() catalog.Module {
 	sub, err := fs.Sub(guideFS, "guide")
 	if err != nil {
 		panic(err)
 	}
-	return catalog.Module{ID: "nyet", Definition: definition(), Rules: New(), Assets: sub, Web: look.MustLoad(definitionFS)}
+	scripts, err := fs.Sub(webFS, "web")
+	if err != nil {
+		panic(err)
+	}
+	return catalog.Module{ID: "nyet", Definition: definition(), Rules: New(), Assets: sub, Scripts: scripts, Web: look.MustLoad(definitionFS)}
 }

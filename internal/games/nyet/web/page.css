@@ -1,0 +1,37 @@
+/* Nyet!'s stylesheet (ADR 0124): the pictures of its board of terms (choice-icons.js)
+   and its players' animals (animals.js). */
+.cicon.ci-themed { color: var(--suit); }
+.cicon.ci-themed .ci-face { fill: var(--paper); stroke: var(--edge); }
+.cg-box.covered .cicon, .cg-box.covered .animal { opacity: .7; }
+.cicon { flex: none; overflow: visible; }
+.cicon .ci-card, .cicon .ci-face { fill: #fffdf6; stroke: currentColor; stroke-width: 1.6; }
+.cicon .ci-text { fill: currentColor; font-family: system-ui, sans-serif; }
+.cicon .ci-bold { font-weight: 800; }
+.cicon .ci-arrow, .cicon .ci-pole { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.cicon .ci-no { fill: none; stroke: var(--danger, #c0392b); stroke-width: 2.8; stroke-linecap: round; }
+.cicon .ci-coin { fill: #f4d36a; stroke: #8a6b0f; stroke-width: 1.6; }
+.cicon .ci-coin-ring { fill: none; stroke: #8a6b0f; stroke-width: 1; opacity: .7; }
+.cicon .ci-points .ci-text, .cicon.ci-points .ci-text { fill: #3a2c04; }
+.cicon.ci-negative .ci-coin { fill: #e9a79f; stroke: #8a2a20; }
+.cicon.ci-negative .ci-coin-ring { stroke: #8a2a20; }
+.cicon.ci-negative .ci-text { fill: #6b140c; }
+.cicon .ci-star { fill: #f2b61f; stroke: #8a6b0f; stroke-width: 1.2; stroke-linejoin: round; }
+.cicon .ci-ontop { fill: #3a2c04; }
+.cicon .ci-crown, .cicon .ci-flag { fill: color-mix(in srgb, currentColor 22%, transparent); stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; }
+.cicon.ci-line-points .ci-coin { stroke-width: 1.4; }
+.cicon.ci-line-super .ci-ontop { fill: #3a2c04; }
+.cicon .suit-icon path, .cicon .suit-icon circle { fill: currentColor; }
+.animal { --a-fill: var(--piece-white-fill); --a-stroke: var(--piece-white-stroke); flex: none; vertical-align: middle; overflow: visible; }
+.animal.color-red { --a-fill: var(--piece-red-fill); --a-stroke: var(--piece-red-stroke); }
+.animal.color-blue { --a-fill: var(--piece-blue-fill); --a-stroke: var(--piece-blue-stroke); }
+.animal.color-green { --a-fill: var(--piece-green-fill); --a-stroke: var(--piece-green-stroke); }
+.animal.color-yellow { --a-fill: var(--piece-yellow-fill); --a-stroke: var(--piece-yellow-stroke); }
+.animal.color-orange { --a-fill: var(--piece-orange-fill); --a-stroke: var(--piece-orange-stroke); }
+.animal .a-body { fill: var(--a-fill); stroke: var(--a-stroke); stroke-width: 1.5; stroke-linejoin: round; }
+.animal .a-inner { fill: var(--a-stroke); opacity: .55; }
+.animal .a-muzzle { fill: #fffdf6; opacity: .92; }
+.animal .a-ink { fill: var(--a-stroke); }
+.animal .a-ink.a-line { fill: none; stroke: var(--a-stroke); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.animal .a-eye { fill: #17141a; }
+.animal .a-beak { fill: #f3c24d; stroke: var(--a-stroke); stroke-width: 1.1; stroke-linejoin: round; }
+.animal .a-crown { fill: #d8362d; }

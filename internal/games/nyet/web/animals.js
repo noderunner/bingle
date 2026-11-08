@@ -7,7 +7,7 @@
 // (the same theme-aware colours as the squares and pieces of other games), the
 // details a darker ink.
 
-import { s } from "./util.js";
+import { s } from "/static/js/util.js";
 
 /** The animal of a player: the seat's label, as the game names it ("Crane"). */
 const ANIMALS = {

@@ -4,6 +4,11 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.98.1 - 2026-11-08
+
+### Bingle Core 0.98.1
+- Nothing changes in play. Hive's insect tiles, Onitama's Move cards, Nyet!'s animals and the pictures on its board of terms, and the pictures of Hive, Nyet! and Solitaire in the list of games are now drawn by each game's own part of the page, which can bring its own styles too.
+
 ## 0.98.0 - 2026-11-07
 
 ### Bingle Core 0.98.0

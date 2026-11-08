@@ -18,12 +18,10 @@ import { LAYOUTS, isMobileLayout, isLandscape, layoutChoice, setLayoutChoice, mo
 import { lobbyCard } from "./lobby.js";
 import { hoverCard, hideHoverCard } from "./tooltip.js";
 import { createOptionsWindow } from "./options.js";
-import { cardTable, choiceGrid, hideCardZoom } from "./cards.js";
+import { cardTable, choiceGrid, choiceIcon, hideCardZoom } from "./cards.js";
 import { solitaireTable } from "./solitaire.js";
 import { rulesIcon } from "./ui-icons.js";
-import { choiceIcon } from "./choice-icons.js";
 import { statIcon as plainStatIcon } from "./stat-icons.js";
-import { animalIcon, animalOf } from "./animals.js";
 import { themesFor, themeById } from "./themes.js";
 import { useCardSet } from "./card-sets.js";
 import { stepMoves, progress as tutorialProgress, isExpected, markFinished, allowed as tutorialAllowed, pagePart, scriptedMoveGroup } from "./tutorial.js";
@@ -3273,20 +3271,20 @@ function resultMessage() {
 // ---- connected / disconnected ---------------------------------------------------------------
 
 /**
- * The picture of a player who is an animal (Nyet!: Wolf, Crane, Tiger, Bear,
- * Eagle), in the colour of the seat; null for the games whose players are not.
+ * The picture of a player, in the colour of the seat, when the game's page
+ * script draws one (info.page.seatIcon: Nyet!'s animals); null otherwise.
  */
-function seatAnimal(seat, px) {
-	if (!S.info || !S.info.cards) return null;
+function seatPicture(seat, px) {
+	const draw = S.info && S.info.page && S.info.page.seatIcon;
+	if (!draw) return null;
 	const label = seatLabel(seat);
-	if (!animalOf(label)) return null;
-	return animalIcon(label, { color: cssColor(colorOf(seat)), size: px, title: label });
+	return draw(label, { color: cssColor(colorOf(seat)), size: px, title: label });
 }
 
 /** The same for a player named by label, as the captions under the trick's cards do. */
-function seatAnimalByLabel(label, px) {
+function seatPictureByLabel(label, px) {
 	const si = (S.info.seats || []).find((x) => x.label === label);
-	return si ? seatAnimal(si.seat, px) : null;
+	return si ? seatPicture(si.seat, px) : null;
 }
 
 /**
@@ -3315,10 +3313,10 @@ function paintConnections() {
 	}
 }
 
-/** The coloured box beside a player's name (in a game of animals, the animal). */
+/** The coloured box beside a player's name, or the player's picture when the game draws one. */
 function seatSwatch(seat, color) {
-	const animal = seatAnimal(seat, 30);
-	if (animal) return h("span", { class: "seat-icon" }, animal);
+	const picture = seatPicture(seat, 30);
+	if (picture) return h("span", { class: "seat-icon" }, picture);
 	const gradient = seatGradient(seat);
 	return h("span", { class: `swatch color-${cssColor(color)}`, style: gradient ? `background: ${gradient}` : null });
 }
@@ -3474,8 +3472,6 @@ const orderLine = (...args) => (cultCardsView().orderLine ? cultCardsView().orde
 const roundBar = (...args) => (cultCardsView().roundBar ? cultCardsView().roundBar(...args) : null);
 const unitInfoCard = (...args) => (cultCardsView().unitInfoCard ? cultCardsView().unitInfoCard(...args) : null);
 const unitTip = (...args) => (cultCardsView().unitTip ? cultCardsView().unitTip(...args) : null);
-
-
 
 
 // ---------------------------------------------------------------------------
@@ -4012,10 +4008,6 @@ function saveAutoPlay(patch) {
 /** A seat's details under a heading each, as the game's view gives them. */
 
 
-
-
-
-
 /** The triangle under a card in summary. One card is open at a time, across the cults and the neutral items. */
 function expandToggle(key, label) {
 	const open = S.expanded === key;
@@ -4054,13 +4046,6 @@ function cardOrder(first) {
 }
 
 
-
-
-/**
- * The Move cards of a game that has them (Onitama): both hands and the card at
- * the side, each drawn as the grid of squares it lets a piece reach. A card of
- * the player to move that can be played now is a button.
- */
 /**
  * The panels of a card game (a board of choices, the card table), drawn from
  * the view's table and grid; empty for other games.
@@ -4112,7 +4097,7 @@ function cardContext(v) {
 		redraw: () => render(),
 		playsList: () => (actingSeat() ? activeBuilder().moves.map((m) => m.notation) : []),
 		prev: S.ctPrev,
-		seatIconByLabel: seatAnimalByLabel,
+		seatIconByLabel: seatPictureByLabel,
 	};
 }
 
@@ -4121,59 +4106,15 @@ function termsBoard(v, ctx) {
 	return h("div", { class: "ct-grid-wrap", id: "terms-board" }, h("div", { class: "ct-round small muted" }, `Round ${v.round} of ${v.rounds}`), choiceGrid(v.grid, ctx));
 }
 
+/**
+ * What a game's own view gives the player to choose from beside the actions,
+ * drawn by its page script (info.page.choicePanel: Onitama's move cards); null
+ * for the other games.
+ */
 function cardsPanel() {
-	const v = rulesetView();
-	if (!v || !v.cards) return null;
-	const seats = S.game.seats || [];
-	const mover = v.impulse_seat || 0;
-	const b = actingSeat() ? activeBuilder() : null;
-	const picked = b && b.gestures[0] && b.gestures[0].kind === "action" ? b.gestures[0].value : null;
-	const playable = b ? new Set(b.nextActions()) : new Set();
-	const grid = (card, seat) => {
-		const g = h("span", { class: "card-grid", "aria-hidden": "true" });
-		const marks = new Set();
-		for (const [dx, dy] of card.moves) {
-			// Seen from the board: the second seat moves the other way.
-			const bx = seat === 2 ? -dx : dx;
-			const by = seat === 2 ? -dy : dy;
-			marks.add(`${2 + bx},${2 - by}`);
-		}
-		for (let r = 0; r < 5; r++) {
-			for (let c = 0; c < 5; c++) {
-				const centre = r === 2 && c === 2;
-				g.append(h("i", { class: centre ? "centre" : marks.has(`${c},${r}`) ? "reach" : "" }));
-			}
-		}
-		return g;
-	};
-	const one = (card, seat, ownHand) => {
-		const id = `card-${card.id}`;
-		const can = ownHand && playable.has(id);
-		const label = h("span", { class: "card-name" }, card.name);
-		const attrs = { class: "move-card" + (can ? " playable" : "") + (picked === id ? " chosen" : ""), "data-card": card.id, title: card.name };
-		if (can) {
-			return h("button", { type: "button", ...attrs, onclick: () => chooseAction(id) }, grid(card, seat), label);
-		}
-		return h("span", attrs, grid(card, seat), label);
-	};
-	const panel = h("div", { class: "cards-panel", id: "cards-panel", "aria-label": "Move cards" });
-	const group = (title, cards, seat, turn, own) => {
-		const g = h("div", { class: "card-group" + (turn ? " on-impulse" : "") }, h("div", { class: "card-group-title small muted" }, title));
-		const row = h("div", { class: "card-row" });
-		for (const c of cards) row.append(one(c, seat, own));
-		return g.append(row), g;
-	};
-	const name = (seat) => ((seats.find((x) => x.seat === seat) || {}).label || `Seat ${seat}`);
-	for (const seat of [2, 1]) {
-		panel.append(group(`${name(seat)}'s cards`, v.cards.hands[String(seat)] || [], seat, mover === seat, mover === seat && seat === actingSeat()));
-		if (seat === 2) panel.append(group("Next card", [v.cards.side], mover || 1, false, false));
-	}
-	return panel;
+	const draw = page().choicePanel;
+	return draw ? draw(viewContext()) : null;
 }
-
-
-
-
 
 
 // Battles and awakenings are the game's to draw (its page script's battles,
@@ -4470,8 +4411,6 @@ function unitCardFor(seat, type) {
 }
 
 
-
-
 /** What an action costs just now, as the server worked it out: null when it is free (or unknown). */
 function actionCost(id) {
 	const rv = rulesetView();
@@ -4498,9 +4437,6 @@ function plainActionButton(id, def, label) {
 	return button;
 }
 const unitButton = (...args) => (actionListView().unitButton ? actionListView().unitButton(...args) : null);
-
-
-
 
 
 /** One of the two directions of play, spelled out as who plays after whom. */

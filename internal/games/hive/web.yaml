@@ -15,3 +15,5 @@ display:
   tints:
     last: {color: '#c8dfa8'}
     danger: {color: '#e8a898'}
+script: page.js
+style: page.css

@@ -12,10 +12,10 @@
 // Everything is drawn in a 32×32 box with the colour of the text, and the
 // red of a warning where a picture says "no".
 
-import { s } from "./util.js";
+import { s } from "/static/js/util.js";
 import { animalIcon } from "./animals.js";
-import { isClassicSuit, suitIcon } from "./card-art.js";
-import { currentCardSet, setSuitArt, setSuitIcon } from "./card-sets.js";
+import { isClassicSuit, suitIcon } from "/static/js/card-art.js";
+import { currentCardSet, setSuitArt, setSuitIcon } from "/static/js/card-sets.js";
 
 const svg = (cls, ...kids) => s("svg", { viewBox: "0 0 32 32", class: `cicon ${cls}`, "aria-hidden": "true", focusable: "false" }, ...kids);
 const path = (d, cls = "") => s("path", { d, class: cls });

@@ -11,6 +11,7 @@ package onitama
 
 import (
 	"embed"
+	"io/fs"
 	"sync"
 
 	"github.com/noderunner/bingle/internal/engine/catalog"
@@ -21,10 +22,20 @@ import (
 //go:embed onitama.yaml web.yaml
 var definitionFS embed.FS
 
+// webFS is the page's own script and stylesheet for Onitama: its Move cards
+// (ADR 0124).
+//
+//go:embed web
+var webFS embed.FS
+
 // definition is the definition as JSON, converted once.
 var definition = sync.OnceValue(func() []byte { return dsl.MustLoad(definitionFS, "onitama.yaml") })
 
 // Module returns Onitama's catalog.Module.
 func Module() catalog.Module {
-	return catalog.Module{ID: "onitama", Definition: definition(), Rules: New(), Assets: newGuideAssets(), Web: look.MustLoad(definitionFS)}
+	scripts, err := fs.Sub(webFS, "web")
+	if err != nil {
+		panic(err)
+	}
+	return catalog.Module{ID: "onitama", Definition: definition(), Rules: New(), Assets: newGuideAssets(), Scripts: scripts, Web: look.MustLoad(definitionFS)}
 }

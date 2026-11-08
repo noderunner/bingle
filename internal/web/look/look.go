@@ -42,6 +42,10 @@ type File struct {
 	// Scripts (served under /static/games/{family}/): an ES module whose
 	// exports the page asks for the parts it draws for this game alone.
 	Script string `json:"script,omitempty"`
+	// Style is the game's own stylesheet, a path among the module's Scripts
+	// like Script: the rules for what its page script draws, which the page
+	// links once it has asked for one of the family's games.
+	Style string `json:"style,omitempty"`
 	// Variants patches the file for one game of the family, by its id, as
 	// a JSON merge patch (the definition's variants work the same way).
 	Variants map[string]File `json:"variants,omitempty"`
@@ -60,7 +64,8 @@ type Seat struct {
 type Piece struct {
 	// Shape names what the page draws: disc, square, flat, wall, cap, ring,
 	// diamond, triangle, cross, a chess piece (pawn, knight, bishop, rook,
-	// queen, king), Yinsh's donut and chip, or one of Hive's bug-* tiles.
+	// queen, king), donut and chip, or a shape the game's page script adds
+	// (Hive's bug-* tiles).
 	Shape string `json:"shape,omitempty"`
 }
 
@@ -163,12 +168,15 @@ func Check(data []byte, family string, games map[string]*catalog.CompiledGame) e
 	if err := f.check(base); err != nil {
 		return fmt.Errorf("look: %s: %w", family, err)
 	}
-	if f.Script != "" {
-		if base.Scripts == nil {
-			return fmt.Errorf("look: %s: script %q, but the module brings no scripts", family, f.Script)
+	for _, file := range []struct{ kind, path string }{{"script", f.Script}, {"style", f.Style}} {
+		if file.path == "" {
+			continue
 		}
-		if _, err := fs.Stat(base.Scripts, f.Script); err != nil {
-			return fmt.Errorf("look: %s: script %q: %w", family, f.Script, err)
+		if base.Scripts == nil {
+			return fmt.Errorf("look: %s: %s %q, but the module brings no scripts", family, file.kind, file.path)
+		}
+		if _, err := fs.Stat(base.Scripts, file.path); err != nil {
+			return fmt.Errorf("look: %s: %s %q: %w", family, file.kind, file.path, err)
 		}
 	}
 	for id, v := range f.Variants {

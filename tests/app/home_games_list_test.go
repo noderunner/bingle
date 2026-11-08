@@ -44,8 +44,10 @@ func TestHomeGames_ListShowsBetaPlayersAndADetailsCard(t *testing.T) {
 	if got := evalString(t, ctx, `document.querySelector('.game-card[data-family="tak-5x5"] .badge.beta').getAttribute("title")`); !strings.Contains(got, "0.1.1") {
 		t.Errorf("the Beta mark does not say the version: %q", got)
 	}
-	// Council and Hive have pictures of their own: drawn by the game's page script, and a cluster of tiles.
+	// Council and Hive draw pictures of their own in their page scripts: four houses, and a cluster of tiles.
 	waitJS(t, ctx, "Council's picture", `document.querySelector('.game-card[data-family="test-council"] .game-card-preview svg.council-icon') !== null`, 15*time.Second)
+	// Its stylesheet is linked with the script, and its rule reaches the picture.
+	waitJS(t, ctx, "Council's stylesheet", `getComputedStyle(document.querySelector('svg.council-icon')).outlineColor === "rgb(201, 162, 39)"`, 15*time.Second)
 	waitJS(t, ctx, "the Hive tiles", `document.querySelectorAll('.game-card[data-family="hive"] .game-card-preview svg .piece').length >= 5`, 15*time.Second)
 	// Hovering over a game shows its name, designers, publisher and description.
 	hover := func(sel string) {

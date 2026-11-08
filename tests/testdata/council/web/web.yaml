@@ -1,3 +1,4 @@
 # How the web page draws Council (ADR 0124), and its page script: the tests'
 # vehicle for a game that brings scripts of its own.
 script: page.js
+style: page.css

@@ -3,10 +3,8 @@
 // drawn as SVG paths in the current text colour, so they follow the theme and
 // need no files. Each takes a size in pixels (20 by default).
 //
-// Pictures of the games themselves are elsewhere: js/game-icons.js (the cards
-// of the games list), js/icons.js (the units and counters of Cthulhu Wars),
-// js/choice-icons.js (a board of choices) and js/animals.js (the players of a
-// card game).
+// Pictures of the games themselves are in each game's page script (ADR 0124):
+// its card in the games list, its own pieces and its players.
 
 import { s } from "./util.js";
 

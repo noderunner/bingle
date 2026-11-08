@@ -76,15 +76,28 @@ export function applyLook(info, file) {
 
 const pages = new Map();
 
+/** Links a game's own stylesheet (the look's `style`) once; it stays for the life of the page. */
+function linkStyle(href) {
+	if (typeof document === "undefined" || document.querySelector(`link[data-game-style="${href}"]`)) return;
+	const link = document.createElement("link");
+	link.rel = "stylesheet";
+	link.href = href;
+	link.dataset.gameStyle = href;
+	document.head.append(link);
+}
+
 /**
  * The game's own page script (the look's `script`, ADR 0124), imported once
  * per family: an ES module whose exports the page asks for what it draws for
- * this game alone (`info.page.seatGlyph`, ...). A game without one, or one
+ * this game alone (`info.page.seatGlyph`, ...), with its stylesheet (the
+ * look's `style`) linked beside it. A game without one, or one
  * whose script fails to load, gets an empty object, and the page draws it by
  * itself.
  */
 export function pageOf(family, file) {
-	const script = file && typeof file === "object" ? file.script : "";
+	const parts = file && typeof file === "object" ? file : {};
+	if (parts.style) linkStyle(`/static/games/${encodeURIComponent(family)}/${parts.style}`);
+	const script = parts.script || "";
 	if (!script) return Promise.resolve({});
 	const url = `/static/games/${encodeURIComponent(family)}/${script}`;
 	if (!pages.has(url)) {
