@@ -75,30 +75,40 @@ export function applyLook(info, file) {
 }
 
 const pages = new Map();
-
-/** Links a game's own stylesheet (the look's `style`) once; it stays for the life of the page. */
-function linkStyle(href) {
-	if (typeof document === "undefined" || document.querySelector(`link[data-game-style="${href}"]`)) return;
-	const link = document.createElement("link");
-	link.rel = "stylesheet";
-	link.href = href;
-	link.dataset.gameStyle = href;
-	document.head.append(link);
-}
+const styles = new Map();
 
 /**
- * The game's own page script (the look's `script`, ADR 0124), imported once
- * per family: an ES module whose exports the page asks for what it draws for
- * this game alone (`info.page.seatGlyph`, ...), with its stylesheet (the
- * look's `style`) linked beside it. A game without one, or one
- * whose script fails to load, gets an empty object, and the page draws it by
- * itself.
+ * Links a game's own stylesheet (the look's `style`) once; it stays for the life
+ * of the page. The promise settles when the sheet has loaded (or failed to), so
+ * the game's parts are not drawn before their rules.
  */
+function linkStyle(href) {
+	if (typeof document === "undefined") return Promise.resolve();
+	if (!styles.has(href)) {
+		styles.set(
+			href,
+			new Promise((done) => {
+				const link = document.createElement("link");
+				link.rel = "stylesheet";
+				link.href = href;
+				link.dataset.gameStyle = href;
+				link.onload = () => done();
+				link.onerror = () => {
+					console.error(`the stylesheet ${href} did not load`);
+					done();
+				};
+				document.head.append(link);
+			})
+		);
+	}
+	return styles.get(href);
+}
+
 export function pageOf(family, file) {
 	const parts = file && typeof file === "object" ? file : {};
-	if (parts.style) linkStyle(`/static/games/${encodeURIComponent(family)}/${parts.style}`);
+	const styled = parts.style ? linkStyle(`/static/games/${encodeURIComponent(family)}/${parts.style}`) : Promise.resolve();
 	const script = parts.script || "";
-	if (!script) return Promise.resolve({});
+	if (!script) return styled.then(() => ({}));
 	const url = `/static/games/${encodeURIComponent(family)}/${script}`;
 	if (!pages.has(url)) {
 		pages.set(
@@ -109,5 +119,5 @@ export function pageOf(family, file) {
 			})
 		);
 	}
-	return pages.get(url);
+	return Promise.all([pages.get(url), styled]).then(([page]) => page);
 }

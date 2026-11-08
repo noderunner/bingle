@@ -4,6 +4,11 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.99.1 - 2026-11-08
+
+### Bingle Core 0.99.1
+- Nothing changes in play. The page no longer carries one game's styles in its own stylesheet, and a game's own parts are drawn only once their styles have loaded, so they no longer flash unstyled.
+
 ## 0.99.0 - 2026-11-08
 
 ### Bingle Core 0.99.0
