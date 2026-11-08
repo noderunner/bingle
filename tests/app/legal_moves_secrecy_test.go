@@ -15,12 +15,12 @@ type secrecyLegal struct {
 	} `json:"options"`
 }
 
-// nyetAtTheCards seats key in all four seats of a game of Nyet! and plays until a seat to move has
+// tricksAtTheCards seats key in all four seats of a game of the Tricks fixture and plays until a seat to move has
 // a choice of cards from its hand, the moves that would give the hand away.
-func nyetAtTheCards(t *testing.T, base, key string) (string, secrecyLegal) {
+func tricksAtTheCards(t *testing.T, base, key string) (string, secrecyLegal) {
 	t.Helper()
 	var created createGameResponse
-	if code := doJSONAs(t, key, "POST", base+"/api/games", map[string]any{"game_def_id": "nyet", "player_name": "Seat 1", "seat": 1}, &created); code != 200 {
+	if code := doJSONAs(t, key, "POST", base+"/api/games", map[string]any{"game_def_id": "test-tricks", "player_name": "Seat 1", "seat": 1}, &created); code != 200 {
 		t.Fatalf("create: %d", code)
 	}
 	room := created.RoomCode
@@ -37,8 +37,8 @@ func nyetAtTheCards(t *testing.T, base, key string) (string, secrecyLegal) {
 		if len(legal.Moves) == 0 {
 			t.Fatalf("seat %d to move has no moves", legal.Seat)
 		}
-		// Everything before the first card is the rules grid ("nyet:") or the choice of team ("team:").
-		if n := legal.Moves[0].Notation; !strings.HasPrefix(n, "nyet:") && !strings.HasPrefix(n, "team:") {
+		// Everything before the first card is the board of terms ("cross:").
+		if n := legal.Moves[0].Notation; !strings.HasPrefix(n, "cross:") {
 			return room, legal
 		}
 		body := map[string]any{"player_name": fmt.Sprintf("Seat %d", legal.Seat), "notation": legal.Moves[0].Notation}
@@ -53,7 +53,7 @@ func nyetAtTheCards(t *testing.T, base, key string) (string, secrecyLegal) {
 func TestLegalMoves_AHandIsShownOnlyToWhoeverHoldsTheSeat(t *testing.T) {
 	base := newRESTTestServer(t)
 	owner, stranger := newGuestKey(t, base), newGuestKey(t, base)
-	room, held := nyetAtTheCards(t, base, owner)
+	room, held := tricksAtTheCards(t, base, owner)
 	url := base + "/api/games/" + room + "/selections"
 
 	for who, key := range map[string]string{"nobody signed in": "", "another guest": stranger} {
@@ -89,7 +89,7 @@ func TestLegalMoves_AHandIsShownOnlyToWhoeverHoldsTheSeat(t *testing.T) {
 func TestLegalMoves_AskingDoesNotTakeASeatNobodyOwns(t *testing.T) {
 	base := newRESTTestServer(t)
 	var created createGameResponse
-	if code := doJSON(t, "POST", base+"/api/games", map[string]any{"game_def_id": "nyet", "player_name": "Seat 1", "seat": 1}, &created); code != 200 {
+	if code := doJSON(t, "POST", base+"/api/games", map[string]any{"game_def_id": "test-tricks", "player_name": "Seat 1", "seat": 1}, &created); code != 200 {
 		t.Fatalf("create: %d", code)
 	}
 	room := created.RoomCode

@@ -235,7 +235,7 @@ func TestTournaments_UI(t *testing.T) {
 	clickSel(t, ctx, "#tournament-new")
 	waitJS(t, ctx, "the form", `document.getElementById("t-game") && document.getElementById("t-game").options.length > 1`, 10*time.Second)
 	// Only games of two are offered, and a long clock is the default.
-	if evalBool(t, ctx, `[...document.getElementById("t-game").options].some((o) => o.value === "nyet")`) {
+	if evalBool(t, ctx, `[...document.getElementById("t-game").options].some((o) => o.value === "test-tricks")`) {
 		t.Error("a game of four is offered")
 	}
 	if got := evalString(t, ctx, `document.getElementById("t-clock").value`); got != "259200" {
@@ -438,7 +438,7 @@ func TestTournaments_TurnMailCanBeTurnedOffInTheGame(t *testing.T) {
 // The games that had no Submit and no test of playing with it: a whole run of turns
 // through the page, pressing Submit whenever it is asked for.
 func TestWebSubmit_TheOtherGamesPlayWithIt(t *testing.T) {
-	for game, step := range map[string]string{"fist": autoStepJS, "fendo": fendoStepJS, "nyet": nyetStepJS, "mycelium": autoStepJS} {
+	for game, step := range map[string]string{"fist": autoStepJS, "fendo": fendoStepJS, "test-tricks": tricksStepJS, "mycelium": autoStepJS} {
 		t.Run(game, func(t *testing.T) {
 			baseURL := newRESTTestServer(t)
 			var created struct {

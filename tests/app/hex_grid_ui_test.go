@@ -109,7 +109,8 @@ func TestWebHexGrid_AnyHexGameCanUseIt(t *testing.T) {
 	setHexStyle(t, ctx, "grid")
 	waitJS(t, ctx, "the edges", `document.querySelectorAll("#board circle.cell-bg.edge-red").length > 0 && document.querySelectorAll("#board circle.cell-bg.edge-blue").length > 0`, 10*time.Second)
 
-	for _, def := range []string{"hive", "go-9x9"} {
+	// A free board (the Table fixture's) is no board to draw either way.
+	for _, def := range []string{"test-table", "go-9x9"} {
 		openNewGame(t, ctx, baseURL, def)
 		clickSel(t, ctx, "#open-options")
 		waitJS(t, ctx, def+": the options", `document.getElementById("opt-board") !== null`, 10*time.Second)

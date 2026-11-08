@@ -83,7 +83,7 @@ func TestWebBoardThemes_OnlyStoneGamesOfferThem(t *testing.T) {
 		def   string
 		offer bool
 	}{
-		{"hex-11", true}, {"yavalath", true}, {"yinsh", true}, {"go-9x9", true}, {"tak-5x5", true}, {"test-council", false}, {"hive", false},
+		{"hex-11", true}, {"yavalath", true}, {"go-9x9", true}, {"tak-5x5", true}, {"test-council", false}, {"test-table", false},
 	} {
 		var created struct {
 			RoomCode string `json:"room_code"`

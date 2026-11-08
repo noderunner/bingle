@@ -12,13 +12,13 @@ import (
 
 	"github.com/noderunner/bingle/internal/auth"
 	"github.com/noderunner/bingle/internal/engine/catalog"
-	"github.com/noderunner/bingle/internal/games/nyet"
 	"github.com/noderunner/bingle/internal/games/tak"
 	"github.com/noderunner/bingle/internal/session"
 	"github.com/noderunner/bingle/internal/store"
+	"github.com/noderunner/bingle/tests/testdata/tricks"
 )
 
-// bigTableManager has Nyet, whose tables seat three to five, and Tak for two seats.
+// bigTableManager has the Tricks fixture, whose tables seat three to five, and Tak for two seats.
 func bigTableManager(t *testing.T) (*session.Manager, *fakeClock) {
 	t.Helper()
 	st, err := store.Open(filepath.Join(t.TempDir(), "takeover.db"))
@@ -27,7 +27,7 @@ func bigTableManager(t *testing.T) (*session.Manager, *fakeClock) {
 	}
 	t.Cleanup(func() { _ = st.Close() })
 	cat := catalog.NewCatalog()
-	for _, mod := range []catalog.Module{nyet.Module(), tak.Module()} {
+	for _, mod := range []catalog.Module{tricks.Module(), tak.Module()} {
 		if err := cat.RegisterModule(mod); err != nil {
 			t.Fatal(err)
 		}
@@ -41,13 +41,13 @@ func bigTableManager(t *testing.T) (*session.Manager, *fakeClock) {
 
 var tableNames = []string{"Ann", "Ben", "Cal", "Dee", "Eve"}
 
-// table is a game of Nyet for len(names) with everybody seated, in the order of names.
+// table is a game of Tricks for len(names) with everybody seated, in the order of names.
 func table(t *testing.T, m *session.Manager, opts session.CreateOptions, names ...string) string {
 	t.Helper()
 	ctx := context.Background()
 	opts.CreatorName = names[0]
 	if opts.GameDefID == "" {
-		opts.GameDefID = map[int]string{3: "nyet-3", 4: "nyet", 5: "nyet-5"}[len(names)]
+		opts.GameDefID = map[int]string{3: "test-tricks-3", 4: "test-tricks", 5: "test-tricks-5"}[len(names)]
 	}
 	created, err := m.CreateGameWithOptions(ctx, opts)
 	if err != nil {
@@ -294,7 +294,7 @@ func TestVoteKick_IsFinal(t *testing.T) {
 	as := func(id string) context.Context {
 		return auth.WithPrincipal(ctx, auth.Principal{ID: id, Kind: store.KindGuest})
 	}
-	created, err := m.CreateGameWithOptions(as("ann"), session.CreateOptions{GameDefID: "nyet-3", CreatorName: "Ann", RealTime: realTime})
+	created, err := m.CreateGameWithOptions(as("ann"), session.CreateOptions{GameDefID: "test-tricks-3", CreatorName: "Ann", RealTime: realTime})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -360,7 +360,7 @@ func TestVoteKick_TheBanOfASeatNobodyOwned(t *testing.T) {
 func TestVoteKick_APersonWithSeveralSeats(t *testing.T) {
 	ctx := context.Background()
 	m, _ := bigTableManager(t)
-	room := table(t, m, session.CreateOptions{GameDefID: "nyet", RealTime: realTime, Also: []int{3}}, "Ann", "Ben", "Cal")
+	room := table(t, m, session.CreateOptions{GameDefID: "test-tricks", RealTime: realTime, Also: []int{3}}, "Ann", "Ben", "Cal")
 	connect(t, m, room, 4)
 	if _, err := m.VoteKick(ctx, room, "Ben", 3); err != nil {
 		t.Fatal(err)
@@ -453,10 +453,10 @@ func TestLargeTableClock_ChargesTheSeatToMove(t *testing.T) {
 func TestLargeTableClock_IsForTwoOrMore(t *testing.T) {
 	m, _ := bigTableManager(t)
 	ctx := context.Background()
-	if _, err := m.CreateGameWithOptions(ctx, session.CreateOptions{GameDefID: "nyet-3", CreatorName: "Ann", ClockSeconds: []int{60, 60}}); !errors.Is(err, session.ErrInvalidClock) {
+	if _, err := m.CreateGameWithOptions(ctx, session.CreateOptions{GameDefID: "test-tricks-3", CreatorName: "Ann", ClockSeconds: []int{60, 60}}); !errors.Is(err, session.ErrInvalidClock) {
 		t.Errorf("two times for three seats: %v", err)
 	}
-	created, err := m.CreateGameWithOptions(ctx, session.CreateOptions{GameDefID: "nyet-3", CreatorName: "Ann", ClockEach: 60})
+	created, err := m.CreateGameWithOptions(ctx, session.CreateOptions{GameDefID: "test-tricks-3", CreatorName: "Ann", ClockEach: 60})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -188,8 +188,8 @@ func TestWebFitScreen_TheTutorialIsBesideTheBoard(t *testing.T) {
 	})()`, 5*time.Second)
 }
 
-// Every kind of game gets this page: a board and a hand, a board that grows, a board with
-// cards to choose from, a table of cards, a game of patience and a map.
+// Every kind of game gets this page: a board and a hand, a board that grows, a table of
+// cards, a game of patience and a map.
 func TestWebFitScreen_EveryKindOfGameFits(t *testing.T) {
 	base := newRESTTestServer(t)
 	ctx, cancel := newChromedpContext(t, 150*time.Second)
@@ -201,10 +201,9 @@ func TestWebFitScreen_EveryKindOfGameFits(t *testing.T) {
 		pinned string // what the player chooses from goes in the actions card
 	}{
 		{"tak-5x5", false, "#board svg", "#impulse-card .hand button"},
-		{"hive-base", false, "#board svg", "#impulse-card .hand button"},
-		{"onitama", false, "#board svg", "#impulse-card #cards-panel"},
+		{"test-table", false, "#board svg", "#impulse-card .hand button"},
 		{"go-9x9", false, "#board svg", "#impulse-card"},
-		{"nyet", false, ".card-table", "#impulse-card"},
+		{"test-tricks", false, ".card-table", "#impulse-card"},
 		{"spider", true, ".sol-table", "#impulse-card"},
 		{"test-council", false, "#board svg", "#impulse-card .action-buttons"},
 	} {
@@ -241,27 +240,43 @@ func TestWebFitScreen_EveryKindOfGameFits(t *testing.T) {
 	}
 }
 
+// tileStepJS lays a tile of the Table fixture (tests/testdata/table): a tile of the hand
+// first, then a space to lay it on. (The middle of an empty table can be clicked before a
+// tile is chosen, so the tile comes first.)
+const tileStepJS = `(function () {
+	if (!document.querySelector("#impulse-card.acting")) return "wait";
+	function click(el, what) {
+		el.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+		return what;
+	}
+	var tile = document.querySelector(".hand-piece.choosable");
+	if (tile && !document.querySelector(".hand-piece.chosen")) return click(tile, "tile");
+	var cell = document.querySelector("#board .cell.clickable");
+	if (cell) return click(cell, "cell");
+	return "stuck";
+})()`
+
 // A board that grows as tiles are laid keeps its shape, or the columns would move at each turn.
-func TestWebFitScreen_ColumnsStayPutAsHiveGrows(t *testing.T) {
+func TestWebFitScreen_ColumnsStayPutAsTheTableGrows(t *testing.T) {
 	base := newRESTTestServer(t)
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
 	var created struct {
 		RoomCode string `json:"room_code"`
 	}
-	if code := doJSON(t, "POST", base+"/api/games", map[string]any{"game_def_id": "hive-base", "player_name": "Alice", "opponent": "random"}, &created); code != 200 {
+	if code := doJSON(t, "POST", base+"/api/games", map[string]any{"game_def_id": "test-table", "player_name": "Alice", "opponent": "random"}, &created); code != 200 {
 		t.Fatalf("create: %d", code)
 	}
 	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1366, 768)); err != nil {
 		t.Fatal(err)
 	}
-	openGameAs(t, ctx, base, created.RoomCode, "hive-base", "Alice")
+	openGameAs(t, ctx, base, created.RoomCode, "test-table", "Alice")
 	left := `Math.round(document.getElementById("play-rail").getBoundingClientRect().left)`
 	waitJS(t, ctx, "a tile", `document.querySelector(".hand-piece.choosable") !== null`, 15*time.Second)
 	before := evalInt(t, ctx, left)
-	evalBool(t, ctx, hiveStepJS+` !== null`)
+	evalBool(t, ctx, tileStepJS+` !== null`)
 	waitJS(t, ctx, "the cell", `document.querySelector("#board .cell.clickable") !== null`, 10*time.Second)
-	evalBool(t, ctx, hiveStepJS+` !== null`)
+	evalBool(t, ctx, tileStepJS+` !== null`)
 	for deadline := time.Now().Add(20 * time.Second); cfGet(t, base, created.RoomCode).MoveSeq < 2 && time.Now().Before(deadline); {
 		time.Sleep(200 * time.Millisecond)
 	}

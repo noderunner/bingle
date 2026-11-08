@@ -1,0 +1,7 @@
+# How the web page draws Table (tests/testdata/table, ADR 0124): a free board,
+# only the tiles and the spaces they may go to, and rings and markers.
+board:
+  style: free
+pieces:
+  ring: {shape: donut}
+  marker: {shape: chip}

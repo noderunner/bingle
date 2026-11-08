@@ -85,8 +85,8 @@ func TestWebActiveGames_TheXLeavesAWaitingGameAsItIs(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	room := gameOfThisBrowser(t, ctx, baseURL, `{game_def_id: "nyet", player_name: "Ana", lobby: true}`)
-	openActiveGames(t, ctx, baseURL, "Ana", map[string]string{room: "nyet"})
+	room := gameOfThisBrowser(t, ctx, baseURL, `{game_def_id: "test-tricks", player_name: "Ana", lobby: true}`)
+	openActiveGames(t, ctx, baseURL, "Ana", map[string]string{room: "test-tricks"})
 	row := `document.querySelector('#my-games li[data-code="` + room + `"]')`
 	waitJS(t, ctx, "the row", row+` !== null`, 10*time.Second)
 	evalBool(t, ctx, `(window.confirm = () => true, `+row+`.querySelector("button.icon").click(), true)`)
@@ -107,23 +107,23 @@ func TestWebActiveGames_TheXLeavesAWaitingGameAsItIs(t *testing.T) {
 // The setup of a game lists the games of that game, each to watch.
 func TestWebSetup_ActiveGamesListsThatGamesGames(t *testing.T) {
 	baseURL := newRESTTestServer(t)
-	nyet := func(name string) string {
+	table := func(name string) string {
 		var made struct {
 			RoomCode string `json:"room_code"`
 		}
-		if code := doJSON(t, "POST", baseURL+"/api/games", map[string]any{"game_def_id": "nyet", "player_name": name, "lobby": true}, &made); code != 200 {
+		if code := doJSON(t, "POST", baseURL+"/api/games", map[string]any{"game_def_id": "test-tricks", "player_name": name, "lobby": true}, &made); code != 200 {
 			t.Fatalf("create: %d", code)
 		}
 		return made.RoomCode
 	}
-	room := nyet("Bo")
+	room := table("Bo")
 	other := botRoom(t, baseURL, "Cy")
-	if got := listOpenGames(t, baseURL, "?family=nyet"); len(got) != 1 || got[0].RoomCode != room {
-		t.Errorf("?family=nyet lists %+v", got)
+	if got := listOpenGames(t, baseURL, "?family=test-tricks"); len(got) != 1 || got[0].RoomCode != room {
+		t.Errorf("?family=test-tricks lists %+v", got)
 	}
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/?game=nyet")); err != nil {
+	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/?game=test-tricks")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the setup", `document.getElementById("setup-tab-active") !== null && !document.getElementById("game-setup").hidden`, 20*time.Second)
@@ -150,7 +150,7 @@ func TestWebJoin_ListsTheTablesWaitingForPlayers(t *testing.T) {
 	var lobby struct {
 		RoomCode string `json:"room_code"`
 	}
-	if code := doJSON(t, "POST", baseURL+"/api/games", map[string]any{"game_def_id": "nyet", "player_name": "Bo", "lobby": true}, &lobby); code != 200 {
+	if code := doJSON(t, "POST", baseURL+"/api/games", map[string]any{"game_def_id": "test-tricks", "player_name": "Bo", "lobby": true}, &lobby); code != 200 {
 		t.Fatalf("create: %d", code)
 	}
 	playing := botRoom(t, baseURL, "Cy")

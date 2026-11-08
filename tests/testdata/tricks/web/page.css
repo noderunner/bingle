@@ -1,0 +1,13 @@
+/* Tricks' stylesheet (tests/testdata/tricks): its board's pictures and its players' discs. */
+.tricks-icon { flex: none; overflow: visible; }
+.tricks-icon text { fill: currentColor; font-family: system-ui, sans-serif; font-weight: 700; }
+.tricks-icon.ti-points circle { fill: #f4d36a; stroke: #8a6b0f; stroke-width: 1.6; }
+.tricks-icon.ti-points text { fill: #3a2c04; }
+.tricks-seat { flex: none; vertical-align: middle; }
+.tricks-seat circle { fill: var(--piece-white-fill); stroke: var(--piece-white-stroke); stroke-width: 1.5; }
+.tricks-seat.color-red circle { fill: var(--piece-red-fill); stroke: var(--piece-red-stroke); }
+.tricks-seat.color-blue circle { fill: var(--piece-blue-fill); stroke: var(--piece-blue-stroke); }
+.tricks-seat.color-green circle { fill: var(--piece-green-fill); stroke: var(--piece-green-stroke); }
+.tricks-seat.color-yellow circle { fill: var(--piece-yellow-fill); stroke: var(--piece-yellow-stroke); }
+.tricks-seat.color-orange circle { fill: var(--piece-orange-fill); stroke: var(--piece-orange-stroke); }
+.tricks-seat text { fill: #fff; font: 700 16px system-ui, sans-serif; }

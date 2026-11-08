@@ -1,0 +1,47 @@
+# Table: a game only the tests play (tests/testdata/table). It is the public
+# suite's vehicle for what only commercial board games used to exercise: tiles
+# laid from a hand onto a table with no board, which grows as they are laid,
+# and the ring and marker shapes.
+id: test-table
+name: Table
+description: "A test fixture: lay rings and markers in the middle of the table, then grow your colony outward one tile at a time."
+version: 0.1.0
+rules:
+  - Each player has two rings and two markers in hand. On your turn, lay one from your hand on an empty space in the middle of the table, or grow one of your tiles onto an empty space next to it (the tile stays, and a copy of it fills the space).
+  - A player with no move passes. When neither player can move, the player with more rings wins; equal rings are a draw.
+board:
+  generator: {type: hexhex, size: 5}
+  regions:
+    middle: [e5, e4, f4, d5, f5, e6, d6]
+seats:
+  - {seat: 1, color: white, label: White}
+  - {seat: 2, color: black, label: Black}
+reserves: {ring: 2, marker: 2}
+pieces:
+  ring: {label: Ring, code: R}
+  marker: {label: Marker, code: M}
+turn_order:
+  type: round-robin
+  seats: [1, 2]
+  pass_when_stuck: true
+actions:
+  - id: lay
+    type: place
+    label: Lay a tile
+    pieces: [ring, marker]
+    source: reserve
+    region: middle
+  - id: grow
+    type: leap
+    label: Grow
+    pieces: [ring, marker]
+    max_distance: 1
+    clone_distance: 1
+win_condition:
+  type: rules
+  rules:
+    - id: count
+      type: end
+      when: [no-legal-moves]
+      decide: {type: most, piece: ring}
+      reason: count
