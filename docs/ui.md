@@ -750,7 +750,8 @@ family and hands its exports to the page as `info.page`; shared code asks it for
 game alone (`info.page.seatGlyph(label)`) and names no game. A game's scripts import the page's own
 modules by absolute path (`/static/js/util.js`), so each is loaded once. A look may name `style` too, a
 stylesheet among the same `Scripts`, which `look.pageOf` links once beside the script: the rules for what the
-script draws stay with it. Hive (`hive/web/`: its insect tiles, through `render.addPieceShapes`), Nyet!
+script draws stay with it. Hive (`hive/web/`: its insect tiles, through `render.addPieceShapes`), Onitama (`onitama/web/`: its
+Move cards), Nyet!
 (`nyet/web/`: its animals and the pictures of its board of terms), Solitaire (its list picture), Council (the
 tests' fixture) and Cthulhu Wars (`cthulhuwars/web/` in the private overlay, ADR 0127; `page.js` and its
 `cw-*.js`) have scripts. What a `page.js` exports, and who asks:
@@ -759,6 +760,7 @@ tests' fixture) and Cthulhu Wars (`cthulhuwars/web/` in the private overlay, ADR
 |---|---|
 | `seatGlyph(label)` | `game.js`, beside a seat's name |
 | `seatIcon(label, {color, size, title})` | `game.js` and `cards.js`: the player's picture in place of the seat's swatch, and under a trick's cards |
+| `choicePanel(ctx)` | `game.js`: what the player chooses from beside the actions, drawn from the game's own view (Onitama's Move cards); `ctx` is `viewContext()` |
 | `choiceIcon(desc, ctx, size)` | `cards.js`, the boxes and lines of a board of choices (their words without it) |
 | `renderAreaMap(host, info, view, handlers)` | `render.js`, for an `areas` board |
 | `mapKey(info)`, `legendMarker(kind, arg, info)` | `rules.js`, the key to the map |
