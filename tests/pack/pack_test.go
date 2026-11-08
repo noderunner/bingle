@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/noderunner/bingle/internal/engine/catalog"
+	"github.com/noderunner/bingle/internal/engine/dsl"
 	"github.com/noderunner/bingle/internal/pack"
 )
 
@@ -279,6 +280,23 @@ func TestRead_TheLimits(t *testing.T) {
 		many[fmt.Sprintf("guide/%d.md", i)] = []byte("x")
 	}
 	refused(t, "too many files", many, "entries")
+}
+
+// Each variant is a whole copy of the definition, so their number is limited too.
+func TestRead_TooManyVariants(t *testing.T) {
+	var b strings.Builder
+	b.WriteString(goodDefinition)
+	for i := range dsl.MaxVariants + 1 {
+		fmt.Fprintf(&b, "  - {id: lines-v%d}\n", i)
+	}
+	files := with("game.yaml", b.String())
+	files["web.yaml"] = []byte("pieces:\n  stone: {shape: disc}\n")
+	refused(t, "too many variants", files, "over the limit")
+}
+
+func TestRead_ADefinitionTooLong(t *testing.T) {
+	long := strings.Replace(goodDefinition, "rules:\n", "rules:\n  - "+strings.Repeat("a", pack.MaxDefinitionBytes)+"\n", 1)
+	refused(t, "a long definition", with("game.yaml", long), "over the limit")
 }
 
 // YAML that expands to a great deal, or includes itself, is the loader's limit.

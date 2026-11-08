@@ -27,7 +27,7 @@ guide/line.png
 `color` has to be a colour: a name, a hex value, or `rgb()` or `hsl()`.
 
 The zip holds YAML, Markdown and pictures (PNG, JPEG, GIF, WebP, SVG), with no links. It may be 20 MB, and unpack
-to 40 MB in 300 files of 8 MB at most.
+to 40 MB in 300 files of 8 MB at most. A definition may come to 1 MiB and declare 64 variants.
 
 ## Versions
 

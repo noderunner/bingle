@@ -56,7 +56,10 @@ const (
 	MaxFileBytes  = 8 << 20  // one file, unpacked
 	MaxTotalBytes = 40 << 20 // every file, unpacked
 	MaxFiles      = 300
-	maxNameLen    = 40
+	// MaxDefinitionBytes limits the definition with its includes and aliases
+	// expanded: each of its variants is a whole copy of it.
+	MaxDefinitionBytes = 1 << 20
+	maxNameLen         = 40
 )
 
 // The trial game each of a pack's games is played before it is accepted.
@@ -202,6 +205,9 @@ func build(files fs.FS) (*Pack, error) {
 			return nil, fmt.Errorf("no %s at the root of the zip", DefinitionFile)
 		}
 		return nil, fmt.Errorf("%s: %w", DefinitionFile, err)
+	}
+	if len(raw) > MaxDefinitionBytes {
+		return nil, fmt.Errorf("%s comes to %d bytes, over the limit of %d", DefinitionFile, len(raw), MaxDefinitionBytes)
 	}
 	var doc map[string]any
 	if err := json.Unmarshal(raw, &doc); err != nil {
