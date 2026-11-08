@@ -522,10 +522,16 @@ func (rs *Ruleset) Gestures(game *catalog.CompiledGame, mv state.Selection) []st
 
 // Describe says how the game is won and written, for clients.
 func (rs *Ruleset) Describe(game *catalog.CompiledGame) state.RulesetInfo {
-	return state.RulesetInfo{
+	info := state.RulesetInfo{
 		WinRules:     []string{"When every card is played, each player scores their tricks times the points of the round; the most points wins, and equal points are a draw."},
 		NotationHelp: []string{"Crossing a box of the board of terms: cross:trump:red, cross:points:2. Playing a card is its name, colour-value: blue-7."},
 	}
+	if st, err := rs.Start(game, 0); err == nil {
+		if moves := rs.Legal(game, st, rs.ImpulseSeat(game, st)); len(moves) > 0 {
+			info.NotationHelp = append(info.NotationHelp, "Example of a legal first move: '"+rs.Format(game, moves[0])+"'.")
+		}
+	}
+	return info
 }
 
 // --- hidden information --------------------------------------------------------
