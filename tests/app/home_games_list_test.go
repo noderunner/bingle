@@ -35,7 +35,7 @@ func TestHomeGames_ListShowsBetaPlayersAndADetailsCard(t *testing.T) {
 	if n := evalInt(t, ctx, `document.querySelectorAll(".game-card").length - document.querySelectorAll(".game-card .badge.beta, .game-card .badge.prototype").length`); n != 0 {
 		t.Errorf("%d games have neither a Beta nor a Prototype mark", n)
 	}
-	for family, want := range map[string]string{"tak-5x5": "2 players", "nyet": "2–5 players", "hive": "2 players"} {
+	for family, want := range map[string]string{"tak-5x5": "2 players", "test-tricks": "3–5 players", "test-table": "2 players"} {
 		got := evalString(t, ctx, fmt.Sprintf(`(function(){ var e = document.querySelector('.game-card[data-family=%q] .game-card-players'); return e ? e.textContent : "" })()`, family))
 		if got != want {
 			t.Errorf("%s: players = %q, want %q", family, got, want)
@@ -44,11 +44,11 @@ func TestHomeGames_ListShowsBetaPlayersAndADetailsCard(t *testing.T) {
 	if got := evalString(t, ctx, `document.querySelector('.game-card[data-family="tak-5x5"] .badge.beta').getAttribute("title")`); !strings.Contains(got, "0.1.1") {
 		t.Errorf("the Beta mark does not say the version: %q", got)
 	}
-	// Council and Hive draw pictures of their own in their page scripts: four houses, and a cluster of tiles.
+	// Council and Solitaire draw pictures of their own in their page scripts: four houses, and columns of cards.
 	waitJS(t, ctx, "Council's picture", `document.querySelector('.game-card[data-family="test-council"] .game-card-preview svg.council-icon') !== null`, 15*time.Second)
 	// Its stylesheet is linked with the script, and its rule reaches the picture.
 	waitJS(t, ctx, "Council's stylesheet", `getComputedStyle(document.querySelector('svg.council-icon')).outlineColor === "rgb(201, 162, 39)"`, 15*time.Second)
-	waitJS(t, ctx, "the Hive tiles", `document.querySelectorAll('.game-card[data-family="hive"] .game-card-preview svg .piece').length >= 5`, 15*time.Second)
+	waitJS(t, ctx, "the Solitaire cards", `document.querySelectorAll('.game-card[data-family="solitaire"] .game-card-preview svg rect').length >= 5`, 15*time.Second)
 	// Hovering over a game shows its name, designers, publisher and description.
 	hover := func(sel string) {
 		var x, y float64
@@ -122,11 +122,9 @@ func TestHomeGames_EmptyStartsShowASampleGame(t *testing.T) {
 	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/"), chromedp.WaitVisible(`.game-card[data-family="tak-5x5"]`, chromedp.ByQuery)); err != nil {
 		t.Fatal(err)
 	}
-	for _, family := range []string{"gomoku", "yavalath", "go-9x9", "hex-11", "havannah-8", "pente", "connect-four", "tic-tac-toe", "tak-5x5", "blooms", "yinsh", "courtfall", "meridians"} {
+	for _, family := range []string{"gomoku", "yavalath", "go-9x9", "hex-11", "havannah-8", "pente", "connect-four", "tic-tac-toe", "tak-5x5", "blooms", "courtfall", "meridians"} {
 		waitJS(t, ctx, family+": pieces on the card", fmt.Sprintf(`document.querySelectorAll('.game-card[data-family=%q] .game-card-preview svg .piece').length >= 4`, family), 20*time.Second)
 	}
-	// Nyet! has no board: a picture of cards.
-	waitJS(t, ctx, "the Nyet! cards", `document.querySelectorAll('.game-card[data-family="nyet"] .game-card-preview svg rect').length >= 5`, 10*time.Second)
 	// The setup page shows the same sample.
 	clickSel(t, ctx, `.game-card[data-family="gomoku"]`)
 	waitJS(t, ctx, "the setup preview", `document.querySelectorAll('#setup-preview svg .piece').length >= 6`, 10*time.Second)

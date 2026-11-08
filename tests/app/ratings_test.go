@@ -90,7 +90,7 @@ func TestRatedGames_API(t *testing.T) {
 		"no clock":    {"game_def_id": "yavalath", "player_name": "ana", "rated": true},
 		"a bot":       {"game_def_id": "yavalath", "player_name": "ana", "clock_seconds": 600, "rated": true, "opponent": "random"},
 		"a handicap":  {"game_def_id": "yavalath", "player_name": "ana", "clock_seconds": []int{60, 600}, "rated": true},
-		"a big table": {"game_def_id": "nyet", "player_name": "ana", "rated": true},
+		"a big table": {"game_def_id": "test-tricks", "player_name": "ana", "rated": true},
 	} {
 		if code := ana.do("POST", "/api/games", body, nil); code != 400 {
 			t.Errorf("%s: %d, want 400", name, code)
@@ -187,7 +187,7 @@ func TestRatedGames_UI(t *testing.T) {
 	ctx, cancel := newChromedpContext(t, 120*time.Second)
 	defer cancel()
 	signInChrome(t, ctx, base, ana.cookie(auth.SessionCookie))
-	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1400, 1000), chromedp.Navigate(base+"/?game=nyet")); err != nil {
+	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1400, 1000), chromedp.Navigate(base+"/?game=test-tricks")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the setup of a big table", `document.getElementById("clock-field").hidden === true`, 20*time.Second)

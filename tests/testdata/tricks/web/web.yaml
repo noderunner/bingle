@@ -1,0 +1,15 @@
+# How the web page draws Tricks (tests/testdata/tricks, ADR 0124), and its page
+# script and stylesheet: the tests' vehicle for a board of choices drawn in
+# pictures and players with pictures of their own.
+board:
+  style: none
+pieces:
+  token: {shape: disc}
+cards:
+  back: {color: '#2f5f8a', text: TRICKS}
+  zones:
+    hand: {layout: fan}
+    trick: {layout: row}
+    last: {layout: row}
+script: page.js
+style: page.css

@@ -56,7 +56,7 @@ func TestOpenGames_ListsEveryUnfinishedGame(t *testing.T) {
 	// Waiting for an opponent.
 	waiting := create(map[string]any{"game_def_id": "tic-tac-toe", "player_name": "Ana"})
 	// A table of four waiting in a lobby, two seats taken.
-	lobby := create(map[string]any{"game_def_id": "nyet", "player_name": "Bo", "lobby": true, "also_seats": []int{2}})
+	lobby := create(map[string]any{"game_def_id": "test-tricks", "player_name": "Bo", "lobby": true, "also_seats": []int{2}})
 	// A game under way against a bot.
 	playing := create(map[string]any{"game_def_id": "tic-tac-toe", "player_name": "Cy", "opponent": "random"})
 	// And one that is over.

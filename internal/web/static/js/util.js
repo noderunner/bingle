@@ -90,6 +90,18 @@ export function rememberGame(code, def, name) {
 	store.set("bingle.name", name);
 }
 
+/**
+ * Remembers a game this browser learned of from the server (a game of its guest
+ * key or account started elsewhere): after the games it already remembers, so a
+ * long list never pushes out a game the browser is playing, such as the one open.
+ */
+export function rememberOlderGame(code, def, name) {
+	const list = rememberedGames();
+	if (list.some((g) => g.code === code) || list.length >= 30) return;
+	list.push({ code, def, name, ts: 0 });
+	store.set(GAMES_KEY, list);
+}
+
 export function forgetGame(code) {
 	store.set(GAMES_KEY, rememberedGames().filter((g) => g.code !== code));
 	store.set(FORGOTTEN_KEY, [code, ...forgottenGames()].slice(0, 100));

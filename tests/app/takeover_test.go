@@ -37,10 +37,10 @@ type takeoverGame struct {
 	} `json:"real_time"`
 }
 
-func threeAtNyet(t *testing.T, base string, extra map[string]any) string {
+func threeAtTricks(t *testing.T, base string, extra map[string]any) string {
 	t.Helper()
 	var created createGameResponse
-	body := map[string]any{"game_def_id": "nyet-3", "player_name": "Ann"}
+	body := map[string]any{"game_def_id": "test-tricks-3", "player_name": "Ann"}
 	for k, v := range extra {
 		body[k] = v
 	}
@@ -54,7 +54,7 @@ func threeAtNyet(t *testing.T, base string, extra map[string]any) string {
 
 func TestRESTVoteKick(t *testing.T) {
 	base := newRESTTestServer(t)
-	room := threeAtNyet(t, base, map[string]any{"real_time": map[string]any{}})
+	room := threeAtTricks(t, base, map[string]any{"real_time": map[string]any{}})
 	vote := func(name string, seat int) int {
 		return doJSON(t, "POST", base+"/api/games/"+room+"/kick-vote", map[string]any{"player_name": name, "seat": seat}, nil)
 	}
@@ -89,7 +89,7 @@ func TestRESTVoteKick(t *testing.T) {
 // One number gives every seat its time, whatever the table.
 func TestRESTClock_OneTimeForAll(t *testing.T) {
 	base := newRESTTestServer(t)
-	room := threeAtNyet(t, base, map[string]any{"clock_seconds": 600})
+	room := threeAtTricks(t, base, map[string]any{"clock_seconds": 600})
 	var g takeoverGame
 	doJSON(t, "GET", base+"/api/games/"+room, nil, &g)
 	if g.Clock == nil || len(g.Clock.Seats) != 3 {
@@ -99,7 +99,7 @@ func TestRESTClock_OneTimeForAll(t *testing.T) {
 
 func TestMCPVoteKick_SaysWhyWithNoSocket(t *testing.T) {
 	base := newRESTTestServer(t)
-	room := threeAtNyet(t, base, map[string]any{"real_time": map[string]any{}})
+	room := threeAtTricks(t, base, map[string]any{"real_time": map[string]any{}})
 	c := newMCPClient(t, base)
 	res := callTool(t, c, "vote_kick", map[string]any{"room_code": room, "player_name": "Ann", "seat": 2})
 	if !res.IsError {
@@ -141,7 +141,7 @@ func TestWebClock_TheSetupOfALargeTable(t *testing.T) {
 	base := newRESTTestServer(t)
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/?game=nyet-3"), chromedp.WaitVisible(`#create-submit`, chromedp.ByQuery)); err != nil {
+	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/?game=test-tricks-3"), chromedp.WaitVisible(`#create-submit`, chromedp.ByQuery)); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the clock is offered", `document.getElementById("clock-field").hidden === false`, 10*time.Second)
@@ -168,7 +168,7 @@ func TestWebClock_TheSetupOfALargeTable(t *testing.T) {
 // the player left watching.
 func TestWebVoteKick(t *testing.T) {
 	base := newRESTTestServer(t)
-	room := threeAtNyet(t, base, map[string]any{"real_time": map[string]any{}})
+	room := threeAtTricks(t, base, map[string]any{"real_time": map[string]any{}})
 
 	// Ann and Ben each move first, so that the record has something of Ben's.
 	for _, name := range []string{"Ann", "Ben"} {
@@ -179,13 +179,13 @@ func TestWebVoteKick(t *testing.T) {
 
 	annCtx, cancelA := newChromedpContext(t, 120*time.Second)
 	defer cancelA()
-	openGameAs(t, annCtx, base, room, "nyet-3", "Ann")
+	openGameAs(t, annCtx, base, room, "test-tricks-3", "Ann")
 	benCtx, cancelB := newChromedpContext(t, 120*time.Second)
 	defer cancelB()
-	openGameAs(t, benCtx, base, room, "nyet-3", "Ben")
+	openGameAs(t, benCtx, base, room, "test-tricks-3", "Ben")
 	calCtx, cancelC := newChromedpContext(t, 120*time.Second)
 	defer cancelC()
-	openGameAs(t, calCtx, base, room, "nyet-3", "Cal")
+	openGameAs(t, calCtx, base, room, "test-tricks-3", "Cal")
 
 	button := `document.querySelector('#seat-2 .seat-kick')`
 	waitJS(t, annCtx, "Ann can start a vote", button+` && !`+button+`.hidden`, 15*time.Second)

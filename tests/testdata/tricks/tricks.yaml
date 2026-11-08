@@ -1,0 +1,85 @@
+# Tricks: a game only the tests play (tests/testdata/tricks). It is the public
+# suite's vehicle for what only a commercial card game used to exercise: a
+# table of three to five, hands only their owner sees, a board of choices
+# crossed off in turn, tricks, and a deck plain enough to wear a set of cards.
+id: test-tricks
+name: Tricks
+description: "A test fixture: four players cross off the trump suit and what a trick is worth, then play out their hands in tricks."
+version: 0.1.0
+engine: ruleset
+rules:
+  - 'The deck has 32 cards: the values 1 to 8 in the four classic suits. Every player is dealt 8 cards (6 with five players); the rest stay face down.'
+  - 'First the players cross off the board of terms in turn, starting with the first player: one box a turn, on a line that still has two or more boxes open, until every line has one box left. The box left on the Trump line is the trump suit, and the one left on the Points line what a trick is worth.'
+  - 'Then the tricks: the first player leads, and play goes round. You must follow the suit led if you can. The highest trump takes the trick, or the highest card of the suit led when nobody played a trump. The winner leads the next trick.'
+  - 'When the hands are played out every player scores their tricks times the points of the round, and the most points wins; equal points are a draw.'
+params: {hand: 8}
+board:
+  generator: {type: grid, width: 1, height: 1, adjacency: orthogonal4}
+seats:
+  - {seat: 1, color: red, label: North}
+  - {seat: 2, color: blue, label: East}
+  - {seat: 3, color: green, label: South}
+  - {seat: 4, color: yellow, label: West}
+pieces:
+  token: {label: Token, code: T}
+turn_order:
+  type: round-robin
+  seats: [1, 2, 3, 4]
+win_condition: {type: ruleset}
+cards:
+  suits:
+    red: {label: Hearts, symbol: ♥}
+    blue: {label: Spades, symbol: ♠}
+    yellow: {label: Diamonds, symbol: ♦}
+    green: {label: Clubs, symbol: ♣}
+  suit_order: [red, blue, yellow, green]
+  decks:
+    main:
+      label: Tricks deck
+      ranks:
+        - {id: "1", value: 1, count: 1}
+        - {id: "2", value: 2, count: 1}
+        - {id: "3", value: 3, count: 1}
+        - {id: "4", value: 4, count: 1}
+        - {id: "5", value: 5, count: 1}
+        - {id: "6", value: 6, count: 1}
+        - {id: "7", value: 7, count: 1}
+        - {id: "8", value: 8, count: 1}
+  zones:
+    - id: deck
+      label: Deck
+      scope: table
+      visibility: none
+      pile: true
+      counts: true
+    - {id: hand, label: Hand, scope: seat, visibility: owner}
+    - {id: trick, label: The trick, scope: table, visibility: flag}
+    - {id: last, label: Last trick, scope: table, visibility: all}
+    - id: won
+      label: Tricks won
+      scope: seat
+      visibility: none
+      pile: true
+      counts: true
+variants:
+  - id: test-tricks-3
+    name: Tricks (3 players)
+    patch:
+      seats:
+        - {seat: 1, color: red, label: North}
+        - {seat: 2, color: blue, label: East}
+        - {seat: 3, color: green, label: South}
+      turn_order:
+        seats: [1, 2, 3]
+  - id: test-tricks-5
+    name: Tricks (5 players)
+    patch:
+      seats:
+        - {seat: 1, color: red, label: North}
+        - {seat: 2, color: blue, label: East}
+        - {seat: 3, color: green, label: South}
+        - {seat: 4, color: yellow, label: West}
+        - {seat: 5, color: orange, label: Centre}
+      turn_order:
+        seats: [1, 2, 3, 4, 5]
+      params: {hand: 6}

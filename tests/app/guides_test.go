@@ -20,8 +20,7 @@ func TestGuides_EveryAbstractGameShipsItsRulesAndPictures(t *testing.T) {
 		"draughts": rules, "breakthrough": rules, "reversi": rules, "go-9x9": rules, "go-19x19": rules,
 		"yavalath": rules, "havannah-8": rules, "havannah-4": rules, "amazons": rules, "amazons-6": rules,
 		"ataxx": rules, "pente": rules, "brandubh": rules, "blooms": rules, "blooms-4": rules,
-		"fendo": rules, "fendo-9": rules, "yinsh": rules, "yinsh-blitz": rules,
-		"onitama": {"rules", "cards"},
+		"fendo": rules, "fendo-9": rules,
 	}
 	image := regexp.MustCompile(`!\[[^\]]*\]\(([^)\s]+)`)
 	for id, wantTabs := range cases {

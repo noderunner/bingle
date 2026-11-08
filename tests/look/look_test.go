@@ -127,14 +127,14 @@ func TestLoadChecksEveryKey(t *testing.T) {
 
 // A zone's layout is the look's, and one the page does not draw is caught.
 func TestCheckCatchesAZoneLayout(t *testing.T) {
-	f := families(t)["nyet"]
-	if err := look.Check([]byte(`{"cards":{"zones":{"hand":{"layout":"fan"}}}}`), "nyet", f.games); err != nil {
+	f := families(t)["solitaire"]
+	if err := look.Check([]byte(`{"cards":{"zones":{"waste":{"layout":"fan"}}}}`), "solitaire", f.games); err != nil {
 		t.Error(err)
 	}
-	if err := look.Check([]byte(`{"cards":{"zones":{"hand":{"layout":"heap"}}}}`), "nyet", f.games); err == nil || !strings.Contains(err.Error(), `unknown layout "heap"`) {
+	if err := look.Check([]byte(`{"cards":{"zones":{"waste":{"layout":"heap"}}}}`), "solitaire", f.games); err == nil || !strings.Contains(err.Error(), `unknown layout "heap"`) {
 		t.Errorf("a bad layout: %v", err)
 	}
-	if err := look.Check([]byte(`{"cards":{"zones":{"pocket":{}}}}`), "nyet", f.games); err == nil {
+	if err := look.Check([]byte(`{"cards":{"zones":{"pocket":{}}}}`), "solitaire", f.games); err == nil {
 		t.Error("a zone the game lacks was accepted")
 	}
 }

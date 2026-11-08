@@ -9,7 +9,9 @@ import (
 
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/engine/dsl"
+	"github.com/noderunner/bingle/internal/web/look"
 	"github.com/noderunner/bingle/tests/testdata/council"
+	"github.com/noderunner/bingle/tests/testdata/tricks"
 )
 
 //go:embed freeplay.json
@@ -47,7 +49,22 @@ func ConnectFour() catalog.Module {
 	return catalog.Module{ID: "connect-four", Definition: connectFour()}
 }
 
+//go:embed table
+var tableFS embed.FS
+
+var table = sync.OnceValue(func() []byte { return dsl.MustLoad(tableFS, "table/table.yaml") })
+
+// TableID is the id of the Table fixture.
+const TableID = "test-table"
+
+// Table is a small game of tiles laid on a table with no board, which grows
+// as they are laid (the board style "free"), with the ring and marker shapes:
+// the public suite's vehicle for what only Hive and Yinsh drew.
+func Table() catalog.Module {
+	return catalog.Module{ID: TableID, Definition: table(), Web: look.MustLoadFile(tableFS, "table/web.yaml")}
+}
+
 // Fixtures are every game only the tests use.
 func Fixtures() []catalog.Module {
-	return []catalog.Module{Freeplay(), TicTacToe(), ConnectFour(), council.Module()}
+	return []catalog.Module{Freeplay(), TicTacToe(), ConnectFour(), council.Module(), tricks.Module(), Table()}
 }

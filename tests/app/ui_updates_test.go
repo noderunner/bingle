@@ -5,6 +5,7 @@ package app_test
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"strings"
 	"testing"
@@ -85,8 +86,8 @@ func TestWebActiveGames_TheXLeavesAWaitingGameAsItIs(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	room := gameOfThisBrowser(t, ctx, baseURL, `{game_def_id: "nyet", player_name: "Ana", lobby: true}`)
-	openActiveGames(t, ctx, baseURL, "Ana", map[string]string{room: "nyet"})
+	room := gameOfThisBrowser(t, ctx, baseURL, `{game_def_id: "test-tricks", player_name: "Ana", lobby: true}`)
+	openActiveGames(t, ctx, baseURL, "Ana", map[string]string{room: "test-tricks"})
 	row := `document.querySelector('#my-games li[data-code="` + room + `"]')`
 	waitJS(t, ctx, "the row", row+` !== null`, 10*time.Second)
 	evalBool(t, ctx, `(window.confirm = () => true, `+row+`.querySelector("button.icon").click(), true)`)
@@ -107,23 +108,23 @@ func TestWebActiveGames_TheXLeavesAWaitingGameAsItIs(t *testing.T) {
 // The setup of a game lists the games of that game, each to watch.
 func TestWebSetup_ActiveGamesListsThatGamesGames(t *testing.T) {
 	baseURL := newRESTTestServer(t)
-	nyet := func(name string) string {
+	table := func(name string) string {
 		var made struct {
 			RoomCode string `json:"room_code"`
 		}
-		if code := doJSON(t, "POST", baseURL+"/api/games", map[string]any{"game_def_id": "nyet", "player_name": name, "lobby": true}, &made); code != 200 {
+		if code := doJSON(t, "POST", baseURL+"/api/games", map[string]any{"game_def_id": "test-tricks", "player_name": name, "lobby": true}, &made); code != 200 {
 			t.Fatalf("create: %d", code)
 		}
 		return made.RoomCode
 	}
-	room := nyet("Bo")
+	room := table("Bo")
 	other := botRoom(t, baseURL, "Cy")
-	if got := listOpenGames(t, baseURL, "?family=nyet"); len(got) != 1 || got[0].RoomCode != room {
-		t.Errorf("?family=nyet lists %+v", got)
+	if got := listOpenGames(t, baseURL, "?family=test-tricks"); len(got) != 1 || got[0].RoomCode != room {
+		t.Errorf("?family=test-tricks lists %+v", got)
 	}
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/?game=nyet")); err != nil {
+	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/?game=test-tricks")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the setup", `document.getElementById("setup-tab-active") !== null && !document.getElementById("game-setup").hidden`, 20*time.Second)
@@ -150,7 +151,7 @@ func TestWebJoin_ListsTheTablesWaitingForPlayers(t *testing.T) {
 	var lobby struct {
 		RoomCode string `json:"room_code"`
 	}
-	if code := doJSON(t, "POST", baseURL+"/api/games", map[string]any{"game_def_id": "nyet", "player_name": "Bo", "lobby": true}, &lobby); code != 200 {
+	if code := doJSON(t, "POST", baseURL+"/api/games", map[string]any{"game_def_id": "test-tricks", "player_name": "Bo", "lobby": true}, &lobby); code != 200 {
 		t.Fatalf("create: %d", code)
 	}
 	playing := botRoom(t, baseURL, "Cy")
@@ -354,5 +355,29 @@ func TestWebProfile_AGuestSeesNoEmailSettings(t *testing.T) {
 	waitJS(t, ctx, "the section hidden", `document.getElementById("profile-email-section") !== null && document.getElementById("profile-email-section").hidden`, 10*time.Second)
 	if got := evalString(t, ctx, `document.querySelector("main").innerText`); strings.Contains(got, "Email") {
 		t.Errorf("the page mentions email: %q", got)
+	}
+}
+
+// A browser with a long list of games still knows the one it opens: the games the
+// server says are this browser's go after the ones it remembers, and never push the
+// open one off the list (they did at 31, and the page asked the player who they were).
+func TestWebActiveGames_ALongListKeepsTheGameOpen(t *testing.T) {
+	baseURL := newRESTTestServer(t)
+	ctx, cancel := newChromedpContext(t, 120*time.Second)
+	defer cancel()
+	for i := 1; i <= 32; i++ {
+		var created struct {
+			RoomCode string `json:"room_code"`
+		}
+		if code := doJSON(t, "POST", baseURL+"/api/games", map[string]any{"game_def_id": "tic-tac-toe", "player_name": "Alice", "opponent": "random"}, &created); code != 200 {
+			t.Fatalf("create %d: %d", i, code)
+		}
+		openGameAs(t, ctx, baseURL, created.RoomCode, "tic-tac-toe", "Alice")
+		waitJS(t, ctx, fmt.Sprintf("game %d: a square to click", i), `document.querySelectorAll('#board .cell.clickable').length > 0 || document.getElementById("identity-gate") !== null`, 10*time.Second)
+		// The top bar's list has had time to load: the game is still the player's.
+		time.Sleep(150 * time.Millisecond)
+		if evalBool(t, ctx, `document.getElementById("identity-gate") !== null`) {
+			t.Fatalf("game %d asks the player who they are", i)
+		}
 	}
 }

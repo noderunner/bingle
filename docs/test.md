@@ -38,6 +38,26 @@ The suite has these kinds of tests, all driven by the one `go test ./...` comman
   notice a start-up rule the Go tests never reach (the secure-connection rule of ADR 0065 broke it
   without a single Go test failing). Builds the real binary, runs it as a real OS process bound to a real port, and curls `/healthz`. This is the only check that exercises `main.go` and `internal/httpserve`'s actual `net.Listen` path end to end; everything else in `internal/app` is deliberately built to never bind a real listener itself, so it can be tested in-process (see `docs/history/plan.md` section 6.7).
 
+### The fixture games
+
+`tests/testdata` holds games only the tests play: the server never registers them, and
+`testdata.Fixtures()` adds them to a test's server. They are there so that every shared feature
+is tested through a public game, now that the commercial games are built apart (ADR 0127). Each
+has its own tests (`tests/council`, `tests/tricks`, `tests/table`), so the tests that lean on it
+lean on something sound.
+
+- **Council** (`test-council`, a Go ruleset): a table of four, reactions, a choice of house per
+  seat with a pool and a derived game per table, a setup catalog, tutorials, a map of areas, a
+  page script and a stylesheet, and a practice study.
+- **Tricks** (`test-tricks`, `-3`, `-5`; a Go ruleset): tables of three to five, hands only their
+  owner sees, a board of choices crossed off in turn, tricks, and a plain deck that can wear a set
+  of cards. Its page script draws the board's pictures and its players (`choiceIcon`,
+  `seatIcon`).
+- **Table** (`test-table`, a declaration): tiles laid from a hand onto a free board that grows,
+  and the ring and marker shapes.
+- **Freeplay**, **Tic-Tac-Toe** and **Connect Four**: the smallest games, kept for the tests that
+  play one to the end.
+
 ### Courtfall
 
 `tests/courtfall` pins the Go ruleset: the draft and its constraints (every

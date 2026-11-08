@@ -25,7 +25,7 @@ func TestCardSets_TheServerKeepsTheChoiceAndRefusesWhatCannotWearOne(t *testing.
 		code := doJSON(t, "POST", baseURL+"/api/games", map[string]any{"game_def_id": def, "player_name": "Ana", "card_set": set}, &out)
 		return code, out.RoomCode
 	}
-	code, room := create("nyet", "amphibians")
+	code, room := create("test-tricks", "amphibians")
 	if code != 200 {
 		t.Fatalf("create with a set: %d", code)
 	}
@@ -35,13 +35,13 @@ func TestCardSets_TheServerKeepsTheChoiceAndRefusesWhatCannotWearOne(t *testing.
 	if code := doJSON(t, "GET", baseURL+"/api/games/"+room, nil, &game); code != 200 || game.CardSet != "amphibians" {
 		t.Errorf("GET the game: %d, card_set %q", code, game.CardSet)
 	}
-	if code, _ := create("nyet", "no-such-set"); code != 400 {
+	if code, _ := create("test-tricks", "no-such-set"); code != 400 {
 		t.Errorf("an unknown set: %d, want 400", code)
 	}
 	if code, _ := create("tak-5x5", "amphibians"); code != 400 {
 		t.Errorf("a game without cards: %d, want 400", code)
 	}
-	code, room = create("nyet", "")
+	code, room = create("test-tricks", "")
 	if code != 200 {
 		t.Fatalf("create without a set: %d", code)
 	}
@@ -57,7 +57,7 @@ func TestWebCardSets_ChosenWhenSettingUpTheGame(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/"), chromedp.WaitVisible(`.game-card[data-family="nyet"]`, chromedp.ByQuery)); err != nil {
+	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/"), chromedp.WaitVisible(`.game-card[data-family="test-tricks"]`, chromedp.ByQuery)); err != nil {
 		t.Fatal(err)
 	}
 	clickSel(t, ctx, `.game-card[data-family="gomoku"]`)
@@ -65,10 +65,10 @@ func TestWebCardSets_ChosenWhenSettingUpTheGame(t *testing.T) {
 	if !evalBool(t, ctx, `document.getElementById("card-set-field").hidden`) {
 		t.Error("a game without cards offers a set of cards")
 	}
-	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/"), chromedp.WaitVisible(`.game-card[data-family="nyet"]`, chromedp.ByQuery)); err != nil {
+	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/"), chromedp.WaitVisible(`.game-card[data-family="test-tricks"]`, chromedp.ByQuery)); err != nil {
 		t.Fatal(err)
 	}
-	clickSel(t, ctx, `.game-card[data-family="nyet"]`)
+	clickSel(t, ctx, `.game-card[data-family="test-tricks"]`)
 	waitJS(t, ctx, "the field", `!document.getElementById("card-set-field").hidden`, 10*time.Second)
 	if got := evalString(t, ctx, `[...document.querySelectorAll('#card-set option')].map(o => o.textContent).join("|")`); got != "The game's own cards|Ancient Civilizations|Amphibians|Fantasy Creatures|Lovecraftian|Atomic Age" {
 		t.Errorf("the choices are %q", got)
@@ -106,7 +106,7 @@ func TestWebCardSets_EveryoneAtTheTableSeesTheSameSet(t *testing.T) {
 	var created struct {
 		RoomCode string `json:"room_code"`
 	}
-	if code := doJSON(t, "POST", baseURL+"/api/games", map[string]any{"game_def_id": "nyet", "player_name": "Ana", "also_seats": []int{3, 4}, "card_set": "amphibians"}, &created); code != 200 {
+	if code := doJSON(t, "POST", baseURL+"/api/games", map[string]any{"game_def_id": "test-tricks", "player_name": "Ana", "also_seats": []int{3, 4}, "card_set": "amphibians"}, &created); code != 200 {
 		t.Fatalf("create: %d", code)
 	}
 	room := created.RoomCode
@@ -115,8 +115,8 @@ func TestWebCardSets_EveryoneAtTheTableSeesTheSameSet(t *testing.T) {
 	}
 	look := func(ctx context.Context, name string) {
 		t.Helper()
-		openGameAs(t, ctx, baseURL, room, "nyet", name)
-		waitJS(t, ctx, name+": the hand", `document.querySelectorAll('#card-table .ct-seat.me .zone-hand .pcard.face').length >= 10`, 15*time.Second)
+		openGameAs(t, ctx, baseURL, room, "test-tricks", name)
+		waitJS(t, ctx, name+": the hand", `document.querySelectorAll('#card-table .ct-seat.me .zone-hand .pcard.face').length >= 8`, 15*time.Second)
 		if n := evalInt(t, ctx, `document.querySelectorAll('#card-table .pcard.face:not([data-set="amphibians"])').length`); n != 0 {
 			t.Errorf("%s: %d faces are not of the set", name, n)
 		}
@@ -162,7 +162,7 @@ func TestWebCardSets_ARematchKeepsTheSet(t *testing.T) {
 	var created struct {
 		RoomCode string `json:"room_code"`
 	}
-	if code := doJSON(t, "POST", baseURL+"/api/games", map[string]any{"game_def_id": "nyet-2", "player_name": "Ana", "opponent": "random", "card_set": "fantasy"}, &created); code != 200 {
+	if code := doJSON(t, "POST", baseURL+"/api/games", map[string]any{"game_def_id": "test-tricks-3", "player_name": "Ana", "opponent": "random", "card_set": "fantasy"}, &created); code != 200 {
 		t.Fatalf("create: %d", code)
 	}
 	if code := doJSON(t, "POST", baseURL+"/api/games/"+created.RoomCode+"/resign", map[string]any{"player_name": "Ana"}, nil); code != 200 {
@@ -170,7 +170,7 @@ func TestWebCardSets_ARematchKeepsTheSet(t *testing.T) {
 	}
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	openGameAs(t, ctx, baseURL, created.RoomCode, "nyet-2", "Ana")
+	openGameAs(t, ctx, baseURL, created.RoomCode, "test-tricks-3", "Ana")
 	waitJS(t, ctx, "the rematch button", `document.getElementById("rematch") !== null`, 15*time.Second)
 	clickSel(t, ctx, `#rematch`)
 	waitJS(t, ctx, "the new game", `location.pathname.startsWith("/game/") && !location.pathname.endsWith("`+created.RoomCode+`")`, 15*time.Second)
@@ -186,10 +186,10 @@ func TestWebCardSets_ARematchKeepsTheSet(t *testing.T) {
 // A game set up without a set keeps its own cards.
 func TestWebCardSets_AGameWithoutOneKeepsItsOwnCards(t *testing.T) {
 	baseURL := newRESTTestServer(t)
-	room := nyetTable(t, baseURL, "nyet", 4)
+	room := tricksTable(t, baseURL, "test-tricks", 4)
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	openGameAs(t, ctx, baseURL, room, "nyet", "Ana")
+	openGameAs(t, ctx, baseURL, room, "test-tricks", "Ana")
 	waitJS(t, ctx, "the hand", `document.querySelectorAll('#card-table .zone-hand svg.pc-svg').length >= 5`, 15*time.Second)
 	if n := evalInt(t, ctx, `document.querySelectorAll('#card-table .pcard.themed').length`); n != 0 {
 		t.Errorf("%d themed cards in a game without a set", n)
@@ -201,7 +201,7 @@ func TestWebCardSets_EverySetIsCompleteAndLegible(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/"), chromedp.WaitVisible(`.game-card[data-family="nyet"]`, chromedp.ByQuery)); err != nil {
+	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/"), chromedp.WaitVisible(`.game-card[data-family="test-tricks"]`, chromedp.ByQuery)); err != nil {
 		t.Fatal(err)
 	}
 	const script = `(async () => {
