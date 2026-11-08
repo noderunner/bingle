@@ -45,7 +45,7 @@ func families(t *testing.T) map[string]family {
 // zones, suits and variants, and previews only pieces in played colours.
 func TestEveryLookFitsItsGame(t *testing.T) {
 	fams := families(t)
-	for _, id := range []string{"nyet", "solitaire", "bowling-solitaire", "blooms", "tak-5x5", "fendo", "fist", "meridians", "hive", "onitama", "yinsh", "courtfall-1.0.0", "mycelium-1.0.0",
+	for _, id := range []string{"solitaire", "bowling-solitaire", "blooms", "tak-5x5", "fendo", "fist", "meridians", "courtfall-1.0.0", "mycelium-1.0.0",
 		"gomoku", "hex-11", "draughts", "breakthrough", "reversi", "go-9x9", "yavalath", "havannah-8", "amazons", "ataxx", "pente", "brandubh"} {
 		if _, ok := fams[id]; !ok {
 			t.Errorf("%s brings no look", id)

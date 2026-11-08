@@ -52,7 +52,7 @@ func TestWebEveryGameDrawsWithoutItsLook(t *testing.T) {
 		t.Fatalf("games drawn without their look:\n%s", got)
 	}
 	// Every board game in the list: the classics, Tak, Fendo, Fist, Blooms,
-	// Meridians, Hive, Onitama, Yinsh and the prototypes.
+	// Meridians, the fixtures and the prototypes.
 	if drawn < 20 {
 		t.Errorf("only %d games were drawn", drawn)
 	}

@@ -33,7 +33,7 @@ plan's first decision), and the game imports `internal/...` packages, which a se
   private`. Every private test file carries the tag, so an untagged run never compiles them.
 - **The overlay has its own CI**, which checks out the public repository around it and runs `make
   test-private`. Public CI sees none of it, and needs none: the public suite tests every shared
-  feature through public games and the Council fixture (`tests/testdata/council`).
+  feature through public games and the fixture games (`tests/testdata`: Council, Tricks and Table).
 - **Its look has not moved yet**: Cthulhu Wars still carries its look in its definition, and the
   public test of ADR 0124's line skips it.
 
@@ -47,3 +47,13 @@ plan's first decision), and the game imports `internal/...` packages, which a se
 - A game that is to become private follows the same path: its package and tests into the overlay,
   a registration file there, and what only it exercised covered first by a public game or a fixture.
 - Git history still holds Cthulhu Wars as it was: rewriting `main` was not wanted.
+
+## Follow-up (2026-11-08)
+
+Yinsh, Onitama, Hive and Nyet!, the rest of the plugins plan's private list, followed the same
+path: their packages, rules tests and browser tests into the overlay, each registered from its own
+file there (`no_yinsh`, `no_onitama`, `no_hive`, `no_nyet`). What only they exercised was covered
+first: the parts of the page only one of them drew became its page script (#173), and the shared
+tests play the Tricks and Table fixtures instead (#174). The diagrams of Onitama's and Yinsh's
+guides are drawn by the overlay's own script, which uses the public drawing helpers.
+

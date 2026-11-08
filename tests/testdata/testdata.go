@@ -59,7 +59,7 @@ const TableID = "test-table"
 
 // Table is a small game of tiles laid on a table with no board, which grows
 // as they are laid (the board style "free"), with the ring and marker shapes:
-// the public suite's vehicle for what only Hive and Yinsh drew.
+// the public suite's vehicle for what only commercial board games drew.
 func Table() catalog.Module {
 	return catalog.Module{ID: TableID, Definition: table(), Web: look.MustLoadFile(tableFS, "table/web.yaml")}
 }

@@ -6,7 +6,7 @@
 // in headless Chrome, so the guide shows the cards as the game does:
 //
 //	BINGLE_ADDR=127.0.0.1:18099 BINGLE_DB_PATH=/tmp/sheet.db ./bin/bingle &
-//	go run scripts/cardsheet/main.go http://127.0.0.1:18099 nyet internal/games/nyet/guide/cards.svg
+//	go run scripts/cardsheet/main.go http://127.0.0.1:18099 <game> internal/games/<package>/guide/cards.svg
 //
 // Re-run it whenever the card drawing or the suits of the game change.
 package main

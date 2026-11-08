@@ -5,8 +5,7 @@
     python3 scripts/guide_diagrams.py tak go     # only the games named
 
 The pictures are checked in; this script is how they are made, so a change to a diagram is
-a change here. The shared drawing helpers are in guide_lib.py. (Onitama's cards are drawn by
-the game's own Go code from its card table, not here.)
+a change here. The shared drawing helpers are in guide_lib.py.
 """
 import math
 import os
@@ -680,7 +679,7 @@ def brandubh():
 
 
 # =================================================================================================
-# Blooms, Fendo, Onitama, Yinsh
+# Blooms, Fendo
 # =================================================================================================
 
 HEX_DIRS = [(1, 0), (1, -1), (0, -1), (-1, 0), (-1, 1), (0, 1)]
@@ -745,76 +744,6 @@ def fendo():
         note(s, x + 124, y + 262, "A fence that closes off an area with exactly one piece in it gives the area to that piece's owner: 4 squares for White", 40)
         return 250, 250
     panels(2 * 268 + 18, 350, "Fendo: moving and fencing", [("A move", p_move), ("A closed area", p_closed)], ("fendo/guide", "fendo-turn"))
-
-
-CARDS = {
-    "crane": [(0, 1), (-1, -1), (1, -1)],
-}
-
-
-@game("onitama", "onitama/guide")
-def onitama():
-    cell = 44
-    s = Svg(560, 316, "Onitama: the setup and a move")
-    caption(s, 140, 18, "The setup", 13)
-    bd = Board(s, 22, 34, 5, 5, cell, checker=None, labels=True)
-    bd.tint([(2, 0), (2, 4)], AMBER, 0.6)
-    for c in (0, 1, 3, 4):
-        bd.put(c, 0, "student", "red")
-        bd.put(c, 4, "student", "blue")
-    bd.put(2, 0, "master", "red")
-    bd.put(2, 4, "master", "blue")
-    note(s, 140, 296, "Gold: the Temple Arches", 30, 11.5)
-    caption(s, 420, 18, "Using a card (the Crane)", 13)
-    bd2 = Board(s, 300, 34, 5, 5, 28, checker=None)
-    bd2.put(2, 2, "student", "red")
-    for dc, dr in CARDS["crane"]:
-        bd2.tint([(2 + dc, 2 + dr)], GREEN, 0.7)
-    bd2.arrow((2, 2), (2, 3), GREEN, 2.5)
-    note(s, 372, 205, "The coloured squares on the card are where the piece may go", 26, 11.5)
-    save("onitama/guide", "onitama-setup", s)
-
-
-def points_row(s, x, y, n, step=44):
-    s.line(x, y, x + step * (n - 1), y, "#5a4326", 3)
-    for i in range(n):
-        s.circle(x + i * step, y, 4, "#5a4326")
-    return [x + i * step for i in range(n)]
-
-
-@game("yinsh", "yinsh/guide")
-def yinsh():
-    s = Svg(470, 330, "Yinsh: moving a ring")
-    s.rect(14, 14, 442, 302, "#ecdcb2", "#b9a57a", 1, rx=8)
-    n, step, x0 = 9, 44, 54
-    caption(s, 235, 34, "Moving a ring along a line", 14)
-    def row(y, label, items, ringat=None, ringcol="white", mk=None):
-        s.text(30, y + 28, label, 11.5, INK, "start", "700")
-        xs = points_row(s, x0, y, n, step)
-        for i, x in enumerate(xs):
-            if i in items:
-                piece(s, x, y, "marker", items[i], 30)
-        if ringat is not None:
-            piece(s, xs[ringat], y, "ring", ringcol, 38)
-        return xs
-    xs = row(100, "Before", {2: "black", 3: "white", 4: "black"}, 0)
-    s.arrow(xs[0], 74, xs[5], 74, GREEN, 3)
-    s.text((xs[0] + xs[5]) / 2, 62, "the ring jumps the whole group", 11, "#6a5a40", weight="500")
-    xs = row(190, "After", {0: "white", 2: "white", 3: "black", 4: "white"}, 5)
-    note(s, 235, 232, "A marker of your colour is dropped in the ring first. The ring then moves in a straight line and lands on the first empty point after the markers it jumped; every marker it jumped changes colour.", 62, 12)
-    save("yinsh/guide", "yinsh-move", s)
-
-    s = Svg(470, 240, "Yinsh: a row of five")
-    s.rect(14, 14, 442, 212, "#ecdcb2", "#b9a57a", 1, rx=8)
-    caption(s, 235, 34, "Making a row of five", 14)
-    xs = points_row(s, 54, 92, 9, 44)
-    for i in range(1, 6):
-        piece(s, xs[i], 92, "marker", "white", 30)
-    piece(s, xs[0], 92, "marker", "black", 30)
-    piece(s, xs[7], 92, "ring", "white", 38)
-    s.rect(xs[1] - 20, 72, xs[5] - xs[1] + 40, 40, "none", HIGH, 3, rx=10)
-    note(s, 235, 146, "Five markers of one colour in a row are removed, and you also take one of your rings off the board: that ring is your score.", 62, 12)
-    save("yinsh/guide", "yinsh-row", s)
 
 
 if __name__ == "__main__":
