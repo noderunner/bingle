@@ -1,6 +1,12 @@
 # 0128. Data packs: a game as a file an admin installs
 
-Status: accepted (2026-11-08). Step 6 of the game plugins plan (`docs/history/game-plugins-plan.md` on
+Status: Withdrawn (2026-11-09), before anything installed a pack. The private overlay (ADR 0127) already lets a
+game be kept unpublished, Go or data alike, so installing games on a running server bought too little for what it
+costs: a reader for hostile zips, an admin flow and its audit, versioning and uninstalling. The reader that #177
+merged was removed again, and `install_plugins` with it (ADR 0071). A game is part of a build. The decision is kept
+below as it was written.
+
+Was: accepted (2026-11-08). Step 6 of the game plugins plan (`docs/history/game-plugins-plan.md` on
 `more-plans`), whose decisions 1, 3, 4 and 5 this builds on. It relies on ADR 0071 (capabilities), 0076
 (retiring a game), 0098 (a version is a game of its own), 0124 (a game's look is data) and 0127 (rules in Go
 are part of a build).

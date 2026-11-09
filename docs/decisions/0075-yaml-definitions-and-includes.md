@@ -25,7 +25,7 @@ direct dependency, and variants are JSON merge patches, which a conversion keeps
 - **`!include path`** replaces any value with another file, relative to the including file. An
   include never leaves the game's own files (no absolute paths, no `..` out, no symbolic links), may
   not form a cycle and nests at most 16 deep; the files read are capped at 16 MB and the expanded
-  document at 64 MB. These matter for data packs, which are untrusted. A large definition lives in a
+  document at 64 MB. A large definition lives in a
   `definition/` folder: a short main file and its parts (board, pieces, options, one file per
   variant). A JSON definition cannot include.
 - **Anchors, aliases and merge keys** (`<<`) are allowed; the loader expands them itself, within

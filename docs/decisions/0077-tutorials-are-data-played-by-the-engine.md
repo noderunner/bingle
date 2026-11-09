@@ -14,7 +14,7 @@ tutorial's knowledge of the game lives, and what stops a tutorial from going sta
 - **A tutorial is a YAML document in the game's own files** (`tutorials/<id>.yaml`, embedded as
   `catalog.Module.Tutorials`), read by `internal/tutorial` with the definition's loader
   (`dsl.LoadAs`): includes, anchors, field names checked with file and line. No game has tutorial
-  code. A game in a private build, or later a data pack, brings its own.
+  code. A game in a private build brings its own.
 - **A game has any number of tutorials, of kind `rules`, `strategy` or `variant`**, sorted by kind
   and `order`. Big games split their rules by topic so one part can be replayed as a refresher.
 - **Positions are given as moves** — `setup`, then each step's `play` (the learner's) and `reply`

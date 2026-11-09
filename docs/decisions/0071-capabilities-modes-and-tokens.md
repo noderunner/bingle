@@ -31,8 +31,9 @@ pages, land with them.
 - **Not yet enforced:** `dm`, `voice_direct`, `chat_global` and `notify` are in the matrix and seeded
   account-only, but the routes do not check them until stage 8 moves those features onto accounts and
   keeps the confirmed contacts working — checking them now would take direct messages and turn mail
-  away from guests before their replacement exists. `view_metrics`, `moderate`, `install_plugins` and
-  `admin` wait for the features that use them; the admin page itself is the admin group's.
+  away from guests before their replacement exists. `view_metrics`, `moderate` and
+  `admin` wait for the features that use them (`install_plugins` was listed too, and removed with data packs,
+  ADR 0128); the admin page itself is the admin group's.
 - **Closed** serves members only: an API request from anybody else outside `/auth` is `401`, a page is
   a redirect to `/login?return=…` (the sign-in, sign-up, reset and confirmation pages, the static
   files and `/healthz` stay open), and a page's first request makes no guest.

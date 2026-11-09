@@ -42,13 +42,12 @@ const (
 	CapEnterTournament  = "enter_tournament"
 	CapViewMetrics      = "view_metrics"
 	CapModerate         = "moderate"
-	CapInstallPlugins   = "install_plugins"
 	CapAdmin            = "admin"
 )
 
 // AllCaps lists every capability, in the order the admin page shows them.
 var AllCaps = []string{CapPlay, CapJoin, CapCreateGame, CapChatGame, CapChatGlobal, CapVoiceGame, CapVoiceDirect, CapDM, CapNotify,
-	CapRunBatch, CapCreateTournament, CapEnterTournament, CapViewMetrics, CapModerate, CapInstallPlugins, CapAdmin}
+	CapRunBatch, CapCreateTournament, CapEnterTournament, CapViewMetrics, CapModerate, CapAdmin}
 
 // The classes. The admin group holds every capability and has no column.
 const (
