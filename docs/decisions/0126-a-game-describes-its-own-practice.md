@@ -1,7 +1,6 @@
 # 0126. A game describes its own practice
 
-Status: accepted (2026-11-07). Part of the game plugins plan's step 3 (`docs/history/game-plugins-plan.md` on
-`more-plans`): nothing outside a game names it. It generalises the practice batches of
+Status: accepted (2026-11-07). Part of the game plugins plan's step 3 ([docs/history/game-plugins-plan.md](../history/game-plugins-plan.md)): nothing outside a game names it. It generalises the practice batches of
 [ADR 0034](0034-practice-batches-and-metrics.md) and the guide tuning built on them.
 
 ## Context

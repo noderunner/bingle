@@ -6,8 +6,7 @@ costs: a reader for hostile zips, an admin flow and its audit, versioning and un
 merged was removed again, and `install_plugins` with it (ADR 0071). A game is part of a build. The decision is kept
 below as it was written.
 
-Was: accepted (2026-11-08). Step 6 of the game plugins plan (`docs/history/game-plugins-plan.md` on
-`more-plans`), whose decisions 1, 3, 4 and 5 this builds on. It relies on ADR 0071 (capabilities), 0076
+Was: accepted (2026-11-08). Step 6 of the game plugins plan ([docs/history/game-plugins-plan.md](../history/game-plugins-plan.md)), whose decisions 1, 3, 4 and 5 this builds on. It relies on ADR 0071 (capabilities), 0076
 (retiring a game), 0098 (a version is a game of its own), 0124 (a game's look is data) and 0127 (rules in Go
 are part of a build).
 

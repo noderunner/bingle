@@ -10,7 +10,7 @@ a question every later removal will raise too — a data pack uninstalled, a gam
 build: what becomes of the games already played? `games.game_def_id` is a bare string, and without
 the definition the server answered every request about such a game with an error, left unfinished
 ones `active` forever, and the game page could not open. Decided with the plugin plan
-(`docs/history/game-plugins-plan.md`, on the plans branch).
+([docs/history/game-plugins-plan.md](../history/game-plugins-plan.md)).
 
 ## Decision
 

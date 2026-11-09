@@ -1,7 +1,6 @@
 # 0125. A binary's games are chosen when it is built
 
-Status: accepted (2026-11-07). Step 2 of the game plugins plan (`docs/history/game-plugins-plan.md` on
-`more-plans`), whose first decision keeps Go games compiled in, never loaded at run time.
+Status: accepted (2026-11-07). Step 2 of the game plugins plan ([docs/history/game-plugins-plan.md](../history/game-plugins-plan.md)), whose first decision keeps Go games compiled in, never loaded at run time.
 
 ## Context
 
