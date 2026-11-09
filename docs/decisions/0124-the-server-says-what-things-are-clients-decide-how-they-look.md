@@ -1,7 +1,7 @@
 # 0124. The server says what things are; each client decides how they look
 
 Status: accepted (2026-11-07). It changes the game plugins plan's step 3 and decision 4
-(`docs/history/game-plugins-plan.md` on `more-plans`), and moves the appearance half of the DSL's display
+([docs/history/game-plugins-plan.md](../history/game-plugins-plan.md)), and moves the appearance half of the DSL's display
 fields (`docs/dsl.md`) out of the game definition. [ADR 0085](0085-card-sets-belong-to-the-table.md) stands, as
 described below.
 

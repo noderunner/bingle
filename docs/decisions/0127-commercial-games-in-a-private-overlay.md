@@ -1,7 +1,6 @@
 # 0127. Commercial games are built from a private overlay
 
-Status: accepted (2026-11-07). Step 5 of the game plugins plan (`docs/history/game-plugins-plan.md` on
-`more-plans`), whose decisions moved the commercial games out of the public repository. It builds on
+Status: accepted (2026-11-07). Step 5 of the game plugins plan ([docs/history/game-plugins-plan.md](../history/game-plugins-plan.md)), whose decisions moved the commercial games out of the public repository. It builds on
 ADR 0124 (a game's look and page scripts are its own), 0125 (a binary's games are chosen when it is
 built) and 0126 (a game describes its own practice).
 

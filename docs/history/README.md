@@ -14,4 +14,5 @@ truth, and [decisions/](../decisions/README.md) records what was decided and why
 | [batch-practice-plan.md](batch-practice-plan.md) | The plan for practice batches and bot tuning |
 | [auth-and-accounts-plan.md](auth-and-accounts-plan.md) | The plan for accounts, capabilities and a secure transport |
 | [observability-plan.md](observability-plan.md) | The plan for logging, metrics and the slow-request journal |
+| [game-plugins-plan.md](game-plugins-plan.md) | The plan for games registered by build, the private overlay for commercial games, and the data packs that were dropped |
 
