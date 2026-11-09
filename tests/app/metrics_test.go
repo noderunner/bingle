@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/noderunner/bingle/internal/app"
 	"github.com/noderunner/bingle/internal/metrics"
@@ -139,8 +140,17 @@ func TestMetrics_CountExactlyUnderConcurrentRequests(t *testing.T) {
 	}
 	wg.Wait()
 
-	got := scrape()
+	// A request is counted when its handler returns, which can be just after the
+	// client has read the whole answer, so the last few may land a moment after
+	// wg.Wait. Wait for them, briefly, rather than read the exposition once.
 	want := `bingle_http_requests_total{method="GET",route="/api/game-defs",status="200"} ` + strconv.Itoa(workers*each)
+	var got string
+	for deadline := time.Now().Add(5 * time.Second); ; time.Sleep(10 * time.Millisecond) {
+		got = scrape()
+		if strings.Contains(got, want) && strings.Contains(got, "bingle_http_requests_in_flight 0") || time.Now().After(deadline) {
+			break
+		}
+	}
 	if !strings.Contains(got, want) {
 		t.Errorf("the exposition does not say %s", want)
 	}
