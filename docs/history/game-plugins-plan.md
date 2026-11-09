@@ -1,8 +1,9 @@
 # Plan: a game as an installable plugin
 
-Status: **planning in progress** (opened 2026-10-28). The five open questions were settled on
-2026-10-31 (see *Decisions*). Steps 1 to 5 and the retirements are built; step 6, data packs, is next. The sections before *Decisions* are
-the initial thinking, kept as written.
+Status: **done**, without step 6 (opened 2026-10-28). The five open questions were settled on 2026-10-31 (see
+*Decisions*). Steps 1 to 5 and the retirements are built; step 6, data packs, was **dropped** on 2026-11-09, and
+with it decisions 3 and 5 (see the status log). Nothing in this plan is left to build. The sections before
+*Decisions* are the initial thinking, kept as written.
 
 ## What was asked for
 
@@ -211,9 +212,9 @@ Retirement needs nothing else in this plan and can land on its own, ahead of the
 5. **The private overlay**, then **Cthulhu Wars, Yinsh, Onitama, Hive and Nyet! move into
    it**, Cthulhu Wars first. The acceptance test: the public repository builds, passes `make test`
    and plays every remaining game through the API with the private games absent.
-6. **Data packs** (Tier 0): manifest, validation through the compiler, the store table, the
+6. **Dropped 2026-11-09, see the status log.** ~~**Data packs** (Tier 0): manifest, validation through the compiler, the store table, the
    admin install page, the namespace, uninstall tombstones and version provenance listed
-   above.
+   above.~~
 
 Steps 1 to 5 need nothing from the other plans. Step 6 needs the auth plan's admin area,
 which is now built.
@@ -316,3 +317,19 @@ which is now built.
     overlay's CI takes about 32 minutes on one runner and flaked once; sharding it as public CI does
     would help. `TestWebCthulhuWarsSetup_TheLayout` fails when only that game's browser tests run,
     which is an order dependency nobody has traced.
+- 2026-11-09: **step 6, data packs, is dropped**, by the maintainer's decision, and with it decisions 3 (installing
+  in the admin area) and 5 (sharing packs between servers). The plan's first reason for packs, letting a commercial
+  game be developed without publishing it, is met in full by the private overlay, which holds a definition-only game
+  as readily as one in Go; and every game that went private needed Go anyway. What packs still offered (installing
+  without a build, a quicker loop for authors who do not build, passing a game around as a file) did not pay for
+  what they cost: the most dangerous button in the product, a reader for hostile zips, an admin flow with its
+  reauthentication and audit, a namespace, versions and uninstalling. A game is part of a build.
+  - **Undone:** the format and reader had merged (#177, ADR 0128); the store table and loading at startup were in
+    review (#178, closed unmerged). #179 removes `internal/pack`, its tests, `docs/packs.md`, the registry's prefix
+    check, the 64-variant cap added for packs, and the `install_plugins` capability, which nothing ever checked.
+    ADR 0128 is marked withdrawn rather than deleted.
+  - **Kept**, since each stands on its own: decisions 1, 2 and 4, the API-only principle, `web.yaml` (ADR 0124),
+    the retired-game record (ADR 0076) and the include limits (ADR 0075).
+  - **If it comes back:** only if bingle gets operators who do not build it, or authors who write games without a
+    checkout. A development-only folder of definitions loaded from disk, which is trusted, would serve the second
+    at a fraction of the cost. The withdrawn ADR and #178 hold what was built.
