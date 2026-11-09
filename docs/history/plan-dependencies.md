@@ -13,7 +13,7 @@ order of work can be chosen deliberately. Provisional: it changes as each plan i
 | [game-tutorials-plan.md](game-tutorials-plan.md) | **built**, with series of named lessons since #155 | no (guests welcome) |
 | [dsl-coverage-audit-plan.md](dsl-coverage-audit-plan.md) | **done**; Onitama and Yinsh stay in Go | no |
 | [patience-vocabulary-plan.md](patience-vocabulary-plan.md) | **built** (addition F of the DSL audit) | no |
-| [game-plugins-plan.md](game-plugins-plan.md) | **done**: steps 1 to 5 built, step 6 (data packs) dropped 2026-11-09 | no |
+| [game-plugins-plan.md](game-plugins-plan.md) (on `main`) | **done**: steps 1 to 5 built, step 6 (data packs) dropped 2026-11-09 | no |
 | [real-time-play-plan.md](real-time-play-plan.md) | **built** | no |
 | [tournaments-and-rankings-plan.md](tournaments-and-rankings-plan.md) | **built** but for its *Later* list | yes |
 | [game-services-proposal.md](game-services-proposal.md) | **deferred** proposal: an alternative to the plugins plan's overlay | no |
@@ -108,3 +108,4 @@ The couplings that would cost the most if missed:
   private games, and installing at run time did not pay for its cost), so nothing depends on the auth plan's
   `install_plugins` any more, and the arrows to plugins from YAML and the DSL coverage audit no longer lead to
   installable games. Both already did their work.
+- 2026-11-09: the plugins plan moved to `main` (#180) and left this branch; its row links to where it now lives.

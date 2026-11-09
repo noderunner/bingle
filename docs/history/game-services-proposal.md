@@ -1,7 +1,7 @@
 # Proposal: games as services, in process or out
 
 Status: **proposal, deferred** (written 2026-11-07). The maintainer chose the private overlay of the
-plugins plan (`game-plugins-plan.md`, decisions 1 and 2) for now. This records an alternative to
+plugins plan (`game-plugins-plan.md`, on `main`, decisions 1 and 2) for now. This records an alternative to
 revisit if the number of compiled-in games keeps growing and the refactor starts to look worth its
 cost. Nothing here is decided or built.
 
