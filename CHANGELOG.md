@@ -4,6 +4,11 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.99.3 - 2026-11-09
+
+### Bingle Core 0.99.3
+- Nothing changes in play yet. The server keeps installed data packs in its database and offers their games when it starts, checking each pack again first. If a pack stops passing those checks, its games are kept as they were, unfinished ones included, and can be read but not played.
+
 ## 0.99.2 - 2026-11-08
 
 ### Bingle Core 0.99.2

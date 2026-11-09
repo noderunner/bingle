@@ -34,3 +34,14 @@ to 40 MB in 300 files of 8 MB at most. A definition may come to 1 MiB and declar
 Version 1.2.0 of `lines` is the game `pack-lines-1.2.0`, and `pack-lines` means the newest version installed. A
 new version installs beside the old: new games use it, and a game in progress finishes on the rules it started
 with. Games of a pack are not rated.
+
+## Where an installed pack is kept
+
+An installed pack is a row of the `packs` table, one for each version, and the zip is kept whole. The server reads
+each one again every time it starts, with every check it would make on a new pack, so a check added later holds for
+packs installed earlier, and each version's game is recorded in `game_versions` like any other.
+
+A pack that no longer passes is left out and logged at error level, and the server starts without it. Its games are
+kept as they were, unfinished ones too: they can be read as a record but not played, and they go on if the pack
+passes again. That is unlike a retired game (ADR 0076), whose unfinished games end, because a pack that fails a
+check may well pass it again, on a fixed server or after the check is eased.

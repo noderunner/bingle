@@ -28,6 +28,7 @@ import (
 	"github.com/noderunner/bingle/internal/mail"
 	"github.com/noderunner/bingle/internal/mcpserver"
 	"github.com/noderunner/bingle/internal/metrics"
+	"github.com/noderunner/bingle/internal/pack"
 	"github.com/noderunner/bingle/internal/repro"
 	"github.com/noderunner/bingle/internal/session"
 	"github.com/noderunner/bingle/internal/store"
@@ -151,6 +152,13 @@ func New(cfg config.Config, opts ...Option) (*App, error) {
 		}
 	}
 
+	// Installed data packs, checked again as if each had just arrived (ADR 0128).
+	unread, err := loadPacks(context.Background(), st, cat, a.log)
+	if err != nil {
+		_ = st.Close()
+		return nil, err
+	}
+
 	if err := recordGameVersions(st, cat); err != nil {
 		_ = st.Close()
 		return nil, err
@@ -189,6 +197,15 @@ func New(cfg config.Config, opts ...Option) (*App, error) {
 		return nil, err
 	} else if n > 0 {
 		a.log.Info("ended the unfinished games of retired games", "games", n, "retired", cat.RetiredIDs())
+	}
+	// A pack that no longer passes its checks is not played, but its games are
+	// kept as they are, unfinished ones too, rather than ended: so they go on
+	// if it passes again (a newer server, or the check eased). This comes after
+	// the games of retired games are ended, so as not to end them.
+	for _, p := range unread {
+		for _, id := range p.Games {
+			cat.Retire(id, p.Title)
+		}
 	}
 
 	manager := session.NewManager(st, cat)
@@ -271,6 +288,37 @@ func New(cfg config.Config, opts ...Option) (*App, error) {
 
 	a.router = a.newRouter()
 	return a, nil
+}
+
+// loadPacks registers every installed data pack in cat, reading each zip again
+// with every check pack.Read makes. A pack that fails is left out and logged,
+// and returned, rather than keeping the server from starting: an admin put it
+// there, and every other game is still fine to play.
+func loadPacks(ctx context.Context, st *store.Store, cat *catalog.Catalog, lg *slog.Logger) (unread []store.StoredPack, err error) {
+	stored, err := st.Packs(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("app: %w", err)
+	}
+	for _, sp := range stored {
+		p, err := pack.Read(sp.Zip)
+		switch {
+		case err != nil:
+		case p.SHA256 != sp.SHA256:
+			err = fmt.Errorf("its zip has changed since it was installed")
+		case p.Name != sp.Name || p.Version != sp.Version:
+			err = fmt.Errorf("it now reads as %s %s", p.Name, p.Version)
+		default:
+			err = cat.RegisterModule(p.Module)
+		}
+		if err != nil {
+			lg.Error("pack: an installed pack no longer passes its checks, so its games cannot be played",
+				"pack", sp.Name, "version", sp.Version, "games", sp.Games, "err", err)
+			unread = append(unread, sp)
+			continue
+		}
+		lg.Info("pack: loaded", "pack", p.Name, "version", p.Version, "games", p.Games)
+	}
+	return unread, nil
 }
 
 // recordGameVersions notes in the database the version of every game this server

@@ -49,6 +49,11 @@ suits rules from somewhere the server does not vouch for.
 **Uninstalling ends a pack's unfinished games**, once the admin has confirmed how many, with no result and the
 end reason of ADR 0076. Its finished games stay readable as a record.
 
+**A pack is checked again each time the server starts** (added 2026-11-09), from the zip kept whole in the database,
+so a check added later holds for packs installed earlier. One that no longer passes is left out and logged, and the
+server starts without it. Its games are kept as they were, unfinished ones too, readable but not played, rather than
+ended as a retired game's are: a check that fails may pass again, and an ended game cannot be resumed.
+
 **Installing is an admin's act**: the `install_plugins` capability, the password again, and an entry in the audit
 log with the zip's hash.
 

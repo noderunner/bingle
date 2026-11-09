@@ -555,3 +555,20 @@ CREATE TABLE IF NOT EXISTS tutorials_done (
     done_at    TEXT NOT NULL,
     PRIMARY KEY (account_id, tutorial)
 );
+
+-- The data packs an admin installed (ADR 0128), one row a version. The zip is
+-- kept whole, and the server reads and checks it again each time it starts, so
+-- a check added later holds for packs installed earlier. games lists, as JSON,
+-- the ids the version registers, so its games stay readable as a record if it
+-- ever fails those checks. installed_by is the admin's account.
+CREATE TABLE IF NOT EXISTS packs (
+    name          TEXT NOT NULL,
+    version       TEXT NOT NULL,
+    title         TEXT NOT NULL DEFAULT '',
+    games         TEXT NOT NULL DEFAULT '[]',
+    sha256        TEXT NOT NULL,
+    zip           BLOB NOT NULL,
+    installed_by  INTEGER,
+    installed_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (name, version)
+);
