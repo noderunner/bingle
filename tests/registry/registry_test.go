@@ -11,7 +11,6 @@ import (
 
 	"github.com/noderunner/bingle/internal/app"
 	"github.com/noderunner/bingle/internal/games/registry"
-	"github.com/noderunner/bingle/internal/pack"
 )
 
 var shipped = []string{"blooms", "classics", "courtfall", "fendo", "fist", "meridians", "mycelium", "solitaire", "tak"}
@@ -35,10 +34,6 @@ func TestEveryFamilyIsRegistered(t *testing.T) {
 			t.Errorf("module %s twice", m.ID)
 		}
 		seen[m.ID] = true
-		// The prefix is the packs', so an installed pack can never shadow a built-in game (ADR 0128).
-		if strings.HasPrefix(m.ID, pack.Prefix) {
-			t.Errorf("the built-in module %s has the prefix of a data pack", m.ID)
-		}
 	}
 	for _, id := range []string{"tak-5x5", "bowling-solitaire", "go-9x9", "courtfall-1.0.0"} {
 		if !seen[id] {

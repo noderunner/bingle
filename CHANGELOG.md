@@ -4,6 +4,11 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.99.3 - 2026-11-09
+
+### Bingle Core 0.99.3
+- Nothing changes in play. Data packs, announced in 0.99.2, won't come after all: a game is part of the server that runs it. The unused `install_plugins` capability is gone from the admin page too, so a capabilities file that still names it now stops the server at startup until the name is taken out.
+
 ## 0.99.2 - 2026-11-08
 
 ### Bingle Core 0.99.2

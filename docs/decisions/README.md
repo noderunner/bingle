@@ -100,7 +100,7 @@ Short records of choices made for the `bingle` project during the requirements i
 | [0117](0117-groups-by-colour-enemies-by-seat.md) | Groups by colour, enemies by seat: a seat may play several `colors`; groups stay one colour, ownership goes by seat |
 | [0118](0118-a-move-limit-decided-by-a-pool.md) | A move limit decided by a pool: `decide: {type: most, pool: …}` compares each seat's reserve pool, as Blooms' captures |
 | [0127](0127-commercial-games-in-a-private-overlay.md) | Commercial games are built from a private overlay: a repository checked out at `internal/games/private`, compiled in with `-tags private`; Cthulhu Wars moves into it |
-| [0128](0128-data-packs.md) | Data packs: a game as a zip of data an admin installs, each version a game of its own, checked as hostile |
+| [0128](0128-data-packs.md) | Data packs: a game as a zip of data an admin installs (withdrawn: a game is part of a build, ADR 0127) |
 | [0126](0126-a-game-describes-its-own-practice.md) | A game describes its own practice: a `batch.Study` gives a game's batches their picks, measures, report and guide knobs, so batches and tuning name no game |
 | [0125](0125-a-binarys-games-are-chosen-when-it-is-built.md) | A binary's games are chosen when it is built: each game registers itself from a file of `internal/games/all` that a `no_<package>` build tag leaves out |
 | [0124](0124-the-server-says-what-things-are-clients-decide-how-they-look.md) | The server says what things are and each client decides how they look: appearance leaves the definition and the API for a per-client file (`web.yaml`), and every game can be drawn without one |
