@@ -108,7 +108,7 @@ func NewRouter(mgr *session.Manager, opts ...Option) chi.Router {
 	r.Post("/games/{code}/bots", h.handleAddBot)
 	r.Post("/games/{code}/start", h.handleStartGame)
 	r.Post("/games/{code}/seat", h.handleChooseSeat)
-	r.Post("/games/{code}/seat-cult", h.handleSetSeatCult)
+	r.Post("/games/{code}/seat-faction", h.handleSetSeatFaction)
 	r.Post("/games/{code}/leave", h.handleLeave)
 	r.Post("/games/{code}/remove", h.handleRemoveSeat)
 	r.Post("/games/{code}/release", h.handleReleaseSeat)

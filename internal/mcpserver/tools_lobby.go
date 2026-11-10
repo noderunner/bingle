@@ -33,23 +33,23 @@ func registerLobbyTools(s *server.MCPServer, mgr *session.Manager) {
 	)
 
 	s.AddTool(
-		mcp.NewTool("set_seat_cult",
-			mcp.WithDescription("Change the cult (faction) of an open seat of a game that waits in its lobby (Cthulhu Wars: gc, cc, bg, ys, ww, sl). A cult played by another open seat changes places with it; seats a player or bot holds keep theirs. Any player at the table may."),
+		mcp.NewTool("set_seat_faction",
+			mcp.WithDescription("Change the faction of an open seat of a game that waits in its lobby, in a game whose seats are factions chosen at setup (get_game_info's options: a seat-choice). A faction played by another open seat changes places with it; seats a player or bot holds keep theirs. Any player at the table may."),
 			mcp.WithString("room_code", mcp.Required(), mcp.Description("The room code of the game.")),
 			mcp.WithString("player_name", mcp.Required(), mcp.Description("Your player name.")),
 			mcp.WithNumber("seat", mcp.Required(), mcp.Description("The open seat to change.")),
-			mcp.WithString("cult", mcp.Required(), mcp.Description("The cult the seat should play: gc, cc, bg, ys, ww or sl.")),
+			mcp.WithString("faction", mcp.Required(), mcp.Description("The key of the faction the seat should play: one of the seat-choice option's choices.")),
 		),
 		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			room, player, errRes := requireRoomAndPlayer(request)
 			if errRes != nil {
 				return errRes, nil
 			}
-			cult, err := request.RequireString("cult")
-			if err != nil || strings.TrimSpace(cult) == "" {
-				return mcp.NewToolResultError("cult is required"), nil
+			faction, err := request.RequireString("faction")
+			if err != nil || strings.TrimSpace(faction) == "" {
+				return mcp.NewToolResultError("faction is required"), nil
 			}
-			snap, err := mgr.SetSeatCult(ctx, room, player, request.GetInt("seat", 0), cult)
+			snap, err := mgr.SetSeatFaction(ctx, room, player, request.GetInt("seat", 0), faction)
 			if err != nil {
 				return mcp.NewToolResultError(err.Error()), nil
 			}

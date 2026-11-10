@@ -204,8 +204,8 @@ export const api = {
 	changelog: () => call("/api/changelog"),
 	start: (code, name) => call(`/api/games/${enc(code)}/start`, { method: "POST", body: { player_name: name } }),
 	chooseSeat: (code, name, seat) => call(`/api/games/${enc(code)}/seat`, { method: "POST", body: { player_name: name, seat } }),
-	// Before the game starts: the cult (gc, cc, bg, ys, ww, sl) an open seat plays.
-	setSeatCult: (code, name, seat, cult) => call(`/api/games/${enc(code)}/seat-cult`, { method: "POST", body: { player_name: name, seat, cult } }),
+	// Before the game starts: the faction an open seat plays (a choice of the game's seat-choice option).
+	setSeatFaction: (code, name, seat, faction) => call(`/api/games/${enc(code)}/seat-faction`, { method: "POST", body: { player_name: name, seat, faction } }),
 	leave: (code, name) => call(`/api/games/${enc(code)}/leave`, { method: "POST", body: { player_name: name } }),
 	voteSlot: (code, slot, on) => call(`/api/games/${enc(code)}/schedule/vote`, { method: "POST", body: { slot, on } }),
 	decideSchedule: (code) => call(`/api/games/${enc(code)}/schedule/decide`, { method: "POST", body: {} }),

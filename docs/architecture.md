@@ -153,7 +153,7 @@ Served by the same binary as static assets plus lightweight JS (no SPA build pip
   the session plays the decline for a person unless they asked to be asked
   (when targeted, after anyone's action, after chosen players') — bots and AI
   clients are always asked. Games may wait in a lobby for their host, where
-  anyone may change the cult of an open seat (`state.SeatCults`); every game has
+  anyone may change the faction of an open seat (`state.SeatFactions`); every game has
   a small chat with emoji. `BINGLE_PUBLIC_URL` is the base of invite links.
 * **Auto-Play Timeout** (ADR 0033): `Manager.RunAutoPlay` watches the games
   whose player to move has the option on and lets the `tactical` bot play the

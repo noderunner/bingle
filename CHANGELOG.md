@@ -4,6 +4,12 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.100.0 - 2026-11-10
+
+### Bingle Core 0.100.0
+- Nothing changes in play: changing the faction of an open seat in the lobby works as before.
+- **For programs:** the API and MCP call a seat's chosen side a faction, whatever the game calls it, without aliases. `POST /games/{code}/seat-faction` with `faction` replaces `POST /games/{code}/seat-cult` with `cult`, the MCP tool `set_seat_faction` (taking `faction`) replaces `set_seat_cult`, and the state event's reason for it is `faction`, not `cult`. On the page, the lobby's list is `select.lobby-faction-select`, `#faction-<seat>`.
+
 ## 0.99.3 - 2026-11-09
 
 ### Bingle Core 0.99.3

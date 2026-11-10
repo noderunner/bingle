@@ -94,18 +94,19 @@ func (h *handlers) handleChooseSeat(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, statusFromSnapshot(snap))
 }
 
-// cultBody is POST /games/{code}/seat-cult's body.
-type cultBody struct {
+// factionBody is POST /games/{code}/seat-faction's body.
+type factionBody struct {
 	PlayerName string `json:"player_name"`
 	Seat       int    `json:"seat"`
-	// Cult is the key of the cult the seat should play (gc, cc, bg, ys, ww, sl).
-	Cult string `json:"cult"`
+	// Faction is the key of the faction the seat should play, one of the
+	// choices of the game's seat-choice option.
+	Faction string `json:"faction"`
 }
 
-// handleSetSeatCult implements POST /games/{code}/seat-cult: before the game
-// starts, anyone at the table changes the cult of an open seat.
-func (h *handlers) handleSetSeatCult(w http.ResponseWriter, r *http.Request) {
-	var req cultBody
+// handleSetSeatFaction implements POST /games/{code}/seat-faction: before the
+// game starts, anyone at the table changes the faction of an open seat.
+func (h *handlers) handleSetSeatFaction(w http.ResponseWriter, r *http.Request) {
+	var req factionBody
 	if !decodeBody(w, r, &req) {
 		return
 	}
@@ -113,11 +114,11 @@ func (h *handlers) handleSetSeatCult(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err)
 		return
 	}
-	if req.Seat < 1 || strings.TrimSpace(req.Cult) == "" {
-		writeError(w, errors.New("api: seat and cult are required"))
+	if req.Seat < 1 || strings.TrimSpace(req.Faction) == "" {
+		writeError(w, errors.New("api: seat and faction are required"))
 		return
 	}
-	snap, err := h.mgr.SetSeatCult(r.Context(), chi.URLParam(r, "code"), req.PlayerName, req.Seat, req.Cult)
+	snap, err := h.mgr.SetSeatFaction(r.Context(), chi.URLParam(r, "code"), req.PlayerName, req.Seat, req.Faction)
 	if err != nil {
 		writeError(w, err)
 		return
