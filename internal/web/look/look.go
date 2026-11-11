@@ -18,6 +18,7 @@ import (
 	"slices"
 	"strconv"
 
+	"github.com/noderunner/bingle/internal/engine/board"
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/engine/dsl"
 )
@@ -39,6 +40,11 @@ type File struct {
 	// setup page, in place of an empty start. Squares a smaller variant's
 	// board lacks are left out.
 	Preview []dsl.SetupEntry `json:"preview,omitempty"`
+	// Data is what the game's page script reads and nothing else does, in a
+	// shape of the script's own: Cthulhu Wars' colour for each area and where
+	// its glyphs are printed. Nothing checks it but the script; variants
+	// patch it like the rest.
+	Data map[string]any `json:"data,omitempty"`
 	// Script is the game's own page script, a path among the module's
 	// Scripts (served under /static/games/{family}/): an ES module whose
 	// exports the page asks for the parts it draws for this game alone.
@@ -80,6 +86,31 @@ type Board struct {
 	// files, for the game's page script to draw it behind an areas board (the
 	// shared page draws no areas board itself). A variant names its own.
 	Art string `json:"art,omitempty"`
+	// Canvas is the coordinate space of an areas board's outlines.
+	Canvas *Canvas `json:"canvas,omitempty"`
+	// Areas outlines each position of an areas board, in the canvas. It is a
+	// list, as the definition's positions are, so a variant's list replaces
+	// the family's whole: each map has areas of its own.
+	Areas []Area `json:"areas,omitempty"`
+}
+
+// Canvas is the width and height of an areas board's coordinate space.
+type Canvas struct {
+	Width  float64 `json:"width"`
+	Height float64 `json:"height"`
+}
+
+// Area is how one position of an areas board is drawn.
+type Area struct {
+	// ID is the position's.
+	ID string `json:"id"`
+	// Polygons outline the area: each is a list of [x, y] corners in the
+	// canvas. More than one draws one area in several pieces (an ocean
+	// that wraps round the edge of the map).
+	Polygons [][][2]float64 `json:"polygons"`
+	// Anchor is where the area's name and its tokens are centred; without
+	// one, the centre of its largest polygon.
+	Anchor *[2]float64 `json:"anchor,omitempty"`
 }
 
 // Cards is how a card game's cards and zones are drawn.
@@ -199,6 +230,62 @@ func Check(data []byte, family string, games map[string]*catalog.CompiledGame) e
 			return fmt.Errorf("look: %s: variant %q: %w", family, id, err)
 		}
 	}
+	// Each game drawn as a map of areas has an outline for every position,
+	// in a canvas: the family's board with the game's variant over it.
+	for id, cg := range games {
+		b := f.Board
+		if v, ok := f.Variants[id]; ok && v.Board != nil {
+			b = mergeBoard(b, v.Board)
+		}
+		if err := b.complete(cg); err != nil {
+			if id == family {
+				return fmt.Errorf("look: %s: %w", family, err)
+			}
+			return fmt.Errorf("look: %s: variant %q: %w", family, id, err)
+		}
+	}
+	return nil
+}
+
+// mergeBoard is variant's board over base's, as a merge patch lays it.
+func mergeBoard(base, variant *Board) *Board {
+	if base == nil {
+		return variant
+	}
+	out := *base
+	if variant.Style != "" {
+		out.Style = variant.Style
+	}
+	if variant.Art != "" {
+		out.Art = variant.Art
+	}
+	if variant.Canvas != nil {
+		out.Canvas = variant.Canvas
+	}
+	if variant.Areas != nil {
+		out.Areas = variant.Areas
+	}
+	return &out
+}
+
+// complete says that a board drawn as areas outlines every position of the
+// game in a canvas.
+func (b *Board) complete(cg *catalog.CompiledGame) error {
+	if b == nil || b.Style != "areas" {
+		return nil
+	}
+	if b.Canvas == nil {
+		return fmt.Errorf("a map of areas needs a canvas")
+	}
+	drawn := map[string]bool{}
+	for _, a := range b.Areas {
+		drawn[a.ID] = true
+	}
+	for _, id := range cg.Board.Positions() {
+		if !drawn[string(id)] {
+			return fmt.Errorf("area %q has no outline", id)
+		}
+	}
 	return nil
 }
 
@@ -236,6 +323,27 @@ func (f File) check(cg *catalog.CompiledGame) error {
 		for region := range f.Board.Borders {
 			if _, ok := cg.Board.Region(region); !ok && def.Board.Regions[region] == nil {
 				return fmt.Errorf("border %q is not a region of the board", region)
+			}
+		}
+		if c := f.Board.Canvas; c != nil && (c.Width <= 0 || c.Height <= 0) {
+			return fmt.Errorf("the canvas needs a positive width and height")
+		}
+		seen := map[string]bool{}
+		for _, a := range f.Board.Areas {
+			if !cg.Board.HasPosition(board.PositionID(a.ID)) {
+				return fmt.Errorf("area %q is not a position of the board", a.ID)
+			}
+			if seen[a.ID] {
+				return fmt.Errorf("area %q is outlined twice", a.ID)
+			}
+			seen[a.ID] = true
+			if len(a.Polygons) == 0 {
+				return fmt.Errorf("area %q has no polygon", a.ID)
+			}
+			for _, poly := range a.Polygons {
+				if len(poly) < 3 {
+					return fmt.Errorf("area %q has a polygon with fewer than three corners", a.ID)
+				}
 			}
 		}
 		if art := f.Board.Art; art != "" {

@@ -4,11 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"math"
 	"path"
 	"strings"
-
-	"github.com/noderunner/bingle/internal/engine/dsl"
 )
 
 // GuideTabInfo names one tab of a game's rules guide.
@@ -158,61 +155,4 @@ func generatedGuide(info GameInfo) []GuideTab {
 // escapeMD makes text safe to embed as Markdown prose.
 func escapeMD(s string) string {
 	return strings.NewReplacer("\\", "\\\\", "`", "\\`", "*", "\\*", "_", "\\_", "[", "\\[", "]", "\\]", "<", "\\<", ">", "\\>", "|", "\\|", "~", "\\~").Replace(s)
-}
-
-// areasOf converts an areas board's positions to the client form.
-func areasOf(def *dsl.GameDefinition) (*CanvasDTO, []AreaDTO) {
-	var canvas *CanvasDTO
-	if c := def.Board.Canvas; c != nil {
-		canvas = &CanvasDTO{Width: c.Width, Height: c.Height}
-	}
-	var out []AreaDTO
-	for _, p := range def.Board.Positions {
-		a := AreaDTO{ID: p.ID, Name: p.Name, Polygons: p.Polygons, Tags: p.Tags}
-		if a.Name == "" {
-			a.Name = p.ID
-		}
-		if p.Anchor != nil {
-			a.Anchor = *p.Anchor
-		} else {
-			a.Anchor = polygonCenter(p.Polygons)
-		}
-		out = append(out, a)
-	}
-	return canvas, out
-}
-
-// polygonCenter is the centroid of the largest polygon.
-func polygonCenter(polys [][][2]float64) [2]float64 {
-	var best [][2]float64
-	bestArea := -1.0
-	for _, poly := range polys {
-		if a := math.Abs(polygonArea(poly)); a > bestArea {
-			best, bestArea = poly, a
-		}
-	}
-	if len(best) == 0 {
-		return [2]float64{}
-	}
-	var cx, cy, a2 float64
-	for i := range best {
-		p, q := best[i], best[(i+1)%len(best)]
-		cross := p[0]*q[1] - q[0]*p[1]
-		a2 += cross
-		cx += (p[0] + q[0]) * cross
-		cy += (p[1] + q[1]) * cross
-	}
-	if a2 == 0 {
-		return best[0]
-	}
-	return [2]float64{cx / (3 * a2), cy / (3 * a2)}
-}
-
-func polygonArea(poly [][2]float64) float64 {
-	var a2 float64
-	for i := range poly {
-		p, q := poly[i], poly[(i+1)%len(poly)]
-		a2 += p[0]*q[1] - q[0]*p[1]
-	}
-	return a2 / 2
 }

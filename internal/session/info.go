@@ -126,34 +126,17 @@ type BoardDTO struct {
 	Regions   map[string][]string `json:"regions,omitempty"`
 	// Borders maps region name -> seat color, for tinting board edges.
 	Borders map[string]string `json:"borders,omitempty"`
-	// Canvas and Areas describe an "areas" board: straight-edged polygons
-	// in a canvas of the given size, one or more per position.
-	Canvas *CanvasDTO `json:"canvas,omitempty"`
-	Areas  []AreaDTO  `json:"areas,omitempty"`
-}
-
-// CanvasDTO is the coordinate space of an area map.
-type CanvasDTO struct {
-	Width  float64 `json:"width"`
-	Height float64 `json:"height"`
-}
-
-// AreaDTO is one area of an area map: its outline(s), where its name and
-// tokens go and its tags (ocean, land, glyph-dragon…).
-type AreaDTO struct {
-	ID       string         `json:"id"`
-	Name     string         `json:"name"`
-	Polygons [][][2]float64 `json:"polygons"`
-	Anchor   [2]float64     `json:"anchor"`
-	Tags     []string       `json:"tags,omitempty"`
 }
 
 // PositionDTO is one board position with layout coordinates (y grows
-// downwards).
+// downwards), and the name and tags of a position that has them (an area
+// of a map: its tags say ocean, land, glyph-dragon…).
 type PositionDTO struct {
-	ID string  `json:"id"`
-	X  float64 `json:"x"`
-	Y  float64 `json:"y"`
+	ID   string   `json:"id"`
+	X    float64  `json:"x"`
+	Y    float64  `json:"y"`
+	Name string   `json:"name,omitempty"`
+	Tags []string `json:"tags,omitempty"`
 }
 
 // CounterDTO is a per-seat number kept in a reserve pool.
@@ -279,14 +262,16 @@ func buildGameInfo(cg *catalog.CompiledGame) GameInfo {
 		}
 	}
 	explicitXY := map[string][2]float64{}
+	named := map[string]dsl.Position{}
 	for _, p := range def.Board.Positions {
 		if p.X != nil && p.Y != nil {
 			explicitXY[p.ID] = [2]float64{*p.X, *p.Y}
 		}
+		named[p.ID] = p
 	}
 	n := b.Len()
 	for i, id := range b.Positions() {
-		pd := PositionDTO{ID: string(id)}
+		pd := PositionDTO{ID: string(id), Name: named[string(id)].Name, Tags: named[string(id)].Tags}
 		c, hasCoord := b.Coord(id)
 		xy, hasXY := explicitXY[string(id)]
 		switch {
@@ -335,20 +320,6 @@ func buildGameInfo(cg *catalog.CompiledGame) GameInfo {
 	}
 	if len(def.Board.Borders) > 0 {
 		bd.Borders = def.Board.Borders
-	}
-	if style == "areas" {
-		bd.Canvas, bd.Areas = areasOf(def)
-		// Areas are positioned by their anchors so generic code that reads
-		// position coordinates still places them sensibly.
-		at := map[string][2]float64{}
-		for _, a := range bd.Areas {
-			at[a.ID] = a.Anchor
-		}
-		for i := range bd.Positions {
-			if xy, ok := at[bd.Positions[i].ID]; ok {
-				bd.Positions[i].X, bd.Positions[i].Y = xy[0], xy[1]
-			}
-		}
 	}
 	info.Board = bd
 	if def.Guide != nil {

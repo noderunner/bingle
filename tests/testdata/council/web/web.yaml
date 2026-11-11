@@ -2,3 +2,14 @@
 # vehicle for a game that brings scripts of its own.
 script: page.js
 style: page.css
+# A map of areas: each position's outline in the canvas. Hall's name and envoys
+# go where its anchor says; the others' at the centre of their outline.
+board:
+  style: areas
+  canvas: {width: 300, height: 200}
+  areas:
+    - {id: north, polygons: [[[0, 0], [300, 0], [300, 60], [0, 60]]]}
+    - {id: west, polygons: [[[0, 60], [80, 60], [80, 140], [0, 140]]]}
+    - {id: hall, anchor: [150, 100], polygons: [[[80, 60], [220, 60], [220, 140], [80, 140]]]}
+    - {id: east, polygons: [[[220, 60], [300, 60], [300, 140], [220, 140]]]}
+    - {id: south, polygons: [[[0, 140], [300, 140], [300, 200], [0, 200]]]}

@@ -730,6 +730,16 @@ pieces:
   red: {shape: disc}           # disc, square, flat, wall, cap, ring, diamond, triangle, cross
 board: {style: points, borders: {top: white}}   # art: guide/board.webp, a picture of the printed board
                                # among the game's own files, for its page script to draw an areas board on
+# A map of areas: style areas, a canvas, and an outline for every position (a list, so that
+# a variant's replaces the family's whole). The anchor, where the name and the units go,
+# defaults to the centre of the largest polygon. look.js joins each to its position's name
+# and tags as info.board.areas, and places the position at its anchor.
+#   board:
+#     style: areas
+#     canvas: {width: 1000, height: 600}
+#     areas:
+#       - {id: asia, anchor: [800, 140], polygons: [[[690, 60], [842, 60], [915, 245], [690, 230]]]}
+#       - {id: north-pacific, polygons: [[[0, 60], [130, 60], [130, 320], [0, 320]], [[915, 60], [1000, 60], [1000, 320], [915, 320]]]}
 cards:
   back: {color: '#7a2030', text: BINGLE}
   zones: {hand: {layout: fan}}  # fan, row, stack, splay or grid
@@ -740,9 +750,16 @@ display:                       # the definition's display keeps each tint's and 
   badges: {fatigued: {color: '#f4f1e8', glyph: z}}
 preview:                       # a game in play for the list of games and the setup page
   - {position: e5, piece: red, color: red}
+data:                          # the game's page script's own, in a shape of its own; nothing
+  fill: {asia: '#bc4420'}      # else reads or checks it (Cthulhu Wars' area colours)
 variants:                      # a merge patch per game of the family, by id
   blooms-8: {board: {style: points}}
 ```
+
+`look.Check` holds a look to its games: every seat, piece, tint, badge, zone, suit and area it names
+is the game's, and a game drawn as areas (its variant's board over the family's) has a canvas and
+an outline for every position. A position a derived game adds (Cthulhu Wars' Moon) is the page
+script's to outline, through its `outlineArea`.
 
 **A game's own page script.** A look may name `script`, an ES module among the module's `Scripts`
 (`catalog.Module.Scripts`), served at `/static/games/<family>/<path>`. `api.gameDef` imports it once per
@@ -762,6 +779,7 @@ and its `cw-*.js`; Hive's tiles, Onitama's Move cards and Nyet!'s pictures) have
 | `choicePanel(ctx)` | `game.js`: what the player chooses from beside the actions, drawn from the game's own view (Onitama's Move cards); `ctx` is `viewContext()` |
 | `choiceIcon(desc, ctx, size)` | `cards.js`, the boxes and lines of a board of choices (their words without it) |
 | `renderAreaMap(host, info, view, handlers)` | `render.js`, for an `areas` board |
+| `outlineArea(position, info)` | `api.gameDef`, for a position of an `areas` board the look does not outline (one a derived game adds: Cthulhu Wars' Moon); returns `{polygons, anchor}` or `null` |
 | `mapKey(info)`, `legendMarker(kind, arg, info)` | `rules.js`, the key to the map |
 | `guideFigure(name, info)` | `rules.js`: a guide's `![…](figure:name)`, a picture the game draws itself (Cthulhu Wars' map); `null` shows the alt text |
 | `listIcon()` | `home.js`, the games list, for a game whose board makes a poor picture |

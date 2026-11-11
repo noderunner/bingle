@@ -62,21 +62,7 @@ func resolveBoard(def *dsl.GameDefinition) (*board.Graph, error) {
 	}
 
 	switch def.Board.Style {
-	case "", "squares", "points", "free", "none":
-	case "areas":
-		if def.Board.Canvas == nil || def.Board.Canvas.Width <= 0 || def.Board.Canvas.Height <= 0 {
-			return nil, fmt.Errorf("catalog: an area map needs a canvas with a positive width and height")
-		}
-		for _, p := range def.Board.Positions {
-			if len(p.Polygons) == 0 {
-				return nil, fmt.Errorf("catalog: area %q has no polygon", p.ID)
-			}
-			for _, poly := range p.Polygons {
-				if len(poly) < 3 {
-					return nil, fmt.Errorf("catalog: area %q has a polygon with fewer than three corners", p.ID)
-				}
-			}
-		}
+	case "", "squares", "points", "free", "none", "areas":
 	default:
 		return nil, fmt.Errorf("catalog: unsupported board style %q", def.Board.Style)
 	}

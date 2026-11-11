@@ -153,14 +153,6 @@
           "description": "Borders tints board edges for clients: region name -\u003e seat color (Hex: top/bottom belong to one player, left/right to the other).",
           "type": "object"
         },
-        "canvas": {
-          "allOf": [
-            {
-              "$ref": "#/$defs/Canvas"
-            }
-          ],
-          "description": "Canvas is the coordinate space of an area map's polygons."
-        },
         "edges": {
           "items": {
             "$ref": "#/$defs/Edge"
@@ -227,19 +219,6 @@
       "additionalProperties": false,
       "description": "CallbackRefs names optional Go-callback hooks a game definition wants wired in by the future catalog package. It is empty for games (like the demo) that use the no-op default; fields will be added here as games that need named hooks are built.",
       "properties": {},
-      "type": "object"
-    },
-    "Canvas": {
-      "additionalProperties": false,
-      "description": "Canvas is the width and height of an area map's coordinate space.",
-      "properties": {
-        "height": {
-          "type": "number"
-        },
-        "width": {
-          "type": "number"
-        }
-      },
       "type": "object"
     },
     "CapturesDef": {
@@ -1134,35 +1113,15 @@
       "additionalProperties": false,
       "description": "Position identifies a single hand-authored board position in an explicit (non-generated) board graph.",
       "properties": {
-        "anchor": {
-          "description": "Anchor is where the area's name and its tokens are centred.",
-          "items": {
-            "type": "number"
-          },
-          "type": "array"
-        },
         "id": {
           "type": "string"
         },
         "name": {
-          "description": "Name is the area's display name.",
+          "description": "Name is the position's name, for a position that has one: an area of a map, like a country or an ocean. How it is drawn (its outline in a map of areas) is the client's (the web page's web.yaml, ADR 0124).",
           "type": "string"
         },
-        "polygons": {
-          "description": "Polygons outline the area: each polygon is a list of [x, y] corners in the board's canvas. More than one polygon draws one area in several pieces (an ocean that wraps round the edge of the map).",
-          "items": {
-            "items": {
-              "items": {
-                "type": "number"
-              },
-              "type": "array"
-            },
-            "type": "array"
-          },
-          "type": "array"
-        },
         "tags": {
-          "description": "Tags classify the area for rules and drawing (\"ocean\", \"land\", ...).",
+          "description": "Tags classify the position for the rules (\"ocean\", \"land\", ...).",
           "items": {
             "type": "string"
           },

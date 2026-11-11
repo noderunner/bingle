@@ -4841,7 +4841,7 @@ function refreshOptions() {
 	// The layers of an area map.
 	w.hide("layers", !areas);
 	if (areas) {
-		const ice = !!(S.info.params && S.info.params.ice_glyphs);
+		const ice = !!(S.info.pageData && S.info.pageData.ice_glyphs);
 		w.update("layers", ["v4", glyphLayerOn(), ice], (el) => {
 			el.append(
 				settingToggle("names", "opt-layer-names", "Area Names", "bingle.layer.names"),
