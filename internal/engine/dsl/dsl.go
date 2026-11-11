@@ -260,15 +260,6 @@ type Board struct {
 	// Borders tints board edges for clients: region name -> seat color
 	// (Hex: top/bottom belong to one player, left/right to the other).
 	Borders map[string]string `json:"borders,omitempty"`
-
-	// Canvas is the coordinate space of an area map's polygons.
-	Canvas *Canvas `json:"canvas,omitempty"`
-}
-
-// Canvas is the width and height of an area map's coordinate space.
-type Canvas struct {
-	Width  float64 `json:"width"`
-	Height float64 `json:"height"`
 }
 
 // BoardGenerator configures a built-in board generator: a "grid" of
@@ -299,19 +290,11 @@ type Position struct {
 	X *float64 `json:"x,omitempty"`
 	Y *float64 `json:"y,omitempty"`
 
-	// The remaining fields describe an *area* of an area map (board style
-	// "areas"): a region outlined with straight edges, like a country or an
-	// ocean on a world map.
-
-	// Name is the area's display name.
+	// Name is the position's name, for a position that has one: an area of
+	// a map, like a country or an ocean. How it is drawn (its outline in a
+	// map of areas) is the client's (the web page's web.yaml, ADR 0124).
 	Name string `json:"name,omitempty"`
-	// Polygons outline the area: each polygon is a list of [x, y] corners in
-	// the board's canvas. More than one polygon draws one area in several
-	// pieces (an ocean that wraps round the edge of the map).
-	Polygons [][][2]float64 `json:"polygons,omitempty"`
-	// Anchor is where the area's name and its tokens are centred.
-	Anchor *[2]float64 `json:"anchor,omitempty"`
-	// Tags classify the area for rules and drawing ("ocean", "land", ...).
+	// Tags classify the position for the rules ("ocean", "land", ...).
 	Tags []string `json:"tags,omitempty"`
 }
 

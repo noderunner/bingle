@@ -46,13 +46,13 @@ func play(t *testing.T, g *catalog.CompiledGame, st *state.BoardState, seat int,
 	return r
 }
 
-// It compiles as a map of areas for four, and random games finish, every
+// It compiles as a board of five areas for four, and random games finish, every
 // move surviving its notation and every position its document.
 func TestRandomGamesFinish(t *testing.T) {
 	cat := newCatalog(t)
 	g := game(t, cat, council.ID)
-	if g.Definition.Board.Style != "areas" || len(g.Definition.Seats) != 4 || g.Board.Len() != 5 {
-		t.Fatalf("the board: %q, %d seats, %d areas", g.Definition.Board.Style, len(g.Definition.Seats), g.Board.Len())
+	if len(g.Definition.Seats) != 4 || g.Board.Len() != 5 {
+		t.Fatalf("the board: %d seats, %d areas", len(g.Definition.Seats), g.Board.Len())
 	}
 	rng := rand.New(rand.NewSource(1))
 	for i := 0; i < 20; i++ {

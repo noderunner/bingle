@@ -128,3 +128,15 @@ and to leave a pile a seat holds unsorted. That part is now its own field, `pile
 (`fan`, `row`, `stack`, `splay`, `grid`) leaves the definition for the web file, where `look.Check` holds it
 to those values. The page draws a pile with no layout as a stack, and any other zone as a row. The patience
 vocabulary's generated piles (stock, waste, foundations, cells, finished suits) are piles; its columns are not.
+
+## Addendum (2026-11-11): an area's outline is the client's, and a page script has data of its own
+
+The last appearance in a definition was Cthulhu Wars', in the private overlay: its map's outlines, and colours
+and glyphs written by Go. An area map's `canvas` and each position's `polygons` and `anchor` leave the
+definition's schema and the game info for the web file's `board.canvas` and `board.areas` (a list by position
+id, so that a variant's replaces the family's whole); `look.Check` asks a game drawn as areas for a canvas and an
+outline for every position. A position keeps its `name` and `tags`, which the game info now sends with it. The
+Gate badges are keyed by faction rather than by seat (a seat's faction is chosen at setup), so that their colour
+can be the web file's. What only a game's page script draws from, such as each area's colour on a printed map,
+goes in the web file's `data`, which nothing else reads. `tests/look` now holds Cthulhu Wars' definition to the
+line as well.

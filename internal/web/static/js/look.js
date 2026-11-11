@@ -2,7 +2,8 @@
 // things are; a game's web.yaml, served as JSON at /api/game-defs/{id}/web,
 // says how this page draws them. applyLook lays the file over the info, so the
 // rest of the page reads the fields where it always has: info.board.style,
-// info.pieces[].shape, info.seats[].blend, info.display, info.preview, info.cards.
+// info.pieces[].shape, info.seats[].blend, info.display, info.preview, info.cards,
+// info.board.areas and canvas, and the page script's own info.pageData.
 // A value in the file wins over one the info still carries; a game with no file
 // is drawn from its info alone.
 
@@ -26,6 +27,75 @@ export function resolveLook(file, id) {
 	return own ? mergePatch(base, own) : base;
 }
 
+/** The centre of the largest of an area's polygons. */
+export function polygonCenter(polys) {
+	const twiceArea = (poly) => poly.reduce((a, p, i) => { const q = poly[(i + 1) % poly.length]; return a + p[0] * q[1] - q[0] * p[1]; }, 0);
+	let best = null;
+	let bestArea = -1;
+	for (const poly of polys || []) {
+		const a = Math.abs(twiceArea(poly));
+		if (a > bestArea) [best, bestArea] = [poly, a];
+	}
+	if (!best || !best.length) return [0, 0];
+	let cx = 0;
+	let cy = 0;
+	let a2 = 0;
+	best.forEach((p, i) => {
+		const q = best[(i + 1) % best.length];
+		const cross = p[0] * q[1] - q[0] * p[1];
+		a2 += cross;
+		cx += (p[0] + q[0]) * cross;
+		cy += (p[1] + q[1]) * cross;
+	});
+	return a2 === 0 ? best[0] : [cx / (3 * a2), cy / (3 * a2)];
+}
+
+/**
+ * A map of areas from the look's outlines and the board's positions: each
+ * area with its name and tags (the info's) and its outlines and anchor (the
+ * look's, the anchor the centre of its largest outline when the look gives
+ * none). A position the look does not outline (one a derived game adds, as
+ * Cthulhu Wars' Moon) is left for the game's page script. Positions are
+ * placed at their anchors, so that code reading a position's x and y finds
+ * it on the map.
+ */
+function areaBoard(board, outlines) {
+	const byId = new Map(outlines.map((a) => [a.id, a]));
+	const areas = [];
+	const anchors = new Map();
+	for (const p of board.positions || []) {
+		const o = byId.get(p.id);
+		if (!o) continue;
+		const anchor = o.anchor || polygonCenter(o.polygons);
+		anchors.set(p.id, anchor);
+		areas.push({ id: p.id, name: p.name || p.id, polygons: o.polygons, anchor, tags: p.tags || [] });
+	}
+	const positions = (board.positions || []).map((p) => (anchors.has(p.id) ? { ...p, x: anchors.get(p.id)[0], y: anchors.get(p.id)[1] } : p));
+	return { areas, positions };
+}
+
+/**
+ * The areas a game's page script outlines itself: a position of a map of
+ * areas that the look leaves out (one a derived game adds, as Cthulhu Wars'
+ * Moon), when the script exports outlineArea(position, info) and it returns
+ * {polygons, anchor}. info is changed in place, once the script has loaded.
+ */
+export function outlineMissing(info, page) {
+	const b = info.board;
+	if (!b || b.style !== "areas" || !b.areas || !page || typeof page.outlineArea !== "function") return info;
+	const have = new Set(b.areas.map((a) => a.id));
+	for (const p of b.positions || []) {
+		if (have.has(p.id)) continue;
+		const o = page.outlineArea(p, info);
+		if (!o || !o.polygons) continue;
+		const anchor = o.anchor || polygonCenter(o.polygons);
+		b.areas.push({ id: p.id, name: p.name || p.id, polygons: o.polygons, anchor, tags: p.tags || [] });
+		p.x = anchor[0];
+		p.y = anchor[1];
+	}
+	return info;
+}
+
 /** info with the look laid over it. info itself is not changed. */
 export function applyLook(info, file) {
 	const look = resolveLook(file, info.id);
@@ -38,6 +108,9 @@ export function applyLook(info, file) {
 		out.pieces = info.pieces.map((p) => (look.pieces[p.type] ? { ...p, ...look.pieces[p.type] } : p));
 	}
 	if (look.board) out.board = { ...info.board, ...look.board };
+	// What the game's page script alone reads (the look's data).
+	if (look.data) out.pageData = look.data;
+	if (look.board && look.board.areas && info.board) out.board = { ...out.board, ...areaBoard(info.board, look.board.areas) };
 	if (look.display) {
 		const display = { ...(info.display || {}) };
 		for (const kind of ["tints", "badges"]) {

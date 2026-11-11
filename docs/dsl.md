@@ -686,50 +686,27 @@ See [courtfall.md](courtfall.md) and ADR 0025. `params` are plain numbers and
 strings the ruleset reads (`CompiledGame.ParamInt`); variants change them with
 a merge patch like anything else.
 
-## Area maps (`board.style: "areas"`)
+## Area maps
 
-A board of irregular areas — continents, oceans, a wrapped sea — instead of a
-grid. Positions are declared with their graph edges, so movement and
-adjacency are ordinary; the polygons only say how to draw them:
+A board of irregular areas (continents, oceans, a wrapped sea) instead of a
+grid. The definition says which areas there are, their names and tags, and
+which touch: movement and adjacency are ordinary. How they are drawn (each
+area's outline, and the canvas it is drawn in) is the client's: the web page
+reads it from the game's `web.yaml` (ADR 0124; [ui.md](ui.md#a-games-look-webyaml)).
 
 ```yaml
 board:
-  type: explicit
-  style: areas
-  canvas: {width: 1000, height: 600}
   positions:
-    - id: asia
-      name: Asia
-      anchor: [800, 140]
-      tags: [land, glyph-dragon]
-      polygons:
-        - - [690, 60]
-          - [842, 60]
-          - [915, 245]
-          - [690, 230]
-    - id: north-pacific
-      name: North Pacific
-      tags: [ocean]
-      polygons:
-        - - [0, 60]
-          - [130, 60]
-          - [130, 320]
-          - [0, 320]
-        - - [915, 60]
-          - [1000, 60]
-          - [1000, 320]
-          - [915, 320]
+    - {id: asia, name: Asia, tags: [land, glyph-dragon]}
+    - {id: north-pacific, name: North Pacific, tags: [ocean]}
   edges:
     - {from: asia, to: north-pacific}
 ```
 
-* `polygons` — one or more outlines (`[x, y]` corners, at least three) on the
-  `canvas`; several polygons draw an area that wraps around the edge.
-* `anchor` — where the name and unit tokens are centred (default: the
-  centroid of the largest polygon).
-* `tags` — free labels; `ocean`/`land` pick the tint and `glyph-<name>` draws
-  a small symbol. Games read tags through `mapData` in their ruleset.
-* The catalog rejects a missing canvas or a position without an outline.
+* `name` — the area's name, sent with the position in the game's info.
+* `tags` — free labels the rules read (`ocean`, `land`, `glyph-<name>`):
+  games read them through `mapData` in their ruleset, and clients may draw
+  by them.
 
 ## Rules guide (`guide`)
 

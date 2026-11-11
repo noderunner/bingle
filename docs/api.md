@@ -388,8 +388,9 @@ Games with `engine: "ruleset"` (Courtfall, Cthulhu Wars) return a *public view* 
 position: secrets (the dice generator, a committed choice) are masked, the
 ruleset's derived `state.ext.view` is attached, and `start_state` / exports of
 a live game carry no seed. `GET /api/game-defs/{id}` adds `engine`, `display`
-(tint/badge legend), `count_labels`, `params` and — for `board.style: "areas"` —
-`board.canvas` and `board.areas[{id, name, polygons, anchor, tags}]`; `guide` lists the
+(tint/badge legend), `count_labels` and `params`; a board's positions carry the `name`
+and `tags` of those that have them (the areas of a map), and nothing about how they are
+drawn: an area's outline is the client's (the web page's `web.yaml`); `guide` lists the
 tabs of a hand-written rules guide; its `actions` list the verbs
 that appear as buttons.
 

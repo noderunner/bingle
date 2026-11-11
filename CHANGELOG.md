@@ -4,6 +4,12 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.102.0 - 2026-11-11
+
+### Bingle Core 0.102.0
+- Nothing changes in play: maps of areas look as they did.
+- **For programs:** a map's outlines are the client's. The game info's `board.canvas` and `board.areas` are gone, and a game definition can no longer give `board.canvas` or a position's `polygons` and `anchor`. The board's `positions` carry each area's `name` and `tags` instead. The web page reads the outlines from the game's `web.yaml`, as `board.canvas` and `board.areas`, and a game's page script can keep data of its own there under `data`.
+
 ## 0.101.1 - 2026-11-11
 
 ### Bingle Core 0.101.1

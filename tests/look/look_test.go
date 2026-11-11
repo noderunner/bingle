@@ -11,6 +11,7 @@ import (
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/engine/dsl"
 	"github.com/noderunner/bingle/internal/web/look"
+	"github.com/noderunner/bingle/tests/testdata"
 )
 
 // families registers every shipped module and returns, for each family whose
@@ -116,6 +117,79 @@ func TestCheckCatchesAMistake(t *testing.T) {
 	}
 }
 
+// A map of areas is the look's: an outline for every position, in a canvas,
+// each variant with its own.
+func TestCheckCatchesAnAreaMap(t *testing.T) {
+	cat := catalog.NewCatalog()
+	src := `{"id":"m","name":"M","board":{"positions":[{"id":"a","name":"A","tags":["land"]},{"id":"b"}],"edges":[{"from":"a","to":"b"}]},
+		"seats":[{"seat":1,"color":"red"},{"seat":2,"color":"blue"}],"pieces":{"stone":{"movement":{}}},
+		"turn_order":{"type":"round-robin","seats":[1,2]},"actions":[{"id":"place","type":"place","pieces":["stone"]}],
+		"win_condition":{"type":"none"},
+		"variants":[{"id":"m-3","patch":{"board":{"positions":[{"id":"a"},{"id":"b"},{"id":"c"}],"edges":[{"from":"a","to":"b"},{"from":"b","to":"c"}]}}}]}`
+	if err := cat.RegisterModule(catalog.Module{ID: "m", Definition: []byte(src)}); err != nil {
+		t.Fatal(err)
+	}
+	games := map[string]*catalog.CompiledGame{}
+	for _, id := range []string{"m", "m-3"} {
+		cg, ok := cat.Get(id)
+		if !ok {
+			t.Fatalf("no %s", id)
+		}
+		games[id] = cg
+	}
+	const sq = `[[[0,0],[1,0],[1,1],[0,1]]]`
+	two := `[{"id":"a","polygons":` + sq + `,"anchor":[0.5,0.5]},{"id":"b","polygons":` + sq + `}]`
+	three := `[{"id":"a","polygons":` + sq + `},{"id":"b","polygons":` + sq + `},{"id":"c","polygons":` + sq + `}]`
+	for file, want := range map[string]string{
+		`{"board":{"style":"areas","canvas":{"width":2,"height":1},"areas":` + two + `},"variants":{"m-3":{"board":{"areas":` + three + `}}}}`: "",
+		// The family's outlines do not draw the variant's third area.
+		`{"board":{"style":"areas","canvas":{"width":2,"height":1},"areas":` + two + `}}`:                      `variant "m-3": area "c" has no outline`,
+		`{"board":{"style":"areas","areas":` + two + `},"variants":{"m-3":{"board":{"areas":` + three + `}}}}`: "needs a canvas",
+		`{"board":{"style":"areas","canvas":{"width":0,"height":1},"areas":` + two + `}}`:                      "positive width and height",
+		`{"board":{"areas":[{"id":"z","polygons":` + sq + `}]}}`:                                               `area "z" is not a position`,
+		`{"board":{"areas":[{"id":"a","polygons":[]}]}}`:                                                       `area "a" has no polygon`,
+		`{"board":{"areas":[{"id":"a","polygons":[[[0,0],[1,1]]]}]}}`:                                          "fewer than three corners",
+		`{"board":{"areas":[{"id":"a","polygons":` + sq + `},{"id":"a","polygons":` + sq + `}]}}`:              `area "a" is outlined twice`,
+		// Outlines with no areas style are only checked, not required.
+		`{"board":{"areas":[{"id":"a","polygons":` + sq + `}]}}`: "",
+		// The page script's data is the script's own.
+		`{"data":{"fill":{"a":"#123456"}}}`: "",
+	} {
+		err := look.Check([]byte(file), "m", games)
+		switch {
+		case want == "" && err != nil:
+			t.Errorf("%s: %v", file, err)
+		case want != "" && (err == nil || !strings.Contains(err.Error(), want)):
+			t.Errorf("%s: got %v, want an error with %s", file, err, want)
+		}
+	}
+	// A definition cannot outline its areas any more.
+	bad := strings.Replace(src, `{"id":"b"}]`, `{"id":"b","polygons":[[[0,0],[1,0],[1,1]]]}]`, 1)
+	if _, err := dsl.Parse([]byte(bad)); err == nil {
+		t.Error("a definition with an outline was accepted")
+	}
+}
+
+// The test fixtures' looks fit their games too: Council's map of areas.
+func TestEveryFixtureLookFitsItsGame(t *testing.T) {
+	for _, m := range testdata.Fixtures() {
+		if m.Web == nil {
+			continue
+		}
+		cat := catalog.NewCatalog()
+		if err := cat.RegisterModule(m); err != nil {
+			t.Fatalf("RegisterModule(%s): %v", m.ID, err)
+		}
+		games := map[string]*catalog.CompiledGame{}
+		for _, cg := range cat.List() {
+			games[cg.Definition.ID] = cg
+		}
+		if err := look.Check(m.Web, m.ID, games); err != nil {
+			t.Error(err)
+		}
+	}
+}
+
 // Load reads web.yaml as JSON and refuses a key the file does not have, such
 // as a rule; a folder without one has no look.
 func TestLoadChecksEveryKey(t *testing.T) {
@@ -148,15 +222,12 @@ func TestCheckCatchesAZoneLayout(t *testing.T) {
 }
 
 // The line of ADR 0124, held: no definition of a shipped game says how it
-// looks, apart from that of a private game whose look has not moved yet
-// (Cthulhu Wars', in a private build, ADR 0127). A piece type's
-// own colour stays, since the rules read it (ADR 0117); a zone's layout cannot
-// be written at all, since the definition only says whether it is a pile.
+// looks, the private games' included (ADR 0127). A piece type's
+// own colour stays, since the rules read it (ADR 0117); a zone's layout and
+// an area's outline cannot be written at all, since the definition only says
+// whether a zone is a pile and which areas there are.
 func TestNoDefinitionCarriesItsLook(t *testing.T) {
 	for _, m := range app.BuiltinModules() {
-		if m.ID == "cthulhu-wars" {
-			continue
-		}
 		cat := catalog.NewCatalog()
 		if err := cat.RegisterModule(m); err != nil {
 			t.Fatalf("RegisterModule(%s): %v", m.ID, err)
