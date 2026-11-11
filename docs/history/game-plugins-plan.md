@@ -2,7 +2,8 @@
 
 Status: **done**, without step 6 (opened 2026-10-28). The five open questions were settled on 2026-10-31 (see
 *Decisions*). Steps 1 to 5 and the retirements are built; step 6, data packs, was **dropped** on 2026-11-09, and
-with it decisions 3 and 5 (see the status log). Nothing in this plan is left to build. The sections before
+with it decisions 3 and 5 (see the status log). Nothing in this plan is left to build: Cthulhu Wars' look left the
+server on 2026-11-11, and the follow-ups the status log lists last are small enough to stand alone. The sections before
 *Decisions* are the initial thinking, kept as written.
 
 ## What was asked for
@@ -333,3 +334,24 @@ which is now built.
   - **If it comes back:** only if bingle gets operators who do not build it, or authors who write games without a
     checkout. A development-only folder of definitions loaded from disk, which is trusted, would serve the second
     at a fraction of the cost. The withdrawn ADR and #178 hold what was built.
+- 2026-11-10 to 2026-11-11: **Cthulhu Wars' look has left the server**, the last of the list in the 2026-11-07
+  entry, in two stages agreed with the maintainer, each a public and overlay pair:
+  - **Stage 1** (#183, overlay #5): the server draws no picture. `board.svg` (`areaMapSVG`) and `map_art` are
+    gone; the setup picker and a guide's `figure:map` are drawn by the game's page script, and the picture of
+    the printed board is the look's `board.art`.
+  - **Stage 2** (#185, overlay #8): an area map's `canvas` and each position's `polygons` and `anchor` leave the
+    definition's schema and the game info for the look's `board.canvas` and `board.areas`; positions carry their
+    `name` and `tags`. A look's `data` is for its page script alone, and a page script may outline a position
+    the look cannot name (`outlineArea`: Cthulhu Wars' Moon). Cthulhu Wars' piece shapes, tint and badge colours
+    and drawing-only params moved with them, and its Gate badges are keyed by faction, so `gateColor` is gone.
+    `tests/look` no longer skips the game (ADR 0124's addendum of 2026-11-11).
+  - Before them, the API, MCP and engine call a seat's chosen side a faction rather than a cult (#182, overlay
+    #4), and the overlay's CI is split into shards as the public CI is (overlay #6).
+  - **The order dependency** noted on 2026-11-08 is traced and fixed: Cthulhu Wars' setup catalog was cached from
+    the first game that asked, and a derived game, which has no options, left it empty (overlay #5).
+  - **Left, as follow-ups rather than parts of this plan:** the shared page still names some of Cthulhu Wars'
+    ideas (its rail's `cults` pane and `#cult-stack`, the phone's `cult-<seat>` pages, the `cultCards` hooks, a
+    unit held on a Gate, and the map layers Sigils, Glyphs and Glacier Glyphs in the options window), which
+    should become generic words or hooks of the page script; and the DSL still accepts the appearance fields no
+    shipped definition uses (style, shape, blend, borders, preview, tint and badge colours and glyphs,
+    `no_hands`, card colours), which the test fixtures keep for the page's fallback.
