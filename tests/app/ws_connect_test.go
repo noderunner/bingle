@@ -368,3 +368,37 @@ func TestWSConnect_SeatsFull_FailsHandshake(t *testing.T) {
 		t.Fatalf("dialWS(/ws/%s?name=Carol&role=player) on a seats-full room returned nil error, want a non-nil dial/handshake error", roomCode)
 	}
 }
+
+// A page loads the game, then opens its socket: a move played in between comes as
+// no event. "joined" says how many selections the game has played, read after the
+// socket subscribed, so the page can tell that it missed one.
+func TestWSConnect_JoinedSaysHowManySelectionsThereAre(t *testing.T) {
+	baseURL := newRESTTestServer(t)
+	room := newTakRoom(t, baseURL, "tak-3x3", "Alice")
+	joinRoom(t, baseURL, room, "Bob")
+	if code, _ := moveNotation(t, baseURL, room, "Alice", "a3"); code != 200 {
+		t.Fatalf("a3: %d", code)
+	}
+	if code, _ := moveNotation(t, baseURL, room, "Bob", "c1"); code != 200 {
+		t.Fatalf("c1: %d", code)
+	}
+
+	conn, err := dialWS(t, baseURL, wsPath(room, "Alice", true, "player", true))
+	if err != nil {
+		t.Fatalf("dialWS: %v", err)
+	}
+	t.Cleanup(func() { _ = conn.CloseNow() })
+	ev := readFirstEvent(t, conn)
+	if ev.Type != "joined" {
+		t.Fatalf("first event type = %q, want joined", ev.Type)
+	}
+	var data struct {
+		MoveSeq *int `json:"move_seq"`
+	}
+	if err := json.Unmarshal(ev.Data, &data); err != nil {
+		t.Fatalf("decode joined: %v (raw: %s)", err, ev.Data)
+	}
+	if data.MoveSeq == nil || *data.MoveSeq != 2 {
+		t.Errorf("joined.move_seq = %v, want 2 (raw: %s)", data.MoveSeq, ev.Data)
+	}
+}

@@ -38,7 +38,10 @@ func TestAccountUI_SignInAndChangeTheGivenPassword(t *testing.T) {
 	}
 	waitJS(t, ctx, "the sign-in link", `document.getElementById("login-link") !== null && !document.getElementById("account-box").hidden`, 10*time.Second)
 	clickSel(t, ctx, "#login-link")
-	waitJS(t, ctx, "the sign-in page", `document.getElementById("login-form") !== null`, 10*time.Second)
+	// The link loads a page: wait until it is loaded and its script has run, or the
+	// keys go to a document the browser is still replacing (and the click to a form
+	// with nothing listening).
+	waitJS(t, ctx, "the sign-in page", `location.pathname === "/login" && document.readyState === "complete" && document.getElementById("login-form") !== null`, 10*time.Second)
 	if err := chromedp.Run(ctx,
 		chromedp.SendKeys("#login-handle", "ana", chromedp.ByID),
 		chromedp.SendKeys("#login-password", pw, chromedp.ByID),
@@ -47,7 +50,7 @@ func TestAccountUI_SignInAndChangeTheGivenPassword(t *testing.T) {
 		t.Fatal(err)
 	}
 	// A given password sends the account to change it.
-	waitJS(t, ctx, "the account page", `location.pathname === "/account" && document.getElementById("account-who") && document.getElementById("account-who").textContent === "Signed in as @ana." && !document.getElementById("account-must-change").hidden`, 10*time.Second)
+	waitJS(t, ctx, "the account page", `location.pathname === "/account" && document.readyState === "complete" && document.getElementById("account-who") && document.getElementById("account-who").textContent === "Signed in as @ana." && !document.getElementById("account-must-change").hidden`, 10*time.Second)
 	if err := chromedp.Run(ctx,
 		chromedp.SendKeys("#password-old", pw, chromedp.ByID),
 		chromedp.SendKeys("#password-new", "a password of my own", chromedp.ByID),
