@@ -4,6 +4,12 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.101.0 - 2026-11-10
+
+### Bingle Core 0.101.0
+- Nothing changes in play. A game's guide can show a picture the game draws itself, such as its map, the same way it draws it on the board.
+- **For programs:** the server draws no pictures of a game any more. `GET /api/game-defs/{id}/assets/board.svg` is gone, and so is `map_art` in `GET /api/game-defs`. A client draws a map from the board's areas, as the web page does. A guide's `![…](figure:map)` names a picture the client draws; one that cannot shows the alt text. A game's `web.yaml` may name `board.art`, the picture of its printed board among its own files.
+
 ## 0.100.0 - 2026-11-10
 
 ### Bingle Core 0.100.0

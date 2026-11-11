@@ -743,8 +743,10 @@ guide:
 The files are embedded with the module (`catalog.Module.Assets`, an `fs.FS`;
 `//go:embed guide`) and each tab must exist. They are plain Markdown with a
 few extras (callouts `> [!NOTE]`, `::: details Title` … `:::`, `[[Key]]`
-keycaps, tables, `![](piece:cthulhu:blue)` piece icons, `![|600](board.svg)`
-images relative to the game's assets, `[text](tab:battle#dice)` links). A
+keycaps, tables, `![](piece:cthulhu:blue)` piece icons, `![|600](diagram.svg)`
+images relative to the game's assets, `![The map|900](figure:map "caption")` for a
+picture the game's page script draws (`guideFigure`, ADR 0124: the server draws none, and a
+client without the script shows the alt text), `[text](tab:battle#dice)` links). A
 game with no `guide` gets one generated *Rules* page (description, rules, how it
 ends, notation). The abstract games ship a single `rules.md` with diagrams
 (`scripts/guide_diagrams.py` draws the SVGs); add a second tab only where it earns

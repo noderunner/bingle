@@ -198,6 +198,8 @@ function build(dlg, info, pages, { tablist, body, search, initial }) {
 			seat: (n) => seatNode(info, n),
 			// The game's page script draws its own marks; a swatch is every game's.
 			marker: (kind, arg) => (info.page && info.page.legendMarker ? info.page.legendMarker(kind, arg, info) : legendMarker(kind, arg)),
+			// A picture the game draws itself, such as its map (ADR 0124: the server draws none).
+			figure: (name) => (info.page && info.page.guideFigure ? info.page.guideFigure(name, info) : null),
 			onTab: (id, anchor) => activate(id, anchor, false),
 			onAnchor: (id) => {
 				const el = document.getElementById(`rules-${page.id}-md-${id}`);

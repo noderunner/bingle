@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"io/fs"
 	"reflect"
+	"regexp"
 	"slices"
 	"strconv"
 
@@ -75,6 +76,10 @@ type Board struct {
 	Style string `json:"style,omitempty"`
 	// Borders tints board edges: region name -> seat colour.
 	Borders map[string]string `json:"borders,omitempty"`
+	// Art is a picture of the printed board, a path among the game's own
+	// files, for the game's page script to draw it behind an areas board (the
+	// shared page draws no areas board itself). A variant names its own.
+	Art string `json:"art,omitempty"`
 }
 
 // Cards is how a card game's cards and zones are drawn.
@@ -101,6 +106,9 @@ type Zone struct {
 }
 
 // layouts are the zone layouts the page draws.
+// pictureFile is what board art may be.
+var pictureFile = regexp.MustCompile(`(?i)\.(png|jpe?g|webp|svg)$`)
+
 var layouts = map[string]bool{"fan": true, "row": true, "stack": true, "splay": true, "grid": true}
 
 // SuitColor is the colour a suit is drawn in, where the rules do not read it.
@@ -228,6 +236,17 @@ func (f File) check(cg *catalog.CompiledGame) error {
 		for region := range f.Board.Borders {
 			if _, ok := cg.Board.Region(region); !ok && def.Board.Regions[region] == nil {
 				return fmt.Errorf("border %q is not a region of the board", region)
+			}
+		}
+		if art := f.Board.Art; art != "" {
+			if !fs.ValidPath(art) || !pictureFile.MatchString(art) {
+				return fmt.Errorf("board art %q has to be a PNG, JPEG, WebP or SVG among the game's files", art)
+			}
+			if cg.Assets == nil {
+				return fmt.Errorf("board art %q, but the game brings no files", art)
+			}
+			if _, err := fs.Stat(cg.Assets, art); err != nil {
+				return fmt.Errorf("board art %q: %w", art, err)
 			}
 		}
 	}

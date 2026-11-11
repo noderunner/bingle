@@ -1,13 +1,11 @@
 package session
 
 import (
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"io/fs"
 	"math"
 	"path"
-	"sort"
 	"strings"
 
 	"github.com/noderunner/bingle/internal/engine/dsl"
@@ -89,7 +87,8 @@ func (m *Manager) GameScripts(family string) (fs.FS, bool) {
 }
 
 // Asset returns a file of the game's module (guide images and so on). The
-// virtual file "board.svg" draws an area map from its polygons.
+// server draws no pictures of its own (ADR 0124): a guide's map of an areas
+// board is drawn by the game's page script (markdown's figure:).
 func (m *Manager) Asset(id, name string) (data []byte, contentType string, err error) {
 	cg, ok := m.catalog.Get(id)
 	if !ok {
@@ -103,15 +102,6 @@ func (m *Manager) Asset(id, name string) (data []byte, contentType string, err e
 		if b, err := fs.ReadFile(cg.Assets, clean); err == nil {
 			return b, assetType(clean), nil
 		}
-	}
-	if clean == "board.svg" && cg.Definition.Board.Style == "areas" {
-		// A map with a painted board shows it, behind the names of its areas.
-		var art []byte
-		artName, _ := cg.Definition.Params["art"].(string)
-		if artName != "" && cg.Assets != nil {
-			art, _ = fs.ReadFile(cg.Assets, artName)
-		}
-		return []byte(areaMapSVG(cg.Definition, art, assetType(artName))), "image/svg+xml", nil
 	}
 	return nil, "", fmt.Errorf("%w: %q", ErrAssetNotFound, name)
 }
@@ -225,212 +215,4 @@ func polygonArea(poly [][2]float64) float64 {
 		a2 += p[0]*q[1] - q[0]*p[1]
 	}
 	return a2 / 2
-}
-
-// areaMiddle is the centroid of the largest piece of an area: an ocean that wraps has one at each
-// edge of the map, and its name belongs in the bigger.
-func areaMiddle(polygons [][][2]float64) [2]float64 {
-	var best [2]float64
-	bestArea := -1.0
-	for _, poly := range polygons {
-		var a2, cx, cy float64
-		for i := range poly {
-			p, q := poly[i], poly[(i+1)%len(poly)]
-			cross := p[0]*q[1] - q[0]*p[1]
-			a2 += cross
-			cx += (p[0] + q[0]) * cross
-			cy += (p[1] + q[1]) * cross
-		}
-		if size := math.Abs(a2); size > bestArea && a2 != 0 {
-			bestArea = size
-			best = [2]float64{cx / (3 * a2), cy / (3 * a2)}
-		}
-	}
-	return best
-}
-
-// mapPalette is the gradient of each kind of area on the map picture:
-// light/dark stops for light mode, then for dark mode.
-var mapPalette = []struct{ kind, a, b, da, db string }{
-	{"pacific", "#8cbfe4", "#5f95c8", "#3b6a96", "#1f4468"},
-	{"atlantic", "#98c9ec", "#6aa5d3", "#447aa6", "#25507a"},
-	{"indian", "#82c4dc", "#509fc4", "#377f9a", "#1c5878"},
-	{"arctic", "#f2f9fd", "#c4deef", "#8aa9bd", "#5d7f96"},
-	{"c-na", "#d7e6a5", "#a9c276", "#7f8f55", "#5a6a37"},
-	{"c-sa", "#c1e38f", "#86b55f", "#6f9a46", "#4a7330"},
-	{"c-eu", "#efe2b3", "#c9b982", "#9d9065", "#766a45"},
-	{"c-me", "#f5d69e", "#d8aa6b", "#a98550", "#7f5f33"},
-	{"c-af", "#f6dc93", "#dcaf5d", "#ad9142", "#876c27"},
-	{"c-as", "#e3d9a8", "#bcaf79", "#958c62", "#6f6840"},
-	{"c-au", "#f3c896", "#d49d61", "#b27c47", "#85582b"},
-	{"c-ice", "#ffffff", "#d1dfec", "#cfdbe6", "#98aabd"},
-}
-
-// areaMapSVG draws an areas board as a standalone SVG picture (for guides):
-// graded seas with waves, a pale shore round every coast, lands in their own
-// colours, names on top and a badge for each glyph. With art (the picture of a printed board) the
-// picture takes the place of the seas and lands. It has to be inside the file: a browser loads
-// nothing else for an SVG shown as an image.
-func areaMapSVG(def *dsl.GameDefinition, art []byte, artType string) string {
-	canvas, areas := areasOf(def)
-	w, h := 1000.0, 490.0
-	if canvas != nil {
-		w, h = canvas.Width, canvas.Height
-	}
-	var b strings.Builder
-	fmt.Fprintf(&b, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-8 -8 %g %g" role="img" aria-label="%s map">`, w+16, h+16, escapeXML(def.Name))
-	b.WriteString("<style>")
-	for _, p := range mapPalette {
-		fmt.Fprintf(&b, ".s-%[1]s-0{stop-color:%[2]s}.s-%[1]s-1{stop-color:%[3]s}", p.kind, p.a, p.b)
-	}
-	b.WriteString(".sea{stroke:#ffffffb3;stroke-width:1.5;stroke-dasharray:8 6}.land{stroke:#5a4a2b;stroke-width:1.6}")
-	b.WriteString(".shore{fill:none;stroke:#ffffff99;stroke-width:10;stroke-linejoin:round}.frame{fill:#8a6a43}")
-	b.WriteString(".waves{fill:url(#waves);opacity:.3}.name{font:700 12.5px system-ui,sans-serif;fill:#1f2a1a;stroke:#ffffffd9;stroke-width:3.2px;paint-order:stroke;text-anchor:middle}")
-	b.WriteString(".name.o{font:italic 600 13px Georgia,serif;letter-spacing:.1em;fill:#123a5e;stroke:#ffffff8c}")
-	b.WriteString(".gb circle{fill:#2b2a26;stroke:#fff;stroke-width:1.5}")
-	b.WriteString("@media (prefers-color-scheme:dark){")
-	for _, p := range mapPalette {
-		fmt.Fprintf(&b, ".s-%[1]s-0{stop-color:%[2]s}.s-%[1]s-1{stop-color:%[3]s}", p.kind, p.da, p.db)
-	}
-	b.WriteString(".land{stroke:#14110a}.sea{stroke:#bedcff59}.shore{stroke:#96c8ff47}.name{fill:#f2f5ee;stroke:#000000bf}.name.o{fill:#cfe6fb;stroke:#00000099}}")
-	if art != nil {
-		b.WriteString(".name,.name.o{fill:#f6f0e2;stroke:#000000cc}")
-	}
-	b.WriteString("</style><defs>")
-	for _, p := range mapPalette {
-		if strings.HasPrefix(p.kind, "c-") {
-			fmt.Fprintf(&b, `<radialGradient id="g-%[1]s" cx=".5" cy=".42" r=".82"><stop offset="0" class="s-%[1]s-0"/><stop offset="1" class="s-%[1]s-1"/></radialGradient>`, p.kind)
-		} else {
-			fmt.Fprintf(&b, `<linearGradient id="g-%[1]s" x1="0" y1="0" x2=".45" y2="1"><stop offset="0" class="s-%[1]s-0"/><stop offset="1" class="s-%[1]s-1"/></linearGradient>`, p.kind)
-		}
-	}
-	b.WriteString(`<pattern id="waves" width="30" height="16" patternUnits="userSpaceOnUse"><path d="M0 8 q7.5 -7 15 0 t15 0" fill="none" stroke="#fff" stroke-width="1.1" stroke-linecap="round"/></pattern>`)
-	fmt.Fprintf(&b, `<clipPath id="clip"><rect width="%g" height="%g"/></clipPath></defs>`, w, h)
-	fmt.Fprintf(&b, `<rect class="frame" x="-8" y="-8" width="%g" height="%g" rx="12"/>`, w+16, h+16)
-
-	kind := func(a AreaDTO) (string, bool) {
-		ocean := false
-		for _, t := range a.Tags {
-			switch t {
-			case "ocean":
-				ocean = true
-			case "pacific", "atlantic", "indian", "arctic", "c-na", "c-sa", "c-eu", "c-me", "c-af", "c-as", "c-au", "c-ice":
-				return t, ocean
-			}
-		}
-		if ocean {
-			return "pacific", true
-		}
-		return "c-eu", false
-	}
-	area := func(poly [][2]float64) float64 {
-		var a2 float64
-		for i := range poly {
-			p, q := poly[i], poly[(i+1)%len(poly)]
-			a2 += p[0]*q[1] - q[0]*p[1]
-		}
-		return math.Abs(a2) / 2
-	}
-	size := func(a AreaDTO) float64 {
-		var sum float64
-		for _, p := range a.Polygons {
-			sum += area(p)
-		}
-		return sum
-	}
-	ordered := make([]AreaDTO, len(areas))
-	copy(ordered, areas)
-	sort.SliceStable(ordered, func(i, j int) bool {
-		if si, sj := size(ordered[i]), size(ordered[j]); si != sj {
-			return si > sj
-		}
-		return ordered[i].ID < ordered[j].ID
-	})
-	points := func(poly [][2]float64) string {
-		pts := make([]string, len(poly))
-		for i, p := range poly {
-			pts[i] = fmt.Sprintf("%g,%g", p[0], p[1])
-		}
-		return strings.Join(pts, " ")
-	}
-	// A map with a picture of its own says each area's colour, as the small drawing's.
-	fills, _ := def.Params["area_fill"].(map[string]any)
-	draw := func(a AreaDTO, ocean bool) {
-		k, _ := kind(a)
-		class := "land"
-		if ocean {
-			class = "sea"
-		}
-		fill := "url(#g-" + k + ")"
-		own, painted := fills[a.ID].(string)
-		if painted {
-			fill = escapeXML(own)
-		}
-		for _, poly := range a.Polygons {
-			fmt.Fprintf(&b, `<polygon class="%s" fill="%s" points="%s"/>`, class, fill, points(poly))
-			if ocean && !painted {
-				fmt.Fprintf(&b, `<polygon class="waves" points="%s"/>`, points(poly))
-			}
-		}
-	}
-	if art != nil {
-		fmt.Fprintf(&b, `<image href="data:%s;base64,%s" width="%g" height="%g" preserveAspectRatio="none"/>`, artType, base64.StdEncoding.EncodeToString(art), w, h)
-	} else {
-		for _, a := range ordered {
-			if _, ocean := kind(a); ocean {
-				draw(a, true)
-			}
-		}
-		b.WriteString(`<g class="shore" clip-path="url(#clip)">`)
-		for _, a := range ordered {
-			if _, ocean := kind(a); !ocean {
-				for _, poly := range a.Polygons {
-					fmt.Fprintf(&b, `<polygon points="%s"/>`, points(poly))
-				}
-			}
-		}
-		b.WriteString(`</g>`)
-		for _, a := range ordered {
-			if _, ocean := kind(a); !ocean {
-				draw(a, false)
-			}
-		}
-	}
-	for _, a := range ordered {
-		_, ocean := kind(a)
-		cls := "name"
-		if ocean {
-			cls = "name o"
-		}
-		// The anchors suit the small drawing. On a printed board a land's may lie too close to a
-		// neighbour's, and the middle of the land has room; a sea wraps around lands, so its middle
-		// may be on one, and its anchor only has to come in from the edge of the map.
-		at := a.Anchor
-		if art != nil {
-			if ocean {
-				half := float64(len(a.Name)) * 4.2
-				at[0] = math.Max(half, math.Min(w-half, at[0]))
-				at[1] = math.Max(12, math.Min(h-8, at[1]))
-			} else {
-				at = areaMiddle(a.Polygons)
-			}
-		}
-		fmt.Fprintf(&b, `<text class="%s" x="%g" y="%g">%s</text>`, cls, at[0], at[1]+4, escapeXML(a.Name))
-		for _, t := range a.Tags {
-			if g, ok := strings.CutPrefix(t, "glyph-"); ok && glyphShapes[g] != nil {
-				x := at[0] + float64(len(a.Name))*3.7 + 15
-				fmt.Fprintf(&b, `<g class="gb" transform="translate(%g %g)"><circle r="11"/><g transform="scale(.72)">`, x, at[1])
-				for _, part := range glyphShapes[g] {
-					fmt.Fprintf(&b, `<path fill="%s" fill-rule="evenodd" d="%s"/>`, part[0], part[1])
-				}
-				b.WriteString(`</g></g>`)
-			}
-		}
-	}
-	b.WriteString(`</svg>`)
-	return b.String()
-}
-
-func escapeXML(s string) string {
-	return strings.NewReplacer("&", "&amp;", "<", "&lt;", ">", "&gt;", `"`, "&quot;").Replace(s)
 }

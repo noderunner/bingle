@@ -771,6 +771,9 @@ dialog.rules-window[open] { display: flex; flex-direction: column; }
 .md figure.md-figure { margin: 1rem 0; text-align: center; }
 .md figure.md-figure figcaption { font-size: 0.85rem; color: var(--muted); margin-top: 0.3rem; }
 .md img.md-img { max-width: 100%; height: auto; border-radius: 6px; vertical-align: middle; }
+/* A picture the game's page script draws for its guide (figure:), as wide as a picture would be. */
+.md .md-drawn { display: block; width: 100%; margin: 0 auto; }
+.md .md-drawn > svg { display: block; width: 100%; height: auto; }
 .md table img.md-img { width: 56px; }
 .md .md-icon { width: 1.5em; height: 1.5em; vertical-align: -0.4em; }
 .md .md-seat { display: inline-flex; align-items: center; gap: 0.35rem; }

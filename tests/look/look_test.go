@@ -69,7 +69,8 @@ func TestCheckCatchesAMistake(t *testing.T) {
 		"turn_order":{"type":"round-robin","seats":[1,2]},"actions":[{"id":"place","type":"place","pieces":["stone"]}],
 		"win_condition":{"type":"none"},"display":{"tints":{"hot":{"label":"Hot"}}},
 		"variants":[{"id":"g-big","patch":{"board":{"generator":{"width":5,"height":5}}}}]}`
-	if err := cat.RegisterModule(catalog.Module{ID: "g", Definition: []byte(src)}); err != nil {
+	files := fstest.MapFS{"art/board.webp": {Data: []byte("RIFF")}, "art/big.svg": {Data: []byte("<svg/>")}, "notes.txt": {Data: []byte("x")}}
+	if err := cat.RegisterModule(catalog.Module{ID: "g", Definition: []byte(src), Assets: files}); err != nil {
 		t.Fatal(err)
 	}
 	games := map[string]*catalog.CompiledGame{}
@@ -97,6 +98,13 @@ func TestCheckCatchesAMistake(t *testing.T) {
 		`{"variants":{"g-big":{"pieces":{"pawn":{}}}}}`:                  `variant "g-big": piece "pawn"`,
 		`{"script":"page.js"}`:                                           `script "page.js", but the module brings no scripts`,
 		`{"style":"page.css"}`:                                           `style "page.css", but the module brings no scripts`,
+		// A picture of the board, for the game's page script: the game's own file.
+		`{"board":{"art":"art/board.webp"},"variants":{"g-big":{"board":{"art":"art/big.svg"}}}}`: "",
+		`{"board":{"art":"art/none.png"}}`:                        `board art "art/none.png"`,
+		`{"variants":{"g-big":{"board":{"art":"art/none.png"}}}}`: `variant "g-big": board art "art/none.png"`,
+		`{"board":{"art":"notes.txt"}}`:                           "has to be a PNG, JPEG, WebP or SVG",
+		`{"board":{"art":"../art/board.webp"}}`:                   "has to be a PNG, JPEG, WebP or SVG",
+		`{"board":{"art":"https://example.com/board.png"}}`:       "has to be a PNG, JPEG, WebP or SVG",
 	} {
 		err := look.Check([]byte(file), "g", games)
 		switch {

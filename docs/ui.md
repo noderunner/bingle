@@ -245,7 +245,7 @@ selects one).
   (`localStorage` `bingle.chat.seen`), so coming back to the page says how much
   was missed. Reading the tab clears it.
 
-**A picture behind a map.** A game whose `params.art` names a file draws it behind its areas (`image.map-art`, `svg.has-art`): the areas are then transparent, there only to be clicked and lit up. The same element is used on every redraw, so a move does not make it flash. `params.ice_glyphs` draws `.ice-glyphs` over it, with the layer `#opt-layer-ice` in the game options (`bingle.layer.ice`). `params.glyph_marks` puts an area's Desecrate glyph where the board prints it (`.area-glyph-badge.printed`, no disc); elsewhere it stands in a round badge beside the name. The glyphs' shapes are in `cw-map-glyphs.js`, and for `board.svg` in `internal/session/map_glyphs.go`, both generated.
+**A picture behind a map.** A game whose look names `board.art` (in `web.yaml`, per variant) draws it behind its areas (`image.map-art`, `svg.has-art`): the areas are then transparent, there only to be clicked and lit up. The same element is used on every redraw, so a move does not make it flash. `params.ice_glyphs` draws `.ice-glyphs` over it, with the layer `#opt-layer-ice` in the game options (`bingle.layer.ice`). `params.glyph_marks` puts an area's Desecrate glyph where the board prints it (`.area-glyph-badge.printed`, no disc); elsewhere it stands in a round badge beside the name. The glyphs' shapes are in `cw-map-glyphs.js`, generated.
 
 **Setup options.** A game's `bool` options are check boxes: under the seats for a
 table of three or more (`#slots-field`) and in a field
@@ -728,7 +728,8 @@ seats:                         # by seat number
   1: {blend: [red, yellow]}    # a seat of two colours, drawn as a gradient
 pieces:
   red: {shape: disc}           # disc, square, flat, wall, cap, ring, diamond, triangle, cross
-board: {style: points, borders: {top: white}}
+board: {style: points, borders: {top: white}}   # art: guide/board.webp, a picture of the printed board
+                               # among the game's own files, for its page script to draw an areas board on
 cards:
   back: {color: '#7a2030', text: BINGLE}
   zones: {hand: {layout: fan}}  # fan, row, stack, splay or grid
@@ -762,6 +763,7 @@ and its `cw-*.js`; Hive's tiles, Onitama's Move cards and Nyet!'s pictures) have
 | `choiceIcon(desc, ctx, size)` | `cards.js`, the boxes and lines of a board of choices (their words without it) |
 | `renderAreaMap(host, info, view, handlers)` | `render.js`, for an `areas` board |
 | `mapKey(info)`, `legendMarker(kind, arg, info)` | `rules.js`, the key to the map |
+| `guideFigure(name, info)` | `rules.js`: a guide's `![…](figure:name)`, a picture the game draws itself (Cthulhu Wars' map); `null` shows the alt text |
 | `listIcon()` | `home.js`, the games list, for a game whose board makes a poor picture |
 | `createSetup(opts)`, `mountTester(host, info)`, `syncPractice(id)` | `home.js`: the setup picker, the Animation Tester tab, the practice wizard |
 | `lobbyPool(info)` | `lobby.js`, what a table was set up with |

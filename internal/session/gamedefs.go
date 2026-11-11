@@ -22,8 +22,6 @@ type GameDefSummary struct {
 	// Prototype marks a game whose rules are not final: each version of them is
 	// a game of the family, and Version says which.
 	Prototype bool
-	// MapArt is the path, among the game's assets, of the picture of its map.
-	MapArt string
 	// Tutorials is how many tutorials a player of this game is offered.
 	Tutorials int
 }
@@ -47,7 +45,6 @@ func (m *Manager) ListGameDefs(ctx context.Context) []GameDefSummary {
 			Designers:     cg.Definition.Designers,
 			Publisher:     cg.Definition.Publisher,
 			Prototype:     cg.Definition.Prototype,
-			MapArt:        cg.ParamString("art", ""),
 		}
 		if _, list, err := m.TutorialsFor(cg.Definition.ID); err == nil {
 			summaries[i].Tutorials = len(list)
