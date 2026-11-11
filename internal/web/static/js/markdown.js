@@ -14,6 +14,8 @@
 //   piece(type, color)  → Node for ![](piece:type[:color])
 //   marker(kind, arg)   → Node for ![](marker:kind[:arg]) (a mark of the map)
 //   seat(n)             → Node for ![](seat:n)
+//   figure(name)        → Node for ![alt|width](figure:name "caption"), a picture the
+//                         game's page script draws (its map); without one, the alt text
 //   onTab(id, anchor)   called for tab:<id>[#anchor] links
 //   onAnchor(id)        called for #anchor links (default: scroll to it)
 //   idPrefix            prefix of generated heading ids (unique per page)
@@ -636,6 +638,19 @@ function image(alt, src, title, ctx) {
 			if (title) node.setAttribute("title", title);
 			return node;
 		}
+	}
+	const fm = /^figure:([\w-]+)$/.exec(u);
+	if (fm) {
+		const node = ctx.opts.figure ? ctx.opts.figure(fm[1]) : null;
+		if (!node) return h("span", { class: "md-badimage" }, altText || fm[1]);
+		node.classList.add("md-img", "md-drawn");
+		node.setAttribute("role", "img");
+		node.setAttribute("aria-label", altText || fm[1]);
+		if (width) node.style.maxWidth = `${width}px`;
+		// Alone in its paragraph, with a title, it is a figure like any picture.
+		node.dataset.mdImage = "1";
+		if (title) node.setAttribute("data-caption", title);
+		return node;
 	}
 	const sm = /^seat:(\d+)$/.exec(u);
 	if (sm && ctx.opts.seat) {
