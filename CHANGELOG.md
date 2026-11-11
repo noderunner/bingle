@@ -4,6 +4,13 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.101.1 - 2026-11-11
+
+### Bingle Core 0.101.1
+- A move made just as you opened a game no longer stays missing until the next one: the page notices it missed it and loads the game again.
+- Going from the main page to a game during a voice call, before the main page had finished loading, no longer leaves an error behind in the page.
+- **For programs:** the WebSocket's `joined` event carries `move_seq`, the selections played so far, read after the socket subscribed. A client that loaded fewer missed a move event.
+
 ## 0.101.0 - 2026-11-10
 
 ### Bingle Core 0.101.0

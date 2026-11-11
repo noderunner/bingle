@@ -93,7 +93,13 @@ func (h *handlers) handleWS(w http.ResponseWriter, r *http.Request) {
 	// Subscribed before the player is told they are joined: a client that waits
 	// for "joined" then loses nothing (a call must not miss the first offer).
 	// It also says who is connected, read after this socket's own seat has been
-	// counted, so the client has no gap to fill between that and the events.
+	// counted, and how many selections the game has played, read after
+	// subscribing: the client has no gap to fill between either and the events,
+	// and a page that loaded the game before a move it then missed sees it has.
+	moveSeq, err := h.mgr.MoveSeq(ctx, code)
+	if err != nil {
+		return
+	}
 	joined := wsJoined{
 		joinGameResponse: joinGameResponse{
 			Role:   string(result.Role),
@@ -102,6 +108,7 @@ func (h *handlers) handleWS(w http.ResponseWriter, r *http.Request) {
 			Status: result.Status,
 		},
 		Connected: h.mgr.ConnectedSeats(code),
+		MoveSeq:   moveSeq,
 	}
 	if err := wsjson.Write(ctx, conn, session.Event{Type: "joined", Data: joined}); err != nil {
 		return
@@ -135,6 +142,8 @@ type wsJoined struct {
 	joinGameResponse
 	// Connected lists the seats that show as connected.
 	Connected []int `json:"connected"`
+	// MoveSeq is the selections played so far: the seq of the last move event.
+	MoveSeq int `json:"move_seq"`
 }
 
 // pingUntilDead pings conn until ctx ends, and closes it at the first ping not

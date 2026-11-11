@@ -2168,6 +2168,12 @@ async function onEvent(env) {
 		} else if (env.type === "joined") {
 			S.connected = new Set((env.data && env.data.connected) || []);
 			paintConnections();
+			// A move played between loading the game and this socket's subscribing
+			// came as no event: the game is loaded again.
+			if (env.data && env.data.move_seq > S.rows) {
+				await refreshGame();
+				render();
+			}
 		} else if (env.type === "connection") {
 			const d = env.data || {};
 			if (!S.connected) return;

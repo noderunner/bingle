@@ -419,7 +419,7 @@ Server-push only. With `only=voice` the socket belongs to a **voice call**, not 
 carries just the `voice` and `rtc` events (below), is the only one that receives `rtc`, and does
 not count as the player looking at the game (no effect on "your turn" mail). The server has
 subscribed before it sends `joined`, so a client that waits for `joined` misses no call message. The first message is
-`{"type":"joined","data":{role,seat,color,status,connected[]}}`; afterwards:
+`{"type":"joined","data":{role,seat,color,status,connected[],move_seq}}`, where `move_seq` is the selections played so far, read after subscribing: a client that loaded fewer missed a move event and should load the game again. Afterwards:
 
 * `{"type":"move","data":{seq, seat, color, notation, from, to, action, piece, count, path, drops, aim, ply, ends_impulse?, impulse_seat, game_ended, winner_seat, end_reason, status, board_state, state, auto?, auto_play?, locked?, impulse_deadline?, server_time?}}`: one event per selection, `seq` counting selections; `ply` is its impulse, and `ends_impulse` marks the last selection of a move. `locked` (a draw or a card turned up, which Undo cannot take back) comes in a game for one seat only
 * `{"type":"state","data":{reason, removed?, status, impulse_seat, move_seq, ply, winner_seat, end_reason, seats[], board_state, state, …}}`

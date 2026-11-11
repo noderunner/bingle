@@ -1,6 +1,7 @@
 package app_test
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 	"sync"
@@ -43,9 +44,9 @@ func TestWebMeridians_PlayThroughTheUI(t *testing.T) {
 	})()`
 	for i := 0; i < 4; i++ {
 		before := evalInt(t, ctx, `document.querySelectorAll("#board .piece").length`)
-		if got := evalString(t, ctx, clickPoint); got == "none" {
-			t.Fatalf("move %d: no point can be clicked", i+1)
-		}
+		// The stone shows before the next player's moves have come: a point is
+		// clickable again only then.
+		waitJS(t, ctx, fmt.Sprintf("a point to click for move %d", i+1), clickPoint+` !== "none"`, 15*time.Second)
 		waitJS(t, ctx, "the stone", `document.querySelectorAll("#board .piece").length > `+itoa(before), 15*time.Second)
 	}
 	if n := evalInt(t, ctx, `document.querySelectorAll("#board .piece").length`); n != 4 {

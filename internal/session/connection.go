@@ -1,6 +1,7 @@
 package session
 
 import (
+	"context"
 	"sort"
 	"sync"
 	"time"
@@ -151,6 +152,17 @@ func (t *connTracker) forget(room string, sc *seatConn) {
 		sc.grace.Stop()
 		sc.grace = nil
 	}
+}
+
+// MoveSeq is the number of selections the room's game has played: the seq of the
+// last move event. A socket reads it after subscribing, so a client that has fewer
+// knows it missed some and nothing after.
+func (m *Manager) MoveSeq(ctx context.Context, roomCode string) (int, error) {
+	game, err := m.store.GetGame(ctx, canonRoom(roomCode))
+	if err != nil {
+		return 0, err
+	}
+	return game.MoveSeq, nil
 }
 
 // ConnectedSeats lists the seats of the room that show as connected, in order.

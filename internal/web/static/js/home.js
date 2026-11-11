@@ -16,7 +16,7 @@ import { installTopbar } from "./topbar.js";
 import { openGameRow } from "./mygames.js";
 import { randomFact } from "./facts.js";
 import { mountGlobalChat } from "./global-chat.js";
-import { installNav, navigate } from "./nav.js";
+import { installNav, navigate, onLeave } from "./nav.js";
 import { tutorialList } from "./tutorials-ui.js";
 import { solitairePreview } from "./solitaire.js";
 
@@ -1238,6 +1238,7 @@ async function setupBots() {
 	} catch (_) {
 		setupFriends = [];
 	}
+	if (left) return;
 	const add = (value, label, desc, checked) => {
 		host.append(
 			h(
@@ -1412,6 +1413,7 @@ async function renderPuzzles() {
 	} catch (_) {
 		puzzles = [];
 	}
+	if (left) return;
 	if (!puzzles.length) {
 		clear(list).append(h("p", { class: "muted small" }, "No puzzles yet."));
 		return;
@@ -1565,6 +1567,13 @@ function setupTabs() {
 
 // ---- boot -----------------------------------------------------------------------
 
+// Whether the player has gone to another page without a reload (a call is up, nav.js):
+// what this page was still fetching then has nowhere to go, its elements gone with it.
+let left = false;
+onLeave(() => {
+	left = true;
+});
+
 (async () => {
 	const fact = document.getElementById("fun-fact");
 	if (fact) fact.textContent = randomFact();
@@ -1575,6 +1584,7 @@ function setupTabs() {
 	} catch (e) {
 		toast("Could not load the game list.", "error");
 	}
+	if (left) return;
 	populateSelect();
 	renderGallery();
 	renderPuzzles();
