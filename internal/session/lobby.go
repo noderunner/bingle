@@ -141,18 +141,18 @@ func (m *Manager) ChooseSeat(ctx context.Context, roomCode, name string, wanted 
 	return m.readState(ctx, roomCode, nil)
 }
 
-// ErrSeatTaken is returned when the cult of a seat that a player or bot holds
-// is asked to change.
-var ErrSeatTaken = errors.New("session: that seat is taken: only the cult of an open seat can change")
+// ErrSeatTaken is returned when the faction of a seat that a player or bot
+// holds is asked to change.
+var ErrSeatTaken = errors.New("session: that seat is taken: only the faction of an open seat can change")
 
-// ErrNoCultChoice is returned for a game whose seats are not cults to choose.
-var ErrNoCultChoice = errors.New("session: the seats of this game have no cult to choose")
+// ErrNoFactionChoice is returned for a game whose seats have no faction to choose.
+var ErrNoFactionChoice = errors.New("session: the seats of this game have no faction to choose")
 
-// SetSeatCult changes the cult of an open seat of a game that has not started
-// (a cult that another open seat plays changes places with it). Any person at
-// the table may; the cults of seats a player or bot holds stay. The game takes
+// SetSeatFaction changes the faction of an open seat of a game that has not
+// started (a faction that another open seat plays changes places with it). Any
+// person at the table may; the factions of seats a player or bot holds stay. The game takes
 // the definition of the new table and a fresh starting position.
-func (m *Manager) SetSeatCult(ctx context.Context, roomCode, by string, seat int, cult string) (StateSnapshot, error) {
+func (m *Manager) SetSeatFaction(ctx context.Context, roomCode, by string, seat int, faction string) (StateSnapshot, error) {
 	roomCode = canonRoom(roomCode)
 	unlock := m.lockRoom(ctx, roomCode)
 	defer unlock()
@@ -172,17 +172,17 @@ func (m *Manager) SetSeatCult(ctx context.Context, roomCode, by string, seat int
 		taken[p.Seat] = true
 	}
 	// At a table set up for its players to choose, a player's own seat is theirs to change.
-	if seat == me.Seat && state.PlayersChooseCults(compiled) {
+	if seat == me.Seat && state.PlayersChooseFactions(compiled) {
 		delete(taken, seat)
 	}
 	if taken[seat] {
 		return StateSnapshot{}, ErrSeatTaken
 	}
-	options, ok, err := state.SeatCultOptions(compiled, seat, cult, taken)
+	options, ok, err := state.SeatFactionOptions(compiled, seat, faction, taken)
 	if !ok {
-		return StateSnapshot{}, ErrNoCultChoice
+		return StateSnapshot{}, ErrNoFactionChoice
 	}
-	if errors.Is(err, state.ErrCultHeld) {
+	if errors.Is(err, state.ErrFactionHeld) {
 		return StateSnapshot{}, fmt.Errorf("%w: %v", ErrSeatTaken, err)
 	}
 	if err != nil {
@@ -217,7 +217,7 @@ func (m *Manager) SetSeatCult(ctx context.Context, roomCode, by string, seat int
 			return StateSnapshot{}, fmt.Errorf("session: recording start position: %w", err)
 		}
 	}
-	m.publishState(ctx, roomCode, "cult")
+	m.publishState(ctx, roomCode, "faction")
 	return m.readState(ctx, roomCode, nil)
 }
 

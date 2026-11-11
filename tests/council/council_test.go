@@ -141,12 +141,12 @@ func TestTables(t *testing.T) {
 		t.Errorf("Stag at the Court: %+v", a)
 	}
 	// A house swap: Ram for seat 2 (from nobody), and Crow for seat 1 (from seat 4).
-	sc := rs.(state.SeatCults)
-	opts, err := sc.SeatCultOptions(g, 1, "crow", map[int]bool{})
+	sc := rs.(state.SeatFactions)
+	opts, err := sc.SeatFactionOptions(g, 1, "crow", map[int]bool{})
 	if err != nil || !reflect.DeepEqual(opts["houses"], []any{"crow", "stag", "wolf", "owl"}) {
 		t.Errorf("crow to seat 1: %v %v", opts, err)
 	}
-	if _, err := sc.SeatCultOptions(g, 1, "crow", map[int]bool{4: true}); !errors.Is(err, state.ErrCultHeld) {
+	if _, err := sc.SeatFactionOptions(g, 1, "crow", map[int]bool{4: true}); !errors.Is(err, state.ErrFactionHeld) {
 		t.Errorf("a taken seat's house: %v", err)
 	}
 	// A pool: the players choose in the lobby, from the pool only.
@@ -156,7 +156,7 @@ func TestTables(t *testing.T) {
 	}
 	pg := game(t, cat, pid)
 	prs, _ := state.RulesetOf(pg)
-	if !prs.(state.OwnSeatCults).PlayersChooseCults(pg) {
+	if !prs.(state.OwnSeatFactions).PlayersChooseFactions(pg) {
 		t.Error("a table with a pool lets its players choose")
 	}
 	for _, bad := range []map[string]any{

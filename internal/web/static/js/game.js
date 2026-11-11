@@ -97,7 +97,7 @@ const S = {
 	reactions: null, // {abilities, targeted, ask_all, ask_seats, others, pending}: this player's reaction settings
 	nextGame: null, // the room of the player's next game of a real-time tournament
 	autoPlayTimeout: null, // {enabled, timeout_seconds, deadline}: this player's Auto-Play Timeout
-	cults: null, // the cults an open seat can be given in the lobby ([] when the game has none)
+	factions: null, // the factions an open seat can be given in the lobby ([] when the game has none)
 	lobbyBusy: false,
 };
 
@@ -319,7 +319,7 @@ async function loadReactions() {
 
 async function refreshGame() {
 	S.game = await api.game(code);
-	// Another cult was given to an open seat in the lobby: the game is another
+	// Another faction was given to an open seat in the lobby: the game is another
 	// definition now, with other names and colors.
 	if (S.info && S.game.game_def_id !== S.info.id) {
 		S.info = await api.gameDef(S.game.game_def_id);
@@ -2906,27 +2906,27 @@ function inLobby() {
 }
 
 /**
- * The cults an open seat can be given in the lobby, from the setup options of
- * the game this one was made from (none for a game whose seats have no cult
- * to choose).
+ * The factions an open seat can be given in the lobby, from the setup options
+ * of the game this one was made from (none for a game whose seats have no
+ * faction to choose).
  */
-async function loadCults() {
-	S.cults = [];
+async function loadFactions() {
+	S.factions = [];
 	try {
 		const base = String(S.info.id).split("~")[0];
 		const info = base === S.info.id ? S.info : await api.gameDef(base);
 		const choice = ((info && info.options) || []).find((o) => o.kind === "seat-choice");
-		S.cults = choice ? choice.choices : [];
+		S.factions = choice ? choice.choices : [];
 	} catch (_) {
-		S.cults = [];
+		S.factions = [];
 	}
 	render();
 }
 
-/** The cults this table may choose from: those chosen at setup, when more were chosen than there are seats. */
-function tableCults() {
+/** The factions this table may choose from: those chosen at setup, when more were chosen than there are seats. */
+function tableFactions() {
 	const pool = (S.info.params && S.info.params.faction_pool) || [];
-	return pool.length ? (S.cults || []).filter((c) => pool.includes(c.id)) : S.cults || [];
+	return pool.length ? (S.factions || []).filter((c) => pool.includes(c.id)) : S.factions || [];
 }
 
 /** What the lobby card draws from, and what its buttons do. */
@@ -2959,14 +2959,14 @@ function lobbyContext() {
 				S.bots = [];
 			});
 	}
-	if (!S.cults) loadCults();
+	if (!S.factions) loadFactions();
 	return {
 		code,
 		info: S.info,
 		game: S.game,
 		me: S.me,
 		bots: S.bots || [],
-		cults: tableCults(),
+		factions: tableFactions(),
 		seatGlyph,
 		inviteURL: S.game.invite_url || location.origin + "/game/" + code,
 		lastName: lastName(),
@@ -2991,7 +2991,7 @@ function lobbyContext() {
 					restartSocket();
 				}),
 			moveTo: (seat) => done(() => api.chooseSeat(code, S.me.name, seat)),
-			setCult: (seat, cult) => done(() => api.setSeatCult(code, S.me.name, seat, cult)),
+			setFaction: (seat, faction) => done(() => api.setSeatFaction(code, S.me.name, seat, faction)),
 			addBot: (kind, seat) => done(() => api.addBot(code, S.me.name, kind, seat)),
 			remove: (seat) => done(() => api.removeSeat(code, S.me.name, seat)),
 			release: (seat) => done(() => api.releaseSeat(code, S.me.name, seat)),

@@ -271,52 +271,53 @@ func ReactionAbilities(game *catalog.CompiledGame, st *BoardState, seat int) []R
 	return r.ReactionAbilities(game, st, seat)
 }
 
-// ErrCultHeld is what SeatCultOptions returns for a cult that a taken seat
-// plays: it cannot change places.
-var ErrCultHeld = errors.New("state: that cult is played by a seat that is taken")
+// ErrFactionHeld is what SeatFactionOptions returns for a faction that a taken
+// seat plays: it cannot change places.
+var ErrFactionHeld = errors.New("state: that faction is played by a seat that is taken")
 
-// SeatCults is implemented by rulesets whose seats are cults chosen when the
-// game is set up (Cthulhu Wars): while a game waits in its lobby, the cult of
-// an open seat may be changed.
-type SeatCults interface {
-	// SeatCultOptions returns the setup options (see catalog.Deriver) of the
-	// table that has cult in seat instead of what sits there now. A cult that
-	// another open seat plays changes places with it; taken marks the seats a
-	// player or bot holds, whose cults stay. It returns nil options when
-	// nothing changes, and an error for a cult that does not exist, cannot sit
-	// on this map or is held by a taken seat.
-	SeatCultOptions(game *catalog.CompiledGame, seat int, cult string, taken map[int]bool) (map[string]any, error)
+// SeatFactions is implemented by rulesets whose seats are factions chosen when
+// the game is set up: while a game waits in its lobby, the faction of an open
+// seat may be changed. A game calls its factions what it likes (a cult, a
+// house); the platform says faction.
+type SeatFactions interface {
+	// SeatFactionOptions returns the setup options (see catalog.Deriver) of the
+	// table that has faction in seat instead of what sits there now. A faction
+	// that another open seat plays changes places with it; taken marks the
+	// seats a player or bot holds, whose factions stay. It returns nil options
+	// when nothing changes, and an error for a faction that does not exist,
+	// cannot sit at this table or is held by a taken seat.
+	SeatFactionOptions(game *catalog.CompiledGame, seat int, faction string, taken map[int]bool) (map[string]any, error)
 }
 
-// OwnSeatCults is implemented by a SeatCults ruleset where a table may be set up
-// for its players to choose their cults: they may then change their own seats' too.
-type OwnSeatCults interface {
-	PlayersChooseCults(game *catalog.CompiledGame) bool
+// OwnSeatFactions is implemented by a SeatFactions ruleset where a table may be set up
+// for its players to choose their factions: they may then change their own seats' too.
+type OwnSeatFactions interface {
+	PlayersChooseFactions(game *catalog.CompiledGame) bool
 }
 
-// PlayersChooseCults says a seated player may change the cult of their own seat.
-func PlayersChooseCults(game *catalog.CompiledGame) bool {
+// PlayersChooseFactions says a seated player may change the faction of their own seat.
+func PlayersChooseFactions(game *catalog.CompiledGame) bool {
 	rs, found := RulesetOf(game)
 	if !found {
 		return false
 	}
-	own, found := rs.(OwnSeatCults)
-	return found && own.PlayersChooseCults(game)
+	own, found := rs.(OwnSeatFactions)
+	return found && own.PlayersChooseFactions(game)
 }
 
-// SeatCultOptions asks the game's ruleset (when it is a SeatCults) for the
-// options of the table with seat's cult changed; ok is false for a game whose
-// seats are not cults.
-func SeatCultOptions(game *catalog.CompiledGame, seat int, cult string, taken map[int]bool) (options map[string]any, ok bool, err error) {
+// SeatFactionOptions asks the game's ruleset (when it is a SeatFactions) for the
+// options of the table with seat's faction changed; ok is false for a game
+// whose seats have no faction to choose.
+func SeatFactionOptions(game *catalog.CompiledGame, seat int, faction string, taken map[int]bool) (options map[string]any, ok bool, err error) {
 	rs, found := RulesetOf(game)
 	if !found {
 		return nil, false, nil
 	}
-	sc, found := rs.(SeatCults)
+	sc, found := rs.(SeatFactions)
 	if !found {
 		return nil, false, nil
 	}
-	options, err = sc.SeatCultOptions(game, seat, cult, taken)
+	options, err = sc.SeatFactionOptions(game, seat, faction, taken)
 	return options, true, err
 }
 

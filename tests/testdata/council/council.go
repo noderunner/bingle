@@ -11,7 +11,7 @@
 //     passes, the clock of a seat that must react);
 //   - a choice of house per seat from five, swapped in the lobby, with a pool
 //     its players choose from, and a game derived for every table
-//     (catalog.Deriver, state.SeatCults, state.OwnSeatCults, saved setups);
+//     (catalog.Deriver, state.SeatFactions, state.OwnSeatFactions, saved setups);
 //   - a setup catalog (state.SetupCatalogs) and an option, the Court;
 //   - a map of areas (board style "areas").
 //
@@ -527,7 +527,7 @@ func (rs *Ruleset) ReactionAbilities(game *catalog.CompiledGame, st *state.Board
 	return out
 }
 
-// --- the table (catalog.Deriver, state.SeatCults, state.OwnSeatCults) -------
+// --- the table (catalog.Deriver, state.SeatFactions, state.OwnSeatFactions) -------
 
 const (
 	optHouses = "houses"
@@ -691,9 +691,9 @@ func pool(game *catalog.CompiledGame) []string {
 	return out
 }
 
-// SeatCultOptions is the table with house in seat: a house another open
+// SeatFactionOptions is the table with house in seat: a house another open
 // seat has changes places with it; one a taken seat has is refused.
-func (rs *Ruleset) SeatCultOptions(game *catalog.CompiledGame, seat int, key string, taken map[int]bool) (map[string]any, error) {
+func (rs *Ruleset) SeatFactionOptions(game *catalog.CompiledGame, seat int, key string, taken map[int]bool) (map[string]any, error) {
 	if _, ok := houseOf(key); !ok {
 		return nil, fmt.Errorf("council: unknown house %q", key)
 	}
@@ -708,7 +708,7 @@ func (rs *Ruleset) SeatCultOptions(game *catalog.CompiledGame, seat int, key str
 	next := append([]string(nil), seats...)
 	if j := slices.Index(seats, key); j >= 0 {
 		if taken[j+1] {
-			return nil, fmt.Errorf("%w: %s", state.ErrCultHeld, key)
+			return nil, fmt.Errorf("%w: %s", state.ErrFactionHeld, key)
 		}
 		next[j] = seats[seat-1]
 	}
@@ -723,8 +723,8 @@ func (rs *Ruleset) SeatCultOptions(game *catalog.CompiledGame, seat int, key str
 	return opts, nil
 }
 
-// PlayersChooseCults: at a table with a pool, each player picks their house.
-func (rs *Ruleset) PlayersChooseCults(game *catalog.CompiledGame) bool { return len(pool(game)) > 0 }
+// PlayersChooseFactions: at a table with a pool, each player picks their house.
+func (rs *Ruleset) PlayersChooseFactions(game *catalog.CompiledGame) bool { return len(pool(game)) > 0 }
 
 // --- the setup catalog (state.SetupCatalogs) -------------------------------
 

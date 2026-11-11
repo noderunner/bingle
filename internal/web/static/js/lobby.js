@@ -15,9 +15,9 @@ function botOptions(bots, id) {
 }
 
 /**
- * ctx: {code, info, game, me: {name, seat}, bots, cults, inviteURL, lastName, busy,
- *       actions: {take, moveTo, setCult, addBot, remove, leave, start, fillBots, copy}}
- * cults lists the cults an open seat can be given ({id, label, color, text}), when the game lets the table change them.
+ * ctx: {code, info, game, me: {name, seat}, bots, factions, inviteURL, lastName, busy,
+ *       actions: {take, moveTo, setFaction, addBot, remove, leave, start, fillBots, copy}}
+ * factions lists the factions an open seat can be given ({id, label, color, text}), when the game lets the table change them.
  */
 /** A time, in the viewer's own zone. */
 const localTime = (iso) => new Date(iso).toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZoneName: "short" });
@@ -171,21 +171,21 @@ export function lobbyCard(ctx) {
 		const kept = (game.reservations || []).find((r) => r.seat === sd.seat);
 		const li = h("li", { class: "lobby-seat" + (taken ? " taken" : " open") + (mine ? " mine" : ""), "data-seat": sd.seat });
 		li.append(ctx.seatGlyph(sd.seat) || h("span", { class: `swatch color-${cssColor(sd.color)}` }));
-		// The cult of an open seat can be changed by anyone at the table, and at a table
+		// The faction of an open seat can be changed by anyone at the table, and at a table
 		// set up with a pool of factions a player can change their own.
-		const cults = ctx.cults || [];
+		const factions = ctx.factions || [];
 		const pool = (info.params && info.params.faction_pool) || [];
-		if ((!taken || (mine && pool.length)) && me.seat && cults.length && cults.some((c) => c.label === sd.label)) {
-			const select = h("select", { class: "lobby-cult-select", id: `cult-${sd.seat}`, "data-seat": sd.seat, "aria-label": `Faction of seat ${sd.seat}`, disabled: ctx.busy });
-			const current = cults.find((c) => c.label === sd.label);
-			for (const c of cults) {
-				// A cult a player or bot already plays cannot be taken from them.
+		if ((!taken || (mine && pool.length)) && me.seat && factions.length && factions.some((c) => c.label === sd.label)) {
+			const select = h("select", { class: "lobby-faction-select", id: `faction-${sd.seat}`, "data-seat": sd.seat, "aria-label": `Faction of seat ${sd.seat}`, disabled: ctx.busy });
+			const current = factions.find((c) => c.label === sd.label);
+			for (const c of factions) {
+				// A faction a player or bot already plays cannot be taken from them.
 				const holder = seats.find((o) => o.seat !== sd.seat && o.label === c.label && (bySeat.get(o.seat) || {}).name);
 				const opt = h("option", { value: c.id, title: c.text || null, disabled: !!holder }, holder ? `${c.label} (taken)` : c.label);
 				select.append(opt);
 			}
 			select.value = current.id;
-			select.addEventListener("change", () => ctx.actions.setCult(sd.seat, select.value));
+			select.addEventListener("change", () => ctx.actions.setFaction(sd.seat, select.value));
 			li.append(select);
 		} else {
 			li.append(h("span", { class: "lobby-faction" }, sd.label));

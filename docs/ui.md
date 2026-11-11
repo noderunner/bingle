@@ -542,13 +542,13 @@ open seats with* bots (`#fill-bots`) and **Start game** (`#start-game`, enabled
 once every seat holds a player or a bot). Bots are named after the faction they
 play and their kind (*Black Goat (MCTS)*), and the lobby shows *MCTS bot*.
 
-In a game whose seats are cults (Cthulhu Wars) anyone at the table can change
-the **cult of an open seat** from the list in its row (`select.lobby-cult-select`,
-`#cult-<seat>`): the cults held by a player or bot are greyed out, a cult played
-from another open seat changes places with it (the Sleeper chosen for seat 4
-while seat 3 plays it moves seat 3 to seat 4's cult). The game takes the id of
+In a game whose seats are factions chosen at setup (Cthulhu Wars' cults, Council's houses) anyone at the table can change
+the **faction of an open seat** from the list in its row (`select.lobby-faction-select`,
+`#faction-<seat>`): the factions held by a player or bot are greyed out, a faction played
+from another open seat changes places with it (one chosen for seat 4
+while seat 3 plays it moves seat 3 to seat 4's). The game takes the id of
 the new table, the page loads its names and colours again, and a visitor's
-*Take this seat* list shows the new cults. A table set up with a pool of factions
+*Take this seat* list shows the new factions. A table set up with a pool of factions
 says so in `#lobby-pool`, lists only those, and gives a player the list on their own row too.
 
 `js/chat.js` is the **chat card** (`#chat-card`: `#chat-log` lines
@@ -825,7 +825,7 @@ picked), `#round-bar`, `#battle-panel`, `.seat-grid`, `.faction-card`,
 `#voice-switch` when the call is in another game), the top-bar button of a call (`#voice-chip` with
 `#voice-chip-code`, and its panel `#voice-pop` with `#voice-pop-go|mute|deafen|leave`), and the lobby: `#lobby`,
 `#invite-link`, `#copy-invite`, `#lobby-seats li[data-seat]`, `#lobby-join`,
-`#lobby-name`, `#lobby-seat`, `#lobby-take`, `#cult-<seat>`, `#fill-bots`, `#start-game`,
+`#lobby-name`, `#lobby-seat`, `#lobby-take`, `#faction-<seat>`, `#fill-bots`, `#start-game`,
 `#leave-seat`, `button[data-act=add-bot|move|remove]`; the rules window is `#rules-dialog` with
 `[role=tab][data-tab]`, `#rules-panel-<id>`, `.rules-toc`, `#rules-search` and
 `#rules-results .rules-hit`; ruleset games add `.cell-bg.tint[data-tint]`, `[data-badge]` stones and rings,

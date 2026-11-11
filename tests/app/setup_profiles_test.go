@@ -163,7 +163,7 @@ func TestFactionPool_PlayersChooseInTheLobby(t *testing.T) {
 	}
 	room := created.RoomCode
 	change := func(who string, seat int, house string) int {
-		return doJSON(t, "POST", base+"/api/games/"+room+"/seat-cult", map[string]any{"player_name": who, "seat": seat, "cult": house}, nil)
+		return doJSON(t, "POST", base+"/api/games/"+room+"/seat-faction", map[string]any{"player_name": who, "seat": seat, "faction": house}, nil)
 	}
 	id := func() string {
 		var g struct {

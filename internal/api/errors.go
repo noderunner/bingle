@@ -29,7 +29,7 @@ func statusForError(err error) int {
 	case errors.Is(err, session.ErrNotOrganiser), errors.Is(err, session.ErrTournamentAccount), errors.Is(err, session.ErrSetupAccount), errors.Is(err, session.ErrMayNotEnter):
 		return http.StatusForbidden
 	case errors.Is(err, session.ErrSeatsFull), errors.Is(err, session.ErrGameNotActive), errors.Is(err, session.ErrNameIsAHandle), errors.Is(err, session.ErrNameIsABot),
-		errors.Is(err, session.ErrAlreadyStarted), errors.Is(err, session.ErrSeatsOpen), errors.Is(err, session.ErrSeatTaken), errors.Is(err, session.ErrNoCultChoice),
+		errors.Is(err, session.ErrAlreadyStarted), errors.Is(err, session.ErrSeatsOpen), errors.Is(err, session.ErrSeatTaken), errors.Is(err, session.ErrNoFactionChoice),
 		errors.Is(err, session.ErrNothingToUndo), errors.Is(err, session.ErrCannotUndo), errors.Is(err, session.ErrTutorialRoom),
 		errors.Is(err, session.ErrDrawNotAllowed), errors.Is(err, session.ErrHintNotAllowed), errors.Is(err, session.ErrTooManyBotMatches), errors.Is(err, session.ErrRatedGame),
 		errors.Is(err, session.ErrNoAutoPlayOffer), errors.Is(err, session.ErrOwnTurnOffer), errors.Is(err, session.ErrNotConnected),
