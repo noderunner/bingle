@@ -508,7 +508,7 @@ async function buildPicker(family, info) {
 		onLayout: (id) => {
 			if (document.getElementById("game_def_id").value !== id) chooseGame(id);
 		},
-		onChange: paintSeatCults,
+		onChange: paintSeatFactions,
 		account: !!me && me.kind === "account",
 		accounts: !!me && !!me.accounts,
 	});
@@ -536,11 +536,11 @@ async function preparePicker(info) {
 }
 
 /** Puts each seat's faction on its row. */
-function paintSeatCults() {
+function paintSeatFactions() {
 	if (!picker) return;
-	const cults = picker.factions();
-	for (const cell of document.querySelectorAll("#slots-field .slot-cult")) {
-		const id = cults[Number(cell.dataset.cultSeat) - 1];
+	const factions = picker.factions();
+	for (const cell of document.querySelectorAll("#slots-field .slot-faction")) {
+		const id = factions[Number(cell.dataset.factionSeat) - 1];
 		clear(cell);
 		cell.dataset.value = id || "";
 		if (id) cell.append(picker.glyph(id, 22), h("strong", {}, picker.factionName(id)));
@@ -985,7 +985,7 @@ function renderSlots(info) {
 		let who = h("strong", {}, seat.label);
 		let swatch = h("span", { class: `swatch color-${seat.color}` });
 		if (picker) {
-			who = h("span", { class: "slot-cult", "data-cult-seat": seat.seat });
+			who = h("span", { class: "slot-faction", "data-faction-seat": seat.seat });
 			swatch = null;
 		}
 		rows.append(h("div", { class: "slot-row" + (picker ? " with-faction" : "") }, swatch, who, select));
@@ -1002,7 +1002,7 @@ function renderSlots(info) {
 	if (picker) {
 		document.getElementById("other-options").append(picker.swapCards);
 		picker.setLayout(info);
-		paintSeatCults();
+		paintSeatFactions();
 	} else {
 		document.querySelector(".other-options > .swap-cards")?.remove();
 	}
@@ -1010,7 +1010,7 @@ function renderSlots(info) {
 
 /**
  * The seat arrangement chosen in the form: {seat, seatBots, options}. options
- * is only there when the table differs from the game's default one: the cults
+ * is only there when the table differs from the game's default one: the factions
  * in seat order and the expansions ticked.
  */
 function slotChoice() {

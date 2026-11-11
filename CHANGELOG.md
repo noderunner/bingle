@@ -4,6 +4,12 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.102.1 - 2026-11-11
+
+### Bingle Core 0.102.1
+- Nothing changes in play. In the options window of a map, the map's own layers now come between Area Names and Units, and each layer you turn on or off stays that way in every game.
+- **For programs:** the shared page names no faction of any game. At a table of three or more the seats are `#seat-stack` and the rail's tab `#rail-tab-seats`; a phone's page for a seat is `seat-<n>`; the setup's faction cells are `.slot-faction[data-faction-seat]`. A game's page script gives the cards of its seats through `seatCards` (it was `cultCards`) and the layers of its map through `mapLayers(info)`.
+
 ## 0.102.0 - 2026-11-11
 
 ### Bingle Core 0.102.0

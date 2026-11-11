@@ -85,12 +85,12 @@ export function allowed(expected, chosen, kind, value) {
  * lies in; `open` says it is in the seat's details, which are folded away.
  * internal/tutorial lists the same names, and a test keeps the two the same.
  */
-const seatPart = (inner, open = false) => ({ seat: (n) => `.seat-strip[data-seat="${n}"] ${inner}`, pane: "cults", open });
+const seatPart = (inner, open = false) => ({ seat: (n) => `.seat-strip[data-seat="${n}"] ${inner}`, pane: "seats", open });
 const PAGE_PARTS = {
 	actions: { selector: ".move-bar" },
 	battle: { selector: ".exchange.battle" },
 	"elder-bag": { selector: ".round-item.bag" },
-	"first-player": { selector: ".first-mark", pane: "cults" },
+	"first-player": { selector: ".first-mark", pane: "seats" },
 	history: { selector: ".side-moves", pane: "history" },
 	"history-since": { selector: ".log-since", pane: "history" },
 	impulse: { selector: ".impulse-card" },
