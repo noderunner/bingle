@@ -7,7 +7,7 @@ import { FAIR_PLAY, ratingText } from "./ratings.js";
 import { h, s, clear, store, rememberGame, nameFor, lastName, ago, titleCase, toast, setTurnBadge, reconnectDelay, brandName } from "./util.js";
 import { api, ApiError, gameTitle } from "./api.js";
 import { MoveBuilder } from "./builder.js";
-import { renderBoard, pieceIcon, cssColor, ONGATE, hasHexStyles, defaultHexStyle } from "./render.js";
+import { renderBoard, pieceIcon, cssColor, hasHexStyles, defaultHexStyle } from "./render.js";
 import { showRules as openRules } from "./rules.js";
 import { keepChatFocus, loadChat, receiveChat, chatCard, chatSeen, chatUnread } from "./chat.js";
 import { voiceCard, voiceEvent, voiceResync } from "./voice.js";
@@ -638,6 +638,11 @@ const bookRequirements = ask("bookRequirements", []);
 const abilitiesBlock = ask("abilitiesBlock", null);
 const unitText = ask("unitText", null);
 const neutralTip = ask("neutralTip", null);
+// A unit that holds a place (Cthulhu Wars' unit on a Gate) is its type with a
+// prefix the game's notation gives it, which its page script names.
+const heldPrefix = () => page().heldPrefix || "";
+const isHeld = (piece) => !!heldPrefix() && String(piece).startsWith(heldPrefix());
+const heldPiece = (type) => heldPrefix() + type;
 const hasEmergence = ask("hasEmergence", false);
 
 function isLive() {
@@ -757,7 +762,7 @@ function shownHolders() {
 	const q = S.moveQueue;
 	if (!holders || !q) return holders;
 	const rest = { ...holders };
-	for (const { from, piece } of queuedUnits()) if (piece === ONGATE + holders[from]) delete rest[from];
+	for (const { from, piece } of queuedUnits()) if (piece === heldPiece(holders[from])) delete rest[from];
 	return rest;
 }
 
@@ -1056,10 +1061,12 @@ function chooseCount(n) {
 // steps of the move being built: the origin of a move, the unit that retreats
 // or takes a result, the one that is sacrificed.
 
-const TOKEN_ACTIONS = new Set(["absorb", "invisible", "lose"]);
-// Actions that name only the area of the unit they work on: clicking that
-// kind of unit (when nothing else claims the click) chooses the action there.
-const TOKEN_AREA_ACTIONS = { devolve: "cultist" };
+// The game's page script names the actions a click on a token may go through
+// (`tokenActions.through`: an action whose next step is the unit), and those
+// that name only the area of the unit they work on (`tokenActions.inArea`:
+// action -> unit type), which a click on that kind of unit chooses there when
+// nothing else claims it.
+const tokenActions = () => page().tokenActions || {};
 
 function trialBuilder(b, extra) {
 	const t = new MoveBuilder(b.moves);
@@ -1083,13 +1090,13 @@ function tokenSteps(b, pos, piece) {
 				return p;
 			}
 			if (o.kind === "pos" && o.value === pos && !hasPos) queue.push([...path, { kind: "pos", value: pos }]);
-			if (o.kind === "action" && TOKEN_ACTIONS.has(o.value) && !path.some((st) => st.kind === "action")) {
+			if (o.kind === "action" && (tokenActions().through || []).includes(o.value) && !path.some((st) => st.kind === "action")) {
 				queue.push([...path, { kind: "action", value: o.value }]);
 			}
 		}
 	}
 	for (const o of trialBuilder(b, []).options()) {
-		if (o.kind !== "action" || TOKEN_AREA_ACTIONS[o.value] !== piece) continue;
+		if (o.kind !== "action" || (tokenActions().inArea || {})[o.value] !== piece) continue;
 		const path = [{ kind: "action", value: o.value }];
 		if (trialBuilder(b, path).options().some((x) => x.kind === "pos" && x.value === pos)) return [...path, { kind: "pos", value: pos }];
 	}
@@ -1108,7 +1115,7 @@ function queueMoves() {
 	const out = [];
 	for (const m of activeBuilder().moves) {
 		const found = /^(go|leave):([^@]+)@([^>]+)>(.+)$/.exec(m.notation || "");
-		if (found) out.push({ piece: found[1] === "leave" ? ONGATE + found[2] : found[2], from: found[3], to: found[4], notation: m.notation });
+		if (found) out.push({ piece: found[1] === "leave" ? heldPiece(found[2]) : found[2], from: found[3], to: found[4], notation: m.notation });
 		// A unit put on the Gate of the area it stands in goes nowhere, for free.
 		const onto = /^control:([^@]+)@(.+)$/.exec(m.notation || "");
 		if (onto) out.push({ piece: onto[1], from: onto[2], to: onto[2], notation: m.notation, free: true });
@@ -1218,7 +1225,7 @@ function removeFromQueue(key) {
 /** Sends the queue to its destination, the units beside a Gate before the one on it. */
 async function sendMoveQueue(to) {
 	const moves = queueMoves();
-	const units = queuedUnits().sort((a, b) => Number(a.piece.startsWith(ONGATE)) - Number(b.piece.startsWith(ONGATE)));
+	const units = queuedUnits().sort((a, b) => Number(isHeld(a.piece)) - Number(isHeld(b.piece)));
 	let notations = units.map((u) => moves.find((m) => m.piece === u.piece && m.from === u.from && m.to === to)?.notation).filter(Boolean);
 	// The script has its own order for the units the learner gathered in theirs.
 	if (S.tut) notations = tutorialMoveGroup().map((m) => m.notation);
@@ -1274,14 +1281,14 @@ function tokenOk(pos, piece, color) {
 	return path !== null;
 }
 
-/** The unit type of a piece value: the unit on a Gate is "gate:<type>". */
+/** The unit type of a piece value, without the prefix of a unit that holds a place. */
 function plainPiece(piece) {
-	return String(piece).startsWith(ONGATE) ? String(piece).slice(ONGATE.length) : piece;
+	return isHeld(piece) ? String(piece).slice(heldPrefix().length) : piece;
 }
 
-/** A piece value's name and icon shape; a piece that holds a place (the ONGATE prefix) is named so, in the game's words when its page script has them. */
+/** A piece value's name and icon shape; a piece that holds a place is named so, in the game's words when its page script has them. */
 function pieceLook(piece) {
-	const onGate = String(piece).startsWith(ONGATE);
+	const onGate = isHeld(piece);
 	const def = S.info.pieces.find((p) => p.type === plainPiece(piece));
 	const label = def ? def.label : plainPiece(piece);
 	const held = onGate ? (page().heldLabel ? page().heldLabel(label) : `${label} (holding its place)`) : label;
@@ -4287,14 +4294,12 @@ function moveBar() {
 			}
 			// The game's page script may say more on a button (what it is worth just now).
 			if (page().actionLabel) label = page().actionLabel(id, label, rv, acting);
-			// A unit to summon or awaken has a button of its own: its icon, and
-			// what it costs just now; the details are in the card that opens
-			// on hover.
-			// Recruiting a Cultist is a unit's button too (the High Priest has a worded one of his own).
-			const unitKind = id.startsWith("summon-") ? "summon" : id.startsWith("awaken-") ? "awaken" : id === "recruit" ? "recruit" : "";
-			if (unitKind) {
-				const type = id === "recruit" ? "cultist" : id.slice(unitKind.length + 1);
-				const button = unitButton(unitKind, type, acting, id);
+			// An action that brings a unit onto the board has a button of its own
+			// when the page script says which ({kind, type}): its icon, and what
+			// it costs just now; the details are in the card that opens on hover.
+			const unit = page().unitAction ? page().unitAction(id) : null;
+			if (unit) {
+				const button = unitButton(unit.kind, unit.type, acting, id);
 				if (button) {
 					group.append(button);
 					continue;
@@ -6002,7 +6007,7 @@ function tutorialMoveGroup() {
 
 /** Whether the step wants one more of this unit from this area, among those gathered already. */
 function tutorialWantsUnit(pos, piece) {
-	const wanted = tutorialMoveGroup().filter((m) => m.from === pos && (m.leaving ? ONGATE + m.piece : m.piece) === piece);
+	const wanted = tutorialMoveGroup().filter((m) => m.from === pos && (m.leaving ? heldPiece(m.piece) : m.piece) === piece);
 	return wanted.length > ((S.moveQueue && S.moveQueue.units.get(queueKey(pos, piece))) || 0);
 }
 

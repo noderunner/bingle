@@ -4,6 +4,12 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.102.2 - 2026-11-11
+
+### Bingle Core 0.102.2
+- Nothing changes in play.
+- **For programs:** a game's page script says which of its pieces hold a place (`heldPrefix`, the prefix of their piece value), which actions a click on a unit stands for (`tokenActions`), and which actions bring a unit onto the map and get a button with its picture (`unitAction(id)`). The shared page no longer knows these rules of any game, and `render.js` no longer exports `ONGATE` or draws the `cultist`, `monster` and `goo` shapes, which no game used.
+
 ## 0.102.1 - 2026-11-11
 
 ### Bingle Core 0.102.1
