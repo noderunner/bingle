@@ -791,11 +791,12 @@ and its `cw-*.js`; Hive's tiles, Onitama's Move cards and Nyet!'s pictures) have
 | `batchSections(rep, other, length, redraw)`, `pickName`, `pickColor`, `endReason`, `optionName` | `batches.js`, a practice batch's report |
 | `statIcon`, `spellMark`, `enterBlock`, `bookRequirements`, `abilitiesBlock`, `unitText`, `neutralTip` | `game.js`, parts of a ruleset's view (counters, marks, unit cards); `stat-icons.js` draws every game's own pictograms |
 | `battles(ctx)`, `seatCards(ctx)`, `actionList(ctx)` | `game.js`: factories given the page's parts (`viewContext`) that draw the battles and awakenings, the seats' cards, and the action buttons with their costs |
+| `heldPrefix`, `tokenActions`, `unitAction(id)` | `game.js`, the units on a map: the prefix of the piece value of a unit that holds a place (Cthulhu Wars' `gate:`); the actions a click on a token stands for, `{through: [action], inArea: {action: unit type}}`; the unit an action brings on, `{kind, type}` or `null`, whose button `actionList`'s `unitButton` draws |
 | `reactionHelp()`, `endReasons`, `drawnMessage(reason, detail)`, `actionLabel(id, label, rv, seat)`, `battleOption` | `game.js`: the reaction help, the game-over line, a button's label, an option's name, in the game's words |
 
 No shared file imports a game's script, tests a game's id or uses its words: a game without a script is drawn
-without these parts, with a plain button for each action. Some generic mechanisms keep names they were given for
-Cthulhu Wars (the `gate:` token prefix of a unit that holds a place, the unit kinds of the action buttons), which the API shares.
+without these parts, with a plain button for each action. One mechanism still reads Cthulhu Wars' rules: the queue of
+units that move together, which reads its notation (`go:`, `leave:`, `control:`) and the view's Power, costs and stacks.
 
 The schema is `internal/web/look`: a game's module loads the file with `look.MustLoad`, which
 refuses an unknown key, and `tests/look` holds every shipped file to its games with `look.Check`.

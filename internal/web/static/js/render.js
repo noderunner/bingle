@@ -9,8 +9,6 @@ import { onNavigate } from "./nav.js";
 
 export const CELL = 80;
 
-/** Prefix of the piece value of the unit that stands on a Gate (see the server's notation). */
-export const ONGATE = "gate:";
 const MARGIN = 30;
 // A themed board has an illustrated frame, and the coordinates would be drawn on
 // that picture: they go in a plain strip round the whole frame instead.
@@ -102,38 +100,6 @@ export function pieceShape(shape, size) {
 					UNIT_GLYPHS[shape]
 				),
 			];
-		case "cultist": {
-			// A hooded figure: a robe and a head.
-			return [
-				s("path", { class: "piece-body", d: `M 0 ${-0.12 * S} L ${0.34 * S} ${0.44 * S} L ${-0.34 * S} ${0.44 * S} Z`, "stroke-linejoin": "round" }),
-				s("circle", { class: "piece-body", cx: 0, cy: -0.29 * S, r: 0.18 * S }),
-			];
-		}
-		case "monster": {
-			// A shield: a hexagon with a claw mark.
-			const pts = [];
-			for (let k = 0; k < 6; k++) {
-				const a = (Math.PI / 180) * (60 * k - 90);
-				pts.push(`${(0.47 * S * Math.cos(a)).toFixed(2)},${(0.47 * S * Math.sin(a)).toFixed(2)}`);
-			}
-			return [
-				s("polygon", { class: "piece-body", points: pts.join(" "), "stroke-linejoin": "round" }),
-				s("path", { class: "piece-detail", d: `M ${-0.2 * S} ${0.08 * S} L 0 ${-0.16 * S} L ${0.2 * S} ${0.08 * S}` }),
-			];
-		}
-		case "goo": {
-			// A many-pointed star: a Great Old One.
-			const pts = [];
-			for (let k = 0; k < 16; k++) {
-				const r = k % 2 === 0 ? 0.54 * S : 0.31 * S;
-				const a = (Math.PI / 8) * k - Math.PI / 2;
-				pts.push(`${(r * Math.cos(a)).toFixed(2)},${(r * Math.sin(a)).toFixed(2)}`);
-			}
-			return [
-				s("polygon", { class: "piece-body", points: pts.join(" "), "stroke-linejoin": "round" }),
-				s("circle", { class: "piece-detail", r: 0.13 * S }),
-			];
-		}
 		case "donut":
 			// A ring with a hole (Yinsh's rings).
 			return [s("circle", { class: "piece-body", r: 0.46 * S }), s("circle", { class: "ring-hole", r: 0.27 * S })];
