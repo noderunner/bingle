@@ -12,3 +12,11 @@ export function listIcon() {
 	}
 	return svg;
 }
+
+/**
+ * A layer of the map for the options window beside its names and units, off
+ * until the player turns it on: the tests' vehicle for a game's own layers.
+ */
+export function mapLayers() {
+	return [{ id: "council-claims", label: "Claims", on: false }];
+}

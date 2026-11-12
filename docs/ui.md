@@ -28,20 +28,20 @@ can be drawn at that height (`--board-aspect`, from the board's `viewBox`; the m
 that grows, such as a free board's), leaving `#play-rail` at least `--rail-least`.
 The rail has what is left, up to 40rem, and any width beyond that is shared by the outer margins. It holds the cards in
 one column and scrolls by itself, keeping its place across redraws: the tutorial (which stays in view at the top of the rail as it scrolls) and any notices, `#impulse-card`,
-`#players-card` (`#cult-stack` at a table of three or more), voice, chat and history. On an upright screen under 980px
+`#players-card` (`#seat-stack` at a table of three or more), voice, chat and history. On an upright screen under 980px
 wide, the rail goes under the board, whose row is no taller than the board.
 
 - **A table of cards** (`.boardless`) has no shape of its own. The rail is at most 26rem and the table takes the rest of
   the width, with cards sized to the window. The column scrolls if a pile of cards runs long.
 - **A map** (`.areas`) sits at the top of its column under the round bar, with a wider rail (`--rail-least`). What is
   under it shares the height left: the battle, the card of a unit, an exchange. The rail's cards take turns behind
-  `.rail-tabs`: `#rail-tab-cults`, `#rail-tab-talk` and `#rail-tab-history`. Every pane stays on the page, so a message being typed survives a change of tab.
+  `.rail-tabs`: `#rail-tab-seats`, `#rail-tab-talk` and `#rail-tab-history`. Every pane stays on the page, so a message being typed survives a change of tab.
   The talk and the history fill the height the rail has left.
-- **A cult's card** is a summary: its numbers and an `.expand-toggle`. Open (`.seat-more`), Cthulhu Wars has a line between its sections and its words in the cult's colour (`--seat-ink`); another game's
+- **A seat's card** is a summary: its numbers and an `.expand-toggle`. Open (`.seat-more`), Cthulhu Wars has a line between its sections and its words in the cult's colour (`--seat-ink`); another game's
   have a `.faction-heading`. `.spellbook-grid` holds `.spell-tile`s in two columns: the six requirements, then the spellbooks
   to come. A spellbook earned takes the place of a met requirement, in listed order, since the server keeps which are
-  met and which are held but not which paid for which. `S.expanded` is the one card open, a cult's or `#neutral-window`.
-  A phone shows each cult whole, on a page of its own.
+  met and which are held but not which paid for which. `S.expanded` is the one card open, a seat's or `#neutral-window`.
+  A phone shows each seat whole, on a page of its own (`seat-<n>`).
 
 No `.status-bar` is drawn on this page. While a game is being played, `#status-message` stays as `.sr-only` for screen
 readers. For a result, history, analysis or a game waiting for an opponent, the message and the bar's buttons (`#rematch`,
@@ -59,7 +59,7 @@ is a colour and a cell, so the two did the same thing; a game whose selections t
 ## The phone page of a map
 
 Turning the phone changes what it shows (`renderMobile`). Upright, it has the cards, swiped between: the actions (with the
-status, any tutorial and notices), the round, each cult, the history and the chat. On its side, `body.m-landscape`
+status, any tutorial and notices), the round, each seat, the history and the chat. On its side, `body.m-landscape`
 gives the whole screen to the map, with no bars, for tapping areas, moving units, pinching and dragging. On the player's
 turn `#m-turn-note` says so, and asks them to hold the phone upright when the next choice is not on the map. A pending
 move carries across the turn of the phone.
@@ -245,7 +245,7 @@ selects one).
   (`localStorage` `bingle.chat.seen`), so coming back to the page says how much
   was missed. Reading the tab clears it.
 
-**A picture behind a map.** A game whose look names `board.art` (in `web.yaml`, per variant) draws it behind its areas (`image.map-art`, `svg.has-art`): the areas are then transparent, there only to be clicked and lit up. The same element is used on every redraw, so a move does not make it flash. `params.ice_glyphs` draws `.ice-glyphs` over it, with the layer `#opt-layer-ice` in the game options (`bingle.layer.ice`). `params.glyph_marks` puts an area's Desecrate glyph where the board prints it (`.area-glyph-badge.printed`, no disc); elsewhere it stands in a round badge beside the name. The glyphs' shapes are in `cw-map-glyphs.js`, generated.
+**A picture behind a map.** A game whose look names `board.art` (in `web.yaml`, per variant) draws it behind its areas (`image.map-art`, `svg.has-art`): the areas are then transparent, there only to be clicked and lit up. The same element is used on every redraw, so a move does not make it flash. Its look's `data.ice_glyphs` draws `.ice-glyphs` over it, with the layer `#opt-layer-ice` in the game options (`bingle.layer.ice`). `data.glyph_marks` puts an area's Desecrate glyph where the board prints it (`.area-glyph-badge.printed`, no disc); elsewhere it stands in a round badge beside the name. The glyphs' shapes are in `cw-map-glyphs.js`, generated.
 
 **Setup options.** A game's `bool` options are check boxes: under the seats for a
 table of three or more (`#slots-field`) and in a field
@@ -424,8 +424,10 @@ Its sections:
   reactions, described below;
 * **Auto-Play Timeout** (`#options-autoplay`) — a person's option, described
   below;
-* **Map layers** (area maps) — *Area names*, *Glyphs*, *Sigils*
-  (`#opt-layer-names|glyphs|sigils`, remembered as `bingle.layer.*`);
+* **Map layers** (area maps) — *Area Names* and *Units*, and between them the
+  layers the game's page script adds (`mapLayers`: Cthulhu Wars' *Glyphs*, *Sigils*
+  and, on a Primeval map, *Glacier Glyphs*), each `#opt-layer-<id>`, remembered as
+  `bingle.layer.<id>` across games;
 * **Display** — coordinates, legal-move and last-move highlights, animation,
   the board style of a hex board (`#opt-hex-style`, below), the board theme,
   preview-and-confirm (games without dice), turn notifications;
@@ -434,8 +436,8 @@ Its sections:
 * **Table** — fill an open seat with a bot, or take one as a spectator;
 * **Game** — *Offer draw*, *Resign*/*End game* (`#resign`).
 
-There is no Players card or Tools card in the side column any more: the cult
-panels (or the seat strips of a two-player game) show who sits where.
+There is no Players card or Tools card in the side column any more: the seat
+panels of a table of three or more (or the seat strips of a two-player game) show who sits where.
 
 ### The board style of a hex board
 
@@ -778,7 +780,8 @@ and its `cw-*.js`; Hive's tiles, Onitama's Move cards and Nyet!'s pictures) have
 | `seatIcon(label, {color, size, title})` | `game.js` and `cards.js`: the player's picture in place of the seat's swatch, and under a trick's cards |
 | `choicePanel(ctx)` | `game.js`: what the player chooses from beside the actions, drawn from the game's own view (Onitama's Move cards); `ctx` is `viewContext()` |
 | `choiceIcon(desc, ctx, size)` | `cards.js`, the boxes and lines of a board of choices (their words without it) |
-| `renderAreaMap(host, info, view, handlers)` | `render.js`, for an `areas` board |
+| `renderAreaMap(host, info, view, handlers)` | `render.js`, for an `areas` board; `view.layers` says which layers are shown, by id |
+| `mapLayers(info)` | `game.js`, the options window: the map's layers beside its names and units, `[{id, label, on}]`, `on` the default |
 | `outlineArea(position, info)` | `api.gameDef`, for a position of an `areas` board the look does not outline (one a derived game adds: Cthulhu Wars' Moon); returns `{polygons, anchor}` or `null` |
 | `mapKey(info)`, `legendMarker(kind, arg, info)` | `rules.js`, the key to the map |
 | `guideFigure(name, info)` | `rules.js`: a guide's `![…](figure:name)`, a picture the game draws itself (Cthulhu Wars' map); `null` shows the alt text |
@@ -787,12 +790,12 @@ and its `cw-*.js`; Hive's tiles, Onitama's Move cards and Nyet!'s pictures) have
 | `lobbyPool(info)` | `lobby.js`, what a table was set up with |
 | `batchSections(rep, other, length, redraw)`, `pickName`, `pickColor`, `endReason`, `optionName` | `batches.js`, a practice batch's report |
 | `statIcon`, `spellMark`, `enterBlock`, `bookRequirements`, `abilitiesBlock`, `unitText`, `neutralTip` | `game.js`, parts of a ruleset's view (counters, marks, unit cards); `stat-icons.js` draws every game's own pictograms |
-| `battles(ctx)`, `cultCards(ctx)`, `actionList(ctx)` | `game.js`: factories given the page's parts (`viewContext`) that draw the battles and awakenings, the seats' cards, and the action buttons with their costs |
+| `battles(ctx)`, `seatCards(ctx)`, `actionList(ctx)` | `game.js`: factories given the page's parts (`viewContext`) that draw the battles and awakenings, the seats' cards, and the action buttons with their costs |
 | `reactionHelp()`, `endReasons`, `drawnMessage(reason, detail)`, `actionLabel(id, label, rv, seat)`, `battleOption` | `game.js`: the reaction help, the game-over line, a button's label, an option's name, in the game's words |
 
 No shared file imports a game's script, tests a game's id or uses its words: a game without a script is drawn
 without these parts, with a plain button for each action. Some generic mechanisms keep names they were given for
-Cthulhu Wars (a seat's "cult" choice, the `gate:` token prefix), which the API shares.
+Cthulhu Wars (the `gate:` token prefix of a unit that holds a place, the unit kinds of the action buttons), which the API shares.
 
 The schema is `internal/web/look`: a game's module loads the file with `look.MustLoad`, which
 refuses an unknown key, and `tests/look` holds every shipped file to its games with `look.Check`.

@@ -858,7 +858,7 @@ kbd { font: 600 0.8em ui-monospace, Menlo, Consolas, monospace; border: 1px soli
 .slot-row .swatch.color-teal { background: var(--piece-teal-fill); }
 .slot-row .swatch.color-brown { background: var(--piece-brown-fill); }
 .slot-row .swatch.color-white { background: var(--piece-white-fill); }
-/* A seat whose cult is chosen: the name column is a list of the cults. */
+/* A seat whose faction is chosen: the name column is a list of the factions. */
 .slot-row.with-faction { grid-template-columns: minmax(11rem, 13rem) 1fr; }
 .option-flag { margin-top: 0.4rem; display: flex; flex-direction: column; gap: 0.1rem; }
 @media (max-width: 520px) {
@@ -910,8 +910,8 @@ kbd { font: 600 0.8em ui-monospace, Menlo, Consolas, monospace; border: 1px soli
 @media (min-width: 1400px) {
 	.game-layout { grid-template-columns: minmax(0, 1fr) 380px; gap: 1.25rem; }
 }
-.cult-stack { display: flex; flex-direction: column; gap: 0.5rem; }
-.cult-stack .seat-strip { max-width: none; width: 100%; }
+.seat-stack { display: flex; flex-direction: column; gap: 0.5rem; }
+.seat-stack .seat-strip { max-width: none; width: 100%; }
 .side-panel .seat-strip .seat-head { row-gap: 0.1rem; }
 
 /* ---- round bar: the phases in order, who plays when ----------------------- */
@@ -959,7 +959,7 @@ kbd { font: 600 0.8em ui-monospace, Menlo, Consolas, monospace; border: 1px soli
 
 .unit-text { margin: 0.2rem 0 0.4rem; }
 
-/* The log: cult names in their colours, the verb in bold. */
+/* The log: seat names in their colours, the verb in bold. */
 .events { font-size: 0.86rem; max-height: 22rem; overflow: auto; }
 .log-actor { display: flex; align-items: center; gap: 0.4rem; margin: 0.45rem 0 0.1rem; padding-top: 0.3rem; border-top: 1px solid var(--border); }
 .log-actor:first-child { border-top: 0; margin-top: 0; padding-top: 0; }
@@ -1886,7 +1886,7 @@ code.wrap { overflow-wrap: anywhere; word-break: break-all; }
 .setup-layout.with-picker .setup-tutorials .setup-tutorials-title { margin-top: 0; }
 @media (max-width: 560px) { .setup-layout.with-picker .setup-side { grid-template-columns: minmax(0, 1fr); } .setup-layout.with-picker .setup-preview { grid-row: auto; } }
 
-.slot-cult { display: inline-flex; align-items: center; gap: 0.4rem; min-width: 0; }
+.slot-faction { display: inline-flex; align-items: center; gap: 0.4rem; min-width: 0; }
 
 /* A phone zooms the page to any box with small text: this one keeps it the size of the page. */
 @media (pointer: coarse) { .rules-search { font-size: 16px; } }

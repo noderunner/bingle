@@ -76,3 +76,25 @@ func TestWebCouncil_ItsScriptDrawsItsPictureInTheList(t *testing.T) {
 	}
 	waitJS(t, ctx, "Council's picture", `document.querySelector('.game-card[data-family="test-council"] .game-card-preview svg.council-icon') !== null`, 20*time.Second)
 }
+
+// A map's layers beyond its names and units are its page script's (mapLayers,
+// ADR 0124): Council's Claims is in the options window, off at first, and a
+// player's choice is kept.
+func TestWebCouncil_ItsScriptAddsALayerOfTheMap(t *testing.T) {
+	base := newRESTTestServer(t)
+	var created createGameResponse
+	if code := doJSON(t, "POST", base+"/api/games", map[string]any{"game_def_id": "test-council", "player_name": "Alice", "seat_bots": map[string]string{"2": "random", "3": "random", "4": "random"}}, &created); code != 200 {
+		t.Fatalf("create: %d", code)
+	}
+	ctx, cancel := newChromedpContext(t, 60*time.Second)
+	defer cancel()
+	openGameAs(t, ctx, base, created.RoomCode, "test-council", "Alice")
+	waitJS(t, ctx, "the options button", `document.getElementById("open-options") !== null`, 15*time.Second)
+	clickSel(t, ctx, "#open-options")
+	waitJS(t, ctx, "the layers", `document.getElementById("opt-layer-council-claims") !== null`, 10*time.Second)
+	if got := evalString(t, ctx, `[...document.querySelectorAll('#game-options input[id^="opt-layer-"]')].map(b => b.id + "=" + b.checked).join(" ")`); got != "opt-layer-names=true opt-layer-council-claims=false opt-layer-units=true" {
+		t.Errorf("the layers: %s", got)
+	}
+	clickSel(t, ctx, "#opt-layer-council-claims")
+	waitJS(t, ctx, "kept", `localStorage.getItem("bingle.layer.council-claims") === "true" && document.getElementById("opt-layer-council-claims").checked`, 5*time.Second)
+}

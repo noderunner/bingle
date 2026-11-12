@@ -141,7 +141,7 @@ async function leaveGame(r, title) {
 
 /** One game of the list: title, who is playing, a status badge, Open/Review and a remove button. */
 export function gameRow(r, defs, onForget) {
-	// A table with its own cults is a derived game ("base~ww-sl-gc-hp"): the
+	// A table with its own factions is a derived game ("base~ww-sl-gc-hp"): the
 	// layout's name, then who sits at it.
 	const defId = String((r.info && r.info.game_def_id) || r.g.def);
 	const def = defs.find((d) => d.id === defId.split("~")[0]);

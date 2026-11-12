@@ -77,13 +77,10 @@ const S = {
 		board: store.get("bingle.board", "wood"),
 		// Size of the big piece buttons in the player panes (a multiplier).
 		tileScale: Number(store.get("bingle.tileScale", 1)) || 1,
-		// Which layers of an area map are drawn.
+		// Which layers of an area map are drawn: its names and its units, and the
+		// layers its page script adds (mapLayers), each remembered by id.
 		names: store.get("bingle.layer.names", true),
-		// null until the player chooses: then the glyphs show when Yellow Sign is at the table.
-		glyphs: store.get("bingle.layer.glyphs", null),
-		sigils: store.get("bingle.layer.sigils", true),
 		units: store.get("bingle.layer.units", true),
-		ice: store.get("bingle.layer.ice", true),
 	},
 	lastPiece: null, // piece type most recently placed (quick placement)
 	inspect: null, // square under the pointer, for the stack inspector
@@ -2353,12 +2350,12 @@ function render() {
 	const many = seats.length > 2;
 	const areas = S.info.board.style === "areas";
 	document.body.classList.toggle("wide-game", areas);
-	// Three or more cults: their panels live beside the map, so the scores,
+	// Three or more seats: their panels live beside the map, so the scores,
 	// cards and counters are in view without scrolling.
-	let cults = null;
+	let seatStack = null;
 	if (many) {
-		cults = h("div", { class: "cult-stack", id: "cult-stack" });
-		for (const seat of cardOrder(bottomSeat)) cults.append(seatStrip(seat));
+		seatStack = h("div", { class: "seat-stack", id: "seat-stack" });
+		for (const seat of cardOrder(bottomSeat)) seatStack.append(seatStrip(seat));
 	}
 
 	// A game that has not started shows its lobby instead of an empty board.
@@ -2373,7 +2370,7 @@ function render() {
 		return;
 	}
 	if (!lobby) {
-		renderFitted(seats, bottomSeat, cults);
+		renderFitted(seats, bottomSeat, seatStack);
 		return;
 	}
 	const side = h("aside", { class: "side-panel" }, voiceCard({ code, me: S.me, seats: S.game.seats }) || "", chatCard({ code, me: S.me }), debugPanel());
@@ -2545,7 +2542,7 @@ function impulseCard(note, choices = []) {
 	return card;
 }
 
-function renderFitted(seats, bottomSeat, cults) {
+function renderFitted(seats, bottomSeat, seatStack) {
 	document.body.classList.add("fit-screen");
 	const areas = S.info.board.style === "areas";
 	const boardless = S.info.board.style === "none";
@@ -2583,8 +2580,8 @@ function renderFitted(seats, bottomSeat, cults) {
 		: { words, over: bar.classList.contains("over"), history: bar.classList.contains("history"), buttons: [...bar.querySelectorAll(":scope > button, :scope > a.button")] };
 	if (quiet) words.classList.add("sr-only");
 
-	const players = cults || h("section", { class: "card players-card", id: "players-card", "aria-label": "Players" });
-	if (!cults) {
+	const players = seatStack || h("section", { class: "card players-card", id: "players-card", "aria-label": "Players" });
+	if (!seatStack) {
 		for (const ts of seats.filter((s) => s.seat !== bottomSeat)) players.append(seatStrip(ts.seat));
 		players.append(seatStrip(bottomSeat));
 	}
@@ -2605,13 +2602,13 @@ function renderFitted(seats, bottomSeat, cults) {
 
 	const rail = h("aside", { class: "side-panel play-rail", id: "play-rail" }, ...first.filter(Boolean));
 	if (areas) {
-		// More than a column can show at once: the cults, the table talk and the history take turns.
-		const panes = [{ id: "cults", label: (seats.length > 2 && page().seatsName) || "Players", nodes: [players, neutralCard()] }];
+		// More than a column can show at once: the seats, the table talk and the history take turns.
+		const panes = [{ id: "seats", label: (seats.length > 2 && page().seatsName) || "Players", nodes: [players, neutralCard()] }];
 		if (talk.length) panes.push({ id: "talk", label: "Chat", nodes: talk });
 		panes.push({ id: "history", label: "History", nodes: [history] });
 		rail.append(...railTabs(panes));
 	} else {
-		rail.append(players, ...(cults ? [neutralCard()].filter(Boolean) : []), ...talk, history);
+		rail.append(players, ...(seatStack ? [neutralCard()].filter(Boolean) : []), ...talk, history);
 		if (talk.length) chatSeen();
 	}
 	rail.append(debugPanel());
@@ -2658,7 +2655,7 @@ function railTabs(panes) {
 // ---- the phone layout --------------------------------------------------------------------
 //
 // One full-screen view at a time under a slim top bar, swiped between like the
-// pages of an app: the map, the actions, the round, each cult's card, the log
+// pages of an app: the map, the actions, the round, each seat's card, the log
 // and the chat. The same pieces as the desktop page, laid out differently.
 
 /** Takes the ids off a copy of a piece of page (it appears twice, the ids must stay unique). */
@@ -2742,11 +2739,11 @@ function renderMobile(seats, bottomSeat) {
 		{ id: "actions", label: "Actions", group: "actions", node: actions },
 		{ id: "round", label: "Round", group: "round", node: round },
 	];
-	const chips = { cults: [] };
+	const chips = { seats: [] };
 	for (const seat of cardOrder(bottomSeat)) {
-		const id = `cult-${seat}`;
-		pages.push({ id, label: seatLabel(seat) || `Seat ${seat}`, group: "cults", node: h("div", { class: "m-stack" }, seatStrip(seat)) });
-		chips.cults.push({ page: id, label: seatLabel(seat) || `Seat ${seat}`, color: cssColor(colorOf(seat)) });
+		const id = `seat-${seat}`;
+		pages.push({ id, label: seatLabel(seat) || `Seat ${seat}`, group: "seats", node: h("div", { class: "m-stack" }, seatStrip(seat)) });
+		chips.seats.push({ page: id, label: seatLabel(seat) || `Seat ${seat}`, color: cssColor(colorOf(seat)) });
 	}
 	pages.push({ id: "log", label: "History", group: "log", node: h("div", { class: "m-stack" }, historyCard()) });
 	if (!S.tut) pages.push({ id: "chat", label: "Chat", group: "chat", node: h("div", { class: "m-stack" }, voiceCard({ code, me: S.me, seats: S.game.seats }), chatCard({ code, me: S.me })) });
@@ -2758,7 +2755,7 @@ function renderMobile(seats, bottomSeat) {
 		groups: [
 			{ id: "actions", label: "Actions", icon: "⚡", pulse: myImpulse && S.mPage !== "actions" },
 			{ id: "round", label: "Round", icon: "⏳" },
-			{ id: "cults", label: page().seatsName || "Players", icon: "👥" },
+			{ id: "seats", label: page().seatsName || "Players", icon: "👥" },
 			{ id: "log", label: "History", icon: "📜" },
 			{ id: "chat", label: "Chat", icon: "💬", badge: unread || 0 },
 		],
@@ -3062,7 +3059,7 @@ function drawBoard(host) {
 			badges: (rulesetView() || {}).badges || null,
 			walls: (rulesetView() || {}).walls || null,
 			holders: shownHolders(),
-			layers: { names: S.settings.names, glyphs: glyphLayerOn(), sigils: S.settings.sigils, units: S.settings.units, ice: S.settings.ice },
+			layers: mapLayersShown(),
 			legend: isRuleset() || declaredTints() ? S.info.display || null : null,
 			tokenOk: interactive ? tokenOk : null,
 			enhanced: enhancedUnits(),
@@ -3365,7 +3362,7 @@ function seatStrip(seat) {
 	head.append(h("span", { class: "badge waiting seat-conn", title: "No connection to this player right now. It may be back in a moment." }, off ? "disconnected" : ""));
 	// A seat of two colours says which it is: the players know each other by these.
 	if (seatGradient(seat) && !(seatName(seat) || "").includes(seatLabel(seat))) head.append(seatWord(seat));
-	// At a table of many cults the faction is named beside its player (a bot's
+	// At a table of many seats the faction is named beside its player (a bot's
 	// name already is the faction's).
 	if (!glyph && S.info.seats.length > 2 && seatLabel(seat) && !(seatName(seat) || "").startsWith(seatLabel(seat))) {
 		head.append(h("span", { class: "seat-faction small muted" }, seatLabel(seat)));
@@ -3454,7 +3451,7 @@ function seatStrip(seat) {
 		strip.append(stones);
 	}
 	if (sv && sv.cards && sv.cards.length) {
-		// A phone gives each cult a page of its own: there is the room to show it all.
+		// A phone gives each seat a page of its own: there is the room to show it all.
 		const whole = isMobileLayout();
 		const key = `seat-${seat}`;
 		strip.append(h("div", { class: "seat-more", hidden: !whole && S.expanded !== key }, factionCards(seat, sv)));
@@ -3465,19 +3462,19 @@ function seatStrip(seat) {
 	return strip;
 }
 
-// Drawn by the game's page script (cultCards, ADR 0124); a game without one has none of these.
-let cultCardsParts = null;
-function cultCardsView() {
-	if (!cultCardsParts) cultCardsParts = (page().cultCards && page().cultCards(viewContext())) || {};
-	return cultCardsParts;
+// Drawn by the game's page script (seatCards, ADR 0124); a game without one has none of these.
+let seatCardsParts = null;
+function seatCardsView() {
+	if (!seatCardsParts) seatCardsParts = (page().seatCards && page().seatCards(viewContext())) || {};
+	return seatCardsParts;
 }
-const enhancedUnits = (...args) => (cultCardsView().enhancedUnits ? cultCardsView().enhancedUnits(...args) : null);
-const factionCards = (...args) => (cultCardsView().factionCards ? cultCardsView().factionCards(...args) : null);
-const neutralCard = (...args) => (cultCardsView().neutralCard ? cultCardsView().neutralCard(...args) : null);
-const orderLine = (...args) => (cultCardsView().orderLine ? cultCardsView().orderLine(...args) : null);
-const roundBar = (...args) => (cultCardsView().roundBar ? cultCardsView().roundBar(...args) : null);
-const unitInfoCard = (...args) => (cultCardsView().unitInfoCard ? cultCardsView().unitInfoCard(...args) : null);
-const unitTip = (...args) => (cultCardsView().unitTip ? cultCardsView().unitTip(...args) : null);
+const enhancedUnits = (...args) => (seatCardsView().enhancedUnits ? seatCardsView().enhancedUnits(...args) : null);
+const factionCards = (...args) => (seatCardsView().factionCards ? seatCardsView().factionCards(...args) : null);
+const neutralCard = (...args) => (seatCardsView().neutralCard ? seatCardsView().neutralCard(...args) : null);
+const orderLine = (...args) => (seatCardsView().orderLine ? seatCardsView().orderLine(...args) : null);
+const roundBar = (...args) => (seatCardsView().roundBar ? seatCardsView().roundBar(...args) : null);
+const unitInfoCard = (...args) => (seatCardsView().unitInfoCard ? seatCardsView().unitInfoCard(...args) : null);
+const unitTip = (...args) => (seatCardsView().unitTip ? seatCardsView().unitTip(...args) : null);
 
 
 // ---------------------------------------------------------------------------
@@ -4014,7 +4011,7 @@ function saveAutoPlay(patch) {
 /** A seat's details under a heading each, as the game's view gives them. */
 
 
-/** The triangle under a card in summary. One card is open at a time, across the cults and the neutral items. */
+/** The triangle under a card in summary. One card is open at a time, across the seats and the neutral items. */
 function expandToggle(key, label) {
 	const open = S.expanded === key;
 	return h(
@@ -4798,14 +4795,21 @@ function initOptions() {
 	}
 }
 
-/** Yellow Sign is one of the cults at this table (the glyph badges are its Desecrate targets). */
-function yellowSignAtTable() {
-	return ((S.info && S.info.seats) || []).some((st) => st.color === "yellow");
+/**
+ * The layers of an area map its page script adds, beside the names and the units:
+ * mapLayers(info) gives [{id, label, on}], on being what a player who has not chosen
+ * sees. Each is shown as the player last chose, in any game, or else as the script says.
+ */
+function pageLayers() {
+	const layers = (S.info && page().mapLayers && page().mapLayers(S.info)) || [];
+	return layers.map((l) => ({ ...l, shown: store.get(`bingle.layer.${l.id}`, null) ?? !!l.on }));
 }
 
-/** Whether the glyph badges are drawn: the player's choice, else only when Yellow Sign plays. */
-function glyphLayerOn() {
-	return S.settings.glyphs === null ? yellowSignAtTable() : S.settings.glyphs;
+/** Which layers of an area map are drawn, by id, for its page script. */
+function mapLayersShown() {
+	const out = { names: S.settings.names, units: S.settings.units };
+	for (const l of pageLayers()) out[l.id] = l.shown;
+	return out;
 }
 
 // How this game's hex board is drawn is remembered per game, not across games:
@@ -4817,13 +4821,23 @@ function hexStyle() {
 
 /** A labelled check box that keeps a setting and redraws the page. */
 function settingToggle(key, id, label, storeKey, redraw = true) {
-	const box = h("input", { type: "checkbox", id, checked: key === "glyphs" ? glyphLayerOn() : S.settings[key] });
+	const box = h("input", { type: "checkbox", id, checked: S.settings[key] });
 	box.addEventListener("change", () => {
 		S.settings[key] = box.checked;
 		store.set(storeKey, box.checked);
 		if (redraw) render();
 	});
 	return h("label", { class: "check" }, box, h("span", {}, label));
+}
+
+/** The check box of a layer the page script adds, remembered as bingle.layer.<id>. */
+function layerToggle(layer) {
+	const box = h("input", { type: "checkbox", id: `opt-layer-${layer.id}`, checked: layer.shown });
+	box.addEventListener("change", () => {
+		store.set(`bingle.layer.${layer.id}`, box.checked);
+		render();
+	});
+	return h("label", { class: "check" }, box, h("span", {}, layer.label));
 }
 
 /** Brings every section of the options window up to date (cheaply: a section is rebuilt only when its signature changes). */
@@ -4841,14 +4855,12 @@ function refreshOptions() {
 	// The layers of an area map.
 	w.hide("layers", !areas);
 	if (areas) {
-		const ice = !!(S.info.pageData && S.info.pageData.ice_glyphs);
-		w.update("layers", ["v4", glyphLayerOn(), ice], (el) => {
+		const extra = pageLayers();
+		w.update("layers", ["v5", JSON.stringify(extra)], (el) => {
 			el.append(
 				settingToggle("names", "opt-layer-names", "Area Names", "bingle.layer.names"),
-				settingToggle("glyphs", "opt-layer-glyphs", "Glyphs", "bingle.layer.glyphs"),
-				settingToggle("sigils", "opt-layer-sigils", "Sigils", "bingle.layer.sigils"),
-				settingToggle("units", "opt-layer-units", "Units", "bingle.layer.units"),
-				...(ice ? [settingToggle("ice", "opt-layer-ice", "Glacier Glyphs", "bingle.layer.ice")] : [])
+				...extra.map(layerToggle),
+				settingToggle("units", "opt-layer-units", "Units", "bingle.layer.units")
 			);
 		});
 	}
@@ -5294,7 +5306,7 @@ function escapeRegExp(text) {
 }
 
 /**
- * One line of the log: cult names in their colours and the verb in bold (or
+ * One line of the log: seat names in their colours and the verb in bold (or
  * the label that opens an effect).
  */
 function logLine(text) {
@@ -5414,7 +5426,7 @@ function logStep(line, e) {
 }
 
 // eventsPane narrates the whole game so far, with a rule marking where the
-// viewer's last decision was (what the other cults did meanwhile comes after
+// viewer's last decision was (what the other seats did meanwhile comes after
 // it). A spectator sees the whole log without the mark. It returns
 // {node, since} for the History tab, or null for a game that does not narrate
 // its turns. A game that does always has the tab: when there is nothing to

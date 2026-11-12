@@ -73,7 +73,7 @@ export function onScreenChange(fn) {
  *
  *   pages  [{id, label, node, group}]  in swipe order
  *   groups [{id, label, icon, badge, pulse}]  the buttons of the bottom bar; a
- *          group with several pages (one per cult) shows a strip to pick one
+ *          group with several pages (one per seat) shows a strip to pick one
  *   chips  {group: [{page, label, color}]}  the strip of a group
  *   current  the id of the page to show
  *   onChange(id)  called when the player settles on another page
