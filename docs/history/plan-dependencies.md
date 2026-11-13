@@ -17,7 +17,7 @@ order of work can be chosen deliberately. Provisional: it changes as each plan i
 | [real-time-play-plan.md](real-time-play-plan.md) | **built** | no |
 | [tournaments-and-rankings-plan.md](tournaments-and-rankings-plan.md) | **built** but for its *Later* list | yes |
 | [game-services-proposal.md](game-services-proposal.md) | **deferred** proposal: an alternative to the plugins plan's overlay | no |
-| [achievements-plan.md](achievements-plan.md) | planning in progress | yes |
+| [achievements-plan.md](achievements-plan.md) | **settled** 2026-11-13, ready to implement | yes |
 | [code-and-architecture-audit-plan.md](code-and-architecture-audit-plan.md) | planning in progress | no |
 
 ## How they constrain each other
@@ -109,3 +109,7 @@ The couplings that would cost the most if missed:
   `install_plugins` any more, and the arrows to plugins from YAML and the DSL coverage audit no longer lead to
   installable games. Both already did their work.
 - 2026-11-09: the plugins plan moved to `main` (#180) and left this branch; its row links to where it now lives.
+- 2026-11-13: achievements settled. They count unrated games and larger tables too, so the end-of-game
+  hook they share with tournaments becomes the pending-results worker generalised to every game that
+  counts; the rated keys in `stats` keep their meaning. Rules now report facts, a change to the
+  `Ruleset` contract that the private overlay's games pick up when they ship badges.

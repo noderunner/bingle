@@ -18,7 +18,7 @@ truth, and [decisions/](../decisions/README.md) records what was decided and why
 | [real-time-play-plan.md](real-time-play-plan.md) | The plan for real-time games: connection, warnings, vote-kicks and clocks |
 | [tournaments-and-rankings-plan.md](tournaments-and-rankings-plan.md) | The plan for tournaments and ratings |
 | [game-tutorials-plan.md](game-tutorials-plan.md) | Initial thoughts on guided tutorials (**in progress**) |
-| [achievements-plan.md](achievements-plan.md) | Initial thoughts on achievements and badges (**in progress**) |
+| [achievements-plan.md](achievements-plan.md) | The plan for achievements and badges: facts reported by the rules, badges checked during play or at the end |
 | [dsl-yaml-plan.md](dsl-yaml-plan.md) | Initial thoughts on YAML for game definitions (**in progress**) |
 | [dsl-coverage-audit-plan.md](dsl-coverage-audit-plan.md) | Initial thoughts on auditing what the DSL can express (**in progress**) |
 | [patience-vocabulary-plan.md](patience-vocabulary-plan.md) | Initial thoughts on a patience vocabulary, the DSL audit's addition F (**in progress**) |
