@@ -4,6 +4,14 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.110.0 - 2026-11-14
+
+### Bingle Core 0.110.0
+- Every player has a page of their own now, at `/players/` and their handle, with the badges they hold and the ratings they show on a leaderboard. Click somebody's @handle to see their medals and a link to their page, where a badge you hold too says so.
+- Your settings page shows every badge there is to earn, the ones you haven't earned yet greyed out. Pick the platform or a game to see only its badges, or show only those you've earned or not yet earned. Click a badge to see what it's for, what kind of game counts for it, and where and when you earned it.
+- A game with badges of its own lists them in a *Badges* tab of its rules window, with the ones you hold marked.
+- **For programs:** `GET /api/badges` and the MCP tool `list_badges` list every badge there is to earn, for anybody ([docs/badges.md](docs/badges.md)).
+
 ## 0.109.0 - 2026-11-14
 
 ### Bingle Core 0.109.0

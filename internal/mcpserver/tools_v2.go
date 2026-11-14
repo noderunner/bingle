@@ -130,6 +130,16 @@ func registerPlayTools(s *server.MCPServer, mgr *session.Manager) {
 	)
 
 	s.AddTool(
+		mcp.NewTool("list_badges",
+			mcp.WithDescription("List every badge there is to earn: the platform's first, then each game's. Each says what it is for, its game (family) for a game's badge, its kind (player, rated or bot, with the weakest bot that will do) and whether it is checked during play or at the end. get_badges says who holds them."),
+			mcp.WithReadOnlyHintAnnotation(true),
+		),
+		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			return mcp.NewToolResultStructuredOnly(map[string]any{"badges": mgr.Badges()}), nil
+		},
+	)
+
+	s.AddTool(
 		mcp.NewTool("list_bots",
 			mcp.WithDescription("List the built-in computer opponents that create_game (opponent=...) and env_reset (opponent=...) accept."),
 		),

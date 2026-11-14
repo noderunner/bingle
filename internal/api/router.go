@@ -88,6 +88,7 @@ func NewRouter(mgr *session.Manager, opts ...Option) chi.Router {
 	r.Get("/ratings/{family}", h.handleLeaderboard)
 	r.Get("/players/{handle}/ratings", h.handlePlayerRatings)
 	r.Get("/players/{handle}/badges", h.handlePlayerBadges)
+	r.Get("/badges", h.handleBadges)
 	r.Get("/here", h.handleGetHere)
 	r.Post("/here", h.handlePostHere)
 	r.Post("/dm", h.handlePostDirect)

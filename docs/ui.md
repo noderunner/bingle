@@ -8,7 +8,16 @@ Plain ES modules served from `internal/web/static` — no build step
   and *Global Chat* (see *The home page* below). The bar at the top has three
   icons: *Active games*, *Join Game* and the *profile*.
 * **Profile** (`/profile`, `js/profile.js`): name, email and the email
-  notification switch, and the finished games.
+  notification switch, and the finished games. For an account, its badges in
+  `#badges-list`: every badge there is, `li[data-badge][data-earned]`, those not
+  yet earned `.unearned` (greyed out), filtered by the chips `#badge-filter`
+  (platform or a game) and `#badge-shown` (all, earned, not yet), remembered in
+  the browser.
+* **Player** (`/players/{handle}`, `js/player.js`): an account's badges as others
+  see them, in `#player-badges` (only those held; `.badge-also` marks one the
+  reader holds too), and its listed ratings. A guest is asked to sign in.
+  Clicking a badge anywhere opens `#badge-dialog` (`js/badges.js`), with a link
+  `#badge-dialog-room` to the game for its holder alone.
 * **Game** (`/game/{code}`, `js/game.js`): board, players, hands, move list,
   history, undo/resign, analysis, rules, export.
 

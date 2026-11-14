@@ -25,7 +25,7 @@ function escapeFromPop(ev) {
 /** A small menu beside the badge. */
 function openPop(anchor, ...content) {
 	closePop();
-	pop = h("div", { class: "friend-pop", id: "friend-pop", role: "dialog", "aria-label": "Friend request" }, ...content);
+	pop = h("div", { class: "friend-pop", id: "friend-pop", role: "dialog", "aria-label": "Player" }, ...content);
 	document.body.append(pop);
 	const at = anchor.getBoundingClientRect();
 	const box = pop.getBoundingClientRect();
@@ -65,16 +65,17 @@ async function offerFriend(anchor, handle) {
 		.playerBadges(handle)
 		.then((r) => r.badges)
 		.catch(() => []);
-	if (held.length) {
-		parts.push(
-			h(
-				"div",
-				{ class: "small pop-badges", id: "pop-badges" },
-				h("span", { class: "muted" }, "Badges: "),
-				...held.map((b, i) => h("span", { title: b.description, "data-badge": b.badge }, (i ? ", " : "") + b.name))
-			)
-		);
-	}
+	// A row of their medals, each naming its badge, and the way to their page.
+	parts.push(
+		h(
+			"div",
+			{ class: "small pop-badges", id: "pop-badges" },
+			held.length
+				? h("span", { class: "pop-medals" }, ...held.map((b) => h("span", { class: "badge-medal small-medal", title: `${b.name}: ${b.description}`, "data-badge": b.badge, role: "img", "aria-label": b.name }, "★")))
+				: h("span", { class: "muted" }, "No badges yet. "),
+			h("a", { href: `/players/${encodeURIComponent(handle)}`, id: "pop-player" }, held.length ? `See @${handle}'s badges` : `@${handle}'s page`)
+		)
+	);
 	if (parts.length === 1) openPop(anchor, parts[0]);
 	else if (parts.length) openPop(anchor, h("div", { class: "pop-stack" }, ...parts));
 }

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="bingle-version" content="{{engineVersion}}">
+	<meta name="bingle-brand" content="{{brandName}}"{{if brandHasIcon}} data-icon="{{brandIconURL}}"{{end}}>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>{{brandName}} — Player</title>
+	<link rel="icon" type="{{brandIconType}}" href="{{brandIconURL}}" id="favicon">
+	<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+	<header class="topbar">
+		<a class="brand" href="/"><span class="logo{{if brandHasIcon}} custom{{end}}"></span>{{brandName}}</a>
+		<span class="spacer"></span>
+		<span class="topbar-actions" id="topbar-actions"></span>
+	</header>
+
+	<main class="page narrow">
+		<h1 id="player-title">Player</h1>
+		<p class="muted" id="player-note" hidden></p>
+
+		<section class="card" id="player-badges-box" hidden>
+			<h2>Badges</h2>
+			<div id="player-badges"></div>
+		</section>
+
+		<section class="card" id="player-ratings-box" hidden>
+			<h2>Ratings</h2>
+			<div class="table-scroll"><table class="data"><thead><tr><th>Game</th><th>Rating</th><th>Won</th><th>Drawn</th><th>Lost</th></tr></thead><tbody id="player-ratings"></tbody></table></div>
+		</section>
+	</main>
+
+	<footer class="site-footer"><sub title="The version of the {{brandFooter}} engine">{{brandFooter}} v{{engineVersion}} · MIT License · <a href="https://github.com/noderunner/bingle" target="_blank" rel="noopener noreferrer">GitHub</a></sub></footer>
+
+	<!-- First, so a fault in any module below is reported (docs/observability.md). -->
+	<script type="module" src="/static/js/errors.js"></script>
+	<script type="module" src="/static/js/player.js"></script>
+</body>
+</html>

@@ -88,6 +88,7 @@ func NewRouter(mgr *session.Manager, brand config.Brand) http.Handler {
 	r.Get("/", h.handleIndex)
 	r.Get("/game/{code}", h.handleGame)
 	r.Get("/profile", h.handleProfile)
+	r.Get("/players/{handle}", h.handlePlayer)
 	r.Get("/tournament/{id}", h.handleTournament)
 	r.Get("/login", h.handleAccountPage("login", "Sign in"))
 	r.Get("/signup", h.handleAccountPage("signup", "Sign up"))
@@ -237,6 +238,15 @@ func (h *handlers) handleProfile(w http.ResponseWriter, r *http.Request) {
 	if err := h.render(r, w, "profile.html.tmpl", nil); err != nil {
 		http.Error(w, "web: rendering profile page failed", http.StatusInternalServerError)
 		return
+	}
+}
+
+// handlePlayer serves a player's page, a shell: the script reads their badges
+// and ratings, which say whether there is such a player.
+func (h *handlers) handlePlayer(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if err := h.render(r, w, "player.html.tmpl", nil); err != nil {
+		http.Error(w, "web: rendering the player page failed", http.StatusInternalServerError)
 	}
 }
 
