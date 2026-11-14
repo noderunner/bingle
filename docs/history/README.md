@@ -15,4 +15,5 @@ truth, and [decisions/](../decisions/README.md) records what was decided and why
 | [auth-and-accounts-plan.md](auth-and-accounts-plan.md) | The plan for accounts, capabilities and a secure transport |
 | [observability-plan.md](observability-plan.md) | The plan for logging, metrics and the slow-request journal |
 | [game-plugins-plan.md](game-plugins-plan.md) | The plan for games registered by build, the private overlay for commercial games, and the data packs that were dropped |
+| [achievements-plan.md](achievements-plan.md) | The plan for badges, and the facts the rules report for them |
 
