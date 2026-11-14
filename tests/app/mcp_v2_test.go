@@ -60,7 +60,7 @@ func TestMCP_ToolListIncludesNewTools(t *testing.T) {
 		"list_game_defs", "create_game", "join_game", "get_state", "make_move", "get_moves",
 		"get_game_info", "list_bots", "get_observation", "undo_move", "resign", "simulate", "export_game",
 		"env_reset", "env_step", "env_observe", "env_fork", "env_close", "env_list", "match_bots", "draw",
-		"env_spec", "env_batch_step", "get_game_guide", "add_bot", "get_leaderboard",
+		"env_spec", "env_batch_step", "get_game_guide", "add_bot", "get_leaderboard", "get_badges",
 		"list_tournaments", "get_tournament", "enter_tournament", "leave_tournament",
 		"start_game", "set_seat_faction", "send_chat", "get_chat", "get_reactions", "set_reactions", "auto_play_impulse", "check_in_tournament", "list_selections",
 	} {

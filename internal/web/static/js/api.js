@@ -143,6 +143,7 @@ export const api = {
 	ratedGames: () => call("/api/ratings"),
 	leaderboard: (family) => call(`/api/ratings/${enc(family)}`),
 	playerRatings: (handle) => call(`/api/players/${enc(handle)}/ratings`),
+	playerBadges: (handle) => call(`/api/players/${enc(handle)}/badges`),
 	me: () => call("/auth/me"),
 	guestKey: () => call("/api/guest/key"),
 	adoptGuest: (key) => call("/api/guest/adopt", { method: "POST", body: { key } }),

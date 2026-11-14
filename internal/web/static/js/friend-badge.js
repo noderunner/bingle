@@ -37,27 +37,46 @@ function openPop(anchor, ...content) {
 
 async function offerFriend(anchor, handle) {
 	const me = await whoAmI();
-	if (me.kind !== "account" || !(me.caps || []).includes("dm")) return;
+	if (me.kind !== "account") return;
 	if (me.handle && me.handle.toLowerCase() === handle.toLowerCase()) return;
-	await loadFriends();
-	const state = friendStateOf(handle);
-	if (state === "friend") return;
-	if (state === "outgoing") {
-		openPop(anchor, h("span", { class: "small muted" }, `Friend request sent to @${handle}.`));
-	} else if (state === "incoming") {
-		const accept = async () => {
-			closePop();
-			await api.friendAnswer(handle, true).catch(() => {});
-			await loadFriends();
-		};
-		openPop(anchor, h("button", { type: "button", class: "primary small", id: "friend-pop-accept", onclick: accept }, `Accept @${handle}'s friend request`));
-	} else {
-		const ask = () => {
-			closePop();
-			askFriend(handle);
-		};
-		openPop(anchor, h("button", { type: "button", class: "primary small", id: "friend-pop-send", onclick: ask }, `Send @${handle} a friend request`));
+	const parts = [];
+	if ((me.caps || []).includes("dm")) {
+		await loadFriends();
+		const state = friendStateOf(handle);
+		if (state === "outgoing") {
+			parts.push(h("span", { class: "small muted" }, `Friend request sent to @${handle}.`));
+		} else if (state === "incoming") {
+			const accept = async () => {
+				closePop();
+				await api.friendAnswer(handle, true).catch(() => {});
+				await loadFriends();
+			};
+			parts.push(h("button", { type: "button", class: "primary small", id: "friend-pop-accept", onclick: accept }, `Accept @${handle}'s friend request`));
+		} else if (state !== "friend") {
+			const ask = () => {
+				closePop();
+				askFriend(handle);
+			};
+			parts.push(h("button", { type: "button", class: "primary small", id: "friend-pop-send", onclick: ask }, `Send @${handle} a friend request`));
+		}
 	}
+	// Their badges, which every account may see (ADR 0130).
+	const held = await api
+		.playerBadges(handle)
+		.then((r) => r.badges)
+		.catch(() => []);
+	if (held.length) {
+		parts.push(
+			h(
+				"div",
+				{ class: "small pop-badges", id: "pop-badges" },
+				h("span", { class: "muted" }, "Badges: "),
+				...held.map((b, i) => h("span", { title: b.description, "data-badge": b.badge }, (i ? ", " : "") + b.name))
+			)
+		);
+	}
+	if (parts.length === 1) openPop(anchor, parts[0]);
+	else if (parts.length) openPop(anchor, h("div", { class: "pop-stack" }, ...parts));
 }
 
 /** The badge of a handle, with or without its @. */

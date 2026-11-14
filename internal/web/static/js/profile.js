@@ -7,6 +7,7 @@ import { isFinished, sortRows, gameRow } from "./mygames.js";
 import { installNav } from "./nav.js";
 import { api, whoAmI } from "./api.js";
 import { ratingText } from "./ratings.js";
+import { badgeItem } from "./badges.js";
 import { notifyConfig, localContact, submitAddress, contactStatus, resendConfirmation, forgetAddress, statusText, whitelistNote, insecureNote } from "./notify-ui.js";
 
 installNav();
@@ -62,6 +63,18 @@ function paintRatings(handle) {
 		.catch(() => {});
 }
 
+/** An account's own badges (ADR 0130), with those others see only at their game's end. */
+function paintBadges(handle) {
+	api.playerBadges(handle)
+		.then(({ badges }) => {
+			const list = document.getElementById("badges-list");
+			for (const b of badges) list.append(badgeItem(b));
+			document.getElementById("badges-empty").hidden = badges.length > 0;
+			document.getElementById("badges-box").hidden = false;
+		})
+		.catch(() => {});
+}
+
 // Who this browser is: an account, or a guest who could sign in (ADR 0068).
 api.me()
 	.then((me) => {
@@ -77,6 +90,7 @@ api.me()
 		};
 		if (me.kind === "account") {
 			line.append(`Signed in as @${me.handle}. `, link("/account", "Your account", "account-link"));
+			paintBadges(me.handle);
 			paintRatings(me.handle);
 			paintFriendSettings();
 		} else {

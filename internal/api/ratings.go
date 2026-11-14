@@ -41,3 +41,15 @@ func (h *handlers) handlePlayerRatings(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"ratings": list})
 }
+
+// handlePlayerBadges implements GET /players/{handle}/badges: the badges an
+// account holds (ADR 0130), for accounts only. The holder also sees those that
+// wait for their game to end, and the room each was earned in.
+func (h *handlers) handlePlayerBadges(w http.ResponseWriter, r *http.Request) {
+	list, err := h.mgr.PlayerBadges(r.Context(), chi.URLParam(r, "handle"))
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"badges": list})
+}
