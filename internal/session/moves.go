@@ -307,6 +307,21 @@ func (m *Manager) applyAndRecordAs(ctx context.Context, compiled *catalog.Compil
 		return MoveOutcome{}, fmt.Errorf("session: marshal move: %w", err)
 	}
 
+	// The facts the rules report go with the selection (ADR 0129). A fact the
+	// game does not declare is a bug in its rules: it is dropped and said,
+	// and the move goes on.
+	facts, undeclared := state.DeclaredFacts(compiled, result.Facts)
+	if len(undeclared) > 0 {
+		m.mx.FactsUndeclared(family, len(undeclared))
+		m.logger().Error("the rules reported facts the game does not declare", "game", compiled.Definition.ID, "facts", undeclared)
+	}
+	var factsJSON []byte
+	if len(facts) > 0 {
+		if factsJSON, err = json.Marshal(facts); err != nil {
+			return MoveOutcome{}, fmt.Errorf("session: marshal facts: %w", err)
+		}
+	}
+
 	var capturedStr *string
 	if result.Captured != nil {
 		v := string(*result.Captured)
@@ -362,6 +377,7 @@ func (m *Manager) applyAndRecordAs(ctx context.Context, compiled *catalog.Compil
 		Clock:               clockJSON,
 		SwapSeats:           pieSwap,
 		EndsImpulse:         endsImpulse,
+		Facts:               string(factsJSON),
 	})
 	if err != nil {
 		m.mx.Move(family, metrics.MoveFailed, applyTook)

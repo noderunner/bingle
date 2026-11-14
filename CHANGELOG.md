@@ -4,6 +4,12 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.103.0 - 2026-11-13
+
+### Bingle Core 0.103.0
+- Nothing changes in play yet. This is the groundwork for badges: a game's rules can now say what a move did, such as a group taken or a spellbook earned, and the server keeps that with the move so a badge can count it later.
+- **For programs:** a game definition may list `facts`, each with a `description` and an optional `secret`, and a declared game reports one with `fact` on an action or an `end_of_turn` effect (ADR 0129). A Go ruleset reports them in `MoveResult.Facts`. They are stored with each move and not yet served. A fact a game does not declare is dropped, logged and counted in `bingle_facts_undeclared_total`.
+
 ## 0.102.2 - 2026-11-11
 
 ### Bingle Core 0.102.2

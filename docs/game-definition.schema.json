@@ -42,6 +42,10 @@
           },
           "type": "array"
         },
+        "fact": {
+          "description": "Fact is a fact of the game's facts, reported for the mover each time the action is applied (ADR 0129).",
+          "type": "string"
+        },
         "flatten": {
           "allOf": [
             {
@@ -562,6 +566,10 @@
           "description": "Effect is \"remove-groups\", the only effect for now.",
           "type": "string"
         },
+        "fact": {
+          "description": "Fact is a fact of the game's facts, reported for the mover each time the effect removes something (once for the effect, ADR 0129).",
+          "type": "string"
+        },
         "tint": {
           "description": "Tint is a key of display.tints: the board marks every group meeting the condition, whoever's it is.",
           "type": "string"
@@ -569,6 +577,21 @@
         "whose": {
           "description": "Whose is \"opponents\" (default; every seat but the mover's), \"mover\" or \"all\".",
           "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "FactDef": {
+      "additionalProperties": false,
+      "description": "FactDef describes one fact a game's rules can report (ADR 0129).",
+      "properties": {
+        "description": {
+          "description": "Description says what the fact means, for whoever writes a badge.",
+          "type": "string"
+        },
+        "secret": {
+          "description": "Secret marks a fact whose mere existence tells something hidden (a card drawn): nothing shows it to anyone but its seat before the end.",
+          "type": "boolean"
         }
       },
       "type": "object"
@@ -685,6 +708,13 @@
             "type": "string"
           },
           "type": "array"
+        },
+        "facts": {
+          "additionalProperties": {
+            "$ref": "#/$defs/FactDef"
+          },
+          "description": "Facts lists, by name, the facts the game's rules can report about what a selection did (ADR 0129): a declared game's actions and effects, or a Go ruleset's Apply. A badge may count only these.",
+          "type": "object"
         },
         "family": {
           "description": "Family groups sibling variants of one game in pickers; ExpandVariants sets it on every expanded document (to the base document's ID).",

@@ -68,6 +68,7 @@ type Metrics struct {
 	gameLegalMoves *prometheus.HistogramVec
 	gameFinished   *prometheus.CounterVec
 	ratedResults   *prometheus.CounterVec
+	factsDropped   *prometheus.CounterVec
 	gameIllegal    *prometheus.CounterVec
 	botSearch      *prometheus.HistogramVec
 	botNodes       *botNodes
@@ -173,6 +174,9 @@ func New(version string) *Metrics {
 		ratedResults: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Name: "bingle_rated_results_total", Help: "Rated games that ended, by what became of their result.",
 		}, []string{"outcome"}),
+		factsDropped: prometheus.NewCounterVec(prometheus.CounterOpts{
+			Name: "bingle_facts_undeclared_total", Help: "Facts the rules reported that the game does not declare, dropped, by game family.",
+		}, []string{"game"}),
 		gameFinished: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Namespace: Namespace, Subsystem: "games", Name: "finished_total",
 			Help: "Games that ended, by game family and why. A spike in ply-limit or no-legal-moves means a rule stopped working.",
@@ -244,7 +248,7 @@ func New(version string) *Metrics {
 		m.httpRequests, m.httpDuration, m.httpInFlight, m.httpBytes, m.httpErrors,
 		m.wsConnections, m.wsTotal,
 		m.dbQueries, m.dbDuration, m.dbRows, m.dbTxDuration, m.dbBusy, m.db,
-		m.gameMoves, m.gameApply, m.gameLegal, m.gameLegalMoves, m.gameFinished, m.gameIllegal, m.ratedResults,
+		m.gameMoves, m.gameApply, m.gameLegal, m.gameLegalMoves, m.gameFinished, m.gameIllegal, m.ratedResults, m.factsDropped,
 		m.botSearch, m.botNodes, m.slotWait, m.slotInUse, m.slotSize, m.batchWorkers, m.realTime,
 		m.clientErrors, m.mail, m.mailSend,
 	)

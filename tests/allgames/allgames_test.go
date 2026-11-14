@@ -33,7 +33,8 @@ func allGames(t testing.TB) []*catalog.CompiledGame {
 // For every game, along random playouts: every enumerated move applies and
 // round-trips through notation to the identical resulting position; the
 // position document survives marshal/unmarshal; planes keep their shape and
-// every move has an action ID when the space is fixed.
+// every move has an action ID when the space is fixed; and every fact a move
+// reports is one its game declares.
 func TestEveryGameStaysConsistentInRandomPlay(t *testing.T) {
 	plies := 70
 	if testing.Short() {
@@ -70,6 +71,10 @@ func TestEveryGameStaysConsistentInRandomPlay(t *testing.T) {
 						res, err := state.Apply(g, st, seat, mv)
 						if err != nil {
 							t.Fatalf("ply %d: enumerated move %+v rejected: %v", ply, mv, err)
+						}
+						// The rules report only the facts the game declares (ADR 0129).
+						if _, bad := state.DeclaredFacts(g, res.Facts); len(bad) > 0 {
+							t.Fatalf("ply %d: %+v reported facts the game does not declare: %v", ply, mv, bad)
 						}
 						text := state.FormatMove(g, mv)
 						back, err := state.ParseMove(g, text)

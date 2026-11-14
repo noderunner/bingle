@@ -72,6 +72,9 @@ type MoveResult struct {
 	EndReason string
 	// EndDetail adds specifics, e.g. the final score of a scored game.
 	EndDetail string
+	// Facts are what the selection did that the rules report, in the order
+	// it happened (ADR 0129): only facts the game declares, nil for none.
+	Facts []Fact
 }
 
 // rctx bundles what every action implementation needs about the move being
@@ -377,6 +380,10 @@ func Apply(game *catalog.CompiledGame, st *BoardState, seat int, mv Selection) (
 
 	newState := st.Clone()
 	captures := exec(newState)
+	var facts []Fact
+	if act.Fact != "" {
+		facts = append(facts, Fact{Name: act.Fact, Seat: seat})
+	}
 	var captured *board.PositionID
 	if len(captures) > 0 {
 		first := captures[0]
@@ -420,7 +427,9 @@ func Apply(game *catalog.CompiledGame, st *BoardState, seat int, mv Selection) (
 		// The effects at the end of a turn come before it is judged; a swap
 		// changes nothing on the board (ADR 0116).
 		if len(game.EndOfTurn) > 0 && act.Type != catalog.ActionSwap {
-			if taken := endOfTurn(game, newState, seat); len(taken) > 0 {
+			taken, effectFacts := endOfTurn(game, newState, seat)
+			facts = append(facts, effectFacts...)
+			if len(taken) > 0 {
 				captures = append(captures, taken...)
 				if captured == nil {
 					first := taken[0]
@@ -467,6 +476,7 @@ func Apply(game *catalog.CompiledGame, st *BoardState, seat int, mv Selection) (
 		Notation:        FormatMove(game, mv),
 		EndReason:       outcome.Reason,
 		EndDetail:       outcome.Detail,
+		Facts:           facts,
 	}, nil
 }
 

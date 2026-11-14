@@ -36,6 +36,7 @@ preview[]                     a sample game in play for the list of games (for a
 turn_order                    required: round-robin, optional opening phase
 actions[]                     place / move-stack / jump / slide / leap / step / pass
                               (pieces with a movement primitive also get "step")
+facts{}                       what the rules can report a selection did, for badges (ADR 0129)
 win_condition                 required: none | callback | rules
 notation                      generic (default) | ptn
 cards                         suits, decks and zones of a card game
@@ -484,6 +485,35 @@ goes there, face up. With `stuck: spend`, a seat that no card lets move spends a
 card anyway. Notation is `tiger:c1-c3` and `tiger:pass`; the gestures are the
 card, then the piece's square and its destination.
 
+## facts
+
+A fact is something a selection did that the rules report, so that a badge can
+count it ([ADR 0129](decisions/0129-the-rules-report-facts.md)): a stone
+placed, a group taken, a spellbook earned. A game lists every fact it can
+report, and a badge may count only those:
+
+```yaml
+facts:
+  fenced: {description: The mover takes a group.}
+  drew_elder: {description: A seat draws an Elder Sign., secret: true}
+actions:
+  - {id: place, type: place, pieces: [stone], source: supply}
+end_of_turn:
+  - {effect: remove-groups, condition: no-liberties, fact: fenced}
+```
+
+* A name is lower case letters, digits and underscores, starting with a
+  letter. `played`, `won`, `drawn` and `lost` are the platform's counts of
+  results and cannot be a game's facts. Every fact needs a `description`.
+* `fact` on an action reports it for the mover every time the action is
+  applied. On an `end_of_turn` effect it is reported for the mover when the
+  effect takes something, once however much it takes.
+* `secret: true` marks a fact whose existence tells something hidden. Facts
+  are stored with their move and are not sent to clients yet; whatever sends
+  them later holds a secret one back until the game ends.
+* A Go ruleset lists its facts in its YAML the same way and reports them from
+  `Apply` (below). A variant can add facts with its patch.
+
 ## win_condition
 
 ```yaml
@@ -678,6 +708,11 @@ definition: `catalog.Module{ID, Definition, Rules: courtfall.New()}`. `actions` 
 * keeps its data in the position's `ext` payload and publishes a derived
   `ext.view` (`tints`, `badges`, `seats[].counters`, `prompt`, `contest`…)
   that the generic UI draws using the `display` legend;
+* reports what a selection did in `MoveResult.Facts`, `{Name, Seat}` where
+  the seat is the one the fact is about (0 for the game), naming only the
+  game's `facts`: a test plays every game to check it, and the server drops
+  and logs any other (ADR 0129). Facts are worked out from the position and
+  the selection, like everything `Apply` returns;
 * may hide information (`Redact`, `RedactMove`, `Determinize`), forbid
   taking moves back across chance (`CanTakeBack`), publish a fixed action
   space and its own observation planes, and give search bots a heuristic.

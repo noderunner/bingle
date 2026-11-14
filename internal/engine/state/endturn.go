@@ -10,9 +10,11 @@ import (
 // judged.
 
 // endOfTurn applies game's end_of_turn effects to ns, the position after the
-// turn seat has just ended, and returns the positions it emptied.
-func endOfTurn(game *catalog.CompiledGame, ns *BoardState, seat int) []board.PositionID {
+// turn seat has just ended, and returns the positions it emptied and the
+// facts of the effects that removed something (ADR 0129).
+func endOfTurn(game *catalog.CompiledGame, ns *BoardState, seat int) ([]board.PositionID, []Fact) {
 	var removed []board.PositionID
+	var facts []Fact
 	for _, e := range game.EndOfTurn {
 		// Every group is decided on the position before any is taken.
 		var taken []board.PositionID
@@ -29,9 +31,12 @@ func endOfTurn(game *catalog.CompiledGame, ns *BoardState, seat int) []board.Pos
 				ns.SetReserve(def.Color, e.CountIn, ns.Reserve(def.Color, e.CountIn)+len(taken))
 			}
 		}
+		if e.Fact != "" && len(taken) > 0 {
+			facts = append(facts, Fact{Name: e.Fact, Seat: seat})
+		}
 		removed = append(removed, taken...)
 	}
-	return removed
+	return removed, facts
 }
 
 // takes reports whether an effect of whose, at the end of seat's turn,
