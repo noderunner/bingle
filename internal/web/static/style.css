@@ -1146,6 +1146,22 @@ dialog.help-dialog li { margin: 0.35rem 0; }
 .badge-item { display: flex; gap: 0.6rem; align-items: flex-start; }
 .badge-medal { flex: none; width: 1.8rem; height: 1.8rem; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: var(--accent-ink); font-size: 1rem; }
 .badge-body { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
+.badge-item > .badge-open {
+	display: flex; gap: 0.6rem; align-items: flex-start; width: 100%; text-align: left; font-weight: 400;
+	background: none; border: 1px solid transparent; padding: 0.35rem 0.45rem; border-radius: 8px;
+}
+.badge-item > .badge-open:hover:not(:disabled) { border-color: var(--border); background: var(--surface-2); }
+.badge-item > .badge-open:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.badge-medal.unearned { background: var(--surface-2); color: var(--muted); border: 1px dashed var(--border); }
+.badge-item.unearned .badge-name, .badge-item.unearned .badge-body > .small:not(.muted) { color: var(--muted); }
+.badge-also { color: var(--accent); font-weight: 700; }
+.badge-dialog { width: min(26rem, 92vw); }
+.badge-dialog-head { display: flex; align-items: center; gap: 0.7rem; margin-bottom: 0.4rem; }
+.badge-dialog-head h2 { margin: 0; }
+.badge-dialog .badge-medal { width: 2.6rem; height: 2.6rem; font-size: 1.4rem; }
+.pop-badges { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; }
+.pop-medals { display: inline-flex; flex-wrap: wrap; gap: 0.2rem; }
+.badge-medal.small-medal { width: 1.3rem; height: 1.3rem; font-size: 0.75rem; }
 .pop-stack { display: flex; flex-direction: column; gap: 0.4rem; }
 .notify-offer { position: fixed; left: 1rem; bottom: 1rem; z-index: 50; max-width: min(22rem, calc(100vw - 2rem)); padding: 0.8rem 1rem; box-shadow: var(--shadow); }
 .notify-offer p { margin: 0 0 0.6rem; }

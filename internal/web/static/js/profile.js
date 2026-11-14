@@ -7,7 +7,7 @@ import { isFinished, sortRows, gameRow } from "./mygames.js";
 import { installNav } from "./nav.js";
 import { api, whoAmI } from "./api.js";
 import { ratingText } from "./ratings.js";
-import { badgeItem } from "./badges.js";
+import { paintShelf } from "./badges.js";
 import { notifyConfig, localContact, submitAddress, contactStatus, resendConfirmation, forgetAddress, statusText, whitelistNote, insecureNote } from "./notify-ui.js";
 
 installNav();
@@ -63,14 +63,17 @@ function paintRatings(handle) {
 		.catch(() => {});
 }
 
-/** An account's own badges (ADR 0130), with those others see only at their game's end. */
+/**
+ * An account's own badges (ADR 0130), with those others see only at their
+ * game's end, and greyed out, those it has yet to earn.
+ */
 function paintBadges(handle) {
 	api.playerBadges(handle)
-		.then(({ badges }) => {
-			const list = document.getElementById("badges-list");
-			for (const b of badges) list.append(badgeItem(b));
+		.then(async ({ badges }) => {
 			document.getElementById("badges-empty").hidden = badges.length > 0;
+			document.getElementById("badges-page").href = `/players/${encodeURIComponent(handle)}`;
 			document.getElementById("badges-box").hidden = false;
+			await paintShelf(document.getElementById("badges-list"), { held: badges, mine: true });
 		})
 		.catch(() => {});
 }

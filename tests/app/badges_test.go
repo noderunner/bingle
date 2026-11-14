@@ -89,12 +89,20 @@ func TestBadges_TheProfileListsThem(t *testing.T) {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "no badges yet", `document.getElementById("badges-box").hidden === false && document.getElementById("badges-empty").hidden === false`, 15*time.Second)
+	// The badges not yet earned are there too, greyed out.
+	waitJS(t, ctx, "the badges to earn", `document.querySelector('#badges-list li[data-badge="first-win"][data-earned="false"].unearned') !== null`, 15*time.Second)
+	clickSel(t, ctx, `#badges-list li[data-badge="well-met"] .badge-open`)
+	waitJS(t, ctx, "its details", `document.querySelector('#badge-dialog[data-badge="well-met"]') !== null`, 5*time.Second)
+	if got := evalString(t, ctx, `document.getElementById("badge-dialog-earned").textContent`); got != "Not earned yet." {
+		t.Errorf("an unearned badge's details say %q", got)
+	}
+	clickSel(t, ctx, "#badge-dialog-close")
 
 	winFirst(t, ana, "ana", bea, "bea")
 	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/profile")); err != nil {
 		t.Fatal(err)
 	}
-	waitJS(t, ctx, "the First Win", `document.querySelector('#badges-list li[data-badge="first-win"] .badge-name') !== null`, 15*time.Second)
+	waitJS(t, ctx, "the First Win", `document.querySelector('#badges-list li[data-badge="first-win"][data-earned="true"] .badge-name') !== null`, 15*time.Second)
 	if got := evalString(t, ctx, `document.querySelector('#badges-list li[data-badge="first-win"] .badge-name').textContent`); got != "First Win" {
 		t.Errorf("the profile names it %q", got)
 	}
@@ -126,5 +134,127 @@ func TestBadges_AHandleShowsTheBadges(t *testing.T) {
 	waitJS(t, ana, "her badges", `document.querySelector('#pop-badges [data-badge="first-win"]') !== null`, 10*time.Second)
 	if evalBool(t, ana, `document.getElementById("friend-pop-send") !== null`) {
 		t.Error("a friend is offered a friend request")
+	}
+}
+
+// badgesGameJSON is a game of placing stones with badges of its own.
+const badgesGameJSON = `{
+  "id": "stones-badges",
+  "name": "Stones with badges",
+  "board": { "generator": { "type": "grid", "width": 4, "height": 4, "adjacency": "orthogonal4", "labels": "algebraic" } },
+  "seats": [ { "seat": 1, "color": "black" }, { "seat": 2, "color": "white" } ],
+  "pieces": { "black": { "color": "black" }, "white": { "color": "white" } },
+  "turn_order": { "type": "round-robin", "seats": [1, 2] },
+  "actions": [ { "id": "place", "type": "place", "pieces": ["black", "white"], "source": "supply", "fact": "placed" } ],
+  "facts": { "placed": { "description": "A stone is placed." } },
+  "badges": [
+    { "id": "builder", "name": "Builder", "description": "Place three stones in a game.", "when": "end",
+      "count": { "fact": "placed", "at_least": 3 } },
+    { "id": "bot-beater", "name": "Bot Beater", "description": "Beat the tactical bot or better.", "when": "end",
+      "won": true, "bot": { "at_least": "tactical" } }
+  ],
+  "win_condition": { "type": "none" }
+}`
+
+type badgeCatalogView struct {
+	Badges []struct {
+		Badge    string `json:"badge"`
+		Name     string `json:"name"`
+		Platform bool   `json:"platform"`
+		Family   string `json:"family"`
+		Game     string `json:"game"`
+		Kind     string `json:"kind"`
+		Bot      string `json:"bot"`
+		When     string `json:"when"`
+	} `json:"badges"`
+}
+
+// Every badge there is to earn, for anybody: the platform's first, then the
+// games'.
+func TestBadges_TheCatalog(t *testing.T) {
+	a, base := membersServer(t)
+	if err := a.Catalog().Register("stones-badges", []byte(badgesGameJSON), nil); err != nil {
+		t.Fatal(err)
+	}
+	var v badgeCatalogView
+	if code := newBrowser(t, base).do("GET", "/api/badges", nil, &v); code != 200 || len(v.Badges) == 0 {
+		t.Fatalf("a guest reads the badges: %d, %+v", code, v)
+	}
+	first := v.Badges[0]
+	if first.Badge != "first-win" || !first.Platform || first.Kind != "player" || first.When != "end" {
+		t.Errorf("the first badge is %+v, want the platform's First Win", first)
+	}
+	kinds := map[string]string{}
+	for _, b := range v.Badges {
+		kinds[b.Badge] = b.Kind
+		switch b.Badge {
+		case "machine-breaker":
+			if b.Bot == "" {
+				t.Errorf("Machine Breaker names no bot: %+v", b)
+			}
+		case "stones-badges.builder":
+			if b.Platform || b.Family != "stones-badges" || b.Game != "Stones with badges" {
+				t.Errorf("a game's badge: %+v", b)
+			}
+		}
+	}
+	if kinds["contender"] != "rated" || kinds["machine-breaker"] != "bot" || kinds["stones-badges.bot-beater"] != "bot" || kinds["stones-badges.builder"] != "player" {
+		t.Errorf("the kinds: %v", kinds)
+	}
+}
+
+// Another player's page shows what they hold, not what they have yet to
+// earn, and marks what the reader holds too.
+func TestBadges_APlayersPage(t *testing.T) {
+	a, base := membersServer(t)
+	anaB, beaB := member(t, a, base, "ana"), member(t, a, base, "bea")
+	winFirst(t, anaB, "ana", beaB, "bea")
+	winFirst(t, beaB, "bea", anaB, "ana")
+
+	bea, cancel := newChromedpContext(t, 60*time.Second)
+	defer cancel()
+	signInChrome(t, bea, base, beaB.cookie(auth.SessionCookie))
+	if err := chromedp.Run(bea, chromedp.Navigate(base+"/players/ana")); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, bea, "her badges", `document.querySelector('#player-badges li[data-badge="first-win"]') !== null`, 15*time.Second)
+	if n := evalString(t, bea, `String(document.querySelectorAll('#player-badges li').length)`); n != "1" {
+		t.Errorf("her page lists %s badges, want only the one she holds", n)
+	}
+	if !evalBool(t, bea, `document.querySelector('#player-badges li[data-badge="first-win"] .badge-also') !== null`) {
+		t.Error("her page does not say the reader holds it too")
+	}
+	clickSel(t, bea, `#player-badges li[data-badge="first-win"] .badge-open`)
+	waitJS(t, bea, "its details", `document.getElementById("badge-dialog-title")?.textContent === "First Win"`, 5*time.Second)
+	if evalBool(t, bea, `document.getElementById("badge-dialog-room") !== null`) {
+		t.Error("another player's badge links the room it was earned in")
+	}
+
+	if err := chromedp.Run(bea, chromedp.Navigate(base+"/players/nobody")); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, bea, "no such player", `document.getElementById("player-note").textContent.includes("no player @nobody")`, 15*time.Second)
+}
+
+// The rules window of a game with badges has a tab of them.
+func TestBadges_TheRulesWindowListsTheGamesBadges(t *testing.T) {
+	a, base := membersServer(t)
+	if err := a.Catalog().Register("stones-badges", []byte(badgesGameJSON), nil); err != nil {
+		t.Fatal(err)
+	}
+	ana := member(t, a, base, "ana")
+	ctx, cancel := newChromedpContext(t, 60*time.Second)
+	defer cancel()
+	signInChrome(t, ctx, base, ana.cookie(auth.SessionCookie))
+	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/?game=stones-badges")); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "the setup", `!document.getElementById("game-setup").hidden`, 15*time.Second)
+	clickSel(t, ctx, "#game-rules-button")
+	waitJS(t, ctx, "the Badges tab", `!!document.querySelector('#rules-dialog [data-tab="badges"]')`, 10*time.Second)
+	clickSel(t, ctx, `#rules-dialog [data-tab="badges"]`)
+	waitJS(t, ctx, "the game's badges", `document.querySelector('#rules-badges li[data-badge="stones-badges.builder"].unearned') !== null`, 10*time.Second)
+	if evalBool(t, ctx, `document.querySelector('#rules-badges li[data-badge="first-win"]') !== null`) {
+		t.Error("the rules window lists the platform's badges")
 	}
 }

@@ -53,3 +53,9 @@ func (h *handlers) handlePlayerBadges(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"badges": list})
 }
+
+// handleBadges implements GET /badges: every badge there is to earn (ADR
+// 0130), the platform's and each game's, for anybody.
+func (h *handlers) handleBadges(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, http.StatusOK, map[string]any{"badges": h.mgr.Badges()})
+}

@@ -5,10 +5,11 @@
 // definition by the server, so every game gets the same window.
 
 import { h, clear, store } from "./util.js";
-import { api, gameTitle } from "./api.js";
+import { api, gameTitle, whoAmI } from "./api.js";
 import { renderMarkdown } from "./markdown.js";
 import { pieceIcon, cssColor, legendMarker } from "./render.js";
 import { tutorialList } from "./tutorials-ui.js";
+import { badgeCatalog, paintShelf } from "./badges.js";
 
 const KEY = "bingle.rules.";
 
@@ -87,6 +88,21 @@ function seatNode(info, n) {
 	);
 }
 
+/** The game's badges: those the reader holds, and greyed out, the rest. */
+function badgesPage(family) {
+	const shelf = h("div", { id: "rules-badges" });
+	const intro = h("p", { class: "small muted" }, "Badges this game awards. Each is earned once, and kept.");
+	whoAmI()
+		.catch(() => null)
+		.then(async (me) => {
+			const account = me && me.kind === "account" && me.handle;
+			if (!account) intro.append(" Sign in to earn them.");
+			const held = account ? await api.playerBadges(me.handle).then((r) => r.badges).catch(() => []) : [];
+			await paintShelf(shelf, { held, mine: true, family });
+		});
+	return h("div", {}, h("h1", {}, "Badges"), intro, shelf);
+}
+
 /** Opens (or reopens) the rules window for the game described by info. */
 export async function showRules(info, { tab } = {}) {
 	const old = document.getElementById("rules-dialog");
@@ -140,8 +156,9 @@ export async function showRules(info, { tab } = {}) {
 
 	let guide;
 	let tutorials = null;
+	let badges = [];
 	try {
-		[guide, tutorials] = await Promise.all([api.guide(info.id), api.tutorials(info.id).catch(() => null)]);
+		[guide, tutorials, badges] = await Promise.all([api.guide(info.id), api.tutorials(info.id).catch(() => null), badgeCatalog()]);
 	} catch (err) {
 		clear(body).append(h("p", { class: "error" }, "The rules could not be loaded: " + err.message));
 		return dlg;
@@ -150,6 +167,10 @@ export async function showRules(info, { tab } = {}) {
 	// The game's tutorials teach by playing (ADR 0077): a tab of their own.
 	if (tutorials && tutorials.tutorials.length) {
 		pages.push({ id: "tutorials", title: "Tutorials", node: tutorialList(tutorials.family, tutorials.tutorials) });
+	}
+	// The game's own badges (ADR 0130), with those the reader holds.
+	if (info.family && badges.some((b) => !b.platform && b.family === info.family)) {
+		pages.push({ id: "badges", title: "Badges", node: badgesPage(info.family) });
 	}
 	const key = keyPage(info);
 	if (key) pages.push({ id: "key", title: "Key", markdown: key });

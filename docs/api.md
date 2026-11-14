@@ -319,6 +319,7 @@ the same two accounts in one game family, change nothing.
 | `GET /ratings` | `{games: [{family, name, players}]}`: the games with a leaderboard |
 | `GET /ratings/{family}?limit=` | `{family, players: [{rank, handle, rating, provisional?, games}]}`, highest first, at most 100 |
 | `GET /players/{handle}/badges` | `{badges: [{badge, name, description, family, game, awarded_at, room?, hidden?}]}`, oldest first, for accounts only (`403` for a guest). Others see those shown to everyone; the account itself also sees those waiting for their game to end (`hidden`) and the `room` each was earned in ([badges.md](badges.md)) |
+| `GET /badges` | `{badges: [{badge, name, description, platform?, family?, game?, kind, bot?, when}]}`: every badge there is to earn, the platform's first, then each game's by its name, for anybody. `kind` is `player`, `rated` or `bot` (`bot` then names the weakest that will do); `family` and `game` are a game's badge's, or a platform badge's that names one ([badges.md](badges.md)) |
 | `GET /players/{handle}/ratings` | `{ratings: [{family, name, rating, provisional?, games, won, drawn, lost, listed}]}`: others see only the `listed` ones (5 rated games against at least 3 opponents); the account itself sees all |
 
 **Restarts.** Time while the server is down costs nobody anything: a turn in

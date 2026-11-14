@@ -110,8 +110,19 @@ has deleted, is logged and dropped: the award stands.
 
 Every account sees every account's badges; a guest sees none.
 
-- **The profile page** lists your own, with those others see only once their game ends.
-- **A handle**, clicked in a chat or a list, shows that account's badges, beside any friend request
-  it offers.
-- **`GET /api/players/{handle}/badges`** ([api.md](api.md)) and the MCP tool **`get_badges`**
-  ([mcp.md](mcp.md)). Only the holder is told the room each was earned in.
+- **Your settings page** (`/profile`) lists every badge there is, the ones you hold first, with those
+  others see only once their game ends, and greyed out, those you have yet to earn. Chips filter it by
+  the platform or a game, and by earned or not yet.
+- **A player's page** (`/players/{handle}`) lists the badges they hold, and only those, marking any
+  the reader holds too, and the ratings they show on a leaderboard. Your own shows you what others
+  see.
+- **A handle**, clicked in a chat or a list, shows that account's medals and a link to their page,
+  beside any friend request it offers.
+- **A game's rules window** has a *Badges* tab when the game has badges of its own, with those the
+  reader holds marked.
+- A badge clicked anywhere opens its details: what it is for, its game, the kind of game that counts
+  for it, and where and when it was earned (the room for its holder alone).
+- **`GET /api/badges`** and the MCP tool **`list_badges`** list every badge there is to earn, for
+  anybody: a badge's description is no secret. **`GET /api/players/{handle}/badges`**
+  ([api.md](api.md)) and the MCP tool **`get_badges`** ([mcp.md](mcp.md)) list what an account holds.
+  Only the holder is told the room each was earned in.
