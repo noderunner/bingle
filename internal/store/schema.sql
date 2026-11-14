@@ -575,3 +575,5 @@ CREATE TABLE IF NOT EXISTS badge_awards (
     visible_at  TEXT,
     UNIQUE (account_id, badge)
 );
+-- The awards still waiting for their game to end before everyone sees them.
+CREATE INDEX IF NOT EXISTS idx_badge_awards_hidden ON badge_awards(game_id) WHERE visible_at IS NULL;

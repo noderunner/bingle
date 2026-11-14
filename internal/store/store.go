@@ -96,6 +96,10 @@ func Open(dbPath string) (*Store, error) {
 		_ = db.Close()
 		return nil, fmt.Errorf("migrate sqlite schema: %w", err)
 	}
+	if _, err := db.Exec(`CREATE INDEX IF NOT EXISTS idx_games_badges_due ON games(id) WHERE facts_seq > badges_seq`); err != nil {
+		_ = db.Close()
+		return nil, fmt.Errorf("migrate sqlite schema: %w", err)
+	}
 	if _, err := db.Exec(`CREATE INDEX IF NOT EXISTS idx_games_real_time ON games(status) WHERE real_time != ''`); err != nil {
 		_ = db.Close()
 		return nil, fmt.Errorf("migrate sqlite schema: %w", err)
@@ -247,6 +251,11 @@ var columnMigrations = []struct{ table, column, ddl string }{
 	// lasting counts (ADR 0130; see CountPending). '' for a game still going,
 	// a tutorial, a voided or retired game, or one that ended before counting.
 	{"games", "count_status", "TEXT NOT NULL DEFAULT ''"},
+	// facts_seq, badges_seq: the last move of a game that reported facts, and
+	// the last the during-badges worker looked at (ADR 0130). A game whose
+	// facts_seq is past its badges_seq has badges to check.
+	{"games", "facts_seq", "INTEGER NOT NULL DEFAULT 0"},
+	{"games", "badges_seq", "INTEGER NOT NULL DEFAULT 0"},
 }
 
 func addMissingColumns(db *sql.DB) error {

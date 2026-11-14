@@ -384,6 +384,9 @@ func (m *Manager) applyAndRecordAs(ctx context.Context, compiled *catalog.Compil
 		return MoveOutcome{}, err
 	}
 	move := recorded
+	if len(factsJSON) > 0 {
+		m.wakeBadges()
+	}
 	if pieSwap {
 		m.seatsSwapped(canonRoom(game.RoomCode), 1, 2)
 	}

@@ -145,6 +145,7 @@ func main() {
 	go a.Manager().RunRealTime(ctx)
 	go a.Manager().RunSchedules(ctx)
 	go a.Manager().RunResults(ctx)
+	go a.Manager().RunBadges(ctx)
 	go a.Manager().RunTournaments(ctx)
 	go a.Manager().RunNotifier(ctx)
 

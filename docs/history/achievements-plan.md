@@ -218,3 +218,6 @@ more games. After that the opportunity is gone. Worth a deliberate yes or no.
   registered user sees badges; awards are announced in the game's chat; no backfill.
 - 2026-11-13: ADRs 0129 (facts) and 0130 (badges) written, step 1 of the order of work; the plan moves
   from the plans branch to `docs/history`.
+- 2026-11-13: steps 2 to 4 built (#190, #191, #192): facts, every counting game recorded at its end,
+  and badge definitions with the `end` check and the first five platform badges. Step 5, the `during`
+  worker with its watermark and the secret delay, follows.

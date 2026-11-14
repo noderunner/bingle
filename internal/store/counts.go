@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strconv"
+	"time"
 )
 
 // Every game that counts adds to its players' lasting counts when it ends
@@ -58,19 +59,32 @@ func (s *Store) PendingCountGames(ctx context.Context) ([]Game, error) {
 	return out, rows.Err()
 }
 
-// SkipCount says a pending game counts for nobody.
-func (s *Store) SkipCount(ctx context.Context, gameID int64) error {
-	if _, err := s.exec(ctx, "SkipCount", `UPDATE games SET count_status = ? WHERE id = ? AND count_status = ?`, CountSkipped, gameID, CountPending); err != nil {
+// SkipCount says a pending game counts for nobody. The awards it gave during
+// play that waited for its end are shown, as RecordCounts shows them.
+func (s *Store) SkipCount(ctx context.Context, gameID int64, now time.Time) error {
+	tx, err := s.begin(ctx, "SkipCount")
+	if err != nil {
+		return fmt.Errorf("begin transaction: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	if _, err := tx.exec(ctx, "SkipCount", `UPDATE games SET count_status = ? WHERE id = ? AND count_status = ?`, CountSkipped, gameID, CountPending); err != nil {
 		return fmt.Errorf("skipping the count of game_id=%d: %w", gameID, err)
+	}
+	if err := revealAwards(ctx, tx, gameID, now); err != nil {
+		return err
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit transaction: %w", err)
 	}
 	return nil
 }
 
 // RecordCounts adds counts, per account and key, writes the awards the game's
-// end earned, and marks the game counted, in one transaction. A game no longer
+// end earned, shows the awards that waited for the end, and marks the game
+// counted, in one transaction. A game no longer
 // pending is left alone and nothing is added, so counting twice adds once; an
 // account that already holds a badge keeps the award it had.
-func (s *Store) RecordCounts(ctx context.Context, gameID int64, counts map[int64]map[string]int, awards []Award) error {
+func (s *Store) RecordCounts(ctx context.Context, gameID int64, counts map[int64]map[string]int, awards []Award, now time.Time) error {
 	tx, err := s.begin(ctx, "RecordCounts")
 	if err != nil {
 		return fmt.Errorf("begin transaction: %w", err)
@@ -99,6 +113,9 @@ func (s *Store) RecordCounts(ctx context.Context, gameID int64, counts map[int64
 		if err := insertAward(ctx, tx, a); err != nil {
 			return err
 		}
+	}
+	if err := revealAwards(ctx, tx, gameID, now); err != nil {
+		return err
 	}
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("commit transaction: %w", err)

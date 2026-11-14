@@ -143,8 +143,8 @@ func (s *Store) RecordMove(ctx context.Context, gameID int64, in MoveInput) (Mov
 	}
 
 	if _, err := tx.exec(ctx, "RecordMove.updateGame",
-		`UPDATE games SET board_state = ?, move_seq = ?, ply = ?, updated_at = CURRENT_TIMESTAMP, impulse_seat = ?, status = ?, winner_seat = ?, end_reason = ?, end_detail = ?, rating_status = CASE WHEN rated = 1 AND ? = 'finished' THEN 'pending' ELSE '' END, count_status = CASE WHEN tutorial = '' AND ? = 'finished' THEN 'pending' ELSE count_status END, draw_offer_seat = NULL WHERE id = ?`,
-		in.ResultingBoardState, newSeq, gamePly, impulseSeat, status, winnerSeat, in.EndReason, in.EndDetail, status, status, gameID,
+		`UPDATE games SET board_state = ?, move_seq = ?, ply = ?, updated_at = CURRENT_TIMESTAMP, impulse_seat = ?, status = ?, winner_seat = ?, end_reason = ?, end_detail = ?, rating_status = CASE WHEN rated = 1 AND ? = 'finished' THEN 'pending' ELSE '' END, count_status = CASE WHEN tutorial = '' AND ? = 'finished' THEN 'pending' ELSE count_status END, facts_seq = CASE WHEN ? THEN ? ELSE facts_seq END, draw_offer_seat = NULL WHERE id = ?`,
+		in.ResultingBoardState, newSeq, gamePly, impulseSeat, status, winnerSeat, in.EndReason, in.EndDetail, status, status, in.Facts != "", newSeq, gameID,
 	); err != nil {
 		return Move{}, fmt.Errorf("updating games row for game_id=%d: %w", gameID, err)
 	}
@@ -245,6 +245,8 @@ func scanMoveByID(ctx context.Context, q rowQuerier, name string, id int64) (Mov
 // UndoToSeq deletes every move with seq > keepSeq and rewinds the game to the
 // position those moves came from, all in one transaction: boardState becomes the
 // game's current snapshot, move_seq becomes keepSeq and impulse_seat impulseSeat.
+// The badges watermark goes back no further than keepSeq: awards already given
+// are kept (ADR 0130).
 // Returns ErrNotFound if gameID doesn't exist.
 func (s *Store) UndoToSeq(ctx context.Context, gameID int64, keepSeq int, boardState string, impulseSeat int) error {
 	tx, err := s.begin(ctx, "UndoToSeq")
@@ -257,8 +259,8 @@ func (s *Store) UndoToSeq(ctx context.Context, gameID int64, keepSeq int, boardS
 		return fmt.Errorf("deleting moves for game_id=%d: %w", gameID, err)
 	}
 	res, err := tx.exec(ctx, "UndoToSeq.updateGame",
-		`UPDATE games SET board_state = ?, move_seq = ?, impulse_seat = ?, ply = COALESCE((SELECT MAX(ply) FROM moves WHERE game_id = ?), 0) WHERE id = ?`,
-		boardState, keepSeq, impulseSeat, gameID, gameID,
+		`UPDATE games SET board_state = ?, move_seq = ?, impulse_seat = ?, ply = COALESCE((SELECT MAX(ply) FROM moves WHERE game_id = ?), 0), facts_seq = MIN(facts_seq, ?), badges_seq = MIN(badges_seq, ?) WHERE id = ?`,
+		boardState, keepSeq, impulseSeat, gameID, keepSeq, keepSeq, gameID,
 	)
 	if err != nil {
 		return fmt.Errorf("updating games row for game_id=%d: %w", gameID, err)

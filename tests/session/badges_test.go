@@ -1,4 +1,4 @@
-// Badges checked at the end of a game (ADR 0130): the platform's and a game's
+// Badges checked during play and at the end of a game (ADR 0130): the platform's and a game's
 // own, awarded once, to accounts only, from games that count.
 
 package session_test
@@ -26,12 +26,14 @@ const badgeFixtureDefJSON = `{
   "actions": [
     { "id": "place", "type": "place", "pieces": ["black", "white"], "source": "supply", "fact": "placed" },
     { "id": "open", "type": "pass", "fact": "opened" },
-    { "id": "close", "type": "pass", "fact": "closed" }
+    { "id": "close", "type": "pass", "fact": "closed" },
+    { "id": "hide", "type": "pass", "fact": "hid" }
   ],
   "facts": {
     "placed": { "description": "A stone is placed." },
     "opened": { "description": "A window opens." },
-    "closed": { "description": "A window closes." }
+    "closed": { "description": "A window closes." },
+    "hid": { "description": "Something is hidden.", "secret": true }
   },
   "badges": [
     { "id": "builder", "name": "Builder", "description": "Place three stones in a game.", "when": "end",
@@ -43,7 +45,11 @@ const badgeFixtureDefJSON = `{
     { "id": "second-wins", "name": "Second Wins", "description": "Win as the second seat.", "when": "end",
       "won": true, "seat": { "side": 2 } },
     { "id": "beat-tactical", "name": "Beat Tactical", "description": "Beat the tactical bot or better.", "when": "end",
-      "won": true, "bot": { "at_least": "tactical" } }
+      "won": true, "bot": { "at_least": "tactical" } },
+    { "id": "handful", "name": "Handful", "description": "Place two stones in a game.", "when": "during",
+      "count": { "fact": "placed", "at_least": 2 } },
+    { "id": "hider", "name": "Hider", "description": "Hide something.", "when": "during",
+      "count": { "fact": "hid", "at_least": 1 } }
   ],
   "win_condition": { "type": "none" }
 }`
@@ -207,5 +213,90 @@ func TestANoShowEarnsNoBadge(t *testing.T) {
 	}
 	if got := w.countStatus(room); got != store.CountSkipped {
 		t.Errorf("count status = %q, want %q", got, store.CountSkipped)
+	}
+}
+
+// visibleIDs is the ids of the awards everyone can see an account hold.
+func (w *ratedWorld) visibleIDs(p player) []string {
+	w.t.Helper()
+	awards, err := w.st.Awards(context.Background(), p.id, false)
+	if err != nil {
+		w.t.Fatal(err)
+	}
+	ids := []string{}
+	for _, a := range awards {
+		ids = append(ids, a.Badge)
+	}
+	sort.Strings(ids)
+	return ids
+}
+
+// A during badge is awarded as soon as it holds, without the game ending, and
+// once however often the worker looks.
+func TestADuringBadgeIsAwardedInPlay(t *testing.T) {
+	w := newRatedWorld(t)
+	w.withBadgeFixture()
+	ana, bea := w.account("ana"), w.account("bea")
+	ctx := context.Background()
+
+	room := w.unrated("fixture-badges", ana, bea)
+	w.play(room, ana, "place", "black", "a1")
+	w.play(room, bea, "place", "white", "a4")
+	w.m.CheckBadges(ctx)
+	if got := w.badgeIDs(ana); len(got) != 0 {
+		t.Fatalf("ana's badges after one stone = %v, want none", got)
+	}
+	w.play(room, ana, "place", "black", "b1")
+	w.m.CheckBadges(ctx)
+	w.m.CheckBadges(ctx)
+	if got := w.visibleIDs(ana); !equal(got, []string{"fixture-badges.handful"}) {
+		t.Errorf("ana's badges in play = %v, want handful, shown", got)
+	}
+	if got := w.badgeIDs(bea); len(got) != 0 {
+		t.Errorf("bea's badges = %v, want none", got)
+	}
+	if got := w.countStatus(room); got != "" {
+		t.Errorf("count status = %q, want the game still going", got)
+	}
+}
+
+// An award that counts a secret fact is shown to its holder at once and to
+// everyone else when the game ends.
+func TestASecretAwardWaitsForTheEnd(t *testing.T) {
+	w := newRatedWorld(t)
+	w.withBadgeFixture()
+	ana, bea := w.account("ana"), w.account("bea")
+	ctx := context.Background()
+
+	room := w.unrated("fixture-badges", ana, bea)
+	w.play(room, ana, "hide", "", "")
+	w.play(room, bea, "place", "white", "a4")
+	w.m.CheckBadges(ctx)
+	if got := w.badgeIDs(ana); !equal(got, []string{"fixture-badges.hider"}) {
+		t.Fatalf("ana's own badges = %v, want hider", got)
+	}
+	if got := w.visibleIDs(ana); len(got) != 0 {
+		t.Fatalf("ana's badges as others see them = %v, want none before the end", got)
+	}
+	w.finish(room, 0)
+	if got := w.visibleIDs(ana); !equal(got, []string{"fixture-badges.hider"}) {
+		t.Errorf("ana's badges after the end = %v, want hider, shown", got)
+	}
+}
+
+// A secret award checked only after its game was counted is shown at once:
+// nothing would show it later.
+func TestASecretAwardAfterTheEndIsShown(t *testing.T) {
+	w := newRatedWorld(t)
+	w.withBadgeFixture()
+	ana, bea := w.account("ana"), w.account("bea")
+
+	room := w.unrated("fixture-badges", ana, bea)
+	w.play(room, ana, "hide", "", "")
+	w.play(room, bea, "place", "white", "a4")
+	w.finish(room, 0)
+	w.m.CheckBadges(context.Background())
+	if got := w.visibleIDs(ana); !equal(got, []string{"fixture-badges.hider"}) {
+		t.Errorf("ana's badges = %v, want hider, shown", got)
 	}
 }
