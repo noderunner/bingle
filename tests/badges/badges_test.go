@@ -83,6 +83,10 @@ func TestABadgeBuiltWronglyIsRefused(t *testing.T) {
 		"bot without win": {func(b *dsl.BadgeDef) {
 			b.When, b.Count, b.Bot = "end", nil, &dsl.BadgeBot{AtLeast: "mcts"}
 		}, false, "needs the win"},
+		"bot across games": {func(b *dsl.BadgeDef) {
+			b.When, b.Won, b.Bot = "end", true, &dsl.BadgeBot{AtLeast: "mcts"}
+			b.Count = &dsl.BadgeCount{Fact: "spellbook", AtLeast: 3, Within: dsl.Within{"games"}}
+		}, false, "games against bots add to no count"},
 		"family in a game": {func(b *dsl.BadgeDef) { b.Game = &dsl.BadgeGame{Family: "hex"} }, false, "already its family's"},
 		"empty seat":       {func(b *dsl.BadgeDef) { b.Seat = &dsl.BadgeSeat{} }, false, "faction or a side"},
 	} {

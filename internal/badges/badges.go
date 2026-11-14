@@ -149,6 +149,10 @@ func Check(b dsl.BadgeDef, facts map[string]dsl.FactDef) error {
 		if b.Rated || b.Distinct != nil {
 			return fail("bots play no rated games, and a bot badge names a bot, never a number of them")
 		}
+		// A game against bots adds nothing to the lasting counts.
+		if b.Count != nil && b.Count.Within.Place() == dsl.WithinGames {
+			return fail("a bot badge counts within one game: games against bots add to no count across games")
+		}
 	}
 	if s := b.Seat; s != nil && s.Faction == "" && s.Side == 0 {
 		return fail("seat names a faction or a side")

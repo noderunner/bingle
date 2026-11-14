@@ -47,7 +47,8 @@ from starting rather than a badge from ever being earned.
   has moved, rated or not, at any size of table.
 - **Bot badges** count a game of one account against bots only. They need `won: true`, and name
   the weakest bot that will do: `at_least: tactical` is the tactical bot or any after it in the
-  server's list of bots, which is kept weakest first. A game against bots earns no other badge.
+  server's list of bots, which is kept weakest first. A game against bots earns no other badge,
+  and adds to no count, so a bot badge counts only within its game.
 - A guest at a seat, a tutorial or a game somebody never moved in counts for nobody. Practice
   batches are played in memory and count for nothing.
 
