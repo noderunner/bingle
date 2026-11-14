@@ -5,6 +5,7 @@
 
 import { h, clear, toast, lastName, setLastName, ensureName, nameIsMadeUp, forgottenGames, rememberGame, rememberedGames, setTurnBadge, store, brandName } from "./util.js";
 import { api, whoAmI } from "./api.js";
+import { offerNotify } from "./browser-notify.js";
 import { guestKeySection } from "./guest-key.js";
 import { gameDefs, loadRows, loadUnread, isFinished, yourImpulse, sortRows, gameRow, openGameRow } from "./mygames.js";
 import { navigate, onLeave } from "./nav.js";
@@ -287,6 +288,7 @@ export function installTopbar({ onRows = () => {}, manageTitle = true } = {}) {
 	// for anything written to us.
 	startHere();
 	startDirectMessages();
+	offerNotify();
 
 	refresh().catch(() => toast("Could not read your games.", "error"));
 	// Keep "your turn" fresh while the page sits open in a tab.

@@ -4,6 +4,11 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.107.1 - 2026-11-14
+
+### Bingle Core 0.107.1
+- Browser notifications are now on by default when you're signed in, for your turn and for badges you earn while the page is in the background. Your browser still asks first: the first page you open shows a small card, and **Turn on** brings up its question. **No thanks**, the *Notify me* box in a game's settings, or blocking notifications in your browser turns them off. Guests are not asked.
+
 ## 0.107.0 - 2026-11-14
 
 ### Bingle Core 0.107.0

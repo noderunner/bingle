@@ -1142,6 +1142,8 @@ dialog.help-dialog li { margin: 0.35rem 0; }
 .chat-who.color-brown { color: #b0406c; }
 .chat-who.color-white { color: #5a6f80; }
 .chat-line.spectator .chat-who { color: var(--muted); font-weight: 600; font-style: italic; }
+.notify-offer { position: fixed; left: 1rem; bottom: 1rem; z-index: 50; max-width: min(22rem, calc(100vw - 2rem)); padding: 0.8rem 1rem; box-shadow: var(--shadow); }
+.notify-offer p { margin: 0 0 0.6rem; }
 .chat-line.server .chat-who { color: var(--muted); font-weight: 700; }
 .chat-line.server .chat-text { font-style: italic; }
 .chat-text { flex: 1 1 100%; order: 2; }

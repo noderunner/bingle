@@ -94,7 +94,8 @@ Each award a worker writes is announced once, after its transaction commits:
 
 - **to its holder**, by a `badge` event on the account's `/ws-dm` socket (`{badge, name,
   description, room, game, hidden}`). The page shows it in a toast and, when the page is out of
-  sight and the browser allows this site's notifications, raises a browser notification. Never an
+  sight, raises a browser notification, which an account has on by default
+  ([ui.md](ui.md)). Never an
   email. An account without the `dm` capability has no such socket, and is not told.
 - **to the room**, by a line from the server in the game's chat (`server: true`, named for the
   instance): "@ana earned the badge First Win: Win a game against another player."
