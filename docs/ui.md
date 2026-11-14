@@ -104,8 +104,12 @@ selection, and its `gestures` are the clicks that enter it.
 * Status bar: whose turn, a *Your turn* badge, move number, connection state.
 * The seat strip of the player to move is highlighted.
 * The tab title gets `● Your turn — …` and the tab icon an orange dot;
-  opt-in browser notifications fire when it becomes your turn while the tab is
-  hidden. The lobby tab shows `(n) Bingle` for n games waiting on you and
+  browser notifications fire when it becomes your turn, or you earn a badge,
+  while the tab is hidden. They are on by default for an account and off for a
+  guest (`js/browser-notify.js`). A site cannot give itself the browser's
+  permission, so an account's first page offers it once, in a small card whose
+  *Turn on* asks the browser; *No thanks*, the game page's *Notify me* box or
+  blocking them in the browser turns them off. The lobby tab shows `(n) Bingle` for n games waiting on you and
   refreshes every 20 seconds.
 * "Last move N min ago" and the lobby's *Your games* list (turn-flagged).
 * Optional **per-move time limits** (set when creating the game): a countdown

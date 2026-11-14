@@ -13,6 +13,7 @@ import { keepChatFocus, loadChat, receiveChat, chatCard, chatSeen, chatUnread } 
 import { voiceCard, voiceEvent, voiceResync } from "./voice.js";
 import { installNav, navigate } from "./nav.js";
 import { installTopbar } from "./topbar.js";
+import { notifyHidden, notifyOn, setNotify } from "./browser-notify.js";
 import { mountGameNotify, applyProfileDefault } from "./notify-ui.js";
 import { LAYOUTS, isMobileLayout, isLandscape, layoutChoice, setLayoutChoice, mobileShell, onScreenChange } from "./mobile.js";
 import { lobbyCard } from "./lobby.js";
@@ -68,7 +69,6 @@ const S = {
 	confirmResign: false,
 	settings: {
 		confirm: store.get("bingle.confirm", true),
-		notify: store.get("bingle.notify", false),
 		coords: store.get("bingle.coords", true),
 		hints: store.get("bingle.hints", true),
 		lastMove: store.get("bingle.lastMove", true),
@@ -2232,13 +2232,7 @@ function notifyIfMyImpulse(fromEvent) {
 	updateTitle();
 	if (!fromEvent || lastNotifiedSeq === S.moves.length) return;
 	lastNotifiedSeq = S.moves.length;
-	if (document.hidden && S.settings.notify && "Notification" in window && Notification.permission === "granted") {
-		try {
-			new Notification("Your turn", { body: `${S.info.name} — room ${code}`, tag: "bingle-" + code });
-		} catch (_) {
-			/* notifications are best-effort */
-		}
-	}
+	notifyHidden("Your turn", { body: `${S.info.name} — room ${code}`, tag: "bingle-" + code });
 }
 
 function updateTitle() {
@@ -4939,21 +4933,15 @@ function refreshOptions() {
 			el.append(h("label", { class: "field" }, h("span", { class: "small" }, "Piece Button Size"), sizeSel));
 		}
 		if ("Notification" in window) {
-			const notify = h("input", { type: "checkbox", id: "opt-notify", checked: S.settings.notify && Notification.permission === "granted" });
+			const notify = h("input", { type: "checkbox", id: "opt-notify", checked: notifyOn() });
 			notify.addEventListener("change", async () => {
-				if (notify.checked) {
-					const perm = await Notification.requestPermission();
-					S.settings.notify = perm === "granted";
-					if (perm !== "granted") {
-						notify.checked = false;
-						toast("Notifications are blocked in this browser.", "error");
-					}
-				} else {
-					S.settings.notify = false;
+				const on = await setNotify(notify.checked);
+				if (notify.checked && !on) {
+					notify.checked = false;
+					toast("Notifications are blocked in this browser.", "error");
 				}
-				store.set("bingle.notify", S.settings.notify);
 			});
-			el.append(h("label", { class: "check" }, notify, h("span", {}, "Notify me on my turn")));
+			el.append(h("label", { class: "check" }, notify, h("span", {}, "Notify me on my turn and of badges")));
 		}
 	});
 

@@ -12,6 +12,7 @@
 
 import { h, clear, store, lastName, rememberGame, toast } from "./util.js";
 import { api, whoAmI } from "./api.js";
+import { notifyHidden } from "./browser-notify.js";
 import { gameDefs, loadRows, isFinished } from "./mygames.js";
 import { onLeave, setKeepAlive, untracked } from "./nav.js";
 import { callPerson, hangUp, toggleMute, callState, onCallChange, ringing, ended, directSignal, inDirectCall, setMyAddress } from "./dm-call.js";
@@ -262,17 +263,12 @@ async function openSocket() {
 }
 
 // A badge the account just earned (ADR 0130): a toast on the page, and a
-// notification from the browser when the page is out of sight and its
-// notifications are allowed. Never an email.
+// notification from the browser when the page is out of sight and they are on
+// (browser-notify.js). Never an email.
 function announceBadge(d) {
 	const later = d.hidden ? " The others see it when the game ends." : "";
 	toast(`Badge earned: ${d.name}. ${d.description}${later}`, "long");
-	if (!document.hidden || !("Notification" in window) || Notification.permission !== "granted") return;
-	try {
-		new Notification(`Badge earned: ${d.name}`, { body: d.description, tag: "bingle-badge-" + d.badge });
-	} catch (_) {
-		/* some browsers allow notifications only from a service worker */
-	}
+	notifyHidden(`Badge earned: ${d.name}`, { body: d.description, tag: "bingle-badge-" + d.badge });
 }
 
 function closeSocket() {
