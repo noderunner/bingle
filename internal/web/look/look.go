@@ -53,9 +53,20 @@ type File struct {
 	// like Script: the rules for what its page script draws, which the page
 	// links once it has asked for one of the family's games.
 	Style string `json:"style,omitempty"`
+	// Badges is the icon of each of the game's own badges (ADR 0130), keyed
+	// by its id within the game (deep-call, not cthulhu-wars.deep-call). A
+	// badge without one, and every platform badge, is drawn with the page's
+	// own trophy. The family's alone: a variant has no badges of its own.
+	Badges map[string]BadgeIcon `json:"badges,omitempty"`
 	// Variants patches the file for one game of the family, by its id, as
 	// a JSON merge patch (the definition's variants work the same way).
 	Variants map[string]File `json:"variants,omitempty"`
+}
+
+// BadgeIcon is how a badge is drawn: Icon is a picture among the module's
+// files, served at /api/game-defs/{family}/assets/{icon}.
+type BadgeIcon struct {
+	Icon string `json:"icon"`
 }
 
 // Seat is how a seat is drawn.
@@ -218,10 +229,16 @@ func Check(data []byte, family string, games map[string]*catalog.CompiledGame) e
 			return fmt.Errorf("look: %s: %s %q: %w", family, file.kind, file.path, err)
 		}
 	}
+	if err := f.checkBadges(base); err != nil {
+		return fmt.Errorf("look: %s: %w", family, err)
+	}
 	for id, v := range f.Variants {
 		def, ok := games[id]
 		if !ok {
 			return fmt.Errorf("look: %s: variant %q is not a game of the family", family, id)
+		}
+		if len(v.Badges) > 0 {
+			return fmt.Errorf("look: %s: variant %q draws badges: a badge's icon is the family's", family, id)
 		}
 		if len(v.Variants) > 0 {
 			return fmt.Errorf("look: %s: variant %q has variants of its own", family, id)
@@ -242,6 +259,30 @@ func Check(data []byte, family string, games map[string]*catalog.CompiledGame) e
 				return fmt.Errorf("look: %s: %w", family, err)
 			}
 			return fmt.Errorf("look: %s: variant %q: %w", family, id, err)
+		}
+	}
+	return nil
+}
+
+// checkBadges holds the badges' icons to the game: each is one of its badges,
+// and a picture among its files.
+func (f File) checkBadges(cg *catalog.CompiledGame) error {
+	declared := map[string]bool{}
+	for _, b := range cg.Definition.Badges {
+		declared[b.ID] = true
+	}
+	for id, b := range f.Badges {
+		if !declared[id] {
+			return fmt.Errorf("badges: %q is not one of the game's badges", id)
+		}
+		if b.Icon == "" {
+			return fmt.Errorf("badges: %q has no icon", id)
+		}
+		if cg.Assets == nil {
+			return fmt.Errorf("badges: %q: icon %q, but the module brings no files", id, b.Icon)
+		}
+		if _, err := fs.Stat(cg.Assets, b.Icon); err != nil {
+			return fmt.Errorf("badges: %q: icon %q: %w", id, b.Icon, err)
 		}
 	}
 	return nil

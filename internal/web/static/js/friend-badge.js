@@ -5,7 +5,7 @@
 import { h } from "./util.js";
 import { api, whoAmI } from "./api.js";
 import { askFriend, friendStateOf, loadFriends } from "./dm.js";
-import { medal } from "./badges.js";
+import { loadIcons, medal } from "./badges.js";
 
 let pop = null;
 
@@ -73,6 +73,8 @@ async function offerFriend(anchor, handle) {
 		.playerBadges(handle)
 		.then((r) => r.badges)
 		.catch(() => []);
+	// A game's badge (family.id) is drawn with its game's icon, if it has one.
+	await loadIcons(held.map((b) => ({ ...b, platform: !b.badge.includes(".") })));
 	// A row of their medals, each naming its badge, and the way to their page.
 	parts.push(
 		h(

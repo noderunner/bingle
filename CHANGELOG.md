@@ -4,6 +4,13 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.112.0 - 2026-11-14
+
+### Bingle Core 0.112.0
+- Badges have icons now: a game can give each of its badges its own, and every other badge is a trophy. The bot and the gold star sit on the icon's lower corners, like a notification badge, and a badge you haven't earned yet is greyed out.
+- A badge on a list no longer opens a window of details: its name, what it's for and where you earned it are all there is.
+- **For game authors:** a game's `web.yaml` names each badge's icon under `badges` ([docs/ui.md](docs/ui.md#a-games-look-webyaml)).
+
 ## 0.111.1 - 2026-11-14
 
 ### Bingle Core 0.111.1
