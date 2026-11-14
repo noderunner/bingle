@@ -203,7 +203,7 @@
               "$ref": "#/$defs/BadgeBot"
             }
           ],
-          "description": "Bot makes a bot badge: a game of one account against bots."
+          "description": "Bot makes a bot badge: earned in games with bots only."
         },
         "count": {
           "allOf": [
