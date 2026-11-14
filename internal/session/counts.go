@@ -67,9 +67,10 @@ func (m *Manager) countGame(ctx context.Context, game store.Game) error {
 	if err != nil {
 		return err
 	}
-	// Players against players, or one account against bots; nothing else.
+	// People only, which add to the lasting counts, or people and bots,
+	// which earn badges only.
 	players := len(at.bots) == 0
-	if !ok || (!players && len(at.accounts) != 1) {
+	if !ok || len(at.accounts) == 0 {
 		return skip()
 	}
 	// A seat that never moved was a no-show, or a quick way to hand

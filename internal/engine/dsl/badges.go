@@ -27,7 +27,7 @@ type BadgeDef struct {
 	Won bool `json:"won,omitempty"`
 	// Rated: only rated games whose result was written.
 	Rated bool `json:"rated,omitempty"`
-	// Bot makes a bot badge: a game of one account against bots.
+	// Bot makes a bot badge: earned in games with bots only.
 	Bot *BadgeBot `json:"bot,omitempty"`
 	// Seat limits the badge to a seat's faction or side.
 	Seat *BadgeSeat `json:"seat,omitempty"`

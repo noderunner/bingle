@@ -4,6 +4,14 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.111.0 - 2026-11-14
+
+### Bingle Core 0.111.0
+- Every badge can now be earned two ways, and you can hold both. Earn it in a game with a computer opponent at the table and its medal gets a small bot at the lower left; earn it in a game of people only, rated or not, and it gets a gold star at the lower right. That covers First Win and every Cthulhu Wars badge. Badges for rated games, for meeting different people or for totals across games still need people-only games.
+- A game of several people with a bot in it now counts towards badges, for the bot version.
+- A badge's details say when and where you earned each version.
+- **For programs:** a badge held is listed once per version, with `against` (`people` or `bots`), in `GET /api/players/{handle}/badges`, `get_badges` and the `badge` event; `GET /api/badges` and `list_badges` say `bots` for a badge with both ([docs/badges.md](docs/badges.md), ADR 0130).
+
 ## 0.110.0 - 2026-11-14
 
 ### Bingle Core 0.110.0

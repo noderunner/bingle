@@ -48,7 +48,7 @@ type played struct {
 	game     store.Game
 	family   string
 	facts    []state.Fact
-	// bots is set in a game of one account against bots: the place of the
+	// bots is set in a game with a bot at a seat: the place of the
 	// weakest of them in the server's list, weakest first.
 	bots      bool
 	weakest   int
@@ -78,6 +78,10 @@ func (m *Manager) endAwards(ctx context.Context, compiled *catalog.CompiledGame,
 	}
 	list := badgesOf(compiled)
 	now := m.now()
+	against := store.AgainstPeople
+	if eg.bots {
+		against = store.AgainstBots
+	}
 	var out []store.Award
 	for seat, account := range at.accounts {
 		stats, err := m.store.Stats(ctx, account)
@@ -94,7 +98,7 @@ func (m *Manager) endAwards(ctx context.Context, compiled *catalog.CompiledGame,
 			out = append(out, store.Award{
 				AccountID: account, Badge: b.id, Name: b.def.Name, Description: b.def.Description,
 				Family: eg.family, GameID: game.ID, RoomCode: game.RoomCode, Detail: compiled.Definition.Name,
-				AwardedAt: now, Visible: true,
+				AwardedAt: now, Visible: true, Against: against,
 			})
 		}
 	}
@@ -106,12 +110,16 @@ func (m *Manager) endAwards(ctx context.Context, compiled *catalog.CompiledGame,
 // no result, so stats is nil for it.
 func (m *Manager) earns(gb gameBadge, eg played, seat int, stats map[string]int) bool {
 	b := gb.def
-	// A bot badge counts games against bots only, and every other badge
-	// games against people only.
-	if (b.Bot != nil) != eg.bots {
+	// A game with a bot at a seat earns a bot badge, and the bots award of
+	// a badge earned both ways; a game of people only, the people award of
+	// every other badge.
+	if eg.bots && b.Bot == nil && !badges.BothWays(b) {
 		return false
 	}
 	if b.Bot != nil {
+		if !eg.bots {
+			return false
+		}
 		need, ok := eg.botPlaces[b.Bot.AtLeast]
 		if !ok {
 			m.logger().Error("a bot badge names a bot the server does not have", "bot", b.Bot.AtLeast)

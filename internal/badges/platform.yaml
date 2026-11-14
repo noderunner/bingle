@@ -4,7 +4,7 @@
 badges:
   - id: first-win
     name: First Win
-    description: Win a game against another player.
+    description: Win a game.
     when: end
     won: true
 

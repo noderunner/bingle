@@ -4,6 +4,7 @@
 import { h } from "./util.js";
 import { api, whoAmI } from "./api.js";
 import { askFriend, friendStateOf, loadFriends } from "./dm.js";
+import { medal } from "./badges.js";
 
 let pop = null;
 
@@ -71,13 +72,33 @@ async function offerFriend(anchor, handle) {
 			"div",
 			{ class: "small pop-badges", id: "pop-badges" },
 			held.length
-				? h("span", { class: "pop-medals" }, ...held.map((b) => h("span", { class: "badge-medal small-medal", title: `${b.name}: ${b.description}`, "data-badge": b.badge, role: "img", "aria-label": b.name }, "★")))
+				? h("span", { class: "pop-medals" }, ...medalsOf(held))
 				: h("span", { class: "muted" }, "No badges yet. "),
 			h("a", { href: `/players/${encodeURIComponent(handle)}`, id: "pop-player" }, held.length ? `See @${handle}'s badges` : `@${handle}'s page`)
 		)
 	);
 	if (parts.length === 1) openPop(anchor, parts[0]);
 	else if (parts.length) openPop(anchor, h("div", { class: "pop-stack" }, ...parts));
+}
+
+/** One small medal per badge held, marked with the ways it was earned. */
+function medalsOf(held) {
+	const byBadge = new Map();
+	for (const a of held) {
+		const b = byBadge.get(a.badge) || { ...a, ways: { people: null, bots: null } };
+		b.ways[a.against === "bots" ? "bots" : "people"] = a;
+		byBadge.set(a.badge, b);
+	}
+	return [...byBadge.values()].map((b) => {
+		const m = medal(b, false, 9);
+		m.classList.add("small-medal");
+		m.removeAttribute("aria-hidden");
+		m.setAttribute("role", "img");
+		m.setAttribute("aria-label", b.name);
+		m.title = `${b.name}: ${b.description}`;
+		m.dataset.badge = b.badge;
+		return m;
+	});
 }
 
 /** The badge of a handle, with or without its @. */

@@ -5,6 +5,7 @@
 
 import { h, clear, store } from "./util.js";
 import { api } from "./api.js";
+import { botIcon } from "./ui-icons.js";
 
 const FILTER_KEY = "bingle.badges.filter";
 const SHOWN_KEY = "bingle.badges.shown";
@@ -29,23 +30,43 @@ function earned(iso) {
 }
 
 /**
- * The badges to show, each what the catalog says it is with the award, if
- * held. With all, every badge there is, earned or not; otherwise only those
- * held. An award of a badge no longer in the catalog keeps its own name.
+ * The awards of each badge held, by how they were earned: a badge earned
+ * against people and against bots is held twice. The first is the one shown
+ * first.
+ */
+function heldWays(held) {
+	const out = new Map();
+	for (const a of held) {
+		const w = out.get(a.badge) || { first: a, people: null, bots: null };
+		w[a.against === "bots" ? "bots" : "people"] = a;
+		out.set(a.badge, w);
+	}
+	return out;
+}
+
+/**
+ * The badges to show, each what the catalog says it is with its awards, if
+ * held: award, the first, and ways, the award of each way it was earned.
+ * With all, every badge there is, earned or not; otherwise only those held.
+ * An award of a badge no longer in the catalog keeps its own name.
  */
 function joined(list, held, all) {
 	const byId = new Map(list.map((b) => [b.badge, b]));
-	const awards = new Map(held.map((a) => [a.badge, a]));
+	const ways = heldWays(held);
+	const withWays = (b, w) => ({ ...b, award: w ? w.first : null, ways: w ? { people: w.people, bots: w.bots } : { people: null, bots: null } });
 	const out = [];
-	if (all) for (const b of list) out.push({ ...b, award: awards.get(b.badge) || null });
-	for (const a of held) {
-		if (all && byId.has(a.badge)) continue;
-		const b = byId.get(a.badge);
+	if (all) for (const b of list) out.push(withWays(b, ways.get(b.badge)));
+	for (const [id, w] of ways) {
+		if (all && byId.has(id)) continue;
+		const a = w.first;
+		const b = byId.get(id);
+		const game = id.includes(".");
 		out.push(
-			b
-				? { ...b, award: a }
-				: // A retired badge: a game's id is family.id, the platform's has no dot.
-					{ badge: a.badge, name: a.name, description: a.description, platform: !a.badge.includes("."), family: a.badge.includes(".") ? a.family : "", game: a.badge.includes(".") ? a.game : "", kind: "", award: a }
+			withWays(
+				// A retired badge: a game's id is family.id, the platform's has no dot.
+				b || { badge: id, name: a.name, description: a.description, platform: !game, family: game ? a.family : "", game: game ? a.game : "", kind: "" },
+				w
+			)
 		);
 	}
 	// Earned first, then the rest, each in the catalog's order.
@@ -61,9 +82,11 @@ function kindText(b) {
 		case "rated":
 			return "Counts rated games only.";
 		case "bot":
-			return `Earned against computer opponents: beat ${b.bot || "the named bot"} or a stronger one.`;
+			return `Earned in games with computer opponents: beat ${b.bot || "the named bot"} or a stronger one.`;
 		case "player":
-			return "Earned in games against other players.";
+			return b.bots
+				? "Earned two ways: in a game of people only, which gives it the gold star, and in a game with a computer opponent at the table, which gives it the bot."
+				: "Earned in games of people only.";
 		default:
 			return "";
 	}
@@ -80,10 +103,21 @@ export function showBadge(b, { mine = false } = {}) {
 	if (b.when) facts.push(b.when === "during" ? "Awarded the moment it happens." : "Checked when the game ends.");
 	lines.push(h("p", { class: "small muted" }, facts.join(" ")));
 	if (a) {
-		const where = [a.game && `in ${a.game}`, earned(a.awarded_at) && `on ${earned(a.awarded_at)}`].filter(Boolean).join(" ");
-		lines.push(h("p", { class: "small", id: "badge-dialog-earned" }, `Earned ${where}.`));
-		if (a.hidden) lines.push(h("p", { class: "small muted" }, "Others see this badge when that game ends."));
-		if (a.room) lines.push(h("p", { class: "small" }, h("a", { href: `/game/${encodeURIComponent(a.room)}`, id: "badge-dialog-room" }, "Open the game it was earned in")));
+		const both = b.ways.people && b.ways.bots;
+		const earnedBox = h("div", { id: "badge-dialog-earned" });
+		for (const [way, label] of [["people", "With people only"], ["bots", "With computer opponents"]]) {
+			const w = b.ways[way];
+			if (!w) continue;
+			const where = [w.game, earned(w.awarded_at)].filter(Boolean).join(", ");
+			const line = h("p", { class: "small", "data-way": way }, `${label}: earned ${where ? "in " + where : ""}.`);
+			if (w.room) line.append(" ", h("a", { href: `/game/${encodeURIComponent(w.room)}`, class: "badge-dialog-room" }, "Open the game"));
+			earnedBox.append(line);
+			if (w.hidden) earnedBox.append(h("p", { class: "small muted" }, "Others see this when that game ends."));
+		}
+		lines.push(earnedBox);
+		if (mine && b.bots && !both) {
+			lines.push(h("p", { class: "small muted" }, b.ways.people ? "Not yet earned in a game with computer opponents." : "Not yet earned in a game of people only."));
+		}
 	} else if (mine) {
 		lines.push(h("p", { class: "small muted", id: "badge-dialog-earned" }, "Not earned yet."));
 	}
@@ -91,7 +125,7 @@ export function showBadge(b, { mine = false } = {}) {
 	const dlg = h(
 		"dialog",
 		{ id: "badge-dialog", class: "badge-dialog", "aria-labelledby": "badge-dialog-title", "data-badge": b.badge },
-		h("div", { class: "badge-dialog-head" }, medal(b, !a && mine), h("h2", { id: "badge-dialog-title" }, b.name)),
+		h("div", { class: "badge-dialog-head" }, medal(b, !a && mine, 22), h("h2", { id: "badge-dialog-title" }, b.name)),
 		...lines,
 		h("div", { class: "row" }, close)
 	);
@@ -107,8 +141,28 @@ export function showBadge(b, { mine = false } = {}) {
 	return dlg;
 }
 
-function medal(b, unearned) {
-	return h("span", { class: "badge-medal" + (unearned ? " unearned" : ""), "aria-hidden": "true" }, "★");
+/**
+ * A badge's medal, with a mark in its corners for each way it was earned: a
+ * bot at the lower left in a game with computer opponents, a gold star at the
+ * lower right in a game of people only.
+ */
+export function medal(b, unearned, markSize = 14) {
+	const ways = b.ways || {};
+	return h(
+		"span",
+		{ class: "badge-medal" + (unearned ? " unearned" : ""), "aria-hidden": "true" },
+		"★",
+		ways.bots ? h("span", { class: "medal-mark medal-bot", title: "Earned in a game with computer opponents" }, botIcon(markSize)) : null,
+		ways.people ? h("span", { class: "medal-mark medal-people", title: "Earned in a game of people only" }, "★") : null
+	);
+}
+
+/** How a held badge was earned, in words for a screen reader. */
+function waysText(b) {
+	const w = b.ways || {};
+	if (w.people && w.bots) return ", earned with people only and with computer opponents";
+	if (w.bots) return ", earned with computer opponents";
+	return "";
 }
 
 /** One badge on a shelf: a button that opens its details. */
@@ -118,10 +172,15 @@ export function badgeItem(b, { mine = false, alsoMine = false } = {}) {
 	const where = a ? [a.game, earned(a.awarded_at)].filter(Boolean).join(", ") : unearned ? "Not earned yet" : "";
 	return h(
 		"li",
-		{ class: "badge-item" + (unearned ? " unearned" : ""), "data-badge": b.badge, "data-earned": a ? "true" : "false" },
+		{
+			class: "badge-item" + (unearned ? " unearned" : ""),
+			"data-badge": b.badge,
+			"data-earned": a ? "true" : "false",
+			"data-ways": [b.ways.people && "people", b.ways.bots && "bots"].filter(Boolean).join(" "),
+		},
 		h(
 			"button",
-			{ type: "button", class: "badge-open", onclick: () => showBadge(b, { mine }), "aria-label": `${b.name}${unearned ? ", not earned yet" : ""}: details` },
+			{ type: "button", class: "badge-open", onclick: () => showBadge(b, { mine }), "aria-label": `${b.name}${unearned ? ", not earned yet" : waysText(b)}: details` },
 			medal(b, unearned),
 			h(
 				"span",

@@ -116,7 +116,7 @@ func registerPlayTools(s *server.MCPServer, mgr *session.Manager) {
 
 	s.AddTool(
 		mcp.NewTool("get_badges",
-			mcp.WithDescription("Read the badges an account holds, oldest first: what each is for, the game it was earned in and when. It takes an account. Your own list also has the badges others see only once their game ends (hidden), and the room each was earned in."),
+			mcp.WithDescription("Read the badges an account holds, oldest first: what each is for, the game it was earned in and when, and how (against: people or bots; a badge earned both ways is listed once for each). It takes an account. Your own list also has the badges others see only once their game ends (hidden), and the room each was earned in."),
 			mcp.WithString("handle", mcp.Required(), mcp.Description("An account's handle, without the @.")),
 			mcp.WithReadOnlyHintAnnotation(true),
 		),
@@ -131,7 +131,7 @@ func registerPlayTools(s *server.MCPServer, mgr *session.Manager) {
 
 	s.AddTool(
 		mcp.NewTool("list_badges",
-			mcp.WithDescription("List every badge there is to earn: the platform's first, then each game's. Each says what it is for, its game (family) for a game's badge, its kind (player, rated or bot, with the weakest bot that will do) and whether it is checked during play or at the end. get_badges says who holds them."),
+			mcp.WithDescription("List every badge there is to earn: the platform's first, then each game's. Each says what it is for, its game (family) for a game's badge, its kind (player, rated or bot, with the weakest bot that will do), whether a player badge is also earned in games with bots (bots) and whether it is checked during play or at the end. get_badges says who holds them."),
 			mcp.WithReadOnlyHintAnnotation(true),
 		),
 		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {

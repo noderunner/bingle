@@ -24,6 +24,8 @@ type BadgeEventData struct {
 	Game string `json:"game,omitempty"`
 	// Hidden says the others see it only when the game ends.
 	Hidden bool `json:"hidden,omitempty"`
+	// Against is how it was earned: "people" or "bots".
+	Against string `json:"against"`
 }
 
 // announce tells holders and rooms of what a write of awards changed.
@@ -47,7 +49,7 @@ func (m *Manager) tellHolder(ctx context.Context, aw store.Award) {
 	}
 	ev := Event{Type: "badge", Data: BadgeEventData{
 		Badge: aw.Badge, Name: aw.Name, Description: aw.Description,
-		Room: aw.RoomCode, Game: aw.Detail, Hidden: !aw.Visible,
+		Room: aw.RoomCode, Game: aw.Detail, Hidden: !aw.Visible, Against: againstOf(aw),
 	}}
 	for _, p := range principals {
 		m.hub.publish(dmRoom(AddressOf(p)), ev)
@@ -66,7 +68,11 @@ func (m *Manager) tellRoom(ctx context.Context, aw store.Award) {
 		fail(err)
 		return
 	}
-	text := fmt.Sprintf("@%s earned the badge %s: %s", account.Handle, aw.Name, aw.Description)
+	way := ""
+	if aw.Against == store.AgainstBots {
+		way = " with bots at the table"
+	}
+	text := fmt.Sprintf("@%s earned the badge %s%s: %s", account.Handle, aw.Name, way, aw.Description)
 	msg, err := m.store.AddChatMessage(ctx, aw.GameID, serverSeat, m.branded("Bingle"), "", text)
 	if err != nil {
 		// Retention may have deleted the game meanwhile.
@@ -74,4 +80,12 @@ func (m *Manager) tellRoom(ctx context.Context, aw store.Award) {
 		return
 	}
 	m.hub.publish(canonRoom(aw.RoomCode), Event{Type: "chat", Data: chatEventData(chatLineOf(msg, ""))})
+}
+
+// againstOf is how aw was earned, as the wire says it.
+func againstOf(aw store.Award) string {
+	if aw.Against == store.AgainstBots {
+		return store.AgainstBots
+	}
+	return store.AgainstPeople
 }

@@ -86,3 +86,13 @@ export const rulesIcon = (size) =>
 		s("path", { d: "M8.2 3v7.2l1.9-1.4 1.9 1.4V3" }),
 		s("path", { d: "M8.4 14h7.2M8.4 17h4.8" })
 	);
+
+/** A robot's head: something done against the computer opponents. */
+export const botIcon = (size) =>
+	icon(
+		"bot",
+		size,
+		s("rect", { x: 4.5, y: 8, width: 15, height: 11, rx: 3 }),
+		s("path", { d: "M12 8V4.5M9.2 13h.1M14.7 13h.1M9.5 16.2h5" }),
+		s("circle", { cx: 12, cy: 3.8, r: 1 })
+	);

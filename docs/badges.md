@@ -45,12 +45,19 @@ from starting rather than a badge from ever being earned.
 
 ## Which games count
 
-- **Player badges** count a game when every seat is held by a different account and every seat
-  has moved, rated or not, at any size of table.
-- **Bot badges** count a game of one account against bots only. They need `won: true`, and name
-  the weakest bot that will do: `at_least: tactical` is the tactical bot or any after it in the
-  server's list of bots, which is kept weakest first. A game against bots earns no other badge,
-  and adds to no count, so a bot badge counts only within its game.
+- **A player badge is earned two ways**, and each way is its own award, so an account can hold
+  both: its **people** award in a game whose every seat is held by a different account, rated or
+  not, and its **bots** award in a game with a bot at one seat or more, the rest held by different
+  accounts, however many. The condition is the badge's own either way: no win, and no bot, is
+  needed that the badge does not ask for. A badge checked `during` play is awarded in play either
+  way. A badge checked at the `end` also needs every seat to have moved.
+- **A badge earned against people only** is one that counts what a game with bots never adds to:
+  `rated` games, `distinct` opponents or families, or a count across games. A game with bots adds
+  to no count.
+- **Bot badges** (`bot`) count games with bots only, and earn no people award. They need
+  `won: true`, and name the weakest bot that will do: `at_least: tactical` is the tactical bot or
+  any after it in the server's list of bots, which is kept weakest first, and the weakest bot at
+  the table decides.
 - A guest at a seat, a tutorial or a game somebody never moved in counts for nobody. Practice
   batches are played in memory and count for nothing.
 
@@ -58,7 +65,7 @@ from starting rather than a badge from ever being earned.
 
 | id | name | condition |
 |---|---|---|
-| `first-win` | First Win | win a game against another player |
+| `first-win` | First Win | win a game |
 | `well-met` | Well Met | play ten different people |
 | `wide-reader` | Wide Reader | play five different games against other people |
 | `contender` | Contender | win twenty-five rated games |
@@ -78,7 +85,9 @@ the game ends: when the results worker counts the game, or skips it.
 
 ## Where awards are kept
 
-`badge_awards`, one row per account and badge, never changed but to become visible (`visible_at`).
+`badge_awards`, one row per account, badge and way it was earned (`against`: `people` or `bots`),
+never changed but to become visible (`visible_at`). A bot badge's awards written before the column
+was added say `people`; the API reports them as `bots`.
 Awards for badges checked at the `end` are written by the results worker, in the same transaction
 as the game's counts (`bingle_game_counts_total` says when that fails).
 
@@ -88,18 +97,19 @@ from its start, checks the badges of its seats, and moves the game's `badges_seq
 transaction with the awards. The watermark says where to look, not what was found, so a crash only
 repeats a check; an undo takes both back no further than the move it keeps. The worker also looks
 once a minute, in case a check failed, and `bingle_badge_checks_total{outcome}` counts its checks:
-`checked`, `skipped` (no `during` badges, or a guest or bot at a seat) and `failed`.
+`checked`, `skipped` (no `during` badges, or a guest at a seat) and `failed`.
 
 ## Announcements
 
 Each award a worker writes is announced once, after its transaction commits:
 
 - **to its holder**, by a `badge` event on the account's `/ws-dm` socket (`{badge, name,
-  description, room, game, hidden}`). The page shows it in a toast and, when the page is out of
+  description, room, game, hidden, against}`). The page shows it in a toast and, when the page is out of
   sight, raises a browser notification, which an account has on by default
   ([ui.md](ui.md)). Never an
   email. An account without the `dm` capability has no such socket, and is not told.
-- **to the room**, by a line from the server in the game's chat (`server: true`, named for the
+- **to the room**, by a line from the server in the game's chat, which says "with bots at the table" for
+  a bots award (`server: true`, named for the
   instance): "@ana earned the badge First Win: Win a game against another player."
 
 An award that waits for its game's end is told to its holder at once, marked `hidden`, and to
@@ -110,6 +120,8 @@ has deleted, is logged and dropped: the award stands.
 
 Every account sees every account's badges; a guest sees none.
 
+- **A medal is marked with the ways it was earned**: a small bot at its lower left for its bots
+  award, a gold star at its lower right for its people award. A badge earned both ways is one medal with both.
 - **Your settings page** (`/profile`) lists every badge there is, the ones you hold first, with those
   others see only once their game ends, and greyed out, those you have yet to earn. Chips filter it by
   the platform or a game, and by earned or not yet.
@@ -124,5 +136,5 @@ Every account sees every account's badges; a guest sees none.
   for it, and where and when it was earned (the room for its holder alone).
 - **`GET /api/badges`** and the MCP tool **`list_badges`** list every badge there is to earn, for
   anybody: a badge's description is no secret. **`GET /api/players/{handle}/badges`**
-  ([api.md](api.md)) and the MCP tool **`get_badges`** ([mcp.md](mcp.md)) list what an account holds.
-  Only the holder is told the room each was earned in.
+  ([api.md](api.md)) and the MCP tool **`get_badges`** ([mcp.md](mcp.md)) list what an account holds,
+  one award per way each badge was earned (`against`). Only the holder is told the room each was earned in.

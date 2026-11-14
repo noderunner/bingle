@@ -87,6 +87,10 @@ func Open(dbPath string) (*Store, error) {
 		_ = db.Close()
 		return nil, fmt.Errorf("migrate sqlite schema: %w", err)
 	}
+	if err := awardsBothWays(db); err != nil {
+		_ = db.Close()
+		return nil, fmt.Errorf("migrate sqlite schema: %w", err)
+	}
 	// Indexes on columns that addMissingColumns may just have added.
 	if _, err := db.Exec(`CREATE INDEX IF NOT EXISTS idx_games_rating_pending ON games(rating_status) WHERE rating_status = 'pending'`); err != nil {
 		_ = db.Close()
@@ -115,6 +119,50 @@ func Open(dbPath string) (*Store, error) {
 	}
 
 	return &Store{db: db, path: dbPath}, nil
+}
+
+// awardsBothWays rebuilds an older badge_awards, whose awards were one per
+// account and badge, so that a badge can be held both ways, against people
+// and against bots (ADR 0130). SQLite cannot change a table's UNIQUE in
+// place, so the rows move to a new table of schema.sql's shape. A table
+// that has the against column already is left alone.
+func awardsBothWays(db *sql.DB) error {
+	has, err := hasColumn(db, "badge_awards", "against")
+	if err != nil || has {
+		return err
+	}
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+	for _, stmt := range []string{
+		`CREATE TABLE badge_awards_both (
+		    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+		    account_id  INTEGER NOT NULL REFERENCES accounts(id),
+		    badge       TEXT NOT NULL,
+		    name        TEXT NOT NULL,
+		    description TEXT NOT NULL,
+		    family      TEXT NOT NULL DEFAULT '',
+		    game_id     INTEGER NOT NULL DEFAULT 0,
+		    room_code   TEXT NOT NULL DEFAULT '',
+		    detail      TEXT NOT NULL DEFAULT '',
+		    awarded_at  TEXT NOT NULL,
+		    visible_at  TEXT,
+		    against     TEXT NOT NULL DEFAULT 'people',
+		    UNIQUE (account_id, badge, against)
+		)`,
+		`INSERT INTO badge_awards_both (id, account_id, badge, name, description, family, game_id, room_code, detail, awarded_at, visible_at)
+		 SELECT id, account_id, badge, name, description, family, game_id, room_code, detail, awarded_at, visible_at FROM badge_awards`,
+		`DROP TABLE badge_awards`,
+		`ALTER TABLE badge_awards_both RENAME TO badge_awards`,
+		`CREATE INDEX IF NOT EXISTS idx_badge_awards_hidden ON badge_awards(game_id) WHERE visible_at IS NULL`,
+	} {
+		if _, err := tx.Exec(stmt); err != nil {
+			return fmt.Errorf("badge_awards both ways: %w", err)
+		}
+	}
+	return tx.Commit()
 }
 
 // renamedColumns are the columns an older database has under another name: the

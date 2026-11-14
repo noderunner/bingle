@@ -7,6 +7,7 @@ import (
 
 	"github.com/noderunner/bingle/internal/badges"
 	"github.com/noderunner/bingle/internal/engine/dsl"
+	"github.com/noderunner/bingle/internal/store"
 
 	"github.com/noderunner/bingle/internal/auth"
 )
@@ -29,6 +30,9 @@ type PlayerBadge struct {
 	Room string `json:"room,omitempty"`
 	// Hidden says only the holder sees it until its game ends.
 	Hidden bool `json:"hidden,omitempty"`
+	// Against is how it was earned: "people" or "bots". A badge earned both
+	// ways is listed once for each.
+	Against string `json:"against"`
 }
 
 // PlayerBadges lists the badges an account holds, oldest first. The holder
@@ -47,12 +51,21 @@ func (m *Manager) PlayerBadges(ctx context.Context, handle string) ([]PlayerBadg
 	if err != nil {
 		return nil, err
 	}
+	// A bot badge is earned with bots only, whatever an award written
+	// before awards said how they were earned has in its row.
+	botOnly := map[string]bool{}
+	for _, b := range m.Badges() {
+		botOnly[b.Badge] = b.Kind == "bot"
+	}
 	out := make([]PlayerBadge, 0, len(awards))
 	for _, a := range awards {
 		b := PlayerBadge{
 			Badge: a.Badge, Name: a.Name, Description: a.Description,
 			Family: a.Family, Game: a.Detail, AwardedAt: a.AwardedAt.UTC().Format("2006-01-02T15:04:05Z"),
-			Hidden: !a.Visible,
+			Hidden: !a.Visible, Against: a.Against,
+		}
+		if botOnly[a.Badge] {
+			b.Against = store.AgainstBots
 		}
 		if mine {
 			b.Room = a.RoomCode
@@ -75,10 +88,13 @@ type Badge struct {
 	Family string `json:"family,omitempty"`
 	Game   string `json:"game,omitempty"`
 	// Kind is "player" (games against other people), "rated" (rated games
-	// only) or "bot" (a game against bots), and Bot the weakest bot that will
-	// do, by its label.
+	// only) or "bot" (games with bots only), and Bot, for a bot badge, the
+	// weakest bot that will do, by its label.
 	Kind string `json:"kind"`
 	Bot  string `json:"bot,omitempty"`
+	// Bots says a player badge is earned both ways: in a game with a bot at
+	// a seat too, as its bots award.
+	Bots bool `json:"bots,omitempty"`
 	// When is "during" (awarded as soon as it holds) or "end".
 	When string `json:"when"`
 }
@@ -92,17 +108,21 @@ func (m *Manager) Badges() []Badge {
 	for _, b := range m.bots.List() {
 		labels[b.ID] = b.Label
 	}
+	label := func(id string) string {
+		if l := labels[id]; l != "" {
+			return l
+		}
+		return id
+	}
 	info := func(id string, def dsl.BadgeDef) Badge {
 		b := Badge{Badge: id, Name: def.Name, Description: def.Description, Kind: "player", When: def.When}
 		switch {
 		case def.Bot != nil:
-			b.Kind, b.Bot = "bot", labels[def.Bot.AtLeast]
-			if b.Bot == "" {
-				b.Bot = def.Bot.AtLeast
-			}
+			b.Kind, b.Bot = "bot", label(def.Bot.AtLeast)
 		case def.Rated:
 			b.Kind = "rated"
 		}
+		b.Bots = badges.BothWays(def)
 		return b
 	}
 	out := []Badge{}

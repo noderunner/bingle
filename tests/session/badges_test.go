@@ -6,6 +6,7 @@ package session_test
 import (
 	"context"
 	"sort"
+	"strings"
 	"testing"
 
 	"github.com/noderunner/bingle/internal/engine/board"
@@ -228,12 +229,15 @@ func TestABotBadgeNamesTheBotBeaten(t *testing.T) {
 		w.play(created.RoomCode, ana, "place", "black", "a1")
 		w.finish(created.RoomCode, 1)
 	}
+	// Beating the random bot earns the bots award of every badge a game with
+	// bots can hold, on its own condition: First Win, and Sparse (won as
+	// the first seat, one stone). Not the bot badge.
 	against("random")
-	if got := w.badgeIDs(ana); len(got) != 0 {
-		t.Fatalf("beating the random bot earned %v, want nothing", got)
+	if got, want := w.badgeIDs(ana), []string{"first-win", "fixture-badges.sparse"}; !equal(got, want) {
+		t.Fatalf("beating the random bot earned %v, want %v", got, want)
 	}
 	against("tactical")
-	if got, want := w.badgeIDs(ana), []string{"fixture-badges.beat-tactical"}; !equal(got, want) {
+	if got, want := w.badgeIDs(ana), []string{"first-win", "fixture-badges.beat-tactical", "fixture-badges.sparse"}; !equal(got, want) {
 		t.Errorf("beating the tactical bot earned %v, want %v", got, want)
 	}
 	if got := w.stats(ana); len(got) != 0 {
@@ -340,5 +344,84 @@ func TestASecretAwardAfterTheEndIsShown(t *testing.T) {
 	w.m.CheckBadges(context.Background())
 	if got := w.visibleIDs(ana); !equal(got, []string{"fixture-badges.hider"}) {
 		t.Errorf("ana's badges = %v, want hider, shown", got)
+	}
+}
+
+// bothWaysDefJSON is the fixture's game for three, with one badge earned in
+// play.
+var bothWaysDefJSON = strings.NewReplacer(
+	`"id": "fixture-badges"`, `"id": "fixture-both"`,
+	`"name": "Fixture badges"`, `"name": "Fixture both"`,
+	`{ "seat": 2, "color": "white" } ]`, `{ "seat": 2, "color": "white" }, { "seat": 3, "color": "red" } ]`,
+	`"seats": [1, 2]`, `"seats": [1, 2, 3]`,
+	`"white": { "color": "white" } }`, `"white": { "color": "white" }, "red": { "color": "red" } }`,
+	`"pieces": ["black", "white"]`, `"pieces": ["black", "white", "red"]`,
+).Replace(badgeFixtureDefJSON[:strings.Index(badgeFixtureDefJSON, `"badges": [`)]) + `"badges": [
+    { "id": "stone", "name": "Stone", "description": "Place a stone.", "when": "during",
+      "count": { "fact": "placed", "at_least": 1 } }
+  ],
+  "win_condition": { "type": "none" }
+}`
+
+// A badge is earned both ways, on its own condition: its bots award in a game
+// with a bot at a seat, whoever else plays and whatever the bot, and its
+// people award in a game of people only. An account can hold both.
+func TestABadgeIsEarnedBothWays(t *testing.T) {
+	w := newRatedWorld(t)
+	if err := w.cat.Register("fixture-both", []byte(bothWaysDefJSON), nil); err != nil {
+		t.Fatal(err)
+	}
+	ana, bea, cyd := w.account("ana"), w.account("bea"), w.account("cyd")
+	ctx := context.Background()
+	ways := func(p player) []string {
+		t.Helper()
+		list, err := w.m.PlayerBadges(p.ctx, p.handle)
+		if err != nil {
+			t.Fatal(err)
+		}
+		out := []string{}
+		for _, b := range list {
+			out = append(out, b.Badge+"/"+b.Against)
+		}
+		sort.Strings(out)
+		return out
+	}
+	game := func(bots map[int]string, joiners ...player) string {
+		t.Helper()
+		created, err := w.m.CreateGameWithOptions(ana.ctx, session.CreateOptions{GameDefID: "fixture-both", CreatorName: ana.handle, SeatBots: bots})
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, p := range joiners {
+			if _, err := w.m.JoinGame(p.ctx, created.RoomCode, p.handle, session.RolePlayer); err != nil {
+				t.Fatal(err)
+			}
+		}
+		return created.RoomCode
+	}
+
+	// Ana against two random bots: a stone, and no win needed.
+	room := game(map[int]string{2: "random", 3: "random"})
+	w.play(room, ana, "place", "black", "a1")
+	w.m.CheckBadges(ctx)
+	if got, want := ways(ana), []string{"fixture-both.stone/bots"}; !equal(got, want) {
+		t.Fatalf("a stone against bots earned %v, want %v", got, want)
+	}
+
+	// Ana and bea with a bot: the bots award, for bea too.
+	room = game(map[int]string{3: "random"}, bea)
+	w.play(room, ana, "place", "black", "a1")
+	w.play(room, bea, "place", "white", "a2")
+	w.m.CheckBadges(ctx)
+	if got, want := ways(bea), []string{"fixture-both.stone/bots"}; !equal(got, want) {
+		t.Errorf("a stone at a table with a bot earned bea %v, want %v", got, want)
+	}
+
+	// People only: the people award, beside the bots one.
+	room = game(nil, bea, cyd)
+	w.play(room, ana, "place", "black", "a1")
+	w.m.CheckBadges(ctx)
+	if got, want := ways(ana), []string{"fixture-both.stone/bots", "fixture-both.stone/people"}; !equal(got, want) {
+		t.Errorf("a stone among people earned ana %v, want both ways", got)
 	}
 }
