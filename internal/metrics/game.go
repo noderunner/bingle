@@ -92,6 +92,26 @@ func (m *Metrics) RatedResult(outcome RatedOutcome) {
 	m.ratedResults.WithLabelValues(string(outcome)).Inc()
 }
 
+// CountOutcome is what became of a finished game looked at for its players'
+// lasting counts (ADR 0130): a closed set of labels.
+type CountOutcome string
+
+const (
+	CountCounted CountOutcome = "counted"
+	CountSkipped CountOutcome = "skipped"
+	CountFailed  CountOutcome = "failed"
+)
+
+// GameCount records what became of a finished game's counts. "failed" is the
+// one to watch: counts are written away from the move that ended the game, and
+// a badge waiting on one would never come.
+func (m *Metrics) GameCount(outcome CountOutcome) {
+	if m == nil {
+		return
+	}
+	m.gameCounts.WithLabelValues(string(outcome)).Inc()
+}
+
 // FactsUndeclared counts facts a game's rules reported without declaring them
 // (ADR 0129). They are dropped, so a badge that wanted them never comes: any
 // count above zero is a bug in that game's rules.
