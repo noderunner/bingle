@@ -158,9 +158,13 @@
     },
     "BadgeCount": {
       "additionalProperties": false,
-      "description": "BadgeCount is a fact about the earning seat, at least AtLeast times, Within the game, a window between two facts, or across games.",
+      "description": "BadgeCount is a fact about the earning seat, at least AtLeast times (or at most AtMost), Within the game, a window between two facts, or across games.",
       "properties": {
         "at_least": {
+          "description": "AtLeast is the fewest times the fact must be counted; AtMost, instead, the most it may be, in the game or in every window (at_most: 0 is never). A count has one of the two.",
+          "type": "integer"
+        },
+        "at_most": {
           "type": "integer"
         },
         "fact": {

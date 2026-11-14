@@ -49,7 +49,10 @@ const badgeFixtureDefJSON = `{
     { "id": "handful", "name": "Handful", "description": "Place two stones in a game.", "when": "during",
       "count": { "fact": "placed", "at_least": 2 } },
     { "id": "hider", "name": "Hider", "description": "Hide something.", "when": "during",
-      "count": { "fact": "hid", "at_least": 1 } }
+      "count": { "fact": "hid", "at_least": 1 } },
+    { "id": "sparse", "name": "Sparse", "description": "Win as the first seat, never placing two stones in one window.",
+      "when": "end", "won": true, "seat": { "side": 1 },
+      "count": { "fact": "placed", "at_most": 1, "within": ["opened", "closed"] } }
   ],
   "win_condition": { "type": "none" }
 }`
@@ -169,6 +172,45 @@ func TestAGamesBadgesCountItsFacts(t *testing.T) {
 	if got := w.badgeIDs(ana); !equal(got, []string{"fixture-badges.builder", "fixture-badges.burst", "fixture-badges.mason"}) {
 		t.Errorf("ana's badges after a second game = %v", got)
 	}
+}
+
+// at_most holds when no window counts more: one stone in each window earns
+// it, two in one window do not, however many are placed outside.
+func TestAtMostHoldsInEveryWindow(t *testing.T) {
+	w := newRatedWorld(t)
+	w.withBadgeFixture()
+	ana, bea, cy := w.account("ana"), w.account("bea"), w.account("cy")
+
+	room := w.unrated("fixture-badges", ana, bea)
+	w.play(room, ana, "place", "black", "a1") // outside: not counted
+	w.play(room, bea, "open", "", "")
+	w.play(room, ana, "place", "black", "b1") // one in the window
+	w.play(room, bea, "close", "", "")
+	w.play(room, ana, "place", "black", "c1") // outside again
+	w.finish(room, 1)
+	if got := w.badgeIDs(ana); !has(got, "fixture-badges.sparse") {
+		t.Errorf("ana's badges = %v, want sparse", got)
+	}
+
+	room = w.unrated("fixture-badges", cy, bea)
+	w.play(room, cy, "place", "black", "a1")
+	w.play(room, bea, "open", "", "")
+	w.play(room, cy, "place", "black", "b1")
+	w.play(room, bea, "place", "white", "a4")
+	w.play(room, cy, "place", "black", "c1") // two in one window
+	w.finish(room, 1)
+	if got := w.badgeIDs(cy); has(got, "fixture-badges.sparse") {
+		t.Errorf("cy's badges = %v, want no sparse", got)
+	}
+}
+
+func has(list []string, s string) bool {
+	for _, x := range list {
+		if x == s {
+			return true
+		}
+	}
+	return false
 }
 
 // A bot badge needs a game of one account against bots, the win, and a bot at

@@ -61,19 +61,30 @@ func TestABadgeBuiltWronglyIsRefused(t *testing.T) {
 	if err := badges.Check(ok(), facts); err != nil {
 		t.Fatalf("the plan's example is refused: %v", err)
 	}
+	never := ok()
+	never.When, never.Count.AtLeast, never.Count.AtMost = "end", 0, ptr(0)
+	if err := badges.Check(never, facts); err != nil {
+		t.Fatalf("at_most: 0 at the end is refused: %v", err)
+	}
 	for name, c := range map[string]struct {
 		edit     func(*dsl.BadgeDef)
 		platform bool
 		want     string
 	}{
-		"bad id":             {func(b *dsl.BadgeDef) { b.ID = "Deep_Call" }, false, "lower case"},
-		"no name":            {func(b *dsl.BadgeDef) { b.Name = "" }, false, "name and a description"},
-		"bad when":           {func(b *dsl.BadgeDef) { b.When = "later" }, false, "not during or end"},
-		"won during play":    {func(b *dsl.BadgeDef) { b.Won = true }, false, "won is known only at the end"},
-		"rated during play":  {func(b *dsl.BadgeDef) { b.Rated = true }, false, "rated is known only at the end"},
-		"undeclared fact":    {func(b *dsl.BadgeDef) { b.Count.Fact = "gate" }, false, `"gate", which the game does not declare`},
-		"undeclared window":  {func(b *dsl.BadgeDef) { b.Count.Within = dsl.Within{"turn_start", "battle_end"} }, false, "a window opens and closes"},
-		"zero count":         {func(b *dsl.BadgeDef) { b.Count.AtLeast = 0 }, false, "at least 1"},
+		"bad id":            {func(b *dsl.BadgeDef) { b.ID = "Deep_Call" }, false, "lower case"},
+		"no name":           {func(b *dsl.BadgeDef) { b.Name = "" }, false, "name and a description"},
+		"bad when":          {func(b *dsl.BadgeDef) { b.When = "later" }, false, "not during or end"},
+		"won during play":   {func(b *dsl.BadgeDef) { b.Won = true }, false, "won is known only at the end"},
+		"rated during play": {func(b *dsl.BadgeDef) { b.Rated = true }, false, "rated is known only at the end"},
+		"undeclared fact":   {func(b *dsl.BadgeDef) { b.Count.Fact = "gate" }, false, `"gate", which the game does not declare`},
+		"undeclared window": {func(b *dsl.BadgeDef) { b.Count.Within = dsl.Within{"turn_start", "battle_end"} }, false, "a window opens and closes"},
+		"zero count":        {func(b *dsl.BadgeDef) { b.Count.AtLeast = 0 }, false, "at least 1"},
+		"at most in play":   {func(b *dsl.BadgeDef) { b.Count.AtLeast, b.Count.AtMost = 0, ptr(1) }, false, "at_most is known only at the end"},
+		"at least and most": {func(b *dsl.BadgeDef) { b.When, b.Count.AtMost = "end", ptr(1) }, false, "not both"},
+		"negative at most":  {func(b *dsl.BadgeDef) { b.When, b.Count.AtLeast, b.Count.AtMost = "end", 0, ptr(-1) }, false, "0 or more"},
+		"at most across": {func(b *dsl.BadgeDef) {
+			b.When, b.Count.AtLeast, b.Count.AtMost, b.Count.Within = "end", 0, ptr(1), dsl.Within{"games"}
+		}, false, "not across games"},
 		"result in a game":   {func(b *dsl.BadgeDef) { b.When = "end"; b.Count = &dsl.BadgeCount{Fact: "won", AtLeast: 3} }, false, "within must be games"},
 		"across during play": {func(b *dsl.BadgeDef) { b.Count.Within = dsl.Within{"games"} }, false, "only at the end"},
 		"platform fact":      {func(b *dsl.BadgeDef) { b.Count.Within = nil }, true, "counts only played, won, drawn or lost"},
@@ -114,3 +125,5 @@ func TestTheCatalogChecksAGamesBadges(t *testing.T) {
 		t.Fatalf("error %v, want the undeclared fact refused", err)
 	}
 }
+
+func ptr(n int) *int { return &n }

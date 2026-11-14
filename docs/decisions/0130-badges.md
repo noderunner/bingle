@@ -45,7 +45,7 @@ hold:
 | part | says |
 |---|---|
 | `when` | `during` (awarded as soon as it holds) or `end` (checked once the game has finished) |
-| `count` | `{fact, at_least, within}`: a fact about the earning seat, at least *N* times. `within` is `game` (the default), `[open, close]` (between two facts, such as `[battle_start, battle_end]`, counted afresh in each window), or `games` (a lasting count, below) |
+| `count` | `{fact, at_least, within}`: a fact about the earning seat, at least *N* times. `within` is `game` (the default), `[open, close]` (between two facts, such as `[battle_start, battle_end]`, counted afresh in each window), or `games` (a lasting count, below). Or `at_most: N` in place of `at_least`: no more than *N* in the game or in any window, checked at the `end` (added 2026-11-14, see below) |
 | `distinct` | `{of: opponents \| families, at_least}`: different accounts played, or different families played, across games |
 | `won` | `true`: the earning seat won |
 | `rated` | `true`: only rated games whose result was written, not voided |
@@ -135,3 +135,12 @@ since a room code lets whoever has it in.
   rows, but it is the one place a counting bug becomes a lasting one, since counts are never re-derived.
 - The bot list's order becomes a promise: a new bot is placed by strength, not appended.
 - A badge's condition is fixed at the time it is earned. Changing a badge's meaning means a new id.
+
+## Amended 2026-11-14: `at_most`
+
+A badge can now say something never happened, or happened no more than so often: *win without ever holding more
+than two Gates in a Doom phase*. The decision that a condition the parts cannot say needs a new part, by ADR, covers
+this one. `count.at_most: N` takes the place of `at_least`: the fact is counted no more than *N* times in the game,
+or in every one of its windows, and `at_most: 0` is never. Until the game ends the fact could still come, so a
+badge with `at_most` is checked at the `end`. A lasting count across games only grows, so `at_most` is not taken
+across games.
