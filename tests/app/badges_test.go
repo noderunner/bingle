@@ -165,6 +165,7 @@ type badgeCatalogView struct {
 		Game     string `json:"game"`
 		Kind     string `json:"kind"`
 		Bot      string `json:"bot"`
+		Bots     bool   `json:"bots"`
 		When     string `json:"when"`
 	} `json:"badges"`
 }
@@ -192,9 +193,18 @@ func TestBadges_TheCatalog(t *testing.T) {
 			if b.Bot == "" {
 				t.Errorf("Machine Breaker names no bot: %+v", b)
 			}
+		case "first-win":
+			// Earned both ways.
+			if !b.Bots {
+				t.Errorf("%s is not earned in games with bots: %+v", b.Badge, b)
+			}
+		case "well-met", "contender":
+			if b.Bots {
+				t.Errorf("%s, which counts people or rated games, can be earned against bots: %+v", b.Badge, b)
+			}
 		case "stones-badges.builder":
-			if b.Platform || b.Family != "stones-badges" || b.Game != "Stones with badges" {
-				t.Errorf("a game's badge: %+v", b)
+			if b.Platform || b.Family != "stones-badges" || b.Game != "Stones with badges" || !b.Bots {
+				t.Errorf("a game's badge, earned both ways: %+v", b)
 			}
 		}
 	}
@@ -226,7 +236,7 @@ func TestBadges_APlayersPage(t *testing.T) {
 	}
 	clickSel(t, bea, `#player-badges li[data-badge="first-win"] .badge-open`)
 	waitJS(t, bea, "its details", `document.getElementById("badge-dialog-title")?.textContent === "First Win"`, 5*time.Second)
-	if evalBool(t, bea, `document.getElementById("badge-dialog-room") !== null`) {
+	if evalBool(t, bea, `document.querySelector("#badge-dialog .badge-dialog-room") !== null`) {
 		t.Error("another player's badge links the room it was earned in")
 	}
 
@@ -257,4 +267,107 @@ func TestBadges_TheRulesWindowListsTheGamesBadges(t *testing.T) {
 	if evalBool(t, ctx, `document.querySelector('#rules-badges li[data-badge="first-win"]') !== null`) {
 		t.Error("the rules window lists the platform's badges")
 	}
+}
+
+// quickWinJSON is a game the first seat wins by placing on the top row, with
+// a badge for winning.
+const quickWinJSON = `{
+  "id": "quick-win",
+  "name": "Quick win",
+  "board": { "generator": { "type": "grid", "width": 3, "height": 2, "adjacency": "orthogonal4", "labels": "algebraic" } },
+  "seats": [ { "seat": 1, "color": "black" }, { "seat": 2, "color": "white" } ],
+  "pieces": { "stone": { "shape": "disc" } },
+  "turn_order": { "type": "round-robin", "seats": [1, 2] },
+  "actions": [ { "id": "place", "type": "place", "source": "supply" } ],
+  "badges": [
+    { "id": "quick", "name": "Quick", "description": "Win a quick game.", "when": "end",
+      "won": true }
+  ],
+  "win_condition": { "type": "rules", "rules": [ { "id": "first", "type": "reach", "seat": 1, "region": "top", "reason": "first" } ] }
+}`
+
+// A badge earned in a game with bots and in one of people only is one medal,
+// with a bot at its lower left and a gold star at its lower right.
+func TestBadges_TheWaysABadgeWasEarned(t *testing.T) {
+	a, base := membersServer(t)
+	if err := a.Catalog().Register("quick-win", []byte(quickWinJSON), nil); err != nil {
+		t.Fatal(err)
+	}
+	anaB, beaB := member(t, a, base, "ana"), member(t, a, base, "bea")
+	ways := func() []string {
+		var v struct {
+			Badges []struct{ Badge, Against string } `json:"badges"`
+		}
+		anaB.do("GET", "/api/players/ana/badges", nil, &v)
+		out := []string{}
+		for _, b := range v.Badges {
+			if b.Badge == "quick-win.quick" {
+				out = append(out, b.Against)
+			}
+		}
+		return out
+	}
+	var made struct {
+		RoomCode string `json:"room_code"`
+	}
+	if code := anaB.do("POST", "/api/games", map[string]any{"game_def_id": "quick-win", "player_name": "ana", "opponent": "tactical"}, &made); code != 200 {
+		t.Fatalf("a game against the tactical bot: %d", code)
+	}
+	winAt := func(b *browser, room string) {
+		t.Helper()
+		// The bottom row, then, once the other seat has moved, the top.
+		if code := b.do("POST", "/api/games/"+room+"/moves", map[string]any{"player_name": "ana", "notation": "a1"}, nil); code != 200 {
+			t.Fatalf("the first stone: %d", code)
+		}
+		won := false
+		waitFor(t, "the winning stone", func() bool {
+			for _, at := range []string{"a2", "b2", "c2"} {
+				if b.do("POST", "/api/games/"+room+"/moves", map[string]any{"player_name": "ana", "notation": at}, nil) == 200 {
+					won = true
+					return true
+				}
+			}
+			return false
+		})
+		if !won {
+			t.Fatal("no winning stone")
+		}
+	}
+	winAt(anaB, made.RoomCode)
+	waitFor(t, "the badge against bots", func() bool { return len(ways()) == 1 })
+
+	ctx, cancel := newChromedpContext(t, 60*time.Second)
+	defer cancel()
+	signInChrome(t, ctx, base, anaB.cookie(auth.SessionCookie))
+	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/profile")); err != nil {
+		t.Fatal(err)
+	}
+	item := `#badges-list li[data-badge="quick-win.quick"]`
+	waitJS(t, ctx, "earned against bots", `document.querySelector('`+item+`[data-ways="bots"] .medal-bot') !== null`, 15*time.Second)
+	if evalBool(t, ctx, `document.querySelector('`+item+` .medal-people') !== null`) {
+		t.Error("a badge earned against bots only has the gold star")
+	}
+
+	if code := anaB.do("POST", "/api/games", map[string]any{"game_def_id": "quick-win", "player_name": "ana"}, &made); code != 200 {
+		t.Fatalf("a game: %d", code)
+	}
+	if code := beaB.do("POST", "/api/games/"+made.RoomCode+"/join", map[string]any{"player_name": "bea"}, nil); code != 200 {
+		t.Fatalf("joining: %d", code)
+	}
+	if code := anaB.do("POST", "/api/games/"+made.RoomCode+"/moves", map[string]any{"player_name": "ana", "notation": "a1"}, nil); code != 200 {
+		t.Fatalf("the first stone: %d", code)
+	}
+	if code := beaB.do("POST", "/api/games/"+made.RoomCode+"/moves", map[string]any{"player_name": "bea", "notation": "b1"}, nil); code != 200 {
+		t.Fatalf("bea's stone: %d", code)
+	}
+	if code := anaB.do("POST", "/api/games/"+made.RoomCode+"/moves", map[string]any{"player_name": "ana", "notation": "a2"}, nil); code != 200 {
+		t.Fatalf("the winning stone: %d", code)
+	}
+	waitFor(t, "the badge against people", func() bool { return len(ways()) == 2 })
+	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/profile")); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "earned both ways", `document.querySelectorAll('`+item+`').length === 1 && document.querySelector('`+item+`[data-ways="people bots"] .medal-bot') !== null && document.querySelector('`+item+` .medal-people') !== null`, 15*time.Second)
+	clickSel(t, ctx, item+` .badge-open`)
+	waitJS(t, ctx, "both ways in its details", `document.querySelectorAll('#badge-dialog-earned [data-way]').length === 2`, 5*time.Second)
 }

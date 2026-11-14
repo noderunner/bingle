@@ -33,6 +33,15 @@ const (
 	OfFamilies  = "families"
 )
 
+// BothWays says a badge is earned both ways (ADR 0130): in a game of people
+// only, its people award, and in a game with a bot at a seat, its bots award,
+// each on the badge's own condition. A bot badge is earned with bots only,
+// and one that counts what a game with bots never adds to (rated games,
+// other people met, or a count across games) with people only.
+func BothWays(b dsl.BadgeDef) bool {
+	return b.Bot == nil && !b.Rated && b.Distinct == nil && (b.Count == nil || b.Count.Within.Place() != dsl.WithinGames)
+}
+
 // IsResult reports whether name is one of the platform's results.
 func IsResult(name string) bool {
 	for _, r := range Results {

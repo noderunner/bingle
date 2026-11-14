@@ -136,6 +136,28 @@ since a room code lets whoever has it in.
 - The bot list's order becomes a promise: a new bot is placed by strength, not appended.
 - A badge's condition is fixed at the time it is earned. Changing a badge's meaning means a new id.
 
+## Amended 2026-11-14: a badge earned both ways
+
+A badge can now be earned in games with bots as well as in games of people only, and shows which: a
+player wants to see which faction they have won with, whoever was at the table, without two badges
+for every one. It is not one or the other. **Every player badge is earned both ways**, each its
+own award, so an account can hold both: its **people** award in a game of different accounts only,
+rated or not, and its **bots** award in a game with a bot at one seat or more, the other seats held
+by different accounts, however many. The condition is the badge's own either way: the bots award
+asks for no win and no bot the badge does not. An award row says which it is (`against`, `people`
+or `bots`), and one account holds a badge at most once each way. This is not a tier: neither ranks
+above the other, and the page draws one medal with a mark in its corner for each, a bot at the
+lower left and a gold star at the lower right.
+
+This replaces two rules of *Which games count* above: a game of two accounts and a bot now counts,
+for bots awards, and a game against bots earns more than bot badges. A game with bots still adds
+to no lasting count, so a badge that is `rated`, counts `distinct` opponents or families, or counts
+across games is earned in games of people only. Bot badges (`bot`) stay their own kind, earned in
+games with bots only, by winning against the weakest bot named or a stronger one. Earning a
+badge's bots award against the random bot is easy, and that is accepted: the gold star is the
+people award. A bot badge's awards are reported as bots awards, including those written before
+awards said which.
+
 ## Amended 2026-11-14: `at_most`
 
 A badge can now say something never happened, or happened no more than so often: *win without ever holding more

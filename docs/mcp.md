@@ -27,7 +27,7 @@ before, only seats nobody owns ([ADR 0067](decisions/0067-principals-and-guest-k
 | `list_game_defs` | games available (`id`, `name`, `description`, board size, `family`, `version`, `prototype`: a prototype lists each version of its rules, and its `family` alone means the newest) |
 | `get_game_info` | rules text, pieces, actions, win rules and **move notation help** |
 | `get_leaderboard` | the ratings: the games with a leaderboard, one game's leaderboard (`family`), or an account's ratings (`handle`) |
-| `get_badges` | the badges an account holds (`handle`), oldest first; it takes an account. Your own list also has those others see only once their game ends (`hidden`) and the room each was earned in ([badges.md](badges.md)) |
+| `get_badges` | the badges an account holds (`handle`), oldest first; it takes an account. Each says how it was earned (`against`: `people` or `bots`), once per way. Your own list also has those others see only once their game ends (`hidden`) and the room each was earned in ([badges.md](badges.md)) |
 | `list_badges` | every badge there is to earn, the platform's first, then each game's: what it is for, its `family` and `game`, its `kind` (`player`, `rated` or `bot`, with the weakest `bot`) and `when` it is checked ([badges.md](badges.md)) |
 | `list_tournaments`, `get_tournament` | the tournaments, and one's settings, standings and schedule with the room code of each game (`id`) |
 | `vote_kick` | in a real-time game that is not rated, vote to have a tactical bot take another player's seats for good (`seat`), opening a vote if none is open. It takes a seat that shows as connected, so an agent with no WebSocket is refused |

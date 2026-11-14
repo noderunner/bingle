@@ -88,19 +88,24 @@ func (m *Manager) checkDuring(ctx context.Context, d store.BadgesDue) error {
 	if len(list) == 0 {
 		return done()
 	}
-	// Players against players only: a bot badge is checked at the end.
+	// With a bot at a seat, the bots award of a badge earned both ways (a
+	// bot badge is checked at the end).
 	at, ok, err := m.seatsOf(ctx, game, compiled)
 	if err != nil {
 		return err
 	}
-	if !ok || len(at.bots) > 0 {
+	if !ok || len(at.accounts) == 0 {
 		return done()
+	}
+	against := store.AgainstPeople
+	if len(at.bots) > 0 {
+		against = store.AgainstBots
 	}
 	facts, err := m.gameFacts(ctx, game.ID)
 	if err != nil {
 		return err
 	}
-	eg := played{compiled: compiled, game: game, family: gameFamily(compiled), facts: facts}
+	eg := played{compiled: compiled, game: game, family: gameFamily(compiled), facts: facts, bots: len(at.bots) > 0}
 	now := m.now()
 	var awards []store.Award
 	for seat, account := range at.accounts {
@@ -111,7 +116,7 @@ func (m *Manager) checkDuring(ctx context.Context, d store.BadgesDue) error {
 			awards = append(awards, store.Award{
 				AccountID: account, Badge: b.id, Name: b.def.Name, Description: b.def.Description,
 				Family: eg.family, GameID: game.ID, RoomCode: game.RoomCode, Detail: compiled.Definition.Name,
-				AwardedAt: now, Visible: !secretBadge(b, compiled),
+				AwardedAt: now, Visible: !secretBadge(b, compiled), Against: against,
 			})
 		}
 	}

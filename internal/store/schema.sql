@@ -573,7 +573,10 @@ CREATE TABLE IF NOT EXISTS badge_awards (
     detail      TEXT NOT NULL DEFAULT '',
     awarded_at  TEXT NOT NULL,
     visible_at  TEXT,
-    UNIQUE (account_id, badge)
+    -- against is how it was earned: 'people', or 'bots' (a game of one
+    -- account against bots). A badge earned both ways has a row for each.
+    against     TEXT NOT NULL DEFAULT 'people',
+    UNIQUE (account_id, badge, against)
 );
 -- The awards still waiting for their game to end before everyone sees them.
 CREATE INDEX IF NOT EXISTS idx_badge_awards_hidden ON badge_awards(game_id) WHERE visible_at IS NULL;

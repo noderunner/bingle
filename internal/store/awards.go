@@ -23,7 +23,16 @@ type Award struct {
 	// Visible says the award is shown to everyone; one that waits for its
 	// game to end is shown only to its holder until then.
 	Visible bool
+	// Against is how it was earned: AgainstPeople or AgainstBots.
+	Against string
 }
+
+// How an award was earned (ADR 0130): in a game against other people, or in a
+// game with a bot at a seat.
+const (
+	AgainstPeople = "people"
+	AgainstBots   = "bots"
+)
 
 // Awarded is what one write of awards changed, for announcing (ADR 0130):
 // the awards new to their holders, and those of a game that ended which
@@ -33,17 +42,17 @@ type Awarded struct {
 	Shown []Award
 }
 
-// insertAward writes a, unless its holder already has the badge, and says
-// whether it did.
+// insertAward writes a, unless its holder already has the badge the same way,
+// and says whether it did.
 func insertAward(ctx context.Context, tx *Tx, a Award) (bool, error) {
 	var visible sql.NullString
 	if a.Visible {
 		visible = sql.NullString{String: stamp(a.AwardedAt), Valid: true}
 	}
 	res, err := tx.exec(ctx, "insertAward",
-		`INSERT INTO badge_awards (account_id, badge, name, description, family, game_id, room_code, detail, awarded_at, visible_at)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (account_id, badge) DO NOTHING`,
-		a.AccountID, a.Badge, a.Name, a.Description, a.Family, a.GameID, a.RoomCode, a.Detail, stamp(a.AwardedAt), visible)
+		`INSERT INTO badge_awards (account_id, badge, name, description, family, game_id, room_code, detail, awarded_at, visible_at, against)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (account_id, badge, against) DO NOTHING`,
+		a.AccountID, a.Badge, a.Name, a.Description, a.Family, a.GameID, a.RoomCode, a.Detail, stamp(a.AwardedAt), visible, againstOf(a))
 	if err != nil {
 		return false, fmt.Errorf("writing an award: %w", err)
 	}
@@ -88,13 +97,21 @@ func (s *Store) Awards(ctx context.Context, accountID int64, all bool) ([]Award,
 	return out, rows.Err()
 }
 
-const awardColumns = `account_id, badge, name, description, family, game_id, room_code, detail, awarded_at, visible_at`
+const awardColumns = `account_id, badge, name, description, family, game_id, room_code, detail, awarded_at, visible_at, against`
+
+// againstOf is how a was earned, people unless it says bots.
+func againstOf(a Award) string {
+	if a.Against == AgainstBots {
+		return AgainstBots
+	}
+	return AgainstPeople
+}
 
 func scanAward(rows interface{ Scan(...any) error }) (Award, error) {
 	var a Award
 	var at string
 	var visible sql.NullString
-	if err := rows.Scan(&a.AccountID, &a.Badge, &a.Name, &a.Description, &a.Family, &a.GameID, &a.RoomCode, &a.Detail, &at, &visible); err != nil {
+	if err := rows.Scan(&a.AccountID, &a.Badge, &a.Name, &a.Description, &a.Family, &a.GameID, &a.RoomCode, &a.Detail, &at, &visible, &a.Against); err != nil {
 		return Award{}, fmt.Errorf("scanning an award: %w", err)
 	}
 	a.AwardedAt, _ = time.Parse(sqlTime, at)

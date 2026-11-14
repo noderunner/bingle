@@ -201,7 +201,7 @@ that account.
 | `POST /dm/threads` | `{}` | `{address, threads: [{with, name, last_id, last_at, text, count}]}` |
 | `POST /dm/call` | `{to, join}` | `{ok}` — ring (or answer) somebody, or hang up |
 | `POST /dm/signal` | `{to, kind, data}` | `{ok}` — one WebRTC message for the person being called |
-| `GET /ws-dm` | (the session) | pushes `ready`, `dm`, `dm-call`, `dm-rtc` and `badge` events for that account (a badge it just earned: `{badge, name, description, room, game, hidden?}`, see [badges.md](badges.md)) |
+| `GET /ws-dm` | (the session) | pushes `ready`, `dm`, `dm-call`, `dm-rtc` and `badge` events for that account (a badge it just earned: `{badge, name, description, room, game, hidden?, against}`, see [badges.md](badges.md)) |
 | `POST /games` | `{game_def_id, player_name, seat?, opponent?, seat_bots? (`{"2": "random"}`: a bot in chosen seats; the rest stay open), lobby? (wait for the host's `start` even with every seat filled), move_time_seconds?, clock_seconds?, clock_increment_seconds?, rated?, card_set? (a themed set of cards for the table — see below), options? (setup choices — see below), start_tps?, start_state?, start_seat?}` | `{room_code, seat, color, status, bot_moves?}` |
 | `GET /config` | | `{public_url}`: the configured `BINGLE_PUBLIC_URL` ("" when unset) |
 | `POST /bot-matches` | `{game_def_id, bot_a, bot_b, delay_ms?}`: a two-player room where two built-in bots play each other at a watchable pace (150 ms – 10 s per move); open it as a spectator (`/games/{code}/join` with role spectator, or the WebSocket). Stops when the game ends, after 2 minutes with nobody watching, or at the move cap; at most 12 run at once | `{room_code, status}` |
@@ -318,8 +318,8 @@ the same two accounts in one game family, change nothing.
 |---|---|
 | `GET /ratings` | `{games: [{family, name, players}]}`: the games with a leaderboard |
 | `GET /ratings/{family}?limit=` | `{family, players: [{rank, handle, rating, provisional?, games}]}`, highest first, at most 100 |
-| `GET /players/{handle}/badges` | `{badges: [{badge, name, description, family, game, awarded_at, room?, hidden?}]}`, oldest first, for accounts only (`403` for a guest). Others see those shown to everyone; the account itself also sees those waiting for their game to end (`hidden`) and the `room` each was earned in ([badges.md](badges.md)) |
-| `GET /badges` | `{badges: [{badge, name, description, platform?, family?, game?, kind, bot?, when}]}`: every badge there is to earn, the platform's first, then each game's by its name, for anybody. `kind` is `player`, `rated` or `bot` (`bot` then names the weakest that will do); `family` and `game` are a game's badge's, or a platform badge's that names one ([badges.md](badges.md)) |
+| `GET /players/{handle}/badges` | `{badges: [{badge, name, description, family, game, awarded_at, room?, hidden?, against}]}`, oldest first, one per way each badge was earned (`against`: `people` or `bots`), for accounts only (`403` for a guest). Others see those shown to everyone; the account itself also sees those waiting for their game to end (`hidden`) and the `room` each was earned in ([badges.md](badges.md)) |
+| `GET /badges` | `{badges: [{badge, name, description, platform?, family?, game?, kind, bot?, bots?, when}]}`: every badge there is to earn, the platform's first, then each game's by its name, for anybody. `kind` is `player`, `rated` or `bot`, `bot` naming a bot badge's weakest bot; `bots` says a player badge is also earned, as its bots award, in a game with a bot at a seat; `family` and `game` are a game's badge's, or a platform badge's that names one ([badges.md](badges.md)) |
 | `GET /players/{handle}/ratings` | `{ratings: [{family, name, rating, provisional?, games, won, drawn, lost, listed}]}`: others see only the `listed` ones (5 rated games against at least 3 opponents); the account itself sees all |
 
 **Restarts.** Time while the server is down costs nobody anything: a turn in

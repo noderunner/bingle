@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	_ "modernc.org/sqlite"
@@ -172,4 +173,82 @@ func TestOpen_PinsTheGamesOfPrototypes(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
+}
+
+// An awards table from before a badge could be held both ways is rebuilt with
+// its rows, which were all earned against people, and then takes a second
+// award of a badge, against bots (ADR 0130).
+func TestOpen_AwardsCanBeHeldBothWays(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "awards.db")
+	// An account, then the awards table as it was.
+	st, err := store.Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	id, err := st.CreateAccount(context.Background(), store.NewAccount{Handle: "ana", DisplayName: "ana", PrincipalID: "p-ana", NewPrincipal: true, PasswordHash: "x"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = st.Close()
+	raw, err := sql.Open("sqlite", path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, stmt := range []string{
+		`DROP TABLE badge_awards`,
+		`CREATE TABLE badge_awards (
+		    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+		    account_id  INTEGER NOT NULL,
+		    badge       TEXT NOT NULL,
+		    name        TEXT NOT NULL,
+		    description TEXT NOT NULL,
+		    family      TEXT NOT NULL DEFAULT '',
+		    game_id     INTEGER NOT NULL DEFAULT 0,
+		    room_code   TEXT NOT NULL DEFAULT '',
+		    detail      TEXT NOT NULL DEFAULT '',
+		    awarded_at  TEXT NOT NULL,
+		    visible_at  TEXT,
+		    UNIQUE (account_id, badge)
+		)`,
+		`INSERT INTO badge_awards (account_id, badge, name, description, awarded_at, visible_at) VALUES (?, 'first-win', 'First Win', 'Win a game.', '2026-11-13 10:00:00', '2026-11-13 10:00:00')`,
+	} {
+		if _, err := raw.Exec(stmt, args(stmt, id)...); err != nil {
+			t.Fatalf("seeding: %v", err)
+		}
+	}
+	_ = raw.Close()
+
+	st, err = store.Open(path)
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	awards, err := st.Awards(context.Background(), id, true)
+	if err != nil || len(awards) != 1 || awards[0].Badge != "first-win" || awards[0].Against != store.AgainstPeople || !awards[0].Visible {
+		t.Fatalf("the award after the upgrade: %+v, %v", awards, err)
+	}
+	_ = st.Close()
+
+	raw, err = sql.Open("sqlite", path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = raw.Close() }()
+	add := func(against string) error {
+		_, err := raw.Exec(`INSERT INTO badge_awards (account_id, badge, name, description, awarded_at, against) VALUES (?, 'first-win', 'First Win', 'Win a game.', '2026-11-14 10:00:00', ?)`, id, against)
+		return err
+	}
+	if err := add("bots"); err != nil {
+		t.Errorf("the same badge against bots: %v", err)
+	}
+	if err := add("people"); err == nil {
+		t.Error("the same badge against people twice was written")
+	}
+}
+
+// args is id for a statement that takes it, and nothing for one that does not.
+func args(stmt string, id int64) []any {
+	if strings.Contains(stmt, "?") {
+		return []any{id}
+	}
+	return nil
 }

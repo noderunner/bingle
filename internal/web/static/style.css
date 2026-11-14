@@ -1144,7 +1144,15 @@ dialog.help-dialog li { margin: 0.35rem 0; }
 .chat-line.spectator .chat-who { color: var(--muted); font-weight: 600; font-style: italic; }
 .badge-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
 .badge-item { display: flex; gap: 0.6rem; align-items: flex-start; }
-.badge-medal { flex: none; width: 1.8rem; height: 1.8rem; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: var(--accent-ink); font-size: 1rem; }
+.badge-medal { position: relative; flex: none; width: 1.8rem; height: 1.8rem; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: var(--accent-ink); font-size: 1rem; }
+/* How a badge was earned, in the medal's lower corners: a bot against computer opponents, a gold star against people. */
+.medal-mark {
+	position: absolute; bottom: -0.4em; width: 1.75em; height: 1.75em; border-radius: 50%; display: grid; place-items: center;
+	background: var(--surface); border: 1px solid var(--border); font-size: 0.6em; line-height: 1;
+}
+.medal-mark svg { width: 88%; height: 88%; stroke-width: 2.2; }
+.medal-bot { left: -0.45em; color: var(--text); }
+.medal-people { right: -0.45em; color: #c99a06; }
 .badge-body { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
 .badge-item > .badge-open {
 	display: flex; gap: 0.6rem; align-items: flex-start; width: 100%; text-align: left; font-weight: 400;
