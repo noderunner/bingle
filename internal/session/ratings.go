@@ -82,8 +82,9 @@ func (m *Manager) mayJoinRated(ctx context.Context, players []store.Player) erro
 // and a rated game's result is written, away from the room lock its caller holds.
 func (m *Manager) finished(game store.Game, family, reason string) {
 	m.mx.Finished(family, reason)
-	if game.Rated {
-		// The caller's context ends with its request, and the result must not.
+	if game.Tutorial == "" {
+		// The caller's context ends with its request, and the result must
+		// not. Every game but a tutorial is counted for its players.
 		go m.RecordResults(context.Background())
 	}
 	if game.TournamentID != 0 {
@@ -108,7 +109,8 @@ func (m *Manager) RunResults(ctx context.Context) {
 }
 
 // RecordResults writes the result of every rated game that has ended and has not
-// had one, one at a time. It is exported so that a test can wait for it.
+// had one, one at a time, and then the counts of every finished game (ADR 0130).
+// It is exported so that a test can wait for it.
 func (m *Manager) RecordResults(ctx context.Context) {
 	m.resultsMu.Lock()
 	defer m.resultsMu.Unlock()
@@ -124,6 +126,8 @@ func (m *Manager) RecordResults(ctx context.Context) {
 		}
 		m.publishState(ctx, game.RoomCode, "rated")
 	}
+	// Then every finished game's counts, once its rated result is written.
+	m.recordCounts(ctx)
 }
 
 func (m *Manager) resultFailed(err error) {

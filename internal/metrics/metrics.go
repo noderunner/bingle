@@ -69,6 +69,7 @@ type Metrics struct {
 	gameFinished   *prometheus.CounterVec
 	ratedResults   *prometheus.CounterVec
 	factsDropped   *prometheus.CounterVec
+	gameCounts     *prometheus.CounterVec
 	gameIllegal    *prometheus.CounterVec
 	botSearch      *prometheus.HistogramVec
 	botNodes       *botNodes
@@ -174,6 +175,9 @@ func New(version string) *Metrics {
 		ratedResults: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Name: "bingle_rated_results_total", Help: "Rated games that ended, by what became of their result.",
 		}, []string{"outcome"}),
+		gameCounts: prometheus.NewCounterVec(prometheus.CounterOpts{
+			Name: "bingle_game_counts_total", Help: "Finished games looked at for their players' lasting counts, by what became of them.",
+		}, []string{"outcome"}),
 		factsDropped: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Name: "bingle_facts_undeclared_total", Help: "Facts the rules reported that the game does not declare, dropped, by game family.",
 		}, []string{"game"}),
@@ -248,7 +252,7 @@ func New(version string) *Metrics {
 		m.httpRequests, m.httpDuration, m.httpInFlight, m.httpBytes, m.httpErrors,
 		m.wsConnections, m.wsTotal,
 		m.dbQueries, m.dbDuration, m.dbRows, m.dbTxDuration, m.dbBusy, m.db,
-		m.gameMoves, m.gameApply, m.gameLegal, m.gameLegalMoves, m.gameFinished, m.gameIllegal, m.ratedResults, m.factsDropped,
+		m.gameMoves, m.gameApply, m.gameLegal, m.gameLegalMoves, m.gameFinished, m.gameIllegal, m.ratedResults, m.factsDropped, m.gameCounts,
 		m.botSearch, m.botNodes, m.slotWait, m.slotInUse, m.slotSize, m.batchWorkers, m.realTime,
 		m.clientErrors, m.mail, m.mailSend,
 	)

@@ -4,6 +4,12 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.104.0 - 2026-11-13
+
+### Bingle Core 0.104.0
+- Nothing changes in play yet. More groundwork for badges: from now on every game you finish with other signed-in players counts towards them, rated or not and at any size of table, as long as everyone made a move. Games with a guest or a bot at the table, games nobody moved in, and tutorials don't count. Games finished before this release don't count either.
+- **For programs:** when a game ends, the results worker adds to each account's `stats` under new keys: `game.played`, `game.won`, `game.drawn` or `game.lost` per family, `fact.<name>` per family for each fact about the seat, and `met:<account id>` (plus `met.rated:<account id>` in a rated game) for each opponent (ADR 0130). The rated keys keep their meaning. `bingle_game_counts_total{outcome}` counts what became of each game.
+
 ## 0.103.0 - 2026-11-13
 
 ### Bingle Core 0.103.0
