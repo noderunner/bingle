@@ -4,6 +4,12 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.108.0 - 2026-11-14
+
+### Bingle Core 0.108.0
+- Your badges are on your profile page now, each with what it's for and the game and day you earned it. Click somebody's @handle in a chat to see theirs. Anyone signed in can see anyone's badges; guests can't.
+- **For programs:** `GET /api/players/{handle}/badges` and the MCP tool `get_badges` list an account's badges, for accounts only. Only the holder sees the room each was earned in, and the badges still waiting for their game to end (ADR 0130).
+
 ## 0.107.1 - 2026-11-14
 
 ### Bingle Core 0.107.1

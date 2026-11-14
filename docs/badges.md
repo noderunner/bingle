@@ -104,5 +104,12 @@ An award that waits for its game's end is told to its holder at once, marked `hi
 the room when it is shown. An announcement that fails, such as a chat line for a game retention
 has deleted, is logged and dropped: the award stands.
 
-The profile page, the API and MCP come with step 7 of the
-[achievements plan](history/achievements-plan.md).
+## Where badges are seen
+
+Every account sees every account's badges; a guest sees none.
+
+- **The profile page** lists your own, with those others see only once their game ends.
+- **A handle**, clicked in a chat or a list, shows that account's badges, beside any friend request
+  it offers.
+- **`GET /api/players/{handle}/badges`** ([api.md](api.md)) and the MCP tool **`get_badges`**
+  ([mcp.md](mcp.md)). Only the holder is told the room each was earned in.

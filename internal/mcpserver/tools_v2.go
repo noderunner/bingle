@@ -115,6 +115,21 @@ func registerPlayTools(s *server.MCPServer, mgr *session.Manager) {
 	)
 
 	s.AddTool(
+		mcp.NewTool("get_badges",
+			mcp.WithDescription("Read the badges an account holds, oldest first: what each is for, the game it was earned in and when. It takes an account. Your own list also has the badges others see only once their game ends (hidden), and the room each was earned in."),
+			mcp.WithString("handle", mcp.Required(), mcp.Description("An account's handle, without the @.")),
+			mcp.WithReadOnlyHintAnnotation(true),
+		),
+		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			list, err := mgr.PlayerBadges(ctx, strings.TrimPrefix(request.GetString("handle", ""), "@"))
+			if err != nil {
+				return mcp.NewToolResultError(err.Error()), nil
+			}
+			return mcp.NewToolResultStructuredOnly(map[string]any{"badges": list}), nil
+		},
+	)
+
+	s.AddTool(
 		mcp.NewTool("list_bots",
 			mcp.WithDescription("List the built-in computer opponents that create_game (opponent=...) and env_reset (opponent=...) accept."),
 		),

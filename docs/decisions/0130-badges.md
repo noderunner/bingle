@@ -121,7 +121,9 @@ to its holder, and to everyone else, the game's chat included, only when the gam
 and to the room by a line from the server in the game's chat.
 
 **Every registered user can see every account's badges**, on the profile page, at
-`GET /api/accounts/{handle}/badges` and through an MCP tool. Guests cannot. There is no setting to hide them.
+`GET /api/players/{handle}/badges` (beside the player's ratings; the plan wrote `/api/accounts/…`) and through an MCP
+tool. Guests cannot. There is no setting to hide them. The room a badge was earned in is shown to its holder alone,
+since a room code lets whoever has it in.
 
 ## Consequences
 

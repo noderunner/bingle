@@ -223,3 +223,6 @@ more games. After that the opportunity is gone. Worth a deliberate yes or no.
   worker with its watermark and the secret delay, follows.
 - 2026-11-14: step 5 built (#193): the `during` worker, its watermark per game, and secret awards
   shown when their game ends. Step 6, announcements, follows.
+- 2026-11-14: step 6 built (#194): a badge is announced to its holder (a toast and a browser
+  notification, on by default for an account since #195) and in the game's chat. Step 7 follows,
+  at `GET /api/players/{handle}/badges` beside the ratings rather than `/api/accounts/…`.
