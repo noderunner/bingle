@@ -99,6 +99,7 @@ func Check(b dsl.BadgeDef, facts map[string]dsl.FactDef) error {
 	}{
 		{b.Won, "won"}, {b.Rated, "rated"}, {b.Distinct != nil, "distinct"}, {b.Bot != nil, "bot"},
 		{b.Count != nil && b.Count.Within.Place() == dsl.WithinGames, "a count across games"},
+		{b.Count != nil && b.Count.AtMost != nil, "count.at_most"},
 	}
 	for _, e := range endOnly {
 		if e.on && b.When != WhenEnd {
@@ -107,7 +108,14 @@ func Check(b dsl.BadgeDef, facts map[string]dsl.FactDef) error {
 	}
 	declared := func(name string) bool { _, ok := facts[name]; return ok }
 	if c := b.Count; c != nil {
-		if c.AtLeast < 1 {
+		switch {
+		case c.AtMost != nil && c.AtLeast != 0:
+			return fail("a count has at_least or at_most, not both")
+		case c.AtMost != nil && *c.AtMost < 0:
+			return fail("count.at_most must be 0 or more")
+		case c.AtMost != nil && c.Within.Place() == dsl.WithinGames:
+			return fail("count.at_most counts within a game or its windows, not across games")
+		case c.AtMost == nil && c.AtLeast < 1:
 			return fail("count.at_least must be at least 1")
 		}
 		switch place := c.Within.Place(); place {

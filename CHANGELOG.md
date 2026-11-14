@@ -4,6 +4,12 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.109.0 - 2026-11-14
+
+### Bingle Core 0.109.0
+- A badge can now be for something you never did, or did no more than a few times, such as winning while holding only a few Gates. Those badges are given when the game ends.
+- **For game authors:** a badge's `count` takes `at_most` in place of `at_least`, in the game or in each window, checked at the `end` ([docs/badges.md](docs/badges.md), ADR 0130).
+
 ## 0.108.0 - 2026-11-14
 
 ### Bingle Core 0.108.0

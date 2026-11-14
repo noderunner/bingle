@@ -35,13 +35,17 @@ type BadgeDef struct {
 	Game *BadgeGame `json:"game,omitempty"`
 }
 
-// BadgeCount is a fact about the earning seat, at least AtLeast times, Within
-// the game, a window between two facts, or across games.
+// BadgeCount is a fact about the earning seat, at least AtLeast times (or at
+// most AtMost), Within the game, a window between two facts, or across games.
 type BadgeCount struct {
 	// Fact is one of the game's facts, or played, won, drawn or lost (the
 	// platform's results, counted across games).
-	Fact    string `json:"fact"`
-	AtLeast int    `json:"at_least"`
+	Fact string `json:"fact"`
+	// AtLeast is the fewest times the fact must be counted; AtMost, instead,
+	// the most it may be, in the game or in every window (at_most: 0 is
+	// never). A count has one of the two.
+	AtLeast int  `json:"at_least,omitempty"`
+	AtMost  *int `json:"at_most,omitempty"`
 	// Within is "game" (the default), "games", or [open, close]: two facts
 	// between which the count starts afresh each time.
 	Within Within `json:"within,omitempty"`

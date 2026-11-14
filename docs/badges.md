@@ -23,7 +23,7 @@ say needs a new part, by ADR.
 | part | says |
 |---|---|
 | `when` | **required.** `during`: awarded as soon as it holds, from what happens in play. `end`: checked once the game has finished |
-| `count` | `{fact, at_least, within}`: a fact about the earning seat, at least *N* times. `within` is `game` (the default), `games` (a lasting count), or `[open, close]`, two facts between which the count starts afresh each time, whoever they name |
+| `count` | `{fact, at_least, within}`: a fact about the earning seat, at least *N* times. `within` is `game` (the default), `games` (a lasting count), or `[open, close]`, two facts between which the count starts afresh each time, whoever they name. `at_most: N` in place of `at_least` says the fact is counted no more than *N* times in the game, or in any one of its windows; `at_most: 0` is never. It is not counted across games |
 | `distinct` | `{of: opponents \| families, at_least}`: different accounts, or different families, played across games that count |
 | `won` | `true`: the earning seat won |
 | `rated` | `true`: only rated games whose result was written. A `count` of results and a `distinct` then count rated games only |
@@ -37,8 +37,10 @@ A badge may `count` only the facts its game declares (`facts` in the definition,
 across games is per family for a game's badge or a platform badge that names a family, and across
 every family otherwise.
 
-`won`, `rated`, `distinct`, `bot` and a count across games are known only at the end, so they need
-`when: end`. The catalog refuses a badge that breaks a rule here, so a mistake stops the server
+`won`, `rated`, `distinct`, `bot`, a count across games and `at_most` are known only at the end, so
+they need `when: end`: until then, the fact could still come. *Win without ever holding more than two
+Gates in a Doom phase* is `won: true` with `count: {fact: doom_gate, at_most: 2, within: [doom_phase,
+round_start]}`. The catalog refuses a badge that breaks a rule here, so a mistake stops the server
 from starting rather than a badge from ever being earned.
 
 ## Which games count

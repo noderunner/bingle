@@ -157,7 +157,11 @@ func (m *Manager) earns(gb gameBadge, eg played, seat int, stats map[string]int)
 		default:
 			n = inWindows(eg.facts, c.Fact, seat, "", "")
 		}
-		if n < c.AtLeast {
+		if c.AtMost != nil {
+			if n > *c.AtMost {
+				return false
+			}
+		} else if n < c.AtLeast {
 			return false
 		}
 	}
@@ -213,7 +217,8 @@ func withPrefix(stats map[string]int, prefix string) int {
 	return n
 }
 
-// inWindows is the most times fact was reported about seat within one window:
+// inWindows is the most times fact was reported about seat within one window
+// (so at_most holds when it holds in every window):
 // between a fact named open and the next named closing, whoever they name.
 // With no window, the whole game is one.
 func inWindows(facts []state.Fact, fact string, seat int, open, closing string) int {
