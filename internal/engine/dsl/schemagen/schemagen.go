@@ -132,6 +132,7 @@ var (
 	rawMessage  = reflect.TypeFor[json.RawMessage]()
 	quantity    = reflect.TypeFor[dsl.Quantity]()
 	counts      = reflect.TypeFor[dsl.Counts]()
+	within      = reflect.TypeFor[dsl.Within]()
 	variantType = reflect.TypeFor[dsl.VariantDef]()
 )
 
@@ -145,6 +146,8 @@ func (g *gen) schema(t reflect.Type) map[string]any {
 		return map[string]any{"type": []string{"integer", "string"}}
 	case counts:
 		return map[string]any{"oneOf": []any{map[string]any{"type": "integer"}, map[string]any{"type": "array", "items": map[string]any{"type": "integer"}}}}
+	case within:
+		return map[string]any{"oneOf": []any{map[string]any{"enum": []string{dsl.WithinGame, dsl.WithinGames}}, map[string]any{"type": "array", "items": map[string]any{"type": "string"}, "minItems": 2, "maxItems": 2}}}
 	case rawMessage:
 		return map[string]any{}
 	}

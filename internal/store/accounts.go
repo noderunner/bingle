@@ -276,6 +276,7 @@ func (s *Store) deletePending(ctx context.Context, sel string, arg any) error {
 		`DELETE FROM account_tokens WHERE account_id IN (` + sel + `)`,
 		`DELETE FROM account_groups WHERE account_id IN (` + sel + `)`,
 		`DELETE FROM tutorials_done WHERE account_id IN (` + sel + `)`,
+		`DELETE FROM badge_awards WHERE account_id IN (` + sel + `)`,
 		`DELETE FROM accounts WHERE id IN (` + sel + `)`,
 	} {
 		if _, err := tx.exec(ctx, "DeletePendingAccounts", q, arg); err != nil {

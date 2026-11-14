@@ -4,15 +4,12 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/noderunner/bingle/internal/badges"
 	"github.com/noderunner/bingle/internal/engine/dsl"
 )
 
 // Facts are what a game's rules report about what a selection did (ADR 0129).
 // A game lists the ones it can report; a badge may count only those.
-
-// ReservedFacts are the platform's counts of results, which no game may
-// declare as a fact of its own (ADR 0130).
-var ReservedFacts = []string{"played", "won", "drawn", "lost"}
 
 // checkFacts checks the names and descriptions of a game's facts.
 func checkFacts(def *dsl.GameDefinition) error {
@@ -20,14 +17,24 @@ func checkFacts(def *dsl.GameDefinition) error {
 		if !factName(name) {
 			return fmt.Errorf("catalog: fact %q: a fact's name is lower case letters, digits and underscores, starting with a letter", name)
 		}
-		for _, r := range ReservedFacts {
-			if name == r {
-				return fmt.Errorf("catalog: fact %q is the platform's count of results, not a game's fact", name)
-			}
+		if badges.IsResult(name) {
+			return fmt.Errorf("catalog: fact %q is the platform's count of results, not a game's fact", name)
 		}
 		if strings.TrimSpace(f.Description) == "" {
 			return fmt.Errorf("catalog: fact %q has no description", name)
 		}
+	}
+	return nil
+}
+
+// checkBadges checks the game's own badges (ADR 0130) against its facts.
+func checkBadges(def *dsl.GameDefinition) error {
+	facts := def.Facts
+	if facts == nil {
+		facts = map[string]dsl.FactDef{}
+	}
+	if err := badges.CheckAll(def.Badges, facts); err != nil {
+		return fmt.Errorf("catalog: %w", err)
 	}
 	return nil
 }

@@ -146,6 +146,159 @@
       },
       "type": "object"
     },
+    "BadgeBot": {
+      "additionalProperties": false,
+      "description": "BadgeBot makes a badge one for beating bots: AtLeast names the weakest bot that will do, in the server's list of bots (weakest first).",
+      "properties": {
+        "at_least": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "BadgeCount": {
+      "additionalProperties": false,
+      "description": "BadgeCount is a fact about the earning seat, at least AtLeast times, Within the game, a window between two facts, or across games.",
+      "properties": {
+        "at_least": {
+          "type": "integer"
+        },
+        "fact": {
+          "description": "Fact is one of the game's facts, or played, won, drawn or lost (the platform's results, counted across games).",
+          "type": "string"
+        },
+        "within": {
+          "description": "Within is \"game\" (the default), \"games\", or [open, close]: two facts between which the count starts afresh each time.",
+          "oneOf": [
+            {
+              "enum": [
+                "game",
+                "games"
+              ]
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            }
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "BadgeDef": {
+      "additionalProperties": false,
+      "description": "BadgeDef is one badge (ADR 0130): something a player would mention, awarded once, and built from a fixed set of parts that must all hold. A game's badges are in its definition; the platform's in one file of their own. Its icon is each client's.",
+      "properties": {
+        "bot": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/BadgeBot"
+            }
+          ],
+          "description": "Bot makes a bot badge: a game of one account against bots."
+        },
+        "count": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/BadgeCount"
+            }
+          ],
+          "description": "Count counts a fact about the earning seat."
+        },
+        "description": {
+          "type": "string"
+        },
+        "distinct": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/BadgeDistinct"
+            }
+          ],
+          "description": "Distinct counts different opponents or families played, across games."
+        },
+        "game": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/BadgeGame"
+            }
+          ],
+          "description": "Game limits the badge to a family (a platform badge) or a variant."
+        },
+        "id": {
+          "description": "ID names the badge: lower case letters, digits and dashes. A game's badge is known as family.id.",
+          "type": "string"
+        },
+        "name": {
+          "description": "Name and Description are what a player reads.",
+          "type": "string"
+        },
+        "rated": {
+          "description": "Rated: only rated games whose result was written.",
+          "type": "boolean"
+        },
+        "seat": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/BadgeSeat"
+            }
+          ],
+          "description": "Seat limits the badge to a seat's faction or side."
+        },
+        "when": {
+          "description": "When is \"during\" (awarded as soon as it holds, from what happens in play) or \"end\" (checked once the game has finished).",
+          "type": "string"
+        },
+        "won": {
+          "description": "Won: the earning seat won the game.",
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "BadgeDistinct": {
+      "additionalProperties": false,
+      "description": "BadgeDistinct is how many different opponents or families an account has played, in games that count.",
+      "properties": {
+        "at_least": {
+          "type": "integer"
+        },
+        "of": {
+          "description": "Of is \"opponents\" or \"families\".",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "BadgeGame": {
+      "additionalProperties": false,
+      "description": "BadgeGame limits a badge to one family (a platform badge) or one game of a family (a variant, by its id).",
+      "properties": {
+        "family": {
+          "type": "string"
+        },
+        "variant": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "BadgeSeat": {
+      "additionalProperties": false,
+      "description": "BadgeSeat limits a badge to the earning seat's faction, or its side (the seat as the definition numbers it).",
+      "properties": {
+        "faction": {
+          "type": "string"
+        },
+        "side": {
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
     "Board": {
       "additionalProperties": false,
       "description": "Board describes the game's board graph as exactly one of: a built-in Generator (e.g. a grid), or an explicit hand-authored graph given as Positions and Edges (the escape hatch for irregular/hex boards). Which form is actually used is validated by the future board/catalog packages, not here.",
@@ -644,6 +797,13 @@
           "description": "Actions declares the non-movement-primitive things a player may do on their turn (placing a piece from the reserve, moving a stack, ...). Pieces whose movement names a primitive additionally get an implicit \"step\" action.",
           "items": {
             "$ref": "#/$defs/ActionDef"
+          },
+          "type": "array"
+        },
+        "badges": {
+          "description": "Badges are the game's own badges (ADR 0130), known as family.id.",
+          "items": {
+            "$ref": "#/$defs/BadgeDef"
           },
           "type": "array"
         },

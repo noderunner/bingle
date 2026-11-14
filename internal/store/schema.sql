@@ -555,3 +555,23 @@ CREATE TABLE IF NOT EXISTS tutorials_done (
     done_at    TEXT NOT NULL,
     PRIMARY KEY (account_id, tutorial)
 );
+
+-- A badge an account has earned (ADR 0130): one row per account and badge,
+-- never changed but to become visible. The badge's name and description are
+-- kept as they were, and the game by id and room without a reference, since
+-- retention may delete it. visible_at is NULL while the award waits for its
+-- game to end (an award that depends on a secret fact).
+CREATE TABLE IF NOT EXISTS badge_awards (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    account_id  INTEGER NOT NULL REFERENCES accounts(id),
+    badge       TEXT NOT NULL,
+    name        TEXT NOT NULL,
+    description TEXT NOT NULL,
+    family      TEXT NOT NULL DEFAULT '',
+    game_id     INTEGER NOT NULL DEFAULT 0,
+    room_code   TEXT NOT NULL DEFAULT '',
+    detail      TEXT NOT NULL DEFAULT '',
+    awarded_at  TEXT NOT NULL,
+    visible_at  TEXT,
+    UNIQUE (account_id, badge)
+);
