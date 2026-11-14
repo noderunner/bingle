@@ -19,8 +19,12 @@ Plain ES modules served from `internal/web/static` — no build step
 * **Player** (`/players/{handle}`, `js/player.js`): an account's badges as others
   see them, in `#player-badges` (only those held; `.badge-also` marks one the
   reader holds too), and its listed ratings. A guest is asked to sign in.
-  Clicking a badge anywhere opens `#badge-dialog` (`js/badges.js`), with a link
-  `#badge-dialog-room` to the game for its holder alone.
+  A badge is drawn (`js/badges.js`) as `.badge-medal`: its game's icon
+  (`img.badge-icon`, from the game's `web.yaml`), or the page's trophy
+  (`svg[data-icon="trophy"]`) for a platform badge or one with no icon, greyed out
+  (`.unearned`) when not earned yet, with `.medal-bot` at its lower left and
+  `.medal-people` (a gold star) at its lower right for the ways it was earned. A
+  badge opens nothing: its item says all there is.
 * **Game** (`/game/{code}`, `js/game.js`): board, players, hands, move list,
   history, undo/resign, analysis, rules, export.
 
@@ -772,12 +776,14 @@ preview:                       # a game in play for the list of games and the se
   - {position: e5, piece: red, color: red}
 data:                          # the game's page script's own, in a shape of its own; nothing
   fill: {asia: '#bc4420'}      # else reads or checks it (Cthulhu Wars' area colours)
+badges:                        # each of the game's own badges' icon (ADR 0130), by its id in the game:
+  deep-call: {icon: guide/glyphs/gc.svg}   # a picture among the module's files; the family's only
 variants:                      # a merge patch per game of the family, by id
   blooms-8: {board: {style: points}}
 ```
 
 `look.Check` holds a look to its games: every seat, piece, tint, badge, zone, suit and area it names
-is the game's, and a game drawn as areas (its variant's board over the family's) has a canvas and
+is the game's, every badge icon a picture among its files, and a game drawn as areas (its variant's board over the family's) has a canvas and
 an outline for every position. A position a derived game adds (Cthulhu Wars' Moon) is the page
 script's to outline, through its `outlineArea`.
 

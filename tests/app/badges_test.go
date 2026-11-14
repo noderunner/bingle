@@ -5,11 +5,14 @@ package app_test
 
 import (
 	"testing"
+	"testing/fstest"
 	"time"
 
 	"github.com/chromedp/chromedp"
 
 	"github.com/noderunner/bingle/internal/auth"
+	"github.com/noderunner/bingle/internal/engine/catalog"
+	"github.com/noderunner/bingle/internal/web/look"
 )
 
 type badgesView struct {
@@ -91,12 +94,14 @@ func TestBadges_TheProfileListsThem(t *testing.T) {
 	waitJS(t, ctx, "no badges yet", `document.getElementById("badges-box").hidden === false && document.getElementById("badges-empty").hidden === false`, 15*time.Second)
 	// The badges not yet earned are there too, greyed out.
 	waitJS(t, ctx, "the badges to earn", `document.querySelector('#badges-list li[data-badge="first-win"][data-earned="false"].unearned') !== null`, 15*time.Second)
-	clickSel(t, ctx, `#badges-list li[data-badge="well-met"] .badge-open`)
-	waitJS(t, ctx, "its details", `document.querySelector('#badge-dialog[data-badge="well-met"]') !== null`, 5*time.Second)
-	if got := evalString(t, ctx, `document.getElementById("badge-dialog-earned").textContent`); got != "Not earned yet." {
-		t.Errorf("an unearned badge's details say %q", got)
+	// A badge is drawn with the trophy, its game having no icon of its own,
+	// and is no button: there are no details to open.
+	if !evalBool(t, ctx, `document.querySelector('#badges-list li[data-badge="well-met"] .badge-medal.unearned svg[data-icon="trophy"]') !== null`) {
+		t.Error("a platform badge is not drawn with the trophy")
 	}
-	clickSel(t, ctx, "#badge-dialog-close")
+	if evalBool(t, ctx, `document.querySelector('#badges-list li button, #badge-dialog') !== null`) {
+		t.Error("a badge on the shelf can be clicked")
+	}
 
 	winFirst(t, ana, "ana", bea, "bea")
 	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/profile")); err != nil {
@@ -234,11 +239,6 @@ func TestBadges_APlayersPage(t *testing.T) {
 	if !evalBool(t, bea, `document.querySelector('#player-badges li[data-badge="first-win"] .badge-also') !== null`) {
 		t.Error("her page does not say the reader holds it too")
 	}
-	clickSel(t, bea, `#player-badges li[data-badge="first-win"] .badge-open`)
-	waitJS(t, bea, "its details", `document.getElementById("badge-dialog-title")?.textContent === "First Win"`, 5*time.Second)
-	if evalBool(t, bea, `document.querySelector("#badge-dialog .badge-dialog-room") !== null`) {
-		t.Error("another player's badge links the room it was earned in")
-	}
 
 	if err := chromedp.Run(bea, chromedp.Navigate(base+"/players/nobody")); err != nil {
 		t.Fatal(err)
@@ -368,8 +368,39 @@ func TestBadges_TheWaysABadgeWasEarned(t *testing.T) {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "earned both ways", `document.querySelectorAll('`+item+`').length === 1 && document.querySelector('`+item+`[data-ways="people bots"] .medal-bot') !== null && document.querySelector('`+item+` .medal-people') !== null`, 15*time.Second)
-	clickSel(t, ctx, item+` .badge-open`)
-	waitJS(t, ctx, "both ways in its details", `document.querySelectorAll('#badge-dialog-earned [data-way]').length === 2`, 5*time.Second)
+}
+
+// A game draws its own badges with the icons its web.yaml names among its
+// files, the rest with the trophy, and a medal's marks sit on that icon.
+func TestBadges_AGameDrawsItsBadgesIcons(t *testing.T) {
+	a, base := membersServer(t)
+	svg := `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><circle cx="5" cy="5" r="4" fill="green"/></svg>`
+	if err := a.Catalog().RegisterModule(catalog.Module{
+		ID:         "stones-badges",
+		Definition: []byte(badgesGameJSON),
+		Assets:     fstest.MapFS{"icons/builder.svg": {Data: []byte(svg)}},
+		Web:        []byte(`{"badges": {"builder": {"icon": "icons/builder.svg"}}}`),
+	}); err != nil {
+		t.Fatal(err)
+	}
+	web := []byte(`{"badges": {"builder": {"icon": "icons/builder.svg"}}}`)
+	cg, _ := a.Catalog().Get("stones-badges")
+	if err := look.Check(web, "stones-badges", map[string]*catalog.CompiledGame{"stones-badges": cg}); err != nil {
+		t.Fatal(err)
+	}
+	ana := member(t, a, base, "ana")
+	ctx, cancel := newChromedpContext(t, 60*time.Second)
+	defer cancel()
+	signInChrome(t, ctx, base, ana.cookie(auth.SessionCookie))
+	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/profile#badges")); err != nil {
+		t.Fatal(err)
+	}
+	builder := `#badges-list li[data-badge="stones-badges.builder"] .badge-medal`
+	waitJS(t, ctx, "the game's icon", `document.querySelector('`+builder+` img.badge-icon[src="/api/game-defs/stones-badges/assets/icons/builder.svg"]') !== null`, 15*time.Second)
+	waitJS(t, ctx, "it loads", `document.querySelector('`+builder+` img').complete && document.querySelector('`+builder+` img').naturalWidth > 0`, 10*time.Second)
+	if !evalBool(t, ctx, `document.querySelector('#badges-list li[data-badge="stones-badges.bot-beater"] .badge-medal svg[data-icon="trophy"]') !== null`) {
+		t.Error("a game's badge without an icon is not drawn with the trophy")
+	}
 }
 
 // At a seat, a player's @handle opens the menu of their badges and the way to

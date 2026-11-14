@@ -132,8 +132,10 @@ Every account sees every account's badges; a guest sees none.
   beside any friend request it offers.
 - **A game's rules window** has a *Badges* tab when the game has badges of its own, with those the
   reader holds marked.
-- A badge clicked anywhere opens its details: what it is for, its game, the kind of game that counts
-  for it, and where and when it was earned (the room for its holder alone).
+- **A badge's icon is its game's**, named in the game's `web.yaml` under `badges` (a picture among
+  its files, [ui.md](ui.md#a-games-look-webyaml)); a platform badge, and a game's badge with no
+  icon, is drawn with the page's own trophy. Cthulhu Wars draws each badge with the glyph of its
+  faction.
 - **`GET /api/badges`** and the MCP tool **`list_badges`** list every badge there is to earn, for
   anybody: a badge's description is no secret. **`GET /api/players/{handle}/badges`**
   ([api.md](api.md)) and the MCP tool **`get_badges`** ([mcp.md](mcp.md)) list what an account holds,

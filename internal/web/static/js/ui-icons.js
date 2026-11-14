@@ -96,3 +96,13 @@ export const botIcon = (size) =>
 		s("path", { d: "M12 8V4.5M9.2 13h.1M14.7 13h.1M9.5 16.2h5" }),
 		s("circle", { cx: 12, cy: 3.8, r: 1 })
 	);
+
+/** A trophy: a badge drawn by no game of its own (ADR 0130). */
+export const trophyIcon = (size) =>
+	icon(
+		"trophy",
+		size,
+		s("path", { d: "M7.5 4h9v5.5a4.5 4.5 0 0 1-9 0V4z" }),
+		s("path", { d: "M7.5 6H5a2.5 2.5 0 0 0 2.6 4.2M16.5 6H19a2.5 2.5 0 0 1-2.6 4.2" }),
+		s("path", { d: "M12 14v3.2M8.5 20.5h7M9.5 20.5c0-1.9 1-3.3 2.5-3.3s2.5 1.4 2.5 3.3" })
+	);

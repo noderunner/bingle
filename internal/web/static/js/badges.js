@@ -5,7 +5,7 @@
 
 import { h, clear, store } from "./util.js";
 import { api } from "./api.js";
-import { botIcon } from "./ui-icons.js";
+import { botIcon, trophyIcon } from "./ui-icons.js";
 
 const FILTER_KEY = "bingle.badges.filter";
 const SHOWN_KEY = "bingle.badges.shown";
@@ -76,82 +76,51 @@ function joined(list, held, all) {
 /** Where a badge belongs among the filters: the platform, or its game. */
 const groupOf = (b) => (b.platform ? "platform" : b.family || "platform");
 
-/** What kind of game a badge counts, in words. */
-function kindText(b) {
-	switch (b.kind) {
-		case "rated":
-			return "Counts rated games only.";
-		case "bot":
-			return `Earned in games with computer opponents: beat ${b.bot || "the named bot"} or a stronger one.`;
-		case "player":
-			return b.bots
-				? "Earned two ways: in a game of people only, which gives it the gold star, and in a game with a computer opponent at the table, which gives it the bot."
-				: "Earned in games of people only.";
-		default:
-			return "";
-	}
-}
+// ---- icons: a game's own, from its web.yaml (ADR 0124), or the trophy ----------
 
-/** One badge's details, in a dialog of its own. */
-export function showBadge(b, { mine = false } = {}) {
-	document.getElementById("badge-dialog")?.remove();
-	const a = b.award;
-	const lines = [h("p", {}, b.description)];
-	const facts = [];
-	facts.push(b.platform ? (b.game ? `A platform badge, earned in ${b.game}.` : "A platform badge, earned in any game.") : `A badge of ${b.game}.`);
-	if (kindText(b)) facts.push(kindText(b));
-	if (b.when) facts.push(b.when === "during" ? "Awarded the moment it happens." : "Checked when the game ends.");
-	lines.push(h("p", { class: "small muted" }, facts.join(" ")));
-	if (a) {
-		const both = b.ways.people && b.ways.bots;
-		const earnedBox = h("div", { id: "badge-dialog-earned" });
-		for (const [way, label] of [["people", "With people only"], ["bots", "With computer opponents"]]) {
-			const w = b.ways[way];
-			if (!w) continue;
-			const where = [w.game, earned(w.awarded_at)].filter(Boolean).join(", ");
-			const line = h("p", { class: "small", "data-way": way }, `${label}: earned ${where ? "in " + where : ""}.`);
-			if (w.room) line.append(" ", h("a", { href: `/game/${encodeURIComponent(w.room)}`, class: "badge-dialog-room" }, "Open the game"));
-			earnedBox.append(line);
-			if (w.hidden) earnedBox.append(h("p", { class: "small muted" }, "Others see this when that game ends."));
-		}
-		lines.push(earnedBox);
-		if (mine && b.bots && !both) {
-			lines.push(h("p", { class: "small muted" }, b.ways.people ? "Not yet earned in a game with computer opponents." : "Not yet earned in a game of people only."));
-		}
-	} else if (mine) {
-		lines.push(h("p", { class: "small muted", id: "badge-dialog-earned" }, "Not earned yet."));
-	}
-	const close = h("button", { type: "button", class: "ghost", id: "badge-dialog-close" }, "Close");
-	const dlg = h(
-		"dialog",
-		{ id: "badge-dialog", class: "badge-dialog", "aria-labelledby": "badge-dialog-title", "data-badge": b.badge },
-		h("div", { class: "badge-dialog-head" }, medal(b, !a && mine, 22), h("h2", { id: "badge-dialog-title" }, b.name)),
-		...lines,
-		h("div", { class: "row" }, close)
+const looks = new Map();
+const icons = new Map();
+
+/**
+ * Reads the icons of the badges of every game among items, once a page:
+ * a game's web.yaml names a picture among its files for each of its badges
+ * it draws (badges.<id>.icon).
+ */
+export async function loadIcons(items) {
+	const families = [...new Set(items.filter((b) => !b.platform && b.family && b.badge.includes(".")).map((b) => b.family))];
+	await Promise.all(
+		families.map((family) => {
+			if (!looks.has(family)) {
+				looks.set(
+					family,
+					api
+						.gameLook(family)
+						.then((look) => {
+							for (const [id, b] of Object.entries((look && look.badges) || {})) {
+								if (b && b.icon) icons.set(`${family}.${id}`, `/api/game-defs/${encodeURIComponent(family)}/assets/${encodeURI(b.icon)}`);
+							}
+						})
+						.catch(() => {})
+				);
+			}
+			return looks.get(family);
+		})
 	);
-	close.addEventListener("click", () => dlg.close());
-	dlg.addEventListener("click", (ev) => {
-		if (ev.target === dlg) dlg.close();
-	});
-	dlg.addEventListener("close", () => dlg.remove());
-	document.body.append(dlg);
-	if (typeof dlg.showModal === "function") dlg.showModal();
-	else dlg.setAttribute("open", "");
-	close.focus();
-	return dlg;
 }
 
 /**
- * A badge's medal, with a mark in its corners for each way it was earned: a
- * bot at the lower left in a game with computer opponents, a gold star at the
- * lower right in a game of people only.
+ * A badge's medal: its game's icon for it, or the trophy, with a mark in its
+ * lower corners, like a notification badge, for each way it was earned: a bot
+ * at the left in a game with computer opponents, a gold star at the right in
+ * a game of people only. Greyed out when not earned yet.
  */
 export function medal(b, unearned, markSize = 14) {
 	const ways = b.ways || {};
+	const src = icons.get(b.badge);
 	return h(
 		"span",
-		{ class: "badge-medal" + (unearned ? " unearned" : ""), "aria-hidden": "true" },
-		"★",
+		{ class: "badge-medal" + (unearned ? " unearned" : "") + (src ? " has-icon" : ""), "aria-hidden": "true" },
+		src ? h("img", { class: "badge-icon", src, alt: "", decoding: "async" }) : trophyIcon(),
 		ways.bots ? h("span", { class: "medal-mark medal-bot", title: "Earned in a game with computer opponents" }, botIcon(markSize)) : null,
 		ways.people ? h("span", { class: "medal-mark medal-people", title: "Earned in a game of people only" }, "★") : null
 	);
@@ -160,12 +129,13 @@ export function medal(b, unearned, markSize = 14) {
 /** How a held badge was earned, in words for a screen reader. */
 function waysText(b) {
 	const w = b.ways || {};
-	if (w.people && w.bots) return ", earned with people only and with computer opponents";
-	if (w.bots) return ", earned with computer opponents";
+	if (w.people && w.bots) return "Earned with people only and with computer opponents.";
+	if (w.bots) return "Earned with computer opponents.";
+	if (w.people) return "Earned with people only.";
 	return "";
 }
 
-/** One badge on a shelf: a button that opens its details. */
+/** One badge on a shelf: its medal, name and what it is for, and where and when it was earned. */
 export function badgeItem(b, { mine = false, alsoMine = false } = {}) {
 	const a = b.award;
 	const unearned = !a && mine;
@@ -178,18 +148,15 @@ export function badgeItem(b, { mine = false, alsoMine = false } = {}) {
 			"data-earned": a ? "true" : "false",
 			"data-ways": [b.ways.people && "people", b.ways.bots && "bots"].filter(Boolean).join(" "),
 		},
+		medal(b, unearned),
 		h(
-			"button",
-			{ type: "button", class: "badge-open", onclick: () => showBadge(b, { mine }), "aria-label": `${b.name}${unearned ? ", not earned yet" : waysText(b)}: details` },
-			medal(b, unearned),
-			h(
-				"span",
-				{ class: "badge-body" },
-				h("strong", { class: "badge-name" }, b.name),
-				h("span", { class: "small" }, b.description),
-				h("span", { class: "small muted" }, where + (a && a.hidden ? " · others see it when the game ends" : "")),
-				alsoMine ? h("span", { class: "small badge-also" }, "You have this too") : null
-			)
+			"span",
+			{ class: "badge-body" },
+			h("strong", { class: "badge-name" }, b.name),
+			h("span", { class: "small" }, b.description),
+			where ? h("span", { class: "small muted" }, where + (a && a.hidden ? " · others see it when the game ends" : "")) : null,
+			waysText(b) ? h("span", { class: "sr-only" }, waysText(b)) : null,
+			alsoMine ? h("span", { class: "small badge-also" }, "You have this too") : null
 		)
 	);
 }
@@ -215,6 +182,7 @@ export async function paintShelf(box, { held, mine = false, mineHeld = null, fam
 	const list = await badgeCatalog();
 	let items = joined(list, held, mine);
 	if (family) items = items.filter((b) => !b.platform && b.family === family);
+	await loadIcons(items);
 	const ownIds = new Set((mineHeld || []).map((a) => a.badge));
 
 	const groups = [];

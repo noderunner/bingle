@@ -145,6 +145,7 @@ export const api = {
 	playerRatings: (handle) => call(`/api/players/${enc(handle)}/ratings`),
 	playerBadges: (handle) => call(`/api/players/${enc(handle)}/badges`),
 	badges: () => call("/api/badges"),
+	gameLook: (id) => call(`/api/game-defs/${enc(id)}/web`),
 	me: () => call("/auth/me"),
 	guestKey: () => call("/api/guest/key"),
 	adoptGuest: (key) => call("/api/guest/adopt", { method: "POST", body: { key } }),

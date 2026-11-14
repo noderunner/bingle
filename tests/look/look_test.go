@@ -275,3 +275,33 @@ func TestNoDefinitionCarriesItsLook(t *testing.T) {
 		}
 	}
 }
+
+// A badge's icon is one of the game's badges, a picture among its files, and
+// the family's alone.
+func TestCheckHoldsBadgeIcons(t *testing.T) {
+	def := `{"id": "icons", "name": "Icons",
+	  "board": {"generator": {"type": "grid", "width": 3, "height": 3, "adjacency": "orthogonal4", "labels": "algebraic"}},
+	  "seats": [{"seat": 1, "color": "black"}, {"seat": 2, "color": "white"}],
+	  "pieces": {"stone": {}}, "turn_order": {"type": "round-robin", "seats": [1, 2]},
+	  "actions": [{"id": "place", "type": "place", "source": "supply"}],
+	  "badges": [{"id": "won", "name": "Won", "description": "Win.", "when": "end", "won": true}],
+	  "win_condition": {"type": "none"}}`
+	cat := catalog.NewCatalog()
+	if err := cat.RegisterModule(catalog.Module{ID: "icons", Definition: []byte(def), Assets: fstest.MapFS{"won.svg": {Data: []byte("<svg/>")}}}); err != nil {
+		t.Fatal(err)
+	}
+	cg, _ := cat.Get("icons")
+	games := map[string]*catalog.CompiledGame{"icons": cg}
+	if err := look.Check([]byte(`{"badges": {"won": {"icon": "won.svg"}}}`), "icons", games); err != nil {
+		t.Errorf("a good icon: %v", err)
+	}
+	for _, c := range []struct{ web, want string }{
+		{`{"badges": {"lost": {"icon": "won.svg"}}}`, "not one of the game's badges"},
+		{`{"badges": {"won": {"icon": "nowhere.svg"}}}`, "nowhere.svg"},
+		{`{"badges": {"won": {}}}`, "has no icon"},
+	} {
+		if err := look.Check([]byte(c.web), "icons", games); err == nil || !strings.Contains(err.Error(), c.want) {
+			t.Errorf("%s: %v, want an error saying %q", c.web, err, c.want)
+		}
+	}
+}
