@@ -72,7 +72,8 @@ func (m *Manager) checkDuring(ctx context.Context, d store.BadgesDue) error {
 	game := d.Game
 	done := func() error {
 		m.mx.BadgeCheck(metrics.BadgeSkipped)
-		return m.store.RecordDuring(ctx, game.ID, d.Seq, nil)
+		_, err := m.store.RecordDuring(ctx, game.ID, d.Seq, nil)
+		return err
 	}
 	compiled, ok := m.catalog.Get(game.GameDefID)
 	if !ok || game.Tutorial != "" {
@@ -114,9 +115,11 @@ func (m *Manager) checkDuring(ctx context.Context, d store.BadgesDue) error {
 			})
 		}
 	}
-	if err := m.store.RecordDuring(ctx, game.ID, d.Seq, awards); err != nil {
+	written, err := m.store.RecordDuring(ctx, game.ID, d.Seq, awards)
+	if err != nil {
 		return err
 	}
 	m.mx.BadgeCheck(metrics.BadgeChecked)
+	m.announce(ctx, written)
 	return nil
 }

@@ -4,6 +4,12 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.107.0 - 2026-11-14
+
+### Bingle Core 0.107.0
+- When you earn a badge, you're told on the spot, on whatever Bingle page you have open, and by a browser notification if the page is in the background and you've allowed them. The game's chat says so too, for everyone at the table to see. A badge that would give away something hidden is announced in the chat only when the game ends.
+- **For programs:** `/ws-dm` pushes a `badge` event, `{badge, name, description, room, game, hidden?}`, to the account that earned it. A chat line the server wrote has `server: true` and no seat (ADR 0130).
+
 ## 0.106.0 - 2026-11-13
 
 ### Bingle Core 0.106.0

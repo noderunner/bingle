@@ -41,6 +41,9 @@ type ChatLine struct {
 	// Handle is the account that said it, and Guest says a guest did.
 	Handle string `json:"handle,omitempty"`
 	Guest  bool   `json:"guest,omitempty"`
+	// Server says the server wrote it, as it announces a badge (ADR 0130);
+	// Seat is then 0.
+	Server bool `json:"server,omitempty"`
 
 	principal string
 }
@@ -169,9 +172,16 @@ func (m *Manager) ChatLog(ctx context.Context, roomCode string, afterID int64, l
 	return out, nil
 }
 
+// serverSeat is the seat stored with a line the server wrote; nobody can
+// speak from it.
+const serverSeat = -1
+
 func chatLineOf(m store.ChatMessage, color string) ChatLine {
-	if m.Seat == 0 {
+	if m.Seat <= 0 {
 		color = ""
+	}
+	if m.Seat == serverSeat {
+		return ChatLine{ID: m.ID, Name: m.Name, Text: m.Body, At: m.CreatedAt, Server: true}
 	}
 	return ChatLine{ID: m.ID, Seat: m.Seat, Color: color, Name: m.Name, Text: m.Body, At: m.CreatedAt, principal: m.PrincipalID}
 }

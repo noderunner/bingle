@@ -42,7 +42,7 @@ func TestBadgesDueFollowTheMovesThatReportFacts(t *testing.T) {
 	if len(d) != 1 || d[0].Game.ID != game.ID || d[0].Seq != 2 {
 		t.Fatalf("due = %+v, want the game up to move 2", d)
 	}
-	if err := s.RecordDuring(ctx, game.ID, 2, nil); err != nil {
+	if _, err := s.RecordDuring(ctx, game.ID, 2, nil); err != nil {
 		t.Fatal(err)
 	}
 	if d := due(); len(d) != 0 {

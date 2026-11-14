@@ -190,7 +190,7 @@ export function titleCase(str) {
 }
 
 let toastTimer = null;
-/** Brief non-blocking message at the bottom of the page. */
+/** Brief non-blocking message at the bottom of the page. kind "error" or "long" keeps it up longer. */
 export function toast(message, kind = "") {
 	let el = document.getElementById("toast");
 	if (!el) {
@@ -200,7 +200,7 @@ export function toast(message, kind = "") {
 	el.textContent = message;
 	el.className = "toast" + (kind ? " " + kind : "");
 	clearTimeout(toastTimer);
-	toastTimer = setTimeout(() => el.classList.add("hidden"), kind === "error" ? 6000 : 2800);
+	toastTimer = setTimeout(() => el.classList.add("hidden"), kind === "error" || kind === "long" ? 6000 : 2800);
 }
 
 const brandMeta = () => document.querySelector('meta[name="bingle-brand"]');

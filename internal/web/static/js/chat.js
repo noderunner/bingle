@@ -216,6 +216,16 @@ function clock(iso) {
 }
 
 function lineNode(line, mine) {
+	// A line from the server, such as a badge earned (ADR 0130), names no seat.
+	if (line.server) {
+		return h(
+			"li",
+			{ class: "chat-line server", "data-id": line.id },
+			h("span", { class: "chat-who" }, line.name),
+			h("span", { class: "chat-text" }, line.text),
+			h("time", { class: "chat-time muted small" }, clock(line.at))
+		);
+	}
 	return h(
 		"li",
 		{ class: "chat-line" + (mine ? " mine" : "") + (line.seat ? "" : " spectator"), "data-id": line.id, "data-seat": line.seat || null },
