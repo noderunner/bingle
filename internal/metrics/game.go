@@ -92,6 +92,16 @@ func (m *Metrics) RatedResult(outcome RatedOutcome) {
 	m.ratedResults.WithLabelValues(string(outcome)).Inc()
 }
 
+// FactsUndeclared counts facts a game's rules reported without declaring them
+// (ADR 0129). They are dropped, so a badge that wanted them never comes: any
+// count above zero is a bug in that game's rules.
+func (m *Metrics) FactsUndeclared(game string, n int) {
+	if m == nil || n == 0 {
+		return
+	}
+	m.factsDropped.WithLabelValues(game).Add(float64(n))
+}
+
 // safeReason keeps the end-reason label a closed set.
 func safeReason(reason string) string {
 	if reason == "" {

@@ -74,6 +74,8 @@ type ResolvedAction struct {
 	ID    string
 	Type  string
 	Label string
+	// Fact is reported for the mover each time the action is applied.
+	Fact string
 
 	// card-move: the seat zone played from, the table zone the card is
 	// passed on through, and whether a stuck seat spends a card.
@@ -328,6 +330,8 @@ const (
 // TurnEffect is one compiled end_of_turn effect.
 type TurnEffect struct {
 	Effect, Condition, Whose, CountIn, Tint string
+	// Fact is reported for the mover when the effect removes something.
+	Fact string
 }
 
 // DealStep is one compiled step of the deal: a shuffle of a deck into a table

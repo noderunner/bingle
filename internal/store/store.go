@@ -236,6 +236,9 @@ var columnMigrations = []struct{ table, column, ddl string }{
 	// before impulses were counted, which session.Manager.RegroupMoves numbers.
 	{"moves", "ply", "INTEGER NOT NULL DEFAULT 0"},
 	{"games", "ply", "INTEGER NOT NULL DEFAULT 0"},
+	// facts: what a selection did that the rules report, as JSON (ADR 0129);
+	// NULL for none, and on every row written before facts were reported.
+	{"moves", "facts", "TEXT"},
 }
 
 func addMissingColumns(db *sql.DB) error {

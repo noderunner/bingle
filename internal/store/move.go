@@ -45,6 +45,9 @@ type MoveInput struct {
 	// EndsImpulse says this selection ends its impulse (state.ImpulseEnds):
 	// the game's ply moves on with it. The row's own ply is the game's + 1.
 	EndsImpulse bool
+	// Facts are what the selection did that the rules report, as JSON
+	// (ADR 0129); "" for none, stored as NULL.
+	Facts string
 }
 
 // Move mirrors one row of the moves table (see schema.sql).
@@ -70,6 +73,9 @@ type Move struct {
 	// Locked: the move rolled dice (or drew a hidden token).
 	Locked    bool
 	CreatedAt string
+	// Facts: what the selection did that the rules report, as JSON
+	// (ADR 0129); "" for none.
+	Facts string
 }
 
 // RecordMove inserts one moves row (seq = the game's current move_seq + 1,
@@ -111,9 +117,9 @@ func (s *Store) RecordMove(ctx context.Context, gameID int64, in MoveInput) (Mov
 	}
 
 	res, err := tx.exec(ctx, "RecordMove.insertMove",
-		`INSERT INTO moves (game_id, seq, seat, color, from_position, to_position, captured_position, resulting_state, notation, move_json, auto, locked, autoplay, ply)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		gameID, newSeq, in.Seat, in.Color, in.From, in.To, captured, in.ResultingBoardState, in.Notation, in.MoveJSON, boolToInt(in.Auto), boolToInt(in.Locked), boolToInt(in.AutoPlay), rowPly,
+		`INSERT INTO moves (game_id, seq, seat, color, from_position, to_position, captured_position, resulting_state, notation, move_json, auto, locked, autoplay, ply, facts)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		gameID, newSeq, in.Seat, in.Color, in.From, in.To, captured, in.ResultingBoardState, in.Notation, in.MoveJSON, boolToInt(in.Auto), boolToInt(in.Locked), boolToInt(in.AutoPlay), rowPly, sql.NullString{String: in.Facts, Valid: in.Facts != ""},
 	)
 	if err != nil {
 		return Move{}, fmt.Errorf("insert moves row: %w", err)
@@ -174,7 +180,7 @@ func (s *Store) RecordMove(ctx context.Context, gameID int64, in MoveInput) (Mov
 // encoding produces "[]", never "null".
 func (s *Store) ListMoves(ctx context.Context, gameID int64, sinceSeq int) ([]Move, error) {
 	rows, err := s.query(ctx, "ListMoves",
-		`SELECT id, game_id, seq, seat, color, from_position, to_position, captured_position, resulting_state, notation, move_json, auto, locked, autoplay, created_at, ply
+		`SELECT id, game_id, seq, seat, color, from_position, to_position, captured_position, resulting_state, notation, move_json, auto, locked, autoplay, created_at, ply, facts
 		 FROM moves WHERE game_id = ? AND seq > ? ORDER BY seq`,
 		gameID, sinceSeq,
 	)
@@ -188,12 +194,14 @@ func (s *Store) ListMoves(ctx context.Context, gameID int64, sinceSeq int) ([]Mo
 		var m Move
 		var captured sql.NullString
 		var auto, locked, autoplay int
-		if err := rows.Scan(&m.ID, &m.GameID, &m.Seq, &m.Seat, &m.Color, &m.From, &m.To, &captured, &m.ResultingState, &m.Notation, &m.MoveJSON, &auto, &locked, &autoplay, &m.CreatedAt, &m.Ply); err != nil {
+		var facts sql.NullString
+		if err := rows.Scan(&m.ID, &m.GameID, &m.Seq, &m.Seat, &m.Color, &m.From, &m.To, &captured, &m.ResultingState, &m.Notation, &m.MoveJSON, &auto, &locked, &autoplay, &m.CreatedAt, &m.Ply, &facts); err != nil {
 			return nil, fmt.Errorf("scanning moves row for game_id=%d: %w", gameID, err)
 		}
 		m.Auto = auto != 0
 		m.Locked = locked != 0
 		m.AutoPlay = autoplay != 0
+		m.Facts = facts.String
 		if captured.Valid {
 			v := captured.String
 			m.Captured = &v
@@ -211,18 +219,20 @@ func scanMoveByID(ctx context.Context, q rowQuerier, name string, id int64) (Mov
 	var m Move
 	var captured sql.NullString
 	var auto, locked, autoplay int
+	var facts sql.NullString
 
 	row := q.queryRow(ctx, name,
-		`SELECT id, game_id, seq, seat, color, from_position, to_position, captured_position, resulting_state, notation, move_json, auto, locked, autoplay, created_at, ply
+		`SELECT id, game_id, seq, seat, color, from_position, to_position, captured_position, resulting_state, notation, move_json, auto, locked, autoplay, created_at, ply, facts
 		 FROM moves WHERE id = ?`,
 		id,
 	)
-	if err := row.Scan(&m.ID, &m.GameID, &m.Seq, &m.Seat, &m.Color, &m.From, &m.To, &captured, &m.ResultingState, &m.Notation, &m.MoveJSON, &auto, &locked, &autoplay, &m.CreatedAt, &m.Ply); err != nil {
+	if err := row.Scan(&m.ID, &m.GameID, &m.Seq, &m.Seat, &m.Color, &m.From, &m.To, &captured, &m.ResultingState, &m.Notation, &m.MoveJSON, &auto, &locked, &autoplay, &m.CreatedAt, &m.Ply, &facts); err != nil {
 		return Move{}, err
 	}
 	m.Auto = auto != 0
 	m.Locked = locked != 0
 	m.AutoPlay = autoplay != 0
+	m.Facts = facts.String
 
 	if captured.Valid {
 		v := captured.String

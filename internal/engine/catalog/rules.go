@@ -30,6 +30,9 @@ func compileRules(cg *CompiledGame) error {
 	if err := compileDeal(cg); err != nil {
 		return err
 	}
+	if err := checkFacts(def); err != nil {
+		return err
+	}
 
 	if def.Engine == "ruleset" {
 		// A ruleset owns moves, opening and scoring; the document only
@@ -195,7 +198,10 @@ func compileActions(cg *CompiledGame) (map[string]bool, error) {
 		}
 		seen[ad.ID] = true
 
-		ra := ResolvedAction{ID: ad.ID, Type: ad.Type, Label: ad.Label}
+		ra := ResolvedAction{ID: ad.ID, Type: ad.Type, Label: ad.Label, Fact: ad.Fact}
+		if err := factDeclared(def, ad.Fact); err != nil {
+			return nil, fmt.Errorf("catalog: action %q: %w", ad.ID, err)
+		}
 		if ra.Label == "" {
 			ra.Label = ad.ID
 		}
@@ -707,7 +713,10 @@ func compileEndOfTurn(cg *CompiledGame) error {
 				return fmt.Errorf("catalog: end_of_turn %d: display.tints declares no %q", i, e.Tint)
 			}
 		}
-		cg.EndOfTurn = append(cg.EndOfTurn, TurnEffect{Effect: e.Effect, Condition: e.Condition, Whose: whose, CountIn: e.CountIn, Tint: e.Tint})
+		if err := factDeclared(def, e.Fact); err != nil {
+			return fmt.Errorf("catalog: end_of_turn %d: %w", i, err)
+		}
+		cg.EndOfTurn = append(cg.EndOfTurn, TurnEffect{Effect: e.Effect, Condition: e.Condition, Whose: whose, CountIn: e.CountIn, Tint: e.Tint, Fact: e.Fact})
 	}
 	return nil
 }

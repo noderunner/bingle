@@ -90,6 +90,11 @@ type GameDefinition struct {
 	// before it is judged (ADR 0116).
 	EndOfTurn []EndOfTurnDef `json:"end_of_turn,omitempty"`
 
+	// Facts lists, by name, the facts the game's rules can report about what
+	// a selection did (ADR 0129): a declared game's actions and effects, or a
+	// Go ruleset's Apply. A badge may count only these.
+	Facts map[string]FactDef `json:"facts,omitempty"`
+
 	WinCondition WinConditionDef `json:"win_condition"`
 
 	// Notation selects the move-notation style: "" / "generic", or "ptn"
@@ -429,6 +434,18 @@ type EndOfTurnDef struct {
 	// Tint is a key of display.tints: the board marks every group meeting
 	// the condition, whoever's it is.
 	Tint string `json:"tint,omitempty"`
+	// Fact is a fact of the game's facts, reported for the mover each time
+	// the effect removes something (once for the effect, ADR 0129).
+	Fact string `json:"fact,omitempty"`
+}
+
+// FactDef describes one fact a game's rules can report (ADR 0129).
+type FactDef struct {
+	// Description says what the fact means, for whoever writes a badge.
+	Description string `json:"description"`
+	// Secret marks a fact whose mere existence tells something hidden (a
+	// card drawn): nothing shows it to anyone but its seat before the end.
+	Secret bool `json:"secret,omitempty"`
 }
 
 // Palette is every colour the seat plays: Colors, or just Color.
@@ -500,6 +517,9 @@ type OpeningDef struct {
 type ActionDef struct {
 	// ID names the action; moves carry it as their "action" field.
 	ID string `json:"id"`
+	// Fact is a fact of the game's facts, reported for the mover each time
+	// the action is applied (ADR 0129).
+	Fact string `json:"fact,omitempty"`
 	// Type is "place", "move-stack", "jump", "slide", "leap", "swap", "step" or "pass". Pieces whose movement
 	// names a primitive get an implicit "step" action; declaring a "step"
 	// action explicitly instead gives per-direction control (Breakthrough's
