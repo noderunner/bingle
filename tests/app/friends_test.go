@@ -640,7 +640,8 @@ func TestWebFriends_ReservingASeatInTheSetup(t *testing.T) {
 	waitJS(t, bob, "Bob in the lobby", `document.querySelector('#lobby-seats .lobby-seat.mine') !== null`, 20*time.Second)
 }
 
-// A handle in a chat offers a friend request, and does nothing for a friend.
+// A handle in a chat offers a friend request, and for a friend, only the way
+// to their page.
 func TestWebFriends_AHandleInAChat(t *testing.T) {
 	a, base := membersServer(t)
 	anaB, bobB, cydB := member(t, a, base, "ana"), member(t, a, base, "bob"), member(t, a, base, "cyd")
@@ -660,12 +661,16 @@ func TestWebFriends_AHandleInAChat(t *testing.T) {
 	clickSel(t, ana, "#tab-chat")
 	waitJS(t, ana, "the badges", `document.querySelector('.handle-badge[data-handle="bob"]') !== null && document.querySelector('.handle-badge[data-handle="cyd"]') !== null`, 15*time.Second)
 
-	// A friend: nothing happens.
+	// A friend: their page, and no request.
 	clickSel(t, ana, `.handle-badge[data-handle="cyd"]`)
-	time.Sleep(500 * time.Millisecond)
-	if evalBool(t, ana, `document.getElementById("friend-pop") !== null`) {
-		t.Error("a friend's badge opened a menu")
+	waitJS(t, ana, "the way to their page", `document.querySelector('#friend-pop #pop-player[href="/players/cyd"]') !== null`, 10*time.Second)
+	if evalBool(t, ana, `document.getElementById("friend-pop-send") !== null`) {
+		t.Error("a friend is offered a friend request")
 	}
+	if err := chromedp.Run(ana, chromedp.KeyEvent("\x1b")); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ana, "the menu closed", `document.getElementById("friend-pop") === null`, 5*time.Second)
 	// Somebody else: an offer, which sends the request and then says so.
 	clickSel(t, ana, `.handle-badge[data-handle="bob"]`)
 	waitJS(t, ana, "the offer", `document.getElementById("friend-pop-send") !== null`, 10*time.Second)
