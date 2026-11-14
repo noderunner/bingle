@@ -17,7 +17,7 @@ order of work can be chosen deliberately. Provisional: it changes as each plan i
 | [real-time-play-plan.md](real-time-play-plan.md) | **built** | no |
 | [tournaments-and-rankings-plan.md](tournaments-and-rankings-plan.md) | **built** but for its *Later* list | yes |
 | [game-services-proposal.md](game-services-proposal.md) | **deferred** proposal: an alternative to the plugins plan's overlay | no |
-| [achievements-plan.md](achievements-plan.md) | **settled** 2026-11-13, ready to implement | yes |
+| [achievements-plan.md](achievements-plan.md) (on `main`) | **settled** 2026-11-13; ADRs 0129 and 0130 written (#189), facts next | yes |
 | [code-and-architecture-audit-plan.md](code-and-architecture-audit-plan.md) | planning in progress | no |
 
 ## How they constrain each other
@@ -113,3 +113,5 @@ The couplings that would cost the most if missed:
   hook they share with tournaments becomes the pending-results worker generalised to every game that
   counts; the rated keys in `stats` keep their meaning. Rules now report facts, a change to the
   `Ruleset` contract that the private overlay's games pick up when they ship badges.
+- 2026-11-13: the achievements plan moved to `main` with ADRs 0129 and 0130 (#189) and left this branch; its row
+  links to where it now lives.
