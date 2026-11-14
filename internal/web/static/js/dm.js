@@ -248,6 +248,9 @@ async function openSocket() {
 			case "dm-rtc":
 				directSignal(d);
 				break;
+			case "badge":
+				announceBadge(d);
+				break;
 		}
 	});
 	ws.addEventListener("close", () => {
@@ -256,6 +259,20 @@ async function openSocket() {
 		sockTries = Math.min(sockTries + 1, 6);
 		sockTimer = window.setTimeout(() => untracked(openSocket), 700 * 2 ** sockTries);
 	});
+}
+
+// A badge the account just earned (ADR 0130): a toast on the page, and a
+// notification from the browser when the page is out of sight and its
+// notifications are allowed. Never an email.
+function announceBadge(d) {
+	const later = d.hidden ? " The others see it when the game ends." : "";
+	toast(`Badge earned: ${d.name}. ${d.description}${later}`, "long");
+	if (!document.hidden || !("Notification" in window) || Notification.permission !== "granted") return;
+	try {
+		new Notification(`Badge earned: ${d.name}`, { body: d.description, tag: "bingle-badge-" + d.badge });
+	} catch (_) {
+		/* some browsers allow notifications only from a service worker */
+	}
 }
 
 function closeSocket() {

@@ -221,3 +221,5 @@ more games. After that the opportunity is gone. Worth a deliberate yes or no.
 - 2026-11-13: steps 2 to 4 built (#190, #191, #192): facts, every counting game recorded at its end,
   and badge definitions with the `end` check and the first five platform badges. Step 5, the `during`
   worker with its watermark and the secret delay, follows.
+- 2026-11-14: step 5 built (#193): the `during` worker, its watermark per game, and secret awards
+  shown when their game ends. Step 6, announcements, follows.

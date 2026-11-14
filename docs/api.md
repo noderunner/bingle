@@ -158,7 +158,8 @@ for a handle, codes for an account) lock it for a minute, doubling, an hour at m
 
 A seat in a game's answer and its state events carries `handle` (an account holds it) or `guest`
 (a guest does), and, in `GET /games/{code}`, `yours` when it is the asker's; so does a chat line
-(`handle`, `guest`). A name that is an account's handle, or a reserved one, is `409` for anybody but
+(`handle`, `guest`). A chat line the server wrote, such as a badge announced, has `server: true`
+and no seat. A name that is an account's handle, or a reserved one, is `409` for anybody but
 that account.
 
 ## Games
@@ -200,7 +201,7 @@ that account.
 | `POST /dm/threads` | `{}` | `{address, threads: [{with, name, last_id, last_at, text, count}]}` |
 | `POST /dm/call` | `{to, join}` | `{ok}` — ring (or answer) somebody, or hang up |
 | `POST /dm/signal` | `{to, kind, data}` | `{ok}` — one WebRTC message for the person being called |
-| `GET /ws-dm` | (the session) | pushes `ready`, `dm`, `dm-call` and `dm-rtc` events for that account |
+| `GET /ws-dm` | (the session) | pushes `ready`, `dm`, `dm-call`, `dm-rtc` and `badge` events for that account (a badge it just earned: `{badge, name, description, room, game, hidden?}`, see [badges.md](badges.md)) |
 | `POST /games` | `{game_def_id, player_name, seat?, opponent?, seat_bots? (`{"2": "random"}`: a bot in chosen seats; the rest stay open), lobby? (wait for the host's `start` even with every seat filled), move_time_seconds?, clock_seconds?, clock_increment_seconds?, rated?, card_set? (a themed set of cards for the table — see below), options? (setup choices — see below), start_tps?, start_state?, start_seat?}` | `{room_code, seat, color, status, bot_moves?}` |
 | `GET /config` | | `{public_url}`: the configured `BINGLE_PUBLIC_URL` ("" when unset) |
 | `POST /bot-matches` | `{game_def_id, bot_a, bot_b, delay_ms?}`: a two-player room where two built-in bots play each other at a watchable pace (150 ms – 10 s per move); open it as a spectator (`/games/{code}/join` with role spectator, or the WebSocket). Stops when the game ends, after 2 minutes with nobody watching, or at the move cap; at most 12 run at once | `{room_code, status}` |

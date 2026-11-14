@@ -1142,6 +1142,8 @@ dialog.help-dialog li { margin: 0.35rem 0; }
 .chat-who.color-brown { color: #b0406c; }
 .chat-who.color-white { color: #5a6f80; }
 .chat-line.spectator .chat-who { color: var(--muted); font-weight: 600; font-style: italic; }
+.chat-line.server .chat-who { color: var(--muted); font-weight: 700; }
+.chat-line.server .chat-text { font-style: italic; }
 .chat-text { flex: 1 1 100%; order: 2; }
 .chat-time { margin-left: auto; order: 1; font-variant-numeric: tabular-nums; }
 .chat-entry { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.5rem; }

@@ -25,16 +25,42 @@ type Award struct {
 	Visible bool
 }
 
-func insertAward(ctx context.Context, tx *Tx, a Award) error {
+// Awarded is what one write of awards changed, for announcing (ADR 0130):
+// the awards new to their holders, and those of a game that ended which
+// waited for it to be shown to everyone.
+type Awarded struct {
+	New   []Award
+	Shown []Award
+}
+
+// insertAward writes a, unless its holder already has the badge, and says
+// whether it did.
+func insertAward(ctx context.Context, tx *Tx, a Award) (bool, error) {
 	var visible sql.NullString
 	if a.Visible {
 		visible = sql.NullString{String: stamp(a.AwardedAt), Valid: true}
 	}
-	if _, err := tx.exec(ctx, "insertAward",
+	res, err := tx.exec(ctx, "insertAward",
 		`INSERT INTO badge_awards (account_id, badge, name, description, family, game_id, room_code, detail, awarded_at, visible_at)
 		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (account_id, badge) DO NOTHING`,
-		a.AccountID, a.Badge, a.Name, a.Description, a.Family, a.GameID, a.RoomCode, a.Detail, stamp(a.AwardedAt), visible); err != nil {
-		return fmt.Errorf("writing an award: %w", err)
+		a.AccountID, a.Badge, a.Name, a.Description, a.Family, a.GameID, a.RoomCode, a.Detail, stamp(a.AwardedAt), visible)
+	if err != nil {
+		return false, fmt.Errorf("writing an award: %w", err)
+	}
+	n, _ := res.RowsAffected()
+	return n > 0, nil
+}
+
+// insertAwards writes awards and adds those new to their holders to into.
+func insertAwards(ctx context.Context, tx *Tx, awards []Award, into *Awarded) error {
+	for _, a := range awards {
+		ok, err := insertAward(ctx, tx, a)
+		if err != nil {
+			return err
+		}
+		if ok {
+			into.New = append(into.New, a)
+		}
 	}
 	return nil
 }
@@ -42,8 +68,7 @@ func insertAward(ctx context.Context, tx *Tx, a Award) error {
 // Awards lists an account's awards, oldest first: every one when all is
 // true (the holder's own view), and otherwise only those shown to everyone.
 func (s *Store) Awards(ctx context.Context, accountID int64, all bool) ([]Award, error) {
-	q := `SELECT account_id, badge, name, description, family, game_id, room_code, detail, awarded_at, visible_at
-	      FROM badge_awards WHERE account_id = ?`
+	q := `SELECT ` + awardColumns + ` FROM badge_awards WHERE account_id = ?`
 	if !all {
 		q += ` AND visible_at IS NOT NULL`
 	}
@@ -54,25 +79,77 @@ func (s *Store) Awards(ctx context.Context, accountID int64, all bool) ([]Award,
 	defer func() { _ = rows.Close() }()
 	var out []Award
 	for rows.Next() {
-		var a Award
-		var at string
-		var visible sql.NullString
-		if err := rows.Scan(&a.AccountID, &a.Badge, &a.Name, &a.Description, &a.Family, &a.GameID, &a.RoomCode, &a.Detail, &at, &visible); err != nil {
-			return nil, fmt.Errorf("scanning an award: %w", err)
+		a, err := scanAward(rows)
+		if err != nil {
+			return nil, err
 		}
-		a.AwardedAt, _ = time.Parse(sqlTime, at)
-		a.Visible = visible.Valid
 		out = append(out, a)
 	}
 	return out, rows.Err()
 }
 
-// revealAwards shows everyone the awards of a game that waited for its end.
-func revealAwards(ctx context.Context, tx *Tx, gameID int64, now time.Time) error {
+const awardColumns = `account_id, badge, name, description, family, game_id, room_code, detail, awarded_at, visible_at`
+
+func scanAward(rows interface{ Scan(...any) error }) (Award, error) {
+	var a Award
+	var at string
+	var visible sql.NullString
+	if err := rows.Scan(&a.AccountID, &a.Badge, &a.Name, &a.Description, &a.Family, &a.GameID, &a.RoomCode, &a.Detail, &at, &visible); err != nil {
+		return Award{}, fmt.Errorf("scanning an award: %w", err)
+	}
+	a.AwardedAt, _ = time.Parse(sqlTime, at)
+	a.Visible = visible.Valid
+	return a, nil
+}
+
+// revealAwards shows everyone the awards of a game that waited for its end,
+// and adds them to into.
+func revealAwards(ctx context.Context, tx *Tx, gameID int64, now time.Time, into *Awarded) error {
+	rows, err := tx.query(ctx, "revealAwards.list", `SELECT `+awardColumns+` FROM badge_awards WHERE game_id = ? AND visible_at IS NULL ORDER BY id`, gameID)
+	if err != nil {
+		return fmt.Errorf("listing the hidden awards of game_id=%d: %w", gameID, err)
+	}
+	var hidden []Award
+	for rows.Next() {
+		a, err := scanAward(rows)
+		if err != nil {
+			_ = rows.Close()
+			return err
+		}
+		a.Visible = true
+		hidden = append(hidden, a)
+	}
+	_ = rows.Close()
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	if len(hidden) == 0 {
+		return nil
+	}
 	if _, err := tx.exec(ctx, "revealAwards", `UPDATE badge_awards SET visible_at = ? WHERE game_id = ? AND visible_at IS NULL`, stamp(now), gameID); err != nil {
 		return fmt.Errorf("showing the awards of game_id=%d: %w", gameID, err)
 	}
+	into.Shown = append(into.Shown, hidden...)
 	return nil
+}
+
+// PrincipalsOfAccount is the principals an account signs in as, which is
+// where what is said to it is sent.
+func (s *Store) PrincipalsOfAccount(ctx context.Context, accountID int64) ([]string, error) {
+	rows, err := s.query(ctx, "PrincipalsOfAccount", `SELECT id FROM principals WHERE account_id = ? AND kind = ? AND merged_into = ''`, accountID, KindAccount)
+	if err != nil {
+		return nil, fmt.Errorf("listing the principals of an account: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+	var out []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		out = append(out, id)
+	}
+	return out, rows.Err()
 }
 
 // BadgesDue is a game with moves that reported facts since its badges were
@@ -123,31 +200,32 @@ func (s *Store) GamesWithBadgesDue(ctx context.Context) ([]BadgesDue, error) {
 // badges have been checked up to move seq, in one transaction, so a check
 // that is repeated awards once. An award not yet visible is shown at once if
 // the game has already ended, since nothing will show it later.
-func (s *Store) RecordDuring(ctx context.Context, gameID int64, seq int, awards []Award) error {
+func (s *Store) RecordDuring(ctx context.Context, gameID int64, seq int, awards []Award) (Awarded, error) {
+	var out Awarded
 	tx, err := s.begin(ctx, "RecordDuring")
 	if err != nil {
-		return fmt.Errorf("begin transaction: %w", err)
+		return out, fmt.Errorf("begin transaction: %w", err)
 	}
 	defer func() { _ = tx.Rollback() }()
 	// The watermark is written first, which takes the write lock before the
 	// game's status is read. An undo may have moved facts_seq back meanwhile.
 	if _, err := tx.exec(ctx, "RecordDuring.seq", `UPDATE games SET badges_seq = MIN(?, facts_seq) WHERE id = ?`, seq, gameID); err != nil {
-		return fmt.Errorf("moving the badges watermark of game_id=%d: %w", gameID, err)
+		return out, fmt.Errorf("moving the badges watermark of game_id=%d: %w", gameID, err)
 	}
 	var countStatus string
 	if err := tx.queryRow(ctx, "RecordDuring.status", `SELECT count_status FROM games WHERE id = ?`, gameID).Scan(&countStatus); err != nil {
-		return fmt.Errorf("reading the status of game_id=%d: %w", gameID, err)
+		return out, fmt.Errorf("reading the status of game_id=%d: %w", gameID, err)
 	}
-	for _, a := range awards {
-		if countStatus != "" && countStatus != CountPending {
-			a.Visible = true
+	if countStatus != "" && countStatus != CountPending {
+		for i := range awards {
+			awards[i].Visible = true
 		}
-		if err := insertAward(ctx, tx, a); err != nil {
-			return err
-		}
+	}
+	if err := insertAwards(ctx, tx, awards, &out); err != nil {
+		return Awarded{}, err
 	}
 	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("commit transaction: %w", err)
+		return Awarded{}, fmt.Errorf("commit transaction: %w", err)
 	}
-	return nil
+	return out, nil
 }

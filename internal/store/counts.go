@@ -61,22 +61,27 @@ func (s *Store) PendingCountGames(ctx context.Context) ([]Game, error) {
 
 // SkipCount says a pending game counts for nobody. The awards it gave during
 // play that waited for its end are shown, as RecordCounts shows them.
-func (s *Store) SkipCount(ctx context.Context, gameID int64, now time.Time) error {
+func (s *Store) SkipCount(ctx context.Context, gameID int64, now time.Time) (Awarded, error) {
+	var out Awarded
 	tx, err := s.begin(ctx, "SkipCount")
 	if err != nil {
-		return fmt.Errorf("begin transaction: %w", err)
+		return out, fmt.Errorf("begin transaction: %w", err)
 	}
 	defer func() { _ = tx.Rollback() }()
-	if _, err := tx.exec(ctx, "SkipCount", `UPDATE games SET count_status = ? WHERE id = ? AND count_status = ?`, CountSkipped, gameID, CountPending); err != nil {
-		return fmt.Errorf("skipping the count of game_id=%d: %w", gameID, err)
+	res, err := tx.exec(ctx, "SkipCount", `UPDATE games SET count_status = ? WHERE id = ? AND count_status = ?`, CountSkipped, gameID, CountPending)
+	if err != nil {
+		return out, fmt.Errorf("skipping the count of game_id=%d: %w", gameID, err)
 	}
-	if err := revealAwards(ctx, tx, gameID, now); err != nil {
-		return err
+	if n, _ := res.RowsAffected(); n == 0 {
+		return out, nil
+	}
+	if err := revealAwards(ctx, tx, gameID, now, &out); err != nil {
+		return Awarded{}, err
 	}
 	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("commit transaction: %w", err)
+		return Awarded{}, fmt.Errorf("commit transaction: %w", err)
 	}
-	return nil
+	return out, nil
 }
 
 // RecordCounts adds counts, per account and key, writes the awards the game's
@@ -84,18 +89,19 @@ func (s *Store) SkipCount(ctx context.Context, gameID int64, now time.Time) erro
 // counted, in one transaction. A game no longer
 // pending is left alone and nothing is added, so counting twice adds once; an
 // account that already holds a badge keeps the award it had.
-func (s *Store) RecordCounts(ctx context.Context, gameID int64, counts map[int64]map[string]int, awards []Award, now time.Time) error {
+func (s *Store) RecordCounts(ctx context.Context, gameID int64, counts map[int64]map[string]int, awards []Award, now time.Time) (Awarded, error) {
+	var out Awarded
 	tx, err := s.begin(ctx, "RecordCounts")
 	if err != nil {
-		return fmt.Errorf("begin transaction: %w", err)
+		return out, fmt.Errorf("begin transaction: %w", err)
 	}
 	defer func() { _ = tx.Rollback() }()
 	res, err := tx.exec(ctx, "RecordCounts.status", `UPDATE games SET count_status = ? WHERE id = ? AND count_status = ?`, CountCounted, gameID, CountPending)
 	if err != nil {
-		return fmt.Errorf("marking game_id=%d counted: %w", gameID, err)
+		return out, fmt.Errorf("marking game_id=%d counted: %w", gameID, err)
 	}
 	if n, _ := res.RowsAffected(); n == 0 {
-		return nil
+		return out, nil
 	}
 	for account, keys := range counts {
 		for key, n := range keys {
@@ -105,22 +111,20 @@ func (s *Store) RecordCounts(ctx context.Context, gameID int64, counts map[int64
 			if _, err := tx.exec(ctx, "RecordCounts.stat",
 				`INSERT INTO stats (account_id, key, value) VALUES (?, ?, ?) ON CONFLICT (account_id, key) DO UPDATE SET value = value + excluded.value`,
 				account, key, n); err != nil {
-				return fmt.Errorf("writing a count: %w", err)
+				return Awarded{}, fmt.Errorf("writing a count: %w", err)
 			}
 		}
 	}
-	for _, a := range awards {
-		if err := insertAward(ctx, tx, a); err != nil {
-			return err
-		}
+	if err := insertAwards(ctx, tx, awards, &out); err != nil {
+		return Awarded{}, err
 	}
-	if err := revealAwards(ctx, tx, gameID, now); err != nil {
-		return err
+	if err := revealAwards(ctx, tx, gameID, now, &out); err != nil {
+		return Awarded{}, err
 	}
 	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("commit transaction: %w", err)
+		return Awarded{}, fmt.Errorf("commit transaction: %w", err)
 	}
-	return nil
+	return out, nil
 }
 
 // GameFacts is the facts of every selection of a game, as stored (JSON), in

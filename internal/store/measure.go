@@ -131,6 +131,20 @@ func (t *Tx) queryRow(ctx context.Context, name, query string, args ...any) *Row
 	return &Row{row: t.tx.QueryRowContext(ctx, query, args...), s: t.s, name: name, start: start, span: span}
 }
 
+func (t *Tx) query(ctx context.Context, name, query string, args ...any) (*Rows, error) {
+	_, span := trace.Start(t.spanCtx(ctx), "store")
+	span.Set("stmt", name)
+
+	start := time.Now()
+	rows, err := t.tx.QueryContext(ctx, query, args...)
+	if err != nil {
+		t.s.record(name, start, 0, err)
+		span.End()
+		return nil, err
+	}
+	return &Rows{Rows: rows, s: t.s, name: name, start: start, span: span}, nil
+}
+
 // spanCtx is the context the transaction's statements nest their spans under.
 func (t *Tx) spanCtx(ctx context.Context) context.Context {
 	if t.ctx != nil {

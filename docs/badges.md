@@ -88,5 +88,20 @@ repeats a check; an undo takes both back no further than the move it keeps. The 
 once a minute, in case a check failed, and `bingle_badge_checks_total{outcome}` counts its checks:
 `checked`, `skipped` (no `during` badges, or a guest or bot at a seat) and `failed`.
 
-Nothing shows awards yet; the profile page, the API and MCP come with step 7 of the
+## Announcements
+
+Each award a worker writes is announced once, after its transaction commits:
+
+- **to its holder**, by a `badge` event on the account's `/ws-dm` socket (`{badge, name,
+  description, room, game, hidden}`). The page shows it in a toast and, when the page is out of
+  sight and the browser allows this site's notifications, raises a browser notification. Never an
+  email. An account without the `dm` capability has no such socket, and is not told.
+- **to the room**, by a line from the server in the game's chat (`server: true`, named for the
+  instance): "@ana earned the badge First Win: Win a game against another player."
+
+An award that waits for its game's end is told to its holder at once, marked `hidden`, and to
+the room when it is shown. An announcement that fails, such as a chat line for a game retention
+has deleted, is logged and dropped: the award stands.
+
+The profile page, the API and MCP come with step 7 of the
 [achievements plan](history/achievements-plan.md).
