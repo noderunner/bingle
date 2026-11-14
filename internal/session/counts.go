@@ -11,15 +11,16 @@ import (
 	"github.com/noderunner/bingle/internal/store"
 )
 
-// Every game that counts adds to its players' lasting counts when it ends
-// (ADR 0130): results and facts per family, and the opponents met. A game
-// counts when every seat is held by a different account and every seat has
-// moved; a tutorial, a guest or a bot at a seat makes it count for nobody.
-// It is counted by the results worker, after its rated result if it has one,
-// so that nothing here ever slows a move.
+// Every game that counts adds to its players' lasting counts when it ends,
+// and earns them the badges checked at the end (ADR 0130). A game counts for
+// player badges when every seat is held by a different account, and for bot
+// badges when one account plays bots only; either way every seat must have
+// moved. A tutorial or a guest at a seat makes it count for nobody. It is
+// counted by the results worker, after its rated result if it has one, so
+// that nothing here ever slows a move.
 
 // recordCounts counts every finished game waiting to be, one at a time. The
-// caller holds resultsMu.
+// caller holds resultsMu, so nothing else writes the counts meanwhile.
 func (m *Manager) recordCounts(ctx context.Context) {
 	games, err := m.store.PendingCountGames(ctx)
 	if err != nil {
@@ -38,8 +39,16 @@ func (m *Manager) countFailed(err error) {
 	m.logger().Error("counting a finished game for its players", "err", err)
 }
 
-// countGame works out what one finished game adds to its players' counts, and
-// writes it.
+// table is who sat at a finished game.
+type table struct {
+	// accounts maps each seat an account held to it.
+	accounts map[int]int64
+	// bots maps each seat a bot held to the bot's id.
+	bots map[int]string
+}
+
+// countGame works out what one finished game adds to its players' counts and
+// which end badges it earns them, and writes it all at once.
 func (m *Manager) countGame(ctx context.Context, game store.Game) error {
 	skip := func() error {
 		m.mx.GameCount(metrics.CountSkipped)
@@ -49,11 +58,13 @@ func (m *Manager) countGame(ctx context.Context, game store.Game) error {
 	if !ok || game.Tutorial != "" {
 		return skip()
 	}
-	accounts, ok, err := m.seatAccounts(ctx, game, compiled)
+	at, ok, err := m.seatsOf(ctx, game, compiled)
 	if err != nil {
 		return err
 	}
-	if !ok {
+	// Players against players, or one account against bots; nothing else.
+	players := len(at.bots) == 0
+	if !ok || (!players && len(at.accounts) != 1) {
 		return skip()
 	}
 	// A seat that never moved was a no-show, or a quick way to hand
@@ -62,53 +73,67 @@ func (m *Manager) countGame(ctx context.Context, game store.Game) error {
 	if err != nil {
 		return err
 	}
-	if moved < len(accounts) {
+	if moved < len(compiled.Definition.Seats) {
 		return skip()
 	}
 	facts, err := m.gameFacts(ctx, game.ID)
 	if err != nil {
 		return err
 	}
-	counts := countsOf(gameFamily(compiled), game, accounts, facts)
-	if err := m.store.RecordCounts(ctx, game.ID, counts); err != nil {
+	family := gameFamily(compiled)
+	var counts map[int64]map[string]int
+	if players {
+		counts = countsOf(family, game, at.accounts, facts)
+	}
+	awards, err := m.endAwards(ctx, compiled, game, at, facts, counts)
+	if err != nil {
+		return err
+	}
+	if err := m.store.RecordCounts(ctx, game.ID, counts, awards); err != nil {
 		return err
 	}
 	m.mx.GameCount(metrics.CountCounted)
 	return nil
 }
 
-// seatAccounts maps each seat of a game to the account holding it. ok is
-// false unless every seat of the game is held, by a different account each.
-func (m *Manager) seatAccounts(ctx context.Context, game store.Game, compiled *catalog.CompiledGame) (map[int]int64, bool, error) {
+// seatsOf is who held each seat of a game. ok is false unless every seat is
+// held, each by a bot or an account, and no account holds two.
+func (m *Manager) seatsOf(ctx context.Context, game store.Game, compiled *catalog.CompiledGame) (table, bool, error) {
 	players, err := m.store.ListPlayers(ctx, game.ID)
 	if err != nil {
-		return nil, false, err
+		return table{}, false, err
 	}
 	if len(players) != len(compiled.Definition.Seats) {
-		return nil, false, nil
+		return table{}, false, nil
 	}
-	principals := make([]string, 0, len(players))
+	var principals []string
 	for _, p := range players {
-		if p.Bot != "" || p.PrincipalID == "" {
-			return nil, false, nil
+		if p.Bot == "" {
+			if p.PrincipalID == "" {
+				return table{}, false, nil
+			}
+			principals = append(principals, p.PrincipalID)
 		}
-		principals = append(principals, p.PrincipalID)
 	}
 	byPrincipal, err := m.store.AccountsOfPrincipals(ctx, principals)
 	if err != nil {
-		return nil, false, err
+		return table{}, false, err
 	}
-	out := make(map[int]int64, len(players))
+	t := table{accounts: map[int]int64{}, bots: map[int]string{}}
 	seen := map[int64]bool{}
 	for _, p := range players {
+		if p.Bot != "" {
+			t.bots[p.Seat] = p.Bot
+			continue
+		}
 		a := byPrincipal[p.PrincipalID]
 		if a == 0 || seen[a] {
-			return nil, false, nil
+			return table{}, false, nil
 		}
 		seen[a] = true
-		out[p.Seat] = a
+		t.accounts[p.Seat] = a
 	}
-	return out, true, nil
+	return t, true, nil
 }
 
 // gameFacts reads the facts of every selection of a game, in order.
@@ -134,18 +159,11 @@ func (m *Manager) gameFacts(ctx context.Context, gameID int64) ([]state.Fact, er
 // moves players between seats, so a fact before it is the seat's, not the
 // player's.
 func countsOf(family string, game store.Game, accounts map[int]int64, facts []state.Fact) map[int64]map[string]int {
-	rated := game.Rated && game.RatingStatus == store.RatingRecorded
+	rated := ratedResult(game)
 	out := make(map[int64]map[string]int, len(accounts))
 	for seat, account := range accounts {
 		c := map[string]int{store.StatKey(store.CountGame+"played", family): 1}
-		outcome := "drawn"
-		if game.WinnerSeat != nil {
-			outcome = "lost"
-			if *game.WinnerSeat == seat {
-				outcome = "won"
-			}
-		}
-		c[store.StatKey(store.CountGame+outcome, family)] = 1
+		c[store.StatKey(store.CountGame+outcomeOf(game, seat), family)] = 1
 		for other, opponent := range accounts {
 			if other == seat {
 				continue
@@ -163,4 +181,20 @@ func countsOf(family string, game store.Game, accounts map[int]int64, facts []st
 		}
 	}
 	return out
+}
+
+// ratedResult says the game is rated and its result was written.
+func ratedResult(game store.Game) bool {
+	return game.Rated && game.RatingStatus == store.RatingRecorded
+}
+
+// outcomeOf is "won", "drawn" or "lost" for seat.
+func outcomeOf(game store.Game, seat int) string {
+	switch {
+	case game.WinnerSeat == nil:
+		return "drawn"
+	case *game.WinnerSeat == seat:
+		return "won"
+	}
+	return "lost"
 }

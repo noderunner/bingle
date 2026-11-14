@@ -66,10 +66,11 @@ func (s *Store) SkipCount(ctx context.Context, gameID int64) error {
 	return nil
 }
 
-// RecordCounts adds counts, per account and key, and marks the game counted,
-// in one transaction. A game no longer pending is left alone and nothing is
-// added, so counting twice adds once.
-func (s *Store) RecordCounts(ctx context.Context, gameID int64, counts map[int64]map[string]int) error {
+// RecordCounts adds counts, per account and key, writes the awards the game's
+// end earned, and marks the game counted, in one transaction. A game no longer
+// pending is left alone and nothing is added, so counting twice adds once; an
+// account that already holds a badge keeps the award it had.
+func (s *Store) RecordCounts(ctx context.Context, gameID int64, counts map[int64]map[string]int, awards []Award) error {
 	tx, err := s.begin(ctx, "RecordCounts")
 	if err != nil {
 		return fmt.Errorf("begin transaction: %w", err)
@@ -92,6 +93,11 @@ func (s *Store) RecordCounts(ctx context.Context, gameID int64, counts map[int64
 				account, key, n); err != nil {
 				return fmt.Errorf("writing a count: %w", err)
 			}
+		}
+	}
+	for _, a := range awards {
+		if err := insertAward(ctx, tx, a); err != nil {
+			return err
 		}
 	}
 	if err := tx.Commit(); err != nil {

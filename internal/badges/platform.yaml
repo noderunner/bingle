@@ -1,0 +1,35 @@
+# The platform's badges (ADR 0130): few and meaningful, a club rather than a
+# game platform. Each is built from the parts in docs/badges.md; the icon is
+# each client's. A badge's id is never reused for a different badge.
+badges:
+  - id: first-win
+    name: First Win
+    description: Win a game against another player.
+    when: end
+    won: true
+
+  - id: well-met
+    name: Well Met
+    description: Play ten different people.
+    when: end
+    distinct: {of: opponents, at_least: 10}
+
+  - id: wide-reader
+    name: Wide Reader
+    description: Play five different games against other people.
+    when: end
+    distinct: {of: families, at_least: 5}
+
+  - id: contender
+    name: Contender
+    description: Win twenty-five rated games.
+    when: end
+    rated: true
+    count: {fact: won, at_least: 25, within: games}
+
+  - id: machine-breaker
+    name: Machine Breaker
+    description: Beat the strongest computer opponent.
+    when: end
+    won: true
+    bot: {at_least: mcts}

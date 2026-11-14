@@ -95,6 +95,9 @@ type GameDefinition struct {
 	// Go ruleset's Apply. A badge may count only these.
 	Facts map[string]FactDef `json:"facts,omitempty"`
 
+	// Badges are the game's own badges (ADR 0130), known as family.id.
+	Badges []BadgeDef `json:"badges,omitempty"`
+
 	WinCondition WinConditionDef `json:"win_condition"`
 
 	// Notation selects the move-notation style: "" / "generic", or "ptn"

@@ -4,6 +4,12 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.105.0 - 2026-11-13
+
+### Bingle Core 0.105.0
+- Badges can be earned from now on, though nothing shows them yet. The first five are the platform's: **First Win** (win a game against another player), **Well Met** (play ten different people), **Wide Reader** (play five different games against other people), **Contender** (win twenty-five rated games) and **Machine Breaker** (beat the strongest computer opponent). Each is earned once, at the end of a game that counts, and kept. Your profile will show them in a later release.
+- **For programs:** a game definition may list its own `badges`, built from a fixed set of parts that `docs/badges.md` describes (ADR 0130). The catalog refuses one built wrongly. Badges checked at the `end` are awarded by the results worker, with the game's counts, into the new `badge_awards` table. A Go ruleset whose seats play factions may implement `state.FactionOfSeat`.
+
 ## 0.104.0 - 2026-11-13
 
 ### Bingle Core 0.104.0

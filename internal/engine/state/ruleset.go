@@ -289,6 +289,27 @@ type SeatFactions interface {
 	SeatFactionOptions(game *catalog.CompiledGame, seat int, faction string, taken map[int]bool) (map[string]any, error)
 }
 
+// FactionOfSeat is implemented by rulesets whose seats play factions: it names
+// the faction seat plays in game, by the key a badge's seat.faction uses
+// (ADR 0130), or "" for none.
+type FactionOfSeat interface {
+	SeatFaction(game *catalog.CompiledGame, seat int) string
+}
+
+// SeatFaction is the faction seat plays in game, or "" for a game whose seats
+// play none.
+func SeatFaction(game *catalog.CompiledGame, seat int) string {
+	rs, found := RulesetOf(game)
+	if !found {
+		return ""
+	}
+	f, found := rs.(FactionOfSeat)
+	if !found {
+		return ""
+	}
+	return f.SeatFaction(game, seat)
+}
+
 // OwnSeatFactions is implemented by a SeatFactions ruleset where a table may be set up
 // for its players to choose their factions: they may then change their own seats' too.
 type OwnSeatFactions interface {

@@ -37,6 +37,7 @@ turn_order                    required: round-robin, optional opening phase
 actions[]                     place / move-stack / jump / slide / leap / step / pass
                               (pieces with a movement primitive also get "step")
 facts{}                       what the rules can report a selection did, for badges (ADR 0129)
+badges[]                      the game's own badges, see docs/badges.md (ADR 0130)
 win_condition                 required: none | callback | rules
 notation                      generic (default) | ptn
 cards                         suits, decks and zones of a card game
@@ -514,6 +515,9 @@ end_of_turn:
 * A Go ruleset lists its facts in its YAML the same way and reports them from
   `Apply` (below). A variant can add facts with its patch.
 
+A game's `badges` count its facts; [badges.md](badges.md) says how they are
+built.
+
 ## win_condition
 
 ```yaml
@@ -713,6 +717,8 @@ definition: `catalog.Module{ID, Definition, Rules: courtfall.New()}`. `actions` 
   game's `facts`: a test plays every game to check it, and the server drops
   and logs any other (ADR 0129). Facts are worked out from the position and
   the selection, like everything `Apply` returns;
+* names the faction each seat plays (`SeatFaction`, `state.FactionOfSeat`),
+  for a badge's `seat.faction`, when its seats play factions;
 * may hide information (`Redact`, `RedactMove`, `Determinize`), forbid
   taking moves back across chance (`CanTakeBack`), publish a fixed action
   space and its own observation planes, and give search bots a heuristic.
