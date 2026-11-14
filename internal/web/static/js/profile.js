@@ -12,6 +12,43 @@ import { notifyConfig, localContact, submitAddress, contactStatus, resendConfirm
 
 installNav();
 
+// ---- tabs: Settings, Badges (an account's) and Finished Games ----------------
+
+const TABS = ["settings", "badges", "finished"];
+
+/** Shows one tab, named in the page's address (#badges) so a link can open it. */
+function showTab(name, { focus = false } = {}) {
+	const open = (t) => !document.getElementById("tab-" + t).hidden;
+	if (!TABS.includes(name) || !open(name)) name = "settings";
+	for (const t of TABS) {
+		const tab = document.getElementById("tab-" + t);
+		const on = t === name;
+		tab.setAttribute("aria-selected", on ? "true" : "false");
+		tab.tabIndex = on ? 0 : -1;
+		document.getElementById("panel-" + t).hidden = !on;
+		if (on && focus) tab.focus();
+	}
+	const url = new URL(window.location.href);
+	url.hash = name === "settings" ? "" : name;
+	window.history.replaceState(null, "", url);
+}
+
+for (const tab of TABS.map((t) => document.getElementById("tab-" + t))) {
+	tab.addEventListener("click", () => showTab(tab.dataset.tab));
+	tab.addEventListener("keydown", (ev) => {
+		const shown = TABS.filter((t) => !document.getElementById("tab-" + t).hidden);
+		const i = shown.indexOf(tab.dataset.tab);
+		const n = shown.length;
+		const to = { ArrowRight: (i + 1) % n, ArrowLeft: (i - 1 + n) % n, Home: 0, End: n - 1 }[ev.key];
+		if (to === undefined) return;
+		ev.preventDefault();
+		showTab(shown[to], { focus: true });
+	});
+}
+// The tab the address asked for: Badges waits for the account to be known.
+const askedTab = window.location.hash.slice(1);
+showTab(askedTab);
+
 /** What an account chose about its friends. */
 function paintFriendSettings() {
 	const mail = document.getElementById("friend-mail");
@@ -73,6 +110,9 @@ function paintBadges(handle) {
 			document.getElementById("badges-empty").hidden = badges.length > 0;
 			document.getElementById("badges-page").href = `/players/${encodeURIComponent(handle)}`;
 			document.getElementById("badges-box").hidden = false;
+			// Badges are an account's: their tab shows once there is one.
+			document.getElementById("tab-badges").hidden = false;
+			if (askedTab === "badges") showTab("badges");
 			await paintShelf(document.getElementById("badges-list"), { held: badges, mine: true });
 		})
 		.catch(() => {});

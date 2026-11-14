@@ -10,6 +10,7 @@ import { MoveBuilder } from "./builder.js";
 import { renderBoard, pieceIcon, cssColor, hasHexStyles, defaultHexStyle } from "./render.js";
 import { showRules as openRules } from "./rules.js";
 import { keepChatFocus, loadChat, receiveChat, chatCard, chatSeen, chatUnread } from "./chat.js";
+import { handleBadge } from "./friend-badge.js";
 import { voiceCard, voiceEvent, voiceResync } from "./voice.js";
 import { installNav, navigate } from "./nav.js";
 import { installTopbar } from "./topbar.js";
@@ -3374,7 +3375,7 @@ function seatStrip(seat) {
 		head.append(h("button", { class: "seat-kick small", hidden: !canVoteKick(seat), title: "Start a vote to have a tactical bot take this seat for good", onclick: () => confirmKick(seat) }, "Vote to replace"));
 	}
 	// Who holds the seat: an account, by its handle, or a guest.
-	if (si && si.handle) head.append(h("span", { class: "badge account", title: "A signed-in account" }, "@" + si.handle));
+	if (si && si.handle) head.append(handleBadge(si.handle, "badge account"));
 	else if (si && si.guest) head.append(h("span", { class: "badge guest", title: "A guest: anybody with no account" }, "guest"));
 	if (si && si.rating) {
 		const change = (S.game.rating_changes || []).find((c) => c.seat === seat);

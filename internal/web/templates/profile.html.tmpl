@@ -19,16 +19,17 @@
 	<main class="page narrow">
 		<h1>All Settings</h1>
 
+		<div class="tabs" role="tablist" aria-label="Settings, badges and finished games">
+			<button type="button" role="tab" class="tab" id="tab-settings" data-tab="settings" aria-controls="panel-settings" aria-selected="true">Settings</button>
+			<button type="button" role="tab" class="tab" id="tab-badges" data-tab="badges" aria-controls="panel-badges" aria-selected="false" tabindex="-1" hidden>Badges</button>
+			<button type="button" role="tab" class="tab" id="tab-finished" data-tab="finished" aria-controls="panel-finished" aria-selected="false" tabindex="-1">Finished Games</button>
+		</div>
+
+		<div role="tabpanel" id="panel-settings" aria-labelledby="tab-settings">
+
 		<section class="card" id="account-box" hidden>
 			<h2>Account</h2>
 			<p id="account-line"></p>
-		</section>
-
-		<section class="card" id="badges-box" hidden>
-			<h2>Badges</h2>
-			<p class="muted small" id="badges-empty" hidden>No badges yet. Win a game against another player for your first.</p>
-			<div id="badges-list"></div>
-			<p class="small"><a id="badges-page" href="/profile">Your player page</a>, as other players see it.</p>
 		</section>
 
 		<section class="card" id="ratings-box" hidden>
@@ -101,11 +102,24 @@
 			<p class="small" id="friend-settings-status" role="status"></p>
 		</section>
 
+		</div>
+
+		<div role="tabpanel" id="panel-badges" aria-labelledby="tab-badges" hidden>
+		<section class="card" id="badges-box" hidden>
+			<h2>Badges</h2>
+			<p class="muted small" id="badges-empty" hidden>No badges yet. Win a game against another player for your first.</p>
+			<div id="badges-list"></div>
+			<p class="small"><a id="badges-page" href="/profile">Your player page</a>, as other players see it.</p>
+		</section>
+		</div>
+
+		<div role="tabpanel" id="panel-finished" aria-labelledby="tab-finished" hidden>
 		<section class="card" id="finished-card">
 			<h2>Finished Games</h2>
 			<ul class="my-games" id="finished-games"></ul>
 			<p class="muted" id="finished-empty" hidden>No finished games yet.</p>
 		</section>
+		</div>
 	</main>
 
 	<footer class="site-footer"><sub title="The version of the {{brandFooter}} engine">{{brandFooter}} v{{engineVersion}} · MIT License · <a href="https://github.com/noderunner/bingle" target="_blank" rel="noopener noreferrer">GitHub</a></sub></footer>
