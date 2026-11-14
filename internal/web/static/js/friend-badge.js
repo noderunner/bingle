@@ -1,5 +1,6 @@
-// A player's @handle in a chat: a badge that offers to send them a friend request. For a friend, or
-// for yourself, or to anybody without an account, clicking it does nothing for now.
+// A player's @handle, in a chat or at a seat: a badge whose menu shows their badges and the way to
+// their page, and offers a friend request to somebody who is not a friend yet. A guest's menu has
+// only the way to the page, since guests see no badges.
 
 import { h } from "./util.js";
 import { api, whoAmI } from "./api.js";
@@ -37,11 +38,17 @@ function openPop(anchor, ...content) {
 }
 
 async function offerFriend(anchor, handle) {
-	const me = await whoAmI();
-	if (me.kind !== "account") return;
-	if (me.handle && me.handle.toLowerCase() === handle.toLowerCase()) return;
+	const me = await whoAmI().catch(() => ({}));
+	const page = `/players/${encodeURIComponent(handle)}`;
+	// A guest sees no badges, and yourself no friend request: the way to the
+	// player's page is all there is.
+	if (me.kind !== "account") {
+		openPop(anchor, h("div", { class: "small pop-badges", id: "pop-badges" }, h("a", { href: page, id: "pop-player" }, `@${handle}'s page`)));
+		return;
+	}
+	const self = me.handle && me.handle.toLowerCase() === handle.toLowerCase();
 	const parts = [];
-	if ((me.caps || []).includes("dm")) {
+	if (!self && (me.caps || []).includes("dm")) {
 		await loadFriends();
 		const state = friendStateOf(handle);
 		if (state === "outgoing") {
@@ -74,7 +81,7 @@ async function offerFriend(anchor, handle) {
 			held.length
 				? h("span", { class: "pop-medals" }, ...medalsOf(held))
 				: h("span", { class: "muted" }, "No badges yet. "),
-			h("a", { href: `/players/${encodeURIComponent(handle)}`, id: "pop-player" }, held.length ? `See @${handle}'s badges` : `@${handle}'s page`)
+			h("a", { href: page, id: "pop-player" }, self ? "Your page" : held.length ? `See @${handle}'s badges` : `@${handle}'s page`)
 		)
 	);
 	if (parts.length === 1) openPop(anchor, parts[0]);
@@ -101,14 +108,19 @@ function medalsOf(held) {
 	});
 }
 
-/** The badge of a handle, with or without its @. */
-export function handleBadge(name) {
+/**
+ * The badge of a handle, with or without its @: a button that opens a menu of
+ * the player's badges, a link to their page and any friend request. cls adds
+ * classes in place of handle-badge, for a badge drawn in a place's own style.
+ */
+export function handleBadge(name, cls = "") {
 	const handle = String(name).replace(/^@/, "");
 	return h(
 		"button",
 		{
 			type: "button",
-			class: "handle-badge",
+			class: cls || "handle-badge",
+			title: `@${handle}: badges and page`,
 			"data-handle": handle,
 			onclick: (ev) => {
 				ev.stopPropagation();

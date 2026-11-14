@@ -4,6 +4,12 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.111.1 - 2026-11-14
+
+### Bingle Core 0.111.1
+- In a game, click a player's @handle at their seat to see their badges and go to their page, as in the chats. Your own handle takes you to your page, and anybody's handle now offers the way to their page, friends' and guests' included.
+- The settings page has three tabs: Settings, Badges and Finished Games. `/profile#badges` opens the Badges tab.
+
 ## 0.111.0 - 2026-11-14
 
 ### Bingle Core 0.111.0

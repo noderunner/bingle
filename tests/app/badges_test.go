@@ -371,3 +371,75 @@ func TestBadges_TheWaysABadgeWasEarned(t *testing.T) {
 	clickSel(t, ctx, item+` .badge-open`)
 	waitJS(t, ctx, "both ways in its details", `document.querySelectorAll('#badge-dialog-earned [data-way]').length === 2`, 5*time.Second)
 }
+
+// At a seat, a player's @handle opens the menu of their badges and the way to
+// their page, and your own the way to yours.
+func TestBadges_AHandleAtASeatOpensItsMenu(t *testing.T) {
+	a, base := membersServer(t)
+	anaB, beaB := member(t, a, base, "ana"), member(t, a, base, "bea")
+	room := winFirst(t, beaB, "bea", anaB, "ana")
+
+	ana, cancel := newChromedpContext(t, 60*time.Second)
+	defer cancel()
+	signInChrome(t, ana, base, anaB.cookie(auth.SessionCookie))
+	if err := chromedp.Run(ana, chromedp.EmulateViewport(1400, 900), chromedp.Navigate(base+"/game/"+room)); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ana, "bea's seat", `document.querySelector('button.badge.account[data-handle="bea"]') !== null`, 20*time.Second)
+	clickSel(t, ana, `button.badge.account[data-handle="bea"]`)
+	waitJS(t, ana, "her menu", `document.querySelector('#friend-pop #pop-badges [data-badge="first-win"]') !== null && document.querySelector('#friend-pop #pop-player[href="/players/bea"]') !== null`, 10*time.Second)
+	if err := chromedp.Run(ana, chromedp.KeyEvent("\x1b")); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ana, "the menu closed", `document.getElementById("friend-pop") === null`, 5*time.Second)
+	clickSel(t, ana, `button.badge.account[data-handle="ana"]`)
+	waitJS(t, ana, "her own menu", `document.querySelector('#friend-pop #pop-player[href="/players/ana"]')?.textContent === "Your page"`, 10*time.Second)
+	if evalBool(t, ana, `document.getElementById("friend-pop-send") !== null`) {
+		t.Error("her own handle offers a friend request")
+	}
+
+	// A guest watching: the way to the page, and nothing else.
+	guest, cancelGuest := newChromedpContext(t, 60*time.Second)
+	defer cancelGuest()
+	if err := chromedp.Run(guest, chromedp.EmulateViewport(1400, 900), chromedp.Navigate(base+"/game/"+room)); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, guest, "bea's seat", `document.querySelector('button.badge.account[data-handle="bea"]') !== null`, 20*time.Second)
+	clickSel(t, guest, `button.badge.account[data-handle="bea"]`)
+	waitJS(t, guest, "the way to her page", `document.querySelector('#friend-pop #pop-player[href="/players/bea"]') !== null`, 10*time.Second)
+	if evalBool(t, guest, `document.querySelector('#friend-pop [data-badge]') !== null`) {
+		t.Error("a guest is shown badges")
+	}
+}
+
+// The settings page has a tab each for the settings, the badges (an
+// account's) and the finished games, and its address can name one.
+func TestBadges_TheProfileHasTabs(t *testing.T) {
+	a, base := membersServer(t)
+	ana := member(t, a, base, "ana")
+
+	guest, cancelGuest := newChromedpContext(t, 60*time.Second)
+	defer cancelGuest()
+	if err := chromedp.Run(guest, chromedp.Navigate(base+"/profile#badges")); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, guest, "the settings", `document.getElementById("panel-settings").hidden === false`, 10*time.Second)
+	if !evalBool(t, guest, `document.getElementById("tab-badges").hidden && document.getElementById("panel-badges").hidden`) {
+		t.Error("a guest has a Badges tab")
+	}
+	clickSel(t, guest, "#tab-finished")
+	waitJS(t, guest, "the finished games", `!document.getElementById("panel-finished").hidden && document.getElementById("panel-settings").hidden && location.hash === "#finished"`, 5*time.Second)
+
+	ctx, cancel := newChromedpContext(t, 60*time.Second)
+	defer cancel()
+	signInChrome(t, ctx, base, ana.cookie(auth.SessionCookie))
+	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/profile#badges")); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "the Badges tab, open", `!document.getElementById("tab-badges").hidden && !document.getElementById("panel-badges").hidden && document.getElementById("panel-settings").hidden`, 15*time.Second)
+	if !evalBool(t, ctx, `document.querySelector('#panel-badges #badges-list li[data-badge="first-win"]') !== null`) {
+		t.Error("the Badges tab has no badges")
+	}
+	clickSel(t, ctx, "#tab-settings")
+	waitJS(t, ctx, "the settings", `!document.getElementById("panel-settings").hidden && document.getElementById("panel-badges").hidden && location.hash === ""`, 5*time.Second)
+}

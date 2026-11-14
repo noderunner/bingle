@@ -1937,8 +1937,9 @@ code.wrap { overflow-wrap: anywhere; word-break: break-all; }
 
 /* A player's @handle in a chat, and the menu it opens. */
 .handle-badge { display: inline-block; padding: 0 0.45rem; border: 1px solid var(--border); border-radius: 999px; background: var(--surface-2); color: var(--text); font: 600 0.74rem system-ui, sans-serif; line-height: 1.5; }
-button.handle-badge { cursor: pointer; }
-button.handle-badge:hover { border-color: var(--accent); color: var(--accent); }
+button.handle-badge, button.badge.account { cursor: pointer; }
+button.badge.account { font-family: inherit; }
+button.handle-badge:hover, button.badge.account:hover { border-color: var(--accent); color: var(--accent); }
 .friend-pop { position: fixed; z-index: 80; padding: 0.4rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25); }
 
 /* A game's badges in a list: two columns, then more rows. */

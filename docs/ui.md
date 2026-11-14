@@ -7,8 +7,11 @@ Plain ES modules served from `internal/web/static` — no build step
   at random on every load) over one card with three tabs — *Games*, *Puzzles*
   and *Global Chat* (see *The home page* below). The bar at the top has three
   icons: *Active games*, *Join Game* and the *profile*.
-* **Profile** (`/profile`, `js/profile.js`): name, email and the email
-  notification switch, and the finished games. For an account, its badges in
+* **Profile** (`/profile`, `js/profile.js`): three tabs, `#tab-settings`,
+  `#tab-badges` (an account's only) and `#tab-finished`, with the panels
+  `#panel-settings` (name, email and the email notification switch, friends,
+  ratings), `#panel-badges` and `#panel-finished` (the finished games). The
+  address names a tab other than Settings (`/profile#badges`). For an account, its badges in
   `#badges-list`: every badge there is, `li[data-badge][data-earned]`, those not
   yet earned `.unearned` (greyed out), filtered by the chips `#badge-filter`
   (platform or a game) and `#badge-shown` (all, earned, not yet), remembered in
@@ -493,8 +496,10 @@ show the `?error=` a provider's callback came back with. The account page lists 
 (`/admin`, `js/admin.js`, ADR 0071): the mode (`#caps-mode`), the drift badge (`#caps-drift`), a box per class and
 capability (`#cap-user-<cap>`, `#cap-guest-<cap>`, saved on change, `#caps-result`), the limits (`#caps-limits`, a row a kind and a column a class), and
 invitations (`#invite-go`, `#invite-link`); its tables are `table.admin-table`. Anybody else is told (`#admin-refused`); an
-administrator who only lacks the second factor off the server's own machine is told so, with a link to it (`#admin-second-factor`). A seat's strip and a chat line show who holds it beside the name (ADR 0072): `.badge.account` (`@handle`) or
-`.badge.guest`, and `.handle-badge`, `.chat-guest`. The profile window (`#open-profile`) of a guest has `#guest-box`, *Move to another device*: `#guest-copy` (the key
+administrator who only lacks the second factor off the server's own machine is told so, with a link to it (`#admin-second-factor`). A seat's strip and a chat line show who holds it beside the name (ADR 0072): `.badge.account` (`@handle`, at a seat a button, `data-handle`) or
+`.badge.guest`, and `.handle-badge`, `.chat-guest`. Either handle's button opens `#friend-pop`: the account's medals in
+`#pop-badges` and its page, `#pop-player` ("Your page" for your own), and a friend request when one can be made; a guest's
+menu has only the page. The profile window (`#open-profile`) of a guest has `#guest-box`, *Move to another device*: `#guest-copy` (the key
 and its `#guest=` link, `#guest-link`, `#guest-key`, copied to the clipboard), `#guest-rotate`, `#guest-discard`, and
 `#guest-use-key` with `#guest-use` to adopt a key; any page opened with `#guest=bgg_…` adopts it, takes it out of the
 address and reloads. "My games" merges `GET /api/me/games` into `bingle.games`. The account page adds the address
