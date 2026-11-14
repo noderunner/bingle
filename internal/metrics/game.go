@@ -112,6 +112,26 @@ func (m *Metrics) GameCount(outcome CountOutcome) {
 	m.gameCounts.WithLabelValues(string(outcome)).Inc()
 }
 
+// BadgeCheck is what became of a game's badges checked during play (ADR
+// 0130): a closed set of labels.
+type BadgeCheck string
+
+const (
+	BadgeChecked BadgeCheck = "checked"
+	BadgeSkipped BadgeCheck = "skipped"
+	BadgeFailed  BadgeCheck = "failed"
+)
+
+// BadgeCheck records a check of a game's badges during play. "failed" is
+// the one to watch: the check runs away from the moves, and nothing else
+// would say it had stopped.
+func (m *Metrics) BadgeCheck(outcome BadgeCheck) {
+	if m == nil {
+		return
+	}
+	m.badgeChecks.WithLabelValues(string(outcome)).Inc()
+}
+
 // FactsUndeclared counts facts a game's rules reported without declaring them
 // (ADR 0129). They are dropped, so a badge that wanted them never comes: any
 // count above zero is a bug in that game's rules.

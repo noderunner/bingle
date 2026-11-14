@@ -13,8 +13,9 @@ import (
 )
 
 // Badges are earned during play or at the end of a game, and awarded once
-// (ADR 0130). This is the end: it runs in the results worker as a finished
-// game is counted, and its awards are written with the counts.
+// (ADR 0130). The end is checked in the results worker as a finished game is
+// counted, and its awards are written with the counts; during play, by the
+// worker in during.go.
 
 // platformBadges is the platform's own list, read once.
 var platformBadges = sync.OnceValue(badges.Platform)
@@ -41,8 +42,8 @@ func badgesOf(compiled *catalog.CompiledGame) []gameBadge {
 	return out
 }
 
-// endGame is what an end badge is checked against.
-type endGame struct {
+// played is a game a badge is checked against.
+type played struct {
 	compiled *catalog.CompiledGame
 	game     store.Game
 	family   string
@@ -58,7 +59,7 @@ type endGame struct {
 // seats. counts is what the game adds to their counts (nil in a game against
 // bots), which the badges see as already added.
 func (m *Manager) endAwards(ctx context.Context, compiled *catalog.CompiledGame, game store.Game, at table, facts []state.Fact, counts map[int64]map[string]int) ([]store.Award, error) {
-	eg := endGame{compiled: compiled, game: game, family: gameFamily(compiled), facts: facts, bots: len(at.bots) > 0}
+	eg := played{compiled: compiled, game: game, family: gameFamily(compiled), facts: facts, bots: len(at.bots) > 0}
 	if eg.bots {
 		eg.botPlaces = map[string]int{}
 		for i, b := range m.bots.List() {
@@ -87,7 +88,7 @@ func (m *Manager) endAwards(ctx context.Context, compiled *catalog.CompiledGame,
 			stats[key] += n
 		}
 		for _, b := range list {
-			if b.def.When != badges.WhenEnd || !m.earnsAtEnd(b, eg, seat, stats) {
+			if b.def.When != badges.WhenEnd || !m.earns(b, eg, seat, stats) {
 				continue
 			}
 			out = append(out, store.Award{
@@ -100,9 +101,10 @@ func (m *Manager) endAwards(ctx context.Context, compiled *catalog.CompiledGame,
 	return out, nil
 }
 
-// earnsAtEnd says whether seat earns b in the finished game eg, with stats
-// the seat's account's counts after it.
-func (m *Manager) earnsAtEnd(gb gameBadge, eg endGame, seat int, stats map[string]int) bool {
+// earns says whether seat earns b in the game eg, with stats the seat's
+// account's counts after it. A badge checked during play reads no counts and
+// no result, so stats is nil for it.
+func (m *Manager) earns(gb gameBadge, eg played, seat int, stats map[string]int) bool {
 	b := gb.def
 	// A bot badge counts games against bots only, and every other badge
 	// games against people only.
@@ -229,4 +231,23 @@ func inWindows(facts []state.Fact, fact string, seat int, open, closing string) 
 		}
 	}
 	return best
+}
+
+// secretBadge says b counts a secret fact, or opens or closes its window on
+// one, so that its award would tell what the fact keeps hidden.
+func secretBadge(b gameBadge, compiled *catalog.CompiledGame) bool {
+	c := b.def.Count
+	if c == nil {
+		return false
+	}
+	names := []string{c.Fact}
+	if open, closing, ok := c.Within.Window(); ok {
+		names = append(names, open, closing)
+	}
+	for _, n := range names {
+		if f, ok := compiled.Fact(n); ok && f.Secret {
+			return true
+		}
+	}
+	return false
 }

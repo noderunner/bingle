@@ -52,7 +52,7 @@ type table struct {
 func (m *Manager) countGame(ctx context.Context, game store.Game) error {
 	skip := func() error {
 		m.mx.GameCount(metrics.CountSkipped)
-		return m.store.SkipCount(ctx, game.ID)
+		return m.store.SkipCount(ctx, game.ID, m.now())
 	}
 	compiled, ok := m.catalog.Get(game.GameDefID)
 	if !ok || game.Tutorial != "" {
@@ -89,7 +89,7 @@ func (m *Manager) countGame(ctx context.Context, game store.Game) error {
 	if err != nil {
 		return err
 	}
-	if err := m.store.RecordCounts(ctx, game.ID, counts, awards); err != nil {
+	if err := m.store.RecordCounts(ctx, game.ID, counts, awards, m.now()); err != nil {
 		return err
 	}
 	m.mx.GameCount(metrics.CountCounted)

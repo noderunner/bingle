@@ -48,6 +48,10 @@ type Manager struct {
 	brand     string           // what this instance calls itself; empty for the default
 	now       func() time.Time // clock; tests may replace it via SetClock
 	resultsMu sync.Mutex       // one writer of rated results at a time
+	// badgesMu: one check of the badges earned during play at a time, which
+	// badgesDue wakes (see RunBadges).
+	badgesMu  sync.Mutex
+	badgesDue chan struct{}
 	// tournamentsMu: one thing at a time moves tournaments on. It is taken before any room lock.
 	tournamentsMu sync.Mutex
 	// mayEnterTournament is the capability check for entering (nil: anybody with
@@ -85,6 +89,7 @@ func NewManager(st *store.Store, cat *catalog.Catalog) *Manager {
 		now:       time.Now,
 		upSince:   time.Now(),
 		roomLocks: make(map[string]*sync.Mutex),
+		badgesDue: make(chan struct{}, 1),
 	}
 }
 

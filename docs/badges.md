@@ -65,10 +65,28 @@ from starting rather than a badge from ever being earned.
 An id is never reused for a different badge. A badge that is retired or redefined keeps the
 awards already given, under the name and description they were given with.
 
+A `during` badge counts a game of accounts only, as a player badge does, but needs no seat to have
+moved: it is awarded in the game, so a game abandoned afterwards keeps it.
+
+## Secret awards
+
+A badge that counts a secret fact, or opens or closes its window on one, would tell what the fact
+keeps hidden. Its award is written at once and shown to its holder, and to everyone else only when
+the game ends: when the results worker counts the game, or skips it.
+
 ## Where awards are kept
 
-`badge_awards`, one row per account and badge, never changed but to become visible. Awards for
-badges checked at the `end` are written by the results worker, in the same transaction as the
-game's counts (`bingle_game_counts_total` says when that fails). Nothing shows them yet; the
-profile page, the API and MCP come with step 7 of the
-[achievements plan](history/achievements-plan.md), and `during` badges with step 5.
+`badge_awards`, one row per account and badge, never changed but to become visible (`visible_at`).
+Awards for badges checked at the `end` are written by the results worker, in the same transaction
+as the game's counts (`bingle_game_counts_total` says when that fails).
+
+Badges checked `during` play are written by a worker of their own, away from the moves. A move that
+reports facts moves its game's `facts_seq` on and wakes the worker, which reads that game's facts
+from its start, checks the badges of its seats, and moves the game's `badges_seq` up to it, in one
+transaction with the awards. The watermark says where to look, not what was found, so a crash only
+repeats a check; an undo takes both back no further than the move it keeps. The worker also looks
+once a minute, in case a check failed, and `bingle_badge_checks_total{outcome}` counts its checks:
+`checked`, `skipped` (no `during` badges, or a guest or bot at a seat) and `failed`.
+
+Nothing shows awards yet; the profile page, the API and MCP come with step 7 of the
+[achievements plan](history/achievements-plan.md).

@@ -4,6 +4,12 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.106.0 - 2026-11-13
+
+### Bingle Core 0.106.0
+- Some badges can now be earned in the middle of a game, as soon as you have done what they ask, so leaving the game afterwards doesn't take them away. A badge that would give away something hidden, such as a card you hold, is shown to you at once and to everyone else when the game ends. None of the platform's badges works this way yet; games will bring their own.
+- **For programs:** badges with `when: during` are checked by a worker of their own, woken by each move that reports facts and following a watermark per game (`games.facts_seq` and `games.badges_seq`), so a move never waits for one. An award that counts a secret fact keeps `visible_at` empty until the results worker counts or skips its game. `bingle_badge_checks_total{outcome}` counts the checks (ADR 0130).
+
 ## 0.105.0 - 2026-11-13
 
 ### Bingle Core 0.105.0
