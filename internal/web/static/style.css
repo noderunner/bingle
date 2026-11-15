@@ -298,7 +298,7 @@ form#friend-add input { width: auto; }
 }
 
 #board { width: 100%; max-width: var(--board-max); }
-#board svg { width: 100%; height: auto; display: block; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+#board > svg { width: 100%; height: auto; display: block; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
 
 .seat-strip {
 	display: flex; flex-direction: column; gap: 0.35rem; width: 100%; max-width: var(--board-max);
@@ -1326,7 +1326,7 @@ body.fit-screen .play-screen {
 .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
 .play-screen .board-wrap { flex: 1; min-height: 0; gap: 0.25rem; }
 .play-screen #board { flex: 1; min-height: 0; max-width: none; }
-.play-screen #board svg { height: 100%; }
+.play-screen #board > svg { height: 100%; }
 .play-screen .inspector { flex: none; max-width: none; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .play-screen.boardless .inspector:empty { display: none; }
 /* A map: its own shape at the top of the column. What is under it shares the height left. */
@@ -1334,14 +1334,21 @@ body.fit-screen .play-screen.areas { --rail-least: min(27rem, 42cqw); --inspecto
 .play-screen.areas .board-wrap { align-items: stretch; }
 .play-screen.areas .round-bar { flex: none; margin: 0; }
 .play-screen.areas #board { flex: 0 1 auto; min-height: 45%; aspect-ratio: var(--board-aspect, 2); }
-.play-screen.areas #board svg { width: 100%; height: 100%; }
+.play-screen.areas #board > svg { width: 100%; height: 100%; }
 .play-screen.areas .board-wrap > .card { flex: 0 1 auto; min-height: 0; overflow-y: auto; margin: 0; }
 /* Above and below the map, as wide as the map is drawn (fitToMap in js/game.js): the battle at its left edge, a unit's card at its right. */
 .play-screen.areas .board-wrap > .round-bar, .play-screen.areas .map-under { width: var(--map-width, 100%); max-width: 100%; align-self: center; box-sizing: border-box; }
-.play-screen.areas .map-under { flex: 0 1 auto; min-height: 0; display: flex; align-items: stretch; gap: 0.75rem; }
+/* The row under the map keeps its height: the map gives way, so a battle never scrolls in its card. */
+.play-screen.areas .map-under { flex: none; display: flex; align-items: stretch; gap: 0.75rem; }
 .play-screen.areas .map-under > * { flex: 0 1 auto; width: auto; min-width: 0; min-height: 0; overflow-y: auto; margin: 0; }
 .play-screen.areas .map-under > .exchange { flex: 0 1 48rem; }
-.play-screen.areas .map-under > .unit-info { margin-left: auto; align-self: flex-start; flex: none; }
+/* The card of a unit, over the corner of the map farthest from it (data-corner), inside the map's frame. */
+.play-screen.areas #board { position: relative; }
+#board > .map-overlay { position: absolute; z-index: 5; margin: 0; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35); }
+#board > .map-overlay[data-corner^="n"] { top: calc((100% - var(--map-height, 100%)) / 2 + 0.9rem); }
+#board > .map-overlay[data-corner^="s"] { bottom: calc((100% - var(--map-height, 100%)) / 2 + 0.9rem); }
+#board > .map-overlay[data-corner$="w"] { left: calc((100% - var(--map-width, 100%)) / 2 + 0.9rem); }
+#board > .map-overlay[data-corner$="e"] { right: calc((100% - var(--map-width, 100%)) / 2 + 0.9rem); }
 .play-screen.areas .map-under:empty { display: none; }
 /* A table of cards has no shape of its own: it takes the width, and scrolls if a column runs long. */
 body.fit-screen .play-screen.boardless { justify-content: stretch; grid-template-columns: minmax(0, 1fr) minmax(var(--rail-least), 26rem); }
@@ -1455,7 +1462,7 @@ body.m-mode button, body.m-mode select, body.m-mode summary { touch-action: mani
 .m-map-page > .status-bar { flex: none; margin: 0; border-radius: 0; padding: 0.4rem 0.6rem; font-size: 0.92rem; }
 .m-board-box { position: relative; flex: 1; min-height: 8rem; display: flex; align-items: center; justify-content: center; background: var(--surface-2); }
 body.m-mode .m-board-box #board { width: 100%; height: 100%; max-width: none; }
-body.m-mode .m-board-box #board svg { width: 100%; height: 100%; touch-action: none; }
+body.m-mode .m-board-box #board > svg { width: 100%; height: 100%; touch-action: none; }
 body.m-mode .site-footer { display: none; }
 /* A phone on its side: the whole screen is the map, past the notch. */
 body.m-landscape .topbar { display: none; }

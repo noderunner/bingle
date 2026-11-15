@@ -4,6 +4,15 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.112.3 - 2026-11-15
+
+### Bingle Core 0.112.3
+- On a computer, a unit's card opens over the map instead of under it, in the corner of the map farthest from the unit you clicked, so it covers neither the unit nor the cards under the map. Clicking the card leaves it open; clicking the map away from the units closes it.
+- The card of a battle under the map no longer needs scrolling: the map makes room for it.
+
+### Cthulhu Wars 0.20.3
+- The battle card's *Replay* is a small button at the right of its heading, like the *Emerges* buttons in the history, so the card takes less room.
+
 ## 0.112.2 - 2026-11-15
 
 ### Bingle Core 0.112.2
