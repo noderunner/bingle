@@ -9,7 +9,8 @@ import { offerNotify } from "./browser-notify.js";
 import { guestKeySection } from "./guest-key.js";
 import { gameDefs, loadRows, loadUnread, isFinished, yourImpulse, sortRows, gameRow, openGameRow } from "./mygames.js";
 import { navigate, onLeave } from "./nav.js";
-import { voiceStatus, voiceSettings, onVoiceChange, toggleMute, toggleDeafen, leaveVoice } from "./voice.js";
+import { voiceStatus, voiceSettings, voiceMembers, onVoiceChange, toggleMute, toggleDeafen, leaveVoice } from "./voice.js";
+import { callState, onCallChange, hangUp, toggleMute as toggleDirectMute } from "./dm-call.js";
 import { gamesIcon, joinIcon, micIcon, helpIcon, profileIcon, messageIcon } from "./ui-icons.js";
 import { whoIsHere, onHereChange, startHere, watchHere, beat as beatHere, myName } from "./here.js";
 import { mountDirectMessages, startDirectMessages, unreadCount, friendStateOf, askFriend, loadFriends, onFriendsChange } from "./dm.js";
@@ -504,8 +505,10 @@ function profileWindow() {
 /**
  * The button for a voice call: there while a call is up, wherever the player is
  * (another game, the main page, the profile), with the room code when the call
- * is in a game other than the one on screen. It opens a small panel with the
- * controls and settings of the call (mute, deafen, leave, push to talk, the
+ * is in a game other than the one on screen. A game's call (js/voice.js) and a
+ * direct call with a friend (js/dm-call.js) both show it; a person is in one at a
+ * time. It opens a small panel with the channel's name, its controls (mute,
+ * deafen, leave), who is in it, the settings of a game's call (push to talk, the
  * microphone and speakers) and a way back to its game.
  */
 function voiceChip() {
@@ -515,10 +518,44 @@ function voiceChip() {
 	const pop = h("div", { class: "voice-pop", id: "voice-pop", hidden: true, role: "group", "aria-label": "Voice chat" });
 	document.body.append(pop);
 
+	const handleOf = (name) => "@" + String(name || "").replace(/^@/, "");
+	// The call that is up: a direct one, or a game's.
+	const status = () => {
+		const d = callState();
+		if (d.state) return { direct: true, active: true, muted: d.muted, deafened: false, call: d };
+		return voiceStatus();
+	};
+
 	const paintPop = (st) => {
 		clear(pop);
+		if (st.direct) {
+			const c = st.call;
+			pop.append(h("p", { class: "voice-pop-title", id: "voice-pop-title" }, h("strong", {}, `Channel - ${handleOf(c.name)}`)));
+			const live = c.state === "live";
+			pop.append(
+				h(
+					"div",
+					{ class: "row voice-pop-buttons" },
+					live ? h("button", { type: "button", id: "voice-pop-mute", "aria-pressed": c.muted ? "true" : "false", class: c.muted ? "danger" : "", onclick: toggleDirectMute }, c.muted ? "Unmute" : "Mute") : null,
+					h("button", { type: "button", id: "voice-pop-leave", class: "ghost", onclick: () => hangUp() }, "Leave")
+				),
+				h(
+					"ul",
+					{ class: "voice-peers", id: "voice-peers" },
+					h("li", { class: "voice-peer", "data-state": "connected", "data-me": "1" }, h("span", { class: "voice-dot", "aria-hidden": "true" }), h("span", { class: "voice-name" }, `${myName() || "You"} (you)`), h("span", { class: "voice-state small muted" }, c.muted ? "mic off" : "mic on")),
+					h(
+						"li",
+						{ class: "voice-peer", "data-state": live ? "connected" : "connecting" },
+						h("span", { class: "voice-dot", "aria-hidden": "true" }),
+						h("span", { class: "voice-name" }, handleOf(c.name)),
+						h("span", { class: "voice-state small muted" }, live ? "connected" : c.state === "ringing" ? "calling you" : "ringing…")
+					)
+				)
+			);
+			return;
+		}
 		const here = st.viewing && st.viewing === st.code;
-		pop.append(h("p", { class: "voice-pop-title" }, h("strong", {}, "Voice chat"), " · ", here ? "this game" : `game ${st.code}`));
+		pop.append(h("p", { class: "voice-pop-title", id: "voice-pop-title" }, h("strong", {}, `Channel - ${st.code}`)));
 		const row = h("div", { class: "row voice-pop-buttons" });
 		if (!here) row.append(h("a", { class: "button primary", id: "voice-pop-go", href: `/game/${st.code}` }, "Go to the game"));
 		row.append(
@@ -526,31 +563,35 @@ function voiceChip() {
 			h("button", { type: "button", id: "voice-pop-deafen", "aria-pressed": st.deafened ? "true" : "false", class: st.deafened ? "danger" : "", title: "Stop hearing the others (this also mutes you)", onclick: toggleDeafen }, st.deafened ? "Undeafen" : "Deafen"),
 			h("button", { type: "button", id: "voice-pop-leave", class: "ghost", onclick: () => leaveVoice() }, "Leave")
 		);
-		pop.append(row, ...voiceSettings());
+		pop.append(row, voiceMembers() || "", ...voiceSettings());
 	};
 	const close = () => {
 		pop.hidden = true;
 		chip.setAttribute("aria-expanded", "false");
 	};
-	const update = (st) => {
+	const update = () => {
+		const st = status();
 		chip.hidden = !st.active;
 		if (!st.active) {
 			close();
+			clear(pop);
 			return;
 		}
-		const elsewhere = st.viewing !== st.code;
+		const elsewhere = !st.direct && st.viewing !== st.code;
 		chip.classList.toggle("elsewhere", elsewhere);
 		chip.classList.toggle("muted", st.muted || st.deafened);
 		code.textContent = elsewhere ? st.code : "";
-		const label = `In the voice chat of game ${st.code}` + (st.deafened ? " (deafened)" : st.muted ? " (muted)" : "");
+		const where = st.direct ? `In a call with ${handleOf(st.call.name)}` : `In the voice chat of game ${st.code}`;
+		const label = where + (st.deafened ? " (deafened)" : st.muted ? " (muted)" : "");
 		chip.title = label;
 		chip.setAttribute("aria-label", label);
-		if (!pop.hidden) paintPop(st);
+		// Painted while folded up too: who is in the call is there the moment it opens.
+		paintPop(st);
 	};
 	chip.addEventListener("click", (ev) => {
 		ev.stopPropagation();
 		if (!pop.hidden) return close();
-		paintPop(voiceStatus());
+		paintPop(status());
 		const r = chip.getBoundingClientRect();
 		pop.style.top = `${Math.round(r.bottom + 6)}px`;
 		pop.style.right = `${Math.max(8, Math.round(window.innerWidth - r.right))}px`;
@@ -565,10 +606,12 @@ function voiceChip() {
 		if (ev.key === "Escape" && !pop.hidden) close();
 	});
 	const stop = onVoiceChange(update);
+	const stopDirect = onCallChange(update);
 	onLeave(() => {
 		stop();
+		stopDirect();
 		pop.remove();
 	});
-	update(voiceStatus());
+	update();
 	return chip;
 }

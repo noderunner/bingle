@@ -11,7 +11,7 @@ import { renderBoard, pieceIcon, cssColor, hasHexStyles, defaultHexStyle } from 
 import { showRules as openRules } from "./rules.js";
 import { keepChatFocus, loadChat, receiveChat, chatCard, chatSeen, chatUnread } from "./chat.js";
 import { handleBadge } from "./friend-badge.js";
-import { voiceCard, voiceEvent, voiceResync } from "./voice.js";
+import { voiceControls, voiceEvent, voiceResync } from "./voice.js";
 import { installNav, navigate } from "./nav.js";
 import { installTopbar } from "./topbar.js";
 import { notifyHidden, notifyOn, setNotify } from "./browser-notify.js";
@@ -2393,7 +2393,7 @@ function render() {
 		renderFitted(seats, bottomSeat, seatStack);
 		return;
 	}
-	const side = h("aside", { class: "side-panel" }, voiceCard({ code, me: S.me, seats: S.game.seats }) || "", chatCard({ code, me: S.me }), debugPanel());
+	const side = h("aside", { class: "side-panel" }, chatCard({ code, me: S.me, voice: voiceControls({ code, me: S.me, seats: S.game.seats }) }), debugPanel());
 	chatSeen();
 	root.append(h("div", { class: "game-layout lobby-layout" }, h("div", { class: "board-column" }, statusBar(), lobbyCard(lobbyContext())), side));
 }
@@ -2658,7 +2658,7 @@ function renderFitted(seats, bottomSeat, seatStack) {
 	first.push(kickVoteBanner(), slowTurnBanner(), nextGameBanner(), firstMoveBanner(), drawOfferBanner(), hintBanner());
 	if (!S.me.seat && !S.spectating) first.push(identityGate());
 	first.push(impulseCard(note, choices.filter(Boolean)));
-	const talk = !S.tut ? [voiceCard({ code, me: S.me, seats: S.game.seats }), chatCard({ code, me: S.me })].filter(Boolean) : [];
+	const talk = !S.tut ? [chatCard({ code, me: S.me, voice: voiceControls({ code, me: S.me, seats: S.game.seats }) })] : [];
 
 	const rail = h("aside", { class: "side-panel play-rail", id: "play-rail" }, ...first.filter(Boolean));
 	if (areas) {
@@ -2806,7 +2806,7 @@ function renderMobile(seats, bottomSeat) {
 		chips.seats.push({ page: id, label: seatLabel(seat) || `Seat ${seat}`, color: cssColor(colorOf(seat)) });
 	}
 	pages.push({ id: "log", label: "History", group: "log", node: h("div", { class: "m-stack" }, historyCard()) });
-	if (!S.tut) pages.push({ id: "chat", label: "Chat", group: "chat", node: h("div", { class: "m-stack" }, voiceCard({ code, me: S.me, seats: S.game.seats }), chatCard({ code, me: S.me })) });
+	if (!S.tut) pages.push({ id: "chat", label: "Chat", group: "chat", node: h("div", { class: "m-stack" }, chatCard({ code, me: S.me, voice: voiceControls({ code, me: S.me, seats: S.game.seats }) })) });
 
 	const unread = S.mPage === "chat" ? 0 : chatUnread();
 	const shell = mobileShell({
@@ -2907,7 +2907,7 @@ function renderMobileCards(seats, bottomSeat) {
 	for (const seat of seatsFrom(bottomSeat)) players.append(seatStrip(seat));
 	pages.push({ id: "players", label: "Players", group: "players", node: players });
 	pages.push({ id: "log", label: "History", group: "log", node: h("div", { class: "m-stack" }, historyCard()) });
-	if (!S.tut) pages.push({ id: "chat", label: "Chat", group: "chat", node: h("div", { class: "m-stack" }, voiceCard({ code, me: S.me, seats: S.game.seats }), chatCard({ code, me: S.me })) });
+	if (!S.tut) pages.push({ id: "chat", label: "Chat", group: "chat", node: h("div", { class: "m-stack" }, chatCard({ code, me: S.me, voice: voiceControls({ code, me: S.me, seats: S.game.seats }) })) });
 
 	const unread = S.mPage === "chat" ? 0 : chatUnread();
 	const shell = mobileShell({

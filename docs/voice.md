@@ -5,17 +5,22 @@ peer (WebRTC). Nothing is recorded and the audio never passes through the server
 
 ## For players
 
-* The **Voice** card appears for seated players when there is somebody to talk to (another
-  person's seat, taken or open). Spectators and people playing only bots do not get it.
-* **Join voice** asks for the microphone (the browser prompts) and puts you in the call.
-  Everybody in the call hears everybody else. **Mute** closes your microphone, **Deafen**
-  silences the others (and mutes you), **Leave** ends it. Each person has a volume slider.
-* **Push to talk**: tick it, choose the key (default `V`); the microphone is open only while
-  the key is held (not while typing in a text box).
-* With several microphones or speakers the card offers pickers (speaker choice needs a
+* A **microphone** in the head of the chat card appears for seated players when there is
+  somebody to talk to (another person's seat, taken or open). Spectators and people playing
+  only bots do not get it.
+* A press of it asks for the microphone (the browser prompts) and puts you in the call; it
+  lights up, and the call's button appears in the top bar. Its panel, headed *Channel -* and
+  the room code, has everything else: who is in the call, each with a volume slider; **Mute**
+  closes your microphone, **Deafen** silences the others (and mutes you), **Leave** ends it.
+  Everybody in the call hears everybody else. Pressing the lit microphone opens the panel.
+* **Push to talk** (in the panel): tick it, choose the key (default `V`); the microphone is
+  open only while the key is held (not while typing in a text box).
+* With several microphones or speakers the panel offers pickers (speaker choice needs a
   browser that supports it; Chrome does). Choices are remembered in the browser.
 * Voice needs a **secure connection**: `https://` (see [tls.md](tls.md)) or `localhost`.
-  Over plain `http://` the card says so instead of offering the button.
+  Over plain `http://` a press of the microphone says so under it.
+* A call with a friend from the Friends window shows the same button in the top bar, its
+  panel headed *Channel -* and the friend's handle.
 * Players in the call see each other's network address (that is how a direct connection
   works). A TURN relay (below) hides it.
 * Reloading the page leaves the call: join again (browsers want a click before they open

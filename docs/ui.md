@@ -546,11 +546,13 @@ mail comes from so the person can whitelist it. The links in the mails open `/no
 
 ### Voice chat
 
-`js/voice.js` is the **Voice card** (`#voice-card`, above the chat card, and on the chat page
-of the phone layout) for seated players when somebody else could be in the call. It starts folded
-up to its heading and badge, and its triangle (`#voice-expand`, as on a seat's card) opens it: *Join
-voice*, then the players in the call with a volume for each. Mute, deafen, leave, push to talk and
-the microphone and speakers are in the panel of the call's button in the top bar (below). The call lives in module state
+There is no voice card: `js/voice.js` puts a **microphone** in the head of the chat card
+(`#voice-join`, `voiceControls()`, which `game.js` hands to `chatCard`) for seated players when somebody else could be
+in the call, on the computer layouts and on the chat page of the phone layout. A press joins the call, and the
+microphone lights up (`aria-pressed`, `.on`); pressed again it opens the call's panel in the top bar (below), which
+has who is in the call with a volume for each, mute, deafen, leave, push to talk and the microphone and speakers. A
+line under the chat card's head (`#voice-note`) says why the microphone could not be opened, or where the call is
+when it is in another game. The call lives in module state
 (the page redraws on every move; the card is rebuilt from it) and has a **WebSocket of its own**
 (`/ws/{code}?only=voice`), so it does not depend on the page; `game.js` still hands it the
 `voice` events of the page's socket (who is in the game's call)
@@ -566,9 +568,11 @@ the modules that keep a page's state (`chat.js`, `render.js`, `tooltip.js`) rese
 (`onNavigate`). With no call up, links load pages as they always did. A **button for the call**
 (`#voice-chip`, a microphone with a green dot, orange when muted) sits in the top bar of every
 page while the call is up, with the room code when it is not the game on screen; it opens a
-panel (`#voice-pop`) with *Go to the game*, *Mute*, *Deafen*, *Leave*, push to talk and its key, and
-the microphone and speakers when there is a choice (`voiceSettings()` in `voice.js`). The voice card of another
-game says where the call is (`#voice-elsewhere`) and offers to *talk in this game instead*.
+panel (`#voice-pop`) headed *Channel - {room code}* (`#voice-pop-title`), with *Go to the game*, *Mute*, *Deafen*,
+*Leave*, who is in the call (`voiceMembers()`), push to talk and its key, and the microphone and speakers when there
+is a choice (`voiceSettings()` in `voice.js`). A direct call with a friend (`js/dm-call.js`) shows the same button,
+its panel headed *Channel - @handle* with *Mute*, *Leave* and the two of you. On the page of another game the
+microphone in the chat says where the call is (`#voice-elsewhere`), and a press of it moves the call there.
 
 ### Lobbies, chat and reactions
 
@@ -884,11 +888,11 @@ picked), `#round-bar`, `#battle-panel`, `.seat-grid`, `.faction-card`,
 `#autoplay-state`, `#chat-card` with `#chat-log`,
 `#chat-input`, `#chat-send`, `#chat-name`, `#emoji-button`, `#emoji-panel`, the card table
 `#card-table` (`.ct-seat.me .zone-hand`, `.pc-slot`, `.pcard.face[data-card]`, `.pc-zoom`, and
-`.zone.reorderable` with `.pc-dragging` / `.pc-shift` while a card is dragged), the voice card
-`#voice-card` (`#voice-expand` and `#voice-body`, folded up at first; `#voice-join`,
-`#voice-peers li[data-voice-seat][data-state]`, `#voice-badge`, `#voice-error`, `#voice-elsewhere` and
-`#voice-switch` when the call is in another game), the top-bar button of a call (`#voice-chip` with
-`#voice-chip-code`, and its panel `#voice-pop` with `#voice-pop-go|mute|deafen|leave`, `#voice-ptt`,
+`.zone.reorderable` with `.pc-dragging` / `.pc-shift` while a card is dragged), the microphone of the voice chat
+`#chat-card h3 #voice-join` (`aria-pressed` while in the call) and the line under it `#voice-note` (`#voice-error`,
+or `#voice-elsewhere` when the call is in another game), the top-bar button of a call (`#voice-chip` with
+`#voice-chip-code`, and its panel `#voice-pop` with `#voice-pop-title`, `#voice-pop-go|mute|deafen|leave`,
+`#voice-peers li[data-voice-seat][data-state]`, `#voice-ptt`,
 `#voice-ptt-key`, `#voice-input` and `#voice-output`), and the lobby: `#lobby`,
 `#invite-link`, `#copy-invite`, `#lobby-seats li[data-seat]`, `#lobby-join`,
 `#lobby-name`, `#lobby-seat`, `#lobby-take`, `#faction-<seat>`, `#fill-bots`, `#start-game`,

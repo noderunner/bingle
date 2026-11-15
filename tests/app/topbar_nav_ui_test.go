@@ -149,10 +149,10 @@ func TestVoiceUI_ACallStaysUpWhenThePlayerGoesToAnotherGameOrTheMainPage(t *test
 	if err := chromedp.Run(alice, chromedp.Navigate(baseURL+"/game/"+call), chromedp.WaitReady("#board-svg", chromedp.ByQuery)); err != nil {
 		t.Fatal(err)
 	}
-	waitJS(t, alice, "voice card", `document.getElementById("voice-join")`, 15*time.Second)
-	waitJS(t, bob, "voice card", `document.getElementById("voice-join")`, 15*time.Second)
+	waitJS(t, alice, "the microphone in the chat", `document.getElementById("voice-join")`, 15*time.Second)
+	waitJS(t, bob, "the microphone in the chat", `document.getElementById("voice-join")`, 15*time.Second)
 	clickSel(t, alice, "#voice-join")
-	waitJS(t, alice, "Alice in the call", `document.getElementById("voice-badge").textContent === "in call"`, 15*time.Second)
+	waitJS(t, alice, "Alice in the call", `document.getElementById("voice-join").getAttribute("aria-pressed") === "true"`, 15*time.Second)
 	clickSel(t, bob, "#voice-join")
 	connected := `(function(){ const r = document.querySelector('#voice-peers li[data-voice-seat="%d"]:not([data-me])'); return !!r && r.dataset.state === "connected"; })()`
 	waitJS(t, alice, "connected to Bob", fmt.Sprintf(connected, 2), 45*time.Second)
@@ -172,12 +172,12 @@ func TestVoiceUI_ACallStaysUpWhenThePlayerGoesToAnotherGameOrTheMainPage(t *test
 	if !evalBool(t, alice, `window.__marker === 42`) {
 		t.Fatal("the document was reloaded: the call is gone")
 	}
-	// The call is still up: its button names its game, the audio plays, the card says where the call is.
+	// The call is still up: its button names its game, the audio plays, the chat card says where the call is.
 	waitJS(t, alice, "the room on the button", `document.getElementById("voice-chip-code").textContent === "`+call+`"`, 10*time.Second)
 	if n := evalInt(t, alice, `document.querySelectorAll('#voice-audio audio').length`); n != 1 {
 		t.Errorf("%d audio elements, want the one of Bob", n)
 	}
-	waitJS(t, alice, "the card says where the call is", `document.getElementById("voice-elsewhere") !== null && document.getElementById("voice-elsewhere").textContent.indexOf("`+call+`") >= 0`, 10*time.Second)
+	waitJS(t, alice, "the chat card says where the call is", `document.getElementById("voice-elsewhere") !== null && document.getElementById("voice-elsewhere").textContent.indexOf("`+call+`") >= 0`, 10*time.Second)
 	// Bob's side did not notice: still connected.
 	if !evalBool(t, bob, fmt.Sprintf(connected, 1)) {
 		t.Error("Bob lost the connection to Alice when she went to another game")
@@ -207,7 +207,7 @@ func TestVoiceUI_ACallStaysUpWhenThePlayerGoesToAnotherGameOrTheMainPage(t *test
 	waitJS(t, alice, "muted from the main page", `document.getElementById("voice-pop-mute").textContent === "Unmute"`, 5*time.Second)
 	clickSel(t, alice, "#voice-pop-mute")
 	clickSel(t, alice, "#voice-pop-go")
-	waitJS(t, alice, "back in the game of the call", `location.pathname === "/game/`+call+`" && document.getElementById("voice-badge") && document.getElementById("voice-badge").textContent === "in call"`, 20*time.Second)
+	waitJS(t, alice, "back in the game of the call", `location.pathname === "/game/`+call+`" && document.getElementById("voice-join") && document.getElementById("voice-join").getAttribute("aria-pressed") === "true"`, 20*time.Second)
 	if !evalBool(t, alice, `window.__marker === 42`) {
 		t.Fatal("the document was reloaded on the way back")
 	}
