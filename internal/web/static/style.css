@@ -1735,7 +1735,9 @@ form[data-opponent="bots"] .human-only { display: none; }
 
 /* ---- voice chat ------------------------------------------------------------------------ */
 .voice h3 { display: flex; align-items: center; gap: 0.5rem; }
-.voice .badge.turn { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.voice h3 + .voice-body[hidden] { display: none; }
+.voice-body > :first-child { margin-top: 0; }
+.voice .badge.turn, .voice-pop .badge.turn { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
 .voice-peers { list-style: none; margin: 0.4rem 0; padding: 0; display: flex; flex-direction: column; gap: 0.3rem; }
 .voice-peer { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
 .voice-dot { width: 0.7rem; height: 0.7rem; border-radius: 50%; background: var(--border); flex: none; transition: box-shadow 0.1s, background 0.2s; }
@@ -1781,6 +1783,7 @@ form[data-opponent="bots"] .human-only { display: none; }
 .voice-pop[hidden] { display: none; }
 .voice-pop p { margin: 0 0 0.3rem; }
 .voice-pop-buttons { flex-wrap: wrap; gap: 0.4rem; margin-top: 0.4rem; }
+.voice-pop .voice-ptt { margin-top: 0.6rem; }
 
 /* ---- the footer: the version of the engine -------------------------------------- */
 .site-footer { text-align: center; padding: 1.2rem 1rem 1rem; color: var(--muted); font-size: 0.72rem; }

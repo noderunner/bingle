@@ -4,6 +4,12 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.112.1 - 2026-11-15
+
+### Bingle Core 0.112.1
+- The voice chat card takes less room: it starts folded up, and its triangle opens it, as on a seat's card. Open, it has the *Join voice* button and then the players in the call, without the explanations.
+- During a call, mute, deafen, push to talk and the choice of microphone and speakers are in the panel of the microphone button in the top bar, which no longer says when nobody else is in the call. The panel now stays open while you use it.
+
 ## 0.112.0 - 2026-11-14
 
 ### Bingle Core 0.112.0
