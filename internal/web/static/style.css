@@ -1336,6 +1336,13 @@ body.fit-screen .play-screen.areas { --rail-least: min(27rem, 42cqw); --inspecto
 .play-screen.areas #board { flex: 0 1 auto; min-height: 45%; aspect-ratio: var(--board-aspect, 2); }
 .play-screen.areas #board svg { width: 100%; height: 100%; }
 .play-screen.areas .board-wrap > .card { flex: 0 1 auto; min-height: 0; overflow-y: auto; margin: 0; }
+/* Above and below the map, as wide as the map is drawn (fitToMap in js/game.js): the battle at its left edge, a unit's card at its right. */
+.play-screen.areas .board-wrap > .round-bar, .play-screen.areas .map-under { width: var(--map-width, 100%); max-width: 100%; align-self: center; box-sizing: border-box; }
+.play-screen.areas .map-under { flex: 0 1 auto; min-height: 0; display: flex; align-items: stretch; gap: 0.75rem; }
+.play-screen.areas .map-under > * { flex: 0 1 auto; width: auto; min-width: 0; min-height: 0; overflow-y: auto; margin: 0; }
+.play-screen.areas .map-under > .exchange { flex: 0 1 48rem; }
+.play-screen.areas .map-under > .unit-info { margin-left: auto; align-self: flex-start; flex: none; }
+.play-screen.areas .map-under:empty { display: none; }
 /* A table of cards has no shape of its own: it takes the width, and scrolls if a column runs long. */
 body.fit-screen .play-screen.boardless { justify-content: stretch; grid-template-columns: minmax(0, 1fr) minmax(var(--rail-least), 26rem); }
 .play-screen.boardless .board-column { overflow-y: auto; }

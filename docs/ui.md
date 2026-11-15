@@ -50,7 +50,11 @@ wide, the rail goes under the board, whose row is no taller than the board.
 - **A table of cards** (`.boardless`) has no shape of its own. The rail is at most 26rem and the table takes the rest of
   the width, with cards sized to the window. The column scrolls if a pile of cards runs long.
 - **A map** (`.areas`) sits at the top of its column under the round bar, with a wider rail (`--rail-least`). What is
-  under it shares the height left: the battle, the card of a unit, an exchange. The rail's cards take turns behind
+  under it (`#map-under`) shares the height left: the battle and an exchange at the left, the card of the unit last
+  clicked (the page script's `unitInfoCard({brief: true})`) at the right; a click on the map away from the units closes
+  that card. A map short of height is drawn narrower than its column, so the round bar and `#map-under` are as wide as
+  the map is drawn (`--map-width` on `.board-wrap`, kept by a `ResizeObserver` in `fitToMap`), and their edges are the
+  map's. A game's look may give `#map-under` a height of its own, so that the card opening does not move the map. The rail's cards take turns behind
   `.rail-tabs`: `#rail-tab-seats`, `#rail-tab-talk` and `#rail-tab-history`. Every pane stays on the page, so a message being typed survives a change of tab.
   The talk and the history fill the height the rail has left.
 - **A seat's card** is a summary: its numbers and an `.expand-toggle`. Open (`.seat-more`), Cthulhu Wars has a line between its sections and its words in the cult's colour (`--seat-ink`); another game's
