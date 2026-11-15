@@ -4,6 +4,14 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.113.1 - 2026-11-15
+
+### Bingle Core 0.113.1
+- On a game with a map, the microphone is there on a computer too, at the top of the *Chat* tab.
+- On a phone, the call's window fits the screen instead of running off its left edge, and scrolls when it is taller than the screen.
+- On a phone, the *History* opens on the newest move, as on a computer, and the buttons to the first and the latest position bring the list there with them.
+- On a phone, the games in the *Active Games* and *Join Game* windows take two lines: the game's name and players above, its badges and its button below.
+
 ## 0.113.0 - 2026-11-15
 
 ### Bingle Core 0.113.0

@@ -565,6 +565,18 @@ function voiceChip() {
 		);
 		pop.append(row, voiceMembers() || "", ...voiceSettings());
 	};
+	// Under the button, its right edge on the button's, but always inside the window: on a
+	// phone the button can be nearer the left edge than the panel is wide.
+	const place = () => {
+		const r = chip.getBoundingClientRect();
+		const vw = document.documentElement.clientWidth || window.innerWidth;
+		const top = Math.round(r.bottom + 6);
+		pop.style.top = `${top}px`;
+		pop.style.right = "auto";
+		pop.style.maxHeight = `${Math.max(120, window.innerHeight - top - 8)}px`;
+		const w = pop.offsetWidth;
+		pop.style.left = `${Math.round(Math.max(8, Math.min(r.right - w, vw - w - 8)))}px`;
+	};
 	const close = () => {
 		pop.hidden = true;
 		chip.setAttribute("aria-expanded", "false");
@@ -592,10 +604,8 @@ function voiceChip() {
 		ev.stopPropagation();
 		if (!pop.hidden) return close();
 		paintPop(status());
-		const r = chip.getBoundingClientRect();
-		pop.style.top = `${Math.round(r.bottom + 6)}px`;
-		pop.style.right = `${Math.max(8, Math.round(window.innerWidth - r.right))}px`;
 		pop.hidden = false;
+		place();
 		chip.setAttribute("aria-expanded", "true");
 	});
 	document.addEventListener("click", (ev) => {
@@ -604,6 +614,9 @@ function voiceChip() {
 	});
 	document.addEventListener("keydown", (ev) => {
 		if (ev.key === "Escape" && !pop.hidden) close();
+	});
+	window.addEventListener("resize", () => {
+		if (!pop.hidden) place();
 	});
 	const stop = onVoiceChange(update);
 	const stopDirect = onCallChange(update);

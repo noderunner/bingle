@@ -84,7 +84,9 @@ Turning the phone changes what it shows (`renderMobile`). Upright, it has the ca
 status, any tutorial and notices), the round, each seat, the history and the chat. On its side, `body.m-landscape`
 gives the whole screen to the map, with no bars, for tapping areas, moving units, pinching and dragging. On the player's
 turn `#m-turn-note` says so, and asks them to hold the phone upright when the next choice is not on the map. A pending
-move carries across the turn of the phone.
+move carries across the turn of the phone. On the history's page the list itself scrolls (`#events` or `#move-list`, not
+the pane around it), as on a computer, so it opens on the newest move and the buttons to the first and the latest position
+take the list with them.
 
 `isLandscape` asks the device (`screen.orientation`), not the window: an on-screen keyboard makes an upright window
 wider than it is tall. With a mouse, on the phone layout asked for in the options, the window's shape decides. A touch
@@ -299,7 +301,8 @@ which picture a button carries).
 lobby*, how many seats are still open (`.badge.open-seats[data-open-seats]`), *Open*, and
 ✕. The ✕ resigns from a game in play after asking, and says so if that ends it for the whole
 table; a game that has not started only leaves the list, after asking
-([ADR 0101](decisions/0101-the-x-resigns-and-games-are-found-where-they-are-wanted.md)).
+([ADR 0101](decisions/0101-the-x-resigns-and-games-are-found-where-they-are-wanted.md)). On a screen narrower than 560px a game of this list, and of the
+*Join Game* window's, takes two lines: its name and players (and the ✕) above, its badges and its button below.
 
 The games of a game are in its setup (`#setup-tab-active`: `#setup-active-list li`, each with
 *Watch*), and *Join Game* (`#open-join`) lists the tables waiting for players
