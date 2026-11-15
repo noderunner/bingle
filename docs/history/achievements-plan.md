@@ -1,9 +1,10 @@
 # Plan: achievements and badges
 
-Status: **settled**, ready to implement (opened 2026-10-28, settled 2026-11-13). The sections
+Status: **done** (opened 2026-10-28, settled 2026-11-13, built by 2026-11-14). The sections
 before *Decisions* are the initial thinking, kept as written; where they differ, the decisions
-win. Nothing is implemented. ADRs [0129](../decisions/0129-the-rules-report-facts.md) (facts) and
-[0130](../decisions/0130-badges.md) (badges) record the decisions as they are to be built.
+win. All eight steps of the order of work are built. ADRs [0129](../decisions/0129-the-rules-report-facts.md)
+(facts) and [0130](../decisions/0130-badges.md) (badges) record the decisions as built; the platform
+badges are in [docs/badges.md](../badges.md).
 
 ## What was asked for
 
@@ -226,3 +227,9 @@ more games. After that the opportunity is gone. Worth a deliberate yes or no.
 - 2026-11-14: step 6 built (#194): a badge is announced to its holder (a toast and a browser
   notification, on by default for an account since #195) and in the game's chat. Step 7 follows,
   at `GET /api/players/{handle}/badges` beside the ratings rather than `/api/accounts/…`.
+- 2026-11-14: step 7 built (#196): `GET /api/players/{handle}/badges`, the MCP tool `get_badges`, a
+  Badges card on the profile page, and badges in a handle's popover. Step 8 follows.
+- 2026-11-14: step 8 built in the private overlay: Cthulhu Wars reports `spellbook`, `battle_start`
+  and `battle_end`, and its first badge is two spellbooks in one battle as Great Cthulhu. The plan
+  is done. Left for later, each small enough to stand alone: more game badges, and drawing each
+  badge's icon from the client's `web.yaml`, which no page reads yet.
