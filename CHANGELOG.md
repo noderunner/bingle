@@ -10,6 +10,10 @@ what the help window shows under *Recent changes*, so it is written for the peop
 - The voice chat card is gone. To talk, press the microphone at the top right of the chat card: it joins the game's voice chat and lights up green, and the call's button appears in the top bar as before. Pressing the lit microphone opens that button's window.
 - The call's window in the top bar now lists who is in the call, with a volume for each, above push to talk and the microphone and speakers. Its heading names the channel: *Channel -* and the game's room code, or *Channel -* and your friend's handle.
 - A call with a friend now shows the call's button in the top bar too, with *Mute* and *Leave*.
+- On a game with a map, the microphone is there on a computer too, at the top of the *Chat* tab.
+- On a phone, the call's window fits the screen instead of running off its left edge, and scrolls when it is taller than the screen.
+- On a phone, the *History* opens on the newest move, as on a computer, and the buttons to the first and the latest position bring the list there with them.
+- On a phone, the games in the *Active Games* and *Join Game* windows take two lines: the game's name and players above, its badges and its button below.
 
 ## 0.112.4 - 2026-11-15
 

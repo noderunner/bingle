@@ -102,7 +102,7 @@ func TestWebFitScreen_TheTurnBringsTheActionsIntoView(t *testing.T) {
 		t.Fatalf("create: %d", code)
 	}
 	room := created.RoomCode
-	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1024, 600), chromedp.Navigate(base+"/")); err != nil {
+	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1024, 480), chromedp.Navigate(base+"/")); err != nil {
 		t.Fatal(err)
 	}
 	var joined bool

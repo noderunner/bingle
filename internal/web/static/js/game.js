@@ -4756,6 +4756,8 @@ function historyControls() {
 /** Brings the newest entry of the history and the moves into view, once the page has been laid out. */
 function showLogEnd() {
 	const go = () => {
+		// A step back through the history in the meantime keeps its own place in the list.
+		if (!isLive()) return;
 		for (const el of [document.getElementById("events"), document.getElementById("move-list"), document.getElementById("m-page-log")]) {
 			if (el) el.scrollTop = el.scrollHeight;
 		}

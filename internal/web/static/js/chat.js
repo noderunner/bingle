@@ -251,7 +251,7 @@ export function chatCard({ code, me, voice = null }) {
 	const card = h("div", { class: "card chat", id: "chat-card" });
 	badgeEl = h("span", { class: "badge chat-unread", id: "chat-unread", hidden: chat.unread === 0 }, String(chat.unread));
 	// The voice chat's microphone sits in the head, and its line under it (js/voice.js).
-	card.append(h("h3", { class: "chat-head" }, "Chat ", badgeEl, voice && voice.button ? voice.button : null));
+	card.append(h("h3", { class: "chat-head" }, h("span", { class: "chat-title" }, "Chat"), badgeEl, voice && voice.button ? voice.button : null));
 	if (voice && voice.note) card.append(voice.note);
 
 	listEl = h("ol", { class: "chat-log", id: "chat-log", "aria-live": "polite", "aria-label": "Chat messages" });

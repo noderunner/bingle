@@ -273,6 +273,16 @@ form#friend-add input { width: auto; }
 .my-games .title { font-weight: 700; }
 .my-games .meta { color: var(--muted); font-size: 0.85rem; }
 .my-games .grow { flex: 1; min-width: 0; }
+/* On a narrow screen a game takes two lines: its name and who plays it (and the ✕ to remove it) above, its
+   badges and its button below, the badges wrapping as they need. */
+@media (max-width: 560px) {
+	.my-games li:has(> .grow) { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.45rem 0.6rem; }
+	.my-games li:has(> .grow) > .grow { grid-column: 1 / -1; grid-row: 1; }
+	.my-games li:has(> .grow) > button.ghost.icon { grid-column: 2; grid-row: 1; align-self: start; justify-self: end; }
+	.my-games li:has(> button.ghost.icon) > .grow { grid-column: 1; }
+	.my-games li:has(> .grow) > .game-badges { grid-column: 1; grid-row: 2; display: flex; flex-wrap: wrap; justify-content: flex-start; }
+	.my-games li:has(> .grow) > :is(a.button, button):not(.ghost.icon) { grid-column: 2; grid-row: 2; justify-self: end; }
+}
 
 .error-text { color: var(--danger); font-weight: 600; min-height: 1.4em; }
 
@@ -1390,7 +1400,10 @@ a.button .unread-count { display: inline-block; margin-left: 0.4rem; min-width: 
 .play-rail > #rail-pane-talk, .play-rail > #rail-pane-history { flex: 1 1 0; min-height: 18rem; }
 #rail-pane-talk > .chat { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
 #rail-pane-talk .chat-log { flex: 1 1 0; max-height: none; }
-#rail-pane-talk > .chat > h3 { display: none; }
+/* The tab says "Chat": the card's head keeps only the voice chat's microphone. */
+#rail-pane-talk > .chat > h3:not(:has(.voice-mic)) { display: none; }
+#rail-pane-talk > .chat > h3 > :is(.chat-title, .chat-unread) { display: none; }
+#rail-pane-talk > .chat > h3 { margin: 0 0 0.3rem; }
 #rail-pane-history > .side-moves { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
 .play-screen .side-moves > .history-pane { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
 .play-screen .side-moves > .history-pane > .events, .play-screen .side-moves > .history-pane > .move-list { flex: 1 1 0; min-height: 0; overflow-y: auto; }
@@ -1508,8 +1521,9 @@ body.m-mode .options-window { top: 0; left: 0; right: 0; bottom: 0; width: auto;
 .m-page-chat .m-stack, .m-page-log .m-stack { height: 100%; box-sizing: border-box; }
 .m-page-chat .m-stack > .card, .m-page-log .m-stack > .card { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .m-page-chat .chat .chat-log { flex: 1; max-height: none; min-height: 0; }
-.m-page-log .history-pane { flex: 1; min-height: 0; overflow-y: auto; }
-.m-page-log .events { max-height: none; }
+/* As on a computer, the list itself scrolls (not the pane around it), so the page's code can open it at its end. */
+.m-page-log .side-moves > .history-pane { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
+.m-page-log .side-moves > .history-pane > .events, .m-page-log .side-moves > .history-pane > .move-list { flex: 1 1 0; min-height: 0; max-height: none; overflow-y: auto; }
 .m-map-page > .status-bar .message { display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
 .square-badge { pointer-events: none; font-weight: 700; }
@@ -1799,7 +1813,7 @@ button.voice-mic.elsewhere { border-color: #2f9e44; color: #2f9e44; }
 .voice-chip-code:empty { display: none; }
 .voice-chip.elsewhere { border-color: #2f9e44; }
 .voice-pop {
-	position: fixed; z-index: 130; width: min(19rem, calc(100vw - 16px)); padding: 0.7rem 0.8rem;
+	position: fixed; z-index: 130; width: min(19rem, calc(100vw - 16px)); box-sizing: border-box; overflow-y: auto; overscroll-behavior: contain; padding: 0.7rem 0.8rem;
 	background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
 }
 .voice-pop[hidden] { display: none; }
