@@ -518,10 +518,7 @@ function voiceChip() {
 	const paintPop = (st) => {
 		clear(pop);
 		const here = st.viewing && st.viewing === st.code;
-		pop.append(
-			h("p", { class: "voice-pop-title" }, h("strong", {}, "Voice chat"), " · ", here ? "this game" : `game ${st.code}`),
-			!st.joined ? h("p", { class: "small muted" }, "Joining…") : st.peers ? h("p", { class: "small muted" }, `${st.peers} other${st.peers === 1 ? "" : "s"} in the call.`) : null
-		);
+		pop.append(h("p", { class: "voice-pop-title" }, h("strong", {}, "Voice chat"), " · ", here ? "this game" : `game ${st.code}`));
 		const row = h("div", { class: "row voice-pop-buttons" });
 		if (!here) row.append(h("a", { class: "button primary", id: "voice-pop-go", href: `/game/${st.code}` }, "Go to the game"));
 		row.append(

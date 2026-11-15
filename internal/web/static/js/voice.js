@@ -761,7 +761,6 @@ function deviceSelect(label, id, devices, value, onchange) {
 
 function fill(card) {
 	card.textContent = "";
-	const names = [...V.roster.entries()].filter(([seat]) => seat !== V.me.seat).map(([, n]) => n);
 	const head = h("h3", {}, "Voice ", h("span", { class: "badge" + (V.joined ? " turn" : ""), id: "voice-badge" }, V.joined ? "in call" : V.joining ? "joining…" : "off"));
 	// The card is folded up until its triangle opens it, and stays as it was left while the page lasts.
 	const body = h("div", { class: "voice-body", id: "voice-body", hidden: !cardOpen });
@@ -800,21 +799,7 @@ function fill(card) {
 	if (V.error) body.append(h("p", { class: "small error", id: "voice-error", role: "alert" }, V.error));
 
 	if (!V.joined) {
-		if (names.length) body.append(h("p", { class: "small muted", id: "voice-hint" }, `${names.join(", ")} ${names.length === 1 ? "is" : "are"} in the voice chat.`));
-		body.append(
-			h(
-				"button",
-				{
-					type: "button",
-					class: "primary",
-					id: "voice-join",
-					disabled: V.joining,
-					title: "Audio goes straight between the players' browsers, not through the server. The other players can see your network address.",
-					onclick: join,
-				},
-				V.joining ? "Joining…" : "Join voice"
-			)
-		);
+		body.append(h("button", { type: "button", class: "primary", id: "voice-join", disabled: V.joining, onclick: join }, V.joining ? "Joining…" : "Join voice"));
 		return;
 	}
 

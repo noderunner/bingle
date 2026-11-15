@@ -35,8 +35,6 @@ func TestVoiceUI_TwoPlayersConnect(t *testing.T) {
 
 	clickSel(t, alice, "#voice-join")
 	waitJS(t, alice, "Alice in the call", `document.getElementById("voice-badge").textContent === "in call"`, 10*time.Second)
-	// Bob sees who is already there before joining.
-	waitJS(t, bob, "the hint", `document.getElementById("voice-hint").textContent.indexOf("Alice") >= 0`, 10*time.Second)
 	clickSel(t, bob, "#voice-join")
 
 	// Both ends reach "connected" (the higher seat makes the offer).
@@ -82,10 +80,10 @@ func openVoicePanel(t *testing.T, ctx context.Context) {
 	waitJS(t, ctx, "the call's panel", `!document.getElementById("voice-pop").hidden && document.getElementById("voice-pop-mute") !== null`, 5*time.Second)
 }
 
-// The voice card starts folded up and says nothing it need not: its triangle
-// opens it, and during a call it lists who is in it, while mute, deafen, push to
-// talk and the devices are in the top bar's panel, which stays open while they
-// are used and does not say that nobody else is there.
+// The voice card starts folded up and explains nothing: its triangle opens it,
+// and during a call it lists who is in it, while mute, deafen, push to talk and
+// the devices are in the top bar's panel, which stays open while they are used
+// and does not count who else is there.
 func TestVoiceUI_CardFoldsAndTheSettingsAreInTheTopBar(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	room := newTakRoom(t, baseURL, "tic-tac-toe", "Alice")
@@ -99,7 +97,7 @@ func TestVoiceUI_CardFoldsAndTheSettingsAreInTheTopBar(t *testing.T) {
 	}
 	clickSel(t, ctx, "#voice-expand")
 	waitJS(t, ctx, "the card open", `!document.getElementById("voice-body").hidden && document.getElementById("voice-expand").getAttribute("aria-expanded") === "true"`, 5*time.Second)
-	if txt := evalString(t, ctx, `document.getElementById("voice-card").textContent`); strings.Contains(txt, "Talk to the other players") || strings.Contains(txt, "Audio goes") {
+	if txt := evalString(t, ctx, `document.getElementById("voice-card").textContent`); strings.Contains(txt, "Talk to the other players") || strings.Contains(txt, "Audio goes") || strings.Contains(txt, "in the voice chat") {
 		t.Errorf("the card still explains itself: %q", txt)
 	}
 
@@ -113,8 +111,8 @@ func TestVoiceUI_CardFoldsAndTheSettingsAreInTheTopBar(t *testing.T) {
 	}
 	openVoicePanel(t, ctx)
 	waitJS(t, ctx, "push to talk in the panel", `document.querySelector("#voice-pop #voice-ptt") !== null`, 5*time.Second)
-	if txt := evalString(t, ctx, `document.getElementById("voice-pop").textContent`); strings.Contains(txt, "Nobody else") {
-		t.Errorf("the panel says nobody else is there: %q", txt)
+	if txt := evalString(t, ctx, `document.getElementById("voice-pop").textContent`); strings.Contains(txt, "Nobody else") || strings.Contains(txt, "in the call") || strings.Contains(txt, "Joining") {
+		t.Errorf("the panel explains the call: %q", txt)
 	}
 	// A button of the panel repaints it; the panel stays open.
 	clickSel(t, ctx, "#voice-pop-mute")

@@ -539,7 +539,7 @@ voice*, then the players in the call with a volume for each. Mute, deafen, leave
 the microphone and speakers are in the panel of the call's button in the top bar (below). The call lives in module state
 (the page redraws on every move; the card is rebuilt from it) and has a **WebSocket of its own**
 (`/ws/{code}?only=voice`), so it does not depend on the page; `game.js` still hands it the
-`voice` events of the page's socket (who is in the game's call, for the hint before joining)
+`voice` events of the page's socket (who is in the game's call)
 and asks it to resync when that socket reconnects. Speaking players' dots light up
 (`.speaking`) from an `AnalyserNode` on each stream. See [voice.md](voice.md).
 
@@ -871,7 +871,7 @@ picked), `#round-bar`, `#battle-panel`, `.seat-grid`, `.faction-card`,
 `#chat-input`, `#chat-send`, `#chat-name`, `#emoji-button`, `#emoji-panel`, the card table
 `#card-table` (`.ct-seat.me .zone-hand`, `.pc-slot`, `.pcard.face[data-card]`, `.pc-zoom`, and
 `.zone.reorderable` with `.pc-dragging` / `.pc-shift` while a card is dragged), the voice card
-`#voice-card` (`#voice-expand` and `#voice-body`, folded up at first; `#voice-join`, `#voice-hint`,
+`#voice-card` (`#voice-expand` and `#voice-body`, folded up at first; `#voice-join`,
 `#voice-peers li[data-voice-seat][data-state]`, `#voice-badge`, `#voice-error`, `#voice-elsewhere` and
 `#voice-switch` when the call is in another game), the top-bar button of a call (`#voice-chip` with
 `#voice-chip-code`, and its panel `#voice-pop` with `#voice-pop-go|mute|deafen|leave`, `#voice-ptt`,
