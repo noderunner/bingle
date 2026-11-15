@@ -4,6 +4,13 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.113.0 - 2026-11-15
+
+### Bingle Core 0.113.0
+- The voice chat card is gone. To talk, press the microphone at the top right of the chat card: it joins the game's voice chat and lights up green, and the call's button appears in the top bar as before. Pressing the lit microphone opens that button's window.
+- The call's window in the top bar now lists who is in the call, with a volume for each, above push to talk and the microphone and speakers. Its heading names the channel: *Channel -* and the game's room code, or *Channel -* and your friend's handle.
+- A call with a friend now shows the call's button in the top bar too, with *Mute* and *Leave*.
+
 ## 0.112.4 - 2026-11-15
 
 ### Bingle Core 0.112.4

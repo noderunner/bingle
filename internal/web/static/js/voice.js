@@ -8,18 +8,19 @@
 // offer at once.
 //
 // The page redraws on every move, so the call lives here, in module state; the
-// card is rebuilt from that state whenever the page asks for it, and updated in
-// place when the state changes.
+// microphone of the chat card is rebuilt from that state whenever the page asks
+// for it, and updated in place when the state changes.
 //
 // The call belongs to one game and outlives the pages: it has a WebSocket of its
 // own (only=voice) and, while it is up, the site moves between pages without
 // reloading the document (nav.js). The game that is on screen may be another one
 // than the game of the call; the top bar then carries a button for the call
-// (topbar.js), and the card of the other game says where the call is.
+// (topbar.js), and the chat card of the other game says where the call is.
 
 import { h, store, toast } from "./util.js";
 import { api, ApiError } from "./api.js";
 import { setKeepAlive, untracked, onNavigate } from "./nav.js";
+import { micIcon } from "./ui-icons.js";
 
 const HEARTBEAT_MS = 15000;
 const SPEAK_LEVEL = 0.035; // RMS of the signal above which somebody counts as speaking
@@ -55,8 +56,8 @@ const V = {
 	analysers: new Map(), // key ("me" or seat) -> {node, data}
 };
 
-let cardEl = null;
-let cardOpen = false; // the voice card starts folded up
+let cardEl = null; // the chat card's microphone button
+let noteEl = null; // the line under the chat card's head
 let audioHost = null;
 let sock = null; // the call's WebSocket
 let sockTries = 0;
@@ -72,7 +73,7 @@ setKeepAlive(inCall);
 // A new page is on screen: it is not the game that was.
 onNavigate(() => {
 	viewing = { code: null };
-	cardEl = null;
+	cardEl = noteEl = null;
 });
 
 /** What the top bar shows of the call. */
@@ -687,7 +688,7 @@ function measure() {
 	}
 }
 
-// ---- the card ----------------------------------------------------------------------------
+// ---- the chat card's microphone, and who is in the call --------------------------------
 
 const STATE_TEXT = { new: "waiting", connecting: "connecting…", connected: "connected", failed: "no connection" };
 
@@ -759,55 +760,56 @@ function deviceSelect(label, id, devices, value, onchange) {
 	return h("label", { class: "voice-device small" }, h("span", {}, label), sel);
 }
 
-function fill(card) {
-	card.textContent = "";
-	const head = h("h3", {}, "Voice ", h("span", { class: "badge" + (V.joined ? " turn" : ""), id: "voice-badge" }, V.joined ? "in call" : V.joining ? "joining…" : "off"));
-	// The card is folded up until its triangle opens it, and stays as it was left while the page lasts.
-	const body = h("div", { class: "voice-body", id: "voice-body", hidden: !cardOpen });
-	const toggle = h(
-		"button",
-		{
-			type: "button",
-			class: "expand-toggle",
-			id: "voice-expand",
-			"aria-controls": "voice-body",
-			"aria-expanded": cardOpen ? "true" : "false",
-			"aria-label": `${cardOpen ? "Hide" : "Show"} the voice chat`,
-			title: `${cardOpen ? "Hide" : "Show"} the voice chat`,
-			onclick: () => {
-				cardOpen = !cardOpen;
-				fill(card);
-			},
-		},
-		h("span", { "aria-hidden": "true" }, cardOpen ? "▲" : "▼")
-	);
-	card.append(head, body, toggle);
+function fill() {
+	const btn = cardEl;
+	const here = !inCall() || V.code === viewing.code;
+	const label = !here
+		? `Talk in this game instead (you are in the voice chat of game ${V.code})`
+		: V.joined
+			? "In the voice chat: its settings"
+			: V.joining
+				? "Joining the voice chat…"
+				: "Join the voice chat";
+	if (btn) {
+		btn.title = label;
+		btn.setAttribute("aria-label", label);
+		btn.setAttribute("aria-pressed", here && V.joined ? "true" : "false");
+		btn.disabled = here && V.joining;
+		btn.classList.toggle("on", here && V.joined);
+		btn.classList.toggle("joining", here && V.joining);
+		btn.classList.toggle("elsewhere", !here);
+	}
+	if (!noteEl) return;
+	noteEl.textContent = "";
+	if (!here) noteEl.append(h("span", { id: "voice-elsewhere" }, "You are in the voice chat of ", h("a", { href: `/game/${V.code}` }, `game ${V.code}`), "."));
+	else if (V.error) noteEl.append(h("span", { id: "voice-error", class: "error", role: "alert" }, V.error));
+	noteEl.hidden = !noteEl.childNodes.length;
+}
 
-	const why = voiceUnsupported();
-	if (why) {
-		body.append(h("p", { class: "small muted", id: "voice-unsupported" }, why));
+/** A press of the chat card's microphone: join, open the call's panel, or bring the call here. */
+function pressMic(ev) {
+	if (inCall() && V.code !== viewing.code) return switchHere();
+	if (V.joined) {
+		// The call's controls are the top bar's (topbar.js); this click must not close them again.
+		ev.stopPropagation();
+		const chip = document.getElementById("voice-chip");
+		const pop = document.getElementById("voice-pop");
+		if (chip && pop && pop.hidden) chip.click();
 		return;
 	}
-	// A call in another game: where it is, and a way to bring it here.
-	if (inCall() && viewing.code && V.code !== viewing.code) {
-		body.append(
-			h("p", { class: "small", id: "voice-elsewhere" }, "You are in the voice chat of ", h("a", { href: `/game/${V.code}` }, `game ${V.code}`), ".")
-		);
-		const talkHere = viewing.me && viewing.me.seat && (viewing.seats || []).some((s) => s.seat !== viewing.me.seat && !s.bot);
-		if (talkHere) body.append(h("button", { type: "button", class: "primary", id: "voice-switch", onclick: switchHere }, "Talk in this game instead"));
-	}
-	if (V.error) body.append(h("p", { class: "small error", id: "voice-error", role: "alert" }, V.error));
+	join();
+}
 
-	if (!V.joined) {
-		body.append(h("button", { type: "button", class: "primary", id: "voice-join", disabled: V.joining, onclick: join }, V.joining ? "Joining…" : "Join voice"));
-		return;
-	}
-
-	// Who is in the call; mute, deafen, push to talk and the devices are in the top bar's panel (voiceSettings).
+/**
+ * Who is in the call, for the top bar's panel: you first, then the others, each
+ * with the state of their connection and a volume. Null until the call is joined.
+ */
+export function voiceMembers() {
+	if (!V.joined) return null;
 	const list = h("ul", { class: "voice-peers", id: "voice-peers" });
 	list.append(peerRow(V.me.seat, V.me.name, true));
 	for (const [seat, name] of V.roster) if (seat !== V.me.seat) list.append(peerRow(seat, name, false));
-	body.append(list);
+	return list;
 }
 
 /**
@@ -866,30 +868,33 @@ export function voiceSettings() {
 }
 
 function paint() {
-	if (cardEl && document.body.contains(cardEl)) fill(cardEl);
+	if (noteEl && document.body.contains(noteEl)) fill();
 	changed();
 }
 
 /**
- * The voice card for the game page. Only people with a seat can talk, and only
- * when there is somebody to talk to; anybody else gets nothing. `seats` is the
- * game's seat list ({seat, name, bot}). While a call is up in another game the
- * card says so, whoever you are here.
+ * The voice chat's part of the game page's chat card: a microphone button for its
+ * head, and a line under it for a refusal or a call that is in another game. Only
+ * people with a seat can talk, and only when there is somebody to talk to; anybody
+ * else gets nothing. `seats` is the game's seat list ({seat, name, bot}). While a
+ * call is up in another game the line says so, whoever you are here.
  */
-export function voiceCard({ code, me, seats }) {
+export function voiceControls({ code, me, seats }) {
 	viewing = { code, me, seats };
+	cardEl = noteEl = null;
 	const away = inCall() && V.code !== code;
-	if (!away) {
+	const others = (who) => (seats || []).some((s) => s.seat !== who && !s.bot);
+	let button = true;
+	if (away) {
+		button = !!(me && me.seat && others(me.seat));
+	} else {
 		// Another player on this very game (a game against oneself): the call is theirs, so it ends.
 		if (V.joined && me && me.name && me.seat && (V.me.name !== me.name || V.me.seat !== me.seat)) leaveVoice({ quiet: true });
 		adoptViewing();
-		const others = (seats || []).some((s) => s.seat !== V.me.seat && !s.bot);
-		if (!V.me.seat || (!others && !V.joined)) {
-			cardEl = null;
-			return null;
-		}
+		if (!V.me.seat || (!others(V.me.seat) && !V.joined)) return null;
 	}
-	cardEl = h("div", { class: "card voice", id: "voice-card" });
-	fill(cardEl);
-	return cardEl;
+	noteEl = h("p", { class: "small voice-note", id: "voice-note", hidden: true });
+	if (button) cardEl = h("button", { type: "button", class: "ghost icon voice-mic", id: "voice-join", onclick: pressMic }, micIcon());
+	fill();
+	return { button: cardEl, note: noteEl };
 }

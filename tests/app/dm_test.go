@@ -387,6 +387,19 @@ func TestWebDirectCall_TwoBrowsersTalk(t *testing.T) {
 		waitJS(t, ctx, who+" can hang up", `document.getElementById("dm-hangup") !== null && !document.getElementById("dm-hangup").hidden`, 10*time.Second)
 	}
 	waitJS(t, ana, "the audio of the call", `document.querySelectorAll("#dm-audio audio[data-dm-audio]").length === 1`, 30*time.Second)
+	// The top bar's button is up for a direct call too, its panel named after the friend.
+	for who, want := range map[context.Context]string{ana: "@bob", bo: "@ana"} {
+		clickSel(t, who, "#friends-dialog .dialog-close")
+		openVoicePanel(t, who)
+		if got := evalString(t, who, `document.getElementById("voice-pop-title").textContent`); got != "Channel - "+want {
+			t.Errorf("the panel's title = %q, want %q", got, "Channel - "+want)
+		}
+		if got := evalString(t, who, `[...document.querySelectorAll("#voice-pop #voice-peers .voice-name")].map(e => e.textContent).join(", ")`); !strings.Contains(got, want) {
+			t.Errorf("who is in the call = %q, want %s among them", got, want)
+		}
+		clickSel(t, who, "#voice-chip")
+		clickSel(t, who, "#open-friends")
+	}
 	// Ana hangs up; Bo's call ends too.
 	clickSel(t, ana, "#dm-hangup")
 	waitJS(t, bo, "Bo's call over", `document.getElementById("dm-hangup").hidden === true`, 20*time.Second)
@@ -411,9 +424,9 @@ func TestWebDirectCall_LeavesTheGamesVoiceChat(t *testing.T) {
 	defer cancel()
 	signInChrome(t, ctx, baseURL, anaB.cookie(auth.SessionCookie))
 	openGameAs(t, ctx, baseURL, room, "tic-tac-toe", "Ana")
-	waitJS(t, ctx, "the voice card", `document.getElementById("voice-join") !== null`, 15*time.Second)
+	waitJS(t, ctx, "the microphone in the chat", `document.getElementById("voice-join") !== null`, 15*time.Second)
 	clickSel(t, ctx, "#voice-join")
-	waitJS(t, ctx, "Ana in the game's call", `document.getElementById("voice-badge").textContent === "in call"`, 15*time.Second)
+	waitJS(t, ctx, "Ana in the game's call", `document.getElementById("voice-join").getAttribute("aria-pressed") === "true"`, 15*time.Second)
 
 	// She rings Bo from the direct messages instead.
 	clickSel(t, ctx, "#open-friends")
@@ -425,7 +438,7 @@ func TestWebDirectCall_LeavesTheGamesVoiceChat(t *testing.T) {
 
 	// The game's call has let her go, and the page says why.
 	clickSel(t, ctx, "#friends-dialog .dialog-close")
-	waitJS(t, ctx, "out of the game's call", `document.getElementById("voice-join") !== null && document.getElementById("voice-badge").textContent !== "in call"`, 20*time.Second)
+	waitJS(t, ctx, "out of the game's call", `document.getElementById("voice-join") !== null && document.getElementById("voice-join").getAttribute("aria-pressed") !== "true"`, 20*time.Second)
 	var call struct {
 		Peers []struct {
 			Name string `json:"name"`

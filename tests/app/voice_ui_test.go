@@ -3,7 +3,6 @@ package app_test
 import (
 	"context"
 	"fmt"
-	"strings"
 	"testing"
 	"time"
 
@@ -30,11 +29,11 @@ func TestVoiceUI_TwoPlayersConnect(t *testing.T) {
 	openGameAs(t, alice, baseURL, room, "tic-tac-toe", "Alice")
 	openGameAs(t, bob, baseURL, room, "tic-tac-toe", "Bob")
 
-	waitJS(t, alice, "voice card", `document.getElementById("voice-join")`, 10*time.Second)
-	waitJS(t, bob, "voice card", `document.getElementById("voice-join")`, 10*time.Second)
+	waitJS(t, alice, "the microphone in the chat", `document.getElementById("voice-join")`, 10*time.Second)
+	waitJS(t, bob, "the microphone in the chat", `document.getElementById("voice-join")`, 10*time.Second)
 
 	clickSel(t, alice, "#voice-join")
-	waitJS(t, alice, "Alice in the call", `document.getElementById("voice-badge").textContent === "in call"`, 10*time.Second)
+	waitJS(t, alice, "Alice in the call", `document.getElementById("voice-join").getAttribute("aria-pressed") === "true"`, 10*time.Second)
 	clickSel(t, bob, "#voice-join")
 
 	// Both ends reach "connected" (the higher seat makes the offer).
@@ -60,7 +59,7 @@ func TestVoiceUI_TwoPlayersConnect(t *testing.T) {
 
 	// Leaving: the other side drops the peer, and the server forgets the seat.
 	clickSel(t, bob, "#voice-pop-leave")
-	waitJS(t, bob, "Bob left", `document.getElementById("voice-join")`, 5*time.Second)
+	waitJS(t, bob, "Bob left", `document.getElementById("voice-join").getAttribute("aria-pressed") === "false"`, 5*time.Second)
 	waitJS(t, alice, "Bob gone", `!document.querySelector('#voice-peers li[data-voice-seat="2"]')`, 10*time.Second)
 	var list voicePeers
 	doJSON(t, "GET", baseURL+"/api/games/"+room+"/voice", nil, &list)
@@ -80,48 +79,47 @@ func openVoicePanel(t *testing.T, ctx context.Context) {
 	waitJS(t, ctx, "the call's panel", `!document.getElementById("voice-pop").hidden && document.getElementById("voice-pop-mute") !== null`, 5*time.Second)
 }
 
-// The voice card starts folded up and explains nothing: its triangle opens it,
-// and during a call it lists who is in it, while mute, deafen, push to talk and
-// the devices are in the top bar's panel, which stays open while they are used
-// and does not count who else is there.
-func TestVoiceUI_CardFoldsAndTheSettingsAreInTheTopBar(t *testing.T) {
+// There is no voice card: a microphone in the chat card's head joins the call
+// and lights up, and the top bar's panel, named after the channel, has the
+// controls, the settings and who is in the call. A press of the lit microphone
+// opens that panel, which stays open while its buttons are used.
+func TestVoiceUI_MicInTheChatAndTheMembersInTheTopBar(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	room := newTakRoom(t, baseURL, "tic-tac-toe", "Alice")
 	joinRoom(t, baseURL, room, "Bob")
 	ctx, cancel := newChromedpContextWith(t, 60*time.Second, fakeMic...)
 	defer cancel()
 	openGameAs(t, ctx, baseURL, room, "tic-tac-toe", "Alice")
-	waitJS(t, ctx, "voice card", `document.getElementById("voice-join")`, 10*time.Second)
-	if !evalBool(t, ctx, `document.getElementById("voice-body").hidden && document.getElementById("voice-expand").getAttribute("aria-expanded") === "false"`) {
-		t.Fatal("the voice card is open before its triangle is clicked")
+	waitJS(t, ctx, "the microphone in the chat", `document.querySelector("#chat-card h3 #voice-join") !== null`, 10*time.Second)
+	if evalBool(t, ctx, `!!document.querySelector("#voice-card, .card.voice")`) {
+		t.Error("a voice card beside the chat")
 	}
-	clickSel(t, ctx, "#voice-expand")
-	waitJS(t, ctx, "the card open", `!document.getElementById("voice-body").hidden && document.getElementById("voice-expand").getAttribute("aria-expanded") === "true"`, 5*time.Second)
-	if txt := evalString(t, ctx, `document.getElementById("voice-card").textContent`); strings.Contains(txt, "Talk to the other players") || strings.Contains(txt, "Audio goes") || strings.Contains(txt, "in the voice chat") {
-		t.Errorf("the card still explains itself: %q", txt)
+	if !evalBool(t, ctx, `document.getElementById("voice-join").getAttribute("aria-pressed") === "false" && document.getElementById("voice-chip").hidden`) {
+		t.Error("the microphone is lit, or the call's button is up, before joining")
 	}
 
 	clickSel(t, ctx, "#voice-join")
-	waitJS(t, ctx, "in call", `document.getElementById("voice-badge").textContent === "in call" && document.getElementById("voice-peers") !== null`, 10*time.Second)
-	if !evalBool(t, ctx, `!document.getElementById("voice-body").hidden`) {
-		t.Error("the card folded up on joining")
+	waitJS(t, ctx, "in call", `document.getElementById("voice-join").getAttribute("aria-pressed") === "true" && document.getElementById("voice-join").classList.contains("on")`, 10*time.Second)
+	waitJS(t, ctx, "the call's button", `!document.getElementById("voice-chip").hidden`, 5*time.Second)
+	if evalBool(t, ctx, `!!document.querySelector("#chat-card #voice-peers, #chat-card #voice-ptt, #chat-card select")`) {
+		t.Error("who is in the call, or its settings, are in the chat card")
 	}
-	if evalBool(t, ctx, `!!document.querySelector("#voice-card #voice-ptt, #voice-card #voice-mute, #voice-card #voice-pop-mute, #voice-card select")`) {
-		t.Error("the call's settings are still in the card")
+	// The lit microphone opens the panel.
+	clickSel(t, ctx, "#voice-join")
+	waitJS(t, ctx, "the panel", `!document.getElementById("voice-pop").hidden`, 5*time.Second)
+	if got, want := evalString(t, ctx, `document.getElementById("voice-pop-title").textContent`), "Channel - "+room; got != want {
+		t.Errorf("the panel's title = %q, want %q", got, want)
 	}
-	openVoicePanel(t, ctx)
+	waitJS(t, ctx, "who is in the call, in the panel", `document.querySelector('#voice-pop #voice-peers li[data-me]') !== null && document.querySelector('#voice-pop #voice-peers li[data-me] .voice-name').textContent === "Alice (you)"`, 5*time.Second)
 	waitJS(t, ctx, "push to talk in the panel", `document.querySelector("#voice-pop #voice-ptt") !== null`, 5*time.Second)
-	if txt := evalString(t, ctx, `document.getElementById("voice-pop").textContent`); strings.Contains(txt, "Nobody else") || strings.Contains(txt, "in the call") || strings.Contains(txt, "Joining") {
-		t.Errorf("the panel explains the call: %q", txt)
-	}
 	// A button of the panel repaints it; the panel stays open.
 	clickSel(t, ctx, "#voice-pop-mute")
-	waitJS(t, ctx, "muted", `document.getElementById("voice-pop-mute").textContent === "Unmute"`, 5*time.Second)
+	waitJS(t, ctx, "muted", `document.getElementById("voice-pop-mute").textContent === "Unmute" && document.querySelector('#voice-peers li[data-me] .voice-state').textContent === "mic off"`, 5*time.Second)
 	if evalBool(t, ctx, `document.getElementById("voice-pop").hidden`) {
 		t.Error("muting closed the panel")
 	}
-	clickSel(t, ctx, "#voice-expand")
-	waitJS(t, ctx, "the card folded", `document.getElementById("voice-body").hidden`, 5*time.Second)
+	clickSel(t, ctx, "#voice-pop-leave")
+	waitJS(t, ctx, "out of the call", `document.getElementById("voice-join").getAttribute("aria-pressed") === "false" && document.getElementById("voice-chip").hidden`, 5*time.Second)
 }
 
 // Push to talk keeps the microphone closed until the key is held.
@@ -132,9 +130,9 @@ func TestVoiceUI_PushToTalk(t *testing.T) {
 	ctx, cancel := newChromedpContextWith(t, 60*time.Second, fakeMic...)
 	defer cancel()
 	openGameAs(t, ctx, baseURL, room, "tic-tac-toe", "Alice")
-	waitJS(t, ctx, "voice card", `document.getElementById("voice-join")`, 10*time.Second)
+	waitJS(t, ctx, "the microphone in the chat", `document.getElementById("voice-join")`, 10*time.Second)
 	clickSel(t, ctx, "#voice-join")
-	waitJS(t, ctx, "in call", `document.getElementById("voice-badge").textContent === "in call"`, 10*time.Second)
+	waitJS(t, ctx, "in call", `document.getElementById("voice-join").getAttribute("aria-pressed") === "true"`, 10*time.Second)
 	openVoicePanel(t, ctx)
 	waitJS(t, ctx, "push to talk in the panel", `document.querySelector("#voice-pop #voice-ptt") !== null`, 5*time.Second)
 	waitJS(t, ctx, "mic on", `document.querySelector('#voice-peers li[data-me] .voice-state').textContent === "mic on"`, 5*time.Second)
@@ -150,8 +148,8 @@ func TestVoiceUI_PushToTalk(t *testing.T) {
 	waitJS(t, ctx, "mic closed again", `document.querySelector('#voice-peers li[data-me] .voice-state').textContent === "mic off"`, 5*time.Second)
 }
 
-// Spectators and people playing only bots get no voice card; a refused
-// microphone is explained.
+// Spectators and people playing only bots get no microphone in the chat; a
+// refused microphone is explained.
 func TestVoiceUI_CardOnlyForPlayersAndExplainsRefusals(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	soloRoom := newTakRoom(t, baseURL, "tic-tac-toe", "Alice")
@@ -165,17 +163,17 @@ func TestVoiceUI_CardOnlyForPlayersAndExplainsRefusals(t *testing.T) {
 	defer cancel()
 	openGameAs(t, ctx, baseURL, created.RoomCode, "tic-tac-toe", "Zoe")
 	waitJS(t, ctx, "the chat", `document.getElementById("chat-card")`, 10*time.Second)
-	if evalBool(t, ctx, `!!document.getElementById("voice-card")`) {
-		t.Error("a voice card against a bot")
+	if evalBool(t, ctx, `!!document.getElementById("voice-join")`) {
+		t.Error("a microphone in the chat against a bot")
 	}
 
 	openGameAs(t, ctx, baseURL, soloRoom, "tic-tac-toe", "Alice")
-	waitJS(t, ctx, "voice card", `document.getElementById("voice-join")`, 10*time.Second)
+	waitJS(t, ctx, "the microphone in the chat", `document.getElementById("voice-join")`, 10*time.Second)
 	clickSel(t, ctx, "#voice-join")
 	// Headless Chrome without the flags has no microphone or denies it: either way a reason is shown.
 	waitJS(t, ctx, "a reason", `document.getElementById("voice-error") && document.getElementById("voice-error").textContent.length > 10`, 15*time.Second)
-	if evalString(t, ctx, `document.getElementById("voice-badge").textContent`) != "off" {
-		t.Error("the badge says the call is on after a refusal")
+	if evalString(t, ctx, `document.getElementById("voice-join").getAttribute("aria-pressed")`) != "false" {
+		t.Error("the microphone says the call is on after a refusal")
 	}
 }
 
@@ -206,13 +204,13 @@ func TestVoiceUI_ThreePlayerMesh(t *testing.T) {
 		ctx, cancel := newChromedpContextWith(t, 120*time.Second, fakeMic...)
 		defer cancel()
 		openGameAs(t, ctx, baseURL, room, "test-council", n)
-		waitJS(t, ctx, "voice card", `document.getElementById("voice-join")`, 15*time.Second)
+		waitJS(t, ctx, "the microphone in the chat", `document.getElementById("voice-join")`, 15*time.Second)
 		pages[n] = ctx
 	}
 	// Seat 2 first, then 3, then 1.
 	for _, n := range []string{"Bob", "Cy", "Alice"} {
 		clickSel(t, pages[n], "#voice-join")
-		waitJS(t, pages[n], n+" in the call", `document.getElementById("voice-badge").textContent === "in call"`, 15*time.Second)
+		waitJS(t, pages[n], n+" in the call", `document.getElementById("voice-join").getAttribute("aria-pressed") === "true"`, 15*time.Second)
 	}
 	for i, n := range names {
 		for j := range names {
