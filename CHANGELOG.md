@@ -4,6 +4,11 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.112.4 - 2026-11-15
+
+### Bingle Core 0.112.4
+- On a phone or a tablet, tap a unit's icon, a spellbook or anything else that shows a card when hovered with a mouse: its card opens and stays open until you touch anywhere outside it, or tap the same thing again. Before, the card flashed up and closed at once. Buttons still do what they do when tapped.
+
 ## 0.112.3 - 2026-11-15
 
 ### Bingle Core 0.112.3
