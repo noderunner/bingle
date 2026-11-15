@@ -104,6 +104,7 @@ let wsRetry = 0;
 let wsStopped = false;
 let titleBase = brandName();
 let confirmTimer = null;
+let mapFit = null; // the observer that keeps what is above and below a map as wide as the map
 
 // ---------------------------------------------------------------------------
 // Boot
@@ -1302,8 +1303,8 @@ function onToken(pos, piece, color) {
 	const onGate = kind !== piece;
 	const same = !!S.unitInfo && S.unitInfo.pos === pos && S.unitInfo.piece === kind && S.unitInfo.color === color && !!S.unitInfo.onGate === onGate;
 	if (tokenOk(pos, piece, color)) {
-		// A unit that is a legal choice is picked up. A phone has no hover, and opens its card too.
-		if (isMobileLayout()) S.unitInfo = { pos, piece: kind, color, onGate };
+		// A unit that is a legal choice is picked up, and its card opens too.
+		S.unitInfo = { pos, piece: kind, color, onGate };
 		if (color === colorOf(actingSeat()) && queueTakes(pos, piece)) {
 			addToQueue(pos, piece);
 			return;
@@ -1314,7 +1315,6 @@ function onToken(pos, piece, color) {
 		return;
 	}
 	// Any other unit just shows its card (a second click closes it).
-	if (!isMobileLayout()) return;
 	S.unitInfo = same ? null : { pos, piece: kind, color, onGate };
 	render();
 }
@@ -2544,6 +2544,25 @@ function impulseCard(note, choices = []) {
 	return card;
 }
 
+/**
+ * A map short of height is drawn narrower than its column, in the middle of it:
+ * the round bar above it and the cards under it are then as wide as the map is
+ * drawn (--map-width on the wrap), so their edges are the map's.
+ */
+function fitToMap(wrap, boardHost, aspect) {
+	if (mapFit) mapFit.disconnect();
+	mapFit = null;
+	if (!wrap || !aspect || typeof ResizeObserver === "undefined") return;
+	const fit = () => {
+		const w = Math.round(Math.min(boardHost.clientWidth, boardHost.clientHeight * aspect));
+		const was = parseFloat(wrap.style.getPropertyValue("--map-width")) || 0;
+		if (w > 0 && Math.abs(w - was) > 1) wrap.style.setProperty("--map-width", `${w}px`);
+	};
+	mapFit = new ResizeObserver(fit);
+	mapFit.observe(boardHost);
+	fit();
+}
+
 function renderFitted(seats, bottomSeat, seatStack) {
 	document.body.classList.add("fit-screen");
 	const areas = S.info.board.style === "areas";
@@ -2555,8 +2574,17 @@ function renderFitted(seats, bottomSeat, seatStack) {
 	wrap.append(boardHost);
 	for (const panel of cardPanels()) wrap.append(panel);
 	wrap.append(h("div", { class: "inspector small muted", id: "inspector", "aria-live": "off" }, inspectorText()));
-	// A map leaves height under it, and what happens on the map is best read next to it.
-	if (areas) for (const part of [battlePanel(), exchangePanel()]) if (part) wrap.append(part);
+	// A map leaves height under it, and what happens on the map is best read next to it: the
+	// battle at the left, the card of the unit last clicked at the right.
+	if (areas) {
+		const under = h("div", { class: "map-under", id: "map-under" });
+		for (const part of [battlePanel(), exchangePanel()]) if (part) under.append(part);
+		const unit = unitInfoCard({ brief: true });
+		if (unit) under.append(unit);
+		wrap.append(under); // empty, it takes no room unless the game's look keeps room for a unit's card
+		// A click on the map that is not on a unit closes the unit's card (a unit's click stops at the unit).
+		boardHost.addEventListener("click", closeUnitInfo);
+	}
 	const main = h("div", { class: "board-column" }, wrap);
 
 	// The play area comes first: the cards take what room it leaves them.
@@ -2570,6 +2598,7 @@ function renderFitted(seats, bottomSeat, seatStack) {
 	// A board that grows with the game (Hive) keeps one shape, or the columns would move at each turn.
 	else if (S.info.board.style === "free") screen.style.setProperty("--board-aspect", 1.25);
 	else if (view && view.height) screen.style.setProperty("--board-aspect", view.width / view.height);
+	fitToMap(areas ? wrap : null, boardHost, areas && canvas ? (canvas.width + 16) / (canvas.height + 16) : 0);
 	const history = historyCard();
 
 	// No bar on this page: what it would say goes in the cards. While the game goes on they

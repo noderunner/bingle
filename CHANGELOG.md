@@ -4,6 +4,12 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.112.2 - 2026-11-15
+
+### Bingle Core 0.112.2
+- On a game with a map, the bar above the map and the cards under it line up with the map's edges, even when the window is too short for the map to fill its column: the battle at the map's left edge, and on a computer the card of the unit you click at its right edge.
+- On a computer, clicking a unit on the map opens its card under the map, as on a phone. Click the map away from the units, click the unit again or press Esc to close it.
+
 ## 0.112.1 - 2026-11-15
 
 ### Bingle Core 0.112.1

@@ -504,3 +504,31 @@ func TestWebTutorial_BackLooksAtEarlierSteps(t *testing.T) {
 	clickSel(t, ctx, `button[data-piece="red"]`)
 	waitJS(t, ctx, "b3", `[...document.querySelectorAll("#board .cell.clickable")].map(c => c.dataset.position).join(",") === "b3"`, 10*time.Second)
 }
+
+// What goes above and under a map is as wide as the map is drawn (--map-width on
+// the wrap), so that their edges are the map's when the map is short of height
+// and drawn narrower than its column (the private overlay's Cthulhu Wars tests
+// look at that case, with its round bar and battle).
+func TestWebFitScreen_WhatIsAboveAndUnderAMapIsAsWideAsTheMap(t *testing.T) {
+	base := newRESTTestServer(t)
+	ctx, cancel := newChromedpContext(t, 60*time.Second)
+	defer cancel()
+	var created struct {
+		RoomCode string `json:"room_code"`
+	}
+	if code := doJSON(t, "POST", base+"/api/games", map[string]any{"game_def_id": "test-council", "player_name": "Alice", "opponent": "random"}, &created); code != 200 {
+		t.Fatalf("create: %d", code)
+	}
+	for _, size := range [][2]int64{{1920, 640}, {1366, 768}} {
+		if err := chromedp.Run(ctx, chromedp.EmulateViewport(size[0], size[1])); err != nil {
+			t.Fatal(err)
+		}
+		openGameAs(t, ctx, base, created.RoomCode, "test-council", "Alice")
+		waitJS(t, ctx, "the map", `document.querySelector("#board svg") !== null`, 20*time.Second)
+		// The canvas is 300 by 200, with 8 round it: the map is drawn 316/216 as wide as it is high.
+		waitJS(t, ctx, fmt.Sprintf("the map's width on the wrap at %dx%d", size[0], size[1]), `(function () {
+			var b = document.getElementById("board"), w = parseFloat(document.querySelector(".board-wrap").style.getPropertyValue("--map-width"));
+			return Math.abs(w - Math.min(b.clientWidth, b.clientHeight * 316 / 216)) <= 2;
+		})()`, 5*time.Second)
+	}
+}
