@@ -1107,6 +1107,8 @@ dialog.help-dialog li { margin: 0.35rem 0; }
 .unit-tip-title { display: flex; flex-direction: column; line-height: 1.25; }
 
 .hover-card .card-rows { margin: 0.2rem 0 0; }
+/* Pinned by a tap on a touch screen (js/tooltip.js): it takes the pointer, so it can be read and scrolled. */
+.hover-card.pinned { pointer-events: auto; max-height: calc(100vh - 16px); overflow-y: auto; overscroll-behavior: contain; }
 
 .undo-action { margin-left: 0.3rem; }
 

@@ -91,6 +91,14 @@ wider than it is tall. With a mouse, on the phone layout asked for in the option
 screen no taller than 500px counts as a phone, since a large phone on its side is wider than the 900px that otherwise
 marks one. A player with the phone's rotation locked sees only the cards.
 
+**Hover cards on a touch screen.** A touch screen has no hover, so every hover card (`hoverCard` in `js/tooltip.js`: a
+unit's icon, a spellbook, a requirement, a neutral item, a hand's tile) opens on a **tap** instead, pinned
+(`.hover-card.pinned`): it stays until a touch anywhere outside it, or a second tap on what opened it. A pinned card takes
+the touch, so it can be read and scrolled. An element that does something when clicked (a button, a link) keeps doing it
+on a tap and opens no card, unless it asked for `keepOnClick` (the setup's tiles), when the tap does both. The tap is
+told from a mouse by the pointer's type, and the hover and focus a browser makes up after a touch are ignored. This is
+the default for every hover card: a new one needs nothing more.
+
 ## How moves are entered
 
 The server lists every legal move of the position
