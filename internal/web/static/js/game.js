@@ -105,6 +105,7 @@ let wsStopped = false;
 let titleBase = brandName();
 let confirmTimer = null;
 let mapFit = null; // the observer that keeps what is above and below a map as wide as the map
+let mapOverlay = null; // a card laid over the map (a unit's), put back each time the map is drawn
 
 // ---------------------------------------------------------------------------
 // Boot
@@ -1297,14 +1298,30 @@ function pieceLook(piece) {
 	return { label: held, shape: def ? def.shape : "disc", color: def ? def.color : "", onGate };
 }
 
-function onToken(pos, piece, color) {
+/**
+ * The corner of the map farthest from a clicked unit, where its card is laid over the map:
+ * "nw", "ne", "sw" or "se". A click on a unit in the north-west puts the card in the south-east.
+ */
+function farCorner(ev) {
+	const board = document.getElementById("board");
+	const tok = ev && ev.target && ev.target.getBoundingClientRect ? ev.target : null;
+	if (!board || !tok) return "se";
+	const b = board.getBoundingClientRect();
+	const t = tok.getBoundingClientRect();
+	const x = (t.left + t.width / 2 - b.left) / (b.width || 1);
+	const y = (t.top + t.height / 2 - b.top) / (b.height || 1);
+	return (y < 0.5 ? "s" : "n") + (x < 0.5 ? "e" : "w");
+}
+
+function onToken(pos, piece, color, ev) {
 	// The unit on a Gate is its own token, and shows the card of its kind.
 	const kind = plainPiece(piece);
 	const onGate = kind !== piece;
 	const same = !!S.unitInfo && S.unitInfo.pos === pos && S.unitInfo.piece === kind && S.unitInfo.color === color && !!S.unitInfo.onGate === onGate;
+	const corner = farCorner(ev);
 	if (tokenOk(pos, piece, color)) {
 		// A unit that is a legal choice is picked up, and its card opens too.
-		S.unitInfo = { pos, piece: kind, color, onGate };
+		S.unitInfo = { pos, piece: kind, color, onGate, corner };
 		if (color === colorOf(actingSeat()) && queueTakes(pos, piece)) {
 			addToQueue(pos, piece);
 			return;
@@ -1315,7 +1332,7 @@ function onToken(pos, piece, color) {
 		return;
 	}
 	// Any other unit just shows its card (a second click closes it).
-	S.unitInfo = same ? null : { pos, piece: kind, color, onGate };
+	S.unitInfo = same ? null : { pos, piece: kind, color, onGate, corner };
 	render();
 }
 
@@ -2304,6 +2321,7 @@ function applyTheme() {
 // ---------------------------------------------------------------------------
 
 function render() {
+	mapOverlay = null;
 	useCardSet(S.game ? S.game.card_set : "");
 	// Typing a chat message on a phone: the keyboard stays up. The page is
 	// redrawn when the field is left.
@@ -2547,7 +2565,8 @@ function impulseCard(note, choices = []) {
 /**
  * A map short of height is drawn narrower than its column, in the middle of it:
  * the round bar above it and the cards under it are then as wide as the map is
- * drawn (--map-width on the wrap), so their edges are the map's.
+ * drawn (--map-width on the wrap), so their edges are the map's. --map-height is
+ * the height it is drawn at, for a card laid over one of its corners.
  */
 function fitToMap(wrap, boardHost, aspect) {
 	if (mapFit) mapFit.disconnect();
@@ -2557,6 +2576,8 @@ function fitToMap(wrap, boardHost, aspect) {
 		const w = Math.round(Math.min(boardHost.clientWidth, boardHost.clientHeight * aspect));
 		const was = parseFloat(wrap.style.getPropertyValue("--map-width")) || 0;
 		if (w > 0 && Math.abs(w - was) > 1) wrap.style.setProperty("--map-width", `${w}px`);
+		const hgt = Math.round(Math.min(boardHost.clientHeight, boardHost.clientWidth / aspect));
+		if (hgt > 0) wrap.style.setProperty("--map-height", `${hgt}px`);
 	};
 	mapFit = new ResizeObserver(fit);
 	mapFit.observe(boardHost);
@@ -2574,14 +2595,21 @@ function renderFitted(seats, bottomSeat, seatStack) {
 	wrap.append(boardHost);
 	for (const panel of cardPanels()) wrap.append(panel);
 	wrap.append(h("div", { class: "inspector small muted", id: "inspector", "aria-live": "off" }, inspectorText()));
-	// A map leaves height under it, and what happens on the map is best read next to it: the
-	// battle at the left, the card of the unit last clicked at the right.
+	// A map leaves height under it, and what happens on the map is best read next to it: the battle
+	// under it, at its left edge. The card of the unit last clicked is laid over the map, in the
+	// corner farthest from the unit.
+	let unitCard = null;
 	if (areas) {
 		const under = h("div", { class: "map-under", id: "map-under" });
 		for (const part of [battlePanel(), exchangePanel()]) if (part) under.append(part);
-		const unit = unitInfoCard({ brief: true });
-		if (unit) under.append(unit);
-		wrap.append(under); // empty, it takes no room unless the game's look keeps room for a unit's card
+		wrap.append(under);
+		unitCard = unitInfoCard({ brief: true });
+		if (unitCard) {
+			unitCard.classList.add("map-overlay");
+			unitCard.dataset.corner = (S.unitInfo && S.unitInfo.corner) || "se";
+			// A click on the card is not a click on the map.
+			unitCard.addEventListener("click", (ev) => ev.stopPropagation());
+		}
 		// A click on the map that is not on a unit closes the unit's card (a unit's click stops at the unit).
 		boardHost.addEventListener("click", closeUnitInfo);
 	}
@@ -2590,6 +2618,7 @@ function renderFitted(seats, bottomSeat, seatStack) {
 	// The play area comes first: the cards take what room it leaves them.
 	const screen = h("div", { class: "game-layout play-screen" + (areas ? " areas" : "") + (boardless ? " boardless" : "") }, main);
 	root.append(screen);
+	mapOverlay = unitCard;
 	drawBoard(boardHost);
 	// The board's column is as wide as the board can be drawn: the cards have what is left, up to a limit.
 	const view = boardHost.querySelector("svg")?.viewBox.baseVal;
@@ -3103,6 +3132,7 @@ function drawBoard(host) {
 		},
 		{ onCell, onHover, onToken }
 	);
+	if (mapOverlay && host.id === "board" && !host.contains(mapOverlay)) host.append(mapOverlay);
 }
 
 function statusBar() {
