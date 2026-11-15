@@ -533,11 +533,13 @@ mail comes from so the person can whitelist it. The links in the mails open `/no
 ### Voice chat
 
 `js/voice.js` is the **Voice card** (`#voice-card`, above the chat card, and on the chat page
-of the phone layout): join, mute, deafen, push to talk, per-player volume and device pickers
-for seated players when somebody else could be in the call. The call lives in module state
+of the phone layout) for seated players when somebody else could be in the call. It starts folded
+up to its heading and badge, and its triangle (`#voice-expand`, as on a seat's card) opens it: *Join
+voice*, then the players in the call with a volume for each. Mute, deafen, leave, push to talk and
+the microphone and speakers are in the panel of the call's button in the top bar (below). The call lives in module state
 (the page redraws on every move; the card is rebuilt from it) and has a **WebSocket of its own**
 (`/ws/{code}?only=voice`), so it does not depend on the page; `game.js` still hands it the
-`voice` events of the page's socket (who is in the game's call, for the hint before joining)
+`voice` events of the page's socket (who is in the game's call)
 and asks it to resync when that socket reconnects. Speaking players' dots light up
 (`.speaking`) from an `AnalyserNode` on each stream. See [voice.md](voice.md).
 
@@ -550,7 +552,8 @@ the modules that keep a page's state (`chat.js`, `render.js`, `tooltip.js`) rese
 (`onNavigate`). With no call up, links load pages as they always did. A **button for the call**
 (`#voice-chip`, a microphone with a green dot, orange when muted) sits in the top bar of every
 page while the call is up, with the room code when it is not the game on screen; it opens a
-panel (`#voice-pop`) with *Go to the game*, *Mute*, *Deafen* and *Leave*. The voice card of another
+panel (`#voice-pop`) with *Go to the game*, *Mute*, *Deafen*, *Leave*, push to talk and its key, and
+the microphone and speakers when there is a choice (`voiceSettings()` in `voice.js`). The voice card of another
 game says where the call is (`#voice-elsewhere`) and offers to *talk in this game instead*.
 
 ### Lobbies, chat and reactions
@@ -868,10 +871,11 @@ picked), `#round-bar`, `#battle-panel`, `.seat-grid`, `.faction-card`,
 `#chat-input`, `#chat-send`, `#chat-name`, `#emoji-button`, `#emoji-panel`, the card table
 `#card-table` (`.ct-seat.me .zone-hand`, `.pc-slot`, `.pcard.face[data-card]`, `.pc-zoom`, and
 `.zone.reorderable` with `.pc-dragging` / `.pc-shift` while a card is dragged), the voice card
-`#voice-card` (`#voice-join`, `#voice-leave`, `#voice-mute`, `#voice-deafen`, `#voice-ptt`,
+`#voice-card` (`#voice-expand` and `#voice-body`, folded up at first; `#voice-join`,
 `#voice-peers li[data-voice-seat][data-state]`, `#voice-badge`, `#voice-error`, `#voice-elsewhere` and
 `#voice-switch` when the call is in another game), the top-bar button of a call (`#voice-chip` with
-`#voice-chip-code`, and its panel `#voice-pop` with `#voice-pop-go|mute|deafen|leave`), and the lobby: `#lobby`,
+`#voice-chip-code`, and its panel `#voice-pop` with `#voice-pop-go|mute|deafen|leave`, `#voice-ptt`,
+`#voice-ptt-key`, `#voice-input` and `#voice-output`), and the lobby: `#lobby`,
 `#invite-link`, `#copy-invite`, `#lobby-seats li[data-seat]`, `#lobby-join`,
 `#lobby-name`, `#lobby-seat`, `#lobby-take`, `#faction-<seat>`, `#fill-bots`, `#start-game`,
 `#leave-seat`, `button[data-act=add-bot|move|remove]`; the rules window is `#rules-dialog` with

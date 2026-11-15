@@ -215,7 +215,8 @@ func TestVoiceUI_ACallStaysUpWhenThePlayerGoesToAnotherGameOrTheMainPage(t *test
 	waitJS(t, alice, "still connected", fmt.Sprintf(connected, 2), 20*time.Second)
 
 	// Leaving ends it everywhere: the button goes, Bob sees her go.
-	clickSel(t, alice, "#voice-leave")
+	openVoicePanel(t, alice)
+	clickSel(t, alice, "#voice-pop-leave")
 	waitJS(t, alice, "the button is gone", `document.getElementById("voice-chip").hidden`, 5*time.Second)
 	waitJS(t, bob, "Alice gone", `!document.querySelector('#voice-peers li[data-voice-seat="1"]')`, 10*time.Second)
 	// With the call over, a link loads the page again.

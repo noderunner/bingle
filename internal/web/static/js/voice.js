@@ -56,6 +56,7 @@ const V = {
 };
 
 let cardEl = null;
+let cardOpen = false; // the voice card starts folded up
 let audioHost = null;
 let sock = null; // the call's WebSocket
 let sockTries = 0;
@@ -760,77 +761,62 @@ function deviceSelect(label, id, devices, value, onchange) {
 
 function fill(card) {
 	card.textContent = "";
-	const names = [...V.roster.entries()].filter(([seat]) => seat !== V.me.seat).map(([, n]) => n);
 	const head = h("h3", {}, "Voice ", h("span", { class: "badge" + (V.joined ? " turn" : ""), id: "voice-badge" }, V.joined ? "in call" : V.joining ? "joining…" : "off"));
-	card.append(head);
+	// The card is folded up until its triangle opens it, and stays as it was left while the page lasts.
+	const body = h("div", { class: "voice-body", id: "voice-body", hidden: !cardOpen });
+	const toggle = h(
+		"button",
+		{
+			type: "button",
+			class: "expand-toggle",
+			id: "voice-expand",
+			"aria-controls": "voice-body",
+			"aria-expanded": cardOpen ? "true" : "false",
+			"aria-label": `${cardOpen ? "Hide" : "Show"} the voice chat`,
+			title: `${cardOpen ? "Hide" : "Show"} the voice chat`,
+			onclick: () => {
+				cardOpen = !cardOpen;
+				fill(card);
+			},
+		},
+		h("span", { "aria-hidden": "true" }, cardOpen ? "▲" : "▼")
+	);
+	card.append(head, body, toggle);
 
 	const why = voiceUnsupported();
 	if (why) {
-		card.append(h("p", { class: "small muted", id: "voice-unsupported" }, why));
+		body.append(h("p", { class: "small muted", id: "voice-unsupported" }, why));
 		return;
 	}
 	// A call in another game: where it is, and a way to bring it here.
 	if (inCall() && viewing.code && V.code !== viewing.code) {
-		card.append(
+		body.append(
 			h("p", { class: "small", id: "voice-elsewhere" }, "You are in the voice chat of ", h("a", { href: `/game/${V.code}` }, `game ${V.code}`), ".")
 		);
 		const talkHere = viewing.me && viewing.me.seat && (viewing.seats || []).some((s) => s.seat !== viewing.me.seat && !s.bot);
-		if (talkHere) card.append(h("button", { type: "button", class: "primary", id: "voice-switch", onclick: switchHere }, "Talk in this game instead"));
+		if (talkHere) body.append(h("button", { type: "button", class: "primary", id: "voice-switch", onclick: switchHere }, "Talk in this game instead"));
 	}
-	if (V.error) card.append(h("p", { class: "small error", id: "voice-error", role: "alert" }, V.error));
+	if (V.error) body.append(h("p", { class: "small error", id: "voice-error", role: "alert" }, V.error));
 
 	if (!V.joined) {
-		card.append(
-			h(
-				"p",
-				{ class: "small muted", id: "voice-hint" },
-				names.length ? `${names.join(", ")} ${names.length === 1 ? "is" : "are"} in the voice chat.` : "Talk to the other players while you play."
-			),
-			h("button", { type: "button", class: "primary", id: "voice-join", disabled: V.joining, onclick: join }, V.joining ? "Joining…" : "Join voice"),
-			h(
-				"p",
-				{ class: "small muted" },
-				"Audio goes straight between the players' browsers, not through the server. The other players can see your network address."
-			)
-		);
+		body.append(h("button", { type: "button", class: "primary", id: "voice-join", disabled: V.joining, onclick: join }, V.joining ? "Joining…" : "Join voice"));
 		return;
 	}
 
+	// Who is in the call; mute, deafen, push to talk and the devices are in the top bar's panel (voiceSettings).
 	const list = h("ul", { class: "voice-peers", id: "voice-peers" });
 	list.append(peerRow(V.me.seat, V.me.name, true));
 	for (const [seat, name] of V.roster) if (seat !== V.me.seat) list.append(peerRow(seat, name, false));
-	card.append(list);
+	body.append(list);
+}
 
-	const buttons = h(
-		"div",
-		{ class: "row voice-buttons" },
-		h(
-			"button",
-			{
-				type: "button",
-				id: "voice-mute",
-				"aria-pressed": V.muted ? "true" : "false",
-				class: V.muted ? "danger" : "",
-				onclick: toggleMute,
-			},
-			V.muted ? "Unmute" : "Mute"
-		),
-		h(
-			"button",
-			{
-				type: "button",
-				id: "voice-deafen",
-				"aria-pressed": V.deafened ? "true" : "false",
-				class: V.deafened ? "danger" : "",
-				title: "Stop hearing the others (this also mutes you)",
-				onclick: toggleDeafen,
-			},
-			V.deafened ? "Undeafen" : "Deafen"
-		),
-		h("button", { type: "button", id: "voice-leave", class: "ghost", onclick: () => leaveVoice() }, "Leave")
-	);
-	card.append(buttons);
-
+/**
+ * The settings of the call for the top bar's panel (topbar.js): push to talk and
+ * its key, and the microphone and speakers when there is a choice. Nothing until
+ * the call is joined.
+ */
+export function voiceSettings() {
+	if (!V.joined) return [];
 	const ptt = h("input", { type: "checkbox", id: "voice-ptt" });
 	ptt.checked = !!prefs.ptt;
 	ptt.addEventListener("change", () => {
@@ -856,27 +842,27 @@ function fill(card) {
 		};
 		document.addEventListener("keydown", grab, true);
 	});
-	card.append(
+	const out = [
 		h(
 			"div",
 			{ class: "voice-ptt small" },
 			h("label", { class: "check" }, ptt, h("span", {}, "Push to talk")),
 			prefs.ptt ? h("span", {}, "hold ", keyBtn) : null,
 			prefs.ptt && V.pttHeld ? h("span", { class: "badge turn" }, "talking") : null
-		)
-	);
-	if (V.devices.inputs.length > 1 || V.devices.outputs.length > 1) {
-		card.append(
+		),
+	];
+	const outputs = V.devices.outputs.length > 1 && typeof HTMLMediaElement.prototype.setSinkId === "function";
+	if (V.devices.inputs.length > 1 || outputs) {
+		out.push(
 			h(
 				"div",
 				{ class: "voice-devices" },
 				V.devices.inputs.length > 1 ? deviceSelect("Microphone", "voice-input", V.devices.inputs, prefs.input, chooseInput) : null,
-				V.devices.outputs.length > 1 && typeof HTMLMediaElement.prototype.setSinkId === "function"
-					? deviceSelect("Speakers", "voice-output", V.devices.outputs, prefs.output, chooseOutput)
-					: null
+				outputs ? deviceSelect("Speakers", "voice-output", V.devices.outputs, prefs.output, chooseOutput) : null
 			)
 		);
 	}
+	return out;
 }
 
 function paint() {

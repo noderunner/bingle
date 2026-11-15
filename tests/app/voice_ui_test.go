@@ -3,6 +3,7 @@ package app_test
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -34,8 +35,6 @@ func TestVoiceUI_TwoPlayersConnect(t *testing.T) {
 
 	clickSel(t, alice, "#voice-join")
 	waitJS(t, alice, "Alice in the call", `document.getElementById("voice-badge").textContent === "in call"`, 10*time.Second)
-	// Bob sees who is already there before joining.
-	waitJS(t, bob, "the hint", `document.getElementById("voice-hint").textContent.indexOf("Alice") >= 0`, 10*time.Second)
 	clickSel(t, bob, "#voice-join")
 
 	// Both ends reach "connected" (the higher seat makes the offer).
@@ -47,18 +46,20 @@ func TestVoiceUI_TwoPlayersConnect(t *testing.T) {
 	waitJS(t, bob, "Alice's audio", `(function(){ const a = document.querySelector('audio[data-voice-audio="1"]'); return a && a.srcObject && a.srcObject.getAudioTracks().length === 1; })()`, 10*time.Second)
 
 	// Mute: the local microphone track is switched off, and the page says so.
-	clickSel(t, alice, "#voice-mute")
-	waitJS(t, alice, "muted", `document.getElementById("voice-mute").textContent === "Unmute" && document.querySelector('#voice-peers li[data-me] .voice-state').textContent === "mic off"`, 5*time.Second)
-	clickSel(t, alice, "#voice-mute")
+	openVoicePanel(t, alice)
+	clickSel(t, alice, "#voice-pop-mute")
+	waitJS(t, alice, "muted", `document.getElementById("voice-pop-mute").textContent === "Unmute" && document.querySelector('#voice-peers li[data-me] .voice-state').textContent === "mic off"`, 5*time.Second)
+	clickSel(t, alice, "#voice-pop-mute")
 	waitJS(t, alice, "unmuted", `document.querySelector('#voice-peers li[data-me] .voice-state').textContent === "mic on"`, 5*time.Second)
 
 	// Deafen mutes the speakers (and the microphone).
-	clickSel(t, bob, "#voice-deafen")
+	openVoicePanel(t, bob)
+	clickSel(t, bob, "#voice-pop-deafen")
 	waitJS(t, bob, "deafened", `document.querySelector('audio[data-voice-audio="1"]').muted === true && document.querySelector('#voice-peers li[data-me] .voice-state').textContent === "deafened"`, 5*time.Second)
-	clickSel(t, bob, "#voice-deafen")
+	clickSel(t, bob, "#voice-pop-deafen")
 
 	// Leaving: the other side drops the peer, and the server forgets the seat.
-	clickSel(t, bob, "#voice-leave")
+	clickSel(t, bob, "#voice-pop-leave")
 	waitJS(t, bob, "Bob left", `document.getElementById("voice-join")`, 5*time.Second)
 	waitJS(t, alice, "Bob gone", `!document.querySelector('#voice-peers li[data-voice-seat="2"]')`, 10*time.Second)
 	var list voicePeers
@@ -66,6 +67,61 @@ func TestVoiceUI_TwoPlayersConnect(t *testing.T) {
 	if len(list.Peers) != 1 || list.Peers[0].Name != "Alice" {
 		t.Errorf("server's list = %+v, want only Alice", list.Peers)
 	}
+}
+
+// openVoicePanel opens the top bar's panel of the call, where its controls and
+// settings are, unless it is open already.
+func openVoicePanel(t *testing.T, ctx context.Context) {
+	t.Helper()
+	waitJS(t, ctx, "the call's button", `document.getElementById("voice-chip") && !document.getElementById("voice-chip").hidden`, 10*time.Second)
+	if evalBool(t, ctx, `document.getElementById("voice-pop").hidden`) {
+		clickSel(t, ctx, "#voice-chip")
+	}
+	waitJS(t, ctx, "the call's panel", `!document.getElementById("voice-pop").hidden && document.getElementById("voice-pop-mute") !== null`, 5*time.Second)
+}
+
+// The voice card starts folded up and explains nothing: its triangle opens it,
+// and during a call it lists who is in it, while mute, deafen, push to talk and
+// the devices are in the top bar's panel, which stays open while they are used
+// and does not count who else is there.
+func TestVoiceUI_CardFoldsAndTheSettingsAreInTheTopBar(t *testing.T) {
+	baseURL := newRESTTestServer(t)
+	room := newTakRoom(t, baseURL, "tic-tac-toe", "Alice")
+	joinRoom(t, baseURL, room, "Bob")
+	ctx, cancel := newChromedpContextWith(t, 60*time.Second, fakeMic...)
+	defer cancel()
+	openGameAs(t, ctx, baseURL, room, "tic-tac-toe", "Alice")
+	waitJS(t, ctx, "voice card", `document.getElementById("voice-join")`, 10*time.Second)
+	if !evalBool(t, ctx, `document.getElementById("voice-body").hidden && document.getElementById("voice-expand").getAttribute("aria-expanded") === "false"`) {
+		t.Fatal("the voice card is open before its triangle is clicked")
+	}
+	clickSel(t, ctx, "#voice-expand")
+	waitJS(t, ctx, "the card open", `!document.getElementById("voice-body").hidden && document.getElementById("voice-expand").getAttribute("aria-expanded") === "true"`, 5*time.Second)
+	if txt := evalString(t, ctx, `document.getElementById("voice-card").textContent`); strings.Contains(txt, "Talk to the other players") || strings.Contains(txt, "Audio goes") || strings.Contains(txt, "in the voice chat") {
+		t.Errorf("the card still explains itself: %q", txt)
+	}
+
+	clickSel(t, ctx, "#voice-join")
+	waitJS(t, ctx, "in call", `document.getElementById("voice-badge").textContent === "in call" && document.getElementById("voice-peers") !== null`, 10*time.Second)
+	if !evalBool(t, ctx, `!document.getElementById("voice-body").hidden`) {
+		t.Error("the card folded up on joining")
+	}
+	if evalBool(t, ctx, `!!document.querySelector("#voice-card #voice-ptt, #voice-card #voice-mute, #voice-card #voice-pop-mute, #voice-card select")`) {
+		t.Error("the call's settings are still in the card")
+	}
+	openVoicePanel(t, ctx)
+	waitJS(t, ctx, "push to talk in the panel", `document.querySelector("#voice-pop #voice-ptt") !== null`, 5*time.Second)
+	if txt := evalString(t, ctx, `document.getElementById("voice-pop").textContent`); strings.Contains(txt, "Nobody else") || strings.Contains(txt, "in the call") || strings.Contains(txt, "Joining") {
+		t.Errorf("the panel explains the call: %q", txt)
+	}
+	// A button of the panel repaints it; the panel stays open.
+	clickSel(t, ctx, "#voice-pop-mute")
+	waitJS(t, ctx, "muted", `document.getElementById("voice-pop-mute").textContent === "Unmute"`, 5*time.Second)
+	if evalBool(t, ctx, `document.getElementById("voice-pop").hidden`) {
+		t.Error("muting closed the panel")
+	}
+	clickSel(t, ctx, "#voice-expand")
+	waitJS(t, ctx, "the card folded", `document.getElementById("voice-body").hidden`, 5*time.Second)
 }
 
 // Push to talk keeps the microphone closed until the key is held.
@@ -78,7 +134,9 @@ func TestVoiceUI_PushToTalk(t *testing.T) {
 	openGameAs(t, ctx, baseURL, room, "tic-tac-toe", "Alice")
 	waitJS(t, ctx, "voice card", `document.getElementById("voice-join")`, 10*time.Second)
 	clickSel(t, ctx, "#voice-join")
-	waitJS(t, ctx, "in call", `document.getElementById("voice-ptt")`, 10*time.Second)
+	waitJS(t, ctx, "in call", `document.getElementById("voice-badge").textContent === "in call"`, 10*time.Second)
+	openVoicePanel(t, ctx)
+	waitJS(t, ctx, "push to talk in the panel", `document.querySelector("#voice-pop #voice-ptt") !== null`, 5*time.Second)
 	waitJS(t, ctx, "mic on", `document.querySelector('#voice-peers li[data-me] .voice-state').textContent === "mic on"`, 5*time.Second)
 	clickSel(t, ctx, "#voice-ptt")
 	waitJS(t, ctx, "mic closed", `document.querySelector('#voice-peers li[data-me] .voice-state').textContent === "mic off"`, 5*time.Second)

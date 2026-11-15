@@ -9,7 +9,7 @@ import { offerNotify } from "./browser-notify.js";
 import { guestKeySection } from "./guest-key.js";
 import { gameDefs, loadRows, loadUnread, isFinished, yourImpulse, sortRows, gameRow, openGameRow } from "./mygames.js";
 import { navigate, onLeave } from "./nav.js";
-import { voiceStatus, onVoiceChange, toggleMute, toggleDeafen, leaveVoice } from "./voice.js";
+import { voiceStatus, voiceSettings, onVoiceChange, toggleMute, toggleDeafen, leaveVoice } from "./voice.js";
 import { gamesIcon, joinIcon, micIcon, helpIcon, profileIcon, messageIcon } from "./ui-icons.js";
 import { whoIsHere, onHereChange, startHere, watchHere, beat as beatHere, myName } from "./here.js";
 import { mountDirectMessages, startDirectMessages, unreadCount, friendStateOf, askFriend, loadFriends, onFriendsChange } from "./dm.js";
@@ -505,7 +505,8 @@ function profileWindow() {
  * The button for a voice call: there while a call is up, wherever the player is
  * (another game, the main page, the profile), with the room code when the call
  * is in a game other than the one on screen. It opens a small panel with the
- * controls of the call and a way back to its game.
+ * controls and settings of the call (mute, deafen, leave, push to talk, the
+ * microphone and speakers) and a way back to its game.
  */
 function voiceChip() {
 	const dot = h("span", { class: "voice-live-dot", "aria-hidden": "true" });
@@ -517,18 +518,15 @@ function voiceChip() {
 	const paintPop = (st) => {
 		clear(pop);
 		const here = st.viewing && st.viewing === st.code;
-		pop.append(
-			h("p", { class: "voice-pop-title" }, h("strong", {}, "Voice chat"), " · ", here ? "this game" : `game ${st.code}`),
-			h("p", { class: "small muted" }, st.joined ? (st.peers ? `${st.peers} other${st.peers === 1 ? "" : "s"} in the call.` : "Nobody else is in the call.") : "Joining…")
-		);
+		pop.append(h("p", { class: "voice-pop-title" }, h("strong", {}, "Voice chat"), " · ", here ? "this game" : `game ${st.code}`));
 		const row = h("div", { class: "row voice-pop-buttons" });
 		if (!here) row.append(h("a", { class: "button primary", id: "voice-pop-go", href: `/game/${st.code}` }, "Go to the game"));
 		row.append(
 			h("button", { type: "button", id: "voice-pop-mute", "aria-pressed": st.muted ? "true" : "false", class: st.muted ? "danger" : "", onclick: toggleMute }, st.muted ? "Unmute" : "Mute"),
-			h("button", { type: "button", id: "voice-pop-deafen", "aria-pressed": st.deafened ? "true" : "false", class: st.deafened ? "danger" : "", onclick: toggleDeafen }, st.deafened ? "Undeafen" : "Deafen"),
+			h("button", { type: "button", id: "voice-pop-deafen", "aria-pressed": st.deafened ? "true" : "false", class: st.deafened ? "danger" : "", title: "Stop hearing the others (this also mutes you)", onclick: toggleDeafen }, st.deafened ? "Undeafen" : "Deafen"),
 			h("button", { type: "button", id: "voice-pop-leave", class: "ghost", onclick: () => leaveVoice() }, "Leave")
 		);
-		pop.append(row);
+		pop.append(row, ...voiceSettings());
 	};
 	const close = () => {
 		pop.hidden = true;
@@ -560,7 +558,8 @@ function voiceChip() {
 		chip.setAttribute("aria-expanded", "true");
 	});
 	document.addEventListener("click", (ev) => {
-		if (!pop.hidden && !pop.contains(ev.target)) close();
+		// The path, not the target: a button of the panel repaints it, so the target is gone by now.
+		if (!pop.hidden && !ev.composedPath().includes(pop)) close();
 	});
 	document.addEventListener("keydown", (ev) => {
 		if (ev.key === "Escape" && !pop.hidden) close();
