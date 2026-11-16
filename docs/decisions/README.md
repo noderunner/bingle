@@ -54,7 +54,7 @@ Short records of choices made for the `bingle` project during the requirements i
 | [0048](0048-optional-native-tls.md) | Optional native TLS with automatic Let's Encrypt certificates |
 | [0049](0049-voice-chat.md) | Voice chat: a WebRTC mesh with signalling over REST and the room socket |
 | [0050](0050-email-notifications.md) | Email notifications: contacts, seat tokens, TLS-only SMTP |
-| [0051](0051-cthulhu-wars-capture-choice-and-neutral-window.md) | Cthulhu Wars: capturing the Cultist on a Gate, a window of the neutral items, glyphs off without Yellow Sign |
+| [0051](0051-cthulhu-wars-capture-choice-and-neutral-window.md) | Cthulhu Wars: capturing the Cultist on a Gate, a window of the neutral items, glyphs off without Yellow Sign (capture superseded by 0131) |
 | [0052](0052-calls-across-pages-top-bar-and-per-reaction-choices.md) | A voice call that outlives the page, the top bar of a game, and a choice for each reaction |
 | [0053](0053-game-versions-beta-rules-pages-and-themes.md) | Game versions and the Beta mark, one Rules page for the abstract games, coordinates outside themed frames |
 | [0054](0054-changelog-nyet-table-and-removing-the-demo.md) | A changelog in the help window, Nyet!'s table (classic suits, animals, pictures for the board, phone views) and the Demo game removed |
@@ -104,6 +104,7 @@ Short records of choices made for the `bingle` project during the requirements i
 | [0126](0126-a-game-describes-its-own-practice.md) | A game describes its own practice: a `batch.Study` gives a game's batches their picks, measures, report and guide knobs, so batches and tuning name no game |
 | [0129](0129-the-rules-report-facts.md) | The rules report facts: `Apply` returns named facts about what a selection did, each game lists the ones it can report, and they are stored with their move |
 | [0130](0130-badges.md) | Badges: few, declared in YAML, built from a fixed set of parts, earned during play or at the end by workers off the move path, kept as rows that never change, and seen by every registered user |
+| [0131](0131-cthulhu-wars-the-captured-cult-chooses.md) | Cthulhu Wars: the captured cult, not the captor, chooses which of its Cultists is taken, so it can keep the one on its Gate |
 | [0125](0125-a-binarys-games-are-chosen-when-it-is-built.md) | A binary's games are chosen when it is built: each game registers itself from a file of `internal/games/all` that a `no_<package>` build tag leaves out |
 | [0124](0124-the-server-says-what-things-are-clients-decide-how-they-look.md) | The server says what things are and each client decides how they look: appearance leaves the definition and the API for a per-client file (`web.yaml`), and every game can be drawn without one |
 | [0123](0123-tutorials-come-in-series-of-lessons.md) | Tutorials come in series of named lessons: the card's head names both, dots track progress, *Start Next Tutorial* leads on, Keep Playing is the tutorial's to offer, and an account keeps what it has finished |

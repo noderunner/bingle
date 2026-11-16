@@ -1,6 +1,7 @@
 # 0051. Cthulhu Wars: capturing the Cultist on a Gate, a window of the neutral items, glyphs off without Yellow Sign
 
-Status: accepted (2026-10-26)
+Status: accepted (2026-10-26). The **Capture** and **Bots** parts are superseded by
+[ADR 0131](0131-cthulhu-wars-the-captured-cult-chooses.md) (2026-11-16): the captured cult chooses which Cultist is taken.
 
 ## Context
 
