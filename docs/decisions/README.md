@@ -33,7 +33,7 @@ Short records of choices made for the `bingle` project during the requirements i
 | [0027](0027-reactions-lobbies-and-chat.md) | Reactions with auto-pass, lobbies with invite links, chat |
 | [0028](0028-derived-games-and-setup-options.md) | Setup options and games derived from a definition (cults at the table, expansions) |
 | [0029](0029-game-options-window-and-solo-seats.md) | The game options window; playing several seats of a table oneself |
-| [0030](0030-gate-occupants-are-units-and-action-cards.md) | The unit on a Gate is a unit of its own; every action button has a price and a card |
+| [0030](0030-gate-occupants-are-units-and-action-cards.md) | The unit on a Gate is a unit of its own; every action button has a price and a card (taking and losing a Gate superseded by 0132) |
 | [0031](0031-free-step-off-oath-asked-and-spellbook-marks.md) | A free step-off, the Oath asked after every action, spellbook marks, captured units |
 | [0032](0032-desecrate-rolls-first-and-locks-in.md) | Desecrate rolls first and the unit is chosen after; a rolled die locks the move in |
 | [0033](0033-first-player-reactions-reversed-and-auto-play.md) | The first player of the game, reactions passed by default (and "when I'm targeted"), the Auto-Play Timeout, cults chosen in the lobby |
@@ -105,6 +105,7 @@ Short records of choices made for the `bingle` project during the requirements i
 | [0129](0129-the-rules-report-facts.md) | The rules report facts: `Apply` returns named facts about what a selection did, each game lists the ones it can report, and they are stored with their move |
 | [0130](0130-badges.md) | Badges: few, declared in YAML, built from a fixed set of parts, earned during play or at the end by workers off the move path, kept as rows that never change, and seen by every registered user |
 | [0131](0131-cthulhu-wars-the-captured-cult-chooses.md) | Cthulhu Wars: the captured cult, not the captor, chooses which of its Cultists is taken, so it can keep the one on its Gate |
+| [0132](0132-cthulhu-wars-a-gate-is-taken-on-its-takers-turn.md) | Cthulhu Wars: a Gate is taken only on its taker's turn, and a lost holder is replaced only by a unit of its own kind |
 | [0125](0125-a-binarys-games-are-chosen-when-it-is-built.md) | A binary's games are chosen when it is built: each game registers itself from a file of `internal/games/all` that a `no_<package>` build tag leaves out |
 | [0124](0124-the-server-says-what-things-are-clients-decide-how-they-look.md) | The server says what things are and each client decides how they look: appearance leaves the definition and the API for a per-client file (`web.yaml`), and every game can be drawn without one |
 | [0123](0123-tutorials-come-in-series-of-lessons.md) | Tutorials come in series of named lessons: the card's head names both, dots track progress, *Start Next Tutorial* leads on, Keep Playing is the tutorial's to offer, and an account keeps what it has finished |

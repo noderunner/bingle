@@ -1,5 +1,9 @@
 # 0030. The unit on a Gate is a unit of its own; every action button has a card
 
+Status: accepted. Two sentences — a unit that arrives takes an abandoned Gate by itself, and another unit steps on
+when the holder is lost against its owner's will — are superseded by
+[ADR 0132](0132-cthulhu-wars-a-gate-is-taken-on-its-takers-turn.md) (2026-11-16).
+
 ## Context
 
 ADR 0029's playtests came back with three kinds of complaint. A Gate showed the
