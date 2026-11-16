@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -22,6 +24,9 @@ type Game struct {
 	// impulse is one or more of the MoveSeq rows.
 	Ply        int
 	WinnerSeat *int // nil ⇒ SQL NULL
+	// SharedResult refines a finished game with no WinnerSeat (column
+	// shared_result): see DrawnSeats and AllLost.
+	SharedResult string
 	// EndReason says why a finished game ended ("road", "resignation", ...);
 	// empty while the game is unfinished.
 	EndReason string
@@ -68,7 +73,7 @@ type Game struct {
 
 // gameColumns is the column list every games SELECT uses, matching
 // scanGameRow.
-const gameColumns = `id, room_code, game_def_id, status, board_state, impulse_seat, move_seq, winner_seat, end_reason, end_detail, move_time_limit, draw_offer_seat, initial_state, initial_impulse_seat, created_at, updated_at, lobby, clock, tutorial, rated, rating_status, tournament_id, card_set, real_time, ply`
+const gameColumns = `id, room_code, game_def_id, status, board_state, impulse_seat, move_seq, winner_seat, end_reason, end_detail, move_time_limit, draw_offer_seat, initial_state, initial_impulse_seat, created_at, updated_at, lobby, clock, tutorial, rated, rating_status, tournament_id, card_set, real_time, ply, shared_result`
 
 type rowScanner interface{ Scan(dest ...any) error }
 
@@ -78,7 +83,7 @@ func scanGameRow(row rowScanner) (Game, error) {
 	var lobby, rated int
 	err := row.Scan(&g.ID, &g.RoomCode, &g.GameDefID, &g.Status, &g.BoardState, &impulseSeat, &g.MoveSeq, &winnerSeat,
 		&g.EndReason, &g.EndDetail, &g.MoveTimeLimit, &drawOffer, &g.InitialState, &g.InitialImpulseSeat,
-		&g.CreatedAt, &g.UpdatedAt, &lobby, &g.Clock, &g.Tutorial, &rated, &g.RatingStatus, &g.TournamentID, &g.CardSet, &g.RealTime, &g.Ply)
+		&g.CreatedAt, &g.UpdatedAt, &lobby, &g.Clock, &g.Tutorial, &rated, &g.RatingStatus, &g.TournamentID, &g.CardSet, &g.RealTime, &g.Ply, &g.SharedResult)
 	if err != nil {
 		return Game{}, err
 	}
@@ -555,3 +560,38 @@ func (s *Store) ListUnfinishedGames(ctx context.Context, limit int) ([]Unfinishe
 // Competitive says the game's result must stand: it is rated, or part of a
 // tournament, so nothing may take a move back or play for a player.
 func (g Game) Competitive() bool { return g.Rated || g.TournamentID != 0 }
+
+// sharedResult is the shared_result column for a game with no winner:
+// "lost" when every seat lost, "drew:1,3" when those seats shared a draw.
+func sharedResult(drawn []int, allLost bool) string {
+	if allLost {
+		return "lost"
+	}
+	if len(drawn) == 0 {
+		return ""
+	}
+	parts := make([]string, len(drawn))
+	for i, s := range drawn {
+		parts[i] = strconv.Itoa(s)
+	}
+	return "drew:" + strings.Join(parts, ",")
+}
+
+// DrawnSeats lists, for a finished game with no winner, the seats that shared
+// a draw while the others lost; nil when every seat drew or lost.
+func (g Game) DrawnSeats() []int {
+	list, ok := strings.CutPrefix(g.SharedResult, "drew:")
+	if !ok {
+		return nil
+	}
+	var drawn []int
+	for _, f := range strings.Split(list, ",") {
+		if n, err := strconv.Atoi(f); err == nil {
+			drawn = append(drawn, n)
+		}
+	}
+	return drawn
+}
+
+// AllLost says a finished game with no winner was lost by every seat.
+func (g Game) AllLost() bool { return g.SharedResult == "lost" }

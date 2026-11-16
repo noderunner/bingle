@@ -324,6 +324,8 @@ type getStateResult struct {
 	Status      string                    `json:"status"`
 	MoveSeq     int                       `json:"move_seq"`
 	WinnerSeat  *int                      `json:"winner_seat"`
+	DrawnSeats  []int                     `json:"drawn_seats,omitempty"`
+	AllLost     bool                      `json:"all_lost,omitempty"`
 	EndReason   string                    `json:"end_reason,omitempty"`
 	// DrawOfferSeat is the seat with an open draw offer (null when none).
 	DrawOfferSeat *int `json:"draw_offer_seat"`
@@ -359,6 +361,8 @@ func handleGetState(mgr *session.Manager) server.ToolHandlerFunc {
 			Status:      snapshot.Status,
 			MoveSeq:     snapshot.MoveSeq,
 			WinnerSeat:  snapshot.WinnerSeat,
+			DrawnSeats:  snapshot.DrawnSeats,
+			AllLost:     snapshot.AllLost,
 			EndReason:   snapshot.EndReason,
 		}), nil
 	}

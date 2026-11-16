@@ -488,3 +488,41 @@ func TestRecordMove_SwapSeatsExchangesThePlayers(t *testing.T) {
 		t.Errorf("a seat keeps its colour: %s, %s", players[0].Color, players[1].Color)
 	}
 }
+
+// A game of several seats may end with no winner and yet not a draw for
+// every seat: some seats share a draw and the others lose, or every seat
+// loses. RecordMove keeps which (Game.DrawnSeats, Game.AllLost).
+func TestRecordMove_ASharedDrawOrALossForEveryoneIsKept(t *testing.T) {
+	s := newRecordMoveTestStore(t)
+	ctx := t.Context()
+	end := func(room string, in store.MoveInput) store.Game {
+		t.Helper()
+		game, _, err := s.CreateGame(ctx, room, "test-freeplay", `{"positions":[]}`, "Alice", "black")
+		if err != nil {
+			t.Fatal(err)
+		}
+		in.Seat, in.Color, in.From, in.To = 1, "black", "0,0", "0,1"
+		in.ResultingBoardState, in.GameEnded = `{"positions":["0,1"]}`, true
+		if _, err := s.RecordMove(ctx, game.ID, in); err != nil {
+			t.Fatal(err)
+		}
+		got, err := s.GetGame(ctx, room)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return got
+	}
+	if g := end("ROOMS1", store.MoveInput{DrawnSeats: []int{1, 3}}); g.WinnerSeat != nil || g.AllLost() || len(g.DrawnSeats()) != 2 || g.DrawnSeats()[0] != 1 || g.DrawnSeats()[1] != 3 {
+		t.Errorf("a draw shared by seats 1 and 3: winner %v drawn %v all lost %v", g.WinnerSeat, g.DrawnSeats(), g.AllLost())
+	}
+	if g := end("ROOMS2", store.MoveInput{AllLost: true}); g.WinnerSeat != nil || !g.AllLost() || len(g.DrawnSeats()) != 0 {
+		t.Errorf("every seat lost: winner %v drawn %v all lost %v", g.WinnerSeat, g.DrawnSeats(), g.AllLost())
+	}
+	if g := end("ROOMS3", store.MoveInput{}); g.WinnerSeat != nil || g.AllLost() || len(g.DrawnSeats()) != 0 {
+		t.Errorf("a plain draw: winner %v drawn %v all lost %v", g.WinnerSeat, g.DrawnSeats(), g.AllLost())
+	}
+	// A winner wins whatever else is said.
+	if g := end("ROOMS4", store.MoveInput{WinnerSeat: intPtr(2), AllLost: true}); g.WinnerSeat == nil || *g.WinnerSeat != 2 || g.AllLost() {
+		t.Errorf("a winner: winner %v all lost %v", g.WinnerSeat, g.AllLost())
+	}
+}

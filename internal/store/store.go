@@ -304,6 +304,10 @@ var columnMigrations = []struct{ table, column, ddl string }{
 	// facts_seq is past its badges_seq has badges to check.
 	{"games", "facts_seq", "INTEGER NOT NULL DEFAULT 0"},
 	{"games", "badges_seq", "INTEGER NOT NULL DEFAULT 0"},
+	// shared_result: a finished game with no winner that was not a draw for
+	// every seat — "drew:1,3" (those seats shared a draw, the others lost) or
+	// "lost" (every seat lost). '' for any other game (Game.DrawnSeats).
+	{"games", "shared_result", "TEXT NOT NULL DEFAULT ''"},
 }
 
 func addMissingColumns(db *sql.DB) error {

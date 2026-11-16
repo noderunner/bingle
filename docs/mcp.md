@@ -196,7 +196,8 @@ move followed by the replies), `done`, `truncated`, `winner_seat`,
   `reward` is +1/−1/0 at the end and 0 before; a truncated episode
   (`max_plies`) has `truncated: true` and reward 0.
 * **Self-play**: `opponent: "self"` — you move for whoever is to move
-  (`impulse_seat`); `winner_seat` tells you who won so you can credit either side.
+  (`impulse_seat`); `winner_seat` tells you who won so you can credit either side. With no winner, `drawn_seats`
+  (in `get_game`) lists the seats that shared a draw while the others lost, and `all_lost` says every seat lost.
 * **Curricula and puzzles**: `start_tps` starts from any Tak position, e.g. a
   position one move from a road; `start_state` (+ `start_seat`) does the same
   for any game. `puzzle_id` (see `list_puzzles`) starts a curated position —

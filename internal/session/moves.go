@@ -61,6 +61,8 @@ type MoveOutcome struct {
 	NextImpulseSeat int
 	GameEnded       bool
 	WinnerSeat      *int
+	DrawnSeats      []int // with no winner: the seats that shared a draw
+	AllLost         bool  // with no winner: every seat lost
 	EndReason       string
 	EndDetail       string
 	Status          string // "active" or "finished" after this move
@@ -367,6 +369,8 @@ func (m *Manager) applyAndRecordAs(ctx context.Context, compiled *catalog.Compil
 		NextImpulseSeat:     result.NextImpulseSeat,
 		GameEnded:           result.GameEnded,
 		WinnerSeat:          result.WinnerSeat,
+		DrawnSeats:          result.DrawnSeats,
+		AllLost:             result.AllLost,
 		EndReason:           result.EndReason,
 		EndDetail:           result.EndDetail,
 		Notation:            result.Notation,
@@ -447,6 +451,8 @@ func (m *Manager) applyAndRecordAs(ctx context.Context, compiled *catalog.Compil
 		ImpulseSeat: eventImpulseSeat,
 		GameEnded:   result.GameEnded,
 		WinnerSeat:  result.WinnerSeat,
+		DrawnSeats:  result.DrawnSeats,
+		AllLost:     result.AllLost,
 		EndReason:   result.EndReason,
 		EndDetail:   result.EndDetail,
 		Status:      finalStatus,
@@ -499,6 +505,8 @@ func (m *Manager) applyAndRecordAs(ctx context.Context, compiled *catalog.Compil
 		NextImpulseSeat: result.NextImpulseSeat,
 		GameEnded:       result.GameEnded,
 		WinnerSeat:      result.WinnerSeat,
+		DrawnSeats:      result.DrawnSeats,
+		AllLost:         result.AllLost,
 		EndReason:       result.EndReason,
 		EndDetail:       result.EndDetail,
 		Status:          finalStatus,

@@ -133,10 +133,10 @@ func (m *Manager) Observe(ctx context.Context, roomCode, name string) (Observati
 	}
 
 	if obs.Done && obs.Seat != 0 {
-		switch {
-		case game.WinnerSeat == nil:
+		switch seatOutcome(game.WinnerSeat, game.DrawnSeats(), game.AllLost(), obs.Seat) {
+		case "drawn":
 			obs.Result = "draw"
-		case *game.WinnerSeat == obs.Seat:
+		case "won":
 			obs.Result, obs.Reward = "win", 1
 		default:
 			obs.Result, obs.Reward = "loss", -1

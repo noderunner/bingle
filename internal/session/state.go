@@ -27,6 +27,9 @@ type StateSnapshot struct {
 	// selections query is made against.
 	Ply        int
 	WinnerSeat *int
+	// DrawnSeats and AllLost refine an ending with no winner (store.Game).
+	DrawnSeats []int
+	AllLost    bool
 	EndReason  string
 	// EndDetail adds specifics to EndReason (e.g. the final score).
 	EndDetail string
@@ -128,6 +131,8 @@ func (m *Manager) snapshot(ctx context.Context, compiled *catalog.CompiledGame, 
 		MoveSeq:         game.Ply, // a move is an impulse (ADR 0114)
 		Ply:             game.Ply,
 		WinnerSeat:      game.WinnerSeat,
+		DrawnSeats:      game.DrawnSeats(),
+		AllLost:         game.AllLost(),
 		EndReason:       game.EndReason,
 		EndDetail:       game.EndDetail,
 		Tutorial:        game.Tutorial,
@@ -379,6 +384,7 @@ func (m *Manager) readState(ctx context.Context, roomCode string, atSeq *int) (S
 		if *atSeq != game.Ply {
 			hist.Status = "active"
 			hist.WinnerSeat = nil
+			hist.SharedResult = ""
 			hist.EndReason = ""
 			hist.MoveSeq = seq
 			hist.Ply = *atSeq
