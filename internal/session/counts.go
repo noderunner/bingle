@@ -198,11 +198,25 @@ func ratedResult(game store.Game) bool {
 
 // outcomeOf is "won", "drawn" or "lost" for seat.
 func outcomeOf(game store.Game, seat int) string {
+	return seatOutcome(game.WinnerSeat, game.DrawnSeats(), game.AllLost(), seat)
+}
+
+// seatOutcome is "won", "drawn" or "lost" for seat in a finished game: the
+// winner won; with no winner, every seat lost (allLost), or the seats in drawn
+// shared a draw and the others lost, or — with neither — every seat drew.
+func seatOutcome(winner *int, drawn []int, allLost bool, seat int) string {
 	switch {
-	case game.WinnerSeat == nil:
-		return "drawn"
-	case *game.WinnerSeat == seat:
+	case winner != nil && *winner == seat:
 		return "won"
+	case winner != nil, allLost:
+		return "lost"
+	case len(drawn) == 0:
+		return "drawn"
+	}
+	for _, s := range drawn {
+		if s == seat {
+			return "drawn"
+		}
 	}
 	return "lost"
 }

@@ -275,6 +275,8 @@ async function loadPosition() {
 	S.game.move_seq = st.move_seq;
 	S.game.ply = st.ply || 0;
 	S.game.winner_seat = st.winner_seat;
+	S.game.drawn_seats = st.drawn_seats || [];
+	S.game.all_lost = !!st.all_lost;
 	S.game.end_reason = st.end_reason;
 	S.game.end_detail = st.end_detail;
 	S.viewCache.clear();
@@ -2164,6 +2166,8 @@ async function onEvent(env) {
 			S.game.ply = d.ends_impulse ? d.ply : d.ply - 1;
 			S.game.move_seq = S.game.ply;
 			S.game.winner_seat = d.winner_seat;
+			S.game.drawn_seats = d.drawn_seats || [];
+			S.game.all_lost = !!d.all_lost;
 			S.game.end_reason = d.end_reason;
 			S.game.end_detail = d.end_detail;
 			S.game.impulse_deadline = d.impulse_deadline || "";
@@ -3273,6 +3277,8 @@ function retiredRecord() {
 	if (g.end_reason === "retired") ending = "It was still being played when the server stopped offering the game, so it ended with no result.";
 	else if (g.end_reason === "abandoned") ending = "It ended with no result when its tournament was abandoned.";
 	else if (g.status !== "finished") ending = "It was never finished.";
+	else if ((g.winner_seat === null || g.winner_seat === undefined) && g.all_lost) ending = "Every player lost.";
+	else if ((g.winner_seat === null || g.winner_seat === undefined) && (g.drawn_seats || []).length) ending = `${g.drawn_seats.map(who).join(" and ")} shared a draw; the others lost.`;
 	else if (g.winner_seat === null || g.winner_seat === undefined) ending = "It ended in a draw.";
 	else ending = `${who(g.winner_seat)} won.`;
 	const players = seats.filter((s) => s.name).map((s) => s.name + (s.bot ? " (bot)" : ""));
@@ -3325,6 +3331,15 @@ function resultMessage() {
 		if (g.end_reason === "abandoned") return "Game over — its tournament was abandoned, so it has no result.";
 		const drawn = page().drawnMessage && page().drawnMessage(g.end_reason, detail);
 		if (drawn) return drawn;
+		// Several seats may share a draw while the others lose, or every seat
+		// may lose.
+		if (g.all_lost) return `Game over — every player lost${how}${detail}.`;
+		const sharing = g.drawn_seats || [];
+		if (sharing.length) {
+			const names = sharing.map((seat) => `${seatLabel(seat)} (${displayName(seat)})`).join(" and ");
+			if (S.me.seat) return sharing.includes(S.me.seat) ? `You share the draw with ${sharing.filter((x) => x !== S.me.seat).map((seat) => `${seatLabel(seat)} (${displayName(seat)})`).join(" and ")}${how}${detail}.` : `${names} share the draw${how}${detail}; you lost.`;
+			return `${names} share the draw${how}${detail}.`;
+		}
 		return `Game over — a draw${how ? " " + how : ""}${detail}.`;
 	}
 	const who = `${seatLabel(g.winner_seat)} (${displayName(g.winner_seat)})`;

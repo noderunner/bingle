@@ -169,3 +169,36 @@ func TestTheFactsOfAGameAreCountedForTheirSeats(t *testing.T) {
 		t.Errorf("bea placed %d, want 1", got)
 	}
 }
+
+// A game with no winner need not be a draw for every seat: the seats that
+// share a draw count it drawn and the others lost; when every seat lost, all
+// count it lost.
+func TestASharedDrawAndALossForEveryoneCountPerSeat(t *testing.T) {
+	for _, c := range []struct {
+		shared   string
+		ana, bea string
+	}{
+		{"drew:1", "drawn", "lost"},
+		{"lost", "lost", "lost"},
+		{"", "drawn", "drawn"},
+	} {
+		w := newRatedWorld(t)
+		ana, bea := w.account("ana"), w.account("bea")
+		room := w.unrated("yavalath", ana, bea)
+		w.moveEach(room, ana, bea)
+		g, err := w.st.GetGame(context.Background(), room)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := w.st.DB().Exec(`UPDATE games SET status = 'finished', impulse_seat = NULL, winner_seat = NULL, shared_result = ?, end_reason = 'draw', count_status = ? WHERE id = ?`, c.shared, store.CountPending, g.ID); err != nil {
+			t.Fatal(err)
+		}
+		w.m.RecordResults(context.Background())
+		if got := w.stats(ana)["game."+c.ana+":yavalath"]; got != 1 {
+			t.Errorf("%q: ana (seat 1) has %v, want game.%s", c.shared, w.stats(ana), c.ana)
+		}
+		if got := w.stats(bea)["game."+c.bea+":yavalath"]; got != 1 {
+			t.Errorf("%q: bea (seat 2) has %v, want game.%s", c.shared, w.stats(bea), c.bea)
+		}
+	}
+}

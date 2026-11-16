@@ -14,6 +14,12 @@ type Outcome struct {
 	Ended bool
 	// Winner is the winning seat; nil with Ended set means a draw.
 	Winner *int
+	// Drawn and AllLost refine an ending with no Winner, for games of more
+	// than two seats. Drawn lists the seats that share a draw — a shared
+	// victory — while the other seats lost; AllLost says that every seat
+	// lost (nobody won and nobody drew). With neither, every seat drew.
+	Drawn   []int
+	AllLost bool
 	// Reason names the rule that ended the game (e.g. "road").
 	Reason string
 	// Detail adds specifics such as a final score.

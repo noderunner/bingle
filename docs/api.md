@@ -89,7 +89,9 @@ curl -s -H "$A" "$B/api/games/$CODE/observe?player_name=Ana" | jq -r .board_text
 #  …
 ```
 
-**7. Play on until `status` is `finished`**, then read `winner_seat` and `end_reason`, or give up with
+**7. Play on until `status` is `finished`**, then read `winner_seat` and `end_reason` (with no winner, `drawn_seats`
+lists the seats that shared a draw while the others lost, and `all_lost` says every seat lost; with neither, every seat
+drew: ADR 0133), or give up with
 `POST /api/games/{code}/resign {"player_name": "Ana"}`. `GET /api/games/{code}/moves` is the record.
 Against a person, wait for their move by polling `state` or by listening on `GET /ws/{code}`.
 
@@ -206,7 +208,7 @@ that account.
 | `GET /config` | | `{public_url}`: the configured `BINGLE_PUBLIC_URL` ("" when unset) |
 | `POST /bot-matches` | `{game_def_id, bot_a, bot_b, delay_ms?}`: a two-player room where two built-in bots play each other at a watchable pace (150 ms – 10 s per move); open it as a spectator (`/games/{code}/join` with role spectator, or the WebSocket). Stops when the game ends, after 2 minutes with nobody watching, or at the move cap; at most 12 run at once | `{room_code, status}` |
 | `POST /games/import` | `{text, game_def_id?, player1?, player2?}`: load a PTN document or a plain move list into a new room (full history; the rules engine validates every move, an illegal one is reported by number; a `[TPS]` header sets the start) | `{room_code, game_def_id, status, moves, players}` |
-| `GET /games/{code}` | | `{game_def_id, status, seats[{seat,color,name,label,bot}], impulse_seat, move_seq, winner_seat, end_reason, end_detail, move_time_seconds, clock?, impulse_deadline, server_time, draw_offer_seat, start_state?, start_impulse_seat?, lobby?, host_seat?, invite_url}` |
+| `GET /games/{code}` | | `{game_def_id, status, seats[{seat,color,name,label,bot}], impulse_seat, move_seq, winner_seat, drawn_seats?, all_lost?, end_reason, end_detail, move_time_seconds, clock?, impulse_deadline, server_time, draw_offer_seat, start_state?, start_impulse_seat?, lobby?, host_seat?, invite_url}` |
 | `POST /games/{code}/join` | `{player_name, role: player\|spectator, seat?}`: `seat` asks for a particular open seat (`409` if taken); a player already seated keeps theirs | `{role, seat, color, status}` |
 | `POST /games/{code}/bots` | `{player_name, bot, seat?}`: a seated player fills the lowest open seat (or `seat`) of a **waiting** game with a built-in bot, named after the seat's faction/colour and its kind (`Black Goat (MCTS)`); a game without a lobby starts when the last seat fills | `{seat, name, color, bot, status}`; `403` not seated, `409` full or already started |
 | `POST /games/{code}/start` | `{player_name}`: the **host** begins a game waiting in its lobby; every seat must be filled | `{status, lobby, host_seat, move_seq, impulse_seat}`; `403` not the host, `409` seats open / already started |
@@ -425,7 +427,7 @@ not count as the player looking at the game (no effect on "your turn" mail). The
 subscribed before it sends `joined`, so a client that waits for `joined` misses no call message. The first message is
 `{"type":"joined","data":{role,seat,color,status,connected[],move_seq}}`, where `move_seq` is the selections played so far, read after subscribing: a client that loaded fewer missed a move event and should load the game again. Afterwards:
 
-* `{"type":"move","data":{seq, seat, color, notation, from, to, action, piece, count, path, drops, aim, ply, ends_impulse?, impulse_seat, game_ended, winner_seat, end_reason, status, board_state, state, auto?, auto_play?, locked?, impulse_deadline?, server_time?}}`: one event per selection, `seq` counting selections; `ply` is its impulse, and `ends_impulse` marks the last selection of a move. `locked` (a draw or a card turned up, which Undo cannot take back) comes in a game for one seat only
+* `{"type":"move","data":{seq, seat, color, notation, from, to, action, piece, count, path, drops, aim, ply, ends_impulse?, impulse_seat, game_ended, winner_seat, drawn_seats?, all_lost?, end_reason, status, board_state, state, auto?, auto_play?, locked?, impulse_deadline?, server_time?}}`: one event per selection, `seq` counting selections; `ply` is its impulse, and `ends_impulse` marks the last selection of a move. `locked` (a draw or a card turned up, which Undo cannot take back) comes in a game for one seat only
 * `{"type":"state","data":{reason, removed?, status, impulse_seat, move_seq, ply, winner_seat, end_reason, seats[], board_state, state, …}}`
   — sent when something other than a move changed the game (`reason` is
   `join`, `leave`, `seat`, `faction`, `start`, `undo`, `resign`, `timeout`, `draw-offer`, `draw-declined`,

@@ -62,6 +62,10 @@ type MoveResult struct {
 	NextImpulseSeat int
 	GameEnded       bool
 	WinnerSeat      *int
+	// DrawnSeats and AllLost refine an ending with no winner (Outcome.Drawn,
+	// Outcome.AllLost).
+	DrawnSeats []int
+	AllLost    bool
 
 	// Move is the normalized move that was applied.
 	Move Selection
@@ -472,6 +476,8 @@ func Apply(game *catalog.CompiledGame, st *BoardState, seat int, mv Selection) (
 		NextImpulseSeat: nextSeat,
 		GameEnded:       outcome.Ended,
 		WinnerSeat:      outcome.Winner,
+		DrawnSeats:      outcome.Drawn,
+		AllLost:         outcome.AllLost,
 		Move:            mv,
 		Notation:        FormatMove(game, mv),
 		EndReason:       outcome.Reason,

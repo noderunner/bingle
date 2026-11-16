@@ -210,8 +210,12 @@ type getGameResponse struct {
 	ImpulseSeat *int          `json:"impulse_seat"`
 	MoveSeq     int           `json:"move_seq"`
 	WinnerSeat  *int          `json:"winner_seat"`
-	EndReason   string        `json:"end_reason,omitempty"`
-	EndDetail   string        `json:"end_detail,omitempty"`
+	// DrawnSeats and AllLost refine a finished game with no winner: the
+	// seats that shared a draw (the others lost), or every seat lost.
+	DrawnSeats []int  `json:"drawn_seats,omitempty"`
+	AllLost    bool   `json:"all_lost,omitempty"`
+	EndReason  string `json:"end_reason,omitempty"`
+	EndDetail  string `json:"end_detail,omitempty"`
 
 	// Rated games: what became of the result once the game has ended, and what
 	// it did to the players' ratings.
@@ -331,6 +335,8 @@ func (h *handlers) handleGetGame(w http.ResponseWriter, r *http.Request) {
 		ImpulseSeat:  snapshot.ImpulseSeat,
 		MoveSeq:      snapshot.MoveSeq,
 		WinnerSeat:   snapshot.WinnerSeat,
+		DrawnSeats:   snapshot.DrawnSeats,
+		AllLost:      snapshot.AllLost,
 		EndReason:    snapshot.EndReason,
 		EndDetail:    snapshot.EndDetail,
 
@@ -443,6 +449,8 @@ type getGameStateResponse struct {
 	// Ply is the number of impulses played, which a move's ply guard names.
 	Ply        int    `json:"ply"`
 	WinnerSeat *int   `json:"winner_seat"`
+	DrawnSeats []int  `json:"drawn_seats,omitempty"`
+	AllLost    bool   `json:"all_lost,omitempty"`
 	EndReason  string `json:"end_reason,omitempty"`
 	EndDetail  string `json:"end_detail,omitempty"`
 	// DrawOfferSeat is the seat currently offering a draw, or null.
@@ -480,6 +488,8 @@ func (h *handlers) handleGetGameState(w http.ResponseWriter, r *http.Request) {
 		MoveSeq:     snapshot.MoveSeq,
 		Ply:         snapshot.Ply,
 		WinnerSeat:  snapshot.WinnerSeat,
+		DrawnSeats:  snapshot.DrawnSeats,
+		AllLost:     snapshot.AllLost,
 		EndReason:   snapshot.EndReason,
 		EndDetail:   snapshot.EndDetail,
 

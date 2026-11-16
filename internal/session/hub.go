@@ -39,6 +39,8 @@ type moveEventData struct {
 	ImpulseSeat *int     `json:"impulse_seat"`
 	GameEnded   bool     `json:"game_ended"`
 	WinnerSeat  *int     `json:"winner_seat"`
+	DrawnSeats  []int    `json:"drawn_seats,omitempty"`
+	AllLost     bool     `json:"all_lost,omitempty"`
 	EndReason   string   `json:"end_reason,omitempty"`
 	EndDetail   string   `json:"end_detail,omitempty"`
 	Status      string   `json:"status"`
@@ -79,6 +81,8 @@ type stateEventData struct {
 	MoveSeq     int             `json:"move_seq"`
 	Ply         int             `json:"ply"`
 	WinnerSeat  *int            `json:"winner_seat"`
+	DrawnSeats  []int           `json:"drawn_seats,omitempty"`
+	AllLost     bool            `json:"all_lost,omitempty"`
 	EndReason   string          `json:"end_reason,omitempty"`
 	EndDetail   string          `json:"end_detail,omitempty"`
 	Seats       []seatEventData `json:"seats"`
@@ -124,6 +128,8 @@ func stateEventFrom(snap StateSnapshot, reason string, removed []int) stateEvent
 		MoveSeq:       snap.MoveSeq,
 		Ply:           snap.Ply,
 		WinnerSeat:    snap.WinnerSeat,
+		DrawnSeats:    snap.DrawnSeats,
+		AllLost:       snap.AllLost,
 		EndReason:     snap.EndReason,
 		EndDetail:     snap.EndDetail,
 		Seats:         seats,

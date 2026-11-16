@@ -4,6 +4,11 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.114.0 - 2026-11-16
+
+### Bingle Core 0.114.0
+- A game of three or more players can now end in a draw shared by some of them, with the others losing, or with every player losing. The end of the game says which ("You share the draw with …", "… share the draw; you lost", "every player lost"), and your record counts it that way. Until now both were counted as a draw for everyone at the table.
+
 ## 0.113.1 - 2026-11-15
 
 ### Bingle Core 0.113.1

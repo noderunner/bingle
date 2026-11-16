@@ -21,6 +21,8 @@ type MoveInput struct {
 	NextImpulseSeat     int     // ignored (games.impulse_seat set NULL) if GameEnded
 	GameEnded           bool
 	WinnerSeat          *int   // nil unless GameEnded (nil + GameEnded = draw)
+	DrawnSeats          []int  // with no winner: the seats that shared a draw (the others lost)
+	AllLost             bool   // with no winner: every seat lost
 	EndReason           string // why the game ended; "" unless GameEnded
 	EndDetail           string // specifics such as the final score
 	Notation            string // the move in the game's canonical notation
@@ -141,10 +143,14 @@ func (s *Store) RecordMove(ctx context.Context, gameID int64, in MoveInput) (Mov
 	if in.WinnerSeat != nil {
 		winnerSeat = sql.NullInt64{Int64: int64(*in.WinnerSeat), Valid: true}
 	}
+	shared := ""
+	if in.GameEnded && in.WinnerSeat == nil {
+		shared = sharedResult(in.DrawnSeats, in.AllLost)
+	}
 
 	if _, err := tx.exec(ctx, "RecordMove.updateGame",
-		`UPDATE games SET board_state = ?, move_seq = ?, ply = ?, updated_at = CURRENT_TIMESTAMP, impulse_seat = ?, status = ?, winner_seat = ?, end_reason = ?, end_detail = ?, rating_status = CASE WHEN rated = 1 AND ? = 'finished' THEN 'pending' ELSE '' END, count_status = CASE WHEN tutorial = '' AND ? = 'finished' THEN 'pending' ELSE count_status END, facts_seq = CASE WHEN ? THEN ? ELSE facts_seq END, draw_offer_seat = NULL WHERE id = ?`,
-		in.ResultingBoardState, newSeq, gamePly, impulseSeat, status, winnerSeat, in.EndReason, in.EndDetail, status, status, in.Facts != "", newSeq, gameID,
+		`UPDATE games SET board_state = ?, move_seq = ?, ply = ?, updated_at = CURRENT_TIMESTAMP, impulse_seat = ?, status = ?, winner_seat = ?, shared_result = ?, end_reason = ?, end_detail = ?, rating_status = CASE WHEN rated = 1 AND ? = 'finished' THEN 'pending' ELSE '' END, count_status = CASE WHEN tutorial = '' AND ? = 'finished' THEN 'pending' ELSE count_status END, facts_seq = CASE WHEN ? THEN ? ELSE facts_seq END, draw_offer_seat = NULL WHERE id = ?`,
+		in.ResultingBoardState, newSeq, gamePly, impulseSeat, status, winnerSeat, shared, in.EndReason, in.EndDetail, status, status, in.Facts != "", newSeq, gameID,
 	); err != nil {
 		return Move{}, fmt.Errorf("updating games row for game_id=%d: %w", gameID, err)
 	}
