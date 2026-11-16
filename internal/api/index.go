@@ -11,6 +11,22 @@ func WithDocs(md string) Option {
 	return func(h *handlers) { h.docs = md }
 }
 
+// WithSchema sets the JSON Schema of the API's messages (docs/api.schema.json), served at GET /schema.
+func WithSchema(schema []byte) Option {
+	return func(h *handlers) { h.schema = schema }
+}
+
+// APIVersionHeader is the response header that carries version.API, on every
+// answer of the API and on a WebSocket's handshake.
+const APIVersionHeader = "Bingle-API-Version"
+
+func apiVersionHeader(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set(APIVersionHeader, version.API)
+		next.ServeHTTP(w, r)
+	})
+}
+
 // indexEndpoint is one route the index points a newcomer at.
 type indexEndpoint struct {
 	Method string `json:"method"`
@@ -20,8 +36,15 @@ type indexEndpoint struct {
 
 // apiIndex is GET /api's body: enough to play a game with curl, and where to read the rest.
 type apiIndex struct {
-	Version   string          `json:"version"`
+	// Version is the server's version, which moves with every change to the
+	// engine or the platform; APIVersion is the version of the API's messages,
+	// whose major a client compares with the one it was built for (ADR 0134).
+	Version    string `json:"version"`
+	APIVersion string `json:"api_version"`
+	// Docs is where the API's documentation is, and Schema the JSON Schema of
+	// its messages (empty when this server has none built in).
 	Docs      string          `json:"docs"`
+	Schema    string          `json:"schema"`
 	MCP       string          `json:"mcp"`
 	WebSocket string          `json:"websocket"`
 	Start     []string        `json:"start"`
@@ -50,9 +73,10 @@ var indexEndpoints = []indexEndpoint{
 // handleIndex implements GET / (GET /api): where to start.
 func (h *handlers) handleIndex(w http.ResponseWriter, r *http.Request) {
 	idx := apiIndex{
-		Version:   version.Engine,
-		MCP:       "/mcp",
-		WebSocket: "/ws/{code}",
+		Version:    version.Engine,
+		APIVersion: version.API,
+		MCP:        "/mcp",
+		WebSocket:  "/ws/{code}",
 		Start: []string{
 			"POST /api/guest, and send its key with every request",
 			"GET /api/game-defs, then GET /api/game-defs/{id} for a game's rules and notation",
@@ -63,6 +87,9 @@ func (h *handlers) handleIndex(w http.ResponseWriter, r *http.Request) {
 	}
 	if h.docs != "" {
 		idx.Docs = "/api/docs"
+	}
+	if len(h.schema) > 0 {
+		idx.Schema = "/api/schema"
 	}
 	writeJSON(w, http.StatusOK, idx)
 }
@@ -76,6 +103,18 @@ func (h *handlers) handleDocs(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	_, _ = w.Write([]byte(h.docs))
+}
+
+// handleSchema implements GET /schema: docs/api.schema.json, the JSON Schema
+// of the messages of the API version this server speaks.
+func (h *handlers) handleSchema(w http.ResponseWriter, r *http.Request) {
+	if len(h.schema) == 0 {
+		writeJSON(w, http.StatusNotFound, errorResponse{Error: "api: this server has no schema built in"})
+		return
+	}
+	w.Header().Set("Content-Type", "application/schema+json")
+	w.Header().Set("Cache-Control", "public, max-age=300")
+	_, _ = w.Write(h.schema)
 }
 
 // noSuchEndpoint is the error of a path the API does not have.

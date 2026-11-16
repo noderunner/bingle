@@ -44,7 +44,7 @@ func GenerateFor(t reflect.Type, srcDir, id, title, description string, required
 	if err != nil {
 		return nil, err
 	}
-	g := &gen{docs: docs, defs: map[string]any{}}
+	g := newGen(func(t reflect.Type) typeDocs { return docs[t.Name()] })
 	root := g.schema(t)
 	out := map[string]any{
 		"$schema":     "https://json-schema.org/draft/2020-12/schema",
@@ -124,8 +124,24 @@ func text(groups ...*ast.CommentGroup) string {
 }
 
 type gen struct {
-	docs map[string]typeDocs
-	defs map[string]any
+	docs  func(t reflect.Type) typeDocs
+	defs  map[string]any
+	names map[reflect.Type]string // the $defs name of each struct type written
+
+	// open is set for the API's messages (Messages): an object lets unknown
+	// fields through, as a client must ignore them, and its fields without
+	// omitempty are required, null allowed where Go may send it. request is
+	// set while a request body is described: its fields are then required
+	// only if listed in Messages.Request.
+	open     bool
+	request  bool
+	special  map[reflect.Type]map[string]any
+	required map[reflect.Type][]string
+	rename   map[reflect.Type]string
+}
+
+func newGen(docs func(t reflect.Type) typeDocs) *gen {
+	return &gen{docs: docs, defs: map[string]any{}, names: map[reflect.Type]string{}}
 }
 
 var (
@@ -140,6 +156,9 @@ var (
 func (g *gen) schema(t reflect.Type) map[string]any {
 	for t.Kind() == reflect.Pointer {
 		t = t.Elem()
+	}
+	if s, ok := g.special[t]; ok {
+		return clone(s)
 	}
 	switch t {
 	case quantity:
@@ -168,44 +187,94 @@ func (g *gen) schema(t reflect.Type) map[string]any {
 	case reflect.Map:
 		return map[string]any{"type": "object", "additionalProperties": g.schema(t.Elem())}
 	case reflect.Struct:
+		if g.open && (t.Implements(marshaler) || reflect.PointerTo(t).Implements(unmarshaler)) {
+			panic(fmt.Sprintf("schemagen: %s has its own JSON form: give it a special schema", t))
+		}
 		return g.object(t)
 	}
 	panic(fmt.Sprintf("schemagen: no schema for %s", t))
 }
 
+var (
+	marshaler   = reflect.TypeFor[json.Marshaler]()
+	unmarshaler = reflect.TypeFor[json.Unmarshaler]()
+)
+
+// clone copies a special schema, so that a description added to one use of
+// it does not reach the others.
+func clone(s map[string]any) map[string]any {
+	out := make(map[string]any, len(s))
+	for k, v := range s {
+		out[k] = v
+	}
+	return out
+}
+
 // object is a reference to the definition of struct type t, written once.
 func (g *gen) object(t reflect.Type) map[string]any {
-	ref := map[string]any{"$ref": "#/$defs/" + t.Name()}
-	if _, done := g.defs[t.Name()]; done {
-		return ref
+	if name, done := g.names[t]; done {
+		return map[string]any{"$ref": "#/$defs/" + name}
 	}
-	def := map[string]any{"type": "object", "additionalProperties": false}
-	g.defs[t.Name()] = def // before the fields, for types that contain themselves
-	if d := g.docs[t.Name()].doc; d != "" {
+	name := g.defName(t)
+	g.names[t] = name
+	def := map[string]any{"type": "object"}
+	if !g.open {
+		def["additionalProperties"] = false
+	}
+	g.defs[name] = def // before the fields, for types that contain themselves
+	if d := g.docs(t).doc; d != "" {
 		def["description"] = d
 	}
 	props := map[string]any{}
-	g.fields(t, props)
+	var required []string
+	g.fields(t, props, &required)
 	def["properties"] = props
-	return ref
+	if g.open && g.request {
+		required = g.required[t]
+	}
+	if g.open && len(required) > 0 {
+		def["required"] = required
+	}
+	return map[string]any{"$ref": "#/$defs/" + name}
 }
 
-// fields adds the properties of struct t, promoting embedded structs' fields.
-func (g *gen) fields(t reflect.Type, props map[string]any) {
+// defName is the name of t's definition: its Go name (capitalised, for a
+// type the package keeps to itself), prefixed with its package's when another
+// package's type took the name first.
+func (g *gen) defName(t reflect.Type) string {
+	name := t.Name()
+	if !g.open {
+		return name
+	}
+	if n, ok := g.rename[t]; ok {
+		return n
+	}
+	name = strings.ToUpper(name[:1]) + name[1:]
+	if _, taken := g.defs[name]; taken {
+		pkg := t.PkgPath()[strings.LastIndex(t.PkgPath(), "/")+1:]
+		name = strings.ToUpper(pkg[:1]) + pkg[1:] + name
+	}
+	return name
+}
+
+// fields adds the properties of struct t, promoting embedded structs' fields,
+// and adds to required the names of those always sent.
+func (g *gen) fields(t reflect.Type, props map[string]any, required *[]string) {
 	for i := range t.NumField() {
 		f := t.Field(i)
 		tag := f.Tag.Get("json")
 		if tag == "-" || (!f.IsExported() && !f.Anonymous) {
 			continue
 		}
-		name, _, _ := strings.Cut(tag, ",")
+		name, opts, _ := strings.Cut(tag, ",")
+		omitempty := strings.Contains(","+opts+",", ",omitempty,")
 		if f.Anonymous && name == "" {
 			ft := f.Type
 			if ft.Kind() == reflect.Pointer {
 				ft = ft.Elem()
 			}
 			if ft.Kind() == reflect.Struct {
-				g.fields(ft, props)
+				g.fields(ft, props, required)
 				continue
 			}
 		}
@@ -218,7 +287,13 @@ func (g *gen) fields(t reflect.Type, props map[string]any) {
 		} else {
 			s = g.schema(f.Type)
 		}
-		if d := g.docs[t.Name()].fields[f.Name]; d != "" {
+		if g.open && !omitempty {
+			*required = append(*required, name)
+			if nullable(f.Type) && g.special[f.Type] == nil {
+				s = orNull(s)
+			}
+		}
+		if d := g.docs(t).fields[f.Name]; d != "" {
 			if _, isRef := s["$ref"]; isRef {
 				s = map[string]any{"allOf": []any{s}, "description": d}
 			} else {
@@ -227,4 +302,26 @@ func (g *gen) fields(t reflect.Type, props map[string]any) {
 		}
 		props[name] = s
 	}
+}
+
+// nullable says Go may send a value of type t as null: a nil pointer, slice
+// or map.
+func nullable(t reflect.Type) bool {
+	switch t.Kind() {
+	case reflect.Pointer, reflect.Slice, reflect.Map, reflect.Interface:
+		return t != rawMessage
+	}
+	return false
+}
+
+// orNull lets s be null too.
+func orNull(s map[string]any) map[string]any {
+	if typ, ok := s["type"].(string); ok {
+		s["type"] = []string{typ, "null"}
+		return s
+	}
+	if len(s) == 0 {
+		return s
+	}
+	return map[string]any{"anyOf": []any{s, map[string]any{"type": "null"}}}
 }

@@ -107,6 +107,7 @@ Short records of choices made for the `bingle` project during the requirements i
 | [0131](0131-cthulhu-wars-the-captured-cult-chooses.md) | Cthulhu Wars: the captured cult, not the captor, chooses which of its Cultists is taken, so it can keep the one on its Gate |
 | [0132](0132-cthulhu-wars-a-gate-is-taken-on-its-takers-turn.md) | Cthulhu Wars: a Gate is taken only on its taker's turn, and a lost holder is replaced only by a unit of its own kind |
 | [0133](0133-a-shared-draw-and-a-loss-for-everyone.md) | A game may end in a draw shared by some seats (the others lose) or a loss for every seat: `Outcome.Drawn`, `AllLost`, `games.shared_result` |
+| [0134](0134-an-api-version-and-a-schema-of-its-messages.md) | The API has a version of its own (`api_version`, the `Bingle-API-Version` header) and a JSON Schema of its messages, generated from the Go types and served at `GET /api/schema` |
 | [0125](0125-a-binarys-games-are-chosen-when-it-is-built.md) | A binary's games are chosen when it is built: each game registers itself from a file of `internal/games/all` that a `no_<package>` build tag leaves out |
 | [0124](0124-the-server-says-what-things-are-clients-decide-how-they-look.md) | The server says what things are and each client decides how they look: appearance leaves the definition and the API for a per-client file (`web.yaml`), and every game can be drawn without one |
 | [0123](0123-tutorials-come-in-series-of-lessons.md) | Tutorials come in series of named lessons: the card's head names both, dots track progress, *Start Next Tutorial* leads on, Keep Playing is the tutorial's to offer, and an account keeps what it has finished |
@@ -116,7 +117,7 @@ Short records of choices made for the `bingle` project during the requirements i
 | [0114](0114-impulses-selections-moves-and-gestures.md) | An impulse is what one seat chooses before the game needs another seat or chance, submitted at once; selections are its parts, a move its data and gestures the interface's, and a selections query lets bots and clients walk it |
 | [0120](0120-move-cards.md) | Move cards: a card lists `moves` read by the seat's `forward`; a `card-move` action plays it and passes it on; `absent` gains `of_seat` |
 | [0121](0121-a-card-turned-up-cannot-be-taken-back.md) | A card turned up cannot be taken back: in a declared game, a selection that shows a seat a card it could not see ends the impulse |
-| [0113](0113-the-api-describes-itself.md) | The API says where to start at `GET /api`, and serves its own docs |
+| [0113](0113-the-api-describes-itself.md) | The API says where to start at `GET /api`, and serves its own docs (added to by 0134) |
 | [0112](0112-legal-moves-go-to-whoever-holds-the-seat.md) | In a game with secrets, legal moves go to whoever holds the seat |
 | [0111](0111-a-tutorial-points-at-the-page-by-name.md) | A tutorial points at the page by name, not by selector |
 | [0110](0110-branding.md) | An instance can have a name and an icon of its own, set at start |

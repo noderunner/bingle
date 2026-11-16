@@ -52,8 +52,8 @@ type SeatReplaced struct {
 	MoveSeq int    `json:"move_seq"`
 }
 
-// seatReplacedEventData is the wire DTO of a "seat_replaced" Event.
-type seatReplacedEventData struct {
+// SeatReplacedEventData is the wire DTO of a "seat_replaced" Event.
+type SeatReplacedEventData struct {
 	Seat   int    `json:"seat"`
 	Name   string `json:"name"`
 	Reason string `json:"reason"`
@@ -69,8 +69,8 @@ type KickVote struct {
 	ExpiresAt string `json:"expires_at"`
 }
 
-// kickVoteEventData is the wire DTO of a "kick_vote" Event: every vote open now.
-type kickVoteEventData struct {
+// KickVoteEventData is the wire DTO of a "kick_vote" Event: every vote open now.
+type KickVoteEventData struct {
 	Votes []KickVote `json:"votes"`
 }
 
@@ -293,7 +293,7 @@ func (m *Manager) settleKickVotes(ctx context.Context, room string, game store.G
 		}
 	}
 	if tell {
-		m.hub.publish(room, Event{Type: "kick_vote", Data: kickVoteEventData{Votes: m.kickVoteViews(room, players)}})
+		m.hub.publish(room, Event{Type: "kick_vote", Data: KickVoteEventData{Votes: m.kickVoteViews(room, players)}})
 	}
 	return nil
 }
@@ -413,7 +413,7 @@ func (m *Manager) takeOver(ctx context.Context, game store.Game, compiled *catal
 		r := t.Replaced
 		m.seatVacated(game.RoomCode, r.Seat)
 		m.logger().Info("a bot took a seat", "room", game.RoomCode, "seat", r.Seat, "reason", reason)
-		m.hub.publish(game.RoomCode, Event{Type: "seat_replaced", Data: seatReplacedEventData{Seat: r.Seat, Name: r.Name, Reason: reason}})
+		m.hub.publish(game.RoomCode, Event{Type: "seat_replaced", Data: SeatReplacedEventData{Seat: r.Seat, Name: r.Name, Reason: reason}})
 	}
 	m.publishState(ctx, game.RoomCode, "takeover")
 	return nil

@@ -1,6 +1,6 @@
 # 0113. The API says where to start, and serves its own docs
 
-Status: accepted (2026-11-05)
+Status: accepted (2026-11-05); ADR 0134 adds a version of the API and a schema of its messages, not of its routes.
 
 ## Context
 

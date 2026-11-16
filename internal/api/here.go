@@ -32,7 +32,13 @@ func (h *handlers) handleListOpenGames(w http.ResponseWriter, r *http.Request) {
 	if games == nil {
 		games = []session.OpenGame{}
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"games": games})
+	writeJSON(w, http.StatusOK, openGamesResponse{Games: games})
+}
+
+// openGamesResponse is GET /games' body.
+type openGamesResponse struct {
+	// Games are the unfinished games, newest change first.
+	Games []session.OpenGame `json:"games"`
 }
 
 // hereRequest is POST /here's body: whether the account is here (true by

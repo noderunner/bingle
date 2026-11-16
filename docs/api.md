@@ -9,6 +9,21 @@ nothing to undo). Room codes are case-insensitive.
 API does not have is `404 {"error"}` and a wrong method `405 {"error"}`, both pointing back at
 `GET /api`.
 
+**Versions** ([ADR 0134](decisions/0134-an-api-version-and-a-schema-of-its-messages.md)). `GET /api`
+reports `version`, the server's, which moves with every change to it, and `api_version`, the
+semantic version of the API's messages, which a client built apart from the server compares with
+the one it was built for. Every answer under `/api` and the WebSocket handshake also carry it in
+the `Bingle-API-Version` header. Its major moves when a change can break a client (a field or
+endpoint removed or renamed, a type or meaning changed, a new event or status a client must
+handle), its minor for what a client may ignore (a new endpoint, optional field or event), its
+patch for the schema's descriptions alone. A client ignores the fields it does not know.
+
+**Schema.** `GET /api/schema` serves [api.schema.json](api.schema.json), the JSON Schema (2020-12)
+of the messages of that `api_version`, generated from the server's Go types: `x-endpoints` gives
+the request and response of each endpoint of the index, `x-error` the error body, and
+`$defs/WebSocketEvent` the events of `/ws/{code}` (all but voice and `rtc`). A position (`state`)
+is left open: each game has its own. The rest of the API is described here alone.
+
 **Who is asking** ([ADR 0067](decisions/0067-principals-and-guest-keys.md)). A request comes from a
 *guest* when it carries a guest key — the `bingle_guest` cookie of a browser, or
 `Authorization: Bearer bgg_…` from a script — and is anonymous otherwise. A seat belongs to the

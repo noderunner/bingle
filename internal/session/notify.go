@@ -620,7 +620,7 @@ func (m *Manager) SetGameNotify(ctx context.Context, roomCode, name string, cont
 func (n *notifier) tap(room string, ev Event) {
 	var seat, seq int
 	switch d := ev.Data.(type) {
-	case moveEventData:
+	case MoveEventData:
 		if d.ImpulseSeat == nil || d.Status != "active" {
 			return
 		}
@@ -629,7 +629,7 @@ func (n *notifier) tap(room string, ev Event) {
 		if !d.EndsImpulse {
 			seq--
 		}
-	case stateEventData:
+	case StateEventData:
 		if d.ImpulseSeat == nil || d.Status != "active" || d.Lobby {
 			return
 		}

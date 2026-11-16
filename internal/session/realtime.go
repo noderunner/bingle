@@ -114,8 +114,8 @@ type FirstMove struct {
 	By   string `json:"by"`
 }
 
-// slowTurnEventData is the wire DTO of a "slow_turn" Event.
-type slowTurnEventData struct {
+// SlowTurnEventData is the wire DTO of a "slow_turn" Event.
+type SlowTurnEventData struct {
 	Seat  int `json:"seat"`
 	Stage int `json:"stage"`
 }
@@ -322,7 +322,7 @@ func (m *Manager) RealTimeDue(ctx context.Context) {
 		}
 		wait := m.realTimeWait(game, players)
 		if wait != nil && wait.Stage > 0 && m.warnedNow(game, wait.Stage) {
-			m.hub.publish(game.RoomCode, Event{Type: "slow_turn", Data: slowTurnEventData{Seat: wait.Seat, Stage: wait.Stage}})
+			m.hub.publish(game.RoomCode, Event{Type: "slow_turn", Data: SlowTurnEventData{Seat: wait.Seat, Stage: wait.Stage}})
 			kind := metrics.RealTimeFirstWarning
 			if wait.Stage == 2 {
 				kind = metrics.RealTimeSecondWarning

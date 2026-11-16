@@ -30,6 +30,11 @@ var changelog string
 //go:embed docs/api.md
 var apiDocs string
 
+// apiSchema is docs/api.schema.json, the JSON Schema of the API's messages, for GET /api/schema.
+//
+//go:embed docs/api.schema.json
+var apiSchema []byte
+
 func main() {
 	// A logger at the defaults, so a complaint about the configuration has
 	// somewhere to go before the configuration has been read.
@@ -48,6 +53,7 @@ func main() {
 	}
 	cfg.Changelog = changelog
 	cfg.APIDocs = apiDocs
+	cfg.APISchema = apiSchema
 
 	// "bingle account …" manages accounts and exits; anything else runs the
 	// server.

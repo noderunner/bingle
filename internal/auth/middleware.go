@@ -265,7 +265,13 @@ func (rs *Resolver) HandleNewGuest(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	_ = json.NewEncoder(w).Encode(map[string]string{"key": key})
+	_ = json.NewEncoder(w).Encode(GuestKey{Key: key})
+}
+
+// GuestKey is POST /api/guest's answer.
+type GuestKey struct {
+	// Key is the guest's key ("bgg_…"), to send as "Authorization: Bearer <key>".
+	Key string `json:"key"`
 }
 
 func (rs *Resolver) clearCookie(w http.ResponseWriter, r *http.Request) {

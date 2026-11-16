@@ -1,0 +1,3086 @@
+{
+  "$defs": {
+    "ActionDTO": {
+      "description": "ActionDTO describes an action a player can take.",
+      "properties": {
+        "carry_limit": {
+          "type": "integer"
+        },
+        "hint": {
+          "description": "Hint is a one-line tooltip (ruleset games). Source says where the action comes from when its button should show it: \"book\" or \"requirement\".",
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "impulse": {
+          "description": "Impulse is what the player is asked next, once they have chosen this action.",
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "pieces": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "source": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "label"
+      ],
+      "type": "object"
+    },
+    "BoardDTO": {
+      "description": "BoardDTO describes the board graph and how to draw it.",
+      "properties": {
+        "borders": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Borders maps region name -\u003e seat color, for tinting board edges.",
+          "type": "object"
+        },
+        "edges": {
+          "items": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "type": "array"
+        },
+        "height": {
+          "type": "integer"
+        },
+        "kind": {
+          "description": "\"grid\", \"hex\" or \"explicit\"",
+          "type": "string"
+        },
+        "labels": {
+          "description": "\"xy\" or \"algebraic\" for grids",
+          "type": "string"
+        },
+        "positions": {
+          "items": {
+            "$ref": "#/$defs/PositionDTO"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "regions": {
+          "additionalProperties": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "type": "object"
+        },
+        "style": {
+          "type": "string"
+        },
+        "width": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "kind",
+        "style",
+        "positions"
+      ],
+      "type": "object"
+    },
+    "BotInfo": {
+      "description": "Info describes a registered bot for listings.",
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "description"
+      ],
+      "type": "object"
+    },
+    "CardBackDef": {
+      "description": "CardBackDef is the back of a card.",
+      "properties": {
+        "color": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "CardTypeDTO": {
+      "description": "CardTypeDTO is one kind of card.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "rank": {
+          "type": "string"
+        },
+        "suit": {
+          "type": "string"
+        },
+        "symbols": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "tags": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "text": {
+          "type": "string"
+        },
+        "value": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "value"
+      ],
+      "type": "object"
+    },
+    "CardsDTO": {
+      "description": "CardsDTO is what a client needs to draw the cards of a game: the suits and every card type (the position names cards by id only), what a back looks like and the zones.",
+      "properties": {
+        "back": {
+          "$ref": "#/$defs/CardBackDef"
+        },
+        "standard": {
+          "description": "Standard says the deck can wear a themed set of cards (see card_set on creating a game).",
+          "type": "boolean"
+        },
+        "suit_order": {
+          "items": {
+            "type": "string"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "suits": {
+          "additionalProperties": {
+            "$ref": "#/$defs/SuitDef"
+          },
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        "types": {
+          "items": {
+            "$ref": "#/$defs/CardTypeDTO"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "zones": {
+          "items": {
+            "$ref": "#/$defs/ZoneDef"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "suits",
+        "suit_order",
+        "types",
+        "back",
+        "zones"
+      ],
+      "type": "object"
+    },
+    "ChatLine": {
+      "description": "ChatLine is one message of a game's chat.",
+      "properties": {
+        "at": {
+          "type": "string"
+        },
+        "color": {
+          "type": "string"
+        },
+        "guest": {
+          "type": "boolean"
+        },
+        "handle": {
+          "description": "Handle is the account that said it, and Guest says a guest did.",
+          "type": "string"
+        },
+        "id": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        },
+        "seat": {
+          "description": "0 for a spectator",
+          "type": "integer"
+        },
+        "server": {
+          "description": "Server says the server wrote it, as it announces a badge (ADR 0130); Seat is then 0.",
+          "type": "boolean"
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "seat",
+        "name",
+        "text",
+        "at"
+      ],
+      "type": "object"
+    },
+    "ClockSnapshot": {
+      "description": "ClockSnapshot is a game clock as clients draw it: one entry per seat, and the seat whose clock is running now (0 when none is).",
+      "properties": {
+        "increment_seconds": {
+          "description": "Increment is the seconds a seat gains each time it hands the turn on.",
+          "type": "integer"
+        },
+        "running": {
+          "type": "integer"
+        },
+        "seats": {
+          "items": {
+            "$ref": "#/$defs/SeatClock"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "seats"
+      ],
+      "type": "object"
+    },
+    "ConnectionEventData": {
+      "description": "ConnectionEventData is the wire DTO of a \"connection\" Event.",
+      "properties": {
+        "connected": {
+          "type": "boolean"
+        },
+        "seat": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "seat",
+        "connected"
+      ],
+      "type": "object"
+    },
+    "CounterDTO": {
+      "description": "CounterDTO is a per-seat number kept in a reserve pool.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "max": {
+          "description": "Max is the count a win rule wants (Blooms' captures), 0 for none.",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "label"
+      ],
+      "type": "object"
+    },
+    "CreateGameRequest": {
+      "properties": {
+        "also_seats": {
+          "description": "AlsoSeats lists seats, besides Seat, that the creator plays as well (a game against oneself): each is a player of its own, named after the creator and the seat (\"Alice · Black Goat\").",
+          "items": {
+            "type": "integer"
+          },
+          "type": "array"
+        },
+        "card_set": {
+          "description": "CardSet draws the cards of a game with a standard deck in a themed set (\"amphibians\"), for everybody at the table. Omitted: the game's own cards.",
+          "type": "string"
+        },
+        "clock_increment_seconds": {
+          "description": "ClockIncrementSeconds adds that many seconds to a player's clock each time they hand the turn on. It needs ClockSeconds.",
+          "type": "integer"
+        },
+        "clock_seconds": {
+          "description": "ClockSeconds plays the game with a game clock (a chess clock) instead: a number gives every player that many seconds, a list gives the seats their own times (handicap play). A player whose clock runs out forfeits, or at three seats or more is replaced by a bot. Not for a game of one seat, and not with MoveTimeSeconds.",
+          "oneOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "items": {
+                "type": "integer"
+              },
+              "type": "array"
+            }
+          ]
+        },
+        "game_def_id": {
+          "type": "string"
+        },
+        "invite_only": {
+          "type": "boolean"
+        },
+        "lobby": {
+          "description": "Lobby makes the game wait, even with every seat filled, until its host starts it (POST /games/{code}/start).",
+          "type": "boolean"
+        },
+        "move_time_seconds": {
+          "description": "MoveTimeSeconds optionally limits each move's thinking time; a player who runs out of time loses. Omitted or 0 means untimed.",
+          "type": "integer"
+        },
+        "opponent": {
+          "description": "Opponent optionally names a built-in bot (see GET /bots) that fills the remaining seats so the game starts immediately.",
+          "type": "string"
+        },
+        "options": {
+          "additionalProperties": {},
+          "description": "Options are the game's setup choices (see GET /game-defs/{id}'s \"options\"): the cults at the table, an expansion. The game created has its own id (base~options), reported by GET /games/{code}.",
+          "type": "object"
+        },
+        "player_name": {
+          "type": "string"
+        },
+        "rated": {
+          "description": "Rated makes the game move its players' ratings when it ends. It takes two accounts, a game of two seats and the same clock for both.",
+          "type": "boolean"
+        },
+        "real_time": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/RealTimeSettings"
+            }
+          ],
+          "description": "RealTime plays the game in real time; {} takes the default warnings, which only matter in a game with no clock and no time per move."
+        },
+        "reserved_seats": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "ReservedSeats keeps open seats for friends (\"2\": \"ana\"); InviteOnly keeps the game off every list (ADR 0107).",
+          "type": "object"
+        },
+        "schedule": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/ScheduleRequest"
+            }
+          ],
+          "description": "Schedule sets the game up for later, for accounts (ADR 0109)."
+        },
+        "seat": {
+          "description": "Seat optionally picks the creator's seat (default 1).",
+          "type": "integer"
+        },
+        "seat_bots": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "SeatBots puts a built-in bot in chosen seats (\"2\": \"random\"); seats not listed stay open for people unless Opponent fills them.",
+          "type": "object"
+        },
+        "start_seat": {
+          "type": "integer"
+        },
+        "start_state": {},
+        "start_tps": {
+          "description": "StartTPS starts from a TPS position (Tak); StartState from a position document (the \"state\" object of any observation) with StartSeat moving first. For puzzles, handicaps and \"play from here\".",
+          "type": "string"
+        }
+      },
+      "required": [
+        "game_def_id",
+        "player_name"
+      ],
+      "type": "object"
+    },
+    "CreateGameResponse": {
+      "description": "createGameResponse is POST /games' 200 response body, from session.CreateGameResult.",
+      "properties": {
+        "bot_moves": {
+          "items": {
+            "$ref": "#/$defs/Move"
+          },
+          "type": "array"
+        },
+        "color": {
+          "type": "string"
+        },
+        "room_code": {
+          "type": "string"
+        },
+        "seat": {
+          "type": "integer"
+        },
+        "status": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "room_code",
+        "seat",
+        "color",
+        "status"
+      ],
+      "type": "object"
+    },
+    "DisplayDef": {
+      "description": "DisplayDef is the legend of a ruleset game's overlays: what each tint and badge key in the position's view means and how to draw it.",
+      "properties": {
+        "badges": {
+          "additionalProperties": {
+            "$ref": "#/$defs/OverlayDef"
+          },
+          "description": "Badges are small marks drawn on a cell (a unit's condition).",
+          "type": "object"
+        },
+        "no_hands": {
+          "description": "NoHands hides the generic reserve (\"hand\") panels: the ruleset's own view shows what a seat holds.",
+          "type": "boolean"
+        },
+        "terms": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Courts and other named choices a ruleset offers are described in text: key -\u003e one-line description.",
+          "type": "object"
+        },
+        "tints": {
+          "additionalProperties": {
+            "$ref": "#/$defs/OverlayDef"
+          },
+          "description": "Tints colours board cells by key (terrain).",
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
+    "ErrorResponse": {
+      "description": "errorResponse is the JSON shape of every error response: {\"error\": \"\u003cmessage\u003e\"}.",
+      "properties": {
+        "error": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "type": "object"
+    },
+    "FirstMove": {
+      "description": "FirstMove is the deadline for a first move in a real-time tournament's game.",
+      "properties": {
+        "by": {
+          "type": "string"
+        },
+        "seat": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "seat",
+        "by"
+      ],
+      "type": "object"
+    },
+    "GameDef": {
+      "description": "GameDef is one entry of the list of games.",
+      "properties": {
+        "board_height": {
+          "type": "integer"
+        },
+        "board_width": {
+          "type": "integer"
+        },
+        "description": {
+          "type": "string"
+        },
+        "designers": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "family": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "prototype": {
+          "description": "Prototype marks a game whose rules are not final: each version of them is listed as a game of the family, and Version says which.",
+          "type": "boolean"
+        },
+        "publisher": {
+          "type": "string"
+        },
+        "seats_required": {
+          "type": "integer"
+        },
+        "tutorials": {
+          "description": "Tutorials is how many tutorials a player of this game is offered (see GET /game-defs/{id}/tutorials).",
+          "type": "integer"
+        },
+        "version": {
+          "description": "Version is the game implementation's semantic version; a version below 1.0.0 is a beta.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "seats_required"
+      ],
+      "type": "object"
+    },
+    "GameInfo": {
+      "description": "GameInfo is a complete, client-facing description of a game definition: everything a UI needs to draw the board, label the pieces and offer the right actions without parsing position IDs or knowing game-specific rules, and everything an AI client needs to read the rules.",
+      "properties": {
+        "actions": {
+          "items": {
+            "$ref": "#/$defs/ActionDTO"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "board": {
+          "$ref": "#/$defs/BoardDTO"
+        },
+        "cards": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/CardsDTO"
+            }
+          ],
+          "description": "Cards describes the suits, card types and zones of a card game."
+        },
+        "count_labels": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "CountLabels says what a count selection means after an action.",
+          "type": "object"
+        },
+        "counters": {
+          "description": "Counters are reserve pools that hold no pieces, only a number per seat (captured stones).",
+          "items": {
+            "$ref": "#/$defs/CounterDTO"
+          },
+          "type": "array"
+        },
+        "default_clock_minutes": {
+          "description": "DefaultClockMinutes is the time the setup suggests for a game clock, when the game names one (ADR 0081).",
+          "type": "integer"
+        },
+        "description": {
+          "type": "string"
+        },
+        "display": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/DisplayDef"
+            }
+          ],
+          "description": "Display is the legend for the tints and badges of a ruleset view."
+        },
+        "engine": {
+          "description": "Engine is \"ruleset\" for games whose rules are written in Go: their moves are a sequence of small decisions, and positions carry a derived view (tints, badges, counters) under state.ext.view.",
+          "type": "string"
+        },
+        "family": {
+          "type": "string"
+        },
+        "guide": {
+          "description": "Guide lists the tabs of the rules window when the game ships its own long-form guide; fetch the pages from /game-defs/{id}/guide.",
+          "items": {
+            "$ref": "#/$defs/GuideTabInfo"
+          },
+          "type": "array"
+        },
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "notation": {
+          "type": "string"
+        },
+        "notation_help": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "opening": {
+          "$ref": "#/$defs/OpeningDTO"
+        },
+        "options": {
+          "description": "Options are the setup choices the game offers its creator (which cults sit at the table, an expansion); send the chosen ones as \"options\" when creating the game.",
+          "items": {
+            "$ref": "#/$defs/OptionDef"
+          },
+          "type": "array"
+        },
+        "params": {
+          "additionalProperties": {},
+          "description": "Params are the definition's tunable numbers (victory points needed).",
+          "type": "object"
+        },
+        "pieces": {
+          "items": {
+            "$ref": "#/$defs/PieceDTO"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "pools": {
+          "items": {
+            "$ref": "#/$defs/PoolDTO"
+          },
+          "type": "array"
+        },
+        "preview": {
+          "additionalProperties": {
+            "items": {
+              "$ref": "#/$defs/PieceOnBoardDTO"
+            },
+            "type": "array"
+          },
+          "description": "Preview is a sample game in play (the squares as in Start.Cells) for games that start with an empty board; absent when the start is picture enough.",
+          "type": "object"
+        },
+        "prototype": {
+          "type": "boolean"
+        },
+        "reserves": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "type": "object"
+        },
+        "rules": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "sample_view": {
+          "description": "SampleView is a game in progress, in the shape of the state's ext.view, for a game whose table is not a board (state.Sampler)."
+        },
+        "scores": {
+          "description": "Scores lists tallies worth showing live (e.g. Tak's flats on top).",
+          "items": {
+            "$ref": "#/$defs/ScoreDTO"
+          },
+          "type": "array"
+        },
+        "seats": {
+          "items": {
+            "$ref": "#/$defs/SeatDefDTO"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "setup_catalog": {
+          "description": "SetupCatalog says the setup page draws a picker from GET /game-defs/{id}/setup-catalog.",
+          "type": "boolean"
+        },
+        "start": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/StartDTO"
+            }
+          ],
+          "description": "Start is the starting position (what a new game looks like), for previews."
+        },
+        "version": {
+          "description": "Version is the game's semantic version; Prototype says its rules are not final, and that this game is the version of them that Version names.",
+          "type": "string"
+        },
+        "view": {
+          "description": "View says the positions carry a derived view under state.ext.view, as a ruleset's do, though the rules are declared: a game of patience (ADR 0122).",
+          "type": "boolean"
+        },
+        "win_rules": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "notation",
+        "seats",
+        "board",
+        "pieces",
+        "actions",
+        "family",
+        "start"
+      ],
+      "type": "object"
+    },
+    "GamePersonView": {
+      "description": "GamePersonView is somebody invited, as a page shows them.",
+      "properties": {
+        "answered": {
+          "description": "Answered says they have said which times they can make.",
+          "type": "boolean"
+        },
+        "handle": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "handle",
+        "status"
+      ],
+      "type": "object"
+    },
+    "GameReservation": {
+      "description": "GameReservation is a seat kept for a friend, as a page shows it.",
+      "properties": {
+        "handle": {
+          "type": "string"
+        },
+        "seat": {
+          "type": "integer"
+        },
+        "yours": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "seat",
+        "handle"
+      ],
+      "type": "object"
+    },
+    "GameScheduleView": {
+      "description": "GameScheduleView is a game's schedule, as a page shows it.",
+      "properties": {
+        "can_vote": {
+          "type": "boolean"
+        },
+        "creator": {
+          "type": "string"
+        },
+        "decide_by": {
+          "type": "string"
+        },
+        "mine": {
+          "type": "boolean"
+        },
+        "people": {
+          "items": {
+            "$ref": "#/$defs/GamePersonView"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "slots": {
+          "items": {
+            "$ref": "#/$defs/GameSlotView"
+          },
+          "type": "array"
+        },
+        "start_at": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "creator",
+        "people"
+      ],
+      "type": "object"
+    },
+    "GameSlotView": {
+      "description": "GameSlotView is a time offered, as a page shows it.",
+      "properties": {
+        "at": {
+          "type": "string"
+        },
+        "count": {
+          "type": "integer"
+        },
+        "id": {
+          "type": "integer"
+        },
+        "mine": {
+          "type": "boolean"
+        },
+        "past": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "at",
+        "count"
+      ],
+      "type": "object"
+    },
+    "Gesture": {
+      "description": "Gesture is one thing a player does in an interface to build a selection: a click on a piece, a square, a count. A client can turn the legal selections into a decision tree keyed by gestures and walk it click by click, so any game's selections are enterable without game-specific UI code. The rules never depend on gestures (ADR 0114).",
+      "properties": {
+        "kind": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "value"
+      ],
+      "type": "object"
+    },
+    "GetGameResponse": {
+      "description": "getGameResponse is GET /games/{code}'s 200 response body, from session.StateSnapshot — deliberately omits board_state/move_seq, which live at GET /games/{code}/state instead.",
+      "properties": {
+        "all_lost": {
+          "type": "boolean"
+        },
+        "card_set": {
+          "type": "string"
+        },
+        "clock": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/ClockSnapshot"
+            }
+          ],
+          "description": "Clock is the game clock of a game played with one: what each seat has left, and whose clock is running (it counts down from ImpulseDeadline)."
+        },
+        "draw_offer_seat": {
+          "description": "DrawOfferSeat is the seat offering a draw, or null.",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "drawn_seats": {
+          "description": "DrawnSeats and AllLost refine a finished game with no winner: the seats that shared a draw (the others lost), or every seat lost.",
+          "items": {
+            "type": "integer"
+          },
+          "type": "array"
+        },
+        "end_detail": {
+          "type": "string"
+        },
+        "end_reason": {
+          "type": "string"
+        },
+        "game_def_id": {
+          "type": "string"
+        },
+        "game_name": {
+          "type": "string"
+        },
+        "host_seat": {
+          "type": "integer"
+        },
+        "impulse_deadline": {
+          "type": "string"
+        },
+        "impulse_seat": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "invite_only": {
+          "type": "boolean"
+        },
+        "invite_url": {
+          "type": "string"
+        },
+        "list_title": {
+          "description": "ListTitle and Tags are what a list of games shows for it, if its rules say.",
+          "type": "string"
+        },
+        "lobby": {
+          "description": "Lobby: the game waits for its host to start it; HostSeat is the seat of the person who created it. InviteURL is the link that brings a person to the game (the configured public URL, else this server's address).",
+          "type": "boolean"
+        },
+        "move_seq": {
+          "type": "integer"
+        },
+        "move_time_seconds": {
+          "description": "Timed games: the per-move allowance, when the player to move runs out of time (RFC 3339) and the server's clock for skew correction.",
+          "type": "integer"
+        },
+        "rated": {
+          "description": "Rated games: what became of the result once the game has ended, and what it did to the players' ratings.",
+          "type": "boolean"
+        },
+        "rating_changes": {
+          "items": {
+            "$ref": "#/$defs/RatingChange"
+          },
+          "type": "array"
+        },
+        "rating_status": {
+          "type": "string"
+        },
+        "real_time": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/RealTimeSnapshot"
+            }
+          ],
+          "description": "RealTime is set in a game played in real time."
+        },
+        "reservations": {
+          "description": "Reservations are the seats kept for friends, and InviteOnly says lists do not show the game.",
+          "items": {
+            "$ref": "#/$defs/GameReservation"
+          },
+          "type": "array"
+        },
+        "retired": {
+          "description": "Retired: this server no longer offers the game, GameName is what it was called. The answer is then a record: the seats, the result and move_seq; the moves come from GET .../moves, and nothing else about the game can be asked for or done.",
+          "type": "boolean"
+        },
+        "schedule": {
+          "$ref": "#/$defs/GameScheduleView"
+        },
+        "seats": {
+          "items": {
+            "$ref": "#/$defs/GetGameSeat"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "server_time": {
+          "type": "string"
+        },
+        "start_impulse_seat": {
+          "type": "integer"
+        },
+        "start_state": {
+          "description": "StartState is the position the game began from, present only for games that did not start from the standard position."
+        },
+        "status": {
+          "type": "string"
+        },
+        "tags": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "tournament": {
+          "$ref": "#/$defs/TournamentRef"
+        },
+        "tutorial": {
+          "description": "Tutorial is \"family/id\" of the tutorial the room plays: the page fetches it from GET /game-defs/{family}/tutorials/{id}.",
+          "type": "string"
+        },
+        "winner_seat": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "game_def_id",
+        "status",
+        "seats",
+        "impulse_seat",
+        "move_seq",
+        "winner_seat",
+        "server_time",
+        "draw_offer_seat"
+      ],
+      "type": "object"
+    },
+    "GetGameSeat": {
+      "description": "getGameSeat is one entry of getGameResponse's seats array, from session.SeatInfo.",
+      "properties": {
+        "bot": {
+          "type": "string"
+        },
+        "color": {
+          "type": "string"
+        },
+        "guest": {
+          "type": "boolean"
+        },
+        "handle": {
+          "description": "Handle is the account holding the seat, Guest says a guest does, and Yours that it is the asker's own (stage 7 of the accounts plan).",
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "rating": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/SeatRating"
+            }
+          ],
+          "description": "Rating is the player's rating, at the seat of a rated game."
+        },
+        "replaced": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/SeatReplaced"
+            }
+          ],
+          "description": "Replaced says who held the seat until a bot took it."
+        },
+        "seat": {
+          "type": "integer"
+        },
+        "yours": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "seat",
+        "color",
+        "name"
+      ],
+      "type": "object"
+    },
+    "GetGameStateResponse": {
+      "description": "getGameStateResponse is GET /games/{code}/state's 200 response body, from session.StateSnapshot. board_state is embedded as a raw JSON object (it's already a JSON string from state.BoardState.MarshalJSON), not a plain string field, so it appears nested rather than doubly-encoded.",
+      "properties": {
+        "all_lost": {
+          "type": "boolean"
+        },
+        "board_state": {
+          "description": "BoardState is the v1 flat view (position -\u003e top piece), kept for backwards compatibility; State is the complete position (stacks, reserves, ply) and what new clients should read."
+        },
+        "draw_offer_seat": {
+          "description": "DrawOfferSeat is the seat currently offering a draw, or null.",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "drawn_seats": {
+          "items": {
+            "type": "integer"
+          },
+          "type": "array"
+        },
+        "end_detail": {
+          "type": "string"
+        },
+        "end_reason": {
+          "type": "string"
+        },
+        "impulse_seat": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "move_seq": {
+          "type": "integer"
+        },
+        "ply": {
+          "description": "Ply is the number of impulses played, which a move's ply guard names.",
+          "type": "integer"
+        },
+        "state": {},
+        "status": {
+          "type": "string"
+        },
+        "winner_seat": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "board_state",
+        "impulse_seat",
+        "status",
+        "move_seq",
+        "ply",
+        "winner_seat",
+        "draw_offer_seat"
+      ],
+      "type": "object"
+    },
+    "GuestKey": {
+      "description": "GuestKey is POST /api/guest's answer.",
+      "properties": {
+        "key": {
+          "description": "Key is the guest's key (\"bgg_…\"), to send as \"Authorization: Bearer \u003ckey\u003e\".",
+          "type": "string"
+        }
+      },
+      "required": [
+        "key"
+      ],
+      "type": "object"
+    },
+    "GuideTabInfo": {
+      "description": "GuideTabInfo names one tab of a game's rules guide.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "title"
+      ],
+      "type": "object"
+    },
+    "IndexEndpoint": {
+      "description": "indexEndpoint is one route the index points a newcomer at.",
+      "properties": {
+        "about": {
+          "type": "string"
+        },
+        "method": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "method",
+        "path",
+        "about"
+      ],
+      "type": "object"
+    },
+    "IndexResponse": {
+      "description": "apiIndex is GET /api's body: enough to play a game with curl, and where to read the rest.",
+      "properties": {
+        "api_version": {
+          "type": "string"
+        },
+        "docs": {
+          "description": "Docs is where the API's documentation is, and Schema the JSON Schema of its messages (empty when this server has none built in).",
+          "type": "string"
+        },
+        "endpoints": {
+          "items": {
+            "$ref": "#/$defs/IndexEndpoint"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "mcp": {
+          "type": "string"
+        },
+        "schema": {
+          "type": "string"
+        },
+        "start": {
+          "items": {
+            "type": "string"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "version": {
+          "description": "Version is the server's version, which moves with every change to the engine or the platform; APIVersion is the version of the API's messages, whose major a client compares with the one it was built for (ADR 0134).",
+          "type": "string"
+        },
+        "websocket": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "version",
+        "api_version",
+        "docs",
+        "schema",
+        "mcp",
+        "websocket",
+        "start",
+        "endpoints"
+      ],
+      "type": "object"
+    },
+    "JoinGameRequest": {
+      "description": "joinGameRequest is POST /games/{code}/join's request body. Role is optional; a blank value defaults to \"player\" (session.RolePlayer).",
+      "properties": {
+        "player_name": {
+          "type": "string"
+        },
+        "role": {
+          "type": "string"
+        },
+        "seat": {
+          "description": "Seat optionally asks for a particular open seat (a player already at the table keeps theirs).",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "player_name"
+      ],
+      "type": "object"
+    },
+    "JoinGameResponse": {
+      "description": "joinGameResponse is POST /games/{code}/join's 200 response body, from session.JoinResult. Seat/Color are tagged omitempty so a spectator's response (Seat == 0, Color == \"\") genuinely omits those keys rather than sending zero values.",
+      "properties": {
+        "color": {
+          "type": "string"
+        },
+        "role": {
+          "type": "string"
+        },
+        "seat": {
+          "type": "integer"
+        },
+        "status": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "role",
+        "status"
+      ],
+      "type": "object"
+    },
+    "JoinedEventData": {
+      "description": "wsJoined is the data of the \"joined\" event a game socket starts with.",
+      "properties": {
+        "color": {
+          "type": "string"
+        },
+        "connected": {
+          "description": "Connected lists the seats that show as connected.",
+          "items": {
+            "type": "integer"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "move_seq": {
+          "description": "MoveSeq is the selections played so far: the seq of the last move event.",
+          "type": "integer"
+        },
+        "role": {
+          "type": "string"
+        },
+        "seat": {
+          "type": "integer"
+        },
+        "status": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "role",
+        "status",
+        "connected",
+        "move_seq"
+      ],
+      "type": "object"
+    },
+    "KickVote": {
+      "description": "KickVote is an open vote as clients see it. Seat is the target's, and Voters holds a seat for each person whose vote counts now.",
+      "properties": {
+        "expires_at": {
+          "type": "string"
+        },
+        "needed": {
+          "type": "integer"
+        },
+        "seat": {
+          "type": "integer"
+        },
+        "voters": {
+          "items": {
+            "type": "integer"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "votes": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "seat",
+        "votes",
+        "needed",
+        "voters",
+        "expires_at"
+      ],
+      "type": "object"
+    },
+    "KickVoteEventData": {
+      "description": "KickVoteEventData is the wire DTO of a \"kick_vote\" Event: every vote open now.",
+      "properties": {
+        "votes": {
+          "items": {
+            "$ref": "#/$defs/KickVote"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "votes"
+      ],
+      "type": "object"
+    },
+    "LegalMoveDTO": {
+      "description": "legalMoveDTO is one selection of GET /games/{code}/selections and simulate.",
+      "properties": {
+        "action": {
+          "type": "string"
+        },
+        "aim": {
+          "type": "string"
+        },
+        "count": {
+          "type": "integer"
+        },
+        "drops": {
+          "items": {
+            "type": "integer"
+          },
+          "type": "array"
+        },
+        "from": {
+          "type": "string"
+        },
+        "gestures": {
+          "items": {
+            "$ref": "#/$defs/Gesture"
+          },
+          "type": "array"
+        },
+        "notation": {
+          "type": "string"
+        },
+        "path": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "piece": {
+          "type": "string"
+        },
+        "to": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "notation",
+        "action"
+      ],
+      "type": "object"
+    },
+    "MakeMoveRequest": {
+      "description": "makeMoveRequest is POST /games/{code}/moves' request body. A move is given in one of three ways: - legacy: {\"from\", \"to\"} (step moves); - structured: {\"action\", \"piece\", \"from\", \"to\", \"count\", \"path\", \"drops\"} with only the fields the action needs; - notation: {\"notation\": \"3c3\u003e111\"} in the game's notation.",
+      "properties": {
+        "action": {
+          "type": "string"
+        },
+        "aim": {
+          "type": "string"
+        },
+        "count": {
+          "type": "integer"
+        },
+        "drops": {
+          "items": {
+            "type": "integer"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "from": {
+          "type": "string"
+        },
+        "notation": {
+          "type": "string"
+        },
+        "path": {
+          "items": {
+            "type": "string"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "piece": {
+          "type": "string"
+        },
+        "player_name": {
+          "type": "string"
+        },
+        "ply": {
+          "description": "Ply, when given, is the ply the move was made against: it is refused with 409 if the game has moved on (ADR 0114).",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "to": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "player_name"
+      ],
+      "type": "object"
+    },
+    "MakeMoveResponse": {
+      "description": "makeMoveResponse is POST /games/{code}/moves' 200 response body, from docs/history/plan.md section 6.8: {\"move\": {...}, \"state\": {...}}. State reuses getGameStateResponse's shape. BotMoves lists replies built-in bot opponents played immediately afterwards (already reflected in State).",
+      "properties": {
+        "bot_moves": {
+          "items": {
+            "$ref": "#/$defs/Move"
+          },
+          "type": "array"
+        },
+        "move": {
+          "$ref": "#/$defs/Move"
+        },
+        "state": {
+          "$ref": "#/$defs/GetGameStateResponse"
+        }
+      },
+      "required": [
+        "move",
+        "state"
+      ],
+      "type": "object"
+    },
+    "Move": {
+      "description": "Move is one move as clients see it: the \"move\" object of a make-move response, an entry of the move history, and the last move of a game.",
+      "properties": {
+        "action": {
+          "type": "string"
+        },
+        "aim": {
+          "type": "string"
+        },
+        "auto": {
+          "description": "Auto: the server played the move for a person (a reaction they chose to pass automatically). AutoPlay: a tactical bot played it for a person whose Auto-Play Timeout ran out. Locked: the move rolled dice or drew a hidden token, so nothing can be taken back across it.",
+          "type": "boolean"
+        },
+        "auto_play": {
+          "type": "boolean"
+        },
+        "captured": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "color": {
+          "type": "string"
+        },
+        "count": {
+          "type": "integer"
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "drops": {
+          "items": {
+            "type": "integer"
+          },
+          "type": "array"
+        },
+        "from": {
+          "type": "string"
+        },
+        "locked": {
+          "type": "boolean"
+        },
+        "notation": {
+          "type": "string"
+        },
+        "path": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "piece": {
+          "type": "string"
+        },
+        "ply": {
+          "description": "Ply is the impulse the move is a selection of (ADR 0114).",
+          "type": "integer"
+        },
+        "seat": {
+          "type": "integer"
+        },
+        "selections": {
+          "description": "Selections are the parts of a move of several (ADR 0114), in order, each with its own seq (its row); the move itself then has the last one's fields, the notation of all of them joined by \"; \" and its ply as seq.",
+          "items": {
+            "$ref": "#/$defs/Move"
+          },
+          "type": "array"
+        },
+        "seq": {
+          "type": "integer"
+        },
+        "to": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "seq",
+        "seat",
+        "color",
+        "from",
+        "to",
+        "captured"
+      ],
+      "type": "object"
+    },
+    "MoveEventData": {
+      "description": "MoveEventData is the wire DTO MakeMove publishes as a \"move\" Event's Data, (docs/history/plan.md section 6.9). It mirrors REST's POST .../moves response shape rather than the raw (untagged) MoveOutcome: BoardState is json.RawMessage so it's sent as a nested JSON object, not double-encoded as an escaped string, and ImpulseSeat is nullable (nil when the move ended the game), matching the convention REST's handleMakeMove already uses for the same reason.",
+      "properties": {
+        "action": {
+          "type": "string"
+        },
+        "aim": {
+          "type": "string"
+        },
+        "all_lost": {
+          "type": "boolean"
+        },
+        "auto": {
+          "description": "Auto: the server played the move for a person (a reaction they chose to pass automatically). AutoPlay: a tactical bot played it for a person whose Auto-Play Timeout ran out.",
+          "type": "boolean"
+        },
+        "auto_play": {
+          "type": "boolean"
+        },
+        "board_state": {
+          "description": "BoardState is the v1 flat top-of-stack view; State is the full position document (stacks, reserves, ply)."
+        },
+        "captured": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "clock": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/ClockSnapshot"
+            }
+          ],
+          "description": "Clock is the game clock after the move, for a game played with one."
+        },
+        "color": {
+          "type": "string"
+        },
+        "count": {
+          "type": "integer"
+        },
+        "drawn_seats": {
+          "items": {
+            "type": "integer"
+          },
+          "type": "array"
+        },
+        "drops": {
+          "items": {
+            "type": "integer"
+          },
+          "type": "array"
+        },
+        "end_detail": {
+          "type": "string"
+        },
+        "end_reason": {
+          "type": "string"
+        },
+        "ends_impulse": {
+          "type": "boolean"
+        },
+        "from": {
+          "type": "string"
+        },
+        "game_ended": {
+          "type": "boolean"
+        },
+        "impulse_deadline": {
+          "description": "ImpulseDeadline is when the next player runs out of time (RFC 3339), and ServerTime the server's clock, for timed games.",
+          "type": "string"
+        },
+        "impulse_seat": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "locked": {
+          "description": "Locked: the move rolled dice (or drew a hidden token): it cannot be taken back. Sent in a game for one seat only, the one that has Undo.",
+          "type": "boolean"
+        },
+        "notation": {
+          "type": "string"
+        },
+        "path": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "piece": {
+          "type": "string"
+        },
+        "ply": {
+          "description": "Ply is the impulse this selection is part of (ADR 0114), and EndsImpulse says it ended it: the game's ply is then Ply, else Ply-1.",
+          "type": "integer"
+        },
+        "seat": {
+          "type": "integer"
+        },
+        "seq": {
+          "type": "integer"
+        },
+        "server_time": {
+          "type": "string"
+        },
+        "state": {},
+        "status": {
+          "type": "string"
+        },
+        "to": {
+          "type": "string"
+        },
+        "winner_seat": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "seq",
+        "seat",
+        "color",
+        "from",
+        "to",
+        "captured",
+        "impulse_seat",
+        "game_ended",
+        "winner_seat",
+        "status",
+        "board_state",
+        "state",
+        "ply"
+      ],
+      "type": "object"
+    },
+    "ObservationResponse": {
+      "description": "observationResponse is GET /games/{code}/observe's body.",
+      "properties": {
+        "board_text": {
+          "type": "string"
+        },
+        "color": {
+          "type": "string"
+        },
+        "done": {
+          "type": "boolean"
+        },
+        "end_reason": {
+          "type": "string"
+        },
+        "game_def_id": {
+          "type": "string"
+        },
+        "impulse_seat": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "last_move": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Move"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "legal_moves": {
+          "items": {
+            "type": "string"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "move_seq": {
+          "type": "integer"
+        },
+        "move_time_seconds": {
+          "type": "integer"
+        },
+        "ply": {
+          "type": "integer"
+        },
+        "result": {
+          "type": "string"
+        },
+        "reward": {
+          "type": "number"
+        },
+        "room_code": {
+          "type": "string"
+        },
+        "seat": {
+          "type": "integer"
+        },
+        "seconds_left": {
+          "type": "integer"
+        },
+        "state": {},
+        "status": {
+          "type": "string"
+        },
+        "tps": {
+          "type": "string"
+        },
+        "winner_seat": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "your_impulse": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "room_code",
+        "game_def_id",
+        "status",
+        "seat",
+        "color",
+        "your_impulse",
+        "impulse_seat",
+        "move_seq",
+        "ply",
+        "board_text",
+        "state",
+        "legal_moves",
+        "last_move",
+        "done",
+        "winner_seat",
+        "reward"
+      ],
+      "type": "object"
+    },
+    "OpenGame": {
+      "description": "OpenGame is one unfinished game as the list shows it.",
+      "properties": {
+        "family": {
+          "type": "string"
+        },
+        "friends_only": {
+          "description": "FriendsOnly says its seats are all held or kept for friends; ReservedForYou that one is the viewer's. OpenSeats counts only the seats the viewer could sit at.",
+          "type": "boolean"
+        },
+        "game_def_id": {
+          "type": "string"
+        },
+        "impulse_seat": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "lobby": {
+          "type": "boolean"
+        },
+        "move_seq": {
+          "type": "integer"
+        },
+        "name": {
+          "description": "Name is the game's name from the catalog (\"Hex (11×11)\"), and Family the id of the game it is a layout or a derived table of.",
+          "type": "string"
+        },
+        "open_seats": {
+          "type": "integer"
+        },
+        "players": {
+          "description": "Players are the seats that are taken, people and bots.",
+          "items": {
+            "$ref": "#/$defs/SeatInfo"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "rated": {
+          "type": "boolean"
+        },
+        "reserved_for_you": {
+          "type": "boolean"
+        },
+        "room_code": {
+          "type": "string"
+        },
+        "seats": {
+          "description": "Seats is how many seats the game has, OpenSeats how many nobody holds.",
+          "type": "integer"
+        },
+        "status": {
+          "description": "Status is \"waiting\" or \"active\"; Lobby says it waits for its host.",
+          "type": "string"
+        },
+        "tags": {
+          "description": "Tags are the short badges the game's rules give it in a list.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "updated_at": {
+          "description": "UpdatedAt is when the game last moved on (a database timestamp).",
+          "type": "string"
+        }
+      },
+      "required": [
+        "room_code",
+        "game_def_id",
+        "name",
+        "status",
+        "seats",
+        "open_seats",
+        "players",
+        "impulse_seat",
+        "move_seq",
+        "updated_at"
+      ],
+      "type": "object"
+    },
+    "OpenGamesResponse": {
+      "description": "openGamesResponse is GET /games' body.",
+      "properties": {
+        "games": {
+          "description": "Games are the unfinished games, newest change first.",
+          "items": {
+            "$ref": "#/$defs/OpenGame"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "games"
+      ],
+      "type": "object"
+    },
+    "OpeningDTO": {
+      "description": "OpeningDTO describes the opening phase.",
+      "properties": {
+        "actions": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "owner": {
+          "type": "string"
+        },
+        "pieces": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "plies": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "plies",
+        "owner"
+      ],
+      "type": "object"
+    },
+    "OptionChoice": {
+      "description": "OptionChoice is one value of a seat-choice option.",
+      "properties": {
+        "color": {
+          "description": "Color is the seat color the choice brings with it.",
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "recommended": {
+          "description": "Recommended (a Slot of a book-swap) is the id of the Choice that suits it best.",
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "label"
+      ],
+      "type": "object"
+    },
+    "OptionDef": {
+      "description": "OptionDef is one setup choice of a game, described for clients.",
+      "properties": {
+        "choices": {
+          "description": "Choices are the values of a seat-choice or multi-choice option.",
+          "items": {
+            "$ref": "#/$defs/OptionChoice"
+          },
+          "type": "array"
+        },
+        "default": {
+          "description": "Default is the value when nothing is chosen: a bool, or for a seat-choice the choice ids per seat."
+        },
+        "id": {
+          "type": "string"
+        },
+        "kind": {
+          "description": "Kind is \"bool\" (a check box), \"seat-choice\" (each seat picks one of Choices, no two the same), \"multi-choice\" (any number of Choices) or \"book-swap\" (a cult picks one of Choices to replace its Slot).",
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "slots": {
+          "description": "Slots (kind \"book-swap\") are the things a choice may replace, each in the cult named by its ID: the page offers a Choice for every Slot whose cult is at the table.",
+          "items": {
+            "$ref": "#/$defs/OptionChoice"
+          },
+          "type": "array"
+        },
+        "text": {
+          "description": "Text explains the option.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "kind"
+      ],
+      "type": "object"
+    },
+    "OverlayDef": {
+      "description": "OverlayDef is one entry of a DisplayDef legend.",
+      "properties": {
+        "color": {
+          "description": "Color is a CSS color (a hex string).",
+          "type": "string"
+        },
+        "glyph": {
+          "description": "Glyph is a short text mark (badges).",
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "text": {
+          "description": "Text explains the effect.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "label"
+      ],
+      "type": "object"
+    },
+    "PieceDTO": {
+      "description": "PieceDTO describes a piece type.",
+      "properties": {
+        "can_step": {
+          "type": "boolean"
+        },
+        "code": {
+          "type": "string"
+        },
+        "color": {
+          "type": "string"
+        },
+        "coverable": {
+          "type": "boolean"
+        },
+        "label": {
+          "type": "string"
+        },
+        "pool": {
+          "type": "string"
+        },
+        "rules": {
+          "type": "string"
+        },
+        "shape": {
+          "type": "string"
+        },
+        "tags": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "type": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "label",
+        "shape",
+        "pool",
+        "coverable"
+      ],
+      "type": "object"
+    },
+    "PieceOnBoardDTO": {
+      "description": "PieceOnBoardDTO is one piece on a square.",
+      "properties": {
+        "color": {
+          "type": "string"
+        },
+        "piece": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "piece",
+        "color"
+      ],
+      "type": "object"
+    },
+    "PlayerRequest": {
+      "description": "playerRequest is the body of the undo/resign endpoints.",
+      "properties": {
+        "player_name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "player_name"
+      ],
+      "type": "object"
+    },
+    "PoolDTO": {
+      "description": "PoolDTO describes a reserve pool: a hand of pieces that placed piece types are drawn from.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "pieces": {
+          "items": {
+            "type": "string"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "start": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "pieces",
+        "start"
+      ],
+      "type": "object"
+    },
+    "PositionDTO": {
+      "description": "PositionDTO is one board position with layout coordinates (y grows downwards), and the name and tags of a position that has them (an area of a map: its tags say ocean, land, glyph-dragon…).",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "tags": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "x",
+        "y"
+      ],
+      "type": "object"
+    },
+    "RatingChange": {
+      "description": "RatingChange is what a rated game did to the player at a seat.",
+      "properties": {
+        "after": {
+          "type": "integer"
+        },
+        "before": {
+          "type": "integer"
+        },
+        "seat": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "seat",
+        "before",
+        "after"
+      ],
+      "type": "object"
+    },
+    "RealTimeSettings": {
+      "description": "RealTimeSettings is what is chosen at setup, and stored as JSON in games.real_time. The second warning counts from the first. A wait of zero takes its default.",
+      "properties": {
+        "first_warning_seconds": {
+          "type": "integer"
+        },
+        "second_warning_seconds": {
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "RealTimeSnapshot": {
+      "description": "RealTimeSnapshot is a real-time game's settings as clients see them. Wait is nil when the game is waiting on nobody the warnings apply to.",
+      "properties": {
+        "first_move": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/FirstMove"
+            }
+          ],
+          "description": "FirstMove is set while a seat of a real-time tournament's game must make its first move in time, or forfeit."
+        },
+        "first_warning_seconds": {
+          "type": "integer"
+        },
+        "kick_votes": {
+          "description": "KickVotes are the votes open to have a bot replace a player.",
+          "items": {
+            "$ref": "#/$defs/KickVote"
+          },
+          "type": "array"
+        },
+        "second_warning_seconds": {
+          "type": "integer"
+        },
+        "wait": {
+          "$ref": "#/$defs/RealTimeWait"
+        }
+      },
+      "required": [
+        "first_warning_seconds",
+        "second_warning_seconds"
+      ],
+      "type": "object"
+    },
+    "RealTimeWait": {
+      "description": "RealTimeWait says how long the game has been waiting on a person, in a game where that has consequences.",
+      "properties": {
+        "first_warning_at": {
+          "type": "string"
+        },
+        "seat": {
+          "type": "integer"
+        },
+        "second_warning_at": {
+          "type": "string"
+        },
+        "stage": {
+          "description": "Stage is how many warnings have passed: 0, 1 or 2. At 2 the turn is on offer.",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "seat",
+        "stage",
+        "first_warning_at",
+        "second_warning_at"
+      ],
+      "type": "object"
+    },
+    "ScheduleRequest": {
+      "description": "ScheduleRequest is what a setup asks for: a time or several, and who to invite.",
+      "properties": {
+        "at": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "invite": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "slots": {
+          "items": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "ScoreDTO": {
+      "description": "ScoreDTO describes a running tally: how many squares have a top piece with the given tag (or of the given piece type) owned by each seat.",
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "piece": {
+          "type": "string"
+        },
+        "tag": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "label"
+      ],
+      "type": "object"
+    },
+    "SeatClock": {
+      "description": "SeatClock is one seat's clock: what it started with and what is left of it (not counting a turn in progress — the seat that is running counts down from the snapshot's ImpulseDeadline).",
+      "properties": {
+        "initial_seconds": {
+          "type": "integer"
+        },
+        "seat": {
+          "type": "integer"
+        },
+        "seconds_left": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "seat",
+        "initial_seconds",
+        "seconds_left"
+      ],
+      "type": "object"
+    },
+    "SeatDefDTO": {
+      "description": "SeatDefDTO describes a seat.",
+      "properties": {
+        "blend": {
+          "description": "Blend is the two colours a seat is drawn in, when it has two.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "color": {
+          "type": "string"
+        },
+        "colors": {
+          "description": "Colors is every colour the seat plays, when it plays several (ADR 0117): a piece in any of them is the seat's.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "label": {
+          "type": "string"
+        },
+        "seat": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "seat",
+        "color",
+        "label"
+      ],
+      "type": "object"
+    },
+    "SeatEventData": {
+      "description": "SeatEventData is one seat of a StateEventData.",
+      "properties": {
+        "bot": {
+          "type": "string"
+        },
+        "color": {
+          "type": "string"
+        },
+        "guest": {
+          "type": "boolean"
+        },
+        "handle": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "seat": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "seat",
+        "color",
+        "name"
+      ],
+      "type": "object"
+    },
+    "SeatInfo": {
+      "description": "SeatInfo describes one seat a game definition declares: its number, the color it plays, and the name of whoever occupies it (\"\" if open).",
+      "properties": {
+        "Bot": {
+          "description": "bot ID when a built-in bot plays this seat",
+          "type": "string"
+        },
+        "Color": {
+          "type": "string"
+        },
+        "Guest": {
+          "type": "boolean"
+        },
+        "Handle": {
+          "description": "Handle is the account's handle when an account holds the seat, and Guest says a guest does (neither: an anonymous client, or nobody).",
+          "type": "string"
+        },
+        "Label": {
+          "type": "string"
+        },
+        "Name": {
+          "description": "\"\" if this seat hasn't been filled yet",
+          "type": "string"
+        },
+        "Rating": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/SeatRating"
+            }
+          ],
+          "description": "Rating is the player's rating, at the seat of a rated game."
+        },
+        "Replaced": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/SeatReplaced"
+            }
+          ],
+          "description": "Replaced says who held the seat until a bot took it."
+        },
+        "Seat": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "Seat",
+        "Color",
+        "Label",
+        "Name",
+        "Bot"
+      ],
+      "type": "object"
+    },
+    "SeatRating": {
+      "description": "SeatRating is a player's rating, shown at the seat of a rated game.",
+      "properties": {
+        "provisional": {
+          "type": "boolean"
+        },
+        "rating": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "rating"
+      ],
+      "type": "object"
+    },
+    "SeatReplaced": {
+      "description": "SeatReplaced says who held a seat before a bot took it: they played its moves up to and including move MoveSeq.",
+      "properties": {
+        "move_seq": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "reason",
+        "move_seq"
+      ],
+      "type": "object"
+    },
+    "SeatReplacedEventData": {
+      "description": "SeatReplacedEventData is the wire DTO of a \"seat_replaced\" Event.",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "seat": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "seat",
+        "name",
+        "reason"
+      ],
+      "type": "object"
+    },
+    "SelectionsResponse": {
+      "description": "selectionsResponse is GET /games/{code}/selections' body (ADR 0114).",
+      "properties": {
+        "complete": {
+          "type": "boolean"
+        },
+        "made": {
+          "items": {
+            "type": "string"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "may_end": {
+          "type": "boolean"
+        },
+        "options": {
+          "items": {
+            "$ref": "#/$defs/LegalMoveDTO"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "ply": {
+          "type": "integer"
+        },
+        "seat": {
+          "type": "integer"
+        },
+        "state": {}
+      },
+      "required": [
+        "seat",
+        "ply",
+        "made",
+        "options",
+        "complete"
+      ],
+      "type": "object"
+    },
+    "SlowTurnEventData": {
+      "description": "SlowTurnEventData is the wire DTO of a \"slow_turn\" Event.",
+      "properties": {
+        "seat": {
+          "type": "integer"
+        },
+        "stage": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "seat",
+        "stage"
+      ],
+      "type": "object"
+    },
+    "StartDTO": {
+      "description": "StartDTO is a starting position: stacks per square (bottom first) and each color's reserve.",
+      "properties": {
+        "cells": {
+          "additionalProperties": {
+            "items": {
+              "$ref": "#/$defs/PieceOnBoardDTO"
+            },
+            "type": "array"
+          },
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        "reserves": {
+          "additionalProperties": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object"
+          },
+          "type": "object"
+        }
+      },
+      "required": [
+        "cells"
+      ],
+      "type": "object"
+    },
+    "StateEventData": {
+      "description": "StateEventData is the wire DTO of a \"state\" Event: a full snapshot sent when something other than a move changed the game — a player took a seat (\"join\"), a move was taken back (\"undo\") or a player resigned (\"resign\").",
+      "properties": {
+        "all_lost": {
+          "type": "boolean"
+        },
+        "board_state": {},
+        "clock": {
+          "$ref": "#/$defs/ClockSnapshot"
+        },
+        "draw_offer_seat": {
+          "description": "DrawOfferSeat is the seat currently offering a draw (null if none).",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "drawn_seats": {
+          "items": {
+            "type": "integer"
+          },
+          "type": "array"
+        },
+        "end_detail": {
+          "type": "string"
+        },
+        "end_reason": {
+          "type": "string"
+        },
+        "host_seat": {
+          "type": "integer"
+        },
+        "impulse_deadline": {
+          "type": "string"
+        },
+        "impulse_seat": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "lobby": {
+          "description": "Lobby: the game waits for its host to start it; HostSeat is the host's seat.",
+          "type": "boolean"
+        },
+        "move_seq": {
+          "type": "integer"
+        },
+        "move_time_seconds": {
+          "type": "integer"
+        },
+        "ply": {
+          "type": "integer"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "removed": {
+          "description": "undo: sequence numbers taken back",
+          "items": {
+            "type": "integer"
+          },
+          "type": "array"
+        },
+        "seats": {
+          "items": {
+            "$ref": "#/$defs/SeatEventData"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "server_time": {
+          "type": "string"
+        },
+        "state": {},
+        "status": {
+          "type": "string"
+        },
+        "winner_seat": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "reason",
+        "status",
+        "impulse_seat",
+        "move_seq",
+        "ply",
+        "winner_seat",
+        "seats",
+        "board_state",
+        "state",
+        "draw_offer_seat"
+      ],
+      "type": "object"
+    },
+    "SuitDef": {
+      "description": "SuitDef is one suit: how it is named and drawn.",
+      "properties": {
+        "color": {
+          "description": "Color is a CSS colour for the suit's pips and card faces.",
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "symbol": {
+          "description": "Symbol is the text drawn as the suit's pip (a glyph or a short word).",
+          "type": "string"
+        },
+        "text": {
+          "description": "Text is a longer description (shown in the rules and on hover).",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "TournamentRef": {
+      "description": "TournamentRef is what a game says of the tournament it is part of.",
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ],
+      "type": "object"
+    },
+    "WebSocketEvent": {
+      "description": "A message the server sends on /ws/{code}. A client skips an event whose type it does not know.",
+      "oneOf": [
+        {
+          "properties": {
+            "data": {
+              "$ref": "#/$defs/JoinedEventData"
+            },
+            "type": {
+              "const": "joined"
+            }
+          },
+          "required": [
+            "type",
+            "data"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "data": {
+              "$ref": "#/$defs/MoveEventData"
+            },
+            "type": {
+              "const": "move"
+            }
+          },
+          "required": [
+            "type",
+            "data"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "data": {
+              "$ref": "#/$defs/StateEventData"
+            },
+            "type": {
+              "const": "state"
+            }
+          },
+          "required": [
+            "type",
+            "data"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "data": {
+              "$ref": "#/$defs/ChatLine"
+            },
+            "type": {
+              "const": "chat"
+            }
+          },
+          "required": [
+            "type",
+            "data"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "data": {
+              "$ref": "#/$defs/ConnectionEventData"
+            },
+            "type": {
+              "const": "connection"
+            }
+          },
+          "required": [
+            "type",
+            "data"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "data": {
+              "$ref": "#/$defs/KickVoteEventData"
+            },
+            "type": {
+              "const": "kick_vote"
+            }
+          },
+          "required": [
+            "type",
+            "data"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "data": {
+              "$ref": "#/$defs/SeatReplacedEventData"
+            },
+            "type": {
+              "const": "seat_replaced"
+            }
+          },
+          "required": [
+            "type",
+            "data"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "data": {
+              "$ref": "#/$defs/SlowTurnEventData"
+            },
+            "type": {
+              "const": "slow_turn"
+            }
+          },
+          "required": [
+            "type",
+            "data"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "ZoneDef": {
+      "description": "ZoneDef is a place cards can be.",
+      "properties": {
+        "counts": {
+          "description": "Hidden zones are not shown at all (only their counts, in the seat's panel): useful for a deck.",
+          "type": "boolean"
+        },
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "pile": {
+          "description": "Pile makes the zone a pile: a seat's view lists none of its cards it cannot see, only their count, and a pile a seat holds is not sorted into hand order. How a client draws any zone is its own (ADR 0124: the web page's layouts are in the game's web.yaml).",
+          "type": "boolean"
+        },
+        "scope": {
+          "description": "Scope is \"seat\" (every seat has its own copy: a hand, a trick pile) or \"table\" (one shared by everyone: the deck, the play area).",
+          "type": "string"
+        },
+        "visibility": {
+          "description": "Visibility says who sees the faces: \"owner\" (only the seat the zone belongs to), \"all\" (everyone; face-down cards still show a back), \"flag\" (a card is seen by everyone when it is face up and by no one when face down), \"none\" (no one: a deck, discarded cards).",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "scope"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "https://github.com/noderunner/bingle/docs/api.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "The requests, responses and WebSocket events of bingle's API, version 1.0.0. Generated from the Go types of the server: do not edit. Objects let unknown fields through: a client ignores those it does not know.",
+  "title": "Bingle API messages",
+  "x-api-version": "1.0.0",
+  "x-endpoints": {
+    "GET /api": {
+      "response": {
+        "$ref": "#/$defs/IndexResponse"
+      }
+    },
+    "GET /api/bots": {
+      "response": {
+        "items": {
+          "$ref": "#/$defs/BotInfo"
+        },
+        "type": "array"
+      }
+    },
+    "GET /api/game-defs": {
+      "response": {
+        "items": {
+          "$ref": "#/$defs/GameDef"
+        },
+        "type": "array"
+      }
+    },
+    "GET /api/game-defs/{id}": {
+      "response": {
+        "$ref": "#/$defs/GameInfo"
+      }
+    },
+    "GET /api/game-defs/{id}/guide": {
+      "media_type": "text/markdown"
+    },
+    "GET /api/games": {
+      "response": {
+        "$ref": "#/$defs/OpenGamesResponse"
+      }
+    },
+    "GET /api/games/{code}": {
+      "response": {
+        "$ref": "#/$defs/GetGameResponse"
+      }
+    },
+    "GET /api/games/{code}/moves": {
+      "response": {
+        "items": {
+          "$ref": "#/$defs/Move"
+        },
+        "type": "array"
+      }
+    },
+    "GET /api/games/{code}/observe": {
+      "response": {
+        "$ref": "#/$defs/ObservationResponse"
+      }
+    },
+    "GET /api/games/{code}/selections": {
+      "response": {
+        "$ref": "#/$defs/SelectionsResponse"
+      }
+    },
+    "GET /api/games/{code}/state": {
+      "response": {
+        "$ref": "#/$defs/GetGameStateResponse"
+      }
+    },
+    "POST /api/games": {
+      "request": {
+        "$ref": "#/$defs/CreateGameRequest"
+      },
+      "response": {
+        "$ref": "#/$defs/CreateGameResponse"
+      }
+    },
+    "POST /api/games/{code}/join": {
+      "request": {
+        "$ref": "#/$defs/JoinGameRequest"
+      },
+      "response": {
+        "$ref": "#/$defs/JoinGameResponse"
+      }
+    },
+    "POST /api/games/{code}/moves": {
+      "request": {
+        "$ref": "#/$defs/MakeMoveRequest"
+      },
+      "response": {
+        "$ref": "#/$defs/MakeMoveResponse"
+      }
+    },
+    "POST /api/games/{code}/resign": {
+      "request": {
+        "$ref": "#/$defs/PlayerRequest"
+      },
+      "response": {
+        "$ref": "#/$defs/GetGameStateResponse"
+      }
+    },
+    "POST /api/guest": {
+      "response": {
+        "$ref": "#/$defs/GuestKey"
+      }
+    }
+  },
+  "x-error": {
+    "$ref": "#/$defs/ErrorResponse"
+  },
+  "x-events": {
+    "chat": {
+      "$ref": "#/$defs/ChatLine"
+    },
+    "connection": {
+      "$ref": "#/$defs/ConnectionEventData"
+    },
+    "joined": {
+      "$ref": "#/$defs/JoinedEventData"
+    },
+    "kick_vote": {
+      "$ref": "#/$defs/KickVoteEventData"
+    },
+    "move": {
+      "$ref": "#/$defs/MoveEventData"
+    },
+    "seat_replaced": {
+      "$ref": "#/$defs/SeatReplacedEventData"
+    },
+    "slow_turn": {
+      "$ref": "#/$defs/SlowTurnEventData"
+    },
+    "state": {
+      "$ref": "#/$defs/StateEventData"
+    }
+  }
+}

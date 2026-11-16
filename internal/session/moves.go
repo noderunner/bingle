@@ -434,7 +434,7 @@ func (m *Manager) applyAndRecordAs(ctx context.Context, compiled *catalog.Compil
 	// A move that commits a secret (a strike's dice) is announced without it.
 	shownMove, shownNotation := state.PublicMove(compiled, result.NewState, result.Move, result.Notation)
 	_, publishSpan := trace.Start(ctx, "ws.publish")
-	m.hub.publish(game.RoomCode, Event{Type: "move", Data: moveEventData{
+	m.hub.publish(game.RoomCode, Event{Type: "move", Data: MoveEventData{
 		Seq:         move.Seq,
 		Seat:        player.Seat,
 		Color:       player.Color,

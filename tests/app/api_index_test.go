@@ -21,8 +21,13 @@ func newDocumentedServer(t *testing.T) (string, string) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	schema, err := os.ReadFile("../../docs/api.schema.json")
+	if err != nil {
+		t.Fatal(err)
+	}
 	cfg := newTestConfig(t)
 	cfg.APIDocs = string(docs)
+	cfg.APISchema = schema
 	a, err := app.New(cfg)
 	if err != nil {
 		t.Fatalf("app.New: %v", err)

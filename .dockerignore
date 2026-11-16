@@ -39,5 +39,6 @@ tests/
 scripts/
 *.md
 !CHANGELOG.md
-# The API docs are built into the binary (main.go).
+# The API docs and the schema of its messages are built into the binary (main.go).
 !docs/api.md
+!docs/api.schema.json

@@ -30,7 +30,11 @@ set to its path; without one they are skipped. `make test-short` skips the slowe
    (copy the newest one for the shape, and add it to the index).
 5. **Version it**: change a game's definition or Go code and you raise its `version` in its definition
    (patch for a fix, minor for a new rule or option; a game stays below 1.0.0 until its owner
-   calls it finished). A change to the engine or platform raises `internal/version`.
+   calls it finished). A change to the engine or platform raises `internal/version`. A change
+   to what the API sends or reads regenerates `docs/api.schema.json` (`go run ./scripts/genschema`)
+   and, judged by the schema's diff, raises `version.API`: major for what can break a client (a
+   field or endpoint removed or renamed, a type or meaning changed, a new event or status a client
+   must handle), minor for an addition a client may ignore, patch for descriptions alone (ADR 0134).
 6. **Say it in the changelog**: add what changed, for players, to the newest entry of
    [CHANGELOG.md](CHANGELOG.md), or start a new entry (`## 0.4.0 - 2026-10-26`, the engine's
    version) when you raise `internal/version`. The help window of the game shows that entry
