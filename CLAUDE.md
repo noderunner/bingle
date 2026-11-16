@@ -89,7 +89,9 @@ git -c credential.helper='!f() { echo username=x-access-token; echo "password=$(
 - `CHANGELOG.md` gets an entry, written for the people who play rather than for developers. The
   newest entry's version is `internal/version`. Bump `internal/version` for engine or platform
   changes and each game's definition `version` separately; minor or patch by judgement, major
-  only when told. A prototype's `version` stays as it is: its rules change in its folder, and a new
+  only when told. `version.API` moves on its own when what the API sends or reads changes
+  (regenerate `docs/api.schema.json`; major for what can break a client, minor for additions, patch
+  for descriptions: ADR 0134). A prototype's `version` stays as it is: its rules change in its folder, and a new
   version folder is made only when the maintainer asks for one (`docs/dsl.md`).
 - `docs/` updated, and an ADR in `docs/decisions/` when the change settles a question rather than
   just adding a mechanism.

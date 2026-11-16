@@ -58,6 +58,7 @@ type App struct {
 	rtc       api.RTCConfig
 	changelog string
 	apiDocs   string // docs/api.md, for GET /api/docs
+	apiSchema []byte // docs/api.schema.json, for GET /api/schema
 	brand     config.Brand
 	log       *slog.Logger
 	metrics   *metrics.Metrics
@@ -228,6 +229,7 @@ func New(cfg config.Config, opts ...Option) (*App, error) {
 	a.brand = cfg.Brand
 	a.changelog = cfg.Changelog
 	a.apiDocs = cfg.APIDocs
+	a.apiSchema = cfg.APISchema
 	if name := cfg.Brand.DisplayName(); name != config.DefaultBrandName {
 		a.changelog = strings.ReplaceAll(a.changelog, config.DefaultBrandName, name)
 	}
@@ -443,7 +445,7 @@ func (a *App) newRouter() chi.Router {
 	r.Use(a.metrics.Middleware)
 	r.Use(logging.Recover(a.log))
 	r.Get("/healthz", a.handleHealthz)
-	apiOpts := []api.Option{api.WithEnvs(a.envs), api.WithBatches(a.batches), api.WithPublicURL(a.publicURL), api.WithRTC(a.rtc), api.WithChangelog(a.changelog), api.WithDocs(a.apiDocs), api.WithTransport(a.transport)}
+	apiOpts := []api.Option{api.WithEnvs(a.envs), api.WithBatches(a.batches), api.WithPublicURL(a.publicURL), api.WithRTC(a.rtc), api.WithChangelog(a.changelog), api.WithDocs(a.apiDocs), api.WithSchema(a.apiSchema), api.WithTransport(a.transport)}
 	if a.clientErrors {
 		// The one observability route on the public listener: a browser has
 		// to be able to reach it. It is write-only, validated against closed

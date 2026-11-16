@@ -15,14 +15,14 @@ type Event struct {
 	Data any    `json:"data"`
 }
 
-// moveEventData is the wire DTO MakeMove publishes as a "move" Event's Data,
+// MoveEventData is the wire DTO MakeMove publishes as a "move" Event's Data,
 // (docs/history/plan.md section 6.9). It mirrors
 // REST's POST .../moves response shape rather than the raw (untagged)
 // MoveOutcome: BoardState is json.RawMessage so it's sent as a nested JSON
 // object, not double-encoded as an escaped string, and ImpulseSeat is nullable
 // (nil when the move ended the game), matching the convention REST's
 // handleMakeMove already uses for the same reason.
-type moveEventData struct {
+type MoveEventData struct {
 	Seq         int      `json:"seq"`
 	Seat        int      `json:"seat"`
 	Color       string   `json:"color"`
@@ -70,10 +70,10 @@ type moveEventData struct {
 	EndsImpulse bool `json:"ends_impulse,omitempty"`
 }
 
-// stateEventData is the wire DTO of a "state" Event: a full snapshot sent
+// StateEventData is the wire DTO of a "state" Event: a full snapshot sent
 // when something other than a move changed the game — a player took a seat
 // ("join"), a move was taken back ("undo") or a player resigned ("resign").
-type stateEventData struct {
+type StateEventData struct {
 	Reason      string          `json:"reason"`
 	Removed     []int           `json:"removed,omitempty"` // undo: sequence numbers taken back
 	Status      string          `json:"status"`
@@ -85,7 +85,7 @@ type stateEventData struct {
 	AllLost     bool            `json:"all_lost,omitempty"`
 	EndReason   string          `json:"end_reason,omitempty"`
 	EndDetail   string          `json:"end_detail,omitempty"`
-	Seats       []seatEventData `json:"seats"`
+	Seats       []SeatEventData `json:"seats"`
 	BoardState  json.RawMessage `json:"board_state"`
 	State       json.RawMessage `json:"state"`
 
@@ -103,8 +103,8 @@ type stateEventData struct {
 	DrawOfferSeat *int `json:"draw_offer_seat"`
 }
 
-// seatEventData is one seat of a stateEventData.
-type seatEventData struct {
+// SeatEventData is one seat of a StateEventData.
+type SeatEventData struct {
 	Seat   int    `json:"seat"`
 	Color  string `json:"color"`
 	Label  string `json:"label,omitempty"`
@@ -115,12 +115,12 @@ type seatEventData struct {
 }
 
 // stateEventFrom builds a "state" event payload from a snapshot.
-func stateEventFrom(snap StateSnapshot, reason string, removed []int) stateEventData {
-	seats := make([]seatEventData, len(snap.Seats))
+func stateEventFrom(snap StateSnapshot, reason string, removed []int) StateEventData {
+	seats := make([]SeatEventData, len(snap.Seats))
 	for i, s := range snap.Seats {
-		seats[i] = seatEventData{Seat: s.Seat, Color: s.Color, Label: s.Label, Name: s.Name, Bot: s.Bot, Handle: s.Handle, Guest: s.Guest}
+		seats[i] = SeatEventData{Seat: s.Seat, Color: s.Color, Label: s.Label, Name: s.Name, Bot: s.Bot, Handle: s.Handle, Guest: s.Guest}
 	}
-	ev := stateEventData{
+	ev := StateEventData{
 		Reason:        reason,
 		Removed:       removed,
 		Status:        snap.Status,

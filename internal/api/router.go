@@ -19,6 +19,7 @@ import (
 	"github.com/noderunner/bingle/internal/metrics"
 	"github.com/noderunner/bingle/internal/session"
 	"github.com/noderunner/bingle/internal/transport"
+	"github.com/noderunner/bingle/internal/version"
 )
 
 // NewRouter returns a chi.Router for bingle's REST API, with routes
@@ -32,9 +33,14 @@ func NewRouter(mgr *session.Manager, opts ...Option) chi.Router {
 		opt(h)
 	}
 
-	// What a client finds without reading the source: an index, the docs, and JSON for a wrong turn.
+	// Every answer says which version of the API's messages it speaks (ADR 0134).
+	r.Use(apiVersionHeader)
+
+	// What a client finds without reading the source: an index, the docs, the
+	// schema of the messages, and JSON for a wrong turn.
 	r.Get("/", h.handleIndex)
 	r.Get("/docs", h.handleDocs)
+	r.Get("/schema", h.handleSchema)
 	r.NotFound(handleNoSuchEndpoint)
 	r.MethodNotAllowed(handleWrongMethod)
 
@@ -188,12 +194,17 @@ func NewRouter(mgr *session.Manager, opts ...Option) chi.Router {
 // NewRouter, since "/ws/{code}" has no "/api" prefix.
 func NewWSHandler(mgr *session.Manager) http.HandlerFunc {
 	h := &handlers{mgr: mgr}
-	return h.handleWS
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set(APIVersionHeader, version.API)
+		h.handleWS(w, r)
+	}
 }
 
 // handlers holds the dependencies shared by every handler in this package.
 type handlers struct {
 	mgr *session.Manager
+	// schema is docs/api.schema.json, for GET /schema (nil: not served).
+	schema []byte
 	// guests makes guests for scripts (POST /guest); nil leaves it unmounted.
 	guests *auth.Resolver
 	envs   *envs.Manager

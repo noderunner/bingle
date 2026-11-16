@@ -54,8 +54,8 @@ func (m *Manager) SetConnectionTimes(t ConnectionTimes) { m.connTimes = t.withDe
 // ConnectionTimes says how sockets are watched.
 func (m *Manager) ConnectionTimes() ConnectionTimes { return m.connTimes.withDefaults() }
 
-// connectionEventData is the wire DTO of a "connection" Event.
-type connectionEventData struct {
+// ConnectionEventData is the wire DTO of a "connection" Event.
+type ConnectionEventData struct {
 	Seat      int  `json:"seat"`
 	Connected bool `json:"connected"`
 }
@@ -78,7 +78,7 @@ type connTracker struct {
 }
 
 func (m *Manager) publishConnection(room string, seat int, connected bool) {
-	m.hub.publish(room, Event{Type: "connection", Data: connectionEventData{Seat: seat, Connected: connected}})
+	m.hub.publish(room, Event{Type: "connection", Data: ConnectionEventData{Seat: seat, Connected: connected}})
 }
 
 // TrackConnection notes that a socket has opened for the seat and tells the room

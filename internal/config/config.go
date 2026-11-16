@@ -215,6 +215,8 @@ type Config struct {
 	Changelog string
 	// APIDocs is the text of docs/api.md, served at GET /api/docs (empty: not served).
 	APIDocs string
+	// APISchema is docs/api.schema.json, served at GET /api/schema (nil: not served).
+	APISchema []byte
 
 	// RTCStun lists the STUN servers voice chat uses to find a path between
 	// players (BINGLE_RTC_STUN, comma separated "stun:host:port" URLs). The
