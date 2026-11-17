@@ -208,6 +208,11 @@ func TestAPISchema_DescribesWhatTheServerSends(t *testing.T) {
 	readEvent("state")
 	ana.do("GET /api/games/{code}", game, nil, 200)
 	ana.do("GET /api/games/{code}/state", game+"/state", nil, 200)
+
+	// Two bots play each other for a spectator, and a match without its bots is refused.
+	match := ana.do("POST /api/bot-matches", "/api/bot-matches", map[string]any{"game_def_id": "hex-7", "bot_a": "random", "bot_b": "random", "delay_ms": 150}, 200)
+	ana.do("GET /api/games/{code}", "/api/games/"+match["room_code"].(string), nil, 200)
+	ana.do("POST /api/bot-matches", "/api/bot-matches", map[string]any{"game_def_id": "hex-7"}, 400)
 }
 
 // checkSchema lists how value breaks schema s, for the parts of JSON Schema

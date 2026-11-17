@@ -529,13 +529,29 @@ func (h *handlers) handleImportGame(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// botMatchRequest is POST /bot-matches' body.
+// botMatchRequest is POST /bot-matches' body: two built-in bots to play
+// each other in a two-player game.
 type botMatchRequest struct {
+	// GameDefID is the game to play, from GET /game-defs; it must have two
+	// seats.
 	GameDefID string `json:"game_def_id"`
-	BotA      string `json:"bot_a"`
-	BotB      string `json:"bot_b"`
-	// DelayMS is the pause between moves (150..10000, default 700).
-	DelayMS int `json:"delay_ms"`
+	// BotA is the bot that plays seat 1: a bot's id from GET /bots.
+	BotA string `json:"bot_a"`
+	// BotB is the bot that plays seat 2, also from GET /bots; it may be the
+	// same bot as BotA.
+	BotB string `json:"bot_b"`
+	// DelayMS is the pause between moves in milliseconds: 0 or omitted
+	// means 700, and a value outside 150..10000 is brought to the nearer end.
+	DelayMS int `json:"delay_ms,omitempty"`
+}
+
+// botMatchResponse is POST /bot-matches' 200 response body: the room the
+// bots play in, to watch as a spectator over /ws/{code}.
+type botMatchResponse struct {
+	// RoomCode is the new room's code.
+	RoomCode string `json:"room_code"`
+	// Status is the game's status: "active", since the bots start at once.
+	Status string `json:"status"`
 }
 
 // handleBotMatch implements POST /bot-matches: start a room where two
@@ -554,5 +570,5 @@ func (h *handlers) handleBotMatch(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"room_code": res.RoomCode, "status": res.Status})
+	writeJSON(w, http.StatusOK, botMatchResponse{RoomCode: res.RoomCode, Status: res.Status})
 }

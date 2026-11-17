@@ -42,6 +42,7 @@ var schemaEndpoints = []schemaEndpoint{
 	{route: "POST /api/games/{code}/moves", request: reflect.TypeFor[makeMoveRequest](), response: reflect.TypeFor[makeMoveResponse]()},
 	{route: "GET /api/games/{code}/moves", response: reflect.TypeFor[[]wire.Move]()},
 	{route: "POST /api/games/{code}/resign", request: reflect.TypeFor[playerRequest](), response: reflect.TypeFor[getGameStateResponse]()},
+	{route: "POST /api/bot-matches", request: reflect.TypeFor[botMatchRequest](), response: reflect.TypeFor[botMatchResponse]()},
 }
 
 // schemaEvents are the WebSocket events of /ws/{code} the schema describes,
@@ -79,6 +80,7 @@ func Schema(root string) ([]byte, error) {
 			reflect.TypeFor[joinGameRequest]():   {"player_name"},
 			reflect.TypeFor[makeMoveRequest]():   {"player_name"},
 			reflect.TypeFor[playerRequest]():     {"player_name"},
+			reflect.TypeFor[botMatchRequest]():   {"game_def_id", "bot_a", "bot_b"},
 		},
 		Names: map[reflect.Type]string{
 			reflect.TypeFor[apiIndex]():  "IndexResponse",

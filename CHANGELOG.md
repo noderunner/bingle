@@ -4,6 +4,11 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.115.1 - 2026-11-17
+
+### Bingle Core 0.115.1
+- Apps that play Bingle without the web page, such as a 3D client, can now count on being able to start a match between two of the built-in bots and watch it to the end: it is listed with the rest of what such an app may use.
+
 ## 0.115.0 - 2026-11-16
 
 ### Bingle Core 0.115.0
