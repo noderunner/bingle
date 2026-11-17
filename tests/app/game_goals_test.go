@@ -5,8 +5,7 @@ import (
 	"testing"
 )
 
-// A game's info says, as data, which regions each seat must connect or
-// reach, so a client can show the goal without reading its words (#216).
+// A game's info says, as data, which regions each seat must connect, so a client can show the goal without reading its words (#216).
 func TestGameInfo_GoalsSayWhichRegionsEachSeatMustJoin(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	type goal struct {
@@ -15,7 +14,6 @@ func TestGameInfo_GoalsSayWhichRegionsEachSeatMustJoin(t *testing.T) {
 		Regions [][]string `json:"regions"`
 		Of      []string   `json:"of"`
 		Touch   int        `json:"touch"`
-		Region  string     `json:"region"`
 		Piece   string     `json:"piece"`
 	}
 	for id, want := range map[string][]goal{
@@ -27,11 +25,12 @@ func TestGameInfo_GoalsSayWhichRegionsEachSeatMustJoin(t *testing.T) {
 			{Seat: 1, Type: "connect", Regions: [][]string{{"top", "bottom"}}},
 			{Seat: 2, Type: "connect", Regions: [][]string{{"left", "right"}}},
 		},
-		"breakthrough": {
-			{Seat: 1, Type: "reach", Region: "top"},
-			{Seat: 2, Type: "reach", Region: "bottom"},
+		"havannah-8": {
+			{Type: "connect", Of: []string{"corner-0", "corner-1", "corner-2", "corner-3", "corner-4", "corner-5"}, Touch: 2},
+			{Type: "connect", Of: []string{"top", "bottom", "upper-left", "lower-left", "upper-right", "lower-right"}, Touch: 3},
 		},
-		"tic-tac-toe": nil,
+		"breakthrough": nil, // its goal is to reach a row, not to connect
+		"tic-tac-toe":  nil,
 	} {
 		var info struct {
 			Goals []goal `json:"goals"`
@@ -47,9 +46,8 @@ func TestGameInfo_GoalsSayWhichRegionsEachSeatMustJoin(t *testing.T) {
 		}
 		// Every region a goal names is one of the board's.
 		for _, g := range info.Goals {
-			names := append(append([]string{g.Region}, g.Of...), goalRegionPairs(g.Regions)...)
-			for _, name := range names {
-				if _, ok := info.Board.Regions[name]; name != "" && !ok {
+			for _, name := range append(g.Of, goalRegionPairs(g.Regions)...) {
+				if _, ok := info.Board.Regions[name]; !ok {
 					t.Errorf("%s: goal %+v names %q, not a region of the board", id, g, name)
 				}
 			}

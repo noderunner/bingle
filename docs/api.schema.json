@@ -692,7 +692,7 @@
           "type": "string"
         },
         "goals": {
-          "description": "Goals are the board regions the win rules point at, as data, so that a client can show each seat's goal in its own way (ADR 0124). Only win rules of the kinds listed in GoalDTO are given; win_rules has them all.",
+          "description": "Goals are the regions of the board each seat must connect, as data, so that a client can show each seat's goal in its own way (ADR 0124). Only connect rules are given; win_rules has them all.",
           "items": {
             "$ref": "#/$defs/GoalDTO"
           },
@@ -1239,7 +1239,7 @@
       "type": "object"
     },
     "GoalDTO": {
-      "description": "GoalDTO is one win rule that names regions of the board (in board.regions). A client skips a goal whose type it does not know.",
+      "description": "GoalDTO is one connect rule: regions of the board (in board.regions) that a group of the seat's pieces must join. A client skips a goal whose type it does not know.",
       "properties": {
         "of": {
           "description": "Of and Touch are the regions of a connect goal and how many of them a group must touch, instead of Regions (Havannah's fork: 3 of the 6 sides).",
@@ -1249,10 +1249,6 @@
           "type": "array"
         },
         "piece": {
-          "type": "string"
-        },
-        "region": {
-          "description": "Region is the region a reach goal's piece must stand in.",
           "type": "string"
         },
         "regions": {
@@ -1270,14 +1266,14 @@
           "type": "integer"
         },
         "tag": {
-          "description": "Tag and Piece, when set, say which pieces count: those with the tag, or of that piece type (Tak's road pieces, Brandubh's king).",
+          "description": "Tag and Piece, when set, say which pieces count: those with the tag, or of that piece type (Tak's road pieces).",
           "type": "string"
         },
         "touch": {
           "type": "integer"
         },
         "type": {
-          "description": "Type is \"connect\" (a connected group of the seat's pieces touches both regions of a pair in Regions, or at least Touch of the regions in Of) or \"reach\" (one of the seat's pieces stands in Region).",
+          "description": "Type is \"connect\": a connected group of the seat's pieces touches both regions of a pair in Regions, or at least Touch of the regions in Of.",
           "type": "string"
         }
       },

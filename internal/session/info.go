@@ -39,9 +39,9 @@ type GameInfo struct {
 	Reserves map[string]int `json:"reserves,omitempty"`
 	Opening  *OpeningDTO    `json:"opening,omitempty"`
 	WinRules []string       `json:"win_rules,omitempty"`
-	// Goals are the board regions the win rules point at, as data, so that a
-	// client can show each seat's goal in its own way (ADR 0124). Only win
-	// rules of the kinds listed in GoalDTO are given; win_rules has them all.
+	// Goals are the regions of the board each seat must connect, as data, so
+	// that a client can show each seat's goal in its own way (ADR 0124). Only
+	// connect rules are given; win_rules has them all.
 	Goals []GoalDTO `json:"goals,omitempty"`
 	// Scores lists tallies worth showing live (e.g. Tak's flats on top).
 	Scores []ScoreDTO `json:"scores,omitempty"`
@@ -118,14 +118,14 @@ type SeatDefDTO struct {
 	Colors []string `json:"colors,omitempty"`
 }
 
-// GoalDTO is one win rule that names regions of the board (in board.regions).
-// A client skips a goal whose type it does not know.
+// GoalDTO is one connect rule: regions of the board (in board.regions) that
+// a group of the seat's pieces must join. A client skips a goal whose type it
+// does not know.
 type GoalDTO struct {
 	// Seat is the seat the goal is for; omitted, it is every seat's.
 	Seat int `json:"seat,omitempty"`
-	// Type is "connect" (a connected group of the seat's pieces touches both
-	// regions of a pair in Regions, or at least Touch of the regions in Of)
-	// or "reach" (one of the seat's pieces stands in Region).
+	// Type is "connect": a connected group of the seat's pieces touches both
+	// regions of a pair in Regions, or at least Touch of the regions in Of.
 	Type string `json:"type"`
 	// Regions are the pairs of regions to connect, any one pair winning.
 	Regions [][]string `json:"regions,omitempty"`
@@ -133,10 +133,8 @@ type GoalDTO struct {
 	// group must touch, instead of Regions (Havannah's fork: 3 of the 6 sides).
 	Of    []string `json:"of,omitempty"`
 	Touch int      `json:"touch,omitempty"`
-	// Region is the region a reach goal's piece must stand in.
-	Region string `json:"region,omitempty"`
 	// Tag and Piece, when set, say which pieces count: those with the tag,
-	// or of that piece type (Tak's road pieces, Brandubh's king).
+	// or of that piece type (Tak's road pieces).
 	Tag   string `json:"tag,omitempty"`
 	Piece string `json:"piece,omitempty"`
 }
@@ -496,8 +494,8 @@ func buildGameInfo(cg *catalog.CompiledGame) GameInfo {
 	return info
 }
 
-// goals are the connect and reach rules of a game won by declared rules, the
-// ones that win (a rule that loses is no goal).
+// goals are the connect rules of a game won by declared rules, the ones that
+// win (a rule that loses is no goal).
 func goals(cg *catalog.CompiledGame) []GoalDTO {
 	wc := cg.Definition.WinCondition
 	if wc.Type != "rules" {
@@ -505,19 +503,12 @@ func goals(cg *catalog.CompiledGame) []GoalDTO {
 	}
 	var out []GoalDTO
 	for _, r := range wc.Rules {
-		if r.Result == "lose" {
+		if r.Type != "connect" || r.Result == "lose" {
 			continue
 		}
-		g := GoalDTO{Seat: r.Seat, Type: r.Type, Tag: r.Tag, Piece: r.Piece}
-		switch r.Type {
-		case "connect":
-			g.Regions, g.Of, g.Touch = r.Regions, r.Of, r.Touch
-		case "reach":
-			g.Region = r.Region
-		default:
-			continue
-		}
-		out = append(out, g)
+		out = append(out, GoalDTO{
+			Seat: r.Seat, Type: r.Type, Regions: r.Regions, Of: r.Of, Touch: r.Touch, Tag: r.Tag, Piece: r.Piece,
+		})
 	}
 	return out
 }

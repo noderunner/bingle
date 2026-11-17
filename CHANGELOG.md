@@ -7,7 +7,7 @@ what the help window shows under *Recent changes*, so it is written for the peop
 ## 0.116.0 - 2026-11-17
 
 ### Bingle Core 0.116.0
-- Apps that play Bingle without the web page, such as a 3D client, can now tell which edges of the board each player must join, or which row a piece must reach, and show it in their own way: in Hex, that Red connects top and bottom and Blue left and right.
+- Apps that play Bingle without the web page, such as a 3D client, can now tell which edges of the board each player must join, and show it in their own way: in Hex, that Red connects top and bottom and Blue left and right.
 
 ## 0.115.1 - 2026-11-17
 
