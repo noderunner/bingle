@@ -691,6 +691,13 @@
         "family": {
           "type": "string"
         },
+        "goals": {
+          "description": "Goals are the regions of the board each seat must connect, as data, so that a client can show each seat's goal in its own way (ADR 0124). Only connect rules are given; win_rules has them all.",
+          "items": {
+            "$ref": "#/$defs/GoalDTO"
+          },
+          "type": "array"
+        },
         "guide": {
           "description": "Guide lists the tabs of the rules window when the game ships its own long-form guide; fetch the pages from /game-defs/{id}/guide.",
           "items": {
@@ -1228,6 +1235,50 @@
         "ply",
         "winner_seat",
         "draw_offer_seat"
+      ],
+      "type": "object"
+    },
+    "GoalDTO": {
+      "description": "GoalDTO is one connect rule: regions of the board (in board.regions) that a group of the seat's pieces must join. A client skips a goal whose type it does not know.",
+      "properties": {
+        "of": {
+          "description": "Of and Touch are the regions of a connect goal and how many of them a group must touch, instead of Regions (Havannah's fork: 3 of the 6 sides).",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "piece": {
+          "type": "string"
+        },
+        "regions": {
+          "description": "Regions are the pairs of regions to connect, any one pair winning.",
+          "items": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "type": "array"
+        },
+        "seat": {
+          "description": "Seat is the seat the goal is for; omitted, it is every seat's.",
+          "type": "integer"
+        },
+        "tag": {
+          "description": "Tag and Piece, when set, say which pieces count: those with the tag, or of that piece type (Tak's road pieces).",
+          "type": "string"
+        },
+        "touch": {
+          "type": "integer"
+        },
+        "type": {
+          "description": "Type is \"connect\": a connected group of the seat's pieces touches both regions of a pair in Regions, or at least Touch of the regions in Of.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type"
       ],
       "type": "object"
     },
@@ -2995,9 +3046,9 @@
   },
   "$id": "https://github.com/noderunner/bingle/docs/api.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "description": "The requests, responses and WebSocket events of bingle's API, version 1.1.0. Generated from the Go types of the server: do not edit. Objects let unknown fields through: a client ignores those it does not know.",
+  "description": "The requests, responses and WebSocket events of bingle's API, version 1.2.0. Generated from the Go types of the server: do not edit. Objects let unknown fields through: a client ignores those it does not know.",
   "title": "Bingle API messages",
-  "x-api-version": "1.1.0",
+  "x-api-version": "1.2.0",
   "x-endpoints": {
     "GET /api": {
       "response": {
