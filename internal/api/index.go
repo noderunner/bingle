@@ -68,6 +68,7 @@ var indexEndpoints = []indexEndpoint{
 	{"POST", "/api/games/{code}/moves", "play a move: {player_name, notation}"},
 	{"GET", "/api/games/{code}/moves", "the moves played so far"},
 	{"POST", "/api/games/{code}/resign", "resign: {player_name}"},
+	{"POST", "/api/bot-matches", "two built-in bots play each other, to watch: {game_def_id, bot_a, bot_b, delay_ms?}"},
 }
 
 // handleIndex implements GET / (GET /api): where to start.

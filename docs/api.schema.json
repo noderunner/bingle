@@ -122,6 +122,51 @@
       ],
       "type": "object"
     },
+    "BotMatchRequest": {
+      "description": "botMatchRequest is POST /bot-matches' body: two built-in bots to play each other in a two-player game.",
+      "properties": {
+        "bot_a": {
+          "description": "BotA is the bot that plays seat 1: a bot's id from GET /bots.",
+          "type": "string"
+        },
+        "bot_b": {
+          "description": "BotB is the bot that plays seat 2, also from GET /bots; it may be the same bot as BotA.",
+          "type": "string"
+        },
+        "delay_ms": {
+          "description": "DelayMS is the pause between moves in milliseconds: 0 or omitted means 700, and a value outside 150..10000 is brought to the nearer end.",
+          "type": "integer"
+        },
+        "game_def_id": {
+          "description": "GameDefID is the game to play, from GET /game-defs; it must have two seats.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "game_def_id",
+        "bot_a",
+        "bot_b"
+      ],
+      "type": "object"
+    },
+    "BotMatchResponse": {
+      "description": "botMatchResponse is POST /bot-matches' 200 response body: the room the bots play in, to watch as a spectator over /ws/{code}.",
+      "properties": {
+        "room_code": {
+          "description": "RoomCode is the new room's code.",
+          "type": "string"
+        },
+        "status": {
+          "description": "Status is the game's status: \"active\", since the bots start at once.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "room_code",
+        "status"
+      ],
+      "type": "object"
+    },
     "CardBackDef": {
       "description": "CardBackDef is the back of a card.",
       "properties": {
@@ -2950,9 +2995,9 @@
   },
   "$id": "https://github.com/noderunner/bingle/docs/api.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "description": "The requests, responses and WebSocket events of bingle's API, version 1.0.0. Generated from the Go types of the server: do not edit. Objects let unknown fields through: a client ignores those it does not know.",
+  "description": "The requests, responses and WebSocket events of bingle's API, version 1.1.0. Generated from the Go types of the server: do not edit. Objects let unknown fields through: a client ignores those it does not know.",
   "title": "Bingle API messages",
-  "x-api-version": "1.0.0",
+  "x-api-version": "1.1.0",
   "x-endpoints": {
     "GET /api": {
       "response": {
@@ -3014,6 +3059,14 @@
     "GET /api/games/{code}/state": {
       "response": {
         "$ref": "#/$defs/GetGameStateResponse"
+      }
+    },
+    "POST /api/bot-matches": {
+      "request": {
+        "$ref": "#/$defs/BotMatchRequest"
+      },
+      "response": {
+        "$ref": "#/$defs/BotMatchResponse"
       }
     },
     "POST /api/games": {
