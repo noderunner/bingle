@@ -39,6 +39,10 @@ type GameInfo struct {
 	Reserves map[string]int `json:"reserves,omitempty"`
 	Opening  *OpeningDTO    `json:"opening,omitempty"`
 	WinRules []string       `json:"win_rules,omitempty"`
+	// Goals are the board regions the win rules point at, as data, so that a
+	// client can show each seat's goal in its own way (ADR 0124). Only win
+	// rules of the kinds listed in GoalDTO are given; win_rules has them all.
+	Goals []GoalDTO `json:"goals,omitempty"`
 	// Scores lists tallies worth showing live (e.g. Tak's flats on top).
 	Scores []ScoreDTO `json:"scores,omitempty"`
 	Family string     `json:"family"`
@@ -112,6 +116,29 @@ type SeatDefDTO struct {
 	// Colors is every colour the seat plays, when it plays several (ADR
 	// 0117): a piece in any of them is the seat's.
 	Colors []string `json:"colors,omitempty"`
+}
+
+// GoalDTO is one win rule that names regions of the board (in board.regions).
+// A client skips a goal whose type it does not know.
+type GoalDTO struct {
+	// Seat is the seat the goal is for; omitted, it is every seat's.
+	Seat int `json:"seat,omitempty"`
+	// Type is "connect" (a connected group of the seat's pieces touches both
+	// regions of a pair in Regions, or at least Touch of the regions in Of)
+	// or "reach" (one of the seat's pieces stands in Region).
+	Type string `json:"type"`
+	// Regions are the pairs of regions to connect, any one pair winning.
+	Regions [][]string `json:"regions,omitempty"`
+	// Of and Touch are the regions of a connect goal and how many of them a
+	// group must touch, instead of Regions (Havannah's fork: 3 of the 6 sides).
+	Of    []string `json:"of,omitempty"`
+	Touch int      `json:"touch,omitempty"`
+	// Region is the region a reach goal's piece must stand in.
+	Region string `json:"region,omitempty"`
+	// Tag and Piece, when set, say which pieces count: those with the tag,
+	// or of that piece type (Tak's road pieces, Brandubh's king).
+	Tag   string `json:"tag,omitempty"`
+	Piece string `json:"piece,omitempty"`
 }
 
 // BoardDTO describes the board graph and how to draw it.
@@ -432,6 +459,7 @@ func buildGameInfo(cg *catalog.CompiledGame) GameInfo {
 
 	info.Cards = cardsDTO(cg)
 	info.WinRules = describeWinRules(cg)
+	info.Goals = goals(cg)
 	info.Family = familyOf(def.Family, def.ID)
 	info.Options = def.Options
 	info.DefaultClockMinutes = def.DefaultClockMinutes
@@ -466,6 +494,32 @@ func buildGameInfo(cg *catalog.CompiledGame) GameInfo {
 		}
 	}
 	return info
+}
+
+// goals are the connect and reach rules of a game won by declared rules, the
+// ones that win (a rule that loses is no goal).
+func goals(cg *catalog.CompiledGame) []GoalDTO {
+	wc := cg.Definition.WinCondition
+	if wc.Type != "rules" {
+		return nil
+	}
+	var out []GoalDTO
+	for _, r := range wc.Rules {
+		if r.Result == "lose" {
+			continue
+		}
+		g := GoalDTO{Seat: r.Seat, Type: r.Type, Tag: r.Tag, Piece: r.Piece}
+		switch r.Type {
+		case "connect":
+			g.Regions, g.Of, g.Touch = r.Regions, r.Of, r.Touch
+		case "reach":
+			g.Region = r.Region
+		default:
+			continue
+		}
+		out = append(out, g)
+	}
+	return out
 }
 
 func describeWinRules(cg *catalog.CompiledGame) []string {

@@ -4,6 +4,11 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.116.0 - 2026-11-17
+
+### Bingle Core 0.116.0
+- Apps that play Bingle without the web page, such as a 3D client, can now tell which edges of the board each player must join, or which row a piece must reach, and show it in their own way: in Hex, that Red connects top and bottom and Blue left and right.
+
 ## 0.115.1 - 2026-11-17
 
 ### Bingle Core 0.115.1
