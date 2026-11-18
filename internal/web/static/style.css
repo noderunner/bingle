@@ -1096,6 +1096,7 @@ dialog.help-dialog li { margin: 0.35rem 0; }
 .stat-fill { fill: currentColor; }
 .stat-line { fill: none; stroke: currentColor; stroke-width: 2; }
 .stat-cut { fill: var(--surface); }
+#seat-moves strong { font-variant-numeric: tabular-nums; }
 .stat-power { color: #c89200; }
 .stat-growth { color: #5f9e3a; }
 .stat-doom { color: #b0443a; }
@@ -1649,7 +1650,6 @@ button.sol-stock { cursor: pointer; }
 .sol-target .sol-card { cursor: pointer; }
 .sol-stock .pile-count, .sol-ball .pile-count { position: absolute; right: 3px; bottom: 3px; }
 .sol-done { align-self: center; }
-.sol-moves { margin: -4px 0 -6px; text-align: right; font-variant-numeric: tabular-nums; }
 .sol-colour { position: absolute; top: 2%; right: 7%; font: 700 calc(var(--cw, 66px) * 0.24) / 1 system-ui, sans-serif; background: #fffdf6; border-radius: 3px; padding: 0 1px; }
 .sol-ghost { position: fixed; z-index: 50; pointer-events: none; width: var(--cw); }
 .sol-ghost .pcard { box-shadow: 0 10px 24px rgba(0,0,0,.45); }

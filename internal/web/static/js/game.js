@@ -3520,6 +3520,11 @@ function seatStrip(seat) {
 			stats.append(h("span", { class: "score counter", title, "data-counter": c.id }, `${c.label}: `, h("strong", {}, String(c.value)), c.show_max ? `/${c.max}` : null, pips));
 		}
 	}
+	// A game of patience counts its moves, a take-back among them: the fewer a game is won in, the better (ADR 0135).
+	if (rv && typeof rv.moves === "number") {
+		const title = `${rv.moves === 1 ? "1 move" : `${rv.moves} moves`} so far: the fewer to win, the better`;
+		head.append(h("span", { class: "score counter stat", id: "seat-moves", title, "data-counter": "moves", "aria-label": title }, statIcon("moves", "Moves", 15), h("strong", {}, String(rv.moves))));
+	}
 	strip.append(head);
 	if (sv && sv.taken && sv.taken.length) {
 		const stones = h("div", { class: "taken-stones", "aria-label": `Stones captured: ${sv.taken.join(", ")}` });
