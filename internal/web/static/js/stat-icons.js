@@ -1,5 +1,5 @@
 // Pictograms of the counters every game's seats may show (ADR 0124): the cards
-// in a hand. A game's page script draws its own beside them (statIcon:
+// in a hand, and the moves a game of patience has taken (ADR 0135). A game's page script draws its own beside them (statIcon:
 // Cthulhu Wars' Power, Doom, Gates and the rest).
 
 /** Path data of the pictograms, in a 24 × 24 box: fill, line and cut paths. */
@@ -7,7 +7,12 @@ const STAT_ICONS = {
 	cards: {
 		fill: ["M8.5 5.5h9a1.5 1.5 0 0 1 1.5 1.5v12a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 7 19V7a1.5 1.5 0 0 1 1.5-1.5z"],
 		line: ["M5.2 16.6A1.5 1.5 0 0 1 4 15.1V5A1.5 1.5 0 0 1 5.5 3.5h8.1A1.5 1.5 0 0 1 15 5"],
-	}
+	},
+	// A card lifted over to another: one move.
+	moves: {
+		fill: ["M14.8 7.2h6.2l-3.1 4.3z", "M16 12.5h4a1.5 1.5 0 0 1 1.5 1.5v6.5A1.5 1.5 0 0 1 20 22h-4a1.5 1.5 0 0 1-1.5-1.5V14a1.5 1.5 0 0 1 1.5-1.5z"],
+		line: ["M4 10h5a1.5 1.5 0 0 1 1.5 1.5v8A1.5 1.5 0 0 1 9 21H4a1.5 1.5 0 0 1-1.5-1.5v-8A1.5 1.5 0 0 1 4 10z", "M6.5 7C9 2.5 15.5 2 17.8 7.6"],
+	},
 };
 
 /** A counter's pictogram, or null for one this file has none of. */

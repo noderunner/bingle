@@ -226,10 +226,11 @@ func TestWebSolitaire_ADrawFromTheStockStands(t *testing.T) {
 	defer cancel()
 	openGameAs(t, ctx, baseURL, room, "solitaire", "Ana")
 	waitJS(t, ctx, "the table", `document.querySelector('#sol-stock')`, 15*time.Second)
-	waitJS(t, ctx, "no moves yet", `document.querySelector('#sol-moves').textContent === '0 moves'`, 10*time.Second)
+	waitJS(t, ctx, "no moves yet", `(function () { var m = document.querySelector('.players-card #seat-moves[data-counter="moves"]'); return !!m && !!m.querySelector('svg.stat-moves') && m.textContent === '0'; })()`, 10*time.Second)
 	clickSel(t, ctx, `#sol-stock`)
 	waitJS(t, ctx, "the waste", `document.querySelectorAll('.sol-waste .pcard.face').length === 1`, 10*time.Second)
-	waitJS(t, ctx, "the counter", `document.querySelector('#sol-moves').textContent === '1 move'`, 10*time.Second)
+	waitJS(t, ctx, "the counter", `document.querySelector('#seat-moves').textContent === '1' && document.querySelector('#sol-moves') === null`, 10*time.Second)
+	shot(t, ctx, "solitaire-moves", func(b *[]byte) error { return chromedp.Run(ctx, chromedp.FullScreenshot(b, 90)) })
 	waitJS(t, ctx, "no Back", `(function () { var b = document.querySelector('#back'); return !b || b.hidden || b.disabled || b.offsetParent === null; })()`, 10*time.Second)
 	if got := moveCount(t, baseURL, room); got != 1 {
 		t.Errorf("%d moves after the draw, want 1", got)

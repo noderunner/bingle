@@ -4,6 +4,11 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.117.1 - 2026-11-18
+
+### Bingle Core 0.117.1
+- In Solitaire, Spider and FreeCell the move counter has moved from above the table to your card in the players panel, beside your name, with a small picture of a card being moved.
+
 ## 0.117.0 - 2026-11-18
 
 ### Bingle Core 0.117.0

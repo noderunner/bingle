@@ -179,10 +179,7 @@ function patience(ctx) {
 	top.append(left, right);
 	const cols = h("div", { class: "sol-columns", style: `--n: ${view.columns}` });
 	for (let i = 1; i <= view.columns; i++) cols.append(column(ctx, i, zones.get(`t${i}`)));
-	const table = h("div", { class: "card-table sol-table", id: "card-table", "data-mode": view.solitaire, style: `--n: ${view.columns}` }, top, cols);
-	// The moves so far: the fewer a game is won in, the better (ADR 0135). A preview has none.
-	if (typeof view.moves === "number") table.prepend(h("div", { class: "sol-moves small muted", id: "sol-moves" }, view.moves === 1 ? "1 move" : `${view.moves} moves`));
-	return table;
+	return h("div", { class: "card-table sol-table", id: "card-table", "data-mode": view.solitaire, style: `--n: ${view.columns}` }, top, cols);
 }
 
 // ---- dragging -----------------------------------------------------------------
