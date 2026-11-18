@@ -4229,6 +4229,8 @@ function cardContext(v) {
 		},
 		picked: () => (actingSeat() ? activeBuilder().gestures.map((st) => st.value) : []),
 		tutorialGestures: () => (S.tut && isLive() ? tutorialExpected() : null),
+		// The live position, not one looked back at: a game won is shown only as it happens.
+		live: isLive() && !inAnalysis(),
 		redraw: () => render(),
 		playsList: () => (actingSeat() ? activeBuilder().moves.map((m) => m.notation) : []),
 		prev: S.ctPrev,

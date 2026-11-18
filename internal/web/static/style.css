@@ -1656,6 +1656,27 @@ button.sol-stock { cursor: pointer; }
 .sol-target .sol-card { cursor: pointer; }
 .sol-stock .pile-count, .sol-ball .pile-count { position: absolute; right: 3px; bottom: 3px; }
 .sol-done { align-self: center; }
+/* A game won (ADR 0137): the cards fly home, the foundations fill as they land, then the picture. */
+.sol-flyer { position: fixed; z-index: 60; pointer-events: none; }
+.sol-flyer .pcard { box-shadow: 0 8px 20px rgba(0,0,0,.4); }
+.sol-homing .sol-slot[data-pile^="f"] > * { visibility: hidden; }
+.sol-won .sol-slot[data-pile^="f"] { animation: sol-home-glow 0.9s ease-out; border-radius: 8px; }
+@keyframes sol-home-glow { 0% { box-shadow: 0 0 0 0 rgba(255, 214, 102, .9); } 100% { box-shadow: 0 0 0 18px rgba(255, 214, 102, 0); } }
+.victory { position: fixed; inset: 0; z-index: 70; pointer-events: none; opacity: 0; overflow: hidden; }
+.victory-classic { background: radial-gradient(ellipse at 50% 40%, rgba(10, 14, 40, .55), rgba(5, 6, 20, .8)); }
+.victory-ancient { background: radial-gradient(ellipse at 50% 60%, rgba(120, 70, 10, .45), rgba(14, 45, 84, .82)); }
+.victory-amphibians { background: linear-gradient(rgba(30, 90, 70, .35), rgba(12, 60, 56, .8)); }
+.victory-fantasy { background: radial-gradient(ellipse at 50% 50%, rgba(80, 30, 120, .5), rgba(20, 8, 40, .85)); }
+.victory-lovecraftian { background: radial-gradient(ellipse at 50% 42%, rgba(20, 60, 45, .55), rgba(2, 8, 6, .92)); }
+.victory-atomic { background: radial-gradient(ellipse at 50% 45%, rgba(31, 58, 68, .6), rgba(8, 16, 30, .88)); }
+.victory-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.victory-sprites { position: absolute; inset: 0; }
+.victory-sprite { position: absolute; left: 0; top: 0; will-change: transform; filter: drop-shadow(0 3px 6px rgba(0,0,0,.45)); }
+.victory-banner { position: absolute; left: 0; right: 0; top: 14%; text-align: center; font: 800 clamp(2rem, 7vw, 4.5rem) / 1.1 system-ui, sans-serif; color: #fff7e0; text-shadow: 0 3px 18px rgba(0,0,0,.6); animation: victory-banner 0.7s cubic-bezier(.2, 1.6, .4, 1) both; padding: 0 16px; }
+.victory-lovecraftian .victory-banner { color: #cfe8d6; font-family: Georgia, serif; letter-spacing: .04em; }
+.victory-ancient .victory-banner { color: #ffe39a; font-family: Georgia, serif; }
+.victory-atomic .victory-banner { color: #ffd23f; font-style: italic; }
+@keyframes victory-banner { from { transform: scale(.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 .sol-colour { position: absolute; top: 2%; right: 7%; font: 700 calc(var(--cw, 66px) * 0.24) / 1 system-ui, sans-serif; background: #fffdf6; border-radius: 3px; padding: 0 1px; }
 .sol-ghost { position: fixed; z-index: 50; pointer-events: none; width: var(--cw); }
 .sol-ghost .pcard { box-shadow: 0 10px 24px rgba(0,0,0,.45); }
