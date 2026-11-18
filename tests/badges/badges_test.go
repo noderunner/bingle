@@ -100,6 +100,8 @@ func TestABadgeBuiltWronglyIsRefused(t *testing.T) {
 		}, false, "games against bots add to no count"},
 		"family in a game": {func(b *dsl.BadgeDef) { b.Game = &dsl.BadgeGame{Family: "hex"} }, false, "already its family's"},
 		"empty seat":       {func(b *dsl.BadgeDef) { b.Seat = &dsl.BadgeSeat{} }, false, "faction or a side"},
+		"moves in play":    {func(b *dsl.BadgeDef) { b.Moves = &dsl.BadgeMoves{AtMost: 100} }, false, "moves is known only at the end"},
+		"no moves":         {func(b *dsl.BadgeDef) { b.When, b.Moves = "end", &dsl.BadgeMoves{} }, false, "moves.at_most must be at least 1"},
 	} {
 		b := ok()
 		c.edit(&b)

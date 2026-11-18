@@ -33,6 +33,15 @@ type BadgeDef struct {
 	Seat *BadgeSeat `json:"seat,omitempty"`
 	// Game limits the badge to a family (a platform badge) or a variant.
 	Game *BadgeGame `json:"game,omitempty"`
+	// Moves limits the badge to a game that ended within so many moves.
+	Moves *BadgeMoves `json:"moves,omitempty"`
+}
+
+// BadgeMoves is the most moves a game may have ended in, every seat's
+// counted (its plies): for a game of patience, the moves it was won in
+// (ADR 0135). A move taken back is not counted.
+type BadgeMoves struct {
+	AtMost int `json:"at_most"`
 }
 
 // BadgeCount is a fact about the earning seat, at least AtLeast times (or at

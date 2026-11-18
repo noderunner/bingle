@@ -151,6 +151,9 @@ func (m *Manager) earns(gb gameBadge, eg played, seat int, stats map[string]int)
 			return false
 		}
 	}
+	if mv := b.Moves; mv != nil && eg.game.Ply > mv.AtMost {
+		return false
+	}
 	// A game's badge counts in its family, and a platform badge across
 	// every family unless it names one.
 	oneFamily := gb.own || (b.Game != nil && b.Game.Family != "")

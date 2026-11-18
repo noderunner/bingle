@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/engine/state"
@@ -95,13 +96,34 @@ func (m *Manager) countGame(ctx context.Context, game store.Game) error {
 	if err != nil {
 		return err
 	}
-	written, err := m.store.RecordCounts(ctx, game.ID, counts, awards, m.now())
+	var scores []store.Score
+	if players {
+		scores = scoresOf(compiled, game, at.accounts, m.now())
+	}
+	written, err := m.store.RecordCounts(ctx, game.ID, counts, scores, awards, m.now())
 	if err != nil {
 		return err
 	}
 	m.mx.GameCount(metrics.CountCounted)
 	m.announce(ctx, written)
 	return nil
+}
+
+// scoresOf is the scores a finished game of people only gives the accounts at
+// its seats: in a game scored by its moves (ADR 0135), each winner's is the
+// moves the game was won in.
+func scoresOf(compiled *catalog.CompiledGame, game store.Game, accounts map[int]int64, now time.Time) []store.Score {
+	if !state.ScoredByMoves(compiled) {
+		return nil
+	}
+	var out []store.Score
+	for seat, account := range accounts {
+		if outcomeOf(game, seat) != "won" {
+			continue
+		}
+		out = append(out, store.Score{GameID: game.ID, AccountID: account, GameDefID: game.GameDefID, Score: game.Ply, RoomCode: game.RoomCode, ScoredAt: now})
+	}
+	return out
 }
 
 // seatsOf is who held each seat of a game. ok is false unless every seat is

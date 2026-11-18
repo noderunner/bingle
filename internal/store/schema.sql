@@ -580,3 +580,20 @@ CREATE TABLE IF NOT EXISTS badge_awards (
 );
 -- The awards still waiting for their game to end before everyone sees them.
 CREATE INDEX IF NOT EXISTS idx_badge_awards_hidden ON badge_awards(game_id) WHERE visible_at IS NULL;
+
+-- A score an account made in a game that keeps one (ADR 0135): the moves a
+-- game of patience was won in, the fewer the better. One row per game and
+-- account, written with the game's counts; the game is kept by id without a
+-- reference, since retention may delete it, so a best score outlives it.
+CREATE TABLE IF NOT EXISTS scores (
+    game_id     INTEGER NOT NULL,
+    account_id  INTEGER NOT NULL REFERENCES accounts(id),
+    game_def_id TEXT NOT NULL,
+    score       INTEGER NOT NULL,
+    room_code   TEXT NOT NULL DEFAULT '',
+    scored_at   TEXT NOT NULL,
+    PRIMARY KEY (game_id, account_id)
+);
+-- An account's best in one game, and a game's best of all.
+CREATE INDEX IF NOT EXISTS idx_scores_best ON scores(account_id, game_def_id, score);
+CREATE INDEX IF NOT EXISTS idx_scores_game ON scores(game_def_id, score);

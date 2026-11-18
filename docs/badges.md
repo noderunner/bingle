@@ -30,6 +30,7 @@ say needs a new part, by ADR.
 | `bot` | `{at_least: <bot id>}`: a bot badge, below |
 | `seat` | `{faction}` (the faction's key in the game) or `{side}` (the seat's number in the definition) |
 | `game` | `{family}` (a platform badge only) or `{variant}` (a game's id) |
+| `moves` | `{at_most: N}`: the game ended within *N* moves, every seat's counted (its plies); a move taken back is not counted. Solitaire's badges for a quick win use it ([ADR 0135](decisions/0135-patience-is-scored-by-its-moves.md)) |
 
 A badge may `count` only the facts its game declares (`facts` in the definition, see
 [dsl.md](dsl.md)), or the platform's results, `played`, `won`, `drawn` and `lost`, with
@@ -37,7 +38,7 @@ A badge may `count` only the facts its game declares (`facts` in the definition,
 across games is per family for a game's badge or a platform badge that names a family, and across
 every family otherwise.
 
-`won`, `rated`, `distinct`, `bot`, a count across games and `at_most` are known only at the end, so
+`won`, `rated`, `distinct`, `bot`, `moves`, a count across games and `at_most` are known only at the end, so
 they need `when: end`: until then, the fact could still come. *Win without ever holding more than two
 Gates in a Doom phase* is `won: true` with `count: {fact: doom_gate, at_most: 2, within: [doom_phase,
 round_start]}`. The catalog refuses a badge that breaks a rule here, so a mistake stops the server
@@ -84,6 +85,10 @@ keeps hidden. Its award is written at once and shown to its holder, and to every
 the game ends: when the results worker counts the game, or skips it.
 
 ## Where awards are kept
+
+A game of patience also keeps a score (ADR 0135): when an account wins one, the results worker writes
+the moves it took to `scores` (one row per game and account, kept by id after retention deletes the
+game) in the same transaction as the counts, and `store.BestScore` is the fewest in a game.
 
 `badge_awards`, one row per account, badge and way it was earned (`against`: `people` or `bots`),
 never changed but to become visible (`visible_at`). A bot badge's awards written before the column

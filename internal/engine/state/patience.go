@@ -564,12 +564,26 @@ func patienceOutcome(game *catalog.CompiledGame, st *BoardState) Outcome {
 	detail := fmt.Sprintf("%d of %d cards home", e.homeCount(), game.Patience.Total)
 	if e.homeCount() == game.Patience.Total {
 		w := game.Definition.Seats[0].Seat
-		return Outcome{Ended: true, Winner: &w, Reason: patienceCleared, Detail: detail}
+		return Outcome{Ended: true, Winner: &w, Reason: patienceCleared, Detail: fmt.Sprintf("%s in %s", detail, movesWord(st.Ply()))}
 	}
 	if len(e.legal()) == 0 {
 		return Outcome{Ended: true, Reason: patienceStuck, Detail: detail}
 	}
 	return Outcome{}
+}
+
+// ScoredByMoves says a game keeps a score of the moves it was won in, the
+// fewer the better (ADR 0135): a game of patience. Each move counts, a draw, a
+// deal and a turn of the waste included; a move taken back does not.
+func ScoredByMoves(game *catalog.CompiledGame) bool {
+	return game != nil && game.Patience != nil && game.Definition.WinCondition.Type == "patience"
+}
+
+func movesWord(n int) string {
+	if n == 1 {
+		return "1 move"
+	}
+	return fmt.Sprintf("%d moves", n)
 }
 
 // formatPatience writes a patience move in Solitaire's notation.

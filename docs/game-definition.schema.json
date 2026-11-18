@@ -236,6 +236,14 @@
           "description": "ID names the badge: lower case letters, digits and dashes. A game's badge is known as family.id.",
           "type": "string"
         },
+        "moves": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/BadgeMoves"
+            }
+          ],
+          "description": "Moves limits the badge to a game that ended within so many moves."
+        },
         "name": {
           "description": "Name and Description are what a player reads.",
           "type": "string"
@@ -286,6 +294,16 @@
         },
         "variant": {
           "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "BadgeMoves": {
+      "additionalProperties": false,
+      "description": "BadgeMoves is the most moves a game may have ended in, every seat's counted (its plies): for a game of patience, the moves it was won in (ADR 0135). A move taken back is not counted.",
+      "properties": {
+        "at_most": {
+          "type": "integer"
         }
       },
       "type": "object"
