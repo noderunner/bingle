@@ -162,6 +162,8 @@ async function updateBlurb() {
 		if (select.value !== id) return;
 		renderSeatChoices(info);
 		renderSetupPreview(id, info);
+		offerDealHistory(info);
+		if (!document.getElementById("setup-deals").hidden) renderSetupDeals();
 	} catch (_) {
 		/* the default First/Second choice stays */
 	}
@@ -182,7 +184,7 @@ function openSetup() {
 
 // ---- the games of the chosen game ---------------------------------------------
 
-const SETUP_TABS = { new: "setup-layout", tutorials: "setup-tutorials-panel", practice: "setup-practice", active: "setup-active", tester: "setup-tester" };
+const SETUP_TABS = { new: "setup-layout", tutorials: "setup-tutorials-panel", practice: "setup-practice", active: "setup-active", deals: "setup-deals", tester: "setup-tester" };
 
 /** Which tab of the setup shows. */
 function showSetupTab(which) {
@@ -191,7 +193,66 @@ function showSetupTab(which) {
 		document.getElementById(panel).hidden = id !== which;
 	}
 	if (which === "active") renderSetupActive();
+	if (which === "deals") renderSetupDeals();
 	if (which === "tester") renderTester();
+}
+
+/**
+ * "Deal History" is offered for a game dealt from a seed, to a signed-in
+ * player: their finished games of the chosen variant, each with its seed and
+ * score (ADR 0136).
+ */
+function offerDealHistory(info) {
+	offerSetupTab("deals", false);
+	if (!info.seeded) return;
+	whoAmI().then((me) => {
+		if (document.getElementById("game_def_id").value === info.id) offerSetupTab("deals", me.kind === "account");
+	});
+}
+
+async function renderSetupDeals() {
+	const list = document.getElementById("setup-deals-list");
+	const table = document.getElementById("setup-deals-table");
+	const empty = document.getElementById("setup-deals-empty");
+	const id = document.getElementById("game_def_id").value;
+	let deals = [];
+	try {
+		deals = (await api.ownDeals(id)).deals || [];
+	} catch (_) {
+		/* an empty list says the same */
+	}
+	// Another game may have been chosen while the list was on its way.
+	if (document.getElementById("game_def_id").value !== id) return;
+	clear(list);
+	for (const d of deals) {
+		const seed = h(
+			"button",
+			{
+				type: "button",
+				class: "deal-seed",
+				"data-seed": d.seed,
+				title: "Deal it again: this fills in Deal on Create Game",
+				onclick: () => {
+					document.getElementById("seed").value = d.seed;
+					showSetupTab("new");
+				},
+			},
+			d.seed
+		);
+		const score = d.won ? (d.moves === 1 ? "1 move" : `${d.moves} moves`) : "Not won";
+		const played = d.ended_at ? new Date(d.ended_at.replace(" ", "T") + (/[Zz+]/.test(d.ended_at) ? "" : "Z")).toLocaleDateString() : "";
+		list.append(
+			h(
+				"tr",
+				{ "data-room": d.room_code },
+				h("td", {}, seed),
+				h("td", { class: "deal-score" }, score, d.chosen ? h("span", { class: "muted small", title: "A deal you chose keeps no best score" }, " (chosen)") : null),
+				h("td", {}, h("a", { href: "/game/" + d.room_code }, played || "the game"))
+			)
+		);
+	}
+	table.hidden = deals.length === 0;
+	empty.hidden = deals.length > 0;
 }
 
 let testerShown = false;

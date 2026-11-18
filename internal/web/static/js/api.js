@@ -126,6 +126,7 @@ function codeBody(typed) {
 export const api = {
 	// Accounts (ADR 0068).
 	me: () => call("/auth/me"),
+	ownDeals: (gameDefID) => call(`/api/me/deals?game_def_id=${enc(gameDefID)}`),
 	login: (handle, password) => call("/auth/login", { method: "POST", body: { handle, password } }),
 	logout: () => call("/auth/logout", { method: "POST" }),
 	signupWithContact: (contactID, contactSecret, handle, password) =>

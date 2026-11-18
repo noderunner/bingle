@@ -46,6 +46,7 @@
 						<button type="button" role="tab" class="tab" id="setup-tab-tutorials" aria-controls="setup-tutorials-panel" aria-selected="false" hidden>Tutorials</button>
 						<button type="button" role="tab" class="tab" id="setup-tab-practice" aria-controls="setup-practice" aria-selected="false" hidden>Practice Batches</button>
 						<button type="button" role="tab" class="tab" id="setup-tab-active" aria-controls="setup-active" aria-selected="false">Active Games</button>
+						<button type="button" role="tab" class="tab" id="setup-tab-deals" aria-controls="setup-deals" aria-selected="false" hidden>Deal History</button>
 						<button type="button" role="tab" class="tab" id="setup-tab-tester" aria-controls="setup-tester" aria-selected="false" hidden>Animation Tester</button>
 					</div>
 					<div role="tabpanel" id="setup-tutorials-panel" aria-labelledby="setup-tab-tutorials" hidden>
@@ -60,6 +61,14 @@
 		</section>
 					</div>
 					<div role="tabpanel" id="setup-tester" aria-labelledby="setup-tab-tester" hidden></div>
+					<div role="tabpanel" id="setup-deals" aria-labelledby="setup-tab-deals" hidden>
+						<table class="data deal-history" id="setup-deals-table" hidden>
+							<thead><tr><th scope="col">Seed</th><th scope="col">Score</th><th scope="col">Played</th></tr></thead>
+							<tbody id="setup-deals-list"></tbody>
+						</table>
+						<p class="muted" id="setup-deals-empty" hidden>No finished games of this one yet.</p>
+						<p class="muted small">The score is the moves a won game took, the fewer the better. Click a seed to deal it again.</p>
+					</div>
 					<div role="tabpanel" id="setup-active" aria-labelledby="setup-tab-active" hidden>
 						<ul class="my-games" id="setup-active-list"></ul>
 						<p class="muted" id="setup-active-empty" hidden>No games of this one are going just now.</p>

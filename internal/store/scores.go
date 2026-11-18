@@ -51,3 +51,42 @@ func (s *Store) BestScore(ctx context.Context, accountID int64, gameDefID string
 	sc.ScoredAt, _ = time.Parse(time.RFC3339Nano, at)
 	return sc, true, nil
 }
+
+// Deal is one finished game of patience an account played, for its deal
+// history (ADR 0136): the seed, how it ended and the position it ended in.
+type Deal struct {
+	RoomCode    string
+	Seed        string
+	StartChosen bool
+	Won         bool
+	BoardState  string
+	Ply         int
+	EndedAt     string
+}
+
+// AccountDeals lists the finished games of gameDefID that accountID played
+// and that have a seed, the latest first, at most limit of them.
+func (s *Store) AccountDeals(ctx context.Context, accountID int64, gameDefID string, limit int) ([]Deal, error) {
+	rows, err := s.query(ctx, "AccountDeals",
+		`SELECT DISTINCT g.id, g.room_code, g.seed, g.start_chosen, COALESCE(g.winner_seat = p.seat, 0), g.board_state, g.ply, g.updated_at
+		 FROM games g JOIN players p ON p.game_id = g.id JOIN principals pr ON pr.id = p.principal_id
+		 WHERE pr.account_id = ? AND pr.kind = ? AND g.game_def_id = ? AND g.status = 'finished' AND g.seed != '' AND g.tutorial = ''
+		 ORDER BY g.updated_at DESC, g.id DESC LIMIT ?`,
+		accountID, KindAccount, gameDefID, limit)
+	if err != nil {
+		return nil, fmt.Errorf("listing the deals of account_id=%d in %s: %w", accountID, gameDefID, err)
+	}
+	defer func() { _ = rows.Close() }()
+	out := []Deal{}
+	for rows.Next() {
+		var d Deal
+		var id int64
+		var chosen, won int
+		if err := rows.Scan(&id, &d.RoomCode, &d.Seed, &chosen, &won, &d.BoardState, &d.Ply, &d.EndedAt); err != nil {
+			return nil, err
+		}
+		d.StartChosen, d.Won = chosen != 0, won != 0
+		out = append(out, d)
+	}
+	return out, rows.Err()
+}

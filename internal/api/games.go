@@ -276,8 +276,7 @@ type getGameResponse struct {
 	Tutorial string `json:"tutorial,omitempty"`
 
 	// Seed is what a game of patience was dealt from, to play the deal again
-	// (POST /games: "seed"). It is sent once the game is over, or from the
-	// start when the player chose it. StartChosen says the player chose where
+	// (POST /games: "seed"), from the start. StartChosen says the player chose where
 	// the game starts (a seed or a position): it keeps no best score and earns
 	// no quick-win badge.
 	Seed        string `json:"seed,omitempty"`
@@ -683,6 +682,30 @@ func (h *handlers) handleOwnGames(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Cache-Control", "no-store")
 	writeJSON(w, http.StatusOK, map[string]any{"games": games})
+}
+
+// ownDealsResponse is GET /me/deals' 200 response body.
+type ownDealsResponse struct {
+	// Deals are the asker's finished games of one game of patience, the
+	// latest first: the seed each was dealt from and how it went.
+	Deals []session.DealRecord `json:"deals"`
+}
+
+// handleOwnDeals implements GET /me/deals?game_def_id=: a signed-in
+// account's deal history in one game of patience (ADR 0136).
+func (h *handlers) handleOwnDeals(w http.ResponseWriter, r *http.Request) {
+	id := strings.TrimSpace(r.URL.Query().Get("game_def_id"))
+	if id == "" {
+		writeError(w, errors.New("api: game_def_id is required"))
+		return
+	}
+	deals, err := h.mgr.Deals(r.Context(), id)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	w.Header().Set("Cache-Control", "no-store")
+	writeJSON(w, http.StatusOK, ownDealsResponse{Deals: deals})
 }
 
 // writeRetiredGame answers GET /games/{code} for a game whose kind was

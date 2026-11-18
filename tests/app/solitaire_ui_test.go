@@ -227,6 +227,7 @@ func TestWebSolitaire_ADrawFromTheStockStands(t *testing.T) {
 	defer cancel()
 	openGameAs(t, ctx, baseURL, room, "solitaire", "Ana")
 	waitJS(t, ctx, "the table", `document.querySelector('#sol-stock')`, 15*time.Second)
+	waitJS(t, ctx, "the seed, shown from the start", `/^Seed [0-9]+$/.test((document.querySelector('.players-card #seed-badge') || {}).textContent || '')`, 10*time.Second)
 	waitJS(t, ctx, "no moves yet", `(function () { var m = document.querySelector('.players-card #seat-moves[data-counter="moves"]'); return !!m && !!m.querySelector('svg.stat-moves') && m.textContent === '0'; })()`, 10*time.Second)
 	clickSel(t, ctx, `#sol-stock`)
 	waitJS(t, ctx, "the waste", `document.querySelectorAll('.sol-waste .pcard.face').length === 1`, 10*time.Second)
@@ -598,6 +599,13 @@ func TestWebSolitaire_ADealIsPlayedAgainFromItsSeed(t *testing.T) {
 	if !evalBool(t, ctx, `document.getElementById("seed-field").hidden`) {
 		t.Error("a game that is not dealt offers a Deal")
 	}
+	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/?game=solitaire")); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "the setup of Solitaire", `!document.getElementById("seed-field").hidden`, 10*time.Second)
+	if !evalBool(t, ctx, `document.getElementById("setup-tab-deals").hidden`) {
+		t.Error("a guest is offered a deal history")
+	}
 	if err := chromedp.Run(ctx,
 		chromedp.Evaluate(`localStorage.setItem("bingle.name", JSON.stringify("Ana"))`, nil),
 		chromedp.Navigate(baseURL+"/?game=solitaire&seed=777"),
@@ -631,4 +639,60 @@ func TestWebSolitaire_ADealIsPlayedAgainFromItsSeed(t *testing.T) {
 	if again := evalString(t, ctx, columns); again != dealt || dealt == "" {
 		t.Errorf("the deal played again is %q, was %q", again, dealt)
 	}
+}
+
+// A signed-in player's Deal History lists their finished games of the chosen
+// variant, each with its seed and score, and a seed clicked deals it again.
+func TestWebSolitaire_TheDealHistory(t *testing.T) {
+	baseURL, member := newMemberServer(t)
+	play := func(def, seed string) string {
+		t.Helper()
+		body := map[string]any{"game_def_id": def, "player_name": "ana"}
+		if seed != "" {
+			body["seed"] = seed
+		}
+		var created struct {
+			RoomCode string `json:"room_code"`
+		}
+		if code := doJSONMember(t, member, "POST", baseURL+"/api/games", body, &created); code != 200 {
+			t.Fatalf("create %s: %d", def, code)
+		}
+		if code := doJSONMember(t, member, "POST", baseURL+"/api/games/"+created.RoomCode+"/resign", map[string]any{"player_name": "ana"}, nil); code != 200 {
+			t.Fatalf("give up: %d", code)
+		}
+		return created.RoomCode
+	}
+	play("solitaire", "31337")
+	play("solitaire", "")
+	play("freecell", "5")
+	var out struct {
+		Deals []struct {
+			Seed string `json:"seed"`
+			Won  bool   `json:"won"`
+		} `json:"deals"`
+	}
+	if code := doJSONMember(t, member, "GET", baseURL+"/api/me/deals?game_def_id=solitaire", nil, &out); code != 200 || len(out.Deals) != 2 {
+		t.Fatalf("GET /api/me/deals: %d %+v", code, out)
+	}
+	if code := doJSON(t, "GET", baseURL+"/api/me/deals?game_def_id=solitaire", nil, nil); code != 403 {
+		t.Errorf("a guest's deal history: %d, want 403", code)
+	}
+
+	ctx, cancel := newChromedpContext(t, 60*time.Second)
+	defer cancel()
+	signInChrome(t, ctx, baseURL, member)
+	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/?game=solitaire")); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "the tab", `!document.getElementById("setup-tab-deals").hidden`, 15*time.Second)
+	clickSel(t, ctx, `#setup-tab-deals`)
+	waitJS(t, ctx, "the two deals", `document.querySelectorAll('#setup-deals-list tr').length === 2`, 10*time.Second)
+	if got := evalString(t, ctx, `[...document.querySelectorAll('#setup-deals-list .deal-score')].map(td => td.textContent).join("|")`); got != "Not won (chosen)|Not won" && got != "Not won|Not won (chosen)" {
+		t.Errorf("the scores read %q", got)
+	}
+	clickSel(t, ctx, `#setup-deals-list button.deal-seed[data-seed="31337"]`)
+	waitJS(t, ctx, "the Deal filled in", `!document.getElementById("setup-layout").hidden && document.getElementById("seed").value === "31337"`, 5*time.Second)
+	shot(t, ctx, "deal-history", func(b *[]byte) error {
+		return chromedp.Run(ctx, chromedp.Click(`#setup-tab-deals`, chromedp.ByQuery), chromedp.Sleep(300*time.Millisecond), chromedp.FullScreenshot(b, 90))
+	})
 }

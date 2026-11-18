@@ -400,10 +400,12 @@ table. **Klondike, Spider and FreeCell** have `.sol-top` (`#sol-stock`, `.sol-wa
 foundations) over `.sol-columns` of `.sol-column`; a pile has `data-pile` (`t3`, `w`, `f1`, `c2`) and a pile that
 takes the cards in hand now has the class `sol-target`. The player's seat strip counts the moves so far, a take-back
 adding one: `#seat-moves` (`data-counter="moves"`), the `moves` pictogram and the number (`view.moves`,
-[ADR 0135](decisions/0135-patience-is-scored-by-its-moves.md)); a preview has none. A game's seed, once it is shown
-(`seed`, [ADR 0136](decisions/0136-a-deal-of-patience-has-a-seed.md)), is `#seed-badge` on the players card, a button that copies
+[ADR 0135](decisions/0135-patience-is-scored-by-its-moves.md)); a preview has none. A game's seed
+(`seed`, [ADR 0136](decisions/0136-a-deal-of-patience-has-a-seed.md)) is `#seed-badge` on the players card, a button that copies
 it, and a finished game has `#replay-deal`, *Play this deal again*. The setup page's `#seed-field` (*Deal*) is shown for a
-game whose info says `seeded`, and `?seed=` fills it.
+game whose info says `seeded`, and `?seed=` fills it. For such a game a signed-in player also has the setup tab
+`#setup-tab-deals` (*Deal History*): `#setup-deals-list` has a row for each finished game, with its seed (`button.deal-seed`, which
+fills in *Deal*), its score (`.deal-score`) and when it was played.
 
 A move is two gestures in the server's `gestures`, `from-<pile>-<count>` and `to-<pile>`: a card a move can start with is a
 `button[data-from]`. Clicking one picks it up (`sol-picked`), or plays it at once if it has one place to go. Clicking

@@ -167,6 +167,7 @@ for a handle, codes for an account) lock it for a minute, doubling, an hour at m
 
 | Method & path | Body | Response |
 |---|---|---|
+| `GET /api/me/deals?game_def_id=` | | `{deals: [{seed, won, moves, chosen?, room_code, ended_at}]}`: a signed-in account's finished games of one game of patience, the latest first (at most 200), with the seed each was dealt from; `moves` of a won game is its score. A guest gets `403` (see *Seeds* below) |
 | `GET /api/me/games` | | `{games: [{room_code, game_def_id, name, status, seats, updated_at}]}`: the games the asker (a guest or an account) has a seat in, the latest first |
 | `GET /api/guest/key` | (the page's header, the guest cookie) | `{key, link}`: this browser's guest key, to copy to another device; `409` for a browser that is not a guest |
 | `POST /api/guest/adopt` | `{key}` | this browser becomes that guest, its own merged in (a signed-in account takes the guest in instead); `400` for any key that does not work, `429` past ten tries an hour |
@@ -322,11 +323,10 @@ how the cards look, never the notation: `blue-9` is still `blue-9`.
 
 **Seeds.** A game of patience (`GET /game-defs/{id}`: `seeded`) is dealt from a seed, a whole
 number, and the same seed deals the same cards ([ADR 0136](decisions/0136-a-deal-of-patience-has-a-seed.md)). `GET /games/{code}` reports
-it as `seed` once the game is over: during play it would say where the face-down cards lie. Give it
-as `seed` to `POST /games` to play the deal again. A seed that is not a number, or one for a game that
+it as `seed`. Give it as `seed` to `POST /games` to play the deal again. A seed that is not a number, or one for a game that
 is not dealt from one, or together with a start position, is a `400`. A game whose seed or start position
-the player chose reports `start_chosen`, and shows its seed from the start. Such a game keeps no best
-score and earns no quick-win badge.
+the player chose reports `start_chosen`. Such a game keeps no best score and earns no quick-win badge.
+`GET /me/deals` is a signed-in account's history of its deals in one game.
 
 **Rated games.** `rated: true` makes the game move both players' ratings when it
 ends. It takes a signed-in account, a game of two seats, `clock_seconds` with the

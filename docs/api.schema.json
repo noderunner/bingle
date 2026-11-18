@@ -524,6 +524,40 @@
       ],
       "type": "object"
     },
+    "DealRecord": {
+      "description": "DealRecord is one finished game of patience in an account's deal history.",
+      "properties": {
+        "chosen": {
+          "description": "Chosen says the player chose the deal: it kept no best score.",
+          "type": "boolean"
+        },
+        "ended_at": {
+          "type": "string"
+        },
+        "moves": {
+          "type": "integer"
+        },
+        "room_code": {
+          "type": "string"
+        },
+        "seed": {
+          "description": "Seed is what the game was dealt from, to play it again.",
+          "type": "string"
+        },
+        "won": {
+          "description": "Won says the game was won; Moves is the moves it used (state.Moves), which for a win is its score.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "seed",
+        "won",
+        "moves",
+        "room_code",
+        "ended_at"
+      ],
+      "type": "object"
+    },
     "DisplayDef": {
       "description": "DisplayDef is the legend of a ruleset game's overlays: what each tint and badge key in the position's view means and how to draw it.",
       "properties": {
@@ -1088,7 +1122,7 @@
           ]
         },
         "seed": {
-          "description": "Seed is what a game of patience was dealt from, to play the deal again (POST /games: \"seed\"). It is sent once the game is over, or from the start when the player chose it. StartChosen says the player chose where the game starts (a seed or a position): it keeps no best score and earns no quick-win badge.",
+          "description": "Seed is what a game of patience was dealt from, to play the deal again (POST /games: \"seed\"), from the start. StartChosen says the player chose where the game starts (a seed or a position): it keeps no best score and earns no quick-win badge.",
           "type": "string"
         },
         "server_time": {
@@ -2214,6 +2248,25 @@
       ],
       "type": "object"
     },
+    "OwnDealsResponse": {
+      "description": "ownDealsResponse is GET /me/deals' 200 response body.",
+      "properties": {
+        "deals": {
+          "description": "Deals are the asker's finished games of one game of patience, the latest first: the seed each was dealt from and how it went.",
+          "items": {
+            "$ref": "#/$defs/DealRecord"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "deals"
+      ],
+      "type": "object"
+    },
     "PieceDTO": {
       "description": "PieceDTO describes a piece type.",
       "properties": {
@@ -3125,6 +3178,11 @@
     "GET /api/games/{code}/state": {
       "response": {
         "$ref": "#/$defs/GetGameStateResponse"
+      }
+    },
+    "GET /api/me/deals": {
+      "response": {
+        "$ref": "#/$defs/OwnDealsResponse"
       }
     },
     "POST /api/bot-matches": {

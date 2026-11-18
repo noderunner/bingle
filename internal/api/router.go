@@ -56,6 +56,7 @@ func NewRouter(mgr *session.Manager, opts ...Option) chi.Router {
 		r.Post("/guest/discard", h.guests.HandleDiscard)
 	}
 	r.Get("/me/games", h.handleOwnGames)
+	r.Get("/me/deals", h.handleOwnDeals)
 	r.Post("/games", h.handleCreateGame)
 	r.Post("/games/import", h.handleImportGame)
 	r.Post("/tutorials", h.handleStartTutorial)

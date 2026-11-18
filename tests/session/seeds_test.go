@@ -1,7 +1,7 @@
 // A game of patience is dealt from a seed, and the same seed deals the same
-// cards (ADR 0136): the seed is shown once the game is over, a player may
-// give one to play a deal again, and such a game keeps no best score and earns
-// no quick-win badge.
+// cards (ADR 0136): the seed is shown, a player may give one to play a deal
+// again, such a game keeps no best score and earns no quick-win badge, and an
+// account has a history of its deals.
 
 package session_test
 
@@ -29,26 +29,18 @@ func TestTheSameSeedDealsTheSameCards(t *testing.T) {
 	ana := w.account("ana")
 	bo := w.account("bo")
 
-	// A new deal's seed is kept, and is not told while the game is played:
-	// it says where every face-down card lies.
+	// A new deal's seed is kept and shown from the start.
 	first := w.patience("solitaire", ana)
 	snap, err := w.m.GetState(ana.ctx, first, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if snap.Seed != "" || snap.StartChosen {
-		t.Fatalf("a game being played shows seed %q (chosen %v)", snap.Seed, snap.StartChosen)
+	seed := snap.Seed
+	if seed == "" || snap.StartChosen {
+		t.Fatalf("a new deal shows seed %q (chosen %v)", seed, snap.StartChosen)
 	}
 	w.patienceMoves(first, ana, 2)
 	w.finish(first, 0)
-	snap, err = w.m.GetState(ana.ctx, first, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	seed := snap.Seed
-	if seed == "" {
-		t.Fatal("a finished game of patience shows no seed")
-	}
 
 	// The seed deals the same cards again, to anybody, and is shown from the start.
 	again, err := w.seeded("solitaire", bo, seed)
@@ -115,5 +107,50 @@ func TestADealPlayedAgainKeepsNoScore(t *testing.T) {
 	}
 	if has(w.badgeIDs(ana), "solitaire.quick-klondike") {
 		t.Error("a chosen deal earned the quick-win badge")
+	}
+}
+
+// An account's deal history is its finished games of one variant, latest
+// first, each with its seed and how it went; a guest has none.
+func TestAnAccountHasAHistoryOfItsDeals(t *testing.T) {
+	w := newRatedWorld(t)
+	if err := w.cat.RegisterModule(solitaire.Module()); err != nil {
+		t.Fatal(err)
+	}
+	ana := w.account("ana")
+	bo := w.account("bo")
+	if _, err := w.m.Deals(context.Background(), "solitaire"); !errors.Is(err, session.ErrDealsAccount) {
+		t.Errorf("a guest's deal history: %v, want ErrDealsAccount", err)
+	}
+
+	lost := w.patience("solitaire", ana)
+	w.patienceMoves(lost, ana, 3)
+	w.finish(lost, 0)
+	won, err := w.seeded("solitaire", ana, "4242")
+	if err != nil {
+		t.Fatal(err)
+	}
+	w.patienceMoves(won, ana, 7)
+	w.finish(won, 1)
+	w.patience("solitaire", ana)             // still being played
+	w.finish(w.patience("freecell", ana), 1) // another variant
+	w.finish(w.patience("solitaire", bo), 1) // somebody else's
+
+	deals, err := w.m.Deals(ana.ctx, "solitaire")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(deals) != 2 {
+		t.Fatalf("ana's Klondike deals: %+v, want the two finished", deals)
+	}
+	byRoom := map[string]session.DealRecord{}
+	for _, d := range deals {
+		byRoom[d.RoomCode] = d
+	}
+	if d := byRoom[won]; d.Seed != "4242" || !d.Won || d.Moves != 7 || !d.Chosen {
+		t.Errorf("the won deal: %+v, want seed 4242, won in 7, chosen", d)
+	}
+	if d := byRoom[lost]; d.Seed == "" || d.Won || d.Moves != 3 || d.Chosen {
+		t.Errorf("the lost deal: %+v, want a seed, lost after 3, not chosen", d)
 	}
 }

@@ -1285,6 +1285,9 @@ table.data th { font-size: 0.78rem; color: var(--muted); font-weight: 700; }
 table.data td.wrap { white-space: normal; text-align: left; max-width: 34rem; }
 
 table.data tr.faint td { color: var(--muted); }
+/* A deal history (ADR 0136): a seed is a button that deals it again. */
+table.deal-history { max-width: 32rem; margin-bottom: 0.6rem; }
+button.deal-seed { font: inherit; font-variant-numeric: tabular-nums; padding: 0; border: 0; background: none; color: var(--accent); cursor: pointer; text-decoration: underline; }
 .table-scroll { overflow-x: auto; }
 .delta.up { color: var(--accent); font-weight: 700; }
 .delta.down { color: var(--danger); font-weight: 700; }
