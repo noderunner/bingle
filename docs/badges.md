@@ -30,7 +30,7 @@ say needs a new part, by ADR.
 | `bot` | `{at_least: <bot id>}`: a bot badge, below |
 | `seat` | `{faction}` (the faction's key in the game) or `{side}` (the seat's number in the definition) |
 | `game` | `{family}` (a platform badge only) or `{variant}` (a game's id) |
-| `moves` | `{at_most: N}`: the game ended within *N* moves, every seat's counted (its plies); a move taken back is not counted. Solitaire's badges for a quick win use it ([ADR 0135](decisions/0135-patience-is-scored-by-its-moves.md)) |
+| `moves` | `{at_most: N}`: the game ended within *N* moves, every seat's counted (its plies); a move taken back still counts, and taking it back is a move too. Solitaire's badges for a quick win use it ([ADR 0135](decisions/0135-patience-is-scored-by-its-moves.md)) |
 
 A badge may `count` only the facts its game declares (`facts` in the definition, see
 [dsl.md](dsl.md)), or the platform's results, `played`, `won`, `drawn` and `lost`, with

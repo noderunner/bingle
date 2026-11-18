@@ -16,9 +16,13 @@ lookup, and give badges for a win in fewer moves than most.
   dealing a row, turning the waste over and Finish each count once. Finish sends everything home in one move,
   as the game already offers it. `state.ScoredByMoves` says which games keep this score: every game whose
   `win_condition` is `patience`. Bowling Solitaire has its own score, its pins, and does not keep this one.
-- **A move taken back does not count.** The counter is the position's ply, and undo returns to an earlier
-  position. A move that showed a card already stands (ADR 0086), so a take-back changes only what could
-  already be seen. Counting undone moves would need a count kept outside the position, which nothing else needs.
+- **Taking a move back uses a move, and the move taken back still counts**, so the counter goes up by one
+  rather than down. Otherwise undo would let a player explore for nothing, and in FreeCell, where every card
+  is face up, nothing else stops it. Undo returns to an earlier position, so the count is carried onto that
+  position. `state.CountTakeBack` adds the plies taken back, and one for the take-back, to the platform's
+  counter `taken_back`. `state.Moves` is the ply plus that counter, and the counter, the score and a badge's
+  `moves` all read it. The moves table's earlier positions keep their old count, so a replay shows the plies
+  as they were played.
 - **The page shows the count** from `view.moves`. A win's detail says how many moves it took ("52 of 52
   cards home in 104 moves").
 - **The score is kept by the results worker**, in `scores` (`game_id`, `account_id`, `game_def_id`,
@@ -28,7 +32,7 @@ lookup, and give badges for a win in fewer moves than most.
   a reference, since retention may delete it and the best should outlive it. `store.BestScore` is an
   account's fewest moves in one game, variants apart, using an index on (account, game, score).
 - **A badge asks for a win within so many moves** with a new part, `moves: {at_most: N}`: the game ended
-  within *N* plies, every seat's counted. It is known only at the end. It is general: in a game of two it
+  within *N* moves (`state.Moves`), every seat's counted. It is known only at the end. It is general: in a game of two it
   counts both players' moves.
 - **Solitaire's six badges** ask for a win in fewer moves than a typical win: 110 for Klondike, 100 for draw
   three, 110 for FreeCell (where every card home is a move), and 150, 200 and 300 for Spider with one, two

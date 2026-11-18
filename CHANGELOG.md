@@ -7,7 +7,7 @@ what the help window shows under *Recent changes*, so it is written for the peop
 ## 0.117.0 - 2026-11-18
 
 ### Bingle Core 0.117.0
-- Solitaire, Spider and FreeCell now count your moves as you play, above the table. A win says how many moves it took, and the fewest you have won each game in is kept as your best score. Every move counts, drawing from the stock, dealing a row and turning the waste over included. A move you take back does not count.
+- Solitaire, Spider and FreeCell now count your moves as you play, above the table. A win says how many moves it took, and the fewest you have won each game in is kept as your best score. Every move counts, drawing from the stock, dealing a row and turning the waste over included. Taking a move back uses a move too: the counter goes up by one, not down.
 
 ### Solitaire 0.4.0
 - Six new badges for a quick win, one for each game: Solitaire in 110 moves or fewer (*Light Fingers*), Solitaire (draw three) in 100 (*Three's Company*), FreeCell in 110 (*Clear Thinking*), Spider (one suit) in 150 (*Spinner*), Spider (two suits) in 200 (*Weaver*) and Spider with all four suits in 300 (*Silk Road*).

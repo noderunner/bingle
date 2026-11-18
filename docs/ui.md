@@ -398,8 +398,8 @@ suit pictures on a board of terms follow the set (the Tricks fixture's page scri
 A view with `solitaire` is drawn by `js/solitaire.js` (`.sol-table`, still `#card-table`), not `cards.js`'s
 table. **Klondike, Spider and FreeCell** have `.sol-top` (`#sol-stock`, `.sol-waste`, the free cells and
 foundations) over `.sol-columns` of `.sol-column`; a pile has `data-pile` (`t3`, `w`, `f1`, `c2`) and a pile that
-takes the cards in hand now has the class `sol-target`. Above them `#sol-moves` counts the moves so far
-(`view.moves`, [ADR 0135](decisions/0135-patience-is-scored-by-its-moves.md)); a preview has none.
+takes the cards in hand now has the class `sol-target`. Above them `#sol-moves` counts the moves so far, a take-back
+adding one (`view.moves`, [ADR 0135](decisions/0135-patience-is-scored-by-its-moves.md)); a preview has none.
 
 A move is two gestures in the server's `gestures`, `from-<pile>-<count>` and `to-<pile>`: a card a move can start with is a
 `button[data-from]`. Clicking one picks it up (`sol-picked`), or plays it at once if it has one place to go. Clicking

@@ -6,6 +6,7 @@ package session_test
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
 	"github.com/noderunner/bingle/internal/games/solitaire"
@@ -79,5 +80,65 @@ func TestAWonGameOfPatienceKeepsItsScore(t *testing.T) {
 	}
 	if has(w.badgeIDs(ana), "solitaire.quick-draw-three") {
 		t.Error("101 moves earned the badge for 100 or fewer")
+	}
+}
+
+// Taking a move back uses a move, and the move taken back still counts: the
+// counter goes up by one, and so does the score.
+func TestTakingAMoveBackUsesAMove(t *testing.T) {
+	w := newRatedWorld(t)
+	if err := w.cat.RegisterModule(solitaire.Module()); err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+	ana := w.account("ana")
+	room := w.patience("freecell", ana)
+	moves := func() int {
+		t.Helper()
+		snap, err := w.m.GetState(ana.ctx, room, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		b := []byte(snap.State)
+		var out struct {
+			Ext struct {
+				View struct {
+					Moves int `json:"moves"`
+				} `json:"view"`
+			} `json:"ext"`
+		}
+		if err := json.Unmarshal(b, &out); err != nil {
+			t.Fatal(err)
+		}
+		return out.Ext.View.Moves
+	}
+	// Every card of FreeCell is face up, so a card sent to a free cell can come back.
+	if _, err := w.m.PlayNotation(ana.ctx, room, ana.handle, "t1-c"); err != nil {
+		t.Fatal(err)
+	}
+	if n := moves(); n != 1 {
+		t.Fatalf("after one move the counter says %d", n)
+	}
+	if _, err := w.m.Undo(ana.ctx, room, ana.handle); err != nil {
+		t.Fatal(err)
+	}
+	if n := moves(); n != 2 {
+		t.Errorf("after taking it back the counter says %d, want 2", n)
+	}
+	if _, err := w.m.PlayNotation(ana.ctx, room, ana.handle, "t1-c"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := w.m.Undo(ana.ctx, room, ana.handle); err != nil {
+		t.Fatal(err)
+	}
+	if n := moves(); n != 4 {
+		t.Errorf("after a second take-back the counter says %d, want 4", n)
+	}
+	if _, err := w.m.PlayNotation(ana.ctx, room, ana.handle, "t1-c"); err != nil {
+		t.Fatal(err)
+	}
+	w.finish(room, 1)
+	if sc, ok, err := w.st.BestScore(ctx, ana.id, "freecell"); err != nil || !ok || sc.Score != 5 {
+		t.Errorf("the score is %d (%v, %v), want 5: three moves and two take-backs", sc.Score, ok, err)
 	}
 }

@@ -249,6 +249,28 @@ func (s *BoardState) Clone() *BoardState {
 	return clone
 }
 
+// takenBack is the platform's own counter: the moves a position's game has
+// had taken back, and the take-backs themselves (ADR 0135).
+const takenBack = "taken_back"
+
+// Moves is the moves a game has used to reach st (ADR 0135): its plies, and
+// for every take-back the moves it took back, which still count, and the
+// take-back itself, which is a move too.
+func Moves(st *BoardState) int {
+	if st == nil {
+		return 0
+	}
+	return st.ply + st.Counter(takenBack)
+}
+
+// CountTakeBack carries the moves a game has used from the position taken
+// back from onto the earlier one it returns to, so that Moves goes up by one
+// rather than down.
+func CountTakeBack(from, to *BoardState) {
+	removed := max(from.ply-to.ply, 0)
+	to.SetCounter(takenBack, from.Counter(takenBack)+removed+1)
+}
+
 // Counter is the declared count name keeps (0 when unset).
 func (s *BoardState) Counter(name string) int { return s.counters[name] }
 

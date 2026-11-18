@@ -116,14 +116,25 @@ func scoresOf(compiled *catalog.CompiledGame, game store.Game, accounts map[int]
 	if !state.ScoredByMoves(compiled) {
 		return nil
 	}
+	moves := movesOf(game)
 	var out []store.Score
 	for seat, account := range accounts {
 		if outcomeOf(game, seat) != "won" {
 			continue
 		}
-		out = append(out, store.Score{GameID: game.ID, AccountID: account, GameDefID: game.GameDefID, Score: game.Ply, RoomCode: game.RoomCode, ScoredAt: now})
+		out = append(out, store.Score{GameID: game.ID, AccountID: account, GameDefID: game.GameDefID, Score: moves, RoomCode: game.RoomCode, ScoredAt: now})
 	}
 	return out
+}
+
+// movesOf is the moves a finished game used (state.Moves): its plies, and
+// what taking moves back cost. A position that cannot be read gives its plies.
+func movesOf(game store.Game) int {
+	st := state.NewBoardState()
+	if err := st.UnmarshalJSON([]byte(game.BoardState)); err != nil {
+		return game.Ply
+	}
+	return state.Moves(st)
 }
 
 // seatsOf is who held each seat of a game. ok is false unless every seat is

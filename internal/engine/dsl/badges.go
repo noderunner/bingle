@@ -39,7 +39,7 @@ type BadgeDef struct {
 
 // BadgeMoves is the most moves a game may have ended in, every seat's
 // counted (its plies): for a game of patience, the moves it was won in
-// (ADR 0135). A move taken back is not counted.
+// (ADR 0135). A move taken back still counts, and so does taking it back.
 type BadgeMoves struct {
 	AtMost int `json:"at_most"`
 }

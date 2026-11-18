@@ -35,7 +35,7 @@ func patienceView(game *catalog.CompiledGame, st *BoardState, viewer int) map[st
 		"alternate":     p.Suit == "alternate",
 		"home":          e.homeCount(),
 		"total":         p.Total,
-		"moves":         st.Ply(),
+		"moves":         Moves(st),
 		"panel_actions": []string{"from-", "to-", patienceDraw, patienceRecycle, patienceRow},
 	}
 	if st.table != nil {
