@@ -74,6 +74,12 @@ type StateSnapshot struct {
 	StartImpulseSeat int
 	// Tutorial is "family/id" of the tutorial the room plays, or empty.
 	Tutorial string
+	// Seed is what a game of patience was dealt from (ADR 0136), shown from
+	// the start. StartChosen says the player chose where the game starts (a
+	// seed, a position), which keeps it from a best score and the quick-win
+	// badges.
+	Seed        string
+	StartChosen bool
 }
 
 // snapshot assembles a StateSnapshot from a game row, its players and a
@@ -151,6 +157,9 @@ func (m *Manager) snapshot(ctx context.Context, compiled *catalog.CompiledGame, 
 
 		StartState:       publicDoc(compiled, game.InitialState),
 		StartImpulseSeat: game.InitialImpulseSeat,
+
+		Seed:        game.Seed,
+		StartChosen: game.StartChosen,
 	}, nil
 }
 

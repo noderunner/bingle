@@ -69,26 +69,32 @@ type Game struct {
 	// Tutorial is "family/id" of the tutorial the room plays (SetTutorial),
 	// empty for an ordinary game.
 	Tutorial string
+	// Seed is what a game of patience was dealt from, as a decimal number
+	// ("" for every other game), and StartChosen says the player chose where
+	// the game starts: a seed or a position (ADR 0136).
+	Seed        string
+	StartChosen bool
 }
 
 // gameColumns is the column list every games SELECT uses, matching
 // scanGameRow.
-const gameColumns = `id, room_code, game_def_id, status, board_state, impulse_seat, move_seq, winner_seat, end_reason, end_detail, move_time_limit, draw_offer_seat, initial_state, initial_impulse_seat, created_at, updated_at, lobby, clock, tutorial, rated, rating_status, tournament_id, card_set, real_time, ply, shared_result`
+const gameColumns = `id, room_code, game_def_id, status, board_state, impulse_seat, move_seq, winner_seat, end_reason, end_detail, move_time_limit, draw_offer_seat, initial_state, initial_impulse_seat, created_at, updated_at, lobby, clock, tutorial, rated, rating_status, tournament_id, card_set, real_time, ply, shared_result, seed, start_chosen`
 
 type rowScanner interface{ Scan(dest ...any) error }
 
 func scanGameRow(row rowScanner) (Game, error) {
 	var g Game
 	var impulseSeat, winnerSeat, drawOffer sql.NullInt64
-	var lobby, rated int
+	var lobby, rated, chosen int
 	err := row.Scan(&g.ID, &g.RoomCode, &g.GameDefID, &g.Status, &g.BoardState, &impulseSeat, &g.MoveSeq, &winnerSeat,
 		&g.EndReason, &g.EndDetail, &g.MoveTimeLimit, &drawOffer, &g.InitialState, &g.InitialImpulseSeat,
-		&g.CreatedAt, &g.UpdatedAt, &lobby, &g.Clock, &g.Tutorial, &rated, &g.RatingStatus, &g.TournamentID, &g.CardSet, &g.RealTime, &g.Ply, &g.SharedResult)
+		&g.CreatedAt, &g.UpdatedAt, &lobby, &g.Clock, &g.Tutorial, &rated, &g.RatingStatus, &g.TournamentID, &g.CardSet, &g.RealTime, &g.Ply, &g.SharedResult, &g.Seed, &chosen)
 	if err != nil {
 		return Game{}, err
 	}
 	g.Lobby = lobby != 0
 	g.Rated = rated != 0
+	g.StartChosen = chosen != 0
 	g.ImpulseSeat = nullInt64ToIntPtr(impulseSeat)
 	g.WinnerSeat = nullInt64ToIntPtr(winnerSeat)
 	g.DrawOfferSeat = nullInt64ToIntPtr(drawOffer)
@@ -195,6 +201,19 @@ func (s *Store) SetInitialPosition(ctx context.Context, gameID int64, doc string
 	res, err := s.exec(ctx, "SetInitialPosition", `UPDATE games SET initial_state = ?, initial_impulse_seat = ? WHERE id = ?`, doc, impulseSeat, gameID)
 	if err != nil {
 		return fmt.Errorf("setting initial position for game_id=%d: %w", gameID, err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+// SetSeed records what a game was dealt from, and whether the player chose
+// where it starts (ADR 0136).
+func (s *Store) SetSeed(ctx context.Context, gameID int64, seed string, chosen bool) error {
+	res, err := s.exec(ctx, "SetSeed", `UPDATE games SET seed = ?, start_chosen = ? WHERE id = ?`, seed, boolToInt(chosen), gameID)
+	if err != nil {
+		return fmt.Errorf("setting the seed of game_id=%d: %w", gameID, err)
 	}
 	if n, _ := res.RowsAffected(); n == 0 {
 		return ErrNotFound

@@ -54,6 +54,9 @@ type GameInfo struct {
 	// a ruleset's do, though the rules are declared: a game of patience
 	// (ADR 0122).
 	View bool `json:"view,omitempty"`
+	// Seeded says the game is dealt from a seed (ADR 0136): send one as
+	// "seed" when creating a game to play that deal again.
+	Seeded bool `json:"seeded,omitempty"`
 	// Display is the legend for the tints and badges of a ruleset view.
 	Display *dsl.DisplayDef `json:"display,omitempty"`
 	// CountLabels says what a count selection means after an action.
@@ -434,6 +437,7 @@ func buildGameInfo(cg *catalog.CompiledGame) GameInfo {
 	}
 	if cg.Patience != nil {
 		info.View = true
+		info.Seeded = state.DealtBySeed(cg)
 		info.Actions = append(info.Actions, ActionDTO{ID: "finish", Type: "patience", Label: "Finish", Hint: "Everything can go home from where it lies: send it"})
 	}
 	if ri, ok := state.DescribeRuleset(cg); ok {

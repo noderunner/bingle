@@ -2649,7 +2649,7 @@ function renderFitted(seats, bottomSeat, seatStack) {
 		for (const ts of seats.filter((s) => s.seat !== bottomSeat)) players.append(seatStrip(ts.seat));
 		players.append(seatStrip(bottomSeat));
 	}
-	const badges = bar.querySelectorAll("#rated-badge, #real-time-badge, #tournament-badge, #rating-note, #conn-badge");
+	const badges = bar.querySelectorAll("#rated-badge, #real-time-badge, #tournament-badge, #rating-note, #seed-badge, #conn-badge");
 	players.append(h("div", { class: "table-badges" }, ...badges));
 
 	// What the player chooses from goes with the actions, and is pinned with them.
@@ -3204,6 +3204,7 @@ function statusBar() {
 	if (g.rated) badges.push(h("span", { class: "badge rated", id: "rated-badge", title: FAIR_PLAY }, "Rated"));
 	if (g.real_time) badges.push(h("span", { class: "badge", id: "real-time-badge", title: "The players are expected to stay until the game ends" }, "Real-time"));
 	if (g.tournament) badges.push(h("a", { class: "badge", id: "tournament-badge", href: `/tournament/${g.tournament.id}`, title: "This game is part of a tournament" }, g.tournament.name));
+	if (g.seed) badges.push(seedBadge(g));
 	const uncounted = { no_moves: "Not counted: a player made no move", daily_limit: "Not counted: enough rated games between these two today", void: "Not counted" }[g.rating_status];
 	if (uncounted) badges.push(h("span", { class: "badge", id: "rating-note" }, uncounted));
 	badges.push(h("span", { class: "badge" + (S.conn === "online" ? " online" : ""), id: "conn-badge" }, S.conn === "online" ? "live" : S.conn === "offline" ? "reconnecting…" : "connecting…"));
@@ -3221,8 +3222,58 @@ function statusBar() {
 		bar.append(h("button", { class: "primary", id: "return-live", onclick: () => viewMove(null) }, "Return to live"));
 	} else if (g.status === "finished") {
 		bar.append(rematchControl());
+		if (g.seed && S.me.seat) bar.append(replayDealButton(g));
 	}
 	return bar;
+}
+
+// A game of patience is dealt from a seed (ADR 0136). It is shown once the game
+// is over, since it says where every face-down card lies, or from the start of
+// a deal the player chose; a click copies it, to type into a new game's Deal.
+function seedBadge(g) {
+	const title = g.start_chosen
+		? "The seed this deal came from, which you chose: a deal you choose keeps no best score and earns no quick-win badge. Click to copy it."
+		: "The seed this deal came from: enter it under Deal when you start a game to play the same cards again. Click to copy it.";
+	return h(
+		"button",
+		{
+			type: "button",
+			class: "badge seed",
+			id: "seed-badge",
+			"data-seed": g.seed,
+			title,
+			onclick: async () => {
+				try {
+					await navigator.clipboard.writeText(g.seed);
+					toast("Seed copied");
+				} catch (_) {
+					toast(`Seed ${g.seed}`);
+				}
+			},
+		},
+		`Seed ${g.seed}`
+	);
+}
+
+/** Deals the same cards again, in a new game of the same variant. */
+function replayDealButton(g) {
+	return h(
+		"button",
+		{
+			id: "replay-deal",
+			title: "Start a new game with the same cards. A deal played again keeps no best score and earns no quick-win badge.",
+			onclick: async () => {
+				try {
+					const res = await api.createGame({ game_def_id: g.game_def_id, player_name: S.me.name, seed: g.seed, card_set: g.card_set || undefined });
+					rememberGame(res.room_code, g.game_def_id, S.me.name);
+					navigate("/game/" + res.room_code);
+				} catch (err) {
+					toast(err.message, "error");
+				}
+			},
+		},
+		"Play this deal again"
+	);
 }
 
 function rematchControl() {

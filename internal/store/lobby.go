@@ -356,7 +356,7 @@ func (s *Store) AutoPlayCandidates(ctx context.Context) ([]DueAutoPlay, error) {
 // cults of its open seats were changed) and the new starting position.
 func (s *Store) ChangeLobbyGame(ctx context.Context, gameID int64, gameDefID, boardState string) error {
 	res, err := s.exec(ctx, "ChangeLobbyGame",
-		`UPDATE games SET game_def_id = ?, board_state = ?, initial_state = '', initial_impulse_seat = 0, updated_at = CURRENT_TIMESTAMP
+		`UPDATE games SET game_def_id = ?, board_state = ?, initial_state = '', initial_impulse_seat = 0, seed = '', start_chosen = 0, updated_at = CURRENT_TIMESTAMP
 		 WHERE id = ? AND status = 'waiting'`,
 		gameDefID, boardState, gameID)
 	if err != nil {

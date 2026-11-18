@@ -97,7 +97,9 @@ func (m *Manager) countGame(ctx context.Context, game store.Game) error {
 		return err
 	}
 	var scores []store.Score
-	if players {
+	// A game whose start the player chose is one they may have played
+	// before: it keeps no best score (ADR 0136).
+	if players && !game.StartChosen {
 		scores = scoresOf(compiled, game, at.accounts, m.now())
 	}
 	written, err := m.store.RecordCounts(ctx, game.ID, counts, scores, awards, m.now())
