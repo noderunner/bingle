@@ -4,6 +4,11 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.119.0 - 2026-11-18
+
+### Bingle Core 0.119.0
+- Solve a game of Solitaire, Spider or FreeCell and the cards fly home to their stacks. Then comes a few seconds of celebration that depends on your cards: fireworks for the classic deck, a golden sunrise for Ancient Civilizations, frogs hopping across a pond for Amphibians, a swirl of sparkles and creatures for Fantasy Creatures, something stirring in the deep for Lovecraftian, and rockets and saucers for Atomic Age. Click or press a key to skip it. If your system asks for less motion, it is not shown.
+
 ## 0.118.0 - 2026-11-18
 
 ### Bingle Core 0.118.0

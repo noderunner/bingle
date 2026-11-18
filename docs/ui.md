@@ -407,6 +407,12 @@ game whose info says `seeded`, and `?seed=` fills it. For such a game a signed-i
 `#setup-tab-deals` (*Deal History*): `#setup-deals-list` has a row for each finished game, with its seed (`button.deal-seed`, which
 fills in *Deal*), its score (`.deal-score`) and when it was played.
 
+A game won in front of its player ([ADR 0137](decisions/0137-a-game-of-patience-won-is-celebrated.md)) sends each card not yet home to its foundation
+(`.sol-flyer`, from where the table last drew it; the foundations are `.sol-homing` meanwhile), and then `js/victory.js`
+puts `#victory` (`.victory-<set>`, or `.victory-classic` for the game's own cards) over the page for 4 s: a canvas and the set's
+suit pictures as sprites, with `.victory-banner` saying "Solved in N moves!". A click or a key ends it. It needs the card
+table's `live` flag, and is left out under `prefers-reduced-motion`.
+
 A move is two gestures in the server's `gestures`, `from-<pile>-<count>` and `to-<pile>`: a card a move can start with is a
 `button[data-from]`. Clicking one picks it up (`sol-picked`), or plays it at once if it has one place to go. Clicking
 it again sends it to its foundation if it can go, and otherwise lets go. It can also be dragged: `.sol-ghost` follows

@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -695,4 +696,84 @@ func TestWebSolitaire_TheDealHistory(t *testing.T) {
 	shot(t, ctx, "deal-history", func(b *[]byte) error {
 		return chromedp.Run(ctx, chromedp.Click(`#setup-tab-deals`, chromedp.ByQuery), chromedp.Sleep(300*time.Millisecond), chromedp.FullScreenshot(b, 90))
 	})
+}
+
+// nearlySolved is a game of Klondike with everything home but the four kings,
+// which lie face up on the first four columns: Finish wins it.
+func nearlySolved(t *testing.T, baseURL, set string) string {
+	t.Helper()
+	suits := []string{"hearts", "spades", "diamonds", "clubs"}
+	ranks := []string{"A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q"}
+	type card struct {
+		ID string `json:"id"`
+		Up bool   `json:"up"`
+	}
+	zones := map[string]any{"stock": map[string]any{}, "waste": map[string]any{}}
+	for i, suit := range suits {
+		var home []card
+		for _, r := range ranks {
+			home = append(home, card{suit + "-" + r, true})
+		}
+		zones["f"+strconv.Itoa(i+1)] = map[string]any{"cards": home}
+		zones["t"+strconv.Itoa(i+1)] = map[string]any{"cards": []card{{suit + "-K", true}}}
+	}
+	for i := 5; i <= 7; i++ {
+		zones["t"+strconv.Itoa(i)] = map[string]any{}
+	}
+	body := map[string]any{"game_def_id": "solitaire", "player_name": "Ana", "start_state": map[string]any{"v": 2, "cells": map[string]any{}, "cards": map[string]any{"zones": zones}}}
+	if set != "" {
+		body["card_set"] = set
+	}
+	var created struct {
+		RoomCode string `json:"room_code"`
+		Error    string `json:"error"`
+	}
+	if code := doJSON(t, "POST", baseURL+"/api/games", body, &created); code != 200 {
+		t.Fatalf("create a game nearly solved: %d %s", code, created.Error)
+	}
+	return created.RoomCode
+}
+
+// A game won in front of its player sends the cards home, then shows a few seconds
+// of a picture in the spirit of the cards (ADR 0137): fireworks for the game's own
+// cards, and for a themed set one of its own. A game already won shows none.
+func TestWebSolitaire_AGameWonIsCelebrated(t *testing.T) {
+	baseURL := newRESTTestServer(t)
+	for _, tc := range []struct{ set, theme string }{{"", "classic"}, {"lovecraftian", "lovecraftian"}} {
+		room := nearlySolved(t, baseURL, tc.set)
+		ctx, cancel := newChromedpContext(t, 60*time.Second)
+		var mu sync.Mutex
+		var jsErrors []string
+		collectJSErrors(ctx, &mu, &jsErrors)
+		openGameAs(t, ctx, baseURL, room, "solitaire", "Ana")
+		waitJS(t, ctx, tc.theme+": the kings", `document.querySelectorAll('.sol-column .pcard.face').length === 4`, 15*time.Second)
+		// Where the cards are is taken a frame after the table is drawn.
+		if err := chromedp.Run(ctx, chromedp.Sleep(200*time.Millisecond)); err != nil {
+			t.Fatal(err)
+		}
+		// The cards are in the air for half a second: each one that takes off is counted.
+		evalString(t, ctx, `(function () { window.flown = 0; new MutationObserver(function (ms) { ms.forEach(function (m) { m.addedNodes.forEach(function (n) { if (n.classList && n.classList.contains('sol-flyer')) window.flown++; }); }); }).observe(document.body, { childList: true }); return "ok"; })()`)
+		clickSel(t, ctx, `button[data-action="finish"]`)
+		waitJS(t, ctx, tc.theme+": the cards fly home", `window.flown === 4`, 5*time.Second)
+		waitJS(t, ctx, tc.theme+": the picture", `(function () { var v = document.getElementById('victory'); return !!v && v.classList.contains('victory-`+tc.theme+`') && v.querySelector('.victory-banner').textContent === 'Solved in 1 move!'; })()`, 5*time.Second)
+		shot(t, ctx, "victory-"+tc.theme, func(b *[]byte) error {
+			return chromedp.Run(ctx, chromedp.Sleep(1500*time.Millisecond), chromedp.CaptureScreenshot(b))
+		})
+		waitJS(t, ctx, tc.theme+": it goes", `document.getElementById('victory') === null && document.querySelectorAll('.sol-flyer').length === 0`, 8*time.Second)
+		// Opened again, a game already won shows nothing.
+		openGameAs(t, ctx, baseURL, room, "solitaire", "Ana")
+		waitJS(t, ctx, tc.theme+": the table again", `document.querySelector('#card-table') !== null`, 10*time.Second)
+		if err := chromedp.Run(ctx, chromedp.Sleep(700*time.Millisecond)); err != nil {
+			t.Fatal(err)
+		}
+		if evalBool(t, ctx, `document.getElementById('victory') !== null || document.querySelectorAll('.sol-flyer').length > 0`) {
+			t.Errorf("%s: a game already won is celebrated again", tc.theme)
+		}
+		mu.Lock()
+		if len(jsErrors) > 0 {
+			t.Errorf("%s: script errors: %v", tc.theme, jsErrors)
+		}
+		mu.Unlock()
+		cancel()
+	}
 }

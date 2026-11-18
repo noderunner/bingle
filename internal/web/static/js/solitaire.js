@@ -7,6 +7,7 @@
 import { h } from "./util.js";
 import { cardBack, cardFace, enableZoom, holdCardZoom } from "./cards.js";
 import { currentCardSet, setSuitIcon } from "./card-sets.js";
+import { celebrate, flyHome, reducedMotion } from "./victory.js";
 
 const pinRows = ["abcd", "efg", "hi", "j"];
 
@@ -389,10 +390,82 @@ function table(ctx) {
 	return ctx.view.bowling ? bowling(ctx) : patience(ctx);
 }
 
+// ---- a game won ----------------------------------------------------------------
+
+// The page draws the table anew for every change, so where each card was is kept
+// after each drawing of a live game: when the game is won, the cards that were not
+// yet home fly there from those places (victory.js, ADR 0137).
+let seen = { room: "", home: -1, cards: new Map() };
+
+/** Where each face-up card of a drawn table is, and in which pile. */
+function measure(node) {
+	const out = new Map();
+	for (const el of node.querySelectorAll(".pcard.face[data-card]")) {
+		const pile = el.closest("[data-pile]");
+		const r = el.getBoundingClientRect();
+		if (r.width) out.set(el.dataset.card, { rect: r, pile: pile ? pile.dataset.pile : "" });
+	}
+	return out;
+}
+
+/** Notices a game won in front of the player, and shows it. */
+function watchForWin(ctx, node) {
+	const { view } = ctx;
+	if (!ctx.live || view.bowling || !view.total) return;
+	const won = view.home === view.total;
+	const before = seen.room === ctx.room ? seen : null;
+	seen = { room: ctx.room, home: view.home, cards: before ? before.cards : new Map() };
+	if (won && before && before.home >= 0 && before.home < view.total) {
+		requestAnimationFrame(() => showWin(ctx, node, before.cards));
+	} else if (!won) {
+		requestAnimationFrame(() => {
+			if (node.isConnected && seen.room === ctx.room) seen.cards = measure(node);
+		});
+	}
+}
+
+/** The flights home of a won game: the cards not yet on a foundation, the low ranks first. */
+function flightsHome(ctx, node, before) {
+	const { view } = ctx;
+	const zones = zonesOf(view);
+	const target = new Map(); // card id -> [rank order, pile element]
+	(view.suits || []).forEach((_, i) => {
+		const pile = `f${i + 1}`;
+		const el = node.querySelector(`[data-pile="${pile}"]`);
+		const cards = (zones.get(pile) || {}).cards || [];
+		cards.forEach((c, k) => c.id && el && target.set(c.id, [k, el]));
+	});
+	// Spider sends a finished suit off the table: it goes to the count of suits finished.
+	const done = node.querySelector("#sol-done");
+	const flights = [];
+	let n = 0;
+	for (const [id, was] of before) {
+		if (/^f\d+$/.test(was.pile)) continue;
+		const [order, el] = target.get(id) || [n++, done];
+		if (!el) continue;
+		flights.push({ order, id, from: was.rect, el });
+	}
+	flights.sort((a, b) => a.order - b.order);
+	return flights.map((f) => ({ node: face(ctx, f.id), from: f.from, to: f.el.getBoundingClientRect() }));
+}
+
+async function showWin(ctx, node, before) {
+	if (!node.isConnected || reducedMotion()) return;
+	const flights = flightsHome(ctx, node, before);
+	// The foundations fill as the cards land: until then they show what they held.
+	node.classList.add("sol-homing");
+	await flyHome(flights);
+	node.classList.remove("sol-homing");
+	node.classList.add("sol-won");
+	const moves = typeof ctx.view.moves === "number" ? ` in ${ctx.view.moves === 1 ? "1 move" : `${ctx.view.moves} moves`}` : "";
+	await celebrate(currentCardSet(ctx.info), `Solved${moves}!`);
+}
+
 /** The table of a game of patience, as cards.js's cardTable draws any other card game: {node, state}. */
 export function solitaireTable(ctx) {
 	const node = table(ctx);
 	enableZoom(node);
+	watchForWin(ctx, node);
 	return { node, state: new Map() };
 }
 

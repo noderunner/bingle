@@ -536,6 +536,12 @@ export function setSuitIcon(set, info, suitId, px) {
 	return chip(set, set.suits[i].art, set.suits[i].color, null, px);
 }
 
+/** The set's suit at place i (0 to 7) as a small picture: a game won shows them (victory.js). */
+export function setSuitChip(set, i, px) {
+	const suit = set.suits[i % set.suits.length];
+	return chip(set, suit.art, suit.color, null, px);
+}
+
 /** A game's suit in this set, for a picture that frames it itself. */
 export function setSuitArt(set, info, suitId) {
 	const i = suitIndex(info, suitId);
