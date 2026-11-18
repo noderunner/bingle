@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/noderunner/bingle/internal/auth"
@@ -135,6 +136,9 @@ type CreateOptions struct {
 	StartTPS   string
 	StartState string
 	StartSeat  int
+	// Seed deals a game of patience from this seed, a decimal number: the
+	// same seed deals the same cards (ADR 0136). Empty draws a new one.
+	Seed string
 	// Tutorial marks the room as playing a tutorial ("family/id"): it is set
 	// by StartTutorial, never by a client.
 	Tutorial string
@@ -144,11 +148,31 @@ type CreateOptions struct {
 // not parse, does not fit the game, or is already decided.
 var ErrInvalidStart = errors.New("session: invalid start position")
 
+// ErrInvalidSeed is returned by CreateGame for a seed that is not a number,
+// or one given to a game that is not dealt from a seed.
+var ErrInvalidSeed = errors.New("session: invalid seed")
+
+// dealtStart is the position a game dealt by seed begins from, and the seed
+// as it is recorded: the one given, or a new one.
+func dealtStart(compiled *catalog.CompiledGame, given string) (*state.BoardState, string, error) {
+	seed := state.NewDealSeed()
+	if given != "" {
+		var err error
+		if seed, err = state.ParseDealSeed(given); err != nil {
+			return nil, "", fmt.Errorf("%w: %v", ErrInvalidSeed, err)
+		}
+	}
+	return state.DealtFrom(compiled, seed), strconv.FormatUint(seed, 10), nil
+}
+
 // resolveStart returns the position and first mover a new game begins from,
 // and whether it is a custom one.
 func resolveStart(compiled *catalog.CompiledGame, opts CreateOptions) (*state.BoardState, int, bool, error) {
 	if opts.StartTPS != "" && opts.StartState != "" {
 		return nil, 0, false, fmt.Errorf("%w: give start_tps or start_state, not both", ErrInvalidStart)
+	}
+	if opts.Seed != "" && (opts.StartTPS != "" || opts.StartState != "") {
+		return nil, 0, false, fmt.Errorf("%w: give a seed or a start position, not both", ErrInvalidSeed)
 	}
 	var st *state.BoardState
 	var seat int
@@ -367,10 +391,21 @@ func (m *Manager) CreateGameWithOptions(ctx context.Context, opts CreateOptions)
 		return CreateGameResult{}, err
 	}
 
+	if opts.Seed != "" && !state.DealtBySeed(compiled) {
+		return CreateGameResult{}, fmt.Errorf("%w: game %q is not dealt from a seed", ErrInvalidSeed, opts.GameDefID)
+	}
 	startState, firstSeat, customStart, err := resolveStart(compiled, opts)
 	if err != nil {
 		return CreateGameResult{}, err
 	}
+	// A game of patience records its seed, so that its deal can be played again.
+	var seed string
+	if state.DealtBySeed(compiled) && opts.StartTPS == "" && opts.StartState == "" {
+		if startState, seed, err = dealtStart(compiled, opts.Seed); err != nil {
+			return CreateGameResult{}, err
+		}
+	}
+	startChosen := opts.Seed != "" || opts.StartTPS != "" || opts.StartState != ""
 	boardJSON, err := startState.MarshalJSON()
 	if err != nil {
 		return CreateGameResult{}, fmt.Errorf("session: marshal initial board state: %w", err)
@@ -418,6 +453,12 @@ func (m *Manager) CreateGameWithOptions(ctx context.Context, opts CreateOptions)
 	if customStart {
 		if err := m.store.SetInitialPosition(ctx, game.ID, string(boardJSON), firstSeat); err != nil {
 			return CreateGameResult{}, fmt.Errorf("session: recording start position: %w", err)
+		}
+	}
+
+	if seed != "" || startChosen {
+		if err := m.store.SetSeed(ctx, game.ID, seed, startChosen); err != nil {
+			return CreateGameResult{}, err
 		}
 	}
 

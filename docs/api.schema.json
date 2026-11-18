@@ -475,6 +475,10 @@
           "description": "SeatBots puts a built-in bot in chosen seats (\"2\": \"random\"); seats not listed stay open for people unless Opponent fills them.",
           "type": "object"
         },
+        "seed": {
+          "description": "Seed deals a game of patience (GET /game-defs/{id}: \"seeded\") from this seed, a whole number: the same seed deals the same cards, so a deal can be played again. Such a game keeps no best score and earns no quick-win badge. Omitted: a new deal.",
+          "type": "string"
+        },
         "start_seat": {
           "type": "integer"
         },
@@ -794,6 +798,10 @@
             "null"
           ]
         },
+        "seeded": {
+          "description": "Seeded says the game is dealt from a seed (ADR 0136): send one as \"seed\" when creating a game to play that deal again.",
+          "type": "boolean"
+        },
         "setup_catalog": {
           "description": "SetupCatalog says the setup page draws a picker from GET /game-defs/{id}/setup-catalog.",
           "type": "boolean"
@@ -1079,8 +1087,15 @@
             "null"
           ]
         },
+        "seed": {
+          "description": "Seed is what a game of patience was dealt from, to play the deal again (POST /games: \"seed\"). It is sent once the game is over, or from the start when the player chose it. StartChosen says the player chose where the game starts (a seed or a position): it keeps no best score and earns no quick-win badge.",
+          "type": "string"
+        },
         "server_time": {
           "type": "string"
+        },
+        "start_chosen": {
+          "type": "boolean"
         },
         "start_impulse_seat": {
           "type": "integer"
@@ -3046,9 +3061,9 @@
   },
   "$id": "https://github.com/noderunner/bingle/docs/api.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "description": "The requests, responses and WebSocket events of bingle's API, version 1.2.0. Generated from the Go types of the server: do not edit. Objects let unknown fields through: a client ignores those it does not know.",
+  "description": "The requests, responses and WebSocket events of bingle's API, version 1.3.0. Generated from the Go types of the server: do not edit. Objects let unknown fields through: a client ignores those it does not know.",
   "title": "Bingle API messages",
-  "x-api-version": "1.2.0",
+  "x-api-version": "1.3.0",
   "x-endpoints": {
     "GET /api": {
       "response": {

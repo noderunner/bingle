@@ -153,7 +153,8 @@ func (m *Manager) earns(gb gameBadge, eg played, seat int, stats map[string]int)
 			return false
 		}
 	}
-	if mv := b.Moves; mv != nil && eg.moves > mv.AtMost {
+	// A quick win counts from a deal the player did not choose (ADR 0136).
+	if mv := b.Moves; mv != nil && (eg.moves > mv.AtMost || eg.game.StartChosen) {
 		return false
 	}
 	// A game's badge counts in its family, and a platform badge across

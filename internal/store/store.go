@@ -308,6 +308,12 @@ var columnMigrations = []struct{ table, column, ddl string }{
 	// every seat — "drew:1,3" (those seats shared a draw, the others lost) or
 	// "lost" (every seat lost). '' for any other game (Game.DrawnSeats).
 	{"games", "shared_result", "TEXT NOT NULL DEFAULT ''"},
+	// seed: what a game of patience was dealt from, as a decimal number, so
+	// that the deal can be played again ('' for every other game).
+	// start_chosen: the player chose where the game starts (a seed, a
+	// position), which a best score and a quick-win badge do not count (ADR 0136).
+	{"games", "seed", "TEXT NOT NULL DEFAULT ''"},
+	{"games", "start_chosen", "INTEGER NOT NULL DEFAULT 0"},
 }
 
 func addMissingColumns(db *sql.DB) error {

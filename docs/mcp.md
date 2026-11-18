@@ -65,7 +65,8 @@ runs out loses) or `clock_seconds` (a game clock for a game of two or more: the 
 each seat starts with, in seat order, which may differ; the player whose clock
 runs out forfeits at two seats, and at three or more a tactical bot takes their seat for good; `clock_increment_seconds` adds time each time they hand the turn on),
 `rated` (the game moves both accounts' ratings: see [the API](api.md); `get_leaderboard` reads them) — `get_observation` then reports `seconds_left` — `card_set`
-(a themed set of cards for everybody at the table: see [the API](api.md)) and
+(a themed set of cards for everybody at the table: see [the API](api.md)), `seed` (deal a game of
+patience from a seed, to play a deal again: see [the API](api.md)) and
 `start_tps` / `start_state` + `start_seat` to begin from a given position
 (puzzles, endgames, curricula in persisted rooms; `env_reset` has `start_tps`
 for in-memory episodes).

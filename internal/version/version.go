@@ -6,7 +6,7 @@ package version
 // Engine is the semantic version of bingle. Raise it with each change to the
 // engine or the platform (not for a change to one game alone, which raises
 // that game's own version). The footer of every page shows it.
-const Engine = "0.117.1"
+const Engine = "0.118.0"
 
 // API is the semantic version of the API's messages: the REST requests and
 // responses and the WebSocket events that docs/api.schema.json describes
@@ -23,4 +23,4 @@ const Engine = "0.117.1"
 //
 // Clients ignore the fields they do not know, which is what keeps an addition
 // minor.
-const API = "1.2.0"
+const API = "1.3.0"

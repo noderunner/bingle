@@ -99,6 +99,11 @@ type createGameRequest struct {
 	StartTPS   string          `json:"start_tps,omitempty"`
 	StartState json.RawMessage `json:"start_state,omitempty"`
 	StartSeat  int             `json:"start_seat,omitempty"`
+	// Seed deals a game of patience (GET /game-defs/{id}: "seeded") from this
+	// seed, a whole number: the same seed deals the same cards, so a deal can
+	// be played again. Such a game keeps no best score and earns no quick-win
+	// badge. Omitted: a new deal.
+	Seed string `json:"seed,omitempty"`
 }
 
 // createGameResponse is POST /games' 200 response body, from
@@ -177,6 +182,7 @@ func (h *handlers) handleCreateGame(w http.ResponseWriter, r *http.Request) {
 		StartTPS:   strings.TrimSpace(req.StartTPS),
 		StartState: string(req.StartState),
 		StartSeat:  req.StartSeat,
+		Seed:       strings.TrimSpace(req.Seed),
 	})
 	if err != nil {
 		writeError(w, err)
@@ -268,6 +274,14 @@ type getGameResponse struct {
 	// Tutorial is "family/id" of the tutorial the room plays: the page
 	// fetches it from GET /game-defs/{family}/tutorials/{id}.
 	Tutorial string `json:"tutorial,omitempty"`
+
+	// Seed is what a game of patience was dealt from, to play the deal again
+	// (POST /games: "seed"). It is sent once the game is over, or from the
+	// start when the player chose it. StartChosen says the player chose where
+	// the game starts (a seed or a position): it keeps no best score and earns
+	// no quick-win badge.
+	Seed        string `json:"seed,omitempty"`
+	StartChosen bool   `json:"start_chosen,omitempty"`
 }
 
 // getGameSeat is one entry of getGameResponse's seats array, from
@@ -347,6 +361,9 @@ func (h *handlers) handleGetGame(w http.ResponseWriter, r *http.Request) {
 		RatingChanges: snapshot.RatingChanges,
 
 		Tutorial: snapshot.Tutorial,
+
+		Seed:        snapshot.Seed,
+		StartChosen: snapshot.StartChosen,
 
 		MoveTimeSeconds: snapshot.MoveTimeLimit,
 		Clock:           snapshot.Clock,

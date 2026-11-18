@@ -219,11 +219,11 @@ that account.
 | `POST /dm/call` | `{to, join}` | `{ok}` — ring (or answer) somebody, or hang up |
 | `POST /dm/signal` | `{to, kind, data}` | `{ok}` — one WebRTC message for the person being called |
 | `GET /ws-dm` | (the session) | pushes `ready`, `dm`, `dm-call`, `dm-rtc` and `badge` events for that account (a badge it just earned: `{badge, name, description, room, game, hidden?, against}`, see [badges.md](badges.md)) |
-| `POST /games` | `{game_def_id, player_name, seat?, opponent?, seat_bots? (`{"2": "random"}`: a bot in chosen seats; the rest stay open), lobby? (wait for the host's `start` even with every seat filled), move_time_seconds?, clock_seconds?, clock_increment_seconds?, rated?, card_set? (a themed set of cards for the table — see below), options? (setup choices — see below), start_tps?, start_state?, start_seat?}` | `{room_code, seat, color, status, bot_moves?}` |
+| `POST /games` | `{game_def_id, player_name, seat?, opponent?, seat_bots? (`{"2": "random"}`: a bot in chosen seats; the rest stay open), lobby? (wait for the host's `start` even with every seat filled), move_time_seconds?, clock_seconds?, clock_increment_seconds?, rated?, card_set? (a themed set of cards for the table — see below), options? (setup choices — see below), start_tps?, start_state?, start_seat?, seed? (deal a game of patience from this seed — see below)}` | `{room_code, seat, color, status, bot_moves?}` |
 | `GET /config` | | `{public_url}`: the configured `BINGLE_PUBLIC_URL` ("" when unset) |
 | `POST /bot-matches` | `{game_def_id, bot_a, bot_b, delay_ms?}`: a two-player room where two built-in bots (`bot_a` seat 1, `bot_b` seat 2, ids from `GET /bots`) play each other at a watchable pace (`delay_ms` between moves, default 700, kept within 150 ms – 10 s); open it as a spectator (`/games/{code}/join` with role spectator, or the WebSocket). Stops when the game ends, after 2 minutes with nobody watching, or at the move cap; at most 12 run at once | `{room_code, status}` |
 | `POST /games/import` | `{text, game_def_id?, player1?, player2?}`: load a PTN document or a plain move list into a new room (full history; the rules engine validates every move, an illegal one is reported by number; a `[TPS]` header sets the start) | `{room_code, game_def_id, status, moves, players}` |
-| `GET /games/{code}` | | `{game_def_id, status, seats[{seat,color,name,label,bot}], impulse_seat, move_seq, winner_seat, drawn_seats?, all_lost?, end_reason, end_detail, move_time_seconds, clock?, impulse_deadline, server_time, draw_offer_seat, start_state?, start_impulse_seat?, lobby?, host_seat?, invite_url}` |
+| `GET /games/{code}` | | `{game_def_id, status, seats[{seat,color,name,label,bot}], impulse_seat, move_seq, winner_seat, drawn_seats?, all_lost?, end_reason, end_detail, move_time_seconds, clock?, impulse_deadline, server_time, draw_offer_seat, start_state?, start_impulse_seat?, seed?, start_chosen?, lobby?, host_seat?, invite_url}` |
 | `POST /games/{code}/join` | `{player_name, role: player\|spectator, seat?}`: `seat` asks for a particular open seat (`409` if taken); a player already seated keeps theirs | `{role, seat, color, status}` |
 | `POST /games/{code}/bots` | `{player_name, bot, seat?}`: a seated player fills the lowest open seat (or `seat`) of a **waiting** game with a built-in bot, named after the seat's faction/colour and its kind (`Black Goat (MCTS)`); a game without a lobby starts when the last seat fills | `{seat, name, color, bot, status}`; `403` not seated, `409` full or already started |
 | `POST /games/{code}/start` | `{player_name}`: the **host** begins a game waiting in its lobby; every seat must be filled | `{status, lobby, host_seat, move_seq, impulse_seat}`; `403` not the host, `409` seats open / already started |
@@ -319,6 +319,14 @@ in the game's definition) in a themed set, for everybody at the table: `ancient`
 `fantasy`, `lovecraftian` or `atomic`. An unknown set, or a game whose deck cannot wear one, is a
 `400`. `GET /games/{code}` reports it as `card_set`. It is fixed when the game is created and changes
 how the cards look, never the notation: `blue-9` is still `blue-9`.
+
+**Seeds.** A game of patience (`GET /game-defs/{id}`: `seeded`) is dealt from a seed, a whole
+number, and the same seed deals the same cards ([ADR 0136](decisions/0136-a-deal-of-patience-has-a-seed.md)). `GET /games/{code}` reports
+it as `seed` once the game is over: during play it would say where the face-down cards lie. Give it
+as `seed` to `POST /games` to play the deal again. A seed that is not a number, or one for a game that
+is not dealt from one, or together with a start position, is a `400`. A game whose seed or start position
+the player chose reports `start_chosen`, and shows its seed from the start. Such a game keeps no best
+score and earns no quick-win badge.
 
 **Rated games.** `rated: true` makes the game move both players' ratings when it
 ends. It takes a signed-in account, a game of two seats, `clock_seconds` with the

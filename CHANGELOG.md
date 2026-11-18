@@ -4,6 +4,11 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.118.0 - 2026-11-18
+
+### Bingle Core 0.118.0
+- Every game of Solitaire, Spider and FreeCell now has a seed, the number its cards were dealt from. When a game ends, the seed is shown on your card in the players panel. Click it to copy it, or press *Play this deal again*. To play a deal another time, or to try one a friend played, enter its seed under *Deal* when you set the game up. A deal you choose is played and counted as usual, but it keeps no best score and earns no badge for a quick win, since you may have played it before.
+
 ## 0.117.1 - 2026-11-18
 
 ### Bingle Core 0.117.1

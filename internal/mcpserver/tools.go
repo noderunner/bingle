@@ -49,6 +49,7 @@ func registerTools(mcpServer *server.MCPServer, mgr *session.Manager) {
 			mcp.WithString("start_tps", mcp.Description("Optional starting position in TPS (Tak) instead of the standard start; the TPS says who moves first. For puzzles and endgame practice.")),
 			mcp.WithObject("start_state", mcp.Description("Optional starting position as a position document (the `state` object of an observation), for any game. Use start_seat to say who moves first.")),
 			mcp.WithNumber("start_seat", mcp.Description("With start_state: the seat that moves first (default: the game's first seat).")),
+			mcp.WithString("seed", mcp.Description("Optional, for a game of patience (get_game_info: seeded): the seed to deal from, a whole number. The same seed deals the same cards, so a finished game's seed plays its deal again. Such a game keeps no best score and earns no quick-win badge. Omit for a new deal.")),
 		),
 		handleCreateGame(mgr),
 	)
@@ -176,6 +177,7 @@ func handleCreateGame(mgr *session.Manager) server.ToolHandlerFunc {
 			StartTPS:   strings.TrimSpace(request.GetString("start_tps", "")),
 			StartState: startStateArg(request.GetArguments()["start_state"]),
 			StartSeat:  request.GetInt("start_seat", 0),
+			Seed:       strings.TrimSpace(request.GetString("seed", "")),
 		})
 		if err != nil {
 			return mcp.NewToolResultError(err.Error()), nil

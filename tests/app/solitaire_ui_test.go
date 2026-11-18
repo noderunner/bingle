@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -580,5 +581,54 @@ func TestWebSolitaire_ACardUnderThePointerShowsLarge(t *testing.T) {
 	}
 	if n := evalInt(t, ctx, `document.querySelectorAll(".pc-zoom").length`); n != 0 {
 		t.Errorf("a card face down was enlarged")
+	}
+}
+
+// A game of patience is dealt from a seed (ADR 0136). The setup page's Deal
+// takes one (a link may bring it), the table shows a deal chosen so from the
+// start, and a game given up offers its deal again.
+func TestWebSolitaire_ADealIsPlayedAgainFromItsSeed(t *testing.T) {
+	baseURL := newRESTTestServer(t)
+	ctx, cancel := newChromedpContext(t, 60*time.Second)
+	defer cancel()
+	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/?game=gomoku")); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "the setup of Gomoku", `document.querySelector('#setup-preview svg') !== null`, 10*time.Second)
+	if !evalBool(t, ctx, `document.getElementById("seed-field").hidden`) {
+		t.Error("a game that is not dealt offers a Deal")
+	}
+	if err := chromedp.Run(ctx,
+		chromedp.Evaluate(`localStorage.setItem("bingle.name", JSON.stringify("Ana"))`, nil),
+		chromedp.Navigate(baseURL+"/?game=solitaire&seed=777"),
+	); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "the Deal", `!document.getElementById("seed-field").hidden && document.getElementById("seed").value === "777"`, 10*time.Second)
+	clickSel(t, ctx, `#create-game-form button[type="submit"]`)
+	waitJS(t, ctx, "the game page", `location.pathname.startsWith("/game/")`, 15*time.Second)
+	// A deal the player chose is shown from the start, on the players card.
+	waitJS(t, ctx, "the seed", `(function () { var b = document.querySelector('.players-card #seed-badge'); return !!b && b.dataset.seed === '777' && b.textContent === 'Seed 777'; })()`, 15*time.Second)
+	first := evalString(t, ctx, `location.pathname.split("/").pop()`)
+	var game struct {
+		Seed        string `json:"seed"`
+		StartChosen bool   `json:"start_chosen"`
+	}
+	if doJSON(t, "GET", baseURL+"/api/games/"+first, nil, &game); game.Seed != "777" || !game.StartChosen {
+		t.Errorf("the game says seed %q, chosen %v", game.Seed, game.StartChosen)
+	}
+	columns := `[...document.querySelectorAll('.sol-column')].map(c => [...c.querySelectorAll('.pcard.face')].map(x => x.dataset.card || x.title).join(',')).join('|')`
+	dealt := evalString(t, ctx, columns)
+
+	// Given up, the game offers its deal again: the same cards.
+	clickSel(t, ctx, `#resign`)
+	waitJS(t, ctx, "the confirmation", `/Really/.test(document.querySelector('#resign').textContent)`, 5*time.Second)
+	clickSel(t, ctx, `#resign`)
+	waitJS(t, ctx, "Play this deal again", `document.querySelector('#replay-deal') !== null`, 15*time.Second)
+	clickSel(t, ctx, `#replay-deal`)
+	waitJS(t, ctx, "the new game", `location.pathname.split("/").pop() !== `+strconv.Quote(first)+` && document.querySelectorAll('.sol-column').length === 7`, 15*time.Second)
+	waitJS(t, ctx, "its seed", `document.querySelector('#seed-badge') && document.querySelector('#seed-badge').dataset.seed === '777'`, 10*time.Second)
+	if again := evalString(t, ctx, columns); again != dealt || dealt == "" {
+		t.Errorf("the deal played again is %q, was %q", again, dealt)
 	}
 }

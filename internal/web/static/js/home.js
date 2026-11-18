@@ -474,6 +474,7 @@ function renderSeatChoices(info) {
 	renderScheduleField();
 	renderRatedField(info);
 	renderCardSetField(info);
+	renderSeedField(info);
 	applyStartMode();
 }
 
@@ -730,6 +731,19 @@ function renderCardSetField(info) {
 		}
 	};
 	show();
+}
+
+/**
+ * "Deal" is offered by a game dealt from a seed, a game of patience (ADR 0136):
+ * a finished game's seed plays its deal again. A link may bring one (?seed=).
+ */
+function renderSeedField(info) {
+	const field = document.getElementById("seed-field");
+	const input = document.getElementById("seed");
+	if (!field || !input) return;
+	field.hidden = !info.seeded;
+	const given = new URLSearchParams(location.search).get("seed");
+	if (given && !input.value) input.value = given;
 }
 
 /**
@@ -1352,6 +1366,8 @@ if (createForm) {
 		if (ratedBox && ratedBox.checked && !document.getElementById("rated-field").hidden) body.rated = true;
 		const cardSet = document.getElementById("card-set");
 		if (cardSet && cardSet.value && !document.getElementById("card-set-field").hidden) body.card_set = cardSet.value;
+		const seed = document.getElementById("seed");
+		if (seed && seed.value.trim() && !document.getElementById("seed-field").hidden) body.seed = seed.value.trim();
 		const submit = createForm.querySelector('button[type="submit"]');
 		submit.disabled = true;
 		try {
