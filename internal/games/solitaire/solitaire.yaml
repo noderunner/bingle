@@ -2,7 +2,7 @@
 id: solitaire
 name: Solitaire
 description: "The patience game most people mean by Solitaire, for one player: build four piles from ace to king, and turn up the seven columns' hidden cards on the way. Spider and FreeCell are here too."
-version: 0.3.1
+version: 0.4.0
 rules:
   - 'Klondike, one card at a time. 52 cards are dealt into seven columns of 1 to 7 cards, the top card of each face up; the rest are the stock. You win by moving every card to the four foundations, one per suit, each built up from ace to king.'
   - 'In a column, cards build down in alternating colours: a black 6 goes on a red 7. A face-up card may be moved with the cards on top of it, as long as they are in that order. A column that is emptied can only be filled with a king. When a face-down card is uncovered it turns up.'
@@ -66,6 +66,52 @@ cards:
 guide:
   tabs:
     - {id: rules, title: Rules, file: klondike.md}
+# A game of patience is scored by the moves it is won in, the fewer the better
+# (ADR 0135); each of these is won in fewer moves than most wins take. A draw,
+# a deal and a turn of the waste are moves, and Finish is one.
+badges:
+  - id: quick-klondike
+    name: Light Fingers
+    description: Win Solitaire (one card at a time) in 110 moves or fewer.
+    when: end
+    won: true
+    game: {variant: solitaire}
+    moves: {at_most: 110}
+  - id: quick-draw-three
+    name: Three's Company
+    description: Win Solitaire (draw three) in 100 moves or fewer.
+    when: end
+    won: true
+    game: {variant: solitaire-draw-3}
+    moves: {at_most: 100}
+  - id: quick-freecell
+    name: Clear Thinking
+    description: Win FreeCell in 110 moves or fewer.
+    when: end
+    won: true
+    game: {variant: freecell}
+    moves: {at_most: 110}
+  - id: quick-spider-1
+    name: Spinner
+    description: Win Spider (one suit) in 150 moves or fewer.
+    when: end
+    won: true
+    game: {variant: spider-1}
+    moves: {at_most: 150}
+  - id: quick-spider-2
+    name: Weaver
+    description: Win Spider (two suits) in 200 moves or fewer.
+    when: end
+    won: true
+    game: {variant: spider-2}
+    moves: {at_most: 200}
+  - id: quick-spider
+    name: Silk Road
+    description: Win Spider, all four suits, in 300 moves or fewer.
+    when: end
+    won: true
+    game: {variant: spider}
+    moves: {at_most: 300}
 variants:
   - id: solitaire-draw-3
     name: Solitaire (draw three)

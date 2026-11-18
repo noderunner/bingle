@@ -35,6 +35,7 @@ func patienceView(game *catalog.CompiledGame, st *BoardState, viewer int) map[st
 		"alternate":     p.Suit == "alternate",
 		"home":          e.homeCount(),
 		"total":         p.Total,
+		"moves":         Moves(st),
 		"panel_actions": []string{"from-", "to-", patienceDraw, patienceRecycle, patienceRow},
 	}
 	if st.table != nil {
@@ -99,6 +100,7 @@ func patienceSample(game *catalog.CompiledGame) any {
 	}
 	v := patienceView(game, st, 0)
 	delete(v, "impulse_seat")
+	delete(v, "moves")
 	v["prompt"], v["hint"], v["impulse"] = "", "", ""
 	patienceSamples.Store(game.Definition.ID, v)
 	return v

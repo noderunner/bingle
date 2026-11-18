@@ -109,6 +109,7 @@ func Check(b dsl.BadgeDef, facts map[string]dsl.FactDef) error {
 		{b.Won, "won"}, {b.Rated, "rated"}, {b.Distinct != nil, "distinct"}, {b.Bot != nil, "bot"},
 		{b.Count != nil && b.Count.Within.Place() == dsl.WithinGames, "a count across games"},
 		{b.Count != nil && b.Count.AtMost != nil, "count.at_most"},
+		{b.Moves != nil, "moves"},
 	}
 	for _, e := range endOnly {
 		if e.on && b.When != WhenEnd {
@@ -170,6 +171,9 @@ func Check(b dsl.BadgeDef, facts map[string]dsl.FactDef) error {
 		if b.Count != nil && b.Count.Within.Place() == dsl.WithinGames {
 			return fail("a bot badge counts within one game: games against bots add to no count across games")
 		}
+	}
+	if b.Moves != nil && b.Moves.AtMost < 1 {
+		return fail("moves.at_most must be at least 1")
 	}
 	if s := b.Seat; s != nil && s.Faction == "" && s.Side == 0 {
 		return fail("seat names a faction or a side")

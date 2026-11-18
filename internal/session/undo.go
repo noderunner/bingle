@@ -127,6 +127,10 @@ func (m *Manager) Undo(ctx context.Context, roomCode, name string) (UndoOutcome,
 			return UndoOutcome{}, err
 		}
 	}
+	// Taking a move back uses a move, and the move still counts (ADR 0135).
+	if doc, err = countTakeBack(game.BoardState, doc); err != nil {
+		return UndoOutcome{}, err
+	}
 	if err := m.store.UndoToSeq(ctx, game.ID, keepSeq, doc, turn); err != nil {
 		return UndoOutcome{}, err
 	}
@@ -142,6 +146,24 @@ func (m *Manager) Undo(ctx context.Context, roomCode, name string) (UndoOutcome,
 		return UndoOutcome{}, err
 	}
 	return UndoOutcome{Removed: removed, Snapshot: snap}, nil
+}
+
+// countTakeBack is the position document before, returned to from the
+// current one, with the moves the game has used carried over and one more.
+func countTakeBack(current, before string) (string, error) {
+	from, to := state.NewBoardState(), state.NewBoardState()
+	if err := from.UnmarshalJSON([]byte(current)); err != nil {
+		return "", fmt.Errorf("reading the position taken back from: %w", err)
+	}
+	if err := to.UnmarshalJSON([]byte(before)); err != nil {
+		return "", fmt.Errorf("reading the position to return to: %w", err)
+	}
+	state.CountTakeBack(from, to)
+	b, err := to.MarshalJSON()
+	if err != nil {
+		return "", fmt.Errorf("writing the position to return to: %w", err)
+	}
+	return string(b), nil
 }
 
 func movedAtSeat(moves []store.Move, seat int) bool {

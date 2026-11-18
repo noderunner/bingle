@@ -786,3 +786,69 @@ func TestARulesetPositionConverts(t *testing.T) {
 		t.Fatal("a Bowling position was converted")
 	}
 }
+
+// A game of patience counts its moves for the page, and a win says how many it
+// took (ADR 0135): a draw and a turn of the waste are moves too.
+func TestPatience_CountsItsMoves(t *testing.T) {
+	g := game(t, "solitaire")
+	moves := func(st *state.BoardState) int {
+		t.Helper()
+		b, err := state.Public(g, st, 1).MarshalJSON()
+		if err != nil {
+			t.Fatal(err)
+		}
+		var out struct {
+			Ext struct {
+				View struct {
+					Moves *int `json:"moves"`
+				} `json:"view"`
+			} `json:"ext"`
+		}
+		if err := json.Unmarshal(b, &out); err != nil {
+			t.Fatal(err)
+		}
+		if out.Ext.View.Moves == nil {
+			t.Fatal("the view has no moves")
+		}
+		return *out.Ext.View.Moves
+	}
+	st := position(t, g, map[string]string{"stock": "?clubs-3 ?clubs-4", "t1": "spades-K"}, nil)
+	if n := moves(st); n != 0 {
+		t.Errorf("a fresh deal has %d moves", n)
+	}
+	st = play(t, g, st, "draw", "draw", "recycle")
+	if n := moves(st); n != 3 {
+		t.Errorf("after three moves the view says %d", n)
+	}
+	if !state.ScoredByMoves(g) || state.ScoredByMoves(game(t, "bowling-solitaire")) {
+		t.Error("patience is scored by its moves, and Bowling by its pins")
+	}
+
+	all := func(suit string) string {
+		var b []string
+		for _, r := range []string{"K", "Q", "J", "10", "9", "8", "7", "6", "5", "4", "3", "2", "A"} {
+			b = append(b, suit+"-"+r)
+		}
+		return strings.Join(b, " ")
+	}
+	st = position(t, g, map[string]string{"t1": all("hearts"), "t2": all("spades"), "t3": all("diamonds"), "t4": all("clubs")}, nil)
+	st = play(t, g, st, "finish")
+	if out, _ := state.Evaluate(g, st, 1); out.Detail != "52 of 52 cards home in 1 move" {
+		t.Errorf("the win says %q", out.Detail)
+	}
+}
+
+// Each badge for a quick win names a game of the family, so none can never be earned.
+func TestEveryQuickWinNamesAVariant(t *testing.T) {
+	g := game(t, "solitaire")
+	if len(g.Definition.Badges) == 0 {
+		t.Fatal("Solitaire has no badges")
+	}
+	for _, b := range g.Definition.Badges {
+		if b.Game == nil || b.Moves == nil || !b.Won {
+			t.Errorf("%s: want a win in a variant within so many moves", b.ID)
+			continue
+		}
+		game(t, b.Game.Variant)
+	}
+}

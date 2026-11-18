@@ -48,6 +48,8 @@ type played struct {
 	game     store.Game
 	family   string
 	facts    []state.Fact
+	// moves is the moves the game used (state.Moves), for a badge's moves part.
+	moves int
 	// bots is set in a game with a bot at a seat: the place of the
 	// weakest of them in the server's list, weakest first.
 	bots      bool
@@ -59,7 +61,7 @@ type played struct {
 // seats. counts is what the game adds to their counts (nil in a game against
 // bots), which the badges see as already added.
 func (m *Manager) endAwards(ctx context.Context, compiled *catalog.CompiledGame, game store.Game, at table, facts []state.Fact, counts map[int64]map[string]int) ([]store.Award, error) {
-	eg := played{compiled: compiled, game: game, family: gameFamily(compiled), facts: facts, bots: len(at.bots) > 0}
+	eg := played{compiled: compiled, game: game, family: gameFamily(compiled), facts: facts, moves: movesOf(game), bots: len(at.bots) > 0}
 	if eg.bots {
 		eg.botPlaces = map[string]int{}
 		for i, b := range m.bots.List() {
@@ -150,6 +152,9 @@ func (m *Manager) earns(gb gameBadge, eg played, seat int, stats map[string]int)
 		if g.Variant != "" && g.Variant != eg.compiled.Definition.ID {
 			return false
 		}
+	}
+	if mv := b.Moves; mv != nil && eg.moves > mv.AtMost {
+		return false
 	}
 	// A game's badge counts in its family, and a platform badge across
 	// every family unless it names one.
