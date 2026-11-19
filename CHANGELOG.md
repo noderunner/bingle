@@ -7,7 +7,7 @@ what the help window shows under *Recent changes*, so it is written for the peop
 ## 0.119.1 - 2026-11-19
 
 ### Bingle Core 0.119.1
-- Apps that play Bingle without the web page, such as a 3D client, can now count on the lobby: starting a game, changing seats, leaving, removing a seat and adding a bot are listed with the rest of what such an app may use.
+- Apps that play Bingle without the web page, such as a 3D client, can now count on the lobby: starting a game, changing seats, leaving, removing a seat and adding a bot are listed with the rest of what such an app may use, and described in full.
 
 ## 0.119.0 - 2026-11-18
 

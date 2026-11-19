@@ -24,8 +24,8 @@ type schemaEndpoint struct {
 	media    string       // the response's media type, when it is not JSON
 }
 
-// schemaEndpoints are the index's endpoints (indexEndpoints), GET /api itself,
-// and a few more a client built apart from the server uses: the lobby's.
+// schemaEndpoints are the index's endpoints (indexEndpoints), GET /api itself
+// and GET /api/me/deals.
 var schemaEndpoints = []schemaEndpoint{
 	{route: "GET /api", response: reflect.TypeFor[apiIndex]()},
 	{route: "POST /api/guest", response: reflect.TypeFor[auth.GuestKey]()},
