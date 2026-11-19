@@ -9,10 +9,17 @@ import (
 // AddBotResult is what AddBot reports: the seat the bot took and whether the
 // game started.
 type AddBotResult struct {
-	Seat   int    `json:"seat"`
-	Name   string `json:"name"`
-	Color  string `json:"color"`
-	Bot    string `json:"bot"`
+	// Seat is the seat the bot took.
+	Seat int `json:"seat"`
+	// Name is the bot's name at the table, after the seat's faction or colour
+	// and its kind (Black Goat (MCTS)).
+	Name string `json:"name"`
+	// Color is the seat's colour.
+	Color string `json:"color"`
+	// Bot is the bot's id, as asked for.
+	Bot string `json:"bot"`
+	// Status is the game's afterwards: active when the bot filled the last
+	// seat of a game without a lobby, waiting otherwise.
 	Status string `json:"status"`
 }
 
