@@ -75,45 +75,159 @@ func TestChangelog_HeadingFormsAndNone(t *testing.T) {
 	}
 }
 
-// The help window shows the newest changes, and a dot on its icon says there
-// is something the player has not seen until they have opened the window.
-func TestWebHelp_RecentChangesAndTheUnseenDot(t *testing.T) {
-	base := newServerWith(t, func(c *config.Config) { c.Changelog = sampleChangelog })
+// longChangelog has releases whose versions sort differently as text and as
+// numbers (0.10.0 after 0.9.1), and text between them that belongs to none.
+const longChangelog = `# Changelog
+
+## 0.10.0 - 2026-11-03
+
+- **Ten**: the newest.
+
+## 0.9.1 - 2026-11-02
+
+- Nine point one.
+
+## Notes
+
+Not a release.
+
+## 0.9.0 - 2026-11-01
+
+- Nine.
+
+## 0.3.0 - 2026-09-01
+
+- Three.
+`
+
+type changelogEntriesResp struct {
+	Entries []changelogResp `json:"entries"`
+}
+
+func entryVersions(r changelogEntriesResp) string {
+	var v []string
+	for _, e := range r.Entries {
+		v = append(v, e.Version)
+	}
+	return strings.Join(v, " ")
+}
+
+// GET /api/changelog/entries?since= gives every release after a version, the
+// newest first, comparing versions as numbers; without since, all of them.
+func TestChangelog_EntriesSinceAVersion(t *testing.T) {
+	base := newServerWith(t, func(c *config.Config) { c.Changelog = longChangelog })
+	for since, want := range map[string]string{
+		"":       "0.10.0 0.9.1 0.9.0 0.3.0",
+		"0.3.0":  "0.10.0 0.9.1 0.9.0",
+		"0.9.0":  "0.10.0 0.9.1",
+		"0.9.5":  "0.10.0",
+		"0.10.0": "",
+		"1.0.0":  "",
+		"0.0.1":  "0.10.0 0.9.1 0.9.0 0.3.0",
+	} {
+		var got changelogEntriesResp
+		if code := doJSON(t, "GET", base+"/api/changelog/entries?since="+since, nil, &got); code != 200 {
+			t.Fatalf("since %q: %d", since, code)
+		}
+		if v := entryVersions(got); v != want {
+			t.Errorf("since %q: %q, want %q", since, v, want)
+		}
+	}
+	var got changelogEntriesResp
+	doJSON(t, "GET", base+"/api/changelog/entries?since=0.9.0", nil, &got)
+	if len(got.Entries) != 2 || got.Entries[1].Date != "2026-11-02" || got.Entries[1].Markdown != "- Nine point one." {
+		t.Errorf("0.9.1, which a heading that is no release ends: %+v", got.Entries)
+	}
+	if code := doJSON(t, "GET", base+"/api/changelog/entries?since=latest", nil, nil); code != 400 {
+		t.Errorf("since=latest: %d, want 400", code)
+	}
+	none := newRESTTestServer(t)
+	if code := doJSON(t, "GET", none+"/api/changelog/entries?since=0.1.0", nil, &got); code != 200 || len(got.Entries) != 0 {
+		t.Errorf("no changelog: %d %+v, want 200 and no entries", code, got)
+	}
+}
+
+// The help window shows every release the player has not read, newest first,
+// in a box that scrolls; the dot on its icon stays until they mark them read,
+// and a browser that never read any is shown the newest alone.
+func TestWebHelp_UnreadChangesUntilMarkedRead(t *testing.T) {
+	base := newServerWith(t, func(c *config.Config) { c.Changelog = longChangelog })
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
+	open := func(what string) {
+		t.Helper()
+		if err := chromedp.Run(ctx, chromedp.Reload(), chromedp.WaitReady("#open-help", chromedp.ByQuery)); err != nil {
+			t.Fatal(err)
+		}
+		waitJS(t, ctx, "the changelog read", `window.performance.getEntriesByName(location.origin + "/api/changelog").length > 0`, 10*time.Second)
+		time.Sleep(300 * time.Millisecond)
+		clickSel(t, ctx, "#open-help")
+		waitJS(t, ctx, what, `!document.getElementById("help-changes").hidden && document.querySelector("#help-changes .help-change")`, 10*time.Second)
+	}
+	shown := func() string {
+		t.Helper()
+		return evalString(t, ctx, `[...document.querySelectorAll("#help-changes .help-change")].map((e) => e.dataset.version).join(" ")`)
+	}
 	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/"), chromedp.WaitReady("#open-help", chromedp.ByQuery)); err != nil {
 		t.Fatal(err)
 	}
-	// Never seen: the dot is on.
-	waitJS(t, ctx, "the dot on the help icon", `document.getElementById("help-badge") && !document.getElementById("help-badge").hidden`, 10*time.Second)
+
+	// Never read: the dot is on, and the window shows the newest release alone.
+	waitJS(t, ctx, "the dot on the help icon", `!document.getElementById("help-badge").hidden`, 10*time.Second)
 	if got := evalString(t, ctx, `document.getElementById("open-help").getAttribute("aria-label")`); got != "Help, with changes you have not seen" {
 		t.Errorf("help icon label = %q", got)
 	}
-	clickSel(t, ctx, "#open-help")
-	waitJS(t, ctx, "the recent changes", `!document.getElementById("help-changes").hidden && document.querySelectorAll("#help-changes li").length === 3`, 10*time.Second)
-	if got := evalString(t, ctx, `document.getElementById("help-changes-head").textContent`); got != "Bingle 0.4.0 · 2026-10-26" {
-		t.Errorf("entry heading = %q", got)
+	open("the newest release")
+	if got := shown(); got != "0.10.0" {
+		t.Errorf("a browser that never read any: %q, want the newest alone", got)
 	}
-	if got := evalString(t, ctx, `document.querySelector("#help-changes li strong").textContent`); got != "Recent Changes" {
+	if got := evalString(t, ctx, `document.querySelector("#help-changes .help-change-head").textContent`); got != "Bingle 0.10.0 · 2026-11-03" {
+		t.Errorf("release heading = %q", got)
+	}
+	if got := evalString(t, ctx, `document.querySelector("#help-changes .help-change strong").textContent`); got != "Ten" {
 		t.Errorf("the Markdown was not rendered: first bold = %q", got)
 	}
-	// Seen: the dot goes, and it stays gone after a reload.
-	waitJS(t, ctx, "the dot gone", `document.getElementById("help-badge").hidden`, 5*time.Second)
-	if err := chromedp.Run(ctx, chromedp.Reload(), chromedp.WaitReady("#open-help", chromedp.ByQuery)); err != nil {
+	if !evalBool(t, ctx, `!document.getElementById("help-mark-read").hidden`) {
+		t.Error("no Mark all as read for an unread release")
+	}
+
+	// Looking is not reading: closed without marking, the dot stays.
+	if err := chromedp.Run(ctx, chromedp.Evaluate(`document.getElementById("help-dialog").close(); true`, nil)); err != nil {
 		t.Fatal(err)
 	}
-	waitJS(t, ctx, "the changelog read", `window.performance.getEntriesByName(location.origin + "/api/changelog").length > 0`, 10*time.Second)
-	time.Sleep(300 * time.Millisecond)
-	if !evalBool(t, ctx, `document.getElementById("help-badge").hidden`) {
-		t.Error("the dot came back for an entry already seen")
+	if !evalBool(t, ctx, `!document.getElementById("help-badge").hidden`) {
+		t.Error("the dot went when the window was only opened")
 	}
-	// An older version seen: this entry is news again.
-	if err := chromedp.Run(ctx,
-		chromedp.Evaluate(`localStorage.setItem("bingle.changelog.seen", JSON.stringify("0.3.0")); true`, nil),
-		chromedp.Reload(), chromedp.WaitReady("#open-help", chromedp.ByQuery)); err != nil {
+
+	// Last read at 0.9.0: both releases since, newest first, in a box that scrolls.
+	if err := chromedp.Run(ctx, chromedp.Evaluate(`localStorage.setItem("bingle.changelog.seen", JSON.stringify("0.9.0")); true`, nil)); err != nil {
 		t.Fatal(err)
 	}
-	waitJS(t, ctx, "the dot for a newer entry", `!document.getElementById("help-badge").hidden`, 10*time.Second)
+	open("the unread releases")
+	waitJS(t, ctx, "two releases", `document.querySelectorAll("#help-changes .help-change").length === 2`, 5*time.Second)
+	if got := shown(); got != "0.10.0 0.9.1" {
+		t.Errorf("unread since 0.9.0: %q, want \"0.10.0 0.9.1\"", got)
+	}
+	if got := evalString(t, ctx, `document.getElementById("help-changes-head").textContent`); got != "2 updates you have not read, the newest first." {
+		t.Errorf("summary = %q", got)
+	}
+	if got := evalString(t, ctx, `getComputedStyle(document.getElementById("help-changes-body")).overflowY`); got != "auto" {
+		t.Errorf("the changes do not scroll: overflow-y %q", got)
+	}
+
+	// Mark all as read: the dot and the button go, and stay gone after a reload.
+	clickSel(t, ctx, "#help-mark-read")
+	waitJS(t, ctx, "the dot gone", `document.getElementById("help-badge").hidden && document.getElementById("help-mark-read").hidden`, 5*time.Second)
+	if got := evalString(t, ctx, `JSON.parse(localStorage.getItem("bingle.changelog.seen"))`); got != "0.10.0" {
+		t.Errorf("read up to %q, want 0.10.0", got)
+	}
+	open("the newest release, read")
+	if got := shown(); got != "0.10.0" {
+		t.Errorf("all read: %q, want the newest alone", got)
+	}
+	if !evalBool(t, ctx, `document.getElementById("help-badge").hidden && document.getElementById("help-mark-read").hidden && document.getElementById("help-changes-head").hidden`) {
+		t.Error("the dot, the button or the summary is back after everything was read")
+	}
 }
 
 // A server with no changelog shows no section and no dot.

@@ -86,6 +86,7 @@ func NewRouter(mgr *session.Manager, opts ...Option) chi.Router {
 	r.Get("/bots", h.handleListBots)
 	r.Get("/config", h.handleConfig)
 	r.Get("/changelog", h.handleChangelog)
+	r.Get("/changelog/entries", h.handleChangelogEntries)
 	r.Get("/bot-guide", h.handleBotGuide)
 	r.Get("/bot-guide/assets/*", h.handleBotGuideAsset)
 	r.Get("/puzzles", h.handleListPuzzles)
@@ -218,8 +219,9 @@ type handlers struct {
 	rtc RTCConfig
 	// docs is docs/api.md, served at GET /docs (empty when the server has none).
 	docs string
-	// changelog is the newest release of CHANGELOG.md (nil when there is none).
-	changelog *changelogEntry
+	// changelog is the releases of CHANGELOG.md, the newest first (none when
+	// the server has no changelog).
+	changelog []changelogEntry
 	// log is the server's logger; nil means slog's default.
 	log *slog.Logger
 	// metrics is the registry; nil records nothing.

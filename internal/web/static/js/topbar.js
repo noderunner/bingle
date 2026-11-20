@@ -34,6 +34,20 @@ function writeTo(address, name) {
 	messages.open(address, name);
 }
 
+/**
+ * Whether version a ("0.10.0") comes after version b ("0.9.3"). Nothing read yet ("") comes
+ * before every version, and a version that is not three numbers after none.
+ */
+export function newerVersion(a, b) {
+	const parts = (v) => (/^\d+\.\d+\.\d+$/.test(v || "") ? v.split(".").map(Number) : null);
+	const pa = parts(a);
+	const pb = parts(b);
+	if (!pa) return false;
+	if (!pb) return true;
+	for (let i = 0; i < 3; i++) if (pa[i] !== pb[i]) return pa[i] > pb[i];
+	return false;
+}
+
 /** The version of the bingle engine, which the server puts in every page. */
 function engineVersion() {
 	const meta = document.querySelector('meta[name="bingle-version"]');
@@ -222,9 +236,18 @@ export function installTopbar({ onRows = () => {}, manageTitle = true } = {}) {
 	// A dot on the icon says the changelog has an entry the player has not seen.
 	const helpDot = h("span", { class: "icon-badge dot", id: "help-badge", hidden: true, "aria-hidden": "true" });
 	const helpBtn = h("button", { type: "button", class: "topbar-icon", id: "open-help", "aria-haspopup": "dialog", title: "Help", "aria-label": "Help" }, helpIcon(), helpDot);
-	const changesBody = h("div", { class: "help-changes-body md" });
-	const changesHead = h("p", { class: "muted small help-changes-head", id: "help-changes-head" });
-	const changes = h("section", { class: "help-changes", id: "help-changes", hidden: true }, h("h3", {}, "Recent changes"), changesHead, changesBody);
+	// Recent changes: every release since the one this browser last marked read, newest first, in a
+	// box of its own that scrolls; Mark all as read clears the dot.
+	const changesBody = h("div", { class: "help-changes-body", id: "help-changes-body", tabindex: "0", "aria-label": "The changes" });
+	const changesHead = h("p", { class: "muted small help-changes-head", id: "help-changes-head", hidden: true });
+	const markRead = h("button", { type: "button", class: "small", id: "help-mark-read", hidden: true, onclick: () => markAllRead() }, "Mark all as read");
+	const changes = h(
+		"section",
+		{ class: "help-changes", id: "help-changes", hidden: true },
+		h("div", { class: "help-changes-top" }, h("h3", {}, "Recent changes"), markRead),
+		changesHead,
+		changesBody
+	);
 	const helpDlg = dialog(
 		"help-dialog",
 		"Help",
@@ -254,32 +277,59 @@ export function installTopbar({ onRows = () => {}, manageTitle = true } = {}) {
 		import("./welcome-tour.js").then((m) => m.openTour()).catch(() => toast("Could not open the tour.", "error"));
 	};
 
-	// The changelog's newest entry is read once the page is up; the dot shows until the player has seen it.
+	// The changelog's newest entry is read once the page is up, to know whether there is news: the
+	// dot shows until the player marks the changes read. The releases since the one they last
+	// marked are read when the window opens. A browser that never has gets the newest alone.
 	let latest = null;
-	let latestShown = false;
+	const seenVersion = () => store.get(CHANGES_SEEN_KEY, "") || "";
+	const unseen = () => !!latest && newerVersion(latest.version, seenVersion());
 	const paintHelpDot = () => {
-		const unseen = !!latest && store.get(CHANGES_SEEN_KEY, "") !== latest.version;
-		helpDot.hidden = !unseen;
-		const label = unseen ? "Help, with changes you have not seen" : "Help";
+		const news = unseen();
+		helpDot.hidden = !news;
+		const label = news ? "Help, with changes you have not seen" : "Help";
 		helpBtn.setAttribute("aria-label", label);
 		helpBtn.title = label;
 	};
 	const showChanges = async () => {
 		if (!latest) return;
-		changesHead.textContent = `${brandName()} ${latest.version}${latest.date ? ` · ${latest.date}` : ""}`;
-		changes.hidden = false;
-		if (!latestShown) {
-			latestShown = true;
+		const news = unseen();
+		const seen = seenVersion();
+		let entries = [latest];
+		if (news && seen) {
 			try {
-				const { renderMarkdown } = await import("./markdown.js");
-				changesBody.append(renderMarkdown(latest.markdown, { idPrefix: "changes" }).node);
+				const got = await api.changelogSince(seen);
+				if (got && got.entries && got.entries.length) entries = got.entries;
 			} catch (_) {
-				changesBody.textContent = latest.markdown;
+				/* the newest alone, as the page already has it */
 			}
 		}
-		// The section is on screen: the player has seen this entry.
+		let renderMarkdown = null;
+		try {
+			({ renderMarkdown } = await import("./markdown.js"));
+		} catch (_) {
+			renderMarkdown = null;
+		}
+		clear(changesBody);
+		for (const e of entries) {
+			const text = h("div", { class: "md" });
+			if (renderMarkdown) text.append(renderMarkdown(e.markdown, { idPrefix: `changes-${e.version}` }).node);
+			else text.textContent = e.markdown;
+			changesBody.append(h("article", { class: "help-change", "data-version": e.version }, h("h4", { class: "help-change-head" }, `${brandName()} ${e.version}${e.date ? ` · ${e.date}` : ""}`), text));
+		}
+		changesBody.scrollTop = 0;
+		changesHead.textContent = !news ? "" : entries.length > 1 ? `${entries.length} updates you have not read, the newest first.` : "An update you have not read.";
+		changesHead.hidden = !news;
+		markRead.hidden = !news;
+		changes.hidden = false;
+	};
+	const markAllRead = () => {
+		if (!latest) return;
 		store.set(CHANGES_SEEN_KEY, latest.version);
+		changesHead.hidden = true;
+		markRead.hidden = true;
 		paintHelpDot();
+		// The button has gone: the focus stays in the window, on the changes.
+		changesBody.focus();
 	};
 	api.changelog().then(
 		(entry) => {

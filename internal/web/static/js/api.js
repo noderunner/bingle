@@ -210,6 +210,8 @@ export const api = {
 	config: () => call("/api/config"),
 	// The newest release of the changelog: {version, date?, markdown}; 404 when the server has none.
 	changelog: () => call("/api/changelog"),
+	// Every release newer than a version, the newest first: {entries: [{version, date?, markdown}]}.
+	changelogSince: (version) => call(`/api/changelog/entries?since=${enc(version)}`),
 	start: (code, name) => call(`/api/games/${enc(code)}/start`, { method: "POST", body: { player_name: name } }),
 	chooseSeat: (code, name, seat) => call(`/api/games/${enc(code)}/seat`, { method: "POST", body: { player_name: name, seat } }),
 	// Before the game starts: the faction an open seat plays (a choice of the game's seat-choice option).
