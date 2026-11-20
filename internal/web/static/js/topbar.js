@@ -54,9 +54,15 @@ function engineVersion() {
 	return (meta && meta.content) || "?";
 }
 
+/**
+ * A window of the top bar. title is its name, shown as its heading, or {label, head}: the name
+ * a screen reader gives it, and what stands beside the close button instead of a heading.
+ */
 function dialog(id, title, ...content) {
 	const closeBtn = h("button", { type: "button", class: "ghost icon dialog-close", "aria-label": "Close", title: "Close (Esc)" }, "✕");
-	const dlg = h("dialog", { id, class: "bar-dialog", "aria-label": title }, h("div", { class: "dialog-head" }, h("h2", {}, title), closeBtn), ...content);
+	const label = typeof title === "string" ? title : title.label;
+	const head = typeof title === "string" ? h("h2", {}, title) : title.head;
+	const dlg = h("dialog", { id, class: "bar-dialog", "aria-label": label }, h("div", { class: "dialog-head" }, head, closeBtn), ...content);
 	closeBtn.addEventListener("click", () => dlg.close());
 	// A click on the backdrop (the dialog element itself) closes it.
 	dlg.addEventListener("click", (ev) => {
@@ -248,24 +254,18 @@ export function installTopbar({ onRows = () => {}, manageTitle = true } = {}) {
 		changesHead,
 		changesBody
 	);
+	// The version stands where a heading would, and the buttons share one line at the bottom.
 	const helpDlg = dialog(
 		"help-dialog",
-		"Help",
-		h("p", { class: "help-version", id: "help-version" }, h("strong", {}, brandName()), ` v${engineVersion()}`),
-		h("p", { class: "muted small" }, "Abstract strategy games to play with friends, against bots, or for training models. Open source under the MIT License."),
+		{ label: "Help", head: h("p", { class: "help-version", id: "help-version" }, h("strong", {}, brandName()), ` v${engineVersion()}`) },
 		changes,
 		h(
 			"div",
-			{ class: "row help-tour" },
-			h("button", { type: "button", class: "button", id: "help-tour", onclick: () => takeTour() }, "Take the Tour"),
-			h("span", { class: "muted small" }, `A short look round ${brandName()}.`)
-		),
-		h(
-			"div",
-			{ class: "row help-links" },
+			{ class: "help-links" },
+			h("button", { type: "button", class: "button", id: "help-tour", onclick: () => takeTour() }, "Tour"),
 			// For anybody writing a client of their own: the API's documentation, from this server.
 			h("a", { class: "button", id: "help-api", href: "/api/docs", target: "_blank", rel: "noopener" }, "API"),
-			h("a", { class: "button", id: "help-github", href: REPO_URL, target: "_blank", rel: "noopener noreferrer" }, brandName() === "Bingle" ? "Bingle on GitHub" : "Source on GitHub"),
+			h("a", { class: "button", id: "help-github", href: REPO_URL, target: "_blank", rel: "noopener noreferrer" }, brandName() === "Bingle" ? "GitHub" : "Source on GitHub"),
 			// The issues of another instance are not this project's to answer.
 			brandName() === "Bingle" ? h("a", { class: "button primary", id: "help-issues", href: `${REPO_URL}/issues`, target: "_blank", rel: "noopener noreferrer" }, "Report Issues") : null
 		)

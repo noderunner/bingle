@@ -1858,8 +1858,19 @@ button.voice-mic.elsewhere { border-color: #2f9e44; color: #2f9e44; }
 .site-footer { text-align: center; padding: 1.2rem 1rem 1rem; color: var(--muted); font-size: 0.72rem; }
 .site-footer sub { vertical-align: baseline; font-size: inherit; }
 
-.help-links { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.8rem; }
-.help-version { margin: 0 0 0.4rem; font-size: 1.05rem; }
+/* The help window's buttons share one line, however narrow the screen. */
+.help-links { display: flex; flex-wrap: nowrap; gap: 0.4rem; margin-top: 0.8rem; }
+.help-links > .button { flex: 1 1 auto; padding-inline: 0.5rem; justify-content: center; text-align: center; white-space: nowrap; }
+@media (max-width: 420px) {
+	#help-dialog { padding-inline: 0.9rem; }
+	.help-links { gap: 0.3rem; }
+	.help-links > .button { padding-inline: 0.4rem; font-size: 0.85rem; }
+}
+@media (max-width: 340px) {
+	.help-links > .button { padding-inline: 0.3rem; font-size: 0.78rem; }
+}
+#help-dialog .dialog-head { margin-bottom: 0.2rem; }
+.help-version { margin: 0; font-size: 1.05rem; }
 
 /* ---- a player who is an animal: the icon beside the name --------  */
 .seat-strip .seat-icon, .players-list .seat-icon { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0; border: 0; background: none; border-radius: 8px; flex: none; }
@@ -2085,4 +2096,3 @@ dialog.tour-card::backdrop { background: rgba(0, 0, 0, 0.3); }
 	.tour-gallery { grid-template-columns: repeat(3, 1fr); }
 	.tour-friend-list { flex-basis: 6rem; }
 }
-.help-tour { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; margin-top: 0.8rem; }
