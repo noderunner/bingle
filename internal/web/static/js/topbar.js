@@ -53,8 +53,10 @@ export function newerVersion(a, b) {
  * release's own heading (under any brand). A game's section keeps its heading.
  */
 export function withoutCoreHeading(markdown, version) {
-	const v = String(version).replace(/[.]/g, "\\.");
-	return String(markdown || "").replace(new RegExp(`^###\\s+.*\\bCore\\s+${v}\\s*$\\n?`, "m"), "").trim();
+	const lines = String(markdown || "").split("\n");
+	const i = lines.findIndex((l) => l.startsWith("### ") && l.trimEnd().endsWith(` Core ${version}`));
+	if (i >= 0) lines.splice(i, 1);
+	return lines.join("\n").trim();
 }
 
 /** The version of the bingle engine, which the server puts in every page. */
