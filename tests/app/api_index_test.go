@@ -63,6 +63,16 @@ func TestAPIIndex_SaysWhereToStartAndEveryEndpointItNamesIsThere(t *testing.T) {
 		if path != "/api" {
 			continue
 		}
+		// The lobby's calls are there for a client that builds a lobby.
+		listed := map[string]bool{}
+		for _, e := range idx.Endpoints {
+			listed[e.Method+" "+e.Path] = true
+		}
+		for _, call := range []string{"bots", "start", "seat", "leave", "remove"} {
+			if !listed["POST /api/games/{code}/"+call] {
+				t.Errorf("POST /api/games/{code}/%s is not in the index", call)
+			}
+		}
 		for _, e := range idx.Endpoints {
 			// Each is a route of the API, not the answer to a path it lacks, and the docs describe it.
 			url := base + strings.NewReplacer("{id}", "hex-7", "{code}", "NOSUCH").Replace(e.Path)

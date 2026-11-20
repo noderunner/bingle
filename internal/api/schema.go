@@ -24,7 +24,8 @@ type schemaEndpoint struct {
 	media    string       // the response's media type, when it is not JSON
 }
 
-// schemaEndpoints are the index's endpoints (indexEndpoints) and GET /api itself.
+// schemaEndpoints are the index's endpoints (indexEndpoints), GET /api itself
+// and GET /api/me/deals.
 var schemaEndpoints = []schemaEndpoint{
 	{route: "GET /api", response: reflect.TypeFor[apiIndex]()},
 	{route: "POST /api/guest", response: reflect.TypeFor[auth.GuestKey]()},
@@ -42,6 +43,11 @@ var schemaEndpoints = []schemaEndpoint{
 	{route: "POST /api/games/{code}/moves", request: reflect.TypeFor[makeMoveRequest](), response: reflect.TypeFor[makeMoveResponse]()},
 	{route: "GET /api/games/{code}/moves", response: reflect.TypeFor[[]wire.Move]()},
 	{route: "POST /api/games/{code}/resign", request: reflect.TypeFor[playerRequest](), response: reflect.TypeFor[getGameStateResponse]()},
+	{route: "POST /api/games/{code}/bots", request: reflect.TypeFor[addBotRequest](), response: reflect.TypeFor[session.AddBotResult]()},
+	{route: "POST /api/games/{code}/start", request: reflect.TypeFor[playerRequest](), response: reflect.TypeFor[gameStatusResponse]()},
+	{route: "POST /api/games/{code}/seat", request: reflect.TypeFor[seatRequest](), response: reflect.TypeFor[gameStatusResponse]()},
+	{route: "POST /api/games/{code}/leave", request: reflect.TypeFor[playerRequest](), response: reflect.TypeFor[gameStatusResponse]()},
+	{route: "POST /api/games/{code}/remove", request: reflect.TypeFor[seatRequest](), response: reflect.TypeFor[gameStatusResponse]()},
 	{route: "GET /api/me/deals", response: reflect.TypeFor[ownDealsResponse]()},
 	{route: "POST /api/bot-matches", request: reflect.TypeFor[botMatchRequest](), response: reflect.TypeFor[botMatchResponse]()},
 }
@@ -81,6 +87,8 @@ func Schema(root string) ([]byte, error) {
 			reflect.TypeFor[joinGameRequest]():   {"player_name"},
 			reflect.TypeFor[makeMoveRequest]():   {"player_name"},
 			reflect.TypeFor[playerRequest]():     {"player_name"},
+			reflect.TypeFor[seatRequest]():       {"player_name", "seat"},
+			reflect.TypeFor[addBotRequest]():     {"player_name", "bot"},
 			reflect.TypeFor[botMatchRequest]():   {"game_def_id", "bot_a", "bot_b"},
 		},
 		Names: map[reflect.Type]string{

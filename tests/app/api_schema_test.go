@@ -209,6 +209,21 @@ func TestAPISchema_DescribesWhatTheServerSends(t *testing.T) {
 	ana.do("GET /api/games/{code}", game, nil, 200)
 	ana.do("GET /api/games/{code}/state", game+"/state", nil, 200)
 
+	// A game in a lobby: a bot sits and is removed, the host changes seats, a
+	// player joins, leaves and comes back, and only the host starts it.
+	lobby := ana.do("POST /api/games", "/api/games", map[string]any{"game_def_id": "hex-7", "player_name": "Ana", "lobby": true}, 200)
+	room := "/api/games/" + lobby["room_code"].(string)
+	ana.do("POST /api/games/{code}/bots", room+"/bots", map[string]any{"player_name": "Ana", "bot": "random"}, 200)
+	ana.do("POST /api/games/{code}/remove", room+"/remove", map[string]any{"player_name": "Ana", "seat": 2}, 200)
+	ana.do("POST /api/games/{code}/seat", room+"/seat", map[string]any{"player_name": "Ana", "seat": 2}, 200)
+	bo.do("POST /api/games/{code}/join", room+"/join", map[string]any{"player_name": "Bo"}, 200)
+	bo.do("POST /api/games/{code}/leave", room+"/leave", map[string]any{"player_name": "Bo"}, 200)
+	bo.do("POST /api/games/{code}/join", room+"/join", map[string]any{"player_name": "Bo"}, 200)
+	bo.do("POST /api/games/{code}/start", room+"/start", map[string]any{"player_name": "Bo"}, 403)
+	if started := ana.do("POST /api/games/{code}/start", room+"/start", map[string]any{"player_name": "Ana"}, 200); started["status"] != "active" {
+		t.Errorf("the lobby game after start: %v", started)
+	}
+
 	// Two bots play each other for a spectator, and a match without its bots is refused.
 	match := ana.do("POST /api/bot-matches", "/api/bot-matches", map[string]any{"game_def_id": "hex-7", "bot_a": "random", "bot_b": "random", "delay_ms": 150}, 200)
 	ana.do("GET /api/games/{code}", "/api/games/"+match["room_code"].(string), nil, 200)

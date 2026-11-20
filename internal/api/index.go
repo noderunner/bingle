@@ -68,6 +68,11 @@ var indexEndpoints = []indexEndpoint{
 	{"POST", "/api/games/{code}/moves", "play a move: {player_name, notation}"},
 	{"GET", "/api/games/{code}/moves", "the moves played so far"},
 	{"POST", "/api/games/{code}/resign", "resign: {player_name}"},
+	{"POST", "/api/games/{code}/bots", "a bot takes an open seat of a waiting game: {player_name, bot, seat?}"},
+	{"POST", "/api/games/{code}/start", "the host starts a game waiting in its lobby: {player_name}"},
+	{"POST", "/api/games/{code}/seat", "move to an open seat before the game starts: {player_name, seat}"},
+	{"POST", "/api/games/{code}/leave", "give up your seat before the game starts: {player_name}"},
+	{"POST", "/api/games/{code}/remove", "the host clears another seat before the game starts: {player_name, seat}"},
 	{"POST", "/api/bot-matches", "two built-in bots play each other, to watch: {game_def_id, bot_a, bot_b, delay_ms?}"},
 }
 

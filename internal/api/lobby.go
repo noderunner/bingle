@@ -46,16 +46,18 @@ func (h *handlers) inviteURL(r *http.Request, code string) string {
 	return strings.TrimRight(base, "/") + "/game/" + strings.ToUpper(code)
 }
 
-// nameBody is the request body of the actions that only name the player.
-type nameBody struct {
+// seatRequest is the body of the lobby's actions on one seat: POST
+// /games/{code}/seat, /remove and /release.
+type seatRequest struct {
 	PlayerName string `json:"player_name"`
-	Seat       int    `json:"seat,omitempty"`
+	// Seat is the seat acted on: the open seat to move to, or the seat to clear.
+	Seat int `json:"seat"`
 }
 
 // handleStartGame implements POST /games/{code}/start: the host begins a
 // game that waits in its lobby.
 func (h *handlers) handleStartGame(w http.ResponseWriter, r *http.Request) {
-	var req nameBody
+	var req playerRequest
 	if !decodeBody(w, r, &req) {
 		return
 	}
@@ -74,7 +76,7 @@ func (h *handlers) handleStartGame(w http.ResponseWriter, r *http.Request) {
 // handleChooseSeat implements POST /games/{code}/seat: a player moves to an
 // open seat before the game starts.
 func (h *handlers) handleChooseSeat(w http.ResponseWriter, r *http.Request) {
-	var req nameBody
+	var req seatRequest
 	if !decodeBody(w, r, &req) {
 		return
 	}
@@ -129,7 +131,7 @@ func (h *handlers) handleSetSeatFaction(w http.ResponseWriter, r *http.Request) 
 // handleLeave implements POST /games/{code}/leave: a player gives up their
 // seat before the game starts.
 func (h *handlers) handleLeave(w http.ResponseWriter, r *http.Request) {
-	var req nameBody
+	var req playerRequest
 	if !decodeBody(w, r, &req) {
 		return
 	}
@@ -148,7 +150,7 @@ func (h *handlers) handleLeave(w http.ResponseWriter, r *http.Request) {
 // handleReleaseSeat implements POST /games/{code}/release: the host gives up a seat kept for a
 // friend, so that anybody can sit there.
 func (h *handlers) handleReleaseSeat(w http.ResponseWriter, r *http.Request) {
-	var req nameBody
+	var req seatRequest
 	if !decodeBody(w, r, &req) {
 		return
 	}
@@ -171,7 +173,7 @@ func (h *handlers) handleReleaseSeat(w http.ResponseWriter, r *http.Request) {
 // handleRemoveSeat implements POST /games/{code}/remove: the host clears
 // another seat before the game starts.
 func (h *handlers) handleRemoveSeat(w http.ResponseWriter, r *http.Request) {
-	var req nameBody
+	var req seatRequest
 	if !decodeBody(w, r, &req) {
 		return
 	}
@@ -191,13 +193,20 @@ func (h *handlers) handleRemoveSeat(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, statusFromSnapshot(snap))
 }
 
-// gameStatusResponse is the small answer of the lobby actions.
+// gameStatusResponse is the small answer of the lobby actions: where the
+// game stands after one.
 type gameStatusResponse struct {
-	Status      string `json:"status"`
-	Lobby       bool   `json:"lobby"`
-	HostSeat    int    `json:"host_seat,omitempty"`
-	MoveSeq     int    `json:"move_seq"`
-	ImpulseSeat *int   `json:"impulse_seat"`
+	// Status is the game's: waiting, active or finished.
+	Status string `json:"status"`
+	// Lobby is true while the game waits for its host's start.
+	Lobby bool `json:"lobby"`
+	// HostSeat is the host's seat, the one that may start the game and clear
+	// other seats; absent in a game without a host.
+	HostSeat int `json:"host_seat,omitempty"`
+	// MoveSeq is the number of moves played.
+	MoveSeq int `json:"move_seq"`
+	// ImpulseSeat is the seat whose impulse the game waits for, null until it starts.
+	ImpulseSeat *int `json:"impulse_seat"`
 }
 
 func statusFromSnapshot(snap session.StateSnapshot) gameStatusResponse {
@@ -423,7 +432,7 @@ func (h *handlers) handlePostGlobalChat(w http.ResponseWriter, r *http.Request) 
 // handleAutoPlayImpulse implements POST /games/{code}/auto-play-impulse: another connected
 // player has a bot play the turn the game has waited on past the second warning.
 func (h *handlers) handleAutoPlayImpulse(w http.ResponseWriter, r *http.Request) {
-	var req nameBody
+	var req playerRequest
 	if !decodeBody(w, r, &req) {
 		return
 	}

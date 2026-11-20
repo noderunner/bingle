@@ -20,9 +20,10 @@ patch for the schema's descriptions alone. A client ignores the fields it does n
 
 **Schema.** `GET /api/schema` serves [api.schema.json](api.schema.json), the JSON Schema (2020-12)
 of the messages of that `api_version`, generated from the server's Go types: `x-endpoints` gives
-the request and response of each endpoint of the index, `x-error` the error body, and
-`$defs/WebSocketEvent` the events of `/ws/{code}` (all but voice and `rtc`). A position (`state`)
-is left open: each game has its own. The rest of the API is described here alone.
+the request and response of each endpoint of the index, the lobby's calls among them, `x-error`
+the error body, and `$defs/WebSocketEvent` the events of `/ws/{code}` (all but voice and `rtc`).
+A position (`state`) is left open: each game has its own. The rest of the API is described here
+alone.
 
 **Who is asking** ([ADR 0067](decisions/0067-principals-and-guest-keys.md)). A request comes from a
 *guest* when it carries a guest key — the `bingle_guest` cookie of a browser, or

@@ -40,6 +40,60 @@
       ],
       "type": "object"
     },
+    "AddBotRequest": {
+      "description": "addBotRequest is POST /games/{code}/bots' body.",
+      "properties": {
+        "bot": {
+          "description": "Bot is the id of a built-in bot, from GET /bots.",
+          "type": "string"
+        },
+        "player_name": {
+          "type": "string"
+        },
+        "seat": {
+          "description": "Seat optionally names the open seat the bot takes; without it, the lowest.",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "player_name",
+        "bot"
+      ],
+      "type": "object"
+    },
+    "AddBotResult": {
+      "description": "AddBotResult is what AddBot reports: the seat the bot took and whether the game started.",
+      "properties": {
+        "bot": {
+          "description": "Bot is the bot's id, as asked for.",
+          "type": "string"
+        },
+        "color": {
+          "description": "Color is the seat's colour.",
+          "type": "string"
+        },
+        "name": {
+          "description": "Name is the bot's name at the table, after the seat's faction or colour and its kind (Black Goat (MCTS)).",
+          "type": "string"
+        },
+        "seat": {
+          "description": "Seat is the seat the bot took.",
+          "type": "integer"
+        },
+        "status": {
+          "description": "Status is the game's afterwards: active when the bot filled the last seat of a game without a lobby, waiting otherwise.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "seat",
+        "name",
+        "color",
+        "bot",
+        "status"
+      ],
+      "type": "object"
+    },
     "BoardDTO": {
       "description": "BoardDTO describes the board graph and how to draw it.",
       "properties": {
@@ -982,6 +1036,41 @@
         "id",
         "at",
         "count"
+      ],
+      "type": "object"
+    },
+    "GameStatusResponse": {
+      "description": "gameStatusResponse is the small answer of the lobby actions: where the game stands after one.",
+      "properties": {
+        "host_seat": {
+          "description": "HostSeat is the host's seat, the one that may start the game and clear other seats; absent in a game without a host.",
+          "type": "integer"
+        },
+        "impulse_seat": {
+          "description": "ImpulseSeat is the seat whose impulse the game waits for, null until it starts.",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "lobby": {
+          "description": "Lobby is true while the game waits for its host's start.",
+          "type": "boolean"
+        },
+        "move_seq": {
+          "description": "MoveSeq is the number of moves played.",
+          "type": "integer"
+        },
+        "status": {
+          "description": "Status is the game's: waiting, active or finished.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "lobby",
+        "move_seq",
+        "impulse_seat"
       ],
       "type": "object"
     },
@@ -2330,7 +2419,7 @@
       "type": "object"
     },
     "PlayerRequest": {
-      "description": "playerRequest is the body of the undo/resign endpoints.",
+      "description": "playerRequest is the body of the actions that only name the player: undo, resign, start, leave and auto-play-impulse.",
       "properties": {
         "player_name": {
           "type": "string"
@@ -2726,6 +2815,23 @@
       ],
       "type": "object"
     },
+    "SeatRequest": {
+      "description": "seatRequest is the body of the lobby's actions on one seat: POST /games/{code}/seat, /remove and /release.",
+      "properties": {
+        "player_name": {
+          "type": "string"
+        },
+        "seat": {
+          "description": "Seat is the seat acted on: the open seat to move to, or the seat to clear.",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "player_name",
+        "seat"
+      ],
+      "type": "object"
+    },
     "SelectionsResponse": {
       "description": "selectionsResponse is GET /games/{code}/selections' body (ADR 0114).",
       "properties": {
@@ -3114,9 +3220,9 @@
   },
   "$id": "https://github.com/noderunner/bingle/docs/api.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "description": "The requests, responses and WebSocket events of bingle's API, version 1.3.0. Generated from the Go types of the server: do not edit. Objects let unknown fields through: a client ignores those it does not know.",
+  "description": "The requests, responses and WebSocket events of bingle's API, version 1.4.0. Generated from the Go types of the server: do not edit. Objects let unknown fields through: a client ignores those it does not know.",
   "title": "Bingle API messages",
-  "x-api-version": "1.3.0",
+  "x-api-version": "1.4.0",
   "x-endpoints": {
     "GET /api": {
       "response": {
@@ -3201,12 +3307,28 @@
         "$ref": "#/$defs/CreateGameResponse"
       }
     },
+    "POST /api/games/{code}/bots": {
+      "request": {
+        "$ref": "#/$defs/AddBotRequest"
+      },
+      "response": {
+        "$ref": "#/$defs/AddBotResult"
+      }
+    },
     "POST /api/games/{code}/join": {
       "request": {
         "$ref": "#/$defs/JoinGameRequest"
       },
       "response": {
         "$ref": "#/$defs/JoinGameResponse"
+      }
+    },
+    "POST /api/games/{code}/leave": {
+      "request": {
+        "$ref": "#/$defs/PlayerRequest"
+      },
+      "response": {
+        "$ref": "#/$defs/GameStatusResponse"
       }
     },
     "POST /api/games/{code}/moves": {
@@ -3217,12 +3339,36 @@
         "$ref": "#/$defs/MakeMoveResponse"
       }
     },
+    "POST /api/games/{code}/remove": {
+      "request": {
+        "$ref": "#/$defs/SeatRequest"
+      },
+      "response": {
+        "$ref": "#/$defs/GameStatusResponse"
+      }
+    },
     "POST /api/games/{code}/resign": {
       "request": {
         "$ref": "#/$defs/PlayerRequest"
       },
       "response": {
         "$ref": "#/$defs/GetGameStateResponse"
+      }
+    },
+    "POST /api/games/{code}/seat": {
+      "request": {
+        "$ref": "#/$defs/SeatRequest"
+      },
+      "response": {
+        "$ref": "#/$defs/GameStatusResponse"
+      }
+    },
+    "POST /api/games/{code}/start": {
+      "request": {
+        "$ref": "#/$defs/PlayerRequest"
+      },
+      "response": {
+        "$ref": "#/$defs/GameStatusResponse"
       }
     },
     "POST /api/guest": {

@@ -124,15 +124,19 @@ func (h *handlers) handleGameAsset(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(data)
 }
 
+// addBotRequest is POST /games/{code}/bots' body.
+type addBotRequest struct {
+	PlayerName string `json:"player_name"`
+	// Bot is the id of a built-in bot, from GET /bots.
+	Bot string `json:"bot"`
+	// Seat optionally names the open seat the bot takes; without it, the lowest.
+	Seat int `json:"seat,omitempty"`
+}
+
 // handleAddBot implements POST /games/{code}/bots: a seated player fills
 // the next open seat of a waiting game with a built-in bot.
 func (h *handlers) handleAddBot(w http.ResponseWriter, r *http.Request) {
-	var req struct {
-		PlayerName string `json:"player_name"`
-		Bot        string `json:"bot"`
-		// Seat optionally names the open seat the bot takes.
-		Seat int `json:"seat,omitempty"`
-	}
+	var req addBotRequest
 	if !decodeBody(w, r, &req) {
 		return
 	}
@@ -193,7 +197,8 @@ func legalMoveDTOs(moves []session.SelectionOption) []legalMoveDTO {
 	return out
 }
 
-// playerRequest is the body of the undo/resign endpoints.
+// playerRequest is the body of the actions that only name the player: undo,
+// resign, start, leave and auto-play-impulse.
 type playerRequest struct {
 	PlayerName string `json:"player_name"`
 }
