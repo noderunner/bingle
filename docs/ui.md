@@ -268,9 +268,11 @@ selects one).
   at `/batches/{id}`) and the report of the one picked (`#analysis-report`:
   `#analysis-seat-card` — the win rate of each seat with a 95% Wilson interval
   and a marker at an even share — `#analysis-endings` and, when two bots played,
-  `#analysis-bot-card`). Under it, **the guide to the bots** (`#analysis-guide`):
-  `GET /api/bot-guide`, Markdown rendered by `js/markdown.js` with its drawings
-  from `/api/bot-guide/assets/`, and a table of contents of its sections.
+  `#analysis-bot-card`). While the tab is shown, a book in the top bar
+  (`#open-bot-guide`) opens **the guide to the bots** in a window like the rules
+  window (`#bot-guide-dialog`, `#analysis-guide`): `GET /api/bot-guide`, Markdown
+  rendered by `js/markdown.js` with its drawings from `/api/bot-guide/assets/`,
+  and a table of contents of its sections.
 * *Global Chat* (`js/global-chat.js`): one room everybody shares
   (`#global-chat-log`, `#global-chat-name`, `#global-chat-input`,
   `#global-chat-send`, the emoji picker of the game chat). History comes from

@@ -73,7 +73,6 @@ function form(host) {
 	const seats = h("div", { id: "analysis-seats-field" });
 	const err = h("div", { class: "error-text", id: "analysis-error", role: "alert" });
 	const start = h("button", { type: "button", id: "analysis-start", class: "primary" }, "Run the batch");
-	const note = h("p", { class: "small muted" }, "The games are played in memory, as fast as the machine allows, and nothing is saved in your games. One batch runs at a time.");
 
 	const paintSeats = async () => {
 		clear(seats);
@@ -129,7 +128,6 @@ function form(host) {
 			h("div", { class: "field" }, h("label", { class: "check" }, rotate, h("span", {}, "Move the bots round the seats (so the order of play favours nobody)"))),
 			err,
 			h("div", { class: "row" }, start),
-			note
 		)
 	);
 }
@@ -263,9 +261,21 @@ async function refresh() {
 
 // ---- the guide to the bots ---------------------------------------------------
 
-async function guide(host) {
-	const box = h("div", { class: "card analysis-guide md", id: "analysis-guide" }, h("p", { class: "muted" }, "Reading the guide…"));
-	host.append(box);
+/** Opens the guide to the bots in a window of its own, like a game's rules. */
+export async function openBotGuide() {
+	document.getElementById("bot-guide-dialog")?.remove();
+	const box = h("div", { class: "rules-body analysis-guide md", id: "analysis-guide", tabindex: -1 }, h("p", { class: "muted" }, "Reading the guide…"));
+	const close = h("button", { class: "rules-close", "aria-label": "Close the guide", title: "Close (Esc)" }, "×");
+	const dlg = h("dialog", { id: "bot-guide-dialog", class: "rules-window", "aria-labelledby": "bot-guide-title" }, h("div", { class: "rules-head" }, h("h2", { id: "bot-guide-title" }, "The bots"), close), box);
+	close.addEventListener("click", () => dlg.close());
+	dlg.addEventListener("click", (ev) => {
+		if (ev.target === dlg) dlg.close();
+	});
+	dlg.addEventListener("close", () => dlg.remove());
+	document.body.append(dlg);
+	if (typeof dlg.showModal === "function") dlg.showModal();
+	else dlg.setAttribute("open", "");
+	box.focus();
 	try {
 		const text = await api.botGuide();
 		clear(box);
@@ -294,10 +304,7 @@ export async function mountAnalysis(host) {
 	if (!host || mounted) return;
 	mounted = true;
 	clear(host);
-	host.append(
-		h("p", { class: "muted" }, "Set bots against each other over hundreds of games to see how a game behaves — who the first move favours, how long games run, how often they are drawn — and how the bots themselves compare."),
-		h("div", { class: "analysis-top" })
-	);
+	host.append(h("div", { class: "analysis-top" }));
 	const top = host.querySelector(".analysis-top");
 	try {
 		[defs, botList] = await Promise.all([api.gameDefs(), api.bots()]);
@@ -330,7 +337,5 @@ export async function mountAnalysis(host) {
 		)
 	);
 	host.append(h("div", { id: "analysis-report", class: "analysis-report" }));
-	host.append(h("h2", { id: "analysis-guide-head" }, "The bots, and what to do with them"));
 	await refresh();
-	await guide(host);
 }

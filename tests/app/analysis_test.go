@@ -213,6 +213,13 @@ func TestWebAnalysis_TheTabRunsABatchAndExplainsTheBots(t *testing.T) {
 		t.Error("the report does not link to the full one")
 	}
 
+	// The guide is not on the tab: the book in the top bar opens it in a window.
+	if evalBool(t, ctx, `document.querySelector("#panel-analysis #analysis-guide")`) {
+		t.Error("the guide is still on the tab")
+	}
+	waitJS(t, ctx, "the guide's button", `!document.getElementById("open-bot-guide").hidden`, 5*time.Second)
+	clickSel(t, ctx, "#open-bot-guide")
+	waitJS(t, ctx, "the guide's window", `document.getElementById("bot-guide-dialog").open`, 5*time.Second)
 	// The guide: its headings, its three drawings, and its references.
 	waitJS(t, ctx, "the guide", `document.querySelectorAll("#analysis-guide .md-h").length > 5`, 30*time.Second)
 	for _, want := range []string{"Monte Carlo tree search", "alpha-beta", "pie rule", "Kocsis"} {
@@ -227,6 +234,11 @@ func TestWebAnalysis_TheTabRunsABatchAndExplainsTheBots(t *testing.T) {
 	if !evalBool(t, ctx, `(function () { var img = document.querySelector('#analysis-guide img'); return img.complete === false || img.naturalWidth > 0; })()`) {
 		t.Error("a drawing of the guide did not load")
 	}
+	// Closed, and on another tab the button goes.
+	clickSel(t, ctx, "#bot-guide-dialog .rules-close")
+	waitJS(t, ctx, "the guide closed", `!document.getElementById("bot-guide-dialog")`, 5*time.Second)
+	clickSel(t, ctx, "#tab-games")
+	waitJS(t, ctx, "the button hidden", `document.getElementById("open-bot-guide").hidden`, 5*time.Second)
 	mu.Lock()
 	defer mu.Unlock()
 	if len(jsErrors) > 0 {
