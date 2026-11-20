@@ -7,7 +7,7 @@
 // games ran, how they ended, and (for Cthulhu Wars, which is watched far more
 // closely) a report of its own at /batches/{id}.
 
-import { h, clear, store, ago } from "./util.js";
+import { h, clear, store } from "./util.js";
 import { api, gameTitle, whoAmI } from "./api.js";
 import { rateBars } from "./charts.js";
 import { renderMarkdown } from "./markdown.js";
@@ -20,7 +20,7 @@ let mounted = false;
 let defs = [];
 let botList = [];
 let timer = null;
-let openReport = 0; // the batch whose report is on screen
+const expanded = new Set(); // the batches whose card shows its report
 
 /** What the form was last set to, so the tab comes back as it was left. */
 function setup() {
@@ -72,7 +72,7 @@ function form(host) {
 	rotate.checked = s.rotate;
 	const seats = h("div", { id: "analysis-seats-field" });
 	const err = h("div", { class: "error-text", id: "analysis-error", role: "alert" });
-	const start = h("button", { type: "button", id: "analysis-start", class: "primary" }, "Run the batch");
+	const start = h("button", { type: "button", id: "analysis-start", class: "primary" }, "Run Batch");
 
 	const paintSeats = async () => {
 		clear(seats);
@@ -107,8 +107,7 @@ function form(host) {
 		});
 		start.disabled = true;
 		try {
-			const info = await api.startBatch(body);
-			openReport = info.id;
+			await api.startBatch(body);
 			await refresh();
 		} catch (e) {
 			err.textContent = e.message;
@@ -121,7 +120,7 @@ function form(host) {
 		h(
 			"div",
 			{ class: "card analysis-form" },
-			h("h2", {}, "Run a batch"),
+			h("h2", {}, "Run Batch"),
 			h("div", { class: "field" }, h("label", { for: "analysis-game" }, "Game"), gameSel),
 			seats,
 			h("div", { class: "field" }, h("label", { for: "analysis-games" }, "How many games"), count),
@@ -134,21 +133,35 @@ function form(host) {
 
 // ---- the batches and their reports ------------------------------------------
 
+/** A batch's game, by its name alone ("Cthulhu Wars", not its layout or size). */
+function gameName(id) {
+	const base = String(id || "").split("~")[0];
+	const def = defs.find((d) => d.id === base);
+	return def ? gameTitle(def).replace(/\s*\(.*\)$/, "") : base;
+}
+
 function batchRow(b) {
 	const status = b.status === "running" ? `running ${b.done}/${b.games}` : `${STATUS_TEXT[b.status] || b.status} · ${b.done}/${b.games}`;
-	const open = h("button", { type: "button", class: "ghost", "data-open-batch": b.id, onclick: () => showReport(b.id) }, "Report");
+	const on = expanded.has(b.id);
+	const report = h("div", { class: "batch-report", hidden: !on });
+	const open = h("button", { type: "button", class: "ghost", "data-open-batch": b.id, "aria-expanded": on ? "true" : "false" }, "Report");
+	open.addEventListener("click", () => {
+		const show = !expanded.has(b.id);
+		if (show) expanded.add(b.id);
+		else expanded.delete(b.id);
+		open.setAttribute("aria-expanded", show ? "true" : "false");
+		report.hidden = !show;
+		if (show) fillReport(b.id, report);
+	});
+	if (on) fillReport(b.id, report);
 	return h(
 		"li",
-		{ "data-batch": b.id, class: b.id === openReport ? "on" : null },
-		h(
-			"div",
-			{ class: "grow" },
-			h("div", { class: "title" }, b.name || `Batch ${b.id}`),
-			h("div", { class: "meta muted small" }, `${b.game_def_id} · ${b.spec.players.map((p) => p.bot).join(" v ")} · ${ago(b.created_at)}`)
-		),
+		{ "data-batch": b.id },
+		h("div", { class: "title grow" }, gameName(b.game_def_id)),
 		h("span", { class: `batch-status ${b.status}` }, status),
 		open,
-		h("a", { class: "button", href: `/batches/${b.id}` }, "Full report")
+		h("a", { class: "button", href: `/batches/${b.id}` }, "Full report"),
+		report
 	);
 }
 
@@ -166,24 +179,7 @@ function seatCard(rep) {
 		};
 	});
 	if (!rows.length) return null;
-	const fair = rows.length ? 1 / rows.length : 0;
-	return h(
-		"div",
-		{ class: "card", id: "analysis-seat-card" },
-		h("h3", {}, "Win rate by seat"),
-		rateBars(rows, { marker: fair }),
-		h("p", { class: "small muted" }, `The dashed line is an even share (${pct(fair)}). The whiskers are a 95% interval: where they overlap the line, the batch has not shown a difference.`)
-	);
-}
-
-/** The same by bot, which is what says whether one plays better than another. */
-function botCard(rep) {
-	const rows = (rep.bots || []).map((b, i) => {
-		const ci = interval(b.wins, b.games);
-		return { label: b.bot, color: SEAT_COLORS[(i + 2) % SEAT_COLORS.length], value: ci.rate, lo: ci.lo, hi: ci.hi, note: `${b.wins} of ${b.games} seats` };
-	});
-	if (rows.length < 2) return null;
-	return h("div", { class: "card", id: "analysis-bot-card" }, h("h3", {}, "Win rate by bot"), rateBars(rows, {}), h("p", { class: "small muted" }, "Each seat of each game counts once, wherever the bot sat."));
+	return h("div", { class: "card analysis-seat-card" }, h("h3", {}, "Win Rate by Seat"), rateBars(rows, { marker: 1 / rows.length }));
 }
 
 function endingsCard(rep) {
@@ -191,8 +187,8 @@ function endingsCard(rep) {
 	const draws = (rep.games || 0) - (rep.decided || 0);
 	return h(
 		"div",
-		{ class: "card", id: "analysis-endings" },
-		h("h3", {}, "How the games went"),
+		{ class: "card analysis-endings" },
+		h("h3", {}, "Result Summary"),
 		h(
 			"dl",
 			{ class: "stat-list" },
@@ -215,29 +211,23 @@ function endingsCard(rep) {
 	);
 }
 
-async function showReport(id) {
-	openReport = id;
-	const host = document.getElementById("analysis-report");
-	if (!host) return;
-	clear(host);
-	host.append(h("p", { class: "muted" }, "Reading the report…"));
+// The last report drawn for each batch, so that redrawing the list while a
+// batch runs does not empty an open card while its report is read again.
+const drawn = new Map();
+
+/** Fills a batch's card with its win rate by seat and its result summary. */
+async function fillReport(id, host) {
+	if (drawn.has(id)) host.replaceChildren(...drawn.get(id).map((n) => n.cloneNode(true)));
+	else host.replaceChildren(h("p", { class: "muted" }, "Reading the report…"));
 	try {
 		const { batch: info, report: rep } = await api.batchReport(id);
-		clear(host);
-		if (!rep.games) {
-			host.append(h("p", { class: "muted" }, info.status === "running" || info.status === "queued" ? "Waiting for the first games to finish…" : "No games were played."));
-			return;
-		}
-		host.append(
-			h("h2", {}, info.name || `Batch ${id}`),
-			h("p", { class: "small muted" }, `${info.game_def_id} · ${rep.games} games · ${STATUS_TEXT[info.status] || info.status}`),
-			h("div", { class: "report-grid" }, seatCard(rep), endingsCard(rep)),
-			botCard(rep),
-			h("p", { class: "small" }, h("a", { href: `/batches/${id}` }, "The full report"), " has everything the batch measured.")
-		);
+		const nodes = rep.games
+			? [h("div", { class: "report-grid" }, seatCard(rep), endingsCard(rep))]
+			: [h("p", { class: "muted" }, info.status === "running" || info.status === "queued" ? "Waiting for the first games to finish…" : "No games were played.")];
+		drawn.set(id, nodes);
+		host.replaceChildren(...nodes);
 	} catch (e) {
-		clear(host);
-		host.append(h("p", { class: "error-text" }, e.message));
+		host.replaceChildren(h("p", { class: "error-text" }, e.message));
 	}
 }
 
@@ -248,10 +238,8 @@ async function refresh() {
 	try {
 		const { batches } = await api.batches();
 		clear(list);
-		if (!batches.length) list.append(h("li", { class: "muted" }, "No batches yet. Set one going above."));
+		if (!batches.length) list.append(h("li", { class: "muted" }, "No batches yet."));
 		for (const b of batches) list.append(batchRow(b));
-		if (!openReport && batches.length) openReport = batches[0].id;
-		if (openReport) await showReport(openReport);
 		if (batches.some((b) => b.status === "running" || b.status === "queued")) timer = setTimeout(refresh, 3000);
 	} catch (e) {
 		clear(list);
@@ -323,7 +311,7 @@ export async function mountAnalysis(host) {
 			h(
 				"div",
 				{ class: "card", id: "analysis-signin" },
-				h("h2", {}, "Run a batch"),
+				h("h2", {}, "Run Batch"),
 				h("p", {}, "Setting bots against each other is for signed-in players. ", h("a", { href: "/login?return=" + encodeURIComponent("/#analysis") }, "Sign in"), " to run one; the reports below are for everybody.")
 			)
 		);
@@ -336,6 +324,5 @@ export async function mountAnalysis(host) {
 			h("ul", { class: "my-games batch-list", id: "analysis-batches" }, h("li", { class: "muted" }, "Reading…"))
 		)
 	);
-	host.append(h("div", { id: "analysis-report", class: "analysis-report" }));
 	await refresh();
 }

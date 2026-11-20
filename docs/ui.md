@@ -261,14 +261,15 @@ selects one).
   header sets the start position.
 * *Puzzles*: see *Puzzles* below.
 * *Analysis* (`js/analysis.js`, built the first time the tab is shown): where a
-  batch of bot-versus-bot games is set going for **any** game and read. The form
+  batch of bot-versus-bot games is set going for **any** game and read. *Run Batch*
   (`#analysis-game`, one `#analysis-seats .analysis-bot` per seat of the chosen
-  game, `#analysis-games`, `#analysis-rotate`, `#analysis-start`), the batches
-  (`#analysis-batches li[data-batch]`, with *Report* and a link to the full one
-  at `/batches/{id}`) and the report of the one picked (`#analysis-report`:
-  `#analysis-seat-card` — the win rate of each seat with a 95% Wilson interval
-  and a marker at an even share — `#analysis-endings` and, when two bots played,
-  `#analysis-bot-card`). While the tab is shown, a book in the top bar
+  game, `#analysis-games`, `#analysis-rotate`, `#analysis-start`) above the
+  batches (`#analysis-batches li[data-batch]`, each titled by its game's name
+  alone, with its status, *Report* and a link to the full one at `/batches/{id}`).
+  *Report* (`[data-open-batch]`) opens the batch's card on `.analysis-seat-card`,
+  *Win Rate by Seat* (the win rate of each seat with a 95% Wilson interval and a
+  marker at an even share), and `.analysis-endings`, *Result Summary*; it follows
+  the batch while it runs, and *Report* again closes it. While the tab is shown, a book in the top bar
   (`#open-bot-guide`) opens **the guide to the bots** in a window like the rules
   window (`#bot-guide-dialog`, `#analysis-guide`): `GET /api/bot-guide`, Markdown
   rendered by `js/markdown.js` with its drawings from `/api/bot-guide/assets/`,

@@ -197,20 +197,38 @@ func TestWebAnalysis_TheTabRunsABatchAndExplainsTheBots(t *testing.T) {
 	})()`)
 	clickSel(t, ctx, "#analysis-start")
 	waitJS(t, ctx, "the batch in the list", `document.querySelectorAll("#analysis-batches li[data-batch]").length === 1`, 20*time.Second)
-	waitJS(t, ctx, "the report", `document.querySelector("#analysis-seat-card") !== null && document.querySelectorAll("#analysis-seat-card .chart").length === 1`, 40*time.Second)
+	// The batch's title is its game's name alone, with nothing under it.
+	if got := evalString(t, ctx, `document.querySelector("#analysis-batches li[data-batch] .title").textContent`); got != gameNameOf(t, baseURL, "tic-tac-toe") {
+		t.Errorf("the batch's title is %q", got)
+	}
+	if evalBool(t, ctx, `document.querySelector("#analysis-batches li[data-batch] .meta")`) {
+		t.Error("the batch has a line under its title")
+	}
+	// Report opens the batch's card on its win rate by seat and its result summary.
+	clickSel(t, ctx, "#analysis-batches li[data-batch] [data-open-batch]")
+	waitJS(t, ctx, "the report", `document.querySelectorAll("#analysis-batches li[data-batch] .analysis-seat-card .chart").length === 1`, 40*time.Second)
 	// The report follows the batch as it runs, so the count settles at eight.
 	waitJS(t, ctx, "all eight games counted", `(function () {
-		var dd = document.querySelectorAll("#analysis-endings .stat-list dd");
+		var dd = document.querySelectorAll("#analysis-batches .analysis-endings .stat-list dd");
 		return dd.length > 0 && dd[0].textContent === "8";
 	})()`, 40*time.Second)
-	if got := evalString(t, ctx, `document.getElementById("analysis-endings").textContent`); !strings.Contains(got, "Moves per game") {
-		t.Errorf("the endings card reads %q", got)
+	if got := evalString(t, ctx, `[...document.querySelectorAll("#analysis-batches .batch-report h3")].map((e) => e.textContent).join(" | ")`); got != "Win Rate by Seat | Result Summary" {
+		t.Errorf("the report's cards are %q", got)
 	}
-	// Win rate by bot, since two different bots played.
-	waitJS(t, ctx, "the bot card", `document.getElementById("analysis-bot-card") !== null`, 20*time.Second)
-	// And the full report is a click away.
-	if got := evalString(t, ctx, `(document.querySelector('#analysis-report a[href^="/batches/"]') || {}).textContent || ""`); got == "" {
-		t.Error("the report does not link to the full one")
+	if got := evalString(t, ctx, `document.querySelector("#analysis-batches .analysis-endings").textContent`); !strings.Contains(got, "Moves per game") {
+		t.Errorf("the result summary reads %q", got)
+	}
+	if evalBool(t, ctx, `document.querySelector("#analysis-batches .batch-report p.small")`) {
+		t.Error("the report has a line of subtext")
+	}
+	// The full report is a click away; Report again closes the card.
+	if got := evalString(t, ctx, `(document.querySelector('#analysis-batches li[data-batch] a[href^="/batches/"]') || {}).textContent || ""`); got != "Full report" {
+		t.Errorf("the link to the full report reads %q", got)
+	}
+	clickSel(t, ctx, "#analysis-batches li[data-batch] [data-open-batch]")
+	waitJS(t, ctx, "the card closed", `document.querySelector("#analysis-batches .batch-report").hidden`, 5*time.Second)
+	if got := evalString(t, ctx, `document.querySelector(".analysis-form h2").textContent + " / " + document.getElementById("analysis-start").textContent`); got != "Run Batch / Run Batch" {
+		t.Errorf("the form reads %q", got)
 	}
 
 	// The guide is not on the tab: the book in the top bar opens it in a window.
@@ -244,4 +262,17 @@ func TestWebAnalysis_TheTabRunsABatchAndExplainsTheBots(t *testing.T) {
 	if len(jsErrors) > 0 {
 		t.Errorf("uncaught JS exceptions: %v", jsErrors)
 	}
+}
+
+// gameNameOf is a game's name as the Analysis tab shows it: without its size or layout.
+func gameNameOf(t *testing.T, base, id string) string {
+	t.Helper()
+	var info struct {
+		Name string `json:"name"`
+	}
+	if code := doJSON(t, "GET", base+"/api/game-defs/"+id, nil, &info); code != 200 {
+		t.Fatalf("GET /api/game-defs/%s: %d", id, code)
+	}
+	name, _, _ := strings.Cut(info.Name, " (")
+	return name
 }
