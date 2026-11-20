@@ -233,6 +233,12 @@ export function installTopbar({ onRows = () => {}, manageTitle = true } = {}) {
 		changes,
 		h(
 			"div",
+			{ class: "row help-tour" },
+			h("button", { type: "button", class: "button", id: "help-tour", onclick: () => takeTour() }, "Take the Tour"),
+			h("span", { class: "muted small" }, `A short look round ${brandName()}.`)
+		),
+		h(
+			"div",
 			{ class: "row help-links" },
 			// For anybody writing a client of their own: the API's documentation, from this server.
 			h("a", { class: "button", id: "help-api", href: "/api/docs", target: "_blank", rel: "noopener" }, "API"),
@@ -241,6 +247,12 @@ export function installTopbar({ onRows = () => {}, manageTitle = true } = {}) {
 			brandName() === "Bingle" ? h("a", { class: "button primary", id: "help-issues", href: `${REPO_URL}/issues`, target: "_blank", rel: "noopener noreferrer" }, "Report Issues") : null
 		)
 	);
+
+	// The welcome tour (ADR 0139), loaded only when it is asked for.
+	const takeTour = () => {
+		helpDlg.close();
+		import("./welcome-tour.js").then((m) => m.openTour()).catch(() => toast("Could not open the tour.", "error"));
+	};
 
 	// The changelog's newest entry is read once the page is up; the dot shows until the player has seen it.
 	let latest = null;

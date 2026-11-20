@@ -329,7 +329,7 @@ can give it up (`[data-act="release"]`), and a visitor with no seat to take sees
 In every chat a player's handle is a badge (`.handle-badge[data-handle]`). To a signed-in player it offers a friend request (`#friend-pop`,
 `#friend-pop-send`, or `#friend-pop-accept` if they have asked); it does nothing for a friend, for yourself, or for a guest.
 
-With *Real-Time Game* ticked, a signed-in player's setup has *When to Play* (`#schedule-field`, `input[name="schedule-mode"]`: `now`, `time`, `windows`), with a time
+With *Real-Time Game* ticked, a signed-in player's setup has *When to Play* (`#schedule-field`, `input[name="schedule-mode"]`: `now`, `time`, `windows`, the last called a **muster**: several times offered, for the players to choose from), with a time
 (`#schedule-at`) or times (`.schedule-slot`, `#schedule-add-slot`), and who to invite (`.schedule-friend`, `#schedule-handles`). The lobby then has `#lobby-schedule`: when it is
 (`#schedule-when`, `#schedule-ics`), or the times to answer (`#schedule-slot-list input[data-slot]`, `#schedule-decide`, `#schedule-new`), and `#schedule-cancel`. ([ADR 0109](decisions/0109-scheduled-games.md))
 
@@ -710,7 +710,30 @@ Every page ends with a small footer (`.site-footer`): `bingle v0.4.0 · MIT Lice
 engine itself (`internal/version`, apart from the versions of the games) and a link to the project.
 The top bar of the main page, the profile and every game ends with a **?** button (`#open-help`, `js/topbar.js`)
 that opens `#help-dialog`: the version first (`.help-version`, read from `<meta name="bingle-version">`),
-then *Bingle on GitHub* (`#help-github`) and *Report Issues* (`#help-issues`, the project's issues page).
+then *Bingle on GitHub* (`#help-github`) and *Report Issues* (`#help-issues`, the project's issues page). *Take the Tour* (`#help-tour`) shows the welcome tour again, on any page.
+
+## The welcome tour
+
+The main page offers a short tour of the platform once to each guest and account (`js/welcome-tour.js`,
+[ADR 0139](decisions/0139-a-welcome-tour.md)): `#welcome-tour`, a floating card of slides, each a picture
+(`#tour-picture`, with `.tour-stage` inside), a title (`#tour-title`), a few words (`#tour-text`) and, where a
+feature is an account's and the player is not, *With an account.* (`#tour-account-note`). A dot for each slide
+(`.tour-dot[data-slide]`), *Skip* (`#tour-skip`), *Back* (`#tour-back`) and *Next* (`#tour-next`, *Done* on the
+last); the arrow keys move between slides, and Esc closes it. The dialog's `data-slide` names the slide shown.
+
+The slides are `welcome`, `opponents`, `learn`, `table`, `puzzles`, `analysis`, `games`, `compete`, `friends`,
+`muster` and, for a guest, `guest` (its key, and what an account adds: `#tour-adds`, with `#tour-signup` where
+signing up is open). A slide whose feature the server offers nobody is left out (`slidesFor`, from `/auth/me`'s
+`caps`, `account_caps` and `accounts`).
+
+Each picture is drawn by the page's own code from sample data — `renderBoard`, a real puzzle, `rateBars`,
+`gameRow`, `badgeItem`, `guestKeySection` — or built of the page's classes, so it follows the theme and the page.
+It is inert and `aria-hidden`, its HTML elements lose their ids, and the frame (`role="img"`) carries its
+description.
+
+The tour is offered when `/auth/me` says `tour_seen` is false and the browser's `bingle.tour.seen` is not set,
+and not to a newcomer on a server in `closed` mode. Closing it in any way sets both (`POST /auth/tour-seen`).
+The browser tests' pages start with `bingle.tour.seen` set; `newChromedpContextWithTour` gives a browser without it.
 
 ## The list of games
 

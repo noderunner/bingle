@@ -1,6 +1,7 @@
 # 0109. Scheduled games, and agreeing on a time
 
-Status: accepted (2026-11-05)
+Status: accepted (2026-11-05). Since [ADR 0139](0139-a-welcome-tour.md), offering several times for the players
+to choose from is called a **muster**.
 
 ## Context
 

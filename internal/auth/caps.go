@@ -454,6 +454,18 @@ func (c *Caps) Has(p Principal, ok bool) []string {
 	return out
 }
 
+// ClassCaps is the capabilities a class holds (for /auth/me, so a guest's
+// page can say what an account would add).
+func (c *Caps) ClassCaps(class string) []string {
+	var out []string
+	for _, cap := range AllCaps {
+		if c.Allowed(class, cap) {
+			out = append(out, cap)
+		}
+	}
+	return out
+}
+
 // check answers a request its principal may not make, and reports whether
 // it did.
 func (c *Caps) check(w http.ResponseWriter, r *http.Request, p Principal, ok bool, peer string, now time.Time) bool {

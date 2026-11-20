@@ -126,6 +126,8 @@ function codeBody(typed) {
 export const api = {
 	// Accounts (ADR 0068).
 	me: () => call("/auth/me"),
+	// The welcome tour was skipped or finished (ADR 0139).
+	tourSeen: () => call("/auth/tour-seen", { method: "POST" }),
 	ownDeals: (gameDefID) => call(`/api/me/deals?game_def_id=${enc(gameDefID)}`),
 	login: (handle, password) => call("/auth/login", { method: "POST", body: { handle, password } }),
 	logout: () => call("/auth/logout", { method: "POST" }),
@@ -148,6 +150,8 @@ export const api = {
 	badges: () => call("/api/badges"),
 	gameLook: (id) => call(`/api/game-defs/${enc(id)}/web`),
 	me: () => call("/auth/me"),
+	// The welcome tour was skipped or finished (ADR 0139).
+	tourSeen: () => call("/auth/tour-seen", { method: "POST" }),
 	guestKey: () => call("/api/guest/key"),
 	adoptGuest: (key) => call("/api/guest/adopt", { method: "POST", body: { key } }),
 	rotateGuest: () => call("/api/guest/rotate", { method: "POST" }),

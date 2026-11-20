@@ -25,6 +25,7 @@ import (
 //	POST /auth/logout                               ends this session
 //	POST /auth/password {old, new}                  a new password, a new cookie
 //	GET  /auth/me                                   who this browser is
+//	POST /auth/tour-seen                            the welcome tour was skipped or finished (ADR 0139)
 //	POST /auth/second   {code | recovery_code}      the second step of a sign-in
 //	POST /auth/totp/setup   {password}               a secret for an app, its link and a QR code of it
 //	POST /auth/totp/enable  {code}                   on, with ten recovery codes
@@ -47,6 +48,7 @@ func (rs *Resolver) Routes() http.Handler {
 	r.Post("/logout", rs.handleLogout)
 	r.Post("/password", rs.handlePassword)
 	r.Get("/me", rs.handleMe)
+	r.Post("/tour-seen", rs.handleTourSeen)
 	r.Post("/second", rs.handleSecond)
 	r.Post("/totp/setup", rs.handleTOTPSetup)
 	r.Post("/totp/enable", rs.handleTOTPEnable)
@@ -351,6 +353,13 @@ type Me struct {
 	Mode       string   `json:"mode,omitempty"`
 	SignupMode string   `json:"signup_mode,omitempty"`
 	Caps       []string `json:"caps,omitempty"`
+	// AccountCaps, for a guest or a newcomer on a server with accounts, are
+	// what an account may do here: what signing up would add to Caps.
+	AccountCaps []string `json:"account_caps,omitempty"`
+	// TourSeen says this guest or account has skipped or finished the welcome
+	// tour (ADR 0139), which the main page then does not offer again; POST
+	// /auth/tour-seen says so. Always false for a newcomer, who has no guest yet.
+	TourSeen bool `json:"tour_seen,omitempty"`
 }
 
 func (rs *Resolver) meOf(r *http.Request, a store.Account) Me {
@@ -366,8 +375,45 @@ func (rs *Resolver) meOf(r *http.Request, a store.Account) Me {
 	out.Providers = rs.oidc.Providers()
 	out.Signup = rs.signupOpen()
 	out.Admin = a.Admin && !out.NeedsSecondFactor
+	out.TourSeen = rs.tourSeen(r, a.PrincipalID)
 	rs.decorate(r, &out)
 	return out
+}
+
+// tourSeen says whether the principal has seen the welcome tour. When that
+// cannot be read it says yes: a tour shown again by mistake is the worse error.
+func (rs *Resolver) tourSeen(r *http.Request, principalID string) bool {
+	if principalID == "" {
+		return false
+	}
+	seen, err := rs.guests.TourSeen(r.Context(), principalID)
+	if err != nil {
+		rs.log.Error("reading whether the tour was seen", "err", err)
+		return true
+	}
+	return seen
+}
+
+// TourSeenResponse is POST /auth/tour-seen's answer.
+type TourSeenResponse struct {
+	// TourSeen is true: the guest or account has seen the tour.
+	TourSeen bool `json:"tour_seen"`
+}
+
+// handleTourSeen marks the welcome tour seen by whoever asks: an account, or
+// a guest, which a page's first request makes if the browser has none yet.
+func (rs *Resolver) handleTourSeen(w http.ResponseWriter, r *http.Request) {
+	p, ok := From(r.Context())
+	if !ok {
+		writeError(w, http.StatusUnauthorized, "auth: there is nobody to remember that for: a guest is made by the page's first request")
+		return
+	}
+	if err := rs.guests.MarkTourSeen(r.Context(), p.ID, rs.now()); err != nil {
+		rs.log.Error("marking the tour seen", "err", err)
+		writeError(w, http.StatusServiceUnavailable, "auth: could not remember that; try again")
+		return
+	}
+	writeJSON(w, http.StatusOK, TourSeenResponse{TourSeen: true})
 }
 
 // needsSecondFactor: the admin group signs in with a second factor, except
@@ -384,6 +430,7 @@ func (rs *Resolver) handleMe(w http.ResponseWriter, r *http.Request) {
 			out = rs.meOf(r, *p.Account)
 		} else {
 			out.Kind = store.KindGuest
+			out.TourSeen = rs.tourSeen(r, p.ID)
 		}
 	}
 	if rs.accounts != nil {
@@ -593,6 +640,9 @@ func (rs *Resolver) decorate(r *http.Request, out *Me) {
 	out.Mode = rs.caps.Mode()
 	p, ok := From(r.Context())
 	out.Caps = rs.caps.Has(p, ok)
+	if rs.accounts != nil && (!ok || p.Account == nil) {
+		out.AccountCaps = rs.caps.ClassCaps(ClassUser)
+	}
 }
 
 // ErrNotAdmin is the answer to an admin request from anybody else (or from

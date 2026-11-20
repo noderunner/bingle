@@ -2403,6 +2403,13 @@
     "MeResponse": {
       "description": "Me is GET /auth/me's answer: who the request comes from.",
       "properties": {
+        "account_caps": {
+          "description": "AccountCaps, for a guest or a newcomer on a server with accounts, are what an account may do here: what signing up would add to Caps.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
         "accounts": {
           "description": "Accounts says whether this server has accounts at all, and Signup whether a person can make one here.",
           "type": "boolean"
@@ -2469,6 +2476,10 @@
         },
         "signup_mode": {
           "type": "string"
+        },
+        "tour_seen": {
+          "description": "TourSeen says this guest or account has skipped or finished the welcome tour (ADR 0139), which the main page then does not offer again; POST /auth/tour-seen says so. Always false for a newcomer, who has no guest yet.",
+          "type": "boolean"
         }
       },
       "required": [
@@ -3945,6 +3956,19 @@
       },
       "type": "object"
     },
+    "TourSeenResponse": {
+      "description": "TourSeenResponse is POST /auth/tour-seen's answer.",
+      "properties": {
+        "tour_seen": {
+          "description": "TourSeen is true: the guest or account has seen the tour.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "tour_seen"
+      ],
+      "type": "object"
+    },
     "TournamentRef": {
       "description": "TournamentRef is what a game says of the tournament it is part of.",
       "properties": {
@@ -4246,9 +4270,9 @@
   },
   "$id": "https://github.com/noderunner/bingle/docs/api.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "description": "The requests, responses and WebSocket events of bingle's API, version 1.6.0. Generated from the Go types of the server: do not edit. Objects let unknown fields through: a client ignores those it does not know.",
+  "description": "The requests, responses and WebSocket events of bingle's API, version 1.7.0. Generated from the Go types of the server: do not edit. Objects let unknown fields through: a client ignores those it does not know.",
   "title": "Bingle API messages",
-  "x-api-version": "1.6.0",
+  "x-api-version": "1.7.0",
   "x-dm-events": {
     "badge": {
       "$ref": "#/$defs/BadgeEventData"
@@ -4580,6 +4604,11 @@
       },
       "response": {
         "$ref": "#/$defs/SessionTokenResponse"
+      }
+    },
+    "POST /auth/tour-seen": {
+      "response": {
+        "$ref": "#/$defs/TourSeenResponse"
       }
     },
     "PUT /api/friends/settings": {

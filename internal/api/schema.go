@@ -64,6 +64,7 @@ var schemaEndpoints = []schemaEndpoint{
 	{route: "POST /auth/login", request: reflect.TypeFor[auth.LoginRequest](), response: reflect.TypeFor[auth.SessionTokenResponse]()},
 	{route: "POST /auth/second", request: reflect.TypeFor[auth.SecondRequest](), response: reflect.TypeFor[auth.SessionTokenResponse]()},
 	{route: "GET /auth/me", response: reflect.TypeFor[auth.Me]()},
+	{route: "POST /auth/tour-seen", response: reflect.TypeFor[auth.TourSeenResponse]()},
 	{route: "POST /auth/logout", response: reflect.TypeFor[auth.LogoutResponse]()},
 
 	// Friends (ADR 0105), who is here and direct messages, for a signed-in
