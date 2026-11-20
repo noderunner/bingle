@@ -16,4 +16,13 @@ truth, and [decisions/](../decisions/README.md) records what was decided and why
 | [observability-plan.md](observability-plan.md) | The plan for logging, metrics and the slow-request journal |
 | [game-plugins-plan.md](game-plugins-plan.md) | The plan for games registered by build, the private overlay for commercial games, and the data packs that were dropped |
 | [achievements-plan.md](achievements-plan.md) | The plan for badges, and the facts the rules report for them |
+| [real-time-play-plan.md](real-time-play-plan.md) | The plan for real-time games: connection, warnings, vote-kicks and clocks |
+| [tournaments-and-rankings-plan.md](tournaments-and-rankings-plan.md) | The plan for tournaments and ratings; its *Later* list is in issues |
+| [game-tutorials-plan.md](game-tutorials-plan.md) | The plan for guided tutorials |
+| [dsl-yaml-plan.md](dsl-yaml-plan.md) | The plan for YAML game definitions |
+| [dsl-coverage-audit-plan.md](dsl-coverage-audit-plan.md) | The audit of what the DSL can express, and the additions it led to |
+| [patience-vocabulary-plan.md](patience-vocabulary-plan.md) | The patience vocabulary, the DSL audit's addition F |
+| [code-and-architecture-audit-plan.md](code-and-architecture-audit-plan.md) | Initial thoughts on a code and architecture audit, still open (issue #249) |
+| [game-services-proposal.md](game-services-proposal.md) | A deferred proposal: games as services, in the server's process or their own, in place of the private overlay |
+| [plan-dependencies.md](plan-dependencies.md) | How the plans depended on each other, and the order they were built in |
 

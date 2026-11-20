@@ -1,0 +1,177 @@
+# Plan: a code and architecture audit
+
+Status: **planning in progress** (opened 2026-10-28), and now tracked in issue #249: every plan it was
+waiting for is done. Initial thoughts written before the design discussion, not settled decisions.
+Nothing is implemented; the measurements below are from 2026-10-28 and are stale.
+
+(The request listed "would require authenticated personal accounts" against this item; I have
+read that as a copy-and-paste from the achievements item, since an audit needs no accounts. Say
+if it meant something else.)
+
+## What was asked for
+
+- Another audit pass across the JavaScript, the Go and the JSON.
+- Evaluate for simplicity, readability and maintainability.
+- Consider changes to the architecture that better fit how bingle has actually evolved.
+
+## Where the code is, measured
+
+| Area | Lines (excluding tests) |
+|---|---|
+| `internal/games` | 30,048 |
+| `internal/engine` | 9,543 (state 4,992 · catalog 2,097 · dsl 962 · board 889 · cards 404) |
+| `internal/session` | 7,869 |
+| `internal/api` | 3,039 |
+| `internal/mcpserver` | 1,968 |
+| `internal/store` | 1,812 |
+| everything else | ~6,800 (batch, envs, bots, mail, config, tune, puzzles, httpserve, app, web, wire) |
+| **Go total** | **61,083**, plus 51,587 lines of tests |
+| Front end | 17,495 lines of JavaScript across ~25 ES modules, 1,825 of CSS, no build step |
+
+Two numbers stand out. **Half the Go is games**, and 17,628 of that is Cthulhu Wars — so "the
+platform" is really about 31,000 lines. And **`game.js` is 5,239 lines**, three times the next
+largest front-end module.
+
+## Initial thinking
+
+**Measure before opining.** The first deliverable is not a refactor, it is a findings document
+ranked by risk times churn: a file-size and function-length histogram, per-package fan-in and
+fan-out, dead code and unused exports (`staticcheck`'s unused passes plus the `deadcode` tool),
+duplication across the ten game packages, and the slowest and flakiest tests. Facts first,
+opinions second, patches third.
+
+**The candidates I would expect it to find, stated now so the audit can confirm or refute them**
+(item 8 is not a prediction: it is measured and waiting):
+
+1. **`internal/session` has become several packages wearing one coat.** Room locks and the hub
+   are the core; presence, direct messages, call claims, voice, notifications and clocks have
+   each grown into it. Splitting the ones with no business in a room lock behind narrow
+   interfaces is the clearest structural win, and it is also what makes the capability checks
+   from the auth plan land in obvious places.
+2. **`game.js` at 5,239 lines.** Board interaction, seat strips, panels, history, dialogs and
+   keyboard handling in one module. It can be split along those seams while keeping plain ES
+   modules and no build step — the constraint stays.
+3. **Duplication across the ten game packages.** Each has grown its own `view.go`,
+   `notation.go`, `data.go` and heuristics with similar shapes. A shared "game kit" for the
+   repeated parts would shrink every one of them, and the DSL coverage audit may delete some
+   outright — so these two plans must be sequenced, not run at once.
+4. **Two front doors over one session layer.** `internal/api` (3,039) and `internal/mcpserver`
+   (1,968) expose overlapping capability. Worth checking whether the MCP layer can be a thin
+   projection of the REST handlers' logic rather than a parallel implementation.
+5. **Definition files.** 25 JSON definitions, several with repeated blocks that generators or
+   merge-patch variants should express once. Cthulhu Wars' definition is 64 KB.
+6. **The test suite.** 51,587 lines of tests and a ~6.5-minute browser suite. There is real
+   value in a pass over what is slow, what is duplicated, and what is flaky — the recurring
+   browser-test flakiness has a known shape and deserves to be fixed systemically rather than
+   per-test.
+7. **Error and logging consistency** will be touched by the observability plan anyway, so the
+   audit should defer to it rather than invent a second convention.
+8. **The browser suite is pinned to chromedp 0.16**, and the migration is the audit's most
+   concrete piece of known work. chromedp 0.21 redesigned the API: `Action` is a generic function
+   type rather than an interface, `Run` takes one action and returns its value rather than a
+   variadic list, `Tasks` became `Steps`, and `Evaluate` is generic rather than taking an
+   out-parameter. That is 214 `Run` call sites, 102 of them with an `Evaluate` out-parameter over
+   some 40 files — mostly mechanical, since the new `Do` is a drop-in for the variadic `Run`, but
+   wide. cdproto is pinned with it: its newer versions drop the `input.Key*` constants chromedp
+   0.16 itself uses, so the pair moves together or not at all. Both are test-only, so nothing in
+   the shipped binary is held back. The interesting part for the audit is that the typed
+   `Evaluate` wants to live in the four eval helpers (`evalString`, `evalInt`, `evalBool`,
+   `waitJS`) rather than be repeated at every call site, which is the same "shared test kit"
+   theme as item 3.
+
+**Method: many small themed pull requests, each green, never one big one.** A platform that
+works is worth more than a platform that is elegant, and the browser suite is the safety net —
+anything that cannot be covered by a test does not get refactored on faith. Behaviour-preserving
+is the rule; where the audit finds a *behaviour* bug, that becomes its own fix with its own test.
+
+**On timing.** The observability and auth implementations both touch every package — structured
+logging, middleware, a capability check at each call site. Auditing and refactoring in parallel
+with those would mean conflicts and wasted review. But the *measurement* pass is cheap and
+independent, and its findings would usefully inform both. So: measure early, refactor after.
+
+## Open questions for the discussion
+
+1. Is a JavaScript build step permanently off the table? I assume yes, and it shapes every
+   front-end option.
+2. How much appetite is there for moving internal packages around (import-path churn across
+   61,000 lines) versus only splitting files within packages?
+3. Does Cthulhu Wars leave the public repository under the plugin plan? That halves the games
+   tree and changes what the audit should even read. **Answered 2026-10-31: yes**, into a
+   private overlay build (see the plugin plan). The audit should not tidy Cthulhu Wars, and
+   should treat the game registry and the CW references in `internal/app`, `internal/batch`,
+   `internal/tune` and the web client as seams the plugin plan is about to cut.
+4. Do we want target metrics (no file over N lines, no function over M) or just a findings list?
+   I lean findings-only; mechanical limits produce mechanical code.
+5. Should the audit cover the documentation set as well? There are now nine plan documents and
+   62 ADRs, and the auth plan already requires a sweep of the ones that say "there are no
+   accounts".
+
+## A UI module for a prototype's version
+
+Decided with the maintainer on 2026-11-04: not to be built yet. When a version of a prototype first
+needs a drawing of its own, it goes in with this audit's refactoring of the web client, because the
+split of `game.js` (item 2) is what would give it places to plug into. Prototypes are in ADR 0098, on
+the `prototype-games` branch until that merges.
+
+**The problem.** Each version of a prototype's rules is a folder holding the whole game, but the web
+client is shared by all of them. Old versions have to keep working, and that should not mean one
+`game.js` that stays compatible with every version of every prototype.
+
+**First, the view.** `game.js` names neither Courtfall nor Mycelium. A version's `view.go` says what to
+draw (`state.ext.view`), so most changes to the rules should need no client code.
+
+**The proposed design, for when the view is not enough:**
+
+- The version's folder holds an optional module, declared in its definition
+  (`ui: {module: ui/game.js}`), and a new version copies it with the rest of the folder. A version
+  without one uses the shared page.
+- The page loads it with `import()` before it first draws the game. It needs no build step.
+- It exports only what it overrides, through a small set of hooks: a side panel, board decorations,
+  piece icons. It gets a small helper object for drawing and for making moves. The set of hooks only
+  ever grows, because frozen versions depend on it.
+- It needs a route of its own. The game assets route sends `default-src 'none'` and `sandbox`, which
+  would block a script, and it should keep doing so.
+- One browser test per shipped version opens a game and checks that its hooks ran, so that a change to
+  the shared page cannot break an old version unnoticed.
+- A version too costly to keep working can be retired (ADR 0076), and its games stay readable as a record.
+
+**Rejected:** a copy of the client per version, since chat, voice, clocks and the mobile layout live in
+`game.js` too and their fixes would never reach old versions; and checks for the version inside
+`game.js`, which is the problem itself.
+
+**To settle at that point:**
+
+- Which hooks. The first real case should decide them, not a guess now.
+- How this fits the plugin plan. That plan's decision 4 is no JavaScript in a pack, ever, and it wants
+  the web client to name no game and a game not to depend on its JavaScript. A module compiled into the
+  binary is not a pack, so it does not break decision 4 as written, but it has to stay a prototype's
+  tool: it may only change how a game is drawn, and the game must stay playable through the API and by a
+  client with no module, such as the planned 3D one.
+
+## Dependencies and cross-plan effects
+
+- **After the observability implementation** (logging conventions touch everything) and **after
+  the auth implementation** (capability checks touch every handler). Measuring can happen now.
+- **Coupled to the DSL coverage audit**: converting a game to a declaration deletes the code
+  this audit would otherwise tidy. Convert first, tidy second.
+- **Coupled to the plugin plan**: a module boundary clean enough for a plugin to plug into is
+  the same boundary this audit wants. If plugins are coming, the audit should shape the seams to
+  suit them.
+- Nothing here depends on accounts.
+
+## Status log
+
+- 2026-10-28: added item 8, the chromedp 0.16 pin, after Dependabot's chromedp and cdproto bumps
+  both failed to compile. Dependabot is told to leave the pair alone until the migration is done
+  deliberately (PRs #1 and #3 closed, the ignore rules in their own pull request).
+- 2026-10-28: opened with initial thoughts, including measured sizes and seven predicted
+  findings. Recommendation: a cheap measurement pass now, the refactoring after the
+  observability and auth implementations, in many small themed pull requests. Planning in
+  progress.
+- 2026-10-31: question 3 answered by the plugin plan: Cthulhu Wars leaves the public
+  repository.
+- 2026-11-04: added *A UI module for a prototype's version*. It is deferred until a version needs it,
+  and then goes in with this plan's refactoring of the web client. Planning in progress.
+- 2026-11-20: moved to `main` as the `more-plans` branch closed. The audit is issue #249, with its open questions and a
+  fresh measurement pass first; item 8, the chromedp migration, is #234, and *A UI module for a prototype's
+  version* is #235.
