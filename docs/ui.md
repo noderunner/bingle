@@ -270,10 +270,10 @@ selects one).
   *Win Rate by Seat* (the win rate of each seat with a 95% Wilson interval and a
   marker at an even share), and `.analysis-endings`, *Result Summary*; it follows
   the batch while it runs, and *Report* again closes it. While the tab is shown, a book in the top bar
-  (`#open-bot-guide`) opens **the guide to the bots** in a window like the rules
-  window (`#bot-guide-dialog`, `#analysis-guide`): `GET /api/bot-guide`, Markdown
-  rendered by `js/markdown.js` with its drawings from `/api/bot-guide/assets/`,
-  and a table of contents of its sections.
+  (`#open-bot-guide`) opens **the guide to the bots**, *Game Analysis with Bots*, in
+  a window like the rules window (`#bot-guide-dialog`, `#analysis-guide`): `GET
+  /api/bot-guide`, Markdown rendered by `js/markdown.js` with its drawings from
+  `/api/bot-guide/assets/`, under the window's title rather than its own.
 * *Global Chat* (`js/global-chat.js`): one room everybody shares
   (`#global-chat-log`, `#global-chat-name`, `#global-chat-input`,
   `#global-chat-send`, the emoji picker of the game chat). History comes from

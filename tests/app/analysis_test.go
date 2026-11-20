@@ -238,12 +238,18 @@ func TestWebAnalysis_TheTabRunsABatchAndExplainsTheBots(t *testing.T) {
 	waitJS(t, ctx, "the guide's button", `!document.getElementById("open-bot-guide").hidden`, 5*time.Second)
 	clickSel(t, ctx, "#open-bot-guide")
 	waitJS(t, ctx, "the guide's window", `document.getElementById("bot-guide-dialog").open`, 5*time.Second)
+	if got := evalString(t, ctx, `document.getElementById("bot-guide-title").textContent`); got != "Game Analysis with Bots" {
+		t.Errorf("the guide's title is %q", got)
+	}
 	// The guide: its headings, its three drawings, and its references.
 	waitJS(t, ctx, "the guide", `document.querySelectorAll("#analysis-guide .md-h").length > 5`, 30*time.Second)
 	for _, want := range []string{"Monte Carlo tree search", "alpha-beta", "pie rule", "Kocsis"} {
 		if !evalBool(t, ctx, `document.getElementById("analysis-guide").textContent.indexOf(`+quoteJS(want)+`) >= 0`) {
 			t.Errorf("the guide does not mention %q", want)
 		}
+	}
+	if evalBool(t, ctx, `document.querySelector("#analysis-guide .rules-toc, #analysis-guide h1")`) {
+		t.Error("the guide repeats its title or has a table of contents")
 	}
 	if n := evalInt(t, ctx, `document.querySelectorAll('#analysis-guide img[src^="/api/bot-guide/assets/"]').length`); n != 3 {
 		t.Errorf("%d drawings in the guide, want 3", n)
@@ -275,4 +281,25 @@ func gameNameOf(t *testing.T, base, id string) string {
 	}
 	name, _, _ := strings.Cut(info.Name, " (")
 	return name
+}
+
+// A batch is titled by its game's name, capitalised as the game is, even when
+// it was started for a prototype's family ("courtfall") rather than one of its
+// versions.
+func TestWebAnalysis_BatchesAreTitledByTheirGamesName(t *testing.T) {
+	baseURL, member := newMemberServer(t)
+	body := map[string]any{"base": "courtfall", "players": []map[string]any{{"bot": "random"}, {"bot": "random"}}, "games": 1}
+	if code := doJSONMember(t, member, "POST", baseURL+"/api/batches", body, nil); code != 201 {
+		t.Fatalf("start a batch of Courtfall: %d", code)
+	}
+	ctx, cancel := newChromedpContext(t, 60*time.Second)
+	defer cancel()
+	signInChrome(t, ctx, baseURL, member)
+	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/#analysis")); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "the batch", `document.querySelector("#analysis-batches li[data-batch] .title")`, 20*time.Second)
+	if got := evalString(t, ctx, `document.querySelector("#analysis-batches li[data-batch] .title").textContent`); got != "Courtfall" {
+		t.Errorf("the batch is titled %q, want Courtfall", got)
+	}
 }

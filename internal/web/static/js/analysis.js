@@ -136,8 +136,9 @@ function form(host) {
 /** A batch's game, by its name alone ("Cthulhu Wars", not its layout or size). */
 function gameName(id) {
 	const base = String(id || "").split("~")[0];
-	const def = defs.find((d) => d.id === base);
-	return def ? gameTitle(def).replace(/\s*\(.*\)$/, "") : base;
+	const def = defs.find((d) => d.id === base) || defs.find((d) => d.family === base);
+	if (def) return def.name.replace(/\s*\(.*\)$/, "");
+	return base.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 function batchRow(b) {
@@ -254,7 +255,7 @@ export async function openBotGuide() {
 	document.getElementById("bot-guide-dialog")?.remove();
 	const box = h("div", { class: "rules-body analysis-guide md", id: "analysis-guide", tabindex: -1 }, h("p", { class: "muted" }, "Reading the guide…"));
 	const close = h("button", { class: "rules-close", "aria-label": "Close the guide", title: "Close (Esc)" }, "×");
-	const dlg = h("dialog", { id: "bot-guide-dialog", class: "rules-window", "aria-labelledby": "bot-guide-title" }, h("div", { class: "rules-head" }, h("h2", { id: "bot-guide-title" }, "The bots"), close), box);
+	const dlg = h("dialog", { id: "bot-guide-dialog", class: "rules-window", "aria-labelledby": "bot-guide-title" }, h("div", { class: "rules-head" }, h("h2", { id: "bot-guide-title" }, "Game Analysis with Bots"), close), box);
 	close.addEventListener("click", () => dlg.close());
 	dlg.addEventListener("click", (ev) => {
 		if (ev.target === dlg) dlg.close();
@@ -267,17 +268,8 @@ export async function openBotGuide() {
 	try {
 		const text = await api.botGuide();
 		clear(box);
-		const { node, headings } = renderMarkdown(text, { idPrefix: "bots", assetBase: "/api/bot-guide/assets/" });
-		if (headings && headings.length > 2) {
-			box.append(
-				h(
-					"nav",
-					{ class: "rules-toc", "aria-label": "On this page" },
-					h("p", { class: "small muted" }, "On this page"),
-					h("ul", {}, headings.filter((t) => t.level === 2).map((t) => h("li", { class: `lvl-${t.level}` }, h("a", { href: `#botsmd-${t.id}` }, t.text))))
-				)
-			);
-		}
+		// The window's title is the guide's: its own first heading is not repeated.
+		const { node } = renderMarkdown(text.replace(/^# .*\n+/, ""), { idPrefix: "bots", assetBase: "/api/bot-guide/assets/" });
 		box.append(node);
 	} catch (e) {
 		clear(box);
