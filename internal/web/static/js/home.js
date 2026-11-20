@@ -7,7 +7,7 @@ import { CARD_SETS, cardSetById, setPreview, useCardSet } from "./card-sets.js";
 import { h, clear, store, rememberGame, rememberedGames, lastName, toast } from "./util.js";
 import { api, gameTitle, whoAmI } from "./api.js";
 import { rulesIcon } from "./ui-icons.js";
-import { mountAnalysis } from "./analysis.js";
+import { mountAnalysis, openBotGuide } from "./analysis.js";
 import { mountRatings } from "./ratings.js";
 import { mountTournaments } from "./tournaments.js";
 import { renderBoard } from "./render.js";
@@ -1595,8 +1595,16 @@ async function startPuzzle(p) {
 const TABS = ["games", "puzzles", "analysis", "ratings", "tournaments", "chat"];
 let chat = null;
 
+// The book in the top bar while the Analysis tab is shown: the guide to the bots.
+let botGuideBtn = null;
+
 function showTab(name, { focus = false } = {}) {
 	if (!TABS.includes(name)) name = "games";
+	if (!botGuideBtn) {
+		botGuideBtn = h("button", { type: "button", id: "open-bot-guide", class: "topbar-icon", title: "The bots", "aria-label": "The bots", "aria-haspopup": "dialog", onclick: () => openBotGuide() }, rulesIcon());
+		document.getElementById("topbar-actions")?.prepend(botGuideBtn);
+	}
+	botGuideBtn.hidden = name !== "analysis";
 	for (const t of TABS) {
 		const tab = document.getElementById("tab-" + t);
 		const on = t === name;
