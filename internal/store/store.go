@@ -314,6 +314,10 @@ var columnMigrations = []struct{ table, column, ddl string }{
 	// position), which a best score and a quick-win badge do not count (ADR 0136).
 	{"games", "seed", "TEXT NOT NULL DEFAULT ''"},
 	{"games", "start_chosen", "INTEGER NOT NULL DEFAULT 0"},
+	// tour_seen_at: when the guest or account skipped or finished the
+	// welcome tour (ADR 0139), '' while it has not, as every principal made
+	// before the tour had not.
+	{"principals", "tour_seen_at", "TEXT NOT NULL DEFAULT ''"},
 }
 
 func addMissingColumns(db *sql.DB) error {

@@ -76,3 +76,24 @@ func (s *Store) SetGameOwner(ctx context.Context, gameID int64, principalID stri
 	_, err := s.exec(ctx, "SetGameOwner", `UPDATE games SET owner_principal_id = ? WHERE id = ? AND owner_principal_id = ''`, principalID, gameID)
 	return err
 }
+
+// TourSeen reports whether the principal has skipped or finished the welcome
+// tour (ADR 0139). An unknown principal has not.
+func (s *Store) TourSeen(ctx context.Context, id string) (bool, error) {
+	var at string
+	err := s.queryRow(ctx, "TourSeen", `SELECT tour_seen_at FROM principals WHERE id = ?`, id).Scan(&at)
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return at != "", nil
+}
+
+// MarkTourSeen records that the principal has skipped or finished the welcome
+// tour. The first time is kept.
+func (s *Store) MarkTourSeen(ctx context.Context, id string, now time.Time) error {
+	_, err := s.exec(ctx, "MarkTourSeen", `UPDATE principals SET tour_seen_at = ? WHERE id = ? AND tour_seen_at = ''`, stamp(now), id)
+	return err
+}

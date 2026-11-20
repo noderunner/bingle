@@ -44,6 +44,10 @@ const touchEvery = time.Hour
 type Guests interface {
 	CreateGuest(ctx context.Context, id, keyHash string) error
 	GuestByKey(ctx context.Context, keyHash string, idleSince time.Time, touchEvery time.Duration, now time.Time) (string, error)
+	// The welcome tour (ADR 0139): whether a principal has seen it, and
+	// marking that it has.
+	TourSeen(ctx context.Context, id string) (bool, error)
+	MarkTourSeen(ctx context.Context, id string, now time.Time) error
 }
 
 // Resolver resolves the principal of each request.

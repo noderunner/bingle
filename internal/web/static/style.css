@@ -2022,3 +2022,63 @@ button.handle-badge:hover, button.badge.account:hover { border-color: var(--acce
 .schedule-new { margin: 0.4rem 0; }
 .lobby-schedule button, .lobby-schedule .button { margin-top: 0.3rem; }
 
+
+/* ---- the welcome tour (ADR 0139) ------------------------------------------------------ */
+
+dialog.tour-card { width: min(34rem, 94vw); max-height: 92vh; padding: 1rem 1.2rem 0.9rem; display: flex; flex-direction: column; }
+dialog.tour-card:not([open]) { display: none; }
+dialog.tour-card::backdrop { background: rgba(0, 0, 0, 0.3); }
+.tour-body { overflow-y: auto; min-height: 0; }
+.tour-count { margin: 0 0 0.4rem; }
+.tour-card h2 { margin: 0.7rem 0 0.3rem; }
+.tour-text { margin: 0 0 0.4rem; line-height: 1.45; min-height: 4.35em; }
+.tour-note { display: inline-block; margin: 0.2rem 0; padding: 0.05rem 0.5rem; border: 1px solid var(--accent); border-radius: 999px; color: var(--accent); font-weight: 700; }
+.tour-adds { margin: 0.2rem 0 0.4rem; }
+.tour-extra .button { display: inline-block; margin-top: 0.3rem; }
+/* The picture: a fixed frame, so that the card does not jump from slide to slide. */
+.tour-picture {
+	position: relative; height: 16rem; overflow: hidden; border: 1px solid var(--border); border-radius: var(--radius);
+	background: var(--bg, var(--surface-2)); padding: 0.7rem;
+}
+.tour-picture::after { content: ""; position: absolute; inset: auto 0 0 0; height: 1.5rem; background: linear-gradient(transparent, var(--bg, var(--surface-2))); pointer-events: none; }
+.tour-stage { pointer-events: none; user-select: none; font-size: 0.9rem; }
+.tour-stage label { flex-direction: row; margin: 0; font-weight: 500; }
+.tour-stage label input { width: auto; flex: none; }
+.tour-stage .row { margin-top: 0.5rem; }
+.tour-stage .stack { display: flex; flex-direction: column; gap: 0.35rem; }
+.tour-stage .dialog-head { display: flex; align-items: center; margin-bottom: 0.4rem; }
+.tour-stage .dialog-head h2, .tour-stage h3 { margin: 0 0 0.3rem; font-size: 1rem; display: flex; align-items: center; gap: 0.35rem; }
+.tour-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.6rem 0.7rem; }
+.tour-gallery { grid-template-columns: repeat(4, 1fr); gap: 0.5rem; }
+.tour-gallery .game-card { padding: 0.35rem; cursor: default; }
+.tour-gallery .game-card-title { font-size: 0.8rem; }
+.tour-status { margin-bottom: 0.4rem; padding: 0.3rem 0.6rem; }
+.tour-board { max-width: 9rem; margin: 0 auto; }
+.tour-board svg, .tour-puzzles svg { width: 100%; height: auto; display: block; }
+.tour-stage .tour-actions { justify-content: center; margin-top: 0.4rem; }
+.tour-puzzles { grid-template-columns: minmax(0, 10rem); justify-content: center; }
+.tour-rules .tabs { margin-bottom: 0.4rem; }
+.tour-rules .md table { font-size: 0.85rem; }
+.tour-badges { margin-top: 0.6rem; }
+.tour-friends { display: flex; gap: 0.8rem; }
+.tour-friend-list { list-style: none; margin: 0; padding: 0 0.7rem 0 0; border-right: 1px solid var(--border); flex: 0 0 8rem; }
+.tour-friend-list .dm-person { display: flex; align-items: center; gap: 0.4rem; padding: 0.25rem 0.3rem; border-radius: 6px; }
+.tour-friend-list li.on .dm-person { background: var(--accent-soft); font-weight: 700; }
+.tour-dm { flex: 1; min-width: 0; }
+.tour-dm .row { margin-top: 0; align-items: center; }
+.tour-dm-lines { list-style: none; margin: 0.5rem 0 0; padding: 0; }
+.tour-dm-lines .chat-line { padding: 0.25rem 0.4rem; border-radius: 6px; }
+.tour-dm-lines .chat-line.mine { background: var(--accent-soft); }
+.schedule-slots li.tour-best { font-weight: 700; border-radius: 6px; outline: 2px solid var(--accent); outline-offset: 1px; padding: 0.15rem 0.35rem; }
+.tour-dots { display: flex; justify-content: center; flex-wrap: wrap; gap: 0.35rem; margin: 0.6rem 0 0.2rem; }
+.tour-dot { width: 0.65rem; height: 0.65rem; min-height: 0; padding: 0; border-radius: 50%; border: 1px solid var(--muted); background: transparent; cursor: pointer; }
+.tour-dot.on { background: var(--accent); border-color: var(--accent); }
+.tour-foot { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem; }
+.tour-foot .spacer { flex: 1; }
+@media (max-width: 520px) {
+	dialog.tour-card { padding: 0.8rem 0.85rem 0.7rem; }
+	.tour-picture { height: 12rem; }
+	.tour-gallery { grid-template-columns: repeat(3, 1fr); }
+	.tour-friend-list { flex-basis: 6rem; }
+}
+.help-tour { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; margin-top: 0.8rem; }

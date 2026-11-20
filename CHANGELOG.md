@@ -4,6 +4,12 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.121.0 - 2026-11-20
+
+### Bingle Core 0.121.0
+- New to Bingle? A short welcome tour now greets you on the main page: a few slides on what you can do here, from playing a friend or a bot to puzzles, analysis, ratings, friends and more. Each slide's picture is drawn the way the page itself looks, in the light or the dark. If you play as a guest, the last slide shows where your guest key is and what an account adds. You see the tour once; skip it whenever you like, and take it again from the **?** help button with *Take the Tour*. If you already play here, you'll see it once too, on your next visit to the main page.
+- Offering several times and letting the players choose is now called a **muster**: call one when you set up a real-time game, and the people you invite tick the times they can make.
+
 ## 0.120.1 - 2026-11-19
 
 ### Bingle Core 0.120.1

@@ -1665,5 +1665,20 @@ onLeave(() => {
 	populateSelect();
 	renderGallery();
 	renderPuzzles();
+	offerWelcomeTour();
 	await setupBots();
 })();
+
+// The welcome tour (ADR 0139), offered once to each guest and account. Its
+// module is loaded only when it is to be shown.
+async function offerWelcomeTour() {
+	try {
+		const me = await whoAmI();
+		// Most visits are by somebody who has seen it: no need to load the tour to know that.
+		if (left || me.tour_seen) return;
+		const tour = await import("./welcome-tour.js");
+		if (!left && tour.shouldOfferTour(me)) tour.openTour(me);
+	} catch (_) {
+		/* no tour is no loss */
+	}
+}

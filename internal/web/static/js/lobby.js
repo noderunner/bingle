@@ -66,7 +66,7 @@ function scheduleBox(ctx) {
 		}
 	}
 	if (sc.status === "polling" || sc.status === "no_agreement") {
-		box.append(h("h3", {}, sc.status === "no_agreement" ? "No time suits everyone" : "Which times can you make?"));
+		box.append(h("h3", {}, sc.status === "no_agreement" ? "Muster: no time suits everyone" : "Muster: which times can you make?"));
 		if (sc.status === "no_agreement" && sc.decide_by) {
 			box.append(h("p", { class: "small", id: "schedule-no-agreement" }, sc.mine ? `Offer new times or cancel. Otherwise the game closes on ${localTime(sc.decide_by)}.` : `The game closes on ${localTime(sc.decide_by)} unless new times are offered.`));
 		}

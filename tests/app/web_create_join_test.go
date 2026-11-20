@@ -22,6 +22,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/chromedp/cdproto/page"
 	"github.com/chromedp/chromedp"
 
 	"github.com/noderunner/bingle/internal/session/roomcode"
@@ -63,7 +64,35 @@ func findBrowser() string {
 }
 
 // newChromedpContextWith is newChromedpContext with extra browser options (such as flags).
+//
+// Its pages start with the welcome tour seen (ADR 0139), so that it does not
+// lie over the main page of a test about something else; newChromedpContextWithTour
+// leaves it to be offered.
 func newChromedpContextWith(t *testing.T, timeout time.Duration, extra ...chromedp.ExecAllocatorOption) (context.Context, context.CancelFunc) {
+	t.Helper()
+	ctx, cancel := chromedpContext(t, timeout, extra...)
+	err := chromedp.Run(ctx, chromedp.ActionFunc(func(c context.Context) error {
+		_, err := page.AddScriptToEvaluateOnNewDocument(tourSeenScript).Do(c)
+		return err
+	}))
+	if err != nil {
+		cancel()
+		t.Fatalf("starting the browser: %v", err)
+	}
+	return ctx, cancel
+}
+
+// tourSeenScript marks the welcome tour seen in a page's browser before the page runs.
+const tourSeenScript = `try { localStorage.setItem("bingle.tour.seen", "true"); } catch (_) {}`
+
+// newChromedpContextWithTour is a browser whose pages are offered the welcome tour
+// as a new browser's are.
+func newChromedpContextWithTour(t *testing.T, timeout time.Duration) (context.Context, context.CancelFunc) {
+	t.Helper()
+	return chromedpContext(t, timeout)
+}
+
+func chromedpContext(t *testing.T, timeout time.Duration, extra ...chromedp.ExecAllocatorOption) (context.Context, context.CancelFunc) {
 	t.Helper()
 
 	if testing.Short() {

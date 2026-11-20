@@ -381,6 +381,10 @@ func TestAPISchema_DescribesTheAccountsCalls(t *testing.T) {
 	ana := nativeMember(t, a, base, "ana", schema)
 	bob := nativeMember(t, a, base, "bob", schema)
 	ana.do("GET /auth/me", "/auth/me", nil, 200)
+	ana.do("POST /auth/tour-seen", "/auth/tour-seen", nil, 200)
+	if me := ana.do("GET /auth/me", "/auth/me", nil, 200); me["tour_seen"] != true {
+		t.Errorf("after POST /auth/tour-seen: %v", me)
+	}
 
 	// Ana's own socket, every event checked.
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
