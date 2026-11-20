@@ -1601,7 +1601,7 @@ let botGuideBtn = null;
 function showTab(name, { focus = false } = {}) {
 	if (!TABS.includes(name)) name = "games";
 	if (!botGuideBtn) {
-		botGuideBtn = h("button", { type: "button", id: "open-bot-guide", class: "topbar-icon", title: "The bots", "aria-label": "The bots", "aria-haspopup": "dialog", onclick: () => openBotGuide() }, rulesIcon());
+		botGuideBtn = h("button", { type: "button", id: "open-bot-guide", class: "topbar-icon", title: "Game Analysis with Bots", "aria-label": "Game Analysis with Bots", "aria-haspopup": "dialog", onclick: () => openBotGuide() }, rulesIcon());
 		document.getElementById("topbar-actions")?.prepend(botGuideBtn);
 	}
 	botGuideBtn.hidden = name !== "analysis";

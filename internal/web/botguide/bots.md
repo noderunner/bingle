@@ -1,4 +1,4 @@
-# The bots, and what to do with them
+# Game Analysis with Bots
 
 Bingle ships four built-in opponents. None of them knows anything about any particular game: they
 ask the engine for the legal moves of a position, try some of them, and answer with one. That is
