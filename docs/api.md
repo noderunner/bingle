@@ -20,8 +20,10 @@ patch for the schema's descriptions alone. A client ignores the fields it does n
 
 **Schema.** `GET /api/schema` serves [api.schema.json](api.schema.json), the JSON Schema (2020-12)
 of the messages of that `api_version`, generated from the server's Go types: `x-endpoints` gives
-the request and response of each endpoint of the index, the lobby's calls among them, `x-error`
-the error body, and `$defs/WebSocketEvent` the events of `/ws/{code}` (all but voice and `rtc`).
+the request and response of each endpoint of the index, the lobby's calls among them, and of a
+signed-in account's calls (the token sign-in, `/auth/me`, `/auth/logout`, friends, `/here` and direct
+messages), `x-error` the error body, `$defs/WebSocketEvent` the events of `/ws/{code}` (all but voice
+and `rtc`), and `x-dm-events` and `$defs/DirectWebSocketEvent` those of `/ws-dm`.
 A position (`state`) is left open: each game has its own. The rest of the API is described here
 alone.
 
@@ -126,11 +128,11 @@ curl -s -X POST $B/api/games/$CODE/moves -d '{"player_name": "Ana", "notation": 
 |---|---|---|
 | `POST /auth/signup` | `{handle, email, password, invite?}` | `202 {status}`: a link to confirm the address is mailed. `400` a bad handle, address or password (10–256 characters); `409` the handle is taken; `403` signing up is closed or the server has no mail; `429` too many tries. An address that is an account's already gets the `202` and no mail |
 | `POST /auth/confirm` | `{token}` (from the mailed link, `/account/confirm?t=`) | `{handle}`; `400` used or too old (48 hours) |
-| `POST /auth/login` | `{handle, password}` | `{kind, handle, display_name, must_change_password?}` and the `bingle_session` cookie; `401` the handle or the password is wrong (one answer for both); `403` not confirmed yet; `429` too many tries (10 a minute per address, 10 per 15 minutes per handle). The browser's guest, if it was one, becomes the account's |
+| `POST /auth/login` | `{handle, password, token?}` | `{kind, handle, display_name, must_change_password?}` and the `bingle_session` cookie; `401` the handle or the password is wrong (one answer for both); `403` not confirmed yet; `429` too many tries (10 a minute per address, 10 per 15 minutes per handle). The browser's guest, if it was one, becomes the account's. With `token: true` (a client that is not a browser, ADR 0138), no cookie: `{token: "bgs_…", expires, me}`, or `{second_factor: true, pending}` for an account with a second factor; a guest key sent as the bearer becomes the account's, and stops working |
 | `POST /auth/logout` | | ends this session |
-| `POST /auth/password` | `{old, new}` | a new session cookie; every other session of the account ends |
+| `POST /auth/password` | `{old, new}` | a new session cookie (with a session token: `{token, expires, me}`, a new one); every other session of the account ends |
 | `GET /auth/me` | | `{kind: "account"\|"guest"\|"anonymous", handle?, display_name?, must_change_password?, second_factor?, recovery_codes_left?, needs_second_factor?, password?, linked?, providers?: [{id, label}], accounts, signup}` |
-| `POST /auth/second` | `{code}` or `{recovery_code}` | the second step of a sign-in (ADR 0069): after a password answered `{second_factor: true}` and the `bingle_login` cookie (five minutes, five wrong codes). `401` a wrong or spent code, or the sign-in ran out |
+| `POST /auth/second` | `{code}` or `{recovery_code}`, and `pending?` | the second step of a sign-in (ADR 0069): after a password answered `{second_factor: true}` and the `bingle_login` cookie (five minutes, five wrong codes). With the `pending` of a token sign-in instead of the cookie, `{token, expires, me}`. `401` a wrong or spent code, or the sign-in ran out |
 | `POST /auth/totp/setup` | `{password}` | `{secret, uri, qr_svg}`: a key for an authenticator app, not yet in use; `qr_svg` is the link as a QR code (ADR 0074) |
 | `POST /auth/totp/enable` | `{code}` | `{recovery_codes: [ten], me}`: on, a new session cookie, every other session ended |
 | `POST /auth/totp/disable` | `{password, code \| recovery_code}` | off; a new session cookie |
@@ -157,7 +159,11 @@ set of capabilities, and a request that needs one it lacks is `403`; one past it
 minute is `429`. `GET /auth/me` lists the browser's `caps`. On a server in `closed` mode an API
 request from anybody not signed in is `401`, outside `/auth`. **API tokens** (`Authorization: Bearer
 bgl_…`, made on the account page) act as their account within their scopes (`play`, `create_game`,
-`read_metrics`), never with an administrator's powers.
+`read_metrics`), never with an administrator's powers. **Session tokens** (`Authorization: Bearer
+bgs_…`, from a sign-in with `token: true`, ADR 0138) are a native client's session: the whole account,
+as a browser's cookie is, with no `X-Bingle-Session`. They are listed in `/auth/sessions` under the
+client's `User-Agent`, and end as a browser's session does: signing out, ending the others, a new
+password, or 14 days unused (90 at most). An ended one is `401`.
 
 An account whose password must be changed (a seeded or command-line one) gets `403` for any
 state-changing request outside `/auth` until it does; so does an administrator without a second
@@ -220,7 +226,7 @@ that account.
 | `POST /dm/threads` | `{}` | `{address, threads: [{with, name, last_id, last_at, text, count}]}` |
 | `POST /dm/call` | `{to, join}` | `{ok}` — ring (or answer) somebody, or hang up |
 | `POST /dm/signal` | `{to, kind, data}` | `{ok}` — one WebRTC message for the person being called |
-| `GET /ws-dm` | (the session) | pushes `ready`, `dm`, `dm-call`, `dm-rtc` and `badge` events for that account (a badge it just earned: `{badge, name, description, room, game, hidden?, against}`, see [badges.md](badges.md)) |
+| `GET /ws-dm` | (the session: its cookie, or a session token as `Authorization: Bearer`) | pushes `ready`, `dm`, `dm-call`, `dm-rtc`, `badge` and `friends` events for that account (a badge it just earned: `{badge, name, description, room, game, hidden?, against}`, see [badges.md](badges.md)) |
 | `POST /games` | `{game_def_id, player_name, seat?, opponent?, seat_bots? (`{"2": "random"}`: a bot in chosen seats; the rest stay open), lobby? (wait for the host's `start` even with every seat filled), move_time_seconds?, clock_seconds?, clock_increment_seconds?, rated?, card_set? (a themed set of cards for the table — see below), options? (setup choices — see below), start_tps?, start_state?, start_seat?, seed? (deal a game of patience from this seed — see below)}` | `{room_code, seat, color, status, bot_moves?}` |
 | `GET /config` | | `{public_url}`: the configured `BINGLE_PUBLIC_URL` ("" when unset) |
 | `POST /bot-matches` | `{game_def_id, bot_a, bot_b, delay_ms?}`: a two-player room where two built-in bots (`bot_a` seat 1, `bot_b` seat 2, ids from `GET /bots`) play each other at a watchable pace (`delay_ms` between moves, default 700, kept within 150 ms – 10 s); open it as a spectator (`/games/{code}/join` with role spectator, or the WebSocket). Stops when the game ends, after 2 minutes with nobody watching, or at the move cap; at most 12 run at once | `{room_code, status}` |

@@ -94,6 +94,42 @@
       ],
       "type": "object"
     },
+    "BadgeEventData": {
+      "description": "BadgeEventData is the wire form of a \"badge\" event.",
+      "properties": {
+        "against": {
+          "description": "Against is how it was earned: \"people\" or \"bots\".",
+          "type": "string"
+        },
+        "badge": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "game": {
+          "description": "Game is the name of the game it was earned in.",
+          "type": "string"
+        },
+        "hidden": {
+          "description": "Hidden says the others see it only when the game ends.",
+          "type": "boolean"
+        },
+        "name": {
+          "type": "string"
+        },
+        "room": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "badge",
+        "name",
+        "description",
+        "against"
+      ],
+      "type": "object"
+    },
     "BoardDTO": {
       "description": "BoardDTO describes the board graph and how to draw it.",
       "properties": {
@@ -612,6 +648,324 @@
       ],
       "type": "object"
     },
+    "DirectCall": {
+      "description": "DirectCall is the wire form of a \"dm-call\" event: somebody is calling, or a call has ended.",
+      "properties": {
+        "dropped": {
+          "description": "Dropped says the call ended because the person joined another one.",
+          "type": "boolean"
+        },
+        "from": {
+          "type": "string"
+        },
+        "kind": {
+          "description": "Kind is \"ring\" (this person wants to talk, or has answered) or \"end\".",
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "from"
+      ],
+      "type": "object"
+    },
+    "DirectCallRequest": {
+      "description": "dmCallRequest is the body of POST /dm/call: ring (or answer) the address To, or hang up with join=false.",
+      "properties": {
+        "join": {
+          "type": "boolean"
+        },
+        "to": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "DirectHistoryRequest": {
+      "description": "dmReadRequest is the body of POST /dm/history: the correspondence with one person, after the message After (0 for all of it).",
+      "properties": {
+        "after": {
+          "type": "integer"
+        },
+        "with": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "with"
+      ],
+      "type": "object"
+    },
+    "DirectHistoryResponse": {
+      "description": "dmHistoryResponse is POST /dm/history's answer: the messages, oldest first.",
+      "properties": {
+        "messages": {
+          "items": {
+            "$ref": "#/$defs/DirectMessage"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "messages"
+      ],
+      "type": "object"
+    },
+    "DirectMessage": {
+      "description": "DirectMessage is one message from one browser to another.",
+      "properties": {
+        "at": {
+          "type": "string"
+        },
+        "from": {
+          "description": "From and To are addresses; Name is what the sender went by.",
+          "type": "string"
+        },
+        "id": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        },
+        "to": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "from",
+        "name",
+        "to",
+        "text",
+        "at"
+      ],
+      "type": "object"
+    },
+    "DirectMessageRequest": {
+      "description": "dmRequest is the body of POST /dm: a message for the address To.",
+      "properties": {
+        "text": {
+          "type": "string"
+        },
+        "to": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "to",
+        "text"
+      ],
+      "type": "object"
+    },
+    "DirectReadyEventData": {
+      "description": "dmReady is the data of /ws-dm's first event, \"ready\": the socket is open, and Address is the account's own address.",
+      "properties": {
+        "address": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "address"
+      ],
+      "type": "object"
+    },
+    "DirectSignal": {
+      "description": "DirectSignal is the wire form of a \"dm-rtc\" event: one browser's WebRTC message for another.",
+      "properties": {
+        "data": {},
+        "from": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "from",
+        "kind",
+        "data"
+      ],
+      "type": "object"
+    },
+    "DirectSignalRequest": {
+      "description": "dmSignalRequest is the body of POST /dm/signal: one WebRTC message for the person this account is calling.",
+      "properties": {
+        "data": {},
+        "kind": {
+          "type": "string"
+        },
+        "to": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "to",
+        "kind",
+        "data"
+      ],
+      "type": "object"
+    },
+    "DirectThread": {
+      "description": "DirectThread is one correspondence, as the list of them shows it.",
+      "properties": {
+        "count": {
+          "type": "integer"
+        },
+        "last_at": {
+          "type": "string"
+        },
+        "last_id": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        },
+        "text": {
+          "description": "Text is the last thing said, and Count how many messages are kept.",
+          "type": "string"
+        },
+        "with": {
+          "description": "With is the other person's address, and Name what they go by (empty once they have gone).",
+          "type": "string"
+        }
+      },
+      "required": [
+        "with",
+        "last_id",
+        "last_at",
+        "text",
+        "count"
+      ],
+      "type": "object"
+    },
+    "DirectThreadsResponse": {
+      "description": "dmThreadsResponse is POST /dm/threads' answer.",
+      "properties": {
+        "address": {
+          "description": "Address is the account's own address, the one others write to.",
+          "type": "string"
+        },
+        "threads": {
+          "description": "Threads are the account's correspondences, newest first.",
+          "items": {
+            "$ref": "#/$defs/DirectThread"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "threads",
+        "address"
+      ],
+      "type": "object"
+    },
+    "DirectWebSocketEvent": {
+      "description": "A message the server sends on /ws-dm, a signed-in account's own socket. A client skips an event whose type it does not know.",
+      "oneOf": [
+        {
+          "properties": {
+            "data": {
+              "$ref": "#/$defs/DirectReadyEventData"
+            },
+            "type": {
+              "const": "ready"
+            }
+          },
+          "required": [
+            "type",
+            "data"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "data": {
+              "$ref": "#/$defs/DirectMessage"
+            },
+            "type": {
+              "const": "dm"
+            }
+          },
+          "required": [
+            "type",
+            "data"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "data": {
+              "$ref": "#/$defs/DirectCall"
+            },
+            "type": {
+              "const": "dm-call"
+            }
+          },
+          "required": [
+            "type",
+            "data"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "data": {
+              "$ref": "#/$defs/DirectSignal"
+            },
+            "type": {
+              "const": "dm-rtc"
+            }
+          },
+          "required": [
+            "type",
+            "data"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "data": {
+              "$ref": "#/$defs/BadgeEventData"
+            },
+            "type": {
+              "const": "badge"
+            }
+          },
+          "required": [
+            "type",
+            "data"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "data": {
+              "$ref": "#/$defs/FriendsEventData"
+            },
+            "type": {
+              "const": "friends"
+            }
+          },
+          "required": [
+            "type",
+            "data"
+          ],
+          "type": "object"
+        }
+      ]
+    },
     "DisplayDef": {
       "description": "DisplayDef is the legend of a ruleset game's overlays: what each tint and badge key in the position's view means and how to draw it.",
       "properties": {
@@ -668,6 +1022,161 @@
       "required": [
         "seat",
         "by"
+      ],
+      "type": "object"
+    },
+    "Friend": {
+      "description": "Friend is one line of the friends list.",
+      "properties": {
+        "address": {
+          "type": "string"
+        },
+        "can_write": {
+          "type": "boolean"
+        },
+        "handle": {
+          "type": "string"
+        },
+        "name": {
+          "description": "\"@ana\"",
+          "type": "string"
+        },
+        "online": {
+          "description": "Online says they can be seen to be here. CanWrite says a message would reach them: they are online, or are hidden but have themselves written or rung.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "name",
+        "handle",
+        "address",
+        "online",
+        "can_write"
+      ],
+      "type": "object"
+    },
+    "FriendInvite": {
+      "description": "FriendInvite is an invitation to a game, as the friends list shows it.",
+      "properties": {
+        "def": {
+          "type": "string"
+        },
+        "from": {
+          "description": "\"@ana\"",
+          "type": "string"
+        },
+        "game": {
+          "type": "string"
+        },
+        "notice": {
+          "description": "Notice is news of the game, shown until dismissed.",
+          "type": "string"
+        },
+        "room": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "room",
+        "game",
+        "def",
+        "from",
+        "status"
+      ],
+      "type": "object"
+    },
+    "FriendRequest": {
+      "description": "friendRequest is the body of the routes about one person or one invitation: POST /friends/request, /answer, /remove, /invite, /invite-answer and /dismiss.",
+      "properties": {
+        "accept": {
+          "description": "Accept is the answer (answer, invite-answer).",
+          "type": "boolean"
+        },
+        "handle": {
+          "description": "Handle is the person's (request, answer, remove, invite).",
+          "type": "string"
+        },
+        "room": {
+          "description": "Room is the game's room code (invite, invite-answer, dismiss).",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "FriendSettings": {
+      "description": "FriendSettings is what an account chose about its friends.",
+      "properties": {
+        "accept_invites": {
+          "description": "AcceptInvites says other players may invite the account to games.",
+          "type": "boolean"
+        },
+        "mail_requests": {
+          "type": "boolean"
+        },
+        "show_presence": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "mail_requests",
+        "show_presence",
+        "accept_invites"
+      ],
+      "type": "object"
+    },
+    "FriendsEventData": {
+      "description": "FriendsEventData is the data of /ws-dm's \"friends\" event, which carries nothing: the friends list changed, and GET /friends reads it again.",
+      "properties": {},
+      "type": "object"
+    },
+    "FriendsList": {
+      "description": "FriendsList is everything the friends list shows.",
+      "properties": {
+        "friends": {
+          "items": {
+            "$ref": "#/$defs/Friend"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "incoming": {
+          "items": {
+            "$ref": "#/$defs/Friend"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "invites": {
+          "items": {
+            "$ref": "#/$defs/FriendInvite"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "outgoing": {
+          "items": {
+            "$ref": "#/$defs/Friend"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "friends",
+        "incoming",
+        "outgoing",
+        "invites"
       ],
       "type": "object"
     },
@@ -1449,6 +1958,36 @@
       ],
       "type": "object"
     },
+    "HereRequest": {
+      "description": "hereRequest is POST /here's body: whether the account is here (true by default) or leaving.",
+      "properties": {
+        "here": {
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "HereResponse": {
+      "description": "hereResponse is the answer of /here: who is about, and, to POST, the account's own address.",
+      "properties": {
+        "address": {
+          "type": "string"
+        },
+        "people": {
+          "items": {
+            "$ref": "#/$defs/Person"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "people"
+      ],
+      "type": "object"
+    },
     "IndexEndpoint": {
       "description": "indexEndpoint is one route the index points a newcomer at.",
       "properties": {
@@ -1703,6 +2242,39 @@
       ],
       "type": "object"
     },
+    "LoginRequest": {
+      "description": "LoginRequest is POST /auth/login's body.",
+      "properties": {
+        "handle": {
+          "type": "string"
+        },
+        "password": {
+          "type": "string"
+        },
+        "token": {
+          "description": "Token asks for the session as a token in the answer (SessionTokenResponse) instead of the cookie: a client that is not a browser (ADR 0138).",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "handle",
+        "password"
+      ],
+      "type": "object"
+    },
+    "LogoutResponse": {
+      "description": "LogoutResponse is POST /auth/logout's answer.",
+      "properties": {
+        "kind": {
+          "description": "Kind is what the request is now: \"anonymous\" once signed out, or \"guest\" when it was not signed in.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind"
+      ],
+      "type": "object"
+    },
     "MakeMoveRequest": {
       "description": "makeMoveRequest is POST /games/{code}/moves' request body. A move is given in one of three ways: - legacy: {\"from\", \"to\"} (step moves); - structured: {\"action\", \"piece\", \"from\", \"to\", \"count\", \"path\", \"drops\"} with only the fields the action needs; - notation: {\"notation\": \"3c3\u003e111\"} in the game's notation.",
       "properties": {
@@ -1780,6 +2352,84 @@
       "required": [
         "move",
         "state"
+      ],
+      "type": "object"
+    },
+    "MeResponse": {
+      "description": "Me is GET /auth/me's answer: who the request comes from.",
+      "properties": {
+        "accounts": {
+          "description": "Accounts says whether this server has accounts at all, and Signup whether a person can make one here.",
+          "type": "boolean"
+        },
+        "admin": {
+          "description": "Admin: the account is in the admin group (and may use its powers from here). Mode is \"hybrid\" or \"closed\"; SignupMode \"open\", \"invite\" or \"closed\"; Caps what this browser may do.",
+          "type": "boolean"
+        },
+        "caps": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "display_name": {
+          "type": "string"
+        },
+        "email": {
+          "description": "Email is the account's own address (never another's).",
+          "type": "string"
+        },
+        "handle": {
+          "type": "string"
+        },
+        "kind": {
+          "description": "\"account\", \"guest\" or \"anonymous\"",
+          "type": "string"
+        },
+        "linked": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "mode": {
+          "type": "string"
+        },
+        "must_change_password": {
+          "type": "boolean"
+        },
+        "needs_second_factor": {
+          "description": "NeedsSecondFactor: an administrator without one, off this machine, who may do nothing else until it is set up.",
+          "type": "boolean"
+        },
+        "password": {
+          "type": "boolean"
+        },
+        "providers": {
+          "description": "Providers are the sign-in providers; Linked those the account signs in with, and Password whether it has one (a provider's account may not).",
+          "items": {
+            "$ref": "#/$defs/ProviderInfo"
+          },
+          "type": "array"
+        },
+        "recovery_codes_left": {
+          "type": "integer"
+        },
+        "second_factor": {
+          "description": "SecondFactor says the account signs in with a code too, and RecoveryCodesLeft how many recovery codes it has unused.",
+          "type": "boolean"
+        },
+        "signup": {
+          "type": "boolean"
+        },
+        "signup_mode": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "accounts",
+        "signup"
       ],
       "type": "object"
     },
@@ -2005,6 +2655,18 @@
         "board_state",
         "state",
         "ply"
+      ],
+      "type": "object"
+    },
+    "OKResponse": {
+      "description": "okResponse is the answer of an action that has nothing more to say.",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "ok"
       ],
       "type": "object"
     },
@@ -2356,6 +3018,33 @@
       ],
       "type": "object"
     },
+    "Person": {
+      "description": "Person is somebody who is here now.",
+      "properties": {
+        "address": {
+          "description": "Address is where a direct message to them is sent.",
+          "type": "string"
+        },
+        "name": {
+          "description": "Name is the account's handle, \"@ana\".",
+          "type": "string"
+        },
+        "seen": {
+          "type": "string"
+        },
+        "since": {
+          "description": "Since is when this browser first said it was here, and Seen when it last did (RFC 3339).",
+          "type": "string"
+        }
+      },
+      "required": [
+        "address",
+        "name",
+        "since",
+        "seen"
+      ],
+      "type": "object"
+    },
     "PieceDTO": {
       "description": "PieceDTO describes a piece type.",
       "properties": {
@@ -2486,6 +3175,22 @@
         "id",
         "x",
         "y"
+      ],
+      "type": "object"
+    },
+    "ProviderInfo": {
+      "description": "ProviderInfo is a provider as the sign-in page shows it.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "label"
       ],
       "type": "object"
     },
@@ -2832,6 +3537,22 @@
       ],
       "type": "object"
     },
+    "SecondRequest": {
+      "description": "SecondRequest is POST /auth/second's body: a code or a recovery code, and, from a client that is not a browser, the pending sign-in its login answered.",
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "pending": {
+          "description": "Pending is what POST /auth/login answered; with it the answer is a SessionTokenResponse too.",
+          "type": "string"
+        },
+        "recovery_code": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "SelectionsResponse": {
       "description": "selectionsResponse is GET /games/{code}/selections' body (ADR 0114).",
       "properties": {
@@ -2874,6 +3595,36 @@
         "options",
         "complete"
       ],
+      "type": "object"
+    },
+    "SessionTokenResponse": {
+      "description": "SessionTokenResponse is the answer of a sign-in that asked for a token (ADR 0138): the session, or, when the account has a second factor, the sign-in still to finish. The session is like a browser's (listed, ended by signing out, by ending the other sessions and by a new password, and expiring as a browser's does); its token is sent as \"Authorization: Bearer \u003ctoken\u003e\" and needs no X-Bingle-Session.",
+      "properties": {
+        "expires": {
+          "description": "Expires is the latest it lasts; unused for 14 days it ends sooner.",
+          "format": "date-time",
+          "type": "string"
+        },
+        "me": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/MeResponse"
+            }
+          ],
+          "description": "Me is who is signed in, as GET /auth/me says."
+        },
+        "pending": {
+          "type": "string"
+        },
+        "second_factor": {
+          "description": "SecondFactor says the password was right and a code comes next: POST /auth/second with Pending and the code, within five minutes, answers with the session.",
+          "type": "boolean"
+        },
+        "token": {
+          "description": "Token is the session's, beginning bgs_.",
+          "type": "string"
+        }
+      },
       "type": "object"
     },
     "SlowTurnEventData": {
@@ -3220,9 +3971,29 @@
   },
   "$id": "https://github.com/noderunner/bingle/docs/api.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "description": "The requests, responses and WebSocket events of bingle's API, version 1.4.0. Generated from the Go types of the server: do not edit. Objects let unknown fields through: a client ignores those it does not know.",
+  "description": "The requests, responses and WebSocket events of bingle's API, version 1.5.0. Generated from the Go types of the server: do not edit. Objects let unknown fields through: a client ignores those it does not know.",
   "title": "Bingle API messages",
-  "x-api-version": "1.4.0",
+  "x-api-version": "1.5.0",
+  "x-dm-events": {
+    "badge": {
+      "$ref": "#/$defs/BadgeEventData"
+    },
+    "dm": {
+      "$ref": "#/$defs/DirectMessage"
+    },
+    "dm-call": {
+      "$ref": "#/$defs/DirectCall"
+    },
+    "dm-rtc": {
+      "$ref": "#/$defs/DirectSignal"
+    },
+    "friends": {
+      "$ref": "#/$defs/FriendsEventData"
+    },
+    "ready": {
+      "$ref": "#/$defs/DirectReadyEventData"
+    }
+  },
   "x-endpoints": {
     "GET /api": {
       "response": {
@@ -3235,6 +4006,16 @@
           "$ref": "#/$defs/BotInfo"
         },
         "type": "array"
+      }
+    },
+    "GET /api/friends": {
+      "response": {
+        "$ref": "#/$defs/FriendsList"
+      }
+    },
+    "GET /api/friends/settings": {
+      "response": {
+        "$ref": "#/$defs/FriendSettings"
       }
     },
     "GET /api/game-defs": {
@@ -3286,9 +4067,19 @@
         "$ref": "#/$defs/GetGameStateResponse"
       }
     },
+    "GET /api/here": {
+      "response": {
+        "$ref": "#/$defs/HereResponse"
+      }
+    },
     "GET /api/me/deals": {
       "response": {
         "$ref": "#/$defs/OwnDealsResponse"
+      }
+    },
+    "GET /auth/me": {
+      "response": {
+        "$ref": "#/$defs/MeResponse"
       }
     },
     "POST /api/bot-matches": {
@@ -3297,6 +4088,91 @@
       },
       "response": {
         "$ref": "#/$defs/BotMatchResponse"
+      }
+    },
+    "POST /api/dm": {
+      "request": {
+        "$ref": "#/$defs/DirectMessageRequest"
+      },
+      "response": {
+        "$ref": "#/$defs/DirectMessage"
+      }
+    },
+    "POST /api/dm/call": {
+      "request": {
+        "$ref": "#/$defs/DirectCallRequest"
+      },
+      "response": {
+        "$ref": "#/$defs/OKResponse"
+      }
+    },
+    "POST /api/dm/history": {
+      "request": {
+        "$ref": "#/$defs/DirectHistoryRequest"
+      },
+      "response": {
+        "$ref": "#/$defs/DirectHistoryResponse"
+      }
+    },
+    "POST /api/dm/signal": {
+      "request": {
+        "$ref": "#/$defs/DirectSignalRequest"
+      },
+      "response": {
+        "$ref": "#/$defs/OKResponse"
+      }
+    },
+    "POST /api/dm/threads": {
+      "response": {
+        "$ref": "#/$defs/DirectThreadsResponse"
+      }
+    },
+    "POST /api/friends/answer": {
+      "request": {
+        "$ref": "#/$defs/FriendRequest"
+      },
+      "response": {
+        "$ref": "#/$defs/OKResponse"
+      }
+    },
+    "POST /api/friends/dismiss": {
+      "request": {
+        "$ref": "#/$defs/FriendRequest"
+      },
+      "response": {
+        "$ref": "#/$defs/OKResponse"
+      }
+    },
+    "POST /api/friends/invite": {
+      "request": {
+        "$ref": "#/$defs/FriendRequest"
+      },
+      "response": {
+        "$ref": "#/$defs/OKResponse"
+      }
+    },
+    "POST /api/friends/invite-answer": {
+      "request": {
+        "$ref": "#/$defs/FriendRequest"
+      },
+      "response": {
+        "$ref": "#/$defs/OKResponse"
+      }
+    },
+    "POST /api/friends/remove": {
+      "request": {
+        "$ref": "#/$defs/FriendRequest"
+      },
+      "response": {
+        "$ref": "#/$defs/OKResponse"
+      }
+    },
+    "POST /api/friends/request": {
+      "request": {
+        "$ref": "#/$defs/FriendRequest"
+      },
+      "response": {
+        "$ref": "#/$defs/OKResponse"
       }
     },
     "POST /api/games": {
@@ -3374,6 +4250,43 @@
     "POST /api/guest": {
       "response": {
         "$ref": "#/$defs/GuestKey"
+      }
+    },
+    "POST /api/here": {
+      "request": {
+        "$ref": "#/$defs/HereRequest"
+      },
+      "response": {
+        "$ref": "#/$defs/HereResponse"
+      }
+    },
+    "POST /auth/login": {
+      "request": {
+        "$ref": "#/$defs/LoginRequest"
+      },
+      "response": {
+        "$ref": "#/$defs/SessionTokenResponse"
+      }
+    },
+    "POST /auth/logout": {
+      "response": {
+        "$ref": "#/$defs/LogoutResponse"
+      }
+    },
+    "POST /auth/second": {
+      "request": {
+        "$ref": "#/$defs/SecondRequest"
+      },
+      "response": {
+        "$ref": "#/$defs/SessionTokenResponse"
+      }
+    },
+    "PUT /api/friends/settings": {
+      "request": {
+        "$ref": "#/$defs/FriendSettings"
+      },
+      "response": {
+        "$ref": "#/$defs/FriendSettings"
       }
     }
   },

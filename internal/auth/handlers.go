@@ -192,7 +192,7 @@ func (rs *Resolver) handleLogin(w http.ResponseWriter, r *http.Request) {
 	if rs.noAccounts(w) {
 		return
 	}
-	var req loginRequest
+	var req LoginRequest
 	if !decode(w, r, &req) {
 		return
 	}
@@ -203,7 +203,7 @@ func (rs *Resolver) handleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.Token {
 		if pending != "" {
-			writeJSON(w, http.StatusOK, loginResponse{SecondFactor: true, Pending: pending})
+			writeJSON(w, http.StatusOK, SessionTokenResponse{SecondFactor: true, Pending: pending})
 			return
 		}
 		rs.answerToken(w, r, s)
@@ -219,8 +219,8 @@ func (rs *Resolver) handleLogin(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, rs.meOf(r, s.Account))
 }
 
-// loginRequest is POST /auth/login's body.
-type loginRequest struct {
+// LoginRequest is POST /auth/login's body.
+type LoginRequest struct {
 	Handle   string `json:"handle"`
 	Password string `json:"password"`
 	// Token asks for the session as a token in the answer (SessionTokenResponse)
@@ -228,33 +228,32 @@ type loginRequest struct {
 	Token bool `json:"token,omitempty"`
 }
 
-// loginResponse is POST /auth/login's answer with token when the account has
-// a second factor: the password was right, and POST /auth/second with
-// pending and a code finishes the sign-in, within five minutes.
-type loginResponse struct {
-	SecondFactor bool   `json:"second_factor"`
-	Pending      string `json:"pending"`
-}
-
-// SessionTokenResponse is the answer of a sign-in that asked for a token: a
-// session like a browser's (listed, ended by signing out, by ending the other
-// sessions and by a new password, and expiring as a browser's does), whose
-// token is sent as "Authorization: Bearer <token>" and needs no
-// X-Bingle-Session.
+// SessionTokenResponse is the answer of a sign-in that asked for a token
+// (ADR 0138): the session, or, when the account has a second factor, the
+// sign-in still to finish. The session is like a browser's (listed, ended by
+// signing out, by ending the other sessions and by a new password, and
+// expiring as a browser's does); its token is sent as "Authorization: Bearer
+// <token>" and needs no X-Bingle-Session.
 type SessionTokenResponse struct {
 	// Token is the session's, beginning bgs_.
-	Token string `json:"token"`
+	Token string `json:"token,omitempty"`
 	// Expires is the latest it lasts; unused for 14 days it ends sooner.
-	Expires time.Time `json:"expires"`
+	Expires *time.Time `json:"expires,omitempty"`
 	// Me is who is signed in, as GET /auth/me says.
-	Me me `json:"me"`
+	Me *Me `json:"me,omitempty"`
+	// SecondFactor says the password was right and a code comes next: POST
+	// /auth/second with Pending and the code, within five minutes, answers
+	// with the session.
+	SecondFactor bool   `json:"second_factor,omitempty"`
+	Pending      string `json:"pending,omitempty"`
 }
 
 // answerToken answers a native sign-in with its session token. The token
 // replaces the guest key the request may have come with: that guest is the
 // account's now, and its key no longer works.
 func (rs *Resolver) answerToken(w http.ResponseWriter, r *http.Request, s Session) {
-	writeJSON(w, http.StatusOK, SessionTokenResponse{Token: SessionTokenPrefix + s.Token, Expires: s.Expires, Me: rs.meOf(r, s.Account)})
+	me := rs.meOf(r, s.Account)
+	writeJSON(w, http.StatusOK, SessionTokenResponse{Token: SessionTokenPrefix + s.Token, Expires: &s.Expires, Me: &me})
 }
 
 // startSession sets the session cookie, and drops the guest cookie: the
@@ -273,7 +272,7 @@ func (rs *Resolver) handleLogout(w http.ResponseWriter, r *http.Request) {
 	p, ok := From(r.Context())
 	if !ok || p.Account == nil {
 		rs.setCookie(w, r, SessionCookie, "", -1)
-		writeJSON(w, http.StatusOK, map[string]string{"kind": "guest"})
+		writeJSON(w, http.StatusOK, LogoutResponse{Kind: "guest"})
 		return
 	}
 	if err := rs.accounts.Logout(r.Context(), p.session, p.Account.ID, rs.transport.PeerIP(r)); err != nil {
@@ -281,7 +280,14 @@ func (rs *Resolver) handleLogout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	rs.setCookie(w, r, SessionCookie, "", -1)
-	writeJSON(w, http.StatusOK, map[string]string{"kind": "anonymous"})
+	writeJSON(w, http.StatusOK, LogoutResponse{Kind: "anonymous"})
+}
+
+// LogoutResponse is POST /auth/logout's answer.
+type LogoutResponse struct {
+	// Kind is what the request is now: "anonymous" once signed out, or
+	// "guest" when it was not signed in.
+	Kind string `json:"kind"`
 }
 
 func (rs *Resolver) handlePassword(w http.ResponseWriter, r *http.Request) {
@@ -313,8 +319,8 @@ func (rs *Resolver) handlePassword(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, rs.meOf(r, s.Account))
 }
 
-// me is GET /auth/me's answer.
-type me struct {
+// Me is GET /auth/me's answer: who the request comes from.
+type Me struct {
 	Kind               string `json:"kind"` // "account", "guest" or "anonymous"
 	Handle             string `json:"handle,omitempty"`
 	DisplayName        string `json:"display_name,omitempty"`
@@ -347,8 +353,8 @@ type me struct {
 	Caps       []string `json:"caps,omitempty"`
 }
 
-func (rs *Resolver) meOf(r *http.Request, a store.Account) me {
-	out := me{Kind: store.KindAccount, Handle: a.Handle, DisplayName: a.DisplayName, MustChangePassword: a.MustChangePassword, Accounts: true, Email: a.Email,
+func (rs *Resolver) meOf(r *http.Request, a store.Account) Me {
+	out := Me{Kind: store.KindAccount, Handle: a.Handle, DisplayName: a.DisplayName, MustChangePassword: a.MustChangePassword, Accounts: true, Email: a.Email,
 		SecondFactor: a.HasTOTP, NeedsSecondFactor: rs.needsSecondFactor(r, a)}
 	if rs.accounts != nil {
 		if a.HasTOTP {
@@ -372,7 +378,7 @@ func (rs *Resolver) needsSecondFactor(r *http.Request, a store.Account) bool {
 }
 
 func (rs *Resolver) handleMe(w http.ResponseWriter, r *http.Request) {
-	out := me{Kind: "anonymous"}
+	out := Me{Kind: "anonymous"}
 	if p, ok := From(r.Context()); ok {
 		if p.Account != nil {
 			out = rs.meOf(r, *p.Account)
@@ -411,12 +417,13 @@ type codeRequest struct {
 	Recovery string `json:"recovery_code"`
 }
 
-// secondRequest is POST /auth/second's body: a code or a recovery code, and,
+// SecondRequest is POST /auth/second's body: a code or a recovery code, and,
 // from a client that is not a browser, the pending sign-in its login answered.
-type secondRequest struct {
+type SecondRequest struct {
 	Code     string `json:"code,omitempty"`
 	Recovery string `json:"recovery_code,omitempty"`
-	// Pending is loginResponse's; with it the answer is a SessionTokenResponse.
+	// Pending is what POST /auth/login answered; with it the answer is a
+	// SessionTokenResponse too.
 	Pending string `json:"pending,omitempty"`
 }
 
@@ -424,7 +431,7 @@ func (rs *Resolver) handleSecond(w http.ResponseWriter, r *http.Request) {
 	if rs.noAccounts(w) {
 		return
 	}
-	var req secondRequest
+	var req SecondRequest
 	if !decode(w, r, &req) {
 		return
 	}
@@ -576,7 +583,7 @@ func (rs *Resolver) signupOpen() bool {
 }
 
 // decorate adds the mode and the capabilities to an answer of /auth/me.
-func (rs *Resolver) decorate(r *http.Request, out *me) {
+func (rs *Resolver) decorate(r *http.Request, out *Me) {
 	if rs.accounts != nil {
 		out.SignupMode = rs.accounts.signup
 	}

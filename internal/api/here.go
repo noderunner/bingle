@@ -47,6 +47,13 @@ type hereRequest struct {
 	Here *bool `json:"here,omitempty"`
 }
 
+// hereResponse is the answer of /here: who is about, and, to POST, the
+// account's own address.
+type hereResponse struct {
+	People  []session.Person `json:"people"`
+	Address string           `json:"address,omitempty"`
+}
+
 // handlePostHere implements POST /here: mark this account present (or away)
 // and answer with everybody who is here. Accounts only (ADR 0073).
 func (h *handlers) handlePostHere(w http.ResponseWriter, r *http.Request) {
@@ -67,7 +74,7 @@ func (h *handlers) handlePostHere(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"people": people, "address": addr})
+	writeJSON(w, http.StatusOK, hereResponse{People: people, Address: addr})
 }
 
 // handleGetHere implements GET /here: who is about, without saying that the
@@ -76,5 +83,5 @@ func (h *handlers) handleGetHere(w http.ResponseWriter, r *http.Request) {
 	if _, _, ok := member(w, r); !ok {
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"people": h.mgr.WhoIsHere()})
+	writeJSON(w, http.StatusOK, hereResponse{People: h.mgr.WhoIsHere()})
 }
