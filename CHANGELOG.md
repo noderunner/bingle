@@ -4,6 +4,11 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.119.2 - 2026-11-19
+
+### Bingle Core 0.119.2
+- On a slow computer, solving a game of Solitaire, Spider or FreeCell sometimes showed no celebration: the cards stayed put and no picture came. Now it always plays.
+
 ## 0.119.1 - 2026-11-19
 
 ### Bingle Core 0.119.1

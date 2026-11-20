@@ -394,8 +394,9 @@ function table(ctx) {
 
 // The page draws the table anew for every change, so where each card was is kept
 // after each drawing of a live game: when the game is won, the cards that were not
-// yet home fly there from those places (victory.js, ADR 0137).
-let seen = { room: "", home: -1, cards: new Map() };
+// yet home fly there from those places (victory.js, ADR 0137). The newest drawing is
+// kept too: one change can draw the table several times before the next frame.
+let seen = { room: "", home: -1, cards: new Map(), ctx: null, node: null };
 
 /** Where each face-up card of a drawn table is, and in which pile. */
 function measure(node) {
@@ -414,9 +415,12 @@ function watchForWin(ctx, node) {
 	if (!ctx.live || view.bowling || !view.total) return;
 	const won = view.home === view.total;
 	const before = seen.room === ctx.room ? seen : null;
-	seen = { room: ctx.room, home: view.home, cards: before ? before.cards : new Map() };
+	seen = { room: ctx.room, home: view.home, cards: before ? before.cards : new Map(), ctx, node };
 	if (won && before && before.home >= 0 && before.home < view.total) {
-		requestAnimationFrame(() => showWin(ctx, node, before.cards));
+		// The cards fly to the table on the page by then, not to one a later drawing replaced.
+		requestAnimationFrame(() => {
+			if (seen.room === ctx.room) showWin(seen.ctx, seen.node, before.cards);
+		});
 	} else if (!won) {
 		requestAnimationFrame(() => {
 			if (node.isConnected && seen.room === ctx.room) seen.cards = measure(node);
