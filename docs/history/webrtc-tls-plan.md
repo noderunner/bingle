@@ -179,3 +179,5 @@ mobile, symmetric NAT) need a TURN relay.
   open questions (the owner said to go ahead): audio first, video later; players only (no spectators);
   open microphone with mute, push to talk optional. Not done: video, listen-only spectators, an SFU,
   a test of a real TURN relay.
+- 2026-11-20: what is not done became issues: video #243, spectators who listen #244, an SFU #245 and a
+  test through a real TURN relay #246.
