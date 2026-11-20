@@ -70,7 +70,7 @@ type dmCallRequest struct {
 // person this account is calling.
 type dmSignalRequest struct {
 	To   string          `json:"to"`
-	Kind string          `json:"kind"`
+	Kind string          `json:"kind"` // "offer", "answer", "ice" or "retry"
 	Data json.RawMessage `json:"data"`
 }
 

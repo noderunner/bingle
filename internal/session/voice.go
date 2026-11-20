@@ -53,25 +53,29 @@ var ErrBadSignal = errors.New("session: bad voice message")
 // something only a player can.
 var ErrNotSeated = errors.New("session: only a player with a seat can do that")
 
-// VoicePeer is a seat that is in the call.
+// VoicePeer is a seat that is in the call, and the name of the player in it.
 type VoicePeer struct {
 	Seat int    `json:"seat"`
 	Name string `json:"name"`
 }
 
-// voiceEventData is the wire form of a "voice" event, sent to the whole room
-// when somebody joins or leaves the call.
-type voiceEventData struct {
+// VoiceEventData is the wire form of a "voice" event, sent to the whole room
+// (every socket of the game, the call's own included) when somebody joins or
+// leaves the call.
+type VoiceEventData struct {
 	Kind string `json:"kind"` // "join" or "leave"
 	Seat int    `json:"seat"`
 	Name string `json:"name"`
 }
 
 // RTCSignal is the wire form of an "rtc" event: a message from one seat to
-// another, delivered only to the connection of the seat it is for.
+// another, delivered only to the call's socket (/ws/{code}?only=voice) of the
+// seat it is for.
 type RTCSignal struct {
-	From int             `json:"from"`
-	Kind string          `json:"kind"` // "offer", "answer", "ice" or "retry" (please call me again)
+	// From is the seat that sent it.
+	From int    `json:"from"`
+	Kind string `json:"kind"` // "offer", "answer", "ice" or "retry" (please call me again)
+	// Data is what the sender put in it, passed on unread.
 	Data json.RawMessage `json:"data"`
 }
 
@@ -208,7 +212,7 @@ func (m *Manager) SetVoice(ctx context.Context, roomCode, name string, active bo
 	}
 	changed := m.voice.set(roomCode, seat, who, active, func() {
 		if m.voice.set(roomCode, seat, who, false, nil) {
-			m.hub.publish(roomCode, Event{Type: "voice", Data: voiceEventData{Kind: "leave", Seat: seat, Name: who}})
+			m.hub.publish(roomCode, Event{Type: "voice", Data: VoiceEventData{Kind: "leave", Seat: seat, Name: who}})
 		}
 	})
 	if changed {
@@ -216,7 +220,7 @@ func (m *Manager) SetVoice(ctx context.Context, roomCode, name string, active bo
 		if active {
 			kind = "join"
 		}
-		m.hub.publish(roomCode, Event{Type: "voice", Data: voiceEventData{Kind: kind, Seat: seat, Name: who}})
+		m.hub.publish(roomCode, Event{Type: "voice", Data: VoiceEventData{Kind: kind, Seat: seat, Name: who}})
 	}
 	return m.voice.list(roomCode), nil
 }

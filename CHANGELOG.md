@@ -4,6 +4,11 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.120.1 - 2026-11-19
+
+### Bingle Core 0.120.1
+- Apps that play Bingle without the web page, such as a 3D client, can now count on voice chat: talking with the other players of a game, and calls with a friend, are described in full, down to what the app must send so that it can talk with people on the web page.
+
 ## 0.120.0 - 2026-11-19
 
 ### Bingle Core 0.120.0

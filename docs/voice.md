@@ -127,9 +127,49 @@ candidates to the other browser's `/ws-dm` socket. It borrows the microphone and
 the ICE servers from `js/voice.js` (`micStream`, `iceServers`), so both kinds of
 call ask for the same thing of the browser.
 
-**A person talks in one place at a time.** A browser that sends its secret when
-joining — a game's call or a direct one — is held to a single call: joining a new
+**A person talks in one place at a time.** A client that says who it is when
+joining (a guest's key, an account's session or session token) — a game's call or
+a direct one — is held to a single call: joining a new
 one takes it out of the old and tells it (the room gets a `voice` leave for that
 seat, the other end of a direct call a `dm-call` end marked `dropped`). The page
 that was dropped takes its call down and says why. An API client that sends no
 secret is not tracked.
+
+## For a client that is not a browser
+
+A client that is not a browser takes part in the same calls as the page, so it
+speaks what a browser's `RTCPeerConnection` does. The calls, their bodies and the
+events are in the API schema ([api.md](api.md)); `$defs/SignalData` there is the
+`data` of a message, the same in a game's call (`voice/signal`, the `rtc` event)
+and a direct one (`/dm/signal`, the `dm-rtc` event). The server does not read it.
+
+| `kind` | `data` |
+|---|---|
+| `offer`, `answer` | a session description, `{type, sdp}`, `type` being `offer` or `answer` |
+| `ice` | `RTCIceCandidate.toJSON()`: `{candidate, sdpMid, sdpMLineIndex, usernameFragment?}`, one candidate per message as it is found (trickle ICE); nothing marks the end of the candidates |
+| `retry` | `{}` |
+
+What the page does, which the other side must match:
+
+* **One audio track** from the microphone, no video and no data channel. The page
+  sets no codec preferences, so browsers settle on Opus.
+* **Who offers.** In a game's call the **higher seat** of each pair makes the offer
+  and the lower one answers. In a direct call the **lower address** offers, the two
+  addresses (16 lowercase hex digits) compared as strings.
+* **Candidates** that arrive before the description they belong to are kept and added
+  once it is set.
+* **The ICE servers** are `GET /api/rtc/config`'s, for both kinds of call; the TURN
+  credentials last 6 hours, so a client asks again for a new call.
+* **A game's call, in order:** open `/ws/{code}?name=…&role=player&only=voice`, wait for
+  `joined`, post `/voice` with `active: true` and again every 15 seconds; its answer and
+  the `voice` events say who is in the call. Offer to each lower seat in it; answer the
+  offers of the higher ones.
+* **After a failure** (the connection's state is `failed`) in a game's call, the higher
+  seat restarts ICE (`createOffer({iceRestart: true})` on the same connection) 1.5
+  seconds later, at most three times until it connects again; the lower seat sends
+  `retry`, and the higher one then closes the connection and offers on a new one. In a
+  direct call the page does not retry by itself; a `retry` it receives makes the side
+  that offers offer again.
+
+Whether a client can open a call over plain HTTP is its own matter: the server asks for
+nothing more than for any other call.
