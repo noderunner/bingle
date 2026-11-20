@@ -48,6 +48,15 @@ export function newerVersion(a, b) {
 	return false;
 }
 
+/**
+ * A release's Markdown without its "### Bingle Core 0.4.0" heading, which only repeats the
+ * release's own heading (under any brand). A game's section keeps its heading.
+ */
+export function withoutCoreHeading(markdown, version) {
+	const v = String(version).replace(/[.]/g, "\\.");
+	return String(markdown || "").replace(new RegExp(`^###\\s+.*\\bCore\\s+${v}\\s*$\\n?`, "m"), "").trim();
+}
+
 /** The version of the bingle engine, which the server puts in every page. */
 function engineVersion() {
 	const meta = document.querySelector('meta[name="bingle-version"]');
@@ -245,13 +254,11 @@ export function installTopbar({ onRows = () => {}, manageTitle = true } = {}) {
 	// Recent changes: every release since the one this browser last marked read, newest first, in a
 	// box of its own that scrolls; Mark all as read clears the dot.
 	const changesBody = h("div", { class: "help-changes-body", id: "help-changes-body", tabindex: "0", "aria-label": "The changes" });
-	const changesHead = h("p", { class: "muted small help-changes-head", id: "help-changes-head", hidden: true });
 	const markRead = h("button", { type: "button", class: "small", id: "help-mark-read", hidden: true, onclick: () => markAllRead() }, "Mark all as read");
 	const changes = h(
 		"section",
 		{ class: "help-changes", id: "help-changes", hidden: true },
 		h("div", { class: "help-changes-top" }, h("h3", {}, "Recent changes"), markRead),
-		changesHead,
 		changesBody
 	);
 	// The version stands where a heading would, and the buttons share one line at the bottom.
@@ -312,20 +319,18 @@ export function installTopbar({ onRows = () => {}, manageTitle = true } = {}) {
 		clear(changesBody);
 		for (const e of entries) {
 			const text = h("div", { class: "md" });
-			if (renderMarkdown) text.append(renderMarkdown(e.markdown, { idPrefix: `changes-${e.version}` }).node);
-			else text.textContent = e.markdown;
-			changesBody.append(h("article", { class: "help-change", "data-version": e.version }, h("h4", { class: "help-change-head" }, `${brandName()} ${e.version}${e.date ? ` · ${e.date}` : ""}`), text));
+			const markdown = withoutCoreHeading(e.markdown, e.version);
+			if (renderMarkdown) text.append(renderMarkdown(markdown, { idPrefix: `changes-${e.version}` }).node);
+			else text.textContent = markdown;
+			changesBody.append(h("article", { class: "help-change", "data-version": e.version }, h("h4", { class: "help-change-head" }, `${e.version}${e.date ? ` · ${e.date}` : ""}`), text));
 		}
 		changesBody.scrollTop = 0;
-		changesHead.textContent = !news ? "" : entries.length > 1 ? `${entries.length} updates you have not read, the newest first.` : "An update you have not read.";
-		changesHead.hidden = !news;
 		markRead.hidden = !news;
 		changes.hidden = false;
 	};
 	const markAllRead = () => {
 		if (!latest) return;
 		store.set(CHANGES_SEEN_KEY, latest.version);
-		changesHead.hidden = true;
 		markRead.hidden = true;
 		paintHelpDot();
 		// The button has gone: the focus stays in the window, on the changes.
