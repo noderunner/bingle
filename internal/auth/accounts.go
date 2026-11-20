@@ -130,6 +130,7 @@ var (
 	ErrBadLink       = errors.New("auth: that link is not valid any more: it was used already, or it is too old")
 	ErrSamePassword  = errors.New("auth: choose a password different from the old one")
 	ErrNotSignedIn   = errors.New("auth: you are not signed in")
+	ErrSessionEnded  = errors.New("auth: that session has ended (signed out, a new password, or too long unused): sign in again")
 	ErrMustChangePwd = errors.New("auth: change your password first")
 	ErrNeedsInvite   = errors.New("auth: signing up here needs an invitation: ask the server's administrator for a link")
 )

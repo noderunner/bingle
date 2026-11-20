@@ -27,6 +27,11 @@ const SessionCookie = "bingle_session"
 // is the one that makes its guest.
 const PageHeader = "X-Bingle-Session"
 
+// SessionTokenPrefix begins a session token: the secret of a signed-in
+// session handed to a client that is not a browser, to send as
+// "Authorization: Bearer" instead of the cookie (ADR 0138).
+const SessionTokenPrefix = "bgs_"
+
 // cookieMaxAge is how long a browser keeps the cookie: the most browsers
 // allow. When a key stops working is the server's decision (Idle), not the
 // cookie's.
@@ -171,7 +176,26 @@ func (rs *Resolver) resolve(w http.ResponseWriter, r *http.Request) (Principal, 
 			return Principal{}, false, err
 		}
 	}
-	if tok := bearerToken(r); tok != "" {
+	if tok := bearerWith(r, SessionTokenPrefix); tok != "" {
+		secret := strings.TrimPrefix(tok, SessionTokenPrefix)
+		if rs.accounts == nil {
+			writeError(w, http.StatusUnauthorized, ErrSessionEnded.Error())
+			return Principal{}, false, ErrSessionEnded
+		}
+		acc, err := rs.accounts.account(r.Context(), secret)
+		switch {
+		case err == nil:
+			return Principal{ID: acc.PrincipalID, Kind: store.KindAccount, Account: &acc, session: secret, bearer: true}, true, nil
+		case errors.Is(err, store.ErrNotFound):
+			writeError(w, http.StatusUnauthorized, ErrSessionEnded.Error())
+			return Principal{}, false, err
+		default:
+			rs.log.Error("reading a session", "err", err)
+			writeError(w, http.StatusServiceUnavailable, "auth: could not check who you are; try again")
+			return Principal{}, false, err
+		}
+	}
+	if tok := bearerWith(r, APITokenPrefix); tok != "" {
 		if rs.accounts == nil {
 			writeError(w, http.StatusUnauthorized, ErrNoToken.Error())
 			return Principal{}, false, ErrNoToken
@@ -192,7 +216,7 @@ func (rs *Resolver) resolve(w http.ResponseWriter, r *http.Request) (Principal, 
 			return Principal{}, false, err
 		}
 	}
-	key, fromCookie := bearerKey(r), false
+	key, fromCookie := bearerWith(r, GuestKeyPrefix), false
 	if key == "" {
 		if c, err := r.Cookie(CookieName); err == nil && c.Value != "" {
 			key, fromCookie = c.Value, true
@@ -285,27 +309,14 @@ func (rs *Resolver) setCookie(w http.ResponseWriter, r *http.Request, name, valu
 	http.SetCookie(w, &http.Cookie{Name: name, Value: value, Path: "/", MaxAge: maxAge, HttpOnly: true, Secure: rs.transport.Secure(r), SameSite: http.SameSiteLaxMode})
 }
 
-// bearerKey is the guest key in an Authorization header, if that is what it
-// holds.
-func bearerKey(r *http.Request) string {
+// bearerWith is the request's "Authorization: Bearer" credential when it
+// begins with prefix, and "" otherwise.
+func bearerWith(r *http.Request, prefix string) string {
 	v := r.Header.Get("Authorization")
 	if len(v) < len("Bearer ") || !strings.EqualFold(v[:len("Bearer ")], "Bearer ") {
 		return ""
 	}
-	if k := strings.TrimSpace(v[len("Bearer "):]); strings.HasPrefix(k, GuestKeyPrefix) {
-		return k
-	}
-	return ""
-}
-
-// bearerToken is the API token in an Authorization header, if that is what
-// it holds.
-func bearerToken(r *http.Request) string {
-	v := r.Header.Get("Authorization")
-	if len(v) < len("Bearer ") || !strings.EqualFold(v[:len("Bearer ")], "Bearer ") {
-		return ""
-	}
-	if k := strings.TrimSpace(v[len("Bearer "):]); strings.HasPrefix(k, APITokenPrefix) {
+	if k := strings.TrimSpace(v[len("Bearer "):]); strings.HasPrefix(k, prefix) {
 		return k
 	}
 	return ""
