@@ -54,11 +54,11 @@ func BowlingModule() catalog.Module {
 	if err != nil {
 		panic(err)
 	}
-	return catalog.Module{ID: "bowling-solitaire", Definition: bowlingDefinition(), Rules: New(), Assets: guide, Tutorials: tutorials, Web: look.MustLoadFile(definitionFS, "web/bowling.yaml")}
+	return catalog.Module{ID: "bowling-solitaire", Definition: bowlingDefinition(), Rules: New(), Assets: guide, Tutorials: tutorials, Scripts: scripts(), Web: look.MustLoadFile(definitionFS, "web/bowling.yaml")}
 }
 
-// scripts is the family's page script and its look files, served under
-// /static/games/solitaire/ (ADR 0124).
+// scripts is the families' page scripts and their look files, served under
+// /static/games/solitaire/ and /static/games/bowling-solitaire/ (ADR 0124).
 func scripts() fs.FS {
 	sub, err := fs.Sub(definitionFS, "web")
 	if err != nil {

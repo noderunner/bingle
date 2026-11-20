@@ -86,7 +86,9 @@ git -c credential.helper='!f() { echo username=x-access-token; echo "password=$(
   shards. With the private overlay checked out at `internal/games/private` (ADR 0127), `make
   test-private` runs the suite with its games too: do so when touching a shared interface they use.
 - A test covers the change. For a bug, one that fails before the fix.
-- `CHANGELOG.md` gets an entry, written for the people who play rather than for developers. The
+- `CHANGELOG.md` gets an entry, written for the people who play rather than for developers. Keep it
+  short: one line per change that says what changed, not how or why ("Simplified Recent Changes UI",
+  not "Recent changes in the help window is simpler: one heading per update, and no extra lines"). The
   newest entry's version is `internal/version`. Bump `internal/version` for engine or platform
   changes and each game's definition `version` separately; minor or patch by judgement, major
   only when told. `version.API` moves on its own when what the API sends or reads changes
