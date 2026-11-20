@@ -2,6 +2,7 @@
 # here changes them, and other clients draw the game their own way.
 board:
   style: none
+script: bowling.js
 pieces:
   token: {shape: disc}
 cards:
