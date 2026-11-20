@@ -4,6 +4,11 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.120.0 - 2026-11-19
+
+### Bingle Core 0.120.0
+- Apps that play Bingle without the web page, such as a 3D client, can now sign you in to your account with your handle and password, and your second factor if you have one. Then you have your friends, direct messages and calls there too. Such a sign-in is listed with your others on your account page under the app's name, and you can end it there like any other. Signing out, ending your other sessions or changing your password ends it as well. If you played as a guest in the app first, your games come with you into your account.
+
 ## 0.119.2 - 2026-11-19
 
 ### Bingle Core 0.119.2

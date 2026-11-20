@@ -64,6 +64,10 @@ type FriendInvite struct {
 	Notice string `json:"notice,omitempty"`
 }
 
+// FriendsEventData is the data of /ws-dm's "friends" event, which carries
+// nothing: the friends list changed, and GET /friends reads it again.
+type FriendsEventData struct{}
+
 // FriendsList is everything the friends list shows.
 type FriendsList struct {
 	Friends  []Friend       `json:"friends"`
@@ -121,7 +125,7 @@ func (m *Manager) activeAccount(ctx context.Context, handle string) (store.Accou
 
 // tellFriends tells the pages of an account that its list has changed.
 func (m *Manager) tellFriends(principalID string) {
-	m.hub.publish(dmRoom(AddressOf(principalID)), Event{Type: "friends", Data: map[string]string{}})
+	m.hub.publish(dmRoom(AddressOf(principalID)), Event{Type: "friends", Data: FriendsEventData{}})
 }
 
 // RequestFriend asks handle to be a friend of the account me. If they have already asked, they are

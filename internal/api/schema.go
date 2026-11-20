@@ -9,6 +9,7 @@ import (
 	"github.com/noderunner/bingle/internal/bots"
 	"github.com/noderunner/bingle/internal/engine/dsl/schemagen"
 	"github.com/noderunner/bingle/internal/session"
+	"github.com/noderunner/bingle/internal/store"
 	"github.com/noderunner/bingle/internal/version"
 	"github.com/noderunner/bingle/internal/wire"
 )
@@ -50,6 +51,32 @@ var schemaEndpoints = []schemaEndpoint{
 	{route: "POST /api/games/{code}/remove", request: reflect.TypeFor[seatRequest](), response: reflect.TypeFor[gameStatusResponse]()},
 	{route: "GET /api/me/deals", response: reflect.TypeFor[ownDealsResponse]()},
 	{route: "POST /api/bot-matches", request: reflect.TypeFor[botMatchRequest](), response: reflect.TypeFor[botMatchResponse]()},
+
+	// Signing in, for a client that is not a browser (ADR 0138): the answers
+	// are those of a sign-in that asks for a token.
+	{route: "POST /auth/login", request: reflect.TypeFor[auth.LoginRequest](), response: reflect.TypeFor[auth.SessionTokenResponse]()},
+	{route: "POST /auth/second", request: reflect.TypeFor[auth.SecondRequest](), response: reflect.TypeFor[auth.SessionTokenResponse]()},
+	{route: "GET /auth/me", response: reflect.TypeFor[auth.Me]()},
+	{route: "POST /auth/logout", response: reflect.TypeFor[auth.LogoutResponse]()},
+
+	// Friends (ADR 0105), who is here and direct messages, for a signed-in
+	// account. Writing and calling need the account to be here.
+	{route: "POST /api/here", request: reflect.TypeFor[hereRequest](), response: reflect.TypeFor[hereResponse]()},
+	{route: "GET /api/here", response: reflect.TypeFor[hereResponse]()},
+	{route: "GET /api/friends", response: reflect.TypeFor[session.FriendsList]()},
+	{route: "POST /api/friends/request", request: reflect.TypeFor[friendRequest](), response: reflect.TypeFor[okResponse]()},
+	{route: "POST /api/friends/answer", request: reflect.TypeFor[friendRequest](), response: reflect.TypeFor[okResponse]()},
+	{route: "POST /api/friends/remove", request: reflect.TypeFor[friendRequest](), response: reflect.TypeFor[okResponse]()},
+	{route: "POST /api/friends/invite", request: reflect.TypeFor[friendRequest](), response: reflect.TypeFor[okResponse]()},
+	{route: "POST /api/friends/invite-answer", request: reflect.TypeFor[friendRequest](), response: reflect.TypeFor[okResponse]()},
+	{route: "POST /api/friends/dismiss", request: reflect.TypeFor[friendRequest](), response: reflect.TypeFor[okResponse]()},
+	{route: "GET /api/friends/settings", response: reflect.TypeFor[store.FriendSettings]()},
+	{route: "PUT /api/friends/settings", request: reflect.TypeFor[store.FriendSettings](), response: reflect.TypeFor[store.FriendSettings]()},
+	{route: "POST /api/dm", request: reflect.TypeFor[dmRequest](), response: reflect.TypeFor[session.DirectMessage]()},
+	{route: "POST /api/dm/history", request: reflect.TypeFor[dmReadRequest](), response: reflect.TypeFor[dmHistoryResponse]()},
+	{route: "POST /api/dm/threads", response: reflect.TypeFor[dmThreadsResponse]()},
+	{route: "POST /api/dm/call", request: reflect.TypeFor[dmCallRequest](), response: reflect.TypeFor[okResponse]()},
+	{route: "POST /api/dm/signal", request: reflect.TypeFor[dmSignalRequest](), response: reflect.TypeFor[okResponse]()},
 }
 
 // schemaEvents are the WebSocket events of /ws/{code} the schema describes,
@@ -66,6 +93,40 @@ var schemaEvents = []struct {
 	{"kick_vote", reflect.TypeFor[session.KickVoteEventData]()},
 	{"seat_replaced", reflect.TypeFor[session.SeatReplacedEventData]()},
 	{"slow_turn", reflect.TypeFor[session.SlowTurnEventData]()},
+}
+
+// schemaDirectEvents are the WebSocket events of /ws-dm, a signed-in
+// account's own socket: its messages, its calls, its badges and its friends.
+var schemaDirectEvents = []struct {
+	typ  string
+	data reflect.Type
+}{
+	{"ready", reflect.TypeFor[dmReady]()},
+	{"dm", reflect.TypeFor[session.DirectMessage]()},
+	{"dm-call", reflect.TypeFor[session.DirectCall]()},
+	{"dm-rtc", reflect.TypeFor[session.DirectSignal]()},
+	{"badge", reflect.TypeFor[session.BadgeEventData]()},
+	{"friends", reflect.TypeFor[session.FriendsEventData]()},
+}
+
+// eventSchemas are the data of each event type, by type, and the schema of
+// each event as a whole, for a WebSocketEvent's oneOf.
+func eventSchemas(m *schemagen.Messages, list []struct {
+	typ  string
+	data reflect.Type
+}) (map[string]any, []any) {
+	byType := map[string]any{}
+	var events []any
+	for _, e := range list {
+		data := m.Response(e.data)
+		byType[e.typ] = data
+		events = append(events, map[string]any{
+			"type":       "object",
+			"properties": map[string]any{"type": map[string]any{"const": e.typ}, "data": data},
+			"required":   []string{"type", "data"},
+		})
+	}
+	return byType, events
 }
 
 // Schema returns docs/api.schema.json: the JSON Schema of the messages of
@@ -90,11 +151,25 @@ func Schema(root string) ([]byte, error) {
 			reflect.TypeFor[seatRequest]():       {"player_name", "seat"},
 			reflect.TypeFor[addBotRequest]():     {"player_name", "bot"},
 			reflect.TypeFor[botMatchRequest]():   {"game_def_id", "bot_a", "bot_b"},
+			reflect.TypeFor[auth.LoginRequest](): {"handle", "password"},
+			reflect.TypeFor[dmRequest]():         {"to", "text"},
+			reflect.TypeFor[dmReadRequest]():     {"with"},
+			reflect.TypeFor[dmSignalRequest]():   {"to", "kind", "data"},
 		},
 		Names: map[reflect.Type]string{
-			reflect.TypeFor[apiIndex]():  "IndexResponse",
-			reflect.TypeFor[wsJoined]():  "JoinedEventData",
-			reflect.TypeFor[bots.Info](): "BotInfo",
+			reflect.TypeFor[apiIndex]():          "IndexResponse",
+			reflect.TypeFor[wsJoined]():          "JoinedEventData",
+			reflect.TypeFor[bots.Info]():         "BotInfo",
+			reflect.TypeFor[dmReady]():           "DirectReadyEventData",
+			reflect.TypeFor[okResponse]():        "OKResponse",
+			reflect.TypeFor[friendRequest]():     "FriendRequest",
+			reflect.TypeFor[dmRequest]():         "DirectMessageRequest",
+			reflect.TypeFor[dmReadRequest]():     "DirectHistoryRequest",
+			reflect.TypeFor[dmCallRequest]():     "DirectCallRequest",
+			reflect.TypeFor[dmSignalRequest]():   "DirectSignalRequest",
+			reflect.TypeFor[dmHistoryResponse](): "DirectHistoryResponse",
+			reflect.TypeFor[dmThreadsResponse](): "DirectThreadsResponse",
+			reflect.TypeFor[auth.Me]():           "MeResponse",
 		},
 	})
 
@@ -114,17 +189,8 @@ func Schema(root string) ([]byte, error) {
 	}
 	errRef := m.Response(reflect.TypeFor[errorResponse]())
 
-	var events []any
-	eventTypes := map[string]any{}
-	for _, e := range schemaEvents {
-		data := m.Response(e.data)
-		eventTypes[e.typ] = data
-		events = append(events, map[string]any{
-			"type":       "object",
-			"properties": map[string]any{"type": map[string]any{"const": e.typ}, "data": data},
-			"required":   []string{"type", "data"},
-		})
-	}
+	eventTypes, events := eventSchemas(m, schemaEvents)
+	directTypes, directEvents := eventSchemas(m, schemaDirectEvents)
 	defs, err := m.Defs()
 	if err != nil {
 		return nil, err
@@ -132,6 +198,10 @@ func Schema(root string) ([]byte, error) {
 	defs["WebSocketEvent"] = map[string]any{
 		"description": "A message the server sends on /ws/{code}. A client skips an event whose type it does not know.",
 		"oneOf":       events,
+	}
+	defs["DirectWebSocketEvent"] = map[string]any{
+		"description": "A message the server sends on /ws-dm, a signed-in account's own socket. A client skips an event whose type it does not know.",
+		"oneOf":       directEvents,
 	}
 
 	out := map[string]any{
@@ -143,6 +213,7 @@ func Schema(root string) ([]byte, error) {
 		"x-endpoints":   endpoints,
 		"x-error":       errRef,
 		"x-events":      eventTypes,
+		"x-dm-events":   directTypes,
 		"$defs":         defs,
 	}
 	data, err := json.MarshalIndent(out, "", "  ")

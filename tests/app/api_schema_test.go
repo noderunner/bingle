@@ -21,6 +21,8 @@ import (
 	"github.com/coder/websocket/wsjson"
 
 	"github.com/noderunner/bingle/internal/api"
+	"github.com/noderunner/bingle/internal/app"
+	"github.com/noderunner/bingle/internal/auth"
 	"github.com/noderunner/bingle/internal/version"
 )
 
@@ -335,4 +337,110 @@ func hasType(typ any, value any) bool {
 		return ok
 	}
 	return false
+}
+
+// nativeMember makes the account @handle and signs a native client in to it
+// with a token, changing the password it was made with, as it must be first.
+func nativeMember(t *testing.T, a *app.App, base, handle string, schema map[string]any) *schemaClient {
+	t.Helper()
+	given, err := a.Accounts().Create(context.Background(), handle, handle+"@example.com", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	c := &schemaClient{t: t, base: base, schema: schema}
+	signedIn := c.do("POST /auth/login", "/auth/login", map[string]any{"handle": handle, "password": given, "token": true}, 200)
+	c.key, _ = signedIn["token"].(string)
+	var changed struct {
+		Token string `json:"token"`
+	}
+	if code := doJSONAs(t, c.key, "POST", base+"/auth/password", map[string]any{"old": given, "new": handle + "'s own password"}, &changed); code != 200 || changed.Token == "" {
+		t.Fatalf("@%s's new password: %d", handle, code)
+	}
+	c.key = changed.Token
+	return c
+}
+
+// The calls of a signed-in native client, and the events of its /ws-dm, fit
+// the schema: signing in, friends, who is here and direct messages (ADR 0138).
+func TestAPISchema_DescribesTheAccountsCalls(t *testing.T) {
+	a, base := membersServer(t)
+	schema := apiSchema(t)
+	ana := nativeMember(t, a, base, "ana", schema)
+	bob := nativeMember(t, a, base, "bob", schema)
+	ana.do("GET /auth/me", "/auth/me", nil, 200)
+
+	// Ana's own socket, every event checked.
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	conn, _, err := websocket.Dial(ctx, wsURL(base, "/ws-dm"), &websocket.DialOptions{HTTPHeader: http.Header{"Authorization": {"Bearer " + ana.key}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = conn.CloseNow() })
+	event := map[string]any{"$ref": "#/$defs/DirectWebSocketEvent"}
+	readEvent := func(want string) map[string]any {
+		t.Helper()
+		for {
+			var ev map[string]any
+			if err := wsjson.Read(ctx, conn, &ev); err != nil {
+				t.Fatalf("waiting for a %q event: %v", want, err)
+			}
+			for _, problem := range checkSchema(schema, event, ev, "") {
+				t.Errorf("/ws-dm event %v: %s", ev["type"], problem)
+			}
+			if ev["type"] == want {
+				data, _ := ev["data"].(map[string]any)
+				return data
+			}
+		}
+	}
+	readEvent("ready")
+
+	bob.do("POST /api/friends/request", "/api/friends/request", map[string]any{"handle": "ana"}, 200)
+	readEvent("friends")
+	ana.do("GET /api/friends", "/api/friends", nil, 200)
+	ana.do("POST /api/friends/answer", "/api/friends/answer", map[string]any{"handle": "bob", "accept": true}, 200)
+	ana.do("GET /api/friends/settings", "/api/friends/settings", nil, 200)
+	ana.do("PUT /api/friends/settings", "/api/friends/settings", map[string]any{"mail_requests": false}, 200)
+
+	anaAddr, _ := ana.do("POST /api/here", "/api/here", map[string]any{}, 200)["address"].(string)
+	bobAddr, _ := bob.do("POST /api/here", "/api/here", map[string]any{}, 200)["address"].(string)
+	ana.do("GET /api/here", "/api/here", nil, 200)
+	bob.do("POST /api/dm", "/api/dm", map[string]any{"to": anaAddr, "text": "a game?"}, 200)
+	readEvent("dm")
+	ana.do("POST /api/dm/history", "/api/dm/history", map[string]any{"with": bobAddr}, 200)
+	ana.do("POST /api/dm/threads", "/api/dm/threads", map[string]any{}, 200)
+	bob.do("POST /api/dm/call", "/api/dm/call", map[string]any{"to": anaAddr, "join": true}, 200)
+	readEvent("dm-call")
+	bob.do("POST /api/dm/signal", "/api/dm/signal", map[string]any{"to": anaAddr, "kind": "offer", "data": map[string]any{"sdp": "v=0"}}, 200)
+	readEvent("dm-rtc")
+	bob.do("POST /api/dm/call", "/api/dm/call", map[string]any{"join": false}, 200)
+	readEvent("dm-call")
+
+	// An invitation to a game, answered and dismissed.
+	created := bob.do("POST /api/games", "/api/games", map[string]any{"game_def_id": "hex-7", "player_name": "Bob"}, 200)
+	room, _ := created["room_code"].(string)
+	bob.do("POST /api/friends/invite", "/api/friends/invite", map[string]any{"handle": "ana", "room": room}, 200)
+	ana.do("POST /api/friends/invite-answer", "/api/friends/invite-answer", map[string]any{"room": room, "accept": false}, 200)
+	ana.do("POST /api/friends/dismiss", "/api/friends/dismiss", map[string]any{"room": room}, 200)
+	ana.do("POST /api/friends/remove", "/api/friends/remove", map[string]any{"handle": "bob"}, 200)
+
+	// A sign-in with a second factor answers its pending step, and the code finishes it.
+	browser := newBrowser(t, base)
+	browser.login("ana", "ana's own password")
+	var setup struct{ Secret string }
+	if code := browser.do("POST", "/auth/totp/setup", map[string]any{"password": "ana's own password"}, &setup); code != 200 {
+		t.Fatalf("totp setup: %d", code)
+	}
+	key := totpKey(t, setup.Secret)
+	if code := browser.do("POST", "/auth/totp/enable", map[string]any{"code": auth.TOTPCode(key, time.Now(), 6)}, nil); code != 200 {
+		t.Fatalf("totp enable: %d", code)
+	}
+	fresh := &schemaClient{t: t, base: base, schema: schema}
+	first := fresh.do("POST /auth/login", "/auth/login", map[string]any{"handle": "ana", "password": "ana's own password", "token": true}, 200)
+	fresh.do("POST /auth/second", "/auth/second", map[string]any{"pending": first["pending"], "code": "000000"}, 401)
+	first = fresh.do("POST /auth/login", "/auth/login", map[string]any{"handle": "ana", "password": "ana's own password", "token": true}, 200)
+	done := fresh.do("POST /auth/second", "/auth/second", map[string]any{"pending": first["pending"], "code": auth.TOTPCode(key, time.Now().Add(30*time.Second), 6)}, 200)
+	fresh.key, _ = done["token"].(string)
+	fresh.do("POST /auth/logout", "/auth/logout", nil, 200)
 }

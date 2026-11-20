@@ -4,7 +4,9 @@
 // asks "which principal?" and never "which name?".
 //
 // A principal is an account, proved by the bingle_session cookie of a
-// signed-in browser (ADR 0068), or a guest, proved by a guest key: the
+// signed-in browser (ADR 0068), by a session token ("Authorization: Bearer
+// bgs_…") of a signed-in native client (ADR 0138) or by an API token, or a
+// guest, proved by a guest key: the
 // bingle_guest cookie of a browser, or "Authorization: Bearer bgg_…" from a
 // script. A request with none of them is anonymous, and keeps what an
 // anonymous request has always had: seats nobody owns, acted for by name.
@@ -38,9 +40,12 @@ type Principal struct {
 	// what it may do, within its account's class, and never the admin
 	// group's powers.
 	Scopes []string
-	// session is the session cookie's value, for signing out and for a
-	// password change, which replaces it.
+	// session is the session's secret, for signing out and for a password
+	// change, which replaces it; bearer says it came as a session token
+	// (SessionTokenPrefix) rather than in the cookie, so a password change
+	// answers with the new one in its body.
 	session string
+	bearer  bool
 }
 
 type ctxKey struct{}

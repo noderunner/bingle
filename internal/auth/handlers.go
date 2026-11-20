@@ -91,7 +91,7 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 // statusOf maps the service's answers to HTTP.
 func statusOf(err error) int {
 	switch {
-	case errors.Is(err, ErrBadLogin), errors.Is(err, ErrNotSignedIn), errors.Is(err, ErrBadCode), errors.Is(err, ErrSignInAgain), errors.Is(err, ErrNeedsCode):
+	case errors.Is(err, ErrBadLogin), errors.Is(err, ErrNotSignedIn), errors.Is(err, ErrSessionEnded), errors.Is(err, ErrBadCode), errors.Is(err, ErrSignInAgain), errors.Is(err, ErrNeedsCode):
 		return http.StatusUnauthorized
 	case errors.Is(err, ErrSignupClosed), errors.Is(err, ErrSignupNoMail), errors.Is(err, ErrNotConfirmed), errors.Is(err, ErrMustChangePwd),
 		errors.Is(err, ErrNeedsInvite), errors.Is(err, ErrNotAdmin), errors.Is(err, ErrAdminNeedsSecondFactor), errors.Is(err, ErrNotYourContact):
@@ -192,16 +192,21 @@ func (rs *Resolver) handleLogin(w http.ResponseWriter, r *http.Request) {
 	if rs.noAccounts(w) {
 		return
 	}
-	var req struct {
-		Handle   string `json:"handle"`
-		Password string `json:"password"`
-	}
+	var req LoginRequest
 	if !decode(w, r, &req) {
 		return
 	}
 	s, pending, err := rs.accounts.Login(r.Context(), req.Handle, req.Password, guestOf(r), rs.transport.PeerIP(r), r.UserAgent())
 	if err != nil {
 		rs.fail(w, err)
+		return
+	}
+	if req.Token {
+		if pending != "" {
+			writeJSON(w, http.StatusOK, SessionTokenResponse{SecondFactor: true, Pending: pending})
+			return
+		}
+		rs.answerToken(w, r, s)
 		return
 	}
 	if pending != "" {
@@ -212,6 +217,43 @@ func (rs *Resolver) handleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	rs.startSession(w, r, s)
 	writeJSON(w, http.StatusOK, rs.meOf(r, s.Account))
+}
+
+// LoginRequest is POST /auth/login's body.
+type LoginRequest struct {
+	Handle   string `json:"handle"`
+	Password string `json:"password"`
+	// Token asks for the session as a token in the answer (SessionTokenResponse)
+	// instead of the cookie: a client that is not a browser (ADR 0138).
+	Token bool `json:"token,omitempty"`
+}
+
+// SessionTokenResponse is the answer of a sign-in that asked for a token
+// (ADR 0138): the session, or, when the account has a second factor, the
+// sign-in still to finish. The session is like a browser's (listed, ended by
+// signing out, by ending the other sessions and by a new password, and
+// expiring as a browser's does); its token is sent as "Authorization: Bearer
+// <token>" and needs no X-Bingle-Session.
+type SessionTokenResponse struct {
+	// Token is the session's, beginning bgs_.
+	Token string `json:"token,omitempty"`
+	// Expires is the latest it lasts; unused for 14 days it ends sooner.
+	Expires *time.Time `json:"expires,omitempty"`
+	// Me is who is signed in, as GET /auth/me says.
+	Me *Me `json:"me,omitempty"`
+	// SecondFactor says the password was right and a code comes next: POST
+	// /auth/second with Pending and the code, within five minutes, answers
+	// with the session.
+	SecondFactor bool   `json:"second_factor,omitempty"`
+	Pending      string `json:"pending,omitempty"`
+}
+
+// answerToken answers a native sign-in with its session token. The token
+// replaces the guest key the request may have come with: that guest is the
+// account's now, and its key no longer works.
+func (rs *Resolver) answerToken(w http.ResponseWriter, r *http.Request, s Session) {
+	me := rs.meOf(r, s.Account)
+	writeJSON(w, http.StatusOK, SessionTokenResponse{Token: SessionTokenPrefix + s.Token, Expires: &s.Expires, Me: &me})
 }
 
 // startSession sets the session cookie, and drops the guest cookie: the
@@ -230,7 +272,7 @@ func (rs *Resolver) handleLogout(w http.ResponseWriter, r *http.Request) {
 	p, ok := From(r.Context())
 	if !ok || p.Account == nil {
 		rs.setCookie(w, r, SessionCookie, "", -1)
-		writeJSON(w, http.StatusOK, map[string]string{"kind": "guest"})
+		writeJSON(w, http.StatusOK, LogoutResponse{Kind: "guest"})
 		return
 	}
 	if err := rs.accounts.Logout(r.Context(), p.session, p.Account.ID, rs.transport.PeerIP(r)); err != nil {
@@ -238,7 +280,14 @@ func (rs *Resolver) handleLogout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	rs.setCookie(w, r, SessionCookie, "", -1)
-	writeJSON(w, http.StatusOK, map[string]string{"kind": "anonymous"})
+	writeJSON(w, http.StatusOK, LogoutResponse{Kind: "anonymous"})
+}
+
+// LogoutResponse is POST /auth/logout's answer.
+type LogoutResponse struct {
+	// Kind is what the request is now: "anonymous" once signed out, or
+	// "guest" when it was not signed in.
+	Kind string `json:"kind"`
 }
 
 func (rs *Resolver) handlePassword(w http.ResponseWriter, r *http.Request) {
@@ -262,12 +311,16 @@ func (rs *Resolver) handlePassword(w http.ResponseWriter, r *http.Request) {
 		rs.fail(w, err)
 		return
 	}
+	if p.bearer {
+		rs.answerToken(w, r, s)
+		return
+	}
 	rs.startSession(w, r, s)
 	writeJSON(w, http.StatusOK, rs.meOf(r, s.Account))
 }
 
-// me is GET /auth/me's answer.
-type me struct {
+// Me is GET /auth/me's answer: who the request comes from.
+type Me struct {
 	Kind               string `json:"kind"` // "account", "guest" or "anonymous"
 	Handle             string `json:"handle,omitempty"`
 	DisplayName        string `json:"display_name,omitempty"`
@@ -300,8 +353,8 @@ type me struct {
 	Caps       []string `json:"caps,omitempty"`
 }
 
-func (rs *Resolver) meOf(r *http.Request, a store.Account) me {
-	out := me{Kind: store.KindAccount, Handle: a.Handle, DisplayName: a.DisplayName, MustChangePassword: a.MustChangePassword, Accounts: true, Email: a.Email,
+func (rs *Resolver) meOf(r *http.Request, a store.Account) Me {
+	out := Me{Kind: store.KindAccount, Handle: a.Handle, DisplayName: a.DisplayName, MustChangePassword: a.MustChangePassword, Accounts: true, Email: a.Email,
 		SecondFactor: a.HasTOTP, NeedsSecondFactor: rs.needsSecondFactor(r, a)}
 	if rs.accounts != nil {
 		if a.HasTOTP {
@@ -325,7 +378,7 @@ func (rs *Resolver) needsSecondFactor(r *http.Request, a store.Account) bool {
 }
 
 func (rs *Resolver) handleMe(w http.ResponseWriter, r *http.Request) {
-	out := me{Kind: "anonymous"}
+	out := Me{Kind: "anonymous"}
 	if p, ok := From(r.Context()); ok {
 		if p.Account != nil {
 			out = rs.meOf(r, *p.Account)
@@ -364,25 +417,44 @@ type codeRequest struct {
 	Recovery string `json:"recovery_code"`
 }
 
+// SecondRequest is POST /auth/second's body: a code or a recovery code, and,
+// from a client that is not a browser, the pending sign-in its login answered.
+type SecondRequest struct {
+	Code     string `json:"code,omitempty"`
+	Recovery string `json:"recovery_code,omitempty"`
+	// Pending is what POST /auth/login answered; with it the answer is a
+	// SessionTokenResponse too.
+	Pending string `json:"pending,omitempty"`
+}
+
 func (rs *Resolver) handleSecond(w http.ResponseWriter, r *http.Request) {
 	if rs.noAccounts(w) {
 		return
 	}
-	var req codeRequest
+	var req SecondRequest
 	if !decode(w, r, &req) {
 		return
 	}
-	c, err := r.Cookie(loginCookie)
-	if err != nil || c.Value == "" {
-		rs.fail(w, ErrSignInAgain)
-		return
+	// A native client brings the sign-in it began in the body, and gets a token.
+	pending := req.Pending
+	if pending == "" {
+		c, err := r.Cookie(loginCookie)
+		if err != nil || c.Value == "" {
+			rs.fail(w, ErrSignInAgain)
+			return
+		}
+		pending = c.Value
 	}
-	s, err := rs.accounts.SecondFactor(r.Context(), c.Value, req.Code, req.Recovery, rs.transport.PeerIP(r), r.UserAgent())
+	s, err := rs.accounts.SecondFactor(r.Context(), pending, req.Code, req.Recovery, rs.transport.PeerIP(r), r.UserAgent())
 	if err != nil {
-		if errors.Is(err, ErrSignInAgain) {
+		if errors.Is(err, ErrSignInAgain) && req.Pending == "" {
 			rs.setCookie(w, r, loginCookie, "", -1)
 		}
 		rs.fail(w, err)
+		return
+	}
+	if req.Pending != "" {
+		rs.answerToken(w, r, s)
 		return
 	}
 	rs.setCookie(w, r, loginCookie, "", -1)
@@ -511,7 +583,7 @@ func (rs *Resolver) signupOpen() bool {
 }
 
 // decorate adds the mode and the capabilities to an answer of /auth/me.
-func (rs *Resolver) decorate(r *http.Request, out *me) {
+func (rs *Resolver) decorate(r *http.Request, out *Me) {
 	if rs.accounts != nil {
 		out.SignupMode = rs.accounts.signup
 	}

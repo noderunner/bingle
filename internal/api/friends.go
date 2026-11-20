@@ -10,11 +10,16 @@ import (
 
 // The friends list (ADR 0105): REST in, and a "friends" event on /ws-dm when it changes.
 
-// friendRequest is the body of the routes about one person.
+// friendRequest is the body of the routes about one person or one
+// invitation: POST /friends/request, /answer, /remove, /invite,
+// /invite-answer and /dismiss.
 type friendRequest struct {
-	Handle string `json:"handle"`
-	Accept bool   `json:"accept,omitempty"`
-	Room   string `json:"room,omitempty"`
+	// Handle is the person's (request, answer, remove, invite).
+	Handle string `json:"handle,omitempty"`
+	// Accept is the answer (answer, invite-answer).
+	Accept bool `json:"accept,omitempty"`
+	// Room is the game's room code (invite, invite-answer, dismiss).
+	Room string `json:"room,omitempty"`
 }
 
 // memberAccount is the signed-in account of the request, answering the request if there is none.
@@ -41,7 +46,7 @@ func friendRoute(w http.ResponseWriter, r *http.Request, act func(store.Account,
 		writeError(w, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"ok": true})
+	writeJSON(w, http.StatusOK, okResponse{OK: true})
 }
 
 // handleGetFriends implements GET /friends.

@@ -74,6 +74,30 @@ type dmSignalRequest struct {
 	Data json.RawMessage `json:"data"`
 }
 
+// dmHistoryResponse is POST /dm/history's answer: the messages, oldest first.
+type dmHistoryResponse struct {
+	Messages []session.DirectMessage `json:"messages"`
+}
+
+// dmThreadsResponse is POST /dm/threads' answer.
+type dmThreadsResponse struct {
+	// Threads are the account's correspondences, newest first.
+	Threads []session.DirectThread `json:"threads"`
+	// Address is the account's own address, the one others write to.
+	Address string `json:"address"`
+}
+
+// okResponse is the answer of an action that has nothing more to say.
+type okResponse struct {
+	OK bool `json:"ok"`
+}
+
+// dmReady is the data of /ws-dm's first event, "ready": the socket is open,
+// and Address is the account's own address.
+type dmReady struct {
+	Address string `json:"address"`
+}
+
 // handlePostDirect implements POST /dm: write to somebody who is here.
 func (h *handlers) handlePostDirect(w http.ResponseWriter, r *http.Request) {
 	from, _, ok := member(w, r)
@@ -106,7 +130,7 @@ func (h *handlers) handleDirectHistory(w http.ResponseWriter, r *http.Request) {
 	if !decodeBody(w, r, &req) {
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"messages": h.mgr.DirectMessages(addr, req.With, req.After)})
+	writeJSON(w, http.StatusOK, dmHistoryResponse{Messages: h.mgr.DirectMessages(addr, req.With, req.After)})
 }
 
 // handleDirectThreads implements POST /dm/threads: the correspondences this
@@ -116,7 +140,7 @@ func (h *handlers) handleDirectThreads(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"threads": h.mgr.DirectThreads(addr), "address": addr})
+	writeJSON(w, http.StatusOK, dmThreadsResponse{Threads: h.mgr.DirectThreads(addr), Address: addr})
 }
 
 // handleDirectCall implements POST /dm/call: ring somebody (or answer them),
@@ -132,7 +156,7 @@ func (h *handlers) handleDirectCall(w http.ResponseWriter, r *http.Request) {
 	}
 	if !req.Join {
 		h.mgr.LeaveDirectCall(from)
-		writeJSON(w, http.StatusOK, map[string]any{"ok": true})
+		writeJSON(w, http.StatusOK, okResponse{OK: true})
 		return
 	}
 	if !h.friendsOnly(w, r, req.To) {
@@ -142,7 +166,7 @@ func (h *handlers) handleDirectCall(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"ok": true})
+	writeJSON(w, http.StatusOK, okResponse{OK: true})
 }
 
 // handleDirectSignal implements POST /dm/signal: relay one WebRTC message to
@@ -160,7 +184,7 @@ func (h *handlers) handleDirectSignal(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"ok": true})
+	writeJSON(w, http.StatusOK, okResponse{OK: true})
 }
 
 // NewDirectWSHandler returns the handler for GET /ws-dm: the signed-in
@@ -184,7 +208,7 @@ func (h *handlers) handleDirectWS(w http.ResponseWriter, r *http.Request) {
 	ctx := conn.CloseRead(r.Context())
 	events, unsubscribe := h.mgr.SubscribeDirect(address)
 	defer unsubscribe()
-	if err := wsjson.Write(ctx, conn, session.Event{Type: "ready", Data: map[string]string{"address": address}}); err != nil {
+	if err := wsjson.Write(ctx, conn, session.Event{Type: "ready", Data: dmReady{Address: address}}); err != nil {
 		return
 	}
 	for {
