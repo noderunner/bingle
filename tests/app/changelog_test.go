@@ -81,7 +81,11 @@ const longChangelog = `# Changelog
 
 ## 0.10.0 - 2026-11-03
 
+### Bingle Core 0.10.0
 - **Ten**: the newest.
+
+### Fist 0.3.0
+- A game's section.
 
 ## 0.9.1 - 2026-11-02
 
@@ -181,8 +185,15 @@ func TestWebHelp_UnreadChangesUntilMarkedRead(t *testing.T) {
 	if got := shown(); got != "0.10.0" {
 		t.Errorf("a browser that never read any: %q, want the newest alone", got)
 	}
-	if got := evalString(t, ctx, `document.querySelector("#help-changes .help-change-head").textContent`); got != "Bingle 0.10.0 · 2026-11-03" {
+	if got := evalString(t, ctx, `document.querySelector("#help-changes .help-change-head").textContent`); got != "0.10.0 · 2026-11-03" {
 		t.Errorf("release heading = %q", got)
+	}
+	// One heading per release: the Core heading that repeats it is dropped, a game's section keeps its own.
+	if got := evalString(t, ctx, `[...document.querySelectorAll("#help-changes .help-change h1, #help-changes .help-change h2, #help-changes .help-change h3, #help-changes .help-change h4")].map((e) => e.textContent).join(" | ")`); got != "0.10.0 · 2026-11-03 | Fist 0.3.0" {
+		t.Errorf("headings of the release = %q, want the release's own and the game's", got)
+	}
+	if evalBool(t, ctx, `document.getElementById("help-changes-head")`) {
+		t.Error("a line of subtext is back above the changes")
 	}
 	if got := evalString(t, ctx, `document.querySelector("#help-changes .help-change strong").textContent`); got != "Ten" {
 		t.Errorf("the Markdown was not rendered: first bold = %q", got)
@@ -208,9 +219,6 @@ func TestWebHelp_UnreadChangesUntilMarkedRead(t *testing.T) {
 	if got := shown(); got != "0.10.0 0.9.1" {
 		t.Errorf("unread since 0.9.0: %q, want \"0.10.0 0.9.1\"", got)
 	}
-	if got := evalString(t, ctx, `document.getElementById("help-changes-head").textContent`); got != "2 updates you have not read, the newest first." {
-		t.Errorf("summary = %q", got)
-	}
 	if got := evalString(t, ctx, `getComputedStyle(document.getElementById("help-changes-body")).overflowY`); got != "auto" {
 		t.Errorf("the changes do not scroll: overflow-y %q", got)
 	}
@@ -225,8 +233,8 @@ func TestWebHelp_UnreadChangesUntilMarkedRead(t *testing.T) {
 	if got := shown(); got != "0.10.0" {
 		t.Errorf("all read: %q, want the newest alone", got)
 	}
-	if !evalBool(t, ctx, `document.getElementById("help-badge").hidden && document.getElementById("help-mark-read").hidden && document.getElementById("help-changes-head").hidden`) {
-		t.Error("the dot, the button or the summary is back after everything was read")
+	if !evalBool(t, ctx, `document.getElementById("help-badge").hidden && document.getElementById("help-mark-read").hidden`) {
+		t.Error("the dot or the button is back after everything was read")
 	}
 }
 

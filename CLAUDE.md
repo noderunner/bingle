@@ -97,6 +97,10 @@ git -c credential.helper='!f() { echo username=x-access-token; echo "password=$(
   just adding a mechanism.
 - Push back, in the PR or the issue, on anything that hurts performance, simplicity, security or
   normal UI practice — before building it.
+- **Keep the interface terse.** Add only the controls and words a request asks for: no explanatory
+  subtext under headings or beside buttons, no summary lines ("3 updates you have not read"), and no
+  heading that repeats another. Screen space is scarce, and extra words have had to be removed later.
+  Text for screen readers (`aria-label`, `.sr-only`) is the exception. When unsure, leave the words out.
 
 ## Words
 

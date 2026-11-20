@@ -4,6 +4,11 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.122.1 - 2026-11-20
+
+### Bingle Core 0.122.1
+- Recent changes in the help window is simpler: one heading per update, and no extra lines.
+
 ## 0.122.0 - 2026-11-20
 
 ### Bingle Core 0.122.0
