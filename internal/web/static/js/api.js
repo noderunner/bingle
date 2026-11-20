@@ -126,8 +126,9 @@ function codeBody(typed) {
 export const api = {
 	// Accounts (ADR 0068).
 	me: () => call("/auth/me"),
-	// The welcome tour was skipped or finished (ADR 0139).
-	tourSeen: () => call("/auth/tour-seen", { method: "POST" }),
+	// The welcome tour was skipped or finished (ADR 0139). Sent with keepalive, so that it
+	// reaches the server even when the player leaves the page as the tour closes.
+	tourSeen: () => call("/auth/tour-seen", { method: "POST", keepalive: true }),
 	ownDeals: (gameDefID) => call(`/api/me/deals?game_def_id=${enc(gameDefID)}`),
 	login: (handle, password) => call("/auth/login", { method: "POST", body: { handle, password } }),
 	logout: () => call("/auth/logout", { method: "POST" }),
@@ -149,9 +150,6 @@ export const api = {
 	playerBadges: (handle) => call(`/api/players/${enc(handle)}/badges`),
 	badges: () => call("/api/badges"),
 	gameLook: (id) => call(`/api/game-defs/${enc(id)}/web`),
-	me: () => call("/auth/me"),
-	// The welcome tour was skipped or finished (ADR 0139).
-	tourSeen: () => call("/auth/tour-seen", { method: "POST" }),
 	guestKey: () => call("/api/guest/key"),
 	adoptGuest: (key) => call("/api/guest/adopt", { method: "POST", body: { key } }),
 	rotateGuest: () => call("/api/guest/rotate", { method: "POST" }),
@@ -210,6 +208,8 @@ export const api = {
 	config: () => call("/api/config"),
 	// The newest release of the changelog: {version, date?, markdown}; 404 when the server has none.
 	changelog: () => call("/api/changelog"),
+	// Every release newer than a version, the newest first: {entries: [{version, date?, markdown}]}.
+	changelogSince: (version) => call(`/api/changelog/entries?since=${enc(version)}`),
 	start: (code, name) => call(`/api/games/${enc(code)}/start`, { method: "POST", body: { player_name: name } }),
 	chooseSeat: (code, name, seat) => call(`/api/games/${enc(code)}/seat`, { method: "POST", body: { player_name: name, seat } }),
 	// Before the game starts: the faction an open seat plays (a choice of the game's seat-choice option).

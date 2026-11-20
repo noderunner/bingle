@@ -4,6 +4,12 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.122.0 - 2026-11-20
+
+### Bingle Core 0.122.0
+- Been away for a while? When the **?** help button shows a dot, it now lists every update since you last caught up, newest first, not just the latest one. Scroll through them at your own pace, then press *Mark all as read* to clear the dot. Opening the help window alone no longer clears it, so nothing slips past you.
+- The help window is tidier: the version sits at the top beside the close button, and *Tour*, *API*, *GitHub* and *Report Issues* share one line at the bottom.
+
 ## 0.121.0 - 2026-11-20
 
 ### Bingle Core 0.121.0

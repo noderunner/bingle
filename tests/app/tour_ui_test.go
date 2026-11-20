@@ -28,6 +28,20 @@ func awaitBool(t *testing.T, ctx context.Context, expr string) bool {
 
 const serverSaysTourSeen = `fetch("/auth/me").then((r) => r.json()).then((me) => me.tour_seen === true)`
 
+// waitServerTourSeen waits for the server to know the tour was seen: the page
+// tells it as the tour closes, without waiting for the answer.
+func waitServerTourSeen(t *testing.T, ctx context.Context, after string) {
+	t.Helper()
+	deadline := time.Now().Add(10 * time.Second)
+	for time.Now().Before(deadline) {
+		if awaitBool(t, ctx, serverSaysTourSeen) {
+			return
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+	t.Fatalf("after %s the server does not know the tour was seen", after)
+}
+
 // walkTour goes through every slide of the open tour from the first, checking
 // that each draws its picture and leaves no id the page has twice, and returns
 // the slides' ids.
@@ -89,9 +103,7 @@ func TestWebTour_ANewcomerIsOfferedItOnce(t *testing.T) {
 	waitJS(t, ctx, "the analysis slide, for an account", `document.getElementById("tour-account-note")`, 5*time.Second)
 	clickSel(t, ctx, "#tour-skip")
 	waitJS(t, ctx, "the tour gone", `!document.getElementById("welcome-tour")`, 5*time.Second)
-	if !awaitBool(t, ctx, serverSaysTourSeen) {
-		t.Fatal("after Skip the server does not know the tour was seen")
-	}
+	waitServerTourSeen(t, ctx, "Skip")
 
 	// Seen: not offered again.
 	if err := chromedp.Run(ctx, chromedp.Reload()); err != nil {
@@ -141,9 +153,7 @@ func TestWebTour_AnAccountIsOfferedItWithoutTheGuestsSlide(t *testing.T) {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the tour closed by Esc", `!document.getElementById("welcome-tour")`, 5*time.Second)
-	if !awaitBool(t, ctx, serverSaysTourSeen) {
-		t.Error("after Esc the server does not know the account saw the tour")
-	}
+	waitServerTourSeen(t, ctx, "Esc")
 }
 
 // A slide whose feature this server offers nobody is left out, and one only
