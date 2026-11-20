@@ -75,7 +75,7 @@ type DirectThread struct {
 // message for another.
 type DirectSignal struct {
 	From string          `json:"from"`
-	Kind string          `json:"kind"`
+	Kind string          `json:"kind"` // "offer", "answer", "ice" or "retry"
 	Data json.RawMessage `json:"data"`
 }
 
@@ -387,7 +387,7 @@ func (m *Manager) claimVoice(addr string, where CallWhere) {
 	switch {
 	case old.Room != "":
 		if m.voice.set(old.Room, old.Seat, old.Name, false, nil) {
-			m.hub.publish(old.Room, Event{Type: "voice", Data: voiceEventData{Kind: "leave", Seat: old.Seat, Name: old.Name}})
+			m.hub.publish(old.Room, Event{Type: "voice", Data: VoiceEventData{Kind: "leave", Seat: old.Seat, Name: old.Name}})
 		}
 	case old.Peer != "":
 		m.hub.publish(dmRoom(old.Peer), Event{Type: "dm-call", Data: DirectCall{Kind: "end", From: addr}})

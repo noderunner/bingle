@@ -13,6 +13,7 @@ import (
 	"math"
 	"net/http"
 	"os"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -134,6 +135,15 @@ func (c *schemaClient) do(route, path string, body any, wantStatus int) map[stri
 	if err := json.Unmarshal(raw, &value); err != nil {
 		c.t.Fatalf("%s: %v (%s)", route, err, raw)
 	}
+	// What the client sends fits the schema too, when it is a request the server should take.
+	if req, ok := c.schema["x-endpoints"].(map[string]any)[route].(map[string]any)["request"]; ok && body != nil && wantStatus < 400 {
+		raw, _ := json.Marshal(body)
+		var sent any
+		_ = json.Unmarshal(raw, &sent)
+		for _, problem := range checkSchema(c.schema, req, sent, "") {
+			c.t.Errorf("%s's request: %s", route, problem)
+		}
+	}
 	var want any
 	if code >= 400 {
 		want = c.schema["x-error"]
@@ -250,6 +260,9 @@ func checkSchema(root map[string]any, s any, value any, at string) []string {
 	var out []string
 	if c, ok := sm["const"]; ok && c != value {
 		return []string{fmt.Sprintf("%s: %v is not %v", at, value, c)}
+	}
+	if enum := asList(sm["enum"]); len(enum) > 0 && !slices.Contains(enum, value) {
+		return []string{fmt.Sprintf("%s: %v is not one of %v", at, value, enum)}
 	}
 	if typ, ok := sm["type"]; ok && !hasType(typ, value) {
 		return []string{fmt.Sprintf("%s: %v is not of type %v", at, value, typ)}
@@ -412,7 +425,7 @@ func TestAPISchema_DescribesTheAccountsCalls(t *testing.T) {
 	ana.do("POST /api/dm/threads", "/api/dm/threads", map[string]any{}, 200)
 	bob.do("POST /api/dm/call", "/api/dm/call", map[string]any{"to": anaAddr, "join": true}, 200)
 	readEvent("dm-call")
-	bob.do("POST /api/dm/signal", "/api/dm/signal", map[string]any{"to": anaAddr, "kind": "offer", "data": map[string]any{"sdp": "v=0"}}, 200)
+	bob.do("POST /api/dm/signal", "/api/dm/signal", map[string]any{"to": anaAddr, "kind": "offer", "data": map[string]any{"type": "offer", "sdp": "v=0\r\n"}}, 200)
 	readEvent("dm-rtc")
 	bob.do("POST /api/dm/call", "/api/dm/call", map[string]any{"join": false}, 200)
 	readEvent("dm-call")
@@ -443,4 +456,87 @@ func TestAPISchema_DescribesTheAccountsCalls(t *testing.T) {
 	done := fresh.do("POST /auth/second", "/auth/second", map[string]any{"pending": first["pending"], "code": auth.TOTPCode(key, time.Now().Add(30*time.Second), 6)}, 200)
 	fresh.key, _ = done["token"].(string)
 	fresh.do("POST /auth/logout", "/auth/logout", nil, 200)
+}
+
+// A game's voice chat fits the schema: the network helpers, the call list and
+// its heartbeat, the messages a browser sends (SignalData), and the call's own
+// socket, which sends joined, voice and rtc and nothing else.
+func TestAPISchema_DescribesTheVoiceCalls(t *testing.T) {
+	base, _ := newDocumentedServer(t)
+	schema := apiSchema(t)
+	ana := &schemaClient{t: t, base: base, key: newGuestKey(t, base), schema: schema}
+	bo := &schemaClient{t: t, base: base, key: newGuestKey(t, base), schema: schema}
+	created := ana.do("POST /api/games", "/api/games", map[string]any{"game_def_id": "hex-7", "player_name": "Ana"}, 200)
+	code, _ := created["room_code"].(string)
+	game := "/api/games/" + code
+	bo.do("POST /api/games/{code}/join", game+"/join", map[string]any{"player_name": "Bo"}, 200)
+	ana.do("GET /api/rtc/config", "/api/rtc/config", nil, 200)
+
+	// Ana's call socket first, as the page opens it, then she joins.
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	conn, _, err := websocket.Dial(ctx, wsURL(base, "/ws/"+code+"?name=Ana&role=player&only=voice"),
+		&websocket.DialOptions{HTTPHeader: http.Header{"Authorization": {"Bearer " + ana.key}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = conn.CloseNow() })
+	event := map[string]any{"$ref": "#/$defs/WebSocketEvent"}
+	readEvent := func(want string) map[string]any {
+		t.Helper()
+		var ev map[string]any
+		if err := wsjson.Read(ctx, conn, &ev); err != nil {
+			t.Fatalf("waiting for a %q event: %v", want, err)
+		}
+		for _, problem := range checkSchema(schema, event, ev, "") {
+			t.Errorf("event %v: %s", ev["type"], problem)
+		}
+		// The call's socket sends nothing else, so each event is the next one expected.
+		if ev["type"] != want {
+			t.Fatalf("the call's socket sent %v, want %q", ev, want)
+		}
+		data, _ := ev["data"].(map[string]any)
+		return data
+	}
+	readEvent("joined")
+	ana.do("POST /api/games/{code}/voice", game+"/voice", map[string]any{"player_name": "Ana", "active": true}, 200)
+	readEvent("voice")
+	bo.do("POST /api/games/{code}/voice", game+"/voice", map[string]any{"player_name": "Bo", "active": true}, 200)
+	if joined := readEvent("voice"); joined["kind"] != "join" || joined["seat"] != 2.0 {
+		t.Errorf("Bo joining: %v", joined)
+	}
+	if peers := ana.do("GET /api/games/{code}/voice", game+"/voice", nil, 200)["peers"].([]any); len(peers) != 2 {
+		t.Errorf("the call: %v", peers)
+	}
+
+	// Bo, the higher seat, offers; what a browser sends of each kind reaches Ana as it was.
+	for _, m := range []struct {
+		kind string
+		data any
+	}{
+		{"offer", map[string]any{"type": "offer", "sdp": "v=0\r\no=- 1 2 IN IP4 127.0.0.1\r\n"}},
+		{"ice", map[string]any{"candidate": "candidate:1 1 udp 2122260223 192.0.2.1 54321 typ host", "sdpMid": "0", "sdpMLineIndex": 0, "usernameFragment": "abcd"}},
+		{"ice", map[string]any{"candidate": "candidate:2 1 udp 1 192.0.2.2 1 typ host", "sdpMid": nil, "sdpMLineIndex": nil}},
+		{"retry", map[string]any{}},
+	} {
+		bo.do("POST /api/games/{code}/voice/signal", game+"/voice/signal", map[string]any{"player_name": "Bo", "to": 1, "kind": m.kind, "data": m.data}, 200)
+		if got := readEvent("rtc"); got["from"] != 2.0 || got["kind"] != m.kind {
+			t.Errorf("Ana got %v for a %s", got, m.kind)
+		}
+	}
+	ana.do("POST /api/games/{code}/voice/signal", game+"/voice/signal", map[string]any{"player_name": "Ana", "to": 2, "kind": "answer", "data": map[string]any{"type": "answer", "sdp": "v=0\r\n"}}, 200)
+	ana.do("POST /api/games/{code}/voice/signal", game+"/voice/signal", map[string]any{"player_name": "Ana", "to": 2, "kind": "hello", "data": map[string]any{}}, 400)
+
+	// The schema tells a browser's messages apart, and says what is not one.
+	data := map[string]any{"$ref": "#/$defs/SignalData"}
+	for _, bad := range []any{map[string]any{"sdp": "v=0"}, map[string]any{"type": "pranswer", "sdp": "v=0"}, map[string]any{"retry": true}} {
+		if len(checkSchema(schema, data, bad, "")) == 0 {
+			t.Errorf("SignalData takes %v", bad)
+		}
+	}
+
+	bo.do("POST /api/games/{code}/voice", game+"/voice", map[string]any{"player_name": "Bo", "active": false}, 200)
+	if left := readEvent("voice"); left["kind"] != "leave" {
+		t.Errorf("Bo leaving: %v", left)
+	}
 }

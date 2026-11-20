@@ -781,11 +781,14 @@
     "DirectSignal": {
       "description": "DirectSignal is the wire form of a \"dm-rtc\" event: one browser's WebRTC message for another.",
       "properties": {
-        "data": {},
+        "data": {
+          "$ref": "#/$defs/SignalData"
+        },
         "from": {
           "type": "string"
         },
         "kind": {
+          "description": "\"offer\", \"answer\", \"ice\" or \"retry\"",
           "type": "string"
         }
       },
@@ -799,8 +802,11 @@
     "DirectSignalRequest": {
       "description": "dmSignalRequest is the body of POST /dm/signal: one WebRTC message for the person this account is calling.",
       "properties": {
-        "data": {},
+        "data": {
+          "$ref": "#/$defs/SignalData"
+        },
         "kind": {
+          "description": "\"offer\", \"answer\", \"ice\" or \"retry\"",
           "type": "string"
         },
         "to": {
@@ -1125,6 +1131,21 @@
         "show_presence",
         "accept_invites"
       ],
+      "type": "object"
+    },
+    "FriendSettingsRequest": {
+      "description": "friendSettingsRequest is PUT /friends/settings' body: the settings to change. Those it leaves out stay as they are.",
+      "properties": {
+        "accept_invites": {
+          "type": "boolean"
+        },
+        "mail_requests": {
+          "type": "boolean"
+        },
+        "show_presence": {
+          "type": "boolean"
+        }
+      },
       "type": "object"
     },
     "FriendsEventData": {
@@ -1985,6 +2006,30 @@
       },
       "required": [
         "people"
+      ],
+      "type": "object"
+    },
+    "ICEServer": {
+      "description": "iceServer is one entry of RTCPeerConnection's iceServers: STUN servers with no credentials, or a TURN relay with credentials that expire.",
+      "properties": {
+        "credential": {
+          "type": "string"
+        },
+        "urls": {
+          "items": {
+            "type": "string"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "username": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "urls"
       ],
       "type": "object"
     },
@@ -3194,6 +3239,47 @@
       ],
       "type": "object"
     },
+    "RTCConfigResponse": {
+      "description": "rtcConfigResponse is GET /rtc/config's answer.",
+      "properties": {
+        "ice_servers": {
+          "description": "IceServers are for RTCPeerConnection's iceServers, the same for a game's call and a call between friends. It may be empty.",
+          "items": {
+            "$ref": "#/$defs/ICEServer"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "ice_servers"
+      ],
+      "type": "object"
+    },
+    "RTCSignal": {
+      "description": "RTCSignal is the wire form of an \"rtc\" event: a message from one seat to another, delivered only to the call's socket (/ws/{code}?only=voice) of the seat it is for.",
+      "properties": {
+        "data": {
+          "$ref": "#/$defs/SignalData"
+        },
+        "from": {
+          "description": "From is the seat that sent it.",
+          "type": "integer"
+        },
+        "kind": {
+          "description": "\"offer\", \"answer\", \"ice\" or \"retry\" (please call me again)",
+          "type": "string"
+        }
+      },
+      "required": [
+        "from",
+        "kind",
+        "data"
+      ],
+      "type": "object"
+    },
     "RatingChange": {
       "description": "RatingChange is what a rated game did to the player at a seat.",
       "properties": {
@@ -3627,6 +3713,70 @@
       },
       "type": "object"
     },
+    "SignalData": {
+      "description": "What a browser's RTCPeerConnection exchanges, by the message's kind. The server does not read it: it checks only that it is JSON, not null and at most 16 KB. A client that is not a browser sends and expects what a browser does (docs/voice.md).",
+      "oneOf": [
+        {
+          "description": "kind offer or answer: RTCSessionDescription's type and sdp.",
+          "properties": {
+            "sdp": {
+              "type": "string"
+            },
+            "type": {
+              "enum": [
+                "offer",
+                "answer"
+              ],
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "sdp"
+          ],
+          "title": "SessionDescription",
+          "type": "object"
+        },
+        {
+          "description": "kind ice: RTCIceCandidate.toJSON(), one candidate per message, with no message for the end of the candidates.",
+          "properties": {
+            "candidate": {
+              "type": "string"
+            },
+            "sdpMLineIndex": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "sdpMid": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "usernameFragment": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "candidate"
+          ],
+          "title": "IceCandidate",
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "kind retry: {}, the side that does not offer asking the other to offer again.",
+          "properties": {},
+          "title": "Retry",
+          "type": "object"
+        }
+      ]
+    },
     "SlowTurnEventData": {
       "description": "SlowTurnEventData is the wire DTO of a \"slow_turn\" Event.",
       "properties": {
@@ -3811,8 +3961,103 @@
       ],
       "type": "object"
     },
+    "VoiceEventData": {
+      "description": "VoiceEventData is the wire form of a \"voice\" event, sent to the whole room (every socket of the game, the call's own included) when somebody joins or leaves the call.",
+      "properties": {
+        "kind": {
+          "description": "\"join\" or \"leave\"",
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "seat": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "kind",
+        "seat",
+        "name"
+      ],
+      "type": "object"
+    },
+    "VoicePeer": {
+      "description": "VoicePeer is a seat that is in the call, and the name of the player in it.",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "seat": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "seat",
+        "name"
+      ],
+      "type": "object"
+    },
+    "VoicePeersResponse": {
+      "description": "voicePeersResponse is the answer of GET and POST /games/{code}/voice: the seats in the call, by seat.",
+      "properties": {
+        "peers": {
+          "items": {
+            "$ref": "#/$defs/VoicePeer"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "peers"
+      ],
+      "type": "object"
+    },
+    "VoiceRequest": {
+      "description": "voiceRequest is POST /games/{code}/voice's body: the seat of PlayerName joins the call, or renews its place in it, with Active; leaves it without. A place lapses 45 seconds after it was last renewed: the page renews it every 15.",
+      "properties": {
+        "active": {
+          "type": "boolean"
+        },
+        "player_name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "player_name"
+      ],
+      "type": "object"
+    },
+    "VoiceSignalRequest": {
+      "description": "signalRequest is POST /games/{code}/voice/signal's body: one WebRTC message from the seat of PlayerName to the seat To, both in the call.",
+      "properties": {
+        "data": {
+          "$ref": "#/$defs/SignalData"
+        },
+        "kind": {
+          "description": "\"offer\", \"answer\", \"ice\" or \"retry\"",
+          "type": "string"
+        },
+        "player_name": {
+          "type": "string"
+        },
+        "to": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "player_name",
+        "to",
+        "kind",
+        "data"
+      ],
+      "type": "object"
+    },
     "WebSocketEvent": {
-      "description": "A message the server sends on /ws/{code}. A client skips an event whose type it does not know.",
+      "description": "A message the server sends on /ws/{code}. A client skips an event whose type it does not know. A voice call's socket, /ws/{code}?only=voice, sends joined, voice and rtc only, and is the only one to send rtc: a client opens it and waits for joined before it posts to /voice, so as to miss no offer.",
       "oneOf": [
         {
           "properties": {
@@ -3933,6 +4178,36 @@
             "data"
           ],
           "type": "object"
+        },
+        {
+          "properties": {
+            "data": {
+              "$ref": "#/$defs/VoiceEventData"
+            },
+            "type": {
+              "const": "voice"
+            }
+          },
+          "required": [
+            "type",
+            "data"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "data": {
+              "$ref": "#/$defs/RTCSignal"
+            },
+            "type": {
+              "const": "rtc"
+            }
+          },
+          "required": [
+            "type",
+            "data"
+          ],
+          "type": "object"
         }
       ]
     },
@@ -3971,9 +4246,9 @@
   },
   "$id": "https://github.com/noderunner/bingle/docs/api.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "description": "The requests, responses and WebSocket events of bingle's API, version 1.5.0. Generated from the Go types of the server: do not edit. Objects let unknown fields through: a client ignores those it does not know.",
+  "description": "The requests, responses and WebSocket events of bingle's API, version 1.6.0. Generated from the Go types of the server: do not edit. Objects let unknown fields through: a client ignores those it does not know.",
   "title": "Bingle API messages",
-  "x-api-version": "1.5.0",
+  "x-api-version": "1.6.0",
   "x-dm-events": {
     "badge": {
       "$ref": "#/$defs/BadgeEventData"
@@ -4067,6 +4342,11 @@
         "$ref": "#/$defs/GetGameStateResponse"
       }
     },
+    "GET /api/games/{code}/voice": {
+      "response": {
+        "$ref": "#/$defs/VoicePeersResponse"
+      }
+    },
     "GET /api/here": {
       "response": {
         "$ref": "#/$defs/HereResponse"
@@ -4075,6 +4355,11 @@
     "GET /api/me/deals": {
       "response": {
         "$ref": "#/$defs/OwnDealsResponse"
+      }
+    },
+    "GET /api/rtc/config": {
+      "response": {
+        "$ref": "#/$defs/RTCConfigResponse"
       }
     },
     "GET /auth/me": {
@@ -4247,6 +4532,22 @@
         "$ref": "#/$defs/GameStatusResponse"
       }
     },
+    "POST /api/games/{code}/voice": {
+      "request": {
+        "$ref": "#/$defs/VoiceRequest"
+      },
+      "response": {
+        "$ref": "#/$defs/VoicePeersResponse"
+      }
+    },
+    "POST /api/games/{code}/voice/signal": {
+      "request": {
+        "$ref": "#/$defs/VoiceSignalRequest"
+      },
+      "response": {
+        "$ref": "#/$defs/OKResponse"
+      }
+    },
     "POST /api/guest": {
       "response": {
         "$ref": "#/$defs/GuestKey"
@@ -4283,7 +4584,7 @@
     },
     "PUT /api/friends/settings": {
       "request": {
-        "$ref": "#/$defs/FriendSettings"
+        "$ref": "#/$defs/FriendSettingsRequest"
       },
       "response": {
         "$ref": "#/$defs/FriendSettings"
@@ -4309,6 +4610,9 @@
     "move": {
       "$ref": "#/$defs/MoveEventData"
     },
+    "rtc": {
+      "$ref": "#/$defs/RTCSignal"
+    },
     "seat_replaced": {
       "$ref": "#/$defs/SeatReplacedEventData"
     },
@@ -4317,6 +4621,9 @@
     },
     "state": {
       "$ref": "#/$defs/StateEventData"
+    },
+    "voice": {
+      "$ref": "#/$defs/VoiceEventData"
     }
   }
 }

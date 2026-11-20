@@ -119,24 +119,29 @@ func (h *handlers) handleGetFriendSettings(w http.ResponseWriter, r *http.Reques
 	writeJSON(w, http.StatusOK, settings)
 }
 
+// friendSettingsRequest is PUT /friends/settings' body: the settings to
+// change. Those it leaves out stay as they are.
+type friendSettingsRequest store.FriendSettings
+
 // handlePutFriendSettings implements PUT /friends/settings.
 func (h *handlers) handlePutFriendSettings(w http.ResponseWriter, r *http.Request) {
 	me, ok := memberAccount(w, r)
 	if !ok {
 		return
 	}
-	// What the request leaves out stays as it is.
-	req, err := h.mgr.FriendSettings(r.Context(), me.ID)
+	current, err := h.mgr.FriendSettings(r.Context(), me.ID)
 	if err != nil {
 		writeError(w, err)
 		return
 	}
+	req := friendSettingsRequest(current)
 	if !decodeBody(w, r, &req) {
 		return
 	}
-	if err := h.mgr.SetFriendSettings(r.Context(), me.ID, session.AddressOf(me.PrincipalID), req); err != nil {
+	settings := store.FriendSettings(req)
+	if err := h.mgr.SetFriendSettings(r.Context(), me.ID, session.AddressOf(me.PrincipalID), settings); err != nil {
 		writeError(w, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, req)
+	writeJSON(w, http.StatusOK, settings)
 }

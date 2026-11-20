@@ -52,6 +52,13 @@ var schemaEndpoints = []schemaEndpoint{
 	{route: "GET /api/me/deals", response: reflect.TypeFor[ownDealsResponse]()},
 	{route: "POST /api/bot-matches", request: reflect.TypeFor[botMatchRequest](), response: reflect.TypeFor[botMatchResponse]()},
 
+	// Voice chat (docs/voice.md): the network helpers of every call, and a
+	// game's call. Its messages arrive on /ws/{code}?only=voice.
+	{route: "GET /api/rtc/config", response: reflect.TypeFor[rtcConfigResponse]()},
+	{route: "GET /api/games/{code}/voice", response: reflect.TypeFor[voicePeersResponse]()},
+	{route: "POST /api/games/{code}/voice", request: reflect.TypeFor[voiceRequest](), response: reflect.TypeFor[voicePeersResponse]()},
+	{route: "POST /api/games/{code}/voice/signal", request: reflect.TypeFor[signalRequest](), response: reflect.TypeFor[okResponse]()},
+
 	// Signing in, for a client that is not a browser (ADR 0138): the answers
 	// are those of a sign-in that asks for a token.
 	{route: "POST /auth/login", request: reflect.TypeFor[auth.LoginRequest](), response: reflect.TypeFor[auth.SessionTokenResponse]()},
@@ -71,7 +78,7 @@ var schemaEndpoints = []schemaEndpoint{
 	{route: "POST /api/friends/invite-answer", request: reflect.TypeFor[friendRequest](), response: reflect.TypeFor[okResponse]()},
 	{route: "POST /api/friends/dismiss", request: reflect.TypeFor[friendRequest](), response: reflect.TypeFor[okResponse]()},
 	{route: "GET /api/friends/settings", response: reflect.TypeFor[store.FriendSettings]()},
-	{route: "PUT /api/friends/settings", request: reflect.TypeFor[store.FriendSettings](), response: reflect.TypeFor[store.FriendSettings]()},
+	{route: "PUT /api/friends/settings", request: reflect.TypeFor[friendSettingsRequest](), response: reflect.TypeFor[store.FriendSettings]()},
 	{route: "POST /api/dm", request: reflect.TypeFor[dmRequest](), response: reflect.TypeFor[session.DirectMessage]()},
 	{route: "POST /api/dm/history", request: reflect.TypeFor[dmReadRequest](), response: reflect.TypeFor[dmHistoryResponse]()},
 	{route: "POST /api/dm/threads", response: reflect.TypeFor[dmThreadsResponse]()},
@@ -80,7 +87,8 @@ var schemaEndpoints = []schemaEndpoint{
 }
 
 // schemaEvents are the WebSocket events of /ws/{code} the schema describes,
-// by type. Voice and "rtc" are left out for now.
+// by type. A socket opened with only=voice is a voice call's: it sends
+// "joined", "voice" and "rtc" and nothing else, and only it sends "rtc".
 var schemaEvents = []struct {
 	typ  string
 	data reflect.Type
@@ -93,6 +101,48 @@ var schemaEvents = []struct {
 	{"kick_vote", reflect.TypeFor[session.KickVoteEventData]()},
 	{"seat_replaced", reflect.TypeFor[session.SeatReplacedEventData]()},
 	{"slow_turn", reflect.TypeFor[session.SlowTurnEventData]()},
+	{"voice", reflect.TypeFor[session.VoiceEventData]()},
+	{"rtc", reflect.TypeFor[session.RTCSignal]()},
+}
+
+// signalMessages are the definitions whose data is a WebRTC message, which
+// the server passes on unread: the schema says what a browser puts there.
+var signalMessages = []string{"VoiceSignalRequest", "RTCSignal", "DirectSignalRequest", "DirectSignal"}
+
+// signalData is the schema of a WebRTC message's data, for each kind.
+var signalData = map[string]any{
+	"description": "What a browser's RTCPeerConnection exchanges, by the message's kind. The server does not read it: it checks only that it is JSON, not null and at most 16 KB. A client that is not a browser sends and expects what a browser does (docs/voice.md).",
+	"oneOf": []any{
+		map[string]any{
+			"title":       "SessionDescription",
+			"description": "kind offer or answer: RTCSessionDescription's type and sdp.",
+			"type":        "object",
+			"properties": map[string]any{
+				"type": map[string]any{"type": "string", "enum": []any{"offer", "answer"}},
+				"sdp":  map[string]any{"type": "string"},
+			},
+			"required": []any{"type", "sdp"},
+		},
+		map[string]any{
+			"title":       "IceCandidate",
+			"description": "kind ice: RTCIceCandidate.toJSON(), one candidate per message, with no message for the end of the candidates.",
+			"type":        "object",
+			"properties": map[string]any{
+				"candidate":        map[string]any{"type": "string"},
+				"sdpMid":           map[string]any{"type": []any{"string", "null"}},
+				"sdpMLineIndex":    map[string]any{"type": []any{"integer", "null"}},
+				"usernameFragment": map[string]any{"type": []any{"string", "null"}},
+			},
+			"required": []any{"candidate"},
+		},
+		map[string]any{
+			"title":                "Retry",
+			"description":          "kind retry: {}, the side that does not offer asking the other to offer again.",
+			"type":                 "object",
+			"properties":           map[string]any{},
+			"additionalProperties": false,
+		},
+	},
 }
 
 // schemaDirectEvents are the WebSocket events of /ws-dm, a signed-in
@@ -155,6 +205,8 @@ func Schema(root string) ([]byte, error) {
 			reflect.TypeFor[dmRequest]():         {"to", "text"},
 			reflect.TypeFor[dmReadRequest]():     {"with"},
 			reflect.TypeFor[dmSignalRequest]():   {"to", "kind", "data"},
+			reflect.TypeFor[voiceRequest]():      {"player_name"},
+			reflect.TypeFor[signalRequest]():     {"player_name", "to", "kind", "data"},
 		},
 		Names: map[reflect.Type]string{
 			reflect.TypeFor[apiIndex]():          "IndexResponse",
@@ -170,6 +222,9 @@ func Schema(root string) ([]byte, error) {
 			reflect.TypeFor[dmHistoryResponse](): "DirectHistoryResponse",
 			reflect.TypeFor[dmThreadsResponse](): "DirectThreadsResponse",
 			reflect.TypeFor[auth.Me]():           "MeResponse",
+			reflect.TypeFor[signalRequest]():     "VoiceSignalRequest",
+			reflect.TypeFor[rtcConfigResponse](): "RTCConfigResponse",
+			reflect.TypeFor[iceServer]():         "ICEServer",
 		},
 	})
 
@@ -195,8 +250,13 @@ func Schema(root string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	defs["SignalData"] = signalData
+	for _, name := range signalMessages {
+		props := defs[name].(map[string]any)["properties"].(map[string]any)
+		props["data"] = map[string]any{"$ref": "#/$defs/SignalData"}
+	}
 	defs["WebSocketEvent"] = map[string]any{
-		"description": "A message the server sends on /ws/{code}. A client skips an event whose type it does not know.",
+		"description": "A message the server sends on /ws/{code}. A client skips an event whose type it does not know. A voice call's socket, /ws/{code}?only=voice, sends joined, voice and rtc only, and is the only one to send rtc: a client opens it and waits for joined before it posts to /voice, so as to miss no offer.",
 		"oneOf":       events,
 	}
 	defs["DirectWebSocketEvent"] = map[string]any{

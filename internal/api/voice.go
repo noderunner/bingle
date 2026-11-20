@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+
+	"github.com/noderunner/bingle/internal/session"
 )
 
 // RTCConfig describes the network helpers voice chat uses: STUN servers, which
@@ -23,7 +25,8 @@ type RTCConfig struct {
 	TurnTTL time.Duration
 }
 
-// iceServer is one entry of RTCPeerConnection's iceServers.
+// iceServer is one entry of RTCPeerConnection's iceServers: STUN servers
+// with no credentials, or a TURN relay with credentials that expire.
 type iceServer struct {
 	URLs       []string `json:"urls"`
 	Username   string   `json:"username,omitempty"`
@@ -53,6 +56,19 @@ func (c RTCConfig) iceServers(now time.Time) []iceServer {
 	return out
 }
 
+// rtcConfigResponse is GET /rtc/config's answer.
+type rtcConfigResponse struct {
+	// IceServers are for RTCPeerConnection's iceServers, the same for a
+	// game's call and a call between friends. It may be empty.
+	IceServers []iceServer `json:"ice_servers"`
+}
+
+// voicePeersResponse is the answer of GET and POST /games/{code}/voice: the
+// seats in the call, by seat.
+type voicePeersResponse struct {
+	Peers []session.VoicePeer `json:"peers"`
+}
+
 // WithRTC sets the STUN/TURN settings voice chat clients are given.
 func WithRTC(c RTCConfig) Option {
 	return func(h *handlers) { h.rtc = c }
@@ -62,15 +78,18 @@ func WithRTC(c RTCConfig) Option {
 // The TURN credentials are time-limited.
 func (h *handlers) handleRTCConfig(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-store")
-	writeJSON(w, http.StatusOK, map[string]any{"ice_servers": h.rtc.iceServers(time.Now())})
+	writeJSON(w, http.StatusOK, rtcConfigResponse{IceServers: h.rtc.iceServers(time.Now())})
 }
 
 // handleGetVoice implements GET /games/{code}/voice: who is in the call.
 func (h *handlers) handleGetVoice(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, http.StatusOK, map[string]any{"peers": h.mgr.VoicePeers(chi.URLParam(r, "code"))})
+	writeJSON(w, http.StatusOK, voicePeersResponse{Peers: h.mgr.VoicePeers(chi.URLParam(r, "code"))})
 }
 
-// voiceRequest is POST /games/{code}/voice's body.
+// voiceRequest is POST /games/{code}/voice's body: the seat of PlayerName
+// joins the call, or renews its place in it, with Active; leaves it without.
+// A place lapses 45 seconds after it was last renewed: the page renews it
+// every 15.
 type voiceRequest struct {
 	PlayerName string `json:"player_name"`
 	Active     bool   `json:"active"`
@@ -93,15 +112,17 @@ func (h *handlers) handlePostVoice(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"peers": peers})
+	writeJSON(w, http.StatusOK, voicePeersResponse{Peers: peers})
 }
 
-// signalRequest is POST /games/{code}/voice/signal's body.
+// signalRequest is POST /games/{code}/voice/signal's body: one WebRTC
+// message from the seat of PlayerName to the seat To, both in the call.
 type signalRequest struct {
-	PlayerName string          `json:"player_name"`
-	To         int             `json:"to"`
-	Kind       string          `json:"kind"`
-	Data       json.RawMessage `json:"data"`
+	PlayerName string `json:"player_name"`
+	To         int    `json:"to"`
+	Kind       string `json:"kind"` // "offer", "answer", "ice" or "retry"
+	// Data is passed on unread: JSON of at most 16 KB, not null.
+	Data json.RawMessage `json:"data"`
 }
 
 // handlePostVoiceSignal implements POST /games/{code}/voice/signal: relay a
@@ -119,5 +140,5 @@ func (h *handlers) handlePostVoiceSignal(w http.ResponseWriter, r *http.Request)
 		writeError(w, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
+	writeJSON(w, http.StatusOK, okResponse{OK: true})
 }

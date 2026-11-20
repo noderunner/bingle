@@ -22,8 +22,10 @@ patch for the schema's descriptions alone. A client ignores the fields it does n
 of the messages of that `api_version`, generated from the server's Go types: `x-endpoints` gives
 the request and response of each endpoint of the index, the lobby's calls among them, and of a
 signed-in account's calls (the token sign-in, `/auth/me`, `/auth/logout`, friends, `/here` and direct
-messages), `x-error` the error body, `$defs/WebSocketEvent` the events of `/ws/{code}` (all but voice
-and `rtc`), and `x-dm-events` and `$defs/DirectWebSocketEvent` those of `/ws-dm`.
+messages) and of voice chat (`/rtc/config` and a game's `/voice`), `x-error` the error body,
+`$defs/WebSocketEvent` the events of `/ws/{code}`, `voice` and `rtc` among them, and `x-dm-events` and
+`$defs/DirectWebSocketEvent` those of `/ws-dm`. `$defs/SignalData` is what a browser puts in a
+call's messages, which the server passes on unread ([voice.md](voice.md#for-a-client-that-is-not-a-browser)).
 A position (`state`) is left open: each game has its own. The rest of the API is described here
 alone.
 
@@ -452,7 +454,7 @@ that appear as buttons.
 ## WebSocket `GET /ws/{code}?name=NAME&role=player|spectator[&only=voice]`
 
 Server-push only. With `only=voice` the socket belongs to a **voice call**, not to a page: it
-carries just the `voice` and `rtc` events (below), is the only one that receives `rtc`, and does
+carries just `joined` and the `voice` and `rtc` events (below), is the only one that receives `rtc`, and does
 not count as the player looking at the game (no effect on "your turn" mail). The server has
 subscribed before it sends `joined`, so a client that waits for `joined` misses no call message. The first message is
 `{"type":"joined","data":{role,seat,color,status,connected[],move_seq}}`, where `move_seq` is the selections played so far, read after subscribing: a client that loaded fewer missed a move event and should load the game again. Afterwards:
