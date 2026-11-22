@@ -392,7 +392,7 @@ func TestWebSolitaire_SettingUp(t *testing.T) {
 	if got := evalString(t, ctx, `document.querySelector('`+card+` .game-card-title').textContent`); got != "Solitaire" {
 		t.Errorf("the card is called %q", got)
 	}
-	if got := evalString(t, ctx, `document.querySelector('`+card+` .game-card-players').textContent`); got != "1 player" {
+	if got := evalString(t, ctx, `document.querySelector('`+card+` .badge.players').textContent`); got != "1P" {
 		t.Errorf("the card says %q", got)
 	}
 	// Bowling Solitaire, which had the tutorial, is a game of its own.
