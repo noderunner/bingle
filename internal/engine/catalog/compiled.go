@@ -168,6 +168,8 @@ type CompiledGame struct {
 	// Scripts is the module's web page scripts (Module.Scripts); nil when it
 	// has none.
 	Scripts fs.FS
+	// Private marks a game of the private overlay (Module.Private).
+	Private bool
 
 	// Rules is the Go ruleset of a game whose definition says
 	// engine: "ruleset" (nil for declarative games). It is opaque here —

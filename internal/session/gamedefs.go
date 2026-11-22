@@ -24,6 +24,8 @@ type GameDefSummary struct {
 	Prototype bool
 	// Tutorials is how many tutorials a player of this game is offered.
 	Tutorials int
+	// Private marks a game of the private overlay (ADR 0140).
+	Private bool
 }
 
 // ListGameDefs returns a summary of every game definition registered in m's
@@ -45,6 +47,7 @@ func (m *Manager) ListGameDefs(ctx context.Context) []GameDefSummary {
 			Designers:     cg.Definition.Designers,
 			Publisher:     cg.Definition.Publisher,
 			Prototype:     cg.Definition.Prototype,
+			Private:       cg.Private,
 		}
 		if _, list, err := m.TutorialsFor(cg.Definition.ID); err == nil {
 			summaries[i].Tutorials = len(list)

@@ -36,6 +36,19 @@ func Register(name string, f Family) {
 	families[name] = f
 }
 
+// RegisterPrivate adds a family of the private overlay (ADR 0127) under
+// name: its modules are marked Private, so clients can tell its games from
+// the public ones (ADR 0140).
+func RegisterPrivate(name string, f Family) {
+	Register(name, func() []catalog.Module {
+		mods := f()
+		for i := range mods {
+			mods[i].Private = true
+		}
+		return mods
+	})
+}
+
 // Names lists the registered families, sorted.
 func Names() []string {
 	mu.Lock()

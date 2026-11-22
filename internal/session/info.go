@@ -21,8 +21,10 @@ type GameInfo struct {
 	Description string `json:"description,omitempty"`
 	// Version is the game's semantic version; Prototype says its rules are not
 	// final, and that this game is the version of them that Version names.
-	Version     string       `json:"version,omitempty"`
-	Prototype   bool         `json:"prototype,omitempty"`
+	Version   string `json:"version,omitempty"`
+	Prototype bool   `json:"prototype,omitempty"`
+	// Private marks a game built from the private overlay (ADR 0140).
+	Private     bool         `json:"private,omitempty"`
 	Rules       []string     `json:"rules,omitempty"`
 	Notation    string       `json:"notation"`
 	NotationDoc []string     `json:"notation_help,omitempty"`
@@ -259,6 +261,7 @@ func buildGameInfo(cg *catalog.CompiledGame) GameInfo {
 		Description: def.Description,
 		Version:     def.Version,
 		Prototype:   def.Prototype,
+		Private:     cg.Private,
 		Rules:       def.Rules,
 		Notation:    notation,
 		NotationDoc: notationHelp(cg),
