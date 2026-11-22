@@ -1140,17 +1140,18 @@ export function isBeta(version) {
 	return !(major >= 1);
 }
 
-/** "2 players", "3–5 players": how many can sit at the game's tables (its variants included). */
-function playerRange(list) {
+/** The badge of how many can sit at the game's tables (its variants included): "2P", "3–5P"; null when none says. */
+function playersBadge(list) {
 	const seats = list.map((d) => d.seats_required).filter((n) => n > 0);
-	if (!seats.length) return "";
+	if (!seats.length) return null;
 	const lo = Math.min(...seats);
 	const hi = Math.max(...seats);
-	if (lo === 1 && hi === 1) return "1 player";
-	return lo === hi ? `${lo} players` : `${lo}\u2013${hi} players`;
+	const range = lo === hi ? `${lo}` : `${lo}\u2013${hi}`;
+	const said = lo === hi ? `${lo} player${lo === 1 ? "" : "s"}` : `${lo} to ${hi} players`;
+	return h("span", { class: "badge players", title: said, "aria-label": said }, `${range}P`);
 }
 
-/** The line under a game's name: the Prototype mark, or the Beta mark while its version is below 1.0, and the players it takes. */
+/** The line under a game's name: the Prototype mark, or the Beta mark while its version is below 1.0, the players it takes, and the Private mark of a game built from the private overlay. */
 function cardMeta(list, lead) {
 	const out = [];
 	if (lead.prototype) {
@@ -1158,8 +1159,9 @@ function cardMeta(list, lead) {
 	} else if (isBeta(lead.version)) {
 		out.push(h("span", { class: "badge beta", title: `Version ${lead.version || "0.0.0"}: still being tested` }, "Beta"));
 	}
-	const players = playerRange(list);
-	if (players) out.push(h("span", { class: "game-card-players muted" }, players));
+	const players = playersBadge(list);
+	if (players) out.push(players);
+	if (list.some((d) => d.private)) out.push(h("span", { class: "badge private", title: "In this private build only" }, "Private"));
 	if (list.some((d) => d.tutorials)) out.push(h("span", { class: "badge tutorial", title: "This game has a tutorial that teaches it by playing" }, "Tutorial"));
 	return out;
 }

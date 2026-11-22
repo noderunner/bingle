@@ -599,7 +599,6 @@ details.debug pre {
 .game-card-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.1rem 0.35rem; margin-top: auto; }
 .badge.prototype { color: var(--focus); border-color: var(--focus); text-transform: uppercase; letter-spacing: 0.04em; font-size: 0.7rem; }
 .badge.beta { color: var(--warn); border-color: var(--warn); text-transform: uppercase; letter-spacing: 0.04em; font-size: 0.7rem; }
-.game-card-players { white-space: nowrap; font-size: 0.78rem; }
 
 /* The card that follows the pointer over a game of the list. */
 .game-tip {

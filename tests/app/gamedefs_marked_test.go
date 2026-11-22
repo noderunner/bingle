@@ -8,18 +8,23 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/chromedp/chromedp"
 
 	"github.com/noderunner/bingle/internal/app"
 	"github.com/noderunner/bingle/internal/games/fendo"
 )
 
-func TestPrivateGames_AreMarked(t *testing.T) {
+// newPrivateGameServer serves the shipped games plus secret-fendo, a copy of
+// Fendo and its variants marked as if built from the overlay.
+func newPrivateGameServer(t *testing.T) string {
+	t.Helper()
 	a, err := app.New(newTestConfig(t))
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = a.Close() })
-	// A copy of Fendo, with its variants, as if built from the overlay.
 	mod := fendo.Module()
 	def := strings.ReplaceAll(string(mod.Definition), `"fendo`, `"secret-fendo`)
 	mod.ID, mod.Definition, mod.Private = "secret-fendo", []byte(def), true
@@ -28,8 +33,12 @@ func TestPrivateGames_AreMarked(t *testing.T) {
 	}
 	srv := httptest.NewServer(a.Router())
 	t.Cleanup(srv.Close)
+	return srv.URL
+}
 
-	_, raw := getJSON(t, srv.URL, "/api/game-defs")
+func TestPrivateGames_AreMarked(t *testing.T) {
+	base := newPrivateGameServer(t)
+	_, raw := getJSON(t, base, "/api/game-defs")
 	var defs []map[string]any
 	if err := json.Unmarshal(raw, &defs); err != nil {
 		t.Fatal(err)
@@ -50,7 +59,7 @@ func TestPrivateGames_AreMarked(t *testing.T) {
 	}
 
 	for id, want := range map[string]bool{"secret-fendo-9": true, "fendo-9": false} {
-		_, raw := getJSON(t, srv.URL, "/api/game-defs/"+id)
+		_, raw := getJSON(t, base, "/api/game-defs/"+id)
 		var info struct {
 			Private *bool `json:"private"`
 		}
@@ -60,5 +69,24 @@ func TestPrivateGames_AreMarked(t *testing.T) {
 		if got := info.Private != nil && *info.Private; got != want || (!want && info.Private != nil) {
 			t.Errorf("GET /api/game-defs/%s: private %v, want %v", id, info.Private, want)
 		}
+	}
+}
+
+// The list of games gives a private game a Private badge, and no other game one.
+func TestPrivateGames_HaveABadgeInTheList(t *testing.T) {
+	base := newPrivateGameServer(t)
+	ctx, cancel := newChromedpContext(t, 60*time.Second)
+	defer cancel()
+	if err := chromedp.Run(ctx,
+		chromedp.Navigate(base+"/"),
+		chromedp.WaitVisible(`.game-card[data-family="secret-fendo"]`, chromedp.ByQuery),
+	); err != nil {
+		t.Fatal(err)
+	}
+	if got := evalString(t, ctx, `document.querySelector('.game-card[data-family="secret-fendo"] .badge.private').textContent`); got != "Private" {
+		t.Errorf("the private game's badge says %q", got)
+	}
+	if n := evalInt(t, ctx, `document.querySelectorAll(".game-card .badge.private").length`); n != 1 {
+		t.Errorf("%d Private badges, want 1", n)
 	}
 }

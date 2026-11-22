@@ -758,8 +758,9 @@ of the start position, or of a sample game in play when the game starts with an 
 (`preview` in the game's look; a game whose board makes a poor picture draws its own, its page script's
 `listIcon`, as Solitaire does),
 the name, a **Beta** badge (`.badge.beta`, while the game's `version` is below 1.0.0; its title
-is the version) and the players it takes (`.game-card-players`: the range of the seat counts of
-the game and its variants). While the pointer is over a card, or it has the focus, `#game-tip`
+is the version), the players it takes (`.badge.players`, "2P" or "3–5P": the range of the seat
+counts of the game and its variants) and, for a game built from the private overlay, a **Private**
+badge (`.badge.private`, from the API's `private`). While the pointer is over a card, or it has the focus, `#game-tip`
 shows the name, designers, publisher, description and version. The board size of a game is
 chosen in the setup (`#setup-variant`), whose button for the rules is `#game-rules-button`
 ("Rules").

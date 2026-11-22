@@ -35,8 +35,8 @@ func TestHomeGames_ListShowsBetaPlayersAndADetailsCard(t *testing.T) {
 	if n := evalInt(t, ctx, `document.querySelectorAll(".game-card").length - document.querySelectorAll(".game-card .badge.beta, .game-card .badge.prototype").length`); n != 0 {
 		t.Errorf("%d games have neither a Beta nor a Prototype mark", n)
 	}
-	for family, want := range map[string]string{"tak-5x5": "2 players", "test-tricks": "3–5 players", "test-table": "2 players"} {
-		got := evalString(t, ctx, fmt.Sprintf(`(function(){ var e = document.querySelector('.game-card[data-family=%q] .game-card-players'); return e ? e.textContent : "" })()`, family))
+	for family, want := range map[string]string{"tak-5x5": "2P", "test-tricks": "3–5P", "test-table": "2P"} {
+		got := evalString(t, ctx, fmt.Sprintf(`(function(){ var e = document.querySelector('.game-card[data-family=%q] .badge.players'); return e ? e.textContent : "" })()`, family))
 		if got != want {
 			t.Errorf("%s: players = %q, want %q", family, got, want)
 		}
