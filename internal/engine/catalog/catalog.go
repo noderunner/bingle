@@ -54,6 +54,9 @@ type Module struct {
 	// Tutorials holds the game's tutorials, one YAML document each at its
 	// root (see package tutorial); nil for a game without any.
 	Tutorials fs.FS
+	// Private marks a module of the private overlay (ADR 0127), registered
+	// with registry.RegisterPrivate; its games say so to clients (ADR 0140).
+	Private bool
 	// Upgrade, when set, converts a stored position document of the
 	// family's games to the form its rules read now, reporting whether it
 	// changed anything: a game whose Go ruleset gave way to a declaration
@@ -149,6 +152,7 @@ func (c *Catalog) RegisterModule(mod Module) error {
 		cg.Assets = mod.Assets
 		cg.Web = mod.Web
 		cg.Scripts = mod.Scripts
+		cg.Private = mod.Private
 		c.src[id] = source{doc: doc, mod: mod}
 		c.mu.Unlock()
 		if i == 0 {
@@ -442,6 +446,7 @@ func (c *Catalog) derive(baseID, suffix string, options map[string]any) (*Compil
 	cg.Assets = src.mod.Assets
 	cg.Web = src.mod.Web
 	cg.Scripts = src.mod.Scripts
+	cg.Private = src.mod.Private
 	c.mu.Unlock()
 	return cg, nil
 }

@@ -118,6 +118,9 @@ type GameDef struct {
 	// Tutorials is how many tutorials a player of this game is offered (see
 	// GET /game-defs/{id}/tutorials).
 	Tutorials int `json:"tutorials,omitempty"`
+	// Private marks a game built from the private overlay (ADR 0140); a public
+	// build marks none.
+	Private bool `json:"private,omitempty"`
 }
 
 // GameDefs converts the manager's list of games.
@@ -128,6 +131,7 @@ func GameDefs(defs []session.GameDefSummary) []GameDef {
 			ID: d.ID, Name: d.Name, SeatsRequired: d.SeatsRequired, Description: d.Description,
 			BoardWidth: d.BoardWidth, BoardHeight: d.BoardHeight, Family: d.Family,
 			Version: d.Version, Designers: d.Designers, Publisher: d.Publisher, Prototype: d.Prototype, Tutorials: d.Tutorials,
+			Private: d.Private,
 		}
 	}
 	return out

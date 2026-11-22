@@ -1228,6 +1228,10 @@
         "name": {
           "type": "string"
         },
+        "private": {
+          "description": "Private marks a game built from the private overlay (ADR 0140); a public build marks none.",
+          "type": "boolean"
+        },
         "prototype": {
           "description": "Prototype marks a game whose rules are not final: each version of them is listed as a game of the family, and Version says which.",
           "type": "boolean"
@@ -1381,6 +1385,10 @@
           },
           "description": "Preview is a sample game in play (the squares as in Start.Cells) for games that start with an empty board; absent when the start is picture enough.",
           "type": "object"
+        },
+        "private": {
+          "description": "Private marks a game built from the private overlay (ADR 0140).",
+          "type": "boolean"
         },
         "prototype": {
           "type": "boolean"
@@ -4270,9 +4278,9 @@
   },
   "$id": "https://github.com/noderunner/bingle/docs/api.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "description": "The requests, responses and WebSocket events of bingle's API, version 1.7.0. Generated from the Go types of the server: do not edit. Objects let unknown fields through: a client ignores those it does not know.",
+  "description": "The requests, responses and WebSocket events of bingle's API, version 1.8.0. Generated from the Go types of the server: do not edit. Objects let unknown fields through: a client ignores those it does not know.",
   "title": "Bingle API messages",
-  "x-api-version": "1.7.0",
+  "x-api-version": "1.8.0",
   "x-dm-events": {
     "badge": {
       "$ref": "#/$defs/BadgeEventData"

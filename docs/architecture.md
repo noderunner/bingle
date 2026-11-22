@@ -130,6 +130,8 @@ Served by the same binary as static assets plus lightweight JS (no SPA build pip
   and, in a private build only, the commercial games of the private overlay
   (`internal/games/private`, compiled in with `-tags private`, ADR 0127): Cthulhu Wars,
   up to five of its cults on an area map with setup options that derive a game per table.
+  The overlay registers its families with `registry.RegisterPrivate`, and the API marks
+  their games `private` (ADR 0140).
   Adding a game is adding a JSON file
   (`docs/dsl.md`), or a ruleset when the rules need Go.
 * **Session** (`internal/session`): room lifecycle plus taking back a selection of a turn,

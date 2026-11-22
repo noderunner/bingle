@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/noderunner/bingle/internal/app"
+	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/games/registry"
 )
 
@@ -90,5 +91,22 @@ func TestATagLeavesAGameOut(t *testing.T) {
 	// And the server itself builds without them.
 	if out, err := exec.Command("go", "build", "-tags", "no_tak,no_classics", "-o", "/dev/null", "github.com/noderunner/bingle").CombinedOutput(); err != nil {
 		t.Errorf("the server without Tak and the classics: %v\n%s", err, out)
+	}
+}
+
+// A family of the private overlay (ADR 0127) is registered as private: its
+// modules say so, and the public families' do not (ADR 0140).
+func TestAPrivateFamilyMarksItsModules(t *testing.T) {
+	registry.RegisterPrivate("zz-private-test", func() []catalog.Module {
+		return []catalog.Module{{ID: "zz-private-a"}, {ID: "zz-private-b"}}
+	})
+	private := map[string]bool{}
+	for _, m := range registry.Modules() {
+		private[m.ID] = m.Private
+	}
+	for id, want := range map[string]bool{"zz-private-a": true, "zz-private-b": true, "tak-5x5": false, "go-9x9": false, "courtfall-1.0.0": false} {
+		if got, ok := private[id]; !ok || got != want {
+			t.Errorf("module %s: private %v (listed %v), want %v", id, got, ok, want)
+		}
 	}
 }
