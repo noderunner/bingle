@@ -213,7 +213,7 @@ func (m *Manager) SetSeatFaction(ctx context.Context, roomCode, by string, seat 
 	}
 	// A game whose start carries a seed keeps it on record, as at creation.
 	if state.NeedsStartRecord(next) {
-		if err := m.store.SetInitialPosition(ctx, game.ID, string(doc), state.FirstSeat(next)); err != nil {
+		if err := m.store.SetInitialPosition(ctx, game.ID, string(doc), state.StartSeat(next, start)); err != nil {
 			return StateSnapshot{}, fmt.Errorf("session: recording start position: %w", err)
 		}
 	}

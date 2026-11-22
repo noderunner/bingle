@@ -85,8 +85,8 @@ func play(ref, cand Side, opt Options, seed uint64) error {
 	if st[1], err = state.InitialStateSeeded(cand.Game, seed); err != nil {
 		return fmt.Errorf("seed %d: the candidate does not start: %w", seed, err)
 	}
-	seat := state.FirstSeat(ref.Game)
-	if s := state.FirstSeat(cand.Game); s != seat {
+	seat := state.StartSeat(ref.Game, st[0])
+	if s := state.StartSeat(cand.Game, st[1]); s != seat {
 		return fmt.Errorf("seed %d: the first impulse is seat %d in the reference, %d in the candidate", seed, seat, s)
 	}
 	var path []string

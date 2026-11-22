@@ -126,7 +126,8 @@ func (m *Manager) ImportGame(ctx context.Context, opts ImportOptions) (ImportRes
 			return ImportResult{}, fmt.Errorf("%w: TPS header: %v", ErrInvalidImport, err)
 		}
 	} else {
-		st, seat = state.InitialState(compiled), state.FirstSeat(compiled)
+		st = state.InitialState(compiled)
+		seat = state.StartSeat(compiled, st)
 	}
 	parsed := make([]state.Selection, 0, len(moves))
 	for i, text := range moves {

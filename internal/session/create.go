@@ -190,7 +190,7 @@ func resolveStart(compiled *catalog.CompiledGame, opts CreateOptions) (*state.Bo
 		}
 		seat = opts.StartSeat
 		if seat == 0 {
-			seat = state.FirstSeat(compiled)
+			seat = state.StartSeat(compiled, st)
 		}
 		if _, ok := compiled.Seat(seat); !ok {
 			return nil, 0, false, fmt.Errorf("%w: start_seat %d does not exist", ErrInvalidStart, seat)
@@ -198,7 +198,8 @@ func resolveStart(compiled *catalog.CompiledGame, opts CreateOptions) (*state.Bo
 	default:
 		// A game whose start carries a secret seed must have it recorded so
 		// that replays, undo and exports see the same position.
-		return state.InitialState(compiled), state.FirstSeat(compiled), state.NeedsStartRecord(compiled), nil
+		st := state.InitialState(compiled)
+		return st, state.StartSeat(compiled, st), state.NeedsStartRecord(compiled), nil
 	}
 	if err := state.Validate(compiled, st); err != nil {
 		return nil, 0, false, fmt.Errorf("%w: %v", ErrInvalidStart, err)
