@@ -338,3 +338,23 @@ func TestCourtfall_TheStandardArenaIsASetupOption(t *testing.T) {
 		t.Errorf("the plain game starts as %q with %d tiles", plain.State.Ext.Phase, len(plain.State.Ext.Tiles))
 	}
 }
+
+// On the standard arena Dark chooses the first Court, so the game starts on
+// seat 2's impulse: a bot there answers at once and the game goes on (#263).
+func TestCourtfall_TheStandardArenaStartsWithDark(t *testing.T) {
+	base := newRESTTestServer(t)
+	var created struct {
+		RoomCode string `json:"room_code"`
+	}
+	body := map[string]any{"game_def_id": "courtfall", "player_name": "Alice", "opponent": "random", "options": map[string]any{"standard-arena": true}}
+	if code := doJSON(t, "POST", base+"/api/games", body, &created); code != 200 {
+		t.Fatalf("create: %d", code)
+	}
+	st := cfGet(t, base, created.RoomCode)
+	if st.MoveSeq != 1 || st.ImpulseSeat == nil || *st.ImpulseSeat != 1 {
+		t.Fatalf("after Dark's bot chooses its Court it should be Light's choice: move_seq %d, impulse seat %v", st.MoveSeq, st.ImpulseSeat)
+	}
+	if l := cfLegalMoves(t, base, created.RoomCode); l.Seat != 1 || len(l.Moves) == 0 {
+		t.Fatalf("Light has %d choices as seat %d", len(l.Moves), l.Seat)
+	}
+}

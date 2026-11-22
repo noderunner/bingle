@@ -328,7 +328,7 @@ func PlayGame(ctx context.Context, cat *catalog.Catalog, spec Spec, i int) (Reco
 		obs = study.Observer(game)
 	}
 	keep := i < spec.EventGames
-	seat := state.FirstSeat(game)
+	seat := state.StartSeat(game, st)
 	winner, reason := 0, "unfinished"
 	for ply := 0; ply < spec.MaxPlies; ply++ {
 		if ctx.Err() != nil {

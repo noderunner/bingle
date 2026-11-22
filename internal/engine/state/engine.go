@@ -650,7 +650,21 @@ func ImpulseAfter(game *catalog.CompiledGame, st *BoardState, seat int) (int, er
 	return next, nil
 }
 
-// FirstSeat returns the seat that moves first.
+// StartSeat returns the seat that moves first from st, a start position of
+// game: the seat a ruleset's position waits for, which need not be the first
+// in turn order (Courtfall on the standard arena starts with Dark choosing a
+// Court), else FirstSeat.
+func StartSeat(game *catalog.CompiledGame, st *BoardState) int {
+	if rs, ok := RulesetOf(game); ok && st != nil {
+		if seat := rs.ImpulseSeat(game, st); seat != 0 {
+			return seat
+		}
+	}
+	return FirstSeat(game)
+}
+
+// FirstSeat returns the first seat in game's turn order. A caller that holds
+// the start position uses StartSeat instead.
 func FirstSeat(game *catalog.CompiledGame) int {
 	if seats := game.Definition.TurnOrder.Seats; len(seats) > 0 {
 		return seats[0]

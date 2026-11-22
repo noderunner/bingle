@@ -275,11 +275,7 @@ func newPlayer(game *catalog.CompiledGame, seed uint64) (*player, error) {
 	if err != nil {
 		return nil, err
 	}
-	p := &player{game: game, st: st, seat: state.FirstSeat(game)}
-	if rs, ok := state.RulesetOf(game); ok {
-		p.seat = rs.ImpulseSeat(game, st)
-	}
-	return p, nil
+	return &player{game: game, st: st, seat: state.StartSeat(game, st)}, nil
 }
 
 // play plays one move in the game's notation. who is the seat that must be

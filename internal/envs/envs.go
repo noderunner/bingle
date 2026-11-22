@@ -227,7 +227,7 @@ func (m *Manager) Reset(ctx context.Context, opts ResetOptions) (Observation, er
 		}
 		impulseSeat := opts.StartSeat
 		if impulseSeat == 0 {
-			impulseSeat = state.FirstSeat(game)
+			impulseSeat = state.StartSeat(game, st)
 		}
 		if _, ok := game.Seat(impulseSeat); !ok {
 			return Observation{}, fmt.Errorf("envs: game %q has no seat %d", opts.GameDefID, impulseSeat)
@@ -241,9 +241,10 @@ func (m *Manager) Reset(ctx context.Context, opts ResetOptions) (Observation, er
 			if err != nil {
 				return Observation{}, err
 			}
-			e.st, e.impulseSeat = st, state.FirstSeat(game)
+			e.st, e.impulseSeat = st, state.StartSeat(game, st)
 		} else {
-			e.st, e.impulseSeat = state.InitialState(game), state.FirstSeat(game)
+			st := state.InitialState(game)
+			e.st, e.impulseSeat = st, state.StartSeat(game, st)
 		}
 	}
 

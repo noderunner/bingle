@@ -222,7 +222,7 @@ func checkPath(cat *catalog.Catalog, compiled *catalog.CompiledGame, b Bundle, w
 		st = state.InitialState(compiled)
 	}
 
-	seat := state.FirstSeat(compiled)
+	seat := state.StartSeat(compiled, st)
 	for i, notation := range b.Moves {
 		mv, err := state.ParseMove(compiled, notation)
 		if err != nil {

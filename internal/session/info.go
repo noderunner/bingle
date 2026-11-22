@@ -673,8 +673,8 @@ func notationHelp(cg *catalog.CompiledGame) []string {
 		out = append(out, "Swap sides (pie rule): 'swap'.")
 	}
 	// A concrete example from the opening position.
-	if first := state.FirstSeat(cg); true {
-		if moves := state.LegalSelections(cg, state.InitialState(cg), first); len(moves) > 0 {
+	if start := state.InitialState(cg); true {
+		if moves := state.LegalSelections(cg, start, state.StartSeat(cg, start)); len(moves) > 0 {
 			out = append(out, "Example of a legal first move: '"+state.FormatMove(cg, moves[0])+"'.")
 		}
 	}

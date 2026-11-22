@@ -175,7 +175,8 @@ func candidatesFromGame(game *catalog.CompiledGame, pl plan, seed int64) []candi
 		st   *state.BoardState
 		seat int
 	}
-	st, seat := state.InitialState(game), state.FirstSeat(game)
+	st := state.InitialState(game)
+	seat := state.StartSeat(game, st)
 	history := []snap{{st, seat}}
 	var winner *int
 	ctx := context.Background()

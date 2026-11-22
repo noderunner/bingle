@@ -163,7 +163,7 @@ func PlayMatch(ctx context.Context, cat *catalog.Catalog, opts MatchOptions) (Ma
 			start = state.InitialState(game)
 		}
 		g := playOne(ctx, game, start, botForSeat, whoForSeat, maxPlies, opts)
-		g.FirstSeatBot = whoForSeat[state.FirstSeat(game)]
+		g.FirstSeatBot = whoForSeat[state.StartSeat(game, start)]
 		res.Played++
 		totalPlies += g.Plies
 		switch g.Winner {
@@ -193,7 +193,7 @@ func PlayMatch(ctx context.Context, cat *catalog.Catalog, opts MatchOptions) (Ma
 
 func playOne(ctx context.Context, game *catalog.CompiledGame, start *state.BoardState, botForSeat map[int]bots.Bot, whoForSeat map[int]string, maxPlies int, opts MatchOptions) MatchGame {
 	var out MatchGame
-	st, seat := start, state.FirstSeat(game)
+	st, seat := start, state.StartSeat(game, start)
 	keep := opts.KeepMoves
 	var space *state.ActionSpace
 	if opts.Record {
