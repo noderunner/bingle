@@ -89,7 +89,8 @@ that each translation puts in the same values and has the same markup as English
   the puzzles, and the fun facts (`fact.*`).
 - The main page's other tabs (Analysis, Ratings, Tournaments, Global Chat), a tournament's page and the shelf of
   badges. Dates and times follow the page's language (`lang` from `i18n.js`), not the browser's.
+- The welcome tour, with the words in its pictures. Lists of words go through `Intl.ListFormat`.
 
-Next, the welcome tour, then the game page (with the boards' descriptions for screen readers, which `render.js` writes), then the remaining
+Next, the game page (with the boards' descriptions for screen readers, which `render.js` writes), then the remaining
 pages (account, administration, tournaments, batches, a player's page), then the mail and the calendar invitations,
 then the changelog in the help window (ADR 0141, *Left for its stage*).

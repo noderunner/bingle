@@ -15,6 +15,7 @@ import { gameRow } from "./mygames.js";
 import { badgeItem } from "./badges.js";
 import { guestKeySection } from "./guest-key.js";
 import { gamesIcon, profileIcon, rulesIcon } from "./ui-icons.js";
+import { t, tParts, lang, forwardKey, backKey } from "./i18n.js";
 
 // This browser has skipped or finished the tour: kept beside the server's mark
 // so that a browser signed out, which is nobody again until its next game, is
@@ -43,12 +44,12 @@ export async function offerTour() {
 
 // What an account adds, by capability, for the guest's slide.
 const ACCOUNT_ADDS = [
-	["dm", "friends and messages"],
-	["voice_direct", "calls with friends"],
-	["chat_global", "writing in the global chat"],
-	["notify", "an email when it's your turn"],
-	["run_batch", "analysis batches"],
-	["enter_tournament", "tournaments"],
+	["dm", "tour.adds_dm"],
+	["voice_direct", "tour.adds_voice_direct"],
+	["chat_global", "tour.adds_chat_global"],
+	["notify", "tour.adds_notify"],
+	["run_batch", "tour.adds_run_batch"],
+	["enter_tournament", "tour.adds_enter_tournament"],
 ];
 
 /** The slides for me, in order: those whose feature this server offers. */
@@ -63,87 +64,87 @@ export function slidesFor(me) {
 	const slides = [
 		{
 			id: "welcome",
-			title: `Welcome to ${brand}`,
-			text: "Abstract strategy games, from classics like Go and Hex to new designs. Pick a game from the list to play it: you don't need to sign up.",
-			alt: "The list of games, each with a picture of its board.",
+			title: t("tour.welcome_title", { brand }),
+			text: t("tour.welcome_text"),
+			alt: t("tour.welcome_alt"),
 			draw: drawGallery,
 		},
 		{
 			id: "opponents",
-			title: "Play anyone",
-			text: "Play a friend by sending them the game's link, or play a bot as strong as you like. You can also set two bots against each other and watch.",
-			alt: "A game's setup, with the choice of opponent: a friend, yourself, a bot or two bots.",
+			title: t("tour.opponents_title"),
+			text: t("tour.opponents_text"),
+			alt: t("tour.opponents_alt"),
 			draw: drawOpponents,
 		},
 		{
 			id: "learn",
-			title: "Learn a game",
-			text: "Every game has its rules a click away, with diagrams, a table of contents and search. Many games have tutorials too, which teach you by playing.",
-			alt: "The rules window of a game, open at its rules.",
+			title: t("tour.learn_title"),
+			text: t("tour.learn_text"),
+			alt: t("tour.learn_alt"),
 			draw: drawRules,
 		},
 		{
 			id: "table",
-			title: "At the table",
-			text: "Choose a piece and the places it can go light up. Build your move, go back if you change your mind, and submit it when it's right. Offer a draw, chat with the table, or talk over voice chat.",
-			alt: "A game of Tak in play, a piece chosen and the squares it can move to marked.",
+			title: t("tour.table_title"),
+			text: t("tour.table_text"),
+			alt: t("tour.table_alt"),
 			draw: drawTable,
 		},
 		{
 			id: "puzzles",
-			title: "Sharpen up",
-			text: "Puzzles give you a position with a win to find. In a game, a bot can give you a hint, and afterwards you can replay it move by move and play on from any point.",
-			alt: "A puzzle: a position to win from, with a Solve button.",
+			title: t("tour.puzzles_title"),
+			text: t("tour.puzzles_text"),
+			alt: t("tour.puzzles_alt"),
 			draw: drawPuzzle,
 		},
 		{
 			id: "analysis",
-			title: "Analysis",
+			title: t("tour.analysis_title"),
 			when: offer("run_batch"),
-			text: "Set bots playing hundreds of games of any game in the background, then read the report: how often each side wins, how the games end, and which bot is stronger.",
-			alt: "A report of a batch of bot games: the win rate of each side, with a line at an even share.",
+			text: t("tour.analysis_text"),
+			alt: t("tour.analysis_alt"),
 			draw: drawAnalysis,
 		},
 		{
 			id: "games",
-			title: "Never lose a game",
-			text: "Your games wait for you. The games button at the top counts those where it's your turn, so you can play several at once, at your own pace.",
-			alt: "The list of your games: one where it's your turn, one waiting for the other player, one in its lobby.",
+			title: t("tour.games_title"),
+			text: t("tour.games_text"),
+			alt: t("tour.games_alt"),
 			draw: drawMyGames,
 		},
 		{
 			id: "compete",
-			title: "Compete",
+			title: t("tour.compete_title"),
 			when: accounts || caps.includes("enter_tournament") ? (isAccount ? "yes" : "account") : "",
-			text: "Play rated games for a rating in each game, enter tournaments, and earn badges for the moments worth telling people about.",
-			alt: "A table of ratings, and a badge earned.",
+			text: t("tour.compete_text"),
+			alt: t("tour.compete_alt"),
 			draw: drawCompete,
 		},
 		{
 			id: "friends",
-			title: "Friends",
+			title: t("tour.friends_title"),
 			when: offer("dm"),
-			text: "Add friends by their handle, see who's online, write to them, call them and invite them straight into a game. And everybody meets in the global chat.",
-			alt: "The friends window: friends with a dot for who is online, and a conversation.",
+			text: t("tour.friends_text"),
+			alt: t("tour.friends_alt"),
 			draw: drawFriends,
 		},
 		{
 			id: "muster",
-			title: "Muster",
+			title: t("tour.muster_title"),
 			when: accounts ? (isAccount ? "yes" : "account") : "",
-			text: "Can't all play now? Call a muster: offer the times you could play, the people you invite tick the ones they can make, and the game is set for the earliest time that suits everyone, with an invitation for their calendars.",
-			alt: "A muster in a game's lobby: the times offered, each with how many can make it.",
+			text: t("tour.muster_text"),
+			alt: t("tour.muster_alt"),
 			draw: drawMuster,
 		},
 	];
 	if (!isAccount) {
-		const adds = ACCOUNT_ADDS.filter(([cap]) => accountCaps.includes(cap) && !caps.includes(cap)).map(([, what]) => what);
-		if (accounts) adds.push("musters", "rated games", "badges", "your games on every device you sign in on");
+		const adds = ACCOUNT_ADDS.filter(([cap]) => accountCaps.includes(cap) && !caps.includes(cap)).map(([, what]) => t(what));
+		if (accounts) adds.push(t("tour.adds_musters"), t("tour.adds_rated"), t("tour.adds_badges"), t("tour.adds_devices"));
 		slides.push({
 			id: "guest",
-			title: "You're playing as a guest",
-			text: "Your guest key is what makes your games yours, and this browser keeps it. To play on your phone or another computer too, open your profile, the person at the top, and choose Move to Another Device.",
-			alt: "The Move to Another Device part of the profile window, with the button that copies your guest key.",
+			title: t("tour.guest_title"),
+			text: t("tour.guest_text"),
+			alt: t("tour.guest_alt"),
 			adds,
 			signup: !!me.signup,
 			draw: drawGuestKey,
@@ -154,7 +155,7 @@ export function slidesFor(me) {
 
 /** "a, b and c". */
 function listWords(items) {
-	return items.length < 2 ? items.join("") : `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
+	return new Intl.ListFormat(lang, { type: "conjunction" }).format(items);
 }
 
 // ---- the card -----------------------------------------------------------------
@@ -185,10 +186,10 @@ function buildCard(slides) {
 	const title = h("h2", { id: "tour-title" });
 	const text = h("p", { class: "tour-text", id: "tour-text" });
 	const extra = h("div", { class: "tour-extra", id: "tour-extra" });
-	const dots = h("div", { class: "tour-dots", role: "group", "aria-label": "Slides" });
-	const back = h("button", { type: "button", class: "ghost", id: "tour-back" }, "Back");
-	const next = h("button", { type: "button", class: "primary", id: "tour-next" }, "Next");
-	const skip = h("button", { type: "button", class: "ghost", id: "tour-skip" }, "Skip");
+	const dots = h("div", { class: "tour-dots", role: "group", "aria-label": t("tour.slides") });
+	const back = h("button", { type: "button", class: "ghost", id: "tour-back" }, t("tour.back"));
+	const next = h("button", { type: "button", class: "primary", id: "tour-next" }, t("tour.next"));
+	const skip = h("button", { type: "button", class: "ghost", id: "tour-skip" }, t("tour.skip"));
 	const dlg = h(
 		"dialog",
 		{ id: "welcome-tour", class: "tour-card", "aria-labelledby": "tour-title", "aria-describedby": "tour-text" },
@@ -200,7 +201,7 @@ function buildCard(slides) {
 	let at = 0;
 	let drawing = 0;
 	const dotButtons = slides.map((sl, i) => {
-		const b = h("button", { type: "button", class: "tour-dot", "data-slide": sl.id, "aria-label": `${i + 1}: ${sl.title}`, onclick: () => show(i) });
+		const b = h("button", { type: "button", class: "tour-dot", "data-slide": sl.id, "aria-label": t("tour.dot", { n: i + 1, title: sl.title }), onclick: () => show(i) });
 		dots.append(b);
 		return b;
 	});
@@ -209,20 +210,20 @@ function buildCard(slides) {
 		at = Math.max(0, Math.min(slides.length - 1, i));
 		const sl = slides[at];
 		dlg.dataset.slide = sl.id;
-		count.textContent = `${at + 1} of ${slides.length}`;
+		count.textContent = t("tour.count", { n: at + 1, total: slides.length });
 		title.textContent = sl.title;
 		text.textContent = sl.text;
 		clear(extra);
-		if (sl.accountOnly) extra.append(h("p", { class: "tour-note small", id: "tour-account-note" }, "With an account."));
-		if (sl.adds && sl.adds.length) extra.append(h("p", { class: "tour-adds small", id: "tour-adds" }, h("strong", {}, "An account adds "), listWords(sl.adds) + "."));
-		if (sl.signup) extra.append(h("p", {}, h("a", { class: "button primary", id: "tour-signup", href: "/signup" }, "Sign up")));
+		if (sl.accountOnly) extra.append(h("p", { class: "tour-note small", id: "tour-account-note" }, t("tour.with_account")));
+		if (sl.adds && sl.adds.length) extra.append(h("p", { class: "tour-adds small", id: "tour-adds" }, ...tParts("tour.account_adds", { adds: h("strong", {}, t("tour.adds_label")), list: listWords(sl.adds) })));
+		if (sl.signup) extra.append(h("p", {}, h("a", { class: "button primary", id: "tour-signup", href: "/signup" }, t("common.sign_up"))));
 		picture.setAttribute("aria-label", sl.alt);
 		dotButtons.forEach((b, j) => {
 			b.classList.toggle("on", j === at);
 			b.setAttribute("aria-current", j === at ? "step" : "false");
 		});
 		back.disabled = at === 0;
-		next.textContent = at === slides.length - 1 ? "Done" : "Next";
+		next.textContent = at === slides.length - 1 ? t("tour.done") : t("tour.next");
 		drawPicture(picture, sl, ++drawing, () => drawing);
 	}
 
@@ -231,8 +232,8 @@ function buildCard(slides) {
 	skip.addEventListener("click", () => dlg.close());
 	dlg.addEventListener("keydown", (ev) => {
 		if (ev.target.closest && ev.target.closest("input, textarea, select")) return;
-		if (ev.key === "ArrowRight") show(at + 1);
-		else if (ev.key === "ArrowLeft") show(at - 1);
+		if (ev.key === forwardKey) show(at + 1);
+		else if (ev.key === backKey) show(at - 1);
 		else return;
 		ev.preventDefault();
 	});
@@ -331,15 +332,15 @@ async function drawOpponents(host) {
 		h(
 			"div",
 			{ class: "tour-panel" },
-			h("div", { class: "field" }, h("label", {}, "Opponent")),
+			h("div", { class: "field" }, h("label", {}, t("setup.opponent"))),
 			h(
 				"div",
 				{ class: "stack" },
-				choice("A friend", "You get a link to share; the game starts when they join.", false),
-				bot ? choice(bot.label + " bot", bot.description, true) : choice("A bot", "A built-in opponent.", true),
-				choice("Two bots", "Nobody plays: you watch two bots play each other.", false)
+				choice(t("setup.a_friend"), t("setup.friend_desc"), false),
+				bot ? choice(t("setup.bot", { name: bot.label }), bot.description, true) : choice(t("tour.a_bot"), t("tour.a_bot_desc"), true),
+				choice(t("setup.two_bots"), t("setup.two_bots_desc"), false)
 			),
-			h("div", { class: "row" }, h("button", { type: "button", class: "primary" }, "Create Game"))
+			h("div", { class: "row" }, h("button", { type: "button", class: "primary" }, t("setup.create_game")))
 		)
 	);
 }
@@ -361,8 +362,8 @@ async function drawRules(host) {
 		h(
 			"div",
 			{ class: "tour-panel tour-rules" },
-			h("div", { class: "dialog-head" }, h("h2", {}, rulesIcon(18), " Hex: Rules")),
-			h("div", { class: "tabs" }, h("button", { type: "button", class: "tab", "aria-selected": "true" }, "Rules"), h("button", { type: "button", class: "tab", "aria-selected": "false" }, "Controls")),
+			h("div", { class: "dialog-head" }, h("h2", {}, rulesIcon(18), " ", t("tour.hex_rules"))),
+			h("div", { class: "tabs" }, h("button", { type: "button", class: "tab", "aria-selected": "true" }, t("setup.rules")), h("button", { type: "button", class: "tab", "aria-selected": "false" }, t("tour.controls"))),
 			h("div", { class: "md" }, renderMarkdown(RULES_SAMPLE, { idPrefix: "tour-rules" }).node)
 		)
 	);
@@ -375,9 +376,9 @@ async function drawTable(host) {
 	const gi = await info(tak.id);
 	const slot = h("div", { class: "tour-board" });
 	host.append(
-		h("div", { class: "status-bar your-impulse tour-status" }, h("strong", {}, "Your turn"), " · move your capstone, or place a stone"),
+		h("div", { class: "status-bar your-impulse tour-status" }, h("strong", {}, t("games.your_turn")), " · " + t("tour.tak_status")),
 		slot,
-		h("div", { class: "row tour-actions" }, h("button", { type: "button", class: "ghost small" }, "Back"), h("button", { type: "button", class: "primary small" }, "Submit"))
+		h("div", { class: "row tour-actions" }, h("button", { type: "button", class: "ghost small" }, t("tour.back")), h("button", { type: "button", class: "primary small" }, t("tour.submit")))
 	);
 	renderBoard(slot, gi, { cells: gi.preview || gi.start.cells, flipped: false, interactive: true, showCoords: true, selected: "c2", targets: new Set(["c1", "b2", "d2"]), lastMove: ["d4"] }, {});
 }
@@ -397,8 +398,8 @@ async function drawPuzzle(host) {
 				{ class: "puzzle-card" },
 				slot,
 				h("div", { class: "puzzle-title" }, p.title.split(":")[0]),
-				h("div", { class: "small muted" }, p.win_in === 1 ? "Win at once" : `Win in ${p.win_in}`),
-				h("button", { class: "primary", type: "button" }, "Solve")
+				h("div", { class: "small muted" }, p.win_in === 1 ? t("home.win_at_once") : t("home.win_in", { n: p.win_in })),
+				h("button", { class: "primary", type: "button" }, t("home.solve"))
 			)
 		)
 	);
@@ -407,15 +408,15 @@ async function drawPuzzle(host) {
 
 async function drawAnalysis(host) {
 	const rows = [
-		{ label: "White (MCTS)", color: "var(--accent)", value: 0.58, lo: 0.52, hi: 0.64 },
-		{ label: "Black (Minimax)", color: "var(--muted)", value: 0.42, lo: 0.36, hi: 0.48 },
+		{ label: t("tour.white_mcts"), color: "var(--accent)", value: 0.58, lo: 0.52, hi: 0.64 },
+		{ label: t("tour.black_minimax"), color: "var(--muted)", value: 0.42, lo: 0.36, hi: 0.48 },
 	];
 	host.append(
 		h(
 			"div",
 			{ class: "tour-panel" },
-			h("h3", {}, "Tak (5×5) · 200 games"),
-			h("p", { class: "small muted" }, "How often each side won, with a line at an even share."),
+			h("h3", {}, t("tour.tak_200")),
+			h("p", { class: "small muted" }, t("tour.even_share")),
 			rateBars(rows, { marker: 0.5, width: 520, rowH: 40 })
 		)
 	);
@@ -424,7 +425,7 @@ async function drawAnalysis(host) {
 async function drawMyGames(host) {
 	const all = await defs();
 	const pick = (fam, fallback) => (all.find((d) => familyWord(d) === fam && d.id === d.family) || all.find((d) => familyWord(d) === fam) || all[fallback] || all[0] || { id: fam }).id;
-	const you = "You";
+	const you = t("setup.you");
 	const now = Date.now();
 	const row = (def, code, status, impulse, other, ago, extra = {}) =>
 		gameRow(
@@ -436,12 +437,12 @@ async function drawMyGames(host) {
 			() => {}
 		);
 	host.append(
-		h("div", { class: "dialog-head" }, h("h2", {}, gamesIcon(18), " Active Games")),
+		h("div", { class: "dialog-head" }, h("h2", {}, gamesIcon(18), " ", t("bar.active_games"))),
 		h(
 			"ul",
 			{ class: "my-games" },
 			row(pick("tak", 0), "K7QM", "active", 1, "Ana", 3 * 60000),
-			row(pick("hex", 1), "B2XR", "active", 2, "Tactical bot", 40 * 60000),
+			row(pick("hex", 1), "B2XR", "active", 2, t("tour.tactical_bot"), 40 * 60000),
 			row(pick("go", 2), "P9DW", "waiting", 1, "", 2 * 3600000, { lobby: true, seats: [{ seat: 1, name: you }, { seat: 2, name: "" }] })
 		)
 	);
@@ -454,9 +455,9 @@ async function drawCompete(host) {
 		["3", "@mei", "1690", "52"],
 	];
 	const badge = {
-		badge: "tour.sample",
-		name: "Against the Odds",
-		description: "Win a game you were losing by a long way.",
+		badge: "tour.sample-badge",
+		name: t("tour.sample_badge"),
+		description: t("tour.sample_badge_desc"),
 		ways: { people: true },
 		award: { game: "Hex", awarded_at: new Date(Date.now() - 86400000).toISOString() },
 	};
@@ -464,7 +465,7 @@ async function drawCompete(host) {
 		h(
 			"div",
 			{ class: "tour-panel" },
-			h("table", { class: "data" }, h("thead", {}, h("tr", {}, ["", "Player", "Rating", "Rated games"].map((t) => h("th", {}, t)))), h("tbody", {}, rows.map((r) => h("tr", {}, r.map((c) => h("td", {}, c)))))),
+			h("table", { class: "data" }, h("thead", {}, h("tr", {}, ["", t("rating.player"), t("rating.rating"), t("rating.games")].map((head) => h("th", {}, head)))), h("tbody", {}, rows.map((r) => h("tr", {}, r.map((c) => h("td", {}, c)))))),
 			h("ul", { class: "badge-list tour-badges" }, badgeItem(badge))
 		)
 	);
@@ -481,8 +482,8 @@ async function drawFriends(host) {
 			h(
 				"div",
 				{ class: "tour-dm" },
-				h("div", { class: "row" }, h("strong", {}, "@ana"), h("span", { class: "spacer" }), h("button", { type: "button", class: "small" }, "Call"), h("button", { type: "button", class: "small primary" }, "Invite to game")),
-				h("ol", { class: "chat-log tour-dm-lines small" }, line("@ana", "Rematch tonight?"), line("You", "Yes! Hex this time.", true))
+				h("div", { class: "row" }, h("strong", {}, "@ana"), h("span", { class: "spacer" }), h("button", { type: "button", class: "small" }, t("dm.call")), h("button", { type: "button", class: "small primary" }, t("dm.invite"))),
+				h("ol", { class: "chat-log tour-dm-lines small" }, line("@ana", t("tour.rematch")), line(t("setup.you"), t("tour.hex_this_time"), true))
 			)
 		)
 	);
@@ -490,20 +491,20 @@ async function drawFriends(host) {
 
 async function drawMuster(host) {
 	const day = (d, hour) => {
-		const t = new Date();
-		t.setDate(t.getDate() + d);
-		t.setHours(hour, 0, 0, 0);
-		return t.toLocaleString([], { weekday: "long", hour: "numeric", minute: "2-digit" });
+		const at = new Date();
+		at.setDate(at.getDate() + d);
+		at.setHours(hour, 0, 0, 0);
+		return at.toLocaleString(lang, { weekday: "long", hour: "numeric", minute: "2-digit" });
 	};
 	const slot = (when, n, mine, best = false) =>
-		h("li", { class: best ? "tour-best" : null }, h("label", { class: "check" }, h("input", { type: "checkbox", checked: mine }), h("span", {}, when)), h("span", { class: "small muted" }, `${n} of 3`));
+		h("li", { class: best ? "tour-best" : null }, h("label", { class: "check" }, h("input", { type: "checkbox", checked: mine }), h("span", {}, when)), h("span", { class: "small muted" }, t("lobby.n_of", { n, total: 3 })));
 	host.append(
 		h(
 			"div",
 			{ class: "lobby-schedule", "data-status": "polling" },
-			h("h3", {}, "Muster: which times can you make?"),
+			h("h3", {}, t("lobby.muster_poll")),
 			h("ul", { class: "schedule-slots" }, slot(day(1, 19), 2, true), slot(day(2, 20), 3, true, true), slot(day(4, 18), 1, false)),
-			h("p", { class: "small muted" }, "@ana: answered · @kofi: answered")
+			h("p", { class: "small muted" }, [t("lobby.answered", { handle: "@ana" }), t("lobby.answered", { handle: "@kofi" })].join(" · "))
 		)
 	);
 }
@@ -512,5 +513,5 @@ async function drawGuestKey(host) {
 	const { section, paint } = guestKeySection();
 	paint("guest");
 	section.hidden = false;
-	host.append(h("div", { class: "dialog-head" }, h("h2", {}, profileIcon(18), " Profile")), h("div", { class: "tour-panel" }, section));
+	host.append(h("div", { class: "dialog-head" }, h("h2", {}, profileIcon(18), " ", t("tour.profile"))), h("div", { class: "tour-panel" }, section));
 }

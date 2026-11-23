@@ -112,14 +112,18 @@ func TestWebLanguages_APhoneInArabicTurnsItsPagesTheOtherWay(t *testing.T) {
 // pseudo-locale (en-XA, whose every word is accented and bracketed): words left
 // out of the catalogs. Names, codes and the brand are not words to translate.
 const plainEnglish = `((sel) => {
-	const keep = /^(Bingle|GitHub|API|bingle|Buchholz|v?[0-9.]+|[A-Z0-9]{4,8}|bgg_…|https?:\/\/\S+|\[Size .*)$/s;
+	// Intl writes the pseudo-locale's dates in English: their months, days and AM/PM pass.
+	// Ana is a player the welcome tour's pictures show.
+	const dates = /^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?$|^(Mon|Tues?|Wed(nes)?|Thu(rs)?|Fri|Sat(ur)?|Sun)(day)?$|^[AP]M$/;
+	const keep = /^(Ana|Bingle|GitHub|API|bingle|Buchholz|v?[0-9.]+|[A-Z0-9]{4,8}|bgg_…|https?:\/\/\S+|\[Size .*)$/s;
 	// A board's or a card table's picture is the renderer's to describe (the game page's part).
-	const pictures = ".game-card-preview, .setup-preview, .puzzle-preview, #card-set-preview";
+	// A rules guide is a game's own content (#253), the welcome tour's sample of one too.
+	const pictures = ".game-card-preview, .setup-preview, .puzzle-preview, #card-set-preview, .tour-rules .md, .tour-board";
 	const accented = /[\u00C0-\u024F\u1E00-\u1EFF]/;
 	const words = (text) => text.split(/[\s·,:()\[\]]+/);
 	// A plain English word: not accented, not a handle, not the games' own (window.__content).
 	const english = (word) =>
-		/[A-Za-z]{2,}/.test(word) && !word.startsWith("@") && !keep.test(word) && !accented.test(word) &&
+		/[A-Za-z]{2,}/.test(word) && !word.startsWith("@") && !keep.test(word) && !dates.test(word) && !accented.test(word) &&
 		!(window.__content && window.__content.has(word.replace(/[.!?;"“”'’]+$/, "")));
 	const out = [];
 	for (const root of document.querySelectorAll(sel)) {
@@ -160,6 +164,7 @@ func learnContent(t *testing.T, ctx context.Context) {
 		}
 		add(await (await fetch("/api/bots")).json());
 		add(await (await fetch("/api/badges")).json().catch(() => null));
+		add(await (await fetch("/api/puzzles")).json().catch(() => null));
 		window.__content = words;
 		return words.size > 0;
 	})()`) {
@@ -331,4 +336,32 @@ func TestWebLanguages_TheOtherTabsAreTranslated(t *testing.T) {
 	}
 	waitJS(t, ctx, "the badges", `document.querySelector("#badges-list .badge-item")`, 20*time.Second)
 	check("the badges", "#panel-badges")
+}
+
+// So is every word of the welcome tour, its pictures included, for a guest on a
+// server with accounts (whose slides say what an account adds).
+func TestWebLanguages_TheWelcomeTourIsTranslated(t *testing.T) {
+	_, base := accountServer(t)
+	ctx, cancel := newChromedpContextWithTour(t, 120*time.Second)
+	defer cancel()
+	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1200, 900), chromedp.Navigate(base+"/healthz"), chromedp.Evaluate(`document.cookie = "bingle_lang=en-XA; path=/"; true`, nil), chromedp.Navigate(base+"/")); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "the tour", `document.querySelector("#welcome-tour[open]")`, 20*time.Second)
+	learnContent(t, ctx)
+	n := evalInt(t, ctx, `document.querySelectorAll("#welcome-tour .tour-dot").length`)
+	if n < 8 {
+		t.Fatalf("the tour has %d slides", n)
+	}
+	for i := 0; i < n; i++ {
+		id := evalString(t, ctx, `document.getElementById("welcome-tour").dataset.slide`)
+		waitJS(t, ctx, "the picture of "+id, `(() => { const st = document.querySelector("#tour-picture .tour-stage"); return st && st.childElementCount > 0; })()`, 15*time.Second)
+		time.Sleep(300 * time.Millisecond)
+		if got := evalString(t, ctx, plainEnglish+`("#welcome-tour")`); got != "" {
+			t.Errorf("slide %s: %s", id, got)
+		}
+		if i < n-1 {
+			clickSel(t, ctx, "#tour-next")
+		}
+	}
 }
