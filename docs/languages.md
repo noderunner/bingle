@@ -96,9 +96,12 @@ that each translation puts in the same values and has the same markup as English
   (draws, slow turns, votes, hints), the status bar and how a game ended, analysis and its dialogs, and the
   phone's pages. A game's own words in these (its seats, pieces, actions and page script) stay as the game has
   them. A message names its players inside `<bdi translate="no">` (`withSeatWords`), so no language touches them.
+- The rest of the game page: the move bar (`move.*`), when to be asked about a reaction (`react.*`), the
+  Auto-Play Timeout (`autoplay.*`), the history and the list of moves (`hist.*`), the options window's sections
+  (`options.*`) and the tutorial's card. The lines of the log are the game's own, as are a tutorial's lessons and
+  a game's contest panel; a notation's name (TPS, PTN) is marked `translate="no"`.
 
-Next, the rest of the game page (the move bar, reactions, auto-play, the history and its log, the options window
-and the tutorial's card in `game.js`; then the boards' descriptions for screen readers, which `render.js`
-writes, the cards and the display settings), then the remaining
+Next, the boards' descriptions for screen readers, which `render.js` writes, the cards and the display settings,
+then the remaining
 pages (account, administration, tournaments, batches, a player's page), then the mail and the calendar invitations,
 then the changelog in the help window (ADR 0141, *Left for its stage*).
