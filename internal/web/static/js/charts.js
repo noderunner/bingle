@@ -2,6 +2,7 @@
 // from the stylesheet's custom properties so both themes work.
 
 import { s } from "./util.js";
+import { t as tr } from "./i18n.js";
 
 const FONT = "font-size: 11px; fill: var(--muted)";
 
@@ -69,7 +70,7 @@ export function lineChart(series, { width = 640, height = 280, xLabel = "", yLab
 		bottom = 36;
 	const xs = series.flatMap((l) => l.points.map((p) => p[0]));
 	const ys = series.flatMap((l) => l.points.map((p) => p[1]));
-	if (!xs.length) return svg(width, 60, text(10, 30, "No data yet."));
+	if (!xs.length) return svg(width, 60, text(10, 30, tr("chart.no_data")));
 	const x0 = Math.min(...xs),
 		x1 = Math.max(...xs, x0 + 1);
 	const topY = yMax !== undefined ? yMax : Math.max(...ys, 1);
@@ -87,7 +88,7 @@ export function lineChart(series, { width = 640, height = 280, xLabel = "", yLab
 		if (!l.points.length) continue;
 		const d = l.points.map((p, i) => `${i ? "L" : "M"}${X(p[0]).toFixed(1)},${Y(p[1]).toFixed(1)}`).join(" ");
 		kids.push(s("path", { d, class: "line", style: `stroke:${l.color}` }, s("title", {}, l.label)));
-		for (const p of l.points) kids.push(s("circle", { cx: X(p[0]), cy: Y(p[1]), r: 2.6, style: `fill:${l.color}` }, s("title", {}, `${l.label}: ${p[1].toFixed(2)} (round ${p[0]})`)));
+		for (const p of l.points) kids.push(s("circle", { cx: X(p[0]), cy: Y(p[1]), r: 2.6, style: `fill:${l.color}` }, s("title", {}, tr("chart.point", { label: l.label, value: p[1].toFixed(2), round: p[0] }))));
 	}
 	return svg(width, height, ...kids);
 }

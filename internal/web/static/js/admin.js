@@ -1,16 +1,24 @@
 // The administration page (ADR 0071): who may do what, and invitations.
 
 import { api, ApiError, whoAmI } from "./api.js";
+import { t, tParts, lang } from "./i18n.js";
+
+// A capability or a kind of limit: the server's name for it, shown as code.
+const codeOf = (text) => {
+	const c = document.createElement("code");
+	c.textContent = text;
+	return c;
+};
 
 const el = (id) => document.getElementById(id);
 const say = (text, kind = "") => {
-	el("caps-result").textContent = text;
+	el("caps-result").replaceChildren(...(Array.isArray(text) ? text : [text]));
 	el("caps-result").className = "small " + kind;
 };
 
 function paint(m) {
 	el("caps-mode").textContent =
-		m.mode === "closed" ? "This server is closed: only signed-in members can play (BINGLE_AUTH_MODE)." : "Guests can play without an account (BINGLE_AUTH_MODE=hybrid).";
+		m.mode === "closed" ? t("admin.closed") : t("admin.hybrid");
 	el("caps-drift").hidden = !m.drift;
 	const rows = el("caps-rows");
 	rows.textContent = "";
@@ -29,15 +37,15 @@ function paint(m) {
 			box.type = "checkbox";
 			box.id = `cap-${cls}-${c.capability}`;
 			box.checked = !!c[cls];
-			box.setAttribute("aria-label", `${cls === "user" ? "Users" : "Guests"} may ${c.capability}`);
+			box.setAttribute("aria-label", t(cls === "user" ? "admin.users_may" : "admin.guests_may", { cap: c.capability }));
 			box.addEventListener("change", async () => {
 				box.disabled = true;
 				try {
 					paint(await api.setCap(cls, c.capability, box.checked));
-					say(`Saved: ${cls === "user" ? "users" : "guests"} ${box.checked ? "may" : "may not"} ${c.capability}.`);
+					say(tParts(`admin.saved_${cls === "user" ? "users" : "guests"}_${box.checked ? "may" : "not"}`, { cap: codeOf(c.capability) }));
 				} catch (err) {
 					box.checked = !box.checked;
-					say(err instanceof ApiError ? err.message : "That did not work.", "error");
+					say(err instanceof ApiError ? err.message : t("common.not_done"), "error");
 				} finally {
 					box.disabled = false;
 				}
@@ -59,18 +67,18 @@ function paint(m) {
 		const tr = document.createElement("tr");
 		const name = document.createElement("th");
 		name.scope = "row";
-		name.textContent = kind.replaceAll("_", " ");
+		name.append(codeOf(kind));
 		tr.append(name);
 		for (const cls of ["user", "guest"]) {
 			const td = document.createElement("td");
 			td.className = "num";
-			td.textContent = per[cls] === undefined ? "—" : per[cls].toLocaleString();
+			td.textContent = per[cls] === undefined ? "—" : per[cls].toLocaleString(lang);
 			tr.append(td);
 		}
 		limits.append(tr);
 	}
 	el("invite-state").textContent =
-		m.signup === "invite" ? "Signing up needs an invitation (BINGLE_SIGNUP=invite). Each link works once, for a week." : `Signing up is ${m.signup} (BINGLE_SIGNUP); invitations are for BINGLE_SIGNUP=invite.`;
+		m.signup === "invite" ? t("admin.invite_only") : t("admin.signup_is", { mode: m.signup });
 	el("invite-go").hidden = m.signup !== "invite";
 }
 
@@ -85,7 +93,7 @@ api.adminCaps()
 				const tr = document.createElement("tr");
 				const when = new Date(e.at);
 				const cells = [
-					["when", isNaN(when) ? e.at : when.toLocaleString()],
+					["when", isNaN(when) ? e.at : when.toLocaleString(lang)],
 					["who", e.account ? "@" + e.account : "—"],
 					["what", e.kind],
 					["detail", e.detail || ""],
@@ -97,11 +105,15 @@ api.adminCaps()
 						const tag = document.createElement("span");
 						tag.className = "event-kind" + (/fail|in-use/.test(v) ? " bad" : "");
 						tag.textContent = v;
+						// The kind is the server's word, as the log has it.
+						tag.translate = false;
 						td.append(tag);
 					} else {
 						td.textContent = v;
 					}
 					if (cls === "when") td.title = e.at;
+					// What the server logged in detail is its own words.
+					if (cls === "detail") td.translate = false;
 					tr.append(td);
 				}
 				rows.append(tr);
@@ -110,7 +122,7 @@ api.adminCaps()
 		});
 	})
 	.catch((err) => {
-		el("admin-refused").textContent = err instanceof ApiError ? err.message : "This page could not be read.";
+		el("admin-refused").textContent = err instanceof ApiError ? err.message : t("admin.not_read");
 		el("admin-refused").hidden = false;
 		// An administrator who only lacks the second factor gets the way to one.
 		whoAmI()
@@ -121,8 +133,8 @@ api.adminCaps()
 el("invite-go").addEventListener("click", async () => {
 	try {
 		const inv = await api.invite();
-		el("invite-link").textContent = `${location.origin}${inv.path} (until ${new Date(inv.expires).toLocaleString()})`;
+		el("invite-link").textContent = t("admin.invite_link", { link: location.origin + inv.path, until: new Date(inv.expires).toLocaleString(lang) });
 	} catch (err) {
-		el("invite-link").textContent = err instanceof ApiError ? err.message : "That did not work.";
+		el("invite-link").textContent = err instanceof ApiError ? err.message : t("common.not_done");
 	}
 });

@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"sync"
 	"testing"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/chromedp/chromedp"
 
+	"github.com/noderunner/bingle/internal/app"
 	"github.com/noderunner/bingle/internal/auth"
 	"github.com/noderunner/bingle/internal/session"
 )
@@ -567,4 +569,55 @@ func TestWebLanguages_TheAccountPagesAreTranslated(t *testing.T) {
 	signInChrome(t, ctx, base, ana.cookie(auth.SessionCookie))
 	check("the account", "/account", `document.querySelectorAll("#sessions-list li").length > 0 && document.getElementById("tf-state").textContent !== ""`)
 	check("your player page", "/players/ana", `!document.getElementById("player-badges-box").hidden`)
+}
+
+func TestWebLanguages_TheAdministrationAndBatchesAreTranslated(t *testing.T) {
+	cfg := newTestConfig(t)
+	cfg.Addr = "127.0.0.1:0"
+	a, err := app.New(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	registerFixtures(t, a)
+	t.Cleanup(func() { _ = a.Close() })
+	srv := httptest.NewServer(a.Router())
+	t.Cleanup(srv.Close)
+	b := newBrowser(t, srv.URL)
+	b.do("POST", "/auth/login", map[string]any{"handle": "admin", "password": auth.DevPassword}, nil)
+	b.do("POST", "/auth/password", map[string]any{"old": auth.DevPassword, "new": "the admin's own"}, nil)
+	var started struct {
+		ID int64 `json:"id"`
+	}
+	body := map[string]any{"base": "tic-tac-toe", "players": []map[string]any{{"bot": "tactical"}, {"bot": "random"}}, "games": 4}
+	if code := b.do("POST", "/api/batches", body, &started); code != 201 {
+		t.Fatalf("start a batch: %d", code)
+	}
+
+	ctx, cancel := newChromedpContext(t, 120*time.Second)
+	defer cancel()
+	signInChrome(t, ctx, srv.URL, b.cookie(auth.SessionCookie))
+	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1200, 900), chromedp.Navigate(srv.URL+"/healthz"), chromedp.Evaluate(`document.cookie = "bingle_lang=en-XA; path=/"; true`, nil)); err != nil {
+		t.Fatal(err)
+	}
+	check := func(what, path, ready string) {
+		t.Helper()
+		if path != "" {
+			if err := chromedp.Run(ctx, chromedp.Navigate(srv.URL+path)); err != nil {
+				t.Fatal(err)
+			}
+		}
+		waitJS(t, ctx, what, ready, 20*time.Second)
+		time.Sleep(300 * time.Millisecond)
+		if !evalBool(t, ctx, `!!window.__content`) {
+			learnContent(t, ctx)
+		}
+		if got := evalString(t, ctx, plainEnglish+`("header, main")`); got != "" {
+			t.Errorf("%s: %s", what, got)
+		}
+	}
+	check("the administration", "/admin", `!document.getElementById("events-card").hidden`)
+	clickSel(t, ctx, "#cap-guest-create_game")
+	check("a capability saved", "", `document.getElementById("caps-result").textContent !== ""`)
+	check("the batches", "/batches", `!!document.getElementById("batch-list")`)
+	check("a batch's report", fmt.Sprintf("/batches/%d", started.ID), `document.getElementById("batch-status") && document.getElementById("batch-status").className.includes("done") && !!document.getElementById("games-card")`)
 }

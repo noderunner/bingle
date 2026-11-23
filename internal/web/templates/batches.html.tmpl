@@ -6,19 +6,19 @@
 	<meta name="bingle-brand" content="{{brandName}}"{{if brandHasIcon}} data-icon="{{brandIconURL}}"{{end}}>
 	<meta name="bingle-language" content="{{.Chosen}}" data-browser="{{.Browser}}">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>Practice batches — {{brandName}}</title>
+	<title>{{t .Lang "batch.title"}} — {{brandName}}</title>
 	<link rel="icon" type="{{brandIconType}}" href="{{brandIconURL}}">
 	<link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
 	<header class="topbar">
 		<a class="brand" href="/"><span class="logo{{if brandHasIcon}} custom{{end}}"></span>{{brandName}}</a>
-		<a class="button ghost" href="/batches">Practice batches</a>
+		<a class="button ghost" href="/batches">{{t .Lang "batch.title"}}</a>
 		<span class="spacer"></span>
-		<span class="tagline">Bot practice and reports</span>
+		<span class="tagline">{{t .Lang "batch.tagline"}}</span>
 	</header>
 	<main class="page">
-		<div id="batch-root" data-batch-id="{{.ID}}"><p class="muted">Loading…</p></div>
+		<div id="batch-root" data-batch-id="{{.ID}}"><p class="muted">{{t .Lang "common.loading"}}</p></div>
 	</main>
 	<footer class="site-footer"><sub title="{{t .Lang "footer.version" "brand" brandFooter}}"><bdi>{{brandFooter}} v{{engineVersion}}</bdi> · <bdi>{{t .Lang "footer.license"}}</bdi> · <a href="https://github.com/noderunner/bingle" target="_blank" rel="noopener noreferrer">GitHub</a></sub></footer>
 	<!-- First, so a fault in any module below is reported (docs/observability.md). -->
