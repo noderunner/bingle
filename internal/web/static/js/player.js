@@ -8,6 +8,7 @@ import { installNav } from "./nav.js";
 import { api, whoAmI } from "./api.js";
 import { paintShelf } from "./badges.js";
 import { ratingText } from "./ratings.js";
+import { t, tParts } from "./i18n.js";
 
 installNav();
 installTopbar();
@@ -16,10 +17,17 @@ const handle = decodeURIComponent(window.location.pathname.split("/").filter(Boo
 const title = document.getElementById("player-title");
 const note = document.getElementById("player-note");
 title.textContent = "@" + handle;
-document.title = `${document.title.replace(/ — Player$/, "")} — @${handle}`;
+// The handle in a sentence: as it is, and whole in a sentence written right to left.
+const handleNode = () => {
+	const b = document.createElement("bdi");
+	b.translate = false;
+	b.textContent = "@" + handle;
+	return b;
+};
+document.title = `${document.title.slice(0, document.title.lastIndexOf(" — "))} — @${handle}`;
 
-function say(text) {
-	note.textContent = text;
+function say(...parts) {
+	note.replaceChildren(...parts);
 	note.hidden = false;
 }
 
@@ -47,7 +55,7 @@ function paintRatings() {
 async function paint() {
 	const me = await whoAmI().catch(() => null);
 	if (!me || me.kind !== "account") {
-		say("Sign in to see a player's badges.");
+		say(t("player.sign_in"));
 		paintRatings();
 		return;
 	}
@@ -55,12 +63,12 @@ async function paint() {
 	try {
 		held = (await api.playerBadges(handle)).badges.filter((b) => !b.hidden);
 	} catch (err) {
-		say(err.status === 404 ? `There is no player @${handle}.` : "Their badges could not be loaded: " + err.message);
+		say(...(err.status === 404 ? tParts("player.none", { handle: handleNode() }) : [t("player.not_loaded", { error: err.message })]));
 		return;
 	}
 	const self = me.handle && me.handle.toLowerCase() === handle.toLowerCase();
 	const mineHeld = self ? null : await api.playerBadges(me.handle).then((r) => r.badges).catch(() => []);
-	if (self) say("This is your page as other players see it. Your settings page also shows the badges you have yet to earn.");
+	if (self) say(t("player.yours"));
 	document.getElementById("player-badges-box").hidden = false;
 	await paintShelf(document.getElementById("player-badges"), { held, mineHeld });
 	paintRatings();

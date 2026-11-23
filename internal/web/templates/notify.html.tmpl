@@ -7,7 +7,7 @@
 	<meta name="bingle-language" content="{{.Chosen}}" data-browser="{{.Browser}}">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<meta name="referrer" content="no-referrer">
-	<title>{{brandName}} — {{if eq .Action "confirm"}}Confirm your email{{else}}Stop emails{{end}}</title>
+	<title>{{brandName}} — {{if eq .Action "confirm"}}{{t .Lang "mailpage.title_confirm"}}{{else}}{{t .Lang "mailpage.title_stop"}}{{end}}</title>
 	<link rel="icon" type="{{brandIconType}}" href="{{brandIconURL}}">
 	<link rel="stylesheet" href="/static/style.css">
 </head>
@@ -18,14 +18,14 @@
 	<main class="page narrow">
 		<section class="card" id="notify-card" data-action="{{.Action}}">
 			{{if eq .Action "confirm"}}
-			<h1>Confirm your email address</h1>
-			<p>Press the button to let {{brandName}} email this address when it is your turn in a game. Nothing happens until you do.</p>
-			<p class="muted small">If you did not ask for this, just close the page: the address is not used.</p>
-			<div class="row"><button type="button" class="primary" id="notify-go">Confirm</button></div>
+			<h1>{{t .Lang "mailpage.confirm_heading"}}</h1>
+			<p>{{t .Lang "mailpage.confirm_text" "brand" brandName}}</p>
+			<p class="muted small">{{t .Lang "mailpage.confirm_note"}}</p>
+			<div class="row"><button type="button" class="primary" id="notify-go">{{t .Lang "account.confirm"}}</button></div>
 			{{else}}
-			<h1>Stop emails from {{brandName}}</h1>
-			<p>Press the button to make sure {{brandName}} never emails this address again.</p>
-			<div class="row"><button type="button" class="primary" id="notify-go">Stop all emails</button></div>
+			<h1>{{t .Lang "mailpage.stop_heading" "brand" brandName}}</h1>
+			<p>{{t .Lang "mailpage.stop_text" "brand" brandName}}</p>
+			<div class="row"><button type="button" class="primary" id="notify-go">{{t .Lang "mailpage.stop_all"}}</button></div>
 			{{end}}
 			<p class="small" id="notify-result" role="status"></p>
 		</section>

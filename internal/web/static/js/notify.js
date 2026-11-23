@@ -1,4 +1,5 @@
 import { brandName } from "./util.js";
+import { t } from "./i18n.js";
 // The page behind the links in a notification mail: a button that POSTs the
 // token of the link. (Following a link alone changes nothing.)
 
@@ -9,7 +10,7 @@ const token = new URLSearchParams(location.search).get("t") || "";
 
 if (!token) {
 	go.disabled = true;
-	result.textContent = "This link is incomplete.";
+	result.textContent = t("account.incomplete");
 }
 
 go.addEventListener("click", async () => {
@@ -17,9 +18,9 @@ go.addEventListener("click", async () => {
 	try {
 		const resp = await fetch(`${location.pathname}?t=${encodeURIComponent(token)}`, { method: "POST" });
 		const body = await resp.json().catch(() => ({}));
-		if (!resp.ok) throw new Error(body.error || "That did not work.");
+		if (!resp.ok) throw new Error(body.error || t("common.not_done"));
 		result.className = "small";
-		result.textContent = card.dataset.action === "confirm" ? "Confirmed. You will get an email when it is your turn." : `Done. ${brandName()} will not email this address again.`;
+		result.textContent = card.dataset.action === "confirm" ? t("mailpage.confirmed") : t("mailpage.stopped", { brand: brandName() });
 		go.hidden = true;
 	} catch (err) {
 		result.className = "small error";

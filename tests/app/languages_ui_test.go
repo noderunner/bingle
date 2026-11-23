@@ -534,3 +534,37 @@ func TestWebLanguages_TheCardsAreTranslated(t *testing.T) {
 	waitJS(t, ctx, "the picture", `document.querySelector('#card-set-preview svg.ts-preview') !== null`, 5*time.Second)
 	check("the sets of cards", "#card-set-field")
 }
+
+func TestWebLanguages_TheAccountPagesAreTranslated(t *testing.T) {
+	a, base := membersServer(t)
+	ana := member(t, a, base, "ana")
+	ctx, cancel := newChromedpContext(t, 120*time.Second)
+	defer cancel()
+	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1200, 900), chromedp.Navigate(base+"/healthz"), chromedp.Evaluate(`document.cookie = "bingle_lang=en-XA; path=/"; true`, nil)); err != nil {
+		t.Fatal(err)
+	}
+	check := func(what, path, ready string) {
+		t.Helper()
+		if err := chromedp.Run(ctx, chromedp.Navigate(base+path)); err != nil {
+			t.Fatal(err)
+		}
+		waitJS(t, ctx, what, ready, 15*time.Second)
+		time.Sleep(300 * time.Millisecond)
+		if got := evalString(t, ctx, plainEnglish+`("main")`); got != "" {
+			t.Errorf("%s: %s", what, got)
+		}
+	}
+	// Signed out: the forms, and the messages of a link without its token.
+	check("signing in", "/login", `!!document.getElementById("login-go")`)
+	check("signing up", "/signup", `!!document.getElementById("signup-go")`)
+	check("a forgotten password", "/forgot", `!!document.getElementById("forgot-go")`)
+	check("a new password", "/account/reset", `document.getElementById("account-result").textContent !== ""`)
+	check("confirming an account", "/account/confirm", `document.getElementById("account-result").textContent !== ""`)
+	check("confirming an address", "/notify/confirm", `document.getElementById("notify-result").textContent !== ""`)
+	check("stopping the mail", "/notify/stop", `document.getElementById("notify-result").textContent !== ""`)
+	check("a player's page, signed out", "/players/ana", `!document.getElementById("player-note").hidden`)
+
+	signInChrome(t, ctx, base, ana.cookie(auth.SessionCookie))
+	check("the account", "/account", `document.querySelectorAll("#sessions-list li").length > 0 && document.getElementById("tf-state").textContent !== ""`)
+	check("your player page", "/players/ana", `!document.getElementById("player-badges-box").hidden`)
+}
