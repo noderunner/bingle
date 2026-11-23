@@ -28,7 +28,7 @@ import { themesFor, themeById } from "./themes.js";
 import { useCardSet } from "./card-sets.js";
 import { stepMoves, progress as tutorialProgress, isExpected, markFinished, allowed as tutorialAllowed, pagePart, scriptedMoveGroup } from "./tutorial.js";
 import { renderMarkdown } from "./markdown.js";
-import { t as tr, lang } from "./i18n.js";
+import { t as tr, lang, tParts } from "./i18n.js";
 
 installNav();
 
@@ -675,7 +675,7 @@ function activeBuilder() {
 
 function seatLabel(seat) {
 	const d = seatDef(seat);
-	return d ? d.label : `Seat ${seat}`;
+	return d ? d.label : tr("game.seat_n", { n: seat });
 }
 
 /** The CSS gradient of a seat of two colours, or null. `stop` writes each colour. */
@@ -3652,14 +3652,13 @@ let saveQueue = Promise.resolve();
 
 /** "Black Goat" for an open seat, "Black Goat (Bex)" for a named one. */
 function otherLabel(o) {
-	const faction = o.label || `Seat ${o.seat}`;
+	const faction = o.label || tr("game.seat_n", { n: o.seat });
 	// A bot is named after its faction already.
 	return o.name && !o.name.startsWith(faction) ? `${faction} (${o.name})` : o.name || faction;
 }
 
 function joinList(items) {
-	if (items.length < 2) return items.join("");
-	return items.slice(0, -1).join(", ") + " and " + items[items.length - 1];
+	return new Intl.ListFormat(lang).format(items);
 }
 
 /** The choice in force for one reaction: its own, else the general one. */
@@ -3674,12 +3673,12 @@ function askSentence(r, ability) {
 	const picked = new Set(c.ask_seats || []);
 	const who = (r.others || []).filter((o) => picked.has(o.seat)).map(otherLabel);
 	const when = [];
-	if (c.targeted) when.push("an action is aimed at you");
-	if (who.length) when.push(`${joinList(who)} acts`);
+	if (c.targeted) when.push(tr("react.when_targeted"));
+	if (who.length) when.push(tr("react.when_acts", { who: joinList(who) }));
 	let s;
-	if (c.ask_all) s = "Asked after every action.";
-	else if (when.length) s = `Asked when ${joinList(when)}.`;
-	else s = "Never asked.";
+	if (c.ask_all) s = tr("react.asked_all");
+	else if (when.length) s = tr("react.asked_when", { when: joinList(when) });
+	else s = tr("react.never");
 	return s;
 }
 
@@ -3699,7 +3698,7 @@ function helpModal(id, title, blocks) {
 	const old = document.getElementById(id);
 	if (old) old.remove();
 	const dlg = h("dialog", { id, class: "help-dialog", "aria-label": title });
-	const close = h("button", { type: "button", class: "primary", id: `${id}-close` }, "Got it");
+	const close = h("button", { type: "button", class: "primary", id: `${id}-close` }, tr("react.got_it"));
 	close.addEventListener("click", () => dlg.close());
 	dlg.append(h("h2", {}, title));
 	for (const b of blocks) {
@@ -3719,11 +3718,11 @@ function showTargetedHelp() {
 	const words = page().reactionHelp
 		? page().reactionHelp()
 		: [
-				"Reactions are abilities you can use on another player's turn. Each time another player acts, the game works out whether you could react, and would then wait for you.",
-				"With “When I'm targeted” on (it is by default) you are asked whenever an opponent's action is aimed at you, at something of yours or at a place where you have something.",
-				"When you are not targeted, your reaction is passed for you and the move list shows it as an automatic pass. Switch the option off to be asked less, or add “After any other player's action” or chosen players below to be asked more.",
+				tr("react.help_1"),
+				tr("react.help_2"),
+				tr("react.help_3"),
 		  ];
-	helpModal("ask-targeted-dialog", "When I'm targeted", words);
+	helpModal("ask-targeted-dialog", tr("react.targeted"), words);
 }
 
 /**
@@ -3760,7 +3759,7 @@ function buildReactionDock(host, r) {
 		h(
 			"p",
 			{ class: "small muted dock-intro" },
-			"Passed for you, unless you choose when to be asked:"
+			tr("react.intro")
 		)
 	);
 	for (const a of r.abilities) host.append(buildAbilityChoice(a, r));
@@ -3775,7 +3774,7 @@ function buildAbilityChoice(a, r) {
 			"div",
 			{ class: "dock-name", title: a.text },
 			h("strong", {}, a.name),
-			a.held ? null : h("span", { class: "muted small" }, " (not earned yet)")
+			a.held ? null : h("span", { class: "muted small" }, tr("react.not_earned"))
 		)
 	);
 
@@ -3786,8 +3785,8 @@ function buildAbilityChoice(a, r) {
 		h(
 			"div",
 			{ class: "ask-row" },
-			h("label", { class: "check", title: `Ask me about ${a.name} when an action is aimed at me or at something of mine` }, targeted, h("span", {}, "When I'm targeted")),
-			helpButton(`ask-${id}-help`, "What does “When I'm targeted” mean?", showTargetedHelp)
+			h("label", { class: "check", title: tr("react.targeted_title", { ability: a.name }) }, targeted, h("span", {}, tr("react.targeted"))),
+			helpButton(`ask-${id}-help`, tr("react.targeted_what"), showTargetedHelp)
 		)
 	);
 
@@ -3798,13 +3797,13 @@ function buildAbilityChoice(a, r) {
 		h(
 			"div",
 			{ class: "ask-row" },
-			h("label", { class: "check", title: `Ask me about ${a.name} after every action of every other player` }, everyone, h("span", {}, "After any other player's action"))
+			h("label", { class: "check", title: tr("react.all_title", { ability: a.name }) }, everyone, h("span", {}, tr("react.all")))
 		)
 	);
 
 	// Or only after some of the players.
 	const details = h("details", { class: "reactions", id: `reactions-${id}` });
-	details.append(h("summary", {}, "After chosen players' actions"));
+	details.append(h("summary", {}, tr("react.chosen")));
 	const list = h("div", { class: "auto-pass-list" });
 	for (const o of r.others || []) {
 		const input = h("input", { type: "checkbox", id: `ask-${id}-seat-${o.seat}` });
@@ -3877,7 +3876,7 @@ function saveReactions(patch, id) {
 			if (savesInFlight === 1) S.reactions = res;
 		} catch (err) {
 			reactionsEpoch++;
-			toast((err && err.message) || "The setting could not be saved.", "error");
+			toast((err && err.message) || tr("notify.not_saved"), "error");
 			if (savesInFlight === 1) {
 				// Fall back to what the server holds.
 				try {
@@ -3937,18 +3936,18 @@ function askShortcuts(rx) {
 			)
 		);
 	if (rx.targeted && c.targeted) {
-		stop("ask-stop-targeted", "when I'm targeted", `Stop asking me about ${rx.ability} when an action is aimed at me, as this one was`, () => ({ targeted: false }));
+		stop("ask-stop-targeted", tr("react.stop_targeted"), tr("react.stop_targeted_title", { ability: rx.ability }), () => ({ targeted: false }));
 	}
 	if (rx.trigger && (c.ask_seats || []).includes(rx.trigger)) {
-		stop("ask-stop-trigger", `after ${trigger}'s actions`, `Stop asking me about ${rx.ability} after ${trigger}'s actions`, () => ({
+		stop("ask-stop-trigger", tr("react.stop_trigger", { who: trigger }), tr("react.stop_trigger_title", { ability: rx.ability, who: trigger }), () => ({
 			ask_seats: (choiceFor(S.reactions, id).ask_seats || []).filter((s) => s !== rx.trigger),
 		}));
 	}
 	if (c.ask_all) {
-		stop("ask-stop-all", "after any action", `Stop asking me about ${rx.ability} after every other player's action`, () => ({ ask_all: false }));
+		stop("ask-stop-all", tr("react.stop_all"), tr("react.stop_all_title", { ability: rx.ability }), () => ({ ask_all: false }));
 	}
 	if (!buttons.length) return null;
-	return h("span", { class: "auto-pass-shortcuts small", id: "ask-shortcuts" }, h("span", { class: "muted" }, `Stop being asked about ${rx.ability}:`), ...buttons);
+	return h("span", { class: "auto-pass-shortcuts small", id: "ask-shortcuts" }, h("span", { class: "muted" }, tr("react.stop_asked", { ability: rx.ability })), ...buttons);
 }
 
 // ---------------------------------------------------------------------------
@@ -3975,10 +3974,10 @@ function splitTimeout(secs) {
 function timeoutText(secs) {
 	const t = splitTimeout(secs);
 	const parts = [];
-	if (t.days) parts.push(`${t.days} ${t.days === 1 ? "day" : "days"}`);
-	if (t.hours) parts.push(`${t.hours} ${t.hours === 1 ? "hour" : "hours"}`);
-	if (t.minutes) parts.push(`${t.minutes} ${t.minutes === 1 ? "minute" : "minutes"}`);
-	return parts.length ? joinList(parts) : "no time";
+	if (t.days) parts.push(tr("time.days", { n: t.days }));
+	if (t.hours) parts.push(tr("time.hours", { n: t.hours }));
+	if (t.minutes) parts.push(tr("time.minutes", { n: t.minutes }));
+	return parts.length ? joinList(parts) : tr("autoplay.no_time");
 }
 
 /** Loads this player's Auto-Play Timeout (people only: bots and spectators have none). */
@@ -3998,27 +3997,27 @@ async function loadAutoPlay() {
 }
 
 function autoplayState(a) {
-	if (!a.enabled) return "Off.";
+	if (!a.enabled) return tr("autoplay.off");
 	const wait = timeoutText(a.timeout_seconds);
 	if (a.deadline && isActive() && S.game.impulse_seat === S.me.seat) {
 		const at = new Date(a.deadline);
 		const left = at.getTime() - (Date.now() + S.skewMs);
-		return `On. A bot plays for you ${left > 0 ? "in " + formatClock(left) : "now"} unless you act.`;
+		return left > 0 ? tr("autoplay.on_in", { time: formatClock(left) }) : tr("autoplay.on_now");
 	}
-	return `On. A bot plays if you wait ${wait}.`;
+	return tr("autoplay.on_wait", { wait });
 }
 
 function showAutoPlayHelp() {
-	helpModal("autoplay-help-dialog", "Auto-Play Timeout", [
-		"Players do not always have the time to take their turn when it comes. With the Auto-Play Timeout on, the game does not wait for you for ever: when it is your turn to act — a turn of your own, or a reaction waiting for your answer — and you have not acted within the time you set, a tactical bot takes the turn for you.",
+	helpModal("autoplay-help-dialog", tr("autoplay.title"), [
+		tr("autoplay.help_1"),
 		[
-			"The wait is counted from the last move in the game: the one that made it your turn, or your own last decision. Every move you make, and every move the bot makes for you, starts the count again.",
-			"The bot plays the decisions of that turn, one after the other, until play passes to another player. Then the count starts over for your next turn.",
-			"It is the tactical bot — the same one you can add to an empty seat: sensible, not brilliant. It will play your seat as it sees fit.",
-			"Every move it makes for you is marked “auto-play” in the Moves tab, and the turn is marked in the History tab, so everyone can see who really played it.",
-			"You can switch it off, or change the time, whenever you like, even while it is your turn. It is off by default; when you switch it on it starts at 24 hours.",
+			tr("autoplay.help_2"),
+			tr("autoplay.help_3"),
+			tr("autoplay.help_4"),
+			tr("autoplay.help_5"),
+			tr("autoplay.help_6"),
 		],
-		"Dice that the bot rolled for you cannot be rolled again: you cannot take those moves back.",
+		tr("autoplay.help_7"),
 	]);
 }
 
@@ -4091,8 +4090,8 @@ function buildAutoPlay(host) {
 	const head = h(
 		"div",
 		{ class: "ask-row" },
-		h("label", { class: "check", title: "A tactical bot plays your turn if you take too long" }, on, h("span", {}, "Let a bot play if I take too long")),
-		helpButton("autoplay-help", "How does the Auto-Play Timeout work?", showAutoPlayHelp)
+		h("label", { class: "check", title: tr("autoplay.on_title") }, on, h("span", {}, tr("autoplay.on"))),
+		helpButton("autoplay-help", tr("autoplay.how"), showAutoPlayHelp)
 	);
 	const read = () => {
 		const num = (id) => Math.max(0, Math.floor(Number(host.querySelector(`#autoplay-${id}`).value) || 0));
@@ -4101,7 +4100,7 @@ function buildAutoPlay(host) {
 	const commit = () => {
 		const secs = read();
 		if (secs < AUTOPLAY_MIN || secs > AUTOPLAY_MAX) {
-			toast(secs < AUTOPLAY_MIN ? "Choose at least one minute." : "Choose at most 365 days.", "error");
+			toast(secs < AUTOPLAY_MIN ? tr("autoplay.min") : tr("autoplay.max"), "error");
 			return;
 		}
 		delete host.dataset.dirty;
@@ -4122,14 +4121,14 @@ function buildAutoPlay(host) {
 		});
 		return h("label", { class: "autoplay-field" }, input, h("span", {}, label));
 	};
-	const save = h("button", { type: "button", class: "small", id: "autoplay-save", disabled: true, title: "Use this time" }, "Set");
+	const save = h("button", { type: "button", class: "small", id: "autoplay-save", disabled: true, title: tr("autoplay.use_time") }, tr("autoplay.set"));
 	save.addEventListener("click", commit);
 	const row = h(
 		"div",
-		{ class: "autoplay-timeout", role: "group", "aria-label": "Timeout" },
-		field("days", "days", 365),
-		field("hours", "hours", 23),
-		field("minutes", "minutes", 59),
+		{ class: "autoplay-timeout", role: "group", "aria-label": tr("autoplay.timeout") },
+		field("days", tr("autoplay.days"), 365),
+		field("hours", tr("autoplay.hours"), 23),
+		field("minutes", tr("autoplay.minutes"), 59),
 		save
 	);
 	host.append(head, row, h("p", { class: "dock-state small", id: "autoplay-state", "aria-live": "polite" }));
@@ -4144,7 +4143,7 @@ function saveAutoPlay(patch) {
 		try {
 			S.autoPlayTimeout = await api.setAutoplay(code, S.me.name, patch);
 		} catch (err) {
-			toast((err && err.message) || "The setting could not be saved.", "error");
+			toast((err && err.message) || tr("notify.not_saved"), "error");
 			try {
 				S.autoPlayTimeout = await api.autoplay(code, S.me.name);
 			} catch (_) {
@@ -4170,8 +4169,8 @@ function expandToggle(key, label) {
 			class: "expand-toggle",
 			"data-expand": key,
 			"aria-expanded": open ? "true" : "false",
-			"aria-label": `${open ? "Hide" : "Show"} ${label}`,
-			title: `${open ? "Hide" : "Show"} ${label}`,
+			"aria-label": tr(open ? "game.hide" : "game.show", { what: label }),
+			title: tr(open ? "game.hide" : "game.show", { what: label }),
 			onclick: () => {
 				S.expanded = open ? null : key;
 				render();
@@ -4257,7 +4256,7 @@ function cardContext(v) {
 
 /** The board of terms of a card game with its round number. */
 function termsBoard(v, ctx) {
-	return h("div", { class: "ct-grid-wrap", id: "terms-board" }, h("div", { class: "ct-round small muted" }, `Round ${v.round} of ${v.rounds}`), choiceGrid(v.grid, ctx));
+	return h("div", { class: "ct-grid-wrap", id: "terms-board" }, h("div", { class: "ct-round small muted" }, tr("game.round_of", { round: v.round, rounds: v.rounds })), choiceGrid(v.grid, ctx));
 }
 
 /**
@@ -4333,12 +4332,12 @@ function handPanel(seat) {
 				kids = [pieceIcon(pc.shape, drawColor, 22)];
 				if (types.length > 1) kids.push(h("span", {}, pc.label));
 			}
-			const tip = tiles ? null : choosable ? `Place: ${pc.label}` : pc.label;
+			const tip = tiles ? null : choosable ? tr("move.place_piece", { piece: pc.label }) : pc.label;
 			let node;
 			if (mine) {
-				node = h("button", { class: classes.join(" "), "data-piece": pc.type, "aria-label": `${pc.label}: ${count} left`, disabled: !choosable && !isChosen, title: tip, onclick: () => choosePiece(pc.type) }, kids);
+				node = h("button", { class: classes.join(" "), "data-piece": pc.type, "aria-label": tr("move.left", { piece: pc.label, n: count }), disabled: !choosable && !isChosen, title: tip, onclick: () => choosePiece(pc.type) }, kids);
 			} else {
-				node = h("span", { class: classes.join(" "), "data-piece": pc.type, "aria-label": `${pc.label}: ${count} left`, title: tip, tabindex: tiles ? "0" : null }, kids);
+				node = h("span", { class: classes.join(" "), "data-piece": pc.type, "aria-label": tr("move.left", { piece: pc.label, n: count }), title: tip, tabindex: tiles ? "0" : null }, kids);
 			}
 			if (tiles) {
 				hoverCard(node, () =>
@@ -4364,9 +4363,9 @@ function moveBar() {
 	if (inAnalysis()) {
 		const a = S.analysis;
 		if (a.moves.length) {
-			bar.append(h("span", { class: "pending", id: "variation" }, "Line: " + a.moves.join(" ")));
+			bar.append(h("span", { class: "pending", id: "variation" }, tr("move.line", { moves: a.moves.join(" ") })));
 		} else {
-			bar.append(h("span", { class: "hint" }, "Play moves for either side to explore; nothing is sent to your opponent."));
+			bar.append(h("span", { class: "hint" }, tr("move.explore")));
 		}
 	}
 
@@ -4376,16 +4375,16 @@ function moveBar() {
 				"span",
 				{ class: "hint" },
 				tutorialLookingBack()
-					? "Looking back at an earlier step. Press Next to come forward again."
+					? tr("move.looking_back")
 					: isLive()
 					? S.me.seat
 						? ""
 						: S.game.status === "waiting"
 						? ""
 						: S.notYours
-						? `You are watching this game. ${S.notYours} plays from another browser or account: sign in as them there to play.`
-						: "You are watching this game."
-					: "Browsing history — the board is read-only."
+						? tr("move.watching_other", { name: S.notYours })
+						: tr("move.watching")
+					: tr("move.browsing")
 			)
 		);
 		const back = backButton();
@@ -4403,15 +4402,15 @@ function moveBar() {
 			h(
 				"span",
 				{ class: "move-actions" },
-				h("button", { class: "primary", id: "pass-confirm", onclick: confirm }, "Pass"),
-				h("button", { id: "back", class: "ghost", onclick: goBack, title: "Undo this choice, and choose again (Backspace)" }, "↶ Back")
+				h("button", { class: "primary", id: "pass-confirm", onclick: confirm }, tr("move.pass")),
+				h("button", { id: "back", class: "ghost", onclick: goBack, title: tr("move.undo_choice") }, tr("move.back"))
 			)
 		);
 		return bar;
 	}
 
 	if (acting && S.moveQueue) {
-		bar.append(moveQueueDisplay(), h("span", { class: "move-actions" }, h("button", { id: "back", class: "ghost", onclick: goBack, title: "Put these units back (Backspace)" }, "↶ Back")));
+		bar.append(moveQueueDisplay(), h("span", { class: "move-actions" }, h("button", { id: "back", class: "ghost", onclick: goBack, title: tr("move.put_back") }, tr("move.back"))));
 		return bar;
 	}
 
@@ -4434,7 +4433,7 @@ function moveBar() {
 			}
 			let label = def ? def.label : (rv && rv.labels && rv.labels[id]) || id;
 			if (id === "done" && rv && rv.reaction && rv.reaction.seat === acting) {
-				label = `Pass (do not use ${rv.reaction.ability})`;
+				label = tr("move.pass_reaction", { ability: rv.reaction.ability });
 			}
 			// The game's page script may say more on a button (what it is worth just now).
 			if (page().actionLabel) label = page().actionLabel(id, label, rv, acting);
@@ -4479,7 +4478,7 @@ function moveBar() {
 							title: look.onGate
 								? page().heldNote
 									? page().heldNote(look.label, b.gestures.some((st) => st.kind === "action" && st.value === "capture"))
-									: `${look.label}: choosing it gives up the place it holds`
+									: tr("move.gives_up_place", { piece: look.label })
 								: look.label,
 							onclick: () => choosePiece(type),
 						},
@@ -4508,14 +4507,14 @@ function moveBar() {
 	const actions = h("span", { class: "move-actions" });
 	if (inAnalysis()) {
 		actions.append(
-			h("button", { id: "analysis-back", class: "ghost", disabled: !S.analysis.moves.length, onclick: analysisBack }, "↶ Take back"),
-			h("button", { id: "analysis-import", class: "ghost", onclick: showImport, title: "Paste a move list to play out here" }, "Import moves…")
+			h("button", { id: "analysis-back", class: "ghost", disabled: !S.analysis.moves.length, onclick: analysisBack }, tr("move.take_back")),
+			h("button", { id: "analysis-import", class: "ghost", onclick: showImport, title: tr("move.import_title") }, tr("move.import"))
 		);
 	}
 	if (acting && b.manualGestures().length) {
-		actions.append(h("button", { id: "back", class: "ghost", onclick: goBack, title: "Undo last selection (Backspace)" }, "↶ Back"));
+		actions.append(h("button", { id: "back", class: "ghost", onclick: goBack, title: tr("move.undo_last") }, tr("move.back")));
 		// A move that is a word and a cell (Blooms), a piece and a place (Havannah), or anything on a map: Back is enough.
-		if (!pieceWord() && S.info.board.style !== "areas" && !placeOnlyImpulse()) actions.append(h("button", { id: "reset-move", class: "ghost", onclick: resetMove, title: "Clear the move (Esc)" }, "Reset"));
+		if (!pieceWord() && S.info.board.style !== "areas" && !placeOnlyImpulse()) actions.append(h("button", { id: "reset-move", class: "ghost", onclick: resetMove, title: tr("move.clear") }, tr("move.reset")));
 	}
 	// Taking back a step already sent: in the list of actions when there is one,
 	// else here. With a selection on the go, Back clears that first.
@@ -4529,8 +4528,8 @@ function moveBar() {
 		actions.append(
 			h(
 				"button",
-				{ id: "submit-move", class: "primary", onclick: submitMove, disabled: S.busy, title: "Play this move (Enter)" },
-				"Submit"
+				{ id: "submit-move", class: "primary", onclick: submitMove, disabled: S.busy, title: tr("move.play_this") },
+				tr("move.submit")
 			)
 		);
 	}
@@ -4551,8 +4550,8 @@ function backButton() {
 	const last = S.pending ? { notation: pendingSelections().at(-1), seat: S.me.seat } : S.moves[S.moves.length - 1];
 	const off = last && /^leave:[^@]+@([^>]+)>(.+)$/.exec(last.notation || "");
 	if (off && off[1] === off[2] && last.seat === S.me.seat) return null;
-	if (S.pending) return h("button", { id: "back", class: "ghost", onclick: goBack, title: "Take back the last part of this move (Backspace)" }, "↶ Back");
-	return h("button", { id: "back", class: "ghost", onclick: goBack, title: "Take back the last step of this turn (Backspace)" }, "↶ Back");
+	if (S.pending) return h("button", { id: "back", class: "ghost", onclick: goBack, title: tr("move.take_back_part") }, tr("move.back"));
+	return h("button", { id: "back", class: "ghost", onclick: goBack, title: tr("move.take_back_step") }, tr("move.back"));
 }
 
 /** The unit card the page knows for a seat's unit type, or null. */
@@ -4602,7 +4601,7 @@ function directionButton(id, rv) {
 			"data-action": id,
 			onclick: () => chooseAction(id),
 		},
-		h("span", { class: "dir-head" }, h("span", { class: "dir-glyph", "aria-hidden": "true" }, cw ? "↻" : "↺"), h("strong", {}, cw ? "Clockwise" : "Counter-clockwise")),
+		h("span", { class: "dir-head" }, h("span", { class: "dir-glyph", "aria-hidden": "true" }, cw ? "↻" : "↺"), h("strong", {}, cw ? tr("move.clockwise") : tr("move.counter_clockwise"))),
 		orderLine(cw ? rv.order.cw : rv.order.ccw)
 	);
 }
@@ -4611,7 +4610,7 @@ function directionButton(id, rv) {
 // carried group first), dimming those already dropped.
 function carryDisplay(b, carried, dropped) {
 	const origin = b.gestures[0] && b.gestures[0].kind === "pos" ? b.gestures[0].value : null;
-	const wrap = h("span", { class: "carry", id: "carry", title: `carrying ${carried}, ${carried - dropped} left to drop` });
+	const wrap = h("span", { class: "carry", id: "carry", title: tr("move.carrying", { n: carried, left: carried - dropped }) });
 	const stack = (origin && currentCells()[origin]) || [];
 	const group = stack.slice(Math.max(0, stack.length - carried));
 	group.forEach((pc, i) => {
@@ -4620,7 +4619,7 @@ function carryDisplay(b, carried, dropped) {
 		const holder = h("span", { class: "carry-piece" + (i < dropped ? " dropped" : "") }, icon);
 		wrap.append(holder);
 	});
-	wrap.append(h("span", { class: "small muted" }, `${carried - dropped} to drop`));
+	wrap.append(h("span", { class: "small muted" }, tr("move.carry_left", { n: carried - dropped })));
 	return wrap;
 }
 
@@ -4683,10 +4682,10 @@ function identityGate() {
 	const seats = S.game.seats || [];
 	const open = seats.find((s) => !s.name);
 	const card = h("div", { class: "card", id: "identity-gate" });
-	card.append(h("h2", {}, "Join this game"));
+	card.append(h("h2", {}, tr("game.join_title")));
 
 	if (open && S.game.status === "waiting") {
-		const input = h("input", { type: "text", id: "gate-name", placeholder: "Your name", value: lastName(), maxlength: 32, autocomplete: "nickname" });
+		const input = h("input", { type: "text", id: "gate-name", placeholder: tr("game.your_name"), value: lastName(), maxlength: 32, autocomplete: "nickname" });
 		const join = async () => {
 			const name = input.value.trim();
 			if (!name) {
@@ -4707,14 +4706,14 @@ function identityGate() {
 			if (ev.key === "Enter") join();
 		});
 		card.append(
-			h("div", { class: "row" }, input, h("button", { class: "primary", id: "gate-join", onclick: join }, `Play as ${seatLabel(open.seat)}`)),
-			h("p", { class: "small muted" }, "Or just watch below.")
+			h("div", { class: "row" }, input, h("button", { class: "primary", id: "gate-join", onclick: join }, tr("game.play_as", { seat: seatLabel(open.seat) }))),
+			h("p", { class: "small muted" }, tr("game.or_watch"))
 		);
 	}
 
 	const named = seats.filter((s) => s.name && !s.bot);
 	if (named.length) {
-		card.append(h("p", { class: "small muted" }, "Already playing? Continue as:"));
+		card.append(h("p", { class: "small muted" }, tr("game.continue_as")));
 		const row = h("div", { class: "row" });
 		for (const s of named) {
 			row.append(
@@ -4730,7 +4729,7 @@ function identityGate() {
 							render();
 						},
 					},
-					`${s.name} (${seatLabel(s.seat)})`
+					tr("game.name_seat", { name: s.name, seat: seatLabel(s.seat) })
 				)
 			);
 		}
@@ -4751,7 +4750,7 @@ function identityGate() {
 						render();
 					},
 				},
-				"Just watch"
+				tr("game.just_watch")
 			)
 		)
 	);
@@ -4789,7 +4788,7 @@ function addBotControl() {
 		return null;
 	}
 	if (!S.bots.length) return null;
-	const select = h("select", { id: "add-bot-select", "aria-label": "Bot to add" });
+	const select = h("select", { id: "add-bot-select", "aria-label": tr("game.bot_to_add") });
 	for (const b of S.bots) select.append(h("option", { value: b.id, title: b.description || null }, b.label));
 	const row = h(
 		"div",
@@ -4809,7 +4808,7 @@ function addBotControl() {
 					}
 				},
 			},
-			"Add bot to an open seat"
+			tr("game.add_bot")
 		)
 	);
 	return row;
@@ -4830,15 +4829,15 @@ function historyControls() {
 		h(
 			"div",
 			{ class: "history-controls" },
-			h("button", { class: "icon", id: "hist-first", title: "First position (Home)", disabled: cur === 0, onclick: () => viewMove(0) }, "⏮"),
-			h("button", { class: "icon", id: "hist-prev", title: "Previous move (←)", disabled: cur === 0, onclick: () => stepHistory(-1) }, "◀"),
-			h("button", { class: "icon", id: "hist-next", title: "Next move (→)", disabled: cur >= total, onclick: () => stepHistory(1) }, "▶"),
-			h("button", { class: "icon", id: "hist-last", title: "Latest position (End)", disabled: cur >= total, onclick: () => viewMove(null) }, "⏭")
+			h("button", { class: "icon", id: "hist-first", title: tr("hist.first"), disabled: cur === 0, onclick: () => viewMove(0) }, "⏮"),
+			h("button", { class: "icon", id: "hist-prev", title: tr("hist.prev"), disabled: cur === 0, onclick: () => stepHistory(-1) }, "◀"),
+			h("button", { class: "icon", id: "hist-next", title: tr("hist.next"), disabled: cur >= total, onclick: () => stepHistory(1) }, "▶"),
+			h("button", { class: "icon", id: "hist-last", title: tr("hist.last"), disabled: cur >= total, onclick: () => viewMove(null) }, "⏭")
 		),
 		h(
 			"button",
-			{ class: "ghost", id: "hist-play", style: "margin-top:0.4rem", disabled: total === 0, onclick: toggleAutoplay, title: "Step through the whole game" },
-			S.autoplay ? "⏸ Pause replay" : "↻ Replay game"
+			{ class: "ghost", id: "hist-play", style: "margin-top:0.4rem", disabled: total === 0, onclick: toggleAutoplay, title: tr("hist.play_title") },
+			S.autoplay ? tr("hist.pause") : tr("hist.replay")
 		)
 	);
 }
@@ -4865,17 +4864,17 @@ function showLogEnd() {
 function historyCard() {
 	const log = eventsPane();
 	const card = h("div", { class: "card side-moves", id: "history-card" });
-	const head = h("div", { class: "history-head" }, h("h3", {}, "History"));
+	const head = h("div", { class: "history-head" }, h("h3", {}, tr("game.history")));
 	card.append(head);
 	if (!log) {
 		card.append(movesPane(), historyControls());
 		return card;
 	}
 	const format = S.historyFormat || (store.get("bingle.historyFormat", "") || (store.get("bingle.historyTab", "") === "moves" ? "notation" : "friendly"));
-	const toggle = h("div", { class: "history-format", role: "group", "aria-label": "How the history is written" });
+	const toggle = h("div", { class: "history-format", role: "group", "aria-label": tr("hist.format") });
 	for (const [id, label, title] of [
-		["friendly", "Friendly", "What happened, in words"],
-		["notation", "Notation", "The moves, in the game's notation"],
+		["friendly", tr("hist.friendly"), tr("hist.friendly_title")],
+		["notation", tr("hist.notation"), tr("hist.notation_title")],
 	]) {
 		toggle.append(
 			h(
@@ -4916,31 +4915,31 @@ function initOptions() {
 	if (!host || optionsWin) return;
 	const rules = h(
 		"button",
-		{ id: "show-rules", class: "topbar-icon", onclick: () => S.info && openRules(S.info), title: "Rules — read the rules of this game", "aria-label": "Rules" },
+		{ id: "show-rules", class: "topbar-icon", onclick: () => S.info && openRules(S.info), title: tr("options.rules_title"), "aria-label": tr("setup.rules") },
 		rulesIcon()
 	);
 	const opts = h(
 		"button",
-		{ id: "open-options", class: "topbar-button", "aria-haspopup": "dialog", "aria-expanded": "false", title: "Settings, tools and the link to this game" },
+		{ id: "open-options", class: "topbar-button", "aria-haspopup": "dialog", "aria-expanded": "false", title: tr("options.button_title") },
 		h("span", { "aria-hidden": "true" }, "⚙ "),
-		"Options"
+		tr("options.button")
 	);
 	host.append(rules, opts);
 	optionsWin = createOptionsWindow({
-		title: "Game Options",
+		title: tr("options.title"),
 		onToggle: (open) => opts.setAttribute("aria-expanded", open ? "true" : "false"),
 	});
 	opts.addEventListener("click", () => optionsWin.toggle());
 	for (const [id, heading] of [
-		["reactions", "Reactions"],
-		["autoplay", "Auto-Play Timeout"],
-		["notify", "Email Notifications"],
-		["layers", "Map Layers"],
-		["display", "Display"],
-		["tools", "Tools"],
-		["share", "Share This Game"],
-		["table", "Table"],
-		["game", "Game"],
+		["reactions", tr("options.reactions")],
+		["autoplay", tr("autoplay.title")],
+		["notify", tr("options.notify")],
+		["layers", tr("options.layers")],
+		["display", tr("options.display")],
+		["tools", tr("options.tools")],
+		["share", tr("options.share")],
+		["table", tr("options.table")],
+		["game", tr("options.game")],
 	]) {
 		optionsWin.section(id, heading);
 	}
@@ -5009,9 +5008,9 @@ function refreshOptions() {
 		const extra = pageLayers();
 		w.update("layers", ["v5", JSON.stringify(extra)], (el) => {
 			el.append(
-				settingToggle("names", "opt-layer-names", "Area Names", "bingle.layer.names"),
+				settingToggle("names", "opt-layer-names", tr("options.area_names"), "bingle.layer.names"),
 				...extra.map(layerToggle),
-				settingToggle("units", "opt-layer-units", "Units", "bingle.layer.units")
+				settingToggle("units", "opt-layer-units", tr("options.units"), "bingle.layer.units")
 			);
 		});
 	}
@@ -5020,46 +5019,46 @@ function refreshOptions() {
 	w.update("display", [isRuleset(), S.settings.confirm, boardTheme(), S.settings.tileScale, areas, layoutChoice(), hexStyle()], (el) => {
 		if (areas) {
 			// The phone layout is picked by screen by default; a player may force either.
-			const layoutSel = h("select", { id: "opt-layout", "aria-label": "Page layout" });
+			const layoutSel = h("select", { id: "opt-layout", "aria-label": tr("options.page_layout") });
 			for (const [value, label] of LAYOUTS) layoutSel.append(h("option", { value, selected: layoutChoice() === value }, label));
 			layoutSel.addEventListener("change", () => {
 				setLayoutChoice(layoutSel.value);
 				render();
 			});
-			el.append(h("label", { class: "field" }, h("span", { class: "small" }, "Page Layout"), layoutSel));
+			el.append(h("label", { class: "field" }, h("span", { class: "small" }, tr("options.page_layout")), layoutSel));
 		}
-		el.append(settingToggle("confirm", "opt-confirm", "Confirm moves with Submit", "bingle.confirm"));
+		el.append(settingToggle("confirm", "opt-confirm", tr("options.confirm"), "bingle.confirm"));
 		if (!areas) {
-			el.append(settingToggle("coords", "opt-coords", "Coordinates", "bingle.coords"));
+			el.append(settingToggle("coords", "opt-coords", tr("options.coords"), "bingle.coords"));
 		}
 		el.append(
-			settingToggle("hints", "opt-hints", "Highlight legal moves", "bingle.hints"),
-			settingToggle("lastMove", "opt-lastmove", "Highlight last move", "bingle.lastMove"),
-			settingToggle("animate", "opt-animate", "Animate moves", "bingle.animate"),
-			...(page().battles ? [settingToggle("battleAnim", "opt-battle-anim", page().battleOption || "Battle animations", "bingle.battleAnim")] : [])
+			settingToggle("hints", "opt-hints", tr("options.hints"), "bingle.hints"),
+			settingToggle("lastMove", "opt-lastmove", tr("options.last_move"), "bingle.lastMove"),
+			settingToggle("animate", "opt-animate", tr("options.animate"), "bingle.animate"),
+			...(page().battles ? [settingToggle("battleAnim", "opt-battle-anim", page().battleOption || tr("options.battles"), "bingle.battleAnim")] : [])
 		);
 		if (hasHexStyles(S.info)) {
-			const styleSel = h("select", { id: "opt-hex-style", "aria-label": "Board style" });
-			for (const [value, label] of [["cells", "Hexagons"], ["grid", "Hex grid"]]) {
+			const styleSel = h("select", { id: "opt-hex-style", "aria-label": tr("options.board_style") });
+			for (const [value, label] of [["cells", tr("options.hexagons")], ["grid", tr("options.hex_grid")]]) {
 				styleSel.append(h("option", { value, selected: hexStyle() === value }, label));
 			}
 			styleSel.addEventListener("change", () => {
 				store.set(hexStyleKey(), styleSel.value);
 				render();
 			});
-			el.append(h("label", { class: "field" }, h("span", { class: "small" }, "Board Style"), styleSel));
+			el.append(h("label", { class: "field" }, h("span", { class: "small" }, tr("options.board_style")), styleSel));
 		}
 		// A map of areas has its own look, which no board theme changes.
 		if (!isAreaMap()) {
-			const themeSel = h("select", { id: "opt-board", "aria-label": "Board theme" });
+			const themeSel = h("select", { id: "opt-board", "aria-label": tr("options.board_theme") });
 			const chosen = boardTheme();
-			for (const [value, label] of [["wood", "Wood"], ["slate", "Slate"], ["green", "Green felt"], ["paper", "Paper"]]) {
+			for (const [value, label] of [["wood", tr("options.theme_wood")], ["slate", tr("options.theme_slate")], ["green", tr("options.theme_green")], ["paper", tr("options.theme_paper")]]) {
 				themeSel.append(h("option", { value, selected: chosen === value }, label));
 			}
 			// Games played with stones also offer the illustrated themes.
 			const fancy = themesFor(S.info);
 			if (fancy.length) {
-				const group = h("optgroup", { label: "Illustrated themes" });
+				const group = h("optgroup", { label: tr("options.illustrated") });
 				for (const t of fancy) group.append(h("option", { value: t.id, selected: chosen === t.id }, t.label));
 				themeSel.append(group);
 			}
@@ -5070,11 +5069,11 @@ function refreshOptions() {
 				// The illustrated themes draw into the board: redraw it.
 				render();
 			});
-			el.append(h("label", { class: "field" }, h("span", { class: "small" }, "Board Theme"), themeSel));
+			el.append(h("label", { class: "field" }, h("span", { class: "small" }, tr("options.board_theme")), themeSel));
 		}
 		if ((S.info.pieces || []).some((p) => p.rules)) {
-			const sizeSel = h("select", { id: "opt-tile-scale", "aria-label": "Piece button size" });
-			for (const [value, label] of [[0.5, "Small"], [0.75, "Medium"], [1, "Large"], [1.25, "Larger"], [1.5, "Largest"]]) {
+			const sizeSel = h("select", { id: "opt-tile-scale", "aria-label": tr("options.tile_size") });
+			for (const [value, label] of [[0.5, tr("options.size_small")], [0.75, tr("options.size_medium")], [1, tr("options.size_large")], [1.25, tr("options.size_larger")], [1.5, tr("options.size_largest")]]) {
 				sizeSel.append(h("option", { value, selected: S.settings.tileScale === value }, label));
 			}
 			sizeSel.addEventListener("change", () => {
@@ -5082,7 +5081,7 @@ function refreshOptions() {
 				store.set("bingle.tileScale", S.settings.tileScale);
 				applyTheme();
 			});
-			el.append(h("label", { class: "field" }, h("span", { class: "small" }, "Piece Button Size"), sizeSel));
+			el.append(h("label", { class: "field" }, h("span", { class: "small" }, tr("options.tile_size")), sizeSel));
 		}
 		if ("Notification" in window) {
 			const notify = h("input", { type: "checkbox", id: "opt-notify", checked: notifyOn() });
@@ -5090,10 +5089,10 @@ function refreshOptions() {
 				const on = await setNotify(notify.checked);
 				if (notify.checked && !on) {
 					notify.checked = false;
-					toast("Notifications are blocked in this browser.", "error");
+					toast(tr("options.notify_blocked"), "error");
 				}
 			});
-			el.append(h("label", { class: "check" }, notify, h("span", {}, "Notify me on my turn and of badges")));
+			el.append(h("label", { class: "check" }, notify, h("span", {}, tr("options.notify_me"))));
 		}
 	});
 
@@ -5114,7 +5113,7 @@ function refreshOptions() {
 							render();
 						},
 					},
-					"⇅ Flip board"
+					tr("options.flip")
 				)
 			);
 		}
@@ -5125,20 +5124,20 @@ function refreshOptions() {
 					id: "analyze",
 					disabled: inAnalysis() || (isLive() && S.game.status !== "active"),
 					onclick: startAnalysis,
-					title: "Try out moves for both sides without playing them",
+					title: tr("options.analyze_title"),
 				},
-				"Analyze"
+				tr("options.analyze")
 			),
 			...(canHint()
-				? [h("button", { id: "hint", disabled: S.hintBusy, onclick: askHint, title: "Ask a bot what it would play" }, S.hintBusy ? "Thinking…" : "Hint")]
+				? [h("button", { id: "hint", disabled: S.hintBusy, onclick: askHint, title: tr("options.hint_title") }, S.hintBusy ? tr("options.thinking") : tr("options.hint"))]
 				: []),
-			h("button", { id: "save-image", onclick: saveBoardImage, title: "Download this position as an SVG image" }, "Image"),
+			h("button", { id: "save-image", onclick: saveBoardImage, title: tr("options.image_title") }, tr("options.image")),
 			...(S.info.notation === "ptn"
-				? [h("button", { id: "copy-tps", onclick: copyTPS, title: "Copy this position as TPS (for other Tak tools)" }, "TPS")]
+				? [h("button", { id: "copy-tps", onclick: copyTPS, title: tr("options.tps_title"), translate: "no" }, "TPS")]
 				: []),
-			h("a", { class: "button", id: "export-json", href: `/api/games/${encodeURIComponent(code)}/export`, target: "_blank", rel: "noopener" }, "Export"),
+			h("a", { class: "button", id: "export-json", href: `/api/games/${encodeURIComponent(code)}/export`, target: "_blank", rel: "noopener" }, tr("options.export")),
 			...(S.info.notation === "ptn"
-				? [h("a", { class: "button", id: "export-ptn", href: `/api/games/${encodeURIComponent(code)}/export?format=ptn`, download: `${code}.ptn` }, "PTN")]
+				? [h("a", { class: "button", id: "export-ptn", href: `/api/games/${encodeURIComponent(code)}/export?format=ptn`, download: `${code}.ptn`, translate: "no" }, "PTN")]
 				: [])
 		);
 		el.append(row);
@@ -5147,9 +5146,9 @@ function refreshOptions() {
 	// The invite link.
 	w.update("share", S.game.invite_url || "", (el) => {
 		const link = S.game.invite_url || location.origin + "/game/" + code;
-		const linkInput = h("input", { type: "text", readonly: true, value: link, id: "share-link", "aria-label": "Game link" });
+		const linkInput = h("input", { type: "text", readonly: true, value: link, id: "share-link", "aria-label": tr("options.link") });
 		el.append(
-			h("p", { class: "small muted" }, `Room ${code}`),
+			h("p", { class: "small muted" }, tr("lobby.room", { code })),
 			h(
 				"div",
 				{ class: "share-row" },
@@ -5169,7 +5168,7 @@ function refreshOptions() {
 							}
 						},
 					},
-					"Copy"
+					tr("options.copy")
 				)
 			)
 		);
@@ -5196,7 +5195,7 @@ function refreshOptions() {
 							render();
 						},
 					},
-					"Join this game"
+					tr("game.join_title")
 				)
 			);
 		}
@@ -5223,14 +5222,14 @@ function refreshOptions() {
 							{
 								id: "offer-draw",
 								disabled: S.busy || offered || opponentIsBot,
-								title: opponentIsBot ? "Bots do not answer draw offers" : "Propose a draw to your opponent",
+								title: opponentIsBot ? tr("options.bots_no_draw") : tr("options.offer_draw_title"),
 								onclick: () => doDraw("offer"),
 							},
-							"½ Offer draw"
+							tr("options.offer_draw")
 						)
 					);
 				}
-				const leave = playingAlone() ? "Give up" : twoParty ? "Resign" : "End game";
+				const leave = playingAlone() ? "give_up" : twoParty ? "resign" : "end_game";
 				row.append(
 					h(
 						"button",
@@ -5238,16 +5237,16 @@ function refreshOptions() {
 							id: "resign",
 							class: "danger",
 							disabled: S.busy,
-							title: twoParty || playingAlone() ? null : "Ends the game for every player, with no winner",
+							title: twoParty || playingAlone() ? null : tr("options.end_title"),
 							onclick: doResign,
 						},
-						S.confirmResign ? `Really ${leave.toLowerCase()}?` : leave
+						tr(`options.${S.confirmResign ? "really_" : ""}${leave}`)
 					)
 				);
 			}
 			if (row.childNodes.length) el.append(row);
 			const age = lastMoveAgeText();
-			if (S.moves.length) el.append(h("p", { class: "small muted", style: "margin-top:0.5rem" }, "Last move ", h("span", { id: "last-move-age" }, age)));
+			if (S.moves.length) el.append(h("p", { class: "small muted", style: "margin-top:0.5rem" }, ...tParts("options.last_move_age", { age: h("span", { id: "last-move-age" }, age) })));
 		}
 	);
 }
@@ -5494,8 +5493,8 @@ function logActor(seat, ply, mark = null) {
 		"div",
 		{ class: `log-actor color-${cssColor(colorOf(seat))}`, "data-seat": seat, "data-auto-play": mark ? "1" : null },
 		h("span", { class: `swatch color-${cssColor(colorOf(seat))}`, style: seatGradient(seat) ? `background: ${seatGradient(seat)}` : null }),
-		h("strong", {}, ...withSeatWords(sd ? sd.label : `Seat ${seat}`)),
-		who ? h("span", { class: "muted small" }, seat === S.me.seat && who === seatName(seat) ? ` · ${who} (you)` : ` · ${who}`) : null,
+		h("strong", {}, ...withSeatWords(sd ? sd.label : tr("game.seat_n", { n: seat }))),
+		who ? h("span", { class: "muted small" }, seat === S.me.seat && who === seatName(seat) ? tr("hist.who_you", { who }) : ` · ${who}`) : null,
 		mark
 	);
 }
@@ -5545,7 +5544,7 @@ function sinceRule(seq) {
 	return h(
 		"div",
 		{ class: "log-since", id: "history-since" },
-		h("button", { type: "button", class: "log-since-button", id: "history-rewind", title: "Go to your last move, and step on from there", disabled: !seq, onclick: () => jumpToMove(seq) }, "Since your last move")
+		h("button", { type: "button", class: "log-since-button", id: "history-rewind", title: tr("hist.since_title"), disabled: !seq, onclick: () => jumpToMove(seq) }, tr("hist.since"))
 	);
 }
 
@@ -5603,7 +5602,7 @@ function eventsPane() {
 	const card = h("div", { class: "history-pane", id: "history-pane" });
 	const box = h("div", { class: "events", id: "events" });
 	if (!entries.length) {
-		box.append(h("p", { class: "muted small empty-history", id: "history-empty" }, "Nothing to tell yet. What the other players do between your moves is narrated here."));
+		box.append(h("p", { class: "muted small empty-history", id: "history-empty" }, tr("hist.empty")));
 	}
 	// Only the viewer's own turn is told after the mark: nobody else has said
 	// anything since.
@@ -5622,11 +5621,11 @@ function eventsPane() {
 		return !!(mv && mv.auto_play);
 	};
 	const badge = (all) =>
-		h("span", { class: "badge auto-play", title: "A tactical bot played this for the player: their Auto-Play Timeout ran out" }, all ? "auto-play" : "partly auto-play");
+		h("span", { class: "badge auto-play", title: tr("hist.auto_play_title") }, all ? tr("hist.auto_play") : tr("hist.partly_auto_play"));
 	for (const g of groups) {
 		if (g.mark) {
 			box.append(sinceRule(mark && mark.ply));
-			if (quiet) box.append(h("p", { class: "muted small empty-history", id: "history-quiet" }, "Nothing new from the others since your last move."));
+			if (quiet) box.append(h("p", { class: "muted small empty-history", id: "history-quiet" }, tr("hist.quiet_others")));
 		}
 		const all = g.entries.every(botPlayed);
 		const some = g.entries.some(botPlayed);
@@ -5638,9 +5637,9 @@ function eventsPane() {
 			const auto = botPlayed(e);
 			e.lines.forEach((line, i) => {
 				// A new round starts a new section of the log.
-				const round = /^—\s*(Round\s+\d+)\s*—$/.exec(line);
+				const round = /^—\s*Round\s+(\d+)\s*—$/.exec(line);
 				if (round) {
-					box.append(h("div", { class: "log-round", role: "separator" }, h("span", {}, round[1])));
+					box.append(h("div", { class: "log-round", role: "separator" }, h("span", {}, tr("game.round_n", { n: Number(round[1]) }))));
 					group = h("ul", { class: turnClass });
 					box.append(group);
 					return;
@@ -5649,14 +5648,14 @@ function eventsPane() {
 				if (auto) {
 					li.classList.add("auto-play");
 					// The turn's header says it when the whole turn was the bot's.
-					if (i === 0 && !all) li.append(" ", h("span", { class: "badge auto-play small" }, "auto-play"));
+					if (i === 0 && !all) li.append(" ", h("span", { class: "badge auto-play small" }, tr("hist.auto_play")));
 				}
 				group.append(li);
 			});
 		}
 	}
 	if (markSeen && !mark) {
-		box.append(sinceRule(null), h("p", { class: "muted small empty-history", id: "history-quiet" }, "Nothing new since your last move."));
+		box.append(sinceRule(null), h("p", { class: "muted small empty-history", id: "history-quiet" }, tr("hist.quiet")));
 	}
 	card.append(box);
 	// Open on what is new: the rule marking the viewer's last move at the top,
@@ -5680,7 +5679,7 @@ function moveList() {
 	// The steps of the turn being played are not moves yet.
 	const moves = S.moves.slice(0, S.moves.length - openSteps());
 	if (!moves.length) {
-		list.append(h("li", { class: "empty-row" }, h("span", { class: "empty" }, "No moves yet.")));
+		list.append(h("li", { class: "empty-row" }, h("span", { class: "empty" }, tr("hist.no_moves"))));
 		return list;
 	}
 	const cur = isLive() ? S.moves.length : S.viewSeq;
@@ -5701,10 +5700,10 @@ function moveList() {
 						{
 							class: "mv" + (m.seq === cur ? " current" : ""),
 							"data-seq": m.seq,
-							title: `Move ${m.seq} by ${seatNameAt(m.seat, m.seq) || seatLabel(m.seat)}${m.auto ? " — passed automatically (auto-pass)" : ""}${m.auto_play ? " — played by a tactical bot: the Auto-Play Timeout ran out" : ""}`,
+							title: tr("hist.move_by", { n: m.seq, who: seatNameAt(m.seat, m.seq) || seatLabel(m.seat) }) + (m.auto ? tr("hist.auto_pass_note") : "") + (m.auto_play ? tr("hist.auto_play_note") : ""),
 							onclick: () => viewMove(m.seq >= S.moves.length ? null : m.seq),
 						},
-						m.notation + (m.auto ? " (auto)" : "") + (m.auto_play ? " (auto-play)" : "")
+						m.notation + (m.auto ? tr("hist.auto_short") : "") + (m.auto_play ? tr("hist.auto_play_short") : "")
 					)
 				)
 			);
@@ -5726,7 +5725,7 @@ function moveList() {
 					{
 						class: "mv" + (m.seq === cur ? " current" : ""),
 						"data-seq": m.seq,
-						title: `Move ${m.seq} by ${seatNameAt(m.seat, m.seq) || seatLabel(m.seat)}${m.created_at ? " — " + ago(m.created_at) : ""}${m.auto_play ? " — played by a tactical bot: the Auto-Play Timeout ran out" : ""}`,
+						title: tr("hist.move_by", { n: m.seq, who: seatNameAt(m.seat, m.seq) || seatLabel(m.seat) }) + (m.created_at ? " — " + ago(m.created_at) : "") + (m.auto_play ? tr("hist.auto_play_note") : ""),
 						onclick: () => viewMove(m.seq >= S.moves.length ? null : m.seq),
 					},
 					(m.notation || `${m.from}-${m.to}`) + (m.auto_play ? " 🤖" : "")
@@ -5792,14 +5791,14 @@ async function copyTPS() {
 			sim = await api.simulate(code, []);
 		}
 		if (!sim.tps) {
-			toast("No TPS for a finished position.", "error");
+			toast(tr("options.no_tps"), "error");
 			return;
 		}
 		try {
 			await navigator.clipboard.writeText(sim.tps);
-			toast("TPS copied: " + sim.tps);
+			toast(tr("options.tps_copied", { tps: sim.tps }));
 		} catch (_) {
-			window.prompt("Position as TPS:", sim.tps);
+			window.prompt(tr("options.tps_prompt"), sim.tps);
 		}
 	} catch (err) {
 		toast(err.message, "error");
@@ -5808,7 +5807,7 @@ async function copyTPS() {
 
 
 function debugPanel() {
-	const d = h("details", { class: "debug" }, h("summary", {}, "Raw state (debug)"));
+	const d = h("details", { class: "debug" }, h("summary", {}, tr("options.debug")));
 	d.append(
 		h(
 			"pre",
@@ -6024,12 +6023,12 @@ function tutorialCard() {
 	);
 	if (p.offScript) {
 		card.append(
-			h("p", { id: "tutorial-off" }, "This game has left the tutorial's script, so it cannot guide you any further from here."),
+			h("p", { id: "tutorial-off" }, tr("tutorial.off_script")),
 			h(
 				"div",
 				{ class: "tutorial-actions" },
-				h("button", { type: "button", id: "tutorial-restart", onclick: tutorialRestart }, "Start the tutorial again"),
-				S.game.status === "active" ? h("button", { type: "button", class: "secondary", id: "tutorial-bot", onclick: tutorialFinishAgainstBot }, "Keep Playing") : null
+				h("button", { type: "button", id: "tutorial-restart", onclick: tutorialRestart }, tr("tutorial.restart")),
+				S.game.status === "active" ? h("button", { type: "button", class: "secondary", id: "tutorial-bot", onclick: tutorialFinishAgainstBot }, tr("tutorial.keep_playing")) : null
 			)
 		);
 		return card;
@@ -6043,9 +6042,9 @@ function tutorialCard() {
 	if (lookingBack) {
 		forward = () => tutorialGoTo(viewed + 1);
 	} else if (p.finished) {
-		card.append(h("p", { class: "tutorial-done", id: "tutorial-done" }, "Tutorial complete."));
-		if (t.next) actions.append(h("button", { type: "button", id: "tutorial-next-tutorial", onclick: tutorialStartNext }, "Start Next Tutorial"));
-		actions.append(h("a", { class: "button secondary", id: "tutorial-return", href: tutorialsHref() }, "Return to Tutorials"));
+		card.append(h("p", { class: "tutorial-done", id: "tutorial-done" }, tr("tutorial.complete")));
+		if (t.next) actions.append(h("button", { type: "button", id: "tutorial-next-tutorial", onclick: tutorialStartNext }, tr("tutorial.start_next")));
+		actions.append(h("a", { class: "button secondary", id: "tutorial-return", href: tutorialsHref() }, tr("tutorial.return")));
 	} else if (p.needsNext) {
 		forward = tutorialNext;
 		// A step to read may ask a question, and keep its answer here.
@@ -6053,11 +6052,11 @@ function tutorialCard() {
 	} else if (p.next && p.next.who === "learner") {
 		if (step.hint) actions.append(tutorialHint(step, p.step));
 	} else if (p.next) {
-		actions.append(h("p", { class: "muted small", id: "tutorial-wait" }, "Your opponent is moving…"));
+		actions.append(h("p", { class: "muted small", id: "tutorial-wait" }, tr("tutorial.opponent_moving")));
 	}
 	// Keep Playing is the tutorial's to offer (Step.keep_playing): from that lesson on.
 	const keep = !lookingBack && S.game.status === "active" && steps.slice(0, viewed + 1).some((s) => s.keep_playing);
-	if (keep) actions.prepend(h("button", { type: "button", id: "tutorial-bot", class: p.finished ? "" : "secondary", onclick: tutorialFinishAgainstBot }, "Keep Playing"));
+	if (keep) actions.prepend(h("button", { type: "button", id: "tutorial-bot", class: p.finished ? "" : "secondary", onclick: tutorialFinishAgainstBot }, tr("tutorial.keep_playing")));
 	if (actions.childNodes.length) card.append(actions);
 	card.append(tutorialFooter(steps.length, viewed, p.finished && !lookingBack, forward));
 	return card;
@@ -6067,16 +6066,16 @@ function tutorialCard() {
 function tutorialFooter(count, viewed, finished, forward) {
 	const last = viewed === count - 1;
 	const dots = h("div", { class: "tutorial-dots", id: "tutorial-count", "data-lesson": String(viewed + 1), "data-finished": finished ? "true" : "false" });
-	dots.append(h("span", { class: "sr-only" }, `Lesson ${viewed + 1} of ${count}`));
+	dots.append(h("span", { class: "sr-only" }, tr("tutorial.lesson_of", { n: viewed + 1, count })));
 	for (let i = 0; i < count; i++) dots.append(h("i", { class: i === viewed ? "on" : i < viewed ? "past" : "", "aria-hidden": "true" }));
 	const arrow = (id, label, glyph, onclick) =>
 		h("button", { type: "button", class: "icon-button tutorial-arrow", id, "aria-label": label, title: label, disabled: !onclick, onclick: onclick || null }, glyph);
 	return h(
 		"div",
 		{ class: "tutorial-footer" },
-		arrow("tutorial-back", "Back", "‹", viewed > 0 ? () => tutorialGoTo(viewed - 1) : null),
+		arrow("tutorial-back", tr("tour.back"), "‹", viewed > 0 ? () => tutorialGoTo(viewed - 1) : null),
 		dots,
-		arrow("tutorial-next", last && forward && !tutorialLookingBack() ? "Finish" : "Next", "›", forward)
+		arrow("tutorial-next", last && forward && !tutorialLookingBack() ? tr("tutorial.finish") : tr("tour.next"), "›", forward)
 	);
 }
 
@@ -6098,7 +6097,7 @@ async function tutorialStartNext() {
 /** A step's hint, or the button that shows it. */
 function tutorialHint(step, index) {
 	if (S.tut.hint === index) return h("p", { class: "tutorial-hint", id: "tutorial-hint" }, step.hint);
-	return h("button", { type: "button", class: "secondary", id: "tutorial-show-hint", onclick: () => ((S.tut.hint = index), render()) }, "Need a hint?");
+	return h("button", { type: "button", class: "secondary", id: "tutorial-show-hint", onclick: () => ((S.tut.hint = index), render()) }, tr("tutorial.need_hint"));
 }
 
 /** The position the current step shows instead of the game's (Step.show), or null. */

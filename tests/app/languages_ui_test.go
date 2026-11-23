@@ -152,7 +152,8 @@ func learnContent(t *testing.T, ctx context.Context) {
 	if !awaitBool(t, ctx, `(async () => {
 		const words = new Set();
 		const add = (v) => {
-			if (typeof v === "string") for (const w of v.split(/[\s·,:()\[\]]+/)) words.add(w.replace(/[.!?;"“”'’]+$/, ""));
+			// A tutorial's text is Markdown: its words are shown without the marks too.
+			if (typeof v === "string") for (const w of (v + " " + v.replace(/[*_#]/g, "")).split(/[\s·,:()\[\]]+/)) words.add(w.replace(/[.!?;"“”'’]+$/, ""));
 			else if (Array.isArray(v)) v.forEach(add);
 			else if (v && typeof v === "object") Object.values(v).forEach(add);
 		};
@@ -160,7 +161,11 @@ func learnContent(t *testing.T, ctx context.Context) {
 		add(defs);
 		for (const d of defs) {
 			add(await (await fetch("/api/game-defs/" + encodeURIComponent(d.id))).json().catch(() => null));
-			if (d.tutorials) add(await (await fetch("/api/game-defs/" + encodeURIComponent(d.id) + "/tutorials")).json().catch(() => null));
+			if (!d.tutorials) continue;
+			const tutorials = "/api/game-defs/" + encodeURIComponent(d.id) + "/tutorials";
+			const list = await (await fetch(tutorials)).json().catch(() => null);
+			add(list);
+			for (const tu of (list && list.tutorials) || []) add(await (await fetch(tutorials + "/" + encodeURIComponent(tu.id))).json().catch(() => null));
 		}
 		add(await (await fetch("/api/bots")).json());
 		add(await (await fetch("/api/badges")).json().catch(() => null));
@@ -453,4 +458,46 @@ func TestWebLanguages_ThePlayAreaIsTranslated(t *testing.T) {
 	openGameAs(t, ctx, base, over.RoomCode, "tak-5x5", "Alice")
 	waitJS(t, ctx, "the result", `document.getElementById("rematch")`, 15*time.Second)
 	check("the result", "#impulse-title, #status-message, #rematch, #players-card .seat-head")
+}
+
+func TestWebLanguages_TheMovesOptionsAndTutorialAreTranslated(t *testing.T) {
+	base := newRESTTestServer(t)
+	var game createGameResponse
+	doJSON(t, "POST", base+"/api/games", map[string]any{"game_def_id": "tak-5x5", "player_name": "Alice", "opponent": "random"}, &game)
+	ctx, cancel := newChromedpContext(t, 120*time.Second)
+	defer cancel()
+	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1400, 1000), chromedp.Navigate(base+"/healthz"), chromedp.Evaluate(`document.cookie = "bingle_lang=en-XA; path=/"; true`, nil)); err != nil {
+		t.Fatal(err)
+	}
+	check := func(what, sel string) {
+		t.Helper()
+		time.Sleep(500 * time.Millisecond)
+		if !evalBool(t, ctx, `!!window.__content`) {
+			learnContent(t, ctx)
+		}
+		if got := evalString(t, ctx, plainEnglish+`("`+sel+`")`); got != "" {
+			t.Errorf("%s: %s", what, got)
+		}
+	}
+	openGameAs(t, ctx, base, game.RoomCode, "tak-5x5", "Alice")
+	waitJS(t, ctx, "the board", `!!document.querySelector('#board .cell[data-position="a1"] .cell-hit')`, 15*time.Second)
+	check("the history before a move", "#history-card")
+	clickCell(t, ctx, "a1")
+	waitJS(t, ctx, "the move so far", `!!document.querySelector("#move-bar button")`, 10*time.Second)
+	check("the move bar", "#move-bar")
+	if evalBool(t, ctx, `!!document.getElementById("submit-move")`) {
+		clickSel(t, ctx, "#submit-move")
+	}
+	waitJS(t, ctx, "both moves", `document.querySelectorAll("#move-list .mv").length >= 2`, 15*time.Second)
+	check("the history", "#history-card")
+	check("the top bar's buttons", "#topbar-actions")
+	clickSel(t, ctx, "#open-options")
+	waitJS(t, ctx, "the options", `!document.getElementById("game-options").hidden`, 10*time.Second)
+	check("the options", "#game-options")
+	clickSel(t, ctx, "#resign")
+	check("the resign button", "#resign")
+
+	openTutorial(t, ctx, base)
+	waitJS(t, ctx, "the tutorial", `!!document.getElementById("tutorial-count")`, 15*time.Second)
+	check("the tutorial", "#tutorial")
 }
