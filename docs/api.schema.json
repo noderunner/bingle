@@ -2282,6 +2282,13 @@
         "aim": {
           "type": "string"
         },
+        "captures": {
+          "description": "Captures are the positions whose pieces the selection takes off the board, so a client can show them before the move is confirmed: absent for none, and in a game with secrets or for a selection that rolls or draws.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
         "count": {
           "type": "integer"
         },
@@ -2555,6 +2562,13 @@
             "null"
           ]
         },
+        "captures": {
+          "description": "Captures are every position the move took a piece from, in order: captured is the first, and a draughts chain or a Go capture takes several. Absent for none.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
         "color": {
           "type": "string"
         },
@@ -2646,6 +2660,12 @@
             "string",
             "null"
           ]
+        },
+        "captures": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
         },
         "clock": {
           "allOf": [
@@ -4314,9 +4334,9 @@
   },
   "$id": "https://github.com/noderunner/bingle/docs/api.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "description": "The requests, responses and WebSocket events of bingle's API, version 1.9.0. Generated from the Go types of the server: do not edit. Objects let unknown fields through: a client ignores those it does not know.",
+  "description": "The requests, responses and WebSocket events of bingle's API, version 1.10.0. Generated from the Go types of the server: do not edit. Objects let unknown fields through: a client ignores those it does not know.",
   "title": "Bingle API messages",
-  "x-api-version": "1.9.0",
+  "x-api-version": "1.10.0",
   "x-dm-events": {
     "badge": {
       "$ref": "#/$defs/BadgeEventData"

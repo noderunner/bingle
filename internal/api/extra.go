@@ -173,6 +173,11 @@ type legalMoveDTO struct {
 	Drops    []int           `json:"drops,omitempty"`
 	Aim      string          `json:"aim,omitempty"`
 	Gestures []state.Gesture `json:"gestures,omitempty"`
+	// Captures are the positions whose pieces the selection takes off the
+	// board, so a client can show them before the move is confirmed: absent
+	// for none, and in a game with secrets or for a selection that rolls or
+	// draws.
+	Captures []string `json:"captures,omitempty"`
 }
 
 func legalMoveDTOs(moves []session.SelectionOption) []legalMoveDTO {
@@ -191,7 +196,7 @@ func legalMoveDTOs(moves []session.SelectionOption) []legalMoveDTO {
 		for _, p := range lm.Selection.Path {
 			d.Path = append(d.Path, string(p))
 		}
-		d.Gestures = lm.Gestures
+		d.Gestures, d.Captures = lm.Gestures, lm.Captures
 		out[i] = d
 	}
 	return out

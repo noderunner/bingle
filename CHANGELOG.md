@@ -4,6 +4,14 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.125.0 - 2026-11-22
+
+### Bingle Core 0.125.0
+- A move you are about to make says which pieces it will capture, for apps to show them first (API 1.10.0)
+
+### Fist 0.1.4
+- A move records the pieces it captured
+
 ## 0.124.4 - 2026-11-22
 
 ### Bingle Core 0.124.4

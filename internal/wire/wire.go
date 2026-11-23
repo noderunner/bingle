@@ -3,7 +3,11 @@
 // and is defined once.
 package wire
 
-import "github.com/noderunner/bingle/internal/session"
+import (
+	"slices"
+
+	"github.com/noderunner/bingle/internal/session"
+)
 
 // Move is one move as clients see it: the "move" object of a make-move
 // response, an entry of the move history, and the last move of a game.
@@ -14,6 +18,10 @@ type Move struct {
 	From     string  `json:"from"`
 	To       string  `json:"to"`
 	Captured *string `json:"captured"`
+	// Captures are every position the move took a piece from, in order:
+	// captured is the first, and a draughts chain or a Go capture takes
+	// several. Absent for none.
+	Captures []string `json:"captures,omitempty"`
 
 	Action   string   `json:"action,omitempty"`
 	Piece    string   `json:"piece,omitempty"`
@@ -53,6 +61,7 @@ func MovesByImpulse(recs []session.MoveRecord, sincePly int) []Move {
 		if n := len(out); n > 0 && out[n-1].Ply == rec.Ply {
 			prev := out[n-1]
 			mv.Notation = prev.Notation + "; " + sel.Notation
+			mv.Captures = append(slices.Clone(prev.Captures), sel.Captures...)
 			mv.Selections = append(prev.Selections, sel)
 			out[n-1] = mv
 			continue
@@ -71,7 +80,7 @@ func MovesByImpulse(recs []session.MoveRecord, sincePly int) []Move {
 // MoveFromOutcome is the Move of a move that was just played.
 func MoveFromOutcome(o session.MoveOutcome) Move {
 	return Move{
-		Seq: o.Ply, Seat: o.Seat, Color: o.Color, From: o.From, To: o.To, Captured: o.Captured,
+		Seq: o.Ply, Seat: o.Seat, Color: o.Color, From: o.From, To: o.To, Captured: o.Captured, Captures: o.Captures,
 		Action: o.Action, Piece: o.Piece, Count: o.Count, Path: o.Path, Drops: o.Drops, Aim: o.Aim, Notation: o.Notation,
 		Auto: o.Auto, AutoPlay: o.AutoPlay, Locked: o.Locked, Ply: o.Ply,
 	}
@@ -92,7 +101,7 @@ func MovesFromOutcomes(os []session.MoveOutcome) []Move {
 // MoveFromRecord is the Move of a move read back from the game's history.
 func MoveFromRecord(rec session.MoveRecord) Move {
 	return Move{
-		Seq: rec.Seq, Seat: rec.Seat, Color: rec.Color, From: rec.From, To: rec.To, Captured: rec.Captured,
+		Seq: rec.Seq, Seat: rec.Seat, Color: rec.Color, From: rec.From, To: rec.To, Captured: rec.Captured, Captures: rec.Captures,
 		Action: rec.Action, Piece: rec.Piece, Count: rec.Count, Path: rec.Path, Drops: rec.Drops, Aim: rec.Aim, Notation: rec.Notation,
 		CreatedAt: rec.CreatedAt, Auto: rec.Auto, AutoPlay: rec.AutoPlay, Locked: rec.Locked, Ply: rec.Ply,
 	}

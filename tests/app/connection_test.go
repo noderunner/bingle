@@ -81,6 +81,8 @@ func dialPlaying(t *testing.T, base, room, name, role string) *websocket.Conn {
 }
 
 // readConnectionEvents collects the "connection" events of a socket on a channel.
+// It returns once the socket has had its "joined" message: the server subscribes
+// it to the room only after the handshake, so an event before then is missed.
 func readConnectionEvents(t *testing.T, base, room, name string) <-chan string {
 	t.Helper()
 	conn, err := dialWS(t, base, wsPath(room, name, true, "spectator", true))
@@ -88,6 +90,20 @@ func readConnectionEvents(t *testing.T, base, room, name string) <-chan string {
 		t.Fatalf("dial %s: %v", name, err)
 	}
 	t.Cleanup(func() { _ = conn.CloseNow() })
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	for {
+		_, b, err := conn.Read(ctx)
+		if err != nil {
+			t.Fatalf("%s's socket had no joined message: %v", name, err)
+		}
+		var ev struct {
+			Type string `json:"type"`
+		}
+		if json.Unmarshal(b, &ev) == nil && ev.Type == "joined" {
+			break
+		}
+	}
 	out := make(chan string, 64)
 	go func() {
 		for {

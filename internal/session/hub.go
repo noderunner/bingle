@@ -29,6 +29,7 @@ type MoveEventData struct {
 	From        string   `json:"from"`
 	To          string   `json:"to"`
 	Captured    *string  `json:"captured"`
+	Captures    []string `json:"captures,omitempty"`
 	Action      string   `json:"action,omitempty"`
 	Piece       string   `json:"piece,omitempty"`
 	Count       int      `json:"count,omitempty"`

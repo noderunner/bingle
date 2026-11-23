@@ -49,6 +49,8 @@ type MoveOutcome struct {
 	From     string
 	To       string
 	Captured *string
+	// Captures are every position the move captured; Captured is the first.
+	Captures []string
 
 	Action   string
 	Piece    string
@@ -329,6 +331,7 @@ func (m *Manager) applyAndRecordAs(ctx context.Context, compiled *catalog.Compil
 		v := string(*result.Captured)
 		capturedStr = &v
 	}
+	capturesStr := positionStrings(result.Captures)
 
 	// The pie rule (ADR 0056): a swap leaves the board untouched and changes
 	// who sits in which seat — recorded with the move, so the two can never
@@ -365,6 +368,7 @@ func (m *Manager) applyAndRecordAs(ctx context.Context, compiled *catalog.Compil
 		From:                string(result.Move.From),
 		To:                  string(result.Move.To),
 		Captured:            capturedStr,
+		Captures:            capturesStr,
 		ResultingBoardState: string(newStateJSON),
 		NextImpulseSeat:     result.NextImpulseSeat,
 		GameEnded:           result.GameEnded,
@@ -441,6 +445,7 @@ func (m *Manager) applyAndRecordAs(ctx context.Context, compiled *catalog.Compil
 		From:        string(shownMove.From),
 		To:          string(shownMove.To),
 		Captured:    capturedStr,
+		Captures:    capturesStr,
 		Action:      shownMove.Action,
 		Piece:       shownMove.Piece,
 		Count:       shownMove.Count,
@@ -495,6 +500,7 @@ func (m *Manager) applyAndRecordAs(ctx context.Context, compiled *catalog.Compil
 		From:            string(result.Move.From),
 		To:              string(result.Move.To),
 		Captured:        capturedStr,
+		Captures:        capturesStr,
 		Action:          shownMove.Action,
 		Piece:           shownMove.Piece,
 		Count:           shownMove.Count,

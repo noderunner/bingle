@@ -68,6 +68,23 @@ type HiddenInfo interface {
 	Determinize(game *catalog.CompiledGame, st *BoardState, viewer int, rng *rand.Rand) *BoardState
 }
 
+// Open is implemented by rulesets that implement HiddenInfo only to attach
+// their derived view: they keep nothing from any seat, so what a selection
+// would do may be worked out and shown (SelectionCaptures).
+type Open interface {
+	HidesNothing() bool
+}
+
+// keepsSecrets is HasSecrets, except for a ruleset that says it hides nothing.
+func keepsSecrets(game *catalog.CompiledGame) bool {
+	if rs, ok := RulesetOf(game); ok {
+		if o, ok := rs.(Open); ok && o.HidesNothing() {
+			return false
+		}
+	}
+	return HasSecrets(game)
+}
+
 // UndoGuard is implemented by rulesets where chance makes taking moves back
 // unfair: rewinding across a die roll would let a player see the dice and
 // choose again.
