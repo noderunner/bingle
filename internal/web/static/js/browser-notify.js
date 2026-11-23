@@ -6,6 +6,7 @@
 
 import { h, store, brandName } from "./util.js";
 import { whoAmI } from "./api.js";
+import { t } from "./i18n.js";
 
 const KEY = "bingle.notify";
 const OFFERED_KEY = "bingle.notifyOffered";
@@ -69,13 +70,13 @@ export async function offerNotify() {
 	};
 	const card = h(
 		"div",
-		{ class: "notify-offer card", id: "notify-offer", role: "region", "aria-label": "Notifications" },
-		h("p", {}, `${brandName()} can tell you when it's your turn or you earn a badge, while you're in another tab.`),
+		{ class: "notify-offer card", id: "notify-offer", role: "region", "aria-label": t("notify.offer_label") },
+		h("p", {}, t("notify.offer", { brand: brandName() })),
 		h(
 			"div",
 			{ class: "row" },
-			h("button", { type: "button", class: "primary", id: "notify-offer-on", onclick: async () => { done(); await setNotify(true); } }, "Turn on"),
-			h("button", { type: "button", id: "notify-offer-off", onclick: () => { done(); store.set(KEY, false); } }, "No thanks")
+			h("button", { type: "button", class: "primary", id: "notify-offer-on", onclick: async () => { done(); await setNotify(true); } }, t("notify.turn_on")),
+			h("button", { type: "button", id: "notify-offer-off", onclick: () => { done(); store.set(KEY, false); } }, t("notify.no_thanks"))
 		)
 	);
 	document.body.append(card);

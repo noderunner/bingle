@@ -1,6 +1,7 @@
 // Thin fetch wrapper around bingle's REST API.
 
 import { applyLook, outlineMissing, pageOf } from "./look.js";
+import { t } from "./i18n.js";
 
 // Every request says it comes from bingle's own page: the server refuses a
 // state-changing request that is proved by the guest cookie but lacks it, and
@@ -39,7 +40,7 @@ async function call(path, { method = "GET", body, headers, keepalive } = {}) {
 	try {
 		resp = await fetch(path, init);
 	} catch (err) {
-		throw new ApiError("Could not reach the server.", 0);
+		throw new ApiError(t("common.no_server"), 0);
 	} finally {
 		// After the first answer the cookie is there (or the server chose not
 		// to make a guest): nothing more to wait for.

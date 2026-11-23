@@ -74,5 +74,11 @@ that each translation puts in the same values and has the same markup as English
 
 ## What is translated so far
 
-The profile window and the profile page. The rest of the page follows module by module, then the mail and the
-calendar invitations, then the changelog in the help window (ADR 0141, *Left for its stage*).
+- The profile window and the profile page.
+- The top bar and its windows: Active Games, Join Game, Friends (with direct messages and calls), the call's panel,
+  Help, and moving a guest to another device; the turn-mail settings; "3 min ago"; the footer of every page.
+
+Next, the main page, the game page and the remaining pages (account, administration, tournaments, batches, a player's
+page), then the mail and the calendar invitations, then the changelog in the help window (ADR 0141, *Left for its
+stage*). `TestWebLanguages_TheTopBarIsTranslated` opens every window of the top bar in the pseudo-locale and fails on
+any plain English word in it: a translated area gets a test like it.

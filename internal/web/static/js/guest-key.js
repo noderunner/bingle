@@ -4,6 +4,7 @@
 
 import { h, clear } from "./util.js";
 import { api } from "./api.js";
+import { t } from "./i18n.js";
 
 /** The section of the window, and paint(kind) to draw it for "guest", "anonymous" or "account". */
 export function guestKeySection() {
@@ -19,7 +20,7 @@ export function guestKeySection() {
 		try {
 			await f();
 		} catch (err) {
-			say(err.message || "That did not work.", "error");
+			say(err.message || t("common.not_done"), "error");
 		} finally {
 			button.disabled = false;
 		}
@@ -30,11 +31,11 @@ export function guestKeySection() {
 	const shown = h(
 		"div",
 		{ id: "guest-shown", hidden: true },
-		h("p", { class: "small" }, "Open this link on the other device (it is copied), or paste the key there:"),
+		h("p", { class: "small" }, t("guest.open_link")),
 		h("p", { class: "small" }, linkText),
 		h("p", { class: "small" }, keyText)
 	);
-	const copy = h("button", { type: "button", class: "primary", id: "guest-copy" }, "Copy my guest key");
+	const copy = h("button", { type: "button", class: "primary", id: "guest-copy" }, t("guest.copy"));
 	copy.addEventListener("click", () =>
 		run(copy, async () => {
 			const { key, link } = await api.guestKey();
@@ -44,39 +45,39 @@ export function guestKeySection() {
 			shown.hidden = false;
 			try {
 				await navigator.clipboard.writeText(url);
-				say("The link is copied.");
+				say(t("guest.copied"));
 			} catch (_) {
-				say("Copy the link or the key by hand.");
+				say(t("guest.copy_by_hand"));
 			}
 		})
 	);
 
 	const useKey = h("input", { id: "guest-use-key", type: "text", maxlength: "60", autocapitalize: "none", spellcheck: "false", placeholder: "bgg_…" });
-	const use = h("button", { type: "button", class: "ghost", id: "guest-use" }, "Submit Key");
+	const use = h("button", { type: "button", class: "ghost", id: "guest-use" }, t("guest.submit"));
 	use.addEventListener("click", () =>
 		run(use, async () => {
 			await api.adoptGuest(useKey.value.trim());
 			useKey.value = "";
-			say("This browser is that guest now: its games are under Active Games, and this browser's own came along.");
+			say(t("guest.adopted"));
 			paint("guest");
 		})
 	);
 
-	const rotate = h("button", { type: "button", class: "ghost", id: "guest-rotate" }, "New key, same me");
+	const rotate = h("button", { type: "button", class: "ghost", id: "guest-rotate" }, t("guest.rotate"));
 	rotate.addEventListener("click", () =>
 		run(rotate, async () => {
 			await api.rotateGuest();
 			shown.hidden = true;
-			say("This browser has a new key. The old one, wherever you copied it, no longer works; your games are still yours.");
+			say(t("guest.rotated"));
 		})
 	);
-	const discard = h("button", { type: "button", class: "ghost", id: "guest-discard" }, "Start over as a new guest");
+	const discard = h("button", { type: "button", class: "ghost", id: "guest-discard" }, t("guest.discard"));
 	discard.addEventListener("click", () =>
 		run(discard, async () => {
-			if (!window.confirm("Start over as a new guest? This browser loses its seats: the games you play now stay with the old guest, which nobody can reach again.")) return;
+			if (!window.confirm(t("guest.discard_confirm"))) return;
 			await api.discardGuest();
 			shown.hidden = true;
-			say("This browser is a new guest from its next game on.");
+			say(t("guest.discarded"));
 			paint("anonymous");
 		})
 	);
@@ -88,20 +89,20 @@ export function guestKeySection() {
 		clear(body);
 		if (kind === "guest") {
 			body.append(
-				h("p", { class: "small muted" }, "Your guest key is what makes your seats yours. Copy it to your phone or another browser to carry on your games there. Anybody with the key can play as you."),
+				h("p", { class: "small muted" }, t("guest.about")),
 				h("div", { class: "row" }, copy),
 				shown
 			);
 		} else {
 			// A browser is a guest from its first game, and has no key until then.
-			body.append(h("p", { class: "small muted", id: "guest-no-key" }, "You get a guest key to copy once you make or join your first game. If you have one from another device, use it here."));
+			body.append(h("p", { class: "small muted", id: "guest-no-key" }, t("guest.no_key")));
 		}
-		body.append(h("div", { class: "field guest-use" }, h("label", { for: "guest-use-key" }, "Use a guest key from another device"), useKey), h("div", { class: "row" }, use));
+		body.append(h("div", { class: "field guest-use" }, h("label", { for: "guest-use-key" }, t("guest.use")), useKey), h("div", { class: "row" }, use));
 		if (kind === "guest") {
-			body.append(h("details", { class: "guest-more" }, h("summary", { class: "small" }, "If your key got out, or to start again"), h("div", { class: "row" }, rotate, discard)));
+			body.append(h("details", { class: "guest-more" }, h("summary", { class: "small" }, t("guest.more")), h("div", { class: "row" }, rotate, discard)));
 		}
 		body.append(result);
 	}
-	section.append(h("h3", {}, "Move to Another Device"), body);
+	section.append(h("h3", {}, t("guest.title")), body);
 	return { section, paint };
 }

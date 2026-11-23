@@ -112,13 +112,13 @@ export function installTopbar({ onRows = () => {}, manageTitle = true } = {}) {
 	const badge = h("span", { class: "icon-badge", id: "active-badge", hidden: true, "aria-hidden": "true" }, "0");
 	const activeBtn = h(
 		"button",
-		{ type: "button", class: "topbar-icon", id: "open-active-games", "aria-haspopup": "dialog", title: "Active Games", "aria-label": "Active Games" },
+		{ type: "button", class: "topbar-icon", id: "open-active-games", "aria-haspopup": "dialog", title: t("bar.active_games"), "aria-label": t("bar.active_games") },
 		gamesIcon(),
 		badge
 	);
 	const list = h("ul", { class: "my-games", id: "my-games" });
-	const empty = h("p", { class: "muted", id: "my-games-empty", hidden: true }, "No games going. Pick one in the Games tab to start.");
-	const activeDlg = dialog("active-games-dialog", "Active Games", list, empty);
+	const empty = h("p", { class: "muted", id: "my-games-empty", hidden: true }, t("bar.no_games"));
+	const activeDlg = dialog("active-games-dialog", t("bar.active_games"), list, empty);
 	let rows = [];
 	let defs = [];
 
@@ -129,7 +129,7 @@ export function installTopbar({ onRows = () => {}, manageTitle = true } = {}) {
 		const waiting = active.filter(yourImpulse).length;
 		badge.textContent = String(waiting);
 		badge.hidden = waiting === 0;
-		const label = waiting ? `Active Games, ${waiting} waiting for you` : "Active Games";
+		const label = waiting ? t("bar.active_waiting", { n: waiting }) : t("bar.active_games");
 		activeBtn.setAttribute("aria-label", label);
 		activeBtn.title = label;
 		if (manageTitle) {
@@ -165,21 +165,21 @@ export function installTopbar({ onRows = () => {}, manageTitle = true } = {}) {
 	});
 
 	// ---- join ----------------------------------------------------------------
-	const joinBtn = h("button", { type: "button", class: "topbar-icon", id: "open-join", "aria-haspopup": "dialog", title: "Join Game", "aria-label": "Join Game" }, joinIcon());
-	const codeInput = h("input", { id: "room_code", name: "room_code", type: "text", required: true, placeholder: "Room Code or Link", "aria-label": "Room code or link", autocomplete: "off", autocapitalize: "characters", spellcheck: "false" });
+	const joinBtn = h("button", { type: "button", class: "topbar-icon", id: "open-join", "aria-haspopup": "dialog", title: t("bar.join_game"), "aria-label": t("bar.join_game") }, joinIcon());
+	const codeInput = h("input", { id: "room_code", name: "room_code", type: "text", required: true, placeholder: t("bar.room_code"), "aria-label": t("bar.room_code_label"), autocomplete: "off", autocapitalize: "characters", spellcheck: "false" });
 	const joinErr = h("div", { class: "error-text", id: "join-error", role: "alert" });
 	const joinForm = h(
 		"form",
 		{ id: "join-game-form" },
 		h("div", { class: "field" }, codeInput),
 		joinErr,
-		h("div", { class: "row" }, h("button", { type: "submit", class: "primary", id: "join-submit" }, "Join Game"))
+		h("div", { class: "row" }, h("button", { type: "submit", class: "primary", id: "join-submit" }, t("bar.join_game")))
 	);
 	// The tables with a seat for anybody, for those without a link to one.
 	const openList = h("ul", { class: "my-games", id: "join-open-games" });
-	const openEmpty = h("p", { class: "muted small", id: "join-open-empty", hidden: true }, "No public lobbies just now.");
-	const openSection = h("section", { id: "join-open" }, h("hr", { class: "join-divider" }), h("h3", {}, "Public Lobbies"), openList, openEmpty);
-	const joinDlg = dialog("join-dialog", "Join Game", joinForm, openSection);
+	const openEmpty = h("p", { class: "muted small", id: "join-open-empty", hidden: true }, t("bar.no_lobbies"));
+	const openSection = h("section", { id: "join-open" }, h("hr", { class: "join-divider" }), h("h3", {}, t("bar.public_lobbies")), openList, openEmpty);
+	const joinDlg = dialog("join-dialog", t("bar.join_game"), joinForm, openSection);
 	async function refreshOpen() {
 		let games = [];
 		try {
@@ -197,7 +197,7 @@ export function installTopbar({ onRows = () => {}, manageTitle = true } = {}) {
 				openGameRow(g, defs, false, g.open_seats > 0 ? h("button", { type: "button", class: "primary", "data-join": g.room_code, onclick: () => {
 					codeInput.value = g.room_code;
 					join();
-				} }, "Join") : null)
+				} }, t("bar.join")) : null)
 			);
 		}
 		openEmpty.hidden = games.length > 0;
@@ -254,38 +254,38 @@ export function installTopbar({ onRows = () => {}, manageTitle = true } = {}) {
 	// ---- help ---------------------------------------------------------------------
 	// A dot on the icon says the changelog has an entry the player has not seen.
 	const helpDot = h("span", { class: "icon-badge dot", id: "help-badge", hidden: true, "aria-hidden": "true" });
-	const helpBtn = h("button", { type: "button", class: "topbar-icon", id: "open-help", "aria-haspopup": "dialog", title: "Help", "aria-label": "Help" }, helpIcon(), helpDot);
+	const helpBtn = h("button", { type: "button", class: "topbar-icon", id: "open-help", "aria-haspopup": "dialog", title: t("bar.help"), "aria-label": t("bar.help") }, helpIcon(), helpDot);
 	// Recent changes: every release since the one this browser last marked read, newest first, in a
 	// box of its own that scrolls; Mark all as read clears the dot.
-	const changesBody = h("div", { class: "help-changes-body", id: "help-changes-body", tabindex: "0", "aria-label": "The changes" });
-	const markRead = h("button", { type: "button", class: "small", id: "help-mark-read", hidden: true, onclick: () => markAllRead() }, "Mark all as read");
+	const changesBody = h("div", { class: "help-changes-body", id: "help-changes-body", tabindex: "0", "aria-label": t("bar.the_changes") });
+	const markRead = h("button", { type: "button", class: "small", id: "help-mark-read", hidden: true, onclick: () => markAllRead() }, t("bar.mark_read"));
 	const changes = h(
 		"section",
 		{ class: "help-changes", id: "help-changes", hidden: true },
-		h("div", { class: "help-changes-top" }, h("h3", {}, "Recent changes"), markRead),
+		h("div", { class: "help-changes-top" }, h("h3", {}, t("bar.recent_changes")), markRead),
 		changesBody
 	);
 	// The version stands where a heading would, and the buttons share one line at the bottom.
 	const helpDlg = dialog(
 		"help-dialog",
-		{ label: "Help", head: h("p", { class: "help-version", id: "help-version" }, h("strong", {}, brandName()), ` v${engineVersion()}`) },
+		{ label: t("bar.help"), head: h("p", { class: "help-version", id: "help-version" }, h("strong", {}, brandName()), ` v${engineVersion()}`) },
 		changes,
 		h(
 			"div",
 			{ class: "help-links" },
-			h("button", { type: "button", class: "button", id: "help-tour", onclick: () => takeTour() }, "Tour"),
+			h("button", { type: "button", class: "button", id: "help-tour", onclick: () => takeTour() }, t("bar.tour")),
 			// For anybody writing a client of their own: the API's documentation, from this server.
 			h("a", { class: "button", id: "help-api", href: "/api/docs", target: "_blank", rel: "noopener" }, "API"),
-			h("a", { class: "button", id: "help-github", href: REPO_URL, target: "_blank", rel: "noopener noreferrer" }, brandName() === "Bingle" ? "GitHub" : "Source on GitHub"),
+			h("a", { class: "button", id: "help-github", href: REPO_URL, target: "_blank", rel: "noopener noreferrer" }, brandName() === "Bingle" ? "GitHub" : t("bar.source")),
 			// The issues of another instance are not this project's to answer.
-			brandName() === "Bingle" ? h("a", { class: "button primary", id: "help-issues", href: `${REPO_URL}/issues`, target: "_blank", rel: "noopener noreferrer" }, "Report Issues") : null
+			brandName() === "Bingle" ? h("a", { class: "button primary", id: "help-issues", href: `${REPO_URL}/issues`, target: "_blank", rel: "noopener noreferrer" }, t("bar.report")) : null
 		)
 	);
 
 	// The welcome tour (ADR 0139), loaded only when it is asked for.
 	const takeTour = () => {
 		helpDlg.close();
-		import("./welcome-tour.js").then((m) => m.openTour()).catch(() => toast("Could not open the tour.", "error"));
+		import("./welcome-tour.js").then((m) => m.openTour()).catch(() => toast(t("bar.tour_failed"), "error"));
 	};
 
 	// The changelog's newest entry is read once the page is up, to know whether there is news: the
@@ -297,7 +297,7 @@ export function installTopbar({ onRows = () => {}, manageTitle = true } = {}) {
 	const paintHelpDot = () => {
 		const news = unseen();
 		helpDot.hidden = !news;
-		const label = news ? "Help, with changes you have not seen" : "Help";
+		const label = news ? t("bar.help_news") : t("bar.help");
 		helpBtn.setAttribute("aria-label", label);
 		helpBtn.title = label;
 	};
@@ -362,7 +362,7 @@ export function installTopbar({ onRows = () => {}, manageTitle = true } = {}) {
 	startDirectMessages();
 	offerNotify();
 
-	refresh().catch(() => toast("Could not read your games.", "error"));
+	refresh().catch(() => toast(t("bar.games_failed"), "error"));
 	// Keep "your turn" fresh while the page sits open in a tab.
 	const again = () => {
 		if (!document.hidden) refresh().catch(() => {});
@@ -381,16 +381,16 @@ function messagesWindow() {
 	const badge = h("span", { class: "icon-badge", id: "dm-badge", hidden: true, "aria-hidden": "true" }, "0");
 	const btn = h(
 		"button",
-		{ type: "button", class: "topbar-icon", id: "open-friends", "aria-haspopup": "dialog", title: "Friends", "aria-label": "Friends" },
+		{ type: "button", class: "topbar-icon", id: "open-friends", "aria-haspopup": "dialog", title: t("bar.friends"), "aria-label": t("bar.friends") },
 		messageIcon(),
 		badge
 	);
 	const body = h("div", { class: "dm-window" });
-	const dlg = dialog("friends-dialog", "Friends", body);
+	const dlg = dialog("friends-dialog", t("bar.friends"), body);
 	const paintBadge = (n) => {
 		badge.textContent = String(n);
 		badge.hidden = n === 0;
-		const label = n ? `Friends, ${n} waiting` : "Friends";
+		const label = n ? t("bar.friends_waiting", { n }) : t("bar.friends");
 		btn.setAttribute("aria-label", label);
 		btn.title = label;
 	};
@@ -587,7 +587,7 @@ function voiceChip() {
 	const dot = h("span", { class: "voice-live-dot", "aria-hidden": "true" });
 	const code = h("span", { class: "voice-chip-code", id: "voice-chip-code" });
 	const chip = h("button", { type: "button", class: "topbar-icon voice-chip", id: "voice-chip", hidden: true, "aria-haspopup": "true", "aria-expanded": "false" }, micIcon(), dot, code);
-	const pop = h("div", { class: "voice-pop", id: "voice-pop", hidden: true, role: "group", "aria-label": "Voice chat" });
+	const pop = h("div", { class: "voice-pop", id: "voice-pop", hidden: true, role: "group", "aria-label": t("voice.label") });
 	document.body.append(pop);
 
 	const handleOf = (name) => "@" + String(name || "").replace(/^@/, "");
@@ -602,38 +602,38 @@ function voiceChip() {
 		clear(pop);
 		if (st.direct) {
 			const c = st.call;
-			pop.append(h("p", { class: "voice-pop-title", id: "voice-pop-title" }, h("strong", {}, `Channel - ${handleOf(c.name)}`)));
+			pop.append(h("p", { class: "voice-pop-title", id: "voice-pop-title" }, h("strong", {}, t("voice.channel", { name: handleOf(c.name) }))));
 			const live = c.state === "live";
 			pop.append(
 				h(
 					"div",
 					{ class: "row voice-pop-buttons" },
-					live ? h("button", { type: "button", id: "voice-pop-mute", "aria-pressed": c.muted ? "true" : "false", class: c.muted ? "danger" : "", onclick: toggleDirectMute }, c.muted ? "Unmute" : "Mute") : null,
-					h("button", { type: "button", id: "voice-pop-leave", class: "ghost", onclick: () => hangUp() }, "Leave")
+					live ? h("button", { type: "button", id: "voice-pop-mute", "aria-pressed": c.muted ? "true" : "false", class: c.muted ? "danger" : "", onclick: toggleDirectMute }, c.muted ? t("voice.unmute") : t("voice.mute")) : null,
+					h("button", { type: "button", id: "voice-pop-leave", class: "ghost", onclick: () => hangUp() }, t("voice.leave"))
 				),
 				h(
 					"ul",
 					{ class: "voice-peers", id: "voice-peers" },
-					h("li", { class: "voice-peer", "data-state": "connected", "data-me": "1" }, h("span", { class: "voice-dot", "aria-hidden": "true" }), h("span", { class: "voice-name" }, `${myName() || "You"} (you)`), h("span", { class: "voice-state small muted" }, c.muted ? "mic off" : "mic on")),
+					h("li", { class: "voice-peer", "data-state": "connected", "data-me": "1" }, h("span", { class: "voice-dot", "aria-hidden": "true" }), h("span", { class: "voice-name" }, myName() ? t("voice.you", { name: myName() }) : t("voice.you_alone")), h("span", { class: "voice-state small muted" }, c.muted ? t("voice.mic_off") : t("voice.mic_on"))),
 					h(
 						"li",
 						{ class: "voice-peer", "data-state": live ? "connected" : "connecting" },
 						h("span", { class: "voice-dot", "aria-hidden": "true" }),
 						h("span", { class: "voice-name" }, handleOf(c.name)),
-						h("span", { class: "voice-state small muted" }, live ? "connected" : c.state === "ringing" ? "calling you" : "ringing…")
+						h("span", { class: "voice-state small muted" }, live ? t("voice.connected") : c.state === "ringing" ? t("voice.calling_you") : t("voice.ringing"))
 					)
 				)
 			);
 			return;
 		}
 		const here = st.viewing && st.viewing === st.code;
-		pop.append(h("p", { class: "voice-pop-title", id: "voice-pop-title" }, h("strong", {}, `Channel - ${st.code}`)));
+		pop.append(h("p", { class: "voice-pop-title", id: "voice-pop-title" }, h("strong", {}, t("voice.channel", { name: st.code }))));
 		const row = h("div", { class: "row voice-pop-buttons" });
-		if (!here) row.append(h("a", { class: "button primary", id: "voice-pop-go", href: `/game/${st.code}` }, "Go to the game"));
+		if (!here) row.append(h("a", { class: "button primary", id: "voice-pop-go", href: `/game/${st.code}` }, t("voice.go")));
 		row.append(
-			h("button", { type: "button", id: "voice-pop-mute", "aria-pressed": st.muted ? "true" : "false", class: st.muted ? "danger" : "", onclick: toggleMute }, st.muted ? "Unmute" : "Mute"),
-			h("button", { type: "button", id: "voice-pop-deafen", "aria-pressed": st.deafened ? "true" : "false", class: st.deafened ? "danger" : "", title: "Stop hearing the others (this also mutes you)", onclick: toggleDeafen }, st.deafened ? "Undeafen" : "Deafen"),
-			h("button", { type: "button", id: "voice-pop-leave", class: "ghost", onclick: () => leaveVoice() }, "Leave")
+			h("button", { type: "button", id: "voice-pop-mute", "aria-pressed": st.muted ? "true" : "false", class: st.muted ? "danger" : "", onclick: toggleMute }, st.muted ? t("voice.unmute") : t("voice.mute")),
+			h("button", { type: "button", id: "voice-pop-deafen", "aria-pressed": st.deafened ? "true" : "false", class: st.deafened ? "danger" : "", title: t("voice.deafen_title"), onclick: toggleDeafen }, st.deafened ? t("voice.undeafen") : t("voice.deafen")),
+			h("button", { type: "button", id: "voice-pop-leave", class: "ghost", onclick: () => leaveVoice() }, t("voice.leave"))
 		);
 		pop.append(row, voiceMembers() || "", ...voiceSettings());
 	};
@@ -665,8 +665,8 @@ function voiceChip() {
 		chip.classList.toggle("elsewhere", elsewhere);
 		chip.classList.toggle("muted", st.muted || st.deafened);
 		code.textContent = elsewhere ? st.code : "";
-		const where = st.direct ? `In a call with ${handleOf(st.call.name)}` : `In the voice chat of game ${st.code}`;
-		const label = where + (st.deafened ? " (deafened)" : st.muted ? " (muted)" : "");
+		const where = st.direct ? t("voice.in_call_with", { name: handleOf(st.call.name) }) : t("voice.in_game", { code: st.code });
+		const label = st.deafened ? t("voice.deafened", { where }) : st.muted ? t("voice.muted", { where }) : where;
 		chip.title = label;
 		chip.setAttribute("aria-label", label);
 		// Painted while folded up too: who is in the call is there the moment it opens.

@@ -1,6 +1,7 @@
 // Small DOM and storage helpers shared by the lobby and the game page.
 
 import { funName } from "./names.js";
+import { t } from "./i18n.js";
 
 /** h("div", {class: "x", onclick: fn}, child, "text") builds a DOM element. */
 export function h(tag, attrs, ...children) {
@@ -177,12 +178,12 @@ export function ago(ts) {
 	}
 	if (!ms || Number.isNaN(ms)) return "";
 	const sec = Math.max(0, Math.round((Date.now() - ms) / 1000));
-	if (sec < 45) return "just now";
+	if (sec < 45) return t("time.just_now");
 	const min = Math.round(sec / 60);
-	if (min < 60) return `${min} min ago`;
+	if (min < 60) return t("time.min_ago", { n: min });
 	const hr = Math.round(min / 60);
-	if (hr < 36) return `${hr} h ago`;
-	return `${Math.round(hr / 24)} d ago`;
+	if (hr < 36) return t("time.h_ago", { n: hr });
+	return t("time.d_ago", { n: Math.round(hr / 24) });
 }
 
 export function titleCase(str) {

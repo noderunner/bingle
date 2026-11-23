@@ -131,6 +131,13 @@ func TestPages_SayTheirLanguageAndDirection(t *testing.T) {
 
 func TestCatalog_IsServedWithAnETag(t *testing.T) {
 	h := NewRouter(nil, config.Brand{}, nil)
+	// The metrics listener's Health page loads js/i18n.js too.
+	if rec := get(t, StaticHandler(), "/static/i18n/fr.json", nil); rec.Code != 200 || !strings.Contains(rec.Body.String(), `"language.label":"Langue"`) {
+		t.Errorf("the catalog from StaticHandler: %d", rec.Code)
+	}
+	if rec := get(t, StaticHandler(), "/static/style.css", nil); rec.Code != 200 {
+		t.Errorf("the stylesheet from StaticHandler: %d", rec.Code)
+	}
 	rec := get(t, h, "/static/i18n/zh-Hans.json", nil)
 	etag := rec.Header().Get("ETag")
 	if rec.Code != 200 || etag == "" || !strings.Contains(rec.Body.String(), `"language.label":"语言"`) {

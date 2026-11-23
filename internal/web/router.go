@@ -170,7 +170,11 @@ func StaticHandler() http.Handler {
 	if err != nil {
 		panic(err) // see NewRouter: a build-time invariant, not a runtime case
 	}
-	return http.StripPrefix("/static/", http.FileServer(http.FS(sub)))
+	// The catalogs too: js/util.js, which the Health page loads, loads js/i18n.js (ADR 0141).
+	r := chi.NewRouter()
+	r.Get("/static/i18n/{lang}.json", handleCatalog)
+	r.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.FS(sub))))
+	return r
 }
 
 // handlers holds the dependencies shared by every handler in this package.
