@@ -7,6 +7,7 @@
 // has changed (its signature), so a click never straddles a redraw.
 
 import { h, clear } from "./util.js";
+import { t } from "./i18n.js";
 
 /**
  * Creates the window (hidden). Returns controls:
@@ -15,8 +16,8 @@ import { h, clear } from "./util.js";
  *   update(id, sig, build)     rebuilds the section when sig changed
  *   hide(id, on)               hides or shows a whole section
  */
-export function createOptionsWindow({ title = "Game Options", onToggle = () => {} } = {}) {
-	const closeBtn = h("button", { class: "options-close", id: "options-close", "aria-label": "Close Game Options", title: "Close (Esc)" }, "×");
+export function createOptionsWindow({ title = t("options.title"), onToggle = () => {} } = {}) {
+	const closeBtn = h("button", { class: "options-close", id: "options-close", "aria-label": t("options.close"), title: t("common.close_esc") }, "×");
 	const body = h("div", { class: "options-body", id: "options-body" });
 	const win = h(
 		"section",

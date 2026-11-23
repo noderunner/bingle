@@ -365,3 +365,54 @@ func TestWebLanguages_TheWelcomeTourIsTranslated(t *testing.T) {
 		}
 	}
 }
+
+// So is every word around a game's board: the lobby of a table that waits for
+// its host, and at a game, the chat (with its emoji) and the rules window's
+// tabs of the platform's own (Controls and Key).
+func TestWebLanguages_TheLobbyChatAndRulesAreTranslated(t *testing.T) {
+	base := newRESTTestServer(t)
+	var lobby, game createGameResponse
+	doJSON(t, "POST", base+"/api/games", map[string]any{"game_def_id": "test-council", "player_name": "Alice", "lobby": true}, &lobby)
+	doJSON(t, "POST", base+"/api/games", map[string]any{"game_def_id": "tak-5x5", "player_name": "Alice"}, &game)
+	ctx, cancel := newChromedpContext(t, 120*time.Second)
+	defer cancel()
+	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1400, 1000), chromedp.Navigate(base+"/healthz"), chromedp.Evaluate(`document.cookie = "bingle_lang=en-XA; path=/"; true`, nil)); err != nil {
+		t.Fatal(err)
+	}
+	check := func(what, sel string) {
+		t.Helper()
+		time.Sleep(500 * time.Millisecond)
+		if !evalBool(t, ctx, `!!window.__content`) {
+			learnContent(t, ctx)
+		}
+		if got := evalString(t, ctx, plainEnglish+`("`+sel+`")`); got != "" {
+			t.Errorf("%s: %s", what, got)
+		}
+	}
+	if err := chromedp.Run(ctx,
+		chromedp.Evaluate(`localStorage.setItem("bingle.games", JSON.stringify([{code: "`+lobby.RoomCode+`", def: "test-council", name: "Alice", ts: Date.now()}])); localStorage.setItem("bingle.name", '"Alice"'); true`, nil),
+		chromedp.Navigate(base+"/game/"+lobby.RoomCode)); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "the lobby", `document.getElementById("lobby-seats")`, 15*time.Second)
+	check("the lobby", "#lobby")
+
+	openGameAs(t, ctx, base, game.RoomCode, "tak-5x5", "Alice")
+	waitJS(t, ctx, "the chat", `document.getElementById("chat-card")`, 15*time.Second)
+	clickSel(t, ctx, "#emoji-button")
+	waitJS(t, ctx, "the emoji", `!document.getElementById("emoji-panel").hidden`, 5*time.Second)
+	check("the chat and its emoji", "#chat-card")
+	if !evalBool(t, ctx, `[...document.querySelectorAll("#emoji-panel .emoji-cell")].every((b) => /[À-ɏ]/.test(b.title))`) {
+		t.Error("an emoji's name is not in the pseudo-locale")
+	}
+	clickSel(t, ctx, "#show-rules")
+	waitJS(t, ctx, "the rules", `document.querySelector("#rules-dialog[open] .rules-tab")`, 15*time.Second)
+	check("the rules window's head", "#rules-dialog .rules-head")
+	for _, tab := range []string{"controls", "key"} {
+		if !evalBool(t, ctx, `!!document.getElementById("rules-tab-`+tab+`")`) {
+			continue
+		}
+		clickSel(t, ctx, "#rules-tab-"+tab)
+		check("the rules' "+tab, "#rules-panel-"+tab+", #rules-tab-"+tab)
+	}
+}
