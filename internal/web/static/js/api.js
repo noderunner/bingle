@@ -129,6 +129,8 @@ export const api = {
 	// The welcome tour was skipped or finished (ADR 0139). Sent with keepalive, so that it
 	// reaches the server even when the player leaves the page as the tour closes.
 	tourSeen: () => call("/auth/tour-seen", { method: "POST", keepalive: true }),
+	// The interface's language (ADR 0141): a language's code, or "" for the browser's own.
+	setLanguage: (language) => call("/auth/language", { method: "POST", body: { language } }),
 	ownDeals: (gameDefID) => call(`/api/me/deals?game_def_id=${enc(gameDefID)}`),
 	login: (handle, password) => call("/auth/login", { method: "POST", body: { handle, password } }),
 	logout: () => call("/auth/logout", { method: "POST" }),

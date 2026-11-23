@@ -467,7 +467,7 @@ func (a *App) newRouter() chi.Router {
 	// specific path above must be registered first to take precedence.
 	// A closed server shows its pages to its members, and the sign-in to
 	// everybody else.
-	r.With(a.guests.ClosedPages).Mount("/", web.NewRouter(a.manager, a.brand))
+	r.With(a.guests.ClosedPages).Mount("/", web.NewRouter(a.manager, a.brand, a.guests.AccountLanguage))
 	return r
 }
 

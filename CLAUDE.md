@@ -99,6 +99,10 @@ git -c credential.helper='!f() { echo username=x-access-token; echo "password=$(
   just adding a mechanism.
 - Push back, in the PR or the issue, on anything that hurts performance, simplicity, security or
   normal UI practice — before building it.
+- **A word added to or changed in the interface goes through `t()`** (`js/i18n.js`; `{{t .Lang "key"}}` in a
+  template), its key in `internal/i18n/catalogs/en.json` and a machine draft in the nine other catalogs, and CSS uses
+  logical properties (`margin-inline-start`, not `margin-left`) outside boards and pictures: see
+  [docs/languages.md](docs/languages.md) (ADR 0141).
 - **Keep the interface terse.** Add only the controls and words a request asks for: no explanatory
   subtext under headings or beside buttons, no summary lines ("3 updates you have not read"), and no
   heading that repeats another. Screen space is scarce, and extra words have had to be removed later.

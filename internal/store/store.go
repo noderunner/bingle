@@ -318,6 +318,9 @@ var columnMigrations = []struct{ table, column, ddl string }{
 	// welcome tour (ADR 0139), '' while it has not, as every principal made
 	// before the tour had not.
 	{"principals", "tour_seen_at", "TEXT NOT NULL DEFAULT ''"},
+	// language: the interface language the account chose (ADR 0141), '' for
+	// the browser's own, as every account made before there was a choice.
+	{"accounts", "language", "TEXT NOT NULL DEFAULT ''"},
 }
 
 func addMissingColumns(db *sql.DB) error {

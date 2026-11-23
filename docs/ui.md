@@ -28,6 +28,13 @@ Plain ES modules served from `internal/web/static` — no build step
 * **Game** (`/game/{code}`, `js/game.js`): board, players, hands, move list,
   history, undo/resign, analysis, rules, export.
 
+## Languages
+
+Every page is in the language the account or the browser chose, or else the browser's own, with `<html lang dir>`
+set by the server; Arabic is laid out right to left, boards and notation left to right. The **Language** setting is
+in the profile window (`#profile-window-language`) and on the profile page (`#profile_language`). The page's words
+come from `t()` in `js/i18n.js`: see [docs/languages.md](languages.md) and [ADR 0141](decisions/0141-interface-languages.md).
+
 ## Identity
 
 A player is a guest (a browser, by its guest key) or a signed-in account ([ADR 0067](decisions/0067-principals-and-guest-keys.md),

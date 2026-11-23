@@ -7,6 +7,7 @@
 
 import { h, store } from "./util.js";
 import { onLeave } from "./nav.js";
+import { dir } from "./i18n.js";
 
 const KEY = "bingle.layout";
 
@@ -117,11 +118,14 @@ export function mobileShell({ pages, groups, chips = {}, current, onChange }) {
 		}
 	};
 
+	// Written right to left, the pages run from the right, and scrollLeft counts
+	// down from 0 (ADR 0141).
+	const sign = dir === "rtl" ? -1 : 1;
 	const show = (id, smooth) => {
 		const i = ids.indexOf(id);
 		if (i < 0) return;
 		now = id;
-		track.scrollTo({ left: i * track.clientWidth, behavior: smooth ? "smooth" : "instant" });
+		track.scrollTo({ left: sign * i * track.clientWidth, behavior: smooth ? "smooth" : "instant" });
 		paint();
 		onChange(id);
 	};
@@ -148,7 +152,7 @@ export function mobileShell({ pages, groups, chips = {}, current, onChange }) {
 			clearTimeout(timer);
 			timer = setTimeout(() => {
 				const w = track.clientWidth || 1;
-				const id = ids[Math.max(0, Math.min(ids.length - 1, Math.round(track.scrollLeft / w)))];
+				const id = ids[Math.max(0, Math.min(ids.length - 1, Math.round((sign * track.scrollLeft) / w)))];
 				if (id !== now) {
 					now = id;
 					paint();
@@ -165,7 +169,7 @@ export function mobileShell({ pages, groups, chips = {}, current, onChange }) {
 		node,
 		show,
 		restore() {
-			track.scrollTo({ left: ids.indexOf(now) * track.clientWidth, behavior: "instant" });
+			track.scrollTo({ left: sign * ids.indexOf(now) * track.clientWidth, behavior: "instant" });
 		},
 	};
 }

@@ -2246,6 +2246,33 @@
       ],
       "type": "object"
     },
+    "LanguageRequest": {
+      "description": "LanguageRequest is POST /auth/language's body.",
+      "properties": {
+        "language": {
+          "description": "Language is the code of one of the interface's languages, or \"\" for the browser's own (Accept-Language).",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "LanguageResponse": {
+      "description": "LanguageResponse is POST /auth/language's answer.",
+      "properties": {
+        "language": {
+          "description": "Language is the language the interface now speaks.",
+          "type": "string"
+        },
+        "language_choice": {
+          "description": "LanguageChoice is the language chosen, absent for the browser's own.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "language"
+      ],
+      "type": "object"
+    },
     "LegalMoveDTO": {
       "description": "legalMoveDTO is one selection of GET /games/{code}/selections and simulate.",
       "properties": {
@@ -2446,6 +2473,14 @@
           "description": "\"account\", \"guest\" or \"anonymous\"",
           "type": "string"
         },
+        "language": {
+          "description": "Language is the language the interface speaks to this request in (ADR 0141): the one chosen, or else the first of Accept-Language that it has, or else English.",
+          "type": "string"
+        },
+        "language_choice": {
+          "description": "LanguageChoice is the language chosen, which POST /auth/language sets: the account's, or else this browser's. Absent for the browser's own.",
+          "type": "string"
+        },
         "linked": {
           "items": {
             "type": "string"
@@ -2493,7 +2528,8 @@
       "required": [
         "kind",
         "accounts",
-        "signup"
+        "signup",
+        "language"
       ],
       "type": "object"
     },
@@ -4278,9 +4314,9 @@
   },
   "$id": "https://github.com/noderunner/bingle/docs/api.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "description": "The requests, responses and WebSocket events of bingle's API, version 1.8.0. Generated from the Go types of the server: do not edit. Objects let unknown fields through: a client ignores those it does not know.",
+  "description": "The requests, responses and WebSocket events of bingle's API, version 1.9.0. Generated from the Go types of the server: do not edit. Objects let unknown fields through: a client ignores those it does not know.",
   "title": "Bingle API messages",
-  "x-api-version": "1.8.0",
+  "x-api-version": "1.9.0",
   "x-dm-events": {
     "badge": {
       "$ref": "#/$defs/BadgeEventData"
@@ -4591,6 +4627,14 @@
       },
       "response": {
         "$ref": "#/$defs/HereResponse"
+      }
+    },
+    "POST /auth/language": {
+      "request": {
+        "$ref": "#/$defs/LanguageRequest"
+      },
+      "response": {
+        "$ref": "#/$defs/LanguageResponse"
       }
     },
     "POST /auth/login": {

@@ -33,6 +33,9 @@ type Account struct {
 	// is in the admin group.
 	HasTOTP bool
 	Admin   bool
+	// Language is the interface language the account chose (ADR 0141), ""
+	// for the browser's own.
+	Language string
 }
 
 // ErrTaken is returned when a handle or an address is already an account's.
@@ -41,7 +44,7 @@ var ErrTaken = errors.New("store: already taken")
 // accountCols are an account's columns, the accounts table being called t.
 func accountCols(t string) string {
 	return t + `.id, ` + t + `.handle, ` + t + `.display_name, ` + t + `.email, ` + t + `.email_verified_at IS NOT NULL, ` + t + `.status, ` +
-		t + `.must_change_password, ` + t + `.principal_id, ` + t + `.created_at, ` +
+		t + `.must_change_password, ` + t + `.principal_id, ` + t + `.created_at, ` + t + `.language, ` +
 		`EXISTS (SELECT 1 FROM credentials c WHERE c.account_id = ` + t + `.id AND c.kind = 'totp'), ` +
 		`EXISTS (SELECT 1 FROM account_groups g WHERE g.account_id = ` + t + `.id AND g.group_name = '` + GroupAdmin + `')`
 }
@@ -49,7 +52,7 @@ func accountCols(t string) string {
 var accountColumns = accountCols("accounts")
 
 func (a *Account) fields() []any {
-	return []any{&a.ID, &a.Handle, &a.DisplayName, &a.Email, &a.EmailVerified, &a.Status, &a.MustChangePassword, &a.PrincipalID, &a.CreatedAt, &a.HasTOTP, &a.Admin}
+	return []any{&a.ID, &a.Handle, &a.DisplayName, &a.Email, &a.EmailVerified, &a.Status, &a.MustChangePassword, &a.PrincipalID, &a.CreatedAt, &a.Language, &a.HasTOTP, &a.Admin}
 }
 
 func scanAccount(row interface{ Scan(...any) error }) (Account, error) {
@@ -252,6 +255,13 @@ func (s *Store) ActivateAccount(ctx context.Context, accountID int64, now time.T
 		return err
 	}
 	return tx.Commit()
+}
+
+// SetAccountLanguage keeps the interface language an account chose (ADR
+// 0141): a language's code, or "" for the browser's own.
+func (s *Store) SetAccountLanguage(ctx context.Context, accountID int64, language string) error {
+	_, err := s.exec(ctx, "SetAccountLanguage", `UPDATE accounts SET language = ? WHERE id = ?`, language, accountID)
+	return err
 }
 
 // DeletePendingAccounts removes accounts never confirmed since before, so an
