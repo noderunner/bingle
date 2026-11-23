@@ -6,6 +6,7 @@
 import { h, s, clear } from "./util.js";
 import { frameDecor, stoneMarks, installThemes, currentTheme } from "./themes.js";
 import { onNavigate } from "./nav.js";
+import { t as tr, lang } from "./i18n.js";
 
 export const CELL = 80;
 
@@ -170,14 +171,21 @@ function layout(info, flipped) {
 	};
 }
 
+/** A colour of the palette in words, in the page's language; another colour as it is given. */
+const COLOR_WORDS = new Set(["white", "black", "red", "yellow", "orange", "green", "blue", "purple", "teal", "sand", "brown"]);
+function colorWord(color) {
+	const c = cssColor(color);
+	return COLOR_WORDS.has(c) ? tr(`color.${c}`) : String(color);
+}
+
 function describeStack(info, stack) {
-	if (!stack || stack.length === 0) return "empty";
+	if (!stack || stack.length === 0) return tr("board.empty");
 	const label = (pc) => {
 		const def = info.pieces.find((p) => p.type === pc.piece);
-		return `${pc.color} ${def ? def.label.toLowerCase() : pc.piece}`;
+		return tr("board.piece", { color: colorWord(pc.color), piece: def ? def.label.toLowerCase() : pc.piece });
 	};
 	if (stack.length === 1) return label(stack[0]);
-	return `stack of ${stack.length} (bottom to top): ` + stack.map(label).join(", ");
+	return tr("board.stack", { n: stack.length, pieces: new Intl.ListFormat(lang, { type: "unit" }).format(stack.map(label)) });
 }
 
 /**
@@ -376,7 +384,7 @@ function drawBoard(host, info, view, handlers = {}) {
 		id: "board-svg",
 		viewBox: `${-strip} ${-strip} ${L.width + 2 * strip} ${L.height + 2 * strip}`,
 		role: "group",
-		"aria-label": `${info.name} board`,
+		"aria-label": tr("board.label", { game: info.name }),
 		preserveAspectRatio: "xMidYMid meet",
 	});
 
@@ -470,9 +478,9 @@ function drawBoard(host, info, view, handlers = {}) {
 			"data-height": stack.length,
 			role: clickable ? "button" : null,
 			tabindex: clickable ? 0 : null,
-			"aria-label": `${p.id}: ${describeStack(info, stack)}`,
+			"aria-label": tr("board.at", { at: p.id, what: describeStack(info, stack) }),
 		});
-		g.append(s("title", {}, `${p.id}: ${describeStack(info, stack)}`));
+		g.append(s("title", {}, tr("board.at", { at: p.id, what: describeStack(info, stack) })));
 
 		const half = CELL / 2;
 		if (showSquares) {
@@ -857,7 +865,7 @@ function renderHexBoard(host, info, view, handlers) {
 		id: "board-svg",
 		viewBox: `${-strip} ${-strip} ${width + 2 * strip} ${height + 2 * strip}`,
 		role: "group",
-		"aria-label": `${info.name} board`,
+		"aria-label": tr("board.label", { game: info.name }),
 		preserveAspectRatio: "xMidYMid meet",
 		class: free ? "free-board" : grid ? "hex-grid-board" : null,
 	});
@@ -895,9 +903,9 @@ function renderHexBoard(host, info, view, handlers) {
 			"data-height": stack.length,
 			role: clickable ? "button" : null,
 			tabindex: clickable ? 0 : null,
-			"aria-label": `${p.id}: ${describeStack(info, stack)}`,
+			"aria-label": tr("board.at", { at: p.id, what: describeStack(info, stack) }),
 		});
-		g.append(s("title", {}, free ? describeStack(info, stack) : `${p.id}: ${describeStack(info, stack)}`));
+		g.append(s("title", {}, free ? describeStack(info, stack) : tr("board.at", { at: p.id, what: describeStack(info, stack) })));
 
 		const shade = ["light", "mid", "dark"][(((p.x - p.y / 2) % 3) + 3) % 3 | 0];
 		const edge = edgeOf.get(p.id);

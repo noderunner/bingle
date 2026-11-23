@@ -8,6 +8,7 @@ import { h } from "./util.js";
 import { cardBack, cardFace, enableZoom, holdCardZoom } from "./cards.js";
 import { currentCardSet, setSuitIcon } from "./card-sets.js";
 import { celebrate, flyHome, reducedMotion } from "./victory.js";
+import { t as tr } from "./i18n.js";
 
 const pinRows = ["abcd", "efg", "hi", "j"];
 
@@ -120,7 +121,7 @@ function stock(ctx, zone) {
 	const act = ["draw", "recycle", "deal"].find((a) => options.includes(a));
 	const body = n ? cardBack(ctx.info) : h("span", { class: "sol-empty" }, options.includes("recycle") ? "↻" : "");
 	const count = h("span", { class: "pile-count" }, String(n));
-	const label = act === "recycle" ? "Turn the waste over" : act === "deal" ? "Deal a row" : "Stock";
+	const label = act === "recycle" ? tr("sol.recycle") : act === "deal" ? tr("sol.deal") : tr("sol.stock");
 	const attrs = { id: "sol-stock", class: "sol-slot sol-stock", "data-pile": "stock", title: label };
 	if (!act) return h("div", attrs, body, count);
 	return h("button", { ...attrs, type: "button", "data-does": act, "aria-label": label, onclick: () => ctx.onAction(act) }, body, count);
@@ -130,7 +131,7 @@ function stock(ctx, zone) {
 function waste(ctx, zone) {
 	const cards = (zone && zone.cards) || [];
 	const shown = Math.min(cards.length, ctx.info.params && ctx.info.params.draw === 3 ? 3 : 1);
-	const el = h("div", pileAttrs(ctx, "w", { class: "sol-slot sol-waste", style: `--shown: ${Math.max(shown, 1)}`, "aria-label": "Waste" }));
+	const el = h("div", pileAttrs(ctx, "w", { class: "sol-slot sol-waste", style: `--shown: ${Math.max(shown, 1)}`, "aria-label": tr("sol.waste") }));
 	if (!cards.length) el.append(h("span", { class: "sol-empty" }));
 	cards.slice(cards.length - shown).forEach((c, i) => {
 		const top = i === shown - 1;
@@ -143,10 +144,10 @@ function waste(ctx, zone) {
 function column(ctx, i, zone) {
 	const pile = `t${i}`;
 	const cards = (zone && zone.cards) || [];
-	const el = h("div", pileAttrs(ctx, pile, { class: "sol-column", "aria-label": `Column ${i}` }));
+	const el = h("div", pileAttrs(ctx, pile, { class: "sol-column", "aria-label": tr("sol.column", { n: i }) }));
 	if (!cards.length) {
 		const empty = h("span", { class: "sol-empty" });
-		el.append(ctx.picked().length && pileTargetted(ctx, pile) ? h("button", { type: "button", class: "sol-card pc-btn", "aria-label": `Column ${i}`, onclick: () => clickPile(ctx, pile, 0) }, empty) : empty);
+		el.append(ctx.picked().length && pileTargetted(ctx, pile) ? h("button", { type: "button", class: "sol-card pc-btn", "aria-label": tr("sol.column", { n: i }), onclick: () => clickPile(ctx, pile, 0) }, empty) : empty);
 		return el;
 	}
 	cards.forEach((c, k) => {
@@ -173,10 +174,10 @@ function patience(ctx) {
 		left.append(stock(ctx, zones.get("stock")));
 		const done = zones.get("done");
 		const count = done ? done.count : 0;
-		right.append(h("div", { class: "sol-done small muted", id: "sol-done" }, `${count / 13} of ${view.total / 13} suits finished`));
+		right.append(h("div", { class: "sol-done small muted", id: "sol-done" }, tr("sol.done", { done: count / 13, total: view.total / 13 })));
 	}
-	for (let i = 1; i <= (view.cells || 0); i++) left.append(slot(ctx, `c${i}`, zones.get(`c${i}`), "", `Free cell ${i}`));
-	(view.suits || []).forEach((suit, i) => right.append(slot(ctx, `f${i + 1}`, zones.get(`f${i + 1}`), foundationMark(ctx, suit), `Foundation ${i + 1}`)));
+	for (let i = 1; i <= (view.cells || 0); i++) left.append(slot(ctx, `c${i}`, zones.get(`c${i}`), "", tr("sol.free_cell", { n: i })));
+	(view.suits || []).forEach((suit, i) => right.append(slot(ctx, `f${i + 1}`, zones.get(`f${i + 1}`), foundationMark(ctx, suit), tr("sol.foundation", { n: i + 1 }))));
 	top.append(left, right);
 	const cols = h("div", { class: "sol-columns", style: `--n: ${view.columns}` });
 	for (let i = 1; i <= view.columns; i++) cols.append(column(ctx, i, zones.get(`t${i}`)));
@@ -299,7 +300,7 @@ function bowling(ctx) {
 	const balls = ballsFor(ctx);
 	const wanted = tutorialPins(ctx);
 	const reachable = new Set(ctx.playsList().flatMap((m) => m.split("@")[0].split("+")));
-	const rack = h("div", { class: "sol-rack", id: "sol-rack", role: "group", "aria-label": "The pins" });
+	const rack = h("div", { class: "sol-rack", id: "sol-rack", role: "group", "aria-label": tr("sol.pins") });
 	for (const row of pinRows) {
 		const r = h("div", { class: "sol-pin-row" });
 		for (const letter of row) {
@@ -311,7 +312,7 @@ function bowling(ctx) {
 			}
 			const can = reachable.has(letter) && (!wanted || wanted.includes(letter));
 			const on = chosen.pins.has(letter);
-			const attrs = { class: "sol-pin" + (on ? " sol-picked" : "") + (wanted && wanted.includes(letter) ? " sol-wanted" : ""), "data-pin": letter, "data-card": card.id, title: `Pin ${letter}` };
+			const attrs = { class: "sol-pin" + (on ? " sol-picked" : "") + (wanted && wanted.includes(letter) ? " sol-wanted" : ""), "data-pin": letter, "data-card": card.id, title: tr("sol.pin", { pin: letter }) };
 			if (!can) {
 				r.append(h("span", attrs, face(ctx, card.id), h("span", { class: "sol-pin-name" }, letter)));
 				continue;
@@ -336,7 +337,7 @@ function bowling(ctx) {
 		}
 		rack.append(r);
 	}
-	const ballsRow = h("div", { class: "sol-balls", id: "sol-balls", role: "group", "aria-label": "The balls" });
+	const ballsRow = h("div", { class: "sol-balls", id: "sol-balls", role: "group", "aria-label": tr("sol.balls_label") });
 	for (let i = 1; i <= 3; i++) {
 		const zone = zones.get(`ball${i}`);
 		const cards = (zone && zone.cards) || [];
@@ -346,7 +347,7 @@ function bowling(ctx) {
 		if (top && top.id) {
 			box.append(
 				can
-					? h("button", { type: "button", class: "sol-ball-card pc-btn playable", "data-throw": i, title: `Throw pile ${i}`, onclick: () => throwBall(ctx, i) }, face(ctx, top.id))
+					? h("button", { type: "button", class: "sol-ball-card pc-btn playable", "data-throw": i, title: tr("sol.throw", { n: i }), onclick: () => throwBall(ctx, i) }, face(ctx, top.id))
 					: face(ctx, top.id)
 			);
 		} else box.append(h("span", { class: "sol-empty" }));
@@ -360,13 +361,13 @@ function bowling(ctx) {
 		"div",
 		{ class: "card-table sol-table", id: "card-table", "data-mode": "bowling" },
 		scoreSheet(view.bowling),
-		h("div", { class: "sol-lanes" }, rack, h("div", { class: "sol-side" }, h("div", { class: "ct-zone-label small muted" }, "Balls"), ballsRow, h("div", { class: "ct-zone-label small muted" }, "Out of play"), out))
+		h("div", { class: "sol-lanes" }, rack, h("div", { class: "sol-side" }, h("div", { class: "ct-zone-label small muted" }, tr("sol.balls")), ballsRow, h("div", { class: "ct-zone-label small muted" }, tr("sol.out")), out))
 	);
 }
 
 /** The score sheet: ten frames, the marks of each ball and the running total. */
 function scoreSheet(b) {
-	const table = h("div", { class: "sol-sheet", id: "sol-sheet", role: "table", "aria-label": "Score sheet" });
+	const table = h("div", { class: "sol-sheet", id: "sol-sheet", role: "table", "aria-label": tr("sol.sheet") });
 	for (let i = 0; i < 10; i++) {
 		const f = b.frames[i] || { marks: [] };
 		const current = i === b.frame - 1 && i < b.frames.length;
@@ -461,8 +462,8 @@ async function showWin(ctx, node, before) {
 	await flyHome(flights);
 	node.classList.remove("sol-homing");
 	node.classList.add("sol-won");
-	const moves = typeof ctx.view.moves === "number" ? ` in ${ctx.view.moves === 1 ? "1 move" : `${ctx.view.moves} moves`}` : "";
-	await celebrate(currentCardSet(ctx.info), `Solved${moves}!`);
+	const solved = typeof ctx.view.moves === "number" ? tr("sol.solved_in", { n: ctx.view.moves }) : tr("sol.solved");
+	await celebrate(currentCardSet(ctx.info), solved);
 }
 
 /** The table of a game of patience, as cards.js's cardTable draws any other card game: {node, state}. */
@@ -480,6 +481,6 @@ export function solitairePreview(info, view) {
 	node.removeAttribute("id");
 	node.classList.add("sol-preview");
 	node.setAttribute("role", "img");
-	node.setAttribute("aria-label", `${info.name}: a game in progress`);
+	node.setAttribute("aria-label", tr("sol.preview", { game: info.name }));
 	return node;
 }

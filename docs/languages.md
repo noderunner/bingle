@@ -100,8 +100,9 @@ that each translation puts in the same values and has the same markup as English
   Auto-Play Timeout (`autoplay.*`), the history and the list of moves (`hist.*`), the options window's sections
   (`options.*`) and the tutorial's card. The lines of the log are the game's own, as are a tutorial's lessons and
   a game's contest panel; a notation's name (TPS, PTN) is marked `translate="no"`.
+- Boards and cards: what a screen reader hears of a board (`board.*`, with the palette's colours as `color.*`;
+  a piece's name stays the game's), the sets of cards (`cards.*`; a joker's name on its picture stays in the
+  English lettering), solitaire's table (`sol.*`), the illustrated themes (`theme.*`) and the page layouts.
 
-Next, the boards' descriptions for screen readers, which `render.js` writes, the cards and the display settings,
-then the remaining
-pages (account, administration, tournaments, batches, a player's page), then the mail and the calendar invitations,
-then the changelog in the help window (ADR 0141, *Left for its stage*).
+Next, the remaining pages (account, administration, tournaments, batches, a player's page), then the mail and the
+calendar invitations, then the changelog in the help window (ADR 0141, *Left for its stage*).

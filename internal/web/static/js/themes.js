@@ -13,6 +13,7 @@
 // together with the hidden <svg> that holds the gradients (url(#th-…)).
 
 import { s } from "./util.js";
+import { t as tr } from "./i18n.js";
 
 const SVG_COLORS = ["red", "yellow", "orange", "white", "blue", "black", "green", "purple", "teal", "sand", "brown"];
 
@@ -158,7 +159,7 @@ function stone(mid, o = {}) {
 
 const SYNTH = {
 	id: "synthwave",
-	label: "Hot Synthwave Vibes",
+	label: tr("theme.synthwave"),
 	board: { light: "#3a1466", mid: "#2c0f55", dark: "#1f0a42", line: "#ff4fd8", frame: "#12032b", label: "#7df9ff", last: "rgba(255,238,90,0.5)", focus: "#7df9ff" },
 	stones: {
 		// Warm: neon pinks, suns and oranges. Cold: electric cyan and violet-black.
@@ -178,7 +179,7 @@ const SYNTH = {
 
 const CELTIC = {
 	id: "celtic",
-	label: "Celtic Rune Fantasy",
+	label: tr("theme.celtic"),
 	board: { light: "#4a6a52", mid: "#3a5a44", dark: "#2c4636", line: "#d9b45a", frame: "#12281c", label: "#e9cf86", last: "rgba(240,205,100,0.5)", focus: "#f0cd64" },
 	stones: {
 		// Warm: garnet, amber, copper and bone. Cold: woad blue and slate-black.
@@ -198,7 +199,7 @@ const CELTIC = {
 
 const SOLSTICE = {
 	id: "solstice",
-	label: "Southwestern Solstice",
+	label: tr("theme.solstice"),
 	board: { light: "#e8c99a", mid: "#d9a96f", dark: "#c78c52", line: "#7a3b1d", frame: "#5b2a16", label: "#f6dca8", last: "rgba(255,226,120,0.6)", focus: "#1f8f95" },
 	stones: {
 		// Warm: terracotta, sunstone, saffron and bone. Cold: turquoise and obsidian.
@@ -218,7 +219,7 @@ const SOLSTICE = {
 
 const BAZAAR = {
 	id: "bazaar",
-	label: "Moroccan Bazaar",
+	label: tr("theme.bazaar"),
 	board: { light: "#f1e3c4", mid: "#e3cda0", dark: "#cfb27c", line: "#8a5a22", frame: "#0f2c4a", label: "#f0cf7a", last: "rgba(255,200,60,0.55)", focus: "#1f56c8" },
 	stones: {
 		// Warm: paprika, brass, saffron and pearl. Cold: majolica cobalt and ebony.
@@ -238,7 +239,7 @@ const BAZAAR = {
 
 const ABYSS = {
 	id: "abyss",
-	label: "Coral Abyss",
+	label: tr("theme.abyss"),
 	board: { light: "#2f8aa6", mid: "#256f90", dark: "#1b567a", line: "#a4f2ff", frame: "#031c2e", label: "#a4f2ff", last: "rgba(255,230,120,0.5)", focus: "#7df9ff" },
 	stones: {
 		// Warm: coral, amber, clownfish and pearl. Cold: bioluminescent blue and the black pearl.
@@ -258,7 +259,7 @@ const ABYSS = {
 
 const GEMS = {
 	id: "gems",
-	label: "Precious Gemstones",
+	label: tr("theme.gems"),
 	board: { light: "#3b3566", mid: "#312b58", dark: "#272246", line: "#e6d595", frame: "#120e26", label: "#e6d595", last: "rgba(255,226,130,0.5)", focus: "#7df9ff" },
 	stones: {
 		// Warm: ruby, citrine, fire opal, diamond and smoky quartz. Cold: sapphire and onyx, with emerald and amethyst besides.
