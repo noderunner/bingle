@@ -5,6 +5,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/noderunner/bingle/internal/i18n"
 )
 
 // changelogEntry is one release of CHANGELOG.md.
@@ -12,6 +14,9 @@ type changelogEntry struct {
 	Version  string `json:"version"`
 	Date     string `json:"date,omitempty"`
 	Markdown string `json:"markdown"`
+	// Lang is the language Markdown is written in: the reader's when the
+	// release is translated, else English's (ADR 0141).
+	Lang string `json:"lang"`
 }
 
 // entryHeading is the heading of a release: "## 0.4.0 - 2026-10-26" (the
@@ -88,11 +93,33 @@ func versionParts(v string) ([3]int, bool) {
 
 // WithChangelog sets the changelog (the text of CHANGELOG.md) whose releases
 // GET /changelog and GET /changelog/entries report, for the Recent Changes of
-// the help window.
-func WithChangelog(md string) Option {
+// the help window, and its translations by language (docs/changelog/<code>.md).
+// A release is told in the reader's language when its translation has it.
+func WithChangelog(md string, translations map[string]string) Option {
 	return func(h *handlers) {
 		h.changelog = changelogEntries(md)
+		for i := range h.changelog {
+			h.changelog[i].Lang = i18n.Default
+		}
+		h.changelogs = map[string]map[string]string{}
+		for code, text := range translations {
+			byVersion := map[string]string{}
+			for _, e := range changelogEntries(text) {
+				byVersion[e.Version] = e.Markdown
+			}
+			h.changelogs[code] = byVersion
+		}
 	}
+}
+
+// inLanguage is a release as the request's reader would read it: in their
+// language when it is translated, else in English.
+func (h *handlers) inLanguage(r *http.Request, e changelogEntry) changelogEntry {
+	lang := requestLanguage(r)
+	if md, ok := h.changelogs[lang][e.Version]; ok {
+		e.Markdown, e.Lang = md, lang
+	}
+	return e
 }
 
 // handleChangelog implements GET /changelog: the newest release of the
@@ -102,7 +129,7 @@ func (h *handlers) handleChangelog(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusNotFound, map[string]string{"error": "no changelog"})
 		return
 	}
-	writeJSON(w, http.StatusOK, h.changelog[0])
+	writeJSON(w, http.StatusOK, h.inLanguage(r, h.changelog[0]))
 }
 
 // changelogEntriesResponse is GET /changelog/entries' answer.
@@ -124,7 +151,7 @@ func (h *handlers) handleChangelogEntries(w http.ResponseWriter, r *http.Request
 	out := changelogEntriesResponse{Entries: []changelogEntry{}}
 	for _, e := range h.changelog {
 		if since == "" || newerThan(e.Version, since) {
-			out.Entries = append(out.Entries, e)
+			out.Entries = append(out.Entries, h.inLanguage(r, e))
 		}
 	}
 	writeJSON(w, http.StatusOK, out)

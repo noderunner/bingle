@@ -38,7 +38,8 @@ set to its path; without one they are skipped. `make test-short` skips the slowe
 6. **Say it in the changelog**: add what changed, for players, to the newest entry of
    [CHANGELOG.md](CHANGELOG.md), or start a new entry (`## 0.4.0 - 2026-10-26`, the engine's
    version) when you raise `internal/version`. The help window of the game shows that entry
-   under *Recent changes*, so write it for the people who play.
+   under *Recent changes*, so write it for the people who play. Add the same entry, in each
+   language, to the changelogs in [docs/changelog/](docs/changelog) (a test checks that each has it).
 7. Open a pull request that says what changed and why, and how you checked it.
 
 ## Adding a game

@@ -120,4 +120,10 @@ The mail and the calendar invitations are in their reader's language too (`mail.
 loads): see [email.md](email.md) for which language a mail is in. They need no plural rules: their numbers are
 written into whole sentences.
 
-Next, the changelog in the help window, then a glossary per language (ADR 0141, *Left for its stage*).
+The help window's *Recent changes* is in the reader's language: `docs/changelog/<code>.md` has each release
+from 0.124.0 (when the Language setting came) in that language, built into the binary beside `CHANGELOG.md`.
+An older release, or one a language lacks, is shown in English, marked `lang="en"`. Each pull request adds its
+entry to every language's changelog, as it does its words to every catalog; `TestChangelog_EachLanguageHasTheNewestEntry`
+checks the newest entry and that each release keeps English's sections.
+
+Next, a glossary per language (ADR 0141, *Left for its stage*).

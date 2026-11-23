@@ -54,11 +54,14 @@ was left to an ADR. The page has no build step, and the binary has eleven direct
   dependency) is needed. The server knows English's plural forms only; a server message that counts would bring a
   language's rules with it. The page counts through `Intl`.
 
+- **The changelog in every language** (decided with it, 2026-11-23): `docs/changelog/<code>.md` beside
+  `CHANGELOG.md`, built into the binary; `/api/changelog` gives a release in the reader's language when that file
+  has it, else English's, and says which in `lang`. The files begin at 0.124.0, the first release a reader of
+  another language could see. Each pull request adds its entry to all of them (CLAUDE.md's changelog rule), and a
+  test checks that each language's newest entry is the engine's version, with English's sections.
+
 ## Left for its stage
 
-- **The changelog** in ten languages (`docs/changelog/<code>.md`, the help window showing the reader's or
-  English), with its step in CLAUDE.md's changelog rule and a test that each language's newest entry has English's
-  version.
 - **A glossary per language** for the platform's words (impulse, muster, practice batch, badge).
 
 ## Consequences

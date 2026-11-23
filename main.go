@@ -3,7 +3,7 @@ package main
 
 import (
 	"context"
-	_ "embed" // CHANGELOG.md
+	"embed"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -24,6 +24,23 @@ import (
 //
 //go:embed CHANGELOG.md
 var changelog string
+
+// changelogs are the changelog in the other languages of the interface, docs/changelog/<code>.md (ADR 0141).
+//
+//go:embed docs/changelog/*.md
+var changelogs embed.FS
+
+// translatedChangelogs reads changelogs by their language's code.
+func translatedChangelogs() map[string]string {
+	out := map[string]string{}
+	files, _ := changelogs.ReadDir("docs/changelog")
+	for _, f := range files {
+		if b, err := changelogs.ReadFile("docs/changelog/" + f.Name()); err == nil {
+			out[strings.TrimSuffix(f.Name(), ".md")] = string(b)
+		}
+	}
+	return out
+}
 
 // apiDocs is docs/api.md, built into the binary so that a client can read it from the server.
 //
@@ -52,6 +69,7 @@ func main() {
 		os.Exit(1)
 	}
 	cfg.Changelog = changelog
+	cfg.Changelogs = translatedChangelogs()
 	cfg.APIDocs = apiDocs
 	cfg.APISchema = apiSchema
 
