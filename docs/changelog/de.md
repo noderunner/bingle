@@ -2,6 +2,11 @@
 
 Was sich in Bingle geändert hat, das Neueste zuerst. Bingle Core (der Server, die Engine und der Web-Client) und jedes Spiel haben eine eigene Version, und jeder Eintrag sagt, welche sich geändert hat. Einträge vor 0.124.0 gibt es nur auf Englisch.
 
+## 0.126.2 - 2026-11-23
+
+### Bingle Core 0.126.2
+- Klarere Wörter für Wertungen, Impulse und gewertete Partien in einigen Sprachen
+
 ## 0.126.1 - 2026-11-23
 
 ### Bingle Core 0.126.1
