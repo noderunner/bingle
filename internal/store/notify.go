@@ -24,16 +24,19 @@ type Contact struct {
 	ConfirmExpires string
 	VerifiedAt     string // "" until confirmed
 	CreatedAt      string
+	// Language is the language its mail is in: that of the browser that last
+	// looked at it (ADR 0141), "" for English.
+	Language string
 }
 
 // Verified reports whether the address was confirmed.
 func (c Contact) Verified() bool { return c.VerifiedAt != "" }
 
-const contactCols = `id, address, addr_hash, secret_hash, stop_token, confirm_hash, COALESCE(confirm_expires, ''), COALESCE(verified_at, ''), created_at`
+const contactCols = `id, address, addr_hash, secret_hash, stop_token, confirm_hash, COALESCE(confirm_expires, ''), COALESCE(verified_at, ''), created_at, language`
 
 func scanContact(row interface{ Scan(...any) error }) (Contact, error) {
 	var c Contact
-	err := row.Scan(&c.ID, &c.Address, &c.AddrHash, &c.SecretHash, &c.StopToken, &c.ConfirmHash, &c.ConfirmExpires, &c.VerifiedAt, &c.CreatedAt)
+	err := row.Scan(&c.ID, &c.Address, &c.AddrHash, &c.SecretHash, &c.StopToken, &c.ConfirmHash, &c.ConfirmExpires, &c.VerifiedAt, &c.CreatedAt, &c.Language)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Contact{}, ErrNotFound
 	}
@@ -43,12 +46,18 @@ func scanContact(row interface{ Scan(...any) error }) (Contact, error) {
 // CreateContact stores a new, unverified contact and returns its id.
 func (s *Store) CreateContact(ctx context.Context, c Contact, expires time.Time) (int64, error) {
 	res, err := s.exec(ctx, "CreateContact",
-		`INSERT INTO notify_contacts (address, addr_hash, secret_hash, stop_token, confirm_hash, confirm_expires) VALUES (?, ?, ?, ?, ?, ?)`,
-		c.Address, c.AddrHash, c.SecretHash, c.StopToken, c.ConfirmHash, stamp(expires))
+		`INSERT INTO notify_contacts (address, addr_hash, secret_hash, stop_token, confirm_hash, confirm_expires, language) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+		c.Address, c.AddrHash, c.SecretHash, c.StopToken, c.ConfirmHash, stamp(expires), c.Language)
 	if err != nil {
 		return 0, fmt.Errorf("storing contact: %w", err)
 	}
 	return res.LastInsertId()
+}
+
+// SetContactLanguage keeps the language a contact is mailed in (ADR 0141).
+func (s *Store) SetContactLanguage(ctx context.Context, id int64, language string) error {
+	_, err := s.exec(ctx, "SetContactLanguage", `UPDATE notify_contacts SET language = ? WHERE id = ?`, language, id)
+	return err
 }
 
 // GetContact returns the contact with the id.

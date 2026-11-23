@@ -34,8 +34,21 @@ type Account struct {
 	HasTOTP bool
 	Admin   bool
 	// Language is the interface language the account chose (ADR 0141), ""
-	// for the browser's own.
-	Language string
+	// for the browser's own; BrowserLanguage is its browser's, as the account
+	// last saw the site.
+	Language, BrowserLanguage string
+}
+
+// MailLanguage is the language to write to the account in: the one it chose,
+// else its browser's, else English (ADR 0141).
+func (a Account) MailLanguage() string {
+	switch {
+	case a.Language != "":
+		return a.Language
+	case a.BrowserLanguage != "":
+		return a.BrowserLanguage
+	}
+	return "en"
 }
 
 // ErrTaken is returned when a handle or an address is already an account's.
@@ -44,7 +57,7 @@ var ErrTaken = errors.New("store: already taken")
 // accountCols are an account's columns, the accounts table being called t.
 func accountCols(t string) string {
 	return t + `.id, ` + t + `.handle, ` + t + `.display_name, ` + t + `.email, ` + t + `.email_verified_at IS NOT NULL, ` + t + `.status, ` +
-		t + `.must_change_password, ` + t + `.principal_id, ` + t + `.created_at, ` + t + `.language, ` +
+		t + `.must_change_password, ` + t + `.principal_id, ` + t + `.created_at, ` + t + `.language, ` + t + `.browser_language, ` +
 		`EXISTS (SELECT 1 FROM credentials c WHERE c.account_id = ` + t + `.id AND c.kind = 'totp'), ` +
 		`EXISTS (SELECT 1 FROM account_groups g WHERE g.account_id = ` + t + `.id AND g.group_name = '` + GroupAdmin + `')`
 }
@@ -52,7 +65,7 @@ func accountCols(t string) string {
 var accountColumns = accountCols("accounts")
 
 func (a *Account) fields() []any {
-	return []any{&a.ID, &a.Handle, &a.DisplayName, &a.Email, &a.EmailVerified, &a.Status, &a.MustChangePassword, &a.PrincipalID, &a.CreatedAt, &a.Language, &a.HasTOTP, &a.Admin}
+	return []any{&a.ID, &a.Handle, &a.DisplayName, &a.Email, &a.EmailVerified, &a.Status, &a.MustChangePassword, &a.PrincipalID, &a.CreatedAt, &a.Language, &a.BrowserLanguage, &a.HasTOTP, &a.Admin}
 }
 
 func scanAccount(row interface{ Scan(...any) error }) (Account, error) {
@@ -80,6 +93,8 @@ type NewAccount struct {
 	// OIDC is a provider's identity ("provider:subject") the account signs
 	// in with, when a provider made it.
 	OIDC string
+	// BrowserLanguage is the language of the browser that made it (ADR 0141).
+	BrowserLanguage string
 }
 
 // CountAccounts is how many accounts there are, deleted ones aside.
@@ -103,9 +118,9 @@ func (s *Store) CreateAccount(ctx context.Context, a NewAccount) (int64, error) 
 		status, verified = AccountActive, time.Now().UTC().Format(sqlTime)
 	}
 	res, err := tx.exec(ctx, "CreateAccount.account",
-		`INSERT INTO accounts (handle, handle_lower, display_name, email, email_lower, email_verified_at, status, must_change_password, principal_id)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		a.Handle, strings.ToLower(a.Handle), a.DisplayName, a.Email, strings.ToLower(a.Email), verified, status, a.MustChangePassword, a.PrincipalID)
+		`INSERT INTO accounts (handle, handle_lower, display_name, email, email_lower, email_verified_at, status, must_change_password, principal_id, browser_language)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		a.Handle, strings.ToLower(a.Handle), a.DisplayName, a.Email, strings.ToLower(a.Email), verified, status, a.MustChangePassword, a.PrincipalID, a.BrowserLanguage)
 	if err != nil {
 		if strings.Contains(err.Error(), "UNIQUE") {
 			return 0, ErrTaken
@@ -261,6 +276,13 @@ func (s *Store) ActivateAccount(ctx context.Context, accountID int64, now time.T
 // 0141): a language's code, or "" for the browser's own.
 func (s *Store) SetAccountLanguage(ctx context.Context, accountID int64, language string) error {
 	_, err := s.exec(ctx, "SetAccountLanguage", `UPDATE accounts SET language = ? WHERE id = ?`, language, accountID)
+	return err
+}
+
+// SetAccountBrowserLanguage keeps the language an account's browser reads
+// in, for its mail when it chose no language (ADR 0141).
+func (s *Store) SetAccountBrowserLanguage(ctx context.Context, accountID int64, language string) error {
+	_, err := s.exec(ctx, "SetAccountBrowserLanguage", `UPDATE accounts SET browser_language = ? WHERE id = ?`, language, accountID)
 	return err
 }
 

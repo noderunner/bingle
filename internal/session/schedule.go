@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/noderunner/bingle/internal/i18n"
 	"github.com/noderunner/bingle/internal/mail"
 	"github.com/noderunner/bingle/internal/store"
 )
@@ -156,7 +157,7 @@ func (m *Manager) gameNameOf(defID string) string {
 }
 
 // calendarEvent is a game on the calendar of address.
-func (m *Manager) calendarEvent(game store.Game, sched store.Schedule, method, address, base string) mail.Event {
+func (m *Manager) calendarEvent(game store.Game, sched store.Schedule, method, address, base, lang string) mail.Event {
 	start, _ := time.Parse(time.RFC3339, sched.StartAt)
 	from, _ := m.NotifyFrom()
 	return mail.Event{
@@ -164,18 +165,19 @@ func (m *Manager) calendarEvent(game store.Game, sched store.Schedule, method, a
 		Seq:       sched.IcsSeq,
 		Start:     start,
 		End:       start.Add(eventLength),
-		Summary:   m.branded(m.gameNameOf(game.GameDefID) + " on Bingle"),
+		Summary:   m.branded(mail.EventSummary(lang, m.gameNameOf(game.GameDefID))),
 		URL:       base + "/game/" + game.RoomCode,
 		Method:    method,
 		Organizer: from,
 		Attendee:  address,
+		Lang:      lang,
 	}
 }
 
 // sendCalendar sends an account the game's time, for its calendar.
 func (m *Manager) sendCalendar(ctx context.Context, game store.Game, sched store.Schedule, a store.Account) {
 	m.mailAccount(ctx, a, func(base string) mail.Message {
-		return mail.GameScheduled(a.Email, m.gameNameOf(game.GameDefID), game.RoomCode, base, m.calendarEvent(game, sched, "REQUEST", a.Email, base), m.now())
+		return mail.GameScheduled(a.MailLanguage(), a.Email, m.gameNameOf(game.GameDefID), game.RoomCode, base, m.calendarEvent(game, sched, "REQUEST", a.Email, base, a.MailLanguage()), m.now())
 	})
 }
 
@@ -217,7 +219,7 @@ func (m *Manager) saveSchedule(ctx context.Context, game store.Game, req *Schedu
 		m.tellFriends(other.PrincipalID)
 		a := other
 		m.mailAccount(ctx, a, func(base string) mail.Message {
-			return mail.GameInvitation(a.Email, creator.Handle, name, game.RoomCode, base, at, req.At == nil)
+			return mail.GameInvitation(a.MailLanguage(), a.Email, creator.Handle, name, game.RoomCode, base, at, req.At == nil)
 		})
 	}
 	if req.At != nil {
@@ -507,7 +509,7 @@ func (m *Manager) noAgreement(ctx context.Context, game store.Game, sched store.
 	}
 	m.tellFriends(creator.PrincipalID)
 	m.mailAccount(ctx, creator, func(base string) mail.Message {
-		return mail.NoCommonTime(creator.Email, m.gameNameOf(game.GameDefID), game.RoomCode, base, by)
+		return mail.NoCommonTime(creator.MailLanguage(), creator.Email, m.gameNameOf(game.GameDefID), game.RoomCode, base, by)
 	})
 	return nil
 }
@@ -606,7 +608,7 @@ func (m *Manager) OfferNewTimes(ctx context.Context, me store.Account, room stri
 		m.tellFriends(v.Account.PrincipalID)
 		a := v.Account
 		m.mailAccount(ctx, a, func(base string) mail.Message {
-			return mail.NewTimesOffered(a.Email, m.gameNameOf(game.GameDefID), game.RoomCode, base)
+			return mail.NewTimesOffered(a.MailLanguage(), a.Email, m.gameNameOf(game.GameDefID), game.RoomCode, base)
 		})
 	}
 	m.tellFriends(me.PrincipalID)
@@ -623,10 +625,11 @@ func (m *Manager) CancelSchedule(ctx context.Context, me store.Account, room str
 	if err != nil {
 		return err
 	}
-	return m.closeSchedule(ctx, game, sched, "the player who scheduled it cancelled it.")
+	return m.closeSchedule(ctx, game, sched, "mail.closed_cancelled")
 }
 
-// closeSchedule closes a game that will not be played, and tells everybody invited.
+// closeSchedule closes a game that will not be played, and tells everybody invited why: reason is a
+// key of the catalog, for each one's mail in their own language.
 func (m *Manager) closeSchedule(ctx context.Context, game store.Game, sched store.Schedule, reason string) error {
 	if sched.Status == store.SchedStarted || sched.Status == store.SchedClosed || game.Status != "waiting" {
 		return ErrNotScheduled
@@ -648,7 +651,7 @@ func (m *Manager) closeSchedule(ctx context.Context, game store.Game, sched stor
 		if v.Status == store.InviteDeclined || v.Status == store.InviteDropped {
 			continue
 		}
-		if err := m.store.SetInviteNotice(ctx, game.ID, v.Account.ID, "closed: "+reason); err != nil {
+		if err := m.store.SetInviteNotice(ctx, game.ID, v.Account.ID, "closed: "+i18n.T(i18n.Default, reason)); err != nil {
 			return err
 		}
 		m.tellFriends(v.Account.PrincipalID)
@@ -658,10 +661,10 @@ func (m *Manager) closeSchedule(ctx context.Context, game store.Game, sched stor
 		m.mailAccount(ctx, a, func(base string) mail.Message {
 			var event *mail.Event
 			if withEntry {
-				e := m.calendarEvent(game, sched, "CANCEL", a.Email, base)
+				e := m.calendarEvent(game, sched, "CANCEL", a.Email, base, a.MailLanguage())
 				event = &e
 			}
-			return mail.GameCancelled(a.Email, m.gameNameOf(game.GameDefID), game.RoomCode, reason, base, event, m.now())
+			return mail.GameCancelled(a.MailLanguage(), a.Email, m.gameNameOf(game.GameDefID), game.RoomCode, reason, base, event, m.now())
 		})
 	}
 	m.publishState(ctx, game.RoomCode, "join")
@@ -684,8 +687,8 @@ func (m *Manager) tellAcceptedTime(ctx context.Context, game store.Game, a store
 	return m.resolveSchedule(ctx, game, sched)
 }
 
-// GameCalendar is a game's time as a file to download, with no people in it.
-func (m *Manager) GameCalendar(ctx context.Context, room, base string) (string, error) {
+// GameCalendar is a game's time as a file to download, with no people in it, its words in lang.
+func (m *Manager) GameCalendar(ctx context.Context, room, base, lang string) (string, error) {
 	game, sched, err := m.loadSchedule(ctx, canonRoom(room))
 	if err != nil {
 		return "", err
@@ -696,7 +699,7 @@ func (m *Manager) GameCalendar(ctx context.Context, room, base string) (string, 
 	if base == "" {
 		base = m.publicBase()
 	}
-	return m.calendarEvent(game, sched, "PUBLISH", "", base).ICS(m.now()), nil
+	return m.calendarEvent(game, sched, "PUBLISH", "", base, lang).ICS(m.now()), nil
 }
 
 // publicBase is the server's public URL, where one is known.
@@ -750,7 +753,7 @@ func (m *Manager) checkSchedule1(ctx context.Context, room string) error {
 		if err != nil || now.Before(by) {
 			return err
 		}
-		return m.closeSchedule(ctx, game, sched, "no time suited everyone, and no new times were offered.")
+		return m.closeSchedule(ctx, game, sched, "mail.closed_no_time")
 	case store.SchedPolling:
 		slots, err := m.store.SlotsOf(ctx, game.ID)
 		if err != nil {

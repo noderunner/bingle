@@ -159,7 +159,7 @@ func (rs *Resolver) handleSignup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if req.ContactID != 0 {
-		s, err := rs.accounts.SignupWithContact(r.Context(), req.ContactID, req.ContactSecret, req.Handle, req.Password, guestOf(r), req.Invite, rs.transport.PeerIP(r), r.UserAgent())
+		s, err := rs.accounts.SignupWithContact(r.Context(), req.ContactID, req.ContactSecret, req.Handle, req.Password, guestOf(r), req.Invite, rs.transport.PeerIP(r), r.UserAgent(), i18n.ForRequest(r, ""))
 		if err != nil {
 			rs.fail(w, err)
 			return
@@ -168,7 +168,7 @@ func (rs *Resolver) handleSignup(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, rs.meOf(r, s.Account))
 		return
 	}
-	if err := rs.accounts.Signup(r.Context(), req.Handle, req.Email, req.Password, guestOf(r), req.Invite, rs.transport.PeerIP(r)); err != nil {
+	if err := rs.accounts.Signup(r.Context(), req.Handle, req.Email, req.Password, guestOf(r), req.Invite, rs.transport.PeerIP(r), i18n.ForRequest(r, "")); err != nil {
 		rs.fail(w, err)
 		return
 	}
@@ -387,8 +387,22 @@ func (rs *Resolver) meOf(r *http.Request, a store.Account) Me {
 	out.Admin = a.Admin && !out.NeedsSecondFactor
 	out.TourSeen = rs.tourSeen(r, a.PrincipalID)
 	out.Language, out.LanguageChoice = i18n.ForRequest(r, a.Language), i18n.Choice(r, a.Language)
+	rs.keepBrowserLanguage(r, a)
 	rs.decorate(r, &out)
 	return out
+}
+
+// keepBrowserLanguage notes the language the account's browser reads the site
+// in, which its mail is in when it has chosen none (ADR 0141). It is written
+// only when it changes; a failure to write it costs only that.
+func (rs *Resolver) keepBrowserLanguage(r *http.Request, a store.Account) {
+	lang := i18n.ForRequest(r, "")
+	if rs.accounts == nil || lang == a.BrowserLanguage {
+		return
+	}
+	if err := rs.accounts.st.SetAccountBrowserLanguage(r.Context(), a.ID, lang); err != nil {
+		rs.log.Warn("the language of an account's browser was not kept", "err", err)
+	}
 }
 
 // tourSeen says whether the principal has seen the welcome tour. When that

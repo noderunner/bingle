@@ -67,7 +67,7 @@ func TestSanitizeKeepsValuesHarmless(t *testing.T) {
 
 func TestBuildRejectsInjectionAndFixesTheHeaders(t *testing.T) {
 	now := time.Date(2026, 10, 25, 12, 0, 0, 0, time.UTC)
-	m := mail.Turn("p@example.com", "Tic-Tac-Toe", "ABC123", "https://bingle.example.com", "stoptoken")
+	m := mail.Turn("en", "p@example.com", "Tic-Tac-Toe", "ABC123", "https://bingle.example.com", "stoptoken")
 	raw, err := m.Build("bingle_games@proton.me", "Bingle", now)
 	if err != nil {
 		t.Fatal(err)
@@ -95,7 +95,7 @@ func TestBuildRejectsInjectionAndFixesTheHeaders(t *testing.T) {
 	}
 
 	// A game name or room code with line breaks cannot add headers or recipients.
-	evil := mail.Turn("p@example.com", "Game\r\nBcc: victim@example.com", "AB\r\nCD", "https://bingle.example.com", "t")
+	evil := mail.Turn("en", "p@example.com", "Game\r\nBcc: victim@example.com", "AB\r\nCD", "https://bingle.example.com", "t")
 	raw, err = evil.Build("bingle_games@proton.me", "Bingle", now)
 	if err != nil {
 		t.Fatal(err)
@@ -143,7 +143,7 @@ func send(t *testing.T, cfg config.Mail, to string) error {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
-	return s.Send(ctx, mail.Confirmation(to, "https://bingle.example.com", "ctoken", "stoken"))
+	return s.Send(ctx, mail.Confirmation("en", to, "https://bingle.example.com", "ctoken", "stoken"))
 }
 
 func TestSendOverSTARTTLS(t *testing.T) {
@@ -272,7 +272,7 @@ func TestConfigSecretIsNeverPrinted(t *testing.T) {
 // The mail to an address someone tried to sign up with again names the
 // account, links only to the public sign-in pages and carries no token.
 func TestAccountExistsMail(t *testing.T) {
-	m := mail.AccountExists("p@example.com", "ana\r\nBcc: x", "https://bingle.example.com")
+	m := mail.AccountExists("en", "p@example.com", "ana\r\nBcc: x", "https://bingle.example.com")
 	raw, err := m.Build("bingle_games@proton.me", "Bingle", time.Now())
 	if err != nil {
 		t.Fatal(err)
@@ -291,11 +291,39 @@ func TestAccountExistsMail(t *testing.T) {
 // Turn mail may have been turned on by a tournament rather than asked for, so it
 // says neither, and says where to turn it off.
 func TestTurnMailSaysWhereToTurnItOff(t *testing.T) {
-	msg := mail.Turn("a@example.com", "Hex", "ABC123", "https://bingle.example", "tok")
+	msg := mail.Turn("en", "a@example.com", "Hex", "ABC123", "https://bingle.example", "tok")
 	if strings.Contains(msg.Body, "you asked") {
 		t.Errorf("the mail says it was asked for: %s", msg.Body)
 	}
 	if !strings.Contains(msg.Body, "turn them off in the game's options") {
 		t.Errorf("the mail does not say where to turn it off: %s", msg.Body)
+	}
+}
+
+// A game's time is written in the reader's language, names of the day and the month and all, and
+// the calendar's words are too; an unknown language reads as English.
+func TestScheduleMail_SaysTheTimeInTheReadersLanguage(t *testing.T) {
+	at := time.Date(2026, time.November, 23, 18, 30, 0, 0, time.UTC)
+	ev := mail.Event{UID: "game-ABC123@bingle", Start: at, End: at.Add(time.Hour), Summary: mail.EventSummary("de", "Hex"), URL: "https://bingle.example/game/ABC123",
+		Method: "REQUEST", Organizer: "games@bingle.example", Attendee: "a@example.com", Lang: "de"}
+	for _, tc := range []struct{ lang, subject, when string }{
+		{"en", "Hex is set for 23 November, 18:30 UTC", "Monday 23 November 2026, 18:30 UTC"},
+		{"de", "Hex ist angesetzt für 23. November, 18:30 UTC", "Montag, 23. November 2026, 18:30 UTC"},
+		{"ja", "Hex は 11月23日 18:30 UTC に決まりました", "2026年11月23日（月曜日）18:30 UTC"},
+		{"ru", "Hex: назначено на 23 ноября, 18:30 UTC", "понедельник, 23 ноября 2026 г., 18:30 UTC"},
+		{"xx", "Hex is set for 23 November, 18:30 UTC", "Monday 23 November 2026, 18:30 UTC"},
+	} {
+		msg := mail.GameScheduled(tc.lang, "a@example.com", "Hex", "ABC123", "https://bingle.example", ev, at)
+		if msg.Subject != tc.subject || !strings.Contains(msg.Body, tc.when) {
+			t.Errorf("%s: %q\n%s", tc.lang, msg.Subject, msg.Body)
+		}
+	}
+	ics := ev.ICS(at)
+	if !strings.Contains(ics, "SUMMARY:Hex auf Bingle") || !strings.Contains(ics, "DESCRIPTION:Partie öffnen: https://bingle.example/game/ABC123") {
+		t.Errorf("the calendar in German:\n%s", ics)
+	}
+	// A reason for closing a game is a key, said in the reader's language.
+	if msg := mail.GameCancelled("fr", "a@example.com", "Hex", "ABC123", "mail.closed_cancelled", "https://bingle.example", nil, at); !strings.Contains(msg.Body, "a été fermée : la personne qui l’avait programmée l’a annulée.") {
+		t.Errorf("the closing in French:\n%s", msg.Body)
 	}
 }

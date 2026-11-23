@@ -187,7 +187,7 @@ func (m *Manager) mailFriendRequest(ctx context.Context, from, to store.Account,
 		return
 	}
 	_ = m.SendAccountMail(ctx, "friend", to.Email, ip, func(base string) mail.Message {
-		return mail.FriendRequest(to.Email, from.Handle, base)
+		return mail.FriendRequest(to.MailLanguage(), to.Email, from.Handle, base)
 	})
 }
 
