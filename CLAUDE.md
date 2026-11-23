@@ -101,7 +101,8 @@ git -c credential.helper='!f() { echo username=x-access-token; echo "password=$(
 - Push back, in the PR or the issue, on anything that hurts performance, simplicity, security or
   normal UI practice — before building it.
 - **A word added to or changed in the interface goes through `t()`** (`js/i18n.js`; `{{t .Lang "key"}}` in a
-  template), its key in `internal/i18n/catalogs/en.json` and a machine draft in the nine other catalogs, and CSS uses
+  template), its key in `internal/i18n/catalogs/en.json` and a machine draft in the nine other catalogs (in the words of
+  [docs/glossary/](docs/glossary/en.md) for the platform's terms), and CSS uses
   logical properties (`margin-inline-start`, not `margin-left`) outside boards and pictures: see
   [docs/languages.md](docs/languages.md) (ADR 0141).
 - **Keep the interface terse.** Add only the controls and words a request asks for: no explanatory

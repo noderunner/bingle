@@ -60,9 +60,13 @@ was left to an ADR. The page has no build step, and the binary has eleven direct
   another language could see. Each pull request adds its entry to all of them (CLAUDE.md's changelog rule), and a
   test checks that each language's newest entry is the engine's version, with English's sections.
 
-## Left for its stage
-
-- **A glossary per language** for the platform's words (impulse, muster, practice batch, badge).
+- **A glossary per language** (decided with it, 2026-11-23): `docs/glossary/en.md` lists the platform's words
+  (impulse, muster, practice batch, badge, rating and so on), what each means and the catalog key that shows it;
+  `docs/glossary/<code>.md` gives each language's word. A test checks that each language's catalog says its word
+  in that key, and that two terms share a word in a language only where its file says so. Writing it found words
+  shared by mistake, now apart: a rating and a tournament's standings in Spanish and French (now *puntuación* and
+  *cote*), an impulse and a practice batch in Arabic, an impulse and a turn in Chinese, a rating and a rated game
+  in Japanese and Korean.
 
 ## Consequences
 

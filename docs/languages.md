@@ -126,4 +126,7 @@ An older release, or one a language lacks, is shown in English, marked `lang="en
 entry to every language's changelog, as it does its words to every catalog; `TestChangelog_EachLanguageHasTheNewestEntry`
 checks the newest entry and that each release keeps English's sections.
 
-Next, a glossary per language (ADR 0141, *Left for its stage*).
+The platform's own words have a glossary, [docs/glossary/](glossary/en.md): what each means, the key that shows it,
+and each language's word for it, which `TestGlossary_EachLanguageHasEveryTermAsItsCatalogShowsIt` checks against
+the catalogs. A new string that uses one of these words uses the glossary's word; a change of a word changes the
+glossary and every key that says it together.
