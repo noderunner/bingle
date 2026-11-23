@@ -7,15 +7,15 @@
 
 import { h, store } from "./util.js";
 import { onLeave } from "./nav.js";
-import { dir } from "./i18n.js";
+import { dir, t } from "./i18n.js";
 
 const KEY = "bingle.layout";
 
 /** The layouts a player can ask for in the options. */
 export const LAYOUTS = [
-	["auto", "Automatic (by screen)"],
-	["phone", "Phone / tablet"],
-	["desktop", "Desktop"],
+	["auto", t("layout.auto")],
+	["phone", t("layout.phone")],
+	["desktop", t("layout.desktop")],
 ];
 
 // A touch screen of phone or portrait-tablet width, or as short as a phone on its

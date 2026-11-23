@@ -118,7 +118,7 @@ const plainEnglish = `((sel) => {
 	const keep = /^(Ana|Bingle|GitHub|API|bingle|Buchholz|v?[0-9.]+|[A-Z0-9]{4,8}|bgg_…|https?:\/\/\S+|\[Size .*)$/s;
 	// A board's or a card table's picture is the renderer's to describe (the game page's part).
 	// A rules guide is a game's own content (#253), the welcome tour's sample of one too.
-	const pictures = ".game-card-preview, .setup-preview, .puzzle-preview, #card-set-preview, .tour-rules .md, .tour-board";
+	const pictures = ".tour-rules .md";
 	const accented = /[\u00C0-\u024F\u1E00-\u1EFF]/;
 	const words = (text) => text.split(/[\s·,:()\[\]]+/);
 	// A plain English word: not accented, not a handle, not the games' own (window.__content).
@@ -152,8 +152,9 @@ func learnContent(t *testing.T, ctx context.Context) {
 	if !awaitBool(t, ctx, `(async () => {
 		const words = new Set();
 		const add = (v) => {
-			// A tutorial's text is Markdown: its words are shown without the marks too.
-			if (typeof v === "string") for (const w of (v + " " + v.replace(/[*_#]/g, "")).split(/[\s·,:()\[\]]+/)) words.add(w.replace(/[.!?;"“”'’]+$/, ""));
+			// A tutorial's text is Markdown: its words are shown without the marks too, and a
+			// piece's name in a sentence in lower case.
+			if (typeof v === "string") for (const w of (v + " " + v.replace(/[*_#]/g, "") + " " + v.toLowerCase()).split(/[\s·,:()\[\]]+/)) words.add(w.replace(/[.!?;"“”'’]+$/, ""));
 			else if (Array.isArray(v)) v.forEach(add);
 			else if (v && typeof v === "object") Object.values(v).forEach(add);
 		};
@@ -500,4 +501,36 @@ func TestWebLanguages_TheMovesOptionsAndTutorialAreTranslated(t *testing.T) {
 	openTutorial(t, ctx, base)
 	waitJS(t, ctx, "the tutorial", `!!document.getElementById("tutorial-count")`, 15*time.Second)
 	check("the tutorial", "#tutorial")
+}
+
+func TestWebLanguages_TheCardsAreTranslated(t *testing.T) {
+	base := newRESTTestServer(t)
+	room := solitaireRoom(t, base, "solitaire", "amphibians")
+	ctx, cancel := newChromedpContext(t, 120*time.Second)
+	defer cancel()
+	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1400, 1000), chromedp.Navigate(base+"/healthz"), chromedp.Evaluate(`document.cookie = "bingle_lang=en-XA; path=/"; true`, nil)); err != nil {
+		t.Fatal(err)
+	}
+	check := func(what, sel string) {
+		t.Helper()
+		time.Sleep(500 * time.Millisecond)
+		if !evalBool(t, ctx, `!!window.__content`) {
+			learnContent(t, ctx)
+		}
+		if got := evalString(t, ctx, plainEnglish+`("`+sel+`")`); got != "" {
+			t.Errorf("%s: %s", what, got)
+		}
+	}
+	openGameAs(t, ctx, base, room, "solitaire", "Ana")
+	waitJS(t, ctx, "the table", `document.querySelectorAll('.sol-column .pcard.face[data-set="amphibians"]').length === 7`, 15*time.Second)
+	check("a solitaire table in a set of cards", "#card-table")
+
+	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/"), chromedp.WaitVisible(`.game-card[data-family="test-tricks"]`, chromedp.ByQuery)); err != nil {
+		t.Fatal(err)
+	}
+	clickSel(t, ctx, `.game-card[data-family="test-tricks"]`)
+	waitJS(t, ctx, "the sets", `!document.getElementById("card-set-field").hidden`, 10*time.Second)
+	evalString(t, ctx, `(function(){ var s = document.getElementById("card-set"); s.value = "lovecraftian"; s.dispatchEvent(new Event("change", {bubbles: true})); return "ok"; })()`)
+	waitJS(t, ctx, "the picture", `document.querySelector('#card-set-preview svg.ts-preview') !== null`, 5*time.Second)
+	check("the sets of cards", "#card-set-field")
 }

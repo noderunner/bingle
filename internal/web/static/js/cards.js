@@ -21,6 +21,7 @@
 import { h, store } from "./util.js";
 import { cardFaceSvg, isClassicSuit } from "./card-art.js";
 import { backSvg, currentCardSet, setFace, setSuitName } from "./card-sets.js";
+import { t as tr } from "./i18n.js";
 
 /** The type id of a card instance ("blue-1#2" → "blue-1"). */
 export function typeId(id) {
@@ -64,7 +65,7 @@ export function cardFace(info, id, extra = {}) {
 	const cls = "pcard face" + (extra.class ? " " + extra.class : "");
 	const style = suit.color ? `--suit: ${suit.color}` : null;
 	if (t && isClassicSuit(pip) && !t.text && !(t.symbols && t.symbols.length)) {
-		const name = `${label} of ${(suit.label || "").toLowerCase()}`;
+		const name = tr("cards.of", { rank: label, suit: (suit.label || "").toLowerCase() });
 		return h("span", { class: cls, style, "data-card": id, "data-type": typeId(id), title: name }, cardFaceSvg(pip, label));
 	}
 	const corner = (c) => h("span", { class: `pc-corner ${c}` }, h("span", { class: "pc-rank" }, label), pip ? h("span", { class: "pc-pip" }, pip) : null);
@@ -82,11 +83,11 @@ export function cardFace(info, id, extra = {}) {
 /** The back of a card. */
 export function cardBack(info, extra = {}) {
 	const set = currentCardSet(info);
-	if (set) return h("span", { class: "pcard back themed" + (extra.class ? " " + extra.class : ""), "data-set": set.id, "aria-label": "A face-down card" }, backSvg(set));
+	if (set) return h("span", { class: "pcard back themed" + (extra.class ? " " + extra.class : ""), "data-set": set.id, "aria-label": tr("cards.face_down") }, backSvg(set));
 	const back = (info.cards && info.cards.back) || {};
 	return h(
 		"span",
-		{ class: "pcard back" + (extra.class ? " " + extra.class : ""), style: back.color ? `--back: ${back.color}` : null, "aria-label": "A face-down card" },
+		{ class: "pcard back" + (extra.class ? " " + extra.class : ""), style: back.color ? `--back: ${back.color}` : null, "aria-label": tr("cards.face_down") },
 		back.text ? h("span", { class: "pc-back-text" }, back.text) : null
 	);
 }
@@ -461,7 +462,7 @@ export function choiceIcon(desc, ctx, size) {
  */
 export function choiceGrid(grid, ctx) {
 	const widest = Math.max(...grid.lines.map((l) => l.boxes.length));
-	const root = h("div", { class: "choice-grid", id: "choice-grid", role: "table", "aria-label": "The board of terms", style: `--cols: ${widest}` });
+	const root = h("div", { class: "choice-grid", id: "choice-grid", role: "table", "aria-label": tr("cards.terms_board"), style: `--cols: ${widest}` });
 	for (const line of grid.lines) {
 		const boxes = h("div", { class: "cg-boxes", role: "presentation", style: `--n: ${line.boxes.length}` });
 		for (const b of line.boxes) {
@@ -469,9 +470,9 @@ export function choiceGrid(grid, ctx) {
 			const can = b.state === "open" && ctx.actions.has(id);
 			const crosser = b.by ? ctx.seats.find((s) => s.seat === b.by) : null;
 			let words = setWords(b, ctx.info);
-			if (b.state === "crossed") words += crosser ? `: crossed off by ${crosser.label}` : ": crossed off";
-			else if (b.state === "chosen") words += ": left open, the rule of the round";
-			else if (b.state === "covered") words += ": not at the table";
+			if (b.state === "crossed") words = crosser ? tr("cards.crossed_by", { box: words, seat: crosser.label }) : tr("cards.crossed", { box: words });
+			else if (b.state === "chosen") words = tr("cards.chosen", { box: words });
+			else if (b.state === "covered") words = tr("cards.covered", { box: words });
 			const pic = b.state === "crossed" && b.by_icon ? choiceIcon(b.by_icon, ctx, 34) : choiceIcon(b.icon, ctx, 34);
 			const attrs = { class: `cg-box ${b.state}` + (can ? " clickable" : ""), "data-line": line.id, "data-box": b.id, "data-state": b.state, "data-by": b.by || null, title: words, "aria-label": words, role: "cell" };
 			const kids = [pic || h("span", { class: "cg-label" }, b.label)];
