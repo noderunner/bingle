@@ -14,6 +14,7 @@
 import { h } from "./util.js";
 import { api } from "./api.js";
 import { leaveVoice, inCall as inGameCall, voiceUnsupported, micStream, iceServers } from "./voice.js";
+import { t } from "./i18n.js";
 
 const C = {
 	peer: "", // the address of the person we are talking to
@@ -90,7 +91,7 @@ export async function callPerson(address, name) {
 	try {
 		await api.directCall(address, true);
 	} catch (err) {
-		C.error = err.message || "The call could not be made.";
+		C.error = err.message || t("call.not_made");
 		hangUp({ quiet: true });
 		return;
 	}
@@ -113,7 +114,7 @@ export function ended(from, dropped) {
 	if (from && C.peer && from !== C.peer) return;
 	teardown();
 	C.state = "";
-	C.error = dropped ? "The call ended: you joined another one." : "";
+	C.error = dropped ? t("call.dropped") : "";
 	changed();
 }
 
@@ -179,7 +180,7 @@ async function connection() {
 	pc.onconnectionstatechange = () => {
 		if (C.pc !== pc) return;
 		if (pc.connectionState === "connected") C.state = "live";
-		if (pc.connectionState === "failed") C.error = "The call could not be connected.";
+		if (pc.connectionState === "failed") C.error = t("call.not_connected");
 		changed();
 	};
 	return pc;
@@ -201,7 +202,7 @@ async function start() {
 		await pc.setLocalDescription(offer);
 		await signal("offer", { type: pc.localDescription.type, sdp: pc.localDescription.sdp });
 	} catch (err) {
-		C.error = err && err.message ? err.message : "The microphone could not be opened.";
+		C.error = err && err.message ? err.message : t("call.no_mic");
 		changed();
 	}
 }

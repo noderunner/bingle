@@ -21,6 +21,7 @@ import { h, store, toast } from "./util.js";
 import { api, ApiError } from "./api.js";
 import { setKeepAlive, untracked, onNavigate } from "./nav.js";
 import { micIcon } from "./ui-icons.js";
+import { t, tParts } from "./i18n.js";
 
 const HEARTBEAT_MS = 15000;
 const SPEAK_LEVEL = 0.035; // RMS of the signal above which somebody counts as speaking
@@ -124,10 +125,10 @@ export function toggleDeafen() {
 /** Why voice cannot work here, or "" when it can. */
 export function voiceUnsupported() {
 	if (!window.isSecureContext) {
-		return "Voice chat needs a secure connection: open this page over https:// (or on localhost). Your browser does not allow the microphone on plain http.";
+		return t("voice.insecure");
 	}
 	if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof RTCPeerConnection === "undefined") {
-		return "This browser cannot do voice chat (no microphone or WebRTC support).";
+		return t("voice.unsupported");
 	}
 	return "";
 }
@@ -136,14 +137,14 @@ function micError(err) {
 	switch (err && err.name) {
 		case "NotAllowedError":
 		case "SecurityError":
-			return "The microphone was blocked. Allow it for this site in the browser (the icon in the address bar), then try again.";
+			return t("voice.blocked");
 		case "NotFoundError":
 		case "OverconstrainedError":
-			return "No microphone was found. Plug one in or choose another in the browser's settings.";
+			return t("voice.no_mic");
 		case "NotReadableError":
-			return "The microphone is in use by another program.";
+			return t("voice.mic_busy");
 		default:
-			return (err && err.message) || "The microphone could not be opened.";
+			return (err && err.message) || t("call.no_mic");
 	}
 }
 
@@ -161,7 +162,7 @@ function ensureAudioHost() {
 function peerFor(seat, name) {
 	let p = V.peers.get(seat);
 	if (!p) {
-		p = { seat, name: name || `Seat ${seat}`, pc: null, audio: null, state: "new", speaking: false, pending: [], stream: null, restarts: 0 };
+		p = { seat, name: name || t("voice.seat", { n: seat }), pc: null, audio: null, state: "new", speaking: false, pending: [], stream: null, restarts: 0 };
 		V.peers.set(seat, p);
 	} else if (name) {
 		p.name = name;
@@ -366,7 +367,7 @@ export function voiceEvent(env, code) {
 			// at a time, and we have joined another (a game, or somebody's
 			// direct call).
 			teardown();
-			toast("You left the voice chat of this game: you are in another call.");
+			toast(t("voice.left"));
 		}
 	}
 	paint();
@@ -690,7 +691,7 @@ function measure() {
 
 // ---- the chat card's microphone, and who is in the call --------------------------------
 
-const STATE_TEXT = { new: "waiting", connecting: "connecting…", connected: "connected", failed: "no connection" };
+const STATE_TEXT = { new: "voice.state_waiting", connecting: "voice.state_connecting", connected: "voice.connected", failed: "voice.state_failed" };
 
 function peerRow(seat, name, me) {
 	const p = V.peers.get(seat);
@@ -699,10 +700,10 @@ function peerRow(seat, name, me) {
 		"li",
 		{ class: "voice-peer", "data-voice-seat": seat, "data-state": state, "data-me": me ? "1" : null },
 		h("span", { class: "voice-dot", "aria-hidden": "true" }),
-		h("span", { class: "voice-name" }, me ? `${name} (you)` : name),
+		h("span", { class: "voice-name" }, me ? t("voice.you", { name }) : name),
 		me
-			? h("span", { class: "voice-state small muted" }, V.deafened ? "deafened" : micOpen() ? "mic on" : "mic off")
-			: h("span", { class: "voice-state small muted" }, STATE_TEXT[state] || state)
+			? h("span", { class: "voice-state small muted" }, V.deafened ? t("voice.deafened_state") : micOpen() ? t("voice.mic_on") : t("voice.mic_off"))
+			: h("span", { class: "voice-state small muted" }, STATE_TEXT[state] ? t(STATE_TEXT[state]) : state)
 	);
 	if (!me && p) {
 		const vol = h("input", {
@@ -711,8 +712,8 @@ function peerRow(seat, name, me) {
 			max: "100",
 			value: String(Math.round((typeof prefs.volumes[p.name] === "number" ? prefs.volumes[p.name] : 1) * 100)),
 			class: "voice-volume",
-			"aria-label": `Volume of ${p.name}`,
-			title: "Volume",
+			"aria-label": t("voice.volume_of", { name: p.name }),
+			title: t("voice.volume"),
 		});
 		vol.addEventListener("input", () => {
 			prefs.volumes[p.name] = Number(vol.value) / 100;
@@ -739,7 +740,7 @@ function peerRow(seat, name, me) {
 							paint();
 						},
 					},
-					"Retry"
+					t("voice.retry")
 				)
 			);
 		}
@@ -753,8 +754,8 @@ function micOpen() {
 
 function deviceSelect(label, id, devices, value, onchange) {
 	const sel = h("select", { id, "aria-label": label });
-	sel.append(h("option", { value: "" }, "Default"));
-	devices.forEach((d, i) => sel.append(h("option", { value: d.deviceId }, d.label || `${label} ${i + 1}`)));
+	sel.append(h("option", { value: "" }, t("voice.default")));
+	devices.forEach((d, i) => sel.append(h("option", { value: d.deviceId }, d.label || t("voice.device_n", { device: label, n: i + 1 }))));
 	sel.value = devices.some((d) => d.deviceId === value) ? value : "";
 	sel.addEventListener("change", () => onchange(sel.value));
 	return h("label", { class: "voice-device small" }, h("span", {}, label), sel);
@@ -764,12 +765,12 @@ function fill() {
 	const btn = cardEl;
 	const here = !inCall() || V.code === viewing.code;
 	const label = !here
-		? `Talk in this game instead (you are in the voice chat of game ${V.code})`
+		? t("voice.talk_here", { code: V.code })
 		: V.joined
-			? "In the voice chat: its settings"
+			? t("voice.in_settings")
 			: V.joining
-				? "Joining the voice chat…"
-				: "Join the voice chat";
+				? t("voice.joining")
+				: t("voice.join");
 	if (btn) {
 		btn.title = label;
 		btn.setAttribute("aria-label", label);
@@ -781,7 +782,7 @@ function fill() {
 	}
 	if (!noteEl) return;
 	noteEl.textContent = "";
-	if (!here) noteEl.append(h("span", { id: "voice-elsewhere" }, "You are in the voice chat of ", h("a", { href: `/game/${V.code}` }, `game ${V.code}`), "."));
+	if (!here) noteEl.append(h("span", { id: "voice-elsewhere" }, ...tParts("voice.elsewhere", { game: h("a", { href: `/game/${V.code}` }, t("voice.game", { code: V.code })) })));
 	else if (V.error) noteEl.append(h("span", { id: "voice-error", class: "error", role: "alert" }, V.error));
 	noteEl.hidden = !noteEl.childNodes.length;
 }
@@ -829,9 +830,9 @@ export function voiceSettings() {
 		paint();
 	});
 	const keyName = prefs.pttKey.replace(/^Key/, "").replace(/^Digit/, "");
-	const keyBtn = h("button", { type: "button", class: "ghost", id: "voice-ptt-key", title: "Choose the push-to-talk key" }, keyName);
+	const keyBtn = h("button", { type: "button", class: "ghost", id: "voice-ptt-key", title: t("voice.ptt_key") }, keyName);
 	keyBtn.addEventListener("click", () => {
-		keyBtn.textContent = "press a key…";
+		keyBtn.textContent = t("voice.press_key");
 		const grab = (ev) => {
 			ev.preventDefault();
 			ev.stopPropagation();
@@ -848,9 +849,9 @@ export function voiceSettings() {
 		h(
 			"div",
 			{ class: "voice-ptt small" },
-			h("label", { class: "check" }, ptt, h("span", {}, "Push to talk")),
-			prefs.ptt ? h("span", {}, "hold ", keyBtn) : null,
-			prefs.ptt && V.pttHeld ? h("span", { class: "badge turn" }, "talking") : null
+			h("label", { class: "check" }, ptt, h("span", {}, t("voice.ptt"))),
+			prefs.ptt ? h("span", {}, ...tParts("voice.hold", { key: keyBtn })) : null,
+			prefs.ptt && V.pttHeld ? h("span", { class: "badge turn" }, t("voice.talking")) : null
 		),
 	];
 	const outputs = V.devices.outputs.length > 1 && typeof HTMLMediaElement.prototype.setSinkId === "function";
@@ -859,8 +860,8 @@ export function voiceSettings() {
 			h(
 				"div",
 				{ class: "voice-devices" },
-				V.devices.inputs.length > 1 ? deviceSelect("Microphone", "voice-input", V.devices.inputs, prefs.input, chooseInput) : null,
-				outputs ? deviceSelect("Speakers", "voice-output", V.devices.outputs, prefs.output, chooseOutput) : null
+				V.devices.inputs.length > 1 ? deviceSelect(t("voice.microphone"), "voice-input", V.devices.inputs, prefs.input, chooseInput) : null,
+				outputs ? deviceSelect(t("voice.speakers"), "voice-output", V.devices.outputs, prefs.output, chooseOutput) : null
 			)
 		);
 	}

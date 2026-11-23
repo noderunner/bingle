@@ -4,6 +4,7 @@
 
 import { h, rememberedGames, rememberGame, rememberOlderGame, forgetGame, forgottenGames, chatReadUpTo, ago, toast } from "./util.js";
 import { api, gameTitle } from "./api.js";
+import { t } from "./i18n.js";
 
 let defsPromise = null;
 
@@ -75,7 +76,7 @@ export function openSeats(info) {
 
 /** "2 seats open" / "1 seat open", or "" when the table is full. */
 function openSeatsText(n) {
-	return n > 0 ? `${n} seat${n === 1 ? "" : "s"} open` : "";
+	return n > 0 ? t("games.seats_open", { n }) : "";
 }
 
 /** Games where it is your turn float to the top, then the newest. */
@@ -97,23 +98,23 @@ const tagBadges = (tags) => (tags || []).map((tag) => h("span", { class: "badge 
 export function openGameRow(g, defs, isMine, action = null) {
 	const def = defs.find((d) => d.id === String(g.game_def_id).split("~")[0]);
 	const title = g.name || (def ? gameTitle(def) : g.game_def_id);
-	const names = (g.players || []).map((p) => p.Name + (p.Bot ? " (bot)" : ""));
-	const meta = [!names.length ? "nobody seated yet" : names.length > 2 ? `${names.length} players` : names.join(" vs ")];
-	if (g.status !== "active") meta.push(g.lobby ? "waiting for its host" : "waiting for players");
+	const names = (g.players || []).map((p) => (p.Bot ? t("games.bot", { name: p.Name }) : p.Name));
+	const meta = [!names.length ? t("games.nobody_seated") : names.length > 2 ? t("games.players", { n: names.length }) : names.length === 2 ? t("games.versus", { a: names[0], b: names[1] }) : names[0]];
+	if (g.status !== "active") meta.push(g.lobby ? t("games.waiting_host") : t("games.waiting_players"));
 	if (g.updated_at) meta.push(ago(g.updated_at));
 	const badges = [];
 	badges.push(...tagBadges(g.tags));
-	if (g.rated) badges.push(h("span", { class: "badge rated" }, "Rated"));
-	if (g.lobby) badges.push(h("span", { class: "badge waiting" }, "In the lobby"));
-	else if (g.status === "waiting") badges.push(h("span", { class: "badge waiting" }, "Waiting"));
+	if (g.rated) badges.push(h("span", { class: "badge rated" }, t("games.rated")));
+	if (g.lobby) badges.push(h("span", { class: "badge waiting" }, t("games.in_lobby")));
+	else if (g.status === "waiting") badges.push(h("span", { class: "badge waiting" }, t("games.waiting")));
 	if (g.open_seats > 0) badges.push(h("span", { class: "badge open-seats", "data-open-seats": g.open_seats }, openSeatsText(g.open_seats)));
-	if (isMine) badges.push(h("span", { class: "badge" }, "yours"));
+	if (isMine) badges.push(h("span", { class: "badge" }, t("games.yours")));
 	return h(
 		"li",
 		{ "data-code": g.room_code },
 		h("div", { class: "grow" }, h("div", { class: "title" }, `${title} · ${g.room_code}`), h("div", { class: "meta" }, meta.join(" · "))),
 		badgeColumns(badges),
-		action || h("a", { class: "button primary", href: "/game/" + g.room_code }, "Watch")
+		action || h("a", { class: "button primary", href: "/game/" + g.room_code }, t("games.watch"))
 	);
 }
 
@@ -124,17 +125,17 @@ export function openGameRow(g, defs, isMine, action = null) {
  */
 async function leaveGame(r, title) {
 	const status = r.info && r.info.status;
-	if (status === "waiting") return window.confirm(`Remove ${title} from your list? You keep your seat, and its link still brings you back.`);
+	if (status === "waiting") return window.confirm(t("games.remove_waiting", { title }));
 	if (status !== "active") return true;
 	// Resigning ends the game for the whole table, however many sit at it.
 	const others = r.info.seats.filter((s) => s.name && s.name.toLowerCase() !== r.g.name.toLowerCase()).length;
-	const cost = others > 1 ? " This ends the game for everyone at the table." : r.info.rated ? " This is a rated game, and counts as a loss." : "";
-	if (!window.confirm(`Resign from ${title} and remove it from your list?${cost}`)) return false;
+	const cost = others > 1 ? " " + t("games.ends_for_all") : r.info.rated ? " " + t("games.counts_loss") : "";
+	if (!window.confirm(t("games.resign_confirm", { title }) + cost)) return false;
 	try {
 		await api.resign(r.g.code, r.g.name);
 		return true;
 	} catch (err) {
-		toast(err.message || "Could not resign from that game.", "error");
+		toast(err.message || t("games.resign_failed"), "error");
 		return false;
 	}
 }
@@ -155,18 +156,18 @@ export function gameRow(r, defs, onForget) {
 	const meta = [];
 	const badges = [];
 	if (r.missing) {
-		meta.push("This game no longer exists.");
+		meta.push(t("games.gone"));
 	} else if (!r.info) {
-		meta.push("Could not load.");
+		meta.push(t("games.not_loaded"));
 	} else {
 		const others = r.info.seats.filter((s) => s.name && s.name.toLowerCase() !== r.g.name.toLowerCase()).map((s) => s.name);
-		meta.push(!others.length ? "waiting for an opponent" : others.length === 1 ? `vs ${others[0]}` : `${others.length + 1} players`);
+		meta.push(!others.length ? t("games.waiting_opponent") : others.length === 1 ? t("games.vs", { name: others[0] }) : t("games.players", { n: others.length + 1 }));
 		badges.push(...tagBadges(r.info.tags));
-		if (r.info.rated) badges.push(h("span", { class: "badge rated" }, "Rated"));
-		if (yourImpulse(r)) badges.push(h("span", { class: "badge turn" }, "Your turn"));
-		else if (r.info.status === "finished") badges.push(h("span", { class: "badge done" }, "Finished"));
-		else if (r.info.status === "waiting") badges.push(h("span", { class: "badge waiting" }, r.info.lobby ? "In the lobby" : "Waiting"));
-		else badges.push(h("span", { class: "badge" }, "Their turn"));
+		if (r.info.rated) badges.push(h("span", { class: "badge rated" }, t("games.rated")));
+		if (yourImpulse(r)) badges.push(h("span", { class: "badge turn" }, t("games.your_turn")));
+		else if (r.info.status === "finished") badges.push(h("span", { class: "badge done" }, t("games.finished")));
+		else if (r.info.status === "waiting") badges.push(h("span", { class: "badge waiting" }, r.info.lobby ? t("games.in_lobby") : t("games.waiting")));
+		else badges.push(h("span", { class: "badge" }, t("games.their_turn")));
 		// A game still filling up says how many seats are free.
 		const free = r.info.status === "waiting" ? openSeats(r.info) : 0;
 		if (free > 0) badges.push(h("span", { class: "badge open-seats", "data-open-seats": free }, openSeatsText(free)));
@@ -181,15 +182,15 @@ export function gameRow(r, defs, onForget) {
 			: h(
 					"a",
 					{ class: "button primary", href: "/game/" + r.g.code },
-					r.info.status === "finished" ? "Review" : "Open",
-					r.unread ? h("span", { class: "unread-count", title: `${r.unread} unread chat message${r.unread === 1 ? "" : "s"}` }, String(r.unread)) : null
+					r.info.status === "finished" ? t("games.review") : t("games.open"),
+					r.unread ? h("span", { class: "unread-count", title: t("games.unread", { n: r.unread }) }, String(r.unread)) : null
 			  ),
 		h(
 			"button",
 			{
 				class: "ghost icon",
-				title: r.info && r.info.status === "active" ? "Resign and remove from this list" : "Remove from this list",
-				"aria-label": r.info && r.info.status === "active" ? "Resign and remove from this list" : "Remove from this list",
+				title: r.info && r.info.status === "active" ? t("games.resign_remove") : t("games.remove"),
+				"aria-label": r.info && r.info.status === "active" ? t("games.resign_remove") : t("games.remove"),
 				onclick: async () => {
 					if (!(await leaveGame(r, title))) return;
 					forgetGame(r.g.code);

@@ -6,6 +6,7 @@ import { h } from "./util.js";
 import { api, whoAmI } from "./api.js";
 import { askFriend, friendStateOf, loadFriends } from "./dm.js";
 import { loadIcons, medal } from "./badges.js";
+import { t } from "./i18n.js";
 
 let pop = null;
 
@@ -27,7 +28,7 @@ function escapeFromPop(ev) {
 /** A small menu beside the badge. */
 function openPop(anchor, ...content) {
 	closePop();
-	pop = h("div", { class: "friend-pop", id: "friend-pop", role: "dialog", "aria-label": "Player" }, ...content);
+	pop = h("div", { class: "friend-pop", id: "friend-pop", role: "dialog", "aria-label": t("friend.player") }, ...content);
 	document.body.append(pop);
 	const at = anchor.getBoundingClientRect();
 	const box = pop.getBoundingClientRect();
@@ -43,7 +44,7 @@ async function offerFriend(anchor, handle) {
 	// A guest sees no badges, and yourself no friend request: the way to the
 	// player's page is all there is.
 	if (me.kind !== "account") {
-		openPop(anchor, h("div", { class: "small pop-badges", id: "pop-badges" }, h("a", { href: page, id: "pop-player" }, `@${handle}'s page`)));
+		openPop(anchor, h("div", { class: "small pop-badges", id: "pop-badges" }, h("a", { href: page, id: "pop-player" }, t("friend.page", { handle }))));
 		return;
 	}
 	const self = me.handle && me.handle.toLowerCase() === handle.toLowerCase();
@@ -52,20 +53,20 @@ async function offerFriend(anchor, handle) {
 		await loadFriends();
 		const state = friendStateOf(handle);
 		if (state === "outgoing") {
-			parts.push(h("span", { class: "small muted" }, `Friend request sent to @${handle}.`));
+			parts.push(h("span", { class: "small muted" }, t("friend.sent", { handle })));
 		} else if (state === "incoming") {
 			const accept = async () => {
 				closePop();
 				await api.friendAnswer(handle, true).catch(() => {});
 				await loadFriends();
 			};
-			parts.push(h("button", { type: "button", class: "primary small", id: "friend-pop-accept", onclick: accept }, `Accept @${handle}'s friend request`));
+			parts.push(h("button", { type: "button", class: "primary small", id: "friend-pop-accept", onclick: accept }, t("friend.accept_from", { handle })));
 		} else if (state !== "friend") {
 			const ask = () => {
 				closePop();
 				askFriend(handle);
 			};
-			parts.push(h("button", { type: "button", class: "primary small", id: "friend-pop-send", onclick: ask }, `Send @${handle} a friend request`));
+			parts.push(h("button", { type: "button", class: "primary small", id: "friend-pop-send", onclick: ask }, t("friend.send", { handle })));
 		}
 	}
 	// Their badges, which every account may see (ADR 0130).
@@ -82,8 +83,8 @@ async function offerFriend(anchor, handle) {
 			{ class: "small pop-badges", id: "pop-badges" },
 			held.length
 				? h("span", { class: "pop-medals" }, ...medalsOf(held))
-				: h("span", { class: "muted" }, "No badges yet. "),
-			h("a", { href: page, id: "pop-player" }, self ? "Your page" : held.length ? `See @${handle}'s badges` : `@${handle}'s page`)
+				: h("span", { class: "muted" }, t("friend.no_badges") + " "),
+			h("a", { href: page, id: "pop-player" }, self ? t("friend.your_page") : held.length ? t("friend.see_badges", { handle }) : t("friend.page", { handle }))
 		)
 	);
 	if (parts.length === 1) openPop(anchor, parts[0]);
@@ -122,7 +123,7 @@ export function handleBadge(name, cls = "") {
 		{
 			type: "button",
 			class: cls || "handle-badge",
-			title: `@${handle}: badges and page`,
+			title: t("friend.badge_title", { handle }),
 			"data-handle": handle,
 			onclick: (ev) => {
 				ev.stopPropagation();

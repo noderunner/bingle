@@ -7,6 +7,7 @@
 
 import { h, store, getProfile, brandName } from "./util.js";
 import { api, ApiError, whoAmI } from "./api.js";
+import { t, tParts } from "./i18n.js";
 
 const CONTACT_KEY = "bingle.contact";
 
@@ -86,14 +87,14 @@ export async function forgetAddress() {
 
 /** One line about the state of the address. */
 export function statusText(info) {
-	if (!info) return "No address set.";
+	if (!info) return t("notify.no_address");
 	switch (info.status) {
 		case "verified":
-			return `Confirmed: ${info.masked}.`;
+			return t("notify.confirmed", { address: info.masked });
 		case "stopped":
-			return `${info.masked} used the unsubscribe link: ${brandName()} will not email it.`;
+			return t("notify.stopped", { address: info.masked, brand: brandName() });
 		default:
-			return `Confirm ${info.masked}: open the link we emailed you.`;
+			return t("notify.confirm", { address: info.masked });
 	}
 }
 
@@ -105,16 +106,14 @@ export function whitelistNote(from) {
 	return h(
 		"p",
 		{ class: "small notify-note", id: "notify-whitelist" },
-		"Sent from ",
-		h("strong", { class: "notify-from" }, from),
-		". Add it to your contacts so it reaches your inbox."
+		...tParts("notify.sent_from", { from: h("strong", { class: "notify-from" }, from) })
 	);
 }
 
 /** A warning when the page is not on a secure connection. */
 export function insecureNote() {
 	if (location.protocol === "https:" || location.hostname === "localhost" || location.hostname === "127.0.0.1") return null;
-	return h("p", { class: "small error", id: "notify-insecure" }, "This connection is not encrypted: your email address could be seen by others on the network. Use an https:// address.");
+	return h("p", { class: "small error", id: "notify-insecure" }, t("notify.insecure"));
 }
 
 // ---- one game ---------------------------------------------------------------------
@@ -143,7 +142,7 @@ export async function mountGameNotify(host, { code, name, onReady = () => {} }) 
 	} catch (err) {
 		if (err && err.status === 403) {
 			host.append(
-				h("p", { class: "small muted", id: "notify-no-token" }, "Only the browser that joined this seat can change this."),
+				h("p", { class: "small muted", id: "notify-no-token" }, t("notify.not_your_seat")),
 				whitelistNote(cfg.from)
 			);
 			return;
@@ -153,21 +152,21 @@ export async function mountGameNotify(host, { code, name, onReady = () => {} }) 
 	const on = h("input", { type: "checkbox", id: "notify-on", role: "switch" });
 	const everyTime = h("input", { type: "radio", name: "notify-mode", id: "notify-mode-always", value: "always", checked: true });
 	const whenAway = h("input", { type: "radio", name: "notify-mode", id: "notify-mode-away", value: "away" });
-	const minutes = h("input", { type: "number", id: "notify-away", min: "1", max: "1440", step: "1", value: "30", "aria-label": "minutes" });
+	const minutes = h("input", { type: "number", id: "notify-away", min: "1", max: "1440", step: "1", value: "30", "aria-label": t("notify.minutes") });
 	const hint = h("p", { class: "small", id: "notify-hint", "aria-live": "polite" });
 	const controls = h(
 		"div",
 		{ class: "notify-modes" },
-		h("label", { class: "check" }, everyTime, h("span", {}, "Every turn, unless this game is open")),
-		h("label", { class: "check" }, whenAway, h("span", {}, "Only after "), minutes, h("span", {}, " minutes"))
+		h("label", { class: "check" }, everyTime, h("span", {}, t("notify.every_turn"))),
+		h("label", { class: "check" }, whenAway, ...tParts("notify.only_after", { minutes }).map((p) => (typeof p === "string" ? h("span", {}, p) : p)))
 	);
-	host.append(h("label", { class: "check" }, on, h("span", {}, "Email me on my turn")), controls, hint, whitelistNote(cfg.from));
+	host.append(h("label", { class: "check" }, on, h("span", {}, t("notify.email_me"))), controls, hint, whitelistNote(cfg.from));
 	const warn = insecureNote();
 	if (warn) host.append(warn);
 
 	// Nothing can be changed until the state of the address and of the game is known.
 	for (const el of [on, everyTime, whenAway, minutes]) el.disabled = true;
-	hint.textContent = "Loading…";
+	hint.textContent = t("common.loading");
 	let verified = false;
 	const paint = (state) => {
 		const s = state || {};
@@ -186,13 +185,13 @@ export async function mountGameNotify(host, { code, name, onReady = () => {} }) 
 	verified = [local, state && state.contact].some((c) => c && c.status === "verified");
 	hint.textContent = "";
 	if (!info) {
-		hint.append("Set your email address in your ", h("a", { href: "/profile" }, "profile"), " first.");
+		hint.append(...tParts("notify.set_address", { profile: h("a", { href: "/profile" }, t("notify.profile")) }));
 	} else if (!verified) {
-		hint.textContent = statusText(info) + " Then come back here, or turn it on from your profile.";
+		hint.textContent = t("notify.then_come_back", { status: statusText(info) });
 	} else {
-		hint.textContent = `Mail goes to ${info.masked}.`;
+		hint.textContent = t("notify.goes_to", { address: info.masked });
 	}
-	if (readErr) hint.textContent = readErr.message || "The setting could not be read.";
+	if (readErr) hint.textContent = readErr.message || t("notify.not_read");
 	paint(state);
 
 	const save = async () => {
@@ -207,13 +206,13 @@ export async function mountGameNotify(host, { code, name, onReady = () => {} }) 
 				away_minutes: away,
 			});
 		} catch (err) {
-			hint.textContent = (err && err.message) || "The setting could not be saved.";
+			hint.textContent = (err && err.message) || t("notify.not_saved");
 			hint.className = "small error";
 			on.checked = !!(state && state.enabled);
 			return;
 		}
 		hint.className = "small";
-		hint.textContent = state.enabled ? `Saved. Mail goes to ${state.contact ? state.contact.masked : "your address"}.` : "Saved. No email for this game.";
+		hint.textContent = state.enabled ? t("notify.saved_to", { address: state.contact ? state.contact.masked : t("notify.your_address") }) : t("notify.saved_off");
 		paint(state);
 	};
 	for (const el of [on, everyTime, whenAway]) el.addEventListener("change", save);
