@@ -2,6 +2,7 @@ package i18n
 
 import (
 	"encoding/json"
+	"html/template"
 	"net/http/httptest"
 	"regexp"
 	"slices"
@@ -257,5 +258,18 @@ func TestPage_IsTheLanguagesAndTheCatalogWithEnglishFilledIn(t *testing.T) {
 	}
 	if body, _ := Page("xx"); body != nil {
 		t.Error("a page for no language")
+	}
+}
+
+// A field the template puts inside a sentence goes in as markup; text values
+// put beside it are still escaped.
+func TestHTML_TakesAFieldInsideTheSentence(t *testing.T) {
+	field := template.HTML(`<input id="x">`)
+	got := string(HTML("de", "setup.warn_after_html", "input", field))
+	if got != `Einen langsamen Spieler nach <input id="x"> Min. warnen` {
+		t.Errorf("German, with a field: %s", got)
+	}
+	if got := string(HTML("en", "setup.warn_after_html", "input", "<b>")); !strings.Contains(got, "&lt;b&gt;") {
+		t.Errorf("a text value is not escaped: %s", got)
 	}
 }

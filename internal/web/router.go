@@ -11,6 +11,7 @@ import (
 	"embed"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"html/template"
 	"io/fs"
 	"net/http"
@@ -44,6 +45,11 @@ var templates = template.Must(template.New("").Funcs(template.FuncMap{
 	// t is the words of a key in the page's language (ADR 0141):
 	// {{t .Lang "key" "name" value …}}.
 	"t": i18n.HTML,
+	// realTimeInput is a number of minutes inside a sentence of the create form,
+	// for an "_html" key to place where its language puts it.
+	"realTimeInput": func(id string, value int, label template.HTML) template.HTML {
+		return template.HTML(fmt.Sprintf(`<input type="number" id="%s" min="1" max="60" step="1" value="%d" aria-label="%s">`, template.HTMLEscapeString(id), value, label)) //nolint:gosec // label is the catalog's, escaped by t
+	},
 }).ParseFS(templateFS, "templates/*.html.tmpl"))
 
 // brandIconPath is where an instance's own icon is served.

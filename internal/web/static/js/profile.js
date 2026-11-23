@@ -9,7 +9,7 @@ import { api, whoAmI } from "./api.js";
 import { ratingText } from "./ratings.js";
 import { paintShelf } from "./badges.js";
 import { notifyConfig, localContact, submitAddress, contactStatus, resendConfirmation, forgetAddress, statusText, whitelistNote, insecureNote } from "./notify-ui.js";
-import { t, tParts } from "./i18n.js";
+import { t, tParts, forwardKey, backKey } from "./i18n.js";
 import { languageField } from "./language.js";
 
 installNav();
@@ -41,7 +41,7 @@ for (const tab of TABS.map((t) => document.getElementById("tab-" + t))) {
 		const shown = TABS.filter((t) => !document.getElementById("tab-" + t).hidden);
 		const i = shown.indexOf(tab.dataset.tab);
 		const n = shown.length;
-		const to = { ArrowRight: (i + 1) % n, ArrowLeft: (i - 1 + n) % n, Home: 0, End: n - 1 }[ev.key];
+		const to = { [forwardKey]: (i + 1) % n, [backKey]: (i - 1 + n) % n, Home: 0, End: n - 1 }[ev.key];
 		if (to === undefined) return;
 		ev.preventDefault();
 		showTab(shown[to], { focus: true });

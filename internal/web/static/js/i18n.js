@@ -12,6 +12,10 @@
 export const lang = document.documentElement.lang || "en";
 export const dir = document.documentElement.dir === "rtl" ? "rtl" : "ltr";
 
+/** The arrow keys that move forward and back along a row (of tabs, say): mirrored right to left. */
+export const forwardKey = dir === "rtl" ? "ArrowLeft" : "ArrowRight";
+export const backKey = dir === "rtl" ? "ArrowRight" : "ArrowLeft";
+
 const meta = document.querySelector('meta[name="bingle-language"]');
 /** The language chosen, "" for the browser's own; and the browser's own. */
 export const chosen = meta ? meta.content : "";
