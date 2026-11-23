@@ -6,7 +6,7 @@
 	<meta name="bingle-brand" content="{{brandName}}"{{if brandHasIcon}} data-icon="{{brandIconURL}}"{{end}}>
 	<meta name="bingle-language" content="{{.Chosen}}" data-browser="{{.Browser}}">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>{{brandName}} — Player</title>
+	<title>{{brandName}} — {{t .Lang "player.title"}}</title>
 	<link rel="icon" type="{{brandIconType}}" href="{{brandIconURL}}" id="favicon">
 	<link rel="stylesheet" href="/static/style.css">
 </head>
@@ -18,17 +18,17 @@
 	</header>
 
 	<main class="page narrow">
-		<h1 id="player-title">Player</h1>
+		<h1 id="player-title">{{t .Lang "player.title"}}</h1>
 		<p class="muted" id="player-note" hidden></p>
 
 		<section class="card" id="player-badges-box" hidden>
-			<h2>Badges</h2>
+			<h2>{{t .Lang "settings.badges"}}</h2>
 			<div id="player-badges"></div>
 		</section>
 
 		<section class="card" id="player-ratings-box" hidden>
-			<h2>Ratings</h2>
-			<div class="table-scroll"><table class="data"><thead><tr><th>Game</th><th>Rating</th><th>Won</th><th>Drawn</th><th>Lost</th></tr></thead><tbody id="player-ratings"></tbody></table></div>
+			<h2>{{t .Lang "settings.ratings"}}</h2>
+			<div class="table-scroll"><table class="data"><thead><tr><th>{{t .Lang "settings.game"}}</th><th>{{t .Lang "settings.rating"}}</th><th>{{t .Lang "settings.won"}}</th><th>{{t .Lang "settings.drawn"}}</th><th>{{t .Lang "settings.lost"}}</th></tr></thead><tbody id="player-ratings"></tbody></table></div>
 		</section>
 	</main>
 

@@ -129,6 +129,24 @@ func TestPages_SayTheirLanguageAndDirection(t *testing.T) {
 	}
 }
 
+// The account pages name themselves by a key of the catalog, which their titles show in the page's language.
+func TestAccountPages_TitlesAreTranslated(t *testing.T) {
+	h := NewRouter(nil, config.Brand{}, nil)
+	for _, path := range []string{"/login", "/signup", "/account", "/account/confirm", "/forgot", "/account/reset"} {
+		for _, lang := range []string{"en", "fr"} {
+			body := get(t, h, path, http.Header{"Accept-Language": {lang}}).Body.String()
+			_, title, _ := strings.Cut(body, "<title>")
+			title, _, _ = strings.Cut(title, "</title>")
+			if strings.Contains(title, "account.") || strings.Contains(title, "common.") {
+				t.Errorf("%s in %s: the title is a key: %q", path, lang, title)
+			}
+			if lang == "fr" && path == "/login" && !strings.Contains(title, "Se connecter") {
+				t.Errorf("/login in French: %q", title)
+			}
+		}
+	}
+}
+
 func TestCatalog_IsServedWithAnETag(t *testing.T) {
 	h := NewRouter(nil, config.Brand{}, nil)
 	// The metrics listener's Health page loads js/i18n.js too.

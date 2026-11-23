@@ -2,6 +2,27 @@
 // account itself (who you are, a new password, signing out). ADR 0068.
 
 import { api, ApiError } from "./api.js";
+import { t as tr, tParts, lang } from "./i18n.js";
+
+// Data inside a sentence (an address, a browser's name): left as it is, and
+// kept whole in a sentence written right to left.
+const data = (text) => {
+	const b = document.createElement("bdi");
+	b.translate = false;
+	b.textContent = text;
+	return b;
+};
+// A moment, in the page's language.
+const when = (iso) => {
+	const d = new Date(iso);
+	return isNaN(d) ? iso : d.toLocaleString(lang, { dateStyle: "medium", timeStyle: "short" });
+};
+// An API scope is the API's word, shown as code.
+const code = (text) => {
+	const c = document.createElement("code");
+	c.textContent = text;
+	return c;
+};
 
 const page = document.body.dataset.page;
 const result = document.getElementById("account-result");
@@ -29,7 +50,7 @@ function providerButtons(host, providers, verb) {
 		a.id = `oidc-${p.id}`;
 		const invite = params.get("invite");
 		a.href = `/auth/oidc/${encodeURIComponent(p.id)}/start?return=${encodeURIComponent(returnTo())}${invite ? `&invite=${encodeURIComponent(invite)}` : ""}`;
-		a.textContent = `${verb} with ${p.label}`;
+		a.textContent = tr("account.with", { verb, provider: p.label });
 		host.append(a);
 	}
 	host.hidden = false;
@@ -52,7 +73,7 @@ async function submit(form, button, run) {
 		try {
 			await run();
 		} catch (err) {
-			say(err instanceof ApiError ? err.message : "That did not work.", "error");
+			say(err instanceof ApiError ? err.message : tr("common.not_done"), "error");
 		} finally {
 			button.disabled = false;
 		}
@@ -65,7 +86,7 @@ if (page === "login") {
 	api.me()
 		.then((me) => {
 			document.getElementById("login-signup").hidden = !me.signup;
-			providerButtons(document.getElementById("oidc-buttons"), me.providers, "Sign in");
+			providerButtons(document.getElementById("oidc-buttons"), me.providers, tr("common.sign_in"));
 		})
 		.catch(() => {});
 	const second = document.getElementById("second-form");
@@ -96,7 +117,7 @@ if (page === "login") {
 			after(await api.secondFactor(document.getElementById("second-code").value));
 		} catch (err) {
 			out.className = "small error";
-			out.textContent = err instanceof ApiError ? err.message : "That did not work.";
+			out.textContent = err instanceof ApiError ? err.message : tr("common.not_done");
 			if (err instanceof ApiError && /sign in again/.test(err.message)) {
 				second.hidden = true;
 				form.hidden = false;
@@ -110,9 +131,9 @@ if (page === "login") {
 	const provider = params.get("provider");
 	api.me()
 		.then((me) => {
-			if (!provider) providerButtons(document.getElementById("signup-oidc-buttons"), me.providers, "Sign up");
+			if (!provider) providerButtons(document.getElementById("signup-oidc-buttons"), me.providers, tr("common.sign_up"));
 			const p = (me.providers || []).find((x) => x.id === provider);
-			if (p) document.getElementById("oidc-signup-who").textContent = `${p.label} vouched for your email address. Choose the handle others will see.`;
+			if (p) document.getElementById("oidc-signup-who").textContent = tr("account.vouched", { provider: p.label });
 		})
 		.catch(() => {});
 	if (provider) {
@@ -130,7 +151,7 @@ if (page === "login") {
 				location.assign(res.return || "/");
 			} catch (err) {
 				out.className = "small error";
-				out.textContent = err instanceof ApiError ? err.message : "That did not work.";
+				out.textContent = err instanceof ApiError ? err.message : tr("common.not_done");
 			} finally {
 				go.disabled = false;
 			}
@@ -152,7 +173,7 @@ if (page === "login") {
 } else if (page === "reset") {
 	const form = document.getElementById("reset-form");
 	const token = new URLSearchParams(location.search).get("t") || "";
-	if (!token) say("This link is incomplete.", "error");
+	if (!token) say(tr("account.incomplete"), "error");
 	submit(form, document.getElementById("reset-go"), async () => {
 		const res = await api.resetPassword(token, document.getElementById("reset-password").value, document.getElementById("reset-code").value);
 		form.querySelectorAll("input").forEach((i) => (i.disabled = true));
@@ -161,7 +182,7 @@ if (page === "login") {
 		result.textContent = res.status + " ";
 		const a = document.createElement("a");
 		a.href = "/login";
-		a.textContent = "Sign in";
+		a.textContent = tr("common.sign_in");
 		result.append(a);
 	});
 } else if (page === "confirm") {
@@ -169,7 +190,7 @@ if (page === "login") {
 	const token = new URLSearchParams(location.search).get("t") || "";
 	if (!token) {
 		go.disabled = true;
-		say("This link is incomplete.", "error");
+		say(tr("account.incomplete"), "error");
 	}
 	go.addEventListener("click", async () => {
 		go.disabled = true;
@@ -178,13 +199,13 @@ if (page === "login") {
 			go.hidden = true;
 			result.className = "small";
 			result.textContent = "";
-			result.append(`@${res.handle} is ready. `);
+			result.append(...tParts("account.ready", { handle: data("@" + res.handle) }), " ");
 			const a = document.createElement("a");
 			a.href = "/login";
-			a.textContent = "Sign in";
-			result.append(a, ".");
+			a.textContent = tr("common.sign_in");
+			result.append(a);
 		} catch (err) {
-			say(err instanceof ApiError ? err.message : "That did not work.", "error");
+			say(err instanceof ApiError ? err.message : tr("common.not_done"), "error");
 			go.disabled = false;
 		}
 	});
@@ -200,18 +221,18 @@ if (page === "login") {
 			location.replace("/login?return=/account");
 			return;
 		}
-		who.textContent = `Signed in as @${me.handle}.`;
-		if (me.email) el("account-email").textContent = `Your address: ${me.email}`;
+		who.replaceChildren(...tParts("account.signed_in_as", { handle: data("@" + me.handle) }));
+		if (me.email) el("account-email").replaceChildren(...tParts("account.your_address", { email: data(me.email) }));
 		el("account-must-change").hidden = !me.must_change_password;
 		el("tf-needed").hidden = !me.needs_second_factor;
 		el("tf-state").textContent = me.second_factor
-			? `On: you sign in with a code from your app as well. ${me.recovery_codes_left} recovery code${me.recovery_codes_left === 1 ? "" : "s"} left.`
-			: "Off: you sign in with your password alone.";
+			? tr("account.tf_on", { n: me.recovery_codes_left })
+			: tr("account.tf_off");
 		el("tf-off-actions").hidden = !!me.second_factor;
 		el("tf-on-actions").hidden = !me.second_factor;
 		// An account a provider made has no password yet: it sets one.
 		el("password-old-field").hidden = !me.password;
-		el("password-title").textContent = me.password ? "Change your password" : "Set a password";
+		el("password-title").textContent = me.password ? tr("account.change_password") : tr("account.set_password");
 		showLinks(me);
 		el("admin-link").hidden = !me.admin;
 	};
@@ -221,12 +242,12 @@ if (page === "login") {
 		list.textContent = "";
 		for (const t of tokens) {
 			const li = document.createElement("li");
-			li.append(`${t.name} (${t.scopes.join(", ")}) `);
+			li.append(data(t.name), " (", ...t.scopes.flatMap((sc, i) => (i ? [", ", code(sc)] : [code(sc)])), ") ");
 			const b = document.createElement("button");
 			b.type = "button";
 			b.className = "ghost";
 			b.id = `token-revoke-${t.id}`;
-			b.textContent = "Revoke";
+			b.textContent = tr("account.revoke");
 			b.addEventListener("click", async () => {
 				await api.revokeToken(t.id);
 				paintTokens();
@@ -244,7 +265,7 @@ if (page === "login") {
 				box.id = `token-scope-${s}`;
 				box.value = s;
 				box.checked = s === "play";
-				label.append(box, ` ${s.replace("_", " ")}`);
+				label.append(box, " ", code(s));
 				host.append(label);
 			}
 		}
@@ -256,7 +277,7 @@ if (page === "login") {
 		list.textContent = "";
 		for (const s of sessions) {
 			const li = document.createElement("li");
-			li.textContent = `${s.agent || "a browser"}, since ${s.created_at}, last seen ${s.last_seen_at}${s.current ? " (this one)" : ""}`;
+			li.replaceChildren(...tParts(s.current ? "account.session_this" : "account.session", { agent: s.agent ? data(s.agent) : tr("account.a_browser"), since: when(s.created_at), seen: when(s.last_seen_at) }));
 			list.append(li);
 		}
 	};
@@ -271,22 +292,22 @@ if (page === "login") {
 		try {
 			show(await api.rename(el("handle-new").value));
 			out.className = "small";
-			out.textContent = "Done.";
+			out.textContent = tr("account.done");
 			el("handle-new").value = "";
 		} catch (err) {
 			out.className = "small error";
-			out.textContent = err instanceof ApiError ? err.message : "That did not work.";
+			out.textContent = err instanceof ApiError ? err.message : tr("common.not_done");
 		}
 	});
 	el("token-go").addEventListener("click", async () => {
 		const scopes = [...el("token-scopes").querySelectorAll("input:checked")].map((b) => b.value);
 		try {
 			const res = await api.newToken(el("token-name").value, scopes);
-			el("token-new").textContent = `Your new token, shown only now: ${res.token}`;
+			el("token-new").textContent = tr("account.new_token", { token: res.token });
 			el("token-name").value = "";
 			paintTokens();
 		} catch (err) {
-			el("token-new").textContent = err instanceof ApiError ? err.message : "That did not work.";
+			el("token-new").textContent = err instanceof ApiError ? err.message : tr("common.not_done");
 		}
 	});
 	const showLinks = (me) => {
@@ -297,17 +318,17 @@ if (page === "login") {
 		for (const p of me.providers) {
 			const li = document.createElement("li");
 			const linked = (me.linked || []).includes(p.id);
-			li.append(`${p.label}: ${linked ? "you can sign in with it. " : "not linked. "}`);
+			li.append(tr(linked ? "account.linked_yes" : "account.linked_no", { provider: p.label }), " ");
 			if (linked) {
 				const b = document.createElement("button");
 				b.type = "button";
 				b.className = "ghost";
 				b.id = `oidc-unlink-${p.id}`;
-				b.textContent = "Unlink";
+				b.textContent = tr("account.unlink");
 				b.addEventListener("click", () =>
 					tf(b, async () => {
 						show(await api.oidcUnlink(p.id, el("tf-password").value));
-						tfSay(`${p.label} is unlinked.`);
+						tfSay(tr("account.unlinked", { provider: p.label }));
 					})
 				);
 				li.append(b);
@@ -315,7 +336,7 @@ if (page === "login") {
 				const a = document.createElement("a");
 				a.id = `oidc-link-${p.id}`;
 				a.href = `/auth/oidc/${encodeURIComponent(p.id)}/start?link=1&return=/account`;
-				a.textContent = `Link ${p.label}`;
+				a.textContent = tr("account.link_provider", { provider: p.label });
 				li.append(a);
 			}
 			list.append(li);
@@ -323,7 +344,7 @@ if (page === "login") {
 		box.hidden = false;
 	};
 	showError("oidc-error");
-	if (params.get("linked")) tfSay(`Linked: you can sign in with ${params.get("linked")} now.`);
+	if (params.get("linked")) tfSay(tr("account.linked_now", { provider: params.get("linked") }));
 	// A request that may fail with a message for the two-step box.
 	const tf = async (button, run) => {
 		button.disabled = true;
@@ -331,7 +352,7 @@ if (page === "login") {
 		try {
 			await run();
 		} catch (err) {
-			tfSay(err instanceof ApiError ? err.message : "That did not work.", "error");
+			tfSay(err instanceof ApiError ? err.message : tr("common.not_done"), "error");
 		} finally {
 			button.disabled = false;
 		}
@@ -382,16 +403,16 @@ if (page === "login") {
 			el("tf-off-code").value = "";
 			el("tf-codes-box").hidden = true;
 			show(me);
-			tfSay("Two-step sign-in is off.");
+			tfSay(tr("account.tf_now_off"));
 		})
 	);
-	api.me().then(show).catch(() => say("Your account could not be read.", "error"));
+	api.me().then(show).catch(() => say(tr("account.not_read"), "error"));
 	const form = document.getElementById("password-form");
 	submit(form, document.getElementById("password-go"), async () => {
 		const me = await api.changePassword(document.getElementById("password-old").value, document.getElementById("password-new").value);
 		form.reset();
 		show(me);
-		say("Done: your password is changed, and every other device is signed out.");
+		say(tr("account.password_changed"));
 	});
 	document.getElementById("logout-go").addEventListener("click", async () => {
 		try {

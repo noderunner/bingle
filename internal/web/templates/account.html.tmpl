@@ -7,7 +7,7 @@
 	<meta name="bingle-language" content="{{.Chosen}}" data-browser="{{.Browser}}">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<meta name="referrer" content="no-referrer">
-	<title>{{brandName}} — {{.Title}}</title>
+	<title>{{brandName}} — {{t .Lang .Title}}</title>
 	<link rel="icon" type="{{brandIconType}}" href="{{brandIconURL}}" id="favicon">
 	<link rel="stylesheet" href="/static/style.css">
 </head>
@@ -20,206 +20,206 @@
 	<main class="page narrow">
 		{{if eq .Page "login"}}
 		<section class="card" id="login-card">
-			<h1>Sign in</h1>
+			<h1>{{t .Lang "common.sign_in"}}</h1>
 			<p class="small error" id="login-error" hidden></p>
 			<div class="row" id="oidc-buttons" hidden></div>
 			<form id="login-form" novalidate>
 				<div class="field">
-					<label for="login-handle">Username</label>
+					<label for="login-handle">{{t .Lang "settings.username"}}</label>
 					<input id="login-handle" type="text" maxlength="25" autocomplete="username" autocapitalize="none" spellcheck="false" required>
 				</div>
 				<div class="field">
-					<label for="login-password">Password</label>
+					<label for="login-password">{{t .Lang "settings.password"}}</label>
 					<input id="login-password" type="password" maxlength="256" autocomplete="current-password" required>
 				</div>
 				<div class="row">
-					<button type="submit" class="primary" id="login-go">Sign in</button>
+					<button type="submit" class="primary" id="login-go">{{t .Lang "common.sign_in"}}</button>
 				</div>
 				<p class="small" id="account-result" role="status" aria-live="polite"></p>
 			</form>
 			<form id="second-form" novalidate hidden>
 				<div class="field">
-					<label for="second-code">Code from your authenticator app</label>
+					<label for="second-code">{{t .Lang "account.app_code"}}</label>
 					<input id="second-code" type="text" inputmode="numeric" maxlength="11" autocomplete="one-time-code" autocapitalize="none" spellcheck="false" required>
-					<span class="small muted">Or one of your recovery codes, if you do not have the app to hand.</span>
+					<span class="small muted">{{t .Lang "account.or_recovery"}}</span>
 				</div>
 				<div class="row">
-					<button type="submit" class="primary" id="second-go">Sign in</button>
+					<button type="submit" class="primary" id="second-go">{{t .Lang "common.sign_in"}}</button>
 				</div>
 				<p class="small" id="second-result" role="status" aria-live="polite"></p>
 			</form>
-			<p class="small muted"><a href="/forgot" id="forgot-link">Forgot your password?</a></p>
-			<p class="small muted" id="login-signup" hidden>No account? <a href="/signup">Sign up</a>. You can also just play: games need no account.</p>
+			<p class="small muted"><a href="/forgot" id="forgot-link">{{t .Lang "account.forgot_link"}}</a></p>
+			<p class="small muted" id="login-signup" hidden>{{t .Lang "account.no_account_html"}}</p>
 		</section>
 		{{else if eq .Page "signup"}}
 		<section class="card" id="signup-card">
-			<h1>Sign up</h1>
-			<p class="muted small">An account keeps your games with you on any device, and gets you direct messages and the global chat. The games you played as a guest in this browser become your account's.</p>
+			<h1>{{t .Lang "common.sign_up"}}</h1>
+			<p class="muted small">{{t .Lang "account.why"}}</p>
 			<form id="oidc-signup-form" novalidate hidden>
 				<p class="small" id="oidc-signup-who"></p>
 				<div class="field">
-					<label for="oidc-handle">Choose a username</label>
+					<label for="oidc-handle">{{t .Lang "account.choose_username"}}</label>
 					<input id="oidc-handle" type="text" maxlength="25" autocomplete="username" autocapitalize="none" spellcheck="false" required>
-					<span class="small muted">3 to 24 letters, digits, "_" or "-". Others see it as @username.</span>
+					<span class="small muted">{{t .Lang "account.username_rule"}}</span>
 				</div>
-				<div class="row"><button type="submit" class="primary" id="oidc-go">Make my account</button></div>
+				<div class="row"><button type="submit" class="primary" id="oidc-go">{{t .Lang "settings.make_my_account"}}</button></div>
 				<p class="small" id="oidc-result" role="status" aria-live="polite"></p>
 			</form>
 			<div class="row" id="signup-oidc-buttons" hidden></div>
 			<form id="signup-form" novalidate>
 				<div class="field">
-					<label for="signup-handle">Username</label>
+					<label for="signup-handle">{{t .Lang "settings.username"}}</label>
 					<input id="signup-handle" type="text" maxlength="25" autocomplete="username" autocapitalize="none" spellcheck="false" required>
-					<span class="small muted">3 to 24 letters, digits, "_" or "-". Others see it as @username.</span>
+					<span class="small muted">{{t .Lang "account.username_rule"}}</span>
 				</div>
 				<div class="field">
-					<label for="signup-email">Email</label>
+					<label for="signup-email">{{t .Lang "settings.email"}}</label>
 					<input id="signup-email" type="email" maxlength="254" autocomplete="email" required>
-					<span class="small muted">{{brandName}} mails a link to confirm it, and never shows it to anybody.</span>
+					<span class="small muted">{{t .Lang "account.email_note" "brand" brandName}}</span>
 				</div>
 				<div class="field">
-					<label for="signup-password">Password</label>
+					<label for="signup-password">{{t .Lang "settings.password"}}</label>
 					<input id="signup-password" type="password" minlength="10" maxlength="256" autocomplete="new-password" required>
-					<span class="small muted">At least 10 characters.</span>
+					<span class="small muted">{{t .Lang "account.ten_chars"}}</span>
 				</div>
 				<div class="row">
-					<button type="submit" class="primary" id="signup-go">Sign up</button>
+					<button type="submit" class="primary" id="signup-go">{{t .Lang "common.sign_up"}}</button>
 				</div>
 				<p class="small" id="account-result" role="status" aria-live="polite"></p>
 			</form>
-			<p class="small muted">Have an account? <a href="/login">Sign in</a>.</p>
+			<p class="small muted">{{t .Lang "account.have_account_html"}}</p>
 		</section>
 		{{else if eq .Page "forgot"}}
 		<section class="card" id="forgot-card">
-			<h1>Forgot your password</h1>
+			<h1>{{t .Lang "account.title_forgot"}}</h1>
 			<form id="forgot-form" novalidate>
 				<div class="field">
-					<label for="forgot-who">Your username or email address</label>
+					<label for="forgot-who">{{t .Lang "account.who"}}</label>
 					<input id="forgot-who" type="text" maxlength="254" autocomplete="username" autocapitalize="none" spellcheck="false" required>
 				</div>
-				<div class="row"><button type="submit" class="primary" id="forgot-go">Mail me a link</button></div>
+				<div class="row"><button type="submit" class="primary" id="forgot-go">{{t .Lang "account.mail_link"}}</button></div>
 				<p class="small" id="account-result" role="status" aria-live="polite"></p>
 			</form>
 		</section>
 		{{else if eq .Page "reset"}}
 		<section class="card" id="reset-card">
-			<h1>Choose a new password</h1>
+			<h1>{{t .Lang "account.title_reset"}}</h1>
 			<form id="reset-form" novalidate>
 				<div class="field">
-					<label for="reset-password">New password</label>
+					<label for="reset-password">{{t .Lang "account.new_password"}}</label>
 					<input id="reset-password" type="password" minlength="10" maxlength="256" autocomplete="new-password" required>
-					<span class="small muted">At least 10 characters. Every device you are signed in on is signed out.</span>
+					<span class="small muted">{{t .Lang "account.reset_note"}}</span>
 				</div>
 				<div class="field">
-					<label for="reset-code">Code from your authenticator app, or a recovery code</label>
+					<label for="reset-code">{{t .Lang "account.app_or_recovery"}}</label>
 					<input id="reset-code" type="text" maxlength="11" autocomplete="one-time-code" autocapitalize="none" spellcheck="false">
-					<span class="small muted">Only if your account signs in with a code.</span>
+					<span class="small muted">{{t .Lang "account.only_if_code"}}</span>
 				</div>
-				<div class="row"><button type="submit" class="primary" id="reset-go">Set the password</button></div>
+				<div class="row"><button type="submit" class="primary" id="reset-go">{{t .Lang "account.set_password_go"}}</button></div>
 				<p class="small" id="account-result" role="status" aria-live="polite"></p>
 			</form>
 		</section>
 		{{else if eq .Page "confirm"}}
 		<section class="card" id="confirm-card">
-			<h1>Confirm your account</h1>
-			<p>Press the button to finish making your {{brandName}} account. Nothing happens until you do.</p>
-			<div class="row"><button type="button" class="primary" id="confirm-go">Confirm</button></div>
+			<h1>{{t .Lang "account.title_confirm"}}</h1>
+			<p>{{t .Lang "account.confirm_text" "brand" brandName}}</p>
+			<div class="row"><button type="button" class="primary" id="confirm-go">{{t .Lang "account.confirm"}}</button></div>
 			<p class="small" id="account-result" role="status" aria-live="polite"></p>
 		</section>
 		{{else}}
 		<section class="card" id="account-card">
-			<h1>Your account</h1>
+			<h1>{{t .Lang "common.your_account"}}</h1>
 			<p id="account-who"></p>
 			<p class="small" id="account-email"></p>
 			<form id="handle-form" novalidate>
-				<h2>Your username</h2>
+				<h2>{{t .Lang "account.your_username"}}</h2>
 				<div class="field">
-					<label for="handle-new">New username</label>
+					<label for="handle-new">{{t .Lang "account.new_username"}}</label>
 					<input id="handle-new" type="text" maxlength="25" autocapitalize="none" spellcheck="false">
-					<span class="small muted">Your old username is kept for you for 30 days, so nobody else can take it and pass for you.</span>
+					<span class="small muted">{{t .Lang "account.old_username"}}</span>
 				</div>
-				<div class="row"><button type="submit" class="ghost" id="handle-go">Change it</button></div>
+				<div class="row"><button type="submit" class="ghost" id="handle-go">{{t .Lang "account.change_it"}}</button></div>
 				<p class="small" id="handle-result" role="status" aria-live="polite"></p>
 			</form>
-			<p class="small error" id="account-must-change" hidden>Choose a new password before you go on: the one you signed in with was given to you.</p>
+			<p class="small error" id="account-must-change" hidden>{{t .Lang "account.must_change"}}</p>
 			<form id="password-form" novalidate>
-				<h2 id="password-title">Change your password</h2>
+				<h2 id="password-title">{{t .Lang "account.change_password"}}</h2>
 				<div class="field" id="password-old-field">
-					<label for="password-old">Current password</label>
+					<label for="password-old">{{t .Lang "account.current_password"}}</label>
 					<input id="password-old" type="password" maxlength="256" autocomplete="current-password" required>
 				</div>
 				<div class="field">
-					<label for="password-new">New password</label>
+					<label for="password-new">{{t .Lang "account.new_password"}}</label>
 					<input id="password-new" type="password" minlength="10" maxlength="256" autocomplete="new-password" required>
-					<span class="small muted">At least 10 characters. Every other device you are signed in on is signed out.</span>
+					<span class="small muted">{{t .Lang "account.change_note"}}</span>
 				</div>
 				<div class="row">
-					<button type="submit" class="primary" id="password-go">Change the password</button>
+					<button type="submit" class="primary" id="password-go">{{t .Lang "account.change_password_go"}}</button>
 				</div>
 				<p class="small" id="account-result" role="status" aria-live="polite"></p>
 			</form>
 			<section id="oidc-box" hidden>
-				<h2>Signing in with another account</h2>
+				<h2>{{t .Lang "account.other_accounts"}}</h2>
 				<p class="small error" id="oidc-error" hidden></p>
 				<ul id="oidc-links"></ul>
 			</section>
 			<section id="tf-box">
-				<h2>Two-step sign-in</h2>
-				<p class="small error" id="tf-needed" hidden>An administrator signs in with a code from an app as well as the password. Set it up before you go on.</p>
+				<h2>{{t .Lang "account.two_step"}}</h2>
+				<p class="small error" id="tf-needed" hidden>{{t .Lang "account.admin_needs"}}</p>
 				<p class="small" id="tf-state"></p>
 				<div class="field" id="tf-password-field">
-					<label for="tf-password">Your password</label>
+					<label for="tf-password">{{t .Lang "account.your_password"}}</label>
 					<input id="tf-password" type="password" maxlength="256" autocomplete="current-password">
 				</div>
 				<div class="row" id="tf-off-actions" hidden>
-					<button type="button" class="primary" id="tf-setup">Set it up</button>
+					<button type="button" class="primary" id="tf-setup">{{t .Lang "account.set_up"}}</button>
 				</div>
 				<div id="tf-setting-up" hidden>
-					<p class="small">Scan this with your authenticator app (Google Authenticator, or any app that does "TOTP"), or type the key into it, then give the code it shows.</p>
-					<img id="tf-qr" class="tf-qr" alt="A QR code of the link below, for an authenticator app" width="200" height="200" hidden>
-					<p class="small">Key: <code id="tf-secret"></code></p>
-					<p class="small">Link: <code id="tf-uri" class="wrap"></code></p>
+					<p class="small">{{t .Lang "account.scan"}}</p>
+					<img id="tf-qr" class="tf-qr" alt="{{t .Lang "account.qr"}}" width="200" height="200" hidden>
+					<p class="small">{{t .Lang "account.key"}} <code id="tf-secret"></code></p>
+					<p class="small">{{t .Lang "account.link"}} <code id="tf-uri" class="wrap"></code></p>
 					<div class="field">
-						<label for="tf-code">Code</label>
+						<label for="tf-code">{{t .Lang "account.code"}}</label>
 						<input id="tf-code" type="text" inputmode="numeric" maxlength="6" autocomplete="one-time-code">
 					</div>
-					<div class="row"><button type="button" class="primary" id="tf-enable">Turn it on</button></div>
+					<div class="row"><button type="button" class="primary" id="tf-enable">{{t .Lang "account.turn_on"}}</button></div>
 				</div>
 				<div id="tf-codes-box" hidden>
-					<p class="small">Your recovery codes. Each works once, instead of a code from the app. Keep them somewhere safe: they are shown only now.</p>
+					<p class="small">{{t .Lang "account.codes_note"}}</p>
 					<ul class="mono" id="tf-codes"></ul>
 				</div>
 				<div id="tf-on-actions" hidden>
 					<div class="field">
-						<label for="tf-off-code">A code from the app (or a recovery code), to turn it off</label>
+						<label for="tf-off-code">{{t .Lang "account.off_code"}}</label>
 						<input id="tf-off-code" type="text" maxlength="11" autocomplete="one-time-code">
 					</div>
 					<div class="row">
-						<button type="button" class="ghost" id="tf-renew">New recovery codes</button>
-						<button type="button" class="ghost" id="tf-off">Turn it off</button>
+						<button type="button" class="ghost" id="tf-renew">{{t .Lang "account.new_codes"}}</button>
+						<button type="button" class="ghost" id="tf-off">{{t .Lang "account.turn_off"}}</button>
 					</div>
 				</div>
 				<p class="small" id="tf-result" role="status" aria-live="polite"></p>
 			</section>
 			<section id="sessions-box">
-				<h2>Where you are signed in</h2>
+				<h2>{{t .Lang "account.sessions"}}</h2>
 				<ul class="small" id="sessions-list"></ul>
-				<div class="row"><button type="button" class="ghost" id="sessions-end">Sign out everywhere else</button></div>
+				<div class="row"><button type="button" class="ghost" id="sessions-end">{{t .Lang "account.sign_out_others"}}</button></div>
 			</section>
 			<section id="tokens-box">
-				<h2>API tokens</h2>
-				<p class="small muted">For scripts and agents: send a token as <code>Authorization: Bearer …</code>. It acts as you, within what its scopes allow, and never with an administrator's powers.</p>
+				<h2>{{t .Lang "account.tokens"}}</h2>
+				<p class="small muted">{{t .Lang "account.tokens_note_html"}}</p>
 				<ul id="tokens-list"></ul>
 				<div class="field">
-					<label for="token-name">Name</label>
+					<label for="token-name">{{t .Lang "settings.name"}}</label>
 					<input id="token-name" type="text" maxlength="40">
 				</div>
 				<div class="row" id="token-scopes"></div>
-				<div class="row"><button type="button" class="ghost" id="token-go">Make a token</button></div>
+				<div class="row"><button type="button" class="ghost" id="token-go">{{t .Lang "account.make_token"}}</button></div>
 				<p class="small" id="token-new"></p>
 			</section>
-			<p class="small" id="admin-link" hidden><a href="/admin">Administration</a></p>
-			<div class="row"><button type="button" class="ghost" id="logout-go">Sign out</button></div>
+			<p class="small" id="admin-link" hidden><a href="/admin">{{t .Lang "account.admin"}}</a></p>
+			<div class="row"><button type="button" class="ghost" id="logout-go">{{t .Lang "profile.sign_out"}}</button></div>
 		</section>
 		{{end}}
 	</main>

@@ -103,6 +103,11 @@ that each translation puts in the same values and has the same markup as English
 - Boards and cards: what a screen reader hears of a board (`board.*`, with the palette's colours as `color.*`;
   a piece's name stays the game's), the sets of cards (`cards.*`; a joker's name on its picture stays in the
   English lettering), solitaire's table (`sol.*`), the illustrated themes (`theme.*`) and the page layouts.
+- The account pages (`account.*`: signing in and up, a forgotten password, confirming an account, the account
+  itself with two-step sign-in, sessions and API tokens), a player's page (`player.*`) and the pages behind the
+  turn mail's links (`mailpage.*`). Their titles are catalog keys the router passes to the template. Data in a
+  sentence (a handle, an address, a browser's name) goes in a `<bdi translate="no">`, and an API scope stays the
+  API's word, shown as code.
 
-Next, the remaining pages (account, administration, tournaments, batches, a player's page), then the mail and the
-calendar invitations, then the changelog in the help window (ADR 0141, *Left for its stage*).
+Next, the administration pages (administration, batches, health), then the mail and the calendar invitations,
+then the changelog in the help window (ADR 0141, *Left for its stage*).
