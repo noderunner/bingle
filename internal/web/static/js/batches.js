@@ -7,14 +7,16 @@
 import { h, clear } from "./util.js";
 import { api } from "./api.js";
 import { columnChart } from "./charts.js";
+import { t, lang } from "./i18n.js";
 
 const root = document.getElementById("batch-root");
 const batchID = root ? root.dataset.batchId : "";
 
-const pct = (v, d = 1) => `${(v * 100).toFixed(d)}%`;
+const pct = (v, d = 1) => new Intl.NumberFormat(lang, { style: "percent", minimumFractionDigits: d, maximumFractionDigits: d }).format(v);
 const num = (v, d = 1) => (Math.abs(v - Math.round(v)) < 1e-9 ? String(Math.round(v)) : v.toFixed(d));
 
-const STATUS_TEXT = { queued: "Queued", running: "Running", done: "Finished", cancelled: "Cancelled", failed: "Failed", interrupted: "Interrupted" };
+const STATUS_TEXT = { queued: "batch.queued", running: "batch.running", done: "batch.done", cancelled: "batch.cancelled", failed: "batch.failed", interrupted: "batch.interrupted" };
+const statusText = (s) => (STATUS_TEXT[s] ? t(STATUS_TEXT[s]) : s);
 
 // ---- sections --------------------------------------------------------------------
 
@@ -23,12 +25,12 @@ function summaryStats(rep, info) {
 	return h(
 		"div",
 		{ class: "batch-stat-row" },
-		stat("Games", `${rep.games}`),
-		stat("Decided", rep.games ? `${rep.decided} (${pct(rep.decided / rep.games, 0)})` : "–"),
-		stat("Plies / game", rep.games ? num(rep.plies.mean, 0) : "–"),
-		stat("Rounds / game", rep.games ? num(rep.rounds.mean, 1) : "–"),
-		mins ? stat("Speed", `${num(mins, 1)} games/min`) : null,
-		...Object.entries(rep.end_reasons || {}).map(([k, v]) => stat(k === "" ? "unfinished" : endReason(k), `${v}`))
+		stat(t("batch.games"), `${rep.games}`),
+		stat(t("batch.decided"), rep.games ? `${rep.decided} (${pct(rep.decided / rep.games, 0)})` : "–"),
+		stat(t("batch.plies_per_game"), rep.games ? num(rep.plies.mean, 0) : "–"),
+		stat(t("batch.rounds_per_game"), rep.games ? num(rep.rounds.mean, 1) : "–"),
+		mins ? stat(t("batch.speed"), t("batch.per_minute", { n: num(mins, 1) })) : null,
+		...Object.entries(rep.end_reasons || {}).map(([k, v]) => stat(k === "" ? t("batch.unfinished") : endReason(k), `${v}`))
 	);
 }
 
@@ -45,7 +47,7 @@ function stat(label, value) {
 function lengthCard(rep) {
 	const b = rep.ply_buckets;
 	const bars = b.counts.map((c, i) => ({ label: String(b.lo + i * b.width), value: c }));
-	return h("section", { class: "card" }, h("h2", {}, "Game length"), h("p", { class: "muted small" }, `Plies (single decisions) per game: median ${num(rep.plies.p50, 0)}, 90% under ${num(rep.plies.p90, 0)}, longest ${num(rep.plies.max, 0)}.`), columnChart(bars, { yLabel: "games" }), h("div", { class: "muted small" }, `Bars start at the labelled ply count and are ${b.width} plies wide.`));
+	return h("section", { class: "card" }, h("h2", {}, t("batch.length")), h("p", { class: "muted small" }, t("batch.length_note", { median: num(rep.plies.p50, 0), p90: num(rep.plies.p90, 0), max: num(rep.plies.max, 0) })), columnChart(bars, { yLabel: t("batch.games_axis") }), h("div", { class: "muted small" }, t("batch.bars_note", { width: b.width })));
 }
 
 // ---- games ------------------------------------------------------------------------------
@@ -63,19 +65,19 @@ function gamesCard(info) {
 			{},
 			h("td", {}, `#${g.index + 1}`),
 			h("td", {}, h("span", { class: "dots" }, g.seating.map((k) => h("i", { style: `background:${pickColor(k)}` }))), " ", g.seating.map((k) => k.toUpperCase()).join(" ")),
-			h("td", {}, w ? pickName(w) : g.winner ? `Seat ${g.winner}` : "–"),
+			h("td", {}, w ? pickName(w) : g.winner ? t("game.seat_n", { n: g.winner }) : "–"),
 			h("td", {}, endReason(g.end_reason)),
 			h("td", {}, String(g.plies)),
 			h("td", {}, String(g.rounds)),
-			h("td", {}, g.index < 20 ? h("button", { type: "button", class: "ghost", "data-game": String(g.index), onclick: () => toggleGame(g.index) }, open ? "Hide moves" : "Moves") : "")
+			h("td", {}, g.index < 20 ? h("button", { type: "button", class: "ghost", "data-game": String(g.index), onclick: () => toggleGame(g.index) }, open ? t("batch.hide_moves") : t("batch.moves")) : "")
 		);
 	});
 	return h(
 		"section",
 		{ class: "card", id: "games-card" },
-		h("h2", {}, "Games"),
-		h("p", { class: "muted small" }, "Seats are listed in order of play for each game. The decisions of the first twenty games are kept."),
-		h("div", { class: "table-scroll" }, h("table", { class: "data" }, h("thead", {}, h("tr", {}, ["Game", "Seating", "Winner", "End", "Plies", "Rounds", ""].map((t) => h("th", {}, t)))), h("tbody", {}, rows))),
+		h("h2", {}, t("batch.games")),
+		h("p", { class: "muted small" }, t("batch.games_note")),
+		h("div", { class: "table-scroll" }, h("table", { class: "data" }, h("thead", {}, h("tr", {}, [t("batch.col_game"), t("batch.col_seating"), t("batch.col_winner"), t("batch.col_end"), t("batch.col_plies"), t("batch.col_rounds"), ""].map((w) => h("th", {}, w)))), h("tbody", {}, rows))),
 		openGame >= 0 && openEvents ? h("div", { class: "batch-events", id: "game-events" }, openEvents.map((e) => h("div", {}, `${e.ply}. s${e.seat} ${e.move}`))) : null
 	);
 }
@@ -111,19 +113,19 @@ function headerCard(info) {
 		"section",
 		{ class: "card", id: "batch-head" },
 		h("div", { class: "row" },
-			h("h1", { style: "margin:0" }, info.name || `Batch ${info.id}`),
-			h("span", { class: `batch-status ${info.status}`, id: "batch-status" }, STATUS_TEXT[info.status] || info.status),
+			h("h1", { style: "margin:0" }, info.name || t("batch.n", { id: info.id })),
+			h("span", { class: `batch-status ${info.status}`, id: "batch-status" }, statusText(info.status)),
 			h("span", { class: "spacer" }),
-			running ? h("button", { type: "button", id: "batch-cancel", onclick: async () => { await api.cancelBatch(info.id); load(); } }, "Cancel") : null,
-			h("button", { type: "button", class: "danger", id: "batch-delete", onclick: async () => { if (confirm("Delete this batch and its games?")) { await api.deleteBatch(info.id); window.location.href = "/batches"; } } }, "Delete")
+			running ? h("button", { type: "button", id: "batch-cancel", onclick: async () => { await api.cancelBatch(info.id); load(); } }, t("common.cancel")) : null,
+			h("button", { type: "button", class: "danger", id: "batch-delete", onclick: async () => { if (confirm(t("batch.delete_confirm"))) { await api.deleteBatch(info.id); window.location.href = "/batches"; } } }, t("batch.delete"))
 		),
 		h("div", { class: "progress", style: "margin:0.6rem 0" }, h("div", { style: `width:${(frac * 100).toFixed(1)}%` })),
 		h("div", { class: "muted small" },
-			`${info.done} of ${info.games} games`,
-			running && remaining ? ` · about ${remaining < 1 ? "under a minute" : Math.round(remaining) + " min"} left` : "",
+			t("batch.done_of", { done: info.done, games: info.games }),
+			running && remaining ? (remaining < 1 ? t("batch.left_under") : t("batch.left_min", { n: Math.round(remaining) })) : "",
 			info.error ? ` · ${info.error}` : "",
-			" · ", info.spec.players.map((p, i) => `${pickName(p.faction) || `Seat ${i + 1}`}: ${p.bot}${p.mcts_iterations ? " " + p.mcts_iterations : ""}`).join(", "),
-			` · seed ${info.spec.seed}${info.spec.rotate ? ", seats rotated" : ""}`,
+			" · ", info.spec.players.map((p, i) => `${pickName(p.faction) || t("game.seat_n", { n: i + 1 })}: ${p.bot}${p.mcts_iterations ? " " + p.mcts_iterations : ""}`).join(", "),
+			t("batch.seed", { seed: info.spec.seed }) + (info.spec.rotate ? t("batch.rotated") : ""),
 			...(info.spec.options || []).map((o) => `, ${page.optionName ? page.optionName(o) : o}`)
 		),
 		compareControl(info)
@@ -136,10 +138,10 @@ function compareControl(info) {
 	const sel = h(
 		"select",
 		{ id: "compare-with", onchange: async (e) => { compare = e.target.value ? await api.batchReport(e.target.value) : null; renderReport(); } },
-		h("option", { value: "" }, "none"),
-		others.map((b) => h("option", { value: String(b.id), selected: compare && compare.batch.id === b.id }, `${b.name || "Batch " + b.id} (${b.done} games)`))
+		h("option", { value: "" }, t("batch.none_option")),
+		others.map((b) => h("option", { value: String(b.id), selected: compare && compare.batch.id === b.id }, t("batch.compare_option", { name: b.name || t("batch.n", { id: b.id }), n: b.done })))
 	);
-	return h("div", { class: "row", style: "margin-top:0.6rem" }, h("label", { for: "compare-with" }, "Compare win rates with"), sel);
+	return h("div", { class: "row", style: "margin-top:0.6rem" }, h("label", { for: "compare-with" }, t("batch.compare")), sel);
 }
 
 function renderReport() {
@@ -148,7 +150,7 @@ function renderReport() {
 	clear(root);
 	root.append(headerCard(info));
 	if (!rep.games) {
-		root.append(h("p", { class: "muted" }, info.status === "running" || info.status === "queued" ? "Waiting for the first games to finish…" : "No games were played."));
+		root.append(h("p", { class: "muted" }, info.status === "running" || info.status === "queued" ? t("batch.waiting") : t("batch.no_games")));
 		return;
 	}
 	// The game's own sections, with the length where it wants it; without
@@ -168,7 +170,7 @@ async function load() {
 		if (data.batch.status === "queued" || data.batch.status === "running") timer = setTimeout(load, 2000);
 	} catch (err) {
 		clear(root);
-		root.append(h("p", { class: "error-text" }, err.message), h("a", { href: "/batches" }, "All batches"));
+		root.append(h("p", { class: "error-text" }, err.message), h("a", { href: "/batches" }, t("batch.all")));
 	}
 }
 
@@ -180,10 +182,10 @@ async function loadList() {
 		const { batches } = await api.batches();
 		clear(root);
 		root.append(
-			h("p", { class: "muted" }, "Bot practice batches. Start one from the home page, from a game that offers practice."),
+			h("p", { class: "muted" }, t("batch.intro")),
 			batches.length
-				? h("ul", { class: "batch-list", id: "batch-list" }, batches.map((b) => h("li", {}, h("div", {}, h("a", { href: `/batches/${b.id}` }, b.name || `Batch ${b.id}`), h("div", { class: "muted small" }, `${b.spec.players.map((p) => `${p.faction ? p.faction.toUpperCase() + ":" : ""}${p.bot}`).join(" ")} · ${new Date(b.created_at).toLocaleString()}`)), h("div", { class: "row" }, h("span", { class: `batch-status ${b.status}` }, b.status === "running" ? `running ${b.done}/${b.games}` : (STATUS_TEXT[b.status] || b.status) + ` · ${b.done}/${b.games}`)))))
-				: h("p", {}, "No batches yet.")
+				? h("ul", { class: "batch-list", id: "batch-list" }, batches.map((b) => h("li", {}, h("div", {}, h("a", { href: `/batches/${b.id}` }, b.name || t("batch.n", { id: b.id })), h("div", { class: "muted small" }, `${b.spec.players.map((p) => `${p.faction ? p.faction.toUpperCase() + ":" : ""}${p.bot}`).join(" ")} · ${new Date(b.created_at).toLocaleString(lang)}`)), h("div", { class: "row" }, h("span", { class: `batch-status ${b.status}` }, b.status === "running" ? t("batch.running_n", { done: b.done, games: b.games }) : statusText(b.status) + ` · ${b.done}/${b.games}`)))))
+				: h("p", {}, t("batch.none_yet"))
 		);
 		if (batches.some((b) => b.status === "running" || b.status === "queued")) timer = setTimeout(loadList, 3000);
 	} catch (err) {

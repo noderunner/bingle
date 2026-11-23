@@ -7,7 +7,7 @@
 	<meta name="bingle-language" content="{{.Chosen}}" data-browser="{{.Browser}}">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<meta name="referrer" content="no-referrer">
-	<title>{{brandName}} — Administration</title>
+	<title>{{brandName}} — {{t .Lang "account.admin"}}</title>
 	<link rel="icon" type="{{brandIconType}}" href="{{brandIconURL}}" id="favicon">
 	<link rel="stylesheet" href="/static/style.css">
 </head>
@@ -17,43 +17,43 @@
 		<span class="spacer"></span>
 	</header>
 	<main class="page narrow">
-		<h1>Administration</h1>
+		<h1>{{t .Lang "account.admin"}}</h1>
 		<p class="small error" id="admin-refused" hidden></p>
-		<p class="small" id="admin-second-factor" hidden><a class="button primary" href="/account#tf-box">Set up a second factor</a></p>
+		<p class="small" id="admin-second-factor" hidden><a class="button primary" href="/account#tf-box">{{t .Lang "admin.set_up_second"}}</a></p>
 		<section class="card" id="caps-card" hidden>
-			<h2>Who may do what</h2>
+			<h2>{{t .Lang "admin.caps"}}</h2>
 			<p class="small" id="caps-mode"></p>
-			<p class="small" id="caps-drift" hidden>The database has drifted from the capabilities file. <code>bingle caps reset</code> applies the file again.</p>
+			<p class="small" id="caps-drift" hidden>{{t .Lang "admin.drift_html"}}</p>
 			<div class="admin-scroll">
 				<table class="admin-table caps" id="caps-table">
-					<thead><tr><th scope="col">Capability</th><th scope="col" class="col-check">Users</th><th scope="col" class="col-check">Guests</th></tr></thead>
+					<thead><tr><th scope="col">{{t .Lang "admin.capability"}}</th><th scope="col" class="col-check">{{t .Lang "admin.users"}}</th><th scope="col" class="col-check">{{t .Lang "admin.guests"}}</th></tr></thead>
 					<tbody id="caps-rows"></tbody>
 				</table>
 			</div>
-			<p class="small muted">Administrators may do everything. A change applies to whatever is started from now on; a call already up is not cut off.</p>
-			<h3>Limits per minute</h3>
+			<p class="small muted">{{t .Lang "admin.caps_note"}}</p>
+			<h3>{{t .Lang "admin.limits"}}</h3>
 			<div class="admin-scroll">
 				<table class="admin-table limits">
-					<thead><tr><th scope="col">What</th><th scope="col" class="num">Users</th><th scope="col" class="num">Guests</th></tr></thead>
+					<thead><tr><th scope="col">{{t .Lang "admin.limit_what"}}</th><th scope="col" class="num">{{t .Lang "admin.users"}}</th><th scope="col" class="num">{{t .Lang "admin.guests"}}</th></tr></thead>
 					<tbody id="caps-limits"></tbody>
 				</table>
 			</div>
 			<p class="small" id="caps-result" role="status" aria-live="polite"></p>
 		</section>
 		<section class="card" id="events-card" hidden>
-			<h2>What happened</h2>
-			<p class="small muted">Sign-ins and their failures, sign-ups, changes to passwords, second factors, tokens and permissions: the latest 200.</p>
+			<h2>{{t .Lang "admin.events"}}</h2>
+			<p class="small muted">{{t .Lang "admin.events_note"}}</p>
 			<div class="admin-scroll">
 				<table class="admin-table events" id="events-table">
-					<thead><tr><th scope="col">When</th><th scope="col">Account</th><th scope="col">What</th><th scope="col">Detail</th></tr></thead>
+					<thead><tr><th scope="col">{{t .Lang "admin.when"}}</th><th scope="col">{{t .Lang "settings.account"}}</th><th scope="col">{{t .Lang "admin.what"}}</th><th scope="col">{{t .Lang "admin.detail"}}</th></tr></thead>
 					<tbody id="events-rows"></tbody>
 				</table>
 			</div>
 		</section>
 		<section class="card" id="invite-card" hidden>
-			<h2>Invitations</h2>
+			<h2>{{t .Lang "admin.invitations"}}</h2>
 			<p class="small" id="invite-state"></p>
-			<div class="row"><button type="button" class="primary" id="invite-go">Make an invitation</button></div>
+			<div class="row"><button type="button" class="primary" id="invite-go">{{t .Lang "admin.make_invite"}}</button></div>
 			<p class="small" id="invite-link"></p>
 		</section>
 	</main>

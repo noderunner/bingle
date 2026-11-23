@@ -108,6 +108,13 @@ that each translation puts in the same values and has the same markup as English
   turn mail's links (`mailpage.*`). Their titles are catalog keys the router passes to the template. Data in a
   sentence (a handle, an address, a browser's name) goes in a `<bdi translate="no">`, and an API scope stays the
   API's word, shown as code.
+- The administration page (`admin.*`) and the practice batches' pages (`batch.*`, with the charts' words as
+  `chart.*`). A capability, a kind of limit and an audit event's kind are the server's names and are shown as code
+  or marked `translate="no"`, as is an event's detail; the server settings they name (`BINGLE_AUTH_MODE`) stay as
+  they are. A game's own sections of a report come from its page script, and are its own (#253).
 
-Next, the administration pages (administration, batches, health), then the mail and the calendar invitations,
-then the changelog in the help window (ADR 0141, *Left for its stage*).
+The Health page stays in English: it is served on the metrics listener, off the public site, for whoever runs the
+server, and has no language of its own to follow.
+
+Next, the mail and the calendar invitations, then the changelog in the help window (ADR 0141, *Left for its
+stage*).
