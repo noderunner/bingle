@@ -4,6 +4,11 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.124.0 - 2026-11-22
+
+### Bingle Core 0.124.0
+- A Language setting in your profile: ten languages, Arabic right to left; the profile is translated so far (API 1.9.0)
+
 ## 0.123.2 - 2026-11-22
 
 ### Bingle Core 0.123.2

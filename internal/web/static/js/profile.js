@@ -9,6 +9,8 @@ import { api, whoAmI } from "./api.js";
 import { ratingText } from "./ratings.js";
 import { paintShelf } from "./badges.js";
 import { notifyConfig, localContact, submitAddress, contactStatus, resendConfirmation, forgetAddress, statusText, whitelistNote, insecureNote } from "./notify-ui.js";
+import { t, tParts } from "./i18n.js";
+import { languageField } from "./language.js";
 
 installNav();
 
@@ -65,10 +67,10 @@ function paintFriendSettings() {
 				box.addEventListener("change", () => {
 					status.textContent = "";
 					api.setFriendSettings({ [key]: box.checked })
-						.then(() => (status.textContent = "Saved."))
+						.then(() => (status.textContent = t("common.saved")))
 						.catch((err) => {
 							box.checked = !box.checked;
-							status.textContent = err.message || "That did not save.";
+							status.textContent = err.message || t("common.not_saved");
 						});
 				});
 			wire(mail, "mail_requests");
@@ -87,14 +89,14 @@ function paintRatings(handle) {
 			for (const r of ratings) {
 				const row = document.createElement("tr");
 				row.dataset.family = r.family;
-				for (const text of [r.name, ratingText(r.rating, r.provisional), r.won, r.drawn, r.lost, r.listed ? "" : "Not listed yet"]) {
+				for (const text of [r.name, ratingText(r.rating, r.provisional), r.won, r.drawn, r.lost, r.listed ? "" : t("settings.not_listed")]) {
 					const cell = document.createElement("td");
 					cell.textContent = String(text);
 					row.append(cell);
 				}
 				rows.append(row);
 			}
-			document.getElementById("ratings-note").textContent = `A question mark means the rating is provisional. You appear on a game's leaderboard after 5 rated games against at least 3 different people.`;
+			document.getElementById("ratings-note").textContent = t("settings.ratings_note");
 			document.getElementById("ratings-box").hidden = false;
 		})
 		.catch(() => {});
@@ -132,7 +134,7 @@ api.me()
 			return a;
 		};
 		if (me.kind === "account") {
-			line.append(`Signed in as @${me.handle}. `, link("/account", "Your account", "account-link"));
+			line.append(...tParts("settings.signed_in_as", { handle: me.handle, account: link("/account", t("common.your_account"), "account-link") }));
 			paintBadges(me.handle);
 			paintRatings(me.handle);
 			paintFriendSettings();
@@ -140,12 +142,15 @@ api.me()
 			// A guest whose browser confirmed an address: that is the
 			// quickest way to an account (ADR 0073).
 			if (localContact() && !(me.caps || []).includes("notify")) document.getElementById("upgrade-box").hidden = false;
-			line.append("You play as a guest in this browser. ", link("/login", "Sign in", "login-link"));
-			if (me.signup) line.append(" or ", link("/signup", "sign up", "signup-link"), " to keep your games on every device.");
+			const signin = link("/login", t("common.sign_in"), "login-link");
+			if (me.signup) line.append(...tParts("settings.guest_signup", { signin, signup: link("/signup", t("settings.sign_up_lower"), "signup-link") }));
+			else line.append(...tParts("settings.guest", { signin }));
 		}
 		box.hidden = false;
 	})
 	.catch(() => {});
+
+document.getElementById("profile-language").append(languageField("profile_language", { label: false }));
 
 const name = document.getElementById("profile_name");
 const email = document.getElementById("profile_email");
@@ -178,7 +183,7 @@ async function paintContact() {
 	try {
 		info = await contactStatus();
 	} catch (_) {
-		line.textContent = "Could not reach the server.";
+		line.textContent = t("common.no_server");
 		return;
 	}
 	line.textContent = statusText(info);
@@ -222,7 +227,7 @@ async function paintContact() {
 document.getElementById("notify-resend").addEventListener("click", async () => {
 	try {
 		const r = await resendConfirmation();
-		line.textContent = r && r.confirmation_sent ? `A new confirmation was sent to ${r.masked}.` : (r && r.note) || statusText(r);
+		line.textContent = r && r.confirmation_sent ? t("settings.resent", { address: r.masked }) : (r && r.note) || statusText(r);
 	} catch (err) {
 		line.textContent = err.message;
 	}
@@ -233,7 +238,7 @@ document.getElementById("notify-forget").addEventListener("click", async () => {
 		await forgetAddress();
 		email.value = "";
 		saveProfile({ email: "" });
-		line.textContent = "Your address was deleted from the server.";
+		line.textContent = t("settings.forgotten");
 		actions.hidden = true;
 		clearInterval(poll);
 	} catch (err) {
@@ -245,13 +250,13 @@ form.addEventListener("submit", async (ev) => {
 	ev.preventDefault();
 	const address = email.value.trim();
 	if (address && !email.checkValidity()) {
-		say("That does not look like an email address.", "error");
+		say(t("settings.not_an_address"), "error");
 		email.focus();
 		return;
 	}
 	setLastName(name.value.trim());
 	saveProfile({ email: address, notify: notify.checked });
-	say("Saved.");
+	say(t("common.saved"));
 	if (!server.enabled) return;
 	const have = localContact();
 	if (!address) {
@@ -265,11 +270,11 @@ form.addEventListener("submit", async (ev) => {
 	}
 	try {
 		const r = await submitAddress(address);
-		line.textContent = r.confirmation_sent ? `We sent a confirmation link to ${r.masked}. Open it and press Confirm (look in the spam folder too).` : r.note || statusText(r);
-		say("Saved.");
+		line.textContent = r.confirmation_sent ? t("settings.sent", { address: r.masked }) : r.note || statusText(r);
+		say(t("common.saved"));
 		paintContact();
 	} catch (err) {
-		say(err.message || "The address could not be sent.", "error");
+		say(err.message || t("settings.not_sent"), "error");
 	}
 });
 
@@ -304,7 +309,7 @@ document.getElementById("upgrade-form").addEventListener("submit", async (ev) =>
 		location.reload();
 	} catch (err) {
 		out.className = "small error";
-		out.textContent = err.message || "That did not work.";
+		out.textContent = err.message || t("common.not_done");
 	} finally {
 		go.disabled = false;
 	}

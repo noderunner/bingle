@@ -385,6 +385,10 @@ func TestAPISchema_DescribesTheAccountsCalls(t *testing.T) {
 	if me := ana.do("GET /auth/me", "/auth/me", nil, 200); me["tour_seen"] != true {
 		t.Errorf("after POST /auth/tour-seen: %v", me)
 	}
+	ana.do("POST /auth/language", "/auth/language", map[string]any{"language": "pt-BR"}, 200)
+	if me := ana.do("GET /auth/me", "/auth/me", nil, 200); me["language"] != "pt-BR" || me["language_choice"] != "pt-BR" {
+		t.Errorf("after POST /auth/language: %v", me)
+	}
 
 	// Ana's own socket, every event checked.
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)

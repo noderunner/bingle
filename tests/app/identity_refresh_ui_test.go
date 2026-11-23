@@ -46,13 +46,16 @@ func TestWebPage_AFailedWhoAmIIsAskedAgain(t *testing.T) {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the first ask", `window.meCalls >= 1`, 10*time.Second)
-	// Asked again, the page gets an answer rather than the failure it had.
+	// Asked again, the page gets an answer rather than the failure it had. The
+	// server's answer always says whether it has accounts, the failure's does not
+	// (and a newcomer is "anonymous" either way, until its first request makes
+	// its guest).
 	var kind string
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`import("/static/js/api.js").then((m) => m.whoAmI()).then((me) => me.kind)`, &kind, func(p *runtime.EvaluateParams) *runtime.EvaluateParams { return p.WithAwaitPromise(true) })); err != nil {
+	if err := chromedp.Run(ctx, chromedp.Evaluate(`import("/static/js/api.js").then((m) => m.whoAmI()).then((me) => (typeof me.accounts === "boolean" ? me.kind : "the failure"))`, &kind, func(p *runtime.EvaluateParams) *runtime.EvaluateParams { return p.WithAwaitPromise(true) })); err != nil {
 		t.Fatal(err)
 	}
-	if kind == "anonymous" {
-		t.Fatalf("the failed answer was kept: %q", kind)
+	if kind == "the failure" {
+		t.Fatal("the failed answer was kept")
 	}
 	// Coming back into view after a failed first ask redraws the page.
 	evalBool(t, ctx, `(window.beforeReload = true, document.dispatchEvent(new Event("visibilitychange")), true)`)

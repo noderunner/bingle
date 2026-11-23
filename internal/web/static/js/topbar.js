@@ -12,6 +12,8 @@ import { navigate, onLeave } from "./nav.js";
 import { voiceStatus, voiceSettings, voiceMembers, onVoiceChange, toggleMute, toggleDeafen, leaveVoice } from "./voice.js";
 import { callState, onCallChange, hangUp, toggleMute as toggleDirectMute } from "./dm-call.js";
 import { gamesIcon, joinIcon, micIcon, helpIcon, profileIcon, messageIcon } from "./ui-icons.js";
+import { t, tParts } from "./i18n.js";
+import { languageField } from "./language.js";
 import { whoIsHere, onHereChange, startHere, watchHere, beat as beatHere, myName } from "./here.js";
 import { mountDirectMessages, startDirectMessages, unreadCount, friendStateOf, askFriend, loadFriends, onFriendsChange } from "./dm.js";
 
@@ -70,7 +72,7 @@ function engineVersion() {
  * a screen reader gives it, and what stands beside the close button instead of a heading.
  */
 function dialog(id, title, ...content) {
-	const closeBtn = h("button", { type: "button", class: "ghost icon dialog-close", "aria-label": "Close", title: "Close (Esc)" }, "✕");
+	const closeBtn = h("button", { type: "button", class: "ghost icon dialog-close", "aria-label": t("common.close"), title: t("common.close_esc") }, "✕");
 	const label = typeof title === "string" ? title : title.label;
 	const head = typeof title === "string" ? h("h2", {}, title) : title.head;
 	const dlg = h("dialog", { id, class: "bar-dialog", "aria-label": label }, h("div", { class: "dialog-head" }, head, closeBtn), ...content);
@@ -424,7 +426,7 @@ function messagesWindow() {
  * handles (ADR 0073).
  */
 function profileWindow() {
-	const btn = h("button", { type: "button", class: "topbar-icon", id: "open-profile", "aria-haspopup": "dialog", title: "Your profile", "aria-label": "Your profile" }, profileIcon());
+	const btn = h("button", { type: "button", class: "topbar-icon", id: "open-profile", "aria-haspopup": "dialog", title: t("profile.button"), "aria-label": t("profile.button") }, profileIcon());
 	const nameInput = h("input", { id: "profile-window-name", type: "text", maxlength: "32", autocomplete: "nickname", value: lastName() });
 	const saved = h("span", { class: "small muted", id: "profile-window-saved", role: "status" });
 	const list = h("ul", { class: "here-list", id: "here-list" });
@@ -436,28 +438,29 @@ function profileWindow() {
 	const here = h(
 		"section",
 		{ class: "here-section", id: "profile-here", hidden: true },
-		h("h3", {}, "Here Now ", count),
+		h("h3", {}, t("profile.here_now"), " ", count),
 		list,
-		h("p", { class: "small muted" }, "The signed-in players who have been here in the last few minutes, by their usernames.")
+		h("p", { class: "small muted" }, t("profile.here_note"))
 	);
 	const dlg = dialog(
 		"profile-dialog",
-		"Your Profile",
+		t("profile.title"),
 		account,
 		h(
 			"section",
 			{ class: "name-section" },
-			h("div", { class: "field" }, h("label", { for: "profile-window-name" }, "My Name"), nameInput, saved)
+			h("div", { class: "field" }, h("label", { for: "profile-window-name" }, t("profile.my_name")), nameInput, saved),
+			languageField("profile-window-language")
 		),
 		guestKey.section,
 		here,
-		h("div", { class: "row window-foot" }, h("a", { class: "button", id: "profile-page-link", href: "/profile" }, "All Settings"))
+		h("div", { class: "row window-foot" }, h("a", { class: "button", id: "profile-page-link", href: "/profile" }, t("profile.all_settings")))
 	);
 	const paintAccount = (me) => {
 		clear(account);
 		const back = encodeURIComponent(location.pathname + location.search);
 		if (me.kind === "account") {
-			const signOut = h("button", { type: "button", class: "ghost", id: "profile-signout" }, "Sign out");
+			const signOut = h("button", { type: "button", class: "ghost", id: "profile-signout" }, t("profile.sign_out"));
 			signOut.addEventListener("click", async () => {
 				signOut.disabled = true;
 				try {
@@ -467,12 +470,12 @@ function profileWindow() {
 				}
 			});
 			account.append(
-				h("p", { id: "profile-account-who" }, "Signed in as ", h("strong", {}, "@" + me.handle)),
+				h("p", { id: "profile-account-who" }, ...tParts("profile.signed_in_as", { handle: h("strong", { dir: "ltr" }, "@" + me.handle) })),
 				h(
 					"div",
 					{ class: "row" },
-					h("a", { class: "button", id: "profile-account-link", href: "/account" }, "Your account"),
-					me.admin ? h("a", { class: "button", id: "profile-admin-link", href: "/admin" }, "Administration") : null,
+					h("a", { class: "button", id: "profile-account-link", href: "/account" }, t("common.your_account")),
+					me.admin ? h("a", { class: "button", id: "profile-admin-link", href: "/admin" }, t("profile.administration")) : null,
 					signOut
 				)
 			);
@@ -480,18 +483,18 @@ function profileWindow() {
 		}
 		if (!me.accounts) return;
 		account.append(
-			h("p", { id: "profile-account-who" }, "You are playing as a guest."),
+			h("p", { id: "profile-account-who" }, t("profile.guest")),
 			h(
 				"div",
 				{ class: "row" },
-				h("a", { class: "button primary", id: "profile-signin", href: `/login?return=${back}` }, "Sign in"),
-				me.signup ? h("a", { class: "button", id: "profile-signup", href: `/signup?return=${back}` }, "Sign up") : null
+				h("a", { class: "button primary", id: "profile-signin", href: `/login?return=${back}` }, t("common.sign_in")),
+				me.signup ? h("a", { class: "button", id: "profile-signup", href: `/signup?return=${back}` }, t("common.sign_up")) : null
 			)
 		);
 	};
 	// The icon says it too, without opening the window.
 	whoAmI().then((me) => {
-		const label = me.kind === "account" ? `Your profile (signed in as @${me.handle})` : "Your profile (playing as a guest)";
+		const label = me.kind === "account" ? t("profile.button_account", { handle: me.handle }) : t("profile.button_guest");
 		btn.title = label;
 		btn.setAttribute("aria-label", label);
 		btn.classList.toggle("signed-in", me.kind === "account");
@@ -513,7 +516,7 @@ function profileWindow() {
 					"li",
 					{ "data-address": p.address, class: isMe ? "me" : null },
 					h("span", { class: "grow" }, p.name),
-					isMe ? h("span", { class: "badge" }, "you") : null,
+					isMe ? h("span", { class: "badge" }, t("profile.you")) : null,
 					isMe
 						? null
 						: h(
@@ -524,7 +527,7 @@ function profileWindow() {
 									disabled: state === "outgoing",
 									"data-friend-action": state || "add",
 									"data-address": p.address,
-									title: state === "friend" ? `Write to ${p.name}` : state === "outgoing" ? `Waiting for ${p.name} to answer` : state === "incoming" ? `${p.name} has asked to be your friend` : `Ask ${p.name} to be your friend`,
+									title: t(state === "friend" ? "profile.write_to" : state === "outgoing" ? "profile.waiting_for" : state === "incoming" ? "profile.asked_you" : "profile.ask", { name: p.name }),
 									onclick: () => {
 										if (state === "friend") {
 											dlg.close();
@@ -537,18 +540,18 @@ function profileWindow() {
 										}
 									},
 								},
-								state === "friend" ? "Message" : state === "outgoing" ? "Requested" : state === "incoming" ? "Answer" : "Add friend"
+								t(state === "friend" ? "profile.message" : state === "outgoing" ? "profile.requested" : state === "incoming" ? "profile.answer" : "profile.add_friend")
 							)
 				)
 			);
 		}
-		if (!people.length) list.append(h("li", { class: "muted" }, "Nobody else just now."));
+		if (!people.length) list.append(h("li", { class: "muted" }, t("profile.here_nobody")));
 	};
 	nameInput.addEventListener("change", () => {
 		const name = nameInput.value.trim();
 		if (!name) return;
 		setLastName(name);
-		saved.textContent = "Saved.";
+		saved.textContent = t("common.saved");
 		beatHere();
 	});
 	btn.addEventListener("click", () => {

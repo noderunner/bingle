@@ -7,16 +7,19 @@
 package web
 
 import (
+	"bytes"
 	"embed"
 	"encoding/json"
 	"errors"
 	"html/template"
 	"io/fs"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 
 	"github.com/noderunner/bingle/internal/config"
+	"github.com/noderunner/bingle/internal/i18n"
 	"github.com/noderunner/bingle/internal/session"
 	"github.com/noderunner/bingle/internal/trace"
 	"github.com/noderunner/bingle/internal/version"
@@ -38,6 +41,9 @@ var templates = template.Must(template.New("").Funcs(template.FuncMap{
 	"brandHasIcon":  func() bool { return false },
 	"brandIconURL":  func() string { return "/static/favicon.svg" },
 	"brandIconType": func() string { return "image/svg+xml" },
+	// t is the words of a key in the page's language (ADR 0141):
+	// {{t .Lang "key" "name" value …}}.
+	"t": i18n.HTML,
 }).ParseFS(templateFS, "templates/*.html.tmpl"))
 
 // brandIconPath is where an instance's own icon is served.
@@ -71,10 +77,13 @@ func brandedTemplates(brand config.Brand) *template.Template {
 // create form's game_def_id select offers every real registered game
 // definition), and "/static/..." serves the embedded static assets
 // (app.js, style.css) index.html.tmpl references.
-func NewRouter(mgr *session.Manager, brand config.Brand) http.Handler {
+//
+// accountLanguage is the language the account a page is for chose, "" for
+// none (auth.Resolver.AccountLanguage); nil when there are no accounts.
+func NewRouter(mgr *session.Manager, brand config.Brand, accountLanguage func(*http.Request) string) http.Handler {
 	r := chi.NewRouter()
 
-	h := &handlers{mgr: mgr, templates: brandedTemplates(brand)}
+	h := &handlers{mgr: mgr, templates: brandedTemplates(brand), accountLanguage: accountLanguage}
 	if brand.Icon != nil {
 		r.Get(brandIconPath, func(w http.ResponseWriter, _ *http.Request) {
 			w.Header().Set("Content-Type", brand.IconType)
@@ -122,9 +131,25 @@ func NewRouter(mgr *session.Manager, brand config.Brand) http.Handler {
 		}
 		http.StripPrefix("/static/games/"+family+"/", http.FileServer(http.FS(scripts))).ServeHTTP(w, req)
 	})
+	r.Get("/static/i18n/{lang}.json", handleCatalog)
 	r.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.FS(staticSub))))
 
 	return r
+}
+
+// handleCatalog serves what js/i18n.js loads for a language: the languages,
+// and the catalog with English's words where it lacks its own. The page asks
+// every time, and is told when it has not changed.
+func handleCatalog(w http.ResponseWriter, r *http.Request) {
+	body, etag := i18n.Page(chi.URLParam(r, "lang"))
+	if body == nil {
+		http.NotFound(w, r)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("ETag", etag)
+	http.ServeContent(w, r, "", time.Time{}, bytes.NewReader(body))
 }
 
 // staticContent returns staticFS rooted at its "static" subdirectory, so
@@ -150,17 +175,37 @@ func StaticHandler() http.Handler {
 
 // handlers holds the dependencies shared by every handler in this package.
 type handlers struct {
-	mgr       *session.Manager
-	templates *template.Template
+	mgr             *session.Manager
+	templates       *template.Template
+	accountLanguage func(*http.Request) string
+}
+
+// page is what every template is given: the language the page is in (ADR
+// 0141), its direction, the language chosen ("" for the browser's own) and the
+// browser's own, which the Language setting offers first.
+type page struct {
+	Lang, Dir, Chosen, Browser string
+}
+
+// page is the request's page data.
+func (h *handlers) page(r *http.Request) page {
+	account := ""
+	if h.accountLanguage != nil {
+		account = h.accountLanguage(r)
+	}
+	lang := i18n.ForRequest(r, account)
+	return page{Lang: lang, Dir: i18n.Dir(lang), Chosen: i18n.Choice(r, account), Browser: i18n.Browser(r)}
 }
 
 // indexPageData is index.html.tmpl's template data.
 type indexPageData struct {
+	page
 	GameDefs []session.GameDefSummary
 }
 
 // gamePageData is game.html.tmpl's template data.
 type gamePageData struct {
+	page
 	Code string
 }
 
@@ -173,11 +218,13 @@ func (h *handlers) render(r *http.Request, w http.ResponseWriter, name string, d
 	_, span := trace.Start(r.Context(), "web.render")
 	span.Set("template", name)
 	defer span.End()
+	// The page's language comes from these (ADR 0141).
+	w.Header().Add("Vary", "Accept-Language, Cookie")
 	return h.templates.ExecuteTemplate(w, name, data)
 }
 
 func (h *handlers) handleIndex(w http.ResponseWriter, r *http.Request) {
-	data := indexPageData{GameDefs: h.mgr.ListGameDefs(r.Context())}
+	data := indexPageData{page: h.page(r), GameDefs: h.mgr.ListGameDefs(r.Context())}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := h.render(r, w, "index.html.tmpl", data); err != nil {
@@ -193,7 +240,7 @@ func (h *handlers) handleIndex(w http.ResponseWriter, r *http.Request) {
 // is what surfaces a 404 for an unknown room (see docs/history/plan.md section 6.11
 // and tests/app/web_board_state_test.go's documented reasoning).
 func (h *handlers) handleGame(w http.ResponseWriter, r *http.Request) {
-	data := gamePageData{Code: chi.URLParam(r, "code")}
+	data := gamePageData{page: h.page(r), Code: chi.URLParam(r, "code")}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	// Only this page may use the microphone (voice chat), and nothing may use the camera.
@@ -207,6 +254,7 @@ func (h *handlers) handleGame(w http.ResponseWriter, r *http.Request) {
 // batchesPageData is batches.html.tmpl's template data: the batch to report on,
 // empty for the list.
 type batchesPageData struct {
+	page
 	ID string
 }
 
@@ -214,7 +262,7 @@ type batchesPageData struct {
 // batch's report at /batches/{id}. Like the game page it is only a shell; the
 // script fetches /api/batches itself.
 func (h *handlers) handleBatches(w http.ResponseWriter, r *http.Request) {
-	data := batchesPageData{ID: chi.URLParam(r, "id")}
+	data := batchesPageData{page: h.page(r), ID: chi.URLParam(r, "id")}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := h.render(r, w, "batches.html.tmpl", data); err != nil {
 		http.Error(w, "web: rendering batches page failed", http.StatusInternalServerError)
@@ -225,7 +273,7 @@ func (h *handlers) handleBatches(w http.ResponseWriter, r *http.Request) {
 // handleTournament serves a tournament's page, which reads the tournament itself.
 func (h *handlers) handleTournament(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := h.render(r, w, "tournament.html.tmpl", nil); err != nil {
+	if err := h.render(r, w, "tournament.html.tmpl", h.page(r)); err != nil {
 		http.Error(w, "web: rendering tournament page failed", http.StatusInternalServerError)
 		return
 	}
@@ -235,7 +283,7 @@ func (h *handlers) handleTournament(w http.ResponseWriter, r *http.Request) {
 // games, both kept in the browser, so the page is only a shell.
 func (h *handlers) handleProfile(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := h.render(r, w, "profile.html.tmpl", nil); err != nil {
+	if err := h.render(r, w, "profile.html.tmpl", h.page(r)); err != nil {
 		http.Error(w, "web: rendering profile page failed", http.StatusInternalServerError)
 		return
 	}
@@ -245,13 +293,14 @@ func (h *handlers) handleProfile(w http.ResponseWriter, r *http.Request) {
 // and ratings, which say whether there is such a player.
 func (h *handlers) handlePlayer(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := h.render(r, w, "player.html.tmpl", nil); err != nil {
+	if err := h.render(r, w, "player.html.tmpl", h.page(r)); err != nil {
 		http.Error(w, "web: rendering the player page failed", http.StatusInternalServerError)
 	}
 }
 
 // accountPageData is account.html.tmpl's data: which of the account pages.
 type accountPageData struct {
+	page
 	Page, Title string
 }
 
@@ -261,7 +310,7 @@ func (h *handlers) handleAccountPage(page, title string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.Header().Set("Cache-Control", "no-store")
-		if err := h.render(r, w, "account.html.tmpl", accountPageData{Page: page, Title: title}); err != nil {
+		if err := h.render(r, w, "account.html.tmpl", accountPageData{page: h.page(r), Page: page, Title: title}); err != nil {
 			http.Error(w, "web: rendering the account page failed", http.StatusInternalServerError)
 		}
 	}
@@ -272,13 +321,14 @@ func (h *handlers) handleAccountPage(page, title string) http.HandlerFunc {
 func (h *handlers) handleAdmin(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-store")
-	if err := h.render(r, w, "admin.html.tmpl", nil); err != nil {
+	if err := h.render(r, w, "admin.html.tmpl", h.page(r)); err != nil {
 		http.Error(w, "web: rendering the admin page failed", http.StatusInternalServerError)
 	}
 }
 
 // notifyPageData is notify.html.tmpl's data: which action the page offers.
 type notifyPageData struct {
+	page
 	Action string // "confirm" or "stop"
 }
 
@@ -291,7 +341,7 @@ func (h *handlers) handleNotifyPage(action string) http.HandlerFunc {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.Header().Set("Cache-Control", "no-store")
 		w.Header().Set("Referrer-Policy", "no-referrer")
-		if err := h.render(r, w, "notify.html.tmpl", notifyPageData{Action: action}); err != nil {
+		if err := h.render(r, w, "notify.html.tmpl", notifyPageData{page: h.page(r), Action: action}); err != nil {
 			http.Error(w, "web: rendering notify page failed", http.StatusInternalServerError)
 		}
 	}

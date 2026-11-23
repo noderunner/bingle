@@ -11,6 +11,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/noderunner/bingle/internal/i18n"
 	"github.com/noderunner/bingle/internal/mail"
 	"github.com/noderunner/bingle/internal/qr"
 	"github.com/noderunner/bingle/internal/store"
@@ -26,6 +27,7 @@ import (
 //	POST /auth/password {old, new}                  a new password, a new cookie
 //	GET  /auth/me                                   who this browser is
 //	POST /auth/tour-seen                            the welcome tour was skipped or finished (ADR 0139)
+//	POST /auth/language {language}                  the interface's language (ADR 0141)
 //	POST /auth/second   {code | recovery_code}      the second step of a sign-in
 //	POST /auth/totp/setup   {password}               a secret for an app, its link and a QR code of it
 //	POST /auth/totp/enable  {code}                   on, with ten recovery codes
@@ -49,6 +51,7 @@ func (rs *Resolver) Routes() http.Handler {
 	r.Post("/password", rs.handlePassword)
 	r.Get("/me", rs.handleMe)
 	r.Post("/tour-seen", rs.handleTourSeen)
+	r.Post("/language", rs.handleLanguage)
 	r.Post("/second", rs.handleSecond)
 	r.Post("/totp/setup", rs.handleTOTPSetup)
 	r.Post("/totp/enable", rs.handleTOTPEnable)
@@ -360,6 +363,13 @@ type Me struct {
 	// tour (ADR 0139), which the main page then does not offer again; POST
 	// /auth/tour-seen says so. Always false for a newcomer, who has no guest yet.
 	TourSeen bool `json:"tour_seen,omitempty"`
+	// Language is the language the interface speaks to this request in (ADR
+	// 0141): the one chosen, or else the first of Accept-Language that it
+	// has, or else English.
+	Language string `json:"language"`
+	// LanguageChoice is the language chosen, which POST /auth/language sets:
+	// the account's, or else this browser's. Absent for the browser's own.
+	LanguageChoice string `json:"language_choice,omitempty"`
 }
 
 func (rs *Resolver) meOf(r *http.Request, a store.Account) Me {
@@ -376,6 +386,7 @@ func (rs *Resolver) meOf(r *http.Request, a store.Account) Me {
 	out.Signup = rs.signupOpen()
 	out.Admin = a.Admin && !out.NeedsSecondFactor
 	out.TourSeen = rs.tourSeen(r, a.PrincipalID)
+	out.Language, out.LanguageChoice = i18n.ForRequest(r, a.Language), i18n.Choice(r, a.Language)
 	rs.decorate(r, &out)
 	return out
 }
@@ -439,9 +450,81 @@ func (rs *Resolver) handleMe(w http.ResponseWriter, r *http.Request) {
 		out.Providers = rs.oidc.Providers()
 	}
 	if out.Kind != store.KindAccount {
+		out.Language, out.LanguageChoice = i18n.ForRequest(r, ""), i18n.Choice(r, "")
 		rs.decorate(r, &out)
 	}
 	writeJSON(w, http.StatusOK, out)
+}
+
+// LanguageRequest is POST /auth/language's body.
+type LanguageRequest struct {
+	// Language is the code of one of the interface's languages, or "" for
+	// the browser's own (Accept-Language).
+	Language string `json:"language"`
+}
+
+// LanguageResponse is POST /auth/language's answer.
+type LanguageResponse struct {
+	// Language is the language the interface now speaks.
+	Language string `json:"language"`
+	// LanguageChoice is the language chosen, absent for the browser's own.
+	LanguageChoice string `json:"language_choice,omitempty"`
+}
+
+// ErrNoSuchLanguage is the answer to a language the interface does not have.
+var ErrNoSuchLanguage = errors.New("auth: the interface has no such language")
+
+// handleLanguage sets the interface's language. An account keeps it, so that it
+// follows the account to every device and its mail can be in it; the browser
+// keeps it in a cookie either way, for a guest, and for after signing out.
+func (rs *Resolver) handleLanguage(w http.ResponseWriter, r *http.Request) {
+	var req LanguageRequest
+	if !decode(w, r, &req) {
+		return
+	}
+	if req.Language != "" && !i18n.Supported(req.Language) {
+		writeError(w, http.StatusBadRequest, ErrNoSuchLanguage.Error())
+		return
+	}
+	if p, ok := From(r.Context()); ok && p.Account != nil && rs.accounts != nil {
+		if err := rs.accounts.st.SetAccountLanguage(r.Context(), p.Account.ID, req.Language); err != nil {
+			rs.log.Error("keeping the account's language", "err", err)
+			writeError(w, http.StatusServiceUnavailable, "auth: could not keep that; try again")
+			return
+		}
+	}
+	if req.Language == "" {
+		rs.setCookie(w, r, i18n.Cookie, "", -1)
+	} else {
+		rs.setCookie(w, r, i18n.Cookie, req.Language, languageCookieAge)
+	}
+	out := LanguageResponse{Language: req.Language, LanguageChoice: req.Language}
+	if out.Language == "" {
+		out.Language = i18n.Browser(r)
+	}
+	writeJSON(w, http.StatusOK, out)
+}
+
+// languageCookieAge is how long a browser keeps its choice of language: 400
+// days, the longest a browser keeps a cookie.
+const languageCookieAge = 400 * 24 * 60 * 60
+
+// AccountLanguage is the language chosen by the account a page is for, or ""
+// when it is nobody's or the account chose none (the pages do not go through
+// Middleware, which would make a guest).
+func (rs *Resolver) AccountLanguage(r *http.Request) string {
+	if rs.accounts == nil {
+		return ""
+	}
+	c, err := r.Cookie(SessionCookie)
+	if err != nil || c.Value == "" {
+		return ""
+	}
+	acc, err := rs.accounts.account(r.Context(), c.Value)
+	if err != nil {
+		return ""
+	}
+	return acc.Language
 }
 
 // account is the signed-in account of the request, or an answer saying it
