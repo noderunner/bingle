@@ -108,6 +108,7 @@ All configuration is via environment variables — there's no config file.
 | `BINGLE_RTC_TURN_URLS` | *(unset)* | Voice chat: URLs of a TURN relay (coturn), for players behind strict NATs |
 | `BINGLE_RTC_TURN_SECRET` | *(unset)* | coturn's `static-auth-secret`; bingle mints expiring credentials from it. See [voice.md](voice.md) |
 | `BINGLE_SMTP_HOST` ... | *(unset = off)* | Email notifications: the SMTP server and login (`BINGLE_SMTP_PORT`, `_TLS`, `_USER`, `_PASSWORD_FILE`, `_CA_FILE`), mail limits (`BINGLE_MAIL_HOURLY_LIMIT`, `_DAILY_LIMIT`). The sender is `BINGLE_TLS_EMAIL`. See [email.md](email.md) |
+| `BINGLE_TRANSLATE_URL` ... | *(unset = off)* | Chat translation: a translation service on this machine or network (`BINGLE_TRANSLATE_MODEL`, `_API`, `_WORKERS`, `_TIMEOUT`). See [translate.md](translate.md) |
 
 TLS is **off by default** and optional: with none of the TLS variables set the server runs plain HTTP, which is what you want for local development. HTTPS turns on either with `BINGLE_TLS_DOMAIN` (automatic certificates) or when **both** `BINGLE_TLS_CERT` and `BINGLE_TLS_KEY` are set to valid, readable files. Setting up a domain, the router and a first test is in [docs/tls.md](tls.md).
 

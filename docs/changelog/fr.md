@@ -2,6 +2,11 @@
 
 Ce qui a changé dans Bingle, du plus récent au plus ancien. Bingle Core (le serveur, le moteur et le client web) et chaque jeu ont leur propre version, et chaque entrée dit lesquels ont changé. Les entrées antérieures à la 0.124.0 ne sont qu’en anglais.
 
+## 0.127.0 - 2026-11-23
+
+### Bingle Core 0.127.0
+- Un serveur peut désormais connecter son propre service de traduction pour le chat
+
 ## 0.126.2 - 2026-11-23
 
 ### Bingle Core 0.126.2

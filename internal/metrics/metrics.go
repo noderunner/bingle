@@ -82,6 +82,8 @@ type Metrics struct {
 	clientErrors   *prometheus.CounterVec
 	mail           *prometheus.CounterVec
 	mailSend       prometheus.Histogram
+	translations   *prometheus.CounterVec
+	translateReq   prometheus.Histogram
 }
 
 // New builds the registry, registers the Go runtime and process collectors
@@ -241,6 +243,16 @@ func New(version string) *Metrics {
 			Namespace: Namespace, Subsystem: "mail", Name: "send_duration_seconds",
 			Help: "How long handing one message to the mail server took, sent or not.", Buckets: durationBuckets,
 		}),
+
+		translations: prometheus.NewCounterVec(prometheus.CounterOpts{
+			Namespace: Namespace, Name: "translations_total",
+			Help: "Chat lines asked to be put into a reader's language, by what became of them: translated, same (already in it), skipped (nothing to translate), rejected (the answer was dropped), failed, dropped (the queue was full), paused (the service was being left alone).",
+		}, []string{"outcome"}),
+
+		translateReq: prometheus.NewHistogram(prometheus.HistogramOpts{
+			Namespace: Namespace, Subsystem: "translate", Name: "request_duration_seconds",
+			Help: "How long one request to the translation service took, answered or not.", Buckets: durationBuckets,
+		}),
 	}
 
 	buildInfo := prometheus.NewGaugeVec(prometheus.GaugeOpts{
@@ -258,7 +270,7 @@ func New(version string) *Metrics {
 		m.dbQueries, m.dbDuration, m.dbRows, m.dbTxDuration, m.dbBusy, m.db,
 		m.gameMoves, m.gameApply, m.gameLegal, m.gameLegalMoves, m.gameFinished, m.gameIllegal, m.ratedResults, m.factsDropped, m.gameCounts, m.badgeChecks,
 		m.botSearch, m.botNodes, m.slotWait, m.slotInUse, m.slotSize, m.batchWorkers, m.realTime,
-		m.clientErrors, m.mail, m.mailSend,
+		m.clientErrors, m.mail, m.mailSend, m.translations, m.translateReq,
 	)
 	return m
 }
