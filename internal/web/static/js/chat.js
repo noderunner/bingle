@@ -8,7 +8,7 @@ import { h, store, lastName, markChatRead } from "./util.js";
 import { api } from "./api.js";
 import { cssColor } from "./render.js";
 import { onNavigate } from "./nav.js";
-import { t } from "./i18n.js";
+import { t, lang } from "./i18n.js";
 
 const chat = {
 	code: null,
@@ -22,47 +22,47 @@ const chat = {
 	picker: false, // the emoji picker is open
 };
 
-// The emoji of the picker, by group: [emoji, name]. The names are for the
-// screen reader and the tooltip.
+// The emoji of the picker, by group: [emoji, the key of its name]. The names are
+// for the screen reader and the tooltip, in the reader's language (ADR 0141).
 const EMOJI_GROUPS = [
 	[
-		"Faces",
+		"emoji.group_faces",
 		[
-			["😀", "grinning"], ["😄", "smiling"], ["😁", "beaming"], ["😆", "laughing"], ["😅", "nervous laugh"], ["😂", "tears of joy"], ["🤣", "rolling on the floor"],
-			["🙂", "slight smile"], ["😉", "wink"], ["😊", "blush"], ["😍", "heart eyes"], ["😘", "blowing a kiss"], ["😎", "cool"], ["🤩", "star-struck"],
-			["🥳", "party"], ["😏", "smirk"], ["😬", "grimace"], ["🙄", "eye roll"], ["🤔", "thinking"], ["🤨", "raised eyebrow"], ["😐", "neutral"],
-			["😮", "surprised"], ["😲", "astonished"], ["😱", "screaming"], ["😭", "crying"], ["😢", "sad"], ["😤", "huffing"], ["😡", "angry"],
-			["🤬", "cursing"], ["😈", "devil"], ["💀", "skull"], ["😴", "sleeping"], ["🤯", "mind blown"], ["🥺", "pleading"], ["😇", "angel"], ["🫠", "melting"],
+			["😀", "emoji.grinning"], ["😄", "emoji.smiling"], ["😁", "emoji.beaming"], ["😆", "emoji.laughing"], ["😅", "emoji.nervous_laugh"], ["😂", "emoji.tears_of_joy"], ["🤣", "emoji.rolling_on_the_floor"],
+			["🙂", "emoji.slight_smile"], ["😉", "emoji.wink"], ["😊", "emoji.blush"], ["😍", "emoji.heart_eyes"], ["😘", "emoji.blowing_a_kiss"], ["😎", "emoji.cool"], ["🤩", "emoji.star_struck"],
+			["🥳", "emoji.party"], ["😏", "emoji.smirk"], ["😬", "emoji.grimace"], ["🙄", "emoji.eye_roll"], ["🤔", "emoji.thinking"], ["🤨", "emoji.raised_eyebrow"], ["😐", "emoji.neutral"],
+			["😮", "emoji.surprised"], ["😲", "emoji.astonished"], ["😱", "emoji.screaming"], ["😭", "emoji.crying"], ["😢", "emoji.sad"], ["😤", "emoji.huffing"], ["😡", "emoji.angry"],
+			["🤬", "emoji.cursing"], ["😈", "emoji.devil"], ["💀", "emoji.skull"], ["😴", "emoji.sleeping"], ["🤯", "emoji.mind_blown"], ["🥺", "emoji.pleading"], ["😇", "emoji.angel"], ["🫠", "emoji.melting"],
 		],
 	],
 	[
-		"Hands",
+		"emoji.group_hands",
 		[
-			["👍", "thumbs up"], ["👎", "thumbs down"], ["👏", "clap"], ["🙌", "raised hands"], ["🙏", "thanks"], ["🤝", "handshake"], ["💪", "strong"],
-			["👀", "eyes"], ["🤞", "fingers crossed"], ["✌️", "victory"], ["🤷", "shrug"], ["🤦", "facepalm"], ["🫡", "salute"], ["👋", "wave"], ["👌", "ok"],
+			["👍", "emoji.thumbs_up"], ["👎", "emoji.thumbs_down"], ["👏", "emoji.clap"], ["🙌", "emoji.raised_hands"], ["🙏", "emoji.thanks"], ["🤝", "emoji.handshake"], ["💪", "emoji.strong"],
+			["👀", "emoji.eyes"], ["🤞", "emoji.fingers_crossed"], ["✌️", "emoji.victory"], ["🤷", "emoji.shrug"], ["🤦", "emoji.facepalm"], ["🫡", "emoji.salute"], ["👋", "emoji.wave"], ["👌", "emoji.ok"],
 		],
 	],
 	[
-		"Game",
+		"emoji.group_game",
 		[
-			["🎲", "dice"], ["🏆", "trophy"], ["⚔️", "swords"], ["🛡️", "shield"], ["🗡️", "dagger"], ["🎯", "bullseye"], ["🃏", "joker"], ["🧩", "puzzle"],
-			["👑", "crown"], ["💎", "gem"], ["🗺️", "map"], ["📜", "scroll"], ["⏳", "hourglass"], ["⏰", "alarm clock"], ["🔥", "fire"], ["💥", "boom"],
-			["⚡", "lightning"], ["✨", "sparkles"], ["🎉", "party popper"], ["🎊", "confetti"], ["✅", "yes"], ["❌", "no"], ["❓", "question"], ["❗", "exclamation"], ["💯", "hundred"],
+			["🎲", "emoji.dice"], ["🏆", "emoji.trophy"], ["⚔️", "emoji.swords"], ["🛡️", "emoji.shield"], ["🗡️", "emoji.dagger"], ["🎯", "emoji.bullseye"], ["🃏", "emoji.joker"], ["🧩", "emoji.puzzle"],
+			["👑", "emoji.crown"], ["💎", "emoji.gem"], ["🗺️", "emoji.map"], ["📜", "emoji.scroll"], ["⏳", "emoji.hourglass"], ["⏰", "emoji.alarm_clock"], ["🔥", "emoji.fire"], ["💥", "emoji.boom"],
+			["⚡", "emoji.lightning"], ["✨", "emoji.sparkles"], ["🎉", "emoji.party_popper"], ["🎊", "emoji.confetti"], ["✅", "emoji.yes"], ["❌", "emoji.no"], ["❓", "emoji.question"], ["❗", "emoji.exclamation"], ["💯", "emoji.hundred"],
 		],
 	],
 	[
-		"Mythos",
+		"emoji.group_mythos",
 		[
-			["🐙", "octopus"], ["🦑", "squid"], ["🌊", "wave"], ["👁️", "eye"], ["🌑", "new moon"], ["🌙", "crescent moon"], ["🕯️", "candle"], ["📖", "book"],
-			["🗝️", "key"], ["🔮", "crystal ball"], ["🧿", "amulet"], ["🦇", "bat"], ["🐍", "snake"], ["🕷️", "spider"], ["🐐", "goat"], ["🌱", "seedling"],
-			["👻", "ghost"], ["👽", "alien"], ["🧟", "zombie"], ["☠️", "skull and crossbones"], ["🩸", "blood"], ["🌀", "cyclone"], ["🌪️", "tornado"], ["❄️", "snowflake"], ["🟡", "yellow sign"],
+			["🐙", "emoji.octopus"], ["🦑", "emoji.squid"], ["🌊", "emoji.water_wave"], ["👁️", "emoji.eye"], ["🌑", "emoji.new_moon"], ["🌙", "emoji.crescent_moon"], ["🕯️", "emoji.candle"], ["📖", "emoji.book"],
+			["🗝️", "emoji.key"], ["🔮", "emoji.crystal_ball"], ["🧿", "emoji.amulet"], ["🦇", "emoji.bat"], ["🐍", "emoji.snake"], ["🕷️", "emoji.spider"], ["🐐", "emoji.goat"], ["🌱", "emoji.seedling"],
+			["👻", "emoji.ghost"], ["👽", "emoji.alien"], ["🧟", "emoji.zombie"], ["☠️", "emoji.skull_and_crossbones"], ["🩸", "emoji.blood"], ["🌀", "emoji.cyclone"], ["🌪️", "emoji.tornado"], ["❄️", "emoji.snowflake"], ["🟡", "emoji.yellow_sign"],
 		],
 	],
 	[
-		"Hearts",
+		"emoji.group_hearts",
 		[
-			["❤️", "red heart"], ["🧡", "orange heart"], ["💛", "yellow heart"], ["💚", "green heart"], ["💙", "blue heart"], ["💜", "purple heart"],
-			["🖤", "black heart"], ["🤍", "white heart"], ["💔", "broken heart"],
+			["❤️", "emoji.red_heart"], ["🧡", "emoji.orange_heart"], ["💛", "emoji.yellow_heart"], ["💚", "emoji.green_heart"], ["💙", "emoji.blue_heart"], ["💜", "emoji.purple_heart"],
+			["🖤", "emoji.black_heart"], ["🤍", "emoji.white_heart"], ["💔", "emoji.broken_heart"],
 		],
 	],
 ];
@@ -122,13 +122,13 @@ export function emojiPicker(input) {
 		input.focus();
 	};
 	const cell = (emoji, name) =>
-		h("button", { type: "button", class: "emoji-cell", "data-emoji": emoji, title: name, "aria-label": name, onclick: () => pick(emoji) }, emoji);
+		h("button", { type: "button", class: "emoji-cell", "data-emoji": emoji, title: t(name), "aria-label": t(name), onclick: () => pick(emoji) }, emoji);
 	const fill = () => {
 		panel.textContent = "";
 		const recent = recentEmoji();
 		const groups = recent.length ? [[t("chat.recent"), recent.map((e) => [e, e])], ...EMOJI_GROUPS] : EMOJI_GROUPS;
 		for (const [title, list] of groups) {
-			panel.append(h("div", { class: "emoji-group-title small muted" }, title));
+			panel.append(h("div", { class: "emoji-group-title small muted" }, t(title)));
 			const grid = h("div", { class: "emoji-grid" });
 			for (const [emoji, name] of list) grid.append(cell(emoji, name));
 			panel.append(grid);
@@ -211,9 +211,9 @@ function bump() {
 
 function clock(iso) {
 	// SQLite stores "YYYY-MM-DD HH:MM:SS" in UTC.
-	const t = Date.parse(String(iso || "").replace(" ", "T") + (/[zZ]|[+-]\d\d:?\d\d$/.test(iso || "") ? "" : "Z"));
+	const at = Date.parse(String(iso || "").replace(" ", "T") + (/[zZ]|[+-]\d\d:?\d\d$/.test(iso || "") ? "" : "Z"));
 	if (Number.isNaN(t)) return "";
-	return new Date(t).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+	return new Date(at).toLocaleTimeString(lang, { hour: "2-digit", minute: "2-digit" });
 }
 
 function lineNode(line, mine) {
@@ -230,9 +230,9 @@ function lineNode(line, mine) {
 	return h(
 		"li",
 		{ class: "chat-line" + (mine ? " mine" : "") + (line.seat ? "" : " spectator"), "data-id": line.id, "data-seat": line.seat || null },
-		h("span", { class: `chat-who ${line.color ? "color-" + cssColor(line.color) : ""}`, title: line.seat ? "" : "spectator" }, line.name + (line.seat ? "" : " (watching)")),
+		h("span", { class: `chat-who ${line.color ? "color-" + cssColor(line.color) : ""}`, title: line.seat ? "" : t("chat.spectator") }, line.seat ? line.name : t("chat.watching", { name: line.name })),
 		// Who said it: an account, by its handle, or a guest.
-		line.handle ? handleBadge(line.handle) : line.guest ? h("span", { class: "chat-guest small muted" }, "guest") : null,
+		line.handle ? handleBadge(line.handle) : line.guest ? h("span", { class: "chat-guest small muted" }, t("chat.guest")) : null,
 		h("span", { class: "chat-text" }, line.text),
 		h("time", { class: "chat-time muted small" }, clock(line.at))
 	);
@@ -252,11 +252,11 @@ export function chatCard({ code, me, voice = null }) {
 	const card = h("div", { class: "card chat", id: "chat-card" });
 	badgeEl = h("span", { class: "badge chat-unread", id: "chat-unread", hidden: chat.unread === 0 }, String(chat.unread));
 	// The voice chat's microphone sits in the head, and its line under it (js/voice.js).
-	card.append(h("h3", { class: "chat-head" }, h("span", { class: "chat-title" }, "Chat"), badgeEl, voice && voice.button ? voice.button : null));
+	card.append(h("h3", { class: "chat-head" }, h("span", { class: "chat-title" }, t("chat.title")), badgeEl, voice && voice.button ? voice.button : null));
 	if (voice && voice.note) card.append(voice.note);
 
-	listEl = h("ol", { class: "chat-log", id: "chat-log", "aria-live": "polite", "aria-label": "Chat messages" });
-	if (!chat.lines.length) listEl.append(h("li", { class: "chat-empty muted small" }, chat.loaded ? "Nobody has said anything yet." : "Loading…"));
+	listEl = h("ol", { class: "chat-log", id: "chat-log", "aria-live": "polite", "aria-label": t("chat.messages_table") });
+	if (!chat.lines.length) listEl.append(h("li", { class: "chat-empty muted small" }, chat.loaded ? t("chat.nobody") : t("common.loading")));
 	for (const line of chat.lines) listEl.append(lineNode(line, me.name && line.name.toLowerCase() === me.name.toLowerCase()));
 	card.append(listEl);
 	queueMicrotask(() => {
@@ -271,9 +271,9 @@ export function chatCard({ code, me, voice = null }) {
 			type: "text",
 			id: "chat-name",
 			class: "chat-name",
-			placeholder: "Your name",
+			placeholder: t("chat.your_name"),
 			maxlength: "32",
-			"aria-label": "Your name in the chat",
+			"aria-label": t("chat.name_label"),
 			value: store.get("bingle.chatname", "") || lastName() || "",
 			autocomplete: "nickname",
 		});
@@ -283,10 +283,10 @@ export function chatCard({ code, me, voice = null }) {
 		type: "text",
 		id: "chat-input",
 		class: "chat-input",
-		placeholder: seated ? "Say something to the table…" : "Say something (as a spectator)…",
+		placeholder: seated ? t("chat.say_table") : t("chat.say_spectator"),
 		maxlength: "500",
 		autocomplete: "off",
-		"aria-label": "Chat message",
+		"aria-label": t("chat.message"),
 		value: chat.draft,
 	});
 	input.addEventListener("input", () => {
@@ -311,7 +311,7 @@ export function chatCard({ code, me, voice = null }) {
 			// The server's push may arrive first; receiveChat ignores repeats.
 			receiveChat(line, { mine: true });
 		} catch (err) {
-			notice.textContent = err.message || "The message was not sent.";
+			notice.textContent = err.message || t("dm.not_sent");
 			setTimeout(() => {
 				if (notice.textContent) notice.textContent = "";
 			}, 4000);
@@ -327,7 +327,7 @@ export function chatCard({ code, me, voice = null }) {
 			send();
 		}
 	});
-	const sendBtn = h("button", { type: "button", id: "chat-send", class: "primary", onclick: send }, "Send");
+	const sendBtn = h("button", { type: "button", id: "chat-send", class: "primary", onclick: send }, t("dm.send"));
 	const notice = h("p", { class: "small error chat-notice", id: "chat-notice", role: "status" });
 	const row = h("div", { class: "chat-entry" });
 	const picker = emojiPicker(input);

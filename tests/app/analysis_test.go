@@ -172,7 +172,7 @@ func TestWebAnalysis_TheTabRunsABatchAndExplainsTheBots(t *testing.T) {
 	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/")); err != nil {
 		t.Fatal(err)
 	}
-	waitJS(t, ctx, "the tabs", `document.getElementById("tab-analysis") !== null`, 20*time.Second)
+	waitScripts(t, ctx)
 	clickSel(t, ctx, "#tab-analysis")
 	waitJS(t, ctx, "the form", `document.getElementById("analysis-start") !== null && document.querySelectorAll("#analysis-seats .analysis-bot").length > 0`, 20*time.Second)
 

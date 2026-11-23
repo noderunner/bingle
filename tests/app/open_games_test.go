@@ -165,7 +165,7 @@ func TestWebGlobalChat_TheTabSaysHowManyAreUnread(t *testing.T) {
 	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/")); err != nil {
 		t.Fatal(err)
 	}
-	waitJS(t, ctx, "the games tab", `document.getElementById("tab-chat") !== null`, 20*time.Second)
+	waitScripts(t, ctx)
 	// Somebody says something while the Games tab is showing.
 	if code := bo.do("POST", "/api/chat", map[string]any{"player_name": "Bo", "text": "Anybody for Hex?"}, nil); code != 200 {
 		t.Fatalf("Bo says something: %d", code)

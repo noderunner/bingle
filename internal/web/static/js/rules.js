@@ -10,6 +10,7 @@ import { renderMarkdown } from "./markdown.js";
 import { pieceIcon, cssColor, legendMarker } from "./render.js";
 import { tutorialList } from "./tutorials-ui.js";
 import { badgeCatalog, paintShelf } from "./badges.js";
+import { t, forwardKey, backKey } from "./i18n.js";
 
 const KEY = "bingle.rules.";
 
@@ -18,30 +19,30 @@ const escapeMd = (t) => String(t).replace(/([\\`*_{}[\]<>|~])/g, "\\$1");
 /** The client-side page: how to play with the mouse and keyboard. */
 function controlsPage(info) {
 	const parts = [
-		"# Controls",
+		t("rules.controls_title"),
 		"",
-		"## Making a move",
+		t("rules.making_move"),
 		"",
-		"- Click a highlighted square, token or button to build your move one choice at a time; [[Esc]] starts it over and [[Backspace]] steps back.",
-		"- Moves that involve dice or secrets are sent straight away; others show a preview to confirm (see the *Confirm* setting).",
-		"- Hover or focus a square to read what is on it.",
+		t("rules.move_click"),
+		t("rules.move_sent"),
+		t("rules.move_hover"),
 		"",
-		"## Keyboard",
+		t("rules.keyboard"),
 		"",
-		"| Key | Does |",
+		t("rules.key_head"),
 		"|---|---|",
-		"| [[Tab]] | enters the board once |",
-		"| [[←]] [[→]] [[↑]] [[↓]] | move between squares |",
-		"| [[Enter]] / [[Space]] | select the focused square |",
-		"| [[Enter]] elsewhere | submit a previewed move |",
-		"| [[Esc]] | reset the move |",
-		"| [[Backspace]] | step back inside a move |",
-		"| [[←]] [[→]] off the board | walk through the game's history |",
-		"| [[Home]] / [[End]] | jump to the start / the live position |",
+		t("rules.key_tab"),
+		t("rules.key_arrows"),
+		t("rules.key_enter"),
+		t("rules.key_enter_else"),
+		t("rules.key_esc"),
+		t("rules.key_back"),
+		t("rules.key_history"),
+		t("rules.key_home"),
 		"",
 	];
 	if ((info.notation_help || []).length) {
-		parts.push("## Move notation", "", "Moves have a plain-text notation used by the move list, exports, the API and bots.", "");
+		parts.push(t("rules.notation"), "", t("rules.notation_text"), "");
 		for (const r of info.notation_help) parts.push("- " + escapeMd(r));
 		parts.push("");
 	}
@@ -58,7 +59,7 @@ function keyPage(info) {
 	const parts = [];
 	// A game whose page script knows its marks writes its own key (Cthulhu Wars' map).
 	if (info.page && info.page.mapKey) return info.page.mapKey(info);
-	parts.push("# Key", "", "What the colours and marks of the board mean.", "", "| Mark | Meaning |", "|---|---|");
+	parts.push(t("rules.key_title"), "", t("rules.key_text"), "", t("rules.key_table"), "|---|---|");
 	const row = (def) => {
 		const label = `${def.glyph ? def.glyph + " " : ""}${def.label}`;
 		parts.push(`| ![${escapeMd(def.label)}](marker:swatch:${def.color}) | **${escapeMd(label)}**${def.text ? " — " + escapeMd(def.text) : ""} |`);
@@ -91,16 +92,16 @@ function seatNode(info, n) {
 /** The game's badges: those the reader holds, and greyed out, the rest. */
 function badgesPage(family) {
 	const shelf = h("div", { id: "rules-badges" });
-	const intro = h("p", { class: "small muted" }, "Badges this game awards. Each is earned once, and kept.");
+	const intro = h("p", { class: "small muted" }, t("rules.badges_intro"));
 	whoAmI()
 		.catch(() => null)
 		.then(async (me) => {
 			const account = me && me.kind === "account" && me.handle;
-			if (!account) intro.append(" Sign in to earn them.");
+			if (!account) intro.append(" " + t("rules.badges_sign_in"));
 			const held = account ? await api.playerBadges(me.handle).then((r) => r.badges).catch(() => []) : [];
 			await paintShelf(shelf, { held, mine: true, family });
 		});
-	return h("div", {}, h("h1", {}, "Badges"), intro, shelf);
+	return h("div", {}, h("h1", {}, t("settings.badges")), intro, shelf);
 }
 
 /** Opens (or reopens) the rules window for the game described by info. */
@@ -108,20 +109,20 @@ export async function showRules(info, { tab } = {}) {
 	const old = document.getElementById("rules-dialog");
 	if (old) old.remove();
 
-	const title = h("h2", { id: "rules-title" }, `${gameTitle(info)} — rules`);
-	const closeBtn = h("button", { class: "rules-close", "aria-label": "Close the rules", title: "Close (Esc)" }, "×");
+	const title = h("h2", { id: "rules-title" }, t("rules.title", { game: gameTitle(info) }));
+	const closeBtn = h("button", { class: "rules-close", "aria-label": t("rules.close"), title: t("common.close_esc") }, "×");
 	const search = h("input", {
 		type: "search",
 		id: "rules-search",
 		class: "rules-search",
-		placeholder: "Search the rules…",
-		"aria-label": "Search the rules",
+		placeholder: t("rules.search"),
+		"aria-label": t("rules.search_label"),
 		autocomplete: "off",
 	});
-	const tablist = h("div", { class: "rules-tabs", role: "tablist", "aria-label": "Rules sections" });
+	const tablist = h("div", { class: "rules-tabs", role: "tablist", "aria-label": t("rules.sections") });
 	// The window opens on the rules, not the search box: on a phone a focused box brings up the
 	// keyboard, and may zoom the page so that the close button is out of reach.
-	const body = h("div", { class: "rules-body", tabindex: -1, autofocus: true }, h("p", { class: "muted" }, "Loading the rules…"));
+	const body = h("div", { class: "rules-body", tabindex: -1, autofocus: true }, h("p", { class: "muted" }, t("rules.loading")));
 	const dlg = h(
 		"dialog",
 		{ id: "rules-dialog", class: "rules-window", "aria-labelledby": "rules-title" },
@@ -160,21 +161,21 @@ export async function showRules(info, { tab } = {}) {
 	try {
 		[guide, tutorials, badges] = await Promise.all([api.guide(info.id), api.tutorials(info.id).catch(() => null), badgeCatalog()]);
 	} catch (err) {
-		clear(body).append(h("p", { class: "error" }, "The rules could not be loaded: " + err.message));
+		clear(body).append(h("p", { class: "error" }, t("rules.not_loaded", { error: err.message })));
 		return dlg;
 	}
 	const pages = [...guide.tabs];
 	// The game's tutorials teach by playing (ADR 0077): a tab of their own.
 	if (tutorials && tutorials.tutorials.length) {
-		pages.push({ id: "tutorials", title: "Tutorials", node: tutorialList(tutorials.family, tutorials.tutorials) });
+		pages.push({ id: "tutorials", title: t("setup.tutorials"), node: tutorialList(tutorials.family, tutorials.tutorials) });
 	}
 	// The game's own badges (ADR 0130), with those the reader holds.
 	if (info.family && badges.some((b) => !b.platform && b.family === info.family)) {
-		pages.push({ id: "badges", title: "Badges", node: badgesPage(info.family) });
+		pages.push({ id: "badges", title: t("settings.badges"), node: badgesPage(info.family) });
 	}
 	const key = keyPage(info);
-	if (key) pages.push({ id: "key", title: "Key", markdown: key });
-	pages.push({ id: "controls", title: "Controls", markdown: controlsPage(info) });
+	if (key) pages.push({ id: "key", title: t("rules.tab_key"), markdown: key });
+	pages.push({ id: "controls", title: t("rules.tab_controls"), markdown: controlsPage(info) });
 	build(dlg, info, pages, { tablist, body, search, initial: tab });
 	return dlg;
 }
@@ -231,7 +232,7 @@ function build(dlg, info, pages, { tablist, body, search, initial }) {
 		const panel = h("section", { class: "rules-panel", id: panelId, role: "tabpanel", "aria-labelledby": tabId, hidden: true });
 		const toc = rendered.headings.filter((x) => x.level >= 2);
 		if (toc.length >= 4) {
-			const nav = h("nav", { class: "rules-toc", "aria-label": "On this page" });
+			const nav = h("nav", { class: "rules-toc", "aria-label": t("rules.on_page") });
 			const ul = h("ul");
 			for (const hd of toc) {
 				ul.append(
@@ -253,7 +254,7 @@ function build(dlg, info, pages, { tablist, body, search, initial }) {
 					)
 				);
 			}
-			nav.append(h("strong", {}, "On this page"), ul);
+			nav.append(h("strong", {}, t("rules.on_page")), ul);
 			panel.classList.add("has-toc");
 			panel.append(rendered.node, nav);
 		} else {
@@ -273,8 +274,8 @@ function build(dlg, info, pages, { tablist, body, search, initial }) {
 		});
 		tab.addEventListener("keydown", (ev) => {
 			let to = null;
-			if (ev.key === "ArrowRight") to = (idx + 1) % pages.length;
-			else if (ev.key === "ArrowLeft") to = (idx - 1 + pages.length) % pages.length;
+			if (ev.key === forwardKey) to = (idx + 1) % pages.length;
+			else if (ev.key === backKey) to = (idx - 1 + pages.length) % pages.length;
 			else if (ev.key === "Home") to = 0;
 			else if (ev.key === "End") to = pages.length - 1;
 			if (to === null) return;
@@ -330,7 +331,7 @@ function build(dlg, info, pages, { tablist, body, search, initial }) {
 			hits.push({ sec, score: sec.heading.toLowerCase().includes(q) ? 0 : 1 });
 		}
 		hits.sort((a, b) => a.score - b.score);
-		results.append(h("h3", {}, hits.length ? `${hits.length} result${hits.length === 1 ? "" : "s"} for “${search.value.trim()}”` : `Nothing matches “${search.value.trim()}”.`));
+		results.append(h("h3", {}, hits.length ? t("rules.results", { n: hits.length, query: search.value.trim() }) : t("rules.no_match", { query: search.value.trim() })));
 		for (const { sec } of hits.slice(0, 40)) {
 			const at = sec.body.toLowerCase().indexOf(q);
 			let snippet = [];

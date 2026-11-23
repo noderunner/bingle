@@ -657,7 +657,7 @@ func TestWebFriends_AHandleInAChat(t *testing.T) {
 	if err := chromedp.Run(ana, chromedp.EmulateViewport(1400, 900), chromedp.Navigate(base+"/")); err != nil {
 		t.Fatal(err)
 	}
-	waitJS(t, ana, "the tab", `document.getElementById("tab-chat") !== null`, 20*time.Second)
+	waitScripts(t, ana)
 	clickSel(t, ana, "#tab-chat")
 	waitJS(t, ana, "the badges", `document.querySelector('.handle-badge[data-handle="bob"]') !== null && document.querySelector('.handle-badge[data-handle="cyd"]') !== null`, 15*time.Second)
 
