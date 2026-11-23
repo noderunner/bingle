@@ -76,6 +76,9 @@ type eng struct {
 	val [64]int8
 	emp [64]bool
 	ev  []string
+	// removed are the cells execute took a piece off for good (a pin, a
+	// capturing jump), not those an ace's jump converted.
+	removed []board.PositionID
 }
 
 func newEng(st *state.BoardState, d *Data) *eng {
@@ -525,7 +528,10 @@ func (rs *Ruleset) Apply(game *catalog.CompiledGame, st *state.BoardState, seat 
 		}
 	}
 	nd.Events = e.ev
-	res := &state.MoveResult{NewState: ns, Move: legal, Notation: rs.Format(game, legal), NextImpulseSeat: nd.Turn}
+	res := &state.MoveResult{NewState: ns, Move: legal, Notation: rs.Format(game, legal), NextImpulseSeat: nd.Turn, Captures: e.removed}
+	if len(e.removed) > 0 {
+		res.Captured = &e.removed[0]
+	}
 	if nd.Turn == 0 {
 		res.GameEnded = true
 		res.NextImpulseSeat = seat
@@ -590,6 +596,7 @@ func (e *eng) execute(mv state.Selection, side uint8) {
 		if mv.Aim != "" {
 			t, _ := cellOf(mv.Aim)
 			v := took(t)
+			e.removed = append(e.removed, mv.Aim)
 			e.say("%s moves %s → %s and pins the %s on %s.", who(), mv.From, mv.To, kindLabel[v.kind], mv.Aim)
 		} else {
 			e.say("%s moves %s → %s.", who(), mv.From, mv.To)
@@ -603,6 +610,7 @@ func (e *eng) execute(mv state.Selection, side uint8) {
 			switch mv.Drops[i] {
 			case jumpCapture:
 				took(mid)
+				e.removed = append(e.removed, board.PositionID(cellName(mid)))
 				e.say("%s jumps %s → %s, capturing the %s on %s.", who(), cellName(cur), land, kindLabel[over.kind], cellName(mid))
 			case jumpConvert:
 				took(mid)

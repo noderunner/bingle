@@ -5,6 +5,7 @@ package classics_test
 
 import (
 	"math/rand"
+	"slices"
 	"testing"
 
 	"github.com/noderunner/bingle/internal/engine/board"
@@ -908,5 +909,31 @@ func TestPieRuleSwapOnTheSecondMoveOnly(t *testing.T) {
 		if _, err := state.Apply(g, second.NewState, 1, Move0(g)); err == nil {
 			t.Errorf("%s: a late swap was accepted", id)
 		}
+	}
+}
+
+// What a legal selection would capture, before it is played (#269): every
+// man a draughts chain jumps, the stones a Go placement takes, and nothing
+// for a plain step.
+func TestSelectionCapturesBeforeTheMoveIsPlayed(t *testing.T) {
+	g := load(t, "draughts")
+	st := draughtsPosition(t, g, map[string][]string{
+		"c1": {"bm"}, "d2": {"rm"}, "f4": {"rm"}, "h8": {"rm"},
+	})
+	if got := state.SelectionCaptures(g, st, 1, mustParse(t, g, "c1xe3xg5")); !slices.Equal(got, []board.PositionID{"d2", "f4"}) {
+		t.Errorf("the chain captures %v, want [d2 f4]", got)
+	}
+	if _, ok := st.Get("d2"); !ok {
+		t.Error("asking what a selection captures changed the position")
+	}
+	open := draughtsPosition(t, g, map[string][]string{"c3": {"bm"}, "h8": {"rm"}})
+	if got := state.SelectionCaptures(g, open, 1, state.Selection{From: "c3", To: "d4"}); got != nil {
+		t.Errorf("a plain step captures %v, want nothing", got)
+	}
+
+	goGame := load(t, "go-9x9")
+	corner := goBoard(t, "ox.......")
+	if got := state.SelectionCaptures(goGame, corner, 1, mustParse(t, goGame, "a8")); !slices.Equal(got, []board.PositionID{"a9"}) {
+		t.Errorf("a8 captures %v, want [a9]", got)
 	}
 }

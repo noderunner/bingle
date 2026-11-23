@@ -52,6 +52,9 @@ func (rs *Ruleset) Redact(game *catalog.CompiledGame, st *state.BoardState, view
 	return out
 }
 
+// HidesNothing: Redact only attaches the view (state.Open).
+func (rs *Ruleset) HidesNothing() bool { return true }
+
 // RedactMove: moves reveal nothing.
 func (rs *Ruleset) RedactMove(game *catalog.CompiledGame, st *state.BoardState, mv state.Selection, notation string) (state.Selection, string) {
 	return mv, notation

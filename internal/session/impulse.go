@@ -83,7 +83,7 @@ func (m *Manager) Selections(ctx context.Context, roomCode, made string, ply *in
 	}
 	view.Complete, view.MayEnd = next.Complete, next.MayEnd
 	for _, mv := range next.Options {
-		view.Options = append(view.Options, SelectionOption{Selection: mv, Notation: state.FormatMove(compiled, mv), Gestures: state.Gestures(compiled, mv)})
+		view.Options = append(view.Options, selectionOption(compiled, next.Position, seat, mv))
 	}
 	if next.Position != nil {
 		doc, err := state.Public(compiled, next.Position, seat).MarshalJSON()

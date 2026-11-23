@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/noderunner/bingle/internal/auth"
+	"github.com/noderunner/bingle/internal/engine/board"
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/engine/state"
 	"github.com/noderunner/bingle/internal/store"
@@ -22,6 +23,8 @@ type MoveRecord struct {
 	From     string
 	To       string
 	Captured *string
+	// Captures are every position the move captured; Captured is the first.
+	Captures []string
 
 	Action    string
 	Piece     string
@@ -82,6 +85,7 @@ func (m *Manager) ListMoves(ctx context.Context, roomCode string, sinceSeq int) 
 			From:      mv.From,
 			To:        mv.To,
 			Captured:  mv.Captured,
+			Captures:  mv.Captures,
 			Notation:  mv.Notation,
 			CreatedAt: mv.CreatedAt,
 			Auto:      mv.Auto,
@@ -110,11 +114,13 @@ func (m *Manager) ListMoves(ctx context.Context, roomCode string, sinceSeq int) 
 }
 
 // SelectionOption is one legal selection: the structured selection, its
-// canonical notation, and the gestures that build it.
+// canonical notation, the gestures that build it and the positions whose
+// pieces it takes off the board (state.SelectionCaptures).
 type SelectionOption struct {
 	Selection state.Selection
 	Notation  string
 	Gestures  []state.Gesture
+	Captures  []string
 }
 
 // mayListMoves reports whether the request may see what seat can do. In a game with secrets the
@@ -142,6 +148,27 @@ func legalMoveList(compiled *catalog.CompiledGame, bs *state.BoardState, seat in
 	out := make([]SelectionOption, len(moves))
 	for i, mv := range moves {
 		out[i] = SelectionOption{Selection: mv, Notation: state.FormatMove(compiled, mv), Gestures: state.Gestures(compiled, mv)}
+	}
+	return out
+}
+
+// selectionOption is the SelectionOption of mv, a legal selection of seat in
+// bs, with what it captures.
+func selectionOption(compiled *catalog.CompiledGame, bs *state.BoardState, seat int, mv state.Selection) SelectionOption {
+	return SelectionOption{
+		Selection: mv, Notation: state.FormatMove(compiled, mv), Gestures: state.Gestures(compiled, mv),
+		Captures: positionStrings(state.SelectionCaptures(compiled, bs, seat, mv)),
+	}
+}
+
+// positionStrings is ids as strings (nil for none).
+func positionStrings(ids []board.PositionID) []string {
+	if len(ids) == 0 {
+		return nil
+	}
+	out := make([]string, len(ids))
+	for i, id := range ids {
+		out[i] = string(id)
 	}
 	return out
 }
@@ -246,7 +273,9 @@ func (m *Manager) Simulate(ctx context.Context, roomCode string, atSeq *int, not
 	sim.State, sim.BoardState = string(full), string(legacy)
 	if !ended {
 		sim.ImpulseSeat = &seat
-		sim.Legal = legalMoveList(compiled, bs, seat)
+		for _, mv := range state.LegalSelections(compiled, bs, seat) {
+			sim.Legal = append(sim.Legal, selectionOption(compiled, bs, seat, mv))
+		}
 		if compiled.Definition.Notation == "ptn" {
 			if tps, err := state.FormatTPS(compiled, bs, seat); err == nil {
 				sim.TPS = tps

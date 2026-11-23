@@ -295,6 +295,10 @@ var columnMigrations = []struct{ table, column, ddl string }{
 	// facts: what a selection did that the rules report, as JSON (ADR 0129);
 	// NULL for none, and on every row written before facts were reported.
 	{"moves", "facts", "TEXT"},
+	// captures: every position a move captured, as a JSON list (Captured is
+	// the first); NULL for none, and on every row written before they were
+	// kept, whose captured_position stands alone.
+	{"moves", "captures", "TEXT"},
 	// count_status: whether a finished game has been counted for its players'
 	// lasting counts (ADR 0130; see CountPending). '' for a game still going,
 	// a tutorial, a voided or retired game, or one that ended before counting.
