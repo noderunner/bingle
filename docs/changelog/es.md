@@ -1,0 +1,76 @@
+# Novedades
+
+Lo que ha cambiado en Bingle, lo más reciente primero. Bingle Core (el servidor, el motor y el cliente web) y cada juego tienen su propia versión, y cada entrada dice cuál ha cambiado. Las entradas anteriores a la 0.124.0 están solo en inglés.
+
+## 0.126.1 - 2026-11-23
+
+### Bingle Core 0.126.1
+- Las novedades de la ventana de ayuda están en tu idioma
+
+## 0.126.0 - 2026-11-23
+
+### Bingle Core 0.126.0
+- Los correos y las invitaciones de calendario están en tu idioma
+
+## 0.125.6 - 2026-11-23
+
+### Bingle Core 0.125.6
+- La página de administración y los lotes de práctica están traducidos
+
+## 0.125.5 - 2026-11-23
+
+### Bingle Core 0.125.5
+- Las páginas de la cuenta, la página de un jugador y las páginas de los enlaces de los correos están traducidas
+
+## 0.125.4 - 2026-11-23
+
+### Bingle Core 0.125.4
+- Los tableros, las cartas, las barajas y el solitario están traducidos
+
+## 0.125.3 - 2026-11-23
+
+### Bingle Core 0.125.3
+- La barra de jugadas, el historial, las opciones y la tarjeta del tutorial de una partida están traducidos
+
+## 0.125.2 - 2026-11-23
+
+### Bingle Core 0.125.2
+- El turno, los jugadores, los resultados y la barra de estado de una partida están traducidos
+
+## 0.125.1 - 2026-11-22
+
+### Bingle Core 0.125.1
+- La sala de espera, el chat (con los nombres de los emojis) y la ventana de reglas de una partida están traducidos
+
+## 0.125.0 - 2026-11-22
+
+### Bingle Core 0.125.0
+- Una jugada que estás a punto de hacer dice qué piezas capturará, para que las apps las muestren primero (API 1.10.0)
+
+### Fist 0.1.4
+- Una jugada registra las piezas que capturó
+
+## 0.124.4 - 2026-11-22
+
+### Bingle Core 0.124.4
+- La visita de bienvenida está traducida
+
+## 0.124.3 - 2026-11-22
+
+### Bingle Core 0.124.3
+- Análisis, Clasificación, Torneos, Chat global y las insignias están traducidos
+
+## 0.124.2 - 2026-11-22
+
+### Bingle Core 0.124.2
+- La página principal está traducida: los juegos, crear una partida, los tutoriales, los puzles y las curiosidades
+
+## 0.124.1 - 2026-11-22
+
+### Bingle Core 0.124.1
+- La barra superior y sus ventanas (partidas, unirse, amigos, llamadas, ayuda) están traducidas
+
+## 0.124.0 - 2026-11-22
+
+### Bingle Core 0.124.0
+- Un ajuste de idioma en tu perfil: diez idiomas, el árabe de derecha a izquierda; por ahora el perfil está traducido (API 1.9.0)

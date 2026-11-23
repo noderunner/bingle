@@ -48,23 +48,24 @@ type App struct {
 	// were accounts), whose password main prints once.
 	seeded *auth.Seeded
 	// argon2 is the cost of a password hash; zero means auth's default.
-	argon2    auth.Argon2Params
-	catalog   *catalog.Catalog
-	manager   *session.Manager
-	envs      *envs.Manager
-	batches   *batch.Manager
-	router    chi.Router
-	publicURL string
-	rtc       api.RTCConfig
-	changelog string
-	apiDocs   string // docs/api.md, for GET /api/docs
-	apiSchema []byte // docs/api.schema.json, for GET /api/schema
-	brand     config.Brand
-	log       *slog.Logger
-	metrics   *metrics.Metrics
-	journal   *journal.DB
-	slower    time.Duration
-	history   journal.PageOptions
+	argon2     auth.Argon2Params
+	catalog    *catalog.Catalog
+	manager    *session.Manager
+	envs       *envs.Manager
+	batches    *batch.Manager
+	router     chi.Router
+	publicURL  string
+	rtc        api.RTCConfig
+	changelog  string
+	changelogs map[string]string
+	apiDocs    string // docs/api.md, for GET /api/docs
+	apiSchema  []byte // docs/api.schema.json, for GET /api/schema
+	brand      config.Brand
+	log        *slog.Logger
+	metrics    *metrics.Metrics
+	journal    *journal.DB
+	slower     time.Duration
+	history    journal.PageOptions
 	// clientErrors mounts POST /api/client-error.
 	clientErrors bool
 	// transport says how to read a request's scheme and peer address.
@@ -230,8 +231,15 @@ func New(cfg config.Config, opts ...Option) (*App, error) {
 	a.changelog = cfg.Changelog
 	a.apiDocs = cfg.APIDocs
 	a.apiSchema = cfg.APISchema
+	a.changelogs = map[string]string{}
+	for code, text := range cfg.Changelogs {
+		a.changelogs[code] = text
+	}
 	if name := cfg.Brand.DisplayName(); name != config.DefaultBrandName {
 		a.changelog = strings.ReplaceAll(a.changelog, config.DefaultBrandName, name)
+		for code, text := range a.changelogs {
+			a.changelogs[code] = strings.ReplaceAll(text, config.DefaultBrandName, name)
+		}
 	}
 	a.rtc = api.RTCConfig{Stun: cfg.RTCStun, TurnURLs: cfg.RTCTurnURLs, TurnSecret: cfg.RTCTurnSecret}
 	caps, err := auth.NewCaps(context.Background(), st, cfg.AuthMode, cfg.CapsFile)
@@ -445,7 +453,7 @@ func (a *App) newRouter() chi.Router {
 	r.Use(a.metrics.Middleware)
 	r.Use(logging.Recover(a.log))
 	r.Get("/healthz", a.handleHealthz)
-	apiOpts := []api.Option{api.WithEnvs(a.envs), api.WithBatches(a.batches), api.WithPublicURL(a.publicURL), api.WithRTC(a.rtc), api.WithChangelog(a.changelog), api.WithDocs(a.apiDocs), api.WithSchema(a.apiSchema), api.WithTransport(a.transport)}
+	apiOpts := []api.Option{api.WithEnvs(a.envs), api.WithBatches(a.batches), api.WithPublicURL(a.publicURL), api.WithRTC(a.rtc), api.WithChangelog(a.changelog, a.changelogs), api.WithDocs(a.apiDocs), api.WithSchema(a.apiSchema), api.WithTransport(a.transport)}
 	if a.clientErrors {
 		// The one observability route on the public listener: a browser has
 		// to be able to reach it. It is write-only, validated against closed

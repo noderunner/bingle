@@ -222,6 +222,9 @@ type handlers struct {
 	// changelog is the releases of CHANGELOG.md, the newest first (none when
 	// the server has no changelog).
 	changelog []changelogEntry
+	// changelogs are the releases in other languages: by the language's code,
+	// each release's Markdown by its version.
+	changelogs map[string]map[string]string
 	// log is the server's logger; nil means slog's default.
 	log *slog.Logger
 	// metrics is the registry; nil records nothing.

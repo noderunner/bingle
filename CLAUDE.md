@@ -89,7 +89,8 @@ git -c credential.helper='!f() { echo username=x-access-token; echo "password=$(
 - `CHANGELOG.md` gets an entry, written for the people who play rather than for developers. Keep it
   short: one line per change that says what changed, not how or why ("Simplified Recent Changes UI",
   not "Recent changes in the help window is simpler: one heading per update, and no extra lines"). The
-  newest entry's version is `internal/version`. Bump `internal/version` for engine or platform
+  newest entry's version is `internal/version`. The same entry, machine-drafted, goes into each
+  `docs/changelog/<code>.md`, with the same `###` sections, so the help window has it in every language. Bump `internal/version` for engine or platform
   changes and each game's definition `version` separately; minor or patch by judgement, major
   only when told. `version.API` moves on its own when what the API sends or reads changes
   (regenerate `docs/api.schema.json`; major for what can break a client, minor for additions, patch

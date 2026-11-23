@@ -213,6 +213,10 @@ type Config struct {
 	// window shows. It is not read from the environment: main sets it from the
 	// copy built into the binary.
 	Changelog string
+	// Changelogs are the changelog in the other languages of the interface, by
+	// the language's code (docs/changelog/<code>.md, ADR 0141); a release one
+	// lacks is shown in English. main sets them too.
+	Changelogs map[string]string
 	// APIDocs is the text of docs/api.md, served at GET /api/docs (empty: not served).
 	APIDocs string
 	// APISchema is docs/api.schema.json, served at GET /api/schema (nil: not served).

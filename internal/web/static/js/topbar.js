@@ -12,7 +12,7 @@ import { navigate, onLeave } from "./nav.js";
 import { voiceStatus, voiceSettings, voiceMembers, onVoiceChange, toggleMute, toggleDeafen, leaveVoice } from "./voice.js";
 import { callState, onCallChange, hangUp, toggleMute as toggleDirectMute } from "./dm-call.js";
 import { gamesIcon, joinIcon, micIcon, helpIcon, profileIcon, messageIcon } from "./ui-icons.js";
-import { t, tParts } from "./i18n.js";
+import { t, tParts, lang } from "./i18n.js";
 import { languageField } from "./language.js";
 import { whoIsHere, onHereChange, startHere, watchHere, beat as beatHere, myName } from "./here.js";
 import { mountDirectMessages, startDirectMessages, unreadCount, friendStateOf, askFriend, loadFriends, onFriendsChange } from "./dm.js";
@@ -326,7 +326,9 @@ export function installTopbar({ onRows = () => {}, manageTitle = true } = {}) {
 			const markdown = withoutCoreHeading(e.markdown, e.version);
 			if (renderMarkdown) text.append(renderMarkdown(markdown, { idPrefix: `changes-${e.version}` }).node);
 			else text.textContent = markdown;
-			changesBody.append(h("article", { class: "help-change", "data-version": e.version }, h("h4", { class: "help-change-head" }, `${e.version}${e.date ? ` · ${e.date}` : ""}`), text));
+			// A release not yet translated comes in English, and is marked so (left to right too).
+			const other = e.lang && e.lang !== lang;
+			changesBody.append(h("article", { class: "help-change", "data-version": e.version, lang: other ? e.lang : null, dir: other ? "ltr" : null }, h("h4", { class: "help-change-head" }, `${e.version}${e.date ? ` · ${e.date}` : ""}`), text));
 		}
 		changesBody.scrollTop = 0;
 		markRead.hidden = !news;

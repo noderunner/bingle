@@ -730,7 +730,9 @@ page loads, and a dot on the **?** (`#help-badge`) says it is newer than the rel
 (`localStorage` `bingle.changelog.seen`). The window then lists every release since that one, newest first
 (`GET /api/changelog/entries?since=`), each an `article.help-change[data-version]` with one heading, its version
 and date (`.help-change-head`, `0.4.0 · 2026-10-26`): the release's own `### Bingle Core 0.4.0` is left out as a
-repeat, and a game's section keeps its heading. They sit in a box that scrolls (`#help-changes-body`), under
+repeat, and a game's section keeps its heading. A release is in the reader's language when
+`docs/changelog/<code>.md` has it, else in English, which the answer's `lang` says and the article marks
+(`lang="en" dir="ltr"`). They sit in a box that scrolls (`#help-changes-body`), under
 *Mark all as read* (`#help-mark-read`). Opening the window is not reading it: the dot stays until that button is
 pressed. A browser that has never marked anything read is shown the newest release alone, and once everything is
 read the window shows the newest release with no button.

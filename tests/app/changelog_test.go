@@ -1,6 +1,8 @@
 package app_test
 
 import (
+	"encoding/json"
+	"net/http"
 	"os"
 	"regexp"
 	"strings"
@@ -9,6 +11,7 @@ import (
 
 	"github.com/chromedp/chromedp"
 	"github.com/noderunner/bingle/internal/config"
+	"github.com/noderunner/bingle/internal/i18n"
 	"github.com/noderunner/bingle/internal/version"
 )
 
@@ -34,6 +37,7 @@ type changelogResp struct {
 	Version  string `json:"version"`
 	Date     string `json:"date"`
 	Markdown string `json:"markdown"`
+	Lang     string `json:"lang"`
 }
 
 // The server reports the newest release of the changelog it was built with,
@@ -277,5 +281,83 @@ func TestChangelog_NewestEntryIsTheEnginesVersion(t *testing.T) {
 	var got changelogResp
 	if code := doJSON(t, "GET", base+"/api/changelog", nil, &got); code != 200 || got.Version != version.Engine || !strings.Contains(got.Markdown, "### Bingle Core") {
 		t.Errorf("GET /api/changelog: %d %+v", code, got)
+	}
+}
+
+// Each language of the interface has its changelog (docs/changelog/<code>.md, ADR 0141), whose
+// newest entry is the engine's version too, so the help window has news in every language. Each
+// entry it has is a release of CHANGELOG.md, with the same sections (the core's, each game's).
+func TestChangelog_EachLanguageHasTheNewestEntry(t *testing.T) {
+	raw, err := os.ReadFile("../../CHANGELOG.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	heading := regexp.MustCompile(`(?m)^## \[?(\d+\.\d+\.\d+)\]?(?: - (\d{4}-\d{2}-\d{2}))?\s*$`)
+	sections := func(text string) map[string]string {
+		out := map[string]string{}
+		parts := heading.Split(text, -1)
+		for i, m := range heading.FindAllStringSubmatch(text, -1) {
+			out[m[1]] = strings.Join(regexp.MustCompile(`(?m)^### .*$`).FindAllString(parts[i+1], -1), "|")
+		}
+		return out
+	}
+	english := sections(string(raw))
+	for _, l := range i18n.Languages() {
+		if l.Code == i18n.Default {
+			continue
+		}
+		text, err := os.ReadFile("../../docs/changelog/" + l.Code + ".md")
+		if err != nil {
+			t.Errorf("%s: no changelog: %v", l.Code, err)
+			continue
+		}
+		m := heading.FindStringSubmatch(string(text))
+		if m == nil || m[1] != version.Engine {
+			t.Errorf("%s: the newest entry is not %s, the engine's version: add it to docs/changelog/%s.md", l.Code, version.Engine, l.Code)
+		}
+		for v, own := range sections(string(text)) {
+			if en, ok := english[v]; !ok {
+				t.Errorf("%s: %s is no release of CHANGELOG.md", l.Code, v)
+			} else if own != en {
+				t.Errorf("%s %s: sections %q, English's %q", l.Code, v, own, en)
+			}
+		}
+	}
+}
+
+// A release is told in the reader's language when its translation has it, and else in English,
+// which the answer says.
+func TestChangelog_InTheReadersLanguage(t *testing.T) {
+	fr := "# Nouveautés\n\n## 0.10.0 - 2026-11-03\n\n### Bingle Core 0.10.0\n- **Dix** : la plus récente.\n"
+	base := newServerWith(t, func(c *config.Config) {
+		c.Changelog = longChangelog
+		c.Changelogs = map[string]string{"fr": fr}
+	})
+	get := func(path, lang string, out any) {
+		t.Helper()
+		req, _ := http.NewRequest("GET", base+path, nil)
+		req.Header.Set("Accept-Language", lang)
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer func() { _ = resp.Body.Close() }()
+		if err := json.NewDecoder(resp.Body).Decode(out); err != nil {
+			t.Fatal(err)
+		}
+	}
+	var newest changelogResp
+	get("/api/changelog", "fr-FR,fr;q=0.9", &newest)
+	if newest.Version != "0.10.0" || newest.Lang != "fr" || !strings.Contains(newest.Markdown, "**Dix**") {
+		t.Errorf("the newest in French: %+v", newest)
+	}
+	var since changelogEntriesResp
+	get("/api/changelog/entries?since=0.9.0", "fr", &since)
+	if len(since.Entries) != 2 || since.Entries[0].Lang != "fr" || since.Entries[1].Lang != "en" || since.Entries[1].Markdown != "- Nine point one." {
+		t.Errorf("since 0.9.0 in French: %+v", since.Entries)
+	}
+	get("/api/changelog", "de", &newest)
+	if newest.Lang != "en" || !strings.Contains(newest.Markdown, "**Ten**") {
+		t.Errorf("the newest in German, which has no changelog here: %+v", newest)
 	}
 }
