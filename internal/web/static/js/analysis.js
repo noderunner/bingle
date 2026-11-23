@@ -11,9 +11,10 @@ import { h, clear, store } from "./util.js";
 import { api, gameTitle, whoAmI } from "./api.js";
 import { rateBars } from "./charts.js";
 import { renderMarkdown } from "./markdown.js";
+import { t, tParts } from "./i18n.js";
 
 const SETUP_KEY = "bingle.analysis";
-const STATUS_TEXT = { queued: "Queued", running: "Running", done: "Finished", cancelled: "Cancelled", failed: "Failed", interrupted: "Interrupted" };
+const STATUS_TEXT = { queued: "batch.queued", running: "batch.running", done: "batch.done", cancelled: "batch.cancelled", failed: "batch.failed", interrupted: "batch.interrupted" };
 const SEAT_COLORS = ["#c0392b", "#2f6f9f", "#3f8a4f", "#c9a227", "#8a5fbf", "#d1731f"];
 
 let mounted = false;
@@ -46,8 +47,8 @@ function interval(wins, n) {
 function seatRows(info, chosen) {
 	const rows = h("div", { class: "stack", id: "analysis-seats" });
 	for (const seat of info.seats) {
-		const sel = h("select", { class: "analysis-bot", "data-seat": seat.seat, "aria-label": `Bot for ${seat.label || seat.color}` });
-		for (const b of botList) sel.append(h("option", { value: b.id }, `${b.label} bot`));
+		const sel = h("select", { class: "analysis-bot", "data-seat": seat.seat, "aria-label": t("analysis.bot_for", { seat: seat.label || seat.color }) });
+		for (const b of botList) sel.append(h("option", { value: b.id }, t("setup.bot", { name: b.label })));
 		sel.value = chosen[String(seat.seat)] || (botList.some((b) => b.id === "tactical") ? "tactical" : botList[0].id);
 		rows.append(
 			h(
@@ -64,23 +65,23 @@ function seatRows(info, chosen) {
 
 function form(host) {
 	const s = setup();
-	const gameSel = h("select", { id: "analysis-game", "aria-label": "Game to study" });
-	for (const d of defs) gameSel.append(h("option", { value: d.id }, `${gameTitle(d)}${d.seats_required ? ` · ${d.seats_required} players` : ""}`));
+	const gameSel = h("select", { id: "analysis-game", "aria-label": t("analysis.game_to_study") });
+	for (const d of defs) gameSel.append(h("option", { value: d.id }, d.seats_required ? t("analysis.game_players", { game: gameTitle(d), n: d.seats_required }) : gameTitle(d)));
 	if (defs.some((d) => d.id === s.game)) gameSel.value = s.game;
-	const count = h("input", { id: "analysis-games", type: "number", min: "1", max: "5000", value: String(s.games), "aria-label": "How many games" });
+	const count = h("input", { id: "analysis-games", type: "number", min: "1", max: "5000", value: String(s.games), "aria-label": t("analysis.how_many") });
 	const rotate = h("input", { id: "analysis-rotate", type: "checkbox" });
 	rotate.checked = s.rotate;
 	const seats = h("div", { id: "analysis-seats-field" });
 	const err = h("div", { class: "error-text", id: "analysis-error", role: "alert" });
-	const start = h("button", { type: "button", id: "analysis-start", class: "primary" }, "Run Batch");
+	const start = h("button", { type: "button", id: "analysis-start", class: "primary" }, t("analysis.run"));
 
 	const paintSeats = async () => {
 		clear(seats);
-		seats.append(h("p", { class: "small muted" }, "Reading the game…"));
+		seats.append(h("p", { class: "small muted" }, t("analysis.reading_game")));
 		try {
 			const info = await api.gameDef(gameSel.value);
 			clear(seats);
-			seats.append(h("label", {}, "Who plays"), seatRows(info, setup().bots));
+			seats.append(h("label", {}, t("analysis.who_plays")), seatRows(info, setup().bots));
 		} catch (e) {
 			clear(seats);
 			seats.append(h("p", { class: "error-text" }, e.message));
@@ -120,11 +121,11 @@ function form(host) {
 		h(
 			"div",
 			{ class: "card analysis-form" },
-			h("h2", {}, "Run Batch"),
-			h("div", { class: "field" }, h("label", { for: "analysis-game" }, "Game"), gameSel),
+			h("h2", {}, t("analysis.run")),
+			h("div", { class: "field" }, h("label", { for: "analysis-game" }, t("analysis.game")), gameSel),
 			seats,
-			h("div", { class: "field" }, h("label", { for: "analysis-games" }, "How many games"), count),
-			h("div", { class: "field" }, h("label", { class: "check" }, rotate, h("span", {}, "Move the bots round the seats (so the order of play favours nobody)"))),
+			h("div", { class: "field" }, h("label", { for: "analysis-games" }, t("analysis.how_many")), count),
+			h("div", { class: "field" }, h("label", { class: "check" }, rotate, h("span", {}, t("analysis.rotate")))),
 			err,
 			h("div", { class: "row" }, start),
 		)
@@ -142,10 +143,10 @@ function gameName(id) {
 }
 
 function batchRow(b) {
-	const status = b.status === "running" ? `running ${b.done}/${b.games}` : `${STATUS_TEXT[b.status] || b.status} · ${b.done}/${b.games}`;
+	const status = b.status === "running" ? t("batch.running_n", { done: b.done, games: b.games }) : `${STATUS_TEXT[b.status] ? t(STATUS_TEXT[b.status]) : b.status} · ${b.done}/${b.games}`;
 	const on = expanded.has(b.id);
 	const report = h("div", { class: "batch-report", hidden: !on });
-	const open = h("button", { type: "button", class: "ghost", "data-open-batch": b.id, "aria-expanded": on ? "true" : "false" }, "Report");
+	const open = h("button", { type: "button", class: "ghost", "data-open-batch": b.id, "aria-expanded": on ? "true" : "false" }, t("analysis.report"));
 	open.addEventListener("click", () => {
 		const show = !expanded.has(b.id);
 		if (show) expanded.add(b.id);
@@ -161,7 +162,7 @@ function batchRow(b) {
 		h("div", { class: "title grow" }, gameName(b.game_def_id)),
 		h("span", { class: `batch-status ${b.status}` }, status),
 		open,
-		h("a", { class: "button", href: `/batches/${b.id}` }, "Full report"),
+		h("a", { class: "button", href: `/batches/${b.id}` }, t("analysis.full_report")),
 		report
 	);
 }
@@ -171,16 +172,16 @@ function seatCard(rep) {
 	const rows = (rep.seats || []).map((s, i) => {
 		const ci = interval(s.wins, s.games);
 		return {
-			label: `${s.label || "Seat " + s.seat}${s.bots && s.bots.length === 1 ? ` (${s.bots[0]})` : ""}`,
+			label: `${s.label || t("analysis.seat", { n: s.seat })}${s.bots && s.bots.length === 1 ? ` (${s.bots[0]})` : ""}`,
 			color: SEAT_COLORS[i % SEAT_COLORS.length],
 			value: ci.rate,
 			lo: ci.lo,
 			hi: ci.hi,
-			note: `${s.wins} of ${s.games} games`,
+			note: t("analysis.wins_of", { wins: s.wins, games: s.games }),
 		};
 	});
 	if (!rows.length) return null;
-	return h("div", { class: "card analysis-seat-card" }, h("h3", {}, "Win Rate by Seat"), rateBars(rows, { marker: 1 / rows.length }));
+	return h("div", { class: "card analysis-seat-card" }, h("h3", {}, t("analysis.win_rate")), rateBars(rows, { marker: 1 / rows.length }));
 }
 
 function endingsCard(rep) {
@@ -189,18 +190,18 @@ function endingsCard(rep) {
 	return h(
 		"div",
 		{ class: "card analysis-endings" },
-		h("h3", {}, "Result Summary"),
+		h("h3", {}, t("analysis.summary")),
 		h(
 			"dl",
 			{ class: "stat-list" },
-			h("dt", {}, "Games"),
+			h("dt", {}, t("analysis.games")),
 			h("dd", {}, String(rep.games || 0)),
-			h("dt", {}, "Decided"),
+			h("dt", {}, t("analysis.decided")),
 			h("dd", {}, `${rep.decided || 0} (${rep.games ? pct(rep.decided / rep.games) : "0%"})`),
-			h("dt", {}, "Drawn or unfinished"),
+			h("dt", {}, t("analysis.drawn")),
 			h("dd", {}, String(draws)),
-			h("dt", {}, "Moves per game"),
-			h("dd", {}, rep.plies ? `${rep.plies.p50.toFixed(0)} median, ${rep.plies.min.toFixed(0)}–${rep.plies.max.toFixed(0)}` : "—")
+			h("dt", {}, t("analysis.moves")),
+			h("dd", {}, rep.plies ? t("analysis.median", { median: Math.round(rep.plies.p50), min: Math.round(rep.plies.min), max: Math.round(rep.plies.max) }) : "—")
 		),
 		reasons.length
 			? h(
@@ -219,12 +220,12 @@ const drawn = new Map();
 /** Fills a batch's card with its win rate by seat and its result summary. */
 async function fillReport(id, host) {
 	if (drawn.has(id)) host.replaceChildren(...drawn.get(id).map((n) => n.cloneNode(true)));
-	else host.replaceChildren(h("p", { class: "muted" }, "Reading the report…"));
+	else host.replaceChildren(h("p", { class: "muted" }, t("analysis.reading_report")));
 	try {
 		const { batch: info, report: rep } = await api.batchReport(id);
 		const nodes = rep.games
 			? [h("div", { class: "report-grid" }, seatCard(rep), endingsCard(rep))]
-			: [h("p", { class: "muted" }, info.status === "running" || info.status === "queued" ? "Waiting for the first games to finish…" : "No games were played.")];
+			: [h("p", { class: "muted" }, info.status === "running" || info.status === "queued" ? t("analysis.waiting") : t("analysis.none_played"))];
 		drawn.set(id, nodes);
 		host.replaceChildren(...nodes);
 	} catch (e) {
@@ -239,7 +240,7 @@ async function refresh() {
 	try {
 		const { batches } = await api.batches();
 		clear(list);
-		if (!batches.length) list.append(h("li", { class: "muted" }, "No batches yet."));
+		if (!batches.length) list.append(h("li", { class: "muted" }, t("analysis.no_batches")));
 		for (const b of batches) list.append(batchRow(b));
 		if (batches.some((b) => b.status === "running" || b.status === "queued")) timer = setTimeout(refresh, 3000);
 	} catch (e) {
@@ -253,9 +254,9 @@ async function refresh() {
 /** Opens the guide to the bots in a window of its own, like a game's rules. */
 export async function openBotGuide() {
 	document.getElementById("bot-guide-dialog")?.remove();
-	const box = h("div", { class: "rules-body analysis-guide md", id: "analysis-guide", tabindex: -1 }, h("p", { class: "muted" }, "Reading the guide…"));
-	const close = h("button", { class: "rules-close", "aria-label": "Close the guide", title: "Close (Esc)" }, "×");
-	const dlg = h("dialog", { id: "bot-guide-dialog", class: "rules-window", "aria-labelledby": "bot-guide-title" }, h("div", { class: "rules-head" }, h("h2", { id: "bot-guide-title" }, "Game Analysis with Bots"), close), box);
+	const box = h("div", { class: "rules-body analysis-guide md", id: "analysis-guide", tabindex: -1 }, h("p", { class: "muted" }, t("analysis.reading_guide")));
+	const close = h("button", { class: "rules-close", "aria-label": t("analysis.close_guide"), title: t("common.close_esc") }, "×");
+	const dlg = h("dialog", { id: "bot-guide-dialog", class: "rules-window", "aria-labelledby": "bot-guide-title" }, h("div", { class: "rules-head" }, h("h2", { id: "bot-guide-title" }, t("home.bot_guide")), close), box);
 	close.addEventListener("click", () => dlg.close());
 	dlg.addEventListener("click", (ev) => {
 		if (ev.target === dlg) dlg.close();
@@ -303,8 +304,8 @@ export async function mountAnalysis(host) {
 			h(
 				"div",
 				{ class: "card", id: "analysis-signin" },
-				h("h2", {}, "Run Batch"),
-				h("p", {}, "Setting bots against each other is for signed-in players. ", h("a", { href: "/login?return=" + encodeURIComponent("/#analysis") }, "Sign in"), " to run one; the reports below are for everybody.")
+				h("h2", {}, t("analysis.run")),
+				h("p", {}, ...tParts("analysis.signin", { signin: h("a", { href: "/login?return=" + encodeURIComponent("/#analysis") }, t("common.sign_in")) }))
 			)
 		);
 	}
@@ -312,8 +313,8 @@ export async function mountAnalysis(host) {
 		h(
 			"div",
 			{ class: "card analysis-batches-card" },
-			h("h2", {}, "Batches"),
-			h("ul", { class: "my-games batch-list", id: "analysis-batches" }, h("li", { class: "muted" }, "Reading…"))
+			h("h2", {}, t("analysis.batches")),
+			h("ul", { class: "my-games batch-list", id: "analysis-batches" }, h("li", { class: "muted" }, t("analysis.reading")))
 		)
 	);
 	await refresh();

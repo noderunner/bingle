@@ -6,6 +6,7 @@ package app_test
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"strings"
 	"sync"
 	"testing"
@@ -14,6 +15,7 @@ import (
 	"github.com/chromedp/chromedp"
 
 	"github.com/noderunner/bingle/internal/auth"
+	"github.com/noderunner/bingle/internal/session"
 )
 
 // Choosing Arabic in the profile window loads the page again in Arabic, right
@@ -110,7 +112,7 @@ func TestWebLanguages_APhoneInArabicTurnsItsPagesTheOtherWay(t *testing.T) {
 // pseudo-locale (en-XA, whose every word is accented and bracketed): words left
 // out of the catalogs. Names, codes and the brand are not words to translate.
 const plainEnglish = `((sel) => {
-	const keep = /^(Bingle|GitHub|API|bingle|v?[0-9.]+|[A-Z0-9]{4,8}|bgg_…|https?:\/\/\S+|\[Size .*)$/s;
+	const keep = /^(Bingle|GitHub|API|bingle|Buchholz|v?[0-9.]+|[A-Z0-9]{4,8}|bgg_…|https?:\/\/\S+|\[Size .*)$/s;
 	// A board's or a card table's picture is the renderer's to describe (the game page's part).
 	const pictures = ".game-card-preview, .setup-preview, .puzzle-preview, #card-set-preview";
 	const accented = /[\u00C0-\u024F\u1E00-\u1EFF]/;
@@ -124,11 +126,11 @@ const plainEnglish = `((sel) => {
 		const walk = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
 		for (let n = walk.nextNode(); n; n = walk.nextNode()) {
 			const el = n.parentElement;
-			if (!el || el.closest("[hidden], .help-changes-body, code, .voice-name, .handle-badge, script, style, " + pictures) || !el.getClientRects().length) continue;
+			if (!el || el.closest("[hidden], [translate=no], .help-changes-body, code, .voice-name, .handle-badge, script, style, " + pictures) || !el.getClientRects().length) continue;
 			for (const word of words(n.textContent)) if (english(word)) out.push(word);
 		}
 		for (const el of root.querySelectorAll("[title], [aria-label], [placeholder]")) {
-			if (el.closest("[hidden], " + pictures)) continue;
+			if (el.closest("[hidden], [translate=no], " + pictures)) continue;
 			for (const a of ["title", "aria-label", "placeholder"]) {
 				const v = el.getAttribute(a);
 				if (v && !keep.test(v) && !accented.test(v) && words(v).some(english)) out.push(a + "=" + v);
@@ -157,6 +159,7 @@ func learnContent(t *testing.T, ctx context.Context) {
 			if (d.tutorials) add(await (await fetch("/api/game-defs/" + encodeURIComponent(d.id) + "/tutorials")).json().catch(() => null));
 		}
 		add(await (await fetch("/api/bots")).json());
+		add(await (await fetch("/api/badges")).json().catch(() => null));
 		window.__content = words;
 		return words.size > 0;
 	})()`) {
@@ -272,4 +275,60 @@ func TestWebLanguages_TheMainPageIsTranslated(t *testing.T) {
 	clickSel(t, ctx, "#tab-puzzles")
 	waitJS(t, ctx, "the puzzles", `document.querySelector(".puzzle-card")`, 15*time.Second)
 	check("the puzzles")
+}
+
+// So is every word of the main page's other tabs (Analysis, Ratings,
+// Tournaments with its form, Global Chat), a tournament's page while it is
+// played, and the shelf of badges.
+func TestWebLanguages_TheOtherTabsAreTranslated(t *testing.T) {
+	a, base := membersServer(t)
+	org := administrator(t, a, base, "org")
+	ana, bea := member(t, a, base, "ana"), member(t, a, base, "bea")
+	var made session.TournamentDetail
+	if code := org.do("POST", "/api/tournaments", cupBody(), &made); code != http.StatusCreated {
+		t.Fatalf("making the tournament: %d", code)
+	}
+	path := fmt.Sprintf("/api/tournaments/%d", made.ID)
+	org.do("POST", path+"/open", nil, nil)
+	ana.do("POST", path+"/enter", nil, nil)
+	bea.do("POST", path+"/enter", nil, nil)
+	if code := org.do("POST", path+"/start", nil, nil); code != 200 {
+		t.Fatalf("starting it: %d", code)
+	}
+	ctx, cancel := newChromedpContext(t, 120*time.Second)
+	defer cancel()
+	signInChrome(t, ctx, base, org.cookie(auth.SessionCookie))
+	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1200, 900), chromedp.Navigate(base+"/healthz"), chromedp.Evaluate(`document.cookie = "bingle_lang=en-XA; path=/"; true`, nil), chromedp.Navigate(base+"/")); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "the tabs", `document.getElementById("tab-analysis")`, 20*time.Second)
+	learnContent(t, ctx)
+	check := func(what, sel string) {
+		t.Helper()
+		time.Sleep(600 * time.Millisecond)
+		if !evalBool(t, ctx, `!!window.__content`) {
+			learnContent(t, ctx)
+		}
+		if got := evalString(t, ctx, plainEnglish+`("`+sel+`")`); got != "" {
+			t.Errorf("%s: %s", what, got)
+		}
+	}
+	for _, tab := range []string{"analysis", "ratings", "tournaments", "chat"} {
+		clickSel(t, ctx, "#tab-"+tab)
+		check("the "+tab+" tab", "#panel-"+tab)
+	}
+	clickSel(t, ctx, "#tab-tournaments")
+	clickSel(t, ctx, "#tournament-new")
+	waitJS(t, ctx, "the form", `document.getElementById("t-game") && document.getElementById("t-game").options.length > 1`, 10*time.Second)
+	check("a new tournament's form", "#panel-tournaments")
+	if err := chromedp.Run(ctx, chromedp.Navigate(fmt.Sprintf("%s/tournament/%d", base, made.ID))); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "the tournament", `document.getElementById("tournament-standings")`, 20*time.Second)
+	check("a tournament being played", "main")
+	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/profile#badges")); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "the badges", `document.querySelector("#badges-list .badge-item")`, 20*time.Second)
+	check("the badges", "#panel-badges")
 }

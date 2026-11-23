@@ -8,6 +8,7 @@ import { h, store, lastName, markChatRead } from "./util.js";
 import { api } from "./api.js";
 import { cssColor } from "./render.js";
 import { onNavigate } from "./nav.js";
+import { t } from "./i18n.js";
 
 const chat = {
 	code: null,
@@ -108,10 +109,10 @@ function insertAtCursor(input, text) {
  * it. The page redraws on every move, so whether it is open is kept in `chat`.
  */
 export function emojiPicker(input) {
-	const panel = h("div", { class: "emoji-panel", id: "emoji-panel", role: "group", "aria-label": "Emoji", hidden: !chat.picker });
+	const panel = h("div", { class: "emoji-panel", id: "emoji-panel", role: "group", "aria-label": t("chat.emoji"), hidden: !chat.picker });
 	const button = h(
 		"button",
-		{ type: "button", class: "emoji-button", id: "emoji-button", "aria-haspopup": "true", "aria-expanded": chat.picker ? "true" : "false", "aria-controls": "emoji-panel", title: "Add an emoji" },
+		{ type: "button", class: "emoji-button", id: "emoji-button", "aria-haspopup": "true", "aria-expanded": chat.picker ? "true" : "false", "aria-controls": "emoji-panel", title: t("chat.add_emoji") },
 		"🙂"
 	);
 	const pick = (emoji) => {
@@ -125,7 +126,7 @@ export function emojiPicker(input) {
 	const fill = () => {
 		panel.textContent = "";
 		const recent = recentEmoji();
-		const groups = recent.length ? [["Recent", recent.map((e) => [e, "recent: " + e])], ...EMOJI_GROUPS] : EMOJI_GROUPS;
+		const groups = recent.length ? [[t("chat.recent"), recent.map((e) => [e, e])], ...EMOJI_GROUPS] : EMOJI_GROUPS;
 		for (const [title, list] of groups) {
 			panel.append(h("div", { class: "emoji-group-title small muted" }, title));
 			const grid = h("div", { class: "emoji-grid" });

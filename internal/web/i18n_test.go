@@ -14,7 +14,7 @@ import (
 
 var (
 	// t("key" and tParts("key" in the page's modules, and {{t .Lang "key" in its templates.
-	jsKey       = regexp.MustCompile(`\bt(?:Parts)?\(\s*"([^"]+)"`)
+	jsKey       = regexp.MustCompile(`\b(?:t|tr|tParts)\(\s*"([^"]+)"`)
 	templateKey = regexp.MustCompile(`[{(]t \.Lang "([^"]+)"`)
 	// Any string that looks like a key, as a t(…) of a choice between keys has them.
 	keyLike = regexp.MustCompile(`"([a-z]+)\.([a-z_]+)"`)
