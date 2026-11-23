@@ -416,3 +416,41 @@ func TestWebLanguages_TheLobbyChatAndRulesAreTranslated(t *testing.T) {
 		check("the rules' "+tab, "#rules-panel-"+tab+", #rules-tab-"+tab)
 	}
 }
+
+// TestWebLanguages_ThePlayAreaIsTranslated looks at a game's play area in the
+// pseudo-locale: whose turn it is and what they are asked, the players' strips and
+// the status bar, while the game goes on and once it is over.
+func TestWebLanguages_ThePlayAreaIsTranslated(t *testing.T) {
+	base := newRESTTestServer(t)
+	var game createGameResponse
+	doJSON(t, "POST", base+"/api/games", map[string]any{"game_def_id": "tak-5x5", "player_name": "Alice", "opponent": "random"}, &game)
+	ctx, cancel := newChromedpContext(t, 120*time.Second)
+	defer cancel()
+	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1400, 1000), chromedp.Navigate(base+"/healthz"), chromedp.Evaluate(`document.cookie = "bingle_lang=en-XA; path=/"; true`, nil)); err != nil {
+		t.Fatal(err)
+	}
+	check := func(what, sel string) {
+		t.Helper()
+		time.Sleep(500 * time.Millisecond)
+		if !evalBool(t, ctx, `!!window.__content`) {
+			learnContent(t, ctx)
+		}
+		if got := evalString(t, ctx, plainEnglish+`("`+sel+`")`); got != "" {
+			t.Errorf("%s: %s", what, got)
+		}
+	}
+	openGameAs(t, ctx, base, game.RoomCode, "tak-5x5", "Alice")
+	waitJS(t, ctx, "the impulse card", `document.getElementById("impulse-text")`, 15*time.Second)
+	check("the impulse", "#impulse-title, #impulse-text")
+	check("the players", "#players-card .seat-head, #players-card .table-badges")
+	check("the status", "#status-message")
+
+	var over createGameResponse
+	doJSON(t, "POST", base+"/api/games", map[string]any{"game_def_id": "tak-5x5", "player_name": "Alice", "opponent": "random"}, &over)
+	if code := doJSON(t, "POST", base+"/api/games/"+over.RoomCode+"/resign", map[string]any{"player_name": "Alice"}, nil); code != 200 {
+		t.Fatalf("resign: %d", code)
+	}
+	openGameAs(t, ctx, base, over.RoomCode, "tak-5x5", "Alice")
+	waitJS(t, ctx, "the result", `document.getElementById("rematch")`, 15*time.Second)
+	check("the result", "#impulse-title, #status-message, #rematch, #players-card .seat-head")
+}

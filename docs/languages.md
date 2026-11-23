@@ -92,8 +92,13 @@ that each translation puts in the same values and has the same markup as English
 - The welcome tour, with the words in its pictures. Lists of words go through `Intl.ListFormat`.
 - Around a game's board: the lobby (with musters), the chat and the names of its emoji (`emoji.*`), the rules
   window's own tabs (Controls, Key, search) and the options window's frame. A game's rules guide is its own (#253).
+- The play area (`game.*`, `end.*`): whose turn it is and what they are asked, the players' strips, the banners
+  (draws, slow turns, votes, hints), the status bar and how a game ended, analysis and its dialogs, and the
+  phone's pages. A game's own words in these (its seats, pieces, actions and page script) stay as the game has
+  them. A message names its players inside `<bdi translate="no">` (`withSeatWords`), so no language touches them.
 
-Next, the rest of the game page (`game.js`, then the boards' descriptions for screen readers, which `render.js`
+Next, the rest of the game page (the move bar, reactions, auto-play, the history and its log, the options window
+and the tutorial's card in `game.js`; then the boards' descriptions for screen readers, which `render.js`
 writes, the cards and the display settings), then the remaining
 pages (account, administration, tournaments, batches, a player's page), then the mail and the calendar invitations,
 then the changelog in the help window (ADR 0141, *Left for its stage*).

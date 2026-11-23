@@ -28,6 +28,7 @@ import { themesFor, themeById } from "./themes.js";
 import { useCardSet } from "./card-sets.js";
 import { stepMoves, progress as tutorialProgress, isExpected, markFinished, allowed as tutorialAllowed, pagePart, scriptedMoveGroup } from "./tutorial.js";
 import { renderMarkdown } from "./markdown.js";
+import { t as tr, lang } from "./i18n.js";
 
 installNav();
 
@@ -127,7 +128,7 @@ async function boot() {
 		S.info = await api.gameDef(S.game.game_def_id);
 		if (S.game.tutorial) await loadTutorial();
 	} catch (err) {
-		S.fatal = err instanceof ApiError && err.status === 404 ? `No game with room code “${code}”.` : String(err.message || err);
+		S.fatal = err instanceof ApiError && err.status === 404 ? tr("game.no_room", { code }) : String(err.message || err);
 		render();
 		return;
 	}
@@ -489,7 +490,7 @@ async function playSelections(notations) {
 		}
 		await settle();
 	} catch (err) {
-		toast(err.message || "That move was rejected.", "error");
+		toast(err.message || tr("game.move_rejected"), "error");
 		// The game moved on under the pending move (a timeout, a resignation): it is gone.
 		if (err instanceof ApiError && err.status === 409) dropPending();
 		await settle().catch(() => {});
@@ -689,14 +690,23 @@ function seatWord(seat) {
 	return h("span", { class: "seat-word", style: gradient ? `background-image: ${gradient}` : null }, seatLabel(seat));
 }
 
-/** Text with the names of the seats of two colours drawn in them: a line of the log, the result of the game. */
+/**
+ * Text with the names of the seats of two colours drawn in them: a line of the log, the result of the game.
+ * The players' names are marked as theirs, which no language translates.
+ */
 function withSeatWords(text) {
 	const seats = S.info.seats.filter((s) => seatGradient(s.seat));
-	if (!seats.length) return [text];
-	const names = new RegExp(`\\b(${seats.map((s) => escapeRegExp(s.label)).join("|")})\\b`);
+	const people = [...new Set((S.game.seats || []).map((s) => s.name).filter(Boolean))].sort((a, b) => b.length - a.length);
+	if (!seats.length && !people.length) return [text];
+	const word = (w) => `(?<![\\p{L}\\p{N}])${escapeRegExp(w)}(?![\\p{L}\\p{N}])`;
+	const names = new RegExp(`(${[...seats.map((s) => s.label), ...people].map(word).join("|")})`, "u");
 	return String(text)
 		.split(names)
-		.map((part, i) => (i % 2 ? seatWord(seats.find((s) => s.label === part).seat) : part));
+		.map((part, i) => {
+			if (i % 2 === 0) return part;
+			const seat = seats.find((s) => s.label === part);
+			return seat ? seatWord(seat.seat) : h("bdi", { translate: "no" }, part);
+		});
 }
 
 /** Who held the seat at move seq: a bot's seat was somebody's until it took over. */
@@ -712,7 +722,7 @@ function seatName(seat) {
 }
 
 function displayName(seat) {
-	return seatName(seat) || "(open)";
+	return seatName(seat) || tr("game.open");
 }
 
 function colorOf(seat) {
@@ -881,7 +891,7 @@ function severalSelections() {
 /** What the pieces to place are called: the last word their names share ("Red stone", "Blue stone": stone). */
 function pieceNoun() {
 	const words = (S.info.pieces || []).map((p) => (p.label || "").trim().split(/\s+/).pop().toLowerCase());
-	return words.length && words.every((w) => w && w === words[0]) ? words[0] : "piece";
+	return words.length && words.every((w) => w && w === words[0]) ? words[0] : tr("game.piece");
 }
 
 /** The word on the buttons of the pieces to place: a ruleset's, or the place action's label. */
@@ -909,7 +919,7 @@ function countLabel(b) {
 	const labels = S.info.count_labels || {};
 	const last = [...b.gestures].reverse().find((st) => st.kind === "action");
 	if (last && labels[last.value]) return labels[last.value];
-	return isRuleset() ? labels[""] || "Choose:" : "Pick up:";
+	return isRuleset() ? labels[""] || tr("game.choose") : tr("game.pick_up");
 }
 
 /** Moves whose outcome depends on dice are not previewed. */
@@ -1255,16 +1265,16 @@ function moveQueueDisplay() {
 		const from = key.slice(0, i);
 		const piece = key.slice(i + 1);
 		const look = pieceLook(piece);
-		const what = `${look.label} from ${areaName(from)}`;
+		const what = tr("game.unit_from", { unit: look.label, area: areaName(from) });
 		const icon = h(
 			"button",
-			{ class: "queue-unit" + (look.onGate ? " on-gate" : ""), "data-piece": piece, "data-from": from, title: `Take ${what} out of this move`, "aria-label": `Take ${what} out of this move`, onclick: () => removeFromQueue(key) },
+			{ class: "queue-unit" + (look.onGate ? " on-gate" : ""), "data-piece": piece, "data-from": from, title: tr("game.take_out", { what }), "aria-label": tr("game.take_out", { what }), onclick: () => removeFromQueue(key) },
 			pieceIcon(look.shape, look.color || colorOf(seat), 30)
 		);
 		if (n > 1) icon.append(h("span", { class: "queue-count" }, String(n)));
 		wrap.append(icon);
 	}
-	wrap.append(h("span", { class: "queue-cost", id: "move-queue-cost", title: "What this move costs" }, statIcon("power", "Power", 16), String(queueCost())));
+	wrap.append(h("span", { class: "queue-cost", id: "move-queue-cost", title: tr("game.move_cost") }, statIcon("power", tr("game.power"), 16), String(queueCost())));
 	return wrap;
 }
 
@@ -1296,7 +1306,7 @@ function pieceLook(piece) {
 	const onGate = isHeld(piece);
 	const def = S.info.pieces.find((p) => p.type === plainPiece(piece));
 	const label = def ? def.label : plainPiece(piece);
-	const held = onGate ? (page().heldLabel ? page().heldLabel(label) : `${label} (holding its place)`) : label;
+	const held = onGate ? (page().heldLabel ? page().heldLabel(label) : tr("game.holding_place", { unit: label })) : label;
 	return { label: held, shape: def ? def.shape : "disc", color: def ? def.color : "", onGate };
 }
 
@@ -1407,7 +1417,7 @@ async function runAnalysis() {
 		a.builder = new MoveBuilder(sim.legal_moves || []);
 		a.builder.autoAdvance();
 	} catch (err) {
-		toast(a.moves.length ? err.message : "There is nothing to analyze from this position.", "error");
+		toast(a.moves.length ? err.message : tr("game.nothing_to_analyze"), "error");
 		if (a.moves.length) {
 			a.moves.pop();
 			return runAnalysis();
@@ -1500,25 +1510,25 @@ function importDialog() {
 				load.disabled = true;
 				try {
 					const r = await importMoves(area.value);
-					if (r.total === 0) msg.textContent = "No moves found in that text.";
-					else if (r.applied < r.total) msg.textContent = `Loaded ${r.applied} of ${r.total} moves — move ${r.applied + 1} is not legal from here.`;
+					if (r.total === 0) msg.textContent = tr("game.no_moves_found");
+					else if (r.applied < r.total) msg.textContent = tr("game.loaded_some", { applied: r.applied, total: r.total, next: r.applied + 1 });
 					else {
 						dlg.close();
-						toast(`Loaded ${r.applied} moves.`);
+						toast(tr("game.loaded", { n: r.applied }));
 					}
 				} finally {
 					load.disabled = false;
 				}
 			},
 		},
-		"Load"
+		tr("game.load")
 	);
 	dlg.append(
-		h("h2", {}, "Import moves"),
-		h("p", { class: "muted" }, "Paste a move list (PTN, or one move per line). Move numbers, results and comments are ignored. The moves are played out from the analysis position."),
+		h("h2", {}, tr("game.import_title")),
+		h("p", { class: "muted" }, tr("game.import_help")),
 		area,
 		msg,
-		h("div", { class: "row" }, load, h("button", { onclick: () => dlg.close() }, "Cancel"))
+		h("div", { class: "row" }, load, h("button", { onclick: () => dlg.close() }, tr("common.cancel")))
 	);
 	dlg.addEventListener("close", () => dlg.remove());
 	return dlg;
@@ -1548,10 +1558,10 @@ async function playFromHere() {
 		bots = [];
 	}
 	const dlg = h("dialog", { id: "from-here-dialog" });
-	dlg.append(h("h2", {}, "Play from this position"));
-	dlg.append(h("p", { class: "muted" }, `${seatLabel(a.sim.impulse_seat)} moves first from here.`));
+	dlg.append(h("h2", {}, tr("game.from_here_title")));
+	dlg.append(h("p", { class: "muted" }, tr("game.moves_first", { seat: seatLabel(a.sim.impulse_seat) })));
 
-	const opp = h("select", { id: "fh-opponent" }, h("option", { value: "" }, "A friend (share the link)"));
+	const opp = h("select", { id: "fh-opponent" }, h("option", { value: "" }, tr("game.a_friend")));
 	for (const b of bots) opp.append(h("option", { value: b.id }, b.label || b.id));
 	if (bots.length) opp.value = bots.find((b) => b.id === "tactical") ? "tactical" : bots[0].id;
 
@@ -1569,7 +1579,7 @@ async function playFromHere() {
 			onclick: async () => {
 				const name = nameInput.value.trim();
 				if (!name) {
-					err.textContent = "Enter a name first.";
+					err.textContent = tr("game.enter_name");
 					return;
 				}
 				start.disabled = true;
@@ -1591,14 +1601,14 @@ async function playFromHere() {
 				}
 			},
 		},
-		"Start game"
+		tr("game.start")
 	);
 	dlg.append(
-		h("label", {}, "Opponent", opp),
-		h("label", {}, "You play", seatSel),
-		h("label", {}, "Your name", nameInput),
+		h("label", {}, tr("game.opponent"), opp),
+		h("label", {}, tr("game.you_play"), seatSel),
+		h("label", {}, tr("game.your_name"), nameInput),
 		err,
-		h("div", { class: "row" }, start, h("button", { onclick: () => dlg.close() }, "Cancel"))
+		h("div", { class: "row" }, start, h("button", { onclick: () => dlg.close() }, tr("common.cancel")))
 	);
 	dlg.addEventListener("close", () => dlg.remove());
 	document.body.append(dlg);
@@ -1676,7 +1686,7 @@ async function doDraw(action) {
 	try {
 		await api.draw(code, S.me.name, action);
 		await settle();
-		if (action === "accept") toast("Draw agreed.");
+		if (action === "accept") toast(tr("game.draw_agreed"));
 	} catch (err) {
 		toast(err.message, "error");
 	} finally {
@@ -1695,15 +1705,15 @@ function slowTurnBanner() {
 	if (!stage || (stage === 1 && !isMine(wait.seat))) return h("div", { id: "slow-turn", hidden: true });
 	const who = seatName(wait.seat) || seatLabel(wait.seat);
 	if (isMine(wait.seat)) {
-		const text = stage === 1 ? "The table is waiting for your move." : "The table has waited a long time, and any of them can now have a bot play your turn.";
+		const text = stage === 1 ? tr("game.table_waiting") : tr("game.table_waited");
 		return h("div", { class: "notice attention", id: "slow-turn" }, text);
 	}
-	if (!S.me.seat) return h("div", { class: "notice", id: "slow-turn" }, `${who} is taking a long time.`);
+	if (!S.me.seat) return h("div", { class: "notice", id: "slow-turn" }, tr("game.taking_long", { who }));
 	return h(
 		"div",
 		{ class: "notice attention", id: "slow-turn" },
-		h("span", {}, `${who} is taking a long time. You can keep waiting, or have a bot play this one turn.`),
-		h("button", { id: "slow-turn-bot", onclick: askBotToPlay }, "Let a bot play this turn")
+		h("span", {}, tr("game.taking_long_bot", { who })),
+		h("button", { id: "slow-turn-bot", onclick: askBotToPlay }, tr("game.let_bot_play"))
 	);
 }
 
@@ -1711,14 +1721,14 @@ function slowTurnBanner() {
 function firstMoveBanner() {
 	const first = S.game.real_time && S.game.real_time.first_move;
 	if (!first || !isMine(first.seat) || !isLive()) return null;
-	const by = new Date(first.by).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-	return h("div", { class: "notice attention", id: "first-move" }, `Make your first move by ${by}, or you forfeit this game.`);
+	const by = new Date(first.by).toLocaleTimeString(lang, { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+	return h("div", { class: "notice attention", id: "first-move" }, tr("game.first_move_by", { time: by }));
 }
 
 /** The next game of a real-time tournament has started, and its clock with it. */
 function nextGameBanner() {
 	if (!S.nextGame) return null;
-	return h("div", { class: "notice attention", id: "next-game" }, h("span", {}, "Your next tournament game has started. "), h("a", { class: "button primary", href: `/game/${encodeURIComponent(S.nextGame)}` }, "Go to it"));
+	return h("div", { class: "notice attention", id: "next-game" }, h("span", {}, tr("game.next_started") + " "), h("a", { class: "button primary", href: `/game/${encodeURIComponent(S.nextGame)}` }, tr("game.go_to_it")));
 }
 
 function showNextGame(room) {
@@ -1756,17 +1766,17 @@ function kickVoteBanner() {
 	const box = h("div", { id: "kick-vote", hidden: !votes.length || S.game.status !== "active" || !isLive() });
 	for (const v of votes) {
 		const who = seatName(v.seat) || seatLabel(v.seat);
-		const count = `${v.votes} of ${v.needed} votes`;
+		const count = tr("game.votes_count", { votes: v.votes, needed: v.needed });
 		const voted = (v.voters || []).some((seat) => isMine(seat));
-		if (isMine(v.seat)) box.append(h("div", { class: "notice attention" }, `The table is voting to have a bot take your seat for good: ${count}.`));
-		else if (!S.me.seat || voted) box.append(h("div", { class: "notice" }, `A vote to have a bot replace ${who}: ${count}.`));
+		if (isMine(v.seat)) box.append(h("div", { class: "notice attention" }, tr("game.vote_on_you", { count })));
+		else if (!S.me.seat || voted) box.append(h("div", { class: "notice" }, tr("game.vote_on", { who, count })));
 		else {
 			box.append(
 				h(
 					"div",
 					{ class: "notice attention" },
-					h("span", {}, `A vote to have a bot replace ${who} for good: ${count}. `),
-					h("button", { class: "kick-vote-yes", onclick: () => voteKick(v.seat) }, "Vote to replace")
+					h("span", {}, tr("game.vote_on_for_good", { who, count }) + " "),
+					h("button", { class: "kick-vote-yes", onclick: () => voteKick(v.seat) }, tr("game.vote_replace"))
 				)
 			);
 		}
@@ -1782,14 +1792,14 @@ function paintKickVotes() {
 
 function confirmKick(seat) {
 	const who = seatName(seat) || seatLabel(seat);
-	if (window.confirm(`Start a vote to have a bot take ${who}'s seat for good? They could not play in this game again.`)) voteKick(seat);
+	if (window.confirm(tr("game.confirm_kick", { who }))) voteKick(seat);
 }
 
 async function voteKick(seat) {
 	try {
 		await api.voteKick(code, S.me.name, seat);
 	} catch (err) {
-		toast(err instanceof ApiError ? err.message : "Could not vote.", "error");
+		toast(err instanceof ApiError ? err.message : tr("game.could_not_vote"), "error");
 	}
 }
 
@@ -1802,7 +1812,7 @@ async function askBotToPlay() {
 	try {
 		await api.autoPlayImpulse(code, S.me.name);
 	} catch (err) {
-		toast(err instanceof ApiError ? err.message : "Could not ask for a bot.", "error");
+		toast(err instanceof ApiError ? err.message : tr("game.could_not_bot"), "error");
 	}
 }
 
@@ -1811,22 +1821,22 @@ function drawOfferBanner() {
 	if (g.status !== "active" || g.draw_offer_seat === null || g.draw_offer_seat === undefined) return null;
 	const offerer = g.draw_offer_seat;
 	const who = seatName(offerer) || seatLabel(offerer);
-	if (!S.me.seat) return h("div", { class: "notice", id: "draw-banner" }, `${who} has offered a draw.`);
+	if (!S.me.seat) return h("div", { class: "notice", id: "draw-banner" }, tr("game.has_offered_draw", { who }));
 	if (offerer === S.me.seat) {
 		return h(
 			"div",
 			{ class: "notice", id: "draw-banner" },
-			h("span", {}, "You offered a draw — waiting for your opponent."),
-			h("button", { id: "draw-cancel", class: "ghost", onclick: () => doDraw("cancel") }, "Withdraw")
+			h("span", {}, tr("game.you_offered_draw")),
+			h("button", { id: "draw-cancel", class: "ghost", onclick: () => doDraw("cancel") }, tr("game.withdraw"))
 		);
 	}
 	return h(
 		"div",
 		{ class: "notice attention", id: "draw-banner" },
-		h("span", {}, `${who} offers a draw.`),
+		h("span", {}, tr("game.offers_draw", { who })),
 		h("span", { class: "move-actions" },
-			h("button", { id: "draw-accept", class: "primary", onclick: () => doDraw("accept") }, "Accept"),
-			h("button", { id: "draw-decline", onclick: () => doDraw("decline") }, "Decline")
+			h("button", { id: "draw-accept", class: "primary", onclick: () => doDraw("accept") }, tr("game.accept")),
+			h("button", { id: "draw-decline", onclick: () => doDraw("decline") }, tr("game.decline"))
 		)
 	);
 }
@@ -1900,22 +1910,22 @@ function hintBanner() {
 		h(
 			"span",
 			{},
-			`Suggested move (${label}): `,
+			tr("game.suggested", { bot: label }) + " ",
 			h("strong", { id: "hint-move" }, hint.notation),
-			hint.winRate === null ? null : h("span", { class: "muted", id: "hint-eval" }, ` — about ${Math.round(hint.winRate * 100)}% to win for ${seatLabel(hint.seat)}`),
+			hint.winRate === null ? null : h("span", { class: "muted", id: "hint-eval" }, " — " + tr("game.win_chance", { pct: Math.round(hint.winRate * 100), seat: seatLabel(hint.seat) })),
 			hint.alternatives.length > 1
 				? h(
 						"span",
 						{ class: "small muted", id: "hint-alternatives" },
-						" · also: " + hint.alternatives.slice(1).map((a) => `${a.notation} (${Math.round(a.win_rate * 100)}%)`).join(", ")
+						" · " + tr("game.also", { moves: hint.alternatives.slice(1).map((a) => `${a.notation} (${Math.round(a.win_rate * 100)}%)`).join(", ") })
 				  )
 				: null
 		),
 		h(
 			"span",
 			{ class: "move-actions" },
-			actingSeat() ? h("button", { id: "hint-use", class: "primary", onclick: useIt }, "Use it") : null,
-			h("button", { id: "hint-dismiss", class: "ghost", onclick: () => { S.hint = null; render(); } }, "Dismiss")
+			actingSeat() ? h("button", { id: "hint-use", class: "primary", onclick: useIt }, tr("game.use_it")) : null,
+			h("button", { id: "hint-dismiss", class: "ghost", onclick: () => { S.hint = null; render(); } }, tr("game.dismiss"))
 		)
 	);
 }
@@ -2182,7 +2192,7 @@ async function onEvent(env) {
 				// The next seat had no legal move and was skipped. (A ruleset's
 				// turn is a run of decisions by the same seat: nothing to say.)
 				const other = S.info.seats.find((x) => x.seat !== d.seat);
-				if (other) toast(`${seatName(other.seat) || seatLabel(other.seat)} has no legal move and passes.`);
+				if (other) toast(tr("game.passes", { who: seatName(other.seat) || seatLabel(other.seat) }));
 			}
 		} else if (d.seq > S.moves.length) {
 			await refreshGame();
@@ -2216,8 +2226,8 @@ async function onEvent(env) {
 		} else if (env.type === "seat_replaced") {
 			const d = env.data || {};
 			const mine = isMine(d.seat);
-			const why = d.reason === "timeout" ? "ran out of time" : "was voted out";
-			toast(mine ? `A bot has taken your seat: you ${why}. You can go on watching.` : `A bot has taken ${d.name}'s seat: they ${why}.`, mine ? "error" : undefined);
+			const why = d.reason === "timeout" ? "time" : "vote";
+			toast(mine ? tr(`game.bot_took_yours_${why}`) : tr(`game.bot_took_${why}`, { name: d.name }), mine ? "error" : undefined);
 			await refreshGame();
 			render();
 		} else if (env.type === "slow_turn") {
@@ -2226,7 +2236,7 @@ async function onEvent(env) {
 			S.game.real_time.wait = { seat: d.seat, stage: d.stage };
 			paintSlowTurn();
 			if (isMine(d.seat)) {
-				toast(d.stage >= 2 ? "The table can now have a bot play your turn." : "The table is waiting for your move.");
+				toast(d.stage >= 2 ? tr("game.table_can_bot") : tr("game.table_waiting"));
 				lastNotifiedSeq = -1;
 				notifyIfMyImpulse(true);
 			}
@@ -2235,7 +2245,7 @@ async function onEvent(env) {
 			receiveChat(line, { mine: !!S.me.name && String(line.name || "").toLowerCase() === S.me.name.toLowerCase(), seen: chatOnScreen() });
 			paintMobileBadges();
 		} else if (env.type === "state") {
-			if (env.data && env.data.reason === "draw-offer") toast("A draw was offered.");
+			if (env.data && env.data.reason === "draw-offer") toast(tr("game.draw_offered"));
 		await refreshGame();
 		if (env.data && env.data.reason === "undo") S.viewSeq = null;
 		notifyIfMyImpulse(true);
@@ -2254,11 +2264,11 @@ function notifyIfMyImpulse(fromEvent) {
 	updateTitle();
 	if (!fromEvent || lastNotifiedSeq === S.moves.length) return;
 	lastNotifiedSeq = S.moves.length;
-	notifyHidden("Your turn", { body: `${S.info.name} — room ${code}`, tag: "bingle-" + code });
+	notifyHidden(tr("game.your_turn"), { body: tr("game.notify_body", { game: S.info.name, code }), tag: "bingle-" + code });
 }
 
 function updateTitle() {
-	document.title = (isMyImpulse() ? "● Your turn — " : "") + titleBase + " · " + code;
+	document.title = (isMyImpulse() ? "● " + tr("game.your_turn") + " — " : "") + titleBase + " · " + code;
 	setTurnBadge(isMyImpulse());
 }
 
@@ -2298,7 +2308,7 @@ function inspectorText() {
 		return `${pc.color} ${def ? def.label.toLowerCase() : pc.piece}`;
 	};
 	if (stack.length === 1) return `${S.inspect}: ${label(stack[0])}`;
-	return `${S.inspect}: ${stack.length} pieces — ` + stack.map(label).join(" › ") + " (top)";
+	return tr("game.stack", { at: S.inspect, n: stack.length, stack: stack.map(label).join(" › ") });
 }
 
 function updateInspector() {
@@ -2360,11 +2370,11 @@ function render() {
 		return;
 	}
 	if (S.fatal) {
-		root.append(h("div", { class: "card", id: "board-error" }, h("h2", {}, "Can’t open this game"), h("p", {}, "Failed to load game state: " + S.fatal), h("a", { class: "button", href: "/" }, "Back to the lobby")));
+		root.append(h("div", { class: "card", id: "board-error" }, h("h2", {}, tr("game.cant_open")), h("p", {}, tr("game.failed_load", { error: S.fatal })), h("a", { class: "button", href: "/" }, tr("game.back_to_lobby"))));
 		return;
 	}
 	if (!S.info || !S.game) {
-		root.append(h("p", { class: "muted" }, "Loading…"));
+		root.append(h("p", { class: "muted" }, tr("common.loading")));
 		return;
 	}
 
@@ -2431,8 +2441,10 @@ function impulseTitle() {
 function impulseHeading() {
 	const seat = S.game.impulse_seat;
 	const glyph = seatGlyph(seat);
-	if (!glyph) return h("h3", { id: "impulse-title" }, impulseTitle());
-	return h("h3", { id: "impulse-title", class: "impulse-seat", style: `color: ${seatInk(seat)}` }, glyph, impulseTitle());
+	// A player's name is theirs, in every language.
+	const own = seatName(seat) ? "no" : null;
+	if (!glyph) return h("h3", { id: "impulse-title", translate: own }, impulseTitle());
+	return h("h3", { id: "impulse-title", class: "impulse-seat", style: `color: ${seatInk(seat)}`, translate: own }, glyph, impulseTitle());
 }
 
 /** What a highlighted place is called on this board. */
@@ -2449,7 +2461,7 @@ function placeOnlyImpulse() {
 	if (kinds.length !== 1) return null;
 	const def = S.info.pieces.find((p) => p.type === kinds[0]);
 	const name = String((def && def.label) || kinds[0]).toLowerCase();
-	return `Place ${/^[aeiou]/.test(name) ? "an" : "a"} ${name}.`;
+	return tr(/^[aeiou]/.test(name) ? "game.place_an" : "game.place_a", { piece: name });
 }
 
 /** "Place a stone or move a stack.": a game with no words of its own says what its actions are. */
@@ -2457,15 +2469,15 @@ function genericImpulse() {
 	const placing = placeOnlyImpulse();
 	if (placing) return placing;
 	const acts = (S.info.actions || []).map((a) => a.label).filter(Boolean);
-	if (!acts.length) return "Choose a move.";
-	const text = acts.map((label, i) => (i ? label.toLowerCase() : label)).join(" or ");
-	return `${text}.`;
+	if (!acts.length) return tr("game.choose_move");
+	const text = new Intl.ListFormat(lang, { type: "disjunction" }).format(acts.map((label, i) => (i ? label.toLowerCase() : label)));
+	return tr("game.actions_or", { actions: text });
 }
 
 /** What the player is asked once they have made a choice of their own in a game with its rules in Go. */
 function rulesetStepImpulse(b, rv) {
 	const opts = b.options();
-	if (!opts.length) return needsConfirm() ? "Check the preview, then submit." : "Submitting…";
+	if (!opts.length) return needsConfirm() ? tr("game.check_preview") : tr("game.submitting");
 	const manual = b.manualGestures();
 	const last = manual[manual.length - 1];
 	const lastAction = [...manual].reverse().find((st) => st.kind === "action");
@@ -2475,11 +2487,11 @@ function rulesetStepImpulse(b, rv) {
 	const choice = kinds.has("count")
 		? countLabel(b)
 		: kinds.has("piece") && !kinds.has("pos")
-		? "Choose a unit."
+		? tr("game.choose_unit")
 		: kinds.has("pos") && !kinds.has("piece")
-		? `Choose ${cellWord() === "area" ? "an area" : `a ${cellWord()}`}.`
-		: "Choose an option.";
-	return def && def.label ? `${def.label}: ${choice.charAt(0).toLowerCase()}${choice.slice(1)}` : choice;
+		? tr(`game.choose_${cellWord()}`)
+		: tr("game.choose_option");
+	return def && def.label ? tr("game.action_choice", { action: def.label, choice: choice.charAt(0).toLocaleLowerCase(lang) + choice.slice(1) }) : choice;
 }
 
 /** What the player on impulse in a game on the generic engine is asked just now. */
@@ -2488,28 +2500,29 @@ function genericActingImpulse(b) {
 	const hasPiece = opts.some((o) => o.kind === "piece");
 	const hasPos = opts.some((o) => o.kind === "pos");
 	if (b.manualGestures().length) {
-		if (opts.some((o) => o.kind === "count")) return "Choose how many pieces to pick up.";
-		if (b.complete()) return opts.length ? "Submit the move, or keep dropping pieces." : needsConfirm() ? "Check the preview, then submit." : "Submitting…";
+		if (opts.some((o) => o.kind === "count")) return tr("game.choose_count");
+		if (b.complete()) return opts.length ? tr("game.submit_or_drop") : needsConfirm() ? tr("game.check_preview") : tr("game.submitting");
 		const picked = b.pickedCount();
 		if (picked) {
 			const left = picked - [...b.dropCounts().values()].reduce((a, c) => a + c, 0);
-			return `Choose a square to drop the remaining ${left} piece${left === 1 ? "" : "s"} on (click again to leave more there).`;
+			return tr("game.drop_rest", { n: left });
 		}
-		return hasPos ? "Choose a highlighted square." : "Continue your move.";
+		return hasPos ? tr("game.choose_highlighted_square") : tr("game.continue_move");
 	}
-	if (openingActive() && S.info.opening.owner === "opponent") return "Opening: place a flat stone of your opponent’s color on any square.";
+	if (openingActive() && S.info.opening.owner === "opponent") return tr("game.opening_flat");
 	const placeOnly = placeOnlyImpulse();
 	if (placeOnly) return placeOnly;
 	// A forced piece choice was taken automatically: the squares on offer are places to put it.
 	const placing = hasPos && !hasPiece && b.gestures.length > 0 && b.gestures[0].kind === "piece";
 	const points = S.info.board.style === "points";
-	if (hasPiece && hasPos) return "Click an empty square to place a stone (Shift: wall, Ctrl: capstone), or click a highlighted stack to move it.";
-	if (hasPiece && pieceWord()) return `Choose a ${pieceNoun()} to place${opts.some((o) => o.kind === "action") ? ", or choose an action" : ""}.`;
-	if (hasPiece && b.quickPlacements().size > 0) return `${points ? "Choose an intersection to place a stone" : "Choose an empty square to place a piece"}${opts.some((o) => o.kind === "action") ? ", or choose an action" : ""}.`;
-	if (hasPiece) return "Choose a piece from your hand.";
-	if (placing) return points ? "Choose an intersection to place a stone." : "Choose an empty square to place a piece.";
-	if (hasPos) return "Choose a highlighted piece to move.";
-	return opts.some((o) => o.kind === "action") ? "Choose an action." : "No moves available.";
+	const orAction = opts.some((o) => o.kind === "action") ? "_or_action" : "";
+	if (hasPiece && hasPos) return tr("game.place_or_move_stack");
+	if (hasPiece && pieceWord()) return tr(`game.choose_to_place${orAction}`, { piece: pieceNoun() });
+	if (hasPiece && b.quickPlacements().size > 0) return tr(`game.${points ? "choose_intersection" : "choose_empty"}${orAction}`);
+	if (hasPiece) return tr("game.choose_from_hand");
+	if (placing) return points ? tr("game.choose_intersection") : tr("game.choose_empty");
+	if (hasPos) return tr("game.choose_to_move");
+	return orAction ? tr("game.choose_action") : tr("game.no_moves");
 }
 
 /**
@@ -2521,10 +2534,10 @@ function impulseText() {
 	const rv = rulesetView();
 	const said = rv && (rv.impulse || rv.prompt);
 	if (!isMyImpulse()) return said || genericImpulse();
-	if (S.passAsked) return page().passWarning ? page().passWarning(powerOf(S.game.impulse_seat)) : `Passing gives up the ${powerOf(S.game.impulse_seat)} you have left to spend.`;
+	if (S.passAsked) return page().passWarning ? page().passWarning(powerOf(S.game.impulse_seat)) : tr("game.pass_gives_up", { power: powerOf(S.game.impulse_seat) });
 	if (S.moveQueue) {
-		const from = queueOrigins().map(areaName).join(" and ");
-		return page().queueReady ? page().queueReady(from) : `Pieces from ${from} are ready: select more from any area, then the area they all go to.`;
+		const from = new Intl.ListFormat(lang).format(queueOrigins().map(areaName));
+		return page().queueReady ? page().queueReady(from) : tr("game.pieces_ready", { areas: from });
 	}
 	const b = activeBuilder();
 	if (!isRuleset()) return genericActingImpulse(b);
@@ -2547,8 +2560,8 @@ function impulseCard(note, choices = []) {
 	const impulse = onImpulse();
 	const text = bar.textContent.trim();
 	if (!acting && !impulse && !text && !note && !choices.length) return null;
-	const title = inAnalysis() ? "Analysis" : !isLive() ? (S.viewSeq === null ? "History" : `History: ${S.viewSeq}`) : g.status === "finished" ? "Game over" : g.status === "waiting" ? "Waiting" : "Actions";
-	const card = h("section", { class: "card impulse-card" + (acting ? " acting" : ""), id: "impulse-card", "aria-label": "Impulse" });
+	const title = inAnalysis() ? tr("game.analysis") : !isLive() ? (S.viewSeq === null ? tr("game.history") : tr("game.history_at", { seq: S.viewSeq })) : g.status === "finished" ? tr("game.game_over") : g.status === "waiting" ? tr("game.waiting") : tr("game.actions");
+	const card = h("section", { class: "card impulse-card" + (acting ? " acting" : ""), id: "impulse-card", "aria-label": tr("game.impulse") });
 	card.append(impulse ? impulseHeading() : h("h3", { id: "impulse-title" }, title));
 	if (impulse) card.append(h("p", { class: "impulse-text", id: "impulse-text" }, impulseText()));
 	if (note) {
@@ -2644,7 +2657,7 @@ function renderFitted(seats, bottomSeat, seatStack) {
 		: { words, over: bar.classList.contains("over"), history: bar.classList.contains("history"), buttons: [...bar.querySelectorAll(":scope > button, :scope > a.button")] };
 	if (quiet) words.classList.add("sr-only");
 
-	const players = seatStack || h("section", { class: "card players-card", id: "players-card", "aria-label": "Players" });
+	const players = seatStack || h("section", { class: "card players-card", id: "players-card", "aria-label": tr("game.players") });
 	if (!seatStack) {
 		for (const ts of seats.filter((s) => s.seat !== bottomSeat)) players.append(seatStrip(ts.seat));
 		players.append(seatStrip(bottomSeat));
@@ -2667,9 +2680,9 @@ function renderFitted(seats, bottomSeat, seatStack) {
 	const rail = h("aside", { class: "side-panel play-rail", id: "play-rail" }, ...first.filter(Boolean));
 	if (areas) {
 		// More than a column can show at once: the seats, the table talk and the history take turns.
-		const panes = [{ id: "seats", label: (seats.length > 2 && page().seatsName) || "Players", nodes: [players, neutralCard()] }];
-		if (talk.length) panes.push({ id: "talk", label: "Chat", nodes: talk });
-		panes.push({ id: "history", label: "History", nodes: [history] });
+		const panes = [{ id: "seats", label: (seats.length > 2 && page().seatsName) || tr("game.players"), nodes: [players, neutralCard()] }];
+		if (talk.length) panes.push({ id: "talk", label: tr("game.chat"), nodes: talk });
+		panes.push({ id: "history", label: tr("game.history"), nodes: [history] });
 		rail.append(...railTabs(panes));
 	} else {
 		rail.append(players, ...(seatStack ? [neutralCard()].filter(Boolean) : []), ...talk, history);
@@ -2685,7 +2698,7 @@ function renderFitted(seats, bottomSeat, seatStack) {
 function railTabs(panes) {
 	const saved = S.railTab || store.get("bingle.railTab", panes[0].id);
 	const current = panes.some((p) => p.id === saved) ? saved : panes[0].id;
-	const tabs = h("div", { class: "card-tabs rail-tabs", role: "tablist", "aria-label": "Cards" });
+	const tabs = h("div", { class: "card-tabs rail-tabs", role: "tablist", "aria-label": tr("game.cards") });
 	const out = [tabs];
 	for (const pane of panes) {
 		const on = pane.id === current;
@@ -2792,7 +2805,7 @@ function renderMobile(seats, bottomSeat) {
 	actions.append(moveBar());
 	for (const part of [unitInfoCard(), battlePanel(), exchangePanel()]) if (part) actions.append(part);
 
-	const round = h("div", { class: "m-stack" }, h("h2", {}, "Round"));
+	const round = h("div", { class: "m-stack" }, h("h2", {}, tr("game.round")));
 	const rb = roundBar();
 	if (rb) round.append(rb);
 
@@ -2800,28 +2813,28 @@ function renderMobile(seats, bottomSeat) {
 	if (neutral) round.append(neutral);
 
 	const pages = [
-		{ id: "actions", label: "Actions", group: "actions", node: actions },
-		{ id: "round", label: "Round", group: "round", node: round },
+		{ id: "actions", label: tr("game.actions"), group: "actions", node: actions },
+		{ id: "round", label: tr("game.round"), group: "round", node: round },
 	];
 	const chips = { seats: [] };
 	for (const seat of cardOrder(bottomSeat)) {
 		const id = `seat-${seat}`;
-		pages.push({ id, label: seatLabel(seat) || `Seat ${seat}`, group: "seats", node: h("div", { class: "m-stack" }, seatStrip(seat)) });
-		chips.seats.push({ page: id, label: seatLabel(seat) || `Seat ${seat}`, color: cssColor(colorOf(seat)) });
+		pages.push({ id, label: seatLabel(seat) || tr("game.seat_n", { n: seat }), group: "seats", node: h("div", { class: "m-stack" }, seatStrip(seat)) });
+		chips.seats.push({ page: id, label: seatLabel(seat) || tr("game.seat_n", { n: seat }), color: cssColor(colorOf(seat)) });
 	}
-	pages.push({ id: "log", label: "History", group: "log", node: h("div", { class: "m-stack" }, historyCard()) });
-	if (!S.tut) pages.push({ id: "chat", label: "Chat", group: "chat", node: h("div", { class: "m-stack" }, chatCard({ code, me: S.me, voice: voiceControls({ code, me: S.me, seats: S.game.seats }) })) });
+	pages.push({ id: "log", label: tr("game.history"), group: "log", node: h("div", { class: "m-stack" }, historyCard()) });
+	if (!S.tut) pages.push({ id: "chat", label: tr("game.chat"), group: "chat", node: h("div", { class: "m-stack" }, chatCard({ code, me: S.me, voice: voiceControls({ code, me: S.me, seats: S.game.seats }) })) });
 
 	const unread = S.mPage === "chat" ? 0 : chatUnread();
 	const shell = mobileShell({
 		pages,
 		chips,
 		groups: [
-			{ id: "actions", label: "Actions", icon: "⚡", pulse: myImpulse && S.mPage !== "actions" },
-			{ id: "round", label: "Round", icon: "⏳" },
-			{ id: "seats", label: page().seatsName || "Players", icon: "👥" },
-			{ id: "log", label: "History", icon: "📜" },
-			{ id: "chat", label: "Chat", icon: "💬", badge: unread || 0 },
+			{ id: "actions", label: tr("game.actions"), icon: "⚡", pulse: myImpulse && S.mPage !== "actions" },
+			{ id: "round", label: tr("game.round"), icon: "⏳" },
+			{ id: "seats", label: page().seatsName || tr("game.players"), icon: "👥" },
+			{ id: "log", label: tr("game.history"), icon: "📜" },
+			{ id: "chat", label: tr("game.chat"), icon: "💬", badge: unread || 0 },
 		],
 		current: S.mPage || "actions",
 		onChange: (id) => {
@@ -2852,7 +2865,7 @@ function renderMobileMap(myImpulse) {
 	// The map cannot say whose turn it is, or that the next choice is a button.
 	if (myImpulse) {
 		const onMap = activeBuilder().options().some((o) => o.kind === "pos");
-		page.append(h("div", { class: "m-turn-note", id: "m-turn-note", role: "status" }, onMap ? "Your turn" : "Your turn: hold the phone upright to choose"));
+		page.append(h("div", { class: "m-turn-note", id: "m-turn-note", role: "status" }, onMap ? tr("game.your_turn") : tr("game.your_turn_upright")));
 	}
 	root.append(page);
 	drawBoard(boardHost);
@@ -2863,7 +2876,7 @@ function renderMobileMap(myImpulse) {
 function mobileHintOnce() {
 	if (store.get("bingle.mobileHint2", false)) return;
 	store.set("bingle.mobileHint2", true);
-	toast("Turn your phone on its side for the map, and upright for your actions, the players and the chat.");
+	toast(tr("game.phone_hint"));
 }
 
 /** A turn that has just come to the player buzzes the phone, once. */
@@ -2897,31 +2910,31 @@ function renderMobileCards(seats, bottomSeat) {
 	S.ctPrev = table.state;
 	play.append(table.node);
 
-	const pages = [{ id: "play", label: "Play", group: "play", node: play }];
+	const pages = [{ id: "play", label: tr("game.play"), group: "play", node: play }];
 	if (v.grid) {
 		// The boxes are pictures: a legend says what each line is for (a phone has no hover text).
 		const legend = h("dl", { class: "cg-legend small" });
 		for (const line of v.grid.lines) {
 			legend.append(h("dt", {}, choiceIcon(line.icon, ctx, 22), h("strong", {}, line.label)), h("dd", { class: "muted" }, line.hint));
 		}
-		const terms = h("div", { class: "m-stack" }, h("h2", {}, "Terms"), termsBoard(v, ctx), h("p", { class: "small muted" }, "The box left open on each line is the rule of the round."), legend);
-		pages.push({ id: "terms", label: "Terms", group: "terms", node: terms });
+		const terms = h("div", { class: "m-stack" }, h("h2", {}, tr("game.terms")), termsBoard(v, ctx), h("p", { class: "small muted" }, tr("game.terms_legend")), legend);
+		pages.push({ id: "terms", label: tr("game.terms"), group: "terms", node: terms });
 	}
-	const players = h("div", { class: "m-stack" }, h("h2", {}, "Players"));
+	const players = h("div", { class: "m-stack" }, h("h2", {}, tr("game.players")));
 	for (const seat of seatsFrom(bottomSeat)) players.append(seatStrip(seat));
-	pages.push({ id: "players", label: "Players", group: "players", node: players });
-	pages.push({ id: "log", label: "History", group: "log", node: h("div", { class: "m-stack" }, historyCard()) });
-	if (!S.tut) pages.push({ id: "chat", label: "Chat", group: "chat", node: h("div", { class: "m-stack" }, chatCard({ code, me: S.me, voice: voiceControls({ code, me: S.me, seats: S.game.seats }) })) });
+	pages.push({ id: "players", label: tr("game.players"), group: "players", node: players });
+	pages.push({ id: "log", label: tr("game.history"), group: "log", node: h("div", { class: "m-stack" }, historyCard()) });
+	if (!S.tut) pages.push({ id: "chat", label: tr("game.chat"), group: "chat", node: h("div", { class: "m-stack" }, chatCard({ code, me: S.me, voice: voiceControls({ code, me: S.me, seats: S.game.seats }) })) });
 
 	const unread = S.mPage === "chat" ? 0 : chatUnread();
 	const shell = mobileShell({
 		pages,
 		groups: [
-			{ id: "play", label: "Play", icon: "🃏", pulse: myImpulse && S.mPage !== "play" },
-			...(v.grid ? [{ id: "terms", label: "Terms", icon: "📋" }] : []),
-			{ id: "players", label: "Players", icon: "👥" },
-			{ id: "log", label: "History", icon: "📜" },
-			{ id: "chat", label: "Chat", icon: "💬", badge: unread || 0 },
+			{ id: "play", label: tr("game.play"), icon: "🃏", pulse: myImpulse && S.mPage !== "play" },
+			...(v.grid ? [{ id: "terms", label: tr("game.terms"), icon: "📋" }] : []),
+			{ id: "players", label: tr("game.players"), icon: "👥" },
+			{ id: "log", label: tr("game.history"), icon: "📜" },
+			{ id: "chat", label: tr("game.chat"), icon: "💬", badge: unread || 0 },
 		],
 		current: S.mPage || "play",
 		onChange: (id) => {
@@ -3005,7 +3018,7 @@ function lobbyContext() {
 		try {
 			await fn();
 		} catch (err) {
-			toast(err.message || "That did not work.", "error");
+			toast(err.message || tr("common.not_done"), "error");
 		} finally {
 			S.lobbyBusy = false;
 			try {
@@ -3043,11 +3056,11 @@ function lobbyContext() {
 				const link = field.value;
 				try {
 					await navigator.clipboard.writeText(link);
-					toast("Link copied");
+					toast(tr("game.link_copied"));
 				} catch (_) {
 					field.select();
 					document.execCommand && document.execCommand("copy");
-					toast("Link selected — copy it");
+					toast(tr("game.link_selected"));
 				}
 			},
 			take: (seat, name) =>
@@ -3147,79 +3160,78 @@ function statusBar() {
 
 	if (tutorialLookingBack()) {
 		cls.push("history");
-		msg = "An earlier step of the tutorial.";
+		msg = tr("game.tutorial_earlier");
 	} else if (inAnalysis()) {
 		cls.push("history");
 		const a = S.analysis;
 		const sim = a.sim;
-		const where = a.base === null ? "the current position" : `the position after move ${a.base}`;
-		if (!sim) msg = "Analysis — loading…";
-		else if (sim.game_ended) msg = `Analysis: the variation ends the game${sim.winner_seat ? ` — ${seatLabel(sim.winner_seat)} wins` : " in a draw"}.`;
-		else msg = `Analysis from ${where}: ${seatLabel(sim.impulse_seat)} to move. Nothing here is played.`;
+		if (!sim) msg = tr("game.analysis_loading");
+		else if (sim.game_ended) msg = sim.winner_seat ? tr("game.analysis_ends_win", { seat: seatLabel(sim.winner_seat) }) : tr("game.analysis_ends_draw");
+		else msg = tr(a.base === null ? "game.analysis_now" : "game.analysis_after", { n: a.base, seat: seatLabel(sim.impulse_seat) });
 	} else if (!isLive()) {
 		cls.push("history");
 		const seq = S.viewSeq;
 		const rec = seq > 0 ? S.moves[seq - 1] : null;
 		// The words the History tab has for this move, where it has any.
 		const told = rulesetLog().filter((e) => e.ply === seq).flatMap((e) => e.lines || []).filter((line) => !/^—.*—$/.test(line));
-		msg = seq === 0 ? "Viewing the starting position." : told.length ? `Move ${seq}: ${told.join(" ")}` : `Viewing the position after move ${seq}${rec ? ` (${rec.notation})` : ""}.`;
+		msg = seq === 0 ? tr("game.viewing_start") : told.length ? tr("game.move_told", { n: seq, words: told.join(" ") }) : rec ? tr("game.viewing_after_notation", { n: seq, move: rec.notation }) : tr("game.viewing_after", { n: seq });
 	} else if (tutorialShown()) {
 		// A picture, not the room's game: nobody's turn, and no result.
 		cls.push("history");
-		msg = "An example position. Nothing here is played.";
+		msg = tr("game.example_position");
 	} else if (g.status === "waiting") {
 		msg = inLobby()
-			? "Waiting in the lobby — send the invite link to the players you want, choose your seats, then start the game."
-			: "Waiting for an opponent — send the link from Options to invite someone, or add a bot there.";
+			? tr("game.waiting_lobby")
+			: tr("game.waiting_opponent");
 	} else if (g.status === "finished") {
 		cls.push("over");
 		msg = resultMessage();
 	} else if (isMyImpulse()) {
 		cls.push("your-impulse");
-		msg = `Your turn — ${impulseText()}`;
+		msg = tr("game.your_turn_text", { text: impulseText() });
 	} else if (S.me.seat) {
 		const si = seatInfo(g.impulse_seat);
 		const who = seatName(g.impulse_seat) || seatLabel(g.impulse_seat);
-		msg = si && si.bot ? `${who} is thinking: ${impulseText()}` : `Waiting for ${who}: ${impulseText()}`;
+		msg = tr(si && si.bot ? "game.thinking" : "game.waiting_for", { who, text: impulseText() });
 	} else {
-		msg = `${seatLabel(g.impulse_seat)} (${displayName(g.impulse_seat)}): ${impulseText()}`;
+		msg = tr("game.seat_text", { seat: seatLabel(g.impulse_seat), name: displayName(g.impulse_seat), text: impulseText() });
 	}
 
 	const bar = h("div", { class: cls.join(" ") });
 	bar.append(h("div", { class: "message", id: "status-message", "aria-live": "polite" }, ...withSeatWords(msg)));
 	if (isLive() && !inAnalysis() && g.status === "active" && !tutorialShown() && !tutorialLookingBack()) {
-		if (isMyImpulse()) badges.push(h("span", { class: "badge turn" }, "Your turn"));
+		if (isMyImpulse()) badges.push(h("span", { class: "badge turn" }, tr("game.your_turn")));
 		{
 			const rv = rulesetView();
 			badges.push(
 				h(
 					"span",
 					{ class: "badge ply" },
-					rv && rv.round ? `Round ${rv.round}` : isRuleset() ? `Ply ${S.moves.length}` : `Move ${Math.floor(S.moves.length / S.info.seats.length) + 1}`
+					rv && rv.round ? tr("game.round_n", { n: rv.round }) : isRuleset() ? tr("game.ply_n", { n: S.moves.length }) : tr("game.move_n", { n: Math.floor(S.moves.length / S.info.seats.length) + 1 })
 				)
 			);
 		}
 	}
-	if (g.status === "finished") badges.push(h("span", { class: "badge done" }, "Finished"));
-	if (g.rated) badges.push(h("span", { class: "badge rated", id: "rated-badge", title: FAIR_PLAY }, "Rated"));
-	if (g.real_time) badges.push(h("span", { class: "badge", id: "real-time-badge", title: "The players are expected to stay until the game ends" }, "Real-time"));
-	if (g.tournament) badges.push(h("a", { class: "badge", id: "tournament-badge", href: `/tournament/${g.tournament.id}`, title: "This game is part of a tournament" }, g.tournament.name));
+	if (g.status === "finished") badges.push(h("span", { class: "badge done" }, tr("game.finished")));
+	if (g.rated) badges.push(h("span", { class: "badge rated", id: "rated-badge", title: FAIR_PLAY }, tr("game.rated")));
+	if (g.real_time) badges.push(h("span", { class: "badge", id: "real-time-badge", title: tr("game.real_time_title") }, tr("game.real_time")));
+	if (g.tournament) badges.push(h("a", { class: "badge", id: "tournament-badge", href: `/tournament/${g.tournament.id}`, title: tr("game.tournament_title"), translate: "no" }, g.tournament.name));
 	if (g.seed) badges.push(seedBadge(g));
-	const uncounted = { no_moves: "Not counted: a player made no move", daily_limit: "Not counted: enough rated games between these two today", void: "Not counted" }[g.rating_status];
+	const uncounted = { no_moves: tr("game.uncounted_no_moves"), daily_limit: tr("game.uncounted_daily"), void: tr("game.uncounted") }[g.rating_status];
 	if (uncounted) badges.push(h("span", { class: "badge", id: "rating-note" }, uncounted));
-	badges.push(h("span", { class: "badge" + (S.conn === "online" ? " online" : ""), id: "conn-badge" }, S.conn === "online" ? "live" : S.conn === "offline" ? "reconnecting…" : "connecting…"));
+	badges.push(h("span", { class: "badge" + (S.conn === "online" ? " online" : ""), id: "conn-badge" }, S.conn === "online" ? tr("game.live") : S.conn === "offline" ? tr("game.reconnecting") : tr("game.connecting")));
 	for (const b of badges) bar.append(b);
 	if (inAnalysis()) {
 		const sim = S.analysis.sim;
 		if (sim && !sim.game_ended) {
-			bar.append(h("button", { id: "play-from-here", onclick: playFromHere, title: "Start a new game from this position" }, "Play from here…"));
+			bar.append(h("button", { id: "play-from-here", onclick: playFromHere, title: tr("game.from_here_hint") }, tr("game.play_from_here")));
 		}
-		bar.append(h("button", { class: "primary", id: "exit-analysis", onclick: exitAnalysis }, "Exit analysis"));
+		bar.append(h("button", { class: "primary", id: "exit-analysis", onclick: exitAnalysis }, tr("game.exit_analysis")));
 	} else if (tutorialLookingBack()) {
 		// Next and Back are in the tutorial's own card.
 	} else if (!isLive()) {
-		bar.append(h("button", { id: "analyze-here", onclick: startAnalysis }, "Analyze from here"));
-		bar.append(h("button", { class: "primary", id: "return-live", onclick: () => viewMove(null) }, "Return to live"));
+		bar.append(h("button", { id: "analyze-here", onclick: startAnalysis }, tr("game.analyze_here")));
+		bar.append(h("button", { class: "primary", id: "return-live", onclick: () => viewMove(null) }, tr("game.return_live")));
 	} else if (g.status === "finished") {
 		bar.append(rematchControl());
 		if (g.seed && S.me.seat) bar.append(replayDealButton(g));
@@ -3232,8 +3244,8 @@ function statusBar() {
 // a deal the player chose; a click copies it, to type into a new game's Deal.
 function seedBadge(g) {
 	const title = g.start_chosen
-		? "The seed this deal came from, which you chose: a deal you choose keeps no best score and earns no quick-win badge. Click to copy it."
-		: "The seed this deal came from: enter it under Deal when you start a game to play the same cards again. Click to copy it.";
+		? tr("game.seed_chosen")
+		: tr("game.seed_title");
 	return h(
 		"button",
 		{
@@ -3245,13 +3257,13 @@ function seedBadge(g) {
 			onclick: async () => {
 				try {
 					await navigator.clipboard.writeText(g.seed);
-					toast("Seed copied");
+					toast(tr("game.seed_copied"));
 				} catch (_) {
-					toast(`Seed ${g.seed}`);
+					toast(tr("game.seed", { seed: g.seed }));
 				}
 			},
 		},
-		`Seed ${g.seed}`
+		tr("game.seed", { seed: g.seed })
 	);
 }
 
@@ -3261,7 +3273,7 @@ function replayDealButton(g) {
 		"button",
 		{
 			id: "replay-deal",
-			title: "Start a new game with the same cards. A deal played again keeps no best score and earns no quick-win badge.",
+			title: tr("game.replay_title"),
 			onclick: async () => {
 				try {
 					const res = await api.createGame({ game_def_id: g.game_def_id, player_name: S.me.name, seed: g.seed, card_set: g.card_set || undefined });
@@ -3272,7 +3284,7 @@ function replayDealButton(g) {
 				}
 			},
 		},
-		"Play this deal again"
+		tr("game.replay")
 	);
 }
 
@@ -3310,10 +3322,10 @@ function rematchControl() {
 					}
 				},
 			},
-			custom ? "Try again" : "Rematch"
+			custom ? tr("game.try_again") : tr("game.rematch")
 		);
 	}
-	return h("a", { class: "button primary", id: "new-game", href: `/?game=${encodeURIComponent(S.game.game_def_id)}` }, "New game");
+	return h("a", { class: "button primary", id: "new-game", href: `/?game=${encodeURIComponent(S.game.game_def_id)}` }, tr("game.new_game"));
 }
 
 /** The page of a game this server no longer offers: who played, how it ended, the moves. */
@@ -3322,80 +3334,85 @@ function retiredRecord() {
 	const seats = g.seats || [];
 	const who = (seat) => {
 		const s = seats.find((x) => x.seat === seat);
-		return s && s.name ? s.name : `Seat ${seat}`;
+		return s && s.name ? s.name : tr("game.seat_n", { n: seat });
 	};
+	const and = new Intl.ListFormat(lang);
 	let ending;
-	if (g.end_reason === "retired") ending = "It was still being played when the server stopped offering the game, so it ended with no result.";
-	else if (g.end_reason === "abandoned") ending = "It ended with no result when its tournament was abandoned.";
-	else if (g.status !== "finished") ending = "It was never finished.";
-	else if ((g.winner_seat === null || g.winner_seat === undefined) && g.all_lost) ending = "Every player lost.";
-	else if ((g.winner_seat === null || g.winner_seat === undefined) && (g.drawn_seats || []).length) ending = `${g.drawn_seats.map(who).join(" and ")} shared a draw; the others lost.`;
-	else if (g.winner_seat === null || g.winner_seat === undefined) ending = "It ended in a draw.";
-	else ending = `${who(g.winner_seat)} won.`;
-	const players = seats.filter((s) => s.name).map((s) => s.name + (s.bot ? " (bot)" : ""));
+	if (g.end_reason === "retired") ending = tr("game.ended_retired");
+	else if (g.end_reason === "abandoned") ending = tr("game.ended_abandoned");
+	else if (g.status !== "finished") ending = tr("game.never_finished");
+	else if ((g.winner_seat === null || g.winner_seat === undefined) && g.all_lost) ending = tr("game.every_lost");
+	else if ((g.winner_seat === null || g.winner_seat === undefined) && (g.drawn_seats || []).length) ending = tr("game.shared_draw_others_lost", { names: and.format(g.drawn_seats.map(who)) });
+	else if (g.winner_seat === null || g.winner_seat === undefined) ending = tr("game.ended_draw");
+	else ending = tr("game.won", { who: who(g.winner_seat) });
+	const players = seats.filter((s) => s.name).map((s) => (s.bot ? tr("game.name_bot", { name: s.name }) : s.name));
 	return h(
 		"div",
 		{ class: "card", id: "retired-game" },
-		h("h2", {}, `${S.retired.name} is no longer played here`),
-		h("p", {}, `This server no longer offers ${S.retired.name}. This game is kept as a record: the board can't be shown any more, but the moves can.`),
-		players.length ? h("p", {}, `Played by ${players.join(" and ")}. ${ending}`) : h("p", {}, ending),
+		h("h2", {}, tr("game.retired_title", { game: S.retired.name })),
+		h("p", {}, tr("game.retired_text", { game: S.retired.name })),
+		players.length ? h("p", {}, tr("game.played_by", { names: and.format(players) }) + " " + ending) : h("p", {}, ending),
 		S.retired.moves.length
 			? h("ol", { class: "retired-moves" }, S.retired.moves.map((m) => h("li", {}, `${who(m.seat)}: ${m.notation || m.to || "—"}`)))
-			: h("p", { class: "muted" }, "No moves were made."),
-		h("a", { class: "button", href: "/" }, "Back to the lobby")
+			: h("p", { class: "muted" }, tr("game.no_moves_made")),
+		h("a", { class: "button", href: "/" }, tr("game.back_to_lobby"))
 	);
 }
 
 function resultMessage() {
 	const g = S.game;
-	if (g.end_reason === "unscheduled") return "This game was closed before it was played.";
+	if (g.end_reason === "unscheduled") return tr("end.unscheduled");
 	const reasons = {
-		road: "by road",
-		"flat-win": "on flats",
-		resignation: "by resignation",
-		forfeit: "by forfeit: the player left the tournament",
-		timeout: "on time",
-		no_show: "for missing the first move",
-		no_shows: "as neither player came",
-		agreement: "by agreement",
-		line: "with a line",
-		five: "with five in a row",
-		connection: "by connecting their edges",
-		score: "on points",
-		discs: "on discs",
-		"no-moves": "because the opponent cannot move",
-		breakthrough: "by breaking through",
+		road: tr("end.road"),
+		"flat-win": tr("end.flat_win"),
+		resignation: tr("end.resignation"),
+		forfeit: tr("end.forfeit"),
+		timeout: tr("end.timeout"),
+		no_show: tr("end.no_show"),
+		no_shows: tr("end.no_shows"),
+		agreement: tr("end.agreement"),
+		line: tr("end.line"),
+		five: tr("end.five"),
+		connection: tr("end.connection"),
+		score: tr("end.score"),
+		discs: tr("end.discs"),
+		"no-moves": tr("end.no_moves"),
+		breakthrough: tr("end.breakthrough"),
 		draw: "",
 		retired: "",
-		cleared: "with every card home",
+		cleared: tr("end.cleared"),
 		// A game's own endings, in its own words (its page script's endReasons).
 		...(page().endReasons || {}),
 	};
-	const how = g.end_reason ? ` ${reasons[g.end_reason] || "(" + g.end_reason + ")"}` : "";
+	// Words that follow the result ("won on time"), after a space in a language that has them.
+	const gap = /^(zh|ja)/.test(lang) ? "" : " ";
+	const how = g.end_reason ? `${gap}${reasons[g.end_reason] || "(" + g.end_reason + ")"}` : "";
 	const detail = g.end_detail ? ` [${g.end_detail}]` : "";
 	if (playingAlone() && (g.winner_seat === null || g.winner_seat === undefined)) {
-		if (g.end_reason === "resignation") return "Game over — you gave up.";
-		if (g.end_reason === "stuck") return `Game over — no move is left${detail}.`;
-		return `Game over${g.end_detail ? `: ${g.end_detail}` : ""}.`;
+		if (g.end_reason === "resignation") return tr("end.you_gave_up");
+		if (g.end_reason === "stuck") return tr("end.no_move_left", { detail });
+		return g.end_detail ? tr("end.over_detail", { detail: g.end_detail }) : tr("end.over");
 	}
 	if (g.winner_seat === null || g.winner_seat === undefined) {
-		if (g.end_reason === "abandoned") return "Game over — its tournament was abandoned, so it has no result.";
+		if (g.end_reason === "abandoned") return tr("end.abandoned");
 		const drawn = page().drawnMessage && page().drawnMessage(g.end_reason, detail);
 		if (drawn) return drawn;
 		// Several seats may share a draw while the others lose, or every seat
 		// may lose.
-		if (g.all_lost) return `Game over — every player lost${how}${detail}.`;
+		if (g.all_lost) return tr("end.all_lost", { how, detail });
 		const sharing = g.drawn_seats || [];
 		if (sharing.length) {
-			const names = sharing.map((seat) => `${seatLabel(seat)} (${displayName(seat)})`).join(" and ");
-			if (S.me.seat) return sharing.includes(S.me.seat) ? `You share the draw with ${sharing.filter((x) => x !== S.me.seat).map((seat) => `${seatLabel(seat)} (${displayName(seat)})`).join(" and ")}${how}${detail}.` : `${names} share the draw${how}${detail}; you lost.`;
-			return `${names} share the draw${how}${detail}.`;
+			const and = new Intl.ListFormat(lang);
+			const named = (list) => and.format(list.map((seat) => `${seatLabel(seat)} (${displayName(seat)})`));
+			const names = named(sharing);
+			if (S.me.seat) return sharing.includes(S.me.seat) ? tr("end.you_share", { names: named(sharing.filter((x) => x !== S.me.seat)), how, detail }) : tr("end.they_share_you_lost", { names, how, detail });
+			return tr("end.they_share", { names, how, detail });
 		}
-		return `Game over — a draw${how ? " " + how : ""}${detail}.`;
+		return tr("end.draw", { how, detail });
 	}
 	const who = `${seatLabel(g.winner_seat)} (${displayName(g.winner_seat)})`;
-	if (S.me.seat) return g.winner_seat === S.me.seat ? `You won${how}${detail}! 🎉` : `${who} won${how}${detail}.`;
-	return `${who} won${how}${detail}.`;
+	if (S.me.seat && g.winner_seat === S.me.seat) return tr("end.you_won", { how, detail });
+	return tr("end.won", { who, how, detail });
 }
 
 // ---- connected / disconnected ---------------------------------------------------------------
@@ -3461,8 +3478,8 @@ function seatGlyph(seat) {
 function firstPlayerMark(seat) {
 	const rv = rulesetView();
 	if (!rv || rv.first !== seat || !rv.dir) return null;
-	const word = rv.dir < 0 ? "counter-clockwise" : "clockwise";
-	return h("span", { class: "first-mark", id: "first-mark", title: `First player, playing ${word}`, "aria-label": `First player, playing ${word}` }, rv.dir < 0 ? "↺" : "↻");
+	const word = rv.dir < 0 ? tr("game.counter_clockwise") : tr("game.clockwise");
+	return h("span", { class: "first-mark", id: "first-mark", title: word, "aria-label": word }, rv.dir < 0 ? "↺" : "↻");
 }
 
 /** A seat's colour for words: mixed with the text colour, so that it can be read on any theme. */
@@ -3485,8 +3502,8 @@ function seatStrip(seat) {
 	if (glyph) strip.style.setProperty("--seat-ink", seatInk(seat));
 	const direction = glyph ? firstPlayerMark(seat) : null;
 	if (direction) head.append(direction);
-	head.append(h("span", { class: "name" + (glyph ? " in-seat-ink" : "") }, seatName(seat) || "(open seat)"));
-	head.append(h("span", { class: "badge waiting seat-conn", title: "No connection to this player right now. It may be back in a moment." }, off ? "disconnected" : ""));
+	head.append(seatName(seat) ? h("span", { class: "name" + (glyph ? " in-seat-ink" : ""), translate: "no" }, seatName(seat)) : h("span", { class: "name" + (glyph ? " in-seat-ink" : "") }, tr("game.open_seat")));
+	head.append(h("span", { class: "badge waiting seat-conn", title: tr("game.no_connection") }, off ? tr("game.disconnected") : ""));
 	// A seat of two colours says which it is: the players know each other by these.
 	if (seatGradient(seat) && !(seatName(seat) || "").includes(seatLabel(seat))) head.append(seatWord(seat));
 	// At a table of many seats the faction is named beside its player (a bot's
@@ -3494,32 +3511,32 @@ function seatStrip(seat) {
 	if (!glyph && S.info.seats.length > 2 && seatLabel(seat) && !(seatName(seat) || "").startsWith(seatLabel(seat))) {
 		head.append(h("span", { class: "seat-faction small muted" }, seatLabel(seat)));
 	}
-	if (si && si.bot) head.append(h("span", { class: "badge bot" }, "bot"));
-	if (si && si.replaced) head.append(h("span", { class: "seat-replaced small muted" }, `replaced ${si.replaced.name}, who ${si.replaced.reason === "timeout" ? "ran out of time" : "was voted out"}`));
+	if (si && si.bot) head.append(h("span", { class: "badge bot" }, tr("game.bot")));
+	if (si && si.replaced) head.append(h("span", { class: "seat-replaced small muted" }, tr(si.replaced.reason === "timeout" ? "game.replaced_time" : "game.replaced_vote", { name: si.replaced.name })));
 	if (S.game.real_time && !(si && si.bot) && !isMine(seat) && S.me.seat) {
-		head.append(h("button", { class: "seat-kick small", hidden: !canVoteKick(seat), title: "Start a vote to have a tactical bot take this seat for good", onclick: () => confirmKick(seat) }, "Vote to replace"));
+		head.append(h("button", { class: "seat-kick small", hidden: !canVoteKick(seat), title: tr("game.kick_title"), onclick: () => confirmKick(seat) }, tr("game.vote_replace")));
 	}
 	// Who holds the seat: an account, by its handle, or a guest.
 	if (si && si.handle) head.append(handleBadge(si.handle, "badge account"));
-	else if (si && si.guest) head.append(h("span", { class: "badge guest", title: "A guest: anybody with no account" }, "guest"));
+	else if (si && si.guest) head.append(h("span", { class: "badge guest", title: tr("game.guest_title") }, tr("game.guest")));
 	if (si && si.rating) {
 		const change = (S.game.rating_changes || []).find((c) => c.seat === seat);
 		const moved = change ? change.after - change.before : 0;
 		head.append(
 			h(
 				"span",
-				{ class: "badge rating", "data-rating": String(si.rating.rating), title: si.rating.provisional ? "Rating, provisional: few recent games, so it could move a long way" : "Rating" },
+				{ class: "badge rating", "data-rating": String(si.rating.rating), title: si.rating.provisional ? tr("game.rating_provisional") : tr("game.rating") },
 				ratingText(si.rating.rating, si.rating.provisional) + (change ? ` (${moved >= 0 ? "+" : ""}${moved})` : "")
 			)
 		);
 	}
-	if (isMine(seat)) head.append(h("span", { class: "badge" }, "you"));
+	if (isMine(seat)) head.append(h("span", { class: "badge" }, tr("game.you")));
 	// The roles of a card game's round: the dealer, who holds the bonus card, who is on the leader's team.
 	const roles = S.info.cards ? rulesetView() : null;
 	if (roles) {
-		if (roles.dealer === seat) head.append(h("span", { class: "ct-badge", title: "Dealer" }, "D"));
-		if (roles.bonus === seat) head.append(h("span", { class: "ct-badge bonus", title: "Holds the x2 bonus card" }, "×2"));
-		if (roles.team && roles.team.includes(seat)) head.append(h("span", { class: "ct-badge team", title: "On the leader's team" }, "★"));
+		if (roles.dealer === seat) head.append(h("span", { class: "ct-badge", title: tr("game.dealer") }, tr("game.dealer_mark")));
+		if (roles.bonus === seat) head.append(h("span", { class: "ct-badge bonus", title: tr("game.bonus_title") }, "×2"));
+		if (roles.team && roles.team.includes(seat)) head.append(h("span", { class: "ct-badge team", title: tr("game.team_title") }, "★"));
 	}
 	head.append(h("span", { class: "grow" }));
 	const onClock = seatMsLeft(seat);
@@ -3532,20 +3549,20 @@ function seatStrip(seat) {
 				{
 					class: "clock" + (running ? " running" : "") + (onClock < 60000 ? " low" : ""),
 					"data-clock": String(seat),
-					title: (running ? "This clock is running" : "Time left on this player's clock") + (c.increment_seconds ? `, plus ${c.increment_seconds} s for each move` : ""),
+					title: c.increment_seconds ? tr("game.clock_increment", { title: running ? tr("game.clock_running") : tr("game.clock_left"), s: c.increment_seconds }) : running ? tr("game.clock_running") : tr("game.clock_left"),
 				},
 				"⏱ " + formatClock(onClock)
 			)
 		);
 	} else if (impulseSeat && msLeft() !== null) {
-		head.append(h("span", { class: "clock", "data-clock": "turn", title: "Time left to move" }, "⏱ " + formatClock(msLeft())));
+		head.append(h("span", { class: "clock", "data-clock": "turn", title: tr("game.time_to_move") }, "⏱ " + formatClock(msLeft())));
 	}
 	for (const sc of scores()) {
-		head.append(h("span", { class: "score", title: sc.label }, `${sc.label}: `, h("strong", {}, String(sc.per[seat]))));
+		head.append(h("span", { class: "score", title: sc.label }, tr("game.label_value", { label: sc.label }) + " ", h("strong", {}, String(sc.per[seat]))));
 	}
 	for (const ct of S.info.counters || []) {
 		const n = ((currentState().reserves || {})[color] || {})[ct.id] || 0;
-		head.append(h("span", { class: "score counter", title: ct.max ? `${ct.label}: ${n} of ${ct.max} to win` : ct.label, "data-counter": ct.id }, `${ct.label}: `, h("strong", {}, ct.max ? `${n}/${ct.max}` : String(n))));
+		head.append(h("span", { class: "score counter", title: ct.max ? tr("game.counter_to_win", { label: ct.label, n, max: ct.max }) : ct.label, "data-counter": ct.id }, tr("game.label_value", { label: ct.label }) + " ", h("strong", {}, ct.max ? `${n}/${ct.max}` : String(n))));
 	}
 	const rv = rulesetView();
 	const sv = rv && rv.seats ? rv.seats[String(seat)] : null;
@@ -3559,7 +3576,7 @@ function seatStrip(seat) {
 		head.append(stats);
 		for (const c of sv.counters || []) {
 			// A counter may say what its value is made of.
-			const title = `${c.label}: ${c.value}${c.max ? " of " + c.max : ""}${c.note ? " (" + c.note + ")" : ""}`;
+			const title = tr(c.max ? "game.counter_title_max" : "game.counter_title", { label: c.label, value: c.value, max: c.max }) + (c.note ? " (" + c.note + ")" : "");
 			const icon = statIcon(c.id, c.label, 15);
 			if (icon) {
 				// A counter with a pictogram shows it in place of its name.
@@ -3568,17 +3585,17 @@ function seatStrip(seat) {
 			}
 			const pips = h("span", { class: "counter-pip", "aria-hidden": "true" });
 			for (let i = 0; i < (c.max && c.max <= 10 ? c.max : 0); i++) pips.append(h("i", { class: `${c.id}${i < c.value ? " on" : ""}` }));
-			stats.append(h("span", { class: "score counter", title, "data-counter": c.id }, `${c.label}: `, h("strong", {}, String(c.value)), c.show_max ? `/${c.max}` : null, pips));
+			stats.append(h("span", { class: "score counter", title, "data-counter": c.id }, tr("game.label_value", { label: c.label }) + " ", h("strong", {}, String(c.value)), c.show_max ? `/${c.max}` : null, pips));
 		}
 	}
 	// A game of patience counts its moves, a take-back among them: the fewer a game is won in, the better (ADR 0135).
 	if (rv && typeof rv.moves === "number") {
-		const title = `${rv.moves === 1 ? "1 move" : `${rv.moves} moves`} so far: the fewer to win, the better`;
-		head.append(h("span", { class: "score counter stat", id: "seat-moves", title, "data-counter": "moves", "aria-label": title }, statIcon("moves", "Moves", 15), h("strong", {}, String(rv.moves))));
+		const title = tr("game.moves_so_far", { n: rv.moves });
+		head.append(h("span", { class: "score counter stat", id: "seat-moves", title, "data-counter": "moves", "aria-label": title }, statIcon("moves", tr("game.moves"), 15), h("strong", {}, String(rv.moves))));
 	}
 	strip.append(head);
 	if (sv && sv.taken && sv.taken.length) {
-		const stones = h("div", { class: "taken-stones", "aria-label": `Stones captured: ${sv.taken.join(", ")}` });
+		const stones = h("div", { class: "taken-stones", "aria-label": tr("game.stones_captured", { stones: sv.taken.join(", ") }) });
 		for (const stone of sv.taken) stones.append(h("span", { class: "taken-stone", "data-stone": stone }, pieceIcon("disc", stone, 16)));
 		strip.append(stones);
 	}
@@ -3587,7 +3604,7 @@ function seatStrip(seat) {
 		const whole = isMobileLayout();
 		const key = `seat-${seat}`;
 		strip.append(h("div", { class: "seat-more", hidden: !whole && S.expanded !== key }, factionCards(seat, sv)));
-		if (!whole) strip.append(expandToggle(key, `${seatLabel(seat) || seatName(seat)}'s details`));
+		if (!whole) strip.append(expandToggle(key, tr("game.details_of", { seat: seatLabel(seat) || seatName(seat) })));
 	}
 	const hand = handPanel(seat);
 	if (hand) strip.append(hand);
@@ -5144,11 +5161,11 @@ function refreshOptions() {
 						onclick: async () => {
 							try {
 								await navigator.clipboard.writeText(link);
-								toast("Link copied");
+								toast(tr("game.link_copied"));
 							} catch (_) {
 								linkInput.select();
 								document.execCommand && document.execCommand("copy");
-								toast("Link selected — copy it");
+								toast(tr("game.link_selected"));
 							}
 						},
 					},
