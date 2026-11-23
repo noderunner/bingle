@@ -4,6 +4,7 @@
 
 import { h, clear } from "./util.js";
 import { api } from "./api.js";
+import { t, tParts } from "./i18n.js";
 
 let mounted = false;
 
@@ -13,10 +14,10 @@ export function ratingText(rating, provisional) {
 }
 
 /** The fair-play rule, wherever rated play is offered or shown. */
-export const FAIR_PLAY = "Rated games are for people playing their own moves: using a bot or another program to choose them is against the rules.";
+export const FAIR_PLAY = t("rating.fair_play");
 
 function board(host, game) {
-	const table = h("div", { id: "leaderboard" }, h("p", { class: "muted small" }, "Loading…"));
+	const table = h("div", { id: "leaderboard" }, h("p", { class: "muted small" }, t("common.loading")));
 	clear(host);
 	host.append(table);
 	api.leaderboard(game.family)
@@ -28,7 +29,7 @@ function board(host, game) {
 					{ "data-handle": p.handle },
 					h("td", {}, String(p.rank)),
 					h("td", {}, "@" + p.handle),
-					h("td", { title: p.provisional ? "Provisional: this player has few recent games, so the rating could move a long way" : "" }, ratingText(p.rating, p.provisional)),
+					h("td", { title: p.provisional ? t("rating.provisional") : "" }, ratingText(p.rating, p.provisional)),
 					h("td", {}, String(p.games))
 				)
 			);
@@ -36,7 +37,7 @@ function board(host, game) {
 				h(
 					"div",
 					{ class: "table-scroll" },
-					h("table", { class: "data" }, h("thead", {}, h("tr", {}, ["", "Player", "Rating", "Rated games"].map((t) => h("th", {}, t)))), h("tbody", {}, rows))
+					h("table", { class: "data" }, h("thead", {}, h("tr", {}, ["", t("rating.player"), t("rating.rating"), t("rating.games")].map((head) => h("th", {}, head)))), h("tbody", {}, rows))
 				)
 			);
 		})
@@ -52,10 +53,10 @@ export async function mountRatings(host) {
 	mounted = true;
 	clear(host);
 	host.append(
-		h("p", { class: "muted small" }, "Each game has its own rating, across all its sizes and variants. Choose ", h("em", {}, "Rated game"), " when you set up a game of two with a game clock. You appear here after 5 rated games against at least 3 different people."),
+		h("p", { class: "muted small" }, ...tParts("rating.about", { rated: h("em", {}, t("setup.rated")) })),
 		h("p", { class: "muted small" }, FAIR_PLAY)
 	);
-	const pick = h("select", { id: "leaderboard-game", "aria-label": "Game" });
+	const pick = h("select", { id: "leaderboard-game", "aria-label": t("rating.game") });
 	const body = h("div", {});
 	host.append(h("div", { class: "field", id: "leaderboard-pick", hidden: true }, pick), body);
 	let games = [];
@@ -66,7 +67,7 @@ export async function mountRatings(host) {
 		return;
 	}
 	if (!games.length) {
-		body.append(h("p", { class: "muted", id: "leaderboard-empty" }, "Nobody has played enough rated games to be listed yet."));
+		body.append(h("p", { class: "muted", id: "leaderboard-empty" }, t("rating.empty")));
 		return;
 	}
 	for (const g of games) pick.append(h("option", { value: g.family }, g.name));

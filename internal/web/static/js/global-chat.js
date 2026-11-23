@@ -9,6 +9,7 @@ import { handleBadge } from "./friend-badge.js";
 import { h, store, lastName } from "./util.js";
 import { api, whoAmI } from "./api.js";
 import { emojiPicker } from "./chat.js";
+import { t, lang } from "./i18n.js";
 
 const MAX_LINES = 300;
 
@@ -22,8 +23,8 @@ function lastSeenID() {
 
 function clock(iso) {
 	// SQLite stores "YYYY-MM-DD HH:MM:SS" in UTC.
-	const t = Date.parse(String(iso || "").replace(" ", "T") + (/[zZ]|[+-]\d\d:?\d\d$/.test(iso || "") ? "" : "Z"));
-	return Number.isNaN(t) ? "" : new Date(t).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+	const at = Date.parse(String(iso || "").replace(" ", "T") + (/[zZ]|[+-]\d\d:?\d\d$/.test(iso || "") ? "" : "Z"));
+	return Number.isNaN(at) ? "" : new Date(at).toLocaleTimeString(lang, { hour: "2-digit", minute: "2-digit" });
 }
 
 /**
@@ -46,14 +47,14 @@ export function mountGlobalChat(host, { visible = () => true, onUnread = () => {
 		}
 	};
 
-	const log = h("ol", { class: "chat-log", id: "global-chat-log", "aria-live": "polite", "aria-label": "Global chat messages" });
+	const log = h("ol", { class: "chat-log", id: "global-chat-log", "aria-live": "polite", "aria-label": t("chat.messages") });
 	const nameInput = h("input", {
 		type: "text",
 		id: "global-chat-name",
 		class: "chat-name",
-		placeholder: "Your name",
+		placeholder: t("chat.your_name"),
 		maxlength: "32",
-		"aria-label": "Your name in the chat",
+		"aria-label": t("chat.name_label"),
 		value: store.get("bingle.chatname", "") || lastName() || "",
 		autocomplete: "nickname",
 	});
@@ -62,13 +63,13 @@ export function mountGlobalChat(host, { visible = () => true, onUnread = () => {
 		type: "text",
 		id: "global-chat-input",
 		class: "chat-input",
-		placeholder: "Say something to everyone…",
+		placeholder: t("chat.say_everyone"),
 		maxlength: "500",
 		autocomplete: "off",
-		"aria-label": "Chat message",
+		"aria-label": t("chat.message"),
 	});
 	const notice = h("p", { class: "small error chat-notice", id: "global-chat-notice", role: "status" });
-	const sendBtn = h("button", { type: "button", id: "global-chat-send", class: "primary" }, "Send");
+	const sendBtn = h("button", { type: "button", id: "global-chat-send", class: "primary" }, t("dm.send"));
 	const picker = emojiPicker(input);
 	const row = h("div", { class: "chat-entry" }, nameInput, picker.button, input, sendBtn);
 	// Everybody reads the room; an account writes in it, under its handle
@@ -76,7 +77,7 @@ export function mountGlobalChat(host, { visible = () => true, onUnread = () => {
 	whoAmI().then((me) => {
 		if (!(me.caps || []).includes("chat_global")) {
 			input.disabled = sendBtn.disabled = nameInput.disabled = true;
-			input.placeholder = "Sign in to write here";
+			input.placeholder = t("chat.sign_in");
 			return;
 		}
 		if (me.kind === "account") {
@@ -97,7 +98,7 @@ export function mountGlobalChat(host, { visible = () => true, onUnread = () => {
 	};
 	const draw = () => {
 		log.textContent = "";
-		if (!lines.length) log.append(h("li", { class: "chat-empty muted small" }, "Nobody has said anything yet."));
+		if (!lines.length) log.append(h("li", { class: "chat-empty muted small" }, t("chat.nobody")));
 		for (const l of lines) log.append(lineNode(l));
 		log.scrollTop = log.scrollHeight;
 	};
@@ -140,7 +141,7 @@ export function mountGlobalChat(host, { visible = () => true, onUnread = () => {
 			// The server's push may arrive first; receive ignores repeats.
 			receive(line, true);
 		} catch (err) {
-			notice.textContent = err.message || "The message was not sent.";
+			notice.textContent = err.message || t("dm.not_sent");
 			setTimeout(() => (notice.textContent = ""), 4000);
 		} finally {
 			sending = false;
@@ -156,7 +157,7 @@ export function mountGlobalChat(host, { visible = () => true, onUnread = () => {
 		}
 	});
 	host.append(
-		h("p", { class: "muted small" }, "Everyone who has this page open can read and write here. Be kind; the last few hundred messages are kept."),
+		h("p", { class: "muted small" }, t("chat.about")),
 		log,
 		picker.panel,
 		row,

@@ -73,7 +73,9 @@ that each translation puts in the same values and has the same markup as English
 - The browser tests run in English and select by id.
 - **Words left out**: `TestWebLanguages_*Translated` open a translated area in the pseudo-locale and fail on any
   plain English word in it (`plainEnglish` in `tests/app/languages_ui_test.go`). Names, handles, codes, the brand and
-  the games' own words (their names, descriptions, options, seats and tutorials, read from the API) are let through.
+  the games' own words (their names, descriptions, options, seats, tutorials and badges, read from the API) are let
+  through, and so is whatever stands in an element marked `translate="no"`: a name a player gave (a tournament's),
+  which no language translates.
   A translated area gets a test like it.
 - **Text that runs left to right inside a right-to-left page** (a version, "3–5P", a licence's name) goes in
   `<bdi>` or takes `dir="ltr"`, or the bidi algorithm reorders it.
@@ -85,8 +87,9 @@ that each translation puts in the same values and has the same markup as English
   Help, and moving a guest to another device; the turn-mail settings; "3 min ago"; the footer of every page.
 - The main page: the gallery, a game's setup (every option of Create Game, tutorials, deal history, active games),
   the puzzles, and the fun facts (`fact.*`).
+- The main page's other tabs (Analysis, Ratings, Tournaments, Global Chat), a tournament's page and the shelf of
+  badges. Dates and times follow the page's language (`lang` from `i18n.js`), not the browser's.
 
-Next, the main page's other tabs (Analysis, Ratings, Tournaments, Global Chat) with the badges and the welcome tour,
-then the game page (with the boards' descriptions for screen readers, which `render.js` writes), then the remaining
+Next, the welcome tour, then the game page (with the boards' descriptions for screen readers, which `render.js` writes), then the remaining
 pages (account, administration, tournaments, batches, a player's page), then the mail and the calendar invitations,
 then the changelog in the help window (ADR 0141, *Left for its stage*).

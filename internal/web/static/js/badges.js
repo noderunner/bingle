@@ -6,6 +6,7 @@
 import { h, clear, store } from "./util.js";
 import { api } from "./api.js";
 import { botIcon, trophyIcon } from "./ui-icons.js";
+import { t, lang } from "./i18n.js";
 
 const FILTER_KEY = "bingle.badges.filter";
 const SHOWN_KEY = "bingle.badges.shown";
@@ -25,8 +26,8 @@ export function badgeCatalog() {
 
 /** The day a badge was earned, in the reader's own way of writing dates. */
 function earned(iso) {
-	const t = Date.parse(iso || "");
-	return Number.isNaN(t) ? "" : new Date(t).toLocaleDateString([], { year: "numeric", month: "short", day: "numeric" });
+	const at = Date.parse(iso || "");
+	return Number.isNaN(at) ? "" : new Date(at).toLocaleDateString(lang, { year: "numeric", month: "short", day: "numeric" });
 }
 
 /**
@@ -121,17 +122,17 @@ export function medal(b, unearned, markSize = 14) {
 		"span",
 		{ class: "badge-medal" + (unearned ? " unearned" : "") + (src ? " has-icon" : ""), "aria-hidden": "true" },
 		src ? h("img", { class: "badge-icon", src, alt: "", decoding: "async" }) : trophyIcon(),
-		ways.bots ? h("span", { class: "medal-mark medal-bot", title: "Earned in a game with computer opponents" }, botIcon(markSize)) : null,
-		ways.people ? h("span", { class: "medal-mark medal-people", title: "Earned in a game of people only" }, "★") : null
+		ways.bots ? h("span", { class: "medal-mark medal-bot", title: t("badge.with_bots") }, botIcon(markSize)) : null,
+		ways.people ? h("span", { class: "medal-mark medal-people", title: t("badge.with_people") }, "★") : null
 	);
 }
 
 /** How a held badge was earned, in words for a screen reader. */
 function waysText(b) {
 	const w = b.ways || {};
-	if (w.people && w.bots) return "Earned with people only and with computer opponents.";
-	if (w.bots) return "Earned with computer opponents.";
-	if (w.people) return "Earned with people only.";
+	if (w.people && w.bots) return t("badge.both_ways");
+	if (w.bots) return t("badge.bots_way");
+	if (w.people) return t("badge.people_way");
 	return "";
 }
 
@@ -139,7 +140,7 @@ function waysText(b) {
 export function badgeItem(b, { mine = false, alsoMine = false } = {}) {
 	const a = b.award;
 	const unearned = !a && mine;
-	const where = a ? [a.game, earned(a.awarded_at)].filter(Boolean).join(", ") : unearned ? "Not earned yet" : "";
+	const where = a ? [a.game, earned(a.awarded_at)].filter(Boolean).join(", ") : unearned ? t("badge.not_yet_earned") : "";
 	return h(
 		"li",
 		{
@@ -154,9 +155,9 @@ export function badgeItem(b, { mine = false, alsoMine = false } = {}) {
 			{ class: "badge-body" },
 			h("strong", { class: "badge-name" }, b.name),
 			h("span", { class: "small" }, b.description),
-			where ? h("span", { class: "small muted" }, where + (a && a.hidden ? " · others see it when the game ends" : "")) : null,
+			where ? h("span", { class: "small muted" }, where + (a && a.hidden ? " · " + t("badge.others_later") : "")) : null,
 			waysText(b) ? h("span", { class: "sr-only" }, waysText(b)) : null,
-			alsoMine ? h("span", { class: "small badge-also" }, "You have this too") : null
+			alsoMine ? h("span", { class: "small badge-also" }, t("badge.you_too")) : null
 		)
 	);
 }
@@ -188,7 +189,7 @@ export async function paintShelf(box, { held, mine = false, mineHeld = null, fam
 	const groups = [];
 	for (const b of items) {
 		const g = groupOf(b);
-		if (!groups.some(([v]) => v === g)) groups.push([g, g === "platform" ? "Platform" : b.game || g]);
+		if (!groups.some(([v]) => v === g)) groups.push([g, g === "platform" ? t("badge.platform") : b.game || g]);
 	}
 	groups.sort((x, y) => (x[0] === "platform" ? -1 : y[0] === "platform" ? 1 : x[1].localeCompare(y[1])));
 
@@ -200,7 +201,7 @@ export async function paintShelf(box, { held, mine = false, mineHeld = null, fam
 		clear(box);
 		if (!family && groups.length > 1) {
 			box.append(
-				chips("Show the badges of", "badge-filter", [["all", "All"], ...groups], filter, (v) => {
+				chips(t("badge.show_of"), "badge-filter", [["all", t("badge.all")], ...groups], filter, (v) => {
 					filter = v;
 					store.set(FILTER_KEY, v);
 					paint();
@@ -209,7 +210,7 @@ export async function paintShelf(box, { held, mine = false, mineHeld = null, fam
 		}
 		if (mine && !family) {
 			box.append(
-				chips("Show", "badge-shown", [["all", "All"], ["earned", "Earned"], ["unearned", "Not yet"]], shown, (v) => {
+				chips(t("badge.show"), "badge-shown", [["all", t("badge.all")], ["earned", t("badge.earned_filter")], ["unearned", t("badge.not_yet")]], shown, (v) => {
 					shown = v;
 					store.set(SHOWN_KEY, v);
 					paint();
@@ -218,7 +219,7 @@ export async function paintShelf(box, { held, mine = false, mineHeld = null, fam
 		}
 		const visible = items.filter((b) => (filter === "all" || groupOf(b) === filter) && (shown === "all" || (shown === "earned") === Boolean(b.award)));
 		if (!visible.length) {
-			box.append(h("p", { class: "muted small badges-none" }, held.length || mine ? "No badges here." : "No badges yet."));
+			box.append(h("p", { class: "muted small badges-none" }, held.length || mine ? t("badge.none_here") : t("friend.no_badges")));
 			return;
 		}
 		box.append(h("ul", { class: "badge-list" }, ...visible.map((b) => badgeItem(b, { mine, alsoMine: !mine && ownIds.has(b.badge) }))));
