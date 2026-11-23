@@ -4,7 +4,9 @@ package app_test
 // Arabic with its board left to right.
 
 import (
+	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -108,27 +110,59 @@ func TestWebLanguages_APhoneInArabicTurnsItsPagesTheOtherWay(t *testing.T) {
 // pseudo-locale (en-XA, whose every word is accented and bracketed): words left
 // out of the catalogs. Names, codes and the brand are not words to translate.
 const plainEnglish = `((sel) => {
-	const keep = /^(Bingle|GitHub|API|bingle|v?[0-9.]+|[A-Z0-9]{4,8}|bgg_…|https?:\/\/\S+)$/;
+	const keep = /^(Bingle|GitHub|API|bingle|v?[0-9.]+|[A-Z0-9]{4,8}|bgg_…|https?:\/\/\S+|\[Size .*)$/s;
+	// A board's or a card table's picture is the renderer's to describe (the game page's part).
+	const pictures = ".game-card-preview, .setup-preview, .puzzle-preview, #card-set-preview";
+	const accented = /[\u00C0-\u024F\u1E00-\u1EFF]/;
+	const words = (text) => text.split(/[\s·,:()\[\]]+/);
+	// A plain English word: not accented, not a handle, not the games' own (window.__content).
+	const english = (word) =>
+		/[A-Za-z]{2,}/.test(word) && !word.startsWith("@") && !keep.test(word) && !accented.test(word) &&
+		!(window.__content && window.__content.has(word.replace(/[.!?;"“”'’]+$/, "")));
 	const out = [];
 	for (const root of document.querySelectorAll(sel)) {
 		const walk = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
 		for (let n = walk.nextNode(); n; n = walk.nextNode()) {
 			const el = n.parentElement;
-			if (!el || el.closest("[hidden], .help-changes-body, code, .voice-name, .handle-badge, script, style") || !el.getClientRects().length) continue;
-			for (const word of n.textContent.split(/[\s·,:()\[\]]+/)) {
-				if (/[A-Za-z]{2,}/.test(word) && !word.startsWith("@") && !keep.test(word) && !/[À-ɏḀ-ỿ]/.test(word)) out.push(word);
-			}
+			if (!el || el.closest("[hidden], .help-changes-body, code, .voice-name, .handle-badge, script, style, " + pictures) || !el.getClientRects().length) continue;
+			for (const word of words(n.textContent)) if (english(word)) out.push(word);
 		}
 		for (const el of root.querySelectorAll("[title], [aria-label], [placeholder]")) {
-			if (el.closest("[hidden]")) continue;
+			if (el.closest("[hidden], " + pictures)) continue;
 			for (const a of ["title", "aria-label", "placeholder"]) {
 				const v = el.getAttribute(a);
-				if (v && /[A-Za-z]{2,}/.test(v) && !keep.test(v) && !/[À-ɏḀ-ỿ]/.test(v)) out.push(a + "=" + v);
+				if (v && !keep.test(v) && !accented.test(v) && words(v).some(english)) out.push(a + "=" + v);
 			}
 		}
 	}
 	return [...new Set(out)].join(" | ");
 })`
+
+// learnContent gathers into window.__content every word of the games' own content
+// (names, descriptions, variants, seats, tutorials) and of the bots: it stays as
+// it is in every language (#253), so plainEnglish passes it.
+func learnContent(t *testing.T, ctx context.Context) {
+	t.Helper()
+	if !awaitBool(t, ctx, `(async () => {
+		const words = new Set();
+		const add = (v) => {
+			if (typeof v === "string") for (const w of v.split(/[\s·,:()\[\]]+/)) words.add(w.replace(/[.!?;"“”'’]+$/, ""));
+			else if (Array.isArray(v)) v.forEach(add);
+			else if (v && typeof v === "object") Object.values(v).forEach(add);
+		};
+		const defs = await (await fetch("/api/game-defs")).json();
+		add(defs);
+		for (const d of defs) {
+			add(await (await fetch("/api/game-defs/" + encodeURIComponent(d.id))).json().catch(() => null));
+			if (d.tutorials) add(await (await fetch("/api/game-defs/" + encodeURIComponent(d.id) + "/tutorials")).json().catch(() => null));
+		}
+		add(await (await fetch("/api/bots")).json());
+		window.__content = words;
+		return words.size > 0;
+	})()`) {
+		t.Fatal("no game content learnt")
+	}
+}
 
 // In the pseudo-locale every word of the top bar and its windows comes from the
 // catalogs: none is plain English.
@@ -191,4 +225,51 @@ func TestWebLanguages_TheTopBarIsTranslatedForAnAccount(t *testing.T) {
 	if got := evalString(t, ctx, plainEnglish+`("#friends-dialog")`); got != "" {
 		t.Errorf("a correspondence: %s", got)
 	}
+}
+
+// So is every word of the main page: the gallery, a game's setup with its
+// options, the deal history, tutorials and active games, and the puzzles.
+func TestWebLanguages_TheMainPageIsTranslated(t *testing.T) {
+	base := newRESTTestServer(t)
+	ctx, cancel := newChromedpContext(t, 120*time.Second)
+	defer cancel()
+	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1200, 900), chromedp.Navigate(base+"/healthz"), chromedp.Evaluate(`document.cookie = "bingle_lang=en-XA; path=/"; true`, nil), chromedp.Navigate(base+"/")); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "the gallery", `document.querySelector(".game-card")`, 20*time.Second)
+	learnContent(t, ctx)
+	check := func(what string) {
+		t.Helper()
+		time.Sleep(400 * time.Millisecond)
+		if got := evalString(t, ctx, plainEnglish+`("main")`); got != "" {
+			t.Errorf("%s: %s", what, got)
+		}
+	}
+	check("the gallery")
+	families := strings.Fields(evalString(t, ctx, `[...document.querySelectorAll(".game-card")].map((c) => c.dataset.family).join(" ")`))
+	if len(families) < 10 {
+		t.Fatalf("the gallery has %d games", len(families))
+	}
+	for _, family := range families {
+		clickSel(t, ctx, `.game-card[data-family="`+family+`"]`)
+		waitJS(t, ctx, "the setup of "+family, `!document.getElementById("game-setup").hidden`, 10*time.Second)
+		check("the setup of " + family)
+		// The opponents' choices change the form: the bots, and importing a move log.
+		if evalBool(t, ctx, `!!document.getElementById("opponent-bots")`) {
+			evalBool(t, ctx, `(document.querySelector("#opponent-bots input").click(), true)`)
+			check(family + " with two bots")
+			evalBool(t, ctx, `(document.querySelector('input[name="opponent"][value=""]').click(), true)`)
+		}
+		for _, tab := range []string{"tutorials", "active", "deals"} {
+			if evalBool(t, ctx, `!document.getElementById("setup-tab-`+tab+`").hidden`) {
+				clickSel(t, ctx, "#setup-tab-"+tab)
+				check(family + "'s " + tab)
+			}
+		}
+		clickSel(t, ctx, "#setup-tab-new")
+		clickSel(t, ctx, "#setup-back")
+	}
+	clickSel(t, ctx, "#tab-puzzles")
+	waitJS(t, ctx, "the puzzles", `document.querySelector(".puzzle-card")`, 15*time.Second)
+	check("the puzzles")
 }

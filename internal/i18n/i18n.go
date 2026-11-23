@@ -254,7 +254,8 @@ func T(code, key string, params ...any) string {
 }
 
 // HTML is T for a template: the words of a "_html" key are markup, the values
-// put into them escaped; any other key's are text, which the template escapes.
+// put into them escaped unless they are template.HTML (a field the template
+// put inside the sentence); any other key's are text, which the template escapes.
 func HTML(code, key string, params ...any) template.HTML {
 	if !strings.HasSuffix(key, "_html") {
 		return template.HTML(html.EscapeString(T(code, key, params...)))
@@ -313,7 +314,8 @@ func fill(s string, params []any, escape bool) string {
 	for i := 0; i+1 < len(params); i += 2 {
 		name, _ := params[i].(string)
 		val := fmt.Sprint(params[i+1])
-		if escape {
+		// Markup the template made (a field inside a sentence) goes in as it is.
+		if _, markup := params[i+1].(template.HTML); escape && !markup {
 			val = html.EscapeString(val)
 		}
 		s = strings.ReplaceAll(s, "{"+name+"}", val)

@@ -71,14 +71,22 @@ that each translation puts in the same values and has the same markup as English
 - **Right to left**: choose العربية in the setting. `TestWebLanguages_*` checks that the page is mirrored and the
   board is not.
 - The browser tests run in English and select by id.
+- **Words left out**: `TestWebLanguages_*Translated` open a translated area in the pseudo-locale and fail on any
+  plain English word in it (`plainEnglish` in `tests/app/languages_ui_test.go`). Names, handles, codes, the brand and
+  the games' own words (their names, descriptions, options, seats and tutorials, read from the API) are let through.
+  A translated area gets a test like it.
+- **Text that runs left to right inside a right-to-left page** (a version, "3–5P", a licence's name) goes in
+  `<bdi>` or takes `dir="ltr"`, or the bidi algorithm reorders it.
 
 ## What is translated so far
 
 - The profile window and the profile page.
 - The top bar and its windows: Active Games, Join Game, Friends (with direct messages and calls), the call's panel,
   Help, and moving a guest to another device; the turn-mail settings; "3 min ago"; the footer of every page.
+- The main page: the gallery, a game's setup (every option of Create Game, tutorials, deal history, active games),
+  the puzzles, and the fun facts (`fact.*`).
 
-Next, the main page, the game page and the remaining pages (account, administration, tournaments, batches, a player's
-page), then the mail and the calendar invitations, then the changelog in the help window (ADR 0141, *Left for its
-stage*). `TestWebLanguages_TheTopBarIsTranslated` opens every window of the top bar in the pseudo-locale and fails on
-any plain English word in it: a translated area gets a test like it.
+Next, the main page's other tabs (Analysis, Ratings, Tournaments, Global Chat) with the badges and the welcome tour,
+then the game page (with the boards' descriptions for screen readers, which `render.js` writes), then the remaining
+pages (account, administration, tournaments, batches, a player's page), then the mail and the calendar invitations,
+then the changelog in the help window (ADR 0141, *Left for its stage*).

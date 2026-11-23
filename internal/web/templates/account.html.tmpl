@@ -224,7 +224,7 @@
 		{{end}}
 	</main>
 
-	<footer class="site-footer"><sub title="{{t .Lang "footer.version" "brand" brandFooter}}">{{brandFooter}} v{{engineVersion}} · {{t .Lang "footer.license"}} · <a href="https://github.com/noderunner/bingle" target="_blank" rel="noopener noreferrer">GitHub</a></sub></footer>
+	<footer class="site-footer"><sub title="{{t .Lang "footer.version" "brand" brandFooter}}"><bdi>{{brandFooter}} v{{engineVersion}}</bdi> · <bdi>{{t .Lang "footer.license"}}</bdi> · <a href="https://github.com/noderunner/bingle" target="_blank" rel="noopener noreferrer">GitHub</a></sub></footer>
 
 	<!-- First, so a fault in any module below is reported (docs/observability.md). -->
 	<script type="module" src="/static/js/errors.js"></script>

@@ -6,11 +6,12 @@
 import { h, store, lastName } from "./util.js";
 import { api } from "./api.js";
 import { finishedTutorials } from "./tutorial.js";
+import { t } from "./i18n.js";
 
 const KINDS = [
-	["rules", "Learn the rules"],
-	["strategy", "Strategy"],
-	["variant", "Variants"],
+	["rules", "tutorial.rules"],
+	["strategy", "tutorial.strategy"],
+	["variant", "tutorial.variants"],
 ];
 
 /**
@@ -22,57 +23,57 @@ const KINDS = [
 export function tutorialList(family, tutorials, { compact = false } = {}) {
 	const root = h("div", { class: "tutorial-list" + (compact ? " compact" : ""), "data-family": family });
 	if (!tutorials.length) {
-		root.append(h("p", { class: "muted" }, "This game has no tutorials yet."));
+		root.append(h("p", { class: "muted" }, t("tutorial.none")));
 		return root;
 	}
 	const error = h("p", { class: "error tutorial-error", role: "alert", hidden: true });
 	const done = finishedTutorials(store);
 
-	const start = async (t, button) => {
+	const start = async (tut, button) => {
 		const name = lastName();
 		error.hidden = true;
 		button.disabled = true;
 		try {
-			const res = await api.startTutorial({ game_def_id: family, tutorial: t.id, player_name: name });
+			const res = await api.startTutorial({ game_def_id: family, tutorial: tut.id, player_name: name });
 			location.assign(`/game/${res.room_code}`);
 		} catch (err) {
 			button.disabled = false;
-			error.textContent = err.message || "The tutorial could not be started.";
+			error.textContent = err.message || t("tutorial.failed");
 			error.hidden = false;
 		}
 	};
 
-	const isDone = (t) => !!t.done || done.has(`${family}/${t.id}`);
-	const completed = (title) => h("span", { class: "badge done", title }, "✓ Completed");
-	const item = (t, n) => {
-		const finished = isDone(t);
-		const button = h("button", { type: "button", class: finished ? "secondary" : "", "data-tutorial": t.id }, finished ? "Again" : "Start");
-		button.addEventListener("click", () => start(t, button));
+	const isDone = (tut) => !!tut.done || done.has(`${family}/${tut.id}`);
+	const completed = (title) => h("span", { class: "badge done", title }, t("tutorial.completed"));
+	const item = (tut, n) => {
+		const finished = isDone(tut);
+		const button = h("button", { type: "button", class: finished ? "secondary" : "", "data-tutorial": tut.id }, finished ? t("tutorial.again") : t("tutorial.start"));
+		button.addEventListener("click", () => start(tut, button));
 		return h(
 			"li",
-			{ "data-tutorial": t.id },
+			{ "data-tutorial": tut.id },
 			h(
 				"div",
 				{ class: "tutorial-item-text" },
 				n ? h("span", { class: "tutorial-step" }, `${n}.`) : null,
-				h("strong", {}, t.title),
-				finished ? completed("You have finished this tutorial") : null,
-				!compact && t.summary ? h("div", { class: "muted small" }, t.summary) : null
+				h("strong", {}, tut.title),
+				finished ? completed(t("tutorial.finished_title")) : null,
+				!compact && tut.summary ? h("div", { class: "muted small" }, tut.summary) : null
 			),
 			button
 		);
 	};
 
 	for (const [kind, heading] of KINDS) {
-		const ofKind = tutorials.filter((t) => t.kind === kind);
+		const ofKind = tutorials.filter((tut) => tut.kind === kind);
 		if (!ofKind.length) continue;
-		if (!compact) root.append(h("h3", {}, heading));
+		if (!compact) root.append(h("h3", {}, t(heading)));
 		// The tutorials of a series come together, in its order; a tutorial that names none is a series of its own.
 		const series = new Map();
-		for (const t of ofKind) {
-			const key = t.series ? "series:" + t.series : "own:" + t.id;
+		for (const tut of ofKind) {
+			const key = tut.series ? "series:" + tut.series : "own:" + tut.id;
 			if (!series.has(key)) series.set(key, []);
-			series.get(key).push(t);
+			series.get(key).push(tut);
 		}
 		let loose = null;
 		for (const list of series.values()) {
@@ -84,12 +85,12 @@ export function tutorialList(family, tutorials, { compact = false } = {}) {
 			}
 			loose = null;
 			const ul = h("ul", { class: "tutorial-items" });
-			list.forEach((t, i) => ul.append(item(t, i + 1)));
+			list.forEach((tut, i) => ul.append(item(tut, i + 1)));
 			root.append(
 				h(
 					"section",
-					{ class: "tutorial-series", "data-series": name, "aria-label": `${name}, a series of tutorials` },
-					h("div", { class: "tutorial-series-name" }, h("span", {}, name), h("span", { class: "muted small" }, list.length === 1 ? "1 tutorial" : `${list.length} tutorials`), list.every(isDone) ? completed("You have finished every tutorial of this series") : null),
+					{ class: "tutorial-series", "data-series": name, "aria-label": t("tutorial.series", { name }) },
+					h("div", { class: "tutorial-series-name" }, h("span", {}, name), h("span", { class: "muted small" }, t("tutorial.count", { n: list.length })), list.every(isDone) ? completed(t("tutorial.series_done")) : null),
 					ul
 				)
 			);

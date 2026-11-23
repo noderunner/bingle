@@ -34,7 +34,7 @@ func TestEngineVersion_IsSemverAndShownInTheFooterOfEveryPage(t *testing.T) {
 		}
 		body, _ := io.ReadAll(resp.Body)
 		_ = resp.Body.Close()
-		want := fmt.Sprintf(`<footer class="site-footer"><sub title="The version of the bingle engine">bingle v%s · MIT License · <a href="https://github.com/noderunner/bingle" target="_blank" rel="noopener noreferrer">GitHub</a></sub></footer>`, version.Engine)
+		want := fmt.Sprintf(`<footer class="site-footer"><sub title="The version of the bingle engine"><bdi>bingle v%s</bdi> · <bdi>MIT License</bdi> · <a href="https://github.com/noderunner/bingle" target="_blank" rel="noopener noreferrer">GitHub</a></sub></footer>`, version.Engine)
 		if !regexp.MustCompile(regexp.QuoteMeta(want)).Match(body) {
 			t.Errorf("%s: no footer with the engine version", path)
 		}

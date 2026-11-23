@@ -19,6 +19,7 @@ import { mountGlobalChat } from "./global-chat.js";
 import { installNav, navigate, onLeave } from "./nav.js";
 import { tutorialList } from "./tutorials-ui.js";
 import { solitairePreview } from "./solitaire.js";
+import { t, forwardKey, backKey } from "./i18n.js";
 
 installNav();
 
@@ -231,7 +232,7 @@ async function renderSetupDeals() {
 				type: "button",
 				class: "deal-seed",
 				"data-seed": d.seed,
-				title: "Deal it again: this fills in Deal on Create Game",
+				title: t("setup.deal_again"),
 				onclick: () => {
 					document.getElementById("seed").value = d.seed;
 					showSetupTab("new");
@@ -239,15 +240,15 @@ async function renderSetupDeals() {
 			},
 			d.seed
 		);
-		const score = d.won ? (d.moves === 1 ? "1 move" : `${d.moves} moves`) : "Not won";
+		const score = d.won ? t("setup.moves", { n: d.moves }) : t("setup.not_won");
 		const played = d.ended_at ? new Date(d.ended_at.replace(" ", "T") + (/[Zz+]/.test(d.ended_at) ? "" : "Z")).toLocaleDateString() : "";
 		list.append(
 			h(
 				"tr",
 				{ "data-room": d.room_code },
 				h("td", {}, seed),
-				h("td", { class: "deal-score" }, score, d.chosen ? h("span", { class: "muted small", title: "A deal you chose keeps no best score" }, " (chosen)") : null),
-				h("td", {}, h("a", { href: "/game/" + d.room_code }, played || "the game"))
+				h("td", { class: "deal-score" }, score, d.chosen ? h("span", { class: "muted small", title: t("setup.chosen_title") }, " " + t("setup.chosen")) : null),
+				h("td", {}, h("a", { href: "/game/" + d.room_code }, played || t("setup.the_game")))
 			)
 		);
 	}
@@ -323,12 +324,12 @@ function inVersion(d, version, family) {
 /** The choice of a prototype's rules: which version, and a word on what that means. */
 function rulesVersionPicker(d, family) {
 	const picker = h("select", { id: "setup-rules-version", onchange: (ev) => chooseGame(inVersion(d, ev.target.value, family)) });
-	rulesVersions(family).forEach((v, i) => picker.append(h("option", { value: v, selected: v === d.version }, i === 0 ? `${v} (newest)` : v)));
+	rulesVersions(family).forEach((v, i) => picker.append(h("option", { value: v, selected: v === d.version }, i === 0 ? t("setup.newest", { version: v }) : v)));
 	picker.value = d.version;
 	return [
-		h("label", { class: "setup-variant-label", for: "setup-rules-version" }, "Rules version"),
+		h("label", { class: "setup-variant-label", for: "setup-rules-version" }, t("setup.rules_version")),
 		picker,
-		h("p", { class: "muted small setup-prototype-note" }, "This game is a prototype: its rules are still changing. A game keeps the version it starts with."),
+		h("p", { class: "muted small setup-prototype-note" }, t("setup.prototype_note")),
 	];
 }
 
@@ -347,7 +348,7 @@ function renderSetupHead(d) {
 	const picker = h("select", { id: "setup-variant", onchange: (ev) => chooseGame(ev.target.value) });
 	for (const v of sortedFamily(list)) picker.append(h("option", { value: v.id, selected: v.id === d.id }, v.name));
 	picker.value = d.id;
-	host.append(h("label", { class: "setup-variant-label", for: "setup-variant" }, "Variant"), picker);
+	host.append(h("label", { class: "setup-variant-label", for: "setup-variant" }, t("setup.variant")), picker);
 }
 
 // The tutorials offered with each game, fetched once.
@@ -438,7 +439,7 @@ function applyStartMode() {
 	const bots = botMatchChosen();
 	createForm.dataset.mode = importing ? "import" : "new";
 	createForm.dataset.opponent = bots ? "bots" : "";
-	document.getElementById("create-submit").textContent = importing ? "Import Game" : bots ? "Watch the Bots" : "Create Game";
+	document.getElementById("create-submit").textContent = importing ? t("setup.import_game") : bots ? t("setup.watch_bots") : t("setup.create_game");
 }
 
 // ---- two bots playing each other ---------------------------------------------------------
@@ -483,7 +484,7 @@ async function startBotMatch(err) {
 async function importFromLog(err) {
 	const text = document.getElementById("import-text").value;
 	if (!text.trim()) {
-		showError(err, "Paste a game record or choose a file first.");
+		showError(err, t("setup.paste_first"));
 		return;
 	}
 	const id = document.getElementById("game_def_id").value;
@@ -514,7 +515,7 @@ function renderSeatChoices(info) {
 	if (!info.seats.some((s) => s.seat === want)) want = info.seats[0].seat;
 	clear(host);
 	info.seats.forEach((seat, i) => {
-		const text = info.seats.length === 2 ? ["First", "Second"][i] : seat.label;
+		const text = info.seats.length === 2 ? [t("setup.first"), t("setup.second")][i] : seat.label;
 		host.append(
 			h(
 				"label",
@@ -606,7 +607,7 @@ function paintSeatFactions() {
 		clear(cell);
 		cell.dataset.value = id || "";
 		if (id) cell.append(picker.glyph(id, 22), h("strong", {}, picker.factionName(id)));
-		else cell.append(h("span", { class: "muted" }, "Choose a faction"));
+		else cell.append(h("span", { class: "muted" }, t("setup.choose_faction")));
 	}
 	syncPoolLobby();
 }
@@ -892,9 +893,9 @@ function boundTimeField(input) {
 function addScheduleSlot() {
 	const host = document.getElementById("schedule-slots");
 	if (host.children.length >= 20) return;
-	const input = h("input", { type: "datetime-local", class: "schedule-slot", "aria-label": "A time to offer" });
+	const input = h("input", { type: "datetime-local", class: "schedule-slot", "aria-label": t("setup.time_to_offer") });
 	boundTimeField(input);
-	const row = h("div", { class: "row" }, input, h("button", { type: "button", class: "ghost small", title: "Remove this time", onclick: () => row.remove() }, "✕"));
+	const row = h("div", { class: "row" }, input, h("button", { type: "button", class: "ghost small", title: t("setup.remove_time"), onclick: () => row.remove() }, "✕"));
 	host.append(row);
 }
 
@@ -912,7 +913,7 @@ async function renderScheduleField() {
 		document.getElementById("schedule-details").hidden = mode === "now";
 		document.getElementById("schedule-time-row").hidden = mode !== "time";
 		document.getElementById("schedule-slots-row").hidden = mode !== "windows";
-		document.getElementById("create-submit").textContent = mode === "now" ? "Create Game" : "Schedule Game";
+		document.getElementById("create-submit").textContent = mode === "now" ? t("setup.create_game") : t("setup.schedule_game");
 		// A scheduled game always gathers in a lobby.
 		document.getElementById("lobby-field").hidden = mode !== "now";
 		if (mode === "windows" && !document.getElementById("schedule-slots").children.length) addScheduleSlot();
@@ -928,12 +929,12 @@ async function renderScheduleField() {
 		document.getElementById("invite-only")?.addEventListener("change", (ev) => (ev.target.dataset.touched = "1"));
 		boundTimeField(document.getElementById("schedule-at"));
 		const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-		document.getElementById("schedule-tz").textContent = zone ? `Times are in your time zone, ${zone}.` : "Times are in your time zone.";
+		document.getElementById("schedule-tz").textContent = zone ? t("setup.tz", { zone }) : t("setup.tz_unknown");
 	}
 	const friends = document.getElementById("schedule-friends");
 	clear(friends);
 	for (const f of setupFriends) {
-		friends.append(h("label", { class: "check" }, h("input", { type: "checkbox", class: "schedule-friend", value: f.handle }), h("span", {}, `Invite ${f.name}`)));
+		friends.append(h("label", { class: "check" }, h("input", { type: "checkbox", class: "schedule-friend", value: f.handle }), h("span", {}, t("setup.invite_name", { name: f.name }))));
 	}
 	sync();
 }
@@ -949,12 +950,12 @@ function scheduleChoice() {
 	}
 	if (scheduleMode() === "time") {
 		const value = document.getElementById("schedule-at").value;
-		if (!value) throw new Error("Choose a time for the game.");
+		if (!value) throw new Error(t("setup.choose_time"));
 		return { at: new Date(value).toISOString(), invite };
 	}
 	const slots = [...field.querySelectorAll(".schedule-slot")].map((i) => i.value).filter(Boolean).map((v) => new Date(v).toISOString());
-	if (!slots.length) throw new Error("Choose at least one time to offer.");
-	if (!invite.length) throw new Error("Invite somebody to answer the times.");
+	if (!slots.length) throw new Error(t("setup.choose_times"));
+	if (!invite.length) throw new Error(t("setup.invite_somebody"));
 	return { slots, invite };
 }
 
@@ -1031,7 +1032,7 @@ function renderSlots(info) {
 	const variants = document.getElementById("setup-variants");
 	if (variants) variants.hidden = !!picker;
 	if (picker) field.append(picker.el);
-	field.append(h("div", { class: "section-head" }, h("h3", {}, "Seats")));
+	field.append(h("div", { class: "section-head" }, h("h3", {}, t("setup.seats"))));
 	const rows = h("div", { class: "stack" });
 	const remember = () => {
 		for (const sel of rows.querySelectorAll(".slot-select")) slotMemory.set(Number(sel.dataset.seat), sel.value);
@@ -1039,14 +1040,14 @@ function renderSlots(info) {
 	const fallback = botList.some((b) => b.id === "tactical") ? "bot:tactical" : "open";
 	info.seats.forEach((seat, i) => {
 		const select = h("select", { class: "slot-select", "data-seat": seat.seat, "aria-label": `${seat.label}` });
-		select.append(h("option", { value: "me" }, "You"));
-		select.append(h("option", { value: "open" }, "A friend (open seat)"));
+		select.append(h("option", { value: "me" }, t("setup.you")));
+		select.append(h("option", { value: "open" }, t("setup.open_seat")));
 		if (setupFriends.length) {
-			const group = h("optgroup", { label: "Reserve for a friend" });
+			const group = h("optgroup", { label: t("setup.reserve_group") });
 			for (const f of setupFriends) group.append(h("option", { value: "friend:" + f.handle }, f.name));
 			select.append(group);
 		}
-		for (const b of botList) select.append(h("option", { value: "bot:" + b.id }, `${b.label} bot`));
+		for (const b of botList) select.append(h("option", { value: "bot:" + b.id }, t("setup.bot", { name: b.label })));
 		// The earlier choice for this seat, when it still means something here.
 		select.value = i === 0 ? "me" : fallback;
 		const before = slotMemory.get(seat.seat);
@@ -1147,22 +1148,22 @@ function playersBadge(list) {
 	const lo = Math.min(...seats);
 	const hi = Math.max(...seats);
 	const range = lo === hi ? `${lo}` : `${lo}\u2013${hi}`;
-	const said = lo === hi ? `${lo} player${lo === 1 ? "" : "s"}` : `${lo} to ${hi} players`;
-	return h("span", { class: "badge players", title: said, "aria-label": said }, `${range}P`);
+	const said = lo === hi ? t("home.n_players", { n: lo }) : t("home.range_players", { lo, hi });
+	return h("span", { class: "badge players", dir: "ltr", title: said, "aria-label": said }, `${range}P`);
 }
 
 /** The line under a game's name: the Prototype mark, or the Beta mark while its version is below 1.0, the players it takes, and the Private mark of a game built from the private overlay. */
 function cardMeta(list, lead) {
 	const out = [];
 	if (lead.prototype) {
-		out.push(h("span", { class: "badge prototype", title: `Rules version ${lead.version}: the rules are still changing` }, "Prototype"));
+		out.push(h("span", { class: "badge prototype", title: t("home.prototype_title", { version: lead.version }) }, t("home.prototype")));
 	} else if (isBeta(lead.version)) {
-		out.push(h("span", { class: "badge beta", title: `Version ${lead.version || "0.0.0"}: still being tested` }, "Beta"));
+		out.push(h("span", { class: "badge beta", title: t("home.beta_title", { version: lead.version || "0.0.0" }) }, t("home.beta")));
 	}
 	const players = playersBadge(list);
 	if (players) out.push(players);
-	if (list.some((d) => d.private)) out.push(h("span", { class: "badge private", title: "In this private build only" }, "Private"));
-	if (list.some((d) => d.tutorials)) out.push(h("span", { class: "badge tutorial", title: "This game has a tutorial that teaches it by playing" }, "Tutorial"));
+	if (list.some((d) => d.private)) out.push(h("span", { class: "badge private", title: t("home.private_title") }, t("home.private")));
+	if (list.some((d) => d.tutorials)) out.push(h("span", { class: "badge tutorial", title: t("home.tutorial_title") }, t("home.tutorial")));
 	return out;
 }
 
@@ -1190,10 +1191,10 @@ function showGameTip(card, list, lead) {
 			"div",
 			{ class: "game-tip-card" },
 			h("div", { class: "game-tip-name" }, familyName(list)),
-			designers.length ? h("div", { class: "game-tip-line" }, h("span", { class: "muted" }, designers.length > 1 ? "Designers: " : "Designer: "), designers.join(", ")) : null,
-			lead.publisher ? h("div", { class: "game-tip-line" }, h("span", { class: "muted" }, "Publisher: "), lead.publisher) : null,
+			designers.length ? h("div", { class: "game-tip-line" }, h("span", { class: "muted" }, (designers.length > 1 ? t("home.designers") : t("home.designer")) + " "), designers.join(", ")) : null,
+			lead.publisher ? h("div", { class: "game-tip-line" }, h("span", { class: "muted" }, t("home.publisher") + " "), lead.publisher) : null,
 			lead.description ? h("p", { class: "game-tip-text" }, lead.description) : null,
-			h("div", { class: "game-tip-version muted small" }, lead.prototype ? `Prototype, rules version ${lead.version}` : `Version ${lead.version || "0.0.0"}${isBeta(lead.version) ? " (beta)" : ""}`)
+			h("div", { class: "game-tip-version muted small" }, lead.prototype ? t("home.prototype_version", { version: lead.version }) : t(isBeta(lead.version) ? "home.version_beta" : "home.version", { version: lead.version || "0.0.0" }))
 		)
 	);
 	card.setAttribute("aria-describedby", "game-tip");
@@ -1328,15 +1329,15 @@ async function setupBots() {
 	};
 	botList = bots;
 	clear(host);
-	add("", "A friend", "You get a link to share; the game starts when they join.", true);
+	add("", t("setup.a_friend"), t("setup.friend_desc"), true);
 	if (setupFriends.length) {
-		const pick = h("select", { id: "reserve-friend", "aria-label": "A friend to keep the seat for" }, h("option", { value: "" }, "Anybody with the link"));
-		for (const f of setupFriends) pick.append(h("option", { value: f.handle }, `Reserve for ${f.name}`));
+		const pick = h("select", { id: "reserve-friend", "aria-label": t("setup.keep_for") }, h("option", { value: "" }, t("setup.anybody")));
+		for (const f of setupFriends) pick.append(h("option", { value: f.handle }, t("setup.reserve_for", { name: f.name })));
 		host.lastElementChild.querySelector("span").append(h("br"), pick);
 	}
-	add(SELF, "Myself", "You play both sides — to try ideas out or play a mock game alone.", false);
-	for (const b of bots) add(b.id, b.label + " bot", b.description, false);
-	add(BOTS_ONLY, "Two bots", "Nobody plays: you watch two bots play each other.", false);
+	add(SELF, t("setup.myself"), t("setup.myself_desc"), false);
+	for (const b of bots) add(b.id, t("setup.bot", { name: b.label }), b.description, false);
+	add(BOTS_ONLY, t("setup.two_bots"), t("setup.two_bots_desc"), false);
 	host.lastElementChild.id = "opponent-bots";
 	host.lastElementChild.hidden = true;
 	for (const sel of ["botmatch-a", "botmatch-b"]) {
@@ -1371,7 +1372,7 @@ if (createForm) {
 		const playerName = lastName();
 		const body = { game_def_id: gameDefID, player_name: playerName };
 		if (picker && !picker.complete()) {
-			showError(err, "Choose a faction for every seat.");
+			showError(err, t("setup.faction_each"));
 			document.getElementById("cw-seat-notice").scrollIntoView({ block: "nearest" });
 			return;
 		}
@@ -1454,8 +1455,8 @@ if (createForm) {
 		// The rule book stands for the word (ui-icons.js).
 		rulesButton.replaceChildren(rulesIcon());
 		rulesButton.classList.add("icon-only");
-		rulesButton.setAttribute("aria-label", "Rules");
-		rulesButton.title = "Rules";
+		rulesButton.setAttribute("aria-label", t("setup.rules"));
+		rulesButton.title = t("setup.rules");
 		rulesButton.addEventListener("click", showRules);
 	}
 	document.getElementById("setup-back").addEventListener("click", closeSetup);
@@ -1468,7 +1469,7 @@ if (createForm) {
 		const file = fileInput.files && fileInput.files[0];
 		if (!file) return;
 		if (file.size > 256 << 10) {
-			showError(err, "That file is too large for a move log (256 KB at most).");
+			showError(err, t("setup.too_large"));
 			fileInput.value = "";
 			return;
 		}
@@ -1494,7 +1495,7 @@ async function renderPuzzles() {
 	}
 	if (left) return;
 	if (!puzzles.length) {
-		clear(list).append(h("p", { class: "muted small" }, "No puzzles yet."));
+		clear(list).append(h("p", { class: "muted small" }, t("home.no_puzzles")));
 		return;
 	}
 	const games = [...new Set(puzzles.map((p) => p.game_def_id))];
@@ -1530,10 +1531,10 @@ async function renderPuzzles() {
 				type: "button",
 				class: "ghost",
 				id: "random-puzzle",
-				title: "Start a random puzzle of this game",
+				title: t("home.random_title"),
 				onclick: () => startPuzzle(shown[Math.floor(Math.random() * shown.length)]),
 			},
-			"🎲 Random"
+			t("home.random")
 		)
 	);
 
@@ -1546,8 +1547,8 @@ async function renderPuzzles() {
 			{ class: "puzzle-card", "data-puzzle": p.id },
 			slot,
 			h("div", { class: "puzzle-title" }, p.title.split(":")[0]),
-			h("div", { class: "small muted" }, p.win_in === 1 ? "Win at once" : `Win in ${p.win_in}`),
-			h("button", { class: "primary", type: "button", onclick: () => startPuzzle(p) }, "Solve")
+			h("div", { class: "small muted" }, p.win_in === 1 ? t("home.win_at_once") : t("home.win_in", { n: p.win_in })),
+			h("button", { class: "primary", type: "button", onclick: () => startPuzzle(p) }, t("home.solve"))
 		);
 		list.append(item);
 		gameInfo(p.game_def_id)
@@ -1567,7 +1568,7 @@ async function renderPuzzles() {
 						renderPuzzles();
 					},
 				},
-				puzzlesExpanded ? "Show fewer" : `Show all ${shown.length}`
+				puzzlesExpanded ? t("home.show_fewer") : t("home.show_all", { n: shown.length })
 			)
 		);
 	}
@@ -1603,7 +1604,7 @@ let botGuideBtn = null;
 function showTab(name, { focus = false } = {}) {
 	if (!TABS.includes(name)) name = "games";
 	if (!botGuideBtn) {
-		botGuideBtn = h("button", { type: "button", id: "open-bot-guide", class: "topbar-icon", title: "Game Analysis with Bots", "aria-label": "Game Analysis with Bots", "aria-haspopup": "dialog", onclick: () => openBotGuide() }, rulesIcon());
+		botGuideBtn = h("button", { type: "button", id: "open-bot-guide", class: "topbar-icon", title: t("home.bot_guide"), "aria-label": t("home.bot_guide"), "aria-haspopup": "dialog", onclick: () => openBotGuide() }, rulesIcon());
 		document.getElementById("topbar-actions")?.prepend(botGuideBtn);
 	}
 	botGuideBtn.hidden = name !== "analysis";
@@ -1635,7 +1636,7 @@ function setupTabs() {
 		tab.addEventListener("click", () => showTab(tab.dataset.tab));
 		tab.addEventListener("keydown", (ev) => {
 			const i = tabs.indexOf(tab);
-			const to = ev.key === "ArrowRight" ? i + 1 : ev.key === "ArrowLeft" ? i - 1 : ev.key === "Home" ? 0 : ev.key === "End" ? tabs.length - 1 : -1;
+			const to = ev.key === forwardKey ? i + 1 : ev.key === backKey ? i - 1 : ev.key === "Home" ? 0 : ev.key === "End" ? tabs.length - 1 : -1;
 			if (to < 0) return;
 			ev.preventDefault();
 			showTab(TABS[(to + tabs.length) % tabs.length], { focus: true });
@@ -1669,7 +1670,7 @@ onLeave(() => {
 	try {
 		defs = await api.gameDefs();
 	} catch (e) {
-		toast("Could not load the game list.", "error");
+		toast(t("home.list_failed"), "error");
 	}
 	if (left) return;
 	populateSelect();

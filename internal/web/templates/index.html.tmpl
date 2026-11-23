@@ -21,42 +21,42 @@
 		<p class="fun-fact" id="fun-fact"></p>
 
 		<section class="card tabbed" id="browser-card">
-			<div class="tabs" role="tablist" aria-label="Games, puzzles and chat">
-				<button type="button" role="tab" class="tab" id="tab-games" data-tab="games" aria-controls="panel-games" aria-selected="true">Games</button>
-				<button type="button" role="tab" class="tab" id="tab-puzzles" data-tab="puzzles" aria-controls="panel-puzzles" aria-selected="false" tabindex="-1">Puzzles</button>
-				<button type="button" role="tab" class="tab" id="tab-analysis" data-tab="analysis" aria-controls="panel-analysis" aria-selected="false" tabindex="-1">Analysis</button>
-				<button type="button" role="tab" class="tab" id="tab-ratings" data-tab="ratings" aria-controls="panel-ratings" aria-selected="false" tabindex="-1">Ratings</button>
-				<button type="button" role="tab" class="tab" id="tab-tournaments" data-tab="tournaments" aria-controls="panel-tournaments" aria-selected="false" tabindex="-1">Tournaments</button>
-				<button type="button" role="tab" class="tab" id="tab-chat" data-tab="chat" aria-controls="panel-chat" aria-selected="false" tabindex="-1">Global Chat <span class="badge tab-badge" id="chat-tab-badge" hidden>0</span></button>
+			<div class="tabs" role="tablist" aria-label="{{t .Lang "home.tabs"}}">
+				<button type="button" role="tab" class="tab" id="tab-games" data-tab="games" aria-controls="panel-games" aria-selected="true">{{t .Lang "home.games"}}</button>
+				<button type="button" role="tab" class="tab" id="tab-puzzles" data-tab="puzzles" aria-controls="panel-puzzles" aria-selected="false" tabindex="-1">{{t .Lang "home.puzzles"}}</button>
+				<button type="button" role="tab" class="tab" id="tab-analysis" data-tab="analysis" aria-controls="panel-analysis" aria-selected="false" tabindex="-1">{{t .Lang "home.analysis"}}</button>
+				<button type="button" role="tab" class="tab" id="tab-ratings" data-tab="ratings" aria-controls="panel-ratings" aria-selected="false" tabindex="-1">{{t .Lang "home.ratings"}}</button>
+				<button type="button" role="tab" class="tab" id="tab-tournaments" data-tab="tournaments" aria-controls="panel-tournaments" aria-selected="false" tabindex="-1">{{t .Lang "home.tournaments"}}</button>
+				<button type="button" role="tab" class="tab" id="tab-chat" data-tab="chat" aria-controls="panel-chat" aria-selected="false" tabindex="-1">{{t .Lang "home.global_chat"}} <span class="badge tab-badge" id="chat-tab-badge" hidden>0</span></button>
 			</div>
 
 			<div role="tabpanel" id="panel-games" aria-labelledby="tab-games">
 				<div id="gallery-view">
-					<p class="muted small">Pick a game to set up a match.</p>
-					<div class="gallery" id="game-gallery"><p class="muted small">Loading games…</p></div>
+					<p class="muted small">{{t .Lang "home.pick_game"}}</p>
+					<div class="gallery" id="game-gallery"><p class="muted small">{{t .Lang "home.loading_games"}}</p></div>
 				</div>
 
 				<div id="game-setup" hidden>
 					<div class="setup-head">
-						<button type="button" class="ghost" id="setup-back">← All games</button>
+						<button type="button" class="ghost" id="setup-back">{{t .Lang "setup.all_games"}}</button>
 						<h2 id="setup-title"></h2>
-						<button type="button" class="ghost" id="game-rules-button">Rules</button>
+						<button type="button" class="ghost" id="game-rules-button">{{t .Lang "setup.rules"}}</button>
 					</div>
-					<div class="tabs" role="tablist" aria-label="Set up this game or see its games">
-						<button type="button" role="tab" class="tab" id="setup-tab-new" aria-controls="setup-layout" aria-selected="true">Create Game</button>
-						<button type="button" role="tab" class="tab" id="setup-tab-tutorials" aria-controls="setup-tutorials-panel" aria-selected="false" hidden>Tutorials</button>
-						<button type="button" role="tab" class="tab" id="setup-tab-practice" aria-controls="setup-practice" aria-selected="false" hidden>Practice Batches</button>
-						<button type="button" role="tab" class="tab" id="setup-tab-active" aria-controls="setup-active" aria-selected="false">Active Games</button>
-						<button type="button" role="tab" class="tab" id="setup-tab-deals" aria-controls="setup-deals" aria-selected="false" hidden>Deal History</button>
-						<button type="button" role="tab" class="tab" id="setup-tab-tester" aria-controls="setup-tester" aria-selected="false" hidden>Animation Tester</button>
+					<div class="tabs" role="tablist" aria-label="{{t .Lang "setup.tabs"}}">
+						<button type="button" role="tab" class="tab" id="setup-tab-new" aria-controls="setup-layout" aria-selected="true">{{t .Lang "setup.create_game"}}</button>
+						<button type="button" role="tab" class="tab" id="setup-tab-tutorials" aria-controls="setup-tutorials-panel" aria-selected="false" hidden>{{t .Lang "setup.tutorials"}}</button>
+						<button type="button" role="tab" class="tab" id="setup-tab-practice" aria-controls="setup-practice" aria-selected="false" hidden>{{t .Lang "setup.practice"}}</button>
+						<button type="button" role="tab" class="tab" id="setup-tab-active" aria-controls="setup-active" aria-selected="false">{{t .Lang "setup.active"}}</button>
+						<button type="button" role="tab" class="tab" id="setup-tab-deals" aria-controls="setup-deals" aria-selected="false" hidden>{{t .Lang "setup.deals"}}</button>
+						<button type="button" role="tab" class="tab" id="setup-tab-tester" aria-controls="setup-tester" aria-selected="false" hidden>{{t .Lang "setup.tester"}}</button>
 					</div>
 					<div role="tabpanel" id="setup-tutorials-panel" aria-labelledby="setup-tab-tutorials" hidden>
 						<div class="setup-tutorials" id="setup-tutorials" hidden></div>
 					</div>
 					<div role="tabpanel" id="setup-practice" aria-labelledby="setup-tab-practice" hidden>
 		<section class="hidden" id="practice-card">
-						<p class="muted small">Let bots play hundreds of games of this table in the background and study the results — win rates, units built, abilities used, areas held — to see what wins and to tune the bots.</p>
-			<div class="row"><button type="button" class="primary" id="practice-toggle">Set up a batch</button></div>
+						<p class="muted small">{{t .Lang "setup.practice_note"}}</p>
+			<div class="row"><button type="button" class="primary" id="practice-toggle">{{t .Lang "setup.practice_set_up"}}</button></div>
 			<div id="practice-wizard" class="hidden"><div id="practice-body"></div></div>
 			<div id="practice-recent"></div>
 		</section>
@@ -64,15 +64,15 @@
 					<div role="tabpanel" id="setup-tester" aria-labelledby="setup-tab-tester" hidden></div>
 					<div role="tabpanel" id="setup-deals" aria-labelledby="setup-tab-deals" hidden>
 						<table class="data deal-history" id="setup-deals-table" hidden>
-							<thead><tr><th scope="col">Seed</th><th scope="col">Score</th><th scope="col">Played</th></tr></thead>
+							<thead><tr><th scope="col">{{t .Lang "setup.seed"}}</th><th scope="col">{{t .Lang "setup.score"}}</th><th scope="col">{{t .Lang "setup.played"}}</th></tr></thead>
 							<tbody id="setup-deals-list"></tbody>
 						</table>
-						<p class="muted" id="setup-deals-empty" hidden>No finished games of this one yet.</p>
-						<p class="muted small">The score is the moves a won game took, the fewer the better. Click a seed to deal it again.</p>
+						<p class="muted" id="setup-deals-empty" hidden>{{t .Lang "setup.no_deals"}}</p>
+						<p class="muted small">{{t .Lang "setup.deals_note"}}</p>
 					</div>
 					<div role="tabpanel" id="setup-active" aria-labelledby="setup-tab-active" hidden>
 						<ul class="my-games" id="setup-active-list"></ul>
-						<p class="muted" id="setup-active-empty" hidden>No games of this one are going just now.</p>
+						<p class="muted" id="setup-active-empty" hidden>{{t .Lang "setup.no_active"}}</p>
 					</div>
 					<div class="setup-layout" id="setup-layout" role="tabpanel" aria-labelledby="setup-tab-new">
 						<div class="setup-side">
@@ -89,193 +89,191 @@
 							</select>
 
 							<div class="field" id="start-mode-field" hidden>
-								<label>Start from</label>
+								<label>{{t .Lang "setup.start_from"}}</label>
 								<div class="segmented">
-									<label><input type="radio" name="start_mode" value="new" checked><span>A new game</span></label>
-									<label><input type="radio" name="start_mode" value="import"><span>A move log</span></label>
+									<label><input type="radio" name="start_mode" value="new" checked><span>{{t .Lang "setup.new_game"}}</span></label>
+									<label><input type="radio" name="start_mode" value="import"><span>{{t .Lang "setup.move_log"}}</span></label>
 								</div>
 							</div>
 
 							<div class="field new-only">
-								<label>Opponent</label>
+								<label>{{t .Lang "setup.opponent"}}</label>
 								<div id="opponent-choices" class="stack">
-									<label class="opponent-choice"><input type="radio" name="opponent" value="" checked> <span><strong>A friend</strong></span></label>
+									<label class="opponent-choice"><input type="radio" name="opponent" value="" checked> <span><strong>{{t .Lang "setup.a_friend"}}</strong></span></label>
 								</div>
 							</div>
 
 							<div class="field new-only bots-only" id="botmatch-options">
 								<div class="row">
-									<label class="inline" for="botmatch-a">First <select id="botmatch-a"></select></label>
-									<label class="inline" for="botmatch-b">Second <select id="botmatch-b"></select></label>
-									<label class="inline" for="botmatch-speed">Speed
+									<label class="inline" for="botmatch-a">{{t .Lang "setup.first"}} <select id="botmatch-a"></select></label>
+									<label class="inline" for="botmatch-b">{{t .Lang "setup.second"}} <select id="botmatch-b"></select></label>
+									<label class="inline" for="botmatch-speed">{{t .Lang "setup.speed"}}
 										<select id="botmatch-speed">
-											<option value="1500">Slow</option>
-											<option value="700" selected>Normal</option>
-											<option value="250">Fast</option>
+											<option value="1500">{{t .Lang "setup.slow"}}</option>
+											<option value="700" selected>{{t .Lang "setup.normal"}}</option>
+											<option value="250">{{t .Lang "setup.fast"}}</option>
 										</select>
 									</label>
 								</div>
-								<span class="small muted">You watch from a spectator's seat, at a pace you can follow — a quick way to see how strong the bots are.</span>
+								<span class="small muted">{{t .Lang "setup.bots_note"}}</span>
 							</div>
 
-							<div class="section-head new-only" id="other-options-head"><h3>Other Options</h3></div>
+							<div class="section-head new-only" id="other-options-head"><h3>{{t .Lang "setup.other_options"}}</h3></div>
 							<div class="other-options" id="other-options">
 							<div class="field new-only" id="setup-options" hidden>
-								<label>This game</label>
+								<label>{{t .Lang "setup.this_game"}}</label>
 							</div>
 
 							<div class="field new-only human-only">
-								<label for="move_time_seconds">Time per Move</label>
+								<label for="move_time_seconds">{{t .Lang "setup.time_per_move"}}</label>
 								<select id="move_time_seconds" name="move_time_seconds">
-									<option value="0" selected>No limit</option>
-									<option value="60">1 minute</option>
-									<option value="300">5 minutes</option>
-									<option value="3600">1 hour</option>
-									<option value="86400">1 day</option>
-									<option value="259200">3 days</option>
+									<option value="0" selected>{{t .Lang "setup.no_limit"}}</option>
+									<option value="60">{{t .Lang "setup.t_1m"}}</option>
+									<option value="300">{{t .Lang "setup.t_5m"}}</option>
+									<option value="3600">{{t .Lang "setup.t_1h"}}</option>
+									<option value="86400">{{t .Lang "setup.t_1d"}}</option>
+									<option value="259200">{{t .Lang "setup.t_3d"}}</option>
 								</select>
-								<span class="small muted">A player who runs out of time loses. At a table of three or more, a bot takes their seat for good.</span>
+								<span class="small muted">{{t .Lang "setup.timeout_note"}}</span>
 							</div>
 
 							<div class="field new-only human-only" id="clock-field" hidden>
-								<label for="clock_seconds">Game Clock</label>
+								<label for="clock_seconds">{{t .Lang "setup.game_clock"}}</label>
 								<div class="clock-time">
 									<select id="clock_seconds" name="clock_seconds">
-										<option value="0" selected>No clock</option>
-										<option value="minutes">Minutes each</option>
-										<option value="7200">2 hours each</option>
-										<option value="86400">1 day each</option>
+										<option value="0" selected>{{t .Lang "setup.no_clock"}}</option>
+										<option value="minutes">{{t .Lang "setup.minutes_each"}}</option>
+										<option value="7200">{{t .Lang "setup.2h_each"}}</option>
+										<option value="86400">{{t .Lang "setup.1d_each"}}</option>
 									</select>
-									<input type="number" id="clock_minutes" min="1" max="60" step="1" value="10" aria-label="Minutes each, from 1 to 60" hidden>
+									<input type="number" id="clock_minutes" min="1" max="60" step="1" value="10" aria-label="{{t .Lang "setup.minutes_each_label"}}" hidden>
 								</div>
-								<label class="check"><input type="checkbox" id="clock-handicap"> <span>Give the players different times (handicap)</span></label>
+								<label class="check"><input type="checkbox" id="clock-handicap"> <span>{{t .Lang "setup.handicap"}}</span></label>
 								<div class="row" id="clock-handicap-row" hidden>
 									<div class="inline clock-time">
-										<label for="clock_seconds_1">First player</label>
+										<label for="clock_seconds_1">{{t .Lang "setup.first_player"}}</label>
 										<select id="clock_seconds_1">
-											<option value="minutes" selected>Minutes</option>
-											<option value="7200">2 hours</option>
-											<option value="86400">1 day</option>
+											<option value="minutes" selected>{{t .Lang "setup.minutes"}}</option>
+											<option value="7200">{{t .Lang "setup.t_2h"}}</option>
+											<option value="86400">{{t .Lang "setup.t_1d"}}</option>
 										</select>
-										<input type="number" id="clock_minutes_1" min="1" max="60" step="1" value="10" aria-label="First player's minutes, from 1 to 60">
+										<input type="number" id="clock_minutes_1" min="1" max="60" step="1" value="10" aria-label="{{t .Lang "setup.first_minutes"}}">
 									</div>
 									<div class="inline clock-time">
-										<label for="clock_seconds_2">Second player</label>
+										<label for="clock_seconds_2">{{t .Lang "setup.second_player"}}</label>
 										<select id="clock_seconds_2">
-											<option value="minutes" selected>Minutes</option>
-											<option value="7200">2 hours</option>
-											<option value="86400">1 day</option>
+											<option value="minutes" selected>{{t .Lang "setup.minutes"}}</option>
+											<option value="7200">{{t .Lang "setup.t_2h"}}</option>
+											<option value="86400">{{t .Lang "setup.t_1d"}}</option>
 										</select>
-										<input type="number" id="clock_minutes_2" min="1" max="60" step="1" value="10" aria-label="Second player's minutes, from 1 to 60">
+										<input type="number" id="clock_minutes_2" min="1" max="60" step="1" value="10" aria-label="{{t .Lang "setup.second_minutes"}}">
 									</div>
 								</div>
-								<label class="inline" id="clock-increment-row" for="clock_increment" hidden>Added per move
+								<label class="inline" id="clock-increment-row" for="clock_increment" hidden>{{t .Lang "setup.added_per_move"}}
 									<select id="clock_increment">
-										<option value="0" selected>Nothing</option>
-										<option value="2">2 seconds</option>
-										<option value="5">5 seconds</option>
-										<option value="10">10 seconds</option>
-										<option value="30">30 seconds</option>
-										<option value="60">1 minute</option>
-										<option value="3600">1 hour</option>
-										<option value="86400">1 day</option>
+										<option value="0" selected>{{t .Lang "setup.nothing"}}</option>
+										<option value="2">{{t .Lang "setup.t_2s"}}</option>
+										<option value="5">{{t .Lang "setup.t_5s"}}</option>
+										<option value="10">{{t .Lang "setup.t_10s"}}</option>
+										<option value="30">{{t .Lang "setup.t_30s"}}</option>
+										<option value="60">{{t .Lang "setup.t_1m"}}</option>
+										<option value="3600">{{t .Lang "setup.t_1h"}}</option>
+										<option value="86400">{{t .Lang "setup.t_1d"}}</option>
 									</select>
 								</label>
-								<span class="small muted">Each player's clock runs while it is their turn, and the first to run out forfeits. A game clock takes the place of a time per move.</span>
+								<span class="small muted">{{t .Lang "setup.clock_note"}}</span>
 							</div>
 
 							<div class="field new-only human-only" id="real-time-field">
-								<label class="check"><input type="checkbox" id="real-time" name="real_time"> <span>Real-Time Game</span></label>
-								<span class="small muted">Everyone is expected to stay until the game ends, and the page shows anyone who has lost their connection.</span>
+								<label class="check"><input type="checkbox" id="real-time" name="real_time"> <span>{{t .Lang "setup.real_time"}}</span></label>
+								<span class="small muted">{{t .Lang "setup.real_time_note"}}</span>
 								<div class="row" id="real-time-warnings" hidden>
-									<label class="inline" for="real-time-first">Warn a slow player after
-										<input type="number" id="real-time-first" min="1" max="60" step="1" value="2" aria-label="Minutes before a slow player is warned, from 1 to 60"> min
+									<label class="inline" for="real-time-first">{{t .Lang "setup.warn_after_html" "input" (realTimeInput "real-time-first" 2 (t .Lang "setup.warn_label"))}}
 									</label>
-									<label class="inline" for="real-time-second">Then offer a bot after
-										<input type="number" id="real-time-second" min="1" max="60" step="1" value="5" aria-label="Minutes after that before the table can have a bot play the turn, from 1 to 60"> more min
+									<label class="inline" for="real-time-second">{{t .Lang "setup.offer_bot_after_html" "input" (realTimeInput "real-time-second" 5 (t .Lang "setup.offer_label"))}}
 									</label>
-									<span class="small muted">With no clock, the table can then have a bot play that turn, or keep waiting.</span>
+									<span class="small muted">{{t .Lang "setup.no_clock_note"}}</span>
 								</div>
 							</div>
 
 							<div class="field new-only human-only" id="rated-field" hidden>
-								<label class="check"><input type="checkbox" id="rated" name="rated"> <span>Rated Game</span></label>
-								<span class="small muted">The result changes both players' ratings for this game. It takes another signed-in player and the same game clock for both. Using a bot or another program to choose your moves is against the rules.</span>
+								<label class="check"><input type="checkbox" id="rated" name="rated"> <span>{{t .Lang "setup.rated"}}</span></label>
+								<span class="small muted">{{t .Lang "setup.rated_note"}}</span>
 							</div>
 
 							<div class="field new-only" id="card-set-field" hidden>
-								<label for="card-set">Cards</label>
-								<select id="card-set" name="card_set"><option value="">The game's own cards</option></select>
-								<span class="small muted">Everyone at the table plays with this set, and it stays for the whole game. Only the look of the cards changes, never the rules.</span>
+								<label for="card-set">{{t .Lang "setup.cards"}}</label>
+								<select id="card-set" name="card_set"><option value="">{{t .Lang "setup.own_cards"}}</option></select>
+								<span class="small muted">{{t .Lang "setup.cards_note"}}</span>
 								<div id="card-set-preview"></div>
 							</div>
 
 							<div class="field new-only" id="seed-field" hidden>
-								<label for="seed">Deal</label>
-								<input id="seed" name="seed" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="20" autocomplete="off" placeholder="A new deal">
-								<span class="small muted">To play a deal again, enter its seed: a finished game shows it. A deal you choose keeps no best score and earns no quick-win badge.</span>
+								<label for="seed">{{t .Lang "setup.deal"}}</label>
+								<input id="seed" name="seed" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="20" autocomplete="off" placeholder="{{t .Lang "setup.new_deal"}}">
+								<span class="small muted">{{t .Lang "setup.seed_note"}}</span>
 							</div>
 
 							<div class="field new-only human-only" id="schedule-field" hidden>
-								<label class="field-title">When to Play</label>
+								<label class="field-title">{{t .Lang "setup.when"}}</label>
 								<div class="stack" id="schedule-modes">
-									<label class="check"><input type="radio" name="schedule-mode" value="now" checked> <span>Play now</span></label>
-									<label class="check"><input type="radio" name="schedule-mode" value="time"> <span>Schedule a time</span></label>
-									<label class="check"><input type="radio" name="schedule-mode" value="windows"> <span><strong>Muster:</strong> offer several times, and let the players choose</span></label>
+									<label class="check"><input type="radio" name="schedule-mode" value="now" checked> <span>{{t .Lang "setup.play_now"}}</span></label>
+									<label class="check"><input type="radio" name="schedule-mode" value="time"> <span>{{t .Lang "setup.schedule"}}</span></label>
+									<label class="check"><input type="radio" name="schedule-mode" value="windows"> <span>{{t .Lang "setup.muster_html"}}</span></label>
 								</div>
 								<div id="schedule-details" hidden>
-									<label id="schedule-time-row" for="schedule-at">Start time <input type="datetime-local" id="schedule-at"></label>
+									<label id="schedule-time-row" for="schedule-at">{{t .Lang "setup.start_time"}} <input type="datetime-local" id="schedule-at"></label>
 									<div id="schedule-slots-row" hidden>
 										<div class="stack" id="schedule-slots"></div>
-										<button type="button" id="schedule-add-slot" class="ghost small">Add a time</button>
-										<span class="small muted">Up to 20 times, in the next 30 days. The earliest time everyone can make becomes the game's time.</span>
+										<button type="button" id="schedule-add-slot" class="ghost small">{{t .Lang "setup.add_time"}}</button>
+										<span class="small muted">{{t .Lang "setup.slots_note"}}</span>
 									</div>
 									<span class="small muted" id="schedule-tz"></span>
 									<div class="stack" id="schedule-friends"></div>
-									<label for="schedule-handles">Invite by handle <input type="text" id="schedule-handles" placeholder="ana, bob" autocapitalize="none" autocomplete="off" spellcheck="false"></label>
-									<span class="small muted">Handles must be exact. The game waits in its lobby, and starts when a player presses Start.</span>
+									<label for="schedule-handles">{{t .Lang "setup.invite_handle"}} <input type="text" id="schedule-handles" placeholder="ana, bob" autocapitalize="none" autocomplete="off" spellcheck="false"></label>
+									<span class="small muted">{{t .Lang "setup.handles_note"}}</span>
 								</div>
 							</div>
 
 							<div class="field new-only human-only" id="invite-only-field">
-								<label class="check"><input type="checkbox" id="invite-only" name="invite_only"> <span>Invite only</span></label>
-								<span class="small muted">The game is not on any list, even your friends'. Players come by its link, or an invitation from your friends list.</span>
+								<label class="check"><input type="checkbox" id="invite-only" name="invite_only"> <span>{{t .Lang "setup.invite_only"}}</span></label>
+								<span class="small muted">{{t .Lang "setup.invite_only_note"}}</span>
 							</div>
 
 							<div class="field new-only human-only" id="lobby-field">
-								<label class="check"><input type="checkbox" id="lobby" name="lobby"> <span>Wait in a lobby until I start the game</span></label>
-								<span class="small muted">Players you invite gather first, pick their factions or seats and add bots; nobody plays until you press Start.</span>
+								<label class="check"><input type="checkbox" id="lobby" name="lobby"> <span>{{t .Lang "setup.lobby"}}</span></label>
+								<span class="small muted">{{t .Lang "setup.lobby_note"}}</span>
 							</div>
 
 							<div class="field new-only human-only">
-								<label>Play As</label>
+								<label>{{t .Lang "setup.play_as"}}</label>
 								<div class="segmented" id="seat-choices">
-									<label><input type="radio" name="seat" value="1" checked><span>First</span></label>
-									<label><input type="radio" name="seat" value="2"><span>Second</span></label>
+									<label><input type="radio" name="seat" value="1" checked><span>{{t .Lang "setup.first"}}</span></label>
+									<label><input type="radio" name="seat" value="2"><span>{{t .Lang "setup.second"}}</span></label>
 								</div>
 							</div>
 
 							</div>
 
 							<div class="field import-only" id="import-fields">
-								<p class="muted small">Replay and analyse a recorded game: PTN (for Tak a <code>[Size]</code> header is enough) or just the moves, one after the other.</p>
-								<label for="import-file">Upload a file</label>
+								<p class="muted small">{{t .Lang "setup.import_html"}}</p>
+								<label for="import-file">{{t .Lang "setup.upload"}}</label>
 								<input id="import-file" type="file" accept=".ptn,.txt,text/plain">
-								<label for="import-text">…or paste the move log</label>
+								<label for="import-text">{{t .Lang "setup.paste"}}</label>
 								<textarea id="import-text" rows="6" placeholder='[Size "5"]&#10;1. a5 e1 2. c3 c4 …' spellcheck="false"></textarea>
 							</div>
 
 							<div class="error-text" id="create-error" role="alert"></div>
-							<div class="row"><button type="submit" class="primary" id="create-submit">Create Game</button></div>
+							<div class="row"><button type="submit" class="primary" id="create-submit">{{t .Lang "setup.create_game"}}</button></div>
 						</form>
 					</div>
 				</div>
 			</div>
 
 			<div role="tabpanel" id="panel-puzzles" aria-labelledby="tab-puzzles" hidden>
-				<p class="muted small">Positions where the side to move has a forced win. Find it — the opponent defends as well as a bot can.</p>
+				<p class="muted small">{{t .Lang "home.puzzles_note"}}</p>
 				<div class="chips" id="puzzle-games"></div>
-				<div class="puzzle-grid" id="puzzle-list"><p class="muted small">Loading puzzles…</p></div>
+				<div class="puzzle-grid" id="puzzle-list"><p class="muted small">{{t .Lang "home.loading_puzzles"}}</p></div>
 			</div>
 
 			<div role="tabpanel" id="panel-analysis" aria-labelledby="tab-analysis" hidden></div>
@@ -286,7 +284,7 @@
 
 	</main>
 
-	<footer class="site-footer"><sub title="{{t .Lang "footer.version" "brand" brandFooter}}">{{brandFooter}} v{{engineVersion}} · {{t .Lang "footer.license"}} · <a href="https://github.com/noderunner/bingle" target="_blank" rel="noopener noreferrer">GitHub</a></sub></footer>
+	<footer class="site-footer"><sub title="{{t .Lang "footer.version" "brand" brandFooter}}"><bdi>{{brandFooter}} v{{engineVersion}}</bdi> · <bdi>{{t .Lang "footer.license"}}</bdi> · <a href="https://github.com/noderunner/bingle" target="_blank" rel="noopener noreferrer">GitHub</a></sub></footer>
 
 	<!-- First, so a fault in any module below is reported (docs/observability.md). -->
 	<script type="module" src="/static/js/errors.js"></script>
