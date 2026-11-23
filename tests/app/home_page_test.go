@@ -288,9 +288,10 @@ func TestGlobalChat_UnreadCountOnTheTab(t *testing.T) {
 	cy := member(t, a, baseURL, "cyd")
 	ctx, cancel := newChromedpContext(t, 40*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/"), chromedp.WaitVisible("#tab-chat", chromedp.ByID)); err != nil {
+	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/")); err != nil {
 		t.Fatal(err)
 	}
+	waitScripts(t, ctx)
 	time.Sleep(600 * time.Millisecond)
 	cy.do("POST", "/api/chat", map[string]any{"player_name": "Cy", "text": "psst"}, nil)
 	waitJS(t, ctx, "unread", `(function(){ const b = document.getElementById("chat-tab-badge"); return !b.hidden && b.textContent === "1"; })()`, 10*time.Second)

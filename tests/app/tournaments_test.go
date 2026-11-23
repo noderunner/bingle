@@ -525,7 +525,7 @@ func TestTournaments_RealTimeUI(t *testing.T) {
 	if err := chromedp.Run(orgCtx, chromedp.EmulateViewport(1400, 1000), chromedp.Navigate(base+"/")); err != nil {
 		t.Fatal(err)
 	}
-	waitJS(t, orgCtx, "the tab", `document.getElementById("tab-tournaments") !== null`, 20*time.Second)
+	waitScripts(t, orgCtx)
 	clickSel(t, orgCtx, "#tab-tournaments")
 	waitJS(t, orgCtx, "the button", `document.getElementById("tournament-new") !== null`, 10*time.Second)
 	clickSel(t, orgCtx, "#tournament-new")
