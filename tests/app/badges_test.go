@@ -468,9 +468,8 @@ func TestBadges_TheProfileHasTabs(t *testing.T) {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the Badges tab, open", `!document.getElementById("tab-badges").hidden && !document.getElementById("panel-badges").hidden && document.getElementById("panel-settings").hidden`, 15*time.Second)
-	if !evalBool(t, ctx, `document.querySelector('#panel-badges #badges-list li[data-badge="first-win"]') !== null`) {
-		t.Error("the Badges tab has no badges")
-	}
+	// The tab opens before the shelf, which fetches the badges' descriptions, is drawn.
+	waitJS(t, ctx, "the badges on the tab", `document.querySelector('#panel-badges #badges-list li[data-badge="first-win"]') !== null`, 10*time.Second)
 	clickSel(t, ctx, "#tab-settings")
 	waitJS(t, ctx, "the settings", `!document.getElementById("panel-settings").hidden && document.getElementById("panel-badges").hidden && location.hash === ""`, 5*time.Second)
 }
