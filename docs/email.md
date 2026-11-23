@@ -149,12 +149,18 @@ The same outcomes are counted in `bingle_mail_total{kind,outcome}` on the metric
   the turn has already moved on when the "N minutes" wait is over. Waits are kept in memory: a restart forgets them.
 * Only addresses with a real seat are mailed: bots are never, and nobody can mail another person's address
   from their own seat, because confirming needs the link that went to that address.
+* **Every mail is in its reader's language** ([ADR 0141](decisions/0141-interface-languages.md)), its words the
+  catalogs' `mail.*` keys. An account's mail is in the language it chose, else in its browser's as the site last
+  saw it (`accounts.browser_language`, kept when the page asks `/auth/me`), else English. A contact's is in the
+  language of the browser that last saved or looked at it (`notify_contacts.language`). A time is written in UTC,
+  with the day and the month named in that language; a calendar invitation's summary and description are in it too.
 
 Endpoints are in [api.md](api.md); the UI pieces in [ui.md](ui.md).
 
 ## Tests
 
-`tests/mail` (addresses, header injection, TLS-only sending against a fake SMTP server in `internal/mail/fakesmtp`,
+`tests/mail` (addresses, header injection, a game's time in several languages, TLS-only sending against a fake SMTP server in `internal/mail/fakesmtp`,
 login failures, the secret never printed), `tests/app/notify_test.go` (the whole flow, tokens, limits, privacy,
-the stop link, the circuit breaker), `tests/app/notify_ui_test.go` (profile and options in a real browser).
+the stop link, the circuit breaker), `tests/app/notify_ui_test.go` (profile and options in a real browser),
+`tests/app/languages_mail_test.go` (a contact, a new account and a friend request in their readers' languages).
 Not covered: delivery through a real provider and what a provider's spam filter makes of the mail.

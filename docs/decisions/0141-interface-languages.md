@@ -44,11 +44,18 @@ was left to an ADR. The page has no build step, and the binary has eleven direct
   speaker has reviewed says so in `_review`. `TestCatalogs_Report` lists what each catalog lacks.
 - **A pseudo-locale, `en-XA`**, made from English (accented, about 40% longer, in brackets), finds layouts that
   break with longer words and words left out of the catalogs. It is not listed; a developer sets the cookie.
+- **Mail is in its reader's language** (decided with the mail, 2026-11-23): an account's chosen language, else
+  the language its browser reads the site in, which the account keeps (`accounts.browser_language`, written when
+  it changes as the page asks `/auth/me`), else English; an address for turn notices keeps the language of the
+  browser that last saved or looked at it. The mail's words are the catalogs' `mail.*` keys, which the page does not
+  load. A time names its day and month from the catalog, in UTC.
+- **No plural rules on the server**: the mail writes its few numbers into whole sentences ("the link works for 48
+  hours"), so nothing it sends is counted, and neither hand-written rules nor `golang.org/x/text` (one more direct
+  dependency) is needed. The server knows English's plural forms only; a server message that counts would bring a
+  language's rules with it. The page counts through `Intl`.
 
 ## Left for its stage
 
-- **Plurals in mail**: hand-written rules for the ten languages, or `golang.org/x/text`, which is one more direct
-  dependency. Until then the server knows English's plural forms only.
 - **The changelog** in ten languages (`docs/changelog/<code>.md`, the help window showing the reader's or
   English), with its step in CLAUDE.md's changelog rule and a test that each language's newest entry has English's
   version.

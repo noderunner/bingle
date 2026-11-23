@@ -383,7 +383,9 @@ func (a *Accounts) ForgotPassword(ctx context.Context, who, ip string) error {
 	if err := a.st.CreateAccountToken(ctx, hashSecret(token), acc.ID, "reset", now.Add(resetFor)); err != nil {
 		return err
 	}
-	if err := a.mail.SendAccountMail(ctx, "reset", acc.Email, ip, func(base string) mail.Message { return mail.PasswordReset(acc.Email, acc.Handle, base, token) }); err != nil {
+	if err := a.mail.SendAccountMail(ctx, "reset", acc.Email, ip, func(base string) mail.Message {
+		return mail.PasswordReset(acc.MailLanguage(), acc.Email, acc.Handle, base, token)
+	}); err != nil {
 		a.log.Warn("a password reset mail was not sent", "err", err)
 	}
 	a.audit(ctx, acc.ID, "reset-requested", "", ip)

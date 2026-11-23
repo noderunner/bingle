@@ -250,8 +250,15 @@ func TestPage_IsTheLanguagesAndTheCatalogWithEnglishFilledIn(t *testing.T) {
 		t.Fatal(err)
 	}
 	en, _ := Raw(Default)
-	if len(page.Languages) != 10 || len(page.Messages) != len(en) || page.Messages["language.label"] != "اللغة" || etag == "" {
-		t.Errorf("Arabic's page: %d languages, %d of %d messages, %v, %q", len(page.Languages), len(page.Messages), len(en), page.Messages["language.label"], etag)
+	// The mail's words are the server's, and stay out of the page.
+	words := 0
+	for k := range en {
+		if !strings.HasPrefix(k, MailPrefix) {
+			words++
+		}
+	}
+	if len(page.Languages) != 10 || len(page.Messages) != words || words == len(en) || page.Messages["language.label"] != "اللغة" || etag == "" {
+		t.Errorf("Arabic's page: %d languages, %d of %d messages, %v, %q", len(page.Languages), len(page.Messages), words, page.Messages["language.label"], etag)
 	}
 	if _, other := Page("de"); other == etag {
 		t.Error("two languages' pages have the same ETag")

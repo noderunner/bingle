@@ -69,7 +69,7 @@ func (h *handlers) handleScheduleICS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	code := chi.URLParam(r, "code")
-	body, err := h.mgr.GameCalendar(r.Context(), code, strings.TrimSuffix(h.inviteURL(r, code), "/game/"+code))
+	body, err := h.mgr.GameCalendar(r.Context(), code, strings.TrimSuffix(h.inviteURL(r, code), "/game/"+code), requestLanguage(r))
 	if err != nil {
 		writeError(w, err)
 		return

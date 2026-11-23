@@ -116,5 +116,8 @@ that each translation puts in the same values and has the same markup as English
 The Health page stays in English: it is served on the metrics listener, off the public site, for whoever runs the
 server, and has no language of its own to follow.
 
-Next, the mail and the calendar invitations, then the changelog in the help window (ADR 0141, *Left for its
-stage*).
+The mail and the calendar invitations are in their reader's language too (`mail.*`, left out of what a page
+loads): see [email.md](email.md) for which language a mail is in. They need no plural rules: their numbers are
+written into whole sentences.
+
+Next, the changelog in the help window, then a glossary per language (ADR 0141, *Left for its stage*).

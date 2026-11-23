@@ -8,6 +8,8 @@
 // rules), for a key given a count. English is complete; any key another
 // language lacks is read in English. Keys starting with "_" say something about
 // the catalog itself (whether a speaker has reviewed it) and are not words.
+// Keys starting with "mail." are the server's mail, in the reader's language,
+// and are left out of what a page loads.
 //
 // The server's own messages (the API's errors), the brand, handles, game names,
 // notation and the API's words stay as they are in every language.
@@ -50,6 +52,9 @@ const Default = "en"
 // words: English, accented and lengthened. It is not in the list a player
 // chooses from; a developer sets it as the Cookie.
 const Pseudo = "en-XA"
+
+// MailPrefix starts the keys of the server's mail, which no page needs.
+const MailPrefix = "mail."
 
 // Cookie is the cookie holding a browser's choice of language: a guest's, or
 // what an account chose last in this browser.
@@ -208,10 +213,12 @@ func init() {
 	}
 	catalogs[Pseudo] = pseudo(en)
 	for code, m := range catalogs {
+		words := maps.Clone(m)
+		maps.DeleteFunc(words, func(k string, _ any) bool { return strings.HasPrefix(k, MailPrefix) })
 		page, err := json.Marshal(struct {
 			Languages []Language     `json:"languages"`
 			Messages  map[string]any `json:"messages"`
-		}{languages, m})
+		}{languages, words})
 		if err != nil {
 			panic(err)
 		}
@@ -287,10 +294,10 @@ func lookup(code, key string, params []any) string {
 	return key
 }
 
-// pluralForm is the plural form of n in a language. The mail is the server's
-// one use of plurals, and its rules are settled with it (ADR 0141); until then
-// this is English's, and Russian's and Arabic's catalogs give their counts
-// as "other".
+// pluralForm is the plural form of n in a language: English's. The server
+// counts nothing in the words it sends (its mail writes its few numbers into
+// whole sentences), so it needs no other language's rules (ADR 0141); a
+// server message that counts would bring them. The page counts with Intl.
 func pluralForm(_ string, n any) string {
 	if f, ok := toFloat(n); ok && f == 1 {
 		return "one"

@@ -4,7 +4,20 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+
+	"github.com/noderunner/bingle/internal/auth"
+	"github.com/noderunner/bingle/internal/i18n"
 )
+
+// requestLanguage is the language the request reads in: the account's choice,
+// else the browser's (ADR 0141). Mail to an address the request sets up is in it.
+func requestLanguage(r *http.Request) string {
+	chosen := ""
+	if p, ok := auth.From(r.Context()); ok && p.Account != nil {
+		chosen = p.Account.Language
+	}
+	return i18n.ForRequest(r, chosen)
+}
 
 // clientIP is the address the request came from.
 //
@@ -47,7 +60,7 @@ func (h *handlers) handleSaveContact(w http.ResponseWriter, r *http.Request) {
 	if !decodeBody(w, r, &req) {
 		return
 	}
-	info, err := h.mgr.SaveContact(r.Context(), h.clientIP(r), req.Address, req.ContactID, req.ContactSecret)
+	info, err := h.mgr.SaveContact(r.Context(), h.clientIP(r), requestLanguage(r), req.Address, req.ContactID, req.ContactSecret)
 	if err != nil {
 		writeError(w, err)
 		return
@@ -62,7 +75,7 @@ func (h *handlers) handleContactStatus(w http.ResponseWriter, r *http.Request) {
 	if !decodeBody(w, r, &req) {
 		return
 	}
-	info, err := h.mgr.ContactStatus(r.Context(), req.ContactID, req.ContactSecret)
+	info, err := h.mgr.ContactStatus(r.Context(), requestLanguage(r), req.ContactID, req.ContactSecret)
 	if err != nil {
 		writeError(w, err)
 		return
@@ -78,7 +91,7 @@ func (h *handlers) handleContactResend(w http.ResponseWriter, r *http.Request) {
 	if !decodeBody(w, r, &req) {
 		return
 	}
-	info, err := h.mgr.ResendConfirmation(r.Context(), h.clientIP(r), req.ContactID, req.ContactSecret)
+	info, err := h.mgr.ResendConfirmation(r.Context(), h.clientIP(r), requestLanguage(r), req.ContactID, req.ContactSecret)
 	if err != nil {
 		writeError(w, err)
 		return

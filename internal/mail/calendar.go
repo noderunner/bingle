@@ -23,7 +23,12 @@ type Event struct {
 	Method string
 	// Organizer and Attendee are addresses, for REQUEST and CANCEL.
 	Organizer, Attendee string
+	// Lang is the language of the words the calendar shows (ADR 0141).
+	Lang string
 }
+
+// EventSummary is what a calendar calls a game: its name, on this server.
+func EventSummary(lang, game string) string { return say(lang, "mail.event_summary", "game", game) }
 
 // icsText escapes a value of an iCalendar property.
 func icsText(s string) string {
@@ -68,7 +73,7 @@ func (e Event) ICS(now time.Time) string {
 	line("DTSTART:" + e.Start.UTC().Format(form))
 	line("DTEND:" + e.End.UTC().Format(form))
 	line("SUMMARY:" + icsText(e.Summary))
-	line("DESCRIPTION:" + icsText("Open the game: "+e.URL))
+	line("DESCRIPTION:" + icsText(say(e.Lang, "mail.event_open", "link", e.URL)))
 	line("URL:" + icsText(e.URL))
 	if e.Method != "PUBLISH" {
 		line("ORGANIZER;CN=Bingle:mailto:" + e.Organizer)
@@ -86,44 +91,55 @@ func (e Event) ICS(now time.Time) string {
 
 func gameURL(base, room string) string { return base + "/game/" + url.PathEscape(room) }
 
-// whenUTC writes a time for a mail, which has no time zone of its reader's to go by.
-func whenUTC(t time.Time) string { return t.UTC().Format("Monday 2 January 2006, 15:04 UTC") }
+// whenUTC writes a time for a mail, which has no time zone of its reader's to go by, in its
+// language: the names of the day and the month are the catalog's.
+func whenUTC(lang string, t time.Time) string {
+	t = t.UTC()
+	return say(lang, "mail.date", "weekday", say(lang, "mail.weekday_"+strings.ToLower(t.Weekday().String())), "day", t.Day(),
+		"month", say(lang, "mail.month_"+strings.ToLower(t.Month().String())), "year", t.Year(), "time", t.Format("15:04"))
+}
+
+// dayUTC is a shorter time, for a subject: the day of the month and the hour.
+func dayUTC(lang string, t time.Time) string {
+	t = t.UTC()
+	return say(lang, "mail.date_short", "day", t.Day(), "month", say(lang, "mail.month_"+strings.ToLower(t.Month().String())), "time", t.Format("15:04"))
+}
 
 // GameInvitation invites an account to a game set up for later. Only the handle, the game's name and
 // the room vary.
-func GameInvitation(to, from, game, room, base string, at time.Time, severalTimes bool) Message {
+func GameInvitation(lang, to, from, game, room, base string, at time.Time, severalTimes bool) Message {
 	from, game, room = Sanitize(from, 24), Sanitize(game, 60), Sanitize(room, 12)
-	when := "They have offered several times: open the game to say which you can make."
+	when := say(lang, "mail.invite_several")
 	if !severalTimes {
-		when = "It is set for " + whenUTC(at) + "."
+		when = say(lang, "mail.invite_at", "when", whenUTC(lang, at))
 	}
 	return Message{
 		To:      to,
-		Subject: fmt.Sprintf("@%s invites you to a game of %s", from, game),
-		Body: fmt.Sprintf("@%s has invited you to a game of %s. %s\n\nAnswer in your friends list, or open the game:\n\n%s\n\n", from, game, when, gameURL(base, room)) +
-			"To stop being invited to games, turn it off in your profile:\n\n" + base + "/profile\n",
+		Subject: say(lang, "mail.invite_subject", "handle", from, "game", game),
+		Body: paragraphs(say(lang, "mail.invite", "handle", from, "game", game)+" "+when, say(lang, "mail.invite_answer"), gameURL(base, room),
+			say(lang, "mail.invite_why"), base+"/profile"),
 	}
 }
 
 // GameScheduled sends a game's time, with the invitation for a calendar.
-func GameScheduled(to, game, room, base string, event Event, now time.Time) Message {
+func GameScheduled(lang, to, game, room, base string, event Event, now time.Time) Message {
 	game, room = Sanitize(game, 60), Sanitize(room, 12)
 	return Message{
-		To:      to,
-		Subject: fmt.Sprintf("%s is set for %s", game, event.Start.UTC().Format("2 Jan, 15:04 UTC")),
-		Body: fmt.Sprintf("Your game of %s is set for %s. The attached invitation shows it in your own time zone.\n\n", game, whenUTC(event.Start)) +
-			"The game does not start by itself: when the time comes, press Start in its lobby.\n\n" + gameURL(base, room) + "\n",
+		To:       to,
+		Subject:  say(lang, "mail.scheduled_subject", "game", game, "when", dayUTC(lang, event.Start)),
+		Body:     paragraphs(say(lang, "mail.scheduled", "game", game, "when", whenUTC(lang, event.Start)), say(lang, "mail.scheduled_start"), gameURL(base, room)),
 		Calendar: &Calendar{Method: event.Method, Body: event.ICS(now)},
 	}
 }
 
-// GameCancelled says a game will not be played. event is its calendar entry, if one was sent.
-func GameCancelled(to, game, room, reason, base string, event *Event, now time.Time) Message {
+// GameCancelled says a game will not be played, for a reason (a key of the catalog). event is
+// its calendar entry, if one was sent.
+func GameCancelled(lang, to, game, room, reason, base string, event *Event, now time.Time) Message {
 	game, room = Sanitize(game, 60), Sanitize(room, 12)
 	msg := Message{
 		To:      to,
-		Subject: fmt.Sprintf("Your game of %s was closed", game),
-		Body:    fmt.Sprintf("Your game of %s (room %s) was closed: %s\n\n%s\n", game, room, reason, base),
+		Subject: say(lang, "mail.closed_subject", "game", game),
+		Body:    paragraphs(say(lang, "mail.closed", "game", game, "room", room, "reason", say(lang, reason)), base),
 	}
 	if event != nil {
 		msg.Calendar = &Calendar{Method: event.Method, Body: event.ICS(now)}
@@ -132,21 +148,21 @@ func GameCancelled(to, game, room, reason, base string, event *Event, now time.T
 }
 
 // NoCommonTime tells a game's creator that nobody's times meet, and how long they have.
-func NoCommonTime(to, game, room, base string, by time.Time) Message {
+func NoCommonTime(lang, to, game, room, base string, by time.Time) Message {
 	game, room = Sanitize(game, 60), Sanitize(room, 12)
 	return Message{
 		To:      to,
-		Subject: fmt.Sprintf("No time suits everyone for %s", game),
-		Body:    fmt.Sprintf("No time you offered for your game of %s suits everyone. In its lobby you can offer new times or cancel it. If you do neither, it closes on %s and everyone is told.\n\n%s\n", game, whenUTC(by), gameURL(base, room)),
+		Subject: say(lang, "mail.no_time_subject", "game", game),
+		Body:    paragraphs(say(lang, "mail.no_time", "game", game, "when", whenUTC(lang, by)), gameURL(base, room)),
 	}
 }
 
 // NewTimesOffered tells those invited that a game's creator has offered new times.
-func NewTimesOffered(to, game, room, base string) Message {
+func NewTimesOffered(lang, to, game, room, base string) Message {
 	game, room = Sanitize(game, 60), Sanitize(room, 12)
 	return Message{
 		To:      to,
-		Subject: fmt.Sprintf("New times for %s", game),
-		Body:    fmt.Sprintf("New times have been offered for your game of %s. Open it to say which you can make:\n\n%s\n", game, gameURL(base, room)),
+		Subject: say(lang, "mail.new_times_subject", "game", game),
+		Body:    paragraphs(say(lang, "mail.new_times", "game", game), gameURL(base, room)),
 	}
 }

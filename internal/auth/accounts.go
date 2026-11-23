@@ -145,7 +145,7 @@ const inviteFor = 7 * 24 * time.Hour
 // seats and games are the account's once the address is confirmed. An
 // address that is already an account's gets the same answer as a new one,
 // and no mail, so the answer does not say whose it is.
-func (a *Accounts) Signup(ctx context.Context, handle, email, password, guest, invite, ip string) error {
+func (a *Accounts) Signup(ctx context.Context, handle, email, password, guest, invite, ip, lang string) error {
 	switch {
 	case a.signup == SignupClosed:
 		return ErrSignupClosed
@@ -181,7 +181,7 @@ func (a *Accounts) Signup(ctx context.Context, handle, email, password, guest, i
 	if principal == "" || a.principalHasAccount(ctx, principal) {
 		principal, fresh = NewPrincipalID(), true
 	}
-	id, err := a.st.CreateAccount(ctx, store.NewAccount{Handle: h, DisplayName: h, Email: addr, PrincipalID: principal, NewPrincipal: fresh, PasswordHash: hash})
+	id, err := a.st.CreateAccount(ctx, store.NewAccount{Handle: h, DisplayName: h, Email: addr, PrincipalID: principal, NewPrincipal: fresh, PasswordHash: hash, BrowserLanguage: lang})
 	switch {
 	case errors.Is(err, store.ErrTaken):
 		// The handle was checked a moment ago, so it is the address: answer as
@@ -191,7 +191,9 @@ func (a *Accounts) Signup(ctx context.Context, handle, email, password, guest, i
 		a.log.Info("signup: the address already belongs to an account, so no confirmation was sent", logging.Addr(addr))
 		if owner, err := a.st.AccountByEmail(ctx, addr); err == nil {
 			a.audit(ctx, owner.ID, "signup-address-in-use", "", ip)
-			if err := a.mail.SendAccountMail(ctx, "notice", owner.Email, ip, func(base string) mail.Message { return mail.AccountExists(owner.Email, owner.Handle, base) }); err != nil {
+			if err := a.mail.SendAccountMail(ctx, "notice", owner.Email, ip, func(base string) mail.Message {
+				return mail.AccountExists(owner.MailLanguage(), owner.Email, owner.Handle, base)
+			}); err != nil {
 				a.log.Info("signup: the owner of the address was not told", logging.Addr(addr), "err", err)
 			}
 		}
@@ -207,7 +209,7 @@ func (a *Accounts) Signup(ctx context.Context, handle, email, password, guest, i
 	if err := a.st.CreateAccountToken(ctx, hashSecret(token), id, "confirm", now.Add(confirmFor)); err != nil {
 		return err
 	}
-	if err := a.mail.SendAccountMail(ctx, "confirm", addr, ip, func(base string) mail.Message { return mail.AccountConfirmation(addr, h, base, token) }); err != nil {
+	if err := a.mail.SendAccountMail(ctx, "confirm", addr, ip, func(base string) mail.Message { return mail.AccountConfirmation(lang, addr, h, base, token) }); err != nil {
 		// Without the mail the account can never be used: let the handle go.
 		_ = a.st.DeletePendingAccount(ctx, id)
 		a.log.Warn("the confirmation of a new account was not sent", logging.Addr(addr), "err", err)
@@ -675,7 +677,7 @@ var ErrNotYourContact = errors.New("auth: that email address is not this browser
 // proved for turn mail — into an account with a handle and a password,
 // without a second confirmation: the address is proven already. The guest
 // becomes the account, as with any sign-up, and the account is signed in.
-func (a *Accounts) SignupWithContact(ctx context.Context, contactID int64, contactSecret, handle, password, guest, invite, ip, agent string) (Session, error) {
+func (a *Accounts) SignupWithContact(ctx context.Context, contactID int64, contactSecret, handle, password, guest, invite, ip, agent, lang string) (Session, error) {
 	if a.signup == SignupClosed {
 		return Session{}, ErrSignupClosed
 	}
@@ -704,7 +706,7 @@ func (a *Accounts) SignupWithContact(ctx context.Context, contactID int64, conta
 		principal, fresh = NewPrincipalID(), true
 	}
 	id, err := a.st.CreateAccount(ctx, store.NewAccount{Handle: h, DisplayName: h, Email: c.Address, Verified: true, PrincipalID: principal, NewPrincipal: fresh,
-		PasswordHash: HashPassword(password, a.params)})
+		PasswordHash: HashPassword(password, a.params), BrowserLanguage: lang})
 	switch {
 	case errors.Is(err, store.ErrTaken):
 		return Session{}, ErrAddressUsed

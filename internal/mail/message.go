@@ -11,6 +11,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/noderunner/bingle/internal/i18n"
 )
 
 // Message is one email: exactly one recipient and a subject and body made
@@ -169,44 +171,47 @@ func ConfirmURL(base, token string) string {
 }
 func StopURL(base, token string) string { return base + "/notify/stop?t=" + url.QueryEscape(token) }
 
+// say is a mail's words in a language (ADR 0141): the catalog's key, with
+// {brand} the name the mail is branded with when it is sent (Message.branded).
+func say(lang, key string, params ...any) string {
+	return i18n.T(lang, key, append([]any{"brand", "Bingle"}, params...)...)
+}
+
+// paragraphs joins a mail's paragraphs and links, a blank line between each.
+func paragraphs(parts ...string) string { return strings.Join(parts, "\n\n") + "\n" }
+
 // Confirmation is the one mail sent to check that an address belongs to the
 // person who typed it. Doing nothing leaves it harmless.
-func Confirmation(to, base, confirmToken, stopToken string) Message {
+func Confirmation(lang, to, base, confirmToken, stopToken string) Message {
 	return Message{
 		To:      to,
-		Subject: "Confirm your email address for Bingle",
-		Body: "Someone, probably you, asked Bingle to email this address when it is their turn in a game.\n\n" +
-			"To turn this on, open the link below and press Confirm (the link works for 24 hours):\n\n" +
-			ConfirmURL(base, confirmToken) + "\n\n" +
-			"If this was not you, ignore this message and nothing happens. To make sure Bingle never emails this address, open:\n\n" +
-			StopURL(base, stopToken) + "\n",
+		Subject: say(lang, "mail.confirm_subject"),
+		Body: paragraphs(say(lang, "mail.confirm_asked"), say(lang, "mail.confirm_open"), ConfirmURL(base, confirmToken),
+			say(lang, "mail.confirm_not_you"), StopURL(base, stopToken)),
 		UnsubscribeURL: StopURL(base, stopToken),
 	}
 }
 
 // Turn tells a player that it is their turn. Only the game's name and the room
 // code (both sanitised) vary.
-func Turn(to, game, room, base, stopToken string) Message {
+func Turn(lang, to, game, room, base, stopToken string) Message {
 	game = Sanitize(game, 60)
 	room = Sanitize(room, 12)
 	return Message{
 		To:      to,
-		Subject: fmt.Sprintf("It is your turn in %s (%s)", game, room),
-		Body: fmt.Sprintf("It is your turn in %s, room %s.\n\nPlay here: %s/game/%s\n\n", game, room, base, url.PathEscape(room)) +
-			"You get this mail because turn notices are on for this game: you can turn them off in the game's options. To stop all mail from Bingle, open:\n\n" +
-			StopURL(base, stopToken) + "\n",
+		Subject: say(lang, "mail.turn_subject", "game", game, "room", room),
+		Body: paragraphs(say(lang, "mail.turn", "game", game, "room", room), say(lang, "mail.play_here", "link", base+"/game/"+url.PathEscape(room)),
+			say(lang, "mail.turn_why"), StopURL(base, stopToken)),
 		UnsubscribeURL: StopURL(base, stopToken),
 	}
 }
 
 // AddressChanged goes to the old address of a profile when it is changed.
-func AddressChanged(to, base, stopToken string) Message {
+func AddressChanged(lang, to, base, stopToken string) Message {
 	return Message{
-		To:      to,
-		Subject: "Your Bingle notification address was changed",
-		Body: "The email address for your turn notices on Bingle was changed to another address, so you will not get them here any more.\n\n" +
-			"If this was not you, open the link below to make sure Bingle never emails this address again:\n\n" +
-			StopURL(base, stopToken) + "\n",
+		To:             to,
+		Subject:        say(lang, "mail.changed_subject"),
+		Body:           paragraphs(say(lang, "mail.changed"), say(lang, "mail.changed_not_you"), StopURL(base, stopToken)),
 		UnsubscribeURL: StopURL(base, stopToken),
 	}
 }
@@ -219,15 +224,13 @@ func AccountConfirmURL(base, token string) string {
 // AccountConfirmation is the mail that confirms the address of a new account.
 // Doing nothing leaves it harmless: the account is never usable, and is
 // forgotten after two days.
-func AccountConfirmation(to, handle, base, token string) Message {
+func AccountConfirmation(lang, to, handle, base, token string) Message {
 	handle = Sanitize(handle, 24)
 	return Message{
 		To:      to,
-		Subject: "Confirm your Bingle account",
-		Body: fmt.Sprintf("Someone, probably you, made the Bingle account @%s with this email address.\n\n", handle) +
-			"To finish, open the link below and press Confirm (the link works for 48 hours):\n\n" +
-			AccountConfirmURL(base, token) + "\n\n" +
-			"If this was not you, ignore this message: the account is never usable and is removed in two days.\n",
+		Subject: say(lang, "mail.account_subject"),
+		Body: paragraphs(say(lang, "mail.account_made", "handle", handle), say(lang, "mail.account_open"), AccountConfirmURL(base, token),
+			say(lang, "mail.account_not_you")),
 	}
 }
 
@@ -235,30 +238,23 @@ func AccountConfirmation(to, handle, base, token string) Message {
 // with it again: the sign-up page answers as it would for a new address, so
 // this is how the person learns they have an account already. It carries no
 // token; its links are the public sign-in and forgotten-password pages.
-func AccountExists(to, handle, base string) Message {
+func AccountExists(lang, to, handle, base string) Message {
 	handle = Sanitize(handle, 24)
 	return Message{
 		To:      to,
-		Subject: "You already have a Bingle account",
-		Body: "Someone, probably you, tried to make a new Bingle account with this email address.\n\n" +
-			fmt.Sprintf("It already belongs to the account @%s, so no new account was made. To sign in:\n\n", handle) +
-			base + "/login\n\n" +
-			"If you have forgotten the password, you can choose a new one here:\n\n" +
-			base + "/forgot\n\n" +
-			"If this was not you, ignore this message: nothing about your account has changed.\n",
+		Subject: say(lang, "mail.exists_subject"),
+		Body: paragraphs(say(lang, "mail.exists_tried"), say(lang, "mail.exists_belongs", "handle", handle), base+"/login",
+			say(lang, "mail.exists_forgot"), base+"/forgot", say(lang, "mail.exists_not_you")),
 	}
 }
 
 // FriendRequest tells an account that somebody has asked to be its friend. Only the handle varies.
-func FriendRequest(to, handle, base string) Message {
+func FriendRequest(lang, to, handle, base string) Message {
 	handle = Sanitize(handle, 24)
 	return Message{
 		To:      to,
-		Subject: fmt.Sprintf("@%s wants to be your friend on Bingle", handle),
-		Body: fmt.Sprintf("@%s has sent you a friend request. Accept or decline it in the friends list, at the top of any page:\n\n", handle) +
-			base + "/\n\n" +
-			"You get this mail because you asked for it in your profile. To stop it, turn it off there:\n\n" +
-			base + "/profile\n",
+		Subject: say(lang, "mail.friend_subject", "handle", handle),
+		Body:    paragraphs(say(lang, "mail.friend", "handle", handle), base+"/", say(lang, "mail.friend_why"), base+"/profile"),
 	}
 }
 
@@ -268,14 +264,12 @@ func PasswordResetURL(base, token string) string {
 }
 
 // PasswordReset is the mail with a link to choose a new password.
-func PasswordReset(to, handle, base, token string) Message {
+func PasswordReset(lang, to, handle, base, token string) Message {
 	handle = Sanitize(handle, 24)
 	return Message{
 		To:      to,
-		Subject: "Reset your Bingle password",
-		Body: fmt.Sprintf("Someone, probably you, asked to reset the password of the Bingle account @%s.\n\n", handle) +
-			"To choose a new one, open the link below (it works for an hour, once):\n\n" +
-			PasswordResetURL(base, token) + "\n\n" +
-			"If this was not you, ignore this message: your password stays as it is.\n",
+		Subject: say(lang, "mail.reset_subject"),
+		Body: paragraphs(say(lang, "mail.reset_asked", "handle", handle), say(lang, "mail.reset_open"), PasswordResetURL(base, token),
+			say(lang, "mail.reset_not_you")),
 	}
 }

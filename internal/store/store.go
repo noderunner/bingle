@@ -325,6 +325,12 @@ var columnMigrations = []struct{ table, column, ddl string }{
 	// language: the interface language the account chose (ADR 0141), '' for
 	// the browser's own, as every account made before there was a choice.
 	{"accounts", "language", "TEXT NOT NULL DEFAULT ''"},
+	// browser_language: the language the account's browser reads in, as it
+	// last saw the site, for the mail of an account that chose none (ADR
+	// 0141); language: the language a turn notice's address is mailed in,
+	// that of the browser that last looked at it. '' until known: English.
+	{"accounts", "browser_language", "TEXT NOT NULL DEFAULT ''"},
+	{"notify_contacts", "language", "TEXT NOT NULL DEFAULT ''"},
 }
 
 func addMissingColumns(db *sql.DB) error {

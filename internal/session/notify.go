@@ -378,7 +378,9 @@ func (m *Manager) mustNotify() (*notifier, error) {
 // (id 0) or a change to the contact it owns (id and secret). The address is
 // not used until the link mailed to it is followed. ip is the client's address,
 // for the limit on confirmation mails per client.
-func (m *Manager) SaveContact(ctx context.Context, ip, address string, id int64, secret string) (ContactInfo, error) {
+// SaveContact asks for turn notices at an address. lang is the language of the
+// browser asking, which the address is mailed in (ADR 0141).
+func (m *Manager) SaveContact(ctx context.Context, ip, lang, address string, id int64, secret string) (ContactInfo, error) {
 	n, err := m.mustNotify()
 	if err != nil {
 		return ContactInfo{}, err
@@ -403,6 +405,9 @@ func (m *Manager) SaveContact(ctx context.Context, ip, address string, id int64,
 		if err != nil {
 			return ContactInfo{}, err
 		}
+		if err := m.keepContactLanguage(ctx, &c, lang); err != nil {
+			return ContactInfo{}, err
+		}
 		if c.AddrHash == ah && c.Verified() {
 			return m.infoOf(ctx, c), nil // nothing changes
 		}
@@ -416,7 +421,7 @@ func (m *Manager) SaveContact(ctx context.Context, ip, address string, id int64,
 		c.VerifiedAt = ""
 	} else {
 		secret = newToken()
-		c = store.Contact{Address: addr, AddrHash: ah, SecretHash: hashOf(secret), StopToken: newToken(), ConfirmHash: hashOf(confirm)}
+		c = store.Contact{Address: addr, AddrHash: ah, SecretHash: hashOf(secret), StopToken: newToken(), ConfirmHash: hashOf(confirm), Language: lang}
 		c.ID, err = m.store.CreateContact(ctx, c, expires)
 		if err != nil {
 			return ContactInfo{}, err
@@ -429,20 +434,21 @@ func (m *Manager) SaveContact(ctx context.Context, ip, address string, id int64,
 	}
 	if oldAddr != "" {
 		if oa, _ := mail.ValidAddress(oldAddr); oa != "" && n.reserve(ctx, "notice", addrHash(oa), 0, ip) == nil {
-			n.enqueue(notifyJob{kind: "notice", msg: mail.AddressChanged(oa, n.opts.BaseURL, oldStop)})
+			n.enqueue(notifyJob{kind: "notice", msg: mail.AddressChanged(c.Language, oa, n.opts.BaseURL, oldStop)})
 		}
 	}
 	if err := n.reserve(ctx, "confirm", ah, 0, ip); err != nil {
 		info.Note = "A confirmation was already sent to this address lately (or this server is busy). Look in the inbox and the spam folder, or try again in a little while."
 		return info, nil
 	}
-	n.enqueue(notifyJob{kind: "confirm", msg: mail.Confirmation(addr, n.opts.BaseURL, confirm, c.StopToken)})
+	n.enqueue(notifyJob{kind: "confirm", msg: mail.Confirmation(c.Language, addr, n.opts.BaseURL, confirm, c.StopToken)})
 	info.ConfirmationSent = true
 	return info, nil
 }
 
-// ContactStatus describes a contact the caller owns.
-func (m *Manager) ContactStatus(ctx context.Context, id int64, secret string) (ContactInfo, error) {
+// ContactStatus describes a contact the caller owns. The browser asking reads
+// in lang, which the contact's mail follows from now on.
+func (m *Manager) ContactStatus(ctx context.Context, lang string, id int64, secret string) (ContactInfo, error) {
 	if _, err := m.mustNotify(); err != nil {
 		return ContactInfo{}, err
 	}
@@ -450,17 +456,36 @@ func (m *Manager) ContactStatus(ctx context.Context, id int64, secret string) (C
 	if err != nil {
 		return ContactInfo{}, err
 	}
+	if err := m.keepContactLanguage(ctx, &c, lang); err != nil {
+		return ContactInfo{}, err
+	}
 	return m.infoOf(ctx, c), nil
 }
 
+// keepContactLanguage has a contact's mail follow the language of the browser
+// that owns it, as it last looked (ADR 0141).
+func (m *Manager) keepContactLanguage(ctx context.Context, c *store.Contact, lang string) error {
+	if lang == "" || c.Language == lang {
+		return nil
+	}
+	if err := m.store.SetContactLanguage(ctx, c.ID, lang); err != nil {
+		return err
+	}
+	c.Language = lang
+	return nil
+}
+
 // ResendConfirmation mails a new confirmation link for an unverified contact.
-func (m *Manager) ResendConfirmation(ctx context.Context, ip string, id int64, secret string) (ContactInfo, error) {
+func (m *Manager) ResendConfirmation(ctx context.Context, ip, lang string, id int64, secret string) (ContactInfo, error) {
 	n, err := m.mustNotify()
 	if err != nil {
 		return ContactInfo{}, err
 	}
 	c, err := m.ownedContact(ctx, id, secret)
 	if err != nil {
+		return ContactInfo{}, err
+	}
+	if err := m.keepContactLanguage(ctx, &c, lang); err != nil {
 		return ContactInfo{}, err
 	}
 	info := m.infoOf(ctx, c)
@@ -475,7 +500,7 @@ func (m *Manager) ResendConfirmation(ctx context.Context, ip string, id int64, s
 		info.Note = "A confirmation was sent to this address lately. Look in the inbox and the spam folder, or try again in a little while."
 		return info, nil
 	}
-	n.enqueue(notifyJob{kind: "confirm", msg: mail.Confirmation(c.Address, n.opts.BaseURL, confirm, c.StopToken)})
+	n.enqueue(notifyJob{kind: "confirm", msg: mail.Confirmation(c.Language, c.Address, n.opts.BaseURL, confirm, c.StopToken)})
 	info.ConfirmationSent = true
 	return info, nil
 }
@@ -727,7 +752,7 @@ func (n *notifier) send(room string, seat, seq int, ignoreConnected bool) {
 	if err := n.reserve(ctx, "turn", c.AddrHash, game.ID, ""); err != nil {
 		return
 	}
-	n.enqueue(notifyJob{kind: "turn", msg: mail.Turn(to, n.gameName(game.GameDefID), game.RoomCode, n.opts.BaseURL, c.StopToken)})
+	n.enqueue(notifyJob{kind: "turn", msg: mail.Turn(c.Language, to, n.gameName(game.GameDefID), game.RoomCode, n.opts.BaseURL, c.StopToken)})
 }
 
 // suppressed notes a mail not sent because its address asked never to be mailed.
