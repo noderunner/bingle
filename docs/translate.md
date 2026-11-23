@@ -93,7 +93,7 @@ the server leaves the service alone for a minute before it tries again, and chat
 
 ## Metrics
 
-On the private metrics listener ([observability.md](observability.md)):
+On the private metrics listener ([observability.md](observability.md)), only when a service is set up:
 
 | Series | What it counts |
 |---|---|

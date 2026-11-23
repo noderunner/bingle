@@ -351,6 +351,7 @@ func enableTranslate(cfg config.Translate, mx *metrics.Metrics, lg *slog.Logger)
 	if err != nil {
 		return nil, fmt.Errorf("app: chat translation: %w", err)
 	}
+	mx.EnableTranslation()
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 	switch local, err := translate.Local(ctx, cfg.URL, nil); {

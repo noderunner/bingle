@@ -82,8 +82,12 @@ type Metrics struct {
 	clientErrors   *prometheus.CounterVec
 	mail           *prometheus.CounterVec
 	mailSend       prometheus.Histogram
-	translations   *prometheus.CounterVec
-	translateReq   prometheus.Histogram
+	// translations and translateReq are registered only once a translation
+	// service is set up (EnableTranslation), so a server without one exposes
+	// nothing about it.
+	translations  *prometheus.CounterVec
+	translateReq  prometheus.Histogram
+	translateOnce sync.Once
 }
 
 // New builds the registry, registers the Go runtime and process collectors
@@ -270,7 +274,7 @@ func New(version string) *Metrics {
 		m.dbQueries, m.dbDuration, m.dbRows, m.dbTxDuration, m.dbBusy, m.db,
 		m.gameMoves, m.gameApply, m.gameLegal, m.gameLegalMoves, m.gameFinished, m.gameIllegal, m.ratedResults, m.factsDropped, m.gameCounts, m.badgeChecks,
 		m.botSearch, m.botNodes, m.slotWait, m.slotInUse, m.slotSize, m.batchWorkers, m.realTime,
-		m.clientErrors, m.mail, m.mailSend, m.translations, m.translateReq,
+		m.clientErrors, m.mail, m.mailSend,
 	)
 	return m
 }
