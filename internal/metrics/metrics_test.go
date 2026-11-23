@@ -333,3 +333,20 @@ func TestMiddleware_DoesNotLeakTheSocketGaugeOnAnAbortedUpgrade(t *testing.T) {
 		t.Error("the socket was not counted as having been accepted")
 	}
 }
+
+func TestTranslation_SeriesAreExposedOnlyOnceEnabled(t *testing.T) {
+	m := metrics.New("test")
+	m.Translation("translated")
+	if strings.Contains(scrape(t, m), "bingle_translations_total") {
+		t.Fatal("exposed before a translation service was set up")
+	}
+	m.EnableTranslation()
+	m.EnableTranslation()
+	m.Translation("nonsense")
+	body := scrape(t, m)
+	for _, want := range []string{`bingle_translations_total{outcome="translated"} 1`, `bingle_translations_total{outcome="other"} 1`, "bingle_translate_request_duration_seconds"} {
+		if !strings.Contains(body, want) {
+			t.Errorf("missing %s", want)
+		}
+	}
+}

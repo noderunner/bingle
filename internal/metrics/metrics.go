@@ -82,6 +82,12 @@ type Metrics struct {
 	clientErrors   *prometheus.CounterVec
 	mail           *prometheus.CounterVec
 	mailSend       prometheus.Histogram
+	// translations and translateReq are registered only once a translation
+	// service is set up (EnableTranslation), so a server without one exposes
+	// nothing about it.
+	translations  *prometheus.CounterVec
+	translateReq  prometheus.Histogram
+	translateOnce sync.Once
 }
 
 // New builds the registry, registers the Go runtime and process collectors
@@ -240,6 +246,16 @@ func New(version string) *Metrics {
 		mailSend: prometheus.NewHistogram(prometheus.HistogramOpts{
 			Namespace: Namespace, Subsystem: "mail", Name: "send_duration_seconds",
 			Help: "How long handing one message to the mail server took, sent or not.", Buckets: durationBuckets,
+		}),
+
+		translations: prometheus.NewCounterVec(prometheus.CounterOpts{
+			Namespace: Namespace, Name: "translations_total",
+			Help: "Chat lines asked to be put into a reader's language, by what became of them: translated, same (already in it), skipped (nothing to translate), rejected (the answer was dropped), failed, dropped (the queue was full), paused (the service was being left alone).",
+		}, []string{"outcome"}),
+
+		translateReq: prometheus.NewHistogram(prometheus.HistogramOpts{
+			Namespace: Namespace, Subsystem: "translate", Name: "request_duration_seconds",
+			Help: "How long one request to the translation service took, answered or not.", Buckets: durationBuckets,
 		}),
 	}
 

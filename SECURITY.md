@@ -15,6 +15,10 @@ Bingle is built for a group of friends that may grow ([the accounts plan](docs/h
 - An anonymous client — no key, no token — can still play seats nobody owns, on a `hybrid` server.
 - Voice chat sends audio directly between the players' browsers; players in a call can see each
   other's network addresses unless a TURN relay is used (docs/voice.md).
+- Chat translation, when it is set up, sends chat lines to the translation service named in
+  `BINGLE_TRANSLATE_URL`, which should be on the server's machine or network; the server warns when it is
+  not. Such services usually have no authentication, so open their port to the local network only
+  (docs/translate.md, ADR 0143).
 
 So: put it on a private network or behind a VPN or a reverse proxy with its own authentication if you do
 not want strangers using it, and use HTTPS (`BINGLE_TLS_DOMAIN`, docs/tls.md) if it is reachable

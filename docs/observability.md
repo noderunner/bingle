@@ -174,6 +174,8 @@ The container image does not publish 9095 by default, and the health check uses 
 | `bingle_game_real_time_events_total{event}` | What the real-time rules did: `first_warning`, `second_warning`, `offer_taken`, `absent_move`, `kick_vote` (a vote opened), `kick`, `timeout_bot` (a bot took a seat whose time ran out) |
 | `bingle_mail_total{kind,outcome}` | Mail by kind — `confirm`, `reset`, `turn`, `notice` — and what became of it: `queued`, `sent`, `failed`, `limited` (held by the sending limits), `suppressed` (the address asked not to be mailed), `dropped` (the queue was full), `stopped` (not tried while sending is stopped or paused), `auth_failed`, `rate_limited`. **`queued` without `sent` means the mail server is the problem** |
 | `bingle_mail_send_duration_seconds` | How long handing one message to the mail server took |
+| `bingle_translations_total{outcome}` | Chat lines asked to be put into a reader's language, and what became of them: `translated`, `same`, `skipped`, `rejected` (the answer was dropped), `failed`, `dropped` (the queue was full), `paused` (the service is being left alone after failing). See [translate.md](translate.md) |
+| `bingle_translate_request_duration_seconds` | How long one request to the translation service took |
 | `bingle_build_info{version}` | Always 1; the label is the engine's version |
 | `go_*`, `process_*` | The Go runtime and process collectors, registered explicitly |
 

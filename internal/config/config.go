@@ -205,6 +205,10 @@ type Config struct {
 	// Mail is the setup for email notifications (see Mail).
 	Mail Mail
 
+	// Translate is the translation service chat is translated by (see
+	// Translate; ADR 0143).
+	Translate Translate
+
 	// Connection shortens how game sockets are watched, for tests. It has no
 	// environment variable, and zero values mean the normal times.
 	Connection Connection
@@ -330,6 +334,28 @@ type Mail struct {
 // Enabled reports whether email notifications are set up.
 func (m Mail) Enabled() bool { return m.Host != "" && m.Password.Set() && m.From != "" }
 
+// Translate is the translation service on the server's own machine or
+// network that chat is translated by (ADR 0143). It is on only when URL is set.
+type Translate struct {
+	// URL is the service's base, such as "http://127.0.0.1:11434/v1" for
+	// Ollama (BINGLE_TRANSLATE_URL). Empty turns translation off.
+	URL string
+	// Model is the model the service is asked for (BINGLE_TRANSLATE_MODEL);
+	// required with URL.
+	Model string
+	// API is how the service is spoken to (BINGLE_TRANSLATE_API): "openai",
+	// the /chat/completions endpoint Ollama, llama.cpp and vLLM serve.
+	API string
+	// Workers is how many requests are made at once (BINGLE_TRANSLATE_WORKERS,
+	// default 1).
+	Workers int
+	// Timeout bounds one request (BINGLE_TRANSLATE_TIMEOUT, default 20s).
+	Timeout time.Duration
+}
+
+// Enabled reports whether a translation service is set up.
+func (t Translate) Enabled() bool { return t.URL != "" }
+
 // DefaultRTCStun is the STUN server used when BINGLE_RTC_STUN is not set.
 const DefaultRTCStun = "stun:stun.l.google.com:19302"
 
@@ -439,6 +465,9 @@ func Load() (Config, error) {
 		return Config{}, err
 	}
 	if err := loadMail(&cfg); err != nil {
+		return Config{}, err
+	}
+	if err := loadTranslate(&cfg); err != nil {
 		return Config{}, err
 	}
 
@@ -910,6 +939,52 @@ func loadMail(cfg *Config) error {
 	}
 	m.Password = NewSecret(pw)
 	cfg.Mail = m
+	return nil
+}
+
+// loadTranslate reads the BINGLE_TRANSLATE_* settings. Without
+// BINGLE_TRANSLATE_URL translation is simply off.
+func loadTranslate(cfg *Config) error {
+	t := Translate{API: "openai", Workers: 1, Timeout: 20 * time.Second}
+	raw := strings.TrimSpace(os.Getenv("BINGLE_TRANSLATE_URL"))
+	if raw == "" {
+		for _, name := range []string{"BINGLE_TRANSLATE_MODEL", "BINGLE_TRANSLATE_API", "BINGLE_TRANSLATE_WORKERS", "BINGLE_TRANSLATE_TIMEOUT"} {
+			if os.Getenv(name) != "" {
+				return fmt.Errorf("config: %s needs BINGLE_TRANSLATE_URL", name)
+			}
+		}
+		return nil
+	}
+	u, err := url.Parse(raw)
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" || u.User != nil || u.RawQuery != "" || u.Fragment != "" {
+		return fmt.Errorf("config: BINGLE_TRANSLATE_URL must be an http or https URL with a host and no login, query or fragment, got %q", raw)
+	}
+	t.URL = strings.TrimRight(raw, "/")
+	t.Model = strings.TrimSpace(os.Getenv("BINGLE_TRANSLATE_MODEL"))
+	if t.Model == "" {
+		return fmt.Errorf("config: BINGLE_TRANSLATE_URL needs BINGLE_TRANSLATE_MODEL, the model to ask for")
+	}
+	if v := strings.ToLower(strings.TrimSpace(os.Getenv("BINGLE_TRANSLATE_API"))); v != "" {
+		if v != "openai" {
+			return fmt.Errorf("config: BINGLE_TRANSLATE_API must be openai, got %q", v)
+		}
+		t.API = v
+	}
+	if v := os.Getenv("BINGLE_TRANSLATE_WORKERS"); v != "" {
+		n, err := strconv.Atoi(v)
+		if err != nil || n < 1 || n > 32 {
+			return fmt.Errorf("config: BINGLE_TRANSLATE_WORKERS must be a whole number from 1 to 32, got %q", v)
+		}
+		t.Workers = n
+	}
+	if v := os.Getenv("BINGLE_TRANSLATE_TIMEOUT"); v != "" {
+		d, err := time.ParseDuration(v)
+		if err != nil || d < time.Second || d > 5*time.Minute {
+			return fmt.Errorf("config: BINGLE_TRANSLATE_TIMEOUT must be a duration from 1s to 5m, got %q", v)
+		}
+		t.Timeout = d
+	}
+	cfg.Translate = t
 	return nil
 }
 

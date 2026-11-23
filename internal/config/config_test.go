@@ -671,3 +671,55 @@ func TestLoad_DevIsLoopbackOnly(t *testing.T) {
 		t.Error("BINGLE_DEV and BINGLE_TRUST_PROXY were accepted together")
 	}
 }
+
+func TestLoad_Translate(t *testing.T) {
+	vars := []string{"BINGLE_TRANSLATE_URL", "BINGLE_TRANSLATE_MODEL", "BINGLE_TRANSLATE_API", "BINGLE_TRANSLATE_WORKERS", "BINGLE_TRANSLATE_TIMEOUT"}
+	set := func(t *testing.T, kv map[string]string) {
+		t.Helper()
+		for _, k := range vars {
+			t.Setenv(k, kv[k])
+		}
+	}
+	t.Run("off when unset", func(t *testing.T) {
+		set(t, nil)
+		cfg, err := Load()
+		if err != nil || cfg.Translate.Enabled() {
+			t.Fatalf("got %+v, %v", cfg.Translate, err)
+		}
+	})
+	t.Run("defaults", func(t *testing.T) {
+		set(t, map[string]string{"BINGLE_TRANSLATE_URL": "http://192.168.1.20:11434/v1/", "BINGLE_TRANSLATE_MODEL": "qwen2.5:7b"})
+		cfg, err := Load()
+		if err != nil {
+			t.Fatal(err)
+		}
+		want := Translate{URL: "http://192.168.1.20:11434/v1", Model: "qwen2.5:7b", API: "openai", Workers: 1, Timeout: 20 * time.Second}
+		if cfg.Translate != want {
+			t.Fatalf("got %+v, want %+v", cfg.Translate, want)
+		}
+	})
+	t.Run("overrides", func(t *testing.T) {
+		set(t, map[string]string{"BINGLE_TRANSLATE_URL": "http://127.0.0.1:8080/v1", "BINGLE_TRANSLATE_MODEL": "m",
+			"BINGLE_TRANSLATE_API": "OpenAI", "BINGLE_TRANSLATE_WORKERS": "3", "BINGLE_TRANSLATE_TIMEOUT": "45s"})
+		cfg, err := Load()
+		if err != nil || cfg.Translate.Workers != 3 || cfg.Translate.Timeout != 45*time.Second || cfg.Translate.API != "openai" {
+			t.Fatalf("got %+v, %v", cfg.Translate, err)
+		}
+	})
+	for name, kv := range map[string]map[string]string{
+		"a setting without the URL": {"BINGLE_TRANSLATE_MODEL": "m"},
+		"no model":                  {"BINGLE_TRANSLATE_URL": "http://127.0.0.1:11434/v1"},
+		"not http":                  {"BINGLE_TRANSLATE_URL": "ftp://127.0.0.1/v1", "BINGLE_TRANSLATE_MODEL": "m"},
+		"a login in the URL":        {"BINGLE_TRANSLATE_URL": "http://u:p@127.0.0.1/v1", "BINGLE_TRANSLATE_MODEL": "m"},
+		"an unknown API":            {"BINGLE_TRANSLATE_URL": "http://127.0.0.1/v1", "BINGLE_TRANSLATE_MODEL": "m", "BINGLE_TRANSLATE_API": "deepl"},
+		"no workers":                {"BINGLE_TRANSLATE_URL": "http://127.0.0.1/v1", "BINGLE_TRANSLATE_MODEL": "m", "BINGLE_TRANSLATE_WORKERS": "0"},
+		"a short timeout":           {"BINGLE_TRANSLATE_URL": "http://127.0.0.1/v1", "BINGLE_TRANSLATE_MODEL": "m", "BINGLE_TRANSLATE_TIMEOUT": "10ms"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			set(t, kv)
+			if _, err := Load(); err == nil {
+				t.Fatal("no error")
+			}
+		})
+	}
+}

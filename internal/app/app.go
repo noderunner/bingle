@@ -31,6 +31,7 @@ import (
 	"github.com/noderunner/bingle/internal/repro"
 	"github.com/noderunner/bingle/internal/session"
 	"github.com/noderunner/bingle/internal/store"
+	"github.com/noderunner/bingle/internal/translate"
 	"github.com/noderunner/bingle/internal/transport"
 	"github.com/noderunner/bingle/internal/version"
 	"github.com/noderunner/bingle/internal/web"
@@ -70,6 +71,9 @@ type App struct {
 	clientErrors bool
 	// transport says how to read a request's scheme and peer address.
 	transport transport.Policy
+	// translator is the chat's translation service, nil when none is set up
+	// (ADR 0143).
+	translator *translate.Service
 }
 
 // WithTransport tells the App how to read a request's peer address: behind a
@@ -258,6 +262,10 @@ func New(cfg config.Config, opts ...Option) (*App, error) {
 		_ = st.Close()
 		return nil, err
 	}
+	if a.translator, err = enableTranslate(cfg.Translate, a.metrics, a.log); err != nil {
+		_ = st.Close()
+		return nil, err
+	}
 	// An empty server gets its first administrator (ADR 0068).
 	seeded, err := a.accounts.SeedAdmin(context.Background(), auth.SeedOptions{
 		Handle: cfg.AdminHandle, Email: cfg.SeedAdminEmail(), Password: cfg.AdminPassword.Reveal(), Deterministic: cfg.SeedPasswordDeterministic()})
@@ -329,6 +337,31 @@ func enableNotify(m *session.Manager, cfg config.Config, lg *slog.Logger) error 
 	lg.Info("notify: mail is on", "host", cfg.Mail.Host, "port", cfg.Mail.Port, "tls", cfg.Mail.Mode,
 		logging.Addr(cfg.Mail.From), "hourly_limit", cfg.Mail.HourlyLimit, "daily_limit", cfg.Mail.DailyLimit)
 	return nil
+}
+
+// enableTranslate starts the translation service when one is set up, and
+// warns when its address is not on this machine or a private network: chat
+// lines go there (ADR 0143).
+func enableTranslate(cfg config.Translate, mx *metrics.Metrics, lg *slog.Logger) (*translate.Service, error) {
+	if !cfg.Enabled() {
+		lg.Info("translate: chat translation is off: set BINGLE_TRANSLATE_URL to a translation service on this machine or network")
+		return nil, nil
+	}
+	svc, err := translate.New(cfg, mx, lg)
+	if err != nil {
+		return nil, fmt.Errorf("app: chat translation: %w", err)
+	}
+	mx.EnableTranslation()
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	switch local, err := translate.Local(ctx, cfg.URL, nil); {
+	case err != nil:
+		lg.Warn("translate: could not tell whether the translation service is on this machine or network; chat lines are sent to it", "error", err)
+	case !local:
+		lg.Warn("translate: the translation service is NOT on this machine or a private network; chat lines are sent to it")
+	}
+	lg.Info("translate: chat translation is on", "api", cfg.API, "model", cfg.Model, "workers", cfg.Workers, "timeout", cfg.Timeout)
+	return svc, nil
 }
 
 // RetiredGames are the games bingle used to ship and no longer does. Games of
@@ -431,6 +464,9 @@ func (a *App) Manager() *session.Manager {
 
 // Close releases resources held by the App.
 func (a *App) Close() error {
+	if a.translator != nil {
+		a.translator.Close()
+	}
 	return a.store.Close()
 }
 
