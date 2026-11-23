@@ -132,7 +132,7 @@ func TestBadges_AHandleShowsTheBadges(t *testing.T) {
 	if err := chromedp.Run(ana, chromedp.EmulateViewport(1400, 900), chromedp.Navigate(base+"/")); err != nil {
 		t.Fatal(err)
 	}
-	waitJS(t, ana, "the tab", `document.getElementById("tab-chat") !== null`, 20*time.Second)
+	waitScripts(t, ana)
 	clickSel(t, ana, "#tab-chat")
 	waitJS(t, ana, "the handle", `document.querySelector('.handle-badge[data-handle="bea"]') !== null`, 15*time.Second)
 	clickSel(t, ana, `.handle-badge[data-handle="bea"]`)

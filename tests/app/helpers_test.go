@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/chromedp/cdproto/runtime"
 	"github.com/chromedp/chromedp"
@@ -116,4 +117,13 @@ func tricksTable(t *testing.T, baseURL, def string, seats int) string {
 	}
 	playUntil(t, baseURL, created.RoomCode, func(m []string) bool { return !strings.HasPrefix(m[0], "cross:") })
 	return created.RoomCode
+}
+
+// waitScripts waits for a page's modules to have run, which the top bar's icons
+// are made by. A tab of the template is there before they run, and a click on it
+// then does nothing; the modules start a little later than the page (js/i18n.js
+// loads the page's words first).
+func waitScripts(t *testing.T, ctx context.Context) {
+	t.Helper()
+	waitJS(t, ctx, "the page's scripts", `document.getElementById("open-profile") !== null`, 20*time.Second)
 }

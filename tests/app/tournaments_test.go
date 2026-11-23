@@ -229,7 +229,7 @@ func TestTournaments_UI(t *testing.T) {
 	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1400, 1000), chromedp.Navigate(base+"/")); err != nil {
 		t.Fatal(err)
 	}
-	waitJS(t, ctx, "the tab", `document.getElementById("tab-tournaments") !== null`, 20*time.Second)
+	waitScripts(t, ctx)
 	clickSel(t, ctx, "#tab-tournaments")
 	waitJS(t, ctx, "the list", `document.getElementById("tournament-empty") !== null`, 10*time.Second)
 	clickSel(t, ctx, "#tournament-new")

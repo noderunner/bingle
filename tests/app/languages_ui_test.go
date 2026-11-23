@@ -306,7 +306,7 @@ func TestWebLanguages_TheOtherTabsAreTranslated(t *testing.T) {
 	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1200, 900), chromedp.Navigate(base+"/healthz"), chromedp.Evaluate(`document.cookie = "bingle_lang=en-XA; path=/"; true`, nil), chromedp.Navigate(base+"/")); err != nil {
 		t.Fatal(err)
 	}
-	waitJS(t, ctx, "the tabs", `document.getElementById("tab-analysis")`, 20*time.Second)
+	waitScripts(t, ctx)
 	learnContent(t, ctx)
 	check := func(what, sel string) {
 		t.Helper()
