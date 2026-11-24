@@ -13,3 +13,7 @@ display:
   no_hands: true
   tints:
     check: {color: '#e0a090'}
+variants:
+  chess-crazyhouse:
+    display:
+      no_hands: false

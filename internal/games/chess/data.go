@@ -76,8 +76,9 @@ func sideOf(color string) uint8 {
 type Data struct {
 	// Turn is the seat to move (0 once the game is over).
 	Turn int `json:"turn"`
-	// Castling lists the castling rights still held, as in FEN: K and Q for
-	// White's king and queen sides, k and q for Black's ("" for none).
+	// Castling lists the castling rights still held, as in X-FEN: K and Q
+	// for White's rooks on h1 and a1, k and q for Black's, and the file of the
+	// rook (B, f) for a Chess960 rook elsewhere ("" for none).
 	Castling string `json:"castling,omitempty"`
 	// EnPassant is the square a pawn passed over with a double step on the
 	// last move, where an enemy pawn may take it.
@@ -90,6 +91,9 @@ type Data struct {
 	// or loss of a castling right, the current one last: a position seen
 	// three times is a draw.
 	Seen []string `json:"seen,omitempty"`
+	// Promoted lists the squares of pieces that were pawns (Crazyhouse: one
+	// taken goes to the hand as a pawn).
+	Promoted []string `json:"promoted,omitempty"`
 	// The result of a finished game.
 	Winner int    `json:"winner,omitempty"`
 	Reason string `json:"reason,omitempty"`
@@ -101,6 +105,7 @@ func (d *Data) CloneExt() any { return d.clone() }
 func (d *Data) clone() *Data {
 	c := *d
 	c.Seen = append([]string(nil), d.Seen...)
+	c.Promoted = append([]string(nil), d.Promoted...)
 	return &c
 }
 

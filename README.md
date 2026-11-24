@@ -26,7 +26,7 @@ click-to-move for free.
 |---|---|
 | **Tak** 3×3 – 8×8 (stacks, walls, capstone, roads, PTN) | `internal/games/tak/tak.yaml` |
 | **Courtfall** (hex arena skirmish: terrain draft, five Courts, secret dice splits, Momentum, Clear Turns — rules in Go, legend in YAML; a prototype, with a folder per version of its rules) | `internal/games/courtfall/` ([rules notes](docs/courtfall.md)) |
-| **Chess** (the FIDE rules: castling, en passant, promotion, and the draws by repetition, fifty moves and insufficient material — rules in Go) | `internal/games/chess/` ([ADR 0144](docs/decisions/0144-chess-notation-and-draws.md)) |
+| **Chess** (the FIDE rules: castling, en passant, promotion, and the draws by repetition, fifty moves and insufficient material; variants Chess960, Crazyhouse, Antichess, Atomic and Alice — rules in Go) | `internal/games/chess/` ([ADR 0144](docs/decisions/0144-chess-notation-and-draws.md), [0145](docs/decisions/0145-chess-variants.md)) |
 | **Fist** (the game from *The Verdigris Pawn*: pinning with allies, jump chains, the mage's Empower, a neutral pawn both sides can seize — rules in Go) | `internal/games/fist/` ([ADR 0036](docs/decisions/0036-fist-one-move-is-one-turn.md)) |
 | **Blooms** (Nick Bentley's Go-like game on a hex board: two colours each, one or two stones a turn, capture fenced blooms; bases 4, 5, 6 — rules in Go) | `internal/games/blooms/` ([ADR 0038](docs/decisions/0038-blooms-two-stage-turns.md)) |
 | **Fendo** (Dieter Stein's territory game: move a piece and fence beside it, or add a piece; areas fenced round one piece score; 7×7, 9×9, 11×11 — rules in Go) | `internal/games/fendo/` ([ADR 0040](docs/decisions/0040-fendo-fences-in-the-view.md)) |

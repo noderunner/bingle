@@ -31,7 +31,7 @@ func (rs *Ruleset) Redact(game *catalog.CompiledGame, st *state.BoardState, view
 		return st
 	}
 	out := st.Clone()
-	out.SetExt(&publicExt{Data: d.clone(), View: buildView(st, d)})
+	out.SetExt(&publicExt{Data: d.clone(), View: buildView(st, d, variantOf(game))})
 	return out
 }
 
@@ -48,19 +48,19 @@ func (rs *Ruleset) Determinize(game *catalog.CompiledGame, st *state.BoardState,
 	return st
 }
 
-func buildView(st *state.BoardState, d *Data) *View {
+func buildView(st *state.BoardState, d *Data, vr variant) *View {
 	v := &View{Phase: "play", ImpulseSeat: d.Turn, Tints: map[string]string{}}
 	if d.Turn == 0 {
 		v.Prompt = reasonText(d.Reason)
 		if d.Reason == "checkmate" {
-			p := decode(st, &Data{Turn: int(other(sideOfSeat(d.Winner)))})
+			p := decode(st, &Data{Turn: int(other(sideOfSeat(d.Winner)))}, vr)
 			if k := p.king(p.side); k >= 0 {
 				v.Tints[cellName(k)] = "check"
 			}
 		}
 		return v
 	}
-	p := decode(st, d)
+	p := decode(st, d, vr)
 	name := map[int]string{seatWhite: "White", seatBlack: "Black"}[d.Turn]
 	v.Prompt = name + " to move"
 	v.Impulse = "Choose a piece to move."
@@ -76,7 +76,8 @@ func buildView(st *state.BoardState, d *Data) *View {
 var value = [...]float64{0, 1, 3, 3, 5, 9, 0}
 
 // Heuristic values a position for seat in [-1, 1] by the material on each
-// side, with a little for pawns that have come forward.
+// side (in hand too, in Crazyhouse), with a little for pawns that have come
+// forward. In Antichess, where you win by losing everything, less is more.
 func (rs *Ruleset) Heuristic(game *catalog.CompiledGame, st *state.BoardState, seat int) float64 {
 	d, err := dataOf(st)
 	if err != nil {
@@ -91,12 +92,22 @@ func (rs *Ruleset) Heuristic(game *catalog.CompiledGame, st *state.BoardState, s
 		}
 		return -1
 	}
-	p := decode(st, d)
+	vr := variantOf(game)
+	p := decode(st, d, vr)
 	var x float64
+	for side := uint8(1); side <= 2; side++ {
+		for k, n := range p.hand[side] {
+			if int(side) == seat {
+				x += value[k] * float64(n)
+			} else {
+				x -= value[k] * float64(n)
+			}
+		}
+	}
 	for c, q := range p.b {
 		w := value[q.kind]
 		if q.kind == kPawn {
-			ranks := c / 8
+			ranks := c % 64 / 8
 			if q.side == seatBlack {
 				ranks = 7 - ranks
 			}
@@ -109,6 +120,9 @@ func (rs *Ruleset) Heuristic(game *catalog.CompiledGame, st *state.BoardState, s
 		}
 	}
 	x /= 20
+	if vr == vAntichess {
+		x = -x
+	}
 	if x > 1 {
 		x = 1
 	}
