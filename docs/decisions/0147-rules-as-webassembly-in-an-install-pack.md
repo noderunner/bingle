@@ -199,10 +199,10 @@ The maintainer settles these by reviewing this ADR. Each is a recommendation unt
    and so `private: true` in the API (ADR 0140). A client deciding what to hide needs the same answer for a
    commercial game whether it came from the overlay or a pack. A pack without it is public. No new API field is
    added during the proof of concept, so `version.API` does not move.
-5. **Which rulebook settles Zèrtz's rules.** *This needs the maintainer.* The recommendation is the rulebook of the
-   maintainer's own copy, with its edition named in the game's guide, as Cthulhu Wars is settled by one named
-   rulebook. The 48- and 61-ring boards and Blitz should follow the same rulebook where it gives them, and
-   the GIPF project's published tournament rules where it does not.
+5. **Which rulebook settles Zèrtz's rules.** *Settled by the maintainer: the 2016 Rio Grande Games edition.* Its
+   rulebook settles every rule, and the game's guide names the edition, as Cthulhu Wars is settled by one named
+   rulebook. The 48- and 61-ring boards and Blitz follow it where it gives them, and the GIPF project's published
+   tournament rules where it does not.
 
 ### How it ends
 
