@@ -67,11 +67,18 @@ func (h *handlers) handleWS(w http.ResponseWriter, r *http.Request) {
 	// is cancelled the moment the connection closes for any reason — that's
 	// what causes the wsjson.Write below to start failing and the loop to
 	// exit once the client disconnects.
-	ctx := conn.CloseRead(r.Context())
+	ctx := conn.CloseRead(withReader(r))
 
 	events, unsubscribe := h.mgr.Subscribe(code)
 	defer unsubscribe()
 	voiceOnly := r.URL.Query().Get("only") == "voice"
+	// The chat's lines are put into this reader's language while the socket
+	// is open (ADR 0143); a voice call's socket reads no chat.
+	lang := ""
+	if !voiceOnly {
+		lang = h.mgr.TranslationLanguage(ctx)
+		defer h.mgr.ReadIn(ctx, code)()
+	}
 	// A socket that stops answering is closed, which ends this handler like any
 	// other close and so disconnects the seat.
 	go pingUntilDead(ctx, conn, h.mgr.ConnectionTimes())
@@ -131,6 +138,9 @@ func (h *handlers) handleWS(w http.ResponseWriter, r *http.Request) {
 		if voiceOnly && ev.Type != "voice" && ev.Type != "rtc" {
 			continue
 		}
+		if !keepsTranslation(ev, lang) {
+			continue
+		}
 		if err := wsjson.Write(ctx, conn, ev); err != nil {
 			return
 		}
@@ -175,9 +185,11 @@ func (h *handlers) handleGlobalChatWS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer func() { _ = conn.CloseNow() }()
-	ctx := conn.CloseRead(r.Context())
+	ctx := conn.CloseRead(withReader(r))
 	events, unsubscribe := h.mgr.SubscribeGlobalChat()
 	defer unsubscribe()
+	lang := h.mgr.TranslationLanguage(ctx)
+	defer h.mgr.ReadIn(ctx, session.GlobalChatRoom)()
 	for {
 		select {
 		case <-ctx.Done():
@@ -185,6 +197,9 @@ func (h *handlers) handleGlobalChatWS(w http.ResponseWriter, r *http.Request) {
 		case ev, ok := <-events:
 			if !ok {
 				return
+			}
+			if !keepsTranslation(ev, lang) {
+				continue
 			}
 			if err := wsjson.Write(ctx, conn, ev); err != nil {
 				return

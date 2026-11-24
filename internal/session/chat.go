@@ -44,6 +44,10 @@ type ChatLine struct {
 	// Server says the server wrote it, as it announces a badge (ADR 0130);
 	// Seat is then 0.
 	Server bool `json:"server,omitempty"`
+	// Translation is the line in the reader's language (ADR 0143): only in
+	// the chat's history, and only once it has been made. A "chat" event
+	// never has it; a "chat_translation" event brings it.
+	Translation *ChatTranslation `json:"translation,omitempty"`
 
 	principal string
 }
@@ -143,7 +147,18 @@ func (m *Manager) SendChat(ctx context.Context, roomCode, name, text string) (Ch
 	m.identifyLines(ctx, lines)
 	line = lines[0]
 	m.hub.publish(roomCode, Event{Type: "chat", Data: chatEventData(line)})
+	m.translateSaid(ctx, lineToTranslate{room: roomCode, id: line.ID, text: line.Text, keep: playerNames(players, speaker)})
 	return line, nil
+}
+
+// playerNames are the names of a game's players and of the speaker, which are
+// never translated.
+func playerNames(players []store.Player, speaker string) []string {
+	out := []string{speaker}
+	for _, p := range players {
+		out = append(out, p.Name)
+	}
+	return out
 }
 
 // ChatLog returns the game's chat: the latest limit messages, or those after
@@ -159,7 +174,8 @@ func (m *Manager) ChatLog(ctx context.Context, roomCode string, afterID int64, l
 		return nil, err
 	}
 	colors := map[int]string{}
-	if players, err := m.store.ListPlayers(ctx, game.ID); err == nil {
+	players, err := m.store.ListPlayers(ctx, game.ID)
+	if err == nil {
 		for _, p := range players {
 			colors[p.Seat] = p.Color
 		}
@@ -169,6 +185,9 @@ func (m *Manager) ChatLog(ctx context.Context, roomCode string, afterID int64, l
 		out[i] = chatLineOf(mm, colors[mm.Seat])
 	}
 	m.identifyLines(ctx, out)
+	m.translationsOf(ctx, false, roomCode, len(out), playerNames(players, ""),
+		func(i int) (int64, string, bool) { return out[i].ID, out[i].Text, out[i].Server },
+		func(i int, t ChatTranslation) { out[i].Translation = &t })
 	return out, nil
 }
 
@@ -213,6 +232,9 @@ type GlobalChatLine struct {
 	Name string `json:"name"`
 	Text string `json:"text"`
 	At   string `json:"at"`
+	// Translation is the line in the reader's language (ADR 0143), as a
+	// game's chat has it.
+	Translation *ChatTranslation `json:"translation,omitempty"`
 }
 
 // SendGlobalChat adds a message from the person called name to the global chat
@@ -243,6 +265,7 @@ func (m *Manager) SendGlobalChat(ctx context.Context, name, text string) (Global
 	}
 	line := GlobalChatLine{ID: msg.ID, Name: msg.Name, Text: msg.Body, At: msg.CreatedAt}
 	m.hub.publish(GlobalChatRoom, Event{Type: "chat", Data: line})
+	m.translateSaid(ctx, lineToTranslate{global: true, room: GlobalChatRoom, id: line.ID, text: line.Text, keep: []string{speaker}})
 	return line, nil
 }
 
@@ -254,9 +277,14 @@ func (m *Manager) GlobalChatLog(ctx context.Context, afterID int64, limit int) (
 		return nil, err
 	}
 	out := make([]GlobalChatLine, len(msgs))
+	names := make([]string, len(msgs))
 	for i, mm := range msgs {
 		out[i] = GlobalChatLine{ID: mm.ID, Name: mm.Name, Text: mm.Body, At: mm.CreatedAt}
+		names[i] = mm.Name
 	}
+	m.translationsOf(ctx, true, GlobalChatRoom, len(out), names,
+		func(i int) (int64, string, bool) { return out[i].ID, out[i].Text, false },
+		func(i int, t ChatTranslation) { out[i].Translation = &t })
 	return out, nil
 }
 

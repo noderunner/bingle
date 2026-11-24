@@ -5,9 +5,21 @@ issue #252). The translation is done by a model that **you** run, on the server'
 does not contain a model and never sends chat to an outside service of its own accord. With no service set up,
 nothing changes: lines arrive as written.
 
-> **Built so far:** the server's client for the service, its settings, checks and metrics. Chat itself is
-> translated from the next stage of #252; until then a service set up here is started and checked but not asked
-> anything.
+> **Built so far:** the service's client, and game and global chat translated on the server, in the API (`chat_translation`
+> events, `translation` in history, `POST /auth/translate`). The page shows translations from the next stage of #252,
+> and direct messages after it.
+
+## How chat is translated
+
+- A reader whose socket is open in a game or the global chat registers their language there: the interface's (ADR
+  0141), if they have not turned translation off (`POST /auth/translate`, on by default) and hold the `translate`
+  capability. A line said there is sent **once for each language registered**, not once per reader.
+- What it comes to is **kept with the line** (`chat_translations`, `global_chat_translations`) and goes with it, so
+  history and later readers do not pay again. A line already in the reader's language, or with nothing to translate,
+  is kept as needing none.
+- A reader who arrives later has the **latest 20 lines** without one asked for when their page reads the history.
+- **The writer's limit**: a writer's lines sent to the service, per minute, by class (`translate` in the capabilities
+  file: 10 for guests, 30 for accounts). A line over it is shown as written.
 
 ## Settings
 

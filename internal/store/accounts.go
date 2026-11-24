@@ -37,6 +37,9 @@ type Account struct {
 	// for the browser's own; BrowserLanguage is its browser's, as the account
 	// last saw the site.
 	Language, BrowserLanguage string
+	// TranslateChat: chat is shown to the account in its language (ADR
+	// 0143). On unless it turned that off.
+	TranslateChat bool
 }
 
 // MailLanguage is the language to write to the account in: the one it chose,
@@ -57,7 +60,7 @@ var ErrTaken = errors.New("store: already taken")
 // accountCols are an account's columns, the accounts table being called t.
 func accountCols(t string) string {
 	return t + `.id, ` + t + `.handle, ` + t + `.display_name, ` + t + `.email, ` + t + `.email_verified_at IS NOT NULL, ` + t + `.status, ` +
-		t + `.must_change_password, ` + t + `.principal_id, ` + t + `.created_at, ` + t + `.language, ` + t + `.browser_language, ` +
+		t + `.must_change_password, ` + t + `.principal_id, ` + t + `.created_at, ` + t + `.language, ` + t + `.browser_language, ` + t + `.translate_chat, ` +
 		`EXISTS (SELECT 1 FROM credentials c WHERE c.account_id = ` + t + `.id AND c.kind = 'totp'), ` +
 		`EXISTS (SELECT 1 FROM account_groups g WHERE g.account_id = ` + t + `.id AND g.group_name = '` + GroupAdmin + `')`
 }
@@ -65,7 +68,7 @@ func accountCols(t string) string {
 var accountColumns = accountCols("accounts")
 
 func (a *Account) fields() []any {
-	return []any{&a.ID, &a.Handle, &a.DisplayName, &a.Email, &a.EmailVerified, &a.Status, &a.MustChangePassword, &a.PrincipalID, &a.CreatedAt, &a.Language, &a.BrowserLanguage, &a.HasTOTP, &a.Admin}
+	return []any{&a.ID, &a.Handle, &a.DisplayName, &a.Email, &a.EmailVerified, &a.Status, &a.MustChangePassword, &a.PrincipalID, &a.CreatedAt, &a.Language, &a.BrowserLanguage, &a.TranslateChat, &a.HasTOTP, &a.Admin}
 }
 
 func scanAccount(row interface{ Scan(...any) error }) (Account, error) {
@@ -283,6 +286,13 @@ func (s *Store) SetAccountLanguage(ctx context.Context, accountID int64, languag
 // in, for its mail when it chose no language (ADR 0141).
 func (s *Store) SetAccountBrowserLanguage(ctx context.Context, accountID int64, language string) error {
 	_, err := s.exec(ctx, "SetAccountBrowserLanguage", `UPDATE accounts SET browser_language = ? WHERE id = ?`, language, accountID)
+	return err
+}
+
+// SetAccountTranslateChat keeps whether chat is shown to the account in its
+// language (ADR 0143).
+func (s *Store) SetAccountTranslateChat(ctx context.Context, accountID int64, on bool) error {
+	_, err := s.exec(ctx, "SetAccountTranslateChat", `UPDATE accounts SET translate_chat = ? WHERE id = ?`, on, accountID)
 	return err
 }
 

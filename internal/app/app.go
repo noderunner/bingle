@@ -255,14 +255,17 @@ func New(cfg config.Config, opts ...Option) (*App, error) {
 	manager.SetMayEnterTournament(caps.MayEnterTournament)
 	a.accounts = auth.NewAccounts(st, auth.AccountOptions{Brand: cfg.Brand.DisplayName(), Mailer: manager, Log: a.log, Signup: cfg.Signup, SessionIdle: cfg.SessionIdle, SessionMax: cfg.SessionMax, Argon2: a.argon2,
 		LoginsPerMinute: caps.Limit(auth.ClassGuest, auth.LimitLogin)})
-	a.guests = auth.NewResolver(st, auth.Options{Transport: a.transport, Idle: cfg.GuestIdle, Log: a.log, Accounts: a.accounts,
-		OIDC: auth.NewOIDC(cfg.PublicURL, cfg.OIDC), Caps: caps})
-
-	if err := enableNotify(manager, cfg, a.log); err != nil {
+	if a.translator, err = enableTranslate(cfg.Translate, a.metrics, a.log); err != nil {
 		_ = st.Close()
 		return nil, err
 	}
-	if a.translator, err = enableTranslate(cfg.Translate, a.metrics, a.log); err != nil {
+	if a.translator != nil {
+		manager.EnableTranslate(a.translator, caps.MayTranslate, caps.AllowTranslation)
+	}
+	a.guests = auth.NewResolver(st, auth.Options{Transport: a.transport, Idle: cfg.GuestIdle, Log: a.log, Accounts: a.accounts,
+		OIDC: auth.NewOIDC(cfg.PublicURL, cfg.OIDC), Caps: caps, Translation: a.translator != nil})
+
+	if err := enableNotify(manager, cfg, a.log); err != nil {
 		_ = st.Close()
 		return nil, err
 	}

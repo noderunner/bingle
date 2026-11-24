@@ -39,8 +39,11 @@ the model cannot be inside it; it does have an HTTP client.
   own, so anyone on that network can use them; `docs/translate.md` and `SECURITY.md` say so.
 - **Translate once per language present** (stage 2): a reader who subscribes to a room or the global chat registers
   their language and their switch, and a new line is translated into each language registered other than its own.
-- **Stored with the chat it translates** (stage 2): `chat_translations`, keyed by the line and the language, is the
-  cache, so history and late joiners do not pay again. **Direct messages' translations are never stored**: they live
+- **Stored with the chat it translates** (stage 2): `chat_translations` and `global_chat_translations`, keyed by the
+  line and the language and removed with the line, are the cache, so history and late joiners do not pay again. A
+  line that needs no translation (already in the language, nothing to translate, the answer dropped) is kept with an
+  empty one, so it is not sent again. A reader who comes later has the latest 20 lines without one asked for when
+  their history is read. **Direct messages' translations are never stored**: they live
   in memory with the message (ADR 0105).
 - **The API** (stage 2): the `chat` event is unchanged and comes at once; a `chat_translation` event, `{id, lang,
   from, text}`, follows when it is ready, and each socket passes on only its reader's language. History's lines gain

@@ -340,7 +340,7 @@ func (h *handlers) handleGetChat(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err)
 		return
 	}
-	lines, err := h.mgr.ChatLog(r.Context(), chi.URLParam(r, "code"), after, limit)
+	lines, err := h.mgr.ChatLog(withReader(r), chi.URLParam(r, "code"), after, limit)
 	if err != nil {
 		writeError(w, err)
 		return
@@ -387,7 +387,7 @@ func (h *handlers) handlePostChat(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err)
 		return
 	}
-	line, err := h.mgr.SendChat(r.Context(), chi.URLParam(r, "code"), req.PlayerName, req.Text)
+	line, err := h.mgr.SendChat(withReader(r), chi.URLParam(r, "code"), req.PlayerName, req.Text)
 	if err != nil {
 		writeError(w, err)
 		return
@@ -403,7 +403,7 @@ func (h *handlers) handleGetGlobalChat(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err)
 		return
 	}
-	lines, err := h.mgr.GlobalChatLog(r.Context(), after, limit)
+	lines, err := h.mgr.GlobalChatLog(withReader(r), after, limit)
 	if err != nil {
 		writeError(w, err)
 		return
@@ -421,7 +421,7 @@ func (h *handlers) handlePostGlobalChat(w http.ResponseWriter, r *http.Request) 
 		writeError(w, err)
 		return
 	}
-	line, err := h.mgr.SendGlobalChat(r.Context(), req.PlayerName, req.Text)
+	line, err := h.mgr.SendGlobalChat(withReader(r), req.PlayerName, req.Text)
 	if err != nil {
 		writeError(w, err)
 		return

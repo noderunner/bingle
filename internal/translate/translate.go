@@ -87,6 +87,13 @@ var names = map[string]string{
 	"ko": "Korean", "ru": "Russian", "ar": "Arabic",
 }
 
+// Supported reports whether a line can be put into the language code: one of
+// the interface's (ADR 0141), not the pseudo-locale.
+func Supported(code string) bool {
+	_, ok := names[code]
+	return ok
+}
+
 const (
 	// queueSize bounds how many requests wait for a worker.
 	queueSize = 256

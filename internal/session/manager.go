@@ -72,6 +72,7 @@ type Manager struct {
 	calls              callRegistry           // the one voice call each browser is in (see dm.go)
 	voice              voiceTracker           // who is in the voice chat of each game (see SetVoice)
 	notify             *notifier              // email notifications (nil when not set up; see EnableNotify)
+	translation        *chatTranslation       // chat in each reader's language (nil when not set up; see EnableTranslate)
 	botsBusy           map[string]bool        // rooms with a background bot run, guarded by mu
 	// autoPlayFrom is when the Auto-Play watcher started (zero when it is not
 	// running, as in tests): a wait that ran while the server was down does

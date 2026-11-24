@@ -52,6 +52,7 @@ func (rs *Resolver) Routes() http.Handler {
 	r.Get("/me", rs.handleMe)
 	r.Post("/tour-seen", rs.handleTourSeen)
 	r.Post("/language", rs.handleLanguage)
+	r.Post("/translate", rs.handleTranslate)
 	r.Post("/second", rs.handleSecond)
 	r.Post("/totp/setup", rs.handleTOTPSetup)
 	r.Post("/totp/enable", rs.handleTOTPEnable)
@@ -370,6 +371,12 @@ type Me struct {
 	// LanguageChoice is the language chosen, which POST /auth/language sets:
 	// the account's, or else this browser's. Absent for the browser's own.
 	LanguageChoice string `json:"language_choice,omitempty"`
+	// Translation says chat can be shown here in Language (ADR 0143): the
+	// server has a translation service and this browser may use it.
+	Translation bool `json:"translation,omitempty"`
+	// TranslateChat is the switch POST /auth/translate sets: chat is shown in
+	// Language. On unless it was turned off; it matters only with Translation.
+	TranslateChat bool `json:"translate_chat"`
 }
 
 func (rs *Resolver) meOf(r *http.Request, a store.Account) Me {
@@ -517,6 +524,56 @@ func (rs *Resolver) handleLanguage(w http.ResponseWriter, r *http.Request) {
 		out.Language = i18n.Browser(r)
 	}
 	writeJSON(w, http.StatusOK, out)
+}
+
+// TranslateRequest is POST /auth/translate's body.
+type TranslateRequest struct {
+	// On says chat is shown in the reader's language (ADR 0143).
+	On bool `json:"on"`
+}
+
+// TranslateResponse is POST /auth/translate's answer.
+type TranslateResponse struct {
+	// TranslateChat is the switch as it now is.
+	TranslateChat bool `json:"translate_chat"`
+}
+
+// TranslateCookie keeps a browser's switch for chat in its language when it
+// is off (ADR 0143). There is no cookie while it is on, the default.
+const TranslateCookie = "bingle_translate"
+
+// handleTranslate sets the switch for chat in the reader's language. An
+// account keeps it, so that it follows the account; the browser keeps it in a
+// cookie either way, for a guest, and for after signing out.
+func (rs *Resolver) handleTranslate(w http.ResponseWriter, r *http.Request) {
+	var req TranslateRequest
+	if !decode(w, r, &req) {
+		return
+	}
+	if p, ok := From(r.Context()); ok && p.Account != nil && rs.accounts != nil {
+		if err := rs.accounts.st.SetAccountTranslateChat(r.Context(), p.Account.ID, req.On); err != nil {
+			rs.log.Error("keeping the account's translation switch", "err", err)
+			writeError(w, http.StatusServiceUnavailable, "auth: could not keep that; try again")
+			return
+		}
+	}
+	if req.On {
+		rs.setCookie(w, r, TranslateCookie, "", -1)
+	} else {
+		rs.setCookie(w, r, TranslateCookie, "off", languageCookieAge)
+	}
+	writeJSON(w, http.StatusOK, TranslateResponse{TranslateChat: req.On})
+}
+
+// TranslateWanted says whether the request's reader wants chat in their
+// language: the account's switch, or else the browser's (ADR 0143). On unless
+// turned off.
+func TranslateWanted(r *http.Request) bool {
+	if p, ok := From(r.Context()); ok && p.Account != nil {
+		return p.Account.TranslateChat
+	}
+	c, err := r.Cookie(TranslateCookie)
+	return err != nil || c.Value != "off"
 }
 
 // languageCookieAge is how long a browser keeps its choice of language: 400
@@ -731,12 +788,15 @@ func (rs *Resolver) decorate(r *http.Request, out *Me) {
 	if rs.accounts != nil {
 		out.SignupMode = rs.accounts.signup
 	}
+	out.TranslateChat = TranslateWanted(r)
 	if rs.caps == nil {
+		out.Translation = rs.translation
 		return
 	}
 	out.Mode = rs.caps.Mode()
 	p, ok := From(r.Context())
 	out.Caps = rs.caps.Has(p, ok)
+	out.Translation = rs.translation && rs.caps.may(p, ok, CapTranslate)
 	if rs.accounts != nil && (!ok || p.Account == nil) {
 		out.AccountCaps = rs.caps.ClassCaps(ClassUser)
 	}
