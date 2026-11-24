@@ -360,3 +360,6 @@ which is now built.
   admin page or zip. It measures the boundary this plan's first decision was taken on, then puts the bot search
   inside the module as the decision said it would have to be. Decision 1 and ADR 0128's withdrawal stand for every
   other game, and the overlay stays the way a commercial game is built until the verdict (#300).
+  The same ADR **decides, for packs, how a non-web client gets a game's assets**, which this plan left open: the
+  pack carries a folder of files for each client, the server lists and serves them without reading them, and a
+  client fetches what it lacks and keeps it by its hash. A client still ships what every game shares.
