@@ -7,6 +7,7 @@ package app_test
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -80,6 +81,13 @@ func translatingServer(t *testing.T, url, capsFile string) string {
 
 func translatingApp(t *testing.T, url, capsFile string) (*app.App, string) {
 	t.Helper()
+	a, base, _ := translatingAppDB(t, url, capsFile)
+	return a, base
+}
+
+// translatingAppDB is translatingApp, and the path of its database.
+func translatingAppDB(t *testing.T, url, capsFile string) (*app.App, string, string) {
+	t.Helper()
 	cfg := newTestConfig(t)
 	cfg.Translate = config.Translate{URL: url + "/v1", Model: "fake", API: "openai", Workers: 1, Timeout: 5 * time.Second}
 	if capsFile != "" {
@@ -93,7 +101,7 @@ func translatingApp(t *testing.T, url, capsFile string) (*app.App, string) {
 	registerFixtures(t, a)
 	srv := httptest.NewServer(a.Router())
 	t.Cleanup(srv.Close)
-	return a, srv.URL
+	return a, srv.URL, cfg.DBPath
 }
 
 // signedIn is a browser signed in to a new account called handle.
@@ -170,11 +178,91 @@ func (r *reader) next(wait time.Duration) (string, translationEvent) {
 		if err := wsjson.Read(ctx, r.conn, &ev); err != nil {
 			return "", translationEvent{}
 		}
-		if ev.Type == "chat" || ev.Type == "chat_translation" {
+		switch ev.Type {
+		case "chat", "chat_translation", "dm", "dm-translation":
 			var d translationEvent
 			_ = json.Unmarshal(ev.Data, &d)
 			return ev.Type, d
 		}
+	}
+}
+
+// dmReader is a signed-in browser reading its direct messages in lang.
+func dmReader(t *testing.T, base string, b *browser, lang string) *reader {
+	t.Helper()
+	if code := b.do("POST", "/auth/language", map[string]any{"language": lang}, nil); code != 200 {
+		t.Fatalf("language %s: %d", lang, code)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), wsDialTimeout)
+	defer cancel()
+	conn, _, err := websocket.Dial(ctx, wsURL(base, "/ws-dm"), &websocket.DialOptions{HTTPClient: b.c})
+	if err != nil {
+		t.Fatalf("the direct messages' socket: %v", err)
+	}
+	t.Cleanup(func() { _ = conn.CloseNow() })
+	if ev := readFirstEvent(t, conn); ev.Type != "ready" {
+		t.Fatalf("first event: %s", ev.Type)
+	}
+	return &reader{browser: b, conn: conn}
+}
+
+// A direct message reaches the one it is written to in their language, the
+// writer has it as written, and its translation is never stored (ADR 0105).
+func TestChatTranslation_ADirectMessageIsTranslatedAndNeverStored(t *testing.T) {
+	f := newFakeTranslator(t)
+	a, base, dbPath := translatingAppDB(t, f.URL, "")
+	anaB, beaB := member(t, a, base, "ana"), member(t, a, base, "bea")
+	ana, bea := anaB.here(), beaB.here()
+	befriend(t, anaB, beaB, "bea", "ana")
+	beaR := dmReader(t, base, beaB, "es")
+	anaR := dmReader(t, base, anaB, "en")
+
+	var sent translatedLine
+	if code := anaB.do("POST", "/api/dm", map[string]any{"to": bea, "text": "rematch, @bea?"}, &sent); code != 200 {
+		t.Fatalf("Ana writes: %d", code)
+	}
+	if typ, _ := beaR.next(5 * time.Second); typ != "dm" {
+		t.Fatalf("Bea's message: %s", typ)
+	}
+	if typ, ev := beaR.next(5 * time.Second); typ != "dm-translation" || ev.ID != sent.ID || ev.Lang != "es" || ev.Text != "[Spanish] rematch, @bea?" {
+		t.Fatalf("Bea's translation: %s %+v", typ, ev)
+	}
+	if typ, _ := anaR.next(5 * time.Second); typ != "dm" {
+		t.Fatalf("Ana's own message: %s", typ)
+	}
+	if typ, ev := anaR.next(300 * time.Millisecond); typ != "" {
+		t.Errorf("the writer was sent %s %+v", typ, ev)
+	}
+
+	// The correspondence has it in Bea's language for her, and as written for
+	// Ana, who wrote it.
+	var read struct {
+		Messages []translatedLine `json:"messages"`
+	}
+	beaB.do("POST", "/api/dm/history", map[string]any{"with": ana}, &read)
+	if len(read.Messages) != 1 || read.Messages[0].Text != "rematch, @bea?" || read.Messages[0].Translation == nil || read.Messages[0].Translation.Text != "[Spanish] rematch, @bea?" {
+		t.Fatalf("Bea's correspondence: %+v", read.Messages)
+	}
+	var own struct {
+		Messages []translatedLine `json:"messages"`
+	}
+	anaB.do("POST", "/api/dm/history", map[string]any{"with": bea}, &own)
+	if len(own.Messages) != 1 || own.Messages[0].Translation != nil {
+		t.Fatalf("Ana's correspondence: %+v", own.Messages)
+	}
+	if n := len(f.requests()); n != 1 {
+		t.Errorf("asked %d times", n)
+	}
+
+	// Nothing of it is in the database.
+	db, err := sql.Open("sqlite", dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = db.Close() }()
+	var rows int
+	if err := db.QueryRow(`SELECT (SELECT COUNT(*) FROM chat_translations) + (SELECT COUNT(*) FROM global_chat_translations)`).Scan(&rows); err != nil || rows != 0 {
+		t.Errorf("stored translations: %d, %v", rows, err)
 	}
 }
 

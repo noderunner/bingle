@@ -185,7 +185,7 @@ func (m *Manager) ChatLog(ctx context.Context, roomCode string, afterID int64, l
 		out[i] = chatLineOf(mm, colors[mm.Seat])
 	}
 	m.identifyLines(ctx, out)
-	m.translationsOf(ctx, false, roomCode, len(out), playerNames(players, ""),
+	m.translationsOf(ctx, gameChat, roomCode, "", len(out), playerNames(players, ""),
 		func(i int) (int64, string, bool) { return out[i].ID, out[i].Text, out[i].Server },
 		func(i int, t ChatTranslation) { out[i].Translation = &t })
 	return out, nil
@@ -265,7 +265,7 @@ func (m *Manager) SendGlobalChat(ctx context.Context, name, text string) (Global
 	}
 	line := GlobalChatLine{ID: msg.ID, Name: msg.Name, Text: msg.Body, At: msg.CreatedAt}
 	m.hub.publish(GlobalChatRoom, Event{Type: "chat", Data: line})
-	m.translateSaid(ctx, lineToTranslate{global: true, room: GlobalChatRoom, id: line.ID, text: line.Text, keep: []string{speaker}})
+	m.translateSaid(ctx, lineToTranslate{kind: globalChat, room: GlobalChatRoom, id: line.ID, text: line.Text, keep: []string{speaker}})
 	return line, nil
 }
 
@@ -282,7 +282,7 @@ func (m *Manager) GlobalChatLog(ctx context.Context, afterID int64, limit int) (
 		out[i] = GlobalChatLine{ID: mm.ID, Name: mm.Name, Text: mm.Body, At: mm.CreatedAt}
 		names[i] = mm.Name
 	}
-	m.translationsOf(ctx, true, GlobalChatRoom, len(out), names,
+	m.translationsOf(ctx, globalChat, GlobalChatRoom, "", len(out), names,
 		func(i int) (int64, string, bool) { return out[i].ID, out[i].Text, false },
 		func(i int, t ChatTranslation) { out[i].Translation = &t })
 	return out, nil

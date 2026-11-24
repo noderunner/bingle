@@ -792,6 +792,14 @@
         },
         "to": {
           "type": "string"
+        },
+        "translation": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/ChatTranslation"
+            }
+          ],
+          "description": "Translation is the message in its reader's language (ADR 0143): only in the correspondence as POST /dm/history gives it, to the one it was written to; a \"dm-translation\" event brings it as it is made. Kept in memory with the message, and forgotten with it."
         }
       },
       "required": [
@@ -956,6 +964,21 @@
             },
             "type": {
               "const": "dm"
+            }
+          },
+          "required": [
+            "type",
+            "data"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "data": {
+              "$ref": "#/$defs/ChatTranslationEventData"
+            },
+            "type": {
+              "const": "dm-translation"
             }
           },
           "required": [
@@ -4435,9 +4458,9 @@
   },
   "$id": "https://github.com/noderunner/bingle/docs/api.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "description": "The requests, responses and WebSocket events of bingle's API, version 1.11.0. Generated from the Go types of the server: do not edit. Objects let unknown fields through: a client ignores those it does not know.",
+  "description": "The requests, responses and WebSocket events of bingle's API, version 1.12.0. Generated from the Go types of the server: do not edit. Objects let unknown fields through: a client ignores those it does not know.",
   "title": "Bingle API messages",
-  "x-api-version": "1.11.0",
+  "x-api-version": "1.12.0",
   "x-dm-events": {
     "badge": {
       "$ref": "#/$defs/BadgeEventData"
@@ -4450,6 +4473,9 @@
     },
     "dm-rtc": {
       "$ref": "#/$defs/DirectSignal"
+    },
+    "dm-translation": {
+      "$ref": "#/$defs/ChatTranslationEventData"
     },
     "friends": {
       "$ref": "#/$defs/FriendsEventData"

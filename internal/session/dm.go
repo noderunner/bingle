@@ -1,14 +1,18 @@
 package session
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
 	"time"
 	"unicode/utf8"
+
+	"github.com/noderunner/bingle/internal/store"
 )
 
 // Direct messages: two accounts that are here (see here.go) write to each
@@ -56,6 +60,11 @@ type DirectMessage struct {
 	To   string `json:"to"`
 	Text string `json:"text"`
 	At   string `json:"at"`
+	// Translation is the message in its reader's language (ADR 0143): only in
+	// the correspondence as POST /dm/history gives it, to the one it was
+	// written to; a "dm-translation" event brings it as it is made. Kept in
+	// memory with the message, and forgotten with it.
+	Translation *ChatTranslation `json:"translation,omitempty"`
 }
 
 // DirectThread is one correspondence, as the list of them shows it.
@@ -104,6 +113,9 @@ func dmKey(a, b string) string {
 type dmThread struct {
 	msgs []DirectMessage
 	last time.Time
+	// tr is what each message came to in each language its reader read it in
+	// (ADR 0143), by message: in memory only, as the messages are.
+	tr map[int64]map[string]store.ChatTranslation
 }
 
 // dmBox holds every correspondence in memory.
@@ -131,6 +143,9 @@ func (b *dmBox) add(msg DirectMessage, now time.Time) DirectMessage {
 	}
 	t.msgs = append(t.msgs, msg)
 	if len(t.msgs) > maxDMThread {
+		for _, gone := range t.msgs[:len(t.msgs)-maxDMThread] {
+			delete(t.tr, gone.ID)
+		}
 		t.msgs = t.msgs[len(t.msgs)-maxDMThread:]
 	}
 	t.last = now
@@ -154,6 +169,42 @@ func (b *dmBox) sweep(now time.Time) {
 		}
 		delete(b.threads, oldest)
 	}
+}
+
+// keepTranslation keeps what message id of the correspondence pair came to in
+// lang, while the message is kept.
+func (b *dmBox) keepTranslation(pair string, id int64, lang string, kept store.ChatTranslation) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	t := b.threads[pair]
+	if t == nil || !slices.ContainsFunc(t.msgs, func(m DirectMessage) bool { return m.ID == id }) {
+		return
+	}
+	if t.tr == nil {
+		t.tr = map[int64]map[string]store.ChatTranslation{}
+	}
+	if t.tr[id] == nil {
+		t.tr[id] = map[string]store.ChatTranslation{}
+	}
+	t.tr[id][lang] = kept
+}
+
+// translations are what the messages ids of the correspondence pair came to
+// in lang.
+func (b *dmBox) translations(pair string, ids []int64, lang string) map[int64]store.ChatTranslation {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	out := map[int64]store.ChatTranslation{}
+	t := b.threads[pair]
+	if t == nil {
+		return out
+	}
+	for _, id := range ids {
+		if k, ok := t.tr[id][lang]; ok {
+			out[id] = k
+		}
+	}
+	return out
 }
 
 // wrote says whether from has written to other in what is still kept.
@@ -217,7 +268,9 @@ func (b *dmBox) threadsOf(addr string) []DirectThread {
 
 // SendDirect writes text from the account at address from to the address
 // to, and delivers it to both of them (so every tab of the sender sees it too).
-func (m *Manager) SendDirect(from, to, text string) (DirectMessage, error) {
+// It is put into the language of the one it is written to, when they read in
+// another (ADR 0143).
+func (m *Manager) SendDirect(ctx context.Context, from, to, text string) (DirectMessage, error) {
 	name := m.NameHere(from)
 	if name == "" {
 		return DirectMessage{}, ErrNotHere
@@ -242,16 +295,22 @@ func (m *Manager) SendDirect(from, to, text string) (DirectMessage, error) {
 	msg := m.dms.add(DirectMessage{From: from, Name: name, To: to, Text: text, At: now.Format(time.RFC3339)}, now)
 	m.hub.publish(dmRoom(to), Event{Type: "dm", Data: msg})
 	m.hub.publish(dmRoom(from), Event{Type: "dm", Data: msg})
+	m.translateSaid(ctx, lineToTranslate{kind: directChat, room: dmRoom(to), pair: dmKey(from, to), id: msg.ID, text: msg.Text,
+		keep: []string{name, m.NameHere(to)}})
 	return msg, nil
 }
 
 // DirectMessages returns the correspondence between this browser and another,
-// after the message afterID (0 for all of it).
-func (m *Manager) DirectMessages(addr, with string, afterID int64) []DirectMessage {
+// after the message afterID (0 for all of it): what the other wrote in the
+// request's reader's language, once it has been made.
+func (m *Manager) DirectMessages(ctx context.Context, addr, with string, afterID int64) []DirectMessage {
 	out := m.dms.thread(addr, with, afterID)
 	if out == nil {
 		out = []DirectMessage{}
 	}
+	m.translationsOf(ctx, directChat, dmRoom(addr), dmKey(addr, with), len(out), []string{m.NameHere(addr), m.NameHere(with)},
+		func(i int) (int64, string, bool) { return out[i].ID, out[i].Text, out[i].From == addr },
+		func(i int, t ChatTranslation) { out[i].Translation = &t })
 	return out
 }
 

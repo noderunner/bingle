@@ -10,6 +10,7 @@ import (
 
 	"github.com/chromedp/chromedp"
 
+	"github.com/noderunner/bingle/internal/auth"
 	"github.com/noderunner/bingle/internal/config"
 )
 
@@ -95,4 +96,34 @@ func TestWebChatTranslation_NoSwitchWithoutAService(t *testing.T) {
 	if !evalBool(t, ctx, `document.getElementById("profile_translate").closest(".field").hidden`) {
 		t.Error("the switch is offered on a server that does not translate")
 	}
+}
+
+// A direct message from a friend shows in the reader's language in the friends
+// window, with the original a click away.
+func TestWebChatTranslation_ADirectMessageIsShownInTheReadersLanguage(t *testing.T) {
+	f := newFakeTranslator(t)
+	a, base := translatingApp(t, f.URL, "")
+	anaB, beaB := member(t, a, base, "ana"), member(t, a, base, "bea")
+	anaB.here()
+	bea := beaB.here()
+	befriend(t, anaB, beaB, "bea", "ana")
+	ctx, cancel := newChromedpContext(t, 90*time.Second)
+	defer cancel()
+	signInChrome(t, ctx, base, beaB.cookie(auth.SessionCookie))
+	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/"), chromedp.WaitVisible("#open-friends", chromedp.ByID)); err != nil {
+		t.Fatal(err)
+	}
+	clickSel(t, ctx, "#open-friends")
+	waitJS(t, ctx, "Ana in the list", `[...document.querySelectorAll("#friends-list .dm-person")].some(b => b.textContent.includes("@ana"))`, 20*time.Second)
+	clickSel(t, ctx, `#friends-list .dm-person[data-address]`)
+	waitJS(t, ctx, "the correspondence", `document.getElementById("dm-title").textContent === "With @ana"`, 10*time.Second)
+	time.Sleep(500 * time.Millisecond)
+	if code := anaB.do("POST", "/api/dm", map[string]any{"to": bea, "text": "hola amigos"}, nil); code != 200 {
+		t.Fatalf("Ana writes: %d", code)
+	}
+	line := lastLine("dm-log")
+	waitJS(t, ctx, "the translation", line+`.querySelector(".chat-text").textContent === "[English] hola amigos" && `+
+		line+`.querySelector(".chat-translation").textContent.startsWith("Translated from Spanish")`, 10*time.Second)
+	clickSel(t, ctx, "#dm-log .chat-line:last-child .chat-original")
+	waitJS(t, ctx, "the original", line+`.querySelector(".chat-text").textContent === "hola amigos"`, 5*time.Second)
 }

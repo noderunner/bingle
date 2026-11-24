@@ -28,10 +28,10 @@ func withReader(r *http.Request) context.Context {
 }
 
 // keepsTranslation says whether a socket whose reader has chat in lang ("" for
-// as written) passes ev on: a "chat_translation" event goes only to a reader
-// of its language.
+// as written) passes ev on: a "chat_translation" or "dm-translation" event
+// goes only to a reader of its language.
 func keepsTranslation(ev session.Event, lang string) bool {
-	if ev.Type != "chat_translation" {
+	if ev.Type != "chat_translation" && ev.Type != "dm-translation" {
 		return true
 	}
 	d, ok := ev.Data.(session.ChatTranslationEventData)

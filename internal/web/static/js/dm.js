@@ -17,6 +17,7 @@ import { gameDefs, loadRows, isFinished } from "./mygames.js";
 import { onLeave, setKeepAlive, untracked } from "./nav.js";
 import { callPerson, hangUp, toggleMute, callState, onCallChange, ringing, ended, directSignal, inDirectCall, setMyAddress } from "./dm-call.js";
 import { t } from "./i18n.js";
+import { chatText } from "./chat-text.js";
 
 // The newest message this browser has shown, by the address it was with.
 const SEEN_KEY = "bingle.dm.seen";
@@ -234,6 +235,15 @@ async function openSocket() {
 			case "dm":
 				receive(d);
 				break;
+			case "dm-translation": {
+				// A message's translation, which follows it (ADR 0143).
+				const m = D.messages.find((x) => x.id === d.id);
+				if (m) {
+					m.translation = { lang: d.lang, from: d.from, text: d.text };
+					paintWindow();
+				}
+				break;
+			}
 			case "friends":
 				loadFriends();
 				break;
@@ -454,7 +464,7 @@ export function mountDirectMessages(host, { onCount = () => {} } = {}) {
 					"li",
 					{ class: "chat-line" + (mine ? " mine" : ""), "data-id": m.id },
 					mine ? h("span", { class: "chat-who" }, t("dm.you")) : friendChatBadge(m.name),
-					h("span", { class: "chat-text" }, m.text)
+					...chatText(m, "d")
 				)
 			);
 		}
