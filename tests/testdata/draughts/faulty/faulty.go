@@ -29,6 +29,10 @@ const (
 	// it fails once and succeeds when it is asked again of a new instance.
 	Tire    = 5
 	IfTired = 6
+	// Churn is no fault: it makes two megabytes of garbage and answers as
+	// usual, so a few hundred calls put the instance's collector through as
+	// many cycles as a long life of ordinary ones.
+	Churn = 7
 )
 
 // How each call is asked: Start by its seed, a call that takes a position by
@@ -75,6 +79,11 @@ func fault(kind int) {
 			}
 			hog = append(hog, block)
 		}
+	case Churn:
+		for range 32 {
+			hog = append(hog, make([]byte, 64<<10))
+		}
+		hog = nil
 	case Tire:
 		tired = true
 	case IfTired:
@@ -95,7 +104,7 @@ func clean(pos *guest.Position) *guest.Position {
 }
 
 func (r *rules) Start(seed uint64) (*guest.Position, error) {
-	if seed <= IfTired {
+	if seed <= Churn {
 		fault(int(seed))
 	}
 	return r.Rules.Start(seed)

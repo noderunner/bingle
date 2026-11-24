@@ -226,6 +226,29 @@ func TestAFailedCallIsAskedOnceMoreOfANewInstance(t *testing.T) {
 	f.healthy(t)
 }
 
+// An instance lives through any number of calls: its memory does not grow
+// with them. A clock that moved at every reading once starved the module's
+// collector, and an instance reached its memory cap after some tens of
+// thousands of calls. Each call here makes two megabytes of garbage, in an
+// instance that may hold sixteen.
+func TestAnInstanceDoesNotGrowWithItsCalls(t *testing.T) {
+	f := newFaulty(t, wasmrules.Options{Instances: 1, MemoryPages: 256, Deadline: 5 * time.Second})
+	mv := state.Selection{Action: "move", From: "a3", To: "b4", Count: faulty.Churn}
+	// The clock that starved the collector lost its instance at the 110th.
+	calls := 600
+	if testing.Short() {
+		calls = 300
+	}
+	for i := range calls {
+		if text := state.FormatMove(f.game, mv); text != "a3-b4" {
+			t.Fatalf("call %d: Format = %q\n%s", i, text, f.log.String())
+		}
+		if logged := f.log.String(); logged != "" {
+			t.Fatalf("an instance was thrown away at call %d:\n%s", i, logged)
+		}
+	}
+}
+
 // A reply that makes no sense for the game counts as no reply.
 func TestANextSeatTheGameDoesNotHaveIsRefused(t *testing.T) {
 	f := newFaulty(t, wasmrules.Options{})

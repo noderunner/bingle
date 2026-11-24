@@ -133,7 +133,10 @@ module's own business, and a replay must not ask for the start again.
   has none unless a host adds them). Stdout and stderr go to the server's log at debug level, cut short, and the
   start of what a failed call wrote is in its error, which is where a Go panic says what it was.
 - **No real clock and no real randomness.** Wall time and the monotonic clock are fake ones, not the
-  machine's, and `random_get` reads from a fixed seed. All of this is set explicitly rather than left to wazero's defaults. A
+  machine's, and `random_get` reads from a fixed seed. The clocks move a millisecond with every call into an
+  instance and a nanosecond with every reading, so nearly all of an instance's time passes between its calls. A
+  clock that moves at each reading instead, which is wazero's default, must not be used with a Go guest: see the
+  status log. All of this is set explicitly rather than left to wazero's defaults. A
   game's chance comes only from the `seed` that `start` is given, kept in its position, as for a compiled-in
   ruleset. Go randomises map order inside the guest from that seed, so a guest must not let map order reach a
   reply. Phase 1's tests compare a fresh instance with a reused one to catch it.
@@ -362,6 +365,13 @@ folder. To drop both removes the pack loader and `BINGLE_PACKS` too, and marks t
     one.
   - **The module**: 4.6 MB of WebAssembly for the fixture, 1.4 s to compile when it loads, 3.8 ms for each further
     instance. A compiled module is kept in memory only, and shared by every runtime of the process that loads it.
+  - **A fake clock can starve a Go guest**, found after the first push and fixed. The clocks first moved a
+    millisecond at each reading, as wazero's own fake clocks do. Go's collector reads the clock several times in a
+    cycle and the code between cycles never does, so the collector saw itself using the whole processor and
+    stopped making the allocating code help it. Nothing else runs it inside a call, so the heap then grew to the
+    memory cap: after some tens of thousands of calls an instance that had held 8 MiB held all it was allowed,
+    and died. The pool replaced it, so no test noticed. With clocks that move between calls an instance stays at 8 MiB,
+    and a test now churns two megabytes a call through one that may hold sixteen.
   - **In the engine**, one addition: `BoardState.Counters`, so that the linked-in adapter can hand a position's
     counts to rules.
   - **Open, for phase 2**: `state.InitialState` turns a start that fails into an empty position, on the ground

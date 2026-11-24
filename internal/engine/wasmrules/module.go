@@ -225,6 +225,7 @@ type instance struct {
 	free   api.Function
 	calls  [numCalls]api.Function
 	output *output
+	clocks *clocks
 	// req is the memory the host writes requests into, and reqCap its size.
 	// It is kept from one call to the next: a guest keeps nothing of a request.
 	req, reqCap uint32
@@ -245,8 +246,28 @@ var (
 	randSeed = [32]byte([]byte("bingle wasmrules: a fixed seed.."))
 )
 
-// fakeTick is how far a clock moves each time it is read.
-const fakeTick = int64(time.Millisecond)
+// An instance's clocks do not run. They move a millisecond with every call
+// made into it, and a nanosecond each time they are read, so that no two
+// readings are the same. The time a call seems to take is then next to
+// nothing, and nearly all of an instance's time passes between its calls.
+//
+// The other way round, with a clock that moves a good deal at every reading,
+// starves the module: Go's collector reads the clock many times in a cycle
+// and the code between cycles never does, so the collector finds itself using
+// all of the processor, stops asking the code that allocates to help it, and
+// the heap grows to the memory cap within some tens of thousands of calls.
+const (
+	clockPerCall = int64(time.Millisecond)
+	clockPerRead = 1
+)
+
+// clocks are an instance's wall clock and monotonic clock, in nanoseconds.
+type clocks struct{ wall, mono int64 }
+
+func (c *clocks) call() {
+	c.wall += clockPerCall
+	c.mono += clockPerCall
+}
 
 // instantiate makes an instance and runs its initialisation. This is the
 // whole of what a module is given: no filesystem, arguments or environment
@@ -255,20 +276,20 @@ const fakeTick = int64(time.Millisecond)
 // randomness from a fixed seed. What it writes goes to the log.
 func (m *Module) instantiate(ctx context.Context) (*instance, error) {
 	out := &output{log: m.rt.opt.Log, pack: m.pack, left: outputLogged}
-	wall, mono := fakeEpoch, int64(0)
+	clk := &clocks{wall: fakeEpoch}
 	cfg := wazero.NewModuleConfig().
 		WithName(""). // anonymous, so a module can be instantiated many times
 		WithStartFunctions("_initialize").
 		WithStdout(out).
 		WithStderr(out).
 		WithWalltime(func() (int64, int32) {
-			wall += fakeTick
-			return wall / int64(time.Second), int32(wall % int64(time.Second))
-		}, wsys.ClockResolution(fakeTick)).
+			clk.wall += clockPerRead
+			return clk.wall / int64(time.Second), int32(clk.wall % int64(time.Second))
+		}, wsys.ClockResolution(clockPerRead)).
 		WithNanotime(func() int64 {
-			mono += fakeTick
-			return mono
-		}, wsys.ClockResolution(fakeTick)).
+			clk.mono += clockPerRead
+			return clk.mono
+		}, wsys.ClockResolution(clockPerRead)).
 		WithNanosleep(func(int64) {}).
 		WithOsyield(func() {}).
 		WithRandSource(rand.NewChaCha8(randSeed))
@@ -276,7 +297,7 @@ func (m *Module) instantiate(ctx context.Context) (*instance, error) {
 	if err != nil {
 		return nil, fmt.Errorf("the module does not start: %w%s", err, out.said())
 	}
-	return &instance{mod: mod, output: out, told: map[string]*toldGame{}}, nil
+	return &instance{mod: mod, output: out, clocks: clk, told: map[string]*toldGame{}}, nil
 }
 
 // bind looks up what a call needs of the instance.
@@ -303,6 +324,7 @@ const maxReply = 16 << 20
 // which is then of no more use.
 func (inst *instance) call(ctx context.Context, c call, req []byte, read func([]byte) error) error {
 	inst.output.head = inst.output.head[:0]
+	inst.clocks.call()
 	fail := func(what string, err error) error {
 		return fmt.Errorf("%s: %w%s", what, explain(err), inst.output.said())
 	}
