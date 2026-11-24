@@ -4,6 +4,14 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.131.0 - 2026-11-23
+
+### Bingle Core 0.131.0
+- New game: Chess
+
+### Chess 0.1.0 — a new game
+- Castling, en passant, promotion and every draw
+
 ## 0.130.1 - 2026-11-23
 
 ### Bingle Core 0.130.1
