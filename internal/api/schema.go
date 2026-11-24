@@ -157,6 +157,7 @@ var schemaDirectEvents = []struct {
 }{
 	{"ready", reflect.TypeFor[dmReady]()},
 	{"dm", reflect.TypeFor[session.DirectMessage]()},
+	{"dm-translation", reflect.TypeFor[session.ChatTranslationEventData]()},
 	{"dm-call", reflect.TypeFor[session.DirectCall]()},
 	{"dm-rtc", reflect.TypeFor[session.DirectSignal]()},
 	{"badge", reflect.TypeFor[session.BadgeEventData]()},

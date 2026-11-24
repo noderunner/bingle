@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -108,16 +109,27 @@ func (m *Manager) TranslationLanguage(ctx context.Context) string {
 	return r.Lang
 }
 
-// ReadIn registers the request's reader in room while their socket is open,
-// so the lines said there are put into their language; the function returned
-// ends that. A reader who has chat as written registers nothing.
+// ReadIn registers the request's reader in room (a game's code, or
+// GlobalChatRoom) while their socket is open, so the lines said there are put
+// into their language; the function returned ends that. A reader who has chat
+// as written registers nothing.
 func (m *Manager) ReadIn(ctx context.Context, room string) func() {
+	if room != GlobalChatRoom {
+		room = canonRoom(room)
+	}
+	return m.readIn(ctx, room)
+}
+
+// ReadDirect registers the request's reader as the reader of the direct
+// messages to address while their socket is open, as ReadIn does a room's.
+func (m *Manager) ReadDirect(ctx context.Context, address string) func() {
+	return m.readIn(ctx, dmRoom(address))
+}
+
+func (m *Manager) readIn(ctx context.Context, room string) func() {
 	lang := m.TranslationLanguage(ctx)
 	if lang == "" {
 		return func() {}
-	}
-	if room != GlobalChatRoom {
-		room = canonRoom(room)
 	}
 	t := m.translation
 	t.mu.Lock()
@@ -156,24 +168,51 @@ func (t *chatTranslation) languagesIn(room string) []string {
 	return out
 }
 
+// chatKind is where a line was said, which decides where its translations are
+// kept: with a game's chat or the global chat, or in memory with a direct
+// message, which is never stored (ADR 0105).
+type chatKind int
+
+const (
+	gameChat chatKind = iota
+	globalChat
+	directChat
+)
+
 // lineToTranslate is a line said in a room, as the service needs it.
 type lineToTranslate struct {
-	global bool
-	room   string
-	id     int64
-	text   string
+	kind chatKind
+	// room is where its reader listens; pair, for a direct message, is the
+	// correspondence it is part of.
+	room string
+	pair string
+	id   int64
+	text string
 	// keep are the names in the room, never translated.
 	keep []string
 	// hint is the writer's language, "" when unknown.
 	hint string
 }
 
-func pendingKey(global bool, id int64, lang string) string {
-	kind := "g"
-	if global {
-		kind = "w"
+func pendingKey(kind chatKind, id int64, lang string) string {
+	return strconv.Itoa(int(kind)) + ":" + strconv.FormatInt(id, 10) + "|" + lang
+}
+
+// keepTranslation keeps what a line came to in lang.
+func (m *Manager) keepTranslation(l lineToTranslate, lang string, kept store.ChatTranslation) error {
+	if l.kind == directChat {
+		m.dms.keepTranslation(l.pair, l.id, lang, kept)
+		return nil
 	}
-	return kind + strconv.FormatInt(id, 10) + "|" + lang
+	return m.store.AddChatTranslation(context.Background(), l.kind == globalChat, l.id, lang, kept)
+}
+
+// keptTranslations are what the lines ids came to in lang.
+func (m *Manager) keptTranslations(ctx context.Context, kind chatKind, pair string, ids []int64, lang string) (map[int64]store.ChatTranslation, error) {
+	if kind == directChat {
+		return m.dms.translations(pair, ids, lang), nil
+	}
+	return m.store.ChatTranslations(ctx, kind == globalChat, ids, lang)
 }
 
 // translateSaid asks for a line just said in each language read in its room.
@@ -200,7 +239,7 @@ func (m *Manager) translateSaid(ctx context.Context, l lineToTranslate) {
 // A failure keeps nothing: the line is asked for again when a history wants it.
 func (m *Manager) askTranslation(l lineToTranslate, lang string) {
 	t := m.translation
-	key := pendingKey(l.global, l.id, lang)
+	key := pendingKey(l.kind, l.id, lang)
 	t.mu.Lock()
 	if t.pending[key] {
 		t.mu.Unlock()
@@ -222,14 +261,17 @@ func (m *Manager) askTranslation(l lineToTranslate, lang string) {
 		if res.Outcome == translate.Translated {
 			kept.Body = res.Text
 		}
-		ctx := context.Background()
-		if err := m.store.AddChatTranslation(ctx, l.global, l.id, lang, kept); err != nil {
+		if err := m.keepTranslation(l, lang, kept); err != nil {
 			m.logger().Warn("translate: a translation was not kept", "err", err)
 		}
 		if kept.Body == "" {
 			return
 		}
-		m.hub.publish(l.room, Event{Type: "chat_translation", Data: ChatTranslationEventData{
+		typ := "chat_translation"
+		if l.kind == directChat {
+			typ = "dm-translation"
+		}
+		m.hub.publish(l.room, Event{Type: typ, Data: ChatTranslationEventData{
 			ID: l.id, ChatTranslation: ChatTranslation{Lang: lang, From: res.Source, Text: res.Text}}})
 	})
 	if !queued {
@@ -240,9 +282,18 @@ func (m *Manager) askTranslation(l lineToTranslate, lang string) {
 // catchUp asks for the latest lines of room that have nothing kept in lang,
 // for a reader of lang who has just come.
 func (m *Manager) catchUp(room, lang string) {
+	if strings.HasPrefix(room, dmRoom("")) {
+		// A direct message's reader catches up when the page reads the
+		// correspondence; the socket has long been open by then.
+		return
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	global := room == GlobalChatRoom
+	kind := gameChat
+	if global {
+		kind = globalChat
+	}
 	type said struct {
 		id   int64
 		text string
@@ -288,17 +339,17 @@ func (m *Manager) catchUp(room, lang string) {
 	}
 	for i := len(lines) - 1; i >= 0; i-- {
 		if _, ok := kept[lines[i].id]; !ok {
-			m.askTranslation(lineToTranslate{global: global, room: room, id: lines[i].id, text: lines[i].text, keep: keep}, lang)
+			m.askTranslation(lineToTranslate{kind: kind, room: room, id: lines[i].id, text: lines[i].text, keep: keep}, lang)
 		}
 	}
 }
 
 // translationsOf gives each line its kept translation in the request's
 // reader's language, and asks for the latest of those that have none yet.
-// line says, for an index, the line's id, text and whether the server said it,
-// and set gives it its translation.
-func (m *Manager) translationsOf(ctx context.Context, global bool, room string, n int, keep []string,
-	line func(i int) (id int64, text string, server bool), set func(i int, t ChatTranslation)) {
+// line says, for an index, the line's id, text and whether it is left as it is
+// (the server said it, or the reader did), and set gives it its translation.
+func (m *Manager) translationsOf(ctx context.Context, kind chatKind, room, pair string, n int, keep []string,
+	line func(i int) (id int64, text string, skip bool), set func(i int, t ChatTranslation)) {
 	lang := m.TranslationLanguage(ctx)
 	if lang == "" || n == 0 {
 		return
@@ -309,7 +360,7 @@ func (m *Manager) translationsOf(ctx context.Context, global bool, room string, 
 			ids = append(ids, id)
 		}
 	}
-	kept, err := m.store.ChatTranslations(ctx, global, ids, lang)
+	kept, err := m.keptTranslations(ctx, kind, pair, ids, lang)
 	if err != nil {
 		m.logger().Warn("translate: reading translations", "err", err)
 		return
@@ -326,7 +377,7 @@ func (m *Manager) translationsOf(ctx context.Context, global bool, room string, 
 			set(i, ChatTranslation{Lang: lang, From: k.Source, Text: k.Body})
 		case !ok && asked < historyBackfill:
 			asked++
-			m.askTranslation(lineToTranslate{global: global, room: room, id: id, text: text, keep: keep}, lang)
+			m.askTranslation(lineToTranslate{kind: kind, room: room, pair: pair, id: id, text: text, keep: keep}, lang)
 		}
 	}
 }

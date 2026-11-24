@@ -8,7 +8,8 @@
 import { handleBadge } from "./friend-badge.js";
 import { h, store, lastName } from "./util.js";
 import { api, whoAmI } from "./api.js";
-import { emojiPicker, chatText } from "./chat.js";
+import { emojiPicker } from "./chat.js";
+import { chatText } from "./chat-text.js";
 import { t, lang } from "./i18n.js";
 
 const MAX_LINES = 300;

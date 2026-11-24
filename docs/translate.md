@@ -5,8 +5,6 @@ issue #252). The translation is done by a model that **you** run, on the server'
 does not contain a model and never sends chat to an outside service of its own accord. With no service set up,
 nothing changes: lines arrive as written.
 
-> **Built so far:** game and global chat, on the page and in the API. Direct messages follow (#252).
-
 On the page, a translated line is marked *Translated from …* with **Show original**, and the profile has the switch
 **Translate chat into my language**, shown only on a server with a service.
 
@@ -20,6 +18,9 @@ On the page, a translated line is marked *Translated from …* with **Show origi
   is kept as needing none.
 - A reader who arrives later has the **latest 20 lines** without one asked for when their socket opens (and when their
   page reads the history).
+- **Direct messages** between friends are put into the language of the one they are written to, while their socket
+  is open, and arrive as `dm-translation` events. Their translations live **in memory only**, with the messages, and
+  are forgotten with them (ADR 0105): they are never stored.
 - **The writer's limit**: a writer's lines sent to the service, per minute, by class (`translate` in the capabilities
   file: 10 for guests, 30 for accounts). A line over it is shown as written.
 

@@ -111,7 +111,7 @@ func (h *handlers) handlePostDirect(w http.ResponseWriter, r *http.Request) {
 	if !h.friendsOnly(w, r, req.To) {
 		return
 	}
-	msg, err := h.mgr.SendDirect(from, req.To, req.Text)
+	msg, err := h.mgr.SendDirect(withReader(r), from, req.To, req.Text)
 	if err != nil {
 		writeError(w, err)
 		return
@@ -130,7 +130,7 @@ func (h *handlers) handleDirectHistory(w http.ResponseWriter, r *http.Request) {
 	if !decodeBody(w, r, &req) {
 		return
 	}
-	writeJSON(w, http.StatusOK, dmHistoryResponse{Messages: h.mgr.DirectMessages(addr, req.With, req.After)})
+	writeJSON(w, http.StatusOK, dmHistoryResponse{Messages: h.mgr.DirectMessages(withReader(r), addr, req.With, req.After)})
 }
 
 // handleDirectThreads implements POST /dm/threads: the correspondences this
@@ -205,9 +205,13 @@ func (h *handlers) handleDirectWS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer func() { _ = conn.CloseNow() }()
-	ctx := conn.CloseRead(r.Context())
+	ctx := conn.CloseRead(withReader(r))
 	events, unsubscribe := h.mgr.SubscribeDirect(address)
 	defer unsubscribe()
+	// The messages written to this account are put into its reader's
+	// language while the socket is open (ADR 0143).
+	lang := h.mgr.TranslationLanguage(ctx)
+	defer h.mgr.ReadDirect(ctx, address)()
 	if err := wsjson.Write(ctx, conn, session.Event{Type: "ready", Data: dmReady{Address: address}}); err != nil {
 		return
 	}
@@ -218,6 +222,9 @@ func (h *handlers) handleDirectWS(w http.ResponseWriter, r *http.Request) {
 		case ev, ok := <-events:
 			if !ok {
 				return
+			}
+			if !keepsTranslation(ev, lang) {
+				continue
 			}
 			if err := wsjson.Write(ctx, conn, ev); err != nil {
 				return
