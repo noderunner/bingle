@@ -267,6 +267,8 @@ func TestChatTranslation_ALineReachesEachReaderInTheirLanguage(t *testing.T) {
 	}
 }
 
+// A reader who comes later has the lines said before them translated when
+// their socket opens, whatever case the room's code was typed in.
 func TestChatTranslation_ALateReaderHasTheRecentLinesTranslated(t *testing.T) {
 	f := newFakeTranslator(t)
 	base := translatingServer(t, f.URL, "")
@@ -275,12 +277,11 @@ func TestChatTranslation_ALateReaderHasTheRecentLinesTranslated(t *testing.T) {
 	if n := len(f.requests()); n != 0 {
 		t.Fatalf("translated for nobody: %d", n)
 	}
-	bea := newReader(t, base, room, "Bea", "es", true)
-	var log []translatedLine
-	bea.do("GET", "/api/games/"+room+"/chat", nil, &log)
+	bea := newReader(t, base, strings.ToLower(room), "Bea", "es", true)
 	if typ, ev := bea.next(5 * time.Second); typ != "chat_translation" || ev.Text != "[Spanish] good luck" {
 		t.Fatalf("the earlier line: %s %+v", typ, ev)
 	}
+	var log []translatedLine
 	bea.do("GET", "/api/games/"+room+"/chat", nil, &log)
 	if len(log) != 1 || log[0].Translation == nil || log[0].Translation.Text != "[Spanish] good luck" {
 		t.Errorf("history: %+v", log)
@@ -342,6 +343,9 @@ limits:
 	base := translatingServer(t, f.URL, caps)
 	ana, room := hostRoom(t, base, "Ana")
 	bea := newReader(t, base, room, "Bea", "es", true)
+	// Bea's socket catches up on the room's earlier lines (none) in the
+	// background; a line it found would be asked for outside the writer's limit.
+	time.Sleep(500 * time.Millisecond)
 	for _, text := range []string{"one", "two", "three"} {
 		if code := ana.do("POST", "/api/games/"+room+"/chat", map[string]any{"player_name": "Ana", "text": text}, nil); code != 200 {
 			t.Fatalf("chat: %d", code)

@@ -14,6 +14,7 @@
 
 	"language.label": "اللغة",
 	"language.browser": "المتصفح ({language})",
+	"translate.label": "ترجمة الدردشة إلى لغتي",
 
 	"profile.button": "ملفك الشخصي",
 	"profile.button_account": "ملفك الشخصي (مسجّل الدخول باسم @{handle})",
@@ -783,6 +784,10 @@
 	"chat.messages_table": "رسائل الدردشة",
 	"chat.say_table": "قل شيئًا للطاولة…",
 	"chat.say_spectator": "قل شيئًا (كمتفرج)…",
+	"chat.translated_from": "مترجم من {language}",
+	"chat.translated": "مترجم",
+	"chat.show_original": "عرض الأصل",
+	"chat.show_translation": "عرض الترجمة",
 
 	"emoji.grinning": "ابتسامة عريضة",
 	"emoji.smiling": "مبتسم",

@@ -14,6 +14,7 @@
 
 	"language.label": "Language",
 	"language.browser": "Browser ({language})",
+	"translate.label": "Translate chat into my language",
 
 	"profile.button": "Your profile",
 	"profile.button_account": "Your profile (signed in as @{handle})",
@@ -783,6 +784,10 @@
 	"chat.messages_table": "Chat messages",
 	"chat.say_table": "Say something to the table…",
 	"chat.say_spectator": "Say something (as a spectator)…",
+	"chat.translated_from": "Translated from {language}",
+	"chat.translated": "Translated",
+	"chat.show_original": "Show original",
+	"chat.show_translation": "Show translation",
 
 	"emoji.grinning": "grinning",
 	"emoji.smiling": "smiling",

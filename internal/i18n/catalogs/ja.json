@@ -14,6 +14,7 @@
 
 	"language.label": "言語",
 	"language.browser": "ブラウザー（{language}）",
+	"translate.label": "チャットを自分の言語に翻訳する",
 
 	"profile.button": "プロフィール",
 	"profile.button_account": "プロフィール（@{handle} としてログイン中）",
@@ -783,6 +784,10 @@
 	"chat.messages_table": "チャットのメッセージ",
 	"chat.say_table": "卓のみんなに話しかける…",
 	"chat.say_spectator": "話しかける（観戦者として）…",
+	"chat.translated_from": "{language}から翻訳",
+	"chat.translated": "翻訳済み",
+	"chat.show_original": "原文を表示",
+	"chat.show_translation": "翻訳を表示",
 
 	"emoji.grinning": "にっこり",
 	"emoji.smiling": "笑顔",

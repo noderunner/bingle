@@ -8,7 +8,7 @@
 import { handleBadge } from "./friend-badge.js";
 import { h, store, lastName } from "./util.js";
 import { api, whoAmI } from "./api.js";
-import { emojiPicker } from "./chat.js";
+import { emojiPicker, chatText } from "./chat.js";
 import { t, lang } from "./i18n.js";
 
 const MAX_LINES = 300;
@@ -92,7 +92,7 @@ export function mountGlobalChat(host, { visible = () => true, onUnread = () => {
 			"li",
 			{ class: "chat-line" + (mine ? " mine" : ""), "data-id": line.id },
 			String(line.name).startsWith("@") ? handleBadge(line.name) : h("span", { class: "chat-who" }, line.name),
-			h("span", { class: "chat-text" }, line.text),
+			...chatText(line, "w"),
 			h("time", { class: "chat-time muted small" }, clock(line.at))
 		);
 	};
@@ -123,6 +123,13 @@ export function mountGlobalChat(host, { visible = () => true, onUnread = () => {
 		} else if (read) {
 			markSeen();
 		}
+	};
+	// A line's translation, which follows the line (ADR 0143): drawn in its place.
+	const translated = (d) => {
+		const line = d && lines.find((l) => l.id === d.id);
+		if (!line) return;
+		line.translation = { lang: d.lang, from: d.from, text: d.text };
+		log.querySelector(`li[data-id="${Number(d.id)}"]`)?.replaceWith(lineNode(line));
 	};
 	const say = async () => {
 		const text = input.value.trim();
@@ -191,6 +198,7 @@ export function mountGlobalChat(host, { visible = () => true, onUnread = () => {
 			try {
 				const env = JSON.parse(ev.data);
 				if (env.type === "chat") receive(env.data);
+				else if (env.type === "chat_translation") translated(env.data);
 			} catch (_) {
 				/* not for us */
 			}

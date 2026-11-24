@@ -10,7 +10,7 @@ import { ratingText } from "./ratings.js";
 import { paintShelf } from "./badges.js";
 import { notifyConfig, localContact, submitAddress, contactStatus, resendConfirmation, forgetAddress, statusText, whitelistNote, insecureNote } from "./notify-ui.js";
 import { t, tParts, forwardKey, backKey } from "./i18n.js";
-import { languageField } from "./language.js";
+import { languageField, translateField } from "./language.js";
 
 installNav();
 
@@ -150,7 +150,7 @@ api.me()
 	})
 	.catch(() => {});
 
-document.getElementById("profile-language").append(languageField("profile_language", { label: false }));
+document.getElementById("profile-language").append(languageField("profile_language", { label: false }), translateField("profile_translate"));
 
 const name = document.getElementById("profile_name");
 const email = document.getElementById("profile_email");

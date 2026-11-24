@@ -1186,6 +1186,8 @@ dialog.help-dialog li { margin: 0.35rem 0; }
 .chat-line.server .chat-text { font-style: italic; }
 .chat-text { flex: 1 1 100%; order: 2; }
 .chat-time { margin-inline-start: auto; order: 1; font-variant-numeric: tabular-nums; }
+.chat-translation { flex: 1 1 100%; order: 3; }
+.chat-original { padding: 0 0.3rem; text-decoration: underline; }
 .chat-entry { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.5rem; }
 .chat-entry .chat-input { flex: 1 1 9rem; min-width: 0; }
 .chat-entry .chat-name { flex: 1 1 100%; }

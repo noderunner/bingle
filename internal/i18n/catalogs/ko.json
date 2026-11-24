@@ -14,6 +14,7 @@
 
 	"language.label": "언어",
 	"language.browser": "브라우저 ({language})",
+	"translate.label": "채팅을 내 언어로 번역",
 
 	"profile.button": "내 프로필",
 	"profile.button_account": "내 프로필 (@{handle}(으)로 로그인함)",
@@ -783,6 +784,10 @@
 	"chat.messages_table": "채팅 메시지",
 	"chat.say_table": "테이블에 한마디…",
 	"chat.say_spectator": "한마디 (관전자로서)…",
+	"chat.translated_from": "{language}에서 번역됨",
+	"chat.translated": "번역됨",
+	"chat.show_original": "원문 보기",
+	"chat.show_translation": "번역 보기",
 
 	"emoji.grinning": "활짝 웃음",
 	"emoji.smiling": "미소",
