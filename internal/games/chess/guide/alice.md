@@ -8,7 +8,7 @@ Alice chess is played on **two boards**, side by side: **board A** (files a to h
 - Then it passes to the **twin square on the other board**, which must be empty. A move whose twin square is taken cannot be made.
 - A capture takes the piece on the board where the move is made.
 
-To move, click the piece and then the square where it will end, on the other board. In the notation the move names that square: `Ng1-n3` is the knight's move from g1 to f3, ending on board B.
+To move, click the piece and then the square it moves to on its own board, as in chess; to capture, click the piece you take. The piece then crosses to the twin square. In the notation, too, a move names the square on its own board: `Ng1-f3` ends on n3 of board B.
 
 ## Check
 

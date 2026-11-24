@@ -93,6 +93,9 @@ type Board struct {
 	Style string `json:"style,omitempty"`
 	// Borders tints board edges: region name -> seat colour.
 	Borders map[string]string `json:"borders,omitempty"`
+	// Divide draws a thick line down a board of squares after that many
+	// columns from the left, for a board that is two (Alice chess's).
+	Divide int `json:"divide,omitempty"`
 	// Art is a picture of the printed board, a path among the game's own
 	// files, for the game's page script to draw it behind an areas board (the
 	// shared page draws no areas board itself). A variant names its own.
@@ -300,6 +303,9 @@ func mergeBoard(base, variant *Board) *Board {
 	if variant.Art != "" {
 		out.Art = variant.Art
 	}
+	if variant.Divide != 0 {
+		out.Divide = variant.Divide
+	}
 	if variant.Canvas != nil {
 		out.Canvas = variant.Canvas
 	}
@@ -365,6 +371,9 @@ func (f File) check(cg *catalog.CompiledGame) error {
 			if _, ok := cg.Board.Region(region); !ok && def.Board.Regions[region] == nil {
 				return fmt.Errorf("border %q is not a region of the board", region)
 			}
+		}
+		if d := f.Board.Divide; d != 0 && (cg.Board.Kind() != "grid" || d < 0 || d >= cg.Board.Width()) {
+			return fmt.Errorf("divide %d is not between two columns of the board", d)
 		}
 		if c := f.Board.Canvas; c != nil && (c.Width <= 0 || c.Height <= 0) {
 			return fmt.Errorf("the canvas needs a positive width and height")

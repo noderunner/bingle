@@ -141,6 +141,17 @@ func TestChessVariants_Chess960(t *testing.T) {
 	if _, res := play(t, g, st, 1, "g1a1"); res.Notation != "O-O-O" {
 		t.Errorf("king takes rook is %s", res.Notation)
 	}
+	// The king on b1 may step to c1 or castle there: the two stay apart.
+	near := cells(map[string]string{"b1": "white king", "a1": "white rook", "g8": "black king"}, chess.Data{Castling: "Q"})
+	for _, mv := range rs.Legal(g, near, 1) {
+		want := rs.Format(g, mv)
+		if _, res := play(t, g, near, 1, want); res.Notation != want {
+			t.Errorf("%s was played as %s", want, res.Notation)
+		}
+	}
+	if l := legalIn(g, near, 1); !has(l, "Kb1-c1") || !has(l, "O-O-O") {
+		t.Errorf("moves with the king on b1: %v", l)
+	}
 	blocked := cells(map[string]string{"g1": "white king", "a1": "white rook", "d1": "white knight", "g8": "black king"}, chess.Data{Castling: "Q"})
 	if has(legalIn(g, blocked, 1), "O-O-O") {
 		t.Error("O-O-O over a knight on d1")
@@ -292,11 +303,11 @@ func TestChessVariants_Alice(t *testing.T) {
 	rs := chess.New()
 	start, _ := rs.Start(g, 1)
 	l := legalIn(g, start, 1)
-	if len(l) != 20 || !has(l, "Ng1-n3") || !has(l, "e2-m4") {
+	if len(l) != 20 || !has(l, "Ng1-f3") || !has(l, "e2-e4") {
 		t.Fatalf("first moves: %v", l)
 	}
 	st, res := play(t, g, start, 1, "e4")
-	if res.Notation != "e2-m4" {
+	if res.Notation != "e2-e4" {
 		t.Errorf("e4 is %s", res.Notation)
 	}
 	if o, _ := st.Get("m4"); o.Piece != "pawn" {
@@ -304,12 +315,12 @@ func TestChessVariants_Alice(t *testing.T) {
 	}
 	// Black's e5 lands on m5, in front of White's pawn on board B.
 	st, _ = play(t, g, st, 2, "e5")
-	if has(legalIn(g, st, 1), "m4-e5") {
+	if has(legalIn(g, st, 1), "m4-m5") {
 		t.Error("the pawn on m4 moved through the pawn on m5")
 	}
 	// The twin square must be empty.
 	st = cells(map[string]string{"e1": "white king", "a1": "white rook", "i8": "black pawn", "e8": "black king"}, chess.Data{})
-	if has(legalIn(g, st, 1), "Ra1-i8") {
+	if has(legalIn(g, st, 1), "Ra1-a8") {
 		t.Error("the rook landed on a piece on board B")
 	}
 	// A rook on board B does not check a king on board A.
@@ -320,12 +331,36 @@ func TestChessVariants_Alice(t *testing.T) {
 	// The king may not step onto d1, attacked on board A, though it would
 	// cross to the safe l1.
 	st = cells(map[string]string{"e1": "white king", "d8": "black rook", "h8": "black king"}, chess.Data{})
-	if l := legalIn(g, st, 1); has(l, "Ke1-l1") || !has(l, "Ke1-n1") {
+	if l := legalIn(g, st, 1); has(l, "Ke1-d1") || !has(l, "Ke1-f1") {
 		t.Errorf("king moves: %v", l)
 	}
+	// A capture on board B is clicked on the piece taken (game BTE3DX): the
+	// bishop on j5 takes the knight on i6 and crosses to a6.
+	st = cells(map[string]string{"e1": "white king", "e8": "black king", "j5": "white bishop", "i6": "black knight", "a7": "black pawn"}, chess.Data{})
+	var take state.Selection
+	for _, mv := range rs.Legal(g, st, 1) {
+		if rs.Format(g, mv) == "Bj5xi6" {
+			take = mv
+		}
+	}
+	if gs := rs.Gestures(g, take); len(gs) != 2 || gs[0].Value != "j5" || gs[1].Value != "i6" {
+		t.Fatalf("Bj5xi6 is clicked %+v (moves %v)", gs, legalIn(g, st, 1))
+	}
+	after, _ := play(t, g, st, 1, "Bxi6")
+	if o, _ := after.Get("a6"); o.Piece != "bishop" {
+		t.Errorf("the bishop is not on a6: %+v", o)
+	}
+	if _, ok := after.Get("i6"); ok {
+		t.Error("the knight is still on i6")
+	}
+	// The older form, naming the twin, is the same move.
+	if _, res := play(t, g, start, 1, "Ng1-n3"); res.Notation != "Ng1-f3" {
+		t.Errorf("Ng1-n3 is recorded as %s", res.Notation)
+	}
+
 	// Castling is on board A, and both cross.
 	st = cells(map[string]string{"e1": "white king", "h1": "white rook", "e8": "black king"}, chess.Data{Castling: "K"})
-	after, _ := play(t, g, st, 1, "O-O")
+	after, _ = play(t, g, st, 1, "O-O")
 	for sq, want := range map[string]string{"o1": "king", "n1": "rook"} {
 		if o, _ := after.Get(board.PositionID(sq)); o.Piece != want {
 			t.Errorf("after O-O %s holds %+v", sq, o)

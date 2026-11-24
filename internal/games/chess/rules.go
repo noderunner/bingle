@@ -760,8 +760,11 @@ func (p *pos) key(legal []move) string {
 	return strconv.FormatUint(h.Sum64(), 36)
 }
 
+// selection is m as clients see it. Its square is the one the piece moves
+// to on its own board; in Alice it then crosses to the twin square (ADR
+// 0146).
 func (m move) selection() state.Selection {
-	sel := state.Selection{Action: actMove, Piece: kindName[m.kind], To: board.PositionID(cellName(m.to))}
+	sel := state.Selection{Action: actMove, Piece: kindName[m.kind], To: board.PositionID(cellName(m.land))}
 	switch {
 	case m.drop:
 		sel.Action = actDrop
@@ -781,8 +784,9 @@ func (m move) selection() state.Selection {
 
 // matches reports whether a parsed selection names m. A selection with both
 // squares (from the list of legal moves, long notation or UCI) is matched by
-// them and the promotion: the square reached may be the one moved to on
-// the piece's own board (Alice) or, for castling, the rook's. One from
+// them and the promotion: the square reached is the one moved to on the
+// piece's own board, or the twin where it ends (Alice's older records), or
+// for castling the rook's. One from
 // short notation (Nf3, exd5, O-O, N@f3) is matched by what it gives: the
 // piece, the square it goes to and any file or rank it names.
 func matches(s state.Selection, m move) bool {
@@ -797,7 +801,17 @@ func matches(s state.Selection, m move) bool {
 	}
 	from := cellName(m.from)
 	if len(s.From) == 2 {
-		return string(s.From) == from && (string(s.To) == to || string(s.To) == land || (m.castle && string(s.To) == cellName(m.rookFrom)))
+		if string(s.From) != from {
+			return false
+		}
+		if m.castle {
+			// Squares name a castling by the king taking its rook, or by the
+			// king going two files or more (e1g1): a Chess960 king one file
+			// from its square may step there too, and that is the step.
+			apart := int(from[0]) - int(land[0])
+			return string(s.To) == cellName(m.rookFrom) || ((string(s.To) == to || string(s.To) == land) && (apart >= 2 || apart <= -2))
+		}
+		return string(s.To) == to || string(s.To) == land
 	}
 	if m.castle || len(s.To) != 2 || fold(s.To[0]) != fold(land[0]) || s.To[1] != land[1] || kindOf(s.Piece) != m.kind {
 		return false

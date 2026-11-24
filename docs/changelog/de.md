@@ -2,6 +2,15 @@
 
 Was sich in Bingle geändert hat, das Neueste zuerst. Bingle Core (der Server, die Engine und der Web-Client) und jedes Spiel haben eine eigene Version, und jeder Eintrag sagt, welche sich geändert hat. Einträge vor 0.124.0 gibt es nur auf Englisch.
 
+## 0.132.1 - 2026-11-23
+
+### Bingle Core 0.132.1
+- Die zwei Bretter eines Spiels, das als eines gezeichnet wird, trennt eine Linie
+
+### Chess 0.2.1
+- Alice-Schach: Ein Zug wird auf seinem eigenen Brett gemacht, ein Schlagzug also auf die geschlagene Figur geklickt
+- Chess960: Ein König neben seinem Rochadefeld kann dorthin ziehen und auch rochieren
+
 ## 0.132.0 - 2026-11-23
 
 ### Bingle Core 0.132.0

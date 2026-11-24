@@ -19,8 +19,9 @@ import (
 //	e2-e4  Ng1-f3  e4xd5  e5xd6 (en passant)  e7-e8=Q  O-O  N@f3
 //
 // Alice's second board is files i to p, and a move names the square the
-// piece ends on there: Ng1-n3 is the knight's move to f3, which crosses to
-// the other board.
+// piece moves to on its own board, as in chess (ADR 0146): Ng1-f3 ends on
+// n3, the twin of f3 on the other board. The older form, naming the twin
+// (Ng1-n3), is read too.
 //
 // Parse also reads short algebraic notation (e4, Nf3, exd5, Nbd7, e8=Q, with
 // or without + and #) and UCI (e2e4, e7e8q); Apply finds the one legal move
@@ -166,7 +167,7 @@ func (rs *Ruleset) Describe(game *catalog.CompiledGame) state.RulesetInfo {
 		}
 	case vAlice:
 		info.WinRules[1] = "The game is drawn by stalemate, by the same position three times, by fifty moves each without a capture or a pawn move, and when only the kings are left."
-		info.NotationHelp = append(info.NotationHelp, "The second board is files i to p. A piece crosses to the other board after every move, and the move names the square it ends on: Ng1-n3.")
+		info.NotationHelp = append(info.NotationHelp, "The second board is files i to p. A move is made on the piece's own board, as in chess (Ng1-f3), and the piece then crosses to the twin square of the other board (n3).")
 	}
 	if st, err := rs.Start(game, 518); err == nil {
 		if moves := rs.Legal(game, st, seatWhite); len(moves) > 0 {

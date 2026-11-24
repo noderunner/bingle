@@ -664,6 +664,12 @@ function drawBoard(host, info, view, handlers = {}) {
 		svg.append(fences);
 	}
 
+	// A line down a board that is two (Alice chess's), from the look.
+	if (showSquares && b.divide > 0 && b.divide < L.W) {
+		const x = L.margin + (view.flipped ? L.W - b.divide : b.divide) * CELL;
+		svg.append(s("line", { class: "board-divide", x1: x, y1: L.margin - 4, x2: x, y2: L.margin + L.H * CELL + 4, "pointer-events": "none" }));
+	}
+
 	const byId = new Map(b.positions.map((p) => [p.id, p]));
 	drawArrows(svg, view, (id) => (byId.has(id) ? L.place(byId.get(id)) : null));
 	clear(host).append(svg);
