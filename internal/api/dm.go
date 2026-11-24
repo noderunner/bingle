@@ -155,7 +155,7 @@ func (h *handlers) handleDirectCall(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !req.Join {
-		h.mgr.LeaveDirectCall(from)
+		h.mgr.LeaveDirectCall(from, req.To)
 		writeJSON(w, http.StatusOK, okResponse{OK: true})
 		return
 	}

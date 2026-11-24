@@ -113,6 +113,7 @@
 
 	"call.not_made": "Der Anruf konnte nicht aufgebaut werden.",
 	"call.dropped": "Der Anruf ist beendet: Du bist einem anderen beigetreten.",
+	"call.declined": "Abgelehnt.",
 	"call.not_connected": "Der Anruf konnte nicht verbunden werden.",
 	"call.no_mic": "Das Mikrofon konnte nicht geöffnet werden.",
 

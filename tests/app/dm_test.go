@@ -5,6 +5,7 @@ package app_test
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -13,6 +14,7 @@ import (
 	"time"
 
 	"github.com/chromedp/chromedp"
+	"github.com/coder/websocket/wsjson"
 
 	"github.com/noderunner/bingle/internal/app"
 	"github.com/noderunner/bingle/internal/auth"
@@ -283,6 +285,74 @@ func TestDirectCall_OneVoiceAtATime(t *testing.T) {
 	// A call to somebody who is not here is refused.
 	if code := anaB.do("POST", "/api/dm/call", map[string]any{"to": strings.Repeat("f", 16), "join": true}, nil); code != 403 {
 		t.Errorf("calling nobody: %d, want 403", code)
+	}
+}
+
+// nextCallEvent is the reader's next dm-call event, or ok false when none
+// comes within wait.
+func nextCallEvent(t *testing.T, r *reader, wait time.Duration) (ev struct {
+	Kind     string `json:"kind"`
+	From     string `json:"from"`
+	Dropped  bool   `json:"dropped"`
+	Declined bool   `json:"declined"`
+}, ok bool) {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(context.Background(), wait)
+	defer cancel()
+	for {
+		var e wsEvent
+		if err := wsjson.Read(ctx, r.conn, &e); err != nil {
+			return ev, false
+		}
+		if e.Type == "dm-call" {
+			_ = json.Unmarshal(e.Data, &ev)
+			return ev, true
+		}
+	}
+}
+
+// Declining a call tells the caller, whose ring ends; it leaves alone a call
+// the one declining is already in (#231).
+func TestDirectCall_DecliningTellsTheCaller(t *testing.T) {
+	a, baseURL := membersServer(t)
+	anaB, boB, cyB := member(t, a, baseURL, "ana"), member(t, a, baseURL, "bob"), member(t, a, baseURL, "cyd")
+	ana, bo, cy := anaB.here(), boB.here(), cyB.here()
+	befriend(t, anaB, boB, "bob", "ana")
+	befriend(t, cyB, boB, "bob", "cyd")
+	anaR, cyR := dmReader(t, baseURL, anaB, "en"), dmReader(t, baseURL, cyB, "en")
+
+	if code := anaB.do("POST", "/api/dm/call", map[string]any{"to": bo, "join": true}, nil); code != 200 {
+		t.Fatalf("Ana calls Bo: %d", code)
+	}
+	if code := boB.do("POST", "/api/dm/call", map[string]any{"to": ana, "join": false}, nil); code != 200 {
+		t.Fatalf("Bo declines: %d", code)
+	}
+	if ev, ok := nextCallEvent(t, anaR, 5*time.Second); !ok || ev.Kind != "end" || ev.From != bo || !ev.Declined || ev.Dropped {
+		t.Fatalf("Ana is told %+v (%v), want an end from Bo, declined", ev, ok)
+	}
+	// Her ring is over: she is in no call with Bo, and answering now rings afresh.
+	if code := anaB.do("POST", "/api/dm/signal", map[string]any{"to": bo, "kind": "offer", "data": map[string]any{"sdp": "x"}}, nil); code != 409 {
+		t.Errorf("Ana signals after being declined: %d, want 409", code)
+	}
+
+	// Bo talks with Cy, and declines Ana ringing meanwhile: his call goes on.
+	cyB.do("POST", "/api/dm/call", map[string]any{"to": bo, "join": true}, nil)
+	boB.do("POST", "/api/dm/call", map[string]any{"to": cy, "join": true}, nil)
+	if ev, ok := nextCallEvent(t, cyR, 5*time.Second); !ok || ev.Kind != "ring" {
+		t.Fatalf("Cy hears Bo answer: %+v (%v)", ev, ok)
+	}
+	anaB.do("POST", "/api/dm/call", map[string]any{"to": bo, "join": true}, nil)
+	boB.do("POST", "/api/dm/call", map[string]any{"to": ana, "join": false}, nil)
+	if ev, ok := nextCallEvent(t, anaR, 5*time.Second); !ok || ev.Kind != "end" || !ev.Declined {
+		t.Errorf("Ana is told %+v (%v), want declined", ev, ok)
+	}
+	if code := boB.do("POST", "/api/dm/signal", map[string]any{"to": cy, "kind": "offer", "data": map[string]any{"sdp": "x"}}, nil); code != 200 {
+		t.Errorf("Bo declining Ana ended his call with Cy: a signal is %d, want 200", code)
+	}
+	// Hanging up for good still ends it, and that is the first Cy hears of it.
+	boB.do("POST", "/api/dm/call", map[string]any{"to": cy, "join": false}, nil)
+	if ev, ok := nextCallEvent(t, cyR, 5*time.Second); !ok || ev.Kind != "end" || ev.From != bo || ev.Declined {
+		t.Errorf("Cy is told %+v (%v), want a plain end from Bo", ev, ok)
 	}
 }
 

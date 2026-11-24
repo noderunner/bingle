@@ -97,6 +97,8 @@ type DirectCall struct {
 	Name string `json:"name,omitempty"`
 	// Dropped says the call ended because the person joined another one.
 	Dropped bool `json:"dropped,omitempty"`
+	// Declined says the one being rung would not answer.
+	Declined bool `json:"declined,omitempty"`
 }
 
 // dmRoom is the hub channel a browser hears its own messages on.
@@ -355,13 +357,20 @@ func (m *Manager) JoinDirectCall(from, to string) error {
 	return nil
 }
 
-// LeaveDirectCall ends the call this browser is in, telling the other side.
-func (m *Manager) LeaveDirectCall(from string) {
-	where, ok := m.calls.release(from)
-	if !ok || where.Peer == "" {
+// LeaveDirectCall ends the call this browser is in with to (with anybody when
+// to is empty), telling the other side. When it is in no call with to but to
+// is ringing it, it declines: the caller's ring ends and they are told.
+func (m *Manager) LeaveDirectCall(from, to string) {
+	if where, ok := m.calls.in(from); ok && (to == "" || where.Peer == to) {
+		m.calls.release(from)
+		if where.Peer != "" {
+			m.hub.publish(dmRoom(where.Peer), Event{Type: "dm-call", Data: DirectCall{Kind: "end", From: from}})
+		}
 		return
 	}
-	m.hub.publish(dmRoom(where.Peer), Event{Type: "dm-call", Data: DirectCall{Kind: "end", From: from}})
+	if to != "" && to != from && m.calls.releaseIf(to, CallWhere{Peer: from}) {
+		m.hub.publish(dmRoom(to), Event{Type: "dm-call", Data: DirectCall{Kind: "end", From: from, Declined: true}})
+	}
 }
 
 // SignalDirect relays one WebRTC message from this browser to the person it is
@@ -423,6 +432,18 @@ func (c *callRegistry) release(addr string) (CallWhere, bool) {
 	old, had := c.at[addr]
 	delete(c.at, addr)
 	return old, had
+}
+
+// releaseIf takes addr out of its call if that call is where, and says
+// whether it did.
+func (c *callRegistry) releaseIf(addr string, where CallWhere) bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if old, had := c.at[addr]; !had || old != where {
+		return false
+	}
+	delete(c.at, addr)
+	return true
 }
 
 // in reports the call addr is in.

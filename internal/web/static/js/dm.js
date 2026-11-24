@@ -253,7 +253,7 @@ async function openSocket() {
 					if (!D.open) openThread(d.from, d.name);
 					toast(t("dm.is_calling", { name: d.name || t("dm.somebody") }));
 				} else if (d.kind === "end") {
-					ended(d.from, d.dropped);
+					ended(d.from, d.dropped, d.declined);
 				}
 				paintWindow();
 				break;

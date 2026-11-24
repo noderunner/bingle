@@ -113,6 +113,7 @@
 
 	"call.not_made": "通話をかけられませんでした。",
 	"call.dropped": "通話が終了しました。別の通話に参加したためです。",
+	"call.declined": "拒否されました。",
 	"call.not_connected": "通話をつなげませんでした。",
 	"call.no_mic": "マイクを開けませんでした。",
 
