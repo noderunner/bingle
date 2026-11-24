@@ -9,7 +9,7 @@ import { api, ApiError, gameTitle } from "./api.js";
 import { MoveBuilder } from "./builder.js";
 import { renderBoard, pieceIcon, cssColor, hasHexStyles, defaultHexStyle } from "./render.js";
 import { showRules as openRules } from "./rules.js";
-import { keepChatFocus, loadChat, receiveChat, chatCard, chatSeen, chatUnread } from "./chat.js";
+import { keepChatFocus, loadChat, receiveChat, receiveTranslation, chatCard, chatSeen, chatUnread } from "./chat.js";
 import { handleBadge } from "./friend-badge.js";
 import { voiceControls, voiceEvent, voiceResync } from "./voice.js";
 import { installNav, navigate } from "./nav.js";
@@ -2244,6 +2244,8 @@ async function onEvent(env) {
 			const line = env.data || {};
 			receiveChat(line, { mine: !!S.me.name && String(line.name || "").toLowerCase() === S.me.name.toLowerCase(), seen: chatOnScreen() });
 			paintMobileBadges();
+		} else if (env.type === "chat_translation") {
+			receiveTranslation(env.data);
 		} else if (env.type === "state") {
 			if (env.data && env.data.reason === "draw-offer") toast(tr("game.draw_offered"));
 		await refreshGame();

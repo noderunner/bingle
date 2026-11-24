@@ -70,6 +70,53 @@ const EMOJI_GROUPS = [
 let listEl = null;
 let badgeEl = null;
 
+// The lines the reader asked to see as written, by scope ("g" a game's, "w"
+// the global chat's) and id: kept across redraws.
+const showingOriginal = new Set();
+
+let languageNames = null;
+try {
+	languageNames = new Intl.DisplayNames([lang], { type: "language" });
+} catch (_) {
+	/* an old browser: "Translated", without the language */
+}
+
+/**
+ * The words of a chat line (ADR 0143): its translation into the reader's
+ * language once the server has one, marked, with the original a click away;
+ * else the line as written. Shown as text, never as markup.
+ */
+export function chatText(line, scope) {
+	const text = h("span", { class: "chat-text", dir: "auto" }, line.text);
+	const tr = line.translation;
+	if (!tr || !tr.text || line.server) return [text];
+	const key = scope + line.id;
+	let from = "";
+	if (tr.from && tr.from !== "und") {
+		try {
+			from = (languageNames && languageNames.of(tr.from)) || "";
+		} catch (_) {
+			/* a code the browser does not know */
+		}
+	}
+	const mark = h("span", { class: "small muted" }, from ? t("chat.translated_from", { language: from }) : t("chat.translated"));
+	const toggle = h("button", { type: "button", class: "ghost small chat-original" });
+	const paint = () => {
+		const original = showingOriginal.has(key);
+		text.textContent = original ? line.text : tr.text;
+		if (original && tr.from && tr.from !== "und") text.lang = tr.from;
+		else if (original) text.removeAttribute("lang");
+		else text.lang = tr.lang;
+		toggle.textContent = original ? t("chat.show_translation") : t("chat.show_original");
+	};
+	toggle.addEventListener("click", () => {
+		if (!showingOriginal.delete(key)) showingOriginal.add(key);
+		paint();
+	});
+	paint();
+	return [text, h("span", { class: "chat-translation" }, mark, " ", toggle)];
+}
+
 // Another page, perhaps another game: nothing of this chat belongs to it.
 onNavigate(() => {
 	Object.assign(chat, { code: null, lines: [], loaded: false, loading: false, draft: "", focused: false, unread: 0, sending: false, picker: false });
@@ -185,6 +232,15 @@ export function chatLoaded() {
 	return chat.loaded;
 }
 
+/** A line's translation, pushed by the server after the line: drawn in its place. */
+export function receiveTranslation(d) {
+	const line = d && chat.lines.find((l) => l.id === d.id);
+	if (!line) return;
+	line.translation = { lang: d.lang, from: d.from, text: d.text };
+	const node = listEl && listEl.querySelector(`li[data-id="${Number(d.id)}"]`);
+	if (node) node.replaceWith(lineNode(line, node.classList.contains("mine")));
+}
+
 /** A message pushed by the server: kept, and drawn in place when on screen. */
 export function receiveChat(line, { mine, seen = true }) {
 	if (!line || chat.lines.some((l) => l.id === line.id)) return;
@@ -192,6 +248,7 @@ export function receiveChat(line, { mine, seen = true }) {
 	if (chat.lines.length > 300) chat.lines.splice(0, chat.lines.length - 300);
 	if (listEl && document.body.contains(listEl)) {
 		const atEnd = listEl.scrollHeight - listEl.scrollTop - listEl.clientHeight < 40;
+		listEl.querySelector(".chat-empty")?.remove();
 		listEl.append(lineNode(line, mine));
 		if (atEnd || mine) listEl.scrollTop = listEl.scrollHeight;
 		if (!mine && !seen) bump();
@@ -212,7 +269,7 @@ function bump() {
 function clock(iso) {
 	// SQLite stores "YYYY-MM-DD HH:MM:SS" in UTC.
 	const at = Date.parse(String(iso || "").replace(" ", "T") + (/[zZ]|[+-]\d\d:?\d\d$/.test(iso || "") ? "" : "Z"));
-	if (Number.isNaN(t)) return "";
+	if (Number.isNaN(at)) return "";
 	return new Date(at).toLocaleTimeString(lang, { hour: "2-digit", minute: "2-digit" });
 }
 
@@ -223,7 +280,7 @@ function lineNode(line, mine) {
 			"li",
 			{ class: "chat-line server", "data-id": line.id },
 			h("span", { class: "chat-who" }, line.name),
-			h("span", { class: "chat-text" }, line.text),
+			...chatText(line, "g"),
 			h("time", { class: "chat-time muted small" }, clock(line.at))
 		);
 	}
@@ -233,7 +290,7 @@ function lineNode(line, mine) {
 		h("span", { class: `chat-who ${line.color ? "color-" + cssColor(line.color) : ""}`, title: line.seat ? "" : t("chat.spectator") }, line.seat ? line.name : t("chat.watching", { name: line.name })),
 		// Who said it: an account, by its handle, or a guest.
 		line.handle ? handleBadge(line.handle) : line.guest ? h("span", { class: "chat-guest small muted" }, t("chat.guest")) : null,
-		h("span", { class: "chat-text" }, line.text),
+		...chatText(line, "g"),
 		h("time", { class: "chat-time muted small" }, clock(line.at))
 	);
 }

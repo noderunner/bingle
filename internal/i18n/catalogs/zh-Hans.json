@@ -14,6 +14,7 @@
 
 	"language.label": "语言",
 	"language.browser": "浏览器（{language}）",
+	"translate.label": "将聊天翻译成我的语言",
 
 	"profile.button": "你的资料",
 	"profile.button_account": "你的资料（已登录为 @{handle}）",
@@ -783,6 +784,10 @@
 	"chat.messages_table": "聊天消息",
 	"chat.say_table": "对同桌说点什么…",
 	"chat.say_spectator": "说点什么（以观众身份）…",
+	"chat.translated_from": "译自{language}",
+	"chat.translated": "已翻译",
+	"chat.show_original": "显示原文",
+	"chat.show_translation": "显示译文",
 
 	"emoji.grinning": "咧嘴笑",
 	"emoji.smiling": "微笑",

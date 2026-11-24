@@ -14,6 +14,7 @@
 
 	"language.label": "Язык",
 	"language.browser": "Браузер ({language})",
+	"translate.label": "Переводить чат на мой язык",
 
 	"profile.button": "Ваш профиль",
 	"profile.button_account": "Ваш профиль (вы вошли как @{handle})",
@@ -783,6 +784,10 @@
 	"chat.messages_table": "Сообщения чата",
 	"chat.say_table": "Скажите что-нибудь столу…",
 	"chat.say_spectator": "Скажите что-нибудь (как зритель)…",
+	"chat.translated_from": "Переведено с языка: {language}",
+	"chat.translated": "Переведено",
+	"chat.show_original": "Показать оригинал",
+	"chat.show_translation": "Показать перевод",
 
 	"emoji.grinning": "широкая улыбка",
 	"emoji.smiling": "улыбка",

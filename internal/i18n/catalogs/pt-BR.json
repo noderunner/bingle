@@ -14,6 +14,7 @@
 
 	"language.label": "Idioma",
 	"language.browser": "Navegador ({language})",
+	"translate.label": "Traduzir o chat para o meu idioma",
 
 	"profile.button": "Seu perfil",
 	"profile.button_account": "Seu perfil (conectado como @{handle})",
@@ -783,6 +784,10 @@
 	"chat.messages_table": "Mensagens do chat",
 	"chat.say_table": "Diga algo para a mesa…",
 	"chat.say_spectator": "Diga algo (como espectador)…",
+	"chat.translated_from": "Traduzido do {language}",
+	"chat.translated": "Traduzido",
+	"chat.show_original": "Ver original",
+	"chat.show_translation": "Ver tradução",
 
 	"emoji.grinning": "sorridente",
 	"emoji.smiling": "feliz",

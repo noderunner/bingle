@@ -4,7 +4,7 @@
 // the page again in it.
 
 import { h } from "./util.js";
-import { api } from "./api.js";
+import { api, whoAmI } from "./api.js";
 import { t, chosen, browserLanguage, languages } from "./i18n.js";
 
 /** The setting: a labelled select whose id is id. */
@@ -33,4 +33,33 @@ export function languageField(id, { label = true } = {}) {
 		}
 	});
 	return h("div", { class: "field" }, label ? h("label", { for: id }, t("language.label")) : null, select, status);
+}
+
+/**
+ * The switch for chat in the reader's language (ADR 0143), whose checkbox's id
+ * is id: shown only where the server translates chat. Changing it loads the
+ * page again, so that the chat is read anew.
+ */
+export function translateField(id) {
+	const box = h("input", { type: "checkbox", id });
+	const status = h("span", { class: "small", role: "status" });
+	const field = h("div", { class: "field", hidden: true }, h("label", { class: "check" }, box, h("span", {}, t("translate.label"))), status);
+	whoAmI().then((me) => {
+		if (!me.translation) return;
+		box.checked = me.translate_chat !== false;
+		field.hidden = false;
+	});
+	box.addEventListener("change", async () => {
+		box.disabled = true;
+		status.textContent = "";
+		try {
+			await api.setTranslate(box.checked);
+			location.reload();
+		} catch (err) {
+			box.checked = !box.checked;
+			box.disabled = false;
+			status.textContent = err.message || t("common.not_saved");
+		}
+	});
+	return field;
 }

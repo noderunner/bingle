@@ -5,6 +5,7 @@ import (
 	"errors"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/noderunner/bingle/internal/store"
 	"github.com/noderunner/bingle/internal/translate"
@@ -115,6 +116,9 @@ func (m *Manager) ReadIn(ctx context.Context, room string) func() {
 	if lang == "" {
 		return func() {}
 	}
+	if room != GlobalChatRoom {
+		room = canonRoom(room)
+	}
 	t := m.translation
 	t.mu.Lock()
 	if t.readers[room] == nil {
@@ -122,6 +126,9 @@ func (m *Manager) ReadIn(ctx context.Context, room string) func() {
 	}
 	t.readers[room][lang]++
 	t.mu.Unlock()
+	// The lines said before this reader came: asked for now, when the
+	// reader's socket is there to have them.
+	go m.catchUp(room, lang)
 	var once sync.Once
 	return func() {
 		once.Do(func() {
@@ -227,6 +234,62 @@ func (m *Manager) askTranslation(l lineToTranslate, lang string) {
 	})
 	if !queued {
 		done()
+	}
+}
+
+// catchUp asks for the latest lines of room that have nothing kept in lang,
+// for a reader of lang who has just come.
+func (m *Manager) catchUp(room, lang string) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	global := room == GlobalChatRoom
+	type said struct {
+		id   int64
+		text string
+	}
+	var lines []said
+	var keep []string
+	if global {
+		msgs, err := m.store.ListGlobalChat(ctx, 0, historyBackfill)
+		if err != nil {
+			return
+		}
+		for _, mm := range msgs {
+			lines = append(lines, said{mm.ID, mm.Body})
+			keep = append(keep, mm.Name)
+		}
+	} else {
+		game, err := m.store.GetGame(ctx, room)
+		if err != nil {
+			return
+		}
+		msgs, err := m.store.ListChat(ctx, game.ID, 0, historyBackfill)
+		if err != nil {
+			return
+		}
+		players, _ := m.store.ListPlayers(ctx, game.ID)
+		keep = playerNames(players, "")
+		for _, mm := range msgs {
+			if mm.Seat != serverSeat {
+				lines = append(lines, said{mm.ID, mm.Body})
+			}
+		}
+	}
+	if len(lines) == 0 {
+		return
+	}
+	ids := make([]int64, len(lines))
+	for i, l := range lines {
+		ids[i] = l.id
+	}
+	kept, err := m.store.ChatTranslations(ctx, global, ids, lang)
+	if err != nil {
+		return
+	}
+	for i := len(lines) - 1; i >= 0; i-- {
+		if _, ok := kept[lines[i].id]; !ok {
+			m.askTranslation(lineToTranslate{global: global, room: room, id: lines[i].id, text: lines[i].text, keep: keep}, lang)
+		}
 	}
 }
 

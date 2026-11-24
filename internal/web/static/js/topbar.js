@@ -13,7 +13,7 @@ import { voiceStatus, voiceSettings, voiceMembers, onVoiceChange, toggleMute, to
 import { callState, onCallChange, hangUp, toggleMute as toggleDirectMute } from "./dm-call.js";
 import { gamesIcon, joinIcon, micIcon, helpIcon, profileIcon, messageIcon } from "./ui-icons.js";
 import { t, tParts, lang } from "./i18n.js";
-import { languageField } from "./language.js";
+import { languageField, translateField } from "./language.js";
 import { whoIsHere, onHereChange, startHere, watchHere, beat as beatHere, myName } from "./here.js";
 import { mountDirectMessages, startDirectMessages, unreadCount, friendStateOf, askFriend, loadFriends, onFriendsChange } from "./dm.js";
 
@@ -452,7 +452,8 @@ function profileWindow() {
 			"section",
 			{ class: "name-section" },
 			h("div", { class: "field" }, h("label", { for: "profile-window-name" }, t("profile.my_name")), nameInput, saved),
-			languageField("profile-window-language")
+			languageField("profile-window-language"),
+			translateField("profile-window-translate")
 		),
 		guestKey.section,
 		here,

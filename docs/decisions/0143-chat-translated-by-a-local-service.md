@@ -43,7 +43,7 @@ the model cannot be inside it; it does have an HTTP client.
   line and the language and removed with the line, are the cache, so history and late joiners do not pay again. A
   line that needs no translation (already in the language, nothing to translate, the answer dropped) is kept with an
   empty one, so it is not sent again. A reader who comes later has the latest 20 lines without one asked for when
-  their history is read. **Direct messages' translations are never stored**: they live
+  their socket opens, which then brings them, and when their history is read. **Direct messages' translations are never stored**: they live
   in memory with the message (ADR 0105).
 - **The API** (stage 2): the `chat` event is unchanged and comes at once; a `chat_translation` event, `{id, lang,
   from, text}`, follows when it is ready, and each socket passes on only its reader's language. History's lines gain
