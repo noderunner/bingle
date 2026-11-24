@@ -9,6 +9,7 @@ Was sich in Bingle geändert hat, das Neueste zuerst. Bingle Core (der Server, d
 
 ### Chess 0.2.1
 - Alice-Schach: Ein Zug wird auf seinem eigenen Brett gemacht, ein Schlagzug also auf die geschlagene Figur geklickt
+- Chess960: Ein König neben seinem Rochadefeld kann dorthin ziehen und auch rochieren
 
 ## 0.132.0 - 2026-11-23
 

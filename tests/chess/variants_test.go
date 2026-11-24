@@ -141,6 +141,17 @@ func TestChessVariants_Chess960(t *testing.T) {
 	if _, res := play(t, g, st, 1, "g1a1"); res.Notation != "O-O-O" {
 		t.Errorf("king takes rook is %s", res.Notation)
 	}
+	// The king on b1 may step to c1 or castle there: the two stay apart.
+	near := cells(map[string]string{"b1": "white king", "a1": "white rook", "g8": "black king"}, chess.Data{Castling: "Q"})
+	for _, mv := range rs.Legal(g, near, 1) {
+		want := rs.Format(g, mv)
+		if _, res := play(t, g, near, 1, want); res.Notation != want {
+			t.Errorf("%s was played as %s", want, res.Notation)
+		}
+	}
+	if l := legalIn(g, near, 1); !has(l, "Kb1-c1") || !has(l, "O-O-O") {
+		t.Errorf("moves with the king on b1: %v", l)
+	}
 	blocked := cells(map[string]string{"g1": "white king", "a1": "white rook", "d1": "white knight", "g8": "black king"}, chess.Data{Castling: "Q"})
 	if has(legalIn(g, blocked, 1), "O-O-O") {
 		t.Error("O-O-O over a knight on d1")

@@ -9,6 +9,7 @@ Ce qui a changé dans Bingle, du plus récent au plus ancien. Bingle Core (le se
 
 ### Chess 0.2.1
 - Échecs d’Alice : un coup se joue sur son propre échiquier, et une prise se clique sur la pièce prise
+- Chess960 : un roi voisin de sa case de roque peut y aller aussi bien que roquer
 
 ## 0.132.0 - 2026-11-23
 

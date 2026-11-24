@@ -9,6 +9,7 @@ Lo que ha cambiado en Bingle, lo más reciente primero. Bingle Core (el servidor
 
 ### Chess 0.2.1
 - Ajedrez de Alicia: la jugada se hace en su propio tablero, así que una captura se marca en la pieza capturada
+- Chess960: un rey junto a su casilla de enroque puede ir a ella además de enrocar
 
 ## 0.132.0 - 2026-11-23
 

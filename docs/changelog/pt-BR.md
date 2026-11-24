@@ -9,6 +9,7 @@ O que mudou no Bingle, do mais recente ao mais antigo. O Bingle Core (o servidor
 
 ### Chess 0.2.1
 - Xadrez de Alice: o lance é feito no próprio tabuleiro, então uma captura é clicada na peça capturada
+- Xadrez960: um rei ao lado da casa de roque pode ir até ela, além de rocar
 
 ## 0.132.0 - 2026-11-23
 

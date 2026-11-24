@@ -11,6 +11,7 @@ what the help window shows under *Recent changes*, so it is written for the peop
 
 ### Chess 0.2.1
 - Alice Chess: a move is made on its own board, so a capture is clicked on the piece taken
+- Chess960: a king next to its castling square can step there as well as castle
 
 ## 0.132.0 - 2026-11-23
 

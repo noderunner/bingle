@@ -801,7 +801,17 @@ func matches(s state.Selection, m move) bool {
 	}
 	from := cellName(m.from)
 	if len(s.From) == 2 {
-		return string(s.From) == from && (string(s.To) == to || string(s.To) == land || (m.castle && string(s.To) == cellName(m.rookFrom)))
+		if string(s.From) != from {
+			return false
+		}
+		if m.castle {
+			// Squares name a castling by the king taking its rook, or by the
+			// king going two files or more (e1g1): a Chess960 king one file
+			// from its square may step there too, and that is the step.
+			apart := int(from[0]) - int(land[0])
+			return string(s.To) == cellName(m.rookFrom) || ((string(s.To) == to || string(s.To) == land) && (apart >= 2 || apart <= -2))
+		}
+		return string(s.To) == to || string(s.To) == land
 	}
 	if m.castle || len(s.To) != 2 || fold(s.To[0]) != fold(land[0]) || s.To[1] != land[1] || kindOf(s.Piece) != m.kind {
 		return false
