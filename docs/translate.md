@@ -30,8 +30,11 @@ is licensed Apache-2.0, which allows any use. Check the licence on the model car
 every size of a family shares one.
 
 Models **not** to use on a server that is run commercially: NLLB-200 and Aya are licensed for non-commercial use
-only. Models that "think" before answering (Qwen3 in its default mode, for example) work, since the thinking is
-taken off, but are much slower for a one-line answer.
+only.
+
+Models that "think" before answering (Gemma 4, Qwen3) are asked not to, with `reasoning_effort: "none"`, which
+Ollama honours: left to think, `gemma4:12b` took up to half a minute a line and sometimes ran out of tokens before
+answering; asked not to, it answers in under a second. A server that refuses the field is asked again without it.
 
 ### On the machine with the GPU
 

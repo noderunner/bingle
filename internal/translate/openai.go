@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync/atomic"
 )
 
 // maxAnswerBytes bounds what is read of the service's answer.
@@ -42,6 +43,9 @@ type openAI struct {
 	base   string // ends in /v1, or wherever /chat/completions lives
 	model  string
 	client *http.Client
+	// thinkingFieldRefused: the server answered 400 to reasoning_effort, so
+	// it is no longer sent.
+	thinkingFieldRefused atomic.Bool
 }
 
 type chatMessage struct {
@@ -56,6 +60,8 @@ type chatRequest struct {
 	MaxTokens      int            `json:"max_tokens"`
 	Stream         bool           `json:"stream"`
 	ResponseFormat map[string]any `json:"response_format"`
+	// ReasoningEffort "none" asks a thinking model to answer at once.
+	ReasoningEffort string `json:"reasoning_effort,omitempty"`
 }
 
 type chatResponse struct {
@@ -71,8 +77,14 @@ var errAnswer = errors.New("translate: the answer is not a translation")
 
 // ask sends the fixed instructions and the line, as data, and reads the
 // answer.
+//
+// It asks the model not to think first (reasoning_effort "none"): a thinking
+// model such as Gemma 4 or Qwen3 can otherwise spend every token it is allowed
+// weighing one word against another and never answer, and takes seconds where
+// an answer takes a fraction of one. A server that refuses the field (400) is
+// asked again without it, and from then on never sent it.
 func (o *openAI) ask(ctx context.Context, system, line string) (answer, error) {
-	body, err := json.Marshal(chatRequest{
+	req := chatRequest{
 		Model: o.model,
 		Messages: []chatMessage{
 			{Role: "system", Content: system},
@@ -83,26 +95,21 @@ func (o *openAI) ask(ctx context.Context, system, line string) (answer, error) {
 			"type":        "json_schema",
 			"json_schema": map[string]any{"name": "translation", "strict": true, "schema": answerSchema},
 		},
-	})
+	}
+	if !o.thinkingFieldRefused.Load() {
+		req.ReasoningEffort = "none"
+	}
+	status, raw, err := o.post(ctx, req)
+	if err == nil && status == http.StatusBadRequest && req.ReasoningEffort != "" {
+		o.thinkingFieldRefused.Store(true)
+		req.ReasoningEffort = ""
+		status, raw, err = o.post(ctx, req)
+	}
 	if err != nil {
 		return answer{}, err
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, o.base+"/chat/completions", bytes.NewReader(body))
-	if err != nil {
-		return answer{}, err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	resp, err := o.client.Do(req)
-	if err != nil {
-		return answer{}, err
-	}
-	defer func() { _ = resp.Body.Close() }()
-	raw, err := io.ReadAll(io.LimitReader(resp.Body, maxAnswerBytes))
-	if err != nil {
-		return answer{}, err
-	}
-	if resp.StatusCode != http.StatusOK {
-		return answer{}, fmt.Errorf("translate: the service answered %s", resp.Status)
+	if status != http.StatusOK {
+		return answer{}, fmt.Errorf("translate: the service answered %d %s", status, http.StatusText(status))
 	}
 	var cr chatResponse
 	if err := json.Unmarshal(raw, &cr); err != nil || len(cr.Choices) == 0 {
@@ -113,6 +120,29 @@ func (o *openAI) ask(ctx context.Context, system, line string) (answer, error) {
 		return answer{}, errAnswer
 	}
 	return a, nil
+}
+
+// post sends one request and reads the answer's status and body.
+func (o *openAI) post(ctx context.Context, cr chatRequest) (int, []byte, error) {
+	body, err := json.Marshal(cr)
+	if err != nil {
+		return 0, nil, err
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, o.base+"/chat/completions", bytes.NewReader(body))
+	if err != nil {
+		return 0, nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := o.client.Do(req)
+	if err != nil {
+		return 0, nil, err
+	}
+	defer func() { _ = resp.Body.Close() }()
+	raw, err := io.ReadAll(io.LimitReader(resp.Body, maxAnswerBytes))
+	if err != nil {
+		return 0, nil, err
+	}
+	return resp.StatusCode, raw, nil
 }
 
 // unwrap takes off what a model may put around the JSON despite being asked
