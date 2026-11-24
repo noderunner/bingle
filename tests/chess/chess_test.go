@@ -389,3 +389,17 @@ func TestChess_Validate(t *testing.T) {
 		t.Errorf("the start: %v", err)
 	}
 }
+
+// A seat number out of range is nobody's: it does not wrap round to White's.
+func TestChess_HeuristicSeatOutOfRange(t *testing.T) {
+	g := game(t)
+	rs := chess.New()
+	st, _ := fen(t, "4k3/8/8/8/8/8/8/Q3K3 w - -")
+	white := rs.Heuristic(g, st, 1)
+	if white <= 0 {
+		t.Fatalf("White a queen up values the position at %v", white)
+	}
+	if got := rs.Heuristic(g, st, 257); got == white {
+		t.Errorf("seat 257 is valued as White: %v", got)
+	}
+}

@@ -53,7 +53,7 @@ func buildView(st *state.BoardState, d *Data) *View {
 	if d.Turn == 0 {
 		v.Prompt = reasonText(d.Reason)
 		if d.Reason == "checkmate" {
-			p := decode(st, &Data{Turn: int(other(uint8(d.Winner)))})
+			p := decode(st, &Data{Turn: int(other(sideOfSeat(d.Winner)))})
 			if k := p.king(p.side); k >= 0 {
 				v.Tints[cellName(k)] = "check"
 			}
@@ -102,7 +102,7 @@ func (rs *Ruleset) Heuristic(game *catalog.CompiledGame, st *state.BoardState, s
 			}
 			w += 0.05 * float64(ranks-1)
 		}
-		if q.side == uint8(seat) {
+		if int(q.side) == seat {
 			x += w
 		} else {
 			x -= w

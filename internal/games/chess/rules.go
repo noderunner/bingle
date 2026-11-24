@@ -126,7 +126,7 @@ type move struct {
 }
 
 func decode(st *state.BoardState, d *Data) *pos {
-	p := &pos{side: uint8(d.Turn), castle: castleBits(d.Castling), ep: -1}
+	p := &pos{side: sideOfSeat(d.Turn), castle: castleBits(d.Castling), ep: -1}
 	for _, id := range st.Occupied() {
 		c, ok := cellOf(string(id))
 		if !ok {

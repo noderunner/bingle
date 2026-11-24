@@ -49,6 +49,18 @@ func kindOfLetter(l byte) uint8 {
 
 var sideColor = [3]string{"", "white", "black"}
 
+// sideOfSeat is the side a seat number plays, or 0 for anything but White's
+// or Black's seat.
+func sideOfSeat(seat int) uint8 {
+	switch seat {
+	case seatWhite:
+		return seatWhite
+	case seatBlack:
+		return seatBlack
+	}
+	return 0
+}
+
 func sideOf(color string) uint8 {
 	switch color {
 	case "white":
