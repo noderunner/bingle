@@ -7,9 +7,9 @@
 # everything and is not listed. The mode and signing up are set with
 # BINGLE_AUTH_MODE and BINGLE_SIGNUP.
 classes:
-  guest:  [play, join, create_game, chat_game, voice_game]
+  guest:  [play, join, create_game, chat_game, voice_game, translate]
   user:   [play, join, create_game, chat_game, chat_global, voice_game,
-           voice_direct, dm, notify, run_batch, enter_tournament]
+           voice_direct, dm, notify, translate, run_batch, enter_tournament]
 limits:                 # per class, per minute
-  guest:  { chat: 10, create_game: 3, login: 5 }
-  user:   { chat: 30, create_game: 10, dm: 20 }
+  guest:  { chat: 10, create_game: 3, login: 5, translate: 10 }
+  user:   { chat: 30, create_game: 10, dm: 20, translate: 30 }

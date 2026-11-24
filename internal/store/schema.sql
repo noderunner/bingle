@@ -70,6 +70,26 @@ CREATE TABLE IF NOT EXISTS global_chat (
     created_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- A chat line in a reader's language (ADR 0143): one row per line and language
+-- asked for. An empty body means none is needed (the line is in that language
+-- already, has nothing to translate, or the answer was dropped), so the line is
+-- not sent again. They go with their line.
+CREATE TABLE IF NOT EXISTS chat_translations (
+    message_id    INTEGER NOT NULL REFERENCES chat_messages(id) ON DELETE CASCADE,
+    lang          TEXT NOT NULL,
+    source        TEXT NOT NULL DEFAULT '',
+    body          TEXT NOT NULL DEFAULT '',
+    PRIMARY KEY (message_id, lang)
+);
+
+CREATE TABLE IF NOT EXISTS global_chat_translations (
+    message_id    INTEGER NOT NULL REFERENCES global_chat(id) ON DELETE CASCADE,
+    lang          TEXT NOT NULL,
+    source        TEXT NOT NULL DEFAULT '',
+    body          TEXT NOT NULL DEFAULT '',
+    PRIMARY KEY (message_id, lang)
+);
+
 -- A person's Auto-Play Timeout, per game and seat (see session.AutoPlay):
 -- when it is their turn to act and they have not for timeout_seconds, a
 -- tactical bot plays for them. Off by default, 24 hours when on.

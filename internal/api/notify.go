@@ -1,12 +1,14 @@
 package api
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
 
 	"github.com/noderunner/bingle/internal/auth"
 	"github.com/noderunner/bingle/internal/i18n"
+	"github.com/noderunner/bingle/internal/session"
 )
 
 // requestLanguage is the language the request reads in: the account's choice,
@@ -17,6 +19,23 @@ func requestLanguage(r *http.Request) string {
 		chosen = p.Account.Language
 	}
 	return i18n.ForRequest(r, chosen)
+}
+
+// withReader carries the request's reader into its context: the language it
+// reads in and whether it wants chat shown in it (ADR 0143).
+func withReader(r *http.Request) context.Context {
+	return session.WithReader(r.Context(), session.Reader{Lang: requestLanguage(r), Translate: auth.TranslateWanted(r)})
+}
+
+// keepsTranslation says whether a socket whose reader has chat in lang ("" for
+// as written) passes ev on: a "chat_translation" event goes only to a reader
+// of its language.
+func keepsTranslation(ev session.Event, lang string) bool {
+	if ev.Type != "chat_translation" {
+		return true
+	}
+	d, ok := ev.Data.(session.ChatTranslationEventData)
+	return ok && lang != "" && d.Lang == lang
 }
 
 // clientIP is the address the request came from.

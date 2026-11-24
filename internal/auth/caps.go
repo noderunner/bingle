@@ -35,7 +35,10 @@ const (
 	CapVoiceDirect = "voice_direct"
 	CapDM          = "dm"
 	CapNotify      = "notify"
-	CapRunBatch    = "run_batch"
+	// CapTranslate: chat is shown to the class in its reader's language, when
+	// the server has a translation service (ADR 0143).
+	CapTranslate = "translate"
+	CapRunBatch  = "run_batch"
 	// Making tournaments is the administrators' until /admin grants it; entering
 	// is for accounts (the tournaments plan).
 	CapCreateTournament = "create_tournament"
@@ -47,7 +50,7 @@ const (
 
 // AllCaps lists every capability, in the order the admin page shows them.
 var AllCaps = []string{CapPlay, CapJoin, CapCreateGame, CapChatGame, CapChatGlobal, CapVoiceGame, CapVoiceDirect, CapDM, CapNotify,
-	CapRunBatch, CapCreateTournament, CapEnterTournament, CapViewMetrics, CapModerate, CapAdmin}
+	CapTranslate, CapRunBatch, CapCreateTournament, CapEnterTournament, CapViewMetrics, CapModerate, CapAdmin}
 
 // The classes. The admin group holds every capability and has no column.
 const (
@@ -62,9 +65,12 @@ const (
 	LimitCreateGame = "create_game"
 	LimitDM         = "dm"
 	LimitLogin      = "login"
+	// LimitTranslate counts a writer's lines sent to the translation service,
+	// whatever number of languages each goes into (ADR 0143).
+	LimitTranslate = "translate"
 )
 
-var limitKinds = []string{LimitChat, LimitCreateGame, LimitDM, LimitLogin}
+var limitKinds = []string{LimitChat, LimitCreateGame, LimitDM, LimitLogin, LimitTranslate}
 
 // Modes (BINGLE_AUTH_MODE).
 const (
@@ -440,6 +446,21 @@ func (c *Caps) may(p Principal, ok bool, capability string) bool {
 func (c *Caps) MayEnterTournament(ctx context.Context) bool {
 	p, ok := From(ctx)
 	return c.may(p, ok, CapEnterTournament)
+}
+
+// MayTranslate says whether the request's principal may read chat in its
+// language (ADR 0143).
+func (c *Caps) MayTranslate(ctx context.Context) bool {
+	p, ok := From(ctx)
+	return c.may(p, ok, CapTranslate)
+}
+
+// AllowTranslation takes one of the request's principal's lines from its
+// class's translation limit: false when the minute's are spent. A writer with
+// no principal shares one count with every other.
+func (c *Caps) AllowTranslation(ctx context.Context) bool {
+	p, ok := From(ctx)
+	return c.allow(classOf(p, ok), LimitTranslate, p.ID, time.Now())
 }
 
 // Has is the capabilities p holds (for /auth/me, so a page can say what it

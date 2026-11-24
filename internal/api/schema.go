@@ -66,6 +66,7 @@ var schemaEndpoints = []schemaEndpoint{
 	{route: "GET /auth/me", response: reflect.TypeFor[auth.Me]()},
 	{route: "POST /auth/tour-seen", response: reflect.TypeFor[auth.TourSeenResponse]()},
 	{route: "POST /auth/language", request: reflect.TypeFor[auth.LanguageRequest](), response: reflect.TypeFor[auth.LanguageResponse]()},
+	{route: "POST /auth/translate", request: reflect.TypeFor[auth.TranslateRequest](), response: reflect.TypeFor[auth.TranslateResponse]()},
 	{route: "POST /auth/logout", response: reflect.TypeFor[auth.LogoutResponse]()},
 
 	// Friends (ADR 0105), who is here and direct messages, for a signed-in
@@ -99,6 +100,7 @@ var schemaEvents = []struct {
 	{"move", reflect.TypeFor[session.MoveEventData]()},
 	{"state", reflect.TypeFor[session.StateEventData]()},
 	{"chat", reflect.TypeFor[session.ChatLine]()},
+	{"chat_translation", reflect.TypeFor[session.ChatTranslationEventData]()},
 	{"connection", reflect.TypeFor[session.ConnectionEventData]()},
 	{"kick_vote", reflect.TypeFor[session.KickVoteEventData]()},
 	{"seat_replaced", reflect.TypeFor[session.SeatReplacedEventData]()},

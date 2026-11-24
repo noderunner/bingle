@@ -398,6 +398,14 @@
         },
         "text": {
           "type": "string"
+        },
+        "translation": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/ChatTranslation"
+            }
+          ],
+          "description": "Translation is the line in the reader's language (ADR 0143): only in the chat's history, and only once it has been made. A \"chat\" event never has it; a \"chat_translation\" event brings it."
         }
       },
       "required": [
@@ -406,6 +414,52 @@
         "name",
         "text",
         "at"
+      ],
+      "type": "object"
+    },
+    "ChatTranslation": {
+      "description": "ChatTranslation is a line in a reader's language.",
+      "properties": {
+        "from": {
+          "type": "string"
+        },
+        "lang": {
+          "description": "Lang is the reader's language, From the line's as the service saw it (a BCP 47 primary subtag, \"und\" when it gave none).",
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "lang",
+        "from",
+        "text"
+      ],
+      "type": "object"
+    },
+    "ChatTranslationEventData": {
+      "description": "ChatTranslationEventData is a \"chat_translation\" event: line ID in one reader's language. A socket sends only its reader's.",
+      "properties": {
+        "from": {
+          "type": "string"
+        },
+        "id": {
+          "type": "integer"
+        },
+        "lang": {
+          "description": "Lang is the reader's language, From the line's as the service saw it (a BCP 47 primary subtag, \"und\" when it gave none).",
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "lang",
+        "from",
+        "text"
       ],
       "type": "object"
     },
@@ -2530,13 +2584,22 @@
         "tour_seen": {
           "description": "TourSeen says this guest or account has skipped or finished the welcome tour (ADR 0139), which the main page then does not offer again; POST /auth/tour-seen says so. Always false for a newcomer, who has no guest yet.",
           "type": "boolean"
+        },
+        "translate_chat": {
+          "description": "TranslateChat is the switch POST /auth/translate sets: chat is shown in Language. On unless it was turned off; it matters only with Translation.",
+          "type": "boolean"
+        },
+        "translation": {
+          "description": "Translation says chat can be shown here in Language (ADR 0143): the server has a translation service and this browser may use it.",
+          "type": "boolean"
         }
       },
       "required": [
         "kind",
         "accounts",
         "signup",
-        "language"
+        "language",
+        "translate_chat"
       ],
       "type": "object"
     },
@@ -4049,6 +4112,29 @@
       ],
       "type": "object"
     },
+    "TranslateRequest": {
+      "description": "TranslateRequest is POST /auth/translate's body.",
+      "properties": {
+        "on": {
+          "description": "On says chat is shown in the reader's language (ADR 0143).",
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "TranslateResponse": {
+      "description": "TranslateResponse is POST /auth/translate's answer.",
+      "properties": {
+        "translate_chat": {
+          "description": "TranslateChat is the switch as it now is.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "translate_chat"
+      ],
+      "type": "object"
+    },
     "VoiceEventData": {
       "description": "VoiceEventData is the wire form of a \"voice\" event, sent to the whole room (every socket of the game, the call's own included) when somebody joins or leaves the call.",
       "properties": {
@@ -4210,6 +4296,21 @@
         {
           "properties": {
             "data": {
+              "$ref": "#/$defs/ChatTranslationEventData"
+            },
+            "type": {
+              "const": "chat_translation"
+            }
+          },
+          "required": [
+            "type",
+            "data"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "data": {
               "$ref": "#/$defs/ConnectionEventData"
             },
             "type": {
@@ -4334,9 +4435,9 @@
   },
   "$id": "https://github.com/noderunner/bingle/docs/api.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "description": "The requests, responses and WebSocket events of bingle's API, version 1.10.0. Generated from the Go types of the server: do not edit. Objects let unknown fields through: a client ignores those it does not know.",
+  "description": "The requests, responses and WebSocket events of bingle's API, version 1.11.0. Generated from the Go types of the server: do not edit. Objects let unknown fields through: a client ignores those it does not know.",
   "title": "Bingle API messages",
-  "x-api-version": "1.10.0",
+  "x-api-version": "1.11.0",
   "x-dm-events": {
     "badge": {
       "$ref": "#/$defs/BadgeEventData"
@@ -4683,6 +4784,14 @@
         "$ref": "#/$defs/TourSeenResponse"
       }
     },
+    "POST /auth/translate": {
+      "request": {
+        "$ref": "#/$defs/TranslateRequest"
+      },
+      "response": {
+        "$ref": "#/$defs/TranslateResponse"
+      }
+    },
     "PUT /api/friends/settings": {
       "request": {
         "$ref": "#/$defs/FriendSettingsRequest"
@@ -4698,6 +4807,9 @@
   "x-events": {
     "chat": {
       "$ref": "#/$defs/ChatLine"
+    },
+    "chat_translation": {
+      "$ref": "#/$defs/ChatTranslationEventData"
     },
     "connection": {
       "$ref": "#/$defs/ConnectionEventData"

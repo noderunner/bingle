@@ -331,6 +331,9 @@ var columnMigrations = []struct{ table, column, ddl string }{
 	// that of the browser that last looked at it. '' until known: English.
 	{"accounts", "browser_language", "TEXT NOT NULL DEFAULT ''"},
 	{"notify_contacts", "language", "TEXT NOT NULL DEFAULT ''"},
+	// translate_chat: the account reads chat in its own language (ADR 0143), on
+	// unless it turned that off.
+	{"accounts", "translate_chat", "INTEGER NOT NULL DEFAULT 1"},
 }
 
 func addMissingColumns(db *sql.DB) error {

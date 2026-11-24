@@ -52,16 +52,18 @@ type Guests interface {
 
 // Resolver resolves the principal of each request.
 type Resolver struct {
-	guests    Guests
-	accounts  *Accounts
-	oidc      *OIDC
-	caps      *Caps
-	transport transport.Policy
-	idle      time.Duration
-	log       *slog.Logger
-	now       func() time.Time
-	made      windowLimiter
-	adopts    windowLimiter
+	guests   Guests
+	accounts *Accounts
+	oidc     *OIDC
+	caps     *Caps
+	// translation: the server has a translation service for chat (ADR 0143).
+	translation bool
+	transport   transport.Policy
+	idle        time.Duration
+	log         *slog.Logger
+	now         func() time.Time
+	made        windowLimiter
+	adopts      windowLimiter
 }
 
 // Options configures a Resolver.
@@ -84,6 +86,9 @@ type Options struct {
 	OIDC *OIDC
 	// Caps, when set, says who may do what, and the mode.
 	Caps *Caps
+	// Translation says the server has a translation service for chat (ADR
+	// 0143), so /auth/me offers the switch.
+	Translation bool
 }
 
 // DefaultIdle is BINGLE_GUEST_IDLE's default.
@@ -105,7 +110,7 @@ func NewResolver(g Guests, o Options) *Resolver {
 	if o.Log == nil {
 		o.Log = slog.Default()
 	}
-	return &Resolver{guests: g, accounts: o.Accounts, oidc: o.OIDC, caps: o.Caps, transport: o.Transport, idle: o.Idle, log: o.Log, now: time.Now, made: windowLimiter{per: o.NewGuestsPerHour, window: time.Hour},
+	return &Resolver{guests: g, accounts: o.Accounts, oidc: o.OIDC, caps: o.Caps, translation: o.Translation, transport: o.Transport, idle: o.Idle, log: o.Log, now: time.Now, made: windowLimiter{per: o.NewGuestsPerHour, window: time.Hour},
 		adopts: windowLimiter{per: 10, window: time.Hour}}
 }
 
