@@ -2,7 +2,7 @@
 id: chess
 name: Chess
 description: 'Checkmate the other king. The classic game of two armies on an 8×8 board, with castling, en passant and promotion.'
-version: 0.1.0
+version: 0.2.0
 engine: ruleset
 rules:
   - 'Chess is played on an 8×8 board. White moves first, then the players take turns. You win by checkmating the other king: attacking it so that no move can save it.'
@@ -35,3 +35,74 @@ display:
 guide:
   tabs:
     - {id: rules, title: Rules, file: guide/rules.md}
+variants:
+  - id: chess-960
+    name: Chess960
+    patch:
+      description: 'Chess with the pieces of the first rank shuffled, one of 960 ways: the king between the rooks and the bishops on squares of both colours, the same for both sides.'
+      params: {variant: '960'}
+      rules:
+        - 'Chess960 (Fischer Random Chess) is chess with the first rank shuffled at the start: one of 960 arrangements, with the bishops on squares of both colours and the king somewhere between the rooks. Black mirrors White. Every other rule is the rule of chess.'
+        - 'Castling: the king goes to the g file and the rook to the f file (king''s side), or the king to the c file and the rook to the d file (queen''s side), wherever they started. Neither may have moved, every square between where they start and where they end must be empty but for the two of them, and the king may not be in check, cross an attacked square or land on one.'
+        - 'The game is won by checkmate and drawn by stalemate, by the same position three times, after fifty moves each without a capture or a pawn move, and when neither side has the pieces left to checkmate.'
+      guide:
+        tabs:
+          - {id: rules, title: Rules, file: guide/rules.md}
+          - {id: chess960, title: Chess960, file: guide/chess960.md}
+  - id: chess-crazyhouse
+    name: Crazyhouse
+    patch:
+      description: 'Chess where a piece you capture joins your hand, and on your turn you may drop it back on the board as your own.'
+      params: {variant: crazyhouse}
+      reserves: {pawn: 0, knight: 0, bishop: 0, rook: 0, queen: 0}
+      rules:
+        - 'Crazyhouse is chess where a captured piece joins the capturer''s hand, turned to their colour. On your turn you may either move or drop a piece from your hand onto any empty square.'
+        - 'A pawn may not be dropped on the first or last rank. A piece that was promoted goes to the hand as a pawn when it is captured. A drop may give check and even checkmate.'
+        - 'The game is won by checkmate and drawn by stalemate and by the same position three times (with the same hands). There is no fifty-move rule.'
+      guide:
+        tabs:
+          - {id: rules, title: Rules, file: guide/rules.md}
+          - {id: crazyhouse, title: Crazyhouse, file: guide/crazyhouse.md}
+  - id: chess-antichess
+    name: Antichess
+    patch:
+      description: 'Lose all your pieces to win. Captures are compulsory, and the king is an ordinary piece.'
+      params: {variant: antichess}
+      rules:
+        - 'Antichess is chess turned inside out: you win by losing all your pieces, or by being left with no legal move.'
+        - 'If you can capture, you must, choosing any capture if there are several. The king is an ordinary piece: there is no check, no checkmate and no castling, and the king may be captured. A pawn may promote to a king.'
+        - 'The game is drawn by the same position three times and after fifty moves each without a capture or a pawn move.'
+      guide:
+        tabs:
+          - {id: rules, title: Rules, file: guide/rules.md}
+          - {id: antichess, title: Antichess, file: guide/antichess.md}
+  - id: chess-atomic
+    name: Atomic Chess
+    patch:
+      description: 'Every capture explodes, taking out the pieces around it. Blow up the other king to win.'
+      params: {variant: atomic}
+      rules:
+        - 'Atomic chess is chess where every capture is an explosion: the piece taken, the piece taking it and every piece but a pawn on the eight squares around are removed. En passant explodes on the square the capturing pawn reaches.'
+        - 'You win by blowing up the other king, or by checkmate. A king may not capture, and you may not make a capture that blows up your own king. Kings standing side by side cannot check each other.'
+        - 'The game is drawn by stalemate, by the same position three times, after fifty moves each without a capture or a pawn move, and when only the kings are left.'
+      guide:
+        tabs:
+          - {id: rules, title: Rules, file: guide/rules.md}
+          - {id: atomic, title: Atomic, file: guide/atomic.md}
+  - id: chess-alice
+    name: Alice Chess
+    patch:
+      description: 'Chess on two boards: after every move the piece passes through the looking glass to the same square of the other board.'
+      params: {variant: alice}
+      board:
+        generator: {width: 16}
+      rules:
+        - 'Alice chess is played on two boards, side by side: board A (files a to h), where the game starts, and board B (files i to p), empty at the start. The square e4 of board A is m4 of board B.'
+        - 'A piece moves as in chess, using only the pieces on its own board, and then passes to the same square of the other board, which must be empty. A capture takes the piece on the board where the move is made.'
+        - 'A move must be legal on its own board, as if the other were not there, and must not leave your king in check on the board where it then stands. A king is in check only from pieces on its own board.'
+        - 'Castling is made on board A, and the king and the rook then both pass to board B. En passant is made by a pawn on the board where the pawn that moved two squares now stands.'
+        - 'The game is won by checkmate and drawn by stalemate, by the same position three times, after fifty moves each without a capture or a pawn move, and when only the kings are left.'
+      guide:
+        tabs:
+          - {id: rules, title: Rules, file: guide/rules.md}
+          - {id: alice, title: Alice, file: guide/alice.md}

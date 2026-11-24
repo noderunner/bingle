@@ -2,6 +2,14 @@
 
 Lo que ha cambiado en Bingle, lo más reciente primero. Bingle Core (el servidor, el motor y el cliente web) y cada juego tienen su propia versión, y cada entrada dice cuál ha cambiado. Las entradas anteriores a la 0.124.0 están solo en inglés.
 
+## 0.132.0 - 2026-11-23
+
+### Bingle Core 0.132.0
+- Nuevas variantes de ajedrez
+
+### Chess 0.2.0
+- Chess960, Crazyhouse, Antiajedrez, Ajedrez atómico y Ajedrez de Alicia
+
 ## 0.131.0 - 2026-11-23
 
 ### Bingle Core 0.131.0
