@@ -113,6 +113,7 @@
 
 	"call.not_made": "The call could not be made.",
 	"call.dropped": "The call ended: you joined another one.",
+	"call.declined": "Declined.",
 	"call.not_connected": "The call could not be connected.",
 	"call.no_mic": "The microphone could not be opened.",
 

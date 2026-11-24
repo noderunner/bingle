@@ -113,6 +113,7 @@
 
 	"call.not_made": "无法发起通话。",
 	"call.dropped": "通话已结束：你加入了另一个通话。",
+	"call.declined": "已拒绝。",
 	"call.not_connected": "无法接通通话。",
 	"call.no_mic": "无法打开麦克风。",
 

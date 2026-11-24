@@ -109,12 +109,12 @@ export function hangUp({ quiet = false } = {}) {
 	changed();
 }
 
-/** The other side hung up, or the server ended the call. */
-export function ended(from, dropped) {
+/** The other side hung up or declined, or the server ended the call. */
+export function ended(from, dropped, declined) {
 	if (from && C.peer && from !== C.peer) return;
 	teardown();
 	C.state = "";
-	C.error = dropped ? t("call.dropped") : "";
+	C.error = dropped ? t("call.dropped") : declined ? t("call.declined") : "";
 	changed();
 }
 

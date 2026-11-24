@@ -406,7 +406,8 @@ The **call** is WebRTC between the two browsers, with `/dm/signal` relaying the
 offer, the answer and the candidates to the other side's `/ws-dm` socket, as a
 game's voice chat does over its room. Both sides must have joined
 (`/dm/call` with `join: true` — the second one is answering) before a signal is
-relayed; otherwise `409`.
+relayed; otherwise `409`. Hanging up (`join: false`) while only being rung declines: the caller
+gets a `dm-call` end with `declined: true`.
 
 **One voice at a time.** A principal (an account, or a guest) joining a game's voice chat
 (`POST /games/{code}/voice`) or a direct call is held to one call: joining a new one takes it out

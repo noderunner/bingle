@@ -113,6 +113,7 @@
 
 	"call.not_made": "전화를 걸 수 없습니다.",
 	"call.dropped": "통화가 끝났습니다. 다른 통화에 참가했습니다.",
+	"call.declined": "거절되었습니다.",
 	"call.not_connected": "통화를 연결할 수 없습니다.",
 	"call.no_mic": "마이크를 열 수 없습니다.",
 

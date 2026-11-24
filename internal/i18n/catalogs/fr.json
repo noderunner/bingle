@@ -113,6 +113,7 @@
 
 	"call.not_made": "L’appel n’a pas pu être passé.",
 	"call.dropped": "L’appel s’est terminé : vous en avez rejoint un autre.",
+	"call.declined": "Refusé.",
 	"call.not_connected": "L’appel n’a pas pu être établi.",
 	"call.no_mic": "Le micro n’a pas pu être ouvert.",
 
