@@ -346,3 +346,34 @@ func TestLocal_TheServiceShouldBeOnThisMachineOrNetwork(t *testing.T) {
 		t.Error("an unknown host was not an error")
 	}
 }
+
+func TestTranslate_AThinkingModelIsAskedToAnswerAtOnce(t *testing.T) {
+	f := newFake(t, func(chatRequest) (int, string) { return http.StatusOK, reply("es", "hello") })
+	s := newService(t, f, 1, 5*time.Second)
+	if _, err := s.Translate(context.Background(), Request{Text: "hola", Target: "en"}); err != nil {
+		t.Fatal(err)
+	}
+	if got := f.last().ReasoningEffort; got != "none" {
+		t.Fatalf("reasoning_effort = %q, want none", got)
+	}
+}
+
+func TestTranslate_AServerThatRefusesTheThinkingFieldIsAskedWithoutIt(t *testing.T) {
+	f := newFake(t, func(req chatRequest) (int, string) {
+		if req.ReasoningEffort != "" {
+			return http.StatusBadRequest, ""
+		}
+		return http.StatusOK, reply("es", "hello")
+	})
+	s := newService(t, f, 1, 5*time.Second)
+	for range 2 {
+		res, err := s.Translate(context.Background(), Request{Text: "hola", Target: "en"})
+		if err != nil || res.Text != "hello" {
+			t.Fatalf("got %+v, %v", res, err)
+		}
+	}
+	// Refused once, then never sent again: three requests for two lines.
+	if n := f.calls.Load(); n != 3 {
+		t.Fatalf("asked %d times, want 3", n)
+	}
+}
