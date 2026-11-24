@@ -1,0 +1,15 @@
+# How the web page draws Chess (ADR 0124). The rules are in the definition; nothing
+# here changes them, and other clients draw the game their own way.
+board:
+  style: squares
+pieces:
+  king: {shape: king}
+  queen: {shape: queen}
+  rook: {shape: rook}
+  bishop: {shape: bishop}
+  knight: {shape: knight}
+  pawn: {shape: pawn}
+display:
+  no_hands: true
+  tints:
+    check: {color: '#e0a090'}

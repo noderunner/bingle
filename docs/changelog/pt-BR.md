@@ -2,6 +2,14 @@
 
 O que mudou no Bingle, do mais recente ao mais antigo. O Bingle Core (o servidor, o motor e o cliente web) e cada jogo têm versão própria, e cada entrada diz qual mudou. As entradas anteriores à 0.124.0 estão só em inglês.
 
+## 0.131.0 - 2026-11-23
+
+### Bingle Core 0.131.0
+- Jogo novo: Xadrez
+
+### Chess 0.1.0 — a new game
+- Roque, en passant, promoção e todos os empates
+
 ## 0.130.1 - 2026-11-23
 
 ### Bingle Core 0.130.1

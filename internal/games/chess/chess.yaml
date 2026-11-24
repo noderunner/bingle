@@ -1,0 +1,37 @@
+# yaml-language-server: $schema=../../../docs/game-definition.schema.json
+id: chess
+name: Chess
+description: 'Checkmate the other king. The classic game of two armies on an 8×8 board, with castling, en passant and promotion.'
+version: 0.1.0
+engine: ruleset
+rules:
+  - 'Chess is played on an 8×8 board. White moves first, then the players take turns. You win by checkmating the other king: attacking it so that no move can save it.'
+  - 'Pieces: the king moves one square in any direction; the queen any distance in a straight line or diagonal; the rook straight; the bishop diagonally; the knight in an L, two squares one way and one the other, jumping over anything. Only the knight jumps; the others stop at the first piece in their way. A piece captures by moving onto an enemy piece.'
+  - 'Pawns move one square forward, or two from their first square, and capture one square diagonally forward. A pawn that has just moved two squares may be taken en passant by an enemy pawn beside it, on the next move only, as if it had moved one. A pawn reaching the last rank becomes a queen, rook, bishop or knight.'
+  - 'Castling: the king moves two squares towards a rook, and the rook goes to the square the king crossed. Neither may have moved, the squares between them must be empty, and the king may not be in check, pass over an attacked square or land on one.'
+  - 'You may never make a move that leaves your own king in check.'
+  - 'The game is drawn by stalemate (the side to move has no legal move and is not in check), when the same position comes up three times, after fifty moves each without a capture or a pawn move, and when neither side has the pieces left to checkmate.'
+board:
+  generator: {type: grid, width: 8, height: 8, adjacency: orthogonal8, labels: algebraic}
+seats:
+  - {seat: 1, color: white, label: White}
+  - {seat: 2, color: black, label: Black}
+pieces:
+  king: {label: King, code: K}
+  queen: {label: Queen, code: Q}
+  rook: {label: Rook, code: R}
+  bishop: {label: Bishop, code: B}
+  knight: {label: Knight, code: N}
+  pawn: {label: Pawn, code: P}
+turn_order:
+  type: round-robin
+  seats: [1, 2]
+win_condition: {type: ruleset}
+display:
+  tints:
+    check:
+      label: Check
+      text: This king is attacked.
+guide:
+  tabs:
+    - {id: rules, title: Rules, file: guide/rules.md}
