@@ -2,7 +2,7 @@
 id: chess
 name: Chess
 description: 'Checkmate the other king. The classic game of two armies on an 8×8 board, with castling, en passant and promotion.'
-version: 0.2.0
+version: 0.2.1
 engine: ruleset
 rules:
   - 'Chess is played on an 8×8 board. White moves first, then the players take turns. You win by checkmating the other king: attacking it so that no move can save it.'

@@ -2,6 +2,14 @@
 
 Lo que ha cambiado en Bingle, lo más reciente primero. Bingle Core (el servidor, el motor y el cliente web) y cada juego tienen su propia versión, y cada entrada dice cuál ha cambiado. Las entradas anteriores a la 0.124.0 están solo en inglés.
 
+## 0.132.1 - 2026-11-23
+
+### Bingle Core 0.132.1
+- Una línea separa los dos tableros de un juego dibujado como uno
+
+### Chess 0.2.1
+- Ajedrez de Alicia: la jugada se hace en su propio tablero, así que una captura se marca en la pieza capturada
+
 ## 0.132.0 - 2026-11-23
 
 ### Bingle Core 0.132.0

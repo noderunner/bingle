@@ -71,11 +71,13 @@ func TestWebChessVariants_ClicksOfTheirOwn(t *testing.T) {
 	clickCellUntil(t, ctx, "g1", `document.querySelectorAll('#board .cell.clickable').length > 0`, 10*time.Second)
 	clickCellUntil(t, ctx, "h1", pieceOn("f1", "rook"), 10*time.Second)
 
-	// Alice: two boards of 64 squares; the knight on g1 goes to f3 and ends on n3.
+	// Alice: two boards of 64 squares with a line between; the knight on g1
+	// is clicked to f3 and ends on n3.
 	chessFrom(t, ctx, baseURL, "chess-alice", nil)
 	waitJS(t, ctx, "two boards", `document.querySelectorAll('#board .cell').length === 128`, 15*time.Second)
+	waitJS(t, ctx, "the line between them", `document.querySelector('#board-svg .board-divide') !== null`, 5*time.Second)
 	clickCellUntil(t, ctx, "g1", `document.querySelectorAll('#board .cell.clickable').length > 0`, 10*time.Second)
-	clickCellUntil(t, ctx, "n3", pieceOn("n3", "knight"), 10*time.Second)
+	clickCellUntil(t, ctx, "f3", pieceOn("n3", "knight"), 10*time.Second)
 
 	mu.Lock()
 	defer mu.Unlock()
