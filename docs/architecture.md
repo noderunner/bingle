@@ -122,6 +122,14 @@ Served by the same binary as static assets plus lightweight JS (no SPA build pip
   instead bring a Go `state.Ruleset` (`engine: "ruleset"`) that implements
   the same functions itself — with chance, hidden information and
   multi-decision turns — behind the same entry points (ADR 0025).
+  `wasmrules` runs such a ruleset from a WebAssembly module instead, as a
+  proof of concept (ADR 0147): a `state.Ruleset` whose nine methods are JSON
+  calls into a sandboxed module (no files, network or clock, a memory cap, a
+  deadline on every call) with a pool of instances, on
+  [wazero](https://github.com/tetratelabs/wazero). A module is written
+  against `wasmrules/guest`, which imports nothing of the engine, and
+  `wasmrules.Native` links the same rules into the binary. Nothing loads a
+  module yet: packs are the next phase.
 * **Games** (`internal/games`): `tak` (3×3–8×8 from one YAML
   definition), `classics` (Gomoku, Hex, Draughts,
   Breakthrough, Reversi, Go, Yavalath, Havannah, Amazons, Ataxx, Pente,

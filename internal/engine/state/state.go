@@ -274,6 +274,18 @@ func CountTakeBack(from, to *BoardState) {
 // Counter is the declared count name keeps (0 when unset).
 func (s *BoardState) Counter(name string) int { return s.counters[name] }
 
+// Counters returns a copy of every count the position keeps, nil for none.
+func (s *BoardState) Counters() map[string]int {
+	if len(s.counters) == 0 {
+		return nil
+	}
+	out := make(map[string]int, len(s.counters))
+	for name, n := range s.counters {
+		out[name] = n
+	}
+	return out
+}
+
 // SetCounter sets a declared count; zero removes it.
 func (s *BoardState) SetCounter(name string, n int) {
 	if n == 0 {

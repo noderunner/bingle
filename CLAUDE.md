@@ -1,7 +1,7 @@
 # Working on bingle, for an agent
 
 Bingle is one static Go binary (`CGO_ENABLED=0`) that serves abstract board games over a browser
-UI, a REST/WebSocket API and MCP, with an embedded SQLite database and eleven direct dependencies.
+UI, a REST/WebSocket API and MCP, with an embedded SQLite database and twelve direct dependencies.
 Keeping it small is a feature. [CONTRIBUTING.md](CONTRIBUTING.md) covers building and testing;
 this file is the working agreement.
 
@@ -134,7 +134,8 @@ A game's own rules and its players' words keep their terms.
 ## The shape of the code
 
 - `internal/engine` — `dsl` (the YAML game definition, loaded as JSON), `catalog` (compiles
-  definitions, variants by merge patch, derived games), `state` (the engine), `board`, `cards`.
+  definitions, variants by merge patch, derived games), `state` (the engine), `board`, `cards`,
+  `wasmrules` (a ruleset run from a WebAssembly module, a proof of concept: ADR 0147).
 - `internal/session` — room locks, the event hub, clocks, presence, direct messages, notifications.
 - `internal/api`, `internal/mcpserver` — two front doors over the same session layer.
 - `internal/web/static/js` — plain ES modules, **no build step**.

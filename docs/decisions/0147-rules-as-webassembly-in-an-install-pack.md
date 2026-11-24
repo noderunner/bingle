@@ -61,9 +61,9 @@ server hands them out, **one generic build of a client can play a private game o
 
 ### The runtime
 
-**[wazero](https://github.com/tetratelabs/wazero)**, pinned to a tagged release. It is pure Go and its own module
-requires nothing, so `CGO_ENABLED=0` and the single binary survive (ADR 0014). It adds one direct dependency and no
-indirect ones. A module is compiled once, ahead of time, where wazero has a compiler (amd64 and arm64), and is
+**[wazero](https://github.com/tetratelabs/wazero)**, pinned to a tagged release (1.12.0). It is pure Go, and the
+one module it requires, `golang.org/x/sys`, was in the build already, so `CGO_ENABLED=0` and the single binary
+survive (ADR 0014). It adds one direct dependency and no indirect ones. A module is compiled once, ahead of time, where wazero has a compiler (amd64 and arm64), and is
 interpreted elsewhere. It is compiled when its pack loads and kept in memory. The proof of concept keeps no
 on-disk cache.
 
@@ -91,24 +91,30 @@ rebuilt when it changes. Each export is prefixed `bingle_`:
 | Export | Signature | What it does |
 |---|---|---|
 | `bingle_abi` | `() → i32` | The ABI version the module speaks: `0`. The host refuses a module whose version it does not speak, or which lacks the export |
-| `bingle_alloc` | `(size u32) → u32` | Memory for a request, which the host writes into |
+| `bingle_alloc` | `(size u32) → u32` | Memory for a request, which the host writes into. The host may keep it and write its next request there: a guest keeps nothing of a request |
 | `bingle_free` | `(ptr u32, size u32)` | Frees a request or a reply |
 | `bingle_init` and one export per call | `(ptr u32, len u32) → u64` | Reads a JSON request at `ptr`, returns its JSON reply as `ptr << 32 \| len`. The host copies the reply and frees it |
 
 The calls are `init`, `start`, `impulse_seat`, `legal`, `apply`, `format`, `parse`, `gestures`, `validate` and
 `outcome`, one for each method of `state.Ruleset`. Phase 4 adds `bot`. Only the Ruleset's nine methods are
 bridged. Every optional interface (`HiddenInfo`, `Reactor`, `Heuristic`, `PlaneEncoder` and the rest) is left
-out until a phase needs it, and a phase that adds one records it here.
+out until a phase needs it, and a phase that adds one records it here. Phase 1 adds `SeededRuleset`, which costs
+no call: the adapter says that a start is recorded with its game, because what `start` does with its seed is the
+module's own business, and a replay must not ask for the start again.
 
 - **Every reply is an envelope**: `{"ok": …}` or `{"error": "…"}`. An error is the call's error (an illegal
-  selection, unparsable notation, a bad custom start). A reply that is not JSON, or not an envelope, counts as a
-  failure of the instance (see below).
-- **`init`, once per instance, carries the games**: every game the pack's definition compiles to (its base game and
-  each variant), each with its id, its definition as the catalog compiled it, and its board as the catalog built it
-  (each position's id, coordinates and neighbours, and the regions). A guest never compiles a definition or a
-  board itself. No other call carries the definition.
-- **Every other request names its game** by id, and carries what the Ruleset method takes: the `position`, a
-  `seat`, a `selection`, a `text` or a `seed`.
+  selection, unparsable notation, a bad custom start). `ok` is never null: no selections is `[]`, and `validate`
+  replies `true`. A reply that is not JSON, or not an envelope, counts as a failure of the instance (see below),
+  and so does one that makes no sense for the game, such as a next seat the game does not have.
+- **`init` carries games**: `{"abi": 0, "games": […]}`, each game with its `id`, its `definition` as the catalog
+  compiled it, and its `board` as the catalog built it (`kind`, `width`, `height`, each of its `positions` with its
+  `id`, its `xy` coordinate where it has one and its `neighbors`, and the `regions`). A guest never compiles a
+  definition or a board itself. No other call carries the definition. **An instance is told of a game before the
+  first call that names it** (changed in phase 1, which first read "once per instance, every game of the pack"):
+  `init` adds its games to those the instance knows, so nobody lists a pack's games ahead, a game derived from
+  one of them by a setup option is told like any other, and rules that refuse a game fail that game alone.
+- **Every other request names its game** by id, and carries what the Ruleset method takes:
+  `{"game", "position", "seat", "selection", "text", "seed"}`, each present where the call takes it.
 - **A position crosses as its document**, exactly as `BoardState.MarshalJSON` writes it (`v: 2`: cells, reserves,
   ply, turn, counters and `ext`), and comes back the same way. The host reads it with the engine's own decoder.
   **The guest's own data rides in `ext`, which the host never decodes**: it stays raw JSON in the `BoardState`, is
@@ -116,21 +122,24 @@ out until a phase needs it, and a phase that adds one records it here.
 - **Selections and gestures** cross with the JSON of `state.Selection` and `state.Gesture`.
 - **`apply` replies with the result**: the new position and the fields of `state.MoveResult` (`captures`,
   `next_seat`, `notation`, `facts`, `ended`, `winner`, `drawn`, `all_lost`, `reason`, `detail`). `outcome` replies
-  with the fields of `state.Outcome`. Where an impulse ends is worked out by the host from the reply, as for any
+  with the fields of `state.Outcome`. A `winner` or a `next_seat` of 0, or none, is no seat. Where an impulse ends is worked out by the host from the reply, as for any
   ruleset (`state.ImpulseEnds`). The guest does not report it.
 
 ### The sandbox
 
-- **No host functions but WASI's**, and of WASI only what the Go runtime needs. There are no preopened directories,
-  no environment and no arguments, and there are no sockets (wazero has none unless a host adds them). Stdout and
-  stderr go to the server's log at debug level, cut short.
+- **No host functions but WASI's**, and of WASI only what the Go runtime needs: the sixteen functions that a Go
+  module which opens no file and no connection imports. A module that imports anything else is refused when it
+  loads. There are no preopened directories, no environment and no arguments, and there are no sockets (wazero
+  has none unless a host adds them). Stdout and stderr go to the server's log at debug level, cut short, and the
+  start of what a failed call wrote is in its error, which is where a Go panic says what it was.
 - **No real clock and no real randomness.** Wall time and the monotonic clock are fake ones, not the
   machine's, and `random_get` reads from a fixed seed. All of this is set explicitly rather than left to wazero's defaults. A
   game's chance comes only from the `seed` that `start` is given, kept in its position, as for a compiled-in
   ruleset. Go randomises map order inside the guest from that seed, so a guest must not let map order reach a
   reply. Phase 1's tests compare a fresh instance with a reused one to catch it.
-- **A memory cap per instance**, by default 2048 pages (128 MiB), until phase 1 has measured what a Go guest
-  needs.
+- **A memory cap per instance**, by default 2048 pages (128 MiB). Phase 1 measured the fixture's instance at 3.6
+  MiB once started and 8 MiB after 20,000 small calls, so rules alone would fit in a quarter of it. The cap stays until
+  phase 4 has put a search inside.
 - **A deadline per call**, by default two seconds, enforced by wazero closing the module when its context ends.
   The context is the adapter's own: `Legal` and `Apply` still take none, and do no I/O. A call into an in-memory
   module is as pure as the rules inside it, which is what CLAUDE.md asks.
@@ -148,8 +157,10 @@ out until a phase needs it, and a phase that adds one records it here.
 - **A failed call never ends a game or loses a move.** `Start`, `Apply`, `Parse` and `Validate` return it as their
   error. The methods without an error (`ImpulseSeat`, `Legal`, `Format`, `Gestures`, `Outcome`) answer with
   something that leaves the game as it stands: no legal selections, an outcome that is not over, notation left
-  blank. `ImpulseSeat` has no such answer, since `0` means the game is over. Phase 1 settles it, for instance by
-  answering from the seats that `start` and `apply` replied with, and tests each of these.
+  blank. **`ImpulseSeat` answers 0** (settled in phase 1). The engine does not read that as the end of the game,
+  which only `Apply`'s result and `Outcome` decide. Its two callers read it as nothing to say: `state.StartSeat`
+  then names the first seat, and `state.ImpulseAfter` the seat that last moved. At worst a new game waits for a
+  seat its module is not waiting for, and has to be made again. Phase 1 tests each of these.
 
 ### A pack
 
@@ -315,3 +326,44 @@ folder. To drop both removes the pack loader and `BINGLE_PACKS` too, and marks t
   from the server as well. Its private folder (decision 2) stays for the overlay's games and for making a look.
 - ABI v0 promises nothing. A pack is rebuilt when the ABI changes, and only when this ADR is accepted does an ABI
   version become a promise.
+
+## Status log
+
+- 2026-11-24, **phase 1** (#296): the host (`internal/engine/wasmrules`), the guest glue (`wasmrules/guest`),
+  `wasmrules.Native` and a public fixture, English draughts with each jump of a chain a selection of its own
+  (`tests/testdata/draughts`). Nothing loads a module yet. What it changed is marked above: an instance is told of
+  a game before the first call about it, `ImpulseSeat` answers 0 when its call fails, a start is always recorded,
+  and the list of WASI functions.
+  - **What a call costs**, on the fixture's 8×8 game twenty selections in, one Intel i9-9900K core, Go 1.27.1 and
+    wazero 1.12.0 (`go test ./tests/wasmrules -run xxx -bench . -benchmem`). *Linked in* is `wasmrules.Native`.
+    *JSON only* is the same requests and replies written and read in process, with no module. *No deadline* is
+    the module run without the checks that let a call be stopped.
+
+    | Call | Linked in | JSON only | Module | Module, no deadline |
+    |---|---|---|---|---|
+    | `Legal` | 5.7 µs | 32 µs | 853 µs | 306 µs |
+    | `Apply` | 11.3 µs | 57 µs | 1,400 µs | 495 µs |
+    | `Format` (carries next to nothing) | 0.06 µs | 2.7 µs | 101 µs | 43 µs |
+
+    A call through the module costs 125 to 150 times the same call linked in, and the plugins plan's objection
+    holds as it was written: a search that makes a million `Legal` calls takes a quarter of an hour where it took
+    six seconds. A person's move is a handful of calls, and a millisecond each is nothing to them.
+  - **Where the time goes.** Entering a module is cheap: an export that does nothing returns in 24 ns, or 290 ns
+    with a deadline to watch. The time is spent inside. The guest's side of the JSON is nearly all of what a
+    call does: the smallest request and reply take 28 µs in the module, where the whole of `Format`, both sides'
+    JSON included, takes 2.7 µs in process. So on this work, which is `encoding/json` and mostly reflection, Go
+    compiled to WebAssembly runs ten to twenty times slower under wazero's compiler than the same Go natively.
+    The guest's garbage collector is not the cause (turning it off saved a twentieth), nor are the fake clocks.
+    **The deadline costs a factor of 2.3 to 2.8.** wazero stops a call by having the module's code leave for
+    the host at the top of every loop to ask whether it has been closed.
+  - **What that leaves for later phases to try**, none of it done here: a guest codec written by hand in place of
+    `encoding/json`, and TinyGo, which generates different code. Phase 4's search inside the module will pay the
+    module's slowness and the deadline's factor on every node, so its own measurement matters more than this
+    one.
+  - **The module**: 4.6 MB of WebAssembly for the fixture, 1.4 s to compile when it loads, 3.8 ms for each further
+    instance. A compiled module is kept in memory only, and shared by every runtime of the process that loads it.
+  - **In the engine**, one addition: `BoardState.Counters`, so that the linked-in adapter can hand a position's
+    counts to rules.
+  - **Open, for phase 2**: `state.InitialState` turns a start that fails into an empty position, on the ground
+    that a registered ruleset's start cannot fail. A module's can (a deadline under load). The session should
+    refuse to create the game instead.
