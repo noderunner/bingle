@@ -200,3 +200,7 @@ These cost little and help the overlay too:
   after asking whether games could be separate Go binaries behind a lighter API acting as a router. The
   maintainer chose to keep the internal plan for now.
 - 2026-11-20: moved to `main` as the `more-plans` branch closed; when to revisit it is issue #241.
+- 2026-11-24: a WebAssembly pack is tried as a third transport for this cut (#294, ADR 0147, proposed). Its first
+  ABI cuts lower, at `state.Ruleset`, to measure the fine-grained boundary, and then adds this proposal's coarse
+  `Bot` call. If packs are kept, a later ABI should move to the other coarse calls here, so one interface has three
+  transports.

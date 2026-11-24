@@ -355,3 +355,11 @@ which is now built.
     should become generic words or hooks of the page script; and the DSL still accepts the appearance fields no
     shipped definition uses (style, shape, blend, borders, preview, tint and badge colours and glyphs,
     `no_hands`, card colours), which the test fixtures keep for the page's fallback.
+- 2026-11-24: **decision 1 is reopened for one game, as a proof of concept** (#294, ADR 0147, proposed): Zèrtz's
+  rules as a WebAssembly module in a pack that a public build reads from `BINGLE_PACKS` at start-up, with no upload,
+  admin page or zip. It measures the boundary this plan's first decision was taken on, then puts the bot search
+  inside the module as the decision said it would have to be. Decision 1 and ADR 0128's withdrawal stand for every
+  other game, and the overlay stays the way a commercial game is built until the verdict (#300).
+  The same ADR **decides, for packs, how a non-web client gets a game's assets**, which this plan left open: the
+  pack carries a folder of files for each client, the server lists and serves them without reading them, and a
+  client fetches what it lacks and keeps it by its hash. A client still ships what every game shares.
