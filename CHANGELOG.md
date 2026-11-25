@@ -4,6 +4,14 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.132.2 - 2026-11-24
+
+### Bingle Core 0.132.2
+- No changes outside Fendo
+
+### Fendo 0.1.3
+- The game ends once only one player's pieces are left in the open area, which is theirs
+
 ## 0.132.1 - 2026-11-23
 
 ### Bingle Core 0.132.1

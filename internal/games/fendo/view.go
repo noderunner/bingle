@@ -65,11 +65,11 @@ func (e *eng) buildView() *View {
 	d := e.d
 	v := &View{Phase: "play", ImpulseSeat: d.Turn, Tints: map[string]string{}, Walls: d.Walls, Seats: map[string]*SeatView{}}
 	for _, a := range e.areas() {
-		if a.count() != 1 {
+		if a.owner() == 0 {
 			continue
 		}
 		key := "area1"
-		if a.pieces[2] == 1 {
+		if a.owner() == 2 {
 			key = "area2"
 		}
 		for _, c := range a.cells {
@@ -97,8 +97,12 @@ func (e *eng) buildView() *View {
 
 // estimate is the squares seat owns for sure plus the share of the open area
 // its pieces reach first (squares reached at the same time count for no one).
+// An open area one seat's pieces are alone in is owned already.
 func (e *eng) estimate(seat int) float64 {
 	total := float64(e.territory()[seat])
+	if e.openOwner() != 0 {
+		return total
+	}
 	open := map[int]bool{}
 	for _, c := range e.openArea() {
 		open[c] = true

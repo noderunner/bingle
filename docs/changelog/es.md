@@ -2,6 +2,14 @@
 
 Lo que ha cambiado en Bingle, lo más reciente primero. Bingle Core (el servidor, el motor y el cliente web) y cada juego tienen su propia versión, y cada entrada dice cuál ha cambiado. Las entradas anteriores a la 0.124.0 están solo en inglés.
 
+## 0.132.2 - 2026-11-24
+
+### Bingle Core 0.132.2
+- Sin cambios fuera de Fendo
+
+### Fendo 0.1.3
+- La partida termina cuando en el área abierta solo quedan piezas de un jugador, y esa área es suya
+
 ## 0.132.1 - 2026-11-23
 
 ### Bingle Core 0.132.1

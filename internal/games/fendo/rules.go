@@ -132,6 +132,21 @@ type area struct {
 
 func (a area) count() int { return a.pieces[1] + a.pieces[2] }
 
+// owner is the seat the area belongs to: the only seat with pieces in it, or
+// 0 while both have. An open area holding one seat's pieces alone is theirs
+// already: the other seat can bring no piece into it (a piece is added only
+// beside one of its own there), and no fence may cut off an empty area, so
+// every square of it ends up round one of their pieces.
+func (a area) owner() int {
+	switch {
+	case a.pieces[1] > 0 && a.pieces[2] == 0:
+		return 1
+	case a.pieces[2] > 0 && a.pieces[1] == 0:
+		return 2
+	}
+	return 0
+}
+
 func (e *eng) areas() []area {
 	seen := make([]bool, len(e.occ))
 	var out []area
@@ -236,19 +251,25 @@ func (e *eng) legal() []state.Selection {
 	return out
 }
 
-// territory counts the squares of the areas closed round one piece.
+// territory counts the squares each seat owns: the areas closed round one
+// of its pieces, and an open area only its pieces are left in.
 func (e *eng) territory() [3]int {
 	var t [3]int
 	for _, a := range e.areas() {
-		if a.count() == 1 {
-			for s := 1; s <= 2; s++ {
-				if a.pieces[s] == 1 {
-					t[s] += len(a.cells)
-				}
-			}
-		}
+		t[a.owner()] += len(a.cells)
 	}
 	return t
+}
+
+// openOwner is the seat only whose pieces are left in the open area, whose
+// squares are all theirs however the game goes on, or 0.
+func (e *eng) openOwner() int {
+	for _, a := range e.areas() {
+		if a.count() > 1 {
+			return a.owner()
+		}
+	}
+	return 0
 }
 
 func other(seat int) int { return 3 - seat }
@@ -300,7 +321,7 @@ func (e *eng) execute(mv state.Selection, seat int) {
 	case e.majority() > 0 && t[seat] >= e.majority():
 		e.finish(seat, "majority")
 		e.say("%s owns %d squares, a majority, and wins!", seatLabel(seat), t[seat])
-	case e.openArea() == nil || d.Passes >= 2:
+	case e.openArea() == nil || e.openOwner() != 0 || d.Passes >= 2:
 		w := 0
 		switch {
 		case t[1] > t[2]:
@@ -309,9 +330,14 @@ func (e *eng) execute(mv state.Selection, seat int) {
 			w = 2
 		}
 		e.finish(w, "territory")
-		if w == 0 {
+		switch o := e.openOwner(); {
+		case o != 0 && w != 0:
+			e.say("Only %s's pieces are left in the open area, so it is theirs: %s wins, %d squares to %d.", seatLabel(o), seatLabel(w), t[w], t[other(w)])
+		case o != 0:
+			e.say("Only %s's pieces are left in the open area, so it is theirs: both players own %d squares, a draw.", seatLabel(o), t[1])
+		case w == 0:
 			e.say("The areas are closed and both players own %d squares: a draw.", t[1])
-		} else {
+		default:
 			e.say("The areas are closed: %s wins, %d squares to %d.", seatLabel(w), t[w], t[other(w)])
 		}
 	default:
