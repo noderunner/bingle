@@ -38,35 +38,10 @@ type Handler struct {
 // NewHandler returns a Handler that makes each game's rules with n.
 func NewHandler(n New) *Handler { return &Handler{make: n} }
 
-// request is every call's request: a call reads the fields it takes.
-type request struct {
-	// init
+// initRequest is the request of init.
+type initRequest struct {
 	ABI   int    `json:"abi"`
 	Games []Game `json:"games"`
-	// every other call
-	Game      string       `json:"game"`
-	Position  *positionDoc `json:"position"`
-	Seat      int          `json:"seat"`
-	Selection *Selection   `json:"selection"`
-	Text      string       `json:"text"`
-	Seed      uint64       `json:"seed"`
-}
-
-// positionDoc is a position as it crosses: the engine's document, with its
-// version.
-type positionDoc struct {
-	V int `json:"v"`
-	*Position
-}
-
-// resultDoc is the reply of apply.
-type resultDoc struct {
-	Position positionDoc `json:"position"`
-	Captures []string    `json:"captures,omitempty"`
-	NextSeat int         `json:"next_seat"`
-	Notation string      `json:"notation,omitempty"`
-	Facts    []Fact      `json:"facts,omitempty"`
-	Outcome
 }
 
 // Call answers one call. name is the call's name ("legal") and req its JSON
@@ -74,12 +49,16 @@ type resultDoc struct {
 // its ok is never null. A panic in the rules is not caught: in a module it
 // ends the instance, which the host replaces.
 func (h *Handler) Call(name string, req []byte) []byte {
-	var r request
-	if err := json.Unmarshal(req, &r); err != nil {
-		return fail(fmt.Errorf("guest: %s: the request is not JSON: %w", name, err))
-	}
 	if name == CallInit {
+		var r initRequest
+		if err := json.Unmarshal(req, &r); err != nil {
+			return fail(fmt.Errorf("guest: %s: the request is not JSON: %w", name, err))
+		}
 		return h.init(&r)
+	}
+	r, err := decodeRequest(req)
+	if err != nil {
+		return fail(fmt.Errorf("guest: %s: the request is not JSON: %w", name, err))
 	}
 	h.mu.RLock()
 	rules, known := h.games[r.Game]
@@ -88,16 +67,15 @@ func (h *Handler) Call(name string, req []byte) []byte {
 		return fail(fmt.Errorf("guest: %s: no game %q was given to init", name, r.Game))
 	}
 
-	var pos *Position
+	pos := r.Position
 	switch name {
 	case CallImpulseSeat, CallLegal, CallApply, CallValidate, CallOutcome:
-		if r.Position == nil || r.Position.Position == nil {
+		if pos == nil {
 			return fail(fmt.Errorf("guest: %s needs a position", name))
 		}
-		if r.Position.V != positionVersion {
-			return fail(fmt.Errorf("guest: %s: position document version %d, want %d", name, r.Position.V, positionVersion))
+		if r.Version != positionVersion {
+			return fail(fmt.Errorf("guest: %s: position document version %d, want %d", name, r.Version, positionVersion))
 		}
-		pos = r.Position.Position
 		if pos.Cells == nil {
 			pos.Cells = map[string][]Piece{}
 		}
@@ -111,6 +89,9 @@ func (h *Handler) Call(name string, req []byte) []byte {
 		sel = *r.Selection
 	}
 
+	// The reply is written straight after its `{"ok":`, and closed by done.
+	out := append(make([]byte, 0, 256+len(req)), `{"ok":`...)
+	done := func(out []byte) []byte { return append(out, '}') }
 	switch name {
 	case CallStart:
 		start, err := rules.Start(r.Seed)
@@ -120,15 +101,21 @@ func (h *Handler) Call(name string, req []byte) []byte {
 		if start == nil {
 			return fail(errors.New("guest: start returned no position"))
 		}
-		return ok(positionDoc{positionVersion, start})
-	case CallImpulseSeat:
-		return ok(rules.ImpulseSeat(pos))
-	case CallLegal:
-		legal := rules.Legal(pos, r.Seat)
-		if legal == nil {
-			legal = []Selection{}
+		if out, err = appendPosition(out, start); err != nil {
+			return fail(err)
 		}
-		return ok(legal)
+		return done(out)
+	case CallImpulseSeat:
+		return done(appendInt(out, rules.ImpulseSeat(pos)))
+	case CallLegal:
+		out = append(out, '[')
+		for i, legal := range rules.Legal(pos, r.Seat) {
+			if i > 0 {
+				out = append(out, ',')
+			}
+			out = appendSelection(out, &legal)
+		}
+		return done(append(out, ']'))
 	case CallApply:
 		res, err := rules.Apply(pos, r.Seat, sel)
 		if err != nil {
@@ -137,36 +124,41 @@ func (h *Handler) Call(name string, req []byte) []byte {
 		if res == nil || res.Position == nil {
 			return fail(errors.New("guest: apply returned no position"))
 		}
-		doc := resultDoc{
-			Position: positionDoc{positionVersion, res.Position},
-			Captures: res.Captures, NextSeat: res.NextSeat, Notation: res.Notation,
-			Facts: res.Facts, Outcome: res.Outcome,
+		notation := res.Notation
+		if notation == "" {
+			notation = rules.Format(sel)
 		}
-		if doc.Notation == "" {
-			doc.Notation = rules.Format(sel)
+		if out, err = appendResult(out, res, notation); err != nil {
+			return fail(err)
 		}
-		return ok(doc)
+		return done(out)
 	case CallFormat:
-		return ok(rules.Format(sel))
+		return done(appendString(out, rules.Format(sel)))
 	case CallParse:
 		parsed, err := rules.Parse(r.Text)
 		if err != nil {
 			return fail(err)
 		}
-		return ok(parsed)
+		return done(appendSelection(out, &parsed))
 	case CallGestures:
-		gestures := rules.Gestures(sel)
-		if gestures == nil {
-			gestures = []Gesture{}
+		out = append(out, '[')
+		for i, g := range rules.Gestures(sel) {
+			if i > 0 {
+				out = append(out, ',')
+			}
+			out = appendString(append(out, `{"kind":`...), g.Kind)
+			out = append(appendString(append(out, `,"value":`...), g.Value), '}')
 		}
-		return ok(gestures)
+		return done(append(out, ']'))
 	case CallValidate:
 		if err := rules.Validate(pos); err != nil {
 			return fail(err)
 		}
-		return ok(true)
+		return done(append(out, "true"...))
 	case CallOutcome:
-		return ok(rules.Outcome(pos))
+		outcome := rules.Outcome(pos)
+		out = append(out, '{')
+		return done(append(appendOutcome(out, len(out), &outcome), '}'))
 	}
 	return fail(fmt.Errorf("guest: no call %q", name))
 }
@@ -175,7 +167,7 @@ func (h *Handler) Call(name string, req []byte) []byte {
 // games the handler knows: the host tells an instance of a game before the
 // first call that names it. A game told again is made again. Nothing is added
 // unless every game of the request can be played.
-func (h *Handler) init(r *request) []byte {
+func (h *Handler) init(r *initRequest) []byte {
 	if r.ABI != ABI {
 		return fail(fmt.Errorf("guest: the host speaks ABI %d, this module ABI %d", r.ABI, ABI))
 	}
@@ -202,22 +194,12 @@ func (h *Handler) init(r *request) []byte {
 		h.games[r.Games[i].ID] = rules
 	}
 	h.mu.Unlock()
-	return ok(true)
+	return ok()
 }
 
-func ok(v any) []byte {
-	out, err := json.Marshal(struct {
-		OK any `json:"ok"`
-	}{v})
-	if err != nil {
-		return fail(fmt.Errorf("guest: the reply cannot be written: %w", err))
-	}
-	return out
-}
+// ok is the reply of a call that has nothing to say but that it worked.
+func ok() []byte { return []byte(`{"ok":true}`) }
 
 func fail(err error) []byte {
-	out, _ := json.Marshal(struct {
-		Error string `json:"error"`
-	}{err.Error()})
-	return out
+	return append(appendString([]byte(`{"error":`), err.Error()), '}')
 }

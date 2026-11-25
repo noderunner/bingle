@@ -340,29 +340,34 @@ folder. To drop both removes the pack loader and `BINGLE_PACKS` too, and marks t
   - **What a call costs**, on the fixture's 8×8 game twenty selections in, one Intel i9-9900K core, Go 1.27.1 and
     wazero 1.12.0 (`go test ./tests/wasmrules -run xxx -bench . -benchmem`). *Linked in* is `wasmrules.Native`.
     *JSON only* is the same requests and replies written and read in process, with no module. *No deadline* is
-    the module run without the checks that let a call be stopped.
+    the module run without the checks that let a call be stopped. The last column is the module as it was first
+    built, with `encoding/json` in the guest.
 
-    | Call | Linked in | JSON only | Module | Module, no deadline |
-    |---|---|---|---|---|
-    | `Legal` | 5.7 µs | 32 µs | 853 µs | 306 µs |
-    | `Apply` | 11.3 µs | 57 µs | 1,400 µs | 495 µs |
-    | `Format` (carries next to nothing) | 0.06 µs | 2.7 µs | 101 µs | 43 µs |
+    | Call | Linked in | JSON only | Module | Module, no deadline | Module, `encoding/json` in the guest |
+    |---|---|---|---|---|---|
+    | `Legal` | 6.1 µs | 22 µs | 326 µs | 113 µs | 830 µs |
+    | `Apply` | 11.3 µs | 45 µs | 563 µs | 205 µs | 1,288 µs |
+    | `Format` (carries next to nothing) | 0.06 µs | 1.6 µs | 29 µs | 10 µs | 91 µs |
 
-    A call through the module costs 125 to 150 times the same call linked in, and the plugins plan's objection
-    holds as it was written: a search that makes a million `Legal` calls takes a quarter of an hour where it took
-    six seconds. A person's move is a handful of calls, and a millisecond each is nothing to them.
-  - **Where the time goes.** Entering a module is cheap: an export that does nothing returns in 24 ns, or 290 ns
-    with a deadline to watch. The time is spent inside. The guest's side of the JSON is nearly all of what a
-    call does: the smallest request and reply take 28 µs in the module, where the whole of `Format`, both sides'
-    JSON included, takes 2.7 µs in process. So on this work, which is `encoding/json` and mostly reflection, Go
-    compiled to WebAssembly runs ten to twenty times slower under wazero's compiler than the same Go natively.
-    The guest's garbage collector is not the cause (turning it off saved a twentieth), nor are the fake clocks.
-    **The deadline costs a factor of 2.3 to 2.8.** wazero stops a call by having the module's code leave for
-    the host at the top of every loop to ask whether it has been closed.
-  - **What that leaves for later phases to try**, none of it done here: a guest codec written by hand in place of
-    `encoding/json`, and TinyGo, which generates different code. Phase 4's search inside the module will pay the
-    module's slowness and the deadline's factor on every node, so its own measurement matters more than this
-    one.
+    A call through the module costs about 50 times the same call linked in, and the plugins plan's objection
+    holds as it was written: a search that makes a million `Legal` calls takes five and a half minutes where it
+    took six seconds. A person's move is a handful of calls, and a third of a millisecond each is nothing to them.
+  - **The guest reads and writes its JSON by hand**, which is where the last column went. With `encoding/json`,
+    which works by reflection, a call cost 115 to 135 times the same call linked in, and nearly all of that was
+    the guest's side of the JSON. A reader and a writer for the wire's few shapes (`guest/codec.go`, held to
+    `encoding/json` by a fuzz target) make a call 2.3 to 3.1 times faster. The wire is the same, and `init`,
+    which an instance hears once for a game, still uses `encoding/json`.
+  - **Where the time goes now.** Entering a module is cheap: an export that does nothing returns in 24 ns, or
+    290 ns with a deadline to watch. Of a `Legal` call, about half is reading the request, nearly all of that the
+    position; two fifths is the fixture's rules; a tenth is writing the reply. All of it is
+    ordinary Go that runs ten to twenty times slower compiled to WebAssembly under wazero than natively: the
+    garbage collector is not the cause (turning it off saved a twentieth). **The deadline costs a factor of 2.8.**
+    wazero stops a call by having the module's code leave for the host at the top of every loop to ask whether
+    it has been closed.
+  - **What that leaves for later phases to try**, none of it done here: TinyGo, which generates different code;
+    a position that crosses as something cheaper to build than a map; and a game reading its own data by hand,
+    which was tried on the fixture and gave 7%. Phase 4's search inside the module will pay the module's slowness
+    and the deadline's factor on every node, so its own measurement matters more than this one.
   - **The module**: 4.6 MB of WebAssembly for the fixture, 1.4 s to compile when it loads, 3.8 ms for each further
     instance. A compiled module is kept in memory only, and shared by every runtime of the process that loads it.
   - **A fake clock can starve a Go guest**, found after the first push and fixed. The clocks first moved a
