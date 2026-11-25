@@ -294,6 +294,18 @@ func (b *tacticalBot) Choose(ctx context.Context, game *catalog.CompiledGame, st
 	if len(legal) == 0 {
 		return state.Selection{}, ErrNoMoves
 	}
+	if _, ok := state.SearcherOf(game); ok {
+		b.mu.Lock()
+		seed := b.rng.Uint64()
+		b.mu.Unlock()
+		ev, ok, err := inRules(ctx, game, st, seat, legal, b.ID(), state.SearchRequest{Level: b.ID(), Budget: searchSafety, Seed: seed})
+		if err != nil {
+			return state.Selection{}, err
+		}
+		if ok {
+			return ev.Move, nil
+		}
+	}
 	b.mu.Lock()
 	st = state.Determinize(game, st, seat, b.rng)
 	b.mu.Unlock()
@@ -405,6 +417,16 @@ func (b *mctsBot) Evaluate(ctx context.Context, game *catalog.CompiledGame, st *
 	// Search a sample of the world the seat can actually know: dice and the
 	// opponent's committed choices are re-drawn.
 	st = state.Determinize(game, st, seat, rng)
+
+	if _, ok := state.SearcherOf(game); ok {
+		ev, ok, err := inRules(ctx, game, st, seat, legal, b.ID(), state.SearchRequest{
+			Level: b.ID(), Budget: b.opts.Budget, Iterations: b.opts.MaxIterations,
+			Plies: b.opts.MaxPlayoutPlies, Exploration: b.opts.Exploration, Seed: rng.Uint64(),
+		})
+		if ok || err != nil {
+			return ev, err
+		}
+	}
 
 	c, err := classify(ctx, game, st, seat, legal)
 	if err != nil {

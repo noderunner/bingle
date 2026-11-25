@@ -4,7 +4,9 @@
 // A Runtime compiles a module once (Load) and gives back a Module, which is a
 // state.Ruleset: each of the Ruleset's nine methods is one call into the
 // module, JSON in and JSON out (ABI v0), so everything above the engine plays
-// the game unchanged. The module is written against the guest package, which
+// the game unchanged. A module built with the guest glue also answers the bot
+// call, so a built-in bot's search runs inside it and crosses once a decision
+// (state.Searcher). The module is written against the guest package, which
 // imports nothing of the engine. Native links the same rules into the binary
 // instead.
 //
@@ -98,12 +100,13 @@ func New(ctx context.Context, opt Options) (*Runtime, error) {
 	return &Runtime{rt: rt, opt: opt}, nil
 }
 
-// deadline gives one call its time.
-func (r *Runtime) deadline(ctx context.Context) (context.Context, context.CancelFunc) {
+// deadline gives one call its time, and extra on top: a bot call's budget.
+// Without a deadline, a call still stops when ctx ends.
+func (r *Runtime) deadline(ctx context.Context, extra time.Duration) (context.Context, context.CancelFunc) {
 	if r.opt.Deadline < 0 {
 		return ctx, func() {}
 	}
-	return context.WithTimeout(ctx, r.opt.Deadline)
+	return context.WithTimeout(ctx, r.opt.Deadline+max(extra, 0))
 }
 
 // Close closes the runtime and every module loaded into it.
@@ -171,7 +174,7 @@ func (m *Module) check(ctx context.Context) error {
 		return fmt.Errorf("%w: it is not a rules module", err)
 	}
 
-	ctx, cancel := m.rt.deadline(ctx)
+	ctx, cancel := m.rt.deadline(ctx, 0)
 	defer cancel()
 	inst, err := m.instantiate(ctx)
 	if err != nil {
@@ -187,8 +190,12 @@ func (m *Module) check(ctx context.Context) error {
 		return fmt.Errorf("the module speaks ABI %d, and this server ABI %d", got, guest.ABI)
 	}
 	err = errors.Join(has("alloc", []api.ValueType{i32}, []api.ValueType{i32}), has("free", callParams, nil))
-	for c := call(0); c < numCalls; c++ {
+	for c := call(0); c < numRequired; c++ {
 		err = errors.Join(err, has(c.String(), callParams, callResults))
+	}
+	if _, ok := exported[exportPrefix+callBot.String()]; ok {
+		err = errors.Join(err, has(callBot.String(), callParams, callResults))
+		m.bot = true
 	}
 	if err == nil {
 		err = inst.bind()

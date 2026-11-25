@@ -114,7 +114,17 @@ func TestTheGuestAnswersEveryRequestWithAnEnvelope(t *testing.T) {
 	refused(guest.CallApply, `{"game":"small",`+position+`}`, "needs a selection")
 	refused(guest.CallApply, `{"game":"small","seat":1,"selection":{"action":"move","from":"a1","to":"a2"},`+position+`}`, "not a legal move")
 	refused(guest.CallParse, `{"game":"small","text":"castles"}`, "neither a move")
-	refused("bot", `{"game":"small"}`, "no call")
+	refused("hint", `{"game":"small"}`, "no call")
+	refused(guest.CallBot, `{"game":"small"}`, "needs a position")
+	refused(guest.CallBot, `{"game":"small","seat":1,`+position+`}`, "needs a bot request")
+	refused(guest.CallBot, `{"game":"small","seat":1,"bot":{"level":"oracle"},`+position+`}`, "no level")
+	refused(guest.CallBot, `{"game":"small","seat":2,"bot":{"level":"mcts"},`+position+`}`, "no legal selection")
+	for _, level := range []string{guest.LevelTactical, guest.LevelMinimax, guest.LevelMCTS} {
+		ok, failure := call(guest.CallBot, `{"game":"small","seat":1,"bot":{"level":"`+level+`","iterations":20,"nodes":200,"seed":5},`+position+`}`)
+		if !strings.Contains(string(ok), `"selection":{"action":"move"`) {
+			t.Errorf("bot at %s = %s, %q", level, ok, failure)
+		}
+	}
 
 	h = guest.NewHandler(nil)
 	refused(guest.CallInit, string(initRequest(guest.ABI, smallGame("small", 2))), "registered no rules")

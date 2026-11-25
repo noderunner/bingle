@@ -1,11 +1,13 @@
 package wasmrules
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
 	"sync"
+	"time"
 
 	"github.com/noderunner/bingle/internal/engine/board"
 	"github.com/noderunner/bingle/internal/engine/catalog"
@@ -265,9 +267,10 @@ func selectionFromGuest(sel guest.Selection) state.Selection {
 // through the guest's own dispatch in process and read back, as it would be
 // for a module. It is the boundary without WebAssembly: what the guest's
 // dispatch is tested through, and what tells the cost of the JSON apart from
-// the cost of the module.
+// the cost of the module. It answers the bot call, as a module does, so it
+// is a state.Searcher.
 func Encoded(n guest.New) state.SeededRuleset {
-	return &adapter{t: &loopback{handler: guest.NewHandler(n)}, log: slog.Default()}
+	return searcher{&adapter{t: &loopback{handler: guest.NewHandler(n)}, log: slog.Default()}}
 }
 
 // loopback is a transport that answers in process.
@@ -277,7 +280,9 @@ type loopback struct {
 	told    sync.Map // game id → *toldGame the handler was last sent
 }
 
-func (l *loopback) roundTrip(c call, game *catalog.CompiledGame, req []byte, read func([]byte) error) error {
+// roundTrip answers at once: nothing in process can stop a call, so ctx and
+// extra are not read.
+func (l *loopback) roundTrip(_ context.Context, c call, game *catalog.CompiledGame, req []byte, _ time.Duration, read func([]byte) error) error {
 	told, err := l.games.of(game)
 	if err != nil {
 		return err

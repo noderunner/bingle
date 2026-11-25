@@ -33,6 +33,8 @@ type Module struct {
 	pack     string
 	compiled wazero.CompiledModule
 	games    games
+	// bot says the module answers the bot call.
+	bot bool
 
 	// slots holds a token for every call that has an instance or waits for
 	// one to be made, so there are never more instances than its size.
@@ -48,8 +50,15 @@ type Module struct {
 	lastFault atomic.Pointer[error] // why the last of them was
 }
 
-// Rules returns the module as a game's rules.
-func (m *Module) Rules() state.SeededRuleset { return &adapter{t: m, log: m.rt.opt.Log} }
+// Rules returns the module as a game's rules: a state.Searcher too when the
+// module answers the bot call.
+func (m *Module) Rules() state.SeededRuleset {
+	a := &adapter{t: m, log: m.rt.opt.Log}
+	if m.bot {
+		return searcher{a}
+	}
+	return a
+}
 
 // Close throws the module's instances away, once the calls in flight have
 // had their answers. Calls made after it fail.
@@ -83,6 +92,18 @@ func (m *Module) Instances() int {
 	return m.live
 }
 
+// Memory is the linear memory of the module's idle instances, in bytes: what
+// its pool holds between calls. An instance at work is not counted.
+func (m *Module) Memory() uint64 {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	var n uint64
+	for _, inst := range m.idle {
+		n += uint64(inst.mem.Size())
+	}
+	return n
+}
+
 // Faults is how many of the module's instances have failed and been thrown
 // away since it was loaded (a trap, a deadline, memory it could not have, a
 // reply that is none), and why the last of them did. A call answered with
@@ -104,32 +125,42 @@ type instanceError struct{ err error }
 func (e *instanceError) Error() string { return e.err.Error() }
 func (e *instanceError) Unwrap() error { return e.err }
 
-// roundTrip makes one call on an instance of the pool.
-func (m *Module) roundTrip(c call, game *catalog.CompiledGame, req []byte, read func([]byte) error) error {
+// roundTrip makes one call on an instance of the pool. A call stopped
+// because ctx ended is not tried again, and is no fault of the instance's
+// though the instance is thrown away. Nor is a bot call tried again: its
+// search had its time, and the bot searches without the module instead.
+func (m *Module) roundTrip(ctx context.Context, c call, game *catalog.CompiledGame, req []byte, extra time.Duration, read func([]byte) error) error {
 	told, err := m.games.of(game)
 	if err != nil {
 		return err
 	}
 	for try := 1; ; try++ {
-		err := m.try(c, told, req, read)
+		err := m.try(ctx, c, told, req, extra, read)
 		var broken *instanceError
 		if !errors.As(err, &broken) {
 			return err
+		}
+		if ctx.Err() != nil {
+			return fmt.Errorf("wasmrules: %s: %s of %s was stopped: %w", m.pack, c, told.id, ctx.Err())
 		}
 		m.lastFault.Store(&err)
 		m.faults.Add(1)
 		m.rt.opt.Log.Warn("wasmrules: an instance failed and was thrown away",
 			"pack", m.pack, "call", c.String(), "game", told.id, "try", try, "error", err)
+		if c == callBot {
+			return fmt.Errorf("wasmrules: %s: %s of %s failed: %w", m.pack, c, told.id, err)
+		}
 		if try == 2 {
 			return fmt.Errorf("wasmrules: %s: %s of %s failed twice: %w", m.pack, c, told.id, err)
 		}
 	}
 }
 
-// try makes the call once, within the deadline: the wait for an instance,
-// telling it of the game if it has not heard of it, and the call itself.
-func (m *Module) try(c call, told *toldGame, req []byte, read func([]byte) error) error {
-	ctx, cancel := m.rt.deadline(context.Background())
+// try makes the call once, within the deadline and extra: the wait for an
+// instance, telling it of the game if it has not heard of it, and the call
+// itself.
+func (m *Module) try(ctx context.Context, c call, told *toldGame, req []byte, extra time.Duration, read func([]byte) error) error {
+	ctx, cancel := m.rt.deadline(ctx, extra)
 	defer cancel()
 	inst, err := m.acquire(ctx)
 	if err != nil {
@@ -275,17 +306,45 @@ var (
 // and the code between cycles never does, so the collector finds itself using
 // all of the processor, stops asking the code that allocates to help it, and
 // the heap grows to the memory cap within some tens of thousands of calls.
+//
+// The one exception is the bot call, whose search must keep to a budget of
+// time: while it runs, the monotonic clock follows the machine's, to the
+// millisecond. The wall clock never runs. A search reads the time only to
+// stop, so with a budget of nodes or playouts its answer is the same however
+// fast the machine is.
 const (
 	clockPerCall = int64(time.Millisecond)
 	clockPerRead = 1
+	clockRunning = time.Millisecond // the resolution of a running clock
 )
 
 // clocks are an instance's wall clock and monotonic clock, in nanoseconds.
-type clocks struct{ wall, mono int64 }
+type clocks struct {
+	wall, mono int64
+	// since is when the monotonic clock began to run, and from where it then
+	// stood; since is zero while it stands.
+	since time.Time
+	from  int64
+}
 
 func (c *clocks) call() {
 	c.wall += clockPerCall
 	c.mono += clockPerCall
+}
+
+// run sets the monotonic clock running with the machine's, and stand stops
+// it again where it has got to.
+func (c *clocks) run()   { c.since, c.from = time.Now(), c.mono }
+func (c *clocks) stand() { c.since = time.Time{} }
+
+// nanotime is a reading of the monotonic clock: a nanosecond on from the last
+// one, or where the running clock has got to if that is later.
+func (c *clocks) nanotime() int64 {
+	c.mono += clockPerRead
+	if !c.since.IsZero() {
+		c.mono = max(c.mono, c.from+int64(time.Since(c.since).Truncate(clockRunning)))
+	}
+	return c.mono
 }
 
 // instantiate makes an instance and runs its initialisation. This is the
@@ -305,10 +364,7 @@ func (m *Module) instantiate(ctx context.Context) (*instance, error) {
 			clk.wall += clockPerRead
 			return clk.wall / int64(time.Second), int32(clk.wall % int64(time.Second))
 		}, wsys.ClockResolution(clockPerRead)).
-		WithNanotime(func() int64 {
-			clk.mono += clockPerRead
-			return clk.mono
-		}, wsys.ClockResolution(clockPerRead)).
+		WithNanotime(clk.nanotime, wsys.ClockResolution(clockPerRead)).
 		WithNanosleep(func(int64) {}).
 		WithOsyield(func() {}).
 		WithRandSource(rand.NewChaCha8(randSeed))
@@ -344,6 +400,10 @@ const maxReply = 16 << 20
 func (inst *instance) call(ctx context.Context, c call, req []byte, read func([]byte) error) error {
 	inst.output.head = inst.output.head[:0]
 	inst.clocks.call()
+	if c == callBot {
+		inst.clocks.run()
+		defer inst.clocks.stand()
+	}
 	fail := func(what string, err error) error {
 		return fmt.Errorf("%s: %w%s", what, explain(err), inst.output.said())
 	}

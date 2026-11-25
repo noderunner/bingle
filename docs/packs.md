@@ -120,3 +120,25 @@ BINGLE_PACKS=$PWD/packs ./bin/bingle
 
 The same rules package links natively through `wasmrules.Native`, so it is tested with plain
 `go test`. `scripts/smoke-test.sh` builds and loads the fixture pack this way.
+
+## Bots
+
+A module built with the guest glue answers the `bot` call (ADR 0147, *ABI v0*), so the built-in bots
+(tactical, minimax and MCTS) run their search inside the module and cross into it once a decision,
+rather than at every position they look at. A game gets them by writing its rules alone. A game whose
+`Rules` also implement `guest.Heuristic`, a value of a position for a seat from -1 to 1, is searched
+with it: minimax values its leaves with it, and MCTS a playout it had to cut short. Without one,
+minimax counts the pieces on top of the board, and MCTS scores a playout it cut short as a draw. A
+module built before the call was added is still played, with the host's bots searching through
+`legal` and `apply`, which is much slower.
+
+The search is still the rules' own speed in WebAssembly, which is far below the same rules linked
+in. On the Draughts fixture, against the same rules compiled into the server:
+
+| | Linked in | Through the module | Inside the module |
+|---|---|---|---|
+| minimax | 67,000 positions/s | 1,500 positions/s | 2,700 positions/s |
+| MCTS | 1,700 playouts/s | 31 playouts/s | 51 playouts/s |
+| a practice batch | 223 games/min | 5.4 games/min | 10.6 games/min |
+
+`tests/wasmrules/report_test.go` measures them (`BINGLE_WASM_REPORT=1`).

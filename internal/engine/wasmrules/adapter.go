@@ -1,10 +1,12 @@
 package wasmrules
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/noderunner/bingle/internal/engine/board"
 	"github.com/noderunner/bingle/internal/engine/catalog"
@@ -26,12 +28,18 @@ const (
 	callGestures
 	callValidate
 	callOutcome
+	// callBot is optional: a module may lack it (phase 4 of #294 added it).
+	callBot
 	numCalls
 )
+
+// numRequired is how many of the calls every module has.
+const numRequired = callBot
 
 var callNames = [numCalls]string{
 	guest.CallInit, guest.CallStart, guest.CallImpulseSeat, guest.CallLegal, guest.CallApply,
 	guest.CallFormat, guest.CallParse, guest.CallGestures, guest.CallValidate, guest.CallOutcome,
+	guest.CallBot,
 }
 
 func (c call) String() string { return callNames[c] }
@@ -42,8 +50,9 @@ type transport interface {
 	// roundTrip sends the JSON request req of call c, which names game, and
 	// gives the reply to read. A read that fails means the reply is not one:
 	// a transport that can replace what answered does so, and asks again. read
-	// may therefore run twice, and only its last run counts.
-	roundTrip(c call, game *catalog.CompiledGame, req []byte, read func(reply []byte) error) error
+	// may therefore run twice, and only its last run counts. The call stops
+	// when ctx ends, and may take extra beyond the transport's own deadline.
+	roundTrip(ctx context.Context, c call, game *catalog.CompiledGame, req []byte, extra time.Duration, read func(reply []byte) error) error
 }
 
 // adapter is a state.Ruleset over the JSON calls of ABI v0 (ADR 0147), so the
@@ -65,6 +74,7 @@ type request struct {
 	Selection *state.Selection  `json:"selection,omitempty"`
 	Text      string            `json:"text,omitempty"`
 	Seed      uint64            `json:"seed,omitempty"`
+	Bot       *guest.BotRequest `json:"bot,omitempty"`
 }
 
 // envelope is every reply: its ok, or the call's own error.
@@ -98,6 +108,12 @@ type outcomeReply struct {
 // The error is the call's own (an illegal selection, notation that cannot be
 // read) or the transport's (see Module).
 func ask[T any](a *adapter, c call, game *catalog.CompiledGame, req request, check func(*T) error) (T, error) {
+	return askWithin(context.Background(), 0, a, c, game, req, check)
+}
+
+// askWithin is ask for a call that stops when ctx ends, and may take extra
+// beyond the transport's deadline.
+func askWithin[T any](ctx context.Context, extra time.Duration, a *adapter, c call, game *catalog.CompiledGame, req request, check func(*T) error) (T, error) {
 	var out T
 	req.Game = game.Definition.ID
 	body, err := json.Marshal(&req)
@@ -105,7 +121,7 @@ func ask[T any](a *adapter, c call, game *catalog.CompiledGame, req request, che
 		return out, fmt.Errorf("wasmrules: %s of %s: the request cannot be written: %w", c, req.Game, err)
 	}
 	var own error
-	err = a.t.roundTrip(c, game, body, func(reply []byte) error {
+	err = a.t.roundTrip(ctx, c, game, body, extra, func(reply []byte) error {
 		var env envelope[T]
 		if err := json.Unmarshal(reply, &env); err != nil {
 			return fmt.Errorf("the reply is not what the call replies with: %w", err)
@@ -254,4 +270,67 @@ func (a *adapter) Outcome(game *catalog.CompiledGame, st *state.BoardState) stat
 		return state.Outcome{}
 	}
 	return state.Outcome{Ended: r.Ended, Winner: r.winner(), Drawn: r.Drawn, AllLost: r.AllLost, Reason: r.Reason, Detail: r.Detail}
+}
+
+// searcher is the adapter of a module that answers the bot call, which is
+// then a state.Searcher: a bot's search runs inside the module, and crosses
+// once a decision rather than at every position it looks at.
+type searcher struct{ *adapter }
+
+var _ state.Searcher = searcher{}
+
+// botReply is the ok of bot.
+type botReply struct {
+	Selection    *state.Selection `json:"selection"`
+	WinRate      float64          `json:"win_rate"`
+	Heuristic    bool             `json:"heuristic"`
+	Visits       int              `json:"visits"`
+	Alternatives []struct {
+		Selection state.Selection `json:"selection"`
+		WinRate   float64         `json:"win_rate"`
+		Visits    int             `json:"visits"`
+	} `json:"alternatives"`
+}
+
+// replyMargin is the part of a bot's time that a search inside the module
+// leaves for its reply and for its last playout: a tenth, and at least this
+// much.
+const replyMargin = 50 * time.Millisecond
+
+// Search hands a bot's decision to the module. The module keeps to the
+// budget, cut to what is left of ctx's time less a margin for the reply,
+// and the call is stopped when ctx ends, which throws its instance away.
+func (s searcher) Search(ctx context.Context, game *catalog.CompiledGame, st *state.BoardState, seat int, req state.SearchRequest) (state.SearchResult, error) {
+	budget := req.Budget
+	if dl, ok := ctx.Deadline(); ok {
+		left := time.Until(dl)
+		left -= max(left/10, replyMargin)
+		if left <= 0 {
+			return state.SearchResult{}, context.DeadlineExceeded
+		}
+		if budget <= 0 || budget > left {
+			budget = left
+		}
+	}
+	br := &guest.BotRequest{
+		Level: req.Level, Iterations: req.Iterations, Nodes: req.Nodes, Depth: req.Depth,
+		Plies: req.Plies, Exploration: req.Exploration, Seed: req.Seed,
+	}
+	if budget > 0 {
+		br.BudgetMS = max(budget.Milliseconds(), 1)
+	}
+	r, err := askWithin(ctx, budget, s.adapter, callBot, game, request{Position: st, Seat: seat, Bot: br}, func(r *botReply) error {
+		if r.Selection == nil {
+			return errors.New("bot replied without a selection")
+		}
+		return nil
+	})
+	if err != nil {
+		return state.SearchResult{}, err
+	}
+	out := state.SearchResult{Move: *r.Selection, WinRate: r.WinRate, Heuristic: r.Heuristic, Visits: r.Visits}
+	for _, c := range r.Alternatives {
+		out.Alternatives = append(out.Alternatives, state.SearchCandidate{Move: c.Selection, WinRate: c.WinRate, Visits: c.Visits})
+	}
+	return out, nil
 }
