@@ -11,6 +11,10 @@
 //   * The ranks are the game's, whatever it calls them: card-lettering.js letters
 //     digits and capitals. Numbers from 2 to 10 lay out that many pips, 1 or A one
 //     large one, and anything else is a framed court card.
+//   * Each suit has a colour of its own, except in a set that `alternates`: there
+//     two suits may share one, and the colours of the odd places (warm) are never
+//     those of the even places (cool), as a pack's red and black suits are not.
+//     Where colours are the rule, such a set needs no mark of the classic suit.
 //   * Jokers (a card with the tag "joker") belong to no suit. Each of the four has
 //     the colours of two suits: suits one and two, three and four, five and six,
 //     seven and eight. A game's first joker is the first of the set, its second the
@@ -322,8 +326,86 @@ function atomicBack() {
 	return g;
 }
 
+// ---------------------------------------------------------------------------
+// Classic Extended (the four suits of a pack of playing cards, and four more)
+// ---------------------------------------------------------------------------
+
+// The heart of the classic pack, by its tip (12, 21.6), as [x, y] points of cubic curves.
+const HEART = [[12, 21.6], [5.4, 16.4], [2, 12.6], [2, 8.4], [2, 5.5], [4.2, 3.4], [7, 3.4], [9, 3.4], [10.8, 4.5], [12, 6.4], [13.2, 4.5], [15, 3.4], [17, 3.4], [19.8, 3.4], [22, 5.5], [22, 8.4], [22, 12.6], [18.6, 16.4], [12, 21.6]];
+
+/** The heart as a leaf: its tip at (cx, cy), k times as large, its lobes pointing `deg` degrees from east. */
+function leaf(cx, cy, k, deg) {
+	const a = ((deg + 90) * Math.PI) / 180;
+	const p = HEART.map(([x, y]) => {
+		const dx = (x - 12) * k;
+		const dy = (y - 21.6) * k;
+		return `${n1(cx + dx * Math.cos(a) - dy * Math.sin(a))} ${n1(cy + dx * Math.sin(a) + dy * Math.cos(a))}`;
+	});
+	return `M${p[0]}C${p.slice(1, 4).join(" ")}C${p.slice(4, 7).join(" ")}C${p.slice(7, 10).join(" ")}C${p.slice(10, 13).join(" ")}C${p.slice(13, 16).join(" ")}C${p.slice(16).join(" ")}z`;
+}
+
+// The suits alternate warm and cool, as a pack's red and black do: a suit at an odd
+// place is red or orange, one at an even place black or purple. A game where colours
+// are the rule reads them by that place (docs/dsl.md), so they show it here too.
+const CLASSIC = {
+	id: "classic-extended",
+	label: tr("cards.set_classic_extended"),
+	paper: "#fbfaf6",
+	ink: "#1f2630",
+	edge: "#a7adb8",
+	trim: { rx: 4, dash: "" },
+	pen: { smooth: true, width: 1.4, serif: 0.9 }, // a printer's plain type
+	alternates: true,
+	suits: [
+		{ label: tr("cards.hearts"), of: "", color: "#c62f2f", art: [["f", leaf(12, 21.6, 1, -90)]] },
+		{ label: tr("cards.spades"), of: "", color: "#1f2630", art: [["f", "M12 1.8C11 5.6 3 9.4 3 14.4c0 2.6 2.1 4.6 4.6 4.6 1.5 0 2.9-.7 3.7-1.9-.1 2.2-.8 4-2.3 5.5h6c-1.5-1.5-2.2-3.3-2.3-5.5.8 1.2 2.2 1.9 3.7 1.9 2.5 0 4.6-2 4.6-4.6C21 9.4 13 5.6 12 1.8z"]] },
+		{ label: tr("cards.diamonds"), of: "", color: "#c62f2f", art: [["f", "M12 1.8 21.2 12 12 22.2 2.8 12z"]] },
+		{ label: tr("cards.clubs"), of: "", color: "#1f2630", art: [["f", dots([12, 7.6, 4.9], [6.6, 14.4, 4.9], [17.4, 14.4, 4.9])], ["f", "M12 12.4c.1 3.6-.9 6.6-3.2 9.2h6.4c-2.3-2.6-3.3-5.6-3.2-9.2z"]] },
+		{ label: tr("cards.clovers"), of: "", color: "#d9650b", art: [["l", "M10.5 10.5Q15 14.5 21.5 22", 1.8], ["f", leaf(10.5, 10.5, 0.46, -90) + leaf(10.5, 10.5, 0.46, 0) + leaf(10.5, 10.5, 0.46, 90) + leaf(10.5, 10.5, 0.46, 180)], ["x", "M10.5 10.5L10.5 3.5M10.5 10.5L17.5 10.5M10.5 10.5L10.5 17.5M10.5 10.5L3.5 10.5", 0.7]] },
+		{ label: tr("cards.moons"), of: "", color: "#6f2da8", art: [["f", o(11, 12.5, 10)], ["k", o(16.2, 9.4, 8.6)]] },
+		{ label: tr("cards.arrows"), of: "", color: "#d9650b", art: [["f", "M12 1.5L21.2 21.8 12 16.6 2.8 21.8z"]] },
+		{ label: tr("cards.hourglasses"), of: "", color: "#6f2da8", art: [["f", "M4.5 1.8h15v2.6h-1.6c0 3.6-2.7 5.9-4.6 7.6 1.9 1.7 4.6 4 4.6 7.6h1.6v2.6h-15v-2.6h1.6c0-3.6 2.7-5.9 4.6-7.6C8.8 10.3 6.1 8 6.1 4.4H4.5z"], ["k", "M8.4 4.4h7.2c-.2 2.700-2.100 4.500-3.600 6-1.500-1.500-3.400-3.300-3.600-6zM8.4 19.6c.2-2.700 2.100-4.500 3.600-6 1.500 1.500 3.400 3.300 3.600 6z"], ["f", "M9.3 19.6Q12 15.4 14.7 19.6zM10.2 6.2h3.6Q12 8.6 10.2 6.2z"], ["l", "M12 11.4V16.6", 0.7]] },
+	],
+	jokers: [
+		{ label: tr("cards.jester"), letter: "Jester", art: [["G", "M4.3 17.300C4.2 12.8 3.6 9 2 5.900c3.400 1.400 6.200 5.200 7.400 11.4z"], ["f", "M8 17.300C8.4 11.6 9.800 7.200 12 4.300c2.200 2.900 3.600 7.300 4 13z"], ["G", o(2.1, 4.9, 1.7)], ["g", o(12, 3, 1.7)], ["f", "M3.5 17h17v3.800h-17z"], ["k", dots([7, 18.9, .8], [12, 18.9, .8], [17, 18.9, .8])]] },
+		{ label: tr("cards.harlequin"), letter: "Harlequin", art: [["f", "M1.8 9.200C5 7.200 9 7.400 12 9c3-1.600 7-1.800 10.200.200.2 4.600-2.200 8-6 8-1.800 0-2.800-1.200-3.400-2.600-.4-.8-1.200-.8-1.600 0-.6 1.400-1.600 2.600-3.400 2.600-3.800 0-6.200-3.400-6-8z"], ["K", el(7, 12.2, 2.5, 1.5, 10)], ["g", "M12 9.400l1.500 2.600-1.500 2.600-1.500-2.600z"], ["M", "M2.200 11.500C1 14 1 17 1.500 20.5", 1.3]] },
+		{ label: tr("cards.juggler"), letter: "Juggler", art: [["m", "M15.34 5.11A8.2 8.2 0 0 1 20.16 13.46M16.82 19.23A8.2 8.2 0 0 1 7.18 19.23M3.84 13.46A8.2 8.2 0 0 1 8.66 5.11", 1.3], ["f", o(12, 4.4, 3.3)], ["g", dots([19.1, 16.7, 3.3], [4.9, 16.7, 3.3])], ["k", dots([11, 3.4, .8], [18.1, 15.7, .8], [3.9, 15.7, .8])]] },
+		{ label: tr("cards.wild_card"), letter: "Wild Card", art: [["f", star(12, 12, 8, 11.8, 5.2)], ["g", star(12, 12, 8, 6.4, 2.8, 22.5)], ["k", o(12, 12, 1.6)]] },
+	],
+	back: classicBack,
+};
+
+function classicBack() {
+	const navy = "#1d3f73";
+	const line = "#e9edf5";
+	const g = [s("rect", { width: 100, height: 140, fill: navy })];
+	// A lattice of diamonds inside a white frame, as on a plain pack.
+	let d = "";
+	const w = 84 / 8;
+	const h = 124 / 10;
+	for (let i = 0; i < 8; i++) {
+		for (let j = 0; j < 10; j++) {
+			const x = 8 + i * w;
+			const y = 8 + j * h;
+			d += `M${n1(x + w / 2)} ${n1(y)}L${n1(x + w)} ${n1(y + h / 2)}L${n1(x + w / 2)} ${n1(y + h)}L${n1(x)} ${n1(y + h / 2)}z`;
+		}
+	}
+	g.push(s("path", { d, fill: "none", stroke: line, "stroke-opacity": 0.5, "stroke-width": 0.8 }));
+	g.push(s("rect", { x: 8, y: 8, width: 84, height: 124, rx: 3, fill: "none", stroke: line, "stroke-width": 1.6 }));
+	g.push(s("rect", { x: 4, y: 4, width: 92, height: 132, rx: 5, fill: "none", stroke: line, "stroke-width": 0.8 }));
+	// A medallion with the clover in it, ringed in the four colours of the set.
+	g.push(s("circle", { cx: 50, cy: 70, r: 21, fill: navy, stroke: line, "stroke-width": 1.4 }));
+	g.push(s("circle", { cx: 50, cy: 70, r: 17.5, fill: line }));
+	CLASSIC.suits.forEach((suit, i) => {
+		const a = ((i * 45 - 90) * Math.PI) / 180;
+		g.push(s("circle", { cx: n1(50 + 21 * Math.cos(a)), cy: n1(70 + 21 * Math.sin(a)), r: 2.3, fill: suit.color, stroke: line, "stroke-width": 0.8 }));
+	});
+	g.push(s("g", { transform: "translate(37.4 57.4) scale(1.05)", style: `color:${navy};--paper:${line}` }, drawIcon(CLASSIC.suits[4].art)));
+	return g;
+}
+
 /** Every set, in the order they are offered. */
-export const CARD_SETS = [ANCIENT, AMPHIBIANS, FANTASY, LOVECRAFTIAN, ATOMIC];
+export const CARD_SETS = [ANCIENT, AMPHIBIANS, FANTASY, LOVECRAFTIAN, ATOMIC, CLASSIC];
 
 // ---------------------------------------------------------------------------
 // Drawing
@@ -499,12 +581,13 @@ function jokerIndex(info, t, id) {
 	return jokers.indexOf(t.id) + copy;
 }
 
-/** "Tree Frogs (hearts)": a suit's name in this set, with the name the rules use. */
+/** "Tree Frogs (hearts)": a suit's name in this set, with the name the rules use when it is another. */
 export function setSuitName(set, info, suitId) {
 	const i = suitIndex(info, suitId);
 	if (i < 0) return "";
 	const own = ((info.cards.suits || {})[suitId] || {}).label;
-	return own ? `${set.suits[i].label} (${own.toLowerCase()})` : set.suits[i].label;
+	const label = set.suits[i].label;
+	return own && own.toLowerCase() !== label.toLowerCase() ? `${label} (${own.toLowerCase()})` : label;
 }
 
 /**

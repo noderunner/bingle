@@ -70,7 +70,7 @@ func TestWebCardSets_ChosenWhenSettingUpTheGame(t *testing.T) {
 	}
 	clickSel(t, ctx, `.game-card[data-family="test-tricks"]`)
 	waitJS(t, ctx, "the field", `!document.getElementById("card-set-field").hidden`, 10*time.Second)
-	if got := evalString(t, ctx, `[...document.querySelectorAll('#card-set option')].map(o => o.textContent).join("|")`); got != "The game's own cards|Ancient Civilizations|Amphibians|Fantasy Creatures|Lovecraftian|Atomic Age" {
+	if got := evalString(t, ctx, `[...document.querySelectorAll('#card-set option')].map(o => o.textContent).join("|")`); got != "The game's own cards|Ancient Civilizations|Amphibians|Fantasy Creatures|Lovecraftian|Atomic Age|Classic Extended" {
 		t.Errorf("the choices are %q", got)
 	}
 	// The picture of a set: its back, its eight suits (those beyond the game's four dimmed) and its four jokers.
@@ -222,7 +222,15 @@ func TestWebCardSets_EverySetIsCompleteAndLegible(t *testing.T) {
 			const say = (m) => problems.push(set.id + ": " + m);
 			if (set.suits.length !== 8) say(set.suits.length + " suits");
 			if (set.jokers.length !== 4) say(set.jokers.length + " jokers");
-			if (new Set(set.suits.map((x) => x.color)).size !== 8) say("two suits share a colour");
+			// Suits have colours of their own, but for a set whose colours alternate as red and black do:
+			// there two suits share each colour, and none is at an odd place and an even one.
+			if (!set.alternates && new Set(set.suits.map((x) => x.color)).size !== 8) say("two suits share a colour");
+			if (set.alternates) {
+				const odd = new Set(set.suits.filter((_, i) => i % 2 === 0).map((x) => x.color));
+				const even = new Set(set.suits.filter((_, i) => i % 2 === 1).map((x) => x.color));
+				if ([...odd].some((c) => even.has(c))) say("a colour is both warm and cool");
+				for (const c of [...odd, ...even]) if (set.suits.filter((x) => x.color === c).length > 2) say("three suits are " + c);
+			}
 			for (const [i, x] of [...set.suits, ...set.jokers].entries()) {
 				if (!x.label) say("a nameless icon at " + i);
 				if (!x.art || !x.art.length) say(x.label + " has no art");
@@ -259,6 +267,11 @@ func TestWebCardSets_EverySetIsCompleteAndLegible(t *testing.T) {
 			}
 			if (setPreview(set, 4).querySelectorAll(".ts-unused").length !== 4) say("the preview dims the wrong suits");
 		}
+		// A suit's tooltip gives the name the rules use only when it is another (Nyet!'s red is Hearts).
+		const nyet = { cards: { standard: true, suit_order: ["red", "blue"], suits: { red: { label: "Hearts" }, blue: { label: "Spades" } }, types: [] } };
+		const classic = CARD_SETS.find((x) => x.id === "classic-extended");
+		if (setFace(classic, nyet, { suit: "red", label: "9" }, "red-9").title !== "9 of Hearts") problems.push("classic-extended: " + setFace(classic, nyet, { suit: "red", label: "9" }, "red-9").title);
+		if (setFace(CARD_SETS[1], nyet, { suit: "red", label: "9" }, "red-9").title !== "9 of Tree Frogs (hearts)") problems.push("amphibians: " + setFace(CARD_SETS[1], nyet, { suit: "red", label: "9" }, "red-9").title);
 		// A set is only worn by a game whose deck can wear it.
 		useCardSet("ancient");
 		if (currentCardSet(info) !== CARD_SETS[0]) problems.push("a standard deck does not wear the set");

@@ -2,6 +2,11 @@
 
 O que mudou no Bingle, do mais recente ao mais antigo. O Bingle Core (o servidor, o motor e o cliente web) e cada jogo têm versão própria, e cada entrada diz qual mudou. As entradas anteriores à 0.124.0 estão só em inglês.
 
+## 0.134.0 - 2026-11-25
+
+### Bingle Core 0.134.0
+- Um novo baralho, Clássico ampliado: os quatro naipes clássicos e mais trevos, luas, flechas e ampulhetas (API 1.15.0)
+
 ## 0.133.0 - 2026-11-25
 
 ### Bingle Core 0.133.0

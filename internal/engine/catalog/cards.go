@@ -282,7 +282,7 @@ func parseRankList(list string) ([]dsl.RankDef, error) {
 
 // CardSetIDs are the themed sets of cards a game can be set up with. The web
 // client draws them (static/js/card-sets.js); a test holds the two lists together.
-var CardSetIDs = []string{"ancient", "amphibians", "fantasy", "lovecraftian", "atomic"}
+var CardSetIDs = []string{"ancient", "amphibians", "fantasy", "lovecraftian", "atomic", "classic-extended"}
 
 // MaxSetSuits is how many suits a themed set of cards has.
 const MaxSetSuits = 8
