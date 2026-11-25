@@ -115,8 +115,8 @@ const MaxCells = 4096
 // regions "left", "right", "top" and "bottom".
 func GenerateGrid(opts GridOptions) (*Graph, error) {
 	boards := opts.Boards
-	if boards < 0 {
-		return nil, fmt.Errorf("board: a grid's boards must not be negative, got %d", boards)
+	if boards < 0 || boards > MaxCells {
+		return nil, fmt.Errorf("board: a grid's boards must be between 0 and %d, got %d", MaxCells, boards)
 	}
 	if boards == 0 {
 		boards = 1
@@ -206,13 +206,14 @@ func GenerateGrid(opts GridOptions) (*Graph, error) {
 	g.setRegion("bottom", bottom)
 
 	if boards > 1 {
-		g.boards = make([][]PositionID, boards)
-		for i := range g.boards {
+		for i := 0; i < boards; i++ {
+			var ids []PositionID
 			for y := 0; y < height; y++ {
 				for x := i * each; x < (i+1)*each; x++ {
-					g.boards[i] = append(g.boards[i], name(x, y))
+					ids = append(ids, name(x, y))
 				}
 			}
+			g.boards = append(g.boards, ids)
 		}
 	}
 
