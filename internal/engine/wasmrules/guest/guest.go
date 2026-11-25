@@ -16,6 +16,10 @@
 // is a state.Ruleset through wasmrules.Native, which is how a pack's rules are
 // tested with plain go test and measured against themselves.
 //
+// A module answers a built-in bot's search too (Search, the bot call), with
+// the host's own methods run over Rules, so a game has bots by having rules.
+// Rules that also implement Heuristic are searched with it.
+//
 // Rules keep nothing between calls: everything a call needs is in its
 // arguments, and whatever a game must remember rides in Position.Ext. They
 // must be deterministic, and must not let the order of a Go map reach an

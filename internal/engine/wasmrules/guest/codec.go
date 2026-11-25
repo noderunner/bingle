@@ -442,6 +442,8 @@ type request struct {
 	Selection *Selection
 	Text      string
 	Seed      uint64
+	// Bot is the bot call's request, read when it is answered.
+	Bot []byte
 }
 
 func decodeRequest(data []byte) (request, error) {
@@ -464,6 +466,8 @@ func decodeRequest(data []byte) (request, error) {
 			r.Text = d.str()
 		case "seed":
 			r.Seed = d.uint64()
+		case "bot":
+			r.Bot = d.raw()
 		default:
 			d.skip()
 		}

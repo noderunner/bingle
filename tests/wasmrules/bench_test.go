@@ -12,7 +12,7 @@ import (
 
 // midgame is a position of the 8×8 game twenty selections in, the seat to
 // move there and its first legal selection.
-func midgame(b *testing.B, game *catalog.CompiledGame) (*state.BoardState, int, state.Selection) {
+func midgame(b testing.TB, game *catalog.CompiledGame) (*state.BoardState, int, state.Selection) {
 	b.Helper()
 	steps := playOut(b, nativeGames(b)[draughts.ID], 7, 7, 20)
 	st := state.NewBoardState()

@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 )
@@ -18,22 +19,28 @@ const (
 	FaultyWasm = "github.com/noderunner/bingle/tests/testdata/draughts/faulty/wasm"
 )
 
-var wasmBuilds sync.Map // main package → func() ([]byte, error)
+var wasmBuilds sync.Map // main package and tags → func() ([]byte, error)
+
+// NoBot is the build tag that leaves the bot call out of a module, as a
+// module built before the call was added lacks it.
+const NoBot = "bingle_nobot"
 
 // BuildWasm builds a rules module (ADR 0147) from its main package with the
 // Go that runs the test, as a pack's is built: for wasip1, as a module whose
 // exports are called rather than its main. No binary is committed. A package
-// is built once for a test binary, and go's own cache keeps the rest.
-func BuildWasm(t testing.TB, pkg string) []byte {
+// is built once for a test binary with each set of tags, and go's own cache
+// keeps the rest.
+func BuildWasm(t testing.TB, pkg string, tags ...string) []byte {
 	t.Helper()
-	build, _ := wasmBuilds.LoadOrStore(pkg, sync.OnceValues(func() ([]byte, error) {
+	key := pkg + " " + strings.Join(tags, ",")
+	build, _ := wasmBuilds.LoadOrStore(key, sync.OnceValues(func() ([]byte, error) {
 		dir, err := os.MkdirTemp("", "bingle-wasm-")
 		if err != nil {
 			return nil, err
 		}
 		defer func() { _ = os.RemoveAll(dir) }()
 		out := filepath.Join(dir, "rules.wasm")
-		cmd := exec.Command("go", "build", "-buildmode=c-shared", "-trimpath", "-buildvcs=false", "-o", out, pkg)
+		cmd := exec.Command("go", "build", "-buildmode=c-shared", "-trimpath", "-buildvcs=false", "-tags", strings.Join(tags, ","), "-o", out, pkg)
 		// The test's own flags (-race, say) are not the module's.
 		cmd.Env = append(os.Environ(), "GOOS=wasip1", "GOARCH=wasm", "CGO_ENABLED=0", "GOFLAGS=")
 		if msg, err := cmd.CombinedOutput(); err != nil {

@@ -19,6 +19,9 @@ const (
 	CallGestures    = "gestures"
 	CallValidate    = "validate"
 	CallOutcome     = "outcome"
+	// CallBot is optional: a module built before it has no bingle_bot, and
+	// the host then searches through the other calls.
+	CallBot = "bot"
 )
 
 // positionVersion is the version of a position document, its "v".
@@ -32,7 +35,15 @@ type Handler struct {
 	make New
 
 	mu    sync.RWMutex
-	games map[string]Rules
+	games map[string]*played
+}
+
+// played is a game the handler has been told of: its rules, and what the
+// search needs to know of the game.
+type played struct {
+	rules  Rules
+	colors map[int]string
+	cells  int
 }
 
 // NewHandler returns a Handler that makes each game's rules with n.
@@ -61,15 +72,16 @@ func (h *Handler) Call(name string, req []byte) []byte {
 		return fail(fmt.Errorf("guest: %s: the request is not JSON: %w", name, err))
 	}
 	h.mu.RLock()
-	rules, known := h.games[r.Game]
+	game, known := h.games[r.Game]
 	h.mu.RUnlock()
 	if !known {
 		return fail(fmt.Errorf("guest: %s: no game %q was given to init", name, r.Game))
 	}
+	rules := game.rules
 
 	pos := r.Position
 	switch name {
-	case CallImpulseSeat, CallLegal, CallApply, CallValidate, CallOutcome:
+	case CallImpulseSeat, CallLegal, CallApply, CallValidate, CallOutcome, CallBot:
 		if pos == nil {
 			return fail(fmt.Errorf("guest: %s needs a position", name))
 		}
@@ -166,6 +178,24 @@ func (h *Handler) Call(name string, req []byte) []byte {
 		outcome := rules.Outcome(pos)
 		out = append(out, '{')
 		return done(append(appendOutcome(out, len(out), &outcome), '}'))
+	case CallBot:
+		// One call a decision: encoding/json costs nothing beside the search.
+		var br BotRequest
+		if len(r.Bot) == 0 {
+			return fail(errors.New("guest: bot needs a bot request"))
+		}
+		if err := json.Unmarshal(r.Bot, &br); err != nil {
+			return fail(fmt.Errorf("guest: bot: %w", err))
+		}
+		reply, err := Search(rules, game.colors, game.cells, pos, r.Seat, br)
+		if err != nil {
+			return fail(err)
+		}
+		body, err := json.Marshal(&reply)
+		if err != nil {
+			return fail(err)
+		}
+		return done(append(out, body...))
 	}
 	return fail(fmt.Errorf("guest: no call %q", name))
 }
@@ -188,7 +218,7 @@ func (h *Handler) init(r *initRequest) []byte {
 	if h.make == nil {
 		return fail(errors.New("guest: the module registered no rules"))
 	}
-	made := make([]Rules, len(r.Games))
+	made := make([]*played, len(r.Games))
 	for i := range r.Games {
 		g := &r.Games[i]
 		rules, err := h.make(g)
@@ -198,14 +228,27 @@ func (h *Handler) init(r *initRequest) []byte {
 		if rules == nil {
 			return fail(fmt.Errorf("guest: game %q: no rules were made", g.ID))
 		}
-		made[i] = rules
+		var def struct {
+			Seats []struct {
+				Seat  int    `json:"seat"`
+				Color string `json:"color"`
+			} `json:"seats"`
+		}
+		if err := json.Unmarshal(g.Definition, &def); err != nil {
+			return fail(fmt.Errorf("guest: game %q: the definition: %w", g.ID, err))
+		}
+		p := &played{rules: rules, colors: make(map[int]string, len(def.Seats)), cells: len(g.Board.Positions)}
+		for _, seat := range def.Seats {
+			p.colors[seat.Seat] = seat.Color
+		}
+		made[i] = p
 	}
 	h.mu.Lock()
 	if h.games == nil {
-		h.games = make(map[string]Rules, len(made))
+		h.games = make(map[string]*played, len(made))
 	}
-	for i, rules := range made {
-		h.games[r.Games[i].ID] = rules
+	for i, p := range made {
+		h.games[r.Games[i].ID] = p
 	}
 	h.mu.Unlock()
 	return ok()

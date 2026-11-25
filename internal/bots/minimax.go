@@ -108,6 +108,15 @@ func (b *minimaxBot) Evaluate(ctx context.Context, game *catalog.CompiledGame, s
 	// Search the world the seat can know (dice and hidden choices re-drawn).
 	st = state.Determinize(game, st, seat, rng)
 
+	if _, ok := state.SearcherOf(game); ok {
+		ev, ok, err := inRules(ctx, game, st, seat, legal, b.ID(), state.SearchRequest{
+			Level: b.ID(), Budget: searchSafety, Nodes: b.opts.NodeBudget, Depth: b.opts.MaxDepth, Seed: rng.Uint64(),
+		})
+		if ok || err != nil {
+			return ev, err
+		}
+	}
+
 	s := &minimaxSearch{game: game, root: seat, botID: b.ID(), budget: b.opts.NodeBudget, ctx: ctx, colors: map[int]string{}}
 	_, s.useHeur = state.HeuristicValue(game, st, seat)
 	for _, sd := range game.Definition.Seats {

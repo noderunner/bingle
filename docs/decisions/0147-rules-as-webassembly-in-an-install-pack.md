@@ -96,8 +96,9 @@ rebuilt when it changes. Each export is prefixed `bingle_`:
 | `bingle_init` and one export per call | `(ptr u32, len u32) → u64` | Reads a JSON request at `ptr`, returns its JSON reply as `ptr << 32 \| len`. The host copies the reply and frees it |
 
 The calls are `init`, `start`, `impulse_seat`, `legal`, `apply`, `format`, `parse`, `gestures`, `validate` and
-`outcome`, one for each method of `state.Ruleset`. Phase 4 adds `bot`. Only the Ruleset's nine methods are
-bridged. Every optional interface (`HiddenInfo`, `Reactor`, `Heuristic`, `PlaneEncoder` and the rest) is left
+`outcome`, one for each method of `state.Ruleset`, and **`bot`, which is optional** (added in phase 4): a module
+without it is played as before, with the host's bots searching through the other calls. Only the Ruleset's nine
+methods and `bot` are bridged. Every optional interface (`HiddenInfo`, `Reactor`, `Heuristic`, `PlaneEncoder` and the rest) is left
 out until a phase needs it, and a phase that adds one records it here. Phase 1 adds `SeededRuleset`, which costs
 no call: the adapter says that a start is recorded with its game, because what `start` does with its seed is the
 module's own business, and a replay must not ask for the start again.
@@ -124,6 +125,15 @@ module's own business, and a replay must not ask for the start again.
   `next_seat`, `notation`, `facts`, `ended`, `winner`, `drawn`, `all_lost`, `reason`, `detail`). `outcome` replies
   with the fields of `state.Outcome`. A `winner` or a `next_seat` of 0, or none, is no seat. Where an impulse ends is worked out by the host from the reply, as for any
   ruleset (`state.ImpulseEnds`). The guest does not report it.
+- **`bot` searches inside the module** (phase 4): a built-in bot's decision, crossed once rather than at every
+  position its search looks at. Its request is a position and a seat, with `bot`: `level` (`tactical`,
+  `minimax` or `mcts`, the host's bots of those names), `budget_ms`, the caps `iterations`, `nodes`, `depth` and
+  `plies`, `exploration` and `seed`. It replies with the `selection`, its `win_rate`, `heuristic`, `visits` and
+  the best few `alternatives`. The guest glue answers it for every game, with the host's three searches written
+  over the guest interface (`guest.Search`), and a game that also implements `guest.Heuristic` is searched with
+  its own valuation. The host hands a decision to it through `state.Searcher`, an optional interface of a ruleset
+  as `state.Heuristic` and `state.BotGuide` are, and plays the answer only if it is one of the legal selections.
+  The same request gives the same answer unless the time ran out first.
 
 ### The sandbox
 
@@ -136,16 +146,23 @@ module's own business, and a replay must not ask for the start again.
   machine's, and `random_get` reads from a fixed seed. The clocks move a millisecond with every call into an
   instance and a nanosecond with every reading, so nearly all of an instance's time passes between its calls. A
   clock that moves at each reading instead, which is wazero's default, must not be used with a Go guest: see the
-  status log. All of this is set explicitly rather than left to wazero's defaults. A
+  status log. All of this is set explicitly rather than left to wazero's defaults. **The one exception is
+  `bot`** (phase 4), whose search has to keep to a budget of time: while it runs, and only then, the monotonic
+  clock follows the machine's to the millisecond. The wall clock never runs. A search reads the time only to stop,
+  so with a budget of nodes or playouts its answer is the same on any machine, and a search with only a time
+  budget is as reproducible as the host's own timed bots, which is to say not at all. A
   game's chance comes only from the `seed` that `start` is given, kept in its position, as for a compiled-in
   ruleset. Go randomises map order inside the guest from that seed, so a guest must not let map order reach a
   reply. Phase 1's tests compare a fresh instance with a reused one to catch it.
 - **A memory cap per instance**, by default 2048 pages (128 MiB). Phase 1 measured the fixture's instance at 3.6
-  MiB once started and 8 MiB after 20,000 small calls, so rules alone would fit in a quarter of it. The cap stays until
-  phase 4 has put a search inside.
+  MiB once started and 8 MiB after 20,000 small calls, so rules alone would fit in a quarter of it. With
+  the search inside (phase 4), an instance held 9.5 MiB after a practice batch, and the cap stays.
 - **A deadline per call**, by default two seconds, enforced by wazero closing the module when its context ends.
-  The context is the adapter's own: `Legal` and `Apply` still take none, and do no I/O. A call into an in-memory
-  module is as pure as the rules inside it, which is what CLAUDE.md asks.
+  A `bot` call has its budget on top, and also ends with the bot's own context (a cancelled search, a bot's
+  time in a room). The search is given its budget cut to what is left of that context's time, less a tenth (at
+  least 50 ms) for its reply, so it answers before it is stopped. The context is the adapter's own: `Legal` and
+  `Apply` still take none, and do no I/O. A call into an in-memory module is as pure as the rules inside it,
+  which is what CLAUDE.md asks.
 
 ### Instances and failures
 
@@ -156,7 +173,9 @@ module's own business, and a replay must not ask for the start again.
   it.
 - **An instance that traps, runs out of time, outgrows its memory or replies with something malformed is thrown
   away** and replaced, and the call is tried once more on the new instance. A second failure is that call's
-  failure, and it is logged with the pack, the call and the game.
+  failure, and it is logged with the pack, the call and the game. A `bot` call is not tried again: the bot
+  searches through the other calls instead. A call stopped because its caller's context ended throws its
+  instance away too, but is not tried again and is not counted as a fault.
 - **A failed call never ends a game or loses a move.** `Start`, `Apply`, `Parse` and `Validate` return it as their
   error. The methods without an error (`ImpulseSeat`, `Legal`, `Format`, `Gestures`, `Outcome`) answer with
   something that leaves the game as it stands: no legal selections, an outcome that is not over, notation left
@@ -403,3 +422,49 @@ folder. To drop both removes the pack loader and `BINGLE_PACKS` too, and marks t
     closes phase 1's open point.
   - **Nothing new in the API**: a pack's game is listed with `prototype` and, from `private: true`, `private`,
     which the API already sent.
+- 2026-11-25, **phase 4** (#299): the built-in bots measured through the module, then their search moved inside
+  it. What it changed is marked above: the optional `bot` call, a monotonic clock that runs while it does, its
+  deadline, and a stopped call that is not a fault. In the engine, one optional interface, `state.Searcher`. In
+  the bots, each of tactical, minimax and MCTS hands its decision to a ruleset that is one, and searches as
+  before when the ruleset is not, fails, or answers with a selection that is not legal. Random needs no search.
+  - **Measured** with `tests/wasmrules/report_test.go` (`BINGLE_WASM_REPORT=1`) on the Draughts fixture, and with
+    the overlay's like report on Zèrtz's 37-ring board, on the machine of phase 1. *Linked in* is
+    `wasmrules.Native` searched by the host's bots. *Across* is the host's bots searching through the module
+    (step 1, with a module built without `bot`). *Inside* is the search inside the module. *In process* is the
+    guest's search over the rules linked in, by way of the JSON with no module, and *no deadline* the search
+    inside a module whose calls cannot be stopped.
+
+    | Draughts | Linked in | In process | Across | Inside | Inside, no deadline |
+    |---|---|---|---|---|---|
+    | tactical, one decision | 0.57 ms | 0.38 ms | 26 ms | 13 ms | 4.8 ms |
+    | minimax, positions a second | 67,000 | 114,000 | 1,520 | 2,720 | 8,300 |
+    | MCTS, playouts a second | 1,740 | 2,540 | 31 | 51 | 174 |
+
+    | Zèrtz, 37 rings | Linked in | Across | Inside |
+    |---|---|---|---|
+    | tactical, one decision | 58 ms | 1,960 ms | 1,550 ms |
+    | minimax, positions a second | 15,400 | 495 | 642 |
+    | MCTS, playouts a second | 416 | 4 | 5 |
+
+    A **practice batch** of Draughts (MCTS at 30 iterations against minimax at 500 positions, 16 games on 8
+    workers, the pool at 8 instances): 223 games a minute linked in, 5.4 across and 10.6 inside. The 8 instances
+    held 70 MiB after it across and 76 MiB inside; the process grew by 2 MiB linked in and by about 190 MiB with
+    a module, most of it the instances and wazero's own. **Strength at equal time**, MCTS at 250 ms a move, 20
+    games with seats alternated: on Draughts, across against linked in 0–20, inside against linked in 1–19, and
+    inside against across 17–2 with one draw; on Zèrtz, 1–19, 2–18 and 11–9.
+  - **What it shows.** Crossing once a decision rather than at every position makes the bots about twice as fast
+    on Draughts, and a little faster on Zèrtz, whose rules cost more beside what crosses. It does not bring them
+    near the rules linked in, because what is left is the rules themselves run as WebAssembly. The guest's search
+    over the rules linked in is faster than the host's (it copies no position into the engine's type), and the
+    same search inside the module is 42 times slower on Draughts and 48 on Zèrtz: about 14 times for Go compiled
+    to WebAssembly under wazero, where the collector also has no other core to run on, and 3 times for the checks
+    that let a call be stopped. Those checks cannot go for a module the host does not trust, since nothing else
+    stops a loop that makes no call out. What would close more of the gap is a guest that runs faster as
+    WebAssembly: TinyGo, or rules over arrays rather than the maps of `guest.Position`. Neither was tried.
+  - **The Zèrtz side** (the overlay's PR for #299): a heuristic, how near each seat is to its nearest winning set,
+    and the pack rebuilt with the new glue. Every bot plays its Blitz variant to the end with the search inside.
+  - **A whole batch inside the guest** is left out. It would take a `batch` call that plays games from a seed
+    with a level for each seat and replies with each game's record, the host's batch report and repro bundles
+    rebuilt from those records, and a deadline per game rather than per call. Each decision of a batch now
+    crosses three times (`legal`, `bot`, `apply`), against hundreds of crossings a decision before, so it would
+    save little beside what the rules cost.
