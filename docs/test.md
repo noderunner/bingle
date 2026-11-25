@@ -31,6 +31,7 @@ The suite has these kinds of tests, all driven by the one `go test ./...` comman
 - **Engine hardening** — `tests/tak/fuzz_test.go` holds native Go fuzz targets (move and TPS parsers, structured-move application, the definition compiler: none may panic); run one with `go test ./tests/tak -run xxx -fuzz FuzzParseMove -fuzztime 30s`. `tests/allgames` adds `FuzzApplyAnyMoveToAnyGame`: arbitrary structured moves (including `aim`) against a mid-game position of every game, asserting that anything `Apply` accepts is one `LegalSelections` lists. `tests/board/limits_test.go` checks the board-size cap. `tests/classics/amazons_test.go` brute-forces every from/to/aim triple against the slide enumerator, and `tests/tak/completeness_test.go` does the same for stack moves.
 - **Cross-game invariants** — `tests/allgames` runs one battery over every shipped game and variant (every enumerated move applies and round-trips through notation to the same position, the position document and planes keep their shape, action IDs exist, the start is playable); a new game JSON is covered the moment it is registered.
 - **Two implementations of one game** — `tests/difftest` plays a reference and a candidate side by side from the same seeds, and reports the first selection where their legal selections, positions, notation, results or the end of an impulse (ADR 0114) differ, with the seed and the moves that led there. It is what a game converted from a Go ruleset to a declaration is checked against (see [dsl.md](dsl.md#converting-a-go-ruleset)); its own tests play every shipped game against a second compiled copy of itself, which also holds every ruleset to being deterministic for a seed.
+- **Rules as a WebAssembly module** — `tests/wasmrules` tests the host of ADR 0147 (`internal/engine/wasmrules`) on the Draughts fixture, which the test itself builds into a module with `go build` (`GOOS=wasip1 GOARCH=wasm -buildmode=c-shared`), so no binary is committed and the first run compiles the standard library for `wasip1`. The same seed gives the same game to the byte on a used instance, a single one and a new module; a module that panics, never returns, wants too much memory or names a seat the game lacks fails its call alone, each method answering as it promises, and leaves the pool usable; a module of another ABI or with another import does not load; many games share a small pool (worth a run with `-race`); the three games are played to the end over HTTP; and the guest's JSON, which it reads and writes by hand, is held to `encoding/json`'s (`go test ./tests/wasmrules -run xxx -fuzz FuzzTheGuestsDecoder -fuzztime 30s`). `tests/difftest` plays the fixture's linked rules against the module over a random battery, and `tests/draughts` holds the fixture's own rules. The benchmark of what the boundary costs is `go test ./tests/wasmrules -run xxx -bench . -benchmem`.
 - **API-only play** — `tests/apiplay` plays every game in `GET /game-defs` to a finish over HTTP, with no browser and no knowledge of any game: random moves from `GET /moves/legal`, played by notation and by their fields in turn. A new game is covered the moment it is registered. Patience games, which random play need not win, play 500 moves and then resign. Every preset in a game's setup catalog plays out as well, and the game must really be the one the options asked for. `-short` plays one game of each family and no presets.
 - **Training support** — `tests/envs` (planes, fixed action IDs, batch stepping, recorded matches) and `tests/puzzles` (solver correctness and a re-proof of every shipped puzzle; `go run scripts/genpuzzles` regenerates them).
 - **Smoke test** — `scripts/smoke-test.sh`, or `make smoke`. `make test` runs it after the Go
@@ -57,6 +58,15 @@ lean on something sound.
   and the ring and marker shapes.
 - **Freeplay**, **Tic-Tac-Toe** and **Connect Four**: the smallest games, kept for the tests that
   play one to the end.
+- **Draughts** (`test-draughts`, `-6`, `-ballot`; `tests/testdata/draughts`): English draughts,
+  the fixture for rules that run as a WebAssembly module (ADR 0147). Its rules are written against
+  `wasmrules/guest` and import nothing of the engine, so the same package is linked in
+  (`testdata.Draughts()`) and built into a module (`testdata.BuildWasm`). A capture must be made,
+  and each jump of a chain is a selection of its own, so a chain is one impulse of several
+  selections. Its variants are a second board and a start drawn by lot from the seed. It is not
+  one of `testdata.Fixtures()`: the tests that want it register it. `draughts/faulty` is the same
+  rules made to panic, loop, take memory or answer nonsense when a call asks, and is only ever run
+  as a module.
 
 ### Courtfall
 

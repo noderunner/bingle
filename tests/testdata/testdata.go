@@ -9,8 +9,11 @@ import (
 
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/engine/dsl"
+	"github.com/noderunner/bingle/internal/engine/state"
+	"github.com/noderunner/bingle/internal/engine/wasmrules"
 	"github.com/noderunner/bingle/internal/web/look"
 	"github.com/noderunner/bingle/tests/testdata/council"
+	"github.com/noderunner/bingle/tests/testdata/draughts"
 	"github.com/noderunner/bingle/tests/testdata/tricks"
 )
 
@@ -67,4 +70,20 @@ func Table() catalog.Module {
 // Fixtures are every game only the tests use.
 func Fixtures() []catalog.Module {
 	return []catalog.Module{Freeplay(), TicTacToe(), ConnectFour(), council.Module(), tricks.Module(), Table()}
+}
+
+//go:embed draughts/draughts.yaml
+var draughtsFS embed.FS
+
+var draughtsDefinition = sync.OnceValue(func() []byte { return dsl.MustLoad(draughtsFS, "draughts/draughts.yaml") })
+
+// Draughts is English draughts, the fixture for rules that run as a
+// WebAssembly module (ADR 0147), with its rules linked in. It is not one of
+// Fixtures: the tests that want it register it themselves.
+func Draughts() catalog.Module { return DraughtsWith(wasmrules.Native(draughts.New)) }
+
+// DraughtsWith is the Draughts fixture played by other rules than the ones
+// linked in: the same rules as a module, say.
+func DraughtsWith(rules state.Ruleset) catalog.Module {
+	return catalog.Module{ID: draughts.ID, Definition: draughtsDefinition(), Rules: rules}
 }

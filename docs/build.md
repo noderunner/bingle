@@ -5,7 +5,7 @@
 - Go (matching the version in `go.mod`, currently 1.27.1; [go.dev/dl](https://go.dev/dl/))
 - To build the container image: `docker` or `podman`
 
-No other tools are required — both dependencies (`modernc.org/sqlite`, `github.com/coder/websocket`, etc.) are pure Go, so there's no CGO toolchain or system library to install.
+No other tools are required — the twelve direct dependencies (`modernc.org/sqlite`, `github.com/coder/websocket`, `github.com/tetratelabs/wazero` and the rest) are pure Go, so there's no CGO toolchain or system library to install.
 
 ## Building the binary
 
