@@ -287,6 +287,12 @@ type BoardGenerator struct {
 	// Labels is "xy" (positions named "x,y", the default) or "algebraic"
 	// (positions named like chess squares: "a1" is bottom-left).
 	Labels string `json:"labels,omitempty"`
+	// Boards, for a "grid", is how many boards of Width x Height the game
+	// is played on, side by side (Alice chess: 2). Their columns, and
+	// algebraic files, run on from one to the next (board B of Alice is
+	// files i to p), no square neighbours a square of another board, and
+	// clients draw each as a board of its own. Absent = one board.
+	Boards int `json:"boards,omitempty"`
 }
 
 // Position identifies a single hand-authored board position in an explicit

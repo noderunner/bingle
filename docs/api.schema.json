@@ -133,6 +133,13 @@
     "BoardDTO": {
       "description": "BoardDTO describes the board graph and how to draw it.",
       "properties": {
+        "boards": {
+          "description": "Boards, for a game played on several boards side by side (Alice chess), lists each board's positions, left to right; absent for one board. The positions are still one board for the rules, laid out as their coordinates say (board B's columns run on from board A's), and a client draws each board as a board of its own.",
+          "items": {
+            "$ref": "#/$defs/BoardPartDTO"
+          },
+          "type": "array"
+        },
         "borders": {
           "additionalProperties": {
             "type": "string"
@@ -188,6 +195,24 @@
       "required": [
         "kind",
         "style",
+        "positions"
+      ],
+      "type": "object"
+    },
+    "BoardPartDTO": {
+      "description": "BoardPartDTO is one of the boards a game is played on.",
+      "properties": {
+        "positions": {
+          "items": {
+            "type": "string"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        }
+      },
+      "required": [
         "positions"
       ],
       "type": "object"
@@ -4462,9 +4487,9 @@
   },
   "$id": "https://github.com/noderunner/bingle/docs/api.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "description": "The requests, responses and WebSocket events of bingle's API, version 1.13.0. Generated from the Go types of the server: do not edit. Objects let unknown fields through: a client ignores those it does not know.",
+  "description": "The requests, responses and WebSocket events of bingle's API, version 1.14.0. Generated from the Go types of the server: do not edit. Objects let unknown fields through: a client ignores those it does not know.",
   "title": "Bingle API messages",
-  "x-api-version": "1.13.0",
+  "x-api-version": "1.14.0",
   "x-dm-events": {
     "badge": {
       "$ref": "#/$defs/BadgeEventData"

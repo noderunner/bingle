@@ -16,6 +16,9 @@ func resolveBoard(def *dsl.GameDefinition) (*board.Graph, error) {
 
 	if def.Board.Generator != nil {
 		gen := def.Board.Generator
+		if gen.Boards > 1 && gen.Type != "grid" {
+			return nil, fmt.Errorf("catalog: only a grid may be several boards, not a %q board", gen.Type)
+		}
 		var err error
 		switch gen.Type {
 		case "grid":
@@ -24,6 +27,7 @@ func resolveBoard(def *dsl.GameDefinition) (*board.Graph, error) {
 				Height: gen.Height,
 				Mode:   gen.Adjacency,
 				Labels: board.Labeling(gen.Labels),
+				Boards: gen.Boards,
 			})
 		case "hex":
 			g, err = board.GenerateHex(gen.Width, gen.Height)

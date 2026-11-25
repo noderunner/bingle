@@ -2,6 +2,14 @@
 
 Was sich in Bingle geändert hat, das Neueste zuerst. Bingle Core (der Server, die Engine und der Web-Client) und jedes Spiel haben eine eigene Version, und jeder Eintrag sagt, welche sich geändert hat. Einträge vor 0.124.0 gibt es nur auf Englisch.
 
+## 0.133.0 - 2026-11-25
+
+### Bingle Core 0.133.0
+- Spiele auf zwei Brettern zeigen jedes Brett für sich
+
+### Chess 0.2.2
+- Alice-Schach: die zwei Bretter werden als zwei Bretter nebeneinander gezeichnet
+
 ## 0.132.2 - 2026-11-24
 
 ### Bingle Core 0.132.2

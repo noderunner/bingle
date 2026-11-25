@@ -371,6 +371,10 @@
         "adjacency": {
           "type": "string"
         },
+        "boards": {
+          "description": "Boards, for a \"grid\", is how many boards of Width x Height the game is played on, side by side (Alice chess: 2). Their columns, and algebraic files, run on from one to the next (board B of Alice is files i to p), no square neighbours a square of another board, and clients draw each as a board of its own. Absent = one board.",
+          "type": "integer"
+        },
         "height": {
           "type": "integer"
         },

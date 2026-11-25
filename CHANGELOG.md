@@ -4,6 +4,14 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.133.0 - 2026-11-25
+
+### Bingle Core 0.133.0
+- Games played on two boards show each board on its own
+
+### Chess 0.2.2
+- Alice Chess: the two boards are drawn as two boards, side by side
+
 ## 0.132.2 - 2026-11-24
 
 ### Bingle Core 0.132.2
