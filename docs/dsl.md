@@ -164,7 +164,8 @@ pieces:
 ```
 
 * Colors are CSS-ish names; the UI has palettes for `white`, `black`, `red`,
-  `blue`, `green` and `yellow`.
+  `blue`, `green`, `yellow`, `orange`, `purple`, `teal`, `sand`, `brown` and `grey`.
+  A piece of any other colour is drawn black.
 * `shape`: `disc` (default), `square`/`flat`, `wall`, `cap`, `ring`,
   `diamond`, `triangle`, `cross`.
 * `code` is the short letter used by notation, TPS and the text board.

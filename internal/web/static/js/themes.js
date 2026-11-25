@@ -15,7 +15,7 @@
 import { s } from "./util.js";
 import { t as tr } from "./i18n.js";
 
-const SVG_COLORS = ["red", "yellow", "orange", "white", "blue", "black", "green", "purple", "teal", "sand", "brown"];
+const SVG_COLORS = ["red", "yellow", "orange", "white", "blue", "black", "green", "purple", "teal", "sand", "brown", "grey"];
 
 // ---------------------------------------------------------------------------
 // Small helpers
@@ -174,6 +174,7 @@ const SYNTH = {
 		sand: stone("#b0a56a", { glow: "#e2d27a", glowSize: 4 }),
 		teal: stone("#2aa6ae", { glow: "#39d4dd", glowSize: 4 }),
 		brown: stone("#ff6fa8", { glow: "#ff8fc0", glowSize: 3 }),
+		grey: stone("#9a94b8", { glow: "#c8c0f0", glowSize: 4 }),
 	},
 };
 
@@ -194,6 +195,7 @@ const CELTIC = {
 		sand: stone("#b0a56a"),
 		teal: stone("#2aa6ae"),
 		brown: stone("#d9769a"),
+		grey: stone("#94968f"),
 	},
 };
 
@@ -214,6 +216,7 @@ const SOLSTICE = {
 		sand: stone("#b0a56a"),
 		teal: stone("#2aa6ae"),
 		brown: stone("#d9769a"),
+		grey: stone("#a39c90"),
 	},
 };
 
@@ -234,6 +237,7 @@ const BAZAAR = {
 		sand: stone("#b0a56a"),
 		teal: stone("#2aa6ae"),
 		brown: stone("#d9769a"),
+		grey: stone("#a8a39a"),
 	},
 };
 
@@ -254,6 +258,7 @@ const ABYSS = {
 		sand: stone("#b0a56a", { glow: "#cfc27a", glowSize: 3 }),
 		teal: stone("#2aa6ae", { glow: "#55c8d0", glowSize: 3 }),
 		brown: stone("#e89ab5"),
+		grey: stone("#9fb0bc", { glow: "#c0d4e0", glowSize: 3 }),
 	},
 };
 
@@ -274,6 +279,7 @@ const GEMS = {
 		sand: stone("#b0a56a", { hi: "#efe6b4", lo: "#4c4620", rim: "#f1ebc2", glow: "#b47aff", glowSize: 2.5 }),
 		teal: stone("#2aa6ae", { hi: "#b8f0f4", lo: "#0f474c", rim: "#c8f4f7", glow: "#b47aff", glowSize: 2.5 }),
 		brown: stone("#c47a96", { hi: "#f0c0d2", lo: "#4a1f30", rim: "#f5d5e2" }),
+		grey: stone("#a8a8b4", { hi: "#eeeef6", lo: "#45454f", rim: "#f0f0f8", glow: "#b47aff", glowSize: 2.5 }),
 	},
 };
 
@@ -864,7 +870,7 @@ export function stoneMarks(shape, color, size) {
 			break;
 		}
 		case "celtic": {
-			const name = { red: "fehu", yellow: "sowilo", orange: "kenaz", white: "othala", blue: "isa", black: "algiz", green: "berkano", purple: "mannaz", brown: "ansuz", teal: "laguz", sand: "dagaz" }[color] || "fehu";
+			const name = { red: "fehu", yellow: "sowilo", orange: "kenaz", white: "othala", blue: "isa", black: "algiz", green: "berkano", purple: "mannaz", brown: "ansuz", teal: "laguz", sand: "dagaz", grey: "hagalaz" }[color] || "fehu";
 			const hh = r * 1.1;
 			const d = runePath(name, -hh / 4, -hh / 2, hh);
 			const sw = f1(Math.max(1.4, size * 0.055));

@@ -214,7 +214,7 @@ function layout(info, flipped) {
 }
 
 /** A colour of the palette in words, in the page's language; another colour as it is given. */
-const COLOR_WORDS = new Set(["white", "black", "red", "yellow", "orange", "green", "blue", "purple", "teal", "sand", "brown"]);
+const COLOR_WORDS = new Set(["white", "black", "red", "yellow", "orange", "green", "blue", "purple", "teal", "sand", "brown", "grey"]);
 function colorWord(color) {
 	const c = cssColor(color);
 	return COLOR_WORDS.has(c) ? tr(`color.${c}`) : String(color);

@@ -26,6 +26,7 @@ PIECE = {
     "orange": ("#ee8a2a", "#7a3a05"),
     "green": ("#3ea86a", "#14502c"),
     "purple": ("#8a5ad0", "#3a1a72"),
+    "grey": ("#a3a19b", "#45433f"),
 }
 
 
