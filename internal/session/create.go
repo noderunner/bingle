@@ -198,7 +198,10 @@ func resolveStart(compiled *catalog.CompiledGame, opts CreateOptions) (*state.Bo
 	default:
 		// A game whose start carries a secret seed must have it recorded so
 		// that replays, undo and exports see the same position.
-		st := state.InitialState(compiled)
+		st, err := state.Start(compiled)
+		if err != nil {
+			return nil, 0, false, fmt.Errorf("%w: %s: %v", ErrStartFailed, compiled.Definition.ID, err)
+		}
 		return st, state.StartSeat(compiled, st), state.NeedsStartRecord(compiled), nil
 	}
 	if err := state.Validate(compiled, st); err != nil {
@@ -621,6 +624,11 @@ func botName(bot bots.Bot, sd dsl.SeatDef, total int) string {
 	}
 	return who + " (" + bot.Label() + ")"
 }
+
+// ErrStartFailed is returned for a game whose rules could not start it. It
+// is the server's failure and not the request's: rules run from a module can
+// fail where rules linked in cannot (ADR 0147), and the game is not made.
+var ErrStartFailed = errors.New("session: the game's rules could not start it")
 
 // ErrGameRetired is returned for a game whose kind this server no longer
 // offers (catalog.Retire): what was played stays readable through

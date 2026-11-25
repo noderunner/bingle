@@ -1,6 +1,8 @@
 package testdata
 
 import (
+	"embed"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -54,4 +56,46 @@ type buildError struct {
 
 func (e *buildError) Error() string {
 	return "building " + e.pkg + " for wasip1: " + e.err.Error() + "\n" + e.output
+}
+
+// The Draughts fixture as an install pack (ADR 0147): its games' ids.
+const (
+	DraughtsPackID      = "pack-draughts-0.1.0"
+	DraughtsPackSmallID = "pack-draughts-0.1.0-6"
+)
+
+//go:embed draughts/pack
+var draughtsPackFS embed.FS
+
+// DraughtsPack writes the Draughts fixture as an install pack into a new
+// directory of packs, with its rules built as a module, and returns that
+// directory (what BINGLE_PACKS names) and the pack's own.
+func DraughtsPack(t testing.TB) (packs, dir string) {
+	t.Helper()
+	packs = t.TempDir()
+	dir = filepath.Join(packs, "draughts")
+	WritePack(t, dir, DraughtsWasm)
+	return packs, dir
+}
+
+// WritePack writes the Draughts fixture pack into dir, with the rules of the
+// main package pkg (DraughtsWasm or FaultyWasm) as its rules.wasm.
+func WritePack(t testing.TB, dir, pkg string) {
+	t.Helper()
+	sub, err := fs.Sub(draughtsPackFS, "draughts/pack")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.CopyFS(dir, sub); err != nil {
+		t.Fatal(err)
+	}
+	WriteRules(t, dir, pkg)
+}
+
+// WriteRules builds the main package pkg as the rules.wasm of the pack in dir.
+func WriteRules(t testing.TB, dir, pkg string) {
+	t.Helper()
+	if err := os.WriteFile(filepath.Join(dir, "rules.wasm"), BuildWasm(t, pkg), 0o644); err != nil {
+		t.Fatal(err)
+	}
 }

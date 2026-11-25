@@ -13,12 +13,14 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
 
 	"github.com/noderunner/bingle/internal/app"
 	"github.com/noderunner/bingle/internal/config"
+	"github.com/noderunner/bingle/tests/testdata"
 )
 
 // patience names the games random play is not expected to win, since it shuffles cards back and
@@ -106,7 +108,10 @@ func newServer(t *testing.T) string {
 	if err != nil {
 		t.Fatal(err)
 	}
-	a, err := app.New(config.Config{DBPath: filepath.Join(t.TempDir(), "apiplay.db"), CapsFile: caps})
+	// The fixture install pack is loaded as a server loads one (ADR 0147), so
+	// its games are among those listed and played like any other.
+	packs, _ := testdata.DraughtsPack(t)
+	a, err := app.New(config.Config{DBPath: filepath.Join(t.TempDir(), "apiplay.db"), CapsFile: caps, Packs: packs})
 	if err != nil {
 		t.Fatalf("app.New: %v", err)
 	}
@@ -226,6 +231,9 @@ func setUp(t *testing.T) (string, string, []gameDef) {
 	root.must(http.MethodGet, "/game-defs", nil, &defs)
 	if len(defs) == 0 {
 		t.Fatal("GET /game-defs lists no games")
+	}
+	if !slices.ContainsFunc(defs, func(d gameDef) bool { return d.ID == testdata.DraughtsPackSmallID }) {
+		t.Fatalf("GET /game-defs does not list the pack's %s", testdata.DraughtsPackSmallID)
 	}
 	return base, guest.Key, defs
 }

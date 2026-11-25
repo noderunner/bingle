@@ -38,3 +38,31 @@ func (s *Store) GameVersions(ctx context.Context) ([]GameVersion, error) {
 	}
 	return out, rows.Err()
 }
+
+// RecordPackGame notes the name of a game an install pack brought (ADR 0147),
+// so that its games stay readable by it once the pack is gone.
+func (s *Store) RecordPackGame(ctx context.Context, id, name string) error {
+	if _, err := s.exec(ctx, "RecordPackGame", `INSERT INTO pack_games (id, name) VALUES (?, ?)
+		ON CONFLICT (id) DO UPDATE SET name = excluded.name`, id, name); err != nil {
+		return fmt.Errorf("store: record pack game: %w", err)
+	}
+	return nil
+}
+
+// PackGames lists every game install packs have brought, by id, with its name.
+func (s *Store) PackGames(ctx context.Context) (map[string]string, error) {
+	rows, err := s.query(ctx, "PackGames", `SELECT id, name FROM pack_games`)
+	if err != nil {
+		return nil, fmt.Errorf("store: list pack games: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+	out := map[string]string{}
+	for rows.Next() {
+		var id, name string
+		if err := rows.Scan(&id, &name); err != nil {
+			return nil, fmt.Errorf("store: list pack games: %w", err)
+		}
+		out[id] = name
+	}
+	return out, rows.Err()
+}

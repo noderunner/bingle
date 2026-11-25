@@ -6,6 +6,7 @@
 package faulty
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -43,10 +44,18 @@ const (
 	ParseText = "fault "
 )
 
+// Param is the definition's param that makes every Legal of its game ask
+// for that fault, so a pack of these rules fails the trial it is played
+// before it is offered (package pack), with no call asking.
+const Param = "fault"
+
 // PanicText is what a panic says.
 const PanicText = "the fixture was asked to panic"
 
-type rules struct{ guest.Rules }
+type rules struct {
+	guest.Rules
+	always int // the fault of every Legal (Param)
+}
 
 // New makes the draughts rules of g, with the faults.
 func New(g *guest.Game) (guest.Rules, error) {
@@ -54,7 +63,14 @@ func New(g *guest.Game) (guest.Rules, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &rules{r}, nil
+	var def struct {
+		Params map[string]any `json:"params"`
+	}
+	if err := json.Unmarshal(g.Definition, &def); err != nil {
+		return nil, fmt.Errorf("faulty: the definition: %w", err)
+	}
+	always, _ := def.Params[Param].(float64)
+	return &rules{Rules: r, always: int(always)}, nil
 }
 
 var (
@@ -116,6 +132,7 @@ func (r *rules) ImpulseSeat(pos *guest.Position) int {
 }
 
 func (r *rules) Legal(pos *guest.Position, seat int) []guest.Selection {
+	fault(r.always)
 	fault(pos.Counters[Counter])
 	return r.Rules.Legal(clean(pos), seat)
 }

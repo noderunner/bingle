@@ -144,6 +144,9 @@ type Config struct {
 	// (BINGLE_CAPS_FILE, bingle-capabilities.yaml by default; the built-in
 	// defaults when there is no such file).
 	CapsFile string
+	// Packs is a directory of install packs, each a directory of its own,
+	// read once at start-up (BINGLE_PACKS; ADR 0147). Empty means no packs.
+	Packs string
 
 	// HSTSSeconds, when above zero, adds a Strict-Transport-Security header of
 	// that many seconds to HTTPS responses (BINGLE_TLS_HSTS_SECONDS). Off by
@@ -617,6 +620,7 @@ func loadJournal(cfg *Config) error {
 	if v, ok := os.LookupEnv("BINGLE_CAPS_FILE"); ok {
 		cfg.CapsFile = strings.TrimSpace(v)
 	}
+	cfg.Packs = strings.TrimSpace(os.Getenv("BINGLE_PACKS"))
 	cfg.AdminHandle = "admin"
 	if v := strings.TrimSpace(os.Getenv("BINGLE_ADMIN_HANDLE")); v != "" {
 		cfg.AdminHandle = v

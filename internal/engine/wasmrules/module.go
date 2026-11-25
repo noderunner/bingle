@@ -9,6 +9,7 @@ import (
 	"math/rand/v2"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/tetratelabs/wazero"
@@ -42,6 +43,9 @@ type Module struct {
 	idle []*instance
 	live int // instances that exist, idle or at work
 	shut bool
+
+	faults    atomic.Uint64         // instances thrown away, since the module was loaded
+	lastFault atomic.Pointer[error] // why the last of them was
 }
 
 // Rules returns the module as a game's rules.
@@ -79,6 +83,19 @@ func (m *Module) Instances() int {
 	return m.live
 }
 
+// Faults is how many of the module's instances have failed and been thrown
+// away since it was loaded (a trap, a deadline, memory it could not have, a
+// reply that is none), and why the last of them did. A call answered with
+// "nothing" because of one is told apart by it from a call that had nothing
+// to say, which is how a pack's trial game knows its rules failed.
+func (m *Module) Faults() (uint64, error) {
+	n := m.faults.Load()
+	if last := m.lastFault.Load(); last != nil {
+		return n, *last
+	}
+	return n, nil
+}
+
 // instanceError is a failure of the instance that answered, not of the call:
 // a trap, a deadline, memory it could not have, a reply that is none. The
 // instance is thrown away, and the call asked once more of a new one.
@@ -99,6 +116,8 @@ func (m *Module) roundTrip(c call, game *catalog.CompiledGame, req []byte, read 
 		if !errors.As(err, &broken) {
 			return err
 		}
+		m.lastFault.Store(&err)
+		m.faults.Add(1)
 		m.rt.opt.Log.Warn("wasmrules: an instance failed and was thrown away",
 			"pack", m.pack, "call", c.String(), "game", told.id, "try", try, "error", err)
 		if try == 2 {

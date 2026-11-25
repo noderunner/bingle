@@ -203,7 +203,10 @@ func (m *Manager) SetSeatFaction(ctx context.Context, roomCode, by string, seat 
 	if !ok {
 		return StateSnapshot{}, fmt.Errorf("%w: %q", ErrGameDefNotFound, newID)
 	}
-	start := state.InitialState(next)
+	start, err := state.Start(next)
+	if err != nil {
+		return StateSnapshot{}, fmt.Errorf("%w: %s: %v", ErrStartFailed, newID, err)
+	}
 	doc, err := start.MarshalJSON()
 	if err != nil {
 		return StateSnapshot{}, fmt.Errorf("session: marshal initial board state: %w", err)

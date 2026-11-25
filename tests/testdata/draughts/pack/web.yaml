@@ -1,0 +1,9 @@
+# How the web page draws the fixture (ADR 0124). A pack's look is data: no
+# script and no style.
+board:
+  style: squares
+pieces:
+  man: {shape: disc}
+  king: {shape: ring}
+display:
+  no_hands: true

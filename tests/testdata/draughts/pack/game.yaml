@@ -1,0 +1,35 @@
+# The definition of ../draughts.yaml as a pack holds it: no id, family,
+# version or prototype, which the server sets from manifest.yaml, and each
+# variant named after the pack (draughts-6 becomes pack-draughts-0.1.0-6).
+name: Draughts
+description: "A test fixture: English draughts from an install pack, with every jump of a chain a selection of its own."
+engine: ruleset
+rules:
+  - 'Each side has twelve men on the dark squares of its three nearest rows. Black moves first.'
+  - 'A man moves one square diagonally forward. It captures by jumping forward over a piece next to it onto the empty square beyond.'
+  - 'A capture must be made when there is one. A piece that can jump again after a jump must go on, and each jump is chosen in turn.'
+  - 'A man that reaches the far row is crowned a king, which moves and jumps backward as well; its move ends there.'
+  - 'A side that cannot move has lost. After forty moves a side with no capture and no man moved, the game is a draw.'
+params: {rows: 3, quiet: 80}
+board:
+  generator: {type: grid, width: 8, height: 8, adjacency: orthogonal4, labels: algebraic}
+seats:
+  - {seat: 1, color: black, label: Black}
+  - {seat: 2, color: white, label: White}
+pieces:
+  man: {label: Man, code: M}
+  king: {label: King, code: K}
+turn_order:
+  type: round-robin
+  seats: [1, 2]
+win_condition: {type: ruleset}
+guide:
+  tabs:
+    - {id: rules, title: Rules, file: rules.md}
+variants:
+  - id: draughts-6
+    name: Draughts (6×6)
+    patch:
+      params: {rows: 2, quiet: 40}
+      board:
+        generator: {width: 6, height: 6}

@@ -185,10 +185,13 @@ zertz/
 - **Names and versions are ADR 0128's.** The family is `pack-<name>`, each version is a game of its own
   `pack-<name>-<version>` with variants `pack-<name>-<version>-<word>` (ADR 0098), and the family's name means the
   newest. The loader sets `id`, `family`, `version` and `prototype` from the manifest and refuses a definition that
-  sets them. A pack's game is a prototype, so it is not rated. No built-in game may use the prefix, and
+  sets them. A variant is named `<name>-<word>` in `game.yaml` and `web.yaml`, as ADR 0128 had it (phase 2). A pack's game is a prototype, so it is not rated. No built-in game may use the prefix, and
   `tests/registry` holds that.
 - **Two versions can sit side by side** as two directories. New games use the newest, and a game in progress
   finishes on the rules it started with.
+- **The guide is the game's files**, rooted at `guide/` as a built-in game's guide folder is, so a definition and a
+  look name a file by its path inside it. Nothing else of the pack is served: not its manifest, definition, look
+  or rules (phase 2).
 - **A pack can carry no page script, and no look's `script` or `style`.** What it draws is what the page already
   draws (ADR 0128's checks, below). A game that needs its own drawing still needs a build.
 
@@ -243,7 +246,9 @@ every game shares and fetches the rest.
   far too long is refused. A client's folder gets the checks of *Every client's files*.
 - **A pack that fails is logged with its reason and left out.** The server starts without it.
 - **A pack that was there and is gone** leaves its games as a retired game's (ADR 0076). They stay readable, and
-  nothing new is started.
+  nothing new is started. **Its unfinished games are not ended** (settled in phase 2), unlike a retired game's: a
+  pack may be back at the next start, after a fix or a rebuild for a new ABI, and its games then play on. The
+  server keeps each pack game's name for this (`pack_games`).
 
 ### The questions #294 left open, with recommended answers
 
@@ -382,3 +387,19 @@ folder. To drop both removes the pack loader and `BINGLE_PACKS` too, and marks t
   - **Open, for phase 2**: `state.InitialState` turns a start that fails into an empty position, on the ground
     that a registered ruleset's start cannot fail. A module's can (a deadline under load). The session should
     refuse to create the game instead.
+- 2026-11-25, **phase 2** (#297): packs load from `BINGLE_PACKS` at start-up (`internal/pack`, documented in
+  [docs/packs.md](../packs.md)). Each is read through an `os.Root` confined to its directory, checked, played a
+  trial game and registered beside the built-in modules. What it settled is marked above: a variant's name in a
+  pack, the guide as the game's files, and a gone pack's unfinished games left as they stand.
+  - **The checks** are ADR 0128's, kept as its reader had them where a directory needs the same: the limits per
+    file (8 MiB), in all (40 MiB) and on the number of files (300), with `rules.wasm` allowed 64 MiB apart; text
+    and pictures sniffed; colours held to a colour's form; a look with no `script` or `style`; at most 64
+    variants and 1 MiB of definition. A directory adds no link anywhere, and no file or folder beside those of the
+    layout. Names starting with a dot (`.git`, `.DS_Store`) are neither read nor served.
+  - **The trial** is 300 random selections from a fixed seed within ten seconds. A call into a module that fails
+    answers with nothing rather than an error (*Instances and failures*), so the trial reads the module's count of
+    thrown-away instances (`Module.Faults`) to tell rules that failed from rules with nothing to offer.
+  - **A start that fails** now fails the game's creation (`state.Start`, `session.ErrStartFailed`, a 500), which
+    closes phase 1's open point.
+  - **Nothing new in the API**: a pack's game is listed with `prototype` and, from `private: true`, `private`,
+    which the API already sent.

@@ -1,0 +1,6 @@
+# The Draughts fixture as an install pack (ADR 0147, docs/packs.md). The tests
+# copy this folder and build rules.wasm into the copy from ../wasm, so no
+# module is committed.
+name: draughts
+version: 0.1.0
+abi: 0

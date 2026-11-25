@@ -20,6 +20,7 @@ import (
 	"github.com/noderunner/bingle/internal/bots"
 	"github.com/noderunner/bingle/internal/config"
 	"github.com/noderunner/bingle/internal/engine/catalog"
+	"github.com/noderunner/bingle/internal/engine/wasmrules"
 	"github.com/noderunner/bingle/internal/envs"
 	_ "github.com/noderunner/bingle/internal/games/all" // every game this repository ships; build tags leave one out
 	"github.com/noderunner/bingle/internal/games/registry"
@@ -28,6 +29,7 @@ import (
 	"github.com/noderunner/bingle/internal/mail"
 	"github.com/noderunner/bingle/internal/mcpserver"
 	"github.com/noderunner/bingle/internal/metrics"
+	"github.com/noderunner/bingle/internal/pack"
 	"github.com/noderunner/bingle/internal/repro"
 	"github.com/noderunner/bingle/internal/session"
 	"github.com/noderunner/bingle/internal/store"
@@ -74,6 +76,10 @@ type App struct {
 	// translator is the chat's translation service, nil when none is set up
 	// (ADR 0143).
 	translator *translate.Service
+	// wasm runs the rules of the packs loaded from BINGLE_PACKS (ADR 0147),
+	// and is nil without them.
+	wasm  *wasmrules.Runtime
+	packs []*pack.Pack
 }
 
 // WithTransport tells the App how to read a request's peer address: behind a
@@ -156,6 +162,17 @@ func New(cfg config.Config, opts ...Option) (*App, error) {
 			return nil, fmt.Errorf("app: registering %q: %w", mod.ID, err)
 		}
 	}
+	if err := a.loadPacks(cfg.Packs, cat); err != nil {
+		_ = st.Close()
+		return nil, err
+	}
+	// The packs' rules go with the store on any error from here on.
+	started := false
+	defer func() {
+		if !started {
+			a.closeWasm()
+		}
+	}()
 
 	if err := recordGameVersions(st, cat); err != nil {
 		_ = st.Close()
@@ -195,6 +212,13 @@ func New(cfg config.Config, opts ...Option) (*App, error) {
 		return nil, err
 	} else if n > 0 {
 		a.log.Info("ended the unfinished games of retired games", "games", n, "retired", cat.RetiredIDs())
+	}
+	// A pack that is gone leaves its games as records, after the retired
+	// games have been ended: its unfinished games wait for it rather than
+	// end, since a pack may be back at the next start (ADR 0147).
+	if err := a.retireGonePacks(st, cat); err != nil {
+		_ = st.Close()
+		return nil, err
 	}
 
 	manager := session.NewManager(st, cat)
@@ -291,6 +315,7 @@ func New(cfg config.Config, opts ...Option) (*App, error) {
 	}
 
 	a.router = a.newRouter()
+	started = true
 	return a, nil
 }
 
@@ -365,6 +390,74 @@ func enableTranslate(cfg config.Translate, mx *metrics.Metrics, lg *slog.Logger)
 	}
 	lg.Info("translate: chat translation is on", "api", cfg.API, "model", cfg.Model, "workers", cfg.Workers, "timeout", cfg.Timeout)
 	return svc, nil
+}
+
+// loadPacks registers the install packs in dir (BINGLE_PACKS, ADR 0147). A
+// pack that fails a check, or cannot be registered, is logged and left out,
+// and the server starts without it. Only a runtime that cannot be made at all
+// stops it.
+func (a *App) loadPacks(dir string, cat *catalog.Catalog) error {
+	if dir == "" {
+		return nil
+	}
+	ctx := context.Background()
+	rt, err := wasmrules.New(ctx, wasmrules.Options{Log: a.log})
+	if err != nil {
+		return fmt.Errorf("app: packs: %w", err)
+	}
+	a.wasm = rt
+	packs, err := pack.Load(ctx, rt, dir, a.log)
+	if err != nil {
+		a.log.Error("pack: no packs loaded", "error", err)
+	}
+	for _, p := range packs {
+		if err := cat.RegisterModule(p.Module); err != nil {
+			a.log.Error("pack: left out", "dir", p.Dir, "error", err)
+			_ = p.Close(ctx)
+			continue
+		}
+		a.packs = append(a.packs, p)
+	}
+	return nil
+}
+
+// retireGonePacks notes the name of every game the packs brought, and
+// retires those whose pack is no longer loaded, so their games stay
+// readable (ADR 0076). Their unfinished games are not ended.
+func (a *App) retireGonePacks(st *store.Store, cat *catalog.Catalog) error {
+	ctx := context.Background()
+	for _, p := range a.packs {
+		for _, id := range p.Games {
+			cg, _ := cat.Get(id)
+			if err := st.RecordPackGame(ctx, id, cg.Definition.Title()); err != nil {
+				return fmt.Errorf("app: %w", err)
+			}
+		}
+	}
+	known, err := st.PackGames(ctx)
+	if err != nil {
+		return fmt.Errorf("app: %w", err)
+	}
+	var gone []string
+	for id, name := range known {
+		if _, loaded := cat.Get(id); !loaded {
+			cat.Retire(id, name)
+			gone = append(gone, id)
+		}
+	}
+	if len(gone) > 0 {
+		slices.Sort(gone)
+		a.log.Info("pack: the games of packs that are gone are kept as records", "games", gone)
+	}
+	return nil
+}
+
+// closeWasm closes the packs' rules.
+func (a *App) closeWasm() {
+	if a.wasm != nil {
+		_ = a.wasm.Close(context.Background())
+		a.wasm = nil
+	}
 }
 
 // RetiredGames are the games bingle used to ship and no longer does. Games of
@@ -470,6 +563,7 @@ func (a *App) Close() error {
 	if a.translator != nil {
 		a.translator.Close()
 	}
+	a.closeWasm()
 	return a.store.Close()
 }
 

@@ -43,6 +43,8 @@ func main() {
 	fmt.Println("Generated from the registered definitions by `go run scripts/gendocs/main.go`;")
 	fmt.Println("each game is one definition under `internal/games`. See [dsl.md](dsl.md) for the")
 	fmt.Println("vocabulary and [mcp.md](mcp.md) for the training side (planes, action IDs).")
+	fmt.Println("A server also offers the games of the install packs it is given (`BINGLE_PACKS`,")
+	fmt.Println("[packs.md](packs.md)), each `pack-<name>-<version>`, which are not listed here.")
 	fmt.Println()
 	fmt.Println("| Game | Version | Board | Seats | Actions | Ends by | Variants |")
 	fmt.Println("|---|---|---|---|---|---|---|")
