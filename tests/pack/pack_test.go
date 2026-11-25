@@ -6,6 +6,7 @@ package pack_test
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -15,6 +16,7 @@ import (
 	"testing"
 
 	"github.com/noderunner/bingle/internal/engine/catalog"
+	"github.com/noderunner/bingle/internal/engine/dsl"
 	"github.com/noderunner/bingle/internal/engine/wasmrules"
 	"github.com/noderunner/bingle/internal/pack"
 	"github.com/noderunner/bingle/tests/testdata"
@@ -180,6 +182,13 @@ func TestABadPackIsRefused(t *testing.T) {
 		{"a file over the limit", func(t *testing.T, dir string) {
 			write(t, dir, "guide/rules.md", strings.Repeat("x", pack.MaxFileBytes+1))
 		}, "over"},
+		{"too many variants", func(t *testing.T, dir string) {
+			var more strings.Builder
+			for i := range dsl.MaxVariants {
+				fmt.Fprintf(&more, "  - {id: draughts-v%d, name: V%d, patch: {}}\n", i, i)
+			}
+			edit(t, dir, "game.yaml", "variants:\n", "variants:\n"+more.String())
+		}, "over the limit"},
 		{"a guide tab with no file", func(t *testing.T, dir string) { _ = os.Remove(filepath.Join(dir, "guide", "rules.md")) }, "rules.md"},
 		{"rules that panic", func(t *testing.T, dir string) {
 			testdata.WriteRules(t, dir, testdata.FaultyWasm)

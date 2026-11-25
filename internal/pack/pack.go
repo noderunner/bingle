@@ -69,10 +69,9 @@ const (
 	MaxRulesBytes = 64 << 20 // rules.wasm
 	MaxTotalBytes = 40 << 20 // every file but rules.wasm
 	MaxFiles      = 300
-	// MaxDefinitionBytes limits the definition with its aliases expanded,
-	// and MaxVariants its variants: each is a whole copy of it.
+	// MaxDefinitionBytes limits the definition with its aliases expanded
+	// (dsl.MaxVariants limits its variants).
 	MaxDefinitionBytes = 1 << 20
-	MaxVariants        = 64
 	maxNameLen         = 40
 )
 
@@ -454,8 +453,8 @@ func readDefinition(files fs.FS, p *Pack) ([]byte, [][]byte, error) {
 	// the version too.
 	doc["id"], doc["family"], doc["version"], doc["prototype"] = p.Home, p.Family, p.Version, true
 	if vs, ok := doc["variants"].([]any); ok {
-		if len(vs) > MaxVariants {
-			return nil, nil, fmt.Errorf("%s: %d variants, over the limit of %d", DefinitionFile, len(vs), MaxVariants)
+		if len(vs) > dsl.MaxVariants {
+			return nil, nil, fmt.Errorf("%s: %d variants, over the limit of %d", DefinitionFile, len(vs), dsl.MaxVariants)
 		}
 		for _, v := range vs {
 			m, _ := v.(map[string]any)
