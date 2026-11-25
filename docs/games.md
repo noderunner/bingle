@@ -3,6 +3,8 @@
 Generated from the registered definitions by `go run scripts/gendocs/main.go`;
 each game is one definition under `internal/games`. See [dsl.md](dsl.md) for the
 vocabulary and [mcp.md](mcp.md) for the training side (planes, action IDs).
+A server also offers the games of the install packs it is given (`BINGLE_PACKS`,
+[packs.md](packs.md)), each `pack-<name>-<version>`, which are not listed here.
 
 | Game | Version | Board | Seats | Actions | Ends by | Variants |
 |---|---|---|---|---|---|---|

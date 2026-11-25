@@ -205,7 +205,11 @@ func TestMetrics_SeriesCountOfAFreshServerIsUnderTheCeiling(t *testing.T) {
 	// Raised to 400 with retiring games (ADR 0076): every start ends the
 	// unfinished games of retired ones, one more statement's histogram (24
 	// series; 344 before, 368 after).
-	const ceiling = 400
+	// Raised to 450 with install packs (ADR 0147): every start reads the games
+	// packs have brought, so that those of a pack that is gone stay readable
+	// even with BINGLE_PACKS unset, one more statement's histogram (24 series;
+	// 395 before, 419 after).
+	const ceiling = 450
 
 	_, scrape := newMeasuredServer(t)
 	got := seriesCount(scrape())

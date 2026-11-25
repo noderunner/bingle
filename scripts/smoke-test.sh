@@ -21,10 +21,19 @@ export BINGLE_METRICS_ADDR="127.0.0.1:$((PORT + 1))"
 
 go build -o "${WORKDIR}/bingle" .
 
+# An install pack (ADR 0147, docs/packs.md): the Draughts fixture, with its
+# rules built as a module, the way a pack's maker builds one.
+export BINGLE_PACKS="${WORKDIR}/packs"
+mkdir -p "${BINGLE_PACKS}"
+cp -R tests/testdata/draughts/pack "${BINGLE_PACKS}/draughts"
+GOOS=wasip1 GOARCH=wasm CGO_ENABLED=0 go build -buildmode=c-shared -trimpath \
+  -o "${BINGLE_PACKS}/draughts/rules.wasm" ./tests/testdata/draughts/wasm
+
 "${WORKDIR}/bingle" &
 PID=$!
 
-for i in $(seq 1 20); do
+# Up to twenty seconds: the pack's module is compiled at start-up.
+for i in $(seq 1 80); do
   if curl -fsS "http://127.0.0.1:${PORT}/healthz" -o "${WORKDIR}/response.json" 2>/dev/null; then
     break
   fi
@@ -97,4 +106,29 @@ if ! grep -q '"notation"' "${WORKDIR}/hint.json"; then
   exit 1
 fi
 
-echo "smoke test PASSED: catalog, game creation vs a bot, a move with a bot reply, static assets, puzzles, environments and hints"
+# The pack's game is offered, and played against a bot like any other.
+curl -fsS "http://127.0.0.1:${PORT}/api/game-defs" -o "${WORKDIR}/defs.json"
+if ! grep -q '"pack-draughts-0.1.0"' "${WORKDIR}/defs.json"; then
+  echo "smoke test FAILED: the pack's game is not offered"
+  exit 1
+fi
+PACKCODE=$(curl -fsS -X POST "http://127.0.0.1:${PORT}/api/games" \
+  -H 'Content-Type: application/json' \
+  -d '{"game_def_id":"pack-draughts-0.1.0","player_name":"Smoke","opponent":"random"}' |
+  sed -n 's/.*"room_code":"\([A-Z0-9]*\)".*/\1/p')
+if [ -z "${PACKCODE}" ]; then
+  echo "smoke test FAILED: could not create a game of the pack against a bot"
+  exit 1
+fi
+FIRST=$(curl -fsS "http://127.0.0.1:${PORT}/api/games/${PACKCODE}/selections" |
+  grep -o '"notation":"[^"]*"' | head -n 1 | sed 's/"notation":"\(.*\)"/\1/')
+curl -fsS -X POST "http://127.0.0.1:${PORT}/api/games/${PACKCODE}/moves" \
+  -H 'Content-Type: application/json' \
+  -d "{\"player_name\":\"Smoke\",\"notation\":\"${FIRST}\"}" -o "${WORKDIR}/packmove.json"
+if ! grep -q '"bot_moves"' "${WORKDIR}/packmove.json"; then
+  echo "smoke test FAILED: the bot did not reply in the pack's game"
+  cat "${WORKDIR}/packmove.json"
+  exit 1
+fi
+
+echo "smoke test PASSED: catalog, game creation vs a bot, a move with a bot reply, static assets, puzzles, environments, hints and an install pack"

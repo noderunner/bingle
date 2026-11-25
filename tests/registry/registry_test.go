@@ -12,6 +12,7 @@ import (
 	"github.com/noderunner/bingle/internal/app"
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/games/registry"
+	"github.com/noderunner/bingle/internal/pack"
 )
 
 var shipped = []string{"blooms", "chess", "classics", "courtfall", "fendo", "fist", "meridians", "mycelium", "solitaire", "tak"}
@@ -39,6 +40,24 @@ func TestEveryFamilyIsRegistered(t *testing.T) {
 	for _, id := range []string{"tak-5x5", "bowling-solitaire", "go-9x9", "courtfall-1.0.0"} {
 		if !seen[id] {
 			t.Errorf("no module %s", id)
+		}
+	}
+}
+
+// The prefix is the install packs', so a pack can never shadow a built-in
+// game, a variant of one or its family (ADR 0147).
+func TestNoBuiltInGameHasThePrefixOfAPack(t *testing.T) {
+	cat := catalog.NewCatalog()
+	for _, m := range app.BuiltinModules() {
+		if err := cat.RegisterModule(m); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, cg := range cat.List() {
+		for _, id := range []string{cg.Definition.ID, cg.Definition.Family} {
+			if strings.HasPrefix(id, pack.Prefix) {
+				t.Errorf("the built-in game %s has the prefix of a pack", id)
+			}
 		}
 	}
 }

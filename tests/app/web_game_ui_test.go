@@ -53,7 +53,7 @@ func openGameAs(t *testing.T, ctx context.Context, baseURL, room, def, name stri
 // their way through a game and are about something else; TestWebSubmit_* is about
 // the setting. A test file of the private overlay adds its own games here.
 var unconfirmed = map[string]bool{
-	"blooms": true, "chess": true, "courtfall": true, "fendo": true, "fist": true, "meridians": true, "mycelium": true,
+	"blooms": true, "chess": true, "courtfall": true, "fendo": true, "fist": true, "meridians": true, "mycelium": true, "pack": true,
 }
 
 // confirmSetting is the "Confirm moves" setting a test opens a game with.

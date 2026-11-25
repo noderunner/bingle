@@ -200,6 +200,14 @@ CREATE TABLE IF NOT EXISTS game_versions (
     PRIMARY KEY (family, version)
 );
 
+-- The games install packs have brought (ADR 0147), by id, with the name each
+-- had when its pack last loaded. A pack that is gone leaves its games readable
+-- as a retired game's, by this name (ADR 0076).
+CREATE TABLE IF NOT EXISTS pack_games (
+    id    TEXT PRIMARY KEY,
+    name  TEXT NOT NULL
+);
+
 -- Whoever acts: a guest, or (later) an account (ADR 0067). The ID is the
 -- server's own name for them and is never shown; a guest proves it is one with
 -- a key, below. merged_into is set when a guest's key was adopted by another

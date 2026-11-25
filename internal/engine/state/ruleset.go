@@ -477,6 +477,17 @@ func Guarded(game *catalog.CompiledGame) bool {
 	return IsRuleset(game) || deals(game)
 }
 
+// Start is InitialState for a new game, which says when a ruleset could not
+// start it rather than giving an empty position: rules run from a module can
+// fail where rules linked in cannot (a deadline under load, ADR 0147), and a
+// game is then not made at all.
+func Start(game *catalog.CompiledGame) (*BoardState, error) {
+	if rs, ok := RulesetOf(game); ok {
+		return rs.Start(game, randomSeed())
+	}
+	return InitialState(game), nil
+}
+
 // InitialStateSeeded is InitialState for a ruleset game with its chance
 // seeded by seed; for declarative games the seed is ignored.
 func InitialStateSeeded(game *catalog.CompiledGame, seed uint64) (*BoardState, error) {

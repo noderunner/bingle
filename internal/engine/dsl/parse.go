@@ -87,6 +87,11 @@ func missingFieldError(field string) error {
 	return fmt.Errorf("dsl: game definition missing required field %q", field)
 }
 
+// MaxVariants is how many variants one definition may declare. Each is a
+// whole copy of the document, and a definition may come from an install pack
+// (ADR 0147), so their number is a limit and not a matter of trust.
+const MaxVariants = 64
+
 // ExpandVariants turns one document that may carry a "variants" array into
 // the complete, standalone definition documents it stands for: the base
 // document first (with its "variants" key removed), followed by one
@@ -113,6 +118,10 @@ func ExpandVariants(data []byte) ([][]byte, error) {
 	}
 	if err := json.Unmarshal(vbytes, &variants); err != nil {
 		return nil, fmt.Errorf("dsl: expand variants: %w", err)
+	}
+
+	if len(variants) > MaxVariants {
+		return nil, fmt.Errorf("dsl: expand variants: %d variants, over the limit of %d", len(variants), MaxVariants)
 	}
 
 	delete(base, "variants")

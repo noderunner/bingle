@@ -55,10 +55,11 @@ func statusForError(err error) int {
 		return http.StatusTooManyRequests
 	case errors.Is(err, session.ErrGameRetired):
 		return http.StatusGone
-	case errors.Is(err, session.ErrRulesetPanic):
-		// A ruleset that panicked is the server's fault, not the client's:
-		// the move may well have been perfectly legal. A repro bundle will
-		// have been written if BINGLE_DEBUG_DIR is set.
+	case errors.Is(err, session.ErrRulesetPanic), errors.Is(err, session.ErrStartFailed):
+		// A ruleset that panicked, or could not start a game, is the
+		// server's fault, not the client's: the move may well have been
+		// perfectly legal. A repro bundle will have been written for a panic
+		// if BINGLE_DEBUG_DIR is set.
 		return http.StatusInternalServerError
 	default:
 		return http.StatusBadRequest

@@ -128,8 +128,11 @@ Served by the same binary as static assets plus lightweight JS (no SPA build pip
   deadline on every call) with a pool of instances, on
   [wazero](https://github.com/tetratelabs/wazero). A module is written
   against `wasmrules/guest`, which imports nothing of the engine, and
-  `wasmrules.Native` links the same rules into the binary. Nothing loads a
-  module yet: packs are the next phase.
+  `wasmrules.Native` links the same rules into the binary. `internal/pack`
+  reads the install packs in `BINGLE_PACKS` at start-up (a definition, a
+  look, a guide and such a module per directory), checks each as hostile,
+  plays it a trial game and hands `internal/app` a `catalog.Module` for each
+  ([packs.md](packs.md)).
 * **Games** (`internal/games`): `tak` (3×3–8×8 from one YAML
   definition), `classics` (Gomoku, Hex, Draughts,
   Breakthrough, Reversi, Go, Yavalath, Havannah, Amazons, Ataxx, Pente,
