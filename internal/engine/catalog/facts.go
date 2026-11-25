@@ -3,6 +3,7 @@ package catalog
 import (
 	"fmt"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/noderunner/bingle/internal/badges"
 	"github.com/noderunner/bingle/internal/engine/dsl"
@@ -37,6 +38,37 @@ func checkBadges(def *dsl.GameDefinition) error {
 		return fmt.Errorf("catalog: %w", err)
 	}
 	return nil
+}
+
+// MaxEndingWords is the most a game's words for one of its endings may run to.
+const MaxEndingWords = 120
+
+// checkEndings checks the words of a game's own endings: each reason, or
+// reason:detail, a name of lower-case letters, digits, dashes and
+// underscores, and each worded in a few words on one line.
+func checkEndings(def *dsl.GameDefinition) error {
+	for key, words := range def.Endings {
+		reason, detail, hasDetail := strings.Cut(key, ":")
+		if !endingName(reason) || hasDetail && !endingName(detail) {
+			return fmt.Errorf("catalog: endings: %q is not a reason, or a reason and a detail as reason:detail", key)
+		}
+		if strings.TrimSpace(words) == "" || utf8.RuneCountInString(words) > MaxEndingWords || strings.ContainsAny(words, "\r\n") {
+			return fmt.Errorf("catalog: endings: %q needs a few words on one line, at most %d characters", key, MaxEndingWords)
+		}
+	}
+	return nil
+}
+
+func endingName(s string) bool {
+	if s == "" {
+		return false
+	}
+	for _, c := range s {
+		if c != '-' && c != '_' && (c < 'a' || c > 'z') && (c < '0' || c > '9') {
+			return false
+		}
+	}
+	return true
 }
 
 // factDeclared checks that name, when set, is one of the game's facts.

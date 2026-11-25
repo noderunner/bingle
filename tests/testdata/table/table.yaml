@@ -45,3 +45,6 @@ win_condition:
       when: [no-legal-moves]
       decide: {type: most, piece: ring}
       reason: count
+# How the game's own ending is worded (ADR 0150): after "won" or "a draw".
+endings:
+  count: on rings

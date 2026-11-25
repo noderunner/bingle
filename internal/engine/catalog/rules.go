@@ -36,6 +36,9 @@ func compileRules(cg *CompiledGame) error {
 	if err := checkBadges(def); err != nil {
 		return err
 	}
+	if err := checkEndings(def); err != nil {
+		return err
+	}
 
 	if def.Engine == "ruleset" {
 		// A ruleset owns moves, opening and scoring; the document only

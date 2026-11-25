@@ -24,14 +24,18 @@ type GameInfo struct {
 	Version   string `json:"version,omitempty"`
 	Prototype bool   `json:"prototype,omitempty"`
 	// Private marks a game built from the private overlay (ADR 0140).
-	Private     bool         `json:"private,omitempty"`
-	Rules       []string     `json:"rules,omitempty"`
-	Notation    string       `json:"notation"`
-	NotationDoc []string     `json:"notation_help,omitempty"`
-	Seats       []SeatDefDTO `json:"seats"`
-	Board       BoardDTO     `json:"board"`
-	Pieces      []PieceDTO   `json:"pieces"`
-	Pools       []PoolDTO    `json:"pools,omitempty"`
+	Private bool     `json:"private,omitempty"`
+	Rules   []string `json:"rules,omitempty"`
+	// Endings word the game's own end reasons (ADR 0150): a reason, or
+	// reason:detail, as the words that follow "won" or "a draw". The
+	// platform's own reasons are not here: every client words those.
+	Endings     map[string]string `json:"endings,omitempty"`
+	Notation    string            `json:"notation"`
+	NotationDoc []string          `json:"notation_help,omitempty"`
+	Seats       []SeatDefDTO      `json:"seats"`
+	Board       BoardDTO          `json:"board"`
+	Pieces      []PieceDTO        `json:"pieces"`
+	Pools       []PoolDTO         `json:"pools,omitempty"`
 	// Cards describes the suits, card types and zones of a card game.
 	Cards *CardsDTO `json:"cards,omitempty"`
 	// Counters are reserve pools that hold no pieces, only a number per
@@ -274,6 +278,7 @@ func buildGameInfo(cg *catalog.CompiledGame) GameInfo {
 		Prototype:   def.Prototype,
 		Private:     cg.Private,
 		Rules:       def.Rules,
+		Endings:     def.Endings,
 		Notation:    notation,
 		NotationDoc: notationHelp(cg),
 		Reserves:    def.Reserves,
