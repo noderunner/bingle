@@ -4,7 +4,7 @@
 // turn notifications. See docs/ui.md for the interaction model.
 
 import { FAIR_PLAY, ratingText } from "./ratings.js";
-import { h, s, clear, store, rememberGame, nameFor, lastName, ago, titleCase, toast, setTurnBadge, reconnectDelay, brandName } from "./util.js";
+import { h, s, clear, store, rememberGame, nameFor, lastName, ago, titleCase, toast, setTurnBadge, reconnectDelay, brandName, gameEnding } from "./util.js";
 import { api, ApiError, gameTitle } from "./api.js";
 import { MoveBuilder } from "./builder.js";
 import { renderBoard, pieceIcon, cssColor, hasHexStyles, defaultHexStyle } from "./render.js";
@@ -3388,8 +3388,10 @@ function resultMessage() {
 	};
 	// Words that follow the result ("won on time"), after a space in a language that has them.
 	const gap = /^(zh|ja)/.test(lang) ? "" : " ";
-	const how = g.end_reason ? `${gap}${reasons[g.end_reason] || "(" + g.end_reason + ")"}` : "";
-	const detail = g.end_detail ? ` [${g.end_detail}]` : "";
+	// A reason the page does not word is the game's own, in the words of its definition.
+	const own = g.end_reason in reasons ? null : gameEnding(S.info.endings, g.end_reason, g.end_detail);
+	const how = g.end_reason ? `${gap}${(own ? own.words : reasons[g.end_reason]) || "(" + g.end_reason + ")"}` : "";
+	const detail = g.end_detail && !(own && own.saysDetail) ? ` [${g.end_detail}]` : "";
 	if (playingAlone() && (g.winner_seat === null || g.winner_seat === undefined)) {
 		if (g.end_reason === "resignation") return tr("end.you_gave_up");
 		if (g.end_reason === "stuck") return tr("end.no_move_left", { detail });

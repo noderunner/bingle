@@ -63,7 +63,8 @@ An ordinary definition ([dsl.md](dsl.md)) with `engine: ruleset`, but
 - A pack's game is a prototype, so it is not rated.
 
 It may have no callbacks, no `callback` win condition and no setup `options` (use variants), and at
-most 64 variants.
+most 64 variants. Its rules' own end reasons are worded in its `endings` (see [dsl.md](dsl.md), *win_condition*), since a pack has no
+page script to word them.
 
 ### web.yaml
 

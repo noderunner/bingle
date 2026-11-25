@@ -577,6 +577,18 @@ Rules are evaluated in order after every move; the first that fires decides.
   `no-legal-moves` + `mover-wins` (draughts).
 * `reason` is stored as the game's `end_reason`.
 
+**Endings.** A reason of the game's own (not the platform's: a resignation, a timeout,
+no moves, a line, five in a row) is worded in the definition's `endings`, as the words that follow "won" or
+"a draw", and the API sends them in the game's info ([ADR 0150](decisions/0150-a-games-own-endings-are-worded-in-its-definition.md)).
+A key `reason:detail` words one detail of a reason, and says it: the page then shows no detail after it. Any game
+may have them, a Go ruleset's or a pack's as well:
+
+```yaml
+endings:
+  count: on rings                         # "White won on rings", "a draw on rings"
+  marbles:white: with four white marbles  # the reason marbles, with the detail white
+```
+
 `"type": "none"` means free play (no win condition); `"type": "callback"` defers to a
 Go `GameCallbacks.CheckWinner` for rules a definition cannot express.
 

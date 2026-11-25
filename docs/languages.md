@@ -94,8 +94,8 @@ that each translation puts in the same values and has the same markup as English
   window's own tabs (Controls, Key, search) and the options window's frame. A game's rules guide is its own (#253).
 - The play area (`game.*`, `end.*`): whose turn it is and what they are asked, the players' strips, the banners
   (draws, slow turns, votes, hints), the status bar and how a game ended, analysis and its dialogs, and the
-  phone's pages. A game's own words in these (its seats, pieces, actions and page script) stay as the game has
-  them. A message names its players inside `<bdi translate="no">` (`withSeatWords`), so no language touches them.
+  phone's pages. A game's own words in these (its seats, pieces, actions, endings and page script) stay as the
+  game has them. A message names its players inside `<bdi translate="no">` (`withSeatWords`), so no language touches them.
 - The rest of the game page: the move bar (`move.*`), when to be asked about a reaction (`react.*`), the
   Auto-Play Timeout (`autoplay.*`), the history and the list of moves (`hist.*`), the options window's sections
   (`options.*`) and the tutorial's card. The lines of the log are the game's own, as are a tutorial's lessons and

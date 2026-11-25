@@ -49,6 +49,13 @@ type GameDefinition struct {
 	// Rules is human-readable rules text, one paragraph per element,
 	// shown in the UI and served to AI clients by the get_rules tool.
 	Rules []string `json:"rules,omitempty"`
+	// Endings word the game's own end reasons, the ones its rules report
+	// beyond the platform's (a resignation, a timeout, no moves): each reason
+	// as the words that follow "won" or "a draw" ("with four white
+	// marbles"). A key "reason:detail" words one detail of a reason, and
+	// stands for the reason and its detail together. Like the rest of a
+	// game's own words they are the game's, in its language (ADR 0150).
+	Endings map[string]string `json:"endings,omitempty"`
 
 	Board Board     `json:"board"`
 	Seats []SeatDef `json:"seats"`

@@ -269,3 +269,15 @@ export function reconnectDelay(retry, realTime) {
 	const wait = 700 * 2 ** retry;
 	return realTime ? Math.min(wait, 3000) : wait;
 }
+
+/**
+ * A game's own words for how it ended (ADR 0150), from the endings of its
+ * info: its words for the reason and this detail of it, which then say the
+ * detail too, else its words for the reason alone. Null when it has none.
+ */
+export function gameEnding(endings, reason, detail) {
+	if (!endings || !reason) return null;
+	const both = detail ? endings[`${reason}:${detail}`] : undefined;
+	if (both) return { words: both, saysDetail: true };
+	return endings[reason] ? { words: endings[reason], saysDetail: false } : null;
+}

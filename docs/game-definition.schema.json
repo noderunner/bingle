@@ -884,6 +884,13 @@
           },
           "type": "array"
         },
+        "endings": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Endings word the game's own end reasons, the ones its rules report beyond the platform's (a resignation, a timeout, no moves): each reason as the words that follow \"won\" or \"a draw\" (\"with four white marbles\"). A key \"reason:detail\" words one detail of a reason, and stands for the reason and its detail together. Like the rest of a game's own words they are the game's, in its language (ADR 0150).",
+          "type": "object"
+        },
         "engine": {
           "description": "Engine says who implements the rules: \"\" (the declarative actions and win rules of this document) or \"ruleset\" (a Go ruleset registered with the module takes over move generation, validation and scoring; the document still describes the board, seats, pieces and display).",
           "type": "string"
