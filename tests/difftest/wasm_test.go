@@ -69,11 +69,19 @@ func TestRulesAgreeNativelyAndThroughWasm(t *testing.T) {
 		"encoded": draughtsGames(t, wasmrules.Encoded(draughts.New)),
 		"wasm":    draughtsGames(t, mod.Rules()),
 	}
+	// And the module as TinyGo builds it, where there is a TinyGo.
+	if _, ok := testdata.TinyGo(); ok {
+		tiny, err := rt.Load(ctx, "draughts-tinygo", testdata.BuildWasmTinyGo(t, testdata.DraughtsWasm))
+		if err != nil {
+			t.Fatal(err)
+		}
+		candidates["wasm-tinygo"] = draughtsGames(t, tiny.Rules())
+	}
 	for name, games := range candidates {
 		// A call into the module takes about a millisecond, so it plays fewer
 		// games than the JSON alone does.
 		opt := difftest.Options{Games: 12, Plies: 400, Sample: 4, Seed: 1 << 60}
-		if name == "wasm" {
+		if name != "encoded" {
 			opt.Games = 5
 		}
 		if testing.Short() {

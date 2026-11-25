@@ -109,8 +109,22 @@ func TestTheSearchInsideTheModuleIsDeterministic(t *testing.T) {
 // A search keeps to its budget and to its context's deadline, and answers.
 // Cancelled, it stops at once, and the module plays on without counting a
 // fault.
+//
+// A module built with TinyGo is asked too, where there is a TinyGo: its
+// runtime reads the wall clock where Go's reads the monotonic one, so both
+// run while a search does.
 func TestTheSearchInsideTheModuleStopsInTime(t *testing.T) {
-	mod := load(t, newRuntime(t, wasmrules.Options{Instances: 1}), testdata.DraughtsWasm)
+	builds := map[string]func(testing.TB, string, ...string) []byte{"Go": testdata.BuildWasm, "TinyGo": testdata.BuildWasmTinyGo}
+	for name, build := range builds {
+		t.Run(name, func(t *testing.T) { searchStopsInTime(t, build(t, testdata.DraughtsWasm)) })
+	}
+}
+
+func searchStopsInTime(t *testing.T, wasm []byte) {
+	mod, err := newRuntime(t, wasmrules.Options{Instances: 1}).Load(context.Background(), "fixture", wasm)
+	if err != nil {
+		t.Fatal(err)
+	}
 	game := games(t, mod.Rules())[draughts.ID]
 	s := searcherOf(t, game)
 	st, seat, _ := midgame(t, nativeGames(t)[draughts.ID])

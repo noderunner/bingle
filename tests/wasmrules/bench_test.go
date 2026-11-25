@@ -1,6 +1,7 @@
 package wasmrules_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/noderunner/bingle/internal/engine/catalog"
@@ -46,6 +47,17 @@ func BenchmarkRules(b *testing.B) {
 		{"encoded", wasmrules.Encoded(draughts.New)},
 		{"wasm", draughtsModule(b).Rules()},
 		{"wasm-no-deadline", free.Rules()},
+	}
+	// The module built with TinyGo, where there is one (testdata.TinyGo).
+	if _, ok := testdata.TinyGo(); ok {
+		tiny, err := newRuntime(b, wasmrules.Options{}).Load(context.Background(), "tinygo", testdata.BuildWasmTinyGo(b, testdata.DraughtsWasm))
+		if err != nil {
+			b.Fatal(err)
+		}
+		sides = append(sides, struct {
+			name  string
+			rules state.Ruleset
+		}{"wasm-tinygo", tiny.Rules()})
 	}
 	for _, side := range sides {
 		game := games(b, side.rules)[draughts.ID]

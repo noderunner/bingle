@@ -19,7 +19,7 @@ const (
 	FaultyWasm = "github.com/noderunner/bingle/tests/testdata/draughts/faulty/wasm"
 )
 
-var wasmBuilds sync.Map // main package and tags → func() ([]byte, error)
+var wasmBuilds sync.Map // toolchain, main package and tags → func() ([]byte, error)
 
 // NoBot is the build tag that leaves the bot call out of a module, as a
 // module built before the call was added lacks it.
@@ -32,7 +32,50 @@ const NoBot = "bingle_nobot"
 // keeps the rest.
 func BuildWasm(t testing.TB, pkg string, tags ...string) []byte {
 	t.Helper()
-	key := pkg + " " + strings.Join(tags, ",")
+	return buildWasm(t, "go", func(out string) *exec.Cmd {
+		cmd := exec.Command("go", "build", "-buildmode=c-shared", "-trimpath", "-buildvcs=false", "-tags", strings.Join(tags, ","), "-o", out, pkg)
+		// The test's own flags (-race, say) are not the module's.
+		cmd.Env = append(os.Environ(), "GOOS=wasip1", "GOARCH=wasm", "CGO_ENABLED=0", "GOFLAGS=")
+		return cmd
+	}, pkg, tags)
+}
+
+// TinyGoFlags are what TinyGo builds a rules module with (docs/packs.md):
+// optimised for speed rather than size, and with no scheduler, since a
+// guest starts no goroutine and the default one slows every call.
+var TinyGoFlags = []string{"-target=wasip1", "-buildmode=c-shared", "-opt=2", "-scheduler=none", "-no-debug"}
+
+// TinyGo is the tinygo command the tests build modules with: BINGLE_TINYGO,
+// or tinygo on the PATH. ok is false when there is none.
+func TinyGo() (cmd string, ok bool) {
+	if cmd = os.Getenv("BINGLE_TINYGO"); cmd != "" {
+		return cmd, true
+	}
+	cmd, err := exec.LookPath("tinygo")
+	return cmd, err == nil
+}
+
+// BuildWasmTinyGo builds a rules module as BuildWasm does, with TinyGo
+// instead of Go. It skips the test when there is no TinyGo (see TinyGo).
+func BuildWasmTinyGo(t testing.TB, pkg string, tags ...string) []byte {
+	t.Helper()
+	tinygo, ok := TinyGo()
+	if !ok {
+		t.Skip("no TinyGo: set BINGLE_TINYGO or put tinygo on the PATH")
+	}
+	return buildWasm(t, "tinygo", func(out string) *exec.Cmd {
+		args := append([]string{"build"}, TinyGoFlags...)
+		args = append(args, "-tags", strings.Join(tags, " "), "-o", out, pkg)
+		cmd := exec.Command(tinygo, args...)
+		cmd.Env = append(os.Environ(), "CGO_ENABLED=0", "GOFLAGS=")
+		return cmd
+	}, pkg, tags)
+}
+
+// buildWasm builds pkg once a test binary for each toolchain and set of tags.
+func buildWasm(t testing.TB, toolchain string, command func(out string) *exec.Cmd, pkg string, tags []string) []byte {
+	t.Helper()
+	key := toolchain + " " + pkg + " " + strings.Join(tags, ",")
 	build, _ := wasmBuilds.LoadOrStore(key, sync.OnceValues(func() ([]byte, error) {
 		dir, err := os.MkdirTemp("", "bingle-wasm-")
 		if err != nil {
@@ -40,10 +83,7 @@ func BuildWasm(t testing.TB, pkg string, tags ...string) []byte {
 		}
 		defer func() { _ = os.RemoveAll(dir) }()
 		out := filepath.Join(dir, "rules.wasm")
-		cmd := exec.Command("go", "build", "-buildmode=c-shared", "-trimpath", "-buildvcs=false", "-tags", strings.Join(tags, ","), "-o", out, pkg)
-		// The test's own flags (-race, say) are not the module's.
-		cmd.Env = append(os.Environ(), "GOOS=wasip1", "GOARCH=wasm", "CGO_ENABLED=0", "GOFLAGS=")
-		if msg, err := cmd.CombinedOutput(); err != nil {
+		if msg, err := command(out).CombinedOutput(); err != nil {
 			return nil, &buildError{pkg: pkg, err: err, output: string(msg)}
 		}
 		return os.ReadFile(out)
