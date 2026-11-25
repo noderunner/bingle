@@ -2,6 +2,14 @@
 
 Ce qui a changé dans Bingle, du plus récent au plus ancien. Bingle Core (le serveur, le moteur et le client web) et chaque jeu ont leur propre version, et chaque entrée dit lesquels ont changé. Les entrées antérieures à la 0.124.0 ne sont qu’en anglais.
 
+## 0.133.0 - 2026-11-25
+
+### Bingle Core 0.133.0
+- Les jeux à deux plateaux montrent chaque plateau à part
+
+### Chess 0.2.2
+- Échecs d’Alice : les deux échiquiers sont dessinés comme deux échiquiers, côte à côte
+
 ## 0.132.2 - 2026-11-24
 
 ### Bingle Core 0.132.2

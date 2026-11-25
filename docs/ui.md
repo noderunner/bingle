@@ -840,8 +840,6 @@ pieces:
   red: {shape: disc}           # disc, square, flat, wall, cap, ring, diamond, triangle, cross
 board: {style: points, borders: {top: white}}   # art: guide/board.webp, a picture of the printed board
                                # among the game's own files, for its page script to draw an areas board on
-                               # divide: 8 draws a thick line after that many columns of squares, for a
-                               # board that is two (Alice chess's)
 # A map of areas: style areas, a canvas, and an outline for every position (a list, so that
 # a variant's replaces the family's whole). The anchor, where the name and the units go,
 # defaults to the centre of the largest polygon. look.js joins each to its position's name

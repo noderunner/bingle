@@ -80,6 +80,11 @@ type GridOptions struct {
 	Mode string
 	// Labels selects position naming; empty means LabelXY.
 	Labels Labeling
+	// Boards, when more than 1, makes that many boards of Width x Height
+	// side by side, as for Alice chess: one graph Boards*Width wide whose
+	// columns (and algebraic files) run on from one board to the next, with
+	// no adjacency between the boards. 0 or 1 is one board.
+	Boards int
 }
 
 // Generate builds a Graph of width*height positions laid out on a grid,
@@ -109,7 +114,19 @@ const MaxCells = 4096
 // grid it builds carries coordinates for each position and the four edge
 // regions "left", "right", "top" and "bottom".
 func GenerateGrid(opts GridOptions) (*Graph, error) {
-	width, height := opts.Width, opts.Height
+	boards := opts.Boards
+	if boards < 0 || boards > MaxCells {
+		return nil, fmt.Errorf("board: a grid's boards must be between 0 and %d, got %d", MaxCells, boards)
+	}
+	if boards == 0 {
+		boards = 1
+	}
+	if opts.Width > 0 && boards > MaxCells/opts.Width {
+		return nil, fmt.Errorf("board: %d boards of %d columns exceed the %d-position limit", boards, opts.Width, MaxCells)
+	}
+	// Each board's columns; the graph is all of them side by side.
+	each := opts.Width
+	width, height := opts.Width*boards, opts.Height
 	if width <= 0 {
 		return nil, fmt.Errorf("board: grid width must be positive, got %d", width)
 	}
@@ -166,7 +183,7 @@ func GenerateGrid(opts GridOptions) (*Graph, error) {
 			from := name(x, y)
 			for _, step := range steps {
 				nx, ny := x+step.dx, y+step.dy
-				if nx < 0 || nx >= width || ny < 0 || ny >= height {
+				if nx < 0 || nx >= width || ny < 0 || ny >= height || nx/each != x/each {
 					continue
 				}
 				g.addEdge(from, name(nx, ny))
@@ -187,6 +204,18 @@ func GenerateGrid(opts GridOptions) (*Graph, error) {
 	g.setRegion("right", right)
 	g.setRegion("top", top)
 	g.setRegion("bottom", bottom)
+
+	if boards > 1 {
+		for i := 0; i < boards; i++ {
+			var ids []PositionID
+			for y := 0; y < height; y++ {
+				for x := i * each; x < (i+1)*each; x++ {
+					ids = append(ids, name(x, y))
+				}
+			}
+			g.boards = append(g.boards, ids)
+		}
+	}
 
 	return g, nil
 }

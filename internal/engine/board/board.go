@@ -49,6 +49,10 @@ type Graph struct {
 	// regions maps a region name (e.g. "left", "top") to its positions.
 	regions map[string][]PositionID
 
+	// boards lists the positions of each board, for a graph that is several
+	// boards side by side (Alice chess); nil for a single board.
+	boards [][]PositionID
+
 	width, height int
 	kind          string
 
@@ -180,6 +184,21 @@ func (g *Graph) Offset(id PositionID, dx, dy int) (PositionID, bool) {
 		return "", false
 	}
 	return g.At(Coord{X: c.X + dx, Y: c.Y + dy})
+}
+
+// Boards returns the positions of each board, left to right, for a graph
+// that is several boards side by side (a grid generated with Boards > 1),
+// and nil for a single board. The rules still see one graph; the boards
+// only say how it is laid out. The slices are copies.
+func (g *Graph) Boards() [][]PositionID {
+	if len(g.boards) == 0 {
+		return nil
+	}
+	out := make([][]PositionID, len(g.boards))
+	for i, ids := range g.boards {
+		out[i] = append([]PositionID(nil), ids...)
+	}
+	return out
 }
 
 // Region returns the named region's positions (a copy), and whether it

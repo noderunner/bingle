@@ -156,6 +156,17 @@ type BoardDTO struct {
 	Regions   map[string][]string `json:"regions,omitempty"`
 	// Borders maps region name -> seat color, for tinting board edges.
 	Borders map[string]string `json:"borders,omitempty"`
+	// Boards, for a game played on several boards side by side (Alice
+	// chess), lists each board's positions, left to right; absent for one
+	// board. The positions are still one board for the rules, laid out as
+	// their coordinates say (board B's columns run on from board A's), and
+	// a client draws each board as a board of its own.
+	Boards []BoardPartDTO `json:"boards,omitempty"`
+}
+
+// BoardPartDTO is one of the boards a game is played on.
+type BoardPartDTO struct {
+	Positions []string `json:"positions"`
 }
 
 // PositionDTO is one board position with layout coordinates (y grows
@@ -322,6 +333,13 @@ func buildGameInfo(cg *catalog.CompiledGame) GameInfo {
 			pd.X, pd.Y = float64(i%cols), float64(i/cols)
 		}
 		bd.Positions = append(bd.Positions, pd)
+	}
+	for _, ids := range b.Boards() {
+		part := BoardPartDTO{Positions: make([]string, len(ids))}
+		for i, id := range ids {
+			part.Positions[i] = string(id)
+		}
+		bd.Boards = append(bd.Boards, part)
 	}
 	if !b.IsGrid() && !b.IsHex() {
 		seen := map[[2]string]bool{}

@@ -27,6 +27,8 @@ default_clock_minutes         the time the setup suggests when a game clock is c
 board                         required: generator or explicit graph, regions, style
                               (a "hexhex" board takes size2 as well: four long sides and two
                               short ones, a hexagon with no middle cell — Meridians)
+                              (a "grid" takes boards: that many boards side by side, their
+                              files running on and none a neighbour of another's — Alice chess)
 seats[]                       required
 pieces{}                      required
 reserves{}                    starting "hand", per seat, by reserve pool

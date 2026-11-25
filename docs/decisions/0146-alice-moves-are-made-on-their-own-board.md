@@ -1,7 +1,7 @@
 # 0146. An Alice move is clicked and written on its own board
 
 Status: accepted (2026-11-23). It supersedes the point of [ADR 0145](0145-chess-variants.md) that an Alice move is
-clicked and written by the square where the piece ends.
+clicked and written by the square where the piece ends. Its line between the boards is superseded by [ADR 0148](0148-a-game-on-several-boards.md).
 
 ## Context
 

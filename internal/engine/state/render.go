@@ -54,10 +54,21 @@ func RenderText(game *catalog.CompiledGame, st *BoardState) string {
 			width = 3
 		}
 		algebraic := game.Definition.Board.Generator != nil && game.Definition.Board.Generator.Labels == string(board.LabelAlgebraic)
+		// A bar between boards, for a game played on several side by side.
+		apart := func(x int) {}
+		if n := len(g.Boards()); n > 1 {
+			each := g.Width() / n
+			apart = func(x int) {
+				if x > 0 && x%each == 0 {
+					b.WriteString(" |")
+				}
+			}
+		}
 
 		// Column header.
 		b.WriteString("    ")
 		for x := 0; x < g.Width(); x++ {
+			apart(x)
 			label := fmt.Sprintf("%d", x)
 			if algebraic {
 				label = string(rune('a' + x))
@@ -72,6 +83,7 @@ func RenderText(game *catalog.CompiledGame, st *BoardState) string {
 			}
 			fmt.Fprintf(&b, "%-3s ", rowLabel)
 			for x := 0; x < g.Width(); x++ {
+				apart(x)
 				id, _ := g.At(board.Coord{X: x, Y: y})
 				fmt.Fprintf(&b, " %-*s", width, cellText(id))
 			}

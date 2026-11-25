@@ -1,7 +1,7 @@
 # 0145. Chess variants: one ruleset, Alice on one wide board, and no Bughouse yet
 
 Status: accepted (2026-11-23). It builds on [ADR 0144](0144-chess-notation-and-draws.md) (chess's notation and
-draws).
+draws). Its drawing of Alice's boards as one is superseded by [ADR 0148](0148-a-game-on-several-boards.md).
 
 ## Context
 

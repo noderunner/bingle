@@ -17,6 +17,3 @@ variants:
   chess-crazyhouse:
     display:
       no_hands: false
-  chess-alice:
-    board:
-      divide: 8

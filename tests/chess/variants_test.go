@@ -368,6 +368,27 @@ func TestChessVariants_Alice(t *testing.T) {
 	}
 }
 
+// Alice is two boards of 64 squares, neither's squares neighbours of the
+// other's, and the text of the position sets them apart.
+func TestChessVariants_AliceIsTwoBoards(t *testing.T) {
+	g := variant(t, "chess-alice")
+	boards := g.Board.Boards()
+	if len(boards) != 2 || len(boards[0]) != 64 || len(boards[1]) != 64 {
+		t.Fatalf("got %d boards", len(boards))
+	}
+	if g.Board.HasEdge("h1", "i1") {
+		t.Error("h1 and i1 are neighbours across the boards")
+	}
+	start, _ := chess.New().Start(g, 1)
+	text := state.RenderText(g, start)
+	if !strings.Contains(text, " h   | i ") || !strings.Contains(text, " wR  | . ") {
+		t.Errorf("the boards are not apart in the text:\n%s", text)
+	}
+	if b := variant(t, "chess").Board; b.Boards() != nil {
+		t.Errorf("chess has %d boards", len(b.Boards()))
+	}
+}
+
 // Random games of every variant: each position is valid, and each move's
 // notation reads back as itself and plays the same move.
 func TestChessVariants_RandomGames(t *testing.T) {

@@ -16,6 +16,8 @@ const MARGIN = 30;
 const COORD_STRIP = 26;
 const stripFor = (showCoords) => (showCoords && currentTheme() ? COORD_STRIP : 0);
 const NODE_MARGIN = 46;
+// The space between the frames of a game played on several boards side by side.
+const BOARD_GAP = 36;
 
 // Hive's tiles: a hexagon bearing the insect.
 const UNIT_GLYPHS = { pawn: "♟", knight: "♞", bishop: "♝", rook: "♜", queen: "♛", king: "♚" };
@@ -129,6 +131,32 @@ export function cssColor(color) {
 }
 
 /**
+ * The columns of each board of a grid, as drawn (flipped or not), left to right: [[lo, hi], …].
+ * One board of every column unless the API lists several boards (Alice chess) whose columns
+ * are bands side by side.
+ */
+function boardColumns(b, flipped) {
+	const whole = [[0, b.width - 1]];
+	if (!Array.isArray(b.boards) || b.boards.length < 2) return whole;
+	const xOf = new Map(b.positions.map((p) => [p.id, p.x]));
+	const bands = [];
+	for (const part of b.boards) {
+		const xs = (part.positions || []).map((id) => xOf.get(id)).filter((x) => x !== undefined);
+		if (!xs.length) return whole;
+		let lo = Math.min(...xs);
+		let hi = Math.max(...xs);
+		if (flipped) [lo, hi] = [b.width - 1 - hi, b.width - 1 - lo];
+		bands.push([lo, hi]);
+	}
+	bands.sort((a, c) => a[0] - c[0]);
+	// Bands that do not tile the columns are drawn as one board.
+	for (let i = 0; i < bands.length; i++) {
+		if (bands[i][0] !== (i ? bands[i - 1][1] + 1 : 0)) return whole;
+	}
+	return bands[bands.length - 1][1] === b.width - 1 ? bands : whole;
+}
+
+/**
  * Layout of the board in SVG user units.
  * Returns {width, height, place(pos) -> {x, y}, kind, cols, rows, labelFor}.
  */
@@ -138,12 +166,26 @@ function layout(info, flipped) {
 		const W = b.width;
 		const H = b.height;
 		const margin = b.labels === "algebraic" ? MARGIN : 14;
+		// Each board in a frame of its own, BOARD_GAP apart: one for most games, two for
+		// Alice chess's (the API's boards). A frame's columns are those drawn there.
+		const frames = [];
+		let at = 0;
+		for (const [lo, hi] of boardColumns(b, flipped)) {
+			const w = (hi - lo + 1) * CELL + 2 * margin;
+			frames.push({ x: at, w, lo, hi });
+			at += w + BOARD_GAP;
+		}
+		const frameOf = (gx) => frames.find((f) => gx >= f.lo && gx <= f.hi) || frames[0];
+		const colX = (gx) => {
+			const f = frameOf(gx);
+			return f.x + margin + (gx - f.lo) * CELL + CELL / 2;
+		};
 		const place = (p) => {
 			const gx = flipped ? W - 1 - p.x : p.x;
 			const gy = flipped ? H - 1 - p.y : p.y;
-			return { x: margin + gx * CELL + CELL / 2, y: margin + gy * CELL + CELL / 2, gx, gy };
+			return { x: colX(gx), y: margin + gy * CELL + CELL / 2, gx, gy };
 		};
-		return { kind: "grid", width: W * CELL + 2 * margin, height: H * CELL + 2 * margin, W, H, margin, place };
+		return { kind: "grid", width: at - BOARD_GAP, height: H * CELL + 2 * margin, W, H, margin, place, frames, colX };
 	}
 	// Explicit graph: scale the declared coordinates.
 	const xs = b.positions.map((p) => p.x);
@@ -388,27 +430,28 @@ function drawBoard(host, info, view, handlers = {}) {
 		preserveAspectRatio: "xMidYMid meet",
 	});
 
-	// Frame / background.
-	svg.append(s("rect", { class: "board-frame", x: 0, y: 0, width: L.width, height: L.height, rx: 14 }));
-	{
-		const decor = frameDecor(L.width, L.height, L.kind === "grid" ? L.margin : NODE_MARGIN);
-		if (decor) svg.append(decor);
+	// Frame / background: one for each board.
+	for (const f of L.frames || [{ x: 0, w: L.width }]) {
+		svg.append(s("rect", { class: "board-frame", x: f.x, y: 0, width: f.w, height: L.height, rx: 14 }));
+		const decor = frameDecor(f.w, L.height, L.kind === "grid" ? L.margin : NODE_MARGIN);
+		if (decor) svg.append(f.x ? s("g", { transform: `translate(${f.x} 0)` }, decor) : decor);
 	}
 
 	if (L.kind === "grid") {
 		const m = L.margin;
 		const style = b.style || "squares";
 		if (style === "points") {
-			svg.append(
-				s("rect", { class: "cell-bg light", x: m, y: m, width: L.W * CELL, height: L.H * CELL, rx: 4 })
-			);
-			for (let i = 0; i < L.W; i++) {
-				const x = m + i * CELL + CELL / 2;
-				svg.append(s("line", { class: "grid-line", x1: x, y1: m + CELL / 2, x2: x, y2: m + L.H * CELL - CELL / 2 }));
-			}
-			for (let j = 0; j < L.H; j++) {
-				const y = m + j * CELL + CELL / 2;
-				svg.append(s("line", { class: "grid-line", x1: m + CELL / 2, y1: y, x2: m + L.W * CELL - CELL / 2, y2: y }));
+			for (const f of L.frames) {
+				const cols = f.hi - f.lo + 1;
+				svg.append(s("rect", { class: "cell-bg light", x: f.x + m, y: m, width: cols * CELL, height: L.H * CELL, rx: 4 }));
+				for (let i = f.lo; i <= f.hi; i++) {
+					const x = L.colX(i);
+					svg.append(s("line", { class: "grid-line", x1: x, y1: m + CELL / 2, x2: x, y2: m + L.H * CELL - CELL / 2 }));
+				}
+				for (let j = 0; j < L.H; j++) {
+					const y = m + j * CELL + CELL / 2;
+					svg.append(s("line", { class: "grid-line", x1: L.colX(f.lo), y1: y, x2: L.colX(f.hi), y2: y }));
+				}
 			}
 		}
 		// Star points (hoshi) on the standard Go sizes.
@@ -426,7 +469,7 @@ function drawBoard(host, info, view, handlers = {}) {
 			for (let gx = 0; gx < L.W; gx++) {
 				const x = view.flipped ? L.W - 1 - gx : gx;
 				const letter = String.fromCharCode(97 + x);
-				const cx = m + gx * CELL + CELL / 2;
+				const cx = L.colX(gx);
 				svg.append(s("text", { class: cls, x: cx, y: L.height - near }, letter));
 				svg.append(s("text", { class: cls, x: cx, y: near }, letter));
 			}
@@ -662,12 +705,6 @@ function drawBoard(host, info, view, handlers = {}) {
 			);
 		}
 		svg.append(fences);
-	}
-
-	// A line down a board that is two (Alice chess's), from the look.
-	if (showSquares && b.divide > 0 && b.divide < L.W) {
-		const x = L.margin + (view.flipped ? L.W - b.divide : b.divide) * CELL;
-		svg.append(s("line", { class: "board-divide", x1: x, y1: L.margin - 4, x2: x, y2: L.margin + L.H * CELL + 4, "pointer-events": "none" }));
 	}
 
 	const byId = new Map(b.positions.map((p) => [p.id, p]));

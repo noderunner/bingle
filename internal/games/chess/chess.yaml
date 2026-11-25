@@ -2,7 +2,7 @@
 id: chess
 name: Chess
 description: 'Checkmate the other king. The classic game of two armies on an 8×8 board, with castling, en passant and promotion.'
-version: 0.2.1
+version: 0.2.2
 engine: ruleset
 rules:
   - 'Chess is played on an 8×8 board. White moves first, then the players take turns. You win by checkmating the other king: attacking it so that no move can save it.'
@@ -95,7 +95,7 @@ variants:
       description: 'Chess on two boards: after every move the piece passes through the looking glass to the same square of the other board.'
       params: {variant: alice}
       board:
-        generator: {width: 16}
+        generator: {boards: 2}
       rules:
         - 'Alice chess is played on two boards, side by side: board A (files a to h), where the game starts, and board B (files i to p), empty at the start. The square e4 of board A is m4 of board B.'
         - 'A piece moves as in chess, using only the pieces on its own board, and then passes to the same square of the other board, which must be empty. A capture takes the piece on the board where the move is made.'
