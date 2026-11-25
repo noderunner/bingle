@@ -47,6 +47,7 @@ The game ends when a fence closes the **last open area**. Count each player's sq
 
 - On the **7×7 board**, the larger total wins and a tie is a draw.
 - On the **9×9** and **11×11** boards, the first player to **own a majority** of the squares (41 of 81, or 61 of 121) wins at once.
+- Once **only one player's pieces are left in the open area**, the game ends: the other player can never get a piece back in, so the whole open area is counted as the first player's.
 - Two passes in a row, or 400 moves, also end the game, and the closed areas are counted.
 
 ## Move notation

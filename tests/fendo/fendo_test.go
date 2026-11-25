@@ -4,6 +4,7 @@
 package fendo_test
 
 import (
+	"encoding/json"
 	"math/rand"
 	"strings"
 	"testing"
@@ -189,6 +190,66 @@ func TestAPlayerWithNoPieceInTheOpenAreaPasses(t *testing.T) {
 	if got := notations(g, st, 1); len(got) != 1 || got[0] != "pass" {
 		t.Errorf("a closed-in player should only pass: %v", got)
 	}
+}
+
+func TestTheGameEndsWhenOnlyOneSeatHasPiecesInTheOpenArea(t *testing.T) {
+	g := game(t, "fendo")
+	// Orange's only piece is fenced in on g7 but for its west side, and it
+	// has no stock to add: once white closes that side, white's two pieces
+	// are alone in the open area, which can only end up white's. The game
+	// ends there, the open area counted white's: 48 squares to 1.
+	st := build([]string{"f1", "b1"}, []string{"g7"}, [][2]string{{"g6", "g7"}}, 1)
+	st.Ext().(*fendo.Data).Stock = [2]int{2, 0}
+	next, res := play(t, g, st, 1, "f1-f7+e")
+	if !res.GameEnded || res.WinnerSeat == nil || *res.WinnerSeat != 1 {
+		t.Fatalf("white owns the open area and should win: %+v", res)
+	}
+	d := next.Ext().(*fendo.Data)
+	if d.Score != [2]int{48, 1} {
+		t.Errorf("score = %v", d.Score)
+	}
+	if !strings.Contains(strings.Join(d.Events, " "), "Only White's pieces are left in the open area") {
+		t.Errorf("events = %v", d.Events)
+	}
+	view, err := json.Marshal(fendo.New().Redact(g, next, 1).Ext())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(view), `"a4":"area1"`) || !strings.Contains(string(view), `"g7":"area2"`) {
+		t.Errorf("the open area should be tinted white's: %s", view)
+	}
+}
+
+// TestASealedInSeatDoesNotPassUntilTheEnd replays an 11×11 game in which
+// all of orange's pieces were fenced in while white's still shared the open
+// area: it went on with orange passing every other ply. It now ends there.
+func TestASealedInSeatDoesNotPassUntilTheEnd(t *testing.T) {
+	g := game(t, "fendo-11")
+	rs := fendo.New()
+	st, _ := rs.Start(g, 1)
+	moves := strings.Fields("add@f10 add@g3 add@g4 add@f6 f1-e11+e add@f9 g4-g11+w add@h11 add@h10 add@h9 " +
+		"h10-i11+w add@d11 g11-h10+n g3-j10+s f10-g10+n f6-g7+w e11-f10+n g7-g9+w i11-g8+n h9-g7+n " +
+		"h10-h9+w f9-f8+w g10-i10+e g7-h8+w f10-g10+s d11-f10+w h9-k10+w h8-j8+s g10-h8+e j8-i6+s " +
+		"k10-j11+s i6-h7+w i10-h6+n f8-h5+n h6-i7+w f10-f8+s h8-h9+s f8+e add@e6 h5-f4+s " +
+		"e6-f9+s f4-h5+s j11-k4+s h5-e9+e k4-e8+n e9-d5+w i7-d6+w d5-e4+s add@f4 e4-c6+w " +
+		"f4-c5+n c6-f7+w d6-f6+n add@i2 e8-d9+s")
+	seat := 1
+	for n, text := range moves {
+		next, res := play(t, g, st, seat, text)
+		st = next
+		if res.GameEnded {
+			d := st.Ext().(*fendo.Data)
+			if res.WinnerSeat == nil || *res.WinnerSeat != 1 || d.Score[0]+d.Score[1] != 121 {
+				t.Fatalf("after %s: winner %v, score %v", text, res.WinnerSeat, d.Score)
+			}
+			return
+		}
+		if got := notations(g, st, res.NextImpulseSeat); len(got) == 1 && got[0] == "pass" {
+			t.Fatalf("after move %d, %s, the game goes on with only a pass for seat %d", n+1, text, res.NextImpulseSeat)
+		}
+		seat = res.NextImpulseSeat
+	}
+	t.Fatal("the game did not end")
 }
 
 func TestAddedPieceMustBeOneMoveAwayAndCostsStock(t *testing.T) {

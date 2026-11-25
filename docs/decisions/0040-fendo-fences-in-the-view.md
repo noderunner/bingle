@@ -16,4 +16,4 @@ Fendo (Dieter Stein, 2014): pieces and fences on a 7×7 board. A turn either mov
 
 ## Interpretations
 
-A piece may stay put and only build a fence. The published text says a selection is illegal when no legal fence can be built at the destination (and mentions the origin in an example); only the destination is checked. Ties are a draw. Two passes in a row, or 400 plies, end the game and count the closed areas.
+A piece may stay put and only build a fence. The published text says a selection is illegal when no legal fence can be built at the destination (and mentions the origin in an example); only the destination is checked. Ties are a draw. Once only one seat's pieces are left in the open area, the game ends and that area counts as theirs: the other seat can never add a piece there (it adds only beside its own in the open area), and no fence may close off an empty area, so all of it would be theirs. Played out, the sealed-in seat only passed, and the other's moves kept two passes from ever coming in a row. Two passes in a row, or 400 plies, end the game and count the closed areas.
