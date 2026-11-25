@@ -2,6 +2,11 @@
 
 Was sich in Bingle geändert hat, das Neueste zuerst. Bingle Core (der Server, die Engine und der Web-Client) und jedes Spiel haben eine eigene Version, und jeder Eintrag sagt, welche sich geändert hat. Einträge vor 0.124.0 gibt es nur auf Englisch.
 
+## 0.134.0 - 2026-11-25
+
+### Bingle Core 0.134.0
+- Ein neues Kartenset, Klassisch erweitert: die vier klassischen Farben und dazu Kleeblätter, Monde, Pfeile und Sanduhren (API 1.15.0)
+
 ## 0.133.0 - 2026-11-25
 
 ### Bingle Core 0.133.0

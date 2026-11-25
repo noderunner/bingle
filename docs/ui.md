@@ -400,7 +400,8 @@ The set belongs to the table ([ADR 0085](decisions/0085-card-sets-belong-to-the-
 stored with the game, sent to everyone as `card_set`, kept by a rematch and by *Play from here*, and
 there is no way to change it at the table. `js/card-sets.js` holds the sets and draws them;
 `js/card-lettering.js` letters the ranks. A themed card has the class `themed` and `data-set`. Its
-tooltip gives the set's name for the suit and the one the rules use: *9 of Tree Frogs (hearts)*. The
+tooltip gives the set's name for the suit and the one the rules use when it is another: *9 of Tree Frogs
+(hearts)*, but *9 of Hearts* in Classic Extended. The
 suit pictures on a board of terms follow the set (the Tricks fixture's page script draws them from it).
 
 ## Games of patience (Solitaire)
@@ -430,7 +431,8 @@ the pointer, the cards on top of it come along, and a drop on a pile that does n
 of the table decides the size of the cards, so ten columns fit a phone.
 
 Where colours are the rule (`view.alternate`), a card at a table with a themed set also shows its classic suit,
-`.sol-colour`, since the set's suits are not red and black.
+`.sol-colour`, since the set's suits are not red and black. A set whose colours alternate warm and cool as red and
+black do (Classic Extended, [ADR 0149](decisions/0149-a-card-set-whose-colours-alternate.md)) needs no such mark.
 
 **Bowling Solitaire** has `#sol-sheet` (ten `.sol-frame[data-frame]`, each with `.sol-mark`s and `.sol-frame-total`),
 `#sol-rack` (`.sol-pin[data-pin]`, a button when it can be part of a play, `.down` when it is down), `#sol-balls` and

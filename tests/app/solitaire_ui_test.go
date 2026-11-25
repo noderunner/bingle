@@ -166,7 +166,8 @@ func TestWebSolitaire_DraggingACard(t *testing.T) {
 }
 
 // At a themed table every card wears the set, and where colours are the rule each
-// shows the red or black it counts as. Spider, where they are not, has no such mark.
+// shows the red or black it counts as, unless the set's own colours show it. Spider,
+// where they are not, has no such mark.
 func TestWebSolitaire_ThemedCardsSayTheirColour(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
@@ -186,6 +187,13 @@ func TestWebSolitaire_ThemedCardsSayTheirColour(t *testing.T) {
 	}
 	if n := evalInt(t, ctx, `document.querySelectorAll('.sol-top [data-pile^="f"] svg').length`); n != 4 {
 		t.Errorf("%d foundations wear the set's suits", n)
+	}
+	// A set whose colours alternate as red and black do needs no mark.
+	room = solitaireRoom(t, baseURL, "freecell", "classic-extended")
+	openGameAs(t, ctx, baseURL, room, "freecell", "Ana")
+	waitJS(t, ctx, "the table", `document.querySelectorAll('.sol-column .pcard.face[data-set="classic-extended"]').length === 52`, 15*time.Second)
+	if n := evalInt(t, ctx, `document.querySelectorAll('.sol-colour').length`); n != 0 {
+		t.Errorf("Classic Extended: %d colour marks", n)
 	}
 	room = solitaireRoom(t, baseURL, "spider-2", "lovecraftian")
 	openGameAs(t, ctx, baseURL, room, "spider-2", "Ana")

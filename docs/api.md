@@ -329,7 +329,7 @@ pass what it started with.
 
 **Card sets.** `card_set` draws the cards of a game with a standard deck (`cards.standard`
 in the game's definition) in a themed set, for everybody at the table: `ancient`, `amphibians`,
-`fantasy`, `lovecraftian` or `atomic`. An unknown set, or a game whose deck cannot wear one, is a
+`fantasy`, `lovecraftian`, `atomic` or `classic-extended`. An unknown set, or a game whose deck cannot wear one, is a
 `400`. `GET /games/{code}` reports it as `card_set`. It is fixed when the game is created and changes
 how the cards look, never the notation: `blue-9` is still `blue-9`.
 
