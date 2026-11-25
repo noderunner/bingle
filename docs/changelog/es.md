@@ -2,6 +2,11 @@
 
 Lo que ha cambiado en Bingle, lo más reciente primero. Bingle Core (el servidor, el motor y el cliente web) y cada juego tienen su propia versión, y cada entrada dice cuál ha cambiado. Las entradas anteriores a la 0.124.0 están solo en inglés.
 
+## 0.135.1 - 2026-11-25
+
+### Bingle Core 0.135.1
+- Las piezas grises se dibujan en gris
+
 ## 0.135.0 - 2026-11-25
 
 ### Bingle Core 0.135.0

@@ -50,11 +50,13 @@
 	--piece-sand-fill: #b0a56a;
 	--piece-teal-fill: #2aa6ae;
 	--piece-brown-fill: #ea8bab; /* the Tcho-Tcho, the only seats of this colour id: pink on the table */
+	--piece-grey-fill: #a3a19b;
 	--piece-orange-stroke: #6b3a0a;
 	--piece-purple-stroke: #34185e;
 	--piece-sand-stroke: #4c4620;
 	--piece-teal-stroke: #0c4347;
 	--piece-brown-stroke: #6b2743;
+	--piece-grey-stroke: #45433f;
 
 	--radius: 10px;
 	--shadow: 0 1px 2px rgba(0, 0, 0, 0.08), 0 6px 18px rgba(0, 0, 0, 0.06);
@@ -454,6 +456,7 @@ dialog ul { padding-inline-start: 1.2rem; }
 .cell-bg.edge-purple { fill: color-mix(in srgb, var(--piece-purple-fill) 55%, var(--board-light)); }
 .cell-bg.edge-sand { fill: color-mix(in srgb, var(--piece-sand-fill) 55%, var(--board-light)); }
 .cell-bg.edge-teal { fill: color-mix(in srgb, var(--piece-teal-fill) 55%, var(--board-light)); }
+.cell-bg.edge-grey { fill: color-mix(in srgb, var(--piece-grey-fill) 55%, var(--board-light)); }
 .cell-bg.edge-brown { fill: color-mix(in srgb, var(--piece-brown-fill) 55%, var(--board-light)); }
 .cell-bg.edge-black { fill: color-mix(in srgb, var(--piece-black-fill) 55%, var(--board-light)); }
 .cell-bg.edge-white { fill: color-mix(in srgb, var(--piece-white-fill) 80%, var(--board-light)); }
@@ -497,11 +500,13 @@ dialog ul { padding-inline-start: 1.2rem; }
 .piece.color-sand .piece-body, .ghost-piece.color-sand .piece-body { fill: var(--piece-sand-fill); stroke: var(--piece-sand-stroke); }
 .piece.color-teal .piece-body, .ghost-piece.color-teal .piece-body { fill: var(--piece-teal-fill); stroke: var(--piece-teal-stroke); }
 .piece.color-brown .piece-body, .ghost-piece.color-brown .piece-body { fill: var(--piece-brown-fill); stroke: var(--piece-brown-stroke); }
+.piece.color-grey .piece-body, .ghost-piece.color-grey .piece-body { fill: var(--piece-grey-fill); stroke: var(--piece-grey-stroke); }
 .piece.color-orange .piece-detail, .ghost-piece.color-orange .piece-detail { stroke: var(--piece-orange-stroke); }
 .piece.color-purple .piece-detail, .ghost-piece.color-purple .piece-detail { stroke: var(--piece-purple-stroke); }
 .piece.color-sand .piece-detail, .ghost-piece.color-sand .piece-detail { stroke: var(--piece-sand-stroke); }
 .piece.color-teal .piece-detail, .ghost-piece.color-teal .piece-detail { stroke: var(--piece-teal-stroke); }
 .piece.color-brown .piece-detail, .ghost-piece.color-brown .piece-detail { stroke: var(--piece-brown-stroke); }
+.piece.color-grey .piece-detail, .ghost-piece.color-grey .piece-detail { stroke: var(--piece-grey-stroke); }
 .piece.ghost { opacity: 0.55; }
 .swatch.color-white { background: var(--piece-white-fill); border-color: var(--piece-white-stroke); }
 .swatch.color-black { background: var(--piece-black-fill); border-color: var(--piece-black-stroke); }
@@ -514,6 +519,7 @@ dialog ul { padding-inline-start: 1.2rem; }
 .swatch.color-sand { background: var(--piece-sand-fill); border-color: var(--piece-sand-stroke); }
 .swatch.color-teal { background: var(--piece-teal-fill); border-color: var(--piece-teal-stroke); }
 .swatch.color-brown { background: var(--piece-brown-fill); border-color: var(--piece-brown-stroke); }
+.swatch.color-grey { background: var(--piece-grey-fill); border-color: var(--piece-grey-stroke); }
 
 .stack-popover {
 	position: absolute; z-index: 20; background: var(--surface); border: 1px solid var(--border);
@@ -869,6 +875,7 @@ kbd { font: 600 0.8em ui-monospace, Menlo, Consolas, monospace; border: 1px soli
 .slot-row .swatch.color-sand { background: var(--piece-sand-fill); }
 .slot-row .swatch.color-teal { background: var(--piece-teal-fill); }
 .slot-row .swatch.color-brown { background: var(--piece-brown-fill); }
+.slot-row .swatch.color-grey { background: var(--piece-grey-fill); }
 .slot-row .swatch.color-white { background: var(--piece-white-fill); }
 /* A seat whose faction is chosen: the name column is a list of the factions. */
 .slot-row.with-faction { grid-template-columns: minmax(11rem, 13rem) 1fr; }
@@ -946,6 +953,7 @@ kbd { font: 600 0.8em ui-monospace, Menlo, Consolas, monospace; border: 1px soli
 .log-actor .swatch.color-sand { background: var(--piece-sand-fill); }
 .log-actor .swatch.color-teal { background: var(--piece-teal-fill); }
 .log-actor .swatch.color-brown { background: var(--piece-brown-fill); }
+.log-actor .swatch.color-grey { background: var(--piece-grey-fill); }
 .log-actor .swatch.color-white { background: var(--piece-white-fill); }
 .seat-order-note { margin: 0.1rem 0.2rem 0; }
 
@@ -1091,6 +1099,7 @@ dialog.help-dialog li { margin: 0.35rem 0; }
 .auto-pass-option .swatch.color-sand { background: var(--piece-sand-fill); }
 .auto-pass-option .swatch.color-teal { background: var(--piece-teal-fill); }
 .auto-pass-option .swatch.color-brown { background: var(--piece-brown-fill); }
+.auto-pass-option .swatch.color-grey { background: var(--piece-grey-fill); }
 .auto-pass-option .swatch.color-white { background: var(--piece-white-fill); }
 
 /* ---- pictograms, hover cards, the summon buttons, the history tabs ------------------ */
