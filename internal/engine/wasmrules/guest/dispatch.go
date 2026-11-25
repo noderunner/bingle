@@ -90,7 +90,14 @@ func (h *Handler) Call(name string, req []byte) []byte {
 	}
 
 	// The reply is written straight after its `{"ok":`, and closed by done.
-	out := append(make([]byte, 0, 256+len(req)), `{"ok":`...)
+	// It starts with room for a reply as long as its request, which is what a
+	// position that comes back needs. A request longer than any position
+	// gets the least, and its reply grows as it is written.
+	room := replyRoom
+	if len(req) < replyRoomMost {
+		room += len(req)
+	}
+	out := append(make([]byte, 0, room), `{"ok":`...)
 	done := func(out []byte) []byte { return append(out, '}') }
 	switch name {
 	case CallStart:
@@ -162,6 +169,13 @@ func (h *Handler) Call(name string, req []byte) []byte {
 	}
 	return fail(fmt.Errorf("guest: no call %q", name))
 }
+
+// A reply's first room: replyRoom, and the length of its request on top
+// when that is under replyRoomMost.
+const (
+	replyRoom     = 256
+	replyRoomMost = 1 << 20
+)
 
 // init makes the rules of the games the host names, and adds them to the
 // games the handler knows: the host tells an instance of a game before the
