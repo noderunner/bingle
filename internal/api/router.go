@@ -81,6 +81,8 @@ func NewRouter(mgr *session.Manager, opts ...Option) chi.Router {
 	r.Get("/game-defs/{id}/guide", h.handleGameGuide)
 	r.Get("/game-defs/{id}/assets/*", h.handleGameAsset)
 	r.Get("/game-defs/{id}/web", h.handleGameWeb)
+	r.Get("/game-defs/{id}/clients/{client}", h.handleClientIndex)
+	r.Get("/game-defs/{id}/clients/{client}/files/*", h.handleClientFile)
 	r.Get("/game-defs/{id}/tutorials", h.handleListTutorials)
 	r.Get("/game-defs/{id}/tutorials/{tutorial}", h.handleGetTutorial)
 	r.Get("/bots", h.handleListBots)

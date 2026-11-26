@@ -33,6 +33,8 @@ var schemaEndpoints = []schemaEndpoint{
 	{route: "GET /api/game-defs", response: reflect.TypeFor[[]wire.GameDef]()},
 	{route: "GET /api/game-defs/{id}", response: reflect.TypeFor[session.GameInfo]()},
 	{route: "GET /api/game-defs/{id}/guide", media: "text/markdown"},
+	{route: "GET /api/game-defs/{id}/clients/{client}", response: reflect.TypeFor[session.ClientIndex]()},
+	{route: "GET /api/game-defs/{id}/clients/{client}/files/{path}", media: "application/octet-stream"},
 	{route: "GET /api/bots", response: reflect.TypeFor[[]bots.Info]()},
 	{route: "GET /api/games", response: reflect.TypeFor[openGamesResponse]()},
 	{route: "POST /api/games", request: reflect.TypeFor[createGameRequest](), response: reflect.TypeFor[createGameResponse]()},

@@ -1,0 +1,4 @@
+# A made-up client's look for the Draughts fixture pack (ADR 0147). The
+# server lists and serves this folder without reading it.
+board = "textures/board.png"
+man = "models/man.glb"

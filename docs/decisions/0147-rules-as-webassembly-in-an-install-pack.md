@@ -230,11 +230,15 @@ every game shares and fetches the rest.
 - **The server does not read a client's files.** ADR 0124 stands: the server says what things are, and each
   client decides how they look. A look in a pack is still the client's, written in the client's format by whoever
   made the pack. The server only keeps it and delivers it.
-- **What the server checks without reading them**: no path or link that leaves the folder; a size limit per
-  file, per folder and on the number of files (by default 64 MiB, 512 MiB and 4,096, until phase 5 has measured);
-  and a list of kinds it will serve at all: TOML, JSON, plain text and Markdown, binary glTF, KTX2, PNG, JPEG and
-  Ogg, each sniffed where its format has a signature. Nothing else is accepted: no script, shader, HTML, SVG or
-  program. A pack with a client folder that fails is refused whole, as for any other check.
+- **What the server checks without reading them**: no link at all, as anywhere in a pack, so no path or link
+  leaves the folder; a size limit per file, per folder and on the number of files (64 MiB, 512 MiB and 4,096 a
+  client, and at most 8 clients a pack: phase 5); paths of at most 200 bytes, each part letters, digits, dots,
+  dashes and underscores, so that any system can name the file and a URL carries it as it is; and a list of
+  kinds it will serve at all: TOML, JSON, plain text and Markdown, binary glTF, KTX2, PNG, JPEG and Ogg, each
+  sniffed where its format has a signature (a binary glTF's header must also say version 2 and its own length),
+  and the four kinds of text held to UTF-8 without a NUL. Nothing else is accepted: no script, shader, HTML, SVG
+  or program. An empty client folder is refused too. A pack with a client folder that fails is refused whole, as
+  for any other check.
 - **An index, then files.**
   - `GET /api/game-defs/{id}/clients/{client}` lists the client's files for a game: each one's path, size,
     SHA-256 and content type.
@@ -244,7 +248,8 @@ every game shares and fetches the rest.
     of games, without asking game by game.
   - Every game of a pack (its variants) offers the same files.
 - **Files are served from disk and never held in memory.** Each is hashed when the pack loads and opened through
-  a root confined to the pack. They are sent inert, as a guide's pictures are (`nosniff`, a sandboxing
+  a root confined to its client's folder, which stays open with the pack. A file whose size or time of writing
+  has changed since it was hashed is not sent (500), so a file never goes out under another's hash. They are sent inert, as a guide's pictures are (`nosniff`, a sandboxing
   `Content-Security-Policy`), and as attachments, so a browser never renders one.
 - **A client fetches what it lacks and keeps it by its hash.** It asks only for a game the player opens, or lists
   with a picture. A file two variants, two versions of a pack or two servers share is downloaded once.
@@ -301,12 +306,13 @@ The maintainer settles these by reviewing this ADR. Each is a recommendation unt
    rulebook. The 48- and 61-ring boards and Blitz follow it where it gives them, and the GIPF project's published
    tournament rules where it does not.
 
-6. **Who may fetch a private game's client files.** *This needs the maintainer.* The recommendation is the same
-   standing as the game's guide pictures and `web.yaml`, which the API already gives to anyone who can reach it:
-   who can reach a private server is its operator's responsibility. The plugins plan asked for it to be written
-   down that "bingle ships no mechanism for distributing someone else's game", and a server that hands a
-   commercial game's models to every client that asks comes closer to one than the page's pictures did. The
-   stricter choice is that a game marked `private` gives its client files only to a signed-in account.
+6. **Who may fetch a private game's client files.** *Settled by the maintainer (2026-11-25, #302): anyone who can
+   reach the server*, the same standing as the game's guide pictures and `web.yaml`, which the API already gives
+   to anyone who can reach it: who can reach a private server is its operator's responsibility. The plugins plan
+   asked for it to be written down that "bingle ships no mechanism for distributing someone else's game", and a
+   server that hands a commercial game's models to every client that asks comes closer to one than the page's
+   pictures did. The stricter choice, not taken, was that a game marked `private` gives its client files only to
+   a signed-in account.
 7. **Whether the web page's files move under `clients/web/`.** *Recommended: no.* The server reads and checks
    `web.yaml` and the guide, and nothing reads a client folder. Two kinds of file with two kinds of checking are
    clearer in two places.
@@ -552,3 +558,15 @@ folder. To drop both removes the pack loader and `BINGLE_PACKS` too, and marks t
     module looks at 638 → 7,924 positions a second and inside a TinyGo one 1,243 → 14,014; MCTS 5 → 169 and
     14 → 366 playouts. At equal time the new bots beat the old 19–1 in either module, and MCTS inside a TinyGo
     module against MCTS on the rules linked in goes from 1–19 to 9–11.
+- 2026-11-25, **phase 5** (#302): a pack's `clients/` folder is checked, hashed and served (`internal/pack/clients.go`,
+  `catalog.ClientFiles`, the two routes above). The game's info and the list of games name its clients, every game
+  of the pack offers the same files, and question 6 is settled. What it changed is marked above: at most 8 clients
+  a pack, the form and length of a path, an empty folder refused, a binary glTF's header checked, and a file that
+  changed after it was hashed not sent. The client folders are checked before the rules are loaded, since a
+  module takes longer to compile and play than all but the largest folder takes to hash.
+  - **What it costs**, on one Intel i9-9900K core: hashing at load runs at about 500 MB/s (SHA-256 with AVX2), so
+    a client folder at its 512 MiB limit adds about a second to start-up, and the fixture's three files nothing
+    that shows. Sending a 48 MiB file allocated 126 KB in the server and the test together: a file goes from the
+    disk to the connection and is never in memory.
+  - **The limits stand as the defaults were** (64 MiB, 512 MiB and 4,096 a client). A real client's folder has
+    still to be measured, in phase 7 (#304).

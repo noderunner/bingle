@@ -130,6 +130,9 @@ type GameDef struct {
 	// Private marks a game built from the private overlay (ADR 0140); a public
 	// build marks none.
 	Private bool `json:"private,omitempty"`
+	// Clients are the clients other than the web page that the game has
+	// files for (ADR 0147), listed at /game-defs/{id}/clients/{client}.
+	Clients []string `json:"clients,omitempty"`
 }
 
 // GameDefs converts the manager's list of games.
@@ -140,7 +143,7 @@ func GameDefs(defs []session.GameDefSummary) []GameDef {
 			ID: d.ID, Name: d.Name, SeatsRequired: d.SeatsRequired, Description: d.Description,
 			BoardWidth: d.BoardWidth, BoardHeight: d.BoardHeight, Family: d.Family,
 			Version: d.Version, Designers: d.Designers, Publisher: d.Publisher, Prototype: d.Prototype, Tutorials: d.Tutorials,
-			Private: d.Private,
+			Private: d.Private, Clients: d.Clients,
 		}
 	}
 	return out

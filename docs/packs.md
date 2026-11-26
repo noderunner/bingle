@@ -35,7 +35,7 @@ draughts/
   web.yaml        optional: how the web page draws it (ADR 0124)
   rules.wasm      the rules
   guide/          the guide's Markdown and pictures
-  clients/        optional: the files of other clients (not read yet: #302)
+  clients/        optional: every other client's files, a folder each
 ```
 
 Nothing else may be in a pack: no other file or folder at its top, and no link anywhere. Files are
@@ -77,7 +77,55 @@ the game (`look.Check`).
 
 The guide's Markdown and its pictures: PNG, JPEG, GIF, WebP and SVG. They are the game's files, as a
 built-in game's guide folder is, so the definition and the look name them by their path inside
-`guide/` (`file: rules.md`, not `guide/rules.md`). Nothing else of the pack is served.
+`guide/` (`file: rules.md`, not `guide/rules.md`). Nothing else of the pack is served but `clients/`.
+
+### clients/
+
+The files each client other than the web page draws the game with, in a folder named after the
+client: `clients/bingle-3d/` for bingle-3d's look, models, textures and sounds, laid out as that
+client wants them. The server never reads them: it checks them as below, hashes each once when the
+pack loads, and hands them to any client that asks, as it does a guide's pictures (ADR 0147).
+
+```text
+clients/
+  bingle-3d/
+    look.toml
+    models/man.glb
+    textures/board.ktx2
+```
+
+- A client's name is lower-case words joined by dashes, as a pack's is; at most 8 clients.
+- A path is at most 200 bytes, each part of it letters, digits, dots, dashes and underscores.
+- At most 64 MiB a file, 512 MiB and 4,096 files a client. An empty folder is refused.
+- The kinds, by extension, each held to its signature or, for text, to UTF-8 without a NUL:
+
+  | Kind | Extensions | Sent as |
+  |---|---|---|
+  | TOML | `.toml` | `application/toml` |
+  | JSON | `.json` | `application/json` |
+  | Text | `.txt` | `text/plain` |
+  | Markdown | `.md` | `text/markdown` |
+  | Binary glTF 2.0 | `.glb` (its header's length must be the file's) | `model/gltf-binary` |
+  | KTX2 | `.ktx2` | `image/ktx2` |
+  | PNG | `.png` | `image/png` |
+  | JPEG | `.jpg`, `.jpeg` | `image/jpeg` |
+  | Ogg | `.ogg` | `audio/ogg` |
+
+Every game of the pack, its variants too, offers the same files. A client finds them from the list
+of games (`clients` in `GET /api/game-defs`), lists them, and fetches only those it lacks:
+
+```sh
+curl -s localhost:8080/api/game-defs/pack-draughts-0.1.0/clients/made-up   # the fixture's client
+# {"game":"pack-draughts-0.1.0","client":"made-up","files":[{"path":"look.toml","size":182,"sha256":"b025c2…","content_type":"application/toml"}, …]}
+curl -s -H 'If-None-Match: "b025c2…"' localhost:8080/api/game-defs/pack-draughts-0.1.0/clients/made-up/files/look.toml
+# 304, nothing sent: the client has it
+```
+
+A file's SHA-256 is its strong `ETag`, so `If-None-Match` and `If-Range` are answered, and so are byte
+ranges, for a download that is resumed. Files are sent from the disk as they are read, inert
+(`nosniff`, a sandboxing `Content-Security-Policy`) and as attachments. One changed on the disk after
+the pack loaded is not sent (500) until the server is restarted, so a file never goes out under
+another's hash. A client checks what it downloads against its hash and treats it as hostile.
 
 ## Checks
 
@@ -87,8 +135,9 @@ from anywhere:
 | Check | Refused |
 |---|---|
 | Paths | anything but the files and folders above; a link; the same name twice, ignoring case |
-| Sizes, on what is really read | a file over 8 MiB, `rules.wasm` over 64 MiB, over 40 MiB in all, over 300 files |
+| Sizes, on what is really read | a file over 8 MiB, `rules.wasm` over 64 MiB, over 40 MiB in all, over 300 files, not counting `clients/` |
 | Kinds | text that is not UTF-8 or holds a NUL; a picture that is not what its name says; another kind of file |
+| Clients | a file of `clients/` itself; a client's name, path, size, count or kind out of the limits of [clients/](#clients); an empty client |
 | Manifest | a missing or malformed name, version or ABI; an ABI this server does not speak; any other field |
 | Definition | one that sets its id, family, version or prototype; that is not a ruleset; that does not compile; over 1 MiB with its aliases expanded |
 | Look | a `script` or `style`; a colour that is not one; one that does not fit the game |

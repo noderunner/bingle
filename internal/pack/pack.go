@@ -13,7 +13,8 @@
 //	rules.wasm      the rules (package wasmrules)
 //	guide/          the guide's Markdown and pictures, which the definition
 //	                and the look name by their paths inside it
-//	clients/        optional: every other client's files, not read here
+//	clients/        optional: every other client's files, a folder each,
+//	                checked and hashed but not read (clients.go)
 //
 // Each version of a pack is a game of its own, pack-name-version, on ADR
 // 0098's terms, and a prototype, so it is not rated.
@@ -58,8 +59,8 @@ const (
 	LookFile       = look.FileName
 	RulesFile      = "rules.wasm"
 	GuideDir       = "guide"
-	// ClientsDir holds the files of clients other than the web page. It is
-	// left alone here: listing and serving it is phase 5 of ADR 0147.
+	// ClientsDir holds the files of clients other than the web page, in a
+	// folder for each, which the server lists and serves without reading.
 	ClientsDir = "clients"
 )
 
@@ -108,10 +109,18 @@ type Pack struct {
 	Module catalog.Module
 
 	rules *wasmrules.Module
+	// roots are its clients' folders, open while it is served.
+	roots []*os.Root
 }
 
-// Close throws its rules' instances away.
-func (p *Pack) Close(ctx context.Context) error { return p.rules.Close(ctx) }
+// Close throws its rules' instances away and closes its clients' folders.
+func (p *Pack) Close(ctx context.Context) error {
+	for _, r := range p.roots {
+		_ = r.Close()
+	}
+	p.roots = nil
+	return p.rules.Close(ctx)
+}
 
 var (
 	nameForm    = regexp.MustCompile(`^[a-z][a-z0-9]*(-[a-z0-9]+)*$`)
@@ -179,16 +188,26 @@ func Read(ctx context.Context, rt *wasmrules.Runtime, dir string) (*Pack, error)
 	if err != nil {
 		return nil, fmt.Errorf("pack: %w", err)
 	}
-	p, err := build(ctx, rt, files, wasm)
+	// The clients' files are checked before the rules, which take longer to
+	// load and play than all but the largest folder takes to hash.
+	clients, roots, err := readClients(root)
 	if err != nil {
 		return nil, fmt.Errorf("pack: %w", err)
 	}
+	p, err := build(ctx, rt, files, wasm)
+	if err != nil {
+		for _, r := range roots {
+			_ = r.Close()
+		}
+		return nil, fmt.Errorf("pack: %w", err)
+	}
+	p.Module.Clients, p.roots = clients, roots
 	p.Dir = dir
 	return p, nil
 }
 
 // readFiles reads and checks every file of the pack but its clients' (which
-// are left alone), and returns them with the rules apart.
+// readClients checks), and returns them with the rules apart.
 func readFiles(fsys fs.FS) (memFS, []byte, error) {
 	files := memFS{}
 	var wasm []byte
