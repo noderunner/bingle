@@ -28,10 +28,13 @@ import (
 //	BINGLE_WASM_REPORT=1 go test ./tests/wasmrules -run Report -v -timeout 60m
 //
 // BINGLE_WASM_REPORT_GAMES sets the games of the strength match (default 20).
+// The sides built with TinyGo need it (testdata.TinyGo), and are left out
+// without it.
 func TestReport(t *testing.T) {
 	if os.Getenv("BINGLE_WASM_REPORT") == "" {
 		t.Skip("set BINGLE_WASM_REPORT=1 to measure bots and batches through a module")
 	}
+	t.Run("Module", reportModule)
 	t.Run("Search", reportSearch)
 	t.Run("Batch", reportBatch)
 	t.Run("Strength", reportStrength)
@@ -49,20 +52,37 @@ type reportSide struct {
 // search over the rules linked in, by way of the JSON (in process); the
 // host's bots searching across the module's boundary, with a module built
 // without the bot call (across); the search inside the module (inside); and
-// inside a module whose calls have no deadline (inside, no deadline).
+// inside a module whose calls have no deadline (inside, no deadline). The
+// TinyGo sides are across and inside with a module TinyGo built.
 const (
-	sideLinked     = "linked in"
-	sideInProcess  = "in process"
-	sideAcross     = "across"
-	sideInside     = "inside"
-	sideNoDeadline = "inside, no deadline"
+	sideLinked       = "linked in"
+	sideInProcess    = "in process"
+	sideAcross       = "across"
+	sideInside       = "inside"
+	sideNoDeadline   = "inside, no deadline"
+	sideAcrossTinyGo = "across, TinyGo"
+	sideInsideTinyGo = "inside, TinyGo"
 )
+
+// tinyGoSides are names with the TinyGo sides left out when there is no TinyGo.
+func tinyGoSides(names ...string) []string {
+	if _, ok := testdata.TinyGo(); ok {
+		return names
+	}
+	var out []string
+	for _, name := range names {
+		if !strings.HasSuffix(name, ", TinyGo") {
+			out = append(out, name)
+		}
+	}
+	return out
+}
 
 func reportSides(t *testing.T, instances int, names ...string) []reportSide {
 	t.Helper()
-	module := func(opt wasmrules.Options, tags ...string) *wasmrules.Module {
+	module := func(opt wasmrules.Options, wasm []byte) *wasmrules.Module {
 		opt.Instances, opt.Log = instances, quietLog
-		mod, err := newRuntime(t, opt).Load(context.Background(), "draughts", testdata.BuildWasm(t, testdata.DraughtsWasm, tags...))
+		mod, err := newRuntime(t, opt).Load(context.Background(), "draughts", wasm)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -78,11 +98,15 @@ func reportSides(t *testing.T, instances int, names ...string) []reportSide {
 		case sideInProcess:
 			rules = wasmrules.Encoded(draughts.New)
 		case sideAcross:
-			mod = module(wasmrules.Options{}, testdata.NoBot)
+			mod = module(wasmrules.Options{}, testdata.BuildWasm(t, testdata.DraughtsWasm, testdata.NoBot))
 		case sideInside:
-			mod = module(wasmrules.Options{})
+			mod = module(wasmrules.Options{}, testdata.BuildWasm(t, testdata.DraughtsWasm))
 		case sideNoDeadline:
-			mod = module(wasmrules.Options{Deadline: -1})
+			mod = module(wasmrules.Options{Deadline: -1}, testdata.BuildWasm(t, testdata.DraughtsWasm))
+		case sideAcrossTinyGo:
+			mod = module(wasmrules.Options{}, testdata.BuildWasmTinyGo(t, testdata.DraughtsWasm, testdata.NoBot))
+		case sideInsideTinyGo:
+			mod = module(wasmrules.Options{}, testdata.BuildWasmTinyGo(t, testdata.DraughtsWasm))
 		default:
 			t.Fatalf("no side %q", name)
 		}
@@ -123,6 +147,40 @@ func reportPositions(t *testing.T) []*state.BoardState {
 	return out
 }
 
+// reportModule is what a module costs to have: its size, the time to load
+// it (compiling it and making its first instance), the time to make a further
+// instance, and the memory of one instance once it has played a game.
+func reportModule(t *testing.T) {
+	builds := []struct {
+		name string
+		wasm []byte
+	}{{"Go", testdata.BuildWasm(t, testdata.DraughtsWasm)}}
+	if _, ok := testdata.TinyGo(); ok {
+		builds = append(builds, struct {
+			name string
+			wasm []byte
+		}{"TinyGo", testdata.BuildWasmTinyGo(t, testdata.DraughtsWasm)})
+	}
+	for _, b := range builds {
+		start := time.Now()
+		mod, err := newRuntime(t, wasmrules.Options{Log: quietLog}).Load(context.Background(), "draughts", b.wasm)
+		if err != nil {
+			t.Fatal(err)
+		}
+		loaded := time.Since(start)
+		// A second load of the same module is not compiled again: what is left
+		// is making its instance.
+		start = time.Now()
+		if _, err := newRuntime(t, wasmrules.Options{Log: quietLog}).Load(context.Background(), "draughts", b.wasm); err != nil {
+			t.Fatal(err)
+		}
+		instance := time.Since(start)
+		playOut(t, games(t, mod.Rules())[draughts.ID], 1, 1, 300)
+		t.Logf("%-7s %5d KB, loads in %s, a further instance in %s, an instance holds %.1f MiB after a game",
+			b.name, len(b.wasm)>>10, loaded.Round(time.Millisecond), instance.Round(10*time.Microsecond), float64(mod.Memory())/(1<<20))
+	}
+}
+
 // reportSearch is positions searched per second, by each bot that searches.
 func reportSearch(t *testing.T) {
 	positions := reportPositions(t)
@@ -135,7 +193,7 @@ func reportSearch(t *testing.T) {
 		{"minimax, 2000 positions", func() bots.Bot { return bots.NewMinimax(bots.MinimaxOptions{Seed: 1, NodeBudget: 2000}) }},
 		{"mcts, 1 s (playouts)", func() bots.Bot { return bots.NewMCTS(bots.MCTSOptions{Seed: 1, Budget: time.Second}) }},
 	}
-	for _, side := range reportSides(t, 0, sideLinked, sideInProcess, sideAcross, sideInside, sideNoDeadline) {
+	for _, side := range reportSides(t, 0, tinyGoSides(sideLinked, sideInProcess, sideAcross, sideInside, sideNoDeadline, sideAcrossTinyGo, sideInsideTinyGo)...) {
 		for _, run := range runs {
 			var took time.Duration
 			visits := 0
@@ -174,7 +232,7 @@ func reportBatch(t *testing.T) {
 		Base: draughts.ID, Games: 2 * workers, Seed: 1, Rotate: true, MaxPlies: 200, Workers: workers,
 		Players: []batch.Player{{Bot: "mcts", MCTSIterations: 30}, {Bot: "minimax", MinimaxNodes: 500}},
 	}
-	for _, side := range reportSides(t, workers, sideLinked, sideAcross, sideInside) {
+	for _, side := range reportSides(t, workers, tinyGoSides(sideLinked, sideAcross, sideInside, sideInsideTinyGo)...) {
 		base := rss()
 		var peak atomic.Int64
 		stop := make(chan struct{})
@@ -207,7 +265,7 @@ func reportBatch(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		line := fmt.Sprintf("%-10s %d games on %d workers in %s: %.1f games a minute, %.0f plies a second; process grew by %d MiB at most",
+		line := fmt.Sprintf("%-14s %d games on %d workers in %s: %.1f games a minute, %.0f plies a second; process grew by %d MiB at most",
 			side.name, spec.Games, workers, took.Round(time.Millisecond), float64(spec.Games)/took.Minutes(),
 			float64(plies)/took.Seconds(), max(peak.Load()-base, 0)>>20)
 		if side.mod != nil {
@@ -240,9 +298,13 @@ func reportStrength(t *testing.T) {
 		games = n
 	}
 	const budget = 250 * time.Millisecond
-	sides := reportSides(t, 0, sideLinked, sideAcross, sideInside)
+	sides := reportSides(t, 0, tinyGoSides(sideLinked, sideAcross, sideInside, sideInsideTinyGo)...)
 	referee := sides[0].game
-	for _, pair := range [][2]reportSide{{sides[1], sides[0]}, {sides[2], sides[0]}, {sides[2], sides[1]}} {
+	pairs := [][2]reportSide{{sides[1], sides[0]}, {sides[2], sides[0]}, {sides[2], sides[1]}}
+	if len(sides) > 3 {
+		pairs = append(pairs, [2]reportSide{sides[3], sides[0]}, [2]reportSide{sides[3], sides[2]})
+	}
+	for _, pair := range pairs {
 		type result struct{ wins, losses, draws, plies int }
 		results := make([]result, games)
 		var wg sync.WaitGroup

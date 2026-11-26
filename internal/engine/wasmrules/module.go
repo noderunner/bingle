@@ -308,10 +308,12 @@ var (
 // the heap grows to the memory cap within some tens of thousands of calls.
 //
 // The one exception is the bot call, whose search must keep to a budget of
-// time: while it runs, the monotonic clock follows the machine's, to the
-// millisecond. The wall clock never runs. A search reads the time only to
-// stop, so with a budget of nodes or playouts its answer is the same however
-// fast the machine is.
+// time: while it runs, both clocks move as fast as the machine's, to the
+// millisecond, from where they stand. The wall clock keeps its own date, so a
+// module never learns the real one: it only sees time pass. (Both run because
+// runtimes differ in which they read: Go's the monotonic clock, TinyGo's the
+// wall clock.) A search reads the time only to stop, so with a budget of nodes
+// or playouts its answer is the same however fast the machine is.
 const (
 	clockPerCall = int64(time.Millisecond)
 	clockPerRead = 1
@@ -321,10 +323,10 @@ const (
 // clocks are an instance's wall clock and monotonic clock, in nanoseconds.
 type clocks struct {
 	wall, mono int64
-	// since is when the monotonic clock began to run, and from where it then
-	// stood; since is zero while it stands.
-	since time.Time
-	from  int64
+	// since is when the clocks began to run, and wallFrom and monoFrom where
+	// they then stood; since is zero while they stand.
+	since              time.Time
+	wallFrom, monoFrom int64
 }
 
 func (c *clocks) call() {
@@ -332,19 +334,26 @@ func (c *clocks) call() {
 	c.mono += clockPerCall
 }
 
-// run sets the monotonic clock running with the machine's, and stand stops
-// it again where it has got to.
-func (c *clocks) run()   { c.since, c.from = time.Now(), c.mono }
+// run sets the clocks running with the machine's, and stand stops them again
+// where they have got to.
+func (c *clocks) run()   { c.since, c.wallFrom, c.monoFrom = time.Now(), c.wall, c.mono }
 func (c *clocks) stand() { c.since = time.Time{} }
 
-// nanotime is a reading of the monotonic clock: a nanosecond on from the last
-// one, or where the running clock has got to if that is later.
-func (c *clocks) nanotime() int64 {
-	c.mono += clockPerRead
+// read moves a clock on for a reading: a nanosecond from the last one, or to
+// where the running clock has got to from from if that is later.
+func (c *clocks) read(clock *int64, from int64) int64 {
+	*clock += clockPerRead
 	if !c.since.IsZero() {
-		c.mono = max(c.mono, c.from+int64(time.Since(c.since).Truncate(clockRunning)))
+		*clock = max(*clock, from+int64(time.Since(c.since).Truncate(clockRunning)))
 	}
-	return c.mono
+	return *clock
+}
+
+func (c *clocks) nanotime() int64 { return c.read(&c.mono, c.monoFrom) }
+
+func (c *clocks) walltime() (int64, int32) {
+	wall := c.read(&c.wall, c.wallFrom)
+	return wall / int64(time.Second), int32(wall % int64(time.Second))
 }
 
 // instantiate makes an instance and runs its initialisation. This is the
@@ -360,10 +369,7 @@ func (m *Module) instantiate(ctx context.Context) (*instance, error) {
 		WithStartFunctions("_initialize").
 		WithStdout(out).
 		WithStderr(out).
-		WithWalltime(func() (int64, int32) {
-			clk.wall += clockPerRead
-			return clk.wall / int64(time.Second), int32(clk.wall % int64(time.Second))
-		}, wsys.ClockResolution(clockPerRead)).
+		WithWalltime(clk.walltime, wsys.ClockResolution(clockPerRead)).
 		WithNanotime(clk.nanotime, wsys.ClockResolution(clockPerRead)).
 		WithNanosleep(func(int64) {}).
 		WithOsyield(func() {}).

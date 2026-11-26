@@ -147,8 +147,10 @@ module's own business, and a replay must not ask for the start again.
   instance and a nanosecond with every reading, so nearly all of an instance's time passes between its calls. A
   clock that moves at each reading instead, which is wazero's default, must not be used with a Go guest: see the
   status log. All of this is set explicitly rather than left to wazero's defaults. **The one exception is
-  `bot`** (phase 4), whose search has to keep to a budget of time: while it runs, and only then, the monotonic
-  clock follows the machine's to the millisecond. The wall clock never runs. A search reads the time only to stop,
+  `bot`** (phase 4), whose search has to keep to a budget of time: while it runs, and only then, both clocks
+  move as fast as the machine's, to the millisecond, from where they stand. The wall clock keeps its own date, so
+  a module still never learns the real one (phase 4 ran the monotonic clock alone; phase 4b found that TinyGo's
+  runtime reads only the wall clock). A search reads the time only to stop,
   so with a budget of nodes or playouts its answer is the same on any machine, and a search with only a time
   budget is as reproducible as the host's own timed bots, which is to say not at all. A
   game's chance comes only from the `seed` that `start` is given, kept in its position, as for a compiled-in
@@ -468,3 +470,47 @@ folder. To drop both removes the pack loader and `BINGLE_PACKS` too, and marks t
     rebuilt from those records, and a deadline per game rather than per call. Each decision of a batch now
     crosses three times (`legal`, `bot`, `apply`), against hundreds of crossings a decision before, so it would
     save little beside what the rules cost.
+- 2026-11-25, **phase 4b** (#321): the same rules built with TinyGo 0.44.0 (Go 1.27.1, LLVM 22) and measured. It
+  builds the guest glue and both games as they are, with `-target=wasip1 -buildmode=c-shared`: the same exports,
+  no import beyond the sixteen WASI functions, the same games to the byte from the same seeds as linked in
+  (`tests/difftest` and the overlay's, on every variant), and every failure test of phase 1 passes against it
+  (a panic says what it was, a loop and a memory hog fail cleanly, an instance does not grow). The one thing it
+  needed of the host is marked above: its runtime reads only the wall clock, so a search inside it never saw its
+  budget run out until the wall clock ran during `bot` too.
+  - **The flags** are `-opt=2 -scheduler=none -no-debug`, chosen on the fixture from both optimisation levels,
+    both schedulers and both collectors. The default scheduler, asyncify, makes a module twice the size and every
+    call three to six times slower, for goroutines a guest never starts. `-opt=2` is a quarter faster than the
+    default `-opt=z` for a module a quarter larger. The precise and the conservative collector came out the
+    same.
+  - **Measured** as phase 4, on the same machine (*Go* is the standard-Go module of phase 4):
+
+    | Draughts | Go | TinyGo |
+    |---|---|---|
+    | module | 4,629 KB | 745 KB |
+    | load (compile and first instance) | 1.47 s | 0.28 s |
+    | a further instance | 57 ms | 9 ms |
+    | an instance after a game | 5.5 MiB | 0.4 MiB |
+    | `Legal`, `Apply`, `Format` a call | 326, 553, 30 µs | 194, 304, 16 µs |
+    | tactical inside, a decision | 13.3 ms | 7.2 ms |
+    | minimax inside, positions a second | 2,705 | 5,743 |
+    | MCTS inside, playouts a second | 52 | 116 |
+    | minimax across (no `bot`), positions a second | 1,511 | 2,671 |
+    | practice batch, games a minute | 10.8 | 22.2 |
+    | its 8 instances after the batch | 76 MiB | 3 MiB |
+
+    | Zèrtz, 37 rings | Go | TinyGo |
+    |---|---|---|
+    | tactical inside, a decision | 1,567 ms | 789 ms |
+    | minimax inside, positions a second | 638 | 1,243 |
+    | MCTS inside, playouts a second | 5 | 14 |
+
+    **At equal time** (MCTS, 250 ms a move, 20 games), TinyGo inside against Go inside: 14–2 with four draws on
+    Draughts, 15–5 on Zèrtz. Against the rules linked in, still 0–20 and 1–19.
+  - **What it shows.** TinyGo halves what the rules cost inside a module, and makes a module six times smaller,
+    five times quicker to load and a tenth of the memory. It leaves the rules ten to twenty times slower than
+    linked in, so it narrows the gap rather than closing it.
+  - **Recommendation for #300: offer TinyGo** as the way a pack is built for speed, with standard Go kept as the
+    way that needs nothing else, since a module of either kind is played the same. That is phase 4b's step 3
+    (tests built with TinyGo where there is one, and `docs/packs.md`), which waits on the maintainer: this ADR
+    chose standard Go so that no other toolchain is needed. Meanwhile the tests already compare a TinyGo module
+    with the rules linked in where `BINGLE_TINYGO` or a `tinygo` on the `PATH` gives one, and skip it otherwise.
