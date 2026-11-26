@@ -26,6 +26,8 @@ type GameDefSummary struct {
 	Tutorials int
 	// Private marks a game of the private overlay (ADR 0140).
 	Private bool
+	// Clients are the clients the game has files for (ADR 0147).
+	Clients []string
 }
 
 // ListGameDefs returns a summary of every game definition registered in m's
@@ -48,6 +50,7 @@ func (m *Manager) ListGameDefs(ctx context.Context) []GameDefSummary {
 			Publisher:     cg.Definition.Publisher,
 			Prototype:     cg.Definition.Prototype,
 			Private:       cg.Private,
+			Clients:       clientNames(cg),
 		}
 		if _, list, err := m.TutorialsFor(cg.Definition.ID); err == nil {
 			summaries[i].Tutorials = len(list)

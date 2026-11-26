@@ -165,6 +165,9 @@ type CompiledGame struct {
 	// Web is the family's web.yaml as JSON (Module.Web), served to the web
 	// page under /api/game-defs/{id}/web; nil when it has none.
 	Web []byte
+	// Clients is each other client's files (Module.Clients), served under
+	// /api/game-defs/{id}/clients/{client}; nil when there are none.
+	Clients map[string]*ClientFiles
 	// Scripts is the module's web page scripts (Module.Scripts); nil when it
 	// has none.
 	Scripts fs.FS

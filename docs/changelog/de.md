@@ -2,6 +2,11 @@
 
 Was sich in Bingle geändert hat, das Neueste zuerst. Bingle Core (der Server, die Engine und der Web-Client) und jedes Spiel haben eine eigene Version, und jeder Eintrag sagt, welche sich geändert hat. Einträge vor 0.124.0 gibt es nur auf Englisch.
 
+## 0.138.0 - 2026-11-25
+
+### Bingle Core 0.138.0
+- Installationspakete können das Aussehen eines Spiels für andere Clients mitbringen, etwa einen 3D-Client (API 1.17.0)
+
 ## 0.137.1 - 2026-11-25
 
 ### Bingle Core 0.137.1

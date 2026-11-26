@@ -55,7 +55,7 @@ func statusForError(err error) int {
 		return http.StatusTooManyRequests
 	case errors.Is(err, session.ErrGameRetired):
 		return http.StatusGone
-	case errors.Is(err, session.ErrRulesetPanic), errors.Is(err, session.ErrStartFailed):
+	case errors.Is(err, session.ErrRulesetPanic), errors.Is(err, session.ErrStartFailed), errors.Is(err, session.ErrClientFileChanged):
 		// A ruleset that panicked, or could not start a game, is the
 		// server's fault, not the client's: the move may well have been
 		// perfectly legal. A repro bundle will have been written for a panic

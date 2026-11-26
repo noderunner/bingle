@@ -24,7 +24,10 @@ type GameInfo struct {
 	Version   string `json:"version,omitempty"`
 	Prototype bool   `json:"prototype,omitempty"`
 	// Private marks a game built from the private overlay (ADR 0140).
-	Private bool     `json:"private,omitempty"`
+	Private bool `json:"private,omitempty"`
+	// Clients are the clients other than the web page that the game has
+	// files for (ADR 0147), listed at /game-defs/{id}/clients/{client}.
+	Clients []string `json:"clients,omitempty"`
 	Rules   []string `json:"rules,omitempty"`
 	// Endings word the game's own end reasons (ADR 0150): a reason, or
 	// reason:detail, as the words that follow "won" or "a draw". The
@@ -277,6 +280,7 @@ func buildGameInfo(cg *catalog.CompiledGame) GameInfo {
 		Version:     def.Version,
 		Prototype:   def.Prototype,
 		Private:     cg.Private,
+		Clients:     clientNames(cg),
 		Rules:       def.Rules,
 		Endings:     def.Endings,
 		Notation:    notation,

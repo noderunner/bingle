@@ -47,6 +47,10 @@ type Module struct {
 	// (web.yaml, ADR 0124) as JSON, or nil. Only the web page reads it: the
 	// catalog and the server carry it as it is.
 	Web []byte
+	// Clients is the files of each client other than the web page, by the
+	// client's name ("bingle-3d"), for the family's games; nil for none. The
+	// server never reads them (ADR 0147).
+	Clients map[string]*ClientFiles
 	// Scripts is the web page's own scripts for the family's games (ADR
 	// 0124), served under /static/games/{family}/ and loaded through the
 	// look's script; nil for a game the page draws by itself.
@@ -151,6 +155,7 @@ func (c *Catalog) RegisterModule(mod Module) error {
 		cg := c.games[id]
 		cg.Assets = mod.Assets
 		cg.Web = mod.Web
+		cg.Clients = mod.Clients
 		cg.Scripts = mod.Scripts
 		cg.Private = mod.Private
 		c.src[id] = source{doc: doc, mod: mod}
@@ -445,6 +450,7 @@ func (c *Catalog) derive(baseID, suffix string, options map[string]any) (*Compil
 	cg := c.games[id]
 	cg.Assets = src.mod.Assets
 	cg.Web = src.mod.Web
+	cg.Clients = src.mod.Clients
 	cg.Scripts = src.mod.Scripts
 	cg.Private = src.mod.Private
 	c.mu.Unlock()

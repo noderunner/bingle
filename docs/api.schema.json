@@ -488,6 +488,61 @@
       ],
       "type": "object"
     },
+    "ClientFileInfo": {
+      "description": "ClientFileInfo is one file of a client's.",
+      "properties": {
+        "content_type": {
+          "description": "ContentType is the media type it is sent as.",
+          "type": "string"
+        },
+        "path": {
+          "description": "Path is its path in the client's folder, slash-separated.",
+          "type": "string"
+        },
+        "sha256": {
+          "description": "SHA256 is the hash of its contents, in lower-case hex, and its ETag.",
+          "type": "string"
+        },
+        "size": {
+          "description": "Size is its length in bytes.",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "path",
+        "size",
+        "sha256",
+        "content_type"
+      ],
+      "type": "object"
+    },
+    "ClientIndex": {
+      "description": "ClientIndex is the files one client draws a game with (ADR 0147): GET /game-defs/{id}/clients/{client}. A client fetches each from /game-defs/{id}/clients/{client}/files/{path} and keeps it by its hash.",
+      "properties": {
+        "client": {
+          "type": "string"
+        },
+        "files": {
+          "description": "Files are in the order of their paths.",
+          "items": {
+            "$ref": "#/$defs/ClientFileInfo"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "game": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "game",
+        "client",
+        "files"
+      ],
+      "type": "object"
+    },
     "ClockSnapshot": {
       "description": "ClockSnapshot is a game clock as clients draw it: one entry per seat, and the seat whose clock is running now (0 when none is).",
       "properties": {
@@ -1316,6 +1371,13 @@
         "board_width": {
           "type": "integer"
         },
+        "clients": {
+          "description": "Clients are the clients other than the web page that the game has files for (ADR 0147), listed at /game-defs/{id}/clients/{client}.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
         "description": {
           "type": "string"
         },
@@ -1386,6 +1448,13 @@
             }
           ],
           "description": "Cards describes the suits, card types and zones of a card game."
+        },
+        "clients": {
+          "description": "Clients are the clients other than the web page that the game has files for (ADR 0147), listed at /game-defs/{id}/clients/{client}.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
         },
         "count_labels": {
           "additionalProperties": {
@@ -4494,9 +4563,9 @@
   },
   "$id": "https://github.com/noderunner/bingle/docs/api.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "description": "The requests, responses and WebSocket events of bingle's API, version 1.16.0. Generated from the Go types of the server: do not edit. Objects let unknown fields through: a client ignores those it does not know.",
+  "description": "The requests, responses and WebSocket events of bingle's API, version 1.17.0. Generated from the Go types of the server: do not edit. Objects let unknown fields through: a client ignores those it does not know.",
   "title": "Bingle API messages",
-  "x-api-version": "1.16.0",
+  "x-api-version": "1.17.0",
   "x-dm-events": {
     "badge": {
       "$ref": "#/$defs/BadgeEventData"
@@ -4556,6 +4625,14 @@
       "response": {
         "$ref": "#/$defs/GameInfo"
       }
+    },
+    "GET /api/game-defs/{id}/clients/{client}": {
+      "response": {
+        "$ref": "#/$defs/ClientIndex"
+      }
+    },
+    "GET /api/game-defs/{id}/clients/{client}/files/{path}": {
+      "media_type": "application/octet-stream"
     },
     "GET /api/game-defs/{id}/guide": {
       "media_type": "text/markdown"

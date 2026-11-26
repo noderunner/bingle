@@ -132,7 +132,9 @@ Served by the same binary as static assets plus lightweight JS (no SPA build pip
   reads the install packs in `BINGLE_PACKS` at start-up (a definition, a
   look, a guide and such a module per directory), checks each as hostile,
   plays it a trial game and hands `internal/app` a `catalog.Module` for each
-  ([packs.md](packs.md)).
+  ([packs.md](packs.md)). A pack's `clients/` folder becomes the module's
+  `Clients`, each client's files hashed but never read, which the API lists
+  and serves from the disk.
 * **Games** (`internal/games`): `tak` (3×3–8×8 from one YAML
   definition), `classics` (Gomoku, Hex, Draughts,
   Breakthrough, Reversi, Go, Yavalath, Havannah, Amazons, Ataxx, Pente,

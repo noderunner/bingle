@@ -131,4 +131,33 @@ if ! grep -q '"bot_moves"' "${WORKDIR}/packmove.json"; then
   exit 1
 fi
 
-echo "smoke test PASSED: catalog, game creation vs a bot, a move with a bot reply, static assets, puzzles, environments, hints and an install pack"
+# The pack's files for a client, fetched as a client with nothing but the API
+# does: list them, download each, check it against its hash and keep it by
+# that hash; the second time, download nothing.
+CLIENT="http://127.0.0.1:${PORT}/api/game-defs/pack-draughts-0.1.0/clients/made-up"
+curl -fsS "${CLIENT}" -o "${WORKDIR}/client.json"
+grep -o '"path":"[^"]*","size":[0-9]*,"sha256":"[0-9a-f]*"' "${WORKDIR}/client.json" |
+  sed 's/"path":"\([^"]*\)".*"sha256":"\([0-9a-f]*\)"/\1 \2/' >"${WORKDIR}/client.txt"
+if [ ! -s "${WORKDIR}/client.txt" ]; then
+  echo "smoke test FAILED: the pack lists no files for its client"
+  cat "${WORKDIR}/client.json"
+  exit 1
+fi
+sha256() { if command -v sha256sum >/dev/null; then sha256sum "$1"; else shasum -a 256 "$1"; fi | cut -d' ' -f1; }
+mkdir -p "${WORKDIR}/kept"
+while read -r FILE HASH; do
+  curl -fsS "${CLIENT}/files/${FILE}" -o "${WORKDIR}/kept/${HASH}"
+  if [ "$(sha256 "${WORKDIR}/kept/${HASH}")" != "${HASH}" ]; then
+    echo "smoke test FAILED: the client's ${FILE} does not match its hash"
+    exit 1
+  fi
+done <"${WORKDIR}/client.txt"
+while read -r FILE HASH; do
+  STATUS=$(curl -sS -o /dev/null -w '%{http_code}' -H "If-None-Match: \"${HASH}\"" "${CLIENT}/files/${FILE}")
+  if [ "${STATUS}" != 304 ]; then
+    echo "smoke test FAILED: the client's ${FILE} was sent again (${STATUS})"
+    exit 1
+  fi
+done <"${WORKDIR}/client.txt"
+
+echo "smoke test PASSED: catalog, game creation vs a bot, a move with a bot reply, static assets, puzzles, environments, hints and an install pack with a client's files"

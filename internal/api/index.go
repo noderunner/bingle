@@ -57,6 +57,8 @@ var indexEndpoints = []indexEndpoint{
 	{"GET", "/api/game-defs", "the games: id, name, seats"},
 	{"GET", "/api/game-defs/{id}", "one game: rules, notation_help, options, board"},
 	{"GET", "/api/game-defs/{id}/guide", "the rules guide, as Markdown"},
+	{"GET", "/api/game-defs/{id}/clients/{client}", "the files a client draws the game with: path, size, sha256"},
+	{"GET", "/api/game-defs/{id}/clients/{client}/files/{path}", "one of them; its sha256 is its ETag"},
 	{"GET", "/api/bots", "the built-in opponents"},
 	{"GET", "/api/games", "the open games waiting for players"},
 	{"POST", "/api/games", "create a game: {game_def_id, player_name, opponent?, options?}"},
