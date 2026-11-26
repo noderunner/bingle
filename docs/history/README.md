@@ -24,5 +24,6 @@ truth, and [decisions/](../decisions/README.md) records what was decided and why
 | [patience-vocabulary-plan.md](patience-vocabulary-plan.md) | The patience vocabulary, the DSL audit's addition F |
 | [code-and-architecture-audit-plan.md](code-and-architecture-audit-plan.md) | Initial thoughts on a code and architecture audit, still open (issue #249) |
 | [game-services-proposal.md](game-services-proposal.md) | A deferred proposal: games as services, in the server's process or their own, in place of the private overlay |
+| [wasm-packs-report.md](wasm-packs-report.md) | The report on the proof of concept of install packs (ADR 0147): its numbers and the recommendations |
 | [plan-dependencies.md](plan-dependencies.md) | How the plans depended on each other, and the order they were built in |
 
