@@ -8,6 +8,7 @@ package web
 
 import (
 	"bytes"
+	"cmp"
 	"embed"
 	"encoding/json"
 	"errors"
@@ -19,6 +20,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/noderunner/bingle/internal/clientbuilds"
 	"github.com/noderunner/bingle/internal/config"
 	"github.com/noderunner/bingle/internal/i18n"
 	"github.com/noderunner/bingle/internal/session"
@@ -42,6 +44,9 @@ var templates = template.Must(template.New("").Funcs(template.FuncMap{
 	"brandHasIcon":  func() bool { return false },
 	"brandIconURL":  func() string { return "/static/favicon.svg" },
 	"brandIconType": func() string { return "image/svg+xml" },
+	// Filled in for a router that offers the bingle-3d client (WithClientBuilds).
+	"clientMenu":   func() bool { return false },
+	"clientBuilds": func() []clientBuild { return nil },
 	// t is the words of a key in the page's language (ADR 0141):
 	// {{t .Lang "key" "name" value …}}.
 	"t": i18n.HTML,
@@ -78,6 +83,44 @@ func brandedTemplates(brand config.Brand) *template.Template {
 	})
 }
 
+// clientBuild is one build of the bingle-3d client in the logo's menu.
+type clientBuild struct {
+	// Name is the platform's, as a person says it; File and Version are the
+	// archive's.
+	Name, File, Version string
+}
+
+// platformNames are the names of the platforms bingle-3d is built for. They
+// are names, so no language has its own; a platform not listed here is shown
+// as its archive calls it.
+var platformNames = map[string]string{
+	"windows-x86_64": "Windows",
+	"linux-x86_64":   "Linux",
+	"steam-frame":    "Steam Frame",
+}
+
+// Option customises NewRouter.
+type Option func(*handlers)
+
+// WithClientBuilds puts a menu on the logo of every page, with a download
+// for each build in set and the client's setup file (ADR 0151). A nil set
+// leaves the logo the plain link home it has always been.
+func WithClientBuilds(set *clientbuilds.Set) Option {
+	return func(h *handlers) {
+		if set == nil {
+			return
+		}
+		var builds []clientBuild
+		for _, b := range set.Builds() {
+			builds = append(builds, clientBuild{Name: cmp.Or(platformNames[b.Platform], b.Platform), File: b.File, Version: b.Version})
+		}
+		h.templates = h.templates.Funcs(template.FuncMap{
+			"clientMenu":   func() bool { return true },
+			"clientBuilds": func() []clientBuild { return builds },
+		})
+	}
+}
+
 // NewRouter returns a chi.Router serving bingle's browser UI: "GET /" renders
 // index.html.tmpl with mgr.ListGameDefs' result as template data (so the
 // create form's game_def_id select offers every real registered game
@@ -86,10 +129,13 @@ func brandedTemplates(brand config.Brand) *template.Template {
 //
 // accountLanguage is the language the account a page is for chose, "" for
 // none (auth.Resolver.AccountLanguage); nil when there are no accounts.
-func NewRouter(mgr *session.Manager, brand config.Brand, accountLanguage func(*http.Request) string) http.Handler {
+func NewRouter(mgr *session.Manager, brand config.Brand, accountLanguage func(*http.Request) string, opts ...Option) http.Handler {
 	r := chi.NewRouter()
 
 	h := &handlers{mgr: mgr, templates: brandedTemplates(brand), accountLanguage: accountLanguage}
+	for _, opt := range opts {
+		opt(h)
+	}
 	if brand.Icon != nil {
 		r.Get(brandIconPath, func(w http.ResponseWriter, _ *http.Request) {
 			w.Header().Set("Content-Type", brand.IconType)

@@ -14,6 +14,7 @@ import (
 
 	"github.com/noderunner/bingle/internal/auth"
 	"github.com/noderunner/bingle/internal/batch"
+	"github.com/noderunner/bingle/internal/clientbuilds"
 	"github.com/noderunner/bingle/internal/envs"
 	"github.com/noderunner/bingle/internal/journal"
 	"github.com/noderunner/bingle/internal/metrics"
@@ -83,6 +84,13 @@ func NewRouter(mgr *session.Manager, opts ...Option) chi.Router {
 	r.Get("/game-defs/{id}/web", h.handleGameWeb)
 	r.Get("/game-defs/{id}/clients/{client}", h.handleClientIndex)
 	r.Get("/game-defs/{id}/clients/{client}/files/*", h.handleClientFile)
+	if h.clientBuilds != nil {
+		r.Get("/client", h.handleClientBuilds)
+		r.Get("/client/files/{file}", h.handleClientBuildFile)
+		if h.guests != nil {
+			r.Post("/client/setup", h.guests.HandleClientSetup)
+		}
+	}
 	r.Get("/game-defs/{id}/tutorials", h.handleListTutorials)
 	r.Get("/game-defs/{id}/tutorials/{tutorial}", h.handleGetTutorial)
 	r.Get("/bots", h.handleListBots)
@@ -211,7 +219,10 @@ type handlers struct {
 	schema []byte
 	// guests makes guests for scripts (POST /guest); nil leaves it unmounted.
 	guests *auth.Resolver
-	envs   *envs.Manager
+	// clientBuilds are the builds of the bingle-3d client on offer (ADR
+	// 0151); nil leaves /client unmounted.
+	clientBuilds *clientbuilds.Set
+	envs         *envs.Manager
 	// batches runs bot practice batches (nil when not mounted).
 	batches *batch.Manager
 	// publicURL is the base URL clients on other networks reach the server by

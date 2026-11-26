@@ -135,6 +135,11 @@ func main() {
 	if cfg.ClientErrors {
 		appOpts = append(appOpts, app.WithClientErrors())
 	}
+	if cfg.TLSSelfSigned {
+		// A client's setup file carries the fingerprint of the certificate
+		// the server makes for itself (ADR 0151).
+		appOpts = append(appOpts, app.WithCertificate(func() string { return httpserve.CachedFingerprint(cfg.TLSCacheDir) }))
+	}
 
 	a, err := app.New(cfg, appOpts...)
 	if err != nil {

@@ -488,6 +488,62 @@
       ],
       "type": "object"
     },
+    "ClientBuild": {
+      "description": "Build is one archive on offer.",
+      "properties": {
+        "api": {
+          "description": "API is the version of the API the build was made for, when its release says so; such a build is offered only by a server it can use.",
+          "type": "string"
+        },
+        "file": {
+          "description": "File is the archive's name, and the last part of its address: /api/client/files/{file}.",
+          "type": "string"
+        },
+        "platform": {
+          "description": "Platform is what it runs on, as its file is named: \"windows-x86_64\", \"linux-x86_64\", \"steam-frame\".",
+          "type": "string"
+        },
+        "sha256": {
+          "description": "SHA256 is the hash of its contents, in lower-case hex, and its ETag.",
+          "type": "string"
+        },
+        "size": {
+          "description": "Size is its length in bytes.",
+          "type": "integer"
+        },
+        "version": {
+          "description": "Version is the client's version.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "platform",
+        "version",
+        "file",
+        "size",
+        "sha256"
+      ],
+      "type": "object"
+    },
+    "ClientBuildsResponse": {
+      "description": "clientBuildsResponse is GET /client's answer.",
+      "properties": {
+        "builds": {
+          "description": "Builds are the builds of the bingle-3d client this server offers: for each platform, the newest it has that can use its API. Each is fetched from /api/client/files/{file}.",
+          "items": {
+            "$ref": "#/$defs/ClientBuild"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "builds"
+      ],
+      "type": "object"
+    },
     "ClientFileInfo": {
       "description": "ClientFileInfo is one file of a client's.",
       "properties": {
@@ -2514,6 +2570,10 @@
     "LoginRequest": {
       "description": "LoginRequest is POST /auth/login's body.",
       "properties": {
+        "code": {
+          "description": "Code is the sign-in code of a client's setup file (\"bgc_…\", ADR 0151), in place of the handle and the password. It works once, within a day of the file's download, and the answer is a SessionTokenResponse whether Token is set or not. No second factor is asked for.",
+          "type": "string"
+        },
         "handle": {
           "type": "string"
         },
@@ -2525,10 +2585,6 @@
           "type": "boolean"
         }
       },
-      "required": [
-        "handle",
-        "password"
-      ],
       "type": "object"
     },
     "LogoutResponse": {
@@ -4563,9 +4619,9 @@
   },
   "$id": "https://github.com/noderunner/bingle/docs/api.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "description": "The requests, responses and WebSocket events of bingle's API, version 1.17.0. Generated from the Go types of the server: do not edit. Objects let unknown fields through: a client ignores those it does not know.",
+  "description": "The requests, responses and WebSocket events of bingle's API, version 1.18.0. Generated from the Go types of the server: do not edit. Objects let unknown fields through: a client ignores those it does not know.",
   "title": "Bingle API messages",
-  "x-api-version": "1.17.0",
+  "x-api-version": "1.18.0",
   "x-dm-events": {
     "badge": {
       "$ref": "#/$defs/BadgeEventData"
@@ -4602,6 +4658,14 @@
         },
         "type": "array"
       }
+    },
+    "GET /api/client": {
+      "response": {
+        "$ref": "#/$defs/ClientBuildsResponse"
+      }
+    },
+    "GET /api/client/files/{file}": {
+      "media_type": "application/octet-stream"
     },
     "GET /api/friends": {
       "response": {
@@ -4702,6 +4766,9 @@
       "response": {
         "$ref": "#/$defs/BotMatchResponse"
       }
+    },
+    "POST /api/client/setup": {
+      "media_type": "application/toml"
     },
     "POST /api/dm": {
       "request": {

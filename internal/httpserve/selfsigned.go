@@ -108,6 +108,17 @@ func EnsureSelfSigned(dir, host string) (SelfSigned, error) {
 	return out, nil
 }
 
+// CachedFingerprint is the fingerprint of the certificate EnsureSelfSigned
+// keeps in dir, or "" when there is none there. It is read from the file each
+// time, so it is the certificate the server is serving with once it serves.
+func CachedFingerprint(dir string) string {
+	cert, err := x509.ParseCertificate(cachedDER(filepath.Join(dir, "selfsigned.crt")))
+	if err != nil {
+		return ""
+	}
+	return fingerprint(cert.Raw)
+}
+
 // selfSignedHosts is what the certificate is valid for: the configured name
 // plus the local ones, without duplicates.
 func selfSignedHosts(host string) []string {

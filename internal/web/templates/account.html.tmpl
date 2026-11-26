@@ -13,7 +13,7 @@
 </head>
 <body data-page="{{.Page}}">
 	<header class="topbar">
-		<a class="brand" href="/"><span class="logo{{if brandHasIcon}} custom{{end}}"></span>{{brandName}}</a>
+		{{template "brand" .}}
 		<span class="spacer"></span>
 	</header>
 
@@ -228,6 +228,6 @@
 
 	<!-- First, so a fault in any module below is reported (docs/observability.md). -->
 	<script type="module" src="/static/js/errors.js"></script>
-	<script type="module" src="/static/js/account.js"></script>
+{{template "brand-script" .}}	<script type="module" src="/static/js/account.js"></script>
 </body>
 </html>

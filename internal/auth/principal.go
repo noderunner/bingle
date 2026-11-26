@@ -46,6 +46,9 @@ type Principal struct {
 	// answers with the new one in its body.
 	session string
 	bearer  bool
+	// issued is the key of a guest this very request made, which the
+	// browser has only once the answer's cookie arrives.
+	issued string
 }
 
 type ctxKey struct{}

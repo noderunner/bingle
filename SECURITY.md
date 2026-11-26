@@ -19,6 +19,10 @@ Bingle is built for a group of friends that may grow ([the accounts plan](docs/h
   `BINGLE_TRANSLATE_URL`, which should be on the server's machine or network; the server warns when it is
   not. Such services usually have no authentication, so open their port to the local network only
   (docs/translate.md, ADR 0143).
+- A server that offers the 3D client (`BINGLE_CLIENT_BUILDS`) gives a player a setup file for it. An
+  account's holds a sign-in code that works once, within a day, and never a session; a guest's holds
+  the guest's key. Until it is used, whoever has the file can become that player
+  (docs/client-builds.md, ADR 0151).
 
 So: put it on a private network or behind a VPN or a reverse proxy with its own authentication if you do
 not want strangers using it, and use HTTPS (`BINGLE_TLS_DOMAIN`, docs/tls.md) if it is reachable

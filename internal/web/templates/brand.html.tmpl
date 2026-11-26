@@ -1,0 +1,16 @@
+{{/* The name and logo at the start of every page's top bar. On a server that offers the
+     bingle-3d client (ADR 0151) the logo opens a menu, and the name stays the way home. */}}
+{{define "brand"}}{{if clientMenu}}<span class="brand has-menu"><button type="button" class="brand-menu-button" id="brand-menu-button" aria-haspopup="menu" aria-expanded="false" aria-controls="brand-menu" aria-label="{{t .Lang "bar.menu"}}"><span class="logo{{if brandHasIcon}} custom{{end}}"></span></button><a class="brand-name" href="/">{{brandName}}</a>
+			<span class="brand-menu" id="brand-menu" role="menu" aria-labelledby="brand-menu-button" hidden>
+				<a role="menuitem" tabindex="-1" id="brand-menu-home" href="/">{{t .Lang "bar.home"}}</a>
+				<span class="brand-menu-group" role="group" aria-labelledby="brand-menu-client">
+					<span class="brand-menu-heading" id="brand-menu-client">{{t .Lang "bar.client"}}</span>
+					{{range clientBuilds}}<a role="menuitem" tabindex="-1" class="brand-menu-build" href="/api/client/files/{{.File}}" download title="{{.Version}}">{{.Name}}</a>
+					{{end}}<button type="button" role="menuitem" tabindex="-1" id="brand-menu-setup">{{t .Lang "bar.setup_file"}}</button>
+				</span>
+			</span></span>{{else}}<a class="brand" href="/"><span class="logo{{if brandHasIcon}} custom{{end}}"></span>{{brandName}}</a>{{end}}{{end}}
+
+{{/* The menu's script, among the page's own at the end of the body, where moving between
+     pages without loading them (js/nav.js) finds it and runs it again. */}}
+{{define "brand-script"}}{{if clientMenu}}	<script type="module" src="/static/js/brand-menu.js"></script>
+{{end}}{{end}}

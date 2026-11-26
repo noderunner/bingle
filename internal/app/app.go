@@ -18,6 +18,7 @@ import (
 	"github.com/noderunner/bingle/internal/auth"
 	"github.com/noderunner/bingle/internal/batch"
 	"github.com/noderunner/bingle/internal/bots"
+	"github.com/noderunner/bingle/internal/clientbuilds"
 	"github.com/noderunner/bingle/internal/config"
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/engine/wasmrules"
@@ -80,6 +81,19 @@ type App struct {
 	// and is nil without them.
 	wasm  *wasmrules.Runtime
 	packs []*pack.Pack
+	// clientBuilds are the builds of the bingle-3d client the server offers
+	// (BINGLE_CLIENT_BUILDS, ADR 0151), nil without a directory of them;
+	// certificate answers with the fingerprint of the certificate the
+	// server made for itself, which a client's setup file carries.
+	clientBuilds *clientbuilds.Set
+	certificate  func() string
+}
+
+// WithCertificate tells the App how to learn the SHA-256 fingerprint of the
+// certificate the server made for itself (BINGLE_TLS_SELFSIGNED), so a
+// client's setup file can carry it (ADR 0151). Without it no file does.
+func WithCertificate(fingerprint func() string) Option {
+	return func(a *App) { a.certificate = fingerprint }
 }
 
 // WithTransport tells the App how to read a request's peer address: behind a
@@ -165,6 +179,16 @@ func New(cfg config.Config, opts ...Option) (*App, error) {
 	if err := a.loadPacks(cfg.Packs, cat); err != nil {
 		_ = st.Close()
 		return nil, err
+	}
+	if cfg.ClientBuilds != "" {
+		if a.clientBuilds, err = clientbuilds.Load(cfg.ClientBuilds, version.API, a.log); err != nil {
+			a.closeWasm()
+			_ = st.Close()
+			return nil, fmt.Errorf("app: BINGLE_CLIENT_BUILDS: %w", err)
+		}
+		for _, b := range a.clientBuilds.Builds() {
+			a.log.Info("client build on offer", "platform", b.Platform, "version", b.Version, "file", b.File)
+		}
 	}
 	// The packs' rules go with the store on any error from here on.
 	started := false
@@ -287,7 +311,7 @@ func New(cfg config.Config, opts ...Option) (*App, error) {
 		manager.EnableTranslate(a.translator, caps.MayTranslate, caps.AllowTranslation)
 	}
 	a.guests = auth.NewResolver(st, auth.Options{Transport: a.transport, Idle: cfg.GuestIdle, Log: a.log, Accounts: a.accounts,
-		OIDC: auth.NewOIDC(cfg.PublicURL, cfg.OIDC), Caps: caps, Translation: a.translator != nil})
+		OIDC: auth.NewOIDC(cfg.PublicURL, cfg.OIDC), Caps: caps, Translation: a.translator != nil, Certificate: a.certificate})
 
 	if err := enableNotify(manager, cfg, a.log); err != nil {
 		_ = st.Close()
@@ -564,6 +588,7 @@ func (a *App) Close() error {
 		a.translator.Close()
 	}
 	a.closeWasm()
+	_ = a.clientBuilds.Close()
 	return a.store.Close()
 }
 
@@ -586,7 +611,7 @@ func (a *App) newRouter() chi.Router {
 	r.Use(a.metrics.Middleware)
 	r.Use(logging.Recover(a.log))
 	r.Get("/healthz", a.handleHealthz)
-	apiOpts := []api.Option{api.WithEnvs(a.envs), api.WithBatches(a.batches), api.WithPublicURL(a.publicURL), api.WithRTC(a.rtc), api.WithChangelog(a.changelog, a.changelogs), api.WithDocs(a.apiDocs), api.WithSchema(a.apiSchema), api.WithTransport(a.transport)}
+	apiOpts := []api.Option{api.WithClientBuilds(a.clientBuilds), api.WithEnvs(a.envs), api.WithBatches(a.batches), api.WithPublicURL(a.publicURL), api.WithRTC(a.rtc), api.WithChangelog(a.changelog, a.changelogs), api.WithDocs(a.apiDocs), api.WithSchema(a.apiSchema), api.WithTransport(a.transport)}
 	if a.clientErrors {
 		// The one observability route on the public listener: a browser has
 		// to be able to reach it. It is write-only, validated against closed
@@ -608,7 +633,7 @@ func (a *App) newRouter() chi.Router {
 	// specific path above must be registered first to take precedence.
 	// A closed server shows its pages to its members, and the sign-in to
 	// everybody else.
-	r.With(a.guests.ClosedPages).Mount("/", web.NewRouter(a.manager, a.brand, a.guests.AccountLanguage))
+	r.With(a.guests.ClosedPages).Mount("/", web.NewRouter(a.manager, a.brand, a.guests.AccountLanguage, web.WithClientBuilds(a.clientBuilds)))
 	return r
 }
 
