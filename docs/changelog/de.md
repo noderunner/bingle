@@ -2,6 +2,14 @@
 
 Was sich in Bingle geändert hat, das Neueste zuerst. Bingle Core (der Server, die Engine und der Web-Client) und jedes Spiel haben eine eigene Version, und jeder Eintrag sagt, welche sich geändert hat. Einträge vor 0.124.0 gibt es nur auf Englisch.
 
+## 0.137.1 - 2026-11-25
+
+### Bingle Core 0.137.1
+- Keine Änderungen außerhalb von Zèrtz
+
+### Zèrtz 1.0.0
+- Bots spielen viel schneller und stärker
+
 ## 0.137.0 - 2026-11-25
 
 ### Bingle Core 0.137.0
