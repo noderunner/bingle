@@ -2,6 +2,7 @@ package wasmrules_test
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"reflect"
@@ -12,6 +13,7 @@ import (
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/engine/state"
 	"github.com/noderunner/bingle/internal/engine/wasmrules"
+	"github.com/noderunner/bingle/internal/engine/wasmrules/guest"
 	"github.com/noderunner/bingle/tests/testdata"
 	"github.com/noderunner/bingle/tests/testdata/draughts"
 )
@@ -224,4 +226,80 @@ func TestBotsPlayAModuleAtEveryLevel(t *testing.T) {
 			})
 		}
 	}
+}
+
+// The search plays a game's own State as it plays Rules: the fixture's rules
+// searched through their State and through Rules and Heuristic alone (the
+// same rules, with the State hidden) give the same answer for the same
+// request at every level, positions and playouts counted alike.
+func TestTheSearchPlaysAStateAsItPlaysRules(t *testing.T) {
+	var g *guest.Game
+	captured := func(game *guest.Game) (guest.Rules, error) { g = game; return draughts.New(game) }
+	if _, err := wasmrules.Native(captured).Start(nativeGames(t)[draughts.ID], 1); err != nil {
+		t.Fatal(err)
+	}
+	arrays, err := draughts.New(g)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := arrays.(guest.Searchable); !ok {
+		t.Fatal("the fixture's rules are not searchable")
+	}
+	maps := rulesOnly{arrays, arrays.(guest.Heuristic)}
+	if _, ok := guest.Rules(maps).(guest.Searchable); ok {
+		t.Fatal("the rules alone are searchable")
+	}
+	colors := map[int]string{1: "black", 2: "white"}
+	for seed := uint64(1); seed <= 3; seed++ {
+		steps := playOut(t, nativeGames(t)[draughts.ID], seed, int64(seed), 24)
+		for _, at := range []int{0, 8, 16, 24} {
+			if at >= len(steps) {
+				continue
+			}
+			// A stored position reads as the guest's, which is what the
+			// guest's own reader holds to (codec_test.go).
+			var pos *guest.Position
+			if err := json.Unmarshal([]byte(steps[at].Position), &pos); err != nil {
+				t.Fatal(err)
+			}
+			seat := maps.ImpulseSeat(pos)
+			if seat == 0 {
+				continue
+			}
+			for _, req := range []guest.BotRequest{
+				{Level: guest.LevelTactical, Seed: seed},
+				{Level: guest.LevelMinimax, Nodes: 400, Seed: seed},
+				{Level: guest.LevelMCTS, Iterations: 30, Seed: seed},
+			} {
+				want, err := guest.Search(maps, colors, len(g.Board.Positions), pos, seat, req)
+				if err != nil {
+					t.Fatal(err)
+				}
+				got, err := guest.Search(arrays, colors, len(g.Board.Positions), pos, seat, req)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if !reflect.DeepEqual(got, want) {
+					t.Errorf("seed %d, selection %d, %s: through the State %+v, through Rules %+v", seed, at, req.Level, got, want)
+				}
+			}
+			// A seat that is not to move has nothing to search, either way.
+			if _, err := guest.Search(arrays, colors, len(g.Board.Positions), pos, 3-seat, quickBot); err == nil {
+				t.Error("the seat that waits was searched for")
+			}
+		}
+	}
+}
+
+var quickBot = guest.BotRequest{Level: guest.LevelMCTS, Iterations: 5}
+
+// rulesOnly are rules and their heuristic, and nothing else: a State they
+// could give the search is hidden.
+type rulesOnly struct {
+	guest.Rules
+	heur guest.Heuristic
+}
+
+func (r rulesOnly) Heuristic(pos *guest.Position, seat int) float64 {
+	return r.heur.Heuristic(pos, seat)
 }

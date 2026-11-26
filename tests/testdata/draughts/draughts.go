@@ -87,9 +87,23 @@ type rules struct {
 	rows    int
 	quiet   int
 	ballot  bool
+
+	// What the array of state.go needs: each square's index in cells, its
+	// row, and the squares one and two steps away in each of the four
+	// diagonal ways (-1 off the board); ways are the ones a seat's man
+	// (ways[seat][0]) and king (ways[seat][1]) go, in the order they are
+	// listed; men is how many men a side starts with.
+	idx  map[string]int
+	row  []int
+	near [][4]int
+	far  [][4]int
+	ways [3][2][]int
+	men  int
 }
 
 // New makes the rules of a game of draughts from its definition and board.
+// They play on an array of the board's dark squares (state.go), which the
+// search inside a module plays too (guest.Searchable).
 func New(g *guest.Game) (guest.Rules, error) {
 	var def definition
 	if err := json.Unmarshal(g.Definition, &def); err != nil {
@@ -133,6 +147,7 @@ func New(g *guest.Game) (guest.Rules, error) {
 		r.at[c] = p.ID
 		r.where[p.ID] = c
 	}
+	r.index()
 	return r, nil
 }
 
@@ -233,151 +248,26 @@ func top(pos *guest.Position, id string) (guest.Piece, bool) {
 	return stack[len(stack)-1], true
 }
 
-// dirs are the ways a piece moves: a man forward, a king both ways.
-func (r *rules) dirs(seat int, piece string) []xy {
-	f := r.forward[seat]
-	if piece == king {
-		return []xy{{-1, f}, {1, f}, {-1, -f}, {1, -f}}
+// Heuristic is a seat's pieces less the other seat's, against the men a side
+// starts with.
+func (r *rules) Heuristic(pos *guest.Position, seat int) float64 {
+	mine, theirs := 0, 0
+	for _, stack := range pos.Cells {
+		if len(stack) == 0 {
+			continue
+		}
+		switch r.seatOf(stack[len(stack)-1].Color) {
+		case seat:
+			mine++
+		case other(seat):
+			theirs++
+		}
 	}
-	return []xy{{-1, f}, {1, f}}
+	return r.worth(mine, theirs)
 }
 
-// jumps lists the jumps the piece on from can make.
-func (r *rules) jumps(pos *guest.Position, seat int, from string, out []guest.Selection) []guest.Selection {
-	p, _ := top(pos, from)
-	c := r.where[from]
-	for _, d := range r.dirs(seat, p.Piece) {
-		over, ok := r.at[xy{c.x + d.x, c.y + d.y}]
-		if !ok {
-			continue
-		}
-		if q, held := top(pos, over); !held || r.seatOf(q.Color) != other(seat) {
-			continue
-		}
-		to, ok := r.at[xy{c.x + 2*d.x, c.y + 2*d.y}]
-		if !ok {
-			continue
-		}
-		if _, held := top(pos, to); held {
-			continue
-		}
-		out = append(out, guest.Selection{Action: actJump, From: from, To: to})
-	}
-	return out
-}
-
-// steps lists the moves without a capture the piece on from can make.
-func (r *rules) steps(pos *guest.Position, seat int, from string, out []guest.Selection) []guest.Selection {
-	p, _ := top(pos, from)
-	c := r.where[from]
-	for _, d := range r.dirs(seat, p.Piece) {
-		to, ok := r.at[xy{c.x + d.x, c.y + d.y}]
-		if !ok {
-			continue
-		}
-		if _, held := top(pos, to); held {
-			continue
-		}
-		out = append(out, guest.Selection{Action: actMove, From: from, To: to})
-	}
-	return out
-}
-
-// Legal lists what seat may do: the next jump of a chain; else every jump,
-// since a capture must be made; else every move.
-func (r *rules) Legal(pos *guest.Position, seat int) []guest.Selection {
-	d, err := dataOf(pos)
-	if err != nil || seat == 0 || d.Turn != seat {
-		return nil
-	}
-	return r.legal(pos, d, seat)
-}
-
-func (r *rules) legal(pos *guest.Position, d *data, seat int) []guest.Selection {
-	if d.Chain != "" {
-		return r.jumps(pos, seat, d.Chain, nil)
-	}
-	var out []guest.Selection
-	for _, id := range r.cells {
-		if p, held := top(pos, id); held && r.seatOf(p.Color) == seat {
-			out = r.jumps(pos, seat, id, out)
-		}
-	}
-	if len(out) > 0 {
-		return out
-	}
-	for _, id := range r.cells {
-		if p, held := top(pos, id); held && r.seatOf(p.Color) == seat {
-			out = r.steps(pos, seat, id, out)
-		}
-	}
-	return out
-}
-
-// Apply makes one move or one jump. A jump that leaves its piece another
-// jump keeps the seat, so a chain is one impulse of several selections; a man
-// that reaches the far row is crowned, and its move ends there.
-func (r *rules) Apply(pos *guest.Position, seat int, sel guest.Selection) (*guest.Result, error) {
-	d, err := dataOf(pos)
-	if err != nil {
-		return nil, err
-	}
-	if d.Turn == 0 {
-		return nil, errors.New("draughts: the game is over")
-	}
-	if seat != d.Turn {
-		return nil, fmt.Errorf("draughts: it is seat %d's move", d.Turn)
-	}
-	listed := false
-	for _, l := range r.legal(pos, d, seat) {
-		if l.Action == sel.Action && l.From == sel.From && l.To == sel.To {
-			listed = true
-			break
-		}
-	}
-	if !listed || !bare(sel) {
-		return nil, fmt.Errorf("draughts: %s is not a legal move", r.Format(sel))
-	}
-
-	next := pos.Clone()
-	next.Ply++
-	piece, _ := top(next, sel.From)
-	delete(next.Cells, sel.From)
-	res := &guest.Result{Position: next}
-	nd := &data{Turn: seat, Quiet: d.Quiet + 1}
-	if sel.Action == actJump {
-		a, b := r.where[sel.From], r.where[sel.To]
-		over := r.at[xy{(a.x + b.x) / 2, (a.y + b.y) / 2}]
-		delete(next.Cells, over)
-		res.Captures = []string{over}
-		nd.Quiet = 0
-	}
-	crowned := piece.Piece == man && r.where[sel.To].y == r.farRow(seat)
-	if piece.Piece == man {
-		nd.Quiet = 0
-	}
-	if crowned {
-		piece.Piece = king
-	}
-	next.Cells[sel.To] = []guest.Piece{piece}
-
-	if sel.Action == actJump && !crowned && len(r.jumps(next, seat, sel.To, nil)) > 0 {
-		nd.Chain = sel.To
-	} else {
-		nd.Turn = other(seat)
-		switch {
-		case len(r.legal(next, nd, nd.Turn)) == 0:
-			nd.Turn, nd.Winner, nd.Reason = 0, seat, ReasonNoMoves
-		case nd.Quiet >= r.quiet:
-			nd.Turn, nd.Reason = 0, ReasonQuiet
-		}
-	}
-	if err := setData(next, nd); err != nil {
-		return nil, err
-	}
-	res.NextSeat = nd.Turn
-	res.Outcome = outcomeOf(nd)
-	return res, nil
+func (r *rules) worth(mine, theirs int) float64 {
+	return max(-1, min(1, float64(mine-theirs)/float64(max(r.men, 1))))
 }
 
 // bare reports whether sel says nothing but its action and its two squares.
@@ -487,7 +377,7 @@ func (r *rules) Validate(pos *guest.Position) error {
 			return fmt.Errorf("draughts: the piece in a chain of jumps is not on %s", d.Chain)
 		}
 	}
-	if len(r.legal(pos, d, d.Turn)) == 0 {
+	if st, err := r.stateOf(pos, d); err != nil || len(st.Legal()) == 0 {
 		return fmt.Errorf("draughts: seat %d has no move, so the game is over", d.Turn)
 	}
 	return nil

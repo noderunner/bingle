@@ -76,13 +76,131 @@ type Candidate struct {
 // Heuristic is searched with it. colors are the seats' colours, which minimax
 // counts pieces by, and cells the board's size, which bounds tactical's
 // look at replies as the host's bot does.
+//
+// Rules that are also Searchable are searched over their own State instead:
+// the position is turned into one once, and the search plays it from there.
 func Search(rules Rules, colors map[int]string, cells int, pos *Position, seat int, req BotRequest) (BotReply, error) {
-	s := &search{rules: rules, colors: colors, cells: max(cells, 1), rng: rand.New(rand.NewPCG(req.Seed, req.Seed^0x9e3779b97f4a7c15))}
-	s.heur, _ = rules.(Heuristic)
+	if sr, ok := rules.(Searchable); ok {
+		st, err := sr.State(pos)
+		if err != nil {
+			return BotReply{}, fmt.Errorf("guest: bot: %w", err)
+		}
+		return searchWith[State](stateOps{}, cells, st, seat, req)
+	}
+	o := positionOps{rules: rules, colors: colors}
+	o.heur, _ = rules.(Heuristic)
+	return searchWith[*Position](o, cells, pos, seat, req)
+}
+
+// Searchable is what a game's Rules may also implement, for the search
+// inside a module: the game's own State, which is cheaper to copy and to read
+// than a Position. The search turns a Position into one once, at its root,
+// and then plays only States.
+type Searchable interface {
+	State(pos *Position) (State, error)
+}
+
+// State is a game's own position, for the search. A State is never changed:
+// Play returns another.
+type State interface {
+	// Turn is the seat to move, 0 once the game is over, and Winner the seat
+	// that won a finished game (0 for a draw).
+	Turn() int
+	Winner() int
+	// Legal lists what the seat to move may do, as Rules.Legal does. The
+	// search does not change the list, so a State may keep it.
+	Legal() []Selection
+	// Play applies a selection that Legal listed, as Rules.Apply does.
+	Play(sel Selection) (State, error)
+	// Value is what the State is worth to seat, from -1 to 1, as Heuristic.
+	Value(seat int) float64
+}
+
+// after is what a selection led to, as the search needs it.
+type after[P any] struct {
+	pos    P
+	next   int // the seat to move, 0 once the game is over
+	ended  bool
+	winner int
+}
+
+// ops are what the search does with a position of type P.
+type ops[P any] interface {
+	legal(p P, seat int) []Selection
+	play(p P, seat int, sel Selection) (after[P], error)
+	// value is the position's worth to seat, if the game says.
+	value(p P, seat int) (float64, bool)
+	// material is the pieces on top of a cell that are seat's, less the rest.
+	material(p P, seat int) int
+}
+
+// positionOps search a Position through Rules.
+type positionOps struct {
+	rules  Rules
+	heur   Heuristic
+	colors map[int]string
+}
+
+func (o positionOps) legal(p *Position, seat int) []Selection { return o.rules.Legal(p, seat) }
+
+func (o positionOps) play(p *Position, seat int, sel Selection) (after[*Position], error) {
+	res, err := o.rules.Apply(p, seat, sel)
+	if err != nil {
+		return after[*Position]{}, err
+	}
+	return after[*Position]{pos: res.Position, next: res.NextSeat, ended: res.Ended, winner: res.Winner}, nil
+}
+
+func (o positionOps) value(p *Position, seat int) (float64, bool) {
+	if o.heur == nil {
+		return 0, false
+	}
+	return o.heur.Heuristic(p, seat), true
+}
+
+func (o positionOps) material(p *Position, seat int) int {
+	mine, score := o.colors[seat], 0
+	for _, stack := range p.Cells {
+		if len(stack) == 0 {
+			continue
+		}
+		if stack[len(stack)-1].Color == mine {
+			score++
+		} else {
+			score--
+		}
+	}
+	return score
+}
+
+// stateOps search a game's own State.
+type stateOps struct{}
+
+func (stateOps) legal(p State, seat int) []Selection {
+	if p.Turn() != seat {
+		return nil
+	}
+	return p.Legal()
+}
+
+func (stateOps) play(p State, _ int, sel Selection) (after[State], error) {
+	next, err := p.Play(sel)
+	if err != nil {
+		return after[State]{}, err
+	}
+	turn := next.Turn()
+	return after[State]{pos: next, next: turn, ended: turn == 0, winner: next.Winner()}, nil
+}
+
+func (stateOps) value(p State, seat int) (float64, bool) { return p.Value(seat), true }
+func (stateOps) material(State, int) int                 { return 0 }
+
+func searchWith[P any](o ops[P], cells int, pos P, seat int, req BotRequest) (BotReply, error) {
+	s := &search[P]{ops: o, cells: max(cells, 1), rng: rand.New(rand.NewPCG(req.Seed, req.Seed^0x9e3779b97f4a7c15))}
 	if req.BudgetMS > 0 {
 		s.stop = time.Now().Add(time.Duration(req.BudgetMS) * time.Millisecond)
 	}
-	legal := rules.Legal(pos, seat)
+	legal := o.legal(pos, seat)
 	if len(legal) == 0 {
 		return BotReply{}, errors.New("guest: bot: the seat has no legal selection")
 	}
@@ -112,23 +230,23 @@ func even(sel Selection) BotReply {
 	return BotReply{Selection: sel, WinRate: 0.5, Alternatives: []Candidate{{Selection: sel, WinRate: 0.5}}}
 }
 
-type search struct {
-	rules  Rules
-	heur   Heuristic
-	colors map[int]string
-	cells  int
-	rng    *rand.Rand
-	stop   time.Time // zero: no time limit
-	nodes  int
+type search[P any] struct {
+	ops   ops[P]
+	cells int
+	rng   *rand.Rand
+	stop  time.Time // zero: no time limit
+	nodes int
 }
 
 // late reports whether the search's time is up.
-func (s *search) late() bool { return !s.stop.IsZero() && time.Now().After(s.stop) }
+func (s *search[P]) late() bool { return !s.stop.IsZero() && time.Now().After(s.stop) }
 
-func (s *search) pick(list []Selection) Selection { return list[s.rng.IntN(len(list))] }
+func (s *search[P]) pick(list []Selection) Selection { return list[s.rng.IntN(len(list))] }
 
-func won(res *Result, seat int) bool  { return res.Ended && res.Winner == seat }
-func lost(res *Result, seat int) bool { return res.Ended && res.Winner != 0 && res.Winner != seat }
+func won[P any](res after[P], seat int) bool { return res.ended && res.winner == seat }
+func lost[P any](res after[P], seat int) bool {
+	return res.ended && res.winner != 0 && res.winner != seat
+}
 
 // replyBudget bounds the replies classify looks at, in cells visited, as the
 // host's bots do.
@@ -138,10 +256,10 @@ const replyBudget = 2_000_000
 // (no loss, and no reply that wins for the other side) and the rest. Once
 // its budget of replies or its time is spent, a selection that neither wins
 // nor loses at once counts as safe.
-func (s *search) classify(pos *Position, seat int, legal []Selection) (wins, safe, unsafe []Selection) {
+func (s *search[P]) classify(pos P, seat int, legal []Selection) (wins, safe, unsafe []Selection) {
 	budget := replyBudget
 	for _, sel := range legal {
-		res, err := s.rules.Apply(pos, seat, sel)
+		res, err := s.ops.play(pos, seat, sel)
 		s.nodes++
 		switch {
 		case err != nil || lost(res, seat):
@@ -150,14 +268,14 @@ func (s *search) classify(pos *Position, seat int, legal []Selection) (wins, saf
 		case won(res, seat):
 			wins = append(wins, sel)
 			continue
-		case res.Ended, budget <= 0, s.late():
+		case res.ended, budget <= 0, s.late():
 			safe = append(safe, sel)
 			continue
 		}
 		losing := false
-		for _, reply := range s.rules.Legal(res.Position, res.NextSeat) {
+		for _, reply := range s.ops.legal(res.pos, res.next) {
 			budget -= s.cells
-			r2, err := s.rules.Apply(res.Position, res.NextSeat, reply)
+			r2, err := s.ops.play(res.pos, res.next, reply)
 			s.nodes++
 			if err == nil && lost(r2, seat) {
 				losing = true
@@ -175,7 +293,7 @@ func (s *search) classify(pos *Position, seat int, legal []Selection) (wins, saf
 
 // tactical takes a win when it sees one, keeps clear of a loss on the next
 // selection, and otherwise plays at random.
-func (s *search) tactical(pos *Position, seat int, legal []Selection) BotReply {
+func (s *search[P]) tactical(pos P, seat int, legal []Selection) BotReply {
 	wins, safe, _ := s.classify(pos, seat, legal)
 	switch {
 	case len(wins) > 0:
@@ -195,8 +313,8 @@ const (
 	minimaxHalf = minimaxWin / 2
 )
 
-type minimax struct {
-	*search
+type minimax[P any] struct {
+	*search[P]
 	root   int
 	budget int
 	out    bool
@@ -204,8 +322,8 @@ type minimax struct {
 
 // minimax is alpha-beta search deepened a selection at a time while its
 // budget lasts, the host's minimax bot over rules.
-func (s *search) minimax(pos *Position, seat int, legal []Selection, budget, depth int) BotReply {
-	m := &minimax{search: s, root: seat, budget: budget}
+func (s *search[P]) minimax(pos P, seat int, legal []Selection, budget, depth int) BotReply {
+	m := &minimax[P]{search: s, root: seat, budget: budget}
 	order := slices.Clone(legal)
 	s.rng.Shuffle(len(order), func(i, j int) { order[i], order[j] = order[j], order[i] })
 	type scored struct {
@@ -218,20 +336,20 @@ func (s *search) minimax(pos *Position, seat int, legal []Selection, budget, dep
 		alpha := -minimaxInf
 		complete := true
 		for _, sel := range order {
-			res, err := s.rules.Apply(pos, seat, sel)
+			res, err := s.ops.play(pos, seat, sel)
 			s.nodes++
 			if err != nil {
 				continue
 			}
 			var score int
 			switch {
-			case res.Ended:
+			case res.ended:
 				score = m.terminal(res, 0)
 			case d == 1:
-				score = m.leaf(res.Position)
+				score = m.leaf(res.pos)
 			default:
-				v := m.value(res.Position, res.NextSeat, d-1, -minimaxInf, minimaxInf, 1)
-				if res.NextSeat == seat {
+				v := m.value(res.pos, res.next, d-1, -minimaxInf, minimaxInf, 1)
+				if res.next == seat {
 					score = v
 				} else {
 					score = -v
@@ -295,8 +413,8 @@ func squash(score int) float64 {
 	return 0.5 + float64(score)/(2*float64(a+8))
 }
 
-func (m *minimax) terminal(res *Result, ply int) int {
-	switch res.Winner {
+func (m *minimax[P]) terminal(res after[P], ply int) int {
+	switch res.winner {
 	case 0:
 		return 0
 	case m.root:
@@ -307,26 +425,15 @@ func (m *minimax) terminal(res *Result, ply int) int {
 
 // leaf values a position for the root seat: the game's heuristic where it
 // has one, or else its pieces on top of a cell less everybody else's.
-func (m *minimax) leaf(pos *Position) int {
-	if m.heur != nil {
-		return int(m.heur.Heuristic(pos, m.root) * 1000)
+func (m *minimax[P]) leaf(pos P) int {
+	if v, ok := m.ops.value(pos, m.root); ok {
+		return int(v * 1000)
 	}
-	mine, score := m.colors[m.root], 0
-	for _, stack := range pos.Cells {
-		if len(stack) == 0 {
-			continue
-		}
-		if stack[len(stack)-1].Color == mine {
-			score++
-		} else {
-			score--
-		}
-	}
-	return score
+	return m.ops.material(pos, m.root)
 }
 
 // value is a position's value for the seat to move, negamax style.
-func (m *minimax) value(pos *Position, seat, depth, alpha, beta, ply int) int {
+func (m *minimax[P]) value(pos P, seat, depth, alpha, beta, ply int) int {
 	if m.out {
 		return 0
 	}
@@ -341,28 +448,28 @@ func (m *minimax) value(pos *Position, seat, depth, alpha, beta, ply int) int {
 		}
 		return v
 	}
-	legal := m.rules.Legal(pos, seat)
+	legal := m.ops.legal(pos, seat)
 	if len(legal) == 0 {
 		return 0
 	}
 	best := -minimaxInf
 	for _, sel := range legal {
-		res, err := m.rules.Apply(pos, seat, sel)
+		res, err := m.ops.play(pos, seat, sel)
 		m.nodes++
 		if err != nil {
 			continue
 		}
 		var v int
 		switch {
-		case res.Ended:
+		case res.ended:
 			v = m.terminal(res, ply)
 			if seat != m.root {
 				v = -v
 			}
-		case res.NextSeat == seat:
-			v = m.value(res.Position, res.NextSeat, depth-1, alpha, beta, ply+1)
+		case res.next == seat:
+			v = m.value(res.pos, res.next, depth-1, alpha, beta, ply+1)
 		default:
-			v = -m.value(res.Position, res.NextSeat, depth-1, -beta, -alpha, ply+1)
+			v = -m.value(res.pos, res.next, depth-1, -beta, -alpha, ply+1)
 		}
 		if m.out {
 			return 0
@@ -378,12 +485,12 @@ func (m *minimax) value(pos *Position, seat, depth, alpha, beta, ply int) int {
 
 // --- mcts -------------------------------------------------------------------
 
-type node struct {
-	pos      *Position
+type node[P any] struct {
+	pos      P
 	seat     int // the seat to move here
 	sel      Selection
-	parent   *node
-	children []*node
+	parent   *node[P]
+	children []*node[P]
 	untried  []Selection
 	visits   int
 	score    float64 // for the seat that moved into this node
@@ -394,7 +501,7 @@ type node struct {
 
 // mcts is UCT Monte-Carlo tree search with random playouts over the safe
 // selections, the host's mcts bot over rules.
-func (s *search) mcts(pos *Position, seat int, legal []Selection, iterations, plies int, exploration float64) BotReply {
+func (s *search[P]) mcts(pos P, seat int, legal []Selection, iterations, plies int, exploration float64) BotReply {
 	wins, safe, _ := s.classify(pos, seat, legal)
 	if len(wins) > 0 {
 		sel := s.pick(wins)
@@ -407,7 +514,7 @@ func (s *search) mcts(pos *Position, seat int, legal []Selection, iterations, pl
 	if len(candidates) == 1 {
 		return even(candidates[0])
 	}
-	root := &node{pos: pos, seat: seat, untried: slices.Clone(candidates)}
+	root := &node[P]{pos: pos, seat: seat, untried: slices.Clone(candidates)}
 	for it := 0; ; it++ {
 		if iterations > 0 && it >= iterations {
 			break
@@ -420,7 +527,7 @@ func (s *search) mcts(pos *Position, seat int, legal []Selection, iterations, pl
 		s.iterate(root, plies, exploration)
 	}
 	children := slices.Clone(root.children)
-	slices.SortStableFunc(children, func(a, b *node) int { return b.visits - a.visits })
+	slices.SortStableFunc(children, func(a, b *node[P]) int { return b.visits - a.visits })
 	if len(children) == 0 {
 		return even(s.pick(candidates))
 	}
@@ -432,7 +539,7 @@ func (s *search) mcts(pos *Position, seat int, legal []Selection, iterations, pl
 	return out
 }
 
-func (s *search) iterate(root *node, plies int, exploration float64) {
+func (s *search[P]) iterate(root *node[P], plies int, exploration float64) {
 	n := root
 	for len(n.untried) == 0 && len(n.children) > 0 && !n.terminal {
 		n = choose(n, exploration)
@@ -442,13 +549,15 @@ func (s *search) iterate(root *node, plies int, exploration float64) {
 		sel := n.untried[i]
 		n.untried[i] = n.untried[len(n.untried)-1]
 		n.untried = n.untried[:len(n.untried)-1]
-		res, err := s.rules.Apply(n.pos, n.seat, sel)
+		res, err := s.ops.play(n.pos, n.seat, sel)
 		if err != nil {
 			return
 		}
-		child := &node{pos: res.Position, seat: res.NextSeat, sel: sel, parent: n, mover: n.seat, terminal: res.Ended, winner: res.Winner}
+		child := &node[P]{pos: res.pos, seat: res.next, sel: sel, parent: n, mover: n.seat, terminal: res.ended, winner: res.winner}
 		if !child.terminal {
-			child.untried = s.rules.Legal(child.pos, child.seat)
+			// Cloned: the search takes selections out of it, and a State may
+			// keep the list it gives.
+			child.untried = slices.Clone(s.ops.legal(child.pos, child.seat))
 			if len(child.untried) == 0 {
 				child.terminal = true // no selection: scored as a draw
 			}
@@ -477,8 +586,8 @@ func (s *search) iterate(root *node, plies int, exploration float64) {
 	}
 }
 
-func choose(n *node, exploration float64) *node {
-	var best *node
+func choose[P any](n *node[P], exploration float64) *node[P] {
+	var best *node[P]
 	bestVal := -1.0
 	logN := math.Log(float64(n.visits))
 	for _, ch := range n.children {
@@ -493,27 +602,27 @@ func choose(n *node, exploration float64) *node {
 // playout plays at random from n to the end of the game or for plies
 // selections. winner is 0 for a draw; decided is false when it was cut short,
 // and the game's heuristic, if it has one, then values where it stopped.
-func (s *search) playout(n *node, plies int) (winner int, decided bool, hv float64, hvSeat int, haveHV bool) {
+func (s *search[P]) playout(n *node[P], plies int) (winner int, decided bool, hv float64, hvSeat int, haveHV bool) {
 	if n.terminal {
 		return n.winner, true, 0, 0, false
 	}
 	pos, seat := n.pos, n.seat
 	for range plies {
-		legal := s.rules.Legal(pos, seat)
+		legal := s.ops.legal(pos, seat)
 		if len(legal) == 0 {
 			return 0, true, 0, 0, false
 		}
-		res, err := s.rules.Apply(pos, seat, s.pick(legal))
+		res, err := s.ops.play(pos, seat, s.pick(legal))
 		if err != nil {
 			return 0, false, 0, 0, false
 		}
-		if res.Ended {
-			return res.Winner, true, 0, 0, false
+		if res.ended {
+			return res.winner, true, 0, 0, false
 		}
-		pos, seat = res.Position, res.NextSeat
+		pos, seat = res.pos, res.next
 	}
-	if s.heur != nil {
-		return 0, false, s.heur.Heuristic(pos, seat), seat, true
+	if v, ok := s.ops.value(pos, seat); ok {
+		return 0, false, v, seat, true
 	}
 	return 0, false, 0, 0, false
 }

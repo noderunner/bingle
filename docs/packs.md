@@ -132,13 +132,42 @@ minimax counts the pieces on top of the board, and MCTS scores a playout it cut 
 module built before the call was added is still played, with the host's bots searching through
 `legal` and `apply`, which is much slower.
 
-The search is still the rules' own speed in WebAssembly, which is far below the same rules linked
-in. On the Draughts fixture, against the same rules compiled into the server:
+### A game's own state
 
-| | Linked in | Through the module | Inside the module |
-|---|---|---|---|
-| minimax | 67,000 positions/s | 1,500 positions/s | 2,700 positions/s |
-| MCTS | 1,700 playouts/s | 31 playouts/s | 51 playouts/s |
-| a practice batch | 223 games/min | 5.4 games/min | 10.6 games/min |
+How fast the search is depends most on what a position costs the game. Through `Rules`, every
+position the search looks at is a `guest.Position`: a map of cells to copy, and the game's own data
+to read and write again as JSON. A game whose `Rules` also implement **`guest.Searchable`** gives
+the search a position of its own instead, a `guest.State`, which the search makes once from the
+`Position` it is asked about and plays from there:
 
-`tests/wasmrules/report_test.go` measures them (`BINGLE_WASM_REPORT=1`).
+```go
+type Searchable interface {
+    State(pos *Position) (State, error)
+}
+
+type State interface {
+    Turn() int                         // the seat to move, 0 once the game is over
+    Winner() int                       // of a finished game, 0 for a draw
+    Legal() []Selection                // as Rules.Legal; the search does not change the list
+    Play(sel Selection) (State, error) // a selection Legal listed, as Rules.Apply
+    Value(seat int) float64            // from -1 to 1, as Heuristic
+}
+```
+
+A `State` is never changed: `Play` returns another. It may keep the list `Legal` gave, and `Play`
+need not check its selection, since it is only given one `Legal` listed. **Write `Rules.Legal` and
+`Rules.Apply` through the same `State`**, turning the `Position` into one as a call comes in and
+back as it goes out, as the Draughts fixture does (`tests/testdata/draughts/state.go`): the rules
+are then written once, and every call across the boundary is cheaper too.
+
+On the Draughts fixture, whose state is an array of its 32 dark squares, against the same rules
+compiled into the server:
+
+| | Linked in | Through the module | Inside, on `Position` | Inside, on a `State` | Inside, on a `State`, TinyGo |
+|---|---|---|---|---|---|
+| minimax, positions/s | 92,000 | 1,800 | 2,700 | 38,700 | 72,900 |
+| MCTS, playouts/s | 2,300 | 36 | 53 | 635 | 1,250 |
+| a practice batch, games/min | 283 | 6.6 | 7.2 | 87 | 161 |
+
+At equal time, MCTS inside a TinyGo module playing on a `State` is as strong as MCTS on the rules
+linked in. `tests/wasmrules/report_test.go` measures them (`BINGLE_WASM_REPORT=1`).
