@@ -368,9 +368,13 @@ func (s *Store) DeleteSession(ctx context.Context, idHash string) error {
 }
 
 // DeleteSessions signs an account out everywhere, except the session
-// keepHash ("" for none).
+// keepHash ("" for none). The sign-in codes it has not spent go too (ADR
+// 0151): each is a session waiting to be made.
 func (s *Store) DeleteSessions(ctx context.Context, accountID int64, keepHash string) error {
-	_, err := s.exec(ctx, "DeleteSessions", `DELETE FROM sessions WHERE account_id = ? AND id_hash != ?`, accountID, keepHash)
+	if _, err := s.exec(ctx, "DeleteSessions", `DELETE FROM sessions WHERE account_id = ? AND id_hash != ?`, accountID, keepHash); err != nil {
+		return err
+	}
+	_, err := s.exec(ctx, "DeleteSessions.codes", `DELETE FROM account_tokens WHERE account_id = ? AND kind = ?`, accountID, SignInCodeKind)
 	return err
 }
 
@@ -387,6 +391,17 @@ func (s *Store) CountSessions(ctx context.Context, accountID int64) (int, error)
 // CreateAccountToken records a one-time token of the kind, by hash.
 func (s *Store) CreateAccountToken(ctx context.Context, hash string, accountID int64, kind string, expires time.Time) error {
 	_, err := s.exec(ctx, "CreateAccountToken", `INSERT INTO account_tokens (hash, account_id, kind, expires_at) VALUES (?, ?, ?, ?)`, hash, accountID, kind, stamp(expires))
+	return err
+}
+
+// SignInCodeKind is the kind of a one-time token that signs a client in
+// (ADR 0151).
+const SignInCodeKind = "client"
+
+// PruneAccountTokens forgets an account's tokens of the kind that are spent
+// or out of date.
+func (s *Store) PruneAccountTokens(ctx context.Context, accountID int64, kind string, now time.Time) error {
+	_, err := s.exec(ctx, "PruneAccountTokens", `DELETE FROM account_tokens WHERE account_id = ? AND kind = ? AND (used_at IS NOT NULL OR expires_at <= ?)`, accountID, kind, stamp(now))
 	return err
 }
 

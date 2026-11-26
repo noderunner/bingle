@@ -129,6 +129,27 @@ kbd {
 }
 .topbar .brand .logo.custom { border-radius: 0; background: url("/brand/icon") center / contain no-repeat; }
 .topbar .brand .logo.custom::after { display: none; }
+/* On a server that offers the 3D client the logo opens a menu, and the name is the link home. */
+.topbar .brand.has-menu { position: relative; }
+.topbar .brand-name { color: inherit; text-decoration: none; }
+.topbar .brand-menu-button {
+	padding: 0.3rem; margin: -0.3rem; border: 0; border-radius: 8px; background: none; display: inline-flex; transition: none;
+}
+.topbar .brand-menu-button:active:not(:disabled) { transform: none; }
+.brand-menu {
+	position: absolute; z-index: 130; inset-block-start: calc(100% + 0.5rem); inset-inline-start: 0; min-width: 11rem; padding: 0.3rem;
+	display: flex; flex-direction: column; font-size: 0.95rem; font-weight: 400; letter-spacing: 0; white-space: nowrap;
+	background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+.brand-menu[hidden] { display: none; }
+.brand-menu-group { display: flex; flex-direction: column; margin-block-start: 0.3rem; padding-block-start: 0.3rem; border-block-start: 1px solid var(--border); }
+.brand-menu-heading { padding: 0.2rem 0.6rem; font-size: 0.8rem; color: var(--muted); }
+.brand-menu [role="menuitem"] {
+	display: block; padding: 0.4rem 0.6rem; border: 0; border-radius: 6px; background: none; color: inherit;
+	font: inherit; text-align: start; text-decoration: none; cursor: pointer; transition: none;
+}
+.brand-menu [role="menuitem"]:hover, .brand-menu [role="menuitem"]:focus-visible { background: var(--surface-2); }
+.brand-menu [role="menuitem"]:active { transform: none; }
 .topbar .spacer { flex: 1; }
 .topbar .tagline { color: var(--muted); font-size: 0.9rem; }
 

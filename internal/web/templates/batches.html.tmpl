@@ -12,7 +12,7 @@
 </head>
 <body>
 	<header class="topbar">
-		<a class="brand" href="/"><span class="logo{{if brandHasIcon}} custom{{end}}"></span>{{brandName}}</a>
+		{{template "brand" .}}
 		<a class="button ghost" href="/batches">{{t .Lang "batch.title"}}</a>
 		<span class="spacer"></span>
 		<span class="tagline">{{t .Lang "batch.tagline"}}</span>
@@ -23,6 +23,6 @@
 	<footer class="site-footer"><sub title="{{t .Lang "footer.version" "brand" brandFooter}}"><bdi>{{brandFooter}} v{{engineVersion}}</bdi> · <bdi>{{t .Lang "footer.license"}}</bdi> · <a href="https://github.com/noderunner/bingle" target="_blank" rel="noopener noreferrer">GitHub</a></sub></footer>
 	<!-- First, so a fault in any module below is reported (docs/observability.md). -->
 	<script type="module" src="/static/js/errors.js"></script>
-	<script type="module" src="/static/js/batches.js"></script>
+{{template "brand-script" .}}	<script type="module" src="/static/js/batches.js"></script>
 </body>
 </html>

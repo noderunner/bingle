@@ -64,6 +64,10 @@ type Resolver struct {
 	now         func() time.Time
 	made        windowLimiter
 	adopts      windowLimiter
+	// setups limits the setup files an account is given (clientsetup.go),
+	// and certificate is the fingerprint one carries.
+	setups      windowLimiter
+	certificate func() string
 }
 
 // Options configures a Resolver.
@@ -89,6 +93,10 @@ type Options struct {
 	// Translation says the server has a translation service for chat (ADR
 	// 0143), so /auth/me offers the switch.
 	Translation bool
+	// Certificate, when set, answers with the SHA-256 fingerprint of the
+	// certificate the server made for itself (BINGLE_TLS_SELFSIGNED), which a
+	// client's setup file carries (ADR 0151); "" when there is none.
+	Certificate func() string
 }
 
 // DefaultIdle is BINGLE_GUEST_IDLE's default.
@@ -111,7 +119,7 @@ func NewResolver(g Guests, o Options) *Resolver {
 		o.Log = slog.Default()
 	}
 	return &Resolver{guests: g, accounts: o.Accounts, oidc: o.OIDC, caps: o.Caps, translation: o.Translation, transport: o.Transport, idle: o.Idle, log: o.Log, now: time.Now, made: windowLimiter{per: o.NewGuestsPerHour, window: time.Hour},
-		adopts: windowLimiter{per: 10, window: time.Hour}}
+		adopts: windowLimiter{per: 10, window: time.Hour}, setups: windowLimiter{per: setupsPerHour, window: time.Hour}, certificate: o.Certificate}
 }
 
 // SetClock replaces the resolver's clock (tests).
@@ -263,7 +271,7 @@ func (rs *Resolver) newGuest(w http.ResponseWriter, r *http.Request) (Principal,
 		return Principal{}, false
 	}
 	rs.setCookie(w, r, CookieName, key, int(cookieMaxAge/time.Second))
-	return Principal{ID: id, Kind: store.KindGuest}, true
+	return Principal{ID: id, Kind: store.KindGuest, issued: key}, true
 }
 
 // errTooMany is issue's answer past the limit for an address.

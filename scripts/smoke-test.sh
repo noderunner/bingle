@@ -29,6 +29,12 @@ cp -R tests/testdata/draughts/pack "${BINGLE_PACKS}/draughts"
 GOOS=wasip1 GOARCH=wasm CGO_ENABLED=0 go build -buildmode=c-shared -trimpath \
   -o "${BINGLE_PACKS}/draughts/rules.wasm" ./tests/testdata/draughts/wasm
 
+# The bingle-3d client for download (ADR 0151, docs/client-builds.md): a
+# directory with one version's folder and one archive in it.
+export BINGLE_CLIENT_BUILDS="${WORKDIR}/builds"
+mkdir -p "${BINGLE_CLIENT_BUILDS}/0.0.1"
+echo "not really an archive" >"${BINGLE_CLIENT_BUILDS}/0.0.1/bingle-3d-linux-x86_64.tar.gz"
+
 "${WORKDIR}/bingle" &
 PID=$!
 
@@ -160,4 +166,29 @@ while read -r FILE HASH; do
   fi
 done <"${WORKDIR}/client.txt"
 
-echo "smoke test PASSED: catalog, game creation vs a bot, a move with a bot reply, static assets, puzzles, environments, hints and an install pack with a client's files"
+# The client's build is listed and sent, the logo has its menu, and a setup
+# file says which server it came from.
+curl -fsS "http://127.0.0.1:${PORT}/api/client" -o "${WORKDIR}/builds.json"
+if ! grep -q '"platform":"linux-x86_64","version":"0.0.1","file":"bingle-3d-linux-x86_64.tar.gz"' "${WORKDIR}/builds.json"; then
+  echo "smoke test FAILED: the client's build is not on offer"
+  cat "${WORKDIR}/builds.json"
+  exit 1
+fi
+curl -fsS "http://127.0.0.1:${PORT}/api/client/files/bingle-3d-linux-x86_64.tar.gz" -o "${WORKDIR}/build.tar.gz"
+if ! cmp -s "${WORKDIR}/build.tar.gz" "${BINGLE_CLIENT_BUILDS}/0.0.1/bingle-3d-linux-x86_64.tar.gz"; then
+  echo "smoke test FAILED: the client's build is not the one on the disk"
+  exit 1
+fi
+curl -fsS "http://127.0.0.1:${PORT}/" -o "${WORKDIR}/index.html"
+if ! grep -q 'id="brand-menu-setup"' "${WORKDIR}/index.html"; then
+  echo "smoke test FAILED: the logo has no menu"
+  exit 1
+fi
+curl -fsS -X POST "http://127.0.0.1:${PORT}/api/client/setup" -o "${WORKDIR}/setup.toml"
+if ! grep -qx "server = \"http://127.0.0.1:${PORT}\"" "${WORKDIR}/setup.toml"; then
+  echo "smoke test FAILED: the setup file does not name this server"
+  cat "${WORKDIR}/setup.toml"
+  exit 1
+fi
+
+echo "smoke test PASSED: catalog, game creation vs a bot, a move with a bot reply, static assets, puzzles, environments, hints, an install pack with a client's files, and the client's own build and setup file"

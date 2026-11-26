@@ -24,7 +24,7 @@ export class ApiError extends Error {
 // cookie overwriting the first and leaving a seat with the guest nobody has.
 let first = null;
 
-async function call(path, { method = "GET", body, headers, keepalive } = {}) {
+async function call(path, { method = "GET", body, headers, keepalive, file } = {}) {
 	const init = { method, headers: { [PAGE_HEADER]: "1", ...(headers || {}) } };
 	if (keepalive) init.keepalive = true;
 	if (body !== undefined) {
@@ -49,6 +49,8 @@ async function call(path, { method = "GET", body, headers, keepalive } = {}) {
 			first = Promise.resolve();
 		}
 	}
+	// A file to save, not JSON to read: the caller gets it as it came.
+	if (file && resp.ok) return resp.blob();
 	let data = null;
 	const text = await resp.text();
 	if (text) {
@@ -155,6 +157,8 @@ export const api = {
 	badges: () => call("/api/badges"),
 	gameLook: (id) => call(`/api/game-defs/${enc(id)}/web`),
 	guestKey: () => call("/api/guest/key"),
+	// The bingle-3d client's setup file, made for this server and whoever asks (ADR 0151).
+	clientSetup: () => call("/api/client/setup", { method: "POST", file: true }),
 	adoptGuest: (key) => call("/api/guest/adopt", { method: "POST", body: { key } }),
 	rotateGuest: () => call("/api/guest/rotate", { method: "POST" }),
 	discardGuest: () => call("/api/guest/discard", { method: "POST" }),

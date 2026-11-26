@@ -7,6 +7,7 @@ import (
 
 	"github.com/noderunner/bingle/internal/auth"
 	"github.com/noderunner/bingle/internal/bots"
+	"github.com/noderunner/bingle/internal/clientbuilds"
 	"github.com/noderunner/bingle/internal/engine/dsl/schemagen"
 	"github.com/noderunner/bingle/internal/session"
 	"github.com/noderunner/bingle/internal/store"
@@ -35,6 +36,10 @@ var schemaEndpoints = []schemaEndpoint{
 	{route: "GET /api/game-defs/{id}/guide", media: "text/markdown"},
 	{route: "GET /api/game-defs/{id}/clients/{client}", response: reflect.TypeFor[session.ClientIndex]()},
 	{route: "GET /api/game-defs/{id}/clients/{client}/files/{path}", media: "application/octet-stream"},
+	// The bingle-3d client itself (ADR 0151), on a server that offers it.
+	{route: "GET /api/client", response: reflect.TypeFor[clientBuildsResponse]()},
+	{route: "GET /api/client/files/{file}", media: "application/octet-stream"},
+	{route: "POST /api/client/setup", media: "application/toml"},
 	{route: "GET /api/bots", response: reflect.TypeFor[[]bots.Info]()},
 	{route: "GET /api/games", response: reflect.TypeFor[openGamesResponse]()},
 	{route: "POST /api/games", request: reflect.TypeFor[createGameRequest](), response: reflect.TypeFor[createGameResponse]()},
@@ -208,7 +213,6 @@ func Schema(root string) ([]byte, error) {
 			reflect.TypeFor[seatRequest]():       {"player_name", "seat"},
 			reflect.TypeFor[addBotRequest]():     {"player_name", "bot"},
 			reflect.TypeFor[botMatchRequest]():   {"game_def_id", "bot_a", "bot_b"},
-			reflect.TypeFor[auth.LoginRequest](): {"handle", "password"},
 			reflect.TypeFor[dmRequest]():         {"to", "text"},
 			reflect.TypeFor[dmReadRequest]():     {"with"},
 			reflect.TypeFor[dmSignalRequest]():   {"to", "kind", "data"},
@@ -216,22 +220,23 @@ func Schema(root string) ([]byte, error) {
 			reflect.TypeFor[signalRequest]():     {"player_name", "to", "kind", "data"},
 		},
 		Names: map[reflect.Type]string{
-			reflect.TypeFor[apiIndex]():          "IndexResponse",
-			reflect.TypeFor[wsJoined]():          "JoinedEventData",
-			reflect.TypeFor[bots.Info]():         "BotInfo",
-			reflect.TypeFor[dmReady]():           "DirectReadyEventData",
-			reflect.TypeFor[okResponse]():        "OKResponse",
-			reflect.TypeFor[friendRequest]():     "FriendRequest",
-			reflect.TypeFor[dmRequest]():         "DirectMessageRequest",
-			reflect.TypeFor[dmReadRequest]():     "DirectHistoryRequest",
-			reflect.TypeFor[dmCallRequest]():     "DirectCallRequest",
-			reflect.TypeFor[dmSignalRequest]():   "DirectSignalRequest",
-			reflect.TypeFor[dmHistoryResponse](): "DirectHistoryResponse",
-			reflect.TypeFor[dmThreadsResponse](): "DirectThreadsResponse",
-			reflect.TypeFor[auth.Me]():           "MeResponse",
-			reflect.TypeFor[signalRequest]():     "VoiceSignalRequest",
-			reflect.TypeFor[rtcConfigResponse](): "RTCConfigResponse",
-			reflect.TypeFor[iceServer]():         "ICEServer",
+			reflect.TypeFor[apiIndex]():           "IndexResponse",
+			reflect.TypeFor[wsJoined]():           "JoinedEventData",
+			reflect.TypeFor[bots.Info]():          "BotInfo",
+			reflect.TypeFor[dmReady]():            "DirectReadyEventData",
+			reflect.TypeFor[okResponse]():         "OKResponse",
+			reflect.TypeFor[friendRequest]():      "FriendRequest",
+			reflect.TypeFor[dmRequest]():          "DirectMessageRequest",
+			reflect.TypeFor[dmReadRequest]():      "DirectHistoryRequest",
+			reflect.TypeFor[dmCallRequest]():      "DirectCallRequest",
+			reflect.TypeFor[dmSignalRequest]():    "DirectSignalRequest",
+			reflect.TypeFor[dmHistoryResponse]():  "DirectHistoryResponse",
+			reflect.TypeFor[dmThreadsResponse]():  "DirectThreadsResponse",
+			reflect.TypeFor[auth.Me]():            "MeResponse",
+			reflect.TypeFor[signalRequest]():      "VoiceSignalRequest",
+			reflect.TypeFor[rtcConfigResponse]():  "RTCConfigResponse",
+			reflect.TypeFor[iceServer]():          "ICEServer",
+			reflect.TypeFor[clientbuilds.Build](): "ClientBuild",
 		},
 	})
 

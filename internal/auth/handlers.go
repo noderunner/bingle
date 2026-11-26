@@ -97,7 +97,7 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 // statusOf maps the service's answers to HTTP.
 func statusOf(err error) int {
 	switch {
-	case errors.Is(err, ErrBadLogin), errors.Is(err, ErrNotSignedIn), errors.Is(err, ErrSessionEnded), errors.Is(err, ErrBadCode), errors.Is(err, ErrSignInAgain), errors.Is(err, ErrNeedsCode):
+	case errors.Is(err, ErrBadLogin), errors.Is(err, ErrNotSignedIn), errors.Is(err, ErrSessionEnded), errors.Is(err, ErrBadCode), errors.Is(err, ErrSignInAgain), errors.Is(err, ErrNeedsCode), errors.Is(err, ErrBadSignInCode):
 		return http.StatusUnauthorized
 	case errors.Is(err, ErrSignupClosed), errors.Is(err, ErrSignupNoMail), errors.Is(err, ErrNotConfirmed), errors.Is(err, ErrMustChangePwd),
 		errors.Is(err, ErrNeedsInvite), errors.Is(err, ErrNotAdmin), errors.Is(err, ErrAdminNeedsSecondFactor), errors.Is(err, ErrNotYourContact):
@@ -202,6 +202,17 @@ func (rs *Resolver) handleLogin(w http.ResponseWriter, r *http.Request) {
 	if !decode(w, r, &req) {
 		return
 	}
+	if req.Code != "" {
+		// A setup file's sign-in code (ADR 0151): the answer is a token, as
+		// only a client that is not a browser is given one.
+		s, err := rs.accounts.LoginWithCode(r.Context(), req.Code, guestOf(r), rs.transport.PeerIP(r), r.UserAgent())
+		if err != nil {
+			rs.fail(w, err)
+			return
+		}
+		rs.answerToken(w, r, s)
+		return
+	}
 	s, pending, err := rs.accounts.Login(r.Context(), req.Handle, req.Password, guestOf(r), rs.transport.PeerIP(r), r.UserAgent())
 	if err != nil {
 		rs.fail(w, err)
@@ -229,6 +240,11 @@ func (rs *Resolver) handleLogin(w http.ResponseWriter, r *http.Request) {
 type LoginRequest struct {
 	Handle   string `json:"handle"`
 	Password string `json:"password"`
+	// Code is the sign-in code of a client's setup file ("bgc_…", ADR 0151),
+	// in place of the handle and the password. It works once, within a day
+	// of the file's download, and the answer is a SessionTokenResponse
+	// whether Token is set or not. No second factor is asked for.
+	Code string `json:"code,omitempty"`
 	// Token asks for the session as a token in the answer (SessionTokenResponse)
 	// instead of the cookie: a client that is not a browser (ADR 0138).
 	Token bool `json:"token,omitempty"`

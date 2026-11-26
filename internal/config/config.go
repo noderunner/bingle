@@ -147,6 +147,10 @@ type Config struct {
 	// Packs is a directory of install packs, each a directory of its own,
 	// read once at start-up (BINGLE_PACKS; ADR 0147). Empty means no packs.
 	Packs string
+	// ClientBuilds is a directory of the bingle-3d client's builds, a folder
+	// for each version, read once at start-up (BINGLE_CLIENT_BUILDS; ADR
+	// 0151). Empty means the server offers no client, and no menu for one.
+	ClientBuilds string
 
 	// HSTSSeconds, when above zero, adds a Strict-Transport-Security header of
 	// that many seconds to HTTPS responses (BINGLE_TLS_HSTS_SECONDS). Off by
@@ -621,6 +625,7 @@ func loadJournal(cfg *Config) error {
 		cfg.CapsFile = strings.TrimSpace(v)
 	}
 	cfg.Packs = strings.TrimSpace(os.Getenv("BINGLE_PACKS"))
+	cfg.ClientBuilds = strings.TrimSpace(os.Getenv("BINGLE_CLIENT_BUILDS"))
 	cfg.AdminHandle = "admin"
 	if v := strings.TrimSpace(os.Getenv("BINGLE_ADMIN_HANDLE")); v != "" {
 		cfg.AdminHandle = v

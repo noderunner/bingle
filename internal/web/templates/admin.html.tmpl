@@ -13,7 +13,7 @@
 </head>
 <body>
 	<header class="topbar">
-		<a class="brand" href="/"><span class="logo{{if brandHasIcon}} custom{{end}}"></span>{{brandName}}</a>
+		{{template "brand" .}}
 		<span class="spacer"></span>
 	</header>
 	<main class="page narrow">
@@ -59,6 +59,6 @@
 	</main>
 	<footer class="site-footer"><sub title="{{t .Lang "footer.version" "brand" brandFooter}}"><bdi>{{brandFooter}} v{{engineVersion}}</bdi> · <bdi>{{t .Lang "footer.license"}}</bdi> · <a href="https://github.com/noderunner/bingle" target="_blank" rel="noopener noreferrer">GitHub</a></sub></footer>
 	<script type="module" src="/static/js/errors.js"></script>
-	<script type="module" src="/static/js/admin.js"></script>
+{{template "brand-script" .}}	<script type="module" src="/static/js/admin.js"></script>
 </body>
 </html>

@@ -135,6 +135,14 @@ Served by the same binary as static assets plus lightweight JS (no SPA build pip
   ([packs.md](packs.md)). A pack's `clients/` folder becomes the module's
   `Clients`, each client's files hashed but never read, which the API lists
   and serves from the disk.
+* **The client itself** (`internal/clientbuilds`): the builds of bingle-3d an
+  operator keeps in `BINGLE_CLIENT_BUILDS`, a folder per version, read once at
+  start-up. For each platform the newest that can use this server's API is
+  hashed, listed at `GET /api/client` and sent from the disk; the logo of
+  every page then opens a menu with them and with a setup file
+  (`internal/auth/clientsetup.go`), which names the server and carries a
+  one-use sign-in code or a guest's key, never a session (ADR 0151,
+  [client-builds.md](client-builds.md)).
 * **Games** (`internal/games`): `tak` (3×3–8×8 from one YAML
   definition), `classics` (Gomoku, Hex, Draughts,
   Breakthrough, Reversi, Go, Yavalath, Havannah, Amazons, Ataxx, Pente,
