@@ -547,3 +547,8 @@ folder. To drop both removes the pack loader and `BINGLE_PACKS` too, and marks t
     on the rules linked in, and the boundary costs bots next to nothing.
   - **Zèrtz** pays all three costs, the JSON most, and is left on the guest's `Position` for now: giving it a
     `State` is an overlay issue.
+  - **Zèrtz on a state of its own** (overlay #60): the rules hold a position in arrays, and `Legal`, `Apply` and
+    `Validate` go through it, with positions unchanged to the byte. On the 37-ring board, minimax inside a Go
+    module looks at 638 → 7,924 positions a second and inside a TinyGo one 1,243 → 14,014; MCTS 5 → 169 and
+    14 → 366 playouts. At equal time the new bots beat the old 19–1 in either module, and MCTS inside a TinyGo
+    module against MCTS on the rules linked in goes from 1–19 to 9–11.
