@@ -71,8 +71,10 @@ on-disk cache.
 
 A pack's rules are **standard Go**: `GOOS=wasip1 GOARCH=wasm go build -buildmode=c-shared`, exporting its calls
 with `//go:wasmexport`. That makes it a reactor module: the host calls `_initialize` once and then calls the
-exports. No other toolchain is needed. TinyGo stays an option if module size or start-up time proves to be the
-problem (the last phase reports both).
+exports. No other toolchain is needed. **TinyGo is supported too** (settled in phase 4b, #321): the same rules
+built with it make a module about twice as fast, six times smaller and five times quicker to load, and the host
+plays either kind the same. It is a second toolchain a pack author may choose, never one the server or its tests
+need: they build a TinyGo module only where one is found.
 
 A game implements a plain Go interface in **`internal/engine/wasmrules/guest`**. The interface has start, impulse
 seat, legal, apply, format, parse, gestures, validate and outcome, over types of its own whose JSON is the
