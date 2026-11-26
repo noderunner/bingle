@@ -121,6 +121,26 @@ BINGLE_PACKS=$PWD/packs ./bin/bingle
 The same rules package links natively through `wasmrules.Native`, so it is tested with plain
 `go test`. `scripts/smoke-test.sh` builds and loads the fixture pack this way.
 
+### With TinyGo
+
+[TinyGo](https://tinygo.org) builds the same rules into a module about twice as fast as Go's, a sixth
+of the size, that loads five times sooner and holds a tenth of the memory (ADR 0147, phase 4b).
+Nothing in the rules changes, and the server plays either module the same:
+
+```sh
+tinygo build -target=wasip1 -buildmode=c-shared -opt=2 -scheduler=none -no-debug   -o packs/draughts/rules.wasm ./tests/testdata/draughts/wasm
+```
+
+- **`-scheduler=none`** matters most: TinyGo's default scheduler slows every call three to six
+  times. Without one, a module cannot start a goroutine, which rules have no use for.
+- **`-opt=2`** is a quarter faster than the default `-opt=z`, for a module a quarter larger.
+- Use a TinyGo that supports the Go the rules are written in (0.44.0 for Go 1.27). TinyGo does
+  not have all of the standard library, and its `encoding/json` works by reflection and is
+  slow, so a game that reads its own data on every call gains less.
+
+The tests build a TinyGo module too where `BINGLE_TINYGO`, or a `tinygo` on the `PATH`, gives one,
+and leave it out otherwise.
+
 ## Bots
 
 A module built with the guest glue answers the `bot` call (ADR 0147, *ABI v0*), so the built-in bots
