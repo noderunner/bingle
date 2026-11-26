@@ -570,3 +570,6 @@ folder. To drop both removes the pack loader and `BINGLE_PACKS` too, and marks t
     disk to the connection and is never in memory.
   - **The limits stand as the defaults were** (64 MiB, 512 MiB and 4,096 a client). A real client's folder has
     still to be measured, in phase 7 (#304).
+- 2026-11-26, **phase 8** (#300): the report, with the numbers measured again and a recommendation for each half,
+  is [docs/history/wasm-packs-report.md](../history/wasm-packs-report.md). The status above waits for the
+  maintainer's verdict.
