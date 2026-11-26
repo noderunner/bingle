@@ -133,7 +133,8 @@ module's own business, and a replay must not ask for the start again.
   `plies`, `exploration` and `seed`. It replies with the `selection`, its `win_rate`, `heuristic`, `visits` and
   the best few `alternatives`. The guest glue answers it for every game, with the host's three searches written
   over the guest interface (`guest.Search`), and a game that also implements `guest.Heuristic` is searched with
-  its own valuation. The host hands a decision to it through `state.Searcher`, an optional interface of a ruleset
+  its own valuation. A game that implements `guest.Searchable` is searched over a `guest.State` of its own
+  instead of the guest's `Position` (phase 4c): nothing of that crosses, so the ABI is the same. The host hands a decision to it through `state.Searcher`, an optional interface of a ruleset
   as `state.Heuristic` and `state.BotGuide` are, and plays the answer only if it is one of the legal selections.
   The same request gives the same answer unless the time ran out first.
 
@@ -516,3 +517,33 @@ folder. To drop both removes the pack loader and `BINGLE_PACKS` too, and marks t
     (tests built with TinyGo where there is one, and `docs/packs.md`), which waits on the maintainer: this ADR
     chose standard Go so that no other toolchain is needed. Meanwhile the tests already compare a TinyGo module
     with the rules linked in where `BINGLE_TINYGO` or a `tinygo` on the `PATH` gives one, and skip it otherwise.
+- 2026-11-25, **phase 4c** (#322): the search over a game's own position. `guest.Searchable` lets a game's `Rules`
+  give the search a `guest.State` of its own (`Turn`, `Winner`, `Legal`, `Play`, `Value`), which the search
+  makes once from the `Position` it is asked about and plays from there; `guest.Search` is generic over the two.
+  The ABI does not change. The Draughts fixture plays on an array of its dark squares, and its `Legal` and
+  `Apply` go through the same state, so the rules are written once: the maintainer's choice, and the advice of
+  [docs/packs.md](../packs.md). The rules on the guest's `Position` were kept beside it to measure against, and
+  removed once measured.
+  - **Measured** as phases 4 and 4b. *Maps* is the fixture on the guest's `Position`, *arrays* on its state;
+    both had the same heuristic, played the same games to the byte (`tests/difftest`), and searched to the same
+    answers for the same seed and caps at every level.
+
+    | Draughts, maps → arrays | Go module | TinyGo module | Linked in |
+    |---|---|---|---|
+    | minimax inside, positions a second | 2,684 → 38,685 | 5,730 → 72,882 | 66,559 → 92,469 (the host's search) |
+    | MCTS inside, playouts a second | 53 → 635 | 114 → 1,247 | 1,750 → 2,346 |
+    | tactical inside, a decision | 13.4 → 1.75 ms | 7.1 → 0.78 ms | 0.54 → 0.39 ms |
+    | practice batch, games a minute | 7.2 → 87 | 14.5 → 161 | 283 (arrays) |
+    | `Legal`, `Apply` across, a call | 332, 541 → 264, 472 µs | | |
+
+    **At equal time** (MCTS, 250 ms a move, 20 games): arrays against maps 20–0 in a Go module and 19–0 with a
+    draw in a TinyGo one; arrays in a TinyGo module against the rules linked in 5–5 with ten draws, the first
+    measurement of this proof of concept in which a pack's bot is not the weaker; arrays in a Go module against
+    the rules linked in 3–13 with four draws.
+  - **What it shows.** Most of what the rules cost inside a module was not WebAssembly but the guest's
+    `Position`: at every position the fixture read and wrote its own data as JSON (with `encoding/json`, which is
+    slow as WebAssembly), copied a map of cells, and listed the legal selections again to check the one it was
+    given. A `State` does none of that. With it and TinyGo, the search inside a module is as fast as the host's
+    on the rules linked in, and the boundary costs bots next to nothing.
+  - **Zèrtz** pays all three costs, the JSON most, and is left on the guest's `Position` for now: giving it a
+    `State` is an overlay issue.

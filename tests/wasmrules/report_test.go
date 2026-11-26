@@ -71,7 +71,7 @@ func tinyGoSides(names ...string) []string {
 	}
 	var out []string
 	for _, name := range names {
-		if !strings.HasSuffix(name, ", TinyGo") {
+		if !strings.Contains(name, "TinyGo") {
 			out = append(out, name)
 		}
 	}
@@ -215,10 +215,10 @@ func reportSearch(t *testing.T) {
 			}
 			per := took / time.Duration(len(positions))
 			if visits == 0 {
-				t.Logf("%-19s %-24s %10s a decision", side.name, run.name, per.Round(10*time.Microsecond))
+				t.Logf("%-20s %-24s %10s a decision", side.name, run.name, per.Round(10*time.Microsecond))
 				continue
 			}
-			t.Logf("%-19s %-24s %10s a decision, %8.0f a second", side.name, run.name,
+			t.Logf("%-20s %-24s %10s a decision, %8.0f a second", side.name, run.name,
 				per.Round(10*time.Microsecond), float64(visits)/took.Seconds())
 		}
 	}
@@ -265,7 +265,7 @@ func reportBatch(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		line := fmt.Sprintf("%-14s %d games on %d workers in %s: %.1f games a minute, %.0f plies a second; process grew by %d MiB at most",
+		line := fmt.Sprintf("%-20s %d games on %d workers in %s: %.1f games a minute, %.0f plies a second; process grew by %d MiB at most",
 			side.name, spec.Games, workers, took.Round(time.Millisecond), float64(spec.Games)/took.Minutes(),
 			float64(plies)/took.Seconds(), max(peak.Load()-base, 0)>>20)
 		if side.mod != nil {
@@ -298,11 +298,21 @@ func reportStrength(t *testing.T) {
 		games = n
 	}
 	const budget = 250 * time.Millisecond
-	sides := reportSides(t, 0, tinyGoSides(sideLinked, sideAcross, sideInside, sideInsideTinyGo)...)
-	referee := sides[0].game
-	pairs := [][2]reportSide{{sides[1], sides[0]}, {sides[2], sides[0]}, {sides[2], sides[1]}}
-	if len(sides) > 3 {
-		pairs = append(pairs, [2]reportSide{sides[3], sides[0]}, [2]reportSide{sides[3], sides[2]})
+	byName := map[string]reportSide{}
+	for _, side := range reportSides(t, 0, tinyGoSides(sideLinked, sideAcross, sideInside, sideInsideTinyGo)...) {
+		byName[side.name] = side
+	}
+	referee := byName[sideLinked].game
+	var pairs [][2]reportSide
+	for _, p := range [][2]string{
+		{sideAcross, sideLinked}, {sideInside, sideLinked}, {sideInside, sideAcross},
+		{sideInsideTinyGo, sideLinked}, {sideInsideTinyGo, sideInside},
+	} {
+		a, okA := byName[p[0]]
+		b, okB := byName[p[1]]
+		if okA && okB {
+			pairs = append(pairs, [2]reportSide{a, b})
+		}
 	}
 	for _, pair := range pairs {
 		type result struct{ wins, losses, draws, plies int }
