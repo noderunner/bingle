@@ -344,12 +344,12 @@ func TestMovesReportWhatTheyCapture(t *testing.T) {
 		pieces map[string][]string
 		move   string
 		want   []board.PositionID
-		turned []board.PositionID
+		turned []state.Conversion
 	}{
 		{map[string][]string{"white/yellow": {"c4"}, "white/blue": {"e3"}, "black/blue": {"e4"}, "black/king": {"h8"}}, "c4-d4xe4", []board.PositionID{"e4"}, nil},
 		{map[string][]string{"white/blue": {"a1"}, "black/yellow": {"b1", "a2"}, "black/king": {"h8"}}, "a1^c1x", []board.PositionID{"b1"}, nil},
 		{map[string][]string{"white/blue": {"a1"}, "black/yellow": {"b1", "a2"}, "black/king": {"h8"}}, "a1^c1", nil, nil},
-		{map[string][]string{"white/ace": {"a1"}, "black/yellow": {"b1"}, "black/king": {"h8"}}, "a1^c1c", nil, []board.PositionID{"b1"}},
+		{map[string][]string{"white/ace": {"a1"}, "black/yellow": {"b1"}, "black/king": {"h8"}}, "a1^c1c", nil, []state.Conversion{{At: "b1", Color: "white"}}},
 	}
 	for _, c := range cases {
 		st := pos{pieces: c.pieces}.build(t)
