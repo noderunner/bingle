@@ -5,7 +5,7 @@ Lo que ha cambiado en Bingle, lo más reciente primero. Bingle Core (el servidor
 ## 0.143.0 - 2026-11-27
 
 ### Bingle Core 0.143.0
-- Para autores de juegos: un archivo web dice paint para aquello con lo que se dibuja un tinte, una insignia, un palo o el dorso de una carta (API 1.21.0)
+- Para autores de juegos: un archivo web dice paint para aquello con lo que se dibuja un tinte, una insignia, un palo o el dorso de una carta (API 1.20.3)
 
 ## 0.142.2 - 2026-11-27
 

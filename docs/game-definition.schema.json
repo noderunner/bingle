@@ -418,6 +418,10 @@
       "additionalProperties": false,
       "description": "CardBackDef is the back of a card. What a client paints it in is the client's (ADR 0154: the web page's web.yaml).",
       "properties": {
+        "color": {
+          "description": "Color is filled by nothing (TestNoDefinitionCarriesItsLook holds every definition to that): what a client paints the back in is the client's (ADR 0154: the web page's web.yaml says paint). It leaves with the API's next major version (ADR 0134).",
+          "type": "string"
+        },
         "text": {
           "type": "string"
         }
@@ -1180,6 +1184,10 @@
       "additionalProperties": false,
       "description": "OverlayDef is one entry of a DisplayDef legend. What a client paints it in is the client's (ADR 0154: the web page's web.yaml).",
       "properties": {
+        "color": {
+          "description": "Color is filled by nothing (TestNoDefinitionCarriesItsLook holds every definition to that): what a client paints a tint or badge in is the client's (ADR 0154: the web page's web.yaml says paint). It leaves with the API's next major version (ADR 0134).",
+          "type": "string"
+        },
         "glyph": {
           "description": "Glyph is a short text mark (badges).",
           "type": "string"
@@ -1521,6 +1529,10 @@
       "additionalProperties": false,
       "description": "SuitDef is one suit: how it is named and its pip. What a client paints it in is the client's (ADR 0154: the web page's web.yaml), and whether it is red or black, where the rules ask, is its place in suit_order (ADR 0122).",
       "properties": {
+        "color": {
+          "description": "Color is filled by nothing (TestNoDefinitionCarriesItsLook holds every definition to that): what a client paints a suit in is the client's (ADR 0154: the web page's web.yaml says paint). It leaves with the API's next major version (ADR 0134).",
+          "type": "string"
+        },
         "label": {
           "type": "string"
         },

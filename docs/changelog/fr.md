@@ -5,7 +5,7 @@ Ce qui a changé dans Bingle, du plus récent au plus ancien. Bingle Core (le se
 ## 0.143.0 - 2026-11-27
 
 ### Bingle Core 0.143.0
-- Pour les auteurs de jeux : un fichier web dit paint pour ce avec quoi se dessinent une teinte, un badge, une couleur de cartes ou un dos de carte (API 1.21.0)
+- Pour les auteurs de jeux : un fichier web dit paint pour ce avec quoi se dessinent une teinte, un badge, une couleur de cartes ou un dos de carte (API 1.20.3)
 
 ## 0.142.2 - 2026-11-27
 

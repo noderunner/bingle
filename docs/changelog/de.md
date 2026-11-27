@@ -5,7 +5,7 @@ Was sich in Bingle geändert hat, das Neueste zuerst. Bingle Core (der Server, d
 ## 0.143.0 - 2026-11-27
 
 ### Bingle Core 0.143.0
-- Für Spieleautoren: Eine Web-Datei sagt paint für das, womit eine Tönung, ein Abzeichen, eine Farbe oder eine Kartenrückseite gezeichnet wird (API 1.21.0)
+- Für Spieleautoren: Eine Web-Datei sagt paint für das, womit eine Tönung, ein Abzeichen, eine Farbe oder eine Kartenrückseite gezeichnet wird (API 1.20.3)
 
 ## 0.142.2 - 2026-11-27
 

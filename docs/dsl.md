@@ -187,9 +187,10 @@ pieces:
   *A game's look* in [ui.md](ui.md)): `shape`, `blend`, `board.style` and `borders`, `preview`, card
   backs, `display.no_hands` and each tint's and badge's `glyph`. The definition still has these
   keys, and `TestNoDefinitionCarriesItsLook` holds every game to leaving them out. What a tint, a
-  badge, a suit or the cards' back is drawn in has no key here at all: it is the web file's `paint`
-  ([ADR 0154](decisions/0154-a-color-is-a-name-and-paint-is-each-clients-own.md)), and a `color` in
-  a definition is always a color's name.
+  badge, a suit or the cards' back is drawn in is the web file's `paint`
+  ([ADR 0154](decisions/0154-a-color-is-a-name-and-paint-is-each-clients-own.md)). Their `color`
+  here is filled by nothing, held to that by the same test, and leaves with the API's next major
+  version ([ADR 0134](decisions/0134-an-api-version-and-a-schema-of-its-messages.md)).
 * `tags` classify pieces for win rules and scores.
 * `pool` names the reserve pool a *placed* piece is drawn from (default: the
   piece type itself). Pieces sharing a pool share a supply — Tak's flat and

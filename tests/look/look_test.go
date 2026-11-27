@@ -269,28 +269,6 @@ func TestCheckHoldsCardPaint(t *testing.T) {
 	}
 }
 
-// A definition says nothing of paint: a tint's, a badge's, a suit's or the
-// cards' back's color is not one of its keys (ADR 0154).
-func TestNoDefinitionPaints(t *testing.T) {
-	const base = `{"id":"g","name":"G","board":{"generator":{"type":"grid","width":3,"height":3,"adjacency":"orthogonal4"}},
-		"seats":[{"seat":1,"color":"red"},{"seat":2,"color":"blue"}],"pieces":{"stone":{"movement":{}}},
-		"turn_order":{"type":"round-robin","seats":[1,2]},"actions":[{"id":"place","type":"place","pieces":["stone"]}],
-		"win_condition":{"type":"none"}`
-	if _, err := dsl.Parse([]byte(base + `,"display":{"tints":{"hot":{"label":"Hot"}}}}`)); err != nil {
-		t.Fatalf("a good definition: %v", err)
-	}
-	for _, extra := range []string{
-		`"display":{"tints":{"hot":{"label":"Hot","color":"#f00"}}}`,
-		`"display":{"badges":{"hot":{"label":"Hot","color":"#f00"}}}`,
-		`"cards":{"suits":{"red":{"label":"Red","color":"#c00"}},"decks":{"main":{"ranks":[{"id":"1","value":1}]}}}`,
-		`"cards":{"back":{"color":"#336"},"suits":{"red":{"label":"Red"}},"decks":{"main":{"ranks":[{"id":"1","value":1}]}}}`,
-	} {
-		if _, err := dsl.Parse([]byte(base + "," + extra + "}")); err == nil || !strings.Contains(err.Error(), "color") {
-			t.Errorf("%s: %v, want it refused", extra, err)
-		}
-	}
-}
-
 // The line of ADR 0124, held: no definition of a shipped game says how it
 // looks, the private games' included (ADR 0127). A piece type's
 // own color stays, since the rules read it (ADR 0117); a zone's layout and
@@ -326,15 +304,20 @@ func TestNoDefinitionCarriesItsLook(t *testing.T) {
 				}
 				for kind, marks := range map[string]map[string]dsl.OverlayDef{"tint": d.Tints, "badge": d.Badges} {
 					for key, o := range marks {
-						if o.Glyph != "" {
-							t.Errorf("%s: %s %s is drawn in the definition (%q)", id, kind, key, o.Glyph)
+						if o.Color != "" || o.Glyph != "" {
+							t.Errorf("%s: %s %s is drawn in the definition (%q %q)", id, kind, key, o.Color, o.Glyph)
 						}
 					}
 				}
 			}
 			if c := def.Cards; c != nil {
-				if c.Back.Text != "" {
+				if c.Back.Color != "" || c.Back.Text != "" {
 					t.Errorf("%s: the definition draws the backs of the cards", id)
+				}
+				for sid, s := range c.Suits {
+					if s.Color != "" {
+						t.Errorf("%s: suit %s has color %q", id, sid, s.Color)
+					}
 				}
 			}
 		}

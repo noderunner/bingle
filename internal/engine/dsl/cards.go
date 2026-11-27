@@ -36,6 +36,11 @@ type CardsDef struct {
 // red or black, where the rules ask, is its place in suit_order (ADR 0122).
 type SuitDef struct {
 	Label string `json:"label,omitempty"`
+	// Color is filled by nothing (TestNoDefinitionCarriesItsLook holds every
+	// definition to that): what a client paints a suit in is the client's
+	// (ADR 0154: the web page's web.yaml says paint). It leaves with the API's
+	// next major version (ADR 0134).
+	Color string `json:"color,omitempty"`
 	// Symbol is the text drawn as the suit's pip (a glyph or a short word).
 	Symbol string `json:"symbol,omitempty"`
 	// Text is a longer description (shown in the rules and on hover).
@@ -97,7 +102,12 @@ type CardDef struct {
 // CardBackDef is the back of a card. What a client paints it in is the
 // client's (ADR 0154: the web page's web.yaml).
 type CardBackDef struct {
-	Text string `json:"text,omitempty"`
+	// Color is filled by nothing (TestNoDefinitionCarriesItsLook holds every
+	// definition to that): what a client paints the back in is the client's
+	// (ADR 0154: the web page's web.yaml says paint). It leaves with the API's
+	// next major version (ADR 0134).
+	Color string `json:"color,omitempty"`
+	Text  string `json:"text,omitempty"`
 }
 
 // ZoneDef is a place cards can be.

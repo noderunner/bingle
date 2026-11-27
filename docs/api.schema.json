@@ -285,6 +285,10 @@
     "CardBackDef": {
       "description": "CardBackDef is the back of a card. What a client paints it in is the client's (ADR 0154: the web page's web.yaml).",
       "properties": {
+        "color": {
+          "description": "Color is filled by nothing (TestNoDefinitionCarriesItsLook holds every definition to that): what a client paints the back in is the client's (ADR 0154: the web page's web.yaml says paint). It leaves with the API's next major version (ADR 0134).",
+          "type": "string"
+        },
         "text": {
           "type": "string"
         }
@@ -3356,6 +3360,10 @@
     "OverlayDef": {
       "description": "OverlayDef is one entry of a DisplayDef legend. What a client paints it in is the client's (ADR 0154: the web page's web.yaml).",
       "properties": {
+        "color": {
+          "description": "Color is filled by nothing (TestNoDefinitionCarriesItsLook holds every definition to that): what a client paints a tint or badge in is the client's (ADR 0154: the web page's web.yaml says paint). It leaves with the API's next major version (ADR 0134).",
+          "type": "string"
+        },
         "glyph": {
           "description": "Glyph is a short text mark (badges).",
           "type": "string"
@@ -4256,6 +4264,10 @@
     "SuitDef": {
       "description": "SuitDef is one suit: how it is named and its pip. What a client paints it in is the client's (ADR 0154: the web page's web.yaml), and whether it is red or black, where the rules ask, is its place in suit_order (ADR 0122).",
       "properties": {
+        "color": {
+          "description": "Color is filled by nothing (TestNoDefinitionCarriesItsLook holds every definition to that): what a client paints a suit in is the client's (ADR 0154: the web page's web.yaml says paint). It leaves with the API's next major version (ADR 0134).",
+          "type": "string"
+        },
         "label": {
           "type": "string"
         },
@@ -4622,9 +4634,9 @@
   },
   "$id": "https://github.com/noderunner/bingle/docs/api.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "description": "The requests, responses and WebSocket events of bingle's API, version 1.21.0. Generated from the Go types of the server: do not edit. Objects let unknown fields through: a client ignores those it does not know.",
+  "description": "The requests, responses and WebSocket events of bingle's API, version 1.20.3. Generated from the Go types of the server: do not edit. Objects let unknown fields through: a client ignores those it does not know.",
   "title": "Bingle API messages",
-  "x-api-version": "1.21.0",
+  "x-api-version": "1.20.3",
   "x-dm-events": {
     "badge": {
       "$ref": "#/$defs/BadgeEventData"

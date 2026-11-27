@@ -879,6 +879,8 @@ written before that put a tint's, a badge's, a suit's or the back's paint under 
 private overlay's still do: `look.js` reads such a `color` as the paint where there is none, and
 `look.Check` takes it only as a value to draw with. `tests/look` refuses it in the public games'
 files and the fixtures' (`look.OldColors`); the old key can go once the overlay's files say `paint`.
+The definition's own `color` of a tint, a badge, a suit and the back is filled by nothing and
+leaves with the API's next major version (ADR 0134).
 
 `look.Check` holds a look to its games: every seat, piece, tint, badge, zone, suit and area it names
 is the game's, every paint a value to draw with, every badge icon a picture among its files, and a game drawn as areas (its variant's board over the family's) has a canvas and

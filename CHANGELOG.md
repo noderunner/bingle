@@ -7,7 +7,7 @@ what the help window shows under *Recent changes*, so it is written for the peop
 ## 0.143.0 - 2026-11-27
 
 ### Bingle Core 0.143.0
-- For game authors: a web file says paint for what a tint, a badge, a suit or a card back is drawn in (API 1.21.0)
+- For game authors: a web file says paint for what a tint, a badge, a suit or a card back is drawn in (API 1.20.3)
 
 ## 0.142.2 - 2026-11-27
 
