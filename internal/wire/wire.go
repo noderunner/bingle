@@ -23,13 +23,19 @@ type Move struct {
 	// several. Absent for none.
 	Captures []string `json:"captures,omitempty"`
 
-	Action   string   `json:"action,omitempty"`
-	Piece    string   `json:"piece,omitempty"`
-	Count    int      `json:"count,omitempty"`
-	Path     []string `json:"path,omitempty"`
-	Drops    []int    `json:"drops,omitempty"`
-	Aim      string   `json:"aim,omitempty"`
-	Notation string   `json:"notation,omitempty"`
+	Action string `json:"action,omitempty"`
+	Piece  string `json:"piece,omitempty"`
+	Count  int    `json:"count,omitempty"`
+	// Path is the positions the selection goes through, in order, the last of them To. With From and no
+	// Count they are the landings of a piece that hops from one to the next, and a client may draw each
+	// leg as a hop; with Count they are where a stack drops. A ruleset may also send positions that
+	// nothing moves through, with no From. Absent for a step, slide, leap or placement.
+	Path []string `json:"path,omitempty"`
+	// Drops is the count dropped on each position of Path for a stack. A ruleset may use it for something
+	// else (one game sends what happens to each piece jumped): a client reads it only beside Count.
+	Drops    []int  `json:"drops,omitempty"`
+	Aim      string `json:"aim,omitempty"`
+	Notation string `json:"notation,omitempty"`
 
 	CreatedAt string `json:"created_at,omitempty"`
 	// Auto: the server played the move for a person (a reaction they chose

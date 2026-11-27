@@ -163,13 +163,19 @@ func (h *handlers) handleListBots(w http.ResponseWriter, r *http.Request) {
 
 // legalMoveDTO is one selection of GET /games/{code}/selections and simulate.
 type legalMoveDTO struct {
-	Notation string          `json:"notation"`
-	Action   string          `json:"action"`
-	Piece    string          `json:"piece,omitempty"`
-	From     string          `json:"from,omitempty"`
-	To       string          `json:"to,omitempty"`
-	Count    int             `json:"count,omitempty"`
-	Path     []string        `json:"path,omitempty"`
+	Notation string `json:"notation"`
+	Action   string `json:"action"`
+	Piece    string `json:"piece,omitempty"`
+	From     string `json:"from,omitempty"`
+	To       string `json:"to,omitempty"`
+	Count    int    `json:"count,omitempty"`
+	// Path is the positions the selection goes through, in order, the last of them To. With From and no
+	// Count they are the landings of a piece that hops from one to the next, and a client may draw each
+	// leg as a hop; with Count they are where a stack drops. A ruleset may also send positions that
+	// nothing moves through, with no From. Absent for a step, slide, leap or placement.
+	Path []string `json:"path,omitempty"`
+	// Drops is the count dropped on each position of Path for a stack. A ruleset may use it for something
+	// else (one game sends what happens to each piece jumped): a client reads it only beside Count.
 	Drops    []int           `json:"drops,omitempty"`
 	Aim      string          `json:"aim,omitempty"`
 	Gestures []state.Gesture `json:"gestures,omitempty"`

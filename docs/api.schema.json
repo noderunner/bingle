@@ -2553,6 +2553,7 @@
           "type": "integer"
         },
         "drops": {
+          "description": "Drops is the count dropped on each position of Path for a stack. A ruleset may use it for something else (one game sends what happens to each piece jumped): a client reads it only beside Count.",
           "items": {
             "type": "integer"
           },
@@ -2571,6 +2572,7 @@
           "type": "string"
         },
         "path": {
+          "description": "Path is the positions the selection goes through, in order, the last of them To. With From and no Count they are the landings of a piece that hops from one to the next, and a client may draw each leg as a hop; with Count they are where a stack drops. A ruleset may also send positions that nothing moves through, with no From. Absent for a step, slide, leap or placement.",
           "items": {
             "type": "string"
           },
@@ -2635,6 +2637,7 @@
           "type": "integer"
         },
         "drops": {
+          "description": "Drops is the count dropped on each position of Path for a stack. A ruleset may use it for something else (one game sends what happens to each piece jumped): a client reads it only beside Count.",
           "items": {
             "type": "integer"
           },
@@ -2650,6 +2653,7 @@
           "type": "string"
         },
         "path": {
+          "description": "Path is the positions the selection goes through, in order, the last of them To. With From and no Count they are the landings of a piece that hops from one to the next, and a client may draw each leg as a hop; with Count they are where a stack drops. A ruleset may also send positions that nothing moves through, with no From. Absent for a step, slide, leap or placement.",
           "items": {
             "type": "string"
           },
@@ -2848,6 +2852,7 @@
           "type": "string"
         },
         "drops": {
+          "description": "Drops is the count dropped on each position of Path for a stack. A ruleset may use it for something else (one game sends what happens to each piece jumped): a client reads it only beside Count.",
           "items": {
             "type": "integer"
           },
@@ -2863,6 +2868,7 @@
           "type": "string"
         },
         "path": {
+          "description": "Path is the positions the selection goes through, in order, the last of them To. With From and no Count they are the landings of a piece that hops from one to the next, and a client may draw each leg as a hop; with Count they are where a stack drops. A ruleset may also send positions that nothing moves through, with no From. Absent for a step, slide, leap or placement.",
           "items": {
             "type": "string"
           },
@@ -4641,9 +4647,9 @@
   },
   "$id": "https://github.com/noderunner/bingle/docs/api.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "description": "The requests, responses and WebSocket events of bingle's API, version 1.21.0. Generated from the Go types of the server: do not edit. Objects let unknown fields through: a client ignores those it does not know.",
+  "description": "The requests, responses and WebSocket events of bingle's API, version 1.21.1. Generated from the Go types of the server: do not edit. Objects let unknown fields through: a client ignores those it does not know.",
   "title": "Bingle API messages",
-  "x-api-version": "1.21.0",
+  "x-api-version": "1.21.1",
   "x-dm-events": {
     "badge": {
       "$ref": "#/$defs/BadgeEventData"
