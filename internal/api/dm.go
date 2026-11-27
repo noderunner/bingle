@@ -215,6 +215,13 @@ func (h *handlers) handleDirectWS(w http.ResponseWriter, r *http.Request) {
 	if err := wsjson.Write(ctx, conn, session.Event{Type: "ready", Data: dmReady{Address: address}}); err != nil {
 		return
 	}
+	// A ring made while no socket was open would be lost: it follows ready.
+	// One made since subscribing may come twice, which a client ignores.
+	for _, ring := range h.mgr.PendingRings(address) {
+		if err := wsjson.Write(ctx, conn, session.Event{Type: "dm-call", Data: ring}); err != nil {
+			return
+		}
+	}
 	for {
 		select {
 		case <-ctx.Done():

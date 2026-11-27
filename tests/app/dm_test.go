@@ -521,3 +521,44 @@ func TestWebDirectCall_LeavesTheGamesVoiceChat(t *testing.T) {
 		}
 	}
 }
+
+// A ring made while the one rung has no socket open still reaches them: it
+// follows ready when their socket opens, until it is answered or ends (#232).
+func TestDirectCall_ARingWaitsForTheSocket(t *testing.T) {
+	a, baseURL := membersServer(t)
+	anaB, boB := member(t, a, baseURL, "ana"), member(t, a, baseURL, "bob")
+	ana, bo := anaB.here(), boB.here()
+	befriend(t, anaB, boB, "bob", "ana")
+
+	// Bo is here, but his socket is not open yet (or is reconnecting).
+	if code := anaB.do("POST", "/api/dm/call", map[string]any{"to": bo, "join": true}, nil); code != 200 {
+		t.Fatalf("Ana calls Bo: %d", code)
+	}
+	boR := dmReader(t, baseURL, boB, "en")
+	if ev, ok := nextCallEvent(t, boR, 5*time.Second); !ok || ev.Kind != "ring" || ev.From != ana {
+		t.Fatalf("Bo opens his socket and is told %+v (%v), want Ana's ring", ev, ok)
+	}
+
+	// Once he answers it is a call, not a ring: a new socket of either is not rung.
+	if code := boB.do("POST", "/api/dm/call", map[string]any{"to": ana, "join": true}, nil); code != 200 {
+		t.Fatalf("Bo answers: %d", code)
+	}
+	for who, b := range map[string]*browser{"Ana": anaB, "Bo": boB} {
+		if ev, ok := nextCallEvent(t, dmReader(t, baseURL, b, "en"), 500*time.Millisecond); ok {
+			t.Errorf("%s reconnects during the call and is told %+v", who, ev)
+		}
+	}
+
+	// When Ana hangs up the call is over for Bo too: her new socket is not rung by him.
+	anaB.do("POST", "/api/dm/call", map[string]any{"join": false}, nil)
+	if ev, ok := nextCallEvent(t, dmReader(t, baseURL, anaB, "en"), 500*time.Millisecond); ok {
+		t.Errorf("Ana reconnects after hanging up and is told %+v", ev)
+	}
+
+	// A ring that has been declined is not sent again.
+	anaB.do("POST", "/api/dm/call", map[string]any{"to": bo, "join": true}, nil)
+	boB.do("POST", "/api/dm/call", map[string]any{"to": ana, "join": false}, nil)
+	if ev, ok := nextCallEvent(t, dmReader(t, baseURL, boB, "en"), 500*time.Millisecond); ok {
+		t.Errorf("Bo reconnects after declining and is told %+v", ev)
+	}
+}

@@ -412,7 +412,10 @@ offer, the answer and the candidates to the other side's `/ws-dm` socket, as a
 game's voice chat does over its room. Both sides must have joined
 (`/dm/call` with `join: true` — the second one is answering) before a signal is
 relayed; otherwise `409`. Hanging up (`join: false`) while only being rung declines: the caller
-gets a `dm-call` end with `declined: true`.
+gets a `dm-call` end with `declined: true`; hanging up a call ends it for both sides. A ring
+still waiting for an answer when `/ws-dm` opens (after signing in, or a reconnect) follows its
+`ready` event, so a ring made while no socket was open is not lost; a client may get the same
+ring twice.
 
 **One voice at a time.** A principal (an account, or a guest) joining a game's voice chat
 (`POST /games/{code}/voice`) or a direct call is held to one call: joining a new one takes it out

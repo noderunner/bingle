@@ -839,7 +839,7 @@
       "type": "object"
     },
     "DirectCall": {
-      "description": "DirectCall is the wire form of a \"dm-call\" event: somebody is calling, or a call has ended.",
+      "description": "DirectCall is the wire form of a \"dm-call\" event: somebody is calling, or a call has ended. A ring still waiting for an answer when /ws-dm opens follows its ready event, and may come twice.",
       "properties": {
         "declined": {
           "description": "Declined says the one being rung would not answer.",
@@ -4633,9 +4633,9 @@
   },
   "$id": "https://github.com/noderunner/bingle/docs/api.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "description": "The requests, responses and WebSocket events of bingle's API, version 1.20.0. Generated from the Go types of the server: do not edit. Objects let unknown fields through: a client ignores those it does not know.",
+  "description": "The requests, responses and WebSocket events of bingle's API, version 1.20.1. Generated from the Go types of the server: do not edit. Objects let unknown fields through: a client ignores those it does not know.",
   "title": "Bingle API messages",
-  "x-api-version": "1.20.0",
+  "x-api-version": "1.20.1",
   "x-dm-events": {
     "badge": {
       "$ref": "#/$defs/BadgeEventData"
