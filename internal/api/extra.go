@@ -182,6 +182,8 @@ type legalMoveDTO struct {
 	// keep their place and change colour (Othello's flips). Absent as
 	// captures are.
 	Converts []string `json:"converts,omitempty"`
+	// ConvertsTo is the colour word each of converts turns to, by position.
+	ConvertsTo map[string]string `json:"converts_to,omitempty"`
 }
 
 func legalMoveDTOs(moves []session.SelectionOption) []legalMoveDTO {
@@ -200,7 +202,7 @@ func legalMoveDTOs(moves []session.SelectionOption) []legalMoveDTO {
 		for _, p := range lm.Selection.Path {
 			d.Path = append(d.Path, string(p))
 		}
-		d.Gestures, d.Captures, d.Converts = lm.Gestures, lm.Captures, lm.Converts
+		d.Gestures, d.Captures, d.Converts, d.ConvertsTo = lm.Gestures, lm.Captures, lm.Converts, lm.ConvertsTo
 		out[i] = d
 	}
 	return out

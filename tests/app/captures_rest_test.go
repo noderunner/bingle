@@ -83,9 +83,9 @@ func TestREST_SelectionsAndMovesListWhatTheyCapture(t *testing.T) {
 	}
 }
 
-// A legal selection says which pieces it would turn over (#293): Othello's
-// opening d3 converts the white disc on d4, and simulate's legal moves say
-// the same.
+// A legal selection says which pieces it would turn over and the colour each
+// turns to (#293): Othello's opening d3 converts the white disc on d4 to
+// black, and simulate's legal moves say the same.
 func TestREST_SelectionsListWhatTheyConvert(t *testing.T) {
 	base := newRESTTestServer(t)
 	ana, bob := newGuestKey(t, base), newGuestKey(t, base)
@@ -98,9 +98,10 @@ func TestREST_SelectionsListWhatTheyConvert(t *testing.T) {
 		t.Fatalf("join: %d", code)
 	}
 	type option struct {
-		Notation string   `json:"notation"`
-		Captures []string `json:"captures"`
-		Converts []string `json:"converts"`
+		Notation   string            `json:"notation"`
+		Captures   []string          `json:"captures"`
+		Converts   []string          `json:"converts"`
+		ConvertsTo map[string]string `json:"converts_to"`
 	}
 	find := func(opts []option, notation string) option {
 		t.Helper()
@@ -118,8 +119,11 @@ func TestREST_SelectionsListWhatTheyConvert(t *testing.T) {
 	if code := doJSONAs(t, ana, "GET", game+"/selections", nil, &sel); code != 200 {
 		t.Fatalf("selections: %d", code)
 	}
-	if o := find(sel.Options, "d3"); !slices.Equal(o.Converts, []string{"d4"}) || o.Captures != nil {
-		t.Errorf("d3 would convert %v and capture %v, want [d4] and nothing", o.Converts, o.Captures)
+	if o := find(sel.Options, "d3"); !slices.Equal(o.Converts, []string{"d4"}) || o.ConvertsTo["d4"] != "black" || len(o.ConvertsTo) != 1 || o.Captures != nil {
+		t.Errorf("d3 would convert %v to %v and capture %v, want [d4] to black and nothing", o.Converts, o.ConvertsTo, o.Captures)
+	}
+	if o := find(sel.Options, "c4"); o.ConvertsTo["d4"] != "black" {
+		t.Errorf("c4 would turn d4 to %v, want black", o.ConvertsTo)
 	}
 	var sim struct {
 		Legal []option `json:"legal_moves"`
@@ -128,7 +132,7 @@ func TestREST_SelectionsListWhatTheyConvert(t *testing.T) {
 		t.Fatalf("simulate: %d", code)
 	}
 	// After d3, white's c3 outflanks d4 (now black) along the diagonal to e5.
-	if o := find(sim.Legal, "c3"); !slices.Equal(o.Converts, []string{"d4"}) {
-		t.Errorf("simulated, c3 would convert %v, want [d4]", o.Converts)
+	if o := find(sim.Legal, "c3"); !slices.Equal(o.Converts, []string{"d4"}) || o.ConvertsTo["d4"] != "white" {
+		t.Errorf("simulated, c3 would convert %v to %v, want [d4] to white", o.Converts, o.ConvertsTo)
 	}
 }

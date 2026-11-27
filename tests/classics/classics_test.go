@@ -939,8 +939,8 @@ func TestSelectionEffectsBeforeTheMoveIsPlayed(t *testing.T) {
 }
 
 // What a legal selection would turn over, before it is played (#293): an
-// Othello placement converts every disc it outflanks, in each line, and
-// captures nothing.
+// Othello placement converts every disc it outflanks, in each line, to its
+// own colour, and captures nothing.
 func TestSelectionConvertsBeforeTheMoveIsPlayed(t *testing.T) {
 	g := load(t, "othello")
 	st := state.NewBoardState()
@@ -952,8 +952,9 @@ func TestSelectionConvertsBeforeTheMoveIsPlayed(t *testing.T) {
 		st.Push(id, state.Occupant{Piece: "disc", Color: color})
 	}
 	captures, converts := state.SelectionEffects(g, st, 1, mustParse(t, g, "a1"))
-	if captures != nil || !slices.Equal(converts, []board.PositionID{"a2", "b1", "c1"}) {
-		t.Errorf("a1 captures %v and converts %v, want nothing and [a2 b1 c1]", captures, converts)
+	want := []state.Conversion{{At: "a2", Color: "black"}, {At: "b1", Color: "black"}, {At: "c1", Color: "black"}}
+	if captures != nil || !slices.Equal(converts, want) {
+		t.Errorf("a1 captures %v and converts %v, want nothing and %v", captures, converts, want)
 	}
 	if occ, _ := st.Get("b1"); occ.Color != "white" {
 		t.Error("asking what a selection converts changed the position")
