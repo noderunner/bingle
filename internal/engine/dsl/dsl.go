@@ -468,8 +468,9 @@ type FactDef struct {
 	Secret bool `json:"secret,omitempty"`
 }
 
-// Palette is every color the seat plays: Colors, or just Color.
-func (s SeatDef) Palette() []string {
+// Plays lists the names of every color the seat plays: Colors, or just
+// Color. They are names, never paint (ADR 0154).
+func (s SeatDef) Plays() []string {
 	if len(s.Colors) > 0 {
 		return s.Colors
 	}

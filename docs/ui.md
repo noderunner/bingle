@@ -822,7 +822,21 @@ game's choice, remembered in `bingle.board`) falls back to wood. Choosing one re
 (`GET /api/game-defs/{id}`): grid boards as checkered `squares` or Go-style
 `points`, explicit boards as node/edge graphs; coordinates for algebraic
 boards; stacks as piles with a height badge; last-move, pending-move and
-legal-target overlays. Piece appearance comes from `shape` and the seat color.
+legal-target overlays. Piece appearance comes from `shape` and the piece's color.
+
+One module, `js/paint.js`, turns a color (a name) into paint, and no other module of the
+page reasons about hue ([ADR 0154](decisions/0154-a-color-is-a-name-and-paint-is-each-clients-own.md)).
+Callers pass names: `colorClass(color, info)` gives the class (`color-<word>`) and
+`colorPaint(color, info)` the CSS value (`var(--piece-<word>-fill)`) for a style that mixes it;
+`info` is the game's, by default the game the page shows (`useColors`). `COLOR_WORDS` lists the
+twelve words the page has a paint for; the stylesheet's `--piece-<word>-fill` and `-stroke`
+and every board theme's stones paint exactly those (`tests/look` holds them, and keeps a piece's
+paint and lists of color words out of the other scripts). A color the page does not know is
+painted by seat: in the order of the seats that play it (each seat's `colors` in order), then of
+the game's `extra_colors`, it is lent the paint of a word the game does not play (red, blue,
+green, yellow, purple, orange, teal, brown, grey, sand, then white and black), so it differs from
+the game's other colors, follows the board theme as the words do, and does not depend on which
+pieces are on the board. What a screen reader hears names the color as the definition gives it.
 
 ### A game's look: `web.yaml`
 

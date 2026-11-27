@@ -11,6 +11,7 @@ import { mountAnalysis, openBotGuide } from "./analysis.js";
 import { mountRatings } from "./ratings.js";
 import { mountTournaments } from "./tournaments.js";
 import { renderBoard } from "./render.js";
+import { colorClass } from "./paint.js";
 import { showRules as openRules } from "./rules.js";
 import { installTopbar } from "./topbar.js";
 import { openGameRow } from "./mygames.js";
@@ -1059,7 +1060,7 @@ function renderSlots(info) {
 			remember();
 		});
 		let who = h("strong", {}, seat.label);
-		let swatch = h("span", { class: `swatch color-${seat.color}` });
+		let swatch = h("span", { class: `swatch ${colorClass(seat.color, info)}` });
 		if (picker) {
 			who = h("span", { class: "slot-faction", "data-faction-seat": seat.seat });
 			swatch = null;

@@ -33,6 +33,7 @@
 	--target-soft: rgba(47, 111, 94, 0.22);
 	--selected: rgba(37, 99, 235, 0.55);
 
+	/* The paint of each of js/paint.js's COLOR_WORDS, and of no other word (tests/look holds them). */
 	--piece-white-fill: #f7f4ec;
 	--piece-white-stroke: #3a352b;
 	--piece-black-fill: #34312c;

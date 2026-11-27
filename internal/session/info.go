@@ -36,9 +36,13 @@ type GameInfo struct {
 	Notation    string            `json:"notation"`
 	NotationDoc []string          `json:"notation_help,omitempty"`
 	Seats       []SeatDefDTO      `json:"seats"`
-	Board       BoardDTO          `json:"board"`
-	Pieces      []PieceDTO        `json:"pieces"`
-	Pools       []PoolDTO         `json:"pools,omitempty"`
+	// ExtraColors are the colors a piece may have that no seat plays (Fist's
+	// neutral pawn), in the definition's order: a client that paints a color
+	// by seat paints these after the seats' (ADR 0154).
+	ExtraColors []string   `json:"extra_colors,omitempty"`
+	Board       BoardDTO   `json:"board"`
+	Pieces      []PieceDTO `json:"pieces"`
+	Pools       []PoolDTO  `json:"pools,omitempty"`
 	// Cards describes the suits, card types and zones of a card game.
 	Cards *CardsDTO `json:"cards,omitempty"`
 	// Counters are reserve pools that hold no pieces, only a number per
@@ -286,6 +290,7 @@ func buildGameInfo(cg *catalog.CompiledGame) GameInfo {
 		Notation:    notation,
 		NotationDoc: notationHelp(cg),
 		Reserves:    def.Reserves,
+		ExtraColors: def.ExtraColors,
 	}
 	if rs, found := state.RulesetOf(cg); found {
 		_, info.SetupCatalog = rs.(state.SetupCatalogs)

@@ -7,7 +7,8 @@
 import { h, clear, store } from "./util.js";
 import { api, gameTitle, whoAmI } from "./api.js";
 import { renderMarkdown } from "./markdown.js";
-import { pieceIcon, cssColor, legendMarker } from "./render.js";
+import { pieceIcon, legendMarker } from "./render.js";
+import { colorClass } from "./paint.js";
 import { tutorialList } from "./tutorials-ui.js";
 import { badgeCatalog, paintShelf } from "./badges.js";
 import { t, forwardKey, backKey } from "./i18n.js";
@@ -84,7 +85,7 @@ function seatNode(info, n) {
 	return h(
 		"span",
 		{ class: "md-seat" },
-		h("span", { class: `swatch color-${cssColor(seat.color)}`, "aria-hidden": "true" }),
+		h("span", { class: `swatch ${colorClass(seat.color, info)}`, "aria-hidden": "true" }),
 		h("strong", {}, seat.label)
 	);
 }
@@ -215,7 +216,7 @@ function build(dlg, info, pages, { tablist, body, search, initial }) {
 			idPrefix: `rules-${page.id}-`,
 			piece: (type, color) => {
 				const def = (info.pieces || []).find((p) => p.type === type);
-				return def ? pieceIcon(def.shape, color || pieceColor, 28) : null;
+				return def ? pieceIcon(def.shape, color || pieceColor, 28, info) : null;
 			},
 			seat: (n) => seatNode(info, n),
 			// The game's page script draws its own marks; a swatch is every game's.

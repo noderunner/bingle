@@ -2,11 +2,12 @@
 // the stones, SVG gradients, patterns and filters, a decorated frame and a
 // small mark on every stone — all drawn here, none of it a picture file.
 //
-// Every theme keeps the same idea for the two sides: the first player's stones
-// are warm (reds, golds, oranges, cream) and the second player's cold (blues,
-// violets, near-black), whatever the color names of the game say, so the
-// players can be told apart at a glance in any theme. (A game whose sides are
-// "white" and "black" gets a warm light and a cold dark stone.)
+// A theme paints each of paint.js's color words (its stones); paint.js says
+// which word a game's color is painted as, a color the page does not know
+// being lent a word by seat, so it follows the theme as the words do. The warm
+// words (reds, golds, oranges, cream) are warm in every theme and the cold
+// (blues, violets, near-black) cold: a game whose sides are "white" and
+// "black" gets a warm light and a cold dark stone.
 //
 // A theme is selected with <html data-board="id">; the stylesheet that makes it
 // work is built from the tables below (installThemes) and put in the page once,
@@ -14,8 +15,7 @@
 
 import { s } from "./util.js";
 import { t as tr } from "./i18n.js";
-
-const SVG_COLORS = ["red", "yellow", "orange", "white", "blue", "black", "green", "purple", "teal", "sand", "brown", "grey"];
+import { COLOR_WORDS } from "./paint.js";
 
 // ---------------------------------------------------------------------------
 // Small helpers
@@ -291,7 +291,7 @@ export const THEMES = [SYNTH, CELTIC, SOLSTICE, BAZAAR, ABYSS, GEMS];
 
 function stoneDefs(t) {
 	const out = [];
-	for (const c of SVG_COLORS) {
+	for (const c of COLOR_WORDS) {
 		const st = t.stones[c];
 		if (!st) continue;
 		out.push(
@@ -449,7 +449,7 @@ function themeCss(t) {
 	const sel = `:root[data-board="${t.id}"]`;
 	const b = t.board;
 	let css = `${sel} { --board-light: ${b.light}; --board-dark: ${b.dark}; --board-line: ${b.line}; --board-frame: ${b.frame}; --board-label: ${b.label}; --last-move: ${b.last}; `;
-	for (const c of SVG_COLORS) {
+	for (const c of COLOR_WORDS) {
 		const st = t.stones[c];
 		if (!st) continue;
 		css += `--piece-${c}-fill: ${st.mid}; --piece-${c}-stroke: ${st.rim}; `;
@@ -462,7 +462,7 @@ function themeCss(t) {
 	css += `${sel} .cell-bg.dark${plain} { fill: url(#th-${t.id}-cd); }\n`;
 	css += `${sel} .cell-bg.mid { fill-opacity: 1; }\n`;
 	css += `${sel} .ring-hole { fill: ${b.mid}; }\n`;
-	for (const c of SVG_COLORS) {
+	for (const c of COLOR_WORDS) {
 		const st = t.stones[c];
 		if (!st) continue;
 		css += `${sel} .piece.color-${c} .piece-body, ${sel} .ghost-piece.color-${c} .piece-body { fill: url(#th-${t.id}-${c}); stroke: ${st.rim}; stroke-width: 2.2; filter: url(#th-${t.id}-${c}-fx); }\n`;

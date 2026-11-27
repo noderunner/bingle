@@ -7,6 +7,7 @@ import { h, s, clear } from "./util.js";
 import { frameDecor, stoneMarks, installThemes, currentTheme } from "./themes.js";
 import { onNavigate } from "./nav.js";
 import { t as tr, lang } from "./i18n.js";
+import { classWord, colorClass, knownColor, paintWord } from "./paint.js";
 
 export const CELL = 80;
 
@@ -119,16 +120,19 @@ export function pieceShape(shape, size) {
 	}
 }
 
-/** A standalone piece icon (for legends and hand panels). */
-export function pieceIcon(shape, color, px = 28) {
+/** A standalone piece icon (for legends and hand panels), painted as paint.js says for the game in view or info. */
+export function pieceIcon(shape, color, px = 28, info) {
 	const svg = s("svg", { viewBox: "-20 -20 40 40", width: px, height: px, "aria-hidden": "true" });
-	svg.append(s("g", { class: `piece color-${cssColor(color)}` }, pieceShape(shape, 34)));
+	svg.append(s("g", { class: `piece ${colorClass(color, info)}` }, pieceShape(shape, 34)));
 	return svg;
 }
 
-export function cssColor(color) {
-	return String(color || "").toLowerCase().replace(/[^a-z0-9]/g, "") || "white";
-}
+/**
+ * A name as a word of a class (paint.js's classWord). Kept for the private
+ * overlay's page scripts, which still build color-<name> and --piece-<name>-fill
+ * from it; it can go once they ask paint.js (colorClass, colorPaint).
+ */
+export const cssColor = classWord;
 
 /**
  * The columns of each board of a grid, as drawn (flipped or not), left to right: [[lo, hi], …].
@@ -213,11 +217,10 @@ function layout(info, flipped) {
 	};
 }
 
-/** A color of the palette in words, in the page's language; another color as it is given. */
-const COLOR_WORDS = new Set(["white", "black", "red", "yellow", "orange", "green", "blue", "purple", "teal", "sand", "brown", "grey"]);
+/** A color word in words, in the page's language; another color as the definition names it. */
 function colorWord(color) {
-	const c = cssColor(color);
-	return COLOR_WORDS.has(c) ? tr(`color.${c}`) : String(color);
+	const c = knownColor(color);
+	return c ? tr(`color.${c}`) : String(color);
 }
 
 function describeStack(info, stack) {
@@ -534,7 +537,7 @@ function drawBoard(host, info, view, handlers = {}) {
 			const gameTintDef = gameTint && view.legend && view.legend.tints ? view.legend.tints[gameTint] : null;
 			g.append(
 				s("rect", {
-					class: "cell-bg " + (light ? "light" : "dark") + (tint ? ` edge-${cssColor(tint)}` : "") + (gameTint ? ` tint tint-${cssColor(gameTint)}` : ""),
+					class: "cell-bg " + (light ? "light" : "dark") + (tint ? ` edge-${paintWord(tint, info)}` : "") + (gameTint ? ` tint tint-${classWord(gameTint)}` : ""),
 					x: pt.x - half,
 					y: pt.y - half,
 					width: CELL,
@@ -590,11 +593,11 @@ function drawBoard(host, info, view, handlers = {}) {
 		// A preview of what a click on this empty square would place.
 		if (n === 0 && view.ghost && isTarget && view.interactive) {
 			const gp = s("g", {
-				class: `ghost-piece color-${cssColor(view.ghost.color)} shape-${view.ghost.shape}`,
+				class: `ghost-piece ${colorClass(view.ghost.color, info)} shape-${view.ghost.shape}`,
 				transform: `translate(${pt.x} ${pt.y})`,
 			});
 			for (const part of pieceShape(view.ghost.shape, pieceSize)) gp.append(part);
-			for (const mark of stoneMarks(view.ghost.shape, cssColor(view.ghost.color), pieceSize)) gp.append(mark);
+			for (const mark of stoneMarks(view.ghost.shape, paintWord(view.ghost.color, info), pieceSize)) gp.append(mark);
 			g.append(gp);
 		}
 
@@ -605,7 +608,7 @@ function drawBoard(host, info, view, handlers = {}) {
 				const def = pieceDefs.get(pc.piece);
 				const y = pt.y + ((n - 1) / 2 - i) * lift;
 				const piece = s("g", {
-					class: `piece color-${cssColor(pc.color)} shape-${def ? def.shape : "disc"}`,
+					class: `piece ${colorClass(pc.color, info)} shape-${def ? def.shape : "disc"}`,
 					transform: `translate(${pt.x} ${y})`,
 					"data-piece": pc.piece,
 					"data-color": pc.color,
@@ -614,7 +617,7 @@ function drawBoard(host, info, view, handlers = {}) {
 					"data-top": i === n - 1 ? "true" : "false",
 				});
 				for (const part of pieceShape(def ? def.shape : "disc", pieceSize)) piece.append(part);
-				for (const mark of stoneMarks(def ? def.shape : "disc", cssColor(pc.color), pieceSize)) piece.append(mark);
+				for (const mark of stoneMarks(def ? def.shape : "disc", paintWord(pc.color, info), pieceSize)) piece.append(mark);
 				g.append(piece);
 			});
 			if (n > 1) {
@@ -957,7 +960,7 @@ function renderHexBoard(host, info, view, handlers) {
 		// A mark that fills a space: the hexagon of a cell, or the disc round a point.
 		const mark = (cls, r) => (grid ? s("circle", { class: cls, cx: pt.x, cy: pt.y, r: r * 0.85 }) : s("polygon", { class: cls, points: hexPoints(pt.x, pt.y, r) }));
 		const spaceAttrs = {
-			class: `cell-bg ${free ? "free-slot" : grid ? "light" : shade}` + (edge ? ` edge-${cssColor(edge)}` : "") + (tint ? ` tint tint-${cssColor(tint)}` : ""),
+			class: `cell-bg ${free ? "free-slot" : grid ? "light" : shade}` + (edge ? ` edge-${paintWord(edge, info)}` : "") + (tint ? ` tint tint-${classWord(tint)}` : ""),
 			stroke: "var(--board-line)",
 			"stroke-width": 1.5,
 			style: tintDef && tintDef.paint ? `fill: color-mix(in srgb, ${tintDef.paint} 78%, var(--board-light))` : null,
@@ -986,17 +989,17 @@ function renderHexBoard(host, info, view, handlers) {
 		const n = stack.length;
 		if (n === 0 && view.ghost && isTarget && view.interactive) {
 			const gp = s("g", {
-				class: `ghost-piece color-${cssColor(view.ghost.color)} shape-${view.ghost.shape}`,
+				class: `ghost-piece ${colorClass(view.ghost.color, info)} shape-${view.ghost.shape}`,
 				transform: `translate(${pt.x} ${pt.y})`,
 			});
 			for (const part of pieceShape(view.ghost.shape, pieceSize)) gp.append(part);
-			for (const mark of stoneMarks(view.ghost.shape, cssColor(view.ghost.color), pieceSize)) gp.append(mark);
+			for (const mark of stoneMarks(view.ghost.shape, paintWord(view.ghost.color, info), pieceSize)) gp.append(mark);
 			g.append(gp);
 		}
 		stack.forEach((pc, i) => {
 			const def = pieceDefs.get(pc.piece);
 			const piece = s("g", {
-				class: `piece color-${cssColor(pc.color)} shape-${def ? def.shape : "disc"}`,
+				class: `piece ${colorClass(pc.color, info)} shape-${def ? def.shape : "disc"}`,
 				// A tile on top of others sits higher, the ones it covers peeking out below.
 				transform: free ? `translate(${pt.x} ${pt.y + (n - 1 - i) * 7})` : `translate(${pt.x} ${pt.y - ((n - 1) / 2 - i) * 4})`,
 				"data-piece": pc.piece,
@@ -1006,7 +1009,7 @@ function renderHexBoard(host, info, view, handlers) {
 				"data-top": i === n - 1 ? "true" : "false",
 			});
 			for (const part of pieceShape(def ? def.shape : "disc", pieceSize)) piece.append(part);
-			for (const mark of stoneMarks(def ? def.shape : "disc", cssColor(pc.color), pieceSize)) piece.append(mark);
+			for (const mark of stoneMarks(def ? def.shape : "disc", paintWord(pc.color, info), pieceSize)) piece.append(mark);
 			g.append(piece);
 		});
 		if (free && n > 1) {
@@ -1025,7 +1028,7 @@ function renderHexBoard(host, info, view, handlers) {
 				// A stone beside the unit: white = Fatigued, black = Exhausted.
 				g.append(
 					s("circle", {
-						class: `badge-stone stone-${cssColor(kind)}`,
+						class: `badge-stone stone-${classWord(kind)}`,
 						cx: pt.x + CELL * 0.27,
 						cy: pt.y + CELL * 0.2,
 						r: CELL * 0.1,

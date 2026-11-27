@@ -163,11 +163,13 @@ pieces:
       flatten_to: flat
 ```
 
-* Colors are CSS-ish names; the UI has palettes for `white`, `black`, `red`,
-  `blue`, `green`, `yellow`, `orange`, `purple`, `teal`, `sand`, `brown` and `grey`.
-  A piece of any other color is drawn black for now; a later stage of
-  [ADR 0154](decisions/0154-a-color-is-a-name-and-paint-is-each-clients-own.md)
-  paints it by its seat instead (#338).
+* A color is a name, never paint ([ADR 0154](decisions/0154-a-color-is-a-name-and-paint-is-each-clients-own.md)).
+  The web page paints the color words `white`, `black`, `red`, `blue`, `green`,
+  `yellow`, `orange`, `purple`, `teal`, `sand`, `brown` and `grey` as they say,
+  and any other color by seat: in the order of the seats that play it, then of
+  `extra_colors`, each gets the paint of a word the game does not play, so two
+  such colors never look the same. What a screen reader hears is still the
+  color's own name.
 * `shape`: `disc` (default), `square`/`flat`, `wall`, `cap`, `ring`,
   `diamond`, `triangle`, `cross`.
 * `code` is the short letter used by notation, TPS and the text board.
