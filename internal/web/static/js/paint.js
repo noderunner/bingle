@@ -127,7 +127,7 @@ export function seatKey(sd, info = inView, { cls = "swatch", title = "" } = {}) 
 	const blend = sd && sd.blend && sd.blend.length > 1 ? sd.blend : colors.length > 1 ? colors : null;
 	const names = new Intl.ListFormat(lang, { type: "unit" }).format(colors.map(colorName));
 	return h("span", {
-		class: `${cls} ${colorClass(colors[0] || "white", info)}`,
+		class: `seat-key ${cls} ${colorClass(colors[0] || "white", info)}`,
 		style: blend ? `background: linear-gradient(90deg, ${blend.map((c) => colorPaint(c, info)).join(", ")})` : null,
 		role: "img",
 		"aria-label": names || null,

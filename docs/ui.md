@@ -849,7 +849,7 @@ pieces are on the board. What a screen reader hears names the color as the defin
 (`colorName`: a color word in the page's language, any other as the definition gives it).
 
 Wherever the page names a seat, its **key** stands beside the name (ADR 0154, decision 5):
-`seatKey(seat, info)` is a `.swatch` in the viewer's paint, which a board theme repaints without
+`seatKey(seat, info)` is a `.seat-key.swatch` (sized by `:where(.seat-key)`, so a row's own rule wins) in the viewer's paint, which a board theme repaints without
 a reload, and for a seat of several colors (Blooms) a gradient of them (the web file's `blend`);
 its `title` and `aria-label` name every color the seat plays. It is beside the seat strips, the
 impulse card's heading, the status line's seat (whose turn, who won), the log's seats and the seats
