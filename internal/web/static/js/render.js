@@ -7,7 +7,7 @@ import { h, s, clear } from "./util.js";
 import { frameDecor, stoneMarks, installThemes, currentTheme } from "./themes.js";
 import { onNavigate } from "./nav.js";
 import { t as tr, lang } from "./i18n.js";
-import { classWord, colorClass, knownColor, paintWord } from "./paint.js";
+import { classWord, colorClass, colorName, paintWord } from "./paint.js";
 
 export const CELL = 80;
 
@@ -217,17 +217,11 @@ function layout(info, flipped) {
 	};
 }
 
-/** A color word in words, in the page's language; another color as the definition names it. */
-function colorWord(color) {
-	const c = knownColor(color);
-	return c ? tr(`color.${c}`) : String(color);
-}
-
 function describeStack(info, stack) {
 	if (!stack || stack.length === 0) return tr("board.empty");
 	const label = (pc) => {
 		const def = info.pieces.find((p) => p.type === pc.piece);
-		return tr("board.piece", { color: colorWord(pc.color), piece: def ? def.label.toLowerCase() : pc.piece });
+		return tr("board.piece", { color: colorName(pc.color), piece: def ? def.label.toLowerCase() : pc.piece });
 	};
 	if (stack.length === 1) return label(stack[0]);
 	return tr("board.stack", { n: stack.length, pieces: new Intl.ListFormat(lang, { type: "unit" }).format(stack.map(label)) });

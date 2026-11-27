@@ -6,7 +6,7 @@
 import { handleBadge } from "./friend-badge.js";
 import { h, store, lastName, markChatRead } from "./util.js";
 import { api } from "./api.js";
-import { colorClass } from "./paint.js";
+import { colorClass, seatInView, seatKey } from "./paint.js";
 import { onNavigate } from "./nav.js";
 import { t, lang } from "./i18n.js";
 import { chatText } from "./chat-text.js";
@@ -242,6 +242,7 @@ function lineNode(line, mine) {
 	return h(
 		"li",
 		{ class: "chat-line" + (mine ? " mine" : "") + (line.seat ? "" : " spectator"), "data-id": line.id, "data-seat": line.seat || null },
+		line.seat && line.color ? seatKey(seatInView(line.seat) || { seat: line.seat, color: line.color }, undefined, { cls: "swatch chat-key" }) : null,
 		h("span", { class: `chat-who ${line.color ? colorClass(line.color) : ""}`, title: line.seat ? "" : t("chat.spectator") }, line.seat ? line.name : t("chat.watching", { name: line.name })),
 		// Who said it: an account, by its handle, or a guest.
 		line.handle ? handleBadge(line.handle) : line.guest ? h("span", { class: "chat-guest small muted" }, t("chat.guest")) : null,

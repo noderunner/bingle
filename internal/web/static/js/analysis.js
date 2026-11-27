@@ -12,6 +12,7 @@ import { api, gameTitle, whoAmI } from "./api.js";
 import { rateBars } from "./charts.js";
 import { renderMarkdown } from "./markdown.js";
 import { t, tParts } from "./i18n.js";
+import { seatKey } from "./paint.js";
 
 const SETUP_KEY = "bingle.analysis";
 const STATUS_TEXT = { queued: "batch.queued", running: "batch.running", done: "batch.done", cancelled: "batch.cancelled", failed: "batch.failed", interrupted: "batch.interrupted" };
@@ -54,7 +55,7 @@ function seatRows(info, chosen) {
 			h(
 				"label",
 				{ class: "row analysis-seat" },
-				h("span", { class: "swatch color-" + seat.color, "aria-hidden": "true" }),
+				seatKey(seat, info),
 				h("span", { class: "grow" }, seat.label || seat.color),
 				sel
 			)

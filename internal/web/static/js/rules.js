@@ -8,7 +8,7 @@ import { h, clear, store } from "./util.js";
 import { api, gameTitle, whoAmI } from "./api.js";
 import { renderMarkdown } from "./markdown.js";
 import { pieceIcon, legendMarker } from "./render.js";
-import { colorClass } from "./paint.js";
+import { seatKey } from "./paint.js";
 import { tutorialList } from "./tutorials-ui.js";
 import { badgeCatalog, paintShelf } from "./badges.js";
 import { t, forwardKey, backKey } from "./i18n.js";
@@ -85,7 +85,7 @@ function seatNode(info, n) {
 	return h(
 		"span",
 		{ class: "md-seat" },
-		h("span", { class: `swatch ${colorClass(seat.color, info)}`, "aria-hidden": "true" }),
+		seatKey(seat, info),
 		h("strong", {}, seat.label)
 	);
 }

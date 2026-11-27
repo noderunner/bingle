@@ -8,7 +8,7 @@
 import { h, store } from "./util.js";
 import { onLeave } from "./nav.js";
 import { dir, t } from "./i18n.js";
-import { colorClass } from "./paint.js";
+import { colorClass, seatKey } from "./paint.js";
 
 const KEY = "bingle.layout";
 
@@ -112,7 +112,7 @@ export function mobileShell({ pages, groups, chips = {}, current, onChange }) {
 				h(
 					"button",
 					{ type: "button", class: "m-chip" + (c.page === now ? " on" : ""), "data-page": c.page, onclick: () => show(c.page, true) },
-					h("span", { class: `swatch ${colorClass(c.color)}` }),
+					c.seat ? seatKey(c.seat) : h("span", { class: `swatch ${colorClass(c.color)}` }),
 					c.label
 				)
 			);

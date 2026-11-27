@@ -845,7 +845,18 @@ painted by seat: in the order of the seats that play it (each seat's `colors` in
 the game's `extra_colors`, it is lent the paint of a word the game does not play (red, blue,
 green, yellow, purple, orange, teal, brown, grey, sand, then white and black), so it differs from
 the game's other colors, follows the board theme as the words do, and does not depend on which
-pieces are on the board. What a screen reader hears names the color as the definition gives it.
+pieces are on the board. What a screen reader hears names the color as the definition gives it
+(`colorName`: a color word in the page's language, any other as the definition gives it).
+
+Wherever the page names a seat, its **key** stands beside the name (ADR 0154, decision 5):
+`seatKey(seat, info)` is a `.swatch` in the viewer's paint, which a board theme repaints without
+a reload, and for a seat of several colors (Blooms) a gradient of them (the web file's `blend`);
+its `title` and `aria-label` name every color the seat plays. It is beside the seat strips, the
+impulse card's heading, the status line's seat (whose turn, who won), the log's seats and the seats
+its lines name (`.log-key`), the flat list of moves (`.seat-dot`), a chat line's author
+(`.chat-key`), the setup's and the lobby's seats, the analysis form, the rules' `{seat}` marks, the
+phone layout's seat chips, and the names in the lists of games (`.seat-named`). A list of games
+(`GET /api/games`) gives a seat one color, so a seat of several shows its first there.
 
 ### A game's look: `web.yaml`
 

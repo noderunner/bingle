@@ -8,7 +8,7 @@ import { h, s, clear, store, rememberGame, nameFor, lastName, ago, titleCase, to
 import { api, ApiError, gameTitle } from "./api.js";
 import { MoveBuilder } from "./builder.js";
 import { renderBoard, pieceIcon, hasHexStyles, defaultHexStyle } from "./render.js";
-import { classWord, colorClass, colorPaint, paintWord, useColors } from "./paint.js";
+import { classWord, colorClass, colorPaint, paintWord, seatKey, useColors } from "./paint.js";
 import { showRules as openRules } from "./rules.js";
 import { keepChatFocus, loadChat, receiveChat, receiveTranslation, chatCard, chatSeen, chatUnread } from "./chat.js";
 import { handleBadge } from "./friend-badge.js";
@@ -2448,7 +2448,7 @@ function impulseHeading() {
 	const glyph = seatGlyph(seat);
 	// A player's name is theirs, in every language.
 	const own = seatName(seat) ? "no" : null;
-	if (!glyph) return h("h3", { id: "impulse-title", translate: own }, impulseTitle());
+	if (!glyph) return h("h3", { id: "impulse-title", class: "impulse-seat", translate: own }, keyOf(seat), impulseTitle());
 	return h("h3", { id: "impulse-title", class: "impulse-seat", style: `color: ${seatInk(seat)}`, translate: own }, glyph, impulseTitle());
 }
 
@@ -2825,7 +2825,7 @@ function renderMobile(seats, bottomSeat) {
 	for (const seat of cardOrder(bottomSeat)) {
 		const id = `seat-${seat}`;
 		pages.push({ id, label: seatLabel(seat) || tr("game.seat_n", { n: seat }), group: "seats", node: h("div", { class: "m-stack" }, seatStrip(seat)) });
-		chips.seats.push({ page: id, label: seatLabel(seat) || tr("game.seat_n", { n: seat }), color: colorOf(seat) });
+		chips.seats.push({ page: id, label: seatLabel(seat) || tr("game.seat_n", { n: seat }), color: colorOf(seat), seat: seatDef(seat) });
 	}
 	pages.push({ id: "log", label: tr("game.history"), group: "log", node: h("div", { class: "m-stack" }, historyCard()) });
 	if (!S.tut) pages.push({ id: "chat", label: tr("game.chat"), group: "chat", node: h("div", { class: "m-stack" }, chatCard({ code, me: S.me, voice: voiceControls({ code, me: S.me, seats: S.game.seats }) })) });
@@ -3160,6 +3160,8 @@ function drawBoard(host) {
 function statusBar() {
 	const cls = ["status-bar"];
 	let msg = "";
+	// The seat the words are about, whose key goes before them.
+	let about = 0;
 	const g = S.game;
 	const badges = [];
 
@@ -3171,8 +3173,13 @@ function statusBar() {
 		const a = S.analysis;
 		const sim = a.sim;
 		if (!sim) msg = tr("game.analysis_loading");
-		else if (sim.game_ended) msg = sim.winner_seat ? tr("game.analysis_ends_win", { seat: seatLabel(sim.winner_seat) }) : tr("game.analysis_ends_draw");
-		else msg = tr(a.base === null ? "game.analysis_now" : "game.analysis_after", { n: a.base, seat: seatLabel(sim.impulse_seat) });
+		else if (sim.game_ended) {
+			msg = sim.winner_seat ? tr("game.analysis_ends_win", { seat: seatLabel(sim.winner_seat) }) : tr("game.analysis_ends_draw");
+			about = sim.winner_seat || 0;
+		} else {
+			msg = tr(a.base === null ? "game.analysis_now" : "game.analysis_after", { n: a.base, seat: seatLabel(sim.impulse_seat) });
+			about = sim.impulse_seat || 0;
+		}
 	} else if (!isLive()) {
 		cls.push("history");
 		const seq = S.viewSeq;
@@ -3191,6 +3198,7 @@ function statusBar() {
 	} else if (g.status === "finished") {
 		cls.push("over");
 		msg = resultMessage();
+		if (!(S.me.seat && g.winner_seat === S.me.seat) && !playingAlone()) about = g.winner_seat || 0;
 	} else if (isMyImpulse()) {
 		cls.push("your-impulse");
 		msg = tr("game.your_turn_text", { text: impulseText() });
@@ -3198,12 +3206,14 @@ function statusBar() {
 		const si = seatInfo(g.impulse_seat);
 		const who = seatName(g.impulse_seat) || seatLabel(g.impulse_seat);
 		msg = tr(si && si.bot ? "game.thinking" : "game.waiting_for", { who, text: impulseText() });
+		about = g.impulse_seat;
 	} else {
 		msg = tr("game.seat_text", { seat: seatLabel(g.impulse_seat), name: displayName(g.impulse_seat), text: impulseText() });
+		about = g.impulse_seat;
 	}
 
 	const bar = h("div", { class: cls.join(" ") });
-	bar.append(h("div", { class: "message", id: "status-message", "aria-live": "polite" }, ...withSeatWords(msg)));
+	bar.append(h("div", { class: "message", id: "status-message", "aria-live": "polite" }, about && seatDef(about) ? keyOf(about, colorOf(about), { cls: "swatch status-key" }) : null, ...withSeatWords(msg)));
 	if (isLive() && !inAnalysis() && g.status === "active" && !tutorialShown() && !tutorialLookingBack()) {
 		if (isMyImpulse()) badges.push(h("span", { class: "badge turn" }, tr("game.your_turn")));
 		{
@@ -3471,8 +3481,12 @@ function paintConnections() {
 function seatSwatch(seat, color) {
 	const picture = seatPicture(seat, 30);
 	if (picture) return h("span", { class: "seat-icon" }, picture);
-	const gradient = seatGradient(seat);
-	return h("span", { class: `swatch ${colorClass(color)}`, style: gradient ? `background: ${gradient}` : null });
+	return keyOf(seat, color);
+}
+
+/** The key beside a seat's name: a swatch in the viewer's paint of each color the seat plays (ADR 0154). */
+function keyOf(seat, color = colorOf(seat), opts) {
+	return seatKey(seatDef(seat) || { seat, color }, S.info, opts);
 }
 
 /** The glyph of a seat's faction, in a game whose factions have them: it says what the name would. */
@@ -3825,7 +3839,7 @@ function buildAbilityChoice(a, r) {
 				"label",
 				{ class: "check auto-pass-option" },
 				input,
-				o.color ? h("span", { class: `swatch ${colorClass(o.color)}` }) : null,
+				o.color ? keyOf(o.seat, o.color) : null,
 				h("span", {}, otherLabel(o))
 			)
 		);
@@ -5469,7 +5483,7 @@ function logLine(text) {
 		const re = new RegExp(names, "g");
 		for (let m = re.exec(text); m; m = re.exec(text)) {
 			const sd = S.info.seats.find((x) => x.label === m[0]);
-			marks.push({ start: m.index, end: m.index + m[0].length, node: () => (seatGradient(sd.seat) ? seatWord(sd.seat) : h("span", { class: `log-fac ${colorClass(sd.color)}` }, m[0])) });
+			marks.push({ start: m.index, end: m.index + m[0].length, node: () => [keyOf(sd.seat, sd.color, { cls: "swatch log-key" }), seatGradient(sd.seat) ? seatWord(sd.seat) : h("span", { class: `log-fac ${colorClass(sd.color)}` }, m[0])] });
 		}
 	}
 	const label = /^([A-Z][A-Za-z'’ -]{1,30}):(?=\s)/.exec(text);
@@ -5485,7 +5499,7 @@ function logLine(text) {
 	for (const m of marks) {
 		if (m.start < at) continue;
 		if (m.start > at) li.append(text.slice(at, m.start));
-		li.append(m.node());
+		li.append(...[m.node()].flat());
 		at = m.end;
 	}
 	if (at < text.length) li.append(text.slice(at));
@@ -5499,7 +5513,7 @@ function logActor(seat, ply, mark = null) {
 	return h(
 		"div",
 		{ class: `log-actor ${colorClass(colorOf(seat))}`, "data-seat": seat, "data-auto-play": mark ? "1" : null },
-		h("span", { class: `swatch ${colorClass(colorOf(seat))}`, style: seatGradient(seat) ? `background: ${seatGradient(seat)}` : null }),
+		keyOf(seat),
 		h("strong", {}, ...withSeatWords(sd ? sd.label : tr("game.seat_n", { n: seat }))),
 		who ? h("span", { class: "muted small" }, seat === S.me.seat && who === seatName(seat) ? tr("hist.who_you", { who }) : ` · ${who}`) : null,
 		mark
@@ -5706,7 +5720,7 @@ function moveList() {
 					"li",
 					{ class: `by-seat-${m.seat}` },
 					h("span", { class: "num" }, `${m.seq}.`),
-					h("span", { class: `seat-dot ${colorClass(colorOf(m.seat))}`, style: seatGradient(m.seat) ? `background: ${seatGradient(m.seat)}` : null, title: seatNameAt(m.seat, m.seq) || seatLabel(m.seat) }),
+					keyOf(m.seat, colorOf(m.seat), { cls: "seat-dot swatch", title: seatNameAt(m.seat, m.seq) || seatLabel(m.seat) }),
 					h(
 						"button",
 						{

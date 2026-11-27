@@ -4,7 +4,8 @@
 
 import { h, rememberedGames, rememberGame, rememberOlderGame, forgetGame, forgottenGames, chatReadUpTo, ago, toast } from "./util.js";
 import { api, gameTitle } from "./api.js";
-import { t } from "./i18n.js";
+import { t, tParts } from "./i18n.js";
+import { seatKey } from "./paint.js";
 
 let defsPromise = null;
 
@@ -84,6 +85,19 @@ export function sortRows(rows) {
 	return [...rows].sort((a, b) => Number(yourImpulse(b)) - Number(yourImpulse(a)) || b.g.ts - a.g.ts);
 }
 
+/**
+ * A player's name with their seat's key before it, in a list of games. A list
+ * gives a seat one color (the first it plays) and paints the colors among
+ * `seats`, the game's seats it lists.
+ */
+function keyed(seat, name, seats) {
+	if (!seat || !seat.color) return name;
+	return h("span", { class: "seat-named" }, seatKey({ seat: seat.seat, color: seat.color }, { seats }), h("bdi", {}, name));
+}
+
+/** Words and elements, with " · " between them. */
+const dotted = (parts) => parts.flatMap((p, i) => (i ? [" · ", ...[p].flat()] : [p].flat()));
+
 /** A game's badges, in two columns, as many rows as they need. */
 const badgeColumns = (badges) => (badges.length ? h("div", { class: "game-badges" }, ...badges) : null);
 
@@ -98,8 +112,10 @@ const tagBadges = (tags) => (tags || []).map((tag) => h("span", { class: "badge 
 export function openGameRow(g, defs, isMine, action = null) {
 	const def = defs.find((d) => d.id === String(g.game_def_id).split("~")[0]);
 	const title = g.name || (def ? gameTitle(def) : g.game_def_id);
-	const names = (g.players || []).map((p) => (p.Bot ? t("games.bot", { name: p.Name }) : p.Name));
-	const meta = [!names.length ? t("games.nobody_seated") : names.length > 2 ? t("games.players", { n: names.length }) : names.length === 2 ? t("games.versus", { a: names[0], b: names[1] }) : names[0]];
+	const players = g.players || [];
+	const seats = players.map((p) => ({ seat: p.Seat, color: p.Color }));
+	const names = players.map((p) => keyed({ seat: p.Seat, color: p.Color }, p.Bot ? t("games.bot", { name: p.Name }) : p.Name, seats));
+	const meta = [!names.length ? t("games.nobody_seated") : names.length > 2 ? t("games.players", { n: names.length }) : names.length === 2 ? tParts("games.versus", { a: names[0], b: names[1] }) : names[0]];
 	if (g.status !== "active") meta.push(g.lobby ? t("games.waiting_host") : t("games.waiting_players"));
 	if (g.updated_at) meta.push(ago(g.updated_at));
 	const badges = [];
@@ -112,7 +128,7 @@ export function openGameRow(g, defs, isMine, action = null) {
 	return h(
 		"li",
 		{ "data-code": g.room_code },
-		h("div", { class: "grow" }, h("div", { class: "title" }, `${title} · ${g.room_code}`), h("div", { class: "meta" }, meta.join(" · "))),
+		h("div", { class: "grow" }, h("div", { class: "title" }, `${title} · ${g.room_code}`), h("div", { class: "meta" }, ...dotted(meta))),
 		badgeColumns(badges),
 		action || h("a", { class: "button primary", href: "/game/" + g.room_code }, t("games.watch"))
 	);
@@ -160,8 +176,8 @@ export function gameRow(r, defs, onForget) {
 	} else if (!r.info) {
 		meta.push(t("games.not_loaded"));
 	} else {
-		const others = r.info.seats.filter((s) => s.name && s.name.toLowerCase() !== r.g.name.toLowerCase()).map((s) => s.name);
-		meta.push(!others.length ? t("games.waiting_opponent") : others.length === 1 ? t("games.vs", { name: others[0] }) : t("games.players", { n: others.length + 1 }));
+		const others = r.info.seats.filter((s) => s.name && s.name.toLowerCase() !== r.g.name.toLowerCase());
+		meta.push(!others.length ? t("games.waiting_opponent") : others.length === 1 ? tParts("games.vs", { name: keyed(others[0], others[0].name, r.info.seats) }) : t("games.players", { n: others.length + 1 }));
 		badges.push(...tagBadges(r.info.tags));
 		if (r.info.rated) badges.push(h("span", { class: "badge rated" }, t("games.rated")));
 		if (yourImpulse(r)) badges.push(h("span", { class: "badge turn" }, t("games.your_turn")));
@@ -175,7 +191,7 @@ export function gameRow(r, defs, onForget) {
 	return h(
 		"li",
 		{ "data-code": r.g.code },
-		h("div", { class: "grow" }, h("div", { class: "title" }, `${title} · ${r.g.code}`), h("div", { class: "meta" }, meta.join(" · ") + (r.g.ts ? ` · ${ago(r.g.ts)}` : ""))),
+		h("div", { class: "grow" }, h("div", { class: "title" }, `${title} · ${r.g.code}`), h("div", { class: "meta" }, ...dotted(r.g.ts ? [...meta, ago(r.g.ts)] : meta))),
 		badgeColumns(badges),
 		r.missing || !r.info
 			? null
