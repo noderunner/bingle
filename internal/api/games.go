@@ -521,16 +521,23 @@ func (h *handlers) handleGetGameState(w http.ResponseWriter, r *http.Request) {
 //     "drops"} with only the fields the action needs;
 //   - notation: {"notation": "3c3>111"} in the game's notation.
 type makeMoveRequest struct {
-	PlayerName string   `json:"player_name"`
-	From       string   `json:"from"`
-	To         string   `json:"to"`
-	Action     string   `json:"action"`
-	Piece      string   `json:"piece"`
-	Count      int      `json:"count"`
-	Path       []string `json:"path"`
-	Drops      []int    `json:"drops"`
-	Aim        string   `json:"aim"`
-	Notation   string   `json:"notation"`
+	PlayerName string `json:"player_name"`
+	From       string `json:"from"`
+	To         string `json:"to"`
+	Action     string `json:"action"`
+	Piece      string `json:"piece"`
+	Count      int    `json:"count"`
+	// Path is the positions the selection goes through, in order. With From and no Count they are the
+	// landings of a piece that hops from one to the next, the last of them To, and a client may draw each
+	// leg as a hop; with Count they are where a stack drops, the last of them To. A ruleset may also send
+	// positions that nothing moves through, with neither From nor To. Absent for a step, slide, leap or
+	// placement.
+	Path []string `json:"path"`
+	// Drops is the count dropped on each position of Path for a stack. A ruleset may use it for something
+	// else (one game sends what happens to each piece jumped): a client reads it only beside Count.
+	Drops    []int  `json:"drops"`
+	Aim      string `json:"aim"`
+	Notation string `json:"notation"`
 	// Ply, when given, is the ply the move was made against: it is refused
 	// with 409 if the game has moved on (ADR 0114).
 	Ply *int `json:"ply"`
