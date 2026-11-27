@@ -223,7 +223,7 @@ func TestSight_EnemyStonesBlockTheLine(t *testing.T) {
 	}
 }
 
-// A group that can see no other group of its colour comes off the board when
+// A group that can see no other group of its color comes off the board when
 // its owner's turn ends — and a group the opponent cut off can be saved.
 func TestDeath_AGroupWithNoPathComesOff(t *testing.T) {
 	g := game(t)

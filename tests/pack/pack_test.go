@@ -155,9 +155,9 @@ func TestABadPackIsRefused(t *testing.T) {
 			edit(t, dir, "game.yaml", "      params: {rows: 2, quiet: 40}", "      family: other\n      params: {rows: 2, quiet: 40}")
 		}, "changes the family"},
 		{"a variant named after another game", func(t *testing.T, dir string) { edit(t, dir, "game.yaml", "id: draughts-6", "id: checkers-6") }, "has to be named"},
-		{"a colour that is not a colour", func(t *testing.T, dir string) {
+		{"a color that is not a color", func(t *testing.T, dir string) {
 			edit(t, dir, "web.yaml", "  no_hands: true", "  no_hands: true\n  tints:\n    last: {color: 'url(https://example.com/x)'}")
-		}, "not a colour"},
+		}, "not a color"},
 		{"a look with a script", func(t *testing.T, dir string) { edit(t, dir, "web.yaml", "board:", "script: draughts.js\nboard:") }, "names a script"},
 		{"a look with a style", func(t *testing.T, dir string) { edit(t, dir, "web.yaml", "board:", "style: draughts.css\nboard:") }, "names a style"},
 		{"a look that does not fit the game", func(t *testing.T, dir string) { edit(t, dir, "web.yaml", "man: {shape: disc}", "pawn: {shape: disc}") }, "pawn"},

@@ -33,7 +33,7 @@
               "$ref": "#/$defs/CustodianDef"
             }
           ],
-          "description": "Custodian makes a placement (or a slide) capture runs of opposing pieces that are flanked by the moved piece and another piece of the mover's colour (Pente's captured pairs; Hnefatafl's sandwiches)."
+          "description": "Custodian makes a placement (or a slide) capture runs of opposing pieces that are flanked by the moved piece and another piece of the mover's color (Pente's captured pairs; Hnefatafl's sandwiches)."
         },
         "directions": {
           "description": "Directions restricts the directions of an explicit step action (see MovementDef.Directions for the vocabulary); empty = every direction.",
@@ -79,7 +79,7 @@
           "type": "string"
         },
         "infect": {
-          "description": "Infect makes every opposing piece adjacent to the landing square change to the mover's colour.",
+          "description": "Infect makes every opposing piece adjacent to the landing square change to the mover's color.",
           "type": "boolean"
         },
         "ko": {
@@ -504,7 +504,7 @@
           "additionalProperties": {
             "$ref": "#/$defs/SuitDef"
           },
-          "description": "Suits are the card groupings (suits, colours, factions), by id.",
+          "description": "Suits are the card groupings (suits, colors, factions), by id.",
           "type": "object"
         },
         "zones": {
@@ -710,7 +710,7 @@
           "additionalProperties": {
             "$ref": "#/$defs/OverlayDef"
           },
-          "description": "Tints colours board cells by key (terrain).",
+          "description": "Tints colors board cells by key (terrain).",
           "type": "object"
         }
       },
@@ -896,7 +896,7 @@
           "type": "string"
         },
         "extra_colors": {
-          "description": "ExtraColors are piece colours besides the seats' own that a position may hold (Fist's neutral verdigris pawn, Blooms' second colour of each player); no reserve may.",
+          "description": "ExtraColors are piece colors besides the seats' own that a position may hold (Fist's neutral verdigris pawn, Blooms' second color of each player); no reserve may.",
           "items": {
             "type": "string"
           },
@@ -1210,7 +1210,7 @@
           "type": "string"
         },
         "suit": {
-          "description": "Suit is \"alternate\" (colour, by place in suit_order), \"same\" or \"any\".",
+          "description": "Suit is \"alternate\" (color, by place in suit_order), \"same\" or \"any\".",
           "type": "string"
         }
       },
@@ -1285,7 +1285,7 @@
           "type": "string"
         },
         "color": {
-          "description": "Color is a fixed colour for a piece type that is its own colour (Blooms' four stones), used where the type is drawn on a button.",
+          "description": "Color is a fixed color for a piece type that is its own color (Blooms' four stones), used where the type is drawn on a button.",
           "type": "string"
         },
         "label": {
@@ -1422,7 +1422,7 @@
       "description": "SeatDef declares one seat a player can occupy, and the color of piece that seat plays.",
       "properties": {
         "blend": {
-          "description": "Blend names the two colours of a seat that plays with both (\"black\", \"blue\"): its swatch and its label are drawn as a gradient between them.",
+          "description": "Blend names the two colors of a seat that plays with both (\"black\", \"blue\"): its swatch and its label are drawn as a gradient between them.",
           "items": {
             "type": "string"
           },
@@ -1432,7 +1432,7 @@
           "type": "string"
         },
         "colors": {
-          "description": "Colors lists every colour the seat plays, Color first (ADR 0117): pieces in any of them are the seat's, while a group is still one colour. Empty means just Color.",
+          "description": "Colors lists every color the seat plays, Color first (ADR 0117): pieces in any of them are the seat's, while a group is still one color. Empty means just Color.",
           "items": {
             "type": "string"
           },
@@ -1529,7 +1529,7 @@
       "description": "SuitDef is one suit: how it is named and drawn.",
       "properties": {
         "color": {
-          "description": "Color is a CSS colour for the suit's pips and card faces.",
+          "description": "Color is a CSS color for the suit's pips and card faces.",
           "type": "string"
         },
         "label": {

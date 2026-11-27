@@ -11,7 +11,7 @@ import (
 	"github.com/chromedp/chromedp"
 )
 
-// bloomsStepJS picks a stone colour, then a cell, or ends a turn.
+// bloomsStepJS picks a stone color, then a cell, or ends a turn.
 const bloomsStepJS = `(function () {
 	if (!document.querySelector("#impulse-card.acting")) return "wait";
 	function click(el, what) {
@@ -27,7 +27,7 @@ const bloomsStepJS = `(function () {
 	return "stuck";
 })()`
 
-// The UI can play Blooms: a hex board, colour buttons for the stones, the
+// The UI can play Blooms: a hex board, color buttons for the stones, the
 // captured counters, and turns of one or two stones.
 func TestWebBlooms_PlayTurnsThroughTheUI(t *testing.T) {
 	baseURL := newRESTTestServer(t)
@@ -80,9 +80,9 @@ func TestWebBlooms_PlayTurnsThroughTheUI(t *testing.T) {
 	}
 }
 
-// The stone previewed on a hovered cell is the colour the player picked, not
-// the seat's own colour: Red & Yellow picking yellow sees a yellow stone.
-func TestWebBlooms_PreviewIsTheChosenColour(t *testing.T) {
+// The stone previewed on a hovered cell is the color the player picked, not
+// the seat's own color: Red & Yellow picking yellow sees a yellow stone.
+func TestWebBlooms_PreviewIsTheChosenColor(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	var created struct {
 		RoomCode string `json:"room_code"`
@@ -98,7 +98,7 @@ func TestWebBlooms_PreviewIsTheChosenColour(t *testing.T) {
 		clickSel(t, ctx, `#piece-buttons button[data-piece="`+stone+`"]`)
 		waitJS(t, ctx, "the previews", `document.querySelectorAll('#board .ghost-piece').length > 0`, 10*time.Second)
 		if n := evalInt(t, ctx, `document.querySelectorAll('#board .ghost-piece:not(.color-`+stone+`)').length`); n != 0 {
-			t.Errorf("after picking %s, %d previews are another colour", stone, n)
+			t.Errorf("after picking %s, %d previews are another color", stone, n)
 		}
 		// The card says what is in hand, in a picture, and Back alone puts it down.
 		if got := evalString(t, ctx, `document.getElementById("pending-move").innerText.trim()`); got != "Place" {
@@ -138,7 +138,7 @@ func TestWebBlooms_PieRuleSwapThroughTheUI(t *testing.T) {
 	collectJSErrors(ctx, &mu, &jsErrors)
 	openGameAs(t, ctx, baseURL, created.RoomCode, "blooms", "Alice")
 	waitJS(t, ctx, "61 cells", `document.querySelectorAll('#board .cell').length === 61`, 15*time.Second)
-	// The opening stone (pick the colour, then a cell), then the swap is a
+	// The opening stone (pick the color, then a cell), then the swap is a
 	// button of the second player's.
 	waitJS(t, ctx, "the opening turn", `document.querySelector('#impulse-card.acting') !== null`, 15*time.Second)
 	clickSel(t, ctx, "#piece-buttons button")
@@ -317,7 +317,7 @@ func TestWebBlooms_TheLastTurnIsMarkedWhole(t *testing.T) {
 }
 
 // The page draws Blooms from its web.yaml (ADR 0124), which the game info no
-// longer carries: each seat's swatch blends its two colours, and there are no
+// longer carries: each seat's swatch blends its two colors, and there are no
 // reserve panels.
 func TestWebBlooms_DrawnFromItsLook(t *testing.T) {
 	baseURL := newRESTTestServer(t)
@@ -336,7 +336,7 @@ func TestWebBlooms_DrawnFromItsLook(t *testing.T) {
 		t.Errorf("%s reserve panels, want none", n)
 	}
 	// What the page reads for base 4: the preview without the squares that
-	// board lacks, the fenced tint's colour beside its words, and the shapes.
+	// board lacks, the fenced tint's color beside its words, and the shapes.
 	var got string
 	script := `import("/static/js/api.js").then(m => m.api.gameDef("blooms-4")).then(i => [
 		Object.keys(i.preview || {}).length > 0 && Object.keys(i.preview).every(p => i.board.positions.some(q => q.id === p)),

@@ -1,4 +1,4 @@
-// Tests of the step primitive's capture rules (capture-or-empty and capture-only), for every colour pairing.
+// Tests of the step primitive's capture rules (capture-or-empty and capture-only), for every color pairing.
 
 package primitives_test
 

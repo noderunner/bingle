@@ -10,7 +10,7 @@ import (
 // Player 1 plays black nodes, player 2 green nodes.
 var seatColors = [3]string{"", "black", "green"}
 
-// ownerOf is the seat that owns nodes of colour c (0 for none).
+// ownerOf is the seat that owns nodes of color c (0 for none).
 func ownerOf(c string) int {
 	for s := 1; s <= 2; s++ {
 		if seatColors[s] == c {
@@ -46,7 +46,7 @@ type Confluence struct {
 	Initiative int `json:"initiative"`
 	// Spent lists the cells of the clusters that have spread in this phase: a
 	// cluster holding one of them has had its spread. A cell leaves the list
-	// when it changes colour.
+	// when it changes color.
 	Spent []string `json:"spent,omitempty"`
 	// Head and Left describe a hyphae spread under way: the node converted
 	// last, which the next conversion must touch, and how many more

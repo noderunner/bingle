@@ -142,7 +142,7 @@ repository cleanly. Today the rules side already holds: the web client fetches t
 move list (`api.legal`) and `MoveBuilder` only narrows it as the player clicks. The coupling
 that remains, found 2026-10-31:
 
-- **Cthulhu Wars' presentation lives in the web client**: cult names and colours in
+- **Cthulhu Wars' presentation lives in the web client**: cult names and colors in
   `cw-names.js`, the sigils in `cw-glyphs.js` (drawn by `render.js`), icons in
   `game-icons.js` and `icons.js`, and a `gameID.startsWith("cthulhu-wars")` check in
   `practice.js`. (2026-10-31 said these move into the game's definition. ADR 0124 reverses that:
@@ -206,7 +206,7 @@ Retirement needs nothing else in this plan and can land on its own, ahead of the
 3. **The web page stops naming games, and no look moves to the server** (ADR 0124, #157,
    which replaces the 2026-10-31 wording "presentation moves to the server"). The page reads a
    game's `web.yaml` and, for a compiled-in game, the scripts it registers through one generic
-   hook. Cthulhu Wars' colours, sigils, icons and `cw-*.js` interface stay web-side and go with
+   hook. Cthulhu Wars' colors, sigils, icons and `cw-*.js` interface stay web-side and go with
    the game into the overlay. The practice report's shape is described by the game, as meaning.
 4. **Fixture games** for every engine feature a departing game was the only public test of,
    Tic-Tac-Toe among them.
@@ -284,9 +284,9 @@ which is now built.
     `session.areaMapSVG` from the outlines and the map art, and the setup picker and the guide
     use it. Under ADR 0124 the page should draw it (it already draws the same map in play),
     or the picture should become an asset built ahead of time.
-  - **Go writes colours**: the Deriver that seats the chosen cults (`config.go`) writes each
+  - **Go writes colors**: the Deriver that seats the chosen cults (`config.go`) writes each
     Gate badge with `gateColor`'s hex and a glyph into the derived definition. The badge's
-    label and text are meaning; its colour and glyph go to the web file, keyed by faction
+    label and text are meaning; its color and glyph go to the web file, keyed by faction
     rather than by seat, since a seat's faction is chosen at setup.
   - **The map art**: `params.art` (a picture's path) and the game list's `map_art` are
     appearance in a param; they move to the web file too.
@@ -313,7 +313,7 @@ which is now built.
     four in #175, and Cthulhu Wars' styles in #176.
   - **Not done:** the list above of Cthulhu Wars' look still in its definition did not move with it,
     despite the note that doing so together would avoid moving it twice: the area map, the server's
-    `board.svg`, the Gate badge colours and the map art. `tests/look` still skips the game by name.
+    `board.svg`, the Gate badge colors and the map art. `tests/look` still skips the game by name.
   - **Found on the way:** a browser with over 30 games lost the one it opened (fixed in #174). The
     overlay's CI takes about 32 minutes on one runner and flaked once; sharding it as public CI does
     would help. `TestWebCthulhuWarsSetup_TheLayout` fails when only that game's browser tests run,
@@ -342,7 +342,7 @@ which is now built.
   - **Stage 2** (#185, overlay #8): an area map's `canvas` and each position's `polygons` and `anchor` leave the
     definition's schema and the game info for the look's `board.canvas` and `board.areas`; positions carry their
     `name` and `tags`. A look's `data` is for its page script alone, and a page script may outline a position
-    the look cannot name (`outlineArea`: Cthulhu Wars' Moon). Cthulhu Wars' piece shapes, tint and badge colours
+    the look cannot name (`outlineArea`: Cthulhu Wars' Moon). Cthulhu Wars' piece shapes, tint and badge colors
     and drawing-only params moved with them, and its Gate badges are keyed by faction, so `gateColor` is gone.
     `tests/look` no longer skips the game (ADR 0124's addendum of 2026-11-11).
   - Before them, the API, MCP and engine call a seat's chosen side a faction rather than a cult (#182, overlay
@@ -353,8 +353,8 @@ which is now built.
     ideas (its rail's `cults` pane and `#cult-stack`, the phone's `cult-<seat>` pages, the `cultCards` hooks, a
     unit held on a Gate, and the map layers Sigils, Glyphs and Glacier Glyphs in the options window), which
     should become generic words or hooks of the page script; and the DSL still accepts the appearance fields no
-    shipped definition uses (style, shape, blend, borders, preview, tint and badge colours and glyphs,
-    `no_hands`, card colours), which the test fixtures keep for the page's fallback.
+    shipped definition uses (style, shape, blend, borders, preview, tint and badge colors and glyphs,
+    `no_hands`, card colors), which the test fixtures keep for the page's fallback.
 - 2026-11-24: **decision 1 is reopened for one game, as a proof of concept** (#294, ADR 0147, proposed): Zèrtz's
   rules as a WebAssembly module in a pack that a public build reads from `BINGLE_PACKS` at start-up, with no upload,
   admin page or zip. It measures the boundary this plan's first decision was taken on, then puts the bot search

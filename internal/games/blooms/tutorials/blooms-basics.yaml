@@ -10,7 +10,7 @@ seat: 1          # you play Warm, red and yellow; the page plays Cool, blue and 
 steps:
   - name: What Blooms is about
     text: |
-      In **Blooms** you place stones of your two colours to build groups
+      In **Blooms** you place stones of your two colors to build groups
       and capture your opponent's groups by fencing them in.
 
       Each player controls two different colors of stones. The **warm** player has red and
@@ -122,7 +122,7 @@ steps:
       Your opponent placed two stones, a blue one in the corner and a black
       one on the far side.
 
-      A **bloom** is a group of touching stones of one colour; a single
+      A **bloom** is a group of touching stones of one color; a single
       stone counts as a bloom.
 
       A bloom is **fenced** when no empty cell touches it (no liberties). The blue stone at a4

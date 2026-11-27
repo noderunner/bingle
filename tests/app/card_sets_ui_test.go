@@ -222,13 +222,13 @@ func TestWebCardSets_EverySetIsCompleteAndLegible(t *testing.T) {
 			const say = (m) => problems.push(set.id + ": " + m);
 			if (set.suits.length !== 8) say(set.suits.length + " suits");
 			if (set.jokers.length !== 4) say(set.jokers.length + " jokers");
-			// Suits have colours of their own, but for a set whose colours alternate as red and black do:
-			// there two suits share each colour, and none is at an odd place and an even one.
-			if (!set.alternates && new Set(set.suits.map((x) => x.color)).size !== 8) say("two suits share a colour");
+			// Suits have colors of their own, but for a set whose colors alternate as red and black do:
+			// there two suits share each color, and none is at an odd place and an even one.
+			if (!set.alternates && new Set(set.suits.map((x) => x.color)).size !== 8) say("two suits share a color");
 			if (set.alternates) {
 				const odd = new Set(set.suits.filter((_, i) => i % 2 === 0).map((x) => x.color));
 				const even = new Set(set.suits.filter((_, i) => i % 2 === 1).map((x) => x.color));
-				if ([...odd].some((c) => even.has(c))) say("a colour is both warm and cool");
+				if ([...odd].some((c) => even.has(c))) say("a color is both warm and cool");
 				for (const c of [...odd, ...even]) if (set.suits.filter((x) => x.color === c).length > 2) say("three suits are " + c);
 			}
 			for (const [i, x] of [...set.suits, ...set.jokers].entries()) {
@@ -244,7 +244,7 @@ func TestWebCardSets_EverySetIsCompleteAndLegible(t *testing.T) {
 			ids.forEach((sid, i) => {
 				const f = setFace(set, info, { suit: sid, label: "K" }, sid + "-K");
 				if (!f.title.startsWith("K of " + set.suits[i].label)) say("suit " + (i + 1) + " is called " + f.title);
-				if (!f.style.includes("--suit: " + set.suits[i].color + ";")) say("suit " + (i + 1) + " is coloured " + f.style);
+				if (!f.style.includes("--suit: " + set.suits[i].color + ";")) say("suit " + (i + 1) + " is colored " + f.style);
 			});
 			// Ranks are the game's: integers and letters, laid out and lettered.
 			for (const label of ["A","2","5","10","J","Q","K","13","X","II"]) {
@@ -254,7 +254,7 @@ func TestWebCardSets_EverySetIsCompleteAndLegible(t *testing.T) {
 			}
 			const pips = (label) => setFace(set, info, { suit: "s1", label }, "s1-" + label).picture.querySelectorAll(":scope > g[transform^='translate']").length;
 			for (const n of [2, 3, 5, 9, 10]) if (pips(String(n)) !== n) say(n + " has " + pips(String(n)) + " pips");
-			// Each joker has the colours of two suits, and two jokers of one game differ.
+			// Each joker has the colors of two suits, and two jokers of one game differ.
 			const a = setFace(set, info, jokers[0], "joker-a");
 			const b = setFace(set, info, jokers[1], "joker-b");
 			if (!a.style.includes("--suit: " + set.suits[0].color + "; --suit2: " + set.suits[1].color)) say("the first joker: " + a.style);

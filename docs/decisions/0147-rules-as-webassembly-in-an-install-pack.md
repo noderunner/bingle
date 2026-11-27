@@ -270,7 +270,7 @@ every game shares and fetches the rest.
 - **The operator chooses what is in the directory, but its contents are checked as though they came from anywhere**,
   since a pack is meant to be handed from one server to another. The checks are ADR 0128's, less what only a zip
   needed: the manifest and ABI version, a definition that compiles, a look that fits it (`look.Check`), no `script`
-  or `style`, colours that are colours, pictures sniffed, text that is text, no path or link that leaves the pack,
+  or `style`, colors that are colors, pictures sniffed, text that is text, no path or link that leaves the pack,
   size limits on what is really read, and a short random trial of each game, in which a pack that panics or thinks
   far too long is refused. A client's folder gets the checks of *Every client's files*.
 - **A pack that fails is logged with its reason and left out.** The server starts without it.
@@ -423,7 +423,7 @@ folder. To drop both removes the pack loader and `BINGLE_PACKS` too, and marks t
   pack, the guide as the game's files, and a gone pack's unfinished games left as they stand.
   - **The checks** are ADR 0128's, kept as its reader had them where a directory needs the same: the limits per
     file (8 MiB), in all (40 MiB) and on the number of files (300), with `rules.wasm` allowed 64 MiB apart; text
-    and pictures sniffed; colours held to a colour's form; a look with no `script` or `style`; at most 64
+    and pictures sniffed; colors held to a color's form; a look with no `script` or `style`; at most 64
     variants and 1 MiB of definition. A directory adds no link anywhere, and no file or folder beside those of the
     layout. Names starting with a dot (`.git`, `.DS_Store`) are neither read nor served.
   - **The trial** is 300 random selections from a fixed seed within ten seconds. A call into a module that fails

@@ -117,7 +117,7 @@ game: blooms-4         # the variant it is played on
 order: 1
 steps:
   - text: |
-      Each turn you place one or two stones, of **different colours**.
+      Each turn you place one or two stones, of **different colors**.
     expect: [d4]               # the learner's move(s) this step accepts
     hint: Place on the highlighted space.
     highlight: [d4]

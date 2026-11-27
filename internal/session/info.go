@@ -123,9 +123,9 @@ type SeatDefDTO struct {
 	Seat  int    `json:"seat"`
 	Color string `json:"color"`
 	Label string `json:"label"`
-	// Blend is the two colours a seat is drawn in, when it has two.
+	// Blend is the two colors a seat is drawn in, when it has two.
 	Blend []string `json:"blend,omitempty"`
-	// Colors is every colour the seat plays, when it plays several (ADR
+	// Colors is every color the seat plays, when it plays several (ADR
 	// 0117): a piece in any of them is the seat's.
 	Colors []string `json:"colors,omitempty"`
 }

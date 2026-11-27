@@ -100,7 +100,7 @@ that each translation puts in the same values and has the same markup as English
   Auto-Play Timeout (`autoplay.*`), the history and the list of moves (`hist.*`), the options window's sections
   (`options.*`) and the tutorial's card. The lines of the log are the game's own, as are a tutorial's lessons and
   a game's contest panel; a notation's name (TPS, PTN) is marked `translate="no"`.
-- Boards and cards: what a screen reader hears of a board (`board.*`, with the palette's colours as `color.*`;
+- Boards and cards: what a screen reader hears of a board (`board.*`, with the palette's colors as `color.*`;
   a piece's name stays the game's), the sets of cards (`cards.*`; a joker's name on its picture stays in the
   English lettering), solitaire's table (`sol.*`), the illustrated themes (`theme.*`) and the page layouts.
 - The account pages (`account.*`: signing in and up, a forgotten password, confirming an account, the account

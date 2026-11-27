@@ -300,7 +300,7 @@ type rowQuerier interface {
 }
 
 // swapSeats exchanges the occupants of seats 1 and 2 of gameID: the players
-// (names, bots and owning principals) trade rows — a seat keeps its colour — and the per-seat
+// (names, bots and owning principals) trade rows — a seat keeps its color — and the per-seat
 // choices that are a person's (Auto-Play Timeout, reaction asks) move with
 // them. It is the store half of the pie rule (ADR 0056): a swap changes who
 // sits where and nothing on the board. Call it inside the transaction that

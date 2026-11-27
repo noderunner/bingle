@@ -12,7 +12,7 @@ Eight **columns**, all cards face up: seven cards in the first four and six in t
 
 ## A move
 
-* **In a column** cards go down in alternating colours: a black 6 goes on a red 7.
+* **In a column** cards go down in alternating colors: a black 6 goes on a red 7.
 * **An empty column** takes any card.
 * **A free cell** holds one card, any card, until it is played to a column or a foundation.
 * **A run in order** can be moved at once if there is room to move it card by card: with F empty cells and E empty columns, (F + 1) × 2^E cards, half that when going to an empty column.

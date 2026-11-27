@@ -14,7 +14,7 @@ Move all 52 cards to the four **foundations**, one per suit, each built up from 
 
 ## A move
 
-* **In a column** cards go down in alternating colours: a black 6 goes on a red 7. A face-up card can be moved with everything on top of it, as long as they are in that order.
+* **In a column** cards go down in alternating colors: a black 6 goes on a red 7. A face-up card can be moved with everything on top of it, as long as they are in that order.
 * **An empty column** takes only a king.
 * **A card uncovered** in a column turns face up by itself.
 * **The stock**: click it to turn over one card onto the waste. The waste's top card can be played to a column or a foundation.
@@ -25,7 +25,7 @@ Move all 52 cards to the four **foundations**, one per suit, each built up from 
 
 Click a card, then where it should go. If it can go to only one place, it goes at once. You can also drag it. Click a selected card again to send it to its foundation. **Finish** appears once everything can go home by itself. **← Back** takes a move back.
 
-With a themed set of cards the suits have other faces, so each card also carries a small red or black mark, showing which colour it counts as.
+With a themed set of cards the suits have other faces, so each card also carries a small red or black mark, showing which color it counts as.
 
 ## Advice
 

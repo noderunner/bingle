@@ -11,7 +11,7 @@ steps:
   - name: What Meridians is about
     text: |
       In **Meridians** you place stones that must always be able to see
-      another group of your own colour. A group that sees none dies, and you
+      another group of your own color. A group that sees none dies, and you
       win by leaving your opponent with nothing on the board.
 
   - name: How the game ends
@@ -78,7 +78,7 @@ steps:
   - name: Seeing along a line
     text: |
       From now on, a stone must go where one of your stones can **see**:
-      along a straight line, with **no stone of the other colour in
+      along a straight line, with **no stone of the other color in
       between**.
 
       Dark's two stones, c4 and c8, see each other down the c line. Your

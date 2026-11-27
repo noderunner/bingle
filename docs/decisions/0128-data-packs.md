@@ -29,7 +29,7 @@ reads one, in memory, without writing anything to disk.
   This is checked on each game as its variants' patches leave it, because a patch can ask too.
 - *Anything that would run in a player's browser*: a look's `script` or `style`, at its top or in a variant, and
   any file that is not YAML, Markdown or a picture.
-- *A colour that is not a colour.* A colour reaches a style attribute, so `url(...)` would have a player's
+- *A color that is not a color.* A color reaches a style attribute, so `url(...)` would have a player's
   browser call somebody's server, and a semicolon would add a rule of its own.
 - *A file that is not what it says*: a picture is sniffed, and text must be text.
 - *An unsafe zip*: a path that leaves the pack, a link, the same file twice (ignoring case), and more than the

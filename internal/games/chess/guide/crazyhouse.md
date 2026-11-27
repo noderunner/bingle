@@ -1,6 +1,6 @@
 # Crazyhouse
 
-Crazyhouse is chess in which nothing is lost for good: a piece you capture joins your **hand**, turned to your colour, and you can bring it back.
+Crazyhouse is chess in which nothing is lost for good: a piece you capture joins your **hand**, turned to your color, and you can bring it back.
 
 ## Dropping
 

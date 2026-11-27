@@ -9,7 +9,7 @@ In a declared game everything happens when a piece lands: a `place` action's `ca
 its stone leaves without liberties, and `custodian` removes the runs it closes. Nothing can happen when a turn ends.
 Some games need exactly that timing:
 
-- **Blooms** removes fenced blooms, groups of one colour with no empty cell beside them, when the mover's turn ends, and
+- **Blooms** removes fenced blooms, groups of one color with no empty cell beside them, when the mover's turn ends, and
   only the opponent's. The mover's own fenced blooms stay until the opponent's turn ends, so the opponent can free them
   first. A turn has up to two stones, so capturing as each stone lands would decide too early.
 - **Meridians** removes dead groups at the end of a turn. The audit keeps it in Go, since what "dead" means is its own,
@@ -42,9 +42,9 @@ end_of_turn:
 | `count_in` | a pool of `reserves` to credit the mover with the pieces removed, as for `custodian` |
 | `tint` | a key of `display.tints`: the board marks every group that meets the condition |
 
-- A **group** is the pieces of one colour connected through the board's adjacency (hex boards included), as `captures`
-  counts them. Only the top piece of a stack counts. Which seat a colour belongs to is the seat's `color`; addition C
-  lets a seat have several colours, and this ADR uses whatever C decides.
+- A **group** is the pieces of one color connected through the board's adjacency (hex boards included), as `captures`
+  counts them. Only the top piece of a stack counts. Which seat a color belongs to is the seat's `color`; addition C
+  lets a seat have several colors, and this ADR uses whatever C decides.
 - **A turn ends** as ADR 0115 says: after its last selection, after `done`, or after a `pass`. A game with no `turn`
   ends a turn after every selection, so the effects run after each one. A `swap` changes nothing on the board, so no
   effect runs after it.
@@ -56,7 +56,7 @@ end_of_turn:
 
 ### The tint
 
-A `tint` names a key of `display.tints`, with its label, colour and text, as Blooms declares `fenced` today. The state
+A `tint` names a key of `display.tints`, with its label, color and text, as Blooms declares `fenced` today. The state
 the server sends for a declared game then carries the cells to tint, worked out from the position and never stored:
 every group meeting the condition, whoever's they are. For Blooms that covers its own fenced blooms too, which the
 opponent will take at the end of their turn unless they are freed first. During a turn of several selections the

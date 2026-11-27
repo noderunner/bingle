@@ -176,7 +176,7 @@ func EncodePlanes(game *catalog.CompiledGame, st *BoardState, viewerSeat, impuls
 	if err != nil {
 		return nil, err
 	}
-	// Viewer-relative colour order.
+	// Viewer-relative color order.
 	idx := -1
 	for i, s := range lay.seats {
 		if s == viewerSeat {
@@ -186,7 +186,7 @@ func EncodePlanes(game *catalog.CompiledGame, st *BoardState, viewerSeat, impuls
 	if idx < 0 {
 		return nil, fmt.Errorf("state: game %q has no seat %d", game.Definition.ID, viewerSeat)
 	}
-	rel := map[string]int{} // colour → relative index
+	rel := map[string]int{} // color → relative index
 	relColors := make([]string, len(lay.colors))
 	for k := range lay.colors {
 		c := lay.colors[(idx+k)%len(lay.colors)]

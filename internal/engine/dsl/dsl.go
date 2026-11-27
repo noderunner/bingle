@@ -59,8 +59,8 @@ type GameDefinition struct {
 
 	Board Board     `json:"board"`
 	Seats []SeatDef `json:"seats"`
-	// ExtraColors are piece colours besides the seats' own that a position
-	// may hold (Fist's neutral verdigris pawn, Blooms' second colour of each
+	// ExtraColors are piece colors besides the seats' own that a position
+	// may hold (Fist's neutral verdigris pawn, Blooms' second color of each
 	// player); no reserve may.
 	ExtraColors []string            `json:"extra_colors,omitempty"`
 	Pieces      map[string]PieceDef `json:"pieces"`
@@ -207,7 +207,7 @@ type GuideTab struct {
 // DisplayDef is the legend of a ruleset game's overlays: what each tint and
 // badge key in the position's view means and how to draw it.
 type DisplayDef struct {
-	// Tints colours board cells by key (terrain).
+	// Tints colors board cells by key (terrain).
 	Tints map[string]OverlayDef `json:"tints,omitempty"`
 	// Badges are small marks drawn on a cell (a unit's condition).
 	Badges map[string]OverlayDef `json:"badges,omitempty"`
@@ -353,7 +353,7 @@ type PieceDef struct {
 	// Promote lists promotions: a piece of this type that ends a move in the
 	// given region becomes another type (draughts men becoming kings).
 	Promote []PromoteDef `json:"promote,omitempty"`
-	// Color is a fixed colour for a piece type that is its own colour
+	// Color is a fixed color for a piece type that is its own color
 	// (Blooms' four stones), used where the type is drawn on a button.
 	Color string `json:"color,omitempty"`
 }
@@ -400,13 +400,13 @@ type MovementDef struct {
 type SeatDef struct {
 	Seat  int    `json:"seat"`
 	Color string `json:"color"`
-	// Colors lists every colour the seat plays, Color first (ADR 0117):
+	// Colors lists every color the seat plays, Color first (ADR 0117):
 	// pieces in any of them are the seat's, while a group is still one
-	// colour. Empty means just Color.
+	// color. Empty means just Color.
 	Colors []string `json:"colors,omitempty"`
 	// Label is an optional display name for the seat ("White").
 	Label string `json:"label,omitempty"`
-	// Blend names the two colours of a seat that plays with both ("black",
+	// Blend names the two colors of a seat that plays with both ("black",
 	// "blue"): its swatch and its label are drawn as a gradient between them.
 	Blend []string `json:"blend,omitempty"`
 	// Forward is the seat's forward direction on a grid ("N", "E", "S" or
@@ -464,7 +464,7 @@ type FactDef struct {
 	Secret bool `json:"secret,omitempty"`
 }
 
-// Palette is every colour the seat plays: Colors, or just Color.
+// Palette is every color the seat plays: Colors, or just Color.
 func (s SeatDef) Palette() []string {
 	if len(s.Colors) > 0 {
 		return s.Colors
@@ -576,7 +576,7 @@ type ActionDef struct {
 	Ko bool `json:"ko,omitempty"`
 	// Custodian makes a placement (or a slide) capture runs of opposing
 	// pieces that are flanked by the moved piece and another piece of the
-	// mover's colour (Pente's captured pairs; Hnefatafl's sandwiches).
+	// mover's color (Pente's captured pairs; Hnefatafl's sandwiches).
 	Custodian *CustodianDef `json:"custodian,omitempty"`
 
 	// --- card-move (ADR 0120) ---
@@ -635,7 +635,7 @@ type ActionDef struct {
 	// the piece jumps and its origin is vacated.
 	CloneDistance int `json:"clone_distance,omitempty"`
 	// Infect makes every opposing piece adjacent to the landing square
-	// change to the mover's colour.
+	// change to the mover's color.
 	Infect bool `json:"infect,omitempty"`
 }
 

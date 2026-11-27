@@ -29,7 +29,7 @@ passant are not things the DSL says, and the FIDE rules leave two questions that
   piece. Castling is the king's two squares.
 - **The draws end the game at once**: the third time a position comes up (the same pieces, side to move, castling
   rights and a possible en passant capture), the hundredth ply with no capture or pawn move, stalemate, and too
-  little material to mate (kings alone, a single minor piece, or bishops all on squares of one colour). This is
+  little material to mate (kings alone, a single minor piece, or bishops all on squares of one color). This is
   what most online play does, and it means bots and clocks never run on in a dead game. Agreeing a draw is the
   platform's draw offer.
 - **The position keeps what FEN keeps** in its `ext`: the side to move, castling rights, the en passant square,

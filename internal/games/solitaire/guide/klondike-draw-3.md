@@ -14,7 +14,7 @@ So you see only every third card on a pass through the stock, and the order chan
 
 ## Everything else
 
-* **In a column** cards go down in alternating colours, and a face-up card can be moved with everything in order on top of it.
+* **In a column** cards go down in alternating colors, and a face-up card can be moved with everything in order on top of it.
 * **An empty column** takes only a king.
 * **A card uncovered** in a column turns face up by itself.
 * **A foundation's top card** can come back to a column.

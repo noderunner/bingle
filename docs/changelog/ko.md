@@ -2,6 +2,14 @@
 
 Bingle에서 바뀐 것을 최신순으로 적었습니다. Bingle Core(서버, 엔진, 웹 클라이언트)와 각 게임에는 저마다 버전이 있으며, 각 항목에 무엇이 바뀌었는지 적혀 있습니다. 0.124.0 이전 항목은 영어로만 제공됩니다.
 
+## 0.142.2 - 2026-11-27
+
+### Bingle Core 0.142.2
+- 인터페이스 전체에서 「color」 철자가 하나로 통일되었습니다 (API 1.20.2)
+
+### Amazons 0.3.2, Ataxx 0.3.2, Blooms 0.6.3, Chess 0.2.3, Fendo 0.1.4, Fist 0.1.5, Go 0.3.2, Gomoku 0.3.2, Havannah 0.3.3, Hex 0.3.2, Meridians 0.1.5, Othello 0.4.1, Pente 0.3.2, Solitaire 0.4.1, Tak 0.1.2 and Yavalath 0.3.2
+- 각 가이드의 「color」 철자가 미국식으로 바뀌었습니다
+
 ## 0.142.1 - 2026-11-27
 
 ### Bingle Core 0.142.1

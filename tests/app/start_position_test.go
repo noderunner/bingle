@@ -95,7 +95,7 @@ func TestGameStartsFromAStateDocument(t *testing.T) {
 			"b2": []map[string]string{{"piece": "mark", "color": "o"}},
 		},
 	}
-	// Find the colour names rather than assuming them.
+	// Find the color names rather than assuming them.
 	var info struct {
 		Seats []struct {
 			Seat  int    `json:"seat"`
@@ -140,7 +140,7 @@ func TestInvalidStartPositionsAreRejected(t *testing.T) {
 		{"both given", map[string]any{"start_tps": "x5/x5/x5/x5/x5 1 1", "start_state": map[string]any{"v": 2}}, "not both"},
 		{"unknown square", map[string]any{"start_state": map[string]any{"v": 2, "cells": map[string]any{"z9": []map[string]string{{"piece": "flat", "color": "white"}}}}}, "not on the board"},
 		{"unknown piece", map[string]any{"start_state": map[string]any{"v": 2, "cells": map[string]any{"a1": []map[string]string{{"piece": "dragon", "color": "white"}}}}}, "unknown piece"},
-		{"unknown colour", map[string]any{"start_state": map[string]any{"v": 2, "cells": map[string]any{"a1": []map[string]string{{"piece": "flat", "color": "teal"}}}}}, "unknown colour"},
+		{"unknown color", map[string]any{"start_state": map[string]any{"v": 2, "cells": map[string]any{"a1": []map[string]string{{"piece": "flat", "color": "teal"}}}}}, "unknown color"},
 		{"bad start seat", map[string]any{"start_state": map[string]any{"v": 2}, "start_seat": 7}, "start_seat"},
 		// A finished game is not a puzzle.
 		{"already won", map[string]any{"start_tps": "1,1,1,1,1/x5/x5/x5/x5 2 6"}, "already decided"},

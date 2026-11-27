@@ -233,7 +233,7 @@ func (c *rctx) validatePlace(act catalog.ResolvedAction, mv Selection) (executor
 		return nil, fmt.Errorf("state: no %s left in the %s reserve", pieceLabel(c.game, mv.Piece), owner)
 	}
 
-	// The stone takes the piece type's own colour when the seat plays it
+	// The stone takes the piece type's own color when the seat plays it
 	// (ADR 0117); the reserve and any pool stay the seat's.
 	color := c.placedIn(owner, mv.Piece)
 
@@ -287,7 +287,7 @@ func (c *rctx) validatePlace(act catalog.ResolvedAction, mv Selection) (executor
 // custodianCaptures returns the opposing pieces a piece of color placed at
 // `to` captures by custodian: along each board direction, a run of opposing
 // pieces whose length is one of the action's lengths, closed off by a piece
-// of the placer's own colour.
+// of the placer's own color.
 func (c *rctx) custodianCaptures(act catalog.ResolvedAction, to board.PositionID, color string) []board.PositionID {
 	g := c.game.Board
 	tc, ok := g.Coord(to)
@@ -398,7 +398,7 @@ func (c *rctx) libertyOutcome(act catalog.ResolvedAction, to board.PositionID, c
 	for _, n := range g.Neighbors(to) {
 		cn := colorAt(n)
 		// A group of the placer's own side is never captured by its
-		// placement, in whichever of its colours (ADR 0117).
+		// placement, in whichever of its colors (ADR 0117).
 		if cn == "" || c.sameSide(cn, color) || removed[n] {
 			continue
 		}

@@ -272,15 +272,15 @@ func TestPositionsThatAreNotTheGames(t *testing.T) {
 	game := games(t)[draughts.ID]
 	good := position(t, game, 1, "", "bc3", "wd6")
 	for name, edit := range map[string]func(st *state.BoardState){
-		"a light square":      func(st *state.BoardState) { st.Set("a2", state.Occupant{Piece: "man", Color: "black"}) },
-		"a colour nobody has": func(st *state.BoardState) { st.Set("a1", state.Occupant{Piece: "man", Color: "red"}) },
-		"an unknown piece":    func(st *state.BoardState) { st.Set("a1", state.Occupant{Piece: "rook", Color: "black"}) },
-		"an uncrowned man":    func(st *state.BoardState) { st.Set("b8", state.Occupant{Piece: "man", Color: "black"}) },
-		"two on a square":     func(st *state.BoardState) { st.Push("c3", state.Occupant{Piece: "man", Color: "black"}) },
-		"no data":             func(st *state.BoardState) { st.SetExt(nil) },
-		"a seat too many":     func(st *state.BoardState) { st.SetExt(json.RawMessage(`{"turn":3}`)) },
-		"a chain of nothing":  func(st *state.BoardState) { st.SetExt(json.RawMessage(`{"turn":1,"chain":"e5"}`)) },
-		"nothing to move":     func(st *state.BoardState) { st.Remove("c3") },
+		"a light square":     func(st *state.BoardState) { st.Set("a2", state.Occupant{Piece: "man", Color: "black"}) },
+		"a color nobody has": func(st *state.BoardState) { st.Set("a1", state.Occupant{Piece: "man", Color: "red"}) },
+		"an unknown piece":   func(st *state.BoardState) { st.Set("a1", state.Occupant{Piece: "rook", Color: "black"}) },
+		"an uncrowned man":   func(st *state.BoardState) { st.Set("b8", state.Occupant{Piece: "man", Color: "black"}) },
+		"two on a square":    func(st *state.BoardState) { st.Push("c3", state.Occupant{Piece: "man", Color: "black"}) },
+		"no data":            func(st *state.BoardState) { st.SetExt(nil) },
+		"a seat too many":    func(st *state.BoardState) { st.SetExt(json.RawMessage(`{"turn":3}`)) },
+		"a chain of nothing": func(st *state.BoardState) { st.SetExt(json.RawMessage(`{"turn":1,"chain":"e5"}`)) },
+		"nothing to move":    func(st *state.BoardState) { st.Remove("c3") },
 	} {
 		st := good.Clone()
 		edit(st)

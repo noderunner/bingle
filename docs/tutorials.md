@@ -45,8 +45,8 @@ steps:
     text: A bloom with no empty cell beside it is fenced.
     pieces: [blue@g1, blue@f2, black@f3, black@f4, yellow@g4, red@g2, red@g3]
     highlight: [g2, g3]
-  - name: One stone of a colour
-    text: You can't place two stones of one colour in a turn.
+  - name: One stone of a color
+    text: You can't place two stones of one color in a turn.
     pieces: [red@d4]
     highlight: [e4]
     illegal: true
@@ -107,7 +107,7 @@ Pick whichever of the three is easiest:
 
 - **`pieces`** is for an example. It lists what is on the board, and nothing asks whether play could get
   there, so it can show a position that could never arise. Write `piece@square`, or
-  `piece:color@square` for a piece not named after its colour (`cultist:green@asia`). List a stack bottom
+  `piece:color@square` for a piece not named after its color (`cultist:green@asia`). List a stack bottom
   first. Everything else, such as captures and reserves, stays as it is at the start of the tutorial.
 - **`show`** is for a real game, such as a finished one. The moves must be a legal game from the start, every
   seat in its turn: in Blooms, Warm's one stone first, with `done` ending any later turn of one
@@ -243,7 +243,7 @@ there is nobody to talk to.
 **What to select is a signal, not a page of its own.** The tutorial the API serves carries a `guide`
 for each step: the gestures each of the learner's moves is entered with (`piece red`, then `pos d4`) and
 the position a step shows ([api.md](api.md#games)). A client shows them its own way. The web page
-keeps every control where it always is — the colour buttons, *End* — picks out the one to press,
+keeps every control where it always is — the color buttons, *End* — picks out the one to press,
 makes the others inert, and lets only the square to click be clicked. *Back* still undoes a choice not yet sent,
 but cannot take back a selection of the turn, which would leave the script. *Need a hint?* shows the step's
 `hint`. When the learner's moves are made, the page

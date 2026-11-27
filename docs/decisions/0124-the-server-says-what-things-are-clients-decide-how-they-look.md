@@ -17,10 +17,10 @@ though, mostly from the start, when the web page was the only client:
 
 - **The game definition carries appearance**: a seat's `blend`, a piece's `shape` and `color`, `board.style` and
   `borders`, an area map's `polygons`, `anchor` and `canvas`, a card zone's `layout`, a card back's `color`, a
-  sample `preview` position, and the `display` legend's hex colours, glyphs and `no_hands`. Game info passes
+  sample `preview` position, and the `display` legend's hex colors, glyphs and `no_hands`. Game info passes
   most of it on to every client.
-- **Go rulesets compute some**: Cthulhu Wars' `gateColor` returns hex colours for the Gate badges.
-- **The plugins plan wanted more.** Its step 3 (2026-10-31) moved Cthulhu Wars' cult colours, sigils and icons
+- **Go rulesets compute some**: Cthulhu Wars' `gateColor` returns hex colors for the Gate badges.
+- **The plugins plan wanted more.** Its step 3 (2026-10-31) moved Cthulhu Wars' cult colors, sigils and icons
   *into* the definition, so that the web page names no game. Its decision 4 gave a data pack, which ships no
   JavaScript, its look through the definition's declarative display vocabulary.
 
@@ -42,13 +42,13 @@ already checks). It needs no field that only describes a picture.
 - the position and the facts the rules derive from it. These are keyed by what they mean, never by how to draw
   them: the cells of a `fenced` bloom, a unit's `fatigued` badge, a pool's count and its target, a prompt;
 - a tint's or badge's `label` and `text`, which explain a fact to a player in words;
-- a property the rules read, even one named like a colour. A suit's red or black is a rule in patience
-  (ADR 0122), and a seat's colour word (`red`) is the seat's identifier in positions, notation and the API;
+- a property the rules read, even one named like a color. A suit's red or black is a rule in patience
+  (ADR 0122), and a seat's color word (`red`) is the seat's identifier in positions, notation and the API;
 - choices made at setup that players talk about: the table's card set (ADR 0085), as an id and its suit names;
 - the rules text, the guide (Markdown with its illustrations, which are documentation, not the board), and
   tutorials.
 
-**Appearance moves to the client.** This covers colours as values (hex), glyphs, shapes, gradients, board
+**Appearance moves to the client.** This covers colors as values (hex), glyphs, shapes, gradients, board
 style, border tints, map outlines and picture coordinates, card layouts and backs, the art of a card set, sample
 pictures, icons, sigils, and which panels a page shows.
 
@@ -63,9 +63,9 @@ web client's, registered for that game through one generic hook, so that the sha
 generic defaults (a palette by seat, a shape by piece type, a layout from the board's own coordinates). The
 appearance file improves that; it is never required.
 
-**Colour words stay as identifiers.** `red` keeps meaning "the seat that plays red" everywhere it is stored and
+**Color words stay as identifiers.** `red` keeps meaning "the seat that plays red" everywhere it is stored and
 sent, because renaming every stored position and notation would cost much and gain nothing. A client may draw
-that seat in any colour, or none.
+that seat in any color, or none.
 
 *Note (2026-11-27):* this stands. [ADR 0154](0154-a-color-is-a-name-and-paint-is-each-clients-own.md) says what
 follows from it: a color is a name, what a client draws it as is its paint, each player's own, and every style a
@@ -78,7 +78,7 @@ Today's appearance fields, and where each goes. "Web file" means the web page's 
 | Today | Used by | Goes to |
 |---|---|---|
 | `pieces.*.shape` | nearly every game | web file |
-| `pieces.*.color` (a type in its own colour) | Blooms | **stays**: the rules read it (see the addendum) |
+| `pieces.*.color` (a type in its own color) | Blooms | **stays**: the rules read it (see the addendum) |
 | `seats[].blend` | Blooms | web file |
 | `board.style` (`squares`, `points`, `none`, `free`, `areas`) | classics, Tak, Fendo, Fist, Hive, Meridians, Nyet!, Onitama, Solitaire, Cthulhu Wars | web file |
 | `board.borders` (edge tints by seat) | classics (Hex) | web file. The regions they mark stay, as rules |
@@ -95,7 +95,7 @@ Today's appearance fields, and where each goes. "Web file" means the web page's 
 | `end_of_turn[].tint` (a key) | Blooms | stays, as the fact's name (`fenced`) |
 | ruleset views' `tints`, `badges`, `counters`, `prompt` (keys and words) | Go rulesets | stays |
 | Cthulhu Wars' `gateColor` (hex in the view) | Cthulhu Wars | web file. The view says which faction's Gate |
-| Cthulhu Wars' cult colours, sigils, icons and the `cw-*.js` interface | the web page | stay in the web client, and travel with the game into the overlay |
+| Cthulhu Wars' cult colors, sigils, icons and the `cw-*.js` interface | the web page | stay in the web client, and travel with the game into the overlay |
 | `card_set` (ADR 0085) | card games | stays as the setup's choice. Each set's art is the client's |
 | `extra_colors`, `seats[].color`, `seats[].colors` | several | stay, as identifiers (above) |
 
@@ -110,7 +110,7 @@ Today's appearance fields, and where each goes. "Web file" means the web page's 
   1. The web page reads a game's `web.yaml` when there is one, and falls back to the fields in the definition.
   2. Each game's appearance fields move into its `web.yaml`, a few games at a time, and the definition's
      schema loses them. Game info and the views stop sending them, and Go rulesets' views send keys, not
-     colours.
+     colors.
   3. A test holds every shipped game's definition, game info and views to the meaning side of this line, and
      draws every game with no `web.yaml` to show the defaults work.
 - **The DSL reference** splits its display section into the facts (in `docs/dsl.md`) and the web file (a section
@@ -118,11 +118,11 @@ Today's appearance fields, and where each goes. "Web file" means the web page's 
 - **A new client** reads the rules, the position and the facts from the API. It reads nothing else from the
   server about how anything looks, unless it chooses to read the web file.
 
-## Addendum (2026-11-07): a piece type's own colour is a rule
+## Addendum (2026-11-07): a piece type's own color is a rule
 
-The audit put `pieces.*.color` with the appearance. It is not: a piece type with a colour of its own
-(Blooms' four stones) is placed in that colour, and only the seat that plays it may place it
-([ADR 0117](0117-groups-by-colour-enemies-by-seat.md)). Like a seat's colour word, it stays in the
+The audit put `pieces.*.color` with the appearance. It is not: a piece type with a color of its own
+(Blooms' four stones) is placed in that color, and only the seat that plays it may place it
+([ADR 0117](0117-groups-by-color-enemies-by-seat.md)). Like a seat's color word, it stays in the
 definition as meaning. Stage 1 found it, when Blooms moved first.
 
 ## Addendum (2026-11-07): a zone says whether it is a pile, and its layout is the client's
@@ -135,12 +135,12 @@ vocabulary's generated piles (stock, waste, foundations, cells, finished suits) 
 
 ## Addendum (2026-11-11): an area's outline is the client's, and a page script has data of its own
 
-The last appearance in a definition was Cthulhu Wars', in the private overlay: its map's outlines, and colours
+The last appearance in a definition was Cthulhu Wars', in the private overlay: its map's outlines, and colors
 and glyphs written by Go. An area map's `canvas` and each position's `polygons` and `anchor` leave the
 definition's schema and the game info for the web file's `board.canvas` and `board.areas` (a list by position
 id, so that a variant's replaces the family's whole); `look.Check` asks a game drawn as areas for a canvas and an
 outline for every position. A position keeps its `name` and `tags`, which the game info now sends with it. The
-Gate badges are keyed by faction rather than by seat (a seat's faction is chosen at setup), so that their colour
-can be the web file's. What only a game's page script draws from, such as each area's colour on a printed map,
+Gate badges are keyed by faction rather than by seat (a seat's faction is chosen at setup), so that their color
+can be the web file's. What only a game's page script draws from, such as each area's color on a printed map,
 goes in the web file's `data`, which nothing else reads. `tests/look` now holds Cthulhu Wars' definition to the
 line as well.

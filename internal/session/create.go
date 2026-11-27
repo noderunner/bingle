@@ -593,7 +593,7 @@ func sameOwner(a, b string) bool {
 }
 
 // aliasName is the name of the seat a creator plays besides their own: their
-// name and the seat's faction (or colour), at most 40 characters.
+// name and the seat's faction (or color), at most 40 characters.
 func aliasName(creator string, sd dsl.SeatDef) string {
 	who := sd.Label
 	if who == "" {

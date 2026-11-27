@@ -70,7 +70,7 @@ page script to word them.
 
 A look as any game's ([ADR 0124](decisions/0124-the-server-says-what-things-are-clients-decide-how-they-look.md)), with a variant's
 named as in `game.yaml`. A pack runs nothing in a player's browser: **no `script` and no `style`**,
-and every colour must be a colour (`#rgb` to `#rrggbbaa`, a name, or `rgb()`/`hsl()`). It must fit
+and every color must be a color (`#rgb` to `#rrggbbaa`, a name, or `rgb()`/`hsl()`). It must fit
 the game (`look.Check`).
 
 ### guide/
@@ -140,7 +140,7 @@ from anywhere:
 | Clients | a file of `clients/` itself; a client's name, path, size, count or kind out of the limits of [clients/](#clients); an empty client |
 | Manifest | a missing or malformed name, version or ABI; an ABI this server does not speak; any other field |
 | Definition | one that sets its id, family, version or prototype; that is not a ruleset; that does not compile; over 1 MiB with its aliases expanded |
-| Look | a `script` or `style`; a colour that is not one; one that does not fit the game |
+| Look | a `script` or `style`; a color that is not one; one that does not fit the game |
 | Rules | a module that does not load (an import beyond WASI, a missing export, another ABI) |
 | Trial | a game of 300 random selections, played with a fixed seed, in which the rules fail, panic, refuse a selection they offered or take over ten seconds |
 

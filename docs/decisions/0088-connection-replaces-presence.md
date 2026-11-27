@@ -6,7 +6,7 @@ Status: accepted (2026-11-02).
 
 Step 2 of the real-time plan (`docs/history/real-time-play-plan.md`, on the plans branch). Real-time
 games need to know whether a player is still there, and the only signal bingle had was an opt-in mark
-a player set by clicking their own colour box. It said what the player claimed, not what the server
+a player set by clicking their own color box. It said what the player claimed, not what the server
 could see, and it had no effect on anything. Turn mail already kept a count of open sockets of its own.
 
 ## Decision

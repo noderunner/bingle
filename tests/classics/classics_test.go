@@ -890,7 +890,7 @@ func TestPieRuleSwapOnTheSecondMoveOnly(t *testing.T) {
 		}
 		orig, _ := res.NewState.Get(first.To)
 		if top.Color != orig.Color {
-			t.Errorf("%s: the stone changed colour", id)
+			t.Errorf("%s: the stone changed color", id)
 		}
 		if sw.NextImpulseSeat != 2 {
 			t.Errorf("%s: next seat = %d, want 2", id, sw.NextImpulseSeat)
@@ -940,7 +940,7 @@ func TestSelectionEffectsBeforeTheMoveIsPlayed(t *testing.T) {
 
 // What a legal selection would turn over, before it is played (#293): an
 // Othello placement converts every disc it outflanks, in each line, to its
-// own colour, and captures nothing.
+// own color, and captures nothing.
 func TestSelectionConvertsBeforeTheMoveIsPlayed(t *testing.T) {
 	g := load(t, "othello")
 	st := state.NewBoardState()

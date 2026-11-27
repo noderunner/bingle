@@ -678,20 +678,20 @@ function seatLabel(seat) {
 	return d ? d.label : tr("game.seat_n", { n: seat });
 }
 
-/** The CSS gradient of a seat of two colours, or null. `stop` writes each colour. */
+/** The CSS gradient of a seat of two colors, or null. `stop` writes each color. */
 function seatGradient(seat, stop = (c) => `var(--piece-${c}-fill)`) {
 	const blend = (seatDef(seat) || {}).blend;
 	return blend && blend.length === 2 ? `linear-gradient(90deg, ${stop(cssColor(blend[0]))}, ${stop(cssColor(blend[1]))})` : null;
 }
 
-/** A seat's name in its colours. Mixed with the text colour, so that yellow or black can be read on any theme. */
+/** A seat's name in its colors. Mixed with the text color, so that yellow or black can be read on any theme. */
 function seatWord(seat) {
 	const gradient = seatGradient(seat, (c) => `color-mix(in srgb, var(--piece-${c}-fill) 72%, var(--text))`);
 	return h("span", { class: "seat-word", style: gradient ? `background-image: ${gradient}` : null }, seatLabel(seat));
 }
 
 /**
- * Text with the names of the seats of two colours drawn in them: a line of the log, the result of the game.
+ * Text with the names of the seats of two colors drawn in them: a line of the log, the result of the game.
  * The players' names are marked as theirs, which no language translates.
  */
 function withSeatWords(text) {
@@ -2439,7 +2439,7 @@ function impulseTitle() {
 	return S.mine.length > 1 ? `${name} (${seatLabel(seat)})` : name;
 }
 
-/** The heading of an impulse: the seat's name, in a faction's colour and with its glyph where it has them. */
+/** The heading of an impulse: the seat's name, in a faction's color and with its glyph where it has them. */
 function impulseHeading() {
 	const seat = S.game.impulse_seat;
 	const glyph = seatGlyph(seat);
@@ -2978,7 +2978,7 @@ function ghostPiece() {
 		}
 	}
 	const def = piece && S.info.pieces.find((p) => p.type === piece);
-	// A piece type that is its own colour (Blooms' stones) is drawn in it.
+	// A piece type that is its own color (Blooms' stones) is drawn in it.
 	return def ? { shape: def.shape, color: def.color || placementColor() } : null;
 }
 
@@ -3422,7 +3422,7 @@ function resultMessage() {
 // ---- connected / disconnected ---------------------------------------------------------------
 
 /**
- * The picture of a player, in the colour of the seat, when the game's page
+ * The picture of a player, in the color of the seat, when the game's page
  * script draws one (info.page.seatIcon: Nyet!'s animals); null otherwise.
  */
 function seatPicture(seat, px) {
@@ -3464,7 +3464,7 @@ function paintConnections() {
 	}
 }
 
-/** The coloured box beside a player's name, or the player's picture when the game draws one. */
+/** The colored box beside a player's name, or the player's picture when the game draws one. */
 function seatSwatch(seat, color) {
 	const picture = seatPicture(seat, 30);
 	if (picture) return h("span", { class: "seat-icon" }, picture);
@@ -3486,7 +3486,7 @@ function firstPlayerMark(seat) {
 	return h("span", { class: "first-mark", id: "first-mark", title: word, "aria-label": word }, rv.dir < 0 ? "↺" : "↻");
 }
 
-/** A seat's colour for words: mixed with the text colour, so that it can be read on any theme. */
+/** A seat's color for words: mixed with the text color, so that it can be read on any theme. */
 function seatInk(seat) {
 	return `color-mix(in srgb, var(--piece-${cssColor(colorOf(seat))}-fill) 72%, var(--text))`;
 }
@@ -3501,14 +3501,14 @@ function seatStrip(seat) {
 	const strip = h("div", { class: "seat-strip" + (impulseSeat ? " on-impulse" : "") + (off ? " disconnected" : ""), id: `seat-${seat}`, "data-seat": seat });
 	const head = h("div", { class: "seat-head" });
 	const glyph = seatGlyph(seat);
-	// A faction's glyph says what the colour box would, and its colour is in the words.
+	// A faction's glyph says what the color box would, and its color is in the words.
 	head.append(glyph || seatSwatch(seat, color));
 	if (glyph) strip.style.setProperty("--seat-ink", seatInk(seat));
 	const direction = glyph ? firstPlayerMark(seat) : null;
 	if (direction) head.append(direction);
 	head.append(seatName(seat) ? h("span", { class: "name" + (glyph ? " in-seat-ink" : ""), translate: "no" }, seatName(seat)) : h("span", { class: "name" + (glyph ? " in-seat-ink" : "") }, tr("game.open_seat")));
 	head.append(h("span", { class: "badge waiting seat-conn", title: tr("game.no_connection") }, off ? tr("game.disconnected") : ""));
-	// A seat of two colours says which it is: the players know each other by these.
+	// A seat of two colors says which it is: the players know each other by these.
 	if (seatGradient(seat) && !(seatName(seat) || "").includes(seatLabel(seat))) head.append(seatWord(seat));
 	// At a table of many seats the faction is named beside its player (a bot's
 	// name already is the faction's).
@@ -5454,7 +5454,7 @@ function escapeRegExp(text) {
 }
 
 /**
- * One line of the log: seat names in their colours and the verb in bold (or
+ * One line of the log: seat names in their colors and the verb in bold (or
  * the label that opens an effect).
  */
 function logLine(text) {
@@ -5489,7 +5489,7 @@ function logLine(text) {
 	return li;
 }
 
-/** The heading of a seat's lines in the log: its colour, its label and who held it. */
+/** The heading of a seat's lines in the log: its color, its label and who held it. */
 function logActor(seat, ply, mark = null) {
 	const sd = seatDef(seat);
 	const who = seatNameAt(seat, ply);

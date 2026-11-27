@@ -115,7 +115,7 @@ type Step struct {
 	Position json.RawMessage `json:"position,omitempty"`
 	// Pieces depicts the board with just these pieces on it, for this step only:
 	// piece@square, or piece:color@square where the piece is not named after its
-	// colour, bottom first where several share a square. It need not be a position
+	// color, bottom first where several share a square. It need not be a position
 	// play can reach, and like Show it asks for no moves.
 	Pieces []string `json:"pieces,omitempty"`
 	// KeepPlaying offers, from this lesson on, to play the game on from where

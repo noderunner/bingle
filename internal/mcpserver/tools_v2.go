@@ -38,7 +38,7 @@ func registerPlayTools(s *server.MCPServer, mgr *session.Manager) {
 
 	s.AddTool(
 		mcp.NewTool("add_bot",
-			mcp.WithDescription("Seat a built-in bot (see list_bots) in an open seat — the lowest, or `seat` — of a game that is still waiting for players. Only someone already seated may do this; a game without a lobby starts when the last seat is filled. The bot is named after the faction or colour of its seat and its kind (\"Black Goat (MCTS)\")."),
+			mcp.WithDescription("Seat a built-in bot (see list_bots) in an open seat — the lowest, or `seat` — of a game that is still waiting for players. Only someone already seated may do this; a game without a lobby starts when the last seat is filled. The bot is named after the faction or color of its seat and its kind (\"Black Goat (MCTS)\")."),
 			mcp.WithString("room_code", mcp.Required(), mcp.Description("The room code of the game.")),
 			mcp.WithString("player_name", mcp.Required(), mcp.Description("Your player name (you must hold a seat).")),
 			mcp.WithString("bot", mcp.Required(), mcp.Description("Bot id, e.g. \"random\", \"tactical\" or \"mcts\".")),
@@ -513,7 +513,7 @@ type legalMoveResult struct {
 	Captures []string `json:"captures,omitempty"`
 	// Converts are the positions whose pieces it turns over where they stand.
 	Converts []string `json:"converts,omitempty"`
-	// ConvertsTo is the colour each of those turns to, by position.
+	// ConvertsTo is the color each of those turns to, by position.
 	ConvertsTo map[string]string `json:"converts_to,omitempty"`
 }
 

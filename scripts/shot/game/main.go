@@ -7,7 +7,7 @@
 //	go run scripts/shot/game/main.go http://127.0.0.1:18099 draughts /tmp/d.png c3-d4 f6-e5
 //
 // SHOT_W / SHOT_H set the viewport (default 1280x900), SHOT_DARK=1 asks for
-// the dark colour scheme and SHOT_HOVER=c3 moves the mouse over that square.
+// the dark color scheme and SHOT_HOVER=c3 moves the mouse over that square.
 package main
 
 import (

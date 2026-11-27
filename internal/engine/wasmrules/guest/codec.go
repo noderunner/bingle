@@ -27,7 +27,7 @@ type decoder struct {
 	fresh bool
 	depth int
 	// seen are the few short strings a position repeats (its pieces' types
-	// and colours), so each is made once for a call.
+	// and colors), so each is made once for a call.
 	seen  [8]string
 	nseen int
 	// stacks is the memory the stacks of a position's cells are cut from.

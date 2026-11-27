@@ -38,7 +38,7 @@ players keep their own (turn, round, action, phase, reaction).
 | **Gesture** | One thing a player does in an interface while building a move: a click, a tap, a drag, a key, Submit or Back. |
 | **Ply** | One impulse applied: a game's ply count is the number of impulses played. |
 
-Selections and gestures do not match one for one. A Blooms stone takes two gestures (its colour, then its cell); one
+Selections and gestures do not match one for one. A Blooms stone takes two gestures (its color, then its cell); one
 gesture on a destination completes the selections of every unit in a Cthulhu Wars queue; Submit and Back make no
 selection at all. So that a client needs no code of a game's own, the server still describes the gestures that enter
 each selection. That is **gesture data**, part of a game's presentation like its view, and the rules never depend on it.

@@ -14,10 +14,10 @@ import (
 // initiative on — and from the spore phase to the hyphae phase, and from that
 // to the end of the confluence — while nobody has one.
 
-// cluster is a connected group of one colour's nodes, as cell indices.
+// cluster is a connected group of one color's nodes, as cell indices.
 type cluster []int
 
-// clusters returns every cluster of the given colour.
+// clusters returns every cluster of the given color.
 func (e *eng) clusters(color string) []cluster {
 	seen := make([]bool, len(e.cells))
 	var out []cluster
@@ -126,7 +126,7 @@ func (e *eng) spreads(seat int) []state.Selection {
 	return out
 }
 
-// enemyNbrs are the cells touching i that hold the other colour.
+// enemyNbrs are the cells touching i that hold the other color.
 func (e *eng) enemyNbrs(i int) []int {
 	var out []int
 	for _, n := range e.g.nbr[i] {

@@ -73,7 +73,7 @@ type Candidate struct {
 // Search chooses a selection for seat with the host's bots' own methods, run
 // over rules rather than across the boundary: the bot call of ABI v0. A
 // module answers it for every game it plays, and a game that implements
-// Heuristic is searched with it. colors are the seats' colours, which minimax
+// Heuristic is searched with it. colors are the seats' colors, which minimax
 // counts pieces by, and cells the board's size, which bounds tactical's
 // look at replies as the host's bot does.
 //

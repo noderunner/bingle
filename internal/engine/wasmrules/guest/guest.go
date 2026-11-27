@@ -89,14 +89,14 @@ type Point struct {
 	Neighbors []string `json:"neighbors"`
 }
 
-// Piece is one piece on the board: its type and its colour.
+// Piece is one piece on the board: its type and its color.
 type Piece struct {
 	Piece string `json:"piece"`
 	Color string `json:"color"`
 }
 
 // Position is a position document: what is on each cell (bottom piece
-// first), each colour's reserve, the plies played, the position's counters
+// first), each color's reserve, the plies played, the position's counters
 // and the game's own data. Counters hold the platform's counts as well as a
 // game's, so Apply carries them over: start from Clone.
 type Position struct {

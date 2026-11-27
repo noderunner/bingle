@@ -74,7 +74,7 @@ func compileRules(cg *CompiledGame) error {
 	return checkNotation(cg)
 }
 
-// checkSeats rejects duplicate or colourless seats and returns the colours in play.
+// checkSeats rejects duplicate or colorless seats and returns the colors in play.
 func checkSeats(def *dsl.GameDefinition) (map[string]bool, error) {
 	seatNums := map[int]bool{}
 	seatColors := map[string]bool{}
@@ -91,7 +91,7 @@ func checkSeats(def *dsl.GameDefinition) (map[string]bool, error) {
 		}
 		for _, c := range s.Palette() {
 			if strings.TrimSpace(c) == "" {
-				return nil, fmt.Errorf("catalog: seat %d lists an empty colour", s.Seat)
+				return nil, fmt.Errorf("catalog: seat %d lists an empty color", s.Seat)
 			}
 			if seatColors[c] {
 				return nil, fmt.Errorf("catalog: duplicate seat color %q", c)
@@ -101,7 +101,7 @@ func checkSeats(def *dsl.GameDefinition) (map[string]bool, error) {
 	}
 	for _, c := range def.ExtraColors {
 		if seatColors[c] {
-			return nil, fmt.Errorf("catalog: extra colour %q is a seat's colour", c)
+			return nil, fmt.Errorf("catalog: extra color %q is a seat's color", c)
 		}
 	}
 	return seatColors, nil
@@ -137,7 +137,7 @@ func checkReserves(cg *CompiledGame) error {
 }
 
 // checkSetup checks that every starting piece is on the board, is a piece of
-// the game and belongs to a seat's colour.
+// the game and belongs to a seat's color.
 func checkSetup(cg *CompiledGame, seatColors map[string]bool) error {
 	def := cg.Definition
 	for i, entry := range def.Setup {
@@ -155,7 +155,7 @@ func checkSetup(cg *CompiledGame, seatColors map[string]bool) error {
 }
 
 // checkPreview checks that the pieces of the sample position are pieces of
-// the game, in colours that are played. (Squares the board lacks are skipped
+// the game, in colors that are played. (Squares the board lacks are skipped
 // when the preview is drawn, so a smaller variant can inherit it.)
 func checkPreview(cg *CompiledGame) error {
 	def := cg.Definition

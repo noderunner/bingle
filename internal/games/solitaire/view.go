@@ -23,7 +23,7 @@ type View struct {
 	Columns int      `json:"columns,omitempty"`
 	Cells   int      `json:"cells,omitempty"`
 	Suits   []string `json:"suits,omitempty"`
-	// Alternate says colours matter: a themed card then shows its classic suit too.
+	// Alternate says colors matter: a themed card then shows its classic suit too.
 	Alternate bool `json:"alternate,omitempty"`
 	// Home is how many cards are home, of Total.
 	Home  int `json:"home"`

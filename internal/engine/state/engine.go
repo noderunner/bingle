@@ -119,13 +119,13 @@ func newCtx(game *catalog.CompiledGame, st *BoardState, seat int) (*rctx, error)
 }
 
 // mine reports whether a piece of color is the mover's: one of its seat's
-// colours.
+// colors.
 func (c *rctx) mine(color string) bool {
 	return color == c.color || slices.Contains(c.palette, color)
 }
 
-// sameSide reports whether colours a and b are one seat's (or the same
-// colour, for those no seat plays).
+// sameSide reports whether colors a and b are one seat's (or the same
+// color, for those no seat plays).
 func (c *rctx) sameSide(a, b string) bool {
 	if a == b {
 		return true
@@ -135,8 +135,8 @@ func (c *rctx) sameSide(a, b string) bool {
 	return ok && ok2 && sa == sb
 }
 
-// seatView shows a movement primitive each piece in its seat's colour, so a
-// seat's second colour is its own, not an opponent's (ADR 0117).
+// seatView shows a movement primitive each piece in its seat's color, so a
+// seat's second color is its own, not an opponent's (ADR 0117).
 type seatView struct{ c *rctx }
 
 func (v seatView) Occupant(id board.PositionID) (string, bool) {
@@ -148,7 +148,7 @@ func (v seatView) Occupant(id board.PositionID) (string, bool) {
 }
 
 // mayPlace reports whether a placement from owner's reserve may be of piece:
-// not when the piece type's own colour is another seat's (ADR 0117).
+// not when the piece type's own color is another seat's (ADR 0117).
 func (c *rctx) mayPlace(owner, piece string) bool {
 	pc := c.game.Definition.Pieces[piece].Color
 	if pc == "" || pc == owner {
@@ -160,8 +160,8 @@ func (c *rctx) mayPlace(owner, piece string) bool {
 	return c.sameSide(pc, owner)
 }
 
-// placedIn is the colour a placement of piece takes when its reserve is
-// owner's: the piece type's own colour when owner's seat plays it, and
+// placedIn is the color a placement of piece takes when its reserve is
+// owner's: the piece type's own color when owner's seat plays it, and
 // otherwise owner itself.
 func (c *rctx) placedIn(owner, piece string) string {
 	pc := c.game.Definition.Pieces[piece].Color

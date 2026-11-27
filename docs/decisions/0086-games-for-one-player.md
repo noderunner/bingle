@@ -37,7 +37,7 @@ naming its rules with the param `mode`, so that they share a place in the list o
 and the code for dealing, redacting and writing moves. Bowling has little in common with the rest except the deck,
 and is its own file.
 
-**Red and black are the suits' places.** The rules read a card's colour from its suit's place in `suit_order`:
+**Red and black are the suits' places.** The rules read a card's color from its suit's place in `suit_order`:
 hearts, spades, diamonds, clubs alternate. A set wears the suits by place too (ADR 0085), so the rules do not know
 about sets. But a set's suits are not red and black, so where the rule depends on it, the page adds the classic suit
 to the corner of a themed card, and the rule stays readable on a phone, which has no tooltips.

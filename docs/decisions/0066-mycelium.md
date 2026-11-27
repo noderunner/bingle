@@ -35,7 +35,7 @@ is no rule of its own.
   worst. A budget of 20,000 partial strands keeps a position nobody has met from stalling a game;
   past it, the longest strand found counts. Nothing in testing came near it.
 - **Who has spread** is a list of cells, `Spent`, cleared when the phase changes. A cluster holding a
-  spent cell has spread, whether it has since grown, merged or been cut; a cell that changes colour
+  spent cell has spread, whether it has since grown, merged or been cut; a cell that changes color
   leaves the list, so a cluster made only of converted nodes is new and may spread if the initiative
   has not passed its size.
 - **The bots** take the centre only when a greedy play-out of the confluence leaves them better off

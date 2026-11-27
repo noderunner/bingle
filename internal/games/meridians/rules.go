@@ -1,6 +1,6 @@
 // Package meridians ships Meridians (Kanare Kato, 2021): a placement game on
 // the intersections of a triangular grid where a group of stones that can see
-// no other group of its colour dies. You win by taking every stone of your
+// no other group of its color dies. You win by taking every stone of your
 // opponent's off the board.
 //
 // The rules are a Go state.Ruleset — line of sight, paths between groups and
@@ -99,7 +99,7 @@ func (e *eng) groups(seat int) [][]int {
 }
 
 // seesGroup reports whether the stone on point i has a path to a stone of the
-// same colour that is not in its own group: a straight line of one or more
+// same color that is not in its own group: a straight line of one or more
 // *empty* points ending on such a stone.
 func (e *eng) seesGroup(i int, group map[int]bool, seat int) bool {
 	for d := range dirVec {
@@ -163,7 +163,7 @@ func (e *eng) placements(seat int) []int {
 		return out
 	}
 	// Otherwise: a point one of our stones can see along a straight line, with
-	// no stone of the other colour in the way. (One of ours in the way makes no
+	// no stone of the other color in the way. (One of ours in the way makes no
 	// difference: that stone sees the same point along the same line.)
 	seen := make([]bool, len(e.stones))
 	for i, s := range e.stones {

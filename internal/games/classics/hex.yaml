@@ -2,7 +2,7 @@
 id: hex-11
 name: Hex (11×11)
 description: Join your two sides of the hexagonal board with an unbroken chain of stones. One player always wins — there are no draws.
-version: 0.3.1
+version: 0.3.2
 designers: [Piet Hein, John Nash]
 rules:
   - Red and Blue alternate placing one stone on any empty hexagon; Red moves first.

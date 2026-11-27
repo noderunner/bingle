@@ -141,7 +141,7 @@ code, docs, API paths and names.
 - So a field, variable or parameter called `color` holds a color, a name, and a value to draw with is called
   `paint` (CSS's own property names and a library's types, such as Bevy's `Color`, are what they are). Anything
   written about a game (notation, the log, results, what a screen reader hears) uses seats, colors and labels, never
-  paint. The word is spelled `color`.
+  paint. The word is spelled `color`, and `tests/spelling` fails on the other spelling.
 
 A game's own rules and its players' words keep their terms.
 

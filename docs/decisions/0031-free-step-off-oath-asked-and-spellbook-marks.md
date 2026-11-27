@@ -31,16 +31,16 @@ reactions settings (pass for everyone / for some players) are the way not to be
 asked. The bots decide as before — they sacrifice only when it matters — so
 what they do is unchanged.
 
-**Spellbook marks.** One pictogram stands for "spellbook": coloured for a
+**Spellbook marks.** One pictogram stands for "spellbook": colored for a
 spellbook that is unlocked or a requirement that is met, greyed out for one that
 is not. It replaces the ticks in the cult cards, and marks the buttons of the
-actions a spellbook gives (coloured) and the actions that meet a requirement
+actions a spellbook gives (colored) and the actions that meet a requirement
 (greyed out): the definition of an action carries its `source` (`book` /
 `requirement`), the page does the rest.
 
 **Captured units are shown.** A cult's view lists the units it holds
 (`seats[n].captured`: owner, type, fate); under its Units the page shows them as
-icons in the owner's colour, which disappear when they go home in Gather Power.
+icons in the owner's color, which disappear when they go home in Gather Power.
 
 **The rules say how each Great Old One wakes.** `UnitView.awaken` carries the
 steps from the faction pages (what must stand on the map, the cost, where it

@@ -4,7 +4,7 @@ Gomoku ("five in a row") is played with Go stones on the lines of a Go board. Pl
 
 ## The goal
 
-Be the first to make an **unbroken row of five (or more) stones** of your own colour, in a line that is horizontal, vertical or diagonal.
+Be the first to make an **unbroken row of five (or more) stones** of your own color, in a line that is horizontal, vertical or diagonal.
 
 ![Five in a row|340](gomoku-five.svg)
 

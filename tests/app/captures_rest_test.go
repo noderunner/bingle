@@ -83,7 +83,7 @@ func TestREST_SelectionsAndMovesListWhatTheyCapture(t *testing.T) {
 	}
 }
 
-// A legal selection says which pieces it would turn over and the colour each
+// A legal selection says which pieces it would turn over and the color each
 // turns to (#293): Othello's opening d3 converts the white disc on d4 to
 // black, and simulate's legal moves say the same.
 func TestREST_SelectionsListWhatTheyConvert(t *testing.T) {

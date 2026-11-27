@@ -35,7 +35,7 @@
           "type": "string"
         },
         "pieces": {
-          "description": "Pieces depicts the board with just these pieces on it, for this step only: piece@square, or piece:color@square where the piece is not named after its colour, bottom first where several share a square. It need not be a position play can reach, and like Show it asks for no moves.",
+          "description": "Pieces depicts the board with just these pieces on it, for this step only: piece@square, or piece:color@square where the piece is not named after its color, bottom first where several share a square. It need not be a position play can reach, and like Show it asks for no moves.",
           "items": {
             "type": "string"
           },

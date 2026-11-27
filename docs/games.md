@@ -8,28 +8,28 @@ A server also offers the games of the install packs it is given (`BINGLE_PACKS`,
 
 | Game | Version | Board | Seats | Actions | Ends by | Variants |
 |---|---|---|---|---|---|---|
-| **Amazons** (`amazons`) | 0.3.1 | 10×10 squares | 2 | slide | end/mover-wins | `amazons` `amazons-6` |
-| **Ataxx** (`ataxx`) | 0.3.1 | 7×7 squares | 2 | leap | end/most |  |
-| **Blooms** (`blooms`) | 0.6.2 | hexagon, 5 per side | 2 | done, place | end/most, pool | `blooms` `blooms-10` `blooms-4` `blooms-6` `blooms-8` |
+| **Amazons** (`amazons`) | 0.3.2 | 10×10 squares | 2 | slide | end/mover-wins | `amazons` `amazons-6` |
+| **Ataxx** (`ataxx`) | 0.3.2 | 7×7 squares | 2 | leap | end/most |  |
+| **Blooms** (`blooms`) | 0.6.3 | hexagon, 5 per side | 2 | done, place | end/most, pool | `blooms` `blooms-10` `blooms-4` `blooms-6` `blooms-8` |
 | **Bowling Solitaire** (`bowling-solitaire`) | 0.2.3 | 1×1 squares | 1 | ruleset (Go) | victory points |  |
 | **Brandubh** (`brandubh`) | 0.1.1 | 7×7 squares | 2 | slide | absent, end/mover-wins, reach |  |
 | **Breakthrough** (`breakthrough`) | 0.1.1 | 8×8 squares | 2 | step | end/mover-wins, reach |  |
-| **Chess** (`chess`) | 0.2.2 | 8×8 squares | 2 | ruleset (Go) | victory points | `chess` `chess-960` `chess-alice` `chess-antichess` `chess-atomic` `chess-crazyhouse` |
+| **Chess** (`chess`) | 0.2.3 | 8×8 squares | 2 | ruleset (Go) | victory points | `chess` `chess-960` `chess-alice` `chess-antichess` `chess-atomic` `chess-crazyhouse` |
 | **Courtfall** (`courtfall-1.0.0`) | 1.0.0 | hexagon, 4 per side | 2 | ruleset (Go) | victory points |  |
 | **English Draughts (Checkers)** (`draughts`) | 0.1.1 | 8×8 squares | 2 | jump, step | end/draw, end/mover-wins |  |
-| **Fendo** (`fendo`) | 0.1.3 | 7×7 squares | 2 | ruleset (Go) | victory points | `fendo` `fendo-11` `fendo-9` |
-| **Fist** (`fist`) | 0.1.4 | 8×8 squares | 2 | ruleset (Go) | victory points |  |
-| **Go** (`go-9x9`) | 0.3.1 | 9×9 points | 2 | pass, place | end/score | `go-13x13` `go-19x19` `go-9x9` |
-| **Gomoku (15×15)** (`gomoku`) | 0.3.1 | 15×15 points | 2 | place, swap | end/draw, line |  |
-| **Havannah** (`havannah-8`) | 0.3.2 | hexagon, 8 per side | 2 | place | connect, end/draw, ring | `havannah-10` `havannah-4` `havannah-6` `havannah-8` |
-| **Hex** (`hex-11`) | 0.3.1 | hex 11×11 | 2 | place, swap | connect | `hex-11` `hex-13` `hex-7` `hex-9` |
-| **Meridians** (`meridians`) | 0.1.4 | hexagon, 6 and 7 per side | 2 | ruleset (Go) | victory points | `meridians` `meridians-5` `meridians-7` |
+| **Fendo** (`fendo`) | 0.1.4 | 7×7 squares | 2 | ruleset (Go) | victory points | `fendo` `fendo-11` `fendo-9` |
+| **Fist** (`fist`) | 0.1.5 | 8×8 squares | 2 | ruleset (Go) | victory points |  |
+| **Go** (`go-9x9`) | 0.3.2 | 9×9 points | 2 | pass, place | end/score | `go-13x13` `go-19x19` `go-9x9` |
+| **Gomoku (15×15)** (`gomoku`) | 0.3.2 | 15×15 points | 2 | place, swap | end/draw, line |  |
+| **Havannah** (`havannah-8`) | 0.3.3 | hexagon, 8 per side | 2 | place | connect, end/draw, ring | `havannah-10` `havannah-4` `havannah-6` `havannah-8` |
+| **Hex** (`hex-11`) | 0.3.2 | hex 11×11 | 2 | place, swap | connect | `hex-11` `hex-13` `hex-7` `hex-9` |
+| **Meridians** (`meridians`) | 0.1.5 | hexagon, 6 and 7 per side | 2 | ruleset (Go) | victory points | `meridians` `meridians-5` `meridians-7` |
 | **Mycelium** (`mycelium-1.0.0`) | 1.0.0 | hexagon, 5 per side | 2 | ruleset (Go) | victory points |  |
-| **Othello** (`othello`) | 0.4.0 | 8×8 squares | 2 | place | end/most |  |
-| **Pente** (`pente`) | 0.3.1 | 13×13 points | 2 | place | end/draw, line, pool |  |
-| **Solitaire** (`solitaire`) | 0.4.0 | 1×1 squares | 1 | patience |  | `freecell` `solitaire` `solitaire-draw-3` `spider` `spider-1` `spider-2` |
-| **Tak** (`tak-5x5`) | 0.1.1 | 5×5 squares | 2 | move-stack, place | connect, end/most | `tak-3x3` `tak-4x4` `tak-5x5` `tak-6x6` `tak-7x7` `tak-8x8` |
-| **Yavalath** (`yavalath`) | 0.3.1 | hexagon, 5 per side | 2 | place | end/draw, line, line (lose) |  |
+| **Othello** (`othello`) | 0.4.1 | 8×8 squares | 2 | place | end/most |  |
+| **Pente** (`pente`) | 0.3.2 | 13×13 points | 2 | place | end/draw, line, pool |  |
+| **Solitaire** (`solitaire`) | 0.4.1 | 1×1 squares | 1 | patience |  | `freecell` `solitaire` `solitaire-draw-3` `spider` `spider-1` `spider-2` |
+| **Tak** (`tak-5x5`) | 0.1.2 | 5×5 squares | 2 | move-stack, place | connect, end/most | `tak-3x3` `tak-4x4` `tak-5x5` `tak-6x6` `tak-7x7` `tak-8x8` |
+| **Yavalath** (`yavalath`) | 0.3.2 | hexagon, 5 per side | 2 | place | end/draw, line, line (lose) |  |
 
 Variants are separate games derived from the base document by a JSON merge patch.
 

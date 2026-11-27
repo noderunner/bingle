@@ -11,7 +11,7 @@ Red owns the **top and bottom** sides of the board and wins by making a chain of
 ## How to play
 
 1. Red goes first, then Blue, alternately.
-2. On your turn place **one stone** of your colour on any empty hexagon.
+2. On your turn place **one stone** of your color on any empty hexagon.
 3. Stones never move and are never removed.
 4. The first player whose stones connect their two sides wins.
 

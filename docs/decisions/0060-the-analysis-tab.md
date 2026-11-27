@@ -48,7 +48,7 @@ cults and spellbook tuning belongs.
 (`internal/web/botguide/bots.md`, `GET /api/bot-guide`), rendered by the same renderer as the rules
 guides, with three drawings made by `scripts/botdiagrams.py` (an alpha-beta cut-off, the four steps
 of MCTS, and what each bot spends its effort on) in the style the game guides use — self-contained
-SVG with opaque colours, so they read the same light or dark. About 2 000 words, a tenth of the
+SVG with opaque colors, so they read the same light or dark. About 2 000 words, a tenth of the
 ceiling asked for: it teaches the four bots, alpha-beta and UCT, which bot suits which game, how to
 read a batch (including what sample size buys), what a game designer should look at in order, where
 the training surface is, and seven references. Writing it as a document rather than as JavaScript

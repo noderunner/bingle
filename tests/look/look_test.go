@@ -43,7 +43,7 @@ func families(t *testing.T) map[string]family {
 }
 
 // Every shipped look names only its own games' seats, pieces, tints, badges,
-// zones, suits and variants, and previews only pieces in played colours.
+// zones, suits and variants, and previews only pieces in played colors.
 func TestEveryLookFitsItsGame(t *testing.T) {
 	fams := families(t)
 	for _, id := range []string{"solitaire", "bowling-solitaire", "blooms", "tak-5x5", "fendo", "fist", "chess", "meridians", "courtfall-1.0.0", "mycelium-1.0.0",
@@ -223,7 +223,7 @@ func TestCheckCatchesAZoneLayout(t *testing.T) {
 
 // The line of ADR 0124, held: no definition of a shipped game says how it
 // looks, the private games' included (ADR 0127). A piece type's
-// own colour stays, since the rules read it (ADR 0117); a zone's layout and
+// own color stays, since the rules read it (ADR 0117); a zone's layout and
 // an area's outline cannot be written at all, since the definition only says
 // whether a zone is a pile and which areas there are.
 func TestNoDefinitionCarriesItsLook(t *testing.T) {
@@ -268,7 +268,7 @@ func TestNoDefinitionCarriesItsLook(t *testing.T) {
 				}
 				for sid, s := range c.Suits {
 					if s.Color != "" {
-						t.Errorf("%s: suit %s has colour %q", id, sid, s.Color)
+						t.Errorf("%s: suit %s has color %q", id, sid, s.Color)
 					}
 				}
 			}

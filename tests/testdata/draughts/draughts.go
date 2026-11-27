@@ -80,7 +80,7 @@ type rules struct {
 	cells []string
 	at    map[xy]string
 	where map[string]xy
-	// colors is each seat's colour, by seat (1 and 2); forward is the way its
+	// colors is each seat's color, by seat (1 and 2); forward is the way its
 	// men move (seat 1 up the board, towards y = 0).
 	colors  [3]string
 	forward [3]int
@@ -325,7 +325,7 @@ func (r *rules) Gestures(sel guest.Selection) []guest.Gesture {
 }
 
 // Validate checks a position that did not come from play: every piece is a
-// man or a king of a seat's colour, alone on a dark square, with no man on
+// man or a king of a seat's color, alone on a dark square, with no man on
 // the row it is crowned on, and the game's data fit it.
 func (r *rules) Validate(pos *guest.Position) error {
 	d, err := dataOf(pos)

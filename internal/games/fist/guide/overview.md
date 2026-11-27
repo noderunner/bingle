@@ -4,7 +4,7 @@ A two-player game from Alysha Wishingrad's novel *The Verdigris Pawn* (Crab Frag
 
 ## The goal
 
-| Side | Colour | Wins by |
+| Side | Color | Wins by |
 |---|---|---|
 | ![](seat:1) | moves first | capturing the **king** |
 | ![](seat:2) | moves second | capturing all **three blue guards** of the challenger |

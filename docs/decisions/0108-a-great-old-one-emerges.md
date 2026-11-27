@@ -16,7 +16,7 @@ plays it again. The best way to make the art was left open.
   really writhe. Generated images would be flat, heavy, and would need their rights looked at.
 - **The game says when, the page says how.** The engine adds the line `<name> Emerges` to the log only
   the first time a cult's Great Old One is awakened, from the `Awoken` it already keeps. It changes no
-  rule. The history draws that line as a badge in the cult's colour.
+  rule. The history draws that line as a badge in the cult's color.
 - **Every Great Old One gets the badge; only those with a scene can play it.** Cthulhu is the first.
   Adding another is a scene and a line in `SCENES`, and old games' badges start working.
 - **It is seen as it happens or asked for.** It plays on the moves that arrive while the page is open,
@@ -25,7 +25,7 @@ plays it again. The best way to make the art was left open.
 - **The stage is shared with the battle show** (`js/cw-map-stage.js`). A battle takes the map from it.
 
 - **The five Great Old Ones of the core set each have a scene of their own**, with its own place and palette, not one
-  scene recoloured: Cthulhu rises from the sea, the King in Yellow from the trap of a rotting stage, Nyarlathotep condenses out
+  scene recolored: Cthulhu rises from the sea, the King in Yellow from the trap of a rotting stage, Nyarlathotep condenses out
   of the shadows, Hastur comes from a point in the abyss between the stars, and Shub-Niggurath heaves up out of a swamp.
 - **Eight more have one too**: Tsathoggua stirs from his slumber in a cavern, Ithaqua walks out of a blizzard, Rhan-Tegoth breaks out
   of a glacier, Yog-Sothoth presses through a rift among the dials of time, Ubbo-Sathla throws the lid off Hell's Banquet, Bastet rises from

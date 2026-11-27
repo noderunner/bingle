@@ -142,7 +142,7 @@ board:
 seats:
   - {seat: 1, color: white, label: White}
   - {seat: 2, color: black}
-# A seat that plays two colours can name them, to be drawn as a gradient:
+# A seat that plays two colors can name them, to be drawn as a gradient:
 #   - {seat: 1, color: red, label: Warm, blend: [red, yellow]}
 pieces:
   flat:
@@ -171,16 +171,16 @@ pieces:
 * `shape`: `disc` (default), `square`/`flat`, `wall`, `cap`, `ring`,
   `diamond`, `triangle`, `cross`.
 * `code` is the short letter used by notation, TPS and the text board.
-* **A seat that plays several colours** ([ADR 0117](decisions/0117-groups-by-colour-enemies-by-seat.md))
+* **A seat that plays several colors** ([ADR 0117](decisions/0117-groups-by-color-enemies-by-seat.md))
   lists them in `colors`, its `color` first: `{seat: 1, color: red, colors: [red, yellow]}`.
-  A piece type with a fixed `color` the seat plays is placed in that colour;
-  anything else in the seat's `color`, and a piece type in another seat's colour
-  is that seat's alone to place. A piece in any of the seat's colours is
+  A piece type with a fixed `color` the seat plays is placed in that color;
+  anything else in the seat's `color`, and a piece type in another seat's color
+  is that seat's alone to place. A piece in any of the seat's colors is
   the seat's: it may move it, its pieces block rather than capture it, it
   flanks for `custodian` and `flips`, and the win rules count it. A group for
-  `captures` is still one colour, and a placement never captures a group of the
-  mover's other colour. Reserves and pools stay under the seat's `color`. A
-  colour belongs to one seat at most and is not also in `extra_colors`;
+  `captures` is still one color, and a placement never captures a group of the
+  mover's other color. Reserves and pools stay under the seat's `color`. A
+  color belongs to one seat at most and is not also in `extra_colors`;
   `blend` only draws.
 * **How a game looks is moving out of the definition** into the game's `web.yaml`
   ([ADR 0124](decisions/0124-the-server-says-what-things-are-clients-decide-how-they-look.md), and
@@ -391,8 +391,8 @@ display:
     fenced: {label: Fenced bloom, color: '#e8a898', text: Taken when the turn ends.}
 ```
 
-* A group is the connected top pieces of one colour. `whose` goes by seat, so
-  with several colours a seat (`colors`) `opponents` takes every colour the
+* A group is the connected top pieces of one color. `whose` goes by seat, so
+  with several colors a seat (`colors`) `opponents` takes every color the
   mover does not play.
 * Every group that qualifies is decided on the same position, then all are
   removed together.
@@ -441,7 +441,7 @@ custodian:
 ```
 
 After a placement or slide, along each direction a run of exactly `length`
-opposing pieces closed off by another piece of the mover's colour — or by an
+opposing pieces closed off by another piece of the mover's color — or by an
 empty square of an `anvils` region (corners, empty throne) — is removed
 (Pente's captured pairs, Hnefatafl's sandwiches; a piece moved *into* a flank
 is safe). `count_in` credits a reserve pool with the number of pieces
@@ -637,7 +637,7 @@ options:
 
 Options describe the choices of a creator for clients: `bool` is a check box,
 `seat-choice` a list per seat (each `choices[].id` at most once, `color` is the
-seat colour it brings), `book-swap` a list of `choices` for every `slots[]`
+seat color it brings), `book-swap` a list of `choices` for every `slots[]`
 entry whose cult (the slot's `id`) sits at the table. The values travel in the create call (`options`) and
 are turned into a **derived game**, `<id>~<suffix>`, by the game's
 `catalog.Deriver` — a ruleset implements `Derive`/`FromSuffix` and returns a
@@ -694,7 +694,7 @@ win_condition: {type: patience}
   `finish: true` offers `finish` once everything can go home with nothing hidden.
 * Notation is Solitaire's: `t3-t5`, `t3.2-t5` (two cards), `w-f` and `t1-f` home,
   `t1-c` to a free cell, `c2-t4`, `f1-t3`, `draw`, `recycle`, `deal`, `finish`.
-* Colour is a suit's place in `suit_order` (odd and even places), so a themed set
+* Color is a suit's place in `suit_order` (odd and even places), so a themed set
   of cards keeps it. A hint is Solitaire's order of moves: home first, then a
   card turned over, a column emptied, and the rest; a bot plays from it rather
   than searching. Drawing and turning a card over end the impulse (ADR 0121).

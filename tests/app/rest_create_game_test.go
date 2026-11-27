@@ -1,4 +1,4 @@
-// Tests of POST /games and GET /game-defs: a known game id gives a room code, seat and colour; an unknown one is a 404.
+// Tests of POST /games and GET /game-defs: a known game id gives a room code, seat and color; an unknown one is a 404.
 
 package app_test
 

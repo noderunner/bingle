@@ -11,10 +11,10 @@ import (
 type AddBotResult struct {
 	// Seat is the seat the bot took.
 	Seat int `json:"seat"`
-	// Name is the bot's name at the table, after the seat's faction or colour
+	// Name is the bot's name at the table, after the seat's faction or color
 	// and its kind (Black Goat (MCTS)).
 	Name string `json:"name"`
-	// Color is the seat's colour.
+	// Color is the seat's color.
 	Color string `json:"color"`
 	// Bot is the bot's id, as asked for.
 	Bot string `json:"bot"`
@@ -32,7 +32,7 @@ func (m *Manager) AddBot(ctx context.Context, roomCode, by, botID string) (AddBo
 }
 
 // AddBotAt is AddBot for a chosen seat (0 = the lowest open one). The bot is
-// named after the faction or colour of its seat and its kind.
+// named after the faction or color of its seat and its kind.
 func (m *Manager) AddBotAt(ctx context.Context, roomCode, by, botID string, wantSeat int) (AddBotResult, error) {
 	roomCode = canonRoom(roomCode)
 	unlock := m.lockRoom(ctx, roomCode)

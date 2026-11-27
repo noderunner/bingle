@@ -115,7 +115,7 @@ func (m *Manager) ListMoves(ctx context.Context, roomCode string, sinceSeq int) 
 
 // SelectionOption is one legal selection: the structured selection, its
 // canonical notation, the gestures that build it, the positions whose pieces
-// it takes off the board, and those whose pieces it turns over with the colour
+// it takes off the board, and those whose pieces it turns over with the color
 // each turns to (state.SelectionEffects).
 type SelectionOption struct {
 	Selection  state.Selection

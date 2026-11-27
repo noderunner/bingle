@@ -338,7 +338,7 @@ function enchantment(c) {
 	const sparkles = [];
 	const flyers = [];
 	for (let i = 0; i < 16; i++) flyers.push({ s: sprite(c, i, 50, [0, 2, 5, 1, 4, 3, 6, 7]), at: i * 170, dur: rand(1800, 2400), turn: (i / 16) * Math.PI * 2 + rand(-0.2, 0.2), dir: i % 2 ? 1 : -1 });
-	const colours = ["#ffe066", "#e6b3ff", "#9ff0ff", "#ffffff", "#ffb3d9"];
+	const colors = ["#ffe066", "#e6b3ff", "#9ff0ff", "#ffffff", "#ffb3d9"];
 	return (t, dt) => {
 		fade(g, c.W, c.H, 0.82);
 		const cx = c.W / 2;
@@ -348,7 +348,7 @@ function enchantment(c) {
 			if (t > SHOW_MS - 900) break;
 			const a = (arm / 5) * Math.PI * 2 + t / 600;
 			const r = ((t / 900) % 1) * R * 0.8;
-			sparkles.push({ x: cx + Math.cos(a + r / 140) * r, y: cy + Math.sin(a + r / 140) * r, size: rand(3, 8), age: 0, life: rand(0.6, 1.2), col: pick(colours), turn: rand(0, 1) });
+			sparkles.push({ x: cx + Math.cos(a + r / 140) * r, y: cy + Math.sin(a + r / 140) * r, size: rand(3, 8), age: 0, life: rand(0.6, 1.2), col: pick(colors), turn: rand(0, 1) });
 		}
 		g.globalCompositeOperation = "lighter";
 		for (let i = sparkles.length - 1; i >= 0; i--) {

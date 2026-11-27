@@ -994,7 +994,7 @@
 	"rules.notation": "## Move notation",
 	"rules.notation_text": "Moves have a plain-text notation used by the move list, exports, the API and bots.",
 	"rules.key_title": "# Key",
-	"rules.key_text": "What the colours and marks of the board mean.",
+	"rules.key_text": "What the colors and marks of the board mean.",
 	"rules.key_table": "| Mark | Meaning |",
 	"rules.badges_intro": "Badges this game awards. Each is earned once, and kept.",
 	"rules.badges_sign_in": "Sign in to earn them.",

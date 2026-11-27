@@ -42,7 +42,7 @@ before, only seats nobody owns ([ADR 0067](decisions/0067-principals-and-guest-k
 | `create_game` | new room; `opponent` seats a bot, `seat` picks your side, `options` the setup choices of games that have them (Cthulhu Wars: `{"factions": ["ww","sl","gc","cc","ys"], "high-priests": true, "azathoth": true, "dreamlands": true, "beyond": true, "igoo-yig": true, "book-swaps": {"bg": "shrivel"}}`; the packs and each Independent, `igoo-abhoth` … `igoo-yig`, are bools) |
 | `join_game` | join an existing room by code (player or spectator) |
 | `get_observation` | **the decision context**: text board, TPS, whose turn, legal moves, reward, done |
-| `list_selections` | what the seat on impulse may select next after the selections `made` (joined by `; `), the position after them, and `complete` once they are a whole move ([ADR 0114](decisions/0114-impulses-selections-moves-and-gestures.md)); each option has its notation and structured fields (`action`, `piece`, `from`, `to`, …) `captures`, the positions it would take pieces from (ADR 0142), and `converts`, those whose pieces it would turn over, with `converts_to`, the colour each turns to (ADR 0153). In a game with secrets, empty unless the request holds that seat (ADR 0112) |
+| `list_selections` | what the seat on impulse may select next after the selections `made` (joined by `; `), the position after them, and `complete` once they are a whole move ([ADR 0114](decisions/0114-impulses-selections-moves-and-gestures.md)); each option has its notation and structured fields (`action`, `piece`, `from`, `to`, …) `captures`, the positions it would take pieces from (ADR 0142), and `converts`, those whose pieces it would turn over, with `converts_to`, the color each turns to (ADR 0153). In a game with secrets, empty unless the request holds that seat (ADR 0112) |
 | `make_move` | play `notation` (preferred): one selection, or a whole impulse of several joined by `; `, applied all or nothing; or structured action/piece/from/to/count/path/drops/aim. `ply` (from `list_selections`) refuses it if the game has moved on |
 | `suggest_move` | a built-in bot's choice for the position (or a variation); only in games against bots or after the game |
 | `undo_move` / `resign` | in a game for one seat, take back the last move, unless it drew or turned a card up (elsewhere a move stands: it is a whole impulse) / concede |
@@ -60,7 +60,7 @@ which `list_game_defs` does not show but every tool accepts as `game_def_id` —
 
 `create_game` also takes `also_seats` (a list of seats, besides yours, that you
 play too: a game against yourself; each is a player named
-`<you> · <faction or colour>`), `move_time_seconds` (per-move limit; the player who
+`<you> · <faction or color>`), `move_time_seconds` (per-move limit; the player who
 runs out loses) or `clock_seconds` (a game clock for a game of two or more: the seconds
 each seat starts with, in seat order, which may differ; the player whose clock
 runs out forfeits at two seats, and at three or more a tactical bot takes their seat for good; `clock_increment_seconds` adds time each time they hand the turn on),

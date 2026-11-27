@@ -94,7 +94,7 @@ func TestBatches_AnyGameCanBeBatched(t *testing.T) {
 	if rep.Report.Plies.Min < 5 || rep.Report.Plies.Max > 9 {
 		t.Errorf("games of %v–%v moves, want 5 to 9", rep.Report.Plies.Min, rep.Report.Plies.Max)
 	}
-	// Two seats, each with the game's own colours, each playing all 12 games,
+	// Two seats, each with the game's own colors, each playing all 12 games,
 	// and the wins and draws adding up.
 	if len(rep.Report.Seats) != 2 {
 		t.Fatalf("the report has %d seats: %+v", len(rep.Report.Seats), rep.Report.Seats)

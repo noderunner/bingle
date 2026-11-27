@@ -25,7 +25,7 @@ The wiki lists many more neutral units and Independent Great Old Ones than ADR 0
 
 ## The Ancients and Bubastis
 
-Two more cults go through the same `card` action. Each brings a new table colour, teal and sand. Bubastis's Moon is a real area, added by the derive patch only at tables with Bubastis, so no other game changes. It has no edges, and `reachWithMoon` carries its one-way movement.
+Two more cults go through the same `card` action. Each brings a new table color, teal and sand. Bubastis's Moon is a real area, added by the derive patch only at tables with Bubastis, so no other game changes. It has no edges, and `reachWithMoon` carries its one-way movement.
 
 ## Not done
 

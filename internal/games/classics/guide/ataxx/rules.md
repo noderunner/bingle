@@ -19,7 +19,7 @@ On your turn, move **one of your pieces to an empty square at most two squares a
 - **Clone**: to a square **one** step away (in any of eight directions). The original piece stays, so you end with one more piece.
 - **Jump**: to a square **two** steps away. The piece moves, so you end with the same number of pieces.
 
-Then every **enemy piece next to the square where you landed** (in all eight directions) is **converted** to your colour.
+Then every **enemy piece next to the square where you landed** (in all eight directions) is **converted** to your color.
 
 If you have no legal move, you **pass**. The game ends when the board is full or when neither player can move.
 
@@ -32,7 +32,7 @@ Cloning is how you grow, so most of the game is cloning; a jump is for reaching 
 The player who moves first has an advantage, so a table may play with the **pie rule** (tick
 *Pie rule* when the game is made). Instead of answering the opening move, the second player
 may **swap sides** on their first turn: the players change seats — nothing on the board moves
-or changes colour — and the first player answers their own opening from the other side. It is then in the first player's interest to open with a move that is neither too
+or changes color — and the first player answers their own opening from the other side. It is then in the first player's interest to open with a move that is neither too
 strong nor too weak. The move is `swap`.
 
 ## Move notation
