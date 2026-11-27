@@ -12,9 +12,9 @@ pieces:
 display:
   no_hands: true
   tints:
-    keep: {color: '#d9c58a'}
-    last: {color: '#b9d6a0'}
-    taken: {color: '#e0a090'}
+    keep: {paint: '#d9c58a'}
+    last: {paint: '#b9d6a0'}
+    taken: {paint: '#e0a090'}
   badges:
-    empowered: {glyph: ✦, color: '#d1a21f'}
-    ctrl: {glyph: ◆, color: '#3f9a55'}
+    empowered: {glyph: ✦, paint: '#d1a21f'}
+    ctrl: {glyph: ◆, paint: '#3f9a55'}

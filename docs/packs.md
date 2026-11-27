@@ -70,7 +70,7 @@ page script to word them.
 
 A look as any game's ([ADR 0124](decisions/0124-the-server-says-what-things-are-clients-decide-how-they-look.md)), with a variant's
 named as in `game.yaml`. A pack runs nothing in a player's browser: **no `script` and no `style`**,
-and every color must be a color (`#rgb` to `#rrggbbaa`, a name, or `rgb()`/`hsl()`). It must fit
+and every `color` and `paint` must be a color (`#rgb` to `#rrggbbaa`, a name, or `rgb()`/`hsl()`). It must fit
 the game (`look.Check`).
 
 ### guide/

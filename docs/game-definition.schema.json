@@ -416,9 +416,10 @@
     },
     "CardBackDef": {
       "additionalProperties": false,
-      "description": "CardBackDef is the back of a card.",
+      "description": "CardBackDef is the back of a card. What a client paints it in is the client's (ADR 0154: the web page's web.yaml).",
       "properties": {
         "color": {
+          "description": "Color is filled by nothing (TestNoDefinitionCarriesItsLook holds every definition to that): what a client paints the back in is the client's (ADR 0154: the web page's web.yaml says paint). It leaves with the API's next major version (ADR 0134).",
           "type": "string"
         },
         "text": {
@@ -476,7 +477,7 @@
     },
     "CardsDef": {
       "additionalProperties": false,
-      "description": "CardsDef describes the cards of a card game: the suits (or any other grouping of cards), the decks built from them, what a card's back looks like, and the zones cards live in (hands, piles, the table). It is data only; internal/engine/catalog expands the decks into card types and internal/engine/cards deals, shuffles and moves the cards of a game in progress. A deck is either a template (every suit × every rank, each rank with its own count, text and symbols) or an explicit list of cards, or both: \"cards\": { \"suits\": { \"red\": { \"label\": \"Red\", \"color\": \"#c0392b\", \"symbol\": \"♥\" } }, \"decks\": { \"main\": { \"ranks\": [ { \"id\": \"1\", \"value\": 1, \"count\": 3 }, { \"id\": \"2\", \"value\": 2 } ], \"extra\": [ { \"id\": \"joker\", \"label\": \"Joker\", \"text\": \"Wild\", \"value\": 0, \"count\": 2 } ] } }, \"zones\": [ { \"id\": \"hand\", \"scope\": \"seat\", \"visibility\": \"owner\", \"layout\": \"fan\" } ] }",
+      "description": "CardsDef describes the cards of a card game: the suits (or any other grouping of cards), the decks built from them, what a card's back looks like, and the zones cards live in (hands, piles, the table). It is data only; internal/engine/catalog expands the decks into card types and internal/engine/cards deals, shuffles and moves the cards of a game in progress. A deck is either a template (every suit × every rank, each rank with its own count, text and symbols) or an explicit list of cards, or both: \"cards\": { \"suits\": { \"red\": { \"label\": \"Red\", \"symbol\": \"♥\" } }, \"decks\": { \"main\": { \"ranks\": [ { \"id\": \"1\", \"value\": 1, \"count\": 3 }, { \"id\": \"2\", \"value\": 2 } ], \"extra\": [ { \"id\": \"joker\", \"label\": \"Joker\", \"text\": \"Wild\", \"value\": 0, \"count\": 2 } ] } }, \"zones\": [ { \"id\": \"hand\", \"scope\": \"seat\", \"visibility\": \"owner\", \"layout\": \"fan\" } ] }",
       "properties": {
         "back": {
           "allOf": [
@@ -1181,10 +1182,10 @@
     },
     "OverlayDef": {
       "additionalProperties": false,
-      "description": "OverlayDef is one entry of a DisplayDef legend.",
+      "description": "OverlayDef is one entry of a DisplayDef legend. What a client paints it in is the client's (ADR 0154: the web page's web.yaml).",
       "properties": {
         "color": {
-          "description": "Color is a CSS color (a hex string).",
+          "description": "Color is filled by nothing (TestNoDefinitionCarriesItsLook holds every definition to that): what a client paints a tint or badge in is the client's (ADR 0154: the web page's web.yaml says paint). It leaves with the API's next major version (ADR 0134).",
           "type": "string"
         },
         "glyph": {
@@ -1526,10 +1527,10 @@
     },
     "SuitDef": {
       "additionalProperties": false,
-      "description": "SuitDef is one suit: how it is named and drawn.",
+      "description": "SuitDef is one suit: how it is named and its pip. What a client paints it in is the client's (ADR 0154: the web page's web.yaml), and whether it is red or black, where the rules ask, is its place in suit_order (ADR 0122).",
       "properties": {
         "color": {
-          "description": "Color is a CSS color for the suit's pips and card faces.",
+          "description": "Color is filled by nothing (TestNoDefinitionCarriesItsLook holds every definition to that): what a client paints a suit in is the client's (ADR 0154: the web page's web.yaml says paint). It leaves with the API's next major version (ADR 0134).",
           "type": "string"
         },
         "label": {

@@ -228,10 +228,14 @@ func (d *DisplayDef) TintOf(key string) (OverlayDef, bool) {
 	return t, ok
 }
 
-// OverlayDef is one entry of a DisplayDef legend.
+// OverlayDef is one entry of a DisplayDef legend. What a client paints it in
+// is the client's (ADR 0154: the web page's web.yaml).
 type OverlayDef struct {
 	Label string `json:"label"`
-	// Color is a CSS color (a hex string).
+	// Color is filled by nothing (TestNoDefinitionCarriesItsLook holds every
+	// definition to that): what a client paints a tint or badge in is the
+	// client's (ADR 0154: the web page's web.yaml says paint). It leaves with
+	// the API's next major version (ADR 0134).
 	Color string `json:"color,omitempty"`
 	// Glyph is a short text mark (badges).
 	Glyph string `json:"glyph,omitempty"`

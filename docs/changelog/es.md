@@ -2,6 +2,11 @@
 
 Lo que ha cambiado en Bingle, lo más reciente primero. Bingle Core (el servidor, el motor y el cliente web) y cada juego tienen su propia versión, y cada entrada dice cuál ha cambiado. Las entradas anteriores a la 0.124.0 están solo en inglés.
 
+## 0.143.0 - 2026-11-27
+
+### Bingle Core 0.143.0
+- Para autores de juegos: un archivo web dice paint para aquello con lo que se dibuja un tinte, una insignia, un palo o el dorso de una carta (API 1.20.3)
+
 ## 0.142.2 - 2026-11-27
 
 ### Bingle Core 0.142.2

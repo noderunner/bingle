@@ -28,7 +28,7 @@ function face(ctx, id) {
 	if (set && !set.alternates) {
 		const t = (ctx.info.cards.types || []).find((x) => x.id === String(id).split("#")[0]);
 		const suit = t ? ctx.info.cards.suits[t.suit] : null;
-		if (suit) node.append(h("span", { class: "sol-color", style: `color: ${suit.color}`, "aria-hidden": "true" }, suit.symbol));
+		if (suit) node.append(h("span", { class: "sol-color", style: `color: ${suit.paint}`, "aria-hidden": "true" }, suit.symbol));
 	}
 	return node;
 }
@@ -162,7 +162,7 @@ function foundationMark(ctx, suitId) {
 	const set = currentCardSet(ctx.info);
 	if (set) return setSuitIcon(set, ctx.info, suitId, 30);
 	const suit = ctx.info.cards.suits[suitId] || {};
-	return h("span", { style: `color: ${suit.color}` }, suit.symbol || "");
+	return h("span", { style: `color: ${suit.paint}` }, suit.symbol || "");
 }
 
 function patience(ctx) {

@@ -12,7 +12,7 @@ pieces:
 display:
   no_hands: true
   tints:
-    check: {color: '#e0a090'}
+    check: {paint: '#e0a090'}
 variants:
   chess-crazyhouse:
     display:

@@ -539,7 +539,7 @@ function drawBoard(host, info, view, handlers = {}) {
 					y: pt.y - half,
 					width: CELL,
 					height: CELL,
-					style: gameTintDef && gameTintDef.color ? `fill: color-mix(in srgb, ${gameTintDef.color} 78%, var(--board-light))` : null,
+					style: gameTintDef && gameTintDef.paint ? `fill: color-mix(in srgb, ${gameTintDef.paint} 78%, var(--board-light))` : null,
 					"data-tint": gameTint || null,
 				})
 			);
@@ -638,7 +638,7 @@ function drawBoard(host, info, view, handlers = {}) {
 						y: pt.y - half * 0.5,
 						"text-anchor": "middle",
 						"font-size": CELL * 0.26,
-						fill: bd.color || "currentColor",
+						fill: bd.paint || "currentColor",
 						"data-badge": kind,
 					},
 					s("title", {}, bd.label || kind),
@@ -960,7 +960,7 @@ function renderHexBoard(host, info, view, handlers) {
 			class: `cell-bg ${free ? "free-slot" : grid ? "light" : shade}` + (edge ? ` edge-${cssColor(edge)}` : "") + (tint ? ` tint tint-${cssColor(tint)}` : ""),
 			stroke: "var(--board-line)",
 			"stroke-width": 1.5,
-			style: tintDef && tintDef.color ? `fill: color-mix(in srgb, ${tintDef.color} 78%, var(--board-light))` : null,
+			style: tintDef && tintDef.paint ? `fill: color-mix(in srgb, ${tintDef.paint} 78%, var(--board-light))` : null,
 			"data-tint": tint || null,
 		};
 		if (grid) {

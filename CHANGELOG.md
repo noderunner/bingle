@@ -4,6 +4,11 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.143.0 - 2026-11-27
+
+### Bingle Core 0.143.0
+- For game authors: a web file says paint for what a tint, a badge, a suit or a card back is drawn in (API 1.20.3)
+
 ## 0.142.2 - 2026-11-27
 
 ### Bingle Core 0.142.2

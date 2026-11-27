@@ -50,8 +50,8 @@ func TestGameLook_ServedApartFromTheInfo(t *testing.T) {
 	display, _ := info["display"].(map[string]any)
 	if display == nil || display["no_hands"] != nil {
 		t.Errorf("Blooms' info display: %v", display)
-	} else if fenced := display["tints"].(map[string]any)["fenced"].(map[string]any); fenced["color"] != nil || fenced["label"] != "Fenced bloom" {
-		t.Errorf("the fenced tint keeps its words and loses its color: %v", fenced)
+	} else if fenced := display["tints"].(map[string]any)["fenced"].(map[string]any); fenced["color"] != nil || fenced["paint"] != nil || fenced["label"] != "Fenced bloom" {
+		t.Errorf("the fenced tint keeps its words and has no paint: %v", fenced)
 	}
 	// Council's look names its page script (tests/testdata/council), which is
 	// served with the game; a family without scripts has none to serve.

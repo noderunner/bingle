@@ -59,6 +59,14 @@ func TestEveryLookFitsItsGame(t *testing.T) {
 		if err := look.Check(f.web, id, f.games); err != nil {
 			t.Error(err)
 		}
+		// The private overlay's files may still put paint under color
+		// (look.OldColors); the public games' say paint.
+		if f.games[id] != nil && f.games[id].Private {
+			continue
+		}
+		if old, err := look.OldColors(f.web); err != nil || len(old) > 0 {
+			t.Errorf("%s: %v %v say color for what they are drawn in: say paint (ADR 0154)", id, old, err)
+		}
 	}
 }
 
@@ -83,22 +91,32 @@ func TestCheckCatchesAMistake(t *testing.T) {
 		games[id] = cg
 	}
 	for file, want := range map[string]string{
-		`{"seats":{"1":{"blend":["red","blue"]}},"pieces":{"stone":{"shape":"ring"}},"display":{"tints":{"hot":{"color":"#f00"}}},"variants":{"g-big":{"board":{"style":"points"}}}}`: "",
-		`{"board":{"borders":{"top":"red"}}}`:                            "",
-		`{"board":{"borders":{"moat":"red"}}}`:                           `border "moat"`,
-		`{"seats":{"3":{}}}`:                                             `seat "3"`,
-		`{"seats":{"1":{"blend":["green"]}}}`:                            `"green", which nobody plays`,
-		`{"pieces":{"pawn":{}}}`:                                         `piece "pawn"`,
-		`{"display":{"tints":{"cold":{}}}}`:                              `tint "cold"`,
-		`{"display":{"badges":{"hot":{}}}}`:                              `badge "hot"`,
-		`{"cards":{}}`:                                                   "the game has none",
-		`{"preview":[{"position":"a1","piece":"pawn","color":"red"}]}`:   `piece "pawn"`,
-		`{"preview":[{"position":"a1","piece":"stone","color":"pink"}]}`: `"pink"`,
-		`{"variants":{"h":{}}}`:                                          `variant "h"`,
-		`{"variants":{"g-big":{"variants":{}}}}`:                         "", // an empty map is no variants
-		`{"variants":{"g-big":{"pieces":{"pawn":{}}}}}`:                  `variant "g-big": piece "pawn"`,
-		`{"script":"page.js"}`:                                           `script "page.js", but the module brings no scripts`,
-		`{"style":"page.css"}`:                                           `style "page.css", but the module brings no scripts`,
+		`{"seats":{"1":{"blend":["red","blue"]}},"pieces":{"stone":{"shape":"ring"}},"display":{"tints":{"hot":{"paint":"#f00"}}},"variants":{"g-big":{"board":{"style":"points"}}}}`: "",
+		// A mark's paint is a value to draw with (ADR 0154).
+		`{"display":{"tints":{"hot":{"paint":"rgb(255 0 0 / 50%)"}}}}`:         "",
+		`{"display":{"tints":{"hot":{"paint":"url(https://example.com/x)"}}}}`: "not a value to draw with",
+		`{"display":{"tints":{"hot":{"paint":"red; background: blue"}}}}`:      "not a value to draw with",
+		// A file written before says color for it, and is still read.
+		`{"display":{"tints":{"hot":{"color":"#f00"}}}}`:                        "",
+		`{"variants":{"g-big":{"display":{"tints":{"hot":{"color":"#f00"}}}}}}`: "",
+		`{"display":{"tints":{"hot":{"color":"red"}}}}`:                         `color "red" is a color of the game's`,
+		`{"display":{"tints":{"hot":{"color":"url(x)"}}}}`:                      "not a value to draw with",
+		`{"display":{"tints":{"hot":{"color":"#f00","paint":"#f00"}}}}`:         "both paint and color",
+		`{"board":{"borders":{"top":"red"}}}`:                                   "",
+		`{"board":{"borders":{"moat":"red"}}}`:                                  `border "moat"`,
+		`{"seats":{"3":{}}}`:                                                    `seat "3"`,
+		`{"seats":{"1":{"blend":["green"]}}}`:                                   `"green", which nobody plays`,
+		`{"pieces":{"pawn":{}}}`:                                                `piece "pawn"`,
+		`{"display":{"tints":{"cold":{}}}}`:                                     `tint "cold"`,
+		`{"display":{"badges":{"hot":{}}}}`:                                     `badge "hot"`,
+		`{"cards":{}}`:                                                          "the game has none",
+		`{"preview":[{"position":"a1","piece":"pawn","color":"red"}]}`:          `piece "pawn"`,
+		`{"preview":[{"position":"a1","piece":"stone","color":"pink"}]}`:        `"pink"`,
+		`{"variants":{"h":{}}}`:                                                 `variant "h"`,
+		`{"variants":{"g-big":{"variants":{}}}}`:                                "", // an empty map is no variants
+		`{"variants":{"g-big":{"pieces":{"pawn":{}}}}}`:                         `variant "g-big": piece "pawn"`,
+		`{"script":"page.js"}`:                                                  `script "page.js", but the module brings no scripts`,
+		`{"style":"page.css"}`:                                                  `style "page.css", but the module brings no scripts`,
 		// A picture of the board, for the game's page script: the game's own file.
 		`{"board":{"art":"art/board.webp"},"variants":{"g-big":{"board":{"art":"art/big.svg"}}}}`: "",
 		`{"board":{"art":"art/none.png"}}`:                        `board art "art/none.png"`,
@@ -187,6 +205,9 @@ func TestEveryFixtureLookFitsItsGame(t *testing.T) {
 		if err := look.Check(m.Web, m.ID, games); err != nil {
 			t.Error(err)
 		}
+		if old, err := look.OldColors(m.Web); err != nil || len(old) > 0 {
+			t.Errorf("%s: %v %v say color for what they are drawn in: say paint (ADR 0154)", m.ID, old, err)
+		}
 	}
 }
 
@@ -218,6 +239,33 @@ func TestCheckCatchesAZoneLayout(t *testing.T) {
 	}
 	if err := look.Check([]byte(`{"cards":{"zones":{"pocket":{}}}}`), "solitaire", f.games); err == nil {
 		t.Error("a zone the game lacks was accepted")
+	}
+}
+
+// A suit and the cards' back are painted like a mark: paint, and the old key
+// color from a file written before ADR 0154, which OldColors lists.
+func TestCheckHoldsCardPaint(t *testing.T) {
+	f := families(t)["solitaire"]
+	for file, want := range map[string]string{
+		`{"cards":{"back":{"paint":"#2f6f5e"},"suits":{"hearts":{"paint":"#c62f2f"}}}}`: "",
+		`{"cards":{"back":{"color":"#2f6f5e"},"suits":{"hearts":{"color":"#c62f2f"}}}}`: "",
+		`{"cards":{"back":{"paint":"url(x)"}}}`:                                         "the cards' back: paint",
+		`{"cards":{"suits":{"hearts":{"paint":"#c00","color":"#c00"}}}}`:                `suit "hearts" says both`,
+	} {
+		err := look.Check([]byte(file), "solitaire", f.games)
+		switch {
+		case want == "" && err != nil:
+			t.Errorf("%s: %v", file, err)
+		case want != "" && (err == nil || !strings.Contains(err.Error(), want)):
+			t.Errorf("%s: got %v, want an error with %s", file, err, want)
+		}
+	}
+	old, err := look.OldColors([]byte(`{"cards":{"back":{"color":"#123"},"suits":{"hearts":{"color":"#c00"},"spades":{"paint":"#000"}}},
+		"display":{"tints":{"last":{"paint":"#fff"},"hot":{"color":"#f00"}},"badges":{"x":{"color":"#0f0"}}},
+		"variants":{"g-big":{"display":{"tints":{"hot":{"color":"#f00"}}}}}}`))
+	want := "display.tints.hot display.badges.x cards.back cards.suits.hearts variants.g-big.display.tints.hot"
+	if got := strings.Join(old, " "); err != nil || got != want {
+		t.Errorf("OldColors: %q %v, want %q", got, err, want)
 	}
 }
 

@@ -6,9 +6,9 @@ pieces:
 display:
   no_hands: true
   tints:
-    last: {color: '#c8dfa8'}
-    spent: {color: '#e0d0a0'}
-    confluence: {color: '#d8b8e8'}
+    last: {paint: '#c8dfa8'}
+    spent: {paint: '#e0d0a0'}
+    confluence: {paint: '#d8b8e8'}
 # A game in play, for the list of games and the setup page.
 preview:
   - {position: e5, piece: black, color: black}

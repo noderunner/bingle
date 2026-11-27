@@ -336,11 +336,11 @@ func TestWebBlooms_DrawnFromItsLook(t *testing.T) {
 		t.Errorf("%s reserve panels, want none", n)
 	}
 	// What the page reads for base 4: the preview without the squares that
-	// board lacks, the fenced tint's color beside its words, and the shapes.
+	// board lacks, the fenced tint's paint beside its words, and the shapes.
 	var got string
 	script := `import("/static/js/api.js").then(m => m.api.gameDef("blooms-4")).then(i => [
 		Object.keys(i.preview || {}).length > 0 && Object.keys(i.preview).every(p => i.board.positions.some(q => q.id === p)),
-		i.display.tints.fenced.color + " " + i.display.tints.fenced.label,
+		i.display.tints.fenced.paint + " " + i.display.tints.fenced.label,
 		i.display.no_hands,
 		i.pieces.every(p => p.shape === "disc"),
 	].join(","))`
