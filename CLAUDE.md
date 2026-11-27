@@ -149,7 +149,7 @@ A game's own rules and its players' words keep their terms.
 
 - `internal/engine` — `dsl` (the YAML game definition, loaded as JSON), `catalog` (compiles
   definitions, variants by merge patch, derived games), `state` (the engine), `board`, `cards`,
-  `wasmrules` (a ruleset run from a WebAssembly module, a proof of concept: ADR 0147).
+  `wasmrules` (a ruleset run from a WebAssembly module, for small games: ADR 0147).
 - `internal/session` — room locks, the event hub, clocks, presence, direct messages, notifications.
 - `internal/api`, `internal/mcpserver` — two front doors over the same session layer.
 - `internal/web/static/js` — plain ES modules, **no build step**.

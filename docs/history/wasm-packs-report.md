@@ -1,6 +1,7 @@
 # Report: Zèrtz as a WebAssembly install pack
 
-Status: **waiting for the maintainer's verdict** (written 2026-11-26), phase 8 of #294 (#300). The design is
+Status: **decided** (2026-11-27): the maintainer agreed with both recommendations. Written 2026-11-26,
+phase 8 of #294 (#300). The design is
 [ADR 0147](../decisions/0147-rules-as-webassembly-in-an-install-pack.md). Its two strategies are judged apart:
 the **rules** as a WebAssembly module, and every **client's files** carried in the pack and served.
 
@@ -298,8 +299,9 @@ A second client and stricter access are not recommended now. There is no second 
 If the rules are dropped and this is kept, it stands on its own: the overlay's modules would offer the files, and
 Zèrtz would offer them from the overlay.
 
-## After the verdict
+## The verdict
 
-Not done until the maintainer decides (#300): set ADR 0147's status, add the closing lines to the status logs of
-the [plugins plan](game-plugins-plan.md) and the [services proposal](game-services-proposal.md), open an issue for
-each follow-up the verdict names, and close #294.
+On 2026-11-27 the maintainer agreed with both: **the rules are kept as they are**, with ABI 0 promising nothing, and
+**the client files are kept and extended**. [ADR 0147](../decisions/0147-rules-as-webassembly-in-an-install-pack.md)
+is accepted. The follow-ups are #345 (client files for the overlay's games), #346 (a ring with a marble on it) and
+noderunner/bingle-3d#96 (`endings`). The single `selections` call is not planned.

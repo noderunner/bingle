@@ -204,3 +204,6 @@ These cost little and help the overlay too:
   ABI cuts lower, at `state.Ruleset`, to measure the fine-grained boundary, and then adds this proposal's coarse
   `Bot` call. If packs are kept, a later ABI should move to the other coarse calls here, so one interface has three
   transports.
+- 2026-11-27: the WebAssembly transport is **kept as it is** (#300, ADR 0147, accepted;
+  [report](wasm-packs-report.md), which compares the two). It stays at `state.Ruleset` with the `Bot` call, and no
+  move to this proposal's other coarse calls is planned. The proposal stays deferred (#241).

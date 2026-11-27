@@ -1,9 +1,12 @@
 # 0147. An install pack: rules as WebAssembly, and every client's files from the server (proof of concept)
 
-Status: proposed (2026-11-24), phase 0 of #294. A proof of concept, not a direction: it ends with the maintainer's
-verdict (#300), and if that verdict is to drop it, what it built is removed again. It has two halves, judged
-apart: a game's **rules** as a WebAssembly module, and a game's **files for every client** carried in the pack and
-handed out by the server. It reopens decision 1 of the game plugins plan
+Status: **accepted** (2026-11-27); proposed 2026-11-24 as a proof of concept (#294). The maintainer's verdict on the
+[report](../history/wasm-packs-report.md) (#300): **the rules are kept as they are**, packs for small games and the
+private overlay for the rest, and **ABI 0 still promises nothing**; **the client files are kept and extended**, to the
+overlay's games next. The text below is the decision as it was proposed and built, and its status log.
+
+It has two halves, judged apart: a game's **rules** as a WebAssembly module, and a game's **files for every client**
+carried in the pack and handed out by the server. It reopens decision 1 of the game plugins plan
 ([docs/history/game-plugins-plan.md](../history/game-plugins-plan.md)) and the withdrawn
 [ADR 0128](0128-data-packs.md), settles for packs what that plan left open about a non-web client's assets, and is
 a third transport for the cut of the game services proposal
@@ -87,8 +90,8 @@ if the proof of concept is dropped.
 
 ### ABI v0
 
-ABI v0 is the proof of concept's ABI, and **it may change without notice until this ADR is accepted**. A pack is
-rebuilt when it changes. Each export is prefixed `bingle_`:
+ABI v0 is the proof of concept's ABI, and **it may change without notice**: accepting this ADR did not change that
+(the verdict). A pack is rebuilt with the server it runs on. Each export is prefixed `bingle_`:
 
 | Export | Signature | What it does |
 |---|---|---|
@@ -347,9 +350,9 @@ folder. To drop both removes the pack loader and `BINGLE_PACKS` too, and marks t
 
 - Phases 1 (#296) to 4 (#299) build the rules half, and phases 5 (#302) to 7 (#304) the client files, each recording
   here anything it changes. The last phase (#300) sets this ADR's status.
-- Until the verdict, the overlay stays the way a commercial game is built. Nothing moves out of it to become a pack.
-- While the proof of concept runs, the plugins plan's decision 1 and ADR 0128's withdrawal stand for every game but
-  Zèrtz.
+- The overlay stays the way a commercial game is built. Nothing moves out of it to become a pack.
+- The plugins plan's decision 1 now allows a pack's rules, for small games. Every other game's Go is compiled in.
+  ADR 0128 stays withdrawn: no upload, zip or admin install.
 - A pack's game shows what the guest's calls cost each time a page asks for its selections. Bots and practice
   batches on a pack's game are expected to be slower than on a compiled-in game until phase 4, and phase 4 may
   show that they stay so.
@@ -362,8 +365,8 @@ folder. To drop both removes the pack loader and `BINGLE_PACKS` too, and marks t
   something a hostile server can aim at. Hashes, limits and data-only formats narrow that and do not remove it.
 - bingle-3d's plan changes with this: assets still ship with the client (its decision 1), and a look may now come
   from the server as well. Its private folder (decision 2) stays for the overlay's games and for making a look.
-- ABI v0 promises nothing. A pack is rebuilt when the ABI changes, and only when this ADR is accepted does an ABI
-  version become a promise.
+- ABI v0 promises nothing. A pack is rebuilt when the ABI changes. Accepting this ADR made no ABI version a
+  promise (the verdict, changing what was proposed): that would take a decision of its own.
 
 ## Status log
 
@@ -573,3 +576,11 @@ folder. To drop both removes the pack loader and `BINGLE_PACKS` too, and marks t
 - 2026-11-26, **phase 8** (#300): the report, with the numbers measured again and a recommendation for each half,
   is [docs/history/wasm-packs-report.md](../history/wasm-packs-report.md). The status above waits for the
   maintainer's verdict.
+- 2026-11-27, **the verdict** (#300): the maintainer agreed with both recommendations of the report.
+  - **Rules: keep as it is.** The host, the guest glue, wazero and `BINGLE_PACKS` stay. Yinsh as a second pack, zip
+    packs, admin install and bridging hidden information are not planned. The one improvement the report thought
+    worth considering, listing selections in one call, is not planned either, unless players feel the delay.
+  - **ABI 0 still promises nothing**, which changes what was proposed: acceptance was to have made it a promise.
+  - **Client files: keep and extend.** The overlay's games offer theirs next (#345). The report's two findings are
+    #346 (a ring with a marble on it) and noderunner/bingle-3d#96 (`endings`). Question 6's answer, that anyone who
+    can reach the server may fetch them, is to be said again before the overlay's art is served (#345).
