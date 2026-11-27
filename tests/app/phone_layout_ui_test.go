@@ -89,7 +89,15 @@ func TestPhoneUI_TheHistoryOpensAtItsEndAndItsButtonsFollow(t *testing.T) {
 	waitJS(t, ctx, "the latest position, the list at its end", `location.hash === "" && document.getElementById("hist-last").disabled && `+atEnd, 5*time.Second)
 
 	// Told in words, the story scrolls by itself too, not the pane around it: the
-	// page opens it on its end by scrolling it, as on a computer.
+	// page opens it on its end by scrolling it, as on a computer. The Council tells
+	// nothing in words, and the trick game tells its deal.
+	var told createGameResponse
+	if code := doJSON(t, "POST", base+"/api/games", map[string]any{"game_def_id": "test-tricks-3", "player_name": "Alice", "seat_bots": map[string]string{"2": "random", "3": "random"}}, &told); code != 200 {
+		t.Fatalf("create: %d", code)
+	}
+	openOnPhone(t, ctx, base, "Alice", map[string]string{told.RoomCode: "test-tricks-3"}, told.RoomCode)
+	clickSel(t, ctx, `#m-nav [data-group="log"]`)
+	waitJS(t, ctx, "the story told so far", `document.getElementById("history-friendly") !== null`, 5*time.Second)
 	clickSel(t, ctx, "#history-friendly")
 	waitJS(t, ctx, "the story", `document.querySelector("#m-page-log #events") !== null`, 5*time.Second)
 	if err := chromedp.Run(ctx, chromedp.Evaluate(`(function () { const ev = document.querySelector("#m-page-log #events"); for (let i = 0; i < 200; i++) { const p = document.createElement("p"); p.textContent = "line " + i; ev.append(p); } return true; })()`, nil)); err != nil {
