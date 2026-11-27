@@ -178,6 +178,10 @@ type legalMoveDTO struct {
 	// for none, and in a game with secrets or for a selection that rolls or
 	// draws.
 	Captures []string `json:"captures,omitempty"`
+	// Converts are the positions whose pieces the selection turns over: they
+	// keep their place and change colour (Othello's flips). Absent as
+	// captures are.
+	Converts []string `json:"converts,omitempty"`
 }
 
 func legalMoveDTOs(moves []session.SelectionOption) []legalMoveDTO {
@@ -196,7 +200,7 @@ func legalMoveDTOs(moves []session.SelectionOption) []legalMoveDTO {
 		for _, p := range lm.Selection.Path {
 			d.Path = append(d.Path, string(p))
 		}
-		d.Gestures, d.Captures = lm.Gestures, lm.Captures
+		d.Gestures, d.Captures, d.Converts = lm.Gestures, lm.Captures, lm.Converts
 		out[i] = d
 	}
 	return out

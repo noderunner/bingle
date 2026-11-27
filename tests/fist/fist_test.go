@@ -335,7 +335,8 @@ func TestNotationRoundTripAndRandomGamesFinish(t *testing.T) {
 
 // A move says which pieces it takes off the board, before it is played and
 // once it is (#269): the pinned piece, each piece a jump captures, and not one
-// an ace converts (it stays, in the ace's colour).
+// an ace converts (it stays, in the ace's colour), which is among what the
+// move turns over instead (#293).
 func TestMovesReportWhatTheyCapture(t *testing.T) {
 	g := game(t)
 	rs := fist.New()
@@ -343,11 +344,12 @@ func TestMovesReportWhatTheyCapture(t *testing.T) {
 		pieces map[string][]string
 		move   string
 		want   []board.PositionID
+		turned []board.PositionID
 	}{
-		{map[string][]string{"white/yellow": {"c4"}, "white/blue": {"e3"}, "black/blue": {"e4"}, "black/king": {"h8"}}, "c4-d4xe4", []board.PositionID{"e4"}},
-		{map[string][]string{"white/blue": {"a1"}, "black/yellow": {"b1", "a2"}, "black/king": {"h8"}}, "a1^c1x", []board.PositionID{"b1"}},
-		{map[string][]string{"white/blue": {"a1"}, "black/yellow": {"b1", "a2"}, "black/king": {"h8"}}, "a1^c1", nil},
-		{map[string][]string{"white/ace": {"a1"}, "black/yellow": {"b1"}, "black/king": {"h8"}}, "a1^c1c", nil},
+		{map[string][]string{"white/yellow": {"c4"}, "white/blue": {"e3"}, "black/blue": {"e4"}, "black/king": {"h8"}}, "c4-d4xe4", []board.PositionID{"e4"}, nil},
+		{map[string][]string{"white/blue": {"a1"}, "black/yellow": {"b1", "a2"}, "black/king": {"h8"}}, "a1^c1x", []board.PositionID{"b1"}, nil},
+		{map[string][]string{"white/blue": {"a1"}, "black/yellow": {"b1", "a2"}, "black/king": {"h8"}}, "a1^c1", nil, nil},
+		{map[string][]string{"white/ace": {"a1"}, "black/yellow": {"b1"}, "black/king": {"h8"}}, "a1^c1c", nil, []board.PositionID{"b1"}},
 	}
 	for _, c := range cases {
 		st := pos{pieces: c.pieces}.build(t)
@@ -355,8 +357,12 @@ func TestMovesReportWhatTheyCapture(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if got := state.SelectionCaptures(g, st, 1, mv); !slices.Equal(got, c.want) {
+		got, turned := state.SelectionEffects(g, st, 1, mv)
+		if !slices.Equal(got, c.want) {
 			t.Errorf("%s would capture %v, want %v", c.move, got, c.want)
+		}
+		if !slices.Equal(turned, c.turned) {
+			t.Errorf("%s would convert %v, want %v", c.move, turned, c.turned)
 		}
 		_, res := play(t, g, st, 1, c.move)
 		if !slices.Equal(res.Captures, c.want) {
