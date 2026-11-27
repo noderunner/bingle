@@ -257,8 +257,9 @@ func (g *CompiledGame) Seat(seat int) (dsl.SeatDef, bool) {
 	return dsl.SeatDef{}, false
 }
 
-// SideColor is the color of the seat that plays col, among all its colors
-// (ADR 0117), or col itself when no seat does.
+// SideColor is the name of the main color of the seat that plays the color
+// named col, among all its colors (ADR 0117), or col itself when no seat
+// does.
 func (g *CompiledGame) SideColor(col string) string {
 	for _, s := range g.Definition.Seats {
 		if s.Color == col || slices.Contains(s.Colors, col) {
@@ -268,8 +269,8 @@ func (g *CompiledGame) SideColor(col string) string {
 	return col
 }
 
-// SeatOfColor returns the seat that plays color, among all its colors
-// (ADR 0117).
+// SeatOfColor returns the seat that plays the color named color, among all
+// its colors (ADR 0117).
 func (g *CompiledGame) SeatOfColor(color string) (int, bool) {
 	for _, s := range g.Definition.Seats {
 		if s.Color == color || slices.Contains(s.Colors, color) {
@@ -279,7 +280,7 @@ func (g *CompiledGame) SeatOfColor(color string) (int, bool) {
 	return 0, false
 }
 
-// Colors lists every seat's color, in seat declaration order.
+// Colors lists the name of every seat's color, in seat declaration order.
 func (g *CompiledGame) Colors() []string {
 	out := make([]string, len(g.Definition.Seats))
 	for i, s := range g.Definition.Seats {

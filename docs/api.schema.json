@@ -1553,6 +1553,13 @@
           "description": "Engine is \"ruleset\" for games whose rules are written in Go: their moves are a sequence of small decisions, and positions carry a derived view (tints, badges, counters) under state.ext.view.",
           "type": "string"
         },
+        "extra_colors": {
+          "description": "ExtraColors are the colors a piece may have that no seat plays (Fist's neutral pawn), in the definition's order: a client that paints a color by seat paints these after the seats' (ADR 0154).",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
         "family": {
           "type": "string"
         },
@@ -4634,9 +4641,9 @@
   },
   "$id": "https://github.com/noderunner/bingle/docs/api.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "description": "The requests, responses and WebSocket events of bingle's API, version 1.20.3. Generated from the Go types of the server: do not edit. Objects let unknown fields through: a client ignores those it does not know.",
+  "description": "The requests, responses and WebSocket events of bingle's API, version 1.21.0. Generated from the Go types of the server: do not edit. Objects let unknown fields through: a client ignores those it does not know.",
   "title": "Bingle API messages",
-  "x-api-version": "1.20.3",
+  "x-api-version": "1.21.0",
   "x-dm-events": {
     "badge": {
       "$ref": "#/$defs/BadgeEventData"

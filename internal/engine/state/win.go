@@ -536,7 +536,7 @@ func areaScores(game *catalog.CompiledGame, st *BoardState, komi map[string]floa
 	g := game.Board
 	byColor := map[string]int{}
 	for _, seat := range game.Definition.Seats {
-		for _, col := range seat.Palette() {
+		for _, col := range seat.Plays() {
 			byColor[col] = seat.Seat
 		}
 	}

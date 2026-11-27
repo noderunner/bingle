@@ -415,7 +415,7 @@ func (f File) check(cg *catalog.CompiledGame) error {
 	colors := map[string]bool{}
 	for _, s := range def.Seats {
 		seats[strconv.Itoa(s.Seat)] = true
-		for _, c := range s.Palette() {
+		for _, c := range s.Plays() {
 			colors[c] = true
 		}
 	}

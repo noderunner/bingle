@@ -2,6 +2,11 @@
 
 Ce qui a changé dans Bingle, du plus récent au plus ancien. Bingle Core (le serveur, le moteur et le client web) et chaque jeu ont leur propre version, et chaque entrée dit lesquels ont changé. Les entrées antérieures à la 0.124.0 ne sont qu’en anglais.
 
+## 0.144.0 - 2026-11-27
+
+### Bingle Core 0.144.0
+- Les pièces d'une couleur que le plateau ne connaît pas ont une couleur à elles au lieu du noir (API 1.21.0)
+
 ## 0.143.0 - 2026-11-27
 
 ### Bingle Core 0.143.0

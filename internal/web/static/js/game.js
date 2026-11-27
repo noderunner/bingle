@@ -7,7 +7,8 @@ import { FAIR_PLAY, ratingText } from "./ratings.js";
 import { h, s, clear, store, rememberGame, nameFor, lastName, ago, titleCase, toast, setTurnBadge, reconnectDelay, brandName, gameEnding } from "./util.js";
 import { api, ApiError, gameTitle } from "./api.js";
 import { MoveBuilder } from "./builder.js";
-import { renderBoard, pieceIcon, cssColor, hasHexStyles, defaultHexStyle } from "./render.js";
+import { renderBoard, pieceIcon, hasHexStyles, defaultHexStyle } from "./render.js";
+import { classWord, colorClass, colorPaint, paintWord, useColors } from "./paint.js";
 import { showRules as openRules } from "./rules.js";
 import { keepChatFocus, loadChat, receiveChat, receiveTranslation, chatCard, chatSeen, chatUnread } from "./chat.js";
 import { handleBadge } from "./friend-badge.js";
@@ -126,6 +127,7 @@ async function boot() {
 			return;
 		}
 		S.info = await api.gameDef(S.game.game_def_id);
+		useColors(S.info);
 		if (S.game.tutorial) await loadTutorial();
 	} catch (err) {
 		S.fatal = err instanceof ApiError && err.status === 404 ? tr("game.no_room", { code }) : String(err.message || err);
@@ -326,6 +328,7 @@ async function refreshGame() {
 	// definition now, with other names and colors.
 	if (S.info && S.game.game_def_id !== S.info.id) {
 		S.info = await api.gameDef(S.game.game_def_id);
+		useColors(S.info);
 		titleBase = gameTitle(S.info);
 	}
 	noteServerTime(S.game.server_time);
@@ -678,15 +681,15 @@ function seatLabel(seat) {
 	return d ? d.label : tr("game.seat_n", { n: seat });
 }
 
-/** The CSS gradient of a seat of two colors, or null. `stop` writes each color. */
-function seatGradient(seat, stop = (c) => `var(--piece-${c}-fill)`) {
+/** The CSS gradient of a seat of two colors, or null. `stop` writes each color's paint. */
+function seatGradient(seat, stop = (paint) => paint) {
 	const blend = (seatDef(seat) || {}).blend;
-	return blend && blend.length === 2 ? `linear-gradient(90deg, ${stop(cssColor(blend[0]))}, ${stop(cssColor(blend[1]))})` : null;
+	return blend && blend.length === 2 ? `linear-gradient(90deg, ${stop(colorPaint(blend[0]))}, ${stop(colorPaint(blend[1]))})` : null;
 }
 
 /** A seat's name in its colors. Mixed with the text color, so that yellow or black can be read on any theme. */
 function seatWord(seat) {
-	const gradient = seatGradient(seat, (c) => `color-mix(in srgb, var(--piece-${c}-fill) 72%, var(--text))`);
+	const gradient = seatGradient(seat, (paint) => `color-mix(in srgb, ${paint} 72%, var(--text))`);
 	return h("span", { class: "seat-word", style: gradient ? `background-image: ${gradient}` : null }, seatLabel(seat));
 }
 
@@ -2822,7 +2825,7 @@ function renderMobile(seats, bottomSeat) {
 	for (const seat of cardOrder(bottomSeat)) {
 		const id = `seat-${seat}`;
 		pages.push({ id, label: seatLabel(seat) || tr("game.seat_n", { n: seat }), group: "seats", node: h("div", { class: "m-stack" }, seatStrip(seat)) });
-		chips.seats.push({ page: id, label: seatLabel(seat) || tr("game.seat_n", { n: seat }), color: cssColor(colorOf(seat)) });
+		chips.seats.push({ page: id, label: seatLabel(seat) || tr("game.seat_n", { n: seat }), color: colorOf(seat) });
 	}
 	pages.push({ id: "log", label: tr("game.history"), group: "log", node: h("div", { class: "m-stack" }, historyCard()) });
 	if (!S.tut) pages.push({ id: "chat", label: tr("game.chat"), group: "chat", node: h("div", { class: "m-stack" }, chatCard({ code, me: S.me, voice: voiceControls({ code, me: S.me, seats: S.game.seats }) })) });
@@ -3429,7 +3432,7 @@ function seatPicture(seat, px) {
 	const draw = S.info && S.info.page && S.info.page.seatIcon;
 	if (!draw) return null;
 	const label = seatLabel(seat);
-	return draw(label, { color: cssColor(colorOf(seat)), size: px, title: label });
+	return draw(label, { color: paintWord(colorOf(seat)), size: px, title: label });
 }
 
 /** The same for a player named by label, as the captions under the trick's cards do. */
@@ -3469,7 +3472,7 @@ function seatSwatch(seat, color) {
 	const picture = seatPicture(seat, 30);
 	if (picture) return h("span", { class: "seat-icon" }, picture);
 	const gradient = seatGradient(seat);
-	return h("span", { class: `swatch color-${cssColor(color)}`, style: gradient ? `background: ${gradient}` : null });
+	return h("span", { class: `swatch ${colorClass(color)}`, style: gradient ? `background: ${gradient}` : null });
 }
 
 /** The glyph of a seat's faction, in a game whose factions have them: it says what the name would. */
@@ -3488,7 +3491,7 @@ function firstPlayerMark(seat) {
 
 /** A seat's color for words: mixed with the text color, so that it can be read on any theme. */
 function seatInk(seat) {
-	return `color-mix(in srgb, var(--piece-${cssColor(colorOf(seat))}-fill) 72%, var(--text))`;
+	return `color-mix(in srgb, ${colorPaint(colorOf(seat))} 72%, var(--text))`;
 }
 
 function seatStrip(seat) {
@@ -3822,7 +3825,7 @@ function buildAbilityChoice(a, r) {
 				"label",
 				{ class: "check auto-pass-option" },
 				input,
-				o.color ? h("span", { class: `swatch color-${cssColor(o.color)}` }) : null,
+				o.color ? h("span", { class: `swatch ${colorClass(o.color)}` }) : null,
 				h("span", {}, otherLabel(o))
 			)
 		);
@@ -4306,7 +4309,7 @@ function handPanel(seat) {
 	const b = activeBuilder();
 	const nextPieces = mine ? b.nextPieces() : new Set();
 	const chosen = b.gestures.find((s) => s.kind === "piece");
-	const wrap = h("div", { class: "hand", id: `hand-${cssColor(color)}` });
+	const wrap = h("div", { class: "hand", id: `hand-${classWord(color)}` });
 	const opening = mine && openingActive() && S.info.opening.owner === "opponent";
 
 	for (const pool of pools) {
@@ -5466,7 +5469,7 @@ function logLine(text) {
 		const re = new RegExp(names, "g");
 		for (let m = re.exec(text); m; m = re.exec(text)) {
 			const sd = S.info.seats.find((x) => x.label === m[0]);
-			marks.push({ start: m.index, end: m.index + m[0].length, node: () => (seatGradient(sd.seat) ? seatWord(sd.seat) : h("span", { class: `log-fac color-${cssColor(sd.color)}` }, m[0])) });
+			marks.push({ start: m.index, end: m.index + m[0].length, node: () => (seatGradient(sd.seat) ? seatWord(sd.seat) : h("span", { class: `log-fac ${colorClass(sd.color)}` }, m[0])) });
 		}
 	}
 	const label = /^([A-Z][A-Za-z'’ -]{1,30}):(?=\s)/.exec(text);
@@ -5495,8 +5498,8 @@ function logActor(seat, ply, mark = null) {
 	const who = seatNameAt(seat, ply);
 	return h(
 		"div",
-		{ class: `log-actor color-${cssColor(colorOf(seat))}`, "data-seat": seat, "data-auto-play": mark ? "1" : null },
-		h("span", { class: `swatch color-${cssColor(colorOf(seat))}`, style: seatGradient(seat) ? `background: ${seatGradient(seat)}` : null }),
+		{ class: `log-actor ${colorClass(colorOf(seat))}`, "data-seat": seat, "data-auto-play": mark ? "1" : null },
+		h("span", { class: `swatch ${colorClass(colorOf(seat))}`, style: seatGradient(seat) ? `background: ${seatGradient(seat)}` : null }),
 		h("strong", {}, ...withSeatWords(sd ? sd.label : tr("game.seat_n", { n: seat }))),
 		who ? h("span", { class: "muted small" }, seat === S.me.seat && who === seatName(seat) ? tr("hist.who_you", { who }) : ` · ${who}`) : null,
 		mark
@@ -5703,7 +5706,7 @@ function moveList() {
 					"li",
 					{ class: `by-seat-${m.seat}` },
 					h("span", { class: "num" }, `${m.seq}.`),
-					h("span", { class: `seat-dot color-${cssColor(colorOf(m.seat))}`, style: seatGradient(m.seat) ? `background: ${seatGradient(m.seat)}` : null, title: seatNameAt(m.seat, m.seq) || seatLabel(m.seat) }),
+					h("span", { class: `seat-dot ${colorClass(colorOf(m.seat))}`, style: seatGradient(m.seat) ? `background: ${seatGradient(m.seat)}` : null, title: seatNameAt(m.seat, m.seq) || seatLabel(m.seat) }),
 					h(
 						"button",
 						{

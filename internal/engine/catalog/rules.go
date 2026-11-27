@@ -89,7 +89,7 @@ func checkSeats(def *dsl.GameDefinition) (map[string]bool, error) {
 		if len(s.Colors) > 0 && s.Colors[0] != s.Color {
 			return nil, fmt.Errorf("catalog: seat %d's colors must begin with its color %q", s.Seat, s.Color)
 		}
-		for _, c := range s.Palette() {
+		for _, c := range s.Plays() {
 			if strings.TrimSpace(c) == "" {
 				return nil, fmt.Errorf("catalog: seat %d lists an empty color", s.Seat)
 			}
@@ -161,7 +161,7 @@ func checkPreview(cg *CompiledGame) error {
 	def := cg.Definition
 	colors := map[string]bool{}
 	for _, s := range def.Seats {
-		for _, c := range s.Palette() {
+		for _, c := range s.Plays() {
 			colors[c] = true
 		}
 	}

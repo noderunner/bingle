@@ -4,6 +4,11 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.144.0 - 2026-11-27
+
+### Bingle Core 0.144.0
+- Pieces in a color the board does not know get a color of their own instead of black (API 1.21.0)
+
 ## 0.143.0 - 2026-11-27
 
 ### Bingle Core 0.143.0

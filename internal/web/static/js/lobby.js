@@ -3,7 +3,7 @@
 
 import { h, brandName } from "./util.js";
 import { api, gameTitle } from "./api.js";
-import { cssColor } from "./render.js";
+import { colorClass } from "./paint.js";
 import { t, tParts, lang } from "./i18n.js";
 
 /** Kinds of bots that can be added, with their labels (from GET /api/bots). */
@@ -171,7 +171,7 @@ export function lobbyCard(ctx) {
 		const mine = me.seat === sd.seat;
 		const kept = (game.reservations || []).find((r) => r.seat === sd.seat);
 		const li = h("li", { class: "lobby-seat" + (taken ? " taken" : " open") + (mine ? " mine" : ""), "data-seat": sd.seat });
-		li.append(ctx.seatGlyph(sd.seat) || h("span", { class: `swatch color-${cssColor(sd.color)}` }));
+		li.append(ctx.seatGlyph(sd.seat) || h("span", { class: `swatch ${colorClass(sd.color, info)}` }));
 		// The faction of an open seat can be changed by anyone at the table, and at a table
 		// set up with a pool of factions a player can change their own.
 		const factions = ctx.factions || [];
