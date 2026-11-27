@@ -114,13 +114,15 @@ func (m *Manager) ListMoves(ctx context.Context, roomCode string, sinceSeq int) 
 }
 
 // SelectionOption is one legal selection: the structured selection, its
-// canonical notation, the gestures that build it and the positions whose
-// pieces it takes off the board (state.SelectionCaptures).
+// canonical notation, the gestures that build it, the positions whose pieces
+// it takes off the board and those whose pieces it turns over
+// (state.SelectionEffects).
 type SelectionOption struct {
 	Selection state.Selection
 	Notation  string
 	Gestures  []state.Gesture
 	Captures  []string
+	Converts  []string
 }
 
 // mayListMoves reports whether the request may see what seat can do. In a game with secrets the
@@ -153,11 +155,12 @@ func legalMoveList(compiled *catalog.CompiledGame, bs *state.BoardState, seat in
 }
 
 // selectionOption is the SelectionOption of mv, a legal selection of seat in
-// bs, with what it captures.
+// bs, with what it captures and converts.
 func selectionOption(compiled *catalog.CompiledGame, bs *state.BoardState, seat int, mv state.Selection) SelectionOption {
+	captures, converts := state.SelectionEffects(compiled, bs, seat, mv)
 	return SelectionOption{
 		Selection: mv, Notation: state.FormatMove(compiled, mv), Gestures: state.Gestures(compiled, mv),
-		Captures: positionStrings(state.SelectionCaptures(compiled, bs, seat, mv)),
+		Captures: positionStrings(captures), Converts: positionStrings(converts),
 	}
 }
 

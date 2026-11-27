@@ -70,7 +70,7 @@ type HiddenInfo interface {
 
 // Open is implemented by rulesets that implement HiddenInfo only to attach
 // their derived view: they keep nothing from any seat, so what a selection
-// would do may be worked out and shown (SelectionCaptures).
+// would do may be worked out and shown (SelectionEffects).
 type Open interface {
 	HidesNothing() bool
 }

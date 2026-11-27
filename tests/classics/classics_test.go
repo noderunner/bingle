@@ -915,25 +915,47 @@ func TestPieRuleSwapOnTheSecondMoveOnly(t *testing.T) {
 // What a legal selection would capture, before it is played (#269): every
 // man a draughts chain jumps, the stones a Go placement takes, and nothing
 // for a plain step.
-func TestSelectionCapturesBeforeTheMoveIsPlayed(t *testing.T) {
+func TestSelectionEffectsBeforeTheMoveIsPlayed(t *testing.T) {
 	g := load(t, "draughts")
 	st := draughtsPosition(t, g, map[string][]string{
 		"c1": {"bm"}, "d2": {"rm"}, "f4": {"rm"}, "h8": {"rm"},
 	})
-	if got := state.SelectionCaptures(g, st, 1, mustParse(t, g, "c1xe3xg5")); !slices.Equal(got, []board.PositionID{"d2", "f4"}) {
-		t.Errorf("the chain captures %v, want [d2 f4]", got)
+	if got, turned := state.SelectionEffects(g, st, 1, mustParse(t, g, "c1xe3xg5")); !slices.Equal(got, []board.PositionID{"d2", "f4"}) || turned != nil {
+		t.Errorf("the chain captures %v and converts %v, want [d2 f4] and nothing", got, turned)
 	}
 	if _, ok := st.Get("d2"); !ok {
 		t.Error("asking what a selection captures changed the position")
 	}
 	open := draughtsPosition(t, g, map[string][]string{"c3": {"bm"}, "h8": {"rm"}})
-	if got := state.SelectionCaptures(g, open, 1, state.Selection{From: "c3", To: "d4"}); got != nil {
-		t.Errorf("a plain step captures %v, want nothing", got)
+	if got, turned := state.SelectionEffects(g, open, 1, state.Selection{From: "c3", To: "d4"}); got != nil || turned != nil {
+		t.Errorf("a plain step captures %v and converts %v, want nothing", got, turned)
 	}
 
 	goGame := load(t, "go-9x9")
 	corner := goBoard(t, "ox.......")
-	if got := state.SelectionCaptures(goGame, corner, 1, mustParse(t, goGame, "a8")); !slices.Equal(got, []board.PositionID{"a9"}) {
-		t.Errorf("a8 captures %v, want [a9]", got)
+	if got, turned := state.SelectionEffects(goGame, corner, 1, mustParse(t, goGame, "a8")); !slices.Equal(got, []board.PositionID{"a9"}) || turned != nil {
+		t.Errorf("a8 captures %v and converts %v, want [a9] and nothing", got, turned)
+	}
+}
+
+// What a legal selection would turn over, before it is played (#293): an
+// Othello placement converts every disc it outflanks, in each line, and
+// captures nothing.
+func TestSelectionConvertsBeforeTheMoveIsPlayed(t *testing.T) {
+	g := load(t, "othello")
+	st := state.NewBoardState()
+	for id, color := range map[board.PositionID]string{
+		"b1": "white", "c1": "white", "d1": "black", // a1 outflanks b1 and c1 along the row
+		"a2": "white", "a3": "black", // and a2 up the file
+		"b2": "white", "h8": "black", // b2 has no black disc behind it
+	} {
+		st.Push(id, state.Occupant{Piece: "disc", Color: color})
+	}
+	captures, converts := state.SelectionEffects(g, st, 1, mustParse(t, g, "a1"))
+	if captures != nil || !slices.Equal(converts, []board.PositionID{"a2", "b1", "c1"}) {
+		t.Errorf("a1 captures %v and converts %v, want nothing and [a2 b1 c1]", captures, converts)
+	}
+	if occ, _ := st.Get("b1"); occ.Color != "white" {
+		t.Error("asking what a selection converts changed the position")
 	}
 }

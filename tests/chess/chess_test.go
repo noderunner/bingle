@@ -4,6 +4,7 @@
 package chess_test
 
 import (
+	"slices"
 	"strings"
 	"testing"
 
@@ -401,5 +402,20 @@ func TestChess_HeuristicSeatOutOfRange(t *testing.T) {
 	}
 	if got := rs.Heuristic(g, st, 257); got == white {
 		t.Errorf("seat 257 is valued as White: %v", got)
+	}
+}
+
+// A pawn that takes a pawn leaves a pawn on the square in the other colour,
+// which is a capture and not a conversion (#293).
+func TestChess_ACaptureOfALikePieceConvertsNothing(t *testing.T) {
+	g := game(t)
+	st, seat := fen(t, "4k3/8/8/3p4/4P3/8/8/4K3 w")
+	mv, err := chess.New().Parse(g, "exd5")
+	if err != nil {
+		t.Fatal(err)
+	}
+	captures, converts := state.SelectionEffects(g, st, seat, mv)
+	if !slices.Equal(captures, []board.PositionID{"d5"}) || converts != nil {
+		t.Errorf("exd5 captures %v and converts %v, want [d5] and nothing", captures, converts)
 	}
 }
