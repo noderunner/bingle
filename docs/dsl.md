@@ -165,7 +165,9 @@ pieces:
 
 * Colors are CSS-ish names; the UI has palettes for `white`, `black`, `red`,
   `blue`, `green`, `yellow`, `orange`, `purple`, `teal`, `sand`, `brown` and `grey`.
-  A piece of any other colour is drawn black.
+  A piece of any other color is drawn black for now; a later stage of
+  [ADR 0154](decisions/0154-a-color-is-a-name-and-paint-is-each-clients-own.md)
+  paints it by its seat instead (#338).
 * `shape`: `disc` (default), `square`/`flat`, `wall`, `cap`, `ring`,
   `diamond`, `triangle`, `cross`.
 * `code` is the short letter used by notation, TPS and the text board.

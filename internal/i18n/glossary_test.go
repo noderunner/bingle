@@ -6,8 +6,9 @@ import (
 	"testing"
 )
 
-// glossaryRows reads the table of a glossary file (docs/glossary/<code>.md): its rows' cells, the
-// header and the rule under it left out.
+// glossaryRows reads the first table of a glossary file (docs/glossary/<code>.md), the words of the
+// interface: its rows' cells, the header and the rule under it left out. English's second table, the
+// words of the code and the docs (ADR 0154), has no catalog key and is not read.
 func glossaryRows(t *testing.T, code string) [][]string {
 	t.Helper()
 	raw, err := os.ReadFile("../../docs/glossary/" + code + ".md")
@@ -16,7 +17,13 @@ func glossaryRows(t *testing.T, code string) [][]string {
 	}
 	var rows [][]string
 	for _, line := range strings.Split(string(raw), "\n") {
-		if !strings.HasPrefix(line, "| ") {
+		if !strings.HasPrefix(line, "|") {
+			if len(rows) > 0 {
+				break
+			}
+			continue
+		}
+		if strings.HasPrefix(line, "|-") {
 			continue
 		}
 		var cells []string

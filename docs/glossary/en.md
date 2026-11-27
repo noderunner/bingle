@@ -1,7 +1,7 @@
 # Glossary
 
 The platform's own words, and what each means, for whoever translates or reviews a language (ADR 0141). A game's
-own words (its pieces, seats and actions) are its own, and are not here. Each term names the catalog key whose
+own words (its pieces, seats and actions) are its own, and are not here. Each term of the first table names the catalog key whose
 words show it; each language's file gives its word for every term, as that key shows it, and a test
 (`TestGlossary_EachLanguageHasEveryTermAsItsCatalogShowsIt`) checks that the catalog says it, and that two terms
 share a word only where the file says so. Change a term here and in the catalogs together.
@@ -14,7 +14,7 @@ Languages: [Español](es.md), [Français](fr.md), [Deutsch](de.md), [Português 
 | game (one played) | `batch.col_game` | One game played at a table, from its lobby to its end. |
 | room | `lobby.room` | A game's address: its room code, which a link or a friend's invitation carries. |
 | lobby | `games.in_lobby` | Where a game waits for its players to take their seats before it starts. |
-| seat | `game.seat_n` | A place at a game's table, which a player, a bot or nobody holds. |
+| seat | `game.seat_n` | A place at a game's table, which a player, a bot or nobody holds: its turn in the order, its clock, its result (ADR 0154). |
 | bot | `game.bot` | A program that plays a seat. |
 | guest | `game.guest` | Somebody playing without an account, known to this browser alone. |
 | spectator | `chat.spectator` | Somebody watching a game without a seat. |
@@ -56,3 +56,14 @@ Languages: [Español](es.md), [Français](fr.md), [Deutsch](de.md), [Português 
 | cards | `setup.cards` | The set of cards a table plays with: the game's own or a themed set. |
 | board theme | `options.board_theme` | How a board looks: wood, slate, an illustrated theme. |
 | options | `options.button` | A game's window of settings, tools and its link. |
+
+## Words of the code and the docs
+
+Words the code, the API and these docs use that the interface shows nowhere, so they have no catalog key, and the
+other languages' files do not repeat them. A seat is in the table above.
+
+| Term | Meaning |
+|---|---|
+| color | A name the rules give a set of pieces (`white`, `yellow`, `grey`). A seat plays one or more, and some are nobody's. An identifier in the definition, the API, the state and notation, never a value to draw with (ADR 0154). |
+| label | What players call a seat ("White", "Warm", "Attackers"), from the definition (ADR 0154). |
+| paint | What one client draws a color as: a hex value, a gradient, a material. Each player chooses their own, and it lives only in that client's files and code (ADR 0154). |
