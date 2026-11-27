@@ -527,10 +527,11 @@ type makeMoveRequest struct {
 	Action     string `json:"action"`
 	Piece      string `json:"piece"`
 	Count      int    `json:"count"`
-	// Path is the positions the selection goes through, in order, the last of them To. With From and no
-	// Count they are the landings of a piece that hops from one to the next, and a client may draw each
-	// leg as a hop; with Count they are where a stack drops. A ruleset may also send positions that
-	// nothing moves through, with no From. Absent for a step, slide, leap or placement.
+	// Path is the positions the selection goes through, in order. With From and no Count they are the
+	// landings of a piece that hops from one to the next, the last of them To, and a client may draw each
+	// leg as a hop; with Count they are where a stack drops, the last of them To. A ruleset may also send
+	// positions that nothing moves through, with neither From nor To. Absent for a step, slide, leap or
+	// placement.
 	Path []string `json:"path"`
 	// Drops is the count dropped on each position of Path for a stack. A ruleset may use it for something
 	// else (one game sends what happens to each piece jumped): a client reads it only beside Count.

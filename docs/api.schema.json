@@ -2572,7 +2572,7 @@
           "type": "string"
         },
         "path": {
-          "description": "Path is the positions the selection goes through, in order, the last of them To. With From and no Count they are the landings of a piece that hops from one to the next, and a client may draw each leg as a hop; with Count they are where a stack drops. A ruleset may also send positions that nothing moves through, with no From. Absent for a step, slide, leap or placement.",
+          "description": "Path is the positions the selection goes through, in order. With From and no Count they are the landings of a piece that hops from one to the next, the last of them To, and a client may draw each leg as a hop; with Count they are where a stack drops, the last of them To. A ruleset may also send positions that nothing moves through, with neither From nor To. Absent for a step, slide, leap or placement.",
           "items": {
             "type": "string"
           },
@@ -2653,7 +2653,7 @@
           "type": "string"
         },
         "path": {
-          "description": "Path is the positions the selection goes through, in order, the last of them To. With From and no Count they are the landings of a piece that hops from one to the next, and a client may draw each leg as a hop; with Count they are where a stack drops. A ruleset may also send positions that nothing moves through, with no From. Absent for a step, slide, leap or placement.",
+          "description": "Path is the positions the selection goes through, in order. With From and no Count they are the landings of a piece that hops from one to the next, the last of them To, and a client may draw each leg as a hop; with Count they are where a stack drops, the last of them To. A ruleset may also send positions that nothing moves through, with neither From nor To. Absent for a step, slide, leap or placement.",
           "items": {
             "type": "string"
           },
@@ -2868,7 +2868,7 @@
           "type": "string"
         },
         "path": {
-          "description": "Path is the positions the selection goes through, in order, the last of them To. With From and no Count they are the landings of a piece that hops from one to the next, and a client may draw each leg as a hop; with Count they are where a stack drops. A ruleset may also send positions that nothing moves through, with no From. Absent for a step, slide, leap or placement.",
+          "description": "Path is the positions the selection goes through, in order. With From and no Count they are the landings of a piece that hops from one to the next, the last of them To, and a client may draw each leg as a hop; with Count they are where a stack drops, the last of them To. A ruleset may also send positions that nothing moves through, with neither From nor To. Absent for a step, slide, leap or placement.",
           "items": {
             "type": "string"
           },
