@@ -179,10 +179,10 @@ type legalMoveDTO struct {
 	// draws.
 	Captures []string `json:"captures,omitempty"`
 	// Converts are the positions whose pieces the selection turns over: they
-	// keep their place and change colour (Othello's flips). Absent as
+	// keep their place and change color (Othello's flips). Absent as
 	// captures are.
 	Converts []string `json:"converts,omitempty"`
-	// ConvertsTo is the colour word each of converts turns to, by position.
+	// ConvertsTo is the color word each of converts turns to, by position.
 	ConvertsTo map[string]string `json:"converts_to,omitempty"`
 }
 

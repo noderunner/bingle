@@ -49,7 +49,7 @@ func takes(game *catalog.CompiledGame, whose string, seat int, color string) boo
 	if whose == catalog.WhoseMover {
 		return ok && owner == seat
 	}
-	// The opponents' groups: any colour the mover does not play.
+	// The opponents' groups: any color the mover does not play.
 	return !ok || owner != seat
 }
 
@@ -59,7 +59,7 @@ type colorGroup struct {
 }
 
 // noLibertyGroups is every group in st with no empty position beside it: the
-// connected top pieces of one colour, through the board's adjacency.
+// connected top pieces of one color, through the board's adjacency.
 func noLibertyGroups(game *catalog.CompiledGame, st *BoardState) []colorGroup {
 	g := game.Board
 	seen := map[board.PositionID]bool{}

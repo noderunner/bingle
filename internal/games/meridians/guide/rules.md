@@ -2,7 +2,7 @@
 
 Meridians is a placement game by **Kanare Kato** (2021) for two players. Stones never move and are
 never captured one at a time: what kills a stone is **loneliness**. A group that can see no other
-group of its own colour comes off the board, and you win when your opponent has nothing left.
+group of its own color comes off the board, and you win when your opponent has nothing left.
 
 ## The board
 
@@ -34,7 +34,7 @@ stones are one group, so they do not see each other — a group needs a *differe
 did, the two would be one group with nobody to see.
 
 **Every turn after that**, lay a stone on an empty point that one of your own stones can see: along
-a straight line, with **no stone of the other colour in between**. (One of your own in the way makes
+a straight line, with **no stone of the other color in between**. (One of your own in the way makes
 no difference — that stone can see the same point along the same line.)
 
 **When your turn ends**, every group of *yours* that has no path comes off the board. This does not

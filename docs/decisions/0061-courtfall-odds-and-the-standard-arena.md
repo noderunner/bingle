@@ -38,7 +38,7 @@ game at the choice of Courts:
 It obeys every constraint of the draft (nothing in either deployment zone, the Eye Open, no two
 Hazards adjacent, no tile touching more than two special tiles) and **maps onto itself under a half
 turn of the board about the Eye**, so neither player has the better ground. Three Mire and three
-Hazard are odd numbers, so two tiles cannot have a partner of their own colour; those two sit on the
+Hazard are odd numbers, so two tiles cannot have a partner of their own color; those two sit on the
 middle row — the one row equally far from both deployment zones — and are each other's partners.
 Overgrowth comes in two pairs in opposite corners, because a pair is a screen worth shooting round;
 the two Hazards beside the Eye make the centre cost something to hold.

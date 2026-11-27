@@ -37,7 +37,7 @@ func kindOf(name string) uint8 {
 	return kNone
 }
 
-// Colours: the pawn is green, belonging to neither seat.
+// Colors: the pawn is green, belonging to neither seat.
 var sideColor = [3]string{"green", "white", "black"}
 
 func sideOf(color string) (uint8, bool) {

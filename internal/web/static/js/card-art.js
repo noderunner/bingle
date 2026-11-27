@@ -2,8 +2,8 @@
 // clubs) in the usual pip layouts, with the rank in two corners. A deck that
 // uses other symbols is drawn by cards.js with text, as before.
 //
-// A face is a 100×140 picture in the colour of its suit (currentColor): the
-// page sets the colour and the card's frame; this module draws what is inside.
+// A face is a 100×140 picture in the color of its suit (currentColor): the
+// page sets the color and the card's frame; this module draws what is inside.
 
 import { s } from "./util.js";
 
@@ -74,7 +74,7 @@ export function rankNumber(label) {
 
 /**
  * The face of a card: symbol is the suit's, label the rank as printed (an
- * integer or letters). The picture takes the colour of its container.
+ * integer or letters). The picture takes the color of its container.
  */
 export function cardFaceSvg(symbol, label) {
 	const n = rankNumber(label);

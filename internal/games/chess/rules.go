@@ -687,7 +687,7 @@ func (p *pos) legal() []move {
 
 // insufficient reports a position where neither side can ever win: in
 // chess and Chess960, kings alone, or with one minor piece, or with bishops
-// all on squares of one colour; in Atomic and Alice, kings alone. Drops
+// all on squares of one color; in Atomic and Alice, kings alone. Drops
 // keep Crazyhouse alive, and Antichess is won by losing everything.
 func (p *pos) insufficient() bool {
 	switch p.v {

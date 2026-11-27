@@ -9,7 +9,7 @@ import (
 	"github.com/noderunner/bingle/internal/engine/state"
 )
 
-// Notation: a placement is the colour, an @ and the cell (black@d4). In a
+// Notation: a placement is the color, an @ and the cell (black@d4). In a
 // confluence, "spore d3 d7" is a spore spread from d3 converting d7; "hyphae
 // d4 e4" starts a hyphae spread at the strand's end d4 by converting e4, and
 // "hyphae f4" converts f4 next in the spread under way; done ends that spread
@@ -40,7 +40,7 @@ func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Selecti
 	if i := strings.IndexByte(t, '@'); i >= 0 {
 		color, cell := t[:i], board.PositionID(t[i+1:])
 		if ownerOf(color) == 0 {
-			return state.Selection{}, fmt.Errorf("mycelium: unknown colour %q (black, green)", color)
+			return state.Selection{}, fmt.Errorf("mycelium: unknown color %q (black, green)", color)
 		}
 		if !game.Board.HasPosition(cell) {
 			return state.Selection{}, fmt.Errorf("mycelium: unknown cell %q", cell)
@@ -67,7 +67,7 @@ func (rs *Ruleset) Parse(game *catalog.CompiledGame, text string) (state.Selecti
 	return state.Selection{}, fmt.Errorf("mycelium: %q needs a node and the cell it converts", text)
 }
 
-// Gestures: a placement is the colour then the cell; a spread is the spreading
+// Gestures: a placement is the color then the cell; a spread is the spreading
 // node then the cell it converts (only the cell, for the next conversion of a
 // hyphae spread); done is an action. Which kind of spread a click makes is
 // never in doubt, because each phase of a confluence has only one kind.

@@ -32,7 +32,7 @@ What the three patience modes do, read from `patience.go`:
 |---|---|---|---|
 | Deck | 52 | 104 (1, 2 or 4 suits) | 52 |
 | Columns | 7, sizes 1–7, top card up | 10, sizes 6/5, top card up | 8, sizes 7/6, all up |
-| Build in a column | down, alternating colour | down, any suit | down, alternating colour |
+| Build in a column | down, alternating color | down, any suit | down, alternating color |
 | What moves | an ordered run | a run of one suit | a run as long as the free cells and empty columns allow |
 | Empty column takes | a king | anything | anything |
 | Foundations | 4, by suit, ace up | none: a whole king-to-ace run of one suit leaves the table | 4, by suit, ace up |
@@ -103,9 +103,9 @@ A game that declares other piles names them in the same pattern.
   Solitaire's `CanTakeBack` refuses to take it back. A declared game needs the same rule, worked out
   from the zones: a selection that makes a hidden card visible to the mover cannot be taken back.
   ADR 0119 left this for here. It is general, not patience's own, so it would be an ADR of its own.
-- **The colour of a suit.** Klondike and FreeCell alternate red and black. Solitaire reads colour from
+- **The color of a suit.** Klondike and FreeCell alternate red and black. Solitaire reads color from
   a suit's place in `suit_order` (odd and even), because a themed set of cards wears the suits by
-  place. A declared suit needs a colour class, or the vocabulary keeps the rule by place.
+  place. A declared suit needs a color class, or the vocabulary keeps the rule by place.
 - **Hints and search.** Solitaire orders its moves for the hint button (going home first, then moves
   that turn a card or empty a column) and tells search bots when a decision is not worth searching.
   A declaration either gets a generic order from the vocabulary, which knows these things, or loses
@@ -142,7 +142,7 @@ vocabulary later, not part of this one.
 3. **Bowling Solitaire becomes a game of its own**, in Go, before Solitaire converts.
 4. **The take-back rule is settled first**, as a general ADR: a declared selection that shows the
    mover a card they could not see cannot be taken back.
-5. **Suit colour stays by place** in `suit_order`, as now, so themed card sets keep working.
+5. **Suit color stays by place** in `suit_order`, as now, so themed card sets keep working.
 6. **A generic hint order** comes from the vocabulary: going home first, then moves that turn a card
    or empty a column, then the rest, with the stock last.
 7. **The page:** a declared patience game sends the view shape Solitaire sends today, and
@@ -161,7 +161,7 @@ These were the questions put to the maintainer; the answers are above.
 3. **Bowling:** a game of its own, or a ruleset variant of a declared base?
 4. **The take-back rule** for a selection that turns up a hidden card: agreed as a general ADR before
    the vocabulary? I'd recommend it, as it is the part of ADR 0119 that was left open.
-5. **Suit colour:** a `color_class` on suits, or kept by place?
+5. **Suit color:** a `color_class` on suits, or kept by place?
 6. **Hints:** a generic hint order from the vocabulary, or none for declared patience?
 7. **The page:** it draws Solitaire from the ruleset's view. A declared patience game would send the
    same `view.table` and `view.solitaire` shape, so `solitaire.js` can stay as it is. That would be
@@ -171,7 +171,7 @@ These were the questions put to the maintainer; the answers are above.
 
 1. An ADR for the take-back rule on revealed cards, built and tested on a small fixture.
 2. An ADR for the patience vocabulary: Klondike, Spider and FreeCell, with Yukon, Scorpion, Baker's
-   Dozen and Forty Thieves, suit colour by place, and the generic hint order.
+   Dozen and Forty Thieves, suit color by place, and the generic hint order.
 3. Build the vocabulary, with a fixture per family in `tests/`.
 4. Bowling Solitaire moved to a game of its own.
 5. Klondike, Spider and FreeCell declared beside the ruleset and checked by `tests/difftest`
@@ -189,11 +189,11 @@ These were the questions put to the maintainer; the answers are above.
 
 - 2026-11-06: opened. Read Solitaire's three patience modes into a table, sketched a parameter
   vocabulary with today's notation kept, and listed what the engine needs besides it: the take-back
-  rule on revealed cards, the colour of a suit, and hints. Also listed the families it would open,
+  rule on revealed cards, the color of a suit, and hints. Also listed the families it would open,
   the Bowling question and seven open questions. Awaiting the maintainer's review.
 - 2026-11-06: the maintainer settled the seven questions: a parameter vocabulary; the cheap
   neighbours (Yukon, Scorpion, Baker's Dozen, Forty Thieves) in the first ADR; Bowling as a game of
-  its own; the take-back rule as a general ADR first; suit colour by place; a generic hint order; and
+  its own; the take-back rule as a general ADR first; suit color by place; a generic hint order; and
   the page's patience view unchanged. Next: stage 1, the take-back ADR.
 - 2026-11-06: stage 1, ADR 0121 (#145, built in #146): a card turned up cannot be taken back.
   Stage 2, ADR 0122 (#147), and stage 3, its build (#148). The build's test turns each of

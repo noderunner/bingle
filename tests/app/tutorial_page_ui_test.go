@@ -109,14 +109,14 @@ func TestWebTutorial_PlaysThroughTheBloomsTutorial(t *testing.T) {
 	waitJS(t, ctx, "the bloom gone", stones+` === 5 && document.querySelector('#board .cell[data-position="g2"]').dataset.height === "0"`, 10*time.Second)
 	next()
 
-	// Step 8: the colour buttons stay where they are; red is picked out, yellow is inert.
+	// Step 8: the color buttons stay where they are; red is picked out, yellow is inert.
 	waitStep(t, ctx, "8")
 	waitJS(t, ctx, "red picked out", `!!document.querySelector('button[data-piece="red"].tutorial-target')`, 10*time.Second)
 	if !evalBool(t, ctx, `document.querySelector('button[data-piece="yellow"]').disabled`) {
 		t.Fatal("the yellow button is not inert")
 	}
 	if got := clickables(t, ctx); got != "" {
-		t.Fatalf("cells can be clicked before the colour is chosen: %q", got)
+		t.Fatalf("cells can be clicked before the color is chosen: %q", got)
 	}
 	clickSel(t, ctx, "#tutorial-show-hint")
 	waitJS(t, ctx, "the hint", `/Press Place on the red stone/.test((document.getElementById("tutorial-hint") || {}).textContent || "")`, 5*time.Second)
@@ -401,7 +401,7 @@ func TestWebTutorial_PlaysThroughTheMyceliumTutorial(t *testing.T) {
 			clickCellUntil(t, ctx, c, took, 10*time.Second)
 		}
 	}
-	colours := func(want string) {
+	colors := func(want string) {
 		t.Helper()
 		js := `[...document.querySelectorAll("#board .cell")].filter(c => c.dataset.height !== "0").map(c => c.dataset.position + ":" + c.querySelector("[data-color]").dataset.color[0]).sort().join(",")`
 		waitJS(t, ctx, "the nodes "+want, js+` === "`+want+`"`, 10*time.Second)
@@ -423,14 +423,14 @@ func TestWebTutorial_PlaysThroughTheMyceliumTutorial(t *testing.T) {
 	play("8", "b9")
 	play("9", "e5")
 	waitStep(t, ctx, "10")
-	colours("b8:b,b9:b,c8:g,d7:g,d8:g,e5:b,f2:g,f7:g,i4:b")
+	colors("b8:b,b9:b,c8:g,d7:g,d8:g,e5:b,f2:g,f7:g,i4:b")
 	next()
 	play("11", "i4", "f7")
 	play("12", "f7", "f2")
 	play("13", "b9", "c8")
 	play("14", "d8")
 	waitStep(t, ctx, "15")
-	colours("b8:b,b9:b,c8:b,d7:g,d8:b,e7:g,f2:b,f7:b,i4:b")
+	colors("b8:b,b9:b,c8:b,d7:g,d8:b,e7:g,f2:b,f7:b,i4:b")
 	next()
 	waitStep(t, ctx, "16")
 	next()

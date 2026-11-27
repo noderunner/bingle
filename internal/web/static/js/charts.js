@@ -1,4 +1,4 @@
-// Small inline-SVG charts for the batch reports. No dependencies; colours come
+// Small inline-SVG charts for the batch reports. No dependencies; colors come
 // from the stylesheet's custom properties so both themes work.
 
 import { s } from "./util.js";

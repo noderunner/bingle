@@ -30,7 +30,7 @@ lose. No game opts in: a new game with a standard deck has the sets the moment i
 **How a game maps onto a set.** Suits go by place: a game's suits, in `suit_order`, wear the first suits of
 the set, so a poker deck uses suits one to four. Ranks are the game's own: any integers and letters, with
 `rank_list` as the short way to write them. An integer from 2 to 10 lays out that many pips, 1 or A one large
-one, and anything else is a framed court card. Each joker has the colours of two suits (one and two, three
+one, and anything else is a framed court card. Each joker has the colors of two suits (one and two, three
 and four, and so on), and a game's first joker is the set's first; a second copy of one joker type is the next.
 
 **Everything is drawn in code.** As with the board themes, a set is vector art in `js/card-sets.js`, with no

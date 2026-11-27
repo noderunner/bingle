@@ -9,8 +9,8 @@ import (
 )
 
 // Validate checks that st is a position game could actually contain: every
-// occupied square exists, every piece type and colour is known, reserves name
-// real pools and colours, and no stack is taller than the board has pieces
+// occupied square exists, every piece type and color is known, reserves name
+// real pools and colors, and no stack is taller than the board has pieces
 // (a guard against absurd documents). It does not check reachability.
 func Validate(game *catalog.CompiledGame, st *BoardState) error {
 	g := game.Board
@@ -44,7 +44,7 @@ func Validate(game *catalog.CompiledGame, st *BoardState) error {
 				return fmt.Errorf("state: unknown piece type %q at %s", o.Piece, id)
 			}
 			if !onBoard[o.Color] {
-				return fmt.Errorf("state: unknown colour %q at %s", o.Color, id)
+				return fmt.Errorf("state: unknown color %q at %s", o.Color, id)
 			}
 		}
 	}
@@ -56,7 +56,7 @@ func Validate(game *catalog.CompiledGame, st *BoardState) error {
 	sort.Strings(colorNames)
 	for _, c := range colorNames {
 		if !colors[c] {
-			return fmt.Errorf("state: reserves for unknown colour %q", c)
+			return fmt.Errorf("state: reserves for unknown color %q", c)
 		}
 		for pool, n := range res[c] {
 			if _, ok := game.Definition.Reserves[pool]; !ok {

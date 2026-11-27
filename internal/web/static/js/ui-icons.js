@@ -1,6 +1,6 @@
 // The small line icons of the interface: the buttons of the bar at the top of
 // every page, and the rule book that stands for the word "Rules". They are
-// drawn as SVG paths in the current text colour, so they follow the theme and
+// drawn as SVG paths in the current text color, so they follow the theme and
 // need no files. Each takes a size in pixels (20 by default).
 //
 // Pictures of the games themselves are in each game's page script (ADR 0124):

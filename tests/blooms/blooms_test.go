@@ -66,8 +66,8 @@ func TestBoardSizesAndTargets(t *testing.T) {
 	}
 }
 
-// Warm opens with one stone of either colour; then a turn is one stone or two
-// of different colours, and done ends it after one. A ply is a turn.
+// Warm opens with one stone of either color; then a turn is one stone or two
+// of different colors, and done ends it after one. A ply is a turn.
 func TestOneStoneThenOneOrTwo(t *testing.T) {
 	g := gameFor(t, "blooms-4")
 	st := state.InitialState(g)
@@ -183,6 +183,6 @@ func TestARulesetPositionConverts(t *testing.T) {
 	}
 	l := legal(g, st, 2)
 	if !slices.Contains(l, "done") || slices.Contains(l, "blue@"+string(cells[9])) || !slices.Contains(l, "black@"+string(cells[9])) {
-		t.Fatal("the turn halfway through does not go on with the other colour")
+		t.Fatal("the turn halfway through does not go on with the other color")
 	}
 }

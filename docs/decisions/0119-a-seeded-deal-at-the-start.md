@@ -2,7 +2,7 @@
 
 Status: accepted (2026-11-06). It is addition D of the DSL coverage audit (`docs/history/dsl-coverage-audit-plan.md`
 on `more-plans`), after additions A to C ([ADR 0115](0115-a-declared-turn-of-several-selections.md),
-[0116](0116-effects-at-the-end-of-a-turn.md), [0117](0117-groups-by-colour-enemies-by-seat.md)).
+[0116](0116-effects-at-the-end-of-a-turn.md), [0117](0117-groups-by-color-enemies-by-seat.md)).
 
 ## Context
 

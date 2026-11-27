@@ -1,10 +1,10 @@
 // Package blooms ships Blooms (Nick Bentley, 2018): a Go-like game on a
-// hexagonal board where each player has two colours of stone, places one or
-// two stones of different colours per turn, and wins by being the first to
+// hexagonal board where each player has two colors of stone, places one or
+// two stones of different colors per turn, and wins by being the first to
 // capture a set number of enemy stones. A "bloom" is a connected group of one
-// colour; it is captured when it has no empty space beside it.
+// color; it is captured when it has no empty space beside it.
 //
-// The rules are declared in blooms.yaml: two colours a seat (ADR 0117), a turn
+// The rules are declared in blooms.yaml: two colors a seat (ADR 0117), a turn
 // of one or two stones (ADR 0115), captures when a turn ends (ADR 0116) and a
 // move limit decided on captures (ADR 0118). Until 0.6.0 they were a Go
 // ruleset; upgrade.go converts the positions it stored. The game has no

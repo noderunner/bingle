@@ -41,7 +41,7 @@ type File struct {
 	// board lacks are left out.
 	Preview []dsl.SetupEntry `json:"preview,omitempty"`
 	// Data is what the game's page script reads and nothing else does, in a
-	// shape of the script's own: Cthulhu Wars' colour for each area and where
+	// shape of the script's own: Cthulhu Wars' color for each area and where
 	// its glyphs are printed. Nothing checks it but the script; variants
 	// patch it like the rest.
 	Data map[string]any `json:"data,omitempty"`
@@ -71,12 +71,12 @@ type BadgeIcon struct {
 
 // Seat is how a seat is drawn.
 type Seat struct {
-	// Blend is the two colours a seat that plays both is drawn in, as a
+	// Blend is the two colors a seat that plays both is drawn in, as a
 	// gradient on its swatch and label.
 	Blend []string `json:"blend,omitempty"`
 }
 
-// Piece is how a piece type is drawn. A piece type's own colour (Blooms'
+// Piece is how a piece type is drawn. A piece type's own color (Blooms'
 // stones) is not here: the rules read it to say whose the piece is (ADR 0117),
 // so it stays in the definition.
 type Piece struct {
@@ -91,7 +91,7 @@ type Piece struct {
 type Board struct {
 	// Style is squares, points, none, free or areas.
 	Style string `json:"style,omitempty"`
-	// Borders tints board edges: region name -> seat colour.
+	// Borders tints board edges: region name -> seat color.
 	Borders map[string]string `json:"borders,omitempty"`
 	// Art is a picture of the printed board, a path among the game's own
 	// files, for the game's page script to draw it behind an areas board (the
@@ -131,7 +131,7 @@ type Cards struct {
 	Suits map[string]SuitColor `json:"suits,omitempty"`
 }
 
-// CardBack is how the backs of the cards look: a colour, and a word printed
+// CardBack is how the backs of the cards look: a color, and a word printed
 // on them (Nyet!'s).
 type CardBack struct {
 	Color string `json:"color,omitempty"`
@@ -153,7 +153,7 @@ var pictureFile = regexp.MustCompile(`(?i)\.(png|jpe?g|webp|svg)$`)
 
 var layouts = map[string]bool{"fan": true, "row": true, "stack": true, "splay": true, "grid": true}
 
-// SuitColor is the colour a suit is drawn in, where the rules do not read it.
+// SuitColor is the color a suit is drawn in, where the rules do not read it.
 type SuitColor struct {
 	Color string `json:"color,omitempty"`
 }
@@ -169,7 +169,7 @@ type Display struct {
 
 // Mark is how one tint or badge is drawn.
 type Mark struct {
-	// Color is a CSS colour.
+	// Color is a CSS color.
 	Color string `json:"color,omitempty"`
 	// Glyph is a short text mark.
 	Glyph string `json:"glyph,omitempty"`
@@ -204,7 +204,7 @@ func MustLoadFile(fsys fs.FS, name string) []byte {
 // Check holds the file (as Load returned it) to the definitions of the
 // family's games: every seat, piece, tint, badge, zone and suit it names must
 // be the game's, every variant it patches one of the family, and the preview
-// made of the game's pieces in colours that are played. games maps each of
+// made of the game's pieces in colors that are played. games maps each of
 // the family's games, by id, to the game compiled.
 func Check(data []byte, family string, games map[string]*catalog.CompiledGame) error {
 	var f File
@@ -359,7 +359,7 @@ func (f File) check(cg *catalog.CompiledGame) error {
 		}
 	}
 	if f.Board != nil {
-		// A border may be any colour: a seat's (Hex's edges) or none's
+		// A border may be any color: a seat's (Hex's edges) or none's
 		// (Brandubh's corners).
 		for region := range f.Board.Borders {
 			if _, ok := cg.Board.Region(region); !ok && def.Board.Regions[region] == nil {

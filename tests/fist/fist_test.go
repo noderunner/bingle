@@ -335,7 +335,7 @@ func TestNotationRoundTripAndRandomGamesFinish(t *testing.T) {
 
 // A move says which pieces it takes off the board, before it is played and
 // once it is (#269): the pinned piece, each piece a jump captures, and not one
-// an ace converts (it stays, in the ace's colour), which is among what the
+// an ace converts (it stays, in the ace's color), which is among what the
 // move turns over instead (#293).
 func TestMovesReportWhatTheyCapture(t *testing.T) {
 	g := game(t)

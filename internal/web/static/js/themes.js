@@ -4,7 +4,7 @@
 //
 // Every theme keeps the same idea for the two sides: the first player's stones
 // are warm (reds, golds, oranges, cream) and the second player's cold (blues,
-// violets, near-black), whatever the colour names of the game say, so the
+// violets, near-black), whatever the color names of the game say, so the
 // players can be told apart at a glance in any theme. (A game whose sides are
 // "white" and "black" gets a warm light and a cold dark stone.)
 //
@@ -30,7 +30,7 @@ function hex(c) {
 	return "#" + c.map((v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, "0")).join("");
 }
 
-/** Mixes two #rrggbb colours: t = 0 is a, t = 1 is b. */
+/** Mixes two #rrggbb colors: t = 0 is a, t = 1 is b. */
 function mix(a, b, t) {
 	const x = rgb(a);
 	const y = rgb(b);
@@ -134,11 +134,11 @@ function frameClip(w, h) {
 }
 
 // ---------------------------------------------------------------------------
-// The palette of a stone: mid colour, highlight, shadow, rim and glow
+// The palette of a stone: mid color, highlight, shadow, rim and glow
 // ---------------------------------------------------------------------------
 
 /**
- * A stone palette from its main colour; every part can be set by hand.
+ * A stone palette from its main color; every part can be set by hand.
  * `hi` is the highlight of the gradient, `lo` its shade, `rim` the outline.
  */
 function stone(mid, o = {}) {
@@ -303,7 +303,7 @@ function stoneDefs(t) {
 				s("stop", { offset: "1", "stop-color": st.lo })
 			)
 		);
-		// A soft glow in the colour of the stone, or a plain shadow.
+		// A soft glow in the color of the stone, or a plain shadow.
 		out.push(
 			s(
 				"filter",
@@ -650,7 +650,7 @@ function celticFrame(w, h, m) {
 
 // ---- Southwestern Solstice ----------------------------------------------
 
-/** A band of diamonds and zigzags in the colours of a Navajo blanket. */
+/** A band of diamonds and zigzags in the colors of a Navajo blanket. */
 function diamondBand(L, T) {
 	const g = s("g", {});
 	g.append(s("rect", { width: L, height: T, rx: 3, fill: "#2a120a" }));

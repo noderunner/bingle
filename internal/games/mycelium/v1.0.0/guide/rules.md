@@ -10,14 +10,14 @@ in 2024. It is still being playtested, and Bingle is one of the places it is tes
 
 ## Normal turns
 
-The board starts empty and Black places first. On your turn, place one node of your colour on any
+The board starts empty and Black places first. On your turn, place one node of your color on any
 empty cell.
 
 A node placed on the **centre** (e5) starts a **confluence**. Normal turns stop until it is over.
 
 ## Clusters and strands
 
-A **cluster** is a connected group of nodes of one colour.
+A **cluster** is a connected group of nodes of one color.
 
 - A **spore cluster** touches no enemy node.
 - A **hyphae cluster** touches at least one enemy node.
@@ -43,7 +43,7 @@ size, are looked at when its turn comes, so conversions earlier in the confluenc
 ### Spore spread
 
 Choose a node of the spore cluster and a straight line from it across empty cells. The first enemy
-node along that line becomes your colour. The node that spreads stays where it is.
+node along that line becomes your color. The node that spreads stays where it is.
 
 ### Hyphae spread
 
@@ -68,7 +68,7 @@ During a confluence, the board tints the nodes that have spread in the current p
 
 When neither phase has anything left to spread:
 
-- The node on the centre is removed, whichever colour it is.
+- The node on the centre is removed, whichever color it is.
 - A player with no nodes left loses.
 - If neither player has any nodes left, the player who took the centre loses.
 - Otherwise, the player who did not take the centre places the next node.

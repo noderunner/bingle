@@ -66,7 +66,7 @@ actions:
 
 Onitama is won by capturing the other Master, and both Masters are the same piece type. The `absent` win rule fires
 when a piece type has left the board altogether; it gains **`of_seat`** (`of` was taken: connect rules list regions under it), a seat: the rule fires when no piece of that type
-**in that seat's colours** is left.
+**in that seat's colors** is left.
 
 ```yaml
 - {id: stone-red, type: absent, piece: master, of_seat: 2, seat: 1, reason: master-captured}

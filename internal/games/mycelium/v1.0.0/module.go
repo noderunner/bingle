@@ -3,7 +3,7 @@
 // the centre triggers a confluence turn in which clusters spread and convert
 // enemy nodes. Mycelium has no secrets and no chance.
 //
-// mycelium.yaml describes the board, seats and the two node colours; the Go
+// mycelium.yaml describes the board, seats and the two node colors; the Go
 // ruleset implements the confluence turn and the conversion mechanics.
 package mycelium
 

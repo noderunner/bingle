@@ -15,7 +15,7 @@ You win by making any one of these shapes out of your own pieces:
 ## How to play
 
 1. The board is a hexagon of hexagonal cells. The game here is played on a base of **8** cells to a side, with 4, 6 and 10 as other sizes. White goes first and the players alternate.
-2. On your turn, place **one piece** of your colour on any empty cell.
+2. On your turn, place **one piece** of your color on any empty cell.
 3. Pieces never move and are never removed.
 4. The first player to complete a ring, a bridge or a fork wins, even if the same move completes more than one of them.
 5. If the board fills up with no winner, the game is a draw.
@@ -29,7 +29,7 @@ The three goals pull in different directions. A ring is made in the middle of th
 The player who moves first has an advantage, so a table may play with the **pie rule** (tick
 *Pie rule* when the game is made). Instead of answering the opening move, the second player
 may **swap sides** on their first turn: the players change seats — nothing on the board moves
-or changes colour — and the first player answers their own opening from the other side. It is then in the first player's interest to open with a move that is neither too
+or changes color — and the first player answers their own opening from the other side. It is then in the first player's interest to open with a move that is neither too
 strong nor too weak. The move is `swap`.
 
 ## Move notation

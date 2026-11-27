@@ -14,7 +14,7 @@ moved; a casual game still wants a polite way to say "may I take that back?".
 * A game may record its own start: `games.initial_state` (a position document)
   and `games.initial_turn_seat`. Empty means the definition's setup. Creation
   takes `start_tps` (PTN games) or `start_state` + `start_seat`; both go
-  through `state.Validate` (squares, pieces, colours, reserves must exist) and
+  through `state.Validate` (squares, pieces, colors, reserves must exist) and
   are rejected if the position is already decided.
 * Everything that used "the initial position" now asks the game: replay at
   `seq 0`, undo to the start, the first mover when the seats fill, export (the

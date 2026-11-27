@@ -7,7 +7,7 @@ Status: accepted (2026-10-27)
 `bingle_tasks.md` asked for one thing: "Implement the abstract game Meridians by Kanare Kato."
 
 Meridians (2021) is a two-player placement game with an unusual death rule: nothing is captured
-stone by stone, but a **group that can see no other group of its own colour is taken off the
+stone by stone, but a **group that can see no other group of its own color is taken off the
 board**. It won the Board Game Geek abstract forum's award for the best combinatorial two-player
 game of its year. There is no single authoritative text online; the rules here follow the Board
 Game Arena implementation's description (which that site says is more precise than its own rules
@@ -36,7 +36,7 @@ stones are on the board, and `Data` holds whose turn it is, how many turns each 
 ended.
 
 **Where the removal happens.** The source rules put it at the *start* of a turn: "remove all dead
-groups of the opposing colour; skip this if your opponent has taken fewer than two turns". This
+groups of the opposing color; skip this if your opponent has taken fewer than two turns". This
 implementation removes **the mover's own dead groups when their turn ends**, which is the same thing
 one step earlier — nothing happens between a player's placement and the next player's turn — and
 leaves the board always settled, with no dead stones sitting on it for a turn. That matters for the

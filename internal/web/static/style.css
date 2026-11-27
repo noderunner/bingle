@@ -49,7 +49,7 @@
 	--piece-purple-fill: #9b6bd6;
 	--piece-sand-fill: #b0a56a;
 	--piece-teal-fill: #2aa6ae;
-	--piece-brown-fill: #ea8bab; /* the Tcho-Tcho, the only seats of this colour id: pink on the table */
+	--piece-brown-fill: #ea8bab; /* the Tcho-Tcho, the only seats of this color id: pink on the table */
 	--piece-grey-fill: #a3a19b;
 	--piece-orange-stroke: #6b3a0a;
 	--piece-purple-stroke: #34185e;
@@ -1000,7 +1000,7 @@ kbd { font: 600 0.8em ui-monospace, Menlo, Consolas, monospace; border: 1px soli
 
 .unit-text { margin: 0.2rem 0 0.4rem; }
 
-/* The log: seat names in their colours, the verb in bold. */
+/* The log: seat names in their colors, the verb in bold. */
 .events { font-size: 0.86rem; max-height: 22rem; overflow: auto; }
 .log-actor { display: flex; align-items: center; gap: 0.4rem; margin: 0.45rem 0 0.1rem; padding-top: 0.3rem; border-top: 1px solid var(--border); }
 .log-actor:first-child { border-top: 0; margin-top: 0; padding-top: 0; }
@@ -1354,7 +1354,7 @@ button.deal-seed { font: inherit; font-variant-numeric: tabular-nums; padding: 0
 .log-since-button:hover { background: var(--accent-soft); }
 .log-since::before, .log-since::after { content: ""; flex: 1; border-top: 2px solid var(--accent); }
 
-/* A player with no connection: the box fades and a word says why. Colour alone would not. */
+/* A player with no connection: the box fades and a word says why. Color alone would not. */
 .seat-conn:empty { display: none; }
 .seat-strip.disconnected .seat-head .swatch, .seat-strip.disconnected .seat-head .seat-icon { opacity: 0.4; }
 
@@ -1409,7 +1409,7 @@ body.fit-screen .play-screen.boardless { justify-content: stretch; grid-template
 .play-screen.boardless .card-table { margin: 0; }
 .play-screen.boardless .card-table:not(.sol-table) { --cw: clamp(66px, min(13cqh, 5.5cqw), 110px); --ch: calc(var(--cw) * 1.39); }
 body.fit-screen .sol-top, body.fit-screen .sol-columns { --cw: min(112px, 14cqh, calc((100cqw - (var(--n, 7) - 1) * var(--gap)) / var(--n, 7))); }
-/* A seat's name in its two colours (seatWord in js/game.js). */
+/* A seat's name in its two colors (seatWord in js/game.js). */
 .seat-word { font-weight: 700; color: transparent; -webkit-background-clip: text; background-clip: text; }
 /* The little padding keeps the outline of a card clear of the column's edge. */
 .play-rail { position: relative; min-height: 0; overflow-y: auto; overscroll-behavior: contain; gap: 0.6rem; padding: 3px; scrollbar-gutter: stable; }
@@ -1624,7 +1624,7 @@ body.m-mode .options-window { top: 0; left: 0; right: 0; bottom: 0; width: auto;
 .pc-svg .pc-svg-ring, .pc-svg .pc-svg-frame { fill: none; stroke: currentColor; stroke-width: 1.6; opacity: .4; }
 .suit-icon { display: inline-block; vertical-align: middle; }
 .suit-icon path, .suit-icon circle { fill: currentColor; }
-/* Themed sets of cards (js/card-sets.js draws them; a card or a chip sets the colours). */
+/* Themed sets of cards (js/card-sets.js draws them; a card or a chip sets the colors). */
 .pcard.face.themed { background: var(--paper); border-color: var(--edge); color: var(--suit); }
 .pcard.back.themed { background: none; border: 1.5px solid rgba(255, 255, 255, 0.55); overflow: hidden; display: inline-block; }
 .pcard .ts-svg { display: block; width: 100%; height: 100%; }
@@ -1712,10 +1712,10 @@ button.sol-stock { cursor: pointer; }
 .victory-ancient .victory-banner { color: #ffe39a; font-family: Georgia, serif; }
 .victory-atomic .victory-banner { color: #ffd23f; font-style: italic; }
 @keyframes victory-banner { from { transform: scale(.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-.sol-colour { position: absolute; top: 2%; right: 7%; font: 700 calc(var(--cw, 66px) * 0.24) / 1 system-ui, sans-serif; background: #fffdf6; border-radius: 3px; padding: 0 1px; }
+.sol-color { position: absolute; top: 2%; right: 7%; font: 700 calc(var(--cw, 66px) * 0.24) / 1 system-ui, sans-serif; background: #fffdf6; border-radius: 3px; padding: 0 1px; }
 .sol-ghost { position: fixed; z-index: 50; pointer-events: none; width: var(--cw); }
 .sol-ghost .pcard { box-shadow: 0 10px 24px rgba(0,0,0,.45); }
-.sol-ghost .sol-colour { font-size: calc(var(--cw) * 0.24); }
+.sol-ghost .sol-color { font-size: calc(var(--cw) * 0.24); }
 .sol-preview { padding: 6px; margin: 0; pointer-events: none; }
 .setup-preview .sol-preview svg { height: 100%; }
 .setup-preview:has(.sol-preview) { max-width: none; }

@@ -3,7 +3,7 @@
 
     python3 scripts/botdiagrams.py
 
-Every picture is a self-contained SVG with its own opaque colours, so it reads
+Every picture is a self-contained SVG with its own opaque colors, so it reads
 the same on the light and the dark page — the same rule the rules guides follow
 (see guide_lib.py, which this borrows).
 """
@@ -95,11 +95,11 @@ def strength():
         ("mcts", 0.9, BLUE, "thousands of random finishes, spent on the moves that look best"),
     ]
     x0, w = 120, 470
-    for i, (name, frac, colour, note) in enumerate(rows):
+    for i, (name, frac, color, note) in enumerate(rows):
         y = 60 + i * 58
         s.text(x0 - 12, y + 11, name, size=14, fill=INK, anchor="end")
         s.rect(x0, y, w, 22, fill="#efe9dc", stroke=None, rx=11)
-        s.rect(x0, y, max(22, w * frac), 22, fill=colour, stroke=INK, sw=1.2, rx=11)
+        s.rect(x0, y, max(22, w * frac), 22, fill=color, stroke=INK, sw=1.2, rx=11)
         s.text(x0 + 4, y + 40, note, size=12, fill=MUTED, anchor="start", weight="400")
     s.text(x0 + w / 2, 40, "how much of the game it looks at before moving", size=13, fill=MUTED)
     return s

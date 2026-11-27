@@ -437,7 +437,7 @@ func (c *Code) penalty() int {
 }
 
 // SVG draws the code with a quiet zone of four modules, each module a unit
-// of the viewBox, dark on light whatever the page's colours.
+// of the viewBox, dark on light whatever the page's colors.
 func (c *Code) SVG() string {
 	var b strings.Builder
 	q := 4

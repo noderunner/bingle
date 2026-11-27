@@ -8,7 +8,7 @@ shapes. A benchmark also needs positions with a known right answer.
 ## Decision
 
 * `state.EncodePlanes` produces a viewer-relative tensor: one-hot channels per
-  stack depth, colour (me / opponent) and piece type, a stack-height plane,
+  stack depth, color (me / opponent) and piece type, a stack-height plane,
   reserve fractions, side-to-move and ply. Channel names travel with the data
   and `env_spec` publishes the layout, so nothing is implicit.
 * `state.ActionSpaceOf` enumerates every move a game can express on its board

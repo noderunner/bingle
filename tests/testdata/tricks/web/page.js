@@ -1,6 +1,6 @@
 // Tricks' page script (tests/testdata/tricks): the pictures of its board of
 // choices and of its players, so the tests see a game's own drawing asked for
-// them (ADR 0124). Every picture is a 32×32 SVG in the colour of the text.
+// them (ADR 0124). Every picture is a 32×32 SVG in the color of the text.
 
 import { s } from "/static/js/util.js";
 import { currentCardSet, setSuitIcon } from "/static/js/card-sets.js";
@@ -11,7 +11,7 @@ const svg = (cls, title, ...kids) => {
 };
 const text = (str, size = 16) => s("text", { x: 16, y: 16, "font-size": size, "text-anchor": "middle", "dominant-baseline": "central" }, str);
 
-/** A player's picture: the initial of the seat's label on a disc in the seat's colour. */
+/** A player's picture: the initial of the seat's label on a disc in the seat's color. */
 export function seatIcon(label, { color = "", size = 22, title = "" } = {}) {
 	if (!label) return null;
 	const el = s("svg", { viewBox: "0 0 32 32", width: size, height: size, class: `tricks-seat color-${color}`, role: "img", "aria-label": title || label });

@@ -142,7 +142,7 @@ func TestOpeningOnTheCentreLoses(t *testing.T) {
 	}
 }
 
-// The spreading spore stays put and the node it sees changes colour. The
+// The spreading spore stays put and the node it sees changes color. The
 // converted node is a new cluster and spreads in turn; a cluster that has
 // spread does not spread again, so a player with nothing left lets the other
 // spread twice running.

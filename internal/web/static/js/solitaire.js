@@ -18,9 +18,9 @@ function zonesOf(view) {
 }
 
 /**
- * A card that says which colour it counts as. A themed set's suits are not red and
- * black, and where colours are the rule a player has to be able to tell at a glance;
- * a set whose colours alternate as red and black do shows it already.
+ * A card that says which color it counts as. A themed set's suits are not red and
+ * black, and where colors are the rule a player has to be able to tell at a glance;
+ * a set whose colors alternate as red and black do shows it already.
  */
 function face(ctx, id) {
 	const node = cardFace(ctx.info, id);
@@ -28,7 +28,7 @@ function face(ctx, id) {
 	if (set && !set.alternates) {
 		const t = (ctx.info.cards.types || []).find((x) => x.id === String(id).split("#")[0]);
 		const suit = t ? ctx.info.cards.suits[t.suit] : null;
-		if (suit) node.append(h("span", { class: "sol-colour", style: `color: ${suit.color}`, "aria-hidden": "true" }, suit.symbol));
+		if (suit) node.append(h("span", { class: "sol-color", style: `color: ${suit.color}`, "aria-hidden": "true" }, suit.symbol));
 	}
 	return node;
 }

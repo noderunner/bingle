@@ -2,6 +2,14 @@
 
 Ce qui a changé dans Bingle, du plus récent au plus ancien. Bingle Core (le serveur, le moteur et le client web) et chaque jeu ont leur propre version, et chaque entrée dit lesquels ont changé. Les entrées antérieures à la 0.124.0 ne sont qu’en anglais.
 
+## 0.142.2 - 2026-11-27
+
+### Bingle Core 0.142.2
+- Le mot « color » s’écrit de la même façon partout dans l’interface (API 1.20.2)
+
+### Amazons 0.3.2, Ataxx 0.3.2, Blooms 0.6.3, Chess 0.2.3, Fendo 0.1.4, Fist 0.1.5, Go 0.3.2, Gomoku 0.3.2, Havannah 0.3.3, Hex 0.3.2, Meridians 0.1.5, Othello 0.4.1, Pente 0.3.2, Solitaire 0.4.1, Tak 0.1.2 and Yavalath 0.3.2
+- Les guides écrivent « color » à l’américaine
+
 ## 0.142.1 - 2026-11-27
 
 ### Bingle Core 0.142.1

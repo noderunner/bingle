@@ -2,7 +2,7 @@
 id: chess
 name: Chess
 description: 'Checkmate the other king. The classic game of two armies on an 8×8 board, with castling, en passant and promotion.'
-version: 0.2.2
+version: 0.2.3
 engine: ruleset
 rules:
   - 'Chess is played on an 8×8 board. White moves first, then the players take turns. You win by checkmating the other king: attacking it so that no move can save it.'
@@ -39,10 +39,10 @@ variants:
   - id: chess-960
     name: Chess960
     patch:
-      description: 'Chess with the pieces of the first rank shuffled, one of 960 ways: the king between the rooks and the bishops on squares of both colours, the same for both sides.'
+      description: 'Chess with the pieces of the first rank shuffled, one of 960 ways: the king between the rooks and the bishops on squares of both colors, the same for both sides.'
       params: {variant: '960'}
       rules:
-        - 'Chess960 (Fischer Random Chess) is chess with the first rank shuffled at the start: one of 960 arrangements, with the bishops on squares of both colours and the king somewhere between the rooks. Black mirrors White. Every other rule is the rule of chess.'
+        - 'Chess960 (Fischer Random Chess) is chess with the first rank shuffled at the start: one of 960 arrangements, with the bishops on squares of both colors and the king somewhere between the rooks. Black mirrors White. Every other rule is the rule of chess.'
         - 'Castling: the king goes to the g file and the rook to the f file (king''s side), or the king to the c file and the rook to the d file (queen''s side), wherever they started. Neither may have moved, every square between where they start and where they end must be empty but for the two of them, and the king may not be in check, cross an attacked square or land on one.'
         - 'The game is won by checkmate and drawn by stalemate, by the same position three times, after fifty moves each without a capture or a pawn move, and when neither side has the pieces left to checkmate.'
       guide:
@@ -56,7 +56,7 @@ variants:
       params: {variant: crazyhouse}
       reserves: {pawn: 0, knight: 0, bishop: 0, rook: 0, queen: 0}
       rules:
-        - 'Crazyhouse is chess where a captured piece joins the capturer''s hand, turned to their colour. On your turn you may either move or drop a piece from your hand onto any empty square.'
+        - 'Crazyhouse is chess where a captured piece joins the capturer''s hand, turned to their color. On your turn you may either move or drop a piece from your hand onto any empty square.'
         - 'A pawn may not be dropped on the first or last rank. A piece that was promoted goes to the hand as a pawn when it is captured. A drop may give check and even checkmate.'
         - 'The game is won by checkmate and drawn by stalemate and by the same position three times (with the same hands). There is no fifty-move rule.'
       guide:

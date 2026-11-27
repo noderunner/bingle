@@ -92,7 +92,7 @@ func (e *pat) suit(c cards.Card) string {
 	return ""
 }
 
-// place is a suit's place in suit_order: its colour is the place's parity.
+// place is a suit's place in suit_order: its color is the place's parity.
 func (e *pat) place(c cards.Card) int {
 	s := e.suit(c)
 	for i, id := range e.game.Cards.Suits {

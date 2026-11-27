@@ -13,8 +13,8 @@ import (
 	"github.com/noderunner/bingle/internal/engine/state"
 )
 
-// blooms is a small Blooms: two colours a seat, one or two stones of
-// different colours a turn, fenced enemy blooms taken when the turn ends,
+// blooms is a small Blooms: two colors a seat, one or two stones of
+// different colors a turn, fenced enemy blooms taken when the turn ends,
 // and a win at target captures.
 func blooms(setup []any, target int, edit func(map[string]any)) map[string]any {
 	disc := func(c string) map[string]any { return map[string]any{"color": c, "code": strings.ToUpper(c[:2])} }

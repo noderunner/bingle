@@ -2,7 +2,7 @@
 id: go-9x9
 name: Go (9×9)
 description: 'Surround territory and capture groups of stones in the classic board game of Go: liberties, ko, passing and area scoring, on a 9×9, 13×13 or 19×19 board.'
-version: 0.3.1
+version: 0.3.2
 rules:
   - Black and White alternate placing a stone on an empty intersection; Black moves first. Stones never move.
   - A group is a set of orthogonally connected stones of one color. Its liberties are the empty intersections next to it. A group left with no liberties is captured and removed.

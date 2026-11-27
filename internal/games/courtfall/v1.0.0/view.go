@@ -34,7 +34,7 @@ type View struct {
 	Prompt string `json:"prompt"`
 	// Impulse is what the seat on impulse is asked to choose, without its name.
 	Impulse string `json:"impulse,omitempty"`
-	// Tints colours hexes by legend key; Badges marks hexes; Notes are
+	// Tints colors hexes by legend key; Badges marks hexes; Notes are
 	// hover texts.
 	Tints  map[string]string   `json:"tints,omitempty"`
 	Badges map[string][]string `json:"badges,omitempty"`

@@ -4,6 +4,14 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.142.2 - 2026-11-27
+
+### Bingle Core 0.142.2
+- Color is spelled the same way throughout the interface (API 1.20.2)
+
+### Amazons 0.3.2, Ataxx 0.3.2, Blooms 0.6.3, Chess 0.2.3, Fendo 0.1.4, Fist 0.1.5, Go 0.3.2, Gomoku 0.3.2, Havannah 0.3.3, Hex 0.3.2, Meridians 0.1.5, Othello 0.4.1, Pente 0.3.2, Solitaire 0.4.1, Tak 0.1.2 and Yavalath 0.3.2
+- The guides spell color the American way
+
 ## 0.142.1 - 2026-11-27
 
 ### Bingle Core 0.142.1
@@ -12,7 +20,7 @@ what the help window shows under *Recent changes*, so it is written for the peop
 ## 0.142.0 - 2026-11-27
 
 ### Bingle Core 0.142.0
-- A move you are about to make also says which colour each piece it turns over will become, for apps to show (API 1.20.0)
+- A move you are about to make also says which color each piece it turns over will become, for apps to show (API 1.20.0)
 
 ## 0.141.0 - 2026-11-27
 
@@ -693,7 +701,7 @@ what the help window shows under *Recent changes*, so it is written for the peop
 ## 0.84.0 - 2026-11-06
 
 ### Bingle Core 0.84.0
-- **For game authors: a seat with several colours.** A game definition can now give a seat more than one colour, as Blooms gives Warm red and yellow. A stone is placed in its own colour, counts as its seat's for moving, capturing and winning, and a group is still one colour, so a player never captures their own stones of the other colour. Games already in the catalog play as before. See *seats, pieces, setup* in the definition guide.
+- **For game authors: a seat with several colors.** A game definition can now give a seat more than one color, as Blooms gives Warm red and yellow. A stone is placed in its own color, counts as its seat's for moving, capturing and winning, and a group is still one color, so a player never captures their own stones of the other color. Games already in the catalog play as before. See *seats, pieces, setup* in the definition guide.
 
 ## 0.83.1 - 2026-11-06
 
@@ -787,7 +795,7 @@ what the help window shows under *Recent changes*, so it is written for the peop
 ### Cthulhu Wars 0.14.0
 - **Every core Great Old One has its moment.** The first time each awakens: **Nyarlathotep** condenses out of the shadows as pale eyes open around him, the **King in Yellow** rises through the trap of a rotting theatre with the Yellow Sign burning behind him, **Hastur** comes from a point in the abyss as the stars are dragged into a spiral, and **Shub-Niggurath** heaves up out of a swamp, with mouths opening all over her.
 - **Watch them again** from their badges in the history.
-- **Easier to read battle dice.** Dice are now in the colour of the faction rolling them, and Kills and Pains stand out clearly on every colour.
+- **Easier to read battle dice.** Dice are now in the color of the faction rolling them, and Kills and Pains stand out clearly on every color.
 
 ## 0.73.0 - 2026-11-05
 
@@ -825,7 +833,7 @@ what the help window shows under *Recent changes*, so it is written for the peop
 
 ### Cthulhu Wars 0.12.0
 - **Cthulhu Emerges.** The first time Cthulhu is awakened, the map zooms in, the sea rises, the drowned city breaks the surface, and he comes up out of the water, wings unfolding, until his eyes open.
-- **Watch it again.** The history marks each Great Old One's first awakening with a badge in its cult's colour. Press *Cthulhu Emerges* to play it again. The other Great Old Ones get their shows later.
+- **Watch it again.** The history marks each Great Old One's first awakening with a badge in its cult's color. Press *Cthulhu Emerges* to play it again. The other Great Old Ones get their shows later.
 
 ## 0.68.0 - 2026-11-04
 
@@ -856,7 +864,7 @@ what the help window shows under *Recent changes*, so it is written for the peop
 ### Cthulhu Wars 0.11.0
 - **Shorter names in the lists.** Public Lobbies and Active Games say *Cthulhu Wars* and the room code. Badges say the rest, where they apply: *Core only*, the map if it is not the usual one, *Neutral units* and *High Priests*.
 - **The real map in the rules.** The rules show the painted map, with the name of each area on it.
-- **Faction glyphs in the lobby**, in place of the coloured squares.
+- **Faction glyphs in the lobby**, in place of the colored squares.
 - **A tidier Round card.** The Ritual track and the Elder Signs stand at its right.
 - **Fewer options.** *Board Theme* and *Flip board* are gone: neither did anything for a map.
 
@@ -894,9 +902,9 @@ what the help window shows under *Recent changes*, so it is written for the peop
 - **All Settings** no longer mentions email to guests.
 
 ### Cthulhu Wars 0.9.1
-- **Cult cards say more with less.** The cult's glyph replaces the coloured square, the player's name and the card's details are
-  in the cult's colour, the summary counts spellbooks, and a line replaces each section's title.
-- **The impulse card** shows the player's name in their cult's colour, with its glyph.
+- **Cult cards say more with less.** The cult's glyph replaces the colored square, the player's name and the card's details are
+  in the cult's color, the summary counts spellbooks, and a line replaces each section's title.
+- **The impulse card** shows the player's name in their cult's color, with its glyph.
 - **The turn order** left the bar above the map, as the cult cards are already in that order. The first player's card shows the
   direction of play.
 - **Pass just says Pass.** If you still have Power, the card asks you to confirm that you will lose it.
@@ -912,8 +920,8 @@ what the help window shows under *Recent changes*, so it is written for the peop
 ## 0.60.0 - 2026-11-04
 
 ### Bingle Core 0.60.0
-- **History in full colour.** Stepping through a game's moves, the card is titled *History: 12* and tells the move just as the
-  History tab does, with the players' colours and icons.
+- **History in full color.** Stepping through a game's moves, the card is titled *History: 12* and tells the move just as the
+  History tab does, with the players' colors and icons.
 - **Better guest names.** A guest who has not chosen a name gets one like *Mossy Otter*.
 - **A tidier profile window.** Your name comes right under the sign-in buttons as *My Name*, sections have clear titles and lines
   between them, and guests no longer see *Here Now*. *Use this key* is now *Submit Key*.
@@ -1016,7 +1024,7 @@ what the help window shows under *Recent changes*, so it is written for the peop
 - No changes of its own: this release is the Cthulhu Wars maps below.
 
 ### Cthulhu Wars 0.8.0
-- **Every map now looks like its board.** The 3-player, 5-3 and 5-player Earth maps and the 3-player Primeval map get the colour
+- **Every map now looks like its board.** The 3-player, 5-3 and 5-player Earth maps and the 3-player Primeval map get the color
   and texture of the printed boards, with the borders traced from them.
 - **Two new maps for four players:** Primeval 3-5 and Primeval 5-3, the two four-player boards of the Primeval Map, each with
   18 areas.
@@ -1040,7 +1048,7 @@ what the help window shows under *Recent changes*, so it is written for the peop
 ### Cthulhu Wars 0.7.0
 - **Cult cards follow the order of play.** The first player's card is on top and the rest follow, and they re-order whenever
   the order changes. The note about play running down the list is gone.
-- **Glyphs on the cult cards.** Each card shows its faction's glyph beside the colour square, in place of the faction's name on
+- **Glyphs on the cult cards.** Each card shows its faction's glyph beside the color square, in place of the faction's name on
   human seats.
 - **Tcho-Tcho are pink.**
 - **Ubbo-Sathla's Growth** is now an icon. Hover over it for what it means.
@@ -1064,7 +1072,7 @@ what the help window shows under *Recent changes*, so it is written for the peop
 - **Glyphs where they are printed.** A map with a painted background can place its glyphs exactly where the board does.
 
 ### Cthulhu Wars 0.5.0
-- **The 3-5 Earth map, redrawn.** The four-player 3-5 map now looks like the printed board, with its coasts, colours and islands.
+- **The 3-5 Earth map, redrawn.** The four-player 3-5 map now looks like the printed board, with its coasts, colors and islands.
 - **New glyphs on every map.** The chevron, thorns and dragon are traced from the board. They replace the old line drawings
   everywhere, and on the 3-5 map they stand where the board prints them.
 - **The 3-5 map's glyphs now match the board.** Eight areas change glyph: North and South America are Dragon; Europe,
@@ -1077,7 +1085,7 @@ what the help window shows under *Recent changes*, so it is written for the peop
 - **Maps can have a painted background.** An area map may now show a picture behind its areas, which stay just as clickable.
 
 ### Cthulhu Wars 0.4.0
-- **The five-player Primeval Map, redrawn.** Traced from the printed board, its coasts follow the real ones, and its colours,
+- **The five-player Primeval Map, redrawn.** Traced from the printed board, its coasts follow the real ones, and its colors,
   shallows and cracks now look like the board's.
 - **Glacier glyphs on the map.** The Primeval Map shows its ice glyphs where the board prints them. Turn them off in the game
   options under *Glacier glyphs*.
@@ -1158,8 +1166,8 @@ what the help window shows under *Recent changes*, so it is written for the peop
 
 ### Blooms 0.3.0
 - **Warm and Cool.** The two sides are now called Warm (red and yellow) and Cool (black and blue), everywhere including
-  the history, and their names and colour swatches blend their two colours.
-- **The captured stones are on show.** Each player's card shows the stones they have captured, in their colours, and how
+  the history, and their names and color swatches blend their two colors.
+- **The captured stones are on show.** Each player's card shows the stones they have captured, in their colors, and how
   many are needed to win, such as *Captured: 3/15*.
 - **Shorter words on the controls.** Each stone's button says *Place*, *End turn* is now *End*, and the line above them
   says what you can do next. Once you pick a stone, the card says *Place* with a picture of it, and *Back* puts it down
@@ -1208,7 +1216,7 @@ what the help window shows under *Recent changes*, so it is written for the peop
 - **See who is connected.** A player whose connection has gone now shows as *disconnected* beside their name, in every
   game, until they are back. A reload or a brief drop won't flag anyone. In a game played over days, your opponent will
   usually show this, which only means they don't have the game open.
-- **The "watching" eye is gone**, along with clicking your colour box to switch it on. Bingle now works this out from
+- **The "watching" eye is gone**, along with clicking your color box to switch it on. Bingle now works this out from
   the connection, so there is nothing to set.
 - **Turn mail is more reliable.** A page whose connection has quietly died no longer counts as you being there, so the
   mail for your turn still goes out.
@@ -1246,14 +1254,14 @@ what the help window shows under *Recent changes*, so it is written for the peop
   there, and clicking a selected card again sends it to its foundation. **Finish** appears when everything can go
   home by itself.
 - With a themed set of cards, the suits are not red and black any more. So in Solitaire and FreeCell, where
-  colours matter, each card also shows a small mark with the classic suit it stands for.
+  colors matter, each card also shows a small mark with the classic suit it stands for.
 
 ## 0.41.0 - 2026-11-02
 
 ### Bingle Core 0.41.0
 - **Themed sets of cards.** When you set up a game played with ordinary suits and ranks (Nyet! today), the
   new *Cards* choice lets you play with one of five sets: **Ancient Civilizations**, **Amphibians**, **Fantasy
-  Creatures**, **Lovecraftian** or the **Atomic Age**. Each has its own card back, colours and lettering for the
+  Creatures**, **Lovecraftian** or the **Atomic Age**. Each has its own card back, colors and lettering for the
   ranks, eight suits and four jokers.
 - **Everyone at the table gets the same cards.** The set is chosen once, by whoever creates the game, and
   stays for the whole game, so "the frogs are trump" means the same to all of you. A rematch keeps it. Only
@@ -1367,7 +1375,7 @@ what the help window shows under *Recent changes*, so it is written for the peop
 ## 0.34.1 - 2026-11-01
 
 ### Bingle Core 0.34.1
-- **The stone under your mouse is now the colour you chose.** In Blooms, picking yellow still showed
+- **The stone under your mouse is now the color you chose.** In Blooms, picking yellow still showed
   a red stone on the board until you placed it; the preview now matches your choice. The same goes
   for the black and green nodes of Mycelium.
 
@@ -1592,7 +1600,7 @@ what the help window shows under *Recent changes*, so it is written for the peop
 - **Mycelium**, by Miles Stevenson, joins the list, so it can be played and tested here. Two fungal
   colonies place nodes on a hexagonal board; whoever takes the centre starts a **confluence**, in
   which every cluster spreads in turn, smallest first. A spore that can see an enemy node down a
-  line of empty cells turns it to its own colour; a cluster touching the enemy grows into it along
+  line of empty cells turns it to its own color; a cluster touching the enemy grows into it along
   a winding chain, as many nodes as its longest strand. A colony left with nothing when the
   confluence ends has lost. You make each spread yourself, one node at a time, the board shows which
   clusters have already spread, and the rules page walks through a confluence.
@@ -1604,7 +1612,7 @@ what the help window shows under *Recent changes*, so it is written for the peop
 
 ### Bingle Core 0.20.0
 - **The pie rule now moves the players, not the pieces.** When the second player swaps sides,
-  nothing on the board moves or changes colour: the two of you change seats, the opening move is
+  nothing on the board moves or changes color: the two of you change seats, the opening move is
   the second player's now, and the first player answers it from the other seat. Taking the swap
   back puts everyone in their first seats again.
 - **Games whose rules are written in Go can offer the pie rule now.** The tick box in the setup,
@@ -1616,7 +1624,7 @@ what the help window shows under *Recent changes*, so it is written for the peop
   one it was.
 
 ### Amazons 0.3.0, Ataxx 0.3.0, Connect Four 0.3.0, Go 0.3.0, Gomoku 0.3.0, Havannah 0.3.0, Hex 0.3.0, Pente 0.3.0, Reversi 0.3.0, Yavalath 0.3.0
-- The pie-rule swap changes seats, not colours; the rules pages say so.
+- The pie-rule swap changes seats, not colors; the rules pages say so.
 
 ## 0.19.0 - 2026-10-29
 
@@ -1863,7 +1871,7 @@ what the help window shows under *Recent changes*, so it is written for the peop
   game could not go on.
 - **The four classic suits.** The cards are redrawn as spades, hearts, diamonds and clubs, with the
   value in two corners and the pips of its value.
-- **Every player is an animal** — Wolf, Crane, Tiger, Bear or Eagle — in the colour of their seat.
+- **Every player is an animal** — Wolf, Crane, Tiger, Bear or Eagle — in the color of their seat.
   You see it beside their name, under the card they played into the trick, and on each box of the
   board they crossed off.
 - **The board of terms is pictures,** not words, in cells of one size; point at one to read it. On a

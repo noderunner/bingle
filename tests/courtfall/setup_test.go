@@ -44,7 +44,7 @@ func TestDraftKeepsTilesOutOfZonesAndTheEye(t *testing.T) {
 			}
 		}
 	}
-	// 18 hexes × 3 colours.
+	// 18 hexes × 3 colors.
 	if got := len(notations(g, st, light)); got != 54 {
 		t.Fatalf("opening draft moves = %d, want 54", got)
 	}

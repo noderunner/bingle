@@ -23,7 +23,7 @@ const (
 	actDone   = "done"
 )
 
-// eng is a decoded position: cells[i] is the colour on cell i ("" for empty).
+// eng is a decoded position: cells[i] is the color on cell i ("" for empty).
 type eng struct {
 	g     *geo
 	d     *Data

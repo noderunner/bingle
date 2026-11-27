@@ -19,7 +19,7 @@ package dsl
 //	  "zones": [ { "id": "hand", "scope": "seat", "visibility": "owner", "layout": "fan" } ]
 //	}
 type CardsDef struct {
-	// Suits are the card groupings (suits, colours, factions), by id.
+	// Suits are the card groupings (suits, colors, factions), by id.
 	Suits map[string]SuitDef `json:"suits,omitempty"`
 	// SuitOrder fixes the order suits are listed in (default: sorted by id).
 	SuitOrder []string `json:"suit_order,omitempty"`
@@ -34,7 +34,7 @@ type CardsDef struct {
 // SuitDef is one suit: how it is named and drawn.
 type SuitDef struct {
 	Label string `json:"label,omitempty"`
-	// Color is a CSS colour for the suit's pips and card faces.
+	// Color is a CSS color for the suit's pips and card faces.
 	Color string `json:"color,omitempty"`
 	// Symbol is the text drawn as the suit's pip (a glyph or a short word).
 	Symbol string `json:"symbol,omitempty"`

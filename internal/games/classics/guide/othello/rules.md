@@ -6,21 +6,21 @@ Goro Hasegawa made Othello in Japan in the early 1970s. It is a form of Reversi,
 
 ## The goal
 
-When the game ends, the player with **more discs of their colour** on the board wins.
+When the game ends, the player with **more discs of their color** on the board wins.
 
 ## The setup
 
-The board is 8×8. The game starts with four discs in the middle, two of each colour, on the diagonals. **Black** moves first, then White, alternately.
+The board is 8×8. The game starts with four discs in the middle, two of each color, on the diagonals. **Black** moves first, then White, alternately.
 
 ## Placing and flipping
 
 ![A move that flips two lines of discs|520](othello-flip.svg)
 
-On your turn you place a disc of your colour on an empty square, and the placement must **bracket** at least one line of enemy discs:
+On your turn you place a disc of your color on an empty square, and the placement must **bracket** at least one line of enemy discs:
 
 - Starting from the new disc, look along any of the **eight directions**: left, right, up, down and the four diagonals.
 - If a straight, unbroken run of **one or more enemy discs** lies next to the new disc and is closed off at the other end by one of **your own** discs, those enemy discs are bracketed.
-- All the bracketed discs, in every direction at once, are **flipped** to your colour.
+- All the bracketed discs, in every direction at once, are **flipped** to your color.
 
 If you have no square where you can bracket a line, you **pass**. If you can place a disc, you must.
 
@@ -37,7 +37,7 @@ The discs in the corners can never be flipped, so the corners and the edges that
 The player who moves first has an advantage, so a table may play with the **pie rule** (tick
 *Pie rule* when the game is made). Instead of answering the opening move, the second player
 may **swap sides** on their first turn: the players change seats — nothing on the board moves
-or changes colour — and the first player answers their own opening from the other side. It is then in the first player's interest to open with a move that is neither too
+or changes color — and the first player answers their own opening from the other side. It is then in the first player's interest to open with a move that is neither too
 strong nor too weak. The move is `swap`.
 
 ## Move notation

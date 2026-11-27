@@ -199,7 +199,7 @@ def gomoku():
 
 
 def hex_edges(hb, n):
-    """Colour the sides of an n x n rhombus: red top and bottom, blue left and right."""
+    """Color the sides of an n x n rhombus: red top and bottom, blue left and right."""
     cs = hb.corners
     for q in range(n):
         for (a, b) in [(4, 5), (5, 0)]:
@@ -384,7 +384,7 @@ def go():
 
 
 def hexpanel(s, x, y, n, size, pieces=None, tints=None, tint_color=AMBER, extra=None, corners=False, marks=()):
-    """A hexagon-shaped board with n cells to a side at (x, y); pieces maps (q, r) to a colour."""
+    """A hexagon-shaped board with n cells to a side at (x, y); pieces maps (q, r) to a color."""
     w = math.sqrt(3) * size * (2 * n - 1) + 2 * size * 0.9
     h = 1.5 * size * (2 * n - 2) + 2 * size + 8
     hb = HexBoard(s, x + w / 2, y + h / 2 - 2, hexhex(n), size)
@@ -469,9 +469,9 @@ def meridian_board(s, x, y, short, long_, size, stones=None, open_points=(), lin
     for q, r in open_points:
         cx, cy = px(q, r)
         s.circle(cx, cy, size * 0.3, fill="none", stroke=BLUE, sw=2)
-    for (q, r), colour in (stones or {}).items():
+    for (q, r), color in (stones or {}).items():
         cx, cy = px(q, r)
-        fill, edge = PIECE[colour]
+        fill, edge = PIECE[color]
         s.circle(cx, cy, size * 0.33, fill=fill, stroke=edge, sw=1.6)
     for q, r in crosses:
         cx, cy = px(q, r)

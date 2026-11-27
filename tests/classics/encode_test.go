@@ -72,7 +72,7 @@ func TestActionSpaceCoversLegalMovesAndPlanesAreWellFormed(t *testing.T) {
 }
 
 // The encoding is viewer-relative: the first two board channels count my
-// pieces and the opponent's, whichever colour I am.
+// pieces and the opponent's, whichever color I am.
 func TestPlanesAreRelativeToTheViewer(t *testing.T) {
 	g := load(t, "tic-tac-toe")
 	res := playAll(t, g, "a3", "b2", "c1") // x at a3,c1; o at b2

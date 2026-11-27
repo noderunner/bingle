@@ -213,7 +213,7 @@ function layout(info, flipped) {
 	};
 }
 
-/** A colour of the palette in words, in the page's language; another colour as it is given. */
+/** A color of the palette in words, in the page's language; another color as it is given. */
 const COLOR_WORDS = new Set(["white", "black", "red", "yellow", "orange", "green", "blue", "purple", "teal", "sand", "brown", "grey"]);
 function colorWord(color) {
 	const c = cssColor(color);
@@ -286,7 +286,7 @@ function reducedMotion() {
 /**
  * Animates what changed between two signatures: a piece that arrived on a
  * square slides in from the square that lost an identical piece, a piece
- * with no donor (a placement) pops in, and a piece whose colour changed in
+ * with no donor (a placement) pops in, and a piece whose color changed in
  * place (Othello flips) turns over.
  */
 function animateChanges(svg, before, after) {
@@ -328,7 +328,7 @@ function animateChanges(svg, before, after) {
 		const sameShape = was && was.split(":")[0] === now.split(":")[0];
 		let anim = null;
 		if (sameShape) {
-			// Same piece, new colour: flip over.
+			// Same piece, new color: flip over.
 			anim = el.animate([{ transform: at(0, 0, "scale(0.1, 1)") }, { transform: at(0, 0, "scale(1, 1)") }], { duration: 260, easing: "ease-out" });
 		} else {
 			const list = donors.get(now);
@@ -897,7 +897,7 @@ function renderHexBoard(host, info, view, handlers) {
 		return { x: M + ox + x * CELL + CELL / 2, y: M + oy + y * CELL + HEX_R };
 	};
 
-	// Which border region (if any) colours each cell.
+	// Which border region (if any) colors each cell.
 	const edgeOf = new Map();
 	for (const [region, color] of Object.entries(b.borders || {})) {
 		for (const id of (b.regions || {})[region] || []) edgeOf.set(id, color);
@@ -1086,7 +1086,7 @@ function renderHexBoard(host, info, view, handlers) {
 
 /**
  * A small drawing of a mark, for the key of the rules window: "swatch" (arg: a
- * CSS colour) is every game's; a game's page script draws its own kinds
+ * CSS color) is every game's; a game's page script draws its own kinds
  * (info.page.legendMarker, Cthulhu Wars' Gates and glyphs).
  */
 export function legendMarker(kind, arg) {

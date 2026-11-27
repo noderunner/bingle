@@ -2,7 +2,7 @@
 id: tak-5x5
 name: Tak (5×5)
 description: Build an unbroken road of your stones from one side of the board to the opposite side. Stacks, walls and a capstone make it a game of tempo and tactics.
-version: 0.1.1
+version: 0.1.2
 designers: [James Ernest, Patrick Rothfuss]
 publisher: Cheapass Games
 rules:

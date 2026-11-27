@@ -27,7 +27,7 @@ When a group has **no liberties left**, it is **captured** and removed from the 
 
 On your turn you may **pass** instead of placing a stone. When both players pass **one after the other**, the game ends and is scored.
 
-The score is counted by **area**: a player's score is the number of their stones on the board plus the number of empty points in regions surrounded **only by their stones**. Empty points that touch both colours count for nobody.
+The score is counted by **area**: a player's score is the number of their stones on the board plus the number of empty points in regions surrounded **only by their stones**. Empty points that touch both colors count for nobody.
 
 ![Area: a player's stones plus the empty points only they surround|340](go-territory.svg)
 
@@ -38,7 +38,7 @@ The score is counted by **area**: a player's score is the number of their stones
 The player who moves first has an advantage, so a table may play with the **pie rule** (tick
 *Pie rule* when the game is made). Instead of answering the opening move, the second player
 may **swap sides** on their first turn: the players change seats — nothing on the board moves
-or changes colour — and the first player answers their own opening from the other side. It is then in the first player's interest to open with a move that is neither too
+or changes color — and the first player answers their own opening from the other side. It is then in the first player's interest to open with a move that is neither too
 strong nor too weak. The move is `swap`.
 
 ## Move notation

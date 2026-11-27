@@ -12,7 +12,7 @@ steps:
     text: |
       In **Mycelium** two fungal colonies fight over a hexagonal board. You
       place nodes, and taking the centre sets off a **confluence**, in which
-      clusters spread and convert enemy nodes to their own colour. You win by
+      clusters spread and convert enemy nodes to their own color. You win by
       wiping out the other colony.
 
   - name: How the game ends
@@ -46,14 +46,14 @@ steps:
   - name: The nodes
     text: |
       Black has **black nodes** and Green has **green nodes**, and neither
-      ever runs out. A node never moves. It can only change colour, when it is
+      ever runs out. A node never moves. It can only change color, when it is
       converted, or leave the board from the centre, as you will see.
 
       You are Black; this tutorial plays Green.
 
   - name: A normal turn
     text: |
-      On a normal turn you place **one node of your colour on any empty
+      On a normal turn you place **one node of your color on any empty
       cell**. The board starts empty and Black goes first.
 
       Place your first node on i4.
@@ -64,7 +64,7 @@ steps:
 
   - name: Spore clusters
     text: |
-      A **cluster** is a connected group of nodes of one colour, and a single
+      A **cluster** is a connected group of nodes of one color, and a single
       node is a cluster of one. A **spore cluster** touches no enemy node, so
       your i4 and Green's f2 are both spore clusters.
 
@@ -126,7 +126,7 @@ steps:
     text: |
       In a **spore spread** you choose a node of the cluster and a straight
       line from it across empty cells. **The first enemy node on that line
-      becomes your colour**, and the node that spread stays where it is. That
+      becomes your color**, and the node that spread stays where it is. That
       is how Green's f2 converted your f7.
 
       A cluster with a legal spread must spread. It is your turn at this size,
@@ -187,7 +187,7 @@ steps:
       a small cluster can break up a big one before it acts.
 
       With nothing left to spread, the confluence ended. **The node on the
-      centre is removed, whichever colour it is.** Both colonies still have
+      centre is removed, whichever color it is.** Both colonies still have
       nodes, so **the player who did not take the centre places next**: Green,
       on e7.
     highlight: [e5, d7, e7]

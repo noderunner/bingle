@@ -165,10 +165,10 @@ func TestWebSolitaire_DraggingACard(t *testing.T) {
 	waitJS(t, ctx, "the drop's move", fmt.Sprintf(`fetch('/api/games/%s').then(r=>r.json()).then(g=>g.move_seq===1)`, room), 10*time.Second)
 }
 
-// At a themed table every card wears the set, and where colours are the rule each
-// shows the red or black it counts as, unless the set's own colours show it. Spider,
+// At a themed table every card wears the set, and where colors are the rule each
+// shows the red or black it counts as, unless the set's own colors show it. Spider,
 // where they are not, has no such mark.
-func TestWebSolitaire_ThemedCardsSayTheirColour(t *testing.T) {
+func TestWebSolitaire_ThemedCardsSayTheirColor(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
@@ -178,22 +178,22 @@ func TestWebSolitaire_ThemedCardsSayTheirColour(t *testing.T) {
 	if n := evalInt(t, ctx, `document.querySelectorAll('.sol-column .pcard.face.themed[data-set="amphibians"]').length`); n != 52 {
 		t.Errorf("%d cards wear the set", n)
 	}
-	if n := evalInt(t, ctx, `document.querySelectorAll('.sol-column .pcard.face .sol-colour').length`); n != 52 {
-		t.Errorf("%d cards say their colour", n)
+	if n := evalInt(t, ctx, `document.querySelectorAll('.sol-column .pcard.face .sol-color').length`); n != 52 {
+		t.Errorf("%d cards say their color", n)
 	}
-	got := evalString(t, ctx, `[...new Set([...document.querySelectorAll('.sol-colour')].map(e => e.textContent))].sort().join("")`)
+	got := evalString(t, ctx, `[...new Set([...document.querySelectorAll('.sol-color')].map(e => e.textContent))].sort().join("")`)
 	if got != "♠♣♥♦" {
 		t.Errorf("the marks are %q", got)
 	}
 	if n := evalInt(t, ctx, `document.querySelectorAll('.sol-top [data-pile^="f"] svg').length`); n != 4 {
 		t.Errorf("%d foundations wear the set's suits", n)
 	}
-	// A set whose colours alternate as red and black do needs no mark.
+	// A set whose colors alternate as red and black do needs no mark.
 	room = solitaireRoom(t, baseURL, "freecell", "classic-extended")
 	openGameAs(t, ctx, baseURL, room, "freecell", "Ana")
 	waitJS(t, ctx, "the table", `document.querySelectorAll('.sol-column .pcard.face[data-set="classic-extended"]').length === 52`, 15*time.Second)
-	if n := evalInt(t, ctx, `document.querySelectorAll('.sol-colour').length`); n != 0 {
-		t.Errorf("Classic Extended: %d colour marks", n)
+	if n := evalInt(t, ctx, `document.querySelectorAll('.sol-color').length`); n != 0 {
+		t.Errorf("Classic Extended: %d color marks", n)
 	}
 	room = solitaireRoom(t, baseURL, "spider-2", "lovecraftian")
 	openGameAs(t, ctx, baseURL, room, "spider-2", "Ana")
@@ -201,8 +201,8 @@ func TestWebSolitaire_ThemedCardsSayTheirColour(t *testing.T) {
 	if n := evalInt(t, ctx, `document.querySelectorAll('.sol-column .pcard.face[data-set="lovecraftian"]').length`); n != 10 {
 		t.Errorf("Spider: %d cards wear the set", n)
 	}
-	if n := evalInt(t, ctx, `document.querySelectorAll('.sol-colour').length`); n != 0 {
-		t.Errorf("Spider: %d colour marks", n)
+	if n := evalInt(t, ctx, `document.querySelectorAll('.sol-color').length`); n != 0 {
+		t.Errorf("Spider: %d color marks", n)
 	}
 }
 

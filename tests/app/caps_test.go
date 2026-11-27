@@ -86,7 +86,7 @@ func TestCaps_AStrictFile(t *testing.T) {
 		"an unknown capability": "classes:\n  guest: [play, fly]\n",
 		"an unknown class":      "classes:\n  wizard: [play]\n",
 		"the mode in the file":  "mode: closed\n",
-		"an unknown key":        "colours: [red]\n",
+		"an unknown key":        "colors: [red]\n",
 		"an unknown limit":      "limits:\n  guest: { naps: 3 }\n",
 	} {
 		if _, err := auth.ParseCapsSeed([]byte(yaml)); err == nil {

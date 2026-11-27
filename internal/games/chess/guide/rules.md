@@ -32,7 +32,7 @@ The game is drawn:
 - by **stalemate**: the side to move has no legal move and is not in check;
 - when the **same position** comes up three times, with the same player to move and the same moves possible;
 - after **fifty moves** each with no capture and no pawn move;
-- when neither side has the **pieces left to checkmate** (kings alone, or with one bishop or knight, or with bishops all on squares of one colour).
+- when neither side has the **pieces left to checkmate** (kings alone, or with one bishop or knight, or with bishops all on squares of one color).
 
 A player may also offer a draw, which the other may accept, or resign.
 

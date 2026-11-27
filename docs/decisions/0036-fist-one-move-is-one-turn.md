@@ -10,7 +10,7 @@ Fist (the game of Alysha Wishingrad's *The Verdigris Pawn*, open beta rules 1.1,
 
 - Fist is a Go `state.Ruleset` (`internal/games/fist`) with a JSON definition for the board, seats, pieces and legend, like Courtfall. It has no hidden information and no dice. `Redact` only attaches the derived view (tints, badges, guard counters, the prompt).
 - A decision is a whole turn. Legal lists every step (with each pin it could make) and every jump chain with a choice (leave, capture, capture and replace) at each jump. Notation: `e5-e6`, `e5-e6xf6`, `a1^c1x^e3c`. The clicks are the piece, each landing square with an action button for the choice, and an end button.
-- The pawn is coloured `green`. The definition gained `extra_colors` so a position may hold a colour that no seat owns (and no reserve may).
+- The pawn is colored `green`. The definition gained `extra_colors` so a position may hold a color that no seat owns (and no reserve may).
 - Values are frozen at the start of each turn, so Empower cannot change mid-turn; the pawn is never empowered and lends no help to other pieces' pins.
 - The bots play through `BotGuide`: no capturing their own pieces and no jumping over an enemy piece they could take.
 - The square-board renderer now draws a ruleset's tints and glyph badges (as the hex renderer already did).

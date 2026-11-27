@@ -53,7 +53,7 @@ func TestWebMeridians_PlayThroughTheUI(t *testing.T) {
 		t.Fatalf("%d stones on the board after four moves", n)
 	}
 	// A player's second stone never touches their first, so both of each
-	// colour are still there: nothing died in the opening.
+	// color are still there: nothing died in the opening.
 	if got := evalString(t, ctx, `[...document.querySelectorAll("#board .piece")].map(p => p.dataset.color).sort().join(",")`); got != "black,black,white,white" {
 		t.Errorf("the stones are %q, want two of each", got)
 	}

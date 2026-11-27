@@ -66,7 +66,7 @@ wide, the rail goes under the board, whose row is no taller than the board.
   The rules for the map's own picture are written `#board > svg`, so that they leave the icons of a card over it alone. The rail's cards take turns behind
   `.rail-tabs`: `#rail-tab-seats`, `#rail-tab-talk` and `#rail-tab-history`. Every pane stays on the page, so a message being typed survives a change of tab.
   The talk and the history fill the height the rail has left.
-- **A seat's card** is a summary: its numbers and an `.expand-toggle`. Open (`.seat-more`), Cthulhu Wars has a line between its sections and its words in the cult's colour (`--seat-ink`); another game's
+- **A seat's card** is a summary: its numbers and an `.expand-toggle`. Open (`.seat-more`), Cthulhu Wars has a line between its sections and its words in the cult's color (`--seat-ink`); another game's
   have a `.faction-heading`. `.spellbook-grid` holds `.spell-tile`s in two columns: the six requirements, then the spellbooks
   to come. A spellbook earned takes the place of a met requirement, in listed order, since the server keeps which are
   met and which are held but not which paid for which. `S.expanded` is the one card open, a seat's or `#neutral-window`.
@@ -83,7 +83,7 @@ is in view however far the rail is scrolled. It neither moves the rail nor takes
 
 Once a piece is chosen, `#pending-move` shows the game's `piece_action` word and the piece's picture. *Back* (`#back`)
 is the only button that undoes a gesture here: `#reset-move` is not drawn, and Esc still clears the move. A selection in Blooms
-is a colour and a cell, so the two did the same thing; a game whose selections take more gestures will need to look at this when it joins.
+is a color and a cell, so the two did the same thing; a game whose selections take more gestures will need to look at this when it joins.
 
 ## The phone page of a map
 
@@ -133,7 +133,7 @@ button appears; otherwise the move is sent immediately.
 
 Because the UI only follows the server's list, any new game works without UI
 changes. (Keyboard play is described at the end.) Hovering an empty target
-square previews the piece a click would place, in the colour it will have.
+square previews the piece a click would place, in the color it will have.
 
 In the words of [ADR 0114](decisions/0114-impulses-selections-moves-and-gestures.md), each option listed here is one
 selection, and its `gestures` are the clicks that enter it.
@@ -244,7 +244,7 @@ the algorithms that play games (minimax, alpha-beta, Monte Carlo tree search)
 and facts about the implemented games. One is drawn at random when the page
 loads (`#fun-fact`). Keep them checkable: the Tak figures are *computed*, not
 quoted — the number of ways a board can be filled within each side's pieces
-(a stack is any sequence of colours with a flat, a wall or a capstone on top;
+(a stack is any sequence of colors with a flat, a wall or a capstone on top;
 a generating function over the piece budgets), an upper bound on the positions
 that can arise: 2.6 × 10^37 for 5×5 and 3.7 × 10^53 for 6×6.
 
@@ -430,9 +430,9 @@ it again sends it to its foundation if it can go, and otherwise lets go. It can 
 the pointer, the cards on top of it come along, and a drop on a pile that does not take them plays nothing. The width
 of the table decides the size of the cards, so ten columns fit a phone.
 
-Where colours are the rule (`view.alternate`), a card at a table with a themed set also shows its classic suit,
-`.sol-colour`, since the set's suits are not red and black. A set whose colours alternate warm and cool as red and
-black do (Classic Extended, [ADR 0149](decisions/0149-a-card-set-whose-colours-alternate.md)) needs no such mark.
+Where colors are the rule (`view.alternate`), a card at a table with a themed set also shows its classic suit,
+`.sol-color`, since the set's suits are not red and black. A set whose colors alternate warm and cool as red and
+black do (Classic Extended, [ADR 0149](decisions/0149-a-card-set-whose-colors-alternate.md)) needs no such mark.
 
 **Bowling Solitaire** has `#sol-sheet` (ten `.sol-frame[data-frame]`, each with `.sol-mark`s and `.sol-frame-total`),
 `#sol-rack` (`.sol-pin[data-pin]`, a button when it can be part of a play, `.down` when it is down), `#sol-balls` and
@@ -620,7 +620,7 @@ the **faction of an open seat** from the list in its row (`select.lobby-faction-
 `#faction-<seat>`): the factions held by a player or bot are greyed out, a faction played
 from another open seat changes places with it (one chosen for seat 4
 while seat 3 plays it moves seat 3 to seat 4's). The game takes the id of
-the new table, the page loads its names and colours again, and a visitor's
+the new table, the page loads its names and colors again, and a visitor's
 *Take this seat* list shows the new factions. A table set up with a pool of factions
 says so in `#lobby-pool`, lists only those, and gives a player the list on their own row too.
 
@@ -807,7 +807,7 @@ interlaced knotwork with carved runes, a sunburst over mesas with a Navajo borde
 with arches, a sea with light rays, kelp and bubbles, velvet with a gold rail set with gems) and a small mark on every round stone
 (`.theme-mark`: retro slits, a rune, a sun or stepped diamond, an eight-point star, a shine, a cut gem).
 With a theme on, the coordinates (`text.coord.coord-out`) stand in a strip outside the frame, in
-the page's text colour, not on the picture (the `viewBox` of the board grows by the strip).
+the page's text color, not on the picture (the `viewBox` of the board grows by the strip).
 Each theme paints a stone by its color's name, whichever seat plays it: `red`, `yellow`,
 `orange`, `white` and `brown` are **warm** (reds, golds, oranges, cream), and `blue` and `black`
 **cold** (blues, violets, near-black), so Go's first player, black, is cold, and chess's, white,
@@ -839,7 +839,7 @@ shape:
 
 ```yaml
 seats:                         # by seat number
-  1: {blend: [red, yellow]}    # a seat of two colours, drawn as a gradient
+  1: {blend: [red, yellow]}    # a seat of two colors, drawn as a gradient
 pieces:
   red: {shape: disc}           # disc, square, flat, wall, cap, ring, diamond, triangle, cross
 board: {style: points, borders: {top: white}}   # art: guide/board.webp, a picture of the printed board
@@ -857,7 +857,7 @@ board: {style: points, borders: {top: white}}   # art: guide/board.webp, a pictu
 cards:
   back: {color: '#7a2030', text: BINGLE}
   zones: {hand: {layout: fan}}  # fan, row, stack, splay or grid
-  suits: {hearts: {color: red}}  # only where the rules do not read the colour
+  suits: {hearts: {color: red}}  # only where the rules do not read the color
 display:                       # the definition's display keeps each tint's and badge's label and text
   no_hands: true
   tints: {fenced: {color: '#e8a898'}}
@@ -865,7 +865,7 @@ display:                       # the definition's display keeps each tint's and 
 preview:                       # a game in play for the list of games and the setup page
   - {position: e5, piece: red, color: red}
 data:                          # the game's page script's own, in a shape of its own; nothing
-  fill: {asia: '#bc4420'}      # else reads or checks it (Cthulhu Wars' area colours)
+  fill: {asia: '#bc4420'}      # else reads or checks it (Cthulhu Wars' area colors)
 badges:                        # each of the game's own badges' icon (ADR 0130), by its id in the game:
   deep-call: {icon: guide/glyphs/gc.svg}   # a picture among the module's files; the family's only
 variants:                      # a merge patch per game of the family, by id

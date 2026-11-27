@@ -69,11 +69,11 @@
           "type": "string"
         },
         "color": {
-          "description": "Color is the seat's colour.",
+          "description": "Color is the seat's color.",
           "type": "string"
         },
         "name": {
-          "description": "Name is the bot's name at the table, after the seat's faction or colour and its kind (Black Goat (MCTS)).",
+          "description": "Name is the bot's name at the table, after the seat's faction or color and its kind (Black Goat (MCTS)).",
           "type": "string"
         },
         "seat": {
@@ -1214,7 +1214,7 @@
           "additionalProperties": {
             "$ref": "#/$defs/OverlayDef"
           },
-          "description": "Tints colours board cells by key (terrain).",
+          "description": "Tints colors board cells by key (terrain).",
           "type": "object"
         }
       },
@@ -2528,7 +2528,7 @@
           "type": "array"
         },
         "converts": {
-          "description": "Converts are the positions whose pieces the selection turns over: they keep their place and change colour (Othello's flips). Absent as captures are.",
+          "description": "Converts are the positions whose pieces the selection turns over: they keep their place and change color (Othello's flips). Absent as captures are.",
           "items": {
             "type": "string"
           },
@@ -2538,7 +2538,7 @@
           "additionalProperties": {
             "type": "string"
           },
-          "description": "ConvertsTo is the colour word each of converts turns to, by position.",
+          "description": "ConvertsTo is the color word each of converts turns to, by position.",
           "type": "object"
         },
         "count": {
@@ -3772,7 +3772,7 @@
       "description": "SeatDefDTO describes a seat.",
       "properties": {
         "blend": {
-          "description": "Blend is the two colours a seat is drawn in, when it has two.",
+          "description": "Blend is the two colors a seat is drawn in, when it has two.",
           "items": {
             "type": "string"
           },
@@ -3782,7 +3782,7 @@
           "type": "string"
         },
         "colors": {
-          "description": "Colors is every colour the seat plays, when it plays several (ADR 0117): a piece in any of them is the seat's.",
+          "description": "Colors is every color the seat plays, when it plays several (ADR 0117): a piece in any of them is the seat's.",
           "items": {
             "type": "string"
           },
@@ -4264,7 +4264,7 @@
       "description": "SuitDef is one suit: how it is named and drawn.",
       "properties": {
         "color": {
-          "description": "Color is a CSS colour for the suit's pips and card faces.",
+          "description": "Color is a CSS color for the suit's pips and card faces.",
           "type": "string"
         },
         "label": {
@@ -4633,9 +4633,9 @@
   },
   "$id": "https://github.com/noderunner/bingle/docs/api.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "description": "The requests, responses and WebSocket events of bingle's API, version 1.20.1. Generated from the Go types of the server: do not edit. Objects let unknown fields through: a client ignores those it does not know.",
+  "description": "The requests, responses and WebSocket events of bingle's API, version 1.20.2. Generated from the Go types of the server: do not edit. Objects let unknown fields through: a client ignores those it does not know.",
   "title": "Bingle API messages",
-  "x-api-version": "1.20.1",
+  "x-api-version": "1.20.2",
   "x-dm-events": {
     "badge": {
       "$ref": "#/$defs/BadgeEventData"

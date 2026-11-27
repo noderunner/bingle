@@ -126,7 +126,7 @@ var (
 	nameForm    = regexp.MustCompile(`^[a-z][a-z0-9]*(-[a-z0-9]+)*$`)
 	wordForm    = regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*$`) // a variant's, after the pack's name
 	versionForm = regexp.MustCompile(`^(0|[1-9][0-9]{0,5})\.(0|[1-9][0-9]{0,5})\.(0|[1-9][0-9]{0,5})$`)
-	// A colour reaches a style attribute, so it may only ever be a colour: not
+	// A color reaches a style attribute, so it may only ever be a color: not
 	// url(...), which would have a player's browser call somebody's server, and
 	// not a semicolon and a rule of its own.
 	colorForm = regexp.MustCompile(`^(#[0-9a-fA-F]{3,8}|[a-zA-Z]{1,30}|(rgb|rgba|hsl|hsla)\([0-9., %/deg-]{1,40}\))$`)
@@ -509,7 +509,7 @@ func (p *Pack) variantID(id string) (string, error) {
 }
 
 // checkDefinition refuses what a pack may not ask for: rules that are not
-// its module's, and anything but a colour where a colour goes.
+// its module's, and anything but a color where a color goes.
 func checkDefinition(doc []byte, p *Pack) error {
 	def, err := dsl.Parse(doc)
 	if err != nil {
@@ -580,13 +580,13 @@ func readLook(files fs.FS, p *Pack) ([]byte, error) {
 	return json.Marshal(tree)
 }
 
-// checkColors holds every colour in a document to the form of a colour.
+// checkColors holds every color in a document to the form of a color.
 func checkColors(file string, node any) error {
 	switch v := node.(type) {
 	case map[string]any:
 		for key, value := range v {
 			if s, ok := value.(string); ok && (key == "color" || strings.HasSuffix(key, "_color")) && !colorForm.MatchString(s) {
-				return fmt.Errorf("%s: %q is not a colour", file, s)
+				return fmt.Errorf("%s: %q is not a color", file, s)
 			}
 			if err := checkColors(file, value); err != nil {
 				return err

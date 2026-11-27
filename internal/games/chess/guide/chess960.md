@@ -1,6 +1,6 @@
 # Chess960
 
-Chess960 (Fischer Random Chess) is chess with the pieces of the first rank shuffled before the game: one of 960 starting arrangements, drawn at random. The bishops always stand on squares of both colours and the king somewhere between the two rooks, and Black's pieces mirror White's. The pawns stand where they always do.
+Chess960 (Fischer Random Chess) is chess with the pieces of the first rank shuffled before the game: one of 960 starting arrangements, drawn at random. The bishops always stand on squares of both colors and the king somewhere between the two rooks, and Black's pieces mirror White's. The pawns stand where they always do.
 
 Every rule is the rule of chess but castling.
 

@@ -1,7 +1,7 @@
-// Package seatcolors_test covers seats that play several colours (ADR 0117):
-// a piece type in one of its seat's colours is placed in it, a seat may not
-// place another seat's colour, groups are one colour, and a placement never
-// captures a group of the mover's other colour.
+// Package seatcolors_test covers seats that play several colors (ADR 0117):
+// a piece type in one of its seat's colors is placed in it, a seat may not
+// place another seat's color, groups are one color, and a placement never
+// captures a group of the mover's other color.
 package seatcolors_test
 
 import (
@@ -14,7 +14,7 @@ import (
 	"github.com/noderunner/bingle/internal/engine/state"
 )
 
-// duo is Go on a 5×5 board with two colours a seat, as in Blooms.
+// duo is Go on a 5×5 board with two colors a seat, as in Blooms.
 func duo(setup []any, edit func(map[string]any)) map[string]any {
 	disc := func(c string) map[string]any { return map[string]any{"color": c, "code": strings.ToUpper(c[:2])} }
 	def := map[string]any{
@@ -77,9 +77,9 @@ func colorAt(st *state.BoardState, pos string) string {
 	return occ.Color
 }
 
-// A stone of the seat's second colour is placed in that colour, and a seat
-// may not place the other seat's colours.
-func TestAStoneTakesItsOwnColour(t *testing.T) {
+// A stone of the seat's second color is placed in that color, and a seat
+// may not place the other seat's colors.
+func TestAStoneTakesItsOwnColor(t *testing.T) {
 	g := mustCompile(t, duo(nil, nil))
 	st := state.InitialState(g)
 	res, err := place(g, st, 1, "yellow", "c3")
@@ -99,10 +99,10 @@ func TestAStoneTakesItsOwnColour(t *testing.T) {
 	}
 }
 
-// Groups are one colour: a red stone that takes the last liberty of a yellow
+// Groups are one color: a red stone that takes the last liberty of a yellow
 // group beside it captures nothing, since both are the first seat's; a
 // yellow stone that takes the last liberty of a blue group captures it.
-func TestAGroupIsOneColourAndEnemiesGoBySeat(t *testing.T) {
+func TestAGroupIsOneColorAndEnemiesGoBySeat(t *testing.T) {
 	g := mustCompile(t, duo([]any{at("a1", "yellow"), at("a2", "red"), at("e1", "blue"), at("e2", "yellow")}, nil))
 	st := state.InitialState(g)
 	res, err := place(g, st, 1, "red", "b1")
@@ -124,9 +124,9 @@ func TestAGroupIsOneColourAndEnemiesGoBySeat(t *testing.T) {
 	}
 }
 
-// The catalog refuses colours that are not the seat's own first, a colour two
-// seats play, and a seat's colour listed again in extra_colors.
-func TestTheCatalogRefusesBadSeatColours(t *testing.T) {
+// The catalog refuses colors that are not the seat's own first, a color two
+// seats play, and a seat's color listed again in extra_colors.
+func TestTheCatalogRefusesBadSeatColors(t *testing.T) {
 	cases := map[string]func(map[string]any){
 		"not first": func(d map[string]any) {
 			d["seats"].([]any)[0].(map[string]any)["colors"] = []string{"yellow", "red"}

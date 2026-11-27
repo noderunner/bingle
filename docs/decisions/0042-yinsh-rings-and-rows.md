@@ -4,7 +4,7 @@ Status: accepted (2026-10-24)
 
 ## Context
 
-Yinsh (Kris Burm, 2003) is played on an 85-point board joined by lines in three directions. Each player has five rings; the two share 51 markers, white on one side and black on the other. A turn drops a marker of your colour in one of your rings and moves that ring along a line, over empty points and over groups of markers (each of which is turned over), landing on the first empty point after a group; rings are never passed. A row of five markers of your colour is removed with one of your rings; the first to remove three rings wins (one in the "blitz" variant). A move can leave rows for both players: the mover removes theirs first, then the opponent removes theirs.
+Yinsh (Kris Burm, 2003) is played on an 85-point board joined by lines in three directions. Each player has five rings; the two share 51 markers, white on one side and black on the other. A turn drops a marker of your color in one of your rings and moves that ring along a line, over empty points and over groups of markers (each of which is turned over), landing on the first empty point after a group; rings are never passed. A row of five markers of your color is removed with one of your rings; the first to remove three rings wins (one in the "blitz" variant). A move can leave rows for both players: the mover removes theirs first, then the opponent removes theirs.
 
 ## Decision
 

@@ -8,7 +8,7 @@ Status: accepted (2026-10-27)
 where it would work", and for "a DSL/Json attribute for game definitions `supports_pie_rule`
 (change the actual name of the attribute if it makes sense to do so)".
 
-The engine has had the move since the v2 engine work: a `swap` action recolours every piece on the
+The engine has had the move since the v2 engine work: a `swap` action recolors every piece on the
 board, exchanges the reserves and gives the turn back to the first player, and Hex and Gomoku each
 declared one in their document. So the rule worked — but as a fixed property of those two games,
 with no way for a table to leave it out and no way for any other game to offer it.
@@ -43,20 +43,20 @@ the plain link. The id stays the only record of the choice; nothing new is store
 
 **It is refused where it cannot work**, when the game is registered, so a mistake is a build-time
 error and not a broken room: a game of other than two seats; a game whose seats have a `forward`
-direction (swapping recolours the pieces where they stand, so Draughts and Breakthrough would come
+direction (swapping recolors the pieces where they stand, so Draughts and Breakthrough would come
 out with every man facing the wrong way); a game that declares a `swap` action of its own; and a Go
 ruleset, which builds its own moves and would have to offer swapping sides itself. (The last was
 lifted by the amendment below: a ruleset may declare the rule and bring the swap itself.)
 
 **Which games offer it.** Where it would work means two seats, the generic engine, no chance, no
-direction of play, and a start that is symmetric between the colours:
+direction of play, and a start that is symmetric between the colors:
 
 * `"standard"`: **Hex**, **Gomoku** — as before, but now the table may leave it out.
 * `"optional"`: **Yavalath**, **Havannah**, **Pente**, **Connect Four**, **Amazons**, **Ataxx**,
   **Reversi**, **Go**.
 * nothing: **Tic-Tac-Toe** (a drawn game: there is no advantage to even out), **Tak** (its opening
   already hands the first stone to the opponent, and two balancing rules would fight),
-  **Brandubh** (the two sides are not the same army, so recolouring is meaningless),
+  **Brandubh** (the two sides are not the same army, so recoloring is meaningless),
   **Draughts** and **Breakthrough** (a direction of play), and every Go ruleset — Blooms, Fendo,
   Fist, Hive, Onitama, Yinsh, Courtfall, Cthulhu Wars, Nyet!. A ruleset that wants the pie rule can
   offer a swap of its own later; the attribute deliberately does not pretend to give it one.
@@ -80,10 +80,10 @@ only when its box differs from the game's default, which is what keeps `hex-11` 
 
 Two changes landed together.
 
-**The swap exchanges the players, not the pieces.** The `swap` action no longer recolours the
+**The swap exchanges the players, not the pieces.** The `swap` action no longer recolors the
 board and exchanges the reserves; it changes nothing on the board at all and keeps the turn with
 the mover's seat, and the session layer exchanges the two seats' occupants in the transaction
-that records the move — a seat keeps its colour, and clocks and per-seat choices move with the
+that records the move — a seat keeps its color, and clocks and per-seat choices move with the
 person. That is the physical rule (you take your opponent's chair), and it no longer repaints the
 board mid-game, which read as a bug to anyone who looked away. A move's owner is derived across
 the swap boundary, so undo and take-back attribute the swap to its maker, and taking it back
@@ -98,5 +98,5 @@ it can — the check box and `<id>~pie` / `<id>~nopie` — and the ruleset offer
 `"pie_rule": "optional"`, and `swap` as the second player's first reply.
 
 The exclusions above stand by choice, not by mechanism: with the seats exchanging, a direction of
-play or unlike armies would survive a swap fine (the recolouring rationale above is the old
+play or unlike armies would survive a swap fine (the recoloring rationale above is the old
 mechanism's), but Draughts, Breakthrough and Brandubh were not reconsidered for the rule.

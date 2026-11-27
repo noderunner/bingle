@@ -8,10 +8,10 @@ import (
 	"github.com/chromedp/chromedp"
 )
 
-// Every colour of the palette draws a piece in a colour of its own, in the
-// page's own look and in every board theme. A colour the stylesheet does not
+// Every color of the palette draws a piece in a color of its own, in the
+// page's own look and in every board theme. A color the stylesheet does not
 // know is drawn black, as grey once was (#313).
-func TestWebEveryPaletteColourDrawsItsPieces(t *testing.T) {
+func TestWebEveryPaletteColorDrawsItsPieces(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
@@ -38,7 +38,7 @@ func TestWebEveryPaletteColourDrawsItsPieces(t *testing.T) {
 			if (plain[c] === "rgb(0, 0, 0)" && c !== "black") out.push(c + " is drawn black");
 		}
 		if (plain.grey !== "rgb(163, 161, 155)") out.push("grey is drawn " + plain.grey);
-		if (new Set(Object.values(plain)).size !== colors.length) out.push("two colours share a fill: " + JSON.stringify(plain));
+		if (new Set(Object.values(plain)).size !== colors.length) out.push("two colors share a fill: " + JSON.stringify(plain));
 		for (const th of THEMES) {
 			document.documentElement.dataset.board = th.id;
 			for (const c of colors) {

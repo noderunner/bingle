@@ -211,7 +211,7 @@ func TestWebGame_PieceColorsAreDistinguishable(t *testing.T) {
 		t.Errorf("black and white pieces are styled identically: %q", fills["black"][0])
 	}
 	// Every piece must have a visible outline: a stroke that is not the
-	// same colour as its own fill.
+	// same color as its own fill.
 	for color, list := range fills {
 		for _, fs := range list {
 			parts := strings.SplitN(fs, "|", 2)

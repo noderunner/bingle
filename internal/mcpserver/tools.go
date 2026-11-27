@@ -35,7 +35,7 @@ func registerTools(mcpServer *server.MCPServer, mgr *session.Manager) {
 			mcp.WithString("player_name", mcp.Required(), mcp.Description("Display name of the player creating the room.")),
 			mcp.WithNumber("seat", mcp.Description("Seat to take (default 1). In most games seat 1 moves first.")),
 			mcp.WithString("opponent", mcp.Description("Optional built-in bot to fill the other seat(s) and start immediately: one of the ids from list_bots (random, tactical, minimax, mcts). Omit to wait for a human or another agent to join.")),
-			mcp.WithArray("also_seats", mcp.Description("Optional seats, besides yours, that you play too (a game against yourself): each is a player of its own named \"<you> · <faction or colour>\"."), mcp.WithNumberItems()),
+			mcp.WithArray("also_seats", mcp.Description("Optional seats, besides yours, that you play too (a game against yourself): each is a player of its own named \"<you> · <faction or color>\"."), mcp.WithNumberItems()),
 			mcp.WithNumber("move_time_seconds", mcp.Description("Optional per-move time limit in seconds; a player who runs out of time loses. Omit or 0 for no limit.")),
 			mcp.WithArray("clock_seconds", mcp.Description("Optional game clock (a chess clock) instead of a per-move limit, for a game of two seats or more: the seconds each seat starts with, in seat order (they may differ for handicap play). A player whose clock runs out forfeits at two seats; at three or more a tactical bot takes the seat for good, and the game goes on."), mcp.WithNumberItems()),
 			mcp.WithNumber("clock_increment_seconds", mcp.Description("Optional seconds added to a player's clock each time they hand the turn on. Needs clock_seconds. Omit or 0 for none.")),

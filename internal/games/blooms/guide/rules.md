@@ -1,6 +1,6 @@
 # Blooms
 
-Blooms is a Go-like game by Nick Bentley played on a hexagonal board with **four colours of stone**. You win by capturing your opponent's *blooms*, which are groups of one colour that you have fenced in.
+Blooms is a Go-like game by Nick Bentley played on a hexagonal board with **four colors of stone**. You win by capturing your opponent's *blooms*, which are groups of one color that you have fenced in.
 
 ## The goal
 
@@ -8,17 +8,17 @@ Be the first player to **capture enough enemy stones**. The target depends on th
 
 ## The stones
 
-Each player has **two colours** of stone, and a stone's colour matters: stones only join up with others of the same colour.
+Each player has **two colors** of stone, and a stone's color matters: stones only join up with others of the same color.
 
 - **Warm** (player 1) has **red** and **yellow** stones.
 - **Cool** (player 2) has **blue** and **black** stones.
 
-A **bloom** is a connected group of stones of one colour (a single stone is a bloom too). Two stones are connected when they touch along an edge of the hexagons. A red stone touching a yellow stone is two separate blooms.
+A **bloom** is a connected group of stones of one color (a single stone is a bloom too). Two stones are connected when they touch along an edge of the hexagons. A red stone touching a yellow stone is two separate blooms.
 
 ## A turn
 
-- Player 1 starts the game with **one** stone of either of their colours.
-- After that, on your turn you place **one or two stones** on empty cells. If you place two they must be of **different colours** (one of each of your colours). You may place just one if you like.
+- Player 1 starts the game with **one** stone of either of their colors.
+- After that, on your turn you place **one or two stones** on empty cells. If you place two they must be of **different colors** (one of each of your colors). You may place just one if you like.
 
 ### The pie rule
 
@@ -33,7 +33,7 @@ The move is `swap`.
 
 ![Not fenced, and fenced|520](blooms-fence.svg)
 
-A bloom is **fenced** when **no empty cell touches any of its stones**: every neighbouring cell is filled (with stones of any colour) or is off the edge of the board.
+A bloom is **fenced** when **no empty cell touches any of its stones**: every neighbouring cell is filled (with stones of any color) or is off the edge of the board.
 
 At the **end of your turn**, you capture every **enemy bloom that is fenced**: it is removed from the board and you count the stones you took.
 
@@ -47,4 +47,4 @@ The first player to reach the target number of captured stones **wins**. If the 
 
 ## Move notation
 
-A stone is its colour, `@` and a cell: `red@d4`. Warm (player 1) has red and yellow, Cool (player 2) blue and black. A turn is one stone or two stones of different colours (the second is a separate move); `done` ends the turn after one. With the pie rule, `swap` is the second player's possible first reply.
+A stone is its color, `@` and a cell: `red@d4`. Warm (player 1) has red and yellow, Cool (player 2) blue and black. A turn is one stone or two stones of different colors (the second is a separate move); `done` ends the turn after one. With the pie rule, `swap` is the second player's possible first reply.

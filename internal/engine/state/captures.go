@@ -13,8 +13,8 @@ import (
 // captures are the positions whose pieces it takes off the board (a draughts
 // chain's jumped men, the stones a placement leaves without liberties, the end
 // of the turn's captures), converts those whose pieces keep their place and
-// change colour (Othello's flips, Fist's ace converting what it jumps), with
-// the colour each turns to. It
+// change color (Othello's flips, Fist's ace converting what it jumps), with
+// the color each turns to. It
 // applies mv to a copy, so it says exactly what Apply would. Both are nil when
 // mv is not legal, in a game with secrets (what a selection does may depend on
 // what the seat may not see), and when mv would show the seat something it
@@ -40,14 +40,14 @@ func SelectionCaptures(game *catalog.CompiledGame, st *BoardState, seat int, mv 
 }
 
 // A Conversion is a position whose piece a selection turns over, and the
-// colour the top piece there turns to.
+// color the top piece there turns to.
 type Conversion struct {
 	At    board.PositionID
 	Color string
 }
 
 // conversions are the positions, sorted, whose stack has the same height and
-// the same kinds of piece before and after but not the same colours: a piece
+// the same kinds of piece before and after but not the same colors: a piece
 // turned over where it stands. A capture by a piece of the kind it takes (a
 // pawn taking a pawn) looks the same, so the positions captured are left out;
 // a promotion changes the kind and a placement fills an empty position, so

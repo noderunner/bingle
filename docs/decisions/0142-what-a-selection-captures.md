@@ -20,7 +20,7 @@ is played (`MoveResult.Captures`), but a played move sent only `captured`, the f
 - **It is left out where applying would tell the seat too much**: in a game with secrets (a ruleset that only
   attaches a view says it hides nothing, `state.Open`), and for a selection that rolls, draws or turns up a card
   (`CanTakeBack`). That keeps ADR 0114's rule that a query never shows a roll early.
-- **A conversion is not a capture**: Fist's ace and Reversi's flips leave a piece where it was, in another colour,
+- **A conversion is not a capture**: Fist's ace and Reversi's flips leave a piece where it was, in another color,
   so they are not in `captures`. A field for them can follow.
 - **A played move carries `captures` too**, beside `captured` (still the first, for the clients that read it),
   kept in `moves.captures`; a row from before has its `captured` alone. A move of several selections lists all of

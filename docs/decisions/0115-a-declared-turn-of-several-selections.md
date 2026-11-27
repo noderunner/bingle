@@ -7,7 +7,7 @@ on `more-plans`) and the DSL step of [ADR 0114](0114-impulses-selections-moves-a
 
 In a declared game a turn is one selection. `turn_order` is round-robin, `opening` restricts the first plies, and
 `then` (Amazons' shot) packs a second choice into the same selection, with a notation of its own (`d1-d5/f5`). Every
-game whose turn is made of several choices is written in Go: Blooms' one or two stones of different colours, Onitama's
+game whose turn is made of several choices is written in Go: Blooms' one or two stones of different colors, Onitama's
 card and move, Fendo's move and then fence, Yinsh's marker and ring move. Outside the catalog the shape is everywhere:
 Connect6's two stones, Arimaa's four steps, every move-then-act game.
 
@@ -27,7 +27,7 @@ turn_order:
   type: round-robin
   seats: [1, 2]
   turn:
-    - {actions: [place], min: 1, max: 2, distinct: piece}   # Blooms: one or two stones, of different colours
+    - {actions: [place], min: 1, max: 2, distinct: piece}   # Blooms: one or two stones, of different colors
   opening:
     plies: 1
     turn:

@@ -120,7 +120,7 @@ func TestStandardArena_IsLegalAndEvenHanded(t *testing.T) {
 			t.Errorf("%s touches %d special tiles, which the draft forbids", hex, neighbours)
 		}
 	}
-	// A half turn about the Eye: every tile has a partner of some colour, and
+	// A half turn about the Eye: every tile has a partner of some color, and
 	// only the two the odd counts cannot pair sit anywhere else.
 	odd := 0
 	for hex := range tiles {

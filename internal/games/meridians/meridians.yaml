@@ -2,13 +2,13 @@
 id: meridians
 name: Meridians
 description: Stones that cannot see a friend die. Place where one of your stones looks, keep every group in sight of another, and take the board away from your opponent.
-version: 0.1.4
+version: 0.1.5
 designers: [Kanare Kato]
 engine: ruleset
 rules:
   - 'The board is a hexagon of triangles with no middle point: six intersections along two sides and seven along the other four. Light moves first; stones never move once placed.'
   - Your first stone goes on any empty intersection. Your second must not touch your first.
-  - "After that, place a stone on an empty intersection your own stones can see: along one of the board's three straight directions, with no stone of the other colour in between."
+  - "After that, place a stone on an empty intersection your own stones can see: along one of the board's three straight directions, with no stone of the other color in between."
   - A group is your stones that touch one another. A path is a straight line of one or more empty intersections joining two of your groups. A group with no path to another group of yours is dead.
   - When your turn ends your dead groups are taken off the board — but not before you have had two turns, so your opening stones are safe. A group the opponent killed can be saved by giving it a new path on your next turn.
   - There is no passing while you have a move. You lose when your turn begins with no stones of yours on the board.
@@ -37,7 +37,7 @@ display:
   badges:
     dead:
       label: No path
-      text: "This group can see no other group of its colour: it comes off the board when its owner's turn ends."
+      text: "This group can see no other group of its color: it comes off the board when its owner's turn ends."
 variants:
   - id: meridians-5
     name: Meridians (5/6)

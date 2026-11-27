@@ -87,7 +87,7 @@ func seatLabel(seat int) string {
 	return "Dark"
 }
 
-// seatColor is the colour of a seat's stones, as the board records them.
+// seatColor is the color of a seat's stones, as the board records them.
 func seatColor(seat int) string {
 	if seat == 1 {
 		return "white"
@@ -95,7 +95,7 @@ func seatColor(seat int) string {
 	return "black"
 }
 
-// seatOf is the seat that owns stones of a colour (0 for neither).
+// seatOf is the seat that owns stones of a color (0 for neither).
 func seatOf(color string) int {
 	switch color {
 	case "white":

@@ -75,7 +75,7 @@ type BotReport struct {
 }
 
 // seatReports counts how each seat of the game fared. The seats come from the
-// definition, so they carry their label and colour even where no game was
+// definition, so they carry their label and color even where no game was
 // played in one.
 func seatReports(cat *catalog.Catalog, gameDefID string, recs []Record) []SeatReport {
 	game, ok := cat.Get(gameDefID)

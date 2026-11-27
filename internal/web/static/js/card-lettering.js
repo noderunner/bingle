@@ -12,7 +12,7 @@
 //   pads     a round pad on every free end
 //   nib      a broad nib: the stroke is drawn again this far along the diagonal
 //   wobble   every point is moved by up to this much, the same way every time
-//   inline   a line of the paper's colour down the middle of the stroke, this wide
+//   inline   a line of the paper's color down the middle of the stroke, this wide
 
 import { s } from "./util.js";
 

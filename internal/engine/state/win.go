@@ -208,7 +208,7 @@ func topMatches(game *catalog.CompiledGame, ns *BoardState, id board.PositionID,
 // no string-keyed map lookups.
 type boardView struct {
 	game  *catalog.CompiledGame
-	color []string // top piece's seat colour per square (ADR 0117); "" = empty
+	color []string // top piece's seat color per square (ADR 0117); "" = empty
 	piece []string // top piece's type per square
 }
 

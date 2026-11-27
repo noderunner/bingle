@@ -1,6 +1,6 @@
 """Small drawing helpers for the diagrams of the rules guides (see guide_diagrams.py).
 
-Every diagram is a self-contained SVG with its own opaque colours, so it reads the same in
+Every diagram is a self-contained SVG with its own opaque colors, so it reads the same in
 the light and the dark page. Squares are addressed (col, row) with row 0 at the BOTTOM, the
 way the games name them (a1 is the bottom-left square).
 """

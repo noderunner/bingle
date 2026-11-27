@@ -300,15 +300,15 @@ func TestChess_Endings(t *testing.T) {
 	draw("stalemate", "7k/8/6Q1/8/8/8/8/K7 w - -", "Qg6-f7", "stalemate")
 	draw("king and bishop", "4k3/8/8/8/8/8/3r4/2B1K3 w - -", "Kxd2", "insufficient-material")
 	draw("fifty moves", "4k3/8/8/8/8/8/8/R3K3 w - - 99 80", "Ra1-a2", "fifty-moves")
-	// Same-coloured bishops cannot mate; opposite ones can.
+	// Same-colored bishops cannot mate; opposite ones can.
 	st, seat := fen(t, "4k3/8/8/8/8/2b5/8/1B2Kr2 w - -")
 	if _, res := play(t, g, st, seat, "Kxf1"); res.GameEnded {
-		t.Errorf("bishops on both colours ended the game: %s", res.EndReason)
+		t.Errorf("bishops on both colors ended the game: %s", res.EndReason)
 	}
 	st, seat = fen(t, "4k3/8/8/8/8/1b6/8/1B2Kr2 w - -")
 	_, res = play(t, g, st, seat, "Kxf1")
 	if !res.GameEnded || res.EndReason != "insufficient-material" {
-		t.Errorf("bishops on one colour: %+v", res)
+		t.Errorf("bishops on one color: %+v", res)
 	}
 	// The start position a third time.
 	_, res = play(t, g, start, 1, "Nf3", "Nf6", "Ng1", "Ng8", "Nf3", "Nf6", "Ng1")
@@ -405,7 +405,7 @@ func TestChess_HeuristicSeatOutOfRange(t *testing.T) {
 	}
 }
 
-// A pawn that takes a pawn leaves a pawn on the square in the other colour,
+// A pawn that takes a pawn leaves a pawn on the square in the other color,
 // which is a capture and not a conversion (#293).
 func TestChess_ACaptureOfALikePieceConvertsNothing(t *testing.T) {
 	g := game(t)

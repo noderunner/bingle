@@ -2,7 +2,7 @@
 id: pente
 name: Pente
 description: Five in a row wins — or capture five pairs. Flank two enemy stones between your own and they are removed.
-version: 0.3.1
+version: 0.3.2
 designers: [Gary Gabrel]
 rules:
   - Players alternate placing a stone on any empty intersection; the first player moves first.

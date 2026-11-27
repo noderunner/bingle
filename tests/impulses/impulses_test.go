@@ -134,7 +134,7 @@ func TestEveryGamePlaysByImpulses(t *testing.T) {
 	}
 }
 
-// Blooms' turn is one impulse: a stone, then a stone of the other colour or
+// Blooms' turn is one impulse: a stone, then a stone of the other color or
 // done; the first player's first turn is a single stone.
 func TestBloomsTurnIsOneImpulse(t *testing.T) {
 	var g *catalog.CompiledGame

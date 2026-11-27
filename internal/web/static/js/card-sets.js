@@ -11,19 +11,19 @@
 //   * The ranks are the game's, whatever it calls them: card-lettering.js letters
 //     digits and capitals. Numbers from 2 to 10 lay out that many pips, 1 or A one
 //     large one, and anything else is a framed court card.
-//   * Each suit has a colour of its own, except in a set that `alternates`: there
-//     two suits may share one, and the colours of the odd places (warm) are never
+//   * Each suit has a color of its own, except in a set that `alternates`: there
+//     two suits may share one, and the colors of the odd places (warm) are never
 //     those of the even places (cool), as a pack's red and black suits are not.
-//     Where colours are the rule, such a set needs no mark of the classic suit.
+//     Where colors are the rule, such a set needs no mark of the classic suit.
 //   * Jokers (a card with the tag "joker") belong to no suit. Each of the four has
-//     the colours of two suits: suits one and two, three and four, five and six,
+//     the colors of two suits: suits one and two, three and four, five and six,
 //     seven and eight. A game's first joker is the first of the set, its second the
 //     second, and so on round.
 //
 // Icons are drawn in a 24×24 box from a list of layers: [kind, path data, width].
-//   f  filled in the suit's colour        l  a line in the suit's colour
-//   g  filled in the second colour        m  a line in the second colour
-//   k  filled in the colour of the paper  x  a line in the colour of the paper
+//   f  filled in the suit's color        l  a line in the suit's color
+//   g  filled in the second color        m  a line in the second color
+//   k  filled in the color of the paper  x  a line in the color of the paper
 // A capital kind is drawn twice, the second time mirrored about the middle.
 
 import { s } from "./util.js";
@@ -177,7 +177,7 @@ function amphibianBack() {
 	g.push(s("circle", { cx: 50, cy: 70, r: 29, fill: "#7cc04b", stroke: "#2f7a2e", "stroke-width": 1.2 }), s("path", { d: "M50 70L76 84A29 29 0 0 1 66 94z", fill: "#0d5c58" }));
 	g.push(s("circle", { cx: 34, cy: 18, r: 3.5, fill: "#f6b7d2" }), s("circle", { cx: 34, cy: 18, r: 1.5, fill: "#ffe680" }));
 	g.push(s("circle", { cx: 66, cy: 122, r: 3.5, fill: "#f6b7d2" }), s("circle", { cx: 66, cy: 122, r: 1.5, fill: "#ffe680" }));
-	// A frog sitting on the big pad, its colours the back's own.
+	// A frog sitting on the big pad, its colors the back's own.
 	g.push(s("g", { transform: "translate(32 50) scale(1.5)", style: "color:#14432b;--paper:#ffe680" }, drawIcon(AMPHIBIANS.suits[0].art)));
 	g.push(s("rect", { x: 3.5, y: 3.5, width: 93, height: 133, rx: 9, fill: "none", stroke: "#bfe58f", "stroke-width": 1.8 }));
 	return g;
@@ -345,7 +345,7 @@ function leaf(cx, cy, k, deg) {
 }
 
 // The suits alternate warm and cool, as a pack's red and black do: a suit at an odd
-// place is red or orange, one at an even place black or purple. A game where colours
+// place is red or orange, one at an even place black or purple. A game where colors
 // are the rule reads them by that place (docs/dsl.md), so they show it here too.
 const CLASSIC = {
 	id: "classic-extended",
@@ -393,7 +393,7 @@ function classicBack() {
 	g.push(s("path", { d, fill: "none", stroke: line, "stroke-opacity": 0.5, "stroke-width": 0.8 }));
 	g.push(s("rect", { x: 8, y: 8, width: 84, height: 124, rx: 3, fill: "none", stroke: line, "stroke-width": 1.6 }));
 	g.push(s("rect", { x: 4, y: 4, width: 92, height: 132, rx: 5, fill: "none", stroke: line, "stroke-width": 0.8 }));
-	// A medallion with the clover in it, ringed in the four colours of the set.
+	// A medallion with the clover in it, ringed in the four colors of the set.
 	g.push(s("circle", { cx: 50, cy: 70, r: 21, fill: navy, stroke: line, "stroke-width": 1.4 }));
 	g.push(s("circle", { cx: 50, cy: 70, r: 17.5, fill: line }));
 	CLASSIC.suits.forEach((suit, i) => {
@@ -432,12 +432,12 @@ function iconAt(art, x, y, size, flip = false) {
 	return s("g", { transform: `translate(${n1(x)} ${n1(y)}) rotate(${flip ? 180 : 0}) scale(${n1(k)}) translate(-12 -12)` }, drawIcon(art));
 }
 
-/** What a card or a chip of this set has to set for its art to take its colours. */
+/** What a card or a chip of this set has to set for its art to take its colors. */
 function setVars(set, a, b) {
 	return `--suit: ${a}; --suit2: ${b || a}; --paper: ${set.paper}; --edge: ${set.edge}; --ink: ${set.ink}`;
 }
 
-/** The colours and the art of the joker at this place in the game's list. */
+/** The colors and the art of the joker at this place in the game's list. */
 function jokerAt(set, index) {
 	const i = index % set.jokers.length;
 	return { ...set.jokers[i], color: set.suits[2 * i].color, color2: set.suits[2 * i + 1].color };
@@ -504,7 +504,7 @@ function suitFaceSvg(set, index, label) {
 	return faces.get(key).cloneNode(true);
 }
 
-/** A joker's picture: its icon in its two colours, its name below it. */
+/** A joker's picture: its icon in its two colors, its name below it. */
 function jokerFaceSvg(set, index) {
 	const key = `${set.id}|joker|${index}`;
 	if (!faces.has(key)) {

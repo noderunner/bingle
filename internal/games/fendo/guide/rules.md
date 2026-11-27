@@ -35,7 +35,7 @@ If you have no possible action, you pass.
 A fence may be built if it either
 
 - stands **inside the open area without closing anything off**, or
-- **closes off an area that holds exactly one piece** (of either colour).
+- **closes off an area that holds exactly one piece** (of either color).
 
 A fence may **not** close off an empty area, or an area that holds several pieces.
 

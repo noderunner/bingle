@@ -33,7 +33,7 @@ Standing stones and flat stones come from the same supply: the choice is made wh
 
 ## Starting the game
 
-Each player's first turn is special: you place one **flat stone of your opponent's colour** on any empty square. White goes first, so White puts a black stone down, then Black puts a white stone down. From then on, White moves again and the players alternate, each playing their own colour.
+Each player's first turn is special: you place one **flat stone of your opponent's color** on any empty square. White goes first, so White puts a black stone down, then Black puts a white stone down. From then on, White moves again and the players alternate, each playing their own color.
 
 ## On your turn
 
@@ -48,7 +48,7 @@ Choose a flat stone, a standing stone or your capstone and put it on any empty s
 
 ### Stacking & Movement
 
-Stones pile up. A square can hold a **stack** of any number of stones, and a stack can contain both colours. **Whoever's stone is on top controls the stack**, so you may move any stack with your own stone on top, however many enemy stones lie underneath.
+Stones pile up. A square can hold a **stack** of any number of stones, and a stack can contain both colors. **Whoever's stone is on top controls the stack**, so you may move any stack with your own stone on top, however many enemy stones lie underneath.
 
 To move a stack:
 
@@ -61,7 +61,7 @@ To move a stack:
 Some things to know:
 
 - Moving just one stone is a move too: a single stone can step to a neighbouring square, on top of whatever stack is there.
-- A stack can be moved onto any square that is **empty** or whose top stone is a **flat stone** (of either colour), including your own.
+- A stack can be moved onto any square that is **empty** or whose top stone is a **flat stone** (of either color), including your own.
 - A stack cannot enter a square topped by a **wall** or a **capstone**, and it cannot move off the board. The one exception is the capstone's flattening, below.
 - Putting your stones on top of an opponent's flat stones *captures* them in the sense that they are covered: they stop counting for roads and for the flat count until the stack above is moved away.
 
@@ -99,7 +99,7 @@ A capstone flattens a wall when it moves onto the wall's square:
 - the capstone must be **alone** when it lands, that is, it must be the only stone dropped on that square, and
 - the wall must be on the **last square** of the move.
 
-The wall is then turned flat and counts as a flat stone again (of its owner's colour), with the capstone on top of it. A stack that contains a capstone can do this too, as long as the capstone is dropped last and alone on the final square.
+The wall is then turned flat and counts as a flat stone again (of its owner's color), with the capstone on top of it. A stack that contains a capstone can do this too, as long as the capstone is dropped last and alone on the final square.
 
 ## Ending without a road
 

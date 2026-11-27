@@ -50,7 +50,7 @@ patience:
 | `deal.down` | how many of them lie face down (default: all but the top card; `0` for all up; a list per column) |
 | `deal.kings_under` | kings are put at the bottom of their column (Baker's Dozen) |
 | `build.rank` | `down` (default) or `up`: a card goes on one a rank above (below) it |
-| `build.suit` | `alternate` (colour), `same` or `any` |
+| `build.suit` | `alternate` (color), `same` or `any` |
 | `lift` | what may be moved off a column together: `top` (one card), `ordered` (a run that builds by `build`), `same-suit` (an ordered run of one suit, Spider), `any-face-up` (any face-up card with everything on it, Yukon and Scorpion) |
 | `lift_limit` | `cells`: a run is at most (free cells + 1) × 2^(empty columns), FreeCell's |
 | `empty` | what an empty column takes: `any` (default), `king` (a king, or a run from a king) or `none` |
@@ -89,9 +89,9 @@ compares by notation:
 The gestures are the pile to lift from (and, for a run, the card it starts at), then the pile it goes to, as the
 page's patience table makes them today.
 
-### Suit colour, hints and search
+### Suit color, hints and search
 
-- **Colour** is a suit's place in `suit_order`: odd places are one colour and even places the other, as Solitaire
+- **Color** is a suit's place in `suit_order`: odd places are one color and even places the other, as Solitaire
   reads it now. A themed set of cards wears the suits by place, so the rule holds whatever the cards look like.
 - **A hint** comes from a generic order of the moves. `finish` comes first, then a card going home. After that, a move
   that turns a card over, then one that empties a column, then a move off a cell, then one that builds in suit. Other

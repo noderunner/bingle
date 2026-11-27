@@ -2,7 +2,7 @@
 id: yavalath
 name: Yavalath
 description: Make four in a row to win — but make three in a row first and you lose. A misère-flavoured race on a hexagonal board.
-version: 0.3.1
+version: 0.3.2
 designers: [Cameron Browne]
 publisher: nestorgames
 rules:

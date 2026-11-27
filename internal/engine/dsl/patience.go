@@ -49,7 +49,7 @@ type ColumnDealDef struct {
 type PatienceBuildDef struct {
 	// Rank is "down" (default) or "up".
 	Rank string `json:"rank,omitempty"`
-	// Suit is "alternate" (colour, by place in suit_order), "same" or "any".
+	// Suit is "alternate" (color, by place in suit_order), "same" or "any".
 	Suit string `json:"suit,omitempty"`
 }
 

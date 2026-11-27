@@ -31,17 +31,17 @@ the test servers register and the real server never does. Nothing in a database 
 of it had been created on the live server.
 
 **Nyet!'s table.**
-- *Classic suits.* The deck's four colours are drawn as spades, hearts, diamonds and clubs (red
+- *Classic suits.* The deck's four colors are drawn as spades, hearts, diamonds and clubs (red
   hearts, blue spades, yellow diamonds, green clubs), with the rank in two corners and the pips of
   the value (`js/card-art.js`; 11–13 are framed, the three 1s of a suit stand in a ring). Only what
   a player reads and sees changed: the card ids (`red-9`), the saved positions, the notation of the
-  moves and the engine keep the colours' names, so a stored game, a move history or an agent that
+  moves and the engine keep the colors' names, so a stored game, a move history or an agent that
   plays over MCP keeps working. The mapping is fixed (`suits.go`), the notation help says so, and
   every sentence the game says (the history, the prompts, the rules, the guide) names suits. The
   alternative, renaming the ids, would have needed a migration of every saved position and a second
   name for every card in notation; it can still be done later behind the same view.
-- *Players are animals.* Wolf, Crane, Tiger, Bear and Eagle are drawn in the colour of their seat
-  (`js/animals.js`, the seat colours of the theme, so they follow light and dark): beside the name in
+- *Players are animals.* Wolf, Crane, Tiger, Bear and Eagle are drawn in the color of their seat
+  (`js/animals.js`, the seat colors of the theme, so they follow light and dark): beside the name in
   the list of players, under the card each played into the trick, and in the box of the board that
   each crossed off.
 - *The other players' hands are not drawn.* The list of players on the right shows, with the points,
@@ -73,8 +73,8 @@ of it had been created on the live server.
 - "The Helm icon" is the help icon (the `?` in the top bar), the only icon the task could mean.
 - "James Earnest" is spelled **James Ernest**, as Tak's designer already is (and as the Cheapass
   Games founder spells it).
-- The classic suits are coloured the classic way, two red and two black. Hearts and diamonds differ
-  by shape only, as in any deck; the board's pictures and the card faces use the same two colours.
+- The classic suits are colored the classic way, two red and two black. Hearts and diamonds differ
+  by shape only, as in any deck; the board's pictures and the card faces use the same two colors.
 - A crossed box no longer shows what it was; only the box left open does, which is the rule of the
   round. What was crossed is in the tooltip and in the history.
 - "Cards in hand" counts only the hand, not the discards or the tricks won.
