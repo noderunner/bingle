@@ -4863,10 +4863,10 @@ function showLogEnd() {
 /**
  * The history of the game, on one card with one set of buttons to step through it.
  * A game that narrates its turns can write it out in words or as its notation; the
- * choice is remembered. One that does not has only the notation.
+ * choice is remembered. One that does not, or has not yet, has only the notation.
  */
 function historyCard() {
-	const log = eventsPane();
+	const log = narrates() ? eventsPane() : null;
 	const card = h("div", { class: "card side-moves", id: "history-card" });
 	const head = h("div", { class: "history-head" }, h("h3", {}, tr("game.history")));
 	card.append(head);
@@ -5573,13 +5573,18 @@ function logStep(line, e) {
 	return li;
 }
 
+/** Whether the game has told anything in words so far: many rules never do (#331). */
+function narrates() {
+	return rulesetLog(true).some((e) => e.lines && e.lines.length) || rulesetEvents().length > 0;
+}
+
 // eventsPane narrates the whole game so far, with a rule marking where the
 // viewer's last decision was (what the other seats did meanwhile comes after
 // it). A spectator sees the whole log without the mark. It returns
-// {node, since} for the History tab, or null for a game that does not narrate
-// its turns. A game that does always has the tab: when there is nothing to
-// tell (the start of the game, a stretch of silent decisions such as Done), the
-// tab says so instead of vanishing and leaving only Moves.
+// {node, since} for the History tab, or null for a game that is not a ruleset.
+// Once a game has narrated, it keeps the tab: when there is nothing to tell
+// (a stretch of silent decisions such as Done), the tab says so instead of
+// vanishing and leaving only Moves.
 function eventsPane() {
 	if (!isRuleset()) return null;
 	const log = rulesetLog(true);

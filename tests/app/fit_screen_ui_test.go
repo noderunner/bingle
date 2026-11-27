@@ -532,3 +532,85 @@ func TestWebFitScreen_WhatIsAboveAndUnderAMapIsAsWideAsTheMap(t *testing.T) {
 		})()`, 5*time.Second)
 	}
 }
+
+// The history card beside a board shows the moves played, written out in words or as
+// notation: neither list is squeezed to nothing (#331).
+func TestWebFitScreen_TheHistoryShowsTheMoves(t *testing.T) {
+	base := newRESTTestServer(t)
+	ctx, cancel := newChromedpContext(t, 90*time.Second)
+	defer cancel()
+	// shown is true when the last element sel finds is drawn with some height, in view in
+	// its pane: a list opens on its newest entry.
+	shown := func(sel string) string {
+		return fmt.Sprintf(`(function () {
+			var e = [...document.querySelectorAll(%q)].pop(), p = e && e.closest(".history-pane");
+			if (!e || !p) return false;
+			var r = e.getBoundingClientRect(), q = p.getBoundingClientRect();
+			return r.height > 0 && r.top >= q.top - 0.5 && r.bottom <= q.bottom + 0.5;
+		})()`, sel)
+	}
+	for _, def := range []string{"blooms", "chess", "meridians"} {
+		t.Run(def, func(t *testing.T) {
+			room := playedAgainstABot(t, base, def)
+			if err := chromedp.Run(ctx, chromedp.EmulateViewport(1280, 900)); err != nil {
+				t.Fatal(err)
+			}
+			openGameAs(t, ctx, base, room, def, "Alice")
+			if evalBool(t, ctx, `document.getElementById("history-notation") !== null`) {
+				evalBool(t, ctx, `(document.getElementById("history-friendly").click(), true)`)
+				waitJS(t, ctx, "the history in words", `document.querySelector("#events li") !== null`, 10*time.Second)
+				if !evalBool(t, ctx, shown("#events li")) {
+					t.Error("the history in words is not shown")
+				}
+				evalBool(t, ctx, `(document.getElementById("history-notation").click(), true)`)
+			}
+			waitJS(t, ctx, "the moves", `document.querySelector("#move-list button.mv") !== null`, 10*time.Second)
+			if !evalBool(t, ctx, shown("#move-list button.mv")) {
+				t.Error("the moves' notation is not shown")
+			}
+		})
+	}
+}
+
+// playedAgainstABot creates a game of def for Alice against a random bot and plays the
+// first selection on offer until Alice and the bot have each played an impulse. It gives
+// the room.
+func playedAgainstABot(t *testing.T, base, def string) string {
+	t.Helper()
+	var created struct {
+		RoomCode string `json:"room_code"`
+		Seat     int    `json:"seat"`
+	}
+	if code := doJSON(t, "POST", base+"/api/games", map[string]any{"game_def_id": def, "player_name": "Alice", "opponent": "random"}, &created); code != 200 {
+		t.Fatalf("create: %d", code)
+	}
+	room := created.RoomCode
+	for i := 0; i < 50; i++ {
+		var st struct {
+			ImpulseSeat int    `json:"impulse_seat"`
+			Status      string `json:"status"`
+			Ply         int    `json:"ply"`
+		}
+		doJSON(t, "GET", base+"/api/games/"+room+"/state", nil, &st)
+		if st.Status != "active" || st.Ply >= 2 {
+			return room
+		}
+		if st.ImpulseSeat != created.Seat {
+			time.Sleep(100 * time.Millisecond) // the bot's turn
+			continue
+		}
+		var legal struct {
+			Moves []struct {
+				Notation string `json:"notation"`
+			} `json:"options"`
+		}
+		if code := doJSON(t, "GET", base+"/api/games/"+room+"/selections", nil, &legal); code != 200 || len(legal.Moves) == 0 {
+			t.Fatalf("selections: %d", code)
+		}
+		if code := doJSON(t, "POST", base+"/api/games/"+room+"/moves", map[string]any{"player_name": "Alice", "notation": legal.Moves[0].Notation}, nil); code != 200 {
+			t.Fatalf("move: %d", code)
+		}
+	}
+	t.Fatal("the bot did not move")
+	return ""
+}

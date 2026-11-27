@@ -1445,9 +1445,11 @@ a.button .unread-count { display: inline-block; margin-inline-start: 0.4rem; min
 #rail-pane-talk > .chat > h3 > :is(.chat-title, .chat-unread) { display: none; }
 #rail-pane-talk > .chat > h3 { margin: 0 0 0.3rem; }
 #rail-pane-history > .side-moves { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
-.play-screen .side-moves > .history-pane { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
-.play-screen .side-moves > .history-pane > .events, .play-screen .side-moves > .history-pane > .move-list { flex: 1 1 0; min-height: 0; overflow-y: auto; }
-.play-screen .side-moves > .history-head, .play-screen .side-moves > .history-steps { flex: none; }
+/* Only in its tab is the history card a column of a set height to fill: anywhere else a
+   list on a basis of 0 would have no height at all (#331). */
+#rail-pane-history > .side-moves > .history-pane { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
+#rail-pane-history > .side-moves > .history-pane > .events, #rail-pane-history > .side-moves > .history-pane > .move-list { flex: 1 1 0; min-height: 0; overflow-y: auto; }
+#rail-pane-history > .side-moves > .history-head, #rail-pane-history > .side-moves > .history-steps { flex: none; }
 .play-screen.areas .events, .play-screen.areas .move-list { max-height: none; }
 .impulse-card .move-bar { max-width: none; min-height: 0; }
 .impulse-card .hint:empty { display: none; }
