@@ -530,6 +530,10 @@ dialog ul { padding-inline-start: 1.2rem; }
 .piece.color-brown .piece-detail, .ghost-piece.color-brown .piece-detail { stroke: var(--piece-brown-stroke); }
 .piece.color-grey .piece-detail, .ghost-piece.color-grey .piece-detail { stroke: var(--piece-grey-stroke); }
 .piece.ghost { opacity: 0.55; }
+/* A seat's key (paint.js's seatKey): a dot of its paint beside its name, sized again where a row wants it bigger. */
+:where(.seat-key) { display: inline-block; inline-size: 0.8rem; block-size: 0.8rem; border-radius: 50%; border: 2px solid var(--border); flex: none; }
+.log-key, .status-key, .seat-named .seat-key { margin-inline-end: 0.25rem; vertical-align: -0.1rem; }
+.chat-key { align-self: center; }
 .swatch.color-white { background: var(--piece-white-fill); border-color: var(--piece-white-stroke); }
 .swatch.color-black { background: var(--piece-black-fill); border-color: var(--piece-black-stroke); }
 .swatch.color-red { background: var(--piece-red-fill); border-color: var(--piece-red-stroke); }

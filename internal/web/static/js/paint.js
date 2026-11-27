@@ -10,6 +10,14 @@
 // colors and then of its extra_colors, so two unknown colors never look the
 // same and each follows the board theme as the words do. What a screen reader
 // hears still names the color as the definition gives it.
+//
+// Wherever the page names a seat, its key stands beside the name (decision 5):
+// seatKey's swatch in the viewer's paint of each color the seat plays, which
+// a board theme repaints without a reload, with the colors' names for a
+// tooltip and a screen reader.
+
+import { h } from "./util.js";
+import { t, lang } from "./i18n.js";
 
 /** The color words the page has a paint for, the stylesheet's and every board theme's. */
 export const COLOR_WORDS = Object.freeze(["white", "black", "red", "yellow", "orange", "green", "blue", "purple", "teal", "sand", "brown", "grey"]);
@@ -89,4 +97,41 @@ export function colorClass(color, info = inView) {
 /** A color's paint as a CSS value, for a style that mixes it (a seat's ink, a gradient). */
 export function colorPaint(color, info = inView) {
 	return `var(--piece-${paintWord(color, info)}-fill)`;
+}
+
+/** A color's name in words: a color word in the page's language, any other as the definition gives it. */
+export function colorName(color) {
+	const c = knownColor(color);
+	return c ? t(`color.${c}`) : String(color);
+}
+
+/** The seat of the game in view, by its number, or null. */
+export function seatInView(seat) {
+	return ((inView && inView.seats) || []).find((s) => s.seat === seat) || null;
+}
+
+/** The colors a seat plays: its colors, or its one color. */
+export function seatColors(sd) {
+	if (!sd) return [];
+	return sd.colors && sd.colors.length ? sd.colors : sd.color ? [sd.color] : [];
+}
+
+/**
+ * The key beside a seat's name: a swatch (or `cls`) in the viewer's paint of
+ * the seat's color, and for a seat of several colors a gradient of them (the
+ * web file's blend where it gives one), named by every color it plays. `title`
+ * goes before the colors' names in the tooltip.
+ */
+export function seatKey(sd, info = inView, { cls = "swatch", title = "" } = {}) {
+	const colors = seatColors(sd);
+	const blend = sd && sd.blend && sd.blend.length > 1 ? sd.blend : colors.length > 1 ? colors : null;
+	const names = new Intl.ListFormat(lang, { type: "unit" }).format(colors.map(colorName));
+	return h("span", {
+		class: `seat-key ${cls} ${colorClass(colors[0] || "white", info)}`,
+		style: blend ? `background: linear-gradient(90deg, ${blend.map((c) => colorPaint(c, info)).join(", ")})` : null,
+		role: "img",
+		"aria-label": names || null,
+		title: (title ? `${title} · ${names}` : names) || null,
+		"data-colors": colors.join(" ") || null,
+	});
 }
