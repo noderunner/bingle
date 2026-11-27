@@ -89,7 +89,8 @@ type DirectSignal struct {
 }
 
 // DirectCall is the wire form of a "dm-call" event: somebody is calling, or a
-// call has ended.
+// call has ended. A ring still waiting for an answer when /ws-dm opens follows
+// its ready event, and may come twice.
 type DirectCall struct {
 	// Kind is "ring" (this person wants to talk, or has answered) or "end".
 	Kind string `json:"kind"`
@@ -336,6 +337,20 @@ func (m *Manager) SubscribeDirect(address string) (<-chan Event, func()) {
 	return m.hub.subscribe(dmRoom(address))
 }
 
+// PendingRings are the rings still waiting for this browser: somebody who is
+// still here has called it, and it has neither answered nor declined. A ring
+// is pushed only to the sockets open when it is made, so /ws-dm sends these
+// again when one opens, after a sign-in or a reconnect (#232).
+func (m *Manager) PendingRings(address string) []DirectCall {
+	var out []DirectCall
+	for _, from := range m.calls.ringing(address) {
+		if name := m.NameHere(from); name != "" {
+			out = append(out, DirectCall{Kind: "ring", From: from, Name: name})
+		}
+	}
+	return out
+}
+
 // ---- a call between two people ---------------------------------------------
 
 // JoinDirectCall says that this browser wants to talk to the address to (or,
@@ -364,6 +379,8 @@ func (m *Manager) LeaveDirectCall(from, to string) {
 	if where, ok := m.calls.in(from); ok && (to == "" || where.Peer == to) {
 		m.calls.release(from)
 		if where.Peer != "" {
+			// The call ends for both: the other side is no longer in it either.
+			m.calls.releaseIf(where.Peer, CallWhere{Peer: from})
 			m.hub.publish(dmRoom(where.Peer), Event{Type: "dm-call", Data: DirectCall{Kind: "end", From: from}})
 		}
 		return
@@ -446,6 +463,20 @@ func (c *callRegistry) releaseIf(addr string, where CallWhere) bool {
 	return true
 }
 
+// ringing lists, in order, who is calling addr without addr having answered.
+func (c *callRegistry) ringing(addr string) []string {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	var out []string
+	for from, w := range c.at {
+		if w.Peer == addr && c.at[addr] != (CallWhere{Peer: from}) {
+			out = append(out, from)
+		}
+	}
+	slices.Sort(out)
+	return out
+}
+
 // in reports the call addr is in.
 func (c *callRegistry) in(addr string) (CallWhere, bool) {
 	c.mu.Lock()
@@ -470,6 +501,7 @@ func (m *Manager) claimVoice(addr string, where CallWhere) {
 			m.hub.publish(old.Room, Event{Type: "voice", Data: VoiceEventData{Kind: "leave", Seat: old.Seat, Name: old.Name}})
 		}
 	case old.Peer != "":
+		m.calls.releaseIf(old.Peer, CallWhere{Peer: addr})
 		m.hub.publish(dmRoom(old.Peer), Event{Type: "dm-call", Data: DirectCall{Kind: "end", From: addr}})
 		m.hub.publish(dmRoom(addr), Event{Type: "dm-call", Data: DirectCall{Kind: "end", From: old.Peer, Dropped: true}})
 	}

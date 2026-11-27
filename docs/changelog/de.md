@@ -2,6 +2,11 @@
 
 Was sich in Bingle geändert hat, das Neueste zuerst. Bingle Core (der Server, die Engine und der Web-Client) und jedes Spiel haben eine eigene Version, und jeder Eintrag sagt, welche sich geändert hat. Einträge vor 0.124.0 gibt es nur auf Englisch.
 
+## 0.142.1 - 2026-11-27
+
+### Bingle Core 0.142.1
+- Ein Anruf, der kommt, während deine Verbindung kurz weg ist, klingelt jetzt trotzdem (API 1.20.1)
+
 ## 0.142.0 - 2026-11-27
 
 ### Bingle Core 0.142.0
