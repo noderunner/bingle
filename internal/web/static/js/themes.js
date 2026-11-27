@@ -4,10 +4,10 @@
 //
 // A theme paints each of paint.js's color words (its stones); paint.js says
 // which word a game's color is painted as, a color the page does not know
-// being lent a word by seat, so it follows the theme as the words do. The warm
-// words (reds, golds, oranges, cream) are warm in every theme and the cold
-// (blues, violets, near-black) cold: a game whose sides are "white" and
-// "black" gets a warm light and a cold dark stone.
+// being lent a word by seat, so it follows the theme as the words do. A theme
+// keeps ADR 0154's paint contract, which tests/look/contract_test.go holds it
+// to: the main paints (mid) of the colors one game plays are told apart, and
+// white is the lightest of them and black the darkest.
 //
 // A theme is selected with <html data-board="id">; the stylesheet that makes it
 // work is built from the tables below (installThemes) and put in the page once,
