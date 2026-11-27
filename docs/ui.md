@@ -808,10 +808,19 @@ with arches, a sea with light rays, kelp and bubbles, velvet with a gold rail se
 (`.theme-mark`: retro slits, a rune, a sun or stepped diamond, an eight-point star, a shine, a cut gem).
 With a theme on, the coordinates (`text.coord.coord-out`) stand in a strip outside the frame, in
 the page's text color, not on the picture (the `viewBox` of the board grows by the strip).
-Each theme paints a stone by its color's name, whichever seat plays it: `red`, `yellow`,
-`orange`, `white` and `brown` are **warm** (reds, golds, oranges, cream), and `blue` and `black`
-**cold** (blues, violets, near-black), so Go's first player, black, is cold, and chess's, white,
-warm ([ADR 0154](decisions/0154-a-color-is-a-name-and-paint-is-each-clients-own.md));
+Each theme paints a stone by its color's name, whichever seat plays it, so Go's first player,
+black, is whatever the theme paints `black`. What a theme must keep is the paint contract of
+[ADR 0154](decisions/0154-a-color-is-a-name-and-paint-is-each-clients-own.md), which
+`tests/look/contract_test.go` holds every look to, the plain ones (wood, slate, green felt, paper:
+`style.css`'s `--piece-<word>-fill`) and each illustrated theme, for every shipped game that
+offers it, from the colors in play in its definition (each seat's `colors` or `color`, and
+`extra_colors`): within a game, the main paints of the colors in play (a stone's `mid`, not its
+highlight or rim) are told apart, at least 0.08 apart in OKLab, and the order of lightness is
+kept, `white` at least 4 L\* lighter than every other color of its game and `black` at least 4
+L\* darker. A color the page does not know is lent the paint of a word its game does not play, so
+the first four words lent (`red`, `blue`, `green`, `yellow`) are held apart in every look too. A
+new theme's author reads the test for what it asks (the same measure and thresholds as the 3D
+client's);
 `themes.css` holds the ambient motion (neon, rays, kelp, bubbles), which runs only with *Animate
 moves* on and the OS not asking for less motion. A theme the game does not offer (another
 game's choice, remembered in `bingle.board`) falls back to wood. Choosing one redraws the board.
