@@ -363,3 +363,8 @@ which is now built.
   The same ADR **decides, for packs, how a non-web client gets a game's assets**, which this plan left open: the
   pack carries a folder of files for each client, the server lists and serves them without reading them, and a
   client fetches what it lacks and keeps it by its hash. A client still ships what every game shares.
+- 2026-11-27: **the proof of concept ended and is kept** (#300, ADR 0147, accepted;
+  [report](wasm-packs-report.md)). Decision 1 now has one exception: a pack's rules may be a WebAssembly module, for
+  small games. The overlay stays the way every other commercial game is built, and data packs stay dropped. For a
+  non-web client, a game may carry that client's files and the server hands them out; the overlay's games are to do
+  the same (#345).

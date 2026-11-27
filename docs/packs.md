@@ -1,10 +1,13 @@
 # Install packs
 
 An install pack is a game whose rules are a WebAssembly module, in a directory that a server reads
-when it starts. An unmodified public build of bingle then offers the game like any other. It is a
-proof of concept ([ADR 0147](decisions/0147-rules-as-webassembly-in-an-install-pack.md)): the way a
-commercial game is built is still the private overlay
+when it starts. An unmodified public build of bingle then offers the game like any other. Packs are
+for small games ([ADR 0147](decisions/0147-rules-as-webassembly-in-an-install-pack.md)): the way
+other commercial games are built is still the private overlay
 ([ADR 0127](decisions/0127-commercial-games-in-a-private-overlay.md)).
+
+**The ABI, version 0, promises nothing.** It may change in any release, so rebuild a pack with the
+server it runs on.
 
 ## Loading packs
 
