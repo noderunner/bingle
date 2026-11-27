@@ -17,7 +17,7 @@ func TestGuides_EveryAbstractGameShipsItsRulesAndPictures(t *testing.T) {
 	cases := map[string][]string{
 		"tak-5x5": rules, "tak-3x3": rules, "tak-8x8": rules,
 		"gomoku": rules, "hex-11": rules, "hex-7": rules,
-		"draughts": rules, "breakthrough": rules, "reversi": rules, "go-9x9": rules, "go-19x19": rules,
+		"draughts": rules, "breakthrough": rules, "othello": rules, "go-9x9": rules, "go-19x19": rules,
 		"yavalath": rules, "havannah-8": rules, "havannah-4": rules, "amazons": rules, "amazons-6": rules,
 		"ataxx": rules, "pente": rules, "brandubh": rules, "blooms": rules, "blooms-4": rules,
 		"fendo": rules, "fendo-9": rules,

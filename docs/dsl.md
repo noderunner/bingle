@@ -228,7 +228,7 @@ actions:
 | `gravity` | direction name (`S`): only squares supported by a piece or the board edge |
 | `captures` | `{}`: after placement, opposing orthogonal groups with no empty neighbour are removed; a placement leaving its own group without liberties is illegal unless it captures (`{"allow_suicide": true}` lifts that) — Go |
 | `ko` | `true` (needs `captures`): may not recreate the position as it was before the opponent's last move |
-| `flips` | `{"require": true}`: the placed piece flips every straight run of opposing pieces it brackets against a piece of its own color; with `require` the placement is only legal if it flips something (Reversi) |
+| `flips` | `{"require": true}`: the placed piece flips every straight run of opposing pieces it brackets against a piece of its own color; with `require` the placement is only legal if it flips something (Othello) |
 | `custodian` | `{"lengths": [2], "count_in": "captured"}`: runs of opposing pieces flanked by the new piece and one of yours are removed (Pente); see *custodian captures* |
 
 **`pass`**: `{"id": "pass", "type": "pass"}` — a move that does nothing (it
@@ -288,7 +288,7 @@ turn_order:
 ```
 
 `"pass_when_stuck": true` on `turn_order` skips a seat that has no legal move
-(Reversi); when nobody can move an `end` rule with `no-legal-moves` finishes
+(Othello); when nobody can move an `end` rule with `no-legal-moves` finishes
 the game.
 
 During the first `plies` plies only the listed actions/pieces are allowed;
@@ -919,4 +919,9 @@ the ruleset in two steps, so nothing changes for the players by accident:
 
 The id stays the same, so ratings and the record of the game's versions carry over. The
 reasoning, and which games are candidates, are in the DSL coverage audit plan.
+
+A game whose id changes lists its old ids in its module's `Formerly` (Othello, once `reversi`): an
+old id still finds the game, a game made with it is stored under the new one, and everything stored
+under it (games, ratings, tournaments, scores, setups, badges) moves to the new id once, at start-up
+(ADR 0152).
 

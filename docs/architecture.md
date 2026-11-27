@@ -145,7 +145,7 @@ Served by the same binary as static assets plus lightweight JS (no SPA build pip
   [client-builds.md](client-builds.md)).
 * **Games** (`internal/games`): `tak` (3×3–8×8 from one YAML
   definition), `classics` (Gomoku, Hex, Draughts,
-  Breakthrough, Reversi, Go, Yavalath, Havannah, Amazons, Ataxx, Pente,
+  Breakthrough, Othello, Go, Yavalath, Havannah, Amazons, Ataxx, Pente,
   Brandubh), `courtfall` (a Go ruleset with a JSON legend,
   [courtfall.md](courtfall.md)), `chess` (a Go ruleset whose notation needs no position, with five variants read from a param, ADR 0144 and 0145), `fist` (a Go ruleset, one move per turn), `blooms` (a Go ruleset, a turn of one or two placements), `fendo` (a Go ruleset whose fences travel in the view), `yinsh` (a Go ruleset on an explicit 85-point graph), `meridians` (a Go ruleset on a hexagon with no middle point, where a group that can see no friend dies), `mycelium` (a Go ruleset whose confluence is a run of single-spread decisions), `nyet` (a Go ruleset on the card framework in `internal/engine/cards`), `solitaire` (one Go ruleset on the same framework for a family of games with one seat, each variant naming its rules with the param `mode`),
   and, in a private build only, the commercial games of the private overlay

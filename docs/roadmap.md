@@ -32,7 +32,7 @@ Legend: ✅ done · 🟡 partial · ⬜ not started · ➖ deliberately out of s
 | ✅ | Capture by jumping | `jump` action: mandatory captures, chained multi-jumps, promotion; English Draughts in JSON |
 | ✅ | Directional movement & capture | per-seat `forward`, `directions`, explicit `step` actions with occupancy; Breakthrough in JSON |
 | ✅ | `reach` and `ply-limit` rules | far-row wins, move-limit draws |
-| ✅ | Flipping & passing | `place` + `flips`, `pass_when_stuck`; Reversi in JSON |
+| ✅ | Flipping & passing | `place` + `flips`, `pass_when_stuck`; Othello in JSON |
 | ✅ | Liberty capture, ko, passing, area scoring | `captures` + `ko` on `place`, `pass` action, `passes` trigger, `score` decision; Go 9/13/19 in JSON |
 | ✅ | Hexagon boards, ring / fork / bridge, "lose" rules | `generator: hexhex`; `ring`, `connect` with `of`/`touch`, `result: lose`; Yavalath and Havannah in JSON |
 | ✅ | Pie rule | `swap` action (second player may take over the first move); Hex and Gomoku |

@@ -45,11 +45,20 @@ func (c *Catalog) noteVersion(id string, def *dsl.GameDefinition) error {
 	return nil
 }
 
-// Pin returns the id a game is stored under: a prototype's name alone (or a
-// game derived from it) becomes its newest version, and any other id is itself.
+// Pin returns the id a game is stored under: a former id of a renamed game
+// (or a game derived from it) becomes its id now, a prototype's name alone (or
+// a game derived from it) becomes its newest version, and any other id is
+// itself.
 func (c *Catalog) Pin(id string) string {
 	base, suffix, derived := strings.Cut(id, DerivedSep)
 	c.mu.RLock()
+	if now, ok := c.renamed[base]; ok {
+		base = now
+		id = now
+		if derived {
+			id += DerivedSep + suffix
+		}
+	}
 	newest, ok := c.newest[base]
 	c.mu.RUnlock()
 	switch {

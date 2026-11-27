@@ -537,10 +537,10 @@ func TestBreakthroughRandomGamesHaveAWinner(t *testing.T) {
 	}
 }
 
-// ---- reversi ----------------------------------------------------------------
+// ---- othello ----------------------------------------------------------------
 
-func TestReversiOpeningMovesAndFlips(t *testing.T) {
-	g := load(t, "reversi")
+func TestOthelloOpeningMovesAndFlips(t *testing.T) {
+	g := load(t, "othello")
 	st := state.InitialState(g)
 	moves := state.LegalSelections(g, st, 1)
 	got := map[string]bool{}
@@ -574,8 +574,8 @@ func TestReversiOpeningMovesAndFlips(t *testing.T) {
 	}
 }
 
-func TestReversiEndsWhenNobodyCanMove(t *testing.T) {
-	g := load(t, "reversi")
+func TestOthelloEndsWhenNobodyCanMove(t *testing.T) {
+	g := load(t, "othello")
 	// Row 1 = _ W B and a far-away black disc. Black plays a1, flipping b1;
 	// white is left with no discs and black has nothing left to flip, so the
 	// game ends and black wins on count (4 discs to 0).
@@ -592,8 +592,8 @@ func TestReversiEndsWhenNobodyCanMove(t *testing.T) {
 	}
 }
 
-func TestReversiRandomGamesFinish(t *testing.T) {
-	g := load(t, "reversi")
+func TestOthelloRandomGamesFinish(t *testing.T) {
+	g := load(t, "othello")
 	rng := rand.New(rand.NewSource(8))
 	passes := 0
 	for n := 0; n < 20; n++ {

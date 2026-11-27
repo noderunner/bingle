@@ -311,8 +311,8 @@ def breakthrough():
     panels(3 * 234 + 18, 300, "Breakthrough", [("Moving", p_move), ("Capturing", p_cap), ("Winning", p_win)], ("classics/guide/breakthrough", "breakthrough-moves"))
 
 
-@game("reversi", "classics/guide/reversi")
-def reversi():
+@game("othello", "classics/guide/othello")
+def othello():
     green = dict(light="#3b8f5c", edge="#245a3a")
     def board(s, x, y, discs):
         bd = Board(s, x + 8, y + 8, 5, 5, 44, checker=None, **green)
@@ -333,7 +333,7 @@ def reversi():
         bd.ring_mark(4, 2, AMBER, 3)
         note(s, x + 118, y + 248, "All the bracketed discs turn white", 38)
         return 236, 236
-    panels(2 * 254 + 18, 310, "Reversi: flipping discs", [("Before", p_before), ("After", p_after)], ("classics/guide/reversi", "reversi-flip"))
+    panels(2 * 254 + 18, 310, "Othello: flipping discs", [("Before", p_before), ("After", p_after)], ("classics/guide/othello", "othello-flip"))
 
 
 @game("go", "classics/guide/go")

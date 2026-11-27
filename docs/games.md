@@ -25,8 +25,8 @@ A server also offers the games of the install packs it is given (`BINGLE_PACKS`,
 | **Hex** (`hex-11`) | 0.3.1 | hex 11×11 | 2 | place, swap | connect | `hex-11` `hex-13` `hex-7` `hex-9` |
 | **Meridians** (`meridians`) | 0.1.4 | hexagon, 6 and 7 per side | 2 | ruleset (Go) | victory points | `meridians` `meridians-5` `meridians-7` |
 | **Mycelium** (`mycelium-1.0.0`) | 1.0.0 | hexagon, 5 per side | 2 | ruleset (Go) | victory points |  |
+| **Othello** (`othello`) | 0.4.0 | 8×8 squares | 2 | place | end/most |  |
 | **Pente** (`pente`) | 0.3.1 | 13×13 points | 2 | place | end/draw, line, pool |  |
-| **Reversi** (`reversi`) | 0.3.2 | 8×8 squares | 2 | place | end/most |  |
 | **Solitaire** (`solitaire`) | 0.4.0 | 1×1 squares | 1 | patience |  | `freecell` `solitaire` `solitaire-draw-3` `spider` `spider-1` `spider-2` |
 | **Tak** (`tak-5x5`) | 0.1.1 | 5×5 squares | 2 | move-stack, place | connect, end/most | `tak-3x3` `tak-4x4` `tak-5x5` `tak-6x6` `tak-7x7` `tak-8x8` |
 | **Yavalath** (`yavalath`) | 0.3.1 | hexagon, 5 per side | 2 | place | end/draw, line, line (lose) |  |

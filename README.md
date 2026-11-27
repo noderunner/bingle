@@ -32,7 +32,7 @@ click-to-move for free.
 | **Fendo** (Dieter Stein's territory game: move a piece and fence beside it, or add a piece; areas fenced round one piece score; 7×7, 9×9, 11×11 — rules in Go) | `internal/games/fendo/` ([ADR 0040](docs/decisions/0040-fendo-fences-in-the-view.md)) |
 | **Solitaire** (Klondike with one or three cards, Spider with one, two or four suits, FreeCell and Sid Sackson's Bowling Solitaire: games for one player, in any themed set of cards — rules in Go, one ruleset for them all) | `internal/games/solitaire/` ([ADR 0086](docs/decisions/0086-games-for-one-player.md)) |
 | **Mycelium** (Miles Stevenson's game of two fungal colonies on a hex board: place nodes, take the centre to start a confluence, and spread clusters by spores and hyphae to convert the other colony — rules in Go; a prototype, with a folder per version of its rules) | `internal/games/mycelium/` ([ADR 0066](docs/decisions/0066-mycelium.md)) |
-| Go (9×9–19×19), Reversi, Hex, Havannah, Yavalath, Amazons, Ataxx, Pente, Brandubh, English Draughts, Breakthrough, Gomoku | `internal/games/classics/*.yaml` |
+| Go (9×9–19×19), Othello, Hex, Havannah, Yavalath, Amazons, Ataxx, Pente, Brandubh, English Draughts, Breakthrough, Gomoku | `internal/games/classics/*.yaml` |
 
 ![The lobby: game gallery, puzzles, bots, time limits](docs/screenshots/lobby.png)
 

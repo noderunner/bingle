@@ -1,6 +1,8 @@
-# Reversi
+# Othello
 
-Reversi is a game of flipping: every disc you place can turn many of your opponent's discs into yours, and a lead can change hands in a single move.
+Othello is a game of flipping: every disc you place can turn many of your opponent's discs into yours, and a lead can change hands in a single move.
+
+Goro Hasegawa made Othello in Japan in the early 1970s. It is a form of Reversi, the 19th-century game of Lewis Waterman and John W. Mollett, but begins with four discs already in the middle where Reversi's players placed the first four themselves.
 
 ## The goal
 
@@ -12,7 +14,7 @@ The board is 8×8. The game starts with four discs in the middle, two of each co
 
 ## Placing and flipping
 
-![A move that flips two lines of discs|520](reversi-flip.svg)
+![A move that flips two lines of discs|520](othello-flip.svg)
 
 On your turn you place a disc of your colour on an empty square, and the placement must **bracket** at least one line of enemy discs:
 

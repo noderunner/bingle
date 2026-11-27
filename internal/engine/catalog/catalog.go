@@ -58,6 +58,10 @@ type Module struct {
 	// Tutorials holds the game's tutorials, one YAML document each at its
 	// root (see package tutorial); nil for a game without any.
 	Tutorials fs.FS
+	// Formerly lists the ids the module's game had before it was renamed:
+	// each still finds the game, a game made under one is stored under ID,
+	// and what was stored under one moves to ID at start-up (see Renamed).
+	Formerly []string
 	// Private marks a module of the private overlay (ADR 0127), registered
 	// with registry.RegisterPrivate; its games say so to clients (ADR 0140).
 	Private bool
@@ -120,14 +124,17 @@ type Catalog struct {
 	retired map[string]string
 	// newest is the id of the newest version of each prototype, by family.
 	newest map[string]string
+	// renamed is the id each former id of a game now has (Module.Formerly).
+	renamed map[string]string
 }
 
 // NewCatalog returns an empty Catalog ready for Register/Get calls.
 func NewCatalog() *Catalog {
 	return &Catalog{
-		games:  make(map[string]*CompiledGame),
-		src:    make(map[string]source),
-		newest: make(map[string]string),
+		games:   make(map[string]*CompiledGame),
+		src:     make(map[string]source),
+		newest:  make(map[string]string),
+		renamed: make(map[string]string),
 	}
 }
 
@@ -162,6 +169,9 @@ func (c *Catalog) RegisterModule(mod Module) error {
 		c.mu.Unlock()
 		if i == 0 {
 			if err := c.noteVersion(id, cg.Definition); err != nil {
+				return err
+			}
+			if err := c.noteFormerly(id, mod.Formerly); err != nil {
 				return err
 			}
 		}
@@ -296,6 +306,33 @@ func (c *Catalog) Get(id string) (*CompiledGame, bool) {
 		}
 	}
 	return nil, false
+}
+
+// noteFormerly records the ids a game had before it was renamed to id.
+func (c *Catalog) noteFormerly(id string, formerly []string) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	for _, old := range formerly {
+		if _, taken := c.games[old]; taken || old == "" || strings.Contains(old, DerivedSep) {
+			return fmt.Errorf("catalog: game %q cannot have been called %q", id, old)
+		}
+		if prev, ok := c.renamed[old]; ok && prev != id {
+			return fmt.Errorf("catalog: %q was renamed to both %q and %q", old, prev, id)
+		}
+		c.renamed[old] = id
+	}
+	return nil
+}
+
+// Renamed returns the id each former id of a game now has.
+func (c *Catalog) Renamed() map[string]string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	out := make(map[string]string, len(c.renamed))
+	for old, id := range c.renamed {
+		out[old] = id
+	}
+	return out
 }
 
 // Tutorials returns the family a game belongs to (its base game: the

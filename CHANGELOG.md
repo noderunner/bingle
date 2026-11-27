@@ -4,6 +4,14 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.140.0 - 2026-11-27
+
+### Bingle Core 0.140.0
+- Games of Reversi, and their ratings, are now Othello's
+
+### Othello 0.4.0
+- Renamed Othello, after the rules it plays, and credited to Goro Hasegawa
+
 ## 0.139.0 - 2026-11-26
 
 ### Bingle Core 0.139.0

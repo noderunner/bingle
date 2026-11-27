@@ -36,7 +36,7 @@ type minimaxBot struct {
 // sees forced wins and losses a few plies deep and otherwise prefers
 // positions with more of its pieces on top of the board than the opponent's
 // — a material heuristic that suits stacking, flipping and capturing games
-// (Tak's flat count, Reversi discs, draughts) — and, in games with a
+// (Tak's flat count, Othello discs, draughts) — and, in games with a
 // connection goal (Tak's roads, Hex), a larger connected group of the pieces
 // that count towards it.
 func NewMinimax(opts MinimaxOptions) Bot {

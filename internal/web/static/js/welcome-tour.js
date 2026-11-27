@@ -287,7 +287,7 @@ const info = (id) => {
 
 // The games the welcome draws first, when the server has them. A family is
 // named after its first game ("tak-5x5"), so it is known by its first word.
-const FAVOURITES = ["tak", "hex", "go", "amazons", "havannah", "reversi", "yavalath", "breakthrough"];
+const FAVOURITES = ["tak", "hex", "go", "amazons", "havannah", "othello", "yavalath", "breakthrough"];
 const familyWord = (d) => (d.family || d.id).split("-")[0];
 
 async function drawGallery(host) {
