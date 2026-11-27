@@ -2,6 +2,14 @@
 
 Was sich in Bingle geändert hat, das Neueste zuerst. Bingle Core (der Server, die Engine und der Web-Client) und jedes Spiel haben eine eigene Version, und jeder Eintrag sagt, welche sich geändert hat. Einträge vor 0.124.0 gibt es nur auf Englisch.
 
+## 0.140.0 - 2026-11-27
+
+### Bingle Core 0.140.0
+- Reversi-Partien und ihre Wertungen gehören jetzt zu Othello
+
+### Othello 0.4.0
+- Heißt jetzt Othello, nach den Regeln, nach denen es gespielt wird, und nennt Goro Hasegawa als Autor
+
 ## 0.139.0 - 2026-11-26
 
 ### Bingle Core 0.139.0

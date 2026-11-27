@@ -198,6 +198,13 @@ func New(cfg config.Config, opts ...Option) (*App, error) {
 		}
 	}()
 
+	// What was stored under a game's former id moves to its id now, before
+	// anything reads it (catalog.Module.Formerly).
+	if err := renameGames(st, cat, a.log); err != nil {
+		_ = st.Close()
+		return nil, err
+	}
+
 	if err := recordGameVersions(st, cat); err != nil {
 		_ = st.Close()
 		return nil, err
@@ -482,6 +489,28 @@ func (a *App) closeWasm() {
 		_ = a.wasm.Close(context.Background())
 		a.wasm = nil
 	}
+}
+
+// renameGames moves what the store holds under each former id of a game to
+// its id now.
+func renameGames(st *store.Store, cat *catalog.Catalog, log *slog.Logger) error {
+	var renames []store.GameRename
+	for from, to := range cat.Renamed() {
+		cg, ok := cat.Get(to)
+		if !ok {
+			continue
+		}
+		renames = append(renames, store.GameRename{From: from, To: to, Name: store.FamilyNameOf(cg.Definition.Name)})
+	}
+	slices.SortFunc(renames, func(a, b store.GameRename) int { return strings.Compare(a.From, b.From) })
+	n, err := st.RenameGames(context.Background(), renames)
+	if err != nil {
+		return fmt.Errorf("app: renaming games: %w", err)
+	}
+	if n > 0 {
+		log.Info("moved what was stored under games' former ids", "rows", n)
+	}
+	return nil
 }
 
 // RetiredGames are the games bingle used to ship and no longer does. Games of

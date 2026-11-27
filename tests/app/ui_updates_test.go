@@ -180,7 +180,7 @@ func TestWebJoin_ListsTheTablesWaitingForPlayers(t *testing.T) {
 // A game whose every move places its one piece says so in those words, to everyone.
 func TestWebImpulse_APlacingGameJustSaysPlace(t *testing.T) {
 	baseURL := newRESTTestServer(t)
-	for def, want := range map[string]string{"havannah-8": "Place a stone.", "go-9x9": "Place a stone.", "reversi": "Place a disc.", "yavalath": "Place a piece.", "mycelium": "Place a node."} {
+	for def, want := range map[string]string{"havannah-8": "Place a stone.", "go-9x9": "Place a stone.", "othello": "Place a disc.", "yavalath": "Place a piece.", "mycelium": "Place a node."} {
 		ctx, cancel := newChromedpContext(t, 60*time.Second)
 		room := newTakRoom(t, baseURL, def, "Alice")
 		joinRoom(t, baseURL, room, "Bob")

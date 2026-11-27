@@ -287,7 +287,7 @@ function reducedMotion() {
  * Animates what changed between two signatures: a piece that arrived on a
  * square slides in from the square that lost an identical piece, a piece
  * with no donor (a placement) pops in, and a piece whose colour changed in
- * place (Reversi flips) turns over.
+ * place (Othello flips) turns over.
  */
 function animateChanges(svg, before, after) {
 	if (reducedMotion() || typeof svg.animate !== "function") return;

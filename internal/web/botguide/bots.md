@@ -13,7 +13,7 @@ Hex would tell you about Hex, while these tell you about *your* game.
 |---|---|---|---|
 | **random** | Picks a legal move with no thought at all. | Nothing. | The baseline. A bot that cannot beat random does not work. |
 | **tactical** | Plays a move that wins at once if there is one, avoids moves that let the opponent win at once, and otherwise picks randomly among what is left. | One move deep. | A quick opponent, and the pace-setter for long batches. |
-| **minimax** | Alpha-beta search with iterative deepening, up to 6 plies and 30 000 positions a move, judging a position by material and (in connection games) by the size of your largest connected group. | Tens of thousands of positions a move. | Games decided by pieces and lines: Tak, Reversi, draughts, Connect Four. |
+| **minimax** | Alpha-beta search with iterative deepening, up to 6 plies and 30 000 positions a move, judging a position by material and (in connection games) by the size of your largest connected group. | Tens of thousands of positions a move. | Games decided by pieces and lines: Tak, Othello, draughts, Connect Four. |
 | **mcts** | Monte Carlo tree search (UCT): thousands of random finishes of the game, spending its effort on the moves that look best so far. | A second a move by default, or a fixed number of iterations. | Games where no simple count tells you who is winning: Hex, Havannah, Blooms, Cthulhu Wars. |
 
 Both thinking bots are **reproducible**: given the same seed and the same budget they play the same
@@ -47,7 +47,7 @@ Bingle's minimax has three bounds worth knowing:
 * **A material heuristic.** It counts what is on the board — your pieces on top of stacks, your
   discs, your men — and, in games with a connection goal, adds the size of your largest connected
   group. That is honest and shallow. It says nothing about shape, tempo or territory, which is why
-  minimax is weak at Go and at Hex and strong at Tak and Reversi.
+  minimax is weak at Go and at Hex and strong at Tak and Othello.
 
 ## Monte Carlo tree search: playing it out
 

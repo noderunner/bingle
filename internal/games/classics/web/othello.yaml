@@ -1,4 +1,4 @@
-# How the web page draws Reversi (ADR 0124). The rules are in the definition; nothing
+# How the web page draws Othello (ADR 0124). The rules are in the definition; nothing
 # here changes them, and other clients draw the game their own way.
 board:
   style: squares

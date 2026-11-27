@@ -75,7 +75,7 @@ func TestPieRule_GamesSayWhetherTheyOfferIt(t *testing.T) {
 		"connect-four": "off",
 		"amazons":      "off",
 		"ataxx":        "off",
-		"reversi":      "off",
+		"othello":      "off",
 		"go-9x9":       "off",
 		"blooms":       "off", // a ruleset offers it too
 		"blooms-4":     "off", // a variant inherits it

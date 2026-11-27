@@ -60,7 +60,7 @@
               "$ref": "#/$defs/FlipsDef"
             }
           ],
-          "description": "Flips makes a placement flip lines of opposing pieces bracketed by the new piece and another piece of the placer's color (Reversi)."
+          "description": "Flips makes a placement flip lines of opposing pieces bracketed by the new piece and another piece of the placer's color (Othello)."
         },
         "forbid_region": {
           "description": "ForbidRegion names a board region the action's pieces may not land on (Hnefatafl's corners and throne, for everyone but the king).",
@@ -1583,7 +1583,7 @@
           "description": "Opening, if set, restricts the first few plies of the game."
         },
         "pass_when_stuck": {
-          "description": "PassWhenStuck makes the turn skip a seat that has no legal move (the next seat that can move plays instead), as in Reversi. When nobody can move, the turn stays where it would have gone and an end rule with the \"no-legal-moves\" trigger finishes the game.",
+          "description": "PassWhenStuck makes the turn skip a seat that has no legal move (the next seat that can move plays instead), as in Othello. When nobody can move, the turn stays where it would have gone and an end rule with the \"no-legal-moves\" trigger finishes the game.",
           "type": "boolean"
         },
         "seats": {

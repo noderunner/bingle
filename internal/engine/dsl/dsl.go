@@ -489,7 +489,7 @@ type TurnOrderDef struct {
 	// Opening, if set, restricts the first few plies of the game.
 	Opening *OpeningDef `json:"opening,omitempty"`
 	// PassWhenStuck makes the turn skip a seat that has no legal move (the
-	// next seat that can move plays instead), as in Reversi. When nobody can
+	// next seat that can move plays instead), as in Othello. When nobody can
 	// move, the turn stays where it would have gone and an end rule with the
 	// "no-legal-moves" trigger finishes the game.
 	PassWhenStuck bool `json:"pass_when_stuck,omitempty"`
@@ -566,7 +566,7 @@ type ActionDef struct {
 	// board edge (Connect Four).
 	Gravity string `json:"gravity,omitempty"`
 	// Flips makes a placement flip lines of opposing pieces bracketed by the
-	// new piece and another piece of the placer's color (Reversi).
+	// new piece and another piece of the placer's color (Othello).
 	Flips *FlipsDef `json:"flips,omitempty"`
 	// Captures makes a placement capture opposing groups left without
 	// liberties (Go).

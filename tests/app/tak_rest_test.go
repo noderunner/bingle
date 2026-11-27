@@ -632,13 +632,13 @@ func TestHistoricalImpulseSeatAccountsForPasses(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	names := map[int]string{1: "Alice", 2: "Bob"}
 
-	// Random Reversi games pass fairly often; play seeded games until one
+	// Random Othello games pass fairly often; play seeded games until one
 	// does (the same seat moving twice in a row), then check the turn seat
 	// reported for the position right after the move that was followed by
 	// the pass.
 	for attempt := 0; attempt < 25; attempt++ {
 		rng := rand.New(rand.NewSource(int64(attempt)))
-		room := newTakRoom(t, baseURL, "reversi", "Alice")
+		room := newTakRoom(t, baseURL, "othello", "Alice")
 		joinRoom(t, baseURL, room, "Bob")
 
 		var seats []int
@@ -694,7 +694,7 @@ func TestHistoricalImpulseSeatAccountsForPasses(t *testing.T) {
 		}
 		return
 	}
-	t.Fatal("no seeded Reversi game produced a pass")
+	t.Fatal("no seeded Othello game produced a pass")
 }
 
 // Every shipped game must describe how it ends and how to write a move, with

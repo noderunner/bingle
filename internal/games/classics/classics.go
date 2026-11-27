@@ -3,7 +3,7 @@
 // rules — Gomoku, Hex (a hexagonal board
 // with per-seat connection rules), English Draughts (mandatory multi-jumps,
 // promotion, directional movement), Breakthrough (direction-specific capture
-// and a "reach the far row" win) Reversi (bracketing flips and passing) and Go (liberty captures, ko, passing,
+// and a "reach the far row" win) Othello (bracketing flips and passing) and Go (liberty captures, ko, passing,
 // area scoring with komi), plus Yavalath (lose by making three) and Havannah
 // (ring, bridge and fork wins) on hexagon-shaped boards, and the Game of the
 // Amazons (queen slides with a compulsory arrow shot) and Ataxx (clone or
@@ -59,7 +59,7 @@ func Modules() []catalog.Module {
 		{ID: "hex-11", Definition: definitions()["hex.yaml"], Assets: guideOf("hex"), Web: look.MustLoadFile(definitionFS, "web/hex.yaml")},
 		{ID: "draughts", Definition: definitions()["draughts.yaml"], Assets: guideOf("draughts"), Web: look.MustLoadFile(definitionFS, "web/draughts.yaml")},
 		{ID: "breakthrough", Definition: definitions()["breakthrough.yaml"], Assets: guideOf("breakthrough"), Web: look.MustLoadFile(definitionFS, "web/breakthrough.yaml")},
-		{ID: "reversi", Definition: definitions()["reversi.yaml"], Assets: guideOf("reversi"), Web: look.MustLoadFile(definitionFS, "web/reversi.yaml")},
+		{ID: "othello", Definition: definitions()["othello.yaml"], Assets: guideOf("othello"), Web: look.MustLoadFile(definitionFS, "web/othello.yaml"), Formerly: []string{"reversi"}},
 		{ID: "go-9x9", Definition: definitions()["go.yaml"], Assets: guideOf("go"), Web: look.MustLoadFile(definitionFS, "web/go.yaml")},
 		{ID: "yavalath", Definition: definitions()["yavalath.yaml"], Assets: guideOf("yavalath"), Web: look.MustLoadFile(definitionFS, "web/yavalath.yaml")},
 		{ID: "havannah-8", Definition: definitions()["havannah.yaml"], Assets: guideOf("havannah"), Web: look.MustLoadFile(definitionFS, "web/havannah.yaml")},
