@@ -62,13 +62,13 @@ function keyPage(info) {
 	parts.push(t("rules.key_title"), "", t("rules.key_text"), "", t("rules.key_table"), "|---|---|");
 	const row = (def) => {
 		const label = `${def.glyph ? def.glyph + " " : ""}${def.label}`;
-		parts.push(`| ![${escapeMd(def.label)}](marker:swatch:${def.color}) | **${escapeMd(label)}**${def.text ? " — " + escapeMd(def.text) : ""} |`);
+		parts.push(`| ![${escapeMd(def.label)}](marker:swatch:${def.paint}) | **${escapeMd(label)}**${def.text ? " — " + escapeMd(def.text) : ""} |`);
 	};
 	for (const [k, def] of Object.entries(d.tints || {})) {
-		if (!k.startsWith("zone") && def.color) row(def);
+		if (!k.startsWith("zone") && def.paint) row(def);
 	}
 	for (const [k, def] of Object.entries(d.badges || {})) {
-		if (k !== "active" && k !== "target" && def.color) row(def);
+		if (k !== "active" && k !== "target" && def.paint) row(def);
 	}
 	return parts.length > 8 ? parts.join("\n") : "";
 }

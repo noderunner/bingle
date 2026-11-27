@@ -855,13 +855,13 @@ board: {style: points, borders: {top: white}}   # art: guide/board.webp, a pictu
 #       - {id: asia, anchor: [800, 140], polygons: [[[690, 60], [842, 60], [915, 245], [690, 230]]]}
 #       - {id: north-pacific, polygons: [[[0, 60], [130, 60], [130, 320], [0, 320]], [[915, 60], [1000, 60], [1000, 320], [915, 320]]]}
 cards:
-  back: {color: '#7a2030', text: BINGLE}
+  back: {paint: '#7a2030', text: BINGLE}
   zones: {hand: {layout: fan}}  # fan, row, stack, splay or grid
-  suits: {hearts: {color: red}}  # only where the rules do not read the color
+  suits: {hearts: {paint: '#c62f2f'}}  # red or black, where the rules ask, is the suit's place in suit_order
 display:                       # the definition's display keeps each tint's and badge's label and text
   no_hands: true
-  tints: {fenced: {color: '#e8a898'}}
-  badges: {fatigued: {color: '#f4f1e8', glyph: z}}
+  tints: {fenced: {paint: '#e8a898'}}
+  badges: {fatigued: {paint: '#f4f1e8', glyph: z}}
 preview:                       # a game in play for the list of games and the setup page
   - {position: e5, piece: red, color: red}
 data:                          # the game's page script's own, in a shape of its own; nothing
@@ -872,8 +872,16 @@ variants:                      # a merge patch per game of the family, by id
   blooms-8: {board: {style: points}}
 ```
 
+**A `paint` is a value to draw with** (a hex value, `rgb()` or `hsl()` and the like, or a CSS color
+keyword), and a `color` is a color's name, one the rules give a set of pieces: a preview entry's and a
+border's ([ADR 0154](decisions/0154-a-color-is-a-name-and-paint-is-each-clients-own.md)). A file
+written before that put a tint's, a badge's, a suit's or the back's paint under `color`, as the
+private overlay's still do: `look.js` reads such a `color` as the paint where there is none, and
+`look.Check` takes it only as a value to draw with. `tests/look` refuses it in the public games'
+files and the fixtures' (`look.OldColors`); the old key can go once the overlay's files say `paint`.
+
 `look.Check` holds a look to its games: every seat, piece, tint, badge, zone, suit and area it names
-is the game's, every badge icon a picture among its files, and a game drawn as areas (its variant's board over the family's) has a canvas and
+is the game's, every paint a value to draw with, every badge icon a picture among its files, and a game drawn as areas (its variant's board over the family's) has a canvas and
 an outline for every position. A position a derived game adds (Cthulhu Wars' Moon) is the page
 script's to outline, through its `outlineArea`.
 

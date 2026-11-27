@@ -7,5 +7,5 @@ pieces:
 display:
   no_hands: true
   tints:
-    area1: {color: '#c9d3e6'}
-    area2: {color: '#f2c28d'}
+    area1: {paint: '#c9d3e6'}
+    area2: {paint: '#f2c28d'}

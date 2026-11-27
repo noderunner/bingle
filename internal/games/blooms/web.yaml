@@ -11,7 +11,7 @@ pieces:
 display:
   no_hands: true
   tints:
-    fenced: {color: '#e8a898'}
+    fenced: {paint: '#e8a898'}
 # A game in play, for the list of games and the setup page.
 preview:
   - {position: e5, piece: red, color: red}

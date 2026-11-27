@@ -8,17 +8,17 @@ pieces:
   queen: {shape: queen}
 display:
   tints:
-    green: {color: '#5f9e5b', glyph: ♣}
-    blue: {color: '#5b86b8', glyph: ≈}
-    red: {color: '#c4584a', glyph: ▲}
-    eye: {color: '#d9b44a', glyph: ◉}
-    zone-1: {color: '#e9e5cf'}
-    zone-2: {color: '#b9b3a2'}
+    green: {paint: '#5f9e5b', glyph: ♣}
+    blue: {paint: '#5b86b8', glyph: ≈}
+    red: {paint: '#c4584a', glyph: ▲}
+    eye: {paint: '#d9b44a', glyph: ◉}
+    zone-1: {paint: '#e9e5cf'}
+    zone-2: {paint: '#b9b3a2'}
   badges:
-    fatigued: {glyph: ●, color: '#f4f1e8'}
-    exhausted: {glyph: ●, color: '#1f1d1a'}
-    active: {glyph: ▲, color: '#e0a526'}
-    target: {glyph: ◎, color: '#d1453b'}
+    fatigued: {glyph: ●, paint: '#f4f1e8'}
+    exhausted: {glyph: ●, paint: '#1f1d1a'}
+    active: {glyph: ▲, paint: '#e0a526'}
+    target: {glyph: ◎, paint: '#d1453b'}
 # A game in play, for the list of games and the setup page.
 preview:
   - {position: d1, piece: rook, color: white}

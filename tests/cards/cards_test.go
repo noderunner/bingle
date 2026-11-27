@@ -31,13 +31,13 @@ func register(t *testing.T, cardsJSON string) (*catalog.CompiledGame, error) {
 }
 
 const goodCards = `{
- "suits":{"hearts":{"label":"Hearts","color":"#c00","symbol":"♥"},"spades":{"label":"Spades","color":"#000","symbol":"♠"}},
+ "suits":{"hearts":{"label":"Hearts","symbol":"♥"},"spades":{"label":"Spades","symbol":"♠"}},
  "suit_order":["spades","hearts"],
  "decks":{"main":{
    "ranks":[{"id":"A","value":14},{"id":"K","value":13,"count":2,"text":"Royal"},{"id":"2","value":2}],
    "extra":[{"id":"joker","label":"Joker","value":0,"count":2,"text":"Wild","symbols":["★"]}]
  }},
- "back":{"color":"#336","text":"BACK"},
+ "back":{"text":"BACK"},
  "zones":[
   {"id":"deck","scope":"table","visibility":"none","pile":true,"counts":true},
   {"id":"hand","scope":"seat","visibility":"owner"},

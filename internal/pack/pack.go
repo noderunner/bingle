@@ -580,12 +580,13 @@ func readLook(files fs.FS, p *Pack) ([]byte, error) {
 	return json.Marshal(tree)
 }
 
-// checkColors holds every color in a document to the form of a color.
+// checkColors holds every color and every paint in a document to the form
+// of a color.
 func checkColors(file string, node any) error {
 	switch v := node.(type) {
 	case map[string]any:
 		for key, value := range v {
-			if s, ok := value.(string); ok && (key == "color" || strings.HasSuffix(key, "_color")) && !colorForm.MatchString(s) {
+			if s, ok := value.(string); ok && (key == "color" || key == "paint" || strings.HasSuffix(key, "_color")) && !colorForm.MatchString(s) {
 				return fmt.Errorf("%s: %q is not a color", file, s)
 			}
 			if err := checkColors(file, value); err != nil {

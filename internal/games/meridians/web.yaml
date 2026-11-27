@@ -7,9 +7,9 @@ pieces:
 display:
   no_hands: true
   tints:
-    last: {color: '#c8dfa8'}
+    last: {paint: '#c8dfa8'}
   badges:
-    dead: {glyph: ✕, color: '#c0392b'}
+    dead: {glyph: ✕, paint: '#c0392b'}
 # A game in play, for the list of games and the setup page.
 preview:
   - {position: g7, piece: stone, color: white}

@@ -96,6 +96,18 @@ export function outlineMissing(info, page) {
 	return info;
 }
 
+/**
+ * A mark, suit or card back of the look with its paint, what it is drawn in.
+ * A file written before ADR 0154 put the paint under color, as the private
+ * overlay's and older install packs' still do: that color is read as paint
+ * here (look.Check takes it only as a value to draw with), and left where it
+ * is for the page scripts that read it. This can go once the overlay's files
+ * say paint.
+ */
+function paintOf(part) {
+	return part && part.paint === undefined && typeof part.color === "string" ? { ...part, paint: part.color } : part;
+}
+
 /** info with the look laid over it. info itself is not changed. */
 export function applyLook(info, file) {
 	const look = resolveLook(file, info.id);
@@ -116,7 +128,7 @@ export function applyLook(info, file) {
 		for (const kind of ["tints", "badges"]) {
 			if (!look.display[kind]) continue;
 			const marks = { ...(display[kind] || {}) };
-			for (const [key, mark] of Object.entries(look.display[kind])) marks[key] = { ...(marks[key] || {}), ...mark };
+			for (const [key, mark] of Object.entries(look.display[kind])) marks[key] = { ...(marks[key] || {}), ...paintOf(mark) };
 			display[kind] = marks;
 		}
 		if (look.display.no_hands !== undefined) display.no_hands = look.display.no_hands;
@@ -124,11 +136,11 @@ export function applyLook(info, file) {
 	}
 	if (look.cards && info.cards) {
 		const cards = { ...info.cards };
-		if (look.cards.back) cards.back = { ...(cards.back || {}), ...look.cards.back };
+		if (look.cards.back) cards.back = { ...(cards.back || {}), ...paintOf(look.cards.back) };
 		if (look.cards.zones && cards.zones) cards.zones = cards.zones.map((z) => (look.cards.zones[z.id] ? { ...z, ...look.cards.zones[z.id] } : z));
 		if (look.cards.suits && cards.suits) {
 			const suits = { ...cards.suits };
-			for (const [id, suit] of Object.entries(look.cards.suits)) if (suits[id]) suits[id] = { ...suits[id], ...suit };
+			for (const [id, suit] of Object.entries(look.cards.suits)) if (suits[id]) suits[id] = { ...suits[id], ...paintOf(suit) };
 			cards.suits = suits;
 		}
 		out.cards = cards;

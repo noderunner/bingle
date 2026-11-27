@@ -117,6 +117,33 @@ func TestWebSolitaire_ClickingCards(t *testing.T) {
 	t.Log("this deal offered no move on the table")
 }
 
+// The cards are drawn in their web file's paint (ADR 0154): the backs' and
+// each suit's. A file written before that says color for the paint, as the
+// private overlay's still do, and the page reads it as the paint.
+func TestWebSolitaire_CardsAreDrawnInTheirPaint(t *testing.T) {
+	baseURL := newRESTTestServer(t)
+	room := solitaireRoom(t, baseURL, "solitaire", "")
+	ctx, cancel := newChromedpContext(t, 60*time.Second)
+	defer cancel()
+	openGameAs(t, ctx, baseURL, room, "solitaire", "Ana")
+	waitJS(t, ctx, "the table", `document.querySelectorAll('.sol-column').length === 7`, 15*time.Second)
+	if got := evalString(t, ctx, `document.querySelector('.sol-column .pcard.back').getAttribute('style') || ""`); got != "--back: #2f6f5e" {
+		t.Errorf("a back is styled %q, want its paint", got)
+	}
+	if got := evalString(t, ctx, `[...new Set([...document.querySelectorAll('.sol-column .pcard.face')].map(e => e.getAttribute('style')))].every(s => s === "--suit: #c62f2f" || s === "--suit: #1f2630") ? "yes" : "no"`); got != "yes" {
+		t.Errorf("the faces are not all in their suits' paint")
+	}
+	got := evalStringAwait(t, ctx, `import("/static/js/look.js").then(({ applyLook }) => {
+		const info = { id: "x", display: { tints: { hot: { label: "Hot" } } }, cards: { back: {}, suits: { hearts: { label: "Hearts" } } } };
+		const old = applyLook(info, { display: { tints: { hot: { color: "#f00" } } }, cards: { back: { color: "#123" }, suits: { hearts: { color: "#c00" } } } });
+		const now = applyLook(info, { display: { tints: { hot: { paint: "#0f0" } } }, cards: { back: { paint: "#456" }, suits: { hearts: { paint: "#0c0" } } } });
+		return [old.display.tints.hot.paint, old.cards.back.paint, old.cards.suits.hearts.paint, now.display.tints.hot.paint, now.cards.back.paint, now.cards.suits.hearts.paint, now.display.tints.hot.label].join(" ");
+	})`)
+	if want := "#f00 #123 #c00 #0f0 #456 #0c0 Hot"; got != want {
+		t.Errorf("the look laid over the info: %q, want %q", got, want)
+	}
+}
+
 // A card can be dragged to where it goes; a drop anywhere else plays nothing.
 func TestWebSolitaire_DraggingACard(t *testing.T) {
 	baseURL := newRESTTestServer(t)

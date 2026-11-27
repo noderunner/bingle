@@ -11,7 +11,7 @@ package dsl
 // own count, text and symbols) or an explicit list of cards, or both:
 //
 //	"cards": {
-//	  "suits": { "red": { "label": "Red", "color": "#c0392b", "symbol": "♥" } },
+//	  "suits": { "red": { "label": "Red", "symbol": "♥" } },
 //	  "decks": { "main": {
 //	      "ranks": [ { "id": "1", "value": 1, "count": 3 }, { "id": "2", "value": 2 } ],
 //	      "extra": [ { "id": "joker", "label": "Joker", "text": "Wild", "value": 0, "count": 2 } ]
@@ -31,11 +31,11 @@ type CardsDef struct {
 	Zones []ZoneDef `json:"zones,omitempty"`
 }
 
-// SuitDef is one suit: how it is named and drawn.
+// SuitDef is one suit: how it is named and its pip. What a client paints it
+// in is the client's (ADR 0154: the web page's web.yaml), and whether it is
+// red or black, where the rules ask, is its place in suit_order (ADR 0122).
 type SuitDef struct {
 	Label string `json:"label,omitempty"`
-	// Color is a CSS color for the suit's pips and card faces.
-	Color string `json:"color,omitempty"`
 	// Symbol is the text drawn as the suit's pip (a glyph or a short word).
 	Symbol string `json:"symbol,omitempty"`
 	// Text is a longer description (shown in the rules and on hover).
@@ -94,10 +94,10 @@ type CardDef struct {
 	Moves [][2]int `json:"moves,omitempty"`
 }
 
-// CardBackDef is the back of a card.
+// CardBackDef is the back of a card. What a client paints it in is the
+// client's (ADR 0154: the web page's web.yaml).
 type CardBackDef struct {
-	Color string `json:"color,omitempty"`
-	Text  string `json:"text,omitempty"`
+	Text string `json:"text,omitempty"`
 }
 
 // ZoneDef is a place cards can be.

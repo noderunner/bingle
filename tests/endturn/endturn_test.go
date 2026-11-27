@@ -32,7 +32,7 @@ func blooms(setup []any, target int, edit func(map[string]any)) map[string]any {
 			"turn": []any{map[string]any{"actions": []string{"place"}, "min": 1, "max": 2, "distinct": "piece"}}},
 		"actions":     []any{map[string]any{"id": "place", "type": "place", "pieces": []string{"red", "yellow", "blue", "black"}, "source": "supply"}},
 		"end_of_turn": []any{map[string]any{"effect": "remove-groups", "condition": "no-liberties", "count_in": "captured", "tint": "fenced"}},
-		"display":     map[string]any{"tints": map[string]any{"fenced": map[string]any{"label": "Fenced", "color": "#e8a898"}}},
+		"display":     map[string]any{"tints": map[string]any{"fenced": map[string]any{"label": "Fenced"}}},
 		"win_condition": map[string]any{"type": "rules", "rules": []any{
 			map[string]any{"id": "target", "type": "pool", "pool": "captured", "at_least": target, "reason": "target"},
 		}},

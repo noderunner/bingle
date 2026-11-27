@@ -182,11 +182,14 @@ pieces:
   mover's other color. Reserves and pools stay under the seat's `color`. A
   color belongs to one seat at most and is not also in `extra_colors`;
   `blend` only draws.
-* **How a game looks is moving out of the definition** into the game's `web.yaml`
+* **How a game looks is not in the definition** but in the game's `web.yaml`
   ([ADR 0124](decisions/0124-the-server-says-what-things-are-clients-decide-how-they-look.md), and
   *A game's look* in [ui.md](ui.md)): `shape`, `blend`, `board.style` and `borders`, `preview`, card
-  backs, `display.no_hands` and each tint's and badge's `color` and `glyph`. Every game but
-  Cthulhu Wars has moved; it still declares them here, and the page reads either.
+  backs, `display.no_hands` and each tint's and badge's `glyph`. The definition still has these
+  keys, and `TestNoDefinitionCarriesItsLook` holds every game to leaving them out. What a tint, a
+  badge, a suit or the cards' back is drawn in has no key here at all: it is the web file's `paint`
+  ([ADR 0154](decisions/0154-a-color-is-a-name-and-paint-is-each-clients-own.md)), and a `color` in
+  a definition is always a color's name.
 * `tags` classify pieces for win rules and scores.
 * `pool` names the reserve pool a *placed* piece is drawn from (default: the
   piece type itself). Pieces sharing a pool share a supply — Tak's flat and
@@ -388,7 +391,7 @@ end_of_turn:
     tint: fenced              # a key of display.tints
 display:
   tints:
-    fenced: {label: Fenced bloom, color: '#e8a898', text: Taken when the turn ends.}
+    fenced: {label: Fenced bloom, text: Taken when the turn ends.}   # its paint is in web.yaml
 ```
 
 * A group is the connected top pieces of one color. `whose` goes by seat, so
@@ -715,9 +718,9 @@ turn_order:
 win_condition: {type: ruleset}
 display:
   tints:
-    green: {label: Overgrowth, color: '#5f9e5b', glyph: ♣, text: …}
+    green: {label: Overgrowth, text: …}   # its paint and glyph are in web.yaml
   badges:
-    fatigued: {label: Fatigued, color: '#f4f1e8', text: …}
+    fatigued: {label: Fatigued, text: …}
 ```
 
 The module registers a Go value implementing `state.Ruleset` next to the
@@ -796,7 +799,7 @@ template of every suit × every rank, plus explicit cards:
 ```yaml
 cards:
   suits:
-    red: {label: Red, color: '#c0392b', symbol: ●}
+    red: {label: Red, symbol: ●}
   suit_order: [red, blue]
   decks:
     main:

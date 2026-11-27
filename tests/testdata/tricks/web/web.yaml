@@ -6,7 +6,7 @@ board:
 pieces:
   token: {shape: disc}
 cards:
-  back: {color: '#2f5f8a', text: TRICKS}
+  back: {paint: '#2f5f8a', text: TRICKS}
   zones:
     hand: {layout: fan}
     trick: {layout: row}

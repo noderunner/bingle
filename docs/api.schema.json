@@ -283,11 +283,8 @@
       "type": "object"
     },
     "CardBackDef": {
-      "description": "CardBackDef is the back of a card.",
+      "description": "CardBackDef is the back of a card. What a client paints it in is the client's (ADR 0154: the web page's web.yaml).",
       "properties": {
-        "color": {
-          "type": "string"
-        },
         "text": {
           "type": "string"
         }
@@ -3357,12 +3354,8 @@
       "type": "object"
     },
     "OverlayDef": {
-      "description": "OverlayDef is one entry of a DisplayDef legend.",
+      "description": "OverlayDef is one entry of a DisplayDef legend. What a client paints it in is the client's (ADR 0154: the web page's web.yaml).",
       "properties": {
-        "color": {
-          "description": "Color is a CSS color (a hex string).",
-          "type": "string"
-        },
         "glyph": {
           "description": "Glyph is a short text mark (badges).",
           "type": "string"
@@ -4261,12 +4254,8 @@
       "type": "object"
     },
     "SuitDef": {
-      "description": "SuitDef is one suit: how it is named and drawn.",
+      "description": "SuitDef is one suit: how it is named and its pip. What a client paints it in is the client's (ADR 0154: the web page's web.yaml), and whether it is red or black, where the rules ask, is its place in suit_order (ADR 0122).",
       "properties": {
-        "color": {
-          "description": "Color is a CSS color for the suit's pips and card faces.",
-          "type": "string"
-        },
         "label": {
           "type": "string"
         },
@@ -4633,9 +4622,9 @@
   },
   "$id": "https://github.com/noderunner/bingle/docs/api.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "description": "The requests, responses and WebSocket events of bingle's API, version 1.20.2. Generated from the Go types of the server: do not edit. Objects let unknown fields through: a client ignores those it does not know.",
+  "description": "The requests, responses and WebSocket events of bingle's API, version 1.21.0. Generated from the Go types of the server: do not edit. Objects let unknown fields through: a client ignores those it does not know.",
   "title": "Bingle API messages",
-  "x-api-version": "1.20.2",
+  "x-api-version": "1.21.0",
   "x-dm-events": {
     "badge": {
       "$ref": "#/$defs/BadgeEventData"

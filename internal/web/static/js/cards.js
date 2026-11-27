@@ -63,7 +63,7 @@ export function cardFace(info, id, extra = {}) {
 	const label = t ? t.label : "?";
 	const pip = suit.symbol || "";
 	const cls = "pcard face" + (extra.class ? " " + extra.class : "");
-	const style = suit.color ? `--suit: ${suit.color}` : null;
+	const style = suit.paint ? `--suit: ${suit.paint}` : null;
 	if (t && isClassicSuit(pip) && !t.text && !(t.symbols && t.symbols.length)) {
 		const name = tr("cards.of", { rank: label, suit: (suit.label || "").toLowerCase() });
 		return h("span", { class: cls, style, "data-card": id, "data-type": typeId(id), title: name }, cardFaceSvg(pip, label));
@@ -87,7 +87,7 @@ export function cardBack(info, extra = {}) {
 	const back = (info.cards && info.cards.back) || {};
 	return h(
 		"span",
-		{ class: "pcard back" + (extra.class ? " " + extra.class : ""), style: back.color ? `--back: ${back.color}` : null, "aria-label": tr("cards.face_down") },
+		{ class: "pcard back" + (extra.class ? " " + extra.class : ""), style: back.paint ? `--back: ${back.paint}` : null, "aria-label": tr("cards.face_down") },
 		back.text ? h("span", { class: "pc-back-text" }, back.text) : null
 	);
 }

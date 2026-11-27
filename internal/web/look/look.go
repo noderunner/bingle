@@ -13,6 +13,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/fs"
+	"maps"
 	"reflect"
 	"regexp"
 	"slices"
@@ -128,12 +129,14 @@ type Area struct {
 type Cards struct {
 	Back  *CardBack            `json:"back,omitempty"`
 	Zones map[string]Zone      `json:"zones,omitempty"`
-	Suits map[string]SuitColor `json:"suits,omitempty"`
+	Suits map[string]SuitPaint `json:"suits,omitempty"`
 }
 
-// CardBack is how the backs of the cards look: a color, and a word printed
-// on them (Nyet!'s).
+// CardBack is how the backs of the cards look: their paint, and a word
+// printed on them (Nyet!'s).
 type CardBack struct {
+	Paint string `json:"paint,omitempty"`
+	// Color is the old key for Paint (see OldColors).
 	Color string `json:"color,omitempty"`
 	Text  string `json:"text,omitempty"`
 }
@@ -153,8 +156,12 @@ var pictureFile = regexp.MustCompile(`(?i)\.(png|jpe?g|webp|svg)$`)
 
 var layouts = map[string]bool{"fan": true, "row": true, "stack": true, "splay": true, "grid": true}
 
-// SuitColor is the color a suit is drawn in, where the rules do not read it.
-type SuitColor struct {
+// SuitPaint is what a suit's pips and faces are drawn in. Whether a suit is
+// red or black, where the rules ask (patience's build.suit: alternate), is
+// its place in suit_order (ADR 0122), not this.
+type SuitPaint struct {
+	Paint string `json:"paint,omitempty"`
+	// Color is the old key for Paint (see OldColors).
 	Color string `json:"color,omitempty"`
 }
 
@@ -169,10 +176,82 @@ type Display struct {
 
 // Mark is how one tint or badge is drawn.
 type Mark struct {
-	// Color is a CSS color.
+	// Paint is what it is drawn in: a CSS color value (ADR 0154).
+	Paint string `json:"paint,omitempty"`
+	// Color is the old key for Paint (see OldColors).
 	Color string `json:"color,omitempty"`
 	// Glyph is a short text mark.
 	Glyph string `json:"glyph,omitempty"`
+}
+
+// paintForm is what a paint may be: a hex value, a CSS color function or a
+// CSS color keyword. (A pack's look is held to a stricter form, since its
+// paint reaches a player's browser from somebody else's file.)
+var paintForm = regexp.MustCompile(`^(#[0-9a-fA-F]{3,8}|[a-zA-Z]{1,30}|(rgba?|hsla?|hwb|lab|lch|oklab|oklch)\([0-9a-zA-Z., %/+-]{1,60}\))$`)
+
+// checkPaint holds one drawn thing's paint, and its old key, to their forms.
+func checkPaint(what, paint, old string, colors map[string]bool) error {
+	switch {
+	case paint != "" && old != "":
+		return fmt.Errorf("%s says both paint and color: paint is what it is drawn in", what)
+	case paint != "" && !paintForm.MatchString(paint):
+		return fmt.Errorf("%s: paint %q is not a value to draw with", what, paint)
+	case old != "" && colors[old]:
+		return fmt.Errorf("%s: color %q is a color of the game's, which nothing here reads: say paint, with a value to draw with", what, old)
+	case old != "" && !paintForm.MatchString(old):
+		return fmt.Errorf("%s: color %q is not a value to draw with", what, old)
+	}
+	return nil
+}
+
+// OldColors lists, for a file as Load returned it, every mark, suit and card
+// back that puts its paint under the old key, color, the family's and its
+// variants': "display.tints.fenced", "variants.g-big.cards.back".
+//
+// The old key is for files written before ADR 0154: a color is a name the
+// rules give a set of pieces and a value to draw with is paint, but the
+// private overlay's files, and install packs built before, still say color.
+// So the page reads a color there as paint where there is no paint (look.js's
+// paintOf), Check takes it only as a value to draw with, and tests/look
+// refuses it in the public games' files and the fixtures'. The Color fields,
+// paintOf and OldColors can go once the overlay's files say paint.
+func OldColors(data []byte) ([]string, error) {
+	var f File
+	if err := json.Unmarshal(data, &f); err != nil {
+		return nil, err
+	}
+	out := f.oldColors("")
+	for _, id := range slices.Sorted(maps.Keys(f.Variants)) {
+		out = append(out, f.Variants[id].oldColors("variants."+id+".")...)
+	}
+	return out, nil
+}
+
+func (f File) oldColors(prefix string) []string {
+	var out []string
+	if d := f.Display; d != nil {
+		for _, kind := range []struct {
+			name  string
+			marks map[string]Mark
+		}{{"tints", d.Tints}, {"badges", d.Badges}} {
+			for _, key := range slices.Sorted(maps.Keys(kind.marks)) {
+				if kind.marks[key].Color != "" {
+					out = append(out, prefix+"display."+kind.name+"."+key)
+				}
+			}
+		}
+	}
+	if c := f.Cards; c != nil {
+		if c.Back != nil && c.Back.Color != "" {
+			out = append(out, prefix+"cards.back")
+		}
+		for _, id := range slices.Sorted(maps.Keys(c.Suits)) {
+			if c.Suits[id].Color != "" {
+				out = append(out, prefix+"cards.suits."+id)
+			}
+		}
+	}
+	return out
 }
 
 // Load reads the web.yaml at the root of fsys and returns it as JSON, with
@@ -404,14 +483,20 @@ func (f File) check(cg *catalog.CompiledGame) error {
 		if def.Display != nil {
 			tints, badges = def.Display.Tints, def.Display.Badges
 		}
-		for key := range f.Display.Tints {
+		for key, m := range f.Display.Tints {
 			if _, ok := tints[key]; !ok {
 				return fmt.Errorf("tint %q is not in the definition's display, with its label", key)
 			}
+			if err := checkPaint(fmt.Sprintf("tint %q", key), m.Paint, m.Color, colors); err != nil {
+				return err
+			}
 		}
-		for key := range f.Display.Badges {
+		for key, m := range f.Display.Badges {
 			if _, ok := badges[key]; !ok {
 				return fmt.Errorf("badge %q is not in the definition's display, with its label", key)
+			}
+			if err := checkPaint(fmt.Sprintf("badge %q", key), m.Paint, m.Color, colors); err != nil {
+				return err
 			}
 		}
 	}
@@ -427,9 +512,17 @@ func (f File) check(cg *catalog.CompiledGame) error {
 				return fmt.Errorf("zone %q has unknown layout %q", id, z.Layout)
 			}
 		}
-		for id := range f.Cards.Suits {
+		for id, suit := range f.Cards.Suits {
 			if _, ok := def.Cards.Suits[id]; !ok {
 				return fmt.Errorf("suit %q is not one of the game's", id)
+			}
+			if err := checkPaint(fmt.Sprintf("suit %q", id), suit.Paint, suit.Color, colors); err != nil {
+				return err
+			}
+		}
+		if b := f.Cards.Back; b != nil {
+			if err := checkPaint("the cards' back", b.Paint, b.Color, colors); err != nil {
+				return err
 			}
 		}
 	}

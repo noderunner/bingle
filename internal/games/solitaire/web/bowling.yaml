@@ -6,10 +6,10 @@ script: bowling.js
 pieces:
   token: {shape: disc}
 cards:
-  back: {color: '#2f6f5e'}
+  back: {paint: '#2f6f5e'}
   suits:
-    hearts: {color: '#c62f2f'}
-    spades: {color: '#1f2630'}
+    hearts: {paint: '#c62f2f'}
+    spades: {paint: '#1f2630'}
   zones:
     pina: {layout: row}
     pinb: {layout: row}

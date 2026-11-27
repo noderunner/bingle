@@ -90,6 +90,10 @@ func TestWebCourtfall_PlayThroughSetupIntoTheGame(t *testing.T) {
 	if n := evalInt(t, ctx, `document.querySelectorAll('#board .cell-bg.tint').length`); n < 10 {
 		t.Errorf("only %d tinted hexes", n)
 	}
+	// Each in its tint's paint, from the web file (ADR 0154).
+	if n := evalInt(t, ctx, `[...document.querySelectorAll('#board .cell-bg.tint')].filter(e => !/color-mix\(in srgb, #[0-9a-f]{6} 78%/.test(e.getAttribute('style') || "")).length`); n != 0 {
+		t.Errorf("%d tinted hexes are not in their tint's paint", n)
+	}
 	waitJS(t, ctx, "scoreboards", `document.querySelectorAll('.seat-strip [data-counter="momentum"]').length === 2 && document.querySelectorAll('.seat-strip .court-tag').length === 2`, 5*time.Second)
 	waitJS(t, ctx, "the history tab", `document.getElementById("events") !== null && document.getElementById("history-friendly") !== null && document.getElementById("history-notation") !== null`, 5*time.Second)
 	// The terrain legend is in the rules window now, as its Key tab.
