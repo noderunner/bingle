@@ -129,4 +129,6 @@ checks the newest entry and that each release keeps English's sections.
 The platform's own words have a glossary, [docs/glossary/](glossary/en.md): what each means, the key that shows it,
 and each language's word for it, which `TestGlossary_EachLanguageHasEveryTermAsItsCatalogShowsIt` checks against
 the catalogs. A new string that uses one of these words uses the glossary's word; a change of a word changes the
-glossary and every key that says it together.
+glossary and every key that says it together. English's file has a second table, of the words of the code and the
+docs that the interface shows nowhere (color, label, paint: ADR 0154), with no key; the other languages' files do
+not repeat it, and the test reads only the first.

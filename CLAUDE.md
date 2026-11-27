@@ -129,6 +129,20 @@ code, docs, API paths and names.
 - In Go, `state.Selection` is one selection, `state.Move` the selections of one impulse and `state.Gesture` one
   gesture; the API's `selections` query lists selections with their `gestures`.
 
+[ADR 0154](docs/decisions/0154-a-color-is-a-name-and-paint-is-each-clients-own.md) defines four more:
+
+- A **seat** is a place at the table: its turn in the order, its clock, its result.
+- A **color** is a name the rules give a set of pieces (`white`, `yellow`, `grey`). A seat plays one or more, and
+  some are nobody's. It is an identifier in the definition, the API, the state and notation, never a value to draw
+  with.
+- A **label** is what players call a seat ("White", "Warm", "Attackers"), from the definition.
+- **Paint** is what one client draws a color as: a hex value, a gradient, a material. It lives only in that
+  client's files and code, and each player chooses their own.
+- So a field, variable or parameter called `color` holds a color, a name, and a value to draw with is called
+  `paint` (CSS's own property names and a library's types, such as Bevy's `Color`, are what they are). Anything
+  written about a game (notation, the log, results, what a screen reader hears) uses seats, colors and labels, never
+  paint. The word is spelled `color`.
+
 A game's own rules and its players' words keep their terms.
 
 ## The shape of the code

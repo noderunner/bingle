@@ -67,6 +67,10 @@ appearance file improves that; it is never required.
 sent, because renaming every stored position and notation would cost much and gain nothing. A client may draw
 that seat in any colour, or none.
 
+*Note (2026-11-27):* this stands. [ADR 0154](0154-a-color-is-a-name-and-paint-is-each-clients-own.md) says what
+follows from it: a color is a name, what a client draws it as is its paint, each player's own, and every style a
+client ships keeps the paint contract and shows a key.
+
 ## The audit: what moves
 
 Today's appearance fields, and where each goes. "Web file" means the web page's `web.yaml`.
