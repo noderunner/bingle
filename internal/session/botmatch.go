@@ -8,6 +8,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/noderunner/bingle/internal/cpu"
 	"github.com/noderunner/bingle/internal/engine/state"
 	"github.com/noderunner/bingle/internal/metrics"
 	"github.com/noderunner/bingle/internal/session/roomcode"
@@ -193,9 +194,12 @@ func (m *Manager) autoplayOne(ctx context.Context, roomCode string) bool {
 	case botSlots <- struct{}{}:
 		m.mx.SlotWait(metrics.SlotMatch, time.Since(queued))
 		m.mx.SlotEnter(metrics.SlotMatch)
+		// A room people watch is live play (ADR 0162).
+		live := cpu.Shared().Live()
 		searched := time.Now()
 		mv, err = bot.Choose(ctx, compiled, bs, mover.Seat, legal)
 		m.mx.BotSearch(bot.ID(), gameFamily(compiled), time.Since(searched))
+		live()
 		m.mx.SlotLeave(metrics.SlotMatch)
 		<-botSlots
 	case <-ctx.Done():

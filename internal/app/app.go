@@ -21,6 +21,7 @@ import (
 	"github.com/noderunner/bingle/internal/bots"
 	"github.com/noderunner/bingle/internal/clientbuilds"
 	"github.com/noderunner/bingle/internal/config"
+	"github.com/noderunner/bingle/internal/cpu"
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/engine/wasmrules"
 	"github.com/noderunner/bingle/internal/envs"
@@ -280,6 +281,14 @@ func New(cfg config.Config, opts ...Option) (*App, error) {
 	}
 	a.metrics.SetBotNodeSource(bots.NodeCounts)
 	batch.SetMetrics(a.metrics)
+	// What background work leaves for live play (ADR 0162), set before the
+	// batches and the ladder take their default workers from it.
+	live := cfg.LiveCPUs
+	if live <= 0 {
+		live = cpu.DefaultReserve(cpu.Shared().Size())
+	}
+	cpu.Shared().SetReserve(live)
+	cpu.Shared().SetMetrics(a.metrics)
 
 	a.store = st
 	a.catalog = cat

@@ -221,6 +221,10 @@ type Config struct {
 	BotLadder BotLadder
 	// Batch holds the limits on practice batches (BINGLE_BATCH_*, ADR 0161).
 	Batch BatchLimits
+	// LiveCPUs (BINGLE_LIVE_CPUS) is how many CPUs background work (batches,
+	// the bot ladder, match_bots, the training environments) leaves for live
+	// play (ADR 0162). Zero is the default: a quarter of them, rounded up.
+	LiveCPUs int
 
 	// Connection shortens how game sockets are watched, for tests. It has no
 	// environment variable, and zero values mean the normal times.
@@ -539,6 +543,13 @@ func Load() (Config, error) {
 		return Config{}, err
 	}
 	cfg.Batch = batchLimits
+	if v := strings.TrimSpace(os.Getenv("BINGLE_LIVE_CPUS")); v != "" {
+		n, err := strconv.Atoi(v)
+		if err != nil || n < 1 || n > 1024 {
+			return Config{}, fmt.Errorf("config: BINGLE_LIVE_CPUS must be a whole number from 1 to 1024, got %q", v)
+		}
+		cfg.LiveCPUs = n
+	}
 
 	stun, err := parseICEList("BINGLE_RTC_STUN", os.Getenv("BINGLE_RTC_STUN"), []string{"stun:", "stuns:"})
 	if err != nil {

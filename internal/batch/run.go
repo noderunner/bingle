@@ -16,11 +16,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"runtime"
 	"slices"
 	"sync"
 
 	"github.com/noderunner/bingle/internal/bots"
+	"github.com/noderunner/bingle/internal/cpu"
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/engine/state"
 	"github.com/noderunner/bingle/internal/metrics"
@@ -63,7 +63,9 @@ type Spec struct {
 	MaxPlies int `json:"max_plies,omitempty"`
 	// EventGames is how many games (the first ones) keep every decision.
 	EventGames int `json:"event_games,omitempty"`
-	// Workers is how many games are played at once (default: 3/4 of the CPUs).
+	// Workers is how many games are played at once (default: the CPUs
+	// background work may use, three quarters of them unless the operator
+	// keeps more for live play; ADR 0162). More than that take turns.
 	Workers int `json:"workers,omitempty"`
 	// Limits are the ceilings this one batch may use in place of the
 	// server's, each field that is set. Only an administrator's request may
@@ -119,13 +121,11 @@ func (s *Spec) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// DefaultWorkers is how many games run at once when a spec does not say: three
-// quarters of the CPUs, so the live server stays responsive.
+// DefaultWorkers is how many games run at once when a spec does not say: the
+// CPUs background work may use (cpu.Budget.BackgroundShare), which is three
+// quarters of them unless the operator keeps more for live play (ADR 0162).
 func DefaultWorkers() int {
-	if n := runtime.NumCPU() * 3 / 4; n > 1 {
-		return n
-	}
-	return 1
+	return cpu.Shared().BackgroundShare()
 }
 
 // DefaultMaxPlies is the ply cap of a game when a spec sets none.
@@ -294,7 +294,9 @@ func Run(ctx context.Context, cat *catalog.Catalog, spec Spec, sink func(Record)
 	return ctx.Err()
 }
 
-// PlayGame plays game number i of the batch.
+// PlayGame plays game number i of the batch. It is background work (ADR
+// 0162): it waits for a slot of the server's CPU budget before it plays, and
+// gives way between plies to live play and, in turn, to other background work.
 func PlayGame(ctx context.Context, cat *catalog.Catalog, spec Spec, i int) (Record, error) {
 	id, seated, err := spec.layout(cat, i)
 	if err != nil {
@@ -334,9 +336,17 @@ func PlayGame(ctx context.Context, cat *catalog.Catalog, spec Spec, i int) (Reco
 	keep := i < spec.EventGames
 	seat := state.StartSeat(game, st)
 	winner, reason := 0, "unfinished"
+	slot, err := cpu.Shared().Background(ctx)
+	if err != nil {
+		return rec, err
+	}
+	defer slot.Release()
 	for ply := 0; ply < spec.MaxPlies; ply++ {
 		if ctx.Err() != nil {
 			return rec, ctx.Err()
+		}
+		if err := slot.GiveWay(ctx); err != nil {
+			return rec, err
 		}
 		legal := state.LegalSelections(game, st, seat)
 		if len(legal) == 0 {

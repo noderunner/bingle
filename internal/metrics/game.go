@@ -37,6 +37,11 @@ const (
 	SlotBot      Slot = "bot"
 	SlotMatch    Slot = "match"
 	SlotEnvBatch Slot = "env-batch"
+	// SlotLive and SlotBackground are the two classes of the shared CPU
+	// budget (internal/cpu, ADR 0162): live play, which never waits for it,
+	// and background work, which waits and gives way.
+	SlotLive       Slot = "live"
+	SlotBackground Slot = "background"
 )
 
 // maxEndReason caps the length of an end-reason label. A ruleset's reasons are
@@ -203,6 +208,15 @@ func (m *Metrics) SlotLeave(pool Slot) {
 		return
 	}
 	m.slotInUse.WithLabelValues(string(pool)).Dec()
+}
+
+// SlotInUse sets how much of a pool is in use, for a pool that counts its own
+// (the shared CPU budget) rather than entering and leaving.
+func (m *Metrics) SlotInUse(pool Slot, n int) {
+	if m == nil {
+		return
+	}
+	m.slotInUse.WithLabelValues(string(pool)).Set(float64(n))
 }
 
 // SetSlotSizes records how large each pool is, so "in use" can be read as a
