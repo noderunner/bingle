@@ -81,11 +81,9 @@ func TestServe_ShutsDownWithASilentConnectionInFlight(t *testing.T) {
 
 	waitForHTTP(t, noRedirect(), "http://"+cfg.HTTPAddr+"/")
 
-	// Connected, and never a ClientHello.
-	raw, err := net.Dial("tcp", cfg.Addr)
-	if err != nil {
-		t.Fatalf("dialling the TLS port: %v", err)
-	}
+	// Connected, and never a ClientHello. Serve opens its two listeners
+	// independently, so the plain one answering does not mean this one is up.
+	raw := waitForDial(t, cfg.Addr)
 	defer func() { _ = raw.Close() }()
 
 	start := time.Now()
