@@ -25,7 +25,7 @@ pages, land with them.
 - **Enforcement** is in the resolver's middleware, by route: making a game (`create_game`), joining
   (`join`, the game WebSocket too), a game's chat (`chat_game`), its voice (`voice_game`), batches
   (`run_batch`: starting, cancelling, deleting), and playing (`play`: every other action on a game,
-  the training environments and MCP). A request without the capability is `403`, past its class's
+  the training environments and MCP, whose tools then each ask for the capability of the REST route that does the same: `internal/mcpserver/guard.go`). A request without the capability is `403`, past its class's
   limit (chat lines, games made, direct messages, sign-ins, per minute; per principal, or per
   address when anonymous) `429`. Anonymous requests are guests.
 - **Not yet enforced:** `dm`, `voice_direct`, `chat_global` and `notify` are in the matrix and seeded

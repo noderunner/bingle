@@ -2,6 +2,11 @@
 
 Lo que ha cambiado en Bingle, lo más reciente primero. Bingle Core (el servidor, el motor y el cliente web) y cada juego tienen su propia versión, y cada entrada dice cuál ha cambiado. Las entradas anteriores a la 0.124.0 están solo en inglés.
 
+## 0.153.1 - 2026-11-28
+
+### Bingle Core 0.153.1
+- Por MCP, iniciar y cancelar lotes, crear o importar partidas, unirse, chatear y registrarse en un torneo ahora requieren los mismos permisos que en la API
+
 ## 0.153.0 - 2026-11-28
 
 ### Bingle Core 0.153.0

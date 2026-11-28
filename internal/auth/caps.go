@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"regexp"
 	"slices"
@@ -497,6 +498,47 @@ func (c *Caps) ClassCaps(class string) []string {
 	return out
 }
 
+// deniedMessage is the refusal of a principal that lacks capability.
+func deniedMessage(capability string, p Principal, ok bool) string {
+	msg := fmt.Sprintf("auth: you may not do that here (it needs %q)", capability)
+	if !ok || p.Account == nil {
+		msg += ": sign in, or ask the server's administrator"
+	}
+	return msg
+}
+
+// Need is the capability the REST request method path needs ("" for none).
+// A front door that is not that route (MCP, one tool for each) asks for the
+// capability of the route that does the same, so that the two cannot drift
+// apart.
+func Need(method, path string) string {
+	capability, _ := needs(&http.Request{Method: method, URL: &url.URL{Path: path}})
+	return capability
+}
+
+// MayDo says whether the request's principal may do what the REST request
+// method path does, and if not, the refusal REST gives (a 403). It is checked
+// where a request does not pass through the route rules: a tool over MCP.
+func (c *Caps) MayDo(ctx context.Context, method, path string) error {
+	capability := Need(method, path)
+	if capability == "" {
+		return nil
+	}
+	p, ok := From(ctx)
+	if c.may(p, ok, capability) {
+		return nil
+	}
+	return &DeniedError{Capability: capability, msg: deniedMessage(capability, p, ok)}
+}
+
+// DeniedError is the answer to a principal that lacks a capability.
+type DeniedError struct {
+	Capability string
+	msg        string
+}
+
+func (e *DeniedError) Error() string { return e.msg }
+
 // check answers a request its principal may not make, and reports whether
 // it did.
 func (c *Caps) check(w http.ResponseWriter, r *http.Request, p Principal, ok bool, peer string, now time.Time) bool {
@@ -510,11 +552,7 @@ func (c *Caps) check(w http.ResponseWriter, r *http.Request, p Principal, ok boo
 		return false
 	}
 	if !c.may(p, ok, capability) {
-		msg := fmt.Sprintf("auth: you may not do that here (it needs %q)", capability)
-		if !ok || p.Account == nil {
-			msg += ": sign in, or ask the server's administrator"
-		}
-		writeError(w, http.StatusForbidden, msg)
+		writeError(w, http.StatusForbidden, deniedMessage(capability, p, ok))
 		return true
 	}
 	if limit != "" {
