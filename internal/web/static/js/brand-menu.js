@@ -21,11 +21,12 @@ if (button && menu) {
 		button.setAttribute("aria-expanded", "false");
 		if (refocus) button.focus();
 	};
-	// The setup file is the signed-in player's, or the guest's: the page cannot know the name.
+	// The setup file is the signed-in player's, or the guest's: the page cannot know the name, so it is put in at load and again on opening, as the name may be made up after.
 	const setup = document.getElementById("brand-menu-setup");
 	const nameSetup = () => {
 		if (setup) setup.textContent = t("bar.setup_file", { name: lastName() }).trim();
 	};
+	nameSetup();
 	const show = () => {
 		nameSetup();
 		menu.hidden = false;

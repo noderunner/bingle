@@ -97,8 +97,8 @@ type clientBuild struct {
 // platformIcons are small marks for the platforms that have one, in the text's
 // color. A platform without one is shown by its name.
 var platformIcons = map[string]template.HTML{
-	"windows-x86_64": `<svg class="platform-icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M1 2.5l6-.8v5.6H1zM8 1.6l7-1v6.7H8zM1 8.7h6v5.6l-6-.8zM8 8.7h7v6.7l-7-1z"/></svg>`,
-	"linux-x86_64":   `<svg class="platform-icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" d="M8 1.2c-1.7 0-2.4 1.4-2.4 3 0 1-.5 1.6-1.2 2.6-.9 1.3-1.6 2.9-1.6 4.4 0 .8.4 1.2 1 1.4.5.2.9.6 1.3 1.1.4.5 1.2.5 1.6.1.4-.4 2.6-.4 3.2 0 .4.4 1.2.4 1.6-.1.4-.5.8-.9 1.3-1.1.6-.2 1-.6 1-1.4 0-1.5-.7-3.1-1.6-4.4-.7-1-1.2-1.6-1.2-2.6 0-1.6-.7-3-2.4-3z"/><circle cx="6.6" cy="4.3" r=".7" fill="currentColor"/><circle cx="9.4" cy="4.3" r=".7" fill="currentColor"/><path fill="currentColor" d="M6.9 5.6h2.2L8 6.6z"/></svg>`,
+	"windows-x86_64": `<svg class="platform-icon" viewBox="0 0 16 16" width="18" height="18" aria-hidden="true" focusable="false"><path fill="currentColor" d="M1 2.5l6-.8v5.6H1zM8 1.6l7-1v6.7H8zM1 8.7h6v5.6l-6-.8zM8 8.7h7v6.7l-7-1z"/></svg>`,
+	"linux-x86_64":   `<svg class="platform-icon" viewBox="0 0 16 16" width="18" height="18" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" d="M8 1.2c-1.7 0-2.4 1.4-2.4 3 0 1-.5 1.6-1.2 2.6-.9 1.3-1.6 2.9-1.6 4.4 0 .8.4 1.2 1 1.4.5.2.9.6 1.3 1.1.4.5 1.2.5 1.6.1.4-.4 2.6-.4 3.2 0 .4.4 1.2.4 1.6-.1.4-.5.8-.9 1.3-1.1.6-.2 1-.6 1-1.4 0-1.5-.7-3.1-1.6-4.4-.7-1-1.2-1.6-1.2-2.6 0-1.6-.7-3-2.4-3z"/><circle cx="6.6" cy="4.3" r=".7" fill="currentColor"/><circle cx="9.4" cy="4.3" r=".7" fill="currentColor"/><path fill="currentColor" d="M6.9 5.6h2.2L8 6.6z"/></svg>`,
 }
 
 // clientDownload is the button that downloads one build: the platform's icon
