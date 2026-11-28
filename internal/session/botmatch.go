@@ -115,19 +115,25 @@ func (m *Manager) StartBotMatch(ctx context.Context, opts BotMatchOptions) (Crea
 	}
 
 	started = true
-	go func() {
+	if !m.detach(func(ctx context.Context) {
 		defer runningBotMatches.Add(-1)
-		m.autoplay(game.RoomCode, delay)
-	}()
+		m.autoplay(ctx, game.RoomCode, delay)
+	}) {
+		runningBotMatches.Add(-1)
+	}
 	return CreateGameResult{RoomCode: game.RoomCode, Seat: 0, Status: "active"}, nil
 }
 
 // autoplay plays roomCode's bots against each other, one move per delay.
-func (m *Manager) autoplay(roomCode string, delay time.Duration) {
-	ctx := context.Background()
+// It stops when ctx ends.
+func (m *Manager) autoplay(ctx context.Context, roomCode string, delay time.Duration) {
 	var unwatchedSince time.Time
 	for i := 0; i < 2*maxBotPlies; i++ {
-		time.Sleep(delay)
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(delay):
+		}
 
 		if m.hub.count(roomCode) == 0 {
 			if unwatchedSince.IsZero() {

@@ -81,11 +81,20 @@ type Manager struct {
 	// running, as in tests): a wait that ran while the server was down does
 	// not count, see autoPlaySince. Guarded by mu.
 	autoPlayFrom time.Time
+	// The work the manager starts on its own (see background.go): stopCtx
+	// ends, and stop ends it, at Close; stopped says Close has begun, and bg
+	// is the work Close waits for.
+	stopCtx context.Context
+	stop    context.CancelFunc
+	bgMu    sync.Mutex
+	stopped bool
+	bg      sync.WaitGroup
 }
 
-// NewManager returns a *Manager backed by st and cat.
+// NewManager returns a *Manager backed by st and cat. Closing st closes the
+// manager first (see Close).
 func NewManager(st *store.Store, cat *catalog.Catalog) *Manager {
-	return &Manager{
+	m := &Manager{
 		store:     st,
 		catalog:   cat,
 		hub:       newHub(),
@@ -95,6 +104,11 @@ func NewManager(st *store.Store, cat *catalog.Catalog) *Manager {
 		roomLocks: make(map[string]*sync.Mutex),
 		badgesDue: make(chan struct{}, 1),
 	}
+	m.stopCtx, m.stop = context.WithCancel(context.Background())
+	if st != nil {
+		st.OnClose(m.Close)
+	}
+	return m
 }
 
 // SetBrand sets what this instance calls itself.

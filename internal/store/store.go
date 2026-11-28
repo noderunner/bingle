@@ -7,6 +7,7 @@ import (
 	_ "embed"
 	"fmt"
 	"strings"
+	"sync"
 
 	_ "modernc.org/sqlite" // pure-Go SQLite driver, registered as "sqlite"
 
@@ -32,6 +33,9 @@ type Store struct {
 	mx *metrics.Metrics
 	// stats caches what Snapshot reports.
 	stats snapshotCache
+	// closers are what Close runs before the database closes (see OnClose).
+	closeMu sync.Mutex
+	closers []func()
 }
 
 // Open opens (creating if necessary) the SQLite database at dbPath and
@@ -392,8 +396,27 @@ func (s *Store) Ping(ctx context.Context) error {
 	return nil
 }
 
-// Close releases the underlying database connection.
+// OnClose has Close run f before the database closes, the last given first.
+// A session manager stops there, and waits for the work it started (see
+// session.Manager.Close), so nothing it started reaches a closed database or
+// its files.
+func (s *Store) OnClose(f func()) {
+	s.closeMu.Lock()
+	defer s.closeMu.Unlock()
+	s.closers = append(s.closers, f)
+}
+
+// Close runs what OnClose was given, then releases the database connection.
+// A connection still in use when the database closes stays open until its
+// statement ends, which is why that work must be stopped first.
 func (s *Store) Close() error {
+	s.closeMu.Lock()
+	fs := s.closers
+	s.closers = nil
+	s.closeMu.Unlock()
+	for i := len(fs) - 1; i >= 0; i-- {
+		fs[i]()
+	}
 	return s.db.Close()
 }
 
