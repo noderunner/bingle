@@ -204,6 +204,32 @@ func TestBotLadderTimeLimit(t *testing.T) {
 	}
 }
 
+// A run keeps within the batches' ceiling on a game's length (ADR 0161): with
+// a ceiling of four plies no game is finished, so every game is a draw, and a
+// run that is given more than its own cap is held to its cap.
+func TestBotLadderKeepsWithinTheBatchCeilings(t *testing.T) {
+	w := newLadderWorld(t)
+	l := botladder.New(w.st, w.cat, nil, botladder.Options{Games: 2, Limit: time.Minute, Strength: weak, Workers: 1, MaxPlies: 4}, nil)
+	sum, err := l.RunOnce(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if sum.Games == 0 {
+		t.Fatal("no games were played")
+	}
+	ladder, err := w.m.BotLadder(context.Background())
+	if err != nil || len(ladder) == 0 {
+		t.Fatalf("the ladder: %v %v", ladder, err)
+	}
+	for _, g := range ladder {
+		for _, b := range g.Bots {
+			if b.Won != 0 || b.Lost != 0 || b.Drawn == 0 {
+				t.Errorf("%s %s: %d won, %d lost, %d drawn in games cut at four plies", g.Family, b.Bot, b.Won, b.Lost, b.Drawn)
+			}
+		}
+	}
+}
+
 // A run plays the families whose ratings are oldest first, those never
 // played before all, so that a run cut short is followed by one that starts
 // where it stopped.

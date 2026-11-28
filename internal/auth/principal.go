@@ -51,6 +51,13 @@ type Principal struct {
 	issued string
 }
 
+// IsAdmin reports whether p is an administrator's own session: an account in
+// the admin group, and not an API token, which never carries the group's
+// powers (ADR 0071).
+func (p Principal) IsAdmin() bool {
+	return p.Account != nil && p.Account.Admin && p.Scopes == nil
+}
+
 type ctxKey struct{}
 
 // WithPrincipal returns ctx carrying p.

@@ -65,6 +65,10 @@ type Spec struct {
 	EventGames int `json:"event_games,omitempty"`
 	// Workers is how many games are played at once (default: 3/4 of the CPUs).
 	Workers int `json:"workers,omitempty"`
+	// Limits are the ceilings this one batch may use in place of the
+	// server's, each field that is set. Only an administrator's request may
+	// send them (ADR 0161).
+	Limits *Ceilings `json:"limits,omitempty"`
 }
 
 // Event is one decision of a game.

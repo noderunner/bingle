@@ -17,6 +17,9 @@ const num = (v, d = 1) => (Math.abs(v - Math.round(v)) < 1e-9 ? String(Math.roun
 
 const STATUS_TEXT = { queued: "batch.queued", running: "batch.running", done: "batch.done", cancelled: "batch.cancelled", failed: "batch.failed", interrupted: "batch.interrupted" };
 const statusText = (s) => (STATUS_TEXT[s] ? t(STATUS_TEXT[s]) : s);
+// A batch ended at a limit says so in place of its status.
+const LIMIT_TEXT = { time: "batch.limit_time" };
+const batchStatus = (b) => (LIMIT_TEXT[b.limit] ? t(LIMIT_TEXT[b.limit]) : statusText(b.status));
 
 // ---- sections --------------------------------------------------------------------
 
@@ -114,7 +117,7 @@ function headerCard(info) {
 		{ class: "card", id: "batch-head" },
 		h("div", { class: "row" },
 			h("h1", { style: "margin:0" }, info.name || t("batch.n", { id: info.id })),
-			h("span", { class: `batch-status ${info.status}`, id: "batch-status" }, statusText(info.status)),
+			h("span", { class: `batch-status ${info.status}${info.limit ? " limit" : ""}`, id: "batch-status" }, batchStatus(info)),
 			h("span", { class: "spacer" }),
 			running ? h("button", { type: "button", id: "batch-cancel", onclick: async () => { await api.cancelBatch(info.id); load(); } }, t("common.cancel")) : null,
 			h("button", { type: "button", class: "danger", id: "batch-delete", onclick: async () => { if (confirm(t("batch.delete_confirm"))) { await api.deleteBatch(info.id); window.location.href = "/batches"; } } }, t("batch.delete"))
@@ -184,7 +187,7 @@ async function loadList() {
 		root.append(
 			h("p", { class: "muted" }, t("batch.intro")),
 			batches.length
-				? h("ul", { class: "batch-list", id: "batch-list" }, batches.map((b) => h("li", {}, h("div", {}, h("a", { href: `/batches/${b.id}` }, b.name || t("batch.n", { id: b.id })), h("div", { class: "muted small" }, `${b.spec.players.map((p) => `${p.faction ? p.faction.toUpperCase() + ":" : ""}${p.bot}`).join(" ")} · ${new Date(b.created_at).toLocaleString(lang)}`)), h("div", { class: "row" }, h("span", { class: `batch-status ${b.status}` }, b.status === "running" ? t("batch.running_n", { done: b.done, games: b.games }) : statusText(b.status) + ` · ${b.done}/${b.games}`)))))
+				? h("ul", { class: "batch-list", id: "batch-list" }, batches.map((b) => h("li", {}, h("div", {}, h("a", { href: `/batches/${b.id}` }, b.name || t("batch.n", { id: b.id })), h("div", { class: "muted small" }, `${b.spec.players.map((p) => `${p.faction ? p.faction.toUpperCase() + ":" : ""}${p.bot}`).join(" ")} · ${new Date(b.created_at).toLocaleString(lang)}`)), h("div", { class: "row" }, h("span", { class: `batch-status ${b.status}${b.limit ? " limit" : ""}` }, b.status === "running" ? t("batch.running_n", { done: b.done, games: b.games }) : batchStatus(b) + ` · ${b.done}/${b.games}`)))))
 				: h("p", {}, t("batch.none_yet"))
 		);
 		if (batches.some((b) => b.status === "running" || b.status === "queued")) timer = setTimeout(loadList, 3000);

@@ -597,6 +597,7 @@
 	"batch.cancelled": "أُلغيت",
 	"batch.failed": "فشلت",
 	"batch.interrupted": "انقطعت",
+	"batch.limit_time": "بلغت حد الوقت",
 	"batch.running_n": "قيد التشغيل {done}/{games}",
 
 	"chat.messages": "رسائل الدردشة العامة",

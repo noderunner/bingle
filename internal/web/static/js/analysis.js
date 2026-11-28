@@ -17,6 +17,8 @@ import { botLadder } from "./botladder.js";
 
 const SETUP_KEY = "bingle.analysis";
 const STATUS_TEXT = { queued: "batch.queued", running: "batch.running", done: "batch.done", cancelled: "batch.cancelled", failed: "batch.failed", interrupted: "batch.interrupted" };
+// A batch ended at a limit says so in place of its status.
+const LIMIT_TEXT = { time: "batch.limit_time" };
 const SEAT_COLORS = ["#c0392b", "#2f6f9f", "#3f8a4f", "#c9a227", "#8a5fbf", "#d1731f"];
 
 let mounted = false;
@@ -65,12 +67,12 @@ function seatRows(info, chosen) {
 	return rows;
 }
 
-function form(host) {
+function form(host, maxGames) {
 	const s = setup();
 	const gameSel = h("select", { id: "analysis-game", "aria-label": t("analysis.game_to_study") });
 	for (const d of defs) gameSel.append(h("option", { value: d.id }, d.seats_required ? t("analysis.game_players", { game: gameTitle(d), n: d.seats_required }) : gameTitle(d)));
 	if (defs.some((d) => d.id === s.game)) gameSel.value = s.game;
-	const count = h("input", { id: "analysis-games", type: "number", min: "1", max: "5000", value: String(s.games), "aria-label": t("analysis.how_many") });
+	const count = h("input", { id: "analysis-games", type: "number", min: "1", max: String(maxGames), value: String(s.games), "aria-label": t("analysis.how_many") });
 	const rotate = h("input", { id: "analysis-rotate", type: "checkbox" });
 	rotate.checked = s.rotate;
 	const seats = h("div", { id: "analysis-seats-field" });
@@ -99,7 +101,7 @@ function form(host) {
 			name: `${gameSel.selectedOptions[0].textContent.split(" · ")[0]} · ${players.map((p) => p.bot).join(" v ")}`,
 			base: gameSel.value,
 			players,
-			games: Math.max(1, Math.min(5000, Number(count.value) || 1)),
+			games: Math.max(1, Math.min(maxGames, Number(count.value) || 1)),
 			rotate: rotate.checked,
 		};
 		store.set(SETUP_KEY, {
@@ -145,7 +147,8 @@ function gameName(id) {
 }
 
 function batchRow(b) {
-	const status = b.status === "running" ? t("batch.running_n", { done: b.done, games: b.games }) : `${STATUS_TEXT[b.status] ? t(STATUS_TEXT[b.status]) : b.status} · ${b.done}/${b.games}`;
+	const word = LIMIT_TEXT[b.limit] ? t(LIMIT_TEXT[b.limit]) : STATUS_TEXT[b.status] ? t(STATUS_TEXT[b.status]) : b.status;
+	const status = b.status === "running" ? t("batch.running_n", { done: b.done, games: b.games }) : `${word} · ${b.done}/${b.games}`;
 	const on = expanded.has(b.id);
 	const report = h("div", { class: "batch-report", hidden: !on });
 	const open = h("button", { type: "button", class: "ghost", "data-open-batch": b.id, "aria-expanded": on ? "true" : "false" }, t("analysis.report"));
@@ -162,7 +165,7 @@ function batchRow(b) {
 		"li",
 		{ "data-batch": b.id },
 		h("div", { class: "title grow" }, gameName(b.game_def_id)),
-		h("span", { class: `batch-status ${b.status}` }, status),
+		h("span", { class: `batch-status ${b.status}${b.limit ? " limit" : ""}` }, status),
 		open,
 		h("a", { class: "button", href: `/batches/${b.id}` }, t("analysis.full_report")),
 		report
@@ -307,7 +310,8 @@ export async function mountAnalysis(host) {
 	// account's (run_batch); reading the reports and the guide is anybody's.
 	const me = await whoAmI();
 	if ((me.caps || []).includes("run_batch")) {
-		form(top);
+		const limits = (await api.batches().catch(() => ({}))).limits || {};
+		form(top, limits.games || 5000);
 	} else {
 		top.append(
 			h(

@@ -3,20 +3,18 @@ package batch
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"time"
 
+	"github.com/noderunner/bingle/internal/auth"
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/store"
 )
 
 // ErrNotFound is returned for a batch that does not exist.
 var ErrNotFound = store.ErrBatchNotFound
-
-// MaxGames bounds the games of one batch.
-const MaxGames = 5000
 
 // Info describes a batch for listings.
 type Info struct {
@@ -31,6 +29,9 @@ type Info struct {
 	StartedAt  *time.Time `json:"started_at,omitempty"`
 	FinishedAt *time.Time `json:"finished_at,omitempty"`
 	Spec       Spec       `json:"spec"`
+	// Limit names the limit that ended the batch before its games were all
+	// played ("time"); its status is then cancelled. Empty when none did.
+	Limit string `json:"limit,omitempty"`
 	// GamesPerMinute is the measured speed of a running or finished batch.
 	GamesPerMinute float64 `json:"games_per_minute,omitempty"`
 }
@@ -61,39 +62,115 @@ type Manager struct {
 	// turn is held by whatever plays bot games on the batches' share of the
 	// machine: a batch, or a run of the bot ladder (Hold). One at a time.
 	turn chan struct{}
+	// limits are the ceilings and allowances (ADR 0161); startMu makes
+	// counting a player's batches and adding one a single step.
+	limits  Limits
+	startMu sync.Mutex
+	// wall is how long a batch with these ceilings may play (a test shortens
+	// it from the minute the setting allows).
+	wall func(Ceilings) time.Duration
+}
+
+// maxCachedReports bounds the finished batches' reports kept in memory (ADR
+// 0161): a report is rebuilt from the stored games when it is not there.
+const maxCachedReports = 32
+
+// Option changes how a Manager is made.
+type Option func(*Manager)
+
+// WithLimits sets the manager's limits (default DefaultLimits). A field left
+// at zero keeps its default.
+func WithLimits(l Limits) Option {
+	return func(m *Manager) {
+		d := DefaultLimits()
+		for _, f := range []struct {
+			to   *int
+			from int
+		}{
+			{&d.Workers, l.Workers}, {&d.MCTSIterations, l.MCTSIterations}, {&d.MinimaxNodes, l.MinimaxNodes},
+			{&d.MaxPlies, l.MaxPlies}, {&d.Games, l.Games}, {&d.EventGames, l.EventGames}, {&d.Minutes, l.Minutes},
+			{&d.Queue, l.Queue}, {&d.QueuedPerPlayer, l.QueuedPerPlayer}, {&d.StoredPerPlayer, l.StoredPerPlayer}, {&d.GamesPerDay, l.GamesPerDay},
+		} {
+			if f.from > 0 {
+				*f.to = f.from
+			}
+		}
+		m.limits = d
+	}
 }
 
 // NewManager starts the manager. Batches a stopped server left unfinished are
 // marked interrupted.
-func NewManager(st *store.Store, cat *catalog.Catalog) *Manager {
-	m := &Manager{st: st, cat: cat, cancels: map[int64]context.CancelFunc{}, queue: make(chan int64, 256), reports: map[int64]Report{}, turn: make(chan struct{}, 1)}
+func NewManager(st *store.Store, cat *catalog.Catalog, opts ...Option) *Manager {
+	m := &Manager{st: st, cat: cat, cancels: map[int64]context.CancelFunc{}, reports: map[int64]Report{}, turn: make(chan struct{}, 1), limits: DefaultLimits(), wall: Ceilings.Wall}
+	for _, o := range opts {
+		o(m)
+	}
+	m.queue = make(chan int64, m.limits.Queue)
 	_ = st.InterruptBatches(context.Background())
 	go m.loop()
 	return m
 }
 
-// Start validates spec and queues a batch.
+// Limits are the limits the manager keeps to.
+func (m *Manager) Limits() Limits { return m.limits }
+
+// DefaultWorkers is how many games a batch plays at once when its spec does
+// not say: the default, within the workers ceiling.
+func (m *Manager) DefaultWorkers() int { return min(DefaultWorkers(), m.limits.Workers) }
+
+// Start validates spec and queues a batch. A spec over a ceiling is refused
+// with a *LimitError, one from a player with no room left (or into a full
+// queue) with an *AllowanceError, and one with limits of its own from anybody
+// but an administrator (an account's own session, never a token's) with ErrNotAdmin.
 func (m *Manager) Start(ctx context.Context, name string, spec Spec) (int64, error) {
-	if spec.Games > MaxGames {
-		return 0, fmt.Errorf("batch: at most %d games per batch", MaxGames)
+	who, _ := auth.From(ctx)
+	admin := who.IsAdmin()
+	if spec.Limits != nil && !admin {
+		return 0, ErrNotAdmin
 	}
+	ceil := m.limits.over(spec.Limits)
+	if err := checkCeilings(name, spec, ceil); err != nil {
+		return 0, err
+	}
+	asked := spec
 	if err := spec.Validate(m.cat); err != nil {
 		return 0, err
+	}
+	// What a spec leaves to the defaults is kept within the ceilings too.
+	if asked.Workers <= 0 {
+		spec.Workers = min(spec.Workers, ceil.Workers)
+	}
+	if asked.MaxPlies <= 0 {
+		spec.MaxPlies = min(spec.MaxPlies, ceil.MaxPlies)
 	}
 	raw, _ := json.Marshal(spec)
 	if name == "" {
 		name = fmt.Sprintf("%s · %d games", spec.Base, spec.Games)
 	}
-	id, err := m.st.CreateBatch(ctx, name, spec.Base, string(raw), spec.Games)
+	owner := who.ID
+	if owner == "" {
+		owner = store.BatchAnonymous
+	}
+	m.startMu.Lock()
+	defer m.startMu.Unlock()
+	if len(m.queue) >= cap(m.queue) {
+		return 0, &AllowanceError{Limit: "queue", Max: cap(m.queue)}
+	}
+	if !admin {
+		use, err := m.st.BatchUsageOf(ctx, owner)
+		if err != nil {
+			return 0, err
+		}
+		if err := m.limits.checkAllowances(use, spec.Games); err != nil {
+			return 0, err
+		}
+	}
+	id, err := m.st.CreateBatch(ctx, name, spec.Base, string(raw), spec.Games, owner)
 	if err != nil {
 		return 0, err
 	}
-	select {
-	case m.queue <- id:
-	default:
-		_ = m.st.SetBatchStatus(ctx, id, store.BatchFailed, "too many batches are queued")
-		return id, errors.New("batch: the queue is full")
-	}
+	m.queue <- id // there is room: only Start adds, and it holds startMu
 	return id, nil
 }
 
@@ -131,6 +208,10 @@ func (m *Manager) run(id int64) {
 		return
 	}
 	ctx, cancel := context.WithCancel(bg)
+	// A batch is given a wall-clock time from the moment it starts playing; at
+	// its end the batch stops and is marked with the limit (ADR 0161).
+	timeCtx, stopTimer := context.WithTimeoutCause(ctx, m.wall(m.limits.over(spec.Limits)), errWallClock)
+	defer stopTimer()
 	m.mu.Lock()
 	m.cancels[id] = cancel
 	m.mu.Unlock()
@@ -141,7 +222,8 @@ func (m *Manager) run(id int64) {
 		m.mu.Unlock()
 	}()
 	_ = m.st.SetBatchStatus(bg, id, store.BatchRunning, "")
-	err = Run(ctx, m.cat, spec, func(r Record) {
+	var finished atomic.Int64
+	err = Run(timeCtx, m.cat, spec, func(r Record) {
 		seating, _ := json.Marshal(r.Seating)
 		metrics, _ := json.Marshal(r.Metrics)
 		events := ""
@@ -154,8 +236,12 @@ func (m *Manager) run(id int64) {
 			Winner: r.Winner, EndReason: r.EndReason, Plies: r.Plies, Rounds: r.Rounds,
 			Metrics: string(metrics), Events: events,
 		})
-	}, nil)
+	}, func(done int) { finished.Store(int64(done)) })
 	switch {
+	case int(finished.Load()) >= spec.Games:
+		_ = m.st.SetBatchStatus(bg, id, store.BatchDone, "")
+	case context.Cause(timeCtx) == errWallClock:
+		_ = m.st.EndBatchAtLimit(bg, id, LimitTime)
 	case ctx.Err() != nil:
 		_ = m.st.SetBatchStatus(bg, id, store.BatchCancelled, "")
 	case err != nil:
@@ -199,6 +285,7 @@ func info(b store.Batch) Info {
 	in := Info{ID: b.ID, Name: b.Name, GameDefID: b.GameDefID, Status: b.Status, Games: b.NGames, Done: b.Done,
 		Error: b.Error, CreatedAt: b.CreatedAt, StartedAt: b.StartedAt, FinishedAt: b.FinishedAt}
 	_ = json.Unmarshal([]byte(b.Spec), &in.Spec)
+	in.Limit = b.LimitHit
 	if b.StartedAt != nil && b.Done > 0 {
 		end := time.Now()
 		if b.FinishedAt != nil {
@@ -315,6 +402,12 @@ func (m *Manager) Report(ctx context.Context, id int64) (Report, error) {
 	rep.Bots = botReports(recs)
 	if final {
 		m.mu.Lock()
+		if len(m.reports) >= maxCachedReports {
+			for k := range m.reports { // any one: the cache only saves a rebuild
+				delete(m.reports, k)
+				break
+			}
+		}
 		m.reports[id] = rep
 		m.mu.Unlock()
 	}

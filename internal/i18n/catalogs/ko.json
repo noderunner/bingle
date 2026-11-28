@@ -597,6 +597,7 @@
 	"batch.cancelled": "취소됨",
 	"batch.failed": "실패",
 	"batch.interrupted": "중단됨",
+	"batch.limit_time": "시간 제한 도달",
 	"batch.running_n": "실행 중 {done}/{games}",
 
 	"chat.messages": "전체 채팅 메시지",

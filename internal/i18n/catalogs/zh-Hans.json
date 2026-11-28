@@ -597,6 +597,7 @@
 	"batch.cancelled": "已取消",
 	"batch.failed": "失败",
 	"batch.interrupted": "已中断",
+	"batch.limit_time": "已达时间限制",
 	"batch.running_n": "进行中 {done}/{games}",
 
 	"chat.messages": "全局聊天消息",

@@ -9,6 +9,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"github.com/noderunner/bingle/internal/batch"
 	"github.com/noderunner/bingle/internal/session"
 	"github.com/noderunner/bingle/internal/store"
 )
@@ -19,7 +20,13 @@ import (
 // unexpected internal error — see plan.md 6.8's "Known, deliberate v1
 // simplification" note.
 func statusForError(err error) int {
+	var allowance *batch.AllowanceError
 	switch {
+	case errors.As(err, &allowance):
+		// A queue with no room, or a player's allowance spent (ADR 0161).
+		return http.StatusTooManyRequests
+	case errors.Is(err, batch.ErrNotAdmin):
+		return http.StatusForbidden
 	case errors.Is(err, store.ErrNotFound), errors.Is(err, store.ErrBatchNotFound), errors.Is(err, session.ErrGameDefNotFound), errors.Is(err, session.ErrAssetNotFound), errors.Is(err, session.ErrNotifyOff),
 		errors.Is(err, session.ErrNoSuchPerson), errors.Is(err, session.ErrTutorialNotFound),
 		errors.Is(err, session.ErrNoAccount), errors.Is(err, session.ErrNoRequest), errors.Is(err, session.ErrNoInvite), errors.Is(err, session.ErrNotRatedGame):
@@ -91,9 +98,15 @@ func checkName(name string) error {
 	return nil
 }
 
-// errorResponse is the JSON shape of every error response: {"error": "<message>"}.
+// errorResponse is the JSON shape of every error response: {"error": "<message>"},
+// and for a batch that ran into a limit also which one (ADR 0161).
 type errorResponse struct {
 	Error string `json:"error"`
+	// Limit names the limit a batch ran into (a field of a batch's limits, or
+	// name, queue, queued_per_player, stored_per_player or games_per_day) and
+	// Max is its value.
+	Limit string `json:"limit,omitempty"`
+	Max   int    `json:"max,omitempty"`
 }
 
 // writeError writes err to w as a JSON error body, with the status mapped
@@ -101,5 +114,14 @@ type errorResponse struct {
 func writeError(w http.ResponseWriter, err error) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusForError(err))
-	_ = json.NewEncoder(w).Encode(errorResponse{Error: err.Error()})
+	body := errorResponse{Error: err.Error()}
+	var over *batch.LimitError
+	var allowance *batch.AllowanceError
+	switch {
+	case errors.As(err, &over):
+		body.Limit, body.Max = over.Limit, over.Max
+	case errors.As(err, &allowance):
+		body.Limit, body.Max = allowance.Limit, allowance.Max
+	}
+	_ = json.NewEncoder(w).Encode(body)
 }

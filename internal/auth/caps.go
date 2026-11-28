@@ -415,7 +415,7 @@ func classOf(p Principal, ok bool) string {
 	switch {
 	case !ok || p.Account == nil:
 		return ClassGuest
-	case p.Account.Admin && p.Scopes == nil:
+	case p.IsAdmin():
 		return ClassAdmin
 	}
 	return ClassUser

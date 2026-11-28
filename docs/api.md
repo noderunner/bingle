@@ -546,15 +546,39 @@ picks a cult per seat, has the option `hp` (the High Priests) and reports per cu
 
 | Route | |
 |---|---|
-| `POST /api/batches` | start (queue) a batch. Body: `name`, `base` (game id), `options` (the study's: `["hp"]`; a spec saved with `high_priests: true` reads as that), `players` [`{faction, bot: random\|tactical\|minimax\|mcts, mcts_iterations, minimax_nodes, tuning}`] one per seat (`faction` is the study's pick, a Cthulhu Wars cult `gc\|cc\|bg\|ys\|ww\|sl`, for every seat or none; `tuning` sets guide knobs by name), `games` (≤ 5000), `seed`, `rotate`, `max_plies`, `event_games` (default 0; the wizard sends 20), `workers`. 201 with the batch |
-| `GET /api/batches` | `{batches, default_workers}`, newest first |
-| `GET /api/batches/{id}` | the batch: status (`queued running done cancelled failed interrupted`), `done`/`games`, `games_per_minute`, spec |
+| `POST /api/batches` | start (queue) a batch. Body: `name`, `base` (game id), `options` (the study's: `["hp"]`; a spec saved with `high_priests: true` reads as that), `players` [`{faction, bot: random\|tactical\|minimax\|mcts, mcts_iterations, minimax_nodes, tuning}`] one per seat (`faction` is the study's pick, a Cthulhu Wars cult `gc\|cc\|bg\|ys\|ww\|sl`, for every seat or none; `tuning` sets guide knobs by name), `games` (at most the limit below, 5000 by default), `seed`, `rotate`, `max_plies`, `event_games` (default 0; the wizard sends 20), `workers`, and `limits` (an administrator's own session only: see below). 201 with the batch; `400` for a spec over a limit, `403` for `limits` from anybody else, `429` for a full queue or a spent allowance |
+| `GET /api/batches` | `{batches, default_workers, limits}`, newest first; `limits` are the server's (see below) |
+| `GET /api/batches/{id}` | the batch: status (`queued running done cancelled failed interrupted`), `done`/`games`, `games_per_minute`, spec, and `limit` (`"time"`) when a limit ended it (its status is then `cancelled`) |
 | `GET /api/batches/{id}/report` | `{batch, report}`: the aggregate of the games finished so far: every game's (by seat, by bot, length, how games ended) and the study's beside it (Cthulhu Wars' `factions` and `area_names`: per cult win rate + interval, by seat, by round, spellbooks, units, actions, areas, each with a win-rate lift) |
 | `GET /api/batches/{id}/games` | one row per finished game (seating, winner, end, plies, rounds) |
 | `GET /api/batches/{id}/games/{n}/events` | the decisions of game *n* (only the first `event_games` keep them) |
 | `POST /api/batches/{id}/cancel`, `DELETE /api/batches/{id}` | stop; delete with its games |
 
 MCP: `start_batch`, `get_batch`, `list_batches`, `cancel_batch`. Pages: `/batches`, `/batches/{id}`.
+
+### Limits on batches
+
+A batch takes the server's CPUs, memory and database, so it is limited ([ADR 0161](decisions/0161-limits-on-batch-jobs.md)).
+`GET /api/batches` lists them as `limits`; the operator sets each with an environment variable
+([build.md](build.md)).
+
+- **Ceilings**, one batch's: `workers` (games at once), `mcts_iterations` and `minimax_nodes` (a bot's search a move),
+  `max_plies` (a game's length), `games`, `event_games` (games that keep their decisions) and `minutes` (wall-clock time
+  from the moment it starts playing). A spec over one is refused up front: `400 {error, limit, max}`, `limit` naming the
+  ceiling (`games`, `workers`, `mcts_iterations`, `minimax_nodes`, `max_plies`, `event_games`, or `name` for a name over
+  200 characters). A batch that reaches `minutes` stops, keeps the games it played, is `cancelled` and has `limit:
+  "time"`. What a spec leaves to the defaults (`workers`, `max_plies`) is kept within the ceilings.
+- **Allowances**, a player's and the server's: `queue` (batches waiting, the whole server's), `queued_per_player`
+  (queued or running), `stored_per_player` (kept) and `games_per_day` (games started in 24 hours: a batch counts its
+  games while it is queued or running and the games it played after). A request with no room is `429 {error, limit,
+  max}`, `limit` naming the allowance. A player is the principal the request acts for; requests with none share one.
+  An administrator's own session is not held to the allowances.
+- **Raising a limit for one batch**: `limits` in the spec, an object of the ceilings above (`{"games": 20000, "minutes":
+  2000}`), each that is set in place of the server's, kept with the spec. Only an administrator's own session may send
+  it (never an API token, which has none of the group's powers): anybody else gets `403`, over MCP too.
+
+`start_batch` refuses the same way: an error result whose structured content is `{error, status, limit, max}`, `status`
+being the `400`, `403` or `429` the route answers with.
 
 ### GET /api/games/{code}/history
 

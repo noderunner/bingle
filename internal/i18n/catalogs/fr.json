@@ -597,6 +597,7 @@
 	"batch.cancelled": "Annulée",
 	"batch.failed": "Échouée",
 	"batch.interrupted": "Interrompue",
+	"batch.limit_time": "Limite de temps atteinte",
 	"batch.running_n": "en cours {done}/{games}",
 
 	"chat.messages": "Messages du chat général",

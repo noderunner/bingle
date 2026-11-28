@@ -219,6 +219,8 @@ type Config struct {
 	// BotLadder is when and how much the bots play for their own ratings
 	// (see BotLadder; ADR 0160).
 	BotLadder BotLadder
+	// Batch holds the limits on practice batches (BINGLE_BATCH_*, ADR 0161).
+	Batch BatchLimits
 
 	// Connection shortens how game sockets are watched, for tests. It has no
 	// environment variable, and zero values mean the normal times.
@@ -390,6 +392,29 @@ const (
 	DefaultBotLadderLimit = time.Hour
 )
 
+// BatchLimits are the operator's limits on practice batches (ADR 0161): the
+// ceilings a batch's spec cannot go past, the time a batch may run, and what
+// one player may queue, keep and start. A field left at zero is the batch
+// package's own default (batch.DefaultLimits).
+type BatchLimits struct {
+	// Workers (BINGLE_BATCH_MAX_WORKERS) is the most games one batch plays at
+	// once; MCTSIterations (BINGLE_BATCH_MAX_MCTS_ITERATIONS) and
+	// MinimaxNodes (BINGLE_BATCH_MAX_MINIMAX_NODES) bound a bot's search a
+	// move; MaxPlies (BINGLE_BATCH_MAX_PLIES) a game's length; Games
+	// (BINGLE_BATCH_MAX_GAMES) a batch's games; EventGames
+	// (BINGLE_BATCH_MAX_EVENT_GAMES) the games that keep their decisions.
+	Workers, MCTSIterations, MinimaxNodes, MaxPlies, Games, EventGames int
+	// Time (BINGLE_BATCH_MAX_TIME) is how long a batch may play, from when it
+	// starts.
+	Time time.Duration
+	// Queue (BINGLE_BATCH_QUEUE) is how many batches may wait;
+	// QueuedPerPlayer (BINGLE_BATCH_QUEUED_PER_PLAYER) how many a player may
+	// have queued or running, StoredPerPlayer (BINGLE_BATCH_STORED_PER_PLAYER)
+	// how many they may keep and GamesPerDay (BINGLE_BATCH_GAMES_PER_DAY) how
+	// many games they may start in 24 hours.
+	Queue, QueuedPerPlayer, StoredPerPlayer, GamesPerDay int
+}
+
 // DefaultRTCStun is the STUN server used when BINGLE_RTC_STUN is not set.
 const DefaultRTCStun = "stun:stun.l.google.com:19302"
 
@@ -509,6 +534,11 @@ func Load() (Config, error) {
 		return Config{}, err
 	}
 	cfg.BotLadder = ladder
+	batchLimits, err := loadBatchLimits()
+	if err != nil {
+		return Config{}, err
+	}
+	cfg.Batch = batchLimits
 
 	stun, err := parseICEList("BINGLE_RTC_STUN", os.Getenv("BINGLE_RTC_STUN"), []string{"stun:", "stuns:"})
 	if err != nil {
@@ -1060,6 +1090,47 @@ func loadBotLadder() (BotLadder, error) {
 			return BotLadder{}, fmt.Errorf("config: BINGLE_BOT_LADDER_LIMIT must be a duration from 1m to 12h, got %q", v)
 		}
 		b.Limit = d
+	}
+	return b, nil
+}
+
+// loadBatchLimits reads the BINGLE_BATCH_* settings: whole numbers, and a
+// duration for the time a batch may play. A setting left out stays zero, which
+// is the default.
+func loadBatchLimits() (BatchLimits, error) {
+	var b BatchLimits
+	for _, f := range []struct {
+		name string
+		to   *int
+		max  int
+	}{
+		{"BINGLE_BATCH_MAX_WORKERS", &b.Workers, 1024},
+		{"BINGLE_BATCH_MAX_MCTS_ITERATIONS", &b.MCTSIterations, 10_000_000},
+		{"BINGLE_BATCH_MAX_MINIMAX_NODES", &b.MinimaxNodes, 100_000_000},
+		{"BINGLE_BATCH_MAX_PLIES", &b.MaxPlies, 100_000},
+		{"BINGLE_BATCH_MAX_GAMES", &b.Games, 1_000_000},
+		{"BINGLE_BATCH_MAX_EVENT_GAMES", &b.EventGames, 10_000},
+		{"BINGLE_BATCH_QUEUE", &b.Queue, 10_000},
+		{"BINGLE_BATCH_QUEUED_PER_PLAYER", &b.QueuedPerPlayer, 10_000},
+		{"BINGLE_BATCH_STORED_PER_PLAYER", &b.StoredPerPlayer, 100_000},
+		{"BINGLE_BATCH_GAMES_PER_DAY", &b.GamesPerDay, 100_000_000},
+	} {
+		v := strings.TrimSpace(os.Getenv(f.name))
+		if v == "" {
+			continue
+		}
+		n, err := strconv.Atoi(v)
+		if err != nil || n < 1 || n > f.max {
+			return BatchLimits{}, fmt.Errorf("config: %s must be a whole number from 1 to %d, got %q", f.name, f.max, v)
+		}
+		*f.to = n
+	}
+	if v := strings.TrimSpace(os.Getenv("BINGLE_BATCH_MAX_TIME")); v != "" {
+		d, err := time.ParseDuration(v)
+		if err != nil || d < time.Minute || d > 30*24*time.Hour {
+			return BatchLimits{}, fmt.Errorf("config: BINGLE_BATCH_MAX_TIME must be a duration from 1m to 720h, got %q", v)
+		}
+		b.Time = d
 	}
 	return b, nil
 }

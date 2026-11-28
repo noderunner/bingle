@@ -70,6 +70,17 @@ All configuration is via environment variables — there's no config file.
 | `BINGLE_BOT_LADDER` | `00:00` | When the bot ladder runs each day: a time of day in UTC, `HH:MM`, or `off`. Tactical, Minimax and MCTS play each other in every game of two seats for ratings of their own, shown in the Ratings tab and the bot guide and never mixed with people's. A run waits for a running batch and plays on a batch's number of workers ([ADR 0160](decisions/0160-a-bot-ladder.md)) |
 | `BINGLE_BOT_LADDER_GAMES` | `2` | Games each pairing of bots plays in each game a run (1 to 100): the default is one each way round, 108 games on the public build |
 | `BINGLE_BOT_LADDER_LIMIT` | `1h` | The longest a whole run may take, the wait for a batch included (`1m` to `12h`); what was played by then counts, and the next run starts with the games left out. A family takes 2 to 14 minutes of one CPU's time, so a server of two CPUs rates about 5 families a night |
+| `BINGLE_BATCH_MAX_WORKERS` | the number of CPUs | The limits on practice batches ([ADR 0161](decisions/0161-limits-on-batch-jobs.md)) are the eleven `BINGLE_BATCH_*` settings, each a whole number from 1 (the time a duration). This is the most games one batch plays at once; a batch's default stays three quarters of the CPUs, within it |
+| `BINGLE_BATCH_MAX_MCTS_ITERATIONS` | `5000` | The most iterations a spec may give the MCTS bot a move (about 11 seconds a move on Hex 11×11's opening, 11 times the default second) |
+| `BINGLE_BATCH_MAX_MINIMAX_NODES` | `100000` | The most positions a spec may give the Minimax bot a move (the default is 30,000) |
+| `BINGLE_BATCH_MAX_PLIES` | `5000` | The longest a game of a batch may be allowed to run (a spec's `max_plies`; its default is 3,000). A batch's workers play the game that long: a ceiling above what games need only matters to a game that never ends |
+| `BINGLE_BATCH_MAX_GAMES` | `5000` | The most games in one batch |
+| `BINGLE_BATCH_MAX_EVENT_GAMES` | `100` | The most games of a batch that keep every decision (about 50 bytes a ply) |
+| `BINGLE_BATCH_MAX_TIME` | `12h` | The longest a batch may play, from the moment it starts (`1m` to `720h`): it then stops, keeps its games and is marked with the limit |
+| `BINGLE_BATCH_QUEUE` | `256` | Batches that may wait for their turn, the whole server's |
+| `BINGLE_BATCH_QUEUED_PER_PLAYER` | `16` | Batches one player may have queued or running |
+| `BINGLE_BATCH_STORED_PER_PLAYER` | `100` | Batches one player may keep (delete one to start another) |
+| `BINGLE_BATCH_GAMES_PER_DAY` | `20000` | Games one player may start in 24 hours |
 | `BINGLE_LOG_LEVEL` | `info` | How much the server says: `debug`, `info`, `warn` or `error`. `debug` is the verbose mode and adds a line per request. See [observability.md](observability.md) |
 | `BINGLE_LOG_FORMAT` | `text` | `text` is `key=value` lines for a person, `json` one object per line for a log collector |
 | `BINGLE_METRICS_ADDR` | `127.0.0.1:9095` | The private listener serving Prometheus metrics at `/metrics`. Empty turns the metrics off. It is deliberately not the public listener, which has no authentication. See [observability.md](observability.md) |
