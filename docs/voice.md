@@ -105,8 +105,8 @@ the user name is the expiry time, the password the HMAC-SHA1 of it under the sec
 ## Limits
 
 Audio only, in a full mesh: each player uploads one stream per other player, which is fine
-for the seats of a game (up to about 6). Video, spectators listening in and an SFU for
-larger rooms are not built.
+for the seats of a game (up to about 6). Video and an SFU for larger rooms are not built; spectators
+listening in is decided against ([ADR 0158](decisions/0158-voice-chat-is-for-players-only.md)).
 
 ## Testing
 
