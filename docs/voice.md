@@ -115,7 +115,38 @@ nobody else), limits and the TURN credentials; `tests/app/voice_ui_test.go` runs
 browsers with Chrome's fake microphone (`--use-fake-ui-for-media-stream
 --use-fake-device-for-media-stream`) and checks two- and three-player calls, mute, deafen,
 push to talk and the refusal messages. Not covered by tests: the 45-second expiry, and
-connections through a TURN relay or a strict NAT (try two real machines).
+a strict NAT (try two real machines).
+
+### A call through a real relay
+
+`TestVoiceUI_CallThroughTURNRelay` (`tests/app/voice_turn_test.go`) runs coturn in a
+container and puts two browsers in a call through it. It is opt-in, and CI skips it:
+
+```sh
+BINGLE_TURN_RELAY=1 go test ./tests/app -run TestVoiceUI_CallThroughTURNRelay -v
+```
+
+It needs `podman` (or `docker`, used when podman is not installed), the image
+`docker.io/coturn/coturn:4.18.0` (pulled on the first run; the test skips if the pull fails)
+and a browser. It takes about 12 seconds.
+
+* **The relay.** coturn runs rootless with host networking, listening on `127.0.0.1` only
+  (`listening-ip`, `relay-ip`), on a free port between 24000 and 26000 and a relay range of
+  the ten ports after it, never 3478. It has `use-auth-secret` with a secret made for the
+  run, which the server under test gets as `RTCTurnSecret`, and no STUN. Both browsers and
+  the relay are on one machine, so every peer the relay sends to is a loopback address,
+  which coturn refuses by default: the test passes `allow-loopback-peers`. **That is for the
+  test only; a real relay must never allow loopback peers.** The container is named for the
+  run and removed when the test ends, whatever the result; on a failure the test prints
+  coturn's log first.
+* **Relay only.** The browser driver adds a script that runs before the page's own
+  (`stepAddScript`) and gives every `RTCPeerConnection` `iceTransportPolicy: "relay"`, so no
+  direct path can connect. The page has no way to ask for it.
+* **What it checks.** From each browser's `getStats()`: the selected candidate pair is
+  `relay` at both ends, and audio received (Chrome's fake microphone) grows in bytes and
+  by at least 50 packets in 3 seconds. Then, alone in a browser with relay-only ICE, the
+  server's credential gathers a relay candidate, and a credential whose expiry has passed
+  and one made with another secret gather none and get `401` in `icecandidateerror`.
 
 ## The call of a direct message
 
