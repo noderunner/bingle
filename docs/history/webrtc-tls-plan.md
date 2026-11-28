@@ -185,3 +185,5 @@ mobile, symmetric NAT) need a TURN relay.
   mode ([ADR 0158](../decisions/0158-voice-chat-is-for-players-only.md)).
 - 2026-11-28: an SFU (#245): none is built until growth brings an actual need, and then an SFU is the default strategy
   ([ADR 0159](../decisions/0159-no-media-server-until-growth-needs-one.md)).
+- 2026-11-28: a test through a real TURN relay (#246): coturn in a container, relay-only ICE in two browsers, opt-in with
+  `BINGLE_TURN_RELAY=1` ([voice.md](../voice.md#a-call-through-a-real-relay)).
