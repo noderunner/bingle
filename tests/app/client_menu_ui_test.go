@@ -37,11 +37,19 @@ func TestWebClientMenu_TheLogoOpensAMenuAndTheNameGoesHome(t *testing.T) {
 	if got := evalString(t, ctx, menuState); got != "open true brand-menu-home" {
 		t.Fatalf("after a click the menu is %q", got)
 	}
-	if got := evalString(t, ctx, `[...document.querySelectorAll('#brand-menu [role="menuitem"]')].map((e) => e.textContent.trim()).join("|")`); got != "Home|Linux|Windows|Setup file" {
+	name := evalString(t, ctx, `JSON.parse(localStorage.getItem("bingle.name") || "\"\"")`)
+	if name == "" {
+		t.Fatal("the guest has no name")
+	}
+	if got := evalString(t, ctx, `[...document.querySelectorAll('#brand-menu [role="menuitem"]')].map((e) => e.textContent.trim()).join("|")`); got != "Home|0.0.2|0.0.3|"+name+" Profile Configs" {
 		t.Errorf("the menu offers %q", got)
 	}
-	if got := evalString(t, ctx, `document.getElementById("brand-menu-client").textContent`); got != "3D client" {
+	if got := evalString(t, ctx, `document.getElementById("brand-menu-client").textContent`); got != "Download Game Client" {
 		t.Errorf("the downloads are headed %q", got)
+	}
+	// A build is a download button: the platform's icon and the version on one line, named for a screen reader.
+	if got := evalString(t, ctx, `[...document.querySelectorAll("#brand-menu a[download]")].map((a) => a.getAttribute("aria-label") + ":" + a.title + ":" + (a.querySelector("svg.platform-icon") ? "icon" : "none") + ":" + (a.getClientRects().length === 1 && a.querySelector("svg").getBoundingClientRect().bottom > a.getBoundingClientRect().top && Math.abs(a.querySelector("svg").getBoundingClientRect().top - a.getBoundingClientRect().top) < a.getBoundingClientRect().height / 2 ? "line" : "wrapped")).join("|")`); got != "Linux 0.0.2:0.0.2:icon:line|Windows 0.0.3:0.0.3:icon:line" {
+		t.Errorf("the builds: %q", got)
 	}
 	// It hangs under the logo, inside the window, over the page.
 	if !evalBool(t, ctx, `(() => {
@@ -60,7 +68,7 @@ func TestWebClientMenu_TheLogoOpensAMenuAndTheNameGoesHome(t *testing.T) {
 		}
 	}
 	key(kb.ArrowDown)
-	if got := evalString(t, ctx, menuState); got != "open true Linux" {
+	if got := evalString(t, ctx, menuState); got != "open true 0.0.2" {
 		t.Errorf("after the down arrow: %q", got)
 	}
 	key(kb.End)

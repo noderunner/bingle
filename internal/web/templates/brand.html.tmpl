@@ -5,8 +5,8 @@
 				<a role="menuitem" tabindex="-1" id="brand-menu-home" href="/">{{t .Lang "bar.home"}}</a>
 				<span class="brand-menu-group" role="group" aria-labelledby="brand-menu-client">
 					<span class="brand-menu-heading" id="brand-menu-client">{{t .Lang "bar.client"}}</span>
-					{{range clientBuilds}}<a role="menuitem" tabindex="-1" class="brand-menu-build" href="/api/client/files/{{.File}}" download title="{{.Version}}">{{.Name}}</a>
-					{{end}}<button type="button" role="menuitem" tabindex="-1" id="brand-menu-setup">{{t .Lang "bar.setup_file"}}</button>
+					{{range clientBuilds}}{{clientDownload . "menuitem"}}
+					{{end}}<button type="button" role="menuitem" tabindex="-1" id="brand-menu-setup">{{t .Lang "bar.setup_file" "name" ""}}</button>
 				</span>
 			</span></span>{{else}}<a class="brand" href="/"><span class="logo{{if brandHasIcon}} custom{{end}}"></span>{{brandName}}</a>{{end}}{{end}}
 

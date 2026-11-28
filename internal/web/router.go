@@ -16,6 +16,7 @@ import (
 	"html/template"
 	"io/fs"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -47,6 +48,8 @@ var templates = template.Must(template.New("").Funcs(template.FuncMap{
 	// Filled in for a router that offers the bingle-3d client (WithClientBuilds).
 	"clientMenu":   func() bool { return false },
 	"clientBuilds": func() []clientBuild { return nil },
+	// clientDownload is one build's download button, for any page that offers the client.
+	"clientDownload": clientDownload,
 	// t is the words of a key in the page's language (ADR 0141):
 	// {{t .Lang "key" "name" value …}}.
 	"t": i18n.HTML,
@@ -86,8 +89,33 @@ func brandedTemplates(brand config.Brand) *template.Template {
 // clientBuild is one build of the bingle-3d client in the logo's menu.
 type clientBuild struct {
 	// Name is the platform's, as a person says it; File and Version are the
-	// archive's.
+	// archive's. Icon is the platform's mark, when it has one.
 	Name, File, Version string
+	Icon                template.HTML
+}
+
+// platformIcons are small marks for the platforms that have one, in the text's
+// color. A platform without one is shown by its name.
+var platformIcons = map[string]template.HTML{
+	"windows-x86_64": `<svg class="platform-icon" viewBox="0 0 16 16" width="18" height="18" aria-hidden="true" focusable="false"><path fill="currentColor" d="M1 2.5l6-.8v5.6H1zM8 1.6l7-1v6.7H8zM1 8.7h6v5.6l-6-.8zM8 8.7h7v6.7l-7-1z"/></svg>`,
+	"linux-x86_64":   `<svg class="platform-icon" viewBox="0 0 16 16" width="18" height="18" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" d="M8 1.2c-1.7 0-2.4 1.4-2.4 3 0 1-.5 1.6-1.2 2.6-.9 1.3-1.6 2.9-1.6 4.4 0 .8.4 1.2 1 1.4.5.2.9.6 1.3 1.1.4.5 1.2.5 1.6.1.4-.4 2.6-.4 3.2 0 .4.4 1.2.4 1.6-.1.4-.5.8-.9 1.3-1.1.6-.2 1-.6 1-1.4 0-1.5-.7-3.1-1.6-4.4-.7-1-1.2-1.6-1.2-2.6 0-1.6-.7-3-2.4-3z"/><circle cx="6.6" cy="4.3" r=".7" fill="currentColor"/><circle cx="9.4" cy="4.3" r=".7" fill="currentColor"/><path fill="currentColor" d="M6.9 5.6h2.2L8 6.6z"/></svg>`,
+}
+
+// clientDownload is the button that downloads one build: the platform's icon
+// and the build's version, or the platform's name and the version when it has
+// no icon. It is a link that downloads, and role is its ARIA role, if any.
+func clientDownload(b clientBuild, role string) template.HTML {
+	e := template.HTMLEscapeString
+	label := b.Name + " " + b.Version
+	inner := string(b.Icon) + e(b.Version)
+	if b.Icon == "" {
+		inner = e(label)
+	}
+	attrs := ""
+	if role != "" {
+		attrs = ` role="` + e(role) + `" tabindex="-1"`
+	}
+	return template.HTML(`<a class="button client-download"` + attrs + ` href="/api/client/files/` + e(url.PathEscape(b.File)) + `" download title="` + e(b.Version) + `" aria-label="` + e(label) + `">` + inner + `</a>`) //nolint:gosec // every value is escaped
 }
 
 // platformNames are the names of the platforms bingle-3d is built for. They
@@ -112,7 +140,7 @@ func WithClientBuilds(set *clientbuilds.Set) Option {
 		}
 		var builds []clientBuild
 		for _, b := range set.Builds() {
-			builds = append(builds, clientBuild{Name: cmp.Or(platformNames[b.Platform], b.Platform), File: b.File, Version: b.Version})
+			builds = append(builds, clientBuild{Name: cmp.Or(platformNames[b.Platform], b.Platform), File: b.File, Version: b.Version, Icon: platformIcons[b.Platform]})
 		}
 		h.templates = h.templates.Funcs(template.FuncMap{
 			"clientMenu":   func() bool { return true },

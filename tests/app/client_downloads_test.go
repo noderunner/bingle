@@ -211,10 +211,13 @@ func TestClientDownloads_EveryPageHasTheMenuOnItsLogo(t *testing.T) {
 			`id="brand-menu-button" aria-haspopup="menu" aria-expanded="false"`,
 			`<a class="brand-name" href="/">Bingle</a>`,
 			`<a role="menuitem" tabindex="-1" id="brand-menu-home" href="/">Home</a>`,
-			`>3D client</span>`,
-			`href="/api/client/files/` + linuxBuild + `" download title="0.0.2">Linux</a>`,
-			`href="/api/client/files/` + windowsBuild + `" download title="0.0.3">Windows</a>`,
-			`id="brand-menu-setup">Setup file</button>`,
+			`>Download Game Client</span>`,
+			`<a class="button client-download" role="menuitem" tabindex="-1" href="/api/client/files/` + linuxBuild + `" download title="0.0.2" aria-label="Linux 0.0.2"><svg class="platform-icon"`,
+			`<a class="button client-download" role="menuitem" tabindex="-1" href="/api/client/files/` + windowsBuild + `" download title="0.0.3" aria-label="Windows 0.0.3"><svg class="platform-icon"`,
+			`fill="currentColor"`,
+			`</svg>0.0.2</a>`,
+			`</svg>0.0.3</a>`,
+			`id="brand-menu-setup"> Profile Configs</button>`,
 			`src="/static/js/brand-menu.js"`,
 		} {
 			if !strings.Contains(body, want) {
@@ -234,7 +237,7 @@ func TestClientDownloads_EveryPageHasTheMenuOnItsLogo(t *testing.T) {
 	}
 	raw, _ := io.ReadAll(resp.Body)
 	_ = resp.Body.Close()
-	for _, want := range []string{`>Startseite</a>`, `>3D-Client</span>`, `>Einrichtungsdatei</button>`, `>Windows</a>`} {
+	for _, want := range []string{`>Startseite</a>`, `>Spiel-Client herunterladen</span>`, `aria-label="Windows 0.0.3"`, `Profilkonfigurationen von </button>`} {
 		if !strings.Contains(string(raw), want) {
 			t.Errorf("the German page lacks %s", want)
 		}
