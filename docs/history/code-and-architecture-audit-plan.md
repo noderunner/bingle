@@ -1,8 +1,9 @@
 # Plan: a code and architecture audit
 
-Status: **planning in progress** (opened 2026-10-28), and now tracked in issue #249: every plan it was
-waiting for is done. Initial thoughts written before the design discussion, not settled decisions.
-Nothing is implemented; the measurements below are from 2026-10-28 and are stale.
+Status: **measured** (opened 2026-10-28), tracked in issue #249. The open questions are answered and the
+first deliverable, the findings ranked by risk times churn with a proposed order of pull requests, is
+[code-and-architecture-audit-findings.md](code-and-architecture-audit-findings.md). The measurements
+below are from 2026-10-28 and are stale; the findings have today's.
 
 (The request listed "would require authenticated personal accounts" against this item; I have
 read that as a copy-and-paste from the achievements item, since an audit needs no accounts. Say
@@ -94,6 +95,13 @@ independent, and its findings would usefully inform both. So: measure early, ref
 
 ## Open questions for the discussion
 
+**Answered by the maintainer on 2026-11-27** (issue #249): 1, a JavaScript build step is off the table;
+2, moving internal packages is fine where it notably improves organisation and readability without
+costing performance or security; 4, loosely, functions under 50 lines and files between 200 and 500
+lines; 5, the audit does not cover the documentation, but does cover overly verbose comments in the
+code: a comment says intent only where the names and a skim of the statements do not. The questions as
+they were asked:
+
 1. Is a JavaScript build step permanently off the table? I assume yes, and it shapes every
    front-end option.
 2. How much appetite is there for moving internal packages around (import-path churn across
@@ -180,3 +188,7 @@ draw (`state.ext.view`), so most changes to the rules should need no client code
   version* is #235.
 - 2026-11-28: item 8, the chromedp migration, is done (#234): chromedp 0.24 and cdproto 0.160.12, behind
   the step helpers of `tests/app/browser_test.go`; Dependabot's ignore rules for the pair are gone.
+- 2026-11-28: the open questions answered (above), and the measurement pass done: the findings, the
+  verdicts on the six candidates and a proposed order of pull requests are in
+  [code-and-architecture-audit-findings.md](code-and-architecture-audit-findings.md), measured by
+  `scripts/audit`.
