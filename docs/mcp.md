@@ -22,6 +22,14 @@ with the `play` and `create_game` scopes; required on a `closed` server) or a gu
 own: nobody else can play them by naming them. Without a key the agent is anonymous and plays, as
 before, only seats nobody owns ([ADR 0067](decisions/0067-principals-and-guest-keys.md)).
 
+Every tool asks for the capability of the REST route that does the same thing ([ADR 0071](decisions/0071-capabilities-modes-and-tokens.md);
+the route rules ask only for `play` of `/mcp` itself): `create_game` and `import_game` need `create_game`, `join_game`
+`join`, `send_chat` `chat_game`, `enter_tournament` and `check_in_tournament` `enter_tournament`, `start_batch` and
+`cancel_batch` `run_batch`, the rest `play` (reads need none). A call without the capability is an error result whose
+structured content is `{error, status: 403}`, with the words REST's `403` has. A guest and an API token have no
+`run_batch` (no token scope carries it), so batches over MCP are for an account's own session. What a tool
+needs is the `twins` table in `internal/mcpserver/guard.go`, which names each tool's REST route; a test fails for a tool without one.
+
 | Tool | Purpose |
 |---|---|
 | `list_game_defs` | games available (`id`, `name`, `description`, board size, `family`, `version`, `prototype`: a prototype lists each version of its rules, and its `family` alone means the newest) |

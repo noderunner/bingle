@@ -554,7 +554,7 @@ picks a cult per seat, has the option `hp` (the High Priests) and reports per cu
 | `GET /api/batches/{id}/games/{n}/events` | the decisions of game *n* (only the first `event_games` keep them) |
 | `POST /api/batches/{id}/cancel`, `DELETE /api/batches/{id}` | stop; delete with its games |
 
-MCP: `start_batch`, `get_batch`, `list_batches`, `cancel_batch`. Pages: `/batches`, `/batches/{id}`.
+MCP: `start_batch`, `get_batch`, `list_batches`, `cancel_batch` (starting and cancelling need `run_batch` there too, as the routes do; the reads need none). Pages: `/batches`, `/batches/{id}`.
 
 ### Limits on batches
 

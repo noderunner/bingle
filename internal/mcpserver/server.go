@@ -28,12 +28,20 @@ const (
 // and returns it wrapped as a Streamable HTTP http.Handler suitable for
 // mounting directly onto a router (e.g. at "/mcp", a sibling of "/api" and
 // "/ws/{code}").
-func NewServer(mgr *session.Manager, envMgr *envs.Manager, batchMgr *batch.Manager) http.Handler {
-	mcpServer := server.NewMCPServer(serverName, serverVersion,
+func NewServer(mgr *session.Manager, envMgr *envs.Manager, batchMgr *batch.Manager, opts ...Option) http.Handler {
+	var o options
+	for _, f := range opts {
+		f(&o)
+	}
+	sopts := []server.ServerOption{
 		server.WithInstructions(instructions),
 		server.WithResourceCapabilities(false, false),
 		server.WithPromptCapabilities(false),
-	)
+	}
+	if o.caps != nil {
+		sopts = append(sopts, server.WithToolHandlerMiddleware(guard(o.caps)))
+	}
+	mcpServer := server.NewMCPServer(serverName, serverVersion, sopts...)
 	registerTools(mcpServer, mgr)
 	registerPlayTools(mcpServer, mgr)
 	registerLobbyTools(mcpServer, mgr)

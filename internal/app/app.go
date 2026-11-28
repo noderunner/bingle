@@ -676,7 +676,7 @@ func (a *App) newRouter() chi.Router {
 		r.Get("/ws/{code}", api.NewWSHandler(a.manager))
 		r.Get("/ws-chat", api.NewGlobalChatWSHandler(a.manager))
 		r.Get("/ws-dm", api.NewDirectWSHandler(a.manager))
-		r.Mount("/mcp", mcpserver.NewServer(a.manager, a.envs, a.batches))
+		r.Mount("/mcp", mcpserver.NewServer(a.manager, a.envs, a.batches, mcpserver.WithCaps(a.caps)))
 		r.Mount("/auth", a.guests.Routes())
 	})
 	// Mounted last: internal/web acts as "/"'s catch-all/root, so every more

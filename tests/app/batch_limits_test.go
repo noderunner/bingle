@@ -14,8 +14,6 @@ import (
 	"time"
 
 	"github.com/mark3labs/mcp-go/client"
-	"github.com/mark3labs/mcp-go/client/transport"
-	"github.com/mark3labs/mcp-go/mcp"
 
 	"github.com/noderunner/bingle/internal/app"
 	"github.com/noderunner/bingle/internal/auth"
@@ -150,38 +148,12 @@ func waitBatch(t *testing.T, base string, id int64, status string) {
 	t.Fatalf("batch %d is %q, not %q", id, info.Status, status)
 }
 
-// MCP's start_batch refuses and reports as the REST route does, and the
-// administrator's own token, which never has the group's powers, cannot raise
-// a limit through it either.
+// MCP's start_batch refuses and reports as the REST route does (for an
+// account: a guest or a token has no run_batch, see mcp_caps_test.go).
 func TestBatchLimits_MCP(t *testing.T) {
-	base, _, admin := limitedServer(t, config.BatchLimits{Games: 5, QueuedPerPlayer: 1})
-	var tok struct{ Token string }
-	if code := admin.do("POST", "/auth/tokens", map[string]any{"name": "an agent", "scopes": []string{"play"}}, &tok); code != 201 {
-		t.Fatalf("token: %d", code)
-	}
-	connect := func(token string) *client.Client {
-		var opts []transport.StreamableHTTPCOption
-		if token != "" {
-			opts = append(opts, transport.WithHTTPHeaders(map[string]string{"Authorization": "Bearer " + token}))
-		}
-		c, err := client.NewStreamableHttpClient(base+"/mcp", opts...)
-		if err != nil {
-			t.Fatal(err)
-		}
-		t.Cleanup(func() { _ = c.Close() })
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-		if err := c.Start(ctx); err != nil {
-			t.Fatal(err)
-		}
-		var init mcp.InitializeRequest
-		init.Params.ProtocolVersion = mcp.LATEST_PROTOCOL_VERSION
-		init.Params.ClientInfo = mcp.Implementation{Name: "bingle-test-agent", Version: "0.0.1"}
-		if _, err := c.Initialize(ctx, init); err != nil {
-			t.Fatal(err)
-		}
-		return c
-	}
+	base, ana, _ := limitedServer(t, config.BatchLimits{Games: 5, QueuedPerPlayer: 1})
+	connect := func(headers map[string]string) *client.Client { return mcpWith(t, base, headers) }
+	member := map[string]string{"Cookie": auth.SessionCookie + "=" + ana, auth.PageHeader: "1"}
 	refusal := func(c *client.Client, spec map[string]any) (int, limitBody) {
 		t.Helper()
 		res := callTool(t, c, "start_batch", map[string]any{"spec": spec})
@@ -195,7 +167,8 @@ func TestBatchLimits_MCP(t *testing.T) {
 		decodeToolResult(t, res, &out)
 		return out.Status, out.limitBody
 	}
-	for who, c := range map[string]*client.Client{"anonymous": connect(""), "admin's token": connect(tok.Token)} {
+	// An account sends batches (an API token has no scope for them).
+	for who, c := range map[string]*client.Client{"an account": connect(member)} {
 		over := hexBatch()
 		over["games"] = 6
 		if status, body := refusal(c, over); status != 400 || body.Limit != "games" || body.Max != 5 {
@@ -209,7 +182,7 @@ func TestBatchLimits_MCP(t *testing.T) {
 		}
 	}
 	// A player who has a batch playing has no room for another.
-	c := connect(tok.Token)
+	c := connect(member)
 	slow := hexBatch()
 	slow["players"] = []map[string]any{{"bot": "mcts"}, {"bot": "mcts"}}
 	res := callTool(t, c, "start_batch", map[string]any{"spec": slow})
