@@ -656,3 +656,39 @@ func TestWebTutorial_PlaysThroughTheChessSpecialMovesTutorial(t *testing.T) {
 	next()
 	waitJS(t, ctx, "the end", `!!document.getElementById("tutorial-done")`, 10*time.Second)
 }
+
+// playChessLessons plays a Chess tutorial by clicking: each lesson is either a
+// move (from, to) or a page to read (empty from, to press Next on), and the
+// tutorial must then be done.
+func playChessLessons(t *testing.T, room string, lessons [][2]string) {
+	t.Helper()
+	base := newRESTTestServer(t)
+	ctx, cancel := newChromedpContext(t, 120*time.Second)
+	defer cancel()
+	openTutorialOf(t, ctx, base, "chess", room)
+	for i, l := range lessons {
+		n := strconv.Itoa(i + 1)
+		waitStep(t, ctx, n)
+		if l[0] == "" {
+			clickSel(t, ctx, "#tutorial-next")
+			continue
+		}
+		waitJS(t, ctx, l[0]+" to be the only piece to move", `[...document.querySelectorAll("#board .cell.clickable")].map(c => c.dataset.position).join(",") === "`+l[0]+`"`, 10*time.Second)
+		clickCell(t, ctx, l[0])
+		waitJS(t, ctx, l[1]+" to be the only square to go to", `[...document.querySelectorAll("#board .cell.clickable")].map(c => c.dataset.position).join(",") === "`+l[1]+`"`, 10*time.Second)
+		clickCell(t, ctx, l[1])
+	}
+	waitJS(t, ctx, "the end", `!!document.getElementById("tutorial-done")`, 15*time.Second)
+}
+
+// The Chess endings tutorial is played as Black (seat 2): the learner's seat is
+// theirs although the server lists seat 1 first among the seats they play.
+func TestWebTutorial_PlaysThroughTheChessEndingsTutorialAsBlack(t *testing.T) {
+	r := [2]string{}
+	playChessLessons(t, "chess-endings", [][2]string{r, {"e7", "e5"}, {"d8", "h4"}, r, r, r, r, r})
+}
+
+func TestWebTutorial_PlaysThroughTheChessBasicsTutorial(t *testing.T) {
+	r := [2]string{}
+	playChessLessons(t, "chess-basics", [][2]string{r, r, {"e2", "e4"}, r, {"f1", "c4"}, {"d1", "h5"}, r, r, r, r, {"h5", "f7"}, r})
+}
