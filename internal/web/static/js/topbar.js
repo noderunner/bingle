@@ -3,7 +3,7 @@
 // player's profile, help (the version, what changed lately, the project's page,
 // where to report problems) and — while a voice call is up — a button for the call.
 
-import { h, clear, toast, lastName, setLastName, ensureName, nameIsMadeUp, forgottenGames, rememberGame, rememberedGames, setTurnBadge, store, brandName } from "./util.js";
+import { h, clear, toast, lastName, setLastName, ensureName, nameIsMadeUp, forgottenGames, rememberGame, rememberedGames, setTurnBadge, store, brandName, brandDiscord } from "./util.js";
 import { api, whoAmI } from "./api.js";
 import { offerNotify } from "./browser-notify.js";
 import { guestKeySection } from "./guest-key.js";
@@ -277,6 +277,8 @@ export function installTopbar({ onRows = () => {}, manageTitle = true } = {}) {
 			// For anybody writing a client of their own: the API's documentation, from this server.
 			h("a", { class: "button", id: "help-api", href: "/api/docs", target: "_blank", rel: "noopener" }, "API"),
 			h("a", { class: "button", id: "help-github", href: REPO_URL, target: "_blank", rel: "noopener noreferrer" }, brandName() === "Bingle" ? "GitHub" : t("bar.source")),
+			// A name, as GitHub is: not translated. The link is the instance's own, whatever its brand.
+			brandDiscord() ? h("a", { class: "button", id: "help-discord", href: brandDiscord(), target: "_blank", rel: "noopener noreferrer" }, "Discord") : null,
 			// The issues of another instance are not this project's to answer.
 			brandName() === "Bingle" ? h("a", { class: "button primary", id: "help-issues", href: `${REPO_URL}/issues`, target: "_blank", rel: "noopener noreferrer" }, t("bar.report")) : null
 		)

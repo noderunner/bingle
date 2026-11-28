@@ -3,7 +3,7 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="bingle-version" content="{{engineVersion}}">
-	<meta name="bingle-brand" content="{{brandName}}"{{if brandHasIcon}} data-icon="{{brandIconURL}}"{{end}}>
+	<meta name="bingle-brand" content="{{brandName}}"{{if brandHasIcon}} data-icon="{{brandIconURL}}"{{end}}{{with discordURL}} data-discord="{{.}}"{{end}}>
 	<meta name="bingle-language" content="{{.Chosen}}" data-browser="{{.Browser}}">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>{{brandName}} — {{t .Lang "profile.all_settings"}}</title>
@@ -128,7 +128,7 @@
 		</div>
 	</main>
 
-	<footer class="site-footer"><sub title="{{t .Lang "footer.version" "brand" brandFooter}}"><bdi>{{brandFooter}} v{{engineVersion}}</bdi> · <bdi>{{t .Lang "footer.license"}}</bdi> · <a href="https://github.com/noderunner/bingle" target="_blank" rel="noopener noreferrer">GitHub</a></sub></footer>
+	<footer class="site-footer"><sub title="{{t .Lang "footer.version" "brand" brandFooter}}"><bdi>{{brandFooter}} v{{engineVersion}}</bdi> · <bdi>{{t .Lang "footer.license"}}</bdi> · <a href="https://github.com/noderunner/bingle" target="_blank" rel="noopener noreferrer">GitHub</a>{{with discordURL}} · <a href="{{.}}" target="_blank" rel="noopener noreferrer">Discord</a>{{end}}</sub></footer>
 
 	<!-- First, so a fault in any module below is reported (docs/observability.md). -->
 	<script type="module" src="/static/js/errors.js"></script>

@@ -723,3 +723,15 @@ func TestLoad_Translate(t *testing.T) {
 		})
 	}
 }
+
+func TestLoad_DiscordURL(t *testing.T) {
+	t.Setenv("BINGLE_DISCORD_URL", "https://discord.gg/abc")
+	cfg, err := Load()
+	if err != nil || cfg.Brand.DiscordURL != "https://discord.gg/abc" {
+		t.Fatalf("Load = %q, %v", cfg.Brand.DiscordURL, err)
+	}
+	t.Setenv("BINGLE_DISCORD_URL", "https://example.com/x")
+	if _, err := Load(); err == nil || !strings.Contains(err.Error(), "BINGLE_DISCORD_URL") {
+		t.Errorf("a link elsewhere: %v", err)
+	}
+}

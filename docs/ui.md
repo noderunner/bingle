@@ -719,12 +719,13 @@ per page of the game's guide (see ADR 0026), plus a client-side *Controls* tab:
 ## The footer and the help button
 
 Every page ends with a small footer (`.site-footer`): `bingle v0.4.0 · MIT License · GitHub` — the version of the
-engine itself (`internal/version`, apart from the versions of the games) and a link to the project.
+engine itself (`internal/version`, apart from the versions of the games) and a link to the project, then *Discord* when
+the server sets `BINGLE_DISCORD_URL` (also `<meta name="bingle-brand" data-discord>`, read by `brandDiscord()`).
 The top bar of the main page, the profile and every game ends with a **?** button (`#open-help`, `js/topbar.js`)
 that opens `#help-dialog`: the version where a heading would be (`.help-version`, read from
 `<meta name="bingle-version">`) beside the close button, then *Recent changes*, then one line of buttons: *Tour*
 (`#help-tour`, the welcome tour again, on any page), *API* (`#help-api`), *GitHub* (`#help-github`; *Source on
-GitHub* under another brand) and *Report Issues* (`#help-issues`, the project's issues page, only under Bingle's
+GitHub* under another brand), *Discord* (`#help-discord`, only when the server has a link, whatever its brand) and *Report Issues* (`#help-issues`, the project's issues page, only under Bingle's
 own name).
 
 **Recent changes** (`#help-changes`) is the changelog. The newest release (`GET /api/changelog`) is read when the

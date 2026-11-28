@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -35,6 +36,8 @@ type Brand struct {
 	// Icon is the picture (BINGLE_BRAND_ICON, a path), and IconType what kind it is. Nil is the default.
 	Icon     []byte
 	IconType string
+	// DiscordURL is the link to this instance's Discord (BINGLE_DISCORD_URL), empty for none.
+	DiscordURL string
 }
 
 // DisplayName is the name to show, the default if none was set.
@@ -43,6 +46,26 @@ func (b Brand) DisplayName() string {
 		return DefaultBrandName
 	}
 	return b.Name
+}
+
+// ParseDiscordURL checks the link to an instance's Discord: an https link to discord.gg or discord.com,
+// since the button says Discord. Empty is none.
+func ParseDiscordURL(raw string) (string, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return "", nil
+	}
+	u, err := url.Parse(raw)
+	host := ""
+	if err == nil {
+		host = strings.ToLower(u.Hostname())
+	}
+	ok := err == nil && u.Scheme == "https" && u.User == nil && u.Port() == "" &&
+		(host == "discord.gg" || host == "discord.com" || strings.HasSuffix(host, ".discord.com"))
+	if !ok {
+		return "", fmt.Errorf("BINGLE_DISCORD_URL %q: use an https link to discord.gg or discord.com, such as https://discord.gg/invite", raw)
+	}
+	return u.String(), nil
 }
 
 // LoadBrand reads the name and icon given. A mistake stops the start rather than showing up later.

@@ -534,6 +534,9 @@ func Load() (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
+	if brand.DiscordURL, err = ParseDiscordURL(os.Getenv("BINGLE_DISCORD_URL")); err != nil {
+		return Config{}, err
+	}
 	cfg.Brand = brand
 
 	if v := os.Getenv("BINGLE_RETENTION_DAYS"); v != "" {
