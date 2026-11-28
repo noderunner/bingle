@@ -233,6 +233,18 @@ CREATE TABLE IF NOT EXISTS guest_keys (
 
 CREATE INDEX IF NOT EXISTS idx_guest_keys_principal ON guest_keys(principal_id);
 
+-- A guest's one-time codes for a link that opens the 3D client (ADR 0163), as
+-- SHA-256 hashes: each is traded once, within a minute, for a new key of the
+-- guest. An account's are sign-in codes, in account_tokens.
+CREATE TABLE IF NOT EXISTS guest_codes (
+    hash          TEXT PRIMARY KEY,
+    principal_id  TEXT NOT NULL REFERENCES principals(id) ON DELETE CASCADE,
+    expires_at    TIMESTAMP NOT NULL,
+    used_at       TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_guest_codes_principal ON guest_codes(principal_id);
+
 -- Accounts (the accounts plan, stage 3). A handle is unique case-blind and
 -- shown as @handle; status is "pending" until the address is confirmed,
 -- then "active". principal_id is the account's principal, which may have

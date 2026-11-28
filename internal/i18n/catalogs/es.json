@@ -115,6 +115,8 @@
 	"bar.client": "Descargar el cliente del juego",
 	"bar.setup_file": "Configuración del perfil de {name}",
 	"bar.quick_setup": "Guía rápida del cliente",
+	"bar.join_3d": "Unirse con Bingle3D",
+	"bar.watch_3d": "Ver con Bingle3D",
 	"quick.title": "Configuración rápida del cliente",
 	"quick.download": "Descarga el cliente.",
 	"quick.unpack_windows_html": "Haz clic derecho en {file} y elige Extraer todo…",

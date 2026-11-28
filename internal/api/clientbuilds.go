@@ -15,8 +15,9 @@ import (
 // (clients.go).
 
 // WithClientBuilds mounts GET /client, GET /client/files/{file} and, with
-// WithGuests, POST /client/setup. A nil set leaves all three unmounted: a
-// server that was not given a directory of builds offers nothing.
+// WithGuests, POST /client/setup and POST /client/code. A nil set leaves all
+// four unmounted: a server that was not given a directory of builds offers
+// nothing.
 func WithClientBuilds(set *clientbuilds.Set) Option {
 	return func(h *handlers) { h.clientBuilds = set }
 }

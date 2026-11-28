@@ -154,6 +154,9 @@ kbd {
 /* A build is a button with the platform's icon and the version on one line. */
 .brand-menu .client-download { display: flex; align-items: center; gap: 0.4rem; margin-block: 0.15rem; border: 1px solid var(--border); background: var(--surface-2); }
 .brand-menu .client-download .platform-icon { flex: none; }
+/* Open a game in the 3D client (ADR 0163), and the download offered when it did not open. */
+.client-link { white-space: nowrap; }
+.client-get { align-self: center; margin-inline-start: 0.4rem; white-space: nowrap; }
 /* The quick setup page: numbered steps, each with its button or command beneath the words. */
 .quick-platform h2 { margin: 0 0 0.6rem; font-size: 1.1rem; }
 .quick-platform.current { border-color: var(--accent); }

@@ -89,6 +89,7 @@ func NewRouter(mgr *session.Manager, opts ...Option) chi.Router {
 		r.Get("/client/files/{file}", h.handleClientBuildFile)
 		if h.guests != nil {
 			r.Post("/client/setup", h.guests.HandleClientSetup)
+			r.Post("/client/code", h.guests.HandleClientCode)
 		}
 	}
 	r.Get("/game-defs/{id}/tutorials", h.handleListTutorials)

@@ -1,7 +1,7 @@
 {{/* The name and logo at the start of every page's top bar. On a server that offers the
      bingle-3d client (ADR 0151) the logo opens a menu, and the name stays the way home. */}}
 {{define "brand"}}{{if clientMenu}}<span class="brand has-menu"><button type="button" class="brand-menu-button" id="brand-menu-button" aria-haspopup="menu" aria-expanded="false" aria-controls="brand-menu" aria-label="{{t .Lang "bar.menu"}}"><span class="logo{{if brandHasIcon}} custom{{end}}"></span></button><a class="brand-name" href="/">{{brandName}}</a>
-			<span class="brand-menu" id="brand-menu" role="menu" aria-labelledby="brand-menu-button" hidden>
+			<span class="brand-menu" id="brand-menu" role="menu" aria-labelledby="brand-menu-button" data-platforms="{{clientPlatforms}}" hidden>
 				<a role="menuitem" tabindex="-1" id="brand-menu-home" href="/">{{t .Lang "bar.home"}}</a>
 				<span class="brand-menu-group" role="group" aria-labelledby="brand-menu-client">
 					<span class="brand-menu-heading" id="brand-menu-client">{{t .Lang "bar.client"}}</span>

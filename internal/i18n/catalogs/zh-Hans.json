@@ -115,6 +115,8 @@
 	"bar.client": "下载游戏客户端",
 	"bar.setup_file": "{name} 的个人资料配置",
 	"bar.quick_setup": "客户端快速设置指南",
+	"bar.join_3d": "用 Bingle3D 加入",
+	"bar.watch_3d": "用 Bingle3D 观看",
 	"quick.title": "客户端快速设置",
 	"quick.download": "下载客户端。",
 	"quick.unpack_windows_html": "右键点击 {file}，然后选择“全部提取…”。",

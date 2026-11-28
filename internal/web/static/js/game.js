@@ -27,6 +27,7 @@ import { rulesIcon } from "./ui-icons.js";
 import { statIcon as plainStatIcon } from "./stat-icons.js";
 import { themesFor, themeById } from "./themes.js";
 import { useCardSet } from "./card-sets.js";
+import { clientLink } from "./client-setup.js";
 import { stepMoves, progress as tutorialProgress, isExpected, markFinished, allowed as tutorialAllowed, pagePart, scriptedMoveGroup } from "./tutorial.js";
 import { renderMarkdown } from "./markdown.js";
 import { t as tr, lang, tParts } from "./i18n.js";
@@ -4728,7 +4729,7 @@ function identityGate() {
 			if (ev.key === "Enter") join();
 		});
 		card.append(
-			h("div", { class: "row" }, input, h("button", { class: "primary", id: "gate-join", onclick: join }, tr("game.play_as", { seat: seatLabel(open.seat) }))),
+			h("div", { class: "row" }, input, h("button", { class: "primary", id: "gate-join", onclick: join }, tr("game.play_as", { seat: seatLabel(open.seat) })), clientLink(code, "join")),
 			h("p", { class: "small muted" }, tr("game.or_watch"))
 		);
 	}
@@ -4773,7 +4774,8 @@ function identityGate() {
 					},
 				},
 				tr("game.just_watch")
-			)
+			),
+			clientLink(code, "watch")
 		)
 	);
 	return card;
@@ -5266,6 +5268,9 @@ function refreshOptions() {
 					)
 				);
 			}
+			// The same seat, in the 3D client (ADR 0163).
+			const inClient = S.game.status === "finished" ? null : clientLink(code, "join");
+			if (inClient) row.append(inClient);
 			if (row.childNodes.length) el.append(row);
 			const age = lastMoveAgeText();
 			if (S.moves.length) el.append(h("p", { class: "small muted", style: "margin-top:0.5rem" }, ...tParts("options.last_move_age", { age: h("span", { id: "last-move-age" }, age) })));

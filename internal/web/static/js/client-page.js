@@ -2,18 +2,11 @@
 // each section's profile configs button makes the setup file for whoever is signed in.
 
 import { whoAmI } from "./api.js";
-import { downloadSetup, setupLabel } from "./client-setup.js";
+import { downloadSetup, platform, setupLabel } from "./client-setup.js";
 import { ensureName, nameIsMadeUp, setLastName } from "./util.js";
 
 const page = document.getElementById("quick-setup");
 if (page) {
-	const platform = () => {
-		const hint = navigator.userAgentData?.platform || navigator.userAgent || "";
-		if (/android/i.test(navigator.userAgent || "")) return "";
-		if (/win/i.test(hint)) return "windows";
-		if (/linux|x11|cros/i.test(hint)) return "linux";
-		return "";
-	};
 	const mine = page.querySelector(`.quick-platform[data-platform="${platform()}"]`);
 	if (mine) {
 		mine.classList.add("current");
