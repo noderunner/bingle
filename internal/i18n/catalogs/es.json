@@ -82,6 +82,9 @@
 	"settings.friend_invites": "Permitir que otros jugadores me inviten a partidas",
 	"settings.friend_presence": "Mostrar cuándo estoy conectado",
 	"settings.presence_note_html": "Si está desactivado, apareces desconectado para tus amigos y no estás en <em>Aquí ahora</em>. Tus amigos no pueden iniciar un mensaje ni una llamada contigo, pero tú puedes escribirles y ellos pueden responder.",
+	"settings.blocked": "Bloqueados",
+	"settings.unblock": "Desbloquear",
+	"settings.unblock_who": "Desbloquear a {name}",
 	"settings.no_badges": "Aún no tienes insignias. Gana una partida contra otro jugador para conseguir la primera.",
 	"settings.player_page_html": "<a id=\"badges-page\" href=\"/profile\">Tu página de jugador</a>, tal como la ven otros jugadores.",
 	"settings.no_finished": "Aún no hay partidas terminadas.",
@@ -178,6 +181,8 @@
 	"dm.invited": "{name} está invitado.",
 	"dm.invite_failed": "No se envió la invitación.",
 	"dm.remove_confirm": "¿Quitar a {name} de tus amigos?",
+	"dm.block": "Bloquear",
+	"dm.block_confirm": "¿Bloquear a {name}? No se le avisa, y puedes desbloquearlo en tu perfil.",
 
 	"footer.version": "La versión del motor de {brand}",
 	"footer.license": "Licencia MIT",

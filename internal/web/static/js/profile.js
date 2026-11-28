@@ -80,6 +80,39 @@ function paintFriendSettings() {
 		.catch(() => {});
 }
 
+/** Those the account has blocked (ADR 0156), each with a way to lift it. Nobody else sees them. */
+function paintBlocks() {
+	const box = document.getElementById("blocked-box");
+	const list = document.getElementById("blocked-list");
+	const status = document.getElementById("friend-settings-status");
+	api.friendBlocks()
+		.then(({ blocked }) => {
+			clear(list);
+			box.hidden = !blocked.length;
+			for (const b of blocked) {
+				const name = document.createElement("span");
+				name.className = "grow";
+				name.textContent = b.name;
+				const undo = document.createElement("button");
+				undo.type = "button";
+				undo.className = "ghost small";
+				undo.dataset.unblock = b.handle;
+				undo.textContent = t("settings.unblock");
+				undo.setAttribute("aria-label", t("settings.unblock_who", { name: b.name }));
+				undo.addEventListener("click", () => {
+					status.textContent = "";
+					api.friendUnblock(b.handle)
+						.then(paintBlocks)
+						.catch((err) => (status.textContent = err.message || t("common.not_saved")));
+				});
+				const row = document.createElement("li");
+				row.append(name, undo);
+				list.append(row);
+			}
+		})
+		.catch(() => {});
+}
+
 /** An account's own ratings, including those not on a leaderboard yet. */
 function paintRatings(handle) {
 	api.playerRatings(handle)
@@ -138,6 +171,7 @@ api.me()
 			paintBadges(me.handle);
 			paintRatings(me.handle);
 			paintFriendSettings();
+			paintBlocks();
 		} else {
 			// A guest whose browser confirmed an address: that is the
 			// quickest way to an account (ADR 0073).

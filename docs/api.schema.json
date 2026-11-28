@@ -221,6 +221,41 @@
       ],
       "type": "object"
     },
+    "BlockedPlayer": {
+      "description": "BlockedPlayer is one line of an account's blocks, as its profile shows them.",
+      "properties": {
+        "handle": {
+          "type": "string"
+        },
+        "name": {
+          "description": "\"@ana\"",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "handle"
+      ],
+      "type": "object"
+    },
+    "BlocksResponse": {
+      "description": "blocksResponse is GET /friends/blocks' answer: those the account has blocked, by handle. Only the account itself can read it.",
+      "properties": {
+        "blocked": {
+          "items": {
+            "$ref": "#/$defs/BlockedPlayer"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "blocked"
+      ],
+      "type": "object"
+    },
     "BoardDTO": {
       "description": "BoardDTO describes the board graph and how to draw it.",
       "properties": {
@@ -1404,14 +1439,14 @@
       "type": "object"
     },
     "FriendRequest": {
-      "description": "friendRequest is the body of the routes about one person or one invitation: POST /friends/request, /answer, /remove, /invite, /invite-answer and /dismiss.",
+      "description": "friendRequest is the body of the routes about one person or one invitation: POST /friends/request, /answer, /remove, /invite, /invite-answer, /dismiss, /block and /unblock.",
       "properties": {
         "accept": {
           "description": "Accept is the answer (answer, invite-answer).",
           "type": "boolean"
         },
         "handle": {
-          "description": "Handle is the person's (request, answer, remove, invite).",
+          "description": "Handle is the person's (request, answer, remove, invite, block, unblock).",
           "type": "string"
         },
         "room": {
@@ -4745,9 +4780,9 @@
   },
   "$id": "https://github.com/noderunner/bingle/docs/api.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "description": "The requests, responses and WebSocket events of bingle's API, version 1.23.0. Generated from the Go types of the server: do not edit. Objects let unknown fields through: a client ignores those it does not know.",
+  "description": "The requests, responses and WebSocket events of bingle's API, version 1.24.0. Generated from the Go types of the server: do not edit. Objects let unknown fields through: a client ignores those it does not know.",
   "title": "Bingle API messages",
-  "x-api-version": "1.23.0",
+  "x-api-version": "1.24.0",
   "x-dm-events": {
     "badge": {
       "$ref": "#/$defs/BadgeEventData"
@@ -4801,6 +4836,11 @@
     "GET /api/friends": {
       "response": {
         "$ref": "#/$defs/FriendsList"
+      }
+    },
+    "GET /api/friends/blocks": {
+      "response": {
+        "$ref": "#/$defs/BlocksResponse"
       }
     },
     "GET /api/friends/settings": {
@@ -4946,6 +4986,14 @@
         "$ref": "#/$defs/OKResponse"
       }
     },
+    "POST /api/friends/block": {
+      "request": {
+        "$ref": "#/$defs/FriendRequest"
+      },
+      "response": {
+        "$ref": "#/$defs/OKResponse"
+      }
+    },
     "POST /api/friends/dismiss": {
       "request": {
         "$ref": "#/$defs/FriendRequest"
@@ -4979,6 +5027,14 @@
       }
     },
     "POST /api/friends/request": {
+      "request": {
+        "$ref": "#/$defs/FriendRequest"
+      },
+      "response": {
+        "$ref": "#/$defs/OKResponse"
+      }
+    },
+    "POST /api/friends/unblock": {
       "request": {
         "$ref": "#/$defs/FriendRequest"
       },

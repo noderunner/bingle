@@ -329,8 +329,10 @@ The speech-bubble icon (`#open-friends`, its badge `#dm-badge` counting what wai
 (`#friend-invites`, *Accept* is `[data-join-invite]`, *Decline* or for news *Dismiss* is `[data-dismiss]`), the friends with a dot for who is online (`#friends-list`,
 `.friend-dot.online`) and *Waiting for an answer* (`#friend-outgoing`, `[data-cancel]`). On the right, for the friend
 chosen (`#dm-title`): *Call*, *Invite to game* (`#friend-invite`, then `#friend-invite-game` and `#friend-invite-send`),
-*Remove friend* (`#friend-remove`) and the conversation. A friend who is offline cannot be written to or called
-(`#dm-offline`). The profile page has the switches for mail about requests (`#friend-mail`) for being invited to games (`#friend-invites`, on by default) and for being seen online (`#friend-presence`).
+*Remove friend* (`#friend-remove`), *Block* (`#friend-block`) and the conversation. A request and an invitation have *Block* too
+(`[data-block]`); each asks first. A friend who is offline cannot be written to or called
+(`#dm-offline`). The profile page has the switches for mail about requests (`#friend-mail`) for being invited to games (`#friend-invites`, on by default) and for being seen online (`#friend-presence`), and
+lists those blocked (`#blocked-box`, `#blocked-list`, *Unblock* is `[data-unblock]`), shown only when there are some.
 
 In the setup, a signed-in player can keep a seat for a friend: in the seat's list under *Reserve for a friend* (`.slot-select`, value `friend:<handle>`), or
 for a table of two under *A friend* (`#reserve-friend`). *Invite only* (`#invite-only`) keeps a game off every list. In the lobby a kept seat has `[data-reserved]`, the host

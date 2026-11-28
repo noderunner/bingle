@@ -322,6 +322,7 @@ export function mountDirectMessages(host, { onCount = () => {} } = {}) {
 	const callState_ = h("span", { class: "small muted", id: "dm-call-state" });
 	const inviteBtn = h("button", { type: "button", id: "friend-invite" }, t("dm.invite"));
 	const removeBtn = h("button", { type: "button", id: "friend-remove", class: "ghost" }, t("dm.remove"));
+	const blockBtn = h("button", { type: "button", id: "friend-block", class: "ghost" }, t("dm.block"));
 	const inviteGame = h("select", { id: "friend-invite-game", "aria-label": t("dm.invite_game") });
 	const inviteSend = h("button", { type: "button", id: "friend-invite-send", class: "primary" }, t("dm.send_invite"));
 	const inviteRow = h("div", { class: "row dm-send-row", id: "friend-invite-row", hidden: true }, inviteGame, inviteSend);
@@ -330,7 +331,7 @@ export function mountDirectMessages(host, { onCount = () => {} } = {}) {
 		"div",
 		{ class: "dm-thread-pane", id: "dm-thread" },
 		title,
-		h("div", { class: "row dm-call-row" }, callBtn, muteBtn, hangBtn, inviteBtn, removeBtn, callState_),
+		h("div", { class: "row dm-call-row" }, callBtn, muteBtn, hangBtn, inviteBtn, removeBtn, blockBtn, callState_),
 		inviteRow,
 		log,
 		offline,
@@ -338,6 +339,13 @@ export function mountDirectMessages(host, { onCount = () => {} } = {}) {
 		h("p", { class: "small muted" }, t("dm.kept"))
 	);
 	host.append(h("div", { class: "dm-panes" }, list, thread));
+
+	// Blocking (ADR 0156) is silent and lifted in the profile; it asks first, as removing does.
+	const block = (handle, name) => {
+		if (!window.confirm(t("dm.block_confirm", { name }))) return;
+		friendAction(() => api.friendBlock(handle));
+	};
+	const blockButton = (handle, name) => h("button", { type: "button", class: "ghost small", "data-block": handle, onclick: () => block(handle, name) }, t("dm.block"));
 
 	const section = (host_, heading, rows) => {
 		clear(host_);
@@ -356,7 +364,8 @@ export function mountDirectMessages(host, { onCount = () => {} } = {}) {
 					{ "data-handle": f.handle },
 					h("span", { class: "grow" }, f.name),
 					h("button", { type: "button", class: "primary small", "data-accept": f.handle, onclick: () => friendAction(() => api.friendAnswer(f.handle, true)) }, t("dm.accept")),
-					h("button", { type: "button", class: "ghost small", "data-decline": f.handle, onclick: () => friendAction(() => api.friendAnswer(f.handle, false)) }, t("dm.decline"))
+					h("button", { type: "button", class: "ghost small", "data-decline": f.handle, onclick: () => friendAction(() => api.friendAnswer(f.handle, false)) }, t("dm.decline")),
+					blockButton(f.handle, f.name)
 				)
 			)
 		);
@@ -383,7 +392,8 @@ export function mountDirectMessages(host, { onCount = () => {} } = {}) {
 								},
 								t("dm.accept")
 						  ),
-					h("button", { type: "button", class: "ghost small", "data-dismiss": g.room, onclick: () => friendAction(() => (g.notice ? api.friendDismiss(g.room) : api.answerInvite(g.room, false))) }, g.notice ? t("dm.dismiss") : t("dm.decline"))
+					h("button", { type: "button", class: "ghost small", "data-dismiss": g.room, onclick: () => friendAction(() => (g.notice ? api.friendDismiss(g.room) : api.answerInvite(g.room, false))) }, g.notice ? t("dm.dismiss") : t("dm.decline")),
+					g.notice ? null : blockButton(g.from.slice(1), g.from)
 				)
 			)
 		);
@@ -432,6 +442,7 @@ export function mountDirectMessages(host, { onCount = () => {} } = {}) {
 		offline.textContent = friend ? t("dm.is_offline", { name: friend.name }) : t("dm.not_friends");
 		inviteBtn.hidden = !friend;
 		removeBtn.hidden = !friend;
+		blockBtn.hidden = !friend;
 		inviteRow.hidden = !friend || !D.inviting;
 		const busy = call.state !== "" && call.peer === D.open;
 		// The button rings somebody, or answers them while they are ringing;
@@ -528,6 +539,14 @@ export function mountDirectMessages(host, { onCount = () => {} } = {}) {
 		D.messages = [];
 		D.inviting = false;
 		friendAction(() => api.friendRemove(friend.handle));
+	});
+	blockBtn.addEventListener("click", () => {
+		const friend = friendAt(D.open);
+		if (!friend || !window.confirm(t("dm.block_confirm", { name: friend.name }))) return;
+		D.open = "";
+		D.messages = [];
+		D.inviting = false;
+		friendAction(() => api.friendBlock(friend.handle));
 	});
 	callBtn.addEventListener("click", () => callPerson(D.open, D.openName));
 	muteBtn.addEventListener("click", toggleMute);

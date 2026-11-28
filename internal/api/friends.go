@@ -12,9 +12,9 @@ import (
 
 // friendRequest is the body of the routes about one person or one
 // invitation: POST /friends/request, /answer, /remove, /invite,
-// /invite-answer and /dismiss.
+// /invite-answer, /dismiss, /block and /unblock.
 type friendRequest struct {
-	// Handle is the person's (request, answer, remove, invite).
+	// Handle is the person's (request, answer, remove, invite, block, unblock).
 	Handle string `json:"handle,omitempty"`
 	// Accept is the answer (answer, invite-answer).
 	Accept bool `json:"accept,omitempty"`
@@ -103,6 +103,40 @@ func (h *handlers) handleFriendDismiss(w http.ResponseWriter, r *http.Request) {
 	friendRoute(w, r, func(me store.Account, req friendRequest) error {
 		return h.mgr.DismissInvite(r.Context(), me, req.Room)
 	})
+}
+
+// handleFriendBlock implements POST /friends/block: hear nothing more from somebody (ADR 0156).
+func (h *handlers) handleFriendBlock(w http.ResponseWriter, r *http.Request) {
+	friendRoute(w, r, func(me store.Account, req friendRequest) error {
+		return h.mgr.BlockPlayer(r.Context(), me, req.Handle)
+	})
+}
+
+// handleFriendUnblock implements POST /friends/unblock.
+func (h *handlers) handleFriendUnblock(w http.ResponseWriter, r *http.Request) {
+	friendRoute(w, r, func(me store.Account, req friendRequest) error {
+		return h.mgr.UnblockPlayer(r.Context(), me, req.Handle)
+	})
+}
+
+// blocksResponse is GET /friends/blocks' answer: those the account has blocked, by handle. Only the
+// account itself can read it.
+type blocksResponse struct {
+	Blocked []session.BlockedPlayer `json:"blocked"`
+}
+
+// handleGetBlocks implements GET /friends/blocks.
+func (h *handlers) handleGetBlocks(w http.ResponseWriter, r *http.Request) {
+	me, ok := memberAccount(w, r)
+	if !ok {
+		return
+	}
+	list, err := h.mgr.BlockedBy(r.Context(), me.ID)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, blocksResponse{Blocked: list})
 }
 
 // handleGetFriendSettings implements GET /friends/settings.

@@ -121,6 +121,9 @@ func (m *Manager) checkSchedule(ctx context.Context, opts *CreateOptions, freeSe
 			continue
 		}
 		seen[other.ID] = true
+		if m.blocks(ctx, me, other.ID) {
+			return nil, fmt.Errorf("%w: you have blocked @%s", ErrBadSchedule, other.Handle)
+		}
 		settings, err := m.store.FriendSettings(ctx, other.ID)
 		if err != nil {
 			return nil, err
@@ -215,6 +218,10 @@ func (m *Manager) saveSchedule(ctx context.Context, game store.Game, req *Schedu
 	for _, other := range invited {
 		if err := m.store.AddGameInvite(ctx, game.ID, other.ID, me, now); err != nil {
 			return err
+		}
+		// Somebody who has blocked the creator is invited, unseen: an invitation nobody answers.
+		if m.blocks(ctx, other.ID, me) {
+			continue
 		}
 		m.tellFriends(other.PrincipalID)
 		a := other
@@ -486,6 +493,9 @@ func (m *Manager) fixSchedule(ctx context.Context, game store.Game, sched store.
 		if err := m.store.SetInviteNotice(ctx, game.ID, v.Account.ID, "a time has been set. Open the game to see it."); err != nil {
 			return err
 		}
+		if m.blocks(ctx, v.Account.ID, sched.CreatorAccount) {
+			continue
+		}
 		m.tellFriends(v.Account.PrincipalID)
 		m.sendCalendar(ctx, game, sched, v.Account)
 	}
@@ -605,6 +615,9 @@ func (m *Manager) OfferNewTimes(ctx context.Context, me store.Account, room stri
 		if err := m.store.SetInviteNotice(ctx, game.ID, v.Account.ID, "new times have been offered. Open the game to answer."); err != nil {
 			return err
 		}
+		if m.blocks(ctx, v.Account.ID, me.ID) {
+			continue
+		}
 		m.tellFriends(v.Account.PrincipalID)
 		a := v.Account
 		m.mailAccount(ctx, a, func(base string) mail.Message {
@@ -653,6 +666,9 @@ func (m *Manager) closeSchedule(ctx context.Context, game store.Game, sched stor
 		}
 		if err := m.store.SetInviteNotice(ctx, game.ID, v.Account.ID, "closed: "+i18n.T(i18n.Default, reason)); err != nil {
 			return err
+		}
+		if m.blocks(ctx, v.Account.ID, sched.CreatorAccount) {
+			continue
 		}
 		m.tellFriends(v.Account.PrincipalID)
 		a := v.Account

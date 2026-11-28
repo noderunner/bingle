@@ -82,6 +82,9 @@
 	"settings.friend_invites": "Andere Spieler dürfen mich zu Partien einladen",
 	"settings.friend_presence": "Zeigen, wann ich online bin",
 	"settings.presence_note_html": "Ausgeschaltet erscheinst du für deine Freunde offline und bist nicht unter <em>Gerade hier</em>. Freunde können keine Nachricht und keinen Anruf mit dir beginnen, aber du kannst ihnen schreiben, und sie können antworten.",
+	"settings.blocked": "Blockiert",
+	"settings.unblock": "Blockierung aufheben",
+	"settings.unblock_who": "Blockierung von {name} aufheben",
 	"settings.no_badges": "Noch keine Abzeichen. Gewinne eine Partie gegen einen anderen Spieler für dein erstes.",
 	"settings.player_page_html": "<a id=\"badges-page\" href=\"/profile\">Deine Spielerseite</a>, wie andere Spieler sie sehen.",
 	"settings.no_finished": "Noch keine beendeten Partien.",
@@ -178,6 +181,8 @@
 	"dm.invited": "{name} ist eingeladen.",
 	"dm.invite_failed": "Die Einladung wurde nicht gesendet.",
 	"dm.remove_confirm": "{name} aus deinen Freunden entfernen?",
+	"dm.block": "Blockieren",
+	"dm.block_confirm": "{name} blockieren? Es wird ihnen nicht gesagt, und du kannst die Blockierung in deinem Profil aufheben.",
 
 	"footer.version": "Die Version der {brand}-Engine",
 	"footer.license": "MIT-Lizenz",

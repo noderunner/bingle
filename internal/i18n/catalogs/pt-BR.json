@@ -82,6 +82,9 @@
 	"settings.friend_invites": "Permitir que outros jogadores me convidem para partidas",
 	"settings.friend_presence": "Mostrar quando estou on-line",
 	"settings.presence_note_html": "Desligado, você aparece off-line para seus amigos e não fica em <em>Aqui agora</em>. Seus amigos não podem iniciar uma mensagem ou chamada com você, mas você pode escrever para eles, e eles podem responder.",
+	"settings.blocked": "Bloqueados",
+	"settings.unblock": "Desbloquear",
+	"settings.unblock_who": "Desbloquear {name}",
 	"settings.no_badges": "Nenhuma medalha ainda. Vença uma partida contra outro jogador para ganhar a primeira.",
 	"settings.player_page_html": "<a id=\"badges-page\" href=\"/profile\">Sua página de jogador</a>, como os outros jogadores a veem.",
 	"settings.no_finished": "Nenhuma partida encerrada ainda.",
@@ -178,6 +181,8 @@
 	"dm.invited": "{name} foi convidado.",
 	"dm.invite_failed": "O convite não foi enviado.",
 	"dm.remove_confirm": "Remover {name} dos seus amigos?",
+	"dm.block": "Bloquear",
+	"dm.block_confirm": "Bloquear {name}? A pessoa não é avisada, e você pode desbloqueá-la no seu perfil.",
 
 	"footer.version": "A versão do motor do {brand}",
 	"footer.license": "Licença MIT",

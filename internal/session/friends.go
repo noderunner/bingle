@@ -83,7 +83,19 @@ func (m *Manager) FriendsOf(ctx context.Context, accountID int64, address string
 	if err != nil {
 		return out, err
 	}
+	blocked, err := m.store.Blocked(ctx, accountID)
+	if err != nil {
+		return out, err
+	}
+	hide := map[int64]bool{}
+	for _, a := range blocked {
+		hide[a.ID] = true
+	}
 	for _, f := range rows {
+		// A request from somebody blocked waits unseen (ADR 0156).
+		if hide[f.OtherID] {
+			continue
+		}
 		line := Friend{Name: "@" + f.Handle, Handle: f.Handle, Address: AddressOf(f.PrincipalID)}
 		switch {
 		case f.Status == store.FriendAccepted:
@@ -142,6 +154,12 @@ func (m *Manager) RequestFriend(ctx context.Context, me store.Account, handle, i
 	if !m.chat.allow("friend|"+AddressOf(me.PrincipalID), now) {
 		return ErrChatTooFast
 	}
+	if m.blocks(ctx, me.ID, other.ID) {
+		return ErrBlocking
+	}
+	// Somebody who has blocked me never sees my request, and is not told or mailed: it waits, as one
+	// nobody answers (ADR 0156).
+	unheard := m.blocks(ctx, other.ID, me.ID)
 	requester, status, updated, err := m.store.FriendshipOf(ctx, me.ID, other.ID)
 	switch {
 	case errors.Is(err, store.ErrNotFound):
@@ -171,8 +189,10 @@ func (m *Manager) RequestFriend(ctx context.Context, me store.Account, handle, i
 		return err
 	}
 	m.tellFriends(me.PrincipalID)
-	m.tellFriends(other.PrincipalID)
-	m.mailFriendRequest(ctx, me, other, ip)
+	if !unheard {
+		m.tellFriends(other.PrincipalID)
+		m.mailFriendRequest(ctx, me, other, ip)
+	}
 	return nil
 }
 
@@ -196,6 +216,9 @@ func (m *Manager) AnswerFriend(ctx context.Context, me store.Account, handle str
 	other, err := m.activeAccount(ctx, handle)
 	if err != nil {
 		return err
+	}
+	if m.blocks(ctx, me.ID, other.ID) {
+		return ErrBlocking
 	}
 	requester, status, _, err := m.store.FriendshipOf(ctx, me.ID, other.ID)
 	if errors.Is(err, store.ErrNotFound) || (err == nil && (status != store.FriendPending || requester == me.ID)) {

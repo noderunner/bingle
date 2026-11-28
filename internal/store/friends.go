@@ -80,6 +80,45 @@ func (s *Store) DeleteFriendship(ctx context.Context, a, b int64) error {
 	return err
 }
 
+// Block records that blocker will not hear from blocked (ADR 0156).
+func (s *Store) Block(ctx context.Context, blocker, blocked int64, now time.Time) error {
+	_, err := s.exec(ctx, "Block", `INSERT INTO blocks (blocker, blocked, created_at) VALUES (?, ?, ?) ON CONFLICT DO NOTHING`, blocker, blocked, stamp(now))
+	return err
+}
+
+// Unblock forgets a block.
+func (s *Store) Unblock(ctx context.Context, blocker, blocked int64) error {
+	_, err := s.exec(ctx, "Unblock", `DELETE FROM blocks WHERE blocker = ? AND blocked = ?`, blocker, blocked)
+	return err
+}
+
+// Blocks says whether blocker has blocked blocked.
+func (s *Store) Blocks(ctx context.Context, blocker, blocked int64) (bool, error) {
+	var n int
+	err := s.queryRow(ctx, "Blocks", `SELECT COUNT(*) FROM blocks WHERE blocker = ? AND blocked = ?`, blocker, blocked).Scan(&n)
+	return n > 0, err
+}
+
+// Blocked lists the accounts that still exist which blocker has blocked, by handle.
+func (s *Store) Blocked(ctx context.Context, blocker int64) ([]Account, error) {
+	rows, err := s.query(ctx, "Blocked",
+		`SELECT `+accountCols("accounts")+` FROM blocks b JOIN accounts ON accounts.id = b.blocked
+		 WHERE b.blocker = ? AND accounts.deleted_at IS NULL ORDER BY accounts.handle_lower`, blocker)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+	var out []Account
+	for rows.Next() {
+		var a Account
+		if err := rows.Scan(a.fields()...); err != nil {
+			return nil, err
+		}
+		out = append(out, a)
+	}
+	return out, rows.Err()
+}
+
 // FriendSettings is what an account chose about its friends.
 type FriendSettings struct {
 	MailRequests bool `json:"mail_requests"`
@@ -154,12 +193,13 @@ func (s *Store) DismissGameInvite(ctx context.Context, to int64, roomCode string
 }
 
 // GameInvites lists what an account has to see: invitations to games still to be played that it has
-// not answered, and news of any game. The newest first.
+// not answered, and news of any game. The newest first. Those from somebody it has blocked are left out.
 func (s *Store) GameInvites(ctx context.Context, to int64) ([]GameInvite, error) {
 	rows, err := s.query(ctx, "GameInvites",
 		`SELECT g.room_code, g.game_def_id, a.handle, i.status, i.notice
 		 FROM game_invites i JOIN games g ON g.id = i.game_id JOIN accounts a ON a.id = i.from_account
 		 WHERE i.to_account = ? AND a.deleted_at IS NULL AND (i.notice != '' OR (i.status = 'pending' AND g.status != 'finished'))
+		   AND NOT EXISTS (SELECT 1 FROM blocks b WHERE b.blocker = i.to_account AND b.blocked = i.from_account)
 		 ORDER BY i.created_at DESC, i.game_id DESC LIMIT 50`, to)
 	if err != nil {
 		return nil, err
