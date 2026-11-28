@@ -177,6 +177,7 @@ func TestAPISchema_DescribesWhatTheServerSends(t *testing.T) {
 	code, _ := created["room_code"].(string)
 	game := "/api/games/" + code
 	ana.do("GET /api/games", "/api/games", nil, 200)
+	ana.do("GET /api/me/games", "/api/me/games", nil, 200)
 	bo.do("POST /api/games/{code}/join", game+"/join", map[string]any{"player_name": "Bo"}, 200)
 	ana.do("GET /api/games/{code}", game, nil, 200)
 

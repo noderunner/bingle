@@ -3546,6 +3546,69 @@
       ],
       "type": "object"
     },
+    "OwnGame": {
+      "description": "OwnGame is one of the request's principal's games, for \"My games\".",
+      "properties": {
+        "game_def_id": {
+          "description": "GameDefID is the id of the game being played.",
+          "type": "string"
+        },
+        "name": {
+          "description": "Name is the game's name, or its id for a game the catalog does not know.",
+          "type": "string"
+        },
+        "room_code": {
+          "description": "RoomCode is the game's room code.",
+          "type": "string"
+        },
+        "seats": {
+          "description": "Seats are the names the principal plays under, one per seat it holds, in seat order. They are names, not seat indices.",
+          "items": {
+            "type": "string"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "status": {
+          "description": "Status is the game's status: waiting, active or finished.",
+          "type": "string"
+        },
+        "updated_at": {
+          "description": "UpdatedAt is when the game last changed, as an RFC 3339 time.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "room_code",
+        "game_def_id",
+        "name",
+        "status",
+        "seats",
+        "updated_at"
+      ],
+      "type": "object"
+    },
+    "OwnGamesResponse": {
+      "description": "ownGamesResponse is GET /me/games' 200 response body.",
+      "properties": {
+        "games": {
+          "description": "Games are the games the asker, a guest or an account, has a seat in, the latest first, at most 60: finished games and waiting ones as well, whether or not GET /games lists them; tutorial rooms are left out. Empty for a request with no key or session.",
+          "items": {
+            "$ref": "#/$defs/OwnGame"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "games"
+      ],
+      "type": "object"
+    },
     "Person": {
       "description": "Person is somebody who is here now.",
       "properties": {
@@ -4780,9 +4843,9 @@
   },
   "$id": "https://github.com/noderunner/bingle/docs/api.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "description": "The requests, responses and WebSocket events of bingle's API, version 1.25.0. Generated from the Go types of the server: do not edit. Objects let unknown fields through: a client ignores those it does not know.",
+  "description": "The requests, responses and WebSocket events of bingle's API, version 1.26.0. Generated from the Go types of the server: do not edit. Objects let unknown fields through: a client ignores those it does not know.",
   "title": "Bingle API messages",
-  "x-api-version": "1.25.0",
+  "x-api-version": "1.26.0",
   "x-dm-events": {
     "badge": {
       "$ref": "#/$defs/BadgeEventData"
@@ -4918,6 +4981,11 @@
     "GET /api/me/deals": {
       "response": {
         "$ref": "#/$defs/OwnDealsResponse"
+      }
+    },
+    "GET /api/me/games": {
+      "response": {
+        "$ref": "#/$defs/OwnGamesResponse"
       }
     },
     "GET /api/rtc/config": {

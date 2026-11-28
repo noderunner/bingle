@@ -23,4 +23,4 @@ const Engine = "0.151.1"
 //
 // Clients ignore the fields they do not know, which is what keeps an addition
 // minor.
-const API = "1.25.0"
+const API = "1.26.0"

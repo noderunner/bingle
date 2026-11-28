@@ -110,12 +110,19 @@ func (m *Manager) mayUseName(ctx context.Context, name string) error {
 
 // OwnGame is one of the request's principal's games, for "My games".
 type OwnGame struct {
-	RoomCode  string   `json:"room_code"`
-	GameDefID string   `json:"game_def_id"`
-	Name      string   `json:"name"`
-	Status    string   `json:"status"`
-	Seats     []string `json:"seats"` // the names the principal plays under
-	UpdatedAt string   `json:"updated_at"`
+	// RoomCode is the game's room code.
+	RoomCode string `json:"room_code"`
+	// GameDefID is the id of the game being played.
+	GameDefID string `json:"game_def_id"`
+	// Name is the game's name, or its id for a game the catalog does not know.
+	Name string `json:"name"`
+	// Status is the game's status: waiting, active or finished.
+	Status string `json:"status"`
+	// Seats are the names the principal plays under, one per seat it holds, in
+	// seat order. They are names, not seat indices.
+	Seats []string `json:"seats"`
+	// UpdatedAt is when the game last changed, as an RFC 3339 time.
+	UpdatedAt string `json:"updated_at"`
 }
 
 // OwnGames lists the games the request's principal has a seat in, the
