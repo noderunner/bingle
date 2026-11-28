@@ -223,7 +223,8 @@ function resolveIdentity() {
 		// In a tutorial the learner plays their own seat; the page plays the others.
 		if (S.tut) {
 			const learner = S.tut.doc.seat || 1;
-			const own = S.mine.find((m) => m.seat === learner);
+			// The learner's seat is not always the first one of theirs the server lists.
+			const own = S.mine.find((m) => m.seat === learner) || seats.filter((s) => s.seat === learner && s.yours && !s.bot).map((s) => ({ seat: s.seat, name: s.name }))[0];
 			if (own) {
 				S.mine = [own];
 				S.me = { name: own.name, seat: own.seat };
