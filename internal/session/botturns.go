@@ -66,24 +66,29 @@ func (m *Manager) continueBots(roomCode string) {
 	}
 	m.botsBusy[roomCode] = true
 	m.mu.Unlock()
-	go func() {
-		defer func() {
-			m.mu.Lock()
-			delete(m.botsBusy, roomCode)
-			m.mu.Unlock()
-		}()
+	done := func() {
+		m.mu.Lock()
+		delete(m.botsBusy, roomCode)
+		m.mu.Unlock()
+	}
+	started := m.detach(func(ctx context.Context) {
+		defer done()
 		deadline := time.Now().Add(botBackgroundLimit)
-		for time.Now().Before(deadline) {
+		// A stop ends the run after the move being played.
+		for time.Now().Before(deadline) && ctx.Err() == nil {
 			// A background run belongs to no request, so nothing is
 			// collecting and the span costs a context lookup.
-			unlock := m.lockRoom(context.Background(), roomCode)
-			_, more := m.runBotsFor(context.Background(), roomCode, 0, 1)
+			unlock := m.lockRoom(ctx, roomCode)
+			_, more := m.runBotsFor(ctx, roomCode, 0, 1)
 			unlock()
 			if !more {
 				return
 			}
 		}
-	}()
+	})
+	if !started {
+		done()
+	}
 }
 
 // runBotsFor plays up to maxMoves bot moves, stopping after soft (when

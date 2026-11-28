@@ -641,8 +641,10 @@ func (a *App) Manager() *session.Manager {
 	return a.manager
 }
 
-// Close releases resources held by the App.
+// Close releases resources held by the App. The session manager stops
+// first, while what its work uses is still there.
 func (a *App) Close() error {
+	a.manager.Close()
 	if a.translator != nil {
 		a.translator.Close()
 	}

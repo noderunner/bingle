@@ -670,11 +670,10 @@ func (n *notifier) tap(room string, ev Event) {
 	}
 	n.lastTurn[room] = k
 	n.mu.Unlock()
-	go n.turnPassed(room, seat, seq)
+	n.m.detach(func(ctx context.Context) { n.turnPassed(ctx, room, seat, seq) })
 }
 
-func (n *notifier) turnPassed(room string, seat, seq int) {
-	ctx := context.Background()
+func (n *notifier) turnPassed(ctx context.Context, room string, seat, seq int) {
 	game, player, ok := n.seatPlayer(ctx, room, seat)
 	if !ok {
 		return
@@ -697,11 +696,13 @@ func (n *notifier) turnPassed(room string, seat, seq int) {
 	if pref.AwayMinutes > 0 {
 		wait := time.Duration(pref.AwayMinutes) * n.opts.AwayUnit
 		n.mu.Lock()
-		n.timers[key] = time.AfterFunc(wait, func() { n.send(room, seat, seq, true) })
+		n.timers[key] = time.AfterFunc(wait, func() {
+			n.m.detach(func(ctx context.Context) { n.send(ctx, room, seat, seq, true) })
+		})
 		n.mu.Unlock()
 		return
 	}
-	n.send(room, seat, seq, false)
+	n.send(ctx, room, seat, seq, false)
 }
 
 func (n *notifier) seatPlayer(ctx context.Context, room string, seat int) (store.Game, store.Player, bool) {
@@ -724,8 +725,7 @@ func (n *notifier) seatPlayer(ctx context.Context, room string, seat int) (store
 // send mails the seat's person that it is their turn, if it still is and the
 // seat's setting, the address and the limits all allow it. ignoreConnected is
 // set for the "only if I was away" mode, whose wait is the point.
-func (n *notifier) send(room string, seat, seq int, ignoreConnected bool) {
-	ctx := context.Background()
+func (n *notifier) send(ctx context.Context, room string, seat, seq int, ignoreConnected bool) {
 	game, player, ok := n.seatPlayer(ctx, room, seat)
 	if !ok || game.Status != "active" || game.ImpulseSeat == nil || *game.ImpulseSeat != seat || game.Ply != seq {
 		return // the turn moved on

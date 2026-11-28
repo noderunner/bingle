@@ -84,11 +84,12 @@ func (m *Manager) finished(game store.Game, family, reason string) {
 	m.mx.Finished(family, reason)
 	if game.Tutorial == "" {
 		// The caller's context ends with its request, and the result must
-		// not. Every game but a tutorial is counted for its players.
-		go m.RecordResults(context.Background())
+		// not. Every game but a tutorial is counted for its players. What a
+		// stop cuts short stays pending, and RunResults writes it.
+		m.detach(m.RecordResults)
 	}
 	if game.TournamentID != 0 {
-		go m.AdvanceTournaments(context.Background())
+		m.detach(m.AdvanceTournaments)
 	}
 }
 

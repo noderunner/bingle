@@ -140,7 +140,7 @@ func (m *Manager) readIn(ctx context.Context, room string) func() {
 	t.mu.Unlock()
 	// The lines said before this reader came: asked for now, when the
 	// reader's socket is there to have them.
-	go m.catchUp(room, lang)
+	m.detach(func(ctx context.Context) { m.catchUp(ctx, room, lang) })
 	var once sync.Once
 	return func() {
 		once.Do(func() {
@@ -281,13 +281,13 @@ func (m *Manager) askTranslation(l lineToTranslate, lang string) {
 
 // catchUp asks for the latest lines of room that have nothing kept in lang,
 // for a reader of lang who has just come.
-func (m *Manager) catchUp(room, lang string) {
+func (m *Manager) catchUp(ctx context.Context, room, lang string) {
 	if strings.HasPrefix(room, dmRoom("")) {
 		// A direct message's reader catches up when the page reads the
 		// correspondence; the socket has long been open by then.
 		return
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 	global := room == GlobalChatRoom
 	kind := gameChat
