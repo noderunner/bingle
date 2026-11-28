@@ -1,4 +1,5 @@
-// The administration page (ADR 0071): who may do what, and invitations.
+// The administration page (ADR 0071): who may do what, announcements (ADR
+// 0155), what happened, and invitations.
 
 import { api, ApiError, whoAmI } from "./api.js";
 import { t, tParts, lang } from "./i18n.js";
@@ -87,6 +88,7 @@ api.adminCaps()
 		paint(m);
 		el("caps-card").hidden = false;
 		el("invite-card").hidden = false;
+		loadAnnouncements();
 		return api.adminEvents().then(({ events }) => {
 			const rows = el("events-rows");
 			for (const e of events) {
@@ -136,5 +138,75 @@ el("invite-go").addEventListener("click", async () => {
 		el("invite-link").textContent = t("admin.invite_link", { link: location.origin + inv.path, until: new Date(inv.expires).toLocaleString(lang) });
 	} catch (err) {
 		el("invite-link").textContent = err instanceof ApiError ? err.message : t("common.not_done");
+	}
+});
+
+// ---- announcements (ADR 0155) ----------------------------------------------------
+
+const announced = (text, kind = "") => {
+	el("announce-result").textContent = text;
+	el("announce-result").className = "small " + kind;
+};
+
+function announcementRow(a) {
+	const tr = document.createElement("tr");
+	const when = document.createElement("td");
+	when.className = "when";
+	const at = new Date(a.published_at);
+	when.textContent = isNaN(at) ? a.published_at : at.toLocaleString(lang);
+	const title = document.createElement("td");
+	title.textContent = a.title;
+	// The administrator's own words.
+	title.translate = false;
+	const act = document.createElement("td");
+	if (a.withdrawn) {
+		act.className = "muted";
+		act.textContent = t("admin.withdrawn");
+	} else {
+		const b = document.createElement("button");
+		b.type = "button";
+		b.className = "small";
+		b.textContent = t("admin.withdraw");
+		b.setAttribute("aria-label", t("admin.withdraw_label", { title: a.title }));
+		b.addEventListener("click", async () => {
+			b.disabled = true;
+			try {
+				tr.replaceWith(announcementRow(await api.withdrawAnnouncement(a.id)));
+			} catch (err) {
+				b.disabled = false;
+				announced(err instanceof ApiError ? err.message : t("common.not_done"), "error");
+			}
+		});
+		act.append(b);
+	}
+	tr.append(when, title, act);
+	return tr;
+}
+
+async function loadAnnouncements() {
+	try {
+		const { announcements } = await api.adminAnnouncements();
+		el("announce-rows").replaceChildren(...announcements.map(announcementRow));
+		el("announce-table").hidden = !announcements.length;
+		el("announce-card").hidden = false;
+	} catch (_) {
+		/* the rest of the page without them */
+	}
+}
+
+el("announce-form").addEventListener("submit", async (ev) => {
+	ev.preventDefault();
+	const go = el("announce-go");
+	go.disabled = true;
+	try {
+		const a = await api.announce(el("announce-title").value, el("announce-body").value);
+		el("announce-rows").prepend(announcementRow(a));
+		el("announce-table").hidden = false;
+		el("announce-form").reset();
+		announced(t("admin.published", { title: a.title }));
+	} catch (err) {
+		announced(err instanceof ApiError ? err.message : t("common.not_done"), "error");
+	} finally {
+		go.disabled = false;
 	}
 });

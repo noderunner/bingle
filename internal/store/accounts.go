@@ -435,7 +435,7 @@ func (s *Store) UseAccountToken(ctx context.Context, hash, kind string, now time
 // ---- principals ---------------------------------------------------------------
 
 // MergePrincipal moves everything that belongs to from — seats, games, chat
-// lines, having seen the welcome tour — to into, and retires from: its keys
+// lines, having seen the welcome tour and announcements — to into, and retires from: its keys
 // stop working and it records where it went.
 func (s *Store) MergePrincipal(ctx context.Context, from, into string) error {
 	if from == "" || from == into {
@@ -460,6 +460,12 @@ func (s *Store) MergePrincipal(ctx context.Context, from, into string) error {
 	// Whoever has seen the welcome tour on either side has seen it (ADR 0139).
 	if _, err := tx.exec(ctx, "MergePrincipal.tour",
 		`UPDATE principals SET tour_seen_at = (SELECT tour_seen_at FROM principals WHERE id = ?) WHERE id = ? AND tour_seen_at = ''`, from, into); err != nil {
+		return err
+	}
+	// So has an announcement, which is not shown to either again (ADR 0155).
+	if _, err := tx.exec(ctx, "MergePrincipal.announcements",
+		`INSERT OR IGNORE INTO announcements_seen (principal_id, announcement_id, seen_at)
+		 SELECT ?, announcement_id, seen_at FROM announcements_seen WHERE principal_id = ?`, into, from); err != nil {
 		return err
 	}
 	if _, err := tx.exec(ctx, "MergePrincipal.keys", `UPDATE guest_keys SET revoked_at = CURRENT_TIMESTAMP WHERE principal_id = ? AND revoked_at IS NULL`, from); err != nil {

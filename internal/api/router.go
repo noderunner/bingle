@@ -97,6 +97,9 @@ func NewRouter(mgr *session.Manager, opts ...Option) chi.Router {
 	r.Get("/config", h.handleConfig)
 	r.Get("/changelog", h.handleChangelog)
 	r.Get("/changelog/entries", h.handleChangelogEntries)
+	if h.guests != nil {
+		r.Get("/announcements", h.guests.HandleAnnouncements)
+	}
 	r.Get("/bot-guide", h.handleBotGuide)
 	r.Get("/bot-guide/assets/*", h.handleBotGuideAsset)
 	r.Get("/puzzles", h.handleListPuzzles)

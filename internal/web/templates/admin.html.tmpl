@@ -40,6 +40,27 @@
 			</div>
 			<p class="small" id="caps-result" role="status" aria-live="polite"></p>
 		</section>
+		<section class="card" id="announce-card" hidden>
+			<h2>{{t .Lang "admin.announcements"}}</h2>
+			<form id="announce-form">
+				<div class="field">
+					<label for="announce-title">{{t .Lang "admin.announcement_title"}}</label>
+					<input id="announce-title" type="text" maxlength="120" required>
+				</div>
+				<div class="field">
+					<label for="announce-body">{{t .Lang "admin.announcement_body"}}</label>
+					<textarea id="announce-body" rows="8" maxlength="20000" required></textarea>
+				</div>
+				<div class="row"><button type="submit" class="primary" id="announce-go">{{t .Lang "admin.publish"}}</button></div>
+			</form>
+			<p class="small" id="announce-result" role="status" aria-live="polite"></p>
+			<div class="admin-scroll">
+				<table class="admin-table announcements" id="announce-table">
+					<thead><tr><th scope="col">{{t .Lang "admin.when"}}</th><th scope="col">{{t .Lang "admin.announcement_title"}}</th><th scope="col"><span class="sr-only">{{t .Lang "admin.withdraw"}}</span></th></tr></thead>
+					<tbody id="announce-rows"></tbody>
+				</table>
+			</div>
+		</section>
 		<section class="card" id="events-card" hidden>
 			<h2>{{t .Lang "admin.events"}}</h2>
 			<p class="small muted">{{t .Lang "admin.events_note"}}</p>

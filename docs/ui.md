@@ -550,7 +550,7 @@ and its `#guest=` link, `#guest-link`, `#guest-key`, copied to the clipboard), `
 `#guest-use-key` with `#guest-use` to adopt a key; any page opened with `#guest=bgg_…` adopts it, takes it out of the
 address and reloads. "My games" merges `GET /api/me/games` into `bingle.games`. The account page adds the address
 (`#account-email`), the handle (`#handle-new`, `#handle-go`) and the sessions (`#sessions-list`, `#sessions-end`); the
-admin page the audit log (`#events-rows`: local time, account, the kind as a tag, `.event-kind.bad` for failures). The top bar's profile window starts with who the browser is (`#profile-account`): a guest gets *Sign in*
+admin page announcements (`#announce-card`, under *Announcements* below) and the audit log (`#events-rows`: local time, account, the kind as a tag, `.event-kind.bad` for failures). The top bar's profile window starts with who the browser is (`#profile-account`): a guest gets *Sign in*
 (`#profile-signin`, back to the page afterwards) and, where the server allows it, *Sign up* (`#profile-signup`); an
 account gets `#profile-account-who` ("Signed in as @ana"), *Your account* (`#profile-account-link`), *Administration*
 for an administrator (`#profile-admin-link`) and *Sign out* (`#profile-signout`). The icon's title says the same.
@@ -737,7 +737,11 @@ repeat, and a game's section keeps its heading. A release is in the reader's lan
 (`lang="en" dir="ltr"`). They sit in a box that scrolls (`#help-changes-body`), under
 *Mark all as read* (`#help-mark-read`). Opening the window is not reading it: the dot stays until that button is
 pressed. A browser that has never marked anything read is shown the newest release alone, and once everything is
-read the window shows the newest release with no button.
+read the window shows the newest release with no button. Under each release it shows, the window links the
+announcements published on or after its date and before the next newer one's (the newest has those after it too),
+newest first: `ul.help-announcements`, an `a.help-announcement[data-announcement]` each by its title, from
+`GET /api/announcements`, which every published announcement not withdrawn is in. A link shows that announcement
+alone in the tour's card and marks nothing seen.
 
 ## The welcome tour
 
@@ -761,6 +765,24 @@ description.
 The tour is offered when `/auth/me` says `tour_seen` is false and the browser's `bingle.tour.seen` is not set,
 and not to a newcomer on a server in `closed` mode. Closing it in any way sets both (`POST /auth/tour-seen`).
 The browser tests' pages start with `bingle.tour.seen` set; `newChromedpContextWithTour` gives a browser without it.
+
+The card itself is `js/tour-card.js` (`openCard`), which the announcements use too: one card at a time, and with a
+single slide no count, dots, *Back* or *Skip*. A slide with no picture hides `#tour-picture`.
+
+## Announcements
+
+An administrator's major announcements ([ADR 0155](decisions/0155-major-announcements-shown-once.md),
+`js/announcements.js`) are shown in the tour's card, `#announcement-card`: a slide each
+(`data-slide="announcement-<id>"`), oldest first, its title in `#tour-title` and its Markdown body, rendered by
+`js/markdown.js` and not translated, in `#tour-text`. With several, *Close* (`#tour-skip`) stands where the tour's
+*Skip* does. `/auth/me`'s `announcements` lists the ids waiting for the guest or account, and only then does the
+main page load the module, and only when it does not offer the tour, so the two never open together. Closing the
+card in any way marks every announcement it showed as seen (`POST /auth/announcements-seen`, with `keepalive`).
+A game's page never shows it.
+
+The admin page's *Announcements* (`#announce-card`) writes one (`#announce-title`, `#announce-body`, Markdown) and
+publishes it (`#announce-go`, `#announce-result`), and lists every one, newest first (`#announce-rows`), each with
+*Withdraw* or, once withdrawn, *Withdrawn*.
 
 ## The list of games
 

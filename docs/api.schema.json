@@ -94,6 +94,90 @@
       ],
       "type": "object"
     },
+    "Announcement": {
+      "description": "Announcement is one announcement as the API sends it.",
+      "properties": {
+        "body": {
+          "description": "Body is Markdown, in the one language its administrator wrote it in; it is not translated.",
+          "type": "string"
+        },
+        "id": {
+          "type": "integer"
+        },
+        "published_at": {
+          "description": "PublishedAt is when it was published (RFC 3339).",
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "withdrawn": {
+          "description": "Withdrawn: it is offered and listed no more. Only the admin page's list has withdrawn ones.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "body",
+        "published_at"
+      ],
+      "type": "object"
+    },
+    "AnnouncementsResponse": {
+      "description": "AnnouncementsResponse is GET /api/announcements' answer.",
+      "properties": {
+        "announcements": {
+          "description": "Announcements are every one published and not withdrawn, oldest first.",
+          "items": {
+            "$ref": "#/$defs/Announcement"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "announcements"
+      ],
+      "type": "object"
+    },
+    "AnnouncementsSeenRequest": {
+      "description": "AnnouncementsSeenRequest is POST /auth/announcements-seen's body.",
+      "properties": {
+        "ids": {
+          "description": "IDs are the announcements the card showed when it was closed.",
+          "items": {
+            "type": "integer"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "AnnouncementsSeenResponse": {
+      "description": "AnnouncementsSeenResponse is POST /auth/announcements-seen's answer.",
+      "properties": {
+        "announcements": {
+          "description": "Announcements are the ids still waiting after these were marked: what /auth/me would now say.",
+          "items": {
+            "type": "integer"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "announcements"
+      ],
+      "type": "object"
+    },
     "BadgeEventData": {
       "description": "BadgeEventData is the wire form of a \"badge\" event.",
       "properties": {
@@ -2724,6 +2808,13 @@
           "description": "Admin: the account is in the admin group (and may use its powers from here). Mode is \"hybrid\" or \"closed\"; SignupMode \"open\", \"invite\" or \"closed\"; Caps what this browser may do.",
           "type": "boolean"
         },
+        "announcements": {
+          "description": "Announcements are the ids of the announcements waiting for this guest or account, oldest first (ADR 0155): published after it was made, not withdrawn, and not yet closed by it; POST /auth/announcements-seen marks them. Absent when none is waiting, and always for a newcomer.",
+          "items": {
+            "type": "integer"
+          },
+          "type": "array"
+        },
         "caps": {
           "items": {
             "type": "string"
@@ -4647,9 +4738,9 @@
   },
   "$id": "https://github.com/noderunner/bingle/docs/api.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "description": "The requests, responses and WebSocket events of bingle's API, version 1.21.1. Generated from the Go types of the server: do not edit. Objects let unknown fields through: a client ignores those it does not know.",
+  "description": "The requests, responses and WebSocket events of bingle's API, version 1.22.0. Generated from the Go types of the server: do not edit. Objects let unknown fields through: a client ignores those it does not know.",
   "title": "Bingle API messages",
-  "x-api-version": "1.21.1",
+  "x-api-version": "1.22.0",
   "x-dm-events": {
     "badge": {
       "$ref": "#/$defs/BadgeEventData"
@@ -4677,6 +4768,11 @@
     "GET /api": {
       "response": {
         "$ref": "#/$defs/IndexResponse"
+      }
+    },
+    "GET /api/announcements": {
+      "response": {
+        "$ref": "#/$defs/AnnouncementsResponse"
       }
     },
     "GET /api/bots": {
@@ -4982,6 +5078,14 @@
       },
       "response": {
         "$ref": "#/$defs/HereResponse"
+      }
+    },
+    "POST /auth/announcements-seen": {
+      "request": {
+        "$ref": "#/$defs/AnnouncementsSeenRequest"
+      },
+      "response": {
+        "$ref": "#/$defs/AnnouncementsSeenResponse"
       }
     },
     "POST /auth/language": {

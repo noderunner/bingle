@@ -1681,15 +1681,25 @@ onLeave(() => {
 	await setupBots();
 })();
 
-// The welcome tour (ADR 0139), offered once to each guest and account. Its
-// module is loaded only when it is to be shown.
+// The welcome tour (ADR 0139), offered once to each guest and account, and
+// then, never with it, the announcements waiting for them (ADR 0155). Each
+// module is loaded only when it has something to show.
 async function offerWelcomeTour() {
 	try {
 		const me = await whoAmI();
+		if (left) return;
 		// Most visits are by somebody who has seen it: no need to load the tour to know that.
-		if (left || me.tour_seen) return;
-		const tour = await import("./welcome-tour.js");
-		if (!left && tour.shouldOfferTour(me)) tour.openTour(me);
+		if (!me.tour_seen) {
+			const tour = await import("./welcome-tour.js");
+			if (left) return;
+			if (tour.shouldOfferTour(me)) {
+				tour.openTour(me);
+				return;
+			}
+		}
+		if (!me.announcements || !me.announcements.length) return;
+		const news = await import("./announcements.js");
+		if (!left) await news.offerAnnouncements(me);
 	} catch (_) {
 		/* no tour is no loss */
 	}

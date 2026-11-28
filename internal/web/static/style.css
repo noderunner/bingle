@@ -1799,6 +1799,9 @@ button.sol-pin:hover > .pcard { transform: translateY(-3px); }
 .help-changes-body .help-change-head { margin: 0 0 0.2rem; font-size: 0.95rem; }
 .help-changes-body h2, .help-changes-body h3, .help-changes-body h4 { font-size: 0.95rem; margin: 0.7rem 0 0.2rem; }
 .help-changes-body ul { margin: 0.2rem 0; padding-inline-start: 1.2rem; }
+/* The announcements made since a release (ADR 0155), by title, under it. */
+.help-changes-body ul.help-announcements { list-style: none; margin-top: 0.4rem; padding-inline-start: 0; }
+.help-announcement { font-weight: 600; }
 
 dialog.bar-dialog { width: min(40rem, 94vw); max-height: 88vh; overflow-y: auto; }
 dialog.bar-dialog .dialog-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 0.6rem; }
@@ -2142,6 +2145,10 @@ dialog.tour-card::backdrop { background: rgba(0, 0, 0, 0.3); }
 .tour-dot.on { background: var(--accent); border-color: var(--accent); }
 .tour-foot { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem; }
 .tour-foot .spacer { flex: 1; }
+/* An announcement's words are Markdown (ADR 0155), and the card's body scrolls when they are long. */
+.tour-text .md > :first-child { margin-top: 0; }
+.tour-text .md > :last-child { margin-bottom: 0; }
+.tour-text .md img { max-width: 100%; height: auto; }
 @media (max-width: 520px) {
 	dialog.tour-card { padding: 0.8rem 0.85rem 0.7rem; }
 	.tour-picture { height: 12rem; }

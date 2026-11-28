@@ -625,3 +625,23 @@ CREATE TABLE IF NOT EXISTS scores (
 -- An account's best in one game, and a game's best of all.
 CREATE INDEX IF NOT EXISTS idx_scores_best ON scores(account_id, game_def_id, score);
 CREATE INDEX IF NOT EXISTS idx_scores_game ON scores(game_def_id, score);
+
+-- Major announcements (ADR 0155): what an administrator wrote, shown once in
+-- the welcome tour's card to each guest or account that existed before it was
+-- published. A withdrawn one is offered and listed no more, but kept.
+CREATE TABLE IF NOT EXISTS announcements (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    title         TEXT NOT NULL,
+    body          TEXT NOT NULL,
+    published_at  TEXT NOT NULL,
+    withdrawn     INTEGER NOT NULL DEFAULT 0
+);
+
+-- Who has closed the card that showed an announcement: it is not shown to
+-- them again.
+CREATE TABLE IF NOT EXISTS announcements_seen (
+    principal_id     TEXT NOT NULL REFERENCES principals(id) ON DELETE CASCADE,
+    announcement_id  INTEGER NOT NULL REFERENCES announcements(id) ON DELETE CASCADE,
+    seen_at          TEXT NOT NULL,
+    PRIMARY KEY (principal_id, announcement_id)
+);

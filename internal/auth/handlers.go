@@ -27,6 +27,7 @@ import (
 //	POST /auth/password {old, new}                  a new password, a new cookie
 //	GET  /auth/me                                   who this browser is
 //	POST /auth/tour-seen                            the welcome tour was skipped or finished (ADR 0139)
+//	POST /auth/announcements-seen {ids}             announcements shown and closed (ADR 0155)
 //	POST /auth/language {language}                  the interface's language (ADR 0141)
 //	POST /auth/second   {code | recovery_code}      the second step of a sign-in
 //	POST /auth/totp/setup   {password}               a secret for an app, its link and a QR code of it
@@ -42,6 +43,8 @@ import (
 //	GET|POST /auth/tokens, DELETE /auth/tokens/{id} API tokens (ADR 0071)
 //	GET|PUT  /auth/admin/caps                       the capability matrix
 //	POST /auth/admin/invites                        an invitation to sign up
+//	GET|POST /auth/admin/announcements              announcements (ADR 0155)
+//	POST /auth/admin/announcements/{id}/withdraw    withdraw one
 func (rs *Resolver) Routes() http.Handler {
 	r := chi.NewRouter()
 	r.Post("/signup", rs.handleSignup)
@@ -51,6 +54,7 @@ func (rs *Resolver) Routes() http.Handler {
 	r.Post("/password", rs.handlePassword)
 	r.Get("/me", rs.handleMe)
 	r.Post("/tour-seen", rs.handleTourSeen)
+	r.Post("/announcements-seen", rs.handleAnnouncementsSeen)
 	r.Post("/language", rs.handleLanguage)
 	r.Post("/translate", rs.handleTranslate)
 	r.Post("/second", rs.handleSecond)
@@ -71,6 +75,9 @@ func (rs *Resolver) Routes() http.Handler {
 	r.Put("/admin/caps", rs.handleAdminSetCap)
 	r.Post("/admin/invites", rs.handleAdminInvite)
 	r.Get("/admin/events", rs.handleAdminEvents)
+	r.Get("/admin/announcements", rs.handleAdminAnnouncements)
+	r.Post("/admin/announcements", rs.handleAdminAnnounce)
+	r.Post("/admin/announcements/{id}/withdraw", rs.handleAdminWithdraw)
 	r.Post("/handle", rs.handleRename)
 	r.Get("/sessions", rs.handleSessions)
 	r.Post("/sessions/end-others", rs.handleEndOthers)
@@ -380,6 +387,11 @@ type Me struct {
 	// tour (ADR 0139), which the main page then does not offer again; POST
 	// /auth/tour-seen says so. Always false for a newcomer, who has no guest yet.
 	TourSeen bool `json:"tour_seen,omitempty"`
+	// Announcements are the ids of the announcements waiting for this guest
+	// or account, oldest first (ADR 0155): published after it was made, not
+	// withdrawn, and not yet closed by it; POST /auth/announcements-seen
+	// marks them. Absent when none is waiting, and always for a newcomer.
+	Announcements []int64 `json:"announcements,omitempty"`
 	// Language is the language the interface speaks to this request in (ADR
 	// 0141): the one chosen, or else the first of Accept-Language that it
 	// has, or else English.
@@ -409,6 +421,7 @@ func (rs *Resolver) meOf(r *http.Request, a store.Account) Me {
 	out.Signup = rs.signupOpen()
 	out.Admin = a.Admin && !out.NeedsSecondFactor
 	out.TourSeen = rs.tourSeen(r, a.PrincipalID)
+	out.Announcements = rs.announcementsWaiting(r, a.PrincipalID)
 	out.Language, out.LanguageChoice = i18n.ForRequest(r, a.Language), i18n.Choice(r, a.Language)
 	rs.keepBrowserLanguage(r, a)
 	rs.decorate(r, &out)
@@ -479,6 +492,7 @@ func (rs *Resolver) handleMe(w http.ResponseWriter, r *http.Request) {
 		} else {
 			out.Kind = store.KindGuest
 			out.TourSeen = rs.tourSeen(r, p.ID)
+			out.Announcements = rs.announcementsWaiting(r, p.ID)
 		}
 	}
 	if rs.accounts != nil {
