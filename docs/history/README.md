@@ -22,7 +22,8 @@ truth, and [decisions/](../decisions/README.md) records what was decided and why
 | [dsl-yaml-plan.md](dsl-yaml-plan.md) | The plan for YAML game definitions |
 | [dsl-coverage-audit-plan.md](dsl-coverage-audit-plan.md) | The audit of what the DSL can express, and the additions it led to |
 | [patience-vocabulary-plan.md](patience-vocabulary-plan.md) | The patience vocabulary, the DSL audit's addition F |
-| [code-and-architecture-audit-plan.md](code-and-architecture-audit-plan.md) | Initial thoughts on a code and architecture audit, still open (issue #249) |
+| [code-and-architecture-audit-plan.md](code-and-architecture-audit-plan.md) | The plan for a code and architecture audit, and the maintainer's answers (issue #249) |
+| [code-and-architecture-audit-findings.md](code-and-architecture-audit-findings.md) | The audit's measurements, its findings ranked by risk times churn, and the order of pull requests it proposes |
 | [game-services-proposal.md](game-services-proposal.md) | A deferred proposal: games as services, in the server's process or their own, in place of the private overlay |
 | [wasm-packs-report.md](wasm-packs-report.md) | The report on the proof of concept of install packs (ADR 0147): its numbers, the recommendations and the verdict |
 | [plan-dependencies.md](plan-dependencies.md) | How the plans depended on each other, and the order they were built in |
