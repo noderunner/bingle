@@ -1,0 +1,115 @@
+# yaml-language-server: $schema=../../../../docs/tutorial.schema.json
+id: chess-special-moves
+kind: rules
+title: Special moves
+summary: Promotion, en passant and castling.
+series: Learn Chess
+order: 2
+game: chess
+seed: 1
+seat: 1             # you play White; the page plays Black
+# A white pawn has fought its way to g7, taking on h6 and g7 on the way.
+setup: [h2-h4, g7-g5, h4xg5, h7-h6, g5xh6, Bf8-g7, h6xg7, Nb8-c6]
+
+steps:
+  - name: Promotion
+    text: |
+      A pawn that reaches the **last rank** is **promoted**: it becomes a
+      queen, a rook, a bishop or a knight, as you choose. Your pawn on g7
+      can take the rook on h8, and so reaches the last rank.
+    play: [g7xh8=Q]
+    hint: Click the pawn on g7, then h8.
+    highlight: [h8]
+    arrow: [g7, h8]
+    reply: [a7-a6]
+
+  - name: Choosing the piece
+    text: |
+      After the pawn moves, **four buttons** offer the piece it becomes. The
+      queen is nearly always the best, which is why your pawn is now one.
+      Choosing a rook, a bishop or a knight is called **underpromotion**,
+      and is rare.
+
+  - name: A pawn's first step
+    text: |
+      A pawn on its first square may move two. Do it with your e-pawn, to
+      e4.
+    play: [e2-e4]
+    hint: Click the pawn on e2, then e4.
+    highlight: [e4]
+    reply: [b7-b6]
+
+  - name: Side by side
+    text: |
+      Push the pawn on to e5. Black's pawn on d7 is still on its first
+      square, and may move two.
+    play: [e4-e5]
+    hint: Click the pawn on e4, then e5.
+    highlight: [e5]
+    reply: [d7-d5]
+
+  - name: En passant
+    text: |
+      Black's pawn jumped over d6 and landed beside yours. A pawn that
+      passes your pawn like that can be taken **as if it had moved only one
+      square**, so you may capture it by moving to d6. This is **en
+      passant**, and it can be done **only on the very next move**.
+    play: [e5xd6]
+    hint: Click the pawn on e5, then d6, not d5.
+    highlight: [d6]
+    arrow: [e5, d6]
+    reply: [Qd8xd6]
+
+  - name: Getting ready to castle
+    text: |
+      Castling puts your king safe and brings a rook into play. It needs
+      the squares between the king and the rook to be empty, so first move
+      the knight out.
+    play: [Ng1-f3]
+    hint: Click the knight on g1, then f3.
+    highlight: [f3]
+    reply: [Bc8-b7]
+
+  - name: Clearing the way
+    text: |
+      Now the bishop, out of the way of the king and the rook.
+    play: [Bf1-e2]
+    hint: Click the bishop on f1, then e2.
+    highlight: [e2]
+    reply: [Nc6-b8]
+
+  - name: Castling
+    text: |
+      The king moves **two squares towards a rook**, and the rook jumps to
+      the square the king crossed. Move your king two squares to g1.
+    play: [O-O]
+    hint: Click the king on e1, then g1.
+    highlight: [g1]
+    arrow: [e1, g1]
+    reply: [Nb8-c6]
+
+  - name: When castling is not allowed
+    text: |
+      You may not castle if the king or that rook **has already moved**, if
+      there is a piece between them, if the king is **in check**, or if the
+      king would **cross or land on an attacked square**. Here the black
+      rook attacks f1, so the king may not cross it.
+    position:
+      v: 2
+      ext: {turn: 1, castling: KQ, fullmove: 1}
+      cells:
+        e1: [{piece: king, color: white}]
+        h1: [{piece: rook, color: white}]
+        a1: [{piece: rook, color: white}]
+        f8: [{piece: rook, color: black}]
+        e8: [{piece: king, color: black}]
+    arrow: [e1, g1]
+    highlight: [f1]
+    illegal: true
+
+  - name: What comes next
+    text: |
+      Castling to the other side, with the rook on a1, is done by moving the
+      king two squares to c1, and has the same conditions.
+
+      The next tutorial covers **How a game ends**.

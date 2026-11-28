@@ -2,6 +2,14 @@
 
 Ce qui a changé dans Bingle, du plus récent au plus ancien. Bingle Core (le serveur, le moteur et le client web) et chaque jeu ont leur propre version, et chaque entrée dit lesquels ont changé. Les entrées antérieures à la 0.124.0 ne sont qu’en anglais.
 
+## 0.151.1 - 2026-11-27
+
+### Bingle Core 0.151.1
+- Aucun changement en dehors des Échecs
+
+### Chess 0.3.0
+- Trois tutoriels enseignent les échecs : comment jouer, les coups spéciaux et comment une partie se termine
+
 ## 0.151.0 - 2026-11-27
 
 ### Bingle Core 0.151.0
