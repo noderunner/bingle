@@ -184,7 +184,10 @@ Served by the same binary as static assets plus lightweight JS (no SPA build pip
   turn once the wait since the game's last change has run out; the moves are
   recorded as the person's with `autoplay` set.
 * **Operations**: `BINGLE_RETENTION_DAYS` removes games nobody touched for
-  that long; hint, match and bot searches share bounded CPU slots.
+  that long; hint, match and bot searches share bounded CPU slots, and every
+  pool shares one CPU budget (`internal/cpu`, ADR 0162): background work
+  (batches, the ladder, `match_bots`, the environments) leaves a reserve to live
+  play and gives way to it between plies.
 * **Persistence**: `games` (with `lobby` and `clock`, the game clock of a game
   played with one), `players` (with `bot`), `moves`
   (with `notation`, `move_json`, `auto`, `locked`, `autoplay`), `reaction_prefs`,

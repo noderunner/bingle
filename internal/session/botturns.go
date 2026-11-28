@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/noderunner/bingle/internal/bots"
+	"github.com/noderunner/bingle/internal/cpu"
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/engine/state"
 	"github.com/noderunner/bingle/internal/metrics"
@@ -180,11 +181,15 @@ func (m *Manager) botMove(ctx context.Context, bot bots.Bot, roomCode string, co
 		// as it always did.
 		m.mx.SlotWait(metrics.SlotBot, time.Since(queued))
 		m.mx.SlotEnter(metrics.SlotBot)
+		// A reply in a room is live play: background work gives way to it
+		// (ADR 0162).
+		live := cpu.Shared().Live()
 		think, stop := context.WithTimeout(ctx, botThinkLimit)
 		searched := time.Now()
 		mv, err = bot.Choose(think, compiled, bs, seat, legal)
 		m.mx.BotSearch(bot.ID(), gameFamily(compiled), time.Since(searched))
 		stop()
+		live()
 		m.mx.SlotLeave(metrics.SlotBot)
 		<-botSlots
 	case <-ctx.Done():

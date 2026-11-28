@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/noderunner/bingle/internal/bots"
+	"github.com/noderunner/bingle/internal/cpu"
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/engine/state"
 	"github.com/noderunner/bingle/internal/metrics"
@@ -143,7 +144,10 @@ func (m *Manager) Hint(ctx context.Context, roomCode, name string, atSeq *int, n
 	case hintSlots <- struct{}{}:
 		m.mx.SlotWait(metrics.SlotHint, time.Since(queued))
 		m.mx.SlotEnter(metrics.SlotHint)
+		// A hint is for a player at a table: live play (ADR 0162).
+		live := cpu.Shared().Live()
 		defer func() {
+			live()
 			m.mx.SlotLeave(metrics.SlotHint)
 			<-hintSlots
 		}()

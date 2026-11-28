@@ -821,3 +821,21 @@ func TestLoad_BatchLimits(t *testing.T) {
 		}
 	}
 }
+
+func TestLoad_LiveCPUs(t *testing.T) {
+	clearTLSEnv(t)
+	t.Setenv("BINGLE_LIVE_CPUS", "")
+	if cfg, err := Load(); err != nil || cfg.LiveCPUs != 0 {
+		t.Errorf("default: got %d, %v, want 0 (the budget's own default)", cfg.LiveCPUs, err)
+	}
+	t.Setenv("BINGLE_LIVE_CPUS", "6")
+	if cfg, err := Load(); err != nil || cfg.LiveCPUs != 6 {
+		t.Errorf("6: got %d, %v", cfg.LiveCPUs, err)
+	}
+	for _, v := range []string{"0", "-2", "half", "1025"} {
+		t.Setenv("BINGLE_LIVE_CPUS", v)
+		if _, err := Load(); err == nil || !strings.Contains(err.Error(), "BINGLE_LIVE_CPUS") {
+			t.Errorf("BINGLE_LIVE_CPUS=%s: %v, want an error naming it", v, err)
+		}
+	}
+}

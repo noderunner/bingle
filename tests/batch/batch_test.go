@@ -7,9 +7,11 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/noderunner/bingle/internal/app"
 	"github.com/noderunner/bingle/internal/batch"
+	"github.com/noderunner/bingle/internal/cpu"
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	_ "github.com/noderunner/bingle/internal/games/all" // the studies, with the games
 )
@@ -65,5 +67,52 @@ func TestAGameWithoutAStudy(t *testing.T) {
 		if err := s.Validate(cat); err == nil {
 			t.Errorf("%s was accepted for Hex", name)
 		}
+	}
+}
+
+// A batch's game is background work (ADR 0162): while live play fills every
+// CPU it waits, and it plays as soon as live play leaves room.
+func TestABatchGameWaitsForLivePlay(t *testing.T) {
+	cat := catalog.NewCatalog()
+	for _, m := range app.BuiltinModules() {
+		if err := cat.RegisterModule(m); err != nil {
+			t.Fatal(err)
+		}
+	}
+	spec := batch.Spec{Base: "hex-7", Games: 1, Seed: 1, Workers: 1, Players: []batch.Player{{Bot: "random"}, {Bot: "random"}}}
+	if err := spec.Validate(cat); err != nil {
+		t.Fatal(err)
+	}
+	budget := cpu.Shared()
+	var live []func()
+	for range budget.Size() {
+		live = append(live, budget.Live())
+	}
+	played := make(chan error, 1)
+	go func() {
+		_, err := batch.PlayGame(context.Background(), cat, spec, 0)
+		played <- err
+	}()
+	select {
+	case err := <-played:
+		t.Fatalf("a batch's game played while live play held every CPU (%v)", err)
+	case <-time.After(100 * time.Millisecond):
+	}
+	for _, done := range live {
+		done()
+	}
+	select {
+	case err := <-played:
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-time.After(10 * time.Second):
+		t.Fatal("the game did not play once live play was done")
+	}
+	if st := budget.Stats(); st != (cpu.Stats{}) {
+		t.Errorf("the budget holds %+v after the game", st)
+	}
+	if got, want := batch.DefaultWorkers(), budget.BackgroundShare(); got != want {
+		t.Errorf("a batch's default workers are %d, the background share %d", got, want)
 	}
 }

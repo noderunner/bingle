@@ -223,6 +223,7 @@ func (m *Manager) run(id int64) {
 	}()
 	_ = m.st.SetBatchStatus(bg, id, store.BatchRunning, "")
 	var finished atomic.Int64
+	records := newGrouped(m.st, groupEvery)
 	err = Run(timeCtx, m.cat, spec, func(r Record) {
 		seating, _ := json.Marshal(r.Seating)
 		metrics, _ := json.Marshal(r.Metrics)
@@ -231,12 +232,13 @@ func (m *Manager) run(id int64) {
 			raw, _ := json.Marshal(r.Events)
 			events = string(raw)
 		}
-		_ = m.st.AddBatchGame(bg, store.BatchGame{
+		records.add(store.BatchGame{
 			BatchID: id, Index: r.Index, Seed: r.Seed, GameID: r.GameID, Seating: string(seating),
 			Winner: r.Winner, EndReason: r.EndReason, Plies: r.Plies, Rounds: r.Rounds,
 			Metrics: string(metrics), Events: events,
 		})
 	}, func(done int) { finished.Store(int64(done)) })
+	records.flush()
 	switch {
 	case int(finished.Load()) >= spec.Games:
 		_ = m.st.SetBatchStatus(bg, id, store.BatchDone, "")
@@ -249,6 +251,88 @@ func (m *Manager) run(id int64) {
 	default:
 		_ = m.st.SetBatchStatus(bg, id, store.BatchDone, "")
 	}
+}
+
+// groupEvery and groupMost are how a batch's records are grouped: written
+// together a quarter of a second after the first of them is kept (or after
+// the last write, if that is later), or at once when 256 are waiting. A batch
+// of quick games finishes hundreds a second, and one transaction each kept the
+// database's one writer from live play's moves for most of a second at a time
+// (ADR 0162); a slow batch's game is written within a quarter of a second of
+// its end.
+const (
+	groupEvery = 250 * time.Millisecond
+	groupMost  = 256
+)
+
+// grouped gathers a batch's finished games and writes them in few
+// transactions. A record never waits longer than every: one timer at most is
+// armed to write what is waiting. Writes are one at a time (wmu, taken before
+// mu), and once the last write (final) is done no other is made, so nothing is
+// written after the batch's row is marked finished or deleted.
+type grouped struct {
+	st    *store.Store
+	every time.Duration
+	wmu   sync.Mutex
+	mu    sync.Mutex
+	buf   []store.BatchGame
+	last  time.Time
+	timer *time.Timer
+	done  bool
+}
+
+func newGrouped(st *store.Store, every time.Duration) *grouped {
+	return &grouped{st: st, every: every, last: time.Now()}
+}
+
+// add keeps game, and writes what is waiting when it is due; otherwise it
+// makes sure a timer will.
+func (g *grouped) add(game store.BatchGame) {
+	g.mu.Lock()
+	g.buf = append(g.buf, game)
+	wait := g.every - time.Since(g.last)
+	if len(g.buf) < groupMost && wait > 0 {
+		if g.timer == nil {
+			g.timer = time.AfterFunc(wait, g.tick)
+		}
+		g.mu.Unlock()
+		return
+	}
+	g.mu.Unlock()
+	g.write(false)
+}
+
+// tick is the timer's: it writes what has waited.
+func (g *grouped) tick() {
+	g.mu.Lock()
+	g.timer = nil
+	g.mu.Unlock()
+	g.write(false)
+}
+
+// flush writes what is waiting, the batch's last write: nothing is written
+// after it.
+func (g *grouped) flush() { g.write(true) }
+
+func (g *grouped) write(final bool) {
+	g.wmu.Lock()
+	defer g.wmu.Unlock()
+	g.mu.Lock()
+	if g.done {
+		g.mu.Unlock()
+		return
+	}
+	if final {
+		g.done = true
+		if g.timer != nil {
+			g.timer.Stop()
+			g.timer = nil
+		}
+	}
+	out := g.buf
+	g.buf, g.last = nil, time.Now()
+	g.mu.Unlock()
+	_ = g.st.AddBatchGames(context.Background(), out)
 }
 
 // Cancel stops a running batch or drops a queued one.

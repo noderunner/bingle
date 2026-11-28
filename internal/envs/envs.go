@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/noderunner/bingle/internal/bots"
+	"github.com/noderunner/bingle/internal/cpu"
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/engine/state"
 )
@@ -433,8 +434,15 @@ func (e *Env) advanceBots(ctx context.Context, played *[]string) error {
 			return nil
 		}
 		// The opponent plays within the game's strategy guide, as it does at
-		// a table.
-		mv, err := e.opp.Choose(ctx, e.game, e.st, e.impulseSeat, state.GuidedMoves(e.game, e.st, e.impulseSeat, legal))
+		// a table. Its search is background work (ADR 0162): it waits for a
+		// slot of the server's CPU budget, behind live play, and a call that
+		// ends while it waits plays the first move, as a search cut short does.
+		var mv state.Selection
+		slot, err := cpu.Shared().Background(ctx)
+		if err == nil {
+			mv, err = e.opp.Choose(ctx, e.game, e.st, e.impulseSeat, state.GuidedMoves(e.game, e.st, e.impulseSeat, legal))
+			slot.Release()
+		}
 		if err != nil {
 			mv = legal[0]
 		}

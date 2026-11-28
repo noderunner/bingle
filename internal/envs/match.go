@@ -4,10 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"runtime"
 	"time"
 
 	"github.com/noderunner/bingle/internal/bots"
+	"github.com/noderunner/bingle/internal/cpu"
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/engine/state"
 )
@@ -87,10 +87,6 @@ type MatchResult struct {
 	Truncated bool `json:"truncated"`
 }
 
-// matchSlots limits concurrent matches to the number of CPUs; a match is
-// seconds of CPU and callers just queue.
-var matchSlots = make(chan struct{}, runtime.NumCPU())
-
 // PlayMatch plays a series of games between two built-in bots and returns
 // the tally (and, optionally, the games). It stops early, reporting what it
 // has, when ctx ends. It is the engine behind the match_bots MCP tool: a
@@ -116,12 +112,14 @@ func PlayMatch(ctx context.Context, cat *catalog.Catalog, opts MatchOptions) (Ma
 		}
 	}
 
-	select {
-	case matchSlots <- struct{}{}:
-		defer func() { <-matchSlots }()
-	case <-ctx.Done():
-		return MatchResult{}, ctx.Err()
+	// A match is background work (ADR 0162): it waits for a slot of the
+	// server's CPU budget, in turn with the batches, and gives way between
+	// plies to live play.
+	slot, err := cpu.Shared().Background(ctx)
+	if err != nil {
+		return MatchResult{}, err
 	}
+	defer slot.Release()
 
 	res := MatchResult{GameDefID: opts.GameDefID, BotA: opts.BotA, BotB: opts.BotB}
 	totalPlies := 0
@@ -162,7 +160,7 @@ func PlayMatch(ctx context.Context, cat *catalog.Catalog, opts MatchOptions) (Ma
 		if start == nil {
 			start = state.InitialState(game)
 		}
-		g := playOne(ctx, game, start, botForSeat, whoForSeat, maxPlies, opts)
+		g := playOne(ctx, slot, game, start, botForSeat, whoForSeat, maxPlies, opts)
 		g.FirstSeatBot = whoForSeat[state.StartSeat(game, start)]
 		res.Played++
 		totalPlies += g.Plies
@@ -191,7 +189,7 @@ func PlayMatch(ctx context.Context, cat *catalog.Catalog, opts MatchOptions) (Ma
 	return res, nil
 }
 
-func playOne(ctx context.Context, game *catalog.CompiledGame, start *state.BoardState, botForSeat map[int]bots.Bot, whoForSeat map[int]string, maxPlies int, opts MatchOptions) MatchGame {
+func playOne(ctx context.Context, slot *cpu.Slot, game *catalog.CompiledGame, start *state.BoardState, botForSeat map[int]bots.Bot, whoForSeat map[int]string, maxPlies int, opts MatchOptions) MatchGame {
 	var out MatchGame
 	st, seat := start, state.StartSeat(game, start)
 	keep := opts.KeepMoves
@@ -214,7 +212,7 @@ func playOne(ctx context.Context, game *catalog.CompiledGame, start *state.Board
 	}
 
 	for ply := 0; ply < maxPlies; ply++ {
-		if ctx.Err() != nil {
+		if ctx.Err() != nil || slot.GiveWay(ctx) != nil {
 			out.Winner = "unfinished"
 			finish(nil)
 			return out
