@@ -209,7 +209,7 @@ func TestAccountUI_AGuestKeyLinkResumesTheGames(t *testing.T) {
 	}
 	// The laptop takes a seat in a game (as the page does: a POST from the page).
 	var room string
-	if err := runSteps(laptop, stepEvalTo(`fetch("/api/games", {method: "POST", headers: {"Content-Type": "application/json", "X-Bingle-Session": "1"}, body: JSON.stringify({game_def_id: "tic-tac-toe", player_name: "Lia"})}).then(r => r.json()).then(j => j.room_code)`, &room, awaitPromise)); err != nil {
+	if err := runSteps(laptop, stepEvalTo(`import("/static/js/api.js").then(m => m.api.createGame({game_def_id: "tic-tac-toe", player_name: "Lia"})).then(j => j.room_code)`, &room, awaitPromise)); err != nil {
 		t.Fatal(err)
 	}
 	doJSONAs(t, newGuestKey(t, base), "POST", base+"/api/games/"+room+"/join", map[string]any{"player_name": "Bob"}, nil)
