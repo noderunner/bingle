@@ -6,7 +6,7 @@
 
 import { api } from "./api.js";
 import { t } from "./i18n.js";
-import { toast } from "./util.js";
+import { lastName, toast } from "./util.js";
 
 const SETUP_FILE = "bingle-3d-setup.toml";
 
@@ -21,7 +21,13 @@ if (button && menu) {
 		button.setAttribute("aria-expanded", "false");
 		if (refocus) button.focus();
 	};
+	// The setup file is the signed-in player's, or the guest's: the page cannot know the name.
+	const setup = document.getElementById("brand-menu-setup");
+	const nameSetup = () => {
+		if (setup) setup.textContent = t("bar.setup_file", { name: lastName() }).trim();
+	};
 	const show = () => {
+		nameSetup();
 		menu.hidden = false;
 		button.setAttribute("aria-expanded", "true");
 		items()[0]?.focus();
@@ -64,7 +70,7 @@ if (button && menu) {
 	// A download leaves the page where it is, so the menu closes behind it.
 	for (const link of menu.querySelectorAll("a[download]")) link.addEventListener("click", () => close(false));
 
-	document.getElementById("brand-menu-setup")?.addEventListener("click", async () => {
+	setup?.addEventListener("click", async () => {
 		close(false);
 		try {
 			const url = URL.createObjectURL(await api.clientSetup());

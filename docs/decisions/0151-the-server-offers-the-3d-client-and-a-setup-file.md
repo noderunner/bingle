@@ -33,7 +33,7 @@ becomes, and what a file that lands in a downloads folder may carry.
 - **The logo opens the menu, and the name beside it stays the link home.** The menu's first item is *Home* too,
   because the phone layout and a game fitted to the screen show the logo alone. It is written into the page by
   the server, so no page asks what is on offer.
-- **The menu names no product.** Its heading is *3D client*, and its items are the platforms and *Setup file*. So
+- **The menu names no product.** Its heading is *Download Game Client*, and its items are each platform's icon and version and *<name> Profile Configs*. So
   a branded instance needs no word of its own for the download, and the files keep `bingle-3d` in their names as
   the code keeps `BINGLE_*`.
 - **The setup file never carries a session. For an account it carries a sign-in code: one use, 24 hours.** A

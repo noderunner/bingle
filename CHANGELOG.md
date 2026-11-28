@@ -4,6 +4,11 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.145.1 - 2026-11-27
+
+### Bingle Core 0.145.1
+- The logo menu offers Download Game Client, with each platform's icon and version, and your Profile Configs
+
 ## 0.145.0 - 2026-11-27
 
 ### Bingle Core 0.145.0
