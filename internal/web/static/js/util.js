@@ -211,6 +211,11 @@ export function brandName() {
 	return brandMeta()?.content || "Bingle";
 }
 
+/** The link to this instance's Discord, or "" when it has none. */
+export function brandDiscord() {
+	return brandMeta()?.dataset.discord || "";
+}
+
 /** Where this instance's own icon is, if it has one. */
 function brandIcon() {
 	return brandMeta()?.dataset.icon || "";

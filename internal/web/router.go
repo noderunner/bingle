@@ -43,6 +43,7 @@ var templates = template.Must(template.New("").Funcs(template.FuncMap{
 	"brandName":     func() string { return config.DefaultBrandName },
 	"brandFooter":   func() string { return "bingle" },
 	"brandHasIcon":  func() bool { return false },
+	"discordURL":    func() string { return "" },
 	"brandIconURL":  func() string { return "/static/favicon.svg" },
 	"brandIconType": func() string { return "image/svg+xml" },
 	// Filled in for a router that offers the bingle-3d client (WithClientBuilds).
@@ -87,6 +88,7 @@ func brandedTemplates(brand config.Brand) *template.Template {
 		"brandName":     brand.DisplayName,
 		"brandFooter":   footer,
 		"brandHasIcon":  func() bool { return brand.Icon != nil },
+		"discordURL":    func() string { return brand.DiscordURL },
 		"brandIconURL":  func() string { return iconURL },
 		"brandIconType": func() string { return iconType },
 	})
