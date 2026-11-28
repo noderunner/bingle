@@ -5,6 +5,7 @@
 import { h, clear } from "./util.js";
 import { api } from "./api.js";
 import { t, tParts } from "./i18n.js";
+import { botLadder } from "./botladder.js";
 
 let mounted = false;
 
@@ -58,7 +59,8 @@ export async function mountRatings(host) {
 	);
 	const pick = h("select", { id: "leaderboard-game", "aria-label": t("rating.game") });
 	const body = h("div", {});
-	host.append(h("div", { class: "field", id: "leaderboard-pick", hidden: true }, pick), body);
+	// The bots have a ladder of their own, below the people's (ADR 0160).
+	host.append(h("div", { class: "field", id: "leaderboard-pick", hidden: true }, pick), body, botLadder({ id: "bot-ladder" }));
 	let games = [];
 	try {
 		games = (await api.ratedGames()).games;

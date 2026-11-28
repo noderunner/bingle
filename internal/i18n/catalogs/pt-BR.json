@@ -619,6 +619,10 @@
 	"rating.about": "Cada jogo tem o seu próprio rating, valendo para todos os tamanhos e variantes. Escolha {rated} ao montar uma partida de dois com relógio. Você aparece aqui depois de 5 partidas ranqueadas contra pelo menos 3 pessoas diferentes.",
 	"rating.game": "Jogo",
 	"rating.empty": "Ninguém jogou partidas ranqueadas suficientes para aparecer ainda.",
+	"rating.bots": "Rating dos bots",
+	"rating.bot": "Bot",
+	"rating.bot_games": "Partidas",
+	"rating.bots_empty": "Os bots ainda não jogaram pelo seu rating.",
 
 	"time.days": {"one": "{n} dia", "other": "{n} dias"},
 	"time.hours": {"one": "{n} hora", "other": "{n} horas"},

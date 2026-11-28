@@ -105,6 +105,14 @@ MCTS elsewhere.** Put differently:
   samples, which is the right instinct where the future is not knowable.
 * Many seats? Minimax is written for two; with three or more, prefer MCTS.
 
+## The bot ladder
+
+Once a day (at midnight UTC, unless the server is set otherwise) **tactical**, **minimax** and
+**MCTS** play each other a few games in each game of two seats, at the strength you meet them in a game, and rates them as it rates people:
+Glicko-2, starting at 1500, one rating per bot per game. A rating marked **?** is still settling.
+It tells you how strong each opponent is before you choose one, and whether a bot beats the one
+below it in that game at all. The bots' ratings are a ladder of their own: they never meet people's.
+
 ## Running a batch
 
 A batch plays the games in memory — no rooms, no move rows, no browser — and keeps the outcome of

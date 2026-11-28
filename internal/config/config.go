@@ -216,6 +216,10 @@ type Config struct {
 	// Translate; ADR 0143).
 	Translate Translate
 
+	// BotLadder is when and how much the bots play for their own ratings
+	// (see BotLadder; ADR 0160).
+	BotLadder BotLadder
+
 	// Connection shortens how game sockets are watched, for tests. It has no
 	// environment variable, and zero values mean the normal times.
 	Connection Connection
@@ -363,6 +367,29 @@ type Translate struct {
 // Enabled reports whether a translation service is set up.
 func (t Translate) Enabled() bool { return t.URL != "" }
 
+// BotLadder is the schedule of the bot ladder's runs (ADR 0160): once a day,
+// at a time of day in UTC, the built-in bots play each other in every game
+// family for ratings of their own.
+type BotLadder struct {
+	// Off turns the runs off (BINGLE_BOT_LADDER=off).
+	Off bool
+	// At is the time of day a run starts, as minutes after midnight UTC
+	// (BINGLE_BOT_LADDER, "HH:MM", default 00:00).
+	At int
+	// Games is how many games each pairing of bots plays in each family a run
+	// (BINGLE_BOT_LADDER_GAMES, default 2: one each way round).
+	Games int
+	// Limit bounds a whole run (BINGLE_BOT_LADDER_LIMIT, default 1h): what was
+	// played by then counts, and the rest waits for the next run.
+	Limit time.Duration
+}
+
+// The bot ladder's defaults: midnight UTC, two games a pairing, an hour at most.
+const (
+	DefaultBotLadderGames = 2
+	DefaultBotLadderLimit = time.Hour
+)
+
 // DefaultRTCStun is the STUN server used when BINGLE_RTC_STUN is not set.
 const DefaultRTCStun = "stun:stun.l.google.com:19302"
 
@@ -477,6 +504,11 @@ func Load() (Config, error) {
 	if err := loadTranslate(&cfg); err != nil {
 		return Config{}, err
 	}
+	ladder, err := loadBotLadder()
+	if err != nil {
+		return Config{}, err
+	}
+	cfg.BotLadder = ladder
 
 	stun, err := parseICEList("BINGLE_RTC_STUN", os.Getenv("BINGLE_RTC_STUN"), []string{"stun:", "stuns:"})
 	if err != nil {
@@ -998,6 +1030,38 @@ func loadTranslate(cfg *Config) error {
 	}
 	cfg.Translate = t
 	return nil
+}
+
+// loadBotLadder reads the BINGLE_BOT_LADDER* settings: a time of day in UTC
+// or off, the games a pairing and the time limit of a run.
+func loadBotLadder() (BotLadder, error) {
+	b := BotLadder{Games: DefaultBotLadderGames, Limit: DefaultBotLadderLimit}
+	if v := strings.ToLower(strings.TrimSpace(os.Getenv("BINGLE_BOT_LADDER"))); v != "" {
+		if v == "off" {
+			b.Off = true
+		} else {
+			at, err := time.Parse("15:04", v)
+			if err != nil {
+				return BotLadder{}, fmt.Errorf("config: BINGLE_BOT_LADDER must be a time of day in UTC, such as 00:00 or 03:30, or off, got %q", v)
+			}
+			b.At = at.Hour()*60 + at.Minute()
+		}
+	}
+	if v := strings.TrimSpace(os.Getenv("BINGLE_BOT_LADDER_GAMES")); v != "" {
+		n, err := strconv.Atoi(v)
+		if err != nil || n < 1 || n > 100 {
+			return BotLadder{}, fmt.Errorf("config: BINGLE_BOT_LADDER_GAMES must be a whole number from 1 to 100, got %q", v)
+		}
+		b.Games = n
+	}
+	if v := strings.TrimSpace(os.Getenv("BINGLE_BOT_LADDER_LIMIT")); v != "" {
+		d, err := time.ParseDuration(v)
+		if err != nil || d < time.Minute || d > 12*time.Hour {
+			return BotLadder{}, fmt.Errorf("config: BINGLE_BOT_LADDER_LIMIT must be a duration from 1m to 12h, got %q", v)
+		}
+		b.Limit = d
+	}
+	return b, nil
 }
 
 // readSecretFile reads a one-line secret from a file that only its owner may

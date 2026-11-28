@@ -170,6 +170,7 @@ func main() {
 
 	go sampler.Run(ctx)
 	go a.RunRetention(ctx, cfg.RetentionDays)
+	go a.RunBotLadder(ctx, cfg.BotLadder)
 	go a.Manager().RunAutoPlay(ctx, 0)
 	go a.Manager().RunRealTime(ctx)
 	go a.Manager().RunSchedules(ctx)

@@ -58,12 +58,15 @@ type Manager struct {
 	cancels map[int64]context.CancelFunc
 	queue   chan int64
 	reports map[int64]Report // finished batches' reports
+	// turn is held by whatever plays bot games on the batches' share of the
+	// machine: a batch, or a run of the bot ladder (Hold). One at a time.
+	turn chan struct{}
 }
 
 // NewManager starts the manager. Batches a stopped server left unfinished are
 // marked interrupted.
 func NewManager(st *store.Store, cat *catalog.Catalog) *Manager {
-	m := &Manager{st: st, cat: cat, cancels: map[int64]context.CancelFunc{}, queue: make(chan int64, 256), reports: map[int64]Report{}}
+	m := &Manager{st: st, cat: cat, cancels: map[int64]context.CancelFunc{}, queue: make(chan int64, 256), reports: map[int64]Report{}, turn: make(chan struct{}, 1)}
 	_ = st.InterruptBatches(context.Background())
 	go m.loop()
 	return m
@@ -96,7 +99,23 @@ func (m *Manager) Start(ctx context.Context, name string, spec Spec) (int64, err
 
 func (m *Manager) loop() {
 	for id := range m.queue {
+		m.turn <- struct{}{}
 		m.run(id)
+		<-m.turn
+	}
+}
+
+// Hold waits until no batch is playing and keeps the batches waiting until
+// release is called, so that other bot games on the batches' share of the
+// machine (the bot ladder, ADR 0160) never run beside a batch. It gives up
+// when ctx ends.
+func (m *Manager) Hold(ctx context.Context) (release func(), err error) {
+	select {
+	case m.turn <- struct{}{}:
+		var once sync.Once
+		return func() { once.Do(func() { <-m.turn }) }, nil
+	case <-ctx.Done():
+		return nil, ctx.Err()
 	}
 }
 

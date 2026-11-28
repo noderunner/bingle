@@ -32,6 +32,17 @@ func (h *handlers) handleLeaderboard(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"family": family, "players": list})
 }
 
+// handleBotLadder implements GET /bot-ratings: the bot ladder (ADR 0160), the
+// built-in bots' ratings in each game, apart from people's.
+func (h *handlers) handleBotLadder(w http.ResponseWriter, r *http.Request) {
+	list, err := h.mgr.BotLadder(r.Context())
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"games": list})
+}
+
 // handlePlayerRatings implements GET /players/{handle}/ratings: an account's
 // ratings. Others see those good enough for a leaderboard; the account itself
 // sees all of them.

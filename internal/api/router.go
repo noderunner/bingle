@@ -108,6 +108,7 @@ func NewRouter(mgr *session.Manager, opts ...Option) chi.Router {
 	r.Get("/games", h.handleListOpenGames)
 	r.Get("/ratings", h.handleRatedFamilies)
 	r.Get("/ratings/{family}", h.handleLeaderboard)
+	r.Get("/bot-ratings", h.handleBotLadder)
 	r.Get("/players/{handle}/ratings", h.handlePlayerRatings)
 	r.Get("/rated-games", h.handleRatedGames)
 	r.Post("/rated-games/{code}/remove", h.handleRemoveRatedGame)

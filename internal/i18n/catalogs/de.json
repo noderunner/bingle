@@ -619,6 +619,10 @@
 	"rating.about": "Jedes Spiel hat seine eigene Wertung, über alle Größen und Varianten. Wähle {rated}, wenn du eine Partie zu zweit mit Schachuhr einrichtest. Du erscheinst hier nach 5 gewerteten Partien gegen mindestens 3 verschiedene Personen.",
 	"rating.game": "Spiel",
 	"rating.empty": "Noch niemand hat genug gewertete Partien gespielt, um hier zu stehen.",
+	"rating.bots": "Bot-Wertungen",
+	"rating.bot": "Bot",
+	"rating.bot_games": "Partien",
+	"rating.bots_empty": "Die Bots haben noch nicht um ihre Wertung gespielt.",
 
 	"time.days": {"one": "{n} Tag", "other": "{n} Tage"},
 	"time.hours": {"one": "{n} Stunde", "other": "{n} Stunden"},

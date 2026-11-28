@@ -619,6 +619,10 @@
 	"rating.about": "Chaque jeu a sa propre cote, pour toutes ses tailles et variantes. Choisissez {rated} en préparant une partie à deux avec une pendule. Vous apparaissez ici après 5 parties classées contre au moins 3 personnes différentes.",
 	"rating.game": "Jeu",
 	"rating.empty": "Personne n’a encore joué assez de parties classées pour figurer ici.",
+	"rating.bots": "Cotes des bots",
+	"rating.bot": "Bot",
+	"rating.bot_games": "Parties",
+	"rating.bots_empty": "Les bots n’ont pas encore joué pour leur cote.",
 
 	"time.days": {"one": "{n} jour", "other": "{n} jours"},
 	"time.hours": {"one": "{n} heure", "other": "{n} heures"},

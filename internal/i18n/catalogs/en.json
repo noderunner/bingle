@@ -619,6 +619,10 @@
 	"rating.about": "Each game has its own rating, across all its sizes and variants. Choose {rated} when you set up a game of two with a game clock. You appear here after 5 rated games against at least 3 different people.",
 	"rating.game": "Game",
 	"rating.empty": "Nobody has played enough rated games to be listed yet.",
+	"rating.bots": "Bot ladder",
+	"rating.bot": "Bot",
+	"rating.bot_games": "Games",
+	"rating.bots_empty": "The bots have not played for their ladder yet.",
 
 	"time.days": {"one": "{n} day", "other": "{n} days"},
 	"time.hours": {"one": "{n} hour", "other": "{n} hours"},

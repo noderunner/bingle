@@ -418,6 +418,25 @@ CREATE TABLE IF NOT EXISTS rating_removals (
     recomputed    INTEGER NOT NULL DEFAULT 0
 );
 
+-- The bot ladder (ADR 0160): the built-in bots' ratings, one per bot per game
+-- family, written by the nightly run. It is a table of its own, with no
+-- account in it, so that no query for people's ratings can reach a bot and no
+-- bot's game can move a person's rating.
+CREATE TABLE IF NOT EXISTS bot_ratings (
+    bot           TEXT NOT NULL,
+    family        TEXT NOT NULL,
+    family_name   TEXT NOT NULL,
+    rating        REAL NOT NULL,
+    deviation     REAL NOT NULL,
+    volatility    REAL NOT NULL,
+    games         INTEGER NOT NULL DEFAULT 0,
+    won           INTEGER NOT NULL DEFAULT 0,
+    drawn         INTEGER NOT NULL DEFAULT 0,
+    lost          INTEGER NOT NULL DEFAULT 0,
+    updated_at    TIMESTAMP NOT NULL,
+    PRIMARY KEY (bot, family)
+);
+
 -- Counters per account, shared with the achievements plan, which adds keys.
 CREATE TABLE IF NOT EXISTS stats (
     account_id    INTEGER NOT NULL REFERENCES accounts(id),
