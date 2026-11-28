@@ -48,6 +48,12 @@ var templates = template.Must(template.New("").Funcs(template.FuncMap{
 	// Filled in for a router that offers the bingle-3d client (WithClientBuilds).
 	"clientMenu":   func() bool { return false },
 	"clientBuilds": func() []clientBuild { return nil },
+	// quickCode is a file name or a command inside a sentence.
+	"quickCode": func(s string) template.HTML {
+		return template.HTML("<code>" + template.HTMLEscapeString(s) + "</code>")
+	}, //nolint:gosec // escaped
+	// Filled in with the quick setup page's path when there is one (WithClientBuilds).
+	"clientSetupPage": func() string { return "" },
 	// clientDownload is one build's download button, for any page that offers the client.
 	"clientDownload": clientDownload,
 	// t is the words of a key in the page's language (ADR 0141):
@@ -127,6 +133,25 @@ var platformNames = map[string]string{
 	"steam-frame":    "Steam Frame",
 }
 
+// quickSetupPath is the page that walks a player through the client (ADR 0151). The
+// announcements and the logo menu link to it, so it stays where it is.
+const quickSetupPath = "/client"
+
+// quickSetupPlatform is one section of the quick setup page: a platform the page
+// has steps for, and the build the server offers for it.
+type quickSetupPlatform struct {
+	// ID is "windows" or "linux"; Program is the file to run, and Build is the archive.
+	ID, Program string
+	Build       clientBuild
+}
+
+// quickSetupPrograms are the platforms the page has steps for, by platform, and the
+// program each archive unpacks to. Steam Frame installs on the headset and has none.
+var quickSetupPrograms = []struct{ Platform, ID, Program string }{
+	{"windows-x86_64", "windows", "bingle-3d.exe"},
+	{"linux-x86_64", "linux", "./bingle-3d"},
+}
+
 // Option customises NewRouter.
 type Option func(*handlers)
 
@@ -142,9 +167,21 @@ func WithClientBuilds(set *clientbuilds.Set) Option {
 		for _, b := range set.Builds() {
 			builds = append(builds, clientBuild{Name: cmp.Or(platformNames[b.Platform], b.Platform), File: b.File, Version: b.Version, Icon: platformIcons[b.Platform]})
 		}
+		for _, q := range quickSetupPrograms {
+			for _, b := range builds {
+				if platformNames[q.Platform] == b.Name {
+					h.quickSetup = append(h.quickSetup, quickSetupPlatform{ID: q.ID, Program: q.Program, Build: b})
+				}
+			}
+		}
+		page := func() string { return "" }
+		if len(h.quickSetup) > 0 {
+			page = func() string { return quickSetupPath }
+		}
 		h.templates = h.templates.Funcs(template.FuncMap{
-			"clientMenu":   func() bool { return true },
-			"clientBuilds": func() []clientBuild { return builds },
+			"clientMenu":      func() bool { return true },
+			"clientBuilds":    func() []clientBuild { return builds },
+			"clientSetupPage": page,
 		})
 	}
 }
@@ -190,6 +227,9 @@ func NewRouter(mgr *session.Manager, brand config.Brand, accountLanguage func(*h
 	r.Get("/notify/stop", h.handleNotifyPage("stop"))
 	r.Post("/notify/confirm", h.handleNotifyConfirm)
 	r.Post("/notify/stop", h.handleNotifyStop)
+	if len(h.quickSetup) > 0 {
+		r.Get(quickSetupPath, h.handleQuickSetup)
+	}
 	r.Get("/batches", h.handleBatches)
 	r.Get("/batches/{id}", h.handleBatches)
 
@@ -262,6 +302,9 @@ type handlers struct {
 	mgr             *session.Manager
 	templates       *template.Template
 	accountLanguage func(*http.Request) string
+	// quickSetup are the platforms the quick setup page has steps for, empty when the
+	// server offers no build for any of them.
+	quickSetup []quickSetupPlatform
 }
 
 // page is what every template is given: the language the page is in (ADR
@@ -370,6 +413,21 @@ func (h *handlers) handleProfile(w http.ResponseWriter, r *http.Request) {
 	if err := h.render(r, w, "profile.html.tmpl", h.page(r)); err != nil {
 		http.Error(w, "web: rendering profile page failed", http.StatusInternalServerError)
 		return
+	}
+}
+
+// quickSetupPageData is client.html.tmpl's template data.
+type quickSetupPageData struct {
+	page
+	Platforms []quickSetupPlatform
+}
+
+// handleQuickSetup serves the page of steps for getting the client running against
+// this server: a section for each platform it has a build for.
+func (h *handlers) handleQuickSetup(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if err := h.render(r, w, "client.html.tmpl", quickSetupPageData{page: h.page(r), Platforms: h.quickSetup}); err != nil {
+		http.Error(w, "web: rendering the quick setup page failed", http.StatusInternalServerError)
 	}
 }
 

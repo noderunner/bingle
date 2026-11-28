@@ -1,14 +1,9 @@
 // The menu on the logo, on a server that offers the bingle-3d client (ADR 0151): the way
 // home, a download for each build the server has, and the client's setup file. The page
 // comes with the menu written out (templates/brand.html.tmpl); this opens and closes it,
-// moves through it with the keys a menu takes, and fetches the setup file, which is made
-// for whoever asks and so is asked for with a POST.
+// moves through it with the keys a menu takes, and fetches the setup file.
 
-import { api } from "./api.js";
-import { t } from "./i18n.js";
-import { lastName, toast } from "./util.js";
-
-const SETUP_FILE = "bingle-3d-setup.toml";
+import { downloadSetup, setupLabel } from "./client-setup.js";
 
 const button = document.getElementById("brand-menu-button");
 const menu = document.getElementById("brand-menu");
@@ -24,7 +19,7 @@ if (button && menu) {
 	// The setup file is the signed-in player's, or the guest's: the page cannot know the name, so it is put in at load and again on opening, as the name may be made up after.
 	const setup = document.getElementById("brand-menu-setup");
 	const nameSetup = () => {
-		if (setup) setup.textContent = t("bar.setup_file", { name: lastName() }).trim();
+		if (setup) setup.textContent = setupLabel();
 	};
 	nameSetup();
 	const show = () => {
@@ -71,19 +66,8 @@ if (button && menu) {
 	// A download leaves the page where it is, so the menu closes behind it.
 	for (const link of menu.querySelectorAll("a[download]")) link.addEventListener("click", () => close(false));
 
-	setup?.addEventListener("click", async () => {
+	setup?.addEventListener("click", () => {
 		close(false);
-		try {
-			const url = URL.createObjectURL(await api.clientSetup());
-			const link = document.createElement("a");
-			link.href = url;
-			link.download = SETUP_FILE;
-			document.body.append(link);
-			link.click();
-			link.remove();
-			setTimeout(() => URL.revokeObjectURL(url), 60000);
-		} catch (err) {
-			toast(err?.status ? err.message : t("bar.setup_failed"), "error");
-		}
+		downloadSetup();
 	});
 }

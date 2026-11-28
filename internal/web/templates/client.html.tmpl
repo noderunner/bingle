@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="{{.Lang}}" dir="{{.Dir}}">
+<head>
+	<meta charset="utf-8">
+	<meta name="bingle-version" content="{{engineVersion}}">
+	<meta name="bingle-brand" content="{{brandName}}"{{if brandHasIcon}} data-icon="{{brandIconURL}}"{{end}}>
+	<meta name="bingle-language" content="{{.Chosen}}" data-browser="{{.Browser}}">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>{{brandName}} — {{t .Lang "quick.title"}}</title>
+	<link rel="icon" type="{{brandIconType}}" href="{{brandIconURL}}">
+	<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+	<header class="topbar">
+		{{template "brand" .}}
+	</header>
+	<main class="page narrow" id="quick-setup">
+		<h1>{{t .Lang "quick.title"}}</h1>
+		{{range .Platforms}}
+		<section class="card quick-platform" id="quick-{{.ID}}" data-platform="{{.ID}}">
+			<h2>{{.Build.Name}}</h2>
+			<ol class="quick-steps">
+				<li>
+					<span>{{t $.Lang "quick.download"}}</span>
+					{{clientDownload .Build ""}}
+				</li>
+				<li>
+					{{if eq .ID "windows"}}<span>{{t $.Lang "quick.unpack_windows_html" "file" (quickCode .Build.File)}}</span>
+					{{else}}<span>{{t $.Lang "quick.unpack_linux"}}</span>
+					<pre class="quick-command"><code>tar -xzf {{.Build.File}}</code></pre>{{end}}
+				</li>
+				<li>
+					<span>{{t $.Lang "quick.profile"}}</span>
+					<button type="button" class="button quick-setup-file">{{t $.Lang "bar.setup_file" "name" ""}}</button>
+				</li>
+				<li>
+					<span>{{t $.Lang "quick.place_html" "file" (quickCode "bingle-3d-setup.toml")}}</span>
+				</li>
+				<li>
+					<span>{{t $.Lang "quick.run_html" "file" (quickCode .Program)}}</span>
+					{{if eq .ID "windows"}}<span class="muted small">{{t $.Lang "quick.windows_warning"}}</span>
+					{{else}}<span class="muted small">{{t $.Lang "quick.linux_needs"}}</span>{{end}}
+				</li>
+			</ol>
+		</section>
+		{{end}}
+		<p class="quick-expect">{{t .Lang "quick.expect"}}</p>
+	</main>
+	<footer class="site-footer"><sub title="{{t .Lang "footer.version" "brand" brandFooter}}"><bdi>{{brandFooter}} v{{engineVersion}}</bdi> · <bdi>{{t .Lang "footer.license"}}</bdi> · <a href="https://github.com/noderunner/bingle" target="_blank" rel="noopener noreferrer">GitHub</a></sub></footer>
+	<!-- First, so a fault in any module below is reported (docs/observability.md). -->
+	<script type="module" src="/static/js/errors.js"></script>
+{{template "brand-script" .}}	<script type="module" src="/static/js/client-page.js"></script>
+</body>
+</html>

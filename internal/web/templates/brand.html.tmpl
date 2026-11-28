@@ -7,7 +7,8 @@
 					<span class="brand-menu-heading" id="brand-menu-client">{{t .Lang "bar.client"}}</span>
 					{{range clientBuilds}}{{clientDownload . "menuitem"}}
 					{{end}}<button type="button" role="menuitem" tabindex="-1" id="brand-menu-setup">{{t .Lang "bar.setup_file" "name" ""}}</button>
-				</span>
+					{{with clientSetupPage}}<a role="menuitem" tabindex="-1" id="brand-menu-quick" href="{{.}}">{{t $.Lang "bar.quick_setup"}}</a>
+					{{end}}				</span>
 			</span></span>{{else}}<a class="brand" href="/"><span class="logo{{if brandHasIcon}} custom{{end}}"></span>{{brandName}}</a>{{end}}{{end}}
 
 {{/* The menu's script, among the page's own at the end of the body, where moving between
