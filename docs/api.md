@@ -22,7 +22,9 @@ patch for the schema's descriptions alone. A client ignores the fields it does n
 of the messages of that `api_version`, generated from the server's Go types: `x-endpoints` gives
 the request and response of each endpoint of the index, the lobby's calls among them, and of a
 signed-in account's calls (the token sign-in, `/auth/me`, `/auth/logout`, friends, `/here` and direct
-messages) and of voice chat (`/rtc/config` and a game's `/voice`), `x-error` the error body,
+messages), of voice chat (`/rtc/config` and a game's `/voice`) and of the practice batches (`/api/batches`,
+on a server that runs them; a spec and a report have JSON forms of their own, written out as `$defs/BatchSpec`,
+`$defs/StartBatchRequest` and `$defs/BatchReport`), `x-error` the error body,
 `$defs/WebSocketEvent` the events of `/ws/{code}`, `voice` and `rtc` among them, and `x-dm-events` and
 `$defs/DirectWebSocketEvent` those of `/ws-dm`. `$defs/SignalData` is what a browser puts in a
 call's messages, which the server passes on unread ([voice.md](voice.md#for-a-client-that-is-not-a-browser)).

@@ -13,7 +13,8 @@ import (
 // WithBatches mounts the bot practice batch endpoints (/batches) backed by bm.
 func WithBatches(bm *batch.Manager) Option { return func(h *handlers) { h.batches = bm } }
 
-// batchRequest is POST /batches' body.
+// batchRequest is POST /batches' body: a spec and a name. Its JSON form is
+// written out in StartBatchRequest (batch.SpecSchema).
 type batchRequest struct {
 	Name string `json:"name"`
 	batch.Spec
@@ -42,6 +43,25 @@ type batchListResponse struct {
 	// Limits are the ceilings on a batch and the allowances of a player (ADR
 	// 0161).
 	Limits batch.Limits `json:"limits"`
+}
+
+// batchReportResponse is GET /batches/{id}/report's body.
+type batchReportResponse struct {
+	Batch batch.Info `json:"batch"`
+	// Report aggregates the games finished so far.
+	Report batch.Report `json:"report"`
+}
+
+// batchGamesResponse is GET /batches/{id}/games' body.
+type batchGamesResponse struct {
+	// Games has one row per finished game.
+	Games []batch.GameInfo `json:"games"`
+}
+
+// batchEventsResponse is GET /batches/{id}/games/{n}/events' body.
+type batchEventsResponse struct {
+	// Events are the decisions of the game, in order.
+	Events []batch.Event `json:"events"`
 }
 
 func (h *handlers) handleBatchStart(w http.ResponseWriter, r *http.Request) {
@@ -110,7 +130,7 @@ func (h *handlers) handleBatchReport(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"batch": info, "report": rep})
+	writeJSON(w, http.StatusOK, batchReportResponse{Batch: info, Report: rep})
 }
 
 func (h *handlers) handleBatchGames(w http.ResponseWriter, r *http.Request) {
@@ -123,7 +143,7 @@ func (h *handlers) handleBatchGames(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"games": games})
+	writeJSON(w, http.StatusOK, batchGamesResponse{Games: games})
 }
 
 func (h *handlers) handleBatchEvents(w http.ResponseWriter, r *http.Request) {
@@ -141,7 +161,7 @@ func (h *handlers) handleBatchEvents(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"events": ev})
+	writeJSON(w, http.StatusOK, batchEventsResponse{Events: ev})
 }
 
 func (h *handlers) handleBatchCancel(w http.ResponseWriter, r *http.Request) {

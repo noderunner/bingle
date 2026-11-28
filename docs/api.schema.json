@@ -221,6 +221,605 @@
       ],
       "type": "object"
     },
+    "BatchBotReport": {
+      "description": "BotReport is one bot over a whole batch, whichever seat it played.",
+      "properties": {
+        "bot": {
+          "type": "string"
+        },
+        "draws": {
+          "type": "integer"
+        },
+        "games": {
+          "type": "integer"
+        },
+        "wins": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "bot",
+        "games",
+        "wins",
+        "draws"
+      ],
+      "type": "object"
+    },
+    "BatchCeilings": {
+      "description": "Ceilings are what one batch may ask for and use. A spec over one is refused before it is queued, and a batch that reaches its Minutes is ended (ADR 0161). The JSON names are those of a spec's \"limits\" (what an administrator may raise for one batch) and of GET /api/batches' \"limits\".",
+      "properties": {
+        "event_games": {
+          "type": "integer"
+        },
+        "games": {
+          "type": "integer"
+        },
+        "max_plies": {
+          "description": "MaxPlies bounds a game's length, Games the games of a batch and EventGames the games that keep their decisions.",
+          "type": "integer"
+        },
+        "mcts_iterations": {
+          "description": "MCTSIterations and MinimaxNodes bound each bot's search a move: what a spec may set for a player.",
+          "type": "integer"
+        },
+        "minimax_nodes": {
+          "type": "integer"
+        },
+        "minutes": {
+          "description": "Minutes is the wall-clock time of a batch from the moment it starts playing, its wait in the queue not counted.",
+          "type": "integer"
+        },
+        "workers": {
+          "description": "Workers is how many games one batch may play at once.",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "workers",
+        "mcts_iterations",
+        "minimax_nodes",
+        "max_plies",
+        "games",
+        "event_games",
+        "minutes"
+      ],
+      "type": "object"
+    },
+    "BatchDist": {
+      "description": "Dist summarises a list of numbers.",
+      "properties": {
+        "max": {
+          "type": "number"
+        },
+        "mean": {
+          "type": "number"
+        },
+        "min": {
+          "type": "number"
+        },
+        "p50": {
+          "type": "number"
+        },
+        "p90": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "min",
+        "mean",
+        "p50",
+        "p90",
+        "max"
+      ],
+      "type": "object"
+    },
+    "BatchEvent": {
+      "description": "Event is one decision of a game.",
+      "properties": {
+        "move": {
+          "type": "string"
+        },
+        "ply": {
+          "type": "integer"
+        },
+        "round": {
+          "type": "integer"
+        },
+        "seat": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "ply",
+        "seat",
+        "round",
+        "move"
+      ],
+      "type": "object"
+    },
+    "BatchEventsResponse": {
+      "description": "batchEventsResponse is GET /batches/{id}/games/{n}/events' body.",
+      "properties": {
+        "events": {
+          "description": "Events are the decisions of the game, in order.",
+          "items": {
+            "$ref": "#/$defs/BatchEvent"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "events"
+      ],
+      "type": "object"
+    },
+    "BatchGameInfo": {
+      "description": "GameInfo is a finished game in a listing (no metrics).",
+      "properties": {
+        "end_reason": {
+          "type": "string"
+        },
+        "game_id": {
+          "type": "string"
+        },
+        "has_events": {
+          "type": "boolean"
+        },
+        "index": {
+          "type": "integer"
+        },
+        "plies": {
+          "type": "integer"
+        },
+        "rounds": {
+          "type": "integer"
+        },
+        "seating": {
+          "items": {
+            "type": "string"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "seed": {
+          "type": "integer"
+        },
+        "winner": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "index",
+        "seed",
+        "game_id",
+        "seating",
+        "winner",
+        "end_reason",
+        "plies",
+        "rounds",
+        "has_events"
+      ],
+      "type": "object"
+    },
+    "BatchGamesResponse": {
+      "description": "batchGamesResponse is GET /batches/{id}/games' body.",
+      "properties": {
+        "games": {
+          "description": "Games has one row per finished game.",
+          "items": {
+            "$ref": "#/$defs/BatchGameInfo"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "games"
+      ],
+      "type": "object"
+    },
+    "BatchHistogram": {
+      "description": "Histogram is a count per bucket of equal width.",
+      "properties": {
+        "counts": {
+          "items": {
+            "type": "integer"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "lo": {
+          "type": "integer"
+        },
+        "width": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "lo",
+        "width",
+        "counts"
+      ],
+      "type": "object"
+    },
+    "BatchInfo": {
+      "description": "Info describes a batch for listings.",
+      "properties": {
+        "created_at": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "done": {
+          "type": "integer"
+        },
+        "error": {
+          "type": "string"
+        },
+        "finished_at": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "game_def_id": {
+          "type": "string"
+        },
+        "games": {
+          "description": "Games is how many the batch plays and Done how many it has finished.",
+          "type": "integer"
+        },
+        "games_per_minute": {
+          "description": "GamesPerMinute is the measured speed of a running or finished batch.",
+          "type": "number"
+        },
+        "id": {
+          "type": "integer"
+        },
+        "limit": {
+          "description": "Limit names the limit that ended the batch before its games were all played (\"time\"); its status is then cancelled. Empty when none did.",
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "spec": {
+          "$ref": "#/$defs/BatchSpec"
+        },
+        "started_at": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "status": {
+          "description": "Status is queued, running, done, cancelled, failed or interrupted (a stopped server left it unfinished).",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "game_def_id",
+        "status",
+        "games",
+        "done",
+        "created_at",
+        "spec"
+      ],
+      "type": "object"
+    },
+    "BatchLimits": {
+      "description": "Limits are the ceilings on a batch and the allowances of a player, set by the operator (ADR 0161).",
+      "properties": {
+        "event_games": {
+          "type": "integer"
+        },
+        "games": {
+          "type": "integer"
+        },
+        "games_per_day": {
+          "type": "integer"
+        },
+        "max_plies": {
+          "description": "MaxPlies bounds a game's length, Games the games of a batch and EventGames the games that keep their decisions.",
+          "type": "integer"
+        },
+        "mcts_iterations": {
+          "description": "MCTSIterations and MinimaxNodes bound each bot's search a move: what a spec may set for a player.",
+          "type": "integer"
+        },
+        "minimax_nodes": {
+          "type": "integer"
+        },
+        "minutes": {
+          "description": "Minutes is the wall-clock time of a batch from the moment it starts playing, its wait in the queue not counted.",
+          "type": "integer"
+        },
+        "queue": {
+          "description": "Queue is how many batches may wait for their turn, the whole server's.",
+          "type": "integer"
+        },
+        "queued_per_player": {
+          "description": "QueuedPerPlayer is how many batches one player may have queued or running, StoredPerPlayer how many they may keep, and GamesPerDay how many games they may start in 24 hours.",
+          "type": "integer"
+        },
+        "stored_per_player": {
+          "type": "integer"
+        },
+        "workers": {
+          "description": "Workers is how many games one batch may play at once.",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "workers",
+        "mcts_iterations",
+        "minimax_nodes",
+        "max_plies",
+        "games",
+        "event_games",
+        "minutes",
+        "queue",
+        "queued_per_player",
+        "stored_per_player",
+        "games_per_day"
+      ],
+      "type": "object"
+    },
+    "BatchListResponse": {
+      "description": "batchListResponse is GET /batches' body.",
+      "properties": {
+        "batches": {
+          "items": {
+            "$ref": "#/$defs/BatchInfo"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "default_workers": {
+          "description": "DefaultWorkers is how many games a batch plays at once when its spec does not say.",
+          "type": "integer"
+        },
+        "limits": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/BatchLimits"
+            }
+          ],
+          "description": "Limits are the ceilings on a batch and the allowances of a player (ADR 0161)."
+        }
+      },
+      "required": [
+        "batches",
+        "default_workers",
+        "limits"
+      ],
+      "type": "object"
+    },
+    "BatchPlayer": {
+      "description": "Player is one seat of the table and the bot that plays it.",
+      "properties": {
+        "bot": {
+          "description": "Bot is a built-in bot id: random, tactical, minimax or mcts.",
+          "type": "string"
+        },
+        "faction": {
+          "description": "Pick is what the seat plays as, in a game whose study picks per seat (a Cthulhu Wars cult: gc, cc, bg, ys, ww or sl). Any other game leaves it empty: its seats are the game's own.",
+          "type": "string"
+        },
+        "mcts_iterations": {
+          "description": "MCTSIterations bounds the mcts bot per move (it is reproducible and much faster than wall-clock time); MinimaxNodes bounds minimax.",
+          "type": "integer"
+        },
+        "minimax_nodes": {
+          "type": "integer"
+        },
+        "tuning": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "description": "Tuning replaces the shipped tuning of this pick's guide (see Study.Knobs); nil plays with the shipped one.",
+          "type": "object"
+        }
+      },
+      "required": [
+        "bot"
+      ],
+      "type": "object"
+    },
+    "BatchReport": {
+      "description": "What a batch's charts are drawn from: every number the report page shows, aggregated over the batch's games. A game with a study adds its own fields beside these (Cthulhu Wars' factions and area_names).",
+      "properties": {
+        "bots": {
+          "description": "How each bot fared, whichever seat it played.",
+          "items": {
+            "$ref": "#/$defs/BatchBotReport"
+          },
+          "type": "array"
+        },
+        "decided": {
+          "description": "How many of them had a winner.",
+          "type": "integer"
+        },
+        "end_reasons": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "description": "The games counted by how they ended.",
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        "games": {
+          "description": "The games the report counts.",
+          "type": "integer"
+        },
+        "plies": {
+          "$ref": "#/$defs/BatchDist"
+        },
+        "ply_buckets": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/BatchHistogram"
+            }
+          ],
+          "description": "A histogram of game length: counts[i] games had lo + i*width \u003c= plies \u003c lo + (i+1)*width."
+        },
+        "rounds": {
+          "$ref": "#/$defs/BatchDist"
+        },
+        "seats": {
+          "description": "How each seat of the table fared, which is where the advantage of moving first shows.",
+          "items": {
+            "$ref": "#/$defs/BatchSeatReport"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "games",
+        "decided",
+        "end_reasons",
+        "plies",
+        "rounds",
+        "ply_buckets"
+      ],
+      "type": "object"
+    },
+    "BatchReportResponse": {
+      "description": "batchReportResponse is GET /batches/{id}/report's body.",
+      "properties": {
+        "batch": {
+          "$ref": "#/$defs/BatchInfo"
+        },
+        "report": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/BatchReport"
+            }
+          ],
+          "description": "Report aggregates the games finished so far."
+        }
+      },
+      "required": [
+        "batch",
+        "report"
+      ],
+      "type": "object"
+    },
+    "BatchSeatReport": {
+      "description": "SeatReport is one seat of the table over a whole batch.",
+      "properties": {
+        "bots": {
+          "description": "Bots lists the bots that sat here (more than one when the batch moved them round the seats).",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "color": {
+          "type": "string"
+        },
+        "draws": {
+          "description": "Draws counts the games that ended with nobody winning, which belong to every seat at once; Unfinished those that ran out of plies.",
+          "type": "integer"
+        },
+        "games": {
+          "type": "integer"
+        },
+        "label": {
+          "type": "string"
+        },
+        "seat": {
+          "type": "integer"
+        },
+        "unfinished": {
+          "type": "integer"
+        },
+        "wins": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "seat",
+        "games",
+        "wins",
+        "draws",
+        "unfinished"
+      ],
+      "type": "object"
+    },
+    "BatchSpec": {
+      "description": "What a batch plays: the game, the bot in each seat, how many games and from what seed.",
+      "properties": {
+        "base": {
+          "description": "The game, e.g. cthulhu-wars-5p or hex-11. The number of players must equal its number of seats.",
+          "type": "string"
+        },
+        "event_games": {
+          "description": "How many games (the first ones) keep every decision.",
+          "type": "integer"
+        },
+        "games": {
+          "description": "How many games to play, at least 1 and at most the server's ceiling.",
+          "type": "integer"
+        },
+        "high_priests": {
+          "deprecated": true,
+          "description": "Read for a spec saved before options were general: true reads as the option hp. The server never sends it.",
+          "type": "boolean"
+        },
+        "limits": {
+          "$ref": "#/$defs/BatchCeilings",
+          "description": "The ceilings this one batch may use in place of the server's, each one that is set. Only an administrator's own session may send them (ADR 0161)."
+        },
+        "max_plies": {
+          "description": "Ends a game that runs too long as unfinished (default 3000).",
+          "type": "integer"
+        },
+        "options": {
+          "description": "The study's options for the table (Cthulhu Wars' hp, the High Priests).",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "players": {
+          "items": {
+            "$ref": "#/$defs/BatchPlayer"
+          },
+          "type": "array"
+        },
+        "rotate": {
+          "description": "Seat the players differently in every game (a cyclic shift), so that the order of play does not favour a cult.",
+          "type": "boolean"
+        },
+        "seed": {
+          "description": "The seed the games' seeds follow from.",
+          "type": "integer"
+        },
+        "workers": {
+          "description": "How many games are played at once, within the server's ceiling.",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "base",
+        "players",
+        "games",
+        "seed",
+        "rotate"
+      ],
+      "type": "object"
+    },
     "BlockedPlayer": {
       "description": "BlockedPlayer is one line of an account's blocks, as its profile shows them.",
       "properties": {
@@ -4346,6 +4945,94 @@
       ],
       "type": "object"
     },
+    "StartBatchRequest": {
+      "description": "A batch to start: its spec and a name.",
+      "properties": {
+        "base": {
+          "description": "The game, e.g. cthulhu-wars-5p or hex-11. The number of players must equal its number of seats.",
+          "type": "string"
+        },
+        "event_games": {
+          "description": "How many games (the first ones) keep every decision.",
+          "type": "integer"
+        },
+        "games": {
+          "description": "How many games to play, at least 1 and at most the server's ceiling.",
+          "type": "integer"
+        },
+        "high_priests": {
+          "deprecated": true,
+          "description": "Read for a spec saved before options were general: true reads as the option hp. The server never sends it.",
+          "type": "boolean"
+        },
+        "limits": {
+          "description": "The ceilings this one batch may use in place of the server's, each one that is set. Only an administrator's own session may send them (ADR 0161).",
+          "properties": {
+            "event_games": {
+              "type": "integer"
+            },
+            "games": {
+              "type": "integer"
+            },
+            "max_plies": {
+              "type": "integer"
+            },
+            "mcts_iterations": {
+              "type": "integer"
+            },
+            "minimax_nodes": {
+              "type": "integer"
+            },
+            "minutes": {
+              "type": "integer"
+            },
+            "workers": {
+              "type": "integer"
+            }
+          },
+          "type": "object"
+        },
+        "max_plies": {
+          "description": "Ends a game that runs too long as unfinished (default 3000).",
+          "type": "integer"
+        },
+        "name": {
+          "description": "What the batch is called, at most 200 characters.",
+          "type": "string"
+        },
+        "options": {
+          "description": "The study's options for the table (Cthulhu Wars' hp, the High Priests).",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "players": {
+          "items": {
+            "$ref": "#/$defs/BatchPlayer"
+          },
+          "type": "array"
+        },
+        "rotate": {
+          "description": "Seat the players differently in every game (a cyclic shift), so that the order of play does not favour a cult.",
+          "type": "boolean"
+        },
+        "seed": {
+          "description": "The seed the games' seeds follow from.",
+          "type": "integer"
+        },
+        "workers": {
+          "description": "How many games are played at once, within the server's ceiling.",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "base",
+        "players",
+        "games"
+      ],
+      "type": "object"
+    },
     "StartDTO": {
       "description": "StartDTO is a starting position: stacks per square (bottom first) and each color's reserve.",
       "properties": {
@@ -4850,9 +5537,9 @@
   },
   "$id": "https://github.com/noderunner/bingle/docs/api.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "description": "The requests, responses and WebSocket events of bingle's API, version 1.28.0. Generated from the Go types of the server: do not edit. Objects let unknown fields through: a client ignores those it does not know.",
+  "description": "The requests, responses and WebSocket events of bingle's API, version 1.29.0. Generated from the Go types of the server: do not edit. Objects let unknown fields through: a client ignores those it does not know.",
   "title": "Bingle API messages",
-  "x-api-version": "1.28.0",
+  "x-api-version": "1.29.0",
   "x-dm-events": {
     "badge": {
       "$ref": "#/$defs/BadgeEventData"
@@ -4877,6 +5564,7 @@
     }
   },
   "x-endpoints": {
+    "DELETE /api/batches/{id}": {},
     "GET /api": {
       "response": {
         "$ref": "#/$defs/IndexResponse"
@@ -4885,6 +5573,31 @@
     "GET /api/announcements": {
       "response": {
         "$ref": "#/$defs/AnnouncementsResponse"
+      }
+    },
+    "GET /api/batches": {
+      "response": {
+        "$ref": "#/$defs/BatchListResponse"
+      }
+    },
+    "GET /api/batches/{id}": {
+      "response": {
+        "$ref": "#/$defs/BatchInfo"
+      }
+    },
+    "GET /api/batches/{id}/games": {
+      "response": {
+        "$ref": "#/$defs/BatchGamesResponse"
+      }
+    },
+    "GET /api/batches/{id}/games/{n}/events": {
+      "response": {
+        "$ref": "#/$defs/BatchEventsResponse"
+      }
+    },
+    "GET /api/batches/{id}/report": {
+      "response": {
+        "$ref": "#/$defs/BatchReportResponse"
       }
     },
     "GET /api/bots": {
@@ -5003,6 +5716,19 @@
     "GET /auth/me": {
       "response": {
         "$ref": "#/$defs/MeResponse"
+      }
+    },
+    "POST /api/batches": {
+      "request": {
+        "$ref": "#/$defs/StartBatchRequest"
+      },
+      "response": {
+        "$ref": "#/$defs/BatchInfo"
+      }
+    },
+    "POST /api/batches/{id}/cancel": {
+      "response": {
+        "$ref": "#/$defs/BatchInfo"
       }
     },
     "POST /api/bot-matches": {
