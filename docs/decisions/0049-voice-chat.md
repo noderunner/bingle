@@ -16,4 +16,4 @@ Status: accepted (2026-10-25)
 
 ## Consequences
 
-Players see each other's addresses unless a relay is used (stated in the card). The mesh is fine for the seats of a game, not for large rooms. Video, spectators and an SFU are later work. Tests run two and three real browsers with Chrome's fake microphone; the 45 s expiry and TURN are not covered.
+Players see each other's addresses unless a relay is used (stated in the card). The mesh is fine for the seats of a game, not for large rooms. Video and an SFU are later work; spectators are decided against ([ADR 0158](0158-voice-chat-is-for-players-only.md)). Tests run two and three real browsers with Chrome's fake microphone; the 45 s expiry and TURN are not covered.

@@ -82,8 +82,7 @@ Goal: players in a room can set up direct audio connections.
   `rtc-join` / `rtc-leave` so peers know who is in the call. The server never looks
   inside the SDP; it only checks that sender and target are both connected to this
   room and forwards. Cap message size and rate.
-- Who may call: seated players and, if wanted, spectators in a listen-only mode
-  (a room setting; default players only).
+- Who may call: seated players only (spectators in a listen-only mode were decided against, ADR 0158).
 - Topology: **mesh** (each player connects to each other player). Fine for up to
   about 6 players for audio and small video. Cost per player is N-1 uploads, which
   is the reason for the SFU note in Stage 4.
@@ -158,7 +157,7 @@ mobile, symmetric NAT) need a TURN relay.
 - Where does the server run: public internet, or home LAN only? (Decides A/B/C.)
 - Domain name and DNS provider (needed for Let's Encrypt in all three options).
 - Audio only first, with video as a follow-up, or both from the start?
-- Should spectators hear or join the call?
+- Should spectators hear or join the call? No (ADR 0158).
 - Is a push-to-talk key wanted, or open mic with mute?
 
 ## Status log
@@ -177,7 +176,9 @@ mobile, symmetric NAT) need a TURN relay.
   offering; `js/voice.js`; STUN by default, TURN with expiring credentials
   (`BINGLE_RTC_STUN`/`TURN_URLS`/`TURN_SECRET`); `Permissions-Policy` on the game page. Decisions on the
   open questions (the owner said to go ahead): audio first, video later; players only (no spectators);
-  open microphone with mute, push to talk optional. Not done: video, listen-only spectators, an SFU,
+  open microphone with mute, push to talk optional. Not done: video, an SFU,
   a test of a real TURN relay.
 - 2026-11-20: what is not done became issues: video #243, spectators who listen #244, an SFU #245 and a
   test through a real TURN relay #246.
+- 2026-11-27: spectators who listen (#244) decided against: voice is for a game's players only, with no listen-only
+  mode ([ADR 0158](../decisions/0158-voice-chat-is-for-players-only.md)).
