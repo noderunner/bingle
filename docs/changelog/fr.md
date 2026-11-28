@@ -2,6 +2,11 @@
 
 Ce qui a changé dans Bingle, du plus récent au plus ancien. Bingle Core (le serveur, le moteur et le client web) et chaque jeu ont leur propre version, et chaque entrée dit lesquels ont changé. Les entrées antérieures à la 0.124.0 ne sont qu’en anglais.
 
+## 0.150.0 - 2026-11-27
+
+### Bingle Core 0.150.0
+- Vous pouvez bloquer un joueur depuis la fenêtre des amis, et le débloquer dans votre profil (API 1.24.0)
+
 ## 0.149.0 - 2026-11-27
 
 ### Bingle Core 0.149.0

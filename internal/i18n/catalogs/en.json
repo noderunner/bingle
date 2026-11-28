@@ -82,6 +82,9 @@
 	"settings.friend_invites": "Let other players invite me to games",
 	"settings.friend_presence": "Show when I am online",
 	"settings.presence_note_html": "Off, you look offline to your friends and are not in <em>Here now</em>. Friends cannot start a message or call with you, but you can write to them, and they can reply.",
+	"settings.blocked": "Blocked",
+	"settings.unblock": "Unblock",
+	"settings.unblock_who": "Unblock {name}",
 	"settings.no_badges": "No badges yet. Win a game against another player for your first.",
 	"settings.player_page_html": "<a id=\"badges-page\" href=\"/profile\">Your player page</a>, as other players see it.",
 	"settings.no_finished": "No finished games yet.",
@@ -178,6 +181,8 @@
 	"dm.invited": "{name} is invited.",
 	"dm.invite_failed": "The invitation was not sent.",
 	"dm.remove_confirm": "Remove {name} from your friends?",
+	"dm.block": "Block",
+	"dm.block_confirm": "Block {name}? They are not told, and you can unblock them in your profile.",
 
 	"footer.version": "The version of the {brand} engine",
 	"footer.license": "MIT License",

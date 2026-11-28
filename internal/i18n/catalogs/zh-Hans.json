@@ -82,6 +82,9 @@
 	"settings.friend_invites": "允许其他玩家邀请我参加对局",
 	"settings.friend_presence": "显示我何时在线",
 	"settings.presence_note_html": "关闭后，你在好友眼中显示为离线，也不会出现在<em>在线玩家</em>中。好友无法主动与你开始消息或通话，但你可以给他们写信，他们也可以回复。",
+	"settings.blocked": "已屏蔽",
+	"settings.unblock": "解除屏蔽",
+	"settings.unblock_who": "解除屏蔽 {name}",
 	"settings.no_badges": "还没有徽章。战胜另一位玩家即可获得第一枚。",
 	"settings.player_page_html": "<a id=\"badges-page\" href=\"/profile\">你的玩家页面</a>，即其他玩家看到的样子。",
 	"settings.no_finished": "还没有已结束的对局。",
@@ -178,6 +181,8 @@
 	"dm.invited": "已邀请 {name}。",
 	"dm.invite_failed": "邀请未发送。",
 	"dm.remove_confirm": "从好友中删除 {name}？",
+	"dm.block": "屏蔽",
+	"dm.block_confirm": "屏蔽 {name}？对方不会收到通知，你可以在资料中解除屏蔽。",
 
 	"footer.version": "{brand} 引擎的版本",
 	"footer.license": "MIT 许可证",

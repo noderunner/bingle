@@ -106,6 +106,10 @@
 			<label class="check"><input type="checkbox" id="friend-presence"> <span>{{t .Lang "settings.friend_presence"}}</span></label>
 			<p class="small muted">{{t .Lang "settings.presence_note_html"}}</p>
 			<p class="small" id="friend-settings-status" role="status"></p>
+			<div id="blocked-box" hidden>
+				<h3>{{t .Lang "settings.blocked"}}</h3>
+				<ul class="here-list" id="blocked-list"></ul>
+			</div>
 		</section>
 
 		</div>

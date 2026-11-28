@@ -526,6 +526,14 @@ CREATE TABLE IF NOT EXISTS friend_settings (
     show_presence INTEGER NOT NULL DEFAULT 1
 );
 
+-- Blocks (ADR 0156): blocker will not hear from blocked. Only the blocker sees the row.
+CREATE TABLE IF NOT EXISTS blocks (
+    blocker    INTEGER NOT NULL REFERENCES accounts(id),
+    blocked    INTEGER NOT NULL REFERENCES accounts(id),
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (blocker, blocked)
+);
+
 -- Invitations to a game, sent from the friends list: kept, as the friend may be away.
 CREATE TABLE IF NOT EXISTS game_invites (
     game_id      INTEGER NOT NULL REFERENCES games(id),

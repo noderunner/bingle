@@ -82,6 +82,9 @@
 	"settings.friend_invites": "ほかのプレイヤーから対局に招待されてもよい",
 	"settings.friend_presence": "オンライン状態を表示する",
 	"settings.presence_note_html": "オフにすると、フレンドからはオフラインに見え、<em>オンライン中</em>にも表示されません。フレンドからメッセージや通話を始めることはできませんが、あなたからは送ることができ、相手は返信できます。",
+	"settings.blocked": "ブロック中",
+	"settings.unblock": "ブロックを解除",
+	"settings.unblock_who": "{name} のブロックを解除",
 	"settings.no_badges": "まだバッジはありません。ほかのプレイヤーとの対局に勝つと、最初のバッジがもらえます。",
 	"settings.player_page_html": "ほかのプレイヤーから見た<a id=\"badges-page\" href=\"/profile\">あなたのプレイヤーページ</a>。",
 	"settings.no_finished": "終了した対局はまだありません。",
@@ -178,6 +181,8 @@
 	"dm.invited": "{name} を招待しました。",
 	"dm.invite_failed": "招待を送れませんでした。",
 	"dm.remove_confirm": "{name} をフレンドから外しますか？",
+	"dm.block": "ブロック",
+	"dm.block_confirm": "{name} をブロックしますか？相手には知らされず、プロフィールで解除できます。",
 
 	"footer.version": "{brand} エンジンのバージョン",
 	"footer.license": "MIT ライセンス",

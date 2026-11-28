@@ -82,6 +82,9 @@
 	"settings.friend_invites": "다른 플레이어가 나를 게임에 초대할 수 있게 하기",
 	"settings.friend_presence": "내가 접속 중일 때 표시하기",
 	"settings.presence_note_html": "끄면 친구들에게 오프라인으로 보이고 <em>지금 접속 중</em>에도 나타나지 않습니다. 친구가 먼저 메시지나 통화를 시작할 수는 없지만, 내가 친구에게 쓸 수 있고 친구는 답할 수 있습니다.",
+	"settings.blocked": "차단한 사용자",
+	"settings.unblock": "차단 해제",
+	"settings.unblock_who": "{name} 님 차단 해제",
 	"settings.no_badges": "아직 배지가 없습니다. 다른 플레이어를 상대로 게임에서 이기면 첫 배지를 받습니다.",
 	"settings.player_page_html": "다른 플레이어에게 보이는 <a id=\"badges-page\" href=\"/profile\">내 플레이어 페이지</a>.",
 	"settings.no_finished": "아직 끝난 게임이 없습니다.",
@@ -178,6 +181,8 @@
 	"dm.invited": "{name} 님을 초대했습니다.",
 	"dm.invite_failed": "초대를 보내지 못했습니다.",
 	"dm.remove_confirm": "{name} 님을 친구에서 삭제할까요?",
+	"dm.block": "차단",
+	"dm.block_confirm": "{name} 님을 차단할까요? 상대에게는 알리지 않으며, 프로필에서 차단을 해제할 수 있습니다.",
 
 	"footer.version": "{brand} 엔진 버전",
 	"footer.license": "MIT 라이선스",

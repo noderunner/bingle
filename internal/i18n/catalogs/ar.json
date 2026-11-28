@@ -82,6 +82,9 @@
 	"settings.friend_invites": "اسمح للاعبين الآخرين بدعوتي إلى المباريات",
 	"settings.friend_presence": "أظهر متى أكون متصلًا",
 	"settings.presence_note_html": "عند الإيقاف تظهر غير متصل لأصدقائك ولا تكون ضمن <em>الموجودون الآن</em>. لا يستطيع أصدقاؤك بدء رسالة أو مكالمة معك، لكن يمكنك أن تكتب إليهم، ويمكنهم الرد.",
+	"settings.blocked": "المحظورون",
+	"settings.unblock": "ارفع الحظر",
+	"settings.unblock_who": "ارفع الحظر عن {name}",
 	"settings.no_badges": "لا شارات بعد. فُز بمباراة ضد لاعب آخر لتحصل على أولى شاراتك.",
 	"settings.player_page_html": "<a id=\"badges-page\" href=\"/profile\">صفحتك كلاعب</a>، كما يراها اللاعبون الآخرون.",
 	"settings.no_finished": "لا مباريات منتهية بعد.",
@@ -178,6 +181,8 @@
 	"dm.invited": "دُعي {name}.",
 	"dm.invite_failed": "لم تُرسل الدعوة.",
 	"dm.remove_confirm": "أتزيل {name} من أصدقائك؟",
+	"dm.block": "احظر",
+	"dm.block_confirm": "أتحظر {name}؟ لن يُبلَّغ بذلك، ويمكنك رفع الحظر من ملفك الشخصي.",
 
 	"footer.version": "إصدار محرّك {brand}",
 	"footer.license": "رخصة MIT",

@@ -395,6 +395,11 @@ last said anything, and nothing is stored. Guests are not listed and see no list
 `GET` and `PUT /friends/settings` hold `mail_requests`, off by default, and `show_presence`, on by default
 ([ADR 0106](decisions/0106-presence-can-be-hidden.md)): off, the account is on no list and looks to anybody else as if it had gone,
 though it can write first, and `can_write` on a friend says that a friend who looks offline can be answered. Changes arrive as a `friends` event on `/ws-dm`.
+`POST /friends/block` and `POST /friends/unblock` take a `handle`, and `GET /friends/blocks` lists your own `blocked`
+([ADR 0156](decisions/0156-blocking-is-silent.md)). A block removes the friendship, and from then on the blocked account's
+requests and invitations to a muster are answered as usual but never reach you; messages, calls and invitations to games
+are refused as to anybody who is not a friend. You get `409` asking or answering somebody you have blocked, and `400`
+inviting them to a muster.
 
 **Who can find a game** ([ADR 0107](decisions/0107-who-can-find-a-game.md)). `POST /games` takes `reserved_seats` (`{"2": "ana"}`, friends of a
 signed-in creator, always with a lobby; otherwise `403`) and `invite_only`. `GET /games` then shows what this viewer may find: no invite-only
