@@ -18,10 +18,13 @@ var ErrNotFound = store.ErrBatchNotFound
 
 // Info describes a batch for listings.
 type Info struct {
-	ID         int64      `json:"id"`
-	Name       string     `json:"name"`
-	GameDefID  string     `json:"game_def_id"`
-	Status     string     `json:"status"`
+	ID        int64  `json:"id"`
+	Name      string `json:"name"`
+	GameDefID string `json:"game_def_id"`
+	// Status is queued, running, done, cancelled, failed or interrupted (a
+	// stopped server left it unfinished).
+	Status string `json:"status"`
+	// Games is how many the batch plays and Done how many it has finished.
 	Games      int        `json:"games"`
 	Done       int        `json:"done"`
 	Error      string     `json:"error,omitempty"`

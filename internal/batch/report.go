@@ -3,6 +3,7 @@ package batch
 import (
 	"encoding/json"
 	"math"
+	"reflect"
 	"sort"
 
 	"github.com/noderunner/bingle/internal/engine/catalog"
@@ -48,6 +49,38 @@ func (r Report) MarshalJSON() ([]byte, error) {
 		}
 	}
 	return json.Marshal(all)
+}
+
+// ReportSchema is the JSON Schema of a report as MarshalJSON writes it,
+// written out because the generator cannot reflect a type with a JSON form of
+// its own (ADR 0134). It lives beside Report so that the two change together,
+// and a test holds them to each other. ref gives the schema (a $ref) of a
+// nested type. The game's own part is more fields beside these, which an
+// object of the API lets through.
+func ReportSchema(ref func(reflect.Type) map[string]any) map[string]any {
+	list := func(t reflect.Type) map[string]any {
+		return map[string]any{"type": "array", "items": ref(t)}
+	}
+	return map[string]any{
+		"type":        "object",
+		"description": "What a batch's charts are drawn from: every number the report page shows, aggregated over the batch's games. A game with a study adds its own fields beside these (Cthulhu Wars' factions and area_names).",
+		"properties": map[string]any{
+			"games":       map[string]any{"type": "integer", "description": "The games the report counts."},
+			"decided":     map[string]any{"type": "integer", "description": "How many of them had a winner."},
+			"end_reasons": map[string]any{"type": []any{"object", "null"}, "additionalProperties": map[string]any{"type": "integer"}, "description": "The games counted by how they ended."},
+			"plies":       ref(reflect.TypeFor[Dist]()),
+			"rounds":      ref(reflect.TypeFor[Dist]()),
+			"ply_buckets": map[string]any{"allOf": []any{ref(reflect.TypeFor[Histogram]())}, "description": "A histogram of game length: counts[i] games had lo + i*width <= plies < lo + (i+1)*width."},
+			"seats":       withDescription(list(reflect.TypeFor[SeatReport]()), "How each seat of the table fared, which is where the advantage of moving first shows."),
+			"bots":        withDescription(list(reflect.TypeFor[BotReport]()), "How each bot fared, whichever seat it played."),
+		},
+		"required": []any{"games", "decided", "end_reasons", "plies", "rounds", "ply_buckets"},
+	}
+}
+
+func withDescription(s map[string]any, d string) map[string]any {
+	s["description"] = d
+	return s
 }
 
 // SeatReport is one seat of the table over a whole batch.

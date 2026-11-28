@@ -16,7 +16,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"slices"
+	"strings"
 	"sync"
 
 	"github.com/noderunner/bingle/internal/bots"
@@ -119,6 +121,56 @@ func (s *Spec) UnmarshalJSON(data []byte) error {
 		s.Options = append(s.Options, "hp")
 	}
 	return nil
+}
+
+// SpecSchema is the JSON Schema of a spec as the server reads and sends it:
+// what UnmarshalJSON accepts, written out because the generator cannot reflect
+// a type with a decoder of its own (ADR 0134). It lives beside Spec so that
+// the two change together, and a test holds them to each other. ref gives the
+// schema (a $ref) of a nested type.
+//
+// A request's spec (request true) requires only what Validate refuses to go
+// without, and its limits may name only some of the ceilings; a spec the server
+// sends carries every field but the optional ones.
+func SpecSchema(ref func(reflect.Type) map[string]any, request bool) map[string]any {
+	players := map[string]any{"type": "array", "items": ref(reflect.TypeFor[Player]())}
+	var limits map[string]any
+	if request {
+		props := map[string]any{}
+		ct := reflect.TypeFor[Ceilings]()
+		for i := range ct.NumField() {
+			props[strings.Split(ct.Field(i).Tag.Get("json"), ",")[0]] = map[string]any{"type": "integer"}
+		}
+		limits = map[string]any{"type": "object", "properties": props}
+	} else {
+		limits = ref(reflect.TypeFor[Ceilings]())
+	}
+	limits["description"] = "The ceilings this one batch may use in place of the server's, each one that is set. Only an administrator's own session may send them (ADR 0161)."
+	required := []any{"base", "players", "games", "seed", "rotate"}
+	description := "What a batch plays: the game, the bot in each seat, how many games and from what seed."
+	if request {
+		required = []any{"base", "players", "games"}
+		description = "A batch to start: its spec and a name."
+	}
+	return map[string]any{
+		"type":        "object",
+		"description": description,
+		"properties": map[string]any{
+			"base":        map[string]any{"type": "string", "description": "The game, e.g. cthulhu-wars-5p or hex-11. The number of players must equal its number of seats."},
+			"options":     map[string]any{"type": "array", "items": map[string]any{"type": "string"}, "description": "The study's options for the table (Cthulhu Wars' hp, the High Priests)."},
+			"players":     players,
+			"games":       map[string]any{"type": "integer", "description": "How many games to play, at least 1 and at most the server's ceiling."},
+			"seed":        map[string]any{"type": "integer", "description": "The seed the games' seeds follow from."},
+			"rotate":      map[string]any{"type": "boolean", "description": "Seat the players differently in every game (a cyclic shift), so that the order of play does not favour a cult."},
+			"max_plies":   map[string]any{"type": "integer", "description": "Ends a game that runs too long as unfinished (default 3000)."},
+			"event_games": map[string]any{"type": "integer", "description": "How many games (the first ones) keep every decision."},
+			"workers":     map[string]any{"type": "integer", "description": "How many games are played at once, within the server's ceiling."},
+			"limits":      limits,
+			"high_priests": map[string]any{"type": "boolean", "deprecated": true,
+				"description": "Read for a spec saved before options were general: true reads as the option hp. The server never sends it."},
+		},
+		"required": required,
+	}
 }
 
 // DefaultWorkers is how many games run at once when a spec does not say: the

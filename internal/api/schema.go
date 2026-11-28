@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/noderunner/bingle/internal/auth"
+	"github.com/noderunner/bingle/internal/batch"
 	"github.com/noderunner/bingle/internal/bots"
 	"github.com/noderunner/bingle/internal/clientbuilds"
 	"github.com/noderunner/bingle/internal/engine/dsl/schemagen"
@@ -59,6 +60,17 @@ var schemaEndpoints = []schemaEndpoint{
 	{route: "GET /api/me/games", response: reflect.TypeFor[ownGamesResponse]()},
 	{route: "GET /api/me/deals", response: reflect.TypeFor[ownDealsResponse]()},
 	{route: "POST /api/bot-matches", request: reflect.TypeFor[botMatchRequest](), response: reflect.TypeFor[botMatchResponse]()},
+
+	// Practice batches (ADR 0034, ADR 0161), on a server that runs them. Deleting
+	// one answers 204 with no body.
+	{route: "GET /api/batches", response: reflect.TypeFor[batchListResponse]()},
+	{route: "POST /api/batches", request: reflect.TypeFor[batchRequest](), response: reflect.TypeFor[batch.Info]()},
+	{route: "GET /api/batches/{id}", response: reflect.TypeFor[batch.Info]()},
+	{route: "GET /api/batches/{id}/report", response: reflect.TypeFor[batchReportResponse]()},
+	{route: "GET /api/batches/{id}/games", response: reflect.TypeFor[batchGamesResponse]()},
+	{route: "GET /api/batches/{id}/games/{n}/events", response: reflect.TypeFor[batchEventsResponse]()},
+	{route: "POST /api/batches/{id}/cancel", response: reflect.TypeFor[batch.Info]()},
+	{route: "DELETE /api/batches/{id}"},
 
 	// Voice chat (docs/voice.md): the network helpers of every call, and a
 	// game's call. Its messages arrive on /ws/{code}?only=voice.
@@ -206,6 +218,11 @@ func Schema(root string) ([]byte, error) {
 	m := schemagen.NewMessages(root, schemagen.MessageOptions{
 		Special: map[reflect.Type]map[string]any{
 			reflect.TypeFor[time.Time](): {"type": "string", "format": "date-time"},
+			// Types with a JSON form of their own: their schemas are written beside
+			// them (batch.SpecSchema, batch.ReportSchema) and added to the definitions below.
+			reflect.TypeFor[batch.Spec]():   {"$ref": "#/$defs/BatchSpec"},
+			reflect.TypeFor[batchRequest](): {"$ref": "#/$defs/StartBatchRequest"},
+			reflect.TypeFor[batch.Report](): {"$ref": "#/$defs/BatchReport"},
 			reflect.TypeFor[clockSeconds](): {"oneOf": []any{
 				map[string]any{"type": "integer"},
 				map[string]any{"type": "array", "items": map[string]any{"type": "integer"}},
@@ -244,6 +261,16 @@ func Schema(root string) ([]byte, error) {
 			reflect.TypeFor[rtcConfigResponse]():  "RTCConfigResponse",
 			reflect.TypeFor[iceServer]():          "ICEServer",
 			reflect.TypeFor[clientbuilds.Build](): "ClientBuild",
+			reflect.TypeFor[batch.Info]():         "BatchInfo",
+			reflect.TypeFor[batch.GameInfo]():     "BatchGameInfo",
+			reflect.TypeFor[batch.Event]():        "BatchEvent",
+			reflect.TypeFor[batch.Player]():       "BatchPlayer",
+			reflect.TypeFor[batch.Limits]():       "BatchLimits",
+			reflect.TypeFor[batch.Ceilings]():     "BatchCeilings",
+			reflect.TypeFor[batch.Dist]():         "BatchDist",
+			reflect.TypeFor[batch.Histogram]():    "BatchHistogram",
+			reflect.TypeFor[batch.SeatReport]():   "BatchSeatReport",
+			reflect.TypeFor[batch.BotReport]():    "BatchBotReport",
 		},
 	})
 
@@ -265,10 +292,20 @@ func Schema(root string) ([]byte, error) {
 
 	eventTypes, events := eventSchemas(m, schemaEvents)
 	directTypes, directEvents := eventSchemas(m, schemaDirectEvents)
+	// The batch's spec and report have JSON forms of their own, written beside
+	// them; the types they name are reflected first, so that they are defined.
+	ref := m.Response
+	batchSpec := batch.SpecSchema(ref, false)
+	startBatch := batch.SpecSchema(ref, true)
+	startBatch["properties"].(map[string]any)["name"] = map[string]any{"type": "string", "description": "What the batch is called, at most 200 characters."}
+	batchReport := batch.ReportSchema(ref)
 	defs, err := m.Defs()
 	if err != nil {
 		return nil, err
 	}
+	defs["BatchSpec"] = batchSpec
+	defs["StartBatchRequest"] = startBatch
+	defs["BatchReport"] = batchReport
 	defs["SignalData"] = signalData
 	for _, name := range signalMessages {
 		props := defs[name].(map[string]any)["properties"].(map[string]any)
