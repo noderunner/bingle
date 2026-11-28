@@ -24,9 +24,10 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/chromedp/cdproto/cdp"
 	"github.com/chromedp/cdproto/emulation"
-	"github.com/chromedp/cdproto/input"
 	"github.com/chromedp/chromedp"
+	"github.com/chromedp/chromedp/remote"
 )
 
 func post(base, path string, body any) map[string]any {
@@ -81,8 +82,10 @@ func main() {
 		_ = exec.Command("pkill", "-9", "-f", "--", filepath.Base(profile)).Run()
 		_ = os.RemoveAll(profile)
 	}()
+	// remote.WebSocket: the browser opens a debugging port instead of reading a pipe,
+	// which a wrapper script around a Flatpak Chromium (docs/test.md) cannot pass on.
 	allocCtx, cancelAlloc := chromedp.NewExecAllocator(context.Background(),
-		append(chromedp.DefaultExecAllocatorOptions[:], chromedp.UserDataDir(profile))...)
+		append(chromedp.DefaultExecAllocatorOptions[:], chromedp.UserDataDir(profile), remote.WebSocket)...)
 	defer cancelAlloc()
 	ctx, cancel := chromedp.NewContext(allocCtx)
 	defer cancel()
@@ -101,29 +104,37 @@ func main() {
 		scheme = "dark"
 	}
 	hover := os.Getenv("SHOT_HOVER")
-	var buf []byte
-	if err = chromedp.Run(ctx,
-		emulation.SetEmulatedMedia().WithFeatures([]*emulation.MediaFeature{{Name: "prefers-color-scheme", Value: scheme}}),
+	if err = chromedp.Do(ctx,
+		chromedp.Func(func(ctx context.Context, t *chromedp.Target) error {
+			_, err := cdp.Call(ctx, t, emulation.SetEmulatedMedia, emulation.SetEmulatedMediaParams{
+				Features: []*emulation.MediaFeature{{Name: "prefers-color-scheme", Value: scheme}},
+			})
+			return err
+		}),
 		chromedp.Navigate(base+"/"),
-		chromedp.Evaluate(`localStorage.setItem("bingle.games", JSON.stringify(`+games+`))`, nil),
+		chromedp.Evaluate[chromedp.Void](`localStorage.setItem("bingle.games", JSON.stringify(`+games+`))`),
 		chromedp.EmulateViewport(w, h),
 		chromedp.Navigate(base+"/game/"+room),
-		chromedp.WaitVisible("#board-svg", chromedp.ByQuery),
+		chromedp.WaitVisible(chromedp.CSS("#board-svg")),
 		chromedp.Sleep(800*time.Millisecond),
-		chromedp.ActionFunc(func(ctx context.Context) error {
+		chromedp.Func(func(ctx context.Context, t *chromedp.Target) error {
 			if hover == "" {
 				return nil
 			}
-			var rect []float64
 			js := fmt.Sprintf(`(function(){var e=document.querySelector('#board .cell[data-position=%q] .cell-hit'); if(!e) return []; var r=e.getBoundingClientRect(); return [r.x+r.width/2, r.y+r.height/2];})()`, hover)
-			if err := chromedp.Evaluate(js, &rect).Do(ctx); err != nil || len(rect) != 2 {
+			rect, err := chromedp.Evaluate[[]float64](js)(ctx, t)
+			if err != nil || len(rect) != 2 {
 				return err
 			}
-			return input.DispatchMouseEvent(input.MouseMoved, rect[0], rect[1]).Do(ctx)
+			_, err = chromedp.MouseEvent(chromedp.MouseMoved, rect[0], rect[1])(ctx, t)
+			return err
 		}),
 		chromedp.Sleep(300*time.Millisecond),
-		chromedp.FullScreenshot(&buf, 90),
 	); err != nil {
+		log.Fatal(err)
+	}
+	buf, err := chromedp.Run(ctx, chromedp.FullScreenshot(90))
+	if err != nil {
 		log.Fatal(err)
 	}
 	_ = os.WriteFile(out, buf, 0o644)

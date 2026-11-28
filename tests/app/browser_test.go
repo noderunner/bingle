@@ -9,12 +9,14 @@ package app_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"regexp"
 	"testing"
 	"time"
 
+	"github.com/chromedp/cdproto/cdp"
 	"github.com/chromedp/cdproto/emulation"
 	"github.com/chromedp/cdproto/input"
 	"github.com/chromedp/cdproto/network"
@@ -22,10 +24,11 @@ import (
 	"github.com/chromedp/cdproto/runtime"
 	"github.com/chromedp/chromedp"
 	"github.com/chromedp/chromedp/kb"
+	"github.com/chromedp/chromedp/remote"
 )
 
 // browserStep is one thing to do in a browser.
-type browserStep = chromedp.Action
+type browserStep = chromedp.Action[chromedp.Void]
 
 // browserOption is a setting of the browser a test starts (a flag, say).
 type browserOption = chromedp.ExecAllocatorOption
@@ -35,9 +38,7 @@ type evalOption = chromedp.EvaluateOption
 
 // awaitPromise makes an evaluation wait for the promise its expression returns
 // and give that promise's value.
-var awaitPromise evalOption = func(p *runtime.EvaluateParams) *runtime.EvaluateParams {
-	return p.WithAwaitPromise(true)
-}
+var awaitPromise evalOption = chromedp.EvalAwaitPromise
 
 // browserFlag is a command-line flag for the browser: browserFlag("mute-audio", true).
 func browserFlag(name string, value any) browserOption {
@@ -46,7 +47,28 @@ func browserFlag(name string, value any) browserOption {
 
 // runSteps runs the steps in the browser behind ctx, in order, until one fails.
 func runSteps(ctx context.Context, steps ...browserStep) error {
-	return chromedp.Run(ctx, steps...)
+	return chromedp.Do(ctx, steps...)
+}
+
+// stepCommand makes a step of one DevTools command with its parameters.
+func stepCommand[P, R any](cmd cdp.Command[P, R], params P) browserStep {
+	return chromedp.Func(func(ctx context.Context, t *chromedp.Target) error {
+		_, err := cdp.Call(ctx, t, cmd, params)
+		return err
+	})
+}
+
+// stepInto makes a step of an action that gives a value, and stores the value in
+// *out when the action succeeds.
+func stepInto[T any](action chromedp.Action[T], out *T) browserStep {
+	return func(ctx context.Context, t *chromedp.Target) (chromedp.Void, error) {
+		v, err := action(ctx, t)
+		if err != nil {
+			return chromedp.Void{}, err
+		}
+		*out = v
+		return chromedp.Void{}, nil
+	}
 }
 
 // stepNavigate loads url and waits for the page to load.
@@ -56,27 +78,23 @@ func stepNavigate(url string) browserStep { return chromedp.Navigate(url) }
 func stepReload() browserStep { return chromedp.Reload() }
 
 // stepWaitVisible waits until an element matching the CSS selector is visible.
-func stepWaitVisible(sel string) browserStep { return chromedp.WaitVisible(sel, chromedp.ByQuery) }
+func stepWaitVisible(sel string) browserStep { return chromedp.WaitVisible(chromedp.CSS(sel)) }
 
 // stepWaitReady waits until an element matching the CSS selector is ready.
-func stepWaitReady(sel string) browserStep { return chromedp.WaitReady(sel, chromedp.ByQuery) }
+func stepWaitReady(sel string) browserStep { return chromedp.WaitReady(chromedp.CSS(sel)) }
 
 // stepSleep waits for d, or until the browser's context ends.
 func stepSleep(d time.Duration) browserStep { return chromedp.Sleep(d) }
 
 // stepClick clicks the middle of the first element matching the CSS selector, with a
 // real mouse press.
-func stepClick(sel string) browserStep { return chromedp.Click(sel, chromedp.ByQuery) }
+func stepClick(sel string) browserStep { return chromedp.Click(chromedp.CSS(sel)) }
 
 // stepSendKeys types text into the first element matching the CSS selector.
-func stepSendKeys(sel, text string) browserStep {
-	return chromedp.SendKeys(sel, text, chromedp.ByQuery)
-}
+func stepSendKeys(sel, text string) browserStep { return chromedp.SendKeys(chromedp.CSS(sel), text) }
 
 // stepSetValue sets the value of the first element matching the CSS selector.
-func stepSetValue(sel, value string) browserStep {
-	return chromedp.SetValue(sel, value, chromedp.ByQuery)
-}
+func stepSetValue(sel, value string) browserStep { return chromedp.SetValue(chromedp.CSS(sel), value) }
 
 // The keys stepKey takes by name; any other key is its character.
 const (
@@ -90,10 +108,12 @@ const (
 func stepKey(key string) browserStep { return chromedp.KeyEvent(key) }
 
 // stepText stores the visible text of the first element matching the CSS selector in *out.
-func stepText(sel string, out *string) browserStep { return chromedp.Text(sel, out, chromedp.ByQuery) }
+func stepText(sel string, out *string) browserStep {
+	return stepInto(chromedp.Text(chromedp.CSS(sel)), out)
+}
 
 // stepLocation stores the page's URL in *out.
-func stepLocation(out *string) browserStep { return chromedp.Location(out) }
+func stepLocation(out *string) browserStep { return stepInto(chromedp.Location(), out) }
 
 // stepViewport sizes the page to w by h CSS pixels.
 func stepViewport(w, h int64) browserStep { return chromedp.EmulateViewport(w, h) }
@@ -106,92 +126,89 @@ func stepMobileViewport(w, h int64) browserStep {
 // stepPhone makes the page a portrait phone w by h CSS pixels at scale pixels per CSS
 // pixel, with a touch screen.
 func stepPhone(w, h int64, scale float64) browserStep {
-	return chromedp.ActionFunc(func(ctx context.Context) error {
-		err := emulation.SetDeviceMetricsOverride(w, h, scale, true).
-			WithScreenOrientation(&emulation.ScreenOrientation{Type: emulation.OrientationTypePortraitPrimary}).Do(ctx)
-		if err != nil {
-			return err
-		}
-		return emulation.SetTouchEmulationEnabled(true).Do(ctx)
-	})
+	return chromedp.Steps(
+		stepCommand(emulation.SetDeviceMetricsOverride, emulation.SetDeviceMetricsOverrideParams{
+			Width: w, Height: h, DeviceScaleFactor: scale, Mobile: true,
+			ScreenOrientation: &emulation.ScreenOrientation{Type: emulation.ScreenOrientationTypePortraitPrimary},
+		}),
+		stepCommand(emulation.SetTouchEmulationEnabled, emulation.SetTouchEmulationEnabledParams{Enabled: true}),
+	)
 }
 
 // stepDesktopMetrics fixes the page at w by h CSS pixels, scale pixels per CSS pixel,
 // as a desktop screen and not a phone.
 func stepDesktopMetrics(w, h int64, scale float64) browserStep {
-	return chromedp.ActionFunc(func(ctx context.Context) error {
-		return emulation.SetDeviceMetricsOverride(w, h, scale, false).Do(ctx)
+	return stepCommand(emulation.SetDeviceMetricsOverride, emulation.SetDeviceMetricsOverrideParams{
+		Width: w, Height: h, DeviceScaleFactor: scale,
 	})
 }
 
 // stepTouchScreen gives the page a touch screen with up to maxPoints fingers.
 func stepTouchScreen(maxPoints int64) browserStep {
-	return chromedp.ActionFunc(func(ctx context.Context) error {
-		return emulation.SetTouchEmulationEnabled(true).WithMaxTouchPoints(maxPoints).Do(ctx)
-	})
+	return stepCommand(emulation.SetTouchEmulationEnabled, emulation.SetTouchEmulationEnabledParams{Enabled: true, MaxTouchPoints: maxPoints})
 }
 
 // stepColorScheme makes the page's prefers-color-scheme "light" or "dark".
 func stepColorScheme(scheme string) browserStep {
-	return chromedp.ActionFunc(func(ctx context.Context) error {
-		return emulation.SetEmulatedMedia().WithFeatures([]*emulation.MediaFeature{{Name: "prefers-color-scheme", Value: scheme}}).Do(ctx)
+	return stepCommand(emulation.SetEmulatedMedia, emulation.SetEmulatedMediaParams{
+		Features: []*emulation.MediaFeature{{Name: "prefers-color-scheme", Value: scheme}},
 	})
 }
 
 // stepMouseMove moves the pointer to x, y (CSS pixels from the page's top left).
 func stepMouseMove(x, y float64) browserStep {
-	return chromedp.ActionFunc(func(ctx context.Context) error {
-		return input.DispatchMouseEvent(input.MouseMoved, x, y).Do(ctx)
-	})
+	return chromedp.MouseEvent(chromedp.MouseMoved, x, y)
 }
 
 // stepTouchTap touches the page at x, y and lifts the finger: a tap.
 func stepTouchTap(x, y float64) browserStep {
-	return chromedp.ActionFunc(func(ctx context.Context) error {
-		if err := input.DispatchTouchEvent(input.TouchStart, []*input.TouchPoint{{X: x, Y: y}}).Do(ctx); err != nil {
-			return err
-		}
-		return input.DispatchTouchEvent(input.TouchEnd, []*input.TouchPoint{}).Do(ctx)
-	})
+	return chromedp.Steps(
+		stepCommand(input.DispatchTouchEvent, input.DispatchTouchEventParams{
+			Type: input.DispatchTouchEventTypeTouchStart, TouchPoints: []*input.TouchPoint{{X: x, Y: y}},
+		}),
+		stepCommand(input.DispatchTouchEvent, input.DispatchTouchEventParams{
+			Type: input.DispatchTouchEventTypeTouchEnd, TouchPoints: []*input.TouchPoint{},
+		}),
+	)
 }
 
-// stepScreenshot stores a PNG of the whole page in *out.
-func stepScreenshot(out *[]byte) browserStep { return chromedp.FullScreenshot(out, 90) }
+// stepScreenshot stores an image of the whole page in *out (a JPEG of quality 90,
+// whatever name a test saves it under).
+func stepScreenshot(out *[]byte) browserStep { return stepInto(chromedp.FullScreenshot(90), out) }
 
 // stepViewportScreenshot stores a PNG of what the page's window shows in *out.
-func stepViewportScreenshot(out *[]byte) browserStep { return chromedp.CaptureScreenshot(out) }
+func stepViewportScreenshot(out *[]byte) browserStep {
+	return stepInto(chromedp.CaptureScreenshot(), out)
+}
 
 // stepNetworkEvents turns on the browser's network events, which listenWebSockets reads.
 func stepNetworkEvents() browserStep {
-	return chromedp.ActionFunc(func(ctx context.Context) error { return network.Enable().Do(ctx) })
+	return stepCommand(network.Enable, network.EnableParams{})
 }
 
 // stepAddScript has the browser run js in every page it loads from now on, before
 // the page's own scripts.
 func stepAddScript(js string) browserStep {
-	return chromedp.ActionFunc(func(ctx context.Context) error {
-		_, err := page.AddScriptToEvaluateOnNewDocument(js).Do(ctx)
-		return err
-	})
+	return stepCommand(page.AddScriptToEvaluateOnNewDocument, page.AddScriptToEvaluateOnNewDocumentParams{Source: js})
 }
 
 // stepSetCookie gives the browser the cookie name=value for the site at baseURL,
 // HttpOnly so that no page can read it.
 func stepSetCookie(baseURL, name, value string) browserStep {
-	return chromedp.ActionFunc(func(ctx context.Context) error {
-		return network.SetCookie(name, value).WithURL(baseURL).WithPath("/").WithHTTPOnly(true).Do(ctx)
+	return stepCommand(network.SetCookie, network.SetCookieParams{
+		Name: name, Value: value, URL: baseURL, Path: "/", HTTPOnly: new(true),
 	})
 }
 
 // stepCookie stores the value of the cookie called name in *out, or "" if there is none.
 func stepCookie(name string, out *string) browserStep {
-	return chromedp.ActionFunc(func(ctx context.Context) error {
-		cookies, err := network.GetCookies().Do(ctx)
+	return chromedp.Func(func(ctx context.Context, t *chromedp.Target) error {
+		res, err := cdp.Call(ctx, t, network.GetCookies, network.GetCookiesParams{})
 		if err != nil {
 			return err
 		}
 		*out = ""
-		for _, c := range cookies {
+		for _, c := range res.Cookies {
 			if c.Name == name {
 				*out = c.Value
 			}
@@ -202,23 +219,34 @@ func stepCookie(name string, out *string) browserStep {
 
 // stepEval evaluates the JavaScript expression js in the page and ignores its value.
 func stepEval(js string, opts ...evalOption) browserStep {
-	return chromedp.Evaluate(js, nil, opts...)
+	return chromedp.Evaluate[chromedp.Void](js, opts...)
 }
 
 // stepEvalTo evaluates the JavaScript expression js in the page and stores its value
 // in *out, which takes the type the value has (a string, an int, a bool, a slice, a
 // struct for an object). An expression that gives undefined is an error; one that
-// gives null leaves *out as it is.
+// gives null leaves *out as it is (chromedp 0.16 did so for every type; the current
+// one reports null as an error for a type that cannot be nil, which is turned back).
 func stepEvalTo[T any](js string, out *T, opts ...evalOption) browserStep {
-	return chromedp.Evaluate(js, out, opts...)
+	return func(ctx context.Context, t *chromedp.Target) (chromedp.Void, error) {
+		v, err := chromedp.Evaluate[T](js, opts...)(ctx, t)
+		if errors.Is(err, chromedp.ErrJSNull) {
+			return chromedp.Void{}, nil
+		}
+		if err != nil {
+			return chromedp.Void{}, err
+		}
+		*out = v
+		return chromedp.Void{}, nil
+	}
 }
 
 // listenJSErrors calls fn with the text of every uncaught exception of the page.
 // fn runs on the browser's event loop: it must be quick and must not drive the browser.
 func listenJSErrors(ctx context.Context, fn func(text string)) {
-	chromedp.ListenTarget(ctx, func(ev any) {
+	mustListen(ctx, func(ev any) {
 		if e, ok := ev.(*runtime.EventExceptionThrown); ok && e.ExceptionDetails != nil {
-			fn(e.ExceptionDetails.Error())
+			fn((&chromedp.ExceptionError{ExceptionDetails: e.ExceptionDetails}).Error())
 		}
 	})
 }
@@ -227,11 +255,20 @@ func listenJSErrors(ctx context.Context, fn func(text string)) {
 // stepNetworkEvents has run. fn runs on the browser's event loop: it must be quick and
 // must not drive the browser.
 func listenWebSockets(ctx context.Context, fn func(url string)) {
-	chromedp.ListenTarget(ctx, func(ev any) {
+	mustListen(ctx, func(ev any) {
 		if e, ok := ev.(*network.EventWebSocketCreated); ok {
 			fn(e.URL)
 		}
 	})
+}
+
+// mustListen calls fn with every event of the page behind ctx. Listening fails only for
+// a context that no browser test made (chromedp 0.16's ListenTarget panicked then too),
+// so a failure panics rather than leave a test listening to nothing.
+func mustListen(ctx context.Context, fn func(ev any)) {
+	if err := chromedp.Listen(ctx, fn); err != nil {
+		panic(fmt.Sprintf("listening to the browser's events: %v", err))
+	}
 }
 
 // closeBrowser closes the browser behind ctx, as a person closing the window would.
@@ -271,6 +308,11 @@ func chromedpContext(t *testing.T, timeout time.Duration, extra ...browserOption
 	}
 	opts := append([]chromedp.ExecAllocatorOption{}, chromedp.DefaultExecAllocatorOptions[:]...)
 	opts = append(opts, chromedp.UserDataDir(dir), chromedp.ExecPath(browser))
+	// chromedp talks to the browser through a pipe it hands to the process as
+	// file descriptors 3 and 4, and no longer through a debugging port. A wrapper
+	// script around a Flatpak Chromium (docs/test.md) does not pass them on, so
+	// the tests keep the port: the way chromedp 0.16 always did.
+	opts = append(opts, remote.WebSocket)
 	// The default 20s is too short for Chrome to start on a busy CI runner,
 	// where the packages' tests run side by side.
 	opts = append(opts, chromedp.WSURLReadTimeout(90*time.Second))

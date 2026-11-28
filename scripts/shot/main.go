@@ -21,8 +21,10 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/chromedp/cdproto/cdp"
 	"github.com/chromedp/cdproto/emulation"
 	"github.com/chromedp/chromedp"
+	"github.com/chromedp/chromedp/remote"
 )
 
 func post(base, path string, body any) map[string]any {
@@ -41,13 +43,18 @@ func post(base, path string, body any) map[string]any {
 	return out
 }
 
-func emulateLight() chromedp.Action {
-	return emulation.SetEmulatedMedia().WithFeatures([]*emulation.MediaFeature{{Name: "prefers-color-scheme", Value: "light"}})
+func emulateScheme(scheme string) chromedp.Action[chromedp.Void] {
+	return chromedp.Func(func(ctx context.Context, t *chromedp.Target) error {
+		_, err := cdp.Call(ctx, t, emulation.SetEmulatedMedia, emulation.SetEmulatedMediaParams{
+			Features: []*emulation.MediaFeature{{Name: "prefers-color-scheme", Value: scheme}},
+		})
+		return err
+	})
 }
 
-func emulateDark() chromedp.Action {
-	return emulation.SetEmulatedMedia().WithFeatures([]*emulation.MediaFeature{{Name: "prefers-color-scheme", Value: "dark"}})
-}
+func emulateLight() chromedp.Action[chromedp.Void] { return emulateScheme("light") }
+
+func emulateDark() chromedp.Action[chromedp.Void] { return emulateScheme("dark") }
 
 func main() {
 	if len(os.Args) < 3 {
@@ -86,25 +93,29 @@ func main() {
 		_ = exec.Command("pkill", "-9", "-f", "--", filepath.Base(profile)).Run()
 		_ = os.RemoveAll(profile)
 	}()
+	// remote.WebSocket: the browser opens a debugging port instead of reading a pipe,
+	// which a wrapper script around a Flatpak Chromium (docs/test.md) cannot pass on.
 	allocCtx, cancelAlloc := chromedp.NewExecAllocator(context.Background(),
-		append(chromedp.DefaultExecAllocatorOptions[:], chromedp.UserDataDir(profile))...)
+		append(chromedp.DefaultExecAllocatorOptions[:], chromedp.UserDataDir(profile), remote.WebSocket)...)
 	defer cancelAlloc()
 	ctx, cancel := chromedp.NewContext(allocCtx)
 	defer cancel()
 	ctx, cancel = context.WithTimeout(ctx, 90*time.Second)
 	defer cancel()
 
-	shot := func(name string, w, h int, url string, wait string, extra ...chromedp.Action) {
-		var buf []byte
-		actions := []chromedp.Action{
+	shot := func(name string, w, h int, url string, wait string, extra ...chromedp.Action[chromedp.Void]) {
+		actions := []chromedp.Action[chromedp.Void]{
 			chromedp.EmulateViewport(int64(w), int64(h)),
 			chromedp.Navigate(url),
-			chromedp.WaitVisible(wait, chromedp.ByQuery),
+			chromedp.WaitVisible(chromedp.CSS(wait)),
 			chromedp.Sleep(700 * time.Millisecond),
 		}
 		actions = append(actions, extra...)
-		actions = append(actions, chromedp.FullScreenshot(&buf, 90))
-		if err := chromedp.Run(ctx, actions...); err != nil {
+		if err := chromedp.Do(ctx, actions...); err != nil {
+			log.Fatalf("%s: %v", name, err)
+		}
+		buf, err := chromedp.Run(ctx, chromedp.FullScreenshot(90))
+		if err != nil {
 			log.Fatalf("%s: %v", name, err)
 		}
 		if err := os.WriteFile(filepath.Join(out, name+".png"), buf, 0o644); err != nil {
@@ -115,9 +126,9 @@ func main() {
 
 	// Remember Alice as the player in both rooms (the UI's identity store).
 	games := fmt.Sprintf(`[{"code":%q,"def":"tak-5x5","name":"Alice","ts":%d},{"code":%q,"def":"othello","name":"Alice","ts":%d}]`, room, time.Now().UnixMilli(), secondRoom, time.Now().UnixMilli())
-	if err := chromedp.Run(ctx,
+	if err := chromedp.Do(ctx,
 		chromedp.Navigate(base+"/"),
-		chromedp.Evaluate(`localStorage.setItem("bingle.games", JSON.stringify(`+games+`)); localStorage.setItem("bingle.name", JSON.stringify("Alice"))`, nil),
+		chromedp.Evaluate[chromedp.Void](`localStorage.setItem("bingle.games", JSON.stringify(`+games+`)); localStorage.setItem("bingle.name", JSON.stringify("Alice"))`),
 	); err != nil {
 		log.Fatal(err)
 	}
@@ -135,8 +146,8 @@ func main() {
 		post(base, "/api/games/"+stackRoom+"/moves", map[string]any{"player_name": m.who, "notation": m.mv})
 	}
 	games2 := fmt.Sprintf(`[{"code":%q,"def":"tak-5x5","name":"Alice","ts":%d}]`, stackRoom, time.Now().UnixMilli())
-	click := func(pos string) chromedp.Action {
-		return chromedp.Evaluate(fmt.Sprintf(`document.querySelector('#board .cell[data-position=%q] .cell-hit').dispatchEvent(new MouseEvent('click',{bubbles:true}))`, pos), nil)
+	click := func(pos string) chromedp.Action[chromedp.Void] {
+		return chromedp.Evaluate[chromedp.Void](fmt.Sprintf(`document.querySelector('#board .cell[data-position=%q] .cell-hit').dispatchEvent(new MouseEvent('click',{bubbles:true}))`, pos))
 	}
 	_ = games2
 
@@ -146,9 +157,9 @@ func main() {
 	shot("othello-desktop", 1280, 900, base+"/game/"+secondRoom, "#board-svg")
 
 	// Mid-move: pick up the 3-stack on a1 and start dropping.
-	if err := chromedp.Run(ctx,
+	if err := chromedp.Do(ctx,
 		chromedp.Navigate(base+"/"),
-		chromedp.Evaluate(`localStorage.setItem("bingle.games", JSON.stringify(`+games2+`))`, nil),
+		chromedp.Evaluate[chromedp.Void](`localStorage.setItem("bingle.games", JSON.stringify(`+games2+`))`),
 	); err != nil {
 		log.Fatal(err)
 	}
@@ -156,10 +167,10 @@ func main() {
 	shot("tak-stack-count", 1280, 900, base+"/game/"+stackRoom, "#board-svg", click("a1"), chromedp.Sleep(300*time.Millisecond))
 	shot("tak-stack-drops", 1280, 900, base+"/game/"+stackRoom, "#board-svg",
 		click("a1"), chromedp.Sleep(150*time.Millisecond),
-		chromedp.Evaluate(`document.querySelector('#count-picker button[data-count="2"]').click()`, nil), chromedp.Sleep(150*time.Millisecond),
+		chromedp.Evaluate[chromedp.Void](`document.querySelector('#count-picker button[data-count="2"]').click()`), chromedp.Sleep(150*time.Millisecond),
 		click("b1"), chromedp.Sleep(150*time.Millisecond), click("c1"), chromedp.Sleep(500*time.Millisecond))
 	shot("tak-history", 1280, 900, base+"/game/"+stackRoom, "#board-svg",
-		chromedp.Evaluate(`document.querySelector('#move-list button.mv[data-seq="6"]').click()`, nil), chromedp.Sleep(500*time.Millisecond))
+		chromedp.Evaluate[chromedp.Void](`document.querySelector('#move-list button.mv[data-seq="6"]').click()`), chromedp.Sleep(500*time.Millisecond))
 	shot("tak-dark", 1280, 900, base+"/game/"+stackRoom, "#board-svg",
 		emulateDark(), chromedp.Sleep(300*time.Millisecond))
 	shot("home-dark", 1200, 1000, base+"/", "#create-game-form",
