@@ -7,9 +7,11 @@ package app_test
 
 import (
 	"context"
+	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"testing/fstest"
 	"time"
@@ -26,14 +28,22 @@ func openTutorial(t *testing.T, ctx context.Context, base string) string {
 }
 
 // openTutorialOf starts a tutorial of a game from the browser and opens its room.
+//
+// The tutorial is started through the page's own api.js, as its list does, and
+// not with a fetch of the test's own: a new browser gets its guest from the
+// answer to its first state-changing request, and api.js holds the page's other
+// such requests until that answer has come. A fetch beside it went out with the
+// page's first one (the top bar's POST /api/dm/threads), each without a cookie,
+// so the server made two guests, and when the other's answer came last its
+// cookie replaced the one of the guest in the tutorial's seats: the page then
+// only watched the tutorial (#382).
 func openTutorialOf(t *testing.T, ctx context.Context, base, game, id string) string {
 	t.Helper()
 	if err := runSteps(ctx, stepNavigate(base+"/")); err != nil {
 		t.Fatal(err)
 	}
 	var room string
-	start := `fetch("/api/tutorials", {method: "POST", headers: {"Content-Type": "application/json", "X-Bingle-Session": "1"},
-		body: JSON.stringify({game_def_id: "` + game + `", tutorial: "` + id + `", player_name: "Lia"})}).then(r => r.json()).then(j => j.room_code)`
+	start := `import("/static/js/api.js").then(m => m.api.startTutorial({game_def_id: "` + game + `", tutorial: "` + id + `", player_name: "Lia"})).then(j => j.room_code)`
 	if err := runSteps(ctx, stepEvalTo(start, &room, awaitPromise)); err != nil || room == "" {
 		t.Fatalf("starting the tutorial: %q %v", room, err)
 	}
@@ -42,6 +52,66 @@ func openTutorialOf(t *testing.T, ctx context.Context, base, game, id string) st
 	}
 	waitJS(t, ctx, "the tutorial card", `document.getElementById("tutorial-count")`, 15*time.Second)
 	return room
+}
+
+// guestRace holds the start of a tutorial until the page's own first
+// state-changing request has come, and that request's answer until the start's
+// has gone: the order a busy machine sometimes gave them (#382). Each wait is
+// bounded, since a page that sends one only after the other has its answer
+// never sends the second while the first is held.
+func guestRace(h http.Handler) http.Handler {
+	arrived, started := make(chan struct{}), make(chan struct{})
+	var arrive, start sync.Once
+	wait := func(c chan struct{}) {
+		select {
+		case <-c:
+		case <-time.After(2 * time.Second):
+		}
+	}
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodGet:
+			h.ServeHTTP(w, r)
+		case r.URL.Path == "/api/tutorials":
+			wait(arrived)
+			h.ServeHTTP(w, r)
+			if f, ok := w.(http.Flusher); ok {
+				f.Flush()
+			}
+			start.Do(func() { close(started) })
+		default:
+			first := false
+			arrive.Do(func() { first = true; close(arrived) })
+			if first {
+				wait(started)
+			}
+			h.ServeHTTP(w, r)
+		}
+	})
+}
+
+// A tutorial started while the page is making its guest is the learner's: the
+// page's first request and the start do not each make a guest of their own.
+func TestWebTutorial_StartedWhileThePageMakesItsGuest(t *testing.T) {
+	a, err := app.New(newTestConfig(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = a.Close() })
+	registerFixtures(t, a)
+	srv := httptest.NewServer(guestRace(a.Router()))
+	t.Cleanup(srv.Close)
+	ctx, cancel := newChromedpContext(t, 60*time.Second)
+	defer cancel()
+
+	room := openTutorial(t, ctx, srv.URL)
+	if !awaitBool(t, ctx, `fetch("/api/games/`+room+`").then(r => r.json()).then(g => g.seats.some(s => s.yours))`) {
+		t.Fatal("the tutorial's seats are another guest's: the page only watches it")
+	}
+	waitStep(t, ctx, "1")
+	if evalBool(t, ctx, `!!document.getElementById("identity-gate")`) {
+		t.Error("the page offers to join the tutorial it started")
+	}
 }
 
 func waitStep(t *testing.T, ctx context.Context, n string) {

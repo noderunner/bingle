@@ -121,6 +121,12 @@ runs *steps* with `runSteps(ctx, stepNavigate(url), stepWaitVisible("#id"), ...)
 with `collectJSErrors`; a thing no helper does yet is a new `step*` function there, not a `chromedp` call in
 the test. A new release of `chromedp` is then a change to that one file.
 
+A request that changes something, sent from a page that has no guest yet, goes through the page's own
+`api.js` (`import("/static/js/api.js").then(m => m.api.startTutorial(...))`), not a `fetch` of the test's
+own. The guest comes from the answer to the page's first such request, and `api.js` holds back the page's
+others until that answer arrives. A `fetch` sent at the same time gets a guest of its own, and if its cookie
+lands first, the page's guest replaces it (#382).
+
 `chromedp` and `cdproto` are test-only (`go list -deps .` names neither) and move together. The browser is
 started with `remote.WebSocket`: since `chromedp` 0.21 the default is a pipe handed to the browser as file
 descriptors 3 and 4, which the wrapper script of a Flatpak Chromium above does not pass on.
