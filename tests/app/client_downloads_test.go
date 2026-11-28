@@ -136,6 +136,9 @@ func TestClientDownloads_WithoutADirectoryNothingChanges(t *testing.T) {
 			t.Errorf("%s %s: %d, want 404", c.method, c.path, resp.StatusCode)
 		}
 	}
+	if resp, _ := fetch(t, base+"/client"); resp.StatusCode != http.StatusNotFound {
+		t.Errorf("GET /client: %d, want 404", resp.StatusCode)
+	}
 	for _, path := range []string{"/", "/game/ABC123", "/login"} {
 		_, body := fetch(t, base+path)
 		if !strings.Contains(body, `<a class="brand" href="/"><span class="logo"></span>Bingle</a>`) || strings.Contains(body, "brand-menu") {
@@ -218,6 +221,7 @@ func TestClientDownloads_EveryPageHasTheMenuOnItsLogo(t *testing.T) {
 			`</svg>0.0.2</a>`,
 			`</svg>0.0.3</a>`,
 			`id="brand-menu-setup"> Profile Configs</button>`,
+			`<a role="menuitem" tabindex="-1" id="brand-menu-quick" href="/client">Client Quick Setup Guide</a>`,
 			`src="/static/js/brand-menu.js"`,
 		} {
 			if !strings.Contains(body, want) {
@@ -241,6 +245,37 @@ func TestClientDownloads_EveryPageHasTheMenuOnItsLogo(t *testing.T) {
 		if !strings.Contains(string(raw), want) {
 			t.Errorf("the German page lacks %s", want)
 		}
+	}
+}
+
+// The page of steps is at /client for each platform the server has a build for, with that
+// build's download in its first step; the menu's last item opens it.
+func TestClientDownloads_TheQuickSetupPageHasTheStepsOfEachPlatform(t *testing.T) {
+	_, base, _ := clientServer(t)
+	resp, body := fetch(t, base+"/client")
+	if resp.StatusCode != 200 || !strings.HasPrefix(resp.Header.Get("Content-Type"), "text/html") {
+		t.Fatalf("GET /client: %d %s", resp.StatusCode, resp.Header.Get("Content-Type"))
+	}
+	for _, want := range []string{
+		`<title>Bingle — Client Quick Setup</title>`,
+		`<h1>Client Quick Setup</h1>`,
+		`<h2>Windows</h2>`, `<h2>Linux</h2>`,
+		`<a class="button client-download" href="/api/client/files/` + windowsBuild + `" download title="0.0.3"`,
+		`<a class="button client-download" href="/api/client/files/` + linuxBuild + `" download title="0.0.2"`,
+		`<code>` + windowsBuild + `</code>`,
+		`<code>tar -xzf ` + linuxBuild + `</code>`,
+		`<code>bingle-3d.exe</code>`, `<code>./bingle-3d</code>`,
+		`<code>bingle-3d-setup.toml</code>`,
+		`glibc 2.35`, `Run anyway`,
+		`id="brand-menu-quick"`,
+		`src="/static/js/client-page.js"`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("the page lacks %s", want)
+		}
+	}
+	if strings.Contains(body, "Steam Frame") {
+		t.Error("the page has steps for the Steam Frame")
 	}
 }
 

@@ -48,8 +48,11 @@ answer `404`.
 
 ## What a player sees
 
-The logo in the top bar opens a menu: *Home*, then under *3D client* a download for each platform and *Setup
-file*. The name beside the logo stays the link home; the phone layout and a game fitted to the screen show the
+The logo in the top bar opens a menu: *Home*, then under *Download Game Client* a button for each platform (its icon
+and version), *<name> Profile Configs* (the setup file) and *Client Quick Setup Guide*, which opens the page at
+`/client`: numbered steps for Windows and Linux (download, unpack, profile configs, put the file beside the program,
+run), the platform of the browser first. The page is there only while the server offers builds, and its path is
+stable, so an announcement can link to it. The name beside the logo stays the link home; the phone layout and a game fitted to the screen show the
 logo alone, which is why the menu starts with *Home*. The menu names neither Bingle nor an instance's own name
 ([ADR 0110](decisions/0110-branding.md)), and a platform is shown by its name: Windows, Linux, Steam Frame, or the
 name in its archive's for one the page does not know.

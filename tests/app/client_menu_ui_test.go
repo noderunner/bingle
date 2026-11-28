@@ -41,7 +41,7 @@ func TestWebClientMenu_TheLogoOpensAMenuAndTheNameGoesHome(t *testing.T) {
 	if name == "" {
 		t.Fatal("the guest has no name")
 	}
-	if got := evalString(t, ctx, `[...document.querySelectorAll('#brand-menu [role="menuitem"]')].map((e) => e.textContent.trim()).join("|")`); got != "Home|0.0.2|0.0.3|"+name+" Profile Configs" {
+	if got := evalString(t, ctx, `[...document.querySelectorAll('#brand-menu [role="menuitem"]')].map((e) => e.textContent.trim()).join("|")`); got != "Home|0.0.2|0.0.3|"+name+" Profile Configs|Client Quick Setup Guide" {
 		t.Errorf("the menu offers %q", got)
 	}
 	if got := evalString(t, ctx, `document.getElementById("brand-menu-client").textContent`); got != "Download Game Client" {
@@ -72,9 +72,14 @@ func TestWebClientMenu_TheLogoOpensAMenuAndTheNameGoesHome(t *testing.T) {
 		t.Errorf("after the down arrow: %q", got)
 	}
 	key(kb.End)
-	if got := evalString(t, ctx, menuState); got != "open true brand-menu-setup" {
+	if got := evalString(t, ctx, menuState); got != "open true brand-menu-quick" {
 		t.Errorf("after End: %q", got)
 	}
+	key(kb.ArrowUp)
+	if got := evalString(t, ctx, menuState); got != "open true brand-menu-setup" {
+		t.Errorf("up from the last item: %q", got)
+	}
+	key(kb.End)
 	key(kb.ArrowDown)
 	if got := evalString(t, ctx, menuState); got != "open true brand-menu-home" {
 		t.Errorf("down from the last item: %q", got)
@@ -109,6 +114,25 @@ func TestWebClientMenu_TheLogoOpensAMenuAndTheNameGoesHome(t *testing.T) {
 	if got := evalString(t, ctx, menuState); !strings.HasPrefix(got, "closed false") {
 		t.Errorf("after the setup file: %q", got)
 	}
+
+	// The last item opens the quick setup page, which makes the same file from its own button.
+	clickSel(t, ctx, "#brand-menu-button")
+	clickSel(t, ctx, "#brand-menu-quick")
+	waitJS(t, ctx, "the quick setup page", `location.pathname === "/client" && document.querySelector(".quick-platform.current .quick-setup-file") !== null`, 15*time.Second)
+	if got := evalString(t, ctx, `[...document.querySelectorAll("#quick-setup .quick-platform")].map((s) => s.dataset.platform + ":" + s.querySelector(".quick-setup-file").textContent.trim()).join("|")`); got != "linux:"+name+" Profile Configs|windows:"+name+" Profile Configs" {
+		t.Errorf("the page's sections, the computer's own first, with their profile configs buttons: %q", got)
+	}
+	if err := chromedp.Run(ctx, chromedp.Evaluate(`(() => {
+		const make = URL.createObjectURL.bind(URL);
+		window.__setup = undefined;
+		URL.createObjectURL = (blob) => { blob.text().then((text) => { window.__setup = text; }); return make(blob); };
+		document.addEventListener("click", (ev) => { const a = ev.target.closest("a[download]"); if (a && a.href.startsWith("blob:")) { window.__saved = a.download; ev.preventDefault(); } }, true);
+		return true;
+	})()`, nil)); err != nil {
+		t.Fatal(err)
+	}
+	clickSel(t, ctx, ".quick-platform.current .quick-setup-file")
+	waitJS(t, ctx, "the setup file from the page", `typeof window.__setup === "string" && window.__saved === "bingle-3d-setup.toml"`, 10*time.Second)
 
 	// The name is the way home.
 	clickSel(t, ctx, ".topbar .brand-name")

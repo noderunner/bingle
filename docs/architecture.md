@@ -139,7 +139,8 @@ Served by the same binary as static assets plus lightweight JS (no SPA build pip
   operator keeps in `BINGLE_CLIENT_BUILDS`, a folder per version, read once at
   start-up. For each platform the newest that can use this server's API is
   hashed, listed at `GET /api/client` and sent from the disk; the logo of
-  every page then opens a menu with them and with a setup file
+  every page then opens a menu with them, a setup file and a quick setup
+  page (`/client`)
   (`internal/auth/clientsetup.go`), which names the server and carries a
   one-use sign-in code or a guest's key, never a session (ADR 0151,
   [client-builds.md](client-builds.md)).
