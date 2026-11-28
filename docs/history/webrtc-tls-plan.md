@@ -118,7 +118,8 @@ mobile, symmetric NAT) need a TURN relay.
   port range); say so in the README.
 - If rooms ever need more than about 6 voices, or recording, replace the mesh by an
   SFU (LiveKit is the usual open-source choice). Keep the client behind a small
-  interface in `voice.js` so that swap is local.
+  interface in `voice.js` so that swap is local. Decided 2026-11-28: no SFU until growth needs one, and then
+  it is the default ([ADR 0159](../decisions/0159-no-media-server-until-growth-needs-one.md)).
 
 ## Security and privacy
 
@@ -182,3 +183,5 @@ mobile, symmetric NAT) need a TURN relay.
   test through a real TURN relay #246.
 - 2026-11-27: spectators who listen (#244) decided against: voice is for a game's players only, with no listen-only
   mode ([ADR 0158](../decisions/0158-voice-chat-is-for-players-only.md)).
+- 2026-11-28: an SFU (#245): none is built until growth brings an actual need, and then an SFU is the default strategy
+  ([ADR 0159](../decisions/0159-no-media-server-until-growth-needs-one.md)).
