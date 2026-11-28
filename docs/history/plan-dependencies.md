@@ -120,5 +120,5 @@ The couplings that would cost the most if missed:
   #249 (with the chromedp migration #234 and a prototype version's page module #235); the tournaments plan's
   *Later* list, a ladder #236, elimination #237, games of more seats #238 and a bot ladder #239, and removing a
   rating #240; the game-services proposal #241; Courtfall's tutorial #242. From other plans and threads: voice
-  video #243, listening spectators #244 (decided against, ADR 0158), an SFU #245 and a TURN relay test #246; blocking a user #247; the last
+  video #243, listening spectators #244 (decided against, ADR 0158), an SFU #245 (none until growth needs one, ADR 0159) and a TURN relay test #246; blocking a user #247; the last
   Cthulhu Wars rules in the shared page #248; and, in the private overlay, retuning its bots.
