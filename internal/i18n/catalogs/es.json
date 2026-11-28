@@ -619,6 +619,10 @@
 	"rating.about": "Cada juego tiene su propia puntuación, para todos sus tamaños y variantes. Elige {rated} al preparar una partida de dos con reloj. Apareces aquí tras 5 partidas clasificatorias contra al menos 3 personas distintas.",
 	"rating.game": "Juego",
 	"rating.empty": "Todavía nadie ha jugado suficientes partidas clasificatorias para aparecer.",
+	"rating.bots": "Puntuaciones de los bots",
+	"rating.bot": "Bot",
+	"rating.bot_games": "Partidas",
+	"rating.bots_empty": "Los bots aún no han jugado por su puntuación.",
 
 	"time.days": {"one": "{n} día", "other": "{n} días"},
 	"time.hours": {"one": "{n} hora", "other": "{n} horas"},

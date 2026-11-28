@@ -619,6 +619,10 @@
 	"rating.about": "每个游戏都有自己的等级分，涵盖它的所有尺寸和变体。设置有计时的两人对局时选择{rated}。与至少 3 位不同的玩家下满 5 局计分对局后，你会出现在这里。",
 	"rating.game": "游戏",
 	"rating.empty": "还没有人下够计分对局，暂无人上榜。",
+	"rating.bots": "机器人等级分",
+	"rating.bot": "机器人",
+	"rating.bot_games": "对局数",
+	"rating.bots_empty": "机器人尚未进行等级分对局。",
 
 	"time.days": {"other": "{n} 天"},
 	"time.hours": {"other": "{n} 小时"},

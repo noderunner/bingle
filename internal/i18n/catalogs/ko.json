@@ -619,6 +619,10 @@
 	"rating.about": "게임마다 레이팅이 따로 있으며, 그 게임의 모든 크기와 변형에 공통입니다. 대국 시계가 있는 2인 게임을 준비할 때 {rated}을(를) 고르세요. 서로 다른 3명 이상을 상대로 레이팅 게임을 5판 하면 여기에 나타납니다.",
 	"rating.game": "게임",
 	"rating.empty": "아직 순위에 오를 만큼 레이팅 게임을 한 사람이 없습니다.",
+	"rating.bots": "봇 레이팅",
+	"rating.bot": "봇",
+	"rating.bot_games": "게임 수",
+	"rating.bots_empty": "봇들이 아직 레이팅 게임을 하지 않았습니다.",
 
 	"time.days": {"other": "{n}일"},
 	"time.hours": {"other": "{n}시간"},

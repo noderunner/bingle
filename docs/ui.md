@@ -176,8 +176,10 @@ selection, and its `gestures` are the clicks that enter it.
   away gives the choice up. The game page has `#rated-badge`, each seat a
   `.badge.rating[data-rating]` with the change once the game is over, and
   `#rating-note` when a result did not count. Auto-Play is not offered. The home page's *Ratings* tab (`#panel-ratings`, `js/ratings.js`) has
-  `#leaderboard-game` and `#leaderboard tr[data-handle]`, and the profile has
-  `#ratings-box`.
+  `#leaderboard-game` and `#leaderboard tr[data-handle]`, then the bot ladder
+  (`#bot-ladder`, `js/botladder.js`: a game's `select` and `tr[data-bot]`, ADR 0160),
+  which the guide to the bots repeats at the end of its section on it
+  (`#bot-ladder-guide`); the profile has `#ratings-box`.
 
 * **Tournaments.** The home page's *Tournaments* tab (`#panel-tournaments`,
   `js/tournaments.js`) lists them in `#tournament-list`, and offers `#tournament-new`

@@ -17,6 +17,7 @@ import (
 	"github.com/noderunner/bingle/internal/api"
 	"github.com/noderunner/bingle/internal/auth"
 	"github.com/noderunner/bingle/internal/batch"
+	"github.com/noderunner/bingle/internal/botladder"
 	"github.com/noderunner/bingle/internal/bots"
 	"github.com/noderunner/bingle/internal/clientbuilds"
 	"github.com/noderunner/bingle/internal/config"
@@ -569,6 +570,13 @@ func (a *App) RunRetention(ctx context.Context, days int) {
 			purge()
 		}
 	}
+}
+
+// RunBotLadder plays the bot ladder's runs on their schedule until ctx ends
+// (ADR 0160), each in the batches' turn, and does nothing when they are off.
+func (a *App) RunBotLadder(ctx context.Context, cfg config.BotLadder) {
+	opts := botladder.Options{Off: cfg.Off, At: cfg.At, Games: cfg.Games, Limit: cfg.Limit}
+	botladder.New(a.store, a.catalog, a.batches.Hold, opts, a.log).Run(ctx)
 }
 
 // Seeded is the administrator this App made for an empty database, or nil.

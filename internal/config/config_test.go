@@ -735,3 +735,47 @@ func TestLoad_DiscordURL(t *testing.T) {
 		t.Errorf("a link elsewhere: %v", err)
 	}
 }
+
+func TestLoad_BotLadder(t *testing.T) {
+	clearTLSEnv(t)
+	for _, k := range []string{"BINGLE_BOT_LADDER", "BINGLE_BOT_LADDER_GAMES", "BINGLE_BOT_LADDER_LIMIT"} {
+		t.Setenv(k, "")
+	}
+	cfg, err := Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := (BotLadder{At: 0, Games: DefaultBotLadderGames, Limit: DefaultBotLadderLimit}); cfg.BotLadder != want {
+		t.Errorf("default: got %+v, want %+v (every midnight UTC)", cfg.BotLadder, want)
+	}
+	for _, c := range []struct {
+		at, games, limit string
+		want             BotLadder
+		bad              bool
+	}{
+		{at: "03:30", want: BotLadder{At: 210, Games: 2, Limit: time.Hour}},
+		{at: " OFF ", want: BotLadder{Off: true, Games: 2, Limit: time.Hour}},
+		{at: "23:59", games: "6", limit: "90m", want: BotLadder{At: 1439, Games: 6, Limit: 90 * time.Minute}},
+		{at: "24:00", bad: true},
+		{at: "3am", bad: true},
+		{at: "0 0 * * *", bad: true},
+		{games: "0", bad: true},
+		{games: "101", bad: true},
+		{limit: "30s", bad: true},
+		{limit: "13h", bad: true},
+	} {
+		t.Setenv("BINGLE_BOT_LADDER", c.at)
+		t.Setenv("BINGLE_BOT_LADDER_GAMES", c.games)
+		t.Setenv("BINGLE_BOT_LADDER_LIMIT", c.limit)
+		cfg, err := Load()
+		if c.bad {
+			if err == nil {
+				t.Errorf("%+v: want an error", c)
+			}
+			continue
+		}
+		if err != nil || cfg.BotLadder != c.want {
+			t.Errorf("%+v: got %+v, %v", c, cfg.BotLadder, err)
+		}
+	}
+}

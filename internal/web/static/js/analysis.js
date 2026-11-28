@@ -13,6 +13,7 @@ import { rateBars } from "./charts.js";
 import { renderMarkdown } from "./markdown.js";
 import { t, tParts } from "./i18n.js";
 import { seatKey } from "./paint.js";
+import { botLadder } from "./botladder.js";
 
 const SETUP_KEY = "bingle.analysis";
 const STATUS_TEXT = { queued: "batch.queued", running: "batch.running", done: "batch.done", cancelled: "batch.cancelled", failed: "batch.failed", interrupted: "batch.interrupted" };
@@ -273,6 +274,13 @@ export async function openBotGuide() {
 		// The window's title is the guide's: its own first heading is not repeated.
 		const { node } = renderMarkdown(text.replace(/^# .*\n+/, ""), { idPrefix: "bots", assetBase: "/api/bot-guide/assets/" });
 		box.append(node);
+		// The section on the bot ladder ends with the ladder itself (ADR 0160).
+		const section = box.querySelector("#botsmd-the-bot-ladder");
+		if (section) {
+			let end = section;
+			while (end.nextElementSibling && !/^H[12]$/.test(end.nextElementSibling.tagName)) end = end.nextElementSibling;
+			end.after(botLadder({ id: "bot-ladder-guide", heading: false }));
+		}
 	} catch (e) {
 		clear(box);
 		box.append(h("p", { class: "error-text" }, e.message));

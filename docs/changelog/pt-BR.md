@@ -2,6 +2,11 @@
 
 O que mudou no Bingle, do mais recente ao mais antigo. O Bingle Core (o servidor, o motor e o cliente web) e cada jogo têm versão própria, e cada entrada diz qual mudou. As entradas anteriores à 0.124.0 estão só em inglês.
 
+## 0.152.0 - 2026-11-28
+
+### Bingle Core 0.152.0
+- Os bots têm rating próprio em cada jogo, disputado toda noite: na aba de rating e no guia dos bots (API 1.27.0)
+
 ## 0.151.2 - 2026-11-28
 
 ### Bingle Core 0.151.2

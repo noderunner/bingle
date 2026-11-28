@@ -158,6 +158,7 @@ export const api = {
 	ownGames: () => call("/api/me/games"),
 	ratedGames: () => call("/api/ratings"),
 	leaderboard: (family) => call(`/api/ratings/${enc(family)}`),
+	botRatings: () => call("/api/bot-ratings"),
 	playerRatings: (handle) => call(`/api/players/${enc(handle)}/ratings`),
 	playerBadges: (handle) => call(`/api/players/${enc(handle)}/badges`),
 	badges: () => call("/api/badges"),
