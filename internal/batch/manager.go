@@ -223,6 +223,7 @@ func (m *Manager) run(id int64) {
 	}()
 	_ = m.st.SetBatchStatus(bg, id, store.BatchRunning, "")
 	var finished atomic.Int64
+	records := &grouped{st: m.st}
 	err = Run(timeCtx, m.cat, spec, func(r Record) {
 		seating, _ := json.Marshal(r.Seating)
 		metrics, _ := json.Marshal(r.Metrics)
@@ -231,12 +232,13 @@ func (m *Manager) run(id int64) {
 			raw, _ := json.Marshal(r.Events)
 			events = string(raw)
 		}
-		_ = m.st.AddBatchGame(bg, store.BatchGame{
+		records.add(store.BatchGame{
 			BatchID: id, Index: r.Index, Seed: r.Seed, GameID: r.GameID, Seating: string(seating),
 			Winner: r.Winner, EndReason: r.EndReason, Plies: r.Plies, Rounds: r.Rounds,
 			Metrics: string(metrics), Events: events,
 		})
 	}, func(done int) { finished.Store(int64(done)) })
+	records.flush()
 	switch {
 	case int(finished.Load()) >= spec.Games:
 		_ = m.st.SetBatchStatus(bg, id, store.BatchDone, "")
@@ -249,6 +251,49 @@ func (m *Manager) run(id int64) {
 	default:
 		_ = m.st.SetBatchStatus(bg, id, store.BatchDone, "")
 	}
+}
+
+// groupEvery and groupMost are how a batch's records are grouped: written
+// together once a quarter of a second has passed since the last write, or 256
+// are waiting. A batch of quick games finishes hundreds a second, and one
+// transaction each kept the database's one writer from live play's moves for
+// most of a second at a time (ADR 0162); a slow batch still writes each game
+// as it ends.
+const (
+	groupEvery = 250 * time.Millisecond
+	groupMost  = 256
+)
+
+// grouped gathers a batch's finished games and writes them in few
+// transactions.
+type grouped struct {
+	st   *store.Store
+	mu   sync.Mutex
+	buf  []store.BatchGame
+	last time.Time
+}
+
+// add keeps g, and writes what is waiting when it is time.
+func (g *grouped) add(game store.BatchGame) {
+	g.mu.Lock()
+	g.buf = append(g.buf, game)
+	if len(g.buf) < groupMost && time.Since(g.last) < groupEvery {
+		g.mu.Unlock()
+		return
+	}
+	out := g.buf
+	g.buf, g.last = nil, time.Now()
+	g.mu.Unlock()
+	_ = g.st.AddBatchGames(context.Background(), out)
+}
+
+// flush writes what is waiting.
+func (g *grouped) flush() {
+	g.mu.Lock()
+	out := g.buf
+	g.buf, g.last = nil, time.Now()
+	g.mu.Unlock()
+	_ = g.st.AddBatchGames(context.Background(), out)
 }
 
 // Cancel stops a running batch or drops a queued one.

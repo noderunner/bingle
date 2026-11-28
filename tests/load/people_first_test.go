@@ -51,7 +51,6 @@ func setting(name string, def int) int {
 // search in the answer), and a page read after each.
 type sample struct {
 	moves, replies, pages []time.Duration
-	games                 int64
 }
 
 func pct(ds []time.Duration, p float64) time.Duration {
@@ -167,24 +166,30 @@ func TestPeopleFirst(t *testing.T) {
 		go person(1000+i, "mcts")
 	}
 
-	// running plays a batch on every CPU (the workers ceiling) until the
-	// phase ends, writing each game to the store as the batch manager does.
-	running := func(s *sample, spec batch.Spec) func() {
-		ctx, cancel := context.WithCancel(context.Background())
-		id, err := st.CreateBatch(ctx, "load", spec.Base, "{}", spec.Games, "load")
+	// running queues a batch on every CPU (the workers ceiling) with the
+	// batch manager, which writes its games as the server does, and returns
+	// what stops it and counts its games.
+	batches := batch.NewManager(st, cat, batch.WithLimits(batch.Limits{Ceilings: batch.Ceilings{Games: 1_000_000}, GamesPerDay: 100_000_000}))
+	running := func(spec batch.Spec) (stop func(), done func() int) {
+		ctx := context.Background()
+		id, err := batches.Start(ctx, "load", spec)
 		if err != nil {
 			t.Fatal(err)
 		}
-		done := make(chan struct{})
-		go func() {
-			defer close(done)
-			_ = batch.Run(ctx, cat, spec, func(r batch.Record) {
-				_ = st.AddBatchGame(context.Background(), store.BatchGame{BatchID: id, Index: r.Index, Seed: r.Seed, GameID: r.GameID,
-					Seating: "[]", Winner: r.Winner, EndReason: r.EndReason, Plies: r.Plies, Rounds: r.Rounds, Metrics: "null"})
-				atomic.AddInt64(&s.games, 1)
-			}, nil)
-		}()
-		return func() { cancel(); <-done }
+		stop = func() {
+			_ = batches.Cancel(ctx, id)
+			for {
+				if b, err := batches.Get(ctx, id); err != nil || b.Status != "running" {
+					return
+				}
+				time.Sleep(20 * time.Millisecond)
+			}
+		}
+		done = func() int {
+			b, _ := batches.Get(ctx, id)
+			return b.Done
+		}
+		return stop, done
 	}
 	searching := batch.Spec{Base: "hex-11", Games: 1_000_000, Seed: 1, Workers: runtime.NumCPU(), Rotate: true,
 		Players: []batch.Player{{Bot: "mcts", MCTSIterations: 150}, {Bot: "mcts", MCTSIterations: 150}}}
@@ -199,18 +204,18 @@ func TestPeopleFirst(t *testing.T) {
 	time.Sleep(2 * time.Second) // let the rooms start
 	for i, ph := range phases {
 		s := &results[i]
-		end := func() {}
+		end, done := func() {}, func() int { return 0 }
 		if ph.spec != nil {
-			end = running(s, *ph.spec)
+			end, done = running(*ph.spec)
 			time.Sleep(2 * time.Second) // let it fill the CPUs
 		}
 		rec.Store(s)
-		began, before := time.Now(), atomic.LoadInt64(&s.games)
+		began, before := time.Now(), done()
 		time.Sleep(phase)
 		rec.Store(nil)
-		games := atomic.LoadInt64(&s.games) - before
-		end()
+		games := done() - before
 		mins := time.Since(began).Minutes()
+		end()
 		t.Logf("%-16s move p50 %5s p99 %6s (%4d) | with tactical's reply p50 %6s p99 %6s (%4d) | page p99 %5s ms | batch %6.0f games/min",
 			ph.name, ms(pct(s.moves, .5)), ms(pct(s.moves, .99)), len(s.moves), ms(pct(s.replies, .5)), ms(pct(s.replies, .99)), len(s.replies),
 			ms(pct(s.pages, .99)), float64(games)/mins)

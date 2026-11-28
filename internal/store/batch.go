@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"slices"
 	"time"
 )
 
@@ -130,20 +131,39 @@ func (s *Store) InterruptBatches(ctx context.Context) error {
 
 // AddBatchGame stores a finished game and counts it in its batch.
 func (s *Store) AddBatchGame(ctx context.Context, g BatchGame) error {
+	return s.AddBatchGames(ctx, []BatchGame{g})
+}
+
+// AddBatchGames stores finished games, of one batch or several, and counts
+// them in their batches, in one transaction: a batch of quick games writes
+// its records together rather than taking the database's one writer from
+// live play hundreds of times a second (ADR 0162).
+func (s *Store) AddBatchGames(ctx context.Context, games []BatchGame) error {
+	if len(games) == 0 {
+		return nil
+	}
 	tx, err := s.begin(ctx, "AddBatchGame")
 	if err != nil {
 		return err
 	}
 	defer func() { _ = tx.Rollback() }()
-	if _, err := tx.exec(ctx, "AddBatchGame.upsert",
-		`INSERT OR REPLACE INTO batch_games (batch_id, idx, seed, game_id, seating, winner, end_reason, plies, rounds, metrics, events)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		g.BatchID, g.Index, g.Seed, g.GameID, g.Seating, g.Winner, g.EndReason, g.Plies, g.Rounds, g.Metrics, g.Events); err != nil {
-		return fmt.Errorf("storing batch game: %w", err)
+	var batches []int64
+	for _, g := range games {
+		if _, err := tx.exec(ctx, "AddBatchGame.upsert",
+			`INSERT OR REPLACE INTO batch_games (batch_id, idx, seed, game_id, seating, winner, end_reason, plies, rounds, metrics, events)
+			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			g.BatchID, g.Index, g.Seed, g.GameID, g.Seating, g.Winner, g.EndReason, g.Plies, g.Rounds, g.Metrics, g.Events); err != nil {
+			return fmt.Errorf("storing batch game: %w", err)
+		}
+		if !slices.Contains(batches, g.BatchID) {
+			batches = append(batches, g.BatchID)
+		}
 	}
-	if _, err := tx.exec(ctx, "AddBatchGame.bumpDone",
-		`UPDATE batches SET done = (SELECT COUNT(*) FROM batch_games WHERE batch_id = ?) WHERE id = ?`, g.BatchID, g.BatchID); err != nil {
-		return err
+	for _, id := range batches {
+		if _, err := tx.exec(ctx, "AddBatchGame.bumpDone",
+			`UPDATE batches SET done = (SELECT COUNT(*) FROM batch_games WHERE batch_id = ?) WHERE id = ?`, id, id); err != nil {
+			return err
+		}
 	}
 	return tx.Commit()
 }

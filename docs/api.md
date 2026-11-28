@@ -558,7 +558,9 @@ MCP: `start_batch`, `get_batch`, `list_batches`, `cancel_batch` (starting and ca
 
 ### Limits on batches
 
-A batch takes the server's CPUs, memory and database, so it is limited ([ADR 0161](decisions/0161-limits-on-batch-jobs.md)).
+A batch takes the server's CPUs, memory and database, so it is limited ([ADR 0161](decisions/0161-limits-on-batch-jobs.md)),
+and it is background work: it plays on the CPUs live play leaves, giving way to it between plies, so a batch of more
+`workers` than that takes turns ([ADR 0162](decisions/0162-games-with-people-go-first.md)).
 `GET /api/batches` lists them as `limits`; the operator sets each with an environment variable
 ([build.md](build.md)).
 
