@@ -5,11 +5,6 @@ import (
 	"fmt"
 	"testing"
 	"time"
-
-	"github.com/chromedp/cdproto/emulation"
-	"github.com/chromedp/cdproto/input"
-	"github.com/chromedp/cdproto/runtime"
-	"github.com/chromedp/chromedp"
 )
 
 // tapSel touches the middle of the element sel finds, as a finger would: a touch
@@ -17,7 +12,7 @@ import (
 func tapSel(t *testing.T, ctx context.Context, sel string) {
 	t.Helper()
 	var at []float64
-	if err := chromedp.Run(ctx, chromedp.Evaluate(fmt.Sprintf(`(function(){ var e = document.querySelector(%q); if (!e) return []; var r = e.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; })()`, sel), &at)); err != nil {
+	if err := runSteps(ctx, stepEvalTo(fmt.Sprintf(`(function(){ var e = document.querySelector(%q); if (!e) return []; var r = e.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; })()`, sel), &at)); err != nil {
 		t.Fatal(err)
 	}
 	if len(at) != 2 {
@@ -28,11 +23,7 @@ func tapSel(t *testing.T, ctx context.Context, sel string) {
 
 func tapAt(t *testing.T, ctx context.Context, x, y float64) {
 	t.Helper()
-	pt := []*input.TouchPoint{{X: x, Y: y}}
-	if err := chromedp.Run(ctx,
-		input.DispatchTouchEvent(input.TouchStart, pt),
-		input.DispatchTouchEvent(input.TouchEnd, []*input.TouchPoint{}),
-	); err != nil {
+	if err := runSteps(ctx, stepTouchTap(x, y)); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -46,15 +37,15 @@ func TestWebTouch_ATapPinsAHoverCardAndATapOutsideClosesIt(t *testing.T) {
 	base := newRESTTestServer(t)
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx,
-		chromedp.EmulateViewport(800, 900),
-		emulation.SetTouchEmulationEnabled(true).WithMaxTouchPoints(5),
-		chromedp.Navigate(base+"/"),
+	if err := runSteps(ctx,
+		stepViewport(800, 900),
+		stepTouchScreen(5),
+		stepNavigate(base+"/"),
 	); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the page", `document.readyState === "complete"`, 10*time.Second)
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`(async function () {
+	if err := runSteps(ctx, stepEval(`(async function () {
 		const m = await import("/static/js/tooltip.js");
 		const box = document.createElement("div");
 		box.style.cssText = "position:fixed;top:200px;left:200px;z-index:200;display:flex;gap:40px;background:#fff;padding:20px";
@@ -69,7 +60,7 @@ func TestWebTouch_ATapPinsAHoverCardAndATapOutsideClosesIt(t *testing.T) {
 		m.hoverCard(btn, () => { const d = document.createElement("div"); d.textContent = "what the button does"; return d; });
 		window.__ready = true;
 		return true;
-	})()`, nil, func(p *runtime.EvaluateParams) *runtime.EvaluateParams { return p.WithAwaitPromise(true) })); err != nil {
+	})()`, awaitPromise)); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the test's icon and button", `window.__ready === true`, 5*time.Second)
@@ -105,15 +96,15 @@ func TestWebTouch_ATapPinsAHoverCardAndATapOutsideClosesIt(t *testing.T) {
 
 	// A mouse still hovers, and the card it opens is not pinned.
 	var at []float64
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`(function(){ var r = document.getElementById("t-icon").getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; })()`, &at)); err != nil {
+	if err := runSteps(ctx, stepEvalTo(`(function(){ var r = document.getElementById("t-icon").getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; })()`, &at)); err != nil {
 		t.Fatal(err)
 	}
 	time.Sleep(1100 * time.Millisecond) // past the time in which a mouse event counts as made up from a touch
-	if err := chromedp.Run(ctx, chromedp.MouseEvent(input.MouseMoved, at[0], at[1])); err != nil {
+	if err := runSteps(ctx, stepMouseMove(at[0], at[1])); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "a hover card", `document.querySelector(".hover-card:not(.pinned)") !== null`, 5*time.Second)
-	if err := chromedp.Run(ctx, chromedp.MouseEvent(input.MouseMoved, 5, 880)); err != nil {
+	if err := runSteps(ctx, stepMouseMove(5, 880)); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the hover card gone with the pointer", `document.querySelector(".hover-card") === null`, 5*time.Second)

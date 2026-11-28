@@ -9,19 +9,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chromedp/chromedp"
-
 	"github.com/noderunner/bingle/internal/mail/fakesmtp"
 )
 
-func (e *notifyEnv) seedBrowser(t *testing.T, run func(actions ...chromedp.Action) error, kv map[string]any) {
+func (e *notifyEnv) seedBrowser(t *testing.T, run func(actions ...browserStep) error, kv map[string]any) {
 	t.Helper()
-	if err := run(chromedp.Navigate(e.URL + "/healthz")); err != nil {
+	if err := run(stepNavigate(e.URL + "/healthz")); err != nil {
 		t.Fatal(err)
 	}
 	for k, v := range kv {
 		b, _ := json.Marshal(v)
-		if err := run(chromedp.Evaluate(fmt.Sprintf(`localStorage.setItem(%q, %q); true`, k, string(b)), nil)); err != nil {
+		if err := run(stepEval(fmt.Sprintf(`localStorage.setItem(%q, %q); true`, k, string(b)))); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -31,7 +29,7 @@ func TestNotifyUI_ProfileOffWhenTheServerCannotMail(t *testing.T) {
 	base := newRESTTestServer(t)
 	ctx, cancel := newChromedpContext(t, 30*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/profile"), chromedp.WaitVisible("#profile-form", chromedp.ByID)); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/profile"), stepWaitVisible("#profile-form")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the notice", `!document.getElementById("notify-off").hidden`, 10*time.Second)
@@ -45,7 +43,7 @@ func TestNotifyUI_ProfileAddressAndWhitelistNote(t *testing.T) {
 	e := newNotifyEnv(t, fakesmtp.Options{})
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.Navigate(e.URL+"/profile"), chromedp.WaitVisible("#notify-box", chromedp.ByID)); err != nil {
+	if err := runSteps(ctx, stepNavigate(e.URL+"/profile"), stepWaitVisible("#notify-box")); err != nil {
 		t.Fatal(err)
 	}
 	// The player is told where the mail will come from.
@@ -71,7 +69,7 @@ func TestNotifyUI_ProfileAddressAndWhitelistNote(t *testing.T) {
 	waitJS(t, ctx, "confirmed", `document.getElementById("notify-status").textContent.indexOf("Confirmed") === 0`, 15*time.Second)
 
 	// Reload: the address is still known (kept in this browser), the status too.
-	if err := chromedp.Run(ctx, chromedp.Navigate(e.URL+"/profile"), chromedp.WaitVisible("#notify-box", chromedp.ByID)); err != nil {
+	if err := runSteps(ctx, stepNavigate(e.URL+"/profile"), stepWaitVisible("#notify-box")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "still confirmed", `document.getElementById("notify-status").textContent.indexOf("Confirmed") === 0 && document.getElementById("profile_email").value === "uitest@example.com"`, 10*time.Second)
@@ -90,13 +88,13 @@ func TestNotifyUI_GameOptionsSection(t *testing.T) {
 
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	e.seedBrowser(t, func(a ...chromedp.Action) error { return chromedp.Run(ctx, a...) }, map[string]any{
+	e.seedBrowser(t, func(a ...browserStep) error { return runSteps(ctx, a...) }, map[string]any{
 		"bingle.games":   []map[string]any{{"code": g.Room, "def": "tic-tac-toe", "name": "Alice", "ts": time.Now().UnixMilli()}},
 		"bingle.name":    "Alice",
 		"bingle.contact": map[string]any{"id": c.ID, "secret": c.Secret, "address": "alice@example.com"},
 	})
 	setBrowserGuest(t, ctx, e.URL, g.Token) // the browser that took Alice's seat
-	if err := chromedp.Run(ctx, chromedp.Navigate(e.URL+"/game/"+g.Room), chromedp.WaitReady("#board-svg", chromedp.ByQuery)); err != nil {
+	if err := runSteps(ctx, stepNavigate(e.URL+"/game/"+g.Room), stepWaitReady("#board-svg")); err != nil {
 		t.Fatal(err)
 	}
 	clickSel(t, ctx, "#open-options")
@@ -156,14 +154,14 @@ func TestNotifyUI_ProfileSwitchAppliesToANewGame(t *testing.T) {
 	c := e.verified(t, "alice@example.com")
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	e.seedBrowser(t, func(a ...chromedp.Action) error { return chromedp.Run(ctx, a...) }, map[string]any{
+	e.seedBrowser(t, func(a ...browserStep) error { return runSteps(ctx, a...) }, map[string]any{
 		"bingle.games":   []map[string]any{{"code": g.Room, "def": "tic-tac-toe", "name": "Alice", "ts": time.Now().UnixMilli()}},
 		"bingle.name":    "Alice",
 		"bingle.contact": map[string]any{"id": c.ID, "secret": c.Secret, "address": "alice@example.com"},
 		"bingle.profile": map[string]any{"email": "alice@example.com", "notify": true},
 	})
 	setBrowserGuest(t, ctx, e.URL, g.Token) // the browser that took Alice's seat
-	if err := chromedp.Run(ctx, chromedp.Navigate(e.URL+"/game/"+g.Room), chromedp.WaitReady("#board-svg", chromedp.ByQuery)); err != nil {
+	if err := runSteps(ctx, stepNavigate(e.URL+"/game/"+g.Room), stepWaitReady("#board-svg")); err != nil {
 		t.Fatal(err)
 	}
 	deadline := time.Now().Add(15 * time.Second)

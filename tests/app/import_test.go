@@ -6,8 +6,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/chromedp/chromedp"
 )
 
 const importedPTN = `[Site "somewhere"]
@@ -136,9 +134,9 @@ func TestWebLobby_SetupCanImportAMoveLog(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	ctx, cancel := newChromedpContext(t, 40*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx,
-		chromedp.Navigate(baseURL+"/?game=tak-5x5"),
-		chromedp.WaitVisible("#create-game-form", chromedp.ByID),
+	if err := runSteps(ctx,
+		stepNavigate(baseURL+"/?game=tak-5x5"),
+		stepWaitVisible("#create-game-form"),
 	); err != nil {
 		t.Fatal(err)
 	}
@@ -148,7 +146,7 @@ func TestWebLobby_SetupCanImportAMoveLog(t *testing.T) {
 	}
 	evalString(t, ctx, `document.querySelector('input[name="start_mode"][value="import"]').click(); "ok"`)
 	waitJS(t, ctx, "the move log box", `document.getElementById("import-text").offsetParent !== null`, 5*time.Second)
-	if err := chromedp.Run(ctx, chromedp.SetValue("#import-text", importedPTN, chromedp.ByID)); err != nil {
+	if err := runSteps(ctx, stepSetValue("#import-text", importedPTN)); err != nil {
 		t.Fatal(err)
 	}
 	clickSel(t, ctx, "#create-submit")
@@ -161,9 +159,9 @@ func TestWebLobby_SetupOffersNoImportForMultiSeatGames(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	ctx, cancel := newChromedpContext(t, 30*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx,
-		chromedp.Navigate(baseURL+"/?game=test-council"),
-		chromedp.WaitVisible("#create-game-form", chromedp.ByID),
+	if err := runSteps(ctx,
+		stepNavigate(baseURL+"/?game=test-council"),
+		stepWaitVisible("#create-game-form"),
 	); err != nil {
 		t.Fatal(err)
 	}
@@ -236,9 +234,9 @@ func TestWebLobby_SetupCanStartTwoBotsToWatch(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx,
-		chromedp.Navigate(baseURL+"/?game=tic-tac-toe"),
-		chromedp.WaitVisible("#create-game-form", chromedp.ByID),
+	if err := runSteps(ctx,
+		stepNavigate(baseURL+"/?game=tic-tac-toe"),
+		stepWaitVisible("#create-game-form"),
 	); err != nil {
 		t.Fatal(err)
 	}

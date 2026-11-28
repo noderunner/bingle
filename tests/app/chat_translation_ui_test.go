@@ -8,8 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chromedp/chromedp"
-
 	"github.com/noderunner/bingle/internal/auth"
 	"github.com/noderunner/bingle/internal/config"
 )
@@ -25,7 +23,7 @@ func TestWebChatTranslation_AGameLineIsShownInTheReadersLanguage(t *testing.T) {
 	ana, room := hostRoom(t, base, "Ana")
 	ctx, cancel := newChromedpContext(t, 90*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/game/"+room)); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/game/"+room)); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the chat", `document.getElementById("chat-log") !== null`, 20*time.Second)
@@ -49,7 +47,7 @@ func TestWebChatTranslation_TheGlobalChatAndTheSwitch(t *testing.T) {
 	bo := signedIn(t, a, base, "bob")
 	ctx, cancel := newChromedpContext(t, 120*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/#chat"), chromedp.WaitVisible("#global-chat-input", chromedp.ByID)); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/#chat"), stepWaitVisible("#global-chat-input")); err != nil {
 		t.Fatal(err)
 	}
 	time.Sleep(500 * time.Millisecond) // let the live feed connect
@@ -61,7 +59,7 @@ func TestWebChatTranslation_TheGlobalChatAndTheSwitch(t *testing.T) {
 
 	// The switch is on the profile page, on; turning it off loads the page
 	// again with it off.
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/profile")); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/profile")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the switch, on", `(() => { const b = document.getElementById("profile_translate"); return b && !b.closest(".field").hidden && b.checked; })()`, 20*time.Second)
@@ -69,7 +67,7 @@ func TestWebChatTranslation_TheGlobalChatAndTheSwitch(t *testing.T) {
 	waitJS(t, ctx, "the switch, off", `(() => { const b = document.getElementById("profile_translate"); return b && !b.closest(".field").hidden && !b.checked && !b.disabled; })()`, 20*time.Second)
 
 	// Chat is then as written: the history, and what comes next.
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/#chat"), chromedp.WaitVisible("#global-chat-input", chromedp.ByID)); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/#chat"), stepWaitVisible("#global-chat-input")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the history as written", line+` && `+line+`.querySelector(".chat-text").textContent === "hola" && !`+line+`.querySelector(".chat-translation")`, 10*time.Second)
@@ -88,7 +86,7 @@ func TestWebChatTranslation_NoSwitchWithoutAService(t *testing.T) {
 	base := newServerWith(t, func(*config.Config) {})
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/profile")); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/profile")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the profile page", `document.getElementById("profile_language") !== null && document.getElementById("profile_translate") !== null`, 20*time.Second)
@@ -110,7 +108,7 @@ func TestWebChatTranslation_ADirectMessageIsShownInTheReadersLanguage(t *testing
 	ctx, cancel := newChromedpContext(t, 90*time.Second)
 	defer cancel()
 	signInChrome(t, ctx, base, beaB.cookie(auth.SessionCookie))
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/"), chromedp.WaitVisible("#open-friends", chromedp.ByID)); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/"), stepWaitVisible("#open-friends")); err != nil {
 		t.Fatal(err)
 	}
 	clickSel(t, ctx, "#open-friends")

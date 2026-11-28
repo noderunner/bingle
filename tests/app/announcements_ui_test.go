@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chromedp/chromedp"
 	"github.com/noderunner/bingle/internal/app"
 	"github.com/noderunner/bingle/internal/auth"
 )
@@ -31,7 +30,7 @@ func TestWebAnnouncements_ShownOnceOnTheMainPage(t *testing.T) {
 	a, base, admin := announcementServer(t)
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/"), chromedp.WaitReady("#open-help", chromedp.ByQuery)); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/"), stepWaitReady("#open-help")); err != nil {
 		t.Fatal(err)
 	}
 	// The page's first request makes its guest.
@@ -40,7 +39,7 @@ func TestWebAnnouncements_ShownOnceOnTheMainPage(t *testing.T) {
 	}
 	one := announce(t, a, admin, "One")
 	two := announce(t, a, admin, "Two")
-	if err := chromedp.Run(ctx, chromedp.Reload()); err != nil {
+	if err := runSteps(ctx, stepReload()); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the announcements", `document.querySelector("#announcement-card[open]")`, 15*time.Second)
@@ -62,7 +61,7 @@ func TestWebAnnouncements_ShownOnceOnTheMainPage(t *testing.T) {
 		}
 		time.Sleep(100 * time.Millisecond)
 	}
-	if err := chromedp.Run(ctx, chromedp.Reload(), chromedp.WaitReady("#open-help", chromedp.ByQuery)); err != nil {
+	if err := runSteps(ctx, stepReload(), stepWaitReady("#open-help")); err != nil {
 		t.Fatal(err)
 	}
 	time.Sleep(time.Second)
@@ -105,7 +104,7 @@ func TestWebAnnouncements_LinkedInRecentChanges(t *testing.T) {
 
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/"), chromedp.Evaluate(`localStorage.setItem("bingle.changelog.seen", JSON.stringify("0.0.1")); true`, nil), chromedp.Reload(), chromedp.WaitReady("#open-help", chromedp.ByQuery)); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/"), stepEval(`localStorage.setItem("bingle.changelog.seen", JSON.stringify("0.0.1")); true`), stepReload(), stepWaitReady("#open-help")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the changelog read", `window.performance.getEntriesByName(location.origin + "/api/changelog").length > 0`, 10*time.Second)
@@ -149,7 +148,7 @@ func TestWebAnnouncements_SlidesAndPictures(t *testing.T) {
 	a, base, admin := announcementServer(t)
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/"), chromedp.WaitReady("#open-help", chromedp.ByQuery)); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/"), stepWaitReady("#open-help")); err != nil {
 		t.Fatal(err)
 	}
 	if !awaitBool(t, ctx, `fetch("/auth/tour-seen", {method: "POST", headers: {"X-Bingle-Session": "1"}}).then((r) => r.ok)`) {
@@ -160,7 +159,7 @@ func TestWebAnnouncements_SlidesAndPictures(t *testing.T) {
 	if code := announceForm(t, a, admin, "News", body, []picture{{"board.png", pngOf(t)}}, &made); code != http.StatusCreated {
 		t.Fatalf("announce: %d", code)
 	}
-	if err := chromedp.Run(ctx, chromedp.Reload()); err != nil {
+	if err := runSteps(ctx, stepReload()); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the announcement", `document.querySelector("#announcement-card[open]")`, 15*time.Second)

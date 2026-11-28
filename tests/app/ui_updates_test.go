@@ -10,9 +10,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/chromedp/cdproto/runtime"
-	"github.com/chromedp/chromedp"
 )
 
 func gameStatus(t *testing.T, baseURL, room string) (status, reason string) {
@@ -30,12 +27,12 @@ func gameStatus(t *testing.T, baseURL, room string) (status, reason string) {
 // gameOfThisBrowser makes a game from the page, so that its guest holds the seat.
 func gameOfThisBrowser(t *testing.T, ctx context.Context, baseURL, body string) string {
 	t.Helper()
-	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/healthz")); err != nil {
+	if err := runSteps(ctx, stepNavigate(baseURL+"/healthz")); err != nil {
 		t.Fatal(err)
 	}
 	var room string
 	create := `fetch("/api/games", {method: "POST", headers: {"Content-Type": "application/json", "X-Bingle-Session": "1"}, body: JSON.stringify(` + body + `)}).then((r) => r.json()).then((g) => g.room_code)`
-	if err := chromedp.Run(ctx, chromedp.Evaluate(create, &room, func(p *runtime.EvaluateParams) *runtime.EvaluateParams { return p.WithAwaitPromise(true) })); err != nil || room == "" {
+	if err := runSteps(ctx, stepEvalTo(create, &room, awaitPromise)); err != nil || room == "" {
 		t.Fatalf("create: %q %v", room, err)
 	}
 	return room
@@ -44,7 +41,7 @@ func gameOfThisBrowser(t *testing.T, ctx context.Context, baseURL, body string) 
 func openActiveGames(t *testing.T, ctx context.Context, baseURL, name string, rooms map[string]string) {
 	t.Helper()
 	rememberGames(t, ctx, baseURL, name, rooms)
-	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/")); err != nil {
+	if err := runSteps(ctx, stepNavigate(baseURL+"/")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the top bar", `document.getElementById("open-active-games") !== null`, 20*time.Second)
@@ -124,7 +121,7 @@ func TestWebSetup_ActiveGamesListsThatGamesGames(t *testing.T) {
 	}
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/?game=test-tricks")); err != nil {
+	if err := runSteps(ctx, stepNavigate(baseURL+"/?game=test-tricks")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the setup", `document.getElementById("setup-tab-active") !== null && !document.getElementById("game-setup").hidden`, 20*time.Second)
@@ -160,7 +157,7 @@ func TestWebJoin_ListsTheTablesWaitingForPlayers(t *testing.T) {
 	}
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/")); err != nil {
+	if err := runSteps(ctx, stepNavigate(baseURL+"/")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the top bar", `document.getElementById("open-join") !== null`, 20*time.Second)
@@ -246,7 +243,7 @@ func TestWebJoin_TakesACodeOrALinkAndWatchesAFullTable(t *testing.T) {
 	defer cancel()
 	joinWith := func(typed string) {
 		t.Helper()
-		if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/")); err != nil {
+		if err := runSteps(ctx, stepNavigate(baseURL+"/")); err != nil {
 			t.Fatal(err)
 		}
 		waitJS(t, ctx, "the top bar", `document.getElementById("open-join") !== null`, 20*time.Second)
@@ -308,7 +305,7 @@ func TestWebActiveGames_OpenCountsUnreadChat(t *testing.T) {
 	count := `document.querySelector('#my-games li[data-code="` + room + `"] a.button .unread-count')`
 	waitJS(t, ctx, "the count", count+` !== null && `+count+`.textContent === "2"`, 10*time.Second)
 	// Having the chat on screen reads it.
-	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/game/"+room)); err != nil {
+	if err := runSteps(ctx, stepNavigate(baseURL+"/game/"+room)); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the chat read", `(JSON.parse(localStorage.getItem("bingle.chatRead")) || {})["`+room+`"] > 0`, 15*time.Second)
@@ -325,7 +322,7 @@ func TestWebProfile_AGuestIsGivenAName(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/")); err != nil {
+	if err := runSteps(ctx, stepNavigate(baseURL+"/")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the top bar", `document.getElementById("open-profile") !== null`, 20*time.Second)
@@ -335,7 +332,7 @@ func TestWebProfile_AGuestIsGivenAName(t *testing.T) {
 		t.Errorf("the name given is %q", name)
 	}
 	// It stays the same across pages.
-	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/profile")); err != nil {
+	if err := runSteps(ctx, stepNavigate(baseURL+"/profile")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the settings", `document.getElementById("profile_name") !== null && document.getElementById("profile_name").value !== ""`, 10*time.Second)
@@ -349,7 +346,7 @@ func TestWebProfile_AGuestSeesNoEmailSettings(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/profile")); err != nil {
+	if err := runSteps(ctx, stepNavigate(baseURL+"/profile")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the section hidden", `document.getElementById("profile-email-section") !== null && document.getElementById("profile-email-section").hidden`, 10*time.Second)

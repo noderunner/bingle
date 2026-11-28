@@ -5,9 +5,6 @@ import (
 	"sync"
 	"testing"
 	"time"
-
-	"github.com/chromedp/cdproto/runtime"
-	"github.com/chromedp/chromedp"
 )
 
 // autoStepJS performs one UI action for the player: finish a pending
@@ -46,13 +43,7 @@ func TestWebCourtfall_PlayThroughSetupIntoTheGame(t *testing.T) {
 	defer cancel()
 	var mu sync.Mutex
 	var jsErrors []string
-	chromedp.ListenTarget(ctx, func(ev any) {
-		if e, ok := ev.(*runtime.EventExceptionThrown); ok && e.ExceptionDetails != nil {
-			mu.Lock()
-			jsErrors = append(jsErrors, e.ExceptionDetails.Error())
-			mu.Unlock()
-		}
-	})
+	collectJSErrors(ctx, &mu, &jsErrors)
 	openGameAs(t, ctx, baseURL, created.RoomCode, "courtfall", "Alice")
 	waitJS(t, ctx, "board", `document.querySelectorAll('#board .cell').length === 37`, 15*time.Second)
 
@@ -60,7 +51,7 @@ func TestWebCourtfall_PlayThroughSetupIntoTheGame(t *testing.T) {
 	var log []string
 	for i := 0; i < 260 && stuck < 40; i++ {
 		var what string
-		if err := chromedp.Run(ctx, chromedp.Evaluate(autoStepJS, &what)); err != nil {
+		if err := runSteps(ctx, stepEvalTo(autoStepJS, &what)); err != nil {
 			t.Fatalf("step %d: %v", i, err)
 		}
 		log = append(log, what)
@@ -123,17 +114,11 @@ func TestWebCourtfall_TheTargetAnswersAStrikeAndSeesTheDice(t *testing.T) {
 	defer cancel()
 	var mu sync.Mutex
 	var jsErrors []string
-	chromedp.ListenTarget(ctx, func(ev any) {
-		if e, ok := ev.(*runtime.EventExceptionThrown); ok && e.ExceptionDetails != nil {
-			mu.Lock()
-			jsErrors = append(jsErrors, e.ExceptionDetails.Error())
-			mu.Unlock()
-		}
-	})
+	collectJSErrors(ctx, &mu, &jsErrors)
 	openGameAs(t, ctx, baseURL, room, "courtfall", defender)
 	waitJS(t, ctx, "answer prompt", `document.querySelectorAll("#count-picker button").length >= 1`, 15*time.Second)
 	waitJS(t, ctx, "committed in secret", `document.getElementById("exchange") && document.getElementById("exchange").textContent.indexOf("committed in secret") >= 0 && document.getElementById("exchange").getAttribute("data-resolved") === "0"`, 5*time.Second)
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`document.querySelector("#count-picker button").click(); true`, nil)); err != nil {
+	if err := runSteps(ctx, stepEval(`document.querySelector("#count-picker button").click(); true`)); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "resolved exchange with dice", `document.getElementById("exchange") && document.getElementById("exchange").getAttribute("data-resolved") === "1" && document.querySelectorAll("#exchange .die").length >= 2`, 15*time.Second)

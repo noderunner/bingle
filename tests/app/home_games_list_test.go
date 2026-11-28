@@ -1,14 +1,10 @@
 package app_test
 
 import (
-	"context"
 	"fmt"
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/chromedp/cdproto/input"
-	"github.com/chromedp/chromedp"
 )
 
 // The list of games: a Beta mark while a game is below 1.0, the players each
@@ -18,9 +14,9 @@ func TestHomeGames_ListShowsBetaPlayersAndADetailsCard(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx,
-		chromedp.Navigate(baseURL+"/"),
-		chromedp.WaitVisible(`.game-card[data-family="tak-5x5"]`, chromedp.ByQuery),
+	if err := runSteps(ctx,
+		stepNavigate(baseURL+"/"),
+		stepWaitVisible(`.game-card[data-family="tak-5x5"]`),
 	); err != nil {
 		t.Fatal(err)
 	}
@@ -53,12 +49,10 @@ func TestHomeGames_ListShowsBetaPlayersAndADetailsCard(t *testing.T) {
 	hover := func(sel string) {
 		var x, y float64
 		evalString(t, ctx, fmt.Sprintf(`(function(){ document.querySelector(%q).scrollIntoView({block: "center"}); return "ok" })()`, sel))
-		if err := chromedp.Run(ctx, chromedp.Evaluate(fmt.Sprintf(`(function(){ var r = document.querySelector(%q).getBoundingClientRect(); return r.left + r.width / 2 })()`, sel), &x), chromedp.Evaluate(fmt.Sprintf(`(function(){ var r = document.querySelector(%q).getBoundingClientRect(); return r.top + r.height / 2 })()`, sel), &y)); err != nil {
+		if err := runSteps(ctx, stepEvalTo(fmt.Sprintf(`(function(){ var r = document.querySelector(%q).getBoundingClientRect(); return r.left + r.width / 2 })()`, sel), &x), stepEvalTo(fmt.Sprintf(`(function(){ var r = document.querySelector(%q).getBoundingClientRect(); return r.top + r.height / 2 })()`, sel), &y)); err != nil {
 			t.Fatal(err)
 		}
-		if err := chromedp.Run(ctx, chromedp.ActionFunc(func(c context.Context) error {
-			return input.DispatchMouseEvent(input.MouseMoved, x, y).Do(c)
-		})); err != nil {
+		if err := runSteps(ctx, stepMouseMove(x, y)); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -74,9 +68,7 @@ func TestHomeGames_ListShowsBetaPlayersAndADetailsCard(t *testing.T) {
 		}
 	}
 	// Moving off the game closes it.
-	if err := chromedp.Run(ctx, chromedp.ActionFunc(func(c context.Context) error {
-		return input.DispatchMouseEvent(input.MouseMoved, 2, 2).Do(c)
-	})); err != nil {
+	if err := runSteps(ctx, stepMouseMove(2, 2)); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the details card closes", `document.getElementById("game-tip").hidden`, 5*time.Second)
@@ -119,7 +111,7 @@ func TestHomeGames_EmptyStartsShowASampleGame(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/"), chromedp.WaitVisible(`.game-card[data-family="tak-5x5"]`, chromedp.ByQuery)); err != nil {
+	if err := runSteps(ctx, stepNavigate(baseURL+"/"), stepWaitVisible(`.game-card[data-family="tak-5x5"]`)); err != nil {
 		t.Fatal(err)
 	}
 	for _, family := range []string{"gomoku", "yavalath", "go-9x9", "hex-11", "havannah-8", "pente", "connect-four", "tic-tac-toe", "tak-5x5", "blooms", "courtfall", "meridians"} {

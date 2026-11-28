@@ -4,9 +4,6 @@ import (
 	"sync"
 	"testing"
 	"time"
-
-	"github.com/chromedp/cdproto/runtime"
-	"github.com/chromedp/chromedp"
 )
 
 // The UI can play Fist: the board shows its 32 pieces, the Keep is tinted,
@@ -23,13 +20,7 @@ func TestWebFist_PlayTurnsThroughTheUI(t *testing.T) {
 	defer cancel()
 	var mu sync.Mutex
 	var jsErrors []string
-	chromedp.ListenTarget(ctx, func(ev any) {
-		if e, ok := ev.(*runtime.EventExceptionThrown); ok && e.ExceptionDetails != nil {
-			mu.Lock()
-			jsErrors = append(jsErrors, e.ExceptionDetails.Error())
-			mu.Unlock()
-		}
-	})
+	collectJSErrors(ctx, &mu, &jsErrors)
 	openGameAs(t, ctx, baseURL, created.RoomCode, "fist", "Alice")
 	waitJS(t, ctx, "board", `document.querySelectorAll('#board .cell').length === 64`, 15*time.Second)
 	waitJS(t, ctx, "32 pieces", `document.querySelectorAll('#board .piece').length === 32`, 10*time.Second)
@@ -41,7 +32,7 @@ func TestWebFist_PlayTurnsThroughTheUI(t *testing.T) {
 	stuck := 0
 	for i := 0; i < 200 && stuck < 40; i++ {
 		var what string
-		if err := chromedp.Run(ctx, chromedp.Evaluate(autoStepJS, &what)); err != nil {
+		if err := runSteps(ctx, stepEvalTo(autoStepJS, &what)); err != nil {
 			t.Fatalf("step %d: %v", i, err)
 		}
 		switch what {

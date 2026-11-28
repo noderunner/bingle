@@ -6,9 +6,6 @@ import (
 	"fmt"
 	"testing"
 	"time"
-
-	"github.com/chromedp/cdproto/emulation"
-	"github.com/chromedp/chromedp"
 )
 
 // councilWithHistory makes a game of the four-seat fixture with a map of areas,
@@ -56,14 +53,13 @@ func openOnPhone(t *testing.T, ctx context.Context, base, name string, games map
 	}
 	gamesJSON, _ := json.Marshal(list)
 	nameJSON, _ := json.Marshal(name)
-	if err := chromedp.Run(ctx,
-		emulation.SetDeviceMetricsOverride(390, 760, 2, true).WithScreenOrientation(&emulation.ScreenOrientation{Type: emulation.OrientationTypePortraitPrimary}),
-		emulation.SetTouchEmulationEnabled(true),
-		chromedp.Navigate(base+"/healthz"),
-		chromedp.Evaluate(fmt.Sprintf(`localStorage.setItem("bingle.games", %q); localStorage.setItem("bingle.name", %q);
+	if err := runSteps(ctx,
+		stepPhone(390, 760, 2),
+		stepNavigate(base+"/healthz"),
+		stepEval(fmt.Sprintf(`localStorage.setItem("bingle.games", %q); localStorage.setItem("bingle.name", %q);
 			localStorage.setItem("bingle.layout", '"phone"'); localStorage.setItem("bingle.historyFormat", '"notation"');
-			localStorage.setItem("bingle.mobileHint2", "true"); true`, gamesJSON, nameJSON), nil),
-		chromedp.Navigate(base+"/game/"+first),
+			localStorage.setItem("bingle.mobileHint2", "true"); true`, gamesJSON, nameJSON)),
+		stepNavigate(base+"/game/"+first),
 	); err != nil {
 		t.Fatal(err)
 	}
@@ -100,7 +96,7 @@ func TestPhoneUI_TheHistoryOpensAtItsEndAndItsButtonsFollow(t *testing.T) {
 	waitJS(t, ctx, "the story told so far", `document.getElementById("history-friendly") !== null`, 5*time.Second)
 	clickSel(t, ctx, "#history-friendly")
 	waitJS(t, ctx, "the story", `document.querySelector("#m-page-log #events") !== null`, 5*time.Second)
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`(function () { const ev = document.querySelector("#m-page-log #events"); for (let i = 0; i < 200; i++) { const p = document.createElement("p"); p.textContent = "line " + i; ev.append(p); } return true; })()`, nil)); err != nil {
+	if err := runSteps(ctx, stepEval(`(function () { const ev = document.querySelector("#m-page-log #events"); for (let i = 0; i < 200; i++) { const p = document.createElement("p"); p.textContent = "line " + i; ev.append(p); } return true; })()`)); err != nil {
 		t.Fatal(err)
 	}
 	if !evalBool(t, ctx, `(function () { const ev = document.querySelector("#m-page-log #events"), pane = ev.parentElement; return ev.scrollHeight > ev.clientHeight && pane.scrollHeight <= pane.clientHeight + 1; })()`) {
@@ -145,7 +141,7 @@ func TestPhoneUI_TheCallsPanelAndTheGameListsFitTheScreen(t *testing.T) {
 	})(%q)`
 	clickSel(t, ctx, "#open-active-games")
 	waitJS(t, ctx, "the two games, each on two lines", `document.querySelectorAll("#my-games li").length === 2 && `+fmt.Sprintf(fits, "#my-games li"), 10*time.Second)
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`document.getElementById("active-games-dialog").close(); true`, nil)); err != nil {
+	if err := runSteps(ctx, stepEval(`document.getElementById("active-games-dialog").close(); true`)); err != nil {
 		t.Fatal(err)
 	}
 	clickSel(t, ctx, "#open-join")
@@ -159,7 +155,7 @@ func TestVoiceUI_TheMicIsInTheChatTabOfAMapGame(t *testing.T) {
 	room := councilWithHistory(t, base, 2)
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1400, 900)); err != nil {
+	if err := runSteps(ctx, stepViewport(1400, 900)); err != nil {
 		t.Fatal(err)
 	}
 	openGameAs(t, ctx, base, room, "test-council", "Alice")

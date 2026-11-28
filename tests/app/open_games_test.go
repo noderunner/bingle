@@ -4,8 +4,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/chromedp/chromedp"
 )
 
 type openGameResp struct {
@@ -162,7 +160,7 @@ func TestWebGlobalChat_TheTabSaysHowManyAreUnread(t *testing.T) {
 	bo := member(t, a, baseURL, "bob") // the global chat is written by accounts (ADR 0073)
 	ctx, cancel := newChromedpContext(t, 90*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/")); err != nil {
+	if err := runSteps(ctx, stepNavigate(baseURL+"/")); err != nil {
 		t.Fatal(err)
 	}
 	waitScripts(t, ctx)
@@ -177,7 +175,7 @@ func TestWebGlobalChat_TheTabSaysHowManyAreUnread(t *testing.T) {
 	// Two more are said while this browser is away from the page (so it does
 	// not see them arrive), and are counted when it comes back: the page
 	// remembers the last message it showed.
-	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/profile")); err != nil {
+	if err := runSteps(ctx, stepNavigate(baseURL+"/profile")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the profile page", `document.getElementById("profile_name") !== null`, 20*time.Second)
@@ -186,7 +184,7 @@ func TestWebGlobalChat_TheTabSaysHowManyAreUnread(t *testing.T) {
 			t.Fatalf("Bo says %q: %d", line, code)
 		}
 	}
-	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/")); err != nil {
+	if err := runSteps(ctx, stepNavigate(baseURL+"/")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the badge after coming back", `document.getElementById("chat-tab-badge") && document.getElementById("chat-tab-badge").hidden === false && document.getElementById("chat-tab-badge").textContent === "2"`, 15*time.Second)

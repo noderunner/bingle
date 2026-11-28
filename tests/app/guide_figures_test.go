@@ -6,9 +6,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/chromedp/cdproto/runtime"
-	"github.com/chromedp/chromedp"
 )
 
 // The server draws no pictures of a game (ADR 0124): there is no board.svg
@@ -41,7 +38,7 @@ func TestWebGuides_AFigureIsDrawnByTheGame(t *testing.T) {
 	base := newRESTTestServer(t)
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/")); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/")); err != nil {
 		t.Fatal(err)
 	}
 	script := `import("/static/js/markdown.js").then(({ renderMarkdown }) => {
@@ -65,7 +62,7 @@ func TestWebGuides_AFigureIsDrawnByTheGame(t *testing.T) {
 		].join(" / ");
 	})`
 	var got string
-	if err := chromedp.Run(ctx, chromedp.Evaluate(script, &got, func(p *runtime.EvaluateParams) *runtime.EvaluateParams { return p.WithAwaitPromise(true) })); err != nil {
+	if err := runSteps(ctx, stepEvalTo(script, &got, awaitPromise)); err != nil {
 		t.Fatal(err)
 	}
 	if want := "drawn / img|The map|300px / The map of this game / The map / A cave"; got != want {

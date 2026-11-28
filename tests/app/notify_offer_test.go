@@ -8,8 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chromedp/chromedp"
-
 	"github.com/noderunner/bingle/internal/auth"
 )
 
@@ -19,12 +17,12 @@ func TestNotifyOffer_AnAccountIsOfferedNotificationsOnce(t *testing.T) {
 	// A guest is not offered them.
 	guest, cancelGuest := newChromedpContext(t, 60*time.Second)
 	defer cancelGuest()
-	if err := chromedp.Run(guest, chromedp.Navigate(base+"/")); err != nil {
+	if err := runSteps(guest, stepNavigate(base+"/")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, guest, "the top bar", `document.getElementById("open-profile") !== null`, 10*time.Second)
 	var offered bool
-	if err := chromedp.Run(guest, chromedp.Sleep(500*time.Millisecond), chromedp.Evaluate(`document.getElementById("notify-offer") !== null`, &offered)); err != nil {
+	if err := runSteps(guest, stepSleep(500*time.Millisecond), stepEvalTo(`document.getElementById("notify-offer") !== null`, &offered)); err != nil {
 		t.Fatal(err)
 	}
 	if offered {
@@ -35,11 +33,11 @@ func TestNotifyOffer_AnAccountIsOfferedNotificationsOnce(t *testing.T) {
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
 	signInChrome(t, ctx, base, ana.cookie(auth.SessionCookie))
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/")); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/")); err != nil {
 		t.Fatal(err)
 	}
 	var perm string
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`"Notification" in window ? Notification.permission : "none"`, &perm)); err != nil {
+	if err := runSteps(ctx, stepEvalTo(`"Notification" in window ? Notification.permission : "none"`, &perm)); err != nil {
 		t.Fatal(err)
 	}
 	if perm != "default" {
@@ -48,7 +46,7 @@ func TestNotifyOffer_AnAccountIsOfferedNotificationsOnce(t *testing.T) {
 	waitJS(t, ctx, "the offer", `document.getElementById("notify-offer") !== null`, 10*time.Second)
 	clickSel(t, ctx, "#notify-offer-off")
 	waitJS(t, ctx, "the offer gone and the setting off", `document.getElementById("notify-offer") === null && localStorage.getItem("bingle.notify") === "false"`, 10*time.Second)
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/"), chromedp.Sleep(800*time.Millisecond), chromedp.Evaluate(`document.getElementById("notify-offer") !== null`, &offered)); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/"), stepSleep(800*time.Millisecond), stepEvalTo(`document.getElementById("notify-offer") !== null`, &offered)); err != nil {
 		t.Fatal(err)
 	}
 	if offered {

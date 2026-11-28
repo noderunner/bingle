@@ -10,8 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chromedp/chromedp"
-
 	"github.com/noderunner/bingle/internal/app"
 	"github.com/noderunner/bingle/internal/config"
 	"github.com/noderunner/bingle/internal/mail/fakesmtp"
@@ -152,7 +150,7 @@ func TestWebBrand_ThePage(t *testing.T) {
 	base := brandedServer(t)
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1400, 900), chromedp.Navigate(base+"/")); err != nil {
+	if err := runSteps(ctx, stepViewport(1400, 900), stepNavigate(base+"/")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the bar", `document.getElementById("open-help") !== null || document.querySelector(".topbar .brand") !== null`, 20*time.Second)

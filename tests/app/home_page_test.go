@@ -7,8 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chromedp/chromedp"
-
 	"github.com/noderunner/bingle/internal/auth"
 )
 
@@ -18,9 +16,9 @@ func TestHomePage_IsTabbedAndTidy(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx,
-		chromedp.Navigate(baseURL+"/"),
-		chromedp.WaitVisible(`.game-card[data-family="tak-5x5"]`, chromedp.ByQuery),
+	if err := runSteps(ctx,
+		stepNavigate(baseURL+"/"),
+		stepWaitVisible(`.game-card[data-family="tak-5x5"]`),
 	); err != nil {
 		t.Fatal(err)
 	}
@@ -68,9 +66,9 @@ func TestHomePage_SetupAppearsAfterPickingAGame(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	ctx, cancel := newChromedpContext(t, 40*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx,
-		chromedp.Navigate(baseURL+"/"),
-		chromedp.WaitVisible(`.game-card[data-family="hex-11"]`, chromedp.ByQuery),
+	if err := runSteps(ctx,
+		stepNavigate(baseURL+"/"),
+		stepWaitVisible(`.game-card[data-family="hex-11"]`),
 	); err != nil {
 		t.Fatal(err)
 	}
@@ -91,7 +89,7 @@ func TestHomePage_FunFactVariesOnReload(t *testing.T) {
 	defer cancel()
 	seen := map[string]bool{}
 	for i := 0; i < 8; i++ {
-		if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/"), chromedp.WaitVisible("#fun-fact", chromedp.ByID)); err != nil {
+		if err := runSteps(ctx, stepNavigate(baseURL+"/"), stepWaitVisible("#fun-fact")); err != nil {
 			t.Fatal(err)
 		}
 		waitJS(t, ctx, "fact", `document.getElementById("fun-fact").textContent.length > 20`, 5*time.Second)
@@ -119,10 +117,10 @@ func TestHomePage_ActiveGamesAndProfile(t *testing.T) {
 	})
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx,
-		chromedp.Navigate(baseURL+"/healthz"),
-		chromedp.Evaluate(fmt.Sprintf(`localStorage.setItem("bingle.games", %q); localStorage.setItem("bingle.name", JSON.stringify("Alice")); true`, games), nil),
-		chromedp.Navigate(baseURL+"/"),
+	if err := runSteps(ctx,
+		stepNavigate(baseURL+"/healthz"),
+		stepEval(fmt.Sprintf(`localStorage.setItem("bingle.games", %q); localStorage.setItem("bingle.name", JSON.stringify("Alice")); true`, games)),
+		stepNavigate(baseURL+"/"),
 	); err != nil {
 		t.Fatal(err)
 	}
@@ -135,7 +133,7 @@ func TestHomePage_ActiveGamesAndProfile(t *testing.T) {
 	}
 
 	// The profile page: finished games ...
-	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/profile"), chromedp.WaitVisible("#profile-form", chromedp.ByID)); err != nil {
+	if err := runSteps(ctx, stepNavigate(baseURL+"/profile"), stepWaitVisible("#profile-form")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "finished list", `document.querySelectorAll("#finished-games li").length === 1`, 10*time.Second)
@@ -154,14 +152,14 @@ func TestHomePage_ActiveGamesAndProfile(t *testing.T) {
 	})()`)
 	clickSel(t, ctx, "#profile-save")
 	waitJS(t, ctx, "saved", `document.getElementById("profile-status").textContent === "Saved."`, 5*time.Second)
-	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/profile"), chromedp.WaitVisible("#profile-form", chromedp.ByID)); err != nil {
+	if err := runSteps(ctx, stepNavigate(baseURL+"/profile"), stepWaitVisible("#profile-form")); err != nil {
 		t.Fatal(err)
 	}
 	if got := evalString(t, ctx, `[document.getElementById("profile_name").value, document.getElementById("profile_email").value, document.getElementById("profile_notify").checked].join("|")`); got != "Alicia|alicia@example.com|true" {
 		t.Errorf("settings after reload = %q", got)
 	}
 	// Joining a game asks no name: it uses this one.
-	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/"), chromedp.WaitVisible("#open-join", chromedp.ByID)); err != nil {
+	if err := runSteps(ctx, stepNavigate(baseURL+"/"), stepWaitVisible("#open-join")); err != nil {
 		t.Fatal(err)
 	}
 	clickSel(t, ctx, "#open-join")
@@ -173,7 +171,7 @@ func TestHomePage_ActiveGamesAndProfile(t *testing.T) {
 		t.Errorf("the name to join under is %q", got)
 	}
 	// A bad address is not saved.
-	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/profile"), chromedp.WaitVisible("#profile-form", chromedp.ByID)); err != nil {
+	if err := runSteps(ctx, stepNavigate(baseURL+"/profile"), stepWaitVisible("#profile-form")); err != nil {
 		t.Fatal(err)
 	}
 	evalString(t, ctx, `document.getElementById("profile_email").value = "not-an-address"; "ok"`)
@@ -187,13 +185,13 @@ func TestHomePage_JoinDialogJoinsAGame(t *testing.T) {
 	room := newTakRoom(t, baseURL, "tic-tac-toe", "Alice")
 	ctx, cancel := newChromedpContext(t, 40*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/"), chromedp.WaitVisible("#open-join", chromedp.ByID)); err != nil {
+	if err := runSteps(ctx, stepNavigate(baseURL+"/"), stepWaitVisible("#open-join")); err != nil {
 		t.Fatal(err)
 	}
 	clickSel(t, ctx, "#open-join")
-	if err := chromedp.Run(ctx,
-		chromedp.WaitVisible("#room_code", chromedp.ByID),
-		chromedp.SendKeys("#room_code", strings.ToLower(room), chromedp.ByID),
+	if err := runSteps(ctx,
+		stepWaitVisible("#room_code"),
+		stepSendKeys("#room_code", strings.ToLower(room)),
 	); err != nil {
 		t.Fatal(err)
 	}
@@ -248,7 +246,7 @@ func TestGlobalChat_RESTAndLive(t *testing.T) {
 	// A guest's page shows the room and says writing is for accounts.
 	guestCtx, cancelG := newChromedpContext(t, 60*time.Second)
 	defer cancelG()
-	if err := chromedp.Run(guestCtx, chromedp.Navigate(baseURL+"/#chat"), chromedp.WaitVisible("#global-chat-input", chromedp.ByID)); err != nil {
+	if err := runSteps(guestCtx, stepNavigate(baseURL+"/#chat"), stepWaitVisible("#global-chat-input")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, guestCtx, "a guest reads but does not write", `document.querySelector("#global-chat-log .chat-line .chat-text") && document.getElementById("global-chat-input").disabled`, 10*time.Second)
@@ -258,7 +256,7 @@ func TestGlobalChat_RESTAndLive(t *testing.T) {
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
 	signInChrome(t, ctx, baseURL, dee.cookie(auth.SessionCookie))
-	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/#chat"), chromedp.WaitVisible("#global-chat-input", chromedp.ByID)); err != nil {
+	if err := runSteps(ctx, stepNavigate(baseURL+"/#chat"), stepWaitVisible("#global-chat-input")); err != nil {
 		t.Fatal(err)
 	}
 	// The history is there ...
@@ -271,7 +269,7 @@ func TestGlobalChat_RESTAndLive(t *testing.T) {
 	}
 	waitJS(t, ctx, "live line", `[...document.querySelectorAll("#global-chat-log .chat-text")].some((e) => e.textContent === "pushed")`, 10*time.Second)
 	// ... and the page can write too.
-	if err := chromedp.Run(ctx, chromedp.SendKeys("#global-chat-input", "from the page", chromedp.ByID)); err != nil {
+	if err := runSteps(ctx, stepSendKeys("#global-chat-input", "from the page")); err != nil {
 		t.Fatal(err)
 	}
 	clickSel(t, ctx, "#global-chat-send")
@@ -288,7 +286,7 @@ func TestGlobalChat_UnreadCountOnTheTab(t *testing.T) {
 	cy := member(t, a, baseURL, "cyd")
 	ctx, cancel := newChromedpContext(t, 40*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/")); err != nil {
+	if err := runSteps(ctx, stepNavigate(baseURL+"/")); err != nil {
 		t.Fatal(err)
 	}
 	waitScripts(t, ctx)

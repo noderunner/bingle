@@ -8,8 +8,6 @@ import (
 	"testing/fstest"
 	"time"
 
-	"github.com/chromedp/chromedp"
-
 	"github.com/noderunner/bingle/internal/auth"
 	"github.com/noderunner/bingle/internal/engine/catalog"
 	"github.com/noderunner/bingle/internal/web/look"
@@ -88,7 +86,7 @@ func TestBadges_TheProfileListsThem(t *testing.T) {
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
 	signInChrome(t, ctx, base, ana.cookie(auth.SessionCookie))
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/profile")); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/profile")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "no badges yet", `document.getElementById("badges-box").hidden === false && document.getElementById("badges-empty").hidden === false`, 15*time.Second)
@@ -104,7 +102,7 @@ func TestBadges_TheProfileListsThem(t *testing.T) {
 	}
 
 	winFirst(t, ana, "ana", bea, "bea")
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/profile")); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/profile")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the First Win", `document.querySelector('#badges-list li[data-badge="first-win"][data-earned="true"] .badge-name') !== null`, 15*time.Second)
@@ -129,7 +127,7 @@ func TestBadges_AHandleShowsTheBadges(t *testing.T) {
 	ana, cancel := newChromedpContext(t, 90*time.Second)
 	defer cancel()
 	signInChrome(t, ana, base, anaB.cookie(auth.SessionCookie))
-	if err := chromedp.Run(ana, chromedp.EmulateViewport(1400, 900), chromedp.Navigate(base+"/")); err != nil {
+	if err := runSteps(ana, stepViewport(1400, 900), stepNavigate(base+"/")); err != nil {
 		t.Fatal(err)
 	}
 	waitScripts(t, ana)
@@ -229,7 +227,7 @@ func TestBadges_APlayersPage(t *testing.T) {
 	bea, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
 	signInChrome(t, bea, base, beaB.cookie(auth.SessionCookie))
-	if err := chromedp.Run(bea, chromedp.Navigate(base+"/players/ana")); err != nil {
+	if err := runSteps(bea, stepNavigate(base+"/players/ana")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, bea, "her badges", `document.querySelector('#player-badges li[data-badge="first-win"]') !== null`, 15*time.Second)
@@ -240,7 +238,7 @@ func TestBadges_APlayersPage(t *testing.T) {
 		t.Error("her page does not say the reader holds it too")
 	}
 
-	if err := chromedp.Run(bea, chromedp.Navigate(base+"/players/nobody")); err != nil {
+	if err := runSteps(bea, stepNavigate(base+"/players/nobody")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, bea, "no such player", `document.getElementById("player-note").textContent.includes("no player @nobody")`, 15*time.Second)
@@ -256,7 +254,7 @@ func TestBadges_TheRulesWindowListsTheGamesBadges(t *testing.T) {
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
 	signInChrome(t, ctx, base, ana.cookie(auth.SessionCookie))
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/?game=stones-badges")); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/?game=stones-badges")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the setup", `!document.getElementById("game-setup").hidden`, 15*time.Second)
@@ -339,7 +337,7 @@ func TestBadges_TheWaysABadgeWasEarned(t *testing.T) {
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
 	signInChrome(t, ctx, base, anaB.cookie(auth.SessionCookie))
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/profile")); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/profile")); err != nil {
 		t.Fatal(err)
 	}
 	item := `#badges-list li[data-badge="quick-win.quick"]`
@@ -364,7 +362,7 @@ func TestBadges_TheWaysABadgeWasEarned(t *testing.T) {
 		t.Fatalf("the winning stone: %d", code)
 	}
 	waitFor(t, "the badge against people", func() bool { return len(ways()) == 2 })
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/profile")); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/profile")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "earned both ways", `document.querySelectorAll('`+item+`').length === 1 && document.querySelector('`+item+`[data-ways="people bots"] .medal-bot') !== null && document.querySelector('`+item+` .medal-people') !== null`, 15*time.Second)
@@ -392,7 +390,7 @@ func TestBadges_AGameDrawsItsBadgesIcons(t *testing.T) {
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
 	signInChrome(t, ctx, base, ana.cookie(auth.SessionCookie))
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/profile#badges")); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/profile#badges")); err != nil {
 		t.Fatal(err)
 	}
 	builder := `#badges-list li[data-badge="stones-badges.builder"] .badge-medal`
@@ -413,13 +411,13 @@ func TestBadges_AHandleAtASeatOpensItsMenu(t *testing.T) {
 	ana, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
 	signInChrome(t, ana, base, anaB.cookie(auth.SessionCookie))
-	if err := chromedp.Run(ana, chromedp.EmulateViewport(1400, 900), chromedp.Navigate(base+"/game/"+room)); err != nil {
+	if err := runSteps(ana, stepViewport(1400, 900), stepNavigate(base+"/game/"+room)); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ana, "bea's seat", `document.querySelector('button.badge.account[data-handle="bea"]') !== null`, 20*time.Second)
 	clickSel(t, ana, `button.badge.account[data-handle="bea"]`)
 	waitJS(t, ana, "her menu", `document.querySelector('#friend-pop #pop-badges [data-badge="first-win"]') !== null && document.querySelector('#friend-pop #pop-player[href="/players/bea"]') !== null`, 10*time.Second)
-	if err := chromedp.Run(ana, chromedp.KeyEvent("\x1b")); err != nil {
+	if err := runSteps(ana, stepKey("\x1b")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ana, "the menu closed", `document.getElementById("friend-pop") === null`, 5*time.Second)
@@ -432,7 +430,7 @@ func TestBadges_AHandleAtASeatOpensItsMenu(t *testing.T) {
 	// A guest watching: the way to the page, and nothing else.
 	guest, cancelGuest := newChromedpContext(t, 60*time.Second)
 	defer cancelGuest()
-	if err := chromedp.Run(guest, chromedp.EmulateViewport(1400, 900), chromedp.Navigate(base+"/game/"+room)); err != nil {
+	if err := runSteps(guest, stepViewport(1400, 900), stepNavigate(base+"/game/"+room)); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, guest, "bea's seat", `document.querySelector('button.badge.account[data-handle="bea"]') !== null`, 20*time.Second)
@@ -451,7 +449,7 @@ func TestBadges_TheProfileHasTabs(t *testing.T) {
 
 	guest, cancelGuest := newChromedpContext(t, 60*time.Second)
 	defer cancelGuest()
-	if err := chromedp.Run(guest, chromedp.Navigate(base+"/profile#badges")); err != nil {
+	if err := runSteps(guest, stepNavigate(base+"/profile#badges")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, guest, "the settings", `document.getElementById("panel-settings").hidden === false`, 10*time.Second)
@@ -464,7 +462,7 @@ func TestBadges_TheProfileHasTabs(t *testing.T) {
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
 	signInChrome(t, ctx, base, ana.cookie(auth.SessionCookie))
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/profile#badges")); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/profile#badges")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the Badges tab, open", `!document.getElementById("tab-badges").hidden && !document.getElementById("panel-badges").hidden && document.getElementById("panel-settings").hidden`, 15*time.Second)

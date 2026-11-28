@@ -6,9 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chromedp/cdproto/runtime"
-	"github.com/chromedp/chromedp"
-
 	"github.com/noderunner/bingle/internal/app"
 	"github.com/noderunner/bingle/internal/auth"
 	"github.com/noderunner/bingle/internal/auth/fakeoidc"
@@ -33,7 +30,7 @@ func TestAccountUI_SignInAndChangeTheGivenPassword(t *testing.T) {
 
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.Navigate(srv.URL+"/profile")); err != nil {
+	if err := runSteps(ctx, stepNavigate(srv.URL+"/profile")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the sign-in link", `document.getElementById("login-link") !== null && !document.getElementById("account-box").hidden`, 10*time.Second)
@@ -42,24 +39,24 @@ func TestAccountUI_SignInAndChangeTheGivenPassword(t *testing.T) {
 	// keys go to a document the browser is still replacing (and the click to a form
 	// with nothing listening).
 	waitJS(t, ctx, "the sign-in page", `location.pathname === "/login" && document.readyState === "complete" && document.getElementById("login-form") !== null`, 10*time.Second)
-	if err := chromedp.Run(ctx,
-		chromedp.SendKeys("#login-handle", "ana", chromedp.ByID),
-		chromedp.SendKeys("#login-password", pw, chromedp.ByID),
-		chromedp.Click("#login-go", chromedp.ByID),
+	if err := runSteps(ctx,
+		stepSendKeys("#login-handle", "ana"),
+		stepSendKeys("#login-password", pw),
+		stepClick("#login-go"),
 	); err != nil {
 		t.Fatal(err)
 	}
 	// A given password sends the account to change it.
 	waitJS(t, ctx, "the account page", `location.pathname === "/account" && document.readyState === "complete" && document.getElementById("account-who") && document.getElementById("account-who").textContent === "Signed in as @ana." && !document.getElementById("account-must-change").hidden`, 10*time.Second)
-	if err := chromedp.Run(ctx,
-		chromedp.SendKeys("#password-old", pw, chromedp.ByID),
-		chromedp.SendKeys("#password-new", "a password of my own", chromedp.ByID),
-		chromedp.Click("#password-go", chromedp.ByID),
+	if err := runSteps(ctx,
+		stepSendKeys("#password-old", pw),
+		stepSendKeys("#password-new", "a password of my own"),
+		stepClick("#password-go"),
 	); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "changed", `document.getElementById("account-result").textContent.indexOf("Done") === 0 && document.getElementById("account-must-change").hidden`, 10*time.Second)
-	if err := chromedp.Run(ctx, chromedp.Navigate(srv.URL+"/profile")); err != nil {
+	if err := runSteps(ctx, stepNavigate(srv.URL+"/profile")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "signed in on the profile", `document.getElementById("account-line").textContent.indexOf("Signed in as @ana.") === 0`, 10*time.Second)
@@ -77,23 +74,23 @@ func TestAccountUI_TwoStepSignIn(t *testing.T) {
 	_, base := accountServer(t)
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/login")); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/login")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the sign-in form", `document.getElementById("login-form") !== null`, 10*time.Second)
-	if err := chromedp.Run(ctx,
-		chromedp.SendKeys("#login-handle", "ana", chromedp.ByID),
-		chromedp.SendKeys("#login-password", anaPassword, chromedp.ByID),
-		chromedp.Click("#login-go", chromedp.ByID),
+	if err := runSteps(ctx,
+		stepSendKeys("#login-handle", "ana"),
+		stepSendKeys("#login-password", anaPassword),
+		stepClick("#login-go"),
 	); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "home", `location.pathname === "/"`, 10*time.Second)
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/account")); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/account")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the account page, ready", `document.getElementById("tf-state").textContent.indexOf("Off") === 0`, 10*time.Second)
-	if err := chromedp.Run(ctx, chromedp.SendKeys("#tf-password", anaPassword, chromedp.ByID)); err != nil {
+	if err := runSteps(ctx, stepSendKeys("#tf-password", anaPassword)); err != nil {
 		t.Fatal(err)
 	}
 	clickSel(t, ctx, "#tf-setup")
@@ -101,9 +98,9 @@ func TestAccountUI_TwoStepSignIn(t *testing.T) {
 	// The QR code is there and the browser could draw it: a phone's camera
 	// is how most people add it.
 	waitJS(t, ctx, "the QR code", `(() => { const q = document.getElementById("tf-qr"); return !q.hidden && q.complete && q.naturalWidth > 0 && getComputedStyle(q).display !== "none"; })()`, 10*time.Second)
-	shot(t, ctx, "totp-setup", func(b *[]byte) error { return chromedp.Run(ctx, chromedp.FullScreenshot(b, 90)) })
+	shot(t, ctx, "totp-setup", func(b *[]byte) error { return runSteps(ctx, stepScreenshot(b)) })
 	key := totpKey(t, evalString(t, ctx, `document.getElementById("tf-secret").textContent`))
-	if err := chromedp.Run(ctx, chromedp.SendKeys("#tf-code", auth.TOTPCode(key, time.Now(), 6), chromedp.ByID)); err != nil {
+	if err := runSteps(ctx, stepSendKeys("#tf-code", auth.TOTPCode(key, time.Now(), 6))); err != nil {
 		t.Fatal(err)
 	}
 	clickSel(t, ctx, "#tf-enable")
@@ -111,21 +108,21 @@ func TestAccountUI_TwoStepSignIn(t *testing.T) {
 	clickSel(t, ctx, "#logout-go")
 	waitJS(t, ctx, "signed out", `location.pathname === "/"`, 10*time.Second)
 
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/login")); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/login")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the sign-in form", `document.getElementById("login-form") !== null`, 10*time.Second)
-	if err := chromedp.Run(ctx,
-		chromedp.SendKeys("#login-handle", "ana", chromedp.ByID),
-		chromedp.SendKeys("#login-password", anaPassword, chromedp.ByID),
-		chromedp.Click("#login-go", chromedp.ByID),
+	if err := runSteps(ctx,
+		stepSendKeys("#login-handle", "ana"),
+		stepSendKeys("#login-password", anaPassword),
+		stepClick("#login-go"),
 	); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the second step", `!document.getElementById("second-form").hidden && document.getElementById("login-form").hidden`, 10*time.Second)
-	if err := chromedp.Run(ctx,
-		chromedp.SendKeys("#second-code", auth.TOTPCode(key, time.Now().Add(30*time.Second), 6), chromedp.ByID),
-		chromedp.Click("#second-go", chromedp.ByID),
+	if err := runSteps(ctx,
+		stepSendKeys("#second-code", auth.TOTPCode(key, time.Now().Add(30*time.Second), 6)),
+		stepClick("#second-go"),
 	); err != nil {
 		t.Fatal(err)
 	}
@@ -139,20 +136,20 @@ func TestAccountUI_SignInWithAProvider(t *testing.T) {
 	idp.SignInAs(fakeoidc.Identity{Subject: "s-ui", Email: "ui@example.com", EmailVerified: true})
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/login")); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/login")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the provider's button", `document.getElementById("oidc-fake") && document.getElementById("oidc-fake").textContent === "Sign in with Fake"`, 10*time.Second)
 	clickSel(t, ctx, "#oidc-fake")
 	waitJS(t, ctx, "the handle form", `location.pathname === "/signup" && !document.getElementById("oidc-signup-form").hidden && document.getElementById("signup-form").hidden`, 10*time.Second)
-	if err := chromedp.Run(ctx,
-		chromedp.SendKeys("#oidc-handle", "uiuser", chromedp.ByID),
-		chromedp.Click("#oidc-go", chromedp.ByID),
+	if err := runSteps(ctx,
+		stepSendKeys("#oidc-handle", "uiuser"),
+		stepClick("#oidc-go"),
 	); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "home", `location.pathname === "/"`, 10*time.Second)
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/account")); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/account")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the account, with the provider linked and no password", `document.getElementById("account-who").textContent === "Signed in as @uiuser." && document.getElementById("password-title").textContent === "Set a password" && document.getElementById("oidc-unlink-fake") !== null`, 10*time.Second)
@@ -177,12 +174,12 @@ func TestAccountUI_TheAdminPage(t *testing.T) {
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
 	signInChrome(t, ctx, srv.URL, b.cookie(auth.SessionCookie))
-	if err := chromedp.Run(ctx, chromedp.Navigate(srv.URL+"/admin")); err != nil {
+	if err := runSteps(ctx, stepNavigate(srv.URL+"/admin")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the matrix", `document.getElementById("cap-guest-create_game") && document.getElementById("cap-guest-create_game").checked && !document.getElementById("cap-guest-run_batch").checked`, 10*time.Second)
 	waitJS(t, ctx, "the events", `!document.getElementById("events-card").hidden`, 10*time.Second)
-	shot(t, ctx, "admin", func(b *[]byte) error { return chromedp.Run(ctx, chromedp.FullScreenshot(b, 90)) })
+	shot(t, ctx, "admin", func(b *[]byte) error { return runSteps(ctx, stepScreenshot(b)) })
 	clickSel(t, ctx, "#cap-guest-create_game")
 	waitJS(t, ctx, "saved", `document.getElementById("caps-result").textContent.indexOf("Saved") === 0 && !document.getElementById("caps-drift").hidden`, 10*time.Second)
 	if code := createAs(t, newGuestKey(t, srv.URL), srv.URL); code != 403 {
@@ -195,7 +192,7 @@ func TestAccountUI_TheAdminPage(t *testing.T) {
 	ctx2, cancel2 := newChromedpContext(t, 60*time.Second)
 	defer cancel2()
 	signInChrome(t, ctx2, srv.URL, nb.cookie(auth.SessionCookie))
-	if err := chromedp.Run(ctx2, chromedp.Navigate(srv.URL+"/admin")); err != nil {
+	if err := runSteps(ctx2, stepNavigate(srv.URL+"/admin")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx2, "refused", `!document.getElementById("admin-refused").hidden && document.getElementById("caps-card").hidden`, 10*time.Second)
@@ -207,16 +204,16 @@ func TestAccountUI_AGuestKeyLinkResumesTheGames(t *testing.T) {
 	base := newRESTTestServer(t)
 	laptop, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	if err := chromedp.Run(laptop, chromedp.Navigate(base+"/")); err != nil {
+	if err := runSteps(laptop, stepNavigate(base+"/")); err != nil {
 		t.Fatal(err)
 	}
 	// The laptop takes a seat in a game (as the page does: a POST from the page).
 	var room string
-	if err := chromedp.Run(laptop, chromedp.Evaluate(`fetch("/api/games", {method: "POST", headers: {"Content-Type": "application/json", "X-Bingle-Session": "1"}, body: JSON.stringify({game_def_id: "tic-tac-toe", player_name: "Lia"})}).then(r => r.json()).then(j => j.room_code)`, &room, func(p *runtime.EvaluateParams) *runtime.EvaluateParams { return p.WithAwaitPromise(true) })); err != nil {
+	if err := runSteps(laptop, stepEvalTo(`fetch("/api/games", {method: "POST", headers: {"Content-Type": "application/json", "X-Bingle-Session": "1"}, body: JSON.stringify({game_def_id: "tic-tac-toe", player_name: "Lia"})}).then(r => r.json()).then(j => j.room_code)`, &room, awaitPromise)); err != nil {
 		t.Fatal(err)
 	}
 	doJSONAs(t, newGuestKey(t, base), "POST", base+"/api/games/"+room+"/join", map[string]any{"player_name": "Bob"}, nil)
-	if err := chromedp.Run(laptop, chromedp.Navigate(base+"/")); err != nil {
+	if err := runSteps(laptop, stepNavigate(base+"/")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, laptop, "the top bar", `document.getElementById("open-profile") !== null`, 10*time.Second)
@@ -228,7 +225,7 @@ func TestAccountUI_AGuestKeyLinkResumesTheGames(t *testing.T) {
 
 	phone, cancel2 := newChromedpContext(t, 60*time.Second)
 	defer cancel2()
-	if err := chromedp.Run(phone, chromedp.Navigate(link)); err != nil {
+	if err := runSteps(phone, stepNavigate(link)); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, phone, "the key out of the address", `location.hash === ""`, 10*time.Second)
@@ -236,7 +233,7 @@ func TestAccountUI_AGuestKeyLinkResumesTheGames(t *testing.T) {
 	// races it, and it aborts the next navigation.
 	waitJS(t, phone, "the reload", `performance.getEntriesByType("navigation")[0].type === "reload" && document.readyState === "complete"`, 10*time.Second)
 	// After the reload, the game is among the phone's, and its seat is the phone's.
-	if err := chromedp.Run(phone, chromedp.Navigate(base+"/game/"+room)); err != nil {
+	if err := runSteps(phone, stepNavigate(base+"/game/"+room)); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, phone, "the seat, as the phone's own", `document.querySelector("#seat-1 .badge") && [...document.querySelectorAll("#seat-1 .badge")].some(b => b.textContent === "you") && [...document.querySelectorAll("#seat-1 .badge")].some(b => b.textContent === "guest")`, 15*time.Second)
@@ -255,7 +252,7 @@ func TestAccountUI_TheProfileWindowMovesAGuest(t *testing.T) {
 	}
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/")); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the top bar", `document.getElementById("open-profile") !== null`, 10*time.Second)
@@ -263,7 +260,7 @@ func TestAccountUI_TheProfileWindowMovesAGuest(t *testing.T) {
 	waitJS(t, ctx, "the key to copy, under its heading", `document.getElementById("guest-copy") !== null && document.querySelector("#guest-box h3").textContent === "Move to Another Device"`, 10*time.Second)
 	evalBool(t, ctx, `(document.getElementById("guest-use-key").value = "`+key+`", document.getElementById("guest-use").click(), true)`)
 	waitJS(t, ctx, "the key taken", `document.getElementById("guest-result").textContent.indexOf("that guest now") >= 0`, 10*time.Second)
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/game/"+room.RoomCode)); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/game/"+room.RoomCode)); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the seat, as this browser's own", `document.querySelector("#seat-1 .badge") && [...document.querySelectorAll("#seat-1 .badge")].some(b => b.textContent === "you")`, 15*time.Second)
@@ -278,7 +275,7 @@ func TestAccountUI_TheProfileWindowMovesAGuest(t *testing.T) {
 	acc, cancelAcc := newChromedpContext(t, 60*time.Second)
 	defer cancelAcc()
 	signInChrome(t, acc, base, ana.cookie(auth.SessionCookie))
-	if err := chromedp.Run(acc, chromedp.Navigate(base+"/")); err != nil {
+	if err := runSteps(acc, stepNavigate(base+"/")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, acc, "the top bar", `document.getElementById("open-profile") !== null`, 10*time.Second)
@@ -296,7 +293,7 @@ func TestAccountUI_TheProfileWindowSaysWhoYouAre(t *testing.T) {
 	a, base := membersServer(t)
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/")); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the icon says guest", `document.getElementById("open-profile") && document.getElementById("open-profile").title === "Your profile (playing as a guest)"`, 10*time.Second)
@@ -309,7 +306,7 @@ func TestAccountUI_TheProfileWindowSaysWhoYouAre(t *testing.T) {
 	ctx2, cancel2 := newChromedpContext(t, 60*time.Second)
 	defer cancel2()
 	signInChrome(t, ctx2, base, ana.cookie(auth.SessionCookie))
-	if err := chromedp.Run(ctx2, chromedp.Navigate(base+"/")); err != nil {
+	if err := runSteps(ctx2, stepNavigate(base+"/")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx2, "the icon says signed in", `document.getElementById("open-profile").title === "Your profile (signed in as @ana)"`, 10*time.Second)
@@ -325,7 +322,7 @@ func TestAccountUI_AGuestIsNotOfferedWhatIsAnAccounts(t *testing.T) {
 	a, base := membersServer(t)
 	guest, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	if err := chromedp.Run(guest, chromedp.Navigate(base+"/")); err != nil {
+	if err := runSteps(guest, stepNavigate(base+"/")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, guest, "the top bar, without direct messages", `document.getElementById("open-profile") && document.getElementById("open-profile").title.indexOf("guest") > 0 && getComputedStyle(document.getElementById("open-friends")).display === "none"`, 10*time.Second)
@@ -336,7 +333,7 @@ func TestAccountUI_AGuestIsNotOfferedWhatIsAnAccounts(t *testing.T) {
 	acc, cancel2 := newChromedpContext(t, 60*time.Second)
 	defer cancel2()
 	signInChrome(t, acc, base, ana.cookie(auth.SessionCookie))
-	if err := chromedp.Run(acc, chromedp.Navigate(base+"/")); err != nil {
+	if err := runSteps(acc, stepNavigate(base+"/")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, acc, "the direct messages", `getComputedStyle(document.getElementById("open-friends")).display !== "none"`, 10*time.Second)
@@ -350,7 +347,7 @@ func TestAccountUI_AGuestsProfileHasNoTurnMail(t *testing.T) {
 	e := accountsNotifyEnv(t) // mail set up, notifications accounts' only
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.Navigate(e.URL+"/profile")); err != nil {
+	if err := runSteps(ctx, stepNavigate(e.URL+"/profile")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the note instead of the address", `!document.getElementById("notify-accounts-only").hidden && getComputedStyle(document.getElementById("profile-email-field")).display === "none" && getComputedStyle(document.getElementById("notify-box")).display === "none"`, 10*time.Second)
@@ -362,7 +359,7 @@ func TestAccountUI_TheSignInBoxesLookAlike(t *testing.T) {
 	_, base := membersServer(t)
 	ctx, cancel := newChromedpContext(t, 30*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/login")); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/login")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the form", `document.getElementById("login-password") !== null`, 10*time.Second)

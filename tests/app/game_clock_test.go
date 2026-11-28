@@ -7,8 +7,6 @@ import (
 	"sync"
 	"testing"
 	"time"
-
-	"github.com/chromedp/chromedp"
 )
 
 type clockResp struct {
@@ -137,12 +135,12 @@ func TestWebGameClock_SetupAndTheSeatStrips(t *testing.T) {
 	var mu sync.Mutex
 	var jsErrors []string
 	collectJSErrors(ctx, &mu, &jsErrors)
-	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1400, 1000)); err != nil {
+	if err := runSteps(ctx, stepViewport(1400, 1000)); err != nil {
 		t.Fatal(err)
 	}
 	open := func(game string) {
 		t.Helper()
-		if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/?game="+game)); err != nil {
+		if err := runSteps(ctx, stepNavigate(baseURL+"/?game="+game)); err != nil {
 			t.Fatal(err)
 		}
 		waitJS(t, ctx, "the setup of "+game, `document.getElementById("create-game-form") !== null && !document.getElementById("game-setup").hidden`, 20*time.Second)
@@ -245,7 +243,7 @@ func TestWebClockMinutesAndTheGamesDefault(t *testing.T) {
 	defer cancel()
 	open := func(game string) {
 		t.Helper()
-		if err := chromedp.Run(ctx, chromedp.EmulateViewport(1400, 1000), chromedp.Navigate(baseURL+"/?game="+game)); err != nil {
+		if err := runSteps(ctx, stepViewport(1400, 1000), stepNavigate(baseURL+"/?game="+game)); err != nil {
 			t.Fatal(err)
 		}
 		waitJS(t, ctx, "the setup of "+game, `document.getElementById("clock-field").hidden === false && !document.getElementById("game-setup").hidden`, 20*time.Second)
@@ -304,7 +302,7 @@ func TestWebClockKeepsTheLongTimes(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	ctx, cancel := newChromedpContext(t, 90*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1400, 1000), chromedp.Navigate(baseURL+"/?game=tak-5x5")); err != nil {
+	if err := runSteps(ctx, stepViewport(1400, 1000), stepNavigate(baseURL+"/?game=tak-5x5")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the setup", `document.getElementById("clock-field").hidden === false && !document.getElementById("game-setup").hidden`, 20*time.Second)

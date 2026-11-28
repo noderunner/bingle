@@ -7,8 +7,6 @@ import (
 	"sync"
 	"testing"
 	"time"
-
-	"github.com/chromedp/chromedp"
 )
 
 // pieOptionOf reports the pie-rule option a game offers: "" when it offers
@@ -376,7 +374,7 @@ func TestWebPieRule_TheSetupOffersIt(t *testing.T) {
 
 	open := func(game string) {
 		t.Helper()
-		if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/?game="+game)); err != nil {
+		if err := runSteps(ctx, stepNavigate(baseURL+"/?game="+game)); err != nil {
 			t.Fatal(err)
 		}
 		waitJS(t, ctx, "the setup of "+game, `document.getElementById("create-game-form") !== null && !document.getElementById("game-setup").hidden`, 20*time.Second)

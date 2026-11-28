@@ -9,8 +9,6 @@ import (
 	"sync"
 	"testing"
 	"time"
-
-	"github.com/chromedp/chromedp"
 )
 
 // solitaireRoom starts a game for Ana.
@@ -177,7 +175,7 @@ func TestWebSolitaire_DraggingACard(t *testing.T) {
 			window.dispatchEvent(new PointerEvent('pointermove', opt(b.left+10, b.bottom-10)));
 			window.dispatchEvent(new PointerEvent('pointerup', opt(b.left+10, b.bottom-10)));
 			return true })()`, from, target)
-		if err := chromedp.Run(ctx, chromedp.Evaluate(js, nil)); err != nil {
+		if err := runSteps(ctx, stepEval(js)); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -268,7 +266,7 @@ func TestWebSolitaire_ADrawFromTheStockStands(t *testing.T) {
 	clickSel(t, ctx, `#sol-stock`)
 	waitJS(t, ctx, "the waste", `document.querySelectorAll('.sol-waste .pcard.face').length === 1`, 10*time.Second)
 	waitJS(t, ctx, "the counter", `document.querySelector('#seat-moves').textContent === '1' && document.querySelector('#sol-moves') === null`, 10*time.Second)
-	shot(t, ctx, "solitaire-moves", func(b *[]byte) error { return chromedp.Run(ctx, chromedp.FullScreenshot(b, 90)) })
+	shot(t, ctx, "solitaire-moves", func(b *[]byte) error { return runSteps(ctx, stepScreenshot(b)) })
 	waitJS(t, ctx, "no Back", `(function () { var b = document.querySelector('#back'); return !b || b.hidden || b.disabled || b.offsetParent === null; })()`, 10*time.Second)
 	if got := moveCount(t, baseURL, room); got != 1 {
 		t.Errorf("%d moves after the draw, want 1", got)
@@ -419,7 +417,7 @@ func TestWebSolitaire_SettingUp(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/")); err != nil {
+	if err := runSteps(ctx, stepNavigate(baseURL+"/")); err != nil {
 		t.Fatal(err)
 	}
 	card := `.game-card[data-family="solitaire"]`
@@ -456,7 +454,7 @@ func TestWebSolitaire_SettingUp(t *testing.T) {
 	waitJS(t, ctx, "the sets of cards", `!document.getElementById('card-set-field').hidden`, 10*time.Second)
 	chooseVariant(t, ctx, "freecell")
 	waitJS(t, ctx, "the description of the variant", `document.getElementById("game-blurb").textContent.includes("free cells")`, 10*time.Second)
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`localStorage.setItem("bingle.name", JSON.stringify("Ana"))`, nil)); err != nil {
+	if err := runSteps(ctx, stepEval(`localStorage.setItem("bingle.name", JSON.stringify("Ana"))`)); err != nil {
 		t.Fatal(err)
 	}
 	clickSel(t, ctx, `#create-game-form button[type="submit"]`)
@@ -469,7 +467,7 @@ func TestWebBowlingSolitaire_IsAGameOfItsOwn(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/")); err != nil {
+	if err := runSteps(ctx, stepNavigate(baseURL+"/")); err != nil {
 		t.Fatal(err)
 	}
 	card := `.game-card[data-family="bowling-solitaire"]`
@@ -483,7 +481,7 @@ func TestWebBowlingSolitaire_IsAGameOfItsOwn(t *testing.T) {
 	clickSel(t, ctx, card)
 	waitJS(t, ctx, "the description", `document.getElementById("game-blurb").textContent.includes("Sackson")`, 10*time.Second)
 	waitJS(t, ctx, "the tutorial", `document.querySelector('#setup-tutorials button[data-tutorial="bowling-basics"]') && !document.getElementById("setup-tutorials").hidden`, 10*time.Second)
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`localStorage.setItem("bingle.name", JSON.stringify("Ana"))`, nil)); err != nil {
+	if err := runSteps(ctx, stepEval(`localStorage.setItem("bingle.name", JSON.stringify("Ana"))`)); err != nil {
 		t.Fatal(err)
 	}
 	clickSel(t, ctx, `#create-game-form button[type="submit"]`)
@@ -495,7 +493,7 @@ func TestWebSolitaire_ThePreviewIsTheVariantInProgress(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/?game=solitaire")); err != nil {
+	if err := runSteps(ctx, stepNavigate(baseURL+"/?game=solitaire")); err != nil {
 		t.Fatal(err)
 	}
 	preview := `#setup-preview .sol-preview`
@@ -515,11 +513,11 @@ func TestWebSolitaire_ThePreviewIsTheVariantInProgress(t *testing.T) {
 		}
 	}
 	// Bowling Solitaire, a game of its own, shows its own game in progress.
-	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/?game=bowling-solitaire")); err != nil {
+	if err := runSteps(ctx, stepNavigate(baseURL+"/?game=bowling-solitaire")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "bowling in progress", `document.querySelectorAll('`+preview+`[data-mode="bowling"] .sol-pin.down').length > 0 && document.querySelector('`+preview+` .sol-frame[data-frame="1"] .sol-mark').textContent !== ""`, 15*time.Second)
-	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/?game=solitaire")); err != nil {
+	if err := runSteps(ctx, stepNavigate(baseURL+"/?game=solitaire")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the setup again", `document.querySelector('#setup-variant')`, 15*time.Second)
@@ -530,7 +528,7 @@ func TestWebSolitaire_ThePreviewIsTheVariantInProgress(t *testing.T) {
 		t.Error("no card lies face down")
 	}
 	js := `(function(){ const s = document.getElementById("card-set"); s.value = "amphibians"; s.dispatchEvent(new Event("change")); return true })()`
-	if err := chromedp.Run(ctx, chromedp.Evaluate(js, nil)); err != nil {
+	if err := runSteps(ctx, stepEval(js)); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the set", `document.querySelector('`+preview+` .pcard.face[data-set="amphibians"]')`, 10*time.Second)
@@ -545,7 +543,7 @@ func TestWebSetup_TutorialsFollowTheVariant(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/?game=solitaire")); err != nil {
+	if err := runSteps(ctx, stepNavigate(baseURL+"/?game=solitaire")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the setup", `document.querySelector('#setup-variant')`, 15*time.Second)
@@ -553,7 +551,7 @@ func TestWebSetup_TutorialsFollowTheVariant(t *testing.T) {
 	chooseVariant(t, ctx, "freecell")
 	waitJS(t, ctx, "FreeCell has none", `document.getElementById("setup-tutorials").hidden`, 10*time.Second)
 	// Blooms is taught on its small board, for every board.
-	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/?game=blooms")); err != nil {
+	if err := runSteps(ctx, stepNavigate(baseURL+"/?game=blooms")); err != nil {
 		t.Fatal(err)
 	}
 	blooms := `document.querySelector('#setup-tutorials button[data-tutorial="blooms-basics"]')`
@@ -574,10 +572,10 @@ func TestWebSolitaire_ACardUnderThePointerShowsLarge(t *testing.T) {
 	waitJS(t, ctx, "the table", `document.querySelectorAll('.sol-column .pcard.face').length === 52`, 15*time.Second)
 	var at []float64
 	// The top of a card under others: only its corner shows.
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`(function(){ const e = document.querySelector('.sol-column[data-pile="t1"] .sol-card .pcard'); const r = e.getBoundingClientRect(); return [r.left + 8, r.top + 6, r.width, r.height] })()`, &at)); err != nil {
+	if err := runSteps(ctx, stepEvalTo(`(function(){ const e = document.querySelector('.sol-column[data-pile="t1"] .sol-card .pcard'); const r = e.getBoundingClientRect(); return [r.left + 8, r.top + 6, r.width, r.height] })()`, &at)); err != nil {
 		t.Fatal(err)
 	}
-	if err := chromedp.Run(ctx, chromedp.MouseEvent("mouseMoved", at[0]-40, at[1]-40), chromedp.MouseEvent("mouseMoved", at[0], at[1])); err != nil {
+	if err := runSteps(ctx, stepMouseMove(at[0]-40, at[1]-40), stepMouseMove(at[0], at[1])); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the enlarged card", `document.querySelectorAll(".pc-zoom").length === 1`, 5*time.Second)
@@ -585,7 +583,7 @@ func TestWebSolitaire_ACardUnderThePointerShowsLarge(t *testing.T) {
 	if want := fmt.Sprintf("%dx%d", int(at[2]*2+0.5), int(at[3]*2+0.5)); zoom != want {
 		t.Errorf("the enlarged card is %s, want %s", zoom, want)
 	}
-	if err := chromedp.Run(ctx, chromedp.MouseEvent("mouseMoved", 4, 4)); err != nil {
+	if err := runSteps(ctx, stepMouseMove(4, 4)); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "gone", `document.querySelectorAll(".pc-zoom").length === 0`, 5*time.Second)
@@ -610,10 +608,10 @@ func TestWebSolitaire_ACardUnderThePointerShowsLarge(t *testing.T) {
 	room = solitaireRoom(t, baseURL, "solitaire", "")
 	openGameAs(t, ctx, baseURL, room, "solitaire", "Ana")
 	waitJS(t, ctx, "the table", `document.querySelector('.sol-column .pcard.back')`, 15*time.Second)
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`(function(){ const e = document.querySelector('.sol-column .pcard.back'); const r = e.getBoundingClientRect(); return [r.left + 8, r.top + 4] })()`, &at)); err != nil {
+	if err := runSteps(ctx, stepEvalTo(`(function(){ const e = document.querySelector('.sol-column .pcard.back'); const r = e.getBoundingClientRect(); return [r.left + 8, r.top + 4] })()`, &at)); err != nil {
 		t.Fatal(err)
 	}
-	if err := chromedp.Run(ctx, chromedp.MouseEvent("mouseMoved", at[0]-40, at[1]-40), chromedp.MouseEvent("mouseMoved", at[0], at[1])); err != nil {
+	if err := runSteps(ctx, stepMouseMove(at[0]-40, at[1]-40), stepMouseMove(at[0], at[1])); err != nil {
 		t.Fatal(err)
 	}
 	if n := evalInt(t, ctx, `document.querySelectorAll(".pc-zoom").length`); n != 0 {
@@ -628,23 +626,23 @@ func TestWebSolitaire_ADealIsPlayedAgainFromItsSeed(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/?game=gomoku")); err != nil {
+	if err := runSteps(ctx, stepNavigate(baseURL+"/?game=gomoku")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the setup of Gomoku", `document.querySelector('#setup-preview svg') !== null`, 10*time.Second)
 	if !evalBool(t, ctx, `document.getElementById("seed-field").hidden`) {
 		t.Error("a game that is not dealt offers a Deal")
 	}
-	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/?game=solitaire")); err != nil {
+	if err := runSteps(ctx, stepNavigate(baseURL+"/?game=solitaire")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the setup of Solitaire", `!document.getElementById("seed-field").hidden`, 10*time.Second)
 	if !evalBool(t, ctx, `document.getElementById("setup-tab-deals").hidden`) {
 		t.Error("a guest is offered a deal history")
 	}
-	if err := chromedp.Run(ctx,
-		chromedp.Evaluate(`localStorage.setItem("bingle.name", JSON.stringify("Ana"))`, nil),
-		chromedp.Navigate(baseURL+"/?game=solitaire&seed=777"),
+	if err := runSteps(ctx,
+		stepEval(`localStorage.setItem("bingle.name", JSON.stringify("Ana"))`),
+		stepNavigate(baseURL+"/?game=solitaire&seed=777"),
 	); err != nil {
 		t.Fatal(err)
 	}
@@ -717,7 +715,7 @@ func TestWebSolitaire_TheDealHistory(t *testing.T) {
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
 	signInChrome(t, ctx, baseURL, member)
-	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/?game=solitaire")); err != nil {
+	if err := runSteps(ctx, stepNavigate(baseURL+"/?game=solitaire")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the tab", `!document.getElementById("setup-tab-deals").hidden`, 15*time.Second)
@@ -729,7 +727,7 @@ func TestWebSolitaire_TheDealHistory(t *testing.T) {
 	clickSel(t, ctx, `#setup-deals-list button.deal-seed[data-seed="31337"]`)
 	waitJS(t, ctx, "the Deal filled in", `!document.getElementById("setup-layout").hidden && document.getElementById("seed").value === "31337"`, 5*time.Second)
 	shot(t, ctx, "deal-history", func(b *[]byte) error {
-		return chromedp.Run(ctx, chromedp.Click(`#setup-tab-deals`, chromedp.ByQuery), chromedp.Sleep(300*time.Millisecond), chromedp.FullScreenshot(b, 90))
+		return runSteps(ctx, stepClick(`#setup-tab-deals`), stepSleep(300*time.Millisecond), stepScreenshot(b))
 	})
 }
 
@@ -783,7 +781,7 @@ func TestWebSolitaire_AGameWonIsCelebrated(t *testing.T) {
 		openGameAs(t, ctx, baseURL, room, "solitaire", "Ana")
 		waitJS(t, ctx, tc.theme+": the kings", `document.querySelectorAll('.sol-column .pcard.face').length === 4`, 15*time.Second)
 		// Where the cards are is taken a frame after the table is drawn.
-		if err := chromedp.Run(ctx, chromedp.Sleep(200*time.Millisecond)); err != nil {
+		if err := runSteps(ctx, stepSleep(200*time.Millisecond)); err != nil {
 			t.Fatal(err)
 		}
 		// The cards are in the air for half a second: each one that takes off is counted.
@@ -792,13 +790,13 @@ func TestWebSolitaire_AGameWonIsCelebrated(t *testing.T) {
 		waitJS(t, ctx, tc.theme+": the cards fly home", `window.flown === 4`, 5*time.Second)
 		waitJS(t, ctx, tc.theme+": the picture", `(function () { var v = document.getElementById('victory'); return !!v && v.classList.contains('victory-`+tc.theme+`') && v.querySelector('.victory-banner').textContent === 'Solved in 1 move!'; })()`, 5*time.Second)
 		shot(t, ctx, "victory-"+tc.theme, func(b *[]byte) error {
-			return chromedp.Run(ctx, chromedp.Sleep(1500*time.Millisecond), chromedp.CaptureScreenshot(b))
+			return runSteps(ctx, stepSleep(1500*time.Millisecond), stepViewportScreenshot(b))
 		})
 		waitJS(t, ctx, tc.theme+": it goes", `document.getElementById('victory') === null && document.querySelectorAll('.sol-flyer').length === 0`, 8*time.Second)
 		// Opened again, a game already won shows nothing.
 		openGameAs(t, ctx, baseURL, room, "solitaire", "Ana")
 		waitJS(t, ctx, tc.theme+": the table again", `document.querySelector('#card-table') !== null`, 10*time.Second)
-		if err := chromedp.Run(ctx, chromedp.Sleep(700*time.Millisecond)); err != nil {
+		if err := runSteps(ctx, stepSleep(700*time.Millisecond)); err != nil {
 			t.Fatal(err)
 		}
 		if evalBool(t, ctx, `document.getElementById('victory') !== null || document.querySelectorAll('.sol-flyer').length > 0`) {

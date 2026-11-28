@@ -4,8 +4,6 @@ import (
 	"sync"
 	"testing"
 	"time"
-
-	"github.com/chromedp/chromedp"
 )
 
 // tricksStepJS makes one choice of the Tricks fixture (tests/testdata/tricks) on the page:
@@ -54,7 +52,7 @@ func TestWebTricks_PlayATableThroughThePage(t *testing.T) {
 	stuck := 0
 	for i := 0; i < 400 && stuck < 60; i++ {
 		var what string
-		if err := chromedp.Run(ctx, chromedp.Evaluate(tricksStepJS, &what)); err != nil {
+		if err := runSteps(ctx, stepEvalTo(tricksStepJS, &what)); err != nil {
 			t.Fatalf("step %d: %v", i, err)
 		}
 		if what == "wait" || what == "stuck" {

@@ -6,9 +6,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/chromedp/cdproto/runtime"
-	"github.com/chromedp/chromedp"
 )
 
 // fitsTheWindowJS is true when nothing of the fitted page lies below or beside the
@@ -36,7 +33,7 @@ func fittedGame(t *testing.T, ctx context.Context, base, def string, w, h int64)
 	if code := doJSON(t, "POST", base+"/api/games", map[string]any{"game_def_id": def, "player_name": "Alice", "opponent": "random"}, &created); code != 200 {
 		t.Fatalf("create: %d", code)
 	}
-	if err := chromedp.Run(ctx, chromedp.EmulateViewport(w, h)); err != nil {
+	if err := runSteps(ctx, stepViewport(w, h)); err != nil {
 		t.Fatal(err)
 	}
 	openGameAs(t, ctx, base, created.RoomCode, def, "Alice")
@@ -102,12 +99,12 @@ func TestWebFitScreen_TheTurnBringsTheActionsIntoView(t *testing.T) {
 		t.Fatalf("create: %d", code)
 	}
 	room := created.RoomCode
-	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1024, 480), chromedp.Navigate(base+"/")); err != nil {
+	if err := runSteps(ctx, stepViewport(1024, 480), stepNavigate(base+"/")); err != nil {
 		t.Fatal(err)
 	}
 	var joined bool
 	join := fmt.Sprintf(`fetch("/api/games/%s/join", {method: "POST", headers: {"Content-Type": "application/json", "X-Bingle-Session": "1"}, body: JSON.stringify({player_name: "Bob"})}).then(r => r.ok)`, room)
-	if err := chromedp.Run(ctx, chromedp.Evaluate(join, &joined, func(p *runtime.EvaluateParams) *runtime.EvaluateParams { return p.WithAwaitPromise(true) })); err != nil || !joined {
+	if err := runSteps(ctx, stepEvalTo(join, &joined, awaitPromise)); err != nil || !joined {
 		t.Fatalf("join: %v %v", joined, err)
 	}
 	openGameAs(t, ctx, base, room, "blooms", "Bob")
@@ -167,7 +164,7 @@ func TestWebFitScreen_TheTutorialIsBesideTheBoard(t *testing.T) {
 	base := newRESTTestServer(t)
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1280, 720)); err != nil {
+	if err := runSteps(ctx, stepViewport(1280, 720)); err != nil {
 		t.Fatal(err)
 	}
 	openTutorialOf(t, ctx, base, "blooms", "blooms-basics")
@@ -178,7 +175,7 @@ func TestWebFitScreen_TheTutorialIsBesideTheBoard(t *testing.T) {
 		t.Error("the tutorial page does not fit the window")
 	}
 	// A long step of the tutorial does not push the stones out of reach.
-	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1024, 500)); err != nil {
+	if err := runSteps(ctx, stepViewport(1024, 500)); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the actions in view", `(function () {
@@ -219,7 +216,7 @@ func TestWebFitScreen_EveryKindOfGameFits(t *testing.T) {
 		}
 		for _, size := range [][2]int64{{1920, 1080}, {1366, 768}} {
 			name := fmt.Sprintf("%s at %dx%d", g.def, size[0], size[1])
-			if err := chromedp.Run(ctx, chromedp.EmulateViewport(size[0], size[1])); err != nil {
+			if err := runSteps(ctx, stepViewport(size[0], size[1])); err != nil {
 				t.Fatal(err)
 			}
 			openGameAs(t, ctx, base, created.RoomCode, g.def, "Alice")
@@ -267,7 +264,7 @@ func TestWebFitScreen_ColumnsStayPutAsTheTableGrows(t *testing.T) {
 	if code := doJSON(t, "POST", base+"/api/games", map[string]any{"game_def_id": "test-table", "player_name": "Alice", "opponent": "random"}, &created); code != 200 {
 		t.Fatalf("create: %d", code)
 	}
-	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1366, 768)); err != nil {
+	if err := runSteps(ctx, stepViewport(1366, 768)); err != nil {
 		t.Fatal(err)
 	}
 	openGameAs(t, ctx, base, created.RoomCode, "test-table", "Alice")
@@ -298,7 +295,7 @@ func TestWebFitScreen_TheCardsSayWhatTheBarSaid(t *testing.T) {
 	if code := doJSON(t, "POST", base+"/api/games", map[string]any{"game_def_id": "blooms-4", "player_name": "Alice", "opponent": "random"}, &created); code != 200 {
 		t.Fatalf("create: %d", code)
 	}
-	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1280, 720)); err != nil {
+	if err := runSteps(ctx, stepViewport(1280, 720)); err != nil {
 		t.Fatal(err)
 	}
 	openGameAs(t, ctx, base, created.RoomCode, "blooms-4", "Alice")
@@ -441,7 +438,7 @@ func TestWebTutorial_BackLooksAtEarlierSteps(t *testing.T) {
 	base := newRESTTestServer(t)
 	ctx, cancel := newChromedpContext(t, 90*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1280, 800)); err != nil {
+	if err := runSteps(ctx, stepViewport(1280, 800)); err != nil {
 		t.Fatal(err)
 	}
 	room := openTutorial(t, ctx, base)
@@ -520,7 +517,7 @@ func TestWebFitScreen_WhatIsAboveAndUnderAMapIsAsWideAsTheMap(t *testing.T) {
 		t.Fatalf("create: %d", code)
 	}
 	for _, size := range [][2]int64{{1920, 640}, {1366, 768}} {
-		if err := chromedp.Run(ctx, chromedp.EmulateViewport(size[0], size[1])); err != nil {
+		if err := runSteps(ctx, stepViewport(size[0], size[1])); err != nil {
 			t.Fatal(err)
 		}
 		openGameAs(t, ctx, base, created.RoomCode, "test-council", "Alice")
@@ -552,7 +549,7 @@ func TestWebFitScreen_TheHistoryShowsTheMoves(t *testing.T) {
 	for _, def := range []string{"blooms", "chess", "meridians"} {
 		t.Run(def, func(t *testing.T) {
 			room := playedAgainstABot(t, base, def)
-			if err := chromedp.Run(ctx, chromedp.EmulateViewport(1280, 900)); err != nil {
+			if err := runSteps(ctx, stepViewport(1280, 900)); err != nil {
 				t.Fatal(err)
 			}
 			openGameAs(t, ctx, base, room, def, "Alice")

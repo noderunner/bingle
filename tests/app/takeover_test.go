@@ -6,8 +6,6 @@ import (
 	"net/http"
 	"testing"
 	"time"
-
-	"github.com/chromedp/chromedp"
 )
 
 type takeoverGame struct {
@@ -141,7 +139,7 @@ func TestWebClock_TheSetupOfALargeTable(t *testing.T) {
 	base := newRESTTestServer(t)
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/?game=test-tricks-3"), chromedp.WaitVisible(`#create-submit`, chromedp.ByQuery)); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/?game=test-tricks-3"), stepWaitVisible(`#create-submit`)); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the clock is offered", `document.getElementById("clock-field").hidden === false`, 10*time.Second)
@@ -149,8 +147,8 @@ func TestWebClock_TheSetupOfALargeTable(t *testing.T) {
 		t.Error("different times are offered for a table of three")
 	}
 	evalString(t, ctx, `(() => { const c = document.getElementById("clock_seconds"); c.value = "7200"; c.dispatchEvent(new Event("change")); return "ok"; })()`)
-	if err := chromedp.Run(ctx,
-		chromedp.Evaluate(`localStorage.setItem("bingle.name", JSON.stringify("Ann"))`, nil),
+	if err := runSteps(ctx,
+		stepEval(`localStorage.setItem("bingle.name", JSON.stringify("Ann"))`),
 		submitClosestForm(ctx, `select[name="game_def_id"]`),
 	); err != nil {
 		t.Fatal(err)

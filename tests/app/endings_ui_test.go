@@ -4,9 +4,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/chromedp/cdproto/runtime"
-	"github.com/chromedp/chromedp"
 )
 
 // A game's own ending is worded in its definition and sent in its info
@@ -63,7 +60,7 @@ func TestWebAGamesOwnEndingIsInItsWords(t *testing.T) {
 	openGameAs(t, ctx, baseURL, room, "test-table", "Alice")
 	waitJS(t, ctx, "the result in the game's words", `document.getElementById("status-message").textContent.includes("on rings")`, 10*time.Second)
 	var msg string
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`document.getElementById("status-message").textContent`, &msg)); err != nil {
+	if err := runSteps(ctx, stepEvalTo(`document.getElementById("status-message").textContent`, &msg)); err != nil {
 		t.Fatal(err)
 	}
 	if strings.Contains(msg, "(count)") {
@@ -84,7 +81,7 @@ func TestWebAGamesOwnEndingIsInItsWords(t *testing.T) {
 		]);
 	})()`
 	var got string
-	if err := chromedp.Run(ctx, chromedp.Evaluate(script, &got, func(p *runtime.EvaluateParams) *runtime.EvaluateParams { return p.WithAwaitPromise(true) })); err != nil {
+	if err := runSteps(ctx, stepEvalTo(script, &got, awaitPromise)); err != nil {
 		t.Fatal(err)
 	}
 	want := `[{"words":"with four white marbles","saysDetail":true},{"words":"with a set of marbles","saysDetail":false},{"words":"with a set of marbles","saysDetail":false},null,null]`

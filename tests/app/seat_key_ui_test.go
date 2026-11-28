@@ -4,8 +4,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/chromedp/chromedp"
 )
 
 // The key (ADR 0154, decision 5): wherever the game's page names a seat, a
@@ -26,7 +24,7 @@ func TestWebSeatKey_ASeatsSwatchHasThePaintOfItsPieces(t *testing.T) {
 			}
 			ctx, cancel := newChromedpContext(t, 90*time.Second)
 			defer cancel()
-			if err := chromedp.Run(ctx, chromedp.EmulateViewport(1400, 1000)); err != nil {
+			if err := runSteps(ctx, stepViewport(1400, 1000)); err != nil {
 				t.Fatal(err)
 			}
 			openGameAs(t, ctx, baseURL, room, def, "Alice")

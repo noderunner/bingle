@@ -6,8 +6,6 @@ import (
 	"sync"
 	"testing"
 	"time"
-
-	"github.com/chromedp/chromedp"
 )
 
 // The illustrated board themes: offered by the games played with stones (Blooms
@@ -97,7 +95,7 @@ func TestWebBoardThemes_OnlyStoneGamesOfferThem(t *testing.T) {
 		ctx, cancel := newChromedpContext(t, 60*time.Second)
 		openGameAs(t, ctx, baseURL, created.RoomCode, c.def, "Alice")
 		// A theme chosen in another game: the page falls back to wood where it is not offered.
-		if err := chromedp.Run(ctx, chromedp.Evaluate(`localStorage.setItem("bingle.board", '"celtic"'); true`, nil), chromedp.Navigate(baseURL+"/game/"+created.RoomCode), chromedp.WaitReady("#board-svg, #card-table")); err != nil {
+		if err := runSteps(ctx, stepEval(`localStorage.setItem("bingle.board", '"celtic"'); true`), stepNavigate(baseURL+"/game/"+created.RoomCode), stepWaitReady("#board-svg, #card-table")); err != nil {
 			cancel()
 			t.Fatal(err)
 		}

@@ -5,8 +5,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/chromedp/chromedp"
 )
 
 type puzzleResp struct {
@@ -161,16 +159,16 @@ func TestWebLobby_PuzzleCardStartsAGameFromThePosition(t *testing.T) {
 	}
 	ctx, cancel := newChromedpContext(t, 40*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx,
-		chromedp.Navigate(baseURL+"/#puzzles"),
-		chromedp.WaitVisible("#panel-puzzles", chromedp.ByID),
+	if err := runSteps(ctx,
+		stepNavigate(baseURL+"/#puzzles"),
+		stepWaitVisible("#panel-puzzles"),
 	); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "puzzle cards", `document.querySelectorAll('#puzzle-list .puzzle-card').length > 0`, 10*time.Second)
 	waitJS(t, ctx, "puzzle board previews", `document.querySelector('#puzzle-list .puzzle-preview svg')`, 10*time.Second)
 	// Needs a name.
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`localStorage.setItem("bingle.name", JSON.stringify("Alice"))`, nil)); err != nil {
+	if err := runSteps(ctx, stepEval(`localStorage.setItem("bingle.name", JSON.stringify("Alice"))`)); err != nil {
 		t.Fatal(err)
 	}
 	clickSel(t, ctx, "#puzzle-list .puzzle-card button.primary")
@@ -206,7 +204,7 @@ func TestWebGame_FailedPuzzleOffersTryAgainFromTheSamePosition(t *testing.T) {
 	clickSel(t, ctx, "#rematch")
 	waitJS(t, ctx, "new room", `location.pathname.indexOf("/game/") === 0 && location.pathname !== "/game/`+created.RoomCode+`"`, 15*time.Second)
 	var newRoom string
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`location.pathname.split("/").pop()`, &newRoom)); err != nil {
+	if err := runSteps(ctx, stepEvalTo(`location.pathname.split("/").pop()`, &newRoom)); err != nil {
 		t.Fatal(err)
 	}
 	var a, b restState

@@ -11,7 +11,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chromedp/chromedp"
 	"github.com/noderunner/bingle/internal/app"
 	"github.com/noderunner/bingle/internal/auth"
 	"github.com/noderunner/bingle/internal/config"
@@ -226,7 +225,7 @@ func TestTournaments_UI(t *testing.T) {
 	ctx, cancel := newChromedpContext(t, 120*time.Second)
 	defer cancel()
 	signInChrome(t, ctx, base, org.cookie(auth.SessionCookie))
-	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1400, 1000), chromedp.Navigate(base+"/")); err != nil {
+	if err := runSteps(ctx, stepViewport(1400, 1000), stepNavigate(base+"/")); err != nil {
 		t.Fatal(err)
 	}
 	waitScripts(t, ctx)
@@ -287,7 +286,7 @@ func TestTournaments_UI(t *testing.T) {
 	if code := bea.do("POST", path+"/enter", nil, nil); code != 200 {
 		t.Fatalf("Bea enters: %d", code)
 	}
-	if err := chromedp.Run(ctx, chromedp.Navigate(loc)); err != nil {
+	if err := runSteps(ctx, stepNavigate(loc)); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the players", `document.querySelectorAll("#tournament-entries li").length === 2 && document.getElementById("t-start") !== null`, 15*time.Second)
@@ -311,7 +310,7 @@ func TestTournaments_UI(t *testing.T) {
 	// A guest can read it, and is not offered anything.
 	gctx, gcancel := newChromedpContext(t, 60*time.Second)
 	defer gcancel()
-	if err := chromedp.Run(gctx, chromedp.EmulateViewport(390, 800), chromedp.Navigate(loc)); err != nil {
+	if err := runSteps(gctx, stepViewport(390, 800), stepNavigate(loc)); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, gctx, "the standings", `document.getElementById("tournament-standings") !== null`, 20*time.Second)
@@ -337,7 +336,7 @@ func TestTournaments_UIShowsARefusal(t *testing.T) {
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
 	signInChrome(t, ctx, base, ana.cookie(auth.SessionCookie))
-	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1400, 1000), chromedp.Navigate(fmt.Sprintf("%s/tournament/%d", base, made.ID))); err != nil {
+	if err := runSteps(ctx, stepViewport(1400, 1000), stepNavigate(fmt.Sprintf("%s/tournament/%d", base, made.ID))); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the button", `document.getElementById("t-enter") !== null`, 20*time.Second)
@@ -407,7 +406,7 @@ func TestTournaments_TurnMailCanBeTurnedOffInTheGame(t *testing.T) {
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
 	signInChrome(t, ctx, e.URL, first.cookie(auth.SessionCookie))
-	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1400, 1000), chromedp.Navigate(e.URL+"/game/"+g.RoomCode), chromedp.WaitReady("#board-svg", chromedp.ByQuery)); err != nil {
+	if err := runSteps(ctx, stepViewport(1400, 1000), stepNavigate(e.URL+"/game/"+g.RoomCode), stepWaitReady("#board-svg")); err != nil {
 		t.Fatal(err)
 	}
 	clickSel(t, ctx, "#open-options")
@@ -450,10 +449,10 @@ func TestWebSubmit_TheOtherGamesPlayWithIt(t *testing.T) {
 			ctx, cancel := newChromedpContext(t, 90*time.Second)
 			defer cancel()
 			openGameAs(t, ctx, baseURL, created.RoomCode, game, "Alice")
-			if err := chromedp.Run(ctx,
-				chromedp.Evaluate(`localStorage.setItem("bingle.confirm", "true"); location.reload(); true`, nil),
-				chromedp.Sleep(300*time.Millisecond),
-				chromedp.WaitReady("#board-svg, #card-table", chromedp.ByQuery),
+			if err := runSteps(ctx,
+				stepEval(`localStorage.setItem("bingle.confirm", "true"); location.reload(); true`),
+				stepSleep(300*time.Millisecond),
+				stepWaitReady("#board-svg, #card-table"),
 			); err != nil {
 				t.Fatal(err)
 			}
@@ -474,7 +473,7 @@ func TestWebSubmit_TheOtherGamesPlayWithIt(t *testing.T) {
 			submits, stuck := 0, 0
 			for i := 0; i < 300 && stuck < 60; i++ {
 				var what string
-				if err := chromedp.Run(ctx, chromedp.Evaluate(withSubmit, &what)); err != nil {
+				if err := runSteps(ctx, stepEvalTo(withSubmit, &what)); err != nil {
 					t.Fatalf("step %d: %v", i, err)
 				}
 				if what != "wait" {
@@ -522,7 +521,7 @@ func TestTournaments_RealTimeUI(t *testing.T) {
 	orgCtx, cancelOrg := newChromedpContext(t, 120*time.Second)
 	defer cancelOrg()
 	signInChrome(t, orgCtx, base, org.cookie(auth.SessionCookie))
-	if err := chromedp.Run(orgCtx, chromedp.EmulateViewport(1400, 1000), chromedp.Navigate(base+"/")); err != nil {
+	if err := runSteps(orgCtx, stepViewport(1400, 1000), stepNavigate(base+"/")); err != nil {
 		t.Fatal(err)
 	}
 	waitScripts(t, orgCtx)
@@ -575,7 +574,7 @@ func TestTournaments_RealTimeUI(t *testing.T) {
 	anaCtx, cancelAna := newChromedpContext(t, 120*time.Second)
 	defer cancelAna()
 	signInChrome(t, anaCtx, base, ana.cookie(auth.SessionCookie))
-	if err := chromedp.Run(anaCtx, chromedp.EmulateViewport(1400, 1000), chromedp.Navigate(base+"/tournament/"+id)); err != nil {
+	if err := runSteps(anaCtx, stepViewport(1400, 1000), stepNavigate(base+"/tournament/"+id)); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, anaCtx, "the check-in", `document.getElementById("t-check-in") !== null`, 15*time.Second)

@@ -5,14 +5,12 @@ import (
 	"fmt"
 	"testing"
 	"time"
-
-	"github.com/chromedp/chromedp"
 )
 
 // fakeMic makes Chrome answer the microphone prompt itself and feed a test tone.
-var fakeMic = []chromedp.ExecAllocatorOption{
-	chromedp.Flag("use-fake-ui-for-media-stream", true),
-	chromedp.Flag("use-fake-device-for-media-stream", true),
+var fakeMic = []browserOption{
+	browserFlag("use-fake-ui-for-media-stream", true),
+	browserFlag("use-fake-device-for-media-stream", true),
 }
 
 // Two players in two browsers join the voice chat and end up connected to each
@@ -138,11 +136,11 @@ func TestVoiceUI_PushToTalk(t *testing.T) {
 	waitJS(t, ctx, "mic on", `document.querySelector('#voice-peers li[data-me] .voice-state').textContent === "mic on"`, 5*time.Second)
 	clickSel(t, ctx, "#voice-ptt")
 	waitJS(t, ctx, "mic closed", `document.querySelector('#voice-peers li[data-me] .voice-state').textContent === "mic off"`, 5*time.Second)
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`document.dispatchEvent(new KeyboardEvent("keydown", {code: "KeyV", key: "v"})); true`, nil)); err != nil {
+	if err := runSteps(ctx, stepEval(`document.dispatchEvent(new KeyboardEvent("keydown", {code: "KeyV", key: "v"})); true`)); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "mic open while held", `document.querySelector('#voice-peers li[data-me] .voice-state').textContent === "mic on"`, 5*time.Second)
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`document.dispatchEvent(new KeyboardEvent("keyup", {code: "KeyV", key: "v"})); true`, nil)); err != nil {
+	if err := runSteps(ctx, stepEval(`document.dispatchEvent(new KeyboardEvent("keyup", {code: "KeyV", key: "v"})); true`)); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "mic closed again", `document.querySelector('#voice-peers li[data-me] .voice-state').textContent === "mic off"`, 5*time.Second)

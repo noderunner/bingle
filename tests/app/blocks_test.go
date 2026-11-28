@@ -4,8 +4,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chromedp/chromedp"
-
 	"github.com/noderunner/bingle/internal/auth"
 	"github.com/noderunner/bingle/internal/mail/fakesmtp"
 )
@@ -177,19 +175,19 @@ func TestWebBlocks_FromTheWindowToTheProfile(t *testing.T) {
 	ana, cancel := newChromedpContext(t, 90*time.Second)
 	defer cancel()
 	signInChrome(t, ana, base, anaB.cookie(auth.SessionCookie))
-	if err := chromedp.Run(ana, chromedp.Navigate(base+"/")); err != nil {
+	if err := runSteps(ana, stepNavigate(base+"/")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ana, "Ana's icon", `getComputedStyle(document.getElementById("open-friends")).display !== "none"`, 20*time.Second)
 	clickSel(t, ana, "#open-friends")
 	waitJS(t, ana, "the request", `document.querySelector("#friend-requests [data-block='bob']") !== null`, 10*time.Second)
-	if err := chromedp.Run(ana, chromedp.Evaluate(`window.confirm = () => true; true`, nil)); err != nil {
+	if err := runSteps(ana, stepEval(`window.confirm = () => true; true`)); err != nil {
 		t.Fatal(err)
 	}
 	clickSel(t, ana, "#friend-requests [data-block='bob']")
 	waitJS(t, ana, "the request gone", `document.querySelector("#friend-requests [data-accept]") === null`, 10*time.Second)
 
-	if err := chromedp.Run(ana, chromedp.Navigate(base+"/profile")); err != nil {
+	if err := runSteps(ana, stepNavigate(base+"/profile")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ana, "the block listed", `!document.getElementById("blocked-box").hidden && document.querySelector("#blocked-list [data-unblock='bob']") !== null`, 20*time.Second)

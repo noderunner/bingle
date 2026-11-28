@@ -11,8 +11,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/chromedp/chromedp"
 )
 
 // readErrorRows reads the faults off the private handler.
@@ -78,10 +76,10 @@ func TestWebClientErrors_AThrowOnAPageIsReported(t *testing.T) {
 	room := createRoom(t, baseURL, "Ana")
 	throw := `setTimeout(() => { throw new Error("a deliberate fault in a test"); }, 0); true`
 
-	if err := chromedp.Run(ctx,
-		chromedp.Navigate(baseURL+"/game/"+room),
-		chromedp.WaitVisible(`body`, chromedp.ByQuery),
-		chromedp.Evaluate(throw, nil),
+	if err := runSteps(ctx,
+		stepNavigate(baseURL+"/game/"+room),
+		stepWaitVisible(`body`),
+		stepEval(throw),
 	); err != nil {
 		t.Fatalf("throwing on the game page: %v", err)
 	}
@@ -113,10 +111,10 @@ func TestWebClientErrors_AThrowOnAPageIsReported(t *testing.T) {
 
 	// The same fault again is the same row, counted twice. A fresh page load
 	// is needed because the reporter sends only a few per page.
-	if err := chromedp.Run(ctx,
-		chromedp.Navigate(baseURL+"/game/"+room),
-		chromedp.WaitVisible(`body`, chromedp.ByQuery),
-		chromedp.Evaluate(throw, nil),
+	if err := runSteps(ctx,
+		stepNavigate(baseURL+"/game/"+room),
+		stepWaitVisible(`body`),
+		stepEval(throw),
 	); err != nil {
 		t.Fatalf("throwing again: %v", err)
 	}
@@ -151,10 +149,10 @@ func TestWebClientErrors_AnUnhandledRejectionIsReported(t *testing.T) {
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
 
-	if err := chromedp.Run(ctx,
-		chromedp.Navigate(baseURL+"/"),
-		chromedp.WaitVisible(`body`, chromedp.ByQuery),
-		chromedp.Evaluate(`Promise.reject(new Error("a deliberate rejection")); true`, nil),
+	if err := runSteps(ctx,
+		stepNavigate(baseURL+"/"),
+		stepWaitVisible(`body`),
+		stepEval(`Promise.reject(new Error("a deliberate rejection")); true`),
 	); err != nil {
 		t.Fatalf("rejecting on the home page: %v", err)
 	}

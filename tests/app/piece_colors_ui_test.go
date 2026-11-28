@@ -3,9 +3,6 @@ package app_test
 import (
 	"testing"
 	"time"
-
-	"github.com/chromedp/cdproto/runtime"
-	"github.com/chromedp/chromedp"
 )
 
 // Every color word the page knows (paint.js's COLOR_WORDS) draws a piece in a
@@ -15,7 +12,7 @@ func TestWebEveryPaletteColorDrawsItsPieces(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/")); err != nil {
+	if err := runSteps(ctx, stepNavigate(baseURL+"/")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the page", `document.readyState === "complete"`, 15*time.Second)
@@ -51,7 +48,7 @@ func TestWebEveryPaletteColorDrawsItsPieces(t *testing.T) {
 		return out.join("\n") || "ok";
 	})()`
 	var got string
-	if err := chromedp.Run(ctx, chromedp.Evaluate(script, &got, func(p *runtime.EvaluateParams) *runtime.EvaluateParams { return p.WithAwaitPromise(true) })); err != nil {
+	if err := runSteps(ctx, stepEvalTo(script, &got, awaitPromise)); err != nil {
 		t.Fatal(err)
 	}
 	if got != "ok" {
@@ -69,7 +66,7 @@ func TestWebUnknownColorsArePaintedBySeat(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/")); err != nil {
+	if err := runSteps(ctx, stepNavigate(baseURL+"/")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the page", `document.readyState === "complete"`, 15*time.Second)
@@ -119,7 +116,7 @@ func TestWebUnknownColorsArePaintedBySeat(t *testing.T) {
 		return out.join("\n") || "ok";
 	})()`
 	var got string
-	if err := chromedp.Run(ctx, chromedp.Evaluate(script, &got, func(p *runtime.EvaluateParams) *runtime.EvaluateParams { return p.WithAwaitPromise(true) })); err != nil {
+	if err := runSteps(ctx, stepEvalTo(script, &got, awaitPromise)); err != nil {
 		t.Fatal(err)
 	}
 	if got != "ok" {

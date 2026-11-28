@@ -4,9 +4,6 @@ import (
 	"sync"
 	"testing"
 	"time"
-
-	"github.com/chromedp/cdproto/runtime"
-	"github.com/chromedp/chromedp"
 )
 
 // The UI can play chess: the board shows the 32 pieces, two clicks move a
@@ -24,13 +21,7 @@ func TestWebChess_MovesAndPromotesThroughTheUI(t *testing.T) {
 	defer cancel()
 	var mu sync.Mutex
 	var jsErrors []string
-	chromedp.ListenTarget(ctx, func(ev any) {
-		if e, ok := ev.(*runtime.EventExceptionThrown); ok && e.ExceptionDetails != nil {
-			mu.Lock()
-			jsErrors = append(jsErrors, e.ExceptionDetails.Error())
-			mu.Unlock()
-		}
-	})
+	collectJSErrors(ctx, &mu, &jsErrors)
 	openGameAs(t, ctx, baseURL, created.RoomCode, "chess", "Alice")
 	waitJS(t, ctx, "board", `document.querySelectorAll('#board .cell').length === 64`, 15*time.Second)
 	waitJS(t, ctx, "32 pieces", `document.querySelectorAll('#board .piece').length === 32`, 10*time.Second)

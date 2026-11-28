@@ -5,9 +5,6 @@ import (
 	"sync"
 	"testing"
 	"time"
-
-	"github.com/chromedp/cdproto/runtime"
-	"github.com/chromedp/chromedp"
 )
 
 // chessFrom creates a game of a chess variant against a bot, from start
@@ -41,13 +38,7 @@ func TestWebChessVariants_ClicksOfTheirOwn(t *testing.T) {
 	defer cancel()
 	var mu sync.Mutex
 	var jsErrors []string
-	chromedp.ListenTarget(ctx, func(ev any) {
-		if e, ok := ev.(*runtime.EventExceptionThrown); ok && e.ExceptionDetails != nil {
-			mu.Lock()
-			jsErrors = append(jsErrors, e.ExceptionDetails.Error())
-			mu.Unlock()
-		}
-	})
+	collectJSErrors(ctx, &mu, &jsErrors)
 	pieceOn := func(sq, kind string) string {
 		return `(function () { var p = document.querySelector('#board .cell[data-position="` + sq + `"] .piece'); return p && /` + kind + `/.test(p.getAttribute('class') + ' ' + (p.getAttribute('data-piece') || '')); })()`
 	}

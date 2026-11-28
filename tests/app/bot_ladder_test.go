@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chromedp/chromedp"
 	"github.com/noderunner/bingle/internal/config"
 	"github.com/noderunner/bingle/internal/store"
 )
@@ -82,7 +81,7 @@ func TestBotLadder_UI(t *testing.T) {
 	base := botLadderServer(t)
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/#ratings")); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/#ratings")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the bot ladder", `document.querySelector('#bot-ladder tr[data-bot="mcts"]') !== null`, 20*time.Second)

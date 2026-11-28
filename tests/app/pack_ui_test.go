@@ -6,9 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chromedp/cdproto/runtime"
-	"github.com/chromedp/chromedp"
-
 	"github.com/noderunner/bingle/internal/app"
 	"github.com/noderunner/bingle/tests/testdata"
 )
@@ -48,19 +45,13 @@ func TestWebPack_APacksGameIsPlayedInThePage(t *testing.T) {
 	defer cancel()
 	var mu sync.Mutex
 	var jsErrors []string
-	chromedp.ListenTarget(ctx, func(ev any) {
-		if e, ok := ev.(*runtime.EventExceptionThrown); ok && e.ExceptionDetails != nil {
-			mu.Lock()
-			jsErrors = append(jsErrors, e.ExceptionDetails.Error())
-			mu.Unlock()
-		}
-	})
+	collectJSErrors(ctx, &mu, &jsErrors)
 	openGameAs(t, ctx, baseURL, created.RoomCode, testdata.DraughtsPackID, "Alice")
 	waitJS(t, ctx, "64 squares", `document.querySelectorAll('#board .cell').length === 64`, 15*time.Second)
 	waitJS(t, ctx, "24 men", `document.querySelectorAll('#board .piece').length === 24`, 5*time.Second)
 	for i := 0; i < 200; i++ {
 		var what string
-		if err := chromedp.Run(ctx, chromedp.Evaluate(packStepJS, &what)); err != nil {
+		if err := runSteps(ctx, stepEvalTo(packStepJS, &what)); err != nil {
 			t.Fatalf("step %d: %v", i, err)
 		}
 		time.Sleep(80 * time.Millisecond)

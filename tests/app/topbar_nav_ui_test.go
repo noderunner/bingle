@@ -8,8 +8,6 @@ import (
 	"sync"
 	"testing"
 	"time"
-
-	"github.com/chromedp/chromedp"
 )
 
 // The bar at the top of a game: the active games, joining a game and the
@@ -27,9 +25,9 @@ func rememberGames(t *testing.T, ctx context.Context, baseURL, name string, game
 	}
 	raw, _ := json.Marshal(list)
 	nameJSON, _ := json.Marshal(name)
-	if err := chromedp.Run(ctx,
-		chromedp.Navigate(baseURL+"/healthz"),
-		chromedp.Evaluate(fmt.Sprintf(`localStorage.setItem("bingle.games", %q); localStorage.setItem("bingle.name", %q); true`, raw, nameJSON), nil),
+	if err := runSteps(ctx,
+		stepNavigate(baseURL+"/healthz"),
+		stepEval(fmt.Sprintf(`localStorage.setItem("bingle.games", %q); localStorage.setItem("bingle.name", %q); true`, raw, nameJSON)),
 	); err != nil {
 		t.Fatal(err)
 	}
@@ -52,7 +50,7 @@ func TestWebGame_TheTopBarHasTheActiveGamesJoinAndProfile(t *testing.T) {
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
 	rememberGames(t, ctx, baseURL, "Alice", map[string]string{a: "tic-tac-toe", b: "tic-tac-toe"})
-	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/game/"+a), chromedp.WaitReady("#board-svg, #card-table", chromedp.ByQuery)); err != nil {
+	if err := runSteps(ctx, stepNavigate(baseURL+"/game/"+a), stepWaitReady("#board-svg, #card-table")); err != nil {
 		t.Fatal(err)
 	}
 	for _, id := range []string{"open-active-games", "open-join", "open-profile"} {
@@ -118,10 +116,10 @@ func TestWebGame_WithNoCallALinkLoadsThePage(t *testing.T) {
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
 	rememberGames(t, ctx, baseURL, "Alice", map[string]string{a: "tic-tac-toe"})
-	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/game/"+a), chromedp.WaitReady("#board-svg", chromedp.ByQuery)); err != nil {
+	if err := runSteps(ctx, stepNavigate(baseURL+"/game/"+a), stepWaitReady("#board-svg")); err != nil {
 		t.Fatal(err)
 	}
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`window.__marker = 1; true`, nil)); err != nil {
+	if err := runSteps(ctx, stepEval(`window.__marker = 1; true`)); err != nil {
 		t.Fatal(err)
 	}
 	clickSel(t, ctx, ".topbar a.brand")
@@ -146,7 +144,7 @@ func TestVoiceUI_ACallStaysUpWhenThePlayerGoesToAnotherGameOrTheMainPage(t *test
 	collectJSErrors(alice, &mu, &jsErrors)
 	rememberGames(t, alice, baseURL, "Alice", map[string]string{call: "tic-tac-toe", other: "tic-tac-toe"})
 	openGameAs(t, bob, baseURL, call, "tic-tac-toe", "Bob")
-	if err := chromedp.Run(alice, chromedp.Navigate(baseURL+"/game/"+call), chromedp.WaitReady("#board-svg", chromedp.ByQuery)); err != nil {
+	if err := runSteps(alice, stepNavigate(baseURL+"/game/"+call), stepWaitReady("#board-svg")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, alice, "the microphone in the chat", `document.getElementById("voice-join")`, 15*time.Second)
@@ -162,7 +160,7 @@ func TestVoiceUI_ACallStaysUpWhenThePlayerGoesToAnotherGameOrTheMainPage(t *test
 	waitJS(t, alice, "no room on the button, the call is in this game", `document.getElementById("voice-chip-code").textContent === ""`, 5*time.Second)
 
 	// To another game, by the list of the active games.
-	if err := chromedp.Run(alice, chromedp.Evaluate(`window.__marker = 42; true`, nil)); err != nil {
+	if err := runSteps(alice, stepEval(`window.__marker = 42; true`)); err != nil {
 		t.Fatal(err)
 	}
 	clickSel(t, alice, "#open-active-games")
@@ -220,7 +218,7 @@ func TestVoiceUI_ACallStaysUpWhenThePlayerGoesToAnotherGameOrTheMainPage(t *test
 	waitJS(t, alice, "the button is gone", `document.getElementById("voice-chip").hidden`, 5*time.Second)
 	waitJS(t, bob, "Alice gone", `!document.querySelector('#voice-peers li[data-voice-seat="1"]')`, 10*time.Second)
 	// With the call over, a link loads the page again.
-	if err := chromedp.Run(alice, chromedp.Evaluate(`window.__marker = 7; true`, nil)); err != nil {
+	if err := runSteps(alice, stepEval(`window.__marker = 7; true`)); err != nil {
 		t.Fatal(err)
 	}
 	clickSel(t, alice, ".topbar a.brand")

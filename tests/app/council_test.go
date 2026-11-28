@@ -3,8 +3,6 @@ package app_test
 import (
 	"testing"
 	"time"
-
-	"github.com/chromedp/chromedp"
 )
 
 // The Council fixture (tests/testdata/council) plays through the API: a table
@@ -71,7 +69,7 @@ func TestWebCouncil_ItsScriptDrawsItsPictureInTheList(t *testing.T) {
 	base := newRESTTestServer(t)
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/")); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "Council's picture", `document.querySelector('.game-card[data-family="test-council"] .game-card-preview svg.council-icon') !== null`, 20*time.Second)

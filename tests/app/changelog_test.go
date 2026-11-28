@@ -9,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chromedp/chromedp"
 	"github.com/noderunner/bingle/internal/config"
 	"github.com/noderunner/bingle/internal/i18n"
 	"github.com/noderunner/bingle/internal/version"
@@ -164,7 +163,7 @@ func TestWebHelp_UnreadChangesUntilMarkedRead(t *testing.T) {
 	defer cancel()
 	open := func(what string) {
 		t.Helper()
-		if err := chromedp.Run(ctx, chromedp.Reload(), chromedp.WaitReady("#open-help", chromedp.ByQuery)); err != nil {
+		if err := runSteps(ctx, stepReload(), stepWaitReady("#open-help")); err != nil {
 			t.Fatal(err)
 		}
 		waitJS(t, ctx, "the changelog read", `window.performance.getEntriesByName(location.origin + "/api/changelog").length > 0`, 10*time.Second)
@@ -176,7 +175,7 @@ func TestWebHelp_UnreadChangesUntilMarkedRead(t *testing.T) {
 		t.Helper()
 		return evalString(t, ctx, `[...document.querySelectorAll("#help-changes .help-change")].map((e) => e.dataset.version).join(" ")`)
 	}
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/"), chromedp.WaitReady("#open-help", chromedp.ByQuery)); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/"), stepWaitReady("#open-help")); err != nil {
 		t.Fatal(err)
 	}
 
@@ -207,7 +206,7 @@ func TestWebHelp_UnreadChangesUntilMarkedRead(t *testing.T) {
 	}
 
 	// Looking is not reading: closed without marking, the dot stays.
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`document.getElementById("help-dialog").close(); true`, nil)); err != nil {
+	if err := runSteps(ctx, stepEval(`document.getElementById("help-dialog").close(); true`)); err != nil {
 		t.Fatal(err)
 	}
 	if !evalBool(t, ctx, `!document.getElementById("help-badge").hidden`) {
@@ -215,7 +214,7 @@ func TestWebHelp_UnreadChangesUntilMarkedRead(t *testing.T) {
 	}
 
 	// Last read at 0.9.0: both releases since, newest first, in a box that scrolls.
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`localStorage.setItem("bingle.changelog.seen", JSON.stringify("0.9.0")); true`, nil)); err != nil {
+	if err := runSteps(ctx, stepEval(`localStorage.setItem("bingle.changelog.seen", JSON.stringify("0.9.0")); true`)); err != nil {
 		t.Fatal(err)
 	}
 	open("the unread releases")
@@ -247,7 +246,7 @@ func TestWebHelp_NoChangelogNoSection(t *testing.T) {
 	base := newRESTTestServer(t)
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/"), chromedp.WaitReady("#open-help", chromedp.ByQuery)); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/"), stepWaitReady("#open-help")); err != nil {
 		t.Fatal(err)
 	}
 	clickSel(t, ctx, "#open-help")
