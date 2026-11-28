@@ -47,8 +47,10 @@ where the issue had none the simplest safe answer was taken. Any of it may be re
 4. **The database.** Measured, a batch of quick games (Hex 7×7 between random bots, 700 games a second) held a person's
    move up for a second at the 99th percentile, before and after the CPU budget: one transaction a game kept the one
    writer from live play's moves, which wait for it by SQLite's busy timeout. So **a batch's records are written
-   together** (`store.AddBatchGames`): once a quarter of a second has passed since the last write, or 256 are waiting,
-   in one transaction, and the rest when the batch ends. A slow batch still writes each game as it ends. The move's
+   together** (`store.AddBatchGames`): in one transaction a quarter of a second after the last write (one timer at most
+   waits to make it), or at once when 256 are waiting, and the rest when the batch ends, after which nothing is
+   written. No record waits longer than that, so a slow batch's game is written within a quarter of a second of its
+   end; the `done` a batch shows players is read from the database, so it is as late. The move's
    99th percentile under that batch fell from 844–1,154 ms to 44–64 ms, and the batch itself, no longer bound by the
    writer, played 240,000 games a minute instead of 42,000. Live writes are not given priority of their own.
 5. **Memory.** The reserve is of CPUs only. Memory stays bounded by ADR 0161's ceilings (workers times a bot's
