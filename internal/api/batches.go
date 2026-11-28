@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"net/http"
 	"strconv"
 
@@ -16,6 +17,20 @@ func WithBatches(bm *batch.Manager) Option { return func(h *handlers) { h.batche
 type batchRequest struct {
 	Name string `json:"name"`
 	batch.Spec
+}
+
+// UnmarshalJSON reads the name and the spec from one body. It is needed
+// because Spec has an UnmarshalJSON of its own, which the embedding would
+// promote and which would leave Name unread.
+func (r *batchRequest) UnmarshalJSON(data []byte) error {
+	var n struct {
+		Name string `json:"name"`
+	}
+	if err := json.Unmarshal(data, &n); err != nil {
+		return err
+	}
+	r.Name = n.Name
+	return json.Unmarshal(data, &r.Spec)
 }
 
 // batchListResponse is GET /batches' body.

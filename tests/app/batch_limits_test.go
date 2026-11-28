@@ -198,3 +198,45 @@ func TestBatchLimits_MCP(t *testing.T) {
 		t.Errorf("a second batch while one plays: %d %+v, want 429", status, body)
 	}
 }
+
+// A batch started over REST keeps its name, and the name's ceiling bites there.
+func TestBatchName_REST(t *testing.T) {
+	base, ana, _ := limitedServer(t, config.BatchLimits{})
+	body := hexBatch()
+	body["name"] = "Sunday ladder"
+	var made struct {
+		ID   int64  `json:"id"`
+		Name string `json:"name"`
+	}
+	if code := doJSONMember(t, ana, "POST", base+"/api/batches", body, &made); code != 201 || made.Name != "Sunday ladder" {
+		t.Fatalf("start: %d %+v", code, made)
+	}
+	waitBatch(t, base, made.ID, "done")
+	var got struct {
+		Name string `json:"name"`
+	}
+	if code := doJSONMember(t, ana, "GET", fmt.Sprintf("%s/api/batches/%d", base, made.ID), nil, &got); code != 200 || got.Name != "Sunday ladder" {
+		t.Errorf("get: %d %+v", code, got)
+	}
+	var list struct {
+		Batches []struct {
+			ID   int64  `json:"id"`
+			Name string `json:"name"`
+		} `json:"batches"`
+	}
+	doJSONMember(t, ana, "GET", base+"/api/batches", nil, &list)
+	found := false
+	for _, b := range list.Batches {
+		if b.ID == made.ID {
+			found = b.Name == "Sunday ladder"
+		}
+	}
+	if !found {
+		t.Errorf("the list lost the name: %+v", list.Batches)
+	}
+	body["name"] = strings.Repeat("x", 201)
+	var refused limitBody
+	if code := doJSONMember(t, ana, "POST", base+"/api/batches", body, &refused); code != 400 || refused.Limit != "name" || refused.Max != 200 {
+		t.Errorf("a long name: %d %+v", code, refused)
+	}
+}

@@ -2,6 +2,11 @@
 
 O que mudou no Bingle, do mais recente ao mais antigo. O Bingle Core (o servidor, o motor e o cliente web) e cada jogo têm versão própria, e cada entrada diz qual mudou. As entradas anteriores à 0.124.0 estão só em inglês.
 
+## 0.153.2 - 2026-11-28
+
+### Bingle Core 0.153.2
+- Os lotes mantêm o nome dado ao iniciá-los pela API
+
 ## 0.153.1 - 2026-11-28
 
 ### Bingle Core 0.153.1
