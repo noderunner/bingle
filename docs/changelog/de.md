@@ -2,6 +2,11 @@
 
 Was sich in Bingle geändert hat, das Neueste zuerst. Bingle Core (der Server, die Engine und der Web-Client) und jedes Spiel haben eine eigene Version, und jeder Eintrag sagt, welche sich geändert hat. Einträge vor 0.124.0 gibt es nur auf Englisch.
 
+## 0.153.2 - 2026-11-28
+
+### Bingle Core 0.153.2
+- Stapel behalten den Namen, den sie beim Start über die API bekommen
+
 ## 0.153.1 - 2026-11-28
 
 ### Bingle Core 0.153.1
