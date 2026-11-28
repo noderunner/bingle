@@ -597,6 +597,7 @@
 	"batch.cancelled": "キャンセル",
 	"batch.failed": "失敗",
 	"batch.interrupted": "中断",
+	"batch.limit_time": "制限時間に到達",
 	"batch.running_n": "実行中 {done}/{games}",
 
 	"chat.messages": "全体チャットのメッセージ",

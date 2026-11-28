@@ -18,6 +18,17 @@ type batchRequest struct {
 	batch.Spec
 }
 
+// batchListResponse is GET /batches' body.
+type batchListResponse struct {
+	Batches []batch.Info `json:"batches"`
+	// DefaultWorkers is how many games a batch plays at once when its spec
+	// does not say.
+	DefaultWorkers int `json:"default_workers"`
+	// Limits are the ceilings on a batch and the allowances of a player (ADR
+	// 0161).
+	Limits batch.Limits `json:"limits"`
+}
+
 func (h *handlers) handleBatchStart(w http.ResponseWriter, r *http.Request) {
 	var req batchRequest
 	if !decodeBody(w, r, &req) {
@@ -42,7 +53,7 @@ func (h *handlers) handleBatchList(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"batches": list, "default_workers": batch.DefaultWorkers()})
+	writeJSON(w, http.StatusOK, batchListResponse{Batches: list, DefaultWorkers: h.batches.DefaultWorkers(), Limits: h.batches.Limits()})
 }
 
 func batchID(w http.ResponseWriter, r *http.Request) (int64, bool) {

@@ -9,9 +9,10 @@
 // bot, and no game a bot plays here can move a person's rating.
 //
 // A run plays its games the way a batch does (batch.PlayGame), on as many
-// workers as a batch takes, and only while no batch plays (batch.Manager.Hold).
-// It is bounded by a number of games a pairing and a time limit for the whole
-// run, and a run that is due while another goes on is skipped, not queued.
+// workers as a batch takes by default (within the batches' ceiling), and only
+// while no batch plays (batch.Manager.Hold). It is bounded by a number of games
+// a pairing, a game's length and a time limit for the whole run, and a run that
+// is due while another goes on is skipped, not queued.
 package botladder
 
 import (
@@ -53,6 +54,12 @@ type Options struct {
 	Games int
 	// Limit bounds a whole run.
 	Limit time.Duration
+	// Workers is how many games a run plays at once (default: a batch's
+	// number, batch.DefaultWorkers), and MaxPlies the batches' ceiling on a
+	// game's length, which a run's own cap of MaxPlies is kept within (ADR
+	// 0161). Zero leaves each at its default.
+	Workers  int
+	MaxPlies int
 	// Strength replaces the bots' own strength, for tests; zero is the
 	// strength players meet.
 	Strength bots.Config
@@ -76,6 +83,12 @@ func New(st *store.Store, cat *catalog.Catalog, hold func(context.Context) (func
 	}
 	if opts.Limit <= 0 {
 		opts.Limit = time.Hour
+	}
+	if opts.Workers < 1 {
+		opts.Workers = batch.DefaultWorkers()
+	}
+	if opts.MaxPlies < 1 || opts.MaxPlies > MaxPlies {
+		opts.MaxPlies = MaxPlies
 	}
 	if log == nil {
 		log = slog.Default()
@@ -147,7 +160,7 @@ func Games(cat *catalog.Catalog) []Game {
 	}
 	out := make([]Game, 0, len(byFamily))
 	for family, cg := range byFamily {
-		spec := pairing(cg.Definition.ID, Bots[0], Bots[1], 1, 0, bots.Config{})
+		spec := pairing(cg.Definition.ID, Bots[0], Bots[1], 1, 0, bots.Config{}, MaxPlies)
 		if err := spec.Validate(cat); err != nil {
 			continue
 		}
@@ -163,11 +176,11 @@ func Games(cat *catalog.Catalog) []Game {
 
 // pairing is the batch spec of two bots in a game: games of them, moved round
 // the seats, so that each plays first as often as the other.
-func pairing(gameID, a, b string, games int, seed int64, strength bots.Config) batch.Spec {
+func pairing(gameID, a, b string, games int, seed int64, strength bots.Config, maxPlies int) batch.Spec {
 	p := func(id string) batch.Player {
 		return batch.Player{Bot: id, MCTSIterations: strength.MCTSIterations, MinimaxNodes: strength.MinimaxNodes}
 	}
-	return batch.Spec{Base: gameID, Players: []batch.Player{p(a), p(b)}, Games: games, Seed: seed, Rotate: true, MaxPlies: MaxPlies, Workers: 1}
+	return batch.Spec{Base: gameID, Players: []batch.Player{p(a), p(b)}, Games: games, Seed: seed, Rotate: true, MaxPlies: maxPlies, Workers: 1}
 }
 
 // Summary is what a run did.
@@ -230,7 +243,7 @@ func (l *Ladder) RunOnce(ctx context.Context) (Summary, error) {
 		p := 0
 		for i := 0; i < len(Bots); i++ {
 			for j := i + 1; j < len(Bots); j++ {
-				spec := pairing(games[f].GameID, Bots[i], Bots[j], l.opts.Games, day*1_000_000+int64(f)*1000+int64(p)*100, l.opts.Strength)
+				spec := pairing(games[f].GameID, Bots[i], Bots[j], l.opts.Games, day*1_000_000+int64(f)*1000+int64(p)*100, l.opts.Strength, l.opts.MaxPlies)
 				if err := spec.Validate(l.cat); err != nil {
 					continue
 				}
@@ -292,7 +305,7 @@ func (l *Ladder) oldestFirst(ctx context.Context, games []Game) ([]int, error) {
 // play plays the jobs on the batches' number of workers, until they are done
 // or ctx ends, and returns the games that count.
 func (l *Ladder) play(ctx context.Context, jobs []job) []outcome {
-	workers := min(batch.DefaultWorkers(), len(jobs))
+	workers := min(l.opts.Workers, len(jobs))
 	feed := make(chan job)
 	var mu sync.Mutex
 	var out []outcome

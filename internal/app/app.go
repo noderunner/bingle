@@ -285,7 +285,13 @@ func New(cfg config.Config, opts ...Option) (*App, error) {
 	a.catalog = cat
 	a.manager = manager
 	a.envs = envs.NewManager(cat)
-	a.batches = batch.NewManager(st, cat)
+	a.batches = batch.NewManager(st, cat, batch.WithLimits(batch.Limits{
+		Ceilings: batch.Ceilings{
+			Workers: cfg.Batch.Workers, MCTSIterations: cfg.Batch.MCTSIterations, MinimaxNodes: cfg.Batch.MinimaxNodes,
+			MaxPlies: cfg.Batch.MaxPlies, Games: cfg.Batch.Games, EventGames: cfg.Batch.EventGames, Minutes: int(cfg.Batch.Time / time.Minute),
+		},
+		Queue: cfg.Batch.Queue, QueuedPerPlayer: cfg.Batch.QueuedPerPlayer, StoredPerPlayer: cfg.Batch.StoredPerPlayer, GamesPerDay: cfg.Batch.GamesPerDay,
+	}))
 	a.publicURL = cfg.PublicURL
 	a.brand = cfg.Brand
 	a.changelog = cfg.Changelog
@@ -575,7 +581,10 @@ func (a *App) RunRetention(ctx context.Context, days int) {
 // RunBotLadder plays the bot ladder's runs on their schedule until ctx ends
 // (ADR 0160), each in the batches' turn, and does nothing when they are off.
 func (a *App) RunBotLadder(ctx context.Context, cfg config.BotLadder) {
-	opts := botladder.Options{Off: cfg.Off, At: cfg.At, Games: cfg.Games, Limit: cfg.Limit}
+	// A run is background work like a batch and keeps within the batches'
+	// ceilings on workers and on a game's length (ADR 0161).
+	lim := a.batches.Limits()
+	opts := botladder.Options{Off: cfg.Off, At: cfg.At, Games: cfg.Games, Limit: cfg.Limit, Workers: a.batches.DefaultWorkers(), MaxPlies: lim.MaxPlies}
 	botladder.New(a.store, a.catalog, a.batches.Hold, opts, a.log).Run(ctx)
 }
 

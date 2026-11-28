@@ -3,6 +3,7 @@ package mcpserver
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/mark3labs/mcp-go/mcp"
@@ -16,7 +17,7 @@ import (
 func registerBatchTools(s *server.MCPServer, bm *batch.Manager) {
 	s.AddTool(
 		mcp.NewTool("start_batch",
-			mcp.WithDescription("Queue a batch of bot-versus-bot games that run in the background. Every game reports how each seat and bot fared, how long games ran and how they ended; a game with a practice study measures more, and its report has a section of its own. `spec` is {base: a game id like \"hex-11\", players: [{bot: random|tactical|minimax|mcts, mcts_iterations, minimax_nodes, faction}] (one per seat; faction is the study's pick for the seat, named for every seat or none), options (the study's options for the table), games, seed, rotate (shift seats each game, default advisable), max_plies, event_games}. Returns the batch; poll get_batch."),
+			mcp.WithDescription("Queue a batch of bot-versus-bot games that run in the background. Every game reports how each seat and bot fared, how long games ran and how they ended; a game with a practice study measures more, and its report has a section of its own. `spec` is {base: a game id like \"hex-11\", players: [{bot: random|tactical|minimax|mcts, mcts_iterations, minimax_nodes, faction}] (one per seat; faction is the study's pick for the seat, named for every seat or none), options (the study's options for the table), games, seed, rotate (shift seats each game, default advisable), max_plies, event_games, workers}. A spec over a ceiling is refused with the limit named (status 400), a full queue or a spent allowance likewise (429): GET /api/batches has the limits. Returns the batch; it is ended, keeping its games, at its time limit (limit \"time\"); poll get_batch."),
 			mcp.WithObject("spec", mcp.Required(), mcp.Description("The batch specification (see above).")),
 			mcp.WithString("name", mcp.Description("A name for the batch.")),
 		),
@@ -31,7 +32,7 @@ func registerBatchTools(s *server.MCPServer, bm *batch.Manager) {
 			}
 			id, err := bm.Start(ctx, request.GetString("name", ""), spec)
 			if err != nil {
-				return mcp.NewToolResultError(err.Error()), nil
+				return batchRefusal(err), nil
 			}
 			info, _ := bm.Get(ctx, id)
 			return mcp.NewToolResultStructured(info, fmt.Sprintf("Batch %d queued: %d games.", id, info.Games)), nil
@@ -88,4 +89,26 @@ func registerBatchTools(s *server.MCPServer, bm *batch.Manager) {
 			return mcp.NewToolResultStructuredOnly(map[string]any{"cancelled": id}), nil
 		},
 	)
+}
+
+// batchRefusal is the answer to a start_batch that was refused: the message,
+// and in its structured content the status the REST route answers with, and
+// the limit the batch ran into and its value, as that route's body has them.
+func batchRefusal(err error) *mcp.CallToolResult {
+	res := mcp.NewToolResultError(err.Error())
+	out := map[string]any{"error": err.Error()}
+	var over *batch.LimitError
+	var allowance *batch.AllowanceError
+	switch {
+	case errors.As(err, &over):
+		out["status"], out["limit"], out["max"] = 400, over.Limit, over.Max
+	case errors.As(err, &allowance):
+		out["status"], out["limit"], out["max"] = 429, allowance.Limit, allowance.Max
+	case errors.Is(err, batch.ErrNotAdmin):
+		out["status"] = 403
+	default:
+		return res
+	}
+	res.StructuredContent = out
+	return res
 }

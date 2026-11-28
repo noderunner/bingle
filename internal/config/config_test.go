@@ -779,3 +779,45 @@ func TestLoad_BotLadder(t *testing.T) {
 		}
 	}
 }
+
+func TestLoad_BatchLimits(t *testing.T) {
+	clearTLSEnv(t)
+	names := []string{"BINGLE_BATCH_MAX_WORKERS", "BINGLE_BATCH_MAX_MCTS_ITERATIONS", "BINGLE_BATCH_MAX_MINIMAX_NODES", "BINGLE_BATCH_MAX_PLIES",
+		"BINGLE_BATCH_MAX_GAMES", "BINGLE_BATCH_MAX_EVENT_GAMES", "BINGLE_BATCH_MAX_TIME", "BINGLE_BATCH_QUEUE",
+		"BINGLE_BATCH_QUEUED_PER_PLAYER", "BINGLE_BATCH_STORED_PER_PLAYER", "BINGLE_BATCH_GAMES_PER_DAY"}
+	for _, k := range names {
+		t.Setenv(k, "")
+	}
+	cfg, err := Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Batch != (BatchLimits{}) {
+		t.Errorf("default: got %+v, want every field left to the batch package's defaults", cfg.Batch)
+	}
+	for k, v := range map[string]string{
+		"BINGLE_BATCH_MAX_WORKERS": "4", "BINGLE_BATCH_MAX_MCTS_ITERATIONS": "800", "BINGLE_BATCH_MAX_MINIMAX_NODES": "9000",
+		"BINGLE_BATCH_MAX_PLIES": "600", "BINGLE_BATCH_MAX_GAMES": "100", "BINGLE_BATCH_MAX_EVENT_GAMES": "5", "BINGLE_BATCH_MAX_TIME": "90m",
+		"BINGLE_BATCH_QUEUE": "10", "BINGLE_BATCH_QUEUED_PER_PLAYER": "2", "BINGLE_BATCH_STORED_PER_PLAYER": "7", "BINGLE_BATCH_GAMES_PER_DAY": "300",
+	} {
+		t.Setenv(k, v)
+	}
+	cfg, err = Load()
+	want := BatchLimits{Workers: 4, MCTSIterations: 800, MinimaxNodes: 9000, MaxPlies: 600, Games: 100, EventGames: 5, Time: 90 * time.Minute,
+		Queue: 10, QueuedPerPlayer: 2, StoredPerPlayer: 7, GamesPerDay: 300}
+	if err != nil || cfg.Batch != want {
+		t.Errorf("got %+v, %v, want %+v", cfg.Batch, err, want)
+	}
+	for _, c := range []struct{ name, value string }{
+		{"BINGLE_BATCH_MAX_WORKERS", "0"}, {"BINGLE_BATCH_MAX_WORKERS", "many"}, {"BINGLE_BATCH_MAX_GAMES", "-1"},
+		{"BINGLE_BATCH_QUEUE", "10001"}, {"BINGLE_BATCH_MAX_TIME", "30s"}, {"BINGLE_BATCH_MAX_TIME", "721h"}, {"BINGLE_BATCH_MAX_TIME", "forever"},
+	} {
+		for _, k := range names {
+			t.Setenv(k, "")
+		}
+		t.Setenv(c.name, c.value)
+		if _, err := Load(); err == nil || !strings.Contains(err.Error(), c.name) {
+			t.Errorf("%s=%s: %v, want an error naming it", c.name, c.value, err)
+		}
+	}
+}

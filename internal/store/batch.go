@@ -34,6 +34,25 @@ type Batch struct {
 	CreatedAt  time.Time
 	StartedAt  *time.Time
 	FinishedAt *time.Time
+	// Owner is the principal that started the batch (BatchAnonymous when
+	// nobody was behind the request, "" for a batch from before owners).
+	Owner string
+	// LimitHit names the limit that ended the batch, "" if none did.
+	LimitHit string
+}
+
+// BatchAnonymous is the owner of a batch started by a request with no
+// principal behind it. No principal's id is this.
+const BatchAnonymous = "-"
+
+// BatchUsage is what one owner has in the batches table: what counts against
+// a player's allowances.
+type BatchUsage struct {
+	// Active are the batches queued or running, Stored every batch.
+	Active, Stored int
+	// GamesToday are the games started in the last 24 hours: all of a
+	// batch still queued or running, and the games a finished one played.
+	GamesToday int
 }
 
 // BatchGame is one game of a batch.
@@ -52,10 +71,10 @@ type BatchGame struct {
 }
 
 // CreateBatch stores a new queued batch.
-func (s *Store) CreateBatch(ctx context.Context, name, gameDefID, spec string, nGames int) (int64, error) {
+func (s *Store) CreateBatch(ctx context.Context, name, gameDefID, spec string, nGames int, owner string) (int64, error) {
 	res, err := s.exec(ctx, "CreateBatch",
-		`INSERT INTO batches (name, game_def_id, spec, n_games) VALUES (?, ?, ?, ?)`,
-		name, gameDefID, spec, nGames)
+		`INSERT INTO batches (name, game_def_id, spec, n_games, owner) VALUES (?, ?, ?, ?, ?)`,
+		name, gameDefID, spec, nGames, owner)
 	if err != nil {
 		return 0, fmt.Errorf("creating batch: %w", err)
 	}
@@ -76,6 +95,30 @@ func (s *Store) SetBatchStatus(ctx context.Context, id int64, status, errText st
 		return fmt.Errorf("setting batch %d status: %w", id, err)
 	}
 	return nil
+}
+
+// EndBatchAtLimit marks a batch ended by a limit: it is cancelled, and the
+// limit is named. The games it played are kept.
+func (s *Store) EndBatchAtLimit(ctx context.Context, id int64, limit string) error {
+	if _, err := s.exec(ctx, "EndBatchAtLimit",
+		`UPDATE batches SET status = ?, error = '', limit_hit = ?, finished_at = CURRENT_TIMESTAMP WHERE id = ?`, BatchCancelled, limit, id); err != nil {
+		return fmt.Errorf("ending batch %d at a limit: %w", id, err)
+	}
+	return nil
+}
+
+// BatchUsageOf counts what owner has in the batches table.
+func (s *Store) BatchUsageOf(ctx context.Context, owner string) (BatchUsage, error) {
+	var u BatchUsage
+	err := s.queryRow(ctx, "BatchUsageOf",
+		`SELECT COALESCE(SUM(status IN ('queued', 'running')), 0), COUNT(*),
+		        COALESCE(SUM(CASE WHEN created_at < datetime('now', '-1 day') THEN 0
+		                          WHEN status IN ('queued', 'running') THEN n_games ELSE done END), 0)
+		 FROM batches WHERE owner = ?`, owner).Scan(&u.Active, &u.Stored, &u.GamesToday)
+	if err != nil {
+		return BatchUsage{}, fmt.Errorf("counting the batches of %q: %w", owner, err)
+	}
+	return u, nil
 }
 
 // InterruptBatches marks the batches a stopped server left queued or running.
@@ -105,12 +148,12 @@ func (s *Store) AddBatchGame(ctx context.Context, g BatchGame) error {
 	return tx.Commit()
 }
 
-const batchCols = `id, name, game_def_id, spec, status, n_games, done, error, created_at, started_at, finished_at`
+const batchCols = `id, name, game_def_id, spec, status, n_games, done, error, created_at, started_at, finished_at, owner, limit_hit`
 
 func scanBatch(sc interface{ Scan(...any) error }) (Batch, error) {
 	var b Batch
 	var started, finished sql.NullTime
-	if err := sc.Scan(&b.ID, &b.Name, &b.GameDefID, &b.Spec, &b.Status, &b.NGames, &b.Done, &b.Error, &b.CreatedAt, &started, &finished); err != nil {
+	if err := sc.Scan(&b.ID, &b.Name, &b.GameDefID, &b.Spec, &b.Status, &b.NGames, &b.Done, &b.Error, &b.CreatedAt, &started, &finished, &b.Owner, &b.LimitHit); err != nil {
 		return Batch{}, err
 	}
 	if started.Valid {

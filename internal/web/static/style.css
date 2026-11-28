@@ -1308,6 +1308,7 @@ input[type="number"] {
 .batch-status.running, .batch-status.queued { border-color: var(--warn); color: var(--warn); }
 .batch-status.done { border-color: var(--accent); color: var(--accent); }
 .batch-status.failed, .batch-status.cancelled, .batch-status.interrupted { border-color: var(--danger); color: var(--danger); }
+.batch-status.limit { border-color: var(--warn); color: var(--warn); }
 
 /* ---- batch reports -------------------------------------------------------------- */
 

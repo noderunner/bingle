@@ -597,6 +597,7 @@
 	"batch.cancelled": "Отменена",
 	"batch.failed": "Сбой",
 	"batch.interrupted": "Прервана",
+	"batch.limit_time": "Достигнут лимит времени",
 	"batch.running_n": "идёт {done}/{games}",
 
 	"chat.messages": "Сообщения общего чата",

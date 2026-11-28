@@ -334,6 +334,12 @@ var columnMigrations = []struct{ table, column, ddl string }{
 	// translate_chat: the account reads chat in its own language (ADR 0143), on
 	// unless it turned that off.
 	{"accounts", "translate_chat", "INTEGER NOT NULL DEFAULT 1"},
+	// owner: the principal that started a batch, "-" for a request nobody
+	// was behind, and '' for the batches made before they had one, which
+	// belong to nobody's allowance (ADR 0161). limit_hit: the limit that
+	// ended the batch before its games were played ('' when none did).
+	{"batches", "owner", "TEXT NOT NULL DEFAULT ''"},
+	{"batches", "limit_hit", "TEXT NOT NULL DEFAULT ''"},
 }
 
 func addMissingColumns(db *sql.DB) error {
