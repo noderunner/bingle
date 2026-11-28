@@ -172,5 +172,49 @@ func (s *Store) ReplaceGuestKey(ctx context.Context, principalID, keyHash string
 	if _, err := tx.exec(ctx, "ReplaceGuestKey", `INSERT INTO guest_keys (principal_id, key_hash) VALUES (?, ?)`, principalID, keyHash); err != nil {
 		return err
 	}
+	// A code not yet traded is a key waiting to be made (ADR 0163).
+	if _, err := tx.exec(ctx, "ReplaceGuestKey.codes", `DELETE FROM guest_codes WHERE principal_id = ?`, principalID); err != nil {
+		return err
+	}
 	return tx.Commit()
+}
+
+// CreateGuestCode records a guest's one-time code for a link that opens the
+// 3D client (ADR 0163), by hash, and forgets the guest's codes that are spent
+// or out of date.
+func (s *Store) CreateGuestCode(ctx context.Context, hash, principalID string, expires, now time.Time) error {
+	if _, err := s.exec(ctx, "CreateGuestCode.prune", `DELETE FROM guest_codes WHERE principal_id = ? AND (used_at IS NOT NULL OR expires_at <= ?)`, principalID, stamp(now)); err != nil {
+		return err
+	}
+	_, err := s.exec(ctx, "CreateGuestCode", `INSERT INTO guest_codes (hash, principal_id, expires_at) VALUES (?, ?, ?)`, hash, principalID, stamp(expires))
+	return err
+}
+
+// UseGuestCode spends a guest's code, once and before it expires, and gives
+// the guest the new key keyHash in the same transaction. It returns the
+// guest; ErrNotFound when the code is unknown, spent or out of date, or its
+// guest has no key that works any more (given up, or become an account).
+func (s *Store) UseGuestCode(ctx context.Context, hash, keyHash string, now time.Time) (string, error) {
+	tx, err := s.begin(ctx, "UseGuestCode")
+	if err != nil {
+		return "", err
+	}
+	defer func() { _ = tx.Rollback() }()
+	res, err := tx.exec(ctx, "UseGuestCode", `UPDATE guest_codes SET used_at = ? WHERE hash = ? AND used_at IS NULL AND expires_at > ?
+		AND EXISTS (SELECT 1 FROM guest_keys k JOIN principals p ON p.id = k.principal_id
+		            WHERE k.principal_id = guest_codes.principal_id AND k.revoked_at IS NULL AND p.merged_into = '')`, stamp(now), hash, stamp(now))
+	if err != nil {
+		return "", err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return "", ErrNotFound
+	}
+	var id string
+	if err := tx.queryRow(ctx, "UseGuestCode.read", `SELECT principal_id FROM guest_codes WHERE hash = ?`, hash).Scan(&id); err != nil {
+		return "", err
+	}
+	if _, err := tx.exec(ctx, "UseGuestCode.key", `INSERT INTO guest_keys (principal_id, key_hash) VALUES (?, ?)`, id, keyHash); err != nil {
+		return "", err
+	}
+	return id, tx.Commit()
 }

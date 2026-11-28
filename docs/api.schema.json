@@ -1270,6 +1270,19 @@
       ],
       "type": "object"
     },
+    "ClientCode": {
+      "description": "ClientCode is POST /api/client/code's answer.",
+      "properties": {
+        "code": {
+          "description": "Code is good once, within a minute: \"bgc_…\" for an account, \"bgj_…\" for a guest. A client trades it at POST /auth/client.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "code"
+      ],
+      "type": "object"
+    },
     "ClientFileInfo": {
       "description": "ClientFileInfo is one file of a client's.",
       "properties": {
@@ -1323,6 +1336,43 @@
         "client",
         "files"
       ],
+      "type": "object"
+    },
+    "ClientSignIn": {
+      "description": "ClientSignIn is POST /auth/client's answer: for an account, a session as POST /auth/login answers one with a token (ADR 0138); for a guest, a key of the guest's own.",
+      "properties": {
+        "expires": {
+          "description": "Expires is the latest the session lasts.",
+          "format": "date-time",
+          "type": "string"
+        },
+        "guest_key": {
+          "description": "GuestKey is a new key of the guest that asked for the code (\"bgg_…\").",
+          "type": "string"
+        },
+        "me": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/MeResponse"
+            }
+          ],
+          "description": "Me is who is signed in, as GET /auth/me says."
+        },
+        "token": {
+          "description": "Token is the session's, beginning bgs_, sent as \"Authorization: Bearer\".",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ClientSignInRequest": {
+      "description": "ClientSignInRequest is POST /auth/client's body.",
+      "properties": {
+        "code": {
+          "description": "Code is a link's code (ClientCode), or a setup file's sign-in code.",
+          "type": "string"
+        }
+      },
       "type": "object"
     },
     "ClockSnapshot": {
@@ -5537,9 +5587,9 @@
   },
   "$id": "https://github.com/noderunner/bingle/docs/api.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "description": "The requests, responses and WebSocket events of bingle's API, version 1.29.0. Generated from the Go types of the server: do not edit. Objects let unknown fields through: a client ignores those it does not know.",
+  "description": "The requests, responses and WebSocket events of bingle's API, version 1.30.0. Generated from the Go types of the server: do not edit. Objects let unknown fields through: a client ignores those it does not know.",
   "title": "Bingle API messages",
-  "x-api-version": "1.29.0",
+  "x-api-version": "1.30.0",
   "x-dm-events": {
     "badge": {
       "$ref": "#/$defs/BadgeEventData"
@@ -5737,6 +5787,11 @@
       },
       "response": {
         "$ref": "#/$defs/BotMatchResponse"
+      }
+    },
+    "POST /api/client/code": {
+      "response": {
+        "$ref": "#/$defs/ClientCode"
       }
     },
     "POST /api/client/setup": {
@@ -5950,6 +6005,14 @@
       },
       "response": {
         "$ref": "#/$defs/AnnouncementsSeenResponse"
+      }
+    },
+    "POST /auth/client": {
+      "request": {
+        "$ref": "#/$defs/ClientSignInRequest"
+      },
+      "response": {
+        "$ref": "#/$defs/ClientSignIn"
       }
     },
     "POST /auth/language": {

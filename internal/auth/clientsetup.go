@@ -57,15 +57,21 @@ var ErrSetupNeedsSession = errors.New("auth: an API token cannot ask for a setup
 // NewSignInCode makes a code that signs a client in to acc once, within a
 // day. It is kept by its hash, as a session is.
 func (a *Accounts) NewSignInCode(ctx context.Context, acc store.Account, ip string) (string, error) {
+	return a.newSignInCode(ctx, acc, ip, signInCodeFor, "")
+}
+
+// newSignInCode is NewSignInCode for a code that lasts life; why is what the
+// audit log says it was made for.
+func (a *Accounts) newSignInCode(ctx context.Context, acc store.Account, ip string, life time.Duration, why string) (string, error) {
 	now := a.now()
 	if err := a.st.PruneAccountTokens(ctx, acc.ID, store.SignInCodeKind, now); err != nil {
 		return "", err
 	}
 	code := newSecret()
-	if err := a.st.CreateAccountToken(ctx, hashSecret(code), acc.ID, store.SignInCodeKind, now.Add(signInCodeFor)); err != nil {
+	if err := a.st.CreateAccountToken(ctx, hashSecret(code), acc.ID, store.SignInCodeKind, now.Add(life)); err != nil {
 		return "", err
 	}
-	a.audit(ctx, acc.ID, "sign-in-code", "", ip)
+	a.audit(ctx, acc.ID, "sign-in-code", why, ip)
 	return SignInCodePrefix + code, nil
 }
 
@@ -206,4 +212,145 @@ func (rs *Resolver) HandleClientSetup(w http.ResponseWriter, r *http.Request) {
 	h.Set("X-Content-Type-Options", "nosniff")
 	h.Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{"filename": SetupFileName}))
 	_, _ = w.Write(file.TOML())
+}
+
+// A link that opens the client at a game (ADR 0163): the page's *Join with
+// Bingle3D* asks for a code and puts it in the link, and the client trades
+// it for a sign-in of its own as the same player.
+//
+//	POST /api/client/code     a code, for the player who asks
+//	POST /auth/client {code}  the client trades it
+//
+// A link ends up in histories and logs, and any page can forge one, so the
+// code is good once, for a minute, and says nothing more than "be this
+// player on this server". An account's is a sign-in code, as the setup
+// file's is; a guest's is traded for a new key of that guest, never the
+// browser's own.
+
+// GuestCodePrefix starts a guest's code for a link.
+const GuestCodePrefix = "bgj_"
+
+// linkCodeFor is how long a link's code waits to be traded: the client is
+// started by the click that made it.
+const linkCodeFor = time.Minute
+
+// linkCodesPerHour is how many link codes one player is given an hour, and
+// how many guests' codes one address may trade.
+const linkCodesPerHour = 30
+
+// ErrLinkNotForAdmin is the answer to an administrator asking for a link's
+// code: a link is no way to hand on the admin group's powers.
+var ErrLinkNotForAdmin = errors.New("auth: a link does not sign the client in as an administrator: sign in to it with your password")
+
+// ClientCode is POST /api/client/code's answer.
+type ClientCode struct {
+	// Code is good once, within a minute: "bgc_…" for an account, "bgj_…"
+	// for a guest. A client trades it at POST /auth/client.
+	Code string `json:"code"`
+}
+
+// ClientSignInRequest is POST /auth/client's body.
+type ClientSignInRequest struct {
+	// Code is a link's code (ClientCode), or a setup file's sign-in code.
+	Code string `json:"code"`
+}
+
+// ClientSignIn is POST /auth/client's answer: for an account, a session as
+// POST /auth/login answers one with a token (ADR 0138); for a guest, a key
+// of the guest's own.
+type ClientSignIn struct {
+	// Token is the session's, beginning bgs_, sent as "Authorization: Bearer".
+	Token string `json:"token,omitempty"`
+	// Expires is the latest the session lasts.
+	Expires *time.Time `json:"expires,omitempty"`
+	// Me is who is signed in, as GET /auth/me says.
+	Me *Me `json:"me,omitempty"`
+	// GuestKey is a new key of the guest that asked for the code ("bgg_…").
+	GuestKey string `json:"guest_key,omitempty"`
+}
+
+// HandleClientCode is POST /api/client/code: a code for a link, for the
+// player who asks. Like the setup file it is a POST, never cached, refused to
+// an API token, and behind a sign-in's gates; unlike it, an administrator
+// gets none.
+func (rs *Resolver) HandleClientCode(w http.ResponseWriter, r *http.Request) {
+	p, known := From(r.Context())
+	switch {
+	case !known:
+		writeError(w, http.StatusForbidden, "auth: a code is for a player: be a guest or sign in first")
+		return
+	case p.Scopes != nil:
+		writeError(w, http.StatusForbidden, "auth: an API token cannot ask for a link's code: sign in")
+		return
+	case p.Account != nil && p.Account.Admin:
+		writeError(w, http.StatusForbidden, ErrLinkNotForAdmin.Error())
+		return
+	}
+	now := rs.now()
+	if !rs.links.allow("code "+p.ID, now) {
+		writeError(w, http.StatusTooManyRequests, "auth: too many codes; try again later")
+		return
+	}
+	var code string
+	var err error
+	if p.Account != nil {
+		code, err = rs.accounts.newSignInCode(r.Context(), *p.Account, rs.transport.PeerIP(r), linkCodeFor, "link")
+	} else if st, ok := rs.guests.(*store.Store); ok {
+		secret := newSecret()
+		code, err = GuestCodePrefix+secret, st.CreateGuestCode(r.Context(), hashSecret(secret), p.ID, now.Add(linkCodeFor), now)
+	} else {
+		err = errors.New("auth: no store for guests' codes")
+	}
+	if err != nil {
+		rs.fail(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, ClientCode{Code: code})
+}
+
+// handleClientSignIn is POST /auth/client: a client trades a link's code. An
+// account's answers as POST /auth/login {code} does, with a session of the
+// client's own; a guest's with a new key of that guest. A guest the client
+// brings as its bearer goes with it in either case, as on signing in: a
+// client that wants to keep it apart leaves its key off.
+func (rs *Resolver) handleClientSignIn(w http.ResponseWriter, r *http.Request) {
+	var req ClientSignInRequest
+	if !decode(w, r, &req) {
+		return
+	}
+	ip := rs.transport.PeerIP(r)
+	st, isStore := rs.guests.(*store.Store)
+	switch {
+	case strings.HasPrefix(req.Code, SignInCodePrefix) && rs.accounts != nil:
+		s, err := rs.accounts.LoginWithCode(r.Context(), req.Code, guestOf(r), ip, r.UserAgent())
+		if err != nil {
+			rs.fail(w, err)
+			return
+		}
+		me := rs.meOf(r, s.Account)
+		writeJSON(w, http.StatusOK, ClientSignIn{Token: SessionTokenPrefix + s.Token, Expires: &s.Expires, Me: &me})
+		return
+	case strings.HasPrefix(req.Code, GuestCodePrefix) && isStore:
+		if !rs.links.allow("trade "+ip, rs.now()) {
+			writeError(w, http.StatusTooManyRequests, ErrTooManyTries.Error())
+			return
+		}
+		key := NewGuestKey()
+		id, err := st.UseGuestCode(r.Context(), hashSecret(strings.TrimPrefix(req.Code, GuestCodePrefix)), HashKey(key), rs.now())
+		if errors.Is(err, store.ErrNotFound) {
+			break
+		}
+		if err != nil {
+			rs.fail(w, err)
+			return
+		}
+		if from := guestOf(r); from != "" && from != id {
+			if err := st.MergePrincipal(r.Context(), from, id); err != nil {
+				rs.log.Error("merging a client's guest", "err", err)
+			}
+		}
+		writeJSON(w, http.StatusOK, ClientSignIn{GuestKey: key})
+		return
+	}
+	writeError(w, http.StatusUnauthorized, ErrBadSignInCode.Error())
 }

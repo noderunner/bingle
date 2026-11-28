@@ -75,6 +75,9 @@ type Resolver struct {
 	// and certificate is the fingerprint one carries.
 	setups      windowLimiter
 	certificate func() string
+	// links limits the codes for a link to the client a player is given, and
+	// the guests' codes an address trades (clientsetup.go).
+	links windowLimiter
 }
 
 // Options configures a Resolver.
@@ -126,7 +129,8 @@ func NewResolver(g Guests, o Options) *Resolver {
 		o.Log = slog.Default()
 	}
 	return &Resolver{guests: g, accounts: o.Accounts, oidc: o.OIDC, caps: o.Caps, translation: o.Translation, transport: o.Transport, idle: o.Idle, log: o.Log, now: time.Now, made: windowLimiter{per: o.NewGuestsPerHour, window: time.Hour},
-		adopts: windowLimiter{per: 10, window: time.Hour}, setups: windowLimiter{per: setupsPerHour, window: time.Hour}, certificate: o.Certificate}
+		adopts: windowLimiter{per: 10, window: time.Hour}, setups: windowLimiter{per: setupsPerHour, window: time.Hour}, certificate: o.Certificate,
+		links: windowLimiter{per: linkCodesPerHour, window: time.Hour}}
 }
 
 // SetClock replaces the resolver's clock (tests).

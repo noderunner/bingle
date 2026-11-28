@@ -30,6 +30,7 @@ import (
 //	POST /auth/announcements-seen {ids}             announcements shown and closed (ADR 0155)
 //	POST /auth/language {language}                  the interface's language (ADR 0141)
 //	POST /auth/second   {code | recovery_code}      the second step of a sign-in
+//	POST /auth/client   {code}                      a client trades a link's code (ADR 0163)
 //	POST /auth/totp/setup   {password}               a secret for an app, its link and a QR code of it
 //	POST /auth/totp/enable  {code}                   on, with ten recovery codes
 //	POST /auth/totp/disable {password, code | recovery_code}
@@ -59,6 +60,7 @@ func (rs *Resolver) Routes() http.Handler {
 	r.Post("/language", rs.handleLanguage)
 	r.Post("/translate", rs.handleTranslate)
 	r.Post("/second", rs.handleSecond)
+	r.Post("/client", rs.handleClientSignIn)
 	r.Post("/totp/setup", rs.handleTOTPSetup)
 	r.Post("/totp/enable", rs.handleTOTPEnable)
 	r.Post("/totp/disable", rs.handleTOTPDisable)

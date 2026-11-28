@@ -41,6 +41,8 @@ var schemaEndpoints = []schemaEndpoint{
 	{route: "GET /api/client", response: reflect.TypeFor[clientBuildsResponse]()},
 	{route: "GET /api/client/files/{file}", media: "application/octet-stream"},
 	{route: "POST /api/client/setup", media: "application/toml"},
+	// A link that opens the client at a game (ADR 0163): its one-time code.
+	{route: "POST /api/client/code", response: reflect.TypeFor[auth.ClientCode]()},
 	{route: "GET /api/bots", response: reflect.TypeFor[[]bots.Info]()},
 	{route: "GET /api/games", response: reflect.TypeFor[openGamesResponse]()},
 	{route: "POST /api/games", request: reflect.TypeFor[createGameRequest](), response: reflect.TypeFor[createGameResponse]()},
@@ -83,6 +85,7 @@ var schemaEndpoints = []schemaEndpoint{
 	// are those of a sign-in that asks for a token.
 	{route: "POST /auth/login", request: reflect.TypeFor[auth.LoginRequest](), response: reflect.TypeFor[auth.SessionTokenResponse]()},
 	{route: "POST /auth/second", request: reflect.TypeFor[auth.SecondRequest](), response: reflect.TypeFor[auth.SessionTokenResponse]()},
+	{route: "POST /auth/client", request: reflect.TypeFor[auth.ClientSignInRequest](), response: reflect.TypeFor[auth.ClientSignIn]()},
 	{route: "GET /auth/me", response: reflect.TypeFor[auth.Me]()},
 	{route: "POST /auth/tour-seen", response: reflect.TypeFor[auth.TourSeenResponse]()},
 	{route: "POST /auth/announcements-seen", request: reflect.TypeFor[auth.AnnouncementsSeenRequest](), response: reflect.TypeFor[auth.AnnouncementsSeenResponse]()},

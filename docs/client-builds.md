@@ -100,6 +100,59 @@ has the browser is.
 What the client does with the file (where it looks for it, and what it writes to its own `config.toml` and
 `keys.toml`) is bingle-3d's, and is described there.
 
+## A link that opens the client
+
+Beside *Join* and *Watch*, a page that has a build for the browser's platform (Windows or Linux, not in the phone
+layout) offers *Join with Bingle3D* and *Watch with Bingle3D*. A click asks the server for a one-time code and hands
+the system a link in the client's own scheme, which the client registers (bingle-3d #77); if the page still has focus
+a moment later, *Download Game Client* appears beside it. [ADR 0163](decisions/0163-a-link-opens-the-3d-client-at-a-game.md)
+says why it is built as it is. This is the contract a client keeps.
+
+```
+bingle-3d://join?server=https%3A%2F%2Fgames.example.com&room=K7MQ2X&code=bgc_AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8
+bingle-3d://watch?server=http%3A%2F%2F127.0.0.1%3A8080&room=K7MQ2X
+```
+
+| Part | What it is |
+|---|---|
+| `bingle-3d:` | the scheme |
+| `//join`, `//watch` | the action, as the host: `join` sits (an open seat, or the one the player holds) else watches, as `--join` does; `watch` watches, as `--watch` does |
+| `server` | required. The page's own origin: `https://host[:port]`, or `http://` only to this machine (`localhost`, `127.0.0.0/8`, `[::1]`). No path, not even `/`, and no query, fragment or user info |
+| `room` | required. The room's code: 4 to 16 of `A-Z0-9` (the server writes six) |
+| `code` | optional. `^bg[cj]_[A-Za-z0-9_-]{43}$`: good once, for a minute |
+
+Each value is percent-encoded as `encodeURIComponent` does, and the page writes them in the order above; a client
+percent-decodes each one and depends on no order. **A client rejects the whole link** for another scheme or action,
+user info or a port or a path after the action, a fragment, a parameter not in the table or one given twice, a
+missing `server` or `room`, a value that fails its pattern, or more than 1024 characters, and nothing in a link
+becomes a command-line option. Any page can make such a link, to any server: the client shows which server it is
+about to connect to, asks before one it has never used, and sends nothing it holds for one server to another. A
+link carries no certificate fingerprint, and a client takes none from one.
+
+**The code.** A link without one joins as whoever the client already is on that server. With one, the client trades
+it with the server the link names, after its usual checks of that server, before it joins:
+
+```
+POST https://games.example.com/auth/client
+Content-Type: application/json
+
+{"code": "bgc_…"}
+```
+
+- An account's code (`bgc_…`) answers `{token, expires, me}`, as `POST /auth/login {code}` does (ADR 0138): a session
+  of the client's own, listed in the account's sessions under the client's name. It replaces what the client held
+  for that server, as signing in does.
+- A guest's code (`bgj_…`) answers `{guest_key}`: a new key of the browser's guest, so the client sits in its seats.
+  It is not the browser's own key.
+- Either way, a guest key the client sends as `Authorization: Bearer` brings that guest along: it is merged in and
+  stops working. Leave it off to keep that guest apart.
+- `401`: the code was spent, is over a minute old, or was never one. The client joins as whoever it is, says so,
+  and does not try the code again. `429`: too many from this address.
+- The code is never written to a log, and nor is the link.
+
+An administrator gets no code: the link opens without one, and the client signs in with the password and second
+factor. The browser and the client may hold the same seat at once, as two tabs may.
+
 ## The API
 
 | Method & path | Response |
@@ -108,3 +161,5 @@ What the client does with the file (where it looks for it, and what it writes to
 | `GET /api/client/files/{file}` | one build's archive, sent from the disk. Its `sha256` is its strong `ETag`: `If-None-Match` answers `304`, and `Range` and `If-Range` are served. Anyone who can reach the server may fetch it |
 | `POST /api/client/setup` | the setup file, `application/toml`, `Cache-Control: no-store` |
 | `POST /auth/login` | with `{code}`: `{token, expires, me}`; `401` for a code that was spent, is too old or was never one |
+| `POST /api/client/code` | `{code}`: a link's one-time code, for the player who asks, from the page; `403` for an administrator and an API token, `429` past 30 an hour |
+| `POST /auth/client` | with `{code}`: `{token, expires, me}` for an account's code, `{guest_key}` for a guest's; `401` for a code that was spent, is too old or was never one |
