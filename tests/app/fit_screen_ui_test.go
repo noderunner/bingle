@@ -103,7 +103,7 @@ func TestWebFitScreen_TheTurnBringsTheActionsIntoView(t *testing.T) {
 		t.Fatal(err)
 	}
 	var joined bool
-	join := fmt.Sprintf(`fetch("/api/games/%s/join", {method: "POST", headers: {"Content-Type": "application/json", "X-Bingle-Session": "1"}, body: JSON.stringify({player_name: "Bob"})}).then(r => r.ok)`, room)
+	join := fmt.Sprintf(`import("/static/js/api.js").then(m => m.api.join("%s", "Bob")).then(() => true)`, room)
 	if err := runSteps(ctx, stepEvalTo(join, &joined, awaitPromise)); err != nil || !joined {
 		t.Fatalf("join: %v %v", joined, err)
 	}

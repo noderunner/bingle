@@ -34,7 +34,7 @@ func TestWebAnnouncements_ShownOnceOnTheMainPage(t *testing.T) {
 		t.Fatal(err)
 	}
 	// The page's first request makes its guest.
-	if !awaitBool(t, ctx, `fetch("/auth/tour-seen", {method: "POST", headers: {"X-Bingle-Session": "1"}}).then((r) => r.ok)`) {
+	if !awaitBool(t, ctx, `import("/static/js/api.js").then((m) => m.api.tourSeen()).then(() => true)`) {
 		t.Fatal("no guest")
 	}
 	one := announce(t, a, admin, "One")
@@ -151,7 +151,7 @@ func TestWebAnnouncements_SlidesAndPictures(t *testing.T) {
 	if err := runSteps(ctx, stepNavigate(base+"/"), stepWaitReady("#open-help")); err != nil {
 		t.Fatal(err)
 	}
-	if !awaitBool(t, ctx, `fetch("/auth/tour-seen", {method: "POST", headers: {"X-Bingle-Session": "1"}}).then((r) => r.ok)`) {
+	if !awaitBool(t, ctx, `import("/static/js/api.js").then((m) => m.api.tourSeen()).then(() => true)`) {
 		t.Fatal("no guest")
 	}
 	body := "First words.\n\n![a board](board.png \"The board\")\n\n---\n\n## Second\n\nMore words.\n\n```\n---\n```\n"
