@@ -142,3 +142,49 @@ func TestWebAnnouncements_LinkedInRecentChanges(t *testing.T) {
 		t.Error("opening an announcement from Recent Changes marked it seen")
 	}
 }
+
+// An announcement's body is several slides, split at a line of ---, and shows
+// its own pictures (#357).
+func TestWebAnnouncements_SlidesAndPictures(t *testing.T) {
+	a, base, admin := announcementServer(t)
+	ctx, cancel := newChromedpContext(t, 60*time.Second)
+	defer cancel()
+	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/"), chromedp.WaitReady("#open-help", chromedp.ByQuery)); err != nil {
+		t.Fatal(err)
+	}
+	if !awaitBool(t, ctx, `fetch("/auth/tour-seen", {method: "POST", headers: {"X-Bingle-Session": "1"}}).then((r) => r.ok)`) {
+		t.Fatal("no guest")
+	}
+	body := "First words.\n\n![a board](board.png \"The board\")\n\n---\n\n## Second\n\nMore words.\n\n```\n---\n```\n"
+	var made auth.Announcement
+	if code := announceForm(t, a, admin, "News", body, []picture{{"board.png", pngOf(t)}}, &made); code != http.StatusCreated {
+		t.Fatalf("announce: %d", code)
+	}
+	if err := chromedp.Run(ctx, chromedp.Reload()); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "the announcement", `document.querySelector("#announcement-card[open]")`, 15*time.Second)
+	id := "announcement-" + strconv.FormatInt(made.ID, 10)
+	if got := evalString(t, ctx, `[...document.querySelectorAll("#announcement-card .tour-dot")].map((d) => d.dataset.slide).join(" ")`); got != id+" "+id+"-2" {
+		t.Errorf("slides %q, want two of one announcement", got)
+	}
+	if got := evalString(t, ctx, `document.getElementById("tour-title").textContent`); got != "News" {
+		t.Errorf("the first slide's title %q, want the announcement's", got)
+	}
+	waitJS(t, ctx, "its picture", `(() => { const i = document.querySelector("#tour-text img"); return i && i.complete && i.naturalWidth === 8; })()`, 10*time.Second)
+	if got := evalString(t, ctx, `document.querySelector("#tour-text figcaption").textContent`); got != "The board" {
+		t.Errorf("caption %q", got)
+	}
+	clickSel(t, ctx, "#tour-next")
+	if got := evalString(t, ctx, `document.getElementById("tour-title").textContent + " | " + document.querySelector("#tour-text pre").textContent.trim() + " | " + !document.querySelector("#tour-text h2")`); got != "Second | --- | true" {
+		t.Errorf("the second slide: %q", got)
+	}
+	clickSel(t, ctx, "#tour-next")
+	deadline := time.Now().Add(10 * time.Second)
+	for !awaitBool(t, ctx, `fetch("/auth/me").then((r) => r.json()).then((me) => !me.announcements)`) {
+		if time.Now().After(deadline) {
+			t.Fatal("closing the card did not mark the announcement seen")
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+}

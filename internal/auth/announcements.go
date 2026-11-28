@@ -7,7 +7,11 @@ package auth
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
+	"mime"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -24,6 +28,18 @@ const (
 	maxAnnouncementBody  = 20000
 )
 
+// An announcement's pictures (#357): PNG or JPEG files, at most twelve, of a
+// megabyte each and four in all, which is a lot for a card of slides.
+const (
+	maxPicture      = 1 << 20
+	maxPictures     = 12
+	maxPictureBytes = 4 << 20
+)
+
+// pictureName is what a picture may be called: the name its body shows it by,
+// which is also the last part of its path.
+var pictureName = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_-]*(\.[A-Za-z0-9_-]+)*\.(?i:png|jpe?g)$`)
+
 // Announcement is one announcement as the API sends it.
 type Announcement struct {
 	ID    int64  `json:"id"`
@@ -36,6 +52,9 @@ type Announcement struct {
 	// Withdrawn: it is offered and listed no more. Only the admin page's
 	// list has withdrawn ones.
 	Withdrawn bool `json:"withdrawn,omitempty"`
+	// Pictures are the names of its pictures, which its body shows by name:
+	// each is at /api/announcements/{id}/pictures/{name}.
+	Pictures []string `json:"pictures,omitempty"`
 }
 
 func announcementOf(a store.Announcement) Announcement {
@@ -43,7 +62,7 @@ func announcementOf(a store.Announcement) Announcement {
 	if t, err := time.Parse(time.DateTime, at); err == nil {
 		at = t.UTC().Format(time.RFC3339)
 	}
-	return Announcement{ID: a.ID, Title: a.Title, Body: a.Body, PublishedAt: at, Withdrawn: a.Withdrawn}
+	return Announcement{ID: a.ID, Title: a.Title, Body: a.Body, PublishedAt: at, Withdrawn: a.Withdrawn, Pictures: a.Pictures}
 }
 
 // AnnouncementsResponse is GET /api/announcements' answer.
@@ -97,6 +116,32 @@ func (rs *Resolver) HandleAnnouncements(w http.ResponseWriter, r *http.Request) 
 	writeJSON(w, http.StatusOK, out)
 }
 
+// HandleAnnouncementPicture is GET /api/announcements/{id}/pictures/{name}:
+// one picture of an announcement not withdrawn, for anybody.
+func (rs *Resolver) HandleAnnouncementPicture(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+	name := chi.URLParam(r, "name")
+	if err != nil || !pictureName.MatchString(name) {
+		writeError(w, http.StatusNotFound, "auth: there is no such picture")
+		return
+	}
+	p, err := rs.guests.AnnouncementPicture(r.Context(), id, name)
+	if errors.Is(err, store.ErrNotFound) {
+		writeError(w, http.StatusNotFound, "auth: there is no such picture")
+		return
+	}
+	if err != nil {
+		rs.log.Error("reading an announcement's picture", "err", err)
+		writeError(w, http.StatusServiceUnavailable, "auth: the picture could not be read; try again")
+		return
+	}
+	w.Header().Set("Content-Type", p.ContentType)
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	// A picture never changes: a new one is a new announcement.
+	w.Header().Set("Cache-Control", "public, max-age=86400")
+	_, _ = w.Write(p.Data)
+}
+
 // handleAnnouncementsSeen marks announcements seen by whoever asks: an
 // account, or a guest, which a page's first request makes if the browser has
 // none yet.
@@ -144,7 +189,12 @@ func (rs *Resolver) handleAdminAnnouncements(w http.ResponseWriter, r *http.Requ
 // too many.
 var errAnnouncement = errors.New("auth: an announcement needs a title of at most 120 characters and a body of at most 20000")
 
-// handleAdminAnnounce publishes an announcement: {title, body}.
+// errPictures is the answer to pictures beyond the limits.
+var errPictures = fmt.Errorf("auth: an announcement may have at most %d pictures, of at most %d KiB each and %d KiB in all", maxPictures, maxPicture>>10, maxPictureBytes>>10)
+
+// handleAdminAnnounce publishes an announcement: {title, body} as JSON, or as
+// a multipart form with its pictures too, each a "pictures" file part named
+// as its body shows it.
 func (rs *Resolver) handleAdminAnnounce(w http.ResponseWriter, r *http.Request) {
 	acc, ok := rs.admin(w, r)
 	if !ok {
@@ -154,8 +204,17 @@ func (rs *Resolver) handleAdminAnnounce(w http.ResponseWriter, r *http.Request) 
 		Title string `json:"title"`
 		Body  string `json:"body"`
 	}
-	// The body is longer than the other requests here allow.
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4*maxAnnouncementBody)).Decode(&req); err != nil {
+	var pictures []store.Picture
+	if mt, _, _ := mime.ParseMediaType(r.Header.Get("Content-Type")); mt == "multipart/form-data" {
+		var status int
+		var err error
+		req.Title, req.Body, pictures, status, err = readAnnouncementForm(w, r)
+		if err != nil {
+			writeError(w, status, err.Error())
+			return
+		}
+	} else if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4*maxAnnouncementBody)).Decode(&req); err != nil {
+		// The body is longer than the other requests here allow.
 		writeError(w, http.StatusBadRequest, "auth: malformed JSON body")
 		return
 	}
@@ -164,13 +223,109 @@ func (rs *Resolver) handleAdminAnnounce(w http.ResponseWriter, r *http.Request) 
 		writeError(w, http.StatusBadRequest, errAnnouncement.Error())
 		return
 	}
-	a, err := rs.accounts.st.CreateAnnouncement(r.Context(), title, body, rs.now())
+	a, err := rs.accounts.st.CreateAnnouncement(r.Context(), title, body, pictures, rs.now())
 	if err != nil {
 		rs.fail(w, err)
 		return
 	}
 	rs.accounts.audit(r.Context(), acc.ID, "announcement-published", title, rs.transport.PeerIP(r))
 	writeJSON(w, http.StatusCreated, announcementOf(a))
+}
+
+// readAnnouncementForm reads an announcement as a multipart form: its title,
+// its body and its pictures, each checked to be a PNG or JPEG within the
+// limits. On an error it says the status to answer with.
+func readAnnouncementForm(w http.ResponseWriter, r *http.Request) (title, body string, pictures []store.Picture, status int, err error) {
+	r.Body = http.MaxBytesReader(w, r.Body, maxPictureBytes+8*maxAnnouncementBody+64<<10)
+	mr, err := r.MultipartReader()
+	if err != nil {
+		return "", "", nil, http.StatusBadRequest, errors.New("auth: malformed form")
+	}
+	total := 0
+	seen := map[string]bool{}
+	for {
+		part, err := mr.NextPart()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			var tooBig *http.MaxBytesError
+			if errors.As(err, &tooBig) {
+				return "", "", nil, http.StatusRequestEntityTooLarge, errPictures
+			}
+			return "", "", nil, http.StatusBadRequest, errors.New("auth: malformed form")
+		}
+		limit := 4 * maxAnnouncementBody
+		if part.FormName() == "pictures" {
+			limit = maxPicture
+		}
+		data, err := io.ReadAll(io.LimitReader(part, int64(limit)+1))
+		if err != nil {
+			var tooBig *http.MaxBytesError
+			if errors.As(err, &tooBig) {
+				return "", "", nil, http.StatusRequestEntityTooLarge, errPictures
+			}
+			return "", "", nil, http.StatusBadRequest, errors.New("auth: malformed form")
+		}
+		switch part.FormName() {
+		case "title", "body":
+			if len(data) > limit {
+				return "", "", nil, http.StatusBadRequest, errAnnouncement
+			}
+			if part.FormName() == "title" {
+				title = string(data)
+			} else {
+				body = string(data)
+			}
+		case "pictures":
+			name := part.FileName()
+			if name == "" && len(data) == 0 {
+				continue // a file input left empty
+			}
+			if !pictureName.MatchString(name) || seen[name] {
+				return "", "", nil, http.StatusBadRequest, fmt.Errorf("auth: %q: a picture's name is letters, digits, dots, dashes and underscores, ends .png, .jpg or .jpeg, and is used once", name)
+			}
+			kind := http.DetectContentType(data)
+			if kind != "image/png" && kind != "image/jpeg" {
+				return "", "", nil, http.StatusBadRequest, fmt.Errorf("auth: %q is not a PNG or JPEG picture", name)
+			}
+			total += len(data)
+			if len(data) > maxPicture || total > maxPictureBytes || len(pictures) == maxPictures {
+				return "", "", nil, http.StatusRequestEntityTooLarge, errPictures
+			}
+			seen[name] = true
+			pictures = append(pictures, store.Picture{Name: name, ContentType: kind, Data: data})
+		}
+	}
+	return title, body, pictures, 0, nil
+}
+
+// handleAdminDelete deletes an announcement for good, with its pictures and
+// who has seen it.
+func (rs *Resolver) handleAdminDelete(w http.ResponseWriter, r *http.Request) {
+	acc, ok := rs.admin(w, r)
+	if !ok {
+		return
+	}
+	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "auth: there is no such announcement")
+		return
+	}
+	a, err := rs.accounts.st.AnnouncementByID(r.Context(), id)
+	if err == nil {
+		err = rs.accounts.st.DeleteAnnouncement(r.Context(), id)
+	}
+	if errors.Is(err, store.ErrNotFound) {
+		writeError(w, http.StatusNotFound, "auth: there is no such announcement")
+		return
+	}
+	if err != nil {
+		rs.fail(w, err)
+		return
+	}
+	rs.accounts.audit(r.Context(), acc.ID, "announcement-deleted", a.Title, rs.transport.PeerIP(r))
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // handleAdminWithdraw withdraws an announcement: nobody is offered it from

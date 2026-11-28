@@ -161,7 +161,23 @@ function announcementRow(a) {
 	const act = document.createElement("td");
 	if (a.withdrawn) {
 		act.className = "muted";
-		act.textContent = t("admin.withdrawn");
+		act.append(t("admin.withdrawn"), " ");
+		const del = document.createElement("button");
+		del.type = "button";
+		del.className = "small";
+		del.textContent = t("admin.delete");
+		del.setAttribute("aria-label", t("admin.delete_label", { title: a.title }));
+		del.addEventListener("click", async () => {
+			del.disabled = true;
+			try {
+				await api.deleteAnnouncement(a.id);
+				tr.remove();
+			} catch (err) {
+				del.disabled = false;
+				announced(err instanceof ApiError ? err.message : t("common.not_done"), "error");
+			}
+		});
+		act.append(del);
 	} else {
 		const b = document.createElement("button");
 		b.type = "button";
@@ -199,7 +215,11 @@ el("announce-form").addEventListener("submit", async (ev) => {
 	const go = el("announce-go");
 	go.disabled = true;
 	try {
-		const a = await api.announce(el("announce-title").value, el("announce-body").value);
+		const form = new FormData();
+		form.append("title", el("announce-title").value);
+		form.append("body", el("announce-body").value);
+		for (const f of el("announce-pictures").files) form.append("pictures", f, f.name);
+		const a = await api.announce(form);
 		el("announce-rows").prepend(announcementRow(a));
 		el("announce-table").hidden = false;
 		el("announce-form").reset();

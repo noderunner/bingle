@@ -645,3 +645,13 @@ CREATE TABLE IF NOT EXISTS announcements_seen (
     seen_at          TEXT NOT NULL,
     PRIMARY KEY (principal_id, announcement_id)
 );
+
+-- An announcement's pictures (#357): PNG or JPEG files its body shows by
+-- name, kept with it and gone with it.
+CREATE TABLE IF NOT EXISTS announcement_pictures (
+    announcement_id  INTEGER NOT NULL REFERENCES announcements(id) ON DELETE CASCADE,
+    name             TEXT NOT NULL,
+    content_type     TEXT NOT NULL,
+    data             BLOB NOT NULL,
+    PRIMARY KEY (announcement_id, name)
+);

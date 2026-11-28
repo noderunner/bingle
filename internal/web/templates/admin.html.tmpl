@@ -51,6 +51,10 @@
 					<label for="announce-body">{{t .Lang "admin.announcement_body"}}</label>
 					<textarea id="announce-body" rows="8" maxlength="20000" required></textarea>
 				</div>
+				<div class="field">
+					<label for="announce-pictures">{{t .Lang "admin.announcement_pictures"}}</label>
+					<input id="announce-pictures" type="file" accept="image/png,image/jpeg" multiple>
+				</div>
 				<div class="row"><button type="submit" class="primary" id="announce-go">{{t .Lang "admin.publish"}}</button></div>
 			</form>
 			<p class="small" id="announce-result" role="status" aria-live="polite"></p>

@@ -772,17 +772,20 @@ single slide no count, dots, *Back* or *Skip*. A slide with no picture hides `#t
 ## Announcements
 
 An administrator's major announcements ([ADR 0155](decisions/0155-major-announcements-shown-once.md),
-`js/announcements.js`) are shown in the tour's card, `#announcement-card`: a slide each
-(`data-slide="announcement-<id>"`), oldest first, its title in `#tour-title` and its Markdown body, rendered by
-`js/markdown.js` and not translated, in `#tour-text`. With several, *Close* (`#tour-skip`) stands where the tour's
+`js/announcements.js`) are shown in the tour's card, `#announcement-card`, oldest first: a slide each
+(`data-slide="announcement-<id>"`), or several when its body has a line of `---` after a blank line (outside fenced
+code), the second `announcement-<id>-2` and so on. A slide's title in `#tour-title` is the heading it starts with, or
+else the announcement's; its Markdown, rendered by `js/markdown.js` and not translated, is in `#tour-text`, and shows
+the announcement's own pictures by name (`assetBase` `/api/announcements/<id>/pictures/`; no other site's). With several, *Close* (`#tour-skip`) stands where the tour's
 *Skip* does. `/auth/me`'s `announcements` lists the ids waiting for the guest or account, and only then does the
 main page load the module, and only when it does not offer the tour, so the two never open together. Closing the
 card in any way marks every announcement it showed as seen (`POST /auth/announcements-seen`, with `keepalive`).
 A game's page never shows it.
 
-The admin page's *Announcements* (`#announce-card`) writes one (`#announce-title`, `#announce-body`, Markdown) and
-publishes it (`#announce-go`, `#announce-result`), and lists every one, newest first (`#announce-rows`), each with
-*Withdraw* or, once withdrawn, *Withdrawn*.
+The admin page's *Announcements* (`#announce-card`) writes one (`#announce-title`, `#announce-body`, Markdown, and
+its PNG or JPEG pictures, `#announce-pictures`) and publishes it with them (`#announce-go`, `#announce-result`), and
+lists every one, newest first (`#announce-rows`), each with *Withdraw* or, once withdrawn, *Withdrawn* and *Delete*,
+which deletes it and its pictures for good. A draft of one, with its pictures, is kept in `docs/announcements/`.
 
 ## The list of games
 

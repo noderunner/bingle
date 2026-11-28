@@ -45,6 +45,7 @@ import (
 //	POST /auth/admin/invites                        an invitation to sign up
 //	GET|POST /auth/admin/announcements              announcements (ADR 0155)
 //	POST /auth/admin/announcements/{id}/withdraw    withdraw one
+//	POST /auth/admin/announcements/{id}/delete      delete one, with its pictures
 func (rs *Resolver) Routes() http.Handler {
 	r := chi.NewRouter()
 	r.Post("/signup", rs.handleSignup)
@@ -78,6 +79,7 @@ func (rs *Resolver) Routes() http.Handler {
 	r.Get("/admin/announcements", rs.handleAdminAnnouncements)
 	r.Post("/admin/announcements", rs.handleAdminAnnounce)
 	r.Post("/admin/announcements/{id}/withdraw", rs.handleAdminWithdraw)
+	r.Post("/admin/announcements/{id}/delete", rs.handleAdminDelete)
 	r.Post("/handle", rs.handleRename)
 	r.Get("/sessions", rs.handleSessions)
 	r.Post("/sessions/end-others", rs.handleEndOthers)

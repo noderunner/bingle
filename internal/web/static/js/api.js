@@ -24,10 +24,12 @@ export class ApiError extends Error {
 // cookie overwriting the first and leaving a seat with the guest nobody has.
 let first = null;
 
-async function call(path, { method = "GET", body, headers, keepalive, file } = {}) {
+async function call(path, { method = "GET", body, form, headers, keepalive, file } = {}) {
 	const init = { method, headers: { [PAGE_HEADER]: "1", ...(headers || {}) } };
 	if (keepalive) init.keepalive = true;
-	if (body !== undefined) {
+	// A form (FormData) goes as the browser encodes it, files and all.
+	if (form) init.body = form;
+	else if (body !== undefined) {
 		init.headers["Content-Type"] = "application/json";
 		init.body = JSON.stringify(body);
 	}
@@ -177,8 +179,10 @@ export const api = {
 	setCap: (cls, capability, allowed) => call("/auth/admin/caps", { method: "PUT", body: { class: cls, capability, allowed } }),
 	invite: () => call("/auth/admin/invites", { method: "POST" }),
 	adminAnnouncements: () => call("/auth/admin/announcements"),
-	announce: (title, body) => call("/auth/admin/announcements", { method: "POST", body: { title, body } }),
+	// form: title, body and its pictures files (#357).
+	announce: (form) => call("/auth/admin/announcements", { method: "POST", form }),
 	withdrawAnnouncement: (id) => call(`/auth/admin/announcements/${enc(id)}/withdraw`, { method: "POST" }),
+	deleteAnnouncement: (id) => call(`/auth/admin/announcements/${enc(id)}/delete`, { method: "POST" }),
 	oidcFinish: (handle) => call("/auth/oidc/finish", { method: "POST", body: { handle } }),
 	oidcUnlink: (provider, password) => call("/auth/oidc/unlink", { method: "POST", body: { provider, password } }),
 	forgot: (who) => call("/auth/forgot", { method: "POST", body: { who } }),
