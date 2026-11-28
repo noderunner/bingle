@@ -1,13 +1,8 @@
 package app_test
 
 import (
-	"context"
 	"testing"
 	"time"
-
-	"github.com/chromedp/cdproto/page"
-	"github.com/chromedp/cdproto/runtime"
-	"github.com/chromedp/chromedp"
 )
 
 // A page that could not learn who it is (the server was away) does not keep
@@ -36,13 +31,10 @@ func TestWebPage_AFailedWhoAmIIsAskedAgain(t *testing.T) {
 			return real(input, init);
 		};
 	})()`
-	if err := chromedp.Run(ctx, chromedp.ActionFunc(func(c context.Context) error {
-		_, err := page.AddScriptToEvaluateOnNewDocument(flaky).Do(c)
-		return err
-	})); err != nil {
+	if err := runSteps(ctx, stepAddScript(flaky)); err != nil {
 		t.Fatal(err)
 	}
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/")); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the first ask", `window.meCalls >= 1`, 10*time.Second)
@@ -51,7 +43,7 @@ func TestWebPage_AFailedWhoAmIIsAskedAgain(t *testing.T) {
 	// (and a newcomer is "anonymous" either way, until its first request makes
 	// its guest).
 	var kind string
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`import("/static/js/api.js").then((m) => m.whoAmI()).then((me) => (typeof me.accounts === "boolean" ? me.kind : "the failure"))`, &kind, func(p *runtime.EvaluateParams) *runtime.EvaluateParams { return p.WithAwaitPromise(true) })); err != nil {
+	if err := runSteps(ctx, stepEvalTo(`import("/static/js/api.js").then((m) => m.whoAmI()).then((me) => (typeof me.accounts === "boolean" ? me.kind : "the failure"))`, &kind, awaitPromise)); err != nil {
 		t.Fatal(err)
 	}
 	if kind == "the failure" {

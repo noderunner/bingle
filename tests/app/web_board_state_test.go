@@ -7,8 +7,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/chromedp/chromedp"
 )
 
 // TestWebGame_LoadsAndDisplaysBoardState covers backlog item 38's AC
@@ -25,18 +23,18 @@ func TestWebGame_LoadsAndDisplaysBoardState(t *testing.T) {
 	ctx, cancel := newChromedpContext(t, 30*time.Second)
 	defer cancel()
 
-	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/game/"+roomCode)); err != nil {
+	if err := runSteps(ctx, stepNavigate(baseURL+"/game/"+roomCode)); err != nil {
 		t.Fatalf("navigate to /game/%s: %v", roomCode, err)
 	}
 
 	// The freeplay fixture's initial setup always places a black stone at "2,0".
-	if err := chromedp.Run(ctx, chromedp.WaitReady(`#board .piece[data-position="2,0"]`, chromedp.ByQuery)); err != nil {
+	if err := runSteps(ctx, stepWaitReady(`#board .piece[data-position="2,0"]`)); err != nil {
 		t.Fatalf("rendered /game/%s page never drew the stone at 2,0: %v", roomCode, err)
 	}
 
 	// The status message reflects the waiting game.
 	var status string
-	if err := chromedp.Run(ctx, chromedp.Text("#status-message", &status, chromedp.ByID)); err != nil {
+	if err := runSteps(ctx, stepText("#status-message", &status)); err != nil {
 		t.Fatalf("reading #status-message: %v", err)
 	}
 	if !strings.Contains(strings.ToLower(status), "waiting") {
@@ -45,7 +43,7 @@ func TestWebGame_LoadsAndDisplaysBoardState(t *testing.T) {
 
 	// The raw state dump (collapsed) carries the fetched JSON.
 	var raw string
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`document.getElementById("board-state").textContent`, &raw)); err != nil {
+	if err := runSteps(ctx, stepEvalTo(`document.getElementById("board-state").textContent`, &raw)); err != nil {
 		t.Fatalf("reading #board-state: %v", err)
 	}
 	for _, want := range []string{"2,0", `"status": "waiting"`, `"move_seq": 0`} {
@@ -55,7 +53,7 @@ func TestWebGame_LoadsAndDisplaysBoardState(t *testing.T) {
 	}
 
 	var loc string
-	if err := chromedp.Run(ctx, chromedp.Location(&loc)); err != nil {
+	if err := runSteps(ctx, stepLocation(&loc)); err != nil {
 		t.Fatalf("chromedp.Location: %v", err)
 	}
 	if !strings.Contains(loc, "/game/"+roomCode) {
@@ -120,7 +118,7 @@ func TestWebGame_UnknownRoomCode_PageStillLoadsButShowsError(t *testing.T) {
 	ctx, cancel := newChromedpContext(t, 30*time.Second)
 	defer cancel()
 
-	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/game/"+unknownCode)); err != nil {
+	if err := runSteps(ctx, stepNavigate(baseURL+"/game/"+unknownCode)); err != nil {
 		t.Fatalf("navigate to /game/%s: %v", unknownCode, err)
 	}
 
@@ -129,7 +127,7 @@ func TestWebGame_UnknownRoomCode_PageStillLoadsButShowsError(t *testing.T) {
 	deadline := time.Now().Add(3 * time.Second)
 	var body string
 	for time.Now().Before(deadline) {
-		if err := chromedp.Run(ctx, chromedp.Text("body", &body, chromedp.ByQuery)); err != nil {
+		if err := runSteps(ctx, stepText("body", &body)); err != nil {
 			t.Fatalf("chromedp.Text(body): %v", err)
 		}
 		time.Sleep(100 * time.Millisecond)
@@ -147,8 +145,8 @@ func TestWebGame_UnknownRoomCode_PageStillLoadsButShowsError(t *testing.T) {
 	// simpler, bounded proxy check here is that the document is still in a
 	// normal "complete" ready state, not stuck mid-load/crashed).
 	var readyState string
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`document.readyState`, &readyState)); err != nil {
-		t.Fatalf("chromedp.Evaluate(document.readyState): %v", err)
+	if err := runSteps(ctx, stepEvalTo(`document.readyState`, &readyState)); err != nil {
+		t.Fatalf("stepEvalTo(document.readyState): %v", err)
 	}
 	if readyState != "complete" {
 		t.Errorf("document.readyState = %q, want %q (page should finish loading cleanly even when .../state 404s)", readyState, "complete")

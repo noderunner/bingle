@@ -111,7 +111,19 @@ chmod +x ~/.local/bin/chromium
 
 Make sure `~/.local/bin` is on your `$PATH`. This is local machine setup only — it's not part of the repo, and CI runners have a real Chrome/Chromium on `PATH` already with no wrapper needed.
 
-The shared helper `newChromedpContext` (`tests/app/web_create_join_test.go`) gives every browser its own uniquely named profile directory and, when a test ends, kills any leftover process holding it and deletes the directory — so the quirk below no longer accumulates across runs on its own.
+The shared helper `newChromedpContext` (`tests/app/browser_test.go`) gives every browser its own uniquely named profile directory and, when a test ends, kills any leftover process holding it and deletes the directory — so the quirk below no longer accumulates across runs on its own.
+
+### Writing a browser test
+
+`tests/app/browser_test.go` is the only file of the package that imports `chromedp` or `cdproto`. A test
+runs *steps* with `runSteps(ctx, stepNavigate(url), stepWaitVisible("#id"), ...)`, evaluates JavaScript with
+`stepEval` and `stepEvalTo` (or the helpers `evalString`, `evalInt`, `evalBool` and `waitJS`), and listens
+with `collectJSErrors`; a thing no helper does yet is a new `step*` function there, not a `chromedp` call in
+the test. A new release of `chromedp` is then a change to that one file.
+
+`chromedp` and `cdproto` are test-only (`go list -deps .` names neither) and move together. The browser is
+started with `remote.WebSocket`: since `chromedp` 0.21 the default is a pipe handed to the browser as file
+descriptors 3 and 4, which the wrapper script of a Flatpak Chromium above does not pass on.
 
 ### Looking at the UI
 

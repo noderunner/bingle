@@ -11,8 +11,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chromedp/chromedp"
-
 	"github.com/noderunner/bingle/internal/app"
 	"github.com/noderunner/bingle/internal/journal"
 	"github.com/noderunner/bingle/internal/metrics"
@@ -83,12 +81,12 @@ func TestWebHealthPage_DrawsFromTheHistory(t *testing.T) {
 	collectJSErrors(ctx, &mu, &jsErrors)
 
 	var cards, text string
-	if err := chromedp.Run(ctx,
-		chromedp.Navigate(baseURL+"/metrics/health"),
+	if err := runSteps(ctx,
+		stepNavigate(baseURL+"/metrics/health"),
 		// The script replaces the "Loading…" shell with cards.
-		chromedp.WaitVisible(`#health-root section.card`, chromedp.ByQuery),
-		chromedp.Evaluate(`String(document.querySelectorAll("#health-root section.card").length)`, &cards),
-		chromedp.Text(`#health-root`, &text, chromedp.ByQuery),
+		stepWaitVisible(`#health-root section.card`),
+		stepEvalTo(`String(document.querySelectorAll("#health-root section.card").length)`, &cards),
+		stepText(`#health-root`, &text),
 	); err != nil {
 		t.Fatalf("driving the health page: %v", err)
 	}
@@ -141,10 +139,10 @@ func TestWebHealthPage_SaysWhenThereIsNoHistory(t *testing.T) {
 	collectJSErrors(ctx, &mu, &jsErrors)
 
 	var text string
-	if err := chromedp.Run(ctx,
-		chromedp.Navigate(baseURL+"/metrics/health"),
-		chromedp.WaitVisible(`#health-root section.card`, chromedp.ByQuery),
-		chromedp.Text(`#health-root`, &text, chromedp.ByQuery),
+	if err := runSteps(ctx,
+		stepNavigate(baseURL+"/metrics/health"),
+		stepWaitVisible(`#health-root section.card`),
+		stepText(`#health-root`, &text),
 	); err != nil {
 		t.Fatalf("driving the health page: %v", err)
 	}
@@ -190,10 +188,10 @@ func TestWebHealthPage_ShowsWhatWentWrongInBrowsers(t *testing.T) {
 	collectJSErrors(ctx, &mu, &jsErrors)
 
 	var text string
-	if err := chromedp.Run(ctx,
-		chromedp.Navigate(srv.URL+"/metrics/health"),
-		chromedp.WaitVisible(`#health-root table.data`, chromedp.ByQuery),
-		chromedp.Text(`#health-root`, &text, chromedp.ByQuery),
+	if err := runSteps(ctx,
+		stepNavigate(srv.URL+"/metrics/health"),
+		stepWaitVisible(`#health-root table.data`),
+		stepText(`#health-root`, &text),
 	); err != nil {
 		t.Fatalf("driving the health page: %v", err)
 	}

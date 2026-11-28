@@ -8,9 +8,6 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/chromedp/cdproto/network"
-	"github.com/chromedp/chromedp"
-
 	"github.com/noderunner/bingle/internal/auth"
 )
 
@@ -32,18 +29,7 @@ func newGuestKey(t *testing.T, baseURL string) string {
 func browserGuestKey(t *testing.T, ctx context.Context) string {
 	t.Helper()
 	var key string
-	err := chromedp.Run(ctx, chromedp.ActionFunc(func(ctx context.Context) error {
-		cookies, err := network.GetCookies().Do(ctx)
-		if err != nil {
-			return err
-		}
-		for _, c := range cookies {
-			if c.Name == "bingle_guest" {
-				key = c.Value
-			}
-		}
-		return nil
-	}))
+	err := runSteps(ctx, stepCookie("bingle_guest", &key))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -57,9 +43,7 @@ func browserGuestKey(t *testing.T, ctx context.Context) string {
 // for baseURL: what a browser that took a seat earlier carries.
 func setBrowserGuest(t *testing.T, ctx context.Context, baseURL, key string) {
 	t.Helper()
-	err := chromedp.Run(ctx, chromedp.ActionFunc(func(ctx context.Context) error {
-		return network.SetCookie("bingle_guest", key).WithURL(baseURL).WithPath("/").WithHTTPOnly(true).Do(ctx)
-	}))
+	err := runSteps(ctx, stepSetCookie(baseURL, "bingle_guest", key))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -105,9 +89,7 @@ func doJSONMember(t *testing.T, session, method, url string, body any, out any) 
 // signInChrome gives the browser behind ctx the session cookie session.
 func signInChrome(t *testing.T, ctx context.Context, baseURL, session string) {
 	t.Helper()
-	err := chromedp.Run(ctx, chromedp.ActionFunc(func(ctx context.Context) error {
-		return network.SetCookie(auth.SessionCookie, session).WithURL(baseURL).WithPath("/").WithHTTPOnly(true).Do(ctx)
-	}))
+	err := runSteps(ctx, stepSetCookie(baseURL, auth.SessionCookie, session))
 	if err != nil {
 		t.Fatal(err)
 	}

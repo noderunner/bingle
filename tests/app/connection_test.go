@@ -9,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chromedp/chromedp"
 	"github.com/coder/websocket"
 
 	"github.com/noderunner/bingle/internal/app"
@@ -331,7 +330,7 @@ func TestWebConnection_OthersSeeAPlayerGoAndComeBack(t *testing.T) {
 		t.Error("the page was re-rendered for a connection")
 	}
 
-	if err := chromedp.Cancel(aliceCtx); err != nil {
+	if err := closeBrowser(aliceCtx); err != nil {
 		t.Logf("closing Alice's browser: %v", err)
 	}
 	cancelA()

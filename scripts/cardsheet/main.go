@@ -18,8 +18,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/chromedp/cdproto/runtime"
 	"github.com/chromedp/chromedp"
+	"github.com/chromedp/chromedp/remote"
 )
 
 // sheet is the script run in the page: it reads the game's cards from the
@@ -85,19 +85,23 @@ func main() {
 		log.Fatal(err)
 	}
 	defer func() { _ = os.RemoveAll(profile) }()
-	allocCtx, cancelAlloc := chromedp.NewExecAllocator(context.Background(), append(chromedp.DefaultExecAllocatorOptions[:], chromedp.UserDataDir(profile))...)
+	// remote.WebSocket: the browser opens a debugging port instead of reading a pipe,
+	// which a wrapper script around a Flatpak Chromium (docs/test.md) cannot pass on.
+	allocCtx, cancelAlloc := chromedp.NewExecAllocator(context.Background(), append(chromedp.DefaultExecAllocatorOptions[:], chromedp.UserDataDir(profile), remote.WebSocket)...)
 	defer cancelAlloc()
 	ctx, cancel := chromedp.NewContext(allocCtx)
 	defer cancel()
 	ctx, cancel = context.WithTimeout(ctx, 60*time.Second)
 	defer cancel()
 
-	var svg string
-	if err := chromedp.Run(ctx,
+	if err := chromedp.Do(ctx,
 		chromedp.Navigate(base+"/"),
-		chromedp.WaitReady("body", chromedp.ByQuery),
-		chromedp.Evaluate(fmt.Sprintf("%s(%q)", sheet, game), &svg, func(p *runtime.EvaluateParams) *runtime.EvaluateParams { return p.WithAwaitPromise(true) }),
+		chromedp.WaitReady(chromedp.CSS("body")),
 	); err != nil {
+		log.Fatal(err)
+	}
+	svg, err := chromedp.Run(ctx, chromedp.Evaluate[string](fmt.Sprintf("%s(%q)", sheet, game), chromedp.EvalAwaitPromise))
+	if err != nil {
 		log.Fatal(err)
 	}
 	if err := os.WriteFile(out, []byte(svg), 0o644); err != nil {

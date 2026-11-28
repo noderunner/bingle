@@ -6,8 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chromedp/chromedp"
-
 	"github.com/noderunner/bingle/internal/engine/board"
 )
 
@@ -93,7 +91,7 @@ func TestWebHexGrid_AnyHexGameCanUseIt(t *testing.T) {
 	ctx, cancel := newChromedpContext(t, 120*time.Second)
 	defer cancel()
 	openNewGame(t, ctx, baseURL, "yavalath")
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`localStorage.setItem("bingle.hexStyle.meridians", '"grid"'); true`, nil)); err != nil {
+	if err := runSteps(ctx, stepEval(`localStorage.setItem("bingle.hexStyle.meridians", '"grid"'); true`)); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "hexagons", `document.querySelectorAll("#board polygon.cell-bg").length === 61 && document.querySelector("#board .hex-lattice") === null`, 20*time.Second)

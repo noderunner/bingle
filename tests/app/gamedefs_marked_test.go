@@ -10,8 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chromedp/chromedp"
-
 	"github.com/noderunner/bingle/internal/app"
 	"github.com/noderunner/bingle/internal/games/fendo"
 )
@@ -77,9 +75,9 @@ func TestPrivateGames_HaveABadgeInTheList(t *testing.T) {
 	base := newPrivateGameServer(t)
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx,
-		chromedp.Navigate(base+"/"),
-		chromedp.WaitVisible(`.game-card[data-family="secret-fendo"]`, chromedp.ByQuery),
+	if err := runSteps(ctx,
+		stepNavigate(base+"/"),
+		stepWaitVisible(`.game-card[data-family="secret-fendo"]`),
 	); err != nil {
 		t.Fatal(err)
 	}

@@ -22,9 +22,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chromedp/cdproto/page"
-	"github.com/chromedp/chromedp"
-
 	"github.com/noderunner/bingle/internal/session/roomcode"
 )
 
@@ -63,25 +60,6 @@ func findBrowser() string {
 	return ""
 }
 
-// newChromedpContextWith is newChromedpContext with extra browser options (such as flags).
-//
-// Its pages start with the welcome tour seen (ADR 0139), so that it does not
-// lie over the main page of a test about something else; newChromedpContextWithTour
-// leaves it to be offered.
-func newChromedpContextWith(t *testing.T, timeout time.Duration, extra ...chromedp.ExecAllocatorOption) (context.Context, context.CancelFunc) {
-	t.Helper()
-	ctx, cancel := chromedpContext(t, timeout, extra...)
-	err := chromedp.Run(ctx, chromedp.ActionFunc(func(c context.Context) error {
-		_, err := page.AddScriptToEvaluateOnNewDocument(tourSeenScript).Do(c)
-		return err
-	}))
-	if err != nil {
-		cancel()
-		t.Fatalf("starting the browser: %v", err)
-	}
-	return ctx, cancel
-}
-
 // tourSeenScript marks the welcome tour seen in a page's browser before the page runs.
 const tourSeenScript = `try { localStorage.setItem("bingle.tour.seen", "true"); } catch (_) {}`
 
@@ -90,41 +68,6 @@ const tourSeenScript = `try { localStorage.setItem("bingle.tour.seen", "true"); 
 func newChromedpContextWithTour(t *testing.T, timeout time.Duration) (context.Context, context.CancelFunc) {
 	t.Helper()
 	return chromedpContext(t, timeout)
-}
-
-func chromedpContext(t *testing.T, timeout time.Duration, extra ...chromedp.ExecAllocatorOption) (context.Context, context.CancelFunc) {
-	t.Helper()
-
-	if testing.Short() {
-		t.Skip("browser tests are skipped with -short")
-	}
-	skipOtherShards(t)
-	browser := findBrowser()
-	if browser == "" {
-		t.Skip("no Chrome or Chromium found on $PATH (set BINGLE_BROWSER to its path): skipping the browser tests")
-	}
-	dir, err := os.MkdirTemp("", "chromedp-runner-")
-	if err != nil {
-		t.Fatalf("creating browser profile dir: %v", err)
-	}
-	opts := append([]chromedp.ExecAllocatorOption{}, chromedp.DefaultExecAllocatorOptions[:]...)
-	opts = append(opts, chromedp.UserDataDir(dir), chromedp.ExecPath(browser))
-	// The default 20s is too short for Chrome to start on a busy CI runner,
-	// where the packages' tests run side by side.
-	opts = append(opts, chromedp.WSURLReadTimeout(90*time.Second))
-	opts = append(opts, extra...)
-
-	allocCtx, cancelAlloc := chromedp.NewExecAllocator(context.Background(), opts...)
-	ctx, cancelChrome := chromedp.NewContext(allocCtx)
-	ctx, cancelTimeout := context.WithTimeout(ctx, timeout)
-
-	cancel := func() {
-		cancelTimeout()
-		cancelChrome()
-		cancelAlloc()
-		killLeftoverBrowser(dir)
-	}
-	return ctx, cancel
 }
 
 // killLeftoverBrowser terminates any process still holding profileDir open
@@ -142,56 +85,6 @@ func killLeftoverBrowser(profileDir string) {
 	}
 }
 
-// pollLocation repeatedly calls chromedp.Location until it matches re, or
-// ctx's deadline is reached (a bounded wait, never an unbounded hang). It
-// returns the first matching URL, or fails the test with the last-seen URL
-// if the deadline is reached first.
-func pollLocation(t *testing.T, ctx context.Context, re *regexp.Regexp) string {
-	t.Helper()
-
-	var lastURL string
-	ticker := time.NewTicker(100 * time.Millisecond)
-	defer ticker.Stop()
-
-	for {
-		var url string
-		if err := chromedp.Run(ctx, chromedp.Location(&url)); err == nil {
-			lastURL = url
-			if re.MatchString(url) {
-				return url
-			}
-		}
-
-		select {
-		case <-ctx.Done():
-			t.Fatalf("timed out waiting for browser location to match %s; last-seen location: %q", re.String(), lastURL)
-			return ""
-		case <-ticker.C:
-		}
-	}
-}
-
-// submitClosestForm runs a small piece of JS in the page that finds the
-// <form> ancestor of the element matching fieldSelector and clicks its
-// submit button (a real button[type=submit]/input[type=submit] click, or
-// failing that any <button> inside the form). Using a genuine click (rather
-// than calling form.submit() directly) matters: form.submit() does NOT fire
-// the form's "submit" event, so it would silently bypass any client-side JS
-// (per docs/history/plan.md section 6.11) that intercepts submission to fetch()
-// POST /api/games instead of letting the browser navigate there directly.
-func submitClosestForm(ctx context.Context, fieldSelector string) chromedp.Action {
-	js := fmt.Sprintf(`(function() {
-		var field = document.querySelector(%q);
-		if (!field) { throw new Error(%q); }
-		var form = field.closest('form');
-		if (!form) { throw new Error('no <form> ancestor found for ' + %q); }
-		var btn = form.querySelector('button[type="submit"], input[type="submit"]') || form.querySelector('button');
-		if (!btn) { throw new Error('no submit button found inside the form'); }
-		btn.click();
-	})()`, fieldSelector, "no element matching "+fieldSelector+" found", fieldSelector)
-	return chromedp.Evaluate(js, nil)
-}
-
 // TestWebIndex_CreateGameForm_SubmitsAndCreatesRealGame covers backlog item
 // 37's AC end-to-end via a real headless browser: loading "/" renders a
 // create-game form (a select for game_def_id offering "test-freeplay", and
@@ -205,11 +98,11 @@ func TestWebIndex_CreateGameForm_SubmitsAndCreatesRealGame(t *testing.T) {
 	ctx, cancel := newChromedpContext(t, 30*time.Second)
 	defer cancel()
 
-	if err := chromedp.Run(ctx,
+	if err := runSteps(ctx,
 		// A link with ?game= opens the setup of that game (the game is
 		// otherwise picked from the gallery).
-		chromedp.Navigate(baseURL+"/?game=test-freeplay"),
-		chromedp.WaitVisible(`#create-submit`, chromedp.ByQuery),
+		stepNavigate(baseURL+"/?game=test-freeplay"),
+		stepWaitVisible(`#create-submit`),
 	); err != nil {
 		t.Fatalf("navigate to / and locate create-game form fields: %v", err)
 	}
@@ -218,7 +111,7 @@ func TestWebIndex_CreateGameForm_SubmitsAndCreatesRealGame(t *testing.T) {
 	// option before trying to select it — a clearer failure than "SetValue
 	// silently did nothing" if the option is missing/misnamed.
 	var hasFixtureOption bool
-	if err := chromedp.Run(ctx, chromedp.Evaluate(
+	if err := runSteps(ctx, stepEvalTo(
 		`!!document.querySelector('select[name="game_def_id"] option[value="test-freeplay"]')`,
 		&hasFixtureOption,
 	)); err != nil {
@@ -228,10 +121,10 @@ func TestWebIndex_CreateGameForm_SubmitsAndCreatesRealGame(t *testing.T) {
 		t.Fatalf(`select[name="game_def_id"] has no option[value="test-freeplay"]`)
 	}
 
-	if err := chromedp.Run(ctx,
+	if err := runSteps(ctx,
 		// A guest's made-up name is already there: this is typing their own.
-		chromedp.Evaluate(`localStorage.setItem("bingle.name", JSON.stringify(""))`, nil),
-		chromedp.Evaluate(`localStorage.setItem("bingle.name", JSON.stringify("Alice"))`, nil),
+		stepEval(`localStorage.setItem("bingle.name", JSON.stringify(""))`),
+		stepEval(`localStorage.setItem("bingle.name", JSON.stringify("Alice"))`),
 		submitClosestForm(ctx, `select[name="game_def_id"]`),
 	); err != nil {
 		t.Fatalf("fill in and submit create-game form: %v", err)
@@ -338,23 +231,23 @@ func TestWebIndex_JoinIconOpensTheJoinForm(t *testing.T) {
 	ctx, cancel := newChromedpContext(t, 30*time.Second)
 	defer cancel()
 
-	if err := chromedp.Run(ctx,
-		chromedp.Navigate(baseURL+"/"),
-		chromedp.WaitVisible(`#open-join`, chromedp.ByQuery),
+	if err := runSteps(ctx,
+		stepNavigate(baseURL+"/"),
+		stepWaitVisible(`#open-join`),
 	); err != nil {
 		t.Fatalf("navigate to /: %v", err)
 	}
 	var onPage bool
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`!!document.querySelector('main #join-game-form')`, &onPage)); err != nil {
+	if err := runSteps(ctx, stepEvalTo(`!!document.querySelector('main #join-game-form')`, &onPage)); err != nil {
 		t.Fatal(err)
 	}
 	if onPage {
 		t.Error("the join form is on the page itself, want it only in the dialog of the top bar's Join icon")
 	}
-	if err := chromedp.Run(ctx,
-		chromedp.Click(`#open-join`, chromedp.ByQuery),
-		chromedp.WaitVisible(`#join-dialog #room_code`, chromedp.ByQuery),
-		chromedp.WaitVisible(`#join-dialog #join-submit`, chromedp.ByQuery),
+	if err := runSteps(ctx,
+		stepClick(`#open-join`),
+		stepWaitVisible(`#join-dialog #room_code`),
+		stepWaitVisible(`#join-dialog #join-submit`),
 	); err != nil {
 		t.Fatalf("open the join dialog: %v", err)
 	}

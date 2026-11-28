@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chromedp/chromedp"
 	"github.com/noderunner/bingle/internal/auth"
 )
 
@@ -175,7 +174,7 @@ func TestRatedGames_UI(t *testing.T) {
 	// A guest is not offered it.
 	guestCtx, cancelGuest := newChromedpContext(t, 60*time.Second)
 	defer cancelGuest()
-	if err := chromedp.Run(guestCtx, chromedp.Navigate(base+"/?game=yavalath")); err != nil {
+	if err := runSteps(guestCtx, stepNavigate(base+"/?game=yavalath")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, guestCtx, "the setup", `document.getElementById("clock-field").hidden === false`, 20*time.Second)
@@ -187,7 +186,7 @@ func TestRatedGames_UI(t *testing.T) {
 	ctx, cancel := newChromedpContext(t, 120*time.Second)
 	defer cancel()
 	signInChrome(t, ctx, base, ana.cookie(auth.SessionCookie))
-	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1400, 1000), chromedp.Navigate(base+"/?game=test-tricks")); err != nil {
+	if err := runSteps(ctx, stepViewport(1400, 1000), stepNavigate(base+"/?game=test-tricks")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the setup of a big table", `document.getElementById("clock-field").hidden === true`, 20*time.Second)
@@ -196,7 +195,7 @@ func TestRatedGames_UI(t *testing.T) {
 		t.Error("a table of four is offered a rated game")
 	}
 
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/?game=yavalath")); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/?game=yavalath")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the choice", `document.getElementById("rated-field").hidden === false`, 20*time.Second)
@@ -245,7 +244,7 @@ func TestRatedGames_UI(t *testing.T) {
 		playRatedGame(t, ana, "ana", others[i%3], names[i%3])
 	}
 
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/#ratings")); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/#ratings")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the leaderboard", `document.querySelector('#leaderboard tr[data-handle="ana"]') !== null`, 15*time.Second)
@@ -255,7 +254,7 @@ func TestRatedGames_UI(t *testing.T) {
 	if evalBool(t, ctx, `document.querySelector('#leaderboard tr[data-handle="bea"]') !== null`) {
 		t.Error("somebody with one opponent is on the board")
 	}
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/profile")); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/profile")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the profile's ratings", `document.getElementById("ratings-box").hidden === false`, 15*time.Second)

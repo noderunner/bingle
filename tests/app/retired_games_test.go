@@ -11,8 +11,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chromedp/chromedp"
-
 	"github.com/noderunner/bingle/internal/app"
 	"github.com/noderunner/bingle/internal/config"
 )
@@ -175,7 +173,7 @@ func TestRetiredGames_ThePageShowsTheRecord(t *testing.T) {
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
 
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/game/"+won)); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/game/"+won)); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the record", `!!document.querySelector("#retired-game h2")`, 15*time.Second)
@@ -192,7 +190,7 @@ func TestRetiredGames_ThePageShowsTheRecord(t *testing.T) {
 		t.Fatal("the page shows an error as well")
 	}
 
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/game/"+playing)); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/game/"+playing)); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the record", `!!document.querySelector("#retired-game h2")`, 15*time.Second)

@@ -66,7 +66,10 @@ opinions second, patches third.
    per-test.
 7. **Error and logging consistency** will be touched by the observability plan anyway, so the
    audit should defer to it rather than invent a second convention.
-8. **The browser suite is pinned to chromedp 0.16**, and the migration is the audit's most
+8. **Done (2026-11-28, issue #234): the browser suite moved from chromedp 0.16 to 0.24** (cdproto
+   0.160.12), and Dependabot's pin is gone. Every browser test now goes through the step helpers of
+   `tests/app/browser_test.go`, the one file that imports chromedp. What follows is the item as it
+   was written, when the suite was **pinned to chromedp 0.16**: the migration was the audit's most
    concrete piece of known work. chromedp 0.21 redesigned the API: `Action` is a generic function
    type rather than an interface, `Run` takes one action and returns its value rather than a
    variadic list, `Tasks` became `Steps`, and `Evaluate` is generic rather than taking an
@@ -175,3 +178,5 @@ draw (`state.ext.view`), so most changes to the rules should need no client code
 - 2026-11-20: moved to `main` as the `more-plans` branch closed. The audit is issue #249, with its open questions and a
   fresh measurement pass first; item 8, the chromedp migration, is #234, and *A UI module for a prototype's
   version* is #235.
+- 2026-11-28: item 8, the chromedp migration, is done (#234): chromedp 0.24 and cdproto 0.160.12, behind
+  the step helpers of `tests/app/browser_test.go`; Dependabot's ignore rules for the pair are gone.

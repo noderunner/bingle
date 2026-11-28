@@ -10,17 +10,13 @@ import (
 	"sync"
 	"testing"
 	"time"
-
-	"github.com/chromedp/cdproto/emulation"
-	"github.com/chromedp/cdproto/runtime"
-	"github.com/chromedp/chromedp"
 )
 
 // awaitBool evaluates expr, a promise of a boolean.
 func awaitBool(t *testing.T, ctx context.Context, expr string) bool {
 	t.Helper()
 	var v bool
-	if err := chromedp.Run(ctx, chromedp.Evaluate(expr, &v, func(p *runtime.EvaluateParams) *runtime.EvaluateParams { return p.WithAwaitPromise(true) })); err != nil {
+	if err := runSteps(ctx, stepEvalTo(expr, &v, awaitPromise)); err != nil {
 		t.Fatalf("evaluate %s: %v", expr, err)
 	}
 	return v
@@ -88,7 +84,7 @@ func TestWebTour_ANewcomerIsOfferedItOnce(t *testing.T) {
 	var mu sync.Mutex
 	var jsErrors []string
 	collectJSErrors(ctx, &mu, &jsErrors)
-	if err := chromedp.Run(ctx, emulation.SetDeviceMetricsOverride(1100, 900, 1, false), chromedp.Navigate(base+"/")); err != nil {
+	if err := runSteps(ctx, stepDesktopMetrics(1100, 900, 1), stepNavigate(base+"/")); err != nil {
 		t.Fatal(err)
 	}
 	ids := walkTour(t, ctx)
@@ -106,7 +102,7 @@ func TestWebTour_ANewcomerIsOfferedItOnce(t *testing.T) {
 	waitServerTourSeen(t, ctx, "Skip")
 
 	// Seen: not offered again.
-	if err := chromedp.Run(ctx, chromedp.Reload()); err != nil {
+	if err := runSteps(ctx, stepReload()); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the games", `document.querySelector("#game-gallery .game-card")`, 15*time.Second)
@@ -116,7 +112,7 @@ func TestWebTour_ANewcomerIsOfferedItOnce(t *testing.T) {
 	}
 
 	// The help window takes it again, in the dark theme too; Done closes it.
-	if err := chromedp.Run(ctx, emulation.SetEmulatedMedia().WithFeatures([]*emulation.MediaFeature{{Name: "prefers-color-scheme", Value: "dark"}})); err != nil {
+	if err := runSteps(ctx, stepColorScheme("dark")); err != nil {
 		t.Fatal(err)
 	}
 	clickSel(t, ctx, "#open-help")
@@ -139,7 +135,7 @@ func TestWebTour_AnAccountIsOfferedItWithoutTheGuestsSlide(t *testing.T) {
 	ctx, cancel := newChromedpContextWithTour(t, 90*time.Second)
 	defer cancel()
 	signInChrome(t, ctx, base, session)
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/")); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/")); err != nil {
 		t.Fatal(err)
 	}
 	ids := walkTour(t, ctx)
@@ -149,7 +145,7 @@ func TestWebTour_AnAccountIsOfferedItWithoutTheGuestsSlide(t *testing.T) {
 	if evalBool(t, ctx, `document.getElementById("tour-account-note")`) {
 		t.Error("an account is told a slide needs an account")
 	}
-	if err := chromedp.Run(ctx, chromedp.KeyEvent("\x1b")); err != nil {
+	if err := runSteps(ctx, stepKey("\x1b")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the tour closed by Esc", `!document.getElementById("welcome-tour")`, 5*time.Second)
@@ -162,7 +158,7 @@ func TestWebTour_TheSlidesFollowWhatTheServerOffers(t *testing.T) {
 	base := newRESTTestServer(t)
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/")); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the page", `document.querySelector("#open-help")`, 15*time.Second)
@@ -186,7 +182,7 @@ func TestWebTour_TheSlidesFollowWhatTheServerOffers(t *testing.T) {
 func evalStringAwait(t *testing.T, ctx context.Context, expr string) string {
 	t.Helper()
 	var s string
-	if err := chromedp.Run(ctx, chromedp.Evaluate(expr, &s, func(p *runtime.EvaluateParams) *runtime.EvaluateParams { return p.WithAwaitPromise(true) })); err != nil {
+	if err := runSteps(ctx, stepEvalTo(expr, &s, awaitPromise)); err != nil {
 		t.Fatalf("evaluate %s: %v", expr, err)
 	}
 	return s

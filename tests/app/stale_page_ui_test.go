@@ -1,14 +1,9 @@
 package app_test
 
 import (
-	"context"
 	"fmt"
 	"testing"
 	"time"
-
-	"github.com/chromedp/cdproto/page"
-	"github.com/chromedp/cdproto/runtime"
-	"github.com/chromedp/chromedp"
 )
 
 // A page waiting on another seat catches up when it has missed the move that
@@ -30,10 +25,7 @@ func TestWebGame_AStalePageCatchesUp(t *testing.T) {
 		window.WebSocket.prototype = Real.prototype;
 		Object.assign(window.WebSocket, Real);
 	})()`
-	if err := chromedp.Run(ctx, chromedp.ActionFunc(func(c context.Context) error {
-		_, err := page.AddScriptToEvaluateOnNewDocument(deaf).Do(c)
-		return err
-	})); err != nil {
+	if err := runSteps(ctx, stepAddScript(deaf)); err != nil {
 		t.Fatal(err)
 	}
 	var created struct {
@@ -44,12 +36,12 @@ func TestWebGame_AStalePageCatchesUp(t *testing.T) {
 		t.Fatalf("create: %d", code)
 	}
 	room := created.RoomCode
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/")); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/")); err != nil {
 		t.Fatal(err)
 	}
 	var joined bool
 	join := fmt.Sprintf(`fetch("/api/games/%s/join", {method: "POST", headers: {"Content-Type": "application/json", "X-Bingle-Session": "1"}, body: JSON.stringify({player_name: "Bob"})}).then(r => r.ok)`, room)
-	if err := chromedp.Run(ctx, chromedp.Evaluate(join, &joined, func(p *runtime.EvaluateParams) *runtime.EvaluateParams { return p.WithAwaitPromise(true) })); err != nil || !joined {
+	if err := runSteps(ctx, stepEvalTo(join, &joined, awaitPromise)); err != nil || !joined {
 		t.Fatalf("join: %v %v", joined, err)
 	}
 	openGameAs(t, ctx, base, room, "gomoku", "Bob")

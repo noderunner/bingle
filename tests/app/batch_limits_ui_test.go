@@ -10,8 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chromedp/chromedp"
-
 	"github.com/noderunner/bingle/internal/config"
 	"github.com/noderunner/bingle/internal/store"
 )
@@ -41,7 +39,7 @@ func TestWebBatchLimits_TheFormAndTheBatchSayWhichLimit(t *testing.T) {
 	ctx, cancel := newChromedpContext(t, 90*time.Second)
 	defer cancel()
 	signInChrome(t, ctx, base, ana)
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/#analysis")); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/#analysis")); err != nil {
 		t.Fatal(err)
 	}
 	waitScripts(t, ctx)
@@ -75,7 +73,7 @@ func TestWebBatchLimits_TheFormAndTheBatchSayWhichLimit(t *testing.T) {
 	}
 
 	// The batch's own page says the same in its header.
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/batches/"+strconv.FormatInt(id, 10))); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/batches/"+strconv.FormatInt(id, 10))); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the header", `document.getElementById("batch-status") !== null`, 20*time.Second)

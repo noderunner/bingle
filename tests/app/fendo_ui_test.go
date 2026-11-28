@@ -4,9 +4,6 @@ import (
 	"sync"
 	"testing"
 	"time"
-
-	"github.com/chromedp/cdproto/runtime"
-	"github.com/chromedp/chromedp"
 )
 
 // fendoStepJS selects a piece and builds a fence beside it.
@@ -38,20 +35,14 @@ func TestWebFendo_PlayTurnsThroughTheUI(t *testing.T) {
 	defer cancel()
 	var mu sync.Mutex
 	var jsErrors []string
-	chromedp.ListenTarget(ctx, func(ev any) {
-		if e, ok := ev.(*runtime.EventExceptionThrown); ok && e.ExceptionDetails != nil {
-			mu.Lock()
-			jsErrors = append(jsErrors, e.ExceptionDetails.Error())
-			mu.Unlock()
-		}
-	})
+	collectJSErrors(ctx, &mu, &jsErrors)
 	openGameAs(t, ctx, baseURL, created.RoomCode, "fendo", "Alice")
 	waitJS(t, ctx, "49 squares", `document.querySelectorAll('#board .cell').length === 49`, 15*time.Second)
 	waitJS(t, ctx, "scoreboards", `document.querySelectorAll('.seat-strip [data-counter="territory"]').length === 2`, 5*time.Second)
 	stuck := 0
 	for i := 0; i < 300 && stuck < 40; i++ {
 		var what string
-		if err := chromedp.Run(ctx, chromedp.Evaluate(fendoStepJS, &what)); err != nil {
+		if err := runSteps(ctx, stepEvalTo(fendoStepJS, &what)); err != nil {
 			t.Fatalf("step %d: %v", i, err)
 		}
 		switch what {

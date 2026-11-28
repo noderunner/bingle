@@ -8,8 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chromedp/chromedp"
-
 	"github.com/noderunner/bingle/internal/version"
 )
 
@@ -42,7 +40,7 @@ func TestEngineVersion_IsSemverAndShownInTheFooterOfEveryPage(t *testing.T) {
 	// Drawn small, at the bottom of the page.
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/"), chromedp.WaitVisible(".site-footer", chromedp.ByQuery)); err != nil {
+	if err := runSteps(ctx, stepNavigate(baseURL+"/"), stepWaitVisible(".site-footer")); err != nil {
 		t.Fatal(err)
 	}
 	if got := evalString(t, ctx, `document.querySelector(".site-footer").textContent`); got != "bingle v"+version.Engine+" · MIT License · GitHub" {
@@ -61,7 +59,7 @@ func TestHelp_TopBarHasTheVersionAndTheProjectLinks(t *testing.T) {
 	ctx, cancel := newChromedpContext(t, 90*time.Second)
 	defer cancel()
 	for _, path := range []string{"/", "/profile", "/game/" + room} {
-		if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+path), chromedp.WaitVisible("#open-help", chromedp.ByQuery)); err != nil {
+		if err := runSteps(ctx, stepNavigate(baseURL+path), stepWaitVisible("#open-help")); err != nil {
 			t.Fatalf("%s: %v", path, err)
 		}
 		clickSel(t, ctx, "#open-help")

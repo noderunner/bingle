@@ -7,9 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chromedp/cdproto/runtime"
-	"github.com/chromedp/chromedp"
-
 	"github.com/noderunner/bingle/internal/app"
 )
 
@@ -72,7 +69,7 @@ func TestWebRealTime_TheSetup(t *testing.T) {
 	base := newRESTTestServer(t)
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/?game=gomoku"), chromedp.WaitVisible(`#create-submit`, chromedp.ByQuery)); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/?game=gomoku"), stepWaitVisible(`#create-submit`)); err != nil {
 		t.Fatal(err)
 	}
 	warnings := `document.getElementById("real-time-warnings").hidden`
@@ -92,8 +89,8 @@ func TestWebRealTime_TheSetup(t *testing.T) {
 	}
 	evalString(t, ctx, `(() => { const c = document.getElementById("clock_seconds"); c.value = "0"; c.dispatchEvent(new Event("change")); document.getElementById("real-time-first").value = "3"; return "ok"; })()`)
 
-	if err := chromedp.Run(ctx,
-		chromedp.Evaluate(`localStorage.setItem("bingle.name", JSON.stringify("Alice"))`, nil),
+	if err := runSteps(ctx,
+		stepEval(`localStorage.setItem("bingle.name", JSON.stringify("Alice"))`),
 		submitClosestForm(ctx, `select[name="game_def_id"]`),
 	); err != nil {
 		t.Fatal(err)
@@ -113,7 +110,7 @@ func TestWebRealTime_TheSetup(t *testing.T) {
 
 	// The page's reconnection stops sooner in a real-time game.
 	var delays []int
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`import("/static/js/util.js").then((u) => [u.reconnectDelay(6, false), u.reconnectDelay(6, true), u.reconnectDelay(1, true)])`, &delays, func(p *runtime.EvaluateParams) *runtime.EvaluateParams { return p.WithAwaitPromise(true) })); err != nil {
+	if err := runSteps(ctx, stepEvalTo(`import("/static/js/util.js").then((u) => [u.reconnectDelay(6, false), u.reconnectDelay(6, true), u.reconnectDelay(1, true)])`, &delays, awaitPromise)); err != nil {
 		t.Fatal(err)
 	}
 	if len(delays) != 3 || delays[0] != 44800 || delays[1] != 3000 || delays[2] != 1400 {

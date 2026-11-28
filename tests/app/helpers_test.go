@@ -11,26 +11,21 @@ import (
 	"sync"
 	"testing"
 	"time"
-
-	"github.com/chromedp/cdproto/runtime"
-	"github.com/chromedp/chromedp"
 )
 
 // jsErrorCollector records uncaught exceptions of a page.
 func collectJSErrors(ctx context.Context, mu *sync.Mutex, out *[]string) {
-	chromedp.ListenTarget(ctx, func(ev any) {
-		if e, ok := ev.(*runtime.EventExceptionThrown); ok && e.ExceptionDetails != nil {
-			mu.Lock()
-			*out = append(*out, e.ExceptionDetails.Error())
-			mu.Unlock()
-		}
+	listenJSErrors(ctx, func(text string) {
+		mu.Lock()
+		*out = append(*out, text)
+		mu.Unlock()
 	})
 }
 
 func evalBool(t *testing.T, ctx context.Context, expr string) bool {
 	t.Helper()
 	var v bool
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`Boolean(`+expr+`)`, &v)); err != nil {
+	if err := runSteps(ctx, stepEvalTo(`Boolean(`+expr+`)`, &v)); err != nil {
 		t.Fatal(err)
 	}
 	return v

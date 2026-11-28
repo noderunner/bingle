@@ -7,8 +7,6 @@ import (
 	"sync"
 	"testing"
 	"time"
-
-	"github.com/chromedp/chromedp"
 )
 
 // quoteJS is a Go string as a JavaScript literal.
@@ -169,7 +167,7 @@ func TestWebAnalysis_TheTabRunsABatchAndExplainsTheBots(t *testing.T) {
 	var mu sync.Mutex
 	var jsErrors []string
 	collectJSErrors(ctx, &mu, &jsErrors)
-	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/")); err != nil {
+	if err := runSteps(ctx, stepNavigate(baseURL+"/")); err != nil {
 		t.Fatal(err)
 	}
 	waitScripts(t, ctx)
@@ -295,7 +293,7 @@ func TestWebAnalysis_BatchesAreTitledByTheirGamesName(t *testing.T) {
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
 	signInChrome(t, ctx, baseURL, member)
-	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/#analysis")); err != nil {
+	if err := runSteps(ctx, stepNavigate(baseURL+"/#analysis")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the batch", `document.querySelector("#analysis-batches li[data-batch] .title")`, 20*time.Second)

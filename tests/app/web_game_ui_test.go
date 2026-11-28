@@ -24,10 +24,6 @@ import (
 	"sync"
 	"testing"
 	"time"
-
-	"github.com/chromedp/cdproto/network"
-	"github.com/chromedp/cdproto/runtime"
-	"github.com/chromedp/chromedp"
 )
 
 // openGameAs signs the browser in as name for room (the UI remembers who you
@@ -36,13 +32,13 @@ func openGameAs(t *testing.T, ctx context.Context, baseURL, room, def, name stri
 	t.Helper()
 	games, _ := json.Marshal([]map[string]any{{"code": room, "def": def, "name": name, "ts": time.Now().UnixMilli()}})
 	nameJSON, _ := json.Marshal(name)
-	if err := chromedp.Run(ctx,
-		chromedp.Navigate(baseURL+"/healthz"),
-		chromedp.Evaluate(fmt.Sprintf(`localStorage.setItem("bingle.games", %q); localStorage.setItem("bingle.name", %q); true`, games, nameJSON), nil),
-		chromedp.Evaluate(fmt.Sprintf(`localStorage.setItem("bingle.confirm", %q); true`, confirmSetting(def)), nil),
-		chromedp.Evaluate(`if (localStorage.getItem("bingle.battleAnim") === null) localStorage.setItem("bingle.battleAnim", "false"); true`, nil),
-		chromedp.Navigate(baseURL+"/game/"+room),
-		chromedp.WaitReady("#board-svg, #card-table", chromedp.ByQuery),
+	if err := runSteps(ctx,
+		stepNavigate(baseURL+"/healthz"),
+		stepEval(fmt.Sprintf(`localStorage.setItem("bingle.games", %q); localStorage.setItem("bingle.name", %q); true`, games, nameJSON)),
+		stepEval(fmt.Sprintf(`localStorage.setItem("bingle.confirm", %q); true`, confirmSetting(def))),
+		stepEval(`if (localStorage.getItem("bingle.battleAnim") === null) localStorage.setItem("bingle.battleAnim", "false"); true`),
+		stepNavigate(baseURL+"/game/"+room),
+		stepWaitReady("#board-svg, #card-table"),
 	); err != nil {
 		t.Fatalf("open /game/%s as %s: %v", room, name, err)
 	}
@@ -72,14 +68,14 @@ func waitJS(t *testing.T, ctx context.Context, what, expr string, timeout time.D
 	var last any
 	for time.Now().Before(deadline) {
 		var v bool
-		if err := chromedp.Run(ctx, chromedp.Evaluate(`Boolean(`+expr+`)`, &v)); err == nil && v {
+		if err := runSteps(ctx, stepEvalTo(`Boolean(`+expr+`)`, &v)); err == nil && v {
 			return
 		}
 		last = expr
 		time.Sleep(60 * time.Millisecond)
 	}
 	var body string
-	_ = chromedp.Run(ctx, chromedp.Evaluate(`document.body.innerText.slice(0, 600)`, &body))
+	_ = runSteps(ctx, stepEvalTo(`document.body.innerText.slice(0, 600)`, &body))
 	t.Fatalf("timed out waiting for %s (%v); page text:\n%s", what, last, body)
 }
 
@@ -93,7 +89,7 @@ func clickCell(t *testing.T, ctx context.Context, pos string) {
 		return true;
 	})()`, pos)
 	var ok bool
-	if err := chromedp.Run(ctx, chromedp.Evaluate(js, &ok)); err != nil || !ok {
+	if err := runSteps(ctx, stepEvalTo(js, &ok)); err != nil || !ok {
 		t.Fatalf("click cell %s: ok=%v err=%v", pos, ok, err)
 	}
 }
@@ -113,11 +109,11 @@ func clickCellUntil(t *testing.T, ctx context.Context, pos, cond string, timeout
 	deadline := time.Now().Add(timeout)
 	for time.Now().Before(deadline) {
 		var ok bool
-		_ = chromedp.Run(ctx, chromedp.Evaluate(js, &ok))
+		_ = runSteps(ctx, stepEvalTo(js, &ok))
 		settle := time.Now().Add(1200 * time.Millisecond)
 		for time.Now().Before(settle) {
 			var done bool
-			if err := chromedp.Run(ctx, chromedp.Evaluate(`Boolean(`+cond+`)`, &done)); err == nil && done {
+			if err := runSteps(ctx, stepEvalTo(`Boolean(`+cond+`)`, &done)); err == nil && done {
 				return
 			}
 			time.Sleep(60 * time.Millisecond)
@@ -130,7 +126,7 @@ func clickSel(t *testing.T, ctx context.Context, sel string) {
 	t.Helper()
 	js := fmt.Sprintf(`(function(){ var el = document.querySelector(%q); if (!el || el.disabled) return false; el.click(); return true; })()`, sel)
 	var ok bool
-	if err := chromedp.Run(ctx, chromedp.Evaluate(js, &ok)); err != nil || !ok {
+	if err := runSteps(ctx, stepEvalTo(js, &ok)); err != nil || !ok {
 		t.Fatalf("click %s: ok=%v err=%v", sel, ok, err)
 	}
 }
@@ -138,7 +134,7 @@ func clickSel(t *testing.T, ctx context.Context, sel string) {
 func evalString(t *testing.T, ctx context.Context, expr string) string {
 	t.Helper()
 	var s string
-	if err := chromedp.Run(ctx, chromedp.Evaluate(expr, &s)); err != nil {
+	if err := runSteps(ctx, stepEvalTo(expr, &s)); err != nil {
 		t.Fatalf("evaluate %s: %v", expr, err)
 	}
 	return s
@@ -147,7 +143,7 @@ func evalString(t *testing.T, ctx context.Context, expr string) string {
 func evalInt(t *testing.T, ctx context.Context, expr string) int {
 	t.Helper()
 	var n int
-	if err := chromedp.Run(ctx, chromedp.Evaluate(expr, &n)); err != nil {
+	if err := runSteps(ctx, stepEvalTo(expr, &n)); err != nil {
 		t.Fatalf("evaluate %s: %v", expr, err)
 	}
 	return n
@@ -166,7 +162,7 @@ func TestWebGame_RendersOnePiecePerOccupant(t *testing.T) {
 
 	ctx, cancel := newChromedpContext(t, 30*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/game/"+room), chromedp.WaitReady("#board-svg", chromedp.ByID)); err != nil {
+	if err := runSteps(ctx, stepNavigate(baseURL+"/game/"+room), stepWaitReady("#board-svg")); err != nil {
 		t.Fatal(err)
 	}
 
@@ -186,7 +182,7 @@ func TestWebGame_PieceColorsAreDistinguishable(t *testing.T) {
 
 	ctx, cancel := newChromedpContext(t, 30*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/game/"+room), chromedp.WaitReady("#board-svg", chromedp.ByID)); err != nil {
+	if err := runSteps(ctx, stepNavigate(baseURL+"/game/"+room), stepWaitReady("#board-svg")); err != nil {
 		t.Fatal(err)
 	}
 
@@ -201,7 +197,7 @@ func TestWebGame_PieceColorsAreDistinguishable(t *testing.T) {
 		});
 		return out;
 	})()`
-	if err := chromedp.Run(ctx, chromedp.Evaluate(js, &fills)); err != nil {
+	if err := runSteps(ctx, stepEvalTo(js, &fills)); err != nil {
 		t.Fatal(err)
 	}
 	if len(fills["black"]) != 3 || len(fills["white"]) != 3 {
@@ -228,13 +224,13 @@ func TestWebGame_BoardHasVisibleGridLines(t *testing.T) {
 
 	ctx, cancel := newChromedpContext(t, 20*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/game/"+room), chromedp.WaitReady("#board-svg", chromedp.ByID)); err != nil {
+	if err := runSteps(ctx, stepNavigate(baseURL+"/game/"+room), stepWaitReady("#board-svg")); err != nil {
 		t.Fatal(err)
 	}
 
 	var strokes []string
 	js := `Array.from(document.querySelectorAll("#board svg line.grid-line")).map(function (el) { return window.getComputedStyle(el).stroke; })`
-	if err := chromedp.Run(ctx, chromedp.Evaluate(js, &strokes)); err != nil {
+	if err := runSteps(ctx, stepEvalTo(js, &strokes)); err != nil {
 		t.Fatal(err)
 	}
 	// The fixture is a 9x9 "points" board: 9 vertical + 9 horizontal lines.
@@ -290,15 +286,9 @@ func TestWebGame_UnknownRoomShowsErrorWithoutJSExceptions(t *testing.T) {
 
 	var mu sync.Mutex
 	var jsErrors []string
-	chromedp.ListenTarget(ctx, func(ev any) {
-		if e, ok := ev.(*runtime.EventExceptionThrown); ok && e.ExceptionDetails != nil {
-			mu.Lock()
-			jsErrors = append(jsErrors, e.ExceptionDetails.Error())
-			mu.Unlock()
-		}
-	})
+	collectJSErrors(ctx, &mu, &jsErrors)
 
-	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/game/QNVWXY"), chromedp.WaitVisible("#board-error", chromedp.ByID)); err != nil {
+	if err := runSteps(ctx, stepNavigate(baseURL+"/game/QNVWXY"), stepWaitVisible("#board-error")); err != nil {
 		t.Fatalf("expected an error panel for an unknown room: %v", err)
 	}
 	if n := evalInt(t, ctx, `document.querySelectorAll("#board svg .piece").length`); n != 0 {
@@ -322,14 +312,12 @@ func TestWebGame_OpensWebSocketOnLoad(t *testing.T) {
 
 	var mu sync.Mutex
 	var urls []string
-	chromedp.ListenTarget(ctx, func(ev any) {
-		if e, ok := ev.(*network.EventWebSocketCreated); ok {
-			mu.Lock()
-			urls = append(urls, e.URL)
-			mu.Unlock()
-		}
+	listenWebSockets(ctx, func(url string) {
+		mu.Lock()
+		urls = append(urls, url)
+		mu.Unlock()
 	})
-	if err := chromedp.Run(ctx, network.Enable(), chromedp.Navigate(baseURL+"/game/"+room), chromedp.WaitReady("#board-svg", chromedp.ByID)); err != nil {
+	if err := runSteps(ctx, stepNetworkEvents(), stepNavigate(baseURL+"/game/"+room), stepWaitReady("#board-svg")); err != nil {
 		t.Fatal(err)
 	}
 
@@ -364,12 +352,12 @@ func TestWebGame_LiveUpdateAcrossTabsWithoutReload(t *testing.T) {
 	defer cancel2()
 
 	for i, ctx := range []context.Context{ctx1, ctx2} {
-		if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/game/"+room), chromedp.WaitReady("#board-svg", chromedp.ByID)); err != nil {
+		if err := runSteps(ctx, stepNavigate(baseURL+"/game/"+room), stepWaitReady("#board-svg")); err != nil {
 			t.Fatalf("tab %d: %v", i+1, err)
 		}
 	}
 	// A marker proves tab 2 is never reloaded.
-	if err := chromedp.Run(ctx2, chromedp.Evaluate(`window.__tab2marker = "alive"; true`, nil)); err != nil {
+	if err := runSteps(ctx2, stepEval(`window.__tab2marker = "alive"; true`)); err != nil {
 		t.Fatal(err)
 	}
 	// Let both sockets connect before the move is made.
@@ -588,9 +576,9 @@ func TestWebLobby_CreateAgainstBotOpensPlayableGame(t *testing.T) {
 
 	ctx, cancel := newChromedpContext(t, 40*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx,
-		chromedp.Navigate(baseURL+"/"),
-		chromedp.WaitVisible(`.game-card[data-family="tak-5x5"]`, chromedp.ByQuery),
+	if err := runSteps(ctx,
+		stepNavigate(baseURL+"/"),
+		stepWaitVisible(`.game-card[data-family="tak-5x5"]`),
 	); err != nil {
 		t.Fatal(err)
 	}
@@ -599,7 +587,7 @@ func TestWebLobby_CreateAgainstBotOpensPlayableGame(t *testing.T) {
 		t.Error("the setup form shows before a game was picked")
 	}
 	clickSel(t, ctx, `.game-card[data-family="tak-5x5"]`)
-	if err := chromedp.Run(ctx, chromedp.WaitVisible("#create-game-form", chromedp.ByID)); err != nil {
+	if err := runSteps(ctx, stepWaitVisible("#create-game-form")); err != nil {
 		t.Fatal(err)
 	}
 	// Games are grouped by family and Tak is the default.
@@ -610,10 +598,10 @@ func TestWebLobby_CreateAgainstBotOpensPlayableGame(t *testing.T) {
 	// Bot choices were fetched from the server.
 	waitJS(t, ctx, "bot choices", `document.querySelector('input[name="opponent"][value="tactical"]')`, 10*time.Second)
 
-	if err := chromedp.Run(ctx,
-		chromedp.Evaluate(`localStorage.setItem("bingle.name", JSON.stringify("Zoe"))`, nil),
-		chromedp.Evaluate(`document.querySelector('input[name="opponent"][value="random"]').click(); true`, nil),
-		chromedp.Evaluate(`document.querySelector('#create-game-form button[type=submit]').click(); true`, nil),
+	if err := runSteps(ctx,
+		stepEval(`localStorage.setItem("bingle.name", JSON.stringify("Zoe"))`),
+		stepEval(`document.querySelector('input[name="opponent"][value="random"]').click(); true`),
+		stepEval(`document.querySelector('#create-game-form button[type=submit]').click(); true`),
 	); err != nil {
 		t.Fatal(err)
 	}
@@ -705,18 +693,18 @@ func TestWebGame_IdentityGateLetsANewcomerJoin(t *testing.T) {
 	ctx, cancel := newChromedpContext(t, 40*time.Second)
 	defer cancel()
 	// A fresh browser: nobody has told the page who this is.
-	if err := chromedp.Run(ctx,
-		chromedp.Navigate(baseURL+"/game/"+room),
-		chromedp.WaitVisible("#identity-gate", chromedp.ByID),
+	if err := runSteps(ctx,
+		stepNavigate(baseURL+"/game/"+room),
+		stepWaitVisible("#identity-gate"),
 	); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "waiting message", `document.getElementById("status-message").textContent.indexOf("Waiting for an opponent") === 0`, 5*time.Second)
 
-	if err := chromedp.Run(ctx,
-		chromedp.Evaluate(`document.getElementById("gate-name").value = ""`, nil),
-		chromedp.SendKeys("#gate-name", "Carol", chromedp.ByID),
-		chromedp.Click("#gate-join", chromedp.ByID),
+	if err := runSteps(ctx,
+		stepEval(`document.getElementById("gate-name").value = ""`),
+		stepSendKeys("#gate-name", "Carol"),
+		stepClick("#gate-join"),
 	); err != nil {
 		t.Fatal(err)
 	}
@@ -742,10 +730,10 @@ func TestWebGame_SpectatorSeesBoardButCannotMove(t *testing.T) {
 
 	ctx, cancel := newChromedpContext(t, 40*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx,
-		chromedp.Navigate(baseURL+"/game/"+room),
-		chromedp.WaitVisible("#identity-gate", chromedp.ByID),
-		chromedp.Click("#gate-watch", chromedp.ByID),
+	if err := runSteps(ctx,
+		stepNavigate(baseURL+"/game/"+room),
+		stepWaitVisible("#identity-gate"),
+		stepClick("#gate-watch"),
 	); err != nil {
 		t.Fatal(err)
 	}
@@ -769,10 +757,10 @@ func TestWebLobby_ListsYourGamesWithYourImpulseFlag(t *testing.T) {
 	ctx, cancel := newChromedpContext(t, 40*time.Second)
 	defer cancel()
 	games, _ := json.Marshal([]map[string]any{{"code": room, "def": "tak-3x3", "name": "Alice", "ts": time.Now().UnixMilli()}})
-	if err := chromedp.Run(ctx,
-		chromedp.Navigate(baseURL+"/healthz"),
-		chromedp.Evaluate(fmt.Sprintf(`localStorage.setItem("bingle.games", %q); true`, games), nil),
-		chromedp.Navigate(baseURL+"/"),
+	if err := runSteps(ctx,
+		stepNavigate(baseURL+"/healthz"),
+		stepEval(fmt.Sprintf(`localStorage.setItem("bingle.games", %q); true`, games)),
+		stepNavigate(baseURL+"/"),
 	); err != nil {
 		t.Fatal(err)
 	}
@@ -903,7 +891,7 @@ func TestWebGame_QuickPlacementByClickingAnEmptySquare(t *testing.T) {
 		return true;
 	})()`
 	var ok bool
-	if err := chromedp.Run(ctx, chromedp.Evaluate(shiftClick, &ok)); err != nil || !ok {
+	if err := runSteps(ctx, stepEvalTo(shiftClick, &ok)); err != nil || !ok {
 		t.Fatalf("shift-click: %v", err)
 	}
 	waitJS(t, ctx, "submit wall on d4", `document.getElementById("submit-move") && document.getElementById("submit-move").textContent.trim() === "Submit"`, 5*time.Second)
@@ -1013,10 +1001,10 @@ func TestWebGame_PlayFromAnalysisPositionStartsANewGame(t *testing.T) {
 	clickSel(t, ctx, "#play-from-here")
 	waitJS(t, ctx, "dialog", `document.getElementById("fh-start")`, 5*time.Second)
 	// Play it against the random bot.
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`(function(){
+	if err := runSteps(ctx, stepEval(`(function(){
 		var s = document.getElementById("fh-opponent"); s.value = "random";
 		return s.value;
-	})()`, nil)); err != nil {
+	})()`)); err != nil {
 		t.Fatal(err)
 	}
 	clickSel(t, ctx, "#fh-start")
@@ -1024,7 +1012,7 @@ func TestWebGame_PlayFromAnalysisPositionStartsANewGame(t *testing.T) {
 	waitJS(t, ctx, "board", `document.getElementById("board-svg")`, 10*time.Second)
 
 	var newRoom string
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`location.pathname.split("/").pop()`, &newRoom)); err != nil {
+	if err := runSteps(ctx, stepEvalTo(`location.pathname.split("/").pop()`, &newRoom)); err != nil {
 		t.Fatal(err)
 	}
 	var st restState
@@ -1053,7 +1041,7 @@ func TestWebGame_ArrowKeysMoveFocusAcrossTheBoard(t *testing.T) {
 		t.Helper()
 		js := `(function(){ var el = document.activeElement; el.dispatchEvent(new KeyboardEvent("keydown", {key: ` + `"` + k + `"` + `, bubbles: true, cancelable: true})); return true; })()`
 		var ok bool
-		if err := chromedp.Run(ctx, chromedp.Evaluate(js, &ok)); err != nil {
+		if err := runSteps(ctx, stepEvalTo(js, &ok)); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -1062,7 +1050,7 @@ func TestWebGame_ArrowKeysMoveFocusAcrossTheBoard(t *testing.T) {
 	}
 
 	// Focus the board by focusing the first tab stop, then walk.
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`document.querySelector('#board .cell[tabindex="0"]').focus(); true`, nil)); err != nil {
+	if err := runSteps(ctx, stepEval(`document.querySelector('#board .cell[tabindex="0"]').focus(); true`)); err != nil {
 		t.Fatal(err)
 	}
 	start := focused()
@@ -1099,12 +1087,12 @@ func TestWebGame_MovesAnimateAndCanBeSwitchedOff(t *testing.T) {
 
 	// Count animations started on pieces; Bob's reply arrives over the
 	// WebSocket and should slide/pop in.
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`(function(){
+	if err := runSteps(ctx, stepEval(`(function(){
 		window.__anims = 0;
 		var orig = Element.prototype.animate;
 		Element.prototype.animate = function(){ window.__anims++; return orig.apply(this, arguments); };
 		return true;
-	})()`, nil)); err != nil {
+	})()`)); err != nil {
 		t.Fatal(err)
 	}
 	// Alice's seat is the browser's (ADR 0067); Bob's was taken anonymously.
@@ -1118,7 +1106,7 @@ func TestWebGame_MovesAnimateAndCanBeSwitchedOff(t *testing.T) {
 
 	// Switching the setting off stops them.
 	clickSel(t, ctx, "#opt-animate")
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`window.__anims = 0; true`, nil)); err != nil {
+	if err := runSteps(ctx, stepEval(`window.__anims = 0; true`)); err != nil {
 		t.Fatal(err)
 	}
 	if code := moveAs(t, browserGuestKey(t, ctx), baseURL, room, "Alice", "b2"); code != 200 {
@@ -1148,12 +1136,12 @@ func TestWebGame_ImportMovesIntoAnalysis(t *testing.T) {
 	// PTN-flavoured text with numbers, a comment and a result; the last
 	// move is illegal (a5 is occupied), so three moves should load.
 	text := "[Size \"5\"]\n1. a5 e1 {opening} 2. c3 1-0 a5"
-	if err := chromedp.Run(ctx, chromedp.SetValue("#import-text", text, chromedp.ByID)); err != nil {
+	if err := runSteps(ctx, stepSetValue("#import-text", text)); err != nil {
 		t.Fatal(err)
 	}
 	clickSel(t, ctx, "#import-load")
 	waitJS(t, ctx, "partial load message", `/Loaded 3 of 4 moves/.test(document.getElementById("import-msg").textContent)`, 10*time.Second)
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`document.getElementById("import-dialog").close(); true`, nil)); err != nil {
+	if err := runSteps(ctx, stepEval(`document.getElementById("import-dialog").close(); true`)); err != nil {
 		t.Fatal(err)
 	}
 	if n := evalInt(t, ctx, `document.querySelectorAll('#board .piece').length`); n != 3 {
@@ -1250,10 +1238,10 @@ func TestWebLobby_TabShowsHowManyGamesAwaitYou(t *testing.T) {
 	})
 	ctx, cancel := newChromedpContext(t, 30*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx,
-		chromedp.Navigate(baseURL+"/healthz"),
-		chromedp.Evaluate(fmt.Sprintf(`localStorage.setItem("bingle.games", %q); true`, games), nil),
-		chromedp.Navigate(baseURL+"/"),
+	if err := runSteps(ctx,
+		stepNavigate(baseURL+"/healthz"),
+		stepEval(fmt.Sprintf(`localStorage.setItem("bingle.games", %q); true`, games)),
+		stepNavigate(baseURL+"/"),
 	); err != nil {
 		t.Fatal(err)
 	}
@@ -1298,13 +1286,13 @@ func TestWebGame_SaveImageProducesAStandaloneSVG(t *testing.T) {
 	waitJS(t, ctx, "button", `document.getElementById("save-image")`, 10*time.Second)
 
 	// Capture the blob the click would download instead of saving a file.
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`(function(){
+	if err := runSteps(ctx, stepEval(`(function(){
 		window.__svg = null;
 		var orig = URL.createObjectURL;
 		URL.createObjectURL = function(blob){ blob.text().then(function(t){ window.__svg = t; }); return orig.call(URL, blob); };
 		HTMLAnchorElement.prototype.click = function(){};
 		return true;
-	})()`, nil)); err != nil {
+	})()`)); err != nil {
 		t.Fatal(err)
 	}
 	clickSel(t, ctx, "#save-image")
@@ -1391,13 +1379,7 @@ func TestWebGame_EveryGameOpensDrawsAndTakesAFirstClick(t *testing.T) {
 	defer cancel()
 	var mu sync.Mutex
 	var jsErrors []string
-	chromedp.ListenTarget(ctx, func(ev any) {
-		if e, ok := ev.(*runtime.EventExceptionThrown); ok && e.ExceptionDetails != nil {
-			mu.Lock()
-			jsErrors = append(jsErrors, e.ExceptionDetails.Error())
-			mu.Unlock()
-		}
-	})
+	collectJSErrors(ctx, &mu, &jsErrors)
 
 	for _, id := range picks {
 		var created struct {

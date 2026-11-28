@@ -14,9 +14,6 @@ import (
 	"testing/fstest"
 	"time"
 
-	"github.com/chromedp/cdproto/page"
-	"github.com/chromedp/cdproto/runtime"
-	"github.com/chromedp/chromedp"
 	"github.com/noderunner/bingle/internal/app"
 	"github.com/noderunner/bingle/internal/engine/catalog"
 )
@@ -31,16 +28,16 @@ func openTutorial(t *testing.T, ctx context.Context, base string) string {
 // openTutorialOf starts a tutorial of a game from the browser and opens its room.
 func openTutorialOf(t *testing.T, ctx context.Context, base, game, id string) string {
 	t.Helper()
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/")); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/")); err != nil {
 		t.Fatal(err)
 	}
 	var room string
 	start := `fetch("/api/tutorials", {method: "POST", headers: {"Content-Type": "application/json", "X-Bingle-Session": "1"},
 		body: JSON.stringify({game_def_id: "` + game + `", tutorial: "` + id + `", player_name: "Lia"})}).then(r => r.json()).then(j => j.room_code)`
-	if err := chromedp.Run(ctx, chromedp.Evaluate(start, &room, func(p *runtime.EvaluateParams) *runtime.EvaluateParams { return p.WithAwaitPromise(true) })); err != nil || room == "" {
+	if err := runSteps(ctx, stepEvalTo(start, &room, awaitPromise)); err != nil || room == "" {
 		t.Fatalf("starting the tutorial: %q %v", room, err)
 	}
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/game/"+room)); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/game/"+room)); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the tutorial card", `document.getElementById("tutorial-count")`, 15*time.Second)
@@ -136,7 +133,7 @@ func TestWebTutorial_PlaysThroughTheBloomsTutorial(t *testing.T) {
 	waitJS(t, ctx, "yellow picked out", `!!document.querySelector('button[data-piece="yellow"].tutorial-target')`, 10*time.Second)
 
 	// Progress comes from the moves played: a reload finds the same step.
-	if err := chromedp.Run(ctx, chromedp.Reload()); err != nil {
+	if err := runSteps(ctx, stepReload()); err != nil {
 		t.Fatal(err)
 	}
 	waitStep(t, ctx, "9")
@@ -203,7 +200,7 @@ func TestWebTutorial_PlaysThroughTheBloomsTutorial(t *testing.T) {
 	}
 
 	// Return to Tutorials opens the game's setup on its tutorials.
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+back)); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+back)); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the tutorials tab", `document.getElementById("setup-tab-tutorials").getAttribute("aria-selected") === "true" && !document.getElementById("setup-tutorials-panel").hidden && !!document.querySelector('#setup-tutorials button[data-tutorial="blooms-basics"]')`, 15*time.Second)
@@ -228,10 +225,10 @@ func TestWebTutorial_OffScript(t *testing.T) {
 	move := `fetch("/api/games/` + room + `/moves", {method: "POST", headers: {"Content-Type": "application/json", "X-Bingle-Session": "1"},
 		body: JSON.stringify({player_name: "Lia", notation: "yellow@e5"})}).then(r => r.status)`
 	var status int
-	if err := chromedp.Run(ctx, chromedp.Evaluate(move, &status, func(p *runtime.EvaluateParams) *runtime.EvaluateParams { return p.WithAwaitPromise(true) })); err != nil || status != 200 {
+	if err := runSteps(ctx, stepEvalTo(move, &status, awaitPromise)); err != nil || status != 200 {
 		t.Fatalf("the off-script move: %d %v", status, err)
 	}
-	if err := chromedp.Run(ctx, chromedp.Reload()); err != nil {
+	if err := runSteps(ctx, stepReload()); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the off-script notice", `!!document.getElementById("tutorial-off")`, 15*time.Second)
@@ -246,7 +243,7 @@ func TestWebTutorial_ListInTheGamePicker(t *testing.T) {
 	base := newRESTTestServer(t)
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/")); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the gallery", `!!document.querySelector('.game-card[data-family="blooms"]')`, 15*time.Second)
@@ -278,10 +275,10 @@ func TestWebTutorial_TabInTheRulesWindow(t *testing.T) {
 	base := newRESTTestServer(t)
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx,
-		chromedp.Navigate(base+"/"),
-		chromedp.Evaluate(`localStorage.setItem("bingle.tutorials.done", JSON.stringify(["blooms/blooms-basics"])); localStorage.setItem("bingle.name", JSON.stringify("Oli")); true`, nil),
-		chromedp.Navigate(base+"/?game=blooms"),
+	if err := runSteps(ctx,
+		stepNavigate(base+"/"),
+		stepEval(`localStorage.setItem("bingle.tutorials.done", JSON.stringify(["blooms/blooms-basics"])); localStorage.setItem("bingle.name", JSON.stringify("Oli")); true`),
+		stepNavigate(base+"/?game=blooms"),
 	); err != nil {
 		t.Fatal(err)
 	}
@@ -307,7 +304,7 @@ func TestWebTutorial_TabInTheRulesWindow(t *testing.T) {
 	waitJS(t, ctx, "the tutorial", `location.pathname.startsWith("/game/") && !!document.getElementById("tutorial-count")`, 15*time.Second)
 
 	// A game without tutorials has no such tab.
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/?game=gomoku")); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/?game=gomoku")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the setup", `!document.getElementById("game-setup").hidden`, 15*time.Second)
@@ -324,7 +321,7 @@ func TestWebTutorial_TabInTheRulesWindow(t *testing.T) {
 // setName types a name into the game picker's form.
 func setName(t *testing.T, ctx context.Context, name string) {
 	t.Helper()
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`localStorage.setItem("bingle.name", JSON.stringify(`+strconv.Quote(name)+`)); true`, nil)); err != nil {
+	if err := runSteps(ctx, stepEval(`localStorage.setItem("bingle.name", JSON.stringify(`+strconv.Quote(name)+`)); true`)); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -590,10 +587,7 @@ func TestWebTutorial_AnIllegalMoveIsMarkedOnAMap(t *testing.T) {
 			});
 		};
 	})()`
-	if err := chromedp.Run(ctx, chromedp.ActionFunc(func(c context.Context) error {
-		_, err := page.AddScriptToEvaluateOnNewDocument(marked).Do(c)
-		return err
-	})); err != nil {
+	if err := runSteps(ctx, stepAddScript(marked)); err != nil {
 		t.Fatal(err)
 	}
 	openTutorialOf(t, ctx, base, "test-council", "moving")

@@ -7,9 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chromedp/cdproto/runtime"
-	"github.com/chromedp/chromedp"
-
 	"github.com/noderunner/bingle/internal/engine/catalog"
 )
 
@@ -57,7 +54,7 @@ func TestWebCardSets_ChosenWhenSettingUpTheGame(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/"), chromedp.WaitVisible(`.game-card[data-family="test-tricks"]`, chromedp.ByQuery)); err != nil {
+	if err := runSteps(ctx, stepNavigate(baseURL+"/"), stepWaitVisible(`.game-card[data-family="test-tricks"]`)); err != nil {
 		t.Fatal(err)
 	}
 	clickSel(t, ctx, `.game-card[data-family="gomoku"]`)
@@ -65,7 +62,7 @@ func TestWebCardSets_ChosenWhenSettingUpTheGame(t *testing.T) {
 	if !evalBool(t, ctx, `document.getElementById("card-set-field").hidden`) {
 		t.Error("a game without cards offers a set of cards")
 	}
-	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/"), chromedp.WaitVisible(`.game-card[data-family="test-tricks"]`, chromedp.ByQuery)); err != nil {
+	if err := runSteps(ctx, stepNavigate(baseURL+"/"), stepWaitVisible(`.game-card[data-family="test-tricks"]`)); err != nil {
 		t.Fatal(err)
 	}
 	clickSel(t, ctx, `.game-card[data-family="test-tricks"]`)
@@ -83,13 +80,13 @@ func TestWebCardSets_ChosenWhenSettingUpTheGame(t *testing.T) {
 		t.Errorf("%d suits are dimmed, want the 4 a game of 4 suits does not reach", n)
 	}
 	// Starting the game carries the choice to the table.
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`localStorage.setItem("bingle.name", JSON.stringify("Ana"))`, nil)); err != nil {
+	if err := runSteps(ctx, stepEval(`localStorage.setItem("bingle.name", JSON.stringify("Ana"))`)); err != nil {
 		t.Fatal(err)
 	}
 	clickSel(t, ctx, `#create-game-form button[type="submit"]`)
 	waitJS(t, ctx, "the game page", `location.pathname.startsWith("/game/")`, 15*time.Second)
 	var room string
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`location.pathname.split("/").pop()`, &room)); err != nil {
+	if err := runSteps(ctx, stepEvalTo(`location.pathname.split("/").pop()`, &room)); err != nil {
 		t.Fatal(err)
 	}
 	var game struct {
@@ -201,7 +198,7 @@ func TestWebCardSets_EverySetIsCompleteAndLegible(t *testing.T) {
 	baseURL := newRESTTestServer(t)
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.Navigate(baseURL+"/"), chromedp.WaitVisible(`.game-card[data-family="test-tricks"]`, chromedp.ByQuery)); err != nil {
+	if err := runSteps(ctx, stepNavigate(baseURL+"/"), stepWaitVisible(`.game-card[data-family="test-tricks"]`)); err != nil {
 		t.Fatal(err)
 	}
 	const script = `(async () => {
@@ -281,7 +278,7 @@ func TestWebCardSets_EverySetIsCompleteAndLegible(t *testing.T) {
 		return JSON.stringify({ ids: CARD_SETS.map((x) => x.id), problems });
 	})()`
 	var raw string
-	if err := chromedp.Run(ctx, chromedp.Evaluate(script, &raw, func(p *runtime.EvaluateParams) *runtime.EvaluateParams { return p.WithAwaitPromise(true) })); err != nil {
+	if err := runSteps(ctx, stepEvalTo(script, &raw, awaitPromise)); err != nil {
 		t.Fatal(err)
 	}
 	var out struct {

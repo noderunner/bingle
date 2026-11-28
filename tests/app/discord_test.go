@@ -8,8 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chromedp/chromedp"
-
 	"github.com/noderunner/bingle/internal/app"
 	"github.com/noderunner/bingle/internal/config"
 )
@@ -107,7 +105,7 @@ func TestWebDiscord_HelpButton(t *testing.T) {
 	for _, name := range []string{"", "Night Club"} {
 		base := serverWithDiscord(t, name)
 		ctx, cancel := newChromedpContext(t, 60*time.Second)
-		if err := chromedp.Run(ctx, chromedp.Navigate(base+"/"), chromedp.WaitVisible("#open-help", chromedp.ByQuery)); err != nil {
+		if err := runSteps(ctx, stepNavigate(base+"/"), stepWaitVisible("#open-help")); err != nil {
 			cancel()
 			t.Fatal(err)
 		}
@@ -124,7 +122,7 @@ func TestWebDiscord_HelpButton(t *testing.T) {
 	// Without the setting there is no button.
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.Navigate(newRESTTestServer(t)+"/"), chromedp.WaitVisible("#open-help", chromedp.ByQuery)); err != nil {
+	if err := runSteps(ctx, stepNavigate(newRESTTestServer(t)+"/"), stepWaitVisible("#open-help")); err != nil {
 		t.Fatal(err)
 	}
 	clickSel(t, ctx, "#open-help")

@@ -12,8 +12,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chromedp/chromedp"
-
 	"github.com/noderunner/bingle/internal/app"
 	"github.com/noderunner/bingle/internal/auth"
 	"github.com/noderunner/bingle/internal/engine/catalog"
@@ -175,7 +173,7 @@ func TestWebPrototypes_ChoosingARulesVersion(t *testing.T) {
 	_, base := newPrototypeServer(t)
 	ctx, cancel := newChromedpContext(t, 90*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/"), chromedp.WaitVisible(`.game-card[data-family="courtfall"]`, chromedp.ByQuery)); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/"), stepWaitVisible(`.game-card[data-family="courtfall"]`)); err != nil {
 		t.Fatal(err)
 	}
 	if got := evalString(t, ctx, `document.querySelector('.game-card[data-family="courtfall"] .badge.prototype').textContent`); got != "Prototype" {
@@ -201,7 +199,7 @@ func TestWebPrototypes_ChoosingARulesVersion(t *testing.T) {
 	}
 
 	// Another version.
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`(() => { const s = document.getElementById("setup-rules-version"); s.value = "1.0.0"; s.dispatchEvent(new Event("change")); })()`, nil)); err != nil {
+	if err := runSteps(ctx, stepEval(`(() => { const s = document.getElementById("setup-rules-version"); s.value = "1.0.0"; s.dispatchEvent(new Event("change")); })()`)); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the older version", `document.getElementById("game_def_id").value === "courtfall-1.0.0" && document.getElementById("setup-rules-version").value === "1.0.0"`, 5*time.Second)
@@ -219,7 +217,7 @@ func TestWebPrototypes_ChoosingARulesVersion(t *testing.T) {
 	waitJS(t, ctx, "Tak's setup", `document.getElementById("game_def_id").value.indexOf("tak") === 0 && !document.getElementById("setup-rules-version")`, 10*time.Second)
 
 	// A link by the family's name opens the newest.
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/?game=courtfall")); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/?game=courtfall")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the link opens the newest", `!!document.getElementById("game_def_id") && document.getElementById("game_def_id").value === "courtfall-1.1.0" && !document.getElementById("game-setup").hidden`, 10*time.Second)
@@ -234,11 +232,11 @@ func TestWebPrototypes_AreNotOfferedRated(t *testing.T) {
 	defer cancel()
 	signInChrome(t, ctx, base, ana.cookie(auth.SessionCookie))
 
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/?game=yavalath")); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/?game=yavalath")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the choice for a game that can be rated", `document.getElementById("rated-field").hidden === false`, 20*time.Second)
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/?game=courtfall")); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/?game=courtfall")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "Courtfall's setup", `document.getElementById("game_def_id").value === "courtfall-1.0.0" && document.getElementById("clock-field").hidden === false`, 20*time.Second)

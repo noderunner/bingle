@@ -8,8 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chromedp/chromedp"
-
 	"github.com/noderunner/bingle/internal/auth"
 	"github.com/noderunner/bingle/internal/mail/fakesmtp"
 )
@@ -432,7 +430,7 @@ func TestWebSchedule_TheSetupAndTheLobby(t *testing.T) {
 	ana, cancel := newChromedpContext(t, 90*time.Second)
 	defer cancel()
 	signInChrome(t, ana, base, anaB.cookie(auth.SessionCookie))
-	if err := chromedp.Run(ana, chromedp.EmulateViewport(1400, 1000), chromedp.Navigate(base+"/?game=tic-tac-toe")); err != nil {
+	if err := runSteps(ana, stepViewport(1400, 1000), stepNavigate(base+"/?game=tic-tac-toe")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ana, "the setup", `document.getElementById("real-time") !== null && document.getElementById("create-submit") !== null`, 20*time.Second)

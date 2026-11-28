@@ -6,9 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chromedp/cdproto/emulation"
-	"github.com/chromedp/chromedp"
-
 	"github.com/noderunner/bingle/internal/auth"
 	"github.com/noderunner/bingle/internal/session"
 )
@@ -50,44 +47,44 @@ func TestWebRatingRemoval_TheAdminCardAndTheStandings(t *testing.T) {
 	ctx, cancel := newChromedpContext(t, 90*time.Second)
 	defer cancel()
 	signInChrome(t, ctx, base, kim.cookie(auth.SessionCookie))
-	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1100, 900), chromedp.Navigate(base+"/admin")); err != nil {
+	if err := runSteps(ctx, stepViewport(1100, 900), stepNavigate(base+"/admin")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the card", `!document.getElementById("ratings-card").hidden`, 10*time.Second)
-	if err := chromedp.Run(ctx, chromedp.SetValue("#ratings-player", "ana", chromedp.ByID)); err != nil {
+	if err := runSteps(ctx, stepSetValue("#ratings-player", "ana")); err != nil {
 		t.Fatal(err)
 	}
 	clickSel(t, ctx, "#ratings-go")
 	waitJS(t, ctx, "Ana's game", `document.querySelector('#ratings-rows tr[data-room="`+g.RoomCode+`"] button') !== null`, 10*time.Second)
-	shot(t, ctx, "rating-removal-admin", func(b *[]byte) error { return chromedp.Run(ctx, chromedp.FullScreenshot(b, 90)) })
+	shot(t, ctx, "rating-removal-admin", func(b *[]byte) error { return runSteps(ctx, stepScreenshot(b)) })
 	// The page asks first; this answers yes.
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`window.confirm = () => true; true`, nil)); err != nil {
+	if err := runSteps(ctx, stepEval(`window.confirm = () => true; true`)); err != nil {
 		t.Fatal(err)
 	}
 	clickSel(t, ctx, `#ratings-rows tr[data-room="`+g.RoomCode+`"] button`)
 	waitJS(t, ctx, "the game removed", `document.getElementById("ratings-result").textContent === "Ratings recomputed" &&
 		document.querySelector('#ratings-rows tr[data-room="`+g.RoomCode+`"]').textContent.includes("Removed by @kim")`, 10*time.Second)
-	shot(t, ctx, "rating-removal-admin-removed", func(b *[]byte) error { return chromedp.Run(ctx, chromedp.FullScreenshot(b, 90)) })
+	shot(t, ctx, "rating-removal-admin-removed", func(b *[]byte) error { return runSteps(ctx, stepScreenshot(b)) })
 	if shooting() {
-		dark := emulation.SetEmulatedMedia().WithFeatures([]*emulation.MediaFeature{{Name: "prefers-color-scheme", Value: "dark"}})
+		dark := stepColorScheme("dark")
 		shot(t, ctx, "rating-removal-admin-dark", func(b *[]byte) error {
-			return chromedp.Run(ctx, dark, chromedp.Sleep(200*time.Millisecond), chromedp.FullScreenshot(b, 90))
+			return runSteps(ctx, dark, stepSleep(200*time.Millisecond), stepScreenshot(b))
 		})
 		shot(t, ctx, "rating-removal-admin-phone", func(b *[]byte) error {
-			return chromedp.Run(ctx, emulation.SetEmulatedMedia().WithFeatures([]*emulation.MediaFeature{{Name: "prefers-color-scheme", Value: "light"}}),
-				chromedp.EmulateViewport(390, 844, chromedp.EmulateMobile), chromedp.Sleep(300*time.Millisecond), chromedp.FullScreenshot(b, 90))
+			return runSteps(ctx, stepColorScheme("light"),
+				stepMobileViewport(390, 844), stepSleep(300*time.Millisecond), stepScreenshot(b))
 		})
 	}
 
 	// Anybody sees the standings say it: a guest's browser.
 	guest, cancelGuest := newChromedpContext(t, 60*time.Second)
 	defer cancelGuest()
-	if err := chromedp.Run(guest, chromedp.EmulateViewport(1100, 900), chromedp.Navigate(fmt.Sprintf("%s/tournament/%d", base, made.ID))); err != nil {
+	if err := runSteps(guest, stepViewport(1100, 900), stepNavigate(fmt.Sprintf("%s/tournament/%d", base, made.ID))); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, guest, "the annotation", `document.querySelectorAll("#tournament-standings .rating-removed").length === 2 &&
 		[...document.querySelectorAll("#tournament-standings .rating-removed")].every((e) => /^Rating change [+−-]\d+ removed by @kim$/.test(e.textContent))`, 10*time.Second)
-	shot(t, guest, "rating-removal-standings", func(b *[]byte) error { return chromedp.Run(guest, chromedp.FullScreenshot(b, 90)) })
+	shot(t, guest, "rating-removal-standings", func(b *[]byte) error { return runSteps(guest, stepScreenshot(b)) })
 }
 
 // shooting says the screenshots are wanted (BINGLE_SHOTS).

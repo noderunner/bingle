@@ -6,9 +6,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/chromedp/chromedp"
-	"github.com/chromedp/chromedp/kb"
 )
 
 // menuState is what the menu looks like to a player: open or not, and where the keys are.
@@ -21,7 +18,7 @@ func TestWebClientMenu_TheLogoOpensAMenuAndTheNameGoesHome(t *testing.T) {
 	_, base, _ := clientServer(t)
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1400, 900), chromedp.Navigate(base+"/profile")); err != nil {
+	if err := runSteps(ctx, stepViewport(1400, 900), stepNavigate(base+"/profile")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the bar", `document.getElementById("open-help") !== null && document.getElementById("brand-menu-button") !== null`, 20*time.Second)
@@ -63,28 +60,28 @@ func TestWebClientMenu_TheLogoOpensAMenuAndTheNameGoesHome(t *testing.T) {
 	// The keys a menu takes.
 	key := func(k string) {
 		t.Helper()
-		if err := chromedp.Run(ctx, chromedp.KeyEvent(k)); err != nil {
+		if err := runSteps(ctx, stepKey(k)); err != nil {
 			t.Fatal(err)
 		}
 	}
-	key(kb.ArrowDown)
+	key(keyArrowDown)
 	if got := evalString(t, ctx, menuState); got != "open true 0.0.2" {
 		t.Errorf("after the down arrow: %q", got)
 	}
-	key(kb.End)
+	key(keyEnd)
 	if got := evalString(t, ctx, menuState); got != "open true brand-menu-quick" {
 		t.Errorf("after End: %q", got)
 	}
-	key(kb.ArrowUp)
+	key(keyArrowUp)
 	if got := evalString(t, ctx, menuState); got != "open true brand-menu-setup" {
 		t.Errorf("up from the last item: %q", got)
 	}
-	key(kb.End)
-	key(kb.ArrowDown)
+	key(keyEnd)
+	key(keyArrowDown)
 	if got := evalString(t, ctx, menuState); got != "open true brand-menu-home" {
 		t.Errorf("down from the last item: %q", got)
 	}
-	key(kb.Escape)
+	key(keyEscape)
 	if got := evalString(t, ctx, menuState); got != "closed false brand-menu-button" {
 		t.Errorf("after Escape: %q", got)
 	}
@@ -96,12 +93,12 @@ func TestWebClientMenu_TheLogoOpensAMenuAndTheNameGoesHome(t *testing.T) {
 	}
 
 	// The setup file is asked for as the page asks for anything, and saved under its name.
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`(() => {
+	if err := runSteps(ctx, stepEval(`(() => {
 		const make = URL.createObjectURL.bind(URL);
 		URL.createObjectURL = (blob) => { blob.text().then((text) => { window.__setup = text; }); return make(blob); };
 		document.addEventListener("click", (ev) => { const a = ev.target.closest("a[download]"); if (a && a.href.startsWith("blob:")) { window.__saved = a.download; ev.preventDefault(); } }, true);
 		return true;
-	})()`, nil)); err != nil {
+	})()`)); err != nil {
 		t.Fatal(err)
 	}
 	clickSel(t, ctx, "#brand-menu-button")
@@ -122,13 +119,13 @@ func TestWebClientMenu_TheLogoOpensAMenuAndTheNameGoesHome(t *testing.T) {
 	if got := evalString(t, ctx, `[...document.querySelectorAll("#quick-setup .quick-platform")].map((s) => s.dataset.platform + ":" + s.querySelector(".quick-setup-file").textContent.trim()).join("|")`); got != "linux:"+name+" Profile Configs|windows:"+name+" Profile Configs" {
 		t.Errorf("the page's sections, the computer's own first, with their profile configs buttons: %q", got)
 	}
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`(() => {
+	if err := runSteps(ctx, stepEval(`(() => {
 		const make = URL.createObjectURL.bind(URL);
 		window.__setup = undefined;
 		URL.createObjectURL = (blob) => { blob.text().then((text) => { window.__setup = text; }); return make(blob); };
 		document.addEventListener("click", (ev) => { const a = ev.target.closest("a[download]"); if (a && a.href.startsWith("blob:")) { window.__saved = a.download; ev.preventDefault(); } }, true);
 		return true;
-	})()`, nil)); err != nil {
+	})()`)); err != nil {
 		t.Fatal(err)
 	}
 	clickSel(t, ctx, ".quick-platform.current .quick-setup-file")

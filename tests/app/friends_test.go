@@ -5,8 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chromedp/chromedp"
-
 	"github.com/noderunner/bingle/internal/auth"
 	"github.com/noderunner/bingle/internal/mail/fakesmtp"
 )
@@ -240,7 +238,7 @@ func TestWebFriends_TheWindow(t *testing.T) {
 	a, base := membersServer(t)
 	guest, cancelG := newChromedpContext(t, 90*time.Second)
 	defer cancelG()
-	if err := chromedp.Run(guest, chromedp.Navigate(base+"/")); err != nil {
+	if err := runSteps(guest, stepNavigate(base+"/")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, guest, "the top bar", `document.getElementById("open-profile") !== null`, 20*time.Second)
@@ -259,10 +257,10 @@ func TestWebFriends_TheWindow(t *testing.T) {
 	defer cancelB()
 	signInChrome(t, ana, base, anaB.cookie(auth.SessionCookie))
 	signInChrome(t, bob, base, bobB.cookie(auth.SessionCookie))
-	if err := chromedp.Run(ana, chromedp.Navigate(base+"/healthz"), chromedp.Evaluate(`localStorage.setItem("bingle.games", JSON.stringify([{code: "`+created.RoomCode+`", def: "tic-tac-toe", name: "Ana", ts: Date.now()}])); true`, nil), chromedp.Navigate(base+"/")); err != nil {
+	if err := runSteps(ana, stepNavigate(base+"/healthz"), stepEval(`localStorage.setItem("bingle.games", JSON.stringify([{code: "`+created.RoomCode+`", def: "tic-tac-toe", name: "Ana", ts: Date.now()}])); true`), stepNavigate(base+"/")); err != nil {
 		t.Fatal(err)
 	}
-	if err := chromedp.Run(bob, chromedp.Navigate(base+"/")); err != nil {
+	if err := runSteps(bob, stepNavigate(base+"/")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ana, "Ana's icon", `getComputedStyle(document.getElementById("open-friends")).display !== "none"`, 20*time.Second)
@@ -270,7 +268,7 @@ func TestWebFriends_TheWindow(t *testing.T) {
 
 	// Ana asks by handle. Bob's badge counts it while his window is shut.
 	clickSel(t, ana, "#open-friends")
-	if err := chromedp.Run(ana, chromedp.Evaluate(`document.getElementById("friend-handle").value = "bob"; document.getElementById("friend-add-go").click(); true`, nil)); err != nil {
+	if err := runSteps(ana, stepEval(`document.getElementById("friend-handle").value = "bob"; document.getElementById("friend-add-go").click(); true`)); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ana, "waiting for an answer", `document.querySelector("#friend-outgoing [data-cancel='bob']") !== null`, 10*time.Second)
@@ -294,7 +292,7 @@ func TestWebFriends_TheWindow(t *testing.T) {
 	waitJS(t, bob, "the invitation gone", `document.querySelector("[data-join-invite]") === null`, 10*time.Second)
 
 	// Ana removes him, and it goes from both lists.
-	if err := chromedp.Run(ana, chromedp.Evaluate(`window.confirm = () => true; true`, nil)); err != nil {
+	if err := runSteps(ana, stepEval(`window.confirm = () => true; true`)); err != nil {
 		t.Fatal(err)
 	}
 	clickSel(t, ana, "#friend-remove")
@@ -618,7 +616,7 @@ func TestWebFriends_ReservingASeatInTheSetup(t *testing.T) {
 	defer cancelB()
 	signInChrome(t, ana, base, anaB.cookie(auth.SessionCookie))
 	signInChrome(t, bob, base, bobB.cookie(auth.SessionCookie))
-	if err := chromedp.Run(ana, chromedp.EmulateViewport(1400, 1000), chromedp.Navigate(base+"/?game=tic-tac-toe")); err != nil {
+	if err := runSteps(ana, stepViewport(1400, 1000), stepNavigate(base+"/?game=tic-tac-toe")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ana, "the friend to keep a seat for", `document.querySelector('#reserve-friend option[value="bob"]') !== null`, 20*time.Second)
@@ -630,7 +628,7 @@ func TestWebFriends_ReservingASeatInTheSetup(t *testing.T) {
 	waitJS(t, ana, "the Release button", `document.querySelector('#lobby-seats [data-act="release"]') !== null`, 10*time.Second)
 
 	// Bob sees it in Join Game, marked as his.
-	if err := chromedp.Run(bob, chromedp.Navigate(base+"/")); err != nil {
+	if err := runSteps(bob, stepNavigate(base+"/")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, bob, "the join button", `document.getElementById("open-join") !== null`, 20*time.Second)
@@ -654,7 +652,7 @@ func TestWebFriends_AHandleInAChat(t *testing.T) {
 	ana, cancel := newChromedpContext(t, 90*time.Second)
 	defer cancel()
 	signInChrome(t, ana, base, anaB.cookie(auth.SessionCookie))
-	if err := chromedp.Run(ana, chromedp.EmulateViewport(1400, 900), chromedp.Navigate(base+"/")); err != nil {
+	if err := runSteps(ana, stepViewport(1400, 900), stepNavigate(base+"/")); err != nil {
 		t.Fatal(err)
 	}
 	waitScripts(t, ana)
@@ -667,7 +665,7 @@ func TestWebFriends_AHandleInAChat(t *testing.T) {
 	if evalBool(t, ana, `document.getElementById("friend-pop-send") !== null`) {
 		t.Error("a friend is offered a friend request")
 	}
-	if err := chromedp.Run(ana, chromedp.KeyEvent("\x1b")); err != nil {
+	if err := runSteps(ana, stepKey("\x1b")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ana, "the menu closed", `document.getElementById("friend-pop") === null`, 5*time.Second)
@@ -698,7 +696,7 @@ func TestWebFriends_TheActiveGamesWindow(t *testing.T) {
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
 	games := `[{"code":"` + duel.RoomCode + `","def":"tic-tac-toe","name":"Ana","ts":` + "Date.now()" + `},{"code":"` + table.RoomCode + `","def":"test-council","name":"Ana","ts":Date.now()}]`
-	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1400, 900), chromedp.Navigate(baseURL+"/healthz"), chromedp.Evaluate(`localStorage.setItem("bingle.games", JSON.stringify(`+games+`)); true`, nil), chromedp.Navigate(baseURL+"/")); err != nil {
+	if err := runSteps(ctx, stepViewport(1400, 900), stepNavigate(baseURL+"/healthz"), stepEval(`localStorage.setItem("bingle.games", JSON.stringify(`+games+`)); true`), stepNavigate(baseURL+"/")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the icon", `document.getElementById("open-active-games") !== null`, 20*time.Second)

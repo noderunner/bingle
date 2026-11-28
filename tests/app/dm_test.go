@@ -13,7 +13,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chromedp/chromedp"
 	"github.com/coder/websocket/wsjson"
 
 	"github.com/noderunner/bingle/internal/app"
@@ -58,7 +57,7 @@ func befriend(t *testing.T, one, two *browser, twoHandle, oneHandle string) {
 func befriendInChrome(t *testing.T, one, two context.Context, twoHandle string) {
 	t.Helper()
 	clickSel(t, one, "#open-friends")
-	if err := chromedp.Run(one, chromedp.Evaluate(`document.getElementById("friend-handle").value = "`+twoHandle+`"; document.getElementById("friend-add-go").click(); true`, nil)); err != nil {
+	if err := runSteps(one, stepEval(`document.getElementById("friend-handle").value = "`+twoHandle+`"; document.getElementById("friend-add-go").click(); true`)); err != nil {
 		t.Fatal(err)
 	}
 	clickSel(t, two, "#open-friends")
@@ -361,9 +360,9 @@ func openAs(t *testing.T, ctx context.Context, a *app.App, baseURL, handle strin
 	t.Helper()
 	b := member(t, a, baseURL, handle)
 	signInChrome(t, ctx, baseURL, b.cookie(auth.SessionCookie))
-	if err := chromedp.Run(ctx,
-		chromedp.Navigate(baseURL+"/"),
-		chromedp.WaitVisible("#open-friends", chromedp.ByID),
+	if err := runSteps(ctx,
+		stepNavigate(baseURL+"/"),
+		stepWaitVisible("#open-friends"),
 	); err != nil {
 		t.Fatalf("open the page as @%s: %v", handle, err)
 	}
@@ -394,12 +393,12 @@ func TestWebDirectMessages_TwoBrowsersWriteToEachOther(t *testing.T) {
 	// Ana writes to Bo.
 	clickSel(t, ana, `#friends-list .dm-person`)
 	waitJS(t, ana, "the correspondence", `document.getElementById("dm-title").textContent === "With @bob" && !document.getElementById("dm-input").disabled`, 10*time.Second)
-	if err := chromedp.Run(ana, chromedp.Evaluate(`(function () {
+	if err := runSteps(ana, stepEval(`(function () {
 		var i = document.getElementById("dm-input");
 		i.value = "Fancy a game of Hex?";
 		document.getElementById("dm-send").click();
 		return true;
-	})()`, nil)); err != nil {
+	})()`)); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ana, "the message on Ana's side", `[...document.querySelectorAll("#dm-log .chat-line")].some(li => li.textContent.includes("Fancy a game of Hex?"))`, 10*time.Second)
@@ -412,12 +411,12 @@ func TestWebDirectMessages_TwoBrowsersWriteToEachOther(t *testing.T) {
 	waitJS(t, bo, "the message on Bo's side", `[...document.querySelectorAll("#dm-log .chat-line")].some(li => li.textContent.includes("Fancy a game of Hex?"))`, 10*time.Second)
 	waitJS(t, bo, "Bo's badge cleared", `document.getElementById("dm-badge").hidden === true`, 10*time.Second)
 	// Bo answers, and Ana sees it without doing anything.
-	if err := chromedp.Run(bo, chromedp.Evaluate(`(function () {
+	if err := runSteps(bo, stepEval(`(function () {
 		var i = document.getElementById("dm-input");
 		i.value = "Go on then";
 		document.getElementById("dm-send").click();
 		return true;
-	})()`, nil)); err != nil {
+	})()`)); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ana, "Bo's answer", `[...document.querySelectorAll("#dm-log .chat-line")].some(li => li.textContent.includes("Go on then"))`, 15*time.Second)

@@ -13,8 +13,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chromedp/chromedp"
-
 	"github.com/noderunner/bingle/internal/app"
 	"github.com/noderunner/bingle/internal/auth"
 	"github.com/noderunner/bingle/internal/session"
@@ -32,7 +30,7 @@ func TestWebLanguages_ArabicIsRightToLeftAndTheBoardIsNot(t *testing.T) {
 	var jsErrors []string
 	collectJSErrors(ctx, &mu, &jsErrors)
 
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/"), chromedp.WaitReady("#open-profile", chromedp.ByQuery)); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/"), stepWaitReady("#open-profile")); err != nil {
 		t.Fatal(err)
 	}
 	if got := evalString(t, ctx, `document.documentElement.lang + " " + getComputedStyle(document.body).direction`); got != "en ltr" {
@@ -61,7 +59,7 @@ func TestWebLanguages_ArabicIsRightToLeftAndTheBoardIsNot(t *testing.T) {
 		t.Errorf("the profile button in Arabic: %q", got)
 	}
 
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/game/"+room), chromedp.WaitReady("#board-svg", chromedp.ByID)); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/game/"+room), stepWaitReady("#board-svg")); err != nil {
 		t.Fatal(err)
 	}
 	if got := evalString(t, ctx, `getComputedStyle(document.body).direction + " " + getComputedStyle(document.getElementById("board")).direction + " " + getComputedStyle(document.getElementById("board-svg")).direction`); got != "rtl ltr ltr" {
@@ -91,7 +89,7 @@ func TestWebLanguages_APhoneInArabicTurnsItsPagesTheOtherWay(t *testing.T) {
 	room := councilWithHistory(t, base, 2)
 	ctx, cancel := newChromedpContext(t, 60*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/healthz"), chromedp.Evaluate(`document.cookie = "bingle_lang=ar; path=/"; true`, nil)); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/healthz"), stepEval(`document.cookie = "bingle_lang=ar; path=/"; true`)); err != nil {
 		t.Fatal(err)
 	}
 	openOnPhone(t, ctx, base, "Alice", map[string]string{room: "test-council"}, room)
@@ -104,7 +102,7 @@ func TestWebLanguages_APhoneInArabicTurnsItsPagesTheOtherWay(t *testing.T) {
 	if !evalBool(t, ctx, `document.getElementById("m-track").scrollLeft < 0`) {
 		t.Error("the pages do not run from the right")
 	}
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`document.getElementById("m-track").scrollTo({ left: 0, behavior: "instant" }); true`, nil)); err != nil {
+	if err := runSteps(ctx, stepEval(`document.getElementById("m-track").scrollTo({ left: 0, behavior: "instant" }); true`)); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the first page followed", `!document.querySelector('#m-nav [data-group="log"]').classList.contains("on")`, 5*time.Second)
@@ -186,7 +184,7 @@ func TestWebLanguages_TheTopBarIsTranslated(t *testing.T) {
 	base := newRESTTestServer(t)
 	ctx, cancel := newChromedpContext(t, 90*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1200, 900), chromedp.Navigate(base+"/healthz"), chromedp.Evaluate(`document.cookie = "bingle_lang=en-XA; path=/"; true`, nil), chromedp.Navigate(base+"/"), chromedp.WaitReady("#open-profile", chromedp.ByID)); err != nil {
+	if err := runSteps(ctx, stepViewport(1200, 900), stepNavigate(base+"/healthz"), stepEval(`document.cookie = "bingle_lang=en-XA; path=/"; true`), stepNavigate(base+"/"), stepWaitReady("#open-profile")); err != nil {
 		t.Fatal(err)
 	}
 	if got := evalString(t, ctx, plainEnglish+`(".topbar-actions")`); got != "" {
@@ -220,7 +218,7 @@ func TestWebLanguages_TheTopBarIsTranslatedForAnAccount(t *testing.T) {
 	ctx, cancel := newChromedpContext(t, 90*time.Second)
 	defer cancel()
 	signInChrome(t, ctx, base, anaB.cookie(auth.SessionCookie))
-	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1200, 900), chromedp.Navigate(base+"/healthz"), chromedp.Evaluate(`document.cookie = "bingle_lang=en-XA; path=/"; true`, nil), chromedp.Navigate(base+"/")); err != nil {
+	if err := runSteps(ctx, stepViewport(1200, 900), stepNavigate(base+"/healthz"), stepEval(`document.cookie = "bingle_lang=en-XA; path=/"; true`), stepNavigate(base+"/")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the friends icon", `getComputedStyle(document.getElementById("open-friends")).display !== "none"`, 20*time.Second)
@@ -249,7 +247,7 @@ func TestWebLanguages_TheMainPageIsTranslated(t *testing.T) {
 	base := newRESTTestServer(t)
 	ctx, cancel := newChromedpContext(t, 120*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1200, 900), chromedp.Navigate(base+"/healthz"), chromedp.Evaluate(`document.cookie = "bingle_lang=en-XA; path=/"; true`, nil), chromedp.Navigate(base+"/")); err != nil {
+	if err := runSteps(ctx, stepViewport(1200, 900), stepNavigate(base+"/healthz"), stepEval(`document.cookie = "bingle_lang=en-XA; path=/"; true`), stepNavigate(base+"/")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the gallery", `document.querySelector(".game-card")`, 20*time.Second)
@@ -311,7 +309,7 @@ func TestWebLanguages_TheOtherTabsAreTranslated(t *testing.T) {
 	ctx, cancel := newChromedpContext(t, 120*time.Second)
 	defer cancel()
 	signInChrome(t, ctx, base, org.cookie(auth.SessionCookie))
-	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1200, 900), chromedp.Navigate(base+"/healthz"), chromedp.Evaluate(`document.cookie = "bingle_lang=en-XA; path=/"; true`, nil), chromedp.Navigate(base+"/")); err != nil {
+	if err := runSteps(ctx, stepViewport(1200, 900), stepNavigate(base+"/healthz"), stepEval(`document.cookie = "bingle_lang=en-XA; path=/"; true`), stepNavigate(base+"/")); err != nil {
 		t.Fatal(err)
 	}
 	waitScripts(t, ctx)
@@ -334,12 +332,12 @@ func TestWebLanguages_TheOtherTabsAreTranslated(t *testing.T) {
 	clickSel(t, ctx, "#tournament-new")
 	waitJS(t, ctx, "the form", `document.getElementById("t-game") && document.getElementById("t-game").options.length > 1`, 10*time.Second)
 	check("a new tournament's form", "#panel-tournaments")
-	if err := chromedp.Run(ctx, chromedp.Navigate(fmt.Sprintf("%s/tournament/%d", base, made.ID))); err != nil {
+	if err := runSteps(ctx, stepNavigate(fmt.Sprintf("%s/tournament/%d", base, made.ID))); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the tournament", `document.getElementById("tournament-standings")`, 20*time.Second)
 	check("a tournament being played", "main")
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/profile#badges")); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/profile#badges")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the badges", `document.querySelector("#badges-list .badge-item")`, 20*time.Second)
@@ -352,7 +350,7 @@ func TestWebLanguages_TheWelcomeTourIsTranslated(t *testing.T) {
 	_, base := accountServer(t)
 	ctx, cancel := newChromedpContextWithTour(t, 120*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1200, 900), chromedp.Navigate(base+"/healthz"), chromedp.Evaluate(`document.cookie = "bingle_lang=en-XA; path=/"; true`, nil), chromedp.Navigate(base+"/")); err != nil {
+	if err := runSteps(ctx, stepViewport(1200, 900), stepNavigate(base+"/healthz"), stepEval(`document.cookie = "bingle_lang=en-XA; path=/"; true`), stepNavigate(base+"/")); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the tour", `document.querySelector("#welcome-tour[open]")`, 20*time.Second)
@@ -384,7 +382,7 @@ func TestWebLanguages_TheLobbyChatAndRulesAreTranslated(t *testing.T) {
 	doJSON(t, "POST", base+"/api/games", map[string]any{"game_def_id": "tak-5x5", "player_name": "Alice"}, &game)
 	ctx, cancel := newChromedpContext(t, 120*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1400, 1000), chromedp.Navigate(base+"/healthz"), chromedp.Evaluate(`document.cookie = "bingle_lang=en-XA; path=/"; true`, nil)); err != nil {
+	if err := runSteps(ctx, stepViewport(1400, 1000), stepNavigate(base+"/healthz"), stepEval(`document.cookie = "bingle_lang=en-XA; path=/"; true`)); err != nil {
 		t.Fatal(err)
 	}
 	check := func(what, sel string) {
@@ -397,9 +395,9 @@ func TestWebLanguages_TheLobbyChatAndRulesAreTranslated(t *testing.T) {
 			t.Errorf("%s: %s", what, got)
 		}
 	}
-	if err := chromedp.Run(ctx,
-		chromedp.Evaluate(`localStorage.setItem("bingle.games", JSON.stringify([{code: "`+lobby.RoomCode+`", def: "test-council", name: "Alice", ts: Date.now()}])); localStorage.setItem("bingle.name", '"Alice"'); true`, nil),
-		chromedp.Navigate(base+"/game/"+lobby.RoomCode)); err != nil {
+	if err := runSteps(ctx,
+		stepEval(`localStorage.setItem("bingle.games", JSON.stringify([{code: "`+lobby.RoomCode+`", def: "test-council", name: "Alice", ts: Date.now()}])); localStorage.setItem("bingle.name", '"Alice"'); true`),
+		stepNavigate(base+"/game/"+lobby.RoomCode)); err != nil {
 		t.Fatal(err)
 	}
 	waitJS(t, ctx, "the lobby", `document.getElementById("lobby-seats")`, 15*time.Second)
@@ -434,7 +432,7 @@ func TestWebLanguages_ThePlayAreaIsTranslated(t *testing.T) {
 	doJSON(t, "POST", base+"/api/games", map[string]any{"game_def_id": "tak-5x5", "player_name": "Alice", "opponent": "random"}, &game)
 	ctx, cancel := newChromedpContext(t, 120*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1400, 1000), chromedp.Navigate(base+"/healthz"), chromedp.Evaluate(`document.cookie = "bingle_lang=en-XA; path=/"; true`, nil)); err != nil {
+	if err := runSteps(ctx, stepViewport(1400, 1000), stepNavigate(base+"/healthz"), stepEval(`document.cookie = "bingle_lang=en-XA; path=/"; true`)); err != nil {
 		t.Fatal(err)
 	}
 	check := func(what, sel string) {
@@ -469,7 +467,7 @@ func TestWebLanguages_TheMovesOptionsAndTutorialAreTranslated(t *testing.T) {
 	doJSON(t, "POST", base+"/api/games", map[string]any{"game_def_id": "tak-5x5", "player_name": "Alice", "opponent": "random"}, &game)
 	ctx, cancel := newChromedpContext(t, 120*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1400, 1000), chromedp.Navigate(base+"/healthz"), chromedp.Evaluate(`document.cookie = "bingle_lang=en-XA; path=/"; true`, nil)); err != nil {
+	if err := runSteps(ctx, stepViewport(1400, 1000), stepNavigate(base+"/healthz"), stepEval(`document.cookie = "bingle_lang=en-XA; path=/"; true`)); err != nil {
 		t.Fatal(err)
 	}
 	check := func(what, sel string) {
@@ -510,7 +508,7 @@ func TestWebLanguages_TheCardsAreTranslated(t *testing.T) {
 	room := solitaireRoom(t, base, "solitaire", "amphibians")
 	ctx, cancel := newChromedpContext(t, 120*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1400, 1000), chromedp.Navigate(base+"/healthz"), chromedp.Evaluate(`document.cookie = "bingle_lang=en-XA; path=/"; true`, nil)); err != nil {
+	if err := runSteps(ctx, stepViewport(1400, 1000), stepNavigate(base+"/healthz"), stepEval(`document.cookie = "bingle_lang=en-XA; path=/"; true`)); err != nil {
 		t.Fatal(err)
 	}
 	check := func(what, sel string) {
@@ -527,7 +525,7 @@ func TestWebLanguages_TheCardsAreTranslated(t *testing.T) {
 	waitJS(t, ctx, "the table", `document.querySelectorAll('.sol-column .pcard.face[data-set="amphibians"]').length === 7`, 15*time.Second)
 	check("a solitaire table in a set of cards", "#card-table")
 
-	if err := chromedp.Run(ctx, chromedp.Navigate(base+"/"), chromedp.WaitVisible(`.game-card[data-family="test-tricks"]`, chromedp.ByQuery)); err != nil {
+	if err := runSteps(ctx, stepNavigate(base+"/"), stepWaitVisible(`.game-card[data-family="test-tricks"]`)); err != nil {
 		t.Fatal(err)
 	}
 	clickSel(t, ctx, `.game-card[data-family="test-tricks"]`)
@@ -542,12 +540,12 @@ func TestWebLanguages_TheAccountPagesAreTranslated(t *testing.T) {
 	ana := member(t, a, base, "ana")
 	ctx, cancel := newChromedpContext(t, 120*time.Second)
 	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1200, 900), chromedp.Navigate(base+"/healthz"), chromedp.Evaluate(`document.cookie = "bingle_lang=en-XA; path=/"; true`, nil)); err != nil {
+	if err := runSteps(ctx, stepViewport(1200, 900), stepNavigate(base+"/healthz"), stepEval(`document.cookie = "bingle_lang=en-XA; path=/"; true`)); err != nil {
 		t.Fatal(err)
 	}
 	check := func(what, path, ready string) {
 		t.Helper()
-		if err := chromedp.Run(ctx, chromedp.Navigate(base+path)); err != nil {
+		if err := runSteps(ctx, stepNavigate(base+path)); err != nil {
 			t.Fatal(err)
 		}
 		waitJS(t, ctx, what, ready, 15*time.Second)
@@ -596,13 +594,13 @@ func TestWebLanguages_TheAdministrationAndBatchesAreTranslated(t *testing.T) {
 	ctx, cancel := newChromedpContext(t, 120*time.Second)
 	defer cancel()
 	signInChrome(t, ctx, srv.URL, b.cookie(auth.SessionCookie))
-	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1200, 900), chromedp.Navigate(srv.URL+"/healthz"), chromedp.Evaluate(`document.cookie = "bingle_lang=en-XA; path=/"; true`, nil)); err != nil {
+	if err := runSteps(ctx, stepViewport(1200, 900), stepNavigate(srv.URL+"/healthz"), stepEval(`document.cookie = "bingle_lang=en-XA; path=/"; true`)); err != nil {
 		t.Fatal(err)
 	}
 	check := func(what, path, ready string) {
 		t.Helper()
 		if path != "" {
-			if err := chromedp.Run(ctx, chromedp.Navigate(srv.URL+path)); err != nil {
+			if err := runSteps(ctx, stepNavigate(srv.URL+path)); err != nil {
 				t.Fatal(err)
 			}
 		}
