@@ -5,6 +5,8 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
+
+	"github.com/noderunner/bingle/internal/auth"
 )
 
 // handleRatedFamilies implements GET /ratings: the games with a leaderboard.
@@ -58,4 +60,26 @@ func (h *handlers) handlePlayerBadges(w http.ResponseWriter, r *http.Request) {
 // 0130), the platform's and each game's, for anybody.
 func (h *handlers) handleBadges(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"badges": h.mgr.Badges()})
+}
+
+// handleRatedGames implements GET /rated-games?player=: an account's rated
+// results, the newest first, for a moderator (ADR 0157).
+func (h *handlers) handleRatedGames(w http.ResponseWriter, r *http.Request) {
+	list, err := h.mgr.RatedGamesOf(r.Context(), r.URL.Query().Get("player"))
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"games": list})
+}
+
+// handleRemoveRatedGame implements POST /rated-games/{code}/remove: a moderator
+// takes a rated game out of the ratings, for both its players (ADR 0157).
+func (h *handlers) handleRemoveRatedGame(w http.ResponseWriter, r *http.Request) {
+	out, err := h.mgr.RemoveRatedGame(r.Context(), chi.URLParam(r, "code"), auth.HashIP(h.clientIP(r)))
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, out)
 }

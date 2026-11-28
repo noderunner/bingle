@@ -528,6 +528,10 @@ func hashSecret(s string) string {
 	return hex.EncodeToString(sum[:])
 }
 
+// HashIP is how the audit log keeps an address, for an entry written outside
+// this package.
+func HashIP(ip string) string { return hashIP(ip) }
+
 // hashIP is how an address is kept in the audit log and with a session:
 // enough to tell two apart, not to read either back.
 func hashIP(ip string) string {

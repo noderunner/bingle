@@ -358,7 +358,7 @@ same time for both, no bots, and the standard start; anything else is a `400`, a
 is joining as a guest or as the account already in the other seat. Auto-Play answers
 `409`. `GET /games/{code}` reports `rated`, each seat's
 `rating: {rating, provisional}`, and once the game has ended `rating_status`
-(`pending`, `rated`, `no_moves`, `daily_limit` or `void`) and `rating_changes:
+(`pending`, `rated`, `no_moves`, `daily_limit`, `void`, or `removed` by a moderator) and `rating_changes:
 [{seat, before, after}]`; a `state` event with reason `rated` says the result has
 been written. A game a player never moved in, and a game past 5 in 24 hours between
 the same two accounts in one game family, change nothing.
@@ -370,6 +370,16 @@ the same two accounts in one game family, change nothing.
 | `GET /players/{handle}/badges` | `{badges: [{badge, name, description, family, game, awarded_at, room?, hidden?, against}]}`, oldest first, one per way each badge was earned (`against`: `people` or `bots`), for accounts only (`403` for a guest). Others see those shown to everyone; the account itself also sees those waiting for their game to end (`hidden`) and the `room` each was earned in ([badges.md](badges.md)) |
 | `GET /badges` | `{badges: [{badge, name, description, platform?, family?, game?, kind, bot?, bots?, when}]}`: every badge there is to earn, the platform's first, then each game's by its name, for anybody. `kind` is `player`, `rated` or `bot`, `bot` naming a bot badge's weakest bot; `bots` says a player badge is also earned, as its bots award, in a game with a bot at a seat; `family` and `game` are a game's badge's, or a platform badge's that names one ([badges.md](badges.md)) |
 | `GET /players/{handle}/ratings` | `{ratings: [{family, name, rating, provisional?, games, won, drawn, lost, listed}]}`: others see only the `listed` ones (5 rated games against at least 3 opponents); the account itself sees all |
+| `GET /rated-games?player={handle}` | `{games: [{room_code, family, game, played_at, opponent, score, before, after, tournament?, removed?: {by, at, recomputed}}]}`: the account's rated results, newest first, at most 100, for a moderator (the `moderate` capability; `403` for anybody else, a token included) |
+| `POST /rated-games/{code}/remove` | `{room_code, game, recomputed, players: [{handle, before, after?}], others}`: the game taken out of the ratings for both its players ([ADR 0157](decisions/0157-a-moderator-removes-a-rated-game.md)), for a moderator. `recomputed`: the family's ratings were replayed without it, `others` more players moving; otherwise only its own change was reversed. `after` is absent for a player left with no rated game in the family. `404` a room with no rated result, `409` one removed already |
+
+**Removing a rated game** (ADR 0157). A moderator takes one game out of the ratings, for both its players.
+Its rows in the history stay, marked removed. When replaying the family's history reproduces every stored
+rating, the family is replayed without the game; otherwise the game's own change is subtracted from both
+players' ratings and nothing else moves. The players' counters lose it, the game's page says it is not
+counted, the audit log has a `rating-removed` entry, and each player with a confirmed address is mailed. A
+tournament's result stands, and each player's line of its standings carries `rating_removals: [{room_code,
+change, by}]`, the change removed and the moderator's handle, for everybody.
 
 **Restarts.** Time while the server is down costs nobody anything: a turn in
 progress, with a clock or a per-move limit, starts again when the server comes up.

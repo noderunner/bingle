@@ -2,6 +2,11 @@
 
 Was sich in Bingle geändert hat, das Neueste zuerst. Bingle Core (der Server, die Engine und der Web-Client) und jedes Spiel haben eine eigene Version, und jeder Eintrag sagt, welche sich geändert hat. Einträge vor 0.124.0 gibt es nur auf Englisch.
 
+## 0.151.0 - 2026-11-27
+
+### Bingle Core 0.151.0
+- Moderatoren können auf der Admin-Seite eine gewertete Partie aus der Wertung nehmen; die Turniertabelle zeigt es (API 1.25.0)
+
 ## 0.150.0 - 2026-11-27
 
 ### Bingle Core 0.150.0

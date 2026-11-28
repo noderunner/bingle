@@ -4,6 +4,11 @@ What changed in Bingle, newest first. Bingle Core (the server, the engine and th
 every game have a version of their own, and each entry says which of them moved. The newest entry is
 what the help window shows under *Recent changes*, so it is written for the people who play.
 
+## 0.151.0 - 2026-11-27
+
+### Bingle Core 0.151.0
+- Moderators can take a rated game out of the ratings, from the admin page; tournament standings show it (API 1.25.0)
+
 ## 0.150.0 - 2026-11-27
 
 ### Bingle Core 0.150.0

@@ -1,6 +1,6 @@
 # 0071. Capabilities, modes, API tokens and invitations
 
-Status: accepted (2026-10-31)
+Status: accepted (2026-10-31). [ADR 0157](0157-a-moderator-removes-a-rated-game.md) gives `moderate` its first use.
 
 ## Context
 

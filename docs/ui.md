@@ -552,7 +552,11 @@ and its `#guest=` link, `#guest-link`, `#guest-key`, copied to the clipboard), `
 `#guest-use-key` with `#guest-use` to adopt a key; any page opened with `#guest=bgg_…` adopts it, takes it out of the
 address and reloads. "My games" merges `GET /api/me/games` into `bingle.games`. The account page adds the address
 (`#account-email`), the handle (`#handle-new`, `#handle-go`) and the sessions (`#sessions-list`, `#sessions-end`); the
-admin page announcements (`#announce-card`, under *Announcements* below) and the audit log (`#events-rows`: local time, account, the kind as a tag, `.event-kind.bad` for failures). The top bar's profile window starts with who the browser is (`#profile-account`): a guest gets *Sign in*
+admin page announcements (`#announce-card`, under *Announcements* below) the audit log (`#events-rows`: local time, account, the kind as a tag, `.event-kind.bad` for failures), and, for whoever holds
+`moderate` (an administrator, or a moderator who sees this card alone), *Ratings* (`#ratings-card`, ADR 0157): a player's handle
+(`#ratings-player`, `#ratings-go`) lists their rated games (`#ratings-rows`, a row a game with `data-room`), each with *Remove*,
+which asks first, or who removed it; `#ratings-result` says whether the ratings were recomputed or the change reversed. A
+tournament's standings show a removed game under the player's handle (`.rating-removed`): the change and the moderator. The top bar's profile window starts with who the browser is (`#profile-account`): a guest gets *Sign in*
 (`#profile-signin`, back to the page afterwards) and, where the server allows it, *Sign up* (`#profile-signup`); an
 account gets `#profile-account-who` ("Signed in as @ana"), *Your account* (`#profile-account-link`), *Administration*
 for an administrator (`#profile-admin-link`) and *Sign out* (`#profile-signout`). The icon's title says the same.

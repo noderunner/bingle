@@ -1261,6 +1261,18 @@ type TournamentEntryInfo struct {
 	// Buchholz is for Swiss; SonnebornBerger for both formats.
 	Buchholz        float64 `json:"buchholz,omitempty"`
 	SonnebornBerger float64 `json:"sonneborn_berger"`
+	// RatingRemovals are the player's games here that a moderator took out of
+	// the ratings (ADR 0157), shown to everybody with who did it.
+	RatingRemovals []TournamentRatingRemoval `json:"rating_removals,omitempty"`
+}
+
+// TournamentRatingRemoval is one game of a player's taken out of the ratings:
+// the change to their rating it no longer makes, and the moderator's handle.
+// The tournament's own result stands.
+type TournamentRatingRemoval struct {
+	RoomCode string `json:"room_code"`
+	Change   int    `json:"change"`
+	By       string `json:"by"`
 }
 
 // TournamentGameInfo is one game of a pairing. A bye has no second player.
@@ -1371,11 +1383,21 @@ func (m *Manager) Tournament(ctx context.Context, id int64) (TournamentDetail, e
 		round := &out.Games[len(out.Games)-1]
 		round.Games = append(round.Games, info)
 	}
+	removals := map[int64][]TournamentRatingRemoval{}
+	if t.Rated {
+		rows, err := m.store.TournamentRatingRemovals(ctx, id)
+		if err != nil {
+			return TournamentDetail{}, err
+		}
+		for _, r := range rows {
+			removals[r.AccountID] = append(removals[r.AccountID], TournamentRatingRemoval{RoomCode: r.RoomCode, Change: rounded(r.After) - rounded(r.Before), By: r.RemovedBy})
+		}
+	}
 	started := t.StartedAt != ""
 	for _, s := range tournament.Standings(t.Format, ids, results) {
 		line := TournamentEntryInfo{
 			Handle: handles[s.ID], Withdrawn: withdrawn[s.ID], CheckedIn: checkedIn[s.ID], Score: s.Score, Played: s.Games, Won: s.Won, Drawn: s.Drawn, Lost: s.Lost,
-			SonnebornBerger: s.SonnebornBerger,
+			SonnebornBerger: s.SonnebornBerger, RatingRemovals: removals[s.ID],
 		}
 		if started {
 			line.Place = s.Place

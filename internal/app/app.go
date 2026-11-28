@@ -308,6 +308,7 @@ func New(cfg config.Config, opts ...Option) (*App, error) {
 	}
 	a.caps = caps
 	manager.SetMayEnterTournament(caps.MayEnterTournament)
+	manager.SetMayModerate(caps.MayModerate)
 	a.accounts = auth.NewAccounts(st, auth.AccountOptions{Brand: cfg.Brand.DisplayName(), Mailer: manager, Log: a.log, Signup: cfg.Signup, SessionIdle: cfg.SessionIdle, SessionMax: cfg.SessionMax, Argon2: a.argon2,
 		LoginsPerMinute: caps.Limit(auth.ClassGuest, auth.LimitLogin)})
 	if a.translator, err = enableTranslate(cfg.Translate, a.metrics, a.log); err != nil {

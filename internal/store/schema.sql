@@ -407,6 +407,17 @@ CREATE TABLE IF NOT EXISTS rating_history (
 CREATE INDEX IF NOT EXISTS idx_rating_history_pair ON rating_history(account_id, opponent_id, family, played_at);
 CREATE INDEX IF NOT EXISTS idx_rating_history_room ON rating_history(room_code);
 
+-- A rated game a moderator took out of the ratings (ADR 0157). Its history rows
+-- stay, and every replay of the family's ratings skips them. recomputed says
+-- whether the family was replayed without it (1) or only its own change was
+-- reversed (0).
+CREATE TABLE IF NOT EXISTS rating_removals (
+    room_code     TEXT PRIMARY KEY,
+    removed_by    INTEGER NOT NULL REFERENCES accounts(id),
+    removed_at    TIMESTAMP NOT NULL,
+    recomputed    INTEGER NOT NULL DEFAULT 0
+);
+
 -- Counters per account, shared with the achievements plan, which adds keys.
 CREATE TABLE IF NOT EXISTS stats (
     account_id    INTEGER NOT NULL REFERENCES accounts(id),

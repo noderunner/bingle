@@ -386,6 +386,9 @@ var routes = func() []route {
 		r("POST", `/api/tournaments`, CapCreateTournament, LimitCreateGame),
 		r("POST", `/api/tournaments/[^/]+/enter`, CapEnterTournament, ""),
 		r("POST", `/api/tournaments/[^/]+/check-in`, CapEnterTournament, ""),
+		// A moderator's (ADR 0157): looking at an account's rated games, and
+		// taking one out of the ratings.
+		r("", `/api/rated-games(/.*)?`, CapModerate, ""),
 		r("POST", `/api/batches`, CapRunBatch, ""),
 		r("POST", `/api/batches/[^/]+/cancel`, CapRunBatch, ""),
 		r("DELETE", `/api/batches/[^/]+`, CapRunBatch, ""),
@@ -446,6 +449,13 @@ func (c *Caps) may(p Principal, ok bool, capability string) bool {
 func (c *Caps) MayEnterTournament(ctx context.Context) bool {
 	p, ok := From(ctx)
 	return c.may(p, ok, CapEnterTournament)
+}
+
+// MayModerate says whether the request's principal holds the moderate
+// capability (ADR 0157). A token never does: no scope carries it.
+func (c *Caps) MayModerate(ctx context.Context) bool {
+	p, ok := From(ctx)
+	return c.may(p, ok, CapModerate)
 }
 
 // MayTranslate says whether the request's principal may read chat in its

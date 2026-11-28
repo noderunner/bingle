@@ -97,6 +97,7 @@ All counted in the database, so they survive a restart:
 | Turn mails to one address | 20 per day |
 | Turn mails for one game | 100 per day |
 | Notices to one address (its address changed; someone signed up with it again) | 1 per hour |
+| A rated game a moderator took out of the ratings (ADR 0157), to each of its players | no limit of its own |
 | Everything bingle sends | `BINGLE_MAIL_HOURLY_LIMIT` per hour, `BINGLE_MAIL_DAILY_LIMIT` per day |
 
 A **login failure** (`535`, `534`, `530`) stops all mail until bingle is restarted, so a wrong password is

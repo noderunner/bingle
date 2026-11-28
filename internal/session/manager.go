@@ -57,23 +57,26 @@ type Manager struct {
 	// mayEnterTournament is the capability check for entering (nil: anybody with
 	// an account).
 	mayEnterTournament func(context.Context) bool
-	upSince            time.Time              // when this server came up, by that clock (see turnStart)
-	mu                 sync.Mutex             // guards roomLocks itself, not room state
-	roomLocks          map[string]*sync.Mutex // lazily created, one per room code ever touched
-	tutorials          tutorialCache          // each family's tutorials, read once
-	shuffles           shuffleTracker         // recent piece arrangements of bots (see avoidShuffles)
-	chat               chatLimiter            // how often each name has spoken (see SendChat)
-	conns              connTracker            // the seats with a socket open (see connection.go)
-	connTimes          ConnectionTimes        // how those sockets are watched
-	rtWarned           realTimeWarned         // the real-time warnings already given (see realtime.go)
-	kicks              kickVotes              // the votes to replace a player (see takeover.go)
-	here               hereTracker            // the browsers that are about (see here.go)
-	dms                dmBox                  // the direct messages, in memory (see dm.go)
-	calls              callRegistry           // the one voice call each browser is in (see dm.go)
-	voice              voiceTracker           // who is in the voice chat of each game (see SetVoice)
-	notify             *notifier              // email notifications (nil when not set up; see EnableNotify)
-	translation        *chatTranslation       // chat in each reader's language (nil when not set up; see EnableTranslate)
-	botsBusy           map[string]bool        // rooms with a background bot run, guarded by mu
+	// mayModerate is the check for the moderate capability (nil: the admin
+	// group only; ADR 0157).
+	mayModerate func(context.Context) bool
+	upSince     time.Time              // when this server came up, by that clock (see turnStart)
+	mu          sync.Mutex             // guards roomLocks itself, not room state
+	roomLocks   map[string]*sync.Mutex // lazily created, one per room code ever touched
+	tutorials   tutorialCache          // each family's tutorials, read once
+	shuffles    shuffleTracker         // recent piece arrangements of bots (see avoidShuffles)
+	chat        chatLimiter            // how often each name has spoken (see SendChat)
+	conns       connTracker            // the seats with a socket open (see connection.go)
+	connTimes   ConnectionTimes        // how those sockets are watched
+	rtWarned    realTimeWarned         // the real-time warnings already given (see realtime.go)
+	kicks       kickVotes              // the votes to replace a player (see takeover.go)
+	here        hereTracker            // the browsers that are about (see here.go)
+	dms         dmBox                  // the direct messages, in memory (see dm.go)
+	calls       callRegistry           // the one voice call each browser is in (see dm.go)
+	voice       voiceTracker           // who is in the voice chat of each game (see SetVoice)
+	notify      *notifier              // email notifications (nil when not set up; see EnableNotify)
+	translation *chatTranslation       // chat in each reader's language (nil when not set up; see EnableTranslate)
+	botsBusy    map[string]bool        // rooms with a background bot run, guarded by mu
 	// autoPlayFrom is when the Auto-Play watcher started (zero when it is not
 	// running, as in tests): a wait that ran while the server was down does
 	// not count, see autoPlaySince. Guarded by mu.
