@@ -105,6 +105,24 @@ func waitForHTTP(t *testing.T, client *http.Client, url string) *http.Response {
 	return nil
 }
 
+// waitForDial polls a TCP dial of addr until it connects or the same deadline
+// as waitForHTTP passes, returning the open connection.
+func waitForDial(t *testing.T, addr string) net.Conn {
+	t.Helper()
+	deadline := time.Now().Add(5 * time.Second)
+	var lastErr error
+	for time.Now().Before(deadline) {
+		conn, err := net.Dial("tcp", addr)
+		if err == nil {
+			return conn
+		}
+		lastErr = err
+		time.Sleep(20 * time.Millisecond)
+	}
+	t.Fatalf("waitForDial: %s never became reachable: %v", addr, lastErr)
+	return nil
+}
+
 // shutdownBudget is how long a graceful shutdown may take before a test calls
 // it a hang.
 //
