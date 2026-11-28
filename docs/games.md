@@ -14,7 +14,7 @@ A server also offers the games of the install packs it is given (`BINGLE_PACKS`,
 | **Bowling Solitaire** (`bowling-solitaire`) | 0.2.3 | 1×1 squares | 1 | ruleset (Go) | victory points |  |
 | **Brandubh** (`brandubh`) | 0.1.1 | 7×7 squares | 2 | slide | absent, end/mover-wins, reach |  |
 | **Breakthrough** (`breakthrough`) | 0.1.1 | 8×8 squares | 2 | step | end/mover-wins, reach |  |
-| **Chess** (`chess`) | 0.2.3 | 8×8 squares | 2 | ruleset (Go) | victory points | `chess` `chess-960` `chess-alice` `chess-antichess` `chess-atomic` `chess-crazyhouse` |
+| **Chess** (`chess`) | 0.3.0 | 8×8 squares | 2 | ruleset (Go) | victory points | `chess` `chess-960` `chess-alice` `chess-antichess` `chess-atomic` `chess-crazyhouse` |
 | **Courtfall** (`courtfall-1.0.0`) | 1.0.0 | hexagon, 4 per side | 2 | ruleset (Go) | victory points |  |
 | **English Draughts (Checkers)** (`draughts`) | 0.1.1 | 8×8 squares | 2 | jump, step | end/draw, end/mover-wins |  |
 | **Fendo** (`fendo`) | 0.1.4 | 7×7 squares | 2 | ruleset (Go) | victory points | `fendo` `fendo-11` `fendo-9` |

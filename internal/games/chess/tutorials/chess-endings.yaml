@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=../../../../docs/tutorial.schema.json
+id: chess-endings
+kind: rules
+title: How a game ends
+summary: "Checkmate, and the draws: stalemate, repetition, fifty moves and too little material."
+series: Learn Chess
+order: 3
+game: chess
+seed: 1
+seat: 2             # you play Black; the page plays White
+setup: [f2-f3]
+
+steps:
+  - name: Winning
+    text: |
+      A game is won by **checkmate**, or when a player **resigns**. This is
+      the quickest checkmate there is, the *fool's mate*. White has made a
+      weak first move; you are Black.
+    show: [f2-f3, e7-e5, g2-g4, Qd8-h4]
+
+  - name: Your first move
+    text: |
+      White has opened with f3, which leaves the king's diagonal open. Open
+      the diagonal for your queen: move the pawn on e7 to e5.
+    play: [e7-e5]
+    hint: Click the pawn on e7, then e5.
+    highlight: [e5]
+    reply: [g2-g4]
+
+  - name: Checkmate
+    text: |
+      White's second move has opened the diagonal further. Move your queen
+      to h4: the king is in check, and cannot move, block or capture.
+    play: [Qd8-h4]
+    hint: Click the queen on d8, then h4.
+    highlight: [h4]
+    arrow: [d8, h4]
+
+  - name: Stalemate
+    text: |
+      If the player to move has **no legal move** but is **not in check**,
+      the game is a **draw** by **stalemate**. This game is a famous one by
+      Sam Loyd. At the end Black is not in check, and no black piece can
+      move.
+    show: [
+      e2-e3, a7-a5, Qd1-h5, Ra8-a6, Qh5xa5, h7-h5, h2-h4, Ra6-h6, Qa5xc7, f7-f6,
+      Qc7xd7, Ke8-f7, Qd7xb7, Qd8-d3, Qb7xb8, Qd3-h7, Qb8xc8, Kf7-g6, Qc8-e6
+    ]
+
+  - name: The same position three times
+    text: |
+      If **the same position comes up three times**, with the same player
+      to move and the same moves possible, the game is drawn. Here both
+      players move a knight out and back, and the starting position comes
+      up for the third time.
+    show: [
+      Ng1-f3, Ng8-f6, Nf3-g1, Nf6-g8, Ng1-f3, Ng8-f6, Nf3-g1, Nf6-g8
+    ]
+
+  - name: Fifty moves
+    text: |
+      After **fifty moves each** with **no capture and no pawn move**, the
+      game is drawn. A capture or a pawn move starts the count again.
+
+  - name: Too little left
+    text: |
+      If neither player has the pieces left to checkmate, the game is
+      drawn at once. That is a king alone against a king, a king and one
+      bishop or knight against a king, or kings with bishops that are all
+      on squares of one color.
+    position:
+      v: 2
+      ext: {turn: 1, fullmove: 40}
+      cells:
+        e1: [{piece: king, color: white}]
+        c1: [{piece: bishop, color: white}]
+        e8: [{piece: king, color: black}]
+
+  - name: Drawing by agreement
+    text: |
+      Players may also **offer a draw**, which the other can accept, and
+      either can **resign**.

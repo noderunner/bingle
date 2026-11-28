@@ -1,0 +1,151 @@
+# yaml-language-server: $schema=../../../../docs/tutorial.schema.json
+id: chess-basics
+kind: rules
+title: How to play Chess
+summary: The goal, how each piece moves and captures, check and checkmate.
+series: Learn Chess
+order: 1
+game: chess
+seed: 1
+seat: 1             # you play White; the page plays Black
+
+steps:
+  - name: What Chess is about
+    text: |
+      In **Chess** two players move their armies, White first, one move each.
+      You win by **checkmate**: attacking the other king so that nothing can
+      save it.
+
+  - name: The armies
+    text: |
+      Each player has sixteen pieces: a **king**, a **queen**, two **rooks**,
+      two **bishops**, two **knights** and eight **pawns**. White's start on
+      the bottom two ranks, and you are White.
+
+      Every piece but the knight stops at the first piece in its way. You
+      **capture** by moving onto an enemy piece, which comes off the board.
+
+  - name: The pawn
+    text: |
+      A pawn moves **one square forward**, or **two from its first square**.
+
+      Move the pawn in front of your king two squares, to e4.
+    play: [e2-e4]
+    hint: Click the pawn on e2, then e4.
+    highlight: [e4]
+    arrow: [e2, e4]
+    reply: [e7-e5]
+
+  - name: How a pawn captures
+    text: |
+      A pawn does not capture the way it moves. It takes **one square
+      diagonally forward**, and cannot take what is straight in front of it.
+      Here the white pawn can take either black pawn, but not the one ahead.
+    position:
+      v: 2
+      ext: {turn: 1, fullmove: 1}
+      cells:
+        e4: [{piece: pawn, color: white}]
+        d5: [{piece: pawn, color: black}]
+        f5: [{piece: pawn, color: black}]
+        e5: [{piece: pawn, color: black}]
+        h1: [{piece: king, color: white}]
+        h8: [{piece: king, color: black}]
+    highlight: [d5, f5]
+
+  - name: The bishop
+    text: |
+      A bishop moves **any distance along a diagonal**, and so always stays
+      on squares of one color.
+
+      Bring your bishop out to c4.
+    play: [Bf1-c4]
+    hint: Click the bishop on f1, then c4.
+    highlight: [c4]
+    arrow: [f1, c4]
+    reply: [Nb8-c6]
+
+  - name: The queen
+    text: |
+      The queen is the strongest piece: she moves **any distance along a
+      rank, a file or a diagonal**.
+
+      Bring her to h5. From there she and your bishop both aim at f7.
+    play: [Qd1-h5]
+    hint: Click the queen on d1, then h5.
+    highlight: [h5, f7]
+    arrow: [d1, h5]
+    reply: [Ng8-f6]
+
+  - name: The rook
+    text: |
+      A rook moves **any distance along a rank or a file**.
+    position:
+      v: 2
+      ext: {turn: 1, fullmove: 1}
+      cells:
+        d4: [{piece: rook, color: white}]
+        a1: [{piece: king, color: white}]
+        h8: [{piece: king, color: black}]
+    highlight: [d1, d2, d3, d5, d6, d7, d8, a4, b4, c4, e4, f4, g4, h4]
+
+  - name: The knight
+    text: |
+      A knight moves in an **L**: two squares one way and one the other. It
+      is the only piece that **jumps over** others.
+    position:
+      v: 2
+      ext: {turn: 1, fullmove: 1}
+      cells:
+        d4: [{piece: knight, color: white}]
+        a1: [{piece: king, color: white}]
+        h8: [{piece: king, color: black}]
+    highlight: [b3, b5, c2, c6, e2, e6, f3, f5]
+
+  - name: The king
+    text: |
+      The king moves **one square in any direction**, but never to a square
+      an enemy piece attacks.
+    position:
+      v: 2
+      ext: {turn: 1, fullmove: 1}
+      cells:
+        d4: [{piece: king, color: white}]
+        h8: [{piece: king, color: black}]
+    highlight: [c3, c4, c5, d3, d5, e3, e4, e5]
+
+  - name: Check
+    text: |
+      A king that is attacked is in **check**, and its square is tinted.
+      The player must get out of it at once: move the king, block the
+      attack, or capture the piece that gives it. You may never make a move
+      that leaves your own king in check.
+    position:
+      v: 2
+      ext: {turn: 2, fullmove: 1}
+      cells:
+        e8: [{piece: king, color: black}]
+        e2: [{piece: queen, color: white}]
+        a1: [{piece: king, color: white}]
+    highlight: [e8]
+    arrow: [e2, e8]
+
+  - name: Checkmate
+    text: |
+      If a king is in check and nothing can save it, that is **checkmate**,
+      and the game is over.
+
+      Black's pawn on f7 is guarded only by the king. Take it with your
+      queen: your bishop protects her, so the king cannot take her, and he
+      has nowhere to go.
+    play: [Qh5xf7]
+    hint: Click the queen on h5, then f7.
+    highlight: [f7]
+    arrow: [h5, f7]
+
+  - name: You won
+    text: |
+      That is checkmate in four moves. A player may also **resign**, and
+      the players can agree a draw.
+
+      The next tutorial covers **Special moves**.

@@ -27,11 +27,18 @@ var definition = sync.OnceValue(func() []byte { return dsl.MustLoad(definitionFS
 //go:embed guide
 var guideFS embed.FS
 
+//go:embed tutorials
+var tutorialsFS embed.FS
+
 // Module returns Chess's catalog.Module.
 func Module() catalog.Module {
 	sub, err := fs.Sub(guideFS, ".")
 	if err != nil {
 		panic(err)
 	}
-	return catalog.Module{ID: "chess", Definition: definition(), Rules: New(), Assets: sub, Web: look.MustLoad(definitionFS)}
+	tutorials, err := fs.Sub(tutorialsFS, "tutorials")
+	if err != nil {
+		panic(err)
+	}
+	return catalog.Module{ID: "chess", Definition: definition(), Rules: New(), Assets: sub, Tutorials: tutorials, Web: look.MustLoad(definitionFS)}
 }

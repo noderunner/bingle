@@ -599,3 +599,60 @@ func TestWebTutorial_AnIllegalMoveIsMarkedOnAMap(t *testing.T) {
 	openTutorialOf(t, ctx, base, "test-council", "moving")
 	waitJS(t, ctx, "the arrow, the ring and their crosses", `!!document.querySelector(".illegal-marks .board-arrow") && document.querySelectorAll(".illegal-cross").length === 4`, 15*time.Second)
 }
+
+// The Chess special moves tutorial is played through: a promotion with its
+// four buttons (the tutorial offers only the queen), en passant and castling,
+// each made by clicking a piece and its square.
+func TestWebTutorial_PlaysThroughTheChessSpecialMovesTutorial(t *testing.T) {
+	base := newRESTTestServer(t)
+	ctx, cancel := newChromedpContext(t, 120*time.Second)
+	defer cancel()
+	openTutorialOf(t, ctx, base, "chess", "chess-special-moves")
+	next := func() { t.Helper(); clickSel(t, ctx, "#tutorial-next") }
+	move := func(from, to string) {
+		t.Helper()
+		waitJS(t, ctx, from+" to be the only piece to move", `[...document.querySelectorAll("#board .cell.clickable")].map(c => c.dataset.position).join(",") === "`+from+`"`, 10*time.Second)
+		clickCell(t, ctx, from)
+		waitJS(t, ctx, to+" to be the only square to go to", `[...document.querySelectorAll("#board .cell.clickable")].map(c => c.dataset.position).join(",") === "`+to+`"`, 10*time.Second)
+		clickCell(t, ctx, to)
+	}
+	piece := func(square string) string {
+		return evalString(t, ctx, `(function () { var p = document.querySelector('#board .cell[data-position="`+square+`"] .piece'); return p ? p.getAttribute('class') + ' ' + (p.getAttribute('data-piece') || '') : ""; })()`)
+	}
+
+	waitStep(t, ctx, "1")
+	move("g7", "h8")
+	waitJS(t, ctx, "the four pieces to choose", `document.querySelectorAll(".action-buttons button").length === 4`, 10*time.Second)
+	clickSel(t, ctx, `.action-buttons button[data-action="queen"]`)
+	waitStep(t, ctx, "2")
+	if !strings.Contains(piece("h8"), "queen") {
+		t.Fatalf("h8 holds %q, want a queen", piece("h8"))
+	}
+	next()
+	waitStep(t, ctx, "3")
+	move("e2", "e4")
+	waitStep(t, ctx, "4")
+	move("e4", "e5")
+	waitStep(t, ctx, "5")
+	waitJS(t, ctx, "Black's pawn on d5", `document.querySelector('#board .cell[data-position="d5"] .piece') !== null`, 10*time.Second)
+	move("e5", "d6")
+	waitStep(t, ctx, "6")
+	waitJS(t, ctx, "d5 to be empty", `document.querySelector('#board .cell[data-position="d5"] .piece') === null`, 10*time.Second)
+	if piece("d5") != "" {
+		t.Fatalf("the pawn taken en passant is still on d5: %q", piece("d5"))
+	}
+	move("g1", "f3")
+	waitStep(t, ctx, "7")
+	move("f1", "e2")
+	waitStep(t, ctx, "8")
+	move("e1", "g1")
+	waitStep(t, ctx, "9")
+	next()
+	waitStep(t, ctx, "10")
+	waitJS(t, ctx, "the castled rook on f1", `!!document.querySelector('#board .cell[data-position="f1"] .piece')`, 10*time.Second)
+	if !strings.Contains(piece("f1"), "rook") {
+		t.Fatalf("f1 holds %q, want the castled rook", piece("f1"))
+	}
+	next()
+	waitJS(t, ctx, "the end", `!!document.getElementById("tutorial-done")`, 10*time.Second)
+}
