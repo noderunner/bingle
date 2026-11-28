@@ -172,6 +172,40 @@ func stepTouchTap(x, y float64) browserStep {
 	)
 }
 
+// stepMouseDown presses the left mouse button at x, y.
+func stepMouseDown(x, y float64) browserStep {
+	return stepCommand(input.DispatchMouseEvent, input.DispatchMouseEventParams{
+		Type: input.DispatchMouseEventTypeMousePressed, X: x, Y: y, Button: input.MouseButtonLeft, ClickCount: 1,
+	})
+}
+
+// stepMouseUp releases the left mouse button at x, y.
+func stepMouseUp(x, y float64) browserStep {
+	return stepCommand(input.DispatchMouseEvent, input.DispatchMouseEventParams{
+		Type: input.DispatchMouseEventTypeMouseReleased, X: x, Y: y, Button: input.MouseButtonLeft, ClickCount: 1,
+	})
+}
+
+// stepMouseDragTo moves the pointer to x, y with the left mouse button held down
+// (stepMouseMove sends no button, so a page takes it for a hover).
+func stepMouseDragTo(x, y float64) browserStep {
+	return stepCommand(input.DispatchMouseEvent, input.DispatchMouseEventParams{
+		Type: input.DispatchMouseEventTypeMouseMoved, X: x, Y: y, Button: input.MouseButtonLeft,
+	})
+}
+
+// stepPhoneLandscape makes the page a phone w by h CSS pixels at scale pixels per CSS
+// pixel, held on its side, with a touch screen.
+func stepPhoneLandscape(w, h int64, scale float64) browserStep {
+	return chromedp.Steps(
+		stepCommand(emulation.SetDeviceMetricsOverride, emulation.SetDeviceMetricsOverrideParams{
+			Width: w, Height: h, DeviceScaleFactor: scale, Mobile: true,
+			ScreenOrientation: &emulation.ScreenOrientation{Type: emulation.ScreenOrientationTypeLandscapePrimary, Angle: 90},
+		}),
+		stepCommand(emulation.SetTouchEmulationEnabled, emulation.SetTouchEmulationEnabledParams{Enabled: true}),
+	)
+}
+
 // stepScreenshot stores an image of the whole page in *out (a JPEG of quality 90,
 // whatever name a test saves it under).
 func stepScreenshot(out *[]byte) browserStep { return stepInto(chromedp.FullScreenshot(90), out) }
