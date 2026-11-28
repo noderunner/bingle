@@ -182,7 +182,8 @@ func (s *Store) RecordRatedGame(ctx context.Context, game Game, family, familyNa
 	for _, r := range results {
 		var met int
 		if err := tx.queryRow(ctx, "RecordRatedGame.met",
-			`SELECT COUNT(*) FROM rating_history WHERE account_id = ? AND opponent_id = ? AND family = ?`, r.AccountID, r.OpponentID, family).Scan(&met); err != nil {
+			`SELECT COUNT(*) FROM rating_history h WHERE account_id = ? AND opponent_id = ? AND family = ?
+			 AND NOT EXISTS (SELECT 1 FROM rating_removals x WHERE x.room_code = h.room_code)`, r.AccountID, r.OpponentID, family).Scan(&met); err != nil {
 			return fmt.Errorf("looking for an earlier game: %w", err)
 		}
 		newOpponent := 0

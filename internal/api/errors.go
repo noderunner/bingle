@@ -22,11 +22,12 @@ func statusForError(err error) int {
 	switch {
 	case errors.Is(err, store.ErrNotFound), errors.Is(err, store.ErrBatchNotFound), errors.Is(err, session.ErrGameDefNotFound), errors.Is(err, session.ErrAssetNotFound), errors.Is(err, session.ErrNotifyOff),
 		errors.Is(err, session.ErrNoSuchPerson), errors.Is(err, session.ErrTutorialNotFound),
-		errors.Is(err, session.ErrNoAccount), errors.Is(err, session.ErrNoRequest), errors.Is(err, session.ErrNoInvite):
+		errors.Is(err, session.ErrNoAccount), errors.Is(err, session.ErrNoRequest), errors.Is(err, session.ErrNoInvite), errors.Is(err, session.ErrNotRatedGame):
 		return http.StatusNotFound
 	case errors.Is(err, store.ErrWrongTournamentState), errors.Is(err, store.ErrTournamentFull), errors.Is(err, session.ErrTooFewEntries), errors.Is(err, session.ErrNotEntered):
 		return http.StatusConflict
-	case errors.Is(err, session.ErrNotOrganiser), errors.Is(err, session.ErrTournamentAccount), errors.Is(err, session.ErrBadgesAccount), errors.Is(err, session.ErrDealsAccount), errors.Is(err, session.ErrSetupAccount), errors.Is(err, session.ErrMayNotEnter):
+	case errors.Is(err, session.ErrNotOrganiser), errors.Is(err, session.ErrTournamentAccount), errors.Is(err, session.ErrBadgesAccount), errors.Is(err, session.ErrDealsAccount), errors.Is(err, session.ErrSetupAccount), errors.Is(err, session.ErrMayNotEnter),
+		errors.Is(err, session.ErrNotModerator):
 		return http.StatusForbidden
 	case errors.Is(err, session.ErrSeatsFull), errors.Is(err, session.ErrGameNotActive), errors.Is(err, session.ErrNameIsAHandle), errors.Is(err, session.ErrNameIsABot),
 		errors.Is(err, session.ErrAlreadyStarted), errors.Is(err, session.ErrSeatsOpen), errors.Is(err, session.ErrSeatTaken), errors.Is(err, session.ErrNoFactionChoice),
@@ -47,7 +48,7 @@ func statusForError(err error) int {
 		return http.StatusConflict
 	case errors.Is(err, session.ErrSeatReserved), errors.Is(err, session.ErrBadReservation):
 		return http.StatusForbidden
-	case errors.Is(err, session.ErrFriendExists), errors.Is(err, session.ErrFriendLimit), errors.Is(err, session.ErrBlocking):
+	case errors.Is(err, session.ErrFriendExists), errors.Is(err, session.ErrFriendLimit), errors.Is(err, session.ErrBlocking), errors.Is(err, session.ErrAlreadyRemoved):
 		return http.StatusConflict
 	case errors.Is(err, session.ErrFriendLater):
 		return http.StatusTooManyRequests

@@ -258,6 +258,19 @@ func FriendRequest(lang, to, handle, base string) Message {
 	}
 }
 
+// RatingRemoved tells a player that a moderator took a rated game of theirs out
+// of the ratings (ADR 0157), and where their rating is now shown.
+func RatingRemoved(lang, to, moderator, game, opponent, room, handle, base string) Message {
+	moderator, opponent, handle = Sanitize(moderator, 24), Sanitize(opponent, 24), Sanitize(handle, 24)
+	game, room = Sanitize(game, 60), Sanitize(room, 12)
+	return Message{
+		To:      to,
+		Subject: say(lang, "mail.rating_removed_subject"),
+		Body: paragraphs(say(lang, "mail.rating_removed", "moderator", moderator, "game", game, "opponent", opponent, "room", room),
+			base+"/players/"+url.PathEscape(handle)),
+	}
+}
+
 // PasswordResetURL is the link that resets an account's password.
 func PasswordResetURL(base, token string) string {
 	return base + "/account/reset?t=" + url.QueryEscape(token)

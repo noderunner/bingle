@@ -3232,7 +3232,7 @@ function statusBar() {
 	if (g.real_time) badges.push(h("span", { class: "badge", id: "real-time-badge", title: tr("game.real_time_title") }, tr("game.real_time")));
 	if (g.tournament) badges.push(h("a", { class: "badge", id: "tournament-badge", href: `/tournament/${g.tournament.id}`, title: tr("game.tournament_title"), translate: "no" }, g.tournament.name));
 	if (g.seed) badges.push(seedBadge(g));
-	const uncounted = { no_moves: tr("game.uncounted_no_moves"), daily_limit: tr("game.uncounted_daily"), void: tr("game.uncounted") }[g.rating_status];
+	const uncounted = { no_moves: tr("game.uncounted_no_moves"), daily_limit: tr("game.uncounted_daily"), void: tr("game.uncounted"), removed: tr("game.uncounted") }[g.rating_status];
 	if (uncounted) badges.push(h("span", { class: "badge", id: "rating-note" }, uncounted));
 	badges.push(h("span", { class: "badge" + (S.conn === "online" ? " online" : ""), id: "conn-badge" }, S.conn === "online" ? tr("game.live") : S.conn === "offline" ? tr("game.reconnecting") : tr("game.connecting")));
 	for (const b of badges) bar.append(b);

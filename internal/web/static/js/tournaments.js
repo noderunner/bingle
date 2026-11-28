@@ -247,7 +247,16 @@ function standingsTable(t) {
 			"tr",
 			{ "data-handle": s.handle, class: s.withdrawn ? "muted" : "" },
 			h("td", {}, String(s.place)),
-			h("td", {}, "@" + s.handle, s.withdrawn ? " " + tr("tourney.withdrew") : ""),
+			h(
+				"td",
+				{},
+				"@" + s.handle,
+				s.withdrawn ? " " + tr("tourney.withdrew") : "",
+				// A game a moderator took out of the ratings (ADR 0157): its result stands here.
+				...(s.rating_removals || []).map((r) =>
+					h("div", { class: "muted small rating-removed", "data-room": r.room_code }, tr("tourney.rating_removed", { change: r.change > 0 ? "+" + r.change : String(r.change), handle: r.by }))
+				)
+			),
 			h("td", {}, score(s.score)),
 			h("td", {}, String(s.won)),
 			h("td", {}, String(s.drawn)),

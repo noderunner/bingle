@@ -157,8 +157,13 @@ func (rs *Resolver) Middleware(next http.Handler) http.Handler {
 		// and look; nothing else. Nor may an administrator who has no second
 		// factor yet, off this machine, until one is set up. A token is
 		// neither: it never uses the password, and never the admin group's
-		// powers.
-		if ok && p.Account != nil && p.Scopes == nil && unsafe && !strings.HasPrefix(r.URL.Path, "/auth/") {
+		// powers. A moderator's look at somebody's rated games is held back
+		// as a change would be (ADR 0157).
+		gated := unsafe
+		if c, _ := needs(r); c == CapModerate {
+			gated = true
+		}
+		if ok && p.Account != nil && p.Scopes == nil && gated && !strings.HasPrefix(r.URL.Path, "/auth/") {
 			switch {
 			case p.Account.MustChangePassword:
 				writeError(w, http.StatusForbidden, ErrMustChangePwd.Error())

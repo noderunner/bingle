@@ -1,0 +1,94 @@
+package app_test
+
+import (
+	"fmt"
+	"os"
+	"testing"
+	"time"
+
+	"github.com/chromedp/cdproto/emulation"
+	"github.com/chromedp/chromedp"
+
+	"github.com/noderunner/bingle/internal/auth"
+	"github.com/noderunner/bingle/internal/session"
+)
+
+// The page (ADR 0157): the admin page's Ratings card lists a player's rated
+// games and takes one out of the ratings, and the tournament's standings then
+// say so, with the moderator's handle, to anybody.
+func TestWebRatingRemoval_TheAdminCardAndTheStandings(t *testing.T) {
+	a, base := membersServer(t)
+	kim := administrator(t, a, base, "kim")
+	ana := member(t, a, base, "ana")
+	bea := member(t, a, base, "bea")
+	who := map[string]*browser{"ana": ana, "bea": bea}
+
+	body := cupBody()
+	body["format"], body["games_per_pairing"], body["pie_rule"] = "round_robin", 1, false
+	var made session.TournamentDetail
+	if code := kim.do("POST", "/api/tournaments", body, &made); code != 201 {
+		t.Fatalf("a tournament: %d", code)
+	}
+	path := fmt.Sprintf("/api/tournaments/%d", made.ID)
+	kim.do("POST", path+"/open", nil, nil)
+	ana.do("POST", path+"/enter", nil, nil)
+	bea.do("POST", path+"/enter", nil, nil)
+	var running session.TournamentDetail
+	if code := kim.do("POST", path+"/start", nil, &running); code != 200 {
+		t.Fatalf("starting: %d", code)
+	}
+	g := running.Games[0].Games[0]
+	first, second := who[g.First], who[g.Second]
+	game := "/api/games/" + g.RoomCode
+	first.do("POST", game+"/moves", map[string]any{"player_name": g.First, "notation": "e5"}, nil)
+	second.do("POST", game+"/moves", map[string]any{"player_name": g.Second, "notation": "d4"}, nil)
+	if code := second.do("POST", game+"/resign", map[string]any{"player_name": g.Second}, nil); code != 200 {
+		t.Fatalf("resigning: %d", code)
+	}
+	waitForRatedResult(t, kim, g.RoomCode)
+
+	ctx, cancel := newChromedpContext(t, 90*time.Second)
+	defer cancel()
+	signInChrome(t, ctx, base, kim.cookie(auth.SessionCookie))
+	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1100, 900), chromedp.Navigate(base+"/admin")); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, ctx, "the card", `!document.getElementById("ratings-card").hidden`, 10*time.Second)
+	if err := chromedp.Run(ctx, chromedp.SetValue("#ratings-player", "ana", chromedp.ByID)); err != nil {
+		t.Fatal(err)
+	}
+	clickSel(t, ctx, "#ratings-go")
+	waitJS(t, ctx, "Ana's game", `document.querySelector('#ratings-rows tr[data-room="`+g.RoomCode+`"] button') !== null`, 10*time.Second)
+	shot(t, ctx, "rating-removal-admin", func(b *[]byte) error { return chromedp.Run(ctx, chromedp.FullScreenshot(b, 90)) })
+	// The page asks first; this answers yes.
+	if err := chromedp.Run(ctx, chromedp.Evaluate(`window.confirm = () => true; true`, nil)); err != nil {
+		t.Fatal(err)
+	}
+	clickSel(t, ctx, `#ratings-rows tr[data-room="`+g.RoomCode+`"] button`)
+	waitJS(t, ctx, "the game removed", `document.getElementById("ratings-result").textContent === "Ratings recomputed" &&
+		document.querySelector('#ratings-rows tr[data-room="`+g.RoomCode+`"]').textContent.includes("Removed by @kim")`, 10*time.Second)
+	shot(t, ctx, "rating-removal-admin-removed", func(b *[]byte) error { return chromedp.Run(ctx, chromedp.FullScreenshot(b, 90)) })
+	if shooting() {
+		dark := emulation.SetEmulatedMedia().WithFeatures([]*emulation.MediaFeature{{Name: "prefers-color-scheme", Value: "dark"}})
+		shot(t, ctx, "rating-removal-admin-dark", func(b *[]byte) error {
+			return chromedp.Run(ctx, dark, chromedp.Sleep(200*time.Millisecond), chromedp.FullScreenshot(b, 90))
+		})
+		shot(t, ctx, "rating-removal-admin-phone", func(b *[]byte) error {
+			return chromedp.Run(ctx, emulation.SetEmulatedMedia().WithFeatures([]*emulation.MediaFeature{{Name: "prefers-color-scheme", Value: "light"}}),
+				chromedp.EmulateViewport(390, 844, chromedp.EmulateMobile), chromedp.Sleep(300*time.Millisecond), chromedp.FullScreenshot(b, 90))
+		})
+	}
+
+	// Anybody sees the standings say it: a guest's browser.
+	guest, cancelGuest := newChromedpContext(t, 60*time.Second)
+	defer cancelGuest()
+	if err := chromedp.Run(guest, chromedp.EmulateViewport(1100, 900), chromedp.Navigate(fmt.Sprintf("%s/tournament/%d", base, made.ID))); err != nil {
+		t.Fatal(err)
+	}
+	waitJS(t, guest, "the annotation", `document.querySelectorAll("#tournament-standings .rating-removed").length === 2 &&
+		[...document.querySelectorAll("#tournament-standings .rating-removed")].every((e) => /^Rating change [+−-]\d+ removed by @kim$/.test(e.textContent))`, 10*time.Second)
+	shot(t, guest, "rating-removal-standings", func(b *[]byte) error { return chromedp.Run(guest, chromedp.FullScreenshot(b, 90)) })
+}
+
+// shooting says the screenshots are wanted (BINGLE_SHOTS).
+func shooting() bool { return os.Getenv("BINGLE_SHOTS") != "" }

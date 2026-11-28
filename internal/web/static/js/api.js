@@ -172,6 +172,9 @@ export const api = {
 	sessions: () => call("/auth/sessions"),
 	endOtherSessions: () => call("/auth/sessions/end-others", { method: "POST" }),
 	adminEvents: () => call("/auth/admin/events"),
+	// A moderator's (ADR 0157): an account's rated games, and taking one out of the ratings.
+	ratedGamesOf: (handle) => call(`/api/rated-games?player=${enc(handle)}`),
+	removeRatedGame: (room) => call(`/api/rated-games/${enc(room)}/remove`, { method: "POST" }),
 	tokens: () => call("/auth/tokens"),
 	newToken: (name, scopes) => call("/auth/tokens", { method: "POST", body: { name, scopes } }),
 	revokeToken: (id) => call(`/auth/tokens/${enc(id)}`, { method: "DELETE" }),

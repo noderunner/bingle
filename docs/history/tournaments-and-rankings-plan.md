@@ -1,8 +1,8 @@
 # Plan: competitive play, tournaments and rankings
 
 Status: **built** (ADRs 0080 to 0083 and 0090) but for its *Later* list, now issues: a ladder #236,
-elimination brackets #237, games of more than two seats #238 and a bot ladder #239. Removing a rating,
-which the `moderate` capability waits for, is #240. The sections before *Decisions* are the initial
+elimination brackets #237, games of more than two seats #238 and a bot ladder #239. Removing a rating
+is built (#240, ADR 0157). The sections before *Decisions* are the initial
 thinking, kept as written; where they differ, the decisions win. Real-time play has a plan of its own,
 [real-time-play-plan.md](real-time-play-plan.md).
 

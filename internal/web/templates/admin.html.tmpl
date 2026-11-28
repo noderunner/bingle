@@ -65,6 +65,23 @@
 				</table>
 			</div>
 		</section>
+		<section class="card" id="ratings-card" hidden>
+			<h2>{{t .Lang "settings.ratings"}}</h2>
+			<form id="ratings-form">
+				<div class="field">
+					<label for="ratings-player">{{t .Lang "rating.player"}}</label>
+					<input id="ratings-player" type="text" maxlength="40" autocomplete="off" spellcheck="false" required>
+				</div>
+				<div class="row"><button type="submit" class="primary" id="ratings-go">{{t .Lang "admin.show"}}</button></div>
+			</form>
+			<p class="small" id="ratings-result" role="status" aria-live="polite"></p>
+			<div class="admin-scroll">
+				<table class="admin-table rated-games" id="ratings-table" hidden>
+					<thead><tr><th scope="col">{{t .Lang "admin.when"}}</th><th scope="col">{{t .Lang "rating.game"}}</th><th scope="col">{{t .Lang "game.opponent"}}</th><th scope="col">{{t .Lang "tourney.score"}}</th><th scope="col">{{t .Lang "rating.rating"}}</th><th scope="col"><span class="sr-only">{{t .Lang "lobby.remove"}}</span></th></tr></thead>
+					<tbody id="ratings-rows"></tbody>
+				</table>
+			</div>
+		</section>
 		<section class="card" id="events-card" hidden>
 			<h2>{{t .Lang "admin.events"}}</h2>
 			<p class="small muted">{{t .Lang "admin.events_note"}}</p>

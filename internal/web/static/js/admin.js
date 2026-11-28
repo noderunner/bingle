@@ -1,5 +1,6 @@
 // The administration page (ADR 0071): who may do what, announcements (ADR
-// 0155), what happened, and invitations.
+// 0155), taking a rated game out of the ratings (ADR 0157), what happened, and
+// invitations.
 
 import { api, ApiError, whoAmI } from "./api.js";
 import { t, tParts, lang } from "./i18n.js";
@@ -124,11 +125,15 @@ api.adminCaps()
 		});
 	})
 	.catch((err) => {
-		el("admin-refused").textContent = err instanceof ApiError ? err.message : t("admin.not_read");
-		el("admin-refused").hidden = false;
-		// An administrator who only lacks the second factor gets the way to one.
+		// A moderator who is not an administrator has the ratings card alone.
 		whoAmI()
-			.then((me) => (el("admin-second-factor").hidden = !me.needs_second_factor))
+			.then((me) => {
+				if (moderates(me)) return;
+				el("admin-refused").textContent = err instanceof ApiError ? err.message : t("admin.not_read");
+				el("admin-refused").hidden = false;
+				// An administrator who only lacks the second factor gets the way to one.
+				el("admin-second-factor").hidden = !me.needs_second_factor;
+			})
 			.catch(() => {});
 	});
 
@@ -226,6 +231,91 @@ el("announce-form").addEventListener("submit", async (ev) => {
 		announced(t("admin.published", { title: a.title }));
 	} catch (err) {
 		announced(err instanceof ApiError ? err.message : t("common.not_done"), "error");
+	} finally {
+		go.disabled = false;
+	}
+});
+
+// ---- ratings (ADR 0157): a moderator takes a rated game out of them ----------------
+
+const moderates = (me) => (me.caps || []).includes("moderate") && !me.needs_second_factor;
+
+const rated = (text, kind = "") => {
+	el("ratings-result").textContent = text;
+	el("ratings-result").className = "small " + kind;
+};
+
+// A score from the player's side: 1–0, ½–½, 0–1.
+const scoreLine = (s) => (s === 1 ? "1–0" : s === 0 ? "0–1" : "½–½");
+
+function ratedRow(g) {
+	const tr = document.createElement("tr");
+	tr.dataset.room = g.room_code;
+	const at = new Date(g.played_at);
+	const whenText = isNaN(at) ? g.played_at : at.toLocaleString(lang);
+	const cell = (text, cls = "") => {
+		const td = document.createElement("td");
+		if (cls) td.className = cls;
+		td.textContent = text;
+		return td;
+	};
+	const game = cell(g.game);
+	// A game's name is its own.
+	game.translate = false;
+	const change = document.createElement("td");
+	change.className = "num";
+	const bdi = document.createElement("bdi");
+	bdi.textContent = `${g.before} → ${g.after}`;
+	change.append(bdi);
+	const act = document.createElement("td");
+	if (g.removed) {
+		act.className = "muted";
+		act.textContent = t("admin.rating_removed_by", { handle: g.removed.by });
+	} else {
+		const b = document.createElement("button");
+		b.type = "button";
+		b.className = "small";
+		b.textContent = t("lobby.remove");
+		b.setAttribute("aria-label", t("admin.remove_rating_label", { opponent: g.opponent, when: whenText }));
+		b.addEventListener("click", async () => {
+			if (!confirm(t("admin.remove_rating_confirm"))) return;
+			b.disabled = true;
+			try {
+				const out = await api.removeRatedGame(g.room_code);
+				rated(out.recomputed ? t("admin.ratings_recomputed") : t("admin.rating_reversed"));
+				await showRated(el("ratings-player").value);
+			} catch (err) {
+				b.disabled = false;
+				rated(err instanceof ApiError ? err.message : t("common.not_done"), "error");
+			}
+		});
+		act.append(b);
+	}
+	tr.append(cell(whenText, "when"), game, cell("@" + g.opponent), cell(scoreLine(g.score), "num"), change, act);
+	return tr;
+}
+
+async function showRated(handle) {
+	const { games } = await api.ratedGamesOf(handle.trim().replace(/^@/, ""));
+	el("ratings-rows").replaceChildren(...games.map(ratedRow));
+	el("ratings-table").hidden = !games.length;
+	if (!games.length) rated(t("admin.no_rated_games"));
+}
+
+whoAmI()
+	.then((me) => (el("ratings-card").hidden = !moderates(me)))
+	.catch(() => {});
+
+el("ratings-form").addEventListener("submit", async (ev) => {
+	ev.preventDefault();
+	const go = el("ratings-go");
+	go.disabled = true;
+	rated("");
+	try {
+		await showRated(el("ratings-player").value);
+	} catch (err) {
+		el("ratings-table").hidden = true;
+		rated(err instanceof ApiError ? err.message : t("common.not_done"), "error");
 	} finally {
 		go.disabled = false;
 	}
