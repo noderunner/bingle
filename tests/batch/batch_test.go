@@ -94,8 +94,8 @@ func TestABatchGameWaitsForLivePlay(t *testing.T) {
 		played <- err
 	}()
 	select {
-	case <-played:
-		t.Fatal("a batch's game played while live play held every CPU")
+	case err := <-played:
+		t.Fatalf("a batch's game played while live play held every CPU (%v)", err)
 	case <-time.After(100 * time.Millisecond):
 	}
 	for _, done := range live {
