@@ -115,6 +115,8 @@
 	"bar.client": "ゲームクライアントをダウンロード",
 	"bar.setup_file": "{name} のプロフィール設定",
 	"bar.quick_setup": "クライアントのクイックセットアップガイド",
+	"bar.join_3d": "Bingle3D で参加",
+	"bar.watch_3d": "Bingle3D で観戦",
 	"quick.title": "クライアントのクイックセットアップ",
 	"quick.download": "クライアントをダウンロードします。",
 	"quick.unpack_windows_html": "{file} を右クリックして「すべて展開…」を選びます。",

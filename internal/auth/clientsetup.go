@@ -310,9 +310,12 @@ func (rs *Resolver) HandleClientCode(w http.ResponseWriter, r *http.Request) {
 
 // handleClientSignIn is POST /auth/client: a client trades a link's code. An
 // account's answers as POST /auth/login {code} does, with a session of the
-// client's own; a guest's with a new key of that guest. A guest the client
-// brings as its bearer goes with it in either case, as on signing in: a
-// client that wants to keep it apart leaves its key off.
+// client's own; a guest's with a new key of that guest.
+//
+// Nothing is merged, whatever bearer the request brings: any page can offer
+// a link, with a code its maker minted for themselves, and a client that
+// sent its own guest along would hand that guest's games to the link's maker
+// with one click. Signing in merges because the player typed a password.
 func (rs *Resolver) handleClientSignIn(w http.ResponseWriter, r *http.Request) {
 	var req ClientSignInRequest
 	if !decode(w, r, &req) {
@@ -322,7 +325,7 @@ func (rs *Resolver) handleClientSignIn(w http.ResponseWriter, r *http.Request) {
 	st, isStore := rs.guests.(*store.Store)
 	switch {
 	case strings.HasPrefix(req.Code, SignInCodePrefix) && rs.accounts != nil:
-		s, err := rs.accounts.LoginWithCode(r.Context(), req.Code, guestOf(r), ip, r.UserAgent())
+		s, err := rs.accounts.LoginWithCode(r.Context(), req.Code, "", ip, r.UserAgent())
 		if err != nil {
 			rs.fail(w, err)
 			return
@@ -336,18 +339,13 @@ func (rs *Resolver) handleClientSignIn(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		key := NewGuestKey()
-		id, err := st.UseGuestCode(r.Context(), hashSecret(strings.TrimPrefix(req.Code, GuestCodePrefix)), HashKey(key), rs.now())
+		_, err := st.UseGuestCode(r.Context(), hashSecret(strings.TrimPrefix(req.Code, GuestCodePrefix)), HashKey(key), rs.now())
 		if errors.Is(err, store.ErrNotFound) {
 			break
 		}
 		if err != nil {
 			rs.fail(w, err)
 			return
-		}
-		if from := guestOf(r); from != "" && from != id {
-			if err := st.MergePrincipal(r.Context(), from, id); err != nil {
-				rs.log.Error("merging a client's guest", "err", err)
-			}
 		}
 		writeJSON(w, http.StatusOK, ClientSignIn{GuestKey: key})
 		return

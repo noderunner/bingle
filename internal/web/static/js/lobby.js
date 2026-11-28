@@ -5,6 +5,7 @@ import { h, brandName } from "./util.js";
 import { api, gameTitle } from "./api.js";
 import { seatKey } from "./paint.js";
 import { t, tParts, lang } from "./i18n.js";
+import { clientLink } from "./client-setup.js";
 
 /** Kinds of bots that can be added, with their labels (from GET /api/bots). */
 function botOptions(bots, id) {
@@ -249,7 +250,7 @@ export function lobbyCard(ctx) {
 		name.addEventListener("keydown", (ev) => {
 			if (ev.key === "Enter") join();
 		});
-		row.append(name, seatSel, h("button", { class: "primary", id: "lobby-take", onclick: join }, t("lobby.take")));
+		row.append(name, seatSel, h("button", { class: "primary", id: "lobby-take", onclick: join }, t("lobby.take")), clientLink(ctx.code, "join"));
 		card.append(row);
 	}
 

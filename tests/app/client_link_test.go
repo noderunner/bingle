@@ -145,15 +145,6 @@ func TestClientLink_AGuestsCodeIsANewKeyOfTheSameGuest(t *testing.T) {
 		t.Errorf("trading a guest's code again: %d, want 401", status)
 	}
 
-	// A guest the client brings goes with it, as on signing in.
-	_, code = askCode(t, gil)
-	if status, out := trade(t, base, other.Key, code); status != 200 || out.GuestKey == "" {
-		t.Fatalf("trading with the client's own guest: %d %+v", status, out)
-	}
-	if c, _ := native(t, base, other.Key, "GET", "/auth/me", nil, nil); c != http.StatusUnauthorized {
-		t.Errorf("the client's old guest still works: %d", c)
-	}
-
 	// For a minute.
 	_, code = askCode(t, gil)
 	a.Resolver().SetClock(func() time.Time { return time.Now().Add(time.Minute + time.Second) })
@@ -176,6 +167,61 @@ func TestClientLink_AGuestsCodeIsANewKeyOfTheSameGuest(t *testing.T) {
 	}
 	if status, _ := trade(t, base, "", code); status != http.StatusUnauthorized {
 		t.Errorf("a code after the guest was given up: %d, want 401", status)
+	}
+}
+
+// Any page can offer a link with a code its maker minted for themselves, so a
+// trade merges nobody: the guest a client already is keeps its own games.
+func TestClientLink_ATradeMergesNobody(t *testing.T) {
+	_, base, ana := clientServer(t)
+	var victim auth.GuestKey
+	if c := doJSON(t, "POST", base+"/api/guest", nil, &victim); c != http.StatusCreated || victim.Key == "" {
+		t.Fatalf("the client's own guest: %d", c)
+	}
+	var created createGameResponse
+	if c, _ := native(t, base, victim.Key, "POST", "/api/games", map[string]any{"game_def_id": "test-council", "player_name": "Vic"}, &created); c != 200 {
+		t.Fatalf("the client's game: %d", c)
+	}
+	sit := func(bearer string) int {
+		c, _ := native(t, base, bearer, "POST", "/api/games/"+created.RoomCode+"/join", map[string]any{"player_name": "Vic", "role": "player"}, nil)
+		return c
+	}
+	mallory := newBrowser(t, base)
+	_, guestCode := askCode(t, mallory)
+	_, accountCode := askCode(t, ana)
+	for _, code := range []string{guestCode, accountCode} {
+		status, out := trade(t, base, victim.Key, code)
+		if status != 200 || out.GuestKey == "" && out.Token == "" {
+			t.Fatalf("trading %s with the client's own guest: %d %+v", code[:4], status, out)
+		}
+		if c, _ := native(t, base, victim.Key, "GET", "/auth/me", nil, nil); c != 200 {
+			t.Errorf("after %s the client's own guest no longer works: %d", code[:4], c)
+		}
+		if c := sit(victim.Key); c != 200 {
+			t.Errorf("after %s the client's own guest lost its seat: %d", code[:4], c)
+		}
+		if c := sit(out.GuestKey + out.Token); c != http.StatusForbidden {
+			t.Errorf("the identity from %s took the client's guest's seat: %d, want 403", code[:4], c)
+		}
+	}
+}
+
+// An account's code signs the client in with no second factor asked for, so
+// a browser still waiting to give its second factor is not the account yet,
+// and gets no account's code.
+func TestClientLink_NoAccountsCodeBeforeTheSecondFactor(t *testing.T) {
+	_, base, ana := clientServer(t)
+	enableTOTP(t, ana)
+	half := newBrowser(t, base)
+	var first map[string]any
+	if c := half.do("POST", "/auth/login", map[string]any{"handle": "ana", "password": anaPassword}, &first); c != 200 || first["second_factor"] != true {
+		t.Fatalf("the password step: %d %v", c, first)
+	}
+	if status, code := askCode(t, half); strings.HasPrefix(code, auth.SignInCodePrefix) {
+		t.Errorf("a code before the second factor: %d %q", status, code)
+	}
+	if status, code := askCode(t, ana); status != 200 || !strings.HasPrefix(code, auth.SignInCodePrefix) {
+		t.Errorf("a code after it: %d %q", status, code)
 	}
 }
 
@@ -202,6 +248,7 @@ func TestClientLink_NoCodeForAnAdministratorOrAToken(t *testing.T) {
 	}
 	// A request proved by the cookie must come from the page.
 	req, _ := http.NewRequest("POST", base+"/api/client/code", nil)
+	req.Header.Set("Origin", "https://elsewhere.example")
 	resp, err := ana.c.Do(req)
 	if err != nil {
 		t.Fatal(err)

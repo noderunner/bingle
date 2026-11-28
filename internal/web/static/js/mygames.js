@@ -6,6 +6,7 @@ import { h, rememberedGames, rememberGame, rememberOlderGame, forgetGame, forgot
 import { api, gameTitle } from "./api.js";
 import { t, tParts } from "./i18n.js";
 import { seatKey } from "./paint.js";
+import { clientLink } from "./client-setup.js";
 
 let defsPromise = null;
 
@@ -130,7 +131,8 @@ export function openGameRow(g, defs, isMine, action = null) {
 		{ "data-code": g.room_code },
 		h("div", { class: "grow" }, h("div", { class: "title" }, `${title} · ${g.room_code}`), h("div", { class: "meta" }, ...dotted(meta))),
 		badgeColumns(badges),
-		action || h("a", { class: "button primary", href: "/game/" + g.room_code }, t("games.watch"))
+		action || h("a", { class: "button primary", href: "/game/" + g.room_code }, t("games.watch")),
+		clientLink(g.room_code, action ? "join" : "watch")
 	);
 }
 
@@ -201,6 +203,7 @@ export function gameRow(r, defs, onForget) {
 					r.info.status === "finished" ? t("games.review") : t("games.open"),
 					r.unread ? h("span", { class: "unread-count", title: t("games.unread", { n: r.unread }) }, String(r.unread)) : null
 			  ),
+		r.missing || !r.info || r.info.status === "finished" ? null : clientLink(r.g.code, "join"),
 		h(
 			"button",
 			{

@@ -140,12 +140,13 @@ Content-Type: application/json
 ```
 
 - An account's code (`bgc_…`) answers `{token, expires, me}`, as `POST /auth/login {code}` does (ADR 0138): a session
-  of the client's own, listed in the account's sessions under the client's name. It replaces what the client held
-  for that server, as signing in does.
+  of the client's own, listed in the account's sessions under the client's name.
 - A guest's code (`bgj_…`) answers `{guest_key}`: a new key of the browser's guest, so the client sits in its seats.
   It is not the browser's own key.
-- Either way, a guest key the client sends as `Authorization: Bearer` brings that guest along: it is merged in and
-  stops working. Leave it off to keep that guest apart.
+- **Nothing is merged**, whatever the client sends as its bearer: the identity it already held for that server
+  keeps its games. A link can come from anybody, with a code its maker minted for themselves, so a client that
+  already holds an identity for that server says who it is and who the link would make it, and asks before trading;
+  for a server it has never used, it trades nothing until the player has agreed to the server.
 - `401`: the code was spent, is over a minute old, or was never one. The client joins as whoever it is, says so,
   and does not try the code again. `429`: too many from this address.
 - The code is never written to a log, and nor is the link.

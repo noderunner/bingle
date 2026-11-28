@@ -51,7 +51,9 @@ bingle-3d://watch?server=http%3A%2F%2F127.0.0.1%3A8080&room=K7MQ2X
 - **An account's code is a sign-in code, as the setup file's is**: the same row of `account_tokens`, kept by its
   hash, spent by one `UPDATE` that also checks it is unspent and in date, ended with the account's other sessions and
   by a new password, and audited as `sign-in-code link`. Only its life differs, a minute instead of a day. No second
-  way to mint a credential for an account was added.
+  way to mint a credential for an account was added. As with the setup file's, no second factor is asked for when it
+  is traded: it is minted only from a session that has given one, and a browser still between its password and its
+  second factor is not the account yet (it is at most a guest, and gets a guest's code).
 - **A guest's code is a row of `guest_codes`**, kept by its hash the same way, since a guest has no account to hang
   a sign-in code on. A new key for the guest, or giving the guest up, ends the guest's codes not yet traded, and so
   does the guest's becoming an account.
@@ -61,12 +63,21 @@ bingle-3d://watch?server=http%3A%2F%2F127.0.0.1%3A8080&room=K7MQ2X
   own, no stronger than the browser's session (an account for the same account). A guest's code answers
   `{guest_key}`: a new key of the same guest, in the same transaction as the spending, not a copy of the browser's
   key. A second trade fails, and so does one after the minute (`401`, one answer for every reason).
-- **A guest the client brings goes with it**, as on signing in (ADR 0138): a guest key sent as the bearer is merged
-  into the code's player and stops working. A client that wants to keep that guest apart leaves the key off.
+- **A link merges nobody into anybody.** Signing in merges the guest a client brings (ADR 0138) because the player
+  typed a password. A link's code can come from anybody's page, minted by its maker for their own guest or account,
+  and a client that sent its own guest along would hand that guest's seats and games to the link's maker with one
+  click. So `POST /auth/client` merges nothing, whatever bearer it comes with: the identity the client already held
+  keeps its games, and its key keeps working. Only the client can tell that a code would make it somebody else than
+  it is on that server: it says who it is and who the link would make it, and asks before trading; and for a server
+  it has never used it trades nothing until the player has agreed to the server.
 - **An administrator gets no code** (`403`), and an API token none. The setup file gives an administrator's account
   its sign-in code, behind the second factor's gate; but a link is clicked many times a day, from pages on many
   servers, and the admin group's powers should not ride on one. The page opens the link without a code, and the
-  client joins as whoever it is, or signs in with the password and the second factor.
+  client joins as whoever it is, or signs in with the password and the second factor. The administrator is the only
+  one refused because the admin group is the only holder of powers beyond a player's: the matrix (ADR 0071) has two
+  classes, guest and user, and the admin group, which holds everything. `moderate` and `view_metrics` are seeded to
+  neither class, so they are the admin group's, unless the admin page grants one to every user, when a link's session
+  has it as every user's does.
 - **The trade is under `/auth`**, so a closed server (ADR 0071) lets a client that is not signed in yet reach it,
   as it lets one reach the sign-in. It is always there; a server that offers no client mints no codes, and refuses
   every one. Trades of guests' codes are limited to thirty an hour per address, and an account's count as sign-in
@@ -109,6 +120,8 @@ bingle-3d://watch?server=http%3A%2F%2F127.0.0.1%3A8080&room=K7MQ2X
   would be a second sign-in flow for one case.
 - *The trade under `/api/client`, beside the code's minting*: a closed server would refuse it to a client that has
   not signed in yet, which is every client that needs it.
+- *Merging the client's guest, as signing in does*: one rule for both, but a takeover of the client's guest for
+  whoever can get a link clicked.
 - *A link the server builds*: one encoder in Go, but the page would still build a link without a code when no code
   is given.
 

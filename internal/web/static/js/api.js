@@ -166,6 +166,8 @@ export const api = {
 	guestKey: () => call("/api/guest/key"),
 	// The bingle-3d client's setup file, made for this server and whoever asks (ADR 0151).
 	clientSetup: () => call("/api/client/setup", { method: "POST", file: true }),
+	// A code for a link that opens the client at a game, good once for a minute (ADR 0163).
+	clientCode: () => call("/api/client/code", { method: "POST" }),
 	adoptGuest: (key) => call("/api/guest/adopt", { method: "POST", body: { key } }),
 	rotateGuest: () => call("/api/guest/rotate", { method: "POST" }),
 	discardGuest: () => call("/api/guest/discard", { method: "POST" }),

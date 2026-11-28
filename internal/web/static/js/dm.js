@@ -18,6 +18,7 @@ import { onLeave, setKeepAlive, untracked } from "./nav.js";
 import { callPerson, hangUp, toggleMute, callState, onCallChange, ringing, ended, directSignal, inDirectCall, setMyAddress } from "./dm-call.js";
 import { t } from "./i18n.js";
 import { chatText } from "./chat-text.js";
+import { clientLink } from "./client-setup.js";
 
 // The newest message this browser has shown, by the address it was with.
 const SEEN_KEY = "bingle.dm.seen";
@@ -392,6 +393,7 @@ export function mountDirectMessages(host, { onCount = () => {} } = {}) {
 								},
 								t("dm.accept")
 						  ),
+					g.notice ? null : clientLink(g.room, "join", () => api.answerInvite(g.room, true).catch(() => {})),
 					h("button", { type: "button", class: "ghost small", "data-dismiss": g.room, onclick: () => friendAction(() => (g.notice ? api.friendDismiss(g.room) : api.answerInvite(g.room, false))) }, g.notice ? t("dm.dismiss") : t("dm.decline")),
 					g.notice ? null : blockButton(g.from.slice(1), g.from)
 				)

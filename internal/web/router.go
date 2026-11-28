@@ -17,6 +17,7 @@ import (
 	"io/fs"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -55,6 +56,9 @@ var templates = template.Must(template.New("").Funcs(template.FuncMap{
 	}, //nolint:gosec // escaped
 	// Filled in with the quick setup page's path when there is one (WithClientBuilds).
 	"clientSetupPage": func() string { return "" },
+	// clientPlatforms are the platforms the quick setup page has a build for
+	// ("windows linux"), where a page offers to open a game in the client (ADR 0163).
+	"clientPlatforms": func() string { return "" },
 	// clientDownload is one build's download button, for any page that offers the client.
 	"clientDownload": clientDownload,
 	// t is the words of a key in the page's language (ADR 0141):
@@ -180,10 +184,16 @@ func WithClientBuilds(set *clientbuilds.Set) Option {
 		if len(h.quickSetup) > 0 {
 			page = func() string { return quickSetupPath }
 		}
+		var ids []string
+		for _, q := range h.quickSetup {
+			ids = append(ids, q.ID)
+		}
+		platforms := strings.Join(ids, " ")
 		h.templates = h.templates.Funcs(template.FuncMap{
 			"clientMenu":      func() bool { return true },
 			"clientBuilds":    func() []clientBuild { return builds },
 			"clientSetupPage": page,
+			"clientPlatforms": func() string { return platforms },
 		})
 	}
 }

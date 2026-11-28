@@ -115,6 +115,8 @@
 	"bar.client": "تنزيل عميل اللعبة",
 	"bar.setup_file": "إعدادات ملف {name}",
 	"bar.quick_setup": "دليل الإعداد السريع للعميل",
+	"bar.join_3d": "انضم عبر Bingle3D",
+	"bar.watch_3d": "شاهد عبر Bingle3D",
 	"quick.title": "الإعداد السريع للعميل",
 	"quick.download": "نزّل العميل.",
 	"quick.unpack_windows_html": "انقر بزر الفأرة الأيمن على {file} ثم اختر استخراج الكل…",
