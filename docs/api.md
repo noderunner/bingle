@@ -185,7 +185,7 @@ for a handle, codes for an account) lock it for a minute, doubling, an hour at m
 | Method & path | Body | Response |
 |---|---|---|
 | `GET /api/me/deals?game_def_id=` | | `{deals: [{seed, won, moves, chosen?, room_code, ended_at}]}`: a signed-in account's finished games of one game of patience, the latest first (at most 200), with the seed each was dealt from; `moves` of a won game is its score. A guest gets `403` (see *Seeds* below) |
-| `GET /api/me/games` | | `{games: [{room_code, game_def_id, name, status, seats, updated_at}]}`: the games the asker (a guest or an account) has a seat in, the latest first |
+| `GET /api/me/games` | | `{games: [{room_code, game_def_id, name, status, seats, updated_at}]}`: the games the asker (a guest or an account) has a seat in, the latest first, at most 60, finished and waiting ones included (`seats` are the names played under, not indices) |
 | `GET /api/guest/key` | (the page's header, the guest cookie) | `{key, link}`: this browser's guest key, to copy to another device; `409` for a browser that is not a guest |
 | `POST /api/guest/adopt` | `{key}` | this browser becomes that guest, its own merged in (a signed-in account takes the guest in instead); `400` for any key that does not work, `429` past ten tries an hour |
 | `POST /api/guest/rotate` | | a new key in the cookie; every copy of the old one stops working; the seats stay |

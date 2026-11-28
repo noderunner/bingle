@@ -56,6 +56,7 @@ var schemaEndpoints = []schemaEndpoint{
 	{route: "POST /api/games/{code}/seat", request: reflect.TypeFor[seatRequest](), response: reflect.TypeFor[gameStatusResponse]()},
 	{route: "POST /api/games/{code}/leave", request: reflect.TypeFor[playerRequest](), response: reflect.TypeFor[gameStatusResponse]()},
 	{route: "POST /api/games/{code}/remove", request: reflect.TypeFor[seatRequest](), response: reflect.TypeFor[gameStatusResponse]()},
+	{route: "GET /api/me/games", response: reflect.TypeFor[ownGamesResponse]()},
 	{route: "GET /api/me/deals", response: reflect.TypeFor[ownDealsResponse]()},
 	{route: "POST /api/bot-matches", request: reflect.TypeFor[botMatchRequest](), response: reflect.TypeFor[botMatchResponse]()},
 

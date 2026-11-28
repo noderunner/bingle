@@ -688,7 +688,16 @@ func (h *handlers) handleOwnGames(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Cache-Control", "no-store")
-	writeJSON(w, http.StatusOK, map[string]any{"games": games})
+	writeJSON(w, http.StatusOK, ownGamesResponse{Games: games})
+}
+
+// ownGamesResponse is GET /me/games' 200 response body.
+type ownGamesResponse struct {
+	// Games are the games the asker, a guest or an account, has a seat in,
+	// the latest first, at most 60: finished games and waiting ones as well,
+	// whether or not GET /games lists them; tutorial rooms are left out. Empty
+	// for a request with no key or session.
+	Games []session.OwnGame `json:"games"`
 }
 
 // ownDealsResponse is GET /me/deals' 200 response body.
