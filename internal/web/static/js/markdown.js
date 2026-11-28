@@ -6,7 +6,7 @@
 //   blocks, ordered/unordered/nested lists, task items, > quotes and
 //   [!NOTE]-style callouts, [[Key]] keycaps, ::: containers (note/tip/warning/important/
 //   details), tables with column alignment, horizontal rules, links
-//   (http(s), #section, tab:<id>) and images — relative to the game's asset
+//   (http(s), #section, tab:<id>, /a-path-here) and images — relative to the game's asset
 //   folder, or ![](piece:cthulhu) / ![](seat:1) for the game's own icons.
 //
 // renderMarkdown(src, opts) returns {node, headings}. Options:
@@ -386,7 +386,9 @@ function uniqueId(text, ctx) {
 	return n ? `${base}-${n}` : base;
 }
 
-const SAFE_LINK = /^(https?:|mailto:|#|tab:)/i;
+// A link to another site, an address, a section, a tab, or a page of this
+// server by its path ("/client", never "//host", which is another site's).
+const SAFE_LINK = /^(https?:|mailto:|#|tab:|\/(?![/\\]))/i;
 
 /** Finds the index of the bracket closing the one at `open`, or -1. */
 function matching(text, open, left, right) {

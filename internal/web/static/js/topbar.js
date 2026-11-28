@@ -321,6 +321,7 @@ export function installTopbar({ onRows = () => {}, manageTitle = true } = {}) {
 			renderMarkdown = null;
 		}
 		clear(changesBody);
+		const articles = new Map();
 		for (const e of entries) {
 			const text = h("div", { class: "md" });
 			const markdown = withoutCoreHeading(e.markdown, e.version);
@@ -328,11 +329,41 @@ export function installTopbar({ onRows = () => {}, manageTitle = true } = {}) {
 			else text.textContent = markdown;
 			// A release not yet translated comes in English, and is marked so (left to right too).
 			const other = e.lang && e.lang !== lang;
-			changesBody.append(h("article", { class: "help-change", "data-version": e.version, lang: other ? e.lang : null, dir: other ? "ltr" : null }, h("h4", { class: "help-change-head" }, `${e.version}${e.date ? ` · ${e.date}` : ""}`), text));
+			const article = h("article", { class: "help-change", "data-version": e.version, lang: other ? e.lang : null, dir: other ? "ltr" : null }, h("h4", { class: "help-change-head" }, `${e.version}${e.date ? ` · ${e.date}` : ""}`), text);
+			articles.set(e, article);
+			changesBody.append(article);
 		}
 		changesBody.scrollTop = 0;
 		markRead.hidden = !news;
 		changes.hidden = false;
+		linkAnnouncements(articles);
+	};
+	// The announcements (ADR 0155), each linked by its title under the release it came after (the
+	// newest release has those after it too), newest first; a link shows it alone in the tour's card,
+	// which marks nothing seen. Those from before the releases shown are under older ones, not here.
+	const linkAnnouncements = async (articles) => {
+		let list = [];
+		try {
+			({ announcements: list } = await api.announcements());
+		} catch (_) {
+			return; // the changes without them
+		}
+		const dated = [...articles.keys()].filter((e) => e.date);
+		const under = new Map();
+		for (const a of [...list].reverse()) {
+			const e = dated.find((x) => x.date <= a.published_at.slice(0, 10));
+			if (!e) continue;
+			if (!under.has(e)) under.set(e, []);
+			under.get(e).push(a);
+		}
+		const openOne = (ev, a) => {
+			ev.preventDefault();
+			import("./announcements.js").then((m) => m.openAnnouncement(a)).catch(() => toast(t("common.not_done"), "error"));
+		};
+		for (const [e, items] of under) {
+			const links = items.map((a) => h("li", {}, h("a", { href: "#", class: "help-announcement", "data-announcement": a.id, onclick: (ev) => openOne(ev, a) }, a.title)));
+			articles.get(e).append(h("ul", { class: "help-announcements" }, links));
+		}
 	};
 	const markAllRead = () => {
 		if (!latest) return;

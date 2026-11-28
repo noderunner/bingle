@@ -72,6 +72,8 @@ var schemaEndpoints = []schemaEndpoint{
 	{route: "POST /auth/second", request: reflect.TypeFor[auth.SecondRequest](), response: reflect.TypeFor[auth.SessionTokenResponse]()},
 	{route: "GET /auth/me", response: reflect.TypeFor[auth.Me]()},
 	{route: "POST /auth/tour-seen", response: reflect.TypeFor[auth.TourSeenResponse]()},
+	{route: "POST /auth/announcements-seen", request: reflect.TypeFor[auth.AnnouncementsSeenRequest](), response: reflect.TypeFor[auth.AnnouncementsSeenResponse]()},
+	{route: "GET /api/announcements", response: reflect.TypeFor[auth.AnnouncementsResponse]()},
 	{route: "POST /auth/language", request: reflect.TypeFor[auth.LanguageRequest](), response: reflect.TypeFor[auth.LanguageResponse]()},
 	{route: "POST /auth/translate", request: reflect.TypeFor[auth.TranslateRequest](), response: reflect.TypeFor[auth.TranslateResponse]()},
 	{route: "POST /auth/logout", response: reflect.TypeFor[auth.LogoutResponse]()},

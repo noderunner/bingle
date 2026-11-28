@@ -48,6 +48,11 @@ type Guests interface {
 	// marking that it has.
 	TourSeen(ctx context.Context, id string) (bool, error)
 	MarkTourSeen(ctx context.Context, id string, now time.Time) error
+	// Announcements (ADR 0155): those published and not withdrawn, the ids
+	// waiting for a principal, and marking some seen by it.
+	Announcements(ctx context.Context, withdrawn bool) ([]store.Announcement, error)
+	AnnouncementsWaiting(ctx context.Context, id string) ([]int64, error)
+	MarkAnnouncementsSeen(ctx context.Context, id string, ids []int64, now time.Time) error
 }
 
 // Resolver resolves the principal of each request.

@@ -2,6 +2,11 @@
 
 O que mudou no Bingle, do mais recente ao mais antigo. O Bingle Core (o servidor, o motor e o cliente web) e cada jogo têm versão própria, e cada entrada diz qual mudou. As entradas anteriores à 0.124.0 estão só em inglês.
 
+## 0.147.0 - 2026-11-27
+
+### Bingle Core 0.147.0
+- Anúncios importantes dos administradores do servidor aparecem uma vez no cartão do tour, e Mudanças recentes traz um link para cada um (API 1.22.0)
+
 ## 0.146.0 - 2026-11-27
 
 ### Bingle Core 0.146.0

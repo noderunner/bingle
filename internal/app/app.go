@@ -602,6 +602,9 @@ func (a *App) Caps() *auth.Caps { return a.caps }
 // Accounts is the account service (the command line's way in).
 func (a *App) Accounts() *auth.Accounts { return a.accounts }
 
+// Resolver is what tells each request's guest or account (tests set its clock).
+func (a *App) Resolver() *auth.Resolver { return a.guests }
+
 // WithArgon2 sets the cost of a password hash: tests make it cheap, since
 // every App they start hashes the seeded administrator's password.
 func WithArgon2(p auth.Argon2Params) Option { return func(a *App) { a.argon2 = p } }

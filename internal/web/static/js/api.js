@@ -132,6 +132,10 @@ export const api = {
 	// The welcome tour was skipped or finished (ADR 0139). Sent with keepalive, so that it
 	// reaches the server even when the player leaves the page as the tour closes.
 	tourSeen: () => call("/auth/tour-seen", { method: "POST", keepalive: true }),
+	// Announcements (ADR 0155): every one published, and marking those a card showed as
+	// seen, with keepalive as the tour's mark.
+	announcements: () => call("/api/announcements"),
+	announcementsSeen: (ids) => call("/auth/announcements-seen", { method: "POST", body: { ids }, keepalive: true }),
 	// The interface's language (ADR 0141): a language's code, or "" for the browser's own.
 	setLanguage: (language) => call("/auth/language", { method: "POST", body: { language } }),
 	setTranslate: (on) => call("/auth/translate", { method: "POST", body: { on } }),
@@ -172,6 +176,9 @@ export const api = {
 	adminCaps: () => call("/auth/admin/caps"),
 	setCap: (cls, capability, allowed) => call("/auth/admin/caps", { method: "PUT", body: { class: cls, capability, allowed } }),
 	invite: () => call("/auth/admin/invites", { method: "POST" }),
+	adminAnnouncements: () => call("/auth/admin/announcements"),
+	announce: (title, body) => call("/auth/admin/announcements", { method: "POST", body: { title, body } }),
+	withdrawAnnouncement: (id) => call(`/auth/admin/announcements/${enc(id)}/withdraw`, { method: "POST" }),
 	oidcFinish: (handle) => call("/auth/oidc/finish", { method: "POST", body: { handle } }),
 	oidcUnlink: (provider, password) => call("/auth/oidc/unlink", { method: "POST", body: { provider, password } }),
 	forgot: (who) => call("/auth/forgot", { method: "POST", body: { who } }),

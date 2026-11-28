@@ -1,13 +1,10 @@
-// The welcome tour (ADR 0139): a floating card of slides on the main page,
-// each a feature worth knowing about, with a picture drawn by the page's own
-// code from sample data, so that it looks like the page in either theme and
-// changes when the page does. It is offered once to each guest and account
-// (home.js asks offerTour), and the help window takes it again (openTour).
-//
-// The pictures are only pictures: inert, out of the tab order and read to a
-// screen reader as one description each.
+// The welcome tour (ADR 0139): the main page's floating card (js/tour-card.js)
+// with a slide for each feature worth knowing about, and a picture drawn by the
+// page's own code from sample data, so that it looks like the page in either
+// theme and changes when the page does. It is offered once to each guest and
+// account (home.js asks offerTour), and the help window takes it again (openTour).
 
-import { h, clear, store, brandName } from "./util.js";
+import { h, store, brandName } from "./util.js";
 import { api, whoAmI } from "./api.js";
 import { renderBoard } from "./render.js";
 import { rateBars } from "./charts.js";
@@ -15,7 +12,8 @@ import { gameRow } from "./mygames.js";
 import { badgeItem } from "./badges.js";
 import { guestKeySection } from "./guest-key.js";
 import { gamesIcon, profileIcon, rulesIcon } from "./ui-icons.js";
-import { t, tParts, lang, forwardKey, backKey } from "./i18n.js";
+import { t, tParts, lang } from "./i18n.js";
+import { openCard } from "./tour-card.js";
 
 // This browser has skipped or finished the tour: kept beside the server's mark
 // so that a browser signed out, which is nobody again until its next game, is
@@ -167,12 +165,18 @@ export function openTour(me = null) {
 	if (current) return current;
 	current = (async () => {
 		me = me || (await whoAmI());
-		const slides = slidesFor(me);
-		const dlg = buildCard(slides);
-		document.body.append(dlg);
-		if (typeof dlg.showModal === "function") dlg.showModal();
-		else dlg.setAttribute("open", "");
-		dlg.querySelector("#tour-next").focus();
+		const dlg = openCard({
+			id: "welcome-tour",
+			slides: slidesFor(me),
+			skip: t("tour.skip"),
+			extra: extraOf,
+			onClose: () => {
+				store.set(TOUR_SEEN_KEY, true);
+				api.tourSeen().catch(() => {});
+				current = null;
+			},
+		});
+		if (!dlg) current = null;
 		return dlg;
 	})().catch(() => {
 		current = null;
@@ -180,99 +184,14 @@ export function openTour(me = null) {
 	return current;
 }
 
-function buildCard(slides) {
-	const count = h("p", { class: "tour-count small muted", id: "tour-count", "aria-live": "polite" });
-	const picture = h("div", { class: "tour-picture", id: "tour-picture", role: "img" });
-	const title = h("h2", { id: "tour-title" });
-	const text = h("p", { class: "tour-text", id: "tour-text" });
-	const extra = h("div", { class: "tour-extra", id: "tour-extra" });
-	const dots = h("div", { class: "tour-dots", role: "group", "aria-label": t("tour.slides") });
-	const back = h("button", { type: "button", class: "ghost", id: "tour-back" }, t("tour.back"));
-	const next = h("button", { type: "button", class: "primary", id: "tour-next" }, t("tour.next"));
-	const skip = h("button", { type: "button", class: "ghost", id: "tour-skip" }, t("tour.skip"));
-	const dlg = h(
-		"dialog",
-		{ id: "welcome-tour", class: "tour-card", "aria-labelledby": "tour-title", "aria-describedby": "tour-text" },
-		h("div", { class: "tour-body" }, count, picture, title, text, extra),
-		dots,
-		h("div", { class: "tour-foot" }, skip, h("span", { class: "spacer" }), back, next)
-	);
-
-	let at = 0;
-	let drawing = 0;
-	const dotButtons = slides.map((sl, i) => {
-		const b = h("button", { type: "button", class: "tour-dot", "data-slide": sl.id, "aria-label": t("tour.dot", { n: i + 1, title: sl.title }), onclick: () => show(i) });
-		dots.append(b);
-		return b;
-	});
-
-	function show(i) {
-		at = Math.max(0, Math.min(slides.length - 1, i));
-		const sl = slides[at];
-		dlg.dataset.slide = sl.id;
-		count.textContent = t("tour.count", { n: at + 1, total: slides.length });
-		title.textContent = sl.title;
-		text.textContent = sl.text;
-		clear(extra);
-		if (sl.accountOnly) extra.append(h("p", { class: "tour-note small", id: "tour-account-note" }, t("tour.with_account")));
-		if (sl.adds && sl.adds.length) extra.append(h("p", { class: "tour-adds small", id: "tour-adds" }, ...tParts("tour.account_adds", { adds: h("strong", {}, t("tour.adds_label")), list: listWords(sl.adds) })));
-		if (sl.signup) extra.append(h("p", {}, h("a", { class: "button primary", id: "tour-signup", href: "/signup" }, t("common.sign_up"))));
-		picture.setAttribute("aria-label", sl.alt);
-		dotButtons.forEach((b, j) => {
-			b.classList.toggle("on", j === at);
-			b.setAttribute("aria-current", j === at ? "step" : "false");
-		});
-		back.disabled = at === 0;
-		next.textContent = at === slides.length - 1 ? t("tour.done") : t("tour.next");
-		drawPicture(picture, sl, ++drawing, () => drawing);
-	}
-
-	next.addEventListener("click", () => (at === slides.length - 1 ? dlg.close() : show(at + 1)));
-	back.addEventListener("click", () => show(at - 1));
-	skip.addEventListener("click", () => dlg.close());
-	dlg.addEventListener("keydown", (ev) => {
-		if (ev.target.closest && ev.target.closest("input, textarea, select")) return;
-		if (ev.key === forwardKey) show(at + 1);
-		else if (ev.key === backKey) show(at - 1);
-		else return;
-		ev.preventDefault();
-	});
-	dlg.addEventListener("close", () => {
-		store.set(TOUR_SEEN_KEY, true);
-		api.tourSeen().catch(() => {});
-		dlg.remove();
-		current = null;
-	});
-	show(0);
-	return dlg;
-}
-
-// drawPicture draws a slide's picture, unless another slide has been shown
-// while it was being drawn. A picture that cannot be drawn leaves the frame
-// empty: the words still say what the slide is about.
-async function drawPicture(frame, slide, n, latest) {
-	clear(frame);
-	const stage = h("div", { class: "tour-stage", inert: true, "aria-hidden": "true" });
-	try {
-		await slide.draw(stage, slide);
-	} catch (_) {
-		clear(stage);
-	}
-	if (n !== latest()) return;
-	quiet(stage);
-	clear(frame).append(stage);
-}
-
-// quiet makes a picture only a picture: no ids or names that the page's own
-// elements have, nothing to focus, nothing to submit.
-function quiet(root) {
-	for (const el of root.querySelectorAll("*")) {
-		if (el instanceof SVGElement) continue; // an SVG's ids are its own gradients and clips
-		el.removeAttribute("id");
-		el.removeAttribute("for");
-		el.removeAttribute("name");
-		if (el.tabIndex >= 0) el.setAttribute("tabindex", "-1");
-	}
+// What a slide says beside its words: that it needs an account, and what an
+// account adds, with the way to one.
+function extraOf(sl) {
+	const out = [];
+	if (sl.accountOnly) out.push(h("p", { class: "tour-note small", id: "tour-account-note" }, t("tour.with_account")));
+	if (sl.adds && sl.adds.length) out.push(h("p", { class: "tour-adds small", id: "tour-adds" }, ...tParts("tour.account_adds", { adds: h("strong", {}, t("tour.adds_label")), list: listWords(sl.adds) })));
+	if (sl.signup) out.push(h("p", {}, h("a", { class: "button primary", id: "tour-signup", href: "/signup" }, t("common.sign_up"))));
+	return out;
 }
 
 // ---- the pictures -------------------------------------------------------------
