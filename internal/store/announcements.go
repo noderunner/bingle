@@ -15,17 +15,86 @@ type Announcement struct {
 	Body        string
 	PublishedAt string
 	Withdrawn   bool
+	// Pictures are the names of its pictures, in order (#357).
+	Pictures []string
 }
 
-// CreateAnnouncement publishes an announcement at now.
-func (s *Store) CreateAnnouncement(ctx context.Context, title, body string, now time.Time) (Announcement, error) {
+// Picture is one picture of an announcement: a PNG or JPEG file its body
+// shows by name.
+type Picture struct {
+	Name        string
+	ContentType string
+	Data        []byte
+}
+
+// CreateAnnouncement publishes an announcement at now, with its pictures,
+// all at once: it is never offered without them.
+func (s *Store) CreateAnnouncement(ctx context.Context, title, body string, pictures []Picture, now time.Time) (Announcement, error) {
 	a := Announcement{Title: title, Body: body, PublishedAt: stamp(now)}
-	res, err := s.exec(ctx, "CreateAnnouncement", `INSERT INTO announcements (title, body, published_at) VALUES (?, ?, ?)`, a.Title, a.Body, a.PublishedAt)
+	tx, err := s.begin(ctx, "CreateAnnouncement")
 	if err != nil {
 		return Announcement{}, err
 	}
-	a.ID, err = res.LastInsertId()
-	return a, err
+	defer func() { _ = tx.Rollback() }()
+	res, err := tx.exec(ctx, "CreateAnnouncement", `INSERT INTO announcements (title, body, published_at) VALUES (?, ?, ?)`, a.Title, a.Body, a.PublishedAt)
+	if err != nil {
+		return Announcement{}, err
+	}
+	if a.ID, err = res.LastInsertId(); err != nil {
+		return Announcement{}, err
+	}
+	for _, p := range pictures {
+		if _, err := tx.exec(ctx, "CreateAnnouncement", `INSERT INTO announcement_pictures (announcement_id, name, content_type, data) VALUES (?, ?, ?, ?)`, a.ID, p.Name, p.ContentType, p.Data); err != nil {
+			return Announcement{}, err
+		}
+		a.Pictures = append(a.Pictures, p.Name)
+	}
+	return a, tx.Commit()
+}
+
+// DeleteAnnouncement deletes an announcement, its pictures and who has seen
+// it. ErrNotFound when there is none by that id.
+func (s *Store) DeleteAnnouncement(ctx context.Context, id int64) error {
+	res, err := s.exec(ctx, "DeleteAnnouncement", `DELETE FROM announcements WHERE id = ?`, id)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+// AnnouncementPicture is one picture of an announcement not withdrawn
+// (ErrNotFound when there is none by that name, or it is withdrawn).
+func (s *Store) AnnouncementPicture(ctx context.Context, id int64, name string) (Picture, error) {
+	var p Picture
+	err := s.queryRow(ctx, "AnnouncementPicture",
+		`SELECT p.name, p.content_type, p.data FROM announcement_pictures p JOIN announcements a ON a.id = p.announcement_id
+		 WHERE p.announcement_id = ? AND p.name = ? AND a.withdrawn = 0`, id, name).Scan(&p.Name, &p.ContentType, &p.Data)
+	if errors.Is(err, sql.ErrNoRows) {
+		return Picture{}, ErrNotFound
+	}
+	return p, err
+}
+
+// pictureNames are the names of the pictures of every announcement, by its id.
+func (s *Store) pictureNames(ctx context.Context) (map[int64][]string, error) {
+	rows, err := s.query(ctx, "AnnouncementPictureNames", `SELECT announcement_id, name FROM announcement_pictures ORDER BY announcement_id, rowid`)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+	out := map[int64][]string{}
+	for rows.Next() {
+		var id int64
+		var name string
+		if err := rows.Scan(&id, &name); err != nil {
+			return nil, err
+		}
+		out[id] = append(out[id], name)
+	}
+	return out, rows.Err()
 }
 
 // WithdrawAnnouncement stops an announcement being offered or listed.
@@ -61,7 +130,18 @@ func (s *Store) Announcements(ctx context.Context, withdrawn bool) ([]Announceme
 		}
 		out = append(out, a)
 	}
-	return out, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	_ = rows.Close()
+	names, err := s.pictureNames(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for i := range out {
+		out[i].Pictures = names[out[i].ID]
+	}
+	return out, nil
 }
 
 // AnnouncementByID is one announcement, withdrawn or not (ErrNotFound).
@@ -72,6 +152,11 @@ func (s *Store) AnnouncementByID(ctx context.Context, id int64) (Announcement, e
 	if errors.Is(err, sql.ErrNoRows) {
 		return Announcement{}, ErrNotFound
 	}
+	if err != nil {
+		return Announcement{}, err
+	}
+	names, err := s.pictureNames(ctx)
+	a.Pictures = names[a.ID]
 	return a, err
 }
 

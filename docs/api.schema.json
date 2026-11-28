@@ -104,6 +104,13 @@
         "id": {
           "type": "integer"
         },
+        "pictures": {
+          "description": "Pictures are the names of its pictures, which its body shows by name: each is at /api/announcements/{id}/pictures/{name}.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
         "published_at": {
           "description": "PublishedAt is when it was published (RFC 3339).",
           "type": "string"
@@ -4738,9 +4745,9 @@
   },
   "$id": "https://github.com/noderunner/bingle/docs/api.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "description": "The requests, responses and WebSocket events of bingle's API, version 1.22.0. Generated from the Go types of the server: do not edit. Objects let unknown fields through: a client ignores those it does not know.",
+  "description": "The requests, responses and WebSocket events of bingle's API, version 1.23.0. Generated from the Go types of the server: do not edit. Objects let unknown fields through: a client ignores those it does not know.",
   "title": "Bingle API messages",
-  "x-api-version": "1.22.0",
+  "x-api-version": "1.23.0",
   "x-dm-events": {
     "badge": {
       "$ref": "#/$defs/BadgeEventData"

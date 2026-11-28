@@ -53,6 +53,8 @@ type Guests interface {
 	Announcements(ctx context.Context, withdrawn bool) ([]store.Announcement, error)
 	AnnouncementsWaiting(ctx context.Context, id string) ([]int64, error)
 	MarkAnnouncementsSeen(ctx context.Context, id string, ids []int64, now time.Time) error
+	// AnnouncementPicture is one picture of an announcement not withdrawn.
+	AnnouncementPicture(ctx context.Context, id int64, name string) (store.Picture, error)
 }
 
 // Resolver resolves the principal of each request.

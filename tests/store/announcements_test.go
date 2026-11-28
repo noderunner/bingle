@@ -4,9 +4,12 @@ package store_test
 
 import (
 	"context"
+	"errors"
 	"slices"
 	"testing"
 	"time"
+
+	"github.com/noderunner/bingle/internal/store"
 )
 
 func waiting(t *testing.T, s interface {
@@ -26,15 +29,15 @@ func TestAnnouncements_OnlyThoseMadeSinceAPrincipalWas(t *testing.T) {
 	s := newTestStore(t)
 	ctx := context.Background()
 	now := time.Now()
-	before, err := s.CreateAnnouncement(ctx, "Before", "Old news", now.Add(-time.Hour))
+	before, err := s.CreateAnnouncement(ctx, "Before", "Old news", nil, now.Add(-time.Hour))
 	if err != nil {
 		t.Fatal(err)
 	}
 	if err := s.CreateGuest(ctx, "g1", "hash-1"); err != nil {
 		t.Fatal(err)
 	}
-	after1, _ := s.CreateAnnouncement(ctx, "After", "News", now.Add(time.Hour))
-	after2, _ := s.CreateAnnouncement(ctx, "Later", "More news", now.Add(2*time.Hour))
+	after1, _ := s.CreateAnnouncement(ctx, "After", "News", nil, now.Add(time.Hour))
+	after2, _ := s.CreateAnnouncement(ctx, "Later", "More news", nil, now.Add(2*time.Hour))
 	if got := waiting(t, s, "g1"); !slices.Equal(got, []int64{after1.ID, after2.ID}) {
 		t.Fatalf("waiting: %v, want %d and %d (not %d, from before the guest)", got, after1.ID, after2.ID, before.ID)
 	}
@@ -62,7 +65,7 @@ func TestAnnouncements_AWithdrawnOneIsNotOffered(t *testing.T) {
 	if err := s.CreateGuest(ctx, "g1", "hash-1"); err != nil {
 		t.Fatal(err)
 	}
-	a, _ := s.CreateAnnouncement(ctx, "Soon gone", "Never mind", time.Now().Add(time.Hour))
+	a, _ := s.CreateAnnouncement(ctx, "Soon gone", "Never mind", nil, time.Now().Add(time.Hour))
 	if got := waiting(t, s, "g1"); len(got) != 1 {
 		t.Fatalf("waiting: %v", got)
 	}
@@ -92,8 +95,8 @@ func TestAnnouncements_SeenMarksFollowAMergedGuest(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	a1, _ := s.CreateAnnouncement(ctx, "One", "1", time.Now().Add(time.Hour))
-	a2, _ := s.CreateAnnouncement(ctx, "Two", "2", time.Now().Add(2*time.Hour))
+	a1, _ := s.CreateAnnouncement(ctx, "One", "1", nil, time.Now().Add(time.Hour))
+	a2, _ := s.CreateAnnouncement(ctx, "Two", "2", nil, time.Now().Add(2*time.Hour))
 	_ = s.MarkAnnouncementsSeen(ctx, "phone", []int64{a1.ID}, time.Now())
 	_ = s.MarkAnnouncementsSeen(ctx, "laptop", []int64{a1.ID, a2.ID}, time.Now())
 	if err := s.MergePrincipal(ctx, "laptop", "phone"); err != nil {
@@ -101,5 +104,42 @@ func TestAnnouncements_SeenMarksFollowAMergedGuest(t *testing.T) {
 	}
 	if got := waiting(t, s, "phone"); len(got) != 0 {
 		t.Errorf("after the merge the phone still has %v waiting", got)
+	}
+}
+
+// Deleting an announcement takes its pictures and who has seen it with it.
+func TestAnnouncements_PicturesGoWithTheirAnnouncement(t *testing.T) {
+	s := newTestStore(t)
+	ctx := context.Background()
+	if err := s.CreateGuest(ctx, "g1", "hash-g1"); err != nil {
+		t.Fatal(err)
+	}
+	pics := []store.Picture{{Name: "a.png", ContentType: "image/png", Data: []byte("a")}, {Name: "b.jpg", ContentType: "image/jpeg", Data: []byte("b")}}
+	a, err := s.CreateAnnouncement(ctx, "Pictures", "![a](a.png)", pics, time.Now().Add(time.Hour))
+	if err != nil {
+		t.Fatal(err)
+	}
+	kept, _ := s.CreateAnnouncement(ctx, "Kept", "![a](a.png)", pics[:1], time.Now().Add(time.Hour))
+	if got, err := s.AnnouncementByID(ctx, a.ID); err != nil || len(got.Pictures) != 2 || got.Pictures[0] != "a.png" {
+		t.Fatalf("by id: %+v %v", got, err)
+	}
+	if p, err := s.AnnouncementPicture(ctx, a.ID, "b.jpg"); err != nil || string(p.Data) != "b" || p.ContentType != "image/jpeg" {
+		t.Fatalf("b.jpg: %+v %v", p, err)
+	}
+	_ = s.MarkAnnouncementsSeen(ctx, "g1", []int64{a.ID}, time.Now())
+	if err := s.DeleteAnnouncement(ctx, a.ID); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.DeleteAnnouncement(ctx, a.ID); !errors.Is(err, store.ErrNotFound) {
+		t.Errorf("deleting it again: %v, want ErrNotFound", err)
+	}
+	var pictures, seen int
+	_ = s.DB().QueryRow(`SELECT COUNT(*) FROM announcement_pictures WHERE announcement_id = ?`, a.ID).Scan(&pictures)
+	_ = s.DB().QueryRow(`SELECT COUNT(*) FROM announcements_seen WHERE announcement_id = ?`, a.ID).Scan(&seen)
+	if pictures != 0 || seen != 0 {
+		t.Errorf("left behind: %d pictures, %d seen marks", pictures, seen)
+	}
+	if _, err := s.AnnouncementPicture(ctx, kept.ID, "a.png"); err != nil {
+		t.Errorf("another announcement's picture went too: %v", err)
 	}
 }
